@@ -1,36 +1,42 @@
-const conductAnalysis = (inputContent) => {
-    const contentLines = inputContent.split('\n');
-    const valueSequence = contentLines[1].split(' ').map(Number);
+function processInputData(rawInput) {
+    const [firstLineContent, secondLineContent] = rawInput.split('\n');
+    const [arrayLengthIndicator] = firstLineContent.split(' ').map(Number);
+    const numericSequence = secondLineContent.split(' ').map(Number);
 
-    const initialMetric = {
-        lowestSeen: valueSequence[0],
-        greatestSpread: 0,
-        spreadOccurrences: 0
+    if (numericSequence.length < 2) {
+        console.log(0);
+        return;
+    }
+
+    const initialAccumulatorState = {
+        currentMinimumValue: numericSequence[0],
+        maximumObservedDifference: 0,
+        maximumDifferenceCount: 0
     };
 
-    const finalMetric = valueSequence.slice(1).reduce((accumulator, currentFigure) => {
-        const potentialSpread = currentFigure - accumulator.lowestSeen;
+    const finalResultState = numericSequence.slice(1).reduce((accumulator, currentValue) => {
+        const potentialDifference = currentValue - accumulator.currentMinimumValue;
 
-        let updatedGreatestSpread = accumulator.greatestSpread;
-        let updatedSpreadOccurrences = accumulator.spreadOccurrences;
+        let nextMaximumObservedDifference = accumulator.maximumObservedDifference;
+        let nextMaximumDifferenceCount = accumulator.maximumDifferenceCount;
 
-        if (potentialSpread > accumulator.greatestSpread) {
-            updatedGreatestSpread = potentialSpread;
-            updatedSpreadOccurrences = 1;
-        } else if (potentialSpread === accumulator.greatestSpread) {
-            updatedSpreadOccurrences++;
+        if (potentialDifference > accumulator.maximumObservedDifference) {
+            nextMaximumObservedDifference = potentialDifference;
+            nextMaximumDifferenceCount = 1;
+        } else if (potentialDifference === accumulator.maximumObservedDifference) {
+            nextMaximumDifferenceCount++;
         }
 
-        const updatedLowestSeen = Math.min(accumulator.lowestSeen, currentFigure);
+        const nextCurrentMinimumValue = Math.min(accumulator.currentMinimumValue, currentValue);
 
         return {
-            lowestSeen: updatedLowestSeen,
-            greatestSpread: updatedGreatestSpread,
-            spreadOccurrences: updatedSpreadOccurrences
+            currentMinimumValue: nextCurrentMinimumValue,
+            maximumObservedDifference: nextMaximumObservedDifference,
+            maximumDifferenceCount: nextMaximumDifferenceCount
         };
-    }, initialMetric);
+    }, initialAccumulatorState);
 
-    console.log(finalMetric.spreadOccurrences);
-};
+    console.log(finalResultState.maximumDifferenceCount);
+}
 
-conductAnalysis(require('node:fs').readFileSync(0, 'utf8'));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

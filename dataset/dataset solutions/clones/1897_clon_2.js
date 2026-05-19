@@ -1,88 +1,79 @@
 const ProcessInput = (rawData) => {
-
     // Split the entire input string into individual lines
-    let lineCollection = rawData.split('\n');
+    const lineSegments = rawData.split('\n');
 
-    // Extract the first line for dimensions (N and M)
-    const dimensions = lineCollection.shift().split(' ').map(val => parseInt(val, 10));
+    // Extract the first line for N and M values
+    const dimensions = lineSegments.shift().split(' ').map(element => parseInt(element, 10));
 
-    // Extract the second line for heights
-    const heights = lineCollection.shift().split(' ').map(val => parseInt(val, 10));
+    // Extract the second line for tower heights
+    const heights = lineSegments.shift().split(' ').map(element => parseInt(element, 10));
 
-    // Remove the last (potentially empty or problematic) line
-    lineCollection.pop(); // This often removes an empty string at the end of input
+    // Remove the last line, which might be empty or a trailing newline
+    lineSegments.pop();
 
-    // Process remaining lines for connections data
-    const connections = lineCollection.map(lineItem =>
-        lineItem.split(' ').map(numStr => parseInt(numStr, 10))
-    );
+    // Parse the remaining lines to get road connections
+    const connections = lineSegments.map(segment => segment.split(' ').map(val => parseInt(val, 10)));
 
-    // For debugging purposes, uncomment these lines
-    // console.log('Parsed Dimensions: ', dimensions);
-    // console.log('Parsed Heights: ', heights);
-    // console.log('Parsed Connections: ', connections);
-
-    // Call the core logic function with parsed data and log its result
-    console.log(CalculateResult(dimensions[0], dimensions[1], heights, connections));
+    // Call the core logic function and print its result
+    console.log(CalculateGoodTowers(dimensions[0], dimensions[1], heights, connections));
 };
 
-
-const CalculateResult = (nodeCount, edgeCount, nodeHeights, edgeList) => {
-
-    // Initialize an adjacency list to represent connections between nodes
-    let adjacencyList = [];
-
-    // Populate the adjacency list with empty arrays for each node
-    for (let nodeIndex = 0; nodeIndex <= nodeCount; nodeIndex++) {
+/**
+ * Determines the number of "good" towers based on their heights and connections.
+ * A tower is "good" if its height is strictly greater than all its directly connected neighbors.
+ *
+ * @param {number} numTowers - The total number of towers (N).
+ * @param {number} numRoads - The total number of roads (M).
+ * @param {number[]} heights - An array of tower heights (H), 0-indexed.
+ * @param {number[][]} connections - An array of road connections (A), where each sub-array [u, v] represents a road between tower u and tower v.
+ * @returns {number} The count of good towers.
+ */
+const CalculateGoodTowers = (numTowers, numRoads, heights, connections) => {
+    // Initialize an adjacency list to store connections for each tower.
+    // The list is 1-indexed to match tower numbers.
+    const adjacencyList = [];
+    for (let k = 0; k <= numTowers; k++) {
         adjacencyList.push([]);
     }
 
-    // Fill the adjacency list based on the provided edge list
-    // Each connection is bidirectional
-    for (let connectionIndex = 0; connectionIndex < edgeCount; connectionIndex++) {
-        const firstNode = edgeList[connectionIndex][0];
-        const secondNode = edgeList[connectionIndex][1];
-        adjacencyList[firstNode].push(secondNode);
-        adjacencyList[secondNode].push(firstNode);
+    // Populate the adjacency list based on the provided road connections.
+    // Roads are bidirectional.
+    for (let k = 0; k < numRoads; k++) {
+        const towerA = connections[k][0];
+        const towerB = connections[k][1];
+        adjacencyList[towerA].push(towerB);
+        adjacencyList[towerB].push(towerA);
     }
 
-    let goodSpotCount = 0; // Counter for nodes that meet the criteria
+    let goodTowerCount = 0; // Counter for towers that meet the "good" criteria.
 
-    // Optional: Log the constructed adjacency list for verification
-    // console.log('Constructed Adjacency List: ', adjacencyList);
-
-    // Iterate through each node (starting from 1, assuming 1-indexed nodes)
-    for (let currNodeIdx = 1; currNodeIdx <= nodeCount; currNodeIdx++) {
-
-        // Optional: Log current node being processed
-        // console.log('Processing Node: ', currNodeIdx, ' with neighbors: ', adjacencyList[currNodeIdx]);
-
-        // If a node has no connections, it automatically qualifies
-        if (adjacencyList[currNodeIdx].length === 0) {
-            goodSpotCount++;
-            continue; // Move to the next node
+    // Iterate through each tower from 1 to N.
+    for (let k = 1; k <= numTowers; k++) {
+        // If a tower has no roads connected to it, it's considered "good" by default.
+        if (adjacencyList[k].length === 0) {
+            goodTowerCount++;
+            continue; // Move to the next tower.
         }
 
-        let maxNeighborHeight = 0; // Track the maximum height among neighbors
+        let maxNeighborHeight = 0; // Track the maximum height among neighbors.
 
-        // Iterate through all neighbors of the current node
-        adjacencyList[currNodeIdx].forEach(neighborNodeIdx => {
-            // Adjust index for 0-based array access for heights
-            if (nodeHeights[neighborNodeIdx - 1] > maxNeighborHeight) {
-                maxNeighborHeight = nodeHeights[neighborNodeIdx - 1];
+        // Check all neighbors of the current tower.
+        adjacencyList[k].forEach(neighborTowerIndex => {
+            // Heights array is 0-indexed, so adjust the neighbor index.
+            if (heights[neighborTowerIndex - 1] > maxNeighborHeight) {
+                maxNeighborHeight = heights[neighborTowerIndex - 1];
             }
         });
 
-        // If the current node's height is strictly greater than all its neighbors' heights
-        // (represented by maxNeighborHeight), it qualifies.
-        // Adjust index for 0-based array access for current node's height
-        if (maxNeighborHeight < nodeHeights[currNodeIdx - 1]) {
-            goodSpotCount++;
+        // If the current tower's height is strictly greater than its tallest neighbor, it's "good".
+        // Heights array is 0-indexed, so adjust the current tower's index.
+        if (maxNeighborHeight < heights[k - 1]) {
+            goodTowerCount++;
         }
     }
 
-    return goodSpotCount; // Return the total count of qualifying nodes
+    return goodTowerCount; // Return the final count of good towers.
 };
 
-// Do not modify the following line; it handles standard input/output and invokes the primary processing function.
+// This section handles standard input/output and should not be modified.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

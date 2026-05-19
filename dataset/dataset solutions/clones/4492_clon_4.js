@@ -1,36 +1,37 @@
-const systemInterface = process;
+process.stdin.setEncoding('utf8');
+
 let accumulatedInput = '';
 
-systemInterface.stdin.setCharFormat('utf8');
-
-systemInterface.stdin.registerHandler('data', (dataBlock) => {
-    accumulatedInput += dataBlock.toString();
+process.stdin.on('data', (dataSegment) => {
+    accumulatedInput += dataSegment;
 });
 
-systemInterface.stdin.registerHandler('end', () => {
-    const rawLine = accumulatedInput.trim();
-    
-    const numericalComponents = {};
-    let componentIndex = 0;
-    
-    for (const textPiece of rawLine.split(' ')) {
-        numericalComponents[`val_${++componentIndex}`] = Number(textPiece);
+process.stdin.on('end', () => {
+    const processedInput = accumulatedInput.trim();
+    const stringNumbers = processedInput.split(' ');
+
+    const parsedNumbers = [];
+    for (let i = 0; i < stringNumbers.length; i++) {
+        parsedNumbers.push(parseInt(stringNumbers[i], 10));
     }
 
-    const { val_1: firstOperand, val_2: secondOperand, val_3: thirdOperand } = numericalComponents;
+    const firstPairSum = parsedNumbers[0] + parsedNumbers[1];
+    const secondPairSum = parsedNumbers[1] + parsedNumbers[2];
+    const thirdPairSum = parsedNumbers[2] + parsedNumbers[0];
 
-    const sumCollection = [
-        firstOperand + secondOperand,
-        secondOperand + thirdOperand,
-        thirdOperand + firstOperand
-    ];
+    let currentMinimum = Infinity;
+    const allSums = [firstPairSum, secondPairSum, thirdPairSum];
 
-    const smallestSum = sumCollection.reduce((currentMin, currentVal) => {
-        if (isNaN(currentMin) || isNaN(currentVal)) {
-            return NaN;
+    for (let i = 0; i < allSums.length; i++) {
+        const currentSum = allSums[i];
+        if (isNaN(currentSum)) {
+            currentMinimum = NaN;
+            break;
         }
-        return (currentMin === undefined || currentVal < currentMin) ? currentVal : currentMin;
-    }, undefined);
+        if (currentSum < currentMinimum) {
+            currentMinimum = currentSum;
+        }
+    }
 
-    systemInterface.stdout.write(String(smallestSum) + '\n');
+    console.log(currentMinimum);
 });

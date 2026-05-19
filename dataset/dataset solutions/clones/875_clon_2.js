@@ -1,133 +1,192 @@
-/*
- * Program entry point. Initial file processing.
- * Created on a different date, by a different developer.
+let fileSystemModule = require('fs');
+
+// Determine the size of the standard input stream
+let dataLength = fileSystemModule.fstatSync(process.stdin.fd).size;
+
+// Allocate a buffer to hold the input data
+let inputBuffer = new Buffer(dataLength);
+
+// Read data from standard input into the buffer
+let readBytesCount = fileSystemModule.readSync(process.stdin.fd, inputBuffer, 0, dataLength, 0);
+
+// Convert buffer to string, then split into lines
+let rawInputLines = inputBuffer.toString('utf8', 0, readBytesCount).split('\n');
+
+// Start the main processing function
+processGraphData();
+
+/**
+ * Implements a Disjoint Set Union (DSU) data structure.
+ * @param {number} nodeCount - The total number of elements/nodes.
+ * @returns {object} An object with DSU operations.
  */
-var filesystem = require('fs'),
-    fileSize = filesystem.fstatSync(process.stdin.fd).size,
-    dataBuffer = new Buffer(fileSize),
-    octetsRead = filesystem.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0),
-    dataLines = dataBuffer.toString('utf8', 0, octetsRead).split('\n');
-runProcessor();
+function DisjointSet(nodeCount) {
+  let loopVar;
+  // parentArray stores the parent of each element, or a negative value if it's a root
+  // The absolute value of a negative root indicates the size of the set.
+  let parentArray = [];
 
-function PartitionStructure(totalElements) {
-  // Implements a Disjoint Set Union (DSU) data structure
-  var idx,
-      parentArray = [];
-  for (idx = 0; idx < totalElements; idx++) {
-    parentArray[idx] = -1;
+  // Initialize each element as its own root (set size -1)
+  for (loopVar = 0; loopVar < nodeCount; loopVar++) {
+    parentArray[loopVar] = -1;
   }
 
-  function mergeComponents(itemX, itemY) {
-    itemX = findRepresentative(itemX);
-    itemY = findRepresentative(itemY);
+  /**
+   * Unites two sets containing nodeX and nodeY.
+   * Uses union by size/rank heuristic.
+   * @param {number} nodeX - The first element.
+   * @param {number} nodeY - The second element.
+   * @returns {boolean} True if the sets were different and merged, false otherwise.
+   */
+  function uniteSets(nodeX, nodeY) {
+    nodeX = findRoot(nodeX); // Find the root of nodeX's set
+    nodeY = findRoot(nodeY); // Find the root of nodeY's set
 
-    if (itemX !== itemY) {
-      if (parentArray[itemX] < parentArray[itemY]) {
-        parentArray[itemX] += parentArray[itemY];
-        parentArray[itemY] = itemX;
-      } else {
-        parentArray[itemY] += parentArray[itemX];
-        parentArray[itemX] = itemY;
+    if (nodeX !== nodeY) { // If they are in different sets
+      // Attach the smaller tree under the root of the larger tree
+      if (parentArray[nodeX] < parentArray[nodeY]) { // nodeX's tree is larger (more negative size)
+        parentArray[nodeX] += parentArray[nodeY]; // Update size of new root
+        parentArray[nodeY] = nodeX; // Make nodeX the parent of nodeY
+      } else { // nodeY's tree is larger or equal
+        parentArray[nodeY] += parentArray[nodeX]; // Update size of new root
+        parentArray[nodeX] = nodeY; // Make nodeY the parent of nodeX
       }
     }
-    return itemX !== itemY;
+    return nodeX !== nodeY; // Return true if a merge occurred
   }
 
-  function findRepresentative(itemX) {
-    return parentArray[itemX] < 0 ? itemX : parentArray[itemX] = findRepresentative(parentArray[itemX]);
+  /**
+   * Finds the representative (root) of the set containing the given element.
+   * Uses path compression optimization.
+   * @param {number} nodeIdentifier - The element to find the root for.
+   * @returns {number} The root of the element's set.
+   */
+  function findRoot(nodeIdentifier) {
+    // If nodeIdentifier is a root (negative parent value), return itself
+    // Otherwise, recursively find the root and perform path compression
+    return parentArray[nodeIdentifier] < 0 ? nodeIdentifier : parentArray[nodeIdentifier] = findRoot(parentArray[nodeIdentifier]);
   }
 
-  function activeComponentCount(membershipFlags) {
-    var counter = 0;
-    for (idx = 0; idx < totalElements; idx++) {
-      if (membershipFlags[idx] && parentArray[idx] < 0) {
-        counter++;
+  /**
+   * Counts the number of distinct components (sets) among the active nodes.
+   * @param {boolean[]} activeNodes - An array indicating which nodes are currently active.
+   * @returns {number} The count of distinct components.
+   */
+  function countComponents(activeNodes) {
+    let componentCounter = 0;
+    for (loopVar = 0; loopVar < nodeCount; loopVar++) {
+      // If a node is active and is a root (parentArray[loopVar] < 0), it represents a component
+      if (activeNodes[loopVar] && parentArray[loopVar] < 0) {
+        componentCounter++;
       }
     }
-    return counter;
+    return componentCounter;
   }
 
-  function inSameSet(itemX, itemY) {
-    return findRepresentative(itemX) === findRepresentative(itemY);
+  /**
+   * Checks if two elements belong to the same set.
+   * @param {number} nodeA - The first element.
+   * @param {number} nodeB - The second element.
+   * @returns {boolean} True if they are in the same set, false otherwise.
+   */
+  function areConnected(nodeA, nodeB) {
+    return findRoot(nodeA) === findRoot(nodeB);
   }
 
+  // Public API for the DisjointSet structure
   return {
-    merge: mergeComponents,
-    getRep: findRepresentative,
-    countActive: activeComponentCount,
-    checkSame: inSameSet
+    unite: uniteSets,
+    findRepresentative: findRoot,
+    getComponentCount: countComponents,
+    areInSameSet: areConnected
   };
 }
 
-function runProcessor() {
-  var currentTokens, numNodes, numEdges,
-      loopVarA, loopVarB, loopVarC,
-      vertexInfo,
-      connectionList, segment,
-      partitionManager,
-      finalScore,
-      nodeSelection;
+/**
+ * Main function to process graph data from standard input.
+ * Reads graph configurations (nodes, edges) and performs calculations.
+ */
+function processGraphData() {
+  let lineParts, nodeCount, edgeCount;
+  let loopIndex, edgeIndex, unusedVar; // unusedVar corresponds to 'k' in original
+  let nodeDetails;
+  let graphEdges, currentEdge;
+  let disjointSetInstance;
+  let totalWeight;
+  let nodeInUse;
 
+  // Loop indefinitely until a termination condition is met
   while (true) {
-    currentTokens = dataLines.shift().split(' ');
-    numNodes = +currentTokens[0];
-    numEdges = +currentTokens[1];
+    // Read the first line for node and edge counts
+    lineParts = rawInputLines.shift().split(' ');
+    nodeCount = +lineParts[0]; // Convert string to number
+    edgeCount = +lineParts[1]; // Convert string to number
 
-    if (numNodes === 0) {
+    // If nodeCount is 0, it's the termination signal
+    if (nodeCount === 0) {
       break;
     }
 
-    vertexInfo = [];
-    nodeSelection = [];
-    for (loopVarA = 0; loopVarA < numNodes; loopVarA++) {
-      vertexInfo[loopVarA] = {
-        identifier: loopVarA,
-        duration: +dataLines.shift()
+    nodeDetails = []; // Array to store node objects (nodeIdentifier, activityDays)
+    nodeInUse = [];   // Boolean array to track which nodes are considered 'in use'
+
+    // Read node details (activity days) for each node
+    for (loopIndex = 0; loopIndex < nodeCount; loopIndex++) {
+      nodeDetails[loopIndex] = {
+        nodeIdentifier: loopIndex,
+        activityDays: +rawInputLines.shift() // Convert string to number
       };
-      nodeSelection[loopVarA] = false;
+      nodeInUse[loopIndex] = false; // Initialize all nodes as not in use
     }
 
-    connectionList = [];
-    for (loopVarA = 0; loopVarA < numEdges; loopVarA++) {
-      currentTokens = dataLines.shift().split(' ');
-      connectionList[loopVarA] = [Number(currentTokens[0]) - 1, Number(currentTokens[1]) - 1, Number(currentTokens[2]) - 0];
+    graphEdges = []; // Array to store graph edges
+
+    // Read edge details (from_node, to_node, weight)
+    for (loopIndex = 0; loopIndex < edgeCount; loopIndex++) {
+      lineParts = rawInputLines.shift().split(' ');
+      // Store edges as [from_node_idx, to_node_idx, weight]
+      // Node indices are 0-based, so subtract 1 from input
+      graphEdges[loopIndex] = [+lineParts[0] - 1, +lineParts[1] - 1, +lineParts[2] - 0];
     }
 
-    vertexInfo.sort(function (itemOne, itemTwo) {
-      return itemOne.duration - itemTwo.duration;
+    // Sort nodes by their activity days in ascending order
+    nodeDetails.sort(function (detailA, detailB) {
+      return detailA.activityDays - detailB.activityDays;
     });
 
-    connectionList.sort(function (linkA, linkB) {
-      return linkA[2] - linkB[2];
+    // Sort edges by their weight in ascending order
+    graphEdges.sort(function (edgeA, edgeB) {
+      return edgeA[2] - edgeB[2];
     });
 
-    partitionManager = PartitionStructure(numNodes);
-    finalScore = 0;
+    // Initialize a new Disjoint Set Union structure for the current graph
+    disjointSetInstance = DisjointSet(nodeCount);
+    totalWeight = 0; // Initialize total weight for the result
 
-    // The following block contains graph processing logic, possibly a Minimum Spanning Tree algorithm variant.
-    // It's currently disabled or placeholder.
-    /*
-    for (loopVarA = numNodes - 1; loopVarA >= 0; loopVarA--) {
-      nodeSelection[vertexInfo[loopVarA].identifier] = true;
-      while (loopVarA > 0 && vertexInfo[loopVarA].duration === vertexInfo[loopVarA - 1].duration) {
-        loopVarA--;
-        nodeSelection[vertexInfo[loopVarA].identifier] = true;
-      }
-      // Process connections for current set of active nodes
-      for (loopVarB = 0; loopVarB < numEdges; loopVarB++) {
-        segment = connectionList[loopVarB];
-        if (nodeSelection[segment[0]] && nodeSelection[segment[1]] && !partitionManager.checkSame(segment[0], segment[1])) {
-          partitionManager.merge(segment[0], segment[1]);
-          finalScore += segment[2];
-        }
-      }
-      if (partitionManager.countActive(nodeSelection) > 1) {
-        finalScore = 0;
-        partitionManager = PartitionStructure(numNodes);
-      }
-    }
-    */
+    // The following block is commented out in the original code.
+    // It represents a potential Kruskal-like algorithm or a specific graph processing logic.
+    // For Type II cloning, its commented status must be preserved.
+    //    for (loopIndex = nodeCount - 1; loopIndex >= 0; loopIndex--) {
+    //      nodeInUse[nodeDetails[loopIndex].nodeIdentifier] = true;
+    //      while (loopIndex > 0 && nodeDetails[loopIndex].activityDays === nodeDetails[loopIndex - 1].activityDays) {
+    //        loopIndex--;
+    //        nodeInUse[nodeDetails[loopIndex].nodeIdentifier] = true;
+    //      }
+    //      // Kruskal's algorithm logic (partially implemented/commented)
+    //      for (edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    //        currentEdge = graphEdges[edgeIndex];
+    //        if (nodeInUse[currentEdge[0]] && nodeInUse[currentEdge[1]] && !disjointSetInstance.areInSameSet(currentEdge[0], currentEdge[1])) {
+    //          disjointSetInstance.unite(currentEdge[0], currentEdge[1]);
+    //          totalWeight += currentEdge[2];
+    //        }
+    //      }
+    //      if (disjointSetInstance.getComponentCount(nodeInUse) > 1) {
+    //        totalWeight = 0;
+    //        disjointSetInstance = DisjointSet(nodeCount);
+    //      }
+    //    }
 
-    console.log(finalScore);
+    // Output the calculated total weight (which is always 0 due to the commented block)
+    console.log(totalWeight);
   }
 }

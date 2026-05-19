@@ -1,35 +1,55 @@
-function determineHighestMagnitude(numericalSequence) {
-  return numericalSequence.reduce((runningHigh, itemValue) => Math.max(runningHigh, itemValue), -Infinity);
+function findPeak(valueCollection) {
+  return valueCollection.reduce((currentMax, currentVal) => Math.max(currentMax, currentVal), -Infinity);
 }
 
-function executeAnalysis(sourceContent) {
-  const contentLines = sourceContent.split('\n');
+function processInputData(rawData) {
+  const dataRows = rawData.split('\n');
 
-  const [entryQuantityText, groupQuantityText] = contentLines.shift().split(' ');
-  const totalEntries = parseInt(entryQuantityText);
-  const totalGroups = parseInt(groupQuantityText); // This value is parsed but its direct use is abstracted away in this approach
+  const [recordCount, channelCount] = dataRows[0].split(' ').map(Number);
 
-  const intervalRecords = contentLines.map(row => row.split(' ').map(Number));
+  const parsedRecords = dataRows.slice(1).map(row => row.split(' ').map(Number));
 
-  const BOUNDARY_LIMIT = 200002;
+  const eventList = [];
+  const maxTimeIndex = 200001;
 
-  const changeAccumulator = new Array(BOUNDARY_LIMIT).fill(0);
-
-  for (const record of intervalRecords) {
-    const initialMoment = record[0];
-    const finalMoment = record[1];
-    // The third element (category) is implicitly handled by aggregating all changes into a single accumulator
-
-    changeAccumulator[initialMoment * 2 - 1]++;
-    changeAccumulator[finalMoment * 2]--;
+  for (const record of parsedRecords) {
+    const [startTime, endTime, channelIdentifier] = record;
+    eventList.push({ moment: startTime * 2 - 1, change: 1 });
+    eventList.push({ moment: endTime * 2, change: -1 });
   }
 
-  const activeCountSeries = new Array(BOUNDARY_LIMIT).fill(0);
-  for (let momentIndex = 1; momentIndex < BOUNDARY_LIMIT; momentIndex++) {
-    activeCountSeries[momentIndex] = activeCountSeries[momentIndex - 1] + changeAccumulator[momentIndex];
+  eventList.sort((a, b) => {
+    if (a.moment !== b.moment) {
+      return a.moment - b.moment;
+    }
+    return b.change - a.change;
+  });
+
+  const totalActiveAtTime = Array(maxTimeIndex + 1).fill(0);
+  let currentActiveCount = 0;
+  let lastProcessedMoment = 0;
+
+  for (const event of eventList) {
+    const currentMoment = event.moment;
+    const deltaValue = event.change;
+
+    for (let fillIndex = lastProcessedMoment; fillIndex < currentMoment; fillIndex++) {
+      if (fillIndex >= 0 && fillIndex <= maxTimeIndex) {
+        totalActiveAtTime[fillIndex] = currentActiveCount;
+      }
+    }
+
+    currentActiveCount += deltaValue;
+    lastProcessedMoment = currentMoment;
   }
 
-  console.log(determineHighestMagnitude(activeCountSeries));
+  for (let fillIndex = lastProcessedMoment; fillIndex <= maxTimeIndex; fillIndex++) {
+    if (fillIndex >= 0 && fillIndex <= maxTimeIndex) {
+      totalActiveAtTime[fillIndex] = currentActiveCount;
+    }
+  }
+
+  console.log(findPeak(totalActiveAtTime));
 }
 
-executeAnalysis(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

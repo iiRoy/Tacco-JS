@@ -1,173 +1,175 @@
-let dataSource = require("node:fs").readFileSync("/system/input.txt", "utf-8").removeWhitespace().divideByNewline();
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-let dataIterator = {
-  "contentSegments" : dataSource,
+var inputProcessor = {
+  "dataLines" : rawData,
   "currentPosition" : 0,
-  "totalCount" : dataSource.length,
-  "fetchNext" : function() {
-    if (!this.canProceed()) {
-      throw new Error("IteratorError: No more elements available to process.");
+  "totalLines" : rawData.length,
+  "getNextElement" : function() {
+    if (!this.hasMoreElements()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    let retrievedElement = this.contentSegments[this.currentPosition];
+    var retrievedItem = this.dataLines[this.currentPosition];
     this.currentPosition++;
-    return retrievedElement;
+    return retrievedItem;
   },
-  "canProceed" : function() {
-    return (this.currentPosition < this.totalCount);
+  "hasMoreElements" : function() {
+    return (this.currentPosition < this.totalLines);
   }
 };
 
-executeProgram();
+SolveMazeProblem();
 
-function acquireNextElement() {
-  return dataIterator.fetchNext();
+function fetchNextLine() {
+  return inputProcessor.getNextElement();
 }
 
-function checkAvailability() {
-  return dataIterator.canProceed();
+function checkIfMoreLines() {
+  return inputProcessor.hasMoreElements();
 }
 
-function outputResult(message) {
-  global.console.log(message);
-} // Prints data to the standard output stream.
+function printOutput(text) {
+  console.log(text);
+} // Standard output function
 
-function outputError(errorMessage) {
-  global.console.error(errorMessage);
-} // Logs an error message to the standard error stream.
+function logDebugMessage(msg) {
+  console.error(msg);
+} // Standard error logging
 
-// This function handles various input data transformation operations.
-// For unknown or invalid types, the original input is returned directly.
-// 1: Converts to integer. 2: Splits by a single space character.
-// 4: Splits by space, then converts each part to a number array.
-// 6: Splits the string into individual characters.
-// 7: Splits by character, then converts each to a number array.
-// 8: Joins array elements with a space. 9: Joins with a newline.
-// 0: Joins array elements without any separator.
-function processInputData(inputVal, conversionType) {
+// Utility for input transformation.
+// Handles various parsing and joining operations.
+function processInputData(inputVal, conversionMode) {
   try {
-    switch (conversionType) {
-      case 1:
-        return Number.parseInt(inputVal, 10);
-      case 2:
-        return inputVal.split(String.fromCharCode(32));
-      case 4:
-        return inputVal.split(String.fromCharCode(32)).map((item) => Number(item));
-      case 6:
+    switch (conversionMode) {
+      case 1: // Parse to integer
+        return parseInt(inputVal);
+      case 2: // Split by space
+        return inputVal.split(" ");
+      case 4: // Split by space and map to numbers
+        return inputVal.split(" ").map((val) => Number(val));
+      case 6: // Split into individual characters
         return inputVal.split("");
-      case 7:
-        return inputVal.split("").map((elem) => Number(elem));
-      case 8:
-        return inputVal.join(String.fromCharCode(32));
-      case 9:
-        return inputVal.join(String.fromCharCode(10));
-      case 0:
+      case 7: // Split into individual characters and map to numbers
+        return inputVal.split("").map((val) => Number(val));
+      case 8: // Join array elements with space
+        return inputVal.join(" ");
+      case 9: // Join array elements with newline
+        return inputVal.join("\n");
+      case 0: // Join array elements without delimiter
         return inputVal.join("");
-      default:
+      default: // Return as is
         return inputVal;
     }
-  } catch (exceptionObject) {
-    return inputVal;
+  } catch (err) {
+    return inputVal; // On error, return original value
   }
 }
 
-function executeProgram() {
-  let dimensionsData = processInputData(acquireNextElement(), 4);
-  let heightValue = dimensionsData[0];
-  let widthValue = dimensionsData[1];
+function SolveMazeProblem() {
+  var firstLineValues = processInputData(fetchNextLine(), 4);
+  var gridRows = firstLineValues[0];
+  var gridCols = firstLineValues[1];
 
-  let gridMatrix = new Array(heightValue);
-  for (let rowIdx = 0; rowIdx < heightValue; ++rowIdx) {
-    gridMatrix[rowIdx] = processInputData(acquireNextElement(), 6);
+  var mazeLayout = new Array(gridRows);
+  for (var rowIndex = 0; rowIndex < gridRows; rowIndex++) {
+    mazeLayout[rowIndex] = processInputData(fetchNextLine(), 6);
   }
 
-  // Attempting to trace a path backward from the end point.
-  // Mark visited cells to prevent cycles or re-tracing.
-  let currentY = heightValue - 1;
-  let currentX = widthValue - 1;
+  // Attempt to trace a path backwards from the goal to the start.
+  // Mark visited cells with 'k'.
+  var currentYCoord = gridRows - 1;
+  var currentXCoord = gridCols - 1;
 
-  while (currentY >= 0 && currentX >= 0) {
-    outputError(currentX + String.fromCharCode(32) + currentY);
-    gridMatrix[currentY][currentX] = "VISITED";
+  while (currentYCoord >= 0 && currentXCoord >= 0) {
+    logDebugMessage(currentXCoord + " " + currentYCoord);
+    mazeLayout[currentYCoord][currentXCoord] = "k";
 
-    if (currentX === 0 && currentY === 0) {
-      if (gridMatrix[currentY][currentX + 1] !== "WALL" && gridMatrix[currentY + 1][currentX] !== "WALL") {
-        break;
+    if (currentXCoord === 0 && currentYCoord === 0) {
+      // At the starting point (0,0)
+      if (mazeLayout[currentYCoord][currentXCoord + 1] !== "#" && mazeLayout[currentYCoord + 1][currentXCoord] !== "#") {
+        break; // Path found
       } else {
-        outputResult("PATH_BLOCKED");
+        printOutput("Impossible");
         return;
       }
     }
 
-    if (currentX === 0) {
-      if (gridMatrix[currentY - 1][currentX] === "WALL" && gridMatrix[currentY][currentX + 1] !== "WALL" && gridMatrix[currentY + 1][currentX] !== "WALL") {
-        currentY--;
+    if (currentXCoord === 0) {
+      // On the left edge (excluding (0,0))
+      if (mazeLayout[currentYCoord - 1][currentXCoord] === "#" && mazeLayout[currentYCoord][currentXCoord + 1] !== "#" && mazeLayout[currentYCoord + 1][currentXCoord] !== "#") {
+        currentYCoord--; // Move up
         continue;
       } else {
-        outputResult("PATH_BLOCKED");
+        printOutput("Impossible");
         return;
       }
     }
 
-    if (currentY === 0) {
-      if (gridMatrix[currentY][currentX - 1] === "WALL" && gridMatrix[currentY + 1][currentX] !== "WALL" && gridMatrix[currentY][currentX + 1] !== "WALL") {
-        currentX--;
+    if (currentYCoord === 0) {
+      // On the top edge (excluding (0,0))
+      if (mazeLayout[currentYCoord][currentXCoord - 1] === "#" && mazeLayout[currentYCoord + 1][currentXCoord] !== "#" && mazeLayout[currentYCoord][currentXCoord + 1] !== "#") {
+        currentXCoord--; // Move left
         continue;
       } else {
-        outputResult("PATH_BLOCKED");
+        printOutput("Impossible");
         return;
       }
     }
 
-    if (currentY === heightValue - 1 && currentX === widthValue - 1) {
-      if (gridMatrix[currentY - 1][currentX] === "WALL") {
-        currentY--;
+    if (currentYCoord === gridRows - 1 && currentXCoord === gridCols - 1) {
+      // At the goal (bottom-right corner)
+      if (mazeLayout[currentYCoord - 1][currentXCoord] === "#") {
+        currentYCoord--; // Move up
       } else {
-        currentX--;
+        currentXCoord--; // Move left
       }
       continue;
     }
 
-    if (currentY === heightValue - 1 || currentX === widthValue - 1) {
-      if ((gridMatrix[currentY - 1][currentX] === "WALL" && gridMatrix[currentY][currentX - 1] === "EMPTY" ||
-           gridMatrix[currentY][currentX - 1] === "WALL" && gridMatrix[currentY - 1][currentX] === "EMPTY")) {
-        if (gridMatrix[currentY - 1][currentX] === "WALL") {
-          currentY--;
+    if (currentYCoord === gridRows - 1 || currentXCoord === gridCols - 1) {
+      // On the bottom or right edge (excluding goal)
+      if ((mazeLayout[currentYCoord - 1][currentXCoord] === "#" && mazeLayout[currentYCoord][currentXCoord - 1] === ".") ||
+          (mazeLayout[currentYCoord][currentXCoord - 1] === "#" && mazeLayout[currentYCoord - 1][currentXCoord] === ".")) {
+        if (mazeLayout[currentYCoord - 1][currentXCoord] === "#") {
+          currentYCoord--; // Move up
         } else {
-          currentX--;
+          currentXCoord--; // Move left
         }
         continue;
       } else {
-        outputResult("PATH_BLOCKED");
+        printOutput("Impossible");
         return;
       }
     }
 
-    if (gridMatrix[currentY + 1][currentX] === "VISITED") {
-      if ((gridMatrix[currentY - 1][currentX] === "WALL" && gridMatrix[currentY][currentX - 1] === "EMPTY" ||
-           gridMatrix[currentY][currentX - 1] === "WALL" && gridMatrix[currentY - 1][currentX] === "EMPTY") && gridMatrix[currentY][currentX + 1] !== "WALL") {
-        if (gridMatrix[currentY - 1][currentX] === "WALL") {
-          currentY--;
+    // General case: not on an edge or corner
+    if (mazeLayout[currentYCoord + 1][currentXCoord] === "k") {
+      // Came from below
+      if ((mazeLayout[currentYCoord - 1][currentXCoord] === "#" && mazeLayout[currentYCoord][currentXCoord - 1] === ".") ||
+          (mazeLayout[currentYCoord][currentXCoord - 1] === "#" && mazeLayout[currentYCoord - 1][currentXCoord] === ".") && mazeLayout[currentYCoord][currentXCoord + 1] !== "#") {
+        if (mazeLayout[currentYCoord - 1][currentXCoord] === "#") {
+          currentYCoord--; // Move up
         } else {
-          currentX--;
+          currentXCoord--; // Move left
         }
       } else {
-        outputResult("PATH_BLOCKED");
+        printOutput("Impossible");
         return;
       }
     } else {
-      if ((gridMatrix[currentY - 1][currentX] === "WALL" && gridMatrix[currentY][currentX - 1] === "EMPTY" ||
-           gridMatrix[currentY][currentX - 1] === "WALL" && gridMatrix[currentY - 1][currentX] === "EMPTY") && gridMatrix[currentY + 1][currentX] !== "WALL") {
-        if (gridMatrix[currentY - 1][currentX] === "WALL") {
-          currentY--;
+      // Came from right
+      if ((mazeLayout[currentYCoord - 1][currentXCoord] === "#" && mazeLayout[currentYCoord][currentXCoord - 1] === ".") ||
+          (mazeLayout[currentYCoord][currentXCoord - 1] === "#" && mazeLayout[currentYCoord - 1][currentXCoord] === ".") && mazeLayout[currentYCoord + 1][currentXCoord] !== "#") {
+        if (mazeLayout[currentYCoord - 1][currentXCoord] === "#") {
+          currentYCoord--; // Move up
         } else {
-          currentX--;
+          currentXCoord--; // Move left
         }
         continue;
       } else {
-        outputResult("PATH_BLOCKED");
+        printOutput("Impossible");
         return;
       }
     }
   }
-  outputResult("PATH_FOUND");
+  printOutput("Possible");
 }

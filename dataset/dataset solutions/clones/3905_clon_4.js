@@ -1,45 +1,35 @@
-const inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let inputBuffer = '';
+
+process.stdin.on('data', (chunk) => {
+    inputBuffer += chunk;
 });
 
-let collectedSegments = [];
+process.stdin.on('end', () => {
+    const inputLines = inputBuffer.split('\n');
+    const elementCount = Number(inputLines[0]);
+    const originalNumbers = inputLines[1].split(' ').map(Number);
 
-inputReader.on('line', (dataSegment) => {
-    collectedSegments.push(dataSegment);
-});
+    const orderedNumbers = originalNumbers.slice().sort((a, b) => a - b);
 
-inputReader.on('close', () => {
-    const allInputRows = collectedSegments;
+    const rankRegistry = orderedNumbers.reduce((accumulator, value, index) => {
+        (accumulator[value] = accumulator[value] || []).push(index);
+        return accumulator;
+    }, {});
 
-    const quantityIdentifier = parseInt(allInputRows[0], 10);
-    const initialNumericalSequence = allInputRows[1].split(' ').map(Number);
+    const lastIndex = elementCount - 1;
+    const middlePosition = Math.floor(lastIndex / 2);
 
-    const orderedNumericalSequence = [...initialNumericalSequence].sort((first, second) => first - second);
+    const lowerMidValue = orderedNumbers[middlePosition];
+    const upperMidValue = orderedNumbers[middlePosition + 1];
 
-    const comparisonThresholdIndex = Math.floor((quantityIdentifier - 1) / 2);
-
-    const valueIfHigherRank = orderedNumericalSequence[comparisonThresholdIndex];
-    const valueIfLowerRank = orderedNumericalSequence[comparisonThresholdIndex + 1];
-
-    const positionMapping = new Map();
-    orderedNumericalSequence.forEach((currentValue, currentIndex) => {
-        if (!positionMapping.has(currentValue)) {
-            positionMapping.set(currentValue, []);
-        }
-        positionMapping.get(currentValue).push(currentIndex);
+    const results = originalNumbers.map((currentNumber) => {
+        const currentRank = rankRegistry[currentNumber].pop();
+        return currentRank <= middlePosition ? upperMidValue : lowerMidValue;
     });
 
-    const finalOutputs = initialNumericalSequence.map((originalValue) => {
-        const correspondingRank = positionMapping.get(originalValue).pop();
-
-        if (correspondingRank <= comparisonThresholdIndex) {
-            return valueIfLowerRank;
-        } else {
-            return valueIfHigherRank;
-        }
+    results.forEach((outputValue) => {
+        console.log(outputValue);
     });
-
-    finalOutputs.forEach(resultEntry => console.log(resultEntry));
 });

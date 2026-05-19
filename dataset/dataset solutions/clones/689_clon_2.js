@@ -1,47 +1,33 @@
-// Obtain raw input data from the standard input stream.
-const   rawData =   require('fs') .readFileSync('/dev/stdin', 'utf8')   ;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input.
 
-// Process the acquired data: remove leading/trailing whitespace and split into an array of lines.
-let   numericInputs =   rawData.trim() .split("\n")   ;
+let lineSegments = rawData.trim().split("\n"); // Process raw data into an array of distinct lines.
 
-// Begin the primary processing loop, which continues until a specific termination condition is met.
-while   (true) {
+while (true) { // Begin an indefinite processing loop.
 
-    // Extract the first numerical value from the input array and convert it to a proper number.
-    let   mainNumber =   Number(numericInputs.shift())   ;
+  let mainValue = lineSegments.shift() - 0; // Extract the next numerical value from the line segments.
 
-    // If the extracted number is zero, it signifies the end of input, so terminate the loop.
-    if   (mainNumber === 0)   {
-        break   ;
+  if (mainValue === 0) { // Check for the termination condition.
+    break; // Exit the loop if the main value is zero.
+  }
+
+  const mainValueCubed = mainValue * mainValue * mainValue; // Compute the cube of the primary value.
+
+  let resultCollection = []; // Initialize an array to store computed differences.
+
+  for (let outerIterator = mainValue - 1; outerIterator > 0; outerIterator--) { // Outer loop for iteration.
+    for (let innerIterator = outerIterator; innerIterator > 0; innerIterator--) { // Inner loop, dependent on outer iterator.
+
+      const calculatedDifference = mainValueCubed - (outerIterator * outerIterator * outerIterator) - (innerIterator * innerIterator * innerIterator); // Calculate the difference of cubes.
+
+      if (calculatedDifference > 0) { // Only consider positive differences.
+        resultCollection.push(calculatedDifference); // Add the valid difference to the collection.
+      }
     }
+  }
 
-    // Compute the cube of the primary number for subsequent calculations.
-    const   mainNumberCubed =   mainNumber * mainNumber * mainNumber   ;
+  resultCollection.sort(function(valA, valB) { // Sort the collected differences in ascending order.
+    return valA - valB;
+  });
 
-    // Initialize an empty collection to store positive differences found during iteration.
-    let   positiveDifferences =   []   ;
-
-    // Outer loop: iterate downwards from 'mainNumber - 1' to 1.
-    for   (let   firstIterator =   mainNumber - 1;   firstIterator > 0;   firstIterator--) {
-
-        // Inner loop: iterate downwards from 'firstIterator' to 1.
-        for   (let   secondIterator =   firstIterator;   secondIterator > 0;   secondIterator--) {
-
-            // Calculate a temporary result based on the cubed main number and the cubes of current iterators.
-            let   tempResult =   mainNumberCubed - (firstIterator * firstIterator * firstIterator) - (secondIterator * secondIterator * secondIterator)   ;
-
-            // If the calculated temporary result is positive, add it to our collection.
-            if   (tempResult > 0)   {
-                positiveDifferences.push(tempResult)   ;
-            }
-        }
-    }
-
-    // Sort the collected positive differences in ascending order.
-    positiveDifferences.sort(function(elem1,   elem2)   {
-        return   elem1 - elem2   ;
-    })   ;
-
-    // Output the smallest positive difference found (which is the first element after sorting).
-    console.log(positiveDifferences[0])   ;
+  console.log(resultCollection[0]); // Output the smallest positive difference found.
 }

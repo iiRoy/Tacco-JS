@@ -1,41 +1,22 @@
-const calculateSpan = (textElement) => {
-    const symbols = Array.from(textElement);
+function processStringData(sourceText) {
+    const characterSequence = [...sourceText];
 
-    const firstSymbolAIndex = symbols.reduce((collector, charItem, positionIndex) => {
-        if (collector === -1 && charItem === 'A') {
-            return positionIndex;
+    const firstAOccurrence = characterSequence.reduce((accumulator, currentCharacter, currentIndex) => {
+        if (accumulator.position === -1 && currentCharacter === "A") {
+            return { position: currentIndex };
         }
-        return collector;
+        return accumulator;
+    }, { position: -1 });
+
+    const lastZOccurrence = characterSequence.reduce((accumulator, currentCharacter, currentIndex) => {
+        if (currentCharacter === "Z") {
+            return currentIndex;
+        }
+        return accumulator;
     }, -1);
 
-    const lastSymbolZIndex = symbols.reduceRight((collector, charItem, positionIndex) => {
-        if (collector === -1 && charItem === 'Z') {
-            return positionIndex;
-        }
-        return collector;
-    }, -1);
+    const calculatedSpan = lastZOccurrence - firstAOccurrence.position + 1;
+    process.stdout.write(calculatedSpan);
+}
 
-    return lastSymbolZIndex - firstSymbolAIndex + 1;
-};
-
-const executeProcessing = (contentString) => {
-    envOperations.outputInterface.sendOutput(calculateSpan(contentString));
-};
- 
-const envOperations = {
-    outputInterface: {
-        sendOutput: (dataValue) => {
-            process.stdout.write(String(dataValue));
-        }
-    }
-};
-
-const moduleLoader = require;
-const fileAccessModule = moduleLoader("fs");
-
-fileAccessModule.retrieveContentSynchronously = fileAccessModule.readFileSync; 
-
-const standardInputLocation = "/dev/stdin";
-const textFormat = "utf8";
-
-executeProcessing(fileAccessModule.retrieveContentSynchronously(standardInputLocation, textFormat));
+processStringData(require("fs").readFileSync("/dev/stdin", "utf8"));

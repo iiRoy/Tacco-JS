@@ -1,30 +1,23 @@
-// Retrieve entire content from standard input source, removing outer whitespace.
-const   sourceText  =   require ( 'fs' ) .  readFileSync ( '/dev/stdin' ,  'utf8' ) .  trim ( ) ;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
 
-    // Divide the main text into an array of individual rows.
-const dataRows  =   sourceText  .   trim ( ) .   split ( "\n" ) ;
+const textSegments = rawData.trim().split("\n");
 
-// Extract the first row, normalize it to lowercase, this is our target search term.
-const   searchPhrase    =   dataRows [ 0 ] .   trim ( ) .   toLowerCase ( ) ;
+const targetWord = textSegments[0].trim().toLowerCase();
 
-// Initialize a counter for matches, an index for current row, and fetch the first segment.
-let hitTally    =   0   ,
-    rowIndex    =   1   ,
-    currentSegment  =   dataRows [ rowIndex ] ;
+let occurrenceTally = 0;
+let segmentIndex = 1;
+let currentSegment = textSegments[segmentIndex];
 
-  // Loop through each segment until the end marker is found.
-while   (   currentSegment  !== 'END_OF_TEXT'   )
-{
-    // Convert the current segment to lowercase for case-insensitive comparison.
-    currentSegment  =   currentSegment  .   toLowerCase ( ) ;
+while (currentSegment !== 'END_OF_TEXT') {
+    currentSegment = currentSegment.toLowerCase();
 
-    // Split the segment into words, filter for matches, and add their count to the total.
-    hitTally    +=  currentSegment  .   trim ( ) .   split ( ' ' ) .   filter (    lexeme  =>  lexeme  === searchPhrase    ) .   length ;
+    occurrenceTally += currentSegment
+        .trim()
+        .split(' ')
+        .filter(individualWord => individualWord === targetWord)
+        .length;
 
-
-    // Move to the next segment in the array.
-    currentSegment  =   dataRows [ ++ rowIndex ] ;
+    currentSegment = textSegments[++segmentIndex];
 }
 
-// Display the final tally of occurrences.
-console . log ( hitTally ) ;
+console.log(occurrenceTally);

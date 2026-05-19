@@ -1,88 +1,69 @@
-/*
- * This module processes input to generate a specific grid pattern.
- * It's designed to read two integers from the first line of input
- * and construct a 100x100 grid based on these values.
- */
-function processInputData ( rawDataString ) {
-    // Split the entire input string into an array of individual lines.
-    let lineArray = rawDataString.split( "\n" );
+function ProcessInput(rawData) {
+  // The incoming raw data string is first divided into an array of lines.
+  let processedData = rawData.split("\n");
 
-    // Parse the first integer from the first line of input.
-    // The first line contains space-separated values.
-    var firstInteger = parseInt( lineArray[0].split( " " )[0] );
+  // Extract the first numerical value from the initial line of input.
+  const firstVal = parseInt(processedData[0].split(" ")[0], 10);
+  // Extract the second numerical value from the initial line of input.
+  const secondVal = parseInt(processedData[0].split(" ")[1], 10);
 
-    // Parse the second integer from the first line of input.
-    var secondInteger = parseInt( lineArray[0].split( " " )[1] );
+  // Initialize a two-dimensional array (matrix) of size 100x100 to represent a canvas.
+  let canvasMatrix = new Array(100);
 
-    // Initialize a two-dimensional array (grid) of size 100x100.
-    // This will hold the characters representing the grid state.
-    const GRID_DIMENSION = 100;
-    let outputGrid = new Array( GRID_DIMENSION );
-
-    // Populate the initial state of the grid.
-    // The top half (0-49) is filled with '.', the bottom half (50-99) with '#'.
-    for ( let rowIndex = 0; rowIndex < GRID_DIMENSION; rowIndex++ )
-    {
-        let tempRow; // Temporary array to hold the current row's characters.
-        if ( rowIndex < ( GRID_DIMENSION / 2 ) )
-        {
-            tempRow = new Array( GRID_DIMENSION ).fill( "." ); // Represents an empty cell.
-        }
-        else
-        {
-            tempRow = new Array( GRID_DIMENSION ).fill( "#" ); // Represents a filled cell.
-        }
-        outputGrid[ rowIndex ] = tempRow; // Assign the constructed row to the grid.
+  // Populate the initial state of the canvas matrix.
+  // The first 50 rows are filled with '.' characters, and the next 50 with '#'.
+  for (let idx = 0; idx < 100; idx++) {
+    let tempRow; // A temporary array to construct each row.
+    if (idx < 50) {
+      // Rows in the upper half are initialized with dots.
+      tempRow = new Array(100).fill(".");
+    } else {
+      // Rows in the lower half are initialized with hash symbols.
+      tempRow = new Array(100).fill("#");
     }
+    canvasMatrix[idx] = tempRow; // Assign the completed row to the matrix.
+  }
 
-    // Modify the grid based on the 'secondInteger' value.
-    // This loop places '#' characters in the top half of the grid.
-    for ( let bCounter = 0; bCounter < secondInteger - 1; bCounter++ )
-    {
-        // The coordinates are calculated to distribute the marks across the grid.
-        outputGrid[ Math.round( bCounter / GRID_DIMENSION ) * 2 ][ ( bCounter % ( GRID_DIMENSION / 2 ) ) * 2 ] = "#";
-    }
+  // Modify the canvas based on the 'secondVal' input.
+  // This loop places '#' characters in specific positions within the upper half of the canvas.
+  for (let idx = 0; idx < secondVal - 1; idx++) {
+    const targetRow = Math.round(idx / 100) * 2;
+    const targetCol = (idx % 50) * 2;
+    canvasMatrix[targetRow][targetCol] = "#";
+  }
 
-    // Modify the grid based on the 'firstInteger' value.
-    // This loop places '.' characters in the bottom half of the grid.
-    for ( let aCounter = 0; aCounter < firstInteger - 1; aCounter++ )
-    {
-        // Coordinates are adjusted to place marks in the lower section.
-        outputGrid[ ( GRID_DIMENSION - 1 ) - Math.round( aCounter / GRID_DIMENSION ) * 2 ][ ( aCounter % ( GRID_DIMENSION / 2 ) ) * 2 ] = ".";
-    }
+  // Modify the canvas based on the 'firstVal' input.
+  // This loop places '.' characters in specific positions within the lower half of the canvas.
+  for (let idx = 0; idx < firstVal - 1; idx++) {
+    const targetRow = 99 - Math.round(idx / 100) * 2;
+    const targetCol = (idx % 50) * 2;
+    canvasMatrix[targetRow][targetCol] = ".";
+  }
 
-    // Prepare the final output string.
-    // The first line of the output is a fixed string.
-    let resultLines = new Array( GRID_DIMENSION + 1 );
-    resultLines[ 0 ] = "100 100"; // Fixed header for the output.
+  // Prepare an array to store the final output lines, including a header.
+  let outputLines = new Array(101);
+  outputLines[0] = "100 100"; // The first line specifies the dimensions of the grid.
 
-    // Convert each grid row array into a single string and add to the result lines.
-    for ( let currentMatrixRow = 0; currentMatrixRow < GRID_DIMENSION; currentMatrixRow++ )
-    {
-        resultLines[ currentMatrixRow + 1 ] = outputGrid[ currentMatrixRow ].join( "" );
-    }
+  // Convert each row of the canvas matrix into a single string and add it to the output lines.
+  for (let idx = 0; idx < 100; idx++) {
+    outputLines[idx + 1] = canvasMatrix[idx].join("");
+  }
 
-    // Join all the result lines with newline characters to form the final output.
-    var finalOutputString = resultLines.join( "\n" );
+  // Combine all generated output lines into a single string, separated by newline characters.
+  const finalOutput = outputLines.join("\n");
 
-    // Print the generated grid to the console.
-    console.log( '%s', finalOutputString );
+  // Display the final generated pattern to the standard output.
+  console.log('%s', finalOutput);
 }
 
-
-// --- Debugging and Execution Section ---
-
-/**
- * Executes the main processing function with user-provided input from a DOM element.
- * This function is typically used for browser-based testing or debugging.
- */
-function performTestRun() {
-    // Retrieve the value from an HTML input field identified by its ID.
-    var testInputValue = document.querySelector( "#inputField" ).value;
-    // Pass the retrieved value to the primary processing function.
-    processInputData( testInputValue );
+// This auxiliary function is intended for debugging within a browser environment.
+function testFunction() {
+  // It retrieves input from a designated HTML element.
+  const browserInput = document.getElementById("input").value;
+  // Then, it invokes the primary processing function with this browser-sourced input.
+  ProcessInput(browserInput);
 }
 
-// Automatically execute the main function by reading input from standard input (e.g., in a Node.js environment).
-// This line ensures the script runs when executed via `node script.js < input.txt`.
-processInputData( require( 'node:fs' ).readFileSync( '/dev/stdin', 'utf-8' ) );
+// Execute the main processing logic by reading input from standard input,
+// which is typical for competitive programming environments using Node.js.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

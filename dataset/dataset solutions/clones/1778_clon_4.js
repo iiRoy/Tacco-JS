@@ -1,46 +1,52 @@
-const processInputContent = (rawTextContent) => {
-    const dataLines = rawTextContent.trim().split('\n');
-    const numberTokens = dataLines[1].split(' ');
-    const parsedNumericalElements = numberTokens.map(Number);
-    return parsedNumericalElements;
+"use strict";
+
+const processInputData = (inputString) => {
+    const inputLines = inputString.trim().split("\n");
+    // The first number on the first line (N) is parsed but not directly used
+    // in the core logic of determining the final count, similar to the original's effective behavior.
+    const initialCount = parseInt(inputLines[0].split(" ")[0]);
+    const rawNumbers = inputLines[1].split(" ").map(val => parseInt(val));
+    // Sorting is crucial for the divisibility logic, preserving original behavior.
+    const sortedNumbers = rawNumbers.sort((a, b) => a - b);
+    return sortedNumbers;
 };
 
-const determineUniqueNonMultiples = (sourceCollection) => {
-    const orderedDistinctValues = Array.from(new Set(sourceCollection)).sort((valA, valB) => valA - valB);
+const determineUniqueNonMultiples = (sourceNumbers) => {
+    // Step 1: Calculate the frequency of each number to identify duplicates.
+    // Using a Map for efficient lookups.
+    const valueFrequencies = sourceNumbers.reduce((acc, currentVal) => {
+        acc.set(currentVal, (acc.get(currentVal) || 0) + 1);
+        return acc;
+    }, new Map());
 
-    const finalRetainedValues = orderedDistinctValues.filter(currentValue => {
-        // Special handling for zero:
-        // In the original code, a number X (currentValue) is marked as a multiple
-        // of Y (otherValue) only if X % Y === 0.
-        // If Y is 0, X % 0 results in NaN, so X % 0 === 0 is false.
-        // This means 0 can never act as a divisor to mark other numbers.
-        // If X is 0 and Y is positive, 0 % Y === 0 is true.
-        // However, due to the sorting and the loop structure, 0 will always be A[i] first.
-        // A[i] (the current divisor) is only marked -1 if it has duplicates.
-        // Since Set handles duplicates, if 0 is present, it's effectively unique in `orderedDistinctValues`.
-        // Thus, 0 will not be marked -1 by its own duplicates.
-        // 0 as A[i] will not mark other A[j] as -1.
-        // 0 as A[j] will not be marked -1 by any A[i] because A[i] cannot be negative (array values are positive integers, or zero).
-        // Therefore, if 0 is present in the input, it always contributes to the count.
-        if (currentValue === 0) {
-            return true;
+    // Step 2: Filter the sorted numbers to retain only those that appear exactly once.
+    // This effectively removes all instances of any duplicated number.
+    const distinctNonDuplicated = sourceNumbers.filter(val => valueFrequencies.get(val) === 1);
+
+    // Step 3: Iterate through the distinct, non-duplicated numbers to build the final set
+    // of numbers that are not multiples of any other number already in the set.
+    // Using `reduce` to accumulate the "keeper" numbers into a Set.
+    const finalKeptSet = distinctNonDuplicated.reduce((accumulatorSet, currentCandidate) => {
+        // Check if the current candidate number is a multiple of any number
+        // that has already been determined to be a "keeper" (i.e., is in accumulatorSet).
+        // `Array.from` is used to convert the Set to an array for the `some` method.
+        const isDivisibleByExistingKeeper = Array.from(accumulatorSet).some(keptValue => currentCandidate % keptValue === 0);
+
+        // If the current candidate is not divisible by any existing keeper,
+        // it means it's a new "prime-like" number in this context, so add it to the set.
+        if (!isDivisibleByExistingKeeper) {
+            accumulatorSet.add(currentCandidate);
         }
+        return accumulatorSet;
+    }, new Set()); // Initialize the accumulator with an empty Set.
 
-        // For non-zero numbers:
-        // A 'currentValue' survives if it is not a multiple of any 'otherValue'
-        // in the set (excluding itself and excluding 0 as a divisor).
-        return !orderedDistinctValues.some(otherValue =>
-            otherValue !== currentValue &&
-            otherValue !== 0 &&
-            currentValue % otherValue === 0
-        );
-    });
-    return finalRetainedValues.length;
+    // The final result is the count of numbers in the `finalKeptSet`.
+    return finalKeptSet.size;
 };
 
-const entryPoint = (inputData) => {
-    const initialRawNumbers = processInputContent(inputData);
-    const finalCount = determineUniqueNonMultiples(initialRawNumbers);
+const entryPoint = (inputArgument) => {
+    const processedNumbers = processInputData(inputArgument);
+    const finalCount = determineUniqueNonMultiples(processedNumbers);
     console.log(finalCount);
 };
 

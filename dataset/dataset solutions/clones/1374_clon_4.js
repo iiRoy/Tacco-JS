@@ -1,50 +1,41 @@
-const solveForCombination = (targetSum, numElements, currentMinValue, maxValue) => {
-    if (numElements === 0) {
-        return targetSum === 0 ? 1 : 0;
-    }
+function* inputSequence(rawText) {
+    const segments = rawText.split("\n");
+    let currentSegmentIndex = 0;
+    while (true) {
+        const segmentData = segments[currentSegmentIndex++];
+        if (!segmentData) break;
+        const numericValues = segmentData.split(" ").map(Number);
+        const firstValue = numericValues[0];
+        const secondValue = numericValues[1];
 
-    if (currentMinValue > maxValue || (maxValue - currentMinValue + 1) < numElements) {
-        return 0;
-    }
-
-    const minimalPossibleSum = numElements * currentMinValue + (numElements * (numElements - 1)) / 2;
-    if (targetSum < minimalPossibleSum) {
-        return 0;
-    }
-
-    const maximalPossibleSum = numElements * maxValue - (numElements * (numElements - 1)) / 2;
-    if (targetSum > maximalPossibleSum) {
-        return 0;
-    }
-
-    let totalWays = 0;
-    totalWays += solveForCombination(targetSum - currentMinValue, numElements - 1, currentMinValue + 1, maxValue);
-    totalWays += solveForCombination(targetSum, numElements, currentMinValue + 1, maxValue);
-
-    return totalWays;
-};
-
-const processInputData = (fullInputString) => {
-    const dataRows = fullInputString.split("\n");
-    const resultsAccumulator = [];
-
-    for (const row of dataRows) {
-        const trimmedRow = row.trim();
-        if (trimmedRow === "") continue;
-
-        const numericValues = trimmedRow.split(" ").map(Number);
-        const [upperBound, desiredTotal] = numericValues;
-
-        if (upperBound === 0 && desiredTotal === 0) {
+        if (firstValue === 0) {
             break;
         }
+        yield { upperLimit: firstValue, desiredSum: secondValue };
+    }
+}
 
-        const currentResult = solveForCombination(desiredTotal, 3, 1, upperBound);
-        resultsAccumulator.push(currentResult);
+function Main(rawInputData) {
+    const outputAccumulator = [];
+
+    for (const { upperLimit, desiredSum } of inputSequence(rawInputData)) {
+        const combinationCount = Array.from({ length: Math.max(0, upperLimit - 3) }, (_, idx) => idx + 1)
+            .reduce((totalCombinations, firstVal) => {
+                const secondValRangeStart = firstVal + 1;
+                const secondValRangeEnd = upperLimit - 2;
+
+                const validSecondVals = Array.from({ length: Math.max(0, secondValRangeEnd - secondValRangeStart + 1) }, (_, idx) => secondValRangeStart + idx)
+                    .filter(secondVal => {
+                        const thirdVal = desiredSum - firstVal - secondVal;
+                        return secondVal + 1 <= thirdVal && thirdVal <= upperLimit;
+                    });
+
+                return totalCombinations + validSecondVals.length;
+            }, 0);
+        outputAccumulator.push(combinationCount);
     }
 
-    return resultsAccumulator.join("\n");
-};
+    outputAccumulator.forEach(res => console.log(res));
+}
 
-const acquiredExternalData = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(processInputData(acquiredExternalData));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,57 +1,40 @@
-const fileHandler = require('fs'); // Import the Node.js file system module for input operations.
+const MAX_INDEX_VALUE_EXCLUSIVE = 100; // The array will hold counts for indices 0 to 99.
 
-// Define constants for clarity and maintainability.
-// The original code uses an array of size 100, implying indices from 0 to 99.
-const MAXIMUM_SUPPORTED_VALUE = 99;
-const FREQUENCY_ARRAY_CAPACITY = MAXIMUM_SUPPORTED_VALUE + 1; // Array size to hold counts for 0 to 99.
+let frequencyCounts = Array.from({ length: MAX_INDEX_VALUE_EXCLUSIVE }, () => 0);
+let currentMaxFrequency = 0;
 
-// Initialize an array to store the frequency of each integer.
-// All elements are set to zero initially, as no numbers have been observed yet.
-let numberOccurrenceCounts = new Array(FREQUENCY_ARRAY_CAPACITY).fill(0);
+const fileSystemHandler = require("fs");
+const rawInputContent = fileSystemHandler.readFileSync("/dev/stdin", "utf8");
+const inputLines = rawInputContent.split('\n');
 
-// This variable will store the highest frequency recorded for any number.
-// It's initialized to zero because no numbers have been processed.
-let highestObservedFrequency = 0;
+inputLines.forEach(function(singleLineText) {
+    const numericValueCandidate = parseInt(singleLineText, 10);
 
-try {
-  // Read all content from standard input, interpret it as UTF-8 text,
-  // and then split it into an array of strings, where each string is a line.
-  const inputDataLines = fileHandler.readFileSync("/dev/stdin", "utf8").split('\n');
+    // The original code's `if(+i)` condition means:
+    // - It ignores empty strings, non-numeric strings (NaN).
+    // - It ignores the number 0 (because +0 is 0, which is falsy).
+    // - It implicitly ignores numbers >= MAX_INDEX_VALUE_EXCLUSIVE (100) because
+    //   accessing a[100] on an array initialized up to a[99] would result in NaN counts,
+    //   which would never be greater than currentMaxFrequency.
+    const isValidAndCountable = !isNaN(numericValueCandidate) &&
+                                numericValueCandidate >= 1 && // Exclude 0
+                                numericValueCandidate < MAX_INDEX_VALUE_EXCLUSIVE; // Exclude 100 and above
 
-  // Iterate over each line obtained from the input.
-  for (const currentInputLine of inputDataLines) {
-    // Attempt to parse the line into an integer.
-    // .trim() removes any leading/trailing whitespace which might affect parsing.
-    const parsedNumericalValue = parseInt(currentInputLine.trim(), 10);
-
-    // Validate the parsed value to ensure it's a valid, non-negative integer
-    // within the expected range (0 to MAXIMUM_SUPPORTED_VALUE).
-    if (!isNaN(parsedNumericalValue) && parsedNumericalValue >= 0 && parsedNumericalValue <= MAXIMUM_SUPPORTED_VALUE) {
-      // Increment the count for the observed number.
-      numberOccurrenceCounts[parsedNumericalValue]++;
-
-      // After incrementing, check if this number's new frequency
-      // surpasses the highest frequency observed so far.
-      if (numberOccurrenceCounts[parsedNumericalValue] > highestObservedFrequency) {
-        highestObservedFrequency = numberOccurrenceCounts[parsedNumericalValue];
-      }
+    if (isValidAndCountable) {
+        frequencyCounts[numericValueCandidate]++;
+        const updatedCount = frequencyCounts[numericValueCandidate];
+        if (updatedCount > currentMaxFrequency) {
+            currentMaxFrequency = updatedCount;
+        }
     }
-    // Lines that are not valid numbers or are out of range are simply ignored,
-    // which is consistent with the implicit behavior of the original code's `if(+i)`.
-  }
-} catch (error) {
-  // In a real application, more robust error handling might be needed.
-  // For this cloning exercise, we'll simply log a warning if input reading fails.
-  console.error("Error reading input:", error.message);
-  // If input reading fails, the program might proceed with empty or default counts.
-}
+});
 
-// After processing all input, iterate through the frequency array
-// to find and output the numbers that appeared with the highest frequency.
-numberOccurrenceCounts.forEach((currentNumberFrequency, correspondingNumberIndex) => {
-  // If a number's frequency matches the highest observed frequency,
-  // it means this number is one of the most frequent.
-  if (currentNumberFrequency === highestObservedFrequency) {
-    console.log(correspondingNumberIndex);
-  }
+// The original code prints all indices whose frequency matches the maximum frequency.
+// If no valid numbers were processed, currentMaxFrequency remains 0.
+// In this case, all initialized counts (which are 0) will match currentMaxFrequency,
+// leading to all indices from 0 to 99 being printed. This is the observed behavior.
+frequencyCounts.forEach(function(countValue, indexPosition) {
+    if (countValue === currentMaxFrequency) {
+        console.log(indexPosition);
+    }
 });

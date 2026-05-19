@@ -1,206 +1,167 @@
-// This function determines the optimal move for the first player ('x').
 function findBestMoveForPlayerOne() {
-  let highestScore = 0; // Tracks the maximum number of pieces that can be flipped.
-  let chosenCoordinates = []; // Stores the [row, column] of the best move found.
-
-  // Iterate through each cell on the 8x8 game grid.
-  for (let rowIdx = 1; rowIdx <= 8; rowIdx++) {
-    for (let colIdx = 1; colIdx <= 8; colIdx++) {
-      // Skip cells that are not empty (represented by '.').
-      if (gameBoard[rowIdx][colIdx] !== ".") {
-        continue;
-      }
-
-      // Calculate the number of pieces that would be flipped if player 'x' places a piece here.
-      const currentFlips = calculateFlips(rowIdx, colIdx, "x", "o");
-
-      // If this move yields more flips than previously found, update the best move.
-      if (currentFlips > highestScore) {
-        chosenCoordinates = [rowIdx, colIdx];
-        highestScore = currentFlips;
-      }
-    }
-  }
-  return chosenCoordinates; // Return the coordinates of the best move.
-}
-
-// This function identifies the most advantageous move for the second player ('o').
-function findBestMoveForPlayerTwo() {
-  let bestCount = 0; // Holds the maximum flip count for player 'o'.
-  let selectedSpot = []; // Stores the coordinates of the optimal placement.
-
-  // Loop through the board in reverse order, which might change evaluation order but not logic.
-  for (let r = 8; r >= 1; r--) {
-    for (let c = 8; c >= 1; c--) {
-      // If the current cell is not empty, skip it.
-      if (gameBoard[r][c] !== ".") continue;
-
-      // Determine the number of pieces player 'o' would capture at this spot.
-      const flipsAchieved = calculateFlips(r, c, "o", "x");
-
-      // Update the best move if more pieces are captured.
-      if (flipsAchieved > bestCount) {
-        selectedSpot = [r, c];
-        bestCount = flipsAchieved;
-      }
-    }
-  }
-  return selectedSpot; // Returns the best position for player 'o'.
-}
-
-// Calculates the total number of opponent pieces that would be flipped by placing a piece at (posY, posX).
-function calculateFlips(posY, posX, playerToken, opponentToken) {
-  // Define direction vectors for Y-axis (8 directions: up, down, left, right, diagonals).
-  const yDirections = [-1, -1, -1, 0, 0, 1, 1, 1];
-  // Define direction vectors for X-axis.
-  const xDirections = [-1, 0, 1, -1, 1, -1, 0, 1];
-
-  let totalFlips = 0; // Accumulator for the total number of flipped pieces.
-
-  // Iterate through all 8 possible directions from the given position.
-  for (let dirIndex = 0; dirIndex < 8; dirIndex++) {
-    let currentYDir = yDirections[dirIndex]; // Y-component of the current direction.
-    let currentXDir = xDirections[dirIndex]; // X-component of the current direction.
-
-    let flipsInDirection = 0; // Counter for pieces flipped in the current direction.
-    let step = 1; // Distance from the starting position in the current direction.
-
-    // Traverse along the current direction until a boundary, empty cell, or player's own piece is found.
-    while (true) {
-      const targetY = posY + currentYDir * step;
-      const targetX = posX + currentXDir * step;
-      const cellContent = gameBoard[targetY][targetX];
-
-      // If we hit a 'f' (fence/boundary) or '.' (empty cell), this direction doesn't result in flips.
-      if (cellContent === "f" || cellContent === ".") {
-        break;
-      }
-      // If we find a piece belonging to the player whose turn it was *before* placing this piece.
-      else if (cellContent === playerToken) {
-        flipsInDirection++;
-      }
-      // If we encounter the current player's piece, all opponent pieces encountered so far in this direction are flipped.
-      else if (cellContent === opponentToken) {
-        totalFlips += flipsInDirection;
-        break; // Stop searching in this direction.
-      }
-      step++; // Move to the next cell in this direction.
-    }
-  }
-  return totalFlips; // Return the grand total of all pieces that would be flipped.
-}
-
-// Executes a move by placing a piece and flipping all captured opponent pieces.
-function applyMoveAndFlip(targetY, targetX, opponentDisc, currentDisc) {
-  // Place the current player's piece at the specified coordinates.
-  gameBoard[targetY][targetX] = currentDisc;
-
-  // Define offsets for checking all 8 directions around a cell.
-  const yAxisOffsets = [-1, -1, -1, 0, 0, 1, 1, 1];
-  const xAxisOffsets = [-1, 0, 1, -1, 1, -1, 0, 1];
-
-  // Iterate through each of the eight possible directions.
-  for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
-    const currentYOffset = yAxisOffsets[directionIndex];
-    const currentXOffset = xAxisOffsets[directionIndex];
-
-    let distanceStep = 1; // Current distance from the placed piece (targetY, targetX).
-    let opponentPieceFound = false; // Flag to track if opponent pieces are encountered in this line.
-
-    // Traverse cells in the current direction.
-    while (true) {
-      const checkY = targetY + currentYOffset * distanceStep;
-      const checkX = targetX + currentXOffset * distanceStep;
-      const cellValue = gameBoard[checkY][checkX]; // Get the content of the cell.
-
-      // If a boundary 'f' or an empty spot '.' is encountered, no pieces can be flipped in this direction.
-      if (cellValue === "f" || cellValue === ".") {
-        break;
-      }
-      // If an opponent's disc is found, mark it. This disc might be flipped later.
-      else if (cellValue === opponentDisc) {
-        opponentPieceFound = true;
-      }
-      // If the current player's disc is found (closing the line of opponent discs).
-      else if (cellValue === currentDisc) {
-        // If opponent discs were indeed found between the placed piece and this closing disc.
-        if (opponentPieceFound) {
-          // Flip all the opponent discs in this line.
-          let flipDistance = distanceStep - 1; // Start flipping from the disc adjacent to the closing disc.
-          while (flipDistance > 0) {
-            gameBoard[targetY + currentYOffset * flipDistance][
-              targetX + currentXOffset * flipDistance
-            ] = currentDisc; // Change the disc to the current player's symbol.
-            flipDistance--;
-          }
+    let highestScore = 0; // Variable to store the maximum number of pieces that can be captured
+    let bestPosition = []; // Array to hold the [row, column] coordinates of the best move found
+    // Iterate through the 8x8 playing grid, starting from row 1, column 1
+    for (let boardRow = 1; boardRow <= 8; boardRow++) {
+        for (let boardCol = 1; boardCol <= 8; boardCol++) {
+            // Check if the current cell is an empty spot (represented by '.')
+            if (gameBoard[boardRow][boardCol] !== ".") {
+                continue; // If not empty, skip to the next cell
+            }
+            // Calculate the number of pieces captured if player 'o' makes a move here.
+            // In this context, 'x' is the current player's piece and 'o' is the opponent's piece.
+            let currentCaptureCount = calculateCaptureCount(boardRow, boardCol, "x", "o");
+            // If this move captures more pieces than any previous move, update the best move
+            if (currentCaptureCount > highestScore) {
+                bestPosition = [boardRow, boardCol]; // Store the new best coordinates
+                highestScore = currentCaptureCount; // Update the highest score
+            }
         }
-        break; // Stop processing this direction.
-      }
-      distanceStep++; // Move to the next cell in the current direction.
     }
-  }
+    return bestPosition; // Return the coordinates of the best move, or an empty array if no valid move exists
 }
 
-// Global game state representing the Reversi board.
-let gameBoard = [];
+function findBestMoveForPlayerTwo() {
+    let maximumScore = 0; // Variable to store the maximum number of pieces that can be flipped
+    let optimalPlacement = []; // Array to hold the [row, column] coordinates for the optimal move
+    // Iterate through the 8x8 playing grid in reverse order, from row 8, column 8
+    for (let gridRow = 8; gridRow >= 1; gridRow--) {
+        for (let gridCol = 8; gridCol >= 1; gridCol--) {
+            // Check if the current cell is an empty spot
+            if (gameBoard[gridRow][gridCol] !== ".") {
+                continue; // If not empty, proceed to the next cell
+            }
+            // Calculate potential captures for player 'x' at this position.
+            // Here, 'o' is the current player's piece and 'x' is the opponent's piece.
+            let potentialFlips = calculateCaptureCount(gridRow, gridCol, "o", "x");
+            // If this move results in more flips than previously found, update the optimal move
+            if (potentialFlips > maximumScore) {
+                optimalPlacement = [gridRow, gridCol]; // Update the coordinates
+                maximumScore = potentialFlips; // Update the maximum score
+            }
+        }
+    }
+    return optimalPlacement; // Return the coordinates of the optimal move
+}
 
-// Read raw input data from standard input.
+function calculateCaptureCount(rowCoord, colCoord, playerPiece, opponentPiece) {
+    const rowDirections = [-1, -1, -1, 0, 0, 1, 1, 1]; // Array of row changes for 8 directions
+    const colDirections = [-1, 0, 1, -1, 1, -1, 0, 1]; // Array of column changes for 8 directions
+    let totalCapturedPieces = 0; // Accumulator for the total count of pieces that would be captured
+
+    // Loop through all 8 possible directions
+    for (let directionIndex = 0; directionIndex < 8; directionIndex++) {
+        let currentRowDelta = rowDirections[directionIndex]; // Row change for the current direction
+        let currentColDelta = colDirections[directionIndex]; // Column change for the current direction
+        let piecesInLine = 0; // Counter for opponent pieces found in the current line
+        let stepMultiplier = 1; // Multiplier to move further in the current direction
+
+        // Traverse in the current direction until a boundary, empty spot, or player's own piece is found
+        while (true) {
+            const nextRow = rowCoord + currentRowDelta * stepMultiplier;
+            const nextCol = colCoord + currentColDelta * stepMultiplier;
+
+            // Check for board boundaries ('f') or empty spots ('.')
+            if (gameBoard[nextRow][nextCol] === "f" || gameBoard[nextRow][nextCol] === ".") {
+                break; // Stop if a boundary or empty spot is encountered
+            } else if (gameBoard[nextRow][nextCol] === playerPiece) {
+                piecesInLine++; // Increment count if an opponent's piece is found
+            } else if (gameBoard[nextRow][nextCol] === opponentPiece) {
+                // If the current player's piece is found, add the counted opponent pieces to the total and break
+                totalCapturedPieces += piecesInLine;
+                break;
+            }
+            stepMultiplier++; // Move to the next cell in this direction
+        }
+    }
+    return totalCapturedPieces; // Return the total count of pieces that would be captured
+}
+
+function applyMoveAndFlipPieces(rowPos, colPos, opponentMark, playerMark) {
+    gameBoard[rowPos][colPos] = playerMark; // Place the current player's piece at the chosen position
+
+    const rowDirectionChanges = [-1, -1, -1, 0, 0, 1, 1, 1]; // Row offsets for 8 directions
+    const colDirectionChanges = [-1, 0, 1, -1, 1, -1, 0, 1]; // Column offsets for 8 directions
+
+    // Iterate through all 8 directions to check for pieces to flip
+    for (let directionIdx = 0; directionIdx < 8; directionIdx++) {
+        let currentDR = rowDirectionChanges[directionIdx]; // Current row delta
+        let currentDC = colDirectionChanges[directionIdx]; // Current column delta
+        let stepCount = 1; // Distance multiplier from the placed piece
+        let foundOpponentPiece = false; // Flag to indicate if an opponent's piece was encountered in this line
+
+        // Traverse in the current direction
+        while (true) {
+            const targetRow = rowPos + currentDR * stepCount;
+            const targetCol = colPos + currentDC * stepCount;
+
+            // Stop if a board boundary ('f') or an empty spot ('.') is reached
+            if (gameBoard[targetRow][targetCol] === "f" || gameBoard[targetRow][targetCol] === ".") {
+                break;
+            } else if (gameBoard[targetRow][targetCol] === opponentMark) {
+                foundOpponentPiece = true; // Mark that an opponent's piece was found
+            } else if (gameBoard[targetRow][targetCol] === playerMark) {
+                // If the current player's piece is found, and opponent pieces were in between, flip them
+                if (foundOpponentPiece) {
+                    // Go back and flip all pieces between the placed piece and the current player's piece
+                    let backtrackStep = stepCount;
+                    while (backtrackStep-- > 0) {
+                        gameBoard[rowPos + currentDR * backtrackStep][colPos + currentDC * backtrackStep] = playerMark;
+                    }
+                }
+                break; // Stop in this direction
+            }
+            stepCount++; // Move to the next cell in this direction
+        }
+    }
+}
+
+// Read input from standard input
 const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawData.trim().split("\n");
 
-// Process the input: trim whitespace and split into individual lines.
-const trimmedLines = rawData.trim().split("\n");
+// Initialize the game board with 'f' (frame) borders
+let gameBoard = [];
+gameBoard.push("ffffffffff".split("")); // Add a top border of 'f' characters
 
-// Initialize the game board with a top boundary row of 'f' characters.
-gameBoard.push("ffffffffff".split(""));
-
-// Iterate over each input line to construct the playable area of the board.
-trimmedLines.forEach(function(lineData) {
-  // Add 'f' characters as left and right boundaries for each row.
-  const paddedLine = "f" + lineData + "f";
-  gameBoard.push(paddedLine.split(""));
+// Process each line of the input to form the main board, adding 'f' borders
+inputLines.forEach(function(lineContent) {
+    lineContent = "f" + lineContent + "f"; // Add 'f' borders to the left and right of each row
+    gameBoard.push(lineContent.split(""));
 });
+gameBoard.push("ffffffffff".split("")); // Add a bottom border of 'f' characters
 
-// Add a bottom boundary row of 'f' characters to complete the board.
-gameBoard.push("ffffffffff".split(""));
+let consecutivePasses = 0; // Counter for consecutive turns where no valid moves are found
 
-let consecutivePasses = 0; // Counter for consecutive turns where no valid moves are available.
-
-// Main game loop: continues until two consecutive passes occur.
+// Main game loop for playing Othello
 while (true) {
-  // Determine the best move for Player 'x'.
-  const playerOneMove = findBestMoveForPlayerOne();
+    // Player One's turn (player 'o', searching for 'x' as opponent)
+    const playerOneMove = findBestMoveForPlayerOne();
+    if (playerOneMove.length === 0) {
+        consecutivePasses++; // No valid move for Player One, increment the pass counter
+    } else {
+        consecutivePasses = 0; // A valid move was made, reset the pass counter
+        applyMoveAndFlipPieces(playerOneMove[0], playerOneMove[1], "x", "o"); // Apply the move for player 'o'
+    }
 
-  // Check if Player 'x' has any valid moves.
-  if (playerOneMove.length === 0) {
-    consecutivePasses++; // Increment pass counter if no move.
-  } else {
-    consecutivePasses = 0; // Reset pass counter if a move is made.
-    // Apply Player 'x''s move and flip pieces. Parameters: (y, x, opponent's disc, current player's disc).
-    applyMoveAndFlip(playerOneMove[0], playerOneMove[1], "x", "o");
-  }
+    // Player Two's turn (player 'x', searching for 'o' as opponent)
+    const playerTwoMove = findBestMoveForPlayerTwo();
+    if (playerTwoMove.length === 0) {
+        consecutivePasses++; // No valid move for Player Two, increment the pass counter
+    } else {
+        consecutivePasses = 0; // A valid move was made, reset the pass counter
+        applyMoveAndFlipPieces(playerTwoMove[0], playerTwoMove[1], "o", "x"); // Apply the move for player 'x'
+    }
 
-  // Determine the best move for Player 'o'.
-  const playerTwoMove = findBestMoveForPlayerTwo();
-
-  // Check if Player 'o' has any valid moves.
-  if (playerTwoMove.length === 0) {
-    consecutivePasses++; // Increment pass counter if no move.
-  } else {
-    consecutivePasses = 0; // Reset pass counter if a move is made.
-    // Apply Player 'o''s move and flip pieces. Parameters: (y, x, opponent's disc, current player's disc).
-    applyMoveAndFlip(playerTwoMove[0], playerTwoMove[1], "o", "x");
-  }
-
-  // If two or more consecutive passes have occurred, the game ends.
-  if (consecutivePasses >= 2) {
-    break; // Exit the game loop.
-  }
+    // If two consecutive passes occur, the game ends
+    if (consecutivePasses >= 2) {
+        break;
+    }
 }
 
-// Remove the top and bottom boundary rows before printing the final board.
-gameBoard.shift();
-gameBoard.pop();
+// Remove the 'f' borders from the game board before printing
+gameBoard.shift(); // Remove the top border row
+gameBoard.pop(); // Remove the bottom border row
 
-// Format and print the final game board to standard output.
-// Joins rows with newlines, then removes commas (from split("")) and 'f' characters.
-console.log(gameBoard.join("\n").replace(/,|f/g, ""));
+// Print the final game board, removing commas from array joining and 'f' characters
+console.log(gameBoard.join("\n").replace(/\,|f/g, ""));

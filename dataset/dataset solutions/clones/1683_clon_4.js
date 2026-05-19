@@ -1,39 +1,28 @@
-function processSourceData(incomingData) {
-    const sourceLines = incomingData.split('\n');
-    const totalCollections = Number(sourceLines[0]);
-    const finalStructuredPayload = [];
+function ProcessDataStream(sourceContent) {
+    const lineSegments = sourceContent.split("\n");
 
-    const parseNextCollection = (currentLineIdx, remainingCollections) => {
-        if (remainingCollections <= 0 || currentLineIdx >= sourceLines.length) {
-            return;
+    const totalSections = Number(lineSegments.shift());
+
+    const allSectionData = [];
+
+    function processRemainingSections(remainingCount, currentSegments, dataAccumulator) {
+        if (remainingCount === 0) {
+            return dataAccumulator;
         }
 
-        const itemCountInCurrentCollection = Number(sourceLines[currentLineIdx]);
-        const currentCollectionItems = [];
+        const sectionItemCount = Number(currentSegments.shift());
+        
+        const currentSectionEntries = Array.from({ length: sectionItemCount }, () => {
+            const lineEntry = currentSegments.shift();
+            return lineEntry.split(" ");
+        });
 
-        for (let i = 0; i < itemCountInCurrentCollection; ++i) {
-            const itemLine = sourceLines[currentLineIdx + 1 + i];
-            if (itemLine !== undefined) {
-                currentCollectionItems.push(itemLine.split(' '));
-            } else {
-                // If the input is malformed and a line is missing,
-                // the original code would access `undefined.split(" ")` and throw an error.
-                // To match behavior, we could throw here, but assuming valid input for Type IV.
-                // For robustness, break is safer than letting it crash on `undefined`.
-                // However, the original *would* crash, so strict Type IV might imply crashing.
-                // Given the context of "executing equivalent functionality",
-                // if the original crashes on malformed input, this should too or handle it identically.
-                // For typical competitive programming, inputs are guaranteed well-formed.
-                break;
-            }
-        }
+        dataAccumulator.push(currentSectionEntries);
 
-        finalStructuredPayload.push(currentCollectionItems);
+        return processRemainingSections(remainingCount - 1, currentSegments, dataAccumulator);
+    }
 
-        const nextStartIdx = currentLineIdx + 1 + itemCountInCurrentCollection;
-        parseNextCollection(nextStartIdx, remainingCollections - 1);
-    };
-
-    parseNextCollection(1, totalCollections);
+    processRemainingSections(totalSections, lineSegments, allSectionData);
 }
-processSourceData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+ProcessDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));

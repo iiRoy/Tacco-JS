@@ -1,29 +1,18 @@
-function ProcessInputData( sourceString )
-{
-  // This function takes a raw string as input and performs a specific calculation.
+function ProcessInput(rawData) {
+  // Split the incoming string data by spaces to get individual components.
+  let parsedValues = rawData.split(' ');
 
-  // First, we parse the incoming string into an array of separate components.
-  const segmentList = sourceString.split( ' ' ) ;
+  // Convert the first component to a numerical value, representing the total number of items.
+  let totalItems = Number(parsedValues[0]);
 
-  // Extract the initial numeric value from the first component.
-  // This value represents the overall quantity to be divided.
-  let overallQuantity = Number( segmentList[ 0 ] ) ;
+  // Convert the second component to a numerical value, representing the effective coverage radius.
+  let coverageRadius = Number(parsedValues[1]);
 
-  // Extract the second numeric value from the array.
-  // This value acts as a spacing or density parameter for the calculation.
-  let spacingParameter = Number( segmentList[ 1 ] ) ;
-
-  // Perform the core computation:
-  // Calculate the required number of "containers" or "groups"
-  // based on the overall quantity and the effective capacity of each unit.
-  // The effective capacity is derived from the spacing parameter.
-  const computedResult = Math.ceil( overallQuantity / ( ( spacingParameter * 2 ) + 1 ) ) ;
-
-  // Display the final calculated outcome to the standard output.
-  console.log( computedResult ) ;
+  // Calculate the required number of units.
+  // Each unit covers a range of (coverageRadius * 2 + 1) items.
+  // We use Math.ceil to ensure all items are covered, even if it's a partial unit.
+  console.log(Math.ceil(totalItems / (coverageRadius * 2 + 1)));
 }
 
-// The program's execution begins here.
-// It reads all data from the standard input stream,
-// decodes it as UTF-8, and then passes it to the main processing routine.
-ProcessInputData( require( 'fs' ) . readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+// Read data from standard input and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

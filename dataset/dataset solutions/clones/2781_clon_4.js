@@ -1,26 +1,32 @@
-let entireBuffer = '';
-process.stdin.on('data', (segment) => {
-  entireBuffer += segment;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+const inputLines = [];
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-  const textualSegments = entireBuffer.trim().split('\n');
-  const numericRepresentations = textualSegments[1].split(' ');
-  const valueSequence = numericRepresentations.map(Number);
+inputReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
+});
 
-  let midpointTally = valueSequence.slice(1, -1).reduce((currentTally, focusValue, relativePosition) => {
+inputReader.on('close', () => {
+
+  const numericSequence = inputLines[1].split(' ').map(Number);
+
+  const determineMiddleElement = (firstVal, middleVal, lastVal) => {
+    return (middleVal >= firstVal && middleVal <= lastVal) || (middleVal <= firstVal && middleVal >= lastVal);
+  };
+
+  const localMedianCount = numericSequence.slice(1, -1).reduce((accumulator, currentElement, relativePosition) => {
     const absolutePosition = relativePosition + 1;
+    const precedingElement = numericSequence[absolutePosition - 1];
+    const succeedingElement = numericSequence[absolutePosition + 1];
 
-    const precedingValue = valueSequence[absolutePosition - 1];
-    const followingValue = valueSequence[absolutePosition + 1];
-
-    const isBetweenNeighbors = (
-      (precedingValue <= focusValue && focusValue <= followingValue) ||
-      (precedingValue >= focusValue && focusValue >= followingValue)
-    );
-
-    return currentTally + (isBetweenNeighbors ? 1 : 0);
+    return accumulator + (determineMiddleElement(precedingElement, currentElement, succeedingElement) ? 1 : 0);
   }, 0);
 
-  console.log(midpointTally);
+  console.log(localMedianCount);
+
 });

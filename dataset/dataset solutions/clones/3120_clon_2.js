@@ -1,114 +1,96 @@
 "use strict";
-
-// This module provides a utility for parsing textual input line by line.
-function DataProcessor(inputString , valueConverterFunction) {
-  // Store the input string split into individual lines.
-  this._sourceLines = inputString .split("\n");
-  // Initialize the token position within the current line.
-  this._tokenPosition = 0;
-  // Initialize the current line number being processed.
-  this._lineIndex = 0;
-  // Set the function used to convert extracted strings to desired types, defaulting to Number.
-  this._valueConverter = valueConverterFunction || Number;
+// This class helps in processing input strings line by line and token by token.
+function InputProcessor(inputString, parseFn) {
+  this._sourceLines = inputString.split("\n"); // Store input as an array of lines.
+  this._currentColumn = 0; // Current token index within the current line.
+  this._currentLine = 0; // Current line index.
+  this._parserFunction = parseFn || Number; // Function to parse tokens, defaults to Number.
 }
 
-// Prototype method to retrieve the next individual item from the input stream.
-DataProcessor.prototype.obtainNextElement = function ( ) {
-  // Get the text of the current line.
-  var currentLineText = this._sourceLines[this._lineIndex];
-  // If the line is empty or undefined, there's nothing more to read.
-  if (!currentLineText) return;
-
-  // Trim whitespace from the line and split it into tokens.
-  var lineTokens = currentLineText.trim().split(" ");
-  // Extract the token at the current position.
-  var extractedToken = lineTokens[this._tokenPosition];
-  // Advance the token position.
-  this._tokenPosition++;
-
-  // Check if all tokens on the current line have been consumed.
-  if (lineTokens.length === this._tokenPosition) {
-    // Reset token position and move to the next line.
-    this._tokenPosition = 0;
-    this._lineIndex++;
+// Method to read the next single value from the input.
+InputProcessor.prototype.readNextValue = function() {
+  let lineContent = this._sourceLines[this._currentLine];
+  if (!lineContent) {
+    return; // No more lines to read.
   }
-  // Convert and return the extracted token.
-  return this._valueConverter(extractedToken);
+  let tokens = lineContent.trim().split(" "); // Split the current line into tokens.
+  let currentValue = tokens[this._currentColumn]; // Get the token at the current column.
+  this._currentColumn++; // Move to the next token.
+  if (tokens.length === this._currentColumn) {
+    // If all tokens on the current line are consumed, reset column and move to next line.
+    this._currentColumn = 0;
+    this._currentLine++;
+  }
+  return this._parserFunction(currentValue); // Parse and return the value.
 };
 
-// Prototype method to retrieve all items from the current line.
-DataProcessor.prototype.getAllLineElements = function () {
-  // Get the text of the current line.
-  var currentLineText = this._sourceLines[this._lineIndex];
-  // If the line is empty or undefined, return nothing.
-  if (!currentLineText) return;
-
-  // Reset token position for a full line read and advance to the next line.
-  this._tokenPosition = 0;
-  this._lineIndex++;
-  // Split the line into tokens and convert each token using the specified function.
-  return currentLineText.split(" ").map(this._valueConverter);
+// Method to read all values from the current line.
+InputProcessor.prototype.readLineValues = function() {
+  let lineContent = this._sourceLines[this._currentLine];
+  if (!lineContent) {
+    return; // No more lines.
+  }
+  this._currentColumn = 0; // Reset column for line-based reading.
+  this._currentLine++; // Move to the next line after reading this one.
+  return lineContent.split(" ").map(this._parserFunction); // Split, parse, and return all values.
 };
 
-// Make the DataProcessor constructor available for external use.
-module.exports = DataProcessor;
+module.exports = InputProcessor;
 
-// Main function to perform graph analysis based on provided input.
-function executeGraphAnalysis(graphInputContent) {
-  // Create an instance of the input parser.
-  const parserUtility = new DataProcessor(graphInputContent);
+// The primary function to process graph-related input and determine a property.
+function processGraphData(rawData) {
+  // Initialize an input parsing utility.
+  const dataReader = new InputProcessor(rawData);
 
-  // Read the total number of nodes (vertices) in the graph.
-  const totalNodes = parserUtility.obtainNextElement();
-  // Read the total number of edges (connections) in the graph.
-  const totalEdges = parserUtility.obtainNextElement();
+  // Read the number of nodes and edges from the input.
+  const nodeCount = dataReader.readNextValue();
+  const edgeCount = dataReader.readNextValue();
 
-  // Initialize an adjacency list to store graph connections.
-  const connectionMatrix = [];
-  // Populate the adjacency list with empty arrays for each node.
-  for (let vertexIterator = 1; vertexIterator <= totalNodes; vertexIterator++) {
-    connectionMatrix[vertexIterator] = [];
+  // Create an adjacency list to represent the graph.
+  const adjacencyList = [];
+  // Initialize an empty array for each node's neighbors.
+  for (let nodeIdx = 1; nodeIdx <= nodeCount; nodeIdx++) {
+    adjacencyList[nodeIdx] = [];
   }
 
-  // Read edge information and build the adjacency list.
-  for (let linkIterator = 0; linkIterator < totalEdges; linkIterator++) {
-    let firstVertex = parserUtility.obtainNextElement(); // Starting node of an edge
-    let secondVertex = parserUtility.obtainNextElement(); // Ending node of an edge
-    // Add bidirectional connections for undirected graph.
-    connectionMatrix[firstVertex].push(secondVertex);
-    connectionMatrix[secondVertex].push(firstVertex);
+  // Populate the adjacency list based on the given edges.
+  for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
+    let nodeA = dataReader.readNextValue(); // First node of the edge.
+    let nodeB = dataReader.readNextValue(); // Second node of the edge.
+    adjacencyList[nodeA].push(nodeB); // Add B to A's neighbors.
+    adjacencyList[nodeB].push(nodeA); // Add A to B's neighbors (undirected graph).
   }
 
-  // Flag to check if any node has a degree of 6 or more.
-  let largeDegreeExists = false;
-  // Counter for nodes with a degree of 4 or more (currently unused in final logic).
-  let countMidDegree = 0;
-  // Flag to check if all node degrees are even.
-  let evenDegreesPresent = true;
-  // Iterate through all nodes to analyze their degrees.
-  for (let vertexIterator = 1; vertexIterator <= totalNodes; vertexIterator++) {
-    // Check if the current node's degree is 6 or greater.
-    if (connectionMatrix[vertexIterator].length >= 6) {
-      largeDegreeExists = true;
+  // Variables to track specific graph properties.
+  let hasHighDegreeNode = false; // True if any node has degree >= 6.
+  let nodesWithDegreeFourOrMore = 0; // Counts nodes with degree >= 4 (this part is commented out in original, so it remains 0).
+  let allEvenDegrees = true; // True if all nodes have an even degree.
+
+  // Iterate through each node to check its degree properties.
+  for (let nodeIdx = 1; nodeIdx <= nodeCount; nodeIdx++) {
+    // Check if any node has a degree of 6 or more.
+    if (adjacencyList[nodeIdx].length >= 6) {
+      hasHighDegreeNode = true;
     }
 
-    // This section related to 'countMidDegree' was present in the original
-    // source but commented out, hence it does not affect the final outcome.
-    // if (connectionMatrix[vertexIterator].length >= 4) {
-    //   countMidDegree += 1;
+    // The following block is commented out in the original,
+    // so its effect on 'nodesWithDegreeFourOrMore' is null.
+    // if (adjacencyList[nodeIdx].length >= 4) {
+    //   nodesWithDegreeFourOrMore += 1;
     // }
 
     // Check if the current node's degree is odd.
-    if (connectionMatrix[vertexIterator].length % 2 !== 0) {
-      evenDegreesPresent = false;
+    if (adjacencyList[nodeIdx].length % 2 !== 0) {
+      allEvenDegrees = false; // If any node has an odd degree, set flag to false.
     }
   }
 
-  // Output "Yes" if conditions are met, otherwise "No".
-  // The 'countMidDegree' variable remains 0 due to the commented-out logic,
-  // so the condition 'countMidDegree >= 2' is always false.
-  console.log(((largeDegreeExists || countMidDegree >= 2) && evenDegreesPresent) ? "Yes" : "No");
+  // Output "Yes" or "No" based on the combined conditions.
+  // The condition checks if:
+  // 1. There's a node with degree >= 6 OR (the count of nodes with degree >= 4 is >= 2, which is always false here due to commented code).
+  // 2. AND all nodes have even degrees.
+  console.log(((hasHighDegreeNode || nodesWithDegreeFourOrMore >= 2) && allEvenDegrees) ? "Yes" : "No");
 }
 
-// Execute the graph analysis with input read from standard input.
-executeGraphAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

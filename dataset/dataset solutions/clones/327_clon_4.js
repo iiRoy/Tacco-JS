@@ -1,54 +1,50 @@
-const obtainInputContent = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const padAndAlignValue = (valToFormat) => String(valToFormat).padStart(5, ' ');
+const formatNumericValue = (val) => ("    " + val).slice(-5);
 
-const processInputContent = (fullTextualData) => {
-    const separatedLines = fullTextualData.trim().split('\n');
-    const taskUnits = [];
-    let linePointer = 0;
-
-    while (linePointer < separatedLines.length) {
-        const currentUnitSize = Number(separatedLines[linePointer++]);
-        if (currentUnitSize === 0) {
-            break;
-        }
-
-        const numericGrid = [];
-        for (let rowCounter = 0; rowCounter < currentUnitSize; rowCounter++) {
-            numericGrid.push(separatedLines[linePointer++].split(' ').map(Number));
-        }
-        taskUnits.push({ unitDimensions: currentUnitSize, dataRows: numericGrid });
+function* generateInputLines(sourceContent) {
+    const lines = sourceContent.trim().split('\n');
+    let lineIndex = 0;
+    while (lineIndex < lines.length) {
+        yield lines[lineIndex++];
     }
-    return taskUnits;
-};
+}
 
-const performCalculations = (allTaskUnits) => {
-    const allResultsOutput = [];
+const processDataBlocks = (inputSource) => {
+    const lineIterator = generateInputLines(inputSource);
+    let currentInputLine;
 
-    for (const unitSpec of allTaskUnits) {
-        const { unitDimensions, dataRows } = unitSpec;
+    while (true) {
+        currentInputLine = lineIterator.next().value;
+        if (currentInputLine === undefined) break;
 
-        const columnAggregates = new Array(unitDimensions + 1).fill(0);
+        const blockRowCount = parseInt(currentInputLine, 10);
+        if (blockRowCount === 0) break;
 
-        const formattedRows = dataRows.map(individualRow => {
-            const rowTotal = individualRow.reduce((acc, currentNumber) => acc + currentNumber, 0);
-            const extendedRow = [...individualRow, rowTotal];
+        const blockNumericData = [];
+        const blockFormattedOutput = [];
 
-            extendedRow.forEach((elementValue, elementIndex) => {
-                columnAggregates[elementIndex] += elementValue;
+        for (let rowCounter = 0; rowCounter < blockRowCount; rowCounter++) {
+            const dataLine = lineIterator.next().value;
+            const rowValues = dataLine.split(" ").map(Number);
+            const rowSum = rowValues.reduce((accumulator, numericValue) => accumulator + numericValue, 0);
+            const completeRow = [...rowValues, rowSum];
+
+            blockNumericData.push(completeRow);
+            blockFormattedOutput.push(completeRow.map(formatNumericValue).join(""));
+        }
+
+        blockFormattedOutput.forEach(outputString => console.log(outputString));
+
+        const columnAggregates = blockNumericData.reduce((accumulatedSums, currentRow) => {
+            currentRow.forEach((value, columnIndex) => {
+                accumulatedSums[columnIndex] = (accumulatedSums[columnIndex] || 0) + value;
             });
+            return accumulatedSums;
+        }, Array(blockNumericData[0].length).fill(0));
 
-            return extendedRow.map(padAndAlignValue).join('');
-        });
-
-        allResultsOutput.push(...formattedRows);
-
-        allResultsOutput.push(columnAggregates.map(padAndAlignValue).join(''));
+        console.log(columnAggregates.map(formatNumericValue).join(""));
     }
-    return allResultsOutput.join('\n');
 };
 
-const sourceData = obtainInputContent();
-const parsedTaskUnits = processInputContent(sourceData);
-const finalOutput = performCalculations(parsedTaskUnits);
-console.log(finalOutput);
+processDataBlocks(fileSystem.readFileSync('/dev/stdin', 'utf8'));

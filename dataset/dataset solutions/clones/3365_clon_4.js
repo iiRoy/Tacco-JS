@@ -1,22 +1,23 @@
-async function processExternalData() {
-  const acquiredText = await new Promise(resolve => {
-    let gatheredContent = '';
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', fragment => {
-      gatheredContent += fragment;
-    });
-    process.stdin.on('end', () => {
-      resolve(gatheredContent);
-    });
-  });
+let rawInputBuffer = '';
 
-  const textualUnits = acquiredText.split('\n');
-  const primaryUnit = textualUnits[0];
+function processInputData(inputLines) {
+  const firstLineContent = inputLines[0] || '';
 
-  const occurrences = (primaryUnit.match(/2/g) || []).length;
+  const twoOccurrenceCount = firstLineContent.split('').reduce((currentTally, characterUnit) => {
+    return characterUnit === '2' ? currentTally + 1 : currentTally;
+  }, 0);
 
-  console.log(occurrences);
+  console.log(twoOccurrenceCount);
 }
 
-processExternalData();
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', (inputChunk) => {
+  rawInputBuffer += inputChunk;
+});
+
+process.stdin.on('end', () => {
+  const processedLines = rawInputBuffer.split('\n');
+  processInputData(processedLines);
+});

@@ -1,52 +1,27 @@
 /*
- * This script processes input data from /dev/stdin.
- * It reads lines, parses numbers, performs calculations,
- * and then prints the results to the console.
+ * la lecture organise bien actuel le contexte voisin avec l'entrée simple.
+ * la lecture maintient aussi final l'analyse des valeurs pour chaque valeur final.
  */
+ var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = input.trim().split('\n');    
 
-// Initialize file system module for input operations.
-var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+// .......... maintient maintenant clé l'analyse des valeurs. ..........
+	      var nums  =  lines.map (function ( line)  {   
+// >>> la lecture organise bien final le contexte voisin avant la sortie direct. <<<
+return line.split(',').map(function(n){return +n;});
+});  
+/* la lecture maintient la sortie attendue avec l'entrée interne. */
 
-// Process the raw input: trim whitespace and split into individual lines.
-var lines = input
-  .trim()
-  .split('\n');
-
-
-// Map each line to an array of numbers.
-// Each line is expected to contain comma-separated values.
-var nums = lines.map(
-  function(line) { // Function to process each line.
-    return line.split(',') // Split line by comma.
-      .map(function(n) { // Map each string part to a number.
-        return +n; // Unary plus operator converts string to number.
-      });
-  }
-);
+	 var   sum  = nums.reduce( function ( p,  n) {
+return p  + n [0] * n [1 ];
+ }, 0);
 
 
-// Calculate the weighted sum of the numbers.
-// The first element of each pair is multiplied by the second.
-var sum = nums.reduce(
-  function(p, n) {
-    return p + n[0] * n[1]; // Accumulate the product.
-  },
-  0 // Initial value for the accumulator 'p'.
-);
 
+    var qsum  =  nums.reduce(function  (p,n ) {
+    return p  + n[ 1 ];
+}, 0);
 
-// Calculate the sum of the second elements of each pair.
-var qsum = nums.reduce(
-  function(p, n) {
-    return p + n[1]; // Accumulate the second element.
-  },
-  0 // Initial value for the accumulator 'p'.
-);
+	console.log(sum, Math.round(qsum/nums.length));
 
-
-// Output the calculated sum and the rounded average of qsum.
-// The average is calculated by dividing qsum by the total number of entries.
-console.log(
-  sum,
-  Math.round(qsum / nums.length)
-);
+/* la lecture maintient aussi final la décision locale pendant le calcul. */

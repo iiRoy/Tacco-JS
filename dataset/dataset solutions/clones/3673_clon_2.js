@@ -1,82 +1,80 @@
-/*
- * This function processes a given input string to find specific patterns.
- * It calculates the number of matching pairs of sub-sequences and their reversed counterparts.
- */
-function CalculateCombinations( rawInput )
-{
-  // Split the input into lines to extract parameters and the main sequence.
-  const inputLines = rawInput.split( '\n' );
+function ProcessInput(inputStringData) {
+  // Split the input string by newline characters to get individual lines.
+  let processedLines = inputStringData.split("\n");
 
-  // The first line contains the length of the sequence, converted to a number.
-  let sequenceLength = +inputLines[ 0 ];
+  // The first line contains the integer 'n'. Convert it to a number.
+  const lengthOfSubstring = +processedLines[0];
 
-  // The second line contains the actual character sequence.
-  const originalSequence = inputLines[ 1 ];
+  // The second line contains the string 's'.
+  let originalSubstring = processedLines[1];
 
-  // Create a reversed version of the sequence for comparison.
-  const reversedSequence = originalSequence.split( '' ).reverse().join( '' );
+  // Create a reversed version of the original substring.
+  const reversedSubstring = originalSubstring.split("").reverse().join("");
 
-  // Calculate the total number of combinations (2^sequenceLength).
-  const totalIterations = 1 << sequenceLength;
+  // Calculate the total number of combinations (2^n).
+  const totalCombinations = 1 << lengthOfSubstring;
 
-  // Initialize two Maps to store counts of generated sub-sequence pairs.
-  // Using Map provides a slight data type difference from plain objects.
-  let firstSetCounts = new Map();
-  let secondSetCounts = new Map();
+  // Initialize two maps (objects) to store counts of generated string pairs.
+  const firstMap = {};
+  const secondMap = {};
 
-  // Iterate through all possible combinations (from 0 to 2^n - 1).
-  for ( let iterationIdx = 0; iterationIdx < totalIterations; iterationIdx++ )
-  {
-    // Initialize temporary strings for building sub-sequences.
-    let currentPartA1 = ``;
-    let currentPartA2 = ``;
-    let currentPartB1 = ``;
-    let currentPartB2 = ``;
+  // Iterate through all possible combinations from 0 to 2^n - 1.
+  for (let combinationIndex = 0; combinationIndex < totalCombinations; combinationIndex++) {
+    // Initialize temporary strings for building parts of the combinations.
+    let firstPartCombined = "";
+    let secondPartCombined = "";
+    let firstPartReversedCombined = "";
+    let secondPartReversedCombined = "";
 
-    // Inner loop to build sub-sequences based on the current iteration index's bits.
-    for ( let charPosition = 0; charPosition < sequenceLength; charPosition++ )
-    {
-      // Check the j-th bit of the current iteration index.
-      // If the bit is set, add characters to the first parts (A1, B1).
-      if ( iterationIdx & ( 1 << charPosition ) )
-      {
-        currentPartA1 += originalSequence[ charPosition ];
-        currentPartB1 += reversedSequence[ charPosition ];
-      }
-      // Otherwise, add characters to the second parts (A2, B2).
-      else
-      {
-        currentPartA2 += originalSequence[ charPosition ];
-        currentPartB2 += reversedSequence[ charPosition ];
+    // Iterate through each character position in the substring.
+    for (let charIndex = 0; charIndex < lengthOfSubstring; charIndex++) {
+      // Check if the j-th bit is set in the current combination index.
+      if (combinationIndex & (1 << charIndex)) {
+        // If the bit is set, append characters from original and reversed substrings to 'first' parts.
+        firstPartCombined += originalSubstring[charIndex];
+        firstPartReversedCombined += reversedSubstring[charIndex];
+      } else {
+        // If the bit is not set, append characters to 'second' parts.
+        secondPartCombined += originalSubstring[charIndex];
+        secondPartReversedCombined += reversedSubstring[charIndex];
       }
     }
 
-    // Combine the parts into unique keys for the Maps.
-    const compositeKeyA = currentPartA1 + `,` + currentPartA2;
-    const compositeKeyB = currentPartB1 + `,` + currentPartB2;
+    // Combine the two parts with a comma separator to form the map keys.
+    firstPartCombined += "," + secondPartCombined;
+    firstPartReversedCombined += "," + secondPartReversedCombined;
 
-    // Increment counts for the generated keys in their respective Maps.
-    firstSetCounts.set( compositeKeyA, ( firstSetCounts.get( compositeKeyA ) || 0 ) + 1 );
-    secondSetCounts.set( compositeKeyB, ( secondSetCounts.get( compositeKeyB ) || 0 ) + 1 );
+    // Increment the count for the generated key in the first map.
+    if (!firstMap[firstPartCombined]) {
+      firstMap[firstPartCombined] = 1;
+    } else {
+      firstMap[firstPartCombined]++;
+    }
+
+    // Increment the count for the generated key in the second map.
+    if (!secondMap[firstPartReversedCombined]) {
+      secondMap[firstPartReversedCombined] = 1;
+    } else {
+      secondMap[firstPartReversedCombined]++;
+    }
   }
 
-  // Initialize a variable to accumulate the final result.
-  let finalTally = 0;
+  // Initialize a variable to store the final calculated result.
+  let finalResult = 0;
 
-  // Iterate through the keys in the first Map.
-  for ( const [ keyA, countA ] of firstSetCounts.entries() )
-  {
-    // If the current key from the first Map does not exist in the second Map, skip it.
-    if ( !secondSetCounts.has( keyA ) )
+  // Iterate over the keys in the first map.
+  for (const mapKey in firstMap) {
+    // If the current key does not exist in the second map, skip it.
+    if (!secondMap[mapKey]) {
       continue;
-
-    // If the key exists in both, multiply their counts and add to the total.
-    finalTally += countA * secondSetCounts.get( keyA );
+    }
+    // Add the product of counts from both maps for the common key to the total result.
+    finalResult += firstMap[mapKey] * secondMap[mapKey];
   }
 
-  // Output the final calculated tally.
-  console.log( finalTally );
+  // Output the final calculated result to the console.
+  console.log(finalResult);
 }
 
-// Read input from standard input and pass it to the processing function.
-CalculateCombinations( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

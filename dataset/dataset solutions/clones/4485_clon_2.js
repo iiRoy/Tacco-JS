@@ -1,50 +1,39 @@
-// This module defines a primary routine for handling numerical operations based on streamed input.
-function processInputData(rawData)
-{
-    // Break down the received string into an array of distinct lines.
-    const parsedLines = rawData.split('\n');
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines
+    rawData = rawData.split('\n');
 
-    // The first line contains space-separated numerical configuration settings.
-    const configurationValues = parsedLines[0].split(' ').map(Number);
+    // Parse the first line for configuration parameters
+    let configParams = rawData[0].split(' ').map(Number);
 
-    // The second line provides a sequence of integer values for processing.
-    const integerSequence = parsedLines[1].split(' ').map(Number);
+    // Parse the second line for the main data sequence
+    let dataSequence = rawData[1].split(' ').map(Number);
 
-    // Canonicalize each element in the sequence to either 0 or 1.
-    { /* This block is structurally retained from the original, though functionally it's just a loop. */
-        for (let currentIdx = 0; currentIdx < integerSequence.length; currentIdx++)
-        {
-            integerSequence[currentIdx] %= 2; // Use modulo 2 to get the remainder.
-        }
+    // Normalize each element in the data sequence to be 0 or 1
+    for (let idx = 0; idx < dataSequence.length; idx++) {
+        dataSequence[idx] %= 2;
     }
 
-    // Initialize a pair of large integer accumulators.
-    // The first element starts at one, the second at zero.
-    let outputAccumulators = [BigInt(1), BigInt(0)];
+    // Initialize a pair of BigInt results
+    let resultPair = [1n, 0n]; // Using BigInt literals for clarity
 
-    // Iterate through the normalized integer sequence to modify the accumulators.
-    for (let currentIdx = 0; currentIdx < integerSequence.length; currentIdx++)
-    {
-        if (integerSequence[currentIdx] === 0)
-        {
-            // If the current sequence element is zero, double both accumulators.
-            outputAccumulators[0] *= 2n;
-            outputAccumulators[1] *= 2n;
+    // Iterate through the processed data sequence
+    for (let idx = 0; idx < dataSequence.length; idx++) {
+        if (dataSequence[idx] === 0) {
+            // If the current element is 0, double both components of the result pair
+            resultPair[0] *= 2n;
+            resultPair[1] *= 2n;
+        } else {
+            // If the current element is 1, update both components with their sum
+            let tempSum = resultPair[0] + resultPair[1];
+            resultPair[0] = tempSum;
+            resultPair[1] = tempSum;
         }
-        else
-        {
-            // If the current sequence element is one, sum the accumulators and assign the sum to both.
-            const temporarySum = outputAccumulators[0] + outputAccumulators[1];
-            outputAccumulators[0] = temporarySum;
-            outputAccumulators[1] = temporarySum;
-        }
+        // console.log(resultPair); // Debugging line, kept as a comment
     }
 
-    // Print the string representation of the specific accumulator
-    // indicated by the second configuration value.
-    console.log(outputAccumulators[configurationValues[1]].toString());
+    // Output the string representation of the selected result based on a config parameter
+    console.log(resultPair[configParams[1]].toString());
 }
 
-// Execute the primary function by reading from standard input.
-// The input stream is expected to be UTF-8 encoded and is trimmed of leading/trailing whitespace.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+// Read input from standard input, process it, and call the main function
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

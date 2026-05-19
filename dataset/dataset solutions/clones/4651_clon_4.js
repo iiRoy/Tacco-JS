@@ -1,53 +1,32 @@
-const sourceData = process.stdin.readFileSync(0, "utf8");
-
-const lineSegments = sourceData.trim().split('\n');
-
-const relevantSegments = lineSegments.filter((segment, index, allSegments) => {
-    const isNotFirst = index > 0;
-    const isNotLast = index < allSegments.length - 1;
-    return isNotFirst && isNotLast;
-});
-
-if (relevantSegments.length === 0) {
-    console.log("");
-    process.exit(0);
-}
-
-const generateSymbolFrequency = (textSegment) => {
-    const symbolCounts = new Map();
-    for (const character of textSegment) {
-        symbolCounts.set(character, (symbolCounts.get(character) || 0) + 1);
+const computeCharFrequencies = (textSegment) => {
+    const frequencyRegistry = new Map();
+    for (const symbol of textSegment) {
+        frequencyRegistry.set(symbol, (frequencyRegistry.get(symbol) || 0) + 1);
     }
-    return symbolCounts;
+    return frequencyRegistry;
 };
 
-const aggregatedSymbolData = new Map();
-const totalRelevantLines = relevantSegments.length;
+const rawInputContent = require("fs").readFileSync(0).toString();
+const processedInputLines = rawInputContent.split('\n').slice(1, -1);
 
-relevantSegments.forEach((segment, segmentIndex) => {
-    const currentSegmentFrequencies = generateSymbolFrequency(segment);
+const lineSpecificFrequencyMaps = processedInputLines.map(computeCharFrequencies);
 
-    for (const [symbol, count] of currentSegmentFrequencies) {
-        if (!aggregatedSymbolData.has(symbol)) {
-            aggregatedSymbolData.set(symbol, new Array(totalRelevantLines).fill(0));
+let combinedCharacterCounts = new Map();
+
+if (lineSpecificFrequencyMaps.length > 0) {
+    combinedCharacterCounts = new Map(lineSpecificFrequencyMaps[0]);
+
+    for (let i = 1; i < lineSpecificFrequencyMaps.length; i++) {
+        const currentLineMap = lineSpecificFrequencyMaps[i];
+        for (const [charKey, currentMinimum] of combinedCharacterCounts.entries()) {
+            const countInCurrentLine = currentLineMap.get(charKey) || 0;
+            combinedCharacterCounts.set(charKey, Math.min(currentMinimum, countInCurrentLine));
         }
-        aggregatedSymbolData.get(symbol)[segmentIndex] = count;
-    }
-});
-
-const finalCommonCounts = new Map();
-
-for (const [symbolKey, occurrenceList] of aggregatedSymbolData) {
-    finalCommonCounts.set(symbolKey, Math.min(...occurrenceList));
-}
-
-const constructedParts = [];
-for (const [symbolKey, finalCount] of finalCommonCounts) {
-    if (finalCount > 0) {
-        constructedParts.push(symbolKey.repeat(finalCount));
     }
 }
 
-constructedParts.sort();
+const finalCharacterSegments = Array.from(combinedCharacterCounts.entries())
+    .filter(([, countValue]) => countValue > 0)
+    .flatMap(([charKey, countValue]) => Array(countValue).fill(charKey));
 
-console.log(constructedParts.join(''));
+console.log(finalCharacterSegments.sort().join(''));

@@ -1,27 +1,25 @@
-// This function processes an input string to perform a specific calculation.
-function  ProcessInputData (  dataPayload )
-{
-  // Split the entire input payload by newline characters to get individual lines.
-  let  processedLines  =  dataPayload.split ( "\n" ) ;
+function processInput(rawData) {
+  // Split the raw input string by newline characters to get individual lines.
+  let processedLines = rawData.split("\n");
 
-  // Parse the first numeric component from the first line of input.
-  const  firstNumericValue  =  parseInt ( processedLines[0].split ( " " ) [0] ) ;
+  // Parse the first line to extract three integer values, separated by spaces.
+  // The first numerical component.
+  const valA = parseInt(processedLines[0].split(" ")[0]);
+  // The second numerical component.
+  const valB = parseInt(processedLines[0].split(" ")[1]);
+  // The third numerical component.
+  const valC = parseInt(processedLines[0].split(" ")[2]);
 
-  // Parse the second numeric component from the first line of input.
-  const  secondNumericValue  =  parseInt ( processedLines[0].split ( " " ) [1] ) ;
+  // Initialize a variable to hold the final computed result.
+  let resultValue = 0;
 
-  // Parse the third numeric component from the first line of input.
-  const  thirdNumericValue  =  parseInt ( processedLines[0].split ( " " ) [2] ) ;
+  // Perform the primary calculation: floor((valA - valC) / (valC + valB)).
+  resultValue = Math.floor((valA - valC) / (valC + valB));
 
-  // Initialize a variable to store the final computed outcome.
-  let  calculatedOutcome  =  0 ;
-
-  // Perform the core calculation: floor((first - third) / (third + second)).
-  calculatedOutcome  =  Math.floor ( ( firstNumericValue - thirdNumericValue ) / ( thirdNumericValue + secondNumericValue ) ) ;
-
-  // Output the computed outcome to the console.
-  console.log ( '%s' , calculatedOutcome ) ;
+  // Output the calculated integer result to the standard console.
+  console.log('%s', resultValue);
 }
 
-// Entry point: Read data from standard input and pass it to the processing function.
-ProcessInputData (  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )  ) ;
+// Read the entire content from standard input (typically a file in competitive programming)
+// and then pass it to our processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

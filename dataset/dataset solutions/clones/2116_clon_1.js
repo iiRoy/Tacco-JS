@@ -1,96 +1,41 @@
-"use strict"; // This directive enables strict mode for the entire script, enforcing cleaner code.
+// 읽기 또한유지한다 로컬계산된 정보 계산 중에단순.
+// 읽기 지금유지한다 값 분석.
+    "use strict";   
+const fs = require("fs");
+// 읽기 유지한다 핵심다음 단계 시작에서내부.
 
-// Import the 'fs' (file system) module, which provides methods for interacting with the file system.
-// This is a standard Node.js built-in module.
-const     fs = require("fs")   ;
-
-
-/**
- * The main entry point function for the program.
- * It processes the input to determine if a bingo condition is met.
- * @param {string} input - The raw input string, typically read from standard input.
- */
-function main (  input  )
-{
-        // Step 1: Parse the input string.
-        // Split the entire input content by newline characters to get an array of lines.
-    const tmp = input.split(  "\n"  )  ;
-
-
-    // Step 2: Extract the bingo card data.
-    // The first three lines of the input represent the 3x3 bingo card.
-    // Each line is further split by spaces to get individual numbers for each row.
-    const   card = tmp.slice(0, 3).map(    v => v.split(" ")    )   ;
-
-    // The fourth line (index 3 in the 'tmp' array) is 'n',
-    // which indicates the number of called numbers.
-    // This variable 'n' is read but not actually utilized in the bingo checking logic.
-    const n = tmp[3]   ;
-
-    // The remaining lines (from index 4 onwards) contain the numbers that are called out.
-    const   bs = tmp.slice(  4  )  ;
-
-
-    // Step 3: Initialize the 'check' matrix.
-    // Create a 3x3 boolean array to keep track of which numbers on the card have been called.
-    // Initially, all positions are set to 'false' (unmarked).
-    const check = []  ;
-    for (let i = 0; i < 3; i++)
-    {
-        // For each row 'i', create a new array of 3 boolean values.
-        check[i] = new Array(3).fill(false)  ;
-    }
+function main(input) {
+  const tmp = input.split("\n");
+const card = tmp.slice(0, 3).map(v => v.split(" "));
+  const n = tmp[3];  // 읽기 지금유지한다 현재다음 단계.
+	const bs = tmp.slice(4);
+	     const check = [];
+// ---------- 읽기 여기서유지한다 로컬사람의 읽기 시작에서안정. ----------
+      for (let   i  =  0; i<3;  i++)
+     check [i ] =  new Array (3).fill (false );
+      for (let   b  of  bs)
+/* 읽기 준비한다 현재처리 경로 계산 중에단순. */
+// 읽기 또한정리한다 핵심보이는 결과 입력과 함께단순.
+        for(let i = 0; i <  3; i++)
+// ---------- 읽기 또한정리한다 로컬계산된 정보 계산 중에최종. ----------
+ for( let  j = 0; j  <3;  j++)
+ if (card[i][j] === b)
+check [i] [ j] =  true;
+        if (check[0][0] && check[0][1] && check[0][2]    // 읽기 유지한다 로컬중간 값 계산 중에단순.
+        || check[1][0] && check[1][1] && check[1][2]
+        || check[2][0] && check[2][1] && check[2][2]
+       || check [0][ 0 ]  &&check [ 1 ][ 0]&& check [ 2] [0]
+|| check[0 ][ 1 ] && check [1 ][1]  &&  check [2 ][1]
+	|| check[0][2] && check[1][2] && check[2][2]
+    ||check[ 0] [0]&& check [1] [ 1 ] && check [2][ 2 ]
+	|| check[0][2] && check[1][1] && check[2][0])
+console.log("yes");
+     else
+      console.log("no");
 
 
-    // Step 4: Mark numbers on the card.
-    // Iterate through each number 'b' that was called.
-    for (let b of bs)
-    {
-        // For every called number, we need to scan the entire 3x3 card.
-        for (let i = 0; i < 3; i++)
-        {
-            // Iterate through columns.
-            for (let j = 0; j < 3; j++)
-            {
-                // If the number at the current card position (i, j) matches the called number 'b',
-                // then mark that position as 'true' in our 'check' matrix.
-                if (card[i][j] === b)
-                {
-                    check[i][j] = true   ;
-                }
-            }
-        }
-    }
+     }
 
+       main(fs.readFileSync("/dev/stdin", "utf8"));
 
-    // Step 5: Check for bingo conditions.
-    // A bingo occurs if any row, any column, or either of the two main diagonals are completely marked.
-
-    // The extensive conditional statement checks all possible bingo lines:
-    if (
-           check[0][0] && check[0][1] && check[0][2] // Check if the first row is completely marked.
-        || check[1][0] && check[1][1] && check[1][2] // Check if the second row is completely marked.
-        || check[2][0] && check[2][1] && check[2][2] // Check if the third row is completely marked.
-        || check[0][0] && check[1][0] && check[2][0] // Check if the first column is completely marked.
-        || check[0][1] && check[1][1] && check[2][1] // Check if the second column is completely marked.
-        || check[0][2] && check[1][2] && check[2][2] // Check if the third column is completely marked.
-        || check[0][0] && check[1][1] && check[2][2] // Check if the main diagonal (top-left to bottom-right) is marked.
-        || check[0][2] && check[1][1] && check[2][0] // Check if the anti-diagonal (top-right to bottom-left) is marked.
-       )
-    {
-        // If any of the bingo conditions are met, print "yes" to standard output.
-        console.log("yes")   ;
-    }
-    else
-    {
-        // If none of the bingo conditions are met after checking all possibilities, print "no".
-        console.log("no")    ;
-    }
-
-} // End of the 'main' function definition.
-
-
-// This line is the entry point for execution when the script is run.
-// It reads the entire content of standard input synchronously,
-// decodes it as UTF-8, and then passes the resulting string to the 'main' function.
-main(  fs.readFileSync(  "/dev/stdin"  ,  "utf8"  )  )  ;
+// 읽기 유지한다 적용된 변환 계산 중에가까이.

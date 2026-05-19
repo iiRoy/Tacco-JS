@@ -1,18 +1,17 @@
-const acquireData = () => {
-    const fileSystemModule = require("fs");
-    const rawInputBuffer = fileSystemModule.readFileSync("/dev/stdin");
-    const decodedInput = rawInputBuffer.toString('utf8');
-    return decodedInput.split('\n').map(s => s.replace(/\r$/, ''));
-};
+const { readFileSync } = require("fs");
 
-const inputEntries = acquireData();
-const soughtTerm = inputEntries[0];
-const documentSegments = inputEntries.slice(1);
+const rawInputContent = readFileSync("/dev/stdin", "utf8");
+const processedLines = rawInputContent.split(/\n\r?/);
 
-let occurrenceCounter = 0;
-for (const currentSegment of documentSegments) {
-    const splitParts = currentSegment.split(soughtTerm);
-    occurrenceCounter += splitParts.length - 1;
-}
+const [searchToken, ...corpusSegments] = processedLines;
 
-console.log(occurrenceCounter);
+const totalCount = corpusSegments.reduce((accumulator, currentSegment) => {
+    const segmentWords = currentSegment.split(' ');
+    if (searchToken === "") {
+        return accumulator + segmentWords.length;
+    } else {
+        return accumulator + segmentWords.filter(wordUnit => wordUnit === searchToken).length;
+    }
+}, 0);
+
+console.log(totalCount);

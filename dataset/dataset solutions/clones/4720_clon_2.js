@@ -1,46 +1,72 @@
 "use strict";
 
-const processInput = inputStr => {
-  inputStr = inputStr.trim().split('\n');
+const processInput = (inputData) => {
+  // Clean up the input string and split it into lines
+  inputData = inputData.trim().split("\n");
 
-  const nodeCount = parseInt(inputStr[0].split(' ')[0], 10);
-  const edgeCount = parseInt(inputStr[0].split(' ')[1], 10);
+  // Parse the number of nodes (N) and edges (M) from the first line
+  const nodeCount = parseInt(inputData[0].split(" ")[0], 10);
+  const edgeCount = parseInt(inputData[0].split(" ")[1], 10);
 
-  const edgeList = inputStr.slice(1, nodeCount + 1).map(lineItem => lineItem.split(' ').map(strVal => parseInt(strVal, 10)));
+  // Extract edge information, converting string pairs to integer pairs
+  const edgeList = inputData
+    .slice(1, nodeCount + 1)
+    .map((_item) => _item.split(" ").map((_val) => parseInt(_val, 10)));
 
-  // Build the graph's connectivity representation.
-  const adjMatrix = Array(nodeCount).fill(null).map(() => Array(nodeCount).fill(0));
+  // Initialize an adjacency matrix for the graph
+  // All connections are initially set to zero
+  const adjacencyMatrix = [...Array(nodeCount)].map(() =>
+    [...Array(nodeCount)].fill(0)
+  );
 
-  for (let edgeIdx in edgeList) {
-    const sourceNode = edgeList[edgeIdx][0] - 1;
-    const targetNode = edgeList[edgeIdx][1] - 1;
+  // Populate the adjacency matrix based on the provided edges
+  // The graph is undirected, so set connections in both directions
+  for (let edgeIndex in edgeList) {
+    const sourceNode = edgeList[edgeIndex][0] - 1; // Adjust to 0-indexed
+    const targetNode = edgeList[edgeIndex][1] - 1; // Adjust to 0-indexed
 
-    adjMatrix[sourceNode][targetNode] = 1;
-    adjMatrix[targetNode][sourceNode] = 1;
+    adjacencyMatrix[sourceNode][targetNode] = 1;
+    adjacencyMatrix[targetNode][sourceNode] = 1;
   }
 
-  let fullPathCount = 0;
+  let pathCounter = 0; // Counter for valid paths
 
-  const explorePaths = (currentVertex, visitedState) => {
-    if (visitedState.every(status => status === true)) {
-      fullPathCount++;
+  // Depth-First Search (DFS) function to find all Hamiltonian paths
+  const explorePaths = (currentNode, visitedNodes) => {
+    // If all nodes have been visited, increment the path counter
+    if (visitedNodes.every((status) => status === true)) {
+      pathCounter++;
     }
 
-    for (let vertexIndex = 0; vertexIndex < nodeCount; vertexIndex++) {
-      if (adjMatrix[currentVertex][vertexIndex] === 0) continue;
-      if (visitedState[vertexIndex]) continue;
+    // Iterate through all possible neighbors of the current node
+    for (let neighborIndex = 0; neighborIndex < nodeCount; neighborIndex++) {
+      // Skip if there's no edge between current and neighbor, or if neighbor is already visited
+      if (adjacencyMatrix[currentNode][neighborIndex] === 0) continue;
+      if (visitedNodes[neighborIndex]) continue;
 
-      visitedState[vertexIndex] = true;
-      explorePaths(vertexIndex, visitedState);
-      visitedState[vertexIndex] = false;
+      // Mark the neighbor as visited
+      visitedNodes[neighborIndex] = true;
+      // Recursively call DFS for the neighbor
+      explorePaths(neighborIndex, visitedNodes);
+      // Backtrack: unmark the neighbor as visited for other path explorations
+      visitedNodes[neighborIndex] = false;
     }
 
-    return;
+    return; // End of current path exploration branch
   };
 
-  const vertexVisitTracker = [true, ...Array(nodeCount - 1).fill(false)];
-  explorePaths(0, vertexVisitTracker);
+  // Initialize the visited array for the DFS.
+  // The starting node (node 0) is marked as visited.
+  const initialVisitedState = [
+    true,
+    ...[...Array(nodeCount - 1)].map(() => false),
+  ];
+  // Start the DFS from node 0
+  explorePaths(0, initialVisitedState);
 
-  console.log(fullPathCount);
+  // Output the total count of valid paths
+  console.log(pathCounter);
 };
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read input from stdin and pass it to the main processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

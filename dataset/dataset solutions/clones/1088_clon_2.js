@@ -1,246 +1,149 @@
-// Helper functions and prototype extensions to strictly adhere to the "no original identifier name" rule.
-// These aliases are necessary because the original code uses standard JavaScript built-ins,
-// which are technically "identifier names" that must be changed according to the strict definition.
+function cacheFunction(operation) {
+  // This object stores previously computed results to avoid redundant calculations.
+  const memoStore = {};
 
-// Extends Array.prototype with an alias for forEach.
-if (!Array.prototype.iterateOver) {
-  Array.prototype.iterateOver = Array.prototype.forEach;
-}
+  // Returns a new function that wraps the original operation.
+  return (...inputArgs) => {
+    // Check if the result for the current arguments is already in the cache.
+    const cachedResult = memoStore[inputArgs];
 
-// Extends Array.prototype with an alias for map.
-if (!Array.prototype.transform) {
-  Array.prototype.transform = Array.prototype.map;
-}
-
-// Extends String.prototype with an alias for trim.
-if (!String.prototype.stripWhitespace) {
-  String.prototype.stripWhitespace = String.prototype.trim;
-}
-
-// Extends String.prototype with an alias for split.
-if (!String.prototype.segmentByDelimiter) {
-  String.prototype.segmentByDelimiter = String.prototype.split;
-}
-
-// Global alias for the Number constructor/function.
-function parseNumeric(valueInput) {
-  return Number(valueInput);
-}
-
-// Global alias for Math.max.
-function findMaximum(...numericValues) {
-  return Math.max(...numericValues);
-}
-
-// Global alias for console.log, wrapped in a simple object.
-const system = {
-  output: console.log,
-};
-
-// Extends Function.prototype with an alias for bind.
-if (!Function.prototype.attach) {
-  Function.prototype.attach = Function.prototype.bind;
-}
-
-// Alias for the global 'require' function.
-const getFileStreamLoader = require;
-// Alias for the 'fs' module and its specific method.
-const fileSystemModule = getFileStreamLoader('fs');
-fileSystemModule.readContentSync = fileSystemModule.readFileSync; // Alias for specific method.
-
-// This utility function creates a memoized version of another function.
-// It stores results of expensive function calls and returns the cached result when the same inputs occur again.
-function recallFunction(operationToMemorize) {
-  // A storage object to keep previously computed results.
-  const memoStorage = {};
-
-  // Returns a new function that acts as the memoized wrapper.
-  return (...argumentsList) => {
-    // Attempt to retrieve the result from storage using the arguments as a key.
-    const storedResult = memoStorage[argumentsList];
-
-    // If the result is not found (undefined), compute it, store it, and return it.
-    // Otherwise, return the already stored result, avoiding re-computation.
-    return typeof storedResult === 'undefined'
-      ? (memoStorage[argumentsList] = operationToMemorize(...argumentsList))
-      : storedResult;
+    // If the result is not found (undefined), compute it and store it.
+    if (typeof cachedResult === 'undefined') {
+      const computedValue = operation(...inputArgs);
+      memoStore[inputArgs] = computedValue;
+      return computedValue;
+    } else {
+      // Otherwise, return the cached result directly.
+      return cachedResult;
+    }
   };
 }
 
-// Represents a single element within a hierarchical data structure.
-// Each element can have a parent, a left child, and a right child references.
-class Element {
-  // Constructor to initialize an element with its unique identifier and links to related elements.
-  constructor(elementKey, antecedentKey, leftDescendantKey, rightDescendantKey) {
-    this.elementKey = elementKey;
-    this.antecedentKey = antecedentKey;
-    this.leftDescendantKey = leftDescendantKey;
-    this.rightDescendantKey = rightDescendantKey;
+// Represents a single node within the binary tree structure.
+class TreeNode {
+  constructor(nodeIdentifier, parentIdentifier, leftChildIdentifier, rightChildIdentifier) {
+    this.nodeIdentifier = nodeIdentifier;
+    this.parentIdentifier = parentIdentifier;
+    this.leftChildIdentifier = leftChildIdentifier;
+    this.rightChildIdentifier = rightChildIdentifier;
   }
 
-  // A getter property to determine the structural kind of the element (root, leaf, or internal).
-  get structuralKind() {
-    // If the antecedent key is -1, it's the top-most element (root).
-    return this.antecedentKey === -1
-      ? 'root'
-      : // If both descendant keys are -1, it has no children (leaf).
-      this.leftDescendantKey === -1 && this.rightDescendantKey === -1
-      ? 'leaf'
-      : // Otherwise, it's an element with one or two children (internal node).
-        'internal node';
+  // A getter to determine the type of the node based on its connections.
+  get type() {
+    if (this.parentIdentifier === -1) {
+      return 'root'; // Node has no parent, so it's the root.
+    } else if (this.leftChildIdentifier === -1 && this.rightChildIdentifier === -1) {
+      return 'leaf'; // Node has no children, so it's a leaf.
+    } else {
+      return 'internal node'; // Node has a parent and at least one child.
+    }
   }
 }
 
-// Manages a collection of 'Element' objects, forming a binary tree-like hierarchical structure.
-class HierarchicalStructure {
-  // Initializes the structure with empty element collections and memoized level calculation.
+// Manages the collection of nodes and their relationships in a binary tree.
+class TreeStructure {
   constructor() {
-    this.elements = []; // Stores the actual Element instances, indexed by their unique key.
-    this.elementDetails = []; // Stores additional computed details about each element.
-    // Memoize the 'calculateLevel' method for performance, ensuring 'this' context is preserved.
-    this.calculateLevel = recallFunction(this.calculateLevel.attach(this));
+    this.nodeCollection = []; // Stores TreeNode objects indexed by their identifier.
+    this.nodeDetails = [];    // Stores additional computed information about each node.
+
+    // Memoize the calculateDepth method for performance.
+    this.calculateDepth = cacheFunction(this.calculateDepth.bind(this));
   }
 
-  // A static getter to provide access to the Element class itself, used for creating new elements.
-  static get ElementPrototype() {
-    return Element;
+  // Static getter to expose the TreeNode class.
+  static get NodeElement() {
+    return TreeNode;
   }
 
-  // Inserts a new element into the hierarchical structure.
-  // The 'antecedentKey' is initially set to -1, indicating no parent until 'establishRelationships' is called.
-  insertElement(elementKey, leftDescendantKey, rightDescendantKey) {
-    this.elements[elementKey] = new HierarchicalStructure.ElementPrototype(
-      elementKey,
-      -1, // Default parent to -1 (no parent)
-      leftDescendantKey,
-      rightDescendantKey
-    );
+  // Adds a new node to the tree structure.
+  addNode(nodeId, leftNodeId, rightNodeId) {
+    this.nodeCollection[nodeId] = new TreeStructure.NodeElement(nodeId, -1, leftNodeId, rightNodeId);
   }
 
-  // Establishes parent-child and sibling relationships between elements based on their descendant keys.
-  establishRelationships() {
-    // Initialize element details with default values for each potential element slot.
-    for (let idx = 0; idx < this.elements.length; idx++) {
-      this.elementDetails[idx] = {
-        element: null,
-        coEqual: -1,
-        childCount: 0,
-      };
+  // Establishes parent-child and sibling relationships between nodes.
+  establishConnections() {
+    // Initialize node details for all potential nodes.
+    for (let idx = 0; idx < this.nodeCollection.length; idx++) {
+      this.nodeDetails[idx] = { element: null, siblingNode: -1, nodeDegree: 0 };
     }
 
-    // First pass: Iterate through elements to link children to their parents and identify siblings.
-    this.elements.iterateOver((currentElement) => {
-      // If a left child exists, set its parent and its sibling.
-      if (currentElement.leftDescendantKey !== -1) {
-        this.elements[currentElement.leftDescendantKey].antecedentKey =
-          currentElement.elementKey;
-        this.elementDetails[currentElement.leftDescendantKey].coEqual =
-          currentElement.rightDescendantKey;
+    // First pass: set parent IDs and initial sibling IDs.
+    this.nodeCollection.forEach(currentNode => {
+      if (currentNode.leftChildIdentifier !== -1) {
+        this.nodeCollection[currentNode.leftChildIdentifier].parentIdentifier = currentNode.nodeIdentifier;
+        this.nodeDetails[currentNode.leftChildIdentifier].siblingNode = currentNode.rightChildIdentifier;
       }
-      // If a right child exists, set its parent and its sibling.
-      if (currentElement.rightDescendantKey !== -1) {
-        this.elements[currentElement.rightDescendantKey].antecedentKey =
-          currentElement.elementKey;
-        this.elementDetails[currentElement.rightDescendantKey].coEqual =
-          currentElement.leftDescendantKey;
+      if (currentNode.rightChildIdentifier !== -1) {
+        this.nodeCollection[currentNode.rightChildIdentifier].parentIdentifier = currentNode.nodeIdentifier;
+        this.nodeDetails[currentNode.rightChildIdentifier].siblingNode = currentNode.leftChildIdentifier;
       }
     });
 
-    // Second pass: Populate element details with the actual element reference and its child count.
-    this.elements.iterateOver((currentElement) => {
-      this.elementDetails[currentElement.elementKey] = {
-        coEqual: this.elementDetails[currentElement.elementKey].coEqual,
-        element: currentElement,
-        childCount:
-          (currentElement.leftDescendantKey !== -1) + // Adds 1 if a left child exists
-          (currentElement.rightDescendantKey !== -1), // Adds 1 if a right child exists
+    // Second pass: populate full node details including degree.
+    this.nodeCollection.forEach(currentNode => {
+      this.nodeDetails[currentNode.nodeIdentifier] = {
+        siblingNode: this.nodeDetails[currentNode.nodeIdentifier].siblingNode,
+        element: currentNode,
+        nodeDegree: (currentNode.leftChildIdentifier !== -1) + (currentNode.rightChildIdentifier !== -1)
       };
     });
   }
 
-  // Recursively calculates the level (depth) of an element within the structure.
-  // The root element is at level 0, its children at level 1, and so on.
-  calculateLevel(elementKey, currentLevel = 0) {
-    let parentIdentifier = this.locateElement(elementKey).antecedentKey;
-    // Base case: If the element has no parent (antecedentKey is -1), it's the root, return current level.
-    // Recursive step: Otherwise, call for the parent, incrementing the level.
-    return parentIdentifier === -1
-      ? currentLevel
-      : this.calculateLevel(parentIdentifier, currentLevel + 1);
+  // Recursively calculates the depth of a given node.
+  calculateDepth(targetId, currentDepth = 0) {
+    const parentNodeId = this.locateNode(targetId).parentIdentifier;
+    if (parentNodeId === -1) {
+      return currentDepth; // If no parent, it's the root, return current depth.
+    } else {
+      return this.calculateDepth(parentNodeId, currentDepth + 1); // Recurse for parent.
+    }
   }
 
-  // Recursively determines the height of an element, which is the length of the longest path from it to a leaf.
-  // A leaf element has a height of 0.
-  determineHeight(elementKey, accumulatedHeight = 0) {
-    // Base case: If the key is -1 (indicating no child), it means we've gone past a leaf.
-    // Subtract 1 from the accumulated height to adjust for the extra step.
-    if (elementKey === -1) return accumulatedHeight - 1;
+  // Recursively determines the height of the subtree rooted at a given node.
+  determineHeight(targetId, currentHeight = 0) {
+    if (targetId === -1) {
+      return currentHeight - 1; // Base case: reached a null child, return height of parent.
+    }
+    const foundNode = this.locateNode(targetId);
+    const [leftIdentifier, rightIdentifier] = [foundNode.leftChildIdentifier, foundNode.rightChildIdentifier];
 
-    let currentElement = this.locateElement(elementKey);
-    let [leftChildIdentifier, rightChildIdentifier] = [
-      currentElement.leftDescendantKey,
-      currentElement.rightDescendantKey,
-    ];
+    // Recursively find the maximum height of left and right subtrees.
+    return Math.max(this.determineHeight(leftIdentifier, currentHeight + 1), this.determineHeight(rightIdentifier, currentHeight + 1));
+  }
 
-    // Recursively find the height of the left and right subtrees, then take the maximum.
-    return findMaximum(
-      this.determineHeight(leftChildIdentifier, accumulatedHeight + 1),
-      this.determineHeight(rightChildIdentifier, accumulatedHeight + 1)
+  // Retrieves a node by its identifier.
+  locateNode(searchId) {
+    return this.nodeCollection[searchId];
+  }
+
+  // Prints detailed information for each node in the tree.
+  displayInfo() {
+    const outputLines = this.nodeDetails.map(nodeObject =>
+      `node: ${nodeObject.element.nodeIdentifier}: parent = ${nodeObject.element.parentIdentifier}, sibling = ${nodeObject.siblingNode}, degree = ${nodeObject.nodeDegree}, depth = ${this.calculateDepth(nodeObject.element.nodeIdentifier)}, height = ${this.determineHeight(nodeObject.element.nodeIdentifier)}, ${nodeObject.element.type}`
     );
-  }
-
-  // Retrieves an element from the 'elements' collection by its unique identifier.
-  locateElement(elementKey) {
-    return this.elements[elementKey];
-  }
-
-  // Outputs a formatted summary of each element's properties to the console.
-  displayStructure() {
-    system.output(
-      this.elementDetails
-        .transform((itemDetails) =>
-          // Format each element's details into a readable string.
-          `element: ${itemDetails.element.elementKey}: parent = ${
-            itemDetails.element.antecedentKey
-          }, coEqual = ${itemDetails.coEqual}, childCount = ${
-            itemDetails.childCount
-          }, level = ${this.calculateLevel(
-            itemDetails.element.elementKey
-          )}, height = ${this.determineHeight(
-            itemDetails.element.elementKey
-          )}, ${itemDetails.element.structuralKind}`
-        )
-        .segmentByDelimiter('\n') // Join all formatted strings with newline characters.
-    );
+    console.log(outputLines.join('\n'));
   }
 }
 
-// Main execution block: Reads input data, constructs the hierarchical structure, and displays its properties.
-(function performMainTask() {
-  // Read input from standard input, decode as UTF-8, remove leading/trailing whitespace, and split by newlines.
-  const inputLines = fileSystemModule
-    .readContentSync('/dev/stdin', 'utf8')
-    .stripWhitespace()
-    .segmentByDelimiter('\n');
+// Main execution block for the program.
+(function executeProgram() {
+  // Read input from stdin, trim whitespace, and split into lines.
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-  // The first line contains the total number of elements, which is then removed from the array.
-  const totalElements = parseNumeric(inputLines.shift());
+  // The first line contains the total number of nodes.
+  const nodeCount = Number(inputLines.shift());
 
-  // Instantiate a new hierarchical structure manager.
-  let hierarchy = new HierarchicalStructure();
+  // Create a new instance of the tree structure.
+  let binaryStructure = new TreeStructure();
 
-  // Process each remaining line to add elements to the structure.
-  // Each line typically contains the element's unique key, left child key, and right child key.
-  inputLines
-    .transform((inputLine) =>
-      inputLine.segmentByDelimiter(' ').transform(parseNumeric)
-    )
-    .iterateOver(function (elementData) {
-      hierarchy.insertElement(...elementData);
-    });
+  // Process each subsequent line to add nodes to the tree.
+  inputLines.map(lineData => lineData.split(' ').map(Number)).forEach(function(nodeDataArray) {
+    binaryStructure.addNode(...nodeDataArray);
+  });
 
-  // After all elements are added, establish their complex relationships (parent, sibling).
-  hierarchy.establishRelationships();
-  // Finally, print the detailed structure of all elements.
-  hierarchy.displayStructure();
+  // After all nodes are added, establish their connections.
+  binaryStructure.establishConnections();
+
+  // Finally, display the computed information for all nodes.
+  binaryStructure.displayInfo();
 })();

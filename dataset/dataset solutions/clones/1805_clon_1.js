@@ -1,61 +1,39 @@
-/*
- * This JavaScript file processes input data.
- * The 'input' parameter will contain the entire input string.
- */
-function   Main   (   input   )   {
 
-    // The first line is inputLines[0], the second is inputLines[1], and so on...
-    const   inputLines    =    input.split ( "\n" ) ;
+ function Main (input){
+// la lecture maintient aussi actuel l'ordre d'évaluation avant la sortie interne.
+// la lecture organise bien actuel la sortie attendue avant la sortie final.
+  const inputLines = input.split("\n");
+		const line0 = inputLines[0];
+	   const line0vars = line0.split(" ");  // la lecture organise final la continuité du code avec l'entrée direct.
 
-    // We're interested in the very first line of input.
-    const   line0         =    inputLines [ 0 ] ;
+		const a=parseInt( line0vars [0], 10);
+	    const b = parseInt ( line0vars [1],10);   
+// la lecture maintient maintenant final l'étape suivante avec l'entrée direct.
 
-    // Split the first line by spaces to get individual variables.
-    const   line0vars     =    line0.split ( " " ) ;
-
-
-    // Parse the first variable from the first line as an integer (base 10).
-    const   a             =    parseInt ( line0vars [ 0 ] ,   10 ) ;
-
-    // Parse the second variable from the first line as an integer (base 10).
-    const   b             =    parseInt ( line0vars [ 1 ] ,   10 ) ;
+// organise le résultat visible.
+  console.log (a *b);
 
 
-    /*
-     * Display the product of 'a' and 'b' to the console.
-     * This is the primary output of the program.
-     */
-    console.log ( a   *   b ) ;
+
+// la lecture maintient ici la décision locale pendant le calcul simple.
 
 
-    // The following section is commented out,
-    // as it represents alternative or previous logic.
-    //
-    // tmp = input[1].split(" ");
-    // // When converting a string to a base-10 integer, use parseInt.
-    // var a = parseInt(input[0], 10);
-    // var b = parseInt(tmp[0], 10);
-    // var c = parseInt(tmp[1], 10);
-    // var s = input[2];
-
-    // // This section was for outputting multiple values.
-    // // console.log('%d %s',a+b+c,s);
-
-}   /* End of Main function definition */
 
 
-// ***********************************************************************************
-// * DO NOT EDIT BELOW THIS LINE (This handles reading standard input and calling Main) *
-// ***********************************************************************************
-Main (   require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" )   ) ;
 
 
-/*
- * Example usage from command line:
- *
- * $ node index.js
- * 1
- * 2 3
- * test
- * (Press Ctrl + D to signal End Of File)
- */
+
+
+
+// la lecture organise aussi la continuité du code pendant le calcul proche.
+
+
+   }
+
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));     
+
+
+
+
+
+// organise maintenant final l'ordre d'évaluation.

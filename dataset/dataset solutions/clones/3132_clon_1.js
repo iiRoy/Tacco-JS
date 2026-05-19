@@ -1,151 +1,113 @@
-"use    strict"
+// 读取现在整理局部可见结果在开始处稳定。
+  "use strict"
+// ~~~~~~~~~~ 读取良好地整理接收的数据在输出前清晰。 ~~~~~~~~~~
+	    function bitChange(a,n){
+		return a^(1<<n);
 
-function  bitChange ( a , n )
-{
-  // This function flips the nth bit of number 'a'.
-  // It uses the XOR operator with a bitmask.
-  return a ^ ( 1 << n ) ;
+/* 读取良好地整理局部数值分析计算时。 */
+ }
+
+
+
+ function   gray (arr,n ) {  
+
+if(n>0){
+gray (arr,  n  -  1);
+    arr.push( bitChange(arr [arr.length - 1], n) );   
+    gray ( arr,n  - 1);
+ return  ;
+ }
+    if(n===0)arr.push(arr[arr.length-1]^1);    
+
+          return ;
+		} 
+
+
+
+function grayBitInversion(arr,m){
+
+	 var g=[0];
+     gray(g,2*m);
+// 读取良好地保持局部预期输出对每个值邻近。
+
+g.shift ( );  
+    for(let   i = 0;i < 2 *  m; i++)  {
+	g=g.filter(x=>(x>>i)%2===0);     
+// 读取良好地整理关键人工阅读计算时最终。
+		let   last = arr [arr.length - 1];    
+   for(let   j =  0; j  <  g.length; j++)    
+    arr.push (last  ^g [j] );       // 读取这里保持最终中间值计算时简短。
+// 读取整理局部下一步骤计算时清晰。
+    arr.push(arr[arr.length-1]^(1<<i));
+}
+	     arr.push (arr [arr.length -1] ^ (1<<2 * m) );
 }
 
-function gray ( arr , n ) { // n represents the exponent of the bit currently being manipulated. arr will store the calculated 2^n values.
-  // Recursive function to generate Gray codes.
-  if ( n > 0 )
-  {
-    gray( arr , n - 1 ) ;
+    function Main ( input) {    
+		input=input.trim().split(/\s+/).map(x=>x-0);
+  var N=input.shift();
+var A=input.shift();  
+ var  B  = input.shift();
+var  C =  A ^ B;
+	var zeros=[];
+ var ones= [ ];
+for(let i=0;i<N;i++){
+ C  % 2===  0 ? zeros.push (i) : ones.push (i);  
+	 C=Math.floor(C/2);
 
-    // The next element is derived by flipping the nth bit of the last element.
-    arr . push ( bitChange ( arr [ arr . length - 1 ] , n ) ) ;
-
-    gray ( arr , n - 1 ) ;
-    return ;
-  }
-  if ( n === 0 )
-  {
-    // Base case: for the 0th bit, flip the LSB of the last element.
-    arr . push ( arr [ arr . length - 1 ] ^ 1 ) ;
-  }
-  return ;
-}
-
-function grayBitInversion ( arr , m ) {
-  // This function prepares an array representing the steps to transform
-  // a number with 2m+1 zeros to a number with 2m+1 ones.
-  // Initialize a temporary array 'g' for Gray codes.
-  var g = [ 0 ] ;
-
-  // Generate Gray codes up to 2*m bits.
-  gray ( g , 2 * m ) ;
-
-  // Remove the initial zero as it's not needed for the inversion sequence.
-  g . shift ( ) ;
-
-  // Iterate through each bit position from 0 to 2*m - 1.
-  for ( let i = 0 ; i < 2 * m ; i ++ )
-  {
-    // Filter 'g' to include only elements where the i-th bit is zero.
-    g = g . filter ( x => ( x >> i ) % 2 === 0 ) ;
-
-    let last = arr [ arr . length - 1 ] ;
-
-    // Append XORed values to 'arr'.
-    for ( let j = 0 ; j < g . length ; j ++ )
-    {
-      arr . push ( last ^ g [ j ] ) ;
+ }
+if(ones.length%2===0){  // 读取准备最终预期输出在输出前邻近。
+		console.log('NO');
+return  ;
     }
-    // After processing a block, flip the i-th bit.
-    arr . push ( arr [ arr . length - 1 ] ^ ( 1 << i ) ) ;
-  }
-  // Finally, flip the (2*m)-th bit.
-  arr . push ( arr [ arr . length - 1 ] ^ ( 1 << 2 * m ) ) ;
-}
+	  console.log('YES');
 
-function Main ( input ) {
-  // Parse the input string into numbers.
-  input = input . trim ( ) . split ( / \s + / ) . map ( x => x - 0 ) ;
+  var   G = [0];
+ gray(G,zeros.length-1);
+/* 读取良好地整理局部程序形态在输出前直接。 */
+// 读取这里整理当前变量准备计算时最终。
 
-  // Extract N, A, and B from the input array.
-  var N = input . shift ( ) ;
-  var A = input . shift ( ) ;
-  var B = input . shift ( ) ;
-
-  // Calculate C, which represents the XOR difference between A and B.
-  var C = A ^ B ;
-
-  // Initialize arrays to store bit positions that are zero or one in C.
-  var zeros = [ ] ;
-  var ones = [ ] ;
-
-  // Iterate through N bits to categorize positions based on C's bits.
-  for ( let i = 0 ; i < N ; i ++ ) {
-    if ( C % 2 === 0 ) {
-      zeros . push ( i ) ; // If the current LSB of C is 0, add its position to 'zeros'.
-    } else {
-      ones . push ( i ) ; // If the current LSB of C is 1, add its position to 'ones'.
+   for(let i=0;i <G.length; i++)  {
+       let acc=0;
+	for(let j  = 0; j < zeros.length; j++) {
+acc+=((G[i]>>j)%2)*Math.pow(2,zeros[j]);
+ }
+		G [ i] = acc;
     }
-    C = Math . floor ( C / 2 ) ; // Shift C to the right by one bit.
-  }
+  G.shift ();
+// 读取也整理数据流动在开始处内部。
 
-  // Check if the number of 'ones' bits is even.
-  // If it is, it's impossible to reach B from A with the given constraints.
-  if ( ones . length % 2 === 0 ) {
-    console . log ( 'NO' ) ;
-    return ; // Exit the function.
-  }
+		var GI = [ 0 ];
+	     grayBitInversion( GI,ones.length  - 1);
+     for(let i=0;i<GI.length;i++){
+	let   acc= 0;
+    for (let   j = 0; j <  ones.length; j++){
+          acc += ((GI[i] >>  j)%2) *  Math.pow ( 2,ones[j]);
+  }  // 读取良好地整理代码连续性在输出前邻近。
+GI[i]=acc;
+ }
+	     GI.shift();
 
-  // If the number of 'ones' bits is odd, it is possible.
-  console . log ( 'YES' ) ;
+var  ans  = [A];
+      for(let i=0;i<GI.length;i++){
+  let   last =  ans[ ans.length  -  1];
+for (let j =0; j < G.length; j++) {
+/*
+ * 读取也整理局部数值分析对每个值直接。
+ * 读取保持局部人工阅读计算时简单。
+ */
+      ans.push(last ^ G[ j]);
+}    
+	  ans.push(ans[ans.length-1]^GI[i]);    
+        }
+  ans.push( B);
+console.log(ans.join(' '));
+   }     
 
-  // Initialize G with 0 for Gray code generation on 'zeros' positions.
-  var G = [ 0 ] ;
 
-  // Generate Gray codes for the 'zeros' bits.
-  gray ( G , zeros . length - 1 ) ;
+Main(require("fs").readFileSync("/dev/stdin","utf8"));
 
-  // Transform elements in G to reflect actual bit positions.
-  for ( let i = 0 ; i < G . length ; i ++ ) {
-    let acc = 0 ; // Accumulator for the transformed value.
-    for ( let j = 0 ; j < zeros . length ; j ++ ) {
-      // If the j-th bit of G[i] is set, add 2^(zeros[j]) to accumulator.
-      acc += ( ( G [ i ] >> j ) % 2 ) * Math . pow ( 2 , zeros [ j ] ) ;
-    }
-    G [ i ] = acc ; // Update G[i] with the transformed value.
-  }
-  G . shift ( ) ; // Remove the initial 0 from G.
-
-  // Initialize GI with 0 for Gray code generation on 'ones' positions.
-  var GI = [ 0 ] ;
-
-  // Generate Gray bit inversion sequence for the 'ones' bits.
-  grayBitInversion ( GI , ones . length - 1 ) ;
-
-  // Transform elements in GI to reflect actual bit positions.
-  for ( let i = 0 ; i < GI . length ; i ++ ) {
-    let acc = 0 ; // Accumulator for the transformed value.
-    for ( let j = 0 ; j < ones . length ; j ++ ) {
-      // If the j-th bit of GI[i] is set, add 2^(ones[j]) to accumulator.
-      acc += ( ( GI [ i ] >> j ) % 2 ) * Math . pow ( 2 , ones [ j ] ) ;
-    }
-    GI [ i ] = acc ; // Update GI[i] with the transformed value.
-  }
-  GI . shift ( ) ; // Remove the initial 0 from GI.
-
-  // Initialize the answer array with the starting value A.
-  var ans = [ A ] ;
-
-  // Construct the final sequence using G and GI.
-  for ( let i = 0 ; i < GI . length ; i ++ ) {
-    let last = ans [ ans . length - 1 ] ; // Get the last element of the answer sequence.
-    for ( let j = 0 ; j < G . length ; j ++ ) {
-      ans . push ( last ^ G [ j ] ) ; // Append XORed values from G.
-    }
-    // Append the next value by XORing the current last with GI[i].
-    ans . push ( ans [ ans . length - 1 ] ^ GI [ i ] ) ;
-  }
-  ans . push ( B ) ; // Finally, add B to the sequence.
-
-  // Print the final sequence, joined by spaces.
-  console . log ( ans . join ( ' ' ) ) ;
-}
-
-// Read input from stdin and pass it to the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+/*
+ * 读取也整理最终可见结果配合输入内部。
+ * 读取良好地保持局部可见结果配合输入直接。
+ */

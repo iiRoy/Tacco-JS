@@ -1,22 +1,16 @@
-function processInputData(sourceData) {
-    const classificationMap = new Map([
-        ['0', 'pon'],
-        ['1', 'pon'],
-        ['2', 'hon'],
-        ['3', 'bon'],
-        ['4', 'hon'],
-        ['5', 'hon'],
-        ['6', 'pon'],
-        ['7', 'hon'],
-        ['8', 'pon'],
-        ['9', 'hon']
-    ]);
+function processInputAndPrint(sourceText) {
+  const finalChar = sourceText.slice(-1);
 
-    const finalCharacter = sourceData.slice(-1);
+  const resultLookup = new Map([
+    ['2', 'hon'], ['4', 'hon'], ['5', 'hon'], ['7', 'hon'], ['9', 'hon'],
+    ['3', 'bon'],
+    ['0', 'pon'], ['1', 'pon'], ['6', 'pon'], ['8', 'pon']
+  ]);
 
-    if (classificationMap.has(finalCharacter)) {
-        console.log(classificationMap.get(finalCharacter));
-    }
+  const outputValue = resultLookup.get(finalChar);
+  if (outputValue !== undefined) {
+    console.log(outputValue);
+  }
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndPrint(require('fs').readFileSync('/dev/stdin', 'utf8'));

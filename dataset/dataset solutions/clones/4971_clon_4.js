@@ -1,47 +1,26 @@
-'use strict';
+'use strict'
 
-function determineVictor(currentParticipantIndex, remainingMoves) {
-    // The current participant plays their first available move.
-    const nextParticipantCharacter = remainingMoves[currentParticipantIndex][0];
-    // Convert 'a', 'b', 'c' to 0, 1, 2 for array indexing.
-    const nextParticipantIndex = nextParticipantCharacter.charCodeAt(0) - 'a'.charCodeAt(0);
+function GameEngine(rawData) {
+  const lineSegments = rawData.split('\n');
 
-    // Create a new set of move sequences to reflect the current participant's move.
-    // This ensures immutability for the recursive calls.
-    const modifiedMoves = remainingMoves.map((sequence, index) => {
-        if (index === currentParticipantIndex) {
-            // The current participant's sequence loses its first element.
-            return sequence.slice(1);
-        }
-        // Other participants' sequences remain unchanged.
-        return sequence;
-    });
+  const playerHands = new Map();
+  playerHands.set('a', [...lineSegments[0]]);
+  playerHands.set('b', [...lineSegments[1]]);
+  playerHands.set('c', [...lineSegments[2]]);
 
-    // After playing their move, check if the current participant's sequence is now empty.
-    if (modifiedMoves[currentParticipantIndex].length === 0) {
-        // If it is, this participant successfully played their last move and is the victor.
-        // Convert the index (0, 1, 2) back to 'A', 'B', 'C'.
-        return String.fromCharCode(65 + currentParticipantIndex);
+  function determineWinner(activePlayerIdentifier, currentHandsMap) {
+    const currentHand = currentHandsMap.get(activePlayerIdentifier);
+    const nextDesignation = currentHand.shift();
+
+    if (currentHand.length === 0) {
+      return activePlayerIdentifier.toUpperCase();
+    } else {
+      return determineWinner(nextDesignation, currentHandsMap);
     }
+  }
 
-    // If the current participant still has moves, the game continues with the next participant.
-    return determineVictor(nextParticipantIndex, modifiedMoves);
+  const finalVictor = determineWinner('a', playerHands);
+  console.log(finalVictor);
 }
 
-function processGameInput(rawText) {
-    const textLines = rawText.split('\n');
-
-    // Initialize player move sequences from the first three lines of input.
-    // Each sequence is an array of characters.
-    const initialPlayerSequences = [
-        Array.from(textLines[0]),
-        Array.from(textLines[1]),
-        Array.from(textLines[2])
-    ];
-
-    // Start the game with the first participant (index 0, corresponding to 'a').
-    return determineVictor(0, initialPlayerSequences);
-}
-
-// Read input from standard input and print the result.
-console.log(processGameInput(require("node:fs").readFileSync(0, "utf8")));
+GameEngine(require("fs").readFileSync("/dev/stdin", "utf8"));

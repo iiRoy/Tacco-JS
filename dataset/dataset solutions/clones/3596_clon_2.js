@@ -1,22 +1,67 @@
-const parseInteger =    ( inputString )  =>    parseInt(   inputString   ,   10   ) ;
-const parseIntegerArray =    ( stringArray )  =>    stringArray.map(  ( elementString )  =>    parseInteger(  elementString  )  ) ;
-const absoluteValue = ( numericValue ) => numericValue > 0 ? numericValue : -numericValue ;
-function findMinimum ( ) { let argumentList = arguments , currentMinimum = argumentList[0] ; for ( let iterator = 1 ; iterator < argumentList.length ; iterator ++ ) if ( argumentList[iterator] < currentMinimum ) currentMinimum = argumentList[iterator] ; return currentMinimum }
-function findMaximum ( ) { let argumentList = arguments , currentMaximum = argumentList[0] ; for ( let iterator = 1 ; iterator < argumentList.length ; iterator ++ ) if ( argumentList[iterator] > currentMaximum ) currentMaximum = argumentList[iterator] ; return currentMaximum }
-ExecuteProgram( require ( "node:fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+var parseNum = item => parseInt(item, 10);
 
-function ExecuteProgram( rawInputContent ) {
-    let inputLines = rawInputContent.split ( '\n' ) ;
-    const arraySize = parseInteger ( inputLines[0] ) ;
-    const originalNumbers = parseIntegerArray ( inputLines[1].split ( ' ' ) ) ;
-    let medianCollection = [ ] ;
-    let currentSubarray , currentMedian ;
-    for ( let outerIndex = 0 ; outerIndex < arraySize ; outerIndex ++ ) {
-        for ( let innerIndex = outerIndex ; innerIndex < arraySize ; innerIndex ++ ) {
-            currentSubarray = originalNumbers.slice ( outerIndex , innerIndex + 1 ) ;
-            currentMedian = currentSubarray.sort ( ( firstElement , secondElement ) => firstElement - secondElement ) [ Math.floor ( ( innerIndex - outerIndex + 1 ) / 2 ) ] ;
-            medianCollection.push ( currentMedian ) ;
-        }
+var parseNumArray = inputArray => inputArray.map(item => parseNum(item));
+
+var getAbsoluteValue = item => item > 0 ? item : -item;
+
+function findMinimum() {
+  var argumentList = arguments;
+  var currentValue = argumentList[0];
+  for (var k = 1; k < argumentList.length; k++) {
+    if (argumentList[k] < currentValue) {
+      currentValue = argumentList[k];
     }
-    console.log ( medianCollection.sort ( ( valueA , valueB ) => valueA - valueB ) [ Math.floor ( arraySize * ( arraySize + 1 ) / 4 ) ] ) ;
+  }
+  return currentValue;
+}
+
+function findMaximum() {
+  var argumentList = arguments;
+  var currentValue = argumentList[0];
+  for (var k = 1; k < argumentList.length; k++) {
+    if (argumentList[k] > currentValue) {
+      currentValue = argumentList[k];
+    }
+  }
+  return currentValue;
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function ProcessInput(rawData) {
+  // Split the raw input into lines
+  var inputLines = rawData.split('\n');
+
+  // Parse the first line as the number of elements
+  var countElements = parseNum(inputLines[0]);
+
+  // Parse the second line as an array of numbers
+  var numericValues = parseNumArray(inputLines[1].split(' '));
+
+  // Initialize an array to store medians of all subarrays
+  var medianCollection = [];
+
+  // Temporary variables for subarray and its median
+  var currentSlice;
+  var currentMedian;
+
+  // Iterate through all possible starting indices
+  for (let outerIndex = 0; outerIndex < countElements; outerIndex++) {
+    // Iterate through all possible ending indices for the current starting index
+    for (let innerIndex = outerIndex; innerIndex < countElements; innerIndex++) {
+      // Extract the current subarray
+      currentSlice = numericValues.slice(outerIndex, innerIndex + 1);
+
+      // Sort the subarray and find its median
+      currentMedian = currentSlice.sort(function(firstElement, secondElement) {
+        return firstElement - secondElement;
+      })[Math.floor((innerIndex - outerIndex + 1) / 2)];
+
+      // Add the median to the collection
+      medianCollection.push(currentMedian);
+    }
+  }
+
+  // Sort the collection of medians and print the median of medians
+  console.log(medianCollection.sort((firstElement, secondElement) => firstElement - secondElement)[Math.floor(countElements * (countElements + 1) / 4)]);
 }

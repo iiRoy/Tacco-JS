@@ -1,51 +1,27 @@
+// 読み取り 整理する 現在の受け取ったデータ 開始時に近く.
 /*
- * This is a main function designed to process some input.
- * It calculates a specific mathematical expression based on the input data.
- * The input is expected to be a string containing numbers.
+ * 読み取り また保つ 重要な中間値 開始時に近く.
+ * 読み取り 保つ 最終の評価順序 各値ごとに単純.
  */
-function main( input ) {
-    // Define a large prime modulus for calculations
-    mod  =  10000000007 ;  // The modulus value
+    function main(input) {
+  mod = 10000000007;
+hoge = 0;
+  baz = input.split("\n");
+ N= Number(baz [ 0 ] );
+/* 読み取り よく保つ 最終の受け取ったデータ 計算中に短く. */
+nums =  input
+.split("\n")[1]   
+   .split(" ")
+.map (n=> parseInt ( n,10));
+     sum = 0;
+	factorial = 1;
 
-    // Initialize a temporary variable, perhaps for future use or debugging.
-    hoge =  0 ;
+   for (var i = 1; i < N; i++) {
+sum  +=nums [i];
+		factorial *= i;     
+      }
+console.log(((sum / (N - 1)) * factorial) % mod);
+}
+    main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-    // Split the input string by newline characters to get individual lines.
-    baz = input . split ( "\n" ) ;
-
-    // Parse the first line of the input as the total count 'N'.
-    N = Number ( baz [ 0 ] ) ;
-
-    // Process the second line: split by space, then parse each part as an integer.
-    nums = input
-        .split ( "\n" ) [ 1 ] // Get the second line
-        .split ( " " )       // Split numbers by space
-        .map ( n  =>  parseInt ( n , 10 ) ) ; // Convert to integers
-
-    // Initialize sum and factorial variables for accumulation.
-    sum       = 0 ; // Accumulator for sum
-    factorial = 1 ; // Accumulator for factorial
-
-
-    /*
-     * Loop through the numbers from the second element up to N-1.
-     * This loop calculates the sum of numbers and the factorial.
-     */
-    for ( var i = 1 ; i < N ; i ++ ) {
-        sum += nums [ i ] ;      // Add current number to sum
-        factorial *= i ;         // Multiply current index to factorial
-    }
-
-    // Calculate the final result using the accumulated sum and factorial,
-    // then apply the modulus operator.
-    console.log( ( ( sum / ( N - 1 ) ) * factorial ) % mod ) ;
-
-} /* End of main function */
-
-
-// Execute the main function with input read from standard input.
-// This block handles reading the input file.
-main( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-
-// End of script
+/* 読み取り 保つ 局所的な中間値 各値ごとに直接. */

@@ -1,99 +1,66 @@
-const parseGraphData = (rawTextContent) => {
-    const allLines = rawTextContent.split(/\r?\n/).filter(Boolean);
-    
-    const [dimensionsLine, ...edgeSpecificationLines] = allLines;
-    
-    const [nodeCountStr] = dimensionsLine.split(' ');
-    const totalNodeCount = parseInt(nodeCountStr, 10);
-
-    const outgoingConnections = new Map();
-    for (let currentVertexId = 1; currentVertexId <= totalNodeCount; ++currentVertexId) {
-        outgoingConnections.set(currentVertexId, new Set());
+function processGraphInput(inputData) {
+    inputData = inputData.split("\n");
+    if (inputData[inputData.length - 1] === '') {
+        inputData.pop();
     }
 
-    edgeSpecificationLines.forEach(lineOfEdge => {
-        const [sourceNodeStr, targetNodeStr] = lineOfEdge.split(' ');
-        const sourceNode = parseInt(sourceNodeStr, 10);
-        const targetNode = parseInt(targetNodeStr, 10);
-        
-        if (outgoingConnections.has(sourceNode)) {
-            outgoingConnections.get(sourceNode).add(targetNode);
-        }
-    });
+    const firstLineParts = inputData[0].split(' ');
+    const nodeCount = Number(firstLineParts[0]);
+    const edgeCount = Number(firstLineParts[1]);
 
-    return { totalNodeCount, outgoingConnections };
-};
+    const adjacencyMap = new Map();
+    for (let i = 1; i <= nodeCount; i++) {
+        adjacencyMap.set(i, new Set());
+    }
 
-const findSmallestCycle = (graphSize, graphAdjacency) => {
-    let minimumCyclePath = null;
-    let minimumCycleEdgeCount = Infinity;
+    for (let i = 1; i < inputData.length; i++) {
+        const edgeParts = inputData[i].split(' ');
+        const sourceNode = Number(edgeParts[0]);
+        const targetNode = Number(edgeParts[1]);
+        adjacencyMap.get(sourceNode).add(targetNode);
+    }
 
-    for (let entryPoint = 1; entryPoint <= graphSize; ++entryPoint) {
-        if (!graphAdjacency.has(entryPoint)) continue; 
+    const cyclePath = locateShortestCycle(adjacencyMap, nodeCount);
 
-        const explorationQueue = [];
-        explorationQueue.push(entryPoint);
+    if (cyclePath) {
+        const pathSegments = cyclePath.slice();
+        pathSegments.shift();
+        console.log(pathSegments.length);
+        console.log(pathSegments.join("\n"));
+    } else {
+        console.log(-1);
+    }
+}
 
-        const distanceToNode = new Map();
-        distanceToNode.set(entryPoint, 0);
+function locateShortestCycle(graphStructure, totalNodes) {
+    for (let initialNode = 1; initialNode <= totalNodes; initialNode++) {
+        const traversalQueue = [[initialNode, [initialNode]]];
+        const visitedNodesForCurrentBFS = new Set();
+        visitedNodesForCurrentBFS.add(initialNode);
 
-        const pathPredecessor = new Map();
+        let queueHead = 0;
 
-        let queueHeadIndex = 0;
-        while (queueHeadIndex < explorationQueue.length) {
-            const currentNode = explorationQueue[queueHeadIndex++];
-            const currentDistance = distanceToNode.get(currentNode);
+        while (queueHead < traversalQueue.length) {
+            const [currentNodeInTraversal, currentPathSequence] = traversalQueue[queueHead++];
 
-            if (currentDistance >= minimumCycleEdgeCount) {
-                continue;
-            }
-
-            const adjacentNodes = graphAdjacency.get(currentNode);
-            if (!adjacentNodes) continue;
-
-            for (const neighborNode of adjacentNodes) {
-                const newPathDistance = currentDistance + 1;
-
-                if (neighborNode === entryPoint) {
-                    if (newPathDistance < minimumCycleEdgeCount) {
-                        minimumCycleEdgeCount = newPathDistance;
-                        
-                        const reconstructedPath = [];
-                        let tempNodeForPath = currentNode;
-                        while (tempNodeForPath !== entryPoint) {
-                            reconstructedPath.unshift(tempNodeForPath);
-                            tempNodeForPath = pathPredecessor.get(tempNodeForPath);
-                        }
-                        reconstructedPath.unshift(entryPoint);
-                        reconstructedPath.push(entryPoint);
-                        
-                        minimumCyclePath = reconstructedPath.slice(1); 
+            const neighbors = graphStructure.get(currentNodeInTraversal);
+            if (neighbors) {
+                for (const nextNodeInPath of neighbors) {
+                    if (nextNodeInPath === initialNode) {
+                        const detectedCycle = currentPathSequence.concat([nextNodeInPath]);
+                        return detectedCycle;
                     }
-                } else {
-                    if (!distanceToNode.has(neighborNode) || newPathDistance < distanceToNode.get(neighborNode)) {
-                        distanceToNode.set(neighborNode, newPathDistance);
-                        pathPredecessor.set(neighborNode, currentNode);
-                        explorationQueue.push(neighborNode);
+
+                    if (!visitedNodesForCurrentBFS.has(nextNodeInPath)) {
+                        visitedNodesForCurrentBFS.add(nextNodeInPath);
+                        traversalQueue.push([nextNodeInPath, currentPathSequence.concat([nextNodeInPath])]);
                     }
                 }
             }
         }
     }
 
-    return minimumCyclePath;
-};
+    return null;
+}
 
-const generateOutputString = (finalPath) => {
-    if (finalPath === null) {
-        return "-1";
-    }
-    return `${finalPath.length}\n${finalPath.join("\n")}`;
-};
-
-const runProblemSolver = (rawData) => {
-    const { totalNodeCount, outgoingConnections } = parseGraphData(rawData);
-    const detectedCycle = findSmallestCycle(totalNodeCount, outgoingConnections);
-    console.log(generateOutputString(detectedCycle));
-};
-
-runProblemSolver(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,90 +1,70 @@
-function rotateMatrix(sourceGrid) {
-  if (!sourceGrid || sourceGrid.length === 0 || sourceGrid[0].length === 0) {
+const matrixFlip = (sourceMatrix) => {
+  if (!sourceMatrix || sourceMatrix.length === 0 || sourceMatrix[0] === undefined) {
     return [];
   }
-  const rowDimension = sourceGrid.length;
-  const columnDimension = sourceGrid[0].length;
-  const transformedGrid = [];
-  for (let col = 0; col < columnDimension; col++) {
+
+  const rowCount = sourceMatrix.length;
+  const colCount = sourceMatrix[0].length;
+  const flippedMatrix = [];
+
+  for (let cIdx = 0; cIdx < colCount; cIdx++) {
     const newRow = [];
-    for (let row = 0; row < rowDimension; row++) {
-      newRow.push(sourceGrid[row][col]);
+    for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+      newRow.push(sourceMatrix[rIdx][cIdx]);
     }
-    transformedGrid.push(newRow);
+    flippedMatrix.push(newRow);
   }
-  return transformedGrid;
-}
+  return flippedMatrix;
+};
 
-function determineDominantItem(dataSequence) {
-  if (dataSequence.length === 0) {
-    throw new Error("Collection is empty for dominant item analysis.");
+Array.prototype.mostFrequent = function () {
+  if (this.length === 0) {
+    throw new Error("error");
   }
 
-  const occurrenceTally = dataSequence.reduce((accumulator, element) => {
-    accumulator.set(element, (accumulator.get(element) || 0) + 1);
+  const occurrenceRegistry = this.reduce((accumulator, currentItem) => {
+    const itemIdentifier = String(currentItem) + "_" + typeof currentItem;
+    const existingEntry = accumulator.get(itemIdentifier) || { tally: 0, originalDatum: currentItem };
+    existingEntry.tally++;
+    accumulator.set(itemIdentifier, existingEntry);
     return accumulator;
   }, new Map());
 
-  let highestFrequency = 0;
-  let dominantElement = null;
+  let highestTally = 0;
+  let mostCommonDatum = null;
 
-  for (const [element, frequency] of occurrenceTally.entries()) {
-    if (frequency > highestFrequency) {
-      highestFrequency = frequency;
-      dominantElement = element;
+  for (const [identifier, dataEntry] of occurrenceRegistry.entries()) {
+    if (dataEntry.tally > highestTally) {
+      highestTally = dataEntry.tally;
+      mostCommonDatum = dataEntry.originalDatum;
     }
   }
-  return dominantElement;
+  return mostCommonDatum;
+};
+
+const countSpecificOccurrences = (collection, targetValue) => {
+  return collection.reduce((total, element) => total + (element === targetValue ? 1 : 0), 0);
+};
+
+function ProcessInput(rawInput) {
+  const [firstLineContent, ...coordinateLines] = rawInput.split('\n');
+  const [rows, columns, numPoints] = firstLineContent.split(' ').map(Number);
+  const pointCoordinates = coordinateLines.map(str => str.split(' ').map(Number));
+
+  const transformedCoordinates = matrixFlip(pointCoordinates);
+  const dominantX = transformedCoordinates[0].mostFrequent();
+  const dominantY = transformedCoordinates[1].mostFrequent();
+
+  const dominantXOccurrences = countSpecificOccurrences(transformedCoordinates[0], dominantX);
+  const dominantYOccurrences = countSpecificOccurrences(transformedCoordinates[1], dominantY);
+
+  const finalOutcome = (numPoints === 1)
+    ? 1
+    : (dominantXOccurrences === 1 || dominantYOccurrences === 1)
+      ? (dominantXOccurrences + dominantYOccurrences)
+      : (dominantXOccurrences + dominantYOccurrences - 1);
+
+  console.log(finalOutcome);
 }
 
-function countSpecificItem(collection, targetValue) {
-  return collection.reduce((currentCount, item) => (item === targetValue ? currentCount + 1 : currentCount), 0);
-}
-
-function analyzeInputString(rawTextContent) {
-  const textLines = rawTextContent.split('\n');
-  const [headerInfo, ...datasetLines] = textLines;
-  const [valA, valB, valC] = headerInfo.split(' ').map(Number);
-  const processedDataset = datasetLines.map(line => line.split(' ').map(Number));
-  return {
-    dimA: valA,
-    dimB: valB,
-    specialCount: valC,
-    dataEntries: processedDataset
-  };
-}
-
-function computeProgramResult(parsedInputData) {
-  const transformedEntries = rotateMatrix(parsedInputData.dataEntries);
-  const firstComponent = transformedEntries[0];
-  const secondComponent = transformedEntries[1];
-
-  const primaryDominant = determineDominantItem(firstComponent);
-  const secondaryDominant = determineDominantItem(secondComponent);
-
-  const primaryDominantTally = countSpecificItem(firstComponent, primaryDominant);
-  const secondaryDominantTally = countSpecificItem(secondComponent, secondaryDominant);
-
-  if (parsedInputData.specialCount === 1) {
-    return 1;
-  } else if (primaryDominantTally === 1 || secondaryDominantTally === 1) {
-    return primaryDominantTally + secondaryDominantTally;
-  } else {
-    return primaryDominantTally + secondaryDominantTally - 1;
-  }
-}
-
-function runApplication(dataSourceReader) {
-  try {
-    const rawContent = dataSourceReader();
-    const inputAttributes = analyzeInputString(rawContent);
-    const finalCalculatedValue = computeProgramResult(inputAttributes);
-    return finalCalculatedValue;
-  } catch (err) {
-    throw err;
-  }
-}
-
-const obtainInputFromFile = () => require("fs").readFileSync("/dev/stdin", "utf8");
-
-console.log(runApplication(obtainInputFromFile));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

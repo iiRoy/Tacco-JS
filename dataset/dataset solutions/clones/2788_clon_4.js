@@ -1,37 +1,22 @@
-(function() {
-    function orderElements(collection) {
-        const totalItems = collection.length;
-        for (let currentPosition = 0; currentPosition < totalItems - 1; currentPosition++) {
-            let smallestElementIndex = currentPosition;
-            for (let comparisonPosition = currentPosition + 1; comparisonPosition < totalItems; comparisonPosition++) {
-                if (collection[comparisonPosition] < collection[smallestElementIndex]) {
-                    smallestElementIndex = comparisonPosition;
-                }
-            }
-            if (smallestElementIndex !== currentPosition) {
-                let temporaryValue = collection[currentPosition];
-                collection[currentPosition] = collection[smallestElementIndex];
-                collection[smallestElementIndex] = temporaryValue;
-            }
-        }
-        return collection;
-    }
+function computeDifference(sourceText) {
+  const processedText = sourceText.replace(/^\s+|\s+$/g, '');
+  const lines = processedText.split('\n');
 
-    function processInputContent(receivedText) {
-        const cleanedText = receivedText.replace(/^\s+|\s+$/g, '');
-        const dataRows = cleanedText.split('\n');
-        const numberStrings = dataRows[1].split(/\s+/).filter(Boolean);
-        const numericalValues = numberStrings.map(str => Number(str));
+  const countMatch = lines[0].match(/\d+/);
+  const elementCount = Number(countMatch[0]);
 
-        const dataLength = numericalValues.length;
-        const arrangedValues = orderElements([...numericalValues]);
+  const dataString = lines[1];
+  const numberStrings = dataString.match(/-?\d+/g);
+  const dataValues = numberStrings.map(Number);
 
-        const firstTargetIndex = Math.floor(dataLength / 2);
-        const secondTargetIndex = firstTargetIndex + 1;
+  dataValues.sort((firstVal, secondVal) => firstVal - secondVal);
 
-        const calculatedDifference = arrangedValues[secondTargetIndex] - arrangedValues[firstTargetIndex];
-        console.log(calculatedDifference);
-    }
+  const lowerMidIndex = elementCount / 2;
+  const upperMidIndex = lowerMidIndex + 1;
 
-    processInputContent(require('fs').readFileSync('/dev/stdin', 'utf8'));
-})();
+  const selectedPair = dataValues.slice(lowerMidIndex, upperMidIndex + 1);
+  
+  console.log(selectedPair[1] - selectedPair[0]);
+}
+
+computeDifference(require('fs').readFileSync('/dev/stdin', 'utf8'));

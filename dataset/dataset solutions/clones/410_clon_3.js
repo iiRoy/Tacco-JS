@@ -1,131 +1,87 @@
-const fs = require('fs'); // Import the file system module explicitly
+function generatePermutations(inputArray) {
+  const arrLen = inputArray.length;
+  const allPerms = [inputArray.slice()];
+  const controlArr = new Array(arrLen).fill(0);
 
-/**
- * Generates all possible permutations of an array using Heap's algorithm.
- * @param {Array<any>} initialSequence The array to permute.
- * @returns {Array<Array<any>>} A collection of all permutations.
- */
-function createAllArrangements(initialSequence) {
-    const sequenceLength = initialSequence.length;
+  let idx = 1;
+  let swapTargetIdx, tempElement;
 
-    // Handle edge cases for permutation generation
-    if (sequenceLength === 0) {
-        return [[]]; // An empty array has one permutation: itself.
+  while (idx < arrLen) {
+    if (controlArr[idx] < idx) {
+      swapTargetIdx = (idx % 2 === 1) ? controlArr[idx] : 0;
+
+      tempElement = inputArray[idx];
+      inputArray[idx] = inputArray[swapTargetIdx];
+      inputArray[swapTargetIdx] = tempElement;
+
+      controlArr[idx]++;
+      idx = 1;
+      allPerms.push(inputArray.slice());
+    } else {
+      controlArr[idx] = 0;
+      idx++;
     }
-    if (sequenceLength === 1) {
-        return [[...initialSequence]]; // Single element array has only one permutation.
-    }
-
-    const collectedPermutations = [];
-    // Start with the original sequence as the first permutation
-    collectedPermutations.push([...initialSequence]);
-
-    // This array tracks the "state" of the Heap's algorithm for each position.
-    const indexTracker = Array.from({ length: sequenceLength }, () => 0);
-
-    let currentPos = 1; // Start processing from the second element
-    while (currentPos < sequenceLength) {
-        if (indexTracker[currentPos] < currentPos) {
-            // Determine the swap index based on parity of currentPos
-            const swapIndex = (currentPos % 2 === 1) ? indexTracker[currentPos] : 0;
-
-            // Perform the swap
-            const tempValue = initialSequence[currentPos];
-            initialSequence[currentPos] = initialSequence[swapIndex];
-            initialSequence[swapIndex] = tempValue;
-
-            // Increment the counter for the current position
-            indexTracker[currentPos]++;
-            currentPos = 1; // Reset to the second position to re-evaluate after swap
-            collectedPermutations.push([...initialSequence]); // Add the new permutation
-        } else {
-            // Reset the counter for the current position and move to the next
-            indexTracker[currentPos] = 0;
-            currentPos++;
-        }
-    }
-    return collectedPermutations;
+  }
+  return allPerms;
 }
 
-// Pre-calculate permutations for arrays of integers up to a certain length (e.g., 10)
-// This lookup table is optimized for repeated use with small N values.
-const permutationLookupTable = new Array(11); // Stores permutations for lengths 0 to 10
-permutationLookupTable[0] = [[]]; // Permutations of an empty array
-permutationLookupTable[1] = [[0]]; // Permutations of [0]
-
-for (let currentLen = 1; currentLen <= 10; currentLen++) {
-    const sequentialArr = Array.from({ length: currentLen }, (_, idx) => idx);
-    permutationLookupTable[currentLen] = createAllArrangements(sequentialArr);
+const precomputedPermutations = [[]];
+for (let currentLength = 1; currentLength <= 10; currentLength++) {
+   const currentArray = [];
+   for (let j = 0; j < currentLength; j++) {
+       currentArray.push(j);
+   }
+   precomputedPermutations[currentLength] = generatePermutations(currentArray);
 }
 
-// Read raw input data from standard input
-const rawInputData = fs.readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let inputLines = fileContent.trim().split("\n");
 
-// Process input lines, filtering out any empty lines that might result from splitting
-const processedLines = rawInputData.split('\n').filter(line => line.trim().length > 0);
+while (true) {
+   const currentN = Number(inputLines.shift());
+   if (currentN === 0) {
+       break;
+   }
 
-// Main loop to process multiple test cases
-while (processedLines.length > 0) {
-    const currentCaseSize = parseInt(processedLines.shift(), 10);
+   const parsedTaskData = Array.from({ length: currentN }, () => {
+       const [taskName, val1, val2] = inputLines.shift().split(" ");
+       return [taskName, Number(val1), Number(val2)];
+   });
 
-    // If '0' is encountered, it signifies the end of input
-    if (currentCaseSize === 0) {
-        break;
-    }
+   const currentPermutations = precomputedPermutations[currentN];
 
-    // Read and parse job specifications for the current test case
-    const jobSpecifications = Array.from({ length: currentCaseSize }, () => {
-        const lineParts = processedLines.shift().split(' ');
-        return {
-            name: lineParts[0],
-            weight: parseInt(lineParts[1], 10),
-            capacityLimit: parseInt(lineParts[2], 10)
-        };
-    });
+   let maxRatio = 0;
+   let bestPermutation = [];
 
-    // Retrieve pre-calculated permutations for the current case size
-    const availablePermutations = permutationLookupTable[currentCaseSize];
+   for (let permIndex = 0; permIndex < currentPermutations.length; permIndex++) {
+      const currentPerm = currentPermutations[permIndex];
 
-    let maximumEfficiencyRatio = -1.0; // Initialize with a value lower than any possible ratio
-    let optimalSequence = []; // Stores the indices of the best permutation
+      let isPermutationValid = true;
+      let currentTotalWeight = 0;
+      let currentWeightedSum = 0;
 
-    // Iterate through all possible permutations for the current set of jobs
-    for (const currentOrder of availablePermutations) {
-        let cumulativeLoad = 0;
-        let totalWeightedTime = 0;
-        let capacityExceeded = false; // Flag to check if any job's capacity limit is breached
+      for (let taskOrderIdx = 0; taskOrderIdx < currentPerm.length; taskOrderIdx++) {
+         const taskIndex = currentPerm[taskOrderIdx];
+         const [taskName, taskWeight, taskDeadline] = parsedTaskData[taskIndex];
 
-        // Evaluate the current permutation
-        for (let positionIndex = 0; positionIndex < currentOrder.length; positionIndex++) {
-            const jobIndex = currentOrder[positionIndex];
-            const job = jobSpecifications[jobIndex];
+         if (currentTotalWeight > taskDeadline) {
+            isPermutationValid = false;
+            break;
+         }
+         
+         currentTotalWeight += taskWeight;
+         currentWeightedSum += taskWeight * (taskOrderIdx + 1);
+      }
 
-            // Check if adding this job exceeds its individual capacity limit based on current cumulative load
-            if (cumulativeLoad + job.weight > job.capacityLimit) {
-                capacityExceeded = true;
-                break; // This permutation is invalid, move to the next
-            }
+      if (isPermutationValid) {
+         const calculatedRatio = currentWeightedSum / currentTotalWeight;
+         if (calculatedRatio > maxRatio) {
+            maxRatio = calculatedRatio;
+            bestPermutation = currentPerm;
+         }
+      }
+   }
 
-            cumulativeLoad += job.weight;
-            totalWeightedTime += job.weight * (positionIndex + 1); // Weighted sum based on position
-        }
-
-        // Only consider valid permutations that did not exceed any capacity limits
-        if (!capacityExceeded) {
-            // Avoid division by zero if all weights are zero, though problem constraints usually prevent this.
-            // If cumulativeLoad is 0, the ratio is 0.
-            const currentEfficiencyRatio = (cumulativeLoad > 0) ? (totalWeightedTime / cumulativeLoad) : 0;
-
-            // Update the maximum efficiency ratio and the corresponding optimal sequence
-            if (currentEfficiencyRatio > maximumEfficiencyRatio) {
-                maximumEfficiencyRatio = currentEfficiencyRatio;
-                optimalSequence = currentOrder;
-            }
-        }
-    }
-
-    // Map the optimal sequence of job indices back to their original names and print
-    // The problem output requires reversing the order of names for some reason.
-    const resultNames = optimalSequence.map(jobIdx => jobSpecifications[jobIdx].name).reverse();
-    console.log(resultNames.join('\n'));
+   const resultNames = bestPermutation.map(taskIdx => parsedTaskData[taskIdx][0]);
+   console.log(resultNames.reverse().join("\n"));
 }

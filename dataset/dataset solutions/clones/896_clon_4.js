@@ -1,49 +1,23 @@
-let receivedData = '';
-process.stdin.on('data', fragment => {
-    receivedData += fragment.toString();
+const fileSystem = require('fs');
+let processedText = fileSystem.readFileSync('/dev/stdin', 'utf8').trim();
+
+const requiredPattern = "AADINNUY";
+const substituteValue = "AIZUNYAN";
+const segmentLength = 8;
+
+const possibleStartIndices = Array.from(
+  { length: Math.max(0, processedText.length - segmentLength + 1) },
+  (_, index) => index
+);
+
+const firstMatchIndex = possibleStartIndices.findIndex(startPoint => {
+  const currentSegment = processedText.substring(startPoint, startPoint + segmentLength);
+  const sortedCurrentSegment = currentSegment.split('').sort().join('');
+  return sortedCurrentSegment === requiredPattern;
 });
 
-process.stdin.on('end', () => {
-    let currentPhrase = receivedData.trim();
-    const phraseExtent = currentPhrase.length;
-    const replacementSequence = "AIZUNYAN";
-    const windowSize = 8;
+if (firstMatchIndex !== -1) {
+  processedText = processedText.slice(0, firstMatchIndex) + substituteValue + processedText.slice(firstMatchIndex + segmentLength);
+}
 
-    const necessaryCharacterTallies = { 'A': 2, 'D': 1, 'I': 1, 'N': 2, 'U': 1, 'Y': 1 };
-
-    const validateArrangement = (substance) => {
-        if (substance.length !== windowSize) return false;
-        const substanceCharacterTallies = {};
-        for (let characterIterator = 0; characterIterator < substance.length; characterIterator++) {
-            const activeCharacter = substance[characterIterator];
-            substanceCharacterTallies[activeCharacter] = (substanceCharacterTallies[activeCharacter] || 0) + 1;
-        }
-
-        for (const characterKey in necessaryCharacterTallies) {
-            if (substanceCharacterTallies[characterKey] !== necessaryCharacterTallies[characterKey]) {
-                return false;
-            }
-        }
-        for (const characterKey in substanceCharacterTallies) {
-            if (necessaryCharacterTallies[characterKey] === undefined) {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    let processed = false;
-    let currentOffset = 0;
-
-    while (currentOffset <= phraseExtent - windowSize) {
-        let currentSpan = currentPhrase.substring(currentOffset, currentOffset + windowSize);
-        if (validateArrangement(currentSpan)) {
-            currentPhrase = currentPhrase.substring(0, currentOffset) + replacementSequence + currentPhrase.substring(currentOffset + windowSize);
-            processed = true;
-            break;
-        }
-        currentOffset++;
-    }
-
-    process.stdout.write(currentPhrase);
-});
+console.log(processedText);

@@ -1,37 +1,31 @@
 'use strict';
-// This utility function helps in displaying messages to the console.
-const printer = ( textMessage ) => {
-    console.log( textMessage );
+
+// This function is responsible for displaying messages to the console.
+const displayOutput = (messageContent) => {
+  console.log(messageContent);
 };
 
-/**
- * Core logic function to analyze an input sequence.
- * @param {Array<string>} dataLines - An array where the first element contains the sequence to be processed.
+/*
+ * The primary function that processes the incoming data.
+ * It takes an array of strings as input.
  */
-function analyzeSequence( dataLines ) {
-  // Extract the first line of input and convert it into an array of individual characters.
-  let charSequence = dataLines[0].trim().split( "" );
+function executeLogic(inputLines) {
+  // Take the first line of input, remove leading/trailing whitespace, and split it into individual characters.
+  let characterArray = inputLines[0].trim().split("");
 
-  // Retrieve the very last character from the sequence. This character is expected to be a digit.
-  let finalDigit = charSequence.pop();
+  // Extract the last character from the array.
+  let finalCharacter = characterArray.pop();
 
-  // Evaluate the extracted digit to determine the appropriate output.
-  if ( finalDigit === '3' ) { // Using strict equality for comparison.
-    printer( 'bon' ); // Output for digit '3'.
-  }
-  else if ( finalDigit === '0' || finalDigit === '1' || finalDigit === '6' || finalDigit === '8' ) {
-    printer( 'pon' ); // Output for specific digits '0', '1', '6', '8'.
-  }
-  else {
-    printer( 'hon' ); // Default output for any other digit.
+  // Based on the value of the last character, print a specific string.
+  if (finalCharacter == 3) {
+    displayOutput('bon'); // Output 'bon' for character '3'
+  } else if (finalCharacter == 0 || finalCharacter == 1 || finalCharacter == 6 || finalCharacter == 8) {
+    displayOutput('pon'); // Output 'pon' for characters '0', '1', '6', '8'
+  } else {
+    displayOutput('hon'); // Output 'hon' for any other character
   }
 }
 
-// Initiate the processing by reading input from standard input,
-// cleaning it, and splitting it into lines before passing to the main analysis function.
-analyzeSequence(
-  require( 'fs' )
-    .readFileSync( '/dev/stdin', 'utf8' )
-    .trim()
-    .split( "\n" )
-);
+// Read input from standard input, decode as UTF-8, trim whitespace, and split into lines.
+// Then, pass the resulting array of lines to the main processing function.
+executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

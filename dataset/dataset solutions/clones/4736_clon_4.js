@@ -1,39 +1,18 @@
 'use strict'
 
-const processText = sourceContent => {
-    const processedString = sourceContent.trim();
+const calculateSpanLength = (sourceContent) => {
+    const processedContent = sourceContent.trim();
+    const startChar = 'A';
+    const endChar = 'Z';
 
-    let firstAIndex = -1;
-    let charPointer = 0;
-    while (charPointer < processedString.length) {
-        if (processedString.charCodeAt(charPointer) === 65) { // ASCII for 'A'
-            firstAIndex = charPointer;
-            break;
-        }
-        charPointer++;
+    const firstOccurrence = processedContent.indexOf(startChar);
+    const lastOccurrence = processedContent.lastIndexOf(endChar);
+
+    if (firstOccurrence !== -1 && lastOccurrence !== -1 && firstOccurrence <= lastOccurrence) {
+        return lastOccurrence - firstOccurrence + 1;
+    } else {
+        return 0;
     }
-
-    let lastZIndex = -1;
-    charPointer = processedString.length - 1;
-    while (charPointer >= 0) {
-        if (processedString.charCodeAt(charPointer) === 90) { // ASCII for 'Z'
-            lastZIndex = charPointer;
-            break;
-        }
-        charPointer--;
-    }
-
-    let resultingSpan = 0;
-    if (firstAIndex !== -1 && lastZIndex !== -1 && firstAIndex <= lastZIndex) {
-        resultingSpan = lastZIndex - firstAIndex + 1;
-    }
-
-    console.log(resultingSpan);
 };
 
-const externalModuleLoader = require;
-const fileSystemAccess = externalModuleLoader('fs');
-const standardInputLocation = '/dev/stdin';
-const textEncoding = 'utf8';
-
-processText(fileSystemAccess.readFileSync(standardInputLocation, textEncoding));
+console.log(calculateSpanLength(require('fs').readFileSync('/dev/stdin', 'utf8')));

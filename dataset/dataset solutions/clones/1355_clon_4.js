@@ -1,33 +1,16 @@
-(function() {
-    const dataSource = require("fs").readFileSync("/dev/stdin").toString();
+function Main(rawInput) {
+    const separatorIndex = rawInput.indexOf(' ');
+    
+    const firstNumericString = rawInput.substring(0, separatorIndex);
+    const secondNumericString = rawInput.slice(separatorIndex + 1);
 
-    const separatorIndex = dataSource.indexOf(' ');
+    const valueOne = parseFloat(firstNumericString);
+    const valueTwo = +secondNumericString;
 
-    const primaryStr = dataSource.substring(0, separatorIndex);
-    const secondaryStr = dataSource.substring(separatorIndex + 1);
+    const productResult = valueOne * valueTwo;
+    const perimeterEquivalent = (valueOne + valueTwo) * 2;
 
-    const valueA = +primaryStr;
-    const valueB = +secondaryStr;
+    console.log(`${productResult} ${perimeterEquivalent}`);
+}
 
-    class GeometryCalculator {
-        constructor(val1, val2) {
-            this.val1 = val1;
-            this.val2 = val2;
-        }
-
-        getGeometricProduct() {
-            return this.val1 * this.val2;
-        }
-
-        getRectanglePerimeter() {
-            return (this.val1 + this.val2) * 2;
-        }
-    }
-
-    const calculator = new GeometryCalculator(valueA, valueB);
-
-    const productOutput = calculator.getGeometricProduct();
-    const perimeterOutput = calculator.getRectanglePerimeter();
-
-    process.stdout.write(`${productOutput} ${perimeterOutput}\n`);
-})();
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

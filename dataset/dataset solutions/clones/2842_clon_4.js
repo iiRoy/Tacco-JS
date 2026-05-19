@@ -1,74 +1,80 @@
-const executeGeometricAnalysis = (rawDataString) => {
-    const textRows = rawDataString.trim().split('\n');
-    const pointQuantity = Number(textRows[0]);
+function analyzeGeometricData(rawData) {
+  const inputLines = rawData.split("\n").slice(0, -1);
+  const pointCount = Number(inputLines.shift());
 
-    const geometricElements = textRows.slice(1, pointQuantity + 1).map(rowText => {
-        const [hVal, vVal] = rowText.split(' ').map(Number);
-        return { hPos: hVal, vPos: vVal };
-    });
+  const coordinates = inputLines.map(line => {
+    const [xCoordStr, yCoordStr] = line.split(' ');
+    return { x: Number(xCoordStr), y: Number(yCoordStr) };
+  });
 
-    const orderedElements = [...geometricElements].sort((elementA, elementB) => {
-        if (elementA.hPos === elementB.hPos) {
-            return elementA.vPos - elementB.vPos;
-        }
-        return elementA.hPos - elementB.hPos;
-    });
-
-    const displacementTally = new Map();
-
-    orderedElements.forEach((sourceElement, sourceIndex) => {
-        orderedElements.forEach((targetElement, targetIndex) => {
-            if (sourceIndex === targetIndex) return;
-
-            const horizontalShift = sourceElement.hPos - targetElement.hPos;
-            const verticalShift = sourceElement.vPos - targetElement.vPos;
-            const displacementSignature = `${horizontalShift},${verticalShift}`;
-
-            displacementTally.set(displacementSignature, (displacementTally.get(displacementSignature) || 0) + 1);
-        });
-    });
-
-    let highestTally = 0;
-    let principalDisplacementSignature = null;
-
-    for (const [signature, count] of displacementTally.entries()) {
-        if (count > highestTally) {
-            highestTally = count;
-            principalDisplacementSignature = signature;
-        }
+  coordinates.sort((ptA, ptB) => {
+    if (ptA.x === ptB.x) {
+      return ptA.y - ptB.y;
     }
+    return ptA.x - ptB.x;
+  });
 
-    const [principalHorizontalShift, principalVerticalShift] = principalDisplacementSignature.split(',').map(Number);
-    const dominantVector = { phs: principalHorizontalShift, pvs: principalVerticalShift };
+  const displacementFrequencies = new Map();
 
-    const verifyAlignment = (firstPoint, secondPoint, vectorH, vectorV) => {
-        const deltaH = secondPoint.hPos - firstPoint.hPos;
-        const deltaV = secondPoint.vPos - firstPoint.vPos;
+  for (let sourceIdx = 0; sourceIdx < pointCount; ++sourceIdx) {
+    for (let targetIdx = 0; targetIdx < pointCount; ++targetIdx) {
+      if (sourceIdx === targetIdx) continue;
 
-        const hCheck = (vectorH === 0) ? (deltaH === 0) : (deltaH % vectorH === 0);
-        const vCheck = (vectorV === 0) ? (deltaV === 0) : (deltaV % vectorV === 0);
+      const sourcePoint = coordinates[sourceIdx];
+      const targetPoint = coordinates[targetIdx];
 
-        return hCheck && vCheck;
-    };
+      const diffX = sourcePoint.x - targetPoint.x;
+      const diffY = sourcePoint.y - targetPoint.y;
+      const vectorIdentifier = `${diffX},${diffY}`;
 
-    const computeCoverage = (remainingElements, currentDominantVector, currentPathCount = 0) => {
-        if (remainingElements.length === 0) {
-            return currentPathCount;
+      displacementFrequencies.set(vectorIdentifier, (displacementFrequencies.get(vectorIdentifier) || 0) + 1);
+    }
+  }
+
+  let maxFrequency = 0;
+  let dominantVectorIdentifier = '0,0';
+
+  for (const [identifier, count] of displacementFrequencies.entries()) {
+    if (count > maxFrequency) {
+      maxFrequency = count;
+      dominantVectorIdentifier = identifier;
+    }
+  }
+
+  const [deltaXStr, deltaYStr] = dominantVectorIdentifier.split(',');
+  const deltaX = Number(deltaXStr);
+  const deltaY = Number(deltaYStr);
+
+  let minimumLines = 0;
+  const unvisitedPointIndices = new Set(Array.from({ length: pointCount }, (_, k) => k));
+
+  const checkAlignment = (point1, point2, dx, dy) => {
+    const currentDiffX = point2.x - point1.x;
+    const currentDiffY = point2.y - point1.y;
+
+    const xAligned = (dx === 0 && currentDiffX === 0) || (dx !== 0 && currentDiffX % dx === 0);
+    const yAligned = (dy === 0 && currentDiffY === 0) || (dy !== 0 && currentDiffY % dy === 0);
+
+    return xAligned && yAligned;
+  };
+
+  for (let currentPointIdx = 0; currentPointIdx < pointCount; ++currentPointIdx) {
+    if (unvisitedPointIndices.has(currentPointIdx)) {
+      minimumLines++;
+      const referencePoint = coordinates[currentPointIdx];
+      unvisitedPointIndices.delete(currentPointIdx);
+
+      const indicesToMarkVisited = [];
+      for (const otherPointIdx of unvisitedPointIndices) {
+        const candidatePoint = coordinates[otherPointIdx];
+        if (checkAlignment(referencePoint, candidatePoint, deltaX, deltaY)) {
+          indicesToMarkVisited.push(otherPointIdx);
         }
+      }
+      indicesToMarkVisited.forEach(idx => unvisitedPointIndices.delete(idx));
+    }
+  }
+  console.log(minimumLines);
+}
 
-        const pathOrigin = remainingElements[0];
-        const { phs, pvs } = currentDominantVector;
-
-        const subsequentElements = remainingElements.filter(element =>
-            !verifyAlignment(pathOrigin, element, phs, pvs)
-        );
-
-        return computeCoverage(subsequentElements, currentDominantVector, currentPathCount + 1);
-    };
-
-    const minimumPasses = computeCoverage(orderedElements, dominantVector);
-
-    console.log(minimumPasses);
-};
-
-executeGeometricAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
+analyzeGeometricData(require("fs").readFileSync("/dev/stdin", "utf8"));

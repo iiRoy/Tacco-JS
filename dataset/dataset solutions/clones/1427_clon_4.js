@@ -1,31 +1,30 @@
-const charProcessor = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+function processInput(inputLines) {
+  const letterTally = Array.from({ length: 26 }, (_, idx) => String.fromCharCode(97 + idx))
+    .reduce((accumulator, character) => {
+      accumulator[character] = 0;
+      return accumulator;
+    }, {});
 
-let collectedTextSegments = [];
+  inputLines.forEach(currentLineContent => {
+    const normalizedLine = currentLineContent.toLowerCase();
+    Array.from({ length: normalizedLine.length + 1 }, (_, charIndex) => normalizedLine[charIndex])
+      .forEach(characterKey => {
+        letterTally[characterKey]++;
+      });
+  });
 
-charProcessor.on('line', (incomingLine) => {
-  collectedTextSegments.push(incomingLine);
-});
-
-charProcessor.on('close', () => {
-  const alphabetLetterTallies = Array(26).fill(0); // For 'a' through 'z'
-
-  collectedTextSegments.forEach((pieceOfText) => {
-    pieceOfText.toLowerCase().split('').forEach((singleCharacter) => {
-      const characterCodePoint = singleCharacter.charCodeAt(0);
-      const alphaOffset = characterCodePoint - 'a'.charCodeAt(0);
-
-      if (alphaOffset >= 0 && alphaOffset < 26) {
-        alphabetLetterTallies[alphaOffset]++;
-      }
+  Array.from({ length: 26 }, (_, idx) => String.fromCharCode(97 + idx))
+    .forEach(characterKey => {
+      console.log(`${characterKey} : ${letterTally[characterKey]}`);
     });
-  });
+}
 
-  alphabetLetterTallies.forEach((currentTally, arrayIndex) => {
-    const associatedLetter = String.fromCharCode('a'.charCodeAt(0) + arrayIndex);
-    console.log(`${associatedLetter} : ${currentTally}`);
-  });
+const receivedData = [];
+process.stdin.on('data', (dataChunk) => {
+  receivedData.push(dataChunk);
+});
+process.stdin.on('end', () => {
+  const fullContent = Buffer.concat(receivedData).toString();
+  const parsedLines = fullContent.split('\n');
+  processInput(parsedLines);
 });

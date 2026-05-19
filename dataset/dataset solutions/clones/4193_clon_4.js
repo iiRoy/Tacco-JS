@@ -1,62 +1,40 @@
-const inputSystem = require('readline');
-let accumulatedInput = [];
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const inputManager = inputSystem.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+let rawInputBuffer = '';
+process.stdin.on('data', function(chunk) {
+    rawInputBuffer += chunk;
 });
 
-inputManager.on('line', (currentLine) => {
-    accumulatedInput.push(currentLine);
+process.stdin.on('end', function() {
+    processData(rawInputBuffer.split(/\r?\n/));
 });
 
-inputManager.on('close', () => {
-    orchestrateProcessing(accumulatedInput);
-});
+function processData(lines) {
+    const shopCount = parseInt(lines[0], 10);
 
-function orchestrateProcessing(sourceData) {
-    const participantCount = Number(sourceData[0]);
+    const featureAvailability = lines.slice(1, 1 + shopCount).map(lineContent =>
+        lineContent.split(' ').map(Number)
+    );
 
-    const activityMatrices = Array.from({ length: participantCount }, (_, participantIndex) => {
-        const individualScheduleTokens = sourceData[1 + participantIndex].split(' ');
-        return individualScheduleTokens.map(Number);
-    });
+    const profitMatrix = lines.slice(1 + shopCount, 1 + shopCount * 2).map(lineContent =>
+        lineContent.split(' ').map(Number)
+    );
 
-    const rewardStructures = Array.from({ length: participantCount }, (_, participantIndex) => {
-        const individualRewardTokens = sourceData[1 + participantCount + participantIndex].split(' ');
-        return individualRewardTokens.map(Number);
-    });
+    let maxProfit = Number.MIN_SAFE_INTEGER;
 
-    let maximalBenefit = Number.MIN_SAFE_INTEGER;
-
-    const assessConfiguration = (intervalMask) => {
-        if (intervalMask === 0) return Number.MIN_SAFE_INTEGER;
-
-        return activityMatrices.reduce((cumulativeValue, currentParticipantSchedule, participantIdentifier) => {
-            const sharedIntervals = currentParticipantSchedule.reduce((count, scheduleStatus, intervalIdentifier) => {
-                const isIntervalActive = (intervalMask >> intervalIdentifier & 1) === 1;
-                return count + (isIntervalActive && scheduleStatus > 0 ? 1 : 0);
+    for (let featureConfigMask = 1; featureConfigMask < 1024; featureConfigMask++) {
+        const currentConfigurationProfit = featureAvailability.reduce((totalProfitAccumulator, shopFeatures, shopIndex) => {
+            const activeFeatureCountForShop = shopFeatures.reduce((countAccumulator, featureStatus, featurePosition) => {
+                const isFeatureSelectedInMask = (featureConfigMask >> featurePosition) & 1;
+                return countAccumulator + (featureStatus > 0 && isFeatureSelectedInMask ? 1 : 0);
             }, 0);
-            return cumulativeValue + rewardStructures[participantIdentifier][sharedIntervals];
+
+            return totalProfitAccumulator + profitMatrix[shopIndex][activeFeatureCountForShop];
         }, 0);
-    };
 
-    const exploreIntervals = (currentMask, intervalIndex) => {
-        if (intervalIndex === 10) {
-            const configurationResult = assessConfiguration(currentMask);
-            if (configurationResult > maximalBenefit) {
-                maximalBenefit = configurationResult;
-            }
-            return;
-        }
+        maxProfit = Math.max(maxProfit, currentConfigurationProfit);
+    }
 
-        exploreIntervals(currentMask, intervalIndex + 1);
-
-        exploreIntervals(currentMask | (1 << intervalIndex), intervalIndex + 1);
-    };
-
-    exploreIntervals(0, 0);
-
-    console.log(maximalBenefit);
+    console.log(maxProfit);
 }

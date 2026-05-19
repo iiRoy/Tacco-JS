@@ -1,39 +1,39 @@
-// This function processes incoming textual information
+// This function processes the raw input string.
 function ProcessInput(rawData) {
+    // Split the entire input string into an array of lines.
+    rawData = rawData.split('\n');
 
-  // Break the entire data block into individual lines
-  let lineArray = rawData.split("\n");
+    // The second line contains space-separated price values.
+    let priceStrings = rawData[1].split(' ');
 
-  // The second line (index 1) contains space-separated numeric values
-  let valueTokens = lineArray[1].split(" ");
+    // Initialize a counter for prices that meet the condition.
+    let validCount = 0;
 
-  // Initialize a counter for elements meeting a specific condition
-  let occurrences = 0;
-  // Set an initial high threshold for finding the minimum value
-  let lowestEncountered = Number.MAX_SAFE_INTEGER;
+    // Initialize the minimum price encountered so far to a very large number.
+    let currentMinPrice = Number.MAX_SAFE_INTEGER;
 
-  // Iterate through the elements based on the count provided in the first line
-  for (let elementIndex = 0; elementIndex < Number(lineArray[0]); elementIndex++) {
+    // The first line of input specifies the total number of items to process.
+    // Loop through each item.
+    for (let idx = 0; idx < rawData[0]; idx++) {
+        // Get the current price string from the array.
+        let currentPrice = priceStrings[idx];
 
-    // Parse the current value from its string representation
-    let itemValue = Number(valueTokens[elementIndex]);
+        // If the current price is less than or equal to the running minimum,
+        // increment the counter. JavaScript will implicitly convert currentPrice to a number for comparison.
+        if (currentPrice <= currentMinPrice) {
+            validCount++;
+        }
 
-    // If the current item is less than or equal to the lowest encountered so far
-    if (itemValue <= lowestEncountered) {
-      // Increment our count of qualifying items
-      occurrences++;
+        // If the current minimum price is greater than or equal to the current price,
+        // update the running minimum. This effectively finds the minimum price encountered up to this point.
+        if (currentMinPrice >= currentPrice) {
+            currentMinPrice = currentPrice;
+        }
     }
 
-    // If the current item represents a new minimum (or is equal to the current minimum)
-    if (lowestEncountered >= itemValue) {
-      // Update the stored minimum value
-      lowestEncountered = itemValue;
-    }
-  }
-
-  // Output the final tally of qualifying items
-  console.log(occurrences);
+    // Display the final calculated count to standard output.
+    console.log(validCount);
 }
 
-// *** Do not modify the following section (it handles reading input and calling the main processing function) ***
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Do not modify the following line; it handles standard input and calls the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

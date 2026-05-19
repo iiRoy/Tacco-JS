@@ -1,39 +1,38 @@
-// This function orchestrates the primary data processing workflow.
-function  ProcessInput (  rawData  ) {
+// This function is designed to process a given string input.
+function ProcessInput(rawData) {
+    // The input string is first divided into an array of lines.
+    let lineSegments = rawData.split("\n");
 
-  // Split the entire raw input string into an array, where each element is a line.
-  let linesArray = rawData.split ( "\n" ) ;
+    // The initial line contains two primary configuration values, separated by spaces.
+    let firstLineParts = lineSegments[0].split(" ");
 
-  // The very first line contains general configuration parameters, separated by spaces.
-  let firstLineTokens = linesArray[0].split(" ");
+    // The subsequent line holds a collection of individual data points, also space-separated.
+    let secondLineElements = lineSegments[1].split(" ");
 
-  // The second line holds individual data points, also space-separated.
-  let secondLineValues = linesArray[1].split(" ");
+    // We extract the total number of participants from the first part of the first line.
+    const totalParticipants = parseInt(firstLineParts[0], 10);
 
+    // And the maximum permissible height from the second part of the first line.
+    const thresholdHeight = parseInt(firstLineParts[1], 10);
 
-  /*
-   *  Extract and convert necessary numerical values from the parsed tokens.
-   *  'participantCount' represents the total number of entries to process.
-   *  'heightThreshold' defines the minimum value for a specific condition.
-   */
-  const participantCount = parseInt( firstLineTokens[0], 10 );
-  const heightThreshold = parseInt( firstLineTokens[1], 10 );
+    // A counter is initialized to keep track of individuals who meet the height requirement.
+    let eligibleCount = 0;
 
-  // Initialize a counter for elements that meet a certain condition.
-  let exceedingCount = 0 ;
+    // We then iterate through each participant's recorded height.
+    for (let idx = 0; idx < totalParticipants; idx++) {
+        // The current participant's height string is converted into an integer.
+        const currentHeight = parseInt(secondLineElements[idx], 10);
 
-  // Loop through each individual data point based on the total participant count.
-  for ( let idx = 0 ; idx < participantCount ; idx++ ) {
-    // Check if the current individual's value is greater than or equal to the defined threshold.
-    if ( heightThreshold <= parseInt(secondLineValues[idx], 10) ) {
-      // If the condition is satisfied, increment the counter.
-      exceedingCount ++ ;
+        // A check is performed to see if the participant's height is at least the threshold height.
+        if (thresholdHeight <= currentHeight) {
+            // If the condition is satisfied, the eligibility counter is incremented.
+            eligibleCount++;
+        }
     }
-  }
 
-  // Display the final calculated count to the standard output.
-  console.log(exceedingCount);
+    // Finally, the total count of eligible participants is printed to the console.
+    console.log(eligibleCount);
 }
 
-// Do not alter the following section. It is responsible for reading standard input and initiating the processing.
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// *この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,117 +1,156 @@
-var firstCount, secondCount; // Declare primary counters
-var listA = [], listB = []; // Initialize dynamic arrays for data storage
+let numElementsA, numElementsB; // Declare variables for array sizes
+let arrayOne = [], arrayTwo = []; // Initialize arrays for holding numbers
 
-function locateValue(targetVal) { // Function to find a specific value within a sorted array
-  var lowIdx = 0, highIdx = secondCount; // Initialize search boundaries
-  while (highIdx - lowIdx > 1) { // Binary search loop
-    var midIdx = (lowIdx + highIdx) >> 1; // Calculate middle index efficiently
-    // Check if the element at midIdx is less than or equal to the target
-    if (listB[midIdx] <= targetVal) {
-      lowIdx = midIdx; // Move lower bound
-    } else {
-      highIdx = midIdx; // Move upper bound
+/**
+ * Performs a binary search for a target value within `arrayTwo`.
+ * @param {number} targetValue The value to search for.
+ * @returns {boolean} True if the target value is found, false otherwise.
+ */
+function binaryFind(targetValue) {
+  let leftIdx = 0, rightIdx = numElementsB; // Initialize search range boundaries
+  while (rightIdx - leftIdx > 1) { // Continue binary search while range is valid
+    const midIdx = (leftIdx + rightIdx) >> 1; // Calculate middle index using bit shift for efficiency
+    if (arrayTwo[midIdx] <= targetValue) { // If middle element is less than or equal to target
+      leftIdx = midIdx; // Move left boundary to middle
+    } else { // If middle element is greater than target
+      rightIdx = midIdx; // Move right boundary to middle
     }
   }
-  // Return true if the value at lowIdx matches the target, false otherwise
-  return listB[lowIdx] === targetVal;
+  return arrayTwo[leftIdx] === targetValue; // Check if the element at leftIdx matches target
 }
 
-function executePrimaryProcess() { // Main execution logic for the program
-  // Loop as long as there's valid input for the first counter
-  while (firstCount = readInput()) {
-    secondCount = readInput(); // Read the second counter value
+/**
+ * The main program execution function.
+ * Reads input, processes arrays, and prints results.
+ */
+function executeProgram() {
+  // Loop as long as there's input for the first array's size
+  while ((numElementsA = readNextNumber())) {
+    numElementsB = readNextNumber(); // Read the size for the second array
 
-    // Populate listA with elements based on firstCount
-    iterateRange(firstCount, function(currentIdx) {
-      listA[currentIdx] = readInput();
-    });
-    // Populate listB with elements based on secondCount
-    iterateRange(secondCount, function(currentIdx) {
-      listB[currentIdx] = readInput();
-    });
-
-    // Sort both arrays in ascending order
-    listA.sort(function(firstEl, secondEl) {
-      return firstEl - secondEl;
-    });
-    listB.sort(function(firstEl, secondEl) {
-      return firstEl - secondEl;
+    // Populate arrayOne with numbers from input
+    iterateRange(numElementsA, function (currentIdx) {
+      arrayOne[currentIdx] = readNextNumber();
     });
 
-    var sumA = 0; // Accumulator for elements in listA
-    // Calculate the sum of all elements in listA
-    iterateRange(firstCount, function(currentIdx) {
-      sumA += listA[currentIdx];
-    });
-    var sumB = 0; // Accumulator for elements in listB
-    // Calculate the sum of all elements in listB
-    iterateRange(secondCount, function(currentIdx) {
-      sumB += listB[currentIdx];
+    // Populate arrayTwo with numbers from input
+    iterateRange(numElementsB, function (currentIdx) {
+      arrayTwo[currentIdx] = readNextNumber();
     });
 
-    // Calculate the required difference, divided by two
-    var differenceHalf = Math.trunc((sumB - sumA) / 2);
-    // If the total difference is not perfectly divisible by 2, no solution
-    if ((sumB - sumA) !== (2 * differenceHalf)) {
-      outputResult(-1); // Indicate no solution
-    } else {
-      var foundSolution = false; // Flag to track if a solution is found
-      // Iterate through listA to find a matching pair
-      iterateRange(firstCount, function(currentIdx) {
-        // Check if a value exists in listB that matches the current element + difference
-        if (locateValue(listA[currentIdx] + differenceHalf)) {
-          outputResult(listA[currentIdx] + ' ' + (listA[currentIdx] + differenceHalf));
-          foundSolution = true; // Mark as found
-          return false; // Stop iteration
+    // Sort both arrays numerically in ascending order
+    arrayOne.sort(function (valU, valV) {
+      return valU - valV;
+    });
+    arrayTwo.sort(function (valU, valV) {
+      return valU - valV;
+    });
+
+    let sumA = 0; // Initialize sum for arrayOne
+    // Calculate the sum of elements in arrayOne
+    iterateRange(numElementsA, function (currentIdx) {
+      sumA += arrayOne[currentIdx];
+    });
+
+    let sumB = 0; // Initialize sum for arrayTwo
+    // Calculate the sum of elements in arrayTwo
+    iterateRange(numElementsB, function (currentIdx) {
+      sumB += arrayTwo[currentIdx];
+    });
+
+    // Calculate the required difference for a swap
+    const differenceHalf = Math.floor((sumB - sumA) / 2);
+
+    // Check if the total difference is an odd number (no integer solution possible)
+    if (sumB - sumA !== 2 * differenceHalf) {
+      outputValue(-1); // If not even, no solution, print -1
+    } else { // If difference is even, proceed to find a pair
+      let foundPair = false; // Flag to indicate if a suitable pair is found
+
+      // Iterate through arrayOne to find a number that, when swapped, balances the sums
+      iterateRange(numElementsA, function (currentIdx) {
+        // Search for a value in arrayTwo that would balance the sums if swapped
+        if (binaryFind(arrayOne[currentIdx] + differenceHalf)) {
+          outputValue(arrayOne[currentIdx] + ' ' + (arrayOne[currentIdx] + differenceHalf)); // Print the pair
+          foundPair = true; // Set flag to true
+          return false; // Stop iteration if a pair is found
         }
       });
-      // If no solution was found after checking all elements
-      if (!foundSolution) {
-        outputResult(-1); // Indicate no solution
+
+      // If no pair was found after checking all elements in arrayOne
+      if (!foundPair) {
+        outputValue(-1); // Print -1
       }
     }
 
-    // Reset arrays for the next iteration of input
-    listA = [];
-    listB = [];
+    // Clear arrays for the next set of inputs
+    arrayOne = [];
+    arrayTwo = [];
   }
 }
 
-function iterateRange(startVal, endVal, callbackFn) { // Generic iteration function
-  // Handle overloaded function signature for simpler iteration
+/**
+ * A generic iteration function.
+ * Can be called with (end, callback) or (start, end, callback).
+ * @param {number} startVal The starting index (or end if only two args).
+ * @param {number} endVal The ending index (exclusive) or callback if two args.
+ * @param {Function} callbackFn The function to call for each iteration.
+ */
+function iterateRange(startVal, endVal, callbackFn) {
+  // Adjust arguments if only two are provided (assuming start from 0)
   if (callbackFn === undefined) {
     callbackFn = endVal;
     endVal = startVal;
     startVal = 0;
   }
   // Loop from startVal up to (but not including) endVal
-  for (var loopIndex = startVal; loopIndex < endVal; ++loopIndex) {
-    // If the callback returns false, break the loop
-    if (callbackFn(loopIndex) === false) {
+  for (let currentIdx = startVal; currentIdx < endVal; ++currentIdx) {
+    // Execute callback; break loop if callback returns false
+    if (callbackFn(currentIdx) === false) {
       break;
     }
   }
 }
 
-var rawDataBuffer = ''; // Buffer to accumulate raw input data
+let rawDataBuffer = ''; // Buffer to store incoming stdin data
 
-function readInput() { // Function to parse and return a number from input
-  return +rawDataBuffer.pop();
-}
-function readStringInput() { // Function to return a string from input
-  return rawDataBuffer.pop();
-}
-function outputResult(valueToDisplay) { // Function to display output
-  console.log(valueToDisplay);
+/**
+ * Reads and parses the next number from the processed input buffer.
+ * @returns {number} The next number.
+ */
+function readNextNumber() {
+  return +rawDataBuffer.pop(); // Pop the last element and convert to number
 }
 
-process.stdin.resume(); // Keep the process alive to receive input
-process.stdin.setEncoding('utf8'); // Set input encoding to UTF-8
-process.stdin.on('data', function(inputChunk) { // Event listener for incoming data
-  rawDataBuffer += inputChunk; // Append new data to the buffer
+/**
+ * Reads the next string from the processed input buffer.
+ * @returns {string} The next string.
+ */
+function readNextString() {
+  return rawDataBuffer.pop(); // Pop the last element (which is a string)
+}
+
+/**
+ * Prints a value to the console.
+ * @param {*} data The value to print.
+ */
+function outputValue(data) {
+  console.log(data);
+}
+
+// Set up stdin processing
+process.stdin.resume(); // Keep stdin open
+process.stdin.setEncoding('utf8'); // Set encoding for stdin
+
+// Event listener for incoming data chunks
+process.stdin.on('data', function (dataChunk) {
+  rawDataBuffer += dataChunk; // Append data to the buffer
 });
-process.stdin.on('end', function() { // Event listener for end of input
-  // Process the accumulated raw data: trim, split by whitespace, and reverse
+
+// Event listener for end of input stream
+process.stdin.on('end', function () {
+  // Process the raw input: trim whitespace, split by any whitespace, and reverse
+  // Reversing allows `pop()` to retrieve elements in their original order
   rawDataBuffer = rawDataBuffer.trim().split(/\s+/).reverse();
-  executePrimaryProcess(); // Start the main processing logic
+  executeProgram(); // Start the main program logic
 });

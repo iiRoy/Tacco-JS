@@ -1,94 +1,66 @@
-const processData = (rawData) => {
-    const dataLines = rawData.split('\n');
-    const elementCount = Number(dataLines[0]);
-    const initialNumbers = dataLines[1].split(' ').map(Number);
+function Main(input) {
+    const lines = input.split('\n');
+    const elementCount = parseInt(lines[0]);
+    const sourceValues = lines[1].split(' ').map(Number);
 
-    if (elementCount < 4) {
-        return -1;
-    }
+    let currentSum = 0;
+    const cumulativeSums = sourceValues.map(val => {
+        currentSum += val;
+        return currentSum;
+    });
 
-    const cumulativeValues = initialNumbers.reduce((accumulator, currentVal, idx) => {
-        const previousSum = idx > 0 ? accumulator[idx - 1] : 0;
-        accumulator.push(previousSum + currentVal);
-        return accumulator;
-    }, []);
+    let minOverallDifference = Infinity;
 
-    let currentLeftPartitionBoundary = 0;
-    const pqPairs = Array.from({ length: elementCount - 3 }, (_, index) => {
-        const boundaryQREnd = index + 1;
+    let leftSplitPoint = 1;
+    let rightSplitPoint = elementCount - 1;
 
-        const totalPQSegmentSum = cumulativeValues[boundaryQREnd];
+    for (let middleSplitPoint = 2; middleSplitPoint <= elementCount - 2; middleSplitPoint++) {
+        while (leftSplitPoint + 1 < middleSplitPoint) {
+            const currentLeftPart1 = cumulativeSums[leftSplitPoint - 1];
+            const currentLeftPart2 = cumulativeSums[middleSplitPoint - 1] - cumulativeSums[leftSplitPoint - 1];
+            const currentLeftDiff = Math.abs(currentLeftPart1 - currentLeftPart2);
 
-        while (currentLeftPartitionBoundary + 1 < boundaryQREnd) {
-            const currentPVal = cumulativeValues[currentLeftPartitionBoundary];
-            const currentQVal = totalPQSegmentSum - currentPVal;
-            const nextPVal = cumulativeValues[currentLeftPartitionBoundary + 1];
-            const nextQVal = totalPQSegmentSum - nextPVal;
+            const nextLeftPart1 = cumulativeSums[leftSplitPoint];
+            const nextLeftPart2 = cumulativeSums[middleSplitPoint - 1] - cumulativeSums[leftSplitPoint];
+            const nextLeftDiff = Math.abs(nextLeftPart1 - nextLeftPart2);
 
-            if (Math.abs(nextPVal - nextQVal) <= Math.abs(currentPVal - currentQVal)) {
-                currentLeftPartitionBoundary++;
+            if (nextLeftDiff <= currentLeftDiff) {
+                leftSplitPoint++;
             } else {
                 break;
             }
         }
-        return [cumulativeValues[currentLeftPartitionBoundary], totalPQSegmentSum - cumulativeValues[currentLeftPartitionBoundary]];
-    });
 
-    const firstPortionSums = pqPairs.map(pair => pair[0]);
-    const secondPortionSums = pqPairs.map(pair => pair[1]);
+        while (rightSplitPoint - 1 > middleSplitPoint) {
+            const currentRightPart1 = cumulativeSums[rightSplitPoint - 1] - cumulativeSums[middleSplitPoint - 1];
+            const currentRightPart2 = cumulativeSums[elementCount - 1] - cumulativeSums[rightSplitPoint - 1];
+            const currentRightDiff = Math.abs(currentRightPart1 - currentRightPart2);
 
-    let currentRightPartitionOffset = 1;
-    const rsPairs = Array.from({ length: elementCount - 3 }, (_, index) => {
-        const boundaryQRStart = elementCount - 2 - index;
+            const prevRightPart1 = cumulativeSums[rightSplitPoint - 2] - cumulativeSums[middleSplitPoint - 1];
+            const prevRightPart2 = cumulativeSums[elementCount - 1] - cumulativeSums[rightSplitPoint - 2];
+            const prevRightDiff = Math.abs(prevRightPart1 - prevRightPart2);
 
-        const totalRSSegmentSum = cumulativeValues[elementCount - 1] - cumulativeValues[boundaryQRStart - 1];
-        let localRightOffset = currentRightPartitionOffset;
-
-        if (elementCount - boundaryQRStart > 2 && localRightOffset - 1 >= 0) {
-            const currentRVal = cumulativeValues[boundaryQRStart + localRightOffset] - cumulativeValues[boundaryQRStart - 1];
-            const currentSVal = cumulativeValues[elementCount - 1] - cumulativeValues[boundaryQRStart + localRightOffset];
-            const prevRVal = cumulativeValues[boundaryQRStart + localRightOffset - 1] - cumulativeValues[boundaryQRStart - 1];
-            const prevSVal = cumulativeValues[elementCount - 1] - cumulativeValues[boundaryQRStart + localRightOffset - 1];
-
-            if (Math.abs(prevRVal - prevSVal) <= Math.abs(currentRVal - currentSVal)) {
-                localRightOffset--;
+            if (prevRightDiff <= currentRightDiff) {
+                rightSplitPoint--;
+            } else {
+                break;
             }
         }
-        currentRightPartitionOffset++;
 
-        return [
-            cumulativeValues[boundaryQRStart + localRightOffset - 1] - cumulativeValues[boundaryQRStart - 1],
-            cumulativeValues[elementCount - 1] - cumulativeValues[boundaryQRStart + localRightOffset - 1]
-        ];
-    }).reverse();
+        const sumP = cumulativeSums[leftSplitPoint - 1];
+        const sumQ = cumulativeSums[middleSplitPoint - 1] - cumulativeSums[leftSplitPoint - 1];
+        const sumR = cumulativeSums[rightSplitPoint - 1] - cumulativeSums[middleSplitPoint - 1];
+        const sumS = cumulativeSums[elementCount - 1] - cumulativeSums[rightSplitPoint - 1];
 
-    const thirdPortionSums = rsPairs.map(pair => pair[0]);
-    const fourthPortionSums = rsPairs.map(pair => pair[1]);
+        const currentMax = Math.max(sumP, sumQ, sumR, sumS);
+        const currentMin = Math.min(sumP, sumQ, sumR, sumS);
+        const currentDifference = currentMax - currentMin;
 
-    let overallMinimumDifference = Number.MAX_SAFE_INTEGER;
-
-    for (let k = 0; k < firstPortionSums.length; ++k) {
-        const groupValues = [
-            firstPortionSums[k],
-            secondPortionSums[k],
-            thirdPortionSums[k],
-            fourthPortionSums[k]
-        ];
-        const maxVal = Math.max(...groupValues);
-        const minVal = Math.min(...groupValues);
-        const currentDifference = maxVal - minVal;
-
-        if (currentDifference < overallMinimumDifference) {
-            overallMinimumDifference = currentDifference;
+        if (currentDifference < minOverallDifference) {
+            minOverallDifference = currentDifference;
         }
     }
 
-    return overallMinimumDifference;
-};
-
-const runApplication = (inputString) => {
-    const finalResult = processData(inputString);
-    console.log(finalResult);
-};
-
-runApplication(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(minOverallDifference);
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

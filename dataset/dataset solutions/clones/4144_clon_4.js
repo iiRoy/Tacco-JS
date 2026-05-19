@@ -1,54 +1,51 @@
-const lineReaderModule = require('readline');
+var inputLines = [];
+var interfaceHandle = require('readline');
 
-const receivedInputs = [];
-
-const interfaceHandle = lineReaderModule.createInterface({
+var rl = interfaceHandle.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-interfaceHandle.on('line', (currentLineData) => {
-    receivedInputs.push(currentLineData);
+rl.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-const evaluateSequenceSegment = (segmentData) => {
-    const segmentLength = segmentData.length;
+rl.on('close', function () {
+    const initialString = inputLines[0];
 
-    const allPositions = Array.from({ length: segmentLength }, (_, zeroIdx) => zeroIdx);
+    const metricCalculator = (sourceSequence, targetCharacter) => {
+        const sequenceLength = sourceSequence.length;
 
-    const qualifyingIndices = allPositions.filter(pos => {
-        if (segmentData[pos] !== '1') {
-            return false;
+        if (sequenceLength === 0) {
+            return Infinity;
         }
-        const isEndPosition = (pos + 1 === segmentLength);
-        const nextCharIsZero = (pos + 1 < segmentLength && segmentData[pos + 1] === '0');
-        return isEndPosition || nextCharIsZero;
-    });
 
-    if (qualifyingIndices.length === 0) {
-        return Number.POSITIVE_INFINITY;
-    }
+        const relevantIndices = Array.from({ length: sequenceLength }, (_, currentIdx) => currentIdx)
+            .filter(currentIdx => {
+                const charVal = sourceSequence[currentIdx];
+                const nextCharVal = sourceSequence[currentIdx + 1];
 
-    const segmentCosts = qualifyingIndices.map(pos => {
-        const distanceToStart = pos + 1;
-        const distanceToEnd = segmentLength - pos;
-        return Math.max(distanceToStart, distanceToEnd);
-    });
+                return charVal === targetCharacter && (currentIdx + 1 === sequenceLength || nextCharVal !== targetCharacter);
+            });
 
-    return Math.min(...segmentCosts);
-};
+        if (relevantIndices.length === 0) {
+            return Infinity;
+        }
 
-interfaceHandle.on('close', () => {
-    const primarySequenceString = receivedInputs[0];
-    const primarySequenceChars = primarySequenceString.split('');
+        const calculatedDistances = relevantIndices.map(currentIdx => {
+            const oneBasedPos = currentIdx + 1;
+            const distFromEnd = sequenceLength - currentIdx;
+            return Math.max(oneBasedPos, distFromEnd);
+        });
 
-    const firstOutcome = evaluateSequenceSegment(primarySequenceChars);
+        return Math.min(...calculatedDistances);
+    };
 
-    const invertedSequenceChars = primarySequenceChars.map(char => (char === '0' ? '1' : '0'));
+    const firstResult = metricCalculator(initialString, "1");
 
-    const secondOutcome = evaluateSequenceSegment(invertedSequenceChars);
+    const transformedString = initialString.split('').map(char => char === "0" ? "1" : "0").join('');
 
-    const finalResult = Math.max(firstOutcome, secondOutcome) - 1;
+    const secondResult = metricCalculator(transformedString, "1");
 
-    console.log(finalResult);
+    console.log(Math.max(firstResult, secondResult) - 1);
 });

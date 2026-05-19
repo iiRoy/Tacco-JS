@@ -1,38 +1,31 @@
 "use strict";
+function processData(rawData) {
+  const firstLineParts = rawData[0].split(" ");
+  const windowSizeStr = firstLineParts[1];
+  const windowSize = parseInt(windowSizeStr, 10);
 
-function calculateWindowMetric(rawDataLines) {
-  const configParts = rawDataLines[0].split(" ");
-  let currentWindowSize = parseInt(configParts[1], 10);
-  const numericValuesStr = rawDataLines[1].split(" ");
-  const processedNumbers = numericValuesStr.map(val => parseInt(val, 10));
+  const numberStringArray = rawData[1].split(" ");
+  const numericValues = numberStringArray.map(str => parseInt(str, 10));
 
-  let overallMaximumScore = 0.0;
+  let overallMaximum = 0;
 
-  if (isNaN(currentWindowSize) || currentWindowSize <= 0) {
-    return;
-  }
-  if (processedNumbers.length < currentWindowSize) {
-    return;
-  }
-
-  for (let windowStartIndex = 0; windowStartIndex <= processedNumbers.length - currentWindowSize; windowStartIndex++) {
-    let currentWindowScore = 0.0;
-
-    for (let offsetInWindow = 0; offsetInWindow < currentWindowSize; offsetInWindow++) {
-      const currentNumericValue = processedNumbers[windowStartIndex + offsetInWindow];
-      currentWindowScore += (currentNumericValue + 1.0) / 2.0;
+  for (let windowEndIndex = windowSize - 1; windowEndIndex < numericValues.length; windowEndIndex++) {
+    let currentWindowSum = 0;
+    for (let offsetInWindow = 0; offsetInWindow < windowSize; offsetInWindow++) {
+      const currentElementIndex = windowEndIndex - offsetInWindow;
+      const elementValue = numericValues[currentElementIndex];
+      
+      // The original inner loop: for(let k=1; k<=elementValue; k++) { currentWindowSum += k / elementValue; }
+      // This sum simplifies to (elementValue * (elementValue + 1) / 2) / elementValue
+      // Which further simplifies to (elementValue + 1) / 2
+      currentWindowSum += (elementValue + 1) / 2;
     }
-    overallMaximumScore = Math.max(overallMaximumScore, currentWindowScore);
-  }
 
-  console.log(overallMaximumScore);
+    if (currentWindowSum > overallMaximum) {
+      overallMaximum = currentWindowSum;
+    }
+  }
+  console.log(overallMaximum);
 }
 
-(function executeProcessing() {
-  const fileSystemModule = require('fs');
-  const standardInputPath = '/dev/stdin';
-  const rawInputContent = fileSystemModule.readFileSync(standardInputPath, 'utf8').trim();
-  const inputLinesArray = rawInputContent.split("\n");
-
-  calculateWindowMetric(inputLinesArray);
-})();
+processData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

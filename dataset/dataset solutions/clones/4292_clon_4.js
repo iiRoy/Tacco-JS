@@ -1,46 +1,40 @@
-const interfaceReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var g_input = '';
+process.stdin.on('data', function(chunk) {
+    g_input += chunk;
 });
 
-let collectedLines = [];
-
-interfaceReader.on('line', (currentLine) => {
-    collectedLines.push(currentLine);
+process.stdin.on('end', function() {
+    Main(g_input.split(/\r?\n/));
 });
 
-interfaceReader.on('close', () => {
-    if (collectedLines.length === 0) {
-        performCalculation(''); // Handle empty input stream
-    } else {
-        performCalculation(collectedLines[0]);
-    }
-});
-
-function obtainPalindromeCost(sourceSequence, leftPtr, rightPtr, totalAdjustments) {
-    if (leftPtr >= rightPtr) {
-        return totalAdjustments;
+function calculatePalindromeCost(subjectString, leftPointer, rightPointer, currentAccumulatedCost) {
+    if (leftPointer >= rightPointer) {
+        return currentAccumulatedCost;
     }
 
-    const leftCode = sourceSequence.charCodeAt(leftPtr);
-    const rightCode = sourceSequence.charCodeAt(rightPtr);
-    const xCode = 120; // ASCII for 'x'
+    const characterAtLeft = subjectString.charAt(leftPointer);
+    const characterAtRight = subjectString.charAt(rightPointer);
 
-    if (leftCode === rightCode) {
-        return obtainPalindromeCost(sourceSequence, leftPtr + 1, rightPtr - 1, totalAdjustments);
+    if (characterAtLeft === characterAtRight) {
+        return calculatePalindromeCost(subjectString, leftPointer + 1, rightPointer - 1, currentAccumulatedCost);
+    } else if (characterAtLeft === 'x') {
+        return calculatePalindromeCost(subjectString, leftPointer + 1, rightPointer, currentAccumulatedCost + 1);
+    } else if (characterAtRight === 'x') {
+        return calculatePalindromeCost(subjectString, leftPointer, rightPointer - 1, currentAccumulatedCost + 1);
     } else {
-        if (leftCode === xCode) {
-            return obtainPalindromeCost(sourceSequence, leftPtr + 1, rightPtr, totalAdjustments + 1);
-        } else if (rightCode === xCode) {
-            return obtainPalindromeCost(sourceSequence, leftPtr, rightPtr - 1, totalAdjustments + 1);
-        } else {
-            return -1; // Impossible to form a palindrome
-        }
+        return -1;
     }
 }
 
-function performCalculation(inputString) {
-    const finalResult = obtainPalindromeCost(inputString, 0, inputString.length - 1, 0);
+function Main(entryData) {
+    const targetString = entryData[0];
+
+    const finalResult = calculatePalindromeCost(targetString, 0, targetString.length - 1, 0);
+
     console.log(finalResult);
+
+    return 0;
 }

@@ -1,82 +1,49 @@
-const fileOperations = require('fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allInputLines = fileContent.trim().split('\n');
+let currentLineIndex = 0;
 
-const parseProblemData = (dataText) => {
-    const separatedLines = dataText.trim().split('\n');
-    const problemCollection = [];
-    let linePointer = 0;
+const computeOptimalCost = (calculationParams) => {
+    const {
+        costPerUnitA, costPerUnitB, costPerUnitC,
+        blockThresholdD, costPerUnitE,
+        quantityA, quantityB, quantityC
+    } = calculationParams;
 
-    for (; linePointer < separatedLines.length; ) {
-        const firstPart = separatedLines[linePointer];
-        if (firstPart === '0 0 0 0 0') {
-            break;
-        }
-        const secondPart = separatedLines[linePointer + 1];
-        const combinedParts = (firstPart + ' ' + secondPart).split(' ').map(Number);
-        problemCollection.push(combinedParts);
-        linePointer += 2;
+    const remainderQuantityC = quantityC % blockThresholdD;
+    let scenarioOneCost = quantityA * costPerUnitA + quantityB * costPerUnitB + Math.floor(quantityC / blockThresholdD) * blockThresholdD * costPerUnitE + remainderQuantityC * costPerUnitC;
+
+    let scenarioTwoCost;
+    if (quantityC >= blockThresholdD) {
+        scenarioTwoCost = quantityA * costPerUnitA + quantityB * costPerUnitB + quantityC * costPerUnitE;
+    } else {
+        const requiredReduction = blockThresholdD - remainderQuantityC;
+        const effectiveQuantityB = Math.max(0, quantityB - requiredReduction);
+        const remainingReduction = requiredReduction - (quantityB - effectiveQuantityB);
+        const effectiveQuantityA = Math.max(0, quantityA - remainingReduction);
+        scenarioTwoCost = effectiveQuantityA * costPerUnitA + effectiveQuantityB * costPerUnitB + blockThresholdD * costPerUnitE;
     }
-    return problemCollection;
+    return Math.min(scenarioOneCost, scenarioTwoCost);
 };
 
-const determineMinimumCost = (pricingAndQuantities) => {
-    const [
-        unitCostA,
-        unitCostB,
-        unitCostC,
-        batchUnitCount,
-        batchUnitCost,
-        initialQuantityA,
-        initialQuantityB,
-        requiredUnitsC
-    ] = pricingAndQuantities;
+do {
+    const firstSegmentLine = allInputLines[currentLineIndex++];
+    if (firstSegmentLine === "0 0 0 0 0") {
+        break;
+    }
+    const secondSegmentLine = allInputLines[currentLineIndex++];
+    const numericalValues = (firstSegmentLine + " " + secondSegmentLine).split(" ").map(Number);
 
-    const calculateStrategyOne = () => {
-        const remainingUnits = requiredUnitsC % batchUnitCount;
-        const completeBatches = Math.floor(requiredUnitsC / batchUnitCount);
-        return (
-            initialQuantityA * unitCostA +
-            initialQuantityB * unitCostB +
-            completeBatches * batchUnitCount * batchUnitCost +
-            remainingUnits * unitCostC
-        );
+    const parametersForCalculation = {
+        costPerUnitA: numericalValues[0],
+        costPerUnitB: numericalValues[1],
+        costPerUnitC: numericalValues[2],
+        blockThresholdD: numericalValues[3],
+        costPerUnitE: numericalValues[4],
+        quantityA: numericalValues[5],
+        quantityB: numericalValues[6],
+        quantityC: numericalValues[7]
     };
 
-    const calculateStrategyTwo = () => {
-        if (requiredUnitsC >= batchUnitCount) {
-            return initialQuantityA * unitCostA + initialQuantityB * unitCostB + requiredUnitsC * batchUnitCost;
-        } else {
-            const neededForFullBatch = batchUnitCount - requiredUnitsC;
-            let currentQuantityA = initialQuantityA;
-            let currentQuantityB = initialQuantityB;
+    console.log(computeOptimalCost(parametersForCalculation));
 
-            const consumedFromB = Math.min(currentQuantityB, neededForFullBatch);
-            currentQuantityB -= consumedFromB;
-            const remainingNeeded = neededForFullBatch - consumedFromB;
-
-            const consumedFromA = Math.min(currentQuantityA, remainingNeeded);
-            currentQuantityA -= consumedFromA;
-
-            return (
-                currentQuantityA * unitCostA +
-                currentQuantityB * unitCostB +
-                batchUnitCount * batchUnitCost
-            );
-        }
-    };
-
-    const costOptionOne = calculateStrategyOne();
-    const costOptionTwo = calculateStrategyTwo();
-
-    return Math.min(costOptionOne, costOptionTwo);
-};
-
-const initiateComputation = () => {
-    const rawDataBuffer = fileOperations.readFileSync('/dev/stdin', 'utf8');
-    const processedProblemSets = parseProblemData(rawDataBuffer);
-
-    const finalOutcomes = processedProblemSets.map(determineMinimumCost);
-
-    finalOutcomes.forEach(resultValue => console.log(resultValue));
-};
-
-initiateComputation();
+} while (currentLineIndex < allInputLines.length);

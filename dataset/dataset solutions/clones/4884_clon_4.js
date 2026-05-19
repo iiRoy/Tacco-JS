@@ -1,51 +1,34 @@
-const processInputData = (rawText) => {
-  const extractionResult = rawText.match(/(\d+)\n([\d\s]+)/);
-  if (!extractionResult || extractionResult.length < 3) {
-    return 0;
-  }
+function processData(rawData) {
+  const lines = rawData.split('\n');
+  const firstLineTokens = lines[0].split(' ');
+  const elementCount = Number(firstLineTokens[0]);
 
-  const numericalSequence = extractionResult[2].trim().split(/\s+/).map(Number);
+  const numericValues = lines[1].split(' ').slice(0, elementCount).map(Number);
 
-  if (numericalSequence.length === 0) {
-      return 0; // Edge case for empty sequence
-  }
+  const finalState = numericValues.reduce((accumulator, currentValue) => {
+    const { currentMinimum, maximumDifference, differenceCount } = accumulator;
 
-  const initialElement = numericalSequence[0];
-  const startingState = {
-    currentLow: initialElement,
-    greatestSpread: 0,
-    occurrenceCount: 1,
-  };
+    const effectiveMinimum = Math.min(currentMinimum, currentValue);
+    const calculatedDifference = currentValue - effectiveMinimum;
 
-  const transformationEngine = (accumulatedState, currentFigure) => {
-    const newLow = Math.min(accumulatedState.currentLow, currentFigure);
-    const potentialSpread = currentFigure - accumulatedState.currentLow;
+    let newMaximumDifference = maximumDifference;
+    let newDifferenceCount = differenceCount;
 
-    let updatedGreatestSpread = accumulatedState.greatestSpread;
-    let updatedOccurrenceCount = accumulatedState.occurrenceCount;
-
-    if (potentialSpread > updatedGreatestSpread) {
-      updatedGreatestSpread = potentialSpread;
-      updatedOccurrenceCount = 1;
-    } else if (potentialSpread === updatedGreatestSpread) {
-      updatedOccurrenceCount++;
+    if (calculatedDifference > maximumDifference) {
+      newMaximumDifference = calculatedDifference;
+      newDifferenceCount = 1;
+    } else if (calculatedDifference === maximumDifference) {
+      newDifferenceCount++;
     }
 
     return {
-      currentLow: newLow,
-      greatestSpread: updatedGreatestSpread,
-      occurrenceCount: updatedOccurrenceCount,
+      currentMinimum: effectiveMinimum,
+      maximumDifference: newMaximumDifference,
+      differenceCount: newDifferenceCount
     };
-  };
+  }, { currentMinimum: Infinity, maximumDifference: 0, differenceCount: 0 });
 
-  const finalOutcome = numericalSequence.slice(1).reduce(transformationEngine, startingState);
+  console.log('%s', finalState.differenceCount);
+}
 
-  return finalOutcome.occurrenceCount;
-};
-
-const programEntry = (sourceData) => {
-  const finalResult = processInputData(sourceData);
-  console.log('%s', finalResult);
-};
-
-programEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

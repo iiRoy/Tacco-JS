@@ -1,68 +1,19 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * All identifiers, operators, and expressions are kept exactly as they were.
- * Significant changes have been made to whitespace (indentation, spacing, blank lines)
- * and comments (added, modified) to create a visually distinct but logically identical version.
- */
+// 読み取り 保つ 中間値 開始時に.
 
-// Declare a variable 'input' and assign it the content read from /dev/stdin.
-// The 'fs' module is used for file system operations.
-var    input = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-
-
-// Declare an array 'arr'.
-// Trim whitespace from 'input' and then split it into lines based on the newline character.
-var arr = input . trim ( ) . split ( "\n" ) ;
-
-// Declare variable 'n'.
-// Remove the first element from 'arr' (which represents 'n' from the problem statement)
-// and assign it to 'n'. Note that 'n' is not used further in this specific logic.
-var      n = arr . shift ( ) ;
-
-// Declare variable 'str'.
-// Remove the new first element from 'arr' (the actual string to be processed)
-// and assign it to 'str'.
-var str = arr . shift ( ) ;
-
-// Begin a loop that continues as long as the length of 'str' is not equal to 1.
-while ( str . length != 1 )
-{
-
-    // Inside the loop, the 'str' variable is updated.
-    // The 'replace' method is used with a regular expression '/../' to match the first two characters.
-    // A function is provided as the replacer, taking the matched substring 's' as an argument.
-    str = str . replace ( /../ , function ( s )
-    {
-        // Conditional logic based on the two-character substring 's'.
-        // If 's' is "TT", the function returns "T".
-        if ( s == "TT" )
-        {
-            return "T" ;
-        }
-
-        // If 's' is "TF", the function returns "F".
-        if ( s == "TF" )
-        {
-            return "F" ;
-        }
-
-        // If 's' is "FT", the function returns "T".
-        if ( s == "FT" )
-        {
-            return "T" ;
-        }
-
-        // This condition is a duplicate of the second 'if' but with a different return value.
-        // In JavaScript, the first matching 'if' block will execute, so this specific
-        // 'if (s == "TF") return "T";' will only be reached if the preceding 'if (s == "TF") return "F";'
-        // was not hit, which is impossible if 's' is "TF". This maintains the original code's exact structure.
-        if ( s == "TF" )
-        {
-            return "T" ;
-        }
-    } ) ;
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+      var arr=input.trim().split("\n");   // 読み取り 今保つ 局所的な計算された情報 各値ごとに内部.
+     var n  = arr.shift ();  
+	var str =  arr.shift();
+while(str.length!=1){
+// 読み取り ここで整理する 重要なコードの連続性 計算中に明確.
+    str=str.replace(/../,function(s){  // 読み取り よく整理する 処理経路 開始時に近く.
+if(s=="TT")return "T";
+// 読み取り ここで保つ 最終のブロックの終端 開始時に単純.
+  if(s=="TF")return "F";
+if(s=="FT")return "T";
+if(s=="TF")return "T";   
+       } );
 }
+         console.log (str );
 
-// After the loop finishes (when 'str' has a length of 1),
-// print the final value of 'str' to the console.
-console . log ( str ) ;
+/* 受け取ったデータをここで保つ. */

@@ -1,219 +1,157 @@
-const outputLog = console.log;
+logOutput = console.log;
+inputLines = require("fs").readFileSync("/dev/stdin", "utf-8").split("\n");
+inputLines.length--; // Strictly preserving the original behavior here
 
-// Read input data from standard input, remove any trailing empty lines.
-const inputDataLines = require("fs")
-  .readFileSync("/dev/stdin", "utf-8")
-  .trim() // Remove leading/trailing whitespace, important for empty lines
-  .split("\n")
-  .filter(line => line.length > 0); // Ensure no empty lines remain after split/trim
+Object.prototype.dbgTrace = function() {
+  logOutput(this + "");
+  return this;
+};
 
-/**
- * Parses a string into an integer.
- * @param {string} inputString The string to parse.
- * @returns {number} The integer value.
- */
-function parseNumericValue(inputString) {
-  return Number(inputString);
+// Helper function for parsing integers
+function parseInteger(inputString) {
+  return +inputString;
 }
 
-// Define custom methods on Array.prototype for convenience
-const arrayExtensions = Array.prototype;
+String.prototype.toIntArray = function(delimiter) {
+  const parts = this.split(delimiter || " ");
+  return parts.map(parseInteger);
+};
 
-/**
- * Custom String method to extract space-separated integers from a string.
- * @param {string} [separator=' '] The separator character.
- * @returns {number[]} An array of parsed integers.
- */
-String.prototype.extractNumericArray = function(separator = ' ') {
-  // Ensure the input string is not empty before splitting
-  if (!this || this.length === 0) {
-    return [];
+const arrayPrototype = Array.prototype;
+
+arrayPrototype.dbgTrace = function() {
+  logOutput(this);
+  return this;
+};
+
+arrayPrototype.findMax = function() {
+  return Math.max.apply(null, this);
+};
+
+arrayPrototype.findMin = function() {
+  return Math.min.apply(null, this);
+};
+
+function identityFunction(value) {
+  return value;
+}
+arrayPrototype.createCopy = function() {
+  return this.map(identityFunction);
+};
+
+arrayPrototype.rotateElements = function(shiftCount) {
+  const currentLength = this.length;
+  if (currentLength === 0) return [];
+  const normalizedShift = shiftCount % currentLength;
+  if (normalizedShift === 0) return this.createCopy();
+
+  const firstSegment = this.slice(normalizedShift, currentLength);
+  const secondSegment = this.slice(0, normalizedShift);
+  return firstSegment.concat(secondSegment);
+};
+
+arrayPrototype.generatePermutations = function() {
+  const sourceArray = this;
+  const sourceLength = sourceArray.length;
+
+  if (sourceLength === 0) return [];
+  if (sourceLength === 1) return [sourceArray];
+
+  let allPermutations = [];
+  for (let index = 0; index < sourceLength; ++index) {
+    const currentItem = sourceArray[index];
+    const remainingItems = sourceArray
+      .slice(0, index)
+      .concat(sourceArray.slice(index + 1, sourceLength));
+
+    const subPerms = remainingItems.generatePermutations();
+
+    const mappedSubPerms = subPerms.map(function(permutationPart) {
+      return permutationPart.concat(currentItem);
+    });
+    allPermutations = allPermutations.concat(mappedSubPerms);
   }
-  return this.split(separator).map(parseNumericValue);
+  return allPermutations;
 };
 
-/**
- * Creates a shallow copy of the array.
- * @returns {Array} A new array containing the same elements.
- */
-arrayExtensions.duplicateElements = function() {
-  return [...this];
-};
-
-/**
- * Calculates the maximum value within the array.
- * @returns {number} The largest number in the array.
- */
-arrayExtensions.getLargest = function() {
-  // Using Math.max directly with spread operator is generally cleaner.
-  return Math.max(...this);
-};
-
-/**
- * Calculates the minimum value within the array.
- * @returns {number} The smallest number in the array.
- */
-arrayExtensions.getSmallest = function() {
-  // Using Math.min directly with spread operator is generally cleaner.
-  return Math.min(...this);
-};
-
-/**
- * Performs a circular shift (rotation) on the array elements.
- * Elements from the start are moved to the end.
- * @param {number} shiftAmount The number of positions to rotate.
- * @returns {Array} A new array with elements rotated.
- */
-arrayExtensions.performCyclicShift = function(shiftAmount) {
-  // Handle negative or large shift amounts by normalizing
-  const effectiveShift = shiftAmount % this.length;
-  const normalizedShift = effectiveShift < 0 ? this.length + effectiveShift : effectiveShift;
-
-  const firstPart = this.slice(normalizedShift);
-  const secondPart = this.slice(0, normalizedShift);
-  return firstPart.concat(secondPart);
-};
-
-/**
- * Generates all possible permutations of the array elements.
- * This is a recursive implementation.
- * @returns {Array<Array>} An array of arrays, each representing a permutation.
- */
-arrayExtensions.generateAllPermutations = function() {
-  const currentArray = this;
-  const arrayLength = currentArray.length;
-
-  if (arrayLength === 0) {
-    return [
-      []
-    ]; // Return an array containing an empty array for an empty input
+arrayPrototype.flattenOneLevel = function() {
+  let flatResult = [];
+  for (let index = 0; index < this.length; ++index) {
+    flatResult = flatResult.concat(this[index]);
   }
-  if (arrayLength === 1) {
-    return [
-      [currentArray[0]]
-    ];
-  }
-
-  let resultPermutations = [];
-  for (let idx = 0; idx < arrayLength; ++idx) {
-    const elementToPermute = currentArray[idx];
-    const remainingElements = currentArray.slice(0, idx).concat(currentArray.slice(idx + 1));
-
-    // Recursively get permutations of the remaining elements
-    const subPermutations = remainingElements.generateAllPermutations();
-
-    // Prepend the current element to each sub-permutation
-    for (const subP of subPermutations) {
-      resultPermutations.push([elementToPermute, ...subP]);
-    }
-  }
-  return resultPermutations;
+  return flatResult;
 };
 
-/**
- * Flattens a nested array by one level.
- * Equivalent to Array.prototype.flat() without a depth argument.
- * @returns {Array} A new array with nested arrays unrolled.
- */
-arrayExtensions.unfoldNestedArray = function() {
-  return this.reduce((accumulator, currentValue) => {
-    // If the current value is an array, concatenate its elements, otherwise add the value itself.
-    return accumulator.concat(Array.isArray(currentValue) ? currentValue : [currentValue]);
-  }, []);
+arrayPrototype.removeDuplicates = function() {
+  const selfReference = this;
+  return this.filter(function(elementValue, elementIndex) {
+    return selfReference.slice(elementIndex + 1).indexOf(elementValue) < 0;
+  });
 };
 
-/**
- * Returns a new array containing only the unique elements of the original array.
- * Uses a Set for efficient uniqueness checking.
- * @returns {Array} An array with duplicate elements removed.
- */
-arrayExtensions.obtainUniqueElements = function() {
-  return Array.from(new Set(this));
-};
-
-/**
- * Generates an arithmetic sequence of numbers.
- * @param {number} count The number of elements to generate.
- * @param {number} [startValue=0] The starting value of the sequence.
- * @param {number} [stepValue=1] The increment/decrement step between elements.
- * @returns {number[]} An array containing the generated sequence.
- */
-function createNumericalSequence(count, startValue = 0, stepValue = 1) {
-  if (count <= 0) {
-    return [];
+function generateIntegerRange(count, startValue, stepIncrement) {
+  startValue = startValue || 0;
+  stepIncrement = stepIncrement || 1;
+  let rangeArray = [];
+  let currentNumber = startValue;
+  for (let i = 0; i < count; ++i) {
+    rangeArray.push(currentNumber);
+    currentNumber += stepIncrement;
   }
-  // Using Array.from with a mapping function for a more functional approach
-  return Array.from({
-    length: count
-  }, (_, index) => startValue + index * stepValue);
+  return rangeArray;
 }
 
-/**
- * Main execution block for the program.
- * Encapsulates the core logic.
- */
-(function executeSolution() {
-  // Parse input values
-  const gridDimensionValue = parseNumericValue(inputDataLines[0]);
-  const startPointString = inputDataLines[1].extractNumericArray();
-  const startGridRow = startPointString[0] - 1; // Adjust to 0-based index
-  const startGridCol = startPointString[1] - 1; // Adjust to 0-based index
+function addValues(val1, val2) {
+  return val1 + val2;
+}
 
-  const endPointString = inputDataLines[2].extractNumericArray();
-  const endGridRow = endPointString[0] - 1; // Adjust to 0-based index
-  const endGridCol = endPointString[1] - 1; // Adjust to 0-based index
+function subtractValues(val1, val2) {
+  return val1 - val2;
+}
 
-  let minimumCalculatedDistance = gridDimensionValue * gridDimensionValue * 2; // Initialize with a sufficiently large value
+function reverseSubtractValues(val1, val2) {
+  return val2 - val1;
+}
 
-  /**
-   * Calculates the Manhattan distance between two points on a grid,
-   * where coordinates are transformed based on a given divisor.
-   * This effectively simulates a grid of size `divisor` x `divisor`.
-   * @param {number} point1 The first point's linear index.
-   * @param {number} point2 The second point's linear index.
-   * @param {number} divisor The grid width for coordinate transformation.
-   * @returns {number} The Manhattan distance.
-   */
-  function calculateManhattanDistanceForGrid(point1, point2, divisor) {
-    // A divisor of 0 would lead to division by zero, which is not expected given the loop starts from 1.
-    if (divisor <= 0) {
-      // Return a very large number or throw an error if this state is unexpected.
-      // For this problem, divisor will always be > 0.
-      return Number.MAX_SAFE_INTEGER;
-    }
+// Main execution logic wrapped in an Immediately Invoked Function Expression (IIFE)
+(function executeMainProgram() {
+  const totalGridSize = parseInteger(inputLines[0]);
+  const firstPairCoords = inputLines[1].toIntArray();
+  const firstPointX = firstPairCoords[0] - 1;
+  const firstPointY = firstPairCoords[1] - 1;
 
-    // Calculate row and column for point1 based on the current divisor (grid width)
-    const p1Row = Math.floor(point1 / divisor);
-    const p1Col = point1 % divisor;
+  const secondPairCoords = inputLines[2].toIntArray();
+  const secondPointX = secondPairCoords[0] - 1;
+  const secondPointY = secondPairCoords[1] - 1;
 
-    // Calculate row and column for point2 based on the current divisor (grid width)
-    const p2Row = Math.floor(point2 / divisor);
-    const p2Col = point2 % divisor;
+  let overallMinimumDistance = totalGridSize * totalGridSize; // Initialize with a sufficiently large value
 
-    // Compute absolute differences for rows and columns
-    const rowDifference = Math.abs(p1Row - p2Row);
-    const colDifference = Math.abs(p1Col - p2Col);
+  // Helper function to compute Manhattan distance between two 1D-mapped points on a grid
+  function calculateGridManhattanDistance(pointOneIndex, pointTwoIndex, currentGridWidth) {
+    const pointOneRow = Math.floor(pointOneIndex / currentGridWidth);
+    const pointOneCol = pointOneIndex % currentGridWidth;
 
-    // Manhattan distance is the sum of absolute differences
+    const pointTwoRow = Math.floor(pointTwoIndex / currentGridWidth);
+    const pointTwoCol = pointTwoIndex % currentGridWidth;
+
+    const rowDifference = Math.abs(pointOneRow - pointTwoRow);
+    const colDifference = Math.abs(pointOneCol - pointTwoCol);
+
     return rowDifference + colDifference;
   }
 
-  // Iterate through possible grid widths (partition factors) from 1 up to N-1
-  for (let currentPartitionFactor = 1; currentPartitionFactor < gridDimensionValue; ++currentPartitionFactor) {
-    // Calculate the distance for the first pair of points (start to end)
-    const distanceAtoB = calculateManhattanDistanceForGrid(startGridRow, startGridCol, currentPartitionFactor);
-    // Calculate the distance for the second pair of points (end to target)
-    const distanceCtoD = calculateManhattanDistanceForGrid(endGridRow, endGridCol, currentPartitionFactor);
+  // Iterate through all possible grid widths (from 1 up to totalGridSize - 1)
+  for (let currentDivisor = 1; currentDivisor < totalGridSize; ++currentDivisor) {
+    const distanceForAB = calculateGridManhattanDistance(firstPointX, firstPointY, currentDivisor);
+    const distanceForCD = calculateGridManhattanDistance(secondPointX, secondPointY, currentDivisor);
 
-    // Sum the distances for the current partition factor
-    const currentCombinedDistance = distanceAtoB + distanceCtoD;
+    const combinedDistance = distanceForAB + distanceForCD;
 
-    // Update the minimum total distance found so far
-    if (currentCombinedDistance < minimumCalculatedDistance) {
-      minimumCalculatedDistance = currentCombinedDistance;
-    }
+    // Update the overall minimum distance found so far
+    overallMinimumDistance = Math.min(overallMinimumDistance, combinedDistance);
   }
 
-  // Output the final minimum distance found
-  outputLog(minimumCalculatedDistance);
+  logOutput(overallMinimumDistance);
 })();
+
+// vim: set ft=javascript:

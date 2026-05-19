@@ -1,31 +1,13 @@
-// Primary module for evaluating system input.
-function analyzeData (    dataCollection   )
-
-{
-    /*
-     *  Evaluate the concatenated form of the provided data.
-     *  If it matches specific disallowed patterns, proceed with negative outcome.
-     */
-    if
-    (
-        dataCollection . join ( '' )  ===  'AAA'
-        ||
-        dataCollection . join ( '' )  ===  'BBB'
-    )
-    {
-        //  Indicate a rejection scenario.
-        console . log ( 'No' )  ;
-
-        return  ; //  Cease further processing.
-    }
-
-    //  If no disallowed patterns are found, indicate acceptance.
-    console . log ( 'Yes' )  ;
+function processInput(dataArray) {
+  // Check the concatenated string for specific patterns
+  if (dataArray.join('') === 'AAA' || dataArray.join('') === 'BBB') {
+    // If a forbidden pattern is found, output 'No'
+    console.log('No');
+    return; // Exit the function early
+  }
+  // Otherwise, if no forbidden pattern is found, output 'Yes'
+  console.log('Yes');
 }
 
-
-//  Execute the main data analysis routine using content from standard input.
-analyzeData
-(
-    require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' )
-) ;
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

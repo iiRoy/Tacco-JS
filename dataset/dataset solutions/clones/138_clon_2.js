@@ -1,56 +1,44 @@
+// This script processes input data from standard input, performing calculations and outputting results.
+// It reads the entire content from standard input, processes it line by line (or by whitespace-separated chunks),
+// and then performs a series of numerical operations on each chunk.
 require("fs")
-  // Read the entire file synchronously from /dev/stdin using UTF-8 encoding.
-  .readFileSync("/dev/stdin", "utf8")
+  .readFileSync("/dev/stdin", 'utf8') // Read the entire content from the standard input file descriptor as UTF-8 encoded text.
+  .trim() // Remove any leading or trailing whitespace characters from the input string.
+  .split(/\s/) // Split the cleaned input string into an array of substrings, using any whitespace character as a delimiter.
+  .map(function (currentInputString) { // Iterate over each substring (representing a data record) in the array.
+    // Declare local variables that will be used within this processing function for each record.
+    let parsedValues; // This array will hold numerical values parsed from the current input string.
+    let indexCounter; // A general-purpose counter, used for array indexing and determining the final output.
+    let loopIterator; // An iterator specifically for controlling the first processing loop.
+    let cumulativeSum; // A variable to accumulate sums and intermediate calculation results.
 
-  // Remove any leading or trailing whitespace characters from the content.
-  .trim()
+    // Split the current input string by commas to get individual data points, storing them in 'parsedValues'.
+    parsedValues = currentInputString.split(',');
 
-  // Divide the cleaned content into an array of strings, splitting by any single whitespace character.
-  .split(/\s/)
-
-  // Apply a transformation function to each element (data segment) in the array.
-  .map(
-    /*
-     * This anonymous function processes an individual data segment.
-     * @param {string} inputLine - A single string segment from the input.
-     */
-    function (inputLine) {
-      // Declare local variables for the current processing scope.
-      let parsedNumbers; // Stores numerical values derived from the input line.
-      let targetIndex; // Used as an index or counter in loops.
-      let loopCounter; // A general-purpose counter for iterations.
-      let accumulatedValue; // An accumulator for various calculations.
-
-      // Initialize all counters and accumulators to zero at the start of processing.
-      targetIndex = loopCounter = accumulatedValue = 0;
-
-      // Split the input line by commas to get an array of string values.
-      parsedNumbers = inputLine.split(",");
-
-      // Loop through the first ten elements to calculate a cumulative negative sum.
-      // Each element parsedNumbers[loopCounter] is updated with the new accumulatedValue
-      // which is current accumulatedValue minus the original value of parsedNumbers[loopCounter].
-      for (loopCounter = 0; loopCounter < 10; loopCounter++) {
-        parsedNumbers[loopCounter] = accumulatedValue -= parsedNumbers[loopCounter];
-      }
-
-      // Perform a specific calculation: multiply accumulatedValue by a ratio
-      // derived from the 10th and 11th elements of parsedNumbers.
-      accumulatedValue *= parsedNumbers[10] / (-parsedNumbers[10] - parsedNumbers[11]);
-
-      // Loop to find the first targetIndex where the value at that index
-      // in parsedNumbers is greater than the negative of the accumulatedValue.
-      // The loop continues, incrementing targetIndex, until the condition is no longer met.
-      for (
-        ; // No initialization needed here, as targetIndex is already zero.
-        parsedNumbers[targetIndex] > -accumulatedValue; // Condition for loop continuation.
-        targetIndex++ // Increment targetIndex after each iteration.
-      ) {
-        // The loop body is intentionally empty; all logic is in the header.
-      }
-
-      // Output the final incremented targetIndex to the console.
-      // The ++ operator increments targetIndex before its value is used in console.log.
-      console.log(++targetIndex);
+    // First processing loop: Initialize variables and calculate a running sum, modifying the 'parsedValues' array in place.
+    for (
+      indexCounter = loopIterator = cumulativeSum = 0; // Initialize 'indexCounter', 'loopIterator', and 'cumulativeSum' to zero.
+      loopIterator < 10; // The loop continues as long as 'loopIterator' is less than 10 (i.e., for the first 10 elements).
+      loopIterator++ // Increment 'loopIterator' after each iteration.
+    ) {
+      // Subtract the numeric value of the current element from 'cumulativeSum'.
+      // Then, assign this new 'cumulativeSum' back to the current element in 'parsedValues'.
+      parsedValues[loopIterator] = cumulativeSum -= parsedValues[loopIterator];
     }
-  );
+
+    // Perform a specific calculation to update 'cumulativeSum' based on elements at indices 10 and 11.
+    // This calculation involves division and negation.
+    cumulativeSum *= parsedValues[10] / (-parsedValues[10] - parsedValues[11]);
+
+    // Second processing loop: Find a specific index based on a comparison condition.
+    // 'indexCounter' retains its value from the previous initialization (which is 0).
+    for (
+      ; // No initialization statement here, as 'indexCounter' is already set.
+      parsedValues[indexCounter] > -cumulativeSum; // The loop continues as long as the value at 'indexCounter' is greater than the negative of 'cumulativeSum'.
+      indexCounter++ // Increment 'indexCounter' after each iteration.
+    );
+
+    // Output the final incremented value of 'indexCounter' to the console.
+    // The '++' operator increments 'indexCounter' before its value is passed to 'console.log'.
+    console.log(++indexCounter);
+  });

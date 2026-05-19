@@ -1,56 +1,39 @@
-const PI_CONSTANT = 3.141592653589793;
-const DEGREE_TO_RADIAN_CONVERSION = PI_CONSTANT / 180.0;
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-function acquireNumeric(textRepresentation) {
-    return parseFloat(textRepresentation);
-}
+const extractNumericalValues = (text) => {
+    return text.trim().match(/(\d+(\.\d+)?)/g).map(parseFloat);
+};
 
-function calculateSine(angleInDegrees) {
-    return Math.sin(angleInDegrees * DEGREE_TO_RADIAN_CONVERSION);
-}
+const [firstDimension, secondDimension, angleInDegrees] = extractNumericalValues(rawInputContent);
 
-function calculateCosine(angleInDegrees) {
-    return Math.cos(angleInDegrees * DEGREE_TO_RADIAN_CONVERSION);
-}
+const convertDegreesToRadians = (degrees) => degrees * (Math.PI / 180);
 
-function calculateSquareRoot(valueToRoot) {
-    return Math.sqrt(valueToRoot);
-}
+const angleInRadians = convertDegreesToRadians(angleInDegrees);
 
-function formatDecimalOutput(numericValue) {
-    return numericValue.toFixed(8);
-}
+const calculateArea = (side1, side2, angleRad) => 0.5 * side1 * side2 * Math.sin(angleRad);
+const triangleArea = calculateArea(firstDimension, secondDimension, angleInRadians);
 
-function processGeometricConfiguration(measurements) {
-    const sideA = measurements[0];
-    const sideB = measurements[1];
-    const includedAngle = measurements[2];
+const calculateThirdSide = (side1, side2, angleRad) => {
+    const termA = Math.pow(side1, 2);
+    const termB = Math.pow(side2, 2);
+    const termC = 2 * side1 * side2 * Math.cos(angleRad);
+    return Math.sqrt(termA + termB - termC);
+};
+const thirdSideLength = calculateThirdSide(firstDimension, secondDimension, angleInRadians);
 
-    const surfaceExtent = 0.5 * sideA * sideB * calculateSine(includedAngle);
+const calculateHeight = (area, base) => (2 * area) / base;
+const triangleHeight = calculateHeight(triangleArea, firstDimension);
 
-    const squareOfSideA = sideA * sideA;
-    const squareOfSideB = sideB * sideB;
-    const termForThirdSide = 2 * sideA * sideB * calculateCosine(includedAngle);
-    const sideC = calculateSquareRoot(squareOfSideA + squareOfSideB - termForThirdSide);
+const calculatePerimeter = (s1, s2, s3) => s1 + s2 + s3;
+const totalPerimeter = calculatePerimeter(firstDimension, secondDimension, thirdSideLength);
 
-    const verticalDimension = (2 * surfaceExtent) / sideA;
+const formatOutput = (value) => value.toFixed(8);
 
-    const boundaryTotal = sideA + sideB + sideC;
+const outputComponents = [
+    formatOutput(triangleArea),
+    formatOutput(totalPerimeter),
+    formatOutput(triangleHeight)
+];
 
-    return {
-        areaValue: surfaceExtent,
-        perimeterValue: boundaryTotal,
-        heightValue: verticalDimension
-    };
-}
-
-const rawTextContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedNumbers = rawTextContent.trim().split(" ").map(acquireNumeric);
-
-const derivedGeometricFacts = processGeometricConfiguration(processedNumbers);
-
-const finalOutputString = formatDecimalOutput(derivedGeometricFacts.areaValue) + " " +
-                         formatDecimalOutput(derivedGeometricFacts.perimeterValue) + " " +
-                         formatDecimalOutput(derivedGeometricFacts.heightValue);
-
-process.stdout.write(finalOutputString + "\n");
+console.log(outputComponents.join(' '));

@@ -1,17 +1,18 @@
-const largePrime = 1000000007;
+'use strict';
 
-const performCalculation = (inputBlob) => {
-  const lineSegments = inputBlob.trim().split('\n');
-  const totalNumbers = Number(lineSegments[0]);
-  const numericList = lineSegments[1].split(' ').map(Number);
+function computeResult(rawData) {
+  const primeMod = 1000000007;
+  const contentLines = rawData.split('\n').filter(Boolean);
+  const elementCount = parseInt(contentLines[0], 10);
+  const numericData = contentLines[1].split(' ').map(item => +item);
 
-  const aggregateResult = numericList.flatMap((firstValue, firstIndex) => {
-    return numericList.slice(firstIndex + 1).map(secondValue => {
-      return firstValue ^ (secondValue % largePrime);
-    });
-  }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+  const totalSummation = numericData.flatMap((valueA, indexA) =>
+    numericData.slice(indexA + 1).map(valueB =>
+      valueA ^ (valueB % primeMod)
+    )
+  ).reduce((accumulatedValue, currentTerm) => accumulatedValue + currentTerm, 0);
 
-  console.log(aggregateResult);
-};
+  console.log(totalSummation);
+}
 
-performCalculation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+computeResult(require('fs').readFileSync('/dev/stdin', 'utf8'));

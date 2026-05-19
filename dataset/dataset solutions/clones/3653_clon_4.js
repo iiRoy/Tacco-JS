@@ -1,25 +1,29 @@
-function processInput(dataStream) {
-    const contentLines = dataStream.split('\n');
-    const primarySequence = contentLines[0];
-    const secondarySequence = contentLines[1];
+function checkCyclicEquivalence(sourceText) {
+    const textLines = sourceText.split('\n');
+    const firstCharacterSequence = textLines[0].split('');
+    const secondCharacterSequence = textLines[1].split('');
 
-    if (primarySequence.length !== secondarySequence.length) {
-        console.log('No');
-        return;
+    if (firstCharacterSequence.length !== secondCharacterSequence.length) {
+        return false;
     }
 
-    if (primarySequence === secondarySequence) {
-        console.log('Yes');
-        return;
+    const firstArrayRepresentation = firstCharacterSequence.toString();
+    const secondArrayRepresentation = secondCharacterSequence.toString();
+
+    if (firstArrayRepresentation === secondArrayRepresentation) {
+        return true;
     }
 
-    const duplicatedPrimary = primarySequence + primarySequence;
+    const extendedFirstRepresentation = firstArrayRepresentation + ',' + firstArrayRepresentation;
 
-    if (duplicatedPrimary.includes(secondarySequence)) {
-        console.log('Yes');
-    } else {
-        console.log('No');
-    }
+    return extendedFirstRepresentation.includes(secondArrayRepresentation);
 }
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const programInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const comparisonResult = checkCyclicEquivalence(programInput);
+
+if (comparisonResult) {
+    console.log('Yes');
+} else {
+    console.log('No');
+}

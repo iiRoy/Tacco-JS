@@ -1,151 +1,183 @@
-function* value_provider(raw_data_string) {
-  const line_segments = raw_data_string.trim().split('\n');
-  for (const current_line_content of line_segments) {
-    const numeric_tokens = current_line_content.split(' ');
-    for (const token_value of numeric_tokens) {
-      yield Number(token_value);
+class MinPriorityQueue {
+    constructor() {
+        this._heapElements = [];
     }
-  }
+
+    _getParentIndex(idx) { return Math.floor((idx - 1) / 2); }
+    _getLeftChildIndex(idx) { return 2 * idx + 1; }
+    _getRightChildIndex(idx) { return 2 * idx + 2; }
+
+    _hasParent(idx) { return this._getParentIndex(idx) >= 0; }
+    _hasLeftChild(idx) { return this._getLeftChildIndex(idx) < this._heapElements.length; }
+    _hasRightChild(idx) { return this._getRightChildIndex(idx) < this._heapElements.length; }
+
+    _getParent(idx) { return this._heapElements[this._getParentIndex(idx)]; }
+    _getLeftChild(idx) { return this._heapElements[this._getLeftChildIndex(idx)]; }
+    _getRightChild(idx) { return this._heapElements[this._getRightChildIndex(idx)]; }
+
+    _swapElements(idx1, idx2) {
+        [this._heapElements[idx1], this._heapElements[idx2]] = [this._heapElements[idx2], this._heapElements[idx1]];
+    }
+
+    _bubbleUp() {
+        let currentIdx = this._heapElements.length - 1;
+        while (this._hasParent(currentIdx) && this._getParent(currentIdx)[0] > this._heapElements[currentIdx][0]) {
+            this._swapElements(currentIdx, this._getParentIndex(currentIdx));
+            currentIdx = this._getParentIndex(currentIdx);
+        }
+    }
+
+    _bubbleDown() {
+        let currentIdx = 0;
+        while (this._hasLeftChild(currentIdx)) {
+            let smallerChildIdx = this._getLeftChildIndex(currentIdx);
+            if (this._hasRightChild(currentIdx) && this._getRightChild(currentIdx)[0] < this._getLeftChild(currentIdx)[0]) {
+                smallerChildIdx = this._getRightChildIndex(currentIdx);
+            }
+
+            if (this._heapElements[currentIdx][0] < this._heapElements[smallerChildIdx][0]) {
+                break;
+            } else {
+                this._swapElements(currentIdx, smallerChildIdx);
+            }
+            currentIdx = smallerChildIdx;
+        }
+    }
+
+    enqueue(item) {
+        this._heapElements.push(item);
+        this._bubbleUp();
+    }
+
+    dequeueMin() {
+        if (this._heapElements.length === 0) return null;
+        if (this._heapElements.length === 1) return this._heapElements.pop();
+
+        const minItem = this._heapElements[0];
+        this._heapElements[0] = this._heapElements.pop();
+        this._bubbleDown();
+        return minItem;
+    }
+
+    isEmpty() {
+        return this._heapElements.length === 0;
+    }
 }
 
-class MinValueHeap {
-  constructor() {
-    this.elements_data = [];
-  }
-
-  insert_element(item_to_add) {
-    this.elements_data.push(item_to_add);
-    this.heapify_up();
-  }
-
-  extract_smallest() {
-    if (this.is_empty()) return null;
-    const minimum_element = this.elements_data[0];
-    const last_element = this.elements_data.pop();
-    if (!this.is_empty()) {
-      this.elements_data[0] = last_element;
-      this.heapify_down();
+class InputProcessor {
+    constructor(rawInput) {
+        this._sourceLines = rawInput.trim().split("\n");
+        this._currentLinePointer = 0;
+        this._currentLineTokens = null;
     }
-    return minimum_element;
-  }
 
-  is_empty() {
-    return this.elements_data.length === 0;
-  }
-
-  heapify_up() {
-    let current_idx = this.elements_data.length - 1;
-    const added_element = this.elements_data[current_idx];
-    while (current_idx > 0) {
-      let parent_idx = Math.floor((current_idx - 1) / 2);
-      let parent_element = this.elements_data[parent_idx];
-      if (added_element.cost_value >= parent_element.cost_value) break;
-      this.elements_data[parent_idx] = added_element;
-      this.elements_data[current_idx] = parent_element;
-      current_idx = parent_idx;
-    }
-  }
-
-  heapify_down() {
-    let current_idx = 0;
-    const total_length = this.elements_data.length;
-    const current_element = this.elements_data[0];
-    while (true) {
-      let left_child_idx = 2 * current_idx + 1;
-      let right_child_idx = 2 * current_idx + 2;
-      let left_child_elem, right_child_elem;
-      let swap_idx = null;
-
-      if (left_child_idx < total_length) {
-        left_child_elem = this.elements_data[left_child_idx];
-        if (left_child_elem.cost_value < current_element.cost_value) {
-          swap_idx = left_child_idx;
+    _loadNextLineTokens() {
+        if (this._currentLinePointer >= this._sourceLines.length) {
+            throw new Error("Input exhausted.");
         }
-      }
-      if (right_child_idx < total_length) {
-        right_child_elem = this.elements_data[right_child_idx];
-        if (
-          (swap_idx === null && right_child_elem.cost_value < current_element.cost_value) ||
-          (swap_idx !== null && right_child_elem.cost_value < left_child_elem.cost_value)
-        ) {
-          swap_idx = right_child_idx;
-        }
-      }
-
-      if (swap_idx === null) break;
-      this.elements_data[current_idx] = this.elements_data[swap_idx];
-      this.elements_data[swap_idx] = current_element;
-      current_idx = swap_idx;
+        this._currentLineTokens = this._sourceLines[this._currentLinePointer].split(" ").reverse();
+        this._currentLinePointer++;
     }
-  }
+
+    retrieveNumber(asString = false) {
+        if (this._currentLineTokens === null || this._currentLineTokens.length === 0) {
+            this._loadNextLineTokens();
+        }
+        const value = this._currentLineTokens.pop();
+        return asString ? value : +value;
+    }
+
+    retrieveLine(asStrings = false) {
+        if (this._currentLinePointer >= this._sourceLines.length) {
+            throw new Error("Input exhausted.");
+        }
+        const lineContent = this._sourceLines[this._currentLinePointer++];
+        this._currentLineTokens = null;
+        return asStrings ? lineContent.split(" ") : lineContent.split(" ").map(Number);
+    }
+
+    retrieveMatrix(rowCount, asStrings = false) {
+        const resultMatrix = [];
+        for (let i = 0; i < rowCount; i++) {
+            resultMatrix.push(this.retrieveLine(asStrings));
+        }
+        return resultMatrix;
+    }
+
+    retrieveVector(elementCount, asStrings = false) {
+        const resultVector = [];
+        for (let i = 0; i < elementCount; i++) {
+            if (this._currentLinePointer >= this._sourceLines.length) {
+                throw new Error("Input exhausted.");
+            }
+            const lineContent = this._sourceLines[this._currentLinePointer++];
+            this._currentLineTokens = null;
+            resultVector.push(asStrings ? lineContent : +lineContent);
+        }
+        return resultVector;
+    }
 }
 
-const initialize_vector = (size_param, initial_fill_value) => Array.from({
-  length: size_param
-}, () => initial_fill_value);
-
-const INFINITE_COST = 1000000007;
-
-function determine_optimal_solution() {
-  const data_stream_iterator = value_provider(require("fs").readFileSync("/dev/stdin", "utf8"));
-  const retrieve_next_value = () => data_stream_iterator.next().value;
-
-  const total_bit_count = retrieve_next_value();
-  const number_of_options = retrieve_next_value();
-
-  const option_definitions = Array.from({
-    length: number_of_options
-  }, () => {
-    const option_price = retrieve_next_value();
-    const num_associated_parts = retrieve_next_value();
-    let coverage_bitmask = 0;
-    for (let part_counter = 0; part_counter < num_associated_parts; part_counter++) {
-      const part_identifier = retrieve_next_value();
-      coverage_bitmask |= (1 << (part_identifier - 1));
-    }
-    return {
-      cost_value: option_price,
-      state_mask: coverage_bitmask
+function buildMultiArray(dimensions, initialValue) {
+    const recursiveBuilder = (remainingDimensions) => {
+        if (remainingDimensions.length === 1) {
+            return Array(remainingDimensions[0]).fill(initialValue);
+        }
+        const currentSize = remainingDimensions[0];
+        const nextDimensions = remainingDimensions.slice(1);
+        return Array(currentSize).fill(null).map(() => recursiveBuilder(nextDimensions));
     };
-  });
-
-  const minimum_expenditure_to_achieve_mask = initialize_vector(1 << total_bit_count, INFINITE_COST);
-  minimum_expenditure_to_achieve_mask[0] = 0;
-
-  const exploration_queue = new MinValueHeap();
-  exploration_queue.insert_element({
-    cost_value: 0,
-    state_mask: 0
-  });
-
-  while (!exploration_queue.is_empty()) {
-    const {
-      cost_value: current_accumulated_expenditure,
-      state_mask: current_unlocked_status
-    } = exploration_queue.extract_smallest();
-
-    if (current_accumulated_expenditure > minimum_expenditure_to_achieve_mask[current_unlocked_status]) {
-      continue;
-    }
-
-    for (const single_option of option_definitions) {
-      const next_unlocked_status = current_unlocked_status | single_option.state_mask;
-      const new_total_expenditure = current_accumulated_expenditure + single_option.cost_value;
-
-      if (new_total_expenditure < minimum_expenditure_to_achieve_mask[next_unlocked_status]) {
-        minimum_expenditure_to_achieve_mask[next_unlocked_status] = new_total_expenditure;
-        exploration_queue.insert_element({
-          cost_value: new_total_expenditure,
-          state_mask: next_unlocked_status
-        });
-      }
-    }
-  }
-
-  const fully_unlocked_mask = (1 << total_bit_count) - 1;
-  const final_expenditure = minimum_expenditure_to_achieve_mask[fully_unlocked_mask];
-
-  return final_expenditure === INFINITE_COST ? -1 : final_expenditure;
+    return recursiveBuilder(dimensions);
 }
 
-console.log(determine_optimal_solution());
+const MAX_COST = 1e9;
+
+console.log(solveProblem());
+
+function solveProblem() {
+    const inputSource = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    const itemCount = inputSource.retrieveNumber();
+    const keyCount = inputSource.retrieveNumber();
+
+    const keyCosts = Array(keyCount);
+    const keyMasks = Array(keyCount);
+
+    for (let k = 0; k < keyCount; k++) {
+        keyCosts[k] = inputSource.retrieveNumber();
+        const coveredItemsCount = inputSource.retrieveNumber();
+        let currentItemMask = 0;
+        for (let j = 0; j < coveredItemsCount; j++) {
+            const itemIdentifier = inputSource.retrieveNumber();
+            currentItemMask |= (1 << (itemIdentifier - 1));
+        }
+        keyMasks[k] = currentItemMask;
+    }
+
+    const allItemsCoveredMask = (1 << itemCount) - 1;
+    const minCosts = buildMultiArray([1 << itemCount], MAX_COST);
+    minCosts[0] = 0;
+
+    const stateQueue = new MinPriorityQueue();
+    stateQueue.enqueue([0, 0]); // [cost, state_mask]
+
+    while (!stateQueue.isEmpty()) {
+        const [currentAccumulatedCost, currentStateMask] = stateQueue.dequeueMin();
+
+        if (currentAccumulatedCost > minCosts[currentStateMask]) {
+            continue;
+        }
+
+        for (let k = 0; k < keyCount; k++) {
+            const nextStateMask = currentStateMask | keyMasks[k];
+            const newTotalCost = currentAccumulatedCost + keyCosts[k];
+
+            if (newTotalCost < minCosts[nextStateMask]) {
+                minCosts[nextStateMask] = newTotalCost;
+                stateQueue.enqueue([newTotalCost, nextStateMask]);
+            }
+        }
+    }
+
+    return minCosts[allItemsCoveredMask] === MAX_COST ? -1 : minCosts[allItemsCoveredMask];
+}

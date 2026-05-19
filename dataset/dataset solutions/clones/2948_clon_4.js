@@ -1,152 +1,154 @@
-class SmallestFirstQueue {
-    constructor() {
-        this.data = [];
+class Heap {
+    constructor(comparator) {
+        this.heap = [];
+        this.comparator = comparator || ((a, b) => a - b);
     }
 
-    _comparison(a, b) {
-        return a - b;
-    }
+    getParentIndex(i) { return Math.floor((i - 1) / 2); }
+    getLeftChildIndex(i) { return 2 * i + 1; }
+    getRightChildIndex(i) { return 2 * i + 2; }
 
-    _exchange(i, j) {
-        [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
-    }
+    hasParent(i) { return this.getParentIndex(i) >= 0; }
+    hasLeftChild(i) { return this.getLeftChildIndex(i) < this.heap.length; }
+    hasRightChild(i) { return this.getRightChildIndex(i) < this.heap.length; }
 
-    _moveUp(idx) {
-        let parentIdx = Math.floor((idx - 1) / 2);
-        while (idx > 0 && this._comparison(this.data[idx], this.data[parentIdx]) < 0) {
-            this._exchange(idx, parentIdx);
-            idx = parentIdx;
-            parentIdx = Math.floor((idx - 1) / 2);
-        }
-    }
+    getParent(i) { return this.heap[this.getParentIndex(i)]; }
+    getLeftChild(i) { return this.heap[this.getLeftChildIndex(i)]; }
+    getRightChild(i) { return this.heap[this.getRightChildIndex(i)]; }
 
-    _moveDown(idx) {
-        const finalIdx = this.data.length - 1;
-        while (true) {
-            let childLeft = 2 * idx + 1;
-            let childRight = 2 * idx + 2;
-            let targetIdx = idx;
+    swap(i, j) { [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]]; }
 
-            if (childLeft <= finalIdx && this._comparison(this.data[childLeft], this.data[targetIdx]) < 0) {
-                targetIdx = childLeft;
-            }
+    peek() { return this.heap.length === 0 ? null : this.heap[0]; }
+    size() { return this.heap.length; }
 
-            if (childRight <= finalIdx && this._comparison(this.data[childRight], this.data[targetIdx]) < 0) {
-                targetIdx = childRight;
-            }
-
-            if (targetIdx !== idx) {
-                this._exchange(idx, targetIdx);
-                idx = targetIdx;
-            } else {
-                break;
-            }
-        }
-    }
-
-    add(val) {
-        this.data.push(val);
-        this._moveUp(this.data.length - 1);
+    insert(item) {
+        this.heap.push(item);
+        this.heapifyUp();
     }
 
     extract() {
-        if (this.isEmpty()) {
-            return undefined;
-        }
-        if (this.data.length === 1) {
-            return this.data.pop();
-        }
-        const rootItem = this.data[0];
-        this.data[0] = this.data.pop();
-        this._moveDown(0);
-        return rootItem;
+        if (this.heap.length === 0) return null;
+        if (this.heap.length === 1) return this.heap.pop();
+        const item = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this.heapifyDown();
+        return item;
     }
 
-    examine() {
-        return this.isEmpty() ? undefined : this.data[0];
-    }
-
-    isEmpty() {
-        return this.data.length === 0;
-    }
-
-    size() {
-        return this.data.length;
-    }
-}
-
-class LargestFirstQueue extends SmallestFirstQueue {
-    _comparison(a, b) {
-        return b - a;
-    }
-}
-
-function ProcessCommands(programInput) {
-    let instructionLines = programInput.split("\n");
-    if (instructionLines[instructionLines.length - 1] === '') {
-        instructionLines.pop();
-    }
-
-    const initialParameter = instructionLines[0].split(' ')[0]; // This value is read but not used in the original.
-
-    let lowerHalfElements = new LargestFirstQueue();
-    let upperHalfElements = new SmallestFirstQueue();
-    let totalComputedValue = 0;
-
-    function maintainBalance() {
-        if (lowerHalfElements.size() > upperHalfElements.size() + 1) {
-            upperHalfElements.add(lowerHalfElements.extract());
-        } else if (upperHalfElements.size() > lowerHalfElements.size()) {
-            lowerHalfElements.add(upperHalfElements.extract());
+    heapifyUp() {
+        let index = this.heap.length - 1;
+        while (this.hasParent(index) && this.comparator(this.getParent(index), this.heap[index]) > 0) {
+            this.swap(this.getParentIndex(index), index);
+            index = this.getParentIndex(index);
         }
     }
 
-    function executeOperation(commandString) {
-        const parts = commandString.split(' ');
-        if (parts[0] === '2') {
-            const currentMiddleElement = lowerHalfElements.examine();
-            console.log(currentMiddleElement, totalComputedValue);
-        } else {
-            const valueForCollection = parseInt(parts[1], 10);
-            const additiveValue = parseInt(parts[2], 10);
-
-            let operationCost = 0;
-            const currentTotalCount = lowerHalfElements.size() + upperHalfElements.size();
-
-            if (currentTotalCount === 0) {
-                lowerHalfElements.add(valueForCollection);
-                totalComputedValue += additiveValue;
-                return;
+    heapifyDown() {
+        let index = 0;
+        while (this.hasLeftChild(index)) {
+            let childIndex = this.getLeftChildIndex(index);
+            if (this.hasRightChild(index) && this.comparator(this.getRightChild(index), this.getLeftChild(index)) < 0) {
+                childIndex = this.getRightChildIndex(index);
             }
-
-            const currentLowerMiddle = lowerHalfElements.examine();
-            const currentUpperMiddle = upperHalfElements.examine();
-
-            if (currentTotalCount % 2 === 0) { // Even count before adding
-                if (valueForCollection > currentUpperMiddle) {
-                    operationCost = valueForCollection - currentUpperMiddle;
-                } else if (valueForCollection < currentLowerMiddle) {
-                    operationCost = currentLowerMiddle - valueForCollection;
-                }
-            } else { // Odd count before adding
-                operationCost = Math.abs(valueForCollection - currentLowerMiddle);
-            }
-
-            totalComputedValue += operationCost;
-            totalComputedValue += additiveValue;
-
-            if (valueForCollection <= currentLowerMiddle) {
-                lowerHalfElements.add(valueForCollection);
+            if (this.comparator(this.heap[index], this.heap[childIndex]) < 0) {
+                break;
             } else {
-                upperHalfElements.add(valueForCollection);
+                this.swap(index, childIndex);
             }
-            maintainBalance();
+            index = childIndex;
         }
-    }
-
-    for (let instructionIndex = 1; instructionIndex < instructionLines.length; instructionIndex++) {
-        executeOperation(instructionLines[instructionIndex]);
     }
 }
 
-ProcessCommands(require("fs").readFileSync("/dev/stdin", "utf8"));
+class MinHeap extends Heap {
+    constructor() {
+        super((a, b) => a - b);
+    }
+}
+
+class MaxHeap extends Heap {
+    constructor() {
+        super((a, b) => b - a);
+    }
+}
+
+class MedianTracker {
+    constructor() {
+        this.lowerHalf = new MaxHeap();
+        this.upperHalf = new MinHeap();
+    }
+
+    addNumber(num) {
+        if (this.lowerHalf.size() === 0 || num <= this.lowerHalf.peek()) {
+            this.lowerHalf.insert(num);
+        } else {
+            this.upperHalf.insert(num);
+        }
+        this.balanceHeaps();
+    }
+
+    balanceHeaps() {
+        if (this.lowerHalf.size() > this.upperHalf.size() + 1) {
+            this.upperHalf.insert(this.lowerHalf.extract());
+        } else if (this.upperHalf.size() > this.lowerHalf.size()) {
+            this.lowerHalf.insert(this.upperHalf.extract());
+        }
+    }
+
+    getMedian() {
+        if (this.lowerHalf.size() === 0) return null;
+        return this.lowerHalf.peek();
+    }
+
+    getElementCount() {
+        return this.lowerHalf.size() + this.upperHalf.size();
+    }
+
+    getUpperHalfMin() {
+        return this.upperHalf.peek();
+    }
+}
+
+function Main(inputContent) {
+    let processedLines = inputContent.split("\n");
+    if (processedLines[processedLines.length - 1] === '') {
+        processedLines.pop();
+    }
+
+    let cumulativeCostSum = 0;
+    const medianDataStructure = new MedianTracker();
+
+    for (let commandIndex = 1; commandIndex < processedLines.length; commandIndex++) {
+        const currentOperation = processedLines[commandIndex];
+        if (currentOperation === '2') {
+            console.log(medianDataStructure.getMedian(), cumulativeCostSum);
+        } else {
+            const operationDetails = currentOperation.split(' ').map(Number);
+            const valueToInsert = operationDetails[1];
+            const associatedCost = operationDetails[2];
+
+            const priorElementCount = medianDataStructure.getElementCount();
+            const priorMedianValue = medianDataStructure.getMedian();
+
+            cumulativeCostSum += associatedCost;
+
+            if (priorElementCount === 0) {
+                // No median-related sum adjustment for the very first element.
+            } else if (priorElementCount % 2 !== 0) {
+                cumulativeCostSum += Math.abs(valueToInsert - priorMedianValue);
+            } else {
+                const lowerMidpointValue = priorMedianValue;
+                const upperMidpointValue = medianDataStructure.getUpperHalfMin();
+
+                if (valueToInsert > upperMidpointValue) {
+                    cumulativeCostSum += valueToInsert - upperMidpointValue;
+                } else if (valueToInsert < lowerMidpointValue) {
+                    cumulativeCostSum += lowerMidpointValue - valueToInsert;
+                }
+            }
+            medianDataStructure.addNumber(valueToInsert);
+        }
+    }
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

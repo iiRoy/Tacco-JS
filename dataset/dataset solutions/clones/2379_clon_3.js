@@ -1,295 +1,181 @@
-// This section handles input/output plumbing and foundational utilities.
-// It's designed to streamline data acquisition and presentation for the main algorithm.
+const readlineInterface = require('readline');
+const debugUtil = require('util');
 
-// Global storage for raw input lines as they are read.
-let capturedInputLines = [];
+let inputProcessor;
+const collectedInputLines = [];
 
-// Manages the input stream and provides methods to access parsed data.
-let dataStreamHandler;
-
-// Configure the interface for reading input line by line from standard input.
-const inputProcessor = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+const inputReader = readlineInterface.createInterface({
+  input: process.stdin, output: process.stdout
 });
 
-// Event listener for each line of input received.
-inputProcessor.on('line', (currentLine) => {
-  capturedInputLines.push(currentLine);
+inputReader.on('line', function(lineContent){
+    collectedInputLines.push(lineContent);
 });
 
-// Event listener for when the input stream closes.
-inputProcessor.on('close', () => {
-  // Initialize the data stream handler with all captured lines.
-  dataStreamHandler = prepareInputDataStream(capturedInputLines);
-
-  // Output a blank line to separate debug info from main output.
-  console.error("\n");
-
-  // Record the start time for performance measurement.
-  const startTime = Date.now();
-
-  // Execute the primary computational logic.
-  performMainCalculation();
-
-  // Calculate and display the elapsed time.
-  const durationMilliseconds = Date.now() - startTime;
-  logDiagnosticInfo("Execution Time : " + durationMilliseconds + "ms");
-
-  // Calculate and display memory usage.
-  const memoryUsageKB = Math.round(process.memoryUsage().heapTotal / 1024);
-  logDiagnosticInfo("Memory Footprint : " + memoryUsageKB + "KB");
+inputReader.on('close', function(){
+    inputProcessor = createInputProcessor(collectedInputLines);
+    console.error("\n");
+    executeMainLogic();
 });
 
-/**
- * Creates a deep copy of an object using JSON serialization/deserialization.
- * Note: This method has limitations (e.g., won't copy functions, Date objects, etc.).
- * @param {object} sourceObject The object to be cloned.
- * @returns {object} A new object that is a deep copy of the source.
- */
-function deepReplicateObject(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+function deepCloneObject(sourceObject){
+    return JSON.parse(JSON.stringify(sourceObject));
 }
 
-/**
- * Retrieves the next integer from the input stream.
- * @returns {number} The parsed integer.
- */
-function obtainNextInteger() {
-  return transformInputToken(retrieveNextElement(), 1);
+function parseInteger(inputString) {
+    return parseInt(inputString, 10);
+}
+function splitStringBySpace(inputString) {
+    return inputString.split(" ");
+}
+function parseIntegerArray(inputString) {
+    return inputString.split(" ").map(Number);
+}
+function splitStringByChar(inputString) {
+    return inputString.split("");
+}
+function parseCharacterIntegerArray(inputString) {
+    return inputString.split("").map(Number);
+}
+function joinArrayWithSpace(arr) {
+    return arr.join(" ");
+}
+function joinArrayWithNewline(arr) {
+    return arr.join("\n");
+}
+function joinArrayWithoutSeparator(arr) {
+    return arr.join("");
 }
 
-/**
- * Retrieves the next string array from the input stream, splitting by spaces.
- * @returns {string[]} An array of strings.
- */
-function obtainNextStringArray() {
-  return transformInputToken(retrieveNextElement(), 2);
-}
-
-/**
- * Retrieves the next integer array from the input stream, splitting by spaces and parsing.
- * @returns {number[]} An array of integers.
- */
-function obtainNextIntegerArray() {
-  return transformInputToken(retrieveNextElement(), 4);
-}
-
-/**
- * Retrieves the next character array from the input stream, splitting by single characters.
- * @returns {string[]} An array of characters.
- */
-function obtainNextCharacterArray() {
-  return transformInputToken(retrieveNextElement(), 6);
-}
-
-/**
- * Advances the input stream and returns the next raw string element.
- * @returns {string} The next raw string from the input.
- */
-function retrieveNextElement() {
-  return dataStreamHandler.fetchNext();
-}
-
-/**
- * Checks if there are more elements available in the input stream.
- * @returns {boolean} True if more elements exist, false otherwise.
- */
-function checkStreamAvailability() {
-  return dataStreamHandler.canAdvance();
-}
-
-/**
- * Initializes and returns an object to manage reading from a list of input lines.
- * This object acts as a cursor for the input data.
- * @param {string[]} inputCollection An array of strings representing the input lines.
- * @returns {object} An object with methods to navigate and retrieve input.
- */
-function prepareInputDataStream(inputCollection) {
-  return {
-    lineCollection: inputCollection,
-    readPointer: 0,
-    totalLines: inputCollection.length,
-
-    /**
-     * Determines if there are more lines to read in the collection.
-     * @returns {boolean} True if there are unread lines, false otherwise.
-     */
-    canAdvance: function() {
-      return (this.readPointer < this.totalLines);
-    },
-
-    /**
-     * Fetches the next line from the collection and increments the read pointer.
-     * Throws an error if no more input is available.
-     * @returns {string} The next line of input.
-     * @throws {Error} If attempting to read beyond the end of the input collection.
-     */
-    fetchNext: function() {
-      if (this.canAdvance()) {
-        return this.lineCollection[this.readPointer++];
-      } else {
-        // Using a standard Error object for better error handling.
-        throw new Error("InputBufferExhausted: No more input lines available.");
-      }
+function convertInput(input, conversionType){
+    try {
+        switch(conversionType){
+            case 1: return parseInteger(input);
+            case 2: return splitStringBySpace(input);
+            case 4: return parseIntegerArray(input);
+            case 6: return splitStringByChar(input);
+            case 7: return parseCharacterIntegerArray(input);
+            case 8: return joinArrayWithSpace(input);
+            case 9: return joinArrayWithNewline(input);
+            case 0: return joinArrayWithoutSeparator(input);
+            default: return input;
+        }
+    } catch(e) {
+        return input;
     }
-  };
 }
 
-/**
- * Displays a string to the standard output, followed by a newline.
- * @param {string} message The string to be printed.
- */
-function displayCalculationResult(message) {
-  console.log(message);
+function createInputProcessor(lines){
+    let currentLineIndex = 0;
+    const totalLines = lines.length;
+
+    return {
+        inputData : lines,
+        currentIndex : 0,
+        maxLines : totalLines,
+        hasMoreTokens : function(){
+            return (this.currentIndex < this.maxLines);
+        },
+        getNextToken : function(){
+            if(this.hasMoreTokens()){
+                return this.inputData[this.currentIndex++];
+            } else {
+                throw new Error("ArrayIndexOutOfBoundsException: No more input available.");
+            }
+        }
+    };
 }
 
-/**
- * Logs detailed debug information to the standard error stream.
- * Uses Node.js's util.inspect for comprehensive object inspection.
- * @param {any} dataToInspect The data to log.
- */
-function logDiagnosticInfo(dataToInspect) {
-  // Using more verbose options for inspect to show hidden properties and deeper objects.
-  console.error("DIAGNOSTIC_LOG: " + require("util").inspect(dataToInspect, {
-    showHidden: true,
-    depth: 5,
-    colors: true
-  }));
+function readInteger(){ return convertInput(inputProcessor.getNextToken(), 1); }
+function readStringArray(){ return convertInput(inputProcessor.getNextToken(), 2); }
+function readIntegerArray(){ return convertInput(inputProcessor.getNextToken(), 4); }
+function readCharacterArray(){ return convertInput(inputProcessor.getNextToken(), 6); }
+function getNextInputToken(){ return inputProcessor.getNextToken(); }
+function hasMoreInputTokens(){ return inputProcessor.hasMoreTokens(); }
+
+function printResult(outputValue){
+    console.log(outputValue);
+}
+function logDebug(debugMessage){
+    console.error("debug:" + debugUtil.inspect(debugMessage, false, null));
 }
 
-/**
- * Generic function to convert an input string or array based on a specified mode.
- * @param {string|string[]} inputValue The input to be converted.
- * @param {number} conversionMode A numeric code indicating the desired conversion.
- *                                - 1: Parse as integer.
- *                                - 2: Split string by space.
- *                                - 4: Split string by space and map to numbers.
- *                                - 6: Split string into individual characters.
- *                                - 7: Split string into individual characters and map to numbers.
- *                                - 8: Join array elements with space.
- *                                - 9: Join array elements with newline.
- *                                - 0: Join array elements without a separator.
- * @returns {any} The converted value. Returns original input on error or unknown mode.
- */
-function transformInputToken(inputValue, conversionMode) {
-  try {
-    if (conversionMode === 1) {
-      return parseInt(inputValue, 10); // Explicit radix for parseInt
-    } else if (conversionMode === 2) {
-      return String(inputValue).split(" ");
-    } else if (conversionMode === 4) {
-      return String(inputValue).split(" ").map(Number);
-    } else if (conversionMode === 6) {
-      return String(inputValue).split("");
-    } else if (conversionMode === 7) {
-      return String(inputValue).split("").map(Number);
-    } else if (conversionMode === 8) {
-      // Ensure inputValue is an array before joining
-      return Array.isArray(inputValue) ? inputValue.join(" ") : String(inputValue);
-    } else if (conversionMode === 9) {
-      return Array.isArray(inputValue) ? inputValue.join("\n") : String(inputValue);
-    } else if (conversionMode === 0) {
-      return Array.isArray(inputValue) ? inputValue.join("") : String(inputValue);
-    } else {
-      // Default case: return the input as is if mode is unknown
-      return inputValue;
-    }
-  } catch (conversionError) {
-    // Log the error but return the original input to prevent crashing.
-    logDiagnosticInfo(`Conversion failed for value: '${inputValue}' with mode: ${conversionMode}. Error: ${conversionError.message}`);
-    return inputValue;
-  }
+function logPerformanceMetrics(startTime) {
+    const endTime = Date.now();
+    const durationMs = endTime - startTime;
+    const memoryUsageKB = Math.round(process.memoryUsage().heapTotal / 1024);
+    logDebug("time : " + durationMs + "ms");
+    logDebug("memory : " + memoryUsageKB + "KB");
 }
 
-// End of input/output and utility section.
-// --------------------------------------------------------------------------
+function executeMainLogic(){
+    const startTime = Date.now();
 
-/**
- * This is the primary function where the core algorithm logic resides.
- * It processes a sequence of numbers based on specific matching rules
- * and calculates a cumulative product modulo a large prime.
- */
-function performMainCalculation() {
-  // Read the total number of elements in the sequence.
-  const totalElements = obtainNextInteger();
+    solveProblem();
 
-  // Read the sequence of integers.
-  const elementSequence = obtainNextIntegerArray();
+    logPerformanceMetrics(startTime);
+}
 
-  // Initialize counters for expected values.
-  // These represent the 'next' value expected for each category (R, B, G).
-  let expectedRedValue = 1;
-  let expectedBlueValue = 0;
-  let expectedGreenValue = 0;
+function calculateIterationState(elementValue, currentRed, currentBlue, currentGreen) {
+    let iterationMatchCount = 0;
+    let colorCounterIncremented = false;
+    let nextRed = currentRed;
+    let nextBlue = currentBlue;
+    let nextGreen = currentGreen;
 
-  // Initialize the result accumulator.
-  // The problem statement implies an initial value of 3 before the loop starts.
-  let currentProductResult = 3;
-
-  // Define the modulo constant to prevent integer overflow.
-  const primeModulo = 1000000007;
-
-  // --- Input Validation and Edge Case Handling ---
-
-  // If the total number of elements is zero or negative, there's nothing to process.
-  if (totalElements <= 0) {
-    displayCalculationResult(0); // Or handle as an error, depending on problem spec.
-    return;
-  }
-
-  // Check the very first element of the sequence.
-  // If the first element is not 0, the sequence is invalid for the problem's rules.
-  if (elementSequence[0] !== 0) {
-    displayCalculationResult(0);
-    return;
-  }
-
-  // --- Core Loop for Sequence Processing ---
-
-  // Iterate through the sequence starting from the second element (index 1).
-  for (let sequenceIndex = 1; sequenceIndex < totalElements; ++sequenceIndex) {
-    let matchesInCurrentElement = 0; // Counts how many categories match the current element.
-    let isElementProcessed = false; // Flag to ensure each increment happens only once per element.
-
-    const currentElementValue = elementSequence[sequenceIndex]; // Cache current element for readability.
-
-    // Check if the current element matches the 'Red' expectation.
-    if (currentElementValue === expectedRedValue) {
-      matchesInCurrentElement++;
-      expectedRedValue++; // Increment for the next expected 'Red' value.
-      isElementProcessed = true;
+    if (elementValue === currentRed) {
+        iterationMatchCount++;
+        nextRed++;
+        colorCounterIncremented = true;
     }
 
-    // Check if the current element matches the 'Blue' expectation.
-    if (currentElementValue === expectedBlueValue) {
-      matchesInCurrentElement++;
-      // Only increment 'Blue' if it hasn't been incremented by 'Red' for this element.
-      // This implicitly assumes a priority or distinct increment logic.
-      if (!isElementProcessed) {
-        expectedBlueValue++;
-        isElementProcessed = true; // Mark as processed, though 'Red' might have already.
-      }
+    if (elementValue === currentBlue) {
+        iterationMatchCount++;
+        if (!colorCounterIncremented) {
+            nextBlue++;
+            colorCounterIncremented = true;
+        }
     }
 
-    // Check if the current element matches the 'Green' expectation.
-    if (currentElementValue === expectedGreenValue) {
-      matchesInCurrentElement++;
-      // Only increment 'Green' if it hasn't been incremented by 'Red' or 'Blue' for this element.
-      if (!isElementProcessed) {
-        expectedGreenValue++;
-        // isElementProcessed = true; // This line is redundant if the above `if (!isElementProcessed)` ensures it.
-      }
+    if (elementValue === currentGreen) {
+        iterationMatchCount++;
+        if (!colorCounterIncremented) {
+            nextGreen++;
+            colorCounterIncremented = true;
+        }
+    }
+    return { iterationMatchCount, nextRed, nextBlue, nextGreen };
+}
+
+function solveProblem(){
+    const arrayLength = readInteger();
+    const dataSequence = readIntegerArray();
+
+    let redCount = 1;
+    let blueCount = 0;
+    let greenCount = 0;
+    let finalResult = 3;
+    const moduloValue = 1000000007;
+
+    const isInitialConditionMet = (dataSequence[0] === 0);
+    if (!isInitialConditionMet) {
+        printResult(0);
+        return;
     }
 
-    // Update the cumulative product.
-    // Ensure the product is always kept within the modulo range.
-    currentProductResult = (currentProductResult * matchesInCurrentElement) % primeModulo;
+    for(let currentIndex = 1; currentIndex < arrayLength; currentIndex++){
+        const { iterationMatchCount, nextRed, nextBlue, nextGreen } = calculateIterationState(
+            dataSequence[currentIndex],
+            redCount,
+            blueCount,
+            greenCount
+        );
 
-    // Optional: Log intermediate results for debugging.
-    // logDiagnosticInfo(`Index: ${sequenceIndex}, Value: ${currentElementValue}, Matches: ${matchesInCurrentElement}, Current Product: ${currentProductResult}`);
-  }
+        redCount = nextRed;
+        blueCount = nextBlue;
+        greenCount = nextGreen;
 
-  // Output the final calculated result.
-  displayCalculationResult(currentProductResult);
+        finalResult = (finalResult * iterationMatchCount) % moduloValue;
+    }
+    printResult(finalResult);
 }

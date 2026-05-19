@@ -1,46 +1,64 @@
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const calculationModulus = 1000000007n;
+class InputProcessor {
+    constructor(rawInputContent) {
+        this.inputTokens = rawInputContent.trim().split(/\s+/g);
+        this.currentTokenIndex = 0;
+    }
 
-const allInputTokens = rawInputContent.trim().split(/\s+/g);
-let currentTokenPointer = 0;
-const retrieveNextToken = () => allInputTokens[currentTokenPointer++];
-
-const totalInputNumberCount = BigInt(retrieveNextToken());
-
-const numericalInputs = [];
-for (let currentNumIndex = 0; currentNumIndex < totalInputNumberCount; currentNumIndex++) {
-    numericalInputs.push(BigInt(retrieveNextToken()));
-}
-
-const highestRelevantBit = 60; 
-
-const bitOneCounts = new Array(highestRelevantBit + 1).fill(0n);
-
-for (const currentNumber of numericalInputs) {
-    let temporaryNumber = currentNumber;
-    let bitPosition = 0;
-    while (temporaryNumber > 0n && bitPosition <= highestRelevantBit) {
-        if ((temporaryNumber & 1n) === 1n) {
-            bitOneCounts[bitPosition]++;
+    retrieveNextString() {
+        if (this.currentTokenIndex >= this.inputTokens.length) {
+            throw new Error("End of input reached.");
         }
-        temporaryNumber >>= 1n;
-        bitPosition++;
+        return this.inputTokens[this.currentTokenIndex++];
+    }
+
+    retrieveNextInteger() {
+        return parseInt(this.retrieveNextString(), 10);
     }
 }
 
-let cumulativeBitwiseSum = 0n;
-let currentTwoPower = 1n;
+function performCalculation(inputData) {
+    const MODULUS_VALUE = 1000000007n;
 
-for (let bitPosition = 0; bitPosition <= highestRelevantBit; bitPosition++) {
-    const onesAtThisPosition = bitOneCounts[bitPosition];
-    const zerosAtThisPosition = totalInputNumberCount - onesAtThisPosition;
+    const totalItemCount = inputData.retrieveNextInteger();
 
-    const termForThisBit = (currentTwoPower * onesAtThisPosition * zerosAtThisPosition) % calculationModulus;
-    
-    cumulativeBitwiseSum = (cumulativeBitwiseSum + termForThisBit) % calculationModulus;
+    const numericalValues = new Array(totalItemCount);
+    for (let i = 0; i < totalItemCount; i++) {
+        numericalValues[i] = BigInt(inputData.retrieveNextString());
+    }
 
-    currentTwoPower = (currentTwoPower * 2n) % calculationModulus;
+    const bitwiseOccurrenceCounts = new Array(61).fill(0);
+
+    for (const currentNumericalValue of numericalValues) {
+        let temporaryValue = currentNumericalValue;
+        let currentBitPosition = 0;
+        while (temporaryValue > 0n) {
+            if ((temporaryValue & 1n) === 1n) {
+                bitwiseOccurrenceCounts[currentBitPosition]++;
+            }
+            temporaryValue >>= 1n;
+            currentBitPosition++;
+        }
+    }
+
+    let finalAccumulatedSum = 0n;
+    let currentFactorOfTwo = 1n;
+
+    for (let bitIndex = 0; bitIndex < bitwiseOccurrenceCounts.length; bitIndex++) {
+        const countAtThisBit = BigInt(bitwiseOccurrenceCounts[bitIndex]);
+        const totalItemsBigInt = BigInt(totalItemCount);
+
+        const componentTerm = (currentFactorOfTwo * countAtThisBit % MODULUS_VALUE * (totalItemsBigInt - countAtThisBit) % MODULUS_VALUE);
+
+        finalAccumulatedSum = (finalAccumulatedSum + componentTerm) % MODULUS_VALUE;
+
+        currentFactorOfTwo = (currentFactorOfTwo * 2n) % MODULUS_VALUE;
+    }
+
+    console.log(finalAccumulatedSum.toString());
 }
 
-console.log(cumulativeBitwiseSum.toString());
+const standardInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+const processor = new InputProcessor(standardInputContent);
+performCalculation(processor);

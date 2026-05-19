@@ -1,49 +1,49 @@
-function processInput(dataLines) {
-  const currentWord = dataLines[0];
-  const originalWord = "keyence";
-  const targetLength = originalWord.length;
-  let outcomeDetermined = false;
+function processInput(data) {
+  const inputLines = data.split('\n');
+  const targetString = 'keyence';
+  const targetLength = targetString.length;
 
-  for (let frontSegmentLen = 0; frontSegmentLen <= targetLength; frontSegmentLen++) {
-    const frontSegment = originalWord.substring(0, frontSegmentLen);
+  const currentLine = inputLines[0];
+  const currentLineLength = currentLine.length;
 
-    if (!currentWord.startsWith(frontSegment)) {
-      continue;
-    }
-
-    for (let backSegmentLen = 0; backSegmentLen <= targetLength; backSegmentLen++) {
-      if (frontSegmentLen + backSegmentLen < targetLength) {
-        continue;
-      }
-
-      const backSegment = originalWord.substring(targetLength - backSegmentLen);
-
-      if (currentWord.endsWith(backSegment)) {
-        if (frontSegmentLen <= currentWord.length - backSegmentLen) {
-          outcomeDetermined = true;
-          break;
-        }
-      }
-    }
-    if (outcomeDetermined) {
-      break;
-    }
+  let prefixMatchCount = 0;
+  while (
+    prefixMatchCount < targetLength &&
+    prefixMatchCount < currentLineLength &&
+    currentLine[prefixMatchCount] === targetString[prefixMatchCount]
+  ) {
+    prefixMatchCount++;
   }
 
-  if (outcomeDetermined) {
+  let suffixMatchCount = 0;
+  while (
+    suffixMatchCount < targetLength &&
+    suffixMatchCount < currentLineLength &&
+    currentLine[currentLineLength - 1 - suffixMatchCount] ===
+      targetString[targetLength - 1 - suffixMatchCount]
+  ) {
+    suffixMatchCount++;
+  }
+
+  if (prefixMatchCount === targetLength) {
+    console.log('YES');
+  } else if (
+    prefixMatchCount + suffixMatchCount >= targetLength &&
+    prefixMatchCount <= currentLineLength - suffixMatchCount
+  ) {
     console.log('YES');
   } else {
     console.log('NO');
   }
 }
 
-let receivedData = '';
+let accumulatedInput = '';
 
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 process.stdin.on('data', function(chunk) {
-  receivedData += chunk;
+  accumulatedInput += chunk;
 });
-
 process.stdin.on('end', function() {
-  const processedLines = receivedData.split('\n');
-  processInput(processedLines);
+  processInput(accumulatedInput);
 });

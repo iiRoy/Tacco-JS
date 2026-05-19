@@ -1,46 +1,35 @@
-let incomingData = '';
-process.stdin.on('data', fragment => {
-    incomingData += fragment.toString();
-});
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const arraySize = parseInt(inputLines.shift(), 10);
+const initialNumbers = inputLines.shift().split(' ').map(Number);
 
-process.stdin.on('end', () => {
-    const parsedLines = incomingData.split('\n').filter(lineEntry => lineEntry.length > 0);
-    const numericCollection = parsedLines[1].split(' ').map(value => Number(value));
+const allStates = Array.from({ length: initialNumbers.length }).reduce((accumulatorOfStates, _, currentIndex) => {
+    const currentArraySnapshot = accumulatorOfStates.length === 0 
+        ? [...initialNumbers] 
+        : [...accumulatorOfStates[accumulatorOfStates.length - 1]];
+    
+    if (currentIndex === 0) {
+        accumulatorOfStates.push(currentArraySnapshot);
+        return accumulatorOfStates;
+    }
 
-    processSequence(numericCollection);
-});
+    const elementToInsert = currentArraySnapshot[currentIndex];
+    const sortedPrefixSlice = currentArraySnapshot.slice(0, currentIndex);
+    
+    const insertionPointInPrefix = sortedPrefixSlice.findIndex(val => val > elementToInsert);
+    
+    const finalInsertionIndex = insertionPointInPrefix === -1 
+        ? currentIndex 
+        : insertionPointInPrefix;
 
-function processSequence(initialItems) {
-    const sequenceReports = [];
+    const nextArrayState = [
+        ...currentArraySnapshot.slice(0, finalInsertionIndex),
+        elementToInsert,
+        ...currentArraySnapshot.slice(finalInsertionIndex, currentIndex),
+        ...currentArraySnapshot.slice(currentIndex + 1)
+    ];
+    
+    accumulatorOfStates.push(nextArrayState);
+    return accumulatorOfStates;
+}, []);
 
-    sequenceReports.push([...initialItems]);
-
-    initialItems.reduce((sortedSegment, currentItem, itemIndex) => {
-        if (itemIndex === 0) {
-            return [currentItem];
-        }
-
-        let placementSpot = 0;
-        while (placementSpot < sortedSegment.length && sortedSegment[placementSpot] < currentItem) {
-            placementSpot++;
-        }
-
-        const nextSortedSegment = [
-            ...sortedSegment.slice(0, placementSpot),
-            currentItem,
-            ...sortedSegment.slice(placementSpot)
-        ];
-
-        const presentFullState = [
-            ...nextSortedSegment,
-            ...initialItems.slice(itemIndex + 1)
-        ];
-        sequenceReports.push(presentFullState);
-
-        return nextSortedSegment;
-    }, []);
-
-    sequenceReports.forEach(report => {
-        process.stdout.write(report.join(' ') + '\n');
-    });
-}
+allStates.forEach(stateArray => console.log(stateArray.join(' ')));

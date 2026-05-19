@@ -1,67 +1,68 @@
+// This module handles processing of binary string inputs and applies a recursive numerical operation.
 function ProcessInput(rawData) {
- // This function orchestrates the entire process, taking raw input data.
-    const lines = rawData. split ("\n") ; // Divide the input string into an array of lines.
+    // Divide the incoming raw data into an array of distinct lines.
+    let dataLines = rawData.split("\n");
 
-    // Extract the iteration count from the first line, ensuring it's an integer.
-    const limitCount = Number.parseInt (lines[0], 10) ;
+    // Extract the first numerical parameter, representing the total number of processing cycles.
+    const numIterations = Number.parseInt(dataLines[0], 10);
 
-    // Obtain the binary string from the second line of input.
-    const binaryString = lines[1];
+    // Obtain the binary sequence string from the second line of the input.
+    const binaryString = dataLines[1];
 
-    // Loop through each position of the binary string up to the specified limit.
-    for (let currentIdx = 0; currentIdx < limitCount; currentIdx++) {
-        // Create a temporary binary string by flipping the bit at the 'currentIdx' position.
-        const alteredBinaryString =
-            binaryString.slice(0, currentIdx) + // Part of the string before the current index.
-            (binaryString[currentIdx] === "1" ? "0" : "1") + // The flipped bit.
-            binaryString.slice(currentIdx + 1); // Part of the string after the current index.
+    // Commence a loop that executes for the specified number of iterations.
+    for (let idx = 0; idx < numIterations; idx++) {
+        // Construct a new binary string by inverting the bit at the current index 'idx'.
+        // If the character at 'idx' is '1', it becomes '0'; otherwise, it becomes '1'.
+        const modifiedBinary = binaryString.slice(0, idx) +
+                               (binaryString[idx] === "1" ? "0" : "1") +
+                               binaryString.slice(idx + 1);
 
-        // Convert the altered binary string to a decimal integer (base 2)
-        // and then pass it to the recursive calculation function.
-        // The result of this calculation is then printed to the console.
-        console.log(computeRecursiveValue(Number.parseInt(alteredBinaryString, 2)));
+        // Convert the newly formed binary string into its decimal integer equivalent.
+        // Subsequently, apply a specialized recursive function to this integer and output its final result.
+        console.log(recursiveOperation(Number.parseInt(modifiedBinary, 2)));
     }
 }
 
-// Invoke the main processing function with data read from standard input.
-// This reads the entire content of '/dev/stdin' as a UTF-8 string.
+// Initiate the primary processing function by reading content from the standard input stream.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// This helper function computes a value that resembles a "population count"
-// but actually counts the number of digits in the decimal representation
-// of the binary string form of the input number.
-function deriveDigitCount(inputNum) {
-    // First, convert the input number to its binary string representation.
-    // Then, parse this binary string as if it were a decimal number (e.g., "101" becomes 101).
-    // Convert this new decimal number back into a string.
-    // Split this string into an array of individual characters (digits).
-    // Filter out any falsy values (which shouldn't occur for digits '0'-'9').
-    // Finally, return the total count of these characters.
-    return (
-        Number.parseInt(inputNum.toString(2))
-            .toString()
-            .split("")
-            .filter((charSegment) => charSegment)
-            .length
-    );
+/**
+ * Computes a unique digit count for a given number.
+ * This function does not count set bits (population count) in the traditional sense.
+ * Instead, it converts the number to its binary string, interprets that binary string
+ * as a decimal number, converts that decimal number back to a string, and then counts
+ * the total number of characters (digits) in that final string.
+ *
+ * @param {number} val The numeric value to be processed.
+ * @returns {number} The calculated count of digits.
+ */
+function calculateDigitCount(val) {
+    // 1. Convert 'val' to its binary string representation (e.g., 5 -> "101").
+    // 2. Parse this binary string as a base-10 integer (e.g., "101" -> 101).
+    // 3. Convert this resulting decimal integer back into its string form (e.g., 101 -> "101").
+    // 4. Split the string into an array of individual character digits.
+    // 5. Filter out any non-truthy elements (though all digits '0'-'9' are truthy, this preserves original logic).
+    // 6. Return the total number of elements (digits) in the filtered array.
+    return parseInt(val.toString(2)).toString().split("").filter(digitChar => digitChar).length;
 }
 
-// A recursive function that calculates a value based on modulo operations
-// using the result of 'deriveDigitCount'.
-function computeRecursiveValue(currentValue, iterationCount) {
-    // Base case for the recursion: if 'currentValue' becomes zero,
-    // return the accumulated 'iterationCount' or 0 if it's the first call.
+/**
+ * Executes a recursive mathematical operation on a number.
+ * The recursion continues until the number becomes zero.
+ *
+ * @param {number} currentValue The current numerical state within the recursion.
+ * @param {number} [iterationCounter] An optional parameter to track the depth or count of recursive calls.
+ * @returns {number} The final accumulated count when the base condition is met, or zero if no count was provided.
+ */
+function recursiveOperation(currentValue, iterationCounter) {
+    // This is the termination condition for the recursion.
+    // If the current value is zero, return the accumulated counter, or zero if the counter is undefined.
     if (currentValue === 0) {
-        return iterationCount || 0;
+        return iterationCounter || 0;
     }
-
-    // Recursive step:
-    // The next 'currentValue' is determined by taking the current 'currentValue'
-    // modulo the result of 'deriveDigitCount' applied to the 'currentValue'.
-    // The 'iterationCount' is incremented for each recursive call,
-    // or initialized to 1 if it's the very first step of the recursion.
-    return computeRecursiveValue(
-        currentValue % deriveDigitCount(currentValue),
-        iterationCount ? iterationCount + 1 : 1
-    );
+    // For the recursive step:
+    // Calculate the next 'currentValue' by taking the modulo of the current 'currentValue'
+    // with the result of 'calculateDigitCount' applied to the current 'currentValue'.
+    // Increment the 'iterationCounter' for the next call; if it's the first call, initialize it to 1.
+    return recursiveOperation(currentValue % calculateDigitCount(currentValue), iterationCounter ? iterationCounter + 1 : 1);
 }

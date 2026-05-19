@@ -1,43 +1,20 @@
-const retrieveSource = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+function processInputData(inputContent) {
+    const contentLines = inputContent.split('\n');
+    const primaryString = contentLines[0];
+    const secondaryString = contentLines[1];
 
-const parseInputLines = (rawInput) => rawInput.split('\n').slice(0, 2);
+    const lengthComparisonValue = primaryString.length - secondaryString.length;
 
-const assessStringMagnitude = (leftStr, rightStr) => {
-    const lenLeft = leftStr.length;
-    const lenRight = rightStr.length;
+    const finalDetermination = (lengthComparisonValue !== 0)
+        ? (lengthComparisonValue > 0 ? 'GREATER' : 'LESS')
+        : (() => {
+            const lexicalOrder = primaryString.localeCompare(secondaryString);
+            return (lexicalOrder > 0) ? 'GREATER' :
+                   (lexicalOrder < 0) ? 'LESS' :
+                   'EQUAL';
+        })();
+    
+    console.log(finalDetermination);
+}
 
-    const lengthOutcomeMap = new Map([
-        [-1, 'LESS'],
-        [1, 'GREATER']
-    ]);
-
-    const lengthComparisonResult = Math.sign(lenLeft - lenRight);
-
-    if (lengthOutcomeMap.has(lengthComparisonResult)) {
-        return lengthOutcomeMap.get(lengthComparisonResult);
-    }
-
-    let index = 0;
-    while (index < lenLeft) {
-        const charValA = leftStr.charCodeAt(index);
-        const charValB = rightStr.charCodeAt(index);
-
-        if (charValA > charValB) {
-            return 'GREATER';
-        }
-        if (charValA < charValB) {
-            return 'LESS';
-        }
-        index++;
-    }
-
-    return 'EQUAL';
-};
-
-const executeComparisonProcess = () => {
-    const [operandA, operandB] = parseInputLines(retrieveSource());
-    const finalVerdict = assessStringMagnitude(operandA, operandB);
-    console.log(finalVerdict);
-};
-
-executeComparisonProcess();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,38 +1,29 @@
-function numericCombiner(sourceDigits) {
-    const sequenceLength = sourceDigits.length;
+function processInput(inputSequence) {
+    const sequenceLength = inputSequence.length;
 
-    if (sequenceLength === 0) {
-        return 0;
-    }
+    let totalAggregateSum = 0;
+    const separatorPositions = sequenceLength - 1;
+    const combinationCount = 1 << separatorPositions;
 
-    let grandTotal = 0;
+    for (let currentPattern = 0; currentPattern < combinationCount; currentPattern++) {
+        let segmentCollection = [];
+        let activeSegmentBuilder = inputSequence[0];
 
-    const numSeparators = sequenceLength - 1;
-    const totalVariations = 1 << numSeparators;
-
-    for (let currentVariation = 0; currentVariation < totalVariations; currentVariation++) {
-        let currentExpressionValue = 0;
-        let currentNumberSegment = "";
-
-        currentNumberSegment += sourceDigits[0];
-
-        for (let k = 0; k < numSeparators; k++) {
-            if ((currentVariation >> k) & 1) {
-                currentExpressionValue += parseInt(currentNumberSegment, 10);
-                currentNumberSegment = "";
+        for (let separatorIndex = 0; separatorIndex < separatorPositions; separatorIndex++) {
+            if ((currentPattern >> separatorIndex) & 1) {
+                segmentCollection.push(activeSegmentBuilder);
+                activeSegmentBuilder = inputSequence[separatorIndex + 1];
+            } else {
+                activeSegmentBuilder += inputSequence[separatorIndex + 1];
             }
-            currentNumberSegment += sourceDigits[k + 1];
         }
+        segmentCollection.push(activeSegmentBuilder);
 
-        currentExpressionValue += parseInt(currentNumberSegment, 10);
-        grandTotal += currentExpressionValue;
+        const currentPatternSum = segmentCollection.reduce((accumulator, segmentString) => accumulator + Number(segmentString), 0);
+        totalAggregateSum += currentPatternSum;
     }
 
-    console.log(grandTotal);
+    console.log(totalAggregateSum);
 }
 
-function processInputData(incomingData) {
-    numericCombiner(incomingData);
-}
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

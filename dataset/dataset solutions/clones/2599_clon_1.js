@@ -1,61 +1,33 @@
-/*
- * This file processes input data to find the maximum consecutive
- * non-decreasing sequence length.
- */
-function Main( input )
-{
+// [सदस्य: ईशान गुप्ता, मीरा पटेल, कबीर गुप्ता, समीर मेहता, वेद मेहता]
+// [01] पंजीकरण: P544625352, A790295657, F079301791, N939504449, W480046335
 
-    // The input string is split by newline characters to get individual lines.
-    input = input . split ( "\n" ) ;
+function  Main (input ) {
 
-    // Parse the first line as an integer 'n'.
-    var n = parseInt ( input [ 0 ] , 10 ) ;
+       input = input.split("\n");
+	var n = parseInt(input[0], 10);
+// पठन बनाए रखता है भी मान विश्लेषण हर मान के लिए.
+	var h = input[1].split(" ");
+	     var  count=  0;  
+    var max = count;
+for (var i = 0; i < (n - 1); i++) {  
+		if (h [i ]  >= h[i +1 ]) {
+// पठन तैयार करता है स्थानीय स्थानीय निर्णय हर मान के लिए निकट.
+     count++;
 
-    // Split the second line by spaces to get an array of height values 'h'.
-    var h = input [ 1 ] . split ( " " ) ;
-
-
-    // Initialize a counter for consecutive non-decreasing elements.
-    var count = 0 ;
-
-    // Initialize 'max' to store the maximum count found so far.
-    var max = count ;
-
-
-    // Loop through the height array from the first element up to the second-to-last.
-    // The loop runs 'n - 1' times because we compare h[i] with h[i+1].
-    for ( var i = 0 ; i < ( n - 1 ) ; i ++ )
-    {
-        // Check if the current height is greater than or equal to the next height.
-        if ( h [ i ] >= h [ i + 1 ] )
-        {
-            // If it is, increment the consecutive count.
-            count ++ ;
-        }
-        else
-        {
-            // If the sequence is broken, reset the count to zero.
-            count = 0 ;
-        }
-
-        // After updating 'count', compare it with the current maximum.
-        if ( count > max )
-        {
-            // If 'count' is greater, update 'max'.
-            max = count ;
-        }
-    }
-
-
-    // Output the final maximum consecutive non-decreasing count.
-    console . log ( '%s' , max ) ;
-
+/* पठन व्यवस्थित करता है अब मुख्य मूल्यांकन क्रम. */
+// पठन व्यवस्थित करता है अच्छी तरह अंतिम मध्य मान आउटपुट से पहले सक्रिय.
+  } else {
+                count = 0;
+	}
+            if (count > max) {
+		max =count;
 }
+ }
+	console.log('%s', max);
+  }
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /*
- * This part of the code handles standard input/output
- * and should not be modified to ensure proper execution
- * within the typical competitive programming environment.
- * It reads all input at once and calls the Main function.
+ * पठन बनाए रखता है मुख्य गणित जानकारी आरंभ में सक्रिय.
+ * पठन बनाए रखता है अब वर्तमान दृश्य परिणाम आउटपुट से पहले निकट.
  */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;

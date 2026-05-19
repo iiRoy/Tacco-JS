@@ -1,38 +1,55 @@
-function processInputAndFindValue(externalInput) {
-    const targetOrdinalPosition = parseInt(externalInput);
-
-    if (targetOrdinalPosition < 10) {
-        console.log(targetOrdinalPosition);
-        return;
+function retrieveKthRunRun(ordinalPosition) {
+    if (ordinalPosition <= 9) {
+        return ordinalPosition;
     }
 
-    let valueGenerationQueue = [];
-    for (let startingDigit = 1; startingDigit <= 9; startingDigit++) {
-        valueGenerationQueue.push(startingDigit);
+    const numberQueue = [];
+    for (let currentDigit = 1; currentDigit <= 9; currentDigit++) {
+        numberQueue.push(currentDigit);
     }
 
-    let currentFoundCount = 0;
-    let finalResultValue = 0;
+    let discoveredCount = 9;
+    let finalValue = 0;
 
-    while (valueGenerationQueue.length > 0) {
-        const extractedNumber = valueGenerationQueue.shift();
-        currentFoundCount++;
+    while (numberQueue.length > 0 && discoveredCount < ordinalPosition) {
+        const currentCandidate = numberQueue.shift();
+        finalValue = currentCandidate;
 
-        if (currentFoundCount === targetOrdinalPosition) {
-            finalResultValue = extractedNumber;
-            break;
+        const lastDigitOfCandidate = currentCandidate % 10;
+
+        if (lastDigitOfCandidate > 0) {
+            const nextGeneratedNumber = currentCandidate * 10 + (lastDigitOfCandidate - 1);
+            numberQueue.push(nextGeneratedNumber);
+            discoveredCount++;
+            if (discoveredCount === ordinalPosition) {
+                return nextGeneratedNumber;
+            }
         }
 
-        const lastDigitOfExtracted = extractedNumber % 10;
-
-        if (lastDigitOfExtracted > 0) {
-            valueGenerationQueue.push(extractedNumber * 10 + (lastDigitOfExtracted - 1));
+        const nextGeneratedNumberSame = currentCandidate * 10 + lastDigitOfCandidate;
+        numberQueue.push(nextGeneratedNumberSame);
+        discoveredCount++;
+        if (discoveredCount === ordinalPosition) {
+            return nextGeneratedNumberSame;
         }
-        valueGenerationQueue.push(extractedNumber * 10 + lastDigitOfExtracted);
-        if (lastDigitOfExtracted < 9) {
-            valueGenerationQueue.push(extractedNumber * 10 + (lastDigitOfExtracted + 1));
+
+        if (lastDigitOfCandidate < 9) {
+            const nextGeneratedNumberPlus = currentCandidate * 10 + (lastDigitOfCandidate + 1);
+            numberQueue.push(nextGeneratedNumberPlus);
+            discoveredCount++;
+            if (discoveredCount === ordinalPosition) {
+                return nextGeneratedNumberPlus;
+            }
         }
     }
-    console.log(finalResultValue);
+
+    return finalValue;
 }
-processInputAndFindValue(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function ProcessInput(inputString) {
+    const targetK = parseInt(inputString);
+    const result = retrieveKthRunRun(targetK);
+    console.log(result);
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

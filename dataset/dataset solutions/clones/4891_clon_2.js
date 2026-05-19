@@ -1,86 +1,79 @@
-ExecuteProgram(retrieveInput());
+ProcessInput(readInputData());
 
-
-function retrieveInput()
-{
-  return require("fs").readFileSync("/dev/stdin", "utf-8").trim();
+function readInputData() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
+function printOutput(resultValue) {
+  console.log(resultValue);
+}
 
-function displayOutput(messageContent)
-{
-  console.log(messageContent);
-} // This function writes data to the standard output stream.
-
-
-function reportError(errorMessage)
-{
+function logError(errorMessage) {
   console.error(errorMessage);
-} // This function outputs debugging or error messages to the standard error stream.
+}
 
-
-// [operationCode] parameter description:
-// Default (any other value): performs no data transformation, returns the input as-is.
-// Case 1: Converts the input data into an integer value.
-// Case 2: Splits the input string by single space characters.
-// Case 3: Splits the input string by newline characters.
-// Case 4: Splits the input by spaces, then converts each resulting segment to a number.
-// Case 5: Splits the input by newlines, then converts each resulting segment to a number.
-// Case 6: Splits the input string into an array of individual characters.
-// Case 7: Splits the input string into characters, then converts each character to a number.
-// Case 8: Joins array elements using a space as the delimiter.
-// Case 9: Joins array elements using a newline as the delimiter.
-// Case 0: Joins array elements without any separator character.
-function processData(inputFragment, operationCode)
-{
-  switch (operationCode) {
+// This utility function handles various data transformations based on the specified type.
+// Conversion Types:
+// 1: Convert to integer
+// 2: Split by space
+// 3: Split by newline
+// 4: Split by space and convert to number array
+// 5: Split by newline and convert to number array
+// 6: Split into individual characters
+// 7: Split into individual characters and convert to number array
+// 8: Join array elements with space
+// 9: Join array elements with newline
+// 0: Join array elements without separator
+// Default: Return input as is
+function transformData(inputItem, conversionType) {
+  switch (conversionType) {
     case 1:
-      return parseInt(inputFragment);
+      return parseInt(inputItem);
     case 2:
-      return inputFragment.split(" ");
+      return inputItem.split(" ");
     case 3:
-      return inputFragment.split("\n");
+      return inputItem.split("\n");
     case 4:
-      return inputFragment.split(" ").map((elementItem) => Number(elementItem));
+      return inputItem.split(" ").map((val) => Number(val));
     case 5:
-      return inputFragment.split("\n").map((elementItem) => Number(elementItem));
+      return inputItem.split("\n").map((val) => Number(val));
     case 6:
-      return inputFragment.split("");
+      return inputItem.split("");
     case 7:
-      return inputFragment.split("").map((elementItem) => Number(elementItem));
+      return inputItem.split("").map((val) => Number(val));
     case 8:
-      return inputFragment.join(" ");
+      return inputItem.join(" ");
     case 9:
-      return inputFragment.join("\n");
+      return inputItem.join("\n");
     case 0:
-      return inputFragment.join("");
+      return inputItem.join("");
     default:
-      return inputFragment;
+      return inputItem;
   }
 }
 
+function ProcessInput(rawData) {
+  rawData = transformData(rawData, 3);
 
-function ExecuteProgram(rawInputData)
-{
-  rawInputData = processData(rawInputData, 3);
-  var stringLength = processData(rawInputData[0], 1);
-  var primaryString = rawInputData[1];
-  var secondaryString = rawInputData[2];
+  var numChars = transformData(rawData[0], 1);
+  var strA = rawData[1];
+  var strB = rawData[2];
 
-  if (primaryString == secondaryString) {
-    displayOutput(stringLength);
+  if (strA === strB) {
+    printOutput(numChars);
   } else {
-    for (var loopIndex = 1; loopIndex <= stringLength; loopIndex++) {
-      var segmentA = primaryString.slice(loopIndex);
-      var segmentB = secondaryString.slice(0, stringLength - loopIndex);
-      reportError(segmentA + " " + segmentB);
+    for (var idx = 1; idx <= numChars; idx++) {
+      var subStrA = strA.slice(idx);
+      var subStrB = strB.slice(0, numChars - idx);
+      logError(subStrA + " " + subStrB);
 
-      if (segmentA == segmentB) {
-        displayOutput(stringLength + loopIndex);
+      if (subStrA === subStrB) {
+        printOutput(numChars + idx);
         return;
       }
     }
-    // This line refers to an undeclared variable, preserving the original's potential runtime error.
-    displayOutput(placeholderVar.length);
+    // Note: The variable 'undefinedVar' is not defined in this scope,
+    // preserving the original code's potential ReferenceError.
+    printOutput(undefinedVar.length);
   }
 }

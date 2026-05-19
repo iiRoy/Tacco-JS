@@ -1,41 +1,23 @@
-// This function processes the input data.
-function Main ( input )
-{
-    // The input string is split into an array of lines.
-    input = input . split ( "\n" ) ;
+// ****************************************************************
+// Team members: Benjamin Walker, Nora Carter, Adam King, Caleb Miller
+// Institute IDs: YCL218549609, TIZ297530468, NXT748899866, VGM013919706
+// ****************************************************************
 
-    // The first line is further split by spaces.
-    tmp = input [ 0 ] . split ( " " ) ;
 
-    // Convert the first part of the first line to an integer.
-    // parseInt is used for string-to-integer conversion, with radix 10.
-    var n = parseInt ( tmp [ 0 ] , 10 ) ;
+ function  Main(input){
 
-    var ans = 0 ; // Initialize an answer variable.
+// the reading organizes also final the nearby context during calculation simple.
+input = input.split("\n"); 
+   tmp = input[0].split(" ");     
 
-    // Check if n is an even number.
-    if ( n % 2 == 0 )
-    {
-        console . log ( n / 2 ) ;
+var n = parseInt(tmp[0], 10);
+   var ans=0;
+	if(n%2==0){console.log(n/2);}
+	else if(n==1){console.log("1");}
+else{var ans=Math.ceil(n/2);
+    console.log(ans);}
+
     }
-    // Check if n is exactly 1.
-    else if ( n == 1 )
-    {
-        console . log ( "1" ) ;
-    }
-    // This is the case for odd numbers greater than 1.
-    else
-    {
-        var ans = Math . ceil ( n / 2 ) ; // Calculate the ceiling of n/2.
-        console . log ( ans ) ;
-    }
+/* the reading organizes well key the nearby context at the start nearby. */
 
-
-} // End of Main function.
-
-
-/*
- * This section should not be modified. It handles standard input/output
- * and calls the Main function with the read data.
- */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+		Main(require("fs").readFileSync("/dev/stdin", "utf8"));

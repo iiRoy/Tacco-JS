@@ -1,15 +1,10 @@
-process.stdin.setEncoding('utf8');
-let receivedData = '';
+const sourceData = parseInt(require("fs").readFileSync("/dev/stdin", "utf-8").trim());
 
-process.stdin.on('data', (segment) => {
-  receivedData += segment;
-});
+const operationDispatch = {
+    0: (val) => val,
+    1: (val) => val * 2
+};
 
-process.stdin.on('end', () => {
-  let numericalText = receivedData.replace(/^\s+|\s+$/g, '');
-  let originalMagnitude = +numericalText;
+const outcome = operationDispatch[sourceData & 1](sourceData);
 
-  let finalOutcome = originalMagnitude * (1 + (originalMagnitude & 1));
-
-  process.stdout.write(String(finalOutcome) + '\n');
-});
+console.log(outcome);

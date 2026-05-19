@@ -1,237 +1,372 @@
 "use strict";
 
-// Retrieve the file system module for input operations
-var sourceData = require("fs").readEntireFile("/dev/stdin", "textEncoding");
+// Module for file system operations, used to read input from stdin.
+var rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Divide the raw input string into an array of tokens using space or newline as separators
-var tokenSequence = sourceData.divideBy(/ |\n/),
-    currentTokenIndex = 0; // Initialize an index to track the current position in the token stream
+// Split the raw input data by spaces or newlines to create a stream of tokens.
+var inputTokens = rawInputData.split(/ |\n/);
+// Index to keep track of the current token being processed.
+var currentTokenIndex = 0;
 
-// Function to get the next token and convert it to a numerical value
-function acquireInteger() {
-    return Number(tokenSequence[currentTokenIndex++]);
+/**
+ * Retrieves the next token from the input stream and converts it to a number.
+ * @returns {number} The numeric value of the next token.
+ */
+function getNextNumber() {
+  return +inputTokens[currentTokenIndex++];
 }
 
-// Function to get the next token as a plain string
-function acquireString() {
-    return tokenSequence[currentTokenIndex++];
+/**
+ * Retrieves the next token from the input stream as a string.
+ * @returns {string} The string value of the next token.
+ */
+function getNextString() {
+  return inputTokens[currentTokenIndex++];
 }
 
-// Function to get the next token and convert it to a BigInt value
-function acquireLargeInteger() {
-    return BigInt(tokenSequence[currentTokenIndex++]);
+/**
+ * Retrieves the next token from the input stream and converts it to a BigInt.
+ * @returns {BigInt} The BigInt value of the next token.
+ */
+function getNextBigInt() {
+  return BigInt(inputTokens[currentTokenIndex++]);
 }
 
-// Function to read a specified number of tokens from the stream
-// 'countItems': the number of tokens to read.
-// 'returnAsRaw': if true, returns string tokens; otherwise, converts them to numbers.
-function acquireSequence(countItems, returnAsRaw) {
-    if (returnAsRaw) {
-        return tokenSequence.slice(currentTokenIndex, currentTokenIndex += countItems);
-    } else {
-        return tokenSequence.slice(currentTokenIndex, currentTokenIndex += countItems).map(value => Number(value));
+/**
+ * Retrieves a specified number of tokens from the input stream.
+ * Optionally converts them to numbers.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} returnAsStrings - If true, tokens are returned as strings; otherwise, as numbers.
+ * @returns {Array<number|string>} An array containing the retrieved tokens.
+ */
+function getNumberSlice(count, returnAsStrings) {
+  if (returnAsStrings) {
+    return inputTokens.slice(currentTokenIndex, (currentTokenIndex += count));
+  } else {
+    return inputTokens.slice(currentTokenIndex, (currentTokenIndex += count)).map((val) => +val);
+  }
+}
+
+/**
+ * Retrieves a 2D matrix of tokens from the input stream.
+ * Optionally converts them to numbers.
+ * @param {number} rows - The number of rows in the matrix.
+ * @param {number} cols - The number of columns in each row.
+ * @param {boolean} returnAsStrings - If true, tokens are returned as strings; otherwise, as numbers.
+ * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
+ */
+function getMatrixData(rows, cols, returnAsStrings) {
+  var resultMatrix = [];
+  var rowIdx = 0;
+  if (returnAsStrings) {
+    for (; rowIdx < rows; rowIdx++) {
+      resultMatrix.push(inputTokens.slice(currentTokenIndex, (currentTokenIndex += cols)));
     }
-}
-
-// Function to read a grid (2D array) of tokens
-// 'numRows': the number of rows in the grid.
-// 'numCols': the number of columns in each row.
-// 'returnAsRaw': if true, rows contain string tokens; otherwise, they contain numerical tokens.
-function acquireGrid(numRows, numCols, returnAsRaw) {
-    var gridResult = [],
-        loopCounter = 0;
-    if (returnAsRaw) {
-        for (; loopCounter < numRows; loopCounter++) {
-            gridResult.push(tokenSequence.slice(currentTokenIndex, currentTokenIndex += numCols));
-        }
-    } else {
-        for (; loopCounter < numRows; loopCounter++) {
-            gridResult.push(tokenSequence.slice(currentTokenIndex, currentTokenIndex += numCols).map(value => Number(value)));
-        }
+  } else {
+    for (; rowIdx < rows; rowIdx++) {
+      resultMatrix.push(inputTokens.slice(currentTokenIndex, (currentTokenIndex += cols)).map((val) => +val));
     }
-    return gridResult;
+  }
+  return resultMatrix;
 }
 
-// Function to create a multi-dimensional array dynamically
-// 'initialElement': the value or expression used to initialize the innermost elements.
-function constructMultiArray(initialElement) {
-    var functionArgs = arguments,
-        argLength = functionArgs.length,
-        // Construct the JavaScript code string to create the array, working from innermost to outermost dimensions
-        arrayCreationExpression = "new Array(functionArgs[" + --argLength + "]).fill().map(item => {return " + initialElement + ";})";
-    while (--argLength) {
-        arrayCreationExpression = "new Array(functionArgs[" + argLength + "]).fill().map(item => " + arrayCreationExpression + ")";
-    }
-    // Execute the generated string to instantiate the multi-dimensional array
-    return eval(arrayCreationExpression);
+/**
+ * Dynamically creates a multi-dimensional array with specified dimensions,
+ * initializing inner-most elements with a given expression.
+ * @param {string} initValueExpr - A string representing the initial value or expression for the innermost elements (e.g., "[]", "0").
+ * @param {...number} dimensions - A variable number of arguments specifying the size of each dimension.
+ * @returns {Array} The newly created multi-dimensional array.
+ */
+function createNestedArray(initValueExpr) {
+  var dimensionArgs = arguments;
+  var numDimensions = dimensionArgs.length;
+  // Start building the array creation string from the innermost dimension.
+  var arrayBuildString = "Array(dimensionArgs[" + --numDimensions + "]).fill().map(element => {return " + initValueExpr + ";})";
+  // Wrap the string for each outer dimension.
+  while (--numDimensions) {
+    arrayBuildString = "Array(dimensionArgs[" + numDimensions + "]).fill().map(element => " + arrayBuildString + ")";
+  }
+  // Evaluate the constructed string to create the array.
+  return eval(arrayBuildString);
 }
 
-// Invoke the main problem-solving routine
-var finalOutput = executeSolution();
+// Execute the main problem-solving logic.
+var finalOutput = solveCollisionProblem();
 
-// If the solution yields a result, output it to the console
+// If the main function returns a value (not undefined), print it to the console.
 if (finalOutput !== undefined) {
-    systemConsole.outputLine(convertToString(finalOutput));
+  console.log(String(finalOutput));
 }
 
-// The core function where the problem's logic resides
-function executeSolution() {
-    // Define a large number to represent an effectively infinite distance for initialization
-    const infiniteValue = 1_000_000_000;
+/**
+ * Main function that implements the collision detection algorithm.
+ * It categorizes points by direction and calculates the minimum collision distance.
+ * @returns {string|number} "SAFE" if no collision is detected, otherwise the minimum collision distance multiplied by 5.
+ */
+function solveCollisionProblem() {
+  // Define a large number to represent an effectively infinite distance.
+  var maxPossibleDistance = 1e9;
 
-    // Read the total number of points that will be processed
-    var pointCount = acquireInteger();
+  // Read the total number of points from the input.
+  var totalPoints = getNextNumber();
 
-    // Initialize a 4-element array, where each element will store points categorized by their direction
-    var categorizedPoints = constructMultiArray("[]", 4);
+  // Initialize a 4-element array, where each element is an empty array.
+  // This structure will hold points categorized by their movement direction.
+  var categorizedPoints = createNestedArray("[]", 4);
 
-    // Create a mapping from direction strings to numerical indices
-    const directionMappings = {
-        DIR_UP: 0,
-        DIR_RIGHT: 1,
-        DIR_DOWN: 2,
-        DIR_LEFT: 3
-    };
+  // Map direction characters to numerical indices for array access.
+  var directionIndexMap = { U: 0, R: 1, D: 2, L: 3 };
 
-    // Loop through each point input to categorize and store its data
-    for (let currentPointLoop = 0; currentPointLoop < pointCount; currentPointLoop++) {
-        var coordinateX = acquireInteger(),
-            coordinateY = acquireInteger(),
-            currentDirection = acquireString();
-        // Store point data: original X, original Y, X-Y (for diagonal), and X+Y (for other diagonal)
-        categorizedPoints[directionMappings[currentDirection]].push([coordinateX, coordinateY, coordinateX - coordinateY, coordinateX + coordinateY]);
-    }
+  // Loop through each point, read its coordinates and direction,
+  // then store it in the appropriate category.
+  for (var pointIdx = 0; pointIdx < totalPoints; pointIdx++) {
+    var currentX = getNextNumber();
+    var currentY = getNextNumber();
+    var currentDirection = getNextString();
 
-    // Initialize the minimum collision distance found to the infinite value
-    var minCollisionDistance = infiniteValue;
+    // Each point is stored as an array: [x, y, x-y, x+y].
+    // x-y and x+y are pre-calculated for efficient diagonal collision checks.
+    categorizedPoints[directionIndexMap[currentDirection]].push([
+      currentX,
+      currentY,
+      currentX - currentY,
+      currentX + currentY,
+    ]);
+  }
 
-    // First sorting pass: Sort points for horizontal/vertical collision detection
-    // Each group is sorted by X or Y coordinate primarily, then by the other coordinate.
-    for (let groupIndexOne = 0; groupIndexOne < 4; groupIndexOne++) {
-        let primarySortAxis = groupIndexOne & 1; // 0 for X-axis (U/D), 1 for Y-axis (R/L)
-        categorizedPoints[groupIndexOne].sort((pointOne, pointTwo) => {
-            // Compare based on the primary axis
-            if (pointOne[primarySortAxis] > pointTwo[primarySortAxis]) return 1;
-            if (pointOne[primarySortAxis] < pointTwo[primarySortAxis]) return -1;
-            // If primary axis values are equal, compare by the secondary axis
-            return pointOne[1 - primarySortAxis] - pointTwo[1 - primarySortAxis];
-        });
-    }
+  // Initialize the minimum collision distance found so far to the maximum possible value.
+  var minimumCollisionDistance = maxPossibleDistance;
 
-    // First collision detection pass: Detect horizontal/vertical collisions (e.g., UP vs. DOWN, RIGHT vs. LEFT)
-    for (let groupPairIndexA = 0; groupPairIndexA < 2; groupPairIndexA++) {
-        let comparisonPointer = 0;
-        // Only proceed if the opposing group (e.g., DOWN for UP) has elements
-        if (categorizedPoints[groupPairIndexA + 2].length > 0) {
-            for (let sourcePointIndexA = 0; sourcePointIndexA < categorizedPoints[groupPairIndexA].length; sourcePointIndexA++) {
-                // Advance the 'comparisonPointer' in the opposing group while its points are "behind" the current source point on the primary axis
-                while (categorizedPoints[groupPairIndexA + 2].length > comparisonPointer &&
-                    categorizedPoints[groupPairIndexA + 2][comparisonPointer][groupPairIndexA] < categorizedPoints[groupPairIndexA][sourcePointIndexA][groupPairIndexA]) {
-                    comparisonPointer++;
-                }
-                // If primary axis values are identical, further advance 'comparisonPointer' if the opposing point is "behind" on the secondary axis
-                while (categorizedPoints[groupPairIndexA + 2].length > comparisonPointer &&
-                    categorizedPoints[groupPairIndexA + 2][comparisonPointer][groupPairIndexA] === categorizedPoints[groupPairIndexA][sourcePointIndexA][groupPairIndexA] &&
-                    categorizedPoints[groupPairIndexA][sourcePointIndexA][1 - groupPairIndexA] > categorizedPoints[groupPairIndexA + 2][comparisonPointer][1 - groupPairIndexA]) {
-                    comparisonPointer++;
-                }
-                // If the pointer has reached the end of the opposing group, no further collisions are possible for this source group
-                if (comparisonPointer === categorizedPoints[groupPairIndexA + 2].length) break;
+  // --- First phase of collision checks: Horizontal and Vertical collisions ---
+  // This loop prepares each direction group for specific collision checks.
+  for (var groupIdx = 0; groupIdx < 4; groupIdx++) {
+    // Determine the primary coordinate for sorting based on group index:
+    // For groups 0 (U) and 2 (D), primary is X (index 0).
+    // For groups 1 (R) and 3 (L), primary is Y (index 1).
+    // The original code uses `i&1` which gives 0 for even (U, D) and 1 for odd (R, L).
+    // This means for U/D, it sorts by Y (index 1), and for R/L, it sorts by X (index 0).
+    // Let's re-evaluate:
+    // U (0) -> 0&1 = 0. Sort by a[0] (X).
+    // R (1) -> 1&1 = 1. Sort by a[1] (Y).
+    // D (2) -> 2&1 = 0. Sort by a[0] (X).
+    // L (3) -> 3&1 = 1. Sort by a[1] (Y).
+    // This is for points moving along X or Y axes.
+    // The original code sorts by `a[j]` where `j = i&1`.
+    // For U (0) and D (2), j=0, so sort by X.
+    // For R (1) and L (3), j=1, so sort by Y.
+    // This is correct for finding collisions along X or Y axes.
+    var primaryCoordType = groupIdx & 1;
 
-                // If primary axis coordinates match, a collision is imminent
-                if (categorizedPoints[groupPairIndexA][sourcePointIndexA][groupPairIndexA] === categorizedPoints[groupPairIndexA + 2][comparisonPointer][groupPairIndexA]) {
-                    // Update the minimum collision distance
-                    minCollisionDistance = Math.min(minCollisionDistance,
-                        categorizedPoints[groupPairIndexA + 2][comparisonPointer][1 - groupPairIndexA] - categorizedPoints[groupPairIndexA][sourcePointIndexA][1 - groupPairIndexA]);
-                }
-            }
+    // Sort points within each group. Primary sort key is `primaryCoordType`,
+    // secondary sort key (for tie-breaking) is the other coordinate.
+    categorizedPoints[groupIdx].sort((pointA, pointB) => {
+      if (pointA[primaryCoordType] > pointB[primaryCoordType]) return 1;
+      if (pointA[primaryCoordType] < pointB[primaryCoordType]) return -1;
+      // If primary coordinates are equal, sort by the other coordinate.
+      return pointA[1 - primaryCoordType] - pointB[1 - primaryCoordType];
+    });
+  }
+
+  // Check for collisions between opposing vertical (U-D) and horizontal (R-L) groups.
+  // pairIndex = 0: Checks U (0) vs D (2)
+  // pairIndex = 1: Checks R (1) vs L (3)
+  for (var pairIndex = 0; pairIndex < 2; pairIndex++) {
+    var otherGroupPointer = 0; // Pointer for iterating through the 'other' group.
+
+    // Only proceed if the 'other' group (D or L) has points.
+    if (categorizedPoints[pairIndex + 2].length) {
+      // Iterate through points in the 'current' group (U or R).
+      for (var currentPointIdx = 0; currentPointIdx < categorizedPoints[pairIndex].length; currentPointIdx++) {
+        // Advance 'otherGroupPointer' past points in the 'other' group
+        // that are "behind" the current point on the primary axis.
+        while (
+          categorizedPoints[pairIndex + 2].length > otherGroupPointer &&
+          categorizedPoints[pairIndex + 2][otherGroupPointer][pairIndex] <
+            categorizedPoints[pairIndex][currentPointIdx][pairIndex]
+        ) {
+          otherGroupPointer++;
         }
-    }
 
-    // Second sorting pass: Sort points for diagonal collision detection (X+Y constant)
-    // Each group is sorted by (X+Y) coordinate primarily, then by Y coordinate.
-    for (let groupIndexTwo = 0; groupIndexTwo < 4; groupIndexTwo++) {
-        let secondarySortAxis = 1 - (groupIndexTwo & 1); // This determines whether to use X or Y for tie-breaking
-        categorizedPoints[groupIndexTwo].sort((pointOne, pointTwo) => {
-            // Compare based on the X+Y coordinate (index 3)
-            if (pointOne[3] > pointTwo[3]) return 1;
-            if (pointOne[3] < pointTwo[3]) return -1;
-            // If X+Y values are equal, compare by the determined secondary axis (Y or X)
-            return pointOne[secondarySortAxis] - pointTwo[secondarySortAxis];
-        });
-    }
-
-    // Second collision detection pass: Detect diagonal collisions where X+Y is constant
-    // Checks pairs like (UP vs. RIGHT), (DOWN vs. LEFT).
-    for (let groupPairIndexB = 0; groupPairIndexB < 4; groupPairIndexB += 2) {
-        let comparisonPointer = 0;
-        if (categorizedPoints[groupPairIndexB + 1].length > 0) {
-            for (let sourcePointIndexB = 0; sourcePointIndexB < categorizedPoints[groupPairIndexB].length; sourcePointIndexB++) {
-                // Advance 'comparisonPointer' while target points are "behind" the source point on the (X+Y) coordinate
-                while (categorizedPoints[groupPairIndexB + 1].length > comparisonPointer &&
-                    categorizedPoints[groupPairIndexB + 1][comparisonPointer][3] < categorizedPoints[groupPairIndexB][sourcePointIndexB][3]) {
-                    comparisonPointer++;
-                }
-                // If (X+Y) values are identical, further advance 'comparisonPointer' if the opposing point is "behind" on the secondary axis
-                while (categorizedPoints[groupPairIndexB + 1].length > comparisonPointer &&
-                    categorizedPoints[groupPairIndexB + 1][comparisonPointer][3] === categorizedPoints[groupPairIndexB][sourcePointIndexB][3] &&
-                    categorizedPoints[groupPairIndexB][sourcePointIndexB][1 - groupPairIndexB / 2] > categorizedPoints[groupPairIndexB + 1][comparisonPointer][1 - groupPairIndexB / 2]) {
-                    comparisonPointer++;
-                }
-                if (comparisonPointer === categorizedPoints[groupPairIndexB + 1].length) break;
-
-                // If (X+Y) coordinates match, a diagonal collision is possible
-                if (categorizedPoints[groupPairIndexB][sourcePointIndexB][3] === categorizedPoints[groupPairIndexB + 1][comparisonPointer][3]) {
-                    // Update minimum distance, multiplying by 2 as it's a diagonal distance
-                    minCollisionDistance = Math.min(minCollisionDistance,
-                        (categorizedPoints[groupPairIndexB + 1][comparisonPointer][1 - groupPairIndexB / 2] - categorizedPoints[groupPairIndexB][sourcePointIndexB][1 - groupPairIndexB / 2]) * 2);
-                }
-            }
+        // If points are on the same primary axis, advance 'otherGroupPointer' past
+        // points that are "behind" the current point on the secondary axis.
+        while (
+          categorizedPoints[pairIndex + 2].length > otherGroupPointer &&
+          categorizedPoints[pairIndex + 2][otherGroupPointer][pairIndex] ===
+            categorizedPoints[pairIndex][currentPointIdx][pairIndex] &&
+          categorizedPoints[pairIndex][currentPointIdx][1 - pairIndex] >
+            categorizedPoints[pairIndex + 2][otherGroupPointer][1 - pairIndex]
+        ) {
+          otherGroupPointer++;
         }
-    }
 
-    // Third sorting pass: Sort points for diagonal collision detection (X-Y constant)
-    // Each group is sorted by (X-Y) coordinate primarily, then by X coordinate.
-    for (let groupIndexThree = 0; groupIndexThree < 4; groupIndexThree++) {
-        categorizedPoints[groupIndexThree].sort((pointOne, pointTwo) => {
-            // Compare based on the X-Y coordinate (index 2)
-            if (pointOne[2] > pointTwo[2]) return 1;
-            if (pointOne[2] < pointTwo[2]) return -1;
-            // If X-Y values are equal, compare by the X coordinate (index 0)
-            return pointOne[0] - pointTwo[0];
-        });
-    }
-
-    // Third collision detection pass: Detect diagonal collisions where X-Y is constant
-    // Checks pairs like (UP vs. LEFT), (DOWN vs. RIGHT).
-    for (let groupPairIndexC = 0; groupPairIndexC < 2; groupPairIndexC++) {
-        let comparisonPointer = 0;
-        // The target group for these checks is 3 - current group index
-        if (categorizedPoints[3 - groupPairIndexC].length > 0) {
-            for (let sourcePointIndexC = 0; sourcePointIndexC < categorizedPoints[groupPairIndexC].length; sourcePointIndexC++) {
-                // Advance 'comparisonPointer' while target points are "behind" the source point on the (X-Y) coordinate
-                while (categorizedPoints[3 - groupPairIndexC].length > comparisonPointer &&
-                    categorizedPoints[3 - groupPairIndexC][comparisonPointer][2] < categorizedPoints[groupPairIndexC][sourcePointIndexC][2]) {
-                    comparisonPointer++;
-                }
-                // If (X-Y) values are identical, further advance 'comparisonPointer' if the opposing point is "behind" on the X coordinate
-                while (categorizedPoints[3 - groupPairIndexC].length > comparisonPointer &&
-                    categorizedPoints[3 - groupPairIndexC][comparisonPointer][2] === categorizedPoints[groupPairIndexC][sourcePointIndexC][2] &&
-                    categorizedPoints[groupPairIndexC][sourcePointIndexC][0] > categorizedPoints[3 - groupPairIndexC][comparisonPointer][0]) {
-                    comparisonPointer++;
-                }
-                if (comparisonPointer === categorizedPoints[3 - groupPairIndexC].length) break;
-
-                // If (X-Y) coordinates match, a diagonal collision is possible
-                if (categorizedPoints[groupPairIndexC][sourcePointIndexC][2] === categorizedPoints[3 - groupPairIndexC][comparisonPointer][2]) {
-                    // Update minimum distance, multiplying by 2 for diagonal distance
-                    minCollisionDistance = Math.min(minCollisionDistance,
-                        (categorizedPoints[3 - groupPairIndexC][comparisonPointer][0] - categorizedPoints[groupPairIndexC][sourcePointIndexC][0]) * 2);
-                }
-            }
+        // If the 'other' group has been exhausted, no more collisions are possible for this 'current' group.
+        if (otherGroupPointer === categorizedPoints[pairIndex + 2].length) {
+          break;
         }
-    }
 
-    // Return "NO_INTERSECTION" if no collisions were found, otherwise return the minimum collision distance multiplied by 5
-    return minCollisionDistance === infiniteValue ? "NO_INTERSECTION" : minCollisionDistance * 5;
+        // If points are on the same primary axis, a potential collision exists.
+        if (
+          categorizedPoints[pairIndex][currentPointIdx][pairIndex] ===
+          categorizedPoints[pairIndex + 2][otherGroupPointer][pairIndex]
+        ) {
+          // Calculate the distance (difference in the secondary coordinate) and update the minimum.
+          minimumCollisionDistance = Math.min(
+            minimumCollisionDistance,
+            categorizedPoints[pairIndex + 2][otherGroupPointer][1 - pairIndex] -
+              categorizedPoints[pairIndex][currentPointIdx][1 - pairIndex]
+          );
+        }
+      }
+    }
+  }
+
+  // --- Second phase of collision checks: Diagonal collisions along x+y axis ---
+  // This loop re-sorts each direction group for diagonal checks.
+  for (var groupIdx = 0; groupIdx < 4; groupIdx++) {
+    // Determine the secondary coordinate for tie-breaking during sorting:
+    // For U (0) and D (2), use Y (index 1).
+    // For R (1) and L (3), use X (index 0).
+    // The original code uses `1-(i&1)`.
+    // U (0) -> 1-(0&1) = 1-0 = 1 (Y coord)
+    // R (1) -> 1-(1&1) = 1-1 = 0 (X coord)
+    // D (2) -> 1-(2&1) = 1-0 = 1 (Y coord)
+    // L (3) -> 1-(3&1) = 1-1 = 0 (X coord)
+    var secondaryCoordForDiagonal = 1 - (groupIdx & 1);
+
+    // Sort points within each group based on the (x+y) coordinate (index 3),
+    // then by the determined secondary coordinate for tie-breaking.
+    categorizedPoints[groupIdx].sort((pointA, pointB) => {
+      if (pointA[3] > pointB[3]) return 1;
+      if (pointA[3] < pointB[3]) return -1;
+      // Tie-breaker: sort by the secondary coordinate (X or Y).
+      return pointA[secondaryCoordForDiagonal] - pointB[secondaryCoordForDiagonal];
+    });
+  }
+
+  // Check for diagonal collisions between specific pairs of groups.
+  // diagonalPairIndex = 0: Checks U (0) vs R (1)
+  // diagonalPairIndex = 2: Checks D (2) vs L (3)
+  for (var diagonalPairIndex = 0; diagonalPairIndex < 4; diagonalPairIndex += 2) {
+    var otherGroupPointer = 0; // Pointer for iterating through the 'other' group.
+
+    // Only proceed if the 'other' group (R or L) has points.
+    if (categorizedPoints[diagonalPairIndex + 1].length) {
+      // Iterate through points in the 'current' group (U or D).
+      for (var currentPointIdx = 0; currentPointIdx < categorizedPoints[diagonalPairIndex].length; currentPointIdx++) {
+        // Advance 'otherGroupPointer' past points in the 'other' group
+        // that are "behind" the current point on the (x+y) axis.
+        while (
+          categorizedPoints[diagonalPairIndex + 1].length > otherGroupPointer &&
+          categorizedPoints[diagonalPairIndex + 1][otherGroupPointer][3] <
+            categorizedPoints[diagonalPairIndex][currentPointIdx][3]
+        ) {
+          otherGroupPointer++;
+        }
+
+        // If points are on the same (x+y) axis, advance 'otherGroupPointer' past
+        // points that are "behind" the current point on the secondary coordinate.
+        while (
+          categorizedPoints[diagonalPairIndex + 1].length > otherGroupPointer &&
+          categorizedPoints[diagonalPairIndex + 1][otherGroupPointer][3] ===
+            categorizedPoints[diagonalPairIndex][currentPointIdx][3] &&
+          categorizedPoints[diagonalPairIndex][currentPointIdx][1 - diagonalPairIndex / 2] >
+            categorizedPoints[diagonalPairIndex + 1][otherGroupPointer][1 - diagonalPairIndex / 2]
+        ) {
+          otherGroupPointer++;
+        }
+
+        // If the 'other' group has been exhausted, no more collisions are possible for this 'current' group.
+        if (otherGroupPointer === categorizedPoints[diagonalPairIndex + 1].length) {
+          break;
+        }
+
+        // If points are on the same (x+y) axis, a potential collision exists.
+        if (
+          categorizedPoints[diagonalPairIndex][currentPointIdx][3] ===
+          categorizedPoints[diagonalPairIndex + 1][otherGroupPointer][3]
+        ) {
+          // Calculate the distance (2 times the difference in the secondary coordinate) and update the minimum.
+          minimumCollisionDistance = Math.min(
+            minimumCollisionDistance,
+            (categorizedPoints[diagonalPairIndex + 1][otherGroupPointer][1 - diagonalPairIndex / 2] -
+              categorizedPoints[diagonalPairIndex][currentPointIdx][1 - diagonalPairIndex / 2]) *
+              2
+          );
+        }
+      }
+    }
+  }
+
+  // --- Third phase of collision checks: Diagonal collisions along x-y axis ---
+  // This loop re-sorts each direction group for the final set of diagonal checks.
+  for (var groupIdx = 0; groupIdx < 4; groupIdx++) {
+    // Sort points within each group based on the (x-y) coordinate (index 2),
+    // then by the X coordinate (index 0) for tie-breaking.
+    categorizedPoints[groupIdx].sort((pointA, pointB) => {
+      if (pointA[2] > pointB[2]) return 1;
+      if (pointA[2] < pointB[2]) return -1;
+      // Tie-breaker: sort by X coordinate.
+      return pointA[0] - pointB[0];
+    });
+  }
+
+  // Check for diagonal collisions between specific pairs of groups.
+  // pairIndex = 0: Checks U (0) vs L (3)
+  // pairIndex = 1: Checks R (1) vs D (2)
+  for (var pairIndex = 0; pairIndex < 2; pairIndex++) {
+    var otherGroupPointer = 0; // Pointer for iterating through the 'other' group.
+
+    // The 'other' group index is calculated as (3 - pairIndex).
+    // For pairIndex=0, other group is 3 (L).
+    // For pairIndex=1, other group is 2 (D).
+    if (categorizedPoints[3 - pairIndex].length) {
+      // Iterate through points in the 'current' group (U or R).
+      for (var currentPointIdx = 0; currentPointIdx < categorizedPoints[pairIndex].length; currentPointIdx++) {
+        // Advance 'otherGroupPointer' past points in the 'other' group
+        // that are "behind" the current point on the (x-y) axis.
+        while (
+          categorizedPoints[3 - pairIndex].length > otherGroupPointer &&
+          categorizedPoints[3 - pairIndex][otherGroupPointer][2] <
+            categorizedPoints[pairIndex][currentPointIdx][2]
+        ) {
+          otherGroupPointer++;
+        }
+
+        // If points are on the same (x-y) axis, advance 'otherGroupPointer' past
+        // points that are "behind" the current point on the X coordinate.
+        while (
+          categorizedPoints[3 - pairIndex].length > otherGroupPointer &&
+          categorizedPoints[3 - pairIndex][otherGroupPointer][2] ===
+            categorizedPoints[pairIndex][currentPointIdx][2] &&
+          categorizedPoints[pairIndex][currentPointIdx][0] >
+            categorizedPoints[3 - pairIndex][otherGroupPointer][0]
+        ) {
+          otherGroupPointer++;
+        }
+
+        // If the 'other' group has been exhausted, no more collisions are possible for this 'current' group.
+        if (otherGroupPointer === categorizedPoints[3 - pairIndex].length) {
+          break;
+        }
+
+        // If points are on the same (x-y) axis, a potential collision exists.
+        if (
+          categorizedPoints[pairIndex][currentPointIdx][2] ===
+          categorizedPoints[3 - pairIndex][otherGroupPointer][2]
+        ) {
+          // Calculate the distance (2 times the difference in the X coordinate) and update the minimum.
+          minimumCollisionDistance = Math.min(
+            minimumCollisionDistance,
+            (categorizedPoints[3 - pairIndex][otherGroupPointer][0] -
+              categorizedPoints[pairIndex][currentPointIdx][0]) *
+              2
+          );
+        }
+      }
+    }
+  }
+
+  // If no collision was found, the minimumCollisionDistance will still be maxPossibleDistance.
+  // In that case, return "SAFE". Otherwise, return the calculated minimum distance multiplied by 5.
+  return minimumCollisionDistance === maxPossibleDistance ? "SAFE" : minimumCollisionDistance * 5;
 }

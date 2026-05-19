@@ -1,141 +1,101 @@
 class TreeNode {
-  constructor(elementData, leftSubtree = null, rightSubtree = null) {
-    this.data = elementData;
-    this.leftRef = leftSubtree;
-    this.rightRef = rightSubtree;
+  constructor(nodeValue, leftChild = null, rightChild = null) {
+    this.nodeValue = nodeValue;
+    this.leftChild = leftChild;
+    this.rightChild = rightChild;
   }
 
-  isLeafNode() {
-    return this.leftRef === null && this.rightRef === null;
+  getNodeValue() {
+    return this.nodeValue;
   }
 }
 
-class BstManager {
+class BinarySearchTree {
   constructor() {
     this.treeRoot = null;
-    this.nodeCount = 0;
-    this.creationTimestamp = Date.now();
   }
 
-  static get NodeFactory() {
-    return TreeNode;
-  }
+  static get Node() { return TreeNode; }
 
-  addNode(valueToAdd) {
-    if (typeof valueToAdd !== 'number' || isNaN(valueToAdd)) {
-      return false;
-    }
-
-    const freshNode = new BstManager.NodeFactory(valueToAdd);
+  addNode(nodeValue) {
+    const freshNode = new BinarySearchTree.Node(nodeValue);
 
     if (this.treeRoot === null) {
       this.treeRoot = freshNode;
-      this.nodeCount++;
-      return true;
-    }
-
-    let currentNode = this.treeRoot;
-    let parentOfCurrent = null;
-
-    while (currentNode !== null) {
-      parentOfCurrent = currentNode;
-
-      if (valueToAdd < currentNode.data) {
-        currentNode = currentNode.leftRef;
-      } else {
-        currentNode = currentNode.rightRef;
-      }
-    }
-
-    if (valueToAdd < parentOfCurrent.data) {
-      parentOfCurrent.leftRef = freshNode;
-    } else {
-      parentOfCurrent.rightRef = freshNode;
-    }
-
-    this.nodeCount++;
-    return true;
-  }
-
-  getInfixTraversal() {
-    const collectedElements = [];
-
-    const _collectInfix = (nodeRef) => {
-      if (nodeRef === null) {
-        return;
-      }
-      _collectInfix(nodeRef.leftRef);
-      collectedElements.push(nodeRef.data);
-      _collectInfix(nodeRef.rightRef);
-    };
-
-    _collectInfix(this.treeRoot);
-    return collectedElements.join(' ');
-  }
-
-  getPrefixTraversal() {
-    const collectedElements = [];
-
-    const _collectPrefix = (nodeRef) => {
-      if (nodeRef === null) {
-        return;
-      }
-      collectedElements.push(nodeRef.data);
-      _collectPrefix(nodeRef.leftRef);
-      _collectPrefix(nodeRef.rightRef);
-    };
-
-    _collectPrefix(this.treeRoot);
-    return collectedElements.join(' ');
-  }
-
-  reportTreeStatus() {
-    if (this.treeRoot === null) {
-      console.log("Tree is empty. No elements to display.");
       return;
     }
 
-    console.log(`In-Order Traversal (Sorted):${this.getInfixTraversal()}`);
-    console.log(`Pre-Order Traversal (Root First):${this.getPrefixTraversal()}`);
+    let currentNode = this.treeRoot;
+    let parentNode = null;
+
+    while (currentNode !== null) {
+      parentNode = currentNode;
+      const isLesser = nodeValue < currentNode.getNodeValue();
+      currentNode = isLesser ? currentNode.leftChild : currentNode.rightChild;
+    }
+
+    if (nodeValue < parentNode.getNodeValue()) {
+      parentNode.leftChild = freshNode;
+    } else {
+      parentNode.rightChild = freshNode;
+    }
+  }
+
+  _performTraversalAndLog(traversalMode) {
+    let outputString = '';
+
+    const recursiveTraversal = (currentTraversalNode) => {
+      if (currentTraversalNode === null) {
+        return;
+      }
+
+      if (traversalMode === 'preOrder') {
+        outputString += ` ${currentTraversalNode.getNodeValue()}`;
+      }
+      recursiveTraversal(currentTraversalNode.leftChild);
+      if (traversalMode === 'inOrder') {
+        outputString += ` ${currentTraversalNode.getNodeValue()}`;
+      }
+      recursiveTraversal(currentTraversalNode.rightChild);
+    };
+
+    recursiveTraversal(this.treeRoot);
+    console.log(outputString);
+  }
+
+  traverseInOrderAndPrint() {
+    this._performTraversalAndLog('inOrder');
+  }
+
+  traversePreOrderAndPrint() {
+    this._performTraversalAndLog('preOrder');
+  }
+
+  displayTree() {
+    this.traverseInOrderAndPrint();
+    this.traversePreOrderAndPrint();
   }
 }
 
-(async function processInputCommands() {
-  const fs = require('fs').promises;
-  let inputInstructions = [];
-  let totalLinesExpected = 0;
+(function processInput() {
+  const fileSystemModule = require('fs');
+  const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8').trim();
+  const inputLines = rawInputContent.split('\n');
 
-  try {
-    const fileContent = await fs.readFile('/dev/stdin', 'utf8');
-    inputInstructions = fileContent.trim().split('\n');
-    totalLinesExpected = Number(inputInstructions.shift());
+  const numCommandsStr = inputLines.shift();
+  const numCommands = Number(numCommandsStr);
 
-  } catch (error) {
-    console.error(`Error reading input file: ${error.message}`);
-    return;
-  }
+  const bstInstance = new BinarySearchTree();
 
-  const myBstInstance = new BstManager();
+  for (const currentLine of inputLines) {
+    const commandParts = currentLine.split(' ');
+    const commandIdentifier = commandParts[0].charAt(0);
 
-  for (const lineEntry of inputInstructions) {
-    const commandPair = lineEntry.split(' ');
-    const operationType = commandPair[0].charAt(0);
-
-    switch (operationType) {
-      case 'i':
-        const valueToInsert = Number(commandPair[1]);
-        if (!isNaN(valueToInsert)) {
-          myBstInstance.addNode(valueToInsert);
-        } else {
-          console.warn(`Skipping invalid insert command: '${lineEntry}'. Value '${commandPair[1]}' is not a number.`);
-        }
-        break;
-      case 'p':
-        myBstInstance.reportTreeStatus();
-        break;
-      default:
-        console.warn(`Unknown command detected: '${commandPair[0]}'. Skipping.`);
-        break;
+    if (commandIdentifier === 'i') {
+      const valueToInsert = Number(commandParts[1]);
+      bstInstance.addNode(valueToInsert);
+    } else {
+      bstInstance.displayTree();
     }
   }
 })();

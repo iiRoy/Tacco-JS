@@ -1,157 +1,230 @@
-var INPUT_PARSER=(function(){
-  // This function acts as a factory for creating input processing objects.
-  function createReader(textData){
-    return new LineByLineReader(textData);
+var INPUT_PARSER = (function () {
+  // This factory function creates an instance of the input processing utility.
+  function createParser(sourceText) {
+    return new InputSource(sourceText);
   }
 
-  // The core class responsible for parsing input line by line.
-  function LineByLineReader(rawText){
-    // Stores the input text, split into individual lines.
-    this.textLines = rawText.trim().split("\n");
-    // Pointer to the current line being processed.
-    this.linePointer = 0;
+  // The InputSource constructor initializes the internal state for reading lines.
+  function InputSource(sourceText) {
+    // Stores all input lines after trimming whitespace and splitting by newline.
+    this._lines = sourceText.trim().split("\n");
+    // Keeps track of the current line being processed.
+    this._currentLineIndex = 0;
   }
 
-  // Extracts the last number from the current line, optionally returning it as a string.
-  LineByLineReader.prototype.extractLastNumber=function(asString){
-    var currentLines = this.textLines,
-        lineIdx = this.linePointer,
-        resultVal;
-    // If the current line is a string, process it by reversing and splitting.
-    if(typeof currentLines[lineIdx]==="string") {
-      currentLines[lineIdx] = currentLines[lineIdx].split(" ").reverse();
+  // Reads a single value from the current line, treating it as a number by default.
+  // Values on a line are assumed to be space-separated and are consumed from right-to-left.
+  // The 'asString' parameter, if true, returns the value as a string instead of a number.
+  InputSource.prototype.readNumber = function (asString) {
+    var lineData = this._lines,
+      lineIdx = this._currentLineIndex,
+      resultVal;
+
+    // If the current line is still a raw string, parse it into an array of strings,
+    // reversing it to allow efficient 'pop' operations from the end.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
-    // Pop the last element from the processed line.
-    resultVal = currentLines[lineIdx].pop();
-    // If the line is now empty, advance to the next line.
-    if(!currentLines[lineIdx].length) this.linePointer++;
-    // Return either the string or its numeric conversion.
+
+    // Extract the next value from the current line.
+    resultVal = lineData[lineIdx].pop();
+
+    // If the current line is now empty, advance to the next line for subsequent reads.
+    if (!lineData[lineIdx].length) {
+      this._currentLineIndex++;
+    }
+
+    // Return the value, converting to a number if 'asString' is not explicitly true.
     return asString ? resultVal : +resultVal;
   };
 
-  // Reads an entire line and returns its space-separated values, optionally as strings.
-  LineByLineReader.prototype.getLineAsNumbers=function(asString){
-    var valuesOnLine = this.textLines[this.linePointer++].split(" ");
-    // Return strings or map to numbers.
-    return asString ? valuesOnLine : valuesOnLine.map(item => +item);
+  // Reads an entire line of space-separated values.
+  // By default, it converts all values to numbers. If 'asString' is true, it returns strings.
+  InputSource.prototype.readNumbersLine = function (asString) {
+    // Retrieve the current line, split it by spaces, and then increment the line index.
+    var parsedData = this._lines[this._currentLineIndex++].split(" ");
+    // Map the array elements to numbers if 'asString' is false, otherwise return as strings.
+    return asString ? parsedData : parsedData.map((element) => +element);
   };
 
-  // Reads 'numRows' lines and parses them into a matrix (2D array of numbers).
-  LineByLineReader.prototype.getMatrix=function(numRows,asString){
-    var matrixData = this.textLines.slice(this.linePointer,this.linePointer+=numRows).map(line => line.split(" "));
-    // Return string matrix or number matrix.
-    return asString ? matrixData : matrixData.map(row => row.map(cell => +cell));
+  // Reads a block of 'numLines' lines, treating each line as a row in a matrix.
+  // Each row is split by spaces. By default, all values are converted to numbers.
+  // If 'asString' is true, the matrix contains string values.
+  InputSource.prototype.readMatrix = function (numLines, asString) {
+    // Extract the specified number of lines and split each line into an array of strings.
+    var parsedData = this._lines
+      .slice(this._currentLineIndex, (this._currentLineIndex += numLines))
+      .map((element) => element.split(" "));
+    // If 'asString' is false, further map each string element to a number.
+    return asString
+      ? parsedData
+      : parsedData.map((row) => row.map((element) => +element));
   };
 
-  // Reads 'numElements' lines and parses them into a vector (1D array of numbers).
-  LineByLineReader.prototype.getVector=function(numElements,asString){
-    var vectorData = this.textLines.slice(this.linePointer,this.linePointer+=numElements);
-    // Return string vector or number vector.
-    return asString ? vectorData : vectorData.map(val => +val);
+  // Reads a block of 'numLines' lines, where each line contains a single value.
+  // By default, these values are converted to numbers. If 'asString' is true, they remain strings.
+  InputSource.prototype.readNumbersArray = function (numLines, asString) {
+    // Extract the specified number of lines from the input source.
+    var parsedData = this._lines.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += numLines)
+    );
+    // Convert each element to a number if 'asString' is false.
+    return asString ? parsedData : parsedData.map((element) => +element);
   };
 
-  // The factory function is returned as the public interface.
-  return createReader;
+  // The IIFE returns the factory function 'createParser'.
+  return createParser;
 })();
 
-// Create an input handler instance by reading from standard input.
-var dataHandler = INPUT_PARSER(require("fs").readFileSync("/dev/stdin","utf8"));
+// Initialize the input reader by synchronously reading the content of /dev/stdin.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Utility function to dynamically construct multi-dimensional arrays.
-// It takes an initial value and then dimensions as subsequent arguments.
-function createNDArray(initialValue){
-  var argumentList = arguments,
-      countOfArgs = argumentList.length,
-      arrayDefinition = "Array(argumentList["+--countOfArgs+"]).fill(0).map(elem=>{return "+initialValue+";})";
-  // Build the nested array creation string.
-  while(--countOfArgs) arrayDefinition="Array(argumentList["+countOfArgs+"]).fill(0).map(elem=>"+arrayDefinition+")";
-  // Evaluate the string to create the array.
-  return eval(arrayDefinition);
+// Dynamically creates a multi-dimensional array with a specified initial value and dimensions.
+// This function uses `eval` to construct the array creation expression.
+function createMultiDimArray(initialValue) {
+  var dimensions = arguments,
+    dimCount = dimensions.length,
+    arrayExpression =
+      "Array(dimensions[" +
+      --dimCount +
+      "]).fill(0).map(x=>{return " +
+      initialValue +
+      ";})";
+  // Build the nested Array.map structure for higher dimensions.
+  while (--dimCount) {
+    arrayExpression =
+      "Array(dimensions[" + dimCount + "]).fill(0).map(x=>" + arrayExpression + ")";
+  }
+  // Execute the constructed string as JavaScript code.
+  return eval(arrayExpression);
 }
 
-// Computes the greatest common divisor of two non-negative integers using Euclidean algorithm.
-function findCommonDivisor(firstNum,secondNum){
-  return secondNum ? findCommonDivisor(secondNum,firstNum % secondNum) : firstNum;
+// Computes the greatest common divisor (GCD) of two numbers using the Euclidean algorithm.
+function greatestCommonDivisor(num1, num2) {
+  // Base case: if num2 is 0, num1 is the GCD.
+  return num2 ? greatestCommonDivisor(num2, num1 % num2) : num1;
 }
 
-// Entry point for the program execution.
-runSolution();
+// Initiates the primary logic of the program.
+executeSolution();
 
-// Main logic for the problem.
-function runSolution(){
-  // Read the total number of elements.
-  var elementCount = dataHandler.extractLastNumber();
-  // Read a sequence of numbers, including an extra element.
-  var numericSequence = dataHandler.getVector(elementCount+1);
+// The main function encapsulating the problem's solution.
+function executeSolution() {
+  // Read the total count of elements from the input.
+  var countElements = inputReader.readNumber();
+  // Read an array of numbers, including an additional element as per problem specification.
+  var inputNumbers = inputReader.readNumbersArray(countElements + 1);
 
-  // Calculate the GCD of all elements in the sequence.
-  var overallGCD = numericSequence[0];
-  for(var idx = 1; idx <= elementCount; idx++) overallGCD = findCommonDivisor(overallGCD, numericSequence[idx]);
+  // Calculate the GCD of all numbers in the 'inputNumbers' array.
+  var commonDivisor = inputNumbers[0];
+  for (var idx = 1; idx <= countElements; idx++) {
+    commonDivisor = greatestCommonDivisor(commonDivisor, inputNumbers[idx]);
+  }
 
-  // Find prime factors of the absolute value of the overall GCD.
-  var solutionSet = decomposeIntoPrimes(Math.abs(overallGCD));
-  // Normalize the numeric sequence by dividing each element by the overall GCD.
-  numericSequence = numericSequence.map(val => val / overallGCD);
+  // Find the prime factors of the absolute value of the calculated common divisor.
+  var primeFactorsSet = getPrimeFactors(Math.abs(commonDivisor));
 
-  // Determine a set of candidate divisors for further checks.
-  var candidateDivisors = decomposeIntoPrimes(Math.abs(numericSequence[elementCount]));
-  // Special case: if the last element is zero, use a sieve to find primes up to elementCount.
-  if(numericSequence[elementCount] === 0) candidateDivisors = generatePrimesUpTo(elementCount);
+  // Divide each number in the input array by the common divisor.
+  inputNumbers = inputNumbers.map((val) => val / commonDivisor);
 
-  // Iterate through the candidate divisors.
-  for(var divisorCandidate of candidateDivisors){
-    // Skip if already found or if the divisor is too large for the problem context.
-    if(solutionSet.has(divisorCandidate) || elementCount < divisorCandidate) continue;
+  // Determine an initial set of potential primes based on the last element of the modified array.
+  var potentialPrimes = getPrimeFactors(Math.abs(inputNumbers[countElements]));
+  // If the last element is zero, consider all primes up to 'countElements' as potential.
+  if (inputNumbers[countElements] === 0) {
+    potentialPrimes = sieveOfEratosthenes(countElements);
+  }
 
-    // Flag to track if a specific condition holds for the current divisor.
-    var conditionMet = 1;
-    // Perform a series of checks based on modular arithmetic.
-    for(var innerIdx = 0; innerIdx < divisorCandidate-1 && conditionMet; innerIdx++){
-      var segmentSum = 0;
-      // Sum elements with a specific step pattern.
-      for(var jmpIdx = innerIdx; jmpIdx < elementCount; jmpIdx += divisorCandidate-1){
-        segmentSum += numericSequence[jmpIdx];
+  // Iterate through each potential prime to check for a specific divisibility condition.
+  for (var currentPrime of potentialPrimes) {
+    // Skip if the prime is already in our set or if it's too large for the current 'countElements'.
+    if (primeFactorsSet.has(currentPrime) || countElements < currentPrime) {
+      continue;
+    }
+
+    // Flag to track if the current prime satisfies the divisibility condition.
+    var isDivisible = 1;
+    // Loop through 'currentPrime - 1' possible starting indices for sub-array sums.
+    for (
+      var startIdx = 0;
+      startIdx < currentPrime - 1 && isDivisible;
+      startIdx++
+    ) {
+      var currentSum = 0;
+      // Calculate the sum of elements, stepping by 'currentPrime - 1'.
+      for (
+        var innerLoopIdx = startIdx;
+        innerLoopIdx < countElements;
+        innerLoopIdx += currentPrime - 1
+      ) {
+        currentSum += inputNumbers[innerLoopIdx];
       }
-      // If the sum is not divisible by the candidate, the condition is not met.
-      if(segmentSum % divisorCandidate !== 0) conditionMet = 0;
+      // If the sum is not divisible by 'currentPrime', then this prime fails the condition.
+      if (currentSum % currentPrime !== 0) {
+        isDivisible = 0;
+      }
     }
-    // If all checks pass, add the candidate divisor to the solution set.
-    if(conditionMet) solutionSet.add(divisorCandidate);
-  }
-
-  // If there are any solutions, print them in sorted order.
-  if(solutionSet.size) console.log(Array.from(solutionSet).sort((a,b)=>a-b).join("\n"));
-}
-
-// Function to find all unique prime factors of a given number.
-function decomposeIntoPrimes(inputNumber){
-  var factorSet = new Set(); // Stores the unique prime factors.
-  // Iterate from 2 up to the square root of the number.
-  for(var divisor = 2; divisor * divisor <= inputNumber; divisor++){
-    // If 'divisor' is a factor.
-    if(inputNumber % divisor === 0){
-      factorSet.add(divisor); // Add it to the set.
-      // Remove all occurrences of this factor.
-      while(inputNumber % divisor === 0) inputNumber /= divisor;
+    // If the prime passed all divisibility checks, add it to the final set of prime factors.
+    if (isDivisible) {
+      primeFactorsSet.add(currentPrime);
     }
   }
-  // If 'inputNumber' is still greater than 1, it means the remaining number is a prime factor itself.
-  if(1 < inputNumber) factorSet.add(inputNumber);
-  return factorSet;
+
+  // If any prime factors were found, sort them numerically and print each on a new line.
+  if (primeFactorsSet.size) {
+    console.log(
+      Array.from(primeFactorsSet)
+        .sort((valA, valB) => valA - valB)
+        .join("\n")
+    );
+  }
 }
 
-// Generates a set of prime numbers up to a specified upper limit using the Sieve of Eratosthenes.
-function generatePrimesUpTo(upperLimit){
-  // Initialize a boolean array for the sieve, true means potentially prime.
-  var sieveArray = Array(upperLimit+1).fill(1);
-  var primeNumbers = new Set(); // Stores the found prime numbers.
-  // Iterate from 2 up to the limit.
-  for(var currentPrime = 2; currentPrime <= upperLimit; currentPrime++){
-    // If currentPrime is marked as prime.
-    if(sieveArray[currentPrime] === 0) continue; // Not prime, skip.
-    primeNumbers.add(currentPrime); // Add to the set of primes.
-    // Mark all multiples of currentPrime as not prime.
-    for(var multiple = currentPrime+currentPrime; multiple <= upperLimit; multiple += currentPrime) sieveArray[multiple] = 0;
+// Finds all unique prime factors of a given positive integer.
+function getPrimeFactors(targetNumber) {
+  var factorsCollection = new Set();
+  // Iterate from 2 up to the square root of the target number.
+  for (var divisor = 2; divisor * divisor <= targetNumber; divisor++) {
+    // If 'divisor' is a factor of 'targetNumber'.
+    if (targetNumber % divisor === 0) {
+      factorsCollection.add(divisor); // Add it to the set of factors.
+      // Continuously divide 'targetNumber' by 'divisor' until it's no longer divisible.
+      while (targetNumber % divisor === 0) {
+        targetNumber /= divisor;
+      }
+    }
   }
-  return primeNumbers;
+  // If 'targetNumber' is still greater than 1 after the loop, it means the remaining
+  // 'targetNumber' itself is a prime factor (larger than its square root).
+  if (1 < targetNumber) {
+    factorsCollection.add(targetNumber);
+  }
+  return factorsCollection;
+}
+
+// Implements the Sieve of Eratosthenes to find all prime numbers up to a specified limit.
+function sieveOfEratosthenes(limitValue) {
+  // Initialize an array where `isPrimeArray[i]` is 1 if 'i' is potentially prime, 0 otherwise.
+  // All numbers are initially considered prime.
+  var isPrimeArray = Array(limitValue + 1).fill(1);
+  var primeNumbersSet = new Set();
+
+  // Start checking for primes from 2.
+  for (var currentNum = 2; currentNum <= limitValue; currentNum++) {
+    // If 'currentNum' has already been marked as not prime, skip it.
+    if (isPrimeArray[currentNum] === 0) {
+      continue;
+    }
+    // If 'currentNum' is prime, add it to our set.
+    primeNumbersSet.add(currentNum);
+    // Mark all multiples of 'currentNum' (starting from currentNum * 2) as not prime.
+    for (
+      var multiple = currentNum + currentNum;
+      multiple <= limitValue;
+      multiple += currentNum
+    ) {
+      isPrimeArray[multiple] = 0;
+    }
+  }
+  return primeNumbersSet;
 }

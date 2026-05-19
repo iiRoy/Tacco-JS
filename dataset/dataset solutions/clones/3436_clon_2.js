@@ -1,62 +1,49 @@
-function computeCombinations(rawDataString)
-{
-    const dataLines = rawDataString . split ( "\n" ) ;
+var primeFactorCounts;
+var currentNumber;
+var divisorCandidate;
+var factorIndex;
 
-    const upperBoundary = parseInt(dataLines[0], 10);
+function ProcessInput(rawData) {
+  rawData = rawData.split("\n");
+  var upperLimit = parseInt(rawData[0]);
+  primeFactorCounts = new Array(101).fill(0);
 
-    const factorTally = Array(101).fill(0);
-
-    for (let currentNumber = 1; currentNumber <= upperBoundary; currentNumber++)
-    {
-        let temporaryNumber = currentNumber;
-
-        for (let divisorCandidate = 2; divisorCandidate <= temporaryNumber; )
-        {
-            if (temporaryNumber % divisorCandidate === 0)
-            {
-                factorTally[divisorCandidate]++;
-                temporaryNumber /= divisorCandidate;
-
-                if (temporaryNumber === 1)
-                {
-                    break;
-                }
-            }
-            else
-            {
-                divisorCandidate++;
-            }
+  for (currentNumber = 1; currentNumber <= upperLimit; currentNumber++) {
+    var tempNumber = currentNumber;
+    for (divisorCandidate = 2; divisorCandidate <= tempNumber; ) {
+      if (tempNumber % divisorCandidate === 0) {
+        primeFactorCounts[divisorCandidate]++;
+        tempNumber = tempNumber / divisorCandidate;
+        if (tempNumber === 1) {
+          break;
         }
+      } else {
+        divisorCandidate++;
+      }
     }
+  }
 
-    let minimumFourCount = 0;
-    let minimumTwoOrThreeCount = 0;
+  var countOfFourOrMoreFactors = 0;
+  var countOfTwoOrThreeFactors = 0;
 
-    for (let primeIndex = 2; primeIndex < 101; primeIndex++)
-    {
-        if (factorTally[primeIndex] === 2 || factorTally[primeIndex] === 3)
-        {
-            minimumTwoOrThreeCount++;
-        }
-        if (factorTally[primeIndex] >= 4)
-        {
-            minimumFourCount++;
-        }
+  for (factorIndex = 2; factorIndex < 101; factorIndex++) {
+    if (primeFactorCounts[factorIndex] === 2 || primeFactorCounts[factorIndex] === 3) {
+      countOfTwoOrThreeFactors++;
     }
+    if (primeFactorCounts[factorIndex] >= 4) {
+      countOfFourOrMoreFactors++;
+    }
+  }
 
-    const finalComputedValue =
-          minimumTwoOrThreeCount * minimumFourCount * (minimumFourCount - 1) / 2
-        + minimumFourCount * (minimumFourCount - 1) * (minimumFourCount - 2) / 2;
+  var finalResult = countOfTwoOrThreeFactors * countOfFourOrMoreFactors * (countOfFourOrMoreFactors - 1) / 2 +
+                    countOfFourOrMoreFactors * (countOfFourOrMoreFactors - 1) * (countOfFourOrMoreFactors - 2) / 2;
 
-    console.log(String(finalComputedValue));
+  console.log('%s', finalResult);
 }
 
-
-function executeDebugTest()
-{
-    const testDataInput = document.getElementById("testInputBox").value;
-    computeCombinations(testDataInput);
+function runDebugMode() {
+  var debugInputString = document.getElementById("input").value;
+  ProcessInput(debugInputString);
 }
 
-
-computeCombinations( require ( 'node:fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

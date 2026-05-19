@@ -1,27 +1,31 @@
-const ProcessInput = (rawData) => {
-  // Parse the incoming raw string data into individual textual rows
-  const textRows = rawData.split('\n');
+function ProcessInput(rawData) {
+    // Divide the incoming raw data string into an array of separate lines.
+    var textRows = rawData.split("\n");
 
-  // Extract primary labels from each row, skipping the first and the last two
-  // The original uses `splice` to extract a segment; `slice` achieves the same logical extraction
-  const sectionHeaders = textRows.slice(1, textRows.length - 2).map(rowEntry => rowEntry.split(' ')[0]);
+    // Generate an array of labels by taking the first word from each line.
+    // This operation skips the initial line and the final two lines of the input.
+    var itemLabels = textRows.map(currentRow => currentRow.split(' ')[0]).splice(1, textRows.length - 3);
 
-  // Determine the reference position by finding the marker in the extracted headers
-  const markerPosition = sectionHeaders.indexOf(textRows[textRows.length - 2]);
+    // Determine the starting position for summation by finding the index
+    // of the second-to-last line's content within the 'itemLabels' array.
+    var startIndex = itemLabels.indexOf(textRows[textRows.length - 2]);
 
-  // Initialize a counter for accumulated numeric values
-  let totalValue = 0;
+    // Initialize an accumulator for the numeric values.
+    var totalValue = 0;
 
-  // Iterate through relevant data rows to aggregate numerical data
-  // The loop starts two positions after the marker and ends before the last two rows
-  for (let currentIdx = markerPosition + 2; currentIdx < textRows.length - 2; currentIdx += 1) {
-    // Extract the second element from the current row, convert it to an integer, and add to the total
-    totalValue += parseInt(textRows[currentIdx].split(' ')[1], 10); // Parse as integer
-  }
+    // Loop through a specific segment of the 'textRows' array.
+    // The iteration begins two positions after 'startIndex' and concludes
+    // two positions before the end of the 'textRows' collection.
+    for (var idx = startIndex + 2; idx < textRows.length - 2; idx++) {
+        // For each line in the designated segment, extract the second word,
+        // convert it to a numerical type, and add it to the running total.
+        totalValue += Number(textRows[idx].split(' ')[1]);
+    }
 
-  // Output the final aggregated numeric result to standard output
-  process.stdout.write(String(totalValue) + '\n');
-};
+    // Display the computed total value to the standard output.
+    console.log(totalValue);
+}
 
-// Invoke the primary processing routine using standard input stream
-ProcessInput(require('node:fs').readFileSync(0, 'utf8')); // Read from stdin file descriptor 0
+// Acquire the input content from the standard input stream
+// and then invoke the primary processing function with this data.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

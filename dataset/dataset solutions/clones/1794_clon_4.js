@@ -1,127 +1,81 @@
 "use strict";
 
-// A custom class for handling input stream operations
-class StreamHandler {
-    #tokens; // Private field for storing tokens
-    #index; // Private field for current position
-
-    constructor(sourceContent) {
-        this.#tokens = sourceContent.trim().split(/\s+/); // Split by any whitespace
-        this.#index = 0;
-    }
-
-    // Fetches the next numerical value
-    retrieveNumeric() {
-        if (this.#index >= this.#tokens.length) {
-            throw new Error("Input stream exhausted.");
-        }
-        return Number(this.#tokens[this.#index++]);
-    }
-
-    // Fetches the next string value
-    retrieveTextual() {
-        if (this.#index >= this.#tokens.length) {
-            throw new Error("Input stream exhausted.");
-        }
-        return this.#tokens[this.#index++];
-    }
-
-    // Fetches the next BigInt value
-    retrieveLargeNumeric() {
-        if (this.#index >= this.#tokens.length) {
-            throw new Error("Input stream exhausted.");
-        }
-        return BigInt(this.#tokens[this.#index++]);
-    }
-
-    // Fetches a specified count of numbers into an array
-    retrieveNumericSequence(count) {
-        const sequence = [];
-        for (let i = 0; i < count; i++) {
-            sequence.push(this.retrieveNumeric());
-        }
-        return sequence;
-    }
-
-    // Fetches a specified count of BigInts into an array
-    retrieveLargeNumericSequence(count) {
-        const sequence = [];
-        for (let i = 0; i < count; i++) {
-            sequence.push(this.retrieveLargeNumeric());
-        }
-        return sequence;
-    }
-
-    // Fetches a 2D array (matrix) of numbers
-    retrieveGrid(rows, columns) {
-        const grid = [];
-        for (let r = 0; r < rows; r++) {
-            grid.push(this.retrieveNumericSequence(columns));
-        }
-        return grid;
+function* createTokenStream(sourceText) {
+    const tokens = sourceText.split(/ |\n/).filter(Boolean);
+    let currentPosition = 0;
+    while (currentPosition < tokens.length) {
+        yield tokens[currentPosition++];
     }
 }
 
-// A recursive utility for creating multi-dimensional arrays (divergent from original's eval-based xArray)
-const constructMultiArray = (dimensions, filler) => {
-    if (dimensions.length === 0) {
-        return filler;
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataStream = createTokenStream(sourceData);
+
+function fetchNumber() {
+    return +dataStream.next().value;
+}
+
+function fetchString() {
+    return dataStream.next().value;
+}
+
+function fetchBigNumber() {
+    return BigInt(dataStream.next().value);
+}
+
+function fetchNumberSequence(count) {
+    return Array.from({ length: count }, () => fetchNumber());
+}
+
+function fetchBigNumberSequence(count) {
+    return Array.from({ length: count }, () => fetchBigNumber());
+}
+
+function fetchGrid(rows, columns, stringMode) {
+    const gridResult = [];
+    for (let r = 0; r < rows; r++) {
+        const rowData = [];
+        for (let c = 0; c < columns; c++) {
+            rowData.push(stringMode ? fetchString() : fetchNumber());
+        }
+        gridResult.push(rowData);
     }
-    const currentDepth = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-    return Array.from({ length: currentDepth }, () =>
-        constructMultiArray(remainingDimensions, filler)
-    );
-};
+    return gridResult;
+}
 
-// The primary computation logic (equivalent to main)
-const processAlgorithm = () => {
-    const inputSource = new StreamHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
+console.log(processIllumination());
 
-    const arraySize = inputSource.retrieveNumeric();
-    const cycleIterations = inputSource.retrieveNumeric();
-    let currentData = inputSource.retrieveNumericSequence(arraySize);
+function processIllumination() {
+    const totalElements = fetchNumber();
+    const maxIterations = fetchNumber();
+    let currentLightConfiguration = fetchNumberSequence(totalElements);
+    let nextLightConfiguration;
+    let iterationCounter;
+    let minimumLevelSnapshot;
 
-    let currentIteration = 0;
-    while (currentIteration < cycleIterations) {
-        // Use a difference array (sweep line technique) for efficient range updates
-        // This replaces the nested 'j' loop with a single pass for setup and another for cumulative sums.
-        const deltaValues = new Array(arraySize + 1).fill(0); // +1 for the boundary marker
+    for (iterationCounter = 0; iterationCounter < maxIterations; iterationCounter++) {
+        nextLightConfiguration = Array(totalElements).fill(0);
+        minimumLevelSnapshot = iterationCounter;
 
-        for (let elementIndex = 0; elementIndex < arraySize; elementIndex++) {
-            const spreadExtent = currentData[elementIndex];
-            const startPosition = Math.max(0, elementIndex - spreadExtent);
-            const endPosition = Math.min(arraySize - 1, elementIndex + spreadExtent);
+        for (let lightSourceIndex = 0; lightSourceIndex < totalElements; lightSourceIndex++) {
+            const lightPower = currentLightConfiguration[lightSourceIndex];
+            const illuminationStartPoint = Math.max(0, lightSourceIndex - lightPower);
+            const illuminationEndPoint = Math.min(totalElements - 1, lightSourceIndex + lightPower);
 
-            deltaValues[startPosition]++;
-            if (endPosition + 1 < arraySize) { // Ensure the decrement index is within bounds
-                deltaValues[endPosition + 1]--;
-            }
+            const temporaryContribution = Array(totalElements).fill(0);
+            temporaryContribution.fill(1, illuminationStartPoint, illuminationEndPoint + 1);
+            
+            nextLightConfiguration = nextLightConfiguration.map((currentValue, index) => currentValue + temporaryContribution[index]);
+
+            minimumLevelSnapshot = Math.min(minimumLevelSnapshot, nextLightConfiguration[lightSourceIndex]);
         }
 
-        const nextDataState = new Array(arraySize);
-        let cumulativeSum = 0;
+        currentLightConfiguration = nextLightConfiguration;
 
-        for (let i = 0; i < arraySize; i++) {
-            cumulativeSum += deltaValues[i];
-            nextDataState[i] = cumulativeSum;
-        }
-
-        currentData = nextDataState;
-
-        // Replicate the original's specific termination condition for Bmin.
-        // The original Bmin was effectively Math.min(k, N) when the array stabilizes to [N,N,...,N].
-        // Thus, Bmin >= N implies k >= N.
-        // The full condition is: if (k > 41 && k >= N) break;
-        if (currentIteration > 41 && currentIteration >= arraySize) {
+        if (iterationCounter > 41 && minimumLevelSnapshot >= totalElements) {
             break;
         }
-
-        currentIteration++;
     }
 
-    return currentData.join(" ");
-};
-
-// Execute the algorithm and print the result
-console.log(processAlgorithm());
+    return currentLightConfiguration.join(" ");
+}

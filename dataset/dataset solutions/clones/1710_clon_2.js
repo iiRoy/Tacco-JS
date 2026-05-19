@@ -1,72 +1,66 @@
-'use strict'
+'use strict';
 
-/*
- * This module is designed to process incoming textual data,
- * extracting numerical parameters and performing a specific
- * analysis on a matrix of scores.
- */
-function processData(rawData) {
-    // Split the entire input string into an array of individual lines.
-    const lineSegments = rawData.split('\n');
+// This function processes the raw input string to determine optimal course selections.
+function processData(rawInputString) {
+  // Divide the entire input into an array of individual lines.
+  const inputLines = rawInputString.split('\n');
 
-    // Parse the first line to get the initial duration value.
-    const durationVal = Number.parseInt(lineSegments[0], 10);
+  // Extract the number of days from the first line.
+  const numDays = parseInt(inputLines[0], 10);
 
-    // The second line contains space-separated cost strings.
-    let costStrings = lineSegments[1].split(' ');
+  // Parse the second line, which contains space-separated cost strings.
+  let costStringArray = inputLines[1].split(' ');
+  // Convert these cost strings into an array of integer values.
+  const dailyCostValues = costStringArray.map(strValue => parseInt(strValue, 10));
 
-    // Convert these cost strings into an array of numerical cost values.
-    const costValues = costStrings.map(numStr => Number.parseInt(numStr, 10));
+  // Initialize a two-dimensional array to store satisfaction scores for each day and course.
+  let satisfactionScores = [];
 
-    // Initialize a two-dimensional array to store performance scores.
-    let scoreMatrix = [];
-    /*
-     * Iterate through the remaining lines of input, starting from the third line.
-     * Each line represents a row in our score matrix.
-     */
-    for (let rowIdx = 2; rowIdx < lineSegments.length; rowIdx++) {
-        // Add a new empty row to the score matrix.
-        scoreMatrix.push([]);
-        // Split the current line into its constituent string parts.
-        const currentLineParts = lineSegments[rowIdx].split(' ');
-        // Iterate through each part of the current line.
-        for (let colIdx = 0; colIdx < currentLineParts.length; colIdx++) {
-            // Parse the string part as an integer and add it to the correct row in the score matrix.
-            scoreMatrix[rowIdx - 2].push(Number.parseInt(currentLineParts[colIdx], 10));
-        }
+  // Iterate through the remaining input lines to populate the satisfaction scores matrix.
+  // The actual data starts from the third line (index 2).
+  for (let lineIndex = 2; lineIndex < inputLines.length; lineIndex++) {
+    // Add a new sub-array for the current day's scores.
+    satisfactionScores.push([]);
+
+    // Split the current line into individual score parts.
+    const currentLineParts = inputLines[lineIndex].split(' ');
+
+    // Convert each score part to an integer and add it to the current day's scores.
+    for (let partIndex = 0; partIndex < currentLineParts.length; partIndex++) {
+      satisfactionScores[lineIndex - 2].push(parseInt(currentLineParts[partIndex], 10));
     }
+  }
 
-    // Initialize an array to store the final computed indices.
-    let resultIndices = [];
+  // Initialize an array to store the 1-based index of the best course chosen for each day.
+  let selectedCourses = [];
 
-    // Loop through each row of the score matrix.
-    for (let rowIdx = 0; rowIdx < scoreMatrix.length; rowIdx++) {
-        // Assume the first element in the current row is the maximum initially.
-        let currentMaximum = scoreMatrix[rowIdx][0];
-        // Initialize the index of the maximum value found so far.
-        let maxIndexFound = 0;
+  // Iterate through each day's available courses to find the one with maximum satisfaction.
+  for (let dayIteration = 0; dayIteration < satisfactionScores.length; dayIteration++) {
+    // Assume the first course of the current day has the highest satisfaction initially.
+    let currentMaxScore = satisfactionScores[dayIteration][0];
+    let bestCourseOption = 0; // Store the 0-based index of this best course.
 
-        // Iterate through the elements of the current row, starting from the second element.
-        for (let colIdx = 1; colIdx < scoreMatrix[rowIdx].length; colIdx++) {
-            // Check if the current element is greater than the current maximum.
-            if (scoreMatrix[rowIdx][colIdx] > currentMaximum) {
-                // If so, update the index of the maximum.
-                maxIndexFound = colIdx;
-                // And update the maximum value itself.
-                currentMaximum = scoreMatrix[rowIdx][colIdx];
-            }
-        }
-        // Store the 1-based index (original problem context often uses 1-based indexing) of the maximum score.
-        resultIndices.push(maxIndexFound + 1);
+    // Compare with all other courses for the current day.
+    for (let courseOptionIndex = 1; courseOptionIndex < satisfactionScores[dayIteration].length; courseOptionIndex++) {
+      // If a course with higher satisfaction is found, update the maximum and its index.
+      if (satisfactionScores[dayIteration][courseOptionIndex] > currentMaxScore) {
+        bestCourseOption = courseOptionIndex;
+        currentMaxScore = satisfactionScores[dayIteration][courseOptionIndex];
+      }
     }
+    // Add the 1-based index of the best course for the current day to the results.
+    selectedCourses.push(bestCourseOption + 1);
+  }
 
-    // Output the final array of calculated indices to the console.
-    console.log(resultIndices);
+  // Output the final array of selected course indices.
+  console.log(selectedCourses);
 }
 
-// Read the input from standard input (e.g., a file or piped data) and then process it.
+// Read the input from standard input and pass it to the processing function.
 processData(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// This second call might be for specific testing environments where 'rawData' is globally available.
-// If 'rawData' is not defined globally, this call would result in an error.
-processData(rawData);
+// This line is present in the original code. It would cause a ReferenceError
+// because 'input' (or 'rawInputString' in this clone) is not defined in the global scope.
+// To maintain strict behavioral equivalence, this line is included as-is,
+// ensuring the clone also produces a ReferenceError at this point.
+processData(rawInputString);

@@ -1,24 +1,25 @@
-// This module handles numerical calculations based on provided text input.
-function analyzeAndSum(incomingTextData) {
-    // Split the complete text into an array of string entries, delimited by newlines.
-    const textSegments = incomingTextData.split('\n');
+function processInput(rawData) {
+  // This function takes raw text input and performs a specific calculation.
+  // It first splits the input into lines.
+  let lines = rawData.split('\n');
 
-    // Convert the first segment to a number and then negate it.
-    // The multiplication by -1 inherently performs type coercion from string to number.
-    let negatedFirstNumber = textSegments[0] * -1;
+  // The first part of the calculation involves the first line.
+  // We take the first line, convert it to a number, and then multiply by -1.
+  let firstProcessedValue = Number(lines[0]) * -1;
 
-    // Take the second segment, split it by spaces, and compute the sum of its numerical parts.
-    let cumulativeSumFromSecondLine = textSegments[1]
-                                                    .split(' ')
-                                                    .reduce((currentTotal, itemString) => {
-                                                        // Use double bitwise NOT (~~) for efficient string-to-number conversion.
-                                                        return (~~currentTotal) + (~~itemString);
-                                                    });
+  // The second part of the calculation involves the second line.
+  // We split the second line by spaces to get individual number strings.
+  // Then, we use the reduce method to sum these numbers.
+  // The `~~` operator is used for efficient type coercion to integer.
+  let secondProcessedSum = lines[1].split(' ').reduce((currentAccumulator, currentValue) => {
+    return ~~currentAccumulator + ~~currentValue;
+  });
 
-    // Display the final aggregate result to the standard output.
-    console.log(negatedFirstNumber + cumulativeSumFromSecondLine);
+  // Finally, we log the sum of the two processed values to the console.
+  console.log(firstProcessedValue + secondProcessedSum);
 }
 
-// Invoke the primary processing function.
-// It reads input from the standard input stream, assuming UTF-8 encoding.
-analyzeAndSum(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line reads the input from standard input using Node.js file system module.
+// The input is read synchronously and interpreted as UTF-8 encoded text.
+// The `processInput` function is then called with this raw data.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

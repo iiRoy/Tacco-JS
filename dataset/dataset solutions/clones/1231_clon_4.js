@@ -1,32 +1,46 @@
-const inputReader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+class ExecutionHalt extends Error {
+    constructor() {
+        super("Execution halted by zero input.");
+        this.name = "ExecutionHalt";
+    }
+}
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let collectedStreamData = '';
+
+process.stdin.on('data', (incomingChunk) => {
+    collectedStreamData += incomingChunk;
 });
 
-let gatheredSegments = [];
+process.stdin.on('end', () => {
+    const linesFromInput = collectedStreamData.split('\n');
 
-inputReader.on('line', (individualLine) => {
-  gatheredSegments.push(individualLine);
+    const processedNumbers = linesFromInput.map(entry => parseInt(entry, 10));
+
+    try {
+        processSequenceRecursively(processedNumbers, 0);
+    } catch (terminationSignal) {
+        if (!(terminationSignal instanceof ExecutionHalt)) {
+            throw terminationSignal;
+        }
+    }
 });
 
-inputReader.on('close', () => {
-  const processValuesRecursively = (dataCollection, currentPoint) => {
-    if (currentPoint >= dataCollection.length) {
-      return;
+function processSequenceRecursively(dataPoints, currentPosition) {
+    if (currentPosition >= dataPoints.length) {
+        return;
     }
 
-    const textualItem = dataCollection[currentPoint];
-    const numericItem = Number(textualItem);
+    const currentDatum = dataPoints[currentPosition];
+    const outputIdentifier = `Case ${currentPosition + 1}: `;
 
-    const preamble = 'Case ' + (currentPoint + 1) + ': ';
-    console.log(preamble + numericItem);
+    console.log(outputIdentifier + currentDatum);
 
-    if (numericItem === 0) {
-      process.exit(0);
+    if (currentDatum === 0) {
+        throw new ExecutionHalt();
     }
 
-    processValuesRecursively(dataCollection, currentPoint + 1);
-  };
-
-  processValuesRecursively(gatheredSegments, 0);
-});
+    processSequenceRecursively(dataPoints, currentPosition + 1);
+}

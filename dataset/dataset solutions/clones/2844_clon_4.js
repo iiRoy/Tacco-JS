@@ -1,75 +1,56 @@
-const extractPoints = (textInput) => {
-    const linesOfData = textInput.split("\n");
-    const totalElements = Number(linesOfData[0]);
-    const pointStructures = linesOfData.slice(1, totalElements + 1).map(lineText => {
-        const coordinateStrings = lineText.split(" ");
-        return { firstCoord: Number(coordinateStrings[0]), secondCoord: Number(coordinateStrings[1]) };
+function processInputData(rawText) {
+  const lineSegments = rawText.split("\n");
+  const pointQuantity = Number(lineSegments.shift());
+  const coordinatePairs = lineSegments.slice(0, pointQuantity).map(segment => segment.split(" ").map(Number));
+  return { pointQuantity, coordinatePairs };
+}
+
+function deriveDifferenceVectors(pointsCollection) {
+  pointsCollection.sort((firstPoint, secondPoint) => firstPoint[0] - secondPoint[0]);
+
+  const vectorSet = pointsCollection.flatMap((currentPoint, currentIndex, allPoints) => {
+    return allPoints.slice(currentIndex + 1).map(comparisonPoint => {
+      return [currentPoint[0] - comparisonPoint[0], currentPoint[1] - comparisonPoint[1]];
     });
-    return { quantity: totalElements, collection: pointStructures };
-};
+  });
+  return vectorSet;
+}
 
-const positionPoints = (structures) => {
-    return [...structures].sort((itemA, itemB) => itemA.firstCoord - itemB.firstCoord);
-};
+function calculateMaxNonFinalConsecutiveCount(vectorList) {
+  vectorList.sort();
 
-const produceDisplacements = (orderedStructures) => {
-    return orderedStructures.flatMap((structureA, indexA) =>
-        orderedStructures.slice(indexA + 1).map(structureB => ({
-            xShift: structureA.firstCoord - structureB.firstCoord,
-            yShift: structureA.secondCoord - structureB.secondCoord
-        }))
-    );
-};
+  if (vectorList.length < 2) {
+    return 0;
+  }
 
-const arrangeDisplacements = (unorderedVectors) => {
-    return [...unorderedVectors].sort((vectorA, vectorB) => {
-        if (vectorA.xShift !== vectorB.xShift) {
-            return vectorA.xShift - vectorB.xShift;
+  const sequenceAnalysis = vectorList.reduce((accumulator, currentVectorElement, elementIndex) => {
+    const currentVectorIdentifier = JSON.stringify(currentVectorElement);
+
+    if (elementIndex === 0) {
+      accumulator.currentSequenceLength = 1;
+      accumulator.previousVectorIdentifier = currentVectorIdentifier;
+    } else {
+      if (currentVectorIdentifier === accumulator.previousVectorIdentifier) {
+        accumulator.currentSequenceLength++;
+      } else {
+        if (accumulator.maxSequenceLengthBeforeTermination < accumulator.currentSequenceLength) {
+          accumulator.maxSequenceLengthBeforeTermination = accumulator.currentSequenceLength;
         }
-        return vectorA.yShift - vectorB.yShift;
-    });
-};
-
-const ascertainMaxSequenceBuggy = (sequencedVectors) => {
-    if (sequencedVectors.length < 2) return 0;
-
-    let currentRun = 1;
-    let highestRun = 0;
-
-    for (let iter = 0; iter < sequencedVectors.length - 1; ++iter) {
-        const currentVector = sequencedVectors[iter];
-        const nextVector = sequencedVectors[iter + 1];
-
-        if (currentVector.xShift === nextVector.xShift && currentVector.yShift === nextVector.yShift) {
-            currentRun++;
-        } else {
-            if (highestRun < currentRun) {
-                highestRun = currentRun;
-            }
-            currentRun = 1;
-        }
+        accumulator.currentSequenceLength = 1;
+        accumulator.previousVectorIdentifier = currentVectorIdentifier;
+      }
     }
-    return highestRun;
-};
+    return accumulator;
+  }, { maxSequenceLengthBeforeTermination: 0, currentSequenceLength: 0, previousVectorIdentifier: null });
 
-const processInputData = (rawData) => {
-    'use strict';
+  return sequenceAnalysis.maxSequenceLengthBeforeTermination;
+}
 
-    const { quantity: totalQuantity, collection: initialPointCollection } = extractPoints(rawData);
+function MainClone(sourceInput) {
+  const { pointQuantity, coordinatePairs } = processInputData(sourceInput);
+  const derivedVectors = deriveDifferenceVectors(coordinatePairs);
+  const maximumConsecutiveCount = calculateMaxNonFinalConsecutiveCount(derivedVectors);
+  console.log(pointQuantity - maximumConsecutiveCount);
+}
 
-    if (totalQuantity <= 1) {
-        return totalQuantity;
-    }
-
-    const orderedPointCollection = positionPoints(initialPointCollection);
-
-    const displacementCollection = produceDisplacements(orderedPointCollection);
-
-    const orderedDisplacementCollection = arrangeDisplacements(displacementCollection);
-
-    const maxIdenticalSequence = ascertainMaxSequenceBuggy(orderedDisplacementCollection);
-
-    return totalQuantity - maxIdenticalSequence;
-};
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+MainClone(require("fs").readFileSync("/dev/stdin", "utf8"));

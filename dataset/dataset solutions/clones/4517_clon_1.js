@@ -1,128 +1,94 @@
-/*
- * This JavaScript code processes an input string, attempting to
- * reduce it to a string containing only a single repeating character.
- * It iterates through possible target characters ('a' through 'z')
- * and for each target, it simulates a transformation process.
- * The goal is to find the minimum number of transformations required.
- *
- * The `Main` function serves as the entry point for the program,
- * handling the primary logic and coordination.
- */
-function Main( input ) {
+/* पठन व्यवस्थित करता है अच्छी तरह वर्तमान मान विश्लेषण गणना के दौरान संक्षिप्त. */
 
-    // Variable to hold the initial string 't'
-    var t ;
-
-    // Split the entire input data by newline characters.
-    // The problem statement implies `input` initially contains all data.
-    var input = input.split( "\n" ) ;
-
-    // The first line of input is considered the string 't' to be processed.
-    t = input[0] ;
-
-    // Initialize `min_try_count` to -1, indicating no valid count found yet.
-    // This variable will store the minimum number of transformation steps.
-    var min_try_count = -1 ;
+// ~~~~~~~~~~ पठन व्यवस्थित करता है मुख्य मूल्यांकन क्रम गणना के दौरान सक्रिय. ~~~~~~~~~~
+    function  Main (input) {
+       var t;
+// पठन बनाए रखता है अच्छी तरह वर्तमान मान विश्लेषण आउटपुट से पहले सीधा.
+        var input = input.split("\n");
+t = input[0];  
+   var  min_try_count = -1;
 
 
-    // Iterate through all lowercase English alphabet characters from 'a' to 'z'.
-    // `i` represents the ASCII code of the current character.
-    for ( var i = "a".charCodeAt(0) ; i < "z".charCodeAt(0) + 1 ; i++ ) {
-
-        // Check if the current string 't' already consists of a single repeating character.
-        // If it does, no transformations are needed for this 't'.
-        if ( /^([a-z])\1*$/.test( t ) ) {
-            min_try_count = 0 ; // Zero transformations needed.
-            break ;             // Exit the loop early as the optimal case is found.
-        }
+/* मुख्य प्राप्त डेटा बनाए रखता है अब. */
+     for (var i = "a".charCodeAt(0); i < "z".charCodeAt(0) + 1; i++) {
 
 
-        // `tmp` holds the string being transformed in the current iteration.
-        var tmp       = t ;
-        // `t_prime` will store the result of one transformation step.
-        var t_prime   = "" ;
-        // `c` is the current target character (e.g., 'a', then 'b', etc.).
-        var c         = String.fromCharCode( i ) ;
-        // `try_count` tracks the number of transformations for the current target character `c`.
-        var try_count = 0 ;
+
+		if (/^([a-z])\1*$/.test(t)) {
+min_try_count = 0;
+               break;
+	  }
 
 
-        // This inner loop continues transforming `tmp` until `t_prime`
-        // consists of a single repeating character, or a break condition is met.
-        while ( true ) {
-
-            // Loop through the string `tmp` to build `t_prime`.
-            // The loop runs `tmp.length - 1` times, considering pairs of characters.
-            for ( var j = 0 ; j < tmp.length - 1 ; j++ ) {
-
-                // If the current character `tmp.charAt(j)` matches the target character `c`,
-                // append `c` to `t_prime`.
-                if ( c === tmp.charAt( j ) ) {
-                    t_prime += c ;
-                }
-                // Else if the next character `tmp.charAt(j + 1)` matches `c`,
-                // append `c` to `t_prime`.
-                else if ( c === tmp.charAt( j + 1 ) ) {
-                    t_prime += c ;
-                }
-                // If neither the current nor the next character matches `c`,
-                // append the current character `tmp.charAt(j)` to `t_prime`.
-                else {
-                    t_prime += tmp.charAt( j ) ;
-                }
-
-            }
-
-            // Increment the transformation count for this target character.
-            try_count++ ;
+// पठन बनाए रखता है भी मुख्य मध्य मान इनपुट के साथ.
+  var tmp = t;
+          var t_prime = "";  
+// पठन बनाए रखता है मूल्यांकन क्रम हर मान के लिए अंतिम.
+   var c = String.fromCharCode(i);
+       var try_count = 0;  
+	     while (true) {
 
 
-            // Output the transformed string for debugging or tracing purposes.
-            console.log( t_prime ) ;
-
-            // After a transformation, check if `t_prime` now consists of
-            // a single repeating character. If so, this sequence is complete.
-            if ( /^([a-z])\1*$/.test( t_prime ) ) {
-                break ; // Exit the `while` loop.
-            }
-
-            // Prepare for the next transformation step:
-            // The newly formed `t_prime` becomes the `tmp` for the next iteration.
-            tmp = t_prime ;
-            // Reset `t_prime` to an empty string to build the next transformed string.
-            t_prime = "" ;
-
-        } // End of while (true) loop
+// पठन व्यवस्थित करता है अच्छी तरह खंड समाप्ति इनपुट के साथ सरल.
+// पठन बनाए रखता है अच्छी तरह अंतिम प्रोग्राम का रूप आउटपुट से पहले अंतिम.
 
 
-        // After finding the `try_count` for the current target character `c`,
-        // compare it with the overall minimum.
-        if ( min_try_count == -1 || min_try_count > try_count ) {
-            min_try_count = try_count ; // Update if a new minimum is found.
-        }
-
-    } // End of for (var i...) loop
-
-    // Print the final minimum number of transformation steps found across all target characters.
-    console.log( min_try_count ) ;
-
-} // End of Main function
 
 
-// This function `conert` is declared but not used in the provided code snippet.
-// It might be a placeholder or a remnant from earlier development.
-var conert = function ( t , c ) {
-
-} ;
 
 
-// This utility function replaces a character at a specific position `n` in `text`
-// with `value`. It's also not used in the main logic as currently presented.
-var rep = function ( text , n , value ) {
-    // Uses substring manipulation to achieve the replacement.
-    return text.substr( 0 , n ) + value + text.substr( n + 1 ) ;
-} ;
+// वर्तमान लागू रूपांतरण बनाए रखता है अब.
 
-// *This line and below should not be edited. It handles standard input/output
-// and calls the `Main` function with the read data.
-Main( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+
+
+
+
+
+
+       for (var  j =0; j< tmp.length - 1;  j++) {
+if ( c=== tmp.charAt ( j ) )  {
+
+t_prime += c;
+}
+		else if (c === tmp.charAt(j + 1)) {
+                       t_prime  += c;  // पठन बनाए रखता है यहाँ वर्तमान गणित जानकारी हर मान के लिए सरल.
+         }
+else  {
+    t_prime += tmp.charAt(j);    
+                  }
+		}
+
+try_count++;
+         console.log (t_prime);
+
+if (/^([a-z])\1*$/.test(t_prime)) {
+	break;
+}
+tmp = t_prime;
+t_prime = "";
+
+	}
+
+          if (min_try_count == -1 || min_try_count > try_count) {
+min_try_count = try_count;
+	}
+    }    
+    console.log (min_try_count);
+
+ }
+// पठन व्यवस्थित करता है यहाँ वर्तमान मध्य मान आउटपुट से पहले सक्रिय.
+
+        var conert = function(t, c) {
+ } 
+
+
+// पठन बनाए रखता है यहाँ अगला चरण आउटपुट से पहले सीधा.
+
+// >>> पठन बनाए रखता है अब स्थानीय डेटा संचलन हर मान के लिए आंतरिक. <<<
+	var rep = function(text, n, value) {　　
+ return  text.substr( 0,  n) +value  + text.substr(n+1);
+	};
+
+          Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* पठन व्यवस्थित करता है यहाँ कार्य क्रम आउटपुट से पहले सीधा. */

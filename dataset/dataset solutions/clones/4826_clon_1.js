@@ -1,35 +1,13 @@
-/*
- * This is the main entry point function for processing input.
- * It takes a string 'input' and performs a series of replacements
- * to determine if the string consists solely of specific keywords.
- */
-function     Main(    input    )
-{
-    // Declare a variable to store the result after replacements.
-    // The goal is to remove predefined "magic" words from the input string.
-    var  erased   =   input
-        .replace(   /eraser/g  ,   ''   )   // Remove all occurrences of 'eraser'
-        .replace(   /erase/g   ,   ''   )   // Then, remove all occurrences of 'erase'
-        .replace(   /dreamer/g ,   ''   )   // Next, remove all occurrences of 'dreamer'
-        .replace(   /dream/g   ,   ''   )   ;  // Finally, remove all occurrences of 'dream'
+		function  Main (input){
+var erased = input.replace(/eraser/g, '').replace(/erase/g, '').
+     replace(/dreamer/g, '').replace(/dream/g, ''); 
+	      if (erased === '') {
+console.log("YES");
+		}else{  // 읽기 정리한다 로컬다음 단계 입력과 함께짧게.
+console.log("NO");
+// 읽기 잘정리한다 처리 경로 각 값마다.
+  }
+  }
+     Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    // After all replacements, check if the string is empty.
-    if    (   erased   ===   ''   )
-    {
-        // If the string is empty, it means the original input
-        // was entirely composed of the magic words.
-        console.log("YES");
-    }
-    else
-    {
-        // If the string is not empty, it means there were
-        // other characters or sequences not covered by the magic words.
-        console.log("NO");
-    }
-
-}
-
-
-// Execute the Main function with input read from standard input.
-// This reads the entire content of /dev/stdin as a UTF-8 string.
-Main(   require("fs")  .  readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+// 읽기 지금정리한다 최종사람의 읽기 시작에서직접.

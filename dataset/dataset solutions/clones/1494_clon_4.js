@@ -1,57 +1,53 @@
-function evaluateLinkage(firstPointCoords, secondPointCoords) {
-    const coordA_X = firstPointCoords[0];
-    const coordA_Y = firstPointCoords[1];
-    const coordB_X = secondPointCoords[0];
-    const coordB_Y = secondPointCoords[1];
-
-    const isDominated = (coordA_X > coordB_X && coordA_Y > coordB_Y);
-    const isDominant = (coordA_X < coordB_X && coordA_Y < coordB_Y);
-
-    return isDominated || isDominant;
-}
-
-function processDataStream(rawDataPayload) {
-    const parsedLines = rawDataPayload.trim().split('\n');
-    const entityCount = parseInt(parsedLines[0].split(' ')[0], 10);
-    const spatialEntities = parsedLines.slice(1, entityCount + 1).map(lineText =>
-        lineText.split(' ').map(numericVal => parseInt(numericVal, 10))
+const processInput = (rawText) => {
+    const lines = rawText.trim().split('\n');
+    const totalCities = parseInt(lines[0].split(' ')[0], 10);
+    const cityData = lines.slice(1, totalCities + 1).map(line =>
+        line.split(' ').map(coord => parseInt(coord, 10))
     );
+    return { totalCities, cityData };
+};
 
-    const connectionGraph = Array.from({ length: entityCount }, () => []);
-    for (let currentEntityIdx = 0; currentEntityIdx < entityCount; currentEntityIdx++) {
-        for (let otherEntityIdx = currentEntityIdx + 1; otherEntityIdx < entityCount; otherEntityIdx++) {
-            if (evaluateLinkage(spatialEntities[currentEntityIdx], spatialEntities[otherEntityIdx])) {
-                connectionGraph[currentEntityIdx].push(otherEntityIdx);
-                connectionGraph[otherEntityIdx].push(currentEntityIdx);
-            }
+const findConnectedNodes = (currentCityIdx, allCityCoords) => {
+    const currentCity = allCityCoords[currentCityIdx];
+    const connectedIndices = [];
+    const cityCount = allCityCoords.length;
+
+    for (let otherCityIdx = 0; otherCityIdx < cityCount; otherCityIdx++) {
+        const otherCity = allCityCoords[otherCityIdx];
+        const [cx, cy] = currentCity;
+        const [ox, oy] = otherCity;
+
+        if ((cx > ox && cy > oy) || (cx < ox && cy < oy)) {
+            connectedIndices.push(otherCityIdx);
         }
     }
+    return connectedIndices;
+};
 
-    const componentMeasures = [];
+const executeTraversal = (inputData) => {
+    const { totalCities, cityData } = inputData;
+    const reachabilityCounts = new Array(totalCities);
 
-    for (let startingEntityIdx = 0; startingEntityIdx < entityCount; startingEntityIdx++) {
-        const visitedEntities = new Set();
-        const traversalQueue = [];
-        let currentComponentSize = 0;
+    for (let startNode = 0; startNode < totalCities; startNode++) {
+        const traversalQueue = [startNode];
+        const visitedNodes = new Set();
+        visitedNodes.add(startNode);
+        let queueHead = 0;
 
-        traversalQueue.push(startingEntityIdx);
-        visitedEntities.add(startingEntityIdx);
+        while (queueHead < traversalQueue.length) {
+            const currentNode = traversalQueue[queueHead++];
+            const neighbors = findConnectedNodes(currentNode, cityData);
 
-        while (traversalQueue.length > 0) {
-            const activeEntity = traversalQueue.shift();
-            currentComponentSize++;
-
-            for (const neighborEntity of connectionGraph[activeEntity]) {
-                if (!visitedEntities.has(neighborEntity)) {
-                    visitedEntities.add(neighborEntity);
-                    traversalQueue.push(neighborEntity);
+            for (const neighborIdx of neighbors) {
+                if (!visitedNodes.has(neighborIdx)) {
+                    visitedNodes.add(neighborIdx);
+                    traversalQueue.push(neighborIdx);
                 }
             }
         }
-        componentMeasures[startingEntityIdx] = currentComponentSize;
+        reachabilityCounts[startNode] = visitedNodes.size;
     }
+    console.log(reachabilityCounts.join('\n'));
+};
 
-    console.log(componentMeasures.join('\n'));
-}
-
-processDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeTraversal(processInput(require('fs').readFileSync('/dev/stdin', 'utf8')));

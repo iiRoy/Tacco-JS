@@ -1,64 +1,49 @@
-// This script processes data from standard input to solve a variation of the Josephus problem.
-// It reads multiple lines, each containing two numbers, and calculates the survivor.
+// This program processes input data to solve a variant of the Josephus problem.
 
-/*
- * Acquire raw text content from the system's standard input stream.
- * The content is expected to be UTF-8 encoded.
- * Any leading or trailing whitespace is removed to ensure clean processing.
- */
-var sourceData = require('fs') . readFileSync ( '/dev/stdin' ,  'utf8' ) . trim (  ) ;
+// Obtain the file system module and read all content from standard input.
+// The content is decoded as UTF-8 and any surrounding whitespace is removed.
+var rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
 
-// Separate the entire input data into an array of individual lines.
-// Each line represents a distinct test case for the problem.
-var textualLines = sourceData . split ( '\n' ) ;
+// Divide the entire input string into an array of individual text lines.
+var inputDataLines = rawInputContent.split('\n');
 
-// Declare a variable to hold the current line being processed from the input.
-var currentSegment;
+var currentProcessedLine; // A variable to hold the line currently being examined.
 
-// Begin processing each line sequentially until no more lines are available.
-// The `shift()` method extracts the first element and removes it from the array.
-while (  currentSegment  =  textualLines.shift( )  )
-{
-    // Break down the current line into its constituent numeric parts,
-    // assuming they are space-separated.
-    var numericParts = currentSegment . split (  ' '  ) ;
+// Iterate through each line of the input data.
+// The loop continues as long as there are lines available and 'shift()' returns a non-null/undefined value.
+while (currentProcessedLine = inputDataLines.shift()) {
+    // Split the current line into an array of string-based numeric tokens.
+    var numericTokens = currentProcessedLine.split(' ');
 
-    // Convert the first string part to an integer, representing the total number of people.
-    var totalIndividuals =  +numericParts[0] ;
-    // Convert the second string part to an integer, representing the elimination step.
-    var eliminationCount =  +numericParts[1] ;
+    // Convert the first token to a numerical value, representing the total number of participants.
+    var totalParticipants = +numericTokens[0];
+    // Convert the second token to a numerical value, representing the elimination step.
+    var eliminationStep = +numericTokens[1];
 
-    // Check for the termination condition: if both numbers are zero,
-    // it signals the end of input or a specific problem scenario.
-    if  (  totalIndividuals  +  eliminationCount  ===  0  )
-    {
-        break ; // Exit the processing loop.
+    // Check for the program's termination condition: if both 'totalParticipants' and 'eliminationStep' are zero.
+    if (totalParticipants + eliminationStep === 0) {
+        break; // Exit the processing loop immediately.
     }
 
-    // Initialize a dynamic array to hold the list of participants.
-    // Participants are numbered from 1 up to 'totalIndividuals'.
-    var remainingParticipants = [  ] ;
-    for  ( var iterationIndex = 0 ;  iterationIndex < totalIndividuals ;  iterationIndex ++  )
-    {
-        remainingParticipants.push (  iterationIndex  +  1  ) ;
+    // Initialize an array to simulate the circle of participants.
+    var participantCircle = [];
+    // Populate the 'participantCircle' array with numbers from 1 up to 'totalParticipants'.
+    for (var participantIndex = 0; participantIndex < totalParticipants; participantIndex++) {
+        participantCircle.push(participantIndex + 1);
     }
 
-    // Simulate the Josephus problem elimination process.
-    // Continue as long as there is more than one participant left.
-    while  (  remainingParticipants.length  >  1  )
-    {
-        // This inner loop moves 'eliminationCount - 1' participants
-        // from the front of the list to the end, simulating counting.
-        for  (  var iterationIndex = 0 ;  iterationIndex  <  eliminationCount  -  1 ;  iterationIndex ++  )
-        {
-            remainingParticipants.push (  remainingParticipants.shift (  )  ) ;
+    // Simulate the Josephus elimination process.
+    // This loop continues until only a single participant remains in the circle.
+    while (participantCircle.length > 1) {
+        // Move 'eliminationStep - 1' participants from the front of the array to its end.
+        // This action simulates counting around the circle without removing anyone yet.
+        for (var moveCount = 0; moveCount < eliminationStep - 1; moveCount++) {
+            participantCircle.push(participantCircle.shift());
         }
-        // After counting, the 'eliminationCount'-th participant is removed (eliminated).
-        remainingParticipants.shift (  ) ;
+        // Remove the participant who is now at the front of the array.
+        // This is the 'eliminationStep'-th person to be eliminated.
+        participantCircle.shift();
     }
-
-    // Output the number of the last remaining participant.
-    console . log (  remainingParticipants[0]  ) ;
+    // The last remaining participant is the survivor. Print their identifier.
+    console.log(participantCircle[0]);
 }
-
-// End of script execution.

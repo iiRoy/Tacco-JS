@@ -1,100 +1,62 @@
-const nodeFileSystemModule = require('node:fs');
+const fileSystem = require('fs');
+
+function getOperationSign(value) {
+    return value > 0 ? '+' : '-';
+}
+
+function buildRepeatedString(charToRepeat, count) {
+    let segmentAccumulator = '';
+    for (let k = 0; k < count; k++) {
+        segmentAccumulator += charToRepeat;
+    }
+    return segmentAccumulator;
+}
 
 const stdinFileDescriptor = process.stdin.fd;
-const textEncoding = 'utf8';
+const inputSize = fileSystem.fstatSync(stdinFileDescriptor).size;
+const inputBuffer = Buffer.alloc(inputSize);
+const readBytesCount = fileSystem.readSync(stdinFileDescriptor, inputBuffer, 0, inputSize, 0);
+const inputLines = inputBuffer.toString('utf8', 0, readBytesCount).split('\n');
 
-function acquireInputLine() {
-  let inputByteCount = 0;
-  try {
-    const fileStatistics = nodeFileSystemModule.fstatSync(stdinFileDescriptor);
-    inputByteCount = fileStatistics.size;
-  } catch (statError) {
-    console.error("Problem accessing standard input file descriptor statistics:", statError.message);
-    return [];
-  }
+function processInputData() {
+    const inputString = inputLines[0];
+    let resultString = '';
+    const stringLength = inputString.length;
 
-  if (inputByteCount === 0) {
-    console.warn("Input stream appears to be empty. No data will be processed.");
-    return [];
-  }
+    let previousCharCode = 0;
+    const thresholdForDirectRepeat = 16;
 
-  const ioBuffer = Buffer.alloc(inputByteCount);
-  let actualReadBytes = 0;
-
-  try {
-    actualReadBytes = nodeFileSystemModule.readSync(
-      stdinFileDescriptor,
-      ioBuffer,
-      0,
-      inputByteCount,
-      0
-    );
-  } catch (readError) {
-    console.error("Failed to read from standard input:", readError.message);
-    return [];
-  }
-
-  if (actualReadBytes === 0) {
-    console.warn("No actual bytes were read despite reported size. Returning empty input.");
-    return [];
-  }
-
-  const rawInputContent = ioBuffer.toString(textEncoding, 0, actualReadBytes).trim();
-  return rawInputContent.split('\n');
-}
-
-const processedInputLines = acquireInputLine();
-
-function transcodeToBrainfuck() {
-  if (processedInputLines.length === 0) {
-    console.error("No input lines provided for Brainfuck transcoding. Exiting.");
-    return '';
-  }
-
-  const sourceText = processedInputLines[0];
-  let bfCommandSequence = '';
-
-  let previousCharValue = 0;
-  const directOperationLimit = 16;
-
-  const repeatCharInstruction = (character, count) => {
-    if (count <= 0) return '';
-    return character.repeat(count);
-  };
-
-  const characterValueArray = Array.from(sourceText, char => char.charCodeAt(0));
-  const textLength = characterValueArray.length;
-
-  for (let charIndex = 0; charIndex < textLength; charIndex++) {
-    const currentCharacterValue = characterValueArray[charIndex];
-    const charCodeDelta = currentCharacterValue - previousCharValue;
-
-    const opSign = charCodeDelta > 0 ? '+' : '-';
-    const absoluteDelta = Math.abs(charCodeDelta);
-
-    if (absoluteDelta < directOperationLimit) {
-      bfCommandSequence += repeatCharInstruction(opSign, absoluteDelta);
-    } else {
-      const sqrtBase = Math.floor(Math.sqrt(absoluteDelta));
-
-      bfCommandSequence += '>';
-      bfCommandSequence += repeatCharInstruction('+', sqrtBase);
-      bfCommandSequence += '[<';
-      bfCommandSequence += repeatCharInstruction(opSign, sqrtBase);
-      bfCommandSequence += '>-]';
-      bfCommandSequence += '<';
-
-      const remainderDelta = absoluteDelta - (sqrtBase * sqrtBase);
-      bfCommandSequence += repeatCharInstruction(opSign, remainderDelta);
+    const characterCodeArray = new Array(stringLength);
+    for (let charIndex = 0; charIndex < stringLength; charIndex++) {
+        characterCodeArray[charIndex] = inputString.charCodeAt(charIndex);
     }
 
-    bfCommandSequence += '.';
+    for (let charIndex = 0; charIndex < stringLength; charIndex++) {
+        const currentCharCode = characterCodeArray[charIndex];
+        const rawDifference = currentCharCode - previousCharCode;
 
-    previousCharValue = currentCharacterValue;
-  }
+        const operationSign = getOperationSign(rawDifference);
+        const absoluteDifference = Math.abs(rawDifference);
 
-  return bfCommandSequence;
+        if (absoluteDifference < thresholdForDirectRepeat) {
+            resultString += buildRepeatedString(operationSign, absoluteDifference);
+        } else {
+            const squareRootValue = Math.floor(Math.sqrt(absoluteDifference));
+
+            resultString += '>';
+            resultString += buildRepeatedString('+', squareRootValue);
+            resultString += '[<';
+            resultString += buildRepeatedString(operationSign, squareRootValue);
+            resultString += '>-]<';
+
+            const remainingDifference = absoluteDifference - (squareRootValue * squareRootValue);
+            resultString += buildRepeatedString(operationSign, remainingDifference);
+        }
+        resultString += '.';
+        previousCharCode = currentCharCode;
+    }
+
+    console.log(resultString);
 }
 
-const finalBrainfuckOutput = transcodeToBrainfuck();
-console.log(finalBrainfuckOutput);
+processInputData();

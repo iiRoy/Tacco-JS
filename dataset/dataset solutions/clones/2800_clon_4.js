@@ -1,41 +1,30 @@
-function entryPoint(sequenceSource) {
-    const valOne = Number(sequenceSource.charAt(0));
-    const valTwo = Number(sequenceSource.charAt(1));
-    const valThree = Number(sequenceSource.charAt(2));
-    const valFour = Number(sequenceSource.charAt(3));
+function Main(entryData) {
+    const char0 = Number(entryData[0]);
+    const char1 = Number(entryData[1]);
+    const char2 = Number(entryData[2]);
+    const char3 = Number(entryData[3]);
 
-    const decisionPoints = [
+    const outcomeRules = [
         {
-            conditionCheck: () => valOne === valTwo,
-            outcomeMessage: "Bad"
+            condition: () => char0 === char1,
+            result: "Bad"
         },
         {
-            conditionCheck: () => valFour !== valThree && valThree !== valTwo && valTwo !== valOne,
-            outcomeMessage: "good"
+            condition: () => char3 !== char2 && char2 !== char1 && char1 !== char0,
+            result: "good"
         },
         {
-            conditionCheck: () => valTwo === valThree,
-            outcomeMessage: "Bad"
-        },
-        {
-            conditionCheck: () => valFour !== valThree && valThree !== valTwo && valTwo !== valOne,
-            outcomeMessage: "good"
-        },
-        {
-            conditionCheck: () => valThree === valFour,
-            outcomeMessage: "Bad"
-        },
-        {
-            conditionCheck: () => valFour !== valThree && valThree !== valTwo && valTwo !== valOne,
-            outcomeMessage: "good"
+            condition: () => char2 === char3,
+            result: "Bad"
         }
     ];
 
-    const firstMatch = decisionPoints.find(point => point.conditionCheck());
-
-    if (firstMatch) {
-        console.log(firstMatch.outcomeMessage);
+    for (const ruleEntry of outcomeRules) {
+        if (ruleEntry.condition()) {
+            console.log(ruleEntry.result);
+            return;
+        }
     }
 }
 
-entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

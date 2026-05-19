@@ -1,50 +1,40 @@
-/* This function orchestrates the entire calculation process */
-function ComputeFinalValue(  initialTextData  )
-{
-  // First, parse the raw input text.
-  // It splits the string by newline characters and converts each part into a number.
-  let numericalSequence = initialTextData
-                            .split(  "\n"  )
-                            .map(  singleItem =>  +singleItem  );
+function ProcessInput(inputString) {
+  // This function processes a multi-line string input to calculate a specific sum.
+  // First, the input string is split into individual lines, and each line is converted to a number.
+  let numericData = inputString.split("\n").map(currentValue => +currentValue);
 
-  // The first element of the sequence often represents a count or an upper bound.
-  const seriesUpperBound = numericalSequence[0];
+  // The initial element of the processed array determines the upper bound for a subsequent loop.
+  const countElements = numericData[0];
 
-  // Initialize a variable to accumulate the result.
-  let accumulatedOutcome = 0;
+  // A variable is initialized to accumulate the final result of the calculation.
+  let totalSum = 0;
 
-  // Iterate backwards through the numerical sequence, starting from the upper bound
-  // and continuing until the second element (index 1).
-  for (  let currentPosition = seriesUpperBound;
-         currentPosition > 1;
-         currentPosition--  )
-  {
-    /* Check for an invalid condition: if the value at the current position
-       is greater than or equal to the position itself, the problem is unsolvable. */
-    if (  numericalSequence[currentPosition]  >=  currentPosition  )
-    {
-      console.log( -1  ); // Output the error indicator.
-      return; // Terminate execution immediately.
+  // A reverse loop iterates from the 'countElements' value down to 2 (exclusive).
+  // This iteration pattern is crucial for the algorithm's logic.
+  for (let loopIndex = countElements; loopIndex > 1; loopIndex--) {
+    // A critical check: if the value at the current index is greater than or equal to the index itself,
+    // it indicates an invalid state, and the program should output -1 and terminate.
+    if (numericData[loopIndex] >= loopIndex) {
+      console.log(-1); // Output the specific error code.
+      return;          // Exit the function immediately.
     }
 
-    // Determine how to update the accumulated outcome based on a specific pattern.
-    if (  numericalSequence[currentPosition]  ===
-          numericalSequence[currentPosition - 1]  +  1  )
-    {
-      // If the current element follows the previous one in sequence, increment the outcome.
-      accumulatedOutcome++;
-    }
-    else
-    {
-      // Otherwise, add the current element's value directly to the outcome.
-      accumulatedOutcome += numericalSequence[currentPosition];
+    // Conditional logic based on the relationship between the current element and its predecessor.
+    // If the current element is exactly one greater than the element at the previous index...
+    if (numericData[loopIndex] === numericData[loopIndex - 1] + 1) {
+      // ...the accumulated sum is incremented by one.
+      totalSum++;
+    } else {
+      // Otherwise, the value of the current element is added directly to the accumulated sum.
+      totalSum += numericData[loopIndex];
     }
   }
 
-  // Display the final computed outcome.
-  console.log(  accumulatedOutcome  );
+  // After the loop has completed its iterations, the final calculated sum is printed to the console.
+  console.log(totalSum);
 }
 
-// Read the input synchronously from standard input using Node.js filesystem module.
-// Then, invoke the main computation function with the obtained string data.
-ComputeFinalValue(require("fs") . readFileSync( "/dev/stdin" ,  "utf8"  ) );
+// The program initiates by reading data from standard input.
+// It uses Node.js's 'fs' module to synchronously read the entire content of '/dev/stdin'
+// and decodes it as a UTF-8 string before passing it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

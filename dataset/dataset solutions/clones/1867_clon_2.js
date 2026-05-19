@@ -1,39 +1,29 @@
-function primaryProcessor
-(
-  incomingText
-)
-{
-  // This function processes the incoming textual data.
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines
+    let linesArray = rawData.split('\n');
 
-  // Divide the complete text by newline characters into an array of lines.
-  var linesArray = incomingText . split ( "\n" ) ;
+    // Extract the first string from the array
+    let firstString = linesArray[0];
 
-  // Extract the very first line as our primary sequence.
-  var firstString = linesArray[0] ;
+    // Extract the second string from the array
+    let secondString = linesArray[1];
 
-  // Retrieve the second line, which will be used for comparison.
-  var secondString = linesArray [ 1 ] ;
+    // Get the length of the first string
+    const firstLength = firstString.length;
 
-  // Determine the character length of the primary sequence.
-  var charCount = firstString . length ;
+    // Extract a substring from the second string,
+    // starting from index 0 and with a length equal to firstLength
+    let prefixCheck = secondString.substr(0, firstLength);
 
-  // Obtain a segment from the second string, starting from the beginning,
-  // with a length equal to the primary sequence's character count.
-  var comparisonSegment = secondString . substr ( 0 , charCount ) ;
+    // Compare the first string with the extracted prefix
+    if (firstString === prefixCheck) {
+        // If they are identical, print "Yes"
+        console.log("Yes");
+    } else {
+        // Otherwise, print "No"
+        console.log("No");
+    }
+}
 
-  // Evaluate if the primary sequence is identical to the obtained segment.
-  if ( firstString == comparisonSegment )
-  {
-    // If they match, output an affirmative response.
-    console . log ( "Yes" ) ;
-  }
-  else
-  {
-    // Otherwise, indicate a negative outcome.
-    console . log ( "No" ) ;
-  } // End of conditional check.
-} // End of primary processing function.
-
-
-// Invoke the main processor by reading content from standard input.
-primaryProcessor ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,57 +1,41 @@
-function ProcessSequence(inputData) {
-  // This function takes a raw string input and performs a specific calculation.
-  // It processes numerical data derived from the input string.
+// This function processes the raw input string to compute a specific numerical result.
+function ProcessInput(inputString) {
+  // The input string is first split into lines, and each line is converted to a number.
+  // The unary plus operator (`+`) is used for concise string-to-number conversion.
+  let numericValues = inputString.split("\n").map(itemString => +itemString);
 
-  /* Step 1: Normalize the input string.
-     First, split the string by newline characters to get an array of stringified numbers.
-     Then, map each string element to its numeric representation using the Number() constructor. */
-  let parsedNumbers = inputData
-                      .split("\n")
-                      .map(elementStr => Number(elementStr));
+  // The first element of the parsed array determines the upper bound for a subsequent loop.
+  const arrayLength = numericValues[0];
 
-  // The first element of the parsed array dictates the effective length for the subsequent loop.
-  const sequenceLength = parsedNumbers[0];
-
-  // A critical condition check: if the second element is not exactly zero.
-  // Using a floating-point literal for comparison to demonstrate a type change.
-  if (parsedNumbers[1] !== 0.0) {
-    console.log(-1.0); // Output a floating-point negative one to signify an error.
-    return; // Exit the function immediately upon error detection.
+  // A critical check: if the second element of the array is not zero,
+  // an error condition is met, and the function outputs -1 before terminating.
+  if (numericValues[1] !== 0) {
+    console.log(-1); // Output the designated error value.
+    return;          // Exit the function immediately.
   }
 
-  // Initialize an accumulator variable to store the calculated sum.
-  // Using a floating-point literal for initialization.
-  let finalTally = 0.0;
+  // Initialize a variable to accumulate the final calculated value.
+  let resultCounter = 0;
 
-  // Begin a reverse iteration loop.
-  // The loop starts from the 'sequenceLength' index and decrements until 'iteratorIndex' is no longer greater than 1.0.
-  for (let iteratorIndex = sequenceLength;
-       iteratorIndex > 1.0; // Using a floating-point literal for the loop condition.
-       iteratorIndex--
-  ) {
-    // Conditional logic: check if the current element's value is precisely one greater than the preceding element.
-    // Floating-point addition is used here.
-    if (parsedNumbers[iteratorIndex] === parsedNumbers[iteratorIndex - 1] + 1.0) {
-      finalTally = finalTally + 1.0; // Increment the accumulator by a floating-point one.
-    }
-    // If the condition is not met, add the current element's value directly to the accumulator.
-    else {
-      finalTally += parsedNumbers[iteratorIndex];
+  // Iterate backwards through the `numericValues` array, starting from `arrayLength`
+  // down to, but not including, the second element (index 1).
+  for (let loopIndex = arrayLength; loopIndex > 1; loopIndex--) {
+    // Compare the current element with the value of the preceding element plus one.
+    if (numericValues[loopIndex] === numericValues[loopIndex - 1] + 1) {
+      // If the condition holds true, increment the result counter by one.
+      resultCounter++;
+    } else {
+      // Otherwise, add the value of the current element directly to the result counter.
+      resultCounter += numericValues[loopIndex];
     }
   }
 
-  // Output the final accumulated result to the console.
-  console.log(finalTally);
+  // After the loop completes, print the final accumulated result to the console.
+  console.log(resultCounter);
 }
 
-// Execution entry point:
-// Read the content of the standard input file using Node.js's file system module.
-// The data is read as UTF-8 encoded text.
-// This raw text content is then passed to our primary processing function.
-ProcessSequence(
-  require("fs")
-    .readFileSync(
-      "/dev/stdin", // Standard input file path.
-      "utf8"        // Specifies the character encoding.
-    )
-);
+// The program starts by reading the entire content of standard input.
+// The `fs` module is used for file system operations, and `readFileSync` reads the file synchronously.
+// The input is expected to be UTF-8 encoded.
+// The read content is then passed to the `ProcessInput` function for computation.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

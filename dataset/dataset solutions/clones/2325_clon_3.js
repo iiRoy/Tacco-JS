@@ -1,103 +1,61 @@
-// This script processes numerical input from standard input to perform a specific calculation.
-
-// Standard input setup for Node.js environment
+"use strict";
 process.stdin.resume();
 process.stdin.setEncoding("utf-8");
 
-// A utility function to display results to the console
-function logOutput(dataToLog) {
-  console.log(dataToLog);
+function outputResult(x) {
+  console.log(x);
 }
 
-let inputDataAccumulator = "";
-let processedLinePointer = 0;
+let rawDataBuffer = "";
+let lineIndex = 0;
 
-// Event listener for incoming data chunks from standard input
-process.stdin.on("data", incomingDataChunk => {
-  inputDataAccumulator += incomingDataChunk;
+process.stdin.on("data", inputChunk => {
+  rawDataBuffer += inputChunk;
 });
-
-// Event listener for the end of standard input stream
 process.stdin.on("end", () => {
-  // Split the accumulated input into an array of lines
-  const lines = inputDataAccumulator.split("\n");
-  // Filter out any potential empty lines if they exist, to ensure valid processing
-  inputDataAccumulator = lines.filter(line => line.trim() !== "");
-  
-  // Initiate the main application workflow after all input is received
-  executePrimaryWorkflow();
+  rawDataBuffer = rawDataBuffer.split("\n");
+  executeProcessing();
 });
-
-// Function to retrieve the next line from the processed input buffer
-function retrieveNextInputLine() {
-  if (processedLinePointer >= inputDataAccumulator.length) {
-    // Optionally log an error or return null/undefined if no more lines
-    // For this problem, we assume input is always sufficient.
-    return null; 
-  }
-  return inputDataAccumulator[processedLinePointer++];
+function fetchLine() {
+  return rawDataBuffer[lineIndex++];
 }
 
-// ************************ End of Input/Output Boilerplate *******************
-// ************************** Core Application Logic Begins *******************
+// ************************ Ignore above this Line ******************************
+// **************************** Main Code Start *********************************
 
-/**
- * Executes the primary workflow of the application.
- * This involves reading two numbers from input, performing
- * a series of mathematical operations, and logging the final result.
- */
-function executePrimaryWorkflow() {
+function executeProcessing() {
 
-  // Attempt to read the first line of numerical input
-  const rawInputLine = retrieveNextInputLine();
+  const inputLine = fetchLine();
+  const SPACE_DELIMITER = " ";
 
-  // Guard clause: Ensure an input line was successfully retrieved
-  if (!rawInputLine) {
-    logOutput("Error: No input line available for processing.");
-    return; // Exit if no input
-  }
+  // Helper function to parse a string into an integer with explicit radix
+  const parseNumericValue = (str) => parseInt(str, 10);
 
-  // Parse the input line: split by space and convert to numbers
-  const stringRepresentations = rawInputLine.split(" ");
-  
-  // Guard clause: Validate that at least two numbers were provided
-  if (stringRepresentations.length < 2) {
-    logOutput("Error: Insufficient numerical values provided in input line.");
-    return; // Exit if not enough numbers
-  }
+  // Split the input line into string tokens
+  const stringTokens = inputLine.split(SPACE_DELIMITER);
 
-  // Convert string numbers to actual numerical values
-  const numericValuesArray = stringRepresentations.map(strRepresentation => Number(strRepresentation));
+  // Parse the individual numeric values
+  const firstVal = parseNumericValue(stringTokens[0]);
+  const secondVal = parseNumericValue(stringTokens[1]);
 
-  // Extract the two operands using array destructuring
-  const [firstOperand, secondOperand] = numericValuesArray;
+  // Introduce a helper function for the core arithmetic logic
+  const calculateDerivedValue = (valA, valB) => {
+    const currentMax = Math.max(valA, valB);
+    const currentMin = Math.min(valA, valB);
 
-  // Determine the maximum and minimum values among the two operands
-  const maxValue = Math.max(firstOperand, secondOperand);
-  const minValue = Math.min(firstOperand, secondOperand);
+    // Use bitwise OR ( | 0 ) as an equivalent for Math.floor for positive numbers
+    const quotientResult = (currentMax / currentMin) | 0;
+    const productResult = (currentMax * currentMin) | 0;
 
-  // Guard clause: Prevent division by zero if the smaller value is zero
-  if (minValue === 0) {
-    logOutput("Error: Division by zero is not permitted as the smaller value is zero.");
-    return; // Exit if division by zero would occur
-  }
+    // Introduce an intermediate variable for the final division step
+    const finalDivisionStep = productResult / quotientResult;
+    
+    // Apply floor again to the final result
+    return finalDivisionStep | 0;
+  };
 
-  // Calculate the integer part of the division of the larger by the smaller value
-  const integerDivisionResult = Math.floor(maxValue / minValue);
+  const finalComputedValue = calculateDerivedValue(firstVal, secondVal);
 
-  // Calculate the integer part of the product of the two values
-  const integerMultiplicationResult = Math.floor(maxValue * minValue);
-
-  // Guard clause: Check if the intermediate division result is zero, which would cause another division by zero
-  if (integerDivisionResult === 0) {
-    logOutput("Error: Intermediate division result became zero, preventing further calculation.");
-    return; // Exit if intermediate result is zero
-  }
-
-  // Perform the final calculation: integer product divided by integer division result
-  const calculatedFinalOutput = Math.floor(integerMultiplicationResult / integerDivisionResult);
-
-  // Display the computed final result to the user
-  logOutput(calculatedFinalOutput);
+  outputResult(finalComputedValue);
   
 }

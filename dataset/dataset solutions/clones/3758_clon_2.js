@@ -1,85 +1,73 @@
-/*
- * This JavaScript module processes incoming data from standard input.
- * It reads a series of numerical coordinates and applies various
- * directional transformations to them.
- * The primary goal is to find the maximum sum of the 'm' largest
- * transformed values across several predefined orientations.
- * The program expects the first line of input to contain two integers:
- * 'n' (total number of coordinate sets) and 'm' (number of largest values to sum).
- * Subsequent 'n' lines each contain three integer coordinates (x, y, z).
- * Final output is a single integer representing the overall maximum sum found.
- */
+var processInput = require('process').stdin; // Obtain the standard input stream from the process module.
+var collectedData = ""; // Initialize an empty string to accumulate incoming data.
 
-const inputSourceStream = require('process').stdin;
-
-let rawInputBuffer = "";
-
-// Attach event listener to accumulate incoming data chunks
-inputSourceStream.on('data', dataSegment => {
-  rawInputBuffer += dataSegment;
+// Attach an event listener for 'data' events on the standard input.
+processInput.on('data', function (chunkOfData) {
+    collectedData += chunkOfData; // Append each received data chunk to the accumulated string.
 });
 
-// Once all input has been received, process the data
-inputSourceStream.on('end', () => {
+// Attach an event listener for the 'end' event, indicating no more data will be received.
+processInput.on('end', function () {
+    // Split the entire collected data into an array of strings, using newline as a delimiter.
+    var dataLines = collectedData.split('\n');
 
-  const inputLineArray = rawInputBuffer.split('\n');
+    // Parse the first line to get two integer values: total entries and top count.
+    var firstLineParts = dataLines[0].split(' ');
+    var totalEntries = parseInt(firstLineParts[0].trim());
+    var topSelectionCount = parseInt(firstLineParts[1].trim());
 
-  // Parse the first line for the problem's main parameters
-  const [countOfItems, elementsToSum] = inputLineArray[0]
-    .split(' ')
-    .map(strVal => parseInt(strVal.trim(), 10)); // Ensure base 10 for parsing
+    // Handle the edge case where the selection count is zero.
+    if (topSelectionCount === 0) {
+        console.log(0); // Output 0 as no sums can be formed.
+        return; // Exit the function early.
+    }
 
-  // Handle a specific edge case where no elements are needed for summing
-  if (elementsToSum === 0) {
-    console.log(0); // If 'm' is zero, the maximum sum is zero
-    return;
-  }
+    // Define an array of coefficient sets for various combinations of signs.
+    var signCombinations = [
+        [1, 1, 1],
+        [1, 1, -1],
+        [1, -1, 1],
+        [1, -1, -1],
+        [-1, 1, 1],
+        [-1, 1, -1],
+        [-1, -1, -1], // Note: The original code is missing [-1, -1, 1]
+    ];
 
-  // Define a set of 3D direction vectors for transformations
-  const directionVectors = [
-    [1, 1, 1],
-    [1, 1, -1],
-    [1, -1, 1],
-    [1, -1, -1],
-    [-1, 1, 1],
-    [-1, 1, -1],
-    [-1, -1, -1],
-  ];
+    // Initialize an array of arrays to store calculated sums for each sign combination.
+    var computedSumsPerCombination = [];
+    for (var _idx = 0; _idx < signCombinations.length; _idx++) {
+        computedSumsPerCombination.push(new Array()); // Add an empty array for each combination.
+    }
 
-  // Initialize an array of arrays to store transformed coordinates for each vector
-  const transformedCoordinates = [];
-  for (const _dummyVar of directionVectors) {
-    transformedCoordinates.push([]); // Each inner array will hold results for one direction
-  }
+    // Iterate through the input data lines, starting from the second line (index 1).
+    for (var entryIndex = 0; entryIndex < totalEntries; entryIndex++) {
+        // Parse the current line to get three integer coordinates.
+        var currentLineParts = dataLines[entryIndex + 1].split(' ');
+        var coordX = parseInt(currentLineParts[0].trim());
+        var coordY = parseInt(currentLineParts[1].trim());
+        var coordZ = parseInt(currentLineParts[2].trim());
 
-  // Iterate through each set of input coordinates
-  for (let loopIndex = 0; loopIndex < countOfItems; loopIndex++) {
+        // For each set of sign coefficients, calculate a sum and store it.
+        signCombinations.forEach(function (coeffs, combinationIndex) {
+            var coeffA = coeffs[0];
+            var coeffB = coeffs[1];
+            var coeffC = coeffs[2];
+            // Calculate the sum: (x*a) + (y*b) + (z*c)
+            computedSumsPerCombination[combinationIndex].push(coordX * coeffA + coordY * coeffB + coordZ * coeffC);
+        });
+    }
 
-    // Parse the current line for the three coordinate values
-    const [coordP, coordQ, coordR] = inputLineArray[loopIndex + 1]
-      .split(' ')
-      .map(strVal => parseInt(strVal.trim(), 10));
-
-    // Apply each direction vector to the current coordinates
-    directionVectors.forEach((currentVector, vectorIdx) => {
-      const [vectorX, vectorY, vectorZ] = currentVector;
-      // Calculate the projected value and store it
-      transformedCoordinates[vectorIdx].push(coordP * vectorX + coordQ * vectorY + coordR * vectorZ);
+    // Process each array of sums: sort in descending order and sum the top 'topSelectionCount' elements.
+    var maximumSumsForEachSet = computedSumsPerCombination.map(function (currentSumSet) {
+        // Sort the current set of sums in descending order.
+        currentSumSet.sort(function (valueOne, valueTwo) { return valueTwo - valueOne; });
+        // Take the top 'topSelectionCount' elements and reduce them to a single sum.
+        return currentSumSet.slice(0, topSelectionCount).reduce(function (accumulator, currentValue) { return accumulator + currentValue; });
     });
-  }
 
-  // Calculate the maximum sum for each set of transformed values
-  const maximumSums = transformedCoordinates.map(currentProjectionList => {
-    // Sort the list in descending order
-    currentProjectionList.sort((valueA, valueB) => valueB - valueA);
-    // Sum the 'elementsToSum' largest values
-    return currentProjectionList.slice(0, elementsToSum).reduce((totalAccumulator, currentElement) => totalAccumulator + currentElement, 0);
-  });
+    // Sort the resulting sums (one for each sign combination) in descending order.
+    maximumSumsForEachSet.sort(function (sumA, sumB) { return sumB - sumA; });
 
-  // Sort the resulting sums in descending order to find the overall maximum
-  maximumSums.sort((valueA, valueB) => valueB - valueA);
-
-  // Output the single largest sum found
-  console.log(maximumSums[0]);
-
+    // The largest sum among all sign combinations is the final result.
+    console.log(maximumSumsForEachSet[0]);
 });

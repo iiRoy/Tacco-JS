@@ -1,115 +1,195 @@
-const obtainModule = require;
-
-let lineProcessor = obtainModule('readline').createInterface({
-  sourceStream: process.stdin,
-  destinationStream: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-let inputParser;
-let rawInputBuffer = [];
+// Buffer to store incoming lines from standard input
+var lineBuffer = [];
+// Global object to manage input stream
+var inputProcessor;
 
-lineProcessor.on('line', function(currentLineText) {
-  rawInputBuffer.push(currentLineText);
+// Event listener for each line received
+inputReader.on('line', function(currentLineText) {
+  lineBuffer.push(currentLineText);
 });
 
-lineProcessor.on('close', function() {
-  inputParser = setupInputStructure(rawInputBuffer);
-  console.error('\n↑Input ↓Output');
-  runApplication();
+// Event listener for when the input stream closes
+inputReader.on('close', function() {
+  // Initialize the input processing object
+  inputProcessor = setupInputHandler(lineBuffer);
+  // Output a debug message to stderr
+  console.error('\n↑入力 ↓出力');
+  // Execute the primary application logic
+  executeMainLogic();
 });
 
-function createCopy(originalEntity) {
-  return (originalEntity instanceof Set) ? new Set(Array.from(originalEntity)) : JSON.parse(JSON.stringify(originalEntity));
+/**
+ * Creates a deep copy of an object or Set.
+ * @param {any} sourceData The object or Set to copy.
+ * @returns {any} A deep copy of the sourceData.
+ */
+function deepCopyObject(sourceData) {
+  return (sourceData instanceof Set) ? new Set(Array.from(sourceData)) : JSON.parse(JSON.stringify(sourceData));
 }
 
-function fetchNextInteger() {
-  return convertValue(advanceAndFetch(), 1);
+/**
+ * Retrieves and parses the next available input item as an integer.
+ * @returns {number} The next integer from the input.
+ */
+function getNextInteger() {
+  return performTypeConversion(fetchNextItem(), 1);
 }
 
-function fetchNextStringGroup() {
-  return convertValue(advanceAndFetch(), 2);
+/**
+ * Retrieves the next available input item as an array of strings, split by spaces.
+ * @returns {string[]} An array of strings.
+ */
+function getNextStringArray() {
+  return performTypeConversion(fetchNextItem(), 2);
 }
 
-function fetchNextIntegerGroup() {
-  return convertValue(advanceAndFetch(), 4);
+/**
+ * Retrieves the next available input item as an array of integers, split by spaces.
+ * @returns {number[]} An array of integers.
+ */
+function getNextIntegerArray() {
+  return performTypeConversion(fetchNextItem(), 4);
 }
 
-function fetchNextCharacterGroup() {
-  return convertValue(advanceAndFetch(), 6);
+/**
+ * Retrieves the next available input item as an array of characters.
+ * @returns {string[]} An array of characters.
+ */
+function getNextCharacterArray() {
+  return performTypeConversion(fetchNextItem(), 6);
 }
 
-function advanceAndFetch() {
-  return inputParser.retrieveNext();
+/**
+ * Fetches the next raw item from the input stream.
+ * @returns {string} The next raw input item.
+ */
+function fetchNextItem() {
+  return inputProcessor.retrieveAndAdvance();
 }
 
-function checkAvailability() {
-  return inputParser.checkNextAvailability();
+/**
+ * Checks if there are more items available in the input stream.
+ * @returns {boolean} True if more items exist, false otherwise.
+ */
+function hasMoreItems() {
+  return inputProcessor.checkAvailability();
 }
 
-function setupInputStructure(sourceDataLines) {
+/**
+ * Initializes an object to manage input lines.
+ * @param {string[]} rawInputLines An array of raw input strings.
+ * @returns {object} An object with methods to navigate the input.
+ */
+function setupInputHandler(rawInputLines) {
   return {
-    dataList: sourceDataLines,
-    currentPosition: 0,
-    maximumLength: sourceDataLines.length,
+    lineCollection: rawInputLines,
+    currentLineIndex: 0,
+    totalLines: rawInputLines.length,
 
-    checkNextAvailability: function() {
-      return (this.currentPosition < this.maximumLength);
+    /**
+     * Checks if there are more lines to process.
+     * @returns {boolean} True if more lines are available, false otherwise.
+     */
+    checkAvailability: function() {
+      return (this.currentLineIndex < this.totalLines);
     },
 
-    retrieveNext: function() {
-      if (this.checkNextAvailability()) {
-        return this.dataList[this.currentPosition++];
+    /**
+     * Retrieves the current line and advances the index.
+     * @returns {string} The next line from the input.
+     * @throws {string} If no more input is available.
+     */
+    retrieveAndAdvance: function() {
+      if (this.checkAvailability()) {
+        return this.lineCollection[this.currentLineIndex++];
       } else {
-        throw new Error('InputBufferExhaustedException: No additional input elements remaining.');
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-function displayResult(outputValue) {
-  console.log(outputValue);
+/**
+ * Prints a value to standard output.
+ * @param {any} messageContent The content to print.
+ */
+function displayOutput(messageContent) {
+  console.log(messageContent);
 }
 
-function reportDebugInfo(debugTarget) {
-  console.error('debugging-info:' + obtainModule('util').inspect(debugTarget, false, null));
+/**
+ * Logs a debug message to standard error.
+ * @param {any} debugPayload The content to log for debugging.
+ */
+function logDebugInfo(debugPayload) {
+  console.error('debug:' + require('util').inspect(debugPayload, false, null));
 }
 
-function convertValue(inputValue, conversionType) {
+/**
+ * Performs various type conversions on input data based on a specified mode.
+ * @param {any} inputVal The value to convert.
+ * @param {number} conversionType The type of conversion to perform.
+ *   - 1: Parse as integer.
+ *   - 2: Split string by spaces.
+ *   - 4: Split string by spaces and map to numbers.
+ *   - 6: Split string into individual characters.
+ *   - 7: Split string into individual characters and map to numbers.
+ *   - 8: Join array elements with spaces.
+ *   - 9: Join array elements with newlines.
+ *   - 0: Join array elements without a separator.
+ * @returns {any} The converted value or the original value if conversion fails or type is unknown.
+ */
+function performTypeConversion(inputVal, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return parseInt(inputValue);
+        return parseInt(inputVal);
       case 2:
-        return inputValue.split(' ');
+        return inputVal.split(' ');
       case 4:
-        return inputValue.split(' ').map(Number);
+        return inputVal.split(' ').map(Number);
       case 6:
-        return inputValue.split('');
+        return inputVal.split('');
       case 7:
-        return inputValue.split('').map(Number);
+        return inputVal.split('').map(Number);
       case 8:
-        return inputValue.join(' ');
+        return inputVal.join(' ');
       case 9:
-        return inputValue.join('\n');
+        return inputVal.join('\n');
       case 0:
-        return inputValue.join('');
+        return inputVal.join('');
       default:
-        return inputValue;
+        return inputVal;
     }
   } catch (conversionError) {
-    return inputValue;
+    return inputVal;
   }
 }
 
-function runApplication() {
-  let itemQuantity = fetchNextInteger();
-  let resultCollector = [];
+// Main application logic starts here
+function executeMainLogic() {
+  // Read the first integer from input, which represents the size of data
+  var dataSize = getNextInteger();
+  // An array to potentially store results, though not used in this specific algorithm's output
+  var resultContainer = [];
 
-  for (let outerIndex = 0; outerIndex < itemQuantity - 1; outerIndex++) {
-    for (let innerIndex = outerIndex + 1; innerIndex < itemQuantity; innerIndex++) {
-      for (let bitPosition = 0; bitPosition < 10; bitPosition++) {
-        if ((outerIndex >> bitPosition & 1) !== (innerIndex >> bitPosition & bitPosition)) {
-          displayResult(bitPosition + 1);
+  // Outer loop iterates from 0 up to dataSize - 2
+  for (var outerLoopVar = 0; outerLoopVar < dataSize - 1; outerLoopVar++) {
+    // Inner loop iterates from outerLoopVar + 1 up to dataSize - 1
+    for (var innerLoopVar = outerLoopVar + 1; innerLoopVar < dataSize; innerLoopVar++) {
+      // Innermost loop iterates 10 times, likely checking bit positions
+      for (var bitPosition = 0; bitPosition < 10; bitPosition++) {
+        // Check if the k-th bit of outerLoopVar is different from the k-th bit of innerLoopVar AND k
+        // This condition (j >> k & k) seems unusual, typically it would be (j >> k & 1)
+        // However, preserving the original expression as per Type II rules.
+        if (((outerLoopVar >> bitPosition) & 1) != ((innerLoopVar >> bitPosition) & bitPosition)) {
+          // If the condition is met, print bitPosition + 1
+          displayOutput(bitPosition + 1);
         }
       }
     }

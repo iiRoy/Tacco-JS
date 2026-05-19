@@ -1,36 +1,42 @@
-const obtainGreatestCommonDivisor = (firstOperand, secondOperand) => {
-    while (secondOperand !== 0) {
-        let temporaryValue = secondOperand;
-        secondOperand = firstOperand % secondOperand;
-        firstOperand = temporaryValue;
+function calculateGCD(firstValue, secondValue) {
+    while (secondValue !== 0) {
+        let temporary = secondValue;
+        secondValue = firstValue % secondValue;
+        firstValue = temporary;
     }
-    return firstOperand;
-};
+    return firstValue;
+}
 
-const calculateLeastCommonMultipleOfTwo = (valueA, valueB) => {
-    if (valueA === 0 || valueB === 0) return 0;
-    return (Math.abs(valueA * valueB)) / obtainGreatestCommonDivisor(valueA, valueB);
-};
+function calculatePairwiseLCM(valOne, valTwo) {
+    if (valOne === 0 || valTwo === 0) return 0;
+    return Math.abs(valOne * valTwo) / calculateGCD(valOne, valTwo);
+}
 
-const determineOverallLeastCommonMultiple = (numericCollection) => {
-    if (numericCollection.length === 0) return 1;
-    return numericCollection.reduce((accumulator, currentElement) => calculateLeastCommonMultipleOfTwo(accumulator, currentElement));
-};
+function computeLeastCommonMultiple(valueSequence) {
+    if (valueSequence.length === 0) return 1;
+    if (valueSequence.length === 1) return valueSequence[0];
 
-const processInputData = (rawTextLines) => {
-    const headerLineParts = rawTextLines[0].split(" ");
-    const elementCount = parseInt(headerLineParts[0], 10); // Parsed but not utilized in final computation
-    const rangeMaximum = parseInt(headerLineParts[1], 10);
+    return valueSequence.reduce((currentAccumulator, nextElement) => calculatePairwiseLCM(currentAccumulator, nextElement));
+}
 
-    const numericSequence = rawTextLines[1].split(" ").map(strVal => parseInt(strVal, 10));
+function processInputAndCalculate(inputLines) {
+    const firstLineData = inputLines[0].split(" ");
+    const upperBound = parseInt(firstLineData[1], 10);
 
-    const derivedCommonMultiple = determineOverallLeastCommonMultiple(numericSequence);
+    const numberSet = inputLines[1].split(" ").map(strValue => parseInt(strValue, 10));
 
-    const divisorComponent = derivedCommonMultiple / 2;
-    const ratioForCounting = rangeMaximum / divisorComponent;
-    const finalResult = Math.ceil(ratioForCounting / 2);
+    const finalLCM = computeLeastCommonMultiple(numberSet);
 
-    return finalResult;
-};
+    let oddMultipleCount = 0;
+    const halfOfLCM = finalLCM / 2;
 
-console.log(processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n")));
+    let currentOddMultiple = halfOfLCM;
+    while (currentOddMultiple <= upperBound) {
+        oddMultipleCount++;
+        currentOddMultiple += finalLCM;
+    }
+
+    console.log(oddMultipleCount);
+}
+
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

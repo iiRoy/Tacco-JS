@@ -1,197 +1,182 @@
-let inputProcessor = require('readline').createInterface({
+/*
+ * This section handles input/output setup and utility functions.
+ * It's generally boilerplate for competitive programming environments.
+ */
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let dataStream;
-let capturedLines = [];
+var inputProcessor; // Global object for managing input tokens
+var inputLines = []; // Array to store all lines read from stdin
 
-inputProcessor.on('line', (currentLine) => {
-  capturedLines.push(currentLine);
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-inputProcessor.on('close', () => {
-  dataStream = initializeDataStream(capturedLines);
-  console.error('\n');
-  let startTime = Date.now();
-  executePrimaryLogic();
-  let elapsedTime = Date.now() - startTime;
-  logError('execution_time : ' + elapsedTime + 'ms');
-  logError('memory_usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+inputReader.on('close', function() {
+  inputProcessor = initializeInputReader(inputLines);
+  console.error('\n'); // Print a newline to stderr for visual separation
+
+  var startTime = Date.now(); // Record start time for performance measurement
+  executeMainLogic(); // Execute the primary application logic
+  var elapsedTime = Date.now() - startTime; // Calculate elapsed time
+
+  logDebug('execution time : ' + elapsedTime + 'ms'); // Log execution time
+  logDebug('memory usage : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB'); // Log memory usage
 });
 
 /**
- * Creates a duplicate of an object. Handles Sets specifically, otherwise uses JSON serialization.
- * @param {object} sourceObject The object to copy.
- * @returns {object} A deep copy of the sourceObject.
+ * Creates a deep copy of an object or Set.
+ * @param {any} sourceObject The object to clone.
+ * @returns {any} A deep copy of the source object.
  */
-function deepCopy(sourceObject) {
+function createDeepCopy(sourceObject) {
   return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
 
 /**
- * Reads the next available input item and parses it as an integer.
- * @returns {number} The next input item converted to an integer.
+ * Reads the next token from input and parses it as an integer.
+ * @returns {number} The parsed integer.
  */
 function readInteger() {
-  return convertData(fetchNext(), 1);
+  return convertInput(getNextToken(), 1);
 }
 
 /**
- * Reads the next available input item and splits it into a string array.
- * @returns {string[]} The next input item split by spaces into a string array.
+ * Reads the next token from input and splits it into a string array by spaces.
+ * @returns {string[]} An array of strings.
  */
 function readStringArray() {
-  return convertData(fetchNext(), 2);
+  return convertInput(getNextToken(), 2);
 }
 
 /**
- * Reads the next available input item, splits it by spaces, and converts elements to numbers.
- * @returns {number[]} The next input item split by spaces and converted to an array of numbers.
+ * Reads the next token from input, splits it by spaces, and parses elements as numbers.
+ * @returns {number[]} An array of numbers.
  */
-function readIntegerArray() {
-  return convertData(fetchNext(), 4);
+function readIntArray() {
+  return convertInput(getNextToken(), 4);
 }
 
 /**
- * Reads the next available input item and splits it into a character array.
- * @returns {string[]} The next input item split into an array of characters.
+ * Reads the next token from input and splits it into a character array.
+ * @returns {string[]} An array of characters.
  */
 function readCharacterArray() {
-  return convertData(fetchNext(), 6);
+  return convertInput(getNextToken(), 6);
 }
 
 /**
- * Retrieves the subsequent entry from the global data stream.
- * @returns {string} The next data entry.
+ * Retrieves the next available input token.
+ * @returns {string} The next input token.
  */
-function fetchNext() {
-  return dataStream.retrieveNextEntry();
+function getNextToken() {
+  return inputProcessor.retrieveNext();
 }
 
 /**
- * Checks if there are more entries available in the global data stream.
- * @returns {boolean} True if more entries exist, false otherwise.
+ * Checks if there are more input tokens available.
+ * @returns {boolean} True if more tokens exist, false otherwise.
  */
-function canFetchMore() {
-  return dataStream.hasMoreEntries();
+function hasMoreTokens() {
+  return inputProcessor.checkNext();
 }
 
 /**
- * Sets up an object for sequential reading of input lines.
- * @param {string[]} inputLines An array of strings representing input lines.
- * @returns {object} An object with methods for reading input.
+ * Initializes an input reader object from an array of input lines.
+ * @param {string[]} lines The array of input lines.
+ * @returns {object} An object with methods to navigate input.
  */
-function initializeDataStream(inputLines) {
+function initializeInputReader(lines) {
   return {
-    dataEntries: inputLines,
-    currentEntryIndex: 0,
-    totalEntries: inputLines.length,
-
-    /**
-     * Determines if there are additional entries to process.
-     * @returns {boolean} True if more entries are available, false otherwise.
-     */
-    hasMoreEntries: function() {
-      return (this.currentEntryIndex < this.totalEntries);
+    dataList: lines,
+    currentIndex: 0,
+    maximumIndex: lines.length,
+    checkNext: function() {
+      return (this.currentIndex < this.maximumIndex);
     },
-
-    /**
-     * Fetches the next entry from the list.
-     * @returns {string} The next entry.
-     * @throws {string} If no more entries are available.
-     */
-    retrieveNextEntry: function() {
-      if (this.hasMoreEntries()) {
-        return this.dataEntries[this.currentEntryIndex++];
+    retrieveNext: function() {
+      if (this.checkNext()) {
+        return this.dataList[this.currentIndex++];
       } else {
-        throw 'InputOutOfBoundsError : All input lines have been consumed.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
 /**
- * Prints a value to the standard output.
- * @param {*} value The value to be printed.
+ * Prints a value to standard output.
+ * @param {any} value The value to print.
  */
 function printOutput(value) {
   console.log(value);
 }
 
 /**
- * Logs a debug message to the standard error stream.
- * @param {*} message The message or object to log.
+ * Prints a debug message to standard error.
+ * @param {any} message The message to print.
  */
-function logError(message) {
-  console.error('debug_info:' + require('util').inspect(message, false, null));
+function logDebug(message) {
+  console.error('debug:' + require('util').inspect(message, false, null));
 }
 
 /**
- * Converts an input value based on a specified type.
- *
- * @param {string|string[]} inputValue The value to be converted.
- * @param {number} conversionType The type of conversion to apply:
- *   1: Parse as integer.
- *   2: Split by spaces into an array of strings.
- *   4: Split by spaces and convert to an array of numbers.
- *   6: Split into an array of characters.
- *   7: Split into characters and convert to an array of numbers.
- *   8: Join array elements with spaces.
- *   9: Join array elements with newlines.
- *   0: Join array elements with no separator.
- *   (Any other value returns the input as is.)
- * @returns {*} The converted value.
+ * Converts an input string based on a specified format code.
+ * @param {string|string[]} inputItem The item to convert.
+ * @param {number} formatCode The conversion format code.
+ * @returns {any} The converted item.
  */
-function convertData(inputValue, conversionType) {
+function convertInput(inputItem, formatCode) {
   try {
-    switch (conversionType) {
+    switch (formatCode) {
       case 1:
-        return parseInt(inputValue);
+        return parseInt(inputItem);
       case 2:
-        return inputValue.split(' ');
+        return inputItem.split(' ');
       case 4:
-        return inputValue.split(' ').map(Number);
+        return inputItem.split(' ').map(Number);
       case 6:
-        return inputValue.split('');
+        return inputItem.split('');
       case 7:
-        return inputValue.split('').map(Number);
+        return inputItem.split('').map(Number);
       case 8:
-        return inputValue.join(' ');
+        return inputItem.join(' ');
       case 9:
-        return inputValue.join('\n');
+        return inputItem.join('\n');
       case 0:
-        return inputValue.join('');
+        return inputItem.join('');
       default:
-        return inputValue;
+        return inputItem;
     }
-  } catch (conversionError) {
-    return inputValue; // Return original if conversion fails
+  } catch (error) {
+    return inputItem; // Return original on error
   }
 }
 
-/**
- * The primary logic function for the application.
- * Solves a specific problem based on input.
+/*
+ * Main application logic starts here.
+ * This part contains the core algorithm.
  */
-function executePrimaryLogic() {
-  const inputNumber = readInteger();
-  const hundredsPart = Math.floor(inputNumber / 100);
-  const remainderPart = inputNumber % 100;
+function executeMainLogic() {
+  var inputNumber = readInteger(); // Read the main input number
+  var hundredsPart = Math.floor(inputNumber / 100); // Calculate the number of hundreds
+  var remainderPart = inputNumber % 100; // Calculate the remainder after dividing by 100
 
   if (inputNumber < 100) {
-    printOutput(0);
+    printOutput(0); // If the number is less than 100, output 0
     return;
   }
 
   if (remainderPart !== 0) {
-    const requiredValue = Math.ceil(remainderPart / 5);
-    if (hundredsPart >= requiredValue) {
-      printOutput(1);
+    var requiredHundreds = Math.ceil(remainderPart / 5); // Calculate required hundreds for the remainder
+    if (hundredsPart >= requiredHundreds) {
+      printOutput(1); // If available hundreds are sufficient, output 1
     } else {
-      printOutput(0);
+      printOutput(0); // Otherwise, output 0
     }
   } else {
-    printOutput(1);
+    printOutput(1); // If remainder is 0, output 1
   }
 }

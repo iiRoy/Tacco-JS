@@ -1,10 +1,9 @@
-const   rawData = require("fs").readFileSync ( "/dev/stdin" , "utf8" ) ; // Obtain all input content
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read input from standard input
 
-const textRows = rawData . split ( '\n' ) ; // Divide the input into an array of strings, one per line
-const [ firstVal , secondVal ] = textRows[0] . split ( ' ' ) . map ( Number ) ; // Extract and convert the initial two numeric parameters
+const dataRows = rawData.split('\n'); // Split the input into an array of lines
+const [firstVal, secondVal] = dataRows[0].split(' ').map(Number); // Parse the first line for two numbers
 
-let evenNumberStart = firstVal - ( firstVal % 2 ) ; // Determine a starting even integer based on the first parameter
-
-for ( let counter = 0 ; counter < secondVal ; counter++ ) { // Iterate according to the second parameter's magnitude
-    console.log( `${ counter + 1 } ${ evenNumberStart - counter }` ) ; // Print the sequential index and a decremented calculated value
+let calcVal = firstVal - firstVal % 2; // Calculate an initial value based on the first number
+for (let idx = 0; idx < secondVal; idx++) { // Loop 'secondVal' times
+    console.log(`${idx + 1} ${calcVal - idx}`); // Print the current iteration number and a derived value
 }

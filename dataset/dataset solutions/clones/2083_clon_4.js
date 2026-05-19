@@ -1,35 +1,27 @@
 'use strict';
 
-const acquireInitialSection = (entireStream) => {
-    let accumulatedCharacters = '';
-    for (let currentPosition = 0; currentPosition < entireStream.length; currentPosition++) {
-        if (entireStream[currentPosition] === '\n') {
-            break;
-        }
-        accumulatedCharacters += entireStream[currentPosition];
-    }
-    return accumulatedCharacters;
+const findSubsequence = (sourceSequence, targetSequence) => {
+  if (targetSequence.length === 0) {
+    return true;
+  }
+  if (sourceSequence.length < targetSequence.length) {
+    return false;
+  }
+
+  return Array.from({ length: sourceSequence.length - targetSequence.length + 1 }, (_, index) =>
+    sourceSequence.substring(index, index + targetSequence.length)
+  ).some(segment => segment === targetSequence);
 };
 
-const ascertainPairPresence = (subjectString, firstChar, secondChar) => {
-    if (subjectString.length < 2) {
-        return false;
-    }
-    if (subjectString[0] === firstChar && subjectString[1] === secondChar) {
-        return true;
-    }
-    return ascertainPairPresence(subjectString.substring(1), firstChar, secondChar);
+const processInputData = (rawData) => {
+  const initialLine = rawData.split('\n')[0];
+  const responseLookup = new Map([
+    [true, 'Yes'],
+    [false, 'No']
+  ]);
+
+  const presenceDetected = findSubsequence(initialLine, 'hi');
+  console.log(responseLookup.get(presenceDetected));
 };
 
-const runVerification = (inputContent) => {
-    const primarySegment = acquireInitialSection(inputContent);
-    const hasDesiredPattern = ascertainPairPresence(primarySegment, 'h', 'i');
-
-    const outcomeMap = {
-        true: 'Yes',
-        false: 'No'
-    };
-    console.log(outcomeMap[hasDesiredPattern]);
-};
-
-runVerification(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

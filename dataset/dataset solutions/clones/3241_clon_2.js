@@ -1,104 +1,110 @@
-function ProcessData(incomingData) {
-  // Split the entire input string into individual lines
-  let processedLines = incomingData.split("\n");
+function ProcessData(rawData) {
+  // Split the incoming raw data string into individual lines.
+  let processedInput = rawData.split("\n");
 
-  // Parse the first line to get the total number of entries
-  const itemCount = parseInt(processedLines[0], 10);
+  // Parse the first line to determine the total number of items.
+  let itemCount = parseInt(processedInput[0]);
 
-  // Initialize two arrays to store parsed data
-  const primarySet = new Array(itemCount);
-  const secondarySet = new Array(itemCount);
+  // Initialize two distinct arrays to hold item details.
+  let collectionA = new Array(itemCount);
+  let collectionB = new Array(itemCount);
 
-  // Loop through the remaining lines to populate the data arrays
-  for (let elementIndex = 0; elementIndex < itemCount; elementIndex++) {
-    // Split each line by space to get individual components
-    const rowTokens = processedLines[elementIndex + 1].split(" ");
-
-    // Parse components and store them along with the original index
-    primarySet[elementIndex] = [
-      parseInt(rowTokens[0], 10),
-      parseInt(rowTokens[1], 10),
-      elementIndex,
-    ];
-    secondarySet[elementIndex] = [
-      parseInt(rowTokens[0], 10),
-      parseInt(rowTokens[1], 10),
-      elementIndex,
-    ];
+  // Iterate through the input lines, starting from the second line, to populate the collections.
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Split each line into its constituent parts.
+    let tempParts = processedInput[idx + 1].split(" ");
+    // Store the parsed numeric values along with the original index in both collections.
+    collectionA[idx] = [parseInt(tempParts[0]), parseInt(tempParts[1]), idx];
+    collectionB[idx] = [parseInt(tempParts[0]), parseInt(tempParts[1]), idx];
   }
 
-  // Initialize control variables
-  let selectorFlag = 0; // Toggles between processing primarySet and secondarySet
-  let totalScoreX = 0; // Accumulator for values from primarySet
-  let totalScoreY = 0; // Accumulator for values from secondarySet
+  // Initialize variables to manage the processing state and accumulated sums.
+  let toggleState = 0; // This variable alternates between 0 and 1 to switch processing logic.
+  let sumValA = 0;     // Accumulator for values derived from collectionA.
+  let sumValB = 0;     // Accumulator for values derived from collectionB.
 
-  // Sort the datasets based on their respective comparison criteria
-  primarySet.sort(firstSorter);
-  secondarySet.sort(secondSorter);
+  // Sort collectionA based on a specific comparison rule.
+  collectionA.sort(compareByFirstThenSecond);
+  // Sort collectionB using a different comparison rule.
+  collectionB.sort(compareBySecondThenFirst);
 
-  // Create a list to keep track of indices that have already been processed
-  const visitedElements = [];
+  // Create an array to keep track of the indices of items that have already been processed.
+  let processedIndices = new Array();
 
-  // Main processing loop, iterating 'itemCount' times
-  for (let loopCounter = 0; loopCounter < itemCount; loopCounter++) {
-    // Check the current state of the selector flag
-    if (selectorFlag === 0) {
-      // If flag is 0, process primarySet
-      // Skip elements if their index is already in the visited list
-      while (visitedElements.includes(primarySet[0][2])) {
-        primarySet.shift(); // Remove the element
+  // Main loop to process items, alternating between collectionA and collectionB.
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Check the current state of the toggle.
+    if (toggleState === 0) {
+      // If the item at the front of collectionA has already been processed,
+      if (processedIndices.indexOf(collectionA[0][2]) !== -1) {
+        // remove items from the front until an unprocessed item is found.
+        while (processedIndices.indexOf(collectionA[0][2]) !== -1) {
+          collectionA.shift();
+        }
       }
-      totalScoreX += primarySet[0][0]; // Add the first component to accumulator X
-      selectorFlag = 1; // Toggle the flag
-      visitedElements.push(primarySet[0][2]); // Mark the index as visited
-      primarySet.shift(); // Remove the processed element
+      // Add the first component of the current item to sumValA.
+      sumValA += collectionA[0][0];
+      // Flip the toggle state.
+      toggleState = 1;
+      // Record the original index of the processed item.
+      processedIndices.push(collectionA[0][2]);
+      // Remove the processed item from collectionA.
+      collectionA.shift();
     } else {
-      // If flag is 1, process secondarySet
-      // Skip elements if their index is already in the visited list
-      while (visitedElements.includes(secondarySet[0][2])) {
-        secondarySet.shift(); // Remove the element
+      // If the item at the front of collectionB has already been processed,
+      if (processedIndices.indexOf(collectionB[0][2]) !== -1) {
+        // remove items from the front until an unprocessed item is found.
+        while (processedIndices.indexOf(collectionB[0][2]) !== -1) {
+          collectionB.shift();
+        }
       }
-      totalScoreY += secondarySet[0][1]; // Add the second component to accumulator Y
-      selectorFlag = 0; // Toggle the flag
-      visitedElements.push(secondarySet[0][2]); // Mark the index as visited
-      secondarySet.shift(); // Remove the processed element
+      // Add the second component of the current item to sumValB.
+      sumValB += collectionB[0][1];
+      // Flip the toggle state.
+      toggleState = 0;
+      // Record the original index of the processed item.
+      processedIndices.push(collectionB[0][2]);
+      // Remove the processed item from collectionB.
+      collectionB.shift();
     }
   }
 
-  // Calculate the final result as the difference between the two accumulators
-  const calculatedDifference = totalScoreX - totalScoreY;
+  // Compute the final result by subtracting sumValB from sumValA.
+  let finalResult = sumValA - sumValB;
 
-  // Output the computed result
-  console.log("%s", calculatedDifference);
+  // Output the calculated final result to the console.
+  console.log('%s', finalResult);
 }
 
-// Helper function for sorting the first dataset
-function firstSorter(elementA, elementB) {
-  // Compare based on the first component (index 0) in descending order
-  if (elementA[0] < elementB[0]) return 1;
-  if (elementA[0] > elementB[0]) return -1;
-  // If first components are equal, compare based on the second component (index 1) in descending order
-  if (elementA[1] < elementB[1]) return 1;
-  if (elementA[1] > elementB[1]) return -1;
-  return 0; // Elements are considered equal
+// This function is provided for debugging purposes, typically in a browser environment.
+function testExecution() {
+  let rawData = document.getElementById("input").value;
+  ProcessData(rawData);
 }
 
-// Helper function for sorting the second dataset
-function secondSorter(elementA, elementB) {
-  // Compare based on the second component (index 1) in descending order
-  if (elementA[1] < elementB[1]) return 1;
-  if (elementA[1] > elementB[1]) return -1;
-  // If second components are equal, compare based on the first component (index 0) in descending order
-  if (elementA[0] < elementB[0]) return 1;
-  if (elementA[0] > elementB[0]) return -1;
-  return 0; // Elements are considered equal
-}
-
-// Function to activate when the "Run" button is clicked (for local testing)
-function testProgram() {
-  const userInputContent = document.getElementById("input").value;
-  ProcessData(userInputContent);
-}
-
-// Execute the primary data processing using standard input from the file system
+// Invoke the main processing function, reading input from standard input in a Node.js environment.
 ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Custom comparison function for sorting items.
+// It prioritizes sorting by the first element in descending order,
+// and then by the second element in descending order if the first elements are equal.
+function compareByFirstThenSecond(itemX, itemY) {
+  if (itemX[0] < itemY[0]) return 1; // itemX should come after itemY
+  if (itemX[0] > itemY[0]) return -1; // itemX should come before itemY
+  // If the first elements are identical, compare the second elements.
+  if (itemX[1] < itemY[1]) return 1; // itemX should come after itemY
+  if (itemX[1] > itemY[1]) return -1; // itemX should come before itemY
+  return 0; // Both items are considered equal for sorting purposes.
+}
+
+// Another custom comparison function for sorting items.
+// It prioritizes sorting by the second element in descending order,
+// and then by the first element in descending order if the second elements are equal.
+function compareBySecondThenFirst(itemX, itemY) {
+  if (itemX[1] < itemY[1]) return 1; // itemX should come after itemY
+  if (itemX[1] > itemY[1]) return -1; // itemX should come before itemY
+  // If the second elements are identical, compare the first elements.
+  if (itemX[0] < itemY[0]) return 1; // itemX should come after itemY
+  if (itemX[0] > itemY[0]) return -1; // itemX should come before itemY
+  return 0; // Both items are considered equal for sorting purposes.
+}

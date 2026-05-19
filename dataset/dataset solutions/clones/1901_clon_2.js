@@ -1,72 +1,55 @@
-const TARGET_VALUE_FOR_DIFFERENCE = parseInt(process.argv[2] || '35', 10); // This constant represents the desired difference value for the fifth powers calculation.
-
-/**
- * This primary function aims to identify two integer values (x and y)
- * such that the result of x^5 - y^5 precisely equals a predefined target.
- * It uses an adaptive search mechanism to first establish a suitable range,
- * then systematically checks all potential integer pairs within that range.
+/*
+ * This script aims to find two integers, X and Y, such that X^5 - Y^5 equals a given input N.
+ * It first determines a search range for X and Y based on the magnitude of 10^9.
  */
-function calculateFifthPowerEquation() {
-    // A mutable numeric variable employed in the initial phase to progressively
-    // increase a base number, helping to determine the overall search span.
-    let baseIncrementer = 10;
+(function() {
+    // Obtain the target integer value from user input.
+    // This simulates reading an integer from standard input without an explicit prompt message.
+    const targetValue = parseInt(prompt(), 10);
 
-    // This variable will ultimately hold the maximum absolute boundary
-    // for the integers x and y in our search space.
-    let solutionRangeMaximum;
+    // Declare a variable to store the maximum absolute value for the search range.
+    let limitRange;
 
-    // Initiate an indefinite loop designed to ascertain an appropriate
-    // upper limit for the subsequent exhaustive search.
+    // Initialize a counter for determining the search range.
+    let iterCount = 10;
+
+    // Loop indefinitely until the search range is determined.
     while (true) {
-        // Compute the fifth power of the current value of the incrementer.
-        const currentFifthPower = Math.pow(baseIncrementer, 5);
+        // Calculate the fifth power of the current counter.
+        const calcVal1 = Math.pow(iterCount, 5);
+        // Calculate the fifth power of the counter minus one.
+        const calcVal2 = Math.pow(iterCount - 1, 5);
 
-        // Compute the fifth power of the integer that immediately precedes
-        // the current incrementer's value.
-        const previousFifthPower = Math.pow(baseIncrementer - 1, 5);
-
-        // Evaluate if the difference between these two consecutive fifth powers
-        // surpasses a substantial threshold (10^9). This condition helps to
-        // establish a sufficiently broad search boundary.
-        if (currentFifthPower - previousFifthPower > Math.pow(10, 9)) {
-            // If the threshold is exceeded, set the maximum search range
-            // and then terminate this preparatory loop.
-            solutionRangeMaximum = baseIncrementer + 1;
+        // Check if the difference between these powers exceeds a large threshold (10^9).
+        if (calcVal1 - calcVal2 > Math.pow(10, 9)) {
+            // If it does, set the limit range and exit this loop.
+            limitRange = iterCount + 1;
             break;
         }
-        // Increment the base counter to proceed with evaluating larger numbers
-        // in the quest for the appropriate search limit.
-        baseIncrementer++;
+        // Increment the counter for the next iteration.
+        iterCount++;
     }
 
-    // Begin the comprehensive search within the determined numerical range.
-    // The outer loop iterates through all viable integer assignments for the first operand (x).
-    for (let firstPotentialOperand = -solutionRangeMaximum; firstPotentialOperand < solutionRangeMaximum; firstPotentialOperand++) {
-        // The inner loop iterates through all viable integer assignments for the second operand (y).
-        for (let secondPotentialOperand = -solutionRangeMaximum; secondPotentialOperand < solutionRangeMaximum; secondPotentialOperand++) {
-            // Calculate the fifth power of the first candidate integer.
-            const firstOperandPowered = Math.pow(firstPotentialOperand, 5);
+    // Iterate through possible values for the first integer (X) within the determined range.
+    for (let outerIndex = -limitRange; outerIndex < limitRange; outerIndex++) {
+        // For each X, iterate through possible values for the second integer (Y) within the same range.
+        for (let innerIndex = -limitRange; innerIndex < limitRange; innerIndex++) {
+            // Compute the fifth power of the current outer index.
+            const resultA = Math.pow(outerIndex, 5);
+            // Compute the fifth power of the current inner index.
+            const resultB = Math.pow(innerIndex, 5);
 
-            // Calculate the fifth power of the second candidate integer.
-            const secondOperandPowered = Math.pow(secondPotentialOperand, 5);
+            // Check if the difference between their fifth powers matches the target value.
+            if (resultA - resultB === targetValue) {
+                // If a match is found, store the values.
+                const solutionX = outerIndex;
+                const solutionY = innerIndex;
 
-            // Check if the computed difference between their fifth powers
-            // exactly matches the globally defined target difference.
-            if (firstOperandPowered - secondOperandPowered === TARGET_VALUE_FOR_DIFFERENCE) {
-                // If a precise match is located, these are the sought-after integer solutions.
-                const finalOperandX = firstPotentialOperand;
-                const finalOperandY = secondPotentialOperand;
-
-                // Output the pair of successful operands to the standard console.
-                console.log(finalOperandX, finalOperandY);
-
-                // Terminate the execution of this function immediately upon
-                // discovering the first valid solution pair.
+                // Output the found integers to the console.
+                console.log(solutionX, solutionY);
+                // Terminate the script execution as the solution is found.
                 return;
             }
         }
     }
-}
-
-// Invoke the main computational routine to commence the search process.
-calculateFifthPowerEquation();
+})();

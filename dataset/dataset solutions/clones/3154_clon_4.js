@@ -1,29 +1,20 @@
-const transformRawData = (sourceText) => {
-  const segments = sourceText.split(' ');
-  return segments.map(parseFloat);
-};
+function ProcessInput(rawData) {
+    const numericParameters = rawData.split(" ").map(Number);
 
-const computeRelevantFactor = (firstOperand, secondOperand, k_index) => {
-  const ceilingCandidate = (firstOperand < secondOperand) ? firstOperand : secondOperand;
-  const effectiveCeiling = ceilingCandidate - 2;
+    const firstValue = numericParameters[0];
+    const secondValue = numericParameters[1];
+    const resultOffset = numericParameters[2];
 
-  if (effectiveCeiling < 1) {
-    return undefined;
-  }
+    const maximumCandidate = Math.min(firstValue, secondValue) - 1;
 
-  const candidateFactors = Array.from({ length: effectiveCeiling }, (_, idx) => idx + 1);
+    const collectedDivisors = Array.from(
+        { length: Math.max(0, maximumCandidate - 1) }, // Generate numbers from 1 up to maximumCandidate - 1
+        (_, index) => index + 1
+    ).filter(currentCandidate =>
+        firstValue % currentCandidate === 0 && secondValue % currentCandidate === 0
+    );
 
-  const commonFactors = candidateFactors.filter(unit =>
-    !(firstOperand % unit) && !(secondOperand % unit)
-  );
+    console.log(collectedDivisors[collectedDivisors.length - resultOffset]);
+}
 
-  return commonFactors.at(-k_index);
-};
-
-const processInputAndDisplay = (inputSource) => {
-  const numericalTuple = transformRawData(inputSource);
-  const result = computeRelevantFactor(numericalTuple[0], numericalTuple[1], numericalTuple[2]);
-  console.log(result);
-};
-
-processInputAndDisplay(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

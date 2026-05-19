@@ -1,43 +1,32 @@
-const eraDefinitions = [
-    { startValue: 19890108, designation: 'heisei', yearOffset: 1988 },
-    { startValue: 19261225, designation: 'showa',  yearOffset: 1925 },
-    { startValue: 19120730, designation: 'taisho', yearOffset: 1911 },
-    { startValue: 18680908, designation: 'meiji',  yearOffset: 1867 }
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const dataLines = fileContent.split('\n');
+
+const eraEpochs = [
+    { designation: 'meiji', commencement: new Date(1868, 8 - 1, 8), yearBase: 1867 },
+    { designation: 'taisho', commencement: new Date(1912, 6 - 1, 30), yearBase: 1911 },
+    { designation: 'showa', commencement: new Date(1926, 11 - 1, 25), yearBase: 1925 },
+    { designation: 'heisei', commencement: new Date(1989, 0 - 1, 8), yearBase: 1988 }
 ];
 
-const dateConverter = (yearly, monthly, daily) => yearly * 10000 + monthly * 100 + daily;
+dataLines.forEach(currentLine => {
+    if (!currentLine) {
+        return;
+    }
 
-const processEntry = (entryText) => {
-    const components = entryText.split(' ').map(Number);
-    const targetYear = components[0];
-    const targetMonth = components[1];
-    const targetDay = components[2];
+    const [inputYear, inputMonth, inputDay] = currentLine.split(' ').map(Number);
+    const targetDate = new Date(inputYear, inputMonth - 1, inputDay);
 
-    const dateValue = dateConverter(targetYear, targetMonth, targetDay);
-
-    let identifiedEra = 'pre-meiji';
-    let calculatedYear = targetYear;
-
-    for (const eraDefinition of eraDefinitions) {
-        if (dateValue >= eraDefinition.startValue) {
-            identifiedEra = eraDefinition.designation;
-            calculatedYear = targetYear - eraDefinition.yearOffset;
-            break;
+    const determinedEra = eraEpochs.reduce((accumulator, currentEraDef) => {
+        if (targetDate >= currentEraDef.commencement) {
+            return { eraName: currentEraDef.designation, eraOffset: currentEraDef.yearBase };
         }
-    }
+        return accumulator;
+    }, { eraName: 'pre-meiji', eraOffset: 0 });
 
-    if (identifiedEra === 'pre-meiji') {
-        return 'pre-meiji';
+    if (determinedEra.eraName === 'pre-meiji') {
+        console.log('pre-meiji');
     } else {
-        return `${identifiedEra} ${calculatedYear} ${targetMonth} ${targetDay}`;
+        const eraRelativeYear = inputYear - determinedEra.eraOffset;
+        console.log(determinedEra.eraName, eraRelativeYear, inputMonth, inputDay);
     }
-};
-
-const dataSource = require('fs');
-
-const rawContent = dataSource.readFileSync('/dev/stdin', 'utf8');
-const contentRows = rawContent.trim().split('\n');
-
-const processedResults = contentRows.map(processEntry);
-
-processedResults.forEach(resultLine => console.log(resultLine));
+});

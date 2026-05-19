@@ -1,56 +1,58 @@
 while (true) {
-    const currentTextSegment = readline();
+    let inputLine = readline();
+    const TERMINATION_MARKER = '.';
 
-    if (currentTextSegment === '.') {
+    if (inputLine === TERMINATION_MARKER) {
         break;
     }
 
-    const checkSegmentBalance = (textToValidate) => {
-        const openingDelimiterStack = [];
-        let balanceStatus = true;
-        const segmentCharCount = textToValidate.length;
+    const currentLineLength = inputLine.length;
+    let bracketStack = [];
+    let isValidationSuccessful = true;
 
-        for (let charPosition = 0; charPosition < segmentCharCount; ++charPosition) {
-            const currentSymbol = textToValidate[charPosition];
+    for (let charPosition = 0; charPosition < currentLineLength; charPosition++) {
+        const currentCharacter = inputLine[charPosition];
+        let retrievedBracket;
 
-            switch (currentSymbol) {
-                case '(':
-                case '[':
-                    openingDelimiterStack.push(currentSymbol);
-                    break;
-                case ')':
-                case ']':
-                    if (openingDelimiterStack.length === 0) {
-                        balanceStatus = false;
-                        break;
-                    }
-                    const lastPoppedDelimiter = openingDelimiterStack.pop();
-
-                    if ((currentSymbol === ')' && lastPoppedDelimiter !== '(') ||
-                        (currentSymbol === ']' && lastPoppedDelimiter !== '[')) {
-                        balanceStatus = false;
-                        break;
-                    }
-                    break;
-                default:
-                    // Non-delimiter characters are ignored for balance checking.
-                    // This could be extended with other character validations if needed.
-                    break;
-            }
-
-            if (!balanceStatus) {
+        switch (currentCharacter) {
+            case '[':
+            case '(':
+                bracketStack.push(currentCharacter);
                 break;
-            }
+            case ']':
+                if (bracketStack.length === 0) {
+                    isValidationSuccessful = false;
+                    break;
+                }
+                retrievedBracket = bracketStack.pop();
+                if (retrievedBracket !== '[') {
+                    isValidationSuccessful = false;
+                }
+                break;
+            case ')':
+                if (bracketStack.length === 0) {
+                    isValidationSuccessful = false;
+                    break;
+                }
+                retrievedBracket = bracketStack.pop();
+                if (retrievedBracket !== '(') {
+                    isValidationSuccessful = false;
+                }
+                break;
+            // Other characters are ignored, maintaining original behavior
         }
 
-        if (balanceStatus && openingDelimiterStack.length === 0) {
-            return 'yes';
-        } else {
-            return 'no';
+        if (!isValidationSuccessful) {
+            break; // Exit inner loop early on first mismatch
         }
-    };
+    }
 
-    const finalOutcome = checkSegmentBalance(currentTextSegment);
+    let finalOutputMessage;
+    if (isValidationSuccessful && bracketStack.length === 0) {
+        finalOutputMessage = 'yes';
+    } else {
+        finalOutputMessage = 'no';
+    }
 
-    print(finalOutcome);
+    print(finalOutputMessage);
 }

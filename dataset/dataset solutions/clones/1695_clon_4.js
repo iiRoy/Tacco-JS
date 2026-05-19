@@ -1,56 +1,32 @@
 'use strict';
-function computeCount(inputString) {
-    const lines = inputString.trim().split('\n');
-    const [height, width, targetCount] = lines.shift().split(' ').map(Number);
-    const gridData = lines;
 
-    let totalMatches = 0;
+function processGrid(inputString) {
+  const lines = inputString.trim().split(/\r?\n/g);
+  const [heightVal, widthVal, targetVal] = lines.shift().split(' ').map(Number);
+  const gridContent = lines;
 
-    function generateRowSubsets(rowIndex, currentKeptRows) {
-        if (rowIndex === height) {
-            generateColSubsets(0, currentKeptRows, []);
-            return;
-        }
+  const rowSelectionMasks = Array.from({ length: 1 << heightVal }, (_, idx) => idx);
+  const colSelectionMasks = Array.from({ length: 1 << widthVal }, (_, idx) => idx);
 
-        // Branch 1: Exclude current row from the subset
-        generateRowSubsets(rowIndex + 1, currentKeptRows);
+  const solutionCount = rowSelectionMasks.reduce((accR, currentRMask) => {
+    return accR + colSelectionMasks.reduce((accC, currentCMask) => {
+      const keptRowIndices = Array.from({ length: heightVal }, (_, r) => r)
+                                  .filter(rIdx => !((currentRMask >> rIdx) & 1));
 
-        // Branch 2: Include current row in the subset
-        currentKeptRows.push(rowIndex);
-        generateRowSubsets(rowIndex + 1, currentKeptRows);
-        currentKeptRows.pop(); // Backtrack for next iteration
-    }
+      const keptColIndices = Array.from({ length: widthVal }, (_, c) => c)
+                                  .filter(cIdx => !((currentCMask >> cIdx) & 1));
 
-    function generateColSubsets(colIndex, keptRows, currentKeptCols) {
-        if (colIndex === width) {
-            let currentHashCount = 0;
-            for (const rIdx of keptRows) {
-                for (const cIdx of currentKeptCols) {
-                    if (gridData[rIdx][cIdx] === '#') {
-                        currentHashCount++;
-                    }
-                }
-            }
-            if (currentHashCount === targetCount) {
-                totalMatches++;
-            }
-            return;
-        }
+      const hashCounter = keptRowIndices.reduce((rowAcc, rIdx) => {
+        return rowAcc + keptColIndices.reduce((colAcc, cIdx) => {
+          return colAcc + (gridContent[rIdx][cIdx] === '#' ? 1 : 0);
+        }, 0);
+      }, 0);
 
-        // Branch 1: Exclude current column from the subset
-        generateColSubsets(colIndex + 1, keptRows, currentKeptCols);
+      return hashCounter === targetVal ? accC + 1 : accC;
+    }, 0);
+  }, 0);
 
-        // Branch 2: Include current column in the subset
-        currentKeptCols.push(colIndex);
-        generateColSubsets(colIndex + 1, keptRows, currentKeptCols);
-        currentKeptCols.pop(); // Backtrack for next iteration
-    }
-
-    generateRowSubsets(0, []);
-
-    return totalMatches;
+  console.log(solutionCount);
 }
 
-const inputSourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalOccurrenceTally = computeCount(inputSourceData);
-console.log(finalOccurrenceTally);
+processGrid(require("fs").readFileSync("/dev/stdin", "utf8"));

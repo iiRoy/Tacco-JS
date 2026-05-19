@@ -1,23 +1,52 @@
-const fileSystemModule = require('fs');
+const fileSystemModule = require("fs");
 
-const inputBlob = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-const processedNumbers = inputBlob.trim().split(/\s+/).map(Number);
+const segmentArrayIntoChunks = (sourceArray, segmentSize) => {
+    const totalSegments = Math.ceil(sourceArray.length / segmentSize);
+    return Array.from({ length: totalSegments }, (_, segmentIndex) =>
+        sourceArray.slice(segmentIndex * segmentSize, segmentIndex * segmentSize + segmentSize)
+    );
+};
 
-function computeDigitAccumulation(currentRemainderFactor, divisorValue, iterationsRemaining, runningSum) {
-    if (iterationsRemaining === 0) {
-        return runningSum;
+function* generateFractionalDigits(initialNumerator, denominator) {
+    let currentNumerator = initialNumerator;
+    while (true) {
+        currentNumerator = (currentNumerator % denominator) * 10;
+        yield ~~(currentNumerator / denominator);
     }
-    const nextRemainderFactor = (currentRemainderFactor % divisorValue) * 10;
-    const extractedDigit = Math.floor(nextRemainderFactor / divisorValue);
-    return computeDigitAccumulation(nextRemainderFactor, divisorValue, iterationsRemaining - 1, runningSum + extractedDigit);
 }
 
-let dataCursor = 0;
-while (dataCursor < processedNumbers.length) {
-    const valueA = processedNumbers[dataCursor++];
-    const valueB = processedNumbers[dataCursor++];
-    const countLimit = processedNumbers[dataCursor++];
-    
-    const finalAccumulatedValue = computeDigitAccumulation(valueA, valueB, countLimit, 0);
-    console.log(finalAccumulatedValue);
-}
+const executeNumericalCalculations = (rawInputContent) => {
+    const numericTokens = rawInputContent
+        .split(/\s/)
+        .map(Number);
+
+    const groupedTriplets = segmentArrayIntoChunks(numericTokens, 3);
+
+    const calculatedOutcomes = groupedTriplets.map(currentGroup => {
+        const [firstOperand, secondOperand, repetitionCount] = currentGroup;
+
+        // Replicate original loop termination behavior for incomplete triplets
+        // The original loop `for(...; c=i[j++];)` terminates if `c` is falsy (e.g., undefined).
+        if (firstOperand === undefined || secondOperand === undefined || repetitionCount === undefined) {
+            return null; // Mark for filtering
+        }
+
+        // Replicate original behavior for c=0 (or c=""), where sum is 0
+        if (repetitionCount === 0) {
+            return 0;
+        }
+
+        const digitProducer = generateFractionalDigits(firstOperand, secondOperand);
+        let accumulatedSum = 0;
+        for (let iteration = 0; iteration < repetitionCount; iteration++) {
+            accumulatedSum += digitProducer.next().value;
+        }
+        return accumulatedSum;
+    }).filter(result => result !== null); // Remove results from incomplete triplets
+
+    return calculatedOutcomes;
+};
+
+const inputSourceData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const finalComputedResults = executeNumericalCalculations(inputSourceData);
+finalComputedResults.forEach(outputValue => console.log(outputValue));

@@ -1,34 +1,29 @@
-const designationTable = { 'a': 0, 'b': 1, 'c': 2 };
-const victoryDesignators = ['A', 'B', 'C'];
+"use strict";
 
-function determineNextStep(currentDesignation, allCompartments) {
-    const activeCompartment = allCompartments[currentDesignation];
+const executeGameLogic = (inputLines) => {
+    const playerDecks = new Map();
+    playerDecks.set('a', inputLines[0].split(''));
+    playerDecks.set('b', inputLines[1].split(''));
+    playerDecks.set('c', inputLines[2].split(''));
 
-    if (activeCompartment.marker >= activeCompartment.sequence.length) {
-        return victoryDesignators[currentDesignation];
-    }
+    const playRound = (activePlayerKey) => {
+        const currentDeck = playerDecks.get(activePlayerKey);
 
-    const nextSymbol = activeCompartment.sequence[activeCompartment.marker];
-    activeCompartment.marker++;
+        if (currentDeck.length === 0) {
+            console.log(activePlayerKey.toUpperCase());
+            return;
+        }
 
-    const subsequentDesignation = designationTable[nextSymbol];
+        const nextPlayerKey = currentDeck.shift();
+        playRound(nextPlayerKey);
+    };
 
-    return determineNextStep(subsequentDesignation, allCompartments);
-}
+    playRound('a');
+};
 
-function computeOutcome(unprocessedData) {
-    const strands = unprocessedData.trim().split("\n");
+const processInputAndRun = (rawInput) => {
+    const parsedLines = rawInput.trim().split("\n");
+    executeGameLogic(parsedLines);
+};
 
-    const compartments = [
-        { sequence: strands[0].split(''), marker: 0 },
-        { sequence: strands[1].split(''), marker: 0 },
-        { sequence: strands[2].split(''), marker: 0 }
-    ];
-
-    const initialDesignation = designationTable['a'];
-
-    return determineNextStep(initialDesignation, compartments);
-}
-
-const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-process.stdout.write(computeOutcome(inputSource) + '\n');
+processInputAndRun(require('fs').readFileSync('/dev/stdin', 'utf8'));

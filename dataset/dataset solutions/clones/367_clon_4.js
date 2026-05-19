@@ -1,252 +1,217 @@
-'use strict';
+((environment) => {
+    const isBrowserEnv = () => typeof window !== 'undefined';
+    const isNodejsEnv = () => !isBrowserEnv();
 
-const ApplicationUtilities = (() => {
-    const ascertainEnvironment = () => {
-        return typeof window !== 'undefined' && typeof document !== 'undefined';
+    const encodeHtmlEntities = (textValue) => {
+        const entityMap = new Map([
+            ['&', '&amp;'],
+            ['"', '&quot;'],
+            ["'", '&#39;'],
+            ['<', '&lt;'],
+            ['>', '&gt;']
+        ]);
+        return Array.from(String(textValue)).reduce((accumulator, character) =>
+            accumulator + (entityMap.has(character) ? entityMap.get(character) : character),
+            ''
+        );
     };
 
-    const ascertainNodeEnv = () => {
-        return typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
-    };
-
-    const secureDisplayContent = (textData) => {
-        let resultBuffer = '';
-        const charSequence = String(textData);
-        for (let i = 0; i < charSequence.length; i++) {
-            const char = charSequence[i];
-            switch (char) {
-                case '&': resultBuffer += '&amp;'; break;
-                case '"': resultBuffer += '&quot;'; break;
-                case "'": resultBuffer += '&#39;'; break;
-                case '<': resultBuffer += '&lt;'; break;
-                case '>': resultBuffer += '&gt;'; break;
-                default: resultBuffer += char;
-            }
-        }
-        return resultBuffer;
-    };
-
-    const outputSourceCode = (sourceFunction) => {
-        if (acertainEnvironment()) {
-            const displayElement = document.getElementById('source_view');
-            if (displayElement) {
-                displayElement.innerHTML = `<pre><code>${secureDisplayContent(sourceFunction)}</code></pre>`;
+    const displayCodeSnippet = (functionReference) => {
+        if (isBrowserEnv()) {
+            const codeOutputElement = document.querySelector('#code');
+            if (codeOutputElement) {
+                codeOutputElement.innerHTML = `<pre><code>${encodeHtmlEntities(functionReference)}</code></pre>`;
             }
         }
     };
 
-    let currentOutputAccumulator = [];
-    const printSingleLine = (lineContent) => {
-        if (acertainEnvironment()) {
-            const outputContainer = document.getElementById('result_display');
-            if (outputContainer) {
-                currentOutputAccumulator.push(lineContent);
-                outputContainer.innerHTML = currentOutputAccumulator.map(secureDisplayContent).join('<br>\n');
-            }
-        } else if (acertainNodeEnv()) {
-            process.stdout.write(lineContent + '\n');
+    const retrieveInputLines = () => {
+        if (isBrowserEnv()) {
+            const inputSourceElement = document.querySelector('#input');
+            return inputSourceElement ? inputSourceElement.innerHTML.split('<br>').map(line => line.trim()) : [];
+        }
+        if (isNodejsEnv()) {
+            const fileSystem = require('fs');
+            return fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+        }
+        return [];
+    };
+
+    const setupLineProcessor = (processingCallback) => {
+        if (isBrowserEnv()) {
+            retrieveInputLines().forEach(processingCallback);
+        }
+        if (isNodejsEnv()) {
+            const fileSystem = require('fs');
+            const readLineModule = require('readline');
+            const inputStream = fileSystem.createReadStream('/dev/stdin');
+            const lineInterface = readLineModule.createInterface({ input: inputStream, output: {} });
+            lineInterface.on('line', processingCallback);
         }
     };
 
-    const printMultiLine = (contentLines) => {
-        if (acertainEnvironment()) {
-            const outputContainer = document.getElementById('result_display');
-            if (outputContainer) {
-                currentOutputAccumulator = contentLines;
-                outputContainer.innerHTML = currentOutputAccumulator.map(secureDisplayContent).join('<br>\n');
+    let bufferedOutputLines = [];
+    const writeAllOutput = (linesCollection) => {
+        if (isBrowserEnv()) {
+            const outputTargetElement = document.querySelector('#output');
+            if (outputTargetElement) {
+                outputTargetElement.innerHTML = linesCollection.map(encodeHtmlEntities).join('<br>\n');
             }
-        } else if (acertainNodeEnv()) {
-            for (const line of contentLines) {
-                process.stdout.write(line + '\n');
-            }
+        }
+        if (isNodejsEnv()) {
+            linesCollection.forEach(line => console.log(line));
         }
     };
 
-    const setupInputProcessor = (processCallback) => {
-        if (acertainEnvironment()) {
-            const dataElement = document.getElementById('input_data');
-            if (dataElement) {
-                const rawText = dataElement.textContent || dataElement.innerText;
-                const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                for (const line of lines) {
-                    processCallback(line);
-                }
-            }
-        } else if (acertainNodeEnv()) {
-            const fileSystemModule = require('fs');
-            const streamModule = require('readline');
-            const dataStream = fileSystemModule.createReadStream('/dev/stdin', { encoding: 'utf8' });
-            const lineReader = streamModule.createInterface({ input: dataStream, output: process.stdout });
-            lineReader.on('line', (dataLine) => {
-                processCallback(dataLine);
-            });
-            lineReader.on('close', () => {
-            });
+    const writeSingleOutputLine = (contentLine) => {
+        if (isBrowserEnv()) {
+            bufferedOutputLines.push(contentLine);
+            writeAllOutput(bufferedOutputLines);
+        }
+        if (isNodejsEnv()) {
+            console.log(contentLine);
         }
     };
 
-    const initializeExecution = (primaryRoutine) => {
-        if (acertainEnvironment()) {
+    const executeMainLogic = (primaryFunction) => {
+        if (isBrowserEnv()) {
             window.addEventListener('load', () => {
-                outputSourceCode(primaryRoutine);
-                primaryRoutine();
+                displayCodeSnippet(primaryFunction);
+                primaryFunction();
             });
-        } else if (acertainNodeEnv()) {
-            primaryRoutine();
+        }
+        if (isNodejsEnv()) {
+            primaryFunction();
         }
     };
 
-    return {
-        isBrowserContext: ascertainEnvironment,
-        isNodeContext: ascertainNodeEnv,
-        htmlEncodeString: secureDisplayContent,
-        showFunctionCode: outputSourceCode,
-        sendOutputLine: printSingleLine,
-        sendOutputBatch: printMultiLine,
-        registerLineHandler: setupInputProcessor,
-        startProgram: initializeExecution
+    environment.AppEnv = {
+        setupLineProcessor: setupLineProcessor,
+        writeSingleOutputLine: writeSingleOutputLine,
+        executeMainLogic: executeMainLogic
     };
-})();
 
-class ScenarioEvaluator {
-    constructor() {
-        this.boundary = { minX: 0, minY: 0, maxX: 10, maxY: 10 };
-        
-        this.creaturePathOptions = [
-            { dx: -1, dy: -2 }, { dx: 0, dy: -2 }, { dx: 1, dy: -2 },
-            { dx: -2, dy: -1 }, { dx: 2, dy: -1 },
-            { dx: -2, dy: 0 }, { dx: 2, dy: 0 },
-            { dx: -2, dy: 1 }, { dx: 2, dy: 1 },
-            { dx: -1, dy: 2 }, { dx: 0, dy: 2 }, { dx: 1, dy: 2 }
-        ];
+})(typeof window !== 'undefined' ? window : global);
 
-        this.deviceEffectArea = [];
-        for (let y = -1; y <= 1; y++) {
-            for (let x = -1; x <= 1; x++) {
-                this.deviceEffectArea.push({ dx: x, dy: y });
-            }
-        }
+const gameMain = () => {
+    const gridDimensions = { xMin: 0, yMin: 0, xMax: 10, yMax: 10 };
+    const phyonkichiMovementVectors = [
+        [-1, -2], [0, -2], [1, -2],
+        [-2, -1], [2, -1],
+        [-2, 0], [2, 0],
+        [-2, 1], [2, 1],
+        [-1, 2], [0, 2], [1, 2]
+    ];
+    const sprinklerEffectArea = [
+        [-1, -1], [0, -1], [1, -1],
+        [-1, 0], [0, 0], [1, 0],
+        [-1, 1], [0, 1], [1, 1]
+    ];
 
-        this.currentScenario = {
-            creatureOrigin: null,
-            sprinklerCount: 0,
-            sprinklerPlacement: []
-        };
+    const currentInputData = {
+        phyonkichiStartCoordinates: { x: 0, y: 0 },
+        numberOfSprinklers: 0,
+        allSprinklerLocations: []
+    };
 
-        this.inputPhase = 0;
-        this.inputPhaseSchema = {
-            CREATURE_START: 0,
-            SPRINKLER_QUANTITY: 1,
-            SPRINKLER_COORDS: 2
-        };
-    }
+    const InputParsingState = {
+        PH_COORDS: 0,
+        SPR_COUNT_VAL: 1,
+        SPR_LOC_LIST: 2
+    };
+    let activeParsingState = InputParsingState.PH_COORDS;
 
-    isPositionValid(coordX, coordY) {
-        return coordX >= this.boundary.minX && coordX < this.boundary.maxX &&
-               coordY >= this.boundary.minY && coordY < this.boundary.maxY;
-    }
+    const isLocationWithinBounds = (xCoord, yCoord) =>
+        xCoord >= gridDimensions.xMin && xCoord < gridDimensions.xMax &&
+        yCoord >= gridDimensions.yMin && yCoord < gridDimensions.yMax;
 
-    getReachablePositions(startPosition, movementRules) {
-        const potentialPositions = [];
-        for (const move of movementRules) {
-            const nextX = startPosition.x + move.dx;
-            const nextY = startPosition.y + move.dy;
-            if (this.isPositionValid(nextX, nextY)) {
-                potentialPositions.push({ x: nextX, y: nextY });
-            }
-        }
-        return potentialPositions;
-    }
+    const derivePossibleLocations = (originLocation, displacementVectors) => {
+        return displacementVectors.flatMap(vector => {
+            const newX = originLocation[0] + vector[0];
+            const newY = originLocation[1] + vector[1];
+            return isLocationWithinBounds(newX, newY) ? [[newX, newY]] : [];
+        });
+    };
 
-    getNextCreaturePositions(currentCreaturePosition) {
-        return this.getReachablePositions(currentCreaturePosition, this.creaturePathOptions);
-    }
+    const getNextPhyonkichiPositions = (currentPhyonkichiLocation) =>
+        derivePossibleLocations(currentPhyonkichiLocation, phyonkichiMovementVectors);
 
-    getSprinklerWetArea(sprinklerAnchor) {
-        return this.getReachablePositions(sprinklerAnchor, this.deviceEffectArea);
-    }
+    const getSprinklerWetSpots = (sprinklerCenterLocation) =>
+        derivePossibleLocations(sprinklerCenterLocation, sprinklerEffectArea);
 
-    assessSurvivalOpportunity(initialCreatureLocation, allSprinklerLocations) {
-        const searchQueue = [];
-        const visitedStates = new Set(); 
+    const canPhyonkichiSurvive = (initialPhyonkichiPosition, allSprinklerCenters) => {
+        const visitedStates = new Map(); // Key: "sprinklerIndex,px,py", Value: true (reachable)
+        const explorationQueue = []; // Stores [phyonkichiPosition, sprinklerIndex]
 
-        const encodeState = (cx, cy, sIdx) => `${cx},${cy},${sIdx}`;
+        const totalSprinklers = allSprinklerCenters.length;
 
-        if (allSprinklerLocations.length === 0) {
-            return true;
-        }
+        const generateStateKey = (sprinklerIndex, phyonkichiLocation) =>
+            `${sprinklerIndex},${phyonkichiLocation[0]},${phyonkichiLocation[1]}`;
 
-        searchQueue.push({ cx: initialCreatureLocation.x, cy: initialCreatureLocation.y, sIdx: 0 });
-        visitedStates.add(encodeState(initialCreatureLocation.x, initialCreatureLocation.y, 0));
+        explorationQueue.push([initialPhyonkichiPosition, 0]);
+        visitedStates.set(generateStateKey(0, initialPhyonkichiPosition), true);
 
-        while (searchQueue.length > 0) {
-            const { cx, cy, sIdx } = searchQueue.shift();
+        while (explorationQueue.length > 0) {
+            const [currentPhyonkichiLoc, currentSprinklerIdx] = explorationQueue.shift();
 
-            if (sIdx === allSprinklerLocations.length) {
-                return true;
+            if (currentSprinklerIdx === totalSprinklers) {
+                return true; // All sprinklers processed, a survival path found
             }
 
-            const currentSprinkler = allSprinklerLocations[sIdx];
-            const wetZones = this.getSprinklerWetArea(currentSprinkler);
-            const nextCreatureMoves = this.getNextCreaturePositions({ x: cx, y: cy });
+            const currentSprinklerCenter = allSprinklerCenters[currentSprinklerIdx];
+            const potentialPhyonkichiMoves = getNextPhyonkichiPositions(currentPhyonkichiLoc);
+            const currentSprinklerWetSpots = new Set(getSprinklerWetSpots(currentSprinklerCenter).map(loc => `${loc[0]},${loc[1]}`));
 
-            for (const nextCreaturePos of nextCreatureMoves) {
-                const isWet = wetZones.some(wetPos => 
-                    wetPos.x === nextCreaturePos.x && wetPos.y === nextCreaturePos.y
-                );
-
-                if (isWet) {
-                    const nextState = { cx: nextCreaturePos.x, cy: nextCreaturePos.y, sIdx: sIdx + 1 };
-                    const nextStateKey = encodeState(nextState.cx, nextState.cy, nextState.sIdx);
+            for (const nextPhyonkichiLocOption of potentialPhyonkichiMoves) {
+                const nextPhyonkichiLocKey = `${nextPhyonkichiLocOption[0]},${nextPhyonkichiLocOption[1]}`;
+                if (currentSprinklerWetSpots.has(nextPhyonkichiLocKey)) {
+                    const nextStateKey = generateStateKey(currentSprinklerIdx + 1, nextPhyonkichiLocOption);
 
                     if (!visitedStates.has(nextStateKey)) {
-                        visitedStates.add(nextStateKey);
-                        searchQueue.push(nextState);
+                        visitedStates.set(nextStateKey, true);
+                        explorationQueue.push([nextPhyonkichiLocOption, currentSprinklerIdx + 1]);
                     }
                 }
             }
         }
 
-        return false;
-    }
+        return false; // No survival path found after exhausting all possibilities
+    };
 
-    processIncomingLine(dataLine) {
-        const numericArgs = dataLine.split(' ').map(Number);
+    const handleInputLine = (inputLine) => {
+        const numericArguments = inputLine.split(' ').map(Number);
 
-        switch (this.inputPhase) {
-            case this.inputPhaseSchema.CREATURE_START:
-                this.currentScenario.creatureOrigin = { x: numericArgs[0], y: numericArgs[1] };
-                this.inputPhase = this.inputPhaseSchema.SPRINKLER_QUANTITY;
+        switch (activeParsingState) {
+            case InputParsingState.PH_COORDS:
+                currentInputData.phyonkichiStartCoordinates.x = numericArguments[0];
+                currentInputData.phyonkichiStartCoordinates.y = numericArguments[1];
+                activeParsingState = InputParsingState.SPR_COUNT_VAL;
                 break;
 
-            case this.inputPhaseSchema.SPRINKLER_QUANTITY:
-                this.currentScenario.sprinklerCount = numericArgs[0];
-                this.inputPhase = this.inputPhaseSchema.SPRINKLER_COORDS;
+            case InputParsingState.SPR_COUNT_VAL:
+                currentInputData.numberOfSprinklers = numericArguments[0];
+                currentInputData.allSprinklerLocations = [];
+                activeParsingState = InputParsingState.SPR_LOC_LIST;
                 break;
 
-            case this.inputPhaseSchema.SPRINKLER_COORDS:
-                this.currentScenario.sprinklerPlacement = [];
-                for (let k = 0; k < numericArgs.length; k += 2) {
-                    this.currentScenario.sprinklerPlacement.push({ x: numericArgs[k], y: numericArgs[k + 1] });
+            case InputParsingState.SPR_LOC_LIST:
+                for (let i = 0; i < numericArguments.length; i += 2) {
+                    currentInputData.allSprinklerLocations.push([numericArguments[i], numericArguments[i + 1]]);
                 }
 
-                const outcome = this.assessSurvivalOpportunity(
-                    this.currentScenario.creatureOrigin,
-                    this.currentScenario.sprinklerPlacement
-                );
-                ApplicationUtilities.sendOutputLine(outcome ? 'OK' : 'NA');
+                const phyonkichiCurrentPosition = [currentInputData.phyonkichiStartCoordinates.x, currentInputData.phyonkichiStartCoordinates.y];
+                if (canPhyonkichiSurvive(phyonkichiCurrentPosition, currentInputData.allSprinklerLocations)) {
+                    AppEnv.writeSingleOutputLine('OK');
+                } else {
+                    AppEnv.writeSingleOutputLine('NA');
+                }
 
-                this.inputPhase = this.inputPhaseSchema.CREATURE_START;
-                break;
-            default:
+                activeParsingState = InputParsingState.PH_COORDS; // Reset for next test case
                 break;
         }
-    }
-}
+    };
 
-const programEntry = () => {
-    const evaluatorInstance = new ScenarioEvaluator();
-    ApplicationUtilities.registerLineHandler(evaluatorInstance.processIncomingLine.bind(evaluatorInstance));
+    AppEnv.setupLineProcessor(handleInputLine);
 };
 
-ApplicationUtilities.startProgram(programEntry);
+AppEnv.executeMainLogic(gameMain);

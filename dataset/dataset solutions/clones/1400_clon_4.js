@@ -1,42 +1,29 @@
-const sourceMaterial = process.stdin.readFileSync(0, 'utf8');
+const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const instructionSet = sourceContent.trim().split("\n");
 
-const lineSegments = sourceMaterial
-    .split('\n')
-    .map(lineItem => lineItem.trim())
-    .filter(trimmedLine => trimmedLine.length > 0);
+const mathOperations = {
+    "+": (firstNum, secondNum) => firstNum + secondNum,
+    "-": (firstNum, secondNum) => firstNum - secondNum,
+    "*": (firstNum, secondNum) => firstNum * secondNum,
+    "/": (firstNum, secondNum) => Math.trunc(firstNum / secondNum)
+};
 
-const operationRegistry = new Map();
-operationRegistry.set('+', (valA, valB) => valA + valB);
-operationRegistry.set('-', (valA, valB) => valA - valB);
-operationRegistry.set('*', (valA, valB) => valA * valB);
-operationRegistry.set('/', (valA, valB) => {
-    const divisionOutcome = valA / valB;
-    return Number.isFinite(divisionOutcome) ? Math.trunc(divisionOutcome) : 0;
+const terminationCommandIndex = instructionSet.findIndex(
+    (commandLine) => commandLine.split(" ")[1] === "%"
+);
+
+const commandsToExecute = terminationCommandIndex === -1
+    ? instructionSet
+    : instructionSet.slice(0, terminationCommandIndex);
+
+commandsToExecute.forEach((commandString) => {
+    const commandParts = commandString.split(" ");
+    const operandA = Number(commandParts[0]);
+    const operatorSymbol = commandParts[1];
+    const operandB = Number(commandParts[2]);
+
+    const operationFunction = mathOperations[operatorSymbol];
+    if (operationFunction) {
+        console.log(operationFunction(operandA, operandB));
+    }
 });
-
-const calculatedOutputs = [];
-let calculationDiscontinued = false;
-
-for (const currentRecord of lineSegments) {
-    if (calculationDiscontinued) {
-        break;
-    }
-
-    const dataPoints = currentRecord.split(' ');
-    const firstOperand = Number(dataPoints[0]);
-    const operatorSymbol = dataPoints[1];
-    const secondValue = Number(dataPoints[1]); // This generates NaN for operators
-
-    if (operatorSymbol === '%') {
-        calculationDiscontinued = true;
-        continue;
-    }
-
-    const performer = operationRegistry.get(operatorSymbol);
-    if (performer) {
-        const finalResult = performer(firstOperand, secondValue);
-        calculatedOutputs.push(finalResult);
-    }
-}
-
-calculatedOutputs.forEach(outputValue => console.log(outputValue));

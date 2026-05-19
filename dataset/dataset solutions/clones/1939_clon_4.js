@@ -1,21 +1,36 @@
-const integerCeilingDivision = (dividend, divisor) => {
-    return Math.floor((dividend + divisor - 1) / divisor);
-};
+function calculateDepletionRounds(initialResource, depletionRate) {
+    if (initialResource <= 0) return 0;
+    if (depletionRate <= 0) return Infinity;
+    return Math.ceil(initialResource / depletionRate);
+}
 
-const analyzeCombatOutcome = (rawText) => {
-    const numericalValues = rawText.split(" ").map(Number);
-    
-    const firstCombatantHP = numericalValues[0];
-    const firstCombatantDMG = numericalValues[1];
-    const secondCombatantHP = numericalValues[2];
-    const secondCombatantDMG = numericalValues[3];
+function calculateConditionalActions(initialResource, depletionRate) {
+    if (initialResource <= 0) return 0;
+    if (depletionRate <= 0) return Infinity;
+    return Math.floor((initialResource - 1) / depletionRate);
+}
 
-    const strikesRequiredByFirst = integerCeilingDivision(secondCombatantHP, firstCombatantDMG);
-    const strikesEnduredByFirst = integerCeilingDivision(firstCombatantHP, secondCombatantDMG);
+function Main(input) {
+    const parsedValues = input.split(" ");
 
-    const outcome = (strikesRequiredByFirst <= strikesEnduredByFirst) ? 'Yes' : 'No';
-    
-    return outcome;
-};
+    const resourceA = parseInt(parsedValues[0], 10);
+    const rateB = parseInt(parsedValues[1], 10);
+    const resourceC = parseInt(parsedValues[2], 10);
+    const rateD = parseInt(parsedValues[3], 10);
 
-console.log(analyzeCombatOutcome(require("fs").readFileSync("/dev/stdin", "utf8")));
+    const cAllowsActions = calculateConditionalActions(resourceC, rateB);
+
+    const aCanEndure = calculateDepletionRounds(resourceA, rateD);
+
+    const totalActionsOnA = Math.min(cAllowsActions, aCanEndure);
+
+    const remainingA = resourceA - totalActionsOnA * rateD;
+
+    if (remainingA > 0) {
+        console.log('Yes');
+    } else {
+        console.log('No');
+    }
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

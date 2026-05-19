@@ -1,20 +1,9 @@
-const input   = require  (  "fs"  )  .  readFileSync  (  "/dev/stdin"  ,  "utf8"  )  // This line reads the input from standard input.
+	  const input = require("fs").readFileSync("/dev/stdin", "utf8")
 
-// Separating the input into individual lines.
-const lines  =  input  .  split  (  '\n'  )
+    const lines = input.split('\n')
+   const [N, M] = lines[0].split(' ').map(Number)
 
-
-// Parsing the first line to get N and M.
-const   [   N   ,   M   ]   =   lines   [   0   ]   .   split   (   ' '   )   .   map   (   Number   )   ;
-
-
-// Calculate initial value for 'e'.
-let   e   =   N   -   N   %   2   ;
-
-
-// Loop M times to generate the required output pairs.
-for   (   let   i   =   0   ;   i   <   M   ;   i   ++   )
-{
-    // Print the current pair: (i + 1) and (e - i).
-    console   .   log   (   `   ${   i   +   1   }     ${   e   -   i   }   `   )   ;
-}
+let e = N - N % 2
+   for (let i = 0; i<  M;i++)  {
+console.log(`${i + 1} ${e - i}`)
+        }

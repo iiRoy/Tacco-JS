@@ -1,125 +1,84 @@
-var sourceDataStream = require('fs') .readFileSync( '/dev/stdin', 'utf8' ) ;
-var textualRecords = ( sourceDataStream . trim ( ) ) . split ( "\n" ) ;
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var processedLines = (sourceData.trim()).split("\n");
 
-var globalIndexA ;
+var globalLineIndex;
+for (globalLineIndex = 0; globalLineIndex < processedLines.length; ++globalLineIndex) {
+    var currentBlockSize = parseInt(processedLines[globalLineIndex]);
 
-// Main processing loop for each block of data
-for ( globalIndexA = 0 ; globalIndexA < textualRecords . length ; ++ globalIndexA )
-{
+    if (currentBlockSize === 0) {
+        break;
+    } else {
+        var foundStatus, listSize, itemIndex;
+        var lenA, lenB, combinedLen, innerMultIndex, multiplicationLoopIndex, currentCarryValue, intermediateProduct;
+        
+        var eligibleEntries = [];
 
-  var currentBlockSize = parseInt ( textualRecords [ globalIndexA ] ) ;
+        for (var blockEntryIterator = 0; blockEntryIterator < currentBlockSize; ++blockEntryIterator) {
+            var entryRecord = processedLines[++innerMultIndex].split(' ');
+            var numArrLong, numArrShort;
 
-  // If the current block size is zero, terminate processing
-  if ( currentBlockSize === 0 ) {
-    break ;
-  }
-  else
-  {
-    var isMatchFound , collectionLength , itemPointer ;
-    var firstOperandLen , secondOperandLen , totalProductLen , globalIndexB , overflowDigit , intermediateCalculation ;
+            if (entryRecord[1].length > entryRecord[2].length) {
+                lenA = entryRecord[1].length;
+                lenB = entryRecord[2].length;
+                numArrLong = entryRecord[1].split('');
+                numArrShort = entryRecord[2].split('');
+            } else {
+                lenA = entryRecord[2].length;
+                lenB = entryRecord[1].length;
+                numArrLong = entryRecord[2].split('');
+                numArrShort = entryRecord[1].split('');
+            }
 
-    // Initialize an array to store identifiers that meet the criteria
-    var approvedIdentifiers = [ ] ;
+            foundStatus = 0;
+            combinedLen = lenA + lenB;
+            if (combinedLen >= 7) {
+                var productBuffer = new Array(combinedLen + 1);
+                for (multiplicationLoopIndex = 0; multiplicationLoopIndex <= combinedLen; ++multiplicationLoopIndex) {
+                    productBuffer[multiplicationLoopIndex] = 0;
+                }
+                
+                for (multiplicationLoopIndex = lenA - 1; multiplicationLoopIndex >= 0; --multiplicationLoopIndex) {
+                    for (currentCarryValue = 0, innerMultIndex = lenB - 1; innerMultIndex >= 0; --innerMultIndex) {
+                        intermediateProduct = parseInt(numArrLong[multiplicationLoopIndex]) * parseInt(numArrShort[innerMultIndex]) + productBuffer[innerMultIndex + multiplicationLoopIndex + 1] + currentCarryValue;
+                        productBuffer[innerMultIndex + multiplicationLoopIndex + 1] = intermediateProduct % 10;
+                        currentCarryValue = parseInt(intermediateProduct / 10);
+                    }
+                    productBuffer[multiplicationLoopIndex] = currentCarryValue;
+                }
+                
+                for (multiplicationLoopIndex = 0; multiplicationLoopIndex <= combinedLen; ++multiplicationLoopIndex) {
+                    if (productBuffer[multiplicationLoopIndex] > 0) {
+                        break;
+                    }
+                }
+                
+                if (combinedLen - multiplicationLoopIndex >= 7) {
+                    foundStatus = 1;
+                }
+            }
 
-    // Loop through each entry within the current data block
-    for ( var globalIndexB = 0 ; globalIndexB < currentBlockSize ; ++ globalIndexB )
-    {
-      // Extract the current entry data, advancing the main record cursor
-      var currentInputSet = textualRecords [ ++ globalIndexA ] . split ( ' ' ) ;
-
-      var operandOneDigits , operandTwoDigits ;
-
-      // Determine which number is longer for multiplication setup
-      if ( currentInputSet [ 1 ] . length > currentInputSet [ 2 ] . length )
-      {
-        firstOperandLen = currentInputSet [ 1 ] . length ;
-        secondOperandLen = currentInputSet [ 2 ] . length ;
-        operandOneDigits = currentInputSet [ 1 ] . split ( '' ) ;
-        operandTwoDigits = currentInputSet [ 2 ] . split ( '' ) ;
-      }
-      else
-      {
-        firstOperandLen = currentInputSet [ 2 ] . length ;
-        secondOperandLen = currentInputSet [ 1 ] . length ;
-        operandOneDigits = currentInputSet [ 2 ] . split ( '' ) ;
-        operandTwoDigits = currentInputSet [ 1 ] . split ( '' ) ;
-      }
-
-      isMatchFound = 0 ;
-      totalProductLen = firstOperandLen + secondOperandLen ;
-
-      // Check if the product could potentially be a "big number" (length >= 7)
-      if ( totalProductLen >= 7 )
-      {
-        // Allocate a buffer for the multiplication result
-        var outputProductBuffer = new Array ( totalProductLen + 1 ) ;
-        // Initialize the buffer elements to zero
-        for ( globalIndexB = 0 ; globalIndexB <= totalProductLen ; ++ globalIndexB )
-        {
-          outputProductBuffer [ globalIndexB ] = 0 ;
+            if (foundStatus) {
+                foundStatus = 0;
+                for (itemIndex = 0, listSize = eligibleEntries.length; itemIndex < listSize; ++itemIndex) {
+                    if (eligibleEntries[itemIndex] == entryRecord[0]) {
+                        foundStatus = 1;
+                        break;
+                    }
+                }
+                    
+                if (foundStatus === 0) {
+                    eligibleEntries.push(entryRecord[0]);
+                }
+            }
         }
-
-        // Perform "long multiplication" digit by digit
-        for ( globalIndexB = firstOperandLen - 1 ; globalIndexB >= 0 ; -- globalIndexB )
-        {
-          for ( overflowDigit = 0, globalIndexA = secondOperandLen - 1 ; globalIndexA >= 0 ; -- globalIndexA )
-          {
-            intermediateCalculation = parseInt ( operandOneDigits [ globalIndexB ] ) * parseInt ( operandTwoDigits [ globalIndexA ] ) + outputProductBuffer [ globalIndexA + globalIndexB + 1 ] + overflowDigit ;
-            outputProductBuffer [ globalIndexA + globalIndexB + 1 ] = intermediateCalculation % 10 ;
-            overflowDigit = parseInt ( intermediateCalculation / 10 ) ;
-          }
-          outputProductBuffer [ globalIndexB ] = overflowDigit ;
+            
+        listSize = eligibleEntries.length;
+        if (listSize === 0) {
+            console.log("NA");
+        } else {
+            for (itemIndex = 0; itemIndex < listSize; ++itemIndex) {
+                console.log(eligibleEntries[itemIndex]);
+            }
         }
-
-        // Find the first non-zero digit in the product buffer
-        for ( globalIndexB = 0 ; globalIndexB <= totalProductLen ; ++ globalIndexB )
-        {
-          if ( outputProductBuffer [ globalIndexB ] > 0 ) break ;
-        }
-
-        // If the effective length of the product is 7 or more, mark as found
-        if ( totalProductLen - globalIndexB >= 7 )
-        {
-          isMatchFound = 1 ;
-        }
-      }
-
-      // If a "big number" product was detected for this entry
-      if ( isMatchFound )
-      {
-        isMatchFound = 0 ; // Reset flag for checking existing entries
-
-        // Check if this identifier is already in the approved list
-        for ( itemPointer = 0, collectionLength = approvedIdentifiers . length ; itemPointer < collectionLength ; ++ itemPointer )
-        {
-          if ( approvedIdentifiers [ itemPointer ] == currentInputSet [ 0 ] )
-          {
-            isMatchFound = 1 ; // Identifier already present
-            break ;
-          }
-        }
-
-        // If the identifier is new, add it to the approved list
-        if ( isMatchFound === 0 )
-        {
-          approvedIdentifiers . push ( currentInputSet [ 0 ] ) ;
-        }
-      }
     }
-
-    collectionLength = approvedIdentifiers . length ;
-    // Output results based on whether any identifiers were approved
-    if ( collectionLength === 0 )
-    {
-      console . log ( "NA" ) ;
-    }
-    else
-    {
-      // Print each approved identifier
-      for ( itemPointer = 0 ; itemPointer < collectionLength ; ++ itemPointer )
-      {
-        console . log ( approvedIdentifiers [ itemPointer ] ) ;
-      }
-    }
-  }
 }

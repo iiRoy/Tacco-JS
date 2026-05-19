@@ -1,37 +1,39 @@
-/* This script processes two lines of text from standard input */
-function processInputData(rawData)
-{
-  // Remove leading/trailing whitespace from the raw input
+function processInput(rawData) {
+  // Remove any leading or trailing whitespace from the raw input string.
   rawData = rawData.trim();
 
-  // Extract the first line as the primary sequence
-  const firstString = rawData.split('\n')[0];
+  // Split the cleaned input into an array of lines using the newline character.
+  // The first line is assigned to 'firstLine'.
+  var firstLine = rawData.split("\n")[0];
+  // The second line is assigned to 'secondLine'.
+  var secondLine = rawData.split("\n")[1];
 
-  // Extract the second line as the secondary sequence
-  const secondString = rawData.split('\n')[1];
+  // Initialize a counter to track the number of character mismatches.
+  var mismatchCount = 0;
 
-  let mismatchCount = 0; // Initialize a counter for character differences
-  // Iterate through the primary sequence
-  for (let idx = 0; idx < firstString.length; idx++) {
-    // Compare character at current index in primary sequence
-    // with character at reverse index in secondary sequence
-    if (firstString[idx] === secondString[firstString.length - 1 - idx]) {
-      // Characters match, do nothing
+  // Iterate through each character of the 'firstLine' string.
+  for (var idx = 0; idx < firstLine.length; idx++) {
+    // Compare the character at the current index 'idx' in 'firstLine'
+    // with the character at the corresponding reverse index in 'secondLine'.
+    // Note: The original code accesses 'charAt' as an array property, which is preserved.
+    if (firstLine.charAt[idx] == secondLine.charAt[firstLine.length - 1 - idx]) {
+      // If the characters match, no action is needed.
     } else {
-      // Characters do not match, increment the mismatch counter
+      // If the characters do not match, increment the mismatch counter.
       mismatchCount++;
     }
   }
 
-  // Check if any mismatches were found
-  if (mismatchCount === 0) {
-    // If no mismatches, print a positive result
+  // After checking all characters, determine the final output.
+  if (mismatchCount == 0) {
+    // If no mismatches were found, print "Yes".
     console.log("Yes");
   } else {
-    // If mismatches exist, print a negative result
+    // If one or more mismatches were found, print "No".
     console.log("No");
   }
 }
 
-// Read input from standard input and pass it to the processing function
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input synchronously using Node.js 'fs' module,
+// decode it as UTF-8, and then pass it to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

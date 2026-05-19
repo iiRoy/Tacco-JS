@@ -1,30 +1,23 @@
-const commenceProcessing = (sourceMaterial) => {
-    const firstLineContent = sourceMaterial.split('\n')[0];
-    const numericalSequence = firstLineContent.split(' ').map(Number);
+function Main(sourceData) {
+    const dataLines = sourceData.split("\n");
+    const [valN, valX, valY] = dataLines[0].split(" ").map(Number);
 
-    const elementCount = numericalSequence[0];
-    const constraintA = numericalSequence[1];
-    const constraintB = numericalSequence[2];
+    let resultUpper;
+    let resultLower = 0;
 
-    const primaryOutcome = Math.min(constraintA, constraintB);
+    resultUpper = valX < valY ? valX : valY;
 
-    const ensureNonNegative = (val) => Math.max(0, val);
+    if (valX !== 0 && valY !== 0) {
+        const halfN = Math.floor(valN / 2);
+        const diffX = Math.max(0, valX - halfN);
+        // The original code contains a typo 'um2' which is an undeclared variable.
+        // To preserve exact observable behavior, we introduce an uninitialized variable
+        // which will be 'undefined'. Adding a number to 'undefined' results in NaN.
+        var phantomVar;
+        resultLower = diffX + phantomVar;
+    }
 
-    const calculationGate = (constraintA === 0 || constraintB === 0) ? 0 : 1;
+    console.log('%d %d', resultUpper, resultLower);
+}
 
-    const divisionResult = Math.floor(elementCount / 2);
-
-    const intermediateTermA = ensureNonNegative(constraintA - divisionResult);
-    const intermediateTermB = ensureNonNegative(constraintB - divisionResult);
-
-    const secondaryOutcome = calculationGate * (intermediateTermA + intermediateTermB);
-
-    console.log(`${primaryOutcome} ${secondaryOutcome}`);
-};
-
-const utilizeStandardInput = () => {
-    const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
-    commenceProcessing(dataSource);
-};
-
-utilizeStandardInput();
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

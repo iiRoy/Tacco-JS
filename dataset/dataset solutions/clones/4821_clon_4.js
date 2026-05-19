@@ -1,19 +1,12 @@
-'use strict'
+'use strict';
 
-const processTextualData = (fullTextualInput) => {
-    const parsedLinesArray = fullTextualInput.trim().split('\n');
-    const operationalLines = parsedLinesArray.slice(1);
+function processInputAndDuplicate(sourceText) {
+  const allLines = sourceText.trim().split('\n');
+  const relevantContent = allLines.slice(1);
 
-    const resultantString = operationalLines.reduce((accumulator, currentElement, currentIndex, fullArray) => {
-        const doubledLine = currentElement + '\n' + currentElement;
-        return accumulator + doubledLine + (currentIndex < fullArray.length - 1 ? '\n' : '');
-    }, '');
+  const duplicatedContent = relevantContent.flatMap(segment => [segment, segment]);
 
-    return resultantString;
-};
+  console.log(duplicatedContent.join('\n'));
+}
 
-const fileSystemInterface = require('node:fs');
-const standardInputPath = '/dev/stdin';
-const rawDataPayload = fileSystemInterface.readFileSync(standardInputPath, 'utf8');
-
-console.log(processTextualData(rawDataPayload));
+processInputAndDuplicate(require('fs').readFileSync('/dev/stdin', 'utf8'));

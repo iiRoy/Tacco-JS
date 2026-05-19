@@ -1,62 +1,36 @@
-/*
- * This JavaScript module is designed to process incoming textual data.
- * It's structured to pinpoint a specific musical track within a list
- * and then sum the playback durations of all tracks that follow it.
- */
-function ProcessInputData( rawData )
-{
+function ProcessInput(rawData) {
+    // The raw input string is split into an array of individual lines.
+    let lines = rawData.split("\n");
 
-	// The entire raw input is given as a single string.
-	// We first segment it into an array of strings, one for each line.
-	var linesOfText = rawData.split( '\n' );
+    // The first line contains the total count of song entries.
+    const countOfSongs = Number(lines[0]);
 
-	// The very first line in the input specifies the total quantity of tracks.
-	// This value is parsed as a base-10 integer to represent the count.
-	var trackCount = parseInt( linesOfText[0], 10 );
+    // The title of the song to search for is found at an index relative to the song count.
+    let targetSongTitle = lines[countOfSongs + 1];
 
-    // The name of the particular song we are searching for is found
-    // at an index corresponding to `trackCount + 1` in the `linesOfText` array.
-    var targetTuneName = linesOfText[trackCount + 1];
+    // A variable to accumulate the total duration of songs after the target.
+    let totalDuration = 0;
 
-    // A variable initialized to zero, which will accumulate the total time
-    // of subsequent tracks once the target tune is located.
-    var totalDuration = 0;
+    // Iterate through the list of songs, starting from the first actual song entry.
+    for (let idx = 1; idx <= countOfSongs; idx++) {
+        // Each song line is split into its constituent parts (name and duration).
+        const currentLineParts = lines[idx].split(' ');
+        const songName = currentLineParts[0]; // Extract the song's name.
 
-	// Begin an iteration from the first actual track entry (index 1)
-	// up to the total number of tracks specified by `trackCount`.
-	for ( var idx = 1; idx <= trackCount; idx++ )
-    {
-    	// Each line representing a track contains its title and duration,
-    	// separated by a space. This line is split into an array.
-    	var currentTrackInfo = linesOfText[idx].split( ' ' );
-
-        // The title of the current track is the first element in its info array.
-        var trackTitle = currentTrackInfo[0];
-
-        // We check if the title of the track we are currently examining
-        // matches the specific tune we are looking for.
-        if ( trackTitle === targetTuneName )
-        {
-          // If the target track is identified, we proceed to sum the durations
-          // of all tracks that appear *after* it in the list.
-          // This nested loop starts from the track immediately following the found one.
-          for ( var subIdx = idx + 1; subIdx <= trackCount; subIdx++ )
-          {
-            // Similar to the outer loop, parse the information for each subsequent track.
-            var subsequentTrackInfo = linesOfText[subIdx].split( ' ' );
-
-        	// The duration for this subsequent track is the second element
-        	// in its parsed information, converted into a numerical value.
-        	var trackPlaybackTime = Number( subsequentTrackInfo[1] );
-
-            // Add this track's duration to our running total.
-            totalDuration += trackPlaybackTime;
-          }
-          // After processing all subsequent tracks and summing their durations,
-          // the accumulated total is printed to the console, and the function terminates.
-          return console.log( totalDuration );
+        // Check if the current song's name matches the desired target song.
+        if (songName === targetSongTitle) {
+            // If a match is found, proceed to sum the durations of all subsequent songs.
+            for (let subIdx = idx + 1; subIdx <= countOfSongs; subIdx++) {
+                // Split the subsequent line to retrieve its duration component.
+                const innerLineParts = lines[subIdx].split(' ');
+                const songDuration = Number(innerLineParts[1]); // Convert the duration string to a numeric value.
+                totalDuration += songDuration; // Add this duration to the running total.
+            }
+            // After finding the target and summing subsequent durations, print the result and terminate execution.
+            return console.log(totalDuration);
         }
     }
 }
-/* This concluding segment should remain untouched. It handles the standard input/output operations and invokes the primary processing function. */
-ProcessInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+
+// The following line should not be altered; it manages reading input from standard I/O and initiating the processing logic.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

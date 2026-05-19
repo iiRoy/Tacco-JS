@@ -1,58 +1,43 @@
-/*
- * This module handles command-line input and performs a specific text analysis.
- * It counts occurrences of a particular search term within the provided text.
- */
-function analyzeTextContent(inputRows) {
-  // The very first row of the input is considered our search query.
-  const searchQuery = inputRows[0];
-  // Initialize a counter for the number of times the query appears.
+// This function processes an array of input rows to identify and count occurrences of a specific string.
+function processInputData(inputRows) {
+  // The initial element of the input array holds the string we are searching for.
+  let searchKey = inputRows[0];
+  // A counter to keep track of how many times the search key appears.
   let occurrenceCounter = 0;
 
-  // Iterate through each subsequent row of the input.
-  // We start from the second row (index 1) as the first is the query.
+  // Begin iterating through the input rows, starting from the second row (index 1),
+  // as the first row contains the search key itself.
   for (let rowIndex = 1; rowIndex < inputRows.length; rowIndex++) {
-    // Split the current row into individual tokens (words) using any whitespace as a delimiter.
-    const tokenArray = inputRows[rowIndex].split(/\s+/);
+    // Each row is split into an array of individual words using any sequence of whitespace characters as a delimiter.
+    let currentWords = inputRows[rowIndex].split(/\s+/);
 
-    // Now, iterate through each token in the current row.
-    for (let tokenIndex = 0; tokenIndex < tokenArray.length; tokenIndex++) {
-      // Check if the current token exactly matches our defined search query.
-      if (tokenArray[tokenIndex] === searchQuery) {
-        // If a match is found, increment our occurrence counter.
+    // Now, iterate over each word obtained from the current row.
+    for (let wordIndex = 0; wordIndex < currentWords.length; wordIndex++) {
+      // Compare the current word with our designated search key.
+      if (currentWords[wordIndex] === searchKey) {
+        // If a match is found, increment the occurrence counter.
         occurrenceCounter++;
       }
     }
   }
-
-  // After processing all rows and tokens, display the total count of query occurrences.
+  // After processing all relevant rows and words, display the final count of the search key.
   console.log(occurrenceCounter);
 }
 
-// An array to temporarily store incoming data fragments from standard input.
-var dataBuffers = [];
+// An array to accumulate incoming data segments from the standard input stream.
+let dataFragments = [];
 
-// Set up an event listener for when data streams in from standard input.
-process
-  .stdin
-  .on(
-    'data',
-    function(dataPart) {
-      // Each received data fragment is added to our buffer array.
-      dataBuffers.push(dataPart)
-    }
-  );
+// Attach an event listener to the standard input stream for 'data' events.
+process.stdin.on('data', function(dataPiece) {
+  // As data arrives, each piece is appended to our collection of fragments.
+  dataFragments.push(dataPiece);
+});
 
-// Set up an event listener for when the standard input stream has completely ended.
-process
-  .stdin
-  .on(
-    'end',
-    function() {
-      // Combine all stored data fragments into a single string.
-      // Then, split this string into an array of lines based on newline characters.
-      const processedLines = dataBuffers.join('').split('\n');
-
-      // Finally, invoke our main analysis function with the prepared array of lines.
-      analyzeTextContent(processedLines);
-    }
-  );
+// Attach an event listener for the 'end' event on the standard input stream.
+process.stdin.on('end', function() {
+  // Once the input stream has concluded, all data fragments are joined into a single string.
+  // This string is then split by newline characters to form an array of distinct input rows.
+  let inputRows = dataFragments.join('').split('\n');
+  // Finally, invoke our primary data processing function with the prepared array of input rows.
+  processInputData(inputRows);
+});

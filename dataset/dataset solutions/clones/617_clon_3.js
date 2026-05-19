@@ -1,76 +1,39 @@
-const fileSystemHandler = require('fs');
+var fileSystem = require('fs');
+var rawInputString = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const standardInputResource = '/dev/stdin';
+var inputLines = rawInputString.trim().split("\n");
 
-const rawTextContent = fileSystemHandler.readFileSync(standardInputResource, 'utf8');
+var accumulatorValue = parseInt(inputLines[0]);
 
-const trimmedAndSplitLines = rawTextContent.trim().split('\n');
+let lineIndex = 1;
+while (lineIndex < inputLines.length) {
+    const currentOperator = inputLines[lineIndex];
 
-let numericalAccumulator = 0;
-
-if (trimmedAndSplitLines.length > 0) {
-    const initialValueString = trimmedAndSplitLines[0];
-    const initialNumericValue = parseFloat(initialValueString);
-
-    if (!isNaN(initialNumericValue)) {
-        numericalAccumulator = Math.trunc(initialNumericValue);
-    } else {
-        if (initialValueString.trim() === '') {
-            numericalAccumulator = 0;
-        } else {
-            numericalAccumulator = NaN;
-        }
+    if (currentOperator === "=") {
+        break;
     }
-} else {
-    numericalAccumulator = 0;
+
+    const operandString = inputLines[lineIndex + 1];
+    const operandValue = parseInt(operandString);
+
+    switch (currentOperator) {
+        case "+":
+            accumulatorValue += operandValue;
+            break;
+        case "-":
+            accumulatorValue -= operandValue;
+            break;
+        case "*":
+            accumulatorValue *= operandValue;
+            break;
+        case "/":
+            accumulatorValue /= operandValue;
+            break;
+    }
+
+    accumulatorValue = parseInt(accumulatorValue);
+
+    lineIndex += 2;
 }
 
-for (let currentLinePointer = 1; currentLinePointer < trimmedAndSplitLines.length; currentLinePointer += 2) {
-    const operationIndicator = trimmedAndSplitLines[currentLinePointer];
-    const operandValueString = trimmedAndSplitLines[currentLinePointer + 1];
-
-    if (operandValueString === undefined) {
-        numericalAccumulator = NaN;
-        break;
-    }
-
-    const parsedOperandNumeric = parseFloat(operandValueString);
-
-    if (isNaN(parsedOperandNumeric)) {
-        numericalAccumulator = NaN;
-        break;
-    }
-
-    switch (operationIndicator) {
-        case '=':
-            currentLinePointer = trimmedAndSplitLines.length;
-            continue;
-        case '+':
-            numericalAccumulator += parsedOperandNumeric;
-            break;
-        case '-':
-            numericalAccumulator -= parsedOperandNumeric;
-            break;
-        case '*':
-            numericalAccumulator *= parsedOperandNumeric;
-            break;
-        case '/':
-            if (parsedOperandNumeric === 0) {
-                numericalAccumulator = NaN;
-                currentLinePointer = trimmedAndSplitLines.length;
-            } else {
-                numericalAccumulator /= parsedOperandNumeric;
-            }
-            break;
-        default:
-            break;
-    }
-
-    numericalAccumulator = Math.trunc(numericalAccumulator);
-
-    if (isNaN(numericalAccumulator)) {
-        break;
-    }
-}
-
-console.log(numericalAccumulator);
+console.log(accumulatorValue);

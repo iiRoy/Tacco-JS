@@ -1,51 +1,55 @@
-function ExecuteProcessing(rawTransmission) {
+function processInput(sourceData) {
   "use strict";
-  const segmentedFeed = rawTransmission.split("\n").filter(Boolean);
+  const lineSegments = sourceData.split("\n");
 
-  const primarySegment = segmentedFeed.shift().split();
+  const initialSegment = lineSegments.shift();
+  const operationCount = parseInt(lineSegments.shift());
+  const operationList = lineSegments.map(entry => entry.split(" "));
 
-  const operationCount = Number(segmentedFeed.shift());
+  let frontBuffer = [];
+  let backBuffer = [initialSegment];
+  let isFlipped = false;
 
-  const instructionSet = segmentedFeed.map(line => line.split(" "));
+  for (const currentOperation of operationList) {
+    const operationType = currentOperation.length;
+    
+    switch (operationType) {
+      case 1:
+        isFlipped = !isFlipped;
+        break;
+      case 3:
+        const positionIndicator = currentOperation[1];
+        const characterToAdd = currentOperation[2];
 
-  let frontPortion = primarySegment;
-  let rearPortion = [];
-
-  let invertedView = false;
-
-  for (let i = 0; i < operationCount; i++) {
-    const currentInstruction = instructionSet[i];
-
-    if (currentInstruction.length === 1) {
-      invertedView = !invertedView;
-    } else {
-      const positionIndicator = currentInstruction[1];
-      const characterDatum = currentInstruction[2];
-
-      if (!invertedView) {
-        if (positionIndicator === "1") {
-          frontPortion.push(characterDatum);
+        if (!isFlipped) {
+          if (positionIndicator === '1') {
+            frontBuffer.unshift(characterToAdd);
+          } else {
+            backBuffer.push(characterToAdd);
+          }
         } else {
-          rearPortion.push(characterDatum);
+          if (positionIndicator === '1') {
+            backBuffer.push(characterToAdd);
+          } else {
+            frontBuffer.unshift(characterToAdd);
+          }
         }
-      } else {
-        if (positionIndicator === "1") {
-          rearPortion.push(characterDatum);
-        } else {
-          frontPortion.push(characterDatum);
-        }
-      }
+        break;
     }
   }
 
-  let assembledResult;
-  if (!invertedView) {
-    assembledResult = frontPortion.reverse().join("") + rearPortion.join("");
+  let finalResult;
+  if (!isFlipped) {
+    finalResult = frontBuffer.reverse().join("") + backBuffer.join("");
   } else {
-    assembledResult = rearPortion.reverse().join("") + frontPortion.join("");
+    finalResult = backBuffer.reverse().join("") + frontBuffer.join("");
   }
 
-  console.log(assembledResult);
+  console.log(finalResult);
 }
 
-ExecuteProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+function Main(input) {
+    processInput(input);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

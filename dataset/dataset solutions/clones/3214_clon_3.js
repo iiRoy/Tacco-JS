@@ -1,141 +1,156 @@
 "use strict";
 
-const performBinaryXOR = (firstBit, secondBit) => {
-  if (typeof firstBit !== 'number' || typeof secondBit !== 'number' || ![0, 1].includes(firstBit) || ![0, 1].includes(secondBit)) {
-    return 0;
+// Main processing function
+var ProcessInput = function(rawData) {
+  // Type III: Refactor input parsing slightly, use parseInt explicitly
+  const parsedTokens = rawData.trim().split(/\s+/);
+  const numRows = parseInt(parsedTokens.shift(), 10);
+  const numCols = parseInt(parsedTokens.shift(), 10);
+  const matrixElements = parsedTokens.map(val => parseInt(val, 10));
+
+  let matrixRank = 0;
+  // Type II: Rename A to currentMatrix
+  var currentMatrix = new BinaryMatrix(numRows, numCols, matrixElements);
+
+  // Type III: Refactor the main while loop logic using findIndex and clearer variable names
+  while (currentMatrix.rows.length > 0) {
+    const currentRows = currentMatrix.rows;
+
+    // Find the index of the first row that has a '1' in the first column
+    const firstOneInColIdx = currentRows.findIndex(row => row[0] === 1);
+
+    if (firstOneInColIdx === -1) { // No '1' found in the first column
+      // Check if there are columns to process. If not, the matrix is effectively empty.
+      if (currentRows.length > 0 && currentRows[0].length > 0) {
+        // Move the last column to the first position and delete it.
+        // This effectively removes the current first column (all zeros) and shifts the remaining columns.
+        currentMatrix.swapColumn(0, currentRows[0].length - 1);
+        currentMatrix.deleteColumn();
+      } else if (currentRows.length > 0 && currentRows[0].length === 0) {
+        // If rows exist but all columns are gone (e.g., matrix is [[]]),
+        // then the matrix is effectively empty. Clear it to terminate the loop.
+        currentMatrix.rows = [];
+      }
+    } else {
+      matrixRank++;
+      let currentPivotRowIdx = firstOneInColIdx; // This is the pivot row
+
+      let nextOneSearchStartIdx = currentPivotRowIdx + 1;
+      while (true) {
+        // Find the next row below the pivot that has a '1' in the first column
+        const nextOneInColIdx = currentRows.findIndex((row, idx) => idx >= nextOneSearchStartIdx && row[0] === 1);
+
+        if (nextOneInColIdx === -1) { // No more '1's below the pivot
+          break;
+        }
+        // XOR the target row with the pivot row
+        currentRows[nextOneInColIdx] = applyRowXor(currentRows[currentPivotRowIdx], currentRows[nextOneInColIdx]);
+        nextOneSearchStartIdx = nextOneInColIdx + 1; // Continue search from the row after the one just processed
+      }
+      // Move the pivot row to the end of the matrix and remove it
+      currentMatrix.swapLow(currentPivotRowIdx, currentRows.length - 1);
+      currentMatrix.deleteLow();
+    }
   }
-  return firstBit === secondBit ? 0 : 1;
+
+  // Type II: Rename K to modulusVal, term1 to firstTerm, term2 to secondTerm, ans to finalResult
+  var modulusVal = 998244353;
+  var firstTerm = 1;
+  var secondTerm = 1;
+
+  // Type III: Use a helper function for modular doubling
+  for (let i = 1; i <= numCols + numRows - 1; i++) {
+    firstTerm = doubleAndMod(firstTerm, modulusVal);
+  }
+  for (let i = 1; i <= numCols + numRows - matrixRank - 1; i++) {
+    secondTerm = doubleAndMod(secondTerm, modulusVal);
+  }
+
+  var finalResult = firstTerm - secondTerm;
+  console.log(finalResult);
 };
 
-const applyRowXOR = (rowA, rowB) => {
-  if (!Array.isArray(rowA) || !Array.isArray(rowB) || rowA.length !== rowB.length) {
-    throw new Error("Mismatched row dimensions for XOR operation.");
-  }
-  const resultRow = [];
-  rowA.forEach((bit, index) => {
-    resultRow.push(performBinaryXOR(bit, rowB[index]));
-  });
-  return resultRow;
-};
-
-const exchangeArrayElements = (arrInstance, index1, index2) => {
-  if (!Array.isArray(arrInstance) || index1 < 0 || index2 < 0 || index1 >= arrInstance.length || index2 >= arrInstance.length) {
-    return;
-  }
-  const tempVal = arrInstance[index1];
-  arrInstance[index1] = arrInstance[index2];
-  arrInstance[index2] = tempVal;
-};
-
-function BinaryGrid(rowsCount, colsCount, flatDataArray) {
-  if (rowsCount <= 0 || colsCount <= 0 || !Array.isArray(flatDataArray) || flatDataArray.length !== rowsCount * colsCount) {
-    throw new Error("Invalid dimensions or data for BinaryGrid construction.");
-  }
-
-  this.gridRows = [];
-
-  for (let rIdx = 0; rIdx < rowsCount; rIdx++) {
-    this.gridRows.push(flatDataArray.slice(rIdx * colsCount, (rIdx + 1) * colsCount));
-  }
-
-  this.getCurrentColumnCount = () => this.gridRows.length > 0 ? this.gridRows[0].length : 0;
+// Type II: Rename xor to binaryXor
+function binaryXor(valA, valB) {
+  return valA === valB ? 0 : 1;
 }
 
-BinaryGrid.prototype.exchangeRows = function(idxA, idxB) {
-  exchangeArrayElements(this.gridRows, idxA, idxB);
+// Type II: Rename XOR to applyRowXor
+function applyRowXor(row1, row2) {
+  return row1.map((element, index) => binaryXor(element, row2[index]));
+}
+
+// Type II: Rename Matrix to BinaryMatrix
+// Type II: Rename elements to matrixElements
+function BinaryMatrix(numRows, numCols, matrixElements) {
+  var self = this; // Type II: Rename A to self
+  self.rows = []; // Type II: Rename A.low to self.rows
+
+  // Type III: Initialize rows directly using Array.from and slice for conciseness
+  for (let r = 0; r < numRows; r++) {
+    self.rows.push(matrixElements.slice(r * numCols, (r + 1) * numCols));
+  }
+}
+
+// Type II: Rename swap to exchangeElements
+function exchangeElements(arr, idx1, idx2) {
+  var tempA = arr[idx1];
+  var tempB = arr[idx2];
+  arr[idx1] = tempB;
+  arr[idx2] = tempA;
+}
+
+// Type II: Rename Matrix.prototype.swapLow to BinaryMatrix.prototype.swapLow
+BinaryMatrix.prototype.swapLow = function(idx1, idx2) {
+  var self = this; // Type II: Rename A to self
+  exchangeElements(self.rows, idx1, idx2);
 };
 
-BinaryGrid.prototype.removeLastRow = function() {
-  if (this.gridRows.length > 0) {
-    this.gridRows.pop();
+// Type II: Rename Matrix.prototype.deleteLow to BinaryMatrix.prototype.deleteLow
+BinaryMatrix.prototype.deleteLow = function() { // delete the last row.
+  var self = this; // Type II: Rename A to self
+  var currentRows = self.rows; // Type II: Rename L to currentRows
+  currentRows.pop();
+};
+
+// Type II: Rename Matrix.prototype.swapColumn to BinaryMatrix.prototype.swapColumn
+BinaryMatrix.prototype.swapColumn = function(colIdx1, colIdx2) {
+  var self = this; // Type II: Rename A to self
+  for (let r = 0; r < self.rows.length; r++) {
+    exchangeElements(self.rows[r], colIdx1, colIdx2);
   }
 };
 
-BinaryGrid.prototype.exchangeColumns = function(colIdx1, colIdx2) {
-  for (const currentRow of this.gridRows) {
-    exchangeArrayElements(currentRow, colIdx1, colIdx2);
-  }
-};
+// Type II: Rename Matrix.prototype.deleteColumn to BinaryMatrix.prototype.deleteColumn
+BinaryMatrix.prototype.deleteColumn = function() { // delete the last Column.
+  var self = this; // Type II: Rename A to self
+  var currentRows = self.rows; // Type II: Rename L to currentRows
 
-BinaryGrid.prototype.removeLastColumn = function() {
-  if (this.getCurrentColumnCount() === 0) {
-    return;
-  }
-  this.gridRows.forEach(row => row.pop());
-};
-
-const processInputData = (rawData) => {
-  const parsedSegments = rawData
-    .trim()
-    .split(/\s+/)
-    .map(val => parseInt(val, 10))
-    .filter(num => !isNaN(num));
-
-  const [initialRows, initialCols, ...matrixValues] = parsedSegments;
-
-  if (initialRows === undefined || initialCols === undefined || initialRows <= 0 || initialCols <= 0) {
-    throw new Error("Invalid or insufficient input dimensions provided.");
-  }
-  if (matrixValues.length !== initialRows * initialCols) {
-    throw new Error("Matrix data length does not match specified dimensions.");
+  if (currentRows.length === 0) {
+    return; // No rows, nothing to do
   }
 
-  let currentRank = 0;
-  const matrixInstance = new BinaryGrid(initialRows, initialCols, matrixValues);
-
-  while (matrixInstance.gridRows.length > 0 && matrixInstance.getCurrentColumnCount() > 0) {
-    const pivotRowIndex = matrixInstance.gridRows.findIndex(row => row[0] === 1);
-
-    if (pivotRowIndex === -1) {
-      matrixInstance.exchangeColumns(0, matrixInstance.getCurrentColumnCount() - 1);
-      matrixInstance.removeLastColumn();
-    } else {
-      currentRank++;
-
-      const pivotRowData = matrixInstance.gridRows[pivotRowIndex];
-
-      for (let targetRowIdx = pivotRowIndex + 1; targetRowIdx < matrixInstance.gridRows.length; ++targetRowIdx) {
-        if (matrixInstance.gridRows[targetRowIdx][0] === 1) {
-          matrixInstance.gridRows[targetRowIdx] = applyRowXOR(pivotRowData, matrixInstance.gridRows[targetRowIdx]);
-        }
-      }
-
-      matrixInstance.exchangeRows(pivotRowIndex, matrixInstance.gridRows.length - 1);
-      matrixInstance.removeLastRow();
-
-      matrixInstance.removeLastColumn();
-    }
-  }
-
-  const finalCalculatedRank = currentRank;
-  const MODULO_CONSTANT = 998244353n;
-
-  const totalRelevantElements = BigInt(initialRows + initialCols - 1);
-  let powerTermOne = 1n;
-  for (let k = 0n; k < totalRelevantElements; ++k) {
-    powerTermOne = (powerTermOne * 2n) % MODULO_CONSTANT;
-  }
-
-  const remainingElements = BigInt(initialRows + initialCols - finalCalculatedRank - 1);
-  let powerTermTwo = 1n;
-  if (remainingElements >= 0) {
-    for (let k = 0n; k < remainingElements; ++k) {
-      powerTermTwo = (powerTermTwo * 2n) % MODULO_CONSTANT;
-    }
+  // Type III: More explicit handling of matrix becoming empty
+  // If there's only one column left, deleting it means the matrix becomes 0xN
+  // The original code `if(L[0].length===1)A.low=[];` effectively clears the matrix.
+  if (currentRows[0].length === 1) {
+    self.rows = []; // If this was the last column, the matrix becomes empty
   } else {
-    powerTermTwo = 0n;
+    // Otherwise, remove the last element from each row
+    for (let r = 0; r < currentRows.length; r++) {
+      currentRows[r].pop();
+    }
   }
-
-  let finalOutcome = (powerTermOne - powerTermTwo + MODULO_CONSTANT) % MODULO_CONSTANT;
-
-  console.log(Number(finalOutcome));
 };
 
-(() => {
-  try {
-    const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    processInputData(fileContent);
-  } catch (error) {
-    console.error("Error reading input or processing data:", error.message);
+// Type III: Add a small helper function for modular arithmetic (doubling)
+function doubleAndMod(currentValue, modulus) {
+  let nextValue = currentValue + currentValue;
+  if (nextValue >= modulus) {
+    nextValue -= modulus;
   }
-})();
+  return nextValue;
+}
+
+// Type II: Rename Main to ProcessInput
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

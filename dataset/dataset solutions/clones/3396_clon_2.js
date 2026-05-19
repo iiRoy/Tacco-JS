@@ -1,203 +1,219 @@
 "use strict";
 
-// Helper function to extract array elements
-function _destructureArrayElements(sourceArray, limitCount) {
-  return _extractArrayItems(sourceArray) || _convertIterableToLimitedArray(sourceArray, limitCount) || _handleNonIterableRemainder();
+// Helper function to handle array destructuring for non-iterable values
+function _slicedToArray(arr, i) {
+  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
 }
 
-// Helper function for non-iterable destructuring
-function _handleNonIterableRemainder() {
+// Throws an error if destructuring fails for non-iterable instances
+function _nonIterableRest() {
   throw new TypeError("Invalid attempt to destructure non-iterable instance");
 }
 
-// Helper to convert an iterable to a limited array with a specific maximum size
-function _convertIterableToLimitedArray(sourceArray, limitCount) {
-  var tempArray = [];
-  var isNormal = true;
-  var isErrored = false;
-  var errorObject = undefined;
+// Limits iteration over an iterable to a specified number of elements
+function _iterableToArrayLimit(arr, i) {
+  var _arr = [];
+  var _n = true;
+  var _d = false;
+  var _e = undefined;
   try {
-    for (var iteratorRef = sourceArray[Symbol.iterator](), iteratorResult; !(isNormal = (iteratorResult = iteratorRef.next()).done); isNormal = true) {
-      tempArray.push(iteratorResult.value);
-      if (limitCount && tempArray.length === limitCount) break;
+    for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      _arr.push(_s.value);
+      if (i && _arr.length === i) break;
     }
   } catch (err) {
-    isErrored = true;
-    errorObject = err;
+    _d = true;
+    _e = err;
   } finally {
     try {
-      if (!isNormal && iteratorRef["return"] != null) iteratorRef["return"]();
+      if (!_n && _i["return"] != null) {
+        _i["return"]();
+      }
     } finally {
-      if (isErrored) throw errorObject;
+      if (_d) throw _e;
     }
   }
-  return tempArray;
+  return _arr;
 }
 
-// Helper to check if an array is a standard array type
-function _extractArrayItems(sourceArray) {
-  if (Array.isArray(sourceArray)) return sourceArray;
+// Checks if a value is an array and returns it, otherwise returns null
+function _arrayWithHoles(arr) {
+  if (Array.isArray(arr)) return arr;
 }
 
+/**
+ * Main function to process the input and calculate the result.
+ * @param {string} rawData - The raw input string from stdin.
+ */
+function processInput(rawData) {
+  // Split the input string into individual lines
+  const inputLines = rawData.split('\n');
+  // Parse the first line to get the number of elements
+  const countElements = parseInt(inputLines[0]);
+  // Parse the second line, split numbers, and take 'countElements' values
+  const elementValues = parseNumbersFromString(inputLines[1]).slice(0, countElements);
 
-function processInputData(rawDataString) {
-  // Split the raw input string into separate lines
-  var inputLines = rawDataString.split('\n');
+  // Create a map to store the frequency of each number
+  const valueCounts = new Map();
 
-  // Parse the first line to get the total number of elements
-  var elementCount = parseInt(inputLines[0]);
-
-  // Process the second line, split numbers, and take the first 'elementCount' elements
-  var numericSequence = parseNumbersFromString(inputLines[1]).slice(0, elementCount);
-
-  // Create a frequency map to store counts of numbers
-  var frequencyMap = new Map();
-  var iteratorStatusOk = true;
-  var iteratorHadError = false;
-  var currentIteratorError = undefined;
+  // Iterate through the input numbers to populate the frequency map
+  let iterCompletionStatus = true;
+  let iterErrorOccurred = false;
+  let currentIterError = undefined;
 
   try {
-    // Iterate over each number in the sequence to populate the frequency map
-    for (var sequenceIterator = numericSequence[Symbol.iterator](), currentStep; !(iteratorStatusOk = (currentStep = sequenceIterator.next()).done); iteratorStatusOk = true) {
-      var currentValue = currentStep.value;
-      var existingCount = frequencyMap.get(currentValue);
+    for (
+      let valueIterator = elementValues[Symbol.iterator](), iterStep;
+      !(iterCompletionStatus = (iterStep = valueIterator.next()).done);
+      iterCompletionStatus = true
+    ) {
+      const currentVal = iterStep.value;
+      const existingCount = valueCounts.get(currentVal);
 
-      // Increment count if number exists, otherwise set to 1
+      // If the value already exists in the map, increment its count
       if (existingCount != null) {
-        frequencyMap.set(currentValue, existingCount + 1);
+        valueCounts.set(currentVal, existingCount + 1);
       } else {
-        frequencyMap.set(currentValue, 1);
+        // Otherwise, add the value with a count of 1
+        valueCounts.set(currentVal, 1);
       }
     }
   } catch (err) {
-    iteratorHadError = true;
-    currentIteratorError = err;
+    iterErrorOccurred = true;
+    currentIterError = err;
   } finally {
     try {
-      // Ensure iterator is properly closed if it didn't complete normally
-      if (!iteratorStatusOk && sequenceIterator.return != null) {
-        sequenceIterator.return();
+      if (!iterCompletionStatus && valueIterator["return"] != null) {
+        valueIterator["return"]();
       }
     } finally {
-      // Re-throw any errors that occurred during iteration
-      if (iteratorHadError) {
-        throw currentIteratorError;
+      if (iterErrorOccurred) {
+        throw currentIterError;
       }
     }
   }
 
-  var finalOutcome = 0;
+  // Initialize the final result accumulator
+  let finalResult = 0;
+
   /*
-  // This section contains a commented-out alternative recursive approach.
-  // It was likely an earlier implementation strategy that was later replaced
-  // by the iterative BFS-like approach below.
-  // The original idea involved recursively exploring paths from a starting number.
-  //
-  // while (frequencyMap.size > 0) {
-  //     const {value: [init, num]} = frequencyMap[Symbol.iterator]().next();
-  //     decrementOrRemove(frequencyMap, init, num);
-  //
-  //     const [leftCount, rightCount] = rec(init);
-  //     finalOutcome += Math.min(leftCount, rightCount);
-  // }
-  // function rec(init) {
-  //     let leftNum = 1;
-  //     let rightNum = 0;
-  //     for (const d of calculateDifferences(init)) {
-  //         if (decrementOrRemove(frequencyMap, d)) {
-  //             const [ls, rs] = rec(d);
-  //             leftNum += rs;
-  //             rightNum += ls;
-  //         }
-  //     }
-  //     return [leftNum, rightNum];
-  // }
+  // Original commented-out recursive approach
+  while (valueCounts.size > 0) {
+      const {value: [initialValue, initialCount]} = valueCounts[Symbol.iterator]().next();
+      decrementOrRemove(valueCounts, initialValue, initialCount);
+      
+      const [leftSideCount, rightSideCount] = recursiveTraversal(initialValue);
+      finalResult += Math.min(leftSideCount, rightSideCount);
+  }
+  function recursiveTraversal(initialValue) {
+      let leftSideCount = 1;
+      let rightSideCount = 0;
+      for (const differenceVal of calculateDifferences(initialValue)) {
+          if (decrementOrRemove(valueCounts, differenceVal)) {
+              const [ls, rs] = recursiveTraversal(differenceVal);
+              leftSideCount += rs;
+              rightSideCount += ls;
+          }
+      }
+      return [leftSideCount, rightSideCount];
+  }
   */
 
-  // Process elements as long as the frequency map is not empty
-  while (frequencyMap.size > 0) {
-    // Extract the first key-value pair from the map using its iterator
-    var mapIteratorResult = frequencyMap[Symbol.iterator]().next(),
-        destructuredPair = _destructureArrayElements(mapIteratorResult.value, 2),
-        initialKey = destructuredPair[0],
-        initialCount = destructuredPair[1];
+  // Process elements from the map using an iterative approach until it's empty
+  while (valueCounts.size > 0) {
+    // Get the first entry from the map (key-value pair)
+    const mapIterResult = valueCounts[Symbol.iterator]().next();
+    const destructuredMapEntry = _slicedToArray(mapIterResult.value, 2);
+    const initialValue = destructuredMapEntry[0];
+    const initialCount = destructuredMapEntry[1];
 
-    // Decrement or remove the initial key from the map
-    decrementOrRemove(frequencyMap, initialKey, initialCount);
-    var processingQueue = [initialKey]; // Initialize a queue for traversal
-    var leftBranchCount = 0, // Counter for elements associated with the 'left' path
-        rightBranchCount = 0; // Counter for elements associated with the 'right' path
+    // Decrement or remove the initial value from the map
+    decrementOrRemove(valueCounts, initialValue, initialCount);
 
-    // Process elements in the queue until it's empty
+    // Initialize a queue for breadth-first traversal (or stack for DFS, as pop is used)
+    const processingQueue = [initialValue];
+    let leftSideCount = 0;
+    let rightSideCount = 0;
+
+    // Process elements in the queue
     while (processingQueue.length > 0) {
-      var currentElement = processingQueue.pop(); // Retrieve the next element from the queue
-      var isNegativeBranch = currentElement < 0; // Determine if the element indicates a 'right' (negative) branch
-      var absoluteValue = Math.abs(currentElement); // Use the absolute value for calculations
+      const currentElement = processingQueue.pop(); // Get the last element (acting as a stack for DFS)
+      const isNegativeFlag = currentElement < 0; // Check if the current element is negative
+      const absValue = Math.abs(currentElement); // Get the absolute value
 
-      // Increment the appropriate branch counter based on 'isNegativeBranch'
-      leftBranchCount += +!isNegativeBranch; // Adds 1 if not negative, 0 otherwise
-      rightBranchCount += +isNegativeBranch; // Adds 1 if negative, 0 otherwise
+      // Increment left or right count based on the sign
+      leftSideCount += +!isNegativeFlag; // If not negative, add to left
+      rightSideCount += +isNegativeFlag; // If negative, add to right
 
-      var innerIteratorStatusOk = true;
-      var innerIteratorHadError = false;
-      var innerIteratorErrorObject = undefined;
+      // Iterate through potential differences for the absolute value
+      let innerIterCompletion = true;
+      let innerIterErrorFlag = false;
+      let innerIterError = undefined;
 
       try {
-        // Iterate through all calculated differences for the current absolute value
-        for (var differenceIterator = calculateDifferences(absoluteValue)[Symbol.iterator](), innerStep; !(innerIteratorStatusOk = (innerStep = differenceIterator.next()).done); innerIteratorStatusOk = true) {
-          var differenceValue = innerStep.value;
-
+        for (
+          let diffIterator = calculateDifferences(absValue)[Symbol.iterator](), diffStep;
+          !(innerIterCompletion = (diffStep = diffIterator.next()).done);
+          innerIterCompletion = true
+        ) {
+          const differenceVal = diffStep.value;
           // If the difference value exists in the map and can be decremented/removed
-          if (decrementOrRemove(frequencyMap, differenceValue)) {
-            // Add the difference to the queue, negating it if it originated from a negative branch
-            processingQueue.push(isNegativeBranch ? differenceValue : -differenceValue);
+          if (decrementOrRemove(valueCounts, differenceVal)) {
+            // Add to the queue, preserving the 'side' (negative for right, positive for left)
+            processingQueue.push(isNegativeFlag ? differenceVal : -differenceVal);
           }
         }
       } catch (err) {
-        innerIteratorHadError = true;
-        innerIteratorErrorObject = err;
+        innerIterErrorFlag = true;
+        innerIterError = err;
       } finally {
         try {
-          // Ensure the inner iterator is closed properly
-          if (!innerIteratorStatusOk && differenceIterator.return != null) {
-            differenceIterator.return();
+          if (!innerIterCompletion && diffIterator["return"] != null) {
+            diffIterator["return"]();
           }
         } finally {
-          // Re-throw any errors encountered during inner iteration
-          if (innerIteratorHadError) {
-            throw innerIteratorErrorObject;
+          if (innerIterErrorFlag) {
+            throw innerIterError;
           }
         }
       }
     }
 
-    // Add the minimum of the two branch counts to the total final outcome
-    finalOutcome += Math.min(leftBranchCount, rightBranchCount);
+    // Add the minimum of left and right counts to the final result
+    finalResult += Math.min(leftSideCount, rightSideCount);
   }
 
-  // Output the final calculated result to the console
-  console.log(finalOutcome);
+  // Output the final calculated result
+  console.log(finalResult);
 }
 
-// Execute the main processing function, reading input from stdin
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from stdin and pass it to the main processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Function to parse space-separated numbers from a string
+/**
+ * Parses a string of space-separated numbers into an array of integers.
+ * @param {string} inputLine - The string containing numbers.
+ * @returns {number[]} An array of parsed integers.
+ */
 function parseNumbersFromString(inputLine) {
   return inputLine.split(/\s+/).map(function (parsedNumber) {
     return parseInt(parsedNumber);
   });
 }
 
-// Function to find a value in a sorted array using binary search
-// This utility function is defined but not utilized in the current main logic.
-function findValueInSortedArray(sortedArray, searchValue) {
-  var startIndex = 0,
-      endIndex = sortedArray.length;
+/**
+ * Performs a binary search on a sorted array. (This function is not used in the main logic)
+ * @param {number[]} targetArray - The array to search within.
+ * @param {number} searchValue - The value to search for.
+ * @returns {number|null} The index of the value if found, otherwise null.
+ */
+function findInSortedArray(targetArray, searchValue) {
+  let startIndex = 0;
+  let endIndex = targetArray.length;
 
   while (startIndex < endIndex) {
-    var middleIndex = Math.floor((endIndex - startIndex) / 2) + startIndex;
-    var middleValue = sortedArray[middleIndex];
+    const middleIndex = Math.floor((endIndex - startIndex) / 2) + startIndex;
+    const middleValue = targetArray[middleIndex];
 
     if (middleValue === searchValue) {
       return middleIndex;
@@ -213,37 +229,43 @@ function findValueInSortedArray(sortedArray, searchValue) {
   return null;
 }
 
-// Function to calculate differences based on powers of two
+/**
+ * Calculates differences between powers of two and the input number.
+ * @param {number} inputNumber - The number to calculate differences for.
+ * @returns {number[]} An array of positive differences.
+ */
 function calculateDifferences(inputNumber) {
-  var resultDifferences = [];
-
-  // Iterate through powers of 2 up to 2 * 10^9
-  for (var targetPower = 2; targetPower <= 2 * 1e9; targetPower *= 2) {
-    var calculatedDifference = targetPower - inputNumber;
-
-    // If the difference is positive, add it to the results list
+  const differenceList = [];
+  // Iterate through powers of two up to 2 * 10^9
+  for (let targetPowerOfTwo = 2; targetPowerOfTwo <= 2 * 1e9; targetPowerOfTwo *= 2) {
+    const calculatedDifference = targetPowerOfTwo - inputNumber;
+    // Only add positive differences to the list
     if (calculatedDifference > 0) {
-      resultDifferences.push(calculatedDifference);
+      differenceList.push(calculatedDifference);
     }
   }
-
-  return resultDifferences;
+  return differenceList;
 }
 
-// Function to decrement the count of a key in a map or remove it if count reaches 0 or 1
-function decrementOrRemove(targetMap, targetKey) {
-  // Get the current count for the key, or use a provided count if available
-  var currentCount = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : targetMap.get(targetKey);
-  // If no count is found or it's invalid, indicate failure
-  if (currentCount == null) return false;
+/**
+ * Decrements the count of an element in a map or removes it if count becomes 0.
+ * @param {Map<number, number>} dataMap - The map storing element counts.
+ * @param {number} elementKey - The key of the element to decrement/remove.
+ * @param {number} [currentCount] - The current count of the element (optional, will fetch from map if not provided).
+ * @returns {boolean} True if the element was found and processed, false otherwise.
+ */
+function decrementOrRemove(dataMap, elementKey, currentCount) {
+  // If currentCount is not provided, try to get it from the map
+  const actualCount = currentCount !== undefined ? currentCount : dataMap.get(elementKey);
+  if (actualCount == null) return false; // Element not found
 
-  // If the count is greater than 1, simply decrement it
-  if (currentCount > 1) {
-    targetMap.set(targetKey, currentCount - 1);
+  // If count is greater than 1, just decrement
+  if (actualCount > 1) {
+    dataMap.set(elementKey, actualCount - 1);
   } else {
-    // Otherwise, remove the key entirely from the map
-    targetMap.delete(targetKey);
+    // If count is 1, remove the element from the map
+    dataMap.delete(elementKey);
   }
 
-  return true; // Indicate that the operation was successful
+  return true; // Element was found and processed
 }

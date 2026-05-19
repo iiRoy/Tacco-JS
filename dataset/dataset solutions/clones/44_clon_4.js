@@ -1,61 +1,132 @@
-const acquireInputContent = () => {
-    let collectedData = '';
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('readable', () => {
-        let currentChunk;
-        while ((currentChunk = process.stdin.read()) !== null) {
-            collectedData += currentChunk;
+function createPoint(xCoord, yCoord) {
+    return { x: parseFloat(xCoord), y: parseFloat(yCoord) };
+}
+
+function calculateDistance(ptA, ptB) {
+    const deltaX = ptA.x - ptB.x;
+    const deltaY = ptA.y - ptB.y;
+    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+}
+
+function findMidpoint(ptA, ptB) {
+    return createPoint((ptA.x + ptB.x) / 2, (ptA.y + ptB.y) / 2);
+}
+
+function calculateSegmentSlope(ptA, ptB) {
+    const deltaX = ptB.x - ptA.x;
+    const deltaY = ptB.y - ptA.y;
+    if (deltaX === 0) return Infinity;
+    if (deltaY === 0) return 0;
+    return deltaY / deltaX;
+}
+
+function getPerpendicularSlope(originalSegmentSlope) {
+    if (originalSegmentSlope === Infinity) return 0;
+    if (originalSegmentSlope === 0) return Infinity;
+    return -1 / originalSegmentSlope;
+}
+
+function deriveLineEquation(pointOnLine, lineSlope) {
+    if (lineSlope === Infinity) {
+        return { type: 'vertical', xVal: pointOnLine.x };
+    }
+    if (lineSlope === 0) {
+        return { type: 'horizontal', yVal: pointOnLine.y };
+    }
+    const yIntercept = pointOnLine.y - lineSlope * pointOnLine.x;
+    return { type: 'slope-intercept', slopeVal: lineSlope, interceptVal: yIntercept };
+}
+
+function findLineIntersection(firstLine, secondLine) {
+    let intersectionX, intersectionY;
+
+    if (firstLine.type === 'vertical') {
+        intersectionX = firstLine.xVal;
+        if (secondLine.type === 'vertical') {
+            return createPoint(NaN, NaN);
+        } else if (secondLine.type === 'horizontal') {
+            intersectionY = secondLine.yVal;
+        } else {
+            intersectionY = secondLine.slopeVal * intersectionX + secondLine.interceptVal;
         }
-    });
-    return new Promise(resolveData => {
-        process.stdin.on('end', () => {
-            resolveData(collectedData);
-        });
-    });
-};
+        return createPoint(intersectionX, intersectionY);
+    }
+    if (secondLine.type === 'vertical') {
+        intersectionX = secondLine.xVal;
+        if (firstLine.type === 'horizontal') {
+            intersectionY = firstLine.yVal;
+        } else {
+            intersectionY = firstLine.slopeVal * intersectionX + firstLine.interceptVal;
+        }
+        return createPoint(intersectionX, intersectionY);
+    }
 
-const extractNumericCoordinates = (sourceText) => {
-    return sourceText.trim().split('\n')
-        .map(inputLine => inputLine.split(' ').map(Number))
-        .filter(numericValues => numericValues.length === 6 && numericValues.every(val => !isNaN(val)));
-};
+    if (firstLine.type === 'horizontal') {
+        intersectionY = firstLine.yVal;
+        if (secondLine.type === 'horizontal') {
+            return createPoint(NaN, NaN);
+        } else {
+            if (secondLine.slopeVal === 0) return createPoint(NaN, NaN);
+            intersectionX = (intersectionY - secondLine.interceptVal) / secondLine.slopeVal;
+        }
+        return createPoint(intersectionX, intersectionY);
+    }
+    if (secondLine.type === 'horizontal') {
+        intersectionY = secondLine.yVal;
+        if (firstLine.slopeVal === 0) return createPoint(NaN, NaN);
+        intersectionX = (intersectionY - firstLine.interceptVal) / firstLine.slopeVal;
+        return createPoint(intersectionX, intersectionY);
+    }
 
-const computeCircumcircleData = (pointAlpha, pointBeta, pointGamma) => {
-    const coordAlphaX = pointAlpha.valX, coordAlphaY = pointAlpha.valY;
-    const coordBetaX = pointBeta.valX, coordBetaY = pointBeta.valY;
-    const coordGammaX = pointGamma.valX, coordGammaY = pointGamma.valY;
+    const slopeA = firstLine.slopeVal;
+    const interceptA = firstLine.interceptVal;
+    const slopeB = secondLine.slopeVal;
+    const interceptB = secondLine.interceptVal;
 
-    const squareAlpha = coordAlphaX * coordAlphaX + coordAlphaY * coordAlphaY;
-    const squareBeta = coordBetaX * coordBetaX + coordBetaY * coordBetaY;
-    const squareGamma = coordGammaX * coordGammaX + coordGammaY * coordGammaY;
+    if (slopeA === slopeB) {
+        return createPoint(NaN, NaN);
+    }
 
-    const denominatorValue = 2 * (coordAlphaX * (coordBetaY - coordGammaY) + coordBetaX * (coordGammaY - coordAlphaY) + coordGammaX * (coordAlphaY - coordBetaY));
+    intersectionX = (interceptB - interceptA) / (slopeA - slopeB);
+    intersectionY = slopeA * intersectionX + interceptA;
+    return createPoint(intersectionX, intersectionY);
+}
 
-    const coreX = (squareAlpha * (coordBetaY - coordGammaY) + squareBeta * (coordGammaY - coordAlphaY) + squareGamma * (coordAlphaY - coordBetaY)) / denominatorValue;
-    const coreY = (squareAlpha * (coordGammaX - coordBetaX) + squareBeta * (coordAlphaX - coordGammaX) + squareGamma * (coordBetaX - coordAlphaX)) / denominatorValue;
+function computeTriangleProperties(vertexA, vertexB, vertexC) {
+    const midAB = findMidpoint(vertexA, vertexB);
+    const slopeAB = calculateSegmentSlope(vertexA, vertexB);
+    const perpSlopeAB = getPerpendicularSlope(slopeAB);
+    const bisectorAB = deriveLineEquation(midAB, perpSlopeAB);
 
-    const distanceSq = (coordAlphaX - coreX) * (coordAlphaX - coreX) + (coordAlphaY - coreY) * (coordAlphaY - coreY);
-    const distanceVal = Math.sqrt(distanceSq);
+    const midBC = findMidpoint(vertexB, vertexC);
+    const slopeBC = calculateSegmentSlope(vertexB, vertexC);
+    const perpSlopeBC = getPerpendicularSlope(slopeBC);
+    const bisectorBC = deriveLineEquation(midBC, perpSlopeBC);
 
-    return {
-        centralX: coreX,
-        centralY: coreY,
-        span: distanceVal
-    };
-};
+    const circumcenterPoint = findLineIntersection(bisectorAB, bisectorBC);
 
-acquireInputContent().then(allInputContent => {
-    extractNumericCoordinates(allInputContent).forEach(coordinateSet => {
-        const primaryPoint = { valX: coordinateSet[0], valY: coordinateSet[1] };
-        const secondaryPoint = { valX: coordinateSet[2], valY: coordinateSet[3] };
-        const tertiaryPoint = { valX: coordinateSet[4], valY: coordinateSet[5] };
+    const circumradiusValue = calculateDistance(circumcenterPoint, vertexA);
 
-        const circleMetrics = computeCircumcircleData(primaryPoint, secondaryPoint, tertiaryPoint);
+    return { centerCoords: circumcenterPoint, radiusLength: circumradiusValue };
+}
+
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const inputLines = fileContent.split('\n');
+
+for (const currentInputLine of inputLines) {
+    const numericParts = currentInputLine.split(' ');
+    if (numericParts.length === 6) {
+        const pointOne = createPoint(numericParts[0], numericParts[1]);
+        const pointTwo = createPoint(numericParts[2], numericParts[3]);
+        const pointThree = createPoint(numericParts[4], numericParts[5]);
+
+        const triangleResult = computeTriangleProperties(pointOne, pointTwo, pointThree);
 
         console.log(
-            circleMetrics.centralX.toFixed(3),
-            circleMetrics.centralY.toFixed(3),
-            circleMetrics.span.toFixed(3)
+            triangleResult.centerCoords.x.toFixed(3),
+            triangleResult.centerCoords.y.toFixed(3),
+            triangleResult.radiusLength.toFixed(3)
         );
-    });
-});
+        break;
+    }
+}

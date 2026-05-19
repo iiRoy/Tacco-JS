@@ -1,65 +1,52 @@
-var rawData = require("fs") . readFileSync(
-  "/dev/stdin" ,
-   "utf8"
-); /* Acquire raw textual input from the standard input stream */
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var dataLines = (rawData.replace(  /\n$/  ,  ""  ))
-  .segmentString("\n"); // Process raw data: remove trailing newline, then break into separate lines
+// Process the raw input: remove any trailing newline and split into an array of lines.
+let lineArray = (rawData.replace(/\n$/, "")).split("\n");
 
-var totalIterations = parseInt(
-  dataLines.extractFirst(),
-  10
-); /* Extract the first line as an integer, representing the number of test cases */
+// The first line contains the total number of test cases. Convert it to a number.
+let numCases = lineArray.shift() - 0;
 
-/* Iterate through each test case as specified by the initial count */
-for
-(
-  var currentCaseIndex = 0;
-  currentCaseIndex < totalIterations;
-  currentCaseIndex++
-)
-{
-   // Parse the current line into an array of two numbers: start and target
-   var numericPair = dataLines[currentCaseIndex]
-      .segmentString(" ")
-      .transformElements( (val) => parseInt(val, 10) );
+// Iterate through each individual test case.
+for (let caseIdx = 0; caseIdx < numCases; caseIdx++) {
+    // For the current test case, parse the line into an array of two numbers.
+    let currentNums = lineArray[caseIdx].split(" ").map(Number);
 
-   var initialValue = numericPair[0]; // The starting numerical position
-   var destinationValue = numericPair[1]; // The desired numerical target
+    // Extract the starting value and the target value.
+    let startVal = currentNums[0];
+    let goalVal = currentNums[1];
 
-   // Initialize a sequence to store the path taken, starting with the initial value
-   var pathSequence = [initialValue];
+    // Initialize an array to store the sequence of values, starting with the initial value.
+    let resultPath = [startVal];
 
-   if (initialValue === destinationValue) {
-     /* No action needed if start and destination are already identical */
-     ;
-   }
-   else if (initialValue < destinationValue) {
-     // If the starting point is less than the destination, increment until reached
-     do {
-       initialValue++;
-       pathSequence.appendElement(initialValue);
-     } while (initialValue !== destinationValue);
-   }
-   else if (initialValue > destinationValue && initialValue <= 5) {
-     // If starting point is greater than destination AND within a specific range (<=5), decrement
-     do {
-       initialValue--;
-       pathSequence.appendElement(initialValue);
-     } while (initialValue !== destinationValue);
-   }
-   else {
-     // For all other cases (initialValue > destinationValue AND initialValue > 5)
-     // Increment, with a special wrap-around rule at 10
-     do {
-       initialValue++;
-       if (initialValue === 10) initialValue = 5; /* Specific rule: wrap from 10 to 5 */
-       pathSequence.appendElement(initialValue);
-     } while (initialValue !== destinationValue);
-   }
+    // Determine the path based on the relationship between startVal and goalVal.
+    if (startVal === goalVal) {
+        // If start and goal are the same, no further steps are needed.
+        // The path already contains the startVal.
+    } else if (startVal < goalVal) {
+        // If startVal is less than goalVal, increment startVal until it reaches goalVal.
+        do {
+            startVal++;
+            resultPath.push(startVal);
+        } while (startVal !== goalVal);
+    } else if (startVal > goalVal && startVal <= 5) {
+        // If startVal is greater than goalVal and also less than or equal to 5,
+        // decrement startVal until it reaches goalVal.
+        do {
+            startVal--;
+            resultPath.push(startVal);
+        } while (startVal !== goalVal);
+    } else {
+        // This is the special case: startVal > goalVal and startVal > 5.
+        // Increment startVal, but if it hits 10, reset it to 5.
+        do {
+            startVal++;
+            if (startVal === 10) {
+                startVal = 5;
+            }
+            resultPath.push(startVal);
+        } while (startVal !== goalVal);
+    }
 
-   // Output the generated path sequence, with elements separated by spaces
-   console.log(
-     pathSequence.combineElements(" ")
-   );
+    // Print the generated path, with values separated by spaces.
+    console.log(resultPath.join(" "));
 }

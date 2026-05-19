@@ -1,45 +1,38 @@
 "use strict";
 
-const generateSequenceProduct = (upperBound) => {
-  let accumulatedProduct = 1;
-  for (let currentFactor = 2; currentFactor <= upperBound; currentFactor++) {
-    accumulatedProduct *= currentFactor;
-  }
-  return accumulatedProduct;
+function computeProductSeries(val) {
+    if (val === 0) return 0;
+    if (val === 1) return 1;
+    let currentProduct = 1;
+    for (let k = 2; k <= val; k++) {
+        currentProduct *= k;
+    }
+    return currentProduct;
+}
+
+const processInputData = rawData => {
+    const [firstLine] = rawData.trim().split("\n");
+    const [firstValStr, secondValStr] = firstLine.split(" ");
+    const firstVal = parseInt(firstValStr);
+    const secondVal = parseInt(secondValStr);
+
+    const maxTwosPossible = Math.floor(firstVal / 2);
+
+    let finalResult = 0;
+
+    const requiredI = (2 * firstVal - secondVal) / 3;
+
+    if (Number.isInteger(requiredI) && requiredI >= 0 && requiredI <= maxTwosPossible) {
+        const currentI = requiredI;
+        const currentOnes = firstVal - (2 * currentI);
+        
+        const termA = computeProductSeries(firstVal);
+        const termB = computeProductSeries(2 * currentI) + computeProductSeries(currentOnes);
+
+        finalResult = termA / termB;
+    }
+    
+    console.log(finalResult % 10e9);
 };
 
-const executeComputation = (incomingData) => {
-  incomingData = incomingData.trim().split("\n");
-  const [initialParamA, initialParamB] = incomingData[0].split(" ").map(Number);
-
-  const potentialA_numerator = 2 * initialParamA - initialParamB;
-  const potentialB_numerator = 2 * initialParamB - initialParamA;
-  const commonDivisorForSolution = 3;
-
-  let finalResultCollection = [];
-
-  if (
-    potentialA_numerator >= 0 &&
-    potentialB_numerator >= 0 &&
-    potentialA_numerator % commonDivisorForSolution === 0 &&
-    potentialB_numerator % commonDivisorForSolution === 0
-  ) {
-    const actualA_count = potentialA_numerator / commonDivisorForSolution;
-    const actualB_count = potentialB_numerator / commonDivisorForSolution;
-
-    const valueOne = generateSequenceProduct(initialParamA);
-    const valueTwo = generateSequenceProduct(2 * actualA_count);
-    const valueThree = generateSequenceProduct(actualB_count);
-
-    finalResultCollection.push(valueOne / (valueTwo + valueThree));
-  }
-
-  if (finalResultCollection.length === 0) {
-    console.log(0);
-  } else {
-    const totalSum = finalResultCollection.reduce((acc, curr) => acc + curr, 0);
-    console.log(totalSum % 10000000000);
-  }
-};
-
-executeComputation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

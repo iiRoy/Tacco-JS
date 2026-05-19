@@ -1,81 +1,100 @@
-function pathSolver(initialX, initialY, targetLength, pathConstraints) {
-    let greatestDepthReached = 0;
+const fileSystem = require('fs');
 
-    const xMovements = [-1, 0, 1, -2, 2, -2, 2, -2, 2, -1, 0, 1];
-    const yMovements = [-2, -2, -2, -1, -1, 0, 0, 1, 1, 2, 2, 2];
+// Global variables to hold scenario-specific data, replacing original globals
+let targetDepthForScenario;
+let waterPointsForScenario;
 
-    const explorationFrontier = [[initialX, initialY, 0]]; // [currentX, currentY, currentDepth]
+// Generator function to yield the specific 12 displacement pairs
+const generateMovementOffsets = function* () {
+    const displacementVectors = [
+        [-1, -2], [0, -2], [1, -2],
+        [-2, -1], [2, -1],
+        [-2, 0], [2, 0],
+        [-2, 1], [2, 1],
+        [-1, 2], [0, 2], [1, 2]
+    ];
+    for (const [deltaX, deltaY] of displacementVectors) {
+        yield { deltaX, deltaY };
+    }
+};
 
-    while (explorationFrontier.length > 0) {
-        const [currentX, currentY, currentDepth] = explorationFrontier.pop();
+// Iterative Breadth-First Search (BFS) function, replacing the recursive 'bomb'
+function determineMaximumReachableDepth(initialXCoordinate, initialYCoordinate) {
+    let currentHighestDepth = 0;
+    const explorationQueue = [{ x: initialXCoordinate, y: initialYCoordinate, currentLevel: 0 }];
+    const processedStates = new Set(); // Stores "x-y-level" to prevent redundant processing
 
-        greatestDepthReached = Math.max(greatestDepthReached, currentDepth);
+    // Mark the initial state as processed
+    processedStates.add(`${initialXCoordinate}-${initialYCoordinate}-0`);
 
-        // If target depth is reached, we can stop early, similar to original's global 'max' check
-        if (greatestDepthReached === targetLength) {
-            return true;
+    let queueHead = 0; // Manual pointer for queue for performance
+
+    while (queueHead < explorationQueue.length) {
+        const { x, y, currentLevel } = explorationQueue[queueHead++];
+
+        currentHighestDepth = Math.max(currentHighestDepth, currentLevel);
+
+        // Early exit optimization: If the target depth is reached, no need to explore further
+        // This mirrors the original's global 'max == n' check
+        if (currentHighestDepth === targetDepthForScenario) {
+            return targetDepthForScenario;
         }
 
-        // If the current path segment has already reached or exceeded the target length,
-        // no need to extend it further to find a path *of* targetLength.
-        // The 'greatestDepthReached' is already updated.
-        if (currentDepth >= targetLength) {
-            continue;
-        }
-
-        // Determine "safe" positions for the current step's water coordinates.
-        // These coordinates define the allowed area for moves *from* currentDepth *to* currentDepth + 1.
-        const currentWaterX = pathConstraints[currentDepth * 2];
-        const currentWaterY = pathConstraints[currentDepth * 2 + 1];
-
-        // This check handles cases where currentDepth goes beyond the available constraintLocations.
-        // (Assuming valid input, this should only happen if currentDepth >= targetLength).
-        if (currentWaterX === undefined || currentWaterY === undefined) {
-             continue;
-        }
-
-        const validPositionsForCurrentStep = new Set();
-        for (let i = -1; i <= 1; i++) {
-            for (let j = -1; j <= 1; j++) {
-                validPositionsForCurrentStep.add((currentWaterX + i) + " " + (currentWaterY + j));
+        // Pre-calculate the 'safe' region for the current depth level
+        const waterSourceX = waterPointsForScenario[currentLevel * 2];
+        const waterSourceY = waterPointsForScenario[currentLevel * 2 + 1];
+        const currentSafeArea = new Set(); // Stores "x y" string keys for quick lookup
+        for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+            for (let colOffset = -1; colOffset <= 1; colOffset++) {
+                currentSafeArea.add(`${waterSourceX + rowOffset} ${waterSourceY + colOffset}`);
             }
         }
 
-        // Explore possible next moves
-        for (let k = 0; k < xMovements.length; k++) {
-            const nextX = currentX + xMovements[k];
-            const nextY = currentY + yMovements[k];
+        // Explore all possible next positions based on the defined movement pattern
+        for (const { deltaX, deltaY } of generateMovementOffsets()) {
+            const nextX = x + deltaX;
+            const nextY = y + deltaY;
+            const nextLevel = currentLevel + 1;
 
-            // Boundary check for a 10x10 grid
+            // Boundary checks: ensure coordinates are within the 10x10 grid
             if (nextX < 0 || nextY < 0 || nextX >= 10 || nextY >= 10) {
                 continue;
             }
 
-            // Check if the next position is "safe" according to the current step's constraints
-            if (validPositionsForCurrentStep.has(nextX + " " + nextY)) {
-                explorationFrontier.push([nextX, nextY, currentDepth + 1]);
+            // Check if the next position is within the 'safe' region for the current depth
+            if (currentSafeArea.has(`${nextX} ${nextY}`)) {
+                const nextStateIdentifier = `${nextX}-${nextY}-${nextLevel}`;
+                if (!processedStates.has(nextStateIdentifier)) {
+                    processedStates.add(nextStateIdentifier);
+                    explorationQueue.push({ x: nextX, y: nextY, currentLevel: nextLevel });
+                }
             }
         }
     }
-
-    // If the loop finishes and targetLength was not reached
-    return false;
+    return currentHighestDepth;
 }
 
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = dataSource.trim().split("\n");
-let currentLineIndex = 0;
+// Main program execution block
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const scenarioInputLines = rawInputData.trim().split("\n");
+
+let currentInputLineIndex = 0;
 
 while (true) {
-    const startCoordinates = processedLines[currentLineIndex++].split(" ").map(Number);
-    if (startCoordinates[0] === 0 && startCoordinates[1] === 0) {
+    const startPositionLine = scenarioInputLines[currentInputLineIndex++];
+    const startPositionCoords = startPositionLine.split(" ").map(Number);
+
+    // Termination condition for the input loop
+    if (startPositionCoords[0] === 0 && startPositionCoords[1] === 0) {
         break;
     }
 
-    const pathTargetLength = parseInt(processedLines[currentLineIndex++], 10);
-    const constraintLocations = processedLines[currentLineIndex++].split(" ").map(Number);
+    targetDepthForScenario = Number(scenarioInputLines[currentInputLineIndex++]);
+    waterPointsForScenario = scenarioInputLines[currentInputLineIndex++].split(" ").map(Number);
 
-    const completionStatus = pathSolver(startCoordinates[0], startCoordinates[1], pathTargetLength, constraintLocations);
+    // Execute the BFS to find the maximum reachable depth for the current scenario
+    const finalAchievedDepth = determineMaximumReachableDepth(startPositionCoords[0], startPositionCoords[1]);
 
-    console.log(completionStatus ? "OK" : "NA");
+    // Output the result based on whether the target depth was reached
+    console.log((finalAchievedDepth === targetDepthForScenario) ? "OK" : "NA");
 }

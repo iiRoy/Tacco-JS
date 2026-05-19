@@ -1,69 +1,76 @@
-const allInputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allLines = inputSource.trim().split("\n");
 let currentLineIndex = 0;
 
-const fetchNextDataLine = () => allInputData[currentLineIndex++];
-const parseLineIntoNumericArray = (lineContent) => lineContent.split(' ').map(Number);
+function retrieveNextLine() {
+    return allLines[currentLineIndex++];
+}
 
-const MAXIMUM_NODES_CAP = 101;
-const UNREACHABLE_METRIC = Number.MAX_SAFE_INTEGER;
+function parseLineToNumbers() {
+    return retrieveNextLine().split(" ").map(Number);
+}
 
-function calculateAllPairRoutes(totalNodes, pathGrid) {
-    for (let intermediateNode = 0; intermediateNode < totalNodes; intermediateNode++) {
-        for (let startingNode = 0; startingNode < totalNodes; startingNode++) {
-            for (let endingNode = 0; endingNode < totalNodes; endingNode++) {
-                const currentPrice = pathGrid[startingNode][endingNode].price;
-                const currentDuration = pathGrid[startingNode][endingNode].duration;
+let pathDataMatrix;
+let graphNodeCount;
 
-                const priceThroughIntermediate = pathGrid[startingNode][intermediateNode].price + pathGrid[intermediateNode][endingNode].price;
-                const durationThroughIntermediate = pathGrid[startingNode][intermediateNode].duration + pathGrid[intermediateNode][endingNode].duration;
-
-                pathGrid[startingNode][endingNode] = {
-                    price: Math.min(currentPrice, priceThroughIntermediate),
-                    duration: Math.min(currentDuration, durationThroughIntermediate)
+function calculateAllShortestPaths(nodeQuantity, pathInformation) {
+    for (let pivotNode = 0; pivotNode < nodeQuantity; ++pivotNode) {
+        for (let originNode = 0; originNode < nodeQuantity; ++originNode) {
+            for (let destinationNode = 0; destinationNode < nodeQuantity; ++destinationNode) {
+                const existingPath = pathInformation[originNode][destinationNode];
+                const pathViaPivot = {
+                    cost: pathInformation[originNode][pivotNode].cost + pathInformation[pivotNode][destinationNode].cost,
+                    time: pathInformation[originNode][pivotNode].time + pathInformation[pivotNode][destinationNode].time
                 };
+
+                if (pathViaPivot.cost < existingPath.cost) {
+                    existingPath.cost = pathViaPivot.cost;
+                }
+                if (pathViaPivot.time < existingPath.time) {
+                    existingPath.time = pathViaPivot.time;
+                }
             }
         }
     }
 }
 
-function processAllScenarios() {
-    while (true) {
-        const [numEdges, numVertices] = parseLineIntoNumericArray(fetchNextDataLine());
+while (true) {
+    const graphDimensions = parseLineToNumbers();
+    const numberOfEdges = graphDimensions[0];
+    graphNodeCount = graphDimensions[1];
 
-        if (numEdges === 0 && numVertices === 0) {
-            break;
-        }
+    if (numberOfEdges === 0 && graphNodeCount === 0) {
+        break;
+    }
 
-        const journeyMap = [];
-        for (let r = 0; r < MAXIMUM_NODES_CAP; r++) {
-            journeyMap[r] = [];
-            for (let c = 0; c < MAXIMUM_NODES_CAP; c++) {
-                journeyMap[r][c] = {
-                    price: (r === c) ? 0 : UNREACHABLE_METRIC,
-                    duration: (r === c) ? 0 : UNREACHABLE_METRIC
-                };
-            }
-        }
+    pathDataMatrix = Array.from({ length: 101 }, (_, rowIdx) =>
+        Array.from({ length: 101 }, (_, colIdx) => ({
+            cost: (rowIdx === colIdx) ? 0 : Infinity,
+            time: (rowIdx === colIdx) ? 0 : Infinity
+        }))
+    );
 
-        for (let e = 0; e < numEdges; e++) {
-            const [origin, destination, costValue, timeValue] = parseLineIntoNumericArray(fetchNextDataLine());
-            journeyMap[origin - 1][destination - 1] = { price: costValue, duration: timeValue };
-        }
+    for (let edgeIdx = 0; edgeIdx < numberOfEdges; ++edgeIdx) {
+        const edgeDefinition = parseLineToNumbers();
+        const startVertex = edgeDefinition[0] - 1;
+        const endVertex = edgeDefinition[1] - 1;
+        pathDataMatrix[startVertex][endVertex].cost = edgeDefinition[2];
+        pathDataMatrix[startVertex][endVertex].time = edgeDefinition[3];
+    }
 
-        calculateAllPairRoutes(numVertices, journeyMap);
+    calculateAllShortestPaths(graphNodeCount, pathDataMatrix);
 
-        const numQueries = Number(fetchNextDataLine());
-        for (let q = 0; q < numQueries; q++) {
-            const [queryOrigin, queryDestination, queryType] = parseLineIntoNumericArray(fetchNextDataLine());
-            const requestedPath = journeyMap[queryOrigin - 1][queryDestination - 1];
+    const numberOfQueries = Number(retrieveNextLine());
+    for (let queryIdx = 0; queryIdx < numberOfQueries; ++queryIdx) {
+        const queryParameters = parseLineToNumbers();
+        const queryStart = queryParameters[0] - 1;
+        const queryEnd = queryParameters[1] - 1;
+        const queryMetricType = queryParameters[2];
 
-            if (queryType === 0) {
-                console.log(requestedPath.price);
-            } else if (queryType === 1) {
-                console.log(requestedPath.duration);
-            }
+        if (queryMetricType === 0) {
+            console.log(pathDataMatrix[queryStart][queryEnd].cost);
+        } else {
+            console.log(pathDataMatrix[queryStart][queryEnd].time);
         }
     }
 }
-
-processAllScenarios();

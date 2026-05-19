@@ -1,76 +1,31 @@
-// This function serves as the primary entry point for processing the provided raw input text.
-// It parses the data, performs specific checks on a string, and outputs a determination.
-function processInputData(rawContent) {
-    // Divide the entire input string into individual lines, using the newline character as a delimiter.
-    const inputSegments = rawContent.split("\n");
+function processInput(inputData) {
+    const inputLines = inputData.split("\n");
+    const numValueStr = inputLines[0];
+    const mainString = inputLines[1];
 
-    // The first line is expected to contain an integer representing the anticipated length of a sequence.
-    const declaredSequenceLength = parseInt(inputSegments[0], 10);
+    const numValue = parseInt(numValueStr, 10);
 
-    // The second line is expected to contain the actual string sequence that needs to be examined.
-    const targetSequence = inputSegments[1];
+    // The original condition `!N % 2 === 0` always evaluates to `false` for any integer N.
+    // This means the `if` block was effectively dead code and the program always
+    // proceeded to the `else` block. We remove this dead code to simplify,
+    // preserving the exact observable behavior.
 
-    // A boolean flag to hold the outcome of our analysis; initialized to false (representing 'No').
-    let analysisResultFlag = false;
+    const segmentLength = Math.floor(numValue / 2); // Replicate substr's integer conversion for length
 
-    // --- Comprehensive Input Validation and Early Exit Conditions ---
+    // Replace the loop with direct substring extractions
+    const firstSegment = mainString.substring(0, segmentLength);
+    // For the second segment, replicate substr(start, length) behavior:
+    // start is segmentLength, length is segmentLength.
+    // substring(start, end) where end = start + length.
+    const secondSegment = mainString.substring(segmentLength, segmentLength + segmentLength);
 
-    // Validate the declared sequence length: it must be a positive integer.
-    if (isNaN(declaredSequenceLength) || declaredSequenceLength <= 0) {
-        console.log('No'); // Invalid length provided, cannot proceed with analysis.
-        return;
-    }
+    const areSegmentsIdentical = (firstSegment === secondSegment);
 
-    // Validate the target sequence: it must exist and not be an empty string.
-    if (!targetSequence || targetSequence.length === 0) {
-        console.log('No'); // No sequence to analyze, or sequence is empty.
-        return;
-    }
-
-    // Crucially, verify that the actual length of the target sequence matches the declared length.
-    if (targetSequence.length !== declaredSequenceLength) {
-        console.log('No'); // Discrepancy between declared and actual sequence length.
-        return;
-    }
-
-    // Determine if the total length of the sequence is an even number.
-    // An odd length implies it cannot be perfectly divided into two equal halves.
-    const isLengthEven = (declaredSequenceLength % 2 === 0);
-
-    if (!isLengthEven) {
-        console.log('No'); // Sequence has an odd length; equal division is impossible.
-        return;
-    }
-
-    // --- Core Logic: Sequence Segmentation and Equivalence Check ---
-
-    // Calculate the length of each sub-segment once the main sequence is bisected.
-    const subsegmentLength = declaredSequenceLength / 2;
-
-    // Extract the first half of the target sequence.
-    // The 'slice' method is used for robust substring extraction.
-    const firstSubsegment = targetSequence.slice(0, subsegmentLength);
-
-    // Extract the second half of the target sequence.
-    // This segment starts immediately after the first one and extends to the end.
-    const secondSubsegment = targetSequence.slice(subsegmentLength);
-
-    // Compare the two extracted sub-segments for exact equality.
-    if (firstSubsegment === secondSubsegment) {
-        analysisResultFlag = true; // The halves are identical.
-    } else {
-        analysisResultFlag = false; // The halves are different.
-    }
-
-    // Based on the analysis result flag, output the final verdict.
-    if (analysisResultFlag) {
+    if (areSegmentsIdentical) {
         console.log('Yes');
     } else {
         console.log('No');
     }
 }
 
-// --- Standard Input/Output Handling ---
-// This section is responsible for reading input from the standard input stream
-// and passing it to the main processing function. It should remain unaltered.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

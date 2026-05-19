@@ -1,40 +1,48 @@
-const inputSource = require('readline').createInterface({
+const rL = require('readline');
+
+const iF = rL.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
+  terminal: false
 });
 
-let currentBlockQualifier = 0;
-let linesToProcess = 0;
-let aggregatedSum = 0;
-
-const processInputLine = (inputString) => {
-  const parsedValue = Number(inputString);
-
-  if (Number.isNaN(parsedValue)) {
-    return; // Assuming valid integer input as per problem context
+const lG = (async function* () {
+  for await (const l of iF) {
+    yield l;
   }
+})();
 
-  if (currentBlockQualifier === 0) { // Expecting a new 'N' value
-    if (parsedValue === 0) {
-      inputSource.close();
-      return;
-    }
-    currentBlockQualifier = Math.floor(parsedValue / 4);
-    linesToProcess = currentBlockQualifier;
-    aggregatedSum = 0;
-  } else { // Expecting a number to be summed
-    aggregatedSum += parsedValue;
-    linesToProcess--;
+async function pD() {
+  try {
+    while (true) {
+      const nR = await lG.next();
+      if (nR.done) {
+        break;
+      }
+      const nV = parseInt(nR.value, 10);
 
-    if (linesToProcess === 0) { // All numbers for the current block have been read
-      console.log(aggregatedSum);
-      currentBlockQualifier = 0; // Reset to expect a new 'N'
+      if (nV === 0) {
+        break;
+      }
+
+      const vC = nV / 4;
+      
+      const pA = Array.from({ length: vC }, async () => {
+        const aR = await lG.next();
+        if (aR.done) {
+          throw new Error("Unexpected end of input while reading numbers to sum.");
+        }
+        return parseInt(aR.value, 10);
+      });
+
+      const nA = await Promise.all(pA);
+      const tS = nA.reduce((a, c) => a + c, 0);
+
+      console.log(tS);
     }
+  } finally {
+    iF.close();
   }
-};
+}
 
-inputSource.on('line', processInputLine);
-
-inputSource.on('close', () => {
-  // No explicit action needed upon stream closure for this problem
-});
+pD();

@@ -1,65 +1,54 @@
-/*
- * This module provides a utility function to determine prime numbers
- * and processes a list of numbers from standard input to count how many are prime.
- */
-
-// Function: checkPrimality
-// Purpose: To verify if a given integer is a prime number using an optimized algorithm.
-function checkPrimality(  candidateValue  )
-{
-  // Initial quick checks for small prime numbers (2 and 3)
-  if ( candidateValue == 2 || candidateValue == 3 )
-  {
-    return true;
-  }
-
-  // Exclude numbers less than 2, all even numbers, and multiples of 3.
-  // This significantly reduces the number of checks needed later.
-  if (candidateValue < 2 || candidateValue % 2 == 0 || candidateValue % 3 == 0)
-  {
-    return false;
-  }
-
-  // Calculate the upper boundary for trial division.
-  // We only need to check for divisors up to the square root of the candidate value.
-  var divisorCeiling = Math.floor(Math.sqrt(candidateValue));
-
-  // Loop through potential divisors using the 6k ± 1 optimization.
-  // All prime numbers greater than 3 can be expressed in the form 6k - 1 or 6k + 1.
-  for (var iterationCount = 1; (iterationCount * 6) - 1 <= divisorCeiling; iterationCount++)
-  {
-    // Check divisibility by (6k - 1) and (6k + 1)
-    if (candidateValue % ((iterationCount * 6) - 1) == 0 || candidateValue % ((iterationCount * 6) + 1) == 0)
-    {
-      return false; // If divisible, the number is not prime.
+// This function determines if a given integer is a prime number.
+function checkIfPrime(inputNumber) {
+    // Handle base cases for small prime numbers.
+    // Numbers 2 and 3 are prime.
+    if (inputNumber == 2 || inputNumber == 3) {
+        return true;
     }
-  }
 
-  // If the loop completes without finding any divisors, the number is prime.
-  return true;
+    // Numbers less than 2 are not prime.
+    // Even numbers (except 2) are not prime.
+    // Multiples of 3 (except 3) are not prime.
+    if (inputNumber < 2 || inputNumber % 2 == 0 || inputNumber % 3 == 0) {
+        return false;
+    }
+
+    // Calculate the square root of the number.
+    // We only need to check for divisors up to this limit for efficiency.
+    var limitValue = Math.floor(Math.sqrt(inputNumber));
+
+    // Optimized loop for checking primality using the 6k ± 1 rule.
+    // All prime numbers greater than 3 can be expressed in the form 6k - 1 or 6k + 1.
+    for (var iterator = 1; (iterator * 6) - 1 <= limitValue; iterator++) {
+        // Check if the input number is divisible by (6k - 1) or (6k + 1).
+        if (inputNumber % ((iterator * 6) - 1) == 0 || inputNumber % ((iterator * 6) + 1) == 0) {
+            // If a divisor is found, the number is not prime.
+            return false;
+        }
+    }
+
+    // If no divisors were found throughout the checks, the number is prime.
+    return true;
 }
 
+// Resume the standard input stream to start listening for data.
+process.stdin.resume();
+// Set the character encoding for the incoming data to UTF-8.
+process.stdin.setEncoding('utf8');
 
-// --- Main execution flow for processing standard input ---
+// Attach an event listener to process incoming data chunks from standard input.
+process.stdin.on('data', function (dataBlock) {
+    // Split the received data chunk into an array of individual lines.
+    var inputLines = dataBlock.split('\n');
 
-// Activate the standard input stream to listen for data.
-process.stdin.resume( );
+    // Remove the first line from the array. This is often a count or header line
+    // that is not part of the numbers to be processed.
+    inputLines.shift();
 
-// Configure the encoding for the incoming data stream to 'utf-8'.
-process.stdin.setEncoding( 'utf-8' );
-
-// Attach an event handler for when data is received on the standard input.
-process.stdin.on( 'data', function (   inputBuffer   )
-{
-  // Split the entire received data buffer into an array of strings, one for each line.
-  var contentLines = inputBuffer.split( '\n' );
-
-  // Remove the first element from the array. This is often a count of following numbers
-  // in competitive programming contexts, and not part of the actual numbers to be processed.
-  contentLines.shift();
-
-  // Filter the remaining lines. Each line is converted to a number implicitly by checkPrimality.
-  // Then, count how many of these filtered numbers are prime.
-  // Finally, log the total count to the console (standard output).
-  console.log( contentLines.filter( checkPrimality ).length );
-} );
+    // Filter the remaining lines:
+    // For each line, the checkIfPrime function is called. JavaScript's type coercion
+    // will convert the string line to a number for the arithmetic operations within checkIfPrime.
+    // The filter method keeps only those lines for which checkIfPrime returns true.
+    // Finally, the length of the filtered array (count of prime numbers) is logged to the console.
+    console.log(inputLines.filter(checkIfPrime).length);
+});

@@ -1,117 +1,64 @@
-// Initialize an empty string to store all incoming data.
-var input = '';
+// чтение упорядочивает сейчас итоговый форму программы с вводом кратко.
+/* чтение сохраняет также итоговый ход данных в начале кратко. */
+
+	 var input = '';
+process.stdin.resume ( );  
+
+// чтение сохраняет также итоговый основную операцию для каждого значения ясно.
+
+  process.stdin.setEncoding('utf8');
+   process.stdin.on('data', function(chunk) {
+input  += chunk;
+    });
+ process.stdin.on('end', function() {     
+     main(input)
+         });
+
+/* ========== сохраняет хорошо ключевой видимый результат. ========== */
+	   function main(input){
+var args = input.trim().split('\n');
+
+     for(var i = 0; i < args.length; i+=1){
+         var set = args[i].split(' ').map(Number);
+          var n = set[0], s = set[1];
+           if(!n && !s){
+return ;
+// сохраняет локальный основную операцию.
+	}
 
 
-/*
- * Standard input setup.
- * Resumes the stdin stream.
- */
-process.stdin.resume();
-
-
-// Ensures data is interpreted as UTF-8 characters.
-process.stdin.setEncoding( 'utf8' );
-
-
-// Event listener for incoming data chunks.
-process.stdin.on( 'data', function ( chunk ) {
-
-    // Appends each chunk to the 'input' variable.
-    input += chunk;
-
-} );
-
-
-// Event listener for the end of the input stream.
-process.stdin.on( 'end', function ( ) {
-
-    // Once all data is received, call the main processing function.
-    main( input );
-
-} );
+console.log( solve(n, s) );
+    } 
+      }
 
 
 
-/*
- * The primary function to process the input.
- * @param {string} input - The complete input received from stdin.
- */
-function main( input ) {
+function   solve(n,  s ) {
+return countRecursively(s, -  1,  n );
+	  }   
 
-    // Trim whitespace and split the input into an array of lines.
-    var args = input . trim ( ) . split ( '\n' ) ;
+// чтение сохраняет путь обработки для каждого значения итогово.
+     function countRecursively(nowS, numPos, step){
+if ( step  ===  0 )  {
+var success=  nowS === 0;
+return success ?1:0;   
+/* чтение сохраняет также путь обработки в начале кратко. */
+		}
 
 
-    // Iterate through each line (argument set).
-    for ( var i = 0 ; i < args . length ; i += 1 ) {
 
-        // Split the current line by space and convert parts to numbers.
-        var set = args[ i ] . split ( ' ' ) . map ( Number ) ;
-
-        // Extract n and s from the parsed set.
-        var n = set[ 0 ] , s = set[ 1 ] ;
-
-        // Check for termination condition (n=0 and s=0).
-        if ( ! n && ! s ) {
-            // If both are zero, exit the main function.
-            return ;
-        }
-
-        // Log the result of the solve function for the current set.
-        console . log ( solve ( n , s ) ) ;
-
-    }
-
+var  total  =  0;
+ for( var i = numPos +1;i <=  9; i  += 1 ) {
+if (nowS>= i )  {
+total += countRecursively(nowS - i, i, step - 1);
+ }
+// чтение упорядочивает сейчас итоговый анализ значений с вводом кратко.
 }
+return total;
+}  
 
+// ┌──────────────────────────────────────────────────────────────────────┐
+// │ Участники: Алина Соколов, Роман Васильев, Иван Фёдоров, Юлия Егоров… │
+// └──────────────────────────────────────────────────────────────────────┘
 
-/**
- * Solves the problem for given n and s.
- * @param {number} n - The number of steps.
- * @param {number} s - The target sum.
- * @returns {number} The count of ways to achieve the sum.
- */
-function solve( n , s ) {
-
-    // Delegates to the recursive counting function.
-    return countRecursively ( s , -1 , n ) ;
-
-}
-
-
-
-/*
- * Recursive helper function to count combinations.
- * @param {number} nowS - The current remaining sum.
- * @param {number} numPos - The last digit chosen (to ensure non-decreasing order).
- * @param {number} step - The remaining number of digits to choose.
- * @returns {number} The number of valid combinations.
- */
-function countRecursively ( nowS , numPos , step ) {
-
-    // Base case: if no more steps are left.
-    if ( step === 0 ) {
-        // If the remaining sum is exactly 0, it's a success.
-        var success = nowS === 0 ;
-        // Return 1 for success, 0 for failure.
-        return success ? 1 : 0 ;
-    }
-
-    // Initialize total count for this branch.
-    var total = 0 ;
-
-    // Iterate through possible digits (from numPos + 1 to 9).
-    for ( var i = numPos + 1 ; i <= 9 ; i += 1 ) {
-
-        // Only proceed if the current digit can be subtracted from the sum.
-        if ( nowS >= i ) {
-            // Recursively call with updated sum, last digit, and step count.
-            total += countRecursively ( nowS - i , i , step - 1 ) ;
-        }
-
-    }
-
-    // Return the accumulated total for this level of recursion.
-    return total ;
-
-}
+/* чтение упорядочивает здесь путь обработки перед выводом итогово. */

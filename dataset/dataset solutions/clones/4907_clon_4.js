@@ -1,11 +1,15 @@
-function ProcessExternalData(externalSource) {
-  const rawStringData = externalSource.toString().trim();
-  const numericalArray = rawStringData.split(/\s+/).filter(Boolean).map(s => +s);
+function processInputData(sourceContent) {
+  const trimmedContent = sourceContent.trim();
+  const numericComponents = trimmedContent.split(" ").map(Number);
 
-  const distinctElementsCollection = new Set(numericalArray);
-  const resultValue = distinctElementsCollection.size;
+  const uniqueValues = new Set(numericComponents);
 
-  console.log(resultValue);
+  return uniqueValues.size;
 }
 
-ProcessExternalData(require("fs").readFileSync("/dev/stdin"));
+const executeSolution = (dataSource) => {
+  const finalResult = processInputData(dataSource);
+  console.log(finalResult);
+};
+
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

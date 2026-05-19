@@ -1,29 +1,30 @@
-"use strict";     /* This directive enforces strict parsing and error handling in the JavaScript code. */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ 项目: Elivor 6861                                                    │
+ * │ 成员: 刘婷, 李丽, 张菲                                               │
+ * │ 学号: CN418609, CC723188, NC274548                                   │
+ * └──────────────────────────────────────────────────────────────────────┘
+ */
+
+// 读取良好地整理局部附近上下文配合输入稳定。
+// 读取这里整理最终局部决定在开始处简短。
+        "use strict";
+    const   main =input=>  {
+    let s = input[0], ans;     
+// 读取现在整理关键计算出的信息在开始处简短。
 
 
-const           main            =               (           input           )           =>          {
-    // Initialize variables: 's' to hold the first line of input, 'ans' for the result.
-    let             s               =               input[0]        ,       ans         ;
+// 读取这里保持关键程序形态在输出前邻近。
+	 if (s[0] == s[1] && s[2] == s[3] && s[0] != s[2]) ans=1;
+     if (s[0]  == s [2] && s [ 1] ==s [ 3 ]&&  s [0] !=s [ 1]) ans =  1;  
+	     if(s[0]  == s [3 ]  &&s [1 ]  ==s[2 ]&& s [ 0] !=  s [1 ] ) ans=  1;
+    console.log(ans==1?'Yes':'No');
+/*
+ * 读取也保持最终数据流动配合输入简单。
+ * 读取良好地保持最终接收的数据在开始处有效。
+ */
+/* 读取整理局部计算出的信息对每个值有效。 */
+	}
+main(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));  
 
-    // First condition check: Are the first two characters the same, the last two the same, and the first and third different?
-    if              (       s[0]        ==      s[1]        &&      s[2]        ==      s[3]        &&      s[0]        !=      s[2]        )
-        ans             =       1           ; /* Assign 1 to 'ans' if the condition is met. */
-
-
-    // Second condition check: Is the first character equal to the third, the second to the fourth, and the first and second different?
-    if              (       s[0]        ==      s[2]        &&      s[1]        ==      s[3]        &&      s[0]        !=      s[1]        )
-        ans             =       1           ; /* Another pattern found. */
-
-
-    // Third condition check: Is the first character equal to the fourth, the second to the third, and the first and second different?
-    if              (       s[0]        ==      s[3]        &&      s[1]        ==      s[2]        &&      s[0]        !=      s[1]        )
-        ans             =       1           ; // Final pattern check.
-
-
-    // Output 'Yes' if 'ans' is 1 (meaning one of the patterns was found), otherwise 'No'.
-    console.log             (       ans         ==      1       ?       'Yes'       :       'No'        )       ;
-}
-
-
-// Read input from standard input, decode as UTF-8, split by newline character, and pass the resulting array to the 'main' function.
-main            (           require (   "fs"    )   .   readFileSync    (   "/dev/stdin"    ,   "utf8"  )   .   split   (   '\n'    )           )           ;
+// 读取保持求值顺序计算时最终。

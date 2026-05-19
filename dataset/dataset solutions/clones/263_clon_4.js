@@ -1,53 +1,50 @@
-function generateArrangements(items, desiredLength) {
-    if (desiredLength === 0) {
-        return [[]];
+function findPermutationCount(targetLength, targetSum, currentLength, currentSum, usedDigitsMask) {
+    if (currentLength === targetLength) {
+        return currentSum === targetSum ? 1 : 0;
     }
 
-    return items.reduce((accumulator, currentItem, index) => {
-        const remainingItems = [...items.slice(0, index), ...items.slice(index + 1)];
-        const subArrangements = generateArrangements(remainingItems, desiredLength - 1);
-        const newArrangements = subArrangements.map(sub => [currentItem, ...sub]);
-        return accumulator.concat(newArrangements);
-    }, []);
+    let validCount = 0;
+    for (let digitValue = 0; digitValue <= 9; digitValue++) {
+        if (!((usedDigitsMask >> digitValue) & 1)) {
+            const nextUsedMask = usedDigitsMask | (1 << digitValue);
+            const nextWeightedComponent = digitValue * (currentLength + 1);
+            validCount += findPermutationCount(
+                targetLength,
+                targetSum,
+                currentLength + 1,
+                currentSum + nextWeightedComponent,
+                nextUsedMask
+            );
+        }
+    }
+    return validCount;
 }
 
-function processInputData(allInputLines) {
-    const initialDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+function processInputLines() {
+    processedLines.forEach(function(lineContent) {
+        const trimmedLine = lineContent.trim();
+        if (trimmedLine === '') return;
 
-    const finalResults = allInputLines
-        .filter(inputLine => inputLine.trim() !== '')
-        .map(inputLine => {
-            const parsedNumbers = inputLine.split(' ').map(value => parseFloat(value));
-            const sequenceLength = parsedNumbers[0];
-            const requiredSum = parsedNumbers[1];
+        const parsedValues = trimmedLine.split(' ').map(parseFloat);
+        const requiredLength = parsedValues[0];
+        const desiredSum = parsedValues[1];
 
-            let validSequenceCount = 0;
-
-            const allPossibleArrangements = generateArrangements(initialDigits, sequenceLength);
-
-            for (const currentSequence of allPossibleArrangements) {
-                let currentTotalWeight = 0;
-                for (let position = 0; position < currentSequence.length; position++) {
-                    currentTotalWeight += currentSequence[position] * (position + 1);
-                }
-                if (currentTotalWeight === requiredSum) {
-                    validSequenceCount++;
-                }
-            }
-            return validSequenceCount;
-        });
-
-    finalResults.forEach(resultValue => console.log(resultValue));
+        const resultCount = findPermutationCount(requiredLength, desiredSum, 0, 0, 0);
+        console.log(resultCount);
+    });
 }
 
-let collectedRawData = '';
+let rawInputData = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(dataSegment) {
-    collectedRawData += dataSegment;
+
+process.stdin.on('data', function(chunkData) {
+    rawInputData += chunkData;
 });
+
+let processedLines;
 process.stdin.on('end', function() {
-    const finalLines = collectedRawData.split('\n');
-    processInputData(finalLines);
+    processedLines = rawInputData.split('\n');
+    processInputLines();
 });

@@ -1,43 +1,27 @@
-const lineReader = require('readline');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const numericLines = fileContent.split('\n').map(Number);
 
-const inputStreamHandler = lineReader.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const collectedPairs = [];
+let currentPosition = 0;
 
-let accumulatedNumericData = [];
+while (currentPosition < numericLines.length - 1) {
+    const firstOperand = numericLines[currentPosition];
+    const secondOperand = numericLines[currentPosition + 1];
 
-inputStreamHandler.on('line', (dataSegment) => {
-    accumulatedNumericData.push(Number(dataSegment));
-});
-
-const calculateGeometricSurface = (baseDimension, verticalElevation) => {
-    const baseSurfaceArea = Math.pow(baseDimension, 2);
-    const slantHypotenuseTerm = Math.sqrt(4 * Math.pow(verticalElevation, 2) + Math.pow(baseDimension, 2));
-    const lateralSurfaceAreaComponent = baseDimension * slantHypotenuseTerm;
-    return baseSurfaceArea + lateralSurfaceAreaComponent;
-};
-
-const processSequenceRecursively = (dataList, currentPosition) => {
-    if (currentPosition + 1 >= dataList.length) {
-        return; // Not enough data for a pair
+    if (firstOperand === 0 && secondOperand === 0) {
+        break;
     }
 
-    const firstComponent = dataList[currentPosition];
-    const secondComponent = dataList[currentPosition + 1];
+    collectedPairs.push({ base: firstOperand, elev: secondOperand });
+    currentPosition += 2;
+}
 
-    if (firstComponent === 0 && secondComponent === 0) {
-        return; // Termination signal detected
-    }
-
-    const resultantValue = calculateGeometricSurface(firstComponent, secondComponent);
-    process.stdout.write(resultantValue.toFixed(6) + '\n');
-
-    // Advance to the next pair
-    processSequenceRecursively(dataList, currentPosition + 2);
+const calculatePyramidSurface = (baseDimension, verticalHeight) => {
+    const baseArea = baseDimension * baseDimension;
+    const slantHeightTerm = Math.sqrt(4 * verticalHeight * verticalHeight + baseDimension * baseDimension);
+    return (baseArea + baseDimension * slantHeightTerm).toFixed(6);
 };
 
-inputStreamHandler.on('close', () => {
-    processSequenceRecursively(accumulatedNumericData, 0);
-});
+collectedPairs
+    .map(pairData => calculatePyramidSurface(pairData.base, pairData.elev))
+    .forEach(formattedResult => console.log(formattedResult));

@@ -1,79 +1,40 @@
-const filesystemModule = require("node:fs");
+const fileSystemModule = require("fs");
 
-const ALPHABET_SIZE_MODULUS = 26;
-const BASE_ASCII_LOWERCASE_A = 97;
+const ALPHABET_SIZE = 26;
+const LOWERCASE_A_CODE = 97;
+const TARGET_PATTERN = /th(is|at)/;
 
-const KEYWORD_DETECTION_PATTERN = /th(?:is|at)/;
-
-function processCharacterWithCipherFormula(
-  inputCharacter,
-  transformFactor,
-  shiftAmount
-) {
-  const originalCharCode = inputCharacter.charCodeAt(0);
-
-  let resultantPosition =
-    (originalCharCode * transformFactor + shiftAmount) %
-    ALPHABET_SIZE_MODULUS;
-
-  if (resultantPosition < 0) {
-    resultantPosition += ALPHABET_SIZE_MODULUS;
-  }
-
-  return String.fromCharCode(resultantPosition + BASE_ASCII_LOWERCASE_A);
+function applyAffineCharTransform(charToProcess, multiplier, shiftValue) {
+    const charCode = charToProcess.charCodeAt(0);
+    const transformedCharCode = (charCode * multiplier + shiftValue) % ALPHABET_SIZE + LOWERCASE_A_CODE;
+    return String.fromCharCode(transformedCharCode);
 }
 
-function analyzeInputLineForKeywords(lineToProcess) {
-  if (!lineToProcess || lineToProcess.trim().length === 0) {
-    return;
-  }
+function applyAffineCipherToLine(inputLine, multiplier, shiftValue) {
+    return inputLine.replace(/[\w]/g, function(charToTransform) {
+        return applyAffineCharTransform(charToTransform, multiplier, shiftValue);
+    });
+}
 
-  for (
-    let currentMultiplierValue = 0;
-    currentMultiplierValue < ALPHABET_SIZE_MODULUS;
-    currentMultiplierValue++
-  ) {
-    for (
-      let currentShiftValue = 0;
-      currentShiftValue < ALPHABET_SIZE_MODULUS;
-      currentShiftValue++
-    ) {
-      const transformedLineCandidate = lineToProcess.replace(
-        /\w/g,
-        function (matchedChar) {
-          return processCharacterWithCipherFormula(
-            matchedChar,
-            currentMultiplierValue,
-            currentShiftValue
-          );
-        }
-      );
-
-      if (KEYWORD_DETECTION_PATTERN.test(transformedLineCandidate)) {
-        console.log(transformedLineCandidate);
-      }
+function checkAndLogMatch(processedString) {
+    const matchResult = processedString.match(TARGET_PATTERN);
+    if (matchResult) {
+        console.log(processedString);
     }
-  }
 }
 
-const standardInputFilePath = "/dev/stdin";
-const fileContentEncoding = "utf8";
+function processInputFileContent() {
+    const fileContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+    const inputLines = fileContent.split('\n');
 
-let entireInputFileContent;
-try {
-  entireInputFileContent = filesystemModule.readFileSync(
-    standardInputFilePath,
-    fileContentEncoding
-  );
-} catch (fileReadError) {
-  console.error(
-    `Failed to read input from '${standardInputFilePath}': ${fileReadError.message}`
-  );
-  process.exit(1);
+    inputLines.forEach(function(currentLine) {
+        for (let currentMultiplier = ALPHABET_SIZE - 1; currentMultiplier >= 0; currentMultiplier--) {
+            for (let currentShift = ALPHABET_SIZE - 1; currentShift >= 0; currentShift--) {
+                const resultString = applyAffineCipherToLine(currentLine, currentMultiplier, currentShift);
+                checkAndLogMatch(resultString);
+            }
+        }
+    });
 }
 
-const inputLinesArray = entireInputFileContent.split("\n");
-
-for (const currentInputLine of inputLinesArray) {
-  analyzeInputLineForKeywords(currentInputLine);
-}
+processInputFileContent();

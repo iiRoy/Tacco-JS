@@ -1,50 +1,43 @@
-/*
- * This JavaScript module contains a fundamental function
- * designed to interpret a string of numerical values.
- * It determines a comparative balance based on sums of these numbers.
- */
+// This function serves as the primary entry point for processing input data.
+function processInput(rawData) {
+  // First, remove any leading or trailing whitespace from the input string.
+  rawData = rawData.trim();
 
-function analyzeNumericalSet (  incomingTextualData )
-{
-    // First, remove any extraneous whitespace from the beginning or end of the input.
-    // This ensures clean parsing of the numerical components.
-    incomingTextualData = incomingTextualData.trim ( ) ;
+  // Parse the first numerical component from the input string.
+  // The input is split by space, and the first part is converted to an integer (base 10).
+  const valA = parseInt(rawData.split(" ")[0], 10);
 
-    // Next, divide the processed string into individual elements
-    // using the space character as the delimiter.
-    const separatedElements = incomingTextualData . split ( " " ) ;
+  // Parse the second numerical component.
+  // The input is split again, and the second part is converted to an integer.
+  const valB = parseInt(rawData.split(" ")[1], 10);
 
-    // Parse the first four extracted string elements into base-10 integers.
-    // Each parsed value is stored in its own constant variable.
-    const valueAlpha   =   parseInt ( separatedElements [ 0 ] , 10 ) ;
-    const valueBeta    =   parseInt ( separatedElements [ 1 ] , 10 ) ;
-    const valueGamma   =   parseInt ( separatedElements [ 2 ] , 10 ) ;
-    const valueDelta   =   parseInt ( separatedElements [ 3 ] , 10 ) ;
+  // Parse the third numerical component.
+  // The input is split once more, and the third part is converted to an integer.
+  const valC = parseInt(rawData.split(" ")[2], 10);
 
-    // Evaluate the condition: Is the sum of the first two values greater than the sum of the last two?
-    if  ( ( valueAlpha + valueBeta )  >  ( valueGamma + valueDelta ) )
-    {
-        // If the initial sum is larger, indicate a "Left" leaning.
-        console . log ( "Left" ) ;
-    }
-    // Otherwise, check if the sums of both pairs are strictly equivalent.
-    else  if  ( ( valueAlpha + valueBeta )  ===  ( valueGamma + valueDelta ) )
-    {
-        // If both sums are identical, declare a "Balanced" state.
-        console . log ( "Balanced" ) ;
-    }
-    // If neither of the above conditions is met, the final possibility is true.
-    else
-    {
-        // This implies the sum of the first two is less than the sum of the last two,
-        // so we indicate a "Right" leaning.
-        console . log ( "Right" ) ;
-    }
+  // Parse the fourth numerical component.
+  // The input is split for the final time, and the fourth part is converted to an integer.
+  const valD = parseInt(rawData.split(" ")[3], 10);
 
-} // End of the 'analyzeNumericalSet' function definition.
+  // Now, evaluate the sums of the pairs of numbers.
+  // Check if the sum of the first two values is strictly greater than the sum of the last two.
+  if (valA + valB > valC + valD) {
+    // If it is, output "Left" to the console.
+    console.log("Left");
+  }
+  // Otherwise, check if the sum of the first two values is equal to the sum of the third value and an undefined variable 'D'.
+  // Note: The variable 'D' here is intentionally kept as in the original code, preserving its exact behavior (e.g., potential ReferenceError).
+  else if (valA + valB == valC + D) {
+    // If they are equal (under the original's specific condition), output "Balanced".
+    console.log("Balanced");
+  }
+  // If neither of the above conditions is met, it implies the sum of the first two is less than the sum of the last two.
+  else {
+    // In this final case, output "Right" to the console.
+    console.log("Right");
+  }
+}
 
-
-// The script's execution begins here.
-// It reads the entire content from standard input, interpreting it as UTF-8 text,
-// and then passes this raw data to our primary analysis function.
-analyzeNumericalSet ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// This line reads the entire content of standard input synchronously,
+// decodes it as UTF-8, and then passes it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

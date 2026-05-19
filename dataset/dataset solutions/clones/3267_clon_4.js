@@ -1,16 +1,19 @@
-const processInputData = (incomingText) => {
-    const cleansedText = incomingText.trim();
-    const requiredDigits = ['1', '9', '7', '4'];
-    const foundCharacters = new Set([...cleansedText]);
+function processInputData(sourceContent) {
+    const cleanedContent = sourceContent.trim();
+    const requiredSymbols = new Set(['1', '9', '7', '4']);
 
-    const allPresent = requiredDigits.every(digit => foundCharacters.has(digit));
+    const remainingSymbolsAfterScan = Array.from(cleanedContent).reduce((accumulatorSet, currentCharacter) => {
+        if (accumulatorSet.has(currentCharacter)) {
+            accumulatorSet.delete(currentCharacter);
+        }
+        return accumulatorSet;
+    }, new Set(requiredSymbols));
 
-    const outcomeDecision = allPresent ? "YES" : "NO";
-    console.log(outcomeDecision);
-};
+    if (remainingSymbolsAfterScan.size === 0) {
+        console.log("YES");
+    } else {
+        console.log("NO");
+    }
+}
 
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const encodingType = "utf8";
-const rawInputBuffer = fileSystemModule.readFileSync(standardInputPath, encodingType);
-processInputData(rawInputBuffer);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

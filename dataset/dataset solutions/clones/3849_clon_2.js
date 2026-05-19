@@ -1,31 +1,43 @@
-function ProcessData (  rawData  ) {
+function ProcessInput(rawData) {
+    // Split the entire input string into individual lines based on the newline character.
+    const inputLines = rawData.split("\n");
 
-  const textRows = rawData .split ( '\n' ) ;
+    // The first line is expected to contain three space-separated values.
+    const firstLineParts = inputLines[0].split(" ");
 
-  const firstRowParts = textRows[0] . split ( ' ' ) ;
+    // Extract the individual string values from the parsed first line.
+    const valA = firstLineParts[0];
+    const valB = firstLineParts[1];
+    const valC = firstLineParts[2];
 
-  const firstVal = firstRowParts[0] ;
-  const secondVal = firstRowParts[1] ;
-  const thirdVal = firstRowParts[2] ;
-  const exponentFactor = textRows[1] ;
+    // The second line provides a single value, which will be used as an exponent.
+    const exponentVal = inputLines[1];
 
-  let maxElement ;
-  let remainingSum ;
+    let maxNumber; // This variable will store the lexicographically largest of valA, valB, or valC.
+    let remainingSum; // This variable will store the string concatenation of the other two values.
 
-  if ( firstVal >= secondVal && firstVal >= thirdVal ) {
-    maxElement = firstVal ;
-    remainingSum = secondVal + thirdVal ;
-  } else if ( secondVal >= thirdVal ) {
-    maxElement = secondVal ;
-    remainingSum = firstVal + thirdVal ;
-  } else {
-    maxElement = thirdVal ;
-    remainingSum = firstVal + secondVal ;
-  }
+    // Determine the largest string value among valA, valB, and valC using lexicographical comparison.
+    // Then, concatenate the other two values.
+    if (valA >= valB && valA >= valC) {
+        maxNumber = valA;
+        remainingSum = valB + valC; // String concatenation
+    } else if (valB >= valC) {
+        maxNumber = valB;
+        remainingSum = valA + valC; // String concatenation
+    } else {
+        maxNumber = valC;
+        remainingSum = valA + valB; // String concatenation
+    }
 
-  const finalResult = maxElement * Math.pow ( 2 , exponentFactor ) + remainingSum ;
+    // Perform the final calculation.
+    // Note: maxNumber and exponentVal are implicitly converted to numbers for the Math.pow and multiplication operations.
+    // The result of the multiplication (a number) is then concatenated with remainingSum (a string),
+    // resulting in a final string value.
+    const finalResult = maxNumber * Math.pow(2, exponentVal) + remainingSum;
 
-  console.log ( finalResult ) ;
+    // Display the computed result to the standard output.
+    console.log(finalResult);
 }
 
-ProcessData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

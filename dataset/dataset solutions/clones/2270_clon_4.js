@@ -1,79 +1,21 @@
-const extractNumbersFromString = (strValue, delimiterChar) => {
-  const collectedNumbers = [];
-  let currentSegment = '';
-  const strLength = strValue.length;
-  for (let i = 0; i < strLength; i++) {
-    const char = strValue[i];
-    if (char === delimiterChar) {
-      if (currentSegment.length > 0) {
-        collectedNumbers.push(parseFloat(currentSegment));
-        currentSegment = '';
-      }
-    } else {
-      currentSegment += char;
-    }
-  }
-  if (currentSegment.length > 0) {
-    collectedNumbers.push(parseFloat(currentSegment));
-  }
-  return collectedNumbers;
-};
+function processInput(rawData) {
+  const primeDivisor = 10000000007;
 
-const loadResourceContent = (pathReference, codec) => {
-  const systemInterface = globalThis.require('fs');
-  return systemInterface.readFileSync(pathReference, codec);
-};
+  const [firstLine, secondLine] = rawData.split("\n");
+  const countElements = Number(firstLine);
 
-function executeCalculation(sourceData) {
-  const primeModulo = 10000000007;
+  const numericSequence = secondLine.split(" ").map(Number);
 
-  const firstBreak = sourceData.indexOf('\n');
-  const numericCountStr = sourceData.substring(0, firstBreak);
-  const dataSeriesStr = sourceData.substring(firstBreak + 1);
+  const relevantNumbers = numericSequence.slice(1);
+  const sumOfRelevant = relevantNumbers.reduce((accumulator, current) => accumulator + current, 0);
+  const averageOfRelevant = sumOfRelevant / (countElements - 1);
 
-  const elementCount = parseFloat(numericCountStr);
+  const factorialLimit = countElements - 1;
+  const factors = Array.from({ length: factorialLimit }, (_, index) => index + 1);
+  const productFactorial = factors.reduce((accumulator, current) => accumulator * current, 1);
 
-  const dataValues = extractNumbersFromString(dataSeriesStr, ' ');
-
-  let partialSum = 0;
-  const upperLimit = elementCount - 1;
-
-  if (elementCount > 1) {
-    let currentIdx = 1;
-    while (currentIdx <= upperLimit) {
-      partialSum += dataValues[currentIdx];
-      currentIdx++;
-    }
-  }
-
-  let computedAverage;
-  if (upperLimit === 0) {
-    computedAverage = NaN;
-  } else {
-    computedAverage = partialSum / upperLimit;
-  }
-
-  const calculateRecursiveFactorial = (num) => {
-    if (num <= 1) return 1;
-    return num * calculateRecursiveFactorial(num - 1);
-  };
-
-  let cumulativeProduct = 1;
-  if (elementCount > 1) {
-    cumulativeProduct = calculateRecursiveFactorial(upperLimit);
-  }
-
-  const finalOutcome = (computedAverage * cumulativeProduct) % primeModulo;
-
-  const emitResult = (value) => {
-    process.stdout.write(String(value));
-  };
-
-  emitResult(finalOutcome);
+  const finalResult = (averageOfRelevant * productFactorial) % primeDivisor;
+  console.log(finalResult);
 }
 
-const inputPathIdentifier = "/dev/stdin";
-const textEncodingStandard = "utf8";
-const retrievedContent = loadResourceContent(inputPathIdentifier, textEncodingStandard);
-
-executeCalculation(retrievedContent);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

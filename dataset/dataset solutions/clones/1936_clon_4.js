@@ -1,91 +1,106 @@
-let tokenArray;
-let tokenPointer = 0;
+function InputProcessor(sourceText) {
+    let currentPosition = 0;
+    const parsedTokens = sourceText.replace(/[\n\s\t]+/g, " ").trim().split(" ");
 
-function obtainNextToken() {
-    if (tokenPointer < tokenArray.length) {
-        return tokenArray[tokenPointer++];
-    }
-    return null;
+    this.retrieveNext = function() {
+        const token = parsedTokens[currentPosition];
+        currentPosition++;
+        return (token !== undefined) ? token : null;
+    };
+
+    this.retrieveInteger = function() {
+        const token = parsedTokens[currentPosition];
+        currentPosition++;
+        return (token !== undefined) ? parseInt(token, 10) : null;
+    };
+
+    this.retrieveDecimal = function() {
+        const token = parsedTokens[currentPosition];
+        currentPosition++;
+        return (token !== undefined) ? parseFloat(token) : null;
+    };
+    
+    this.retrieveByte = function() {
+        const token = parsedTokens[currentPosition];
+        currentPosition++;
+        return (token !== undefined) ? new Int8Array(token) : null;
+    };
 }
 
-function obtainNextNumeral() {
-    const retrievedVal = obtainNextToken();
-    return retrievedVal !== null ? parseInt(retrievedVal, 10) : null;
+function findInsertionPoint(sortedArr, targetValue) {
+    let lowIndex = 0;
+    let highIndex = sortedArr.length;
+    while (lowIndex < highIndex) {
+        const midIndex = Math.floor((lowIndex + highIndex) / 2);
+        if (sortedArr[midIndex] < targetValue) {
+            lowIndex = midIndex + 1;
+        } else {
+            highIndex = midIndex;
+        }
+    }
+    return lowIndex;
 }
 
-function processInputData(sourceContent) {
-    tokenArray = sourceContent.replace(/[\n\t\r]+/g, ' ').split(' ').filter(segment => segment.length > 0);
-    currentTokenPtr = 0;
+function calculateLisLength(valueSequence) {
+    if (valueSequence.length === 0) return 0;
+    const lisEndValues = [];
 
-    const totalNodes = obtainNextNumeral();
+    for (const currentElement of valueSequence) {
+        const insertAt = findInsertionPoint(lisEndValues, currentElement);
 
-    const nodeValuesStore = [0];
-    for (let i = 0; i < totalNodes; ++i) {
-        nodeValuesStore.push(obtainNextNumeral());
+        if (insertAt === lisEndValues.length) {
+            lisEndValues.push(currentElement);
+        } else {
+            lisEndValues[insertAt] = currentElement;
+        }
     }
+    return lisEndValues.length;
+}
 
-    const treeConnections = Array.from({ length: totalNodes + 1 }, () => []);
-    for (let i = 0; i < totalNodes - 1; ++i) {
-        const firstPoint = obtainNextNumeral();
-        const secondPoint = obtainNextNumeral();
-        treeConnections[firstPoint].push(secondPoint);
-        treeConnections[secondPoint].push(firstPoint);
+function ProcessGraph(inputProcessor) {
+    const nodeCount = inputProcessor.retrieveInteger();
+    const resultLengths = [];
+    
+    const nodeValues = new Map();
+    for (let nodeIdx = 1; nodeIdx <= nodeCount; nodeIdx++) {
+        nodeValues.set(nodeIdx, inputProcessor.retrieveInteger());
     }
-
-    const pathValueSequences = Array(totalNodes + 1).fill(null);
-    const traversalFrontier = [];
-
-    traversalFrontier.push({ currentPoint: 1, antecedent: -1, currentPathSegment: [] });
-
-    while (traversalFrontier.length > 0) {
-        const { currentPoint, antecedent, currentPathSegment } = traversalFrontier.shift();
-
-        const extendedPathSegment = currentPathSegment.concat(nodeValuesStore[currentPoint]);
-        pathValueSequences[currentPoint] = extendedPathSegment;
-
-        for (const connectedPoint of treeConnections[currentPoint]) {
-            if (connectedPoint !== antecedent) {
-                traversalFrontier.push({ currentPoint: connectedPoint, antecedent: currentPoint, currentPathSegment: extendedPathSegment });
+    
+    const adjacencyMap = new Map();
+    for (let edgeIdx = 0; edgeIdx < nodeCount - 1; edgeIdx++) {
+        const firstNode = inputProcessor.retrieveInteger();
+        const secondNode = inputProcessor.retrieveInteger();
+        
+        if (!adjacencyMap.has(firstNode)) adjacencyMap.set(firstNode, []);
+        adjacencyMap.get(firstNode).push(secondNode);
+        
+        if (!adjacencyMap.has(secondNode)) adjacencyMap.set(secondNode, []);
+        adjacencyMap.get(secondNode).push(firstNode);
+    }
+    
+    const nodePathValueSequences = new Map();
+    const traversalStack = [[1, -1, []]]; // [currentNodeId, parentNodeId, pathValuesSoFar]
+    
+    while (traversalStack.length > 0) {
+        const [currentNodeId, parentNodeId, pathValuesSoFar] = traversalStack.pop();
+        
+        const extendedPath = pathValuesSoFar.concat(nodeValues.get(currentNodeId));
+        nodePathValueSequences.set(currentNodeId, extendedPath);
+        
+        const neighbors = adjacencyMap.get(currentNodeId) || [];
+        for (const neighborNode of neighbors) {
+            if (neighborNode !== parentNodeId) {
+                traversalStack.push([neighborNode, currentNodeId, extendedPath]);
             }
         }
     }
-
-    const finalCalculatedLengths = [];
-
-    for (let nodeIdentifier = 1; nodeIdentifier <= totalNodes; ++nodeIdentifier) {
-        const pathForNode = pathValueSequences[nodeIdentifier];
-        if (!pathForNode || pathForNode.length === 0) {
-            finalCalculatedLengths.push(0);
-            continue;
-        }
-
-        const currentLISActiveList = [];
-
-        for (const elementValue of pathForNode) {
-            let lowIdx = 0;
-            let highIdx = currentLISActiveList.length;
-            let insertionPosition = currentLISActiveList.length;
-
-            while (lowIdx < highIdx) {
-                const midIdx = Math.floor((lowIdx + highIdx) / 2);
-                if (currentLISActiveList[midIdx] >= elementValue) {
-                    insertionPosition = midIdx;
-                    highIdx = midIdx;
-                } else {
-                    lowIdx = midIdx + 1;
-                }
-            }
-
-            if (insertionPosition === currentLISActiveList.length) {
-                currentLISActiveList.push(elementValue);
-            } else {
-                currentLISActiveList[insertionPosition] = elementValue;
-            }
-        }
-        finalCalculatedLengths.push(currentLISActiveList.length);
+    
+    for (let nodeIdx = 1; nodeIdx <= nodeCount; nodeIdx++) {
+        const currentPathSequence = nodePathValueSequences.get(nodeIdx);
+        resultLengths.push(calculateLisLength(currentPathSequence));
     }
-
-    console.log(finalCalculatedLengths.join("\n"));
+    
+    console.log(resultLengths.join("\n"));
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGraph(new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8")));

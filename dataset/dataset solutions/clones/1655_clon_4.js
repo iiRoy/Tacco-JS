@@ -1,40 +1,25 @@
-function Main(input) {
+const processFinancialData = (sourceData) => {
+    const dataSegments = sourceData.split("\n");
+  
+    const totalPeriods = Number(dataSegments[0]);
+    const marketValues = dataSegments[1].split(" ").map(Number);
 
-    const processFinancialData = (sourceText) => {
-        const numericTokens = sourceText.match(/(\d+)/g);
+    const terminalMetrics = marketValues.slice(1).reduce((accumulated, presentValue) => {
+        const { currentHoldings, priorValue } = accumulated;
 
-        const totalEntries = Number(numericTokens[0]);
-        const valuationSequence = numericTokens.slice(1).map(Number);
+        const unitsToProcure = (presentValue > priorValue)
+            ? Math.trunc(currentHoldings / priorValue)
+            : 0;
+        
+        const revisedHoldings = currentHoldings + (presentValue - priorValue) * unitsToProcure;
 
-        const simulateTrading = (indexPosition, currentBalance, currentHoldingUnits, priceHistory) => {
-            if (indexPosition >= totalEntries) {
-                return currentBalance;
-            }
-
-            const priorDayValuation = priceHistory[indexPosition - 1];
-            const presentDayValuation = priceHistory[indexPosition];
-
-            let transactedUnits = currentHoldingUnits;
-
-            transactedUnits = (priorDayValuation < presentDayValuation)
-                ? (currentBalance / priorDayValuation) | 0
-                : transactedUnits;
-
-            const balanceChange = (presentDayValuation - priorDayValuation) * transactedUnits;
-            const updatedBalance = currentBalance + balanceChange;
-
-            return simulateTrading(indexPosition + 1, updatedBalance, transactedUnits, priceHistory);
+        return {
+            currentHoldings: revisedHoldings,
+            priorValue: presentValue
         };
+    }, { currentHoldings: 1000, priorValue: marketValues[0] });
 
-        const initialInvestment = 1000;
-        const initialShareCount = 0;
+	console.log('%d', terminalMetrics.currentHoldings);
+};
 
-        return simulateTrading(1, initialInvestment, initialShareCount, valuationSequence);
-    };
-
-    const finalResult = processFinancialData(input);
-
-	console.log('%d', finalResult);
-}
-
-Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+processFinancialData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,39 +1,49 @@
-const checkPresence = (strValue, subStr) => strValue.indexOf(subStr) !== -1;
-const getArraySegment = (sourceArr, startIdx, endIdx) => sourceArr.slice(startIdx, endIdx);
-const transformArrayElements = (arrToProcess, callbackFn) => arrToProcess.map(callbackFn);
-const combineArrayElements = (arrContent, separatorStr) => arrContent.join(separatorStr);
-const divideStringIntoParts = (inputStr, delimiterChar, limitCount) => inputStr.split(delimiterChar, limitCount);
-const convertStringToInt = (numStr) => parseInt(numStr, 10);
-const roundNumberDown = (numericVal) => Math.floor(numericVal);
+var inputDataRows, loopIndex, querySymbolPosition;
 
-const loadModule = require;
-const outputChannel = console;
+// Read all input from standard input, assuming ASCII encoding.
+// Then, split the entire content into an array of strings, one for each line.
+inputDataRows = require('fs').readFileSync('/dev/stdin', 'ascii').split("\n");
 
-let inputDataRows, currentScanIndex, queryMarkerPosition;
-
-inputDataRows = loadModule('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
-
-for (currentScanIndex = inputDataRows.length - 1; currentScanIndex >= 0; currentScanIndex--) {
-    if (checkPresence(inputDataRows[currentScanIndex], '?')) {
-        queryMarkerPosition = currentScanIndex;
+// Iterate through the lines in reverse order to find the last occurrence of a specific marker.
+for (loopIndex = inputDataRows.length - 1; loopIndex >= 0; loopIndex--) {
+    // Check if the current line contains the query symbol.
+    if (inputDataRows[loopIndex].includes("?")) {
+        querySymbolPosition = loopIndex; // Store the index of the line containing the marker.
     }
 }
 
-inputDataRows = getArraySegment(inputDataRows, 0, queryMarkerPosition);
+// Create a new array containing only the lines before the marker.
+inputDataRows = inputDataRows.slice(0, querySymbolPosition);
 
-outputChannel.log(combineArrayElements(transformArrayElements(inputDataRows, evaluateStatement), '\n'));
+// Process each line in the filtered array using the 'evaluateExpression' function.
+// The results are then joined back into a single string, separated by newline characters,
+// and printed to the console.
+console.log(inputDataRows.map(evaluateExpression).join("\n"));
 
-function evaluateStatement(singleRowText) {
-    let statementComponents;
-    statementComponents = divideStringIntoParts(singleRowText, ' ', 3);
+/**
+ * Parses an arithmetic expression from a string and computes its result.
+ * Supports addition, subtraction, multiplication, and integer division.
+ *
+ * @param {string} currentExpressionLine - A string representing an arithmetic operation (e.g., "5 + 3").
+ * @returns {number} The numerical result of the expression.
+ */
+function evaluateExpression(currentExpressionLine) {
+    var expressionComponents; // An array to hold the parsed parts of the expression.
 
-    if (statementComponents[1] === '+') {
-        return convertStringToInt(statementComponents[0]) + convertStringToInt(statementComponents[2]);
-    } else if (statementComponents[1] === '-') {
-        return convertStringToInt(statementComponents[0]) - convertStringToInt(statementComponents[2]);
-    } else if (statementComponents[1] === '*') {
-        return convertStringToInt(statementComponents[0]) * convertStringToInt(statementComponents[2]);
-    } else {
-        return roundNumberDown(convertStringToInt(statementComponents[0]) / convertStringToInt(statementComponents[2]));
+    // Split the input string by spaces into at most three components: operand1, operator, operand2.
+    expressionComponents = currentExpressionLine.split(" ", 3);
+
+    // Determine the operation based on the operator component.
+    if (expressionComponents[1] == '+') {
+        // Perform addition.
+        return parseInt(expressionComponents[0]) + parseInt(expressionComponents[2]);
+    } else if (expressionComponents[1] == '-') {
+        // Perform subtraction.
+        return parseInt(expressionComponents[0]) - parseInt(expressionComponents[2]);
+    } else if (expressionComponents[1] == '*') {
+        // Perform multiplication.
+        return parseInt(expressionComponents[0]) * parseInt(expressionComponents[2]);
     }
+    // If no other operator matches, default to integer division.
+    return Math.floor(parseInt(expressionComponents[0]) / parseInt(expressionComponents[2]));
 }

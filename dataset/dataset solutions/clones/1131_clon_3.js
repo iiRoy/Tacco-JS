@@ -1,87 +1,67 @@
-const rawProblemData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const NEWLINE_DELIMITER = '\n';
-const SPACE_DELIMITER = ' ';
-const NO_SOLUTION_POSSIBLE = Infinity;
-const BASE_CASE_COINS_NEEDED = 0;
+const lines = rawData.trim().split('\n');
+const [ targetValueStr, coinTypeCountStr ] = lines[0].split(' ');
+const targetValue = Number(targetValueStr);
+const coinTypeCount = Number(coinTypeCountStr);
+const coinDenominations = lines[1].trim().split(' ').map(Number);
 
-const parseInteger = (valueString) => {
-  const parsedValue = parseInt(valueString, 10);
-  if (isNaN(parsedValue)) {
-    // In a production system, this might involve more sophisticated error handling.
-    // For competitive programming, we typically assume valid input formats.
-    throw new Error(`Invalid number format encountered: '${valueString}'`);
-  }
-  return parsedValue;
+const generateCacheKey = (...keyParts) => {
+  return keyParts.join(':');
 };
 
-const processedInputLines = rawProblemData.trim().split(NEWLINE_DELIMITER);
+const memoizationCache = new Map();
+const IMPOSSIBLE_COIN_COUNT = 50001; // A value larger than any possible valid result (N <= 50,000)
 
-const [ targetSumString, numCoinTypesString ] = processedInputLines[0].split(SPACE_DELIMITER);
-const goalAmount = parseInteger(targetSumString);
-const numberOfCoinTypes = parseInteger(numCoinTypesString);
+const calculateMinCoins = (currentRecursionDepth, remainingAmount) => {
+  const cacheKey = generateCacheKey(currentRecursionDepth, remainingAmount);
 
-const coinDenominations = processedInputLines[1]
-  .trim()
-  .split(SPACE_DELIMITER)
-  .map(parseInteger);
-
-// A cache to store previously computed results for subproblems.
-// This prevents redundant calculations, which is the core of dynamic programming.
-const memoizedResultsCache = new Map();
-
-/**
- * Computes the minimum number of coins required to achieve a given target amount.
- * This function employs a recursive, top-down dynamic programming approach with memoization.
- *
- * @param {number} currentRemainingAmount - The monetary value for which to find the minimum coins.
- * @returns {number} The smallest count of coins, or NO_SOLUTION_POSSIBLE if no combination works.
- */
-const determineMinimumCoins = (currentRemainingAmount) => {
-  // A guard clause for invalid states: negative amounts cannot be made with coins.
-  if (currentRemainingAmount < BASE_CASE_COINS_NEEDED) {
-    return NO_SOLUTION_POSSIBLE;
+  // Check if the result for this subproblem is already computed
+  if (memoizationCache.has(cacheKey)) {
+    return memoizationCache.get(cacheKey);
   }
 
-  // The base case: if the amount is zero, no coins are needed.
-  if (currentRemainingAmount === BASE_CASE_COINS_NEEDED) {
-    return BASE_CASE_COINS_NEEDED;
+  // Base case: If the remaining amount is zero, no more coins are needed
+  if (remainingAmount === 0) {
+    return 0;
   }
 
-  // Generate a unique identifier for the current subproblem.
-  const cacheKey = String(currentRemainingAmount);
+  // Initialize minimum coins for the current state to a very large value
+  let minimumCoinsForCurrentState = IMPOSSIBLE_COIN_COUNT;
 
-  // Check if the result for this specific amount is already available in the cache.
-  if (memoizedResultsCache.has(cacheKey)) {
-    return memoizedResultsCache.get(cacheKey);
-  }
+  // Prepare for the next level of recursion
+  const nextRecursionDepth = currentRecursionDepth + 1;
 
-  let lowestCoinCountFound = NO_SOLUTION_POSSIBLE; // Initialize with a value indicating no solution yet.
+  // Iterate through all available coin denominations
+  for (let idx = 0; idx < coinTypeCount; idx++) {
+    const currentCoinValue = coinDenominations[idx];
+    const newRemainingAmount = remainingAmount - currentCoinValue;
 
-  // Iterate through each available coin type to explore all possible first moves.
-  for (const coinValue of coinDenominations) {
-    // Calculate the amount that would remain after using the current coin.
-    const subsequentAmount = currentRemainingAmount - coinValue;
-
-    // Recursively determine the minimum coins needed for the subsequent amount.
-    const coinsForSubsequentAmount = determineMinimumCoins(subsequentAmount);
-
-    // If a valid path was found for the subsequent amount (i.e., it's not impossible),
-    // update our minimum by considering this path (1 for the current coin + coins for the rest).
-    if (coinsForSubsequentAmount !== NO_SOLUTION_POSSIBLE) {
-      lowestCoinCountFound = Math.min(lowestCoinCountFound, 1 + coinsForSubsequentAmount);
+    // If subtracting the current coin results in a negative amount, this path is invalid
+    if (newRemainingAmount < 0) {
+      continue;
     }
+
+    // Recursively find the minimum coins for the new remaining amount
+    const resultFromSubproblem = calculateMinCoins(nextRecursionDepth, newRemainingAmount);
+
+    // Store the result of this subproblem in the cache for future use
+    // This caches the result for (nextRecursionDepth, newRemainingAmount)
+    memoizationCache.set(generateCacheKey(nextRecursionDepth, newRemainingAmount), resultFromSubproblem);
+
+    // Update the minimum coins found for the current state
+    minimumCoinsForCurrentState = Math.min(minimumCoinsForCurrentState, resultFromSubproblem);
   }
 
-  // Store the calculated minimum coin count for the current amount in the cache.
-  memoizedResultsCache.set(cacheKey, lowestCoinCountFound);
+  // The result for the current state is 1 (for the coin just used) plus the minimum coins from the subproblems
+  const finalResult = minimumCoinsForCurrentState + 1;
 
-  // Return the result for the current subproblem.
-  return lowestCoinCountFound;
+  // Note: The original code's memoization strategy only caches results for subproblems (nextRecursionDepth, newRemainingAmount),
+  // not for the current (currentRecursionDepth, remainingAmount) call itself.
+  // This behavior is preserved here.
+
+  return finalResult;
 };
 
-// Initiate the dynamic programming process for the primary goal amount.
-const overallMinimumCoins = determineMinimumCoins(goalAmount);
-
-// Output the final result. If no solution was found, typically -1 is expected in such problems.
-console.log(overallMinimumCoins === NO_SOLUTION_POSSIBLE ? -1 : overallMinimumCoins);
+// Initiate the calculation for the target value starting with a depth of 0
+console.log(calculateMinCoins(0, targetValue));

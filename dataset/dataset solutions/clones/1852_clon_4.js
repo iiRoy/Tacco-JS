@@ -1,15 +1,12 @@
-function performOperation(initialDataInput) {
-  let dataSegments = initialDataInput.split('\n');
+function Main(inputContent) {
+  const [numericConstraint, targetString] = inputContent.split('\n');
+  const charLimit = Number(numericConstraint);
 
-  let numericLimit = parseInt(dataSegments[0], 10);
-  let targetString = dataSegments[1];
+  const resultString = targetString.length <= charLimit
+    ? targetString
+    : targetString.match(new RegExp(`^.{0,${charLimit}}`))[0] + '...';
 
-  let preparedString = targetString.substring(0, Math.min(targetString.length, numericLimit));
-
-  let suffixOptions = ['', '...'];
-  let suffixIndex = Number(targetString.length > numericLimit);
-
-  let finalOutputResult = preparedString + suffixOptions[suffixIndex];
-
-  console.log(finalOutputResult);
+  console.log(resultString);
 }
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

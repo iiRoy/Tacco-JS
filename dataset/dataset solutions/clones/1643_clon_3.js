@@ -1,73 +1,40 @@
-function processPerformanceScore(rawInputString) {
-    /*
-     * This module is responsible for evaluating a raw performance score
-     * and assigning a corresponding achievement level based on predefined tiers.
-     *
-     * It performs robust input validation, calculates the level using a
-     * mathematical mapping, and then displays the final assessment.
-     */
+function processScoreInput(scoreValue) {
+  const gradeMappings = [
+    { lowerBound: 400, upperBound: 599, displayValue: '8' },
+    { lowerBound: 600, upperBound: 799, displayValue: '7' },
+    { lowerBound: 800, upperBound: 999, displayValue: '6' },
+    { lowerBound: 1000, upperBound: 1199, displayValue: '5' },
+    { lowerBound: 1200, upperBound: 1399, displayValue: '4' },
+    { lowerBound: 1400, upperBound: 1599, displayValue: '3' },
+    { lowerBound: 1600, upperBound: 1799, displayValue: '2' },
+    { lowerBound: 1800, upperBound: 1999, displayValue: '1' },
+  ];
 
-    // Step 1: Input parsing and initial validation
-    // Attempt to convert the string input into an integer numeric value.
-    // The .trim() method removes any leading/trailing whitespace.
-    const numericScore = parseInt(rawInputString.trim(), 10);
+  let determinedOutput = null;
 
-    // Validate if the parsed value is a valid number.
-    // If not a number, an error message is printed, and the function exits early.
-    if (isNaN(numericScore)) {
-        console.error("Error: Invalid input provided. Please ensure the score is a numeric value.");
-        return;
+  const checkRangeAndAssign = (currentScore, minVal, maxVal, outputVal) => {
+    if (currentScore >= minVal && currentScore <= maxVal) {
+      return outputVal;
     }
+    return null;
+  };
 
-    // Define the acceptable boundaries for scores that can be processed.
-    const MINIMUM_ACCEPTABLE_SCORE = 400;
-    const MAXIMUM_ACCEPTABLE_SCORE = 1999;
-
-    // Guard clause: Check if the score falls within the expected operational range.
-    // Scores outside this range are considered unassignable to a specific level.
-    if (numericScore < MINIMUM_ACCEPTABLE_SCORE || numericScore > MAXIMUM_ACCEPTABLE_SCORE) {
-        console.warn(`Warning: Score ${numericScore} is outside the standard evaluation range ` +
-                     `(${MINIMUM_ACCEPTABLE_SCORE}-${MAXIMUM_ACCEPTABLE_SCORE}). ` +
-                     `No specific achievement level will be assigned.`);
-        return;
+  for (const mappingEntry of gradeMappings) {
+    const potentialOutput = checkRangeAndAssign(
+      scoreValue,
+      mappingEntry.lowerBound,
+      mappingEntry.upperBound,
+      mappingEntry.displayValue
+    );
+    if (potentialOutput !== null) {
+      determinedOutput = potentialOutput;
+      break;
     }
+  }
 
-    // Helper constants for the mathematical calculation of the achievement level.
-    const scoreBaseOffset = 400;          // The lowest score for the highest rank.
-    const scoreIntervalWidth = 200;       // The width of each score interval.
-    const highestRankNumber = 8;          // The numerical value of the highest achievement rank.
-
-    // Step 2: Determine the achievement level using a mathematical mapping.
-    // This approach replaces a long sequence of if-else if statements with a dynamic calculation.
-    // Calculate the interval index: This indicates how many 200-point intervals
-    // the score is above the base score (400).
-    const intervalIndex = Math.floor((numericScore - scoreBaseOffset) / scoreIntervalWidth);
-
-    // Calculate the final achievement level.
-    // The highest rank (8) corresponds to an intervalIndex of 0.
-    // As the intervalIndex increases, the rank number decreases.
-    const finalAchievementLevel = String(highestRankNumber - intervalIndex);
-
-    // Step 3: Output the determined level.
-    // The computed achievement level is displayed to the standard output.
-    console.log(finalAchievementLevel);
+  if (determinedOutput !== null) {
+    console.log(determinedOutput);
+  }
 }
 
-// --- Main execution block for reading input and invoking the processing function ---
-// This section simulates reading system input, typically from a file or stdin in competitive programming environments.
-
-// Define the standard input path for file system operations.
-const standardInputPath = "/dev/stdin";
-
-try {
-    // Utilize the Node.js 'fs' (file system) module to synchronously read
-    // the content of the standard input file. The content is expected to be UTF-8 encoded.
-    const inputContent = require("fs").readFileSync(standardInputPath, "utf8");
-
-    // Invoke the primary processing function with the obtained input content.
-    processPerformanceScore(inputContent);
-} catch (readingError) {
-    // Catch and log any errors that occur during the file reading process
-    // or during the initial execution of the script.
-    console.error(`An error occurred during input processing: ${readingError.message}`);
-}
+processScoreInput(require("fs").readFileSync("/dev/stdin", "utf8"));

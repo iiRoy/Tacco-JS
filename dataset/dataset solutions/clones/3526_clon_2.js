@@ -1,48 +1,54 @@
-// This module handles the processing of battle-related input data.
-function ProcessBattleData(battleInfoStr) {
-  // Input string is split into individual lines for easier access.
-  let parsedLines = battleInfoStr.split("\n");
+function ProcessInput(rawData) {
+  // Split the entire input string into individual lines.
+  let processedLines = rawData.split("\n");
 
-  const configParams = parsedLines[0].split(" "); // The first line contains general configuration values.
-  const playerXCoords = parsedLines[1].split(" "); // Player X-coordinates are on the second line.
-  const playerYCoords = parsedLines[2].split(" "); // Player Y-coordinates are on the third line.
+  // Parse the first line for general parameters.
+  let firstLineParts = processedLines[0].split(" ");
 
-  // Convert string values to integers for numerical operations.
-  const countA = parseInt(configParams[0], 10);
-  const countB = parseInt(configParams[1], 10);
-  let worldXLimit = parseInt(configParams[2], 10);
-  let worldYLimit = parseInt(configParams[3], 10);
+  // Extract X-coordinates from the second line.
+  let xCoordinates = processedLines[1].split(" ");
 
-  if (worldXLimit >= worldYLimit) { // Check for an immediate "War" condition.
-    console.log('War'); // Output the "War" status.
-    return; // Terminate execution if war is declared.
+  // Extract Y-coordinates from the third line.
+  let yCoordinates = processedLines[2].split(" ");
+
+  // Convert string parts to integers.
+  let countN = parseInt(firstLineParts[0], 10);
+  let countM = parseInt(firstLineParts[1], 10);
+  let initialX = parseInt(firstLineParts[2], 10);
+  let initialY = parseInt(firstLineParts[3], 10);
+
+  // Check for an immediate "War" condition.
+  if (initialX >= initialY) {
+    console.log('War');
+    return;
   }
 
-  let maxPlayerXCoordinate = worldXLimit; // Initialize the maximum X-coordinate encountered.
-  let minPlayerYCoordinate = worldYLimit; // Initialize the minimum Y-coordinate encountered.
+  // Initialize maximum X and minimum Y values.
+  let maximumXValue = initialX;
+  let minimumYValue = initialY;
 
-
-  // Iterate through the X-coordinates provided by one faction.
-  for (let currentCoordinate of playerXCoords) {
-    if (parseInt(currentCoordinate, 10) > parseInt(maxPlayerXCoordinate, 10)) { // Update if a higher X-coordinate is found.
-      maxPlayerXCoordinate = parseInt(currentCoordinate, 10); // Store the new maximum.
+  // Iterate through X-coordinates to find the true maximum X.
+  for (let currentValue of xCoordinates) {
+    if (parseInt(currentValue) > parseInt(maximumXValue)) {
+      maximumXValue = currentValue;
     }
   }
 
-  // Iterate through the Y-coordinates provided by another faction.
-  for (let currentCoordinate of playerYCoords) {
-    if (parseInt(currentCoordinate, 10) < parseInt(minPlayerYCoordinate, 10)) { // Update if a lower Y-coordinate is found.
-      minPlayerYCoordinate = parseInt(currentCoordinate, 10); // Store the new minimum.
+  // Iterate through Y-coordinates to find the true minimum Y.
+  for (let currentValue of yCoordinates) {
+    if (parseInt(currentValue) < parseInt(minimumYValue)) {
+      minimumYValue = currentValue;
     }
   }
 
-
-  // Determine the final outcome based on the calculated boundaries.
-  if (minPlayerYCoordinate >= maxPlayerXCoordinate) {
-    console.log('War'); // A state of conflict is declared.
+  // Determine the final outcome based on the calculated maximum X and minimum Y.
+  if (parseInt(minimumYValue) >= parseInt(maximumXValue)) {
+    console.log('War');
   } else {
-    console.log('No War'); // Peace prevails.
+    console.log('No War');
   }
 }
-// Do not modify the following section; it handles standard input/output and function invocation.
-ProcessBattleData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// This section handles reading input and invoking the main processing function.
+// It should not be modified as it interacts with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,129 +1,146 @@
-const DATA_PARSER = ( function ( ) {
-  // Factory function to create a new data stream processor
-  function createProcessor ( rawText ) {
-    return new StreamProcessor( rawText ) ;
+var INPUT_PARSER = (function () {
+  // This function serves as the entry point for creating an InputReader instance.
+  function createParser(sourceText) {
+    return new InputReader(sourceText);
   }
 
-  // Class definition for the stream processor
-  function StreamProcessor ( sourceContent ) {
-    // Store the input content, split into lines, and trim whitespace
-    this. _dataRows = sourceContent . trim ( ) . split ( "\n" ) ;
-    // Initialize the pointer to the current line
-    this. _linePointer = 0 ;
+  // The InputReader class handles parsing input text line by line.
+  function InputReader(rawInputString) {
+    // Store the input string, split into an array of lines, after trimming whitespace.
+    this._sourceLines = rawInputString.trim().split('\n');
+    // Keep track of the current line being processed.
+    this._currentLineIndex = 0;
   }
 
-  // Prototype method to extract a single value from the current line
-  StreamProcessor . prototype . fetchElement = function ( returnRaw ) {
-    const currentLines = this. _dataRows ;
-    let currentIndex = this. _linePointer ;
-    let extractedToken ;
+  // Prototype method to read a single token from the current line.
+  InputReader.prototype.readToken = function (returnAsString) {
+    var lineArray = this._sourceLines;
+    var linePosition = this._currentLineIndex;
+    var extractedToken;
 
-    // If the current line hasn't been processed into tokens yet, do it now
-    if ( typeof currentLines[ currentIndex ] === "string" ) {
-      currentLines[ currentIndex ] = currentLines[ currentIndex ] . split ( " " ) . reverse ( ) ;
+    // If the current line hasn't been processed into tokens yet, do so.
+    if (typeof lineArray[linePosition] === 'string') {
+      lineArray[linePosition] = lineArray[linePosition].split(' ').reverse();
     }
 
-    // Pop the last token from the current line
-    extractedToken = currentLines[ currentIndex ] . pop ( ) ;
+    // Pop the last token from the (reversed) array.
+    extractedToken = lineArray[linePosition].pop();
 
-    // If the current line is now empty, advance the line pointer
-    if ( ! currentLines[ currentIndex ] . length ) {
-      this. _linePointer ++ ;
+    // If the current line is now empty, advance to the next line.
+    if (!lineArray[linePosition].length) {
+      this._currentLineIndex++;
     }
 
-    // Return the token, either as raw string or converted to a number
-    return returnRaw ? extractedToken : + extractedToken ;
-  } ;
+    // Return the token as a string or a number based on the 'returnAsString' flag.
+    return returnAsString ? extractedToken : +extractedToken;
+  };
 
-  // Prototype method to read an entire line and convert its tokens to numbers
-  StreamProcessor . prototype . getLineElements = function ( keepStrings ) {
-    // Get the current line, advance the pointer, and split into parts
-    const lineParts = this. _dataRows[ this. _linePointer ++ ] . split ( " " ) ;
-    // Return parts as strings or converted to numbers
-    return keepStrings ? lineParts : lineParts . map ( ( value ) => + value ) ;
-  } ;
+  // Prototype method to read an entire line and split it into tokens.
+  InputReader.prototype.readLineTokens = function (returnAsString) {
+    // Get the current line, then advance the line index.
+    var tokensOnLine = this._sourceLines[this._currentLineIndex++].split(' ');
 
-  // Prototype method to read multiple lines as a matrix
-  StreamProcessor . prototype . getGridData = function ( rowCount , stringMatrix ) {
-    // Slice the required number of rows and split each into elements
-    const matrixSlice = this. _dataRows . slice ( this. _linePointer , this. _linePointer += rowCount ) . map ( ( rowString ) => rowString . split ( " " ) ) ;
-    // Return matrix as strings or converted to numbers
-    return stringMatrix ? matrixSlice : matrixSlice . map ( ( row ) => row . map ( ( element ) => + element ) ) ;
-  } ;
+    // Return tokens as strings or convert them to numbers.
+    return returnAsString ? tokensOnLine : tokensOnLine.map(item => +item);
+  };
 
-  // Prototype method to read a block of lines
-  StreamProcessor . prototype . getLineBlock = function ( blockLength , keepAsStrings ) {
-    // Slice the required number of rows
-    const rowBlock = this. _dataRows . slice ( this. _linePointer , this. _linePointer += blockLength ) ;
-    // Return block as strings or converted to numbers
-    return keepAsStrings ? rowBlock : rowBlock . map ( ( lineVal ) => + lineVal ) ;
-  } ;
+  // Prototype method to read 'numLines' lines as a matrix (array of arrays of tokens).
+  InputReader.prototype.readMatrix = function (numLines, returnAsString) {
+    // Extract the specified number of lines and split each into tokens.
+    var matrixData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines).map(item => item.split(' '));
 
-  return createProcessor ; // Expose the factory function
-} ) ( ) ;
+    // Return the matrix as strings or convert all elements to numbers.
+    return returnAsString ? matrixData : matrixData.map(row => row.map(element => +element));
+  };
 
-// Initialize the data handler by reading from standard input
-const inputProcessor = DATA_PARSER ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+  // Prototype method to read 'numLines' raw lines without splitting them.
+  InputReader.prototype.readRawLines = function (numLines, returnAsString) {
+    // Extract the specified number of lines.
+    var rawLineData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
 
-// Utility function to create multi-dimensional arrays (not used in main processing logic)
-function buildNestedArray ( initialValue ) {
-  const args = arguments ;
-  let len = args . length ;
-  let resultString = "Array(args[" + --len + "]).fill(0).map(x=>{return " + initialValue + ";})" ;
-  while ( --len ) {
-    resultString = "Array(args[" + len + "]).fill(0).map(x=>" + resultString + ")" ;
+    // Return lines as strings or convert them to numbers.
+    return returnAsString ? rawLineData : rawLineData.map(item => +item);
+  };
+
+  return createParser;
+})();
+
+// Initialize the input parser with data read from standard input.
+var inputData = INPUT_PARSER(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Helper function to create multi-dimensional arrays.
+function createMultiDimArray(initialValue) {
+  var args = arguments,
+    argCount = args.length,
+    evalString = `Array(args[--argCount]).fill(0).map(_ignored => { return ${initialValue}; })`;
+
+  while (--argCount) {
+    evalString = `Array(args[argCount]).fill(0).map(_ignored => ${evalString})`;
   }
-  return eval ( resultString ) ;
+  return eval(evalString);
 }
 
-// Execute the primary processing logic and print the result
-console . log ( computeResult ( ) ) ;
+// Output the result of the main processing function.
+console.log(processInput());
 
-// Main function to perform calculations
-function computeResult ( ) {
-  // Read the total count of elements
-  const elementCount = inputProcessor . fetchElement ( ) ;
-  // Read the array of numeric data
-  const numericData = inputProcessor . getLineElements ( ) ;
-  // Sort the data in ascending order
-  numericData . sort ( ( first , second ) => first - second ) ;
+// Main function to solve the problem.
+function processInput() {
+  // Read the total number of elements.
+  var totalElements = inputData.readToken();
+  // Read the array of elements.
+  var elementArray = inputData.readLineTokens();
 
-  // Initialize the array for output lines
-  const outputLines = [ - numericData[ 0 ] ] ;
-  // Calculate the initial sum based on absolute values
-  for ( let idx = 1 ; idx < elementCount ; idx ++ ) {
-    outputLines[ 0 ] += Math . abs ( numericData[ idx ] ) ;
+  // Sort the array in ascending numerical order.
+  elementArray.sort((valA, valB) => valA - valB);
+
+  // Initialize the output lines array. The first element is the negation of the smallest number.
+  var outputLines = [-elementArray[0]];
+
+  // Sum the absolute values of all elements (except the first) into the first output line.
+  for (var idx = 1; idx < totalElements; idx++) {
+    outputLines[0] += Math.abs(elementArray[idx]);
   }
 
-  // Initialize a running total variable
-  let runningTotal = numericData[ 0 ] ;
+  // Initialize a running sum variable with the smallest element.
+  var currentSum = elementArray[0];
 
-  // First pass to construct intermediate output lines
-  for ( let iterationCounter = 1 ; iterationCounter < elementCount - 1 ; iterationCounter ++ ) {
-    // Skip negative numbers in this specific part of the logic
-    if ( numericData[ iterationCounter ] < 0 ) {
-      continue ;
+  // Iterate through the array, excluding the first and last elements.
+  for (var loopCounter = 1; loopCounter < totalElements - 1; loopCounter++) {
+    // Skip negative numbers in this phase.
+    if (elementArray[loopCounter] < 0) {
+      continue;
     }
-    const currentLength = outputLines . length ;
-    // Handle the first intermediate line differently
-    if ( currentLength === 1 ) {
-      outputLines . push ( numericData[ 0 ] + " " + numericData[ iterationCounter ] ) ;
-      runningTotal = numericData[ 0 ] - numericData[ iterationCounter ] ;
+
+    var currentOutputLength = outputLines.length;
+
+    // If this is the first operation after the initial sum.
+    if (currentOutputLength === 1) {
+      // Add a new line representing the subtraction of the current element from the smallest.
+      outputLines.push(elementArray[0] + ' ' + elementArray[loopCounter]);
+      // Update the running sum.
+      currentSum = elementArray[0] - elementArray[loopCounter];
     } else {
-      outputLines . push ( runningTotal + " " + numericData[ iterationCounter ] ) ;
-      runningTotal -= numericData[ iterationCounter ] ;
+      // For subsequent operations, subtract the current element from the running sum.
+      outputLines.push(currentSum + ' ' + elementArray[loopCounter]);
+      // Update the running sum.
+      currentSum -= elementArray[loopCounter];
     }
   }
-  // Add the final calculation for the last element
-  outputLines . push ( numericData[ elementCount - 1 ] + " " + runningTotal ) ;
-  runningTotal = numericData[ elementCount - 1 ] - runningTotal ;
 
-  // Second pass to fill any remaining output lines
-  for ( let iterationCounter = 1 ; outputLines . length !== elementCount ; iterationCounter ++ ) {
-    const currentLength = outputLines . length ;
-    outputLines . push ( runningTotal + " " + numericData[ iterationCounter ] ) ;
-    runningTotal -= numericData[ iterationCounter ] ;
+  // Add the last element's operation to the output.
+  outputLines.push(elementArray[totalElements - 1] + ' ' + currentSum);
+  // Update the running sum with the last element.
+  currentSum = elementArray[totalElements - 1] - currentSum;
+
+  // Continue adding operations until the output lines count matches the total elements.
+  for (var loopCounter = 1; outputLines.length !== totalElements; loopCounter++) {
+    var currentOutputLength = outputLines.length; // This variable is not strictly needed here but matches original structure.
+    // Add a new line representing the subtraction of the current element from the running sum.
+    outputLines.push(currentSum + ' ' + elementArray[loopCounter]);
+    // Update the running sum.
+    currentSum -= elementArray[loopCounter];
   }
-  // Join all output lines with newline characters
-  return outputLines . join ( "\n" ) ;
+
+  // Join all output lines with newline characters and return the result.
+  return outputLines.join('\n');
 }

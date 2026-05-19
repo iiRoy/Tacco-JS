@@ -1,106 +1,106 @@
-const _3dMovementVectors = [
-  [-1, -1, 0], [0, -1, 0], [1, -1, 0], [-1, 0, 0],
-  [0, -1, -1], [0, 0, -1], [0, 1, -1], [0, -1, 0],
-  [-1, 0, -1], [-1, 0, 0],
-  [-1, 0, 1], [0, 0, -1],
-  [1, -1, -1], [-1, -1, -1], [1, -1, 1], [-1, -1, 1]
-].map(([dx, dy, dz]) => ({ dx, dy, dz }));
-
-const measureAlignment = (marker, currentX, currentY, currentZ, gameBoard, boardWidth, boardHeight, boardDepth) => {
-  const evaluateLineSegment = (startCoords, direction) => {
-    let [x, y, z] = startCoords;
-    let currentStreak = 0;
-    let maximumStreak = 0;
-
-    while (true) {
-      x += direction.dx;
-      y += direction.dy;
-      z += direction.dz;
-
-      if (x < 0 || y < 0 || z < 0 || x >= boardWidth || y >= boardHeight || z >= boardDepth) {
-        break;
-      }
-
-      if (gameBoard[x][y][z] === marker) {
-        currentStreak++;
-      } else {
-        currentStreak = 0;
-      }
-      maximumStreak = Math.max(maximumStreak, currentStreak);
+const allDirectionVectors = (() => {
+    const vectors = [];
+    for (let k = -1; k <= 1; k++) {
+        for (let j = -1; j <= 1; j++) {
+            for (let i = -1; i <= 1; i++) {
+                if (i !== 0 || j !== 0 || k !== 0) {
+                    vectors.push([i, j, k]);
+                }
+            }
+        }
     }
-    return maximumStreak;
-  };
+    return vectors;
+})();
 
-  return _3dMovementVectors.reduce((overallMax, vector) => {
-    let traceX = currentX;
-    let traceY = currentY;
-    let traceZ = currentZ;
+function determineLongestSequence(gridData, playerIdentifier, initialX, initialY, initialZ, dimX, dimY, dimZ) {
+    let overallMaxSequence = 0;
 
-    while (true) {
-      const nextX = traceX - vector.dx;
-      const nextY = traceY - vector.dy;
-      const nextZ = traceZ - vector.dz;
+    for (const [deltaX, deltaY, deltaZ] of allDirectionVectors) {
+        let currentX = initialX;
+        let currentY = initialY;
+        let currentZ = initialZ;
 
-      if (nextX < 0 || nextY < 0 || nextZ < 0 || nextX >= boardWidth || nextY >= boardHeight || nextZ >= boardDepth) {
-        break;
-      }
-      traceX = nextX;
-      traceY = nextY;
-      traceZ = nextZ;
+        while (
+            currentX - deltaX >= 0 && currentX - deltaX < dimX &&
+            currentY - deltaY >= 0 && currentY - deltaY < dimY &&
+            currentZ - deltaZ >= 0 && currentZ - deltaZ < dimZ
+        ) {
+            currentX -= deltaX;
+            currentY -= deltaY;
+            currentZ -= deltaZ;
+        }
+
+        let currentSequenceLength = 0;
+        let maxSequenceInThisDirection = 0;
+
+        while (
+            currentX >= 0 && currentX < dimX &&
+            currentY >= 0 && currentY < dimY &&
+            currentZ >= 0 && currentZ < dimZ
+        ) {
+            if (gridData[currentX][currentY][currentZ] === playerIdentifier) {
+                currentSequenceLength++;
+            } else {
+                currentSequenceLength = 0;
+            }
+            maxSequenceInThisDirection = Math.max(maxSequenceInThisDirection, currentSequenceLength);
+
+            currentX += deltaX;
+            currentY += deltaY;
+            currentZ += deltaZ;
+        }
+        overallMaxSequence = Math.max(overallMaxSequence, maxSequenceInThisDirection);
     }
-    
-    return Math.max(overallMax, evaluateLineSegment([traceX, traceY, traceZ], vector));
-  }, 0);
-};
+    return overallMaxSequence;
+}
 
-const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-let processedLines = rawInputData.trim().split("\n");
-let currentLineIndex = 0;
+const create3DArray = (dim1, dim2, dim3, initialValue = 0) =>
+    Array.from({ length: dim1 }, () =>
+        Array.from({ length: dim2 }, () =>
+            Array.from({ length: dim3 }, () => initialValue)
+        )
+    );
 
-const retrieveNextLine = () => processedLines[currentLineIndex++];
-const convertToNumbers = (line) => line.split(" ").map(Number);
+const playerOutputNames = { 1: "Black", 2: "White" };
+
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInput.trim().split("\n");
+
+let lineIndex = 0;
 
 while (true) {
-  const dimensionSpecification = retrieveNextLine();
-  if (dimensionSpecification === "0 0 0") break;
+    const dimensionsLine = inputLines[lineIndex++];
+    if (dimensionsLine === "0 0 0") break;
 
-  const [gridXDimension, requiredConsecutive, gridZDimension] = convertToNumbers(dimensionSpecification);
+    const [gridSizeX, winConditionLength, gridSizeZ] = dimensionsLine.split(" ").map(Number);
 
-  const playfield = Array.from({ length: gridXDimension }, () =>
-    Array.from({ length: gridXDimension }, () =>
-      Array.from({ length: gridZDimension }, () => 0)
-    )
-  );
+    const gameBoard = create3DArray(gridSizeX, gridSizeX, gridSizeZ);
 
-  const playerMoveCoordinates = Array.from({ length: gridZDimension }, () =>
-    convertToNumbers(retrieveNextLine())
-  );
-
-  let activePlayerIdentifier = 1;
-  let gameConcluded = false;
-
-  for (let moveNumber = 0; moveNumber < gridZDimension; moveNumber++) {
-    const [colPlacement, rowPlacement] = playerMoveCoordinates[moveNumber];
-    const targetColumn = colPlacement - 1;
-    const targetRow = rowPlacement - 1;
-
-    let currentStackHeight = 0;
-    while (currentStackHeight < gridZDimension && playfield[targetColumn][targetRow][currentStackHeight] !== 0) {
-      currentStackHeight++;
+    const playerMoves = [];
+    for (let i = 0; i < gridSizeZ; i++) {
+        playerMoves.push(inputLines[lineIndex++].split(" ").map(Number));
     }
-    
-    playfield[targetColumn][targetRow][currentStackHeight] = activePlayerIdentifier;
 
-    if (measureAlignment(activePlayerIdentifier, targetColumn, targetRow, currentStackHeight, playfield, gridXDimension, gridXDimension, gridZDimension) >= requiredConsecutive) {
-      console.log((activePlayerIdentifier === 2) ? "White" : "Black", moveNumber + 1);
-      gameConcluded = true;
-      break;
+    let currentPlayerIdentifier = 1;
+    let gameEnded = false;
+
+    for (const [moveNumber, moveCoords] of playerMoves.entries()) {
+        const [colX, colY] = moveCoords.map(coord => coord - 1);
+
+        const dropHeight = gameBoard[colX][colY].findIndex(cell => cell === 0);
+
+        gameBoard[colX][colY][dropHeight] = currentPlayerIdentifier;
+
+        if (determineLongestSequence(gameBoard, currentPlayerIdentifier, colX, colY, dropHeight, gridSizeX, gridSizeX, gridSizeZ) >= winConditionLength) {
+            console.log(playerOutputNames[currentPlayerIdentifier], moveNumber + 1);
+            gameEnded = true;
+            break;
+        }
+
+        currentPlayerIdentifier = 3 - currentPlayerIdentifier;
     }
-    
-    activePlayerIdentifier = (activePlayerIdentifier === 1) ? 2 : 1;
-  }
 
-  if (!gameConcluded) {
-    console.log("Draw");
-  }
+    if (!gameEnded) {
+        console.log("Draw");
+    }
 }

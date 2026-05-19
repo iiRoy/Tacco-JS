@@ -1,81 +1,95 @@
-systemRuntime.inputDataStream.beginReceiving();
-systemRuntime.inputDataStream.setStreamEncoding('utf8')
-var accumulatedInputBuffer = ''; // This variable holds all incoming data.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+var rawInputData = ''; // Stores all incoming data from standard input
 
-systemRuntime.inputDataStream.registerEventHandler('data', function(dataPacket) {
-    // Appends each received data segment to our main buffer.
-    accumulatedInputBuffer += dataPacket;
+process.stdin.on('data', function (dataChunk) {
+    rawInputData += dataChunk; // Append each chunk of data
 });
 
-
-const parseWhitespaceDelimitedNumbers = function (inputRowText) {
-
-    var tokenArray = inputRowText.replace(/(^\s+)|(\s+$)/g, "").split(" "); // Cleans leading/trailing spaces, then splits by space.
-    for (var idx = 0; idx < tokenArray.length; ++idx) {
-
-        tokenArray[idx] = +tokenArray[idx]; // Converts each string token into a numeric value.
+/**
+ * Parses a space-separated string into an array of numbers.
+ * Trims leading/trailing whitespace and converts each part to a number.
+ * @param {string} inputLine - The string line to parse.
+ * @returns {number[]} An array of numbers.
+ */
+const parseNumericLine = function (inputLine) {
+    // Remove leading/trailing spaces, then split by single space
+    var parsedValues = inputLine.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    // Convert each string element to a number
+    for (var idx = 0; idx < parsedValues.length; ++idx) {
+        parsedValues[idx] = +parsedValues[idx];
     }
-    return tokenArray; // Returns an array of numbers.
+    return parsedValues;
 };
 
-const parseWhitespaceDelimitedChars = function(inputRowText) {
-    // This function is similar to the numeric parser but keeps values as strings.
-    var tokenArray = inputRowText.replace(/(^\s+)|(\s+$)/g, "") .split(" ");
-    for (var idx = 0; idx < tokenArray.length; ++idx) {
-        tokenArray[idx] = tokenArray[idx]; // No type conversion needed, keep as string.
+/**
+ * Parses a space-separated string into an array of strings.
+ * Trims leading/trailing whitespace.
+ * NOTE: This function is defined but not used in the main logic.
+ * @param {string} inputLine - The string line to parse.
+ * @returns {string[]} An array of strings.
+ */
+const parseStringLine = function (inputLine) {
+    var parsedValues = inputLine.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    // No type conversion needed, elements remain strings
+    for (var idx = 0; idx < parsedValues.length; ++idx) {
+        parsedValues[idx] = parsedValues[idx]; // Explicitly assign itself (no-op)
     }
-    return tokenArray; // Returns an array of strings.
+    return parsedValues;
 };
 
-systemRuntime.inputDataStream.registerEventHandler('end', function() {
-    const allTextLines = accumulatedInputBuffer.split('\n'); // Divides the entire input into separate lines.
+process.stdin.on('end', function () {
+    // Split the entire input string by newline characters
+    const inputLines = rawInputData.split('\n');
 
-    const gridDimensions = parseWhitespaceDelimitedNumbers(allTextLines[0]); // Parses the first line for grid dimensions.
-    const gridColumns = gridDimensions[0]; // Extracts the width (number of columns).
-    const gridRows = gridDimensions[1]; // Extracts the height (number of rows).
+    // Parse the first line for grid dimensions (Width and Height)
+    const dimensions = parseNumericLine(inputLines[0]);
+    const gridWidth = dimensions[0];
+    const gridHeight = dimensions[1];
 
-    // Processes subsequent lines to form the 2D character map.
-    // Filters out empty lines and then splits each character.
-    const mapGrid = allTextLines.slice(1).filter(lineEntry => lineEntry.length > 0).map(currentRowString => currentRowString.split(""));
+    // Process subsequent lines to form the grid map
+    // Filter out empty lines, then split each line into an array of characters
+    const gridMap = inputLines.slice(1).filter(val => val.length > 0).map(lineStr => lineStr.split(""));
 
-    let finalResultCollection = []; // This variable is declared but not utilized in the current logic.
-    let neighborDeltaCoords = []; // Stores the relative coordinates for all 8 neighbors.
+    let finalResult = []; // This variable is declared but not used in the original logic.
 
-    for (let xOffset = -1; xOffset <= 1; ++xOffset) {
-        for (let yOffset = -1; yOffset <= 1; ++yOffset) {
-            // Excludes the central point (0,0) itself.
-            if (xOffset !== 0 || yOffset !== 0) {
-                neighborDeltaCoords.push([xOffset, yOffset]); // Adds the offset pair to the list.
+    // Define the 8 possible neighbor offsets (excluding self)
+    let neighborOffsets = [];
+    for (let rowOffset = -1; rowOffset <= 1; ++rowOffset) {
+        for (let colOffset = -1; colOffset <= 1; ++colOffset) {
+            // Exclude the (0,0) offset which represents the current cell itself
+            if (rowOffset !== 0 || colOffset !== 0) {
+                neighborOffsets.push([rowOffset, colOffset]);
             }
         }
     }
 
-    // Iterates through each cell of the grid to calculate neighbor counts.
-    for (let rowIndex = 0; rowIndex < gridRows; ++rowIndex) {
-        for (let colIndex = 0; colIndex < gridColumns; ++colIndex) {
-            // Checks if the current cell is an empty space (represented by '.').
-            if (mapGrid[rowIndex][colIndex] === ".") {
-                let obstacleNeighborCount = 0; // Counter for adjacent obstacles.
+    // Iterate through each cell of the grid
+    for (let currentRow = 0; currentRow < gridHeight; ++currentRow) {
+        for (let currentCol = 0; currentCol < gridWidth; ++currentCol) {
+            // If the current cell is an empty spot ('.')
+            if (gridMap[currentRow][currentCol] === ".") {
+                let hashCount = 0; // Counter for adjacent '#' cells
 
-                // Loops through each predefined neighbor offset.
-                for (let deltaPair of neighborDeltaCoords) {
-                    const adjacentRow = rowIndex + deltaPair[0];
-                    const adjacentCol = colIndex + deltaPair[1];
+                // Check all 8 neighbors
+                for (let offsetPair of neighborOffsets) {
+                    const neighborRow = currentRow + offsetPair[0];
+                    const neighborCol = currentCol + offsetPair[1];
 
-                    // Validates if the neighbor coordinates are within the grid boundaries.
-                    if (adjacentRow < gridRows && adjacentRow >= 0 && adjacentCol < gridColumns && adjacentCol >= 0) {
-                        // If the neighbor cell contains an obstacle ('#'), increment the count.
-                        if (mapGrid[adjacentRow][adjacentCol] === "#") {
-                            obstacleNeighborCount++;
+                    // Check if the neighbor is within grid boundaries
+                    if (neighborRow < gridHeight && neighborRow >= 0 && neighborCol < gridWidth && neighborCol >= 0) {
+                        // If the neighbor cell contains a '#'
+                        if (gridMap[neighborRow][neighborCol] === "#") {
+                            hashCount++; // Increment the count
                         }
                     }
                 }
-                // Updates the current empty cell with the count of surrounding obstacles.
-                mapGrid[rowIndex][colIndex] = obstacleNeighborCount;
+                // Update the current empty cell with the count of adjacent '#'
+                gridMap[currentRow][currentCol] = hashCount;
             }
         }
-        // Prints the processed row, joining elements back into a string.
-        console.log(mapGrid[rowIndex].join(""));
+        // After processing all columns in the current row, print the row
+        // Join the characters/numbers in the row back into a string
+        console.log(gridMap[currentRow].join(""));
     }
-
 });

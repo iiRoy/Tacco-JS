@@ -1,315 +1,200 @@
-"use strict"; // Maintain strict mode for robust code.
-
-// --- Global Input Handling Utilities ---
-// Reads all standard input at once.
+"use strict";
 const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-// Splits the input into tokens by spaces or newlines.
-let tokenStream = rawInputData.split(/ |\n/);
-// Index to keep track of the current token being read.
+const inputTokens = rawInputData.split(/ |\n/);
 let currentTokenIndex = 0;
 
-/**
- * Retrieves the next token from the stream and converts it to an integer.
- * @returns {number} The next integer token.
- */
-function acquireNextInteger() {
-    // Using Number() for explicit conversion, slightly more verbose than unary '+'.
-    return Number(tokenStream[currentTokenIndex++]);
-}
-
-/**
- * Retrieves the next token as a string.
- * @returns {string} The next string token.
- */
-function acquireNextString() {
-    return tokenStream[currentTokenIndex++];
-}
-
-/**
- * Retrieves the next token and converts it to a BigInt.
- * @returns {BigInt} The next BigInt token.
- */
-function acquireNextBigInt() {
-    // Explicit BigInt constructor for clarity.
-    return BigInt(tokenStream[currentTokenIndex++]);
-}
-
-/**
- * Reads a specified number of tokens and converts them to numbers.
- * @param {number} count - The number of tokens to read.
- * @param {boolean} [shouldConvertToNumber=true] - Whether to convert tokens to numbers.
- * @returns {Array<number|string>} An array of tokens.
- */
-function acquireNumberSequence(count, shouldConvertToNumber = true) {
-    const startIndex = currentTokenIndex;
+const InputReader = {
+  readNextInt: () => +inputTokens[currentTokenIndex++],
+  readNextString: () => inputTokens[currentTokenIndex++],
+  readNextBigInt: () => BigInt(inputTokens[currentTokenIndex++]),
+  readIntArray: (count, mapToNum = true) => {
+    const slice = inputTokens.slice(currentTokenIndex, currentTokenIndex + count);
     currentTokenIndex += count;
-    const sequence = tokenStream.slice(startIndex, currentTokenIndex);
-    return shouldConvertToNumber ? sequence.map(val => Number(val)) : sequence;
+    return mapToNum ? slice.map(Number) : slice;
+  },
+  readMatrix: (height, width, mapToNum = true) => {
+    const matrix = [];
+    for (let i = 0; i < height; i++) {
+      const row = inputTokens.slice(currentTokenIndex, currentTokenIndex + width);
+      currentTokenIndex += width;
+      matrix.push(mapToNum ? row.map(Number) : row);
+    }
+    return matrix;
+  }
+};
+
+function createMultiDimensionalArray(initialValue) {
+  var args = arguments,
+    length = args.length,
+    result = "Array(args[" + --length + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--length) result = "Array(args[" + length + "]).fill().map(x=>" + result + ")";
+  return eval(result);
 }
 
-/**
- * Reads a 2D matrix of tokens.
- * @param {number} numRows - The number of rows.
- * @param {number} numCols - The number of columns.
- * @param {boolean} [shouldParseAsInt=true] - Whether to convert tokens in the matrix to integers.
- * @returns {Array<Array<number|string>>} The 2D matrix.
- */
-function acquireMatrix(numRows, numCols, shouldParseAsInt = true) {
-    const matrixData = [];
-    for (let r = 0; r < numRows; r++) {
-        const rowTokens = tokenStream.slice(currentTokenIndex, currentTokenIndex + numCols);
-        currentTokenIndex += numCols;
-        matrixData.push(shouldParseAsInt ? rowTokens.map(val => Number(val)) : rowTokens);
+class MinPriorityQueue {
+  constructor() {
+    this.heapElements = [];
+  }
+
+  _bubbleUp(index) {
+    const element = this.heapElements[index];
+    while (index > 0) {
+      const parentIndex = (index - 1) >> 1;
+      const parent = this.heapElements[parentIndex];
+      if (element[0] >= parent[0]) break;
+      this.heapElements[index] = parent;
+      index = parentIndex;
     }
-    return matrixData;
+    this.heapElements[index] = element;
+  }
+
+  _bubbleDown(index) {
+    const heap = this.heapElements;
+    const length = heap.length;
+    const element = heap[index];
+    while (true) {
+      let leftChildIndex = (index << 1) + 1;
+      let rightChildIndex = (index << 1) + 2;
+      let swapIndex = index;
+      let leftChild, rightChild;
+
+      if (leftChildIndex < length) {
+        leftChild = heap[leftChildIndex];
+        if (leftChild[0] < element[0]) {
+          swapIndex = leftChildIndex;
+        }
+      }
+      if (rightChildIndex < length) {
+        rightChild = heap[rightChildIndex];
+        if (rightChild[0] < (swapIndex === index ? element[0] : leftChild[0])) {
+          swapIndex = rightChildIndex;
+        }
+      }
+
+      if (swapIndex === index) break;
+      heap[index] = heap[swapIndex];
+      index = swapIndex;
+    }
+    heap[index] = element;
+  }
+
+  push(itemValue, itemData) {
+    this.heapElements.push([itemValue, itemData]);
+    this._bubbleUp(this.heapElements.length - 1);
+  }
+
+  pop() {
+    const heap = this.heapElements;
+    const rootElement = heap[0];
+    const lastElement = heap.pop();
+    if (heap.length > 0) {
+      heap[0] = lastElement;
+      this._bubbleDown(0);
+    }
+    return rootElement;
+  }
+
+  get size() {
+    return this.heapElements.length;
+  }
+
+  get top() {
+    return this.heapElements[0];
+  }
 }
 
-// --- Custom Priority Queue (Min-Heap) Implementation ---
-// Renamed from priorityQueue to MinValueHeap and internal array 'a' to 'heapStorage'.
-class MinValueHeap {
-    constructor() {
-        this.heapStorage = []; // Stores elements as [priority, data]
+const resultOfMain = main();
+if (resultOfMain !== undefined) console.log(resultOfMain);
+
+function main() {
+  const numTestCases = InputReader.readNextInt();
+  const primeDivisors = [2n, 3n, 5n];
+
+  // Helper to update the priority queue and memoization map
+  const updateQueueAndMemo = (num, cost, minCostQueue, minCostMemo) => {
+    if (!minCostMemo.has(num) || minCostMemo.get(num) > cost) {
+      minCostMemo.set(num, cost);
+      minCostQueue.push(cost, num);
+    }
+  };
+
+  const processNumberState = (currentNumber, currentPathCost, minCostQueue, minCostMemo, initialCosts, factorCosts, primeDivisors) => {
+    if (currentNumber < 5n) {
+      const finalCost = currentPathCost + initialCosts[currentNumber];
+      updateQueueAndMemo(0n, finalCost, minCostQueue, minCostMemo);
+      return;
     }
 
-    /**
-     * Inserts an element into the heap.
-     * @param {BigInt} priorityValue - The priority of the element (cost).
-     * @param {BigInt} associatedData - The data associated with the priority (node value).
-     */
-    insertElement(priorityValue, associatedData) {
-        const dataStore = this.heapStorage;
-        let currentIndex = dataStore.length;
-        // Bubble up: Compare with parent and swap if parent has higher priority.
-        while (currentIndex > 0) {
-            const parentIndex = (currentIndex - 1) >> 1; // Equivalent to Math.floor((i-1)/2)
-            if (dataStore[parentIndex][0] <= priorityValue) {
-                break; // Correct position found
-            }
-            dataStore[currentIndex] = dataStore[parentIndex];
-            currentIndex = parentIndex;
-        }
-        dataStore[currentIndex] = [priorityValue, associatedData];
+    for (let i = 0; i < 3; i++) {
+      const divisorVal = primeDivisors[i];
+      const costForFactor = factorCosts[i];
+
+      // Case 1: Division (floor)
+      let nextNumberFloor = currentNumber / divisorVal;
+      let remainderFloor = currentNumber % divisorVal;
+      let calculatedCostA = costForFactor + initialCosts[1] * remainderFloor;
+      let calculatedCostB = (currentNumber - nextNumberFloor) * initialCosts[1];
+      let finalCostFloor = currentPathCost + (calculatedCostA < calculatedCostB ? calculatedCostA : calculatedCostB);
+      updateQueueAndMemo(nextNumberFloor, finalCostFloor, minCostQueue, minCostMemo);
+
+      // Case 2: Division (ceil) if there's a remainder
+      if (remainderFloor > 0n) {
+        let nextNumberCeil = nextNumberFloor + 1n;
+        let remainderCeil = divisorVal - remainderFloor;
+        calculatedCostA = costForFactor + initialCosts[1] * remainderCeil;
+        calculatedCostB = (currentNumber - nextNumberCeil) * initialCosts[1];
+        let finalCostCeil = currentPathCost + (calculatedCostA < calculatedCostB ? calculatedCostA : calculatedCostB);
+        updateQueueAndMemo(nextNumberCeil, finalCostCeil, minCostQueue, minCostMemo);
+      }
     }
+  };
 
-    /**
-     * Removes and returns the element with the smallest priority.
-     * @returns {Array<BigInt>|undefined} The element with the smallest priority: [priority, data].
-     */
-    extractMin() {
-        const dataStore = this.heapStorage;
-        if (dataStore.length === 0) {
-            return undefined; // Heap is empty
-        }
-        if (dataStore.length === 1) {
-            return dataStore.pop(); // Only one element, just remove it
-        }
+  for (let testCaseIdx = 0; testCaseIdx < numTestCases; testCaseIdx++) {
+    const targetNumber = InputReader.readNextBigInt();
+    const factorCosts = [InputReader.readNextBigInt(), InputReader.readNextBigInt(), InputReader.readNextBigInt()];
+    const initialCosts = [0n, InputReader.readNextBigInt()];
 
-        const minElement = dataStore[0]; // The smallest element
-        const lastElement = dataStore.pop(); // The element to re-position
+    // Calculate initialCosts[2]
+    let costForTwo = initialCosts[1] * 2n;
+    let costForTwoAlt = initialCosts[1] + factorCosts[0];
+    initialCosts[2] = costForTwo < costForTwoAlt ? costForTwo : costForTwoAlt;
 
-        let currentIndex = 0;
-        const halfLength = dataStore.length >> 1; // Optimization: only need to check up to half length for parents
+    // Calculate initialCosts[3]
+    let costForThree = initialCosts[2] + initialCosts[1];
+    let costForThreeAlt = initialCosts[1] + factorCosts[1];
+    initialCosts[3] = costForThree < costForThreeAlt ? costForThree : costForThreeAlt;
 
-        // Bubble down: Compare with children and swap with the smaller child.
-        while (currentIndex < halfLength) {
-            let leftChildIndex = (currentIndex << 1) + 1; // 2 * i + 1
-            let rightChildIndex = leftChildIndex + 1; // 2 * i + 2
-            let smallestChildIndex = leftChildIndex;
+    // Calculate initialCosts[4]
+    let candidateCost4_1 = initialCosts[3] + initialCosts[1];
+    let candidateCost4_2 = initialCosts[2] + factorCosts[0];
+    let candidateCost4_3 = initialCosts[1] + factorCosts[2];
 
-            // Determine which child has the smaller priority
-            if (rightChildIndex < dataStore.length && dataStore[rightChildIndex][0] < dataStore[leftChildIndex][0]) {
-                smallestChildIndex = rightChildIndex;
-            }
-
-            // If the lastElement is smaller than or equal to the smallest child, its position is found.
-            if (lastElement[0] <= dataStore[smallestChildIndex][0]) {
-                break;
-            }
-
-            dataStore[currentIndex] = dataStore[smallestChildIndex];
-            currentIndex = smallestChildIndex;
-        }
-
-        // Place the lastElement in its final position
-        dataStore[currentIndex] = lastElement;
-        return minElement;
+    let minCostForFour = candidateCost4_1;
+    if (candidateCost4_2 < minCostForFour) {
+      minCostForFour = candidateCost4_2;
     }
-
-    /**
-     * Gets the number of elements currently in the heap.
-     * @returns {number} The current size of the heap.
-     */
-    get currentSize() {
-        return this.heapStorage.length;
+    if (candidateCost4_3 < minCostForFour) {
+      minCostForFour = candidateCost4_3;
     }
+    initialCosts[4] = minCostForFour;
 
-    /**
-     * Peeks at the element with the smallest priority without removing it.
-     * @returns {Array<BigInt>|undefined} The smallest element, or undefined if heap is empty.
-     */
-    get peekMin() {
-        return this.heapStorage.length > 0 ? this.heapStorage[0] : undefined;
+    const minCostQueue = new MinPriorityQueue();
+    minCostQueue.push(0n, targetNumber);
+    const minCostMemo = new Map();
+    minCostMemo.set(targetNumber, 0n);
+
+    while (true) {
+      const [currentPathCost, currentNumber] = minCostQueue.pop();
+
+      if (minCostMemo.has(currentNumber) && minCostMemo.get(currentNumber) < currentPathCost) {
+        continue;
+      }
+      if (currentNumber === 0n) {
+        console.log(currentPathCost.toString());
+        break;
+      }
+
+      processNumberState(currentNumber, currentPathCost, minCostQueue, minCostMemo, initialCosts, factorCosts, primeDivisors);
     }
-}
-
-// --- Main Program Execution ---
-// Stores the result of the computation, if any.
-const programOutput = executeSolution();
-
-// If the solution returns a value (e.g., for a single test case), print it.
-if (programOutput !== undefined) {
-    console.log(programOutput);
-}
-
-/**
- * Helper function for BigInt Math.min equivalent.
- * @param {BigInt} a
- * @param {BigInt} b
- * @returns {BigInt} The smaller of the two BigInts.
- */
-function bigIntMin(a, b) {
-    return a < b ? a : b;
-}
-
-/**
- * The core logic for solving the problem.
- * This function handles multiple test cases.
- */
-function executeSolution() {
-    // Read the total number of test cases.
-    const numTestCases = acquireNextInteger();
-
-    // Loop through each test case.
-    for (let caseIdx = 0; caseIdx < numTestCases; caseIdx++) {
-        // Read the target value for the current test case.
-        const targetValue = acquireNextBigInt();
-        // Read the conversion costs for prime factors (2, 3, 5).
-        const primeConversionCosts = [acquireNextBigInt(), acquireNextBigInt(), acquireNextBigInt()];
-
-        // Precompute costs for small values (0 to 4) using dynamic programming-like approach.
-        // `baseCosts[i]` represents the minimum cost to reach 0 from `i` using only decrement by 1 operations (cost `baseCosts[1]`)
-        // or by using conversion costs `primeConversionCosts[0]` (for 2), `primeConversionCosts[1]` (for 3), etc.
-        // Note: `baseCosts[0]` is 0, `baseCosts[1]` is given.
-        const baseCosts = [0n, acquireNextBigInt()]; // Initialize with 0n for 0, and the cost for 1.
-
-        // Cost for 2: Either 1+1 (2*baseCosts[1]) or 1+cost_for_2 (baseCosts[1]+primeConversionCosts[0])
-        baseCosts.push(bigIntMin(baseCosts[1] + baseCosts[1], baseCosts[1] + primeConversionCosts[0]));
-
-        // Cost for 3: Either 2+1 (baseCosts[2]+baseCosts[1]) or 1+cost_for_3 (baseCosts[1]+primeConversionCosts[1])
-        baseCosts.push(bigIntMin(baseCosts[2] + baseCosts[1], baseCosts[1] + primeConversionCosts[1]));
-
-        // Cost for 4: Three options from the original logic:
-        // 1. Cost to reach 3, then add 1: baseCosts[3] + baseCosts[1]
-        // 2. Cost to reach 2, then apply cost for factor 2: baseCosts[2] + primeConversionCosts[0]
-        // 3. Cost to reach 1, then apply cost for factor 5: baseCosts[1] + primeConversionCosts[2]
-        const costOption_from3_plus1 = baseCosts[3] + baseCosts[1];
-        const costOption_from2_plusCostForFactor2 = baseCosts[2] + primeConversionCosts[0];
-        const costOption_from1_plusCostForFactor5 = baseCosts[1] + primeConversionCosts[2];
-
-        let minCostForFour = costOption_from3_plus1;
-        minCostForFour = bigIntMin(minCostForFour, costOption_from2_plusCostForFactor2);
-        minCostForFour = bigIntMin(minCostForFour, costOption_from1_plusCostForFactor5);
-        baseCosts.push(minCostForFour); // baseCosts[4]
-
-        // Initialize a min-priority queue for Dijkstra's algorithm.
-        const minPriorityQueue = new MinValueHeap();
-        // Start by pushing the target value with an initial cost of 0.
-        minPriorityQueue.insertElement(0n, targetValue);
-
-        // Store the minimum cost found so far to reach a specific value.
-        const minCostsMap = new Map();
-        minCostsMap.set(targetValue, 0n);
-
-        // Define the prime factors for division operations.
-        const primeFactors = [2n, 3n, 5n];
-
-        // Dijkstra's algorithm loop.
-        for (;;) { // Equivalent to while(true)
-            // If the queue is empty, we can't reach 0, though problem constraints usually prevent this.
-            if (minPriorityQueue.currentSize === 0) {
-                // This case should ideally not happen if 0 is reachable.
-                // For robustness, could throw an error or handle it.
-                break;
-            }
-
-            // Extract the node with the smallest cost.
-            const extractedEntry = minPriorityQueue.extractMin();
-            const currentCost = extractedEntry[0];
-            const currentNodeValue = extractedEntry[1];
-
-            // If we found a shorter path to this node previously, skip.
-            if (minCostsMap.has(currentNodeValue) && minCostsMap.get(currentNodeValue) < currentCost) {
-                continue;
-            }
-
-            // If we have reached 0, we found the minimum cost.
-            if (currentNodeValue === 0n) {
-                console.log(currentCost.toString());
-                break; // Exit the loop for this test case.
-            }
-
-            // Handle small node values (less than 5) using precomputed base costs.
-            if (currentNodeValue < 5n) {
-                // The cost to reach 0 from this small value is currentCost + baseCosts[currentNodeValue].
-                const costToZeroFromSmall = currentCost + baseCosts[Number(currentNodeValue)];
-
-                // If this is a new or better path to 0, update and add to queue.
-                if (!minCostsMap.has(0n) || minCostsMap.get(0n) > costToZeroFromSmall) {
-                    minCostsMap.set(0n, costToZeroFromSmall);
-                    minPriorityQueue.insertElement(costToZeroFromSmall, 0n);
-                }
-                continue; // Skip further processing for small values.
-            }
-
-            // For larger node values, consider division and subtraction operations.
-            for (let factorIndex = 0; factorIndex < 3; factorIndex++) {
-                const currentFactor = primeFactors[factorIndex];
-                const currentFactorCost = primeConversionCosts[factorIndex];
-
-                // --- Option 1: Reduce by division (floor division) ---
-                // Calculate the value after division.
-                const nextValueFloorDiv = currentNodeValue / currentFactor;
-                // Calculate the remainder.
-                const remainder = currentNodeValue % currentFactor;
-
-                // Cost for this operation:
-                // Option A: Apply `currentFactorCost` and reduce remainder by `baseCosts[1]` operations.
-                const costOptionA = currentFactorCost + baseCosts[1] * remainder;
-                // Option B: Simply subtract `currentNodeValue - nextValueFloorDiv` times `baseCosts[1]`.
-                const costOptionB = (currentNodeValue - nextValueFloorDiv) * baseCosts[1];
-
-                // Choose the minimum cost for this transformation.
-                const effectiveReductionCostFloorDiv = bigIntMin(costOptionA, costOptionB);
-                const totalCostFloorDiv = currentCost + effectiveReductionCostFloorDiv;
-
-                // If this path is new or better, update the map and queue.
-                if (!minCostsMap.has(nextValueFloorDiv) || minCostsMap.get(nextValueFloorDiv) > totalCostFloorDiv) {
-                    minCostsMap.set(nextValueFloorDiv, totalCostFloorDiv);
-                    minPriorityQueue.insertElement(totalCostFloorDiv, nextValueFloorDiv);
-                }
-
-                // --- Option 2: Reduce by division (ceiling division), if there's a remainder ---
-                if (remainder !== 0n) {
-                    const nextValueCeilDiv = nextValueFloorDiv + 1n; // Value after ceiling division.
-                    const complementRemainder = currentFactor - remainder; // How much more to add to reach next multiple.
-
-                    // Cost for this operation:
-                    // Option C: Apply `currentFactorCost` and add `complementRemainder` by `baseCosts[1]` operations.
-                    const costOptionC = currentFactorCost + baseCosts[1] * complementRemainder;
-                    // Option D: Simply subtract `currentNodeValue - nextValueCeilDiv` times `baseCosts[1]`.
-                    const costOptionD = (currentNodeValue - nextValueCeilDiv) * baseCosts[1];
-
-                    // Choose the minimum cost for this transformation.
-                    const effectiveReductionCostCeilDiv = bigIntMin(costOptionC, costOptionD);
-                    const totalCostCeilDiv = currentCost + effectiveReductionCostCeilDiv;
-
-                    // If this path is new or better, update the map and queue.
-                    if (!minCostsMap.has(nextValueCeilDiv) || minCostsMap.get(nextValueCeilDiv) > totalCostCeilDiv) {
-                        minCostsMap.set(nextValueCeilDiv, totalCostCeilDiv);
-                        minPriorityQueue.insertElement(totalCostCeilDiv, nextValueCeilDiv);
-                    }
-                }
-            }
-        }
-    }
+  }
 }

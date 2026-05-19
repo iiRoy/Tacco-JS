@@ -1,107 +1,95 @@
-var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8')
-  .split("\n").map((lineStr) => {
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8')
+  .split("\n")
+  .map((lineStr) => {
     return lineStr.split(" ").map((numStr) => {
-      // Convert string segment to numeric value
-      return numStr - 0;
+      return Number(numStr);
     });
   });
 
+/* Extracting graph parameters from the first line */
+var nodeCount = rawData[0][0];
+// The second element (rawData[0][1]) is not used in the original logic.
+var paramVal = rawData[0][2]; // This variable is declared but never utilized.
 
-var totalNodes = fileContent[0][0];
-// var unusedLinkCount = fileContent[0][1]; // This variable is not utilized
-var unusedParam = fileContent[0][2];
+/* Remove the header line from the input data */
+rawData.shift();
 
-// Remove the header line from the processed data
-fileContent.shift();
-
-
-// Initialize an adjacency list to store graph connections
-var graphConnections = {};
-for (var nodeCounter = 1; nodeCounter <= totalNodes; nodeCounter++) {
-  graphConnections[nodeCounter] = [];
+/* Initialize an adjacency list to store graph connections */
+var adjacencyList = {};
+for (var nodeIdx = 1; nodeIdx <= nodeCount; nodeIdx++) {
+  adjacencyList[nodeIdx] = [];
 }
 
-
-// Populate the adjacency list with edges and their associated gains
-fileContent.forEach((connectionInfo) => {
-  // connectionInfo[0] is the source node
-  // connectionInfo[1] is the destination node
-  // connectionInfo[2] is the gain for traversing this edge
-  graphConnections[connectionInfo[0]].push([connectionInfo[1], connectionInfo[2]]);
+/* Populate the adjacency list with edges and their associated gains */
+rawData.forEach((edgeInfo) => {
+  adjacencyList[edgeInfo[0]].push([edgeInfo[1], edgeInfo[2]]);
 });
 
-
-// Variable to store the maximum profit found, initialized to a non-achievable value
+/* Variable to store the maximum profit found, initialized to a minimum value */
 var maxProfit = -1;
 
-
-// Immediately Invoked Function Expression for managing scope
+/* Self-executing anonymous function to encapsulate the pathfinding logic */
 (() => {
 
-  // Stores the sequence of nodes in the current traversal path
-  var visitedNodes = [1];
-  // Stores the gains accumulated at each step of the current path
-  var segmentProfits = [0];
+  /* Tracks the sequence of nodes in the current traversal */
+  var currentPathNodes = [1];
+  /* Stores the profit accumulated along each segment of the current path */
+  var pathProfits = [0];
+  /* A stack to manage alternative branches to explore */
+  var pendingPathsStack = [Array.from(adjacencyList[1])];
+  /* The set of edges to explore from the current node */
+  var currentBranchPaths = pendingPathsStack.pop();
 
-  // Stack to hold sets of alternative edges when backtracking is needed
-  var branchingPaths = [Array.from(graphConnections[1])];
-  // The current set of edges to explore from the last node
-  var availableBranches = branchingPaths.pop();
-
-
-  // Main loop for depth-first search like traversal
+  /* Main loop for depth-first search traversal */
   do {
-    // Get the next available edge (destination node and its gain)
-    var traverseOption = availableBranches.pop();
-    var targetVertex = traverseOption[0];
+    /* Get the next edge to explore from the current set of paths */
+    var currentEdge = currentBranchPaths.pop();
+    var nextNodeId = currentEdge[0];
 
-    // console.log("Currently exploring: " + visitedNodes + " -> " + targetVertex); // Debug output
+    // console.log("Exploring: " + currentPathNodes + " -> " + nextNodeId); // Debugging line, commented out.
 
-    // Check if the current target vertex is the desired end node
-    if (targetVertex == totalNodes) {
-      // If end node reached, calculate total profit for this path
-      var edgeProfit = traverseOption[1];
-      // Sum all segment profits and add the last edge's profit
-      var currentPathTotalGain = segmentProfits.reduce((currentSum, individualProfit) => {
-        return currentSum + individualProfit;
+    /* Check if the destination node is the target node */
+    if (nextNodeId === nodeCount) {
+      /* If target reached, calculate total profit for this path */
+      var edgeProfit = currentEdge[1];
+      var totalCurrentPathProfit = pathProfits.reduce((accumulator, currentValue) => {
+        return accumulator + currentValue;
       }, 0) + edgeProfit;
-
-      // Update the overall maximum profit if this path yielded a higher profit
-      maxProfit = Math.max(currentPathTotalGain, maxProfit);
+      /* Update the maximum profit if this path yields a higher value */
+      maxProfit = Math.max(totalCurrentPathProfit, maxProfit);
     }
 
-    // Check if the target vertex has not been visited in the current path to avoid cycles
-    if (visitedNodes.indexOf(targetVertex) == -1) {
-      // If the target vertex has outgoing edges, push current branches and explore
-      if (graphConnections[targetVertex].length > 0) {
-        branchingPaths.push(availableBranches); // Save current branch options
-        availableBranches = Array.from(graphConnections[targetVertex]); // Load new branch options
-        visitedNodes.push(targetVertex); // Add target to current path
-        segmentProfits.push(traverseOption[1]); // Add its gain to path gains
-        continue; // Continue with the new path
+    /* Check if the next node has already been visited in the current path to avoid cycles */
+    if (currentPathNodes.indexOf(nextNodeId) === -1) {
+      /* If the node has outgoing edges, push current paths to stack and explore new branch */
+      if (adjacencyList[nextNodeId].length > 0) {
+        pendingPathsStack.push(currentBranchPaths);
+        currentBranchPaths = Array.from(adjacencyList[nextNodeId]);
+        currentPathNodes.push(nextNodeId);
+        pathProfits.push(currentEdge[1]);
+        continue; // Continue to the next iteration of the do-while loop
       }
     } else {
-      // console.log("Cycle identified."); // Inform about detected cycle
+      /* Log a message if a loop is detected (node already in current path) */
+      console.log("loop detected");
     }
 
+    /* Backtrack if the current branch has no more paths to explore */
+    while (currentBranchPaths.length === 0) {
+      currentPathNodes.pop(); // Remove the last node from the path
+      pathProfits.pop(); // Remove the last profit from the path
 
-    // Backtrack if all branches from the current node are exhausted
-    while (availableBranches.length == 0) {
-      visitedNodes.pop(); // Remove last node from path
-      segmentProfits.pop(); // Remove its corresponding gain
-
-      if (branchingPaths.length > 0) {
-        availableBranches = branchingPaths.pop(); // Restore previous branch options
+      /* If there are pending branches in the stack, pop them to continue exploration */
+      if (pendingPathsStack.length > 0) {
+        currentBranchPaths = pendingPathsStack.pop();
       } else {
-        // console.log("Traversal complete."); // All paths explored
-        return; // Exit the IIFE as exploration is finished
+        // console.log("Traversal complete."); // Debugging line, commented out.
+        return; // All paths explored, exit the IIFE
       }
     }
-  } while (true); // Loop indefinitely until explicit return
+  } while (true); // Loop indefinitely until an explicit return statement is hit
 
+})();
 
-})(); // End of IIFE
-
-
-// Output the final maximum profit found
+/* Output the final maximum profit found */
 console.log(maxProfit);

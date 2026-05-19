@@ -1,28 +1,21 @@
-const ioInterface = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+function computeResult(values) {
+    const combinedString = values[0].concat(values[1]);
+    return Number(combinedString) * 0.5;
+}
 
-const calculateResult = (operandX, operandY) => {
-  const numericValues = [parseFloat(operandX), parseFloat(operandY)];
-  const totalAmount = numericValues.reduce((accumulator, current) => accumulator + current, 0);
-  return totalAmount / numericValues.length;
+let receivedData = '';
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+const processInputChunk = (segment) => {
+    receivedData += segment;
 };
 
-let collectedData = '';
+const finalizeProcessing = () => {
+    const dataSegments = receivedData.split(' ');
+    console.log(computeResult(dataSegments));
+};
 
-ioInterface.on('line', (segment) => {
-  collectedData += segment;
-});
-
-ioInterface.on('close', () => {
-  const processedContent = collectedData.trim();
-  const numericalTokens = processedContent.match(/\S+/g);
-
-  const [elementA, elementB] = numericalTokens;
-
-  const finalOutcome = calculateResult(elementA, elementB);
-
-  process.stdout.write(finalOutcome.toString() + '\n');
-});
+process.stdin.on('data', processInputChunk);
+process.stdin.on('end', finalizeProcessing);

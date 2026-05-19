@@ -1,32 +1,27 @@
-const processSequence = (sourceText) => {
-    const allLines = sourceText.trim().split('\n');
-    const numberOfSteps = Number(allLines[0]);
+function processSchedule(inputString) {
+  const dataLines = inputString.trim().split("\n");
+  const numEntries = Number(dataLines[0]);
 
-    const stepDataPairs = allLines.slice(1, numberOfSteps + 1).map(line => {
-        const parts = line.split(' ');
-        return [Number(parts[0]), Number(parts[1])];
-    });
+  const initialAccumulator = { currentAudience: 1, currentTime: 1 };
 
-    const initialQuantities = { alpha: 1, beta: 1 };
+  const iterationData = dataLines.slice(1, numEntries + 1);
 
-    const finalQuantities = stepDataPairs.reduce((currentAccumulator, currentTargets) => {
-        const currentAlpha = currentAccumulator.alpha;
-        const currentBeta = currentAccumulator.beta;
+  const finalState = iterationData.reduce((previousState, lineSegment) => {
+    const { currentAudience: prevAudience, currentTime: prevTime } = previousState;
 
-        const targetBeta = currentTargets[0];
-        const targetAlpha = currentTargets[1];
+    const [segmentTime, segmentAudience] = lineSegment.split(" ").map(Number);
 
-        const neededForBeta = Math.ceil(currentBeta / targetBeta);
-        const neededForAlpha = Math.ceil(currentAlpha / targetAlpha);
-        const commonMultiplier = Math.max(neededForBeta, neededForAlpha);
+    const requiredTimeMultiplier = Math.ceil(prevTime / segmentTime);
+    const requiredAudienceMultiplier = Math.ceil(prevAudience / segmentAudience);
+    const commonMultiplier = Math.max(requiredTimeMultiplier, requiredAudienceMultiplier);
 
-        const nextBeta = targetBeta * commonMultiplier;
-        const nextAlpha = targetAlpha * commonMultiplier;
+    const nextTimeValue = segmentTime * commonMultiplier;
+    const nextAudienceValue = segmentAudience * commonMultiplier;
 
-        return { alpha: nextAlpha, beta: nextBeta };
-    }, initialQuantities);
+    return { currentAudience: nextAudienceValue, currentTime: nextTimeValue };
+  }, initialAccumulator);
 
-    return finalQuantities.alpha + finalQuantities.beta;
-};
+  console.log(finalState.currentAudience + finalState.currentTime);
+}
 
-console.log(processSequence(require("fs").readFileSync("/dev/stdin", "utf8")));
+processSchedule(require("fs").readFileSync("/dev/stdin", "utf8"));

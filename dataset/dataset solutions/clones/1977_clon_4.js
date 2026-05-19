@@ -1,24 +1,16 @@
-const stdDataSource = require('node:fs');
+"use strict";
+const sourceMaterial = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const processInputData = (fullText) => {
-    const initialSegment = fullText.trim().split(/\s+/)[0];
-    return initialSegment || ''; // Ensure it's always a string, even for empty input
+const evaluateContent = (textualData) => {
+  const parsedSegments = textualData.trim().split(/\s+/);
+  const principalSegment = parsedSegments[0];
+
+  const hasTargetDigit = Array.from(String(principalSegment || ''))
+    .slice(0, 3)
+    .some(characterElement => characterElement == 7);
+
+  return hasTargetDigit ? "Yes" : "No";
 };
 
-const evaluateDigits = (subjectString) => {
-    const inspectionZone = subjectString.substring(0, 3);
-    const containsSpecificDigit = inspectionZone.includes('7');
-    return containsSpecificDigit ? "Yes" : "No";
-};
-
-const mainProgram = () => {
-    const rawContentBuffer = stdDataSource.readFileSync('/dev/stdin', 'utf8');
-    const primaryTokenValue = processInputData(rawContentBuffer);
-    const finalVerdict = evaluateDigits(primaryTokenValue);
-    return finalVerdict;
-};
-
-const programResult = mainProgram();
-if (programResult !== undefined) {
-    console.log(programResult);
-}
+const outcomeDisplay = evaluateContent(sourceMaterial);
+console.log(outcomeDisplay);

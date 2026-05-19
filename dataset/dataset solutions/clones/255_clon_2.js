@@ -1,44 +1,37 @@
-// This module processes textual data to identify duplicate numerical entries.
-var parsedFragments =     []; // Array to hold segments of the initial text input.
-var tallyMap          = []; // An array acting as a hash map to store occurrence counts.
+let sourceData = []; // Array to hold the processed input segments.
+let frequencyMap = []; // This array will store the counts of each number.
 
-// 'incomingString' is assumed to be the raw input content, similar to a file read.
-// The splitting pattern looks for a comma, followed by digits, then optional newlines.
-parsedFragments = incomingString/* This placeholder simulates a file read operation */.split(/,\d+\n{0,}/);
+// The 'input' variable is assumed to be provided from an external source,
+// similar to reading from stdin.
+sourceData = input.split(/,\d+\n{0,}/); // Split the raw input string based on a specific pattern.
 
-// Capture the total count of fragments for loop iteration.
-var fragmentCount = parsedFragments.length;
+let segmentCount = sourceData.length; // Determine the total number of input segments.
+let currentNumericValue; // A temporary variable to hold the integer value of a segment.
+let finalOutputString = ""; // An accumulator string for the results.
 
-var currentNumericItem; // A temporary variable to hold the integer value of each fragment.
+// Loop through the input segments, excluding the last one if it's empty or incomplete.
+for (let segmentIndex = 0; segmentIndex < segmentCount - 1; segmentIndex++) {
+    currentNumericValue = parseInt(sourceData[segmentIndex]); // Convert the current segment to an integer.
 
-var finalOutputString = ""; // String accumulator for the results.
-
-// First pass: Iterate through the fragments to populate the tally map.
-for ( var    fragmentIndex = 0;    fragmentIndex < fragmentCount - 1;    fragmentIndex++ ) {
-    // Convert the string fragment into its integer representation.
-    currentNumericItem = parseInt(parsedFragments[fragmentIndex]);
-
-    // Check if this number has been registered in our tally map yet.
-    if (tallyMap[currentNumericItem]    ===    undefined) {
-        // If new, initialize its count to one.
-        tallyMap[currentNumericItem] = 1;
-    }    else {
-        // If seen before, increment its existing count.
-        tallyMap[currentNumericItem]++;
+    // Check if this numeric value has been encountered before in our frequency map.
+    if (frequencyMap[currentNumericValue] === undefined) {
+        frequencyMap[currentNumericValue] = 1; // If not, initialize its count to 1.
+    } else {
+        frequencyMap[currentNumericValue]++; // If yes, increment its existing count.
     }
 }
 
-// Update the fragmentCount to reflect the size of the tally map for the second loop.
-fragmentCount = tallyMap.length;
+// Update the segmentCount to reflect the length of the frequency map,
+// which represents the highest number encountered plus one.
+segmentCount = frequencyMap.length;
 
-// Second pass: Iterate through the tally map to construct the final report.
-for (fragmentIndex = 0; fragmentIndex < fragmentCount; fragmentIndex++) {
-    // Only include numbers that appeared more than once in the output.
-    if (tallyMap[fragmentIndex] !== undefined && tallyMap[fragmentIndex] > 1)
-    {
-        finalOutputString += (fragmentIndex + ' ' + tallyMap[fragmentIndex] + '\n');
+// Iterate through the frequency map to find numbers that appeared more than once.
+for (let mapIndex = 0; mapIndex < segmentCount; mapIndex++) {
+    // If an entry exists and its count is greater than 1, append it to the output string.
+    if (frequencyMap[mapIndex] !== undefined && frequencyMap[mapIndex] > 1) {
+        finalOutputString += (mapIndex + ' ' + frequencyMap[mapIndex] + '\n');
     }
 }
 
-// Display the generated report containing duplicate numbers and their frequencies.
+// Print the accumulated result string to the console.
 console.log(finalOutputString);

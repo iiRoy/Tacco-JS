@@ -1,13 +1,20 @@
-function processInput (rawData) {
-    const segments = rawData.split(' ');
-    const primaryCount = parseInt(segments[0], 10);
-    const secondaryCount = parseInt(segments[1], 10);
+function calculateCombinations (sourceData) {
+    const [firstResource, secondResource] = sourceData.split(' ').map(Number);
 
-    const groupOneUnits = Math.min(primaryCount, Math.floor(secondaryCount / 2));
-    const remainingSecondary = secondaryCount - (groupOneUnits * 2);
-    const totalScore = groupOneUnits + Math.floor(remainingSecondary / 4);
+    const potentialMixedSetsFromFirst = firstResource;
+    const potentialMixedSetsFromSecond = Math.floor(secondResource / 2);
 
-    console.log(totalScore);
+    const actualMixedSets = Math.min(potentialMixedSetsFromFirst, potentialMixedSetsFromSecond);
+
+    let finalTally = actualMixedSets;
+
+    const remainingSecondResource = secondResource - (actualMixedSets * 2);
+
+    const soloSets = Math.floor(remainingSecondResource / 4);
+
+    finalTally += soloSets;
+
+    console.log(finalTally);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+calculateCombinations(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,51 +1,55 @@
-function ProcessData ( sourceContent ) {
-    // The 'sourceContent' variable holds the complete input string.
+// This function serves as the primary entry point for processing the provided data.
+function ProcessInput(rawData) {
+  // The entire raw input string is split into an array of individual lines.
+  rawData = rawData.split("\n");
 
-    sourceContent = sourceContent.split ( "\n" ) ; // Divide the raw input into an array of individual lines.
-    
-    // Each line from the input is stored sequentially, e.g., first line at 'lineRecords[0]', second at 'lineRecords[1]', and so on.
-    let lineRecords = sourceContent;
+  // The first line of the input is parsed to determine the total number of entries.
+  // It's assumed the first line contains a single integer representing this count.
+  let numEntries = parseInt(rawData[0].split(" ")[0]);
 
-    let totalEntries = parseInt( lineRecords[0].split ( " " ) );
+  // An index variable is initialized to traverse through the data lines.
+  let idx = 0;
 
-    let lineIndex = 0;
-    let finalDecision = "No";
+  // A variable to store the final determination, defaulting to "No".
+  let outcome = "No";
 
-    while ( lineIndex < totalEntries - 2 )
-    {
-        let currentLineTokens = lineRecords[lineIndex + 1].split(" ");
-        let firstNumber = parseInt( currentLineTokens[0] );
-        let secondNumber = parseInt( currentLineTokens[1] );
+  // A loop iterates through the data, checking for a specific pattern of three consecutive matching pairs.
+  // The loop continues as long as there are at least three lines remaining to be checked.
+  while (idx < numEntries - 2) {
+    // The current line (offset by 1 from the index) is split into its constituent parts.
+    const currentLineParts = rawData[idx + 1].split(" ");
+    const firstVal = parseInt(currentLineParts[0]);
+    const secondVal = parseInt(currentLineParts[1]);
 
-        if ( firstNumber === secondNumber )
-        {
-            let nextSegmentTokens = lineRecords[ lineIndex + 2 ].split ( " " );
-            if ( parseInt( nextSegmentTokens[0] ) === parseInt( nextSegmentTokens[1] ) )
-            {
-                let thirdSegmentTokens = lineRecords[ lineIndex + 3 ].split ( " " );
-                if ( parseInt( thirdSegmentTokens[0] ) === parseInt( thirdSegmentTokens[1] ) )
-                {
-                    finalDecision = "Yes";
-                    break;
-                }
-                else
-                {
-                    lineIndex += 3;
-                }
-            }
-            else
-            {
-                lineIndex += 2;
-            }
+    // Checks if the two numerical values on the current line are identical.
+    if (firstVal === secondVal) {
+      // If the current line's values match, the subsequent line (offset by 2) is examined.
+      const nextLineParts = rawData[idx + 2].split(" ");
+      if (parseInt(nextLineParts[0]) === parseInt(nextLineParts[1])) {
+        // If the second line's values also match, the third consecutive line (offset by 3) is checked.
+        const thirdLineParts = rawData[idx + 3].split(" ");
+        if (parseInt(thirdLineParts[0]) === parseInt(thirdLineParts[1])) {
+          // If all three consecutive lines contain matching pairs, the outcome is set to "Yes", and the search concludes.
+          outcome = "Yes";
+          break;
+        } else {
+          // If the third line does not have matching values, the index is advanced by three steps to skip these lines.
+          idx += 3;
         }
-        else
-        {
-            lineIndex++;
-        }
+      } else {
+        // If the second line does not have matching values, the index is advanced by two steps.
+        idx += 2;
+      }
+    } else {
+      // If the current line does not have matching values, the index is simply advanced by one step.
+      idx++;
     }
-    // Display the outcome
-    console.log( finalDecision );
+  }
+
+  // The determined outcome is printed to the console.
+  console.log(outcome);
 }
 
-/* Do not modify the following code block. It handles reading from standard input and invoking the primary processing function. */
-ProcessData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// This section handles reading input from standard input and invoking the main processing function.
+// It is typically used in competitive programming environments and should remain unaltered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

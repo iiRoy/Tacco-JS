@@ -1,64 +1,34 @@
-const acquireNumericalSeries = (fileSource) => {
-    const rawContent = require('fs').readFileSync(fileSource, 'utf8');
-    const processedLines = rawContent.trim().split('\n').map(Number);
-    let position = 0;
-    return {
-        fetchNext: () => {
-            if (position < processedLines.length) {
-                return processedLines[position++];
-            }
-            return 0;
-        }
-    };
-};
+const stdinContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericInputs = stdinContent.trim().split("\n").map(Number).filter(val => val !== 0);
 
-const sequenceProvider = acquireNumericalSeries('/dev/stdin');
-const finalOutputs = [];
-
-const processNumericalSegment = (providerReference) => {
-    const segmentLength = providerReference.fetchNext();
-    if (segmentLength === 0) {
-        return;
+for (const currentN of numericInputs) {
+    const residueSet = new Set();
+    for (let k = 1; k < currentN; k++) {
+        residueSet.add((k * k) % currentN);
     }
+    const residuesArray = Array.from(residueSet).sort((a, b) => a - b);
 
-    const squaresModulo = new Set();
-    for (let currentSquareRoot = 1; currentSquareRoot < segmentLength; ++currentSquareRoot) {
-        squaresModulo.add((currentSquareRoot * currentSquareRoot) % segmentLength);
-    }
-    const residueCollection = Array.from(squaresModulo).sort((a, b) => a - b);
+    const differenceCounts = new Map();
+    const maxSymmetricDiff = Math.floor((currentN - 1) / 2);
 
-    const maxRelevantDistance = Math.floor((segmentLength - 1) / 2);
-    const counterMap = new Map();
-    for (let d = 1; d <= maxRelevantDistance; ++d) {
-        counterMap.set(d, 0);
-    }
-
-    for (let firstIndex = 0; firstIndex < residueCollection.length; ++firstIndex) {
-        for (let secondIndex = 0; secondIndex < residueCollection.length; ++secondIndex) {
-            if (firstIndex === secondIndex) {
-                continue;
+    residuesArray.forEach((firstVal, firstIdx) => {
+        residuesArray.forEach((secondVal, secondIdx) => {
+            if (firstIdx === secondIdx) {
+                return;
             }
 
-            let computedDifference = residueCollection[firstIndex] - residueCollection[secondIndex];
-            computedDifference = (computedDifference % segmentLength + segmentLength) % segmentLength;
+            let rawDifference = (firstVal - secondVal + currentN) % currentN;
 
-            if (maxRelevantDistance < computedDifference) {
-                computedDifference -= segmentLength;
+            if (rawDifference > 0 && rawDifference <= maxSymmetricDiff) {
+                differenceCounts.set(rawDifference, (differenceCounts.get(rawDifference) || 0) + 1);
             }
+        });
+    });
 
-            if (computedDifference >= 1 && computedDifference <= maxRelevantDistance) {
-                counterMap.set(computedDifference, (counterMap.get(computedDifference) || 0) + 1);
-            }
-        }
-    }
+    const finalOutputValues = Array.from({ length: maxSymmetricDiff }, (_, index) => {
+        const diffKey = index + 1;
+        return (differenceCounts.get(diffKey) || 0) * 2;
+    });
 
-    for (let d = 1; d <= maxRelevantDistance; ++d) {
-        finalOutputs.push(counterMap.get(d) * 2);
-    }
-
-    processNumericalSegment(providerReference);
-};
-
-processNumericalSegment(sequenceProvider);
-
-finalOutputs.forEach(val => console.log(val));
+    finalOutputValues.forEach(val => console.log(val));
+}

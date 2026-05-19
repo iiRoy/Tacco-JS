@@ -1,111 +1,111 @@
-var dataSource = require( "fs" )
-  . readFileSync( "/dev/stdin" , "utf8" )
-  . trim()
-  . split( "\n" )
-;
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const PROCESS_TO_INTEGER       = 1 ; // Option to convert string to an integer
-const PROCESS_SPACE_STRINGS    = 2 ; // Option to split string by space into string array
-const PROCESS_SPACE_NUMBERS    = 4 ; // Option to split string by space and convert to number array
-const PROCESS_CHAR_STRINGS     = 6 ; // Option to split string by character into string array
-const PROCESS_CHAR_NUMBERS     = 7 ; // Option to split string by character and convert to number array
-const PROCESS_JOIN_SPACE       = 8 ; // Option to join array elements with a space
-const PROCESS_JOIN_NEWLINE     = 9 ; // Option to join array elements with a newline
-const PROCESS_JOIN_NONE        = 0 ; // Option to join array elements without any separator
+var dataProcessor = {
+  sourceData: rawData,
+  currentPosition: 0,
+  maximumItems: rawData.length,
 
-var streamHandler = {
-  "sourceCollection" : dataSource,
-  "currentPosition"  : 0,
-  "totalItems"       : dataSource.length,
-
-  "hasMoreItems" : function() {
-    return ( this.currentPosition < this.totalItems );
+  // Method to check if there are more elements to process
+  hasMoreElements: function() {
+    return (this.currentPosition < this.maximumItems);
   },
 
-  "retrieveNextItem" : function() {
-    if ( ! this.hasMoreItems() ) {
-      return "" ;
+  // Method to retrieve the next element from the data source
+  retrieveNext: function() {
+    if (!this.hasMoreElements()) {
+      return ""; // Return an empty string if no more items are available
     }
-    var currentElement = this.sourceCollection[ this.currentPosition ] ;
-    this.currentPosition++ ;
-    return currentElement ;
+    var itemToReturn = this.sourceData[this.currentPosition];
+    this.currentPosition++;
+    return itemToReturn;
   }
-} ;
+};
 
-executePrimaryRoutine();
+// Initiate the primary execution flow
+executeProgram();
 
-function getNextRecord() {
-  return streamHandler.retrieveNextItem();
+// Global utility function to get the next raw input line
+function fetchNextItem() {
+  return dataProcessor.retrieveNext();
 }
 
-function getNextNumericValue() {
-  return dataTransformation( getNextRecord() , PROCESS_TO_INTEGER );
+// Global utility function to get the next input line as an integer
+function fetchNextInteger() {
+  return dataConverter(fetchNextItem(), 1);
 }
 
-function getNextTextArray() {
-  return dataTransformation( getNextRecord() , PROCESS_SPACE_STRINGS ); // Segments by space
+// Global utility function to get the next input line as an array of strings, split by space
+function fetchNextStringArray() {
+  return dataConverter(fetchNextItem(), 2);
 }
 
-function getNextNumericArray() {
-  return dataTransformation( getNextRecord() , PROCESS_SPACE_NUMBERS ); // Segments by space and parses to numbers
+// Global utility function to get the next input line as an array of numbers, split by space
+function fetchNextIntegerArray() {
+  return dataConverter(fetchNextItem(), 4);
 }
 
-function getNextCharacterArray() {
-  return dataTransformation( getNextRecord() , PROCESS_CHAR_STRINGS ); // Segments into individual characters
+// Global utility function to get the next input line as an array of characters
+function fetchNextCharacterArray() {
+  return dataConverter(fetchNextItem(), 6);
 }
 
-function hasAdditionalData() {
-  return streamHandler.hasMoreItems();
+// Global utility function to check if there are more input lines
+function checkMoreElements() {
+  return dataProcessor.hasMoreElements();
 }
 
-function displayOutput( content ) {
-  console.log( content ); // Writes to standard output
+// Global function for standard console output
+function printToConsole(outputValue) {
+  console.log(outputValue);
 }
 
-function displayError( issue ) {
-  console.error( issue ); // Writes to standard error stream
+// Global function for standard error output
+function printToError(errorMessage) {
+  console.error(errorMessage);
 }
 
-// Description of 'processCode' argument for dataTransformation function.
-// This argument specifies the type of data manipulation.
-// For undefined or invalid process codes, the input is returned unchanged.
-// 1: Converts the input string to an integer.
-// 2: Splits the input string by single spaces into a string array.
-// 4: Splits the input string by single spaces and converts elements to numbers.
-// 6: Splits the input string into an array of individual characters.
-// 7: Splits the input string into characters and converts elements to numbers.
-// 8: Joins array elements with a single space.
-// 9: Joins array elements with a newline character.
-// 0: Joins array elements without any separator.
-function dataTransformation( incomingValue , processCode ) {
+// Universal data conversion utility
+// conversionType parameter dictates the transformation:
+// 1: Parse to integer
+// 2: Split string by spaces
+// 4: Split string by spaces and convert parts to numbers
+// 6: Split string into individual characters
+// 7: Split string into individual characters and convert parts to numbers
+// 8: Join array elements with a space
+// 9: Join array elements with a newline
+// 0: Join array elements without any separator
+// Default: Return the input value unchanged
+function dataConverter(inputValue, conversionType) {
   try {
-    switch ( processCode ) {
-      case PROCESS_TO_INTEGER:
-        return parseInt( incomingValue );
-      case PROCESS_SPACE_STRINGS:
-        return incomingValue.split( " " );
-      case PROCESS_SPACE_NUMBERS:
-        return incomingValue.split( " " ).map( ( itemElement ) => Number( itemElement ) );
-      case PROCESS_CHAR_STRINGS:
-        return incomingValue.split( "" );
-      case PROCESS_CHAR_NUMBERS:
-        return incomingValue.split( "" ).map( ( itemElement ) => Number( itemElement ) );
-      case PROCESS_JOIN_SPACE:
-        return incomingValue.join( " " );
-      case PROCESS_JOIN_NEWLINE:
-        return incomingValue.join( "\n" );
-      case PROCESS_JOIN_NONE:
-        return incomingValue.join( "" );
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(" ");
+      case 4:
+        return inputValue.split(" ").map((element) => Number(element));
+      case 6:
+        return inputValue.split("");
+      case 7:
+        return inputValue.split("").map((element) => Number(element));
+      case 8:
+        return inputValue.join(" ");
+      case 9:
+        return inputValue.join("\n");
+      case 0:
+        return inputValue.join("");
       default:
-        return incomingValue;
+        return inputValue;
     }
-  } catch ( conversionError ) {
-    return incomingValue;
+  } catch (errorDetails) {
+    // If an error occurs during conversion, return the original input
+    return inputValue;
   }
 }
 
-function executePrimaryRoutine() {
-  var numericSequence = getNextNumericArray();
-  var finalCalculation = ( 1 / numericSequence[ 0 ] ) + ( 1 / numericSequence[ 1 ] );
-  displayOutput( 1 / finalCalculation );
+// The main program logic
+function executeProgram() {
+  var firstLineNumbers = fetchNextIntegerArray();
+  var calculatedResult = (1 / firstLineNumbers[0]) + (1 / firstLineNumbers[1]);
+  printToConsole(1 / calculatedResult);
 }

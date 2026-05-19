@@ -1,81 +1,50 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineSegments = sourceData.trim().split('\n');
+const fileSystem = require('fs');
+let inputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split("\n");
 
-const generateExpectedUtterance = (cycleCount) => {
-    let resultPhrase = '';
-    if (cycleCount % 3 === 0) resultPhrase += 'Fizz';
-    if (cycleCount % 5 === 0) resultPhrase += 'Buzz';
-    return resultPhrase || String(cycleCount);
+const generateFizzBuzzPhrase = (numericValue) => {
+    const phraseComponents = [];
+    if (numericValue % 3 === 0) phraseComponents.push("Fizz");
+    if (numericValue % 5 === 0) phraseComponents.push("Buzz");
+    return phraseComponents.length > 0 ? phraseComponents.join("") : String(numericValue);
 };
 
-const extractGameScenarios = (rawLines) => {
-    const gameScenarios = [];
-    let currentLineIndex = 0;
-    while (currentLineIndex < rawLines.length) {
-        const roundSpecs = rawLines[currentLineIndex].split(' ').map(Number);
-        const participantInitialCount = roundSpecs[0];
-        const utteranceTotalCount = roundSpecs[1];
-        currentLineIndex++;
+while (true) {
+    const gameConfiguration = inputLines.shift().split(" ").map(Number);
+    const initialParticipantCount = gameConfiguration[0];
+    const responseSequenceLength = gameConfiguration[1];
 
-        if (participantInitialCount === 0 && utteranceTotalCount === 0) {
-            break;
+    if (initialParticipantCount === 0 && responseSequenceLength === 0) break;
+
+    const startingParticipants = Array.from({ length: initialParticipantCount }, (_, participantIdentifier) => participantIdentifier + 1);
+    const providedResponseSequence = Array.from({ length: responseSequenceLength }, () => inputLines.shift());
+
+    const simulationOutcome = providedResponseSequence.reduce((accumulator, currentTurnResponse) => {
+        let { activeParticipants, currentRoundNumber, participantTurnIndex } = accumulator;
+
+        if (activeParticipants.length === 0) {
+            return { activeParticipants, currentRoundNumber: currentRoundNumber + 1, participantTurnIndex };
         }
 
-        const utteranceSequence = [];
-        for (let j = 0; j < utteranceTotalCount; j++) {
-            utteranceSequence.push(rawLines[currentLineIndex]);
-            currentLineIndex++;
+        const expectedTurnPhrase = generateFizzBuzzPhrase(currentRoundNumber);
+        let updatedParticipants = [...activeParticipants];
+        let nextParticipantIndex = participantTurnIndex;
+
+        if (currentTurnResponse !== expectedTurnPhrase) {
+            updatedParticipants.splice(participantTurnIndex, 1);
         }
 
-        gameScenarios.push({
-            initialParticipants: participantInitialCount,
-            totalUtterances: utteranceTotalCount,
-            utterances: utteranceSequence
-        });
-    }
-    return gameScenarios;
-};
-
-const conductRound = (scenario) => {
-    const initialActiveContestants = Array.from({ length: scenario.initialParticipants }, (_, pIdx) => pIdx + 1);
-
-    const finalRoundState = scenario.utterances.reduce((stateAccumulator, spokenWordFromPlayer, turnZeroBased) => {
-        const { remainingContestants, speakerCursor } = stateAccumulator;
-        const gameCycleNumber = turnZeroBased + 1;
-
-        if (remainingContestants.length === 0) {
-            return stateAccumulator;
-        }
-
-        const requiredPhrase = generateExpectedUtterance(gameCycleNumber);
-        
-        let nextContestants = [...remainingContestants];
-        let nextSpeakerCursor = speakerCursor;
-
-        if (spokenWordFromPlayer !== requiredPhrase) {
-            nextContestants.splice(speakerCursor, 1);
-        }
-        
-        nextSpeakerCursor = (nextSpeakerCursor + 1);
-        
-        if (nextContestants.length > 0) {
-            nextSpeakerCursor %= nextContestants.length;
-        } else {
-            nextSpeakerCursor = 0;
-        }
+        nextParticipantIndex = updatedParticipants.length > 0 ? (participantTurnIndex + 1) % updatedParticipants.length : 0;
 
         return {
-            remainingContestants: nextContestants,
-            speakerCursor: nextSpeakerCursor
+            activeParticipants: updatedParticipants,
+            currentRoundNumber: currentRoundNumber + 1,
+            participantTurnIndex: nextParticipantIndex
         };
-    }, { remainingContestants: initialActiveContestants, speakerCursor: 0 });
+    }, {
+        activeParticipants: startingParticipants,
+        currentRoundNumber: 1,
+        participantTurnIndex: 0
+    });
 
-    return finalRoundState.remainingContestants;
-};
-
-const allGameScenarios = extractGameScenarios(lineSegments);
-
-for (const scenario of allGameScenarios) {
-    const finalContestants = conductRound(scenario);
-    console.log(finalContestants.join(' '));
+    console.log(simulationOutcome.activeParticipants.join(" "));
 }

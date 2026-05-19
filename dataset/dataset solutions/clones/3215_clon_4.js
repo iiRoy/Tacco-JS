@@ -1,95 +1,132 @@
-function combineBinaryVectors(firstVector, secondVector) {
-  const resultingVector = [];
-  for (let itemIndex = 0; itemIndex < firstVector.length; itemIndex++) {
-    resultingVector.push(firstVector[itemIndex] ^ secondVector[itemIndex]);
-  }
-  return resultingVector;
-}
+function processInputData(inputString) {
+    const parsedData = inputString.trim().split(/\s+/).map(Number);
+    const initialRows = parsedData.shift();
+    const initialCols = parsedData.shift();
 
-function isVectorZero(anyVector) {
-  for (const elementValue of anyVector) {
-    if (elementValue !== 0) return false;
-  }
-  return true;
-}
-
-function computeMatrixRank(rowsCount, columnsCount, flattenedElements) {
-  const initialRowSet = [];
-  for (let rCounter = 0; rCounter < rowsCount; rCounter++) {
-    initialRowSet.push(flattenedElements.slice(rCounter * columnsCount, (rCounter + 1) * columnsCount));
-  }
-
-  const linearBasis = [];
-
-  for (let rowIterator = 0; rowIterator < rowsCount; rowIterator++) {
-    let currentVector = [...initialRowSet[rowIterator]];
-
-    for (let basisElement of linearBasis) {
-      let pivotColumnIndex = -1;
-      for (let colSearch = 0; colSearch < columnsCount; colSearch++) {
-        if (basisElement[colSearch] === 1) {
-          pivotColumnIndex = colSearch;
-          break;
+    function BinaryGrid(rowsCount, colsCount, initialElements) {
+        this.originalRows = rowsCount;
+        this.originalCols = colsCount;
+        this.data = new Uint8Array(rowsCount * colsCount);
+        for (let i = 0; i < initialElements.length; i++) {
+            this.data[i] = initialElements[i];
         }
-      }
 
-      if (pivotColumnIndex !== -1 && currentVector[pivotColumnIndex] === 1) {
-        currentVector = combineBinaryVectors(currentVector, basisElement);
-      }
+        this.activeRowIndices = Array.from({ length: rowsCount }, (_, i) => i);
+        this.activeColIndices = Array.from({ length: colsCount }, (_, i) => i);
     }
 
-    if (!isVectorZero(currentVector)) {
-      let newVectorPivotCol = -1;
-      for (let colFind = 0; colFind < columnsCount; colFind++) {
-        if (currentVector[colFind] === 1) {
-          newVectorPivotCol = colFind;
-          break;
-        }
-      }
+    BinaryGrid.prototype.retrieve = function(activeRowIdx, activeColIdx) {
+        const originalRow = this.activeRowIndices[activeRowIdx];
+        const originalCol = this.activeColIndices[activeColIdx];
+        return this.data[originalRow * this.originalCols + originalCol];
+    };
 
-      if (newVectorPivotCol !== -1) {
-        for (let k = 0; k < linearBasis.length; k++) {
-          if (linearBasis[k][newVectorPivotCol] === 1) {
-            linearBasis[k] = combineBinaryVectors(linearBasis[k], currentVector);
-          }
+    BinaryGrid.prototype.update = function(activeRowIdx, activeColIdx, value) {
+        const originalRow = this.activeRowIndices[activeRowIdx];
+        const originalCol = this.activeColIndices[activeColIdx];
+        this.data[originalRow * this.originalCols + originalCol] = value;
+    };
+
+    BinaryGrid.prototype.swapActiveRows = function(idxA, idxB) {
+        const temp = this.activeRowIndices[idxA];
+        this.activeRowIndices[idxA] = this.activeRowIndices[idxB];
+        this.activeRowIndices[idxB] = temp;
+    };
+
+    BinaryGrid.prototype.swapActiveCols = function(idxA, idxB) {
+        const temp = this.activeColIndices[idxA];
+        this.activeColIndices[idxA] = this.activeColIndices[idxB];
+        this.activeColIndices[idxB] = temp;
+    };
+
+    BinaryGrid.prototype.removeLastActiveRow = function() {
+        this.activeRowIndices.pop();
+    };
+
+    BinaryGrid.prototype.removeLastActiveCol = function() {
+        this.activeColIndices.pop();
+    };
+
+    BinaryGrid.prototype.applyRowXOR = function(pivotActiveRowIdx, targetActiveRowIdx, currentActiveColIdx) {
+        const pivotOriginalRow = this.activeRowIndices[pivotActiveRowIdx];
+        const targetOriginalRow = this.activeRowIndices[targetActiveRowIdx];
+
+        for (let i = currentActiveColIdx; i < this.activeColIndices.length; i++) {
+            const originalCol = this.activeColIndices[i];
+            const pivotVal = this.data[pivotOriginalRow * this.originalCols + originalCol];
+            const targetVal = this.data[targetOriginalRow * this.originalCols + originalCol];
+            this.data[targetOriginalRow * this.originalCols + originalCol] = pivotVal ^ targetVal;
         }
-        linearBasis.push(currentVector);
-      }
+    };
+
+    function calculateRankRecursive(gridInstance, currentRankAccumulator) {
+        if (gridInstance.activeRowIndices.length === 0 || gridInstance.activeColIndices.length === 0) {
+            return currentRankAccumulator;
+        }
+
+        const currentColumnIndexInActive = 0;
+
+        let pivotRowIndexInActive = -1;
+        for (let i = 0; i < gridInstance.activeRowIndices.length; i++) {
+            if (gridInstance.retrieve(i, currentColumnIndexInActive) === 1) {
+                pivotRowIndexInActive = i;
+                break;
+            }
+        }
+
+        if (pivotRowIndexInActive === -1) {
+            gridInstance.swapActiveCols(currentColumnIndexInActive, gridInstance.activeColIndices.length - 1);
+            gridInstance.removeLastActiveCol();
+            return calculateRankRecursive(gridInstance, currentRankAccumulator);
+        } else {
+            const newRank = currentRankAccumulator + 1;
+            gridInstance.swapActiveRows(pivotRowIndexInActive, 0);
+
+            for (let i = 1; i < gridInstance.activeRowIndices.length; i++) {
+                if (gridInstance.retrieve(i, currentColumnIndexInActive) === 1) {
+                    gridInstance.applyRowXOR(0, i, currentColumnIndexInActive);
+                }
+            }
+
+            gridInstance.swapActiveRows(0, gridInstance.activeRowIndices.length - 1);
+            gridInstance.removeLastActiveRow();
+            gridInstance.swapActiveCols(currentColumnIndexInActive, gridInstance.activeColIndices.length - 1);
+            gridInstance.removeLastActiveCol();
+
+            return calculateRankRecursive(gridInstance, newRank);
+        }
     }
-  }
-  return linearBasis.length;
+
+    const gridInstance = new BinaryGrid(initialRows, initialCols, parsedData);
+    const finalRank = calculateRankRecursive(gridInstance, 0);
+
+    const MODULUS_VAL = 998244353;
+
+    const calculatePowerTerm = (exponent, initialValue, modulus) => {
+        let currentVal = initialValue;
+        for (let i = 0; i < exponent; i++) {
+            currentVal = (currentVal * 2);
+            if (currentVal >= modulus) {
+                currentVal -= modulus;
+            }
+        }
+        return currentVal;
+    };
+
+    let termAValue = calculatePowerTerm(initialCols + initialRows - 1, 1, MODULUS_VAL);
+
+    let termBValue = 1;
+    const exponentB = initialCols + initialRows - finalRank - 1;
+    for (let i = 0; i < exponentB; i++) {
+        termBValue = (termBValue * 2);
+        // Replicating the bug from the original code: it incorrectly modifies term1 (termAValue)
+        if (termBValue >= MODULUS_VAL) {
+            termAValue -= MODULUS_VAL;
+        }
+    }
+
+    let finalResult = (termAValue - termBValue + MODULUS_VAL) % MODULUS_VAL;
+    console.log(finalResult);
 }
 
-function calculateModularExponent(baseValue, exponentValue, modulusValue) {
-  let finalProduct = 1;
-  baseValue %= modulusValue;
-  while (exponentValue > 0) {
-    if (exponentValue % 2 === 1) finalProduct = (finalProduct * baseValue) % modulusValue;
-    baseValue = (baseValue * baseValue) % modulusValue;
-    exponentValue = Math.floor(exponentValue / 2);
-  }
-  return finalProduct;
-}
-
-function executeProblemSolver(rawInputString) {
-  let parsedNumericalData = rawInputString.trim().split(/\s+/).map(entry => parseInt(entry, 10));
-
-  let matrixDimensionR = parsedNumericalData.shift();
-  let matrixDimensionC = parsedNumericalData.shift();
-
-  let computedLinearRank = computeMatrixRank(matrixDimensionR, matrixDimensionC, parsedNumericalData);
-
-  const largePrimeDivisor = 998244353;
-
-  let firstExponent = matrixDimensionC + matrixDimensionR - 1;
-  let firstPowerResult = calculateModularExponent(2, firstExponent, largePrimeDivisor);
-
-  let secondExponent = matrixDimensionC + matrixDimensionR - computedLinearRank - 1;
-  let secondPowerResult = calculateModularExponent(2, secondExponent, largePrimeDivisor);
-
-  let finalCalculatedAnswer = (firstPowerResult - secondPowerResult + largePrimeDivisor) % largePrimeDivisor;
-
-  console.log(finalCalculatedAnswer);
-}
-
-executeProblemSolver(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

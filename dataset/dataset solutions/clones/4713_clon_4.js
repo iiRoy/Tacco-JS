@@ -1,55 +1,56 @@
-const retrieveAllInputData = async () => {
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    let acquiredData = '';
-    for await (const dataChunk of process.stdin) {
-        acquiredData += dataChunk;
-    }
-    return acquiredData.split('\n');
-};
+process.stdin.resume();
+process.stdin.setEncoding('ascii');
 
-const performGridMatching = (mainGridDimension, patternGridDimension, mainMatrixContent, patternMatrixContent) => {
-    const verticalOffsets = Array.from({ length: mainGridDimension - patternGridDimension + 1 }, (_, idx) => idx);
-    const horizontalOffsets = Array.from({ length: mainGridDimension - patternGridDimension + 1 }, (_, idx) => idx);
+let rawInputBuffer = "";
+let inputLines = [];
+let currentLineIndex = 0;
 
-    const isPatternFound = verticalOffsets.some(currentYOffset => {
-        return horizontalOffsets.some(currentXOffset => {
-            const rowsToCompare = Array.from({ length: patternGridDimension }, (_, rowIdx) => rowIdx);
-            const allRowsMatch = rowsToCompare.every(patternRowIndex => {
-                const mainGridSlice = mainMatrixContent[currentYOffset + patternRowIndex].slice(currentXOffset, currentXOffset + patternGridDimension);
-                const patternRow = patternMatrixContent[patternRowIndex];
-                return mainGridSlice === patternRow;
+process.stdin.on('data', function (data) {
+    rawInputBuffer += data;
+});
+
+process.stdin.on('end', function () {
+    inputLines = rawInputBuffer.split("\n");
+    executePatternSearch();
+});
+
+function obtainLine() {
+    return inputLines[currentLineIndex++];
+}
+
+/////////////// ignore above this line ////////////////////
+
+function executePatternSearch() {
+    const dimensionsLineParts = obtainLine().split(" ");
+    const mainGridDimension = parseInt(dimensionsLineParts[0]);
+    const patternGridDimension = parseInt(dimensionsLineParts[1]);
+
+    const mainGridData = Array.from({ length: mainGridDimension }, () =>
+        obtainLine().slice(0, mainGridDimension)
+    );
+
+    const patternGridData = Array.from({ length: patternGridDimension }, () =>
+        obtainLine().slice(0, patternGridDimension)
+    );
+
+    const possibleRowStarts = Array.from({ length: mainGridDimension - patternGridDimension + 1 }, (_, idx) => idx);
+    const possibleColStarts = Array.from({ length: mainGridDimension - patternGridDimension + 1 }, (_, idx) => idx);
+
+    const isPatternPresent = possibleRowStarts.some(rowOffset => {
+        return possibleColStarts.some(colOffset => {
+            const currentSubgridMatches = Array.from({ length: patternGridDimension }, (_, patternRowIdx) => patternRowIdx).every(patternRowIdx => {
+                const mainGridSegment = mainGridData[rowOffset + patternRowIdx].slice(colOffset, colOffset + patternGridDimension);
+                const patternGridSegment = patternGridData[patternRowIdx];
+                return mainGridSegment === patternGridSegment;
             });
-            return allRowsMatch;
+            return currentSubgridMatches;
         });
     });
 
-    return isPatternFound ? "Yes" : "No";
-};
-
-const initiateApplication = async () => {
-    const allReceivedLines = await retrieveAllInputData();
-
-    let currentLinePointer = 0;
-    const obtainNextLineSegment = () => {
-        if (currentLinePointer >= allReceivedLines.length) {
-            return '';
-        }
-        return allReceivedLines[currentLinePointer++];
-    };
-
-    const dimensionParameters = obtainNextLineSegment().split(" ").map(Number);
-    const largeGridSize = dimensionParameters[0];
-    const smallGridSize = dimensionParameters[1];
-
-    const largeGridCollection = Array.from({ length: largeGridSize }, () => obtainNextLineSegment().substring(0, largeGridSize));
-
-    const smallGridCollection = Array.from({ length: smallGridSize }, () => obtainNextLineSegment().substring(0, smallGridSize));
-
-    const finalResult = performGridMatching(largeGridSize, smallGridSize, largeGridCollection, smallGridCollection);
-
-    console.log(finalResult);
-    process.exit(0);
-};
-
-initiateApplication();
+    if (isPatternPresent) {
+        process.stdout.write("Yes");
+    } else {
+        process.stdout.write("No");
+    }
+    process.exit();
+}

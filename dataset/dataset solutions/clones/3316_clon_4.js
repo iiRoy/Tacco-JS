@@ -1,80 +1,84 @@
-function ProcessGraphPaths(rawData) {
-    const rawInputLines = rawData.split("\n");
+function Main(input) {
+  const inputLines = input.split("\n");
+  const [nodeCount, edgeCount] = inputLines[0].split(" ").map(Number);
 
-    const firstConfiguration = rawInputLines.shift().split(" ").map(Number);
-    const totalNodes = firstConfiguration[0]; 
-    const totalEdges = firstConfiguration[1];
+  const edgeStrings = inputLines.slice(1, inputLines.length - 2);
+  const edges = edgeStrings.map(s => s.split(" ").map(Number));
 
-    const connectionStatements = rawInputLines
-        .map(line => line.split(" ").map(Number))
-        .filter(arr => arr.length === 2 && !isNaN(arr[0]) && !isNaN(arr[1])); 
+  const forwardAdjacency = new Map();
+  const backwardAdjacency = new Map();
+  const nodeOutDegrees = new Map();
+  const allInvolvedNodes = new Set();
 
-    const adjacencyMap = new Map(); 
-    const entryDegrees = new Map(); 
-    const activeNodes = new Set(); 
-
-    for (const [sourceVertex, destinationVertex] of connectionStatements) {
-        activeNodes.add(sourceVertex);
-        activeNodes.add(destinationVertex);
-
-        if (!adjacencyMap.has(sourceVertex)) {
-            adjacencyMap.set(sourceVertex, new Set());
-        }
-        adjacencyMap.get(sourceVertex).add(destinationVertex);
-
-        entryDegrees.set(destinationVertex, (entryDegrees.get(destinationVertex) || 0) + 1);
-        if (!entryDegrees.has(sourceVertex)) {
-            entryDegrees.set(sourceVertex, 0);
-        }
+  for (const [u, v] of edges) {
+    if (!forwardAdjacency.has(u)) {
+      forwardAdjacency.set(u, []);
     }
+    forwardAdjacency.get(u).push(v);
 
-    const topologicalQueue = [];
-    const maxEdgePaths = new Map(); 
-
-    for (const nodeIdentifier of activeNodes) {
-        if ((entryDegrees.get(nodeIdentifier) || 0) === 0) { 
-            topologicalQueue.push(nodeIdentifier);
-        }
-        maxEdgePaths.set(nodeIdentifier, 0); 
+    if (!backwardAdjacency.has(v)) {
+      backwardAdjacency.set(v, []);
     }
+    backwardAdjacency.get(v).push(u);
 
-    let resultantLength = 0;
+    nodeOutDegrees.set(u, (nodeOutDegrees.get(u) || 0) + 1);
 
-    while (topologicalQueue.length > 0) {
-        const processedNode = topologicalQueue.shift();
-        resultantLength = Math.max(resultantLength, maxEdgePaths.get(processedNode));
+    allInvolvedNodes.add(u);
+    allInvolvedNodes.add(v);
+  }
 
-        if (adjacencyMap.has(processedNode)) {
-            for (const adjacentNode of adjacencyMap.get(processedNode)) {
-                maxEdgePaths.set(
-                    adjacentNode,
-                    Math.max(
-                        maxEdgePaths.get(adjacentNode),
-                        maxEdgePaths.get(processedNode) + 1
-                    )
-                );
+  const processingQueue = [];
+  const reverseTopologicalOrder = [];
+  const currentOutDegrees = new Map(nodeOutDegrees);
 
-                entryDegrees.set(adjacentNode, entryDegrees.get(adjacentNode) - 1);
-                if (entryDegrees.get(adjacentNode) === 0) {
-                    topologicalQueue.push(adjacentNode);
-                }
-            }
-        }
+  for (const node of allInvolvedNodes) {
+    if (!currentOutDegrees.has(node) || currentOutDegrees.get(node) === 0) {
+      processingQueue.push(node);
     }
+  }
 
-    console.log('%s', resultantLength);
-    return resultantLength;
+  while (processingQueue.length > 0) {
+    const currentNode = processingQueue.shift();
+    reverseTopologicalOrder.push(currentNode);
+
+    const predecessors = backwardAdjacency.get(currentNode) || [];
+    for (const predNode of predecessors) {
+      currentOutDegrees.set(predNode, currentOutDegrees.get(predNode) - 1);
+      if (currentOutDegrees.get(predNode) === 0) {
+        processingQueue.push(predNode);
+      }
+    }
+  }
+
+  const longestPathFromNode = new Map();
+  for (const node of allInvolvedNodes) {
+    longestPathFromNode.set(node, 0);
+  }
+
+  let overallMaxPath = 0;
+
+  for (const node of reverseTopologicalOrder) {
+    let currentMaxForNode = 0;
+    const neighbors = forwardAdjacency.get(node) || [];
+
+    for (const neighbor of neighbors) {
+      currentMaxForNode = Math.max(currentMaxForNode, 1 + (longestPathFromNode.get(neighbor) || 0));
+    }
+    longestPathFromNode.set(node, currentMaxForNode);
+    overallMaxPath = Math.max(overallMaxPath, currentMaxForNode);
+  }
+
+  console.log('%s', overallMaxPath);
+  return overallMaxPath;
 }
 
-function TestGraphAnalysis(testCaseNumber) {
-    var testInput = document.getElementById("input" + testCaseNumber).value;
-    var computedResult = ProcessGraphPaths(testInput);
-    var expectedResult = document.getElementById("output" + testCaseNumber).value.split("\n")[0];
-    var evaluationStatus = "FAIL";
-    if (computedResult == expectedResult) {
-        evaluationStatus = "PASS";
-    }
-    document.getElementById("result" + testCaseNumber).innerHTML = evaluationStatus;
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  var ans=Main(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+n).innerHTML=result;
 }
-
-ProcessGraphPaths(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

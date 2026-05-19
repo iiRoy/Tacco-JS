@@ -1,181 +1,157 @@
-let lineInterface = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-let inputController;
-let capturedLines = [];
 
-lineInterface.on('line', function(receivedText) {
-  capturedLines.push(receivedText);
+var dataStream;
+var inputLines = [];
+
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-lineInterface.on('close', function() {
-  inputController = initializeReader(capturedLines);
-  console.error('\n↑ Input Data ↓ Program Output');
-  runApplication();
+inputReader.on('close', function() {
+  dataStream = initializeInputProcessor(inputLines);
+  console.error('\n↑入力 ↓出力'); // Preserving original string literal
+  executeSolution();
 });
 
-/**
- * Creates a deep copy of an object or Set.
- * @param {any} sourceEntity The item to duplicate.
- * @returns {any} A new, independent copy of the source.
- */
-function deepCopyEntity(sourceEntity) {
-  return (sourceEntity instanceof Set) ? new Set(Array.from(sourceEntity)) : JSON.parse(JSON.stringify(sourceEntity));
+function createDeepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Functions to retrieve various data types from the input stream
-function readNextInteger() {
-  return dataTransformer(advanceAndFetch(), 1);
+function getNextInteger() {
+  return convertInputToken(fetchNextToken(), 1);
 }
 
-function readNextStringArray() {
-  return dataTransformer(advanceAndFetch(), 2);
+function getNextStringArray() {
+  return convertInputToken(fetchNextToken(), 2);
 }
 
-function readNextIntegerArray() {
-  return dataTransformer(advanceAndFetch(), 4);
+function getNextIntegerArray() {
+  return convertInputToken(fetchNextToken(), 4);
 }
 
-function readNextCharacterArray() {
-  return dataTransformer(advanceAndFetch(), 6);
+function getNextCharacterArray() {
+  return convertInputToken(fetchNextToken(), 6);
 }
 
-function advanceAndFetch() {
-  return inputController.advanceAndFetch();
+function fetchNextToken() {
+  return dataStream.fetchNextToken();
 }
 
-function hasMoreInput() {
-  return inputController.hasMoreInput();
+function hasMoreTokens() {
+  return dataStream.hasMoreTokens();
 }
 
-/**
- * Sets up an object to manage input lines.
- * @param {string[]} lines The array of raw input lines.
- * @returns {object} An object with methods to navigate input.
- */
-function initializeReader(lines) {
+function initializeInputProcessor(rawInput) {
   return {
-    dataPayload: lines,
-    readPosition: 0,
-    totalLines: lines.length,
-    hasMoreInput: function() {
-      return (this.readPosition < this.totalLines);
+    sourceData: rawInput,
+    currentIndex: 0,
+    maximumIndex: rawInput.length,
+
+    hasMoreTokens: function() {
+      return (this.currentIndex < this.maximumIndex);
     },
-    advanceAndFetch: function() {
-      if (this.hasMoreInput()) {
-        return this.dataPayload[this.readPosition++];
+
+    fetchNextToken: function() {
+      if (this.hasMoreTokens()) {
+        return this.sourceData[this.currentIndex++];
       } else {
-        throw new Error('InputOutOfBounds: No more lines available for reading.');
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input'; // Preserving original string literal
       }
     }
   };
 }
 
-/**
- * Prints a message to the standard output.
- * @param {string} messageContent The string to display.
- */
-function printToConsole(messageContent) {
-  console.log(messageContent);
+function printResult(outputValue) {
+  console.log(outputValue);
 }
 
-/**
- * Logs detailed debug information to the error stream.
- * @param {any} debugData The data to inspect and log.
- */
-function logErrorDetails(debugData) {
-  console.error('Debug Trace: ' + require('util').inspect(debugData, false, null));
+function logDebugMessage(debugContent) {
+  console.error('debug:' + require('util').inspect(debugContent, false, null)); // Preserving original string literal
 }
 
-/**
- * Converts an input value based on a specified transformation type.
- * @param {string|string[]} itemValue The value to transform.
- * @param {number} transformType Code indicating the conversion method.
- *        1: Parse as integer.
- *        2: Split by space into string array.
- *        4: Split by space, then parse each as number.
- *        6: Split into character array.
- *        7: Split into character array, then parse each as number.
- *        8: Join array elements with spaces.
- *        9: Join array elements with newlines.
- *        0: Join array elements with no separator.
- *        Default: Return input as is.
- * @returns {any} The transformed value.
- */
-function dataTransformer(itemValue, transformType) {
+// This function converts input based on a numeric format code.
+// 1: Parse as integer.
+// 2: Split by space into string array.
+// 4: Split by space into integer array.
+// 6: Split into character array.
+// 7: Split into character array and parse as integers.
+// 8: Join array elements with space.
+// 9: Join array elements with newline.
+// 0: Join array elements without separator.
+// Default: Return input as is.
+function convertInputToken(inputItem, formatCode) {
   try {
-    switch (transformType) {
+    switch (formatCode) {
       case 1:
-        return parseInt(itemValue);
+        return parseInt(inputItem);
       case 2:
-        return itemValue.split(' ');
+        return inputItem.split(' ');
       case 4:
-        return itemValue.split(' ').map(Number);
+        return inputItem.split(' ').map(Number);
       case 6:
-        return itemValue.split('');
+        return inputItem.split('');
       case 7:
-        return itemValue.split('').map(Number);
+        return inputItem.split('').map(Number);
       case 8:
-        return itemValue.join(' ');
+        return inputItem.join(' ');
       case 9:
-        return itemValue.join('\n');
+        return inputItem.join('\n');
       case 0:
-        return itemValue.join('');
+        return inputItem.join('');
       default:
-        return itemValue;
+        return inputItem;
     }
-  } catch (err) {
-    return itemValue;
+  } catch (conversionError) {
+    return inputItem;
   }
 }
 
-/**
- * Main application logic starts here.
- * This function processes the input data to determine maximum concurrent events.
- */
-function runApplication() {
-  const initialConfig = readNextIntegerArray();
-  const recordCount = initialConfig[0];
-  const channelCapacity = initialConfig[1];
+function executeSolution() {
+  var firstInput = getNextIntegerArray();
+  var numEvents = firstInput[0];
+  var channelCountLimit = firstInput[1]; // This variable is read but not used in the algorithm.
 
-  const segmentLength = 100005;
-  const timeSegments = new Array(segmentLength);
+  var timeRange = 100005; // Defines the upper bound for time points.
+  var eventSchedule = new Array(timeRange);
 
-  // Initialize each segment with event lists for arrivals and departures
-  for (let segmentIndex = 0; segmentIndex < segmentLength; segmentIndex++) {
-    timeSegments[segmentIndex] = {
-      arrivals: [],
-      departures: []
+  // Initialize each time point with empty lists for channels to add and remove.
+  for (var timePoint = 0; timePoint < timeRange; timePoint++) {
+    eventSchedule[timePoint] = {
+      channelsToAdd: [],
+      channelsToRemove: []
     };
   }
 
-  // Populate event lists based on input records
-  for (let recordIndex = 0; recordIndex < recordCount; recordIndex++) {
-    const currentRecord = readNextIntegerArray();
-    // Adjust start index for 0-based indexing
-    timeSegments[currentRecord[0] - 1].arrivals.push(currentRecord[2]);
-    timeSegments[currentRecord[1]].departures.push(currentRecord[2]);
+  // Process each event from the input.
+  for (var eventIndex = 0; eventIndex < numEvents; eventIndex++) {
+    var currentEvent = getNextIntegerArray(); // Format: [start_time, end_time, channel_id]
+    // Add channel_id to the 'channelsToAdd' list at (start_time - 1).
+    eventSchedule[currentEvent[0] - 1].channelsToAdd.push(currentEvent[2]);
+    // Add channel_id to the 'channelsToRemove' list at end_time.
+    eventSchedule[currentEvent[1]].channelsToRemove.push(currentEvent[2]);
   }
 
-  let activeChannels = new Set();
-  let maximumConcurrency = 0;
+  var activeChannels = new Set(); // Tracks currently active channels.
+  var maxConcurrentChannels = 0; // Stores the maximum number of channels active at any single time.
 
-  // Iterate through each time segment to calculate concurrency
-  for (let segmentIndex = 0; segmentIndex < segmentLength; segmentIndex++) {
-    // Process departures: remove channels that end at this segment
-    for (let eventIndex = 0; eventIndex < timeSegments[segmentIndex].departures.length; eventIndex++) {
-      activeChannels.delete(timeSegments[segmentIndex].departures[eventIndex]);
+  // Iterate through each time point to simulate channel activity.
+  for (var timePoint = 0; timePoint < timeRange; timePoint++) {
+    // First, remove channels that end at this time point.
+    for (var subIndex = 0; subIndex < eventSchedule[timePoint].channelsToRemove.length; subIndex++) {
+      activeChannels.delete(eventSchedule[timePoint].channelsToRemove[subIndex]);
     }
 
-    // Process arrivals: add channels that start at this segment
-    for (let eventIndex = 0; eventIndex < timeSegments[segmentIndex].arrivals.length; eventIndex++) {
-      activeChannels.add(timeSegments[segmentIndex].arrivals[eventIndex]);
+    // Then, add channels that start at this time point.
+    for (var subIndex = 0; subIndex < eventSchedule[timePoint].channelsToAdd.length; subIndex++) {
+      activeChannels.add(eventSchedule[timePoint].channelsToAdd[subIndex]);
     }
 
-    // Update the maximum concurrency observed so far
-    maximumConcurrency = Math.max(maximumConcurrency, activeChannels.size);
+    // Update the maximum concurrent channels if the current count is higher.
+    maxConcurrentChannels = Math.max(maxConcurrentChannels, activeChannels.size);
   }
 
-  printToConsole(maximumConcurrency);
+  printResult(maxConcurrentChannels);
 }

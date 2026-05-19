@@ -1,21 +1,12 @@
-function computeOutcome(rawData) {
-    // This function takes raw input and processes it to derive a numerical output.
+function processInput(inputString) {
+    // This function processes a given string input.
+    inputString = inputString.split("\n")[0]; // Extract the first line of the input.
+    inputString = inputString.split(" "); // Split the line by spaces into an array.
 
-    // Extract the very first line from the entire input string.
-    let trimmedLine = rawData.split("\n")[0];
-
-    // Further break down this first line into individual string components,
-    // assuming they are space-separated numerical values.
-    let numericalTokens = trimmedLine.split(" ");
-
-    // Display the calculated sum: the first number plus half of the second number.
-    console.log(Number(numericalTokens[0]) + Number(numericalTokens[1]) / 2);
-
-    /*
-     * An alternative calculation could simply be half of the second numerical token.
-     * console.log(Number(numericalTokens[1]) / 2);
-     */
+    console.log(Number(inputString[0]) + Number(inputString[1]) / 2); // Perform calculation and print result.
+    // The line below was a previous debug statement, now commented out.
+    // console.log(Number(inputString[1]) / 2);
 }
 
-// Initiate the outcome computation by reading data from standard input.
-computeOutcome( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

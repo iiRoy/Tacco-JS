@@ -1,48 +1,37 @@
-const evaluateData = (sourceText) => {
-    const dataLines = sourceText.split('\n');
-    const quantity = Number(dataLines[0]);
-    const rawValues = dataLines[1].split(' ').map(Number);
+function processInput(dataString) {
+    const lines = dataString.split('\n');
+    const countVal = Number(lines[0]);
+    const sortedNumbers = lines[1].split(' ').map(Number).sort((a, b) => b - a);
 
-    const arrangedValues = rawValues.sort((first, second) => second - first);
+    const midIndex = Math.ceil(countVal / 2);
+    const sumOfLargerHalf = sortedNumbers.slice(0, midIndex).reduce((accumulator, current) => accumulator + current, 0);
+    const sumOfSmallerHalf = sortedNumbers.slice(midIndex).reduce((accumulator, current) => accumulator + current, 0);
+    console.log(sumOfLargerHalf - sumOfSmallerHalf);
 
-    const positiveCount = Math.ceil(quantity / 2);
-    const negativeCount = Math.floor(quantity / 2);
+    let currentAccumulator;
+    let leftCursor = 0;
+    let rightCursor = countVal - 1;
+    let shouldPickFromLeft;
 
-    const largestSum = arrangedValues.slice(0, positiveCount).reduce((total, val) => total + val, 0);
-    const smallestSum = arrangedValues.slice(quantity - negativeCount).reduce((total, val) => total + val, 0);
-
-    const ultimateSum = largestSum - smallestSum;
-    console.log(ultimateSum);
-
-    let currentAccumulation;
-    let leftPointer = 0;
-    let rightPointer = quantity - 1;
-
-    if (quantity % 2 === 0) {
-        currentAccumulation = arrangedValues[rightPointer--];
+    if (countVal % 2 === 0) {
+        currentAccumulator = sortedNumbers[rightCursor--];
+        shouldPickFromLeft = true;
     } else {
-        currentAccumulation = arrangedValues[leftPointer++];
+        currentAccumulator = sortedNumbers[leftCursor++];
+        shouldPickFromLeft = false;
     }
 
-    Array.from({ length: quantity - 1 }).reduce((accumulator, _, stepIndex) => {
-        let valueForOperation;
-        if (quantity % 2 === 0) {
-            if (stepIndex % 2 === 0) {
-                valueForOperation = arrangedValues[accumulator.left++];
-            } else {
-                valueForOperation = arrangedValues[accumulator.right--];
-            }
+    for (let operationIndex = 0; operationIndex < countVal - 1; operationIndex++) {
+        let selectedOperand;
+        if (shouldPickFromLeft) {
+            selectedOperand = sortedNumbers[leftCursor++];
         } else {
-            if (stepIndex % 2 === 0) {
-                valueForOperation = arrangedValues[accumulator.right--];
-            } else {
-                valueForOperation = arrangedValues[accumulator.left++];
-            }
+            selectedOperand = sortedNumbers[rightCursor--];
         }
-        console.log(`${valueForOperation} ${accumulator.current}`);
-        accumulator.current = valueForOperation - accumulator.current;
-        return accumulator;
-    }, { current: currentAccumulation, left: leftPointer, right: rightPointer });
-};
+        console.log(`${selectedOperand} ${currentAccumulator}`);
+        currentAccumulator = selectedOperand - currentAccumulator;
+        shouldPickFromLeft = !shouldPickFromLeft;
+    }
+}
 
-evaluateData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

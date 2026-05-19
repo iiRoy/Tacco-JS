@@ -1,52 +1,58 @@
-const fileSystemModule = require('fs'); // Import the file system module for input operations.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8'); // Acquire all content from standard input, encoded as UTF-8.
+// Split the entire input into individual lines
+var lineData = (rawData.trim()).split("\n");
 
-let parsedLines = rawInputData.trim().split("\n"); // Sanitize the raw input: remove leading/trailing whitespace and segment into an array of lines.
-let linePointer = 0; // Initialize an index to navigate through the array of input lines.
+// Initialize a pointer to track the current line being processed
+var linePointer = 0;
 
-// Commence the primary processing cycle, which iterates indefinitely until a specific exit condition is encountered.
+// Main processing loop: continues until a specific termination condition is met
 while (true) {
-    // Deconstruct the current configuration line, converting space-separated values into numbers.
-    let currentConfig = parsedLines[linePointer].split(" ").map(Number);
-    linePointer++; // Progress the line index to point to the subsequent line.
+  // Parse the current line for N and S values
+  var currentConfig = lineData[linePointer].split(" ").map(Number);
+  linePointer++; // Move to the next line for subsequent reads
 
-    let numberOfItems = currentConfig[0]; // Extract the first parameter: count of data points for this test case.
-    let sumThreshold = currentConfig[1]; // Extract the second parameter: the target sum value for comparison.
+  var elementCount = currentConfig[0]; // N: number of elements to read
+  var sumThreshold = currentConfig[1]; // S: the target sum threshold
 
-    // Evaluate the termination condition: both configuration parameters are zero.
-    if (numberOfItems === 0 && sumThreshold === 0) {
-        break; // Terminate the main processing loop.
+  // Termination condition: if both N and S are zero, exit the loop
+  if (elementCount === 0 && sumThreshold === 0) {
+    break;
+  }
+
+  // Array to store the numeric values for the current test case
+  var numericValues = [];
+
+  // Read 'elementCount' numbers from subsequent lines
+  for (var readIndex = 0; readIndex < elementCount; readIndex++) {
+    var parsedValue = lineData[linePointer] - 0; // Convert line string to number
+    linePointer++; // Advance the line pointer
+    numericValues.push(parsedValue); // Add the number to our list
+  }
+
+  // Sort the array in ascending order, which is crucial for the algorithm
+  numericValues.sort(function(valA, valB) {
+    return valA - valB;
+  });
+
+  // Initialize a counter for pairs that satisfy the condition
+  var validPairCount = 0;
+
+  // Iterate through the sorted array to find pairs
+  for (var firstElementIndex = 0; firstElementIndex < elementCount; firstElementIndex++) {
+    // For each element, iterate through the remaining elements to its right
+    for (var secondElementIndex = firstElementIndex + 1; secondElementIndex < elementCount; secondElementIndex++) {
+      // If the sum of the current pair exceeds the threshold
+      if (numericValues[firstElementIndex] + numericValues[secondElementIndex] > sumThreshold) {
+        // All subsequent pairs with 'firstElementIndex' will also exceed the sum
+        // because the array is sorted. So, add the count of remaining elements
+        // and break the inner loop.
+        validPairCount += elementCount - secondElementIndex;
+        break;
+      }
     }
+  }
 
-    let numericalCollection = []; // Allocate an empty array to store the numerical data for the current scenario.
-    // Iterate to populate the numerical collection with the specified number of items.
-    for (let primaryIndex = 0; primaryIndex < numberOfItems; primaryIndex++) {
-        let parsedNumericValue = Number(parsedLines[linePointer]); // Transform the current input line string into a numerical type.
-        linePointer++; // Advance the line index.
-        numericalCollection.push(parsedNumericValue); // Append the converted number to the collection.
-    }
-
-    // Arrange the collected numbers in ascending order to optimize subsequent pair-finding logic.
-    numericalCollection.sort(function(firstVal, secondVal) {
-        return firstVal - secondVal;
-    });
-
-    let exceedingPairCounter = 0; // Initialize a tally for pairs whose aggregate value surpasses the threshold.
-
-    // Begin the nested loop structure to identify relevant pairs within the sorted collection.
-    for (let outerLoopIndex = 0; outerLoopIndex < numberOfItems; outerLoopIndex++) {
-        // The inner loop starts from the element immediately following the outer loop's current element.
-        for (let innerLoopIndex = outerLoopIndex + 1; innerLoopIndex < numberOfItems; innerLoopIndex++) {
-            // Check if the sum of the pair (current outer element + current inner element) exceeds the defined limit.
-            if (numericalCollection[outerLoopIndex] + numericalCollection[innerLoopIndex] > sumThreshold) {
-                // Due to the sorted nature of the array, if this pair exceeds the threshold,
-                // all subsequent pairs formed with `numericalCollection[outerLoopIndex]` and elements
-                // from `innerLoopIndex` onwards will also exceed the threshold.
-                exceedingPairCounter += numberOfItems - innerLoopIndex;
-                break; // Exit the inner loop for the current `outerLoopIndex` as further checks are redundant.
-            }
-        }
-    }
-    console.log(exceedingPairCounter); // Display the computed count of pairs that exceed the sum threshold for this test case.
+  // Output the total count of valid pairs for the current test case
+  console.log(validPairCount);
 }

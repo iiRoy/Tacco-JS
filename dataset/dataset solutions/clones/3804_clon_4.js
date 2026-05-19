@@ -1,41 +1,38 @@
-const fileSystemUtility = require("fs");
+"use strict";
+const fs = require("fs");
+const rawData = fs.readFileSync("/dev/stdin", "utf-8");
+const lines = rawData.split("\n");
 
-const acquiredContent = fileSystemUtility.readFileSync("/dev/stdin", "utf-8");
-const parsedLines = acquiredContent.split("\n");
+const humanSequence = lines[1];
+const sequenceLength = humanSequence.length;
 
-const orientationPattern = parsedLines[1];
-const patternLength = orientationPattern.length;
+if (sequenceLength === 0) {
+    console.log(0);
+} else {
+    // Pre-calculate the number of 'W's to the left of each position (exclusive)
+    // westwardCountsLeft[i] stores the count of 'W's in humanSequence[0...i-1]
+    const westwardCountsLeft = Array(sequenceLength).fill(0);
+    for (let currentPosition = 1; currentPosition < sequenceLength; currentPosition++) {
+        westwardCountsLeft[currentPosition] = westwardCountsLeft[currentPosition - 1] + (humanSequence[currentPosition - 1] === "W" ? 1 : 0);
+    }
 
-// Function to compute prefix sums for 'W' indicators
-const computeForwardWestward = (pattern) => {
-    return pattern.split('').reduce((accumulated, indicator, index) => {
-        accumulated.push(accumulated[index] + (indicator === 'W' ? 1 : 0));
-        return accumulated;
-    }, [0]);
-};
-const forwardWestwardTallies = computeForwardWestward(orientationPattern);
+    // Pre-calculate the number of 'E's to the right of each position (exclusive)
+    // eastwardCountsRight[i] stores the count of 'E's in humanSequence[i+1...sequenceLength-1]
+    const eastwardCountsRight = Array(sequenceLength).fill(0);
+    for (let currentPosition = sequenceLength - 2; currentPosition >= 0; currentPosition--) {
+        eastwardCountsRight[currentPosition] = eastwardCountsRight[currentPosition + 1] + (humanSequence[currentPosition + 1] === "E" ? 1 : 0);
+    }
 
-// Function to compute suffix sums for 'E' indicators
-const computeBackwardEastward = (pattern) => {
-    const reversedPatternArr = pattern.split('').reverse();
-    const reversedForwardEastward = reversedPatternArr.reduce((accumulated, indicator, index) => {
-        accumulated.push(accumulated[index] + (indicator === 'E' ? 1 : 0));
-        return accumulated;
-    }, [0]);
-    // Reverse the counts back to align with original indexing and adjust size
-    return reversedForwardEastward.reverse().slice(0, patternLength + 1);
-};
-const backwardEastwardTallies = computeBackwardEastward(orientationPattern);
+    let minimumRotations = Infinity;
 
-// Determine the minimum alignment score across all possible division points
-// An alignment score for a division point 'k' is (count of 'W's to the left of k) + (count of 'E's to the right of k)
-const potentialAlignmentScores = Array.from({ length: patternLength }, (_, divisionPoint) => {
-    const leftwardWestwardTally = forwardWestwardTallies[divisionPoint];
-    const rightwardEastwardTally = backwardEastwardTallies[divisionPoint + 1];
-    return leftwardWestwardTally + rightwardEastwardTally;
-});
-
-const optimalConformityScore = potentialAlignmentScores.reduce((minimumValue, currentValue) => Math.min(minimumValue, currentValue), Infinity);
-
-// Display the ultimate outcome
-console.log(optimalConformityScore);
+    // Iterate through each person, considering them as the potential leader
+    // The leader does not need to change direction.
+    // People to the left must face 'E', people to the right must face 'W'.
+    for (let leaderIndex = 0; leaderIndex < sequenceLength; leaderIndex++) {
+        const rotationsForCurrentLeader = westwardCountsLeft[leaderIndex] + eastwardCountsRight[leaderIndex];
+        if (rotationsForCurrentLeader < minimumRotations) {
+            minimumRotations = rotationsForCurrentLeader;
+        }
+    }
+    console.log(minimumRotations);
+}

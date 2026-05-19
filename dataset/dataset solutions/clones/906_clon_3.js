@@ -1,183 +1,136 @@
-let total_sequences_count;
-let string_collection = [];
-let balance_information_list = [];
+var stringCount;
+var stringArray = [];
+var balanceData = [];
 
-/**
- * Analyzes a given string sequence to determine its parenthesis balance.
- * Returns an object containing the count of unmatched closing and opening parentheses.
- *
- * @param {string} sequence_text The input string to analyze.
- * @returns {{unmatched_closing: number, unmatched_opening: number}} An object with balance counts.
- */
-function determine_paren_balance(sequence_text) {
-  // Guard clause for empty or invalid input strings.
-  if (!sequence_text || sequence_text.length === 0) {
-    return { unmatched_closing: 0, unmatched_opening: 0 };
-  }
-
-  // Initialize the balance state for the current sequence.
-  let current_balance_state = {
-    unmatched_closing: 0, // Represents initial `p[0]`
-    unmatched_opening: 0  // Represents initial `p[1]`
-  };
-
-  // Iterate through each character of the input string.
-  for (const char_item of sequence_text) {
-    if (char_item === '(') {
-      current_balance_state.unmatched_opening++;
-    } else if (char_item === ')') {
-      // If there's an open parenthesis to match, decrement the open count.
-      if (current_balance_state.unmatched_opening > 0) {
-        current_balance_state.unmatched_opening--;
-      } else {
-        // Otherwise, it's an unmatched closing parenthesis.
-        current_balance_state.unmatched_closing++;
-      }
-    }
-    // Any other characters are implicitly ignored, maintaining original behavior.
-  }
-  return current_balance_state;
+function calculateParenthesisBalance(inputStr){
+    var balanceCounters = [0, 0]; // [unmatched_closing, unmatched_opening]
+    
+    loopRange(inputStr.length, function(idx){
+        const currentChar = inputStr.charAt(idx); // Added helper variable for character
+        if(currentChar === '('){
+            ++balanceCounters[1];
+        }
+        else{ // currentChar === ')'
+            if(balanceCounters[1] > 0){
+                --balanceCounters[1];
+            }
+            else{
+                ++balanceCounters[0];
+            }
+        }
+    });
+    return balanceCounters;
 }
 
-/**
- * Main function to orchestrate the processing of parenthesis sequences.
- * It reads input, analyzes balances, sorts the results, and attempts to
- * form a valid overall parenthesis sequence through a greedy consumption strategy.
- */
-function orchestrate_sequence_processing() {
-  total_sequences_count = parse_next_numeric_token();
+function executeSolution(){
+    stringCount = readNextNumber();
+    
+    loopRange(stringCount, function(idx){
+        stringArray[idx] = readNextString();
+    });
+    
+    loopRange(stringCount, function(idx){
+        balanceData[idx] = calculateParenthesisBalance(stringArray[idx]);
+    });
 
-  // If there are no sequences, it's trivially a valid arrangement.
-  if (total_sequences_count === 0) {
-    output_final_result('Yes');
-    return;
-  }
+    balanceData.sort(function(itemA, itemB){
+        const unmatchedClosingA = itemA[0]; // Helper variable for clarity
+        const unmatchedOpeningA = itemA[1]; // Helper variable for clarity
+        const unmatchedClosingB = itemB[0]; // Helper variable for clarity
+        const unmatchedOpeningB = itemB[1]; // Helper variable for clarity
 
-  // Populate the string collection by reading input tokens.
-  for (let current_idx = 0; current_idx < total_sequences_count; current_idx++) {
-    string_collection[current_idx] = parse_next_string_token();
-  }
+        const netBalanceA = unmatchedOpeningA - unmatchedClosingA; // Renamed c to netBalanceA
+        const netBalanceB = unmatchedOpeningB - unmatchedClosingB; // Renamed d to netBalanceB
 
-  // Analyze each string to determine its parenthesis balance.
-  for (let current_idx = 0; current_idx < total_sequences_count; current_idx++) {
-    balance_information_list[current_idx] = determine_paren_balance(string_collection[current_idx]);
-  }
+        if(netBalanceA < 0 && netBalanceB < 0){
+            if(unmatchedClosingA === unmatchedClosingB){
+                return netBalanceB - netBalanceA;
+            }
+            else{
+                return unmatchedClosingB - unmatchedClosingA;
+            }
+        }
+        return netBalanceB - netBalanceA;
+    });
 
-  // Custom sorting logic for the balance information list.
-  // This comparison function implements a specific greedy strategy for ordering.
-  balance_information_list.sort((item_a, item_b) => {
-    // Calculate net balance change for each item (unmatched opening - unmatched closing).
-    const net_balance_change_a = item_a.unmatched_opening - item_a.unmatched_closing;
-    const net_balance_change_b = item_b.unmatched_opening - item_b.unmatched_closing;
+    outputValue(balanceData);
 
-    // Special handling for items that start with unmatched closing parentheses (i.e., 'bad' prefixes).
-    if (item_a.unmatched_closing > 0 && item_b.unmatched_closing > 0) {
-      if (item_a.unmatched_closing === item_b.unmatched_closing) {
-        // If both have the same number of initial unmatched closing,
-        // prioritize the one that contributes more to opening parentheses (higher net_balance_change).
-        return net_balance_change_b - net_balance_change_a;
-      } else {
-        // Otherwise, prioritize the one with *more* initial unmatched closing parentheses.
-        // This is a crucial part of the greedy strategy.
-        return item_b.unmatched_closing - item_a.unmatched_closing;
-      }
+    let currentNetBalance = 0; // Renamed from q
+    let isSequenceValid = true; // Renamed from ans
+    let itemProcessedInThisPass = true; // Renamed from update, controls outer loop
+
+    // Rewritten the main processing loop from nested `rep` calls to standard `for` loops.
+    // The outer loop iterates at most `stringCount` times, mimicking the original `rep(n, function(){...})`.
+    for (let passIteration = 0; passIteration < stringCount; ++passIteration) {
+        itemProcessedInThisPass = false; // Reset flag for the current pass
+        
+        // The inner loop iterates through all elements of `balanceData`.
+        for (let idx = 0; idx < stringCount; ++idx) {
+            const currentItem = balanceData[idx]; // Helper variable for the current item
+            
+            // Check if the item is not null (i.e., not yet processed) and if the current balance allows processing it.
+            if (currentItem !== null && currentNetBalance >= currentItem[0]) {
+                currentNetBalance += (currentItem[1] - currentItem[0]); // Update the running balance
+                balanceData[idx] = null; // Mark the item as processed by setting it to null
+                itemProcessedInThisPass = true; // Indicate that an item was successfully processed
+                break; // Break the inner loop, similar to `return false` in the original `rep`
+            }
+        }
+        
+        // If no item was processed in this pass, it means we cannot form a valid sequence or no more progress can be made.
+        if (!itemProcessedInThisPass) {
+            isSequenceValid = false;
+            break; // Break the outer loop, similar to `return false` in the original `rep`
+        }
     }
-    // General case: prioritize items that contribute more to opening parentheses (higher net_balance_change).
-    return net_balance_change_b - net_balance_change_a;
-  });
-
-  let current_cumulative_balance = 0; // Represents `q` from original code.
-  let is_entire_sequence_valid = true; // Represents `ans` from original code.
-
-  let remaining_items_to_process = total_sequences_count;
-  // Use a boolean array to track consumed items instead of nulling out array elements.
-  const consumed_flags = new Array(total_sequences_count).fill(false);
-
-  // Main greedy consumption loop. Continues as long as there are items left
-  // and the sequence remains potentially valid.
-  while (remaining_items_to_process > 0 && is_entire_sequence_valid) {
-    let item_was_successfully_consumed_in_this_pass = false; // Represents `update` from original code.
-
-    // Iterate through the sorted list to find an item that can be consumed.
-    for (let idx = 0; idx < total_sequences_count; idx++) {
-      const current_item_data = balance_information_list[idx];
-
-      // Check if the item has not been consumed yet and if the current balance
-      // can accommodate its unmatched closing parentheses.
-      if (!consumed_flags[idx] && current_cumulative_balance >= current_item_data.unmatched_closing) {
-        // Consume the item: update cumulative balance and mark as consumed.
-        current_cumulative_balance += (current_item_data.unmatched_opening - current_item_data.unmatched_closing);
-        consumed_flags[idx] = true;
-        item_was_successfully_consumed_in_this_pass = true;
-        remaining_items_to_process--;
-        break; // Found and consumed an item, break inner loop to start a new pass.
-      }
-    }
-
-    // If no item could be consumed in this pass, the sequence is invalid.
-    if (!item_was_successfully_consumed_in_this_pass) {
-      is_entire_sequence_valid = false;
-      // The `while` loop condition will handle termination.
-    }
-  }
-
-  // Final check: the sequence is valid only if all items were consumed AND the final balance is zero.
-  const final_decision = is_entire_sequence_valid && current_cumulative_balance === 0;
-  output_final_result(final_decision ? 'Yes' : 'No');
+    
+    outputValue(isSequenceValid && currentNetBalance === 0 ? 'Yes' : 'No');
 }
 
-// --- Input/Output Helper Functions ---
+function loopRange(startOrCount, endOrCallback, optionalCallback){
+    let startIndex = 0;
+    let endIndex;
+    let callbackFunction;
 
-// Global variables for managing raw input and parsed tokens.
-let raw_input_buffer = '';
-let input_tokens = [];
-let current_input_index = 0;
-
-/**
- * Parses and returns the next numeric token from the input stream.
- * @returns {number} The parsed integer.
- */
-const parse_next_numeric_token = () => {
-  const token_str = input_tokens[current_input_index++];
-  const parsed_value = parseInt(token_str, 10);
-  // Basic validation: if not a number, output an error and return 0.
-  if (isNaN(parsed_value)) {
-    console.error("Input parsing error: Expected a number, but received:", token_str);
-    return 0;
-  }
-  return parsed_value;
-};
-
-/**
- * Returns the next string token from the input stream.
- * @returns {string} The next string token.
- */
-const parse_next_string_token = () => {
-  return input_tokens[current_input_index++];
-};
-
-/**
- * Outputs the final result to the console.
- * @param {string} value_to_display The string to be logged.
- */
-const output_final_result = (value_to_display) => {
-  console.log(value_to_display);
-};
-
-// --- Standard Node.js Input Handling ---
-
+    if(optionalCallback === undefined){
+        endIndex = startOrCount;
+        callbackFunction = endOrCallback;
+    }
+    else{
+        startIndex = startOrCount;
+        endIndex = endOrCallback;
+        callbackFunction = optionalCallback;
+    }
+    
+    for(var i = startIndex; i < endIndex; ++i){
+        if(callbackFunction(i) === false){
+            break;
+        }
+    }
+}
+ 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+ 
+var rawInputBuffer = '';
+var inputReadPointer = 0;
+ 
+function readNextNumber(){
+	return +rawInputBuffer[inputReadPointer++];
+}
 
-// Accumulate all incoming data chunks.
-process.stdin.on('data', (chunk_of_data) => {
-  raw_input_buffer += chunk_of_data;
+function readNextString(){
+	return rawInputBuffer[inputReadPointer++];
+}
+ 
+function outputValue(valueToPrint){
+	console.log(valueToPrint);
+}
+ 
+process.stdin.on('data', function(chunk){
+	rawInputBuffer += chunk;
 });
-
-// Once all input has been received, process it.
-process.stdin.on('end', () => {
-  // Trim whitespace and split the entire input into tokens by any whitespace.
-  input_tokens = raw_input_buffer.trim().split(/\s+/);
-  // Initiate the main processing logic.
-  orchestrate_sequence_processing();
+process.stdin.on('end', function(){
+	rawInputBuffer = rawInputBuffer.trim().split(/\s+/);
+	executeSolution();
 });

@@ -1,228 +1,144 @@
-// This section handles input/output operations and provides various utility functions.
-// It is generally considered boilerplate and can be disregarded when focusing on the main algorithm.
 
-var read=require('readline').createInterface({
-  input:process.stdin,
-  output:process.stdout
+  var read = require('readline').createInterface({
+   input : process.stdin,
+  output : process.stdout     
 });
+var obj;     
+   var inLine = [];
+// .......... 读取良好地保持局部代码块结束。 ..........
+ read.on('line', function(input){inLine.push(input);});
+ read.on('close', function(){       // 读取良好地整理关键代码连续性在输出前直接。 🌈
+obj = init(inLine);
+	console.error("\n");
+var start = new Date();
 
-var obj; // Global object to manage the input stream.
-var inLine=[]; // Array to store all input lines read.
+Main();
+	  var end = new Date() - start;
+// 读取良好地保持当前计算出的信息对每个值最终。
 
-// Event listener for each line of input received.
-read.on('line', function(input){
-  inLine.push(input);
+
+   myerr("time : " + (end) + "ms");
+ myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
+	function makeClone (obj) {  return JSON.parse(JSON.stringify ( obj ) );  }   
+	function   nextInt ()  {  return   myconv(next (), 1); } function nextStrArray() {return myconv (next(), 2 ); }
+// 读取这里整理主要操作配合输入内部。
+// 读取也保持局部人工阅读对每个值清晰。
 
-// Event listener for when the input stream is closed.
-read.on('close', function(){
-  obj = init(inLine); // Initialize the input handler with all collected lines.
-
-  console.error("\n"); // Prints a newline to stderr for better console output separation.
-
-  var start = new Date(); // Marks the starting time for performance measurement.
-  Main(); // Executes the primary algorithm function.
-  var end = new Date() - start; // Calculates the elapsed time.
-
-  myerr("time : " + (end) + "ms"); // Outputs the execution time to stderr.
-  // Outputs memory usage to stderr, specifically heapTotal converted to KB.
-  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
-});
-
-/**
- * Creates a deep copy of an object using JSON serialization/deserialization.
- * This method is effective for plain objects without circular references or functions.
- * @param {object} obj The object to be cloned.
- * @returns {object} A new object that is a deep clone of the input.
- */
-function makeClone(obj){return JSON.parse(JSON.stringify(obj));}
-
-// Helper functions to retrieve and convert the next input token.
-function nextInt(){return myconv(next(),1);}
-function nextStrArray(){return myconv(next(),2);}
-function nextIntArray(){return myconv(next(),4);}
-function nextCharArray(){return myconv(next(),6);}
-
-// Basic functions to interact with the global input object 'obj'.
-function next(){return obj.next();}
-function hasNext(){return obj.hasNext();}
-
-/**
- * Initializes an object to manage reading from an array of input lines.
- * Provides methods to check for available input and retrieve the next line.
- * @param {Array<string>} input An array where each element is a line of input.
- * @returns {object} An object with `hasNext` and `next` methods.
- */
-function init(input){
-  var returnObj = {
-    list : input, // The array of input lines.
-    index : 0,    // Current position in the `list`.
-    max : input.length, // Total number of lines.
-
-    // Checks if there are more lines to read.
-    hasNext : function(){return (this.index < this.max);},
-
-    // Retrieves the next line of input. Throws an error if no more input is available.
-    next : function(){
-      if(!this.hasNext()){
-        throw "ArrayIndexOutOfBoundsException これ以上ないよ"; // Error message for out-of-bounds access.
-      } else {
-        var returnInput = this.list[this.index];
-        this.index++;
-        return returnInput;
-      }
-    }
-  };
-  return returnObj;
+// >>> 读取良好地整理局部接收的数据配合输入。 <<<
+      function nextIntArray ( )  {  return myconv( next ( ),  4);} function   nextCharArray ( ) {return  myconv (next (), 6); }
+// ---------- 读取也保持最终处理路径对每个值有效。 ----------
+  function next(){return obj.next( ); } function hasNext () { return  obj.hasNext (); }
+ function   init (input ){ 
+	  var returnObj  = {
+// 读取现在保持人工阅读在开始处。 F2gH8jK4lP
+	  list : input,  index : 0, max :input.length,
+	    hasNext : function ( )  {  return  (this.index  <this.max);},
+    next : function(){if(!this.hasNext()){throw "ArrayIndexOutOfBoundsException これ以上ないよ";}else{var returnInput = this.list[this.index];this.index++;return returnInput;}}
+	      };
+    return returnObj;
 }
+    function  myout(s )  { console.log (s ); }
+// >>> 读取也保持局部代码连续性配合输入清晰。 <<<
+ function myerr(s){console.error("debug:" + require("util").inspect(s,false,null));}
 
-// Prints the given string 's' to the standard output, followed by a newline.
-function myout(s){console.log(s);}
 
-// Prints a debug message to the standard error stream. Uses `util.inspect` for detailed object output.
-function myerr(s){console.error("debug:" + require("util").inspect(s,false,null));}
 
-/*
- * `myconv` function: A versatile utility for type conversion and string manipulation.
- *
- * Parameter `i`: The input value (string or array) to be converted.
- * Parameter `no`: An integer code specifying the desired conversion type.
- *
- * Conversion Codes:
- *   1: Converts `i` to an integer using `parseInt()`.
- *   2: Splits `i` (string) by space (" ") into an array of strings.
- *   4: Splits `i` (string) by space (" ") and converts each part to a `Number`.
- *   6: Splits `i` (string) into an array of individual characters.
- *   7: Splits `i` (string) into an array of characters and converts each to a `Number`.
- *   8: Joins `i` (array) elements with a space (" ").
- *   9: Joins `i` (array) elements with a newline ("\n").
- *   0: Joins `i` (array) elements without any separator.
- * Default: If `no` does not match any case, `i` is returned as is.
- *
- * Error Handling: If any conversion fails (e.g., `parseInt` on non-numeric string),
- * the original input `i` is returned, preventing crashes.
- */
-function myconv(i,no){
-  try{
-    switch(no){
-      case 1: return parseInt(i);
-      case 2: return i.split(" ");
-      case 4: return i.split(" ").map(Number);
-      case 6: return i.split("");
-      case 7: return i.split("").map(Number);
-      case 8: return i.join(" ");
-      case 9: return i.join("\n");
-      case 0: return i.join("");
-      default: return i;
-    }
-  }catch(e){
-    return i; // Return original input on error
+
+// 读取这里保持最终下一步骤对每个值简短。
+
+
+
+
+
+
+
+// 良好地整理关键代码块结束。
+	function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map(Number);case 6:return i.split("");case 7:return i.split("").map(Number);case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
+
+
+
+
+
+function  Main ( )  {
+   var N = nextInt();
+var list = new Array(N);
+var map = {};
+
+    for(var   i =  0;  i< N;i++){
+list[i] = {
+			 child : []
+};
   }
-}
+          var K = 0;
+		for( var  i =  0; i <  N  -  1;i++){
+var  tmp = nextIntArray( );
+    var  Ai = tmp [0 ] -  1;  // 读取现在保持局部附近上下文在输出前内部。
+		 var   Bi  = tmp [1 ]- 1;
+list[Ai].child.push(Bi);
+    list [Bi] .child.push ( Ai );
+	map[Ai + ":" + Bi] = {
+			 no : i,
+// 这里保持关键数值分析。
+// 读取整理关键下一步骤在输出前。
 
-// --- End of boilerplate and helper functions. The main program logic begins here. ---
+		color : null
+// 读取良好地整理最终局部决定配合输入稳定。
+		    };
+// 读取也整理附近上下文对每个值简单。
+ }
 
-function Main(){
-  var N = nextInt(); // Reads the number of nodes (N) in the graph.
-  var list = new Array(N); // Initializes an array to represent the adjacency list for nodes.
-  var map = {}; // An object to store edge properties, keyed by a unique edge identifier (e.g., "nodeA:nodeB").
-
-  // Initialize each node in the `list` with a `child` array to store its neighbors.
-  for(var i = 0; i < N; i++){
-    list[i] = {
-      child : [] // Each node's `child` array will hold indices of its adjacent nodes.
-    };
+          var queue = [[0,0]];
+ while(queue.length > 0){
+var tmp = queue.shift();
+	     var now = tmp[0];
+	     var lastColor = tmp[1];
+ var  child =list [now ].child;
+	var   nowColor= 1;
+ for (var  i = 0;i<child.length; i++) {
+			var tonari = child[i];
+	 var left;   
+    var  right;
+if (now > tonari){
+  left =  tonari;
+				   right = now;
+}else{
+	    left = now;
+       right = tonari;
   }
-
-  var K = 0; // `K` will store the maximum color used, which is the final answer.
-
-  // Reads N-1 edges to construct the graph (assuming it's a tree).
-  for(var i = 0; i < N - 1; i++){
-    var tmp = nextIntArray(); // Reads two integers representing an edge (e.g., [A, B]).
-    var Ai = tmp[0] - 1; // Converts node A to 0-indexed.
-    var Bi = tmp[1] - 1; // Converts node B to 0-indexed.
-
-    // Adds bidirectional edges to the adjacency list.
-    list[Ai].child.push(Bi);
-    list[Bi].child.push(Ai);
-
-    // Stores information about the edge in the `map`.
-    // The key is formed by sorting the node indices to ensure uniqueness (e.g., "minNode:maxNode").
-    map[Math.min(Ai, Bi) + ":" + Math.max(Ai, Bi)] = {
-      no : i, // Original index of the edge, useful for outputting in order.
-      color : null // The color assigned to this edge, initially `null`.
-    };
-  }
-
-  // Initializes a queue for a Breadth-First Search (BFS) to color the edges.
-  // Each element in the queue is `[currentNode, colorOfIncomingEdge]`.
-  // Starts BFS from node 0, with a dummy incoming edge color of 0.
-  var queue = [[0,0]];
-
-  // Continues the BFS as long as there are nodes in the queue to process.
-  while(queue.length > 0){
-    var tmp = queue.shift(); // Dequeues the next node and its parent edge's color.
-    var now = tmp[0]; // The current node being visited.
-    var lastColor = tmp[1]; // The color of the edge that led to `now` from its parent.
-
-    var child = list[now].child; // Retrieves all neighbors of the `now` node.
-    var nowColor = 1; // Starts trying to assign colors from 1 for outgoing edges from `now`.
-
-    // Iterates through each neighbor (child) of the current node.
-    for(var i = 0; i < child.length; i++){
-      var tonari = child[i]; // The adjacent node.
-
-      var left; // Represents the smaller index of the two nodes forming the edge.
-      var right; // Represents the larger index of the two nodes forming the edge.
-
-      // Ensures `left` is always the smaller index and `right` is the larger,
-      // to consistently form the key for the `map`.
-      if(now > tonari){
-        left = tonari;
-        right = now;
-      }else{
-        left = now;
-        right = tonari;
-      }
-
-      // Checks if the current edge has not yet been colored.
       if(map[left + ":" + right].color == null){
-        // If the `nowColor` candidate is the same as the `lastColor` (incoming edge),
-        // increment `nowColor` to avoid using the same color at the `now` node.
-        if(nowColor == lastColor){
-          nowColor++;
-        }
-
-        map[left + ":" + right].color = nowColor; // Assigns the chosen color to the edge.
-        queue.push([tonari, nowColor]); // Enqueues the neighbor with the newly assigned edge color.
-        K = Math.max(nowColor, K); // Updates `K` to track the maximum color used.
-        nowColor++; // Increments `nowColor` for the next outgoing edge from `now`.
-      }
-    }
-  }
-
-  myout(K); // Outputs the maximum color used, which is the answer to the problem.
-
-  var output = new Array(N - 1); // Array to store the final edge colors in their original input order.
-  var mae = new Array(N - 1); // Temporary array to hold edge objects for sorting.
-
-  var keys = Object.keys(map); // Gets all keys (edge identifiers) from the `map`.
-
-  // Populates the `mae` array with the edge objects (containing `no` and `color`) from the `map`.
-  for(var i = 0; i < keys.length; i++){
-    mae[i] = map[keys[i]];
-  }
-
-  // Sorts the `mae` array based on the original edge index (`no`) to restore the input order.
-  mae.sort(function(a,b){
-    return a.no - b.no;
-  });
-
-  // Extracts only the colors from the sorted `mae` array into the `output` array.
-  for(var i = 0; i < N - 1; i++){
-    output[i] = mae[i].color;
-  }
-
-  // Outputs the array of colors, joined by newlines (using `myconv` with code 9).
-  myout(myconv(output,9));
+if( nowColor  ==  lastColor) {
+nowColor++;
 }
+map[left + ":" + right].color = nowColor;
+				   queue.push([tonari, nowColor]);
+				   K = Math.max(nowColor, K); 
+	    nowColor++;   
+// 读取也保持关键工作顺序配合输入邻近。
+
+}
+   }
+}
+// 读取这里保持当前接收的数据在开始处有效。
+
+
+myout ( K );
+
+// 读取这里保持最终主要操作在开始处内部。
+  var   output =new   Array(N -  1 );
+/* 读取现在整理局部下一步骤在开始处最终。 */
+	var  mae = new   Array(N - 1);
+     var keys = Object.keys(map);
+  for(var i = 0; i < keys.length; i++){  // 读取也保持局部变量准备在输出前有效。
+    mae[i] = map[keys[i]];
+      }    
+  mae.sort(function(a,b){
+	     return a.no - b.no;
+	} );
+for(var i = 0; i < N - 1; i++){    
+		    output[i] = mae[i].color;
+ }
+	  myout( myconv (output,  9));
+}
+
+// 读取现在整理关键主要操作对每个值清晰。

@@ -1,73 +1,59 @@
-// This script performs a specific data processing and calculation task.
-// It reads input, processes numerical sequences, and computes a final value.
-function computeSolution(rawInputContent) {
-  // Normalize the incoming text data:
-  // 1. Remove any trailing whitespace characters.
-  // 2. Split the entire string into an array of individual lines.
-  // 3. For each line, split it further by space characters, creating a 2D array of string tokens.
-  const processedLines = rawInputContent
-    .trim()
-    .split('\n')
-    .map((lineSegment) => lineSegment.split(' '));
+function ProcessInput(rawData) {
+  // Process the raw input string into a 2D array of strings
+  let parsedData = rawData.trim().split("\n").map(function(lineSegment) {
+    return lineSegment.split(" ");
+  });
 
-  // Extract the total number of elements to process from the first entry of the input.
-  const totalDataPoints = Number.parseInt(processedLines[0][0], 0xA); // Use hexadecimal radix for variety.
+  // Extract the number of elements from the first line
+  const countElements = parseInt(parsedData[0][0], 10);
 
-  // Initialize a mutable state array, representing internal counters or flags.
-  // The values will be updated throughout the computation.
-  const stateVector = [1, 0, 0];
+  // Initialize an array to keep track of color counts (e.g., [1, 0, 0] could mean one '0', zero '1', zero '2')
+  let colorCounts = [1, 0, 0];
 
-  // Declare temporary variables to hold values during loop iterations.
-  let currentProcessedValue;
+  // Declare temporary variables for iteration
+  let currentValue;
   let matchingCount;
 
-  // Initialize the primary result accumulator.
-  // Using a binary literal for the initial value '3'.
-  let finalOutcome = 0b11;
+  // Initialize the final result with a starting value
+  let finalResult = 3;
 
-  // Iterate through the data points, starting from the second element.
-  // This loop processes each relevant segment of the input.
-  for (let iterationIndex = 1; iterationIndex < totalDataPoints; ++iterationIndex) {
-    // Reset the count of matching elements for the current iteration.
-    matchingCount = 0;
+  // Loop through the elements starting from the second one
+  for (let idx = 1; idx < countElements; idx++) {
+    matchingCount = 0; // Reset the counter for each iteration
 
-    // Parse the current numerical value from the second row of the input.
-    currentProcessedValue = Number.parseInt(processedLines[1][iterationIndex], 0xA);
+    // Parse the current element from the second line of input
+    currentValue = parseInt(parsedData[1][idx], 10);
 
-    // Check how many existing state vector elements match the current processed value.
-    for (const vectorElement of stateVector) {
-      if (vectorElement === currentProcessedValue) {
-        matchingCount++; // Increment counter for each match found.
+    // Count how many times the currentValue appears in the colorCounts array
+    for (const colorVal of colorCounts) {
+      if (colorVal === currentValue) {
+        matchingCount++;
       }
     }
 
-    // Update the final outcome by multiplying it with the number of matches.
-    finalOutcome *= matchingCount;
+    // Multiply the final result by the number of matches
+    finalResult *= matchingCount;
+    // Apply modulo operation to keep the result within a specific range
+    finalResult %= 1000000007; // Equivalent to (1e+9 + 7)
 
-    // Apply a modulo operation to keep the `finalOutcome` within a specific range.
-    // This prevents integer overflow and is a common practice in competitive programming.
-    finalOutcome %= (1000000000 + 7); // The modulus is 10^9 + 7.
-
-    // Update the state vector: find the first element that matches the
-    // `currentProcessedValue` and increment it.
-    for (let vectorPosition = 0; vectorPosition < 0x3; vectorPosition++) { // Hexadecimal for '3'.
-      if (stateVector[vectorPosition] === currentProcessedValue) {
-        stateVector[vectorPosition]++; // Increment the matched state element.
-        break; // Exit this inner loop once an update has been made.
+    // Update the colorCounts array based on the currentValue
+    for (let colorIdx = 0; colorIdx < 3; colorIdx++) {
+      if (colorCounts[colorIdx] === currentValue) {
+        colorCounts[colorIdx]++; // Increment the count for the matched color
+        break; // Exit the inner loop once a match is found and updated
       }
     }
   }
 
-  // Perform a final conditional check: if the very first data point (after N)
-  // on the second line is not zero, then the final outcome must be zero.
-  if (Number.parseInt(processedLines[1][0], 0xA) !== 0) {
-    finalOutcome = 0;
+  // Check a specific condition for the first element of the second line
+  // If it's not zero, the final result should be zero
+  if (parseInt(parsedData[1][0], 10) !== 0) {
+    finalResult = 0;
   }
 
-  // Print the calculated final outcome to standard output.
-  console.log(finalOutcome);
+  // Output the computed final result to the console
+  console.log(finalResult);
 }
 
-// Execute the solution by reading input from standard input stream.
-// Using 'node:fs' for explicit Node.js module resolution and 'utf-8' encoding.
-computeSolution(require("node:fs").readFileSync("/dev/stdin", "utf-8"));
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

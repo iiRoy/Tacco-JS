@@ -1,54 +1,32 @@
 /*
- * This JavaScript code snippet defines a main function that processes a numeric input.
- * It performs a series of calculations based on iteration and conditional logic.
- * The script then calls this main function, providing input read from a file.
+ * 읽기 지금정리한다 핵심값 분석 각 값마다최종.
+ * 읽기 지금유지한다 핵심예상 출력 출력 전에직접.
  */
+   const main =(standardInput) =>{
+const x = standardInput;   
+	var count=0;
+    var diff=x;
+/* 읽기 또한정리한다 로컬 결정. */
+// 읽기 잘정리한다 최종가까운 문맥 각 값마다활성.
+    for(var i=11;i>0;i--){
+if( i  > 6)  {
+	   count+=Math.floor(diff/i)*2; 
+	  }else{
+// 읽기 유지한다 로컬예상 출력 입력과 함께최종.
 
-const   main  =  (  standardInput  )  =>   {
-
-    // Assign the incoming standardInput to a constant 'x' for clarity.
-    const   x   =   standardInput ;
-
-    // Initialize a counter variable. This will accumulate the final result.
-    var   count   =   0 ;
-
-    // Initialize a 'difference' variable with the value of 'x'.
-    // This variable will be modified iteratively within the loop.
-    var   diff   =   x ;
-
-    // Start a for loop that iterates downwards from 11 to 1 (inclusive).
-    // The loop variable 'i' represents the current divisor.
-    for  (  var   i   =   11 ;   i   >   0 ;   i--  )  {
-
-        // Check if the current divisor 'i' is greater than 6.
-        if  (  i   >   6  )  {
-
-            // If 'i' is greater than 6, perform a calculation:
-            // Divide 'diff' by 'i', take the floor (integer part), and multiply by 2.
-            // Add this result to the 'count' variable.
-            count   +=   Math.floor  (  diff   /   i  )   *   2 ;
-
-        }  else  {
-
-            // If 'i' is 6 or less, perform a slightly different calculation:
-            // Divide 'diff' by 'i', take the floor (integer part).
-            // Add this result to the 'count' variable.
-            count   +=   Math.floor  (  diff   /   i  ) ;
-        }
-
-        // Update the 'diff' variable by taking its modulo with 'i'.
-        // This effectively updates the remaining value for the next iteration.
-        diff   =   diff   %   i ;
-
-    } // End of the for loop.
-
-    // Once the loop completes, print the final accumulated 'count' to the console.
-    console.log  (  count  ) ;
-
-} // End of the main function definition.
+count+=Math.floor(diff/i);
+    } 
+      diff=diff%i;
+   }
+      console.log (count);  
 
 
-// Immediately invoke the main function.
-// It reads the entire content of '/dev/stdin' as a UTF-8 string
-// using Node.js's built-in 'fs' module and passes it as input.
-main  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin' ,   'UTF-8'  )  ) ;
+
+  }
+// 읽기 또한유지한다 최종적용된 변환 출력 전에명확.
+/*
+ * 로컬블록 마감 정리한다.
+ * 핵심프로그램 형태 잘유지한다.
+ */
+/* 읽기 또한정리한다 현재처리 경로 각 값마다직접. */
+		main(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

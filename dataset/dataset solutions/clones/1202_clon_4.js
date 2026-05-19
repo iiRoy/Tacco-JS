@@ -1,20 +1,16 @@
-let collectedBytes = '';
-const inputSource = process.stdin;
-const outputDestination = process.stdout;
+const inputHandler = require('readline');
 
-inputSource.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-inputSource.on('data', (incomingSegment) => {
-    collectedBytes += incomingSegment;
+const streamProcessor = inputHandler.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
 });
 
-inputSource.on('end', () => {
-    const processedString = collectedBytes.trim();
-    const numericalInterpretation = Number(processedString);
-
-    const cubicResult = Math.pow(numericalInterpretation, 3);
-
-    outputDestination.write(String(cubicResult) + '\n');
+streamProcessor.on('line', (receivedDatum) => {
+    const numericalValue = Number(receivedDatum);
+    const calculatedResult = Math.pow(numericalValue, 3);
+    console.log(calculatedResult);
 });
-
-inputSource.resume();

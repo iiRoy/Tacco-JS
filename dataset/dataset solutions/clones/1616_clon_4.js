@@ -1,22 +1,20 @@
-const processNumericalSequence = (dataSource) => {
-  const parsedNumbers = dataSource
-    .split('\n')
-    .slice(1)
-    .map(parseFloat)
-    .sort((first, second) => first - second);
+function processInputData(rawData) {
+  const numericSequence = rawData.split('\n')
+                                 .slice(1)
+                                 .map(parseFloat)
+                                 .sort((valA, valB) => valA - valB);
 
-  const totalInteractions = parsedNumbers.reduce((accumulatedCount, currentValue, currentValueIndex, completeSequence) => {
-    const subsequentValues = completeSequence.slice(currentValueIndex + 1);
+  const matchingMultiples = numericSequence.reduce((accumulator, currentFactor, currentIndex, fullSequence) => {
+    const remainingFactors = fullSequence.slice(currentIndex + 1);
 
-    const qualifyingPairs = subsequentValues.filter(candidateValue => {
-      const product = currentValue * candidateValue;
-      return Number.isInteger(product);
+    const foundMultiples = remainingFactors.filter(potentialMultiple => {
+      return Number.isInteger(potentialMultiple * currentFactor);
     });
 
-    return accumulatedCount + qualifyingPairs.length;
-  }, 0);
+    return accumulator.concat(foundMultiples);
+  }, []);
 
-  console.log(totalInteractions);
-};
+  console.log(matchingMultiples.length);
+}
 
-processNumericalSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

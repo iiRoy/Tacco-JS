@@ -1,15 +1,18 @@
-function evaluateCondition(dataPacket) {
-    const numericFragments = dataPacket.split(" ").map(segment => Number(segment));
+function processInputData(rawString) {
+  const numericValues = rawString.split(" ").map(parseFloat);
+  const firstNum = numericValues[0];
+  const secondNum = numericValues[1];
+  const thirdNum = numericValues[2];
 
-    const X = numericFragments[0];
-    const Y = numericFragments[1];
-    const Z = numericFragments[2];
+  const intermediateDiff = thirdNum - firstNum - secondNum;
 
-    const intermediateValue = Z - X - Y;
+  let outcome = "No";
 
-    const finalDecision = (intermediateValue > 0) && (intermediateValue * intermediateValue > 4 * X * Y)
-        ? "Yes"
-        : "No";
+  if (intermediateDiff > 0 && Math.pow(intermediateDiff, 2) > 4 * firstNum * secondNum) {
+    outcome = "Yes";
+  }
 
-    console.log(finalDecision);
+  console.log(outcome);
 }
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

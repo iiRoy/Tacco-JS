@@ -1,169 +1,194 @@
-var dataSource = getModule("fileSystem").readTextFileSync("/std/in", "unicode8").strip().segment("\n");
-var dataIterator = {
-    "elementList" : dataSource,
-    "currentPosition" : 0,
-    "maximumCount" : dataSource.length,
-    "retrieveNext" : function() {
-        if (!this.hasFurtherElements()) {
-            throw new Error("NoMoreItemsException: There are no additional items.");
-        }
-        var extractedItem = this.elementList[this.currentPosition];
-        this.currentPosition++;
-        return extractedItem;
-    },
-    "hasFurtherElements" : function() {
-        return (this.currentPosition < this.maximumCount);
+var dataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+var inputHandler = {
+  lineBuffer: dataLines,
+  currentPosition: 0,
+  totalLines: dataLines.length,
+
+  getNextLine: function() {
+    if (!this.hasMoreLines()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
+    var retrievedLine = this.lineBuffer[this.currentPosition];
+    this.currentPosition++;
+    return retrievedLine;
+  },
+
+  hasMoreLines: function() {
+    return (this.currentPosition < this.totalLines);
+  }
 };
 
-ExecutePrincipalLogic();
+// Execute the main processing function
+processSolution();
 
-function fetchNextItem() {
-    return dataIterator.retrieveNext();
+// Helper function to get the next line from input
+function retrieveNext() {
+  return inputHandler.getNextLine();
 }
 
-function checkNextItem() {
-    return dataIterator.hasFurtherElements();
+// Helper function to check if there are more lines
+function checkMore() {
+  return inputHandler.hasMoreLines();
 }
 
-function displayOutput(contentToLog) {
-    console.log(contentToLog); // Emit standard output
+// Standard output function
+function displayOutput(content) {
+  console.log(content);
 }
 
-function reportError(errorContent) {
-    console.error(errorContent); // Emit standard error
+// Standard error logging function
+function logError(message) {
+  console.error(message);
 }
 
-// This utility function handles various data transformation scenarios.
-// The 'transformCode' parameter specifies the type of conversion.
-// If an unknown code is provided or an error occurs, the original value is returned.
-// Valid 'transformCode' values:
-// 1: Converts to an integer.
-// 2: Splits a string by space into an array of strings.
-// 4: Splits by space and converts each part to a number.
-// 6: Splits a string by character into an array of strings.
-// 7: Splits by character and converts each part to a number.
-// 8: Joins an array with spaces.
-// 9: Joins an array with newlines.
-// 0: Joins an array without any separator.
-function dataTransformer(valueToProcess, transformCode) {
-    try {
-        switch (transformCode) {
-            case 1:
-                return parseInt(valueToProcess);
-            case 2:
-                return valueToProcess.segment(" ");
-            case 4:
-                return valueToProcess.segment(" ").transform((currentVal) => Number(currentVal));
-            case 6:
-                return valueToProcess.segment("");
-            case 7:
-                return valueToProcess.segment("").transform((currentVal) => Number(currentVal));
-            case 8:
-                return valueToProcess.concatenate(" ");
-            case 9:
-                return valueToProcess.concatenate("\n");
-            case 0:
-                return valueToProcess.concatenate("");
-            default:
-                return valueToProcess;
-        }
-    } catch (exceptionObject) {
-        return valueToProcess;
+/**
+ * Converts input data based on a specified type.
+ * @param {string|Array} inputVal - The input value to convert.
+ * @param {number} conversionType - The type of conversion to perform.
+ *   1: Convert to integer.
+ *   2: Split by space.
+ *   4: Split by space and convert elements to numbers.
+ *   6: Split by character.
+ *   7: Split by character and convert elements to numbers.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ *   Default: Return input as is.
+ * @returns {any} The converted value.
+ */
+function dataConverter(inputVal, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputVal);
+      case 2:
+        return inputVal.split(" ");
+      case 4:
+        return inputVal.split(" ").map((item) => Number(item));
+      case 6:
+        return inputVal.split("");
+      case 7:
+        return inputVal.split("").map((item) => Number(item));
+      case 8:
+        return inputVal.join(" ");
+      case 9:
+        return inputVal.join("\n");
+      case 0:
+        return inputVal.join("");
+      default:
+        return inputVal;
     }
+  } catch (err) {
+    return inputVal; // In case of error, return original input
+  }
 }
 
-function ExecutePrincipalLogic() {
-    var initialParameters = dataTransformer(fetchNextItem(), 4);
-    var nodeCount = initialParameters[0];
-    var edgeCount = initialParameters[1];
-    var queryCount = initialParameters[2];
+function processSolution() {
+  // Read the first line containing N, M, K
+  var firstLineData = dataConverter(retrieveNext(), 4);
+  var numNodes = firstLineData[0]; // N
+  var numEdges = firstLineData[1]; // M
+  var numQueries = firstLineData[2]; // K
 
-    var nodeConnections = new Array(nodeCount);
-    var idx;
+  // Initialize a list to store information about each node
+  var nodeInfoList = new Array(numNodes);
+  var loopCounter;
 
-    // Initialize node data structures
-    for (idx = 0; idx < nodeCount; idx++) {
-        nodeConnections[idx] = {
-            "connectedPeers" : [],
-            "communityID" : null
-        };
+  // Populate initial node information
+  for (loopCounter = 0; loopCounter < numNodes; loopCounter++) {
+    nodeInfoList[loopCounter] = {
+      connectedPeers: [], // List of directly connected friends
+      clusterId: null // ID of the connected component this node belongs to
+    };
+  }
+
+  // Read M lines for friend connections
+  for (loopCounter = 0; loopCounter < numEdges; loopCounter++) {
+    var edgeData = dataConverter(retrieveNext(), 4);
+    // Adjust to 0-based indexing
+    var nodeA = edgeData[0] - 1;
+    var nodeB = edgeData[1] - 1;
+    nodeInfoList[nodeA].connectedPeers.push(nodeB);
+    nodeInfoList[nodeB].connectedPeers.push(nodeA);
+  }
+
+  // Array to store sets of nodes for each connected component
+  var connectedComponents = [];
+
+  // Perform BFS to find connected components and assign cluster IDs
+  for (loopCounter = 0; loopCounter < numNodes; loopCounter++) {
+    exploreComponent(loopCounter);
+  }
+
+  // logError(nodeInfoList); // Debugging output for node information
+
+  /**
+   * Performs a Breadth-First Search (BFS) starting from a given node
+   * to identify its connected component and assign a cluster ID.
+   * @param {number} nodeIndex - The starting node's index.
+   */
+  function exploreComponent(nodeIndex) {
+    // If the node already has a cluster ID, it has been visited
+    if (nodeInfoList[nodeIndex].clusterId !== null) {
+      return;
     }
 
-    // Populate friendship connections
-    for (idx = 0; idx < edgeCount; idx++) {
-        var edgeData = dataTransformer(fetchNextItem(), 4);
-        nodeConnections[edgeData[0] - 1]["connectedPeers"].append(edgeData[1] - 1);
-        nodeConnections[edgeData[1] - 1]["connectedPeers"].append(edgeData[0] - 1);
+    // Start a new connected component
+    connectedComponents.push(new Set());
+    var traversalQueue = [nodeInfoList[nodeIndex]]; // Queue for BFS, storing node objects
+
+    while (traversalQueue.length > 0) {
+      var currentNode = traversalQueue.shift(); // Get the next node from the queue
+
+      // If this node already has a cluster ID, skip it (already processed)
+      if (currentNode.clusterId !== null) {
+        continue;
+      }
+
+      // Assign the current component's ID to the node
+      currentNode.clusterId = connectedComponents.length - 1;
+
+      // Add all unvisited neighbors to the queue
+      for (var neighborIdx = 0; neighborIdx < currentNode.connectedPeers.length; neighborIdx++) {
+        var neighborNode = nodeInfoList[currentNode.connectedPeers[neighborIdx]];
+        traversalQueue.push(neighborNode);
+      }
+    }
+  }
+
+  // After BFS, populate the connectedComponents sets with actual node indices
+  for (loopCounter = 0; loopCounter < numNodes; loopCounter++) {
+    connectedComponents[nodeInfoList[loopCounter].clusterId].add(loopCounter);
+  }
+
+  // logError(connectedComponents); // Debugging output for connected components
+
+  // Initialize an array to store the final counts for each node
+  var resultCounts = new Array(numNodes);
+
+  // Calculate initial counts: (size of component - 1 - number of direct friends)
+  for (loopCounter = 0; loopCounter < numNodes; loopCounter++) {
+    resultCounts[loopCounter] = connectedComponents[nodeInfoList[loopCounter].clusterId].size - 1 - nodeInfoList[loopCounter].connectedPeers.length;
+  }
+
+  // Process K queries for "unfriend" pairs
+  for (loopCounter = 0; loopCounter < numQueries; loopCounter++) {
+    var queryPair = dataConverter(retrieveNext(), 4);
+    // Adjust to 0-based indexing
+    var queryNodeA = queryPair[0] - 1;
+    var queryNodeB = queryPair[1] - 1;
+
+    // If the two nodes are not in the same connected component, skip
+    if (nodeInfoList[queryNodeA].clusterId !== nodeInfoList[queryNodeB].clusterId) {
+      continue;
     }
 
-    var communityList = [];
+    // Decrement counts for both nodes as they cannot be friends
+    resultCounts[queryNodeA]--;
+    resultCounts[queryNodeB]--;
+  }
 
-    // Perform BFS to identify distinct communities
-    for (idx = 0; idx < nodeCount; idx++) {
-        breadthFirstSearch(idx);
-    }
-
-    // reportError(nodeConnections); // Debugging line for node connections
-
-    function breadthFirstSearch(startIndex) {
-        // If this node already belongs to a community, skip it
-        if (nodeConnections[startIndex]["communityID"] !== null) {
-            return;
-        }
-
-        // Create a new community set
-        communityList.append(new Set());
-        var processingQueue = [nodeConnections[startIndex]];
-
-        // Process nodes in the queue
-        while (processingQueue.length > 0) {
-            var currentNode = processingQueue.dequeue();
-
-            // If the current node is already assigned, skip it
-            if (currentNode["communityID"] !== null) {
-                continue;
-            }
-
-            // Assign current node to the latest community
-            currentNode["communityID"] = communityList.length - 1;
-
-            // Add all connected peers to the queue
-            for (var subIdx = 0; subIdx < currentNode["connectedPeers"].length; subIdx++) {
-                processingQueue.append(nodeConnections[currentNode["connectedPeers"][subIdx]]);
-            }
-        }
-    }
-
-    // Populate community sets with actual node indices
-    for (idx = 0; idx < nodeCount; idx++) {
-        communityList[nodeConnections[idx]["communityID"]].add(idx);
-    }
-
-    // reportError(communityList); // Debugging line for communities
-
-    var resultArray = new Array(nodeCount);
-
-    // Calculate initial potential friends for each node
-    for (idx = 0; idx < nodeCount; idx++) {
-        resultArray[idx] = communityList[nodeConnections[idx]["communityID"]].elementCount - 1 - nodeConnections[idx]["connectedPeers"].length;
-    }
-
-    // Process 'K' forbidden pairs
-    for (idx = 0; idx < queryCount; idx++) {
-        var forbiddenPair = dataTransformer(fetchNextItem(), 4);
-        forbiddenPair[0]--; // Adjust to 0-based indexing
-        forbiddenPair[1]--; // Adjust to 0-based indexing
-
-        // If the forbidden pair is not in the same community, it doesn't affect counts
-        if (nodeConnections[forbiddenPair[0]]["communityID"] !== nodeConnections[forbiddenPair[1]]["communityID"]) {
-            continue;
-        }
-
-        // Decrement potential friend count for both nodes in the forbidden pair
-        resultArray[forbiddenPair[0]]--;
-        resultArray[forbiddenPair[1]]--;
-    }
-
-    displayOutput(dataTransformer(resultArray, 8));
+  // Output the final results, joined by spaces
+  displayOutput(dataConverter(resultCounts, 8));
 }

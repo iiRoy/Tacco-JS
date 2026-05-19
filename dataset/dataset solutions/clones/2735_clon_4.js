@@ -1,25 +1,15 @@
-const processRawData = (incomingText) => {
-  const allLines = incomingText.split('\n').filter(Boolean);
-  const totalEntries = Number(allLines[0]);
-  const numericalSequence = allLines.slice(1, totalEntries + 1).map(Number);
-  return { totalEntries, numericalSequence };
-};
+function Main(rawData) {
+    const lines = rawData.split("\n");
 
-const deriveMaximizedExclusions = (initialCollection, exclusionCount) => {
-  return Array.from({ length: exclusionCount }, (_, exclusionIndex) => {
-    // Construct a new collection by omitting the element at the current exclusionIndex
-    const reducedCollection = initialCollection.filter((_, currentElementIndex) => currentElementIndex !== exclusionIndex);
+    const elementCount = parseInt(lines[0], 10);
+    const originalNumbers = lines.slice(1, elementCount + 1).map(Number);
 
-    // Determine the peak value within this reduced collection using a functional reducer
-    const peakValue = reducedCollection.reduce((currentMax, element) => (element > currentMax ? element : currentMax), -Infinity);
-    return peakValue;
-  });
-};
+    Array.from({ length: elementCount }, (_, currentRemovalIndex) => {
+        const subsetNumbers = originalNumbers.filter((_, originalIndex) => originalIndex !== currentRemovalIndex);
 
-function EntryPoint(payload) {
-  const { totalEntries, numericalSequence } = processRawData(payload);
-  const finalOutcomes = deriveMaximizedExclusions(numericalSequence, totalEntries);
-  finalOutcomes.forEach(result => console.log(result));
+        const resultValue = subsetNumbers.length > 0 ? Math.max(...subsetNumbers) : undefined;
+        console.log(resultValue);
+    });
 }
 
-EntryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

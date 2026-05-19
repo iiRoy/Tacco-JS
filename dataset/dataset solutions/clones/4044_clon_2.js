@@ -1,153 +1,130 @@
-let dataStream = require("fs").readFileSync("/dev/stdin", "utf8")
-                     .stripSurroundingWhitespace()
-                     .divideByNewline();
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-let recordProcessor = {
-  "collection" : dataStream,
-  "currentPosition" : 0,
-  "maximumItems" : dataStream.length,
+var dataStream = {
+  "dataLines" : rawData,
+  "currentIdx" : 0,
+  "totalLines" : rawData.length,
 
-  "hasMoreElements" : function() {
-    return (this.currentPosition < this.maximumItems);
+  "hasMore" : function() {
+    return (this.currentIdx < this.totalLines);
   },
 
-  "retrieveNextElement" : function() {
-    if (!this.hasMoreElements()) {
-      throw new Error("IterationExhaustedError: No further entries available.");
+  "getNext" : function() {
+    if (!this.hasMore()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    let retrievedItem = this.collection[this.currentPosition];
-    this.currentPosition++;
+    var retrievedItem = this.dataLines[this.currentIdx];
+    this.currentIdx++;
     return retrievedItem;
   }
 };
 
-// Initiate the primary computation routine
+// Start the main execution flow
 ExecuteProgram();
 
-/*
- * Retrieves the subsequent entry from the global record processor.
- * @returns {string} The next string entry.
- */
-function acquireNext() {
-  return recordProcessor.retrieveNextElement();
+// Helper function to get the next line from the input stream
+function fetchNextLine() {
+  return dataStream.getNext();
 }
 
-/**
- * Parses the next input string as an integer.
- * @returns {number} The next integer value.
- */
-function acquireInteger() {
-  return processInputData(acquireNext(), 1);
+// Helper function to get the next line as an integer
+function fetchNextInteger() {
+  return convertInput(fetchNextLine(), 1);
 }
 
-// Obtains the next line and splits it into a string array by space.
-function acquireStringArray() {
-  return processInputData(acquireNext(), 2);
+// Helper function to get the next line as an array of strings (space-separated)
+function fetchStringArray() {
+  return convertInput(fetchNextLine(), 2);
 }
 
-// Fetches the next line, splits by space, and converts to an array of numbers.
-function acquireIntegerArray() {
-  return processInputData(acquireNext(), 4);
+// Helper function to get the next line as an array of integers (space-separated)
+function fetchIntegerArray() {
+  return convertInput(fetchNextLine(), 4);
 }
 
-/*
- * Grabs the next input string and breaks it into an array of individual characters.
- */
-function acquireCharacterArray() {
-  return processInputData(acquireNext(), 6);
+// Helper function to get the next line as an array of characters
+function fetchCharacterArray() {
+  return convertInput(fetchNextLine(), 6);
 }
 
-// Checks if there are more items remaining in the input stream.
-function checkFurtherElements() {
-  return recordProcessor.hasMoreElements();
+// Helper function to check if there's more data in the input stream
+function checkMoreData() {
+  return dataStream.hasMore();
 }
 
-/**
- * Prints the provided content to standard output.
- * @param {*} content The data to be logged.
- */
-function displayOutput(content) {
-  console.info(content);
+// Function for standard output
+function printOutput(content) {
+  console.log(content);
 }
 
-// Outputs an error message to the standard error stream.
-function displayError(issue) {
-  console.warn(issue);
+// Function for standard error output
+function printError(content) {
+  console.error(content);
 }
 
 /*
- * This utility function converts or processes input content based on a specified operation code.
- *
- * Operation Codes:
- *   1: Convert to integer.
- *   2: Split string by space into an array of strings.
- *   4: Split string by space and convert elements to numbers.
- *   6: Split string into an array of characters.
- *   7: Split string into characters and convert elements to numbers.
- *   8: Join array elements with a space.
- *   9: Join array elements with a newline.
- *   0: Join array elements without any separator.
- *
- * @param {*} inputContent The data to be processed.
- * @param {number} operationCode The code defining the processing type.
- * @returns {*} The processed data or original data if conversion fails/is unknown.
- */
-function processInputData(inputContent, operationCode) {
+  This utility function handles various input conversions.
+  conversionType:
+  1: Convert to integer
+  2: Split by space into string array
+  4: Split by space and convert to integer array
+  6: Split by character into string array
+  7: Split by character and convert to integer array
+  8: Join array elements with space
+  9: Join array elements with newline
+  0: Join array elements without separator
+  Default: Return input as is
+*/
+function convertInput(inputValue, conversionType) {
   try {
-    switch (operationCode) {
-      case 1:
-        return Number.parseInt(inputContent);
-      case 2:
-        return inputContent.split(" ");
-      case 4:
-        return inputContent.split(" ").map((element) => Number(element));
-      case 6:
-        return inputContent.split("");
-      case 7:
-        return inputContent.split("").map((charItem) => Number(charItem));
-      case 8:
-        return inputContent.join(" ");
-      case 9:
-        return inputContent.join("\n");
-      case 0:
-        return inputContent.join("");
-      default:
-        return inputContent;
+    switch (conversionType) {
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map((element) => Number(element));
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map((element) => Number(element));
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (exceptionOccurred) {
-    return inputContent;
+  } catch (errDetails) {
+    return inputValue; // In case of conversion error, return original value
   }
 }
 
+// Main program logic
 function ExecuteProgram() {
-  let itemCount = acquireInteger();
-  let firstCollection = acquireIntegerArray();
-  let secondCollection = acquireIntegerArray();
+  var numElements = fetchNextInteger();
+  var firstArray = fetchIntegerArray();
+  var secondArray = fetchIntegerArray();
 
-  let firstSum = 0; // This variable is declared but not utilized in the core logic.
-  let secondSum = 0; // This variable is declared but not utilized in the core logic.
+  var sumA = 0; // Declared but not used in original logic
+  var sumB = 0; // Declared but not used in original logic
 
-  let differenceCounter = 0; // Tracks the difference requiring adjustments.
+  var balanceCounter = 0; // Counter to track differences
 
-  // First pass: identify elements where firstCollection is less than secondCollection.
-  for (let idx = 0; idx < itemCount; idx++) {
-    if (firstCollection[idx] < secondCollection[idx]) {
-      // If the parity is inconsistent, the value added to the counter is one less.
-      differenceCounter += Math.floor(secondCollection[idx] - firstCollection[idx] / 2);
+  // First pass: Calculate required adjustments for aList[idx] < bList[idx]
+  for (var idx = 0; idx < numElements; idx++) {
+    if (firstArray[idx] < secondArray[idx]) {
+      // If first element is smaller, add the difference (divided by 2, floored) to the counter.
+      // This logic implies a specific problem context where '2' is a factor.
+      balanceCounter += Math.floor(secondArray[idx] - firstArray[idx] / 2);
     }
   }
 
-  // Second pass: adjust the counter based on elements where firstCollection is greater than secondCollection.
-  for (let idx = 0; idx < itemCount; idx++) {
-    if (firstCollection[idx] > secondCollection[idx]) {
-      differenceCounter -= firstCollection[idx] - secondCollection[idx];
+  // Second pass: Adjust counter for aList[idx] > bList[idx]
+  for (var idx = 0; idx < numElements; idx++) {
+    if (firstArray[idx] > secondArray[idx]) {
+      // If first element is larger, subtract the direct difference from the counter.
+      balanceCounter -= (firstArray[idx] - secondArray[idx]);
     }
   }
 
-  // Determine the final outcome based on the calculated difference.
-  if (differenceCounter >= 0) {
-    displayOutput("Affirmative");
+  // Final check based on the accumulated balanceCounter
+  if (balanceCounter >= 0) {
+    printOutput("Yes");
   } else {
-    displayOutput("Negative");
+    printOutput("No");
   }
 }

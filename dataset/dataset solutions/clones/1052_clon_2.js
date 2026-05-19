@@ -1,28 +1,27 @@
-let fileContents = require('fs') .readFileSync( '/dev/stdin' , 'utf8' ) ;
-let textLines = fileContents.split( '\n' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var dataRows = rawData.split('\n'); // Split the input into individual lines
 
-let totalElements = +textLines.shift() ;
-let valueList = textLines.shift() .trim() .split(' ') .map( function(item) { return +item; } ) ;
-let numQueries = +textLines.shift() ;
-let targetSums = textLines.shift().trim().split(' ').map(function(val) { return +val; });
+var countElements = +dataRows.shift(); // Get the number of elements for the main array
+var elementArray = dataRows.shift().trim().split(' ').map(function(numStr) { return +numStr; }); // Parse the main array of numbers
+var queryCount = +dataRows.shift(); // Get the number of queries
+var queryArray = dataRows.shift().trim().split(' ').map(function(numStr) { return +numStr; }); // Parse the array of target sums for queries
 
-targetSums.forEach( function(requiredSum) {
-	if ( findSubsetSum( 0, requiredSum ) ) {
-		console.log( 'yes' ) ;
-	} else {
-		console.log( 'no' ) ;
+queryArray.forEach(function(targetSum) { // Iterate through each target sum query
+	if (canFormSum(0, targetSum)) { // Check if the current target sum can be formed
+		console.log('yes');
 	}
-} ) ;
-
-function findSubsetSum( elementIndex , requiredSum )
-{
-	if ( elementIndex >= totalElements ) {
-		return false ;
+	else { // If not, output 'no'
+		console.log('no');
 	}
+});
 
-	if ( valueList[elementIndex] === requiredSum ) {
-		return true ;
+function canFormSum(currentIndex, targetSum) { // Recursive function to determine if a sum can be formed
+	if (currentIndex >= countElements) { // Base case: If we've exhausted all elements
+		return false; // Sum cannot be formed
 	}
 
-	return findSubsetSum( elementIndex + 1 , requiredSum ) || findSubsetSum( elementIndex + 1 , requiredSum - valueList[elementIndex] ) ;
+	if (elementArray[currentIndex] == targetSum) { // Base case: If the current element itself is the target sum
+		return true; // Sum found
+	}
+	return canFormSum(currentIndex + 1, targetSum) || canFormSum(currentIndex + 1, targetSum - elementArray[currentIndex]); // Recursive calls: either skip current element or include it
 }

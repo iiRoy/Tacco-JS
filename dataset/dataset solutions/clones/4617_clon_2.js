@@ -1,31 +1,23 @@
-function computeAcronym(sourceText) {
-    // This function processes an input string to generate an acronym.
-    // It assumes the input contains at least three space-separated words.
+function processInput(rawData) {
+  // Trim any leading or trailing whitespace from the raw input string.
+  rawData = rawData.trim();
 
-    // Remove any leading or trailing whitespace from the raw input string.
-    let processedText = sourceText.trim();
+  // Split the processed string by spaces and assign the first part.
+  const firstPart = rawData.split(" ")[0];
+  // Split the processed string by spaces and assign the second part.
+  const secondPart = rawData.split(" ")[1];
+  // Split the processed string by spaces and assign the third part.
+  const thirdPart = rawData.split(" ")[2];
 
-    // Split the cleaned string into its constituent parts based on spaces.
-    // We are interested in the first, second, and third segments.
-    let firstWordSegment = processedText.split(" ")[0]; // Captures the initial component.
-    let secondWordSegment = processedText.split(" ")[1]; // Obtains the middle component.
-    let thirdWordSegment = processedText.split(" ")[2]; // Retrieves the final component.
-
-    // Construct the acronym by taking the first character of each segment,
-    // converting it to uppercase, and then concatenating these characters.
-    console.log(
-        firstWordSegment.slice(0, 1).toUpperCase() +
-        secondWordSegment.slice(0, 1).toUpperCase() +
-        thirdWordSegment.slice(0, 1).toUpperCase()
-    );
+  // Extract the first character of each part, convert it to uppercase,
+  // and then concatenate these uppercase characters before printing to console.
+  console.log(
+    firstPart.substr(0, 1).toUpperCase() +
+    secondPart.substr(0, 1).toUpperCase() +
+    thirdPart.substr(0, 1).toUpperCase()
+  );
 }
 
-
-
-// The main execution point of this script.
-// It reads data from standard input (e.g., from a pipe or file redirection)
-// and passes it to the `computeAcronym` function for processing.
-computeAcronym(
-    require('fs')
-        .readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

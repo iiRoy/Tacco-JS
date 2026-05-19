@@ -1,44 +1,41 @@
-// This function performs a series of calculations on input data.
-function ProcessData (rawData)
-{
-  // Split the raw input string into an array of lines.
-  let parsedLines = rawData.split ( "\n" ) ;
+// This function serves as the primary entry point for processing the provided input data.
+function ProcessInput(rawData) {
+    // The input string is first divided into an array of individual lines.
+    var lines = rawData.split("\n");
 
-  // The first line indicates the number of processing rounds.
-  let iterationCount = parsedLines [ 0 ] ;
+    // The initial element of the 'lines' array specifies the total number of processing cycles.
+    var iterationsCount = lines[0];
 
-  // The remaining lines form the initial set of values for processing.
-  let currentValues = parsedLines.slice ( 1 ) ;
+    // The subsequent elements of the 'lines' array form the starting collection of values.
+    var currentValues = lines.slice(1);
 
-  // Begin the main processing loop, executing for the specified number of rounds.
-  for (let roundIndex = 0 ; roundIndex < iterationCount ; ++ roundIndex) {
-    // Initialize an empty array to store results for the current round.
-    let nextValues = [ ] ;
+    // A loop is initiated to perform the core transformation logic for the specified number of iterations.
+    for (var loopIndex = 0; loopIndex < iterationsCount; ++loopIndex) {
+        // A temporary array is created in each iteration to store the computed results for the current cycle.
+        var nextValues = [];
 
-    // Iterate through the 'currentValues' array, processing elements in pairs.
-    for (let pairIndex = 0 ; pairIndex < currentValues.length ; pairIndex += 2) {
-      /*
-       * Compare two adjacent elements from the 'currentValues' array.
-       * The comparison implicitly converts string values to numbers.
-       */
-      if (currentValues [ pairIndex ] > currentValues [ pairIndex + 1 ]) {
-        // If the first element is greater, push their difference to 'nextValues'.
-        nextValues.push ( currentValues [ pairIndex ] - currentValues [ pairIndex + 1 ] ) ;
-      } else if (currentValues [ pairIndex ] == currentValues [ pairIndex + 1 ]) {
-        // If elements are equal, push the first element itself.
-        nextValues.push ( currentValues [ pairIndex ] ) ;
-      } else {
-        // If the second element is greater, push their difference (second minus first).
-        nextValues.push ( currentValues [ pairIndex + 1 ] - currentValues [ pairIndex ] ) ;
-      }
+        // This inner loop processes the 'currentValues' array in pairs.
+        for (var pairIndex = 0; pairIndex < currentValues.length; pairIndex += 2) {
+            // The comparison and arithmetic operations below rely on JavaScript's implicit type coercion
+            // to convert string values from the input into numbers as needed.
+            if (currentValues[pairIndex] > currentValues[pairIndex + 1]) {
+                // If the first value in the pair is numerically larger, their difference is added.
+                nextValues.push(currentValues[pairIndex] - currentValues[pairIndex + 1]);
+            } else if (currentValues[pairIndex] == currentValues[pairIndex + 1]) {
+                // If both values in the pair are numerically equal, the first value is added.
+                nextValues.push(currentValues[pairIndex]);
+            } else {
+                // Otherwise (if the second value is numerically larger), their difference (second minus first) is added.
+                nextValues.push(currentValues[pairIndex + 1] - currentValues[pairIndex]);
+            }
+        }
+        // After processing all pairs, the 'currentValues' array is updated with the newly computed 'nextValues'.
+        currentValues = nextValues;
     }
-    // After processing all pairs, the 'nextValues' become the 'currentValues' for the next round.
-    currentValues = nextValues ;
-  }
 
-  // Finally, log the first element of the last processed array to the console.
-  console.log ( currentValues [ 0 ] ) ;
+    // Upon completion of all iterations, the very first element of the final 'currentValues' array is printed to the console.
+    console.log(currentValues[0]);
 }
 
-// Invoke the main processing function, reading input from standard input.
-ProcessData( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The program reads its input from standard input, using UTF-8 encoding, and then passes it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

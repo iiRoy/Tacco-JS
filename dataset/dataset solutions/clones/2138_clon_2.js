@@ -1,107 +1,107 @@
-function OrderedCollection()
-{
-  this.storageArray = []; // Initialize the underlying array for storing elements
+function MinHeapStructure() {
+  this.dataStore = []; // Array to store heap elements
 }
 
-OrderedCollection.prototype = {
-  insertElement: function(newValue)
-  {
-    var internalArray = this.storageArray;
-    var currentIndex = internalArray.length; // Start at the end
-    internalArray.length++; // Increment length for new element
+MinHeapStructure.prototype = {
+  // Inserts a new value into the min-heap.
+  insertElement: function (val) {
+    let ds = this.dataStore;
+    let idx = ds.length; // Index where the new element is initially placed
+    ds.push(val); // Add the element to the end of the array
 
-    var parentIndex; // Placeholder for parent index
-    while (currentIndex > 0)
-    {
-      parentIndex = (currentIndex - 1) >>> 1; // Calculate parent index using bitwise right shift
-      if (internalArray[parentIndex] <= newValue)
-      {
-        break; // New value is larger than or equal to parent, found correct spot
+    // Bubble up the new element to maintain the min-heap property
+    while (idx > 0) {
+      let parentIdx = (idx - 1) >> 1; // Calculate parent index
+      if (ds[parentIdx] <= val) {
+        break; // If parent is smaller or equal, correct position found
       }
-      internalArray[currentIndex] = internalArray[parentIndex]; // Move parent down
-      currentIndex = parentIndex; // Move up the collection
+      ds[idx] = ds[parentIdx]; // Move parent down
+      idx = parentIdx; // Move up to the parent's position
     }
-    internalArray[currentIndex] = newValue; // Place the new element
+    ds[idx] = val; // Place the new element at its final position
   },
 
-  extractMin: function()
-  {
-    var internalArray = this.storageArray;
-    var minVal = internalArray[0]; // Store the minimum value to be returned
-    var lastElement = internalArray.pop(); // Remove the last element and store it
+  // Removes and returns the smallest element from the min-heap.
+  extractMin: function () {
+    let ds = this.dataStore;
+    let minVal = ds[0]; // The smallest element is always at the root
+    let lastVal = ds.pop(); // Remove the last element from the heap
 
-    var currentIndex = 0; // Start at the root
-    var halfLength = internalArray.length >>> 1; // Pre-calculate half length for loop condition
-    var childIndex; // Placeholder for child index
+    // If the heap is not empty after removing the root, re-heapify
+    if (ds.length > 0) {
+      let idx = 0;
+      let childLimit = ds.length >> 1; // Only need to check parents up to this index
 
-    while (currentIndex < halfLength)
-    {
-      childIndex = (currentIndex << 1) + 1; // Left child index
-      // If right child exists and is smaller than left child, choose right child
-      if ((childIndex + 1) < internalArray.length && internalArray[childIndex + 1] < internalArray[childIndex])
-      {
-        childIndex++;
+      // Bubble down the last element to maintain the min-heap property
+      while (idx < childLimit) {
+        let leftChildIdx = (idx << 1) + 1; // Calculate left child index
+        let rightChildIdx = leftChildIdx + 1; // Calculate right child index
+        let smallestChildIdx = leftChildIdx;
+
+        // Determine which child is smaller (if right child exists and is smaller)
+        if (rightChildIdx < ds.length && ds[rightChildIdx] < ds[leftChildIdx]) {
+          smallestChildIdx = rightChildIdx;
+        }
+
+        if (lastVal <= ds[smallestChildIdx]) {
+          break; // If lastVal is smaller or equal to its smallest child, correct position found
+        }
+
+        ds[idx] = ds[smallestChildIdx]; // Move smallest child up
+        idx = smallestChildIdx; // Move down to the child's position
       }
-
-      if (lastElement <= internalArray[childIndex])
-      {
-        break; // Last element is smaller than or equal to child, found correct spot
-      }
-
-      internalArray[currentIndex] = internalArray[childIndex]; // Move child up
-      currentIndex = childIndex; // Move down the collection
-    }
-
-    if (internalArray.length > 0)
-    {
-      internalArray[currentIndex] = lastElement; // Place the last element in its final position
+      ds[idx] = lastVal; // Place the last element at its final position
     }
     return minVal; // Return the original minimum value
   },
 
-  getElementCount: function()
-  {
-    return this.storageArray.length; // Return the number of elements currently in the collection
+  // Returns the current number of elements in the heap.
+  getElementCount: function () {
+    return this.dataStore.length;
   },
 
-  peekMin: function()
-  {
-    return this.storageArray[0]; // Return the smallest element without removing it
-  }
+  // Returns the smallest element without removing it.
+  peekMin: function () {
+    return this.dataStore[0];
+  },
 };
 
-function numericOrder(firstNum, secondNum)
-{
-  // A utility function for sorting numbers in ascending order
+// A utility function for sorting numbers in ascending order.
+function numericComparator(firstNum, secondNum) {
   return firstNum - secondNum;
 }
 
-function ExecuteLogic(inputString)
-{
-  var lines = inputString.split("\n");
-  var totalElements = parseInt(lines[0], 10); // Parse the first line as an integer
-  var dataSequence = lines[1].split(" ").map(val => parseInt(val, 10)); // Parse the second line into an array of numbers
-  dataSequence.sort(numericOrder); // Sort the numerical sequence
+// Main function to process the input data.
+function processInput(inputString) {
+  // Extract the first line as the array length.
+  let arrayLength = parseInt(inputString.split("\n")[0], 10);
 
-  var resultCollection = new OrderedCollection(); // Instantiate our custom ordered collection
+  // Extract the second line, split by space, and convert to numbers.
+  let numberArray = inputString.split("\n")[1].split(" ").map(Number);
 
-  // Iterate from the smallest value in the data sequence up to (but not including) the largest
-  for (var currentIterValue = dataSequence[0]; currentIterValue < dataSequence[totalElements - 1]; currentIterValue++)
-  {
-    var tempSumOfSquares = 0; // Initialize a temporary sum for squares of differences
-    // Calculate sum of squares of differences for the current iteration value
-    for (var sequenceIndex = 0; sequenceIndex < totalElements; sequenceIndex++)
-    {
-      var difference = dataSequence[sequenceIndex] - currentIterValue;
-      tempSumOfSquares += (difference * difference);
+  // Sort the array of numbers in ascending order.
+  numberArray.sort(numericComparator);
+
+  // Initialize a min-heap to store the calculated sums of squares.
+  let resultHeap = new MinHeapStructure();
+
+  // Iterate through a range of 'i' values, from the smallest to one less than the largest number in the array.
+  for (let outerLoopIdx = numberArray[0]; outerLoopIdx < numberArray[arrayLength - 1]; outerLoopIdx++) {
+    let currentSumOfSquares = 0; // Accumulator for the sum of squares for the current 'i'
+
+    // Calculate the sum of squares of differences for each number in the array.
+    for (let innerLoopIdx = 0; innerLoopIdx < arrayLength; innerLoopIdx++) {
+      let difference = numberArray[innerLoopIdx] - outerLoopIdx;
+      currentSumOfSquares += difference * difference;
     }
-    resultCollection.insertElement(tempSumOfSquares); // Add the calculated sum to our ordered collection
+    // Add the calculated sum of squares to the min-heap.
+    resultHeap.insertElement(currentSumOfSquares);
   }
 
-  // Output the minimum calculated sum
-  console.log(resultCollection.peekMin());
-  return; // End of main execution path
+  // Output the smallest sum of squares found, which is at the top of the min-heap.
+  console.log(resultHeap.peekMin());
+  return; // End of function execution.
 }
 
-// Execute the primary logic by reading input from standard input
-ExecuteLogic(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

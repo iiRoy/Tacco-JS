@@ -1,16 +1,20 @@
-"use strict"; // Enable strict mode for better error handling
+"use strict";
 
-const processInputData = ( incomingString ) => {
-    // Clean and split the initial input string into lines
-    incomingString = incomingString.trim()
-                                   .split( "\n" );
+// This function processes the provided text input.
+const processInput = (inputData) => {
+    // First, remove any leading/trailing whitespace and then
+    // split the entire input string into an array of lines.
+    inputData = inputData.trim().split("\n");
 
-    // Take the first line and break it down by comma delimiters
-    const segmentList = incomingString[0].split( "," );
+    // Take the first line of the processed input,
+    // and split it further by the comma delimiter.
+    const stringParts = inputData[0].split(",");
 
-    // Print the collected segments joined by a space
-    console.log( segmentList.join( " " ) );
+    // Finally, join the resulting parts with a space
+    // and print the combined string to the console.
+    console.log(stringParts.join(" "));
 };
 
-// Execute the primary function, reading data from standard input
-processInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the content from standard input synchronously,
+// using UTF-8 encoding, and then pass it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

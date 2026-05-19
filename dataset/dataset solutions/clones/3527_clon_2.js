@@ -1,38 +1,55 @@
 function ProcessInput(rawData) {
-    // The received string contains all input information.
-    rawData = rawData.split("\n");
-    // Each element in the array 'dataLines' represents a line from the input.
-    let firstLineTokens = rawData[0].split(" ");
-    let xCoordinates = rawData[1].split(" ");
-    let yCoordinates = rawData[2].split(" ");
+    // This function processes raw input data to determine a "war" condition.
+    // The input is expected to be a multi-line string.
 
-    // For converting string representations to base-10 integers, utilize parseInt.
-    let countN = parseInt(firstLineTokens[0], 10);
-    let countM = parseInt(firstLineTokens[1], 10);
-    let initialX = parseInt(firstLineTokens[2], 10);
-    let initialY = parseInt(firstLineTokens[3], 10);
+    // Split the entire input string into an array of individual lines.
+    let dataLines = rawData.split("\n");
 
-    let maximumXValue = initialX;
-    let minimumYValue = initialY;
+    // Parse the first line, which contains N, M, X, Y values.
+    let firstLineParts = dataLines[0].split(" ");
 
-    for (let currentString of xCoordinates) {
-        if (parseInt(currentString) > parseInt(maximumXValue)) {
-            maximumXValue = currentString;
+    // Parse the second line, containing X coordinates.
+    let xCoordinates = dataLines[1].split(" ");
+
+    // Parse the third line, containing Y coordinates.
+    let yCoordinates = dataLines[2].split(" ");
+
+    // Convert string parts to integers for initial parameters.
+    const countN = parseInt(firstLineParts[0], 10); // Number of X values
+    const countM = parseInt(firstLineParts[1], 10); // Number of Y values
+    const initialX = parseInt(firstLineParts[2], 10); // Initial X boundary
+    const initialY = parseInt(firstLineParts[3], 10); // Initial Y boundary
+
+    // Initialize variables to track the maximum X and minimum Y values.
+    let maximumX = initialX;
+    let minimumY = initialY;
+
+    // Iterate through the X coordinates to find the true maximum X.
+    for (const currentXVal of xCoordinates) {
+        // Convert the current string value to an integer for comparison.
+        if (parseInt(currentXVal, 10) > parseInt(maximumX, 10)) {
+            maximumX = currentXVal; // Update maximumX if a larger value is found.
         }
     }
 
-    for (let currentString of yCoordinates) {
-        if (parseInt(currentString) < parseInt(minimumYValue)) {
-            minimumYValue = currentString;
+    // Iterate through the Y coordinates to find the true minimum Y.
+    for (const currentYVal of yCoordinates) {
+        // Convert the current string value to an integer for comparison.
+        if (parseInt(currentYVal, 10) < parseInt(minimumY, 10)) {
+            minimumY = currentYVal; // Update minimumY if a smaller value is found.
         }
     }
 
-    if (parseInt(minimumYValue) <= parseInt(maximumXValue)) {
+    // Determine the outcome based on the final maximum X and minimum Y values.
+    // If the minimum Y is less than or equal to the maximum X, it's "War".
+    if (parseInt(minimumY, 10) <= parseInt(maximumX, 10)) {
         console.log('War');
-    }
-    else {
+    } else {
+        // Otherwise, it's "No War".
         console.log('No War');
     }
 }
-// Do not modify the code below this line (standard input/output mechanism).
+
+// The following line handles reading input from standard input and calling the main processing function.
+// It should not be modified.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

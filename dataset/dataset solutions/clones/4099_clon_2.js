@@ -1,24 +1,19 @@
 'use strict';
 
-/**
- * Core processing routine for the application.
- * @param {string} rawInputText - The complete raw data provided as input.
- */
-const processInputData = ( rawInputText ) => {
-    // Obtain the initial line from the input and convert it into a sequence of characters.
-    const characterSequence = rawInputText
-        .split ( '\n' ) [0]
-        .split ( '' ) ;
+// This function serves as the primary entry point for processing the input data.
+function ProcessInput(rawData) {
+    // First, the raw input string is split by newline characters, and only the first line is taken.
+    // Then, this first line is further split into an array of individual characters.
+    const charArray = rawData.split("\n")[0].split("");
 
-    // Update a specific character within the obtained sequence.
-    characterSequence [3] = '8';
+    // The character at the fourth position (index 3) in the array is modified to '8'.
+    charArray[3] = "8";
 
-    // Output the modified character sequence as a single concatenated string.
-    console . log ( characterSequence . join ( '' ) ) ;
-};
+    // Finally, the modified character array is joined back into a single string
+    // and printed to the console.
+    console.log(charArray.join(""));
+}
 
-// Initiate the data processing by reading content from the standard input stream.
-processInputData (
-    require ( 'fs' )
-        . readFileSync ( '/dev/stdin' , 'utf8' )
-) ;
+// The program reads the entire content of standard input as a UTF-8 string
+// and passes it to the ProcessInput function for processing.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

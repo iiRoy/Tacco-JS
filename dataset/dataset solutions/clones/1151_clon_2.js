@@ -1,156 +1,151 @@
-var outputChannel = console.info;
+var output = console.log;
 
 if (typeof process !== "undefined") {
-    var receivedData = "";
-
+    var dataBuffer = "";
     process.stdin.resume();
-
     process.stdin.setEncoding('utf8');
-
-    process.stdin.on('data', function(segment) {
-        receivedData += segment;
+    process.stdin.on('data', function(chunk) {
+        dataBuffer += chunk;
     });
-
     process.stdin.on('end', function() {
-        var textRows = receivedData.split("\n");
-        processInput(textRows);
+        var inputLines = dataBuffer.split("\n");
+        processGrid(inputLines);
     });
 }
 
-// ----- Utility Functions Section -----
+// --- Helper Functions ---
 
-function isToTheRight(coordA, coordB) {
-	// Determines if the second point's column index is greater than the first.
-	return coordA[1] < coordB[1];
+function isFurtherRight(coordA, coordB) {
+    // Determines if coordB is to the right of coordA.
+    return coordA[1] < coordB[1];
 }
 
-function isBelow(coordA, coordB) {
-	// Determines if the second point's row index is greater than the first.
-	return coordA[0] < coordB[0];
+function isFurtherDown(coordA, coordB) {
+    // Determines if coordB is below coordA.
+    return coordA[0] < coordB[0];
 }
 
-function getOneRight(currentPoint) {
-	// Calculates the coordinates of a point one unit to the right.
-	return [currentPoint[0], currentPoint[1] + 1];
+function getRightNeighbor(coordA) {
+    // Returns the coordinate directly to the right of coordA.
+    return [coordA[0], coordA[1] + 1];
 }
 
-function getOneDown(currentPoint) {
-	// Calculates the coordinates of a point one unit below.
-	return [currentPoint[0] + 1, currentPoint[1]];
+function getDownNeighbor(coordA) {
+    // Returns the coordinate directly below coordA.
+    return [coordA[0] + 1, coordA[1]];
 }
 
-function hasSuperiorCoverage(currentPoint, coverageSet) {
-	// Checks if the 'currentPoint' is sub-covered by any rectangle in the 'coverageSet'.
-	// This function temporarily modifies 'coverageSet' by adding/removing a placeholder.
-	let tempPlaceholder = coverageSet.unshift(false);
-
-	let resultFlag = coverageSet.reduce((previousState, currentCoverage) => {
-		if (previousState) {
-			return previousState;
-		} else {
-			if (currentPoint[1] === currentCoverage[1]) {
-				// If column indices are identical, check vertical relationship.
-				return isBelow(currentCoverage, currentPoint);
-			}
-
-			if (currentPoint[0] === currentCoverage[0]) {
-				// If row indices are identical, check horizontal relationship.
-				return isToTheRight(currentCoverage, currentPoint);
-			}
-
-			return previousState;
-		}
-	});
-	
-	coverageSet.shift(); // Remove the temporary placeholder.
-
-	return resultFlag;
+function hasMoreDominant(coordA, dominantSet) {
+    // Checks if coordA is dominated by any point in dominantSet.
+    // A point 'd' dominates 'a' if 'd' is to the left of 'a' (same row)
+    // or 'd' is above 'a' (same column).
+    dominantSet.unshift(false); // Placeholder for initial reduce value.
+    var resultFlag = dominantSet.reduce((prevVal, currElem) => {
+        if (prevVal) {
+            return prevVal;
+        } else {
+            if (coordA[1] === currElem[1]) { // Same column
+                return isFurtherDown(currElem, coordA);
+            }
+            if (coordA[0] === currElem[0]) { // Same row
+                return isFurtherRight(currElem, coordA);
+            }
+            return prevVal;
+        }
+    });
+    dominantSet.shift(); // Remove the placeholder.
+    return resultFlag;
 }
 
-function processInput(textRows) {
-	var numericGridRows = textRows.map(singleRow => singleRow.split(" ").map(element => Number(element)));
-	var gridDimensions = numericGridRows.shift();
-	var gridHeight = gridDimensions[0];
-	var gridWidth = gridDimensions[1];
-	
-	var largestAreaFound = -1;
-	
-	var prevXCoords = Array(gridHeight).fill(0).map(rowFill => Array(gridWidth).fill(-1));
-	var prevYCoords = Array(gridHeight).fill(0).map(rowFill => Array(gridWidth).fill(-1));
-	var dominantRects = Array(gridHeight).fill(0).map(rowFill => Array(gridWidth).fill([]));
-	
-	for (var rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
-		for (var colIndex = 0; colIndex < gridWidth; colIndex++) {
-			var cellValue = numericGridRows[rowIndex][colIndex];
-			
-			// Determine inherited previous X and Y coordinates for rectangle tracking.
-			var currentPrevX = rowIndex === 0 ? -1 : prevXCoords[rowIndex - 1][colIndex];
-			var currentPrevY = colIndex === 0 ? -1 : prevYCoords[rowIndex][colIndex - 1];
-			
-			// Retrieve dominant rectangles from the top-left diagonal cell.
-			var inheritedDominantRects = (rowIndex === 0 || colIndex === 0) ? [] : dominantRects[rowIndex - 1][colIndex - 1];
-			
-			var newDominantRects;
+function processGrid(inputLines) {
+    var parsedGridData = inputLines.map(lineEntry => lineEntry.split(" ").map(strNum => Number(strNum)));
+    var dimensionsLine = parsedGridData.shift();
+    var gridHeight = dimensionsLine[0];
+    var gridWidth = dimensionsLine[1];
 
-			if (cellValue === 0) {
-				var xCoordCandidate = [currentPrevX, colIndex];
-				var yCoordCandidate = [rowIndex, currentPrevY];
-				
-				newDominantRects = inheritedDominantRects.map(existingRect => {
-					if (!isToTheRight(yCoordCandidate, existingRect)) {
-						return [existingRect[0], currentPrevY + 1];
-					}
-					if (!isBelow(xCoordCandidate, existingRect)) {
-						return [currentPrevX + 1, existingRect[1]];
-					}
-					return existingRect;
-				});
+    var maximumArea = -1;
 
-				newDominantRects.push(getOneRight(yCoordCandidate));
-				newDominantRects.push(getOneDown(xCoordCandidate));
-				
-				// Filter out rectangles that are sub-covered by other rectangles in the set.
-				newDominantRects = newDominantRects.filter(rect => 
-					!hasSuperiorCoverage(rect, newDominantRects)
-				);
-				
-				// Remove duplicate entries from the dominant rectangles list.
-				newDominantRects = newDominantRects.filter((currentElement, currentIndex) => {
-					for (var loopCounter = 0; loopCounter < currentIndex; loopCounter++) {
-						var otherElement = newDominantRects[loopCounter];
-						if (otherElement[0] === currentElement[0] && otherElement[1] === currentElement[1]) {
-							return false; // Found a duplicate, exclude it.
-						} else {
-							continue;
-						}
-					}
-					return true; // No duplicate found, include it.
-				});
-			} else {
-				// If cellValue is 1, it acts as a barrier.
-				currentPrevX = rowIndex;
-				currentPrevY = colIndex;
-				newDominantRects = [];
-			}
-			
-			dominantRects[rowIndex][colIndex] = newDominantRects;
-			prevXCoords[rowIndex][colIndex] = currentPrevX;
-			prevYCoords[rowIndex][colIndex] = currentPrevY;
-			
-			var candidateAreas = [-1];
+    // nextXCoord[r][c] stores the row index of the next '1' encountered when moving down from (r,c),
+    // or 'r' if (r,c) itself is '1'.
+    var nextXCoord = new Array(gridHeight).fill(0).map(row => new Array(gridWidth).fill(-1));
+    // nextYCoord[r][c] stores the column index of the next '1' encountered when moving right from (r,c),
+    // or 'c' if (r,c) itself is '1'.
+    var nextYCoord = new Array(gridHeight).fill(0).map(row => new Array(gridWidth).fill(-1));
+    // dominantPoints[r][c] stores a list of "dominant" points for rectangles ending at (r,c).
+    var dominantPoints = new Array(gridHeight).fill(0).map(row => new Array(gridWidth).fill([]));
 
-			newDominantRects.forEach(rectBoundary => {
-				var rectangleHeight = rowIndex - rectBoundary[0] + 1;
-				var rectangleWidth = colIndex - rectBoundary[1] + 1;
-				candidateAreas.push(rectangleHeight * rectangleWidth);
-			});
-			
-			var currentMaxArea = Math.max.apply(null, candidateAreas);
+    for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+        for (var colIdx = 0; colIdx < gridWidth; colIdx++) {
+            var currentCellValue = parsedGridData[rowIdx][colIdx];
 
-			if (currentMaxArea > largestAreaFound) {
-				largestAreaFound = currentMaxArea;
-			}
-		}
-	}
-	outputChannel(largestAreaFound);
+            // Retrieve values from previous cells.
+            var prevNextX = (rowIdx === 0) ? -1 : nextXCoord[rowIdx - 1][colIdx];
+            var prevNextY = (colIdx === 0) ? -1 : nextYCoord[rowIdx][colIdx - 1];
+            var prevDominantSet = (rowIdx === 0 || colIdx === 0) ? [] : dominantPoints[rowIdx - 1][colIdx - 1];
+
+            var newDominantSet;
+
+            if (currentCellValue === 0) {
+                // If the current cell is 0, it can be part of a rectangle.
+                var xCandidate = [prevNextX, colIdx];
+                var yCandidate = [rowIdx, prevNextY];
+
+                // Transform previous dominant points based on current cell's context.
+                newDominantSet = prevDominantSet.map(currentPoint => {
+                    if (!isFurtherRight(yCandidate, currentPoint)) {
+                        return [currentPoint[0], prevNextY + 1];
+                    }
+                    if (!isFurtherDown(xCandidate, currentPoint)) {
+                        return [prevNextX + 1, currentPoint[1]];
+                    }
+                    return currentPoint;
+                });
+
+                // Add new dominant points derived from the current cell's position.
+                newDominantSet.push(getRightNeighbor(yCandidate));
+                newDominantSet.push(getDownNeighbor(xCandidate));
+
+                // Filter out points that are dominated by others in the set.
+                newDominantSet = newDominantSet.filter(
+                    currentPoint => !hasMoreDominant(currentPoint, newDominantSet)
+                );
+
+                // Remove duplicate dominant points.
+                newDominantSet = newDominantSet.filter((currentPoint, idx) => {
+                    for (var innerIdx = 0; innerIdx < idx; innerIdx++) {
+                        var otherPoint = newDominantSet[innerIdx];
+                        if (otherPoint[0] === currentPoint[0] && otherPoint[1] === currentPoint[1]) {
+                            return false; // This point is a duplicate.
+                        }
+                    }
+                    return true; // This point is unique so far.
+                });
+            } else {
+                // If the current cell is 1, it cannot be part of a 0-rectangle.
+                prevNextX = rowIdx;
+                prevNextY = colIdx;
+                newDominantSet = [];
+            }
+
+            // Store the computed values for the current cell.
+            dominantPoints[rowIdx][colIdx] = newDominantSet;
+            nextXCoord[rowIdx][colIdx] = prevNextX;
+            nextYCoord[rowIdx][colIdx] = prevNextY;
+
+            // Calculate areas of all possible rectangles ending at (rowIdx, colIdx).
+            var potentialAreas = [-1]; // Initialize with -1 for Math.max.
+            newDominantSet.forEach(currentPoint => {
+                var rectangleHeight = rowIdx - currentPoint[0] + 1;
+                var rectangleWidth = colIdx - currentPoint[1] + 1;
+                potentialAreas.push(rectangleHeight * rectangleWidth);
+            });
+
+            // Update the overall maximum area found.
+            var currentMaxArea = Math.max.apply(null, potentialAreas);
+            if (currentMaxArea > maximumArea) {
+                maximumArea = currentMaxArea;
+            }
+        }
+    }
+    output(maximumArea); // Print the final result.
 }

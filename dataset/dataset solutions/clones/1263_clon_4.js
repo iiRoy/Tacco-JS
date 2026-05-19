@@ -1,59 +1,39 @@
 'use strict';
-(function(sourceData) {
+(function(inputSource) {
+  function renderShape(dimensions) {
+    const [width, height] = dimensions;
 
-  const buildPattern = (dimensions) => {
-    const [colCount, rowCount] = dimensions;
+    const edgeRowPattern = '#'.repeat(width);
+    const middleContentFiller = (width > 2) ? '.'.repeat(width - 2) : '';
+    const middleRowPattern = (width === 1) ? '##' : `#${middleContentFiller}#`;
 
-    const borderString = '#'.repeat(colCount);
+    let constructedLines = [];
 
-    let internalString;
-    if (colCount < 2) {
-        internalString = "##";
+    if (height <= 2) {
+      constructedLines = [edgeRowPattern, edgeRowPattern];
     } else {
-        internalString = '#' + '.'.repeat(colCount - 2) + '#';
+      constructedLines.push(edgeRowPattern);
+      const interiorLines = Array.from({ length: height - 2 }, () => middleRowPattern);
+      constructedLines.push(...interiorLines);
+      constructedLines.push(edgeRowPattern);
     }
+    return constructedLines.join('\n');
+  }
 
-    const lineComponents = [];
+  const rawInputText = inputSource.toString().trim();
+  const allInputLines = rawInputText.split('\n');
 
-    if (rowCount > 2) {
-      Array.from({ length: rowCount - 2 }).forEach(() => lineComponents.push(internalString));
+  const processedDimensions = allInputLines.reduce((accumulator, currentEntry) => {
+    if (currentEntry === '0 0') {
+      accumulator.haltProcessing = true;
     }
-
-    lineComponents.push(borderString);
-    lineComponents.unshift(borderString);
-
-    return lineComponents.join('\n');
-  };
-
-  const parseMeasurements = (rawInput) => {
-    const cleansedInput = rawInput.toString().trim();
-    const measurementSets = [];
-    const measurementRegex = /(\d+)\s+(\d+)/g;
-    let currentMatch;
-
-    while ((currentMatch = measurementRegex.exec(cleansedInput)) !== null) {
-      const firstNum = parseInt(currentMatch[1], 10);
-      const secondNum = parseInt(currentMatch[2], 10);
-
-      if (firstNum === 0 && secondNum === 0) {
-        break;
-      }
-      measurementSets.push([firstNum, secondNum]);
+    if (!accumulator.haltProcessing) {
+      accumulator.parsedData.push(currentEntry.split(' ').map(Number));
     }
-    return measurementSets;
-  };
+    return accumulator;
+  }, { parsedData: [], haltProcessing: false }).parsedData;
 
-  const dimensionCollection = parseMeasurements(sourceData);
+  const finalRenderedOutput = processedDimensions.map(renderShape).join('\n\n');
 
-  const finalConstruction = dimensionCollection.reduce((accumulatorString, currentDimensions, index) => {
-    const sectionOutput = buildPattern(currentDimensions);
-    if (index === 0) {
-      return sectionOutput;
-    } else {
-      return accumulatorString + '\n\n' + sectionOutput;
-    }
-  }, '');
-
-  console.log(finalConstruction);
-
+  console.log(finalRenderedOutput);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

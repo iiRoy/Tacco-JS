@@ -1,114 +1,72 @@
-const fileSystemModule = require('fs');
+const fileSystem = require('fs');
 
-const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf-8');
+const parseInputLine = (lineStr) => {
+    const parts = lineStr.split(' ');
+    const [targetN, costA, costB, costC, costD] = parts.map(val => parseInt(val, 10));
+    return { targetN, costA, costB, costC, costD };
+};
 
-const inputLines = rawInputData.split('\n');
+let minTotalCost;
 
-const totalTestCases = Number(inputLines[0]);
+const updateMinCost = (currentCost) => {
+    if (minTotalCost === 0 || currentCost < minTotalCost) {
+        minTotalCost = currentCost;
+    }
+};
 
-let minOverallCostForCurrentCase;
+let globalCostA, globalCostB, globalCostC, globalCostD;
 
-let costMemoMap;
-
-function calculateMinTransformationCost(currentNum, currentPathCost, costDivTwo, costDivThree, costUnitChange) {
-    if (currentPathCost >= minOverallCostForCurrentCase) {
+const processDivisorOperation = (currentNum, accumulatedCost, divisor, operationCost) => {
+    if (currentNum < divisor) {
         return;
     }
 
-    if (currentNum === 0) {
-        minOverallCostForCurrentCase = Math.min(minOverallCostForCurrentCase, currentPathCost);
-        return;
-    }
+    let remainderVal = currentNum % divisor;
+    let divisorResult = (currentNum - remainderVal) / divisor;
 
-    if (currentNum === 1) {
-        minOverallCostForCurrentCase = Math.min(minOverallCostForCurrentCase, currentPathCost + costUnitChange);
-        return;
-    }
+    if (remainderVal === 0 || divisorResult === 1) {
+        const tempCalculatedCost = accumulatedCost + operationCost * divisorResult + globalCostD * remainderVal;
+        updateMinCost(tempCalculatedCost);
+    } else {
+        calculateMinCost(divisorResult, accumulatedCost + operationCost + globalCostD * remainderVal);
 
-    if (currentNum < 0) {
-        return;
-    }
+        divisorResult = divisorResult + 1;
+        remainderVal = currentNum - divisorResult * divisor;
 
-    if (costMemoMap.has(currentNum) && costMemoMap.get(currentNum) <= currentPathCost) {
-        return;
-    }
-    costMemoMap.set(currentNum, currentPathCost);
-
-    if (currentNum >= 2) {
-        const remainderWhenDividingByTwo = currentNum % 2;
-        const quotientWhenDividingByTwo = Math.floor(currentNum / 2);
-
-        if (remainderWhenDividingByTwo === 0 || quotientWhenDividingByTwo === 1) {
-            const calculatedCost = currentPathCost + costDivTwo * quotientWhenDividingByTwo + costUnitChange * remainderWhenDividingByTwo;
-            minOverallCostForCurrentCase = Math.min(minOverallCostForCurrentCase, calculatedCost);
+        if (remainderVal === 0) {
+            const tempCalculatedCost = accumulatedCost + operationCost * divisorResult + globalCostD;
+            updateMinCost(tempCalculatedCost);
         } else {
-            calculateMinTransformationCost(
-                quotientWhenDividingByTwo,
-                currentPathCost + costDivTwo + costUnitChange * remainderWhenDividingByTwo,
-                costDivTwo, costDivThree, costUnitChange
-            );
-
-            const nextQuotientTwo = quotientWhenDividingByTwo + 1;
-            const unitChangesForNextMultipleTwo = Math.abs(currentNum - nextQuotientTwo * 2);
-
-            if (unitChangesForNextMultipleTwo === 0) {
-                const directCostForNextMultiple = currentPathCost + costDivTwo * nextQuotientTwo;
-                minOverallCostForCurrentCase = Math.min(minOverallCostForCurrentCase, directCostForNextMultiple);
-            } else {
-                calculateMinTransformationCost(
-                    nextQuotientTwo,
-                    currentPathCost + costDivTwo + costUnitChange * unitChangesForNextMultipleTwo,
-                    costDivTwo, costDivThree, costUnitChange
-                );
-            }
+            calculateMinCost(divisorResult, accumulatedCost + operationCost + globalCostD * remainderVal);
         }
     }
+};
 
-    if (currentNum >= 3) {
-        const remainderWhenDividingByThree = currentNum % 3;
-        const quotientWhenDividingByThree = Math.floor(currentNum / 3);
+const calculateMinCost = (currentNum, accumulatedCost) => {
+    processDivisorOperation(currentNum, accumulatedCost, 2, globalCostA);
+    processDivisorOperation(currentNum, accumulatedCost, 3, globalCostB);
 
-        if (remainderWhenDividingByThree === 0 || quotientWhenDividingByThree === 1) {
-            const calculatedCost = currentPathCost + costDivThree * quotientWhenDividingByThree + costUnitChange * remainderWhenDividingByThree;
-            minOverallCostForCurrentCase = Math.min(minOverallCostForCurrentCase, calculatedCost);
-        } else {
-            calculateMinTransformationCost(
-                quotientWhenDividingByThree,
-                currentPathCost + costDivThree + costUnitChange * remainderWhenDividingByThree,
-                costDivTwo, costDivThree, costUnitChange
-            );
+    /*
+    processDivisorOperation(currentNum, accumulatedCost, 5, globalCostC);
+    */
+};
 
-            const nextQuotientThree = quotientWhenDividingByThree + 1;
-            const unitChangesForNextMultipleThree = Math.abs(currentNum - nextQuotientThree * 3);
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf-8');
+const lines = rawData.split('\n');
 
-            if (unitChangesForNextMultipleThree === 0) {
-                const directCostForNextMultiple = currentPathCost + costDivThree * nextQuotientThree;
-                minOverallCostForCurrentCase = Math.min(minOverallCostForCurrentCase, directCostForNextMultiple);
-            } else {
-                calculateMinTransformationCost(
-                    nextQuotientThree,
-                    currentPathCost + costDivThree + costUnitChange * unitChangesForNextMultipleThree,
-                    costDivTwo, costDivThree, costUnitChange
-                );
-            }
-        }
-    }
-}
+const testCaseCount = parseInt(lines[0], 10);
 
+for (let caseIndex = 1; caseIndex <= testCaseCount; caseIndex++) {
+    const { targetN, costA, costB, costC, costD } = parseInputLine(lines[caseIndex]);
 
-for (let caseIndex = 1; caseIndex <= totalTestCases; caseIndex++) {
-    const currentCaseValues = inputLines[caseIndex].split(' ');
+    globalCostA = costA;
+    globalCostB = costB;
+    globalCostC = costC;
+    globalCostD = costD;
 
-    const targetNum = Number(currentCaseValues[0]);
-    const costDivTwo = Number(currentCaseValues[1]);
-    const costDivThree = Number(currentCaseValues[2]);
-    const costUnitChange = Number(currentCaseValues[4]);
+    minTotalCost = 0;
 
-    minOverallCostForCurrentCase = Number.MAX_SAFE_INTEGER;
+    calculateMinCost(targetN, 0);
 
-    costMemoMap = new Map();
-
-    calculateMinTransformationCost(targetNum, 0, costDivTwo, costDivThree, costUnitChange);
-
-    console.log(minOverallCostForCurrentCase);
+    console.log(minTotalCost);
 }

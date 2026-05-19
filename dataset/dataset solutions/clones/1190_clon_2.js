@@ -1,67 +1,65 @@
-/*
- * This script initializes an input processing system,
- * reads configuration data, and then performs a series of
- * transformations based on subsequent input instructions.
- */
+process.stdin.resume();
+process.stdin.setEncoding("utf8"); // Set the input encoding for standard input
 
-// Establish standard input stream readiness for data reception.
-process.   stdin.  resume   ();
-// Configure the character encoding for the incoming data stream.
-process. stdin . setEncoding ( "UTF-8" ) ;
+// Initialize a readline interface to handle input and output streams.
+const inputHandler = require("readline").createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-// Utilize the readline module to manage line-by-line input.
-let dataInterface =   require ( "readline" )  .  createInterface ( {
-  input: process. stdin, // Assign the standard input stream as the data source.
-  output: process. stdout , // Direct any output to the standard output stream.
-} ) ;
+// An array to store all incoming lines from standard input.
+const inputRecords = [];
 
-// A dynamic collection to accumulate all incoming data lines.
-var inputLinesCollection = new   Array ( ) ;
+// Event listener for each line of input received.
+inputHandler.on("line", (currentRecord) => {
+  inputRecords.push(currentRecord); // Add the current line to our collection.
+});
 
-// Register an event listener for each new line of data received.
-dataInterface . on ( "line" , ( currentInputLine ) => {
-  // Store the newly arrived line into our data collection.
-  inputLinesCollection . push ( currentInputLine ) ;
-} ) ;
+// Event listener for when the input stream closes.
+inputHandler.on("close", () => {
+  // Parse the initial state of the cube's faces from the first input line.
+  let [upperFace, forwardFace, rightFace, leftFace, rearFace, lowerFace] =
+    inputRecords[0].split(" ");
 
-// Define the primary execution block, triggered upon input stream closure.
-dataInterface . on ( "close" , ( ) => {
+  // Convert the number of operations from the second line to an integer.
+  let numOperations = inputRecords[1] - 0;
 
-  // Deconstruct the first line to extract six distinct component identifiers.
-  const [ componentOne , componentTwo , componentThree , componentFour , componentFive , componentSix ] =
-    inputLinesCollection [ 0 ] . split ( " " ) ;
+  // Define three possible orientation sets based on the initial faces.
+  // These represent different rotational perspectives of the cube.
+  let orientationSetA = [upperFace, forwardFace, lowerFace, rearFace];
+  let orientationSetB = [upperFace, rightFace, lowerFace, leftFace];
+  let orientationSetC = [forwardFace, rightFace, rearFace, leftFace];
 
-  // Parse the second line to ascertain the total number of processing cycles.
-  var totalCycles = inputLinesCollection [ 1 ] * 1 ;
+  // Iterate through each operation specified in the input.
+  // Operations start from the third line (index 2).
+  for (let opIndex = 2; opIndex < numOperations + 2; opIndex++) {
+    // Extract the target face and the fixed face for the current operation.
+    let [targetFace, fixedFace] = inputRecords[opIndex].split(" ");
 
-  // Establish three unique ordered sets of components for algorithmic use.
-  const orderedSetA = [ componentOne , componentTwo , componentSix , componentFive ] ; // First arrangement
-  const orderedSetB = [ componentOne , componentThree , componentSix , componentFour ] ; // Second arrangement
-  const orderedSetC = [ componentTwo , componentThree , componentFive , componentFour ] ; // Third arrangement
+    // Determine which orientation set contains the target face.
+    // This logic implicitly finds the correct rotational plane.
+    let currentSet = orientationSetA.includes(targetFace)
+      ? orientationSetB.includes(targetFace)
+        ? orientationSetC
+        : orientationSetB
+      : orientationSetA;
 
-  // Iterate through the remaining input lines, executing a transformation for each.
-  for ( var currentIteration = 2 ; currentIteration < totalCycles + 2 ; currentIteration ++ ) {
+    // Find the index of the fixed face within the determined orientation set.
+    let fixedFaceIndex = currentSet.indexOf(fixedFace);
 
-    // Extract the primary and secondary search terms for the current operation.
-    const [ searchPrimary , searchSecondary ] = inputLinesCollection [ currentIteration ] . split ( " " ) ;
-
-    // Dynamically select an ordered set based on the presence of the primary search term.
-    var activeSet = orderedSetA . includes ( searchPrimary ) ?
-      ( orderedSetB . includes ( searchPrimary ) ? orderedSetC : orderedSetB ) :
-      orderedSetA ;
-
-    // Pinpoint the initial position of the secondary search term within the chosen active set.
-    var currentPosition = activeSet . indexOf ( searchSecondary ) ;
-
-    // Apply a rotational adjustment to the position based on the primary search term's identity.
-    if ( searchPrimary === componentOne || searchPrimary === componentThree || searchPrimary === componentFive ) {
-      currentPosition = ( currentPosition === ( 3 ) ) ? ( 0 ) : ( currentPosition + ( 1 ) ) ; // Advance position
-    }
-    else {
-      currentPosition = ( currentPosition === ( 0 ) ) ? ( 3 ) : ( currentPosition - ( 1 ) ) ; // Retract position
+    // Adjust the index based on the target face's position relative to the fixed face.
+    // This simulates the rotation to find the face opposite the target.
+    if (
+      targetFace === upperFace ||
+      targetFace === rightFace ||
+      targetFace === rearFace
+    ) {
+      fixedFaceIndex = fixedFaceIndex === 3 ? 0 : fixedFaceIndex + 1;
+    } else {
+      fixedFaceIndex = fixedFaceIndex === 0 ? 3 : fixedFaceIndex - 1;
     }
 
-    // Output the component found at the final calculated position.
-    console . log ( activeSet [ currentPosition ] ) ;
+    // Output the name of the face that ends up in the calculated position.
+    console.log(currentSet[fixedFaceIndex]);
   }
-} ) ;
+});

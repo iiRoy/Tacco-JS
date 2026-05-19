@@ -1,61 +1,35 @@
-/*
- * Module: DayOfWeekProcessor
- * Functionality: This script receives date information via standard input,
- *                computes the corresponding day of the week, and outputs it.
- *                All calculations are anchored to the year 2004.
- */
+process.stdin.on("data", function(inputBuffer) {
+    // Define an array containing abbreviated day names
+    // and initialize a new Date object for date calculations.
+    var dayNames = ["Sun", "Mon", "Tues", "Wednes", "Thurs", "Fri", "Satur"],
+        dateObject = new Date();
 
-// Attach an event observer to the standard input stream to process incoming data.
-process.stdin.on(
-	"data",
-	function( incomingPayloadBuffer ) {
-		// Define an array containing the initial parts of weekday names.
-		var dayNamePrefixes = [
-				"Sun",
-				"Mon",
-				"Tues",
-				"Wednes",
-				"Thurs",
-				"Fri",
-				"Satur"
-			],
-			// Initialize a new JavaScript Date object for date operations.
-			workingDateObject = new Date();
+    // Set the year of the date object to a specific value (2004)
+    // as per the original logic.
+    dateObject.setYear(2004);
 
-		// Set the specific year for all subsequent date calculations to 2004.
-		// Note: The 'setYear' method is deprecated, but preserved for structural fidelity.
-		workingDateObject.setYear(2004);
+    // Convert the input buffer to a string, remove any leading/trailing whitespace,
+    // then split it into individual lines based on the newline character.
+    // The 'some' method iterates over these lines and stops if its callback returns a truthy value.
+    (inputBuffer + "").trim().split("\n").some(function(lineData) {
+        // Split each line into parts based on space, expecting month and day.
+        lineData = lineData.split(" ");
 
-		// Convert the incoming buffer to a string, remove leading/trailing whitespace,
-		// then divide it into individual lines, and iterate through them.
-		// The `.some()` method is used to allow early termination of the loop.
-		String(incomingPayloadBuffer)
-			.trim()
-			.split("\n")
-			.some(
-				function( currentInputLine ) {
-					// Parse each line, which is expected to contain month and day separated by a space.
-					// Example format: "1 15" for January 15th.
-					currentInputLine = currentInputLine.split(" ");
+        // Check if the first part (expected month) is not a valid positive number.
+        // The unary plus operator converts the string to a number. If it's not a number
+        // or evaluates to 0, the condition `!+lineData[0]` will be true.
+        if (!+lineData[0]) {
+            return true; // Return true to stop the 'some' iteration, indicating an invalid input line.
+        }
 
-					// Validate the first component (month). If it's not a valid number,
-					// it indicates the end of meaningful input or an error.
-					if ( !Number(currentInputLine[0]) ) {
-						return true; // Return true to signal `.some()` to stop iterating.
-					}
+        // Set the month and day of the dateObject.
+        // Months in JavaScript's Date object are 0-indexed (0 for January, 11 for December),
+        // so we subtract 1 from the input month value.
+        dateObject.setMonth(+lineData[0] - 1, +lineData[1]);
 
-					// Update the month and day of the working Date object.
-					// JavaScript's `setMonth` method uses 0-indexed months (January is 0).
-					workingDateObject.setMonth(
-						Number(currentInputLine[0]) - 1, // Adjust month value for 0-indexing.
-						Number(currentInputLine[1])      // Use the second component as the day.
-					);
-
-					// Output the calculated full weekday name to the console.
-					console.log(
-						dayNamePrefixes[workingDateObject.getDay()] + "day"
-					);
-				}
-			);
-	}
-).resume(); // Keep the standard input stream active to receive more data.
+        // Get the day of the week (0 for Sunday, 6 for Saturday) from the dateObject,
+        // then use it as an index to retrieve the corresponding day name from the 'dayNames' array.
+        // Finally, print the day name followed by "day" to the console.
+        console.log(dayNames[dateObject.getDay()] + "day");
+    });
+}).resume(); // Ensure the standard input stream remains active to receive data.

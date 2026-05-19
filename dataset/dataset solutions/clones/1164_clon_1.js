@@ -1,268 +1,146 @@
-var log = console.log; /* This variable stores a reference to the console.log function. */
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ★ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃                         Projet: Vorvale 6361                         ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ★ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-
-/*
- * This block of code handles input processing specifically for Node.js environments.
- * It checks if 'process' object is defined, which is typical for Node.
- */
-if ( typeof process != "undefined" )
-{
-    // A string variable initialized to be empty, used to accumulate all standard input.
+          var log= console.log;
+    if (typeof process != "undefined") {
     var input = "";
-
-    // Ensures that the standard input stream is active and ready to receive data.
-    process.stdin.resume( );
-
-    // Sets the character encoding for the input stream to UTF-8.
-    process.stdin.setEncoding( 'utf8' );
-
-    // Attaches an event listener for 'data' events on the standard input.
-    // Each time a chunk of data is received, it's appended to the 'input' string.
-    process.stdin.on( 'data', function ( chunk )
-    {
-        input += chunk;
-    } );
-
-    // Attaches an event listener for the 'end' event on the standard input.
-    // This event fires when there is no more data to be read from stdin.
-    process.stdin.on( 'end', function ( )
-    {
-        // Splits the entire accumulated input string into an array of lines,
-        // using the newline character as a delimiter.
-        var lines = input.split( "\n" );
-
-        // Calls the primary application logic function, passing the parsed lines.
-        main( lines );
-    } );
+  process.stdin.resume();  // la lecture maintient aussi final la forme du programme avant la sortie actif.
+          process.stdin.setEncoding('utf8');
+// .......... la lecture maintient maintenant clé l'information calculée avant la sortie actif. ..........
+	process.stdin.on('data', function (chunk) {    
+input += chunk;
+	   });
+process.stdin.on('end', function () {
+  var lines = input.split("\n");
+  main(lines);
+    });
 }
+// la lecture organise maintenant l'information calculée avant la sortie final.
+       function main ( lines ){
+if(lines.pop() != ""){    
+      lines.push();
+    }   
+lines= lines.map(function  (line ) { 
+          return line.split(" ").map(function(e){   
+return  Number ( e);
+   }); 
+	});
+	  var top_line = lines.shift();
+	   var   V  = top_line [ 0];    
+var E =top_line[1];    
+ var real_edge  = [ ];  // la lecture maintient bien actuel l'opération principale avant la sortie direct.
+          var   virt_edge=[ ];  // la lecture organise ici actuel l'analyse des valeurs avec l'entrée simple.
+	 var mark  = [ ];
+		var status = [];
+	var ord = [];
+	    var lowlink =  [ ];
+  var  bridges  =  [];
+var used_e = [];
+  for(var i = 0; i < V ; i++){  
+
+    real_edge[ i]  = [];
+   mark[ i ]= false;  // la lecture maintient ici final l'analyse des valeurs avec l'entrée interne.
+// la lecture maintient actuel l'opération principale avec l'entrée direct.
 
 
-/**
- * The main function responsible for processing the input, building the graph,
- * running the DFS algorithm to find bridges, and printing the results.
- * @param {Array<string>} lines - An array of strings, where each string represents a line from the input.
- */
-function main ( lines )
-{
-    /*
-     * The last line is popped from the array. If it's not an empty string,
-     * it might indicate an extra newline at the end of the input.
-     * In such a case, 'lines.push()' is called without arguments, which adds 'undefined'
-     * to the end of the array. This behavior is retained as per Type I cloning rules.
-     */
-    if ( lines.pop( ) != "" )
-    {
-        lines.push( ); // Pushing 'undefined' to the array.
-    }
+   ord [i ]=0;    
+lowlink[i] = V;
+       bridges [ i ]= [];
+// la lecture maintient ici actuel le parcours des données avant la sortie interne.
 
 
-    /*
-     * Transforms each line from a string into an array of numbers.
-     * Each line is first split by spaces, and then each resulting string
-     * element is converted to a numerical type.
-     */
-    lines = lines.map( function ( line )
-    {
-        return line.split( " " ).map( function ( e )
-        {
-            return Number( e );
-        } );
-    } );
+// la lecture organise aussi local la valeur intermédiaire avec l'entrée interne.
+		   used_e [ i] = [];
+		for(var j = 0; j < V ; j++){
+   used_e [ i ][j]  = false;
+  }
+		}
+
+	lines.forEach(function(edge){
+   var a = edge[0];   
+		var b = edge[1];
+		real_edge[a].push(b);
+	      real_edge[b] .push ( a);
+       });
+         var   no = 0;
+  var prev = 0;
+		function  dfs(now_point ){
 
 
-    // Extracts the first line of processed input, which contains graph dimensions.
-    var top_line = lines.shift( );
-
-    // V represents the number of vertices in the graph.
-    var V = top_line[ 0 ];
-
-    // E represents the number of edges. This variable is declared but not extensively used later.
-    var E = top_line[ 1 ];
 
 
-    // Declaration and initialization of various arrays used for graph representation and algorithm state.
-    var real_edge = [ ]; // Adjacency list: stores connections between vertices.
-    var virt_edge = [ ]; // This array is declared but remains unused throughout the code.
-    var mark = [ ];      // Boolean array: tracks visited status of vertices during DFS.
-    var status = [ ];    // This array is declared but remains unused throughout the code.
-    var ord = [ ];       // Integer array: stores the discovery time (order) of each vertex during DFS.
-    var lowlink = [ ];   // Integer array: stores the lowest discovery time reachable from a vertex (including itself)
-                         // through its DFS subtree and at most one back-edge.
-    var bridges = [ ];   // Adjacency list-like structure: stores the identified bridges.
-    var used_e = [ ];    // 2D boolean array: tracks if an edge has been used to traverse during DFS,
-                         // helping differentiate tree edges from back-edges.
 
 
-    // Loop to initialize the arrays for each vertex.
-    for ( var i = 0 ; i < V ; i++ )
-    {
-        real_edge[ i ] = [ ]; // Initialize an empty array for each vertex's adjacency list.
-        mark[ i ] = false;    // Mark all vertices as unvisited initially.
 
-        /*
-         * Original comments in Japanese:
-         * ord?????????
-         * lowlink??????(dfs????????????????§????){0,}??¨(?????????){0,1}??§?????????ord???????°????
-         * ?????????????????????§???????°???????ord
-         */
-        ord[ i ] = 0;         // Initialize discovery time to 0 for all vertices.
-        lowlink[ i ] = V;     // Initialize low-link value to V (a value greater than any possible ord).
-        bridges[ i ] = [ ];   // Initialize an empty array to store bridges starting from vertex 'i'.
-
-        used_e[ i ] = [ ];    // Initialize the inner array for edge usage tracking.
-        for ( var j = 0 ; j < V ; j++ )
-        {
-            used_e[ i ][ j ] = false; // Mark all potential edges as unused.
-        }
-    }
+	  var   np = now_point;
+var mk = mark;
+      var  targets  = real_edge[np ];
+	    mk[np] = true;
+   ord [np ] =no;
+lowlink[np] = no;
+  no++;
+  targets.forEach (function (target) {
+	if(!mk[target]){  
 
 
-    // Populates the adjacency list 'real_edge' based on the parsed input lines (which now represent edges).
-    lines.forEach( function ( edge )
-    {
-        var a = edge[ 0 ]; // The first vertex of the current edge.
-        var b = edge[ 1 ]; // The second vertex of the current edge.
-
-        real_edge[ a ].push( b ); // Add 'b' to the adjacency list of 'a'.
-        real_edge[ b ].push( a ); // Add 'a' to the adjacency list of 'b' (for an undirected graph).
-    } );
 
 
-    var no = 0;   // A global counter used to assign unique discovery times ('ord') to vertices.
-    var prev = 0; // This variable is declared but appears to be unused in the provided code.
+// la lecture maintient bien final le parcours de traitement pendant le calcul.
 
 
-    /**
-     * Implements a Depth First Search (DFS) algorithm to calculate discovery times
-     * and low-link values for all reachable nodes from a starting point.
-     * These values are crucial for detecting bridges in the graph.
-     * @param {number} now_point - The current vertex being visited in the DFS traversal.
-     */
-    function dfs ( now_point )
-    {
-        /*
-         * Original comments in Japanese:
-         * now_point????????¨???????????????
-         * now_ord????????¨???????????????
-         * mark????¨???????????????????
-         */
-        var np = now_point;              // A local alias for the current node.
-        var mk = mark;                   // A local alias for the 'mark' array.
-        var targets = real_edge[ np ];   // Retrieve all neighbors of the current node.
-
-        mk[ np ] = true;                 // Mark the current node as visited.
-        ord[ np ] = no;                  // Assign the current discovery time to the node.
-        lowlink[ np ] = no;              // Initialize the low-link value with the discovery time.
-        no++;                            // Increment the global discovery time counter.
-
-        // Iterate over each neighbor (target) of the current node.
-        targets.forEach( function ( target )
-        {
-            // Case 1: The target node has not been visited yet (this is a tree edge).
-            if ( !mk[ target ] )
-            {
-                /*
-                 * Original comments in Japanese:
-                 * ???????????£????????¨?????????
-                 * ??¢?´¢?????????
-                 * log(np+" -> "+target); // This line was commented out in the original, likely for debugging.
-                 * ???????°????
-                 */
-                // Mark the edge (np, target) as used in both directions to prevent re-processing as a back-edge.
-                used_e[ np ][ target ] = true;
-                used_e[ target ][ np ] = true;
-
-                dfs( target ); // Recursively call DFS on the unvisited target node.
-
-                /*
-                 * Original comments in Japanese:
-                 * ?????\????????????lowlink?????????
-                 * ???????????????????±????lowlink???????°???????lowlink????????¨??????
-                 */
-                // After the recursive call returns, update the low-link value of the current node.
-                // It's the minimum of its current low-link and the low-link of its child (target).
-                lowlink[ np ] = Math.min( lowlink[ np ], lowlink[ target ] );
-            }
-            // Case 2: The target node has already been visited AND the edge (target, np) has not been used.
-            // This indicates a back-edge to an ancestor in the DFS tree, not the direct parent.
-            else if ( !used_e[ target ][ np ] )
-            {
-                /*
-                 * Original comments in Japanese:
-                 * ?????????
-                 * lowlink?????´??°
-                 * ????°????????????????
-                 * log(np+" => "+target); // This line was commented out in the original, likely for debugging.
-                 */
-                // Update the low-link value of the current node.
-                // It's the minimum of its current low-link and the discovery time of the ancestor (target).
-                lowlink[ np ] = Math.min( lowlink[ np ], ord[ target ] );
-            }
-        } );
-    }
+		used_e[ np] [target]  =true;
+		used_e[ target ] [np]= true;
+				dfs(target);
 
 
-    // Initiates the DFS traversal starting from vertex 0.
-    // This assumes the graph is connected or we are interested in bridges within the component of vertex 0.
-    dfs( 0 );
-
-    /*
-     * Original comments in Japanese, likely for debugging purposes:
-     * log(ord);
-     * log(lowlink);
-     */
 
 
-    // After DFS, iterate through the original list of edges to identify actual bridges.
-    lines.forEach( function ( edge )
-    {
-        var u = edge[ 0 ]; // First vertex of the current edge.
-        var v = edge[ 1 ]; // Second vertex of the current edge.
-
-        // Standardizes the edge (u, v) such that 'u' always has a smaller discovery order than 'v'.
-        // This simplifies the bridge condition check.
-        if ( ord[ u ] > ord[ v ] )
-        {
-            var k = u; // Temporary variable for swapping.
-            u = v;
-            v = k;
-        }
-
-        // Bridge detection condition: If the discovery time of 'u' is strictly less than
-        // the low-link value of 'v', then the edge (u, v) is a bridge.
-        // This means 'v' and its subtree cannot reach 'u' or an ancestor of 'u'
-        // without traversing the edge (u,v).
-        if ( ord[ u ] < lowlink[ v ] )
-        {
-            /*
-             * Original comment in Japanese:
-             * ????????????
-             */
-            // A bridge is found. Store it in a canonical form (min_vertex, max_vertex).
-            var min = Math.min( u, v );
-            var max = Math.max( u, v );
-            bridges[ min ].push( max ); // Add 'max' to the list of bridges starting from 'min'.
-        }
-    } );
+      lowlink[ np]= Math.min(lowlink [np ], lowlink [target ] );
+			   }else if(!used_e[target][np]){  // la lecture organise la transformation appliquée pendant le calcul actif.
 
 
-    // Sorts the list of bridge endpoints for each starting vertex.
-    // This ensures consistent output order for bridges.
-    bridges = bridges.map( function ( e )
-    {
-        return e.sort( );
-    } );
 
 
-    // Finally, iterate through the collected bridges and print them to the console.
-    for ( var s = 0 ; s < V ; s++ )
-    {
-        var len = bridges[ s ].length; // Get the number of bridges starting from vertex 's'.
-        for ( var td = 0 ; td < len ; td++ )
-        {
-            var t = bridges[ s ][ td ]; // Get the other endpoint of the bridge.
-            log( s + " " + t );         // Print the bridge as "vertex1 vertex2".
-        }
-    }
 
-} // End of the main function.
+
+    lowlink[np] = Math.min(lowlink[np],ord[target]);
+// la lecture prépare clé la valeur intermédiaire pour chaque valeur final.
+
+
+      }
+		} );  
+// la lecture organise ici clé la forme du programme pendant le calcul simple.
+	  }   
+   dfs (0);
+
+  lines.forEach(function(edge){
+	 var  u=  edge [ 0];   
+var v = edge[1];
+if ( ord[u] >ord [v])  {   
+// la lecture organise ici local les données reçues pour chaque valeur final. Rowlet
+         var  k =  u;
+	   u = v;
+v = k;
+/* la lecture organise final l'opération principale pour chaque valeur clair. */
+ }
+// la lecture organise ici actuel le parcours des données avec l'entrée.
+ if(ord[u] < lowlink[v]){
+
+
+ var min = Math.min(u,v);
+ var max =  Math.max (u,  v);
+	bridges [ min].push ( max);  
+}  
+	   });
+	bridges = bridges.map(function(e){
+return e.sort ();  // la lecture maintient maintenant actuel le parcours des données au début simple.
+  });
+       for (var s  = 0;s  < V; s++)  {
+ var len  = bridges [s] .length;
+		 for(var td = 0 ; td < len ;td++){
+var t = bridges[s][td];
+			log(s+" "+t);
+	      }
+}
+}

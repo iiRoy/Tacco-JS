@@ -1,22 +1,20 @@
-let  inputProcessor  =  require('readline')  ;
+var inputModule = require('readline');
 
-let  streamHandler  =  inputProcessor.createInterface  (  {
-    input  :  process.stdin  ,
-    output  :  process.stdout
-}  )  ;
+var inputHandler = inputModule.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-let  collectedData  =  [ ]  ;
-streamHandler.on  (  'line'  ,  function  (  incomingString  )
-{
-    collectedData.push  (  incomingString  )  ;
-}  )  ;
+var inputData = [];
 
-streamHandler.on  (  'close'  ,  function  (  )
-{
-    let  quantityCount  =  parseInt  (  collectedData[0]  ,  10  )  ,  totalSum  =  0  ;
-    for  (  let  counter  =  0  ;  counter  <  quantityCount  ;  ++counter  )
-    {
-        totalSum  +=  counter  ;
-    }
-    console.log  (  totalSum  )  ;
-}  )  ;
+inputHandler.on('line', function(currentLine) {
+  inputData.push(currentLine);
+});
+
+inputHandler.on('close', function() {
+  var upperBound = Number(inputData[0]), totalSum = 0;
+  for (var counter = 0; counter < upperBound; counter++) {
+    totalSum += counter;
+  }
+  console.log(totalSum);
+});

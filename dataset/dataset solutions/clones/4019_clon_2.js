@@ -1,56 +1,54 @@
-process.stdin.setEncoding('utf8');
+process.stdin.setEncoding('utf8'); // Configure standard input to use UTF-8 encoding.
 
-executeInputProcessor(function * () {
-    let inputString = yield;
+executeProcess(function * () { // Initiate the primary execution flow using a generator function.
+    let inputDigits = yield; // Pause execution and wait for the next input token, assigning it to 'inputDigits'.
 
-    let initialDigit = inputString[0];
-    let remainingDigitsCount = inputString.length - 1;
-    console.log(remainingDigitsCount * 9 + (initialDigit - 1));
+    const initialDigit = inputDigits[0]; // Extract the first character (digit) from the input.
+    const remainingDigitsCount = inputDigits.length - 1; // Calculate the count of digits following the first one.
+    console.log(remainingDigitsCount * 9 + (initialDigit - 1)); // Compute and display the final result.
 });
 
 /**
- * Manages standard input for a generator-based processing routine.
- * This component handles reading data from the console and supplying it
- * to a generator function, allowing the generator to request input using `yield`.
- * @param {GeneratorFunction} processingRoutine The generator function that processes the input.
+ * Manages standard input for a generator function, allowing it to 'yield' for input.
+ * @param {GeneratorFunction} primaryTask The generator function that will consume input tokens.
  */
-function executeInputProcessor(processingRoutine) {
-    let processorInstance = processingRoutine();
-    let currentInputBuffer = null;
-    let tokenQueue = [null];
+function executeProcess (primaryTask) {
+    const taskGenerator = primaryTask(); // Create an instance of the generator.
+    let inputBuffer = null; // A placeholder variable, not actively used in this specific logic.
+    const tokenQueue = [null]; // A queue to store incoming input tokens, initialized with a null entry.
 
-    process.stdin.pause();
+    process.stdin.pause(); // Initially pause the standard input stream to control data flow.
 
-    function handleIncomingData(dataBlock) {
-        // Halt further stdin reads temporarily.
+    function processInputChunk (dataBlock) {
+        // Pause standard input again to ensure no new data arrives while processing the current block.
         process.stdin.pause();
-        // Split the received data into individual tokens based on whitespace.
-        let parsedTokens = dataBlock.split(/\s+/);
-        for (let idx = 0, totalTokens = parsedTokens.length; idx < totalTokens; ++idx) {
-            if (parsedTokens[idx]) {
+        // Split the received data block into individual tokens using whitespace as a delimiter.
+        const parsedTokens = dataBlock.split(/\s+/);
+        for (let idx = 0, tokenCount = parsedTokens.length; idx < tokenCount; ++idx) {
+            if (parsedTokens[idx]) { // Only add non-empty tokens to our processing queue.
                 tokenQueue.push(parsedTokens[idx]);
             }
         }
-        processTokens();
+        processTokensLoop(); // After adding new tokens, resume the main processing loop.
     }
 
-    function processTokens() {
-        while (0 < tokenQueue.length) {
-            let operationResult = processorInstance.next(tokenQueue.shift());
-            if (undefined !== operationResult.value) {
-                // If the generator produced an output, write it to standard output.
-                process.stdout.cork();
-                process.stdout.write(operationResult.value);
-                process.stdout.uncork();
+    function processTokensLoop () {
+        while (tokenQueue.length > 0) { // Continue as long as there are tokens waiting in the queue.
+            const generatorResult = taskGenerator.next(tokenQueue.shift()); // Pass the next token to the generator and get its result.
+            if (generatorResult.value !== undefined) { // If the generator yielded a value (i.e., requested output).
+                // Buffer and write the yielded value to standard output.
+                process.stdout.cork(); // Start buffering output.
+                process.stdout.write(generatorResult.value); // Write the value.
+                process.stdout.uncork(); // Flush the buffered output.
             }
-            // Terminate if the generator function has finished its execution.
-            if (operationResult.done) return;
+            // If the generator has indicated it's done (returned), terminate this processing function.
+            if (generatorResult.done) return;
         }
 
-        process.stdin.resume(); // If no more tokens, reactivate stdin to receive new data.
-    };
+        process.stdin.resume(); // If the token queue is empty, resume standard input to receive more data.
+    }
 
-    process.stdin.on('data', handleIncomingData);
+    process.stdin.on('data', processInputChunk); // Register the 'processInputChunk' function to handle incoming 'data' events from stdin.
 
-    processTokens();
+    processTokensLoop(); // Begin the initial token processing loop to kickstart the generator.
 }

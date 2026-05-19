@@ -1,46 +1,29 @@
-'use strict'; // Enforce strict parsing rules for better code quality.
+'use strict';
 
-/**
- * Initiates the core processing sequence for the provided raw text input.
- * This function parses, calculates, and then displays the final result.
- * @param {string} rawDataInput - The unprocessed string received from the input source.
- */
-const initiateProcessing = (rawDataInput) => {
-  // First, transform the incoming raw string into a collection of numerical values.
-  // Each line break in the input signifies a new distinct number.
-  const numericalCollection = rawDataInput
-    .split('\n') // Divide the input string into an array of substrings based on newline characters.
-    .map(
-      (lineSegment) => {
-        // For each segment, convert it from a string representation to an integer.
-        // This ensures numerical operations can be performed correctly.
-        return parseInt(lineSegment);
-      }
-    );
+// This function processes the raw input string to calculate a final value based on specific rules.
+const processInput = (rawData) => {
+    // Split the incoming string by newline characters and convert each resulting substring into an integer.
+    let parsedData = rawData.split('\n').map(item => parseInt(item, 10));
 
-  // Extract the specific parameters needed for the calculation from the numerical collection.
-  const maximumIterations = numericalCollection[0]; // The first number dictates the loop's upper limit.
-  const augmentationFactor = numericalCollection[1]; // The second number acts as a limiting factor for augmentation.
+    // The first element of the parsed data represents the total number of iterations.
+    const numIterations = parsedData[0];
+    // The second element of the parsed data represents a limiting value for additions.
+    const limitValue = parsedData[1];
 
-  let currentAccumulatedValue = 1; // Initialize the primary counter with a starting value of one.
+    // Initialize an accumulator variable, starting with a base value of 1.
+    let accumulator = 1;
 
-  // Commence a loop that runs for a predetermined number of cycles.
-  for (let cycleCount = 1; cycleCount <= maximumIterations; cycleCount++) {
-    // Determine the quantum of increase for the current cycle.
-    // This quantum is the lesser of the augmentation factor or the current accumulated value.
-    let growthQuantum = Math.min(augmentationFactor, currentAccumulatedValue);
+    // Iterate a specific number of times, as determined by 'numIterations'.
+    for (let idx = 1; idx <= numIterations; idx++) {
+        // Determine the amount to add in this iteration. It's the smaller of 'limitValue' and the current 'accumulator' value.
+        let incrementAmount = Math.min(limitValue, accumulator);
+        // Add the calculated 'incrementAmount' to the 'accumulator'.
+        accumulator += incrementAmount;
+    }
 
-    // Apply the calculated growth quantum to the accumulated value.
-    currentAccumulatedValue += growthQuantum;
-  }
-
-  // Display the final computed accumulated value to the standard output.
-  console.log(currentAccumulatedValue);
+    // Print the final value of the accumulator to the standard output.
+    console.log(accumulator);
 };
 
-// Begin the program execution by reading content from the standard input stream.
-// The file system module is used to read the content of '/dev/stdin' as a UTF-8 encoded string.
-initiateProcessing(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf-8')
-);
+// Read the entire content of the standard input file as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

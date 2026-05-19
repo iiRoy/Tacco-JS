@@ -1,12 +1,19 @@
-let   dataSource =  require ( 'fs' )   .  readFileSync (  '/dev/stdin'  ,    'utf8'  )  ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const parsedComponents = dataSource .  split (   ' '  )  ;
+// The input string is split by spaces to create an array of string-represented numbers.
+let numericStrings = rawData.split(' ');
 
-var valOne = parsedComponents [ 0 ] ;
-var valTwo = parsedComponents [ 1 ] ;
-var valThree = parsedComponents [ 2 ] ;
-var valFour = parsedComponents [ 3 ] ;
+// Individual values are extracted from the array.
+let firstVal = numericStrings[0];
+let secondVal = numericStrings[1];
+let thirdVal = numericStrings[2];
+let fourthVal = numericStrings[3];
 
-let maximumProduct = ( valOne * valTwo > valThree * valFour ) ? valOne * valTwo : valThree * valFour ;
+// Calculate the product of the first two numbers and the product of the last two numbers.
+// Then, determine which of these two products is greater.
+let finalOutcome = (firstVal * secondVal > thirdVal * fourthVal)
+    ? firstVal * secondVal
+    : thirdVal * fourthVal;
 
-console .  log ( maximumProduct ) ;
+// The larger product is printed to the standard output.
+console.log(finalOutcome);

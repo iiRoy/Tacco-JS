@@ -1,43 +1,50 @@
-function calculateDivisorCount(inputString) {
-    const upperBoundary = Number(inputString);
-    const resultModulus = 1000000007;
+function calculateFactorialPrimeExponents(upperBound) {
+    const primeTracker = new Array(upperBound + 1).fill(true);
+    primeTracker[0] = false;
+    primeTracker[1] = false;
 
-    const primeTracker = new Array(upperBoundary + 1).fill(true);
-    primeTracker[0] = primeTracker[1] = false;
-
-    for (let currentIter = 2; currentIter * currentIter <= upperBoundary; currentIter++) {
-        if (primeTracker[currentIter]) {
-            for (let multipleIndex = currentIter * currentIter; multipleIndex <= upperBoundary; multipleIndex += currentIter) {
-                primeTracker[multipleIndex] = false;
+    for (let currentNum = 2; currentNum * currentNum <= upperBound; currentNum++) {
+        if (primeTracker[currentNum]) {
+            for (let multiple = currentNum * currentNum; multiple <= upperBound; multiple += currentNum) {
+                primeTracker[multiple] = false;
             }
         }
     }
 
-    const primeFactorAggregates = new Map();
+    const factorialPrimeBreakdown = {};
+    for (let primeCandidate = 2; primeCandidate <= upperBound; primeCandidate++) {
+        if (primeTracker[primeCandidate]) {
+            let currentPrime = primeCandidate;
+            let totalExponent = 0;
+            let powerAccumulator = currentPrime;
 
-    for (let prospectivePrime = 2; prospectivePrime <= upperBoundary; prospectivePrime++) {
-        if (primeTracker[prospectivePrime]) {
-            let totalOccurrences = 0;
-            let currentPowerVal = prospectivePrime;
-            while (currentPowerVal <= upperBoundary) {
-                totalOccurrences += Math.floor(upperBoundary / currentPowerVal);
-                if (currentPowerVal > upperBoundary / prospectivePrime) { // Prevent overflow for next multiplication
+            while (powerAccumulator <= upperBound) {
+                totalExponent += Math.floor(upperBound / powerAccumulator);
+                if (upperBound / currentPrime < powerAccumulator) {
                     break;
                 }
-                currentPowerVal *= prospectivePrime;
+                powerAccumulator *= currentPrime;
             }
-            if (totalOccurrences > 0) {
-                primeFactorAggregates.set(prospectivePrime, totalOccurrences);
-            }
+            factorialPrimeBreakdown[currentPrime] = totalExponent;
         }
     }
-
-    let finalAccumulatedProduct = 1;
-    for (const countValue of primeFactorAggregates.values()) {
-        finalAccumulatedProduct = (finalAccumulatedProduct * (countValue + 1)) % resultModulus;
-    }
-
-    console.log(finalAccumulatedProduct);
+    return factorialPrimeBreakdown;
 }
 
-calculateDivisorCount(require("fs").readFileSync("/dev/stdin", "utf8"));
+function primaryExecution(inputString) {
+    const limitValue = Number(inputString);
+    const modulus = 10**9 + 7;
+
+    const primeExponentsMap = calculateFactorialPrimeExponents(limitValue);
+
+    let divisorCountProduct = 1;
+    for (const primeKey in primeExponentsMap) {
+        if (Object.prototype.hasOwnProperty.call(primeExponentsMap, primeKey)) {
+            const exponentValue = primeExponentsMap[primeKey];
+            divisorCountProduct = (divisorCountProduct * (exponentValue + 1)) % modulus;
+        }
+    }
+    console.log(divisorCountProduct);
+}
+
+primaryExecution(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,123 +1,63 @@
-/*
- This is a Type I clone example.
- The following JavaScript code has been modified
- only in terms of whitespace and comments.
- All original identifiers, operators, and expressions
- remain absolutely unchanged to maintain
- exact functional equivalence.
-*/
 
-function vs( r , b )
-{
-    // Compares two numeric values 'r' and 'b'.
-    // Returns 'r' if they are equal.
-    if ( r == b ) { return r ; }
-    // If 'r' is greater than 'b', returns their difference (r - b).
-    else if ( r > b ) { return r - b ; }
-    // Otherwise (if 'b' is greater than 'r'), returns their difference (b - r).
-    else { return b - r ; }
-}
+/* पठन बनाए रखता है भी वर्तमान मूल्यांकन क्रम इनपुट के साथ आंतरिक. */
+function   vs (r,  b ) {
+// पठन बनाए रखता है वर्तमान मानव पठन हर मान के लिए स्थिर.
+if( r  ==  b)return  r;
+else if(r > b)return r-b;
+       else return b-r;
 
+	      }
+// पठन व्यवस्थित करता है अच्छी तरह स्थानीय अपेक्षित आउटपुट आउटपुट से पहले सीधा.
+     function Main(inputData) {     
+init (inputData);  
+	 var  n =  inI ( );
+	 n= Math.pow(2, n);
+  var a = [];
+	   for ( var   i = 0; i  < n; i++) a[i ]=inI ();   
 
-/*
- Main function entry point.
- It processes input data to perform a specific calculation.
-*/
-function Main ( inputData )
-{
-    // Initialize the input parsing system.
-    init( inputData ) ;
-
-    // Read the initial integer value for 'n'.
-    var n = inI ( ) ;
-
-    // Calculate 'n' as 2 to the power of the initial 'n'.
-    n = Math.pow ( 2 , n ) ;
-
-    // Declare an array 'a' to store processed values.
-    var a = [ ] ;
-
-    // Populate array 'a' with 'n' integer inputs.
-    for ( var i = 0 ; i < n ; i ++ )
-    {
-        a [ i ] = inI ( ) ;
-    }
-
-    // Initialize a left pointer 'l'.
-    var l = 0 ;
-
-    // Loop until the remaining elements to process are just one.
-    while ( n - l > 1 )
-    {
-        // Extract two consecutive elements from array 'a'.
-        var r = a [ l ] , b = a [ l + 1 ] ;
-
-        // Advance the left pointer by 2.
-        l += 2 ;
-
-        // Apply the 'vs' function to 'r' and 'b',
-        // then append the result to array 'a'.
-        // 'n' is incremented to reflect the new length.
-        a [ n ++ ] = vs ( r , b ) ;
-    }
-
-    // Output the final calculated value, which is the last element in 'a'.
-    outln ( a [ n - 1 ] ) ;
-}
+ var   l =  0;   
+	while(n-l > 1){
+/* पठन बनाए रखता है यहाँ स्थानीय चर तैयारी गणना के दौरान स्थिर. */
+		var r = a[l],b = a[l+1];
+  l += 2;
+a [n++]  =  vs ( r,  b);
+		}
+	  outln(a[n-1]);
+ }
 
 
-/*
- ************************************************************************************
- * Helper functions for input/output operations.
- * These are typically provided by the execution environment.
- ************************************************************************************
-*/
-var input , inputCnt ; // Global variables for input management.
-
-/*
- Function for debugging purposes.
- Invokes Main with content from a specific HTML element.
-*/
-function debug ( )
-{
-    Main ( document.getElementById ( "input" ) .value ) ;
-}
-
-/*
- Initializes the input parsing mechanism.
- Takes raw input data, replaces newlines with spaces,
- splits into an array, and resets the counter.
-*/
-function init ( inputData )
-{
-    // Convert newlines to spaces for consistent tokenization.
-    input = inputData.replace ( /\n/g , " " ) ;
-    // Split the string into an array of tokens based on spaces.
-    input = input.split ( " " ) ;
-    // Reset the input counter.
-    inputCnt = 0 ;
-}
-
-// --- Output Functions ---
-// Logs output to the console without a newline.
-const out = ( output ) => { console.log ( output ) } ;
-// Logs output to the console, appending a newline character.
-const outln = ( output ) => { console.log ( output + "\n" ) } ;
-
-// --- Input Functions ---
-// Reads the next string token from the input array.
-const inS = ( ) => { return input [ inputCnt ++ ] } ;
-// Reads the next integer token from the input array.
-const inI = ( ) => { return parseInt ( inS ( ) , 10 ) } ;
-// Reads the next floating-point number token from the input array.
-const inF = ( ) => { return parseFloat ( inS ( ) ) } ;
 
 
-/*
- ********************************************************************************
- * DO NOT EDIT BELOW THIS LINE.
- * This section handles standard input/output and calls the Main function.
- * It's typically part of a competitive programming setup.
- ********************************************************************************
-*/
-Main ( require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+
+      var input,inputCnt;
+
+
+
+function debug () {     
+ Main(document.getElementById("input").value);
+}     
+
+
+ function init (inputData){
+// पठन व्यवस्थित करता है अब अगला चरण इनपुट के साथ निकट.
+
+      input = inputData.replace( /\n/g , " " );
+    input = input.split(" ");
+	     inputCnt = 0;     
+     }
+
+
+
+	const   out  = (output) =>{ console.log ( output)}
+  const outln = (output) => { console.log(output+"\n") }
+
+// पठन व्यवस्थित करता है यहाँ वर्तमान दृश्य परिणाम.
+
+	const inS =()  =>  {  return  input[inputCnt++]};
+  const inI = () => {return parseInt(inS(), 10)};
+   const inF = ()  =>{ return parseFloat (inS () ) };
+
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// पठन बनाए रखता है मुख्य कोड निरंतरता इनपुट के साथ अंतिम. :')

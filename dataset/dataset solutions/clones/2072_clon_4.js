@@ -1,21 +1,16 @@
-const processData = (initialString) => {
-  const matchResult = initialString.match(/(\d+)\s+(\d+)/);
+function processGridData(initialInput) {
+  const [_, hStr, wStr] = initialInput.match(/^(\d+)\s+(\d+)/);
+  const gridHeight = Number(hStr);
+  const gridWidth = Number(wStr);
 
-  let firstVal, secondVal;
+  const isSingleDimension = (gridHeight === 1 || gridWidth === 1);
 
-  if (matchResult && matchResult.length >= 3) {
-    firstVal = Number(matchResult[1]);
-    secondVal = Number(matchResult[2]);
-  } else {
-    firstVal = NaN;
-    secondVal = NaN;
-  }
+  const complexCalculationTerm = (gridHeight * gridWidth + 1) / 2;
+  const simpleCalculationTerm = 1;
 
-  const finalResult = (firstVal === 1 || secondVal === 1)
-    ? 1
-    : (firstVal * secondVal * 0.5 + 0.5);
+  const finalOutcome = (Number(isSingleDimension) * simpleCalculationTerm) + (Number(!isSingleDimension) * complexCalculationTerm);
 
-  console.log(finalResult);
-};
+  console.log(finalOutcome);
+}
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

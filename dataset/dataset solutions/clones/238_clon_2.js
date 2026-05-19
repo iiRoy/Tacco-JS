@@ -1,52 +1,44 @@
-// Input stream handling mechanism
-const fileSystemModule = require('node:fs')
-;
+var fs = require('fs'); // File system module for input operations
 
-const inputSize = fileSystemModule.fstatSync(process.stdin.fd)
-                                  .size;
+// Determine the size of the standard input stream
+var dataSize = fs.fstatSync(process.stdin.fd).size;
 
-const rawBytes = Buffer.alloc(inputSize);
+// Create a buffer to hold the input data
+var inputBuffer = new Buffer(dataSize);
 
-let actualReadCount = fileSystemModule.readSync(
-  process.stdin.fd,
-  rawBytes,
-  0,
-  inputSize,
-  0
-);
+// Read data from standard input into the buffer
+var readBytesCount = fs.readSync(process.stdin.fd, inputBuffer, 0, dataSize, 0);
 
-const processedLines = rawBytes.toString('utf8', 0, actualReadCount)
-                               .trim()
-                               .split('\n');
+// Convert buffer to string, trim whitespace, and split into an array of lines
+var linesOfText = inputBuffer.toString('utf8', 0, readBytesCount).trim().split('\n');
 
-executeProcessing();
+// Execute the primary processing function
+processInputData();
 
+function processInputData() {
+  // Iterate through each line of the input
+  for (var idx = 0, totalLines = linesOfText.length; idx < totalLines; idx++) {
+    // Parse the current line into an array of numbers
+    var coordsArray = linesOfText[idx].split(' ').map(Number);
 
-function executeProcessing()
-{
-  for (
-    let currentLineIdx = 0, totalLineCount = processedLines.length;
-    currentLineIdx < totalLineCount;
-    ++currentLineIdx
-  )
-  {
-    const currentCoords = processedLines[currentLineIdx]
-                                        .split('   ')
-                                        .map(parseFloat);
-    
-    const rectangleA_x1 = currentCoords[0]
-                         ,rectangleA_y1 = currentCoords[1]
-                         ,rectangleA_x2 = currentCoords[2]
-                         ,rectangleA_y2 = currentCoords[3]
-                         ,rectangleB_x1 = currentCoords[4]
-                         ,rectangleB_y1 = currentCoords[5]
-                         ,rectangleB_x2 = currentCoords[6]
-                         ,rectangleB_y2 = currentCoords[7]
-                                          ;
+    // Extract coordinates for the first rectangle (Rectangle A)
+    var rectA_x1 = coordsArray[0];
+    var rectA_y1 = coordsArray[1];
+    var rectA_x2 = coordsArray[2];
+    var rectA_y2 = coordsArray[3];
 
-    const doesIntersect = (rectangleA_x1 <= rectangleB_x2 && rectangleB_x1 <= rectangleA_x2) &&
-                          (rectangleA_y1 <= rectangleB_y2 && rectangleB_y1 <= rectangleA_y2);
+    // Extract coordinates for the second rectangle (Rectangle B)
+    var rectB_x1 = coordsArray[4];
+    var rectB_y1 = coordsArray[5];
+    var rectB_x2 = coordsArray[6];
+    var rectB_y2 = coordsArray[7];
 
-    console.log(doesIntersect ? 'YES' : 'NO');
+    // Check for overlap between the two rectangles
+    // Overlap occurs if they overlap on both X and Y axes
+    var overlapDetected = (rectA_x1 <= rectB_x2 && rectB_x1 <= rectA_x2) &&
+                          (rectA_y1 <= rectB_y2 && rectB_y1 <= rectA_y2);
+
+    // Output 'YES' if overlap is detected, otherwise 'NO'
+    console.log(overlapDetected ? 'YES' : 'NO');
   }
 }

@@ -1,78 +1,69 @@
-// This module manages input parsing and core calculation
-function ProcessInputData ( rawData )
-{
-  // Auxiliary routine to parse a line of text into an array of string tokens
-  var extractWords = function ( currentSegment )
-  {
-    var stringTokens = currentSegment . replace ( / ( ^ \s + ) | ( \s + $ ) / g , "" ) . split ( " " ) ;
-    for ( var currentIdx = 0 ; currentIdx < stringTokens . length ; ++ currentIdx )
-    {
-      stringTokens [ currentIdx ] = stringTokens [ currentIdx ] ; // No type conversion, elements remain as strings
+function ProcessInput(rawData) {
+  // Helper to convert a line into an array of strings
+  const parseStringArray = function(inputLine) {
+    let tokenArray = inputLine.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    for (let idx = 0; idx < tokenArray.length; ++idx) {
+      // No conversion needed, just keeping the loop structure
+      tokenArray[idx] = tokenArray[idx];
     }
-    return stringTokens ;
-  } ;
+    return tokenArray;
+  };
 
-  // Auxiliary routine to parse a line of text into an array of numeric values
-  var convertNumbers = function ( currentSegment )
-  {
-    var numericTokens = currentSegment . replace ( / ( ^ \s + ) | ( \s + $ ) / g , "" ) . split ( " " ) ;
-    for ( var currentIdx = 0 ; currentIdx < numericTokens . length ; ++ currentIdx )
-    {
-      numericTokens [ currentIdx ] = + numericTokens [ currentIdx ] ; // Convert string to number
+  // Helper to convert a line into an array of numbers
+  const parseNumberArray = function(inputLine) {
+    let tokenArray = inputLine.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    for (let idx = 0; idx < tokenArray.length; ++idx) {
+      tokenArray[idx] = +tokenArray[idx]; // Convert to number
     }
-    return numericTokens ;
-  } ;
+    return tokenArray;
+  };
 
-  // Simple function to determine the lesser of two given numbers
-  var findSmaller = function ( valueOne , valueTwo ) { return valueOne > valueTwo ? valueTwo : valueOne ; } ;
+  // Helper to determine the smaller of two values
+  const findMinimum = function(val1, val2) {
+    return val1 > val2 ? val2 : val1;
+  };
 
-  // Break down the complete raw input into an array of separate lines
-  var dataRows = rawData . split ( "\n" ) ;
+  // Split the entire input into individual lines
+  const inputLines = rawData.split("\n");
 
-  // Extract and parse the first line, which contains key parameters
-  var initialParameters = convertNumbers ( dataRows [ 0 ] ) ;
-  var totalItems = initialParameters [ 0 ] ; // Corresponds to 'n'
-  var limitThreshold = initialParameters [ 1 ] ; // Corresponds to 't'
+  // Parse the first line for N and T
+  const firstLineData = parseNumberArray(inputLines[0]);
+  const elementCount = firstLineData[0];
+  const thresholdValue = firstLineData[1];
 
-  // Extract and parse the second line, which holds the primary data sequence
-  var numericalSequence = convertNumbers ( dataRows [ 1 ] ) ;
+  // Parse the second line for the array 'a'
+  const dataPoints = parseNumberArray(inputLines[1]);
 
-  var maximumProfit = 0 ; // Holds the largest difference found so far
-  var profitOccurrences = 0 ; // Counts how many times 'maximumProfit' is achieved
+  let maxProfit = 0;
+  let profitOccurrences = 0;
+  let currentMin = dataPoints[0];
+  let currentMax = dataPoints[0]; // This variable is declared but not used in the original logic
 
-  var currentMinimum = numericalSequence [ 0 ] ; // Keeps track of the smallest value encountered up to the current point
-  var currentMaximum = numericalSequence [ 0 ] ; // This variable is present in the original structure but not actively used in the calculation logic.
-
-  // Special handling for inputs with only a single data item
-  if ( totalItems === 1 )
-  {
-    console . log ( "0" ) ;
+  // Handle the special case where there's only one element
+  if (elementCount === 1) {
+    console.log("0");
   }
 
-  // Iterate through the numerical sequence to compute maximum profit and its occurrences
-  for ( var currentIdx = 0 ; currentIdx < totalItems ; ++ currentIdx )
-  {
-    var elementValue = numericalSequence [ currentIdx ] ; // The value of the current data element
+  // Iterate through the data points to find max profit and its occurrences
+  for (let idx = 0; idx < elementCount; ++idx) {
+    const currentValue = dataPoints[idx];
 
-    // If a new, larger profit is discovered
-    if ( elementValue - currentMinimum > maximumProfit )
-    {
-      maximumProfit = elementValue - currentMinimum ; // Update the highest profit
-      profitOccurrences = 1 ; // Reset the count as a new highest profit is found
-    }
-    // If the current profit matches the existing maximum profit (and is not zero)
-    else if ( elementValue - currentMinimum === maximumProfit && maximumProfit !== 0 )
-    {
-      profitOccurrences ++ ; // Increment the count of matching occurrences
+    // Check if the current profit (currentValue - currentMin) is greater than the recorded maxProfit
+    if (currentValue - currentMin > maxProfit) {
+      maxProfit = currentValue - currentMin;
+      profitOccurrences = 1; // Reset count as a new max profit is found
+    } else if (currentValue - currentMin === maxProfit && maxProfit !== 0) {
+      // If current profit equals maxProfit and maxProfit is not zero, increment count
+      profitOccurrences++;
     }
 
-    // Update the lowest value seen so far for subsequent calculations
-    currentMinimum = elementValue < currentMinimum ? elementValue : currentMinimum ;
+    // Update the minimum value encountered so far
+    currentMin = currentValue < currentMin ? currentValue : currentMin;
   }
 
-  // Display the final calculated result: the lesser of profit occurrences or half of the threshold
-  console . log ( findSmaller ( profitOccurrences , Math . floor ( limitThreshold / 2 ) ) ) ;
+  // Output the minimum of profit occurrences or floor(T/2)
+  console.log(findMinimum(profitOccurrences, Math.floor(thresholdValue / 2)));
 }
 
-// Entry point for execution: Reads input from standard input and initiates processing
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,36 +1,21 @@
-const acquireData = () => {
-  const source = globalThis.process.binding('fs').read(0, 1024, 0, 0);
-  return source.toString().trim();
+const processInput = (rawInput) => {
+    const [countVal, initialVal] = rawInput.split(" ").map(Number);
+
+    const firstTaste = initialVal;
+    const lastTaste = initialVal + countVal - 1;
+
+    const determineOmittedFlavor = (startBoundary, endBoundary) => {
+        if (startBoundary <= 0 && endBoundary >= 0) {
+            return 0;
+        }
+        return Math.abs(startBoundary) < Math.abs(endBoundary) ? startBoundary : endBoundary;
+    };
+
+    const omittedFlavor = determineOmittedFlavor(firstTaste, lastTaste);
+
+    const totalTasteSum = (firstTaste + lastTaste) * countVal / 2;
+
+    console.log(totalTasteSum - omittedFlavor);
 };
 
-const transformText = (rawEntry) => {
-  const elements = rawEntry.split(" ");
-  const firstValue = Number(elements[0]);
-  const secondValue = Number(elements[1]);
-  return { dimension: firstValue, initial: secondValue };
-};
-
-const computeOutcome = (dataBundle) => {
-  const { dimension: countOfTerms, initial: startTerm } = dataBundle;
-
-  const endTerm = startTerm + countOfTerms - 1;
-
-  const aggregateSum = (startTerm + endTerm) * countOfTerms / 2;
-
-  const termToOmit = Math.max(startTerm, Math.min(endTerm, 0));
-
-  return aggregateSum - termToOmit;
-};
-
-const displayResult = (finalValue) => {
-  globalThis.console.info(finalValue);
-};
-
-const orchestrateProcess = () => {
-  const textData = acquireData();
-  const processedData = transformText(textData);
-  const finalCalculation = computeOutcome(processedData);
-  displayResult(finalCalculation);
-};
-
-orchestrateProcess();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

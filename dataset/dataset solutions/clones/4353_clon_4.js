@@ -1,1 +1,100 @@
-const retrieveSourceData=()=>process.stdin.readFileSync(0,"utf8").trim().split("\n");class InputProcessor{constructor(sourceLines){this.dataLines=sourceLines;this.currentLineIndex=0;this.maxLines=sourceLines.length;}hasNextLine(){return this.currentLineIndex<this.maxLines;}advanceLine(){if(!this.hasNextLine()){throw new Error("No more input available.");}return this.dataLines[this.currentLineIndex++];}fetchInteger(){return Number.parseInt(this.advanceLine(),10);}fetchNumericSequence(){return this.advanceLine().split(" ").map(Number);}}const publishResult=(message)=>console.log(message);const signalDiagnostic=(message)=>console.error(message);const calculatePathIntegrity=()=>{const rawInput=retrieveSourceData();const inputHandler=new InputProcessor(rawInput);const graphDimension=inputHandler.fetchInteger();const pathNetwork=Array.from({length:graphDimension},()=>inputHandler.fetchNumericSequence());let cumulativeWeight=0;pathNetwork.forEach(row=>row.forEach(weight=>{cumulativeWeight+=weight;}));signalDiagnostic(cumulativeWeight);cumulativeWeight/=2;let avoidableWeight=0;const evaluatedConnections=new Map();let terminationFlag=false;Array.from({length:graphDimension},(_,intermediateNode)=>{if(terminationFlag)return;Array.from({length:graphDimension},(_,startNode)=>{if(terminationFlag)return;Array.from({length:graphDimension},(_,endNode)=>{if(terminationFlag)return;const directPath=pathNetwork[startNode][endNode];const indirectPath=pathNetwork[startNode][intermediateNode]+pathNetwork[intermediateNode][endNode];if(directPath>indirectPath){publishResult(-1);terminationFlag=true;}else if(directPath===indirectPath&&startNode!==intermediateNode&&endNode!==intermediateNode){const sortedNodes=[startNode,endNode].sort((a,b)=>a-b);const connectionIdentifier=`${sortedNodes[0]}:${sortedNodes[1]}`;if(!evaluatedConnections.has(connectionIdentifier)){avoidableWeight+=directPath;evaluatedConnections.set(connectionIdentifier,true);}}});});});if(terminationFlag){return;}signalDiagnostic(avoidableWeight);publishResult(cumulativeWeight-avoidableWeight);};calculatePathIntegrity();
+class InputHandler {
+  #sourceLines;
+  #currentLineIndex;
+  #maxLines;
+
+  constructor(inputContent) {
+    this.#sourceLines = inputContent.trim().split("\n");
+    this.#currentLineIndex = 0;
+    this.#maxLines = this.#sourceLines.length;
+  }
+
+  hasMoreData() {
+    return this.#currentLineIndex < this.#maxLines;
+  }
+
+  retrieveNextLine() {
+    if (!this.hasMoreData()) {
+      throw new Error("EndOfInputException: No more lines to read.");
+    }
+    const currentLine = this.#sourceLines[this.#currentLineIndex];
+    this.#currentLineIndex++;
+    return currentLine;
+  }
+}
+
+const dataConverter = (inputValue, conversionType) => {
+  const conversionStrategies = new Map([
+    [1, (val) => parseInt(val, 10)],
+    [2, (val) => val.split(" ")],
+    [4, (val) => val.split(" ").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+    [8, (val) => val.join(" ")],
+    [9, (val) => val.join("\n")],
+    [0, (val) => val.join("")],
+  ]);
+
+  try {
+    const strategy = conversionStrategies.get(conversionType);
+    return strategy ? strategy(inputValue) : inputValue;
+  } catch (e) {
+    return inputValue;
+  }
+};
+
+const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputProcessor = new InputHandler(rawInput);
+
+const fetchInteger = () => dataConverter(inputProcessor.retrieveNextLine(), 1);
+const fetchIntegerArray = () => dataConverter(inputProcessor.retrieveNextLine(), 4);
+
+const emitResult = (content) => console.log(content);
+const emitDiagnostic = (content) => console.error(content);
+
+const executeAlgorithm = () => {
+  const matrixDimension = fetchInteger();
+  const adjacencyMatrix = Array.from({ length: matrixDimension }, () => fetchIntegerArray());
+
+  let totalPathSum = adjacencyMatrix.flat().reduce((accumulator, value) => accumulator + value, 0);
+  emitDiagnostic(totalPathSum);
+
+  totalPathSum /= 2;
+
+  let redundantPathSum = 0;
+  const processedEdges = new Set();
+  let earlyExitTriggered = false;
+
+  Array.from({ length: matrixDimension }, (_, intermediateNode) => intermediateNode).forEach(intermediateNode => {
+    Array.from({ length: matrixDimension }, (_, sourceNode) => sourceNode).forEach(destinationNode => {
+      Array.from({ length: matrixDimension }, (_, targetNode) => targetNode).forEach(pathNode => {
+        if (earlyExitTriggered) return;
+
+        const directPath = adjacencyMatrix[destinationNode][pathNode];
+        const indirectPath = adjacencyMatrix[destinationNode][intermediateNode] + adjacencyMatrix[intermediateNode][pathNode];
+
+        if (directPath > indirectPath) {
+          emitResult(-1);
+          earlyExitTriggered = true;
+          return;
+        } else if (directPath === indirectPath && destinationNode !== intermediateNode && pathNode !== intermediateNode) {
+          const edgeIdentifier = `${Math.min(destinationNode, pathNode)}:${Math.max(destinationNode, pathNode)}`;
+
+          if (!processedEdges.has(edgeIdentifier)) {
+            redundantPathSum += directPath;
+            processedEdges.add(edgeIdentifier);
+          }
+        }
+      });
+    });
+  });
+
+  if (earlyExitTriggered) {
+    return;
+  }
+
+  emitDiagnostic(redundantPathSum);
+  emitResult(totalPathSum - redundantPathSum);
+};
+
+executeAlgorithm();

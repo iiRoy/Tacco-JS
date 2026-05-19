@@ -1,41 +1,37 @@
-const obtainPrimeFactors = (targetValue, currentDivisor = 2, accumulatedFactors = []) => {
-    if (targetValue <= 1) {
-        return accumulatedFactors;
-    }
-
-    if (currentDivisor * currentDivisor > targetValue) {
-        if (targetValue > 1) {
-            return accumulatedFactors.concat([{ element: targetValue, frequency: 1 }]);
+const decomposeNumberIntoPrimes = (initialNum) => {
+    const collectFactors = (currentNum, currentDivisor, accumulatedFactors) => {
+        if (currentNum === 1) {
+            return accumulatedFactors;
         }
-        return accumulatedFactors;
-    }
-
-    if (targetValue % currentDivisor === 0) {
-        let count = 0;
-        let temporaryValue = targetValue;
-        while (temporaryValue % currentDivisor === 0) {
-            temporaryValue /= currentDivisor;
-            count++;
+        if (currentDivisor * currentDivisor > currentNum) {
+            return [...accumulatedFactors, { basePrime: currentNum, primePower: 1 }];
         }
-        return obtainPrimeFactors(temporaryValue, currentDivisor, accumulatedFactors.concat([{ element: currentDivisor, frequency: count }]));
-    } else {
-        return obtainPrimeFactors(targetValue, currentDivisor + 1, accumulatedFactors);
-    }
+
+        let currentPower = 0;
+        let tempNumForPower = currentNum;
+        for (; tempNumForPower % currentDivisor === 0; tempNumForPower /= currentDivisor) {
+            currentPower++;
+        }
+
+        if (currentPower > 0) {
+            return collectFactors(tempNumForPower, currentDivisor + 1, [...accumulatedFactors, { basePrime: currentDivisor, primePower: currentPower }]);
+        } else {
+            return collectFactors(currentNum, currentDivisor + 1, accumulatedFactors);
+        }
+    };
+    return collectFactors(initialNum, 2, []);
 };
 
-const processCalculation = (inputPayload) => {
-    const valuesAsNumbers = inputPayload.trim().split(" ").map(Number);
-    const rootIndex = valuesAsNumbers[0];
-    const baseNumber = valuesAsNumbers[1];
+const processInputAndCompute = (inputString) => {
+    const [rootDegree, targetNumber] = inputString.split(" ").map(Number);
+    const primeDecomposition = decomposeNumberIntoPrimes(targetNumber);
 
-    const factorList = obtainPrimeFactors(baseNumber);
-
-    const finalResult = factorList.reduce((currentProduct, factorEntry) => {
-        const effectivePower = Math.floor(factorEntry.frequency / rootIndex);
-        return currentProduct * Math.pow(factorEntry.element, effectivePower);
+    const resultValue = primeDecomposition.reduce((accumulator, factor) => {
+        const effectivePower = Math.floor(factor.primePower / rootDegree);
+        return accumulator * (factor.basePrime ** effectivePower);
     }, 1);
 
-    process.stdout.write(String(finalResult) + '\n');
+    console.log(resultValue);
 };
 
-processCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

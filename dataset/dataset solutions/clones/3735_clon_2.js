@@ -1,54 +1,51 @@
 'use strict';
 
-/*
- * This script processes input from standard input
- * to perform a specific calculation related to array manipulation.
- */
-
 /**
- * Executes the primary data processing workflow.
- * @param {string} rawInputContent The complete string content read from the input source.
+ * Processes raw input data to compute a specific numerical result.
+ * This function parses numerical parameters and an array of string values,
+ * then performs a calculation based on the parsed numbers.
+ *
+ * @param {string} rawData - The complete input string, typically from standard input.
  */
-function ExecuteTask(rawInputContent) {
-    // Divide the entire input string into an array of lines.
-    rawInputContent = rawInputContent.split("\n");
+function ProcessInput(rawData) {
+  // Divide the entire input string into an array of lines.
+  let processedLines = rawData.split("\n");
 
-    // Extract numerical parameters from the very first line of input.
-    let firstLineSegments = rawInputContent[0].split(' ');
+  // Extract and parse the first line, which contains two space-separated integers.
+  let firstLineParts = processedLines[0].split(' ');
+  let totalElements = parseInt(firstLineParts[0]); // Corresponds to 'N' in the original.
+  let groupSize = parseInt(firstLineParts[1]);     // Corresponds to 'K' in the original.
 
-    // Determine the total number of items from the first parameter.
-    let totalItemCount = parseInt(firstLineSegments[0]);
+  // Extract the second line, which contains space-separated string representations of numbers.
+  let elementValues = processedLines[1].split(' '); // Corresponds to 'A' in the original.
 
-    // Ascertain the grouping factor from the second parameter.
-    let groupingFactor = parseInt(firstLineSegments[1]);
+  // Initialize a variable for accumulating results. This variable is declared
+  // but not ultimately used in the final output, mirroring the original structure.
+  let resultAccumulator = 0; // Corresponds to 'ret' in the original.
 
-    // Parse the second line of input to obtain the array of data elements.
-    let dataElements = rawInputContent[1].split(' ');
+  // Initialize a variable to keep track of the index of the "minimum" element found.
+  // The comparison is lexicographical (string-based) as per the original code's behavior.
+  let minimumIndex = -1; // Corresponds to 'minPos' in the original.
 
-    // Initialize a placeholder for a potential computed value (unused in this specific logic).
-    let finalResult = 0;
-
-    // Keep track of the array index that holds the minimum value encountered.
-    let minimumValueIndex = -1;
-
-    // Traverse through the data elements to pinpoint the location of the smallest value.
-    for (let currentPosition = 0; currentPosition < totalItemCount; currentPosition += 1) {
-        // If it's the initial check or a smaller element is found, update the minimum index.
-        if (minimumValueIndex === -1 || dataElements[minimumValueIndex] > dataElements[currentPosition]) {
-            minimumValueIndex = currentPosition;
-        }
+  // Iterate through the array of element values to find the index of the minimum string value.
+  // The outcome of this loop (minimumIndex) is not utilized in the final console output,
+  // but its presence and logic are maintained to preserve Type II structural equivalence.
+  for (let idx = 0; idx < totalElements; idx += 1) {
+    // If no minimum has been established yet, or if the current element's string value
+    // is lexicographically "smaller" than the string value at the current minimum index.
+    if (minimumIndex === -1 || elementValues[minimumIndex] > elementValues[idx]) {
+      minimumIndex = idx; // Update the index to the current element's position.
     }
+  }
 
-    // Output the final calculated value, which involves integer division.
-    console.log(
-        Math.floor(
-            (totalItemCount - 1 + groupingFactor - 2) / (groupingFactor - 1)
-        )
-    );
+  // Perform the primary calculation using the parsed 'totalElements' (N) and 'groupSize' (K).
+  // The formula is (N - 1 + K - 2) / (K - 1), with the result floored to the nearest integer.
+  let finalCalculatedValue = Math.floor((totalElements - 1 + groupSize - 2) / (groupSize - 1));
+
+  // Output the final computed numerical result to the standard console.
+  console.log(finalCalculatedValue);
 }
 
-// Call the main task execution function with data acquired from the standard input stream.
-ExecuteTask(
-    require("fs")
-        .readFileSync("/dev/stdin", "utf8")
-);
+// Invoke the main processing function by reading all input from standard input.
+// This specific input reading mechanism is preserved exactly as in the original code.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,32 +1,14 @@
-const obtainRawData = () => {
-    return require("node:fs").readFileSync("/dev/stdin");
-};
+function processInputData(rawData) {
+  const [initialLine] = rawData.split('\n');
+  const [valAStr, valBStr] = initialLine.split(' ');
 
-const parseNumericalTokens = (blob) => {
-    const textualForm = blob.toString("utf8");
-    const foundNumbers = textualForm.match(/-?\d+/g);
-    return foundNumbers.map(Number);
-};
+  const valA = Number(valAStr);
+  const valB = Number(valBStr);
 
-const calculateFinalValue = ([valA, valB]) => {
-    const remainderResult = valA % valB;
-    const isRemainderNonZeroOrInvalid = (remainderResult !== 0);
-    const isRemainderZero = (remainderResult === 0);
-    
-    // This arithmetic expression replaces an if/else conditional.
-    // In JavaScript, true coerces to 1 and false to 0 in arithmetic contexts.
-    return (valA * isRemainderNonZeroOrInvalid) + (-1 * isRemainderZero);
-};
+  const divisionResult = valA / valB;
+  const finalOutcome = Number.isInteger(divisionResult) ? -1 : valA;
 
-const displayOutput = (computedResult) => {
-    process.stdout.write(String(computedResult));
-};
+  console.log('%s', finalOutcome);
+}
 
-const initiateProcessing = () => {
-    const dataSource = obtainRawData();
-    const parsedOperands = parseNumericalTokens(dataSource);
-    const finalCalculation = calculateFinalValue(parsedOperands);
-    displayOutput(finalCalculation);
-};
-
-initiateProcessing();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,90 +1,82 @@
-// This module contains utilities for sequence generation and problem solving.
+// This function generates permutations, though it's not used in Main.
+function generateSequences(maxValue, sequenceLength) {
+    let currentSequences = [[]]; // Initialize with an empty sequence
+    let nextSequences; // Will hold sequences for the next iteration
 
-// Function to create permutations (sequences) of a given length from a set of elements.
-function generateSequences(totalElements, sequenceLength) {
-    // Initialize with an empty sequence, as the base for building longer sequences.
-    let resultSets = [[]];
-    let nextStage;
-
-    // Loop to build sequences incrementally up to the desired length.
-    for (let currentLengthIndex = 0; currentLengthIndex < sequenceLength; currentLengthIndex++) {
-        // Prepare for the next set of sequences.
-        nextStage = [];
-        // Iterate through existing sequences to extend them.
-        resultSets.forEach(currentSequence => {
-            // Try adding each possible element.
-            for (let elementValue = 1; elementValue <= totalElements; elementValue++) {
-                // Only add an element if it's not already in the current sequence (for permutations).
-                if (!currentSequence.includes(elementValue)) {
-                    // Create a new sequence by appending the element and add it to the next stage.
-                    nextStage.push(currentSequence.concat([elementValue]));
+    // Loop to build sequences of desired length
+    for (let idx = 0; idx < sequenceLength; idx++) {
+        nextSequences = []; // Reset for the current iteration
+        currentSequences.forEach(currentSeq => {
+            // Iterate through possible values
+            for (let val = 1; val <= maxValue; val++) {
+                // Check if the value is already in the current sequence
+                if (!currentSeq.includes(val)) {
+                    // If not, add it and push the new sequence
+                    nextSequences.push(currentSeq.concat([val]));
                 }
             }
         });
-        // Update the current result set with the newly generated sequences.
-        resultSets = nextStage.concat([]);
+        // Update currentSequences for the next iteration
+        currentSequences = nextSequences.concat([]); // Deep copy
     }
-    // Return all generated sequences.
-    return resultSets;
+    return currentSequences; // Return the generated sequences
 }
 
+// Main processing function for the game logic
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines
+    rawData = rawData.split("\n");
 
-// Main entry point for the program, processing input and calculating a final value.
-function ExecuteProgram(programInput) {
-    // Split the entire input string into an array of lines.
-    let trimmedLines = programInput.split("\n");
-
-    // Remove the last element if it's an empty string (common with terminal input).
-    if (trimmedLines[trimmedLines.length - 1] === '') {
-        trimmedLines.pop();
+    // Remove the last element if it's an empty string (common with stdin)
+    if (rawData[rawData.length - 1] === '') {
+        rawData.pop();
     }
 
-    // Parse configuration values from the first line.
-    const limitValue = parseInt(trimmedLines[0].split(' ')[0], 10);
-    const intervalOffset = parseInt(trimmedLines[0].split(' ')[1], 10);
+    // Parse game parameters from the first line
+    const totalRounds = parseInt(rawData[0].split(' ')[0]); // N
+    const blockInterval = parseInt(rawData[0].split(' ')[1]); // K
 
-    // Parse scoring values from the second line.
-    const rockScore = parseInt(trimmedLines[1].split(' ')[0], 10);
-    const scissorsScore = parseInt(trimmedLines[1].split(' ')[1], 10);
-    const paperScore = parseInt(trimmedLines[1].split(' ')[2], 10);
+    // Parse scores for winning moves from the second line
+    const rockScore = parseInt(rawData[1].split(' ')[0]); // R (score for winning with rock)
+    const scissorsScore = parseInt(rawData[1].split(' ')[1]); // S (score for winning with scissors)
+    const paperScore = parseInt(rawData[1].split(' ')[2]); // P (score for winning with paper)
 
-    // Get the sequence of moves from the third line.
-    const gameMoves = trimmedLines[2];
+    // Get the opponent's moves sequence from the third line
+    const opponentMoves = rawData[2]; // T
 
-    // Initialize the accumulator for the final score.
-    let totalScore = 0;
+    let totalScore = 0; // Initialize the player's total score
 
-    // Create a boolean array to track moves that result in a "pass" or "skip" condition.
-    let forbiddenMoves = new Array(limitValue).fill(false);
+    // Create an array to track skipped moves due to consecutive identical moves
+    let skippedMoves = new Array(totalRounds).fill(false); // Initialize all to false
 
-    // Iterate through each move in the game sequence.
-    for (let moveIndex = 0; moveIndex < gameMoves.length; moveIndex++) {
-        // Check for a special condition: if the current move is related to a previous identical move
-        // and that previous move was not itself "passed" or "skipped".
-        if (moveIndex >= intervalOffset && gameMoves[moveIndex] === gameMoves[moveIndex - intervalOffset] && !forbiddenMoves[moveIndex - intervalOffset]) {
-            // If the condition is met, mark the current move as "passed" and skip scoring for it.
-            forbiddenMoves[moveIndex] = true;
-            continue; // Proceed to the next move.
+    // Iterate through each round of the game
+    for (let roundIndex = 0; roundIndex < opponentMoves.length; roundIndex++) {
+        // Check for the "block" condition:
+        // If current round is past the interval K,
+        // and the opponent's move is the same as K rounds ago,
+        // and the move K rounds ago was NOT skipped.
+        if (roundIndex >= blockInterval && opponentMoves[roundIndex] === opponentMoves[roundIndex - blockInterval] && !skippedMoves[roundIndex - blockInterval]) {
+            skippedMoves[roundIndex] = true; // Mark the current move as skipped
+            continue; // Skip scoring for this round
         }
 
-        // Determine the score based on the current move type.
-        switch (gameMoves[moveIndex]) {
-            case 'r': // If the move is 'rock'
-                totalScore += paperScore; // Add points for beating rock (paper points).
+        // Determine score based on the opponent's current move
+        switch (opponentMoves[roundIndex]) {
+            case 'r': // Opponent plays rock, player wins with paper
+                totalScore += paperScore;
                 break;
-            case 's': // If the move is 'scissors'
-                totalScore += rockScore; // Add points for beating scissors (rock points).
+            case 's': // Opponent plays scissors, player wins with rock
+                totalScore += rockScore;
                 break;
-            case 'p': // If the move is 'paper'
-                totalScore += scissorsScore; // Add points for beating paper (scissors points).
+            case 'p': // Opponent plays paper, player wins with scissors
+                totalScore += scissorsScore;
                 break;
         }
     }
 
-    // Output the final calculated score to the console.
+    // Output the final calculated score
     console.log(totalScore);
 }
 
-
-// The following line handles standard input/output and should not be modified by the user.
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line should not be modified (reads from stdin and calls the main function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,17 +1,16 @@
-runtimeEnv.standardInput.attachListener("inputReceived", function(rawDataBuffer) {
-    // Convert the incoming buffer to a string, remove leading/trailing whitespace, and split by space.
-    let tokenizedInput = (rawDataBuffer + "").stripWhitespace().divideIntoParts(" ");
+process.stdin.on("data", function(inputBuffer) {
+    // Convert the input buffer to a string, remove whitespace, and split by space.
+    let partsArray = (inputBuffer + "").trim().split(" ");
 
-    // Parse the first and second tokens as numeric values.
-    let firstOperand = +tokenizedInput[0];
-    let secondOperand = +tokenizedInput[1];
+    // Parse the first two parts as numbers.
+    let firstOperand = +partsArray[0];
+    let secondOperand = +partsArray[1];
 
-    // Calculate integer division, remainder, and a precise floating-point result.
-    systemLogger.outputResults(
-        firstOperand / secondOperand | 0, // Integer quotient
-        firstOperand % secondOperand,     // Remainder
-        +(firstOperand / secondOperand).formatPrecision(8) // Floating-point result with 8 decimal places
-    );
-})
-// Begin monitoring the input stream for data.
-.activateStream();
+    // Calculate integer division, remainder, and floating-point division with fixed precision.
+    let integerQuotient = firstOperand / secondOperand | 0;
+    let remainderValue = firstOperand % secondOperand;
+    let preciseQuotient = +(firstOperand / secondOperand).toFixed(8);
+
+    // Output the results to the console.
+    console.log(integerQuotient, remainderValue, preciseQuotient);
+}).resume(); // Ensure the input stream continues to flow.

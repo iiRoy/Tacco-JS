@@ -1,72 +1,55 @@
-let allIndividualsInfo;
-let totalIndividuals;
+function processInput(rawData) {
+  const inputLines = rawData.split("\n");
+  const personCount = +inputLines[0];
+  const remainingLines = inputLines.slice(1);
 
-function countActiveBits(value) {
-  if (value === 0) return 0;
-  return (value & 1) + countActiveBits(value >> 1);
-}
-
-function fetchBitState(mask, index) {
-  return (mask >> index) & 1;
-}
-
-function checkValidity(assignmentMask) {
-  return allIndividualsInfo.every((individual) => {
-    const isSpeakerHonest = fetchBitState(assignmentMask, individual.id);
-
-    return individual.stmts.every((declaration) => {
-      const declaredTargetIsHonest = fetchBitState(assignmentMask, declaration.target - 1);
-
-      return isSpeakerHonest === (declaredTargetIsHonest === declaration.state);
-    });
-  });
-}
-
-function recursiveSearch(currentPersonIdx, currentAssignmentMask, highestCountFound) {
-  if (currentPersonIdx === totalIndividuals) {
-    if (checkValidity(currentAssignmentMask)) {
-      return Math.max(highestCountFound, countActiveBits(currentAssignmentMask));
+  function parseTestimonies(lines, currentPersonIdx = 0, currentLineIdx = 0, collectedTestimonies = []) {
+    if (currentLineIdx >= lines.length) {
+      return collectedTestimonies;
     }
-    return highestCountFound;
+
+    const numClaims = +lines[currentLineIdx];
+    const personClaims = [];
+    for (let k = 1; k <= numClaims; k++) {
+      const [subjectId, claimedStatus] = lines[currentLineIdx + k].split(' ').map(Number);
+      personClaims.push({ subjectId, claimedStatus });
+    }
+    collectedTestimonies[currentPersonIdx] = personClaims;
+
+    return parseTestimonies(lines, currentPersonIdx + 1, currentLineIdx + numClaims + 1, collectedTestimonies);
   }
 
-  let resultIfHonest = recursiveSearch(
-    currentPersonIdx + 1,
-    currentAssignmentMask | (1 << currentPersonIdx),
-    highestCountFound
-  );
+  const witnessStatements = parseTestimonies(remainingLines);
 
-  let resultIfLiar = recursiveSearch(
-    currentPersonIdx + 1,
-    currentAssignmentMask,
-    highestCountFound
-  );
+  const bitPopulationCount = (value) => (value >>> 0).toString(2).split('1').length - 1;
 
-  return Math.max(resultIfHonest, resultIfLiar);
+  const maxHonestCount = Array.from({ length: 1 << personCount }, (_, configIndex) => configIndex)
+    .filter(configIndex => configIndex > 0)
+    .reduce((currentMax, currentHonestyConfig) => {
+      const numHonestInConfig = bitPopulationCount(currentHonestyConfig);
+
+      if (numHonestInConfig <= currentMax) {
+        return currentMax;
+      }
+
+      const isConfigConsistent = Array.from({ length: personCount }, (_, witnessIdx) => {
+        const claimsByWitness = witnessStatements[witnessIdx];
+        if (!claimsByWitness || claimsByWitness.length === 0) {
+          return true;
+        }
+
+        const witnessAssumedHonest = (currentHonestyConfig >> witnessIdx) & 1;
+
+        return claimsByWitness.every(claim => {
+          const subjectAssumedHonest = (currentHonestyConfig >> (claim.subjectId - 1)) & 1;
+          return witnessAssumedHonest === (claim.claimedStatus === subjectAssumedHonest);
+        });
+      }).every(Boolean);
+
+      return isConfigConsistent ? numHonestInConfig : currentMax;
+    }, 0);
+
+  console.log(maxHonestCount);
 }
 
-function processInputData(rawTxt) {
-  const segments = rawTxt.split("\n");
-  totalIndividuals = +segments[0];
-  let cursor = 1;
-  const collectedInfo = [];
-
-  for (let personId = 0; personId < totalIndividuals; personId++) {
-    const numDeclarations = +segments[cursor++];
-    const personDeclarations = [];
-    for (let k = 0; k < numDeclarations; k++) {
-      const parts = segments[cursor++].split(' ').map(Number);
-      personDeclarations.push({ target: parts[0], state: parts[1] });
-    }
-    collectedInfo.push({ id: personId, stmts: personDeclarations });
-  }
-  return collectedInfo;
-}
-
-function entryPoint(rawTxt) {
-  allIndividualsInfo = processInputData(rawTxt);
-  const finalResult = recursiveSearch(0, 0, 0);
-  console.log(finalResult);
-}
-
-entryPoint(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

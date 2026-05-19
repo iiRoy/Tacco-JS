@@ -1,31 +1,22 @@
 'use strict';
 
-const processCoordinates = (textualData) => {
-    const extractNumericValues = (rawString) => {
-        return rawString.split(/\s+/).map(Number);
-    };
+const calculateIntervalSeparation = (firstCoord, secondCoord, intervalWidth) => {
+    const firstIntervalEnd = firstCoord + intervalWidth;
+    const secondIntervalEnd = secondCoord + intervalWidth;
 
-    const numericals = extractNumericValues(textualData);
-
-    const dimension = numericals[0];
-    const firstOrigin = numericals[1];
-    const secondOrigin = numericals[2];
-
-    const firstIntervalStart = firstOrigin;
-    const firstIntervalEnd = firstOrigin + dimension;
-    const secondIntervalStart = secondOrigin;
-    const secondIntervalEnd = secondOrigin + dimension;
-
-    const separation = Math.max(
-        0,
-        firstIntervalStart - secondIntervalEnd,
-        secondIntervalStart - firstIntervalEnd
-    );
-
-    process.stdout.write(separation.toString() + '\n');
+    return Math.max(0, firstCoord - secondIntervalEnd, secondCoord - firstIntervalEnd);
 };
 
-(() => {
-    const dataStream = require('fs').readFileSync('/dev/stdin', 'utf-8');
-    processCoordinates(dataStream);
-})();
+const executeLogic = (rawInput) => {
+    const numericValues = rawInput.trim().split(/\s+/).map(Number);
+
+    const widthVal = numericValues[0];
+    const coordA = numericValues[1];
+    const coordB = numericValues[2];
+
+    const separationResult = calculateIntervalSeparation(coordA, coordB, widthVal);
+
+    console.log(separationResult);
+};
+
+executeLogic(require('fs').readFileSync('/dev/stdin', 'utf-8'));

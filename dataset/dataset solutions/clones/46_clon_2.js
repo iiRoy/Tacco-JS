@@ -1,69 +1,52 @@
 process.stdin.resume();
-
-
 process.stdin.setEncoding('utf8');
 
-
-process.stdin.on('data', function (incomingDataBlock) {
-    // Process the received data by trimming whitespace and passing it to the core logic handler.
-    performShuffle(incomingDataBlock.trim());
+// Set up an event listener to process incoming data from standard input.
+process.stdin.on('data', function(inputDataChunk) {
+    // Trim any leading/trailing whitespace from the input and pass it to the main processing function.
+    processInput(inputDataChunk.trim());
 });
 
 /**
- * Executes a series of element swaps based on the provided input.
- * This function reads configuration parameters and then performs specified
- * permutation operations on a sequence of numbers.
- *
- * @param {string} rawInputBlock The raw string data, typically from standard input,
- *                                containing configuration and swap instructions.
+ * Main function to process the input chunk, perform array manipulations, and print results.
+ * @param {string} inputData - The raw input string received from stdin.
  */
-function performShuffle(rawInputBlock) {
-    // Divide the raw input string into an array, where each element is a line.
-    var inputRows = rawInputBlock.split("\n");
+function processInput(inputData) {
+    // Split the input string into an array of lines.
+    var inputLines = inputData.split("\n");
 
-    // The first line specifies the total size of the collection.
-    var containerSize = parseInt(inputRows[0], 10);
+    // The first line contains the width value.
+    var widthVal = Number(inputLines[0]);
+    // The second line contains the number of swap operations.
+    var numSwaps = Number(inputLines[1]);
 
-    // The second line indicates how many swap operations will be executed.
-    var operationCount = parseInt(inputRows[1], 10);
-
-    // Initialize an array to store the numerical elements.
-    var dataElements = [];
-
-    // Populate the array with a sequence of integers from 1 up to the defined container size.
-    for (let currentNum = 1; currentNum <= containerSize; currentNum++) {
-        dataElements.push(currentNum);
+    // Initialize an array with sequential numbers from 1 to widthVal.
+    var resultArray = [];
+    for (var idx = 1; idx <= widthVal; idx++) {
+        resultArray.push(idx);
     }
 
-    // Set an internal pointer to start reading swap instructions from the third line onwards.
-    var currentLinePtr = 2;
+    // Initialize a pointer to the current line being read for swap operations.
+    var linePointer = 2;
 
-    // Iterate through each of the specified swap operations.
-    for (let opIdx = 0; opIdx < operationCount; opIdx++) {
-        // Parse the current line for swap positions, splitting by comma.
-        const positions = inputRows[currentLinePtr].split(",");
+    // Iterate through each swap operation.
+    for (var k = 0; k < numSwaps; k++) {
+        // Parse the current line to get the two positions for swapping.
+        // Subtract 1 to convert to zero-based indexing.
+        var firstPos = Number(inputLines[linePointer].split(",")[0]) - 1;
+        var secondPos = Number(inputLines[linePointer].split(",")[1]) - 1;
 
-        // Convert the first position string to an integer, adjusting for zero-based indexing.
-        var firstPosition = parseInt(positions[0], 10) - 1;
+        // Perform the swap using a temporary variable.
+        var tempVal = resultArray[firstPos];
+        resultArray[firstPos] = resultArray[secondPos];
+        resultArray[secondPos] = tempVal;
 
-        // Convert the second position string to an integer, adjusting for zero-based indexing.
-        var secondPosition = parseInt(positions[1], 10) - 1;
-
-        // Store the value at the first position temporarily before overwriting.
-        var temporaryValue = dataElements[firstPosition];
-
-        // Move the value from the second position to the first.
-        dataElements[firstPosition] = dataElements[secondPosition];
-
-        // Move the temporarily stored value to the second position, completing the swap.
-        dataElements[secondPosition] = temporaryValue;
-
-        // Advance the line pointer to the next operation instruction.
-        currentLinePtr++;
+        // Move to the next line for the subsequent swap operation.
+        linePointer++;
     }
 
-    // After all swap operations are complete, print each element of the modified array on a new line.
-    for (let outputIter = 0; outputIter < containerSize; outputIter++) {
-        console.log(dataElements[outputIter]);
+    // Print each element of the final resultArray on a new line.
+    for (var j = 0; j < widthVal; j++) {
+        console.log(resultArray[j]);
     }
 }

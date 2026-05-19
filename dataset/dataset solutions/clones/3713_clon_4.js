@@ -1,65 +1,84 @@
-const ProcessInput = (inputData) => {
-  const [sizeString, valuesString] = inputData.split('\n');
-  const totalElementsCount = parseInt(sizeString);
-  const finalIndex = totalElementsCount - 1;
-  const rawNumbers = valuesString.split(' ').map(Number);
+const calculateSegmentDifference = (firstCutIndex, middleCutIndex, thirdCutIndex, allPrefixSums, finalArrayElementIndex) => {
+    const segmentOneSum = allPrefixSums[firstCutIndex];
+    const segmentTwoSum = allPrefixSums[middleCutIndex] - allPrefixSums[firstCutIndex];
+    const segmentThreeSum = allPrefixSums[thirdCutIndex] - allPrefixSums[middleCutIndex];
+    const segmentFourSum = allPrefixSums[finalArrayElementIndex] - allPrefixSums[thirdCutIndex];
+    
+    const currentSegmentSums = [segmentOneSum, segmentTwoSum, segmentThreeSum, segmentFourSum].sort((valA, valB) => valA - valB);
+    return currentSegmentSums[3] - currentSegmentSums[0];
+};
 
-  const aggregatedValues = rawNumbers.reduce((accumulator, currentVal) => {
-    const previousSum = accumulator.length === 0 ? 0 : accumulator[accumulator.length - 1];
-    return [...accumulator, previousSum + currentVal];
-  }, []);
-
-  let overallMinimumDifference = Number.MAX_SAFE_INTEGER;
-
-  for (let midPointIdx = 1; midPointIdx <= finalIndex - 2; ++midPointIdx) {
-    const targetLeftSectionSum = aggregatedValues[midPointIdx] / 2;
-    const targetRightSectionSum = (aggregatedValues[finalIndex] + aggregatedValues[midPointIdx]) / 2;
-
-    const firstSplitCandidateIdx = RetrieveLowerBound(aggregatedValues, 0, midPointIdx - 1, targetLeftSectionSum);
-    const thirdSplitCandidateIdx = RetrieveLowerBound(aggregatedValues, midPointIdx + 1, finalIndex - 1, targetRightSectionSum);
-
-    const firstSplitPositions = [firstSplitCandidateIdx];
-    if (firstSplitCandidateIdx > 0) {
-      firstSplitPositions.push(firstSplitCandidateIdx - 1);
+function findFirstGreaterOrEqual(dataArray, searchRangeStart, searchRangeEndExclusive, targetValue) {
+    let lowBoundary = searchRangeStart;
+    let highBoundary = searchRangeEndExclusive;
+    while (lowBoundary < highBoundary) {
+        const midPoint = Math.floor((lowBoundary + highBoundary) / 2);
+        if (dataArray[midPoint] < targetValue) {
+            lowBoundary = midPoint + 1;
+        } else {
+            highBoundary = midPoint;
+        }
     }
+    return lowBoundary;
+}
 
-    const thirdSplitPositions = [thirdSplitCandidateIdx];
-    if (thirdSplitCandidateIdx > midPointIdx + 1) {
-      thirdSplitPositions.push(thirdSplitCandidateIdx - 1);
-    }
+function processInputData(rawData) {
+    const inputLines = rawData.split('\n');
+    const elementCount = Number(inputLines[0]);
+    const finalArrayElementIndex = elementCount - 1;
 
-    for (const currentFirstSplit of firstSplitPositions) {
-      for (const currentThirdSplit of thirdSplitPositions) {
-        if (currentFirstSplit >= midPointIdx || currentThirdSplit <= midPointIdx || currentThirdSplit >= finalIndex) {
-            continue;
+    const numericSequence = inputLines[1].split(' ').map(Number);
+
+    const prefixSums = numericSequence.reduce((accumulator, currentElement, currentIndex) => {
+        const previousCumulativeSum = currentIndex === 0 ? 0 : accumulator[currentIndex - 1];
+        accumulator.push(previousCumulativeSum + currentElement);
+        return accumulator;
+    }, []);
+
+    let optimalRangeDiff = Number.MAX_SAFE_INTEGER;
+
+    Array.from({ length: finalArrayElementIndex - 1 }).forEach((_, k) => {
+        const midpointIndex = k + 1; // Corresponds to 'i' in original, ranges from 1 to finalArrayElementIndex - 1
+
+        if (midpointIndex >= finalArrayElementIndex - 1) return; // Adjust loop to match original 'i < n - 1'
+
+        const totalSum = prefixSums[finalArrayElementIndex];
+        const sumUpToMidpoint = prefixSums[midpointIndex];
+
+        const targetSumForLeftHalf = sumUpToMidpoint / 2;
+        const targetSumForRightHalf = (totalSum + sumUpToMidpoint) / 2;
+
+        const initialLeftSplitCandidate = findFirstGreaterOrEqual(prefixSums, 0, midpointIndex, targetSumForLeftHalf);
+        
+        const potentialLeftSplitIndices = new Set();
+        if (initialLeftSplitCandidate >= 0 && initialLeftSplitCandidate < midpointIndex) {
+            potentialLeftSplitIndices.add(initialLeftSplitCandidate);
+        }
+        if (initialLeftSplitCandidate > 0 && (initialLeftSplitCandidate - 1) < midpointIndex) {
+            potentialLeftSplitIndices.add(initialLeftSplitCandidate - 1);
         }
 
-        const sectionOneSum = aggregatedValues[currentFirstSplit];
-        const sectionTwoSum = aggregatedValues[midPointIdx] - aggregatedValues[currentFirstSplit];
-        const sectionThreeSum = aggregatedValues[currentThirdSplit] - aggregatedValues[midPointIdx];
-        const sectionFourSum = aggregatedValues[finalIndex] - aggregatedValues[currentThirdSplit];
+        const initialRightSplitCandidate = findFirstGreaterOrEqual(prefixSums, midpointIndex + 1, finalArrayElementIndex, targetSumForRightHalf);
 
-        const currentSectionSums = [sectionOneSum, sectionTwoSum, sectionThreeSum, sectionFourSum];
-        currentSectionSums.sort((valA, valB) => valA - valB);
+        const potentialRightSplitIndices = new Set();
+        if (initialRightSplitCandidate > midpointIndex && initialRightSplitCandidate < finalArrayElementIndex) {
+            potentialRightSplitIndices.add(initialRightSplitCandidate);
+        }
+        if (initialRightSplitCandidate > midpointIndex + 1 && (initialRightSplitCandidate - 1) < finalArrayElementIndex) {
+            potentialRightSplitIndices.add(initialRightSplitCandidate - 1);
+        }
+        
+        for (const currentLeftSplit of potentialLeftSplitIndices) {
+            for (const currentRightSplit of potentialRightSplitIndices) {
+                optimalRangeDiff = Math.min(
+                    optimalRangeDiff,
+                    calculateSegmentDifference(currentLeftSplit, midpointIndex, currentRightSplit, prefixSums, finalArrayElementIndex)
+                );
+            }
+        }
+    });
 
-        overallMinimumDifference = Math.min(overallMinimumDifference, currentSectionSums[3] - currentSectionSums[0]);
-      }
-    }
-  }
+    console.log(optimalRangeDiff);
+}
 
-  console.log(overallMinimumDifference);
-};
-
-const RetrieveLowerBound = (collection, begin, end, targetValue) => {
-  if (end - begin <= 1) {
-    return collection[begin] < targetValue ? end : begin;
-  }
-  const centralIndex = Math.floor((begin + end) / 2);
-  if (collection[centralIndex] < targetValue) {
-    return RetrieveLowerBound(collection, centralIndex, end, targetValue);
-  } else {
-    return RetrieveLowerBound(collection, begin, centralIndex, targetValue);
-  }
-};
-
-ProcessInput(require("fs").readFileSync("/dev/stdin","utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

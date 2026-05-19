@@ -1,74 +1,117 @@
-const _ioSystem = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var inputSource;
+var rawInputLines = [];
+inputReader.on('line', function(lineContent){rawInputLines.push(lineContent);});
+inputReader.on('close', function(){
+  inputSource = createInputProcessor(rawInputLines);
+  console.error('\n↑入力 ↓出力');
+  computeMinAbsoluteSum();
 });
 
-let _collectedInputLines = [];
-let _currentLineIndex = 0;
+const createDeepCopy = (item) => (item instanceof Set) ? new Set(Array.from(item)) : JSON.parse(JSON.stringify(item));
 
-_ioSystem.on('line', (inputLine) => {
-    _collectedInputLines.push(inputLine);
-});
-
-_ioSystem.on('close', () => {
-    console.error('\n↑入力 ↓出力');
-    _processProgramLogic();
-});
-
-const _retrieveNextInputDatum = () => _collectedInputLines[_currentLineIndex++];
-const _transformLineToNumericSequence = (textualLine) => textualLine.split(' ').map(Number);
-const _presentFinalResult = (outcomeValue) => console.log(outcomeValue);
-
-const _processProgramLogic = () => {
-    const _gridDimensionsSpec = _retrieveNextInputDatum();
-    const [_rowsCount, _columnsCount] = _transformLineToNumericSequence(_gridDimensionsSpec);
-
-    const _firstGridValues = Array.from({ length: _rowsCount }, _retrieveNextInputDatum)
-                                 .map(_transformLineToNumericSequence);
-
-    const _secondGridValues = Array.from({ length: _rowsCount }, _retrieveNextInputDatum)
-                                  .map(_transformLineToNumericSequence);
-
-    const _elementwiseDifferenceMatrix = _firstGridValues.map((rowElementsA, rowIndex) =>
-        rowElementsA.map((valA, colIndex) => Math.abs(valA - _secondGridValues[rowIndex][colIndex]))
-    );
-
-    const _computedPathMagnitudeSets = Array.from({ length: _rowsCount }, () =>
-        Array.from({ length: _columnsCount }, () => null)
-    );
-
-    const _determineAccessibleMagnitudes = (rowIdx, colIdx) => {
-        if (_computedPathMagnitudeSets[rowIdx][colIdx] !== null) {
-            return _computedPathMagnitudeSets[rowIdx][colIdx];
-        }
-
-        const _currentCellAbsoluteDifference = _elementwiseDifferenceMatrix[rowIdx][colIdx];
-        let _accumulatedMagnitudes = new Set();
-
-        if (rowIdx === 0 && colIdx === 0) {
-            _accumulatedMagnitudes.add(_currentCellAbsoluteDifference);
-        } else {
-            if (rowIdx > 0) {
-                const _magnitudesFromUpperCell = _determineAccessibleMagnitudes(rowIdx - 1, colIdx);
-                for (const _previousPathMagnitude of _magnitudesFromUpperCell) {
-                    _accumulatedMagnitudes.add(Math.abs(_previousPathMagnitude + _currentCellAbsoluteDifference));
-                    _accumulatedMagnitudes.add(Math.abs(_previousPathMagnitude - _currentCellAbsoluteDifference));
-                }
-            }
-            if (colIdx > 0) {
-                const _magnitudesFromLeftCell = _determineAccessibleMagnitudes(rowIdx, colIdx - 1);
-                for (const _previousPathMagnitude of _magnitudesFromLeftCell) {
-                    _accumulatedMagnitudes.add(Math.abs(_previousPathMagnitude + _currentCellAbsoluteDifference));
-                    _accumulatedMagnitudes.add(Math.abs(_previousPathMagnitude - _currentCellAbsoluteDifference));
-                }
-            }
-        }
-        _computedPathMagnitudeSets[rowIdx][colIdx] = _accumulatedMagnitudes;
-        return _accumulatedMagnitudes;
-    };
-
-    const _finalCellReachableMagnitudes = _determineAccessibleMagnitudes(_rowsCount - 1, _columnsCount - 1);
-    const _smallestFinalMagnitude = Math.min(...Array.from(_finalCellReachableMagnitudes));
-
-    _presentFinalResult(_smallestFinalMagnitude);
+const parseInputToken = (token, conversionType) => {
+  const conversionMap = {
+    1: (val) => parseInt(val),
+    2: (val) => val.split(' '),
+    4: (val) => val.split(' ').map(Number),
+    6: (val) => val.split(''),
+    7: (val) => val.split('').map(Number),
+    8: (val) => val.join(' '),
+    9: (val) => val.join('\n'),
+    0: (val) => val.join('')
+  };
+  try {
+    return conversionMap[conversionType] ? conversionMap[conversionType](token) : token;
+  } catch (e) {
+    return token;
+  }
 };
+
+const getInteger = () => parseInputToken(retrieveNext(), 1);
+const getStringArray = () => parseInputToken(retrieveNext(), 2);
+const getIntegerArray = () => parseInputToken(retrieveNext(), 4);
+const getCharacterArray = () => parseInputToken(retrieveNext(), 6);
+
+const retrieveNext = () => inputSource.pullNext();
+const checkAvailability = () => inputSource.hasMore();
+
+const createInputProcessor = (lines) => {  
+  let currentLineIndex = 0;
+  const totalLines = lines.length;
+  return {
+    linesList : lines,
+    currentPosition : 0,
+    totalCount : lines.length,
+    hasMore : function(){return (this.currentPosition < this.totalCount);},
+    pullNext : function(){
+      if(this.hasMore()){
+        return this.linesList[this.currentPosition++];
+      }else{
+        throw 'EndOfInputException: No more input available';
+      }
+    }
+  };
+};
+
+const displayResult = (outputValue) => {console.log(outputValue);};
+const logDebug = (debugInfo) => {console.error('debug:' + require('util').inspect(debugInfo,false,null));};
+
+function computeMinAbsoluteSum(){
+  const dimensions = getIntegerArray();
+  const gridHeight = dimensions[0];
+  const gridWidth = dimensions[1];
+
+  const firstMatrix = Array.from({ length: gridHeight }, () => getIntegerArray());
+  const secondMatrix = Array.from({ length: gridHeight }, () => getIntegerArray());
+
+  const differenceMatrix = Array.from({ length: gridHeight }, (_, r) =>
+    Array.from({ length: gridWidth }, (_, c) =>
+      Math.abs(firstMatrix[r][c] - secondMatrix[r][c])
+    )
+  );
+
+  const maximumPossibleSum = 13000;
+  
+  const dpState = Array.from({ length: gridHeight }, () =>
+    Array.from({ length: gridWidth }, () => new Set())
+  );
+  
+  dpState[0][0].add(differenceMatrix[0][0]);
+
+  for (let r = 0; r < gridHeight; r++) {
+    for (let c = 0; c < gridWidth; c++) {
+      if (r === 0 && c === 0) {
+        continue;
+      }
+
+      const currentCellValue = differenceMatrix[r][c];
+      const reachableSumsForCurrentCell = new Set();
+
+      if (r > 0) { // Can come from the cell above
+        for (const previousSum of dpState[r - 1][c]) {
+          reachableSumsForCurrentCell.add(Math.abs(previousSum + currentCellValue));
+          reachableSumsForCurrentCell.add(Math.abs(previousSum - currentCellValue));
+        }
+      }
+
+      if (c > 0) { // Can come from the cell to the left
+        for (const previousSum of dpState[r][c - 1]) {
+          reachableSumsForCurrentCell.add(Math.abs(previousSum + currentCellValue));
+          reachableSumsForCurrentCell.add(Math.abs(previousSum - currentCellValue));
+        }
+      }
+      dpState[r][c] = reachableSumsForCurrentCell;
+    }
+  }
+
+  const finalCellSums = dpState[gridHeight - 1][gridWidth - 1];
+  for (let s = 0; s < maximumPossibleSum; s++) {
+    if (finalCellSums.has(s)) {
+      displayResult(s);
+      return;
+    }
+  }
+}

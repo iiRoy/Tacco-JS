@@ -1,19 +1,23 @@
 "use strict";
 
-const processEntry = (sourceData) => {
-    const dataLines = sourceData.split('\n');
-    const digitString = dataLines[0];
-    const limitIndex = Number(dataLines[1]);
+function processInput(dataPayload) {
+  const contentLines = dataPayload.split('\n');
+  const mainString = contentLines[0];
+  const searchBoundary = Number(contentLines[1]);
 
-    const finalCharacter = Array.from(digitString)
-        .map((singleDigit, currentPosition) => {
-            return (singleDigit !== '1' && currentPosition < limitIndex) ? singleDigit : null;
-        })
-        .filter(potentialChar => potentialChar !== null)
-        .shift()
-        || '1';
+  let resultChar = '1';
 
-    console.log(finalCharacter);
-};
+  const relevantSegment = mainString.slice(0, searchBoundary); // Using slice instead of substring for divergence
+  
+  const firstNonOne = Array.from(relevantSegment).find(
+    (character) => character !== '1'
+  );
 
-processEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+  if (firstNonOne !== undefined) {
+    resultChar = firstNonOne;
+  }
+
+  console.log(resultChar);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

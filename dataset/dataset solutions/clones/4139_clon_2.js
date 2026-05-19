@@ -1,42 +1,34 @@
-"use strict"; // Enforce strict mode for better code quality and error handling.
+"use strict";
 
-    // This primary function orchestrates the processing of received textual data.
-    const processInputData = ( receivedData ) => {
+// This function processes the given input string to calculate a specific value.
+const processInput = (inputString) => {
+  // Trim leading/trailing whitespace and split the input by newlines.
+  let processedLines = inputString.trim().split("\n");
 
-        // First, clean up leading/trailing whitespace and then segment the data by newlines.
-        receivedData = receivedData . trim() . split( "\n" );
+  // Parse the first two space-separated integers from the first line.
+  const initialValue = parseInt(processedLines[0].split(" ")[0]);
+  const targetLimit = parseInt(processedLines[0].split(" ")[1]);
 
-        // Extract the first numerical component from the initial line of input.
-        const startingPoint = parseInt( receivedData [ 0 ] . split( " " ) [ 0 ] );
+  // Initialize a variable to track the current value, starting from initialValue.
+  let currentVal = initialValue;
+  // Initialize a counter for the result, starting at one.
+  let resultCount = 1;
 
-        // Extract the second numerical component from the initial line of input.
-        const upperThreshold = parseInt( receivedData [ 0 ] . split( " " ) [ 1 ] );
+  // Loop as long as the current value does not exceed the target limit.
+  while (currentVal <= targetLimit) {
+    // Check if doubling the current value would still be within the target limit.
+    if (currentVal * 2 <= targetLimit) {
+      // If so, increment the result counter.
+      resultCount++;
+    }
 
+    // Double the current value for the next iteration.
+    currentVal *= 2;
+  }
 
-        // Initialize a mutable variable to track the current value in our sequence.
-        let currentSequenceValue = startingPoint;
+  // Output the final calculated result to the console.
+  console.log(resultCount);
+};
 
-        // Initialize a counter for the number of doubling operations performed.
-        let doublingOperationsCount = 1;
-
-
-        // Continue looping as long as the current sequence value does not exceed the defined upper threshold.
-        while ( currentSequenceValue <= upperThreshold ) {
-
-            // Check if the next potential doubled value would still be within the acceptable range.
-            if ( ( currentSequenceValue * 2 ) <= upperThreshold ) {
-                // If doubling is still possible and valid, increment our operation counter.
-                doublingOperationsCount++;
-            }
-
-            // Update the current sequence value by doubling it for the next iteration.
-            currentSequenceValue *= 2;
-        }
-
-        // Display the final tally of doubling operations to the standard output.
-        console . log( doublingOperationsCount );
-    };
-
-
-// Execute the main processing function, feeding it content read from standard input.
-processInputData( require( 'fs' ) . readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

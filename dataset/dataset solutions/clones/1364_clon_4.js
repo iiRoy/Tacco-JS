@@ -1,50 +1,53 @@
-const inputSystem = process.stdin;
-const outputSystem = process.stdout;
+process.stdin.on('data', (dataBuffer) => {
+    const inputLine = dataBuffer.toString();
+    const parsedSegments = [];
+    let segmentStart = 0;
 
-inputSystem.on('data', function (rawChunk) {
-    const textSegment = rawChunk.toString();
-    let numericElements = [];
-    let currentAccumulator = '';
-    let priorWasWhitespace = true;
+    // Imperative parsing to mimic String.prototype.split(' ') behavior
+    for (let currentPos = 0; currentPos < inputLine.length; currentPos++) {
+        const charValue = inputLine[currentPos];
+        if (charValue === ' ') {
+            parsedSegments.push(inputLine.substring(segmentStart, currentPos));
+            segmentStart = currentPos + 1;
+        }
+    }
+    // Add the last segment after the loop, or if no spaces were found
+    parsedSegments.push(inputLine.substring(segmentStart));
 
-    for (let char of textSegment) {
-        if (char === ' ') {
-            if (currentAccumulator.length > 0) {
-                numericElements.push(Number(currentAccumulator));
-                currentAccumulator = '';
-            } else if (priorWasWhitespace) {
-                numericElements.push(0);
+    // Imperative sorting (Selection Sort) for strings, comparing numerically
+    const segmentCount = parsedSegments.length;
+    for (let currentPos = 0; currentPos < segmentCount - 1; currentPos++) {
+        let smallestSegment = parsedSegments[currentPos];
+        let smallestNumericValue = Number(smallestSegment);
+        let smallestIndex = currentPos;
+
+        for (let comparePos = currentPos + 1; comparePos < segmentCount; comparePos++) {
+            const segmentToCompare = parsedSegments[comparePos];
+            const numericValueToCompare = Number(segmentToCompare);
+
+            if (numericValueToCompare < smallestNumericValue) {
+                smallestNumericValue = numericValueToCompare;
+                smallestSegment = segmentToCompare; // Keep the string representation
+                smallestIndex = comparePos;
             }
-            priorWasWhitespace = true;
-        } else {
-            currentAccumulator += char;
-            priorWasWhitespace = false;
+        }
+        // Swap elements if a smaller one was found
+        if (smallestIndex !== currentPos) {
+            const temporarySegment = parsedSegments[currentPos];
+            parsedSegments[currentPos] = parsedSegments[smallestIndex];
+            parsedSegments[smallestIndex] = temporarySegment;
         }
     }
 
-    if (currentAccumulator.length > 0) {
-        numericElements.push(Number(currentAccumulator));
-    } else if (priorWasWhitespace) {
-        numericElements.push(0);
-    }
-
-    const count = numericElements.length;
-    for (let idx = 1; idx < count; idx++) {
-        let reference = numericElements[idx];
-        let jdx = idx - 1;
-        while (jdx >= 0 && numericElements[jdx] > reference) {
-            numericElements[jdx + 1] = numericElements[jdx];
-            jdx = jdx - 1;
-        }
-        numericElements[jdx + 1] = reference;
-    }
-
-    let finalRenderedString = '';
-    for (let kdx = 0; kdx < count; kdx++) {
-        finalRenderedString += numericElements[kdx].toString();
-        if (kdx < count - 1) {
-            finalRenderedString += ' ';
+    // Imperative joining of sorted segments
+    let outputString = '';
+    const finalSegmentCount = parsedSegments.length;
+    if (finalSegmentCount > 0) {
+        outputString += parsedSegments[0];
+        for (let currentPos = 1; currentPos < finalSegmentCount; currentPos++) {
+            outputString += ' ' + parsedSegments[currentPos];
         }
     }
-    outputSystem.write(finalRenderedString + '\n');
+
+    console.log(outputString);
 });

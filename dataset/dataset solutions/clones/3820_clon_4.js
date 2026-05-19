@@ -1,42 +1,28 @@
-const convertTextToNumbers = (rawTextContent) =>
-  rawTextContent.split('\n').filter(lineSegment => lineSegment.trim() !== '').map(Number);
+function processInputAndCompute(rawInput) {
+    const numericData = rawInput.split("\n").map(val => Number(val));
+    const initialCount = numericData[0];
 
-const determineCumulativeOutcome = (numericSequence) => {
-  const iterationBoundary = numericSequence[0];
+    const computeSumRecursively = (currentIdx, accumulatedResult) => {
+        if (currentIdx <= 1) {
+            return accumulatedResult;
+        }
 
-  if (iterationBoundary < 2) {
-      return 0;
-  }
+        const currentElement = numericData[currentIdx];
+        const previousElement = numericData[currentIdx - 1];
 
-  const processingIndices = Array.from({ length: iterationBoundary - 1 }, (_, ordinal) => iterationBoundary - ordinal);
+        if (currentElement >= currentIdx) {
+            return -1;
+        }
 
-  const finalAccumulationState = processingIndices.reduce((currentAccumulator, currentPosition) => {
-    if (currentAccumulator.hasError) {
-      return currentAccumulator;
-    }
+        const nextAccumulation = (currentElement === previousElement + 1)
+            ? accumulatedResult + 1
+            : accumulatedResult + currentElement;
 
-    const elementAtCurrent = numericSequence[currentPosition];
-    const elementAtPreceding = numericSequence[currentPosition - 1];
-
-    if (elementAtCurrent >= currentPosition) {
-      return { finalSum: -1, hasError: true };
-    }
-
-    const valueToAdd = (elementAtCurrent === elementAtPreceding + 1) ? 1 : elementAtCurrent;
-
-    return {
-      finalSum: currentAccumulator.finalSum + valueToAdd,
-      hasError: false,
+        return computeSumRecursively(currentIdx - 1, nextAccumulation);
     };
-  }, { finalSum: 0, hasError: false });
 
-  return finalAccumulationState.hasError ? -1 : finalAccumulationState.finalSum;
-};
+    const finalOutcome = computeSumRecursively(initialCount, 0);
+    console.log(finalOutcome);
+}
 
-const orchestrateDataProcessing = (incomingStreamData) => {
-  const parsedNumericData = convertTextToNumbers(incomingStreamData);
-  const computedResult = determineCumulativeOutcome(parsedNumericData);
-  console.log(computedResult);
-};
-
-orchestrateDataProcessing(require("fs").readFileSync("/dev/stdin","utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin","utf8"));

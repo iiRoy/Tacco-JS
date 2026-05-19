@@ -1,85 +1,42 @@
-function processDataString(inputPayload) {
-    // Validate input presence
-    if (!inputPayload || inputPayload.trim() === '') {
-        console.log("No"); // Or handle error appropriately
-        return;
-    }
+function processInput(rawData) {
+    const NEWLINE_SEPARATOR = "\n";
+    const VALUE_SEPARATOR = " ";
 
-    const cleanedPayload = inputPayload.trim();
-    const payloadLines = cleanedPayload.split('\n');
+    rawData = rawData.trim();
+    const parsedLines = rawData.split(NEWLINE_SEPARATOR);
 
-    // Ensure we have at least two lines of data
-    if (payloadLines.length < 2) {
-        console.log("No");
-        return;
-    }
-
-    // Parse the total number of elements expected
-    const totalNumItems = Number(payloadLines[0]);
-    if (isNaN(totalNumItems) || totalNumItems <= 0) {
-        console.log("No");
-        return;
-    }
-
-    // Parse the sequence of numeric values
-    const itemValues = payloadLines[1].split(' ').filter(str => str !== '').map(val => Number(val));
-
-    // Validate that the number of parsed items matches the declared count
-    if (itemValues.length !== totalNumItems) {
-        // This is a critical mismatch, indicating malformed input
-        console.log("No");
-        return;
-    }
+    const dataLength = parseInt(parsedLines[0], 10);
+    const numberSequence = parsedLines[1].split(VALUE_SEPARATOR).map(Number);
 
     let countMultiplesOfFour = 0;
-    let countTwosOnly = 0; // Numbers divisible by 2 but not by 4
+    let countMultiplesOfTwoOnly = 0;
 
-    // Iterate through each number in the sequence to categorize them
-    for (const currentVal of itemValues) {
-        if (isNaN(currentVal)) {
-            // Handle non-numeric values in the sequence
-            continue;
-        }
+    numberSequence.forEach(currentValue => {
+        const isDivisibleByTwo = (currentValue % 2 === 0);
+        const isDivisibleByFour = (currentValue % 4 === 0);
 
-        // Check for divisibility by 4
-        if (currentVal % 4 === 0) {
+        if (isDivisibleByFour) {
             countMultiplesOfFour++;
+        } else if (isDivisibleByTwo) {
+            countMultiplesOfTwoOnly++;
         }
-        // Check for divisibility by 2 but not by 4 (i.e., remainder 2 when divided by 4)
-        else if (currentVal % 2 === 0) { // Equivalent to currentVal % 4 === 2
-            countTwosOnly++;
+    });
+
+    const evaluateCondition = (totalLength, foursCount, twosOnlyCount) => {
+        const targetPairsNeeded = Math.floor(totalLength / 2);
+
+        if (foursCount >= targetPairsNeeded) {
+            return true;
+        } else {
+            const deficitInFours = targetPairsNeeded - foursCount;
+            const requiredTwosForDeficit = deficitInFours * 2;
+            return twosOnlyCount >= requiredTwosForDeficit;
         }
-        // Numbers not divisible by 2 are implicitly ignored as they don't contribute
-        // to the required structure for this problem.
-    }
+    };
 
-    // Determine the minimum number of multiples of four required
-    // (or pairs of 2s to substitute for 4s)
-    const requiredFoursSlots = Math.floor(totalNumItems / 2);
+    const finalOutcome = evaluateCondition(dataLength, countMultiplesOfFour, countMultiplesOfTwoOnly) ? "Yes" : "No";
 
-    let finalDecision = false; // Assume 'No' initially
-
-    if (countMultiplesOfFour >= requiredFoursSlots) {
-        // If we have enough 4-multiples, the condition is met
-        finalDecision = true;
-    } else {
-        // If not enough 4-multiples, calculate the shortfall
-        const shortfallInFours = requiredFoursSlots - countMultiplesOfFour;
-
-        // Each 'two' (number % 4 === 2) can cover half a 'slot' of a 4-multiple.
-        // So, we need two 'twos' to substitute for one 'four' shortfall.
-        const twosNeededToCoverShortfall = shortfallInFours * 2;
-
-        if (countTwosOnly >= twosNeededToCoverShortfall) {
-            finalDecision = true;
-        }
-        // If countTwosOnly is less than twosNeededToCoverShortfall, finalDecision remains false.
-    }
-
-    // Output the final verdict
-    console.log(finalDecision ? "Yes" : "No");
+    console.log(finalOutcome);
 }
 
-// Entry point for execution, reading from standard input
-const fileContents = require("fs").readFileSync("/dev/stdin", "utf8");
-processDataString(fileContents);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

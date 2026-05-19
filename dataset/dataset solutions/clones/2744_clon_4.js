@@ -1,89 +1,98 @@
-const assembleInputProcessor = (sourceData) => {
-    let rawLines = sourceData.trim().split('\n');
-    let lineCursor = 0;
-    let currentLineSegments = [];
-    let segmentCursor = 0;
-
-    const advanceLineState = () => {
-        if (lineCursor < rawLines.length) {
-            currentLineSegments = rawLines[lineCursor].split(' ');
-            segmentCursor = 0;
-            lineCursor++;
-            return true;
-        }
-        return false;
-    };
-
-    if (rawLines.length > 0) {
-        advanceLineState();
+const InputReaderFactory = (function() {
+    function createReader(sourceString) {
+        return new DataStreamProcessor(sourceString);
     }
 
-    const acquireNextValue = (asString = false) => {
-        if (segmentCursor >= currentLineSegments.length) {
-            if (!advanceLineState()) {
-                throw new Error("Input exhaustion: attempted to read past end of data.");
+    function DataStreamProcessor(sourceString) {
+        this.sourceLines = sourceString.trim().split("\n");
+        this.currentLineIndex = 0;
+        this.currentLineTokens = [];
+    }
+
+    DataStreamProcessor.prototype.extractNextValue = function(asString) {
+        if (this.currentLineTokens.length === 0) {
+            if (this.currentLineIndex >= this.sourceLines.length) {
+                return undefined;
             }
+            this.currentLineTokens = this.sourceLines[this.currentLineIndex].split(" ");
         }
-        const value = currentLineSegments[segmentCursor++];
-        return asString ? value : Number(value);
-    };
-
-    const acquireLineValues = (quantity, asString = false) => {
-        const collectedValues = [];
-        segmentCursor = currentLineSegments.length; 
-        
-        for (let k = 0; k < quantity; k++) {
-            if (!advanceLineState()) {
-                throw new Error(`Input exhaustion: attempted to read line ${k + 1} of ${quantity}.`);
-            }
-            const lineSegments = currentLineSegments.map(seg => asString ? seg : Number(seg));
-            collectedValues.push(...lineSegments);
+        const nextToken = this.currentLineTokens.shift();
+        if (this.currentLineTokens.length === 0) {
+            this.currentLineIndex++;
         }
-        return collectedValues;
+        return asString ? nextToken : +nextToken;
     };
 
-    return {
-        getOne: acquireNextValue,
-        getMany: acquireLineValues,
+    DataStreamProcessor.prototype.fetchLineValues = function(asStrings) {
+        const lineContent = this.sourceLines[this.currentLineIndex++];
+        const tokens = lineContent.split(" ");
+        return asStrings ? tokens : tokens.map(val => +val);
     };
-};
 
-const locateInsertionIndex = (orderedCollection, itemValue, begin = 0, end = orderedCollection.length) => {
-    if (begin >= end) {
-        return begin;
-    }
-    const midPoint = Math.floor((begin + end) / 2);
-    if (orderedCollection[midPoint] <= itemValue) {
-        return locateInsertionIndex(orderedCollection, itemValue, midPoint + 1, end);
-    } else {
-        return locateInsertionIndex(orderedCollection, itemValue, begin, midPoint);
-    }
-};
+    DataStreamProcessor.prototype.retrieveMatrix = function(numRows, asStrings) {
+        const matrixRows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + numRows);
+        this.currentLineIndex += numRows;
+        return asStrings ?
+            matrixRows.map(rowStr => rowStr.split(" ")) :
+            matrixRows.map(rowStr => rowStr.split(" ").map(val => +val));
+    };
 
-const computeSequenceResult = () => {
-    const ioProcessor = assembleInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+    DataStreamProcessor.prototype.acquireRows = function(numRows, asStrings) {
+        const rows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + numRows);
+        this.currentLineIndex += numRows;
+        return asStrings ? rows : rows.map(val => +val);
+    };
 
-    const elementsCount = ioProcessor.getOne();
-    
-    if (elementsCount === 0) {
-        return 1; // Matches original behavior for n=0
-    }
+    return createReader;
+})();
 
-    const dataSeries = ioProcessor.getMany(elementsCount);
+const inputProcessor = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const sortedPiles = dataSeries.reduce((pilesAccumulator, currentElement) => {
-        const invertedValue = -currentElement;
-        const targetIndex = locateInsertionIndex(pilesAccumulator, invertedValue);
-
-        if (targetIndex === pilesAccumulator.length) {
-            pilesAccumulator.push(invertedValue);
+function generateMultiDimArray(fillValue, ...dimensions) {
+    const recursiveBuilder = (dimIndex) => {
+        if (dimIndex === dimensions.length - 1) {
+            return Array(dimensions[dimIndex]).fill(fillValue);
         } else {
-            pilesAccumulator[targetIndex] = invertedValue;
+            return Array(dimensions[dimIndex]).fill(0).map(() => recursiveBuilder(dimIndex + 1));
         }
-        return pilesAccumulator;
-    }, []);
+    };
+    return recursiveBuilder(0);
+}
 
-    return sortedPiles.length;
-};
+function findInsertionPoint(dataCollection, lowerBound, upperBound, targetElement) {
+    let low = lowerBound;
+    let high = upperBound;
+    let midPoint;
 
-console.log(computeSequenceResult());
+    while (low < high) {
+        midPoint = Math.floor((low + high) / 2);
+        if (dataCollection[midPoint] <= targetElement) {
+            low = midPoint + 1;
+        } else {
+            high = midPoint;
+        }
+    }
+    return low;
+}
+
+console.log(solveProblem());
+
+function solveProblem() {
+    const elementCount = inputProcessor.extractNextValue();
+    const inputSequence = inputProcessor.acquireRows(elementCount);
+
+    const tailElements = [1];
+
+    inputSequence.forEach(currentElement => {
+        const negatedValue = -currentElement;
+        const insertionIndex = findInsertionPoint(tailElements, 0, tailElements.length, negatedValue);
+
+        if (insertionIndex === tailElements.length) {
+            tailElements.push(negatedValue);
+        } else {
+            tailElements[insertionIndex] = negatedValue;
+        }
+    });
+
+    return tailElements.length;
+}

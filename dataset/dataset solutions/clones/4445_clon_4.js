@@ -1,22 +1,25 @@
-const evaluateSequence = (sourceText) => {
-    const [countLine, numberLine] = sourceText.trim().split('\n');
-    const overallAmount = parseInt(countLine, 10);
-    const digits = numberLine.split(' ').map(parseFloat);
+function processInput(rawInputText) {
+  const [lengthString, numbersString] = rawInputText.trim().split('\n');
+  const totalCount = parseInt(lengthString);
+  const numberSequence = numbersString.split(' ').map(Number);
 
-    const { quadDiv, dualOnly } = digits.reduce((accum, currentDigit) => {
-        if (currentDigit % 4 === 0) {
-            accum.quadDiv++;
-        } else if (currentDigit % 2 === 0) {
-            accum.dualOnly++;
-        }
-        return accum;
-    }, { quadDiv: 0, dualOnly: 0 });
+  const { countDivisibleByFour, countDivisibleByTwoNotFour } = numberSequence.reduce((accumulator, currentElement) => {
+    if (currentElement % 4 === 0) {
+      accumulator.countDivisibleByFour++;
+    } else if (currentElement % 2 === 0) {
+      accumulator.countDivisibleByTwoNotFour++;
+    }
+    return accumulator;
+  }, { countDivisibleByFour: 0, countDivisibleByTwoNotFour: 0 });
 
-    const neededCapacity = overallAmount >> 1;
+  const requiredFourLikeSlots = Math.floor(totalCount / 2);
 
-    const finalDetermination = (quadDiv >= neededCapacity) || (dualOnly >= (neededCapacity - quadDiv) * 2);
+  const isArrangementPossible = (countDivisibleByFour >= requiredFourLikeSlots) ||
+                                (countDivisibleByFour < requiredFourLikeSlots && countDivisibleByTwoNotFour >= (requiredFourLikeSlots - countDivisibleByFour) * 2);
 
-    console.log(finalDetermination ? "Yes" : "No");
-};
+  const finalVerdict = isArrangementPossible ? "Yes" : "No";
 
-evaluateSequence(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+  console.log(finalVerdict);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

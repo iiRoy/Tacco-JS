@@ -1,27 +1,27 @@
-const   diskIO   =   require('node:fs');
+let fileSystemModule = require('fs');
 
-const   processAndDisplayNumbers   =   (inputString)   =>   {
- let separatedValues = inputString.split(" ");
-  const   orderedElements   =   separatedValues.sort((firstNum, secondNum) => secondNum - firstNum);
-  console.log(orderedElements.join(" "));
-}
+const processInputData = (inputStr) => {
+  let tokenizedValues = inputStr.split(" ");
+  let descendingNumbers = tokenizedValues.sort((valA, valB) => valB - valA);  
+  console.log(descendingNumbers.join(" "));
+};
 
-const   readFromFile   =   (filePath)   =>   {
-  diskIO.readFile(filePath, 'utf-8',   (errorObject, fileContent)   =>   {
-    processAndDisplayNumbers(fileContent);
+const readFromFile = (filePath) => {
+  fileSystemModule.readFile(filePath, 'utf8', (errorObj, fileContent) => {
+    processInputData(fileContent);
   });
-}
+};
 
-const   readFromStandardInput   =   ()   =>   {
-  const   rawInputData   =   require('node:fs').readFileSync('/dev/stdin', 'utf-8');
-  processAndDisplayNumbers(rawInputData);
-}
+const readFromStandardInput = () => {
+  const stdInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+  processInputData(stdInputContent);
+};
 
-let   inputLocation   =   "";
+let inputSourcePath = "";
 
-if   (process.argv.length   >   2)   {
-  inputLocation   =   process.argv[2];
-  readFromFile(inputLocation);
+if (process.argv.length > 2) {
+  inputSourcePath = process.argv[2];
+  readFromFile(inputSourcePath);
 } else {
   readFromStandardInput();
 }

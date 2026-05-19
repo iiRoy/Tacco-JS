@@ -1,39 +1,42 @@
-function analyzeObstacles(rawText) {
-    const lines = rawText.split('\n');
-    const totalCount = Number(lines[0]);
-    const elementStream = lines[1];
+'use strict'
 
-    const fullStreamEast = [...elementStream].filter(symbol => symbol === 'E').length;
+function processFormation(inputData) {
+  const lines = inputData.split('\n');
+  const squadSize = Number.parseInt(lines[0], 10);
+  const formation = lines[1];
 
-    const finalState = [...elementStream].reduce((state, currentSymbol) => {
-        const rightEastForCurrentSplit = fullStreamEast - state.leftEast;
-        const currentSplitObstruction = state.leftWest + rightEastForCurrentSplit;
+  let totalEastbound = 0;
+  for (let charIndex = 0; charIndex < squadSize; charIndex++) {
+    if (formation[charIndex] === 'E') {
+      totalEastbound++;
+    }
+  }
 
-        const updatedMinObs = Math.min(state.minObs, currentSplitObstruction);
+  let westboundLeft = 0;
+  let leastDisruption = Number.MAX_SAFE_INTEGER;
 
-        let nextLeftEast = state.leftEast;
-        let nextLeftWest = state.leftWest;
+  // The loop iterates through potential split points.
+  // 'currentPosition' represents the index of the first character of the right segment.
+  // So, the left segment is 'formation[0...currentPosition-1]'
+  // and the right segment is 'formation[currentPosition...squadSize-1]'.
+  // This covers 'squadSize' distinct split configurations, from splitting before the first character
+  // to splitting before the last character.
+  for (let currentPosition = 0; currentPosition < squadSize; currentPosition++) {
+    // Calculate the cost for the current split point:
+    // 'westboundLeft' holds the count of 'W's in the left segment (formation[0...currentPosition-1]).
+    // 'totalEastbound' holds the count of 'E's in the right segment (formation[currentPosition...squadSize-1]).
+    leastDisruption = Math.min(leastDisruption, westboundLeft + totalEastbound);
 
-        if (currentSymbol === 'E') {
-            nextLeftEast++;
-        } else {
-            nextLeftWest++;
-        }
+    // Update counts for the next iteration's split point (which will be before formation[currentPosition+1]).
+    // The character at 'currentPosition' now moves from the right segment to the left segment.
+    if (formation[currentPosition] === 'W') {
+      westboundLeft++;
+    } else { // 'E'
+      totalEastbound--;
+    }
+  }
 
-        return {
-            leftEast: nextLeftEast,
-            leftWest: nextLeftWest,
-            minObs: updatedMinObs
-        };
-    }, {
-        leftEast: 0,
-        leftWest: 0,
-        minObs: fullStreamEast
-    });
-
-    const finalSplitPointObstruction = finalState.leftWest;
-
-    return Math.min(finalState.minObs, finalSplitPointObstruction);
+  console.log(leastDisruption);
 }
 
-console.log(analyzeObstacles(require('fs').readFileSync('/dev/stdin', 'utf8')));
+processFormation(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,16 +1,29 @@
-const obtainAndProcess = () => {
-    const entryData = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
-    const parsedNumbers = entryData.match(/\d+/g).map(Number);
+'use strict'
 
-    const iterationCount = parsedNumbers[0];
-    const additionCap = parsedNumbers[1];
+const processInputAndCalculate = (rawData) => {
+    const numericValues = rawData.split('\n').map(Number);
+    const iterationLimit = numericValues[0];
+    const growthConstant = numericValues[1];
 
-    const finalOutcome = Array.from({ length: iterationCount }).reduce((accumulatedValue) => {
-        const incrementAmount = Math.min(additionCap, accumulatedValue);
-        return accumulatedValue + incrementAmount;
-    }, 1);
+    if (growthConstant === 1) {
+        return 1 + iterationLimit;
+    }
 
-    process.stdout.write(finalOutcome.toString() + '\n');
+    let currentAccumulation = 1;
+    let stepsTaken = 0;
+
+    while (currentAccumulation < growthConstant && stepsTaken < iterationLimit) {
+        currentAccumulation *= 2;
+        stepsTaken++;
+    }
+
+    if (stepsTaken === iterationLimit) {
+        return currentAccumulation;
+    } else {
+        const remainingSteps = iterationLimit - stepsTaken;
+        return currentAccumulation + (remainingSteps * growthConstant);
+    }
 };
 
-obtainAndProcess();
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf-8');
+console.log(processInputAndCalculate(inputData));

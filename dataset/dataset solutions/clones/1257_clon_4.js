@@ -1,28 +1,19 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'UTF-8');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'UTF-8');
 
-const processGeometry = (sourceText) => {
-    const processedRectangles = sourceText
-        .split('\n')
-        .reduce((accumulator, currentLine) => {
-            if (accumulator.terminationTriggered) {
-                return accumulator;
-            }
+const processGeometricForms = (rawData) => {
+  const dimensionPairs = rawData.split('\n');
 
-            const dimensionStrings = currentLine.split(' ');
-            const heightMeasure = Number(dimensionStrings[0]);
-            const widthMeasure = Number(dimensionStrings[1]);
+  for (const line of dimensionPairs) {
+    const [heightVal, widthVal] = line.split(' ').map(Number);
 
-            if (heightMeasure === 0 && widthMeasure === 0) {
-                return { generatedContent: accumulator.generatedContent, terminationTriggered: true };
-            }
+    if (heightVal === 0 && widthVal === 0) {
+      return false;
+    }
 
-            const rowPattern = '#'.repeat(widthMeasure);
-            const blockContent = (rowPattern + '\n').repeat(heightMeasure);
-            
-            return { generatedContent: accumulator.generatedContent + blockContent, terminationTriggered: false };
-        }, { generatedContent: '', terminationTriggered: false });
-
-    console.log(processedRectangles.generatedContent);
+    const rowPattern = '#'.repeat(widthVal);
+    const formOutput = Array.from({ length: heightVal }, () => rowPattern).join('\n');
+    console.log(formOutput + '\n');
+  }
 };
 
-processGeometry(sourceData);
+processGeometricForms(sourceData);

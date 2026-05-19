@@ -1,14 +1,11 @@
-function processTransaction(rawData) {
-    const numericComponents = rawData.match(/\d+/g).map(Number);
+const processData = (sourceString) => {
+    const [itemCountText, thresholdAmountText] = sourceString.split(' ');
 
-    const merchandiseCount = numericComponents[0];
-    const customerPayment = numericComponents[1];
-
-    const totalCostEstimate = merchandiseCount * (250 + 250); 
+    const quantityValue = Number(itemCountText);
+    const totalCost = 500 * quantityValue;
+    const comparisonValue = Number(thresholdAmountText);
     
-    const resultIndicator = !(customerPayment > totalCostEstimate); 
+    console.log(totalCost >= comparisonValue ? 'yes' : 'no');
+};
 
-    console.log(resultIndicator ? 'yes' : 'no');
-}
-
-processTransaction(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

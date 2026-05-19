@@ -1,109 +1,113 @@
-"use strict";
-
-class DataStreamProcessor {
-    constructor(sourceData) {
-        this.dataTokens = sourceData.split(/ |\n/).filter(segment => segment !== '');
-        this.currentTokenIndex = 0;
+class InputProcessor {
+    constructor(sourceText) {
+        this.dataTokens = sourceText.split(/ |\n/);
+        this.tokenIndex = 0;
     }
 
-    retrieveNumericToken() {
-        return Number(this.dataTokens[this.currentTokenIndex++]);
+    retrieveNumeric() {
+        return Number(this.dataTokens[this.tokenIndex++]);
     }
 
-    retrieveStringToken() {
-        return this.dataTokens[this.currentTokenIndex++];
+    retrieveString() {
+        return this.dataTokens[this.tokenIndex++];
+    }
+
+    retrieveBigInteger() {
+        return BigInt(this.dataTokens[this.tokenIndex++]);
+    }
+
+    retrieveMultiple(count, transformation) {
+        const segment = this.dataTokens.slice(this.tokenIndex, this.tokenIndex + count);
+        this.tokenIndex += count;
+        return transformation ? segment.map(transformation) : segment;
+    }
+
+    retrieveGrid(rows, columns, transformation) {
+        const grid = [];
+        for (let r = 0; r < rows; r++) {
+            const rowSegment = this.dataTokens.slice(this.tokenIndex, this.tokenIndex + columns);
+            this.tokenIndex += columns;
+            grid.push(transformation ? rowSegment.map(transformation) : rowSegment);
+        }
+        return grid;
     }
 }
 
-function calculatePopulationCount(numericValue) {
-    if (numericValue === 0) return 0;
-    let count = 0;
-    let tempValue = numericValue;
-    while (tempValue > 0) {
-        tempValue &= (tempValue - 1);
-        count++;
-    }
-    return count;
+function generateMultiDimensionalArray(initialElement, ...dimensions) {
+    const recursiveBuilder = (dimList) => {
+        if (dimList.length === 0) return initialElement;
+        const currentDimension = dimList[0];
+        const remainingDimensions = dimList.slice(1);
+        return Array.from({ length: currentDimension }, () => recursiveBuilder(remainingDimensions));
+    };
+    return recursiveBuilder(dimensions);
 }
 
-function determineReductionSequenceLength(initialValue) {
-    if (initialValue === 0) return 1;
-    let currentValue = initialValue;
-    let stepsTaken = 1;
-    while (true) {
-        currentValue %= calculatePopulationCount(currentValue);
-        if (currentValue === 0) break;
-        stepsTaken++;
-    }
-    return stepsTaken;
+function calculateSetBitCount(numberValue) {
+    if (numberValue === 0) return 0;
+    return numberValue.toString(2).split('1').length - 1;
 }
 
-function convertBinaryStringToModuloValue(binaryString, modulusDivisor) {
-    return binaryString.split('').reduce((accumulator, digitChar) => {
-        return (accumulator * 2 + (digitChar === '1' ? 1 : 0)) % modulusDivisor;
+function computeInitialModuloValue(binarySequence, modulusDivisor) {
+    return Array.from(binarySequence).reduce((accumulator, digitChar) => {
+        return (accumulator * 2 + Number(digitChar)) % modulusDivisor;
     }, 0);
 }
 
-function processBitChangeScenarios(binarySourceString, stringLength, modulusDivisor, performSubtraction) {
-    const baseValueModulo = convertBinaryStringToModuloValue(binarySourceString, modulusDivisor);
-    const outcomeArray = new Array(stringLength).fill(0);
-
-    let currentPowerOfTwoFactor = performSubtraction ? (modulusDivisor - 1) : 1;
-
-    for (let index = stringLength - 1; index >= 0; index--) {
-        const currentBit = Number(binarySourceString[index]);
-
-        let conditionMet = false;
-        if (performSubtraction && currentBit === 1) {
-            conditionMet = true;
-        } else if (!performSubtraction && currentBit === 0) {
-            conditionMet = true;
-        }
-
-        if (conditionMet) {
-            const transformedValue = (baseValueModulo + currentPowerOfTwoFactor) % modulusDivisor;
-            outcomeArray[index] = determineReductionSequenceLength(transformedValue);
-        }
-        currentPowerOfTwoFactor = (currentPowerOfTwoFactor * 2) % modulusDivisor;
+function countReductionOperations(startingValue) {
+    let currentOperand = startingValue;
+    let operationCount = 0;
+    while (currentOperand !== 0) {
+        operationCount++;
+        currentOperand %= calculateSetBitCount(currentOperand);
     }
-    return outcomeArray;
+    return operationCount;
 }
 
-function orchestratePrimaryComputation() {
-    const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    const inputParser = new DataStreamProcessor(fileContent);
+function processBitTypeLogic(totalBits, bitSequence, initialRemainder, currentModulus, targetBitChar, outputArray) {
+    if (currentModulus < 1) return;
 
-    const sequenceLength = inputParser.retrieveNumericToken();
-    const binaryInputSequence = inputParser.retrieveStringToken();
+    let powerOfTwoModulo;
+    if (targetBitChar === '0') {
+        powerOfTwoModulo = 1; // Corresponds to 2^0 % modulus for the last bit (index totalBits-1)
+    } else { // targetBitChar === '1'
+        powerOfTwoModulo = (currentModulus - 1 + currentModulus) % currentModulus; // Corresponds to (modulus-1) % modulus for the last bit
+    }
 
-    const numberOfOnes = binaryInputSequence.split('').filter(character => character === '1').length;
-    const primaryModuloDivisor = 1 + numberOfOnes;
-    const secondaryModuloDivisor = primaryModuloDivisor - 2;
-
-    const finalOutputResults = new Array(sequenceLength).fill(0);
-
-    const resultsForZeroFlips = processBitChangeScenarios(binaryInputSequence, sequenceLength, primaryModuloDivisor, false);
-    for (let i = 0; i < sequenceLength; i++) {
-        if (Number(binaryInputSequence[i]) === 0) {
-            finalOutputResults[i] = resultsForZeroFlips[i];
+    for (let bitIndex = totalBits - 1; bitIndex >= 0; bitIndex--) {
+        if (bitSequence[bitIndex] === targetBitChar) {
+            let temporaryValue = (initialRemainder + powerOfTwoModulo + currentModulus) % currentModulus;
+            outputArray[bitIndex] = 1 + countReductionOperations(temporaryValue);
         }
+        powerOfTwoModulo = (powerOfTwoModulo * 2) % currentModulus;
     }
-
-    if (secondaryModuloDivisor < 1) {
-        return finalOutputResults.join("\n");
-    }
-
-    const resultsForOneFlips = processBitChangeScenarios(binaryInputSequence, sequenceLength, secondaryModuloDivisor, true);
-    for (let i = 0; i < sequenceLength; i++) {
-        if (Number(binaryInputSequence[i]) === 1) {
-            finalOutputResults[i] = resultsForOneFlips[i];
-        }
-    }
-
-    return finalOutputResults.join("\n");
 }
 
-const computationResult = orchestratePrimaryComputation();
-if (computationResult !== undefined) {
-    console.log(String(computationResult));
+var fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+var inputHandler = new InputProcessor(fileContent);
+
+function executeSolution() {
+    const totalBitsCount = inputHandler.retrieveNumeric();
+    const binaryStringRepresentation = inputHandler.retrieveString();
+
+    let modulusForZeroBits = 1 + Array.from(binaryStringRepresentation).filter(char => char === '1').length;
+
+    const finalResultArray = generateMultiDimensionalArray(0, totalBitsCount);
+
+    const initialRemainderForZero = computeInitialModuloValue(binaryStringRepresentation, modulusForZeroBits);
+    processBitTypeLogic(totalBitsCount, binaryStringRepresentation, initialRemainderForZero, modulusForZeroBits, '0', finalResultArray);
+
+    let modulusForOneBits = modulusForZeroBits - 2;
+
+    if (modulusForOneBits < 1) {
+        return finalResultArray.join("\n");
+    }
+
+    const initialRemainderForOne = computeInitialModuloValue(binaryStringRepresentation, modulusForOneBits);
+    processBitTypeLogic(totalBitsCount, binaryStringRepresentation, initialRemainderForOne, modulusForOneBits, '1', finalResultArray);
+
+    return finalResultArray.join("\n");
 }
+
+var programOutput = executeSolution();
+if (programOutput !== undefined) console.log(String(programOutput));

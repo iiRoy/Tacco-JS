@@ -1,27 +1,22 @@
-function calculateAggregateValue(sourceData) {
-    const dataSegments = sourceData.split('\n');
-    const [, secondParamStr] = dataSegments[0].split(' ');
-    const referenceDuration = Number(secondParamStr);
+function processInput(dataStream) {
+    const [firstLineContent, secondLineContent] = dataStream.split('\n');
+    const [eventCount, timeLimit] = firstLineContent.split(' ').map(Number);
+    const triggerPoints = secondLineContent.split(' ').map(Number);
 
-    const eventTimings = dataSegments[1].split(' ').map(Number);
+    let cumulativeDuration = 0;
 
-    let cumulativeOutcome = 0;
+    if (eventCount > 0) {
+        cumulativeDuration = Math.min(triggerPoints[0], timeLimit);
 
-    if (eventTimings.length > 0) {
-        cumulativeOutcome += Math.min(referenceDuration, eventTimings[0]);
-
-        const intermediateSum = eventTimings.slice(1).reduce((partialSum, currentMoment, positionIndex) => {
-            const priorMoment = eventTimings[positionIndex];
-            const momentSpan = currentMoment - priorMoment;
-            return partialSum + Math.min(referenceDuration, momentSpan);
+        cumulativeDuration += triggerPoints.slice(1).reduce((acc, currentPoint, index) => {
+            const priorPoint = triggerPoints[index];
+            const intervalSpan = currentPoint - priorPoint;
+            return acc + Math.min(intervalSpan, timeLimit);
         }, 0);
-
-        cumulativeOutcome += intermediateSum;
     }
 
-    cumulativeOutcome += referenceDuration;
-
-    console.log(cumulativeOutcome);
+    cumulativeDuration += timeLimit;
+    console.log(cumulativeDuration);
 }
 
-calculateAggregateValue(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

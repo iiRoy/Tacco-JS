@@ -1,104 +1,90 @@
-const CHARACTER_A = 0;
-const CHARACTER_C = 1;
-const CHARACTER_G = 2;
-const CHARACTER_T = 3;
-const CHARACTER_PLACEHOLDER = 4;
-const TOTAL_CHARACTER_TYPES = 4;
-const TOTAL_DP_STATE_INDICES = TOTAL_CHARACTER_TYPES + 1;
+const solve = (inputData) => {
+    const sequenceLengthTarget = Number(inputData);
+    const moduloConstant = 1000000007;
 
-const MODULO_CONSTANT = 1000000007;
+    const characterToIndexMap = { 'A': 0, 'C': 1, 'G': 2, 'T': 3 };
+    const indexToCharacterMap = ['A', 'C', 'G', 'T'];
+    const placeholderIndex = 4; // Represents a character that doesn't exist yet (for sequences shorter than 3 characters)
 
-function checkThreeCharForbidden(ch1, ch2, ch3) {
-  if (ch1 === CHARACTER_PLACEHOLDER || ch2 === CHARACTER_PLACEHOLDER || ch3 === CHARACTER_PLACEHOLDER) {
-    return false;
-  }
-  return (
-    (ch1 === CHARACTER_A && ch2 === CHARACTER_G && ch3 === CHARACTER_C) ||
-    (ch1 === CHARACTER_A && ch2 === CHARACTER_C && ch3 === CHARACTER_G) ||
-    (ch1 === CHARACTER_G && ch2 === CHARACTER_A && ch3 === CHARACTER_C)
-  );
-}
-
-function checkFourCharForbidden(ch0, ch1, ch2, ch3) {
-  if (ch0 === CHARACTER_PLACEHOLDER || ch1 === CHARACTER_PLACEHOLDER || ch2 === CHARACTER_PLACEHOLDER || ch3 === CHARACTER_PLACEHOLDER) {
-    return false;
-  }
-  return (
-    (ch0 === CHARACTER_A && ch1 === CHARACTER_G && ch3 === CHARACTER_C) ||
-    (ch0 === CHARACTER_A && ch2 === CHARACTER_G && ch3 === CHARACTER_C)
-  );
-}
-
-const computeSequenceCount = (inputValue) => {
-  const desiredLength = Number(inputValue);
-
-  const dynamicProgramTable = Array(desiredLength + 1)
-    .fill(0)
-    .map(() =>
-      Array(TOTAL_DP_STATE_INDICES)
-        .fill(0)
-        .map(() =>
-          Array(TOTAL_DP_STATE_INDICES)
-            .fill(0)
-            .map(() =>
-              Array(TOTAL_DP_STATE_INDICES).fill(0).map(() => Array(TOTAL_DP_STATE_INDICES).fill(0))
+    // dpTable[currentLength][lastCharIdx][secondLastCharIdx][thirdLastCharIdx]
+    // Indices 0-3 for A, C, G, T. Index 4 for placeholderIndex.
+    const dpTable = Array(sequenceLengthTarget + 1).fill(0).map(() =>
+        Array(5).fill(0).map(() =>
+            Array(5).fill(0).map(() =>
+                Array(5).fill(0)
             )
         )
     );
 
-  dynamicProgramTable[0][CHARACTER_PLACEHOLDER][CHARACTER_PLACEHOLDER][CHARACTER_PLACEHOLDER][CHARACTER_PLACEHOLDER] = 1;
+    // Base case: An empty string (length 0) is one valid sequence.
+    // Represented by all placeholderIndex for the last three characters.
+    dpTable[0][placeholderIndex][placeholderIndex][placeholderIndex] = 1;
 
-  for (let currentSequenceLength = 0; currentSequenceLength < desiredLength; ++currentSequenceLength) {
-    for (let prevC0 = 0; prevC0 < TOTAL_DP_STATE_INDICES; ++prevC0) {
-      for (let prevC1 = 0; prevC1 < TOTAL_DP_STATE_INDICES; ++prevC1) {
-        for (let prevC2 = 0; prevC2 < TOTAL_DP_STATE_INDICES; ++prevC2) {
-          for (let prevC3 = 0; prevC3 < TOTAL_DP_STATE_INDICES; ++prevC3) {
-            const currentAccumulatedCount = dynamicProgramTable[currentSequenceLength][prevC0][prevC1][prevC2][prevC3];
-            if (currentAccumulatedCount === 0) {
-              continue;
+    for (let currentLen = 0; currentLen < sequenceLengthTarget; currentLen++) { // Iterate for sequence length currentLen
+        for (let thirdLast = 0; thirdLast <= placeholderIndex; thirdLast++) { // third_last_char_idx
+            for (let secondLast = 0; secondLast <= placeholderIndex; secondLast++) { // second_last_char_idx
+                for (let last = 0; last <= placeholderIndex; last++) { // last_char_idx
+                    if (dpTable[currentLen][last][secondLast][thirdLast] === 0) {
+                        continue; // No sequences of length currentLen end in this state
+                    }
+
+                    for (let nextCharIdx = 0; nextCharIdx < 4; nextCharIdx++) { // Try appending each character
+                        let isTransitionPermitted = true;
+
+                        // The new sequence ends with (thirdLast, secondLast, last, nextCharIdx)
+                        // The last 3 chars are (secondLast, last, nextCharIdx)
+                        // The last 4 chars are (thirdLast, secondLast, last, nextCharIdx)
+
+                        // Check for 'AGC' permutations in the last 3 characters (secondLast, last, nextCharIdx)
+                        // This corresponds to original `next3` checks
+                        if (secondLast !== placeholderIndex && last !== placeholderIndex) {
+                            if ((secondLast === characterToIndexMap['A'] && last === characterToIndexMap['G'] && nextCharIdx === characterToIndexMap['C']) || // AGC
+                                (secondLast === characterToIndexMap['A'] && last === characterToIndexMap['C'] && nextCharIdx === characterToIndexMap['G']) || // ACG
+                                (secondLast === characterToIndexMap['G'] && last === characterToIndexMap['A'] && nextCharIdx === characterToIndexMap['C'])) { // GAC
+                                isTransitionPermitted = false;
+                            }
+                        }
+
+                        // Check for 'AGC' patterns involving the 4th character (thirdLast, secondLast, last, nextCharIdx)
+                        // This corresponds to original `next4` checks
+                        if (thirdLast !== placeholderIndex && secondLast !== placeholderIndex && last !== placeholderIndex) {
+                            if ((thirdLast === characterToIndexMap['A'] && last === characterToIndexMap['G'] && nextCharIdx === characterToIndexMap['C']) || // A_GC (thirdLast, last, nextCharIdx)
+                                (thirdLast === characterToIndexMap['A'] && secondLast === characterToIndexMap['G'] && nextCharIdx === characterToIndexMap['C'])) { // AG_C (thirdLast, secondLast, nextCharIdx)
+                                isTransitionPermitted = false;
+                            }
+                        }
+
+                        if (isTransitionPermitted) {
+                            // Update the DP table for length currentLen+1
+                            // The new state's last three characters are (nextCharIdx, last, secondLast)
+                            // (new_last, new_second_last, new_third_last)
+                            const newLastCharIdx = nextCharIdx;
+                            const newSecondLastCharIdx = last;
+                            const newThirdLastCharIdx = secondLast;
+
+                            dpTable[currentLen + 1][newLastCharIdx][newSecondLastCharIdx][newThirdLastCharIdx] =
+                                (dpTable[currentLen + 1][newLastCharIdx][newSecondLastCharIdx][newThirdLastCharIdx] + dpTable[currentLen][last][secondLast][thirdLast]) % moduloConstant;
+                        }
+                    }
+                }
             }
+        }
+    }
 
-            for (let appendedCharIndex = 0; appendedCharIndex < TOTAL_CHARACTER_TYPES; ++appendedCharIndex) {
-              let nextC0, nextC1, nextC2, nextC3;
-
-              nextC0 = (currentSequenceLength < 3) ? CHARACTER_PLACEHOLDER : prevC1;
-              nextC1 = (currentSequenceLength < 2) ? CHARACTER_PLACEHOLDER : prevC2;
-              nextC2 = (currentSequenceLength < 1) ? CHARACTER_PLACEHOLDER : prevC3;
-              nextC3 = appendedCharIndex;
-
-              let isPermissibleExtension = true;
-
-              if (checkThreeCharForbidden(nextC1, nextC2, nextC3)) {
-                isPermissibleExtension = false;
-              }
-
-              if (isPermissibleExtension && checkFourCharForbidden(nextC0, nextC1, nextC2, nextC3)) {
-                isPermissibleExtension = false;
-              }
-              
-              if (isPermissibleExtension) {
-                dynamicProgramTable[currentSequenceLength + 1][nextC0][nextC1][nextC2][nextC3] =
-                  (dynamicProgramTable[currentSequenceLength + 1][nextC0][nextC1][nextC2][nextC3] + currentAccumulatedCount) % MODULO_CONSTANT;
-              }
+    let totalValidSequences = 0;
+    for (let thirdLast = 0; thirdLast <= placeholderIndex; thirdLast++) {
+        for (let secondLast = 0; secondLast <= placeholderIndex; secondLast++) {
+            for (let last = 0; last <= placeholderIndex; last++) {
+                totalValidSequences = (totalValidSequences + dpTable[sequenceLengthTarget][last][secondLast][thirdLast]) % moduloConstant;
             }
-          }
         }
-      }
     }
-  }
 
-  let finalCount = 0;
-  for (let c0 = 0; c0 < TOTAL_DP_STATE_INDICES; ++c0) {
-    for (let c1 = 0; c1 < TOTAL_DP_STATE_INDICES; ++c1) {
-      for (let c2 = 0; c2 < TOTAL_DP_STATE_INDICES; ++c2) {
-        for (let c3 = 0; c3 < TOTAL_DP_STATE_INDICES; ++c3) {
-          finalCount = (finalCount + dynamicProgramTable[desiredLength][c0][c1][c2][c3]) % MODULO_CONSTANT;
-        }
-      }
-    }
-  }
-
-  console.log(finalCount);
+    return totalValidSequences;
 };
 
-computeSequenceCount(require('fs').readFileSync('/dev/stdin', 'UTF-8'));
+const processInputAndOutput = (inputContent) => {
+    console.log(solve(inputContent));
+};
+
+processInputAndOutput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

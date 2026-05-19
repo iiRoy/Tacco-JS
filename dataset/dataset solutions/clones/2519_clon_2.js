@@ -1,29 +1,23 @@
-/*
- * This module defines a function to process a numerical argument
- * and return a calculated outcome based on its internal properties.
- * It serves as a foundational utility for numerical transformations.
- */
-var computeOutcome = function ( incomingVal )
-{
-    // Check for a specific initial condition: if the provided value is unity.
-    if  (  incomingVal   ===   1  )
-    {
-        return  1;  // Return the value itself for this base case.
+var processValue = function (incomingData) {
+    // This function calculates a specific value based on the provided numerical input.
+
+    // First, check for a special condition where the input is exactly one.
+    if (incomingData === 1) {
+        return 1; // If the input is 1, the function immediately returns 1.
     }
 
-    // Determine if the incoming numerical value is an even number.
-    if  (  incomingVal  %  2  ===  0  )
-    {
-        // For even numbers, perform a specific division operation sequence.
-        return   (  incomingVal  /  2  )  /  incomingVal;
+    // Next, determine if the incoming numerical data is an even number.
+    if (incomingData % 2 === 0) {
+        // For even numbers, perform a calculation:
+        // Divide the input by two, then divide that result by the original input.
+        return (incomingData / 2) / incomingData;
+    } else {
+        // If the number is not even (i.e., it's odd), perform a different calculation:
+        // Divide the input by two, add one to that result, and then divide the sum by the original input.
+        return (incomingData / 2 + 1) / incomingData;
     }
-    else
-    {
-        // For odd numbers, apply an alternative numerical transformation.
-        return   (  incomingVal  /  2  +  1  )  /  incomingVal;
-    }
-}
+};
 
-// Example invocation: Process an uninitialized numerical entity.
-// Note: 'initialValueToProcess' would need to be declared and assigned a value elsewhere for execution.
-computeOutcome (  initialValueToProcess  );
+// This line invokes the processing function with an external variable named 'input'.
+// The 'input' variable is assumed to be defined in the surrounding scope or environment.
+processValue(input);

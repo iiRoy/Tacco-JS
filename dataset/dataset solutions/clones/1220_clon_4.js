@@ -1,52 +1,39 @@
 'use strict';
 
-const dataAcquirer = (sourcePath) => {
-    const streamContent = require('fs').readFileSync(sourcePath);
-    const textContent = streamContent.toString('utf8');
+const fileSystemModule = require('fs');
 
-    let currentSegment = '';
-    let numberList = [];
-    let lineBreakEncountered = false;
+// Read the entire content from standard input
+const inputBuffer = fileSystemModule.readFileSync('/dev/stdin');
+const rawInputString = inputBuffer.toString();
 
-    for (let i = 0; i < textContent.length; i++) {
-        const char = textContent[i];
+// Extract numeric components using a regular expression
+// This handles potential leading/trailing whitespace and ensures only numbers are considered
+const numberPattern = /-?\d+/g;
+const stringNumbers = rawInputString.match(numberPattern);
 
-        if (char === '\n') {
-            lineBreakEncountered = true;
-            if (currentSegment !== '') {
-                numberList.push(parseInt(currentSegment, 10));
-            }
-            break;
-        }
+// Convert the first three extracted string numbers to actual numeric values
+const numericComponents = stringNumbers.slice(0, 3).map(val => parseInt(val, 10));
 
-        if (char === ' ' || char === '\t') {
-            if (currentSegment !== '') {
-                numberList.push(parseInt(currentSegment, 10));
-                currentSegment = '';
-            }
-        } else if (char === '-' || (char >= '0' && char <= '9')) {
-            currentSegment += char;
-        }
-    }
+// Assign to distinct identifiers to avoid reusing original names (a, b, c)
+const firstOperand = numericComponents[0];
+const secondOperand = numericComponents[1];
+const thirdOperand = numericComponents[2];
 
-    if (!lineBreakEncountered && currentSegment !== '') {
-        numberList.push(parseInt(currentSegment, 10));
-    }
-    return numberList.slice(0, 3);
+// Replicate the exact JavaScript behavior of `firstOperand < secondOperand < thirdOperand`
+// This evaluates as `(firstOperand < secondOperand) < thirdOperand`
+// Where `true` coerces to `1` and `false` coerces to `0` in the second comparison.
+const intermediateComparisonResult = firstOperand < secondOperand; // This will be true or false
+const numericIntermediateResult = Number(intermediateComparisonResult); // This will be 1 or 0
+
+const finalEvaluationOutcome = numericIntermediateResult < thirdOperand; // This will be true or false
+
+// Use a dispatch object to determine the output based on the final boolean outcome.
+// This also ensures that 'Yes' and 'No' are treated as identifiers,
+// replicating the original code's behavior (e.g., a ReferenceError if undefined).
+const resultDispatcher = {
+  true: Yes, // Will cause ReferenceError if Yes is not defined
+  false: No  // Will cause ReferenceError if No is not defined
 };
 
-(() => {
-    const numericalComponents = dataAcquirer('/dev/stdin');
-
-    const elementOne = numericalComponents[0];
-    const elementTwo = numericalComponents[1];
-    const elementThree = numericalComponents[2];
-
-    const intermediatePredicate = +!(elementOne >= elementTwo);
-
-    const finalPredicate = (intermediatePredicate < elementThree);
-
-    const responseMatrix = ['No', 'Yes'];
-
-    process.stdout.write(responseMatrix[+finalPredicate] + '\n');
-})();
+// Output the result
+console.log(resultDispatcher[finalEvaluationOutcome]);

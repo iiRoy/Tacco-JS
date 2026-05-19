@@ -1,104 +1,74 @@
-const fileSystem = require('fs'); // Import the Node.js file system module for input operations.
+const INPUT_FILE_PATH = '/dev/stdin';
+const MODULO_VALUE = 100000;
 
-// Define a constant for the modulo operation to improve readability and maintainability.
-const RESULT_MODULO = 100000;
+// Helper function for robust integer parsing
+const parseInteger = (inputString) => parseInt(inputString, 10);
 
-// Function to safely parse an integer from a string.
-// This is a common utility in robust parsing.
-function parseInteger(strValue) {
-    const parsed = parseInt(strValue, 10);
-    if (isNaN(parsed)) {
-        // Handle cases where conversion fails, perhaps by throwing an error or returning a default.
-        // For competitive programming, we often assume valid input, but for Type III,
-        // adding robustness demonstrates complexity.
-        throw new Error(`Failed to parse integer from: "${strValue}"`);
-    }
-    return parsed;
+// Read raw input data from the specified path
+const rawInputData = require('fs').readFileSync(INPUT_FILE_PATH, 'utf8');
+const inputLines = rawInputData.trim().split("\n");
+
+// Extract and parse dimensions (m and n) from the first line
+const dimensionStrings = inputLines.shift().split(" ");
+const numRows = parseInteger(dimensionStrings[0]);
+const numCols = parseInteger(dimensionStrings[1]);
+
+// Populate the array of segment values (si)
+const segmentValues = [];
+// The loop runs 'numRows - 1' times as per original logic
+for (let segmentIndex = 0; segmentIndex < numRows - 1; segmentIndex++) {
+    segmentValues.push(parseInteger(inputLines.shift()));
 }
 
-try {
-    // Read the entire standard input as a UTF-8 string.
-    // This is the raw data provided to the script.
-    const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-
-    // Split the input content into individual lines, trim whitespace from each line,
-    // and filter out any empty lines that might result from extra newlines.
-    const processedInputLines = rawInputContent.trim().split('\n').filter(line => line.length > 0);
-
-    // The first line contains grid dimensions (rows and columns).
-    // Extract and parse these values.
-    const dimensionTokens = processedInputLines.shift().split(' ').map(parseInteger);
-    const numGridRows = dimensionTokens[0]; // Represents 'm' from original code.
-    const numGridCols = dimensionTokens[1]; // Represents 'n' from original code.
-
-    // Basic validation for grid dimensions.
-    if (numGridRows < 1 || numGridCols < 1) {
-        console.error("Error: Grid dimensions must be positive.");
-        process.exit(1); // Exit with an error code.
-    }
-
-    // The next (m-1) lines contain the "cost" or "value" associated with each path segment.
-    // Store these in an array.
-    const pathSegmentValues = [];
-    for (let currentSegmentIndex = 0; currentSegmentIndex < numGridRows - 1; currentSegmentIndex++) {
-        pathSegmentValues.push(parseInteger(processedInputLines.shift()));
-    }
-
-    // The following 'n' lines contain the movement instructions.
-    // Each instruction indicates a direction and magnitude of movement.
-    const movementCommandSequence = [];
-    for (let commandIndex = 0; commandIndex < numGridCols; commandIndex++) {
-        movementCommandSequence.push(parseInteger(processedInputLines.shift()));
-    }
-
-    // Initialize variables for tracking the accumulated score and current position.
-    let totalAccumulatedScore = 0;
-    let currentPathIndex = 0; // Represents 'i' from original code.
-
-    // Iterate through each movement command in the sequence.
-    for (const singleMoveInstruction of movementCommandSequence) {
-        // Determine the direction of movement based on the instruction's sign.
-        // Positive means move right (increment index), negative means move left (decrement index).
-        const directionFactor = (singleMoveInstruction > 0) ? 1 : -1;
-
-        // Get the absolute number of steps to take for this instruction.
-        let numberOfSteps = Math.abs(singleMoveInstruction);
-
-        // Execute the movement for the specified number of steps.
-        for (let stepCounter = 0; stepCounter < numberOfSteps; stepCounter++) {
-            // Check for valid index boundaries before accessing the array.
-            // This adds robustness, although problem constraints usually ensure valid moves.
-            if (currentPathIndex < 0 || currentPathIndex >= pathSegmentValues.length) {
-                // This indicates an out-of-bounds access, which shouldn't happen with valid input.
-                // Log an error and potentially break or throw.
-                console.error(`Warning: Attempted to access path segment out of bounds at index ${currentPathIndex}.`);
-                // Depending on requirements, might break here or adjust currentPathIndex.
-                // For this problem, we'll assume valid input and let the logic proceed.
-                // If it happened, it would likely mean a problem with the input data or problem understanding.
-            }
-
-            // Apply the score accumulation logic based on direction.
-            // If moving right (directionFactor === 1):
-            //   Add the value of the current segment *before* moving past it.
-            // If moving left (directionFactor === -1):
-            //   First, move to the new segment, then add its value.
-            if (directionFactor === 1) {
-                // Add the cost of the segment we are *currently on* before advancing.
-                totalAccumulatedScore += pathSegmentValues[currentPathIndex];
-                currentPathIndex++; // Move to the next segment.
-            } else { // Moving left
-                currentPathIndex--; // First, move to the previous segment.
-                // Then, add the cost of the segment we have just arrived at.
-                totalAccumulatedScore += pathSegmentValues[currentPathIndex];
-            }
-        }
-    }
-
-    // Output the final accumulated score modulo the defined constant.
-    console.log(totalAccumulatedScore % RESULT_MODULO);
-
-} catch (error) {
-    // Catch any errors that occurred during file reading or parsing.
-    console.error("An error occurred during script execution:", error.message);
-    process.exit(1); // Exit with an error code to indicate failure.
+// Populate the array of movement instructions (ai)
+const movementInstructions = [];
+for (let instructionIndex = 0; instructionIndex < numCols; instructionIndex++) {
+    movementInstructions.push(parseInteger(inputLines.shift()));
 }
+
+let accumulatedSum = 0;
+let currentTrackPosition = 0; // Represents the 'i' variable from the original code
+
+// Helper function to calculate the state after a single step
+// This encapsulates the core movement and sum update logic
+const calculateNextStateAfterStep = (moveDirection, currentPos, segments, currentTotal) => {
+    let newPos = currentPos;
+    let newTotal = currentTotal;
+
+    // Add value of current segment if moving forward
+    if (moveDirection === 1) {
+        newTotal += segments[newPos];
+    }
+    
+    // Update position
+    newPos += moveDirection;
+    
+    // Add value of new segment if moving backward
+    if (moveDirection === -1) {
+        newTotal += segments[newPos];
+    }
+    
+    return { updatedPosition: newPos, updatedSum: newTotal };
+};
+
+// Process each movement instruction
+for (const instructionMagnitude of movementInstructions) {
+    // Determine the direction multiplier (1 for positive, -1 for negative)
+    const directionMultiplier = (instructionMagnitude > 0) ? 1 : -1;
+    let remainingSteps = Math.abs(instructionMagnitude);
+
+    // Execute steps based on the instruction magnitude
+    while (remainingSteps--) {
+        const stepResult = calculateNextStateAfterStep(
+            directionMultiplier,
+            currentTrackPosition,
+            segmentValues,
+            accumulatedSum
+        );
+        currentTrackPosition = stepResult.updatedPosition;
+        accumulatedSum = stepResult.updatedSum;
+    }
+}
+
+// Output the final sum modulo MODULO_VALUE
+console.log(accumulatedSum % MODULO_VALUE);

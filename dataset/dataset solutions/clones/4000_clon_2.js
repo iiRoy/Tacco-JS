@@ -1,39 +1,32 @@
-/*
- * This module processes input data to calculate a specific grid-related value.
- * The calculation determines the number of 'inner' cells in a rectangular grid
- * after removing a border of two units from each side.
- */
-function SolveGridProblem(sourceData) {
-  // Parse the input string into two BigInt values representing grid dimensions.
-  // The input is expected to be two space-separated numbers.
-  const [horizontalExtent, verticalExtent] = sourceData
-    .split(" ") // Split the string by space
-    .map(BigInt); // Convert each part to a BigInt
+// This function is designed to process a given string of raw input.
+function ProcessInput(rawData) {
+  // The input string is split by space, and each part is converted into a BigInt.
+  // These two BigInt values are then destructured into 'firstNum' and 'secondNum'.
+  const [firstNum, secondNum] = rawData.split(" ").map(BigInt);
 
-  // Perform the core calculation based on the grid dimensions.
-  // The logic handles edge cases where one or both dimensions are small (1 or 2).
-  const calculatedResult = (
-    (horizontalExtent === 1n || verticalExtent === 1n) // Check if either dimension is 1
-      ? (
-          (horizontalExtent === verticalExtent) // If both are 1 (implies 1x1 grid)
-            ? 0n // Result is zero for a 1x1 grid
-            : (horizontalExtent === 1n) // If only horizontal extent is 1
-              ? verticalExtent - 2n // Adjust vertical extent, effectively 0 if vertical is 1 or 2
-              : horizontalExtent - 2n // If only vertical extent is 1, adjust horizontal extent
-        )
-      : horizontalExtent * verticalExtent - // For larger grids, calculate total area
-        ((horizontalExtent - 2n) * 2n + (verticalExtent - 2n) * 2n) - // Subtract perimeter-like sections
-        4n // Subtract corners
+  // A complex conditional expression is evaluated to determine the final output value.
+  // The result of this evaluation is then converted to a string and printed to the console.
+  console.log(
+    (
+      (firstNum === 1n || secondNum === 1n) // Check if either of the numbers is 1n.
+        ? ( // If true, execute this block.
+            (firstNum === secondNum) // Check if both numbers are equal (implies both are 1n here).
+              ? 0n // If both are 1n, the result is 0n.
+              : (firstNum === 1n) // If not equal, check if the first number is 1n.
+                ? secondNum - 2n // If firstNum is 1n, calculate secondNum - 2n.
+                : firstNum - 2n // Otherwise (secondNum is 1n), calculate firstNum - 2n.
+          )
+        : ( // If neither number is 1n, execute this block.
+            firstNum * secondNum - ( // Calculate product minus a complex subtraction.
+              (firstNum - 2n) * 2n + (secondNum - 2n) * 2n // This part calculates a specific sum.
+            ) - 4n // Subtract a final 4n from the total.
+          )
+    ).toString() // Convert the final BigInt result to a string.
   );
-
-  // Output the final computed value as a string to the console.
-  console.log(calculatedResult.toString());
 }
 
-// Execute the main problem solver with data read from standard input.
-// The input is read as a UTF-8 string and any leading/trailing whitespace is removed.
-SolveGridProblem(
-  require("fs")
-    .readFileSync("/dev/stdin", "utf8") // Read file from standard input
-    .trim() // Remove whitespace
-);
+// The program starts by reading the content of standard input.
+// It uses Node.js's 'fs' module to read the file '/dev/stdin' with 'utf8' encoding.
+// Any leading or trailing whitespace is removed using '.trim()'.
+// Finally, the 'ProcessInput' function is called with the prepared input string.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

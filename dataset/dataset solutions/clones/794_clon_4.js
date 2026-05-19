@@ -1,53 +1,59 @@
-const SECONDS_PER_FULL_DAY = 86400;
+const inputReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-function parseTime(timeString) {
-    const components = timeString.split(':');
-    const h = parseInt(components[0], 10);
-    const m = parseInt(components[1], 10);
-    const s = parseInt(components[2], 10);
-    return h * 3600 + m * 60 + s;
-}
+let storedLines = [];
+inputReader.on('line', (currentLine) => {
+    storedLines.push(currentLine);
+});
 
-function processAllIntervals() {
+inputReader.on('close', () => {
+    processAllEntries(storedLines);
+});
+
+function processAllEntries(allInputLines) {
+    let currentLineIndex = 0;
+    const totalDaySeconds = 24 * 60 * 60;
+
+    const convertTimeToSeconds = (timeString) => {
+        const [hourStr, minuteStr, secondStr] = timeString.split(':');
+        return parseInt(hourStr) * 3600 + parseInt(minuteStr) * 60 + parseInt(secondStr);
+    };
+
     while (true) {
-        const eventsCountLine = readline();
-        const numEvents = parseInt(eventsCountLine, 10);
-
-        if (numEvents === 0) {
+        const numberOfActivities = parseInt(allInputLines[currentLineIndex++]);
+        if (numberOfActivities === 0) {
             break;
         }
 
-        const timelineMarkers = [];
+        let activityEvents = [];
 
-        for (let idx = 0; idx < numEvents; ++idx) {
-            const timeIntervalString = readline();
-            const [startMomentString, endMomentString] = timeIntervalString.split(' ');
+        for (let activityIndex = 0; activityIndex < numberOfActivities; activityIndex++) {
+            const [startString, endString] = allInputLines[currentLineIndex++].split(' ');
+            const startSecond = convertTimeToSeconds(startString);
+            const endSecond = convertTimeToSeconds(endString);
 
-            const startMomentSeconds = parseTime(startMomentString);
-            const endMomentSeconds = parseTime(endMomentString);
-
-            timelineMarkers.push({ timePoint: startMomentSeconds, typeOfChange: 1 });
-            timelineMarkers.push({ timePoint: endMomentSeconds, typeOfChange: -1 });
+            activityEvents.push({ moment: startSecond, type: 1 });
+            activityEvents.push({ moment: endSecond, type: -1 });
         }
 
-        timelineMarkers.sort((eventA, eventB) => {
-            if (eventA.timePoint !== eventB.timePoint) {
-                return eventA.timePoint - eventB.timePoint;
+        activityEvents.sort((eventA, eventB) => {
+            if (eventA.moment !== eventB.moment) {
+                return eventA.moment - eventB.moment;
             }
-            return eventA.typeOfChange - eventB.typeOfChange;
+            return eventB.type - eventA.type;
         });
 
-        let currentSimultaneousEvents = 0;
-        let maximumSimultaneousEvents = 0;
+        let currentConcurrentCount = 0;
+        let maximumConcurrentCount = 0;
 
-        for (const marker of timelineMarkers) {
-            currentSimultaneousEvents += marker.typeOfChange;
-            if (currentSimultaneousEvents > maximumSimultaneousEvents) {
-                maximumSimultaneousEvents = currentSimultaneousEvents;
+        for (const eventItem of activityEvents) {
+            currentConcurrentCount += eventItem.type;
+            if (currentConcurrentCount > maximumConcurrentCount) {
+                maximumConcurrentCount = currentConcurrentCount;
             }
         }
-        console.log(maximumSimultaneousEvents);
+        console.log(maximumConcurrentCount);
     }
 }
-
-processAllIntervals();

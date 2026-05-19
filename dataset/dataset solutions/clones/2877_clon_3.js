@@ -1,84 +1,44 @@
+const TARGET_PATTERN = "ABC";
+const REPLACEMENT_PATTERN = "BCA";
+const PATTERN_LENGTH = TARGET_PATTERN.length; // This is 3
+const REWIND_OFFSET = PATTERN_LENGTH - 1; // This is 2, for re-checking overlapping patterns
+
 function processInputString(rawData) {
-    // Declare constants for the pattern matching and replacement operations.
-    // Using constants enhances readability and maintainability.
-    const TARGET_SEQUENCE_PATTERN = "ABC";
-    const REPLACEMENT_STRING_VALUE = "BCA";
-    const PATTERN_LENGTH = TARGET_SEQUENCE_PATTERN.length; // This will be 3.
+    let currentString = rawData.trim();
+    let stringLength = currentString.length;
+    let replacementCount = 0;
 
-    // Robust input handling: Ensure rawData is treated as a string and trimmed.
-    // Handles cases where rawData might be null, undefined, or not a string.
-    let currentWorkingText = String(rawData || "").trim();
-
-    // Cache the length of the string for performance within the loop.
-    let evaluatedTextLength = currentWorkingText.length;
-
-    // Initialize a counter to track the number of successful transformations.
-    let transformationCounter = 0;
-
-    // Early exit guard clause: If the text is shorter than the pattern, no matches are possible.
-    if (evaluatedTextLength < PATTERN_LENGTH) {
-        console.log(0); // Output zero as no transformations occurred.
-        return; // Terminate function execution.
+    // Early exit if the string is too short to contain the pattern
+    if (stringLength < PATTERN_LENGTH) {
+        console.log(replacementCount);
+        return;
     }
 
-    // Iterate through the string to find occurrences of the target pattern.
-    // The loop condition ensures we always have enough characters remaining to form the pattern.
-    for (let charIndex = 0; charIndex <= evaluatedTextLength - PATTERN_LENGTH; charIndex++) {
-        // Extract a segment of the string at the current position for comparison.
-        const segmentToCheck = currentWorkingText.substring(charIndex, charIndex + PATTERN_LENGTH);
+    // Iterate through the string, checking for the pattern
+    // The loop condition ensures we don't go out of bounds when slicing
+    for (let currentIndex = 0; currentIndex <= stringLength - PATTERN_LENGTH; currentIndex++) {
+        // Extract a segment of the string to compare with the target pattern
+        const segmentToCheck = currentString.slice(currentIndex, currentIndex + PATTERN_LENGTH);
 
-        // Check if the extracted segment exactly matches the target pattern.
-        if (segmentToCheck === TARGET_SEQUENCE_PATTERN) {
-            // If a match is found, perform the string transformation.
+        if (segmentToCheck === TARGET_PATTERN) {
+            // If the pattern is found, perform the replacement
+            const prefixSegment = currentString.slice(0, currentIndex);
+            const suffixSegment = currentString.slice(currentIndex + PATTERN_LENGTH);
+            currentString = prefixSegment + REPLACEMENT_PATTERN + suffixSegment;
 
-            // 1. Isolate the portion of the string preceding the matched pattern.
-            const leadingSegment = currentWorkingText.slice(0, charIndex);
+            replacementCount++;
 
-            // 2. Isolate the portion of the string following the matched pattern.
-            const trailingSegment = currentWorkingText.slice(charIndex + PATTERN_LENGTH);
-
-            // 3. Concatenate the segments with the replacement string in between.
-            // This forms the new state of the string after one transformation.
-            currentWorkingText = leadingSegment + REPLACEMENT_STRING_VALUE + trailingSegment;
-
-            // Increment the total count of transformations.
-            transformationCounter++;
-
-            // Crucial step for handling overlapping patterns:
-            // After a replacement (e.g., "ABC" -> "BCA"), the 'B' from the new 'BCA'
-            // could potentially be the start of a new "ABC" sequence.
-            // By decrementing the index, we effectively re-evaluate the character
-            // at the start of the *new* 'BCA' and potentially the character before it.
-            // For PATTERN_LENGTH = 3, this means charIndex -= 2.
-            // The loop's natural increment (charIndex++) will then move it one position forward relative to the adjusted index.
-            // This ensures patterns like "AABC" correctly become "ABCA" then "BCABCA", finding both "ABC"s.
-            charIndex -= (PATTERN_LENGTH - 1);
-
-            // Note: In this specific problem, PATTERN_LENGTH and REPLACEMENT_STRING_VALUE.length are the same (3).
-            // If they were different, 'evaluatedTextLength' would need to be updated here:
-            // evaluatedTextLength = currentWorkingText.length;
+            // Adjust the index to re-evaluate the modified part of the string.
+            // This is crucial for handling overlapping patterns (e.g., "ABABC" -> "ABCA" -> "BCAA").
+            // The original code uses i -= 2, which corresponds to PATTERN_LENGTH - 1.
+            currentIndex -= REWIND_OFFSET;
+            // Note: stringLength does not need to be updated here because TARGET_PATTERN and REPLACEMENT_PATTERN
+            // have the same length (3). If lengths differed, stringLength = currentString.length; would be necessary.
         }
     }
 
-    // Output the final tally of transformations.
-    console.log(transformationCounter);
+    console.log(replacementCount);
 }
 
-// --- Application Entry Point ---
-// This block handles reading input from the standard input stream,
-// which is common in competitive programming environments.
-try {
-    // Attempt to read the entire content from /dev/stdin synchronously.
-    // '/dev/stdin' is a standard Unix path for the standard input.
-    // 'utf8' specifies the character encoding for the input.
-    const fileInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-
-    // Invoke the main processing function with the obtained input.
-    processInputString(fileInputContent);
-} catch (errorCondition) {
-    // If any error occurs during file reading or initial processing,
-    // log the error details for debugging purposes.
-    console.error("An issue was encountered while processing input:", errorCondition.message);
-    // As a fallback, output 0 transformations if input cannot be read or processed.
-    console.log(0);
-}
+// Standard input reading for competitive programming environments
+processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));

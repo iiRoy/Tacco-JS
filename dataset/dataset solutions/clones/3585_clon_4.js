@@ -1,41 +1,43 @@
-const transposeMatrix = (gridData) => {
-    if (!gridData || gridData.length === 0 || gridData[0].length === 0) {
-        return [];
-    }
-    return gridData[0].map((_, columnPosition) => gridData.map(rowLine => rowLine[columnPosition]));
-};
+function main(inputString) {
+    const inputLines = inputString.trim().split("\n");
+    const [initialGridHeight, initialGridWidth] = inputLines[0].split(" ").map(Number);
+    const rawGridRows = inputLines.slice(1);
 
-function processGridData(inputTxt) {
-    const allInputLines = inputTxt.trim().split('\n');
-    const [dimRowsStr, dimColsStr] = allInputLines[0].split(' ');
-    const initialGridHeight = parseInt(dimRowsStr, 10);
-    const initialGridWidth = parseInt(dimColsStr, 10);
+    const characterMatrix = rawGridRows.map(rowText => rowText.split(''));
 
-    let currentCharacterMatrix = allInputLines.slice(1).map(lineContent => lineContent.split(''));
+    const getTransposedMatrix = (matrixToTranspose) => {
+        if (matrixToTranspose.length === 0 || matrixToTranspose[0].length === 0) {
+            return [];
+        }
+        const rowCount = matrixToTranspose.length;
+        const colCount = matrixToTranspose[0].length;
+        const transposedResult = Array.from({ length: colCount }, () => Array(rowCount).fill(null));
+        for (let rIdx = 0; rIdx < rowCount; rIdx++) {
+            for (let cIdx = 0; cIdx < colCount; cIdx++) {
+                transposedResult[cIdx][rIdx] = matrixToTranspose[rIdx][cIdx];
+            }
+        }
+        return transposedResult;
+    };
 
-    const rowsWithoutDashes = currentCharacterMatrix.filter(rowArray => rowArray.some(cellChar => cellChar === '#'));
+    const hasHashCharacter = (lineSegment) => lineSegment.some(charElement => charElement === '#');
 
-    if (rowsWithoutDashes.length === 0) {
-        return "";
-    }
+    const rowsWithoutEmpty = characterMatrix.filter(hasHashCharacter);
 
-    const transposedCharacterMatrix = transposeMatrix(rowsWithoutDashes);
+    const columnsAsRows = getTransposedMatrix(rowsWithoutEmpty);
 
-    const colsWithoutDashesTransposed = transposedCharacterMatrix.filter(colArray => colArray.some(cellChar => cellChar === '#'));
+    const columnsWithoutEmpty = columnsAsRows.filter(hasHashCharacter);
 
-    const finalRenderedMatrix = transposeMatrix(colsWithoutDashesTransposed);
+    const finalProcessedMatrix = getTransposedMatrix(columnsWithoutEmpty);
 
-    if (finalRenderedMatrix.length === 1) {
-        return finalRenderedMatrix[0].filter(cellChar => cellChar === '#').join('');
-    } else if (finalRenderedMatrix.length === 0) {
-        return '';
+    if (finalProcessedMatrix.length === 1) {
+        const singleResultRow = finalProcessedMatrix[0];
+        const hashOnlyCharacters = singleResultRow.filter(charItem => charItem === '#');
+        console.log(hashOnlyCharacters.join(''));
     } else {
-        return finalRenderedMatrix.map(rowArray => rowArray.join('')).join('\n');
+        const stringifiedRows = finalProcessedMatrix.map(rowArray => rowArray.join(''));
+        console.log(stringifiedRows.join('\n'));
     }
 }
 
-const acquireExternalData = require('fs').readFileSync;
-const inputSourcePath = '/dev/stdin';
-
-const systemInput = acquireExternalData(inputSourcePath, 'utf8');
-console.log(processGridData(systemInput));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,20 +1,17 @@
-function processInputData(rawData) {
-    const inputParts = rawData.split('\n');
-    const maxLen = Number(inputParts[0]);
-    const charSequence = inputParts[1];
-    const charIdx = Number(inputParts[2]);
+function main(inputData) {
+    const inputLines = inputData.split('\n');
+    const charLimit = Number(inputLines[0]);
+    const sourceText = inputLines[1];
+    const keyIndex = Number(inputLines[2]);
 
-    const specificChar = charSequence.charAt(charIdx);
+    const referenceCharacter = sourceText[keyIndex];
 
-    const effectiveSequence = charSequence.slice(0, maxLen);
-    
-    const escapedSpecificChar = specificChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    
-    const replacementPattern = new RegExp(`[^${escapedSpecificChar}]`, 'g');
-    
-    const finalResult = effectiveSequence.replace(replacementPattern, '*');
-    
-    console.log(finalResult);
+    const processedCharacters = Array.from({ length: charLimit }, (_, index) => {
+        const currentCharacter = sourceText[index];
+        return currentCharacter === referenceCharacter ? currentCharacter : '*';
+    });
+
+    console.log(processedCharacters.join(''));
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

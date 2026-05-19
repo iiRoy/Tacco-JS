@@ -1,25 +1,23 @@
-globalInput.resume();
-globalInput.setEncoding('utf8');
-globalInput.on('data',
-  // Listener for incoming data segments
-  function (inputSegment) {
+process.stdin.resume(); // Start reading input from the standard input stream.
+process.stdin.setEncoding('utf8'); // Configure the input stream to use UTF-8 encoding.
 
-    // Split the received string by spaces to get individual numeric parts
-    let valueParts = inputSegment.split(" ");
+// Attach an event listener for incoming data chunks.
+process.stdin.on('data', function (inputSegment) {
+  // Split the received data string by spaces to get individual components.
+  let parsedValues = inputSegment.split(" ");
 
-    // Convert the first part to an integer, representing the first dimension
-    let firstDimension = Number.parseInt(valueParts[0], 10);
+  // Convert the first component to an integer, representing the initial measurement.
+  let firstDimension = parseInt(parsedValues[0]);
 
-    // Convert the second part to an integer, representing the second dimension
-    let secondDimension = Number.parseInt(valueParts[1], 10);
+  // Convert the second component to an integer, representing the subsequent measurement.
+  let secondDimension = parseInt(parsedValues[1]);
 
-    // Calculate the area using the two dimensions
-    let calculatedArea = firstDimension * secondDimension;
+  // Compute the product of the two dimensions.
+  let calculatedSurface = firstDimension * secondDimension;
 
-    // Calculate the perimeter based on the dimensions
-    let perimeterValue = 2 * (firstDimension + secondDimension);
+  // Compute twice the sum of the two dimensions.
+  let totalPerimeter = 2 * (firstDimension + secondDimension);
 
-    // Output the calculated area and perimeter, separated by a space
-    console.log(calculatedArea + " " + perimeterValue);
-  }
-);
+  // Output the calculated surface and perimeter, separated by a space.
+  console.log(calculatedSurface + " " + totalPerimeter);
+});

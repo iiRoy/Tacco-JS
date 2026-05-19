@@ -1,71 +1,35 @@
-const sourceMaterial = require('node:fs').readFileSync(0, 'utf8');
-const lineFragments = sourceMaterial.trim().split('\n');
-let fragmentPointer = 0;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = (rawData.trim()).split("\n");
 
-function extractNumber() {
-    return Number(lineFragments[fragmentPointer++]);
-}
-
-function extractNumberSequence() {
-    return lineFragments[fragmentPointer++].split(' ').map(Number);
-}
-
-function orderNumericsDescending(collection) {
-    const workingCopy = collection.slice();
-    const elementCount = workingCopy.length;
-
-    for (let outer = 0; outer < elementCount - 1; outer++) {
-        let largestIndex = outer;
-        for (let inner = outer + 1; inner < elementCount; inner++) {
-            if (workingCopy[inner] > workingCopy[largestIndex]) {
-                largestIndex = inner;
-            }
-        }
-        if (largestIndex !== outer) {
-            const temporary = workingCopy[outer];
-            workingCopy[outer] = workingCopy[largestIndex];
-            workingCopy[largestIndex] = temporary;
-        }
-    }
-    return workingCopy;
-}
-
-function analyzeScenario(baseCount, baseItems, supplementalItems) {
-    let primarySum = 0;
-    for (let index = 0; index < baseItems.length; ++index) {
-        primarySum += baseItems[index];
+while (true) {
+    var initialCount = parseInt(lineSegments.shift(), 10);
+    if (initialCount === 0) {
+        break;
     }
 
-    const sortedSupplemental = orderNumericsDescending(supplementalItems);
+    var baseValues = lineSegments.shift().split(" ").map(Number);
+    var adjustmentValues = lineSegments.shift().split(" ").map(Number);
 
-    let currentBestProduct = primarySum * baseCount;
+    var initialBaseSum = baseValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-    function exploreAdditions(currentIterationIndex, currentCumulativeSum, currentEffectiveCount, currentOptimalProduct) {
-        const potentialProduct = currentCumulativeSum * currentEffectiveCount;
-        const updatedOptimalProduct = (potentialProduct > currentOptimalProduct) ? potentialProduct : currentOptimalProduct;
+    adjustmentValues.sort((a, b) => b - a);
 
-        if (currentIterationIndex === sortedSupplemental.length) {
-            return updatedOptimalProduct;
-        }
+    var cumulativeAdjustments = adjustmentValues.reduce((acc, val) => {
+        const lastCumulative = acc.length > 0 ? acc[acc.length - 1] : 0;
+        acc.push(lastCumulative + val);
+        return acc;
+    }, []);
 
-        const nextCumulativeSum = currentCumulativeSum + sortedSupplemental[currentIterationIndex];
-        const nextEffectiveCount = currentEffectiveCount - 1;
+    var allPossibleSums = [initialBaseSum].concat(
+        cumulativeAdjustments.map(cumAdj => initialBaseSum + cumAdj)
+    );
 
-        return exploreAdditions(
-            currentIterationIndex + 1,
-            nextCumulativeSum,
-            nextEffectiveCount,
-            updatedOptimalProduct
-        );
-    }
+    var allPossibleCounts = Array.from({ length: adjustmentValues.length + 1 }, (_, index) => initialCount - index);
 
-    return exploreAdditions(0, primarySum, baseCount, currentBestProduct);
-}
+    var peakProduct = allPossibleSums.reduce((currentMaximum, currentSum, index) => {
+        const correspondingCount = allPossibleCounts[index];
+        return Math.max(currentMaximum, currentSum * correspondingCount);
+    }, -Infinity);
 
-let currentCaseSize;
-while ((currentCaseSize = extractNumber()) !== 0) {
-    const primaryElements = extractNumberSequence();
-    const additionalElements = extractNumberSequence();
-    const finalResult = analyzeScenario(currentCaseSize, primaryElements, additionalElements);
-    console.log(finalResult);
+    console.log(peakProduct);
 }

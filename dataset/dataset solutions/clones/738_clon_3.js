@@ -1,110 +1,78 @@
-const fileSystemModule = require('fs'); // Renamed module import for clarity
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split("\n");
 
-// Read all input data from stdin, decode as UTF-8
-let rawInputDataString = fileSystemModule.readFileSync('/dev/stdin', 'utf8'); // Renamed input variable
+const TERMINATION_SEQUENCE_INDICATOR = "0 0 0";
 
-// Pre-process input: trim leading/trailing whitespace and split into individual lines
-// Added a guard for empty input to prevent errors on `trim()` or `split()`.
-if (!rawInputDataString || rawInputDataString.trim() === '') {
-    // In a real application, you might log an error or exit with a specific code.
-    // For this context, we'll simply stop processing if there's no valid input.
-    process.exit(0); 
-}
-const inputLineCollection = rawInputDataString.trim().split("\n"); // Renamed array variable
+// This helper function encapsulates the core logic for a single Josephus variant problem.
+const calculateRemainingParticipant = (totalParticipants, skipCount, initialEliminationPosition) => {
+    // Initialize an array to track the status of each participant.
+    // Index 0 is unused, so the array size is `totalParticipants + 1`.
+    // All participants are initially considered active (true).
+    const participantStatus = new Array(totalParticipants + 1).fill(true);
 
-/**
- * Helper function to parse a string line into an array of integers.
- * Includes basic validation for the number of expected parts and their numeric nature.
- * @param {string} lineString - The string line to parse.
- * @param {number} expectedPartCount - The expected number of numeric parts in the line.
- * @returns {number[]|null} An array of parsed integers, or null if parsing fails.
- */
-const extractNumericParameters = (lineString, expectedPartCount = 3) => {
-    const parts = lineString.split(" ").map(segment => parseInt(segment.trim(), 10)); // Explicit parseInt with radix
-    // Validate that all parts are numbers and the count matches
-    if (parts.length !== expectedPartCount || parts.some(isNaN)) {
-        return null; // Indicate failure to parse
-    }
-    return parts;
-};
+    // As per the problem's specific rules, the participant at `initialEliminationPosition`
+    // is the very first one to be eliminated.
+    participantStatus[initialEliminationPosition] = false;
+    let eliminatedCount = 1; // One participant has already been removed.
 
-let currentLinePointer = 0; // Tracks the current line being processed from the input collection
+    let currentScanIndex = initialEliminationPosition; // Start scanning from this position.
+    let activeSkippedCounter = 0; // Counts active participants encountered since the last elimination.
 
-// Main processing loop: continues as long as there are lines to read
-// and the termination condition "0 0 0" has not been met.
-while (currentLinePointer < inputLineCollection.length) {
-    const currentTestCaseLine = inputLineCollection[currentLinePointer++]; // Get line and advance pointer
+    // The simulation continues until `totalParticipants - 1` participants have been eliminated.
+    // This ensures that exactly one participant remains.
+    const targetEliminations = totalParticipants - 1;
 
-    // Check for the termination condition for the entire program
-    if (currentTestCaseLine.trim() === "0 0 0") {
-        break; // Exit the main processing loop
-    }
+    // Loop until the required number of eliminations (excluding the first one) has occurred.
+    while (eliminatedCount < targetEliminations) {
+        currentScanIndex++; // Move to the next position in the circle.
 
-    // Attempt to parse the numeric parameters for the current test case
-    const simulationParameters = extractNumericParameters(currentTestCaseLine);
-
-    // If parsing failed (e.g., malformed line), skip this test case and move to the next.
-    if (simulationParameters === null) {
-        continue;
-    }
-
-    // Extract individual parameters using descriptive names
-    const totalParticipantsCount = simulationParameters[0]; // Corresponds to 'n'
-    const eliminationStepInterval = simulationParameters[1]; // Corresponds to 'm'
-    const initialEliminatedPosition = simulationParameters[2]; // Corresponds to 'start'
-
-    // Add guard clauses for invalid simulation parameters
-    if (totalParticipantsCount <= 0 || eliminationStepInterval <= 0 || 
-        initialEliminatedPosition < 1 || initialEliminatedPosition > totalParticipantsCount) {
-        // Skip this test case if parameters are nonsensical for the simulation
-        continue;
-    }
-
-    // Initialize the status of participants.
-    // Using Array.from with a callback for a more modern array initialization.
-    // Index 0 is intentionally left unused to make participant IDs (1 to N) match array indices.
-    const participantStatusArray = Array.from({ length: totalParticipantsCount + 1 }, () => true); // Renamed 'ary'
-
-    // As per the problem's specific rule, the starting participant is immediately removed.
-    participantStatusArray[initialEliminatedPosition] = false;
-    
-    let activeParticipantPointer = initialEliminatedPosition; // Renamed 'i', represents current position in circle
-    let currentStepCounter = 0; // Renamed 'j', counts steps for elimination
-    let currentlyEliminatedCount = 1; // Renamed 'cnt', starts at 1 because initialEliminatedPosition is out
-
-    // The simulation continues until only one participant remains.
-    // This means N-1 participants must be eliminated.
-    const requiredEliminations = totalParticipantsCount - 1;
-
-    // Core simulation loop: continues until the target number of eliminations is reached
-    while (currentlyEliminatedCount < requiredEliminations) {
-        // Move the pointer to the next position in the circular arrangement
-        activeParticipantPointer++;
-        // Wrap around if the pointer exceeds the total number of participants
-        if (activeParticipantPointer > totalParticipantsCount) {
-            activeParticipantPointer = 1;
+        // If the index goes beyond the last participant, wrap around to the first participant.
+        if (currentScanIndex > totalParticipants) {
+            currentScanIndex = 1;
         }
 
-        // Check if the participant at the current pointer position is still in the game
-        if (participantStatusArray[activeParticipantPointer]) {
-            currentStepCounter++; // Increment the step counter
+        // Check if the participant at the `currentScanIndex` is still active.
+        if (participantStatus[currentScanIndex]) {
+            activeSkippedCounter++; // Increment the counter for active participants skipped.
 
-            // If the step counter reaches the elimination interval, remove this participant
-            if (currentStepCounter === eliminationStepInterval) {
-                participantStatusArray[activeParticipantPointer] = false; // Mark as eliminated
-                currentStepCounter = 0; // Reset the counter for the next elimination round
-                currentlyEliminatedCount++; // Increment the total count of eliminated participants
+            // If `skipCount` active participants have been skipped, it's time for an elimination.
+            if (activeSkippedCounter === skipCount) {
+                participantStatus[currentScanIndex] = false; // Mark this participant as eliminated.
+                activeSkippedCounter = 0; // Reset the skip counter for the next round of counting.
+                eliminatedCount++; // Increment the total count of eliminated participants.
             }
         }
-        // If the participant is already eliminated, we simply skip them and continue counting steps.
     }
 
-    // After the simulation, iterate through the participant status array
-    // and print the identifier(s) of the remaining active participant(s).
-    // The problem implies only one will remain, but the original code iterates.
-    for (let pId = 1; pId <= totalParticipantsCount; pId++) { // Renamed 'i' for output loop
-        if (participantStatusArray[pId]) {
-            console.log(pId);
+    // After the loop, only one participant remains active. Find and return their index.
+    for (let finalParticipantIndex = 1; finalParticipantIndex <= totalParticipants; finalParticipantIndex++) {
+        if (participantStatus[finalParticipantIndex]) {
+            return finalParticipantIndex;
         }
     }
+
+    // This line should theoretically not be reached if `totalParticipants` is at least 1.
+    // It serves as a fallback for unexpected scenarios.
+    return -1;
+};
+
+// Main loop to process multiple test cases from the input.
+while (true) {
+    let currentInputLine = inputLines.shift();
+
+    // Check if the current line is the termination sequence.
+    if (currentInputLine === TERMINATION_SEQUENCE_INDICATOR) {
+        break; // Exit the loop if the termination sequence is found.
+    }
+
+    // Parse the input line, splitting it by spaces and converting parts to numbers.
+    const parsedParameters = currentInputLine.split(" ").map(Number);
+    const totalParticipants = parsedParameters[0];
+    const skipCount = parsedParameters[1];
+    const initialEliminationPosition = parsedParameters[2];
+
+    // Call the helper function to solve the problem for the current set of parameters
+    // and print the index of the last remaining participant.
+    const resultParticipant = calculateRemainingParticipant(totalParticipants, skipCount, initialEliminationPosition);
+    console.log(resultParticipant);
 }

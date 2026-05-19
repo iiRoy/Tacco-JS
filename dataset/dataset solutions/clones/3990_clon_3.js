@@ -1,144 +1,94 @@
-'use strict'
+'use strict';
 
-/**
- * Determines the outcome based on two input numbers,
- * handling potential large integer multiplication.
- * @param {string} rawInputString - The raw string input, e.g., "5 8\n..."
- */
-function computeFinalResult(rawInputString) {
+function main(rawInputLine) {
+  // Step 1: Parse the input string from the first line
+  const firstLineContent = rawInputLine.split('\n')[0];
+  const numberStringTokens = firstLineContent.split(' ');
+  const parsedNumericValues = numberStringTokens.map(str => Number(str));
 
-  // Internal constant for maximum safe integer value
-  const SAFE_NUMBER_LIMIT = Number.MAX_SAFE_INTEGER;
+  // Extract the two input numbers
+  const firstInputNumber = parsedNumericValues[0];
+  const secondInputNumber = parsedNumericValues[1];
 
-  // Helper function to safely parse an integer
-  const extractInteger = (textSegment) => {
-    const parsed = parseInt(textSegment.trim(), 10);
-    if (isNaN(parsed)) {
-      // For robustness, although input format is usually guaranteed
-      console.error("Error: Invalid number detected in input.");
-      return 0; // Default to 0 or throw error
-    }
-    return parsed;
-  };
+  // Define a small helper function for the common absolute difference calculation
+  const calculateAbsoluteDifferenceFromTwo = (value) => Math.abs(value - 2);
 
-  // Process the initial input line
-  const inputSegments = rawInputString.trim().split('\n')[0].split(/\s+/).filter(Boolean);
+  // Compute the two operands for multiplication
+  const multiplierA = calculateAbsoluteDifferenceFromTwo(firstInputNumber);
+  const multiplierB = calculateAbsoluteDifferenceFromTwo(secondInputNumber);
 
-  if (inputSegments.length < 2) {
-    console.error("Error: Insufficient input values provided.");
-    return; // Exit if input is malformed
-  }
+  let finalComputedResult;
 
-  // Extract and validate the primary operands
-  const firstNumericValue = extractInteger(inputSegments[0]);
-  const secondNumericValue = extractInteger(inputSegments[1]);
+  // Check for potential overflow before performing the multiplication
+  // This prevents 'Infinity' or incorrect results from standard JS number multiplication
+  // if either multiplier is 0, the product is 0, which is handled by the else branch.
+  if (multiplierA > Number.MAX_SAFE_INTEGER / multiplierB || multiplierB > Number.MAX_SAFE_INTEGER / multiplierA) {
+    // If the product might exceed MAX_SAFE_INTEGER, use a custom big integer multiplication approach
 
-  /**
-   * Calculates the adjusted absolute difference for an input value.
-   * Equivalent to Math.abs(value - 2).
-   * @param {number} val - The input number.
-   * @returns {number} The absolute difference.
-   */
-  const deriveAdjustedAbsValue = (val) => {
-    return Math.abs(val - 2);
-  };
+    // Helper function to convert a number into an array of its digits, in reverse order (least significant first)
+    const convertToReversedDigitArray = (numValue) => String(numValue).split('').map(char => Number(char)).reverse();
 
-  const adjustedFirst = deriveAdjustedAbsValue(firstNumericValue);
-  const adjustedSecond = deriveAdjustedAbsValue(secondNumericValue);
+    const digitsOfA = convertToReversedDigitArray(multiplierA);
+    const digitsOfB = convertToReversedDigitArray(multiplierB);
 
-  let finalProduct; // Variable to store the computed result
+    // Initialize an array to store the product digits.
+    // Its size is the sum of the lengths of the input numbers' digits,
+    // which is the maximum possible length for their product.
+    let productDigitsAccumulator = Array(digitsOfA.length + digitsOfB.length).fill(0);
 
-  // Attempt standard multiplication first
-  const intermediateStandardProduct = adjustedFirst * adjustedSecond;
+    // Nested helper function to handle carry propagation within the productDigitsAccumulator.
+    // This function iterates through the digits from left to right (most significant to least significant)
+    // and moves any 'tens' part to the next more significant digit.
+    const propagateCarriesThroughArray = () => {
+      for (let currentIdx = 0; currentIdx < productDigitsAccumulator.length; currentIdx++) {
+        if (productDigitsAccumulator[currentIdx] >= 10) {
+          const carryAmount = Math.floor(productDigitsAccumulator[currentIdx] / 10); // Get the carry value
+          const remainingDigit = productDigitsAccumulator[currentIdx] % 10;         // Get the single digit remainder
 
-  // Check if the result exceeds the safe integer limit
-  if (intermediateStandardProduct > SAFE_NUMBER_LIMIT || adjustedFirst > SAFE_NUMBER_LIMIT || adjustedSecond > SAFE_NUMBER_LIMIT) {
-    // If overflow is possible or actual, delegate to large number arithmetic
-    
-    /**
-     * Performs multiplication of two non-negative integers represented as numbers,
-     * returning the result as a string for arbitrary precision.
-     * This method implements a manual "long multiplication" algorithm.
-     * @param {number} factorA - The first non-negative integer factor.
-     * @param {number} factorB - The second non-negative integer factor.
-     * @returns {string} The product as a string.
-     */
-    const performLargeScaleMultiplication = (factorA, factorB) => {
-      if (factorA < 0 || factorB < 0) {
-        console.error("Error: Large scale multiplication expects non-negative factors.");
-        return "0"; // Or throw an error
-      }
-      if (factorA === 0 || factorB === 0) {
-          return "0";
-      }
-
-      // Convert factors to arrays of digits, in reverse order (LSB first)
-      const digitsOfFactorA = String(factorA).split('').map(Number).reverse();
-      const digitsOfFactorB = String(factorB).split('').map(Number).reverse();
-
-      // Initialize an array to store intermediate products, size sufficient for result
-      const resultDigitAccumulator = new Array(digitsOfFactorA.length + digitsOfFactorB.length).fill(0);
-
-      // Perform the core multiplication logic (similar to manual long multiplication)
-      for (let i = 0; i < digitsOfFactorA.length; i++) {
-        const currentDigitA = digitsOfFactorA[i];
-        for (let j = 0; j < digitsOfFactorB.length; j++) {
-          const currentDigitB = digitsOfFactorB[j];
-          const productOfDigits = currentDigitA * currentDigitB;
-          
-          // Add the product to the correct position in the accumulator
-          // (i+j) determines the place value from the right (LSB)
-          resultDigitAccumulator[i + j] += productOfDigits;
-        }
-      }
-
-      // Propagate carries from right to left (LSB to MSB)
-      for (let k = 0; k < resultDigitAccumulator.length; k++) {
-        if (resultDigitAccumulator[k] >= 10) {
-          const carryComponent = Math.floor(resultDigitAccumulator[k] / 10);
-          resultDigitAccumulator[k] %= 10; // Keep only the digit part
-          
-          // Add carry to the next significant position
-          // If at the very end, extend the array
-          if (k + 1 < resultDigitAccumulator.length) {
-            resultDigitAccumulator[k + 1] += carryComponent;
-          } else {
-            // This case should ideally be handled by initial array sizing,
-            // but provides robustness if a very large carry extends beyond.
-            resultDigitAccumulator.push(carryComponent);
+          // Add the carry to the digit at the more significant position (to the left).
+          // The smallest possible index for a digit that can have a value >= 10 is 1,
+          // as productDigitsAccumulator[0] only receives carries, it's not directly assigned a product.
+          if (currentIdx > 0) {
+            productDigitsAccumulator[currentIdx - 1] += carryAmount;
           }
+          productDigitsAccumulator[currentIdx] = remainingDigit;
         }
       }
-
-      // Remove any leading zeros (from the MSB end, which is the end of the array after reverse)
-      // The array is currently LSB...MSB, so we need to remove trailing zeros after reversing.
-      while (resultDigitAccumulator.length > 1 && resultDigitAccumulator[resultDigitAccumulator.length - 1] === 0) {
-          resultDigitAccumulator.pop();
-      }
-
-      // Reverse the array to get MSB first and join into a string
-      return resultDigitAccumulator.reverse().join('');
     };
 
-    finalProduct = performLargeScaleMultiplication(adjustedFirst, adjustedSecond);
+    // Perform the multiplication using a method similar to manual long multiplication
+    for (let i = 0; i < digitsOfA.length; i++) {
+      for (let j = 0; j < digitsOfB.length; j++) {
+        const currentPartialProduct = digitsOfA[i] * digitsOfB[j];
+        // Calculate the correct position for this partial product in the accumulator array.
+        // (i+j) represents the position from the right (least significant digit).
+        // We map this to the left-to-right indexed productDigitsAccumulator.
+        const targetAccumulatorPosition = productDigitsAccumulator.length - (i + j) - 1;
+
+        productDigitsAccumulator[targetAccumulatorPosition] += currentPartialProduct;
+        propagateCarriesThroughArray(); // Propagate carries immediately after each addition
+      }
+    }
+
+    // Remove any leading zeros from the accumulated product digits.
+    let firstNonZeroDigitIndex = 0;
+    // Continue incrementing the index as long as the digit is zero and it's not the very last digit
+    // (to ensure '0' itself is not trimmed to an empty string).
+    while (firstNonZeroDigitIndex < productDigitsAccumulator.length - 1 && productDigitsAccumulator[firstNonZeroDigitIndex] === 0) {
+      firstNonZeroDigitIndex++;
+    }
+
+    // Convert the array of digits into a single string representation of the large number.
+    finalComputedResult = productDigitsAccumulator.slice(firstNonZeroDigitIndex).join('');
+
   } else {
-    // If within safe integer limits, use the standard number result
-    finalProduct = intermediateStandardProduct;
+    // If the product fits within JavaScript's safe integer range, perform direct multiplication.
+    finalComputedResult = multiplierA * multiplierB;
   }
 
-  // Output the calculated result
-  console.log(finalProduct);
+  // Output the final result to the console.
+  console.log(finalComputedResult);
 }
 
-// Read input from standard input and invoke the main processing function
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const encodingType = "utf8";
-
-try {
-  const inputContent = fileSystemModule.readFileSync(standardInputPath, encodingType);
-  computeFinalResult(inputContent);
-} catch (ioError) {
-  console.error(`Failed to read input from ${standardInputPath}:`, ioError.message);
-  // Optionally, provide a default behavior or exit
-}
+// Read input from standard input (typically for competitive programming environments)
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

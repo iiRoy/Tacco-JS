@@ -1,21 +1,43 @@
-function processText ( sourceData ) {
-  let workingString = sourceData ;
-  let lowerChars = "abcdefghijklmnopqrstuvwxyz" ;
-  let upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" ;
-  let resultString = "" ;
-  for ( let charIndex = 0 ; charIndex < workingString . length ; charIndex ++ ) {
-    let transformedChar = "" ;
-    if ( lowerChars . indexOf ( workingString [ charIndex ] ) !== -1 ) {
-      transformedChar = workingString [ charIndex ] . toUpperCase ( ) ;
+function processInput(rawData) {
+  // Initialize a string to hold the data for processing.
+  let processedString = rawData;
+
+  // Define strings for lowercase and uppercase alphabets.
+  // These are used to check the case of characters.
+  let lowerCaseChars = "abcdefghijklmnopqrstuvwxyz";
+  let upperCaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  // This variable will accumulate the modified characters.
+  let finalResult = "";
+
+  // Iterate through each character of the input string.
+  for (let charIndex = 0; charIndex < processedString.length; charIndex++) {
+    // Variable to store the character after case transformation.
+    let transformedChar = "";
+
+    // Check if the current character is a lowercase letter.
+    if (lowerCaseChars.indexOf(processedString[charIndex]) !== -1) {
+      // If it's lowercase, convert it to uppercase.
+      transformedChar = processedString[charIndex].toUpperCase();
     }
-    else if ( upperChars . indexOf ( workingString [ charIndex ] ) !== -1 ) {
-      transformedChar = workingString [ charIndex ] . toLowerCase ( ) ;
+    // Otherwise, check if the current character is an uppercase letter.
+    else if (upperCaseChars.indexOf(processedString[charIndex]) !== -1) {
+      // If it's uppercase, convert it to lowercase.
+      transformedChar = processedString[charIndex].toLowerCase();
     }
+    // If it's neither an uppercase nor a lowercase letter (e.g., number, symbol, space).
     else {
-      transformedChar = workingString [ charIndex ] ;
+      // Keep the character as is.
+      transformedChar = processedString[charIndex];
     }
-    resultString += transformedChar ;
+
+    // Append the transformed character to the final result string.
+    finalResult += transformedChar;
   }
-  console . log ( resultString . trim ( ) ) ;
+
+  // Output the final result to the console, ensuring leading/trailing whitespace is removed.
+  console.log(finalResult.trim());
 }
-processText ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf-8" ) ) ;
+
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

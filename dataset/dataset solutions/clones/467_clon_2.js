@@ -1,108 +1,135 @@
-// Function to rotate a square matrix 90 degrees clockwise
-function spinMatrix ( inputArray ) {
-    const lastIndex = inputArray.length - 1; // Calculate the last valid index for rows/columns
-    // Create a new matrix by mapping and slicing each row to ensure a deep copy
-    let rotatedMatrix = inputArray.map(
-        function ( rowElement ) {
-            return rowElement.slice(); // Deep copy each row array
-        }
-    );
+function spinMatrix(inputMatrix) {
+  // Determine the size of the square matrix (assuming it's square)
+  const matrixDimension = inputMatrix.length - 1;
+  // Create a new matrix of the same dimensions, initialized with copies of rows
+  let rotatedData = inputMatrix.map(function(rowElements) {
+    return rowElements.slice();
+  });
 
-    // Iterate through each cell of the matrix to perform the rotation transformation
-    for ( let rowIndex = 0; rowIndex <= lastIndex; rowIndex++ ) {
-        for ( let colIndex = 0; colIndex <= lastIndex; colIndex++ ) {
-            // The element at new position [rowIndex][colIndex] comes from original [lastIndex - colIndex][rowIndex]
-            rotatedMatrix[rowIndex][colIndex] = inputArray[lastIndex - colIndex][rowIndex];
-        }
+  // Perform the 90-degree clockwise rotation
+  for (let rowIndex = 0; rowIndex <= matrixDimension; rowIndex++) {
+    for (let colIndex = 0; colIndex <= matrixDimension; colIndex++) {
+      // The element at (rowIndex, colIndex) in the new matrix
+      // comes from (matrixDimension - colIndex, rowIndex) in the original.
+      rotatedData[rowIndex][colIndex] = inputMatrix[matrixDimension - colIndex][rowIndex];
     }
-    return rotatedMatrix; // Return the newly rotated matrix
+  }
+  return rotatedData; // Return the newly rotated matrix
 }
 
-// This routine checks for a pattern match at a given offset within the main grid
-function verifyOverlap ( rowOffset, colOffset ) {
-    let matchResult = false; // Initialize the result; 'false' means no match yet or no valid first coordinate
-    // Iterate through the cells of the search pattern matrix
-    for ( let patternRow = 0; patternRow < subMatrixDim; patternRow++ ) {
-        for ( let patternCol = 0; patternCol < subMatrixDim; patternCol++ ) {
-            // If the pattern element is a wildcard (-1), skip checking it
-            if ( searchPattern[patternRow][patternCol] === -1 )
-                continue;
+// This function checks if a pattern (currentPattern) matches a subgrid
+// within the targetGrid starting at (rowStart, colStart).
+// It implicitly uses 'patternDimension', 'targetGrid', and 'currentPattern'
+// from the outer scope, as per the original's design.
+function verifyPattern(rowStart, colStart) {
+  let firstOccurrence = false; // Stores the coordinates of the first non-negative pattern element
+  // Iterate through the pattern matrix
+  for (let patRowIdx = 0; patRowIdx < patternDimension; patRowIdx++) {
+    for (let patColIdx = 0; patColIdx < patternDimension; patColIdx++) {
+      // If the pattern element is -1, it's a wildcard, so skip it.
+      if (currentPattern[patRowIdx][patColIdx] === -1) continue;
 
-            // If this is the first non-wildcard element encountered, record its absolute position in the main grid
-            if ( matchResult === false )
-                matchResult = [rowOffset + patternRow, colOffset + patternCol];
+      // If this is the first non-wildcard element found, record its absolute position.
+      if (firstOccurrence === false) {
+        firstOccurrence = [rowStart + patRowIdx, colStart + patColIdx];
+      }
 
-            // Compare the current pattern element with the corresponding element in the main grid
-            // If they don't match, this is not a valid placement for the pattern
-            if ( mainGrid[rowOffset + patternRow][colOffset + patternCol] !== searchPattern[patternRow][patternCol] )
-                return false; // Mismatch found, so return 'false' immediately
-        }
+      // Compare the pattern element with the corresponding target grid element.
+      // If they don't match, the pattern does not fit here.
+      if (targetGrid[rowStart + patRowIdx][colStart + patColIdx] !== currentPattern[patRowIdx][patColIdx]) {
+        return false; // Mismatch found, pattern does not fit
+      }
     }
-    return matchResult; // If all non-wildcard elements matched, return the coordinates of the first match
+  }
+  return firstOccurrence; // Return the coordinates of the first non-wildcard match, or false if no match.
 }
 
-// Read all input from standard input as a UTF-8 string
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-// Split the input into individual lines and store them in a buffer, removing any leading/trailing whitespace
-let lineBuffer = rawData.trim().split('\n');
+// Read all input from stdin
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split input into lines and trim any leading/trailing whitespace
+let inputLines = rawInputData.trim().split("\n");
 
-// Main loop to process multiple test cases from the input buffer
-while ( true ) {
-    // Extract grid dimensions (N and M) from the first line of the current test case
-    const dimensions = lineBuffer.shift().split(' ').map(Number);
-    let gridRows = dimensions[0]; // N: Represents the number of rows/columns in the main grid
-    let subMatrixDim = dimensions[1]; // M: Represents the dimension of the square sub-matrix (pattern)
+// Main processing loop
+while (true) {
+  // Read the grid dimensions (N and M) from the first line
+  const dimensionsPair = inputLines.shift().split(" ").map(Number);
+  const targetGridSize = dimensionsPair[0]; // N
+  const patternDimension = dimensionsPair[1]; // M
 
-    // Termination condition for the entire program loop (N=0 and M=0 indicates end of input)
-    if ( gridRows === 0 && subMatrixDim === 0 ) {
-        break; // Exit the loop
-    }
+  // If N and M are both 0, it's the termination condition
+  if (targetGridSize === 0 && patternDimension === 0) break;
 
-    // Initialize the main grid array (N x N)
-    let mainGrid = [];
-    // Populate the main grid by parsing subsequent input lines
-    for ( let rowIdx = 0; rowIdx < gridRows; rowIdx++ ) {
-        const currentLine = lineBuffer.shift().split(' ').map(Number); // Convert line to an array of numbers
-        mainGrid.push(currentLine); // Add the parsed row to the main grid
-    }
+  // Read the target grid (N x N)
+  let targetGrid = [];
+  for (let i = 0; i < targetGridSize; i++) {
+    const lineValues = inputLines.shift().split(" ").map(Number);
+    targetGrid.push(lineValues);
+  }
 
-    // Initialize the search pattern matrix array (M x M)
-    let searchPattern = [];
-    // Populate the search pattern matrix from input lines
-    for ( let rowIdx = 0; rowIdx < subMatrixDim; rowIdx++ ) {
-        const currentLine = lineBuffer.shift().split(' ').map(Number); // Convert line to an array of numbers
-        searchPattern.push(currentLine); // Add the parsed row to the search pattern
-    }
+  // Read the pattern grid (M x M)
+  let currentPattern = [];
+  for (let i = 0; i < patternDimension; i++) {
+    const patternLineValues = inputLines.shift().split(" ").map(Number);
+    currentPattern.push(patternLineValues);
+  }
 
-    // Variable to store the best (top-leftmost) match position found across all rotations and offsets
-    // Initialized to a value that is guaranteed to be larger than any valid match coordinates (1-indexed)
-    let bestMatchPosition = [101, 101];
+  // Initialize minimum match coordinates to a value larger than any possible valid coordinate
+  let bestMatchCoordinates = [101, 101]; // [row, col] + 1
 
-    // Iterate through 4 rotations of the search pattern (0, 90, 180, 270 degrees)
-    for ( let rotationCount = 0; rotationCount < 4; rotationCount++ ) {
-        // Iterate through all possible top-left corner positions for the sub-matrix within the main grid
-        for ( let rowOffset = 0; rowOffset <= gridRows - subMatrixDim; rowOffset++ ) {
-            for ( let colOffset = 0; colOffset <= gridRows - subMatrixDim; colOffset++ ) {
-                // Check if the current search pattern (at its current rotation) matches at this specific offset
-                const currentMatch = verifyOverlap(rowOffset, colOffset);
+  // Iterate through 4 possible rotations of the pattern
+  for (let rotationIteration = 0; rotationIteration < 4; rotationIteration++) {
+    // Iterate through all possible top-left positions for the pattern within the target grid
+    for (let searchRowOffset = 0; searchRowOffset <= targetGridSize - patternDimension; searchRowOffset++) {
+      for (let searchColOffset = 0; searchColOffset <= targetGridSize - patternDimension; searchColOffset++) {
+        // Check if the current pattern (in its current rotation) matches at this offset
+        const matchResult = verifyPattern(searchRowOffset, searchColOffset);
 
-                // If a match is found (i.e., 'currentMatch' is not 'false')
-                if ( currentMatch !== false ) {
-                    // Update the 'bestMatchPosition' if the current match is better (i.e., smaller 1-indexed row,
-                    // or same 1-indexed row with a smaller 1-indexed column).
-                    // The problem asks for 1-indexed coordinates, so we add 1 to the 0-indexed values.
-                    if ( bestMatchPosition[0] >= currentMatch[0] + 1 && bestMatchPosition[1] > currentMatch[1] + 1 ) {
-                        bestMatchPosition = [currentMatch[0] + 1, currentMatch[1] + 1];
-                    }
-                }
-            }
+        // If a match is found (matchResult is not false)
+        if (matchResult !== false) {
+          // Update bestMatchCoordinates if this match is "earlier" (smaller row, then smaller column)
+          // Note: The original code uses `flag[0]+1` and `flag[1]+1` for comparison,
+          // which implies 1-based indexing for output, but `flag` itself is 0-based.
+          // The comparison logic `min[0] >= flag[0]+1 && min[1] > flag[1]+1` is a bit unusual.
+          // It means: if current min row is greater than or equal to new row, AND current min col is strictly greater than new col.
+          // This implies a lexicographical comparison where the column is prioritized if rows are equal.
+          // Let's re-evaluate the original logic:
+          // `min[0] >= flag[0]+1` (current min row is >= new row + 1)
+          // `min[1] > flag[1]+1` (current min col is > new col + 1)
+          // This is equivalent to:
+          // if (new_row+1 < min_row) OR (new_row+1 == min_row AND new_col+1 < min_col)
+          // The original code's condition `min[0] >= flag[0]+1 && min[1] > flag[1]+1` is not a standard lexicographical comparison.
+          // It seems to be: if the new row is *strictly smaller* than the current best row, OR
+          // if the new row is *equal* to the current best row AND the new column is *strictly smaller* than the current best column.
+          // Let's stick to the exact original comparison:
+          // `min[0]` is the row component of `bestMatchCoordinates`
+          // `min[1]` is the column component of `bestMatchCoordinates`
+          // `flag[0]` is the row component of `matchResult`
+          // `flag[1]` is the column component of `matchResult`
+          // The comparison is `bestMatchCoordinates[0] >= matchResult[0] + 1 && bestMatchCoordinates[1] > matchResult[1] + 1`
+          // This is a very specific comparison. Let's trace it:
+          // If `bestMatchCoordinates = [101, 101]` and `matchResult = [0, 0]`:
+          // `101 >= 0 + 1` (true) AND `101 > 0 + 1` (true) -> `bestMatchCoordinates` becomes `[0+1, 0+1]` = `[1, 1]`
+          // If `bestMatchCoordinates = [1, 1]` and `matchResult = [0, 1]`:
+          // `1 >= 0 + 1` (true) AND `1 > 1 + 1` (false) -> No update.
+          // If `bestMatchCoordinates = [1, 1]` and `matchResult = [1, 0]`:
+          // `1 >= 1 + 1` (false) -> No update.
+          // This condition is `(new_row_plus_one < current_min_row_plus_one) || (new_row_plus_one == current_min_row_plus_one && new_col_plus_one < current_min_col_plus_one)`
+          // The original condition `min[0] >= flag[0]+1 && min[1] > flag[1]+1` is NOT equivalent to standard lexicographical min.
+          // It's `(current_min_row >= new_row_plus_one) AND (current_min_col > new_col_plus_one)`.
+          // This means it only updates if the new match is *strictly better in column* AND *at least as good in row*.
+          // This is a very unusual comparison. I must preserve it exactly.
+          if (bestMatchCoordinates[0] >= matchResult[0] + 1 && bestMatchCoordinates[1] > matchResult[1] + 1) {
+            bestMatchCoordinates = [matchResult[0] + 1, matchResult[1] + 1];
+          }
         }
-        // Rotate the search pattern clockwise for the next iteration
-        searchPattern = spinMatrix(searchPattern);
+      }
     }
+    // Rotate the pattern for the next iteration
+    currentPattern = spinMatrix(currentPattern);
+  }
 
-    // Output the result:
-    // If 'bestMatchPosition' is still its initial value, it means no match was found, so output "NA".
-    // Otherwise, output the 1-indexed column and row of the best match, separated by a space.
-    console.log( ( bestMatchPosition.join('') === '101101' ) ? 'NA' : `${bestMatchPosition[1]} ${bestMatchPosition[0]}` );
+  // Output the result
+  // If bestMatchCoordinates is still [101, 101], no match was found, output "NA".
+  // Otherwise, output the 1-based column and then row coordinates.
+  console.log((bestMatchCoordinates.join("") === "101101") ? "NA" : bestMatchCoordinates[1] + " " + bestMatchCoordinates[0]);
 }

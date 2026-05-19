@@ -1,579 +1,561 @@
-/*
- * This is a Type II clone of an original JavaScript module bundle.
- * The core logic and control flow are preserved, but identifiers,
- * whitespace, and comments have been thoroughly altered.
- */
-!function( packageRegistry ) {
-  // A cache for loaded modules, preventing redundant processing.
-  var moduleCache = {};
+!function(modulesMap) {
+    // This object serves as a cache for loaded modules.
+    var moduleCache = {};
 
-  /**
-   * Loads a module by its identifier.
-   * @param {number} moduleId - The unique identifier of the module to load.
-   * @returns {object} The exports object of the loaded module.
-   */
-  function loadModule( moduleId ) {
-    // If the module is already in the cache, return its exports.
-    if ( moduleCache[ moduleId ] ) {
-      return moduleCache[ moduleId ].exports;
-    }
-
-    // Initialize a new module entry in the cache.
-    // The 'modId' property stores the module's ID.
-    // 'isLoaded' flag indicates if the module's function has been executed.
-    // 'exports' is the object where the module's public API will be stored.
-    var currentModule = moduleCache[ moduleId ] = {
-      modId: moduleId,
-      isLoaded: false,
-      exports: {}
-    };
-
-    // Execute the module's function, passing necessary parameters.
-    // 'packageRegistry[moduleId]' holds the actual module function.
-    // 'currentModule.exports' is passed as 'this' and the 'exports' object.
-    // 'currentModule' is passed as the module object itself.
-    // 'loadModule' (this function) is passed as the 'require' function for internal dependencies.
-    packageRegistry[ moduleId ].call( currentModule.exports, currentModule, currentModule.exports, loadModule );
-
-    // Mark the module as loaded.
-    currentModule.isLoaded = true;
-
-    // Return the module's exports.
-    return currentModule.exports;
-  }
-
-  // Store a reference to the collection of module functions.
-  loadModule.modulesDict = packageRegistry;
-  // Store a reference to the module cache.
-  loadModule.cacheRef = moduleCache;
-
-  /**
-   * Defines an enumerable getter property on an object.
-   * This is typically used for defining exports.
-   * @param {object} targetObj - The object to define the property on.
-   * @param {string} propName - The name of the property.
-   * @param {Function} getterFunc - The getter function for the property.
-   */
-  loadModule.defineExport = function( targetObj, propName, getterFunc ) {
-    if ( !loadModule.hasOwnProp( targetObj, propName ) ) {
-      Object.defineProperty( targetObj, propName, {
-        enumerable: true, // Make the property enumerable.
-        get: getterFunc   // Assign the getter function.
-      } );
-    }
-  };
-
-  /**
-   * Marks a module as an ES module by adding a Symbol.toStringTag property
-   * and an __esModule flag.
-   * @param {object} targetObj - The module exports object.
-   */
-  loadModule.registerEsModule = function( targetObj ) {
-    if ( typeof Symbol !== "undefined" && Symbol.toStringTag ) {
-      Object.defineProperty( targetObj, Symbol.toStringTag, { value: "Module" } );
-    }
-    Object.defineProperty( targetObj, "__esModule", { value: true } );
-  };
-
-  /**
-   * Retrieves the exports of a module, handling different module types (ESM, CJS).
-   * @param {any} moduleVal - The module or its ID.
-   * @param {number} modeFlags - Flags indicating how to interpret 'moduleVal'.
-   * @returns {any} The module's exports.
-   */
-  loadModule.getModuleExports = function( moduleVal, modeFlags ) {
-    // If flag 1 is set, 'moduleVal' is a module ID, so load it.
-    if ( 1 & modeFlags ) {
-      moduleVal = loadModule( moduleVal );
-    }
-    // If flag 8 is set, return the module value directly.
-    if ( 8 & modeFlags ) {
-      return moduleVal;
-    }
-    // If flag 4 is set and it's an object with __esModule, return it directly.
-    if ( 4 & modeFlags && typeof moduleVal === "object" && moduleVal && moduleVal.__esModule ) {
-      return moduleVal;
-    }
-
-    // Create a new object for the namespace.
-    var namespaceObj = Object.create( null );
-    // Register it as an ES module.
-    loadModule.registerEsModule( namespaceObj );
-    // Set the 'default' export.
-    Object.defineProperty( namespaceObj, "default", { enumerable: true, value: moduleVal } );
-
-    // If flag 2 is set and it's not a string, copy all properties from moduleVal.
-    if ( 2 & modeFlags && typeof moduleVal !== "string" ) {
-      for ( var propKey in moduleVal ) {
-        loadModule.defineExport( namespaceObj, propKey, ( function( key ) {
-          return moduleVal[ key ];
-        } ).bind( null, propKey ) );
-      }
-    }
-    return namespaceObj;
-  };
-
-  /**
-   * Creates a namespace object for a given module, handling default exports.
-   * @param {any} moduleVal - The module object.
-   * @returns {Function} A getter function for the module's exports.
-   */
-  loadModule.getNamespaceObject = function( moduleVal ) {
-    var exportGetter = moduleVal && moduleVal.__esModule ?
-      function() { return moduleVal.default; } : // If ES module, return default.
-      function() { return moduleVal; };       // Otherwise, return module itself.
-
-    // Define a property 'a' (common webpack convention) that returns the exports.
-    loadModule.defineExport( exportGetter, "a", exportGetter );
-    return exportGetter;
-  };
-
-  /**
-   * Checks if an object has a specific property as its own property.
-   * @param {object} obj - The object to check.
-   * @param {string} key - The property key.
-   * @returns {boolean} True if the object has the property, false otherwise.
-   */
-  loadModule.hasOwnProp = function( obj, key ) {
-    return Object.prototype.hasOwnProperty.call( obj, key );
-  };
-
-  // Initialize the public path (often used for dynamic imports).
-  loadModule.publicPath = "";
-
-  // Load the entry point module (module ID 17).
-  loadModule( loadModule.startupModuleId = 17 );
-}( {
-  /* Module 0: Input Utilities and Async Helpers */
-  0: function( currentMod, modExports, moduleLoader ) {
-    "use strict";
-    // Helper for async/await functionality (TypeScript transpilation).
-    // This function wraps a generator function to provide async/await behavior.
-    var awaitHelper = ( this && this.__awaiter ) || function( thisArg, _arguments, P, generator ) {
-      // Return a new Promise that will resolve or reject based on the generator's execution.
-      return new ( P || ( P = Promise ) )( function( fulfill, fail ) {
-        /**
-         * Processes the next step of the generator.
-         * @param {any} genResult - The result of the previous generator yield/return.
-         */
-        function processStep( genResult ) {
-          try {
-            advanceGenerator( generator.next( genResult ) );
-          } catch ( errorValue ) {
-            fail( errorValue );
-          }
+    // The core module loading function, similar to 'require'.
+    function moduleLoader(currentModuleId) {
+        // If the module is already in the cache, return its exports immediately.
+        if (moduleCache[currentModuleId]) {
+            return moduleCache[currentModuleId].exports;
         }
 
-        /**
-         * Handles errors thrown by the generator.
-         * @param {any} errorValue - The error thrown.
-         */
-        function handleError( errorValue ) {
-          try {
-            advanceGenerator( generator.throw( errorValue ) );
-          } catch ( errorValue ) {
-            fail( errorValue );
-          }
-        }
-
-        /**
-         * Advances the generator based on its current state.
-         * If the generator is done, it fulfills the promise with the final value.
-         * Otherwise, it wraps the yielded value in a promise and continues.
-         * @param {IteratorResult} iterResult - The result object from generator.next() or generator.throw().
-         */
-        function advanceGenerator( iterResult ) {
-          iterResult.done ? fulfill( iterResult.value ) : new P( function( promiseResolve ) {
-            promiseResolve( iterResult.value );
-          } ).then( processStep, handleError );
-        }
-
-        // Start the generator execution.
-        advanceGenerator( ( generator = generator.apply( thisArg, _arguments || [] ) ).next() );
-      } );
-    };
-
-    // Helper for generator functions (TypeScript transpilation).
-    // This function provides the structure for an iterable generator.
-    var generatorHelper = ( this && this.__generator ) || function( thisArg, _arguments ) {
-      var currentGen, lastYielded, currentOp, iteratorObj, // Internal state variables for the generator.
-        genState = {
-          label: 0, // Current state label within the generator.
-          sent: function() {
-            if ( 1 & currentOp[ 0 ] ) throw currentOp[ 1 ];
-            return currentOp[ 1 ];
-          },
-          trys: [], // Stack for try/catch/finally blocks.
-          ops: []   // Stack for operations.
+        // If not in cache, create a new module entry and store it.
+        var moduleObject = moduleCache[currentModuleId] = {
+            i: currentModuleId, // The module's ID.
+            l: false,           // A flag indicating if the module has been loaded.
+            exports: {}         // The exports object for this module.
         };
 
-      iteratorObj = {
-        next: makeStep( 0 ),
-        throw: makeStep( 1 ),
-        return: makeStep( 2 )
-      };
+        // Execute the module function, passing the module object, its exports, and the loader itself.
+        modulesMap[currentModuleId].call(moduleObject.exports, moduleObject, moduleObject.exports, moduleLoader);
 
-      // If Symbol.iterator is available, make the generator object iterable.
-      if ( typeof Symbol === "function" && ( iteratorObj[ Symbol.iterator ] = function() { return this; } ) ) {
-        // No-op, assignment already done.
-      }
-      return iteratorObj;
+        // Mark the module as loaded after execution.
+        moduleObject.l = true;
 
-      /**
-       * Creates a step function for the generator.
-       * @param {number} stepType - The type of step (next, throw, return).
-       * @returns {Function} The step function.
-       */
-      function makeStep( stepType ) {
-        return function( stepValue ) {
-          return executeStep( [ stepType, stepValue ] );
-        };
-      }
-
-      /**
-       * Executes a step within the generator's state machine.
-       * This is the core logic that simulates generator execution.
-       * @param {Array} stepArray - An array containing the step type and value.
-       * @returns {IteratorResult} An object with 'value' and 'done' properties.
-       */
-      function executeStep( stepArray ) {
-        if ( currentGen ) throw new TypeError( "Generator is already executing." );
-
-        while ( genState ) {
-          try {
-            // Mark generator as executing.
-            if ( ( currentGen = 1 ) &&
-              ( lastYielded = ( 2 & stepArray[ 0 ] ? currentGen.return : stepArray[ 0 ] ? currentGen.throw || ( ( currentOp = currentGen.return ) && currentOp.call( currentGen ), 0 ) : currentGen.next ) ) &&
-              !( currentOp = lastYielded.call( currentGen, stepArray[ 1 ] ) ).done ) {
-              return currentOp;
-            }
-
-            // Reset generator status.
-            lastYielded = 0;
-
-            // Update stepArray based on current operation.
-            if ( currentOp ) {
-              stepArray = [ 2 & stepArray[ 0 ], currentOp.value ];
-            }
-
-            switch ( stepArray[ 0 ] ) {
-              case 0: // Initial state or after yield.
-              case 1: // After an error.
-                currentOp = stepArray;
-                break;
-              case 4: // Yield a value.
-                genState.label++;
-                return { value: stepArray[ 1 ], done: false };
-              case 5: // Assign next state and break.
-                genState.label++;
-                lastYielded = stepArray[ 1 ];
-                stepArray = [ 0 ];
-                continue;
-              case 7: // Pop from ops and trys stack.
-                stepArray = genState.ops.pop();
-                genState.trys.pop();
-                continue;
-              default:
-                // Handle various try/catch/finally block transitions.
-                if ( !( currentOp = ( currentOp = genState.trys ).length > 0 && currentOp[ currentOp.length - 1 ] ) && ( 6 === stepArray[ 0 ] || 2 === stepArray[ 0 ] ) ) {
-                  genState = 0; // Exit generator.
-                  continue;
-                }
-                if ( 3 === stepArray[ 0 ] && ( !currentOp || stepArray[ 1 ] > currentOp[ 0 ] && stepArray[ 1 ] < currentOp[ 3 ] ) ) {
-                  genState.label = stepArray[ 1 ];
-                  break;
-                }
-                if ( 6 === stepArray[ 0 ] && genState.label < currentOp[ 1 ] ) {
-                  genState.label = currentOp[ 1 ];
-                  currentOp = stepArray;
-                  break;
-                }
-                if ( currentOp && genState.label < currentOp[ 2 ] ) {
-                  genState.label = currentOp[ 2 ];
-                  genState.ops.push( stepArray );
-                  break;
-                }
-                // Default: Pop from ops and trys, then continue.
-                currentOp[ 2 ] && genState.ops.pop();
-                genState.trys.pop();
-                continue;
-            }
-            stepArray = _arguments.call( thisArg, genState );
-          } catch ( errorValue ) {
-            stepArray = [ 6, errorValue ];
-            lastYielded = 0;
-          } finally {
-            currentGen = currentOp = 0; // Clear generator state.
-          }
-        }
-        if ( 5 & stepArray[ 0 ] ) throw stepArray[ 1 ];
-        return { value: stepArray[ 0 ] ? stepArray[ 1 ] : void 0, done: true };
-      }
-    };
-
-    // Helper for importing default exports from modules.
-    var importDefaultHelper = ( this && this.__importDefault ) || function( inputModule ) {
-      return inputModule && inputModule.__esModule ? inputModule : { default: inputModule };
-    };
-
-    // Store a reference to the 'this' context for use in helpers.
-    var localContext = this;
-    // Mark this module's exports as an ES module.
-    modExports.isEsModule = true;
-
-    // Import the 'fs' (file system) module.
-    var fileSystemUtil = importDefaultHelper( moduleLoader( 1 ) );
-
-    /**
-     * Generator function that yields words from a string.
-     * Splits the string by whitespace and yields each non-empty word.
-     * @param {string} sourceString - The string to tokenize.
-     * @yields {string} A single word from the input string.
-     */
-    function getInputWordIterator( sourceString ) {
-      var wordParts, currentIndex;
-      return generatorHelper( this, function( genState ) {
-        switch ( genState.label ) {
-          case 0:
-            // Split the string by whitespace and filter out empty strings.
-            wordParts = sourceString.split( /\s+/ ).filter( function( s ) { return s.length > 0; } );
-            currentIndex = 0;
-            genState.label = 1;
-          case 1:
-            // Loop through the word parts.
-            return currentIndex < wordParts.length ? [ 4, wordParts[ currentIndex ] ] : [ 3, 4 ];
-          case 2:
-            // After yielding, continue to the next word.
-            genState.sent();
-            genState.label = 3;
-          case 3:
-            currentIndex++;
-            return [ 3, 1 ]; // Go back to label 1 to check condition.
-          case 4:
-            return [ 2 ]; // Generator done.
-        }
-      } );
+        // Return the module's exports.
+        return moduleObject.exports;
     }
 
-    /**
-     * Reads the entire input from /dev/stdin asynchronously.
-     * @returns {Promise<string>} A promise that resolves with the input string or rejects with an error.
-     */
-    modExports.retrieveInput = function() {
-      return new Promise( function( resolveHandler, errorHandler ) {
-        fileSystemUtil.default.readFile( "/dev/stdin", "utf8", function( readError, inputData ) {
-          if ( readError ) {
-            errorHandler( readError );
-          } else {
-            resolveHandler( inputData );
-          }
-        } );
-      } );
+    // Expose the modules map to the loader.
+    moduleLoader.m = modulesMap;
+
+    // Expose the module cache to the loader.
+    moduleLoader.c = moduleCache;
+
+    // Define a getter function for harmony exports (ESM compatibility).
+    moduleLoader.d = function(targetObject, propertyName, getterFunction) {
+        // Only define if the property doesn't already exist on the target object.
+        if (!moduleLoader.o(targetObject, propertyName)) {
+            Object.defineProperty(targetObject, propertyName, {
+                enumerable: true, // Make the property enumerable.
+                get: getterFunction // Assign the provided getter function.
+            });
+        }
     };
 
-    // Expose the word iterator function.
-    modExports.createWordStream = getInputWordIterator;
-
-    /**
-     * Asynchronously gets a function that, when called, returns the next integer from input.
-     * It reads the entire input once, then provides a closure for subsequent calls.
-     * @returns {Promise<Function>} A promise resolving to a function that returns parsed integers.
-     */
-    modExports.getNextInteger = function() {
-      return awaitHelper( localContext, void 0, void 0, function() {
-        var rawInputText, wordStream;
-        return generatorHelper( this, function( genState ) {
-          switch ( genState.label ) {
-            case 0:
-              return [ 4, modExports.retrieveInput() ]; // Await input.
-            case 1:
-              rawInputText = genState.sent();
-              wordStream = getInputWordIterator( rawInputText ); // Create iterator from input.
-              return [ 2, function() {
-                return parseInt( wordStream.next().value ); // Return a function to get next int.
-              } ];
-          }
-        } );
-      } );
+    // Define __esModule on exports for ES module interoperability.
+    moduleLoader.r = function(targetObject) {
+        // Set Symbol.toStringTag for better module identification in some environments.
+        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(targetObject, Symbol.toStringTag, {
+                value: "Module"
+            });
+        }
+        // Mark the object as an ES module.
+        Object.defineProperty(targetObject, "__esModule", {
+            value: true
+        });
     };
 
-    /**
-     * Asynchronously gets a function that, when called, returns the next token from input.
-     * This version implements a more robust tokenization directly from the string.
-     * It reads the entire input once, then provides a closure for subsequent calls.
-     * @returns {Promise<Function>} A promise resolving to a function that returns string tokens.
-     */
-    modExports.getNextToken = function() {
-      return awaitHelper( localContext, void 0, void 0, function() {
-        var wholeInput, tokenGenerator;
-        return generatorHelper( this, function( genState ) {
-          switch ( genState.label ) {
-            case 0:
-              return [ 4, modExports.retrieveInput() ]; // Await input.
-            case 1:
-              wholeInput = genState.sent();
-              // Define an inner generator to yield tokens from the 'wholeInput' string.
-              tokenGenerator = function() {
-                var startIdx, endIdx, tokenValue;
-                return generatorHelper( this, function( genState ) {
-                  switch ( genState.label ) {
+    // Create a fake namespace object for various import scenarios.
+    // mode & 1: value is a module ID, so require it first.
+    // mode & 8: behave like a direct 'require' call.
+    // mode & 4: return value directly if it's already an ES module namespace object.
+    // mode & 2: merge all properties from the module into the new namespace object.
+    moduleLoader.t = function(targetModuleId, modeFlags) {
+        if (modeFlags & 1) {
+            targetModuleId = moduleLoader(targetModuleId);
+        }
+        if (modeFlags & 8) {
+            return targetModuleId;
+        }
+        if (modeFlags & 4 && typeof targetModuleId === "object" && targetModuleId && targetModuleId.__esModule) {
+            return targetModuleId;
+        }
+        var resultObject = Object.create(null);
+        moduleLoader.r(resultObject);
+        Object.defineProperty(resultObject, "default", {
+            enumerable: true,
+            value: targetModuleId
+        });
+        if (modeFlags & 2 && typeof targetModuleId !== "string") {
+            for (var propName in targetModuleId) {
+                moduleLoader.d(resultObject, propName, (function(prop) {
+                    return targetModuleId[prop];
+                }).bind(null, propName));
+            }
+        }
+        return resultObject;
+    };
+
+    // Get the default export of a module, handling both ES modules and CommonJS.
+    moduleLoader.n = function(inputModule) {
+        var defaultExportGetter = inputModule && inputModule.__esModule ? function() {
+            return inputModule.default
+        } : function() {
+            return inputModule
+        };
+        return moduleLoader.d(defaultExportGetter, "a", defaultExportGetter), defaultExportGetter
+    };
+
+    // Check if a property is an own property of an object.
+    moduleLoader.o = function(checkObject, checkProperty) {
+        return Object.prototype.hasOwnProperty.call(checkObject, checkProperty);
+    };
+
+    // Public path for assets (empty in this case).
+    moduleLoader.p = "";
+
+    // Load the entry module (module ID 17) and start execution.
+    moduleLoader(moduleLoader.s = 17);
+}({
+    // Module 0: Contains utility functions for input processing.
+    0: function(moduleRef, exportsObj, localRequire) {
+        "use strict";
+        // TypeScript/Babel helper for async/await syntax.
+        var asyncWrapper = (this && this.__awaiter) || function(thisArg, _arguments, P, generator) {
+            return new(P || (P = Promise))(function(resolve, reject) {
+                function fulfilled(value) {
+                    try {
+                        step(generator.next(value));
+                    } catch (e) {
+                        reject(e);
+                    }
+                }
+
+                function rejected(value) {
+                    try {
+                        step(generator.throw(value));
+                    } catch (e) {
+                        reject(e);
+                    }
+                }
+
+                function step(result) {
+                    result.done ? resolve(result.value) : new P(function(resolve) {
+                        resolve(result.value);
+                    }).then(fulfilled, rejected);
+                }
+                step((generator = generator.apply(thisArg, _arguments || [])).next());
+            });
+        };
+
+        // TypeScript/Babel helper for generator functions.
+        var generatorFactory = (this && this.__generator) || function(thisArg, body) {
+            var _ = {
+                    label: 0,
+                    sent: function() {
+                        if (1 & _[0]) throw _[1];
+                        return _[1];
+                    },
+                    trys: [],
+                    ops: []
+                },
+                f, y, t, g;
+            return g = {
+                next: verb(0),
+                "throw": verb(1),
+                "return": verb(2)
+            }, typeof Symbol === "function" && (g[Symbol.iterator] = function() {
+                return this;
+            }), g;
+
+            function verb(n) {
+                return function(v) {
+                    return step([n, v]);
+                };
+            }
+
+            function step(op) {
+                if (f) throw new TypeError("Generator is already executing.");
+                while (_) try {
+                    if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                    if (y = 0, t) op = [op[0] & 2, t.value];
+                    switch (op[0]) {
+                        case 0:
+                        case 1:
+                            t = op;
+                            break;
+                        case 4:
+                            _.label++;
+                            return {
+                                value: op[1],
+                                done: false
+                            };
+                        case 5:
+                            _.label++;
+                            y = op[1];
+                            op = [0];
+                            continue;
+                        case 7:
+                            op = _.ops.pop();
+                            _.trys.pop();
+                            continue;
+                        default:
+                            if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+                                _ = 0;
+                                continue;
+                            }
+                            if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) {
+                                _.label = op[1];
+                                break;
+                            }
+                            if (op[0] === 6 && _.label < t[1]) {
+                                _.label = t[1];
+                                t = op;
+                                break;
+                            }
+                            if (t && _.label < t[2]) {
+                                _.label = t[2];
+                                _.ops.push(op);
+                                break;
+                            }
+                            if (t[2]) {
+                                _.ops.pop();
+                            }
+                            _.trys.pop();
+                            continue;
+                    }
+                    op = body.call(thisArg, _);
+                } catch (e) {
+                    op = [6, e];
+                    y = 0;
+                } finally {
+                    f = t = 0;
+                }
+                if (op[0] & 5) throw op[1];
+                return {
+                    value: op[0] ? op[1] : void 0,
+                    done: true
+                };
+            }
+        };
+
+        // TypeScript/Babel helper for handling default imports.
+        var importDefaultHelper = (this && this.__importDefault) || function(inputModule) {
+            return (inputModule && inputModule.__esModule) ? inputModule : {
+                default: inputModule
+            };
+        };
+
+        var currentContext = this;
+        exportsObj.__esModule = true;
+
+        // Import the Node.js 'fs' (file system) module.
+        var fileSystemModule = importDefaultHelper(localRequire(1));
+
+        // Generator function that yields words from an input string, splitting by whitespace.
+        function createWordIterator(inputString) {
+            var wordParts, currentIndex, genState;
+            return generatorFactory(this, function(genState) {
+                switch (genState.label) {
                     case 0:
-                      startIdx = -1; // Marks the start of a token.
-                      endIdx = 0;    // Current position in the string.
-                      genState.label = 1;
+                        // Split the input string by one or more whitespace characters and filter out empty results.
+                        wordParts = inputString.split(/\s+/).filter(function(part) {
+                            return part.length > 0;
+                        });
+                        currentIndex = 0;
+                        genState.label = 1;
                     case 1:
-                      // Loop until end of string.
-                      return endIdx <= wholeInput.length ?
-                        ( " " !== wholeInput[ endIdx ] && "\n" !== wholeInput[ endIdx ] && endIdx !== wholeInput.length ?
-                          [ 3, 5 ] : // If not whitespace and not end, continue building token.
-                          ( -1 !== startIdx ? [ 3, 2 ] : [ 3, 6 ] ) ) : // If whitespace or end, check if a token was being built.
-                        [ 3, 7 ]; // End of string, exit.
+                        // Check if there are more words to yield.
+                        return currentIndex < wordParts.length ? [4, wordParts[currentIndex]] : [3, 4];
                     case 2:
-                      tokenValue = wholeInput.substring( startIdx, endIdx ); // Extract token.
-                      startIdx = -1; // Reset start index.
-                      return [ 4, tokenValue ]; // Yield the token.
+                        genState.sent(); // Consume the yielded value (not used here, but part of generator flow).
+                        genState.label = 3;
                     case 3:
-                      genState.sent();
-                      genState.label = 4;
+                        currentIndex++; // Move to the next word.
+                        return [3, 1]; // Loop back to check for more words.
                     case 4:
-                      return [ 3, 6 ]; // Continue loop.
-                    case 5:
-                      if ( -1 === startIdx ) {
-                        startIdx = endIdx; // Mark start of new token.
-                      }
-                      genState.label = 6;
-                    case 6:
-                      endIdx++;
-                      return [ 3, 1 ]; // Continue loop.
-                    case 7:
-                      return [ 2 ]; // Generator done.
-                  }
-                } );
-              }(); // Immediately invoke the inner generator to get the iterator.
-              return [ 2, function() {
-                return tokenGenerator.next().value; // Return a function to get next token.
-              } ];
-          }
-        } );
-      } );
-    };
-
-    /**
-     * Asynchronously gets a function that, when called, returns the next integer from input.
-     * This uses the more robust tokenization method.
-     * @returns {Promise<Function>} A promise resolving to a function that returns parsed integers.
-     */
-    modExports.getNextParsedInteger = function() {
-      return awaitHelper( localContext, void 0, void 0, function() {
-        var tokenFunc;
-        return generatorHelper( this, function( genState ) {
-          switch ( genState.label ) {
-            case 0:
-              return [ 4, modExports.getNextToken() ]; // Await the token getter function.
-            case 1:
-              tokenFunc = genState.sent();
-              return [ 2, function() {
-                return parseInt( tokenFunc() ); // Return a function to get next token and parse it.
-              } ];
-          }
-        } );
-      } );
-    };
-  },
-
-  /* Module 1: Node.js File System (fs) Module */
-  1: function( currentMod, modExports ) {
-    // This module simply exports the Node.js built-in 'fs' module.
-    currentMod.exports = require( "node:fs" );
-  },
-
-  /* Module 17: Main Application Logic */
-  17: function( currentMod, modExports, moduleLoader ) {
-    "use strict";
-    // Reuse the awaiter and generator helpers from the boilerplate.
-    var awaitHelper = ( this && this.__awaiter ) || function( thisArg, _arguments, P, generator ) {
-      return new ( P || ( P = Promise ) )( function( fulfill, fail ) {
-        function processStep( genResult ) { try { advanceGenerator( generator.next( genResult ) ); } catch ( errorValue ) { fail( errorValue ); } }
-        function handleError( errorValue ) { try { advanceGenerator( generator.throw( errorValue ) ); } catch ( errorValue ) { fail( errorValue ); } }
-        function advanceGenerator( iterResult ) { iterResult.done ? fulfill( iterResult.value ) : new P( function( promiseResolve ) { promiseResolve( iterResult.value ); } ).then( processStep, handleError ); }
-        advanceGenerator( ( generator = generator.apply( thisArg, _arguments || [] ) ).next() );
-      } );
-    };
-    var generatorHelper = ( this && this.__generator ) || function( thisArg, _arguments ) {
-      var currentGen, lastYielded, currentOp, iteratorObj, genState = { label: 0, sent: function() { if ( 1 & currentOp[ 0 ] ) throw currentOp[ 1 ]; return currentOp[ 1 ]; }, trys: [], ops: [] };
-      return iteratorObj = { next: makeStep( 0 ), throw: makeStep( 1 ), return: makeStep( 2 ) }, typeof Symbol === "function" && ( iteratorObj[ Symbol.iterator ] = function() { return this; } ), iteratorObj;
-      function makeStep( stepType ) { return function( stepValue ) { return executeStep( [ stepType, stepValue ] ); }; }
-      function executeStep( stepArray ) {
-        if ( currentGen ) throw new TypeError( "Generator is already executing." );
-        while ( genState ) try {
-          if ( ( currentGen = 1 ) && ( lastYielded = ( 2 & stepArray[ 0 ] ? currentGen.return : stepArray[ 0 ] ? currentGen.throw || ( ( currentOp = currentGen.return ) && currentOp.call( currentGen ), 0 ) : currentGen.next ) ) && !( currentOp = lastYielded.call( currentGen, stepArray[ 1 ] ) ).done ) return currentOp;
-          lastYielded = 0;
-          if ( currentOp ) stepArray = [ 2 & stepArray[ 0 ], currentOp.value ];
-          switch ( stepArray[ 0 ] ) {
-            case 0: case 1: currentOp = stepArray; break;
-            case 4: genState.label++; return { value: stepArray[ 1 ], done: false };
-            case 5: genState.label++; lastYielded = stepArray[ 1 ]; stepArray = [ 0 ]; continue;
-            case 7: stepArray = genState.ops.pop(); genState.trys.pop(); continue;
-            default:
-              if ( !( currentOp = ( currentOp = genState.trys ).length > 0 && currentOp[ currentOp.length - 1 ] ) && ( 6 === stepArray[ 0 ] || 2 === stepArray[ 0 ] ) ) { genState = 0; continue; }
-              if ( 3 === stepArray[ 0 ] && ( !currentOp || stepArray[ 1 ] > currentOp[ 0 ] && stepArray[ 1 ] < currentOp[ 3 ] ) ) { genState.label = stepArray[ 1 ]; break; }
-              if ( 6 === stepArray[ 0 ] && genState.label < currentOp[ 1 ] ) { genState.label = currentOp[ 1 ]; currentOp = stepArray; break; }
-              if ( currentOp && genState.label < currentOp[ 2 ] ) { genState.label = currentOp[ 2 ]; genState.ops.push( stepArray ); break; }
-              currentOp[ 2 ] && genState.ops.pop(); genState.trys.pop(); continue;
-          }
-          stepArray = _arguments.call( thisArg, genState );
-        } catch ( errorValue ) { stepArray = [ 6, errorValue ]; lastYielded = 0; } finally { currentGen = currentOp = 0; }
-        if ( 5 & stepArray[ 0 ] ) throw stepArray[ 1 ]; return { value: stepArray[ 0 ] ? stepArray[ 1 ] : void 0, done: true };
-      }
-    };
-
-    // Store a reference to the 'this' context for use in helpers.
-    var localContext = this;
-    // Mark this module's exports as an ES module.
-    modExports.isEsModule = true;
-
-    // Import the input utilities module (Module 0).
-    var inputUtilities = moduleLoader( 0 );
-
-    // Main asynchronous execution block.
-    awaitHelper( localContext, void 0, void 0, function() {
-      var inputValue, parsedValue, counterA, counterB;
-      return generatorHelper( this, function( genState ) {
-        switch ( genState.label ) {
-          case 0:
-            // Obtain the function to get the next parsed integer from input.
-            return [ 4, inputUtilities.getNextParsedInteger() ];
-          case 1:
-            inputValue = genState.sent(); // 'inputValue' is now a function.
-            parsedValue = inputValue();   // Call it to get the actual integer.
-
-            // Check if the parsed value is odd.
-            if ( parsedValue % 2 === 1 ) {
-              // If odd, iterate from 1 to parsedValue.
-              for ( counterA = 1; counterA <= parsedValue; counterA++ ) {
-                // Inner loop from counterA + 1 to parsedValue.
-                for ( counterB = counterA + 1; counterB <= parsedValue; counterB++ ) {
-                  // If the sum of counterA and counterB is NOT equal to parsedValue, print them.
-                  if ( counterA + counterB !== parsedValue ) {
-                    console.log( counterA + " " + counterB );
-                  }
+                        return [2]; // End of the generator.
                 }
-              }
-            } else {
-              // If even, iterate from 1 to parsedValue.
-              for ( counterA = 1; counterA <= parsedValue; counterA++ ) {
-                // Inner loop from counterA + 1 to parsedValue.
-                for ( counterB = counterA + 1; counterB <= parsedValue; counterB++ ) {
-                  // If the sum of counterA and counterB is NOT equal to parsedValue + 1, print them.
-                  if ( counterA + counterB !== parsedValue + 1 ) {
-                    console.log( counterA + " " + counterB );
-                  }
-                }
-              }
-            }
-            return [ 2 ]; // End of generator.
+            });
         }
-      } );
-    } );
-  }
-} );
+
+        // Asynchronously reads all content from standard input (/dev/stdin).
+        exportsObj.readInput = function() {
+            return new Promise(function(resolvePromise, rejectPromise) {
+                fileSystemModule.default.readFile("/dev/stdin", "utf8", function(readError, fileContent) {
+                    if (readError) {
+                        rejectPromise(readError); // Reject the promise if an error occurs.
+                    } else {
+                        resolvePromise(fileContent); // Resolve with the file content.
+                    }
+                });
+            });
+        };
+
+        // Expose the word iterator creator function.
+        exportsObj.getFoolIterator = createWordIterator;
+
+        // Asynchronously gets a function that returns the next integer from stdin using the basic word iterator.
+        exportsObj.getFoolNextInt = function() {
+            return asyncWrapper(currentContext, void 0, void 0, function() {
+                var rawInput, wordIterator;
+                return generatorFactory(this, function(genState) {
+                    switch (genState.label) {
+                        case 0:
+                            return [4, exportsObj.readInput()]; // Await the full input string.
+                        case 1:
+                            rawInput = genState.sent();
+                            wordIterator = createWordIterator(rawInput); // Create an iterator for the input.
+                            // Return a function that, when called, yields and parses the next integer.
+                            return [2, function() {
+                                return parseInt(wordIterator.next().value);
+                            }];
+                    }
+                });
+            });
+        };
+
+        // Asynchronously gets a function that returns the next token from stdin using a character-by-character iterator.
+        exportsObj.getChottoMashinaNext = function() {
+            return asyncWrapper(currentContext, void 0, void 0, function() {
+                var fullInput, charIterator;
+                return generatorFactory(this, function(genState) {
+                    switch (genState.label) {
+                        case 0:
+                            return [4, exportsObj.readInput()]; // Await the full input string.
+                        case 1:
+                            fullInput = genState.sent();
+                            // Define and immediately invoke an inner generator to extract tokens.
+                            charIterator = function() {
+                                var startIndex, charIndex, currentWord, innerGenState;
+                                return generatorFactory(this, function(innerGenState) {
+                                    switch (innerGenState.label) {
+                                        case 0:
+                                            startIndex = -1; // Initialize start index for a word.
+                                            charIndex = 0; // Initialize character index.
+                                            innerGenState.label = 1;
+                                        case 1:
+                                            // Loop through the input string character by character.
+                                            return charIndex <= fullInput.length ?
+                                                // If current char is not a space/newline AND not end of string, it's part of a word.
+                                                (fullInput[charIndex] !== " " && fullInput[charIndex] !== "\n" && charIndex !== fullInput.length) ? [3, 5] :
+                                                // If a word was being built (startIndex != -1), yield it.
+                                                startIndex !== -1 ? [3, 2] : [3, 6] :
+                                                [3, 7]; // End of string, terminate.
+                                        case 2:
+                                            currentWord = fullInput.substring(startIndex, charIndex); // Extract the word.
+                                            startIndex = -1; // Reset start index for the next word.
+                                            return [4, currentWord]; // Yield the extracted word.
+                                        case 3:
+                                            innerGenState.sent(); // Consume the yielded value.
+                                            innerGenState.label = 4;
+                                        case 4:
+                                            return [3, 6]; // Continue to the next character.
+                                        case 5:
+                                            // If not currently building a word, mark the current character as the start.
+                                            if (startIndex === -1) {
+                                                startIndex = charIndex;
+                                            }
+                                            innerGenState.label = 6;
+                                        case 6:
+                                            charIndex++; // Move to the next character.
+                                            return [3, 1]; // Loop back.
+                                        case 7:
+                                            return [2]; // End of the inner generator.
+                                    }
+                                });
+                            }();
+                            // Return a function that, when called, returns the next token from the character iterator.
+                            return [2, function() {
+                                return charIterator.next().value;
+                            }];
+                    }
+                });
+            });
+        };
+
+        // Asynchronously gets a function that returns the next integer from stdin using the "chotto mashina" iterator.
+        exportsObj.getChottoMashinaNextInt = function() {
+            return asyncWrapper(currentContext, void 0, void 0, function() {
+                var nextWordFunction;
+                return generatorFactory(this, function(genState) {
+                    switch (genState.label) {
+                        case 0:
+                            return [4, exportsObj.getChottoMashinaNext()]; // Await the token getter function.
+                        case 1:
+                            nextWordFunction = genState.sent();
+                            // Return a function that, when called, gets the next token and parses it as an integer.
+                            return [2, function() {
+                                return parseInt(nextWordFunction());
+                            }];
+                    }
+                });
+            });
+        };
+    },
+
+    // Module 1: Node.js 'fs' module, directly exported.
+    1: function(moduleRef, exportsObj) {
+        moduleRef.exports = require("fs");
+    },
+
+    // Module 17: Main application logic.
+    17: function(moduleRef, exportsObj, localRequire) {
+        "use strict";
+        // TypeScript/Babel helper for async/await syntax.
+        var asyncWrapper = (this && this.__awaiter) || function(thisArg, _arguments, P, generator) {
+            return new(P || (P = Promise))(function(resolve, reject) {
+                function fulfilled(value) {
+                    try {
+                        step(generator.next(value));
+                    } catch (e) {
+                        reject(e);
+                    }
+                }
+
+                function rejected(value) {
+                    try {
+                        step(generator.throw(value));
+                    } catch (e) {
+                        reject(e);
+                    }
+                }
+
+                function step(result) {
+                    result.done ? resolve(result.value) : new P(function(resolve) {
+                        resolve(result.value);
+                    }).then(fulfilled, rejected);
+                }
+                step((generator = generator.apply(thisArg, _arguments || [])).next());
+            });
+        };
+
+        // TypeScript/Babel helper for generator functions.
+        var generatorFactory = (this && this.__generator) || function(thisArg, body) {
+            var _ = {
+                    label: 0,
+                    sent: function() {
+                        if (1 & _[0]) throw _[1];
+                        return _[1];
+                    },
+                    trys: [],
+                    ops: []
+                },
+                f, y, t, g;
+            return g = {
+                next: verb(0),
+                "throw": verb(1),
+                "return": verb(2)
+            }, typeof Symbol === "function" && (g[Symbol.iterator] = function() {
+                return this;
+            }), g;
+
+            function verb(n) {
+                return function(v) {
+                    return step([n, v]);
+                };
+            }
+
+            function step(op) {
+                if (f) throw new TypeError("Generator is already executing.");
+                while (_) try {
+                    if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                    if (y = 0, t) op = [op[0] & 2, t.value];
+                    switch (op[0]) {
+                        case 0:
+                        case 1:
+                            t = op;
+                            break;
+                        case 4:
+                            _.label++;
+                            return {
+                                value: op[1],
+                                done: false
+                            };
+                        case 5:
+                            _.label++;
+                            y = op[1];
+                            op = [0];
+                            continue;
+                        case 7:
+                            op = _.ops.pop();
+                            _.trys.pop();
+                            continue;
+                        default:
+                            if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+                                _ = 0;
+                                continue;
+                            }
+                            if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) {
+                                _.label = op[1];
+                                break;
+                            }
+                            if (op[0] === 6 && _.label < t[1]) {
+                                _.label = t[1];
+                                t = op;
+                                break;
+                            }
+                            if (t && _.label < t[2]) {
+                                _.label = t[2];
+                                _.ops.push(op);
+                                break;
+                            }
+                            if (t[2]) {
+                                _.ops.pop();
+                            }
+                            _.trys.pop();
+                            continue;
+                    }
+                    op = body.call(thisArg, _);
+                } catch (e) {
+                    op = [6, e];
+                    y = 0;
+                } finally {
+                    f = t = 0;
+                }
+                if (op[0] & 5) throw op[1];
+                return {
+                    value: op[0] ? op[1] : void 0,
+                    done: true
+                };
+            }
+        };
+
+        var currentContext = this;
+        exportsObj.__esModule = true;
+
+        // Import input helper functions from module 0.
+        var inputHelpers = localRequire(0);
+
+        // Main asynchronous execution block for the application.
+        asyncWrapper(currentContext, void 0, void 0, function() {
+            var initialValue, currentNum, firstLoopVar, secondLoopVar, genState;
+            return generatorFactory(this, function(genState) {
+                switch (genState.label) {
+                    case 0:
+                        // Await a function that will provide the next integer from input.
+                        return [4, inputHelpers.getChottoMashinaNextInt()];
+                    case 1:
+                        initialValue = genState.sent();
+                        currentNum = initialValue(); // Call the obtained function to get the actual integer value.
+
+                        // Check if the number is odd or even.
+                        if (currentNum % 2 === 1) {
+                            // If the number is odd, iterate through pairs (firstLoopVar, secondLoopVar).
+                            // Print pairs where their sum is NOT equal to currentNum.
+                            for (firstLoopVar = 1; firstLoopVar <= currentNum; firstLoopVar++) {
+                                for (secondLoopVar = firstLoopVar + 1; secondLoopVar <= currentNum; secondLoopVar++) {
+                                    if (firstLoopVar + secondLoopVar !== currentNum) {
+                                        console.log(firstLoopVar + " " + secondLoopVar);
+                                    }
+                                }
+                            }
+                        } else {
+                            // If the number is even, iterate through pairs (firstLoopVar, secondLoopVar).
+                            // Print pairs where their sum is NOT equal to currentNum + 1.
+                            for (firstLoopVar = 1; firstLoopVar <= currentNum; firstLoopVar++) {
+                                for (secondLoopVar = firstLoopVar + 1; secondLoopVar <= currentNum; secondLoopVar++) {
+                                    if (firstLoopVar + secondLoopVar !== currentNum + 1) {
+                                        console.log(firstLoopVar + " " + secondLoopVar);
+                                    }
+                                }
+                            }
+                        }
+                        return [2]; // End of the main logic.
+                }
+            });
+        })();
+    }
+});

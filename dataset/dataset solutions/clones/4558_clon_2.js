@@ -1,34 +1,32 @@
-// The entire incoming stream of characters is contained within the dataSource variable.
-function ProcessData(dataSource) {
-  // Define constant arrays representing two distinct categories of numbers.
-  const firstCollection = [1, 3, 5, 7, 8, 12];
-  const secondCollection = [4, 6, 9, 11];
+function ProcessInput(rawData) {
+  // This function processes the provided raw input data.
+  const setOne = [1, 3, 5, 7, 8, 12]; // A collection of numbers for comparison.
+  const setTwo = [4, 6, 9, 11];     // Another collection of numbers.
 
-  let finalVerdict; // This variable will store the ultimate determination.
+  let resultString; // Variable to store the final outcome.
 
-  // The initial line of the input is found at dataSource[0].
-  const parsedInputTokens = dataSource[0].split(" "); // The raw string is broken into components.
+  // The first line of rawData contains space-separated values.
+  const parsedValues = rawData[0].split(" "); // Split the input string by space.
 
-  const valueOne = parseInt(parsedInputTokens[0], 10); // Convert the initial token to an integer.
-  const valueTwo = parseInt(parsedInputTokens[1], 10); // Convert the subsequent token to an integer.
+  // Convert the string values to integers.
+  const firstNum = parseInt(parsedValues[0], 10);
+  const secondNum = parseInt(parsedValues[1], 10);
 
-  // Evaluate conditions based on the parsed numerical values.
-  if (valueOne === 2 || valueTwo === 2) {
-    finalVerdict = "No"; // If either value is two, the condition is not met.
+  // Check for specific conditions to determine the result.
+  if (firstNum === 2 || secondNum === 2) {
+    resultString = "No"; // If either number is 2, the answer is "No".
   } else if (
-    (firstCollection.indexOf(valueOne) >= 0 &&
-      firstCollection.indexOf(valueTwo) >= 0) ||
-    (secondCollection.indexOf(valueOne) >= 0 &&
-      secondCollection.indexOf(valueTwo) >= 0)
+    (setOne.includes(firstNum) && setOne.includes(secondNum)) || // Both numbers in setOne.
+    (setTwo.includes(firstNum) && setTwo.includes(secondNum))    // Or both numbers in setTwo.
   ) {
-    finalVerdict = "Yes"; // Both values are in the same collection.
+    resultString = "Yes"; // If they belong to the same group, the answer is "Yes".
   } else {
-    finalVerdict = "No"; // Otherwise, the condition is not met.
+    resultString = "No"; // Otherwise, the answer is "No".
   }
 
-  // Display the computed outcome.
-  console.log("%s", finalVerdict);
+  // Display the computed result.
+  console.log("%s", resultString);
 }
 
-// *** Do not modify the following section (it handles standard input/output and invokes the primary processing function). ***
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Do not modify the following line; it handles reading from standard input and invoking the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

@@ -1,87 +1,111 @@
-const acquireSourceData = () => require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+class InputReader {
+    #lineBuffer;
+    #currentLineIndex;
 
-const PARSING_MODE = {
-  NUMERIC_SEQUENCE: 101,
-  SINGLE_NUMBER: 102,
-  CHARACTER_STREAM: 103
-};
+    constructor(rawInputContent) {
+        this.#lineBuffer = rawInputContent.trim().split('\n');
+        this.#currentLineIndex = 0;
+    }
 
-const processLineContent = (textEntry, modeIdentifier) => {
-  switch (modeIdentifier) {
-    case PARSING_MODE.NUMERIC_SEQUENCE:
-      return textEntry.split(" ").map(Number);
-    case PARSING_MODE.SINGLE_NUMBER:
-      return Number(textEntry);
-    case PARSING_MODE.CHARACTER_STREAM:
-      return textEntry.split("");
-    default:
-      return textEntry;
-  }
-};
+    hasMoreLines() {
+        return this.#currentLineIndex < this.#lineBuffer.length;
+    }
 
-function* feedLineProvider(sourceEntries) {
-  let pointer = 0;
-  while (pointer < sourceEntries.length) {
-    yield sourceEntries[pointer++];
-  }
+    retrieveNextLine() {
+        if (!this.hasMoreLines()) {
+            throw new Error("No more input lines available.");
+        }
+        return this.#lineBuffer[this.#currentLineIndex++];
+    }
 }
 
-const orchestrateComputation = () => {
-  const rawDataLines = acquireSourceData();
-  const lineGenerator = feedLineProvider(rawDataLines);
+const standardInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputProcessor = new InputReader(standardInputContent);
 
-  const obtainNextParsedValue = (mode) => processLineContent(lineGenerator.next().value, mode);
+const conversionOperations = new Map([
+    [1, (val) => parseInt(val)],
+    [2, (val) => val.split(" ")],
+    [4, (val) => val.split(" ").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+    [8, (arr) => arr.join(" ")],
+    [9, (arr) => arr.join("\n")],
+    [0, (arr) => arr.join("")]
+]);
 
-  const initialParameters = obtainNextParsedValue(PARSING_MODE.NUMERIC_SEQUENCE);
-  const vertexCount = initialParameters[0];
-  const edgeCount = initialParameters[1];
+function applyConversion(inputValue, conversionType) {
+    try {
+        const operation = conversionOperations.get(conversionType);
+        return operation ? operation(inputValue) : inputValue;
+    } catch (err) {
+        return inputValue;
+    }
+}
 
-  const largeArbitraryValue = 1000000007;
+function fetchInteger() { return applyConversion(inputProcessor.retrieveNextLine(), 1); }
+function fetchStringArray() { return applyConversion(inputProcessor.retrieveNextLine(), 2); }
+function fetchIntegerArray() { return applyConversion(inputProcessor.retrieveNextLine(), 4); }
+function fetchCharacterArray() { return applyConversion(inputProcessor.retrieveNextLine(), 6); }
 
-  const shortestPathMatrix = Array.from({ length: vertexCount }, (_, rIdx) =>
-    Array.from({ length: vertexCount }, (_, cIdx) => (rIdx === cIdx ? 0 : largeArbitraryValue))
-  );
+function emitResult(data) { console.log(data); }
+function emitError(data) { console.error(data); }
 
-  const originalConnectionMatrix = Array.from({ length: vertexCount }, (_, rIdx) =>
-    Array.from({ length: vertexCount }, (_, cIdx) => (rIdx === cIdx ? 0 : largeArbitraryValue))
-  );
+processGraphData();
 
-  Array.from({ length: edgeCount }).forEach(() => {
-    const connectionDetails = obtainNextParsedValue(PARSING_MODE.NUMERIC_SEQUENCE);
-    const startVertex = connectionDetails[0] - 1;
-    const endVertex = connectionDetails[1] - 1;
-    const edgeWeight = connectionDetails[2];
+function processGraphData() {
+    const graphParameters = fetchIntegerArray();
+    const nodeCount = graphParameters[0];
+    const edgeCount = graphParameters[1];
 
-    shortestPathMatrix[startVertex][endVertex] = edgeWeight;
-    shortestPathMatrix[endVertex][startVertex] = edgeWeight;
-    originalConnectionMatrix[startVertex][endVertex] = edgeWeight;
-    originalConnectionMatrix[endVertex][startVertex] = edgeWeight;
-  });
+    const pathInfinity = 1000000007;
 
-  Array.from({ length: vertexCount }).forEach((_, pivotVertex) => {
-    Array.from({ length: vertexCount }).forEach((_, startVertex) => {
-      Array.from({ length: vertexCount }).forEach((_, endVertex) => {
-        const currentDistance = shortestPathMatrix[startVertex][endVertex];
-        const pathViaPivot = shortestPathMatrix[startVertex][pivotVertex] + shortestPathMatrix[pivotVertex][endVertex];
-        if (currentDistance > pathViaPivot) {
-          shortestPathMatrix[startVertex][endVertex] = pathViaPivot;
-        }
-      });
+    const shortestPaths = Array.from({ length: nodeCount }, () =>
+        Array.from({ length: nodeCount }, () => pathInfinity)
+    );
+
+    Array.from({ length: nodeCount }).forEach((_, idx) => {
+        shortestPaths[idx][idx] = 0;
     });
-  });
 
-  let superfluousEdgeCounter = 0;
-  Array.from({ length: vertexCount }).forEach((_, row) => {
-    Array.from({ length: vertexCount }).forEach((_, col) => {
-      if (originalConnectionMatrix[row][col] !== largeArbitraryValue &&
-          originalConnectionMatrix[row][col] !== shortestPathMatrix[row][col]) {
-        superfluousEdgeCounter++;
-      }
+    const originalEdgeWeights = new Map();
+
+    Array.from({ length: edgeCount }).forEach(() => {
+        const edgeData = fetchIntegerArray();
+        const u = edgeData[0] - 1;
+        const v = edgeData[1] - 1;
+        const weight = edgeData[2];
+
+        shortestPaths[u][v] = weight;
+        shortestPaths[v][u] = weight;
+
+        originalEdgeWeights.set(`${u}-${v}`, weight);
+        originalEdgeWeights.set(`${v}-${u}`, weight);
     });
-  });
 
-  const presentFinalResult = (value) => console.log(value);
-  presentFinalResult(superfluousEdgeCounter / 2);
-};
+    Array.from({ length: nodeCount }).forEach((_, k) => {
+        Array.from({ length: nodeCount }).forEach((_1, i) => {
+            Array.from({ length: nodeCount }).forEach((_2, j) => {
+                shortestPaths[i][j] = Math.min(
+                    shortestPaths[i][j],
+                    shortestPaths[i][k] + shortestPaths[k][j]
+                );
+            });
+        });
+    });
 
-orchestrateComputation();
+    let redundantEdgeCount = 0;
+
+    Array.from({ length: nodeCount }).forEach((_, i) => {
+        Array.from({ length: nodeCount }).forEach((_1, j) => {
+            const edgeKey = `${i}-${j}`;
+            if (originalEdgeWeights.has(edgeKey)) {
+                const originalWeight = originalEdgeWeights.get(edgeKey);
+                if (originalWeight !== shortestPaths[i][j]) {
+                    redundantEdgeCount++;
+                }
+            }
+        });
+    });
+
+    emitResult(redundantEdgeCount / 2);
+}

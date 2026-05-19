@@ -1,31 +1,20 @@
-// Begin processing standard input to receive data.
 process.stdin.resume();
+process.stdin.setEncoding('utf8'); // Set the input encoding to UTF-8
 
-// Configure the input stream to interpret data as UTF-8 characters.
-process.stdin.setEncoding( 'utf8' );
+process.stdin.on('data', function(inputData) { // Listen for incoming data chunks
 
-// Attach an event handler to respond to incoming 'data' chunks.
-process.stdin.on(
-    'data',
-    function(  inputSegment  )
-    {
-        // Transform the raw input segment into a string,
-        // then split it by spaces, and finally convert each resulting part into a numerical value.
-        const parsedNumbers = inputSegment.toString().split( ' ' ).map( Number );
+    // Convert the input chunk to a string, split by space, and map to numbers
+    let parsedNumbers = inputData.toString().split(' ').map(Number);
 
-        // Extract the first number from the array, which represents the radial dimension.
-        const radiusVal = Number( parsedNumbers[0] );
+    // Extract the first number as the radius value
+    const radiusValue = Number(parsedNumbers[0]);
 
-        // Compute the surface area of the circular shape using the formula: Area = π * r².
-        // Math.PI provides the mathematical constant Pi.
-        const calculatedArea = radiusVal * radiusVal * Math.PI;
+    // Calculate the area of the circle using the radius
+    let circleArea = radiusValue * radiusValue * Math.PI;
 
-        // Determine the total length of the boundary (circumference) of the circular shape,
-        // using the formula: Circumference = 2 * π * r.
-        const perimeterCalc = 2 * radiusVal * Math.PI;
+    // Calculate the circumference of the circle
+    const circumferenceLength = 2 * radiusValue * Math.PI;
 
-        // Display the computed perimeter and area to the console,
-        // ensuring they are separated by a single space character.
-        console.log( perimeterCalc + ' ' + calculatedArea );
-    }
-);
+    // Print the calculated circumference and area to the console
+    console.log(circumferenceLength + ' ' + circleArea);
+});

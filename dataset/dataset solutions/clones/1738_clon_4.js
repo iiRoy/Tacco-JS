@@ -1,29 +1,15 @@
-function verifyCapitalization(textSegment) {
-  const minCapitalAscii = 65; // ASCII for 'A'
-  const maxCapitalAscii = 90; // ASCII for 'Z'
-
+const checkCapitalization = (textSegment) => {
   if (textSegment.length === 0) {
     return false;
   }
+  return Array.from(textSegment).every(char => {
+    const charCode = char.charCodeAt(0);
+    return charCode >= 65 && charCode <= 90;
+  });
+};
 
-  for (let pos = 0; pos < textSegment.length; pos++) {
-    const charCode = textSegment.charCodeAt(pos);
-    if (charCode < minCapitalAscii || charCode > maxCapitalAscii) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function runProgram(fullText) {
-  const lineTerminator = '\n';
-  const firstDelimiter = fullText.indexOf(lineTerminator);
-
-  const targetSegment = (firstDelimiter !== -1) ? fullText.substring(0, firstDelimiter) : fullText;
-
-  if (verifyCapitalization(targetSegment)) {
-    console.log('A');
-  } else {
-    console.log('a');
-  }
-}
+const processInputData = (rawData) => {
+  const firstLineContent = rawData.split('\n').shift();
+  const resultIndicator = checkCapitalization(firstLineContent) ? 'A' : 'a';
+  console.log(resultIndicator);
+};

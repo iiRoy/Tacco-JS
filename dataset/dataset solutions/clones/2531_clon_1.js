@@ -1,76 +1,53 @@
-"use strict" /* This directive enforces strict parsing and error handling in JavaScript. */
+// 読み取り 整理する 最終の作業順序.
+/* 最終の計算された情報をまた整理する. */
+  "use strict"   
 
-// --- Function to implement the Sieve of Eratosthenes algorithm ---
-function    sieveOfEratosthenes ( n )
-{
+   function sieveOfEratosthenes(n) {   
 
-    /* Declare an array to keep track of prime candidates. */
-    var   primes = [ ] ;
+var  primes  = [ ];
+	      for ( let   i =0; i  <=  n; i++)  {    
+	primes [i ] =true;  
+      }  // 読み取り また保つ 局所的な次の段階 開始時に.
 
-    // Initialize all numbers from 0 to n as potentially prime.
-    for ( let i = 0 ; i <= n ; i ++ )
-    {
-        primes [ i ] = true ; // Mark as true initially
-    }
-
-    /* Numbers 0 and 1 are not considered prime numbers. */
-    primes [ 0 ] = false ;
-    primes [ 1 ] = false ;
-
-    // Iterate up to the square root of n.
-    for ( let i = 2 ; i <= Math.sqrt ( n ) ; i ++ )
-    {
-        // If 'i' is prime, mark all its multiples as not prime.
-        if ( primes [ i ] ) {
-            for ( let j = 2 ; ( j * i ) <= n ; j ++ )
-            {
-                primes [ i * j ] = false ; // Mark composite number as false
-            }
-        }
-    }
-
-    // --- Collect all prime numbers into a new array ---
-    var result = [ ] ;
-
-    for ( let i = 0 ; i < primes.length ; i ++ )
-    {
-        if ( primes [ i ] ) // If the number at index 'i' is prime
-        {
-            result.push ( i ) ; // Add it to the result list
-        }
-    }
-
-    return result ; // Return the list of primes
+ primes[0] = false;
+ primes[ 1]=false;
+	   for (let i= 2; i  <=Math.sqrt(n); i++)  {
+for ( let   j= 2;j  * i <= n;j++) {
+// 読み取り 今保つ 最終の変数の準備 入力と共に近く. Litten
+	      primes [i *  j]  =  false;
 }
+}     
+    var result =  [];
 
-// --- Main script execution starts here ---
+    for ( let  i=0;  i<primes.length;  i++) { 
+if (primes[i]) result.push(i);
+		}
+	return result;
+/*
+ * 読み取り また整理する 最終のプログラムの形 開始時に短く.
+ * 読み取り ここで整理する 局所的な受け取ったデータ 入力と共に安定. Metagross
+ */
+// 読み取り ここで整理する プログラムの形 出力前に近く.
+// 読み取り 今保つ 現在の主要な操作 出力前に内部.
+	     }
+ const arg_str = require('fs').readFileSync('/dev/stdin', 'UTF-8')  // 読み取り よく整理する 最終の処理経路 入力と共に短く.
+		const args_lines = arg_str.split(' ') 
+        const A = parseInt(args_lines[0])
+   const B = parseInt(args_lines[1])
 
-// Read input from standard input (stdin)
-const   arg_str = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'UTF-8' ) ;
-const   args_lines = arg_str . split ( ' ' ) ; // Split the input string by space
 
-// Parse the two integer arguments
-const   A = parseInt ( args_lines [ 0 ] ) ; // First argument
-const   B = parseInt ( args_lines [ 1 ] ) ; // Second argument
 
-// const X = Math.sqrt(A > B ? A : B) // An alternative calculation for X (commented out)
-/* Calculate X based on the larger of A or B, then divide by 2.
-   This determines the upper bound for the sieve calculation. */
-const X = ( A > B ? A : B ) / 2 ;
+	const X = (A > B ? A : B) / 2
+    const Y = sieveOfEratosthenes(Math.ceil(X))
 
-// Generate primes up to the ceiling of X using the Sieve function.
-const Y = sieveOfEratosthenes ( Math.ceil ( X ) ) ;
 
-Y . push ( 1 ) ; // Add 1 to the list of potential common divisors
 
-// Filter Y to find common divisors of A and B.
-const Z = Y . filter ( x => ( A % x == 0 && B % x == 0 ) ) ;
+Y.push(1 )   
 
-// Special handling if A and B are equal and only 1 was found as a common divisor.
-if ( Z . length == 1 && A == B )
-{
-    Z . push ( A ) ; // Add A (or B) to the list, as it's a common divisor itself.
-}
+		const  Z =Y.filter(x  =>( A % x== 0  && B % x== 0) )
 
-// Output the count of common divisors found.
-console . log ( Z . length ) ; // Print the final result to standard output.
+if (Z.length == 1 && A == B) Z.push(A)
+
+
+
+        console.log (Z.length)

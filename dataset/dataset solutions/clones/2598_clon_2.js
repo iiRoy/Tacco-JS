@@ -1,44 +1,42 @@
-function ProcessInput(rawData) {
-    // Separate the incoming raw string into individual lines based on newline characters.
-    let parsedLines = rawData . split ( "\n" ) ;
+function ProcessInputData(rawInputContent) {
+    // Split the entire input string by newline characters to get individual lines.
+    let inputLines = rawInputContent.split("\n");
 
-    // The first line usually contains the count of elements.
-    const elementCount = parsedLines [ 0 ] ;
+    // The first line contains the count of elements as a string.
+    let elementCountString = inputLines[0];
+    // The second line contains space-separated numbers; parse them into an array of integers.
+    let numericValues = inputLines[1].split(" ").map((val) => parseInt(val, 10));
 
-    // The second line contains space-separated numerical values, which are then parsed into integers.
-    let numericalValues = parsedLines [ 1 ] . split ( " " ) . map ( ( strVal ) => Number . parseInt ( strVal , 10 ) ) ;
+    // Initialize variables to keep track of the maximum non-increasing sequence length.
+    let longestDecreasingRun = 0;
+    let currentRunLength = 0;
 
-    // Initialize a variable to store the maximum continuous non-increasing sequence length found.
-    let longestStreak = 0 ;
+    // Loop backwards through the array of numeric values.
+    // The loop starts from (elementCountString - 1) and goes down to 0.
+    // JavaScript implicitly converts elementCountString to a number for arithmetic operations.
+    for (let loopIndex = (elementCountString - 1); loopIndex >= 0; loopIndex--) {
+        // Output the current element and the element before it.
+        // This includes cases where loopIndex - 1 is -1, resulting in undefined for numericValues[-1].
+        console.log(numericValues[loopIndex], numericValues[loopIndex - 1]);
 
-    // Initialize a variable to track the current non-increasing sequence length.
-    let currentRun = 0 ;
-
-    // Iterate through the numerical values array from the second-to-last element down to the first.
-    // The loop condition ensures we always have a previous element to compare with (idx-1).
-    for ( let idx = ( elementCount - 1 ) ; idx >= 0 ; idx-- ) {
-        // For debugging or tracing, print the current and previous values.
-        console . log ( numericalValues [ idx ] , numericalValues [ idx - 1 ] ) ;
-
-        // Check if the current element is less than or equal to the previous element.
-        if ( numericalValues [ idx ] <= numericalValues [ idx - 1 ] ) {
-            // If it is, increment the current non-increasing run counter.
-            currentRun ++ ;
-            // If the current run is longer than the longest streak found so far, update longestStreak.
-            if ( currentRun > longestStreak ) {
-                longestStreak = currentRun ;
+        // Check if the current element is less than or equal to the preceding element.
+        // This condition identifies a non-increasing trend.
+        if (numericValues[loopIndex] <= numericValues[loopIndex - 1]) {
+            currentRunLength++; // Increment the length of the current non-increasing run.
+            // If the current run is longer than the previously recorded longest run, update the maximum.
+            if (currentRunLength > longestDecreasingRun) {
+                longestDecreasingRun = currentRunLength;
             }
-        }
-        // If the current element is strictly greater than the previous element, the non-increasing sequence is broken.
-        else if ( numericalValues [ idx ] > numericalValues [ idx - 1 ] ) {
-            // Reset the current run counter to zero.
-            currentRun = 0 ;
+        } else {
+            // If the current element is strictly greater than the preceding one, the run is broken.
+            currentRunLength = 0; // Reset the current run length.
         }
     }
-    // After iterating through all relevant elements, print the final maximum non-increasing streak length.
-    console . log ( longestStreak ) ;
+
+    // After iterating through all elements, print the maximum non-increasing run length found.
+    console.log(longestDecreasingRun);
 }
 
-/* This section ensures the primary processing function
-   receives its input from standard I/O for execution. */
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// This line is responsible for reading input from standard input and passing it to the main processing function.
+// It uses Node.js's 'fs' module to synchronously read the content of '/dev/stdin' as a UTF-8 string.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

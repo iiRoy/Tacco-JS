@@ -1,55 +1,50 @@
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const contentLines = fileContent.trim().split('\n');
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const elementCount = Number(contentLines[0]);
-const setAlpha = contentLines[1].split(/\s+/).filter(Boolean).map(Number);
-const setBeta = contentLines[2].split(/\s+/).filter(Boolean).map(Number);
-const setGamma = contentLines[3].split(/\s+/).filter(Boolean).map(Number);
+const dataLines = inputData.split('\n');
+const arraySize = Number(dataLines[0]);
+const alphaNums = dataLines[1].split(' ');
+const betaNums = dataLines[2].split(' ');
+const gammaNums = dataLines[3].split(' ');
 
-setAlpha.sort((valA, valB) => valA - valB);
-setBeta.sort((valA, valB) => valA - valB);
-setGamma.sort((valA, valB) => valA - valB);
+const numericSortAsc = (val1, val2) => val1 - val2;
 
-const findBoundaryLow = (collection, targetValue) => { // Finds the index of the first element `x` such that `x >= targetValue`. This effectively counts elements strictly less than `targetValue`.
-    let leftPointer = 0;
-    let rightPointer = collection.length;
-    while (leftPointer < rightPointer) {
-        const midPoint = Math.floor((leftPointer + rightPointer) / 2);
-        if (collection[midPoint] < targetValue) {
-            leftPointer = midPoint + 1;
+const alphaSet = alphaNums.map(Number).sort(numericSortAsc);
+const betaSet = betaNums.map(Number).sort(numericSortAsc);
+const gammaSet = gammaNums.map(Number).sort(numericSortAsc);
+
+const findCountLessThan = (sortedArr, targetVal) => {
+    let lowIdx = 0;
+    let highIdx = sortedArr.length;
+    while (lowIdx < highIdx) {
+        const midIdx = Math.floor((lowIdx + highIdx) / 2);
+        if (sortedArr[midIdx] < targetVal) {
+            lowIdx = midIdx + 1;
         } else {
-            rightPointer = midPoint;
+            highIdx = midIdx;
         }
     }
-    return leftPointer;
+    return lowIdx;
 };
 
-const findBoundaryHigh = (collection, targetValue) => { // Finds the index of the first element `x` such that `x > targetValue`. This effectively counts elements less than or equal to `targetValue`.
-    let leftPointer = 0;
-    let rightPointer = collection.length;
-    while (leftPointer < rightPointer) {
-        const midPoint = Math.floor((leftPointer + rightPointer) / 2);
-        if (collection[midPoint] <= targetValue) {
-            leftPointer = midPoint + 1;
+const findCountLessEqual = (sortedArr, targetVal) => {
+    let lowIdx = 0;
+    let highIdx = sortedArr.length;
+    while (lowIdx < highIdx) {
+        const midIdx = Math.floor((lowIdx + highIdx) / 2);
+        if (sortedArr[midIdx] <= targetVal) {
+            lowIdx = midIdx + 1;
         } else {
-            rightPointer = midPoint;
+            highIdx = midIdx;
         }
     }
-    return leftPointer;
+    return lowIdx;
 };
 
-let cumulativeResult = 0;
+const totalResult = betaSet.reduce((accumulator, currentBetaVal) => {
+    const countAlphaSmaller = findCountLessThan(alphaSet, currentBetaVal);
+    const countGammaSmallerEqual = findCountLessEqual(gammaSet, currentBetaVal);
+    const countGammaLarger = arraySize - countGammaSmallerEqual;
+    return accumulator + (countAlphaSmaller * countGammaLarger);
+}, 0);
 
-for (const currentBetaValue of setBeta) {
-    // Original `countA`: number of elements in `listA` that are strictly less than `b`.
-    // `findBoundaryLow(setAlpha, currentBetaValue)` returns the count of such elements.
-    const alphaMatchCount = findBoundaryLow(setAlpha, currentBetaValue);
-
-    // Original `countC`: number of elements in `listC` that are less than or equal to `b`.
-    // `findBoundaryHigh(setGamma, currentBetaValue)` returns the count of such elements.
-    const gammaMatchCount = findBoundaryHigh(setGamma, currentBetaValue);
-
-    cumulativeResult += alphaMatchCount * (elementCount - gammaMatchCount);
-}
-
-console.log(cumulativeResult);
+console.log(totalResult);

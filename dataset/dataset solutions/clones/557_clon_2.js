@@ -1,50 +1,45 @@
 'use strict';
 
-// Core decryption logic for a simple shift cipher
-function decryptShiftCipher(encodedMessage)
-{
-    let decodedResult = ''; // Stores the final decoded string
+// Function to perform a Caesar cipher decryption
+function decodeCipher(encodedMessage) {
+    // Initialize an empty string to accumulate the decrypted characters
+    let decodedString = '';
 
-    // This constant defines the shift value for decryption
-    const DECRYPTION_OFFSET = 3;
+    // Variable to temporarily hold the ASCII value of a character
+    let charBuffer;
 
-    // This constant represents the ASCII code for 'A' (uppercase start)
-    const MIN_UPPERCASE_CODE = 65;
+    // Loop through each character of the input encoded message
+    for (let idx = 0; idx < encodedMessage.length; idx++) {
+        // Get the ASCII code of the current character and subtract 3 (Caesar shift)
+        charBuffer = encodedMessage.charCodeAt(idx) - 3;
 
-    // This constant represents the total number of letters in the English alphabet
-    const ALPHABET_LENGTH = 26;
-
-    let charValue; // Temporary variable to hold character's numerical representation
-
-    for (let charIndex = 0; charIndex < encodedMessage.length; charIndex++)
-    {
-        // Get the ASCII value of the current character and apply the reverse shift
-        charValue = encodedMessage.charCodeAt(charIndex) - DECRYPTION_OFFSET;
-
-        // If the character's value falls below 'A', wrap it around the alphabet
-        if (charValue < MIN_UPPERCASE_CODE)
-        {
-            charValue += ALPHABET_LENGTH; // Add the alphabet length to bring it back into range
+        // Check if the character has wrapped around before 'A' (ASCII 65)
+        if (charBuffer < 65) {
+            // If it wrapped, add 26 to bring it back into the uppercase alphabet range
+            charBuffer += 26;
         }
-
-        // Convert the numerical value back to a character and append to the result
-        decodedResult += String.fromCharCode(charValue);
+        // Convert the adjusted ASCII code back to a character and append it
+        decodedString += String.fromCharCode(charBuffer);
     }
 
-    return decodedResult; // Return the fully decoded string
+    // Return the complete decoded string
+    return decodedString;
 }
 
-// Input/Output handling setup
-const inputHandler = require('node:readline').createInterface({
-    input:  process.stdin,
-    output: process.stdout
+// Set up the readline interface for standard input/output operations
+const inputReader = require('readline').createInterface({
+    input: process.stdin,  // Use standard input stream
+    output: process.stdout // Use standard output stream
 });
 
-inputHandler.on('line', (inputLine) =>
-{
-    // Process the received line, remove leading/trailing whitespace, and decrypt
-    console.log(decryptShiftCipher(inputLine.trim()));
-
-    // Close the input interface after processing the first line
-    inputHandler.close();
+// Event listener for when a line of input is received
+inputReader.on('line', (inputLine) => {
+    // Trim any leading/trailing whitespace from the input line
+    const trimmedInput = inputLine.trim();
+    // Decode the trimmed input using the Caesar decryption function
+    const finalOutput = decodeCipher(trimmedInput);
+    // Print the decoded result to the console
+    console.log(finalOutput);
+    // Close the readline interface after processing the first line
+    inputReader.close();
 });

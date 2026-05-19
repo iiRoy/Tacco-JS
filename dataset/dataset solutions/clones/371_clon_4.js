@@ -1,106 +1,88 @@
-const findBadCoordinates = (digitSequence) => {
-    const digitTallies = digitSequence.reduce((accumulator, currentDigit) => {
-        accumulator[currentDigit] = (accumulator[currentDigit] || 0) + 1;
-        return accumulator;
-    }, {});
+const findDuplicateIndices = (sourceArray) => {
+    const valueOccurrences = new Map();
+    sourceArray.forEach(element => {
+        valueOccurrences.set(element, (valueOccurrences.get(element) || 0) + 1);
+    });
 
-    const redundantDigits = Object.keys(digitTallies)
-                                  .filter(key => digitTallies[key] > 1)
-                                  .map(Number);
-
-    const problematicPositions = digitSequence.reduce((accumulator, currentDigit, currentIndex) => {
-        if (redundantDigits.includes(currentDigit)) {
-            accumulator.push(currentIndex);
+    const repeatedValues = new Set();
+    for (const [val, count] of valueOccurrences.entries()) {
+        if (count >= 2) {
+            repeatedValues.add(val);
         }
-        return accumulator;
-    }, []);
-    return problematicPositions;
+    }
+
+    const resultIndices = [];
+    sourceArray.forEach((element, index) => {
+        if (repeatedValues.has(element)) {
+            resultIndices.push(index);
+        }
+    });
+    return resultIndices;
 };
 
-const processSudokuGrids = (rawPuzzleInput) => {
-    let inputLines = rawPuzzleInput.trim().split('\n');
-    let totalPuzzleCount = parseInt(inputLines.shift(), 10);
-    let collectedOutputs = [];
-    let currentPuzzleIteration = 0;
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split("\n");
+let currentLineIndex = 0;
+const totalCases = parseInt(inputLines[currentLineIndex++], 10);
 
-    while (currentPuzzleIteration < totalPuzzleCount) {
-        if (currentPuzzleIteration > 0) {
-            collectedOutputs.push(''); // Add an empty string for the newline separator
-        }
+for (let caseNumber = 0; caseNumber < totalCases; caseNumber++) {
+    if (caseNumber !== 0) {
+        console.log("\n");
+    }
 
-        let currentSudokuLayout = [];
-        for (let r = 0; r < 9; r++) {
-            currentSudokuLayout.push(inputLines.shift().split(' ').map(Number));
-        }
+    const puzzleGrid = [];
+    for (let r = 0; r < 9; r++) {
+        puzzleGrid.push(inputLines[currentLineIndex++].split(" ").map(Number));
+    }
 
-        let violationMarkers = Array.from({ length: 9 }, () => Array(9).fill(0));
+    const errorLocations = new Set(); // Stores "row,col" strings for cells with duplicates
 
-        const applyValidationCheck = (dataExtractor) => {
-            for (let i = 0; i < 9; i++) {
-                const { elements: extractedElements, map: coordinateMap } = dataExtractor(currentSudokuLayout, i);
-                const localBadIndices = findBadCoordinates(extractedElements);
-                localBadIndices.forEach(localIndex => {
-                    const [globalRow, globalCol] = coordinateMap[localIndex];
-                    violationMarkers[globalRow][globalCol]++;
-                });
-            }
-        };
+    const registerErrors = (indices, coordinateMap) => {
+        indices.forEach(idx => {
+            const [rowCoord, colCoord] = coordinateMap[idx];
+            errorLocations.add(`${rowCoord},${colCoord}`);
+        });
+    };
 
-        const getRowData = (grid, rowIdentifier) => {
-            return {
-                elements: grid[rowIdentifier],
-                map: Array.from({ length: 9 }, (_, colIdentifier) => [rowIdentifier, colIdentifier])
-            };
-        };
-        applyValidationCheck(getRowData);
+    // Process rows
+    puzzleGrid.forEach((rowContent, rowIndex) => {
+        const indicesInRow = findDuplicateIndices(rowContent);
+        const rowCoordinates = rowContent.map((_, colIndex) => [rowIndex, colIndex]);
+        registerErrors(indicesInRow, rowCoordinates);
+    });
 
-        const getColumnData = (grid, colIdentifier) => {
-            const elements = [];
-            const map = [];
-            for (let r = 0; r < 9; r++) {
-                elements.push(grid[r][colIdentifier]);
-                map.push([r, colIdentifier]);
-            }
-            return { elements, map };
-        };
-        applyValidationCheck(getColumnData);
+    // Process columns
+    for (let colIndex = 0; colIndex < 9; colIndex++) {
+        const columnContent = Array.from({ length: 9 }, (_, rowIndex) => puzzleGrid[rowIndex][colIndex]);
+        const indicesInColumn = findDuplicateIndices(columnContent);
+        const columnCoordinates = columnContent.map((_, rowIndex) => [rowIndex, colIndex]);
+        registerErrors(indicesInColumn, columnCoordinates);
+    }
 
-        const getBlockData = (grid, blockIdentifier) => { // blockIdentifier from 0 to 8
-            const startingRow = Math.floor(blockIdentifier / 3) * 3;
-            const startingCol = (blockIdentifier % 3) * 3;
-            const elements = [];
-            const map = [];
+    // Process 3x3 blocks
+    for (let blockRowStart = 0; blockRowStart < 3; blockRowStart++) {
+        for (let blockColStart = 0; blockColStart < 3; blockColStart++) {
+            const blockValues = [];
+            const blockCoordinates = [];
             for (let rOffset = 0; rOffset < 3; rOffset++) {
                 for (let cOffset = 0; cOffset < 3; cOffset++) {
-                    const globalR = startingRow + rOffset;
-                    const globalC = startingCol + cOffset;
-                    elements.push(grid[globalR][globalC]);
-                    map.push([globalR, globalC]);
+                    const actualRow = blockRowStart * 3 + rOffset;
+                    const actualCol = blockColStart * 3 + cOffset;
+                    blockValues.push(puzzleGrid[actualRow][actualCol]);
+                    blockCoordinates.push([actualRow, actualCol]);
                 }
             }
-            return { elements, map };
-        };
-        // Blocks need a direct loop as applyValidationCheck iterates 9 times for a specific type (row/col)
-        for (let blockIdx = 0; blockIdx < 9; blockIdx++) {
-             const { elements: blockElements, map: blockCoordinateMap } = getBlockData(currentSudokuLayout, blockIdx);
-             const badIndicesInBlock = findBadCoordinates(blockElements);
-             badIndicesInBlock.forEach(localIdx => {
-                 const [originalR, originalC] = blockCoordinateMap[localIdx];
-                 violationMarkers[originalR][originalC]++;
-             });
+            const indicesInBlock = findDuplicateIndices(blockValues);
+            registerErrors(indicesInBlock, blockCoordinates);
         }
-
-        let formattedOutputGrid = currentSudokuLayout.map((row, rIndex) => {
-            return row.map((value, cIndex) => {
-                return (violationMarkers[rIndex][cIndex] > 0) ? `*${value}` : ` ${value}`;
-            }).join('');
-        });
-        collectedOutputs.push(formattedOutputGrid.join('\n'));
-
-        currentPuzzleIteration++;
     }
-    return collectedOutputs.join('\n');
-};
 
-const suppliedData = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processSudokuGrids(suppliedData));
+    const formattedOutput = puzzleGrid.map((row, rIdx) =>
+        row.map((value, cIdx) => {
+            const cellKey = `${rIdx},${cIdx}`;
+            return errorLocations.has(cellKey) ? `*${value}` : ` ${value}`;
+        }).join('')
+    ).join('\n');
+
+    console.log(formattedOutput);
+}

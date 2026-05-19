@@ -1,39 +1,36 @@
-const obtainModule = require;
-const fileSystemAccess = obtainModule('fs');
-const retrieveContent = fileSystemAccess.readFileSync;
-const rawTextData = retrieveContent('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const removeWhitespace = String.prototype.trim;
-const divideByDelimiter = String.prototype.split;
-const lineSegments = divideByDelimiter.call(removeWhitespace.call(rawTextData), "\n");
-
-let currentInputIndex = 0;
-
-function handleNextBlock() {
-    if (currentInputIndex >= lineSegments.length) {
-        return;
+function* lineIterator(textData) {
+    const lines = textData.trim().split('\n');
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+        yield lines[currentLineIndex++];
     }
-
-    const currentLineValue = lineSegments[currentInputIndex];
-    currentInputIndex++;
-
-    const numericConversion = Number;
-    const blockParameters = divideByDelimiter.call(currentLineValue, " ").map(numericConversion);
-    const entityCount = blockParameters[0];
-    const targetSum = blockParameters[1];
-
-    if (entityCount === 0 && targetSum === 0) {
-        return;
-    }
-
-    // Advance past the 'entityCount' lines that would contain individual values.
-    // These values are processed in the original but do not affect the final output '0'.
-    currentInputIndex += entityCount;
-
-    const displayResult = console.log;
-    displayResult(0);
-
-    handleNextBlock();
 }
 
-handleNextBlock();
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLineProvider = lineIterator(rawInputContent);
+
+let currentN, currentS;
+
+do {
+    const configLine = inputLineProvider.next().value;
+    const [valN, valS] = configLine.split(' ').map(Number);
+    currentN = valN;
+    currentS = valS;
+
+    if (currentN === 0 && currentS === 0) {
+        break;
+    }
+
+    const valueCounts = Array.from({ length: 101 }, () => 0);
+
+    Array.from({ length: currentN }, () => Number(inputLineProvider.next().value))
+         .forEach(val => {
+             valueCounts[val]++;
+         });
+
+    const finalOutputValue = 0;
+    console.log(finalOutputValue);
+
+} while (true);

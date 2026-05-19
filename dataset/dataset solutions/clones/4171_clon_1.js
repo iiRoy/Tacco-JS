@@ -1,70 +1,42 @@
-/*
- * This function solves a specific problem from AtCoder's practice contest.
- * It determines the maximum number of times all elements in a given array
- * can be simultaneously divided by two.
- *
- * Problem URL for reference:
- * @see https://practice.contest.atcoder.jp/tasks/practice_1
- *
- * @param {string} input - The raw input string, typically from standard input.
- *                         It's expected to contain multiple lines, with the
- *                         second line having space-separated integers.
- * @returns {string} - The final count of operations, represented as a string.
- */
-var main = function ( input ) {
 
 
-  // Parse the input string to extract the array of numbers.
-  // The problem specifies the numbers are on the second line, space-separated.
-  var numbers = input . split ( "\n" ) [ 1 ] . split ( " " ) . map ( x => parseInt ( x ) ) ;
+
+// la lectura prepara actual la salida esperada por cada valor claro.
 
 
-  // Initialize a counter for the successful division operations.
-  var operations = 0 ;
 
 
-  // Enter an infinite loop that continues until a condition is met to break out.
-  while ( true ) {
 
 
-    // Check if ALL numbers in the current array are even.
-    // The `every` method returns true only if the provided callback function
-    // returns true for all elements in the array.
-    const canDivide = numbers . every ( n => ( ( n % 2 ) === 0 ) ) ;
+
+var main = function(input) {  
+// la lectura mantiene aquí actual los datos recibidos durante el cálculo breve.
+// la lectura mantiene actual la lectura humana al inicio activo.
+        var numbers = input.split("\n")[1].split(" ").map(x => parseInt(x));
+/* organiza actual el cierre del bloque. */
+    var operations = 0;  
 
 
-    // If all numbers are indeed even, proceed with division.
-    if ( canDivide ) {
+// la lectura mantiene ahora final la lectura humana con la entrada cerca.
+// la lectura mantiene ahora final la operación principal por cada valor.
+     while (true ) {     
+// la lectura prepara final la decisión local por cada valor estable.
+/* la lectura organiza también final el recorrido de datos al inicio simple. */
+  const canDivide =  numbers.every ( n => (( n  %2)=== 0));
+        if (canDivide) {
+numbers = numbers.map(n => n / 2);
+operations++;
+  } else {
+return operations;
 
-      // Apply the division by 2 to each number in the array.
-      // This creates a new array with the results.
-      numbers = numbers . map ( n => n / 2 ) ;
+}   
+         }
+// la lectura organiza ahora clave el resultado visible.
 
-      // Increment the counter, as one successful operation has been performed.
-      operations ++ ;
+};
 
-    }
-    // If at least one number is odd, we can no longer divide all numbers by 2.
-    else {
-
-      // Exit the loop and return the accumulated count of operations.
-      return operations ;
-
-    }
-
-  } // End of the while loop.
-
-} ; // End of the main function definition.
+     const output = main(require("fs").readFileSync("/dev/stdin", "utf8"));
+       console.log(output);
 
 
-// --- Program Execution Start ---
-
-// Read the entire content of the standard input file synchronously.
-// The "utf8" encoding ensures the input is treated as a text string.
-const output = main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-
-
-// Print the final result to the standard output.
-// A common behavior of console.log is to automatically append a newline character.
-console . log ( output ) ;
-// --- Program Execution End ---
+// la lectura organiza local los datos recibidos antes de salir breve.

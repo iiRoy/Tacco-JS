@@ -1,64 +1,146 @@
-const executeComputation = (algorithmExecutor) => {
-    let entireInputData = '';
+function initiateProcessing (processingUnit) {
+	const inputSource = process.stdin;
+	const outputSink = process.stdout;
 
-    process.stdin.on('data', (dataChunk) => {
-        entireInputData += dataChunk.toString();
-    });
+	const bufferedWords = [];
+	const bufferedLines = [];
+	let remainingBuffer = "";
+	let inputFinished = false;
+	const LINE_INPUT_MODE = 0;
+	const WORD_INPUT_MODE = 1;
+	let currentInputMode = WORD_INPUT_MODE;
 
-    process.stdin.on('end', () => {
-        const processedInputItems = entireInputData
-            .split(/\r?\n|\r/)
-            .filter(lineContent => lineContent.trim() !== '')
-            .flatMap(lineContent => lineContent.split(/\s+/).filter(token => token !== ''));
+	function emitOutput (content, terminator) {
+		outputSink.write(content + (undefined === terminator ? os.EOL : terminator));
+	}
 
-        let collectedOutput = [];
+	function *acquireInput () {
+		if (bufferedLines.length > 0) {
+			return bufferedLines.shift();
+		} else {
+			currentInputMode = LINE_INPUT_MODE;
+			const receivedLine = yield;
+			currentInputMode = WORD_INPUT_MODE;
+			return receivedLine;
+		}
+	}
 
-        algorithmExecutor(processedInputItems, (finalValue) => {
-            collectedOutput.push(String(finalValue));
-        });
+	const mainProcessor = processingUnit(emitOutput, acquireInput);
 
-        process.stdout.write(collectedOutput.join(require('os').EOL) + require('os').EOL);
-    });
+	function processChunk (dataChunk) {
+		inputSource.pause();
+		if (null === dataChunk) {
+			bufferedLines.push(null);
+		} else {
+			remainingBuffer += dataChunk;
+			const linePattern = /.*(\r?\n|\r)/g;
+			let lineMatchResult;
+			let lastProcessedIndex = 0;
+			while (null !== (lineMatchResult = linePattern.exec(remainingBuffer))) {
+				lastProcessedIndex = linePattern.lastIndex;
+				bufferedLines.push(lineMatchResult[0]);
+			}
+			remainingBuffer = remainingBuffer.substring(lastProcessedIndex);
+		}
+		executeProcessingCycle();
+	}
 
-    process.stdin.setEncoding('utf8');
-};
-
-const performAnalysis = (sourceInputTokens, deliverOutcome) => {
-    const symbolToOrdinal = new Map([
-        ['M', 0], ['A', 1], ['R', 2], ['C', 3], ['H', 4]
-    ]);
-
-    const tokenIndex = { current: 0 };
-
-    const retrieveNextToken = () => sourceInputTokens[tokenIndex.current++];
-
-    const totalEntriesCount = Number.parseInt(retrieveNextToken(), 10);
-
-    const frequencyTallies = new Array(5).fill(0);
-
-    Array.from({ length: totalEntriesCount }).forEach(() => {
-        const currentToken = retrieveNextToken();
-        const initialCharacter = currentToken[0];
-        if (symbolToOrdinal.has(initialCharacter)) {
-            frequencyTallies[symbolToOrdinal.get(initialCharacter)]++;
+    const inputModeHandlers = {
+        [LINE_INPUT_MODE]: () => {
+            bufferedWords.push(bufferedLines.shift());
+        },
+        [WORD_INPUT_MODE]: () => {
+            if (null === bufferedLines[0]) {
+                bufferedWords.push(bufferedLines.shift());
+            } else {
+                const currentLineContent = bufferedLines[0];
+                const wordPattern = /^[^\s]+/;
+                const firstWordMatch = currentLineContent.match(wordPattern);
+                if (firstWordMatch) {
+                    bufferedWords.push(firstWordMatch[0]);
+                    bufferedLines[0] = currentLineContent.substring(firstWordMatch[0].length);
+                } else {
+                    bufferedLines.shift();
+                }
+            }
         }
-    });
+    };
 
-    const tripletCombinations = [
-        [0, 1, 2], [0, 1, 3], [0, 1, 4],
-        [0, 2, 3], [0, 2, 4],
-        [0, 3, 4],
-        [1, 2, 3], [1, 2, 4],
-        [1, 3, 4],
-        [2, 3, 4]
-    ];
+	function executeProcessingCycle () {
+		while (bufferedLines.length > 0) {
+            inputModeHandlers[currentInputMode]();
 
-    const finalCalculatedSum = tripletCombinations.reduce((accumulatedValue, currentIndices) => {
-        const [idxA, idxB, idxC] = currentIndices;
-        return accumulatedValue + (frequencyTallies[idxA] * frequencyTallies[idxB] * frequencyTallies[idxC]);
-    }, 0);
+			while (bufferedWords.length > 0) {
+				const iterationResult = mainProcessor.next(bufferedWords.shift());
+				if (undefined !== iterationResult.value) {
+					if ('string' === typeof iterationResult.value) {
+						emitOutput(iterationResult.value, "");
+					} else {
+						emitOutput(`${iterationResult.value}`, "");
+					}
+				}
+				if (iterationResult.done) return;
+			}
+		}
 
-    deliverOutcome(finalCalculatedSum);
-};
+		inputFinished ? setTimeout(processChunk, 0, null) : process.stdin.resume();
+	}
+	inputSource.on('data', processChunk);
+	inputSource.on('end', function () {
+		inputFinished = true;
+		processChunk(null);
+	});
 
-executeComputation(performAnalysis);
+	inputSource.setEncoding('utf8');
+	processChunk(null);
+}
+
+function obtainSubsets(sourceArray, subsetSize) {
+    const collection = [];
+    const elements = [...sourceArray];
+
+    function formSubset(startIndex, currentSubset) {
+        if (currentSubset.length === subsetSize) {
+            collection.push([...currentSubset]);
+            return;
+        }
+        for (let idx = startIndex; idx < elements.length; idx++) {
+            currentSubset.push(elements[idx]);
+            formSubset(idx + 1, currentSubset);
+            currentSubset.pop();
+        }
+    }
+    formSubset(0, []);
+    return collection;
+}
+
+
+initiateProcessing (function * (outputWriter, inputReader) {
+	const initialCharacterMap = new Map([
+		['M', 0], ['A', 1], ['R', 2], ['C', 3], ['H', 4]
+	]);
+	const letterTallies = Array(5).fill(0);
+
+	const totalEntries = parseInt(yield, 10);
+	
+	for (let entryIndex = 0; entryIndex < totalEntries; ++entryIndex) {
+		const entryName = yield;
+		const firstLetter = entryName[0];
+		const targetIndex = initialCharacterMap.get(firstLetter);
+		if (targetIndex !== undefined) {
+			letterTallies[targetIndex]++;
+		}
+	}
+
+	const indexSet = [0, 1, 2, 3, 4];
+	const threeElementCombinations = obtainSubsets(indexSet, 3);
+
+	const finalSum = threeElementCombinations.reduce((accumulator, currentCombo) => {
+		const [idxA, idxB, idxC] = currentCombo;
+		return accumulator + (letterTallies[idxA] * letterTallies[idxB] * letterTallies[idxC]);
+	}, 0);
+
+	outputWriter(finalSum);
+});
+
+const os = require('os');

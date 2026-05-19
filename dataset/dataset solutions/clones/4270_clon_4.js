@@ -1,27 +1,23 @@
-const sourceReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let collectedDataBuffer = '';
+process.stdin.on('data', (segment) => {
+    collectedDataBuffer += segment;
 });
 
-const acquiredData = [];
-
-sourceReader.on('line', (rowText) => {
-    acquiredData.push(rowText);
+process.stdin.on('end', () => {
+    calculateAndDisplayResult(collectedDataBuffer.split(/\r?\n/));
 });
 
-sourceReader.on('close', () => {
-    (async () => {
-        const [firstSegment, secondSegment, ...excessSegments] = acquiredData;
-        
-        const primaryNumber = parseInt(firstSegment, 10);
-        const secondaryNumber = parseInt(secondSegment, 10);
+function calculateAndDisplayResult(lineSegments) {
+    const firstOperand = Number(lineSegments[0]);
+    const secondOperand = Number(lineSegments[1]);
 
-        const computedValue = (secondaryNumber * 2) - primaryNumber;
+    const operationElements = [secondOperand, secondOperand, -firstOperand];
+    const finalOutcome = operationElements.reduce((currentSum, element) => currentSum + element, 0);
 
-        console.log(computedValue);
-    })().catch(err => {
-        console.error("An error occurred during processing:", err);
-        process.exit(1);
-    });
-});
+    console.log(finalOutcome);
+
+    return 0;
+}

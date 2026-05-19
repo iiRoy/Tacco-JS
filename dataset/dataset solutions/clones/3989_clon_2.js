@@ -1,42 +1,55 @@
-// The entire input string is provided to this function.
-function ProcessData(rawData) {
-  // The first line becomes the first element, the second line the second, and so on.
-	let partsArray = rawData.split(" ");
-	// To convert string representations to decimal integers, use parseInt.
-  var calculateProduct = dimensionStrings => {
-    var widthValue = parseInt(dimensionStrings[0])
-    var heightValue = parseInt(dimensionStrings[1])
-    console.log((widthValue - 2) * (heightValue - 2))
-    return
-    var tally = 0
+// This script processes raw input data.
+function ProcessInput(rawData) {
+  // The input string is split by spaces into an array of strings.
+  let parsedData = rawData.split(" ");
 
-    const isPalindrome = testNumber => {
-      var numStr = testNumber.toString()
-      var firstHalf = numStr.slice(Math.floor(numStr.length / 2))
-      var secondHalfReversed = numStr.slice(0, Math.floor(numStr.length / 2) + 1).split("").reverse().join("")
-      if (firstHalf === secondHalfReversed) {
-        return true
+  // This function computes and logs a result based on two numeric dimensions.
+  const calculateDimensions = (dimensionStrings) => {
+    // Parse the first string as an integer for the initial dimension.
+    let firstDim = parseInt(dimensionStrings[0]);
+    // Parse the second string as an integer for the secondary dimension.
+    let secondDim = parseInt(dimensionStrings[1]);
+
+    // Output the product of (firstDim - 2) and (secondDim - 2) to the console.
+    console.log((firstDim - 2) * (secondDim - 2));
+    return; // The function exits here, making the subsequent code unreachable.
+
+    // The following block of code is dead code due to the 'return' statement above.
+    // It is included to maintain the exact structure and logic of the original.
+    let totalCount = 0; // A counter variable, never used.
+
+    // This nested function checks if a number's string representation is a palindrome.
+    const isPalindrome = (valueToCheck) => {
+      let stringValue = valueToCheck.toString(); // Convert the input number to its string form.
+      // Extract the second half of the string.
+      let secondHalf = stringValue.slice(Math.floor(stringValue.length / 2));
+      // Extract the first half, reverse it, and join it back.
+      let firstHalfReversed = stringValue.slice(0, Math.floor(stringValue.length / 2) + 1).split("").reverse().join("");
+
+      // Compare the two halves to determine if it's a palindrome.
+      if (secondHalf === firstHalfReversed) {
+        return true; // It is a palindrome.
+      } else {
+        return false; // It is not a palindrome.
       }
-      else {
-        return false
+    };
+
+    // A loop that would iterate from 'a' to 'b' (variables 'a' and 'b' are undefined).
+    for (let loopIndex = a; loopIndex <= b; loopIndex++) {
+      if (isPalindrome(loopIndex)) {
+        totalCount++; // Increment the counter if the number is a palindrome.
       }
     }
 
-    for (var idx = startVal; idx <= endVal; idx++) {
-      if (isPalindrome(idx)) {
-        tally++
-      }
-    }
+    // This console.log statement is also unreachable.
+    console.log(totalCount);
+  };
 
-    console.log(tally)
-
-  }
-
-
-  calculateProduct(partsArray)
-	// Output section
-
+  // Invoke the dimension calculation function with the prepared input.
+  calculateDimensions(parsedData);
+  // The script's primary execution path concludes here.
 }
 
-/* Do not modify anything below this line (reads from standard input/output and invokes the primary processing function). */
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line handles reading from standard input and calling the main processing function.
+// It should not be altered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

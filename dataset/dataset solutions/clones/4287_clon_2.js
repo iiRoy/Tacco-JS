@@ -1,67 +1,73 @@
-function obtainDataStream() {
+function readInputData() {
   return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
-function displayResult(val) {
-  console.log(val); // Write the computed value to the standard output console.
+function displayResult(messageContent) {
+  console.log(messageContent);
 }
 
-function reportError(msg) {
-  console.error(msg); // Output an error message to the standard error stream.
+function logError(messageContent) {
+  console.error(messageContent);
 }
 
-// This utility function handles various forms of data conversion.
-//   Transformation Codes:
-//   0: Return the input data without any modifications.
-//   1: Parse the input string into an integer.
-//   2: Divide the input string by single spaces.
-//   3: Divide the input string by newline characters.
-//   4: Divide by spaces, then convert each resulting part to a number.
-//   5: Divide by newlines, then convert each resulting part to a number.
-//   6: Break the input string into an array of individual characters.
-//   7: Break into characters, then convert each character to a number.
-function convertData(item, option) {
-  switch (option) {
+// This utility function handles various input string conversions.
+// conversionType:
+// 0: No conversion, return as is.
+// 1: Convert to integer.
+// 2: Split by space.
+// 3: Split by newline.
+// 4: Split by space and convert to number array.
+// 5: Split by newline and convert to number array.
+// 6: Split into individual characters.
+// 7: Split into individual characters and convert to number array.
+function processInputString(inputStr, conversionType) {
+  switch (conversionType) {
     case 0:
-      return item;
+      return inputStr;
     case 1:
-      return parseInt(item);
+      return parseInt(inputStr);
     case 2:
-      return item.split(" ");
+      return inputStr.split(" ");
     case 3:
-      return item.split("\n");
+      return inputStr.split("\n");
     case 4:
-      return item.split(" ").map((element) => Number(element));
+      return inputStr.split(" ").map((itemVal) => Number(itemVal));
     case 5:
-      return item.split("\n").map((element) => Number(element));
+      return inputStr.split("\n").map((itemVal) => Number(itemVal));
     case 6:
-      return item.split("");
+      return inputStr.split("");
     case 7:
-      return item.split("").map((element) => Number(element));
-    default:
-      return item;
+      return inputStr.split("").map((itemVal) => Number(itemVal));
   }
 }
 
-// The primary function orchestrating the data processing.
-function processMainData(initialInput) {
-  initialInput = convertData(initialInput, 3); // First, split the entire input into lines.
+function executeCoreLogic(rawData) {
+  // First, split the raw input by newlines.
+  let processedLines = processInputString(rawData, 3);
 
-  let countVal = convertData(initialInput[0], 1); // Get the first line and parse it as an integer.
-  const dataArray = convertData(initialInput[1], 4); // Get the second line, split by spaces, and convert to numbers.
+  // The first line contains the count N.
+  const countElements = processInputString(processedLines[0], 1);
 
-  let finalResult = Math.pow(3, countVal); // Compute 3 raised to the power of the numeric count.
-  let evenProduct = 1; // Initialize a variable to track products related to even numbers.
+  // The second line contains a space-separated list of numbers.
+  const numberSequence = processInputString(processedLines[1], 4);
 
-  // Loop through the processed data array.
-  for (let k = 0; k < countVal; k++) {
-    if (dataArray[k] % 2 === 0) { // Check if the current array element is an even number.
-      evenProduct *= 2; // If even, multiply the 'evenProduct' by 2.
+  // Calculate the total possible combinations (3^N).
+  let totalCombinations = Math.pow(3, countElements);
+
+  // Initialize a variable to store the product of 2 for each even number found.
+  let evenProduct = 1;
+
+  // Iterate through the number sequence to find even numbers.
+  for (let idx = 0; idx < countElements; idx++) {
+    // If the current number is even, multiply evenProduct by 2.
+    if (numberSequence[idx] % 2 === 0) {
+      evenProduct *= 2;
     }
   }
 
-  displayResult(finalResult - evenProduct); // Output the final calculated difference.
+  // The final result is totalCombinations minus evenProduct.
+  displayResult(totalCombinations - evenProduct);
 }
 
-// Begin the application by fetching the input and passing it to the main processing function.
-processMainData(obtainDataStream());
+// Execute the main logic by reading input from stdin.
+executeCoreLogic(readInputData());

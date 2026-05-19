@@ -1,8 +1,10 @@
-function ComputeValues(sourceText)
-{
-    sourceText = sourceText.split( "\n" ).map( Number );
+function ProcessData(rawText) {
+	// Split the incoming text by newline characters and convert each part to a numerical value.
+	let parsedNumbers = rawText.split("\n").map(Number);
 
-    console.log( ( sourceText[ 0 ] + 1 - sourceText[ 1 ] ) * ( sourceText[ 0 ] + 1 - sourceText[ 2 ] ) );
+	// Calculate the result based on specific array elements and print it to the console.
+	console.log((parsedNumbers[0] + 1 - parsedNumbers[1]) * (parsedNumbers[0] + 1 - parsedNumbers[2]));
 }
 
-ComputeValues( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ).trim() );
+// Read data from standard input, remove leading/trailing whitespace, and pass it to the processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

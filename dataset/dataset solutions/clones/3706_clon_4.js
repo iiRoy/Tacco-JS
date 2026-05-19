@@ -1,88 +1,93 @@
 "use strict";
 
-function obtainNumericArray(textLine) {
-  return textLine.split(/\s+/).map(function (val) {
-    return parseInt(val, 10);
-  });
-}
+const processInputData = (rawData) => {
+    const dataLines = rawData.split('\n');
+    const elementCount = Number(dataLines[0]);
+    const numericValues = dataLines[1].split(/\s+/).map(Number).slice(0, elementCount);
+    return { elementCount, numericValues };
+};
 
-function processInputSeries(sourceText) {
-  const allLines = sourceText.split('\n');
-  const totalElements = parseInt(allLines[0], 10);
-  const rawNumbers = obtainNumericArray(allLines[1]).slice(0, totalElements);
+const calculateCumulativeSums = (valuesArray) =>
+    valuesArray.reduce((accumulator, currentValue, index) => {
+        accumulator.push((index === 0 ? 0 : accumulator[index - 1]) + currentValue);
+        return accumulator;
+    }, []);
 
-  const prefixSums = rawNumbers.reduce((accumulator, currentVal, index) => {
-    accumulator.push(currentVal + (index === 0 ? 0 : accumulator[index - 1]));
-    return accumulator;
-  }, []);
+const determineOptimalPartitionPoints = (cumulativeSums, totalElements) => {
+    const optimalLeftSplits = new Array(totalElements);
+    const optimalRightSplits = new Array(totalElements);
 
-  const leftSplitPoints = [-1]; // Corresponds to original 'ls'
-  for (let currentIdx = 1; currentIdx < totalElements - 1; ++currentIdx) {
-    if (currentIdx === 1) {
-      leftSplitPoints.push(0);
-      continue;
+    let currentLeftPointer = 0;
+    for (let midPoint = 1; midPoint <= totalElements - 2; ++midPoint) {
+        while (currentLeftPointer < midPoint - 1) {
+            const firstSegmentSum = cumulativeSums[currentLeftPointer];
+            const secondSegmentSum = cumulativeSums[midPoint] - cumulativeSums[currentLeftPointer];
+            const currentAbsoluteDifference = Math.abs(firstSegmentSum - secondSegmentSum);
+
+            const nextFirstSegmentSum = cumulativeSums[currentLeftPointer + 1];
+            const nextSecondSegmentSum = cumulativeSums[midPoint] - cumulativeSums[currentLeftPointer + 1];
+            const nextAbsoluteDifference = Math.abs(nextFirstSegmentSum - nextSecondSegmentSum);
+
+            if (nextAbsoluteDifference < currentAbsoluteDifference) {
+                currentLeftPointer++;
+            } else {
+                break;
+            }
+        }
+        optimalLeftSplits[midPoint] = currentLeftPointer;
     }
-    const previousOptimalLeft = leftSplitPoints[currentIdx - 1];
-    for (let leftCandidate = previousOptimalLeft; leftCandidate < currentIdx; ++leftCandidate) {
-      const firstPartSum = prefixSums[leftCandidate];
-      const secondPartSum = prefixSums[currentIdx] - prefixSums[leftCandidate];
-      const currentDifference = Math.abs(firstPartSum - secondPartSum);
 
-      const nextFirstPartSum = prefixSums[leftCandidate + 1];
-      const nextSecondPartSum = prefixSums[currentIdx] - prefixSums[leftCandidate + 1];
-      const nextDifference = Math.abs(nextFirstPartSum - nextSecondPartSum);
+    let currentRightPointer = totalElements - 2;
+    for (let midPoint = totalElements - 2; midPoint >= 1; --midPoint) {
+        while (currentRightPointer > midPoint + 1) {
+            const thirdSegmentSum = cumulativeSums[currentRightPointer] - cumulativeSums[midPoint];
+            const fourthSegmentSum = cumulativeSums[totalElements - 1] - cumulativeSums[currentRightPointer];
+            const currentAbsoluteDifference = Math.abs(thirdSegmentSum - fourthSegmentSum);
 
-      if (currentDifference < nextDifference || leftCandidate === currentIdx - 1) {
-        leftSplitPoints.push(leftCandidate);
-        break;
-      }
+            const previousThirdSegmentSum = cumulativeSums[currentRightPointer - 1] - cumulativeSums[midPoint];
+            const previousFourthSegmentSum = cumulativeSums[totalElements - 1] - cumulativeSums[currentRightPointer - 1];
+            const previousAbsoluteDifference = Math.abs(previousThirdSegmentSum - previousFourthSegmentSum);
+
+            if (previousAbsoluteDifference < currentAbsoluteDifference) {
+                currentRightPointer--;
+            } else {
+                break;
+            }
+        }
+        optimalRightSplits[midPoint] = currentRightPointer;
     }
-  }
-  leftSplitPoints.push(-1);
+    return { optimalLeftSplits, optimalRightSplits };
+};
 
-  const rightSplitPoints = [-1]; // Corresponds to original 'rs'
-  for (let currentIdx = 1; currentIdx < totalElements - 1; ++currentIdx) {
-    if (currentIdx === 1) {
-      rightSplitPoints.push(totalElements - 2);
-      continue;
+const findMinimumOverallDifference = (cumulativeSums, totalElements, optimalLeftSplits, optimalRightSplits) => {
+    let minimumRangeDifference = Infinity;
+
+    // The middle cut point 'midPoint' iterates from 1 to totalElements - 3 (inclusive).
+    for (let midPoint = 1; midPoint <= totalElements - 3; ++midPoint) {
+        const leftCutIndex = optimalLeftSplits[midPoint];
+        // The original code's 'rs' array was reversed, meaning rs[k] corresponded to the optimal right cut for (N-2)-k.
+        // So, to get the correct right cut for 'midPoint', we need to access optimalRightSplits[(totalElements - 2) - midPoint].
+        const rightCutIndex = optimalRightSplits[(totalElements - 2) - midPoint];
+
+        const partOne = cumulativeSums[leftCutIndex];
+        const partTwo = cumulativeSums[midPoint] - cumulativeSums[leftCutIndex];
+        const partThree = cumulativeSums[rightCutIndex] - cumulativeSums[midPoint];
+        const partFour = cumulativeSums[totalElements - 1] - cumulativeSums[rightCutIndex];
+
+        const currentMinimumValue = Math.min(partOne, partTwo, partThree, partFour);
+        const currentMaximumValue = Math.max(partOne, partTwo, partThree, partFour);
+
+        minimumRangeDifference = Math.min(minimumRangeDifference, currentMaximumValue - currentMinimumValue);
     }
-    const targetJ = totalElements - 2 - currentIdx;
-    const previousOptimalRight = rightSplitPoints[currentIdx - 1];
-    for (let rightCandidate = previousOptimalRight; rightCandidate > targetJ; --rightCandidate) {
-      const thirdPartSum = prefixSums[rightCandidate] - prefixSums[targetJ];
-      const fourthPartSum = prefixSums[totalElements - 1] - prefixSums[rightCandidate];
-      const currentDifference = Math.abs(thirdPartSum - fourthPartSum);
+    return minimumRangeDifference;
+};
 
-      const nextThirdPartSum = prefixSums[rightCandidate - 1] - prefixSums[targetJ];
-      const nextFourthPartSum = prefixSums[totalElements - 1] - prefixSums[rightCandidate - 1];
-      const nextDifference = Math.abs(nextThirdPartSum - nextFourthPartSum);
+const executeSolution = (inputContent) => {
+    const { elementCount, numericValues } = processInputData(inputContent);
+    const cumulativeSums = calculateCumulativeSums(numericValues);
+    const { optimalLeftSplits, optimalRightSplits } = determineOptimalPartitionPoints(cumulativeSums, elementCount);
+    const finalResult = findMinimumOverallDifference(cumulativeSums, elementCount, optimalLeftSplits, optimalRightSplits);
+    console.log(finalResult);
+};
 
-      if (currentDifference < nextDifference || rightCandidate === targetJ + 1) {
-        rightSplitPoints.push(rightCandidate);
-        break;
-      }
-    }
-  }
-  rightSplitPoints.push(-1);
-  rightSplitPoints.reverse();
-
-  let minOverallDifference = Number.MAX_VALUE;
-
-  for (let currentIdx = 1; currentIdx < totalElements - 1; ++currentIdx) {
-    const primaryLeftSplit = leftSplitPoints[currentIdx];
-    const primaryRightSplit = rightSplitPoints[currentIdx];
-
-    const firstSegmentSum = prefixSums[primaryLeftSplit];
-    const secondSegmentSum = prefixSums[currentIdx] - prefixSums[primaryLeftSplit];
-    const thirdSegmentSum = prefixSums[primaryRightSplit] - prefixSums[currentIdx];
-    const fourthSegmentSum = prefixSums[totalElements - 1] - prefixSums[primaryRightSplit];
-
-    const currentMin = Math.min(firstSegmentSum, secondSegmentSum, thirdSegmentSum, fourthSegmentSum);
-    const currentMax = Math.max(firstSegmentSum, secondSegmentSum, thirdSegmentSum, fourthSegmentSum);
-    minOverallDifference = Math.min(minOverallDifference, currentMax - currentMin);
-  }
-
-  console.log(minOverallDifference);
-}
-
-processInputSeries(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeSolution(require('fs').readFileSync('/dev/stdin', 'utf8'));

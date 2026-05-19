@@ -1,65 +1,57 @@
-const filesystem = require('fs');
+const fileSystemModule = require('fs');
 
-const processAndDisplayNumericData = contentString => {
-  // Divergent approach for trimming whitespace
-  const cleanedContent = contentString.replace(/^\s+|\s+$/g, '');
+const processNumericSequence = inputString => {
+    const effectiveInput = (inputString === undefined || inputString === null) ? "" : String(inputString);
+    const trimmedInput = effectiveInput.trim();
 
-  // Divergent approach for parsing numbers (regex match instead of split/map)
-  const numericSequence = (cleanedContent.match(/\d+/g) || []).map(val => parseInt(val, 10));
+    const parts = trimmedInput.split(" ");
+    const parsedNumbers = [];
 
-  // Custom sorting algorithm for descending order (Selection Sort implementation)
-  const arrangeInDecreasingOrder = (items) => {
-    const workingArray = [...items]; // Operate on a copy for a more functional style
-    const totalItems = workingArray.length;
-    for (let outerIndex = 0; outerIndex < totalItems - 1; outerIndex++) {
-      let greatestIndex = outerIndex;
-      for (let innerIndex = outerIndex + 1; innerIndex < totalItems; innerIndex++) {
-        if (workingArray[innerIndex] > workingArray[greatestIndex]) {
-          greatestIndex = innerIndex;
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        if (part === "") {
+            parsedNumbers.push(0);
+        } else {
+            parsedNumbers.push(parseFloat(part));
         }
-      }
-      // Perform swap if a greater element was found
-      if (greatestIndex !== outerIndex) {
-        let temporaryValue = workingArray[outerIndex];
-        workingArray[outerIndex] = workingArray[greatestIndex];
-        workingArray[greatestIndex] = temporaryValue;
-      }
     }
-    return workingArray;
-  };
 
-  const sortedNumbers = arrangeInDecreasingOrder(numericSequence);
+    const sortedNumbersCollection = parsedNumbers.reduce((accumulator, currentVal) => {
+        if (isNaN(currentVal)) {
+            accumulator.push(currentVal);
+        } else {
+            let insertPosition = 0;
+            while (insertPosition < accumulator.length && (isNaN(accumulator[insertPosition]) || currentVal < accumulator[insertPosition])) {
+                insertPosition++;
+            }
+            accumulator.splice(insertPosition, 0, currentVal);
+        }
+        return accumulator;
+    }, []);
 
-  // Divergent approach for formatting output (manual string concatenation loop)
-  let finalOutputAccumulator = '';
-  if (sortedNumbers.length > 0) {
-    finalOutputAccumulator = String(sortedNumbers[0]);
-    for (let i = 1; i < sortedNumbers.length; i++) {
-      finalOutputAccumulator += ' ' + String(sortedNumbers[i]);
+    console.log(sortedNumbersCollection.join(" "));
+};
+
+const handleFileProcessing = (filePath) => {
+    fileSystemModule.readFile(filePath, 'utf8', (readError, fileContent) => {
+        processNumericSequence(fileContent);
+    });
+};
+
+const handleStdinProcessing = () => {
+    try {
+        const stdinContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+        processNumericSequence(stdinContent);
+    } catch (readError) {
+        throw readError;
     }
-  }
-  global.console.log(finalOutputAccumulator);
 };
 
-const retrieveContentAsync = filePath => {
-  filesystem.readFile(filePath, { encoding: 'utf8' }, (error, content) => {
-    // Original does not explicitly handle error in callback, so we pass potentially null/undefined content
-    // The processing function handles empty string gracefully.
-    processAndDisplayNumericData(content || '');
-  });
-};
+let sourcePath = "";
 
-const retrieveContentFromStandardInput = () => {
-  // Original does not use try/catch for readFileSync, mimicking that behavior.
-  const inputContent = filesystem.readFileSync('/dev/stdin', { encoding: 'utf8' });
-  processAndDisplayNumericData(inputContent);
-};
-
-let inputSourceLocationIdentifier = "";
-
-if (global.process.argv.length > 2) {
-  inputSourceLocationIdentifier = global.process.argv[2];
-  retrieveContentAsync(inputSourceLocationIdentifier);
+if (process.argv.length > 2) {
+    sourcePath = process.argv[2];
+    handleFileProcessing(sourcePath);
 } else {
-  retrieveContentFromStandardInput();
+    handleStdinProcessing();
 }

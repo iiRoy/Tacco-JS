@@ -1,84 +1,102 @@
-/*
- * This JavaScript module encapsulates a dynamic programming algorithm
- * for solving a specific optimization problem.
- */
+function executeProgram() {
+  // Read the number of items
+  let numItems = readInput();
+  // Read the number of categories
+  let numCategories = readInput();
 
-// Primary routine that orchestrates the entire computation flow.
-function performCalculation ( ) {
-  let countA = parseToken ( ) ; // Retrieve the first dimension's size from input.
-  let countB = parseToken ( ) ; // Retrieve the second dimension's size from input.
+  // Initialize an array to store item costs
+  const itemCosts = Array(numItems);
+  // Populate the item costs array
+  iterateRange(numItems, function(idxA) {
+    itemCosts[idxA] = readInput();
+  });
 
-  const weightsA = new Array ( countA ) ; // Declare and initialize an array to hold item weights.
-  iterateOver ( countA , function ( itemIdx ) {
-    weightsA [ itemIdx ] = parseToken ( ) ; // Fill the weights array with parsed numerical values.
-  } ) ;
+  // Initialize an array to store category multipliers
+  const categoryMultipliers = Array(numCategories);
+  // Populate the category multipliers array
+  iterateRange(numCategories, function(idxA) {
+    categoryMultipliers[idxA] = readInput();
+  });
 
-  const pricesB = new Array ( countB ) ; // Declare and initialize an array for category prices.
-  iterateOver ( countB , function ( itemIdx ) {
-    pricesB [ itemIdx ] = parseToken ( ) ; // Populate the prices array with parsed numerical values.
-  } ) ;
-
-  // Initialize the 2D array for dynamic programming memoization.
-  const optimalValues = new Array ( countA + 1 ) ;
-  iterateOver ( countA + 1 , function ( itemIdx ) {
-    optimalValues [ itemIdx ] = new Array ( countB + 1 ) ;
-    iterateOver ( countB + 1 , function ( categoryIdx ) {
-      if ( itemIdx === 0 ) {
-        optimalValues [ itemIdx ] [ categoryIdx ] = 0.0 ; // Base case: no items considered, cost is zero.
-      } else if ( categoryIdx === 0 ) {
-        optimalValues [ itemIdx ] [ categoryIdx ] = Number.POSITIVE_INFINITY ; // Base case: no categories, cost is infinite.
-      } else {
-        // Apply the core dynamic programming recurrence relation.
-        optimalValues [ itemIdx ] [ categoryIdx ] = Math.min (
-          optimalValues [ itemIdx ] [ categoryIdx - 1 ] , // Option 1: Exclude the current category.
-          optimalValues [ itemIdx - 1 ] [ categoryIdx - 1 ] + weightsA [ itemIdx - 1 ] * pricesB [ categoryIdx - 1 ] // Option 2: Include the current category.
-        ) ;
+  // Initialize the dynamic programming memoization table
+  const memoTable = Array(numItems + 1);
+  // Fill the memoization table
+  iterateRange(numItems + 1, function(idxA) {
+    memoTable[idxA] = Array(numCategories + 1);
+    iterateRange(numCategories + 1, function(idxC) {
+      // Base case: no items, cost is 0
+      if (idxA === 0) {
+        memoTable[idxA][idxC] = 0;
       }
-    } ) ;
-  } ) ;
+      // Base case: no categories, cost is infinite (cannot fulfill)
+      else if (idxC === 0) {
+        memoTable[idxA][idxC] = Infinity;
+      }
+      // Recursive step: calculate minimum cost
+      else {
+        // Option 1: Don't use the current category (j-1)
+        // Option 2: Use the current category (j-1) for the current item (i-1)
+        memoTable[idxA][idxC] = Math.min(
+          memoTable[idxA][idxC - 1],
+          memoTable[idxA - 1][idxC - 1] + itemCosts[idxA - 1] * categoryMultipliers[idxC - 1]
+        );
+      }
+    });
+  });
 
-  logResult ( optimalValues [ countA ] [ countB ] ) ; // Output the final computed minimum cost.
+  // Output the final minimum cost
+  outputResult(memoTable[numItems][numCategories]);
 }
 
-
-// A general-purpose helper function to perform a task repeatedly.
-function iterateOver ( totalIterations , taskToPerform ) {
-  for ( let itemIdx = 0 ; itemIdx < totalIterations ; ++itemIdx ) {
-    taskToPerform ( itemIdx ) ; // Invoke the provided callback function for each iteration.
+/**
+ * A utility function to iterate a specified number of times,
+ * calling a callback function with the current index.
+ * @param {number} count The number of iterations.
+ * @param {function(number): void} callbackFn The function to call for each iteration.
+ */
+function iterateRange(count, callbackFn) {
+  for (let idxB = 0; idxB < count; ++idxB) {
+    callbackFn(idxB);
   }
 }
 
-// Standard input stream setup for Node.js environment.
-process.stdin.resume ( ) ;
-process.stdin.setEncoding ( 'utf8' ) ;
+// Set up standard input processing
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
+let rawData = ''; // Stores all incoming input data
+let dataPointer = 0; // Pointer to the current position in the parsed input array
 
-let sourceText = '' ; // Buffer to accumulate all incoming standard input data.
-let dataCursor = 0 ; // Index to track the current position within the parsed input tokens.
-
-
-// Function to extract and convert the next token from the input stream.
-function parseToken ( valueType ) {
-  if ( valueType === 'string' ) {
-    return sourceText [ dataCursor ++ ] ; // Return the token as a string.
+/**
+ * Reads a value from the processed input array.
+ * @param {string} [dataType] Optional type hint, 'string' for string, otherwise number.
+ * @returns {string|number} The parsed input value.
+ */
+function readInput(dataType) {
+  if (dataType === 'string') {
+    return rawData[dataPointer++];
   } else {
-    return +sourceText [ dataCursor ++ ] ; // Convert and return the token as a number.
+    return +rawData[dataPointer++]; // Convert to number using unary plus
   }
 }
 
-// Function designated for displaying the final outcome.
-function logResult ( valueToOutput ) {
-  console.log ( valueToOutput ) ; // Print the given value to the console.
+/**
+ * Prints a value to the console, followed by a newline.
+ * @param {*} valueToOutput The value to be printed.
+ */
+function outputResult(valueToOutput) {
+  console.log(valueToOutput);
 }
 
+// Event listener for incoming data chunks
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
+});
 
-// Event handler for chunks of data received from standard input.
-process.stdin.on ( 'data' , function ( dataBlock ) {
-  sourceText += dataBlock ; // Append the received data chunk to the overall input buffer.
-} ) ;
-
-// Event handler for the end of the standard input stream.
-process.stdin.on ( 'end' , function ( ) {
-  sourceText = sourceText.split ( /\s+/ ) ; // Split the accumulated input into an array of tokens using whitespace as delimiter.
-  performCalculation ( ) ; // Begin the main program execution after all input has been processed.
-} ) ;
+// Event listener for the end of input stream
+process.stdin.on('end', function() {
+  // Split the raw input by whitespace and store it in the rawData array
+  rawData = rawData.split(/\s+/);
+  // Execute the main program logic
+  executeProgram();
+});

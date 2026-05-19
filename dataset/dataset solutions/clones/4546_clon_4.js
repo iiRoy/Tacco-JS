@@ -1,36 +1,29 @@
-function processInputAndCompute(inputData) {
-    const parsedValues = inputData.split(/\s+/).filter(Boolean).map(Number);
+"use strict";
 
-    const initialElementCount = parsedValues[0];
-    const numericCollection = parsedValues.slice(1);
+function processInput(rawData) {
+    const parsedLines = rawData.split('\n').map(Number);
 
-    const aggregatedSum = numericCollection.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
+    const itemCount = parsedLines.shift();
+    const allInputNumbers = parsedLines;
 
-    if (aggregatedSum % 10 !== 0) {
-        console.log(aggregatedSum);
+    const cumulativeTotal = allInputNumbers.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
+
+    if (cumulativeTotal % 10 !== 0) {
+        console.log(cumulativeTotal);
         return;
     }
 
-    const potentialRemovals = [];
-    for (let currentIdx = 0; currentIdx < initialElementCount; currentIdx++) {
-        const elementToConsider = numericCollection[currentIdx];
-        const resultantSum = aggregatedSum - elementToConsider;
-        if (resultantSum % 10 !== 0) {
-            potentialRemovals.push({
-                itemValue: elementToConsider,
-                newTotalValue: resultantSum
-            });
-        }
-    }
+    const numbersToConsiderForRemoval = allInputNumbers.slice(0, itemCount);
 
-    if (potentialRemovals.length === 0) {
+    const sortedConsideredValues = [...numbersToConsiderForRemoval].sort((a, b) => a - b);
+
+    const removableValue = sortedConsideredValues.find(val => (cumulativeTotal - val) % 10 !== 0);
+
+    if (removableValue !== undefined) {
+        console.log(1, cumulativeTotal - removableValue);
+    } else {
         console.log(0);
-        return;
     }
-
-    potentialRemovals.sort((optionA, optionB) => optionA.itemValue - optionB.itemValue);
-
-    console.log(1, potentialRemovals[0].newTotalValue);
 }
 
-processInputAndCompute(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

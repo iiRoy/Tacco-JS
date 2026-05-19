@@ -1,56 +1,80 @@
-let receivedLines = [];
-let currentLinePosition = 0;
-
-function grabNextLine() {
-    if (currentLinePosition >= receivedLines.length) {
-        throw new Error('Input exhausted.');
+class InputSource {
+    constructor(lines) {
+        this.lineData = lines;
+        this.currentLineIndex = 0;
     }
-    return receivedLines[currentLinePosition++];
-}
 
-function parseNumericalInput() {
-    return parseInt(grabNextLine(), 10);
-}
-
-function sendOutput(value) {
-    console.log(value);
-}
-
-function evaluateCalculation() {
-    let upperLimit = parseNumericalInput();
-    let totalAccumulation = 0;
-    let iterationIndex = 1;
-
-    while (iterationIndex <= upperLimit) {
-        let currentGroupValue = Math.floor(upperLimit / iterationIndex);
-        let nextIndexBoundary = Math.floor(upperLimit / currentGroupValue) + 1;
-
-        let blockEndIndex = nextIndexBoundary - 1;
-        let sumOfIndicesInBlock = (iterationIndex + blockEndIndex) * (blockEndIndex - iterationIndex + 1) / 2;
-
-        let sumFromOneToGroupValue = currentGroupValue * (currentGroupValue + 1) / 2;
-        
-        totalAccumulation += sumFromOneToGroupValue * sumOfIndicesInBlock;
-
-        iterationIndex = nextIndexBoundary;
+    retrieveNextLine() {
+        if (this.currentLineIndex < this.lineData.length) {
+            return this.lineData[this.currentLineIndex++];
+        }
+        throw new Error('Input exhausted: No more lines to read.');
     }
-    sendOutput(totalAccumulation);
+
+    transformInput(value, conversionType) {
+        try {
+            switch (conversionType) {
+                case 1: return parseInt(value);
+                case 2: return value.split(' ');
+                case 4: return value.split(' ').map(Number);
+                case 6: return value.split('');
+                case 7: return value.split('').map(Number);
+                case 8: return value.join(' ');
+                case 9: return value.join('\n');
+                case 0: return value.join('');
+                default: return value;
+            }
+        } catch (e) {
+            return value;
+        }
+    }
+
+    fetchInteger() {
+        return this.transformInput(this.retrieveNextLine(), 1);
+    }
 }
 
-const inputHandler = require('readline').createInterface({
+let allInputLines = [];
+let dataStream;
+
+require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
-});
-
-inputHandler.on('line', function(textLine) {
-    receivedLines.push(textLine);
-});
-
-inputHandler.on('close', function() {
-    const operationStart = Date.now();
-    evaluateCalculation();
-    const operationDuration = Date.now() - operationStart;
+}).on('line', line => allInputLines.push(line))
+  .on('close', () => {
+    dataStream = new InputSource(allInputLines);
     console.error('\n');
-    console.error('diagnostics: execution duration: ' + operationDuration + 'ms');
-    console.error('diagnostics: heap usage: ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+    const executionStart = Date.now();
+    executeCoreLogic();
+    const executionEnd = Date.now() - executionStart;
+    outputDebugInfo('time : ' + executionEnd + 'ms');
+    outputDebugInfo('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
 });
+
+function produceDeepCopy(originalObject) {
+    if (originalObject instanceof Set) {
+        return new Set(Array.from(originalObject));
+    }
+    return structuredClone(originalObject);
+}
+
+function displayResult(content) { console.log(content); }
+function outputDebugInfo(message) { console.error('debug:' + require('util').inspect(message, false, null)); }
+
+function executeCoreLogic() {
+    const upperLimit = dataStream.fetchInteger();
+    const divisorTally = new Array(upperLimit + 1).fill(0);
+
+    for (let currentFactor = 1; currentFactor <= upperLimit; ++currentFactor) {
+        for (let currentMultiple = currentFactor; currentMultiple <= upperLimit; currentMultiple += currentFactor) {
+            divisorTally[currentMultiple]++;
+        }
+    }
+
+    let totalAccumulator = 0;
+    for (let numberValue = 1; numberValue <= upperLimit; ++numberValue) {
+        totalAccumulator += numberValue * divisorTally[numberValue];
+    }
+
+    displayResult(totalAccumulator);
+}

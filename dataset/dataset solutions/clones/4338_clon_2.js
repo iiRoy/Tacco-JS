@@ -1,80 +1,58 @@
-function processInput(rawData){
-  // Extract dimensions from the first line of the raw input string
-  const dimensionsStringArray = rawData.split('\n')[0].split(' ');
-  const heightValue = stringToInteger(dimensionsStringArray[0]); // Height of the grid
-  const widthValue = stringToInteger(dimensionsStringArray[1]); // Width of the grid
+function parseInteger(inputString) {
+    return parseInt(inputString, 10);
+}
 
-  // Special case: If width is 1, the condition is always met
-  if (widthValue === 1) return console.log('Yes');
+function ProcessInput(rawData) {
+    const dimensionsStr = rawData.split('\n')[0].split(' ');
+    const heightVal = parseInteger(dimensionsStr[0]);
+    const widthVal = parseInteger(dimensionsStr[1]);
 
-  // Process the grid characters (from the second line onwards)
-  // Flatten all characters into a single string and count their occurrences
-  const characterFrequencyMap = rawData
-    .split('\n')
-    .slice(1)
-    .join('')
-    .split('')
-    .reduce(function(frequencyMap, currentChar) {
-      if (frequencyMap[currentChar] === undefined) {
-        frequencyMap[currentChar] = 0;
-      }
-      frequencyMap[currentChar]++;
-      return frequencyMap;
+    if (widthVal === 0x1) {
+        return console.log('Yes');
+    }
+
+    const charCountsMap = rawData.split('\n').slice(0x1).join('').split('').reduce(function(accumulator, currentChar) {
+        if (accumulator[currentChar] === void 0) {
+            accumulator[currentChar] = 0x0;
+        }
+        accumulator[currentChar]++;
+        return accumulator;
     }, {});
 
-
-  // Condition for even height and even width
-  if (heightValue % 2 === 0 && widthValue % 2 === 0) {
-    // Count characters whose frequencies are not multiples of 4
-    const nonQuadrupleCount = Object.keys(characterFrequencyMap).filter(function(charKey) {
-      return characterFrequencyMap[charKey] % 4 !== 0;
-    }).length;
-
-    // If all character frequencies are multiples of 4, it's a 'Yes'
-    if (nonQuadrupleCount === 0) {
-      return console.log('Yes');
-    } else {
-      return console.log('No');
+    if (heightVal % 0x2 === 0x0 && widthVal % 0x2 === 0x0) {
+        const nonQuadrupleCount = Object.keys(charCountsMap).filter(function(keyChar) {
+            return charCountsMap[keyChar] % 0x4 !== 0x0;
+        }).length;
+        if (nonQuadrupleCount === 0x0) {
+            return console.log('Yes');
+        } else {
+            return console.log('No');
+        }
     }
-  }
 
-  // Condition for odd height and odd width
-  if (heightValue % 2 !== 0 && widthValue % 2 !== 0) {
-    // Sum up the frequencies of characters that are not multiples of 4
-    const totalOddRemainderSum = Object.keys(characterFrequencyMap).filter(function(keyIdentifier) {
-      return characterFrequencyMap[keyIdentifier] % 4 !== 0;
-    }).reduce(function(currentAccumulator, mapKey) {
-      return currentAccumulator + stringToInteger(characterFrequencyMap[mapKey]);
-    }, 0);
-
-    // If the sum of these non-quadruple frequencies is odd, it's a 'Yes'
-    if (totalOddRemainderSum % 2 === 1) {
-      return console.log('Yes');
-    } else {
-      return console.log('No');
+    if (heightVal % 0x2 !== 0x0 && widthVal % 0x2 !== 0x0) {
+        const remainderSum = Object.keys(charCountsMap).filter(function(keyChar) {
+            return charCountsMap[keyChar] % 0x4 !== 0x0;
+        }).reduce(function(currentSum, keyChar) {
+            return currentSum + parseInteger(charCountsMap[keyChar]);
+        }, 0x0);
+        if (remainderSum % 0x2 === 0x1) {
+            return console.log('Yes');
+        } else {
+            return console.log('No');
+        }
     }
-  }
 
-  // Condition for mixed parity (one even, one odd dimension)
-  // Calculate the sum of character frequencies that are not multiples of 4
-  const finalRemainderSum = Object.keys(characterFrequencyMap).filter(function(charLabel) {
-    return characterFrequencyMap[charLabel] % 4 !== 0;
-  }).reduce(function(runningTotal, currentLabel) {
-    return runningTotal + stringToInteger(characterFrequencyMap[currentLabel]);
-  }, 0);
-
-  // If this sum is zero, it's a 'Yes'
-  if (finalRemainderSum === 0) {
-    return console.log('Yes');
-  } else {
-    return console.log('No');
-  }
+    const totalRemainder = Object.keys(charCountsMap).filter(function(keyChar) {
+        return charCountsMap[keyChar] % 0x4 !== 0x0;
+    }).reduce(function(currentSum, keyChar) {
+        return currentSum + parseInteger(charCountsMap[keyChar]);
+    }, 0x0);
+    if (totalRemainder === 0x0) {
+        return console.log('Yes');
+    } else {
+        return console.log('No');
+    }
 }
 
-// Helper function to convert a string to an integer with base 10
-function stringToInteger(strValue) {
-  return parseInt(strValue, 10);
-}
-
-// Read input from standard input and pass to the main processing function
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

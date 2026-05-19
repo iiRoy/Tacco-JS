@@ -1,61 +1,26 @@
-/*
- * This JavaScript file processes input from standard input
- * to solve a specific algorithmic problem.
- * It reads lines, parses them, and performs a symmetry check.
- */
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃ 프로젝트: 강 Oracle 3493                                             ┃
+// ┃ 구성원: 박가은, 오민재                                               ┃
+// ┃ 학번: PG61553875, XQ45398459                                         ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-// Import the 'fs' module for file system operations.
-var lines = require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . split ( "\n" ) ;
+/* 읽기 정리한다 현재평가 순서 각 값마다가까이. */
+   var lines = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
 
+      var n=lines[0]|0;
+	var s  =lines.slice(1);
 
-// The first line of input typically contains a number 'n'.
-var n = lines [ 0 ] | 0 ;
-
-// The remaining lines form the input grid or array 's'.
-var s = lines . slice ( 1 ) ;
-
-
-/**
- * Checks for a specific symmetry condition within the grid 's'.
- * This function takes two offsets, 'a' and 'b', and verifies if
- * the grid 's' remains symmetric under a transformation.
- * @param {number} a - The row offset.
- * @param {number} b - The column offset.
- * @returns {number} 1 if the symmetry holds, 0 otherwise.
- */
-function good ( a , b ) {
-
-    // Iterate through each row of the virtual grid.
-    for ( var i = 0 ; i < n ; ++ i ) {
-
-        // Iterate through each column of the virtual grid.
-        for ( var j = 0 ; j < n ; ++ j ) {
-
-            // Check the symmetry condition:
-            // (i+a, j+b) should be equal to (j+a, i+b) after modulo n.
-            if ( s [ ( i + a ) % n ] [ ( j + b ) % n ] !== s [ ( j + a ) % n ] [ ( i + b ) % n ] ) {
-                // If any mismatch is found, the symmetry does not hold.
-                return 0 ;
-            }
-        }
+	    function good ( a, b){
+// 읽기 또한정리한다 핵심평가 순서 각 값마다안정.
+       for(var i=0;i<n;++i){
+   for ( var j =  0; j  <  n;++j){
+		if (s[ ( i + a)%  n] [ ( j  + b)  %n]  !==  s[( j +  a)  %  n] [( i+ b )  %n ] ) return  0;
+          }
     }
-
-    // If all checks pass, the symmetry holds for the given offsets.
-    return 1 ;
-}
-
-
-// Initialize a variable to accumulate the final answer.
-var ans = 0 ;
-
-// Loop through all possible row offsets 'a'.
-for ( var a = 0 ; a < n ; ++ a ) {
-
-    // For each 'a', calculate 'good(a, 0)' and multiply by 'n',
-    // then add to the total answer.
-    // The 'b' offset is fixed at 0 in this calculation.
-    ans += good ( a , 0 ) * n ;
-}
-
-// Output the final calculated answer to the console.
-console . log ( ans ) ;
+	   return 1;
+ }
+ var ans= 0;
+		for ( var   a = 0; a < n;++a)  { 
+    ans+=good(a,0)*n;
+    }
+console.log (ans );

@@ -1,148 +1,150 @@
-var INPUT_READER = (function() {
-    // This function acts as the public API to create a new input processor instance.
-    function createInputProcessor(sourceData) {
-        return new InputTextProcessor(sourceData);
+var INPUT_PARSER = (function () {
+    // This function serves as a factory to create new instances of the data stream processor.
+    function createParser(inputString) {
+        return new DataStream(inputString);
     }
 
-    // The core class for processing input text line by line.
-    function InputTextProcessor(rawData) {
-        // Store the processed lines of text, trimmed and split by newline.
-        this._textLines = rawData.trim().split("\n");
-        // Keep track of the current line being processed.
-        this._currentLinePosition = 0;
+    // The DataStream constructor initializes the input source.
+    function DataStream(inputString) {
+        // The raw input string is trimmed of leading/trailing whitespace and split into individual lines.
+        this._sourceLines = inputString.trim().split("\n");
+        // A pointer to the current line being processed is initialized to the first line.
+        this._currentLineIndex = 0;
     }
 
-    // Method to extract a single value from the current line.
-    InputTextProcessor.prototype.getNextElement = function(returnAsString) {
-        var currentLines = this._textLines;
-        var linePointer = this._currentLinePosition;
-        var extractedElement;
+    // This method extracts a single value from the current line.
+    // If 'asString' is true, the value is returned as a string; otherwise, it's converted to a number.
+    DataStream.prototype.readSingleValue = function (asString) {
+        var currentLineData = this._sourceLines,
+            lineIdx = this._currentLineIndex,
+            resultValue;
 
-        // If the current line hasn't been processed into an array of elements yet, do it now.
-        // It's reversed to allow efficient popping from the end.
-        if (typeof currentLines[linePointer] === "string") {
-            currentLines[linePointer] = currentLines[linePointer].split(" ").reverse();
+        // If the current line has not yet been parsed into an array of tokens, do so.
+        // The tokens are reversed to allow efficient extraction using `pop()`.
+        if (typeof currentLineData[lineIdx] === "string") {
+            currentLineData[lineIdx] = currentLineData[lineIdx].split(" ").reverse();
         }
 
-        // Pop the last element from the current line's array.
-        extractedElement = currentLines[linePointer].pop();
+        // Retrieve the last token from the current line's array.
+        resultValue = currentLineData[lineIdx].pop();
 
-        // If the current line is now empty, advance to the next line.
-        if (!currentLines[linePointer].length) {
-            this._currentLinePosition++;
+        // If the current line is now exhausted, advance the line pointer.
+        if (!currentLineData[lineIdx].length) {
+            this._currentLineIndex++;
         }
 
-        // Return the element either as a string or converted to a number.
-        return returnAsString ? extractedElement : +extractedElement;
+        // Return the extracted value, applying numeric conversion if 'asString' is not set.
+        return asString ? resultValue : +resultValue;
     };
 
-    // Method to read an entire line and return its elements.
-    InputTextProcessor.prototype.getLineAsNumbers = function(outputAsText) {
-        // Get the current line, incrementing the pointer, and split it by spaces.
-        var lineSegments = this._textLines[this._currentLinePosition++].split(" ");
-        // Return segments as strings or map them to numbers.
-        return outputAsText ? lineSegments : lineSegments.map(item => +item);
+    // This method reads an entire line, splitting it into an array of values.
+    // If 'asString' is true, an array of strings is returned; otherwise, an array of numbers.
+    DataStream.prototype.readLineOfValues = function (asString) {
+        // Fetch the current line, split it by spaces, and then increment the line index.
+        var currentLineValues = this._sourceLines[this._currentLineIndex++].split(" ");
+        // Map the values to numbers if 'asString' is false, otherwise return as strings.
+        return asString ? currentLineValues : currentLineValues.map(item => +item);
     };
 
-    // Method to read a matrix (multiple lines) of values.
-    InputTextProcessor.prototype.readMatrixOfNumbers = function(numberOfRows, outputAsStrings) {
-        // Extract a slice of lines, incrementing the pointer by numberOfRows.
-        // Each line is then split into an array of strings.
-        var matrixData = this._textLines.slice(this._currentLinePosition, this._currentLinePosition += numberOfRows).map(rowString => rowString.split(" "));
-        // Return the matrix as strings or convert all elements to numbers.
-        return outputAsStrings ? matrixData : matrixData.map(row => row.map(val => +val));
+    // This method reads a block of 'numLines' lines, treating each as a row in a matrix.
+    // Each row is split into values. The 'asString' flag determines value type.
+    DataStream.prototype.readMatrix = function (numLines, asString) {
+        // Extract a slice of lines, then process each line into an array of values.
+        var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines).map(item => item.split(" "));
+        // Convert all elements to numbers if 'asString' is false.
+        return asString ? matrixRows : matrixRows.map(row => row.map(item => +item));
     };
 
-    // Method to read a block of raw lines.
-    InputTextProcessor.prototype.readRawLinesAsNumbers = function(lineCount, keepAsStrings) {
-        // Get a slice of raw lines without splitting individual elements.
-        var rawLineData = this._textLines.slice(this._currentLinePosition, this._currentLinePosition += lineCount);
-        // Return raw lines as strings or convert each line to a number (if it represents one).
-        return keepAsStrings ? rawLineData : rawLineData.map(value => +value);
+    // This method reads a specified number of raw lines without further splitting.
+    // If 'asString' is true, an array of strings is returned; otherwise, an array of numbers.
+    DataStream.prototype.readRawLines = function (numLines, asString) {
+        // Obtain a segment of lines from the source.
+        var rawLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+        // Convert lines to numbers if 'asString' is false.
+        return asString ? rawLines : rawLines.map(item => +item);
     };
 
-    // The IIFE returns the public creator function.
-    return createInputProcessor;
+    // The factory function is returned, making it the public interface of the IIFE.
+    return createParser;
 })();
 
-// Initialize the data processor by reading input from stdin.
-var dataProcessor = INPUT_READER(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Instantiate the input reader by consuming data from standard input.
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Utility function to create a multi-dimensional array initialized with a value.
-function createMultidimensionalArray(initialValue) {
-    var dimensionArguments = arguments;
-    var currentDimensionIndex = dimensionArguments.length;
-    // Build the array creation string from innermost to outermost dimension.
-    var arrayCreationString = "Array(dimensionArguments[" + --currentDimensionIndex + "]).fill(0).map(item => { return " + initialValue + "; })";
-    while (--currentDimensionIndex) {
-        arrayCreationString = "Array(dimensionArguments[" + currentDimensionIndex + "]).fill(0).map(element => " + arrayCreationString + ")";
+// This utility function dynamically constructs multi-dimensional arrays.
+// It is not utilized in the primary logic of this script.
+function createMultiDimArray(initialValue) {
+    var argsList = arguments,
+        argCount = argsList.length,
+        arrayCreationString = "Array(argsList[" + --argCount + "]).fill(0).map(_ => {return " + initialValue + ";})";
+    // Build the array creation string for higher dimensions.
+    while (--argCount) {
+        arrayCreationString = "Array(argsList[" + argCount + "]).fill(0).map(_ => " + arrayCreationString + ")";
     }
-    // Evaluate the constructed string to create the array.
+    // Execute the dynamically generated string to create the array.
     return eval(arrayCreationString);
 }
 
-// Output the result of the main calculation.
+// Execute the main calculation function and print its result to the console.
 console.log(calculateMaxSum());
 
-// Main function to perform the problem's logic.
+// The core function that computes the maximum possible sum.
 function calculateMaxSum() {
-    // Read the total number of elements (n) and the limit on operations (k).
-    var totalElements = dataProcessor.getNextElement();
-    var operationsLimit = dataProcessor.getNextElement();
-    // Read the array of numbers for processing.
-    var inputNumbersCollection = dataProcessor.getLineAsNumbers();
+    // Read the total number of elements (N) and the maximum allowed operations (K).
+    var totalElements = inputReader.readSingleValue();
+    var maxOperations = inputReader.readSingleValue();
+    // Read the array of integer values.
+    var valueArray = inputReader.readLineOfValues();
 
-    // Variable to store the maximum sum found.
-    var maximumPossibleSum = 0;
+    // Initialize the variable to store the highest sum found.
+    var maximumSum = 0;
 
-    // Outer loop: Iterate through possible total operations (i), from 0 up to k or n-1.
-    for (var currentOpCount = 0; currentOpCount <= operationsLimit && currentOpCount < totalElements; currentOpCount++) {
-        // Inner loop: Iterate through the number of elements taken from the left side (l).
-        for (var leftElementsCount = 0; leftElementsCount <= currentOpCount; leftElementsCount++) {
-            // Buffer to store negative numbers encountered in the current window.
-            var negativeValuesBuffer = [];
-            // Current sum for the window being evaluated.
-            var currentWindowSum = 0;
+    // Outer loop: Iterates through all possible counts of elements taken from the ends,
+    // up to 'maxOperations' or 'totalElements', whichever is smaller.
+    for (var currentOperationCount = 0; currentOperationCount <= maxOperations && currentOperationCount < totalElements; currentOperationCount++) {
+        // Inner loop: Determines how many of the 'currentOperationCount' elements are taken from the left side.
+        for (var leftElementsCount = 0; leftElementsCount <= currentOperationCount; leftElementsCount++) {
+            // A temporary array to hold any negative values encountered.
+            var negativeValues = [];
+            // The sum for the current combination of elements.
+            var currentSum = 0;
 
-            // Loop to take elements from the left side.
-            for (var leftIndexIterator = 0; leftIndexIterator < leftElementsCount; leftIndexIterator++) {
-                // If a negative number is found, add it to the buffer.
-                if (inputNumbersCollection[leftIndexIterator] < 0) {
-                    negativeValuesBuffer.push(inputNumbersCollection[leftIndexIterator]);
+            // Process elements taken from the left end of the array.
+            for (var leftIndex = 0; leftIndex < leftElementsCount; leftIndex++) {
+                // If an element is negative, add it to our list of negative values.
+                if (valueArray[leftIndex] < 0) {
+                    negativeValues.push(valueArray[leftIndex]);
                 }
-                // Add the element to the current window sum.
-                currentWindowSum += inputNumbersCollection[leftIndexIterator];
+                // Accumulate the value into the current sum.
+                currentSum += valueArray[leftIndex];
             }
 
-            // Loop to take elements from the right side.
-            // The number of elements from the right is (currentOpCount - leftElementsCount).
-            for (var rightIndexIterator = 0; rightIndexIterator < currentOpCount - leftElementsCount; rightIndexIterator++) {
-                // Determine the actual index from the right end of the array.
-                var actualRightIndex = totalElements - 1 - rightIndexIterator;
-                // If a negative number is found, add it to the buffer.
-                if (inputNumbersCollection[actualRightIndex] < 0) {
-                    negativeValuesBuffer.push(inputNumbersCollection[actualRightIndex]);
+            // Process elements taken from the right end of the array.
+            // The number of elements from the right is (currentOperationCount - leftElementsCount).
+            for (var rightIndex = 0; rightIndex < currentOperationCount - leftElementsCount; rightIndex++) {
+                // Check for negative values from the right side.
+                if (valueArray[totalElements - 1 - rightIndex] < 0) {
+                    negativeValues.push(valueArray[totalElements - 1 - rightIndex]);
                 }
-                // Add the element to the current window sum.
-                currentWindowSum += inputNumbersCollection[actualRightIndex];
+                // Add the value to the current sum.
+                currentSum += valueArray[totalElements - 1 - rightIndex];
             }
 
-            // Sort the collected negative numbers in ascending order.
-            negativeValuesBuffer.sort((valA, valB) => valA - valB);
+            // Sort the collected negative values in ascending order to easily remove the smallest ones.
+            negativeValues.sort((valA, valB) => valA - valB);
 
-            // Remove negative numbers from the sum if there are remaining operations (k-i).
-            // This effectively "undoes" the addition of the smallest negative numbers.
-            for (var removedNegativeCount = 0; removedNegativeCount < operationsLimit - currentOpCount && removedNegativeCount < negativeValuesBuffer.length; removedNegativeCount++) {
-                currentWindowSum -= negativeValuesBuffer[removedNegativeCount];
+            // Remove the smallest negative values if there are remaining operations (k - i).
+            // This effectively increases the sum by turning a negative into a positive contribution.
+            for (var negativeRemovalIndex = 0; negativeRemovalIndex < maxOperations - currentOperationCount && negativeRemovalIndex < negativeValues.length; negativeRemovalIndex++) {
+                currentSum -= negativeValues[negativeRemovalIndex];
             }
 
-            // Update the maximum possible sum if the current window sum is greater.
-            if (currentWindowSum > maximumPossibleSum) {
-                maximumPossibleSum = currentWindowSum;
+            // Update the overall maximum sum if the current combination yields a higher sum.
+            if (currentSum > maximumSum) {
+                maximumSum = currentSum;
             }
         }
     }
-
-    // Return the final maximum sum found.
-    return maximumPossibleSum;
+    // Return the final maximum sum found across all combinations.
+    return maximumSum;
 }

@@ -1,33 +1,22 @@
-// This script determines the intersection count between two sets of numbers.
-(  function   (   dataInput  )   {
-    // Decompose the incoming textual data into individual lines for processing.
-    var   lineFragments   = dataInput.split( '\n' );
+(function(rawData) {
+    // This function processes raw input data to find common elements.
+    var lineSegments = rawData.split('\n'); // Split the input into an array of lines.
 
-    // Extract the size specification for the initial numeric collection.
-    var   firstArrayLength = Number  ( lineFragments . shift ( )  )  ;
+    var firstArraySize = Number(lineSegments.shift()); // Extract the size for the first array.
+    var primaryNumbers = lineSegments.shift().split(' ', firstArraySize).map(Number); // Parse the first array of numbers.
 
-    // Parse the first line into a collection of numeric values.
-    var   primarySet = lineFragments.shift().split(' ', firstArrayLength) .map ( Number ) ;
+    var secondArraySize = Number(lineSegments.shift()); // Extract the size for the second array.
+    var queryNumbers = lineSegments.shift().split(' ', secondArraySize).map(Number); // Parse the second array of numbers.
 
-    // Obtain the size parameter for the subsequent query collection.
-    var   secondArrayLength =   Number(   lineFragments.shift()   )   ;
+    var matchCounter = 0; // Initialize a counter for matching elements.
 
-    // Convert the next line into the collection of numbers to be searched for.
-    var   querySet = lineFragments.shift().split(' ', secondArrayLength).map( Number );
-
-    // Initialize a counter for elements found in both collections.
-    var   matchCounter   = 0   ;
-
-    // Iterate through each element in the query collection.
-    querySet.forEach(  function  (  itemToCheck  )   {
-        // Check if the current query element exists within the primary collection.
-        if  (   primarySet.indexOf(itemToCheck)   !==  -1   )   {
-            // Increment the counter if a match is identified.
-            matchCounter++;
+    // Iterate through each element in the query numbers array.
+    queryNumbers.forEach(function(currentElement) {
+        // Check if the current query element exists in the primary numbers array.
+        if (primaryNumbers.indexOf(currentElement) !== -1) {
+            matchCounter++; // Increment the counter if a match is found.
         }
-    }  )  ;
+    });
 
-    // Output the final tally of common elements to the console.
-    console.log(   matchCounter   )   ;
-
-} ) (   require('fs').readFileSync   (   '/dev/stdin'   ,   'utf8'   )   )   ;
+    console.log(matchCounter); // Output the total count of matching elements.
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

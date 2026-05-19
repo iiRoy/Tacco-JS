@@ -1,35 +1,44 @@
-const ProcessInput = function (SourceText) {
- function ReverseString(OriginalText) {
-  let TextToReverse = new String(OriginalText);
-  let ReversedOutput = "";
-  for (let Idx = TextToReverse.length; Idx > 0; Idx--) {
-   ReversedOutput += TextToReverse.charAt(Idx - 1);
+const ProcessInput = function (initialString) {
+  // This helper function reverses a given string.
+  function reverseString(originalText) {
+    let textObject = new String(originalText);
+    let reversedResult = "";
+    for (let idx = textObject.length; idx > 0; idx--) {
+      reversedResult += textObject.charAt(idx - 1);
+    }
+    return reversedResult;
   }
-  return ReversedOutput;
- };
 
- let CurrentString = new String(SourceText);
- let LengthOfCurrent = CurrentString.length;
+  let inputStrObj = new String(initialString);
+  let strLength = inputStrObj.length;
 
- console.log(ReverseString(SourceText));
+  // First, print the reversed version of the initial string.
+  console.log(reverseString(initialString));
 
- if (ReverseString(SourceText) == SourceText) {
+  // Check if the entire string is a palindrome.
+  if (reverseString(initialString) === initialString) {
+    // If it is, check the first half (excluding the middle character for odd lengths).
+    let firstHalf = inputStrObj.substring(0, (strLength - 1) / 2);
 
-  let FirstHalf = CurrentString.substring(0, (LengthOfCurrent - 1) / 2);
+    // Check if the first half is also a palindrome.
+    if (reverseString(firstHalf) === firstHalf) {
+      // If both are palindromes, check the second half.
+      // The second half starts after the middle character (for odd lengths) and ends before the last character.
+      let secondHalf = inputStrObj.substring((strLength + 3) / 2 - 1, strLength);
 
-  if (ReverseString(FirstHalf) == FirstHalf) {
-   let SecondHalf = CurrentString.substring((LengthOfCurrent + 3) / 2, LengthOfCurrent - 1);
-   if (ReverseString(SecondHalf) == SecondHalf) {
-    console.log("Yes");
-   } else {
-    console.log("No");
-   }
+      // Check if the second half is a palindrome.
+      if (reverseString(secondHalf) === secondHalf) {
+        console.log("Yes"); // All conditions met.
+      } else {
+        console.log("No"); // Second half not a palindrome.
+      }
+    } else {
+      console.log("No"); // First half not a palindrome.
+    }
   } else {
-   console.log("No");
+    console.log("No"); // Initial string not a palindrome.
   }
- } else {
-  console.log("No");
- }
 };
 
+// Read input from standard input and pass it to the main processing function.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

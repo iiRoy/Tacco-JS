@@ -1,21 +1,17 @@
-function performCalculation(src) {
-    const [alpha, beta, gamma, delta, epsilon] = src.split(" ").map(Number);
+function Main(inputString) {
+    const [priceA, priceB, priceAB, countA, countB] = inputString.split(' ').map(Number);
 
-    const smallestOfTwo = (val1, val2) => val1 < val2 ? val1 : val2;
-    const largestOfTwo = (val1, val2) => val1 > val2 ? val1 : val2;
+    const optionOneCost = Math.min(countA, countB) * (priceA + priceB);
 
-    const lowerQuantity = smallestOfTwo(delta, epsilon);
-    const higherQuantity = largestOfTwo(delta, epsilon);
+    const optionTwoCost = Math.min(countA, countB) * priceAB * 2 +
+                          Math.abs(countA - countB) * (countA > countB ? priceA : priceB);
 
-    const initialPurchaseCost = lowerQuantity * alpha + lowerQuantity * beta;
+    const optionThreeCost = Math.max(countA, countB) * priceAB * 2;
 
-    const combinedPurchaseCost = (lowerQuantity * gamma * 2) +
-                                 ((delta - lowerQuantity) * alpha) +
-                                 ((epsilon - lowerQuantity) * beta);
+    const finalMinimumPrice = Math.min(optionOneCost, optionTwoCost, optionThreeCost);
 
-    const bulkPurchaseCost = higherQuantity * gamma * 2;
-
-    const ultimatePrice = smallestOfTwo(initialPurchaseCost, smallestOfTwo(combinedPurchaseCost, bulkPurchaseCost));
-
-    console.log(ultimatePrice);
+    console.log(finalMinimumPrice);
 }
+Main("1500 2000 1600 3 2");
+Main("1500 2000 1900 3 2");
+Main("1500 2000 500 90000 100000");

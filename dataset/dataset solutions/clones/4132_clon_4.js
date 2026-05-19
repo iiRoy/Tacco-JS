@@ -1,50 +1,24 @@
-'use strict'
+'use strict';
 
-const processSourceData = (incomingText) => {
-    const extractedNumericStrings = incomingText.match(/\d+/g) || [];
-    const numericComponents = extractedNumericStrings.map(Number);
+function processInputData(rawData) {
+    const numericValues = rawData.split(/[\s\n]+/).filter(Boolean).map(Number);
 
-    return {
-        firstComponent: numericComponents[0],
-        secondComponent: numericComponents[1],
-        thirdComponent: numericComponents[2],
-        fourthComponent: numericComponents[3]
-    };
-};
+    const [firstOperand, secondOperand, thirdOperand, fourthOperand] = numericValues;
 
-const evaluateComparativeStrength = (comp1, comp2, comp3, comp4) => {
-    const initialInfluence = comp1 + comp2;
-    const subsequentInfluence = comp3 + comp4;
+    const leftAccumulator = firstOperand + secondOperand;
+    const rightAccumulator = thirdOperand + fourthOperand;
 
-    const resultDictionary = {
+    const netDifference = leftAccumulator - rightAccumulator;
+
+    const outcomeMapping = {
+        '1': 'Left',
         '-1': 'Right',
-        '0': 'Balanced',
-        '1': 'Left'
+        '0': 'Balanced'
     };
 
-    const differenceSign = Math.sign(initialInfluence - subsequentInfluence);
+    const finalOutput = outcomeMapping[Math.sign(netDifference)];
 
-    return resultDictionary[differenceSign];
-};
+    console.log(finalOutput);
+}
 
-const coordinateProcessing = (rawDataStream) => {
-    const structuredComponents = processSourceData(rawDataStream);
-    const finalJudgment = evaluateComparativeStrength(
-        structuredComponents.firstComponent,
-        structuredComponents.secondComponent,
-        structuredComponents.thirdComponent,
-        structuredComponents.fourthComponent
-    );
-    deliverResult(finalJudgment);
-};
-
-const deliverResult = (finalMessage) => {
-    console.log(finalMessage);
-};
-
-const initiateSystem = () => {
-    const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    coordinateProcessing(rawInputContent);
-};
-
-initiateSystem();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

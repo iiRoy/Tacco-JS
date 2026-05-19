@@ -1,36 +1,38 @@
 "use strict";
 
-const processingUnit = (rawInput) => {
-    const dataLines = rawInput.trim().split('\n');
-    const numericParameters = dataLines[0].split(' ').map(Number);
-    
-    const valueA = numericParameters[0];
-    const valueB = numericParameters[1];
-    
-    if (valueB === 0) {
-        console.log(valueA * valueA);
+const parseInputValues = (rawInput) => {
+    const [lineContent] = rawInput.trim().split("\n");
+    const [firstVal, secondVal] = lineContent.split(" ").map(Number);
+    return { firstVal, secondVal };
+};
+
+function* generateContributions(limitValue, minimumRemainder) {
+    if (minimumRemainder === 0) {
+        yield limitValue * limitValue;
         return;
     }
-    
-    let exclusionTally = 0;
-    
-    for (let currentDivisor = 1; currentDivisor <= valueA; ++currentDivisor) {
-        const fullCycles = Math.floor(valueA / currentDivisor);
-        const remainingElements = valueA % currentDivisor;
-        
-        exclusionTally += fullCycles * Math.min(valueB, currentDivisor);
-        
-        if (remainingElements > 0) {
-            exclusionTally += Math.max(0, Math.min(remainingElements, valueB - 1));
+
+    for (let currentDivisor = 1; currentDivisor <= limitValue; currentDivisor++) {
+        const quotientResult = Math.floor(limitValue / currentDivisor);
+        const remainderResult = limitValue % currentDivisor;
+
+        const termForFullBlocks = quotientResult * Math.max(0, currentDivisor - minimumRemainder);
+        let termForPartialBlock = 0;
+        if (remainderResult > 0) {
+            termForPartialBlock = Math.max(0, remainderResult - minimumRemainder + 1);
         }
+        yield termForFullBlocks + termForPartialBlock;
     }
-    
-    const finalOutcome = (valueA * valueA) - exclusionTally;
-    console.log(finalOutcome);
+}
+
+const processCalculation = (inputString) => {
+    const { firstVal, secondVal } = parseInputValues(inputString);
+
+    let accumulatedSum = 0;
+    for (const individualContribution of generateContributions(firstVal, secondVal)) {
+        accumulatedSum += individualContribution;
+    }
+    console.log(accumulatedSum);
 };
 
-const initiateCalculation = (externalData) => {
-    processingUnit(externalData);
-};
-
-initiateCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,24 +1,17 @@
-const processSourceData = (rawData) => {
-  const lineSegments = rawData.trim().split('\n');
-  const targetLine = lineSegments[1];
-  const numericStrings = targetLine.split(' ');
+"use strict";
 
-  const resultTally = numericStrings.reduce((counter, stringValue, position) => {
-    if (position % 2 !== 0) { // Check if index is odd
-      const numericValue = Number(stringValue); // Convert string to number
-      if (numericValue % 2 !== 0) { // Check if number itself is odd
-        return counter + 1;
-      }
-    }
-    return counter;
-  }, 0);
+const processInput = rawData => {
+  const trimmedData = rawData.trim();
 
-  console.info(resultTally);
+  const [firstLineData, numberSequence] = trimmedData.split('\n').map(lineStr => lineStr.split(' ').map(numStr => parseInt(numStr)));
+
+  const oddCount = numberSequence.filter((currentValue, currentIndex) => {
+    const isIndexOdd = currentIndex % 2 !== 0;
+    const isValueOdd = !isNaN(currentValue) && currentValue % 2 !== 0;
+    return isIndexOdd && isValueOdd;
+  }).length;
+
+  console.log(oddCount);
 };
 
-const acquireAndExecute = () => {
-    const externalData = require('node:fs').readFileSync(process.stdin.fd, 'utf8');
-    processSourceData(externalData);
-};
-
-acquireAndExecute();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

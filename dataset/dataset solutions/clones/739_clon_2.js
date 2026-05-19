@@ -1,90 +1,47 @@
-const   fileData  =  require ( 'fs' )
-                     .  readFileSync (
-                         '/dev/stdin'
-                       , 'utf8'
-                     )  ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineData = rawData.trim().split("\n");
 
-// Process the raw input data into an array of lines.
-let inputLines = fileData.trim() .split("\n") ;
+while (true) {
+    var [totalParticipants, skipCount, startPosition] = lineData.shift().split(" ").map(Number);
 
-
-// Main processing loop for multiple test cases.
-while ( true )
-{
-
-    // Extract parameters for the current test case:
-    // participantCount (n), skipInterval (k), startOffset (m).
-    let [ participantCount , skipInterval , startOffset ]
-        = inputLines.shift().split(" ").map( Number )
-    ;
-
-    // Check for termination condition: all parameters are zero.
-    if ( participantCount + skipInterval + startOffset === 0 )
-    {
-        break ; // Exit the main loop.
+    if (totalParticipants + skipCount + startPosition === 0) {
+        break;
     }
 
-    // Initialize an array to track the status of each participant.
-    // 'true' means participant is active, 'false' means eliminated.
-    let participantStatuses = [] ;
-    for ( let itemIndex = 0 ; itemIndex < participantCount ; itemIndex ++ )
-    {
-        participantStatuses[ itemIndex ] = true ;
+    var activeParticipants = [];
+    for (var idx = 0; idx < totalParticipants; idx++) {
+        activeParticipants[idx] = true;
     }
 
-    // Determine the initial starting position for elimination.
-    let currentPosition = startOffset - 1 ;
+    var currentPointer = startPosition - 1;
+    var remainingParticipants = totalParticipants;
 
-    // Keep track of how many participants are still active.
-    let remainingParticipants = participantCount ;
-
-    // Inner loop for the elimination process.
-    while ( true )
-    {
-        // If only one participant remains, the process is complete.
-        if ( remainingParticipants === 1 )
-        {
-            break ; // Exit the elimination loop.
+    while (true) {
+        if (remainingParticipants === 1) {
+            break;
         }
 
-        // Mark the participant at the current position as eliminated.
-        participantStatuses[ currentPosition ] = false ;
-        remainingParticipants -- ; // Decrement the count of active participants.
+        activeParticipants[currentPointer] = false;
+        remainingParticipants--;
 
-        // Counter for skipping participants.
-        let skippedParticipants = 0 ;
-        while ( true )
-        {
-            // If we have skipped enough active participants, stop.
-            if ( skippedParticipants === skipInterval )
-            {
-                break ; // Exit the skipping loop.
+        var skippedCount = 0;
+        while (true) {
+            if (skippedCount === skipCount) {
+                break;
             }
-
-            // Move to the next position in the circle.
-            currentPosition ++ ;
-
-            // Wrap around if we go past the end of the participant list.
-            if ( currentPosition >= participantCount )
-            {
-                currentPosition = 0 ;
+            currentPointer++;
+            if (currentPointer >= totalParticipants) {
+                currentPointer = 0;
             }
-
-            // If the participant at the new position is active, count them.
-            if ( participantStatuses[ currentPosition ] )
-            {
-                skippedParticipants ++ ;
+            if (activeParticipants[currentPointer]) {
+                skippedCount++;
             }
         }
     }
 
-    // After elimination, find and print the index of the last remaining participant.
-    participantStatuses.forEach (
-        ( isStillActive , originalMemberIdx ) => {
-            if ( isStillActive )
-            {
-                console.log ( originalMemberIdx + 1 ) ;
-            }
+    activeParticipants.forEach((isActive, idx) => {
+        if (isActive) {
+            console.log(idx + 1);
         }
-    ) ;
+    });
 }

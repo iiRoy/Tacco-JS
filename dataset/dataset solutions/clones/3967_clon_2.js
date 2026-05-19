@@ -1,57 +1,59 @@
-'use strict'
-// This function is designed to process an input string,
-// perform some calculations, and then display the result.
-function handleDataProcessing ( rawInputString ) {
+'use strict';
 
-  // First, parse the entire input by splitting it into distinct lines.
-  rawInputString = rawInputString.split( '\n' ) ;
+function processInputData(inputLines) {
+  // Split the entire input string into an array of individual lines.
+  inputLines = inputLines.split('\n');
 
-  // The very first line contains a number that dictates the size of a segment.
-  const numericalIndicator = Number( rawInputString[0] ) ;
+  // The first line contains the count of blue items.
+  const numBlueItems = Number(inputLines[0]);
 
-  // Extract the primary collection of strings based on the numerical indicator.
-  const firstCollection = rawInputString.slice( 1, 1 + numericalIndicator ) ;
+  // Extract the 'blue' items from the input array.
+  // These are from the second line up to (and including) the N-th line.
+  const primaryItems = inputLines.slice(1, 1 + numBlueItems);
 
-  // Extract the secondary collection of strings, skipping a few lines.
-  const secondCollection = rawInputString.slice( numericalIndicator + 2, -1 ) ;
+  // Extract the 'red' items.
+  // These start after the blue items and the line separating them,
+  // and go until the very last line (which might be empty or a newline).
+  const secondaryItems = inputLines.slice(numBlueItems + 2, -1);
 
-  // Initialize an array to store aggregated item counts.
-  const itemAggregates = [ ] ;
+  // Initialize an array to store unique item tallies.
+  const itemTallies = [];
 
-  // Iterate through each element in the primary collection.
-  firstCollection.forEach( ( currentElement, elementIndex, completeList ) => {
-    // If this is the first time we encounter this specific element,
-    // add it to our aggregates with an initial count of one.
-    if ( completeList.indexOf( currentElement ) === elementIndex ) {
-      itemAggregates.push( { itemIdentifier: currentElement, currentTally: 1 } ) ;
+  // Process each primary item to count its occurrences.
+  primaryItems.forEach((currentItem, currentIndex, allItems) => {
+    // If this is the first occurrence of the item, add it to our tallies.
+    if (allItems.indexOf(currentItem) === currentIndex) {
+      itemTallies.push({ identifier: currentItem, occurrenceCount: 1 });
+    } else {
+      // If the item has been seen before, find its entry and increment its count.
+      itemTallies.forEach(tallyEntry => {
+        if (currentItem === tallyEntry.identifier) {
+          tallyEntry.occurrenceCount += 1;
+        }
+      });
     }
-    // Otherwise, locate the existing aggregate record for this element
-    // and increment its count.
-    else {
-      itemAggregates.forEach( ( existingAggregate ) => {
-        if ( currentElement === existingAggregate.itemIdentifier ) existingAggregate.currentTally += 1
-      } ) ;
-    }
-  } ) ;
+  });
 
-  // Now, iterate through each element in the secondary collection.
-  secondCollection.forEach( ( elementToDecrement ) => {
-    // For each element, find its corresponding aggregate record
-    // and reduce its count by one.
-    itemAggregates.forEach( ( aggregateToModify ) => {
-      if ( elementToDecrement === aggregateToModify.itemIdentifier ) aggregateToModify.currentTally -= 1
-    } ) ;
-  } ) ;
+  // Now, process each secondary item.
+  // For each secondary item, decrement the count of the corresponding primary item.
+  secondaryItems.forEach((redItem) => {
+    itemTallies.forEach(tallyEntry => {
+      if (redItem === tallyEntry.identifier) {
+        tallyEntry.occurrenceCount -= 1;
+      }
+    });
+  });
 
-  // Sort the aggregate records in descending order based on their tallies.
-  itemAggregates.sort( ( entryOne, entryTwo ) => entryTwo.currentTally - entryOne.currentTally ) ;
+  // Sort the tallies in descending order based on their occurrence counts.
+  itemTallies.sort((firstEntry, secondEntry) => secondEntry.occurrenceCount - firstEntry.occurrenceCount);
 
-  // Calculate the final answer: it's either the highest tally if it's non-negative,
-  // or zero if the highest tally is negative.
-  const ultimateAnswer = ( itemAggregates[0].currentTally >= 0 ) ? itemAggregates[0].currentTally : 0 ;
-  // Display the computed ultimate answer.
-  console.log( ultimateAnswer ) ;
+  // The final answer is the count of the item with the highest positive tally.
+  // If the highest tally is negative, the result should be 0.
+  const finalResult = (itemTallies[0].occurrenceCount >= 0) ? itemTallies[0].occurrenceCount : 0;
+
+  // Output the calculated result.
+  console.log(finalResult);
 }
 
-// Initiate the data processing by reading content from standard input.
-handleDataProcessing( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

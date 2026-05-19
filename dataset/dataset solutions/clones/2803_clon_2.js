@@ -1,43 +1,44 @@
-// This function handles the primary processing of the provided data string.
-function  processInput( rawData  )
-{
-  // Split the incoming string by spaces to get individual components.
-  let   parts = rawData . split ( " " ) ;
+// This function is designed to process a given input string.
+function processInput(rawData) {
+  // The input string is split into an array of string arguments.
+  const parameters = rawData.split(" ");
+  // The first argument is parsed as an integer, representing a count.
+  const count = parseInt(parameters[0], 10);
+  // The second argument is parsed as an integer, representing a starting number.
+  const startValue = parseInt(parameters[1], 10);
 
-  // Parse the first component as an integer, representing the total number of items.
-  let   itemCount = parseInt ( parts[0] ,   10 ) ;
+  // An array is initialized to hold a sequence of numbers.
+  var valueList = [];
 
-  // Parse the second component as an integer, representing the starting numerical value.
-  let   initialNum = parseInt ( parts[1] ,   10 ) ;
-
-  // Initialize an array to store the generated numerical sequence.
-  let   numberList = [] ;
-
-  // Loop to populate the array based on the initial number and item count.
-  for ( let   idx = 0 ;   idx < itemCount ;   idx ++ )
-  {
-    numberList . push ( initialNum  +  idx ) ;
+  // A loop iterates 'count' times to populate the 'valueList'.
+  // The loop variable 'idx' is implicitly global if not in strict mode, mirroring the original 'i'.
+  for (idx = 0; idx < count; idx++) {
+    // Each element is the 'startValue' incremented by the current loop index.
+    valueList.push(startValue + idx);
   }
 
-  // Check if the generated sequence contains the value zero.
-  if ( numberList . indexOf ( 0 )  >=  0 )
-  {
-    // If zero is present, calculate the sum of an arithmetic progression.
-    console . log ( ( numberList[0] + numberList[itemCount - 1] ) * itemCount / 2 ) ;
+  // Calculate the sum of the arithmetic progression.
+  // This is a common formula: (first_term + last_term) * number_of_terms / 2.
+  const totalSum = (valueList[0] + valueList[count - 1]) * count / 2;
+
+  // Conditional logic to determine the final output based on the contents of 'valueList'.
+  // Check if the number 0 is present in the generated list.
+  if (valueList.indexOf(0) >= 0) {
+    // If 0 is found, the total sum is printed directly.
+    console.log(totalSum);
   }
-  // Otherwise, check if the last element of the sequence is negative.
-  else if ( numberList[itemCount - 1] < 0 )
-  {
-    // If the last element is negative, calculate the sum and adjust by removing the last element.
-    console . log ( ( numberList[0] + numberList[itemCount - 1] ) * itemCount / 2 - numberList[itemCount - 1] ) ;
+  // Otherwise, if the last element in the list is negative.
+  else if (valueList[count - 1] < 0) {
+    // The total sum minus the last element is printed.
+    console.log(totalSum - valueList[count - 1]);
   }
-  // If neither of the above conditions is met (i.e., sequence contains no zero and last element is non-negative).
-  else
-  {
-    // Calculate the sum and adjust by removing the first element.
-    console . log ( ( numberList[0] + numberList[itemCount - 1] ) * itemCount / 2 - numberList[0] ) ;
+  // Otherwise (if 0 is not found and the last element is non-negative, implying the first element is also non-negative).
+  else {
+    // The total sum minus the first element is printed.
+    console.log(totalSum - valueList[0]);
   }
 }
 
-// Call the main processing function with data read from standard input.
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ) ;
+// The script reads input from standard input, typically '/dev/stdin' in Unix-like environments.
+// The content is read as a UTF-8 string and passed to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

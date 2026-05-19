@@ -1,29 +1,12 @@
-const processTextSegment = (dataSource) => {
-    const characters = [...dataSource];
-    
-    const outcomeAccumulator = characters.reduce((currentResult, charItem, charIndex, charArray) => {
-        if (charIndex === 0) {
-            currentResult.initial = charItem;
-        }
-        if (charIndex === charArray.length - 1) {
-            currentResult.final = charItem;
-        }
-        if (charArray.length > 2 && charIndex > 0 && charIndex < charArray.length - 1) {
-            currentResult.centralCount++;
-        }
-        return currentResult;
-    }, { initial: undefined, final: undefined, centralCount: 0 });
-
-    const ultimateInitial = outcomeAccumulator.initial;
-    const ultimateFinal = outcomeAccumulator.final;
-    const ultimateCentralCount = outcomeAccumulator.centralCount;
-
-    console.log(
-        (ultimateInitial === undefined ? "undefined" : ultimateInitial) +
-        ultimateCentralCount +
-        (ultimateFinal === undefined ? "undefined" : ultimateFinal)
-    );
+const processInputString = (sourceText) => {
+  const initialCharacter = sourceText.charAt(0);
+  const finalCharacter = sourceText.charAt(sourceText.length - 1);
+  const innerSegmentLength = Math.max(0, sourceText.length - 2);
+  return `${initialCharacter}${innerSegmentLength}${finalCharacter}`;
 };
 
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-processTextSegment(sourceData);
+function ExecuteTask(dataPayload) {
+  console.log(processInputString(dataPayload));
+}
+
+ExecuteTask(require("fs").readFileSync("/dev/stdin","utf8"));

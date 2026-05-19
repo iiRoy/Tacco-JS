@@ -1,25 +1,42 @@
-function logToConsole( displayString ) {
-  console.log( displayString ); // Show the computed result on the console
+// This function serves as a standard output mechanism.
+function logMessage(messageContent) {
+    console.log(messageContent);
 }
 
-function ExecuteCalculation( initialValue ) {
-  initialValue = parseInt( initialValue ); // Convert the raw input string into an integer
-  // This section contains commented-out input processing examples for different formats:
-  // initialValue = initialValue.trim().split(" ");
-  // initialValue = initialValue.trim().split("\n");
-  // initialValue = initialValue.trim().split(" ").map( ( element ) => Number( element ) );
-  // initialValue = initialValue.trim().split("\n").map( ( element ) => Number( element ) );
+// The primary function to process the incoming data.
+function processInputData(rawData) {
+    // Convert the raw input string into an integer value.
+    var numericValue = parseInt(rawData);
 
-  var smallestDigitSum = 1000000000; // Initialize with a very large number to facilitate finding the minimum sum
-  for ( var loopIndexOuter = 1; loopIndexOuter <= 100000; loopIndexOuter++ ) {
-    var numberDigits = ( initialValue * loopIndexOuter ) .toString() .split( "" ) .map( ( digitCharacter ) => Number( digitCharacter ) );
-    var currentDigitSum = 0; // This variable will accumulate the sum of digits for the current product
-    for ( var loopIndexInner = 0; loopIndexInner < numberDigits.length; loopIndexInner++ ) {
-      currentDigitSum += numberDigits[ loopIndexInner ];
+    // Initialize a variable to keep track of the smallest sum of digits found.
+    // A large initial value ensures any valid sum will be smaller.
+    var minimumSum = 1000000000;
+
+    // Iterate through a range of multipliers from 1 to 100,000.
+    for (var multiplier = 1; multiplier <= 100000; multiplier++) {
+        // Calculate the product of the numeric value and the current multiplier.
+        // Convert the product to a string, then split it into an array of individual digit characters.
+        // Finally, map each character back to its numeric representation.
+        var digitArray = (numericValue * multiplier).toString().split("").map(function(charDigit) {
+            return Number(charDigit);
+        });
+
+        // Initialize a temporary variable to sum the digits of the current product.
+        var currentSum = 0;
+
+        // Loop through the array of digits and add each digit to the current sum.
+        for (var digitIndex = 0; digitIndex < digitArray.length; digitIndex++) {
+            currentSum += digitArray[digitIndex];
+        }
+
+        // Update the minimumSum if the current product's digit sum is smaller.
+        minimumSum = Math.min(minimumSum, currentSum);
     }
-    smallestDigitSum = Math.min( smallestDigitSum, currentDigitSum ); // Update the overall minimum sum found so far
-  }
-  logToConsole( smallestDigitSum ); // Output the final smallest sum of digits
+
+    // Output the final calculated minimum sum of digits.
+    logMessage(minimumSum);
 }
 
-ExecuteCalculation( require( "fs" ) .readFileSync( "/dev/stdin", "utf8" ) .trim() );
+// Read the input from standard input, remove any leading/trailing whitespace,
+// and then pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

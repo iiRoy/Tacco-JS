@@ -1,83 +1,43 @@
-let fullInputAccumulator = '';
-let processingInitiated = false;
-
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(incomingData) {
+    const allInputLines = incomingData.trim().split("\n");
+    let currentLinePointer = 0;
 
-process.stdin.on('data', (incomingDataChunk) => {
-    fullInputAccumulator += incomingDataChunk;
-});
+    while (currentLinePointer < allInputLines.length) {
+        const blockItemCountString = allInputLines[currentLinePointer++].trim();
+        const blockItemCount = parseInt(blockItemCountString, 10);
 
-process.stdin.on('end', () => {
-    if (!processingInitiated) {
-        processingInitiated = true;
-        initiateProcessingRoutine(fullInputAccumulator);
+        if (blockItemCount === 0) {
+            break;
+        }
+
+        const aggregatedProductValues = new Map(); // Using a Map for efficient aggregation
+
+        for (let itemIndex = 0; itemIndex < blockItemCount; ++itemIndex) {
+            const itemDetails = allInputLines[currentLinePointer++].trim().split(" ");
+            const productName = itemDetails[0];
+            const productQuantity = parseInt(itemDetails[1], 10);
+            const productUnitPrice = parseInt(itemDetails[2], 10);
+
+            const calculatedItemTotal = productQuantity * productUnitPrice;
+
+            // Update or add the total value for the product
+            aggregatedProductValues.set(
+                productName,
+                (aggregatedProductValues.get(productName) || 0) + calculatedItemTotal
+            );
+        }
+
+        // Filter and map to get names of products exceeding the threshold
+        const highValueProductNames = Array.from(aggregatedProductValues.entries())
+            .filter(([, totalValue]) => totalValue >= 1000000)
+            .map(([name,]) => name);
+
+        if (highValueProductNames.length > 0) {
+            highValueProductNames.forEach(name => console.log(name));
+        } else {
+            console.log("NA");
+        }
     }
 });
-
-function initiateProcessingRoutine(completeInputString) {
-    const parsedSegments = completeInputString.split('\n');
-    let segmentReadHead = 0;
-
-    const fetchNextSegment = () => {
-        if (segmentReadHead >= parsedSegments.length) {
-            return undefined;
-        }
-        return parsedSegments[segmentReadHead++].trim();
-    };
-
-    const evaluateNextDataBlock = () => {
-        const blockControlSegment = fetchNextSegment();
-
-        if (blockControlSegment === undefined) {
-            return;
-        }
-
-        const currentBlockItemCount = Number.parseInt(blockControlSegment, 10);
-
-        if (currentBlockItemCount === 0) {
-            return;
-        }
-
-        const itemSummaries = new Map();
-        const valueThreshold = 1000000;
-
-        for (let itemOrdinal = 0; itemOrdinal < currentBlockItemCount; ++itemOrdinal) {
-            const itemDescriptionSegment = fetchNextSegment();
-
-            if (itemDescriptionSegment === undefined) {
-                return;
-            }
-
-            const itemComponents = itemDescriptionSegment.split(" ");
-            const itemKey = itemComponents[0];
-            const priceNumerical = Number.parseInt(itemComponents[1], 10);
-            const quantityNumerical = Number.parseInt(itemComponents[2], 10);
-
-            const instantaneousTotal = priceNumerical * quantityNumerical;
-
-            const priorAccumulation = itemSummaries.get(itemKey) || 0;
-            itemSummaries.set(itemKey, priorAccumulation + instantaneousTotal);
-        }
-
-        let highValueItemFound = false;
-        const resultIdentifiers = [];
-
-        itemSummaries.forEach((accumulatedValue, identifier) => {
-            if (accumulatedValue >= valueThreshold) {
-                resultIdentifiers.push(identifier);
-                highValueItemFound = true;
-            }
-        });
-
-        if (highValueItemFound) {
-            resultIdentifiers.forEach(id => process.stdout.write(id + '\n'));
-        } else {
-            process.stdout.write("NA\n");
-        }
-
-        evaluateNextDataBlock();
-    };
-
-    evaluateNextDataBlock();
-}

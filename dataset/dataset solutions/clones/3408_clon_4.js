@@ -1,25 +1,15 @@
-const acquireInputData = () => {
-    const fileSystemModule = require('node:fs');
-    const filePathDescriptor = '/dev/stdin';
-    const dataEncoding = 'utf8';
-    return fileSystemModule.readFileSync(filePathDescriptor, dataEncoding);
-};
+function processInputData(sourceText) {
+  const numericValue = parseInt(sourceText, 10);
 
-function processSeasonalDate(rawInputString) {
-    const numericDay = Number(rawInputString);
+  const messageRegistry = new Map([
+    [25, 'Christmas'],
+    [24, 'Christmas Eve'],
+    [23, 'Christmas Eve Eve']
+  ]);
 
-    const holidayMessages = new Map();
-    holidayMessages.set(25, 'Christmas');
-    holidayMessages.set(24, 'Christmas Eve');
-    holidayMessages.set(23, 'Christmas Eve Eve');
+  const finalMessage = messageRegistry.get(numericValue) || 'Christmas Eve Eve Eve';
 
-    const defaultMessage = 'Christmas Eve Eve Eve';
-
-    const finalAnnouncement = holidayMessages.get(numericDay) || defaultMessage;
-
-    outputDisplay(finalAnnouncement);
+  console.log(finalMessage);
 }
 
-const outputDisplay = console.log;
-
-processSeasonalDate(acquireInputData());
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

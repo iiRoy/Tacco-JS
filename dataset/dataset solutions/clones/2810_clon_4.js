@@ -1,38 +1,32 @@
-const solveSchedulingProblem = (rawScheduleData) => {
-    const dataLines = rawScheduleData.split('\n');
-    const jobCount = parseInt(dataLines[0], 10);
+function ProcessSchedule(rawData) {
+  rawData = rawData.split("\n");
+  const taskCount = parseInt(rawData[0], 10);
+  const taskDetails = rawData.slice(1, taskCount + 1).map(line => line.split(" ").map(Number));
 
-    const allJobSpecs = dataLines.slice(1, jobCount + 1).map(lineContent => {
-        const valuePairs = lineContent.split(' ').map(Number);
-        return {
-            effort: valuePairs[0],
-            deadline: valuePairs[1]
-        };
-    });
+  taskDetails.sort((a, b) => a[1] - b[1]);
 
-    allJobSpecs.sort((firstJobSpec, secondJobSpec) => {
-        return firstJobSpec.deadline - secondJobSpec.deadline;
-    });
+  const finalEvaluation = taskDetails.reduce((accumulator, currentTask) => {
+    if (!accumulator.isFeasible) {
+      return accumulator;
+    }
+    const newCumulativeDuration = accumulator.currentTotalDuration + currentTask[0];
+    const newFeasibility = newCumulativeDuration <= currentTask[1];
+    return { currentTotalDuration: newCumulativeDuration, isFeasible: newFeasibility };
+  }, { currentTotalDuration: 0, isFeasible: true });
 
-    const schedulingEvaluation = allJobSpecs.reduce((currentAccumulator, currentJobSpec) => {
-        if (!currentAccumulator.isFeasible) {
-            return currentAccumulator;
-        }
+  const feasibilityStatus = finalEvaluation.isFeasible ? "Yes" : "No";
 
-        const newCumulativeEffort = currentAccumulator.totalEffort + currentJobSpec.effort;
-        const stillFeasible = newCumulativeEffort <= currentJobSpec.deadline;
+  console.log('%s', feasibilityStatus);
+  return feasibilityStatus;
+}
 
-        return {
-            totalEffort: newCumulativeEffort,
-            isFeasible: stillFeasible
-        };
-    }, { totalEffort: 0, isFeasible: true });
-
-    const finalResultText = schedulingEvaluation.isFeasible ? "Yes" : "No";
-
-    console.log(finalResultText);
-    return finalResultText;
-};
-
-const programInput = require("fs").readFileSync("/dev/stdin", "utf8");
-solveSchedulingProblem(programInput);
+function debug(n) {
+  var input = document.getElementById("input" + n).value;
+  var ans = ProcessSchedule(input);
+  var result = "WA";
+  if (ans == document.getElementById("output" + n).value.split("\n")[0]) {
+    result = "AC";
+  }
+  document.getElementById("result" + n).innerHTML = result;
+}
+ProcessSchedule(require("fs").readFileSync("/dev/stdin", "utf8"));

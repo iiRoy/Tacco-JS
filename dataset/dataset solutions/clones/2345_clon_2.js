@@ -1,29 +1,32 @@
-const processData = (dataSource) => {
-  // This function analyzes a string to count character mismatches
-  // for a palindrome-like comparison.
+function processInput(dataLines) {
+  // Extract the first line of input, which is the string to analyze.
+  let firstLineString = dataLines[0];
 
-  let targetString = dataSource[0]; // Obtain the primary data string from the input array.
-  let stringLength = targetString.length; // Determine the total count of characters in the string.
+  // Determine the total character count of the string.
+  const stringLength = firstLineString.length;
 
-  let mismatchCount = 0; // Initialize a variable to store the number of differing character pairs.
+  // Initialize a counter for character mismatches.
+  let mismatchCount = 0;
 
-  // Iterate through the first half of the string.
-  // We use Math.floor to ensure correct indexing for both even and odd length strings.
-  for (let counter = 0; counter < Math.floor(stringLength / 2); counter++) {
-    const charFront = targetString[counter]; // Retrieve the character from the beginning of the string.
-    const charBack = targetString[stringLength - 1 - counter]; // Retrieve the character from the end, moving inwards.
+  // Iterate through the first half of the string to compare characters.
+  // We use Math.trunc to handle odd-length strings correctly,
+  // as the middle character doesn't need comparison.
+  for (let idx = 0; idx < Math.trunc(stringLength / 2); idx++) {
+    // Get the character from the front of the string.
+    const charFront = firstLineString[idx];
+    // Get the corresponding character from the back of the string.
+    const charBack = firstLineString[stringLength - 1 - idx];
 
-    // Compare the two characters.
+    // If the characters do not match, increment the mismatch counter.
     if (charFront !== charBack) {
-      mismatchCount++; // If they are not identical, increment the mismatch counter.
+      mismatchCount++;
     }
   }
 
-  // Display the final tally of mismatches.
-  console.info(mismatchCount);
-};
+  // Output the final count of mismatches to the console.
+  console.log(mismatchCount);
+}
 
-// Invoke the data processing function.
-// It reads input from standard input, decodes it, removes leading/trailing whitespace,
-// and splits it into an array by newlines, then passes it to the function.
-processData(require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' }).trim().split('\n'));
+// Read input from standard input, decode as UTF-8, remove leading/trailing whitespace,
+// and split into an array of lines. Then, pass this array to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

@@ -1,74 +1,61 @@
-function bigIntExponentiateMod(baseValue, powerValue, moduloValue) {
-    let bigBase = BigInt(baseValue);
-    let bigModulo = BigInt(moduloValue);
-    let bigPower = BigInt(powerValue);
-
-    if (bigPower === 0n) {
-        return 1;
-    }
-    if (bigBase === 0n) {
-        return 0;
-    }
-
-    let bigComputationResult = 1n;
-    let bigCurrentBaseTerm = bigBase % bigModulo;
-
-    while (bigPower > 0n) {
-        if (bigPower % 2n === 1n) {
-            bigComputationResult = (bigComputationResult * bigCurrentBaseTerm) % bigModulo;
-        }
-        bigCurrentBaseTerm = (bigCurrentBaseTerm * bigCurrentBaseTerm) % bigModulo;
-        bigPower = bigPower / 2n;
-    }
-    return Number(bigComputationResult);
+function modularExponentiation(base, exp, mod) {
+  if (base === 0n) {
+    if (exp === 0n) return 1n;
+    return 0n;
+  }
+  let res = 1n;
+  base %= mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) res = (res * base) % mod;
+    base = (base * base) % mod;
+    exp /= 2n;
+  }
+  return res;
 }
 
-function solveProblem() {
-    const inputLines = [];
-    const readStream = process.stdin;
-    const writeStream = process.stdout;
+function processSequence(sequenceLength, dataPoints) {
+  const MODULUS = 998244353n;
 
-    readStream.on('data', chunk => {
-        inputLines.push(...chunk.toString().trim().split('\n'));
-    });
+  const valueCounts = dataPoints.reduce((accumulator, currentVal) => {
+    accumulator.set(currentVal, (accumulator.get(currentVal) || 0) + 1);
+    return accumulator;
+  }, new Map());
 
-    readStream.on('end', () => {
-        const inputSize = parseInt(inputLines[0], 10);
-        const dataElements = inputLines[1].split(' ').map(Number);
+  if (dataPoints[0] !== 0 || (valueCounts.get(0) || 0) > 1) {
+    return 0;
+  }
 
-        if (isNaN(inputSize) || inputSize <= 0 || dataElements.length !== inputSize) {
-            writeStream.write('0\n');
-            return;
-        }
+  const indicesToProcess = Array.from({ length: Math.max(0, sequenceLength - 2) }, (_, idx) => idx + 2);
 
-        const tallyMap = new Map();
-        for (const dataPoint of dataElements) {
-            tallyMap.set(dataPoint, (tallyMap.get(dataPoint) || 0) + 1);
-        }
+  const finalProduct = indicesToProcess.reduce((currentProduct, currentIdx) => {
+    const baseCount = BigInt(valueCounts.get(currentIdx - 1) || 0);
+    const exponentCount = BigInt(valueCounts.get(currentIdx) || 0);
 
-        const initialDatum = dataElements[0];
-        const zeroOccurrences = tallyMap.get(0) || 0;
+    const term = modularExponentiation(baseCount, exponentCount, MODULUS);
+    return (currentProduct * term) % MODULUS;
+  }, 1n);
 
-        if (initialDatum !== 0 || zeroOccurrences >= 2) {
-            writeStream.write('0\n');
-            return;
-        }
-
-        const MODULO_CONSTANT = 998244353;
-        
-        const factorIndices = Array.from({ length: Math.max(0, inputSize - 2) }, (_, index) => index + 2);
-
-        const cumulativeProduct = factorIndices.reduce((currentValue, processingIndex) => {
-            const priorCount = tallyMap.get(processingIndex - 1) || 0;
-            const currentCount = tallyMap.get(processingIndex) || 0;
-
-            const powerTerm = bigIntExponentiateMod(priorCount, currentCount, MODULO_CONSTANT);
-
-            return (currentValue * BigInt(powerTerm)) % BigInt(MODULO_CONSTANT);
-        }, 1n);
-
-        writeStream.write(cumulativeProduct.toString() + '\n');
-    });
+  return Number(finalProduct);
 }
 
-solveProblem();
+let inputLines = [];
+let currentLine = 0;
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', data => {
+  inputLines = data.toString().trim().split('\n');
+  mainExecution();
+});
+
+function getLine() {
+  return inputLines[currentLine++];
+}
+
+function mainExecution() {
+  const N = parseInt(getLine(), 10);
+  const D_array = getLine().split(' ').map(Number);
+  const result = processSequence(N, D_array);
+  console.log(result);
+}

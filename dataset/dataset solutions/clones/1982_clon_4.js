@@ -1,20 +1,13 @@
-const ProcessValue = (dataString) => {
-  const upperBound = Number.parseInt(dataString.trim(), 10);
+const processInput = (sourceText) => {
+  const upperBound = parseInt(sourceText.trim());
 
-  const calculateTotal = (cap) => cap * (cap + 1) / 2;
+  const totalSum = Array.from({ length: upperBound }, (_, index) => index + 1)
+    .reduce((accumulator, currentNum) => {
+      return accumulator + ((currentNum % 3 === 0 || currentNum % 5 === 0) ? 0 : currentNum);
+    }, 0);
 
-  const calculateDivisorSum = (divisor, cap) => {
-    const count = Math.floor(cap / divisor);
-    return divisor * calculateTotal(count);
-  };
-
-  const finalSum = calculateTotal(upperBound) -
-                   calculateDivisorSum(3, upperBound) -
-                   calculateDivisorSum(5, upperBound) +
-                   calculateDivisorSum(15, upperBound);
-
-  console.log(finalSum);
-  return finalSum;
+  console.log(totalSum);
+  return totalSum;
 };
 
-ProcessValue(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

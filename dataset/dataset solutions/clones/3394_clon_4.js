@@ -1,42 +1,52 @@
-function isBinaryUnit(valueToCheck) {
-  return valueToCheck > 0 && (valueToCheck & (valueToCheck - 1)) === 0;
+"use strict";
+
+function checkPowerOfTwo(val) {
+  return val > 0 && (val & (val - 1)) === 0;
 }
 
-function processInputData(rawText) {
-  const dataLines = rawText.split("\n").filter(Boolean);
-  const initialNumbers = dataLines[1].split(" ").map(Number);
+function processInput(rawData) {
+  const parsedLines = rawData.split("\n").filter(Boolean);
 
-  const countPairsRecursively = (currentSequence, currentPairCounter) => {
-    if (currentSequence.length <= 1) {
-      return currentPairCounter;
+  const initialNumbers = parsedLines[1].split(" ").map(Number);
+
+  const numberFrequencies = new Map();
+  let maxObservedValue = 0;
+  for (const num of initialNumbers) {
+    numberFrequencies.set(num, (numberFrequencies.get(num) || 0) + 1);
+    if (num > maxObservedValue) {
+      maxObservedValue = num;
     }
+  }
 
-    const orderedNumbers = [...currentSequence].sort((a, b) => b - a);
+  const uniqueDescendingNumbers = Array.from(numberFrequencies.keys()).sort((a, b) => b - a);
 
-    const largestAvailable = orderedNumbers[0];
-    const remainingElements = orderedNumbers.slice(1);
+  const relevantPowersOfTwo = [];
+  for (let p = 2; p <= 2 * maxObservedValue; p *= 2) {
+    relevantPowersOfTwo.push(p);
+  }
 
-    let matchFoundFlag = false;
+  let successfulPairs = 0;
 
-    const updatedRemainingElements = remainingElements.reduce((accumulator, element) => {
-      if (!matchFoundFlag && isBinaryUnit(largestAvailable + element)) {
-        matchFoundFlag = true;
-      } else {
-        accumulator.push(element);
+  for (const currentNumber of uniqueDescendingNumbers) {
+    while (numberFrequencies.get(currentNumber) > 0) {
+      numberFrequencies.set(currentNumber, numberFrequencies.get(currentNumber) - 1);
+
+      let pairFoundForCurrent = false;
+
+      for (const powerVal of relevantPowersOfTwo) {
+        const requiredComplement = powerVal - currentNumber;
+
+        if (requiredComplement > 0 && numberFrequencies.get(requiredComplement) > 0) {
+          numberFrequencies.set(requiredComplement, numberFrequencies.get(requiredComplement) - 1);
+          successfulPairs++;
+          pairFoundForCurrent = true;
+          break;
+        }
       }
-      return accumulator;
-    }, []);
-
-    if (matchFoundFlag) {
-      return countPairsRecursively(updatedRemainingElements, currentPairCounter + 1);
-    } else {
-      return countPairsRecursively(remainingElements, currentPairCounter);
     }
-  };
+  }
 
-  const finalPairCount = countPairsRecursively(initialNumbers, 0);
-
-  console.log(finalPairCount);
+  console.log(successfulPairs);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,21 +1,25 @@
-const transformData = (sourceData) => {
-    const lines = sourceData.trim().split('\n');
+'use strict';
 
-    const [firstTerm, secondTerm] = lines[0].split(' ');
-    const [valueOne, valueTwo] = lines[1].split(' ').map(Number);
-    const identifierToModify = lines[2];
+function executeGameLogic(rawData) {
+  const processedLines = rawData.trim().split('\n');
 
-    const stateContainer = {
-        [firstTerm]: valueOne,
-        [secondTerm]: valueTwo,
-    };
+  const [firstIdentifier, secondIdentifier] = processedLines[0].split(' ');
 
-    stateContainer[identifierToModify]--;
+  const currentScores = processedLines[1].split(' ').reduce((accumulator, stringValue) => {
+    accumulator.push(Number(stringValue));
+    return accumulator;
+  }, []);
 
-    const resultOne = stateContainer[firstTerm];
-    const resultTwo = stateContainer[secondTerm];
+  const activeIdentifier = processedLines[2];
 
-    console.log(`${resultOne} ${resultTwo}`);
-};
+  const scoreModificationDispatch = {
+    [firstIdentifier]: (scoresArray) => { scoresArray[0]--; },
+    [secondIdentifier]: (scoresArray) => { scoresArray[1]--; }
+  };
 
-transformData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+  scoreModificationDispatch[activeIdentifier](currentScores);
+
+  console.log(`${currentScores[0]} ${currentScores[1]}`);
+}
+
+executeGameLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

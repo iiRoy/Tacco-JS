@@ -1,31 +1,24 @@
-function processInputData ( rawData ) { /* This function analyzes provided textual input */
+function processInput(rawData) {
+    // Parse the raw input string into an array of numbers.
+    const numericValues = rawData.trim().split(/[\n\s]/).map(strItem => ~~strItem);
 
-    // Parse raw string into numbers, splitting by any sequence of whitespace characters.
-    const numericValues = rawData . trim ( ) . split ( /\s+/ ) . map ( ( itemString ) => {
-        return Number ( itemString ) ;
-    } ) ;
+    // Initialize a counter array for numbers 1 through 4.
+    let frequencyCounts = [0, 0, 0, 0];
 
-    // Initialize an array to count occurrences of values (expected 1 to 4).
-    let frequencyCounts = new Array ( 4 ) . fill ( 0 ) ;
+    // Iterate through the parsed numbers and increment their respective counters.
+    numericValues.forEach(currentValue => {
+        frequencyCounts[currentValue - 1]++;
+    });
 
-    // Iterate through each number to tally its frequency.
-    numericValues . forEach ( ( currentValue ) => {
-        // Increment the counter for the corresponding index (value - 1).
-        frequencyCounts [ currentValue - 1 ] ++ ;
-    } ) ;
+    // Sort the frequency counts in ascending order.
+    frequencyCounts.sort();
 
-    // Arrange the counts in ascending order for consistent pattern checking.
-    frequencyCounts . sort ( ) ;
+    // Check if the sorted counts match the specific pattern (1, 1, 2, 2).
+    const isPatternMatch = (frequencyCounts[0] === 1 && frequencyCounts[1] === 1 && frequencyCounts[2] === 2 && frequencyCounts[3] === 2);
 
-    // Check if the sorted counts match a specific pattern: [1, 1, 2, 2].
-    const isPatternMatch = ( frequencyCounts [ 0 ] === 1 &&
-                             frequencyCounts [ 1 ] === 1 &&
-                             frequencyCounts [ 2 ] === 2 &&
-                             frequencyCounts [ 3 ] === 2 ) ;
-
-    // Display the result based on whether the pattern was matched.
-    console . log ( isPatternMatch ? 'YES' : 'NO' ) ;
+    // Output 'YES' if the pattern matches, otherwise 'NO'.
+    console.log(isPatternMatch ? 'YES' : 'NO');
 }
 
-// Execute the main processing function with file content read from standard input.
-processInputData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

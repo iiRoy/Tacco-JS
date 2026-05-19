@@ -1,47 +1,46 @@
-const dataStream = require('readline');
+process.stdin.setEncoding('utf8');
 
-let firstInputLineProcessed = false;
+process.stdin.on('readable', () => {
+    const dataBlock = process.stdin.read();
 
-const lineInputHandler = dataStream.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+    if (dataBlock !== null) {
+        let processedLines = dataBlock.split('\n');
+
+        if (processedLines[processedLines.length - 1] === '') {
+            processedLines.pop();
+        }
+
+        const primaryToken = processedLines[0].split(' ')[0];
+
+        const modifiedToken = primaryToken.slice(0, primaryToken.length - 1);
+
+        console.log(determineLongestDoublePrefix(modifiedToken));
+    }
 });
 
-function computeSymmetryLength(sourcePhrase) {
-    for (let currentCandidateLength = sourcePhrase.length; currentCandidateLength >= 2; currentCandidateLength--) {
-        if (currentCandidateLength % 2 === 0) {
-            const partitionSize = currentCandidateLength / 2;
-            const initialPortion = sourcePhrase.substring(0, partitionSize);
-            const concludingPortion = sourcePhrase.substring(partitionSize, currentCandidateLength);
+function determineLongestDoublePrefix(inputSequence) {
+    let currentSegmentLength = inputSequence.length;
 
-            if (initialPortion === concludingPortion) {
-                return currentCandidateLength;
-            }
+    while (currentSegmentLength > 0) {
+        if (currentSegmentLength % 2 !== 0) {
+            currentSegmentLength--;
+            continue;
+        }
+
+        const halfSegmentLength = currentSegmentLength / 2;
+        const firstPart = inputSequence.substring(0, halfSegmentLength);
+        const secondPart = inputSequence.substring(halfSegmentLength, currentSegmentLength);
+
+        const arePartsEquivalent = Array.from(firstPart).every((charValue, charIndex) =>
+            charValue === secondPart[charIndex]
+        );
+
+        if (arePartsEquivalent) {
+            return currentSegmentLength;
+        } else {
+            currentSegmentLength -= 2;
         }
     }
+
     return 0;
 }
-
-lineInputHandler.on('line', (receivedLine) => {
-    if (firstInputLineProcessed) {
-        return;
-    }
-    firstInputLineProcessed = true;
-
-    const lineComponents = receivedLine.split(' ');
-    let primaryComponent = lineComponents[0];
-
-    if (primaryComponent.length > 0) {
-        primaryComponent = primaryComponent.substring(0, primaryComponent.length - 1);
-    }
-
-    const finalValue = computeSymmetryLength(primaryComponent);
-    process.stdout.write(finalValue.toString() + '\n');
-    
-    lineInputHandler.close();
-});
-
-lineInputHandler.on('close', () => {
-    // Exit gracefully once processing is complete.
-});

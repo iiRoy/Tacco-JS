@@ -1,133 +1,115 @@
-const makeInputReader = (rawData) => {
-    let allLines = rawData.split('\n').map(l => l.trim()).filter(Boolean);
-    let lineCursor = 0;
-    let tokenBuffer = [];
+var GET=(function(){function InputProcessor(rawInputString){this.sourceLines=rawInputString.trim().split("\n");this.linePointer=0;this.currentLineBuffer=null;this.tokenReadIndex=-1;}InputProcessor.prototype.a=function(returnAsString){if(this.currentLineBuffer===null||this.tokenReadIndex<0){if(this.linePointer>=this.sourceLines.length){return undefined;}this.currentLineBuffer=this.sourceLines[this.linePointer].split(" ");this.tokenReadIndex=this.currentLineBuffer.length-1;}const tokenValue=this.currentLineBuffer[this.tokenReadIndex];this.tokenReadIndex--;if(this.tokenReadIndex<0){this.linePointer++;this.currentLineBuffer=null;}return returnAsString?tokenValue:+tokenValue;};InputProcessor.prototype.l=function(returnAsString){if(this.linePointer>=this.sourceLines.length){return undefined;}this.currentLineBuffer=null;this.tokenReadIndex=-1;const lineContent=this.sourceLines[this.linePointer++];const tokens=lineContent.split(" ");return returnAsString?tokens:tokens.map(Number);};InputProcessor.prototype.m=function(numLines,returnAsString){const matrix=[];for(let i=0;i<numLines;i++){matrix.push(this.l(returnAsString));}return matrix;};InputProcessor.prototype.r=function(numLines,returnAsString){const lines=[];for(let i=0;i<numLines;i++){if(this.linePointer>=this.sourceLines.length){lines.push(undefined);continue;}this.currentLineBuffer=null;this.tokenReadIndex=-1;const lineContent=this.sourceLines[this.linePointer++];lines.push(returnAsString?lineContent:+lineContent);}return lines;};return function(inputString){return new InputProcessor(inputString);};})();
+var o=GET(require("fs").readFileSync("/dev/stdin","utf8"));
 
-    const refillTokenBuffer = () => {
-        if (lineCursor < allLines.length) {
-            tokenBuffer = allLines[lineCursor].split(/\s+/).filter(Boolean);
-            lineCursor++;
-        } else {
-            tokenBuffer = [];
-        }
-    };
+let pathAccumulator = [];
+let bitCountN;
 
-    refillTokenBuffer(); // Populate buffer with first line's tokens
+console.log(mainLogic());
 
-    const obtainNextNumericValue = () => {
-        while (tokenBuffer.length === 0 && lineCursor <= allLines.length) {
-            refillTokenBuffer();
-        }
-        if (tokenBuffer.length > 0) {
-            return Number(tokenBuffer.shift());
-        }
-        return NaN; // Indicate end of stream or error
-    };
+function mainLogic(){
+  const numBits = o.a();
+  const valA = o.a();
+  const valB = o.a();
 
-    const obtainAllNumericValuesOnCurrentLine = () => {
-        while (tokenBuffer.length === 0 && lineCursor <= allLines.length) {
-            refillTokenBuffer();
-        }
-        if (tokenBuffer.length > 0) {
-            const lineValues = tokenBuffer.map(Number);
-            tokenBuffer = []; // Consume all tokens on this line
-            return lineValues;
-        }
-        return [];
-    };
+  bitCountN = numBits;
 
-    const obtainNumericMatrix = (rowsToRead) => {
-        const resultMatrix = [];
-        for (let i = 0; i < rowsToRead; i++) {
-            resultMatrix.push(obtainAllNumericValuesOnCurrentLine());
-        }
-        return resultMatrix;
-    };
+  const maskForN = (1 << numBits) - 1;
+  let countSetBitsA = 0;
+  let tempA = valA & maskForN;
+  while (tempA > 0) {
+      tempA &= (tempA - 1);
+      countSetBitsA++;
+  }
 
-    const obtainNumericVector = (elementsToRead) => {
-        const resultVector = [];
-        // Ensure token buffer is cleared if a line was partially read before this call
-        tokenBuffer = []; 
-        for (let i = 0; i < elementsToRead; i++) {
-            if (lineCursor < allLines.length) {
-                resultVector.push(Number(allLines[lineCursor].trim()));
-                lineCursor++;
-            } else {
-                resultVector.push(NaN); // Or handle error appropriately
+  let countSetBitsB = 0;
+  let tempB = valB & maskForN;
+  while (tempB > 0) {
+      tempB &= (tempB - 1);
+      countSetBitsB++;
+  }
+
+  const totalSetBits = countSetBitsA + countSetBitsB;
+
+  if (totalSetBits % 2 === 0) {
+      return "NO";
+  }
+
+  solvePath(valA, valB, 0);
+
+  console.log("YES");
+  return pathAccumulator.join(" ");
+}
+
+function solvePath(initialA, initialB, initialX) {
+    const executionStack = [[initialA, initialB, initialX, 0]];
+
+    while (executionStack.length > 0) {
+        let [currentA, currentB, currentX, state] = executionStack.pop();
+
+        if (state === 0) {
+            if (currentA === currentB) {
+                pathAccumulator.push(currentA);
+                continue;
             }
-        }
-        return resultVector;
-    };
 
-    return {
-        getNumerical: obtainNextNumericValue,
-        getLineNumerics: obtainAllNumericValuesOnCurrentLine,
-        getNumericGrid: obtainNumericMatrix,
-        getNumericArray: obtainNumericVector,
-    };
-};
+            executionStack.push([currentA, currentB, currentX, 1]);
 
-const processInputAndSolve = () => {
-    const dataSource = makeInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+            const differingBits = currentA ^ currentB;
+            let nextY = currentA;
+            let nextZ = currentA;
+            let nextX_for_first_branch = currentX;
 
-    const totalBits = dataSource.getNumerical();
-    const initialConfiguration = dataSource.getNumerical();
-    const finalConfiguration = dataSource.getNumerical();
+            let foundSameBit = false;
+            let foundDiffBit = false;
 
-    let aggregateBitSum = 0;
-    for (let currentBitPosition = 0; currentBitPosition < totalBits; currentBitPosition++) {
-        const bitMask = 1 << currentBitPosition;
-        if ((initialConfiguration & bitMask) !== 0) aggregateBitSum++;
-        if ((finalConfiguration & bitMask) !== 0) aggregateBitSum++;
-    }
+            for (let bitIndex = 0; bitIndex < bitCountN; bitIndex++) {
+                const bitMask = 1 << bitIndex;
+                if (currentX & bitMask) continue;
 
-    if (aggregateBitSum % 2 === 0) {
-        return "NO";
-    }
-
-    const generatedPath = [];
-    
-    const buildGrayPath = (currentBinary, targetBinary, restrictedBitPositions, maxBitWidth, pathCollector) => {
-        if (currentBinary === targetBinary) {
-            pathCollector.push(currentBinary);
-            return;
-        }
-
-        const differingBitPattern = currentBinary ^ targetBinary;
-        let selectedSameBitPower = 0;
-        let selectedDifferentBitPower = 0;
-
-        for (let bitPosition = 0; bitPosition < maxBitWidth; bitPosition++) {
-            const bitPower = 1 << bitPosition;
-            if (restrictedBitPositions.has(bitPosition)) continue;
-
-            if ((differingBitPattern & bitPower) === 0) { // Bit is same in currentBinary and targetBinary
-                if (selectedSameBitPower === 0) { // Found the first available same bit
-                    selectedSameBitPower = bitPower;
-                }
-            } else { // Bit is different in currentBinary and targetBinary
-                if (selectedDifferentBitPower === 0) { // Found the first available different bit
-                    selectedDifferentBitPower = bitPower;
+                if (!(differingBits & bitMask)) {
+                    if (!foundSameBit) {
+                        nextY ^= bitMask;
+                        nextZ ^= bitMask;
+                        foundSameBit = true;
+                    }
+                } else {
+                    if (!foundDiffBit) {
+                        nextZ ^= bitMask;
+                        nextX_for_first_branch |= bitMask;
+                        foundDiffBit = true;
+                    }
                 }
             }
-            if (selectedSameBitPower !== 0 && selectedDifferentBitPower !== 0) break;
+            executionStack.push([currentA, nextY, nextX_for_first_branch, 0]);
+
+        } else if (state === 1) {
+            const differingBits = currentA ^ currentB;
+            let nextY_recalc = currentA;
+            let nextZ_recalc = currentA;
+            let nextX_for_second_branch = currentX;
+
+            let foundSameBit_recalc = false;
+            let foundDiffBit_recalc = false;
+
+            for (let bitIndex = 0; bitIndex < bitCountN; bitIndex++) {
+                const bitMask = 1 << bitIndex;
+                if (currentX & bitMask) continue;
+
+                if (!(differingBits & bitMask)) {
+                    if (!foundSameBit_recalc) {
+                        nextY_recalc ^= bitMask;
+                        nextZ_recalc ^= bitMask;
+                        foundSameBit_recalc = true;
+                    }
+                } else {
+                    if (!foundDiffBit_recalc) {
+                        nextZ_recalc ^= bitMask;
+                        nextX_for_second_branch |= bitMask;
+                        foundDiffBit_recalc = true;
+                    }
+                }
+            }
+            executionStack.push([nextZ_recalc, currentB, nextX_for_second_branch, 0]);
         }
-
-        const firstIntermediate = currentBinary ^ selectedSameBitPower;
-        const secondIntermediate = currentBinary ^ selectedSameBitPower ^ selectedDifferentBitPower;
-
-        buildGrayPath(currentBinary, firstIntermediate, restrictedBitPositions, maxBitWidth, pathCollector);
-
-        const newRestrictedBitPositions = new Set(restrictedBitPositions);
-        newRestrictedBitPositions.add(Math.log2(selectedDifferentBitPower));
-
-        buildGrayPath(secondIntermediate, targetBinary, newRestrictedBitPositions, maxBitWidth, pathCollector);
-    };
-
-    buildGrayPath(initialConfiguration, finalConfiguration, new Set(), totalBits, generatedPath);
-
-    console.log("YES");
-    return generatedPath.join(" ");
-};
-
-console.log(processInputAndSolve());
+    }
+}

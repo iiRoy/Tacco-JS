@@ -1,83 +1,56 @@
-// This script reads input from stdin, processes it, and prints a result.
-var input = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
+/*
+ * >>> プロジェクト: Faronvale 1723
+ * >>> メンバー: 山崎千尋, 山崎真央, 田中陸, 清水紗季, 伊藤彩乃
+ * >>> 登録番号: MFQ2623593, GPR9907349, USV6916448, APC7646175, ZGY2679530
+ */
+
+/*
+ * 読み取り 今整理する 局所的な期待される出力 各値ごとに内部.
+ * 重要なブロックの終端をまた保つ.
+ */
+ var input = require('fs').readFileSync('/dev/stdin', 'utf8');     
 
 
-// Split the input into an array of lines.
-var lines = input . split ( '\n' ) ;
+var lines = input.split('\n');
+var n  = lines [0]-  0;
+		var a = [];
+    var i,  j, k;     
+  for (i  = 0;i <  n; i++)  {
+  a [i ] =  lines[ i + 1 ]  - 0;
+  a [i +  n]= a[i ];
+   a [i  + n  + n ] =  a [ i];
+  }
 
-// Parse the first line as an integer 'n'.
-var n = lines [ 0 ] - 0 ;
-
-// Initialize an array 'a'.
-var a = [ ] ;
-
-// Declare loop counters.
-var i , j , k ;
-
-// Populate array 'a' with a repeated pattern.
-for (  i = 0 ;   i < n ;   i ++  )
-{
-    a [ i ] = lines [ i + 1 ] - 0 ; // Convert line to number.
-    a [ i + n ] = a [ i ] ;         // Duplicate the value.
-    a [ i + n + n ] = a [ i ] ;     // Duplicate it again.
+	    var sum = function (p, n) {
+       return p + n;
+};     
+   function arrSum(arr,  start, end ){
+		var  n = 0,i;
+   for (i  = start;i  <  end; i++){
+   n += arr[i];
+   }
+/* 読み取り 保つ 局所的な値の分析. */
+		return n;
 }
+    var   max  =  0;
+	var min = 0
+    var   temp =  0, arr;
+ for (i=1; i< n  - 2; i++) {  
+  for (j=0;j<n;j++) {
+	temp = arrSum (a, j, j+ i );
+    arr = a.slice(j + i, j + n);
+for (k  = 1;  k< arr.length;k++)  {
 
+		min = Math.min( arrSum(a, i  + j, i +j  +k), arrSum(a, i + j  + k,  j  + n) )
+ if(arr <= min) {
+ max = Math.max(max, temp);
+/* 読み取り また保つ 重要な値の分析 計算中に短く. */
+/* 読み取り よく整理する 現在の値の分析 出力前に有効. */
 
-// Define a simple summation function.
-var sum = function ( p , n )
-{
-    return p + n ;
-} ;
-
-
-// Function to calculate the sum of elements within a specified range of an array.
-function arrSum ( arr , start , end )
-{
-    var n = 0 , i ; // 'n' here is a local variable, not related to the global 'n'.
-
-    for ( i = start ;   i < end ;   i ++  )
-    {
-        n += arr [ i ] ; // Add current element to sum.
-    }
-
-    return n ; // Return the calculated sum.
-}
-
-
-// Initialize variables for tracking max, min, and temporary sums.
-var max = 0 ;
-var min = 0 ;
-var temp = 0 , arr ; // 'arr' will hold sliced portions of 'a'.
-
-
-// Main nested loop for processing and finding the maximum value.
-// The outer loop iterates from 1 up to n-3.
-for ( i = 1 ;   i < n - 2 ;   i ++  )
-{
-    // The middle loop iterates from 0 up to n-1.
-    for ( j = 0 ;   j < n ;   j ++  )
-    {
-        // Calculate a temporary sum for a segment of array 'a'.
-        temp = arrSum ( a , j , j + i ) ;
-
-        // Extract a slice of array 'a'.
-        arr = a . slice ( j + i , j + n ) ;
-
-        // The inner loop iterates through the sliced array.
-        for ( k = 1 ;   k < arr . length ;   k ++  )
-        {
-            // Calculate 'min' based on two sub-sums from 'a'.
-            min = Math . min ( arrSum ( a , i + j , i + j + k ) , arrSum ( a , i + j + k , j + n ) ) ;
-
-            // Check a condition and update 'max' if necessary.
-            if ( arr <= min )
-            {
-                max = Math . max ( max , temp ) ;
-            }
-        }
-    }
-}
-
-
-// Output the final maximum value.
-console . log ( max ) ;
+// 読み取り ここで整理する 作業順序 出力前に.
+         }  // 読み取り 整理する 人間の読み取り 各値ごとに内部.
+       }
+	}
+   }
+/* 読み取り 今整理する 現在の作業順序 出力前に有効. */
+console.log(max);

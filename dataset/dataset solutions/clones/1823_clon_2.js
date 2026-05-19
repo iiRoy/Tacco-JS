@@ -1,45 +1,33 @@
-console.info( ( inputData => {
-  // This section parses the incoming raw string data.
-  // It extracts the total count from the first line and then
-  // processes subsequent lines into a matrix of numeric values.
-  const [ [ totalElements ], ...inputMatrix ] = inputData
+console.log((inputData => {
+  // Process the raw input string to extract numerical data.
+  // The first line provides the total count, and subsequent lines contain pairs of numbers.
+  const [[countElements], ...dataMatrix] = inputData
     .trim()
-    .split( '\n' )
-    .map( currentRow =>
-      currentRow.split( ' ' ).map( stringValue => Number( stringValue ) )
-    );
+    .split('\n')
+    .map(rowStr => rowStr.split(' ').map(valStr => valStr | 0));
 
-  // Initialize two separate collections for storing processed numbers.
+  // Declare two separate arrays to hold the first and second components of each pair.
   const firstValues = [];
   const secondValues = [];
 
-  // Iterate through the input matrix to populate the two collections.
-  // Each row provides one element for 'firstValues' and one for 'secondValues'.
-  for ( let idxCounter = 0; idxCounter < totalElements; ++idxCounter ) {
-    firstValues.push( inputMatrix[ idxCounter ][ 0 ] );
-    secondValues.push( inputMatrix[ idxCounter ][ 1 ] );
+  // Iterate through the parsed data to populate the two arrays.
+  for (let idx = 0; idx < countElements; idx++) {
+    firstValues.push(dataMatrix[idx][0]);
+    secondValues.push(dataMatrix[idx][1]);
   }
 
-  // Sort both collections numerically in ascending order.
-  firstValues.sort( ( valA, valB ) => valA - valB );
-  secondValues.sort( ( valA, valB ) => valA - valB );
+  // Sort both arrays numerically in ascending order to prepare for median calculations.
+  firstValues.sort((elemA, elemB) => elemA - elemB);
+  secondValues.sort((elemA, elemB) => elemA - elemB);
 
-  // Apply different calculation logic based on whether 'totalElements' is odd or even.
-  if ( ( totalElements % 2 ) !== 0 ) {
-    // For an odd number of total elements, pinpoint the single middle index.
-    const centerIndex = Math.floor( ( totalElements - 1 ) / 2 );
-    // Compute the result based on the middle elements of both sorted collections.
-    return secondValues[ centerIndex ] - firstValues[ centerIndex ] + 1;
+  // Apply different calculation logic based on whether the total count is odd or even.
+  if (countElements % 2 !== 0) { // Check if countElements is odd
+    // If the count is odd, use the single middle element for calculation.
+    const medianIdx = (countElements - 1) / 2;
+    return secondValues[medianIdx] - firstValues[medianIdx] + 1;
   } else {
-    // For an even number of total elements, identify the two central indices.
-    const midpointIdx = totalElements / 2;
-    // Calculate the result using the two middle elements from each sorted collection.
-    return (
-      secondValues[ midpointIdx ] +
-      secondValues[ midpointIdx - 1 ] -
-      firstValues[ midpointIdx ] -
-      firstValues[ midpointIdx - 1 ] +
-      1
-    );
+    // If the count is even, use the two middle elements for calculation.
+    const medianIdx = countElements / 2;
+    return secondValues[medianIdx] + secondValues[medianIdx - 1] - firstValues[medianIdx] - firstValues[medianIdx - 1] + 1;
   }
-} )( require( 'node:fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) );
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

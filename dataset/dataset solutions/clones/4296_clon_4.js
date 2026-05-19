@@ -1,38 +1,27 @@
-let inputBuffer = '';
-process.stdin.on('data', function(chunk) {
-    inputBuffer += chunk;
+const fileSystem = require('fs');
+const inputLine = fileSystem.readFileSync('/dev/stdin', 'utf8').split('\n')[0].split(' ');
+
+const val1 = Number(inputLine[0]);
+const val2 = Number(inputLine[1]);
+const val3 = Number(inputLine[2]);
+
+const numberCounts = new Map();
+[val1, val2, val3].forEach(numValue => {
+    numberCounts.set(numValue, (numberCounts.get(numValue) || 0) + 1);
 });
-process.stdin.on('end', function() {
-    const rawLines = inputBuffer.trim().split('\n');
-    const targetLine = rawLines[0];
-    const numericParts = targetLine.split(' ');
 
-    const initialValue = Number(numericParts[0]);
-    const secondaryValue = Number(numericParts[1]);
-    const tertiaryValue = Number(numericParts[2]);
-
-    const isFirstMatchingSecond = (initialValue === secondaryValue);
-    const isFirstMatchingThird = (initialValue === tertiaryValue);
-
-    let comparisonOutcomeTag = '';
-    if (isFirstMatchingSecond) {
-        comparisonOutcomeTag += 'M_S'; // Matches Second
-    } else {
-        comparisonOutcomeTag += 'N_S'; // Not Matches Second
+let finalOutcome;
+if (numberCounts.size === 3) {
+    finalOutcome = val1;
+} else if (numberCounts.size === 1) {
+    finalOutcome = val3;
+} else {
+    for (const [numValue, occurrenceCount] of numberCounts.entries()) {
+        if (occurrenceCount === 1) {
+            finalOutcome = numValue;
+            break;
+        }
     }
+}
 
-    if (isFirstMatchingThird) {
-        comparisonOutcomeTag += 'M_T'; // Matches Third
-    } else {
-        comparisonOutcomeTag += 'N_T'; // Not Matches Third
-    }
-
-    const resolutionMap = {
-        'M_SM_T': tertiaryValue,
-        'M_SN_T': tertiaryValue,
-        'N_SM_T': secondaryValue,
-        'N_SN_T': initialValue
-    };
-
-    console.log(resolutionMap[comparisonOutcomeTag]);
-});
+console.log(finalOutcome);

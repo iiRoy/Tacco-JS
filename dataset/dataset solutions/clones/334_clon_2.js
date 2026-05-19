@@ -1,123 +1,152 @@
-let outputLog = console.info; // Mimics Python's print function for convenience
-let sourceLines; // Stores processed input lines for sequential access
+var logOutput = console.log; // Custom logging function, similar to Python's print
+var sourceLines; // Global variable to hold processed input lines
 
-function acquireTextData(rawData) { // Function to parse and prepare raw input string
-    sourceLines = rawData.split('\n');
-    return function() { // Returns a closure to retrieve lines one by one
-        return sourceLines.shift();
+/**
+ * Initializes the input processing mechanism.
+ * Splits the raw input string into an array of lines.
+ * @param {string} rawData - The complete input string.
+ * @returns {function(): string} A function that returns the next line from the input.
+ */
+function processInputData(rawData) {
+    sourceLines = rawData.split("\n"); // Divide the input into individual lines
+    return function () {
+        return sourceLines.shift(); // Retrieve and remove the first line
     };
 }
 
-function parseIntegersFromLine(adjustForZeroIndex) { // Parses a line of space-separated numbers into an array
-    const stringParts = sourceLines.shift().split(' ');
-    const valueCorrection = adjustForZeroIndex ? -1 : 0; // Determines if values need adjustment (e.g., for 1-based indexing)
-    const resultArray = [];
-    for (let idx = 0; idx < stringParts.length; idx++) {
-        resultArray.push(Number.parseInt(stringParts[idx]));
+/**
+ * Parses a line of space-separated integers.
+ * @param {boolean} adjustForZeroIndex - If true, subtracts 1 from each parsed integer.
+ * @returns {number[]} An array of parsed integers.
+ */
+function parseLineOfIntegers(adjustForZeroIndex) {
+    var strParts = sourceLines.shift().split(' '); // Get a line and split by space
+    var indexAdjustment = adjustForZeroIndex ? -1 : 0; // Determine if adjustment is needed
+    var resultArray = []; // Initialize array for results
+    for (var idx = 0; idx < strParts.length; idx++) {
+        resultArray.push(parseInt(strParts[idx])); // Parse and add to array
     }
     return resultArray;
 }
 
-function findMaximum() { // Finds the largest value among its arguments
-    let currentMax = arguments[0];
-    for (let counter = 1; counter < arguments.length; counter++) {
-        currentMax = currentMax > arguments[counter] ? currentMax : arguments[counter];
+/**
+ * Finds the maximum value among its arguments.
+ * @returns {number} The largest value.
+ */
+function findMaximum() {
+    var maximumValue = arguments[0]; // Start with the first argument
+    for (var idx = 1; idx < arguments.length; idx++) {
+        maximumValue = maximumValue > arguments[idx] ? maximumValue : arguments[idx]; // Update if current is larger
     }
-    return currentMax;
+    return maximumValue;
 }
 
-function findMinimum() { // Finds the smallest value among its arguments
-    let currentMin = arguments[0];
-    for (let jdx = 1; jdx < arguments.length; jdx++) {
-        currentMin = currentMin < arguments[jdx] ? currentMin : arguments[jdx];
+/**
+ * Finds the minimum value among its arguments.
+ * @returns {number} The smallest value.
+ */
+function findMinimum() {
+    var minimumValue = arguments[0]; // Start with the first argument
+    for (var idx = 1; idx < arguments.length; idx++) {
+        minimumValue = minimumValue < arguments[idx] ? minimumValue : arguments[idx]; // Update if current is smaller
     }
-    return currentMin;
+    return minimumValue;
 }
 
 
 /**
- * Computes the sum of all numeric elements in the array.
- * @returns {number} The total sum of elements.
+ * Calculates the sum of all numeric elements in the array.
+ * @return {number} The total sum.
  */
-Array.prototype.calculateTotal = function sumElements() {
-    let accumulator = 0;
-    this.forEach(function (elementValue) {
-        accumulator += elementValue;
+Array.prototype.SUM = function calculateArraySum() { // Renamed internal function name
+    var totalValue = 0; // Accumulator for the sum
+    this.forEach(function (elementItem) {
+        totalValue += elementItem; // Add each element
     });
-    return accumulator;
+    return totalValue;
 };
 
 /**
- * Converts array elements to a string, joined by a specified separator.
- * @param {string} [separatorChar=" "] - The string to use as a separator between elements.
- * @returns {string} The concatenated string representation of the array.
+ * Formats the array elements into a string, joined by a specified separator.
+ * @return {string} The formatted string.
  */
-Array.prototype.stringifyElements = function formatElements(separatorChar) {
-    if (separatorChar === void 0) { // Check if separator is not explicitly provided
-        separatorChar = " ";
+Array.prototype.Format = function formatArrayToString(separatorChar) { // Renamed internal function name
+    if (separatorChar === undefined) {
+        separatorChar = " "; // Default separator is a space
     }
-    return this.join(separatorChar);
+    return this.join(separatorChar); // Join array elements
 };
 
-function createSortComparator(propertyKey, isDescending, tieBreakerFunction) { // Generates a comparison function for sorting objects by a specific property
-    let orderDirection = 1;
-    if (isDescending) { // Adjusts comparison direction for descending order
-        orderDirection = -1;
+/**
+ * Creates a comparison function for sorting objects by a specific property.
+ * @param {string} propertyKey - The name of the property to sort by.
+ * @param {boolean} isDescending - If true, sort in descending order.
+ * @param {function(object, object): number} [tieBreakerFunction] - A function to resolve ties.
+ * @returns {function(object, object): number} A comparator function for Array.prototype.sort.
+ */
+function createSortComparator(propertyKey, isDescending, tieBreakerFunction) {
+    var sortDirection = 1; // Default ascending
+    if (isDescending) {
+        sortDirection = -1; // Change to descending
     }
-    return function(firstItem, secondItem) { // The actual comparison logic for two objects
-        if (firstItem[propertyKey] < secondItem[propertyKey]) return -1 * orderDirection;
-        else if (firstItem[propertyKey] > secondItem[propertyKey]) return orderDirection;
+    return function (itemA, itemB) {
+        // Compare based on the specified property
+        if (itemA[propertyKey] < itemB[propertyKey]) return -1 * sortDirection;
+        else if (itemA[propertyKey] > itemB[propertyKey]) return sortDirection;
 
-        if (tieBreakerFunction === null) { // If no tie-breaker is provided, consider them equal
-            return 0;
+        // If values are equal, use the tie-breaker function if provided
+        if (tieBreakerFunction === undefined) {
+            return 0; // No tie-breaker, consider them equal
         } else {
-            return tieBreakerFunction(firstItem, secondItem); // Use the provided tie-breaker function
+            return tieBreakerFunction(itemA, itemB); // Resolve tie with custom function
         }
     };
 }
 
 /*
- * This section contains placeholder comments,
- * typically used for extensive documentation or
- * multi-line notes about the overall program structure
- * or complex algorithms. It helps in understanding
- * the high-level design choices.
- */
+ This section contains comments that are intentionally verbose or in a different language,
+ to demonstrate changes in whitespace and comments without altering logic.
+ The original comments were in Japanese, so these are just placeholder comments.
+*/
 
-// This function is the primary entry point for processing the problem input.
-function executeProgram(initialData) { // Orchestrates the main execution flow of the application
-    const getNextLine = acquireTextData(initialData); // Function to read lines sequentially from the pre-processed input
-    while (true) { // Infinite loop, designed to break on a specific termination condition
-        const dims = parseIntegersFromLine(); // Reads dimensions (e.g., width, height) from the current input line
-        if (dims[0] === 0) { // Termination condition: if the first dimension is zero, exit the program
-            return;
+// Main execution function that processes the input and performs the core logic.
+function executeProgram(rawData) {
+    var getInputLine = processInputData(rawData); // Initialize input reader
+    // Loop indefinitely until a specific termination condition is met
+    while (true) {
+        var dimensions = parseLineOfIntegers(); // Read grid dimensions (M, N)
+        if (dimensions[0] === 0) { // Check for termination condition (M=0)
+            return; // Exit the program
         }
-        const gridCells = []; // Initializes a 2D array (grid) to store cell data
-        for (let rowIdx = 0; rowIdx < dims[0]; rowIdx++) {
-            gridCells.push(getNextLine().split('')); // Populates the grid row by row by splitting the input line into characters
+        var gridCells = []; // Array to store the grid
+        // Populate the grid based on the first dimension (M)
+        for (var idx = 0; idx < dimensions[0]; idx++) {
+            gridCells.push(getInputLine().split("")); // Read each row and split into characters
         }
-        const directionMap = { // Defines movement vectors (dx, dy) for different directional symbols
-            ">": [1, 0],
-            "v": [0, 1],
-            "^": [0, -1],
-            "<": [-1, 0]
+        // Define a map for movement directions based on symbols
+        var directionMap = {
+            ">": [1, 0], // Right movement: +1 to X, 0 to Y
+            "v": [0, 1], // Down movement: 0 to X, +1 to Y
+            "^": [0, -1], // Up movement: 0 to X, -1 to Y
+            "<": [-1, 0]  // Left movement: -1 to X, 0 to Y
         };
-        let currentX = 0,
-            currentY = 0; // Starting coordinates for the traversal within the grid
-        while (gridCells[currentY][currentX] !== '.') { // Traverses the grid until an exit point ('.') is found
-            if (gridCells[currentY][currentX] === 'visited') { // Detects if a cycle has occurred by re-visiting a marked cell
-                outputLog("CYCLE_DETECTED"); // Logs a cycle detection message
-                return; // Exits the program due to cycle
+        var currentX = 0, currentY = 0; // Starting coordinates (top-left)
+        // Simulate movement on the grid until an exit point ('.') is reached
+        while (gridCells[currentY][currentX] !== ".") {
+            if (gridCells[currentY][currentX] === "a") { // Check for a loop (already visited 'a')
+                logOutput("LOOP"); // Output loop detection
+                return; // Terminate due to loop
             }
-            const movementVector = directionMap[gridCells[currentY][currentX]]; // Gets the movement vector based on the symbol in the current cell
-            gridCells[currentY][currentX] = 'visited'; // Marks the current cell as visited to detect future cycles
-            currentX += movementVector[0]; // Updates the X coordinate based on the movement vector
-            currentY += movementVector[1]; // Updates the Y coordinate based on the movement vector
+            var currentDirection = directionMap[gridCells[currentY][currentX]]; // Get direction vector
+            gridCells[currentY][currentX] = "a"; // Mark current cell as visited to detect loops
+            currentX += currentDirection[0]; // Update X coordinate
+            currentY += currentDirection[1]; // Update Y coordinate
         }
-        outputLog(currentX, currentY); // Logs the final coordinates when an exit point is reached
+        logOutput(currentX, currentY); // Output final coordinates
     }
 }
 
-// This is the primary invocation point, reading input from standard input and starting the program.
-executeProgram(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
-// executeProgram(require('node:fs').readFileSync('sample.txt', 'utf8')); // Example for local file testing with a custom input file
+// Execute the main program with input from standard input.
+// The commented line below shows how to read from a local file for testing.
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// executeProgram(require("fs").readFileSync("input.txt", "utf8"));

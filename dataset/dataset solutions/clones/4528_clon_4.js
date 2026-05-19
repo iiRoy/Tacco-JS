@@ -1,38 +1,32 @@
-const processNumericPayload = (fullInputText) => {
-    const dataLines = fullInputText.split('\n');
-    const targetLine = dataLines[1];
+'use strict';
 
-    const stringTokens = targetLine.split(' ');
+function processCoordinates(sourceData) {
+    const lines = sourceData.split('\n');
+    // The first line, representing 'n' in the original, is not utilized in the final calculation.
+    // We proceed directly to the second line for coordinate processing.
 
-    let floorValue = Number.POSITIVE_INFINITY;
-    let ceilingValue = Number.NEGATIVE_INFINITY;
-    const uniqueElements = new Set();
+    const rawCoordinateStrings = lines[1].split(' ');
 
-    for (const currentToken of stringTokens) {
-        const parsedValue = Number(currentToken);
-        
-        if (!uniqueElements.has(parsedValue)) {
-            uniqueElements.add(parsedValue);
-            if (parsedValue < floorValue) {
-                floorValue = parsedValue;
+    let minimumCoordinate = Infinity;
+    let maximumCoordinate = -Infinity;
+    const encounteredCoordinates = new Set();
+
+    for (const stringRepresentation of rawCoordinateStrings) {
+        const currentCoordinate = Number(stringRepresentation);
+
+        if (!encounteredCoordinates.has(currentCoordinate)) {
+            encounteredCoordinates.add(currentCoordinate);
+            if (currentCoordinate < minimumCoordinate) {
+                minimumCoordinate = currentCoordinate;
             }
-            if (parsedValue > ceilingValue) {
-                ceilingValue = parsedValue;
+            if (currentCoordinate > maximumCoordinate) {
+                maximumCoordinate = currentCoordinate;
             }
         }
     }
-    
-    if (uniqueElements.size === 0) {
-        return 0; 
-    }
 
-    return ceilingValue - floorValue;
-};
+    const coordinateSpan = maximumCoordinate - minimumCoordinate;
+    console.log(coordinateSpan);
+}
 
-const initiateOperation = (filePath) => {
-    const fileContent = require('fs').readFileSync(filePath, 'utf8');
-    const finalResult = processNumericPayload(fileContent);
-    console.log(finalResult);
-};
-
-initiateOperation('/dev/stdin');
+processCoordinates(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,152 +1,166 @@
-// This module processes structured input data to calculate a specific sum based on item categories and available slots.
-function ProcessInput( rawInputData ) {
-    rawInputData = rawInputData.trim().split( "\n" ).map( function ( lineStr ) { return lineStr.split( " " ) } );
+// This script processes input data to calculate a specific sum based on item properties.
+function processInputData(rawData) {
+    // Parse the raw input string into an array of arrays, splitting by newlines and spaces.
+    let parsedLines = rawData.trim().split("\n").map(function(lineStr) { return lineStr.split(" "); });
 
-    let currentLineIdx = 1; // Index for navigating through the input array, starting after the initial N.
+    // Initialize the starting line index for processing each test case.
+    let currentLineIndex = 1;
 
-    // A utility method for finding an insertion point in an ordered sequence.
-    // This function is defined but not actively invoked within the main execution path.
-    const findInsertionPoint = ( targetArray, searchValue ) => {
-        let searchStart = 0;
-        let searchEnd = targetArray.length - 1;
+    // Helper function to find the lower bound index in a sorted array.
+    // This is equivalent to `std::lower_bound` in C++.
+    const findInsertionPoint = (sortedArray, targetValue) => {
+        let startIndex = 0;
+        let endIndex = sortedArray.length - 1;
         let midPoint;
-        while ( searchStart <= searchEnd ) {
-            midPoint = 0 | ( searchStart + searchEnd ) / 2;
-            if ( targetArray[ midPoint ] < searchValue ) {
-                searchStart = midPoint + 1;
+
+        // Binary search loop.
+        while (startIndex <= endIndex) {
+            midPoint = Math.floor((startIndex + endIndex) / 2); // Using Math.floor for integer division.
+            if (sortedArray[midPoint] < targetValue) {
+                startIndex = midPoint + 1;
             } else {
-                searchEnd = midPoint - 1;
+                endIndex = midPoint - 1;
             }
         }
-        return searchStart;
+        return startIndex; // Returns the index where targetValue would be inserted to maintain order.
     };
 
-    // The primary loop iterates over distinct sets of data within the input.
-    while ( true ) {
-        if ( rawInputData[ currentLineIdx ] == null ) { // Condition to exit if no more data sets are present.
-            break;
+    // Main loop to process multiple test cases from the input.
+    while (true) {
+        // Check if there are more lines to process for a new test case.
+        if (parsedLines[currentLineIndex] === undefined) {
+            break; // Exit loop if no more data.
         }
 
-        let totalItems = parseInt( rawInputData[ currentLineIdx ][ 0 ], 10 ); // Retrieve the count of items for the current data set.
-        let categoryAlphaItems = []; // Collection for items belonging to the first classification group.
-        let categoryBetaItems = []; // Collection for items belonging to the second classification group.
-        let alphaKeys = []; // Unique key identifiers for items in category alpha.
-        let betaKeys = []; // Unique key identifiers for items in category beta.
-        let currentParsedEntry; // Holds the numerical values of a single input line.
-        let accumulatedBaseValue = 0; // Sum of minimum values or fixed costs.
-        let itemsRemainingCount = totalItems; // Counter for unclassified or special items.
+        // Read the number of elements for the current test case.
+        let numElements = parseInt(parsedLines[currentLineIndex][0], 10);
 
-        // Iteration to parse and categorize each item within the current data set.
-        for ( let loopIteration = 0; loopIteration < totalItems; loopIteration++ ) {
-            currentParsedEntry = rawInputData[ currentLineIdx + loopIteration + 1 ].map( numStr => parseInt( numStr, 10 ) );
-            console.log; // An expression statement with no side effect, retained from original.
+        // Arrays to store categorized items based on their properties.
+        let itemsGroupA = [];
+        let itemsGroupB = [];
 
-            // Decision logic to assign items to categories or compute base values.
-            if ( currentParsedEntry[ 0 ] === totalItems ) {
-                accumulatedBaseValue += currentParsedEntry[ 1 ];
-                itemsRemainingCount--;
-            } else if ( currentParsedEntry[ 1 ] > currentParsedEntry[ 2 ] ) {
-                categoryAlphaItems.push( currentParsedEntry );
-                accumulatedBaseValue += currentParsedEntry[ 2 ];
-                alphaKeys.push( currentParsedEntry[ 0 ] - 1 );
-            } else if ( currentParsedEntry[ 1 ] < currentParsedEntry[ 2 ] ) {
-                // Transformation of item data for the beta category.
-                currentParsedEntry = [ totalItems - currentParsedEntry[ 0 ], currentParsedEntry[ 2 ], currentParsedEntry[ 1 ] ];
-                categoryBetaItems.push( currentParsedEntry );
-                accumulatedBaseValue += currentParsedEntry[ 2 ];
-                betaKeys.push( currentParsedEntry[ 0 ] - 1 );
+        // Lists to store K-values (minus 1) for each group, before sorting and filtering.
+        let uniqueKeysA = [];
+        let uniqueKeysB = [];
+
+        // Variables for accumulating the base sum and tracking effective item count.
+        let baseSumValue = 0;
+        let effectiveItemCount = numElements; // This variable is declared but not used after initialization in the original.
+
+        // Loop through each item's data for the current test case.
+        for (let itemIdx = 0; itemIdx < numElements; itemIdx++) {
+            // Parse the current line into an array of integers.
+            let currentEntry = parsedLines[currentLineIndex + itemIdx + 1].map(val => parseInt(val, 10));
+
+            // Categorize items based on their K, L, R values (currentEntry[0], currentEntry[1], currentEntry[2]).
+            if (currentEntry[0] === numElements) {
+                // Special case: K equals N. Add L to base sum and decrement effective count.
+                baseSumValue += currentEntry[1];
+                effectiveItemCount--;
+            } else if (currentEntry[1] > currentEntry[2]) {
+                // Case 1: L > R. Add to Group A.
+                itemsGroupA.push(currentEntry);
+                baseSumValue += currentEntry[2]; // Add R to base sum.
+                uniqueKeysA.push(currentEntry[0] - 1); // Store K-1.
+            } else if (currentEntry[1] < currentEntry[2]) {
+                // Case 2: L < R. Transform and add to Group B.
+                // Transformation: K becomes N-K, L becomes R, R becomes L.
+                let transformedEntry = [numElements - currentEntry[0], currentEntry[2], currentEntry[1]];
+                itemsGroupB.push(transformedEntry);
+                baseSumValue += transformedEntry[2]; // Add the new R (original L) to base sum.
+                uniqueKeysB.push(transformedEntry[0] - 1); // Store transformed K-1.
             } else {
-                accumulatedBaseValue += currentParsedEntry[ 1 ];
-                itemsRemainingCount--;
+                // Case 3: L == R. Add L (or R) to base sum and decrement effective count.
+                baseSumValue += currentEntry[1];
+                effectiveItemCount--;
             }
         }
 
-        // Sorting the categorized item arrays by their primary key.
-        categoryAlphaItems.sort( ( firstElem, secondElem ) => firstElem[ 0 ] - secondElem[ 0 ] );
-        categoryBetaItems.sort( ( firstElem, secondElem ) => firstElem[ 0 ] - secondElem[ 0 ] );
+        // Sort the item groups by their first element (K-value).
+        itemsGroupA.sort((a, b) => a[0] - b[0]);
+        itemsGroupB.sort((a, b) => a[0] - b[0]);
 
-        // Sorting the key lists and removing duplicate entries.
-        alphaKeys = alphaKeys.sort( ( firstVal, secondVal ) => firstVal - secondVal ).filter( function ( uniqueValue, currentPos, selfList ) {
-            return selfList.indexOf( uniqueValue ) === currentPos;
-        } );
-        betaKeys = betaKeys.sort( ( firstVal, secondVal ) => firstVal - secondVal ).filter( function ( uniqueValue, currentPos, selfList ) {
-            return selfList.indexOf( uniqueValue ) === currentPos;
-        } );
+        // Sort unique keys and remove duplicates to get distinct, sorted keys.
+        let distinctKeysA = uniqueKeysA.sort((a, b) => a - b).filter(function (value, index, self) {
+            return self.indexOf(value) === index;
+        });
+        let distinctKeysB = uniqueKeysB.sort((a, b) => a - b).filter(function (value, index, self) {
+            return self.indexOf(value) === index;
+        });
 
-        // Initialization of data structures to manage available capacity or 'slots'.
-        let alphaCategoryCapacity = [ [], [] ];
-        let betaCategoryCapacity = [ [], [] ];
+        // Initialize capacity tracking structures for each group.
+        // capacityData[0] stores available slots, capacityData[1] stores used slots.
+        let capacityDataA = [[], []];
+        let capacityDataB = [[], []];
 
-        // Creation of lookup maps to quickly find slot indices based on keys.
-        // Note: The original code for `betaCategorySlotLookup` used `alphaKeys` for length calculation; this behavior is preserved.
-        let alphaCategorySlotLookup = Array.from( { length: alphaKeys[ alphaKeys.length - 1 ] + 1 }, () => 0 );
-        let betaCategorySlotLookup = Array.from( { length: alphaKeys[ betaKeys.length - 1 ] + 1 }, () => 0 ); // Retaining original logic.
+        // Maps K-values to their corresponding index in the distinctKeys list.
+        // Handle empty distinctKeys list to avoid accessing index -1.
+        let keyToIndexMapA = Array.from({length: (distinctKeysA.length > 0 ? distinctKeysA[distinctKeysA.length - 1] + 1 : 0)}, () => 0);
+        let keyToIndexMapB = Array.from({length: (distinctKeysB.length > 0 ? distinctKeysB[distinctKeysB.length - 1] + 1 : 0)}, () => 0);
 
-        let lastEncounteredKey = -1; // Helper variable for slot size calculation.
-
-        // Populating capacity arrays and lookup maps for the alpha category.
-        for ( let indexVal = 0; indexVal < alphaKeys.length; indexVal++ ) {
-            alphaCategoryCapacity[ 0 ].push( alphaKeys[ indexVal ] - lastEncounteredKey );
-            alphaCategoryCapacity[ 1 ].push( 0 ); // Initialize usage count to zero.
-            alphaCategorySlotLookup[ alphaKeys[ indexVal ] ] = indexVal;
-            lastEncounteredKey = alphaKeys[ indexVal ];
+        // Populate capacity data and index maps for Group A.
+        let lastProcessedKeyA = -1;
+        for (let kIndexA = 0; kIndexA < distinctKeysA.length; kIndexA++) {
+            capacityDataA[0].push(distinctKeysA[kIndexA] - lastProcessedKeyA); // Available slots based on key difference
+            capacityDataA[1].push(0); // Used slots, initialized to 0
+            keyToIndexMapA[distinctKeysA[kIndexA]] = kIndexA;
+            lastProcessedKeyA = distinctKeysA[kIndexA];
         }
 
-        lastEncounteredKey = -1; // Resetting the helper for the next category.
-
-        // Populating capacity arrays and lookup maps for the beta category.
-        for ( let indexVal = 0; indexVal < betaKeys.length; indexVal++ ) {
-            betaCategoryCapacity[ 0 ].push( betaKeys[ indexVal ] - lastEncounteredKey );
-            betaCategoryCapacity[ 1 ].push( 0 ); // Initialize usage count to zero.
-            betaCategorySlotLookup[ betaKeys[ indexVal ] ] = indexVal;
-            lastEncounteredKey = betaKeys[ indexVal ];
+        // Populate capacity data and index maps for Group B.
+        let lastProcessedKeyB = -1;
+        for (let kIndexB = 0; kIndexB < distinctKeysB.length; kIndexB++) {
+            capacityDataB[0].push(distinctKeysB[kIndexB] - lastProcessedKeyB); // Available slots based on key difference
+            capacityDataB[1].push(0); // Used slots, initialized to 0
+            keyToIndexMapB[distinctKeysB[kIndexB]] = kIndexB;
+            lastProcessedKeyB = distinctKeysB[kIndexB];
         }
 
-        let finalComputedSum = accumulatedBaseValue; // The running total for the maximized sum.
-        let incrementalValue; // Represents the potential increase an item can contribute.
-        let currentSlotAccessPointer; // Pointer for navigating within the slot capacity arrays.
+        // Initialize the final answer with the base sum.
+        let finalResult = baseSumValue;
+        let currentCapacityIndex; // Variable to hold the index in capacityData.
 
-        // Processing items in the first category to potentially increase the sum.
-        for ( let indexVal = 0; indexVal < categoryAlphaItems.length; indexVal++ ) {
-            incrementalValue = categoryAlphaItems[ indexVal ][ 1 ] - categoryAlphaItems[ indexVal ][ 2 ];
-            currentSlotAccessPointer = alphaCategorySlotLookup[ categoryAlphaItems[ indexVal ][ 0 ] - 1 ];
+        // Process items in Group A to maximize the sum.
+        for (let itemIndexA = 0; itemIndexA < itemsGroupA.length; itemIndexA++) {
+            let gainAmount = itemsGroupA[itemIndexA][1] - itemsGroupA[itemIndexA][2]; // L - R
+            currentCapacityIndex = keyToIndexMapA[itemsGroupA[itemIndexA][0] - 1]; // Get index for K-1
 
-            // Backtrack to find an available slot if the current one is fully utilized.
-            while ( alphaCategoryCapacity[ 1 ][ currentSlotAccessPointer ] === alphaCategoryCapacity[ 0 ][ currentSlotAccessPointer ] && currentSlotAccessPointer >= 0 ) {
-                 currentSlotAccessPointer--;
+            // Find the first available slot by moving backwards if current slot is full.
+            while (capacityDataA[1][currentCapacityIndex] === capacityDataA[0][currentCapacityIndex] && currentCapacityIndex >= 0) {
+                currentCapacityIndex--;
             }
 
-            // If an empty slot is identified, use it and update the total sum.
-            if ( currentSlotAccessPointer >= 0 ) {
-                alphaCategoryCapacity[ 1 ][ currentSlotAccessPointer ]++;
-                finalComputedSum += incrementalValue;
-            }
-        }
-
-        // Processing items in the second category with similar logic.
-        for ( let indexVal = 0; indexVal < categoryBetaItems.length; indexVal++ ) {
-            incrementalValue = categoryBetaItems[ indexVal ][ 1 ] - categoryBetaItems[ indexVal ][ 2 ];
-            currentSlotAccessPointer = betaCategorySlotLookup[ categoryBetaItems[ indexVal ][ 0 ] - 1 ];
-
-            // Search backwards for an unoccupied slot.
-            while ( betaCategoryCapacity[ 1 ][ currentSlotAccessPointer ] === betaCategoryCapacity[ 0 ][ currentSlotAccessPointer ] && currentSlotAccessPointer >= 0 ) {
-                 currentSlotAccessPointer--;
-            }
-
-            // If a suitable slot is found, mark it as used and add to the sum.
-            if ( currentSlotAccessPointer >= 0 ) {
-                betaCategoryCapacity[ 1 ][ currentSlotAccessPointer ]++;
-                finalComputedSum += incrementalValue;
+            // If an available slot is found, use it and add the gain to the total.
+            if (currentCapacityIndex >= 0) {
+                capacityDataA[1][currentCapacityIndex]++;
+                finalResult += gainAmount;
             }
         }
 
-        // Output the final calculated sum for the current data set.
-        console.log( finalComputedSum );
+        // Process items in Group B to maximize the sum.
+        for (let itemIndexB = 0; itemIndexB < itemsGroupB.length; itemIndexB++) {
+            let gainAmount = itemsGroupB[itemIndexB][1] - itemsGroupB[itemIndexB][2]; // Transformed L - Transformed R
+            currentCapacityIndex = keyToIndexMapB[itemsGroupB[itemIndexB][0] - 1]; // Get index for transformed K-1
 
-        // Advance the input pointer to the beginning of the next data set.
-        currentLineIdx += totalItems + 1;
+            // Find the first available slot by moving backwards if current slot is full.
+            while (capacityDataB[1][currentCapacityIndex] === capacityDataB[0][currentCapacityIndex] && currentCapacityIndex >= 0) {
+                currentCapacityIndex--;
+            }
+
+            // If an available slot is found, use it and add the gain to the total.
+            if (currentCapacityIndex >= 0) {
+                capacityDataB[1][currentCapacityIndex]++;
+                finalResult += gainAmount;
+            }
+        }
+
+        // Output the calculated final result for the current test case.
+        console.log(finalResult);
+
+        // Move to the start of the next test case in the input.
+        currentLineIndex += numElements + 1;
     }
 }
 
-// Initial call to the processing function, reading input from the standard input stream.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from stdin and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

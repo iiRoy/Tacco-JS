@@ -1,132 +1,128 @@
-// This function serves as the central processing unit for the application logic.
-function mainProcessor( ) {
-  let
-  // Index used to traverse through the raw input lines.
-  lineIndex = 0,
-  // Iterators for grid rows and columns.
-  rowIterator, currentYCoord, currentXCoord,
-  // Stores the width and height of the current grid.
-  gridDimensions,
-  // The 2D array representing the grid of cell types.
-  gridMatrix,
-  // A map storing the number of paths reaching each cell coordinate.
-  pathCounts = {},
-  // A special row appended to the grid to handle boundary conditions.
-  boundaryRow = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+function processGridData() {
+  // This variable tracks the current line being read from the input buffer.
+  let currentLineIdx = 0;
+  // Variables for iterating through grid rows and columns.
+  let rowIndex, gridRowCoord, gridColCoord;
+  // Stores the dimensions [width, height] of the current grid.
+  let gridDimensions;
+  // A 2D array representing the layout of the grid cells.
+  let gridLayout = [];
+  // An object to store the calculated number of distinct paths to each cell coordinate.
+  let pathwayCounts = {};
+  // A constant row used as a boundary or padding, filled with the value '2'.
+  const boundaryRow = Array(15).fill(2);
 
-  // An indefinite loop to process multiple grid configurations.
-  // It terminates when a specific input condition is met.
-  for ( ; ; ) {
-    // Parse the grid dimensions from the input data.
-    gridDimensions = rawInputData[lineIndex++].split(' ').map(Number);
-    gridMatrix = []; // Initialize the grid for the current scenario.
+  // The main processing loop continues until a specific termination condition is met.
+  for (;;) {
+    // Read the grid's width and height from the input buffer.
+    // The values are parsed as floating-point numbers.
+    gridDimensions = rawInputBuffer[currentLineIdx++].split(' ').map(parseFloat);
+    // Reset the grid layout for the new set of dimensions.
+    gridLayout = [];
 
-    // Check for the termination signal (0 0 dimensions).
+    // Check if both dimensions are zero, which signals the end of input.
     if (gridDimensions[0] === 0 && gridDimensions[1] === 0) {
-      break;
+      break; // Exit the infinite loop.
+    }
+    
+    // Populate the gridLayout with cell data for each row.
+    for (rowIndex = 0; rowIndex < gridDimensions[1]; rowIndex++) {
+      gridLayout.push(rawInputBuffer[currentLineIdx++].split(' ').map(parseFloat));
+    }
+    // Append the predefined boundary row to the grid layout.
+    gridLayout.push(boundaryRow);
+    
+    // Initialize the total path sum for the current grid configuration.
+    let finalPathSum = 0;
+    // Clear the pathway counts from the previous grid.
+    pathwayCounts = {};
+
+    // Initialize path counts for the very first row (gridRowCoord = 0).
+    // A cell with value 0 in the first row is considered a starting point with 1 path.
+    for (gridColCoord = 0; gridColCoord < gridDimensions[0]; gridColCoord++) {
+      pathwayCounts[[gridColCoord, 0]] = gridLayout[0][gridColCoord] === 0 ? 1 : 0;
     }
 
-    // Populate the grid matrix with cell data.
-    for (rowIterator = 0; rowIterator < gridDimensions[1]; rowIterator++) {
-      gridMatrix.push(rawInputData[lineIndex++].split(' ').map(Number));
-    }
-    gridMatrix.push(boundaryRow); // Append the boundary row for path calculation.
+    // Iterate through each cell of the grid to calculate path propagation.
+    for (gridRowCoord = 0; gridRowCoord < gridDimensions[1]; gridRowCoord++) {
+      for (gridColCoord = 0; gridColCoord < gridDimensions[0]; gridColCoord++) {
+        // Ensure the current cell's path count is initialized to zero if it hasn't been reached yet.
+        pathwayCounts[[gridColCoord, gridRowCoord]] = pathwayCounts[[gridColCoord, gridRowCoord]] || 0;
 
-    let totalPaths = 0; // Reset the total path count for the new grid.
-    pathCounts = {}; // Clear previously stored path counts.
-
-    // Initialize the path counts for the first row based on cell type 0.
-    for (currentXCoord = 0; currentXCoord < gridDimensions[0]; currentXCoord++) {
-      pathCounts[[currentXCoord, 0]] = gridMatrix[0][currentXCoord] === 0 ? 1 : 0;
-    }
-
-    // Iterate through the grid to calculate path counts for each cell.
-    for (currentYCoord = 0; currentYCoord < gridDimensions[1]; currentYCoord++) {
-      for (currentXCoord = 0; currentXCoord < gridDimensions[0]; currentXCoord++) {
-        // Ensure the current cell's path count is at least 0.
-        pathCounts[[currentXCoord, currentYCoord]] = pathCounts[[currentXCoord, currentYCoord]] || 0;
-
-        // Apply path logic based on the cell's type.
-        switch (gridMatrix[currentYCoord][currentXCoord]) {
-          case 0: // Cell type 0 allows diagonal and direct downward movement.
-            // Move to bottom-left if not blocked by a type 2 cell.
-            if (gridMatrix[currentYCoord + 1][currentXCoord - 1] !== 2) {
-              pathCounts[[currentXCoord - 1, currentYCoord + 1]] = (pathCounts[[currentXCoord - 1, currentYCoord + 1]] || 0) + pathCounts[[currentXCoord, currentYCoord]];
+        // Apply different path-finding rules based on the cell's type.
+        switch (gridLayout[gridRowCoord][gridColCoord]) {
+          case 0: // Cell type 0: Paths can move to adjacent cells in the next row.
+            // Propagate paths to the bottom-left cell, if it's not a blocker (value 2).
+            if (gridLayout[gridRowCoord + 1][gridColCoord - 1] !== 2) {
+              pathwayCounts[[gridColCoord - 1, gridRowCoord + 1]] = (pathwayCounts[[gridColCoord - 1, gridRowCoord + 1]] || 0) + pathwayCounts[[gridColCoord, gridRowCoord]];
             }
-            // Move directly downward.
-            pathCounts[[currentXCoord, currentYCoord + 1]] = (pathCounts[[currentXCoord, currentYCoord + 1]] || 0) + pathCounts[[currentXCoord, currentYCoord]];
-            // Move to bottom-right if not blocked by a type 2 cell.
-            if (gridMatrix[currentYCoord + 1][currentXCoord + 1] !== 2) {
-              pathCounts[[currentXCoord + 1, currentYCoord + 1]] = (pathCounts[[currentXCoord + 1, currentYCoord + 1]] || 0) + pathCounts[[currentXCoord, currentYCoord]];
+            // Propagate paths directly downwards.
+            pathwayCounts[[gridColCoord, gridRowCoord + 1]] = (pathwayCounts[[gridColCoord, gridRowCoord + 1]] || 0) + pathwayCounts[[gridColCoord, gridRowCoord]];
+            // Propagate paths to the bottom-right cell, if it's not a blocker (value 2).
+            if (gridLayout[gridRowCoord + 1][gridColCoord + 1] !== 2) {
+              pathwayCounts[[gridColCoord + 1, gridRowCoord + 1]] = (pathwayCounts[[gridColCoord + 1, gridRowCoord + 1]] || 0) + pathwayCounts[[gridColCoord, gridRowCoord]];
             }
             break;
-          case 1: // Cell type 1 is a stopper; no paths originate from here.
+          case 1: // Cell type 1: This cell acts as a dead end; no paths propagate from it.
             break;
-          case 2: // Cell type 2 allows a jump of two steps downward.
-            pathCounts[[currentXCoord, currentYCoord + 2]] = (pathCounts[[currentXCoord, currentYCoord + 2]] || 0) + pathCounts[[currentXCoord, currentYCoord]];
+          case 2: // Cell type 2: Paths from this cell jump two rows down.
+            pathwayCounts[[gridColCoord, gridRowCoord + 2]] = (pathwayCounts[[gridColCoord, gridRowCoord + 2]] || 0) + pathwayCounts[[gridColCoord, gridRowCoord]];
             break;
         }
       }
     }
 
-    // This line is for debugging and visualizing the path counts, currently inactive.
-    // displayGridState(gridDimensions, pathCounts);
+    // The following line was commented out in the original code, likely for debugging.
+    // visualizeGridState(gridDimensions, pathwayCounts);
 
-    // Aggregate the total paths from the final two rows of the grid.
-    for (currentYCoord = gridDimensions[1]; currentYCoord <= gridDimensions[1] + 1; currentYCoord++) {
-      for (currentXCoord = 0; currentXCoord < gridDimensions[0]; currentXCoord++) {
-        totalPaths += pathCounts[[currentXCoord, currentYCoord]] || 0;
+    // Sum up the path counts for the last two rows of the grid.
+    // These represent paths that have successfully traversed the grid.
+    for (gridRowCoord = gridDimensions[1]; gridRowCoord <= gridDimensions[1] + 1; gridRowCoord++) {
+      for(gridColCoord = 0; gridColCoord < gridDimensions[0]; gridColCoord++) {
+        finalPathSum += pathwayCounts[[gridColCoord, gridRowCoord]] || 0;
       }
     }
 
-    // Output the final calculated total paths for the current grid.
-    console.log(totalPaths);
+    // Output the calculated total number of paths for the current grid.
+    console.log(finalPathSum);
   }
 }
 
+// This utility function is designed for visualizing the state of path counts on the grid.
+// It was commented out in the original source, indicating it's for debugging purposes.
+function visualizeGridState(gridDimensions, pathwayCounts) {
+  let gridColCoord, gridRowCoord;
+  let outputRow; // An array to build each row's string representation.
 
-// A utility function intended for debugging to print the state of the grid.
-function displayGridState(dimensions, computedValues) {
-  let
-  columnTracker, rowTracker,
-  outputLineSegments; // Array to build each line of output.
-
-  // Loop through each row, including the boundary.
-  for (rowTracker = 0; rowTracker <= dimensions[1]; rowTracker++) {
-    outputLineSegments = []; // Reset line segments for the new row.
-    // Loop through each column in the current row.
-    for (columnTracker = 0; columnTracker < dimensions[0]; columnTracker++) {
-      // Add the path count (or 0 if none) to the current line's segments.
-      outputLineSegments.push(computedValues[[columnTracker, rowTracker]] || 0);
+  // Iterate through each row of the grid, including the boundary row.
+  for (gridRowCoord = 0; gridRowCoord <= gridDimensions[1]; gridRowCoord++) {
+    outputRow = []; // Reset the row for new values.
+    // Iterate through each column.
+    for (gridColCoord = 0; gridColCoord < gridDimensions[0]; gridColCoord++) {
+      // Add the path count for the current cell, defaulting to 0 if not present.
+      outputRow.push(pathwayCounts[[gridColCoord, gridRowCoord]] || 0);
     }
-    // Print the collected segments, joined by spaces, to the console.
-    console.log(outputLineSegments.join(' '));
+    // Print the row's path counts, separated by spaces.
+    console.log(outputRow.join(' '));
   }
 }
 
+// A string variable to accumulate all incoming data from standard input.
+let rawInputBuffer = '';
 
-// Global variable to store all input received from standard input.
-let rawInputData = '';
+// Configure standard input to resume and use UTF-8 encoding.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Create aliases for standard input stream methods to avoid direct 'process.stdin' calls.
-const streamActivator = process.stdin.resume.bind(process.stdin);
-const encodingSetter = process.stdin.setEncoding.bind(process.stdin);
-const eventRegistrar = process.stdin.on.bind(process.stdin);
-
-// Begin processing the input stream.
-streamActivator();
-// Set the character encoding for the incoming data to UTF-8.
-encodingSetter('utf8');
-
-// Register a handler to accumulate data chunks as they arrive.
-eventRegistrar('data', function(incomingDataSegment) {
-  rawInputData += incomingDataSegment; // Append the new data to our buffer.
+// Event listener for incoming data chunks from stdin.
+process.stdin.on('data', function(dataChunk) {
+  rawInputBuffer += dataChunk; // Append the chunk to the buffer.
 });
 
-// Register a handler for when the entire input stream has concluded.
-eventRegistrar('end', function() {
-  // Once all input is received, split it into an array of lines.
-  rawInputData = rawInputData.split('\n');
-  // Initiate the main application logic with the prepared input.
-  mainProcessor();
+// Event listener for when all input has been received.
+process.stdin.on('end', function() {
+  // Split the accumulated input string into an array of lines.
+  rawInputBuffer = rawInputBuffer.split('\n');
+  // Initiate the main grid processing logic.
+  processGridData();
 });

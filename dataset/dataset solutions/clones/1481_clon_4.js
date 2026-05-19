@@ -1,43 +1,36 @@
-const getSystemInput = () => require("fs").readFileSync("/dev/stdin", "utf8");
-const processInputData = (rawText) => {
-    const rowStrings = rawText.split('\n');
-    const [nodeLimit, edgeCount] = rowStrings[0].split(' ').map(Number);
-    const edgeList = rowStrings.slice(1, edgeCount + 1).map(row => row.split(' ').map(Number));
-    return { nodeLimit, edgeCount, edgeList };
-};
+const input = require("fs").readFileSync("/dev/stdin", "utf8");
+const lines = input.split('\n');
+let [nodeCount, edgeCount] = lines[0].split(' ').map(Number);
 
-const { nodeLimit: totalNodes, edgeCount: numConnections, edgeList: connections } = processInputData(getSystemInput());
+const parentArray = Array(nodeCount + 1).fill(0).map((_val, index) => index);
+const componentSizes = Array(nodeCount + 1).fill(1);
+let distinctComponentCount = nodeCount;
 
-const nodeParents = Array.from({ length: totalNodes + 1 }, (_, idx) => idx);
-const componentSizes = Array.from({ length: totalNodes + 1 }, () => 1);
-let currentGroupCount = totalNodes;
-
-const findRepresentative = (elementId) => {
-    if (nodeParents[elementId] === elementId) {
-        return elementId;
+const findRoot = (nodeIdentifier) => {
+    if (parentArray[nodeIdentifier] === nodeIdentifier) {
+        return nodeIdentifier;
     }
-    nodeParents[elementId] = findRepresentative(nodeParents[elementId]);
-    return nodeParents[elementId];
+    parentArray[nodeIdentifier] = findRoot(parentArray[nodeIdentifier]);
+    return parentArray[nodeIdentifier];
 };
 
-const uniteSets = (firstElement, secondElement) => {
-    let rootOne = findRepresentative(firstElement);
-    let rootTwo = findRepresentative(secondElement);
+const uniteSets = (firstNode, secondNode) => {
+    let rootFirst = findRoot(firstNode);
+    let rootSecond = findRoot(secondNode);
 
-    if (rootOne !== rootTwo) {
-        if (componentSizes[rootOne] < componentSizes[rootTwo]) {
-            [rootOne, rootTwo] = [rootTwo, rootOne];
+    if (rootFirst !== rootSecond) {
+        if (componentSizes[rootFirst] < componentSizes[rootSecond]) {
+            [rootFirst, rootSecond] = [rootSecond, rootFirst];
         }
-        nodeParents[rootTwo] = rootOne;
-        componentSizes[rootOne] += componentSizes[rootTwo];
-        currentGroupCount--;
-        return true;
+        parentArray[rootSecond] = rootFirst;
+        componentSizes[rootFirst] += componentSizes[rootSecond];
+        distinctComponentCount--;
     }
-    return false;
 };
 
-for (const [aNode, bNode] of connections) {
-    uniteSets(aNode, bNode);
+for (let edgeIndex = 1; edgeIndex <= edgeCount; edgeIndex++) {
+    const [uIdentifier, vIdentifier] = lines[edgeIndex].split(' ').map(Number);
+    uniteSets(uIdentifier, vIdentifier);
 }
 
-console.log(currentGroupCount - 1);
+console.log(distinctComponentCount - 1);

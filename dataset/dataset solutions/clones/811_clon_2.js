@@ -1,83 +1,99 @@
-var resultDisplay = console.log; // This identifier points to the standard logging function.
+var outputLog = console.log;
 
-if (typeof process !== 'undefined') { // Verify if the current execution environment is Node.js.
-    var receivedInputContent = ""; // Storage for all incoming data from the standard input stream.
-    process.stdin.resume(); // Activate the standard input to begin listening for data.
-    process.stdin.setEncoding('utf8'); // Configure the input stream to decode data as UTF-8.
+// Check if running in a Node.js environment to handle standard input.
+if (typeof process !== "undefined") {
+    var rawData = ""; // Accumulates incoming data from stdin.
+    process.stdin.resume(); // Keep the process alive.
+    process.stdin.setEncoding('utf8'); // Set encoding for input.
 
-    // Establish an event handler for 'data' events on stdin.
-    process.stdin.on('data', function (dataFragment) {
-        receivedInputContent += dataFragment; // Append each new piece of data to the buffer.
+    // Event listener for data chunks.
+    process.stdin.on('data', function (chunkSegment) {
+        rawData += chunkSegment; // Append new data.
     });
 
-    // Establish an event handler for the 'end' event on stdin.
+    // Event listener for end of input.
     process.stdin.on('end', function () {
-        prepareAndProcess(receivedInputContent); // Once all input is received, initiate the processing.
+        processInitialData(rawData); // Process all collected data.
     });
 }
 
-function prepareAndProcess(incomingFullText) {
-    var rawTextLines = incomingFullText.split("\n"); // Deconstruct the complete input string into an array of lines.
-    rawTextLines.shift(); // Remove the very first line from the array.
-    rawTextLines.pop(); // Remove the very last line from the array.
-    executeAlgorithm(rawTextLines); // Hand over the refined list of lines to the primary algorithm.
+/**
+ * Pre-processes the raw input string before passing it to the main logic.
+ * @param {string} incomingText - The complete input string from stdin.
+ */
+function processInitialData(incomingText) {
+    var textRows = incomingText.split("\n"); // Split input into individual lines.
+    textRows.shift(); // Remove the first line (often metadata or empty).
+    textRows.pop(); // Remove the last line (often empty or EOF marker).
+    executeCoreLogic(textRows); // Pass cleaned lines to the primary function.
 }
 
-// --- Main Computational Algorithm ---
+//----- Core Application Logic -----
 
-function executeAlgorithm(processedDataRows) {
-    processedDataRows.shift(); // Discard the initial element of the processed data rows.
-    processedDataRows = processedDataRows.map(function (singleLineEntry) { // Iterate and transform each individual line entry.
-        var lineSegments = singleLineEntry.split(" "); // Break the current line into smaller segments using space as a delimiter.
-        var numericValues = lineSegments.map(function (stringPart) {
-            return Number(stringPart); // Convert each string segment into its numerical representation.
+/**
+ * Executes the main algorithm on the processed input lines.
+ * @param {string[]} textRows - An array of strings, each representing a line of data.
+ */
+function executeCoreLogic(textRows) {
+    textRows.shift(); // Discard another initial line, as per problem spec.
+
+    // Convert each line into an array of numbers.
+    var parsedNumericRows = textRows.map(function (currentElement) {
+        var partsArray = currentElement.split(" "); // Split line by space.
+        var numericValues = partsArray.map(function (strValue) {
+            return Number(strValue); // Convert each part to a number.
         });
-        return numericValues; // Return the new array containing only numeric values.
+        return numericValues;
     });
 
-    var groupedDataSets = []; // An empty array designated to hold collections of grouped data.
+    var dataCollections = []; // Stores pairs of data arrays.
 
-    // A repetitive block to organize data rows into pairs of datasets.
-    while (processedDataRows.length > 1) {
-        // Construct a new array to store a pair of consecutive data rows.
-        var currentDataSetPair = [];
-        currentDataSetPair.push(processedDataRows.shift()); // Extract and add the first available row.
-        currentDataSetPair.push(processedDataRows.shift()); // Extract and add the subsequent row.
-        groupedDataSets.push(currentDataSetPair); // Integrate the newly formed pair into the main collection.
+    // Group the numeric rows into datasets of two arrays each.
+    while (parsedNumericRows.length > 1) {
+        var tempCollection = []; // Temporary array for a single dataset.
+        tempCollection.push(parsedNumericRows.shift()); // Add the first array.
+        tempCollection.push(parsedNumericRows.shift()); // Add the second array.
+        dataCollections.push(tempCollection); // Store the pair.
     }
 
-    groupedDataSets.forEach(function (dataSetItem) { // Process each distinct dataset item.
-        var powerFactor = dataSetItem[0][1]; // Retrieve a specific numerical factor from the first sub-array of the dataset.
-        var valueDifferencesList = []; // An array to accumulate calculated differences between values.
+    // Process each collected dataset.
+    dataCollections.forEach(function (currentDataset) {
+        var powerValue = currentDataset[0][1]; // Extract the power value from the first array.
+        var differenceArray = []; // Array to store differences between consecutive elements.
 
-        dataSetItem[1].forEach(function (currentElementValue, elementIndex, allElementsArray) {
-            if (elementIndex === 0) { // Bypass the first element as there's no preceding value for difference calculation.
-                return;
+        // Calculate differences between adjacent elements in the second array of the dataset.
+        currentDataset[1].forEach(function (currentNum, idx, fullArray) {
+            if (idx === 0) {
+                return; // Skip the first element as there's no previous one.
             } else {
-                valueDifferencesList.push(allElementsArray[elementIndex] - allElementsArray[elementIndex - 1]); // Compute and append the difference.
+                differenceArray.push(fullArray[idx] - fullArray[idx - 1]); // Calculate and store difference.
             }
         });
 
-        valueDifferencesList.sort(function (firstValue, secondValue) { // Arrange the computed differences in descending order.
-            return secondValue - firstValue;
+        // Sort the differences in descending order.
+        differenceArray.sort(function (valA, valB) {
+            return valB - valA; // Descending sort.
         });
 
-        // Iteratively remove a specific count of the largest differences from the beginning of the sorted list.
-        for (var loopCounter = 0; loopCounter < powerFactor - 1; loopCounter++) {
-            valueDifferencesList.shift();
+        // Remove the largest (powerValue - 1) differences.
+        for (var loopCounter = 0; loopCounter < powerValue - 1; loopCounter++) {
+            differenceArray.shift(); // Remove the first element (largest).
         }
 
-        if (valueDifferencesList.length > 0) { // Proceed if there are any remaining differences to sum.
-            var calculatedSum = valueDifferencesList.reduce(function (accumulator, currentReducedValue) {
-                if (currentReducedValue !== void 0) { // Verify that the current value is not undefined.
-                    return accumulator + currentReducedValue;
+        // Calculate the sum of the remaining differences.
+        if (differenceArray.length > 0) {
+            var totalSum = differenceArray.reduce(function (previousVal, currentVal) {
+                // Ensure currentVal is defined before adding.
+                if (currentVal !== undefined) {
+                    return previousVal + currentVal;
                 } else {
-                    return accumulator === void 0 ? 0 : accumulator; // Handle the initial state of the accumulator if it's undefined.
+                    // If previousVal is undefined, initialize to 0, otherwise use its value.
+                    return previousVal === undefined ? 0 : previousVal;
                 }
             });
-            resultDisplay(calculatedSum); // Present the final aggregated sum.
+            outputLog(totalSum); // Output the calculated sum.
         } else {
-            resultDisplay(0); // If no differences remain, output a default value of zero.
+            outputLog(0); // If no differences remain, output 0.
         }
     });
 }

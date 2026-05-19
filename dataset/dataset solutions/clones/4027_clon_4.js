@@ -1,38 +1,22 @@
 "use strict";
 
-function computeCardDifference(inputData) {
-    const valueLineMatch = inputData.match(/\n(.+)/);
-    if (!valueLineMatch || valueLineMatch.length < 2) {
-        return 0; // Handle malformed input gracefully, though problem constraints usually prevent this
-    }
-    const valueLine = valueLineMatch[1];
+var calculateScoreDifference = function(inputData) {
+    const lineTokens = inputData.split("\n")[1].split(" ");
 
-    const numericalItems = valueLine.match(/\d+/g).map(numStr => Number(numStr));
+    const orderedNumbers = Array.from(lineTokens, Number)
+                               .sort((valA, valB) => valB - valA);
 
-    numericalItems.sort((first, second) => first - second).reverse();
-
-    function determineScoreDifference(itemsCollection, currentIndex, currentP1Sum, currentP2Sum, isP1Next) {
-        if (currentIndex >= itemsCollection.length) {
-            return currentP1Sum - currentP2Sum;
-        }
-
-        const chosenValue = itemsCollection[currentIndex];
-
-        if (isP1Next) {
-            return determineScoreDifference(itemsCollection, currentIndex + 1, currentP1Sum + chosenValue, currentP2Sum, false);
+    const playerScores = orderedNumbers.reduce((accumulator, currentNumber, index) => {
+        if (index % 2 === 0) {
+            accumulator.playerOne += currentNumber;
         } else {
-            return determineScoreDifference(itemsCollection, currentIndex + 1, currentP1Sum, currentP2Sum + chosenValue, true);
+            accumulator.playerTwo += currentNumber;
         }
-    }
+        return accumulator;
+    }, { playerOne: 0, playerTwo: 0 });
 
-    return determineScoreDifference(numericalItems, 0, 0, 0, true);
-}
+    return playerScores.playerOne - playerScores.playerTwo;
+};
 
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const encodingType = "utf8";
-
-const rawInputContent = fileSystemModule.readFileSync(standardInputPath, encodingType);
-const finalResult = computeCardDifference(rawInputContent);
-
+const finalResult = calculateScoreDifference(require("fs").readFileSync("/dev/stdin", "utf8"));
 console.log(finalResult);

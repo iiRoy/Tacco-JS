@@ -1,54 +1,62 @@
-function locateValue ( dataCollection ,  lookupKey ) {
-  // This function performs a binary search operation on a sorted array.
-  var lowerBound = 0 ; // Initialize the starting index for the search range.
-  var upperBound = dataCollection . length ; // Set the ending index for the search range.
-  var stepCounter = 0 ; // Variable to keep track of the number of iterations or comparisons made.
+function findPosition(dataArray, targetValue) {
+    // Initialize the starting index for the search range.
+    let startIndex = 0;
+    // Initialize the ending index for the search range (exclusive upper bound).
+    let endIndex = dataArray.length;
+    // Counter to track the number of comparisons made during the search.
+    let iterationCount = 0;
 
-  while ( true )
-  {
-    stepCounter ++ ; // Increment the operation counter with each loop cycle.
+    // Begin an indefinite loop for the binary search process.
+    for (;;) {
+        iterationCount++; // Increment the counter for each iteration.
 
-    if ( lowerBound > upperBound ) {
-      break ; // Exit the loop if the lower bound exceeds the upper bound, indicating the element is not found.
+        // If the start index surpasses the end index, the element is not present.
+        if (startIndex > endIndex) {
+            break; // Exit the loop as the search space is exhausted.
+        }
+
+        // Calculate the middle index of the current search segment.
+        const middleIndex = Math.floor((startIndex + endIndex) / 2);
+
+        // Check if the element at the calculated middle index matches the target value.
+        if (dataArray[middleIndex] === targetValue) {
+            return iterationCount; // Return the count if the target is found.
+        }
+
+        // Adjust the search boundaries based on the comparison.
+        if (targetValue < dataArray[middleIndex]) {
+            endIndex = middleIndex; // If target is smaller, search in the left half.
+        } else {
+            startIndex = middleIndex + 1; // If target is larger, search in the right half.
+        }
     }
-
-    var pivotPoint = Math . floor ( ( lowerBound + upperBound ) / 2 ) ; // Calculate the middle index of the current search range.
-
-    if ( dataCollection [ pivotPoint ] === lookupKey ) {
-      return stepCounter ; // If the element at the pivot point matches the lookup key, return the total steps.
-    }
-
-    if ( lookupKey < dataCollection [ pivotPoint ] ) {
-      upperBound = pivotPoint ; // If the lookup key is smaller, narrow the search to the left half.
-    }
-    else {
-      lowerBound = pivotPoint + 1 ; // Otherwise, narrow the search to the right half.
-    }
-  }
-
-  return stepCounter ; // Return the final step count if the element was not found in the array.
+    // If the loop completes without finding the target, return the final iteration count.
+    return iterationCount;
 }
 
-// Main program execution starts here.
-// It reads input from standard input, processes multiple test cases, and outputs search results.
-var fileContent = require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ; // Read all raw input from the specified file path.
-var inputLines = fileContent . trim ( ) . split ( "\n" ) ; // Clean up the input and split it into an array of individual lines.
+// Read the entire content from standard input as a UTF-8 string.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the input: remove leading/trailing whitespace and split into an array of lines.
+let lineSegments = fileContent.trim().split('\n');
 
-while ( true )
-{
-  var numElements = inputLines . shift ( ) - 0 ; // Extract the number of elements for the current test case, converting it to a number.
+// Loop continuously to process multiple test cases from the input.
+while (true) {
+    // Extract the first line, convert it to a number, representing the count of elements.
+    let elementCount = lineSegments.shift() - 0;
 
-  if ( numElements === 0 ) {
-    break ; // If the number of elements is zero, it signifies the end of input, so terminate the loop.
-  }
+    // If the element count is zero, it signifies the end of input, so break the loop.
+    if (elementCount === 0) {
+        break;
+    }
 
-  var currentDataSet = [ ] ; // Initialize an empty array to store the elements for the current test case.
+    // Create a new array to store the numeric data for the current test case.
+    const numericData = [];
+    // Populate the numericData array with 'elementCount' numbers from subsequent input lines.
+    for (let idx = 0; idx < elementCount; idx++) {
+        numericData.push(lineSegments.shift() - 0); // Convert each line to a number and add.
+    }
 
-  for ( var idx = 0 ; idx < numElements ; idx ++ ) {
-    currentDataSet . push ( inputLines . shift ( ) - 0 ) ; // Populate the current data set with elements from input, converting them to numbers.
-  }
-
-  // Call the search function with the current data set and the target value (also converted to a number).
-  // Then, print the result (the number of steps taken) to the console.
-  console . log ( locateValue ( currentDataSet , inputLines . shift ( ) - 0 ) ) ;
+    // Perform the binary search on the 'numericData' array for the next target value from input.
+    // The result (iteration count) is then printed to the console.
+    console.log(findPosition(numericData, lineSegments.shift() - 0));
 }

@@ -1,45 +1,43 @@
-function processNetworkData(sourceData) {
-  const dataSegments = sourceData.split('\n');
-  const entityCount = parseInt(dataSegments.shift(), 10);
+function processGraphData(inputData) {
+    const inputSegments = inputData.split("\n");
+    const nodeCount = Number(inputSegments.shift());
 
-  const rawConnections = dataSegments
-    .slice(0, dataSegments.length - 1)
-    .map(line => line.split(' ').map(Number));
+    const edgeDescriptions = inputSegments.slice(0, inputSegments.length - 1);
+    const availableCostValues = inputSegments[inputSegments.length - 1]
+                                .split(' ')
+                                .map(Number)
+                                .sort((valA, valB) => valA - valB);
 
-  const valuationSet = dataSegments[dataSegments.length - 1]
-    .split(' ')
-    .map(Number)
-    .sort((a, b) => a - b);
+    const currentDegrees = Array.from({ length: nodeCount + 1 }, () => 0);
 
-  const connectionMetrics = new Map();
-  Array.from({ length: entityCount }, (_, idx) => idx + 1)
-    .forEach(nodeIdentifier => connectionMetrics.set(nodeIdentifier, 0));
+    const parsedEdges = edgeDescriptions.map(edgeStr => edgeStr.split(' ').map(Number));
 
-  rawConnections.forEach(([nodeA, nodeB]) => {
-    connectionMetrics.set(nodeA, connectionMetrics.get(nodeA) + 1);
-    connectionMetrics.set(nodeB, connectionMetrics.get(nodeB) + 1);
-  });
+    parsedEdges.forEach(pair => {
+        currentDegrees[pair[0]]++;
+        currentDegrees[pair[1]]++;
+    });
 
-  const degreeList = Array.from(connectionMetrics.entries())
-    .map(([nodeIdentifier, currentDegree]) => ({ nodeIdentifier, currentDegree }));
+    const degreeRankings = Array.from({ length: nodeCount }, (_, idx) => ({
+        identifier: idx + 1,
+        degreeValue: currentDegrees[idx + 1]
+    }));
 
-  const sortedDegreeList = degreeList.sort((itemA, itemB) => itemA.currentDegree - itemB.currentDegree);
+    degreeRankings.sort((itemA, itemB) => itemA.degreeValue - itemB.degreeValue);
 
-  const entityValuations = new Map();
-  sortedDegreeList.forEach((item, indexPosition) => {
-    entityValuations.set(item.nodeIdentifier, valuationSet[indexPosition]);
-  });
+    const assignedNodeCosts = Array.from({ length: nodeCount + 1 });
 
-  const cumulativeValue = rawConnections.reduce((accumulator, [nodeA, nodeB]) => {
-    return accumulator + Math.min(entityValuations.get(nodeA), entityValuations.get(nodeB));
-  }, 0);
+    degreeRankings.forEach((rankedNode, index) => {
+        assignedNodeCosts[rankedNode.identifier] = availableCostValues[index];
+    });
 
-  console.log(String(cumulativeValue));
+    const totalMinimumEdgeCost = parsedEdges.reduce((accumulator, [nodeU, nodeV]) => {
+        return accumulator + Math.min(assignedNodeCosts[nodeU], assignedNodeCosts[nodeV]);
+    }, 0);
 
-  const arrangedValuations = Array.from({ length: entityCount }, (_, idx) => idx + 1)
-    .map(nodeIdentifier => entityValuations.get(nodeIdentifier));
+    const finalCostSequence = Array.from({ length: nodeCount }, (_, idx) => assignedNodeCosts[idx + 1]).join(' ');
 
-  console.log(arrangedValuations.join(' '));
+    console.log(String(totalMinimumEdgeCost));
+    console.log(finalCostSequence);
 }
 
-processNetworkData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

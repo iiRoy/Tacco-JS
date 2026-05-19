@@ -1,25 +1,49 @@
-const retrieveData = () => require("node:fs").readFileSync("/dev/stdin", "utf8").trim();
-const formatAndDisplay = (content) => console.log(content);
+const readInputSource = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const outputResult = (content) => console.log(content);
 
-const determineOriginalValue = (targetAmount) => {
-    const taxRateMultiplier = 1.08;
-    let potentialBase = Math.floor(targetAmount / taxRateMultiplier);
+const inputConversionMap = Object.freeze({
+    0: (val) => val,
+    1: (val) => Number.parseInt(val),
+    2: (val) => val.split(" "),
+    3: (val) => val.split("\n"),
+    4: (val) => val.split(" ").map(Number),
+    5: (val) => val.split("\n").map(Number),
+    6: (val) => val.split(""),
+    7: (val) => val.split("").map(Number)
+});
 
-    for (let currentCandidate = potentialBase - 1; currentCandidate <= potentialBase + 2; ++currentCandidate) {
-        if (currentCandidate < 0) continue; 
+function processInputData(rawData, conversionIdentifier) {
+    const converter = inputConversionMap[conversionIdentifier];
+    return converter ? converter(rawData) : rawData;
+}
 
-        const resultOfCalculation = Math.floor(currentCandidate * taxRateMultiplier);
+function calculateOriginalPrice(taxedAmountString) {
+    const desiredTaxedValue = processInputData(taxedAmountString, 1);
+    
+    const approximateBaseValue = desiredTaxedValue / 1.08;
+    let finalBasePrice = null;
 
-        if (resultOfCalculation === targetAmount) {
-            return currentCandidate;
+    const lowerBoundCheck = Math.floor(approximateBaseValue) - 2;
+    const upperBoundCheck = Math.ceil(approximateBaseValue) + 2;
+
+    for (let potentialBase = lowerBoundCheck; potentialBase <= upperBoundCheck; potentialBase++) {
+        if (potentialBase < 0) {
+            continue;
+        }
+
+        const computedTaxedValue = Math.floor(potentialBase * 1.08);
+
+        if (computedTaxedValue === desiredTaxedValue) {
+            finalBasePrice = potentialBase;
+            break;
         }
     }
 
-    return ":(";
-};
+    if (finalBasePrice !== null) {
+        outputResult(finalBasePrice);
+    } else {
+        outputResult(":(");
+    }
+}
 
-(() => {
-    const rawInputString = retrieveData();
-    const numericInput = parseInt(rawInputString, 10);
-    formatAndDisplay(determineOriginalValue(numericInput));
-})();
+calculateOriginalPrice(readInputSource());

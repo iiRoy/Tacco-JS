@@ -1,85 +1,91 @@
 "use strict";
-const processInputData = ( initialData ) => {
-    initialData = initialData
-        .trim()
-        .split(
-            "\n"
-        );
-    const charSequence = initialData[0]
-        .split(
-            ""
-        );
-    const multiplier = parseInt(initialData[1]);
 
-    let firstPassScore = 0;
-    let secondPassScore = 0;
+const processInput = (inputData) => {
+  // Normalize input string: trim whitespace and split into lines
+  inputData = inputData.trim().split("\n");
 
-    // Handle edge case: single character input
-    if (charSequence.length === 1) {
-        console.log(
-            Math.floor(multiplier / 2)
-        );
-        return;
+  // Extract the character string and repeat count from input
+  const charArrayA = inputData[0].split("");
+  const repeatCount = parseInt(inputData[1]);
+
+  // Initialize counters for consecutive character streaks
+  let countA = 0;
+  let countB = 0;
+
+  // Handle edge case: single character string
+  if (charArrayA.length === 1) {
+    console.log(Math.floor(repeatCount / 2));
+    return; // Exit early for single character input
+  }
+
+  // Create a second mutable copy of the character array
+  let charArrayB = [...charArrayA];
+  let firstCharModified = false; // Flag to track if the first character of charArrayA was modified
+
+  // First pass: Analyze charArrayA for consecutive characters
+  // This loop identifies and marks consecutive pairs in the first array.
+  for (let idx = 0; idx < charArrayA.length - 1; idx++) {
+    // Check for consecutive characters
+    if (charArrayA[idx] === charArrayA[parseInt(idx) + 1]) {
+      // Special handling for the very last pair in the string
+      if (idx === charArrayA.length - 2) {
+        countA++;
+        charArrayA[parseInt(idx) + 1] = "|"; // Mark the second character of the pair
+        continue; // Move to the next iteration (which will be the end of the loop)
+      }
+
+      countA++; // Increment streak counter
+
+      // Mark the second character of the pair, unless it's the very first character
+      if (idx !== 0) {
+        charArrayA[parseInt(idx) + 1] = "*";
+      } else {
+        // If the first character is part of a streak, mark it and set a flag
+        charArrayA[idx] = "*";
+        firstCharModified = true;
+      }
     }
+  }
 
-    let alteredSequence = [...charSequence];
-    let startModifiedFlag = false;
+  // Store the original first and last characters of the initial string
+  let initialChar = charArrayA[0];
+  let finalChar = charArrayA[charArrayA.length - 1];
 
-    /*
-     * This segment calculates consecutive character matches for the primary pattern.
-     * It specifically addresses contiguous pairs and potential modifications to the sequence.
-     */
-    for (let index = 0; index < charSequence.length - 1; index++) {
-        // Check if the current character is identical to the next one
-        if (charSequence[index] === charSequence[index + 1] && index === charSequence.length - 2) {
-            firstPassScore++;
-            charSequence[index + 1] = "#"; // Mark the second character of the pair
-            continue;
-        }
+  // If the first and last characters of the *original* string are identical,
+  // and they form a "wrap-around" streak, adjust charArrayB and its counter.
+  // This condition specifically checks for a potential streak across the string boundary.
+  if (initialChar === finalChar) {
+    charArrayB[0] = "@"; // Mark the first character
+    charArrayB[charArrayB.length - 1] = "@"; // Mark the last character
+    countB = 2; // Initialize countB for this specific boundary case
+  }
 
-        if (charSequence[index] === charSequence[index + 1]) {
-            firstPassScore++;
-
-            if (index !== 0) {
-                charSequence[index + 1] = "&"; // Mark internal consecutive characters
-            } else {
-                charSequence[index] = "$"; // Mark the first character if it's the start of a streak
-                startModifiedFlag = true;
-            }
-        }
+  // Second pass: Analyze charArrayB for consecutive characters
+  // This loop identifies and marks consecutive pairs in the second array.
+  for (let jdx = 0; jdx < charArrayB.length - 1; jdx++) {
+    // Check for consecutive characters
+    if (charArrayB[jdx] === charArrayB[jdx + parseInt(1)]) {
+      countB++; // Increment streak counter
+      charArrayB[parseInt(jdx) + 1] = "?"; // Mark the second character of the pair
     }
+  }
 
-    let initialElement = charSequence[0];
-    let finalElement = charSequence[charSequence.length - 1];
+  let finalResult = 0; // Variable to store the computed answer
 
-    // Conditional modification of sequence ends if they are identical
-    if (initialElement === finalElement) {
-        alteredSequence[0] = "~";
-        alteredSequence[alteredSequence.length - 1] = "~";
+  // Calculate the final result based on the parity of repeatCount
+  if (repeatCount % 2 === 0) {
+    // If repeatCount is even, average the two streak counts and multiply by repeatCount
+    finalResult = (countA + countB) * (repeatCount / 2);
+  } else {
+    // If repeatCount is odd, apply ceiling to one streak and floor to the other
+    finalResult =
+      countA * Math.ceil(repeatCount / 2) +
+      countB * Math.floor(repeatCount / 2);
+  }
 
-        secondPassScore = 2;
-    }
-
-    /*
-     * This part computes consecutive matches for a secondary pattern
-     * using the potentially modified sequence.
-     */
-    for (let j = 0; j < alteredSequence.length - 1; j++) {
-        // Evaluate adjacent characters for equality
-        if (alteredSequence[j] === alteredSequence[j + 1]) {
-            secondPassScore++;
-            alteredSequence[j + 1] = "!"; // Mark the matched character
-        }
-    }
-
-    let ultimateResult = 0;
-
-    if (multiplier % 2 === 0) {
-        ultimateResult = (firstPassScore + secondPassScore) * (multiplier / 2);
-    } else {
-        ultimateResult = (firstPassScore * Math.ceil(multiplier / 2)) + (secondPassScore * Math.floor(multiplier / 2));
-    }
-
-    console.log(ultimateResult);
+  // Output the calculated result
+  console.log(finalResult);
 };
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read input from standard input and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

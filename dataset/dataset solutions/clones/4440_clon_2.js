@@ -1,68 +1,50 @@
-/*
- * This JavaScript module processes a sequence of numerical inputs
- * to determine if a specific condition related to divisibility holds true.
- */
-function ProcessInputData(rawData) {
-  // Normalize the input string by replacing all newline characters with spaces.
-  let tokenizedData = rawData.replace(/\n/g, '   ');
+function ProcessInput(rawData) {
+  // Normalize line endings and split the raw input string into an array of strings.
+  rawData = rawData.replace(/\n/g, ' ');
+  rawData = rawData.split(" ");
 
-  // Split the processed string into an array of individual tokens (strings).
-  tokenizedData = tokenizedData.split(" ");
-
-  // The first element is expected to be the total count of numbers to process.
-  var countOfNumbers = tokenizedData[0];
-
-  // Remove the count element from the beginning of the array.
-  tokenizedData.shift();
+  // The first element indicates the total number of subsequent integers to process.
+  var countOfNumbers = rawData[0];
+  // Remove the count from the beginning of the array, leaving only the numbers.
+  rawData.shift();
 
   // Initialize counters for different types of numbers.
-  // This counter tracks numbers perfectly divisible by four.
-  var divisibleByFourCount = 0;
+  var divisibleByFourCount = 0; // Counts numbers perfectly divisible by 4.
+  var divisibleByTwoOnlyCount = 0; // Counts numbers divisible by 2 but not by 4.
+  var oddCount = 0; // Counts odd numbers.
 
-  // This counter tracks numbers divisible by two but not by four.
-  var divisibleByTwoNotFourCount = 0;
+  // Initialize the default outcome string.
+  var resultString = "No";
 
-  // This counter tracks odd numbers.
-  var oddCount = 0;
-
-  // Initialize the final outcome message.
-  var finalVerdict = "No";
-
-  // Iterate through the remaining numbers based on the initial count.
+  // Iterate through the array of numbers to categorize them.
   for (var idx = 0; idx < countOfNumbers; idx++) {
-    // Convert the current string token to a numerical value.
-    var currentNumber = Number(tokenizedData[idx]);
+    // Convert the current string element to a number.
+    var currentNum = Number(rawData[idx]);
 
-    // Check divisibility conditions for the current number.
-    if (currentNumber % 4 === 0) {
-      // If divisible by 4, increment its respective counter.
-      divisibleByFourCount++;
-    } else if (currentNumber % 2 === 0) {
-      // If divisible by 2 but not 4, increment its respective counter.
-      divisibleByTwoNotFourCount++;
+    // Check divisibility conditions.
+    if (currentNum % 4 === 0) {
+      divisibleByFourCount++; // Increment count for multiples of 4.
+    } else if (currentNum % 2 === 0) {
+      divisibleByTwoOnlyCount++; // Increment count for even numbers not divisible by 4.
     } else {
-      // Otherwise, it's an odd number; increment its counter.
-      oddCount++;
+      oddCount++; // Increment count for odd numbers.
     }
   }
 
-  // Evaluate the collected counts to determine the final verdict.
-
-  // Condition 1: If the count of odd numbers is less than or equal to
-  // the count of numbers divisible by four.
+  // Determine the final result based on the counts.
+  // Condition 1: If the count of odd numbers is less than or equal to the count of multiples of 4.
   if (oddCount <= divisibleByFourCount) {
-    finalVerdict = "Yes";
+    resultString = "Yes";
   }
-  // Condition 2: If the count of odd numbers is exactly one more than
-  // the count of numbers divisible by four, AND there are no numbers
-  // divisible by two but not four.
-  else if (divisibleByFourCount + 1 === oddCount && divisibleByTwoNotFourCount === 0) {
-    finalVerdict = "Yes";
+  // Condition 2: If the count of odd numbers is exactly one more than multiples of 4,
+  // AND there are no numbers divisible by 2 but not by 4.
+  else if (divisibleByFourCount + 1 === oddCount && divisibleByTwoOnlyCount === 0) {
+    resultString = "Yes";
   }
 
-  // Output the final decision to the console.
-  console.log(finalVerdict);
+  // Output the determined result to the console.
+  console.log(resultString);
 }
 
-// Invoke the main processing function with input read from standard input.
-ProcessInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,24 +1,44 @@
-let dataBuffer = '';
+var rawData = ""; // Initialize a variable to accumulate incoming data from standard input.
 
-process.stdin.resume(); // Begin reading from standard input
-process.stdin.setEncoding('utf8'); /* Set the character encoding for the input stream */
+// Resume the standard input stream to start receiving data.
+process.stdin.resume();
 
-process.stdin.on('data', function(dataPortion) {
-  dataBuffer += dataPortion; // Append incoming data chunks
+// Set the encoding for the standard input stream to UTF-8.
+process.stdin.setEncoding('utf-8');
+
+// Attach an event listener for 'data' events on the standard input.
+// Each time a chunk of data is received, append it to our rawData variable.
+process.stdin.on('data', function(dataSegment) {
+  rawData += dataSegment; // Concatenate the received data segment.
 });
 
+// Attach an event listener for the 'end' event on the standard input.
+// This event fires when there is no more data to be read.
 process.stdin.on('end', function() {
-  dataBuffer = dataBuffer.split('\n'); /* Split the entire input by newline characters */
-  
-  let valueStrings = dataBuffer[1].split(' '); // Extract the relevant line and split by spaces
-  
-  let minimumVal = Math.min.apply(null, valueStrings); // Determine the smallest numerical value
-  let maximumVal = Math.max.apply(null, valueStrings); // Determine the largest numerical value
-  
-  let totalSummation = 0; // Initialize a variable to accumulate the sum
-  for (let loopIndex = 0; loopIndex < valueStrings.length; ++loopIndex) {
-    totalSummation += Number(valueStrings[loopIndex]); /* Convert each string to a number and add to total */
+  // Once all data is received, split the raw data by newline characters.
+  // This typically separates lines of input.
+  rawData = rawData.split("\n");
+
+  // The problem implies the numbers are on the second line (index 1).
+  // Split this line by spaces to get an array of number strings.
+  let numberStrings = rawData[1].split(" ");
+
+  // Calculate the minimum value from the array of number strings.
+  // Math.min.apply is used to pass array elements as individual arguments.
+  let minimumValue = Math.min.apply(null, numberStrings);
+
+  // Calculate the maximum value from the array of number strings.
+  let maximumValue = Math.max.apply(null, numberStrings);
+
+  // Initialize a variable to store the sum of the numbers.
+  let totalSum = 0;
+
+  // Iterate through the array of number strings.
+  for (let idx = 0; idx < numberStrings.length; ++idx) {
+    // Convert each string to a number and add it to the total sum.
+    totalSum += Number(numberStrings[idx]);
   }
 
-  console.log(minimumVal + ' ' + maximumVal + ' ' + totalSummation); // Display the calculated minimum, maximum, and sum
+  // Output the minimum, maximum, and sum values, separated by spaces.
+  console.log(minimumValue + " " + maximumValue + " " + totalSum);
 });

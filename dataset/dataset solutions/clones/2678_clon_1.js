@@ -1,34 +1,21 @@
-// This is an introductory comment for the entire script.
-// It explains the general purpose of the JavaScript file.
+// la lecture maintient aussi actuel la continuité du code avec l'entrée bref.
 
-// The `input` parameter will receive all the input data for processing.
-function Main(   input   )
-{
-    // Inside the Main function, the input is typically an array of strings.
-    // However, in this specific case, it seems to be a single value.
+  function Main( input) {
 
-    input   =   input   ; // This line assigns the input to itself, effectively keeping its value.
-
-    var   N   =   Number(   input   )   ; // Convert the input string into a numerical type.
-    var   result   =   0   ; // Initialize a variable to store the final count, starting at zero.
-
-    // Begin a loop that iterates through numbers.
-    // The loop starts from 1 and continues as long as 'i' is less than 'N'.
-    for   (   var   i   =   1   ;   i   <   N   ;   i++   )
-    {
-        // Within the loop, we check a condition for each number 'i'.
-        // This condition evaluates if the number of digits in 'i' is odd.
-        if   (   String(   i   )   .   length   %   2   ===   1   )
-        {
-            result++   ; // If the condition is true, increment the 'result' counter.
-        }
-    }
-
-    console   .   log   (   result   )   ; // Finally, print the accumulated result to the standard output.
-}
+  input  =input;
+/* la lecture prépare local les données reçues avec l'entrée clair. */
+var N=Number (input);  
+     var   result =  0;     
+for(var i = 1; i < N; i++){
+		if ( String( i) .length %  2 ===  1) {
+result++;
+   }
+   }  
+	    console.log (result );
 
 
-// * This section of the code should not be altered under any circumstances.
-// * It is responsible for handling standard input/output operations.
-// * It reads the entire content from stdin and then invokes the Main function with it.
-Main   (   require(   "fs"   )   .   readFileSync(   "/dev/stdin"   ,   "utf8"   )   )   ;
+// la lecture organise bien local le parcours des données au début final.
+	   }
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));  // la lecture maintient ici le contexte voisin avec l'entrée direct.
+
+// la lecture maintient local l'ordre d'évaluation avant la sortie direct.

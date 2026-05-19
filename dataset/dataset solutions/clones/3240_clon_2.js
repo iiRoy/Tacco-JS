@@ -1,87 +1,41 @@
-/*
- * This script processes character sequences obtained from a standard input source.
- * It aims to calculate a cumulative score based on character matching logic
- * across three distinct character sequences.
- */
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
 
-// Utilize the built-in 'fs' module to synchronously read data from the system's standard input.
-var acquiredInputData = require('node:fs')
-                                  .readFileSync(
-                                      '/dev/stdin' // Path representing standard input stream
-                                    , 'utf-8'      // Specify the character encoding for the input data
-                                  );
+var lineSegments = rawData.split('\n'); // Split the input into an array of lines
 
+var countOfItems = Number(lineSegments[0]); // Convert the first line to a number for iteration count
 
-// Parse the raw input string by splitting it into an array of individual line segments.
-var processedLineSegments = acquiredInputData.split('\n');
+var firstSequence = lineSegments[1].split(''); // Get the second line and split it into characters
+var secondSequence = lineSegments[2].split(''); // Get the third line and split it into characters
+var thirdSequence = lineSegments[3].split(''); // Get the fourth line and split it into characters
 
-
-// Convert the first line segment to a numeric value, representing the total count of relevant lines.
-const totalLineCount = Number(processedLineSegments[0]);
-
-
-// Extract and split the next three line segments into arrays of single characters.
-var primarySequence = processedLineSegments[1]
-                                          .split('');
-
-var secondarySequence = processedLineSegments[2]
-                                          .split('');
-
-var tertiarySequence = processedLineSegments[3]
-                                          .split('');
-
-
-// Initialize a variable to store the final accumulated score.
-let accumulatedScore = 0;
-
+var totalScore = 0; // Initialize a counter for the score
 
 /**
- * Evaluates whether at least two of the three character sequences have
- * an identical character at a specific zero-based index.
- *
- * @param {number} currentPosition - The numerical index to check within each sequence.
- * @returns {boolean} Returns `true` if any pair of characters at `currentPosition` matches,
- *                    otherwise returns `false`.
+ * Checks if any two characters at a given index across the three sequences are identical.
+ * @param {number} idx - The current index to check.
+ * @returns {boolean} True if at least two characters are the same, false otherwise.
  */
-const evaluateCharacterSimilarity = ( currentPosition ) => {
-
-    // Compare characters from the three sequences at the given index.
-    if ( ( primarySequence[currentPosition] === secondarySequence[currentPosition] ) ||
-         ( secondarySequence[currentPosition] === tertiarySequence[currentPosition] ) ||
-         ( tertiarySequence[currentPosition] === primarySequence[currentPosition] )
-       ) {
-        return true; // Indicates that two or more characters are the same.
-    }
-
-    return false; // Indicates that all three characters are distinct.
+var checkSimilarity = (idx) => {
+  if (firstSequence[idx] === secondSequence[idx] || secondSequence[idx] === thirdSequence[idx] || thirdSequence[idx] === firstSequence[idx]) {
+    return true; // Found a pair of identical characters
+  }
+  return false; // No identical pairs at this index
 };
 
-
-// Iterate through each character position across the sequences, up to the determined line count.
-for ( let sequenceIterator = 0; sequenceIterator < totalLineCount; sequenceIterator++ ) {
-
-    // Check if no two characters are similar at the current position.
-    if ( !evaluateCharacterSimilarity( sequenceIterator ) ) {
-        // If all three characters are unique, increment the score by two points.
-        accumulatedScore += 2;
-    }
-
-    // Else, if all three characters at the current position are identical.
-    else if ( ( primarySequence[sequenceIterator] === secondarySequence[sequenceIterator] ) &&
-              ( secondarySequence[sequenceIterator] === tertiarySequence[sequenceIterator] )
-            ) {
-        // In this specific case (all three match), no points are added to the score.
-        // This block intentionally performs no operation.
-    }
-
-    // Otherwise (exactly two characters are similar).
-    else {
-        // If precisely two characters are identical, increment the score by one point.
-        accumulatedScore += 1;
-    }
-
+// Iterate through each character position up to the defined count
+for (var currentIdx = 0; currentIdx < countOfItems; currentIdx++) {
+  // If no two characters are similar at the current position
+  if (!checkSimilarity(currentIdx)) {
+    totalScore += 2; // Add 2 to the score
+  }
+  // Else if all three characters are identical
+  else if (firstSequence[currentIdx] === secondSequence[currentIdx] && secondSequence[currentIdx] === thirdSequence[currentIdx]) {
+    // Do nothing, score remains unchanged for this case
+  }
+  // Else (meaning exactly two characters are identical)
+  else {
+    totalScore += 1; // Add 1 to the score
+  }
 }
 
-
-// Display the final calculated accumulated score to the standard output.
-console.log(accumulatedScore);
+console.log(totalScore); // Output the final calculated score

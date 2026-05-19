@@ -1,45 +1,33 @@
-process . stdin . resume ( ); // Initialize the standard input stream to listen for data
+process.stdin.resume(); // Start reading from standard input
+process.stdin.setEncoding('utf8'); // Set the encoding for incoming data
 
-process.stdin.setEncoding( 'utf8' ); // Configure the input stream to interpret data as UTF-8 characters
+let incomingStream = ''; // Initialize a variable to accumulate all input data
 
-/*
- * This variable serves as a temporary storage buffer
- * for all incoming data segments from the standard input.
- */
-let rawInputBuffer = "";
+// Event listener for 'data' chunks from standard input
+process.stdin.on('data', chunkOfData => {
+  incomingStream += chunkOfData; // Append each data chunk to the accumulated stream
+});
 
-// Attach an event listener to capture each incoming data fragment
-process . stdin . on (
-    'data',
-    ( dataChunk ) => { // The 'dataChunk' parameter holds a segment of the input
-        rawInputBuffer += dataChunk; // Append the new data segment to the buffer
-    }
-);
+// Event listener for the 'end' of standard input
+process.stdin.on('end', noEventArg => {
+  // Process the accumulated input:
+  // 1. Remove any trailing whitespace characters.
+  // 2. Split the string into an array of substrings using space as a delimiter.
+  incomingStream = incomingStream.replace(/\s*$/g, '').split(' ');
 
-// Define an event listener for when the entire input stream has concluded
-process . stdin . on ( 'end' , ( eventArgumentIgnored ) => {
-    // First, remove any trailing whitespace characters from the accumulated buffer
-    // Then, split the cleaned string into an array of substrings, using space as the delimiter
-    rawInputBuffer = rawInputBuffer.replace( /\s*$/g, '' ).split( ' ' );
-
-    // After processing the raw input, invoke the primary execution function
-    beginComputationAndOutput();
-} );
-
+  // Execute the primary logic function after input processing.
+  performCalculation();
+});
 
 /**
- * This central function manages the core logic:
- * performing a calculation on the processed input and then
- * displaying the final outcome to the standard output.
+ * This function performs the core calculation on the processed input data.
+ * It multiplies all numbers in the input array and prints the result.
  */
-function beginComputationAndOutput( )
-{
-    // Perform a 'reduce' operation on the array of input strings.
-    // It multiplies all elements together, effectively converting them to numbers implicitly.
-    let finalProductValue = rawInputBuffer.reduce( ( accumulatedValue, currentElement ) => {
-        return accumulatedValue * currentElement;
-    } );
+function performCalculation() {
+  // Use the reduce method to multiply all elements in the incomingStream array.
+  // The initial accumulatorValue will be the first element, and currentElement will be the second, and so on.
+  let finalProduct = incomingStream.reduce((accumulatorValue, currentElement) => accumulatorValue * currentElement);
 
-    // Convert the numerical result to a string and write it to the standard output stream
-    process.stdout.write( finalProductValue.toString() );
+  // Write the final calculated product to standard output, converting it to a string first.
+  process.stdout.write(finalProduct.toString());
 }

@@ -1,136 +1,125 @@
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8").trim();
-let dataLines = sourceData.split("\n");
-let lineCursor = 0;
+class InputHandler {
+  constructor(rawInput) {
+    this.lineSegments = rawInput.trim().split("\n");
+    this.currentSegmentIndex = 0;
+  }
 
-function* lineIterator(lines) {
-  for (const currentLine of lines) {
-    yield currentLine;
+  retrieveNextLine() {
+    if (!this.hasMoreSegments()) {
+      throw new Error("NoMoreInputException: No more lines available.");
+    }
+    const currentSegment = this.lineSegments[this.currentSegmentIndex];
+    this.currentSegmentIndex++;
+    return currentSegment;
+  }
+
+  retrieveNextInteger() {
+    return parseInt(this.retrieveNextLine(), 10);
+  }
+
+  retrieveNextStringArray() {
+    return this.retrieveNextLine().split(" ");
+  }
+
+  retrieveNextIntegerArray() {
+    return this.retrieveNextLine().split(" ").map(Number);
+  }
+
+  retrieveNextCharacterArray() {
+    return this.retrieveNextLine().split("");
+  }
+
+  hasMoreSegments() {
+    return this.currentSegmentIndex < this.lineSegments.length;
   }
 }
 
-const inputGenerator = lineIterator(dataLines);
-
-function fetchNextLine() {
-  const result = inputGenerator.next();
-  if (result.done) {
-    throw new Error("No more input lines available.");
-  }
-  return result.value;
-}
-
-const lineTransformers = new Map([
-  [1, (text) => Number(text)],
-  [2, (text) => text.split(" ")],
-  [4, (text) => text.split(" ").map(Number)],
-  [6, (text) => text.split("")],
-  [7, (text) => text.split("").map(Number)],
-]);
-
-function processLine(text, transformCode) {
-  const transformer = lineTransformers.get(transformCode);
-  if (transformer) {
-    return transformer(text);
-  }
-  return text; // Default: return as is if no specific transformer
-}
-
-function fetchNumericArray() {
-  return processLine(fetchNextLine(), 4);
-}
-
-function fetchInteger() {
-  return processLine(fetchNextLine(), 1);
-}
-
-function printOutput(content, joinMethod = '\n') {
-  if (Array.isArray(content)) {
-    console.log(content.join(joinMethod));
-  } else {
-    console.log(content);
-  }
-}
-
-class DisjointSet {
-  #parentLinks;
-  #treeRanks;
-
+class DisjointSetCollection {
   constructor(elementCount) {
-    this.#parentLinks = new Map();
-    this.#treeRanks = new Map();
+    this.parentRegistry = new Map();
+    this.componentSizes = new Map();
+
     for (let i = 0; i < elementCount; i++) {
-      this.#parentLinks.set(i, i);
-      this.#treeRanks.set(i, 0);
+      this.parentRegistry.set(i, i);
+      this.componentSizes.set(i, 1);
     }
   }
 
-  findSetRepresentative(nodeIdentifier) {
-    let current = nodeIdentifier;
+  findRoot(element) {
+    let current = element;
     const path = [];
 
-    while (this.#parentLinks.get(current) !== current) {
+    while (this.parentRegistry.get(current) !== current) {
       path.push(current);
-      current = this.#parentLinks.get(current);
+      current = this.parentRegistry.get(current);
     }
-    const root = current;
 
     for (const nodeOnPath of path) {
-      this.#parentLinks.set(nodeOnPath, root);
+      this.parentRegistry.set(nodeOnPath, current);
     }
-    return root;
+    return current;
   }
 
-  uniteNodes(nodeA, nodeB) {
-    let rootA = this.findSetRepresentative(nodeA);
-    let rootB = this.findSetRepresentative(nodeB);
+  uniteComponents(elementA, elementB) {
+    let rootA = this.findRoot(elementA);
+    let rootB = this.findRoot(elementB);
 
-    if (rootA !== rootB) {
-      const rankA = this.#treeRanks.get(rootA);
-      const rankB = this.#treeRanks.get(rootB);
-
-      if (rankA < rankB) {
-        [rootA, rootB] = [rootB, rootA];
-      }
-
-      this.#parentLinks.set(rootB, rootA);
-      if (rankA === rankB) {
-        this.#treeRanks.set(rootA, rankA + 1);
-      }
-      return true;
+    if (rootA === rootB) {
+      return;
     }
-    return false;
+
+    let sizeA = this.componentSizes.get(rootA);
+    let sizeB = this.componentSizes.get(rootB);
+
+    if (sizeA < sizeB) {
+      [rootA, rootB] = [rootB, rootA];
+      [sizeA, sizeB] = [sizeB, sizeA];
+    }
+
+    this.parentRegistry.set(rootB, rootA);
+    this.componentSizes.set(rootA, sizeA + sizeB);
+    this.componentSizes.delete(rootB);
   }
 
-  areInSameSet(nodeA, nodeB) {
-    return this.findSetRepresentative(nodeA) === this.findSetRepresentative(nodeB);
+  areInSameComponent(elementA, elementB) {
+    return this.findRoot(elementA) === this.findRoot(elementB);
+  }
+
+  getComponentSize(element) {
+    return this.componentSizes.get(this.findRoot(element));
   }
 }
 
-function applicationEntry() {
-  const initialParameters = fetchNumericArray();
-  const elementQuantity = initialParameters[0];
-  const queryQuantity = initialParameters[1];
+function executeProgram() {
+  const fileSystem = require("fs");
+  const rawInputData = fileSystem.readFileSync("/dev/stdin", "utf8");
+  const inputProcessor = new InputHandler(rawInputData);
 
-  const setManager = new DisjointSet(elementQuantity);
-  const collectedResponses = [];
+  const initialParameters = inputProcessor.retrieveNextIntegerArray();
+  const nodeCount = initialParameters[0];
+  const queryCount = initialParameters[1];
 
-  for (let q = 0; q < queryQuantity; q++) {
-    const currentQuery = fetchNumericArray();
+  const disjointSet = new DisjointSetCollection(nodeCount);
+  const resultAccumulator = [];
+
+  for (let i = 0; i < queryCount; i++) {
+    const currentQuery = inputProcessor.retrieveNextIntegerArray();
     const queryType = currentQuery[0];
     const firstArg = currentQuery[1];
     const secondArg = currentQuery[2];
 
     if (queryType === 0) {
-      setManager.uniteNodes(firstArg, secondArg);
+      disjointSet.uniteComponents(firstArg, secondArg);
     } else {
-      if (setManager.areInSameSet(firstArg, secondArg)) {
-        collectedResponses.push("Yes");
+      if (disjointSet.areInSameComponent(firstArg, secondArg)) {
+        resultAccumulator.push("Yes");
       } else {
-        collectedResponses.push("No");
+        resultAccumulator.push("No");
       }
     }
   }
 
-  printOutput(collectedResponses);
+  console.log(resultAccumulator.join("\n"));
 }
 
-applicationEntry();
+executeProgram();

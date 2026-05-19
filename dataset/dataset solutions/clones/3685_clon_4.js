@@ -1,35 +1,20 @@
-function computeOutcome(dataStream) {
-    let numericElements = [];
-    let currentSegment = "";
-    for (let charIndex = 0; charIndex < dataStream.length; charIndex++) {
-        let character = dataStream[charIndex];
-        if (character === ' ' || character === '\n' || character === '\r' || character === '\t') {
-            if (currentSegment.length > 0) {
-                numericElements.push(parseInt(currentSegment, 10));
-                currentSegment = "";
-            }
-        } else {
-            currentSegment += character;
-        }
-    }
-    if (currentSegment.length > 0) {
-        numericElements.push(parseInt(currentSegment, 10));
-    }
+function computeOutcome(rawInputString) {
+  const numericComponents = rawInputString.match(/\d+/g).map(Number);
 
-    let initialVal = numericElements[0];
-    let modifierVal = numericElements[1];
-    let flagVal = numericElements[2];
+  const [firstValue, secondValue, thirdValue] = numericComponents;
 
-    let firstTerm = modifierVal - 1;
-    let secondTerm = initialVal - flagVal;
+  const adjustedSecondValue = secondValue - 1;
+  const conditionalMultiplier = [1, 2][+!!thirdValue];
 
-    let multiplierFactor = (flagVal > 0 ? 1 : 0) + 1;
+  const productTermA = adjustedSecondValue;
+  const productTermB = firstValue - thirdValue;
+  const productTermC = conditionalMultiplier;
 
-    let divisor = initialVal * initialVal;
+  const divisorTerm = Math.pow(firstValue, 2);
 
-    let ultimateResult = (firstTerm * secondTerm * multiplierFactor) / divisor;
+  const finalResult = (productTermA * productTermB * productTermC) / divisorTerm;
 
-    console.log(ultimateResult);
+  console.log(finalResult);
 }
 
-computeOutcome(require("fs").readFileSync("/dev/stdin","utf8"));
+computeOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));

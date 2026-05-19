@@ -1,94 +1,107 @@
-function parseInteger ( inputString ) {
-  // Converts a string to an integer value
-  return parseInt( inputString );
+function parseInteger (inputString) {
+  // Converts a string to an integer.
+  return parseInt(inputString);
 }
 
-function parseFloatValue ( numericString ) {
-  // Converts a string to a floating-point number
-  return parseFloat( numericString );
+function parseDecimal (inputString) {
+  // Converts a string to a floating-point number.
+  return parseFloat(inputString);
 }
 
+function ProcessInput (rawData) {
+  // Split the raw input into individual lines.
+  const lines = rawData.split("\n");
 
-function ExecuteProgram ( programInput ) {
-  const inputLines = programInput.split( "\n" );
-  const initialParameters = inputLines[ 0 ].split( ' ' ).map( parseInteger );
+  // Parse the first line for initial parameters.
+  const initialParams = lines[0].split(' ').map(parseInteger);
+  const numA = initialParams[0]; // Represents N from original
+  const numB = initialParams[1]; // Represents M from original
 
-  // Retrieve primary lengths from parsed parameters
-  const lengthA = initialParameters[ 0 ];
-  const lengthB = initialParameters[ 1 ];
+  // Get the two strings from the input.
+  const strA = lines[1]; // Represents S from original
+  const strB = lines[2]; // Represents T from original
 
-  // Get the two input strings
-  const stringA = inputLines[ 1 ];
-  const stringB = inputLines[ 2 ];
-
-  // Function to compute the greatest common divisor of two numbers
-  function findGreatestCommonDivisor ( valOne , valTwo ) {
-    valOne = Math.abs( valOne );
-    valTwo = Math.abs( valTwo );
-    while ( valTwo ) {
-      var tempValue = valTwo;
-      valTwo = valOne % valTwo;
-      valOne = tempValue;
+  /**
+   * Computes the greatest common divisor (GCD) of two numbers.
+   * @param {number} val1 - The first number.
+   * @param {number} val2 - The second number.
+   * @returns {number} The GCD of val1 and val2.
+   */
+  function calculateGCD (val1, val2) {
+    let absoluteVal1 = Math.abs(val1);
+    let absoluteVal2 = Math.abs(val2);
+    while (absoluteVal2) {
+      let tempVar = absoluteVal2;
+      absoluteVal2 = absoluteVal1 % absoluteVal2;
+      absoluteVal1 = tempVar;
     }
-    return valOne;
+    return absoluteVal1;
   }
 
-  // Function to compute the least common multiple of two numbers
-  function calculateLeastCommonMultiple ( valOne , valTwo ) {
-    if ( ( typeof valOne !== 'number' ) || ( typeof valTwo !== 'number' ) )
-      return false; // Type check, though not strictly needed here
-    return ( !valOne || !valTwo ) ? 0 : Math.abs( ( valOne * valTwo ) / findGreatestCommonDivisor( valOne , valTwo ) );
+  /**
+   * Computes the least common multiple (LCM) of two numbers.
+   * @param {number} numX - The first number.
+   * @param {number} numY - The second number.
+   * @returns {number|boolean} The LCM of numX and numY, or false if inputs are not numbers.
+   */
+  function calculateLCM (numX, numY) {
+    if ((typeof numX !== 'number') || (typeof numY !== 'number')) {
+      return false; // Input validation
+    }
+    // LCM formula: |x*y| / GCD(x,y)
+    return (!numX || !numY) ? 0 : Math.abs((numX * numY) / calculateGCD(numX, numY));
   }
 
-  // Calculate the common step based on LCM of lengths
-  const commonMultipleStep = calculateLeastCommonMultiple( lengthB , lengthA );
+  // Calculate the common step size using LCM.
+  const commonMultipleStep = calculateLCM(numB, numA);
 
-  // Check initial character consistency
-  if ( stringA.charAt( 0 ) !== stringB.charAt( 0 ) ) {
-    console.log( -1 );
+  // Check the first characters for an early exit condition.
+  if (strA.charAt(0) !== strB.charAt(0)) {
+    console.log(-1);
     return;
   }
 
-  // Iterate through potential synchronization points
-  for ( var mainLoopIndex = commonMultipleStep; mainLoopIndex <= lengthA * lengthB; mainLoopIndex += commonMultipleStep ) {
-    var charMap = []; // Map to store characters at synchronized positions
-    var conflictDetected = false; // Flag to indicate a mismatch
+  // Iterate through potential common lengths.
+  for (let currentIteration = commonMultipleStep; currentIteration <= numA * numB; currentIteration += commonMultipleStep) {
+    // Initialize a map to store characters at specific indices.
+    let charMap = [];
+    let hasConflict = false; // Flag to detect mismatches
 
-    // Populate charMap with characters from stringA
-    for ( var subLoopIndex = 1; subLoopIndex < lengthA; subLoopIndex++ ) {
-      charMap[ ( subLoopIndex * mainLoopIndex ) / lengthA ] = stringA.charAt( subLoopIndex );
+    // Populate charMap based on strA.
+    for (let innerIndex = 1; innerIndex < numA; innerIndex++) {
+      charMap[innerIndex * currentIteration / numA] = strA.charAt(innerIndex);
     }
 
-    // Check and populate charMap with characters from stringB
-    for ( var subLoopIndex = 1; subLoopIndex < lengthB; subLoopIndex++ ) {
-      var targetChar = stringB.charAt( subLoopIndex );
+    // Check and populate charMap based on strB.
+    for (let innerIndex = 1; innerIndex < numB; innerIndex++) {
+      let targetChar = strB.charAt(innerIndex); // Character from strB
 
-      // If a character already exists at this synchronized position
-      if ( charMap[ ( subLoopIndex * mainLoopIndex ) / lengthB ] ) {
-        // Check for conflict
-        if ( targetChar !== charMap[ ( subLoopIndex * mainLoopIndex ) / lengthB ] ) {
-          conflictDetected = true;
-          break; // Exit inner loop if conflict found
+      // If an entry already exists in charMap for this position.
+      if (charMap[innerIndex * currentIteration / numB]) {
+        // Check for character mismatch.
+        if (targetChar !== charMap[innerIndex * currentIteration / numB]) {
+          hasConflict = true; // Conflict found
+          break; // Exit inner loop
         }
       } else {
-        // Otherwise, add the character from stringB
-        charMap[ ( subLoopIndex * mainLoopIndex ) / lengthB ] = stringB.charAt( subLoopIndex );
+        // No entry, so add the character from strB.
+        charMap[innerIndex * currentIteration / numB] = strB.charAt(innerIndex);
       }
     }
 
-    // If no conflict was detected for this step
-    if ( conflictDetected ) {
-      continue; // Try the next synchronization step
+    // If a conflict was found, skip to the next iteration.
+    if (hasConflict) {
+      continue;
     }
 
-    // If we reached here, a valid synchronization point is found
-    console.log( mainLoopIndex );
-    return; // Exit the program
+    // If no conflict, this is the smallest common length.
+    console.log(currentIteration);
+    return; // Exit the function
   }
 
-  // If no synchronization point is found after all iterations
-  console.log( -1 );
+  // If no common length was found after all iterations.
+  console.log(-1);
 }
 
-// Read input from standard input and execute the main program
-ExecuteProgram( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

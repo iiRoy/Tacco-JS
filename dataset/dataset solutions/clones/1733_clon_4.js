@@ -1,121 +1,81 @@
 "use strict";
 
-const dataStream = require("node:fs").readFileSync(0, "utf8").split(/\s+/).filter(Boolean);
-let streamPosition = 0;
+const fileSystem = require("fs");
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+const inputTokens = rawInputContent.match(/\S+/g);
+let tokenPointer = 0;
 
-const obtainNextToken = () => dataStream[streamPosition++];
-const convertToNumber = () => Number(obtainNextToken());
-const convertToLargeNumber = () => BigInt(obtainNextToken());
+const fetchNextNumber = () => Number(inputTokens[tokenPointer++]);
+const fetchNextBigInt = () => BigInt(inputTokens[tokenPointer++]);
 
-const primeModulus = 1000000007;
+const getSmallerBigInt = (valueOne, valueTwo) => (valueOne > valueTwo ? valueTwo : valueOne);
 
-const calculateProductModulo = (...factorElements) => {
-    let accumulatedProduct = BigInt(factorElements[0]);
-    const currentMod = BigInt(primeModulus);
-    for (let idx = 1; idx < factorElements.length; ++idx) {
-        accumulatedProduct = (accumulatedProduct * BigInt(factorElements[idx])) % currentMod;
-    }
-    return Number(accumulatedProduct);
-};
+const performMainCalculation = () => {
+    const totalCount = fetchNextNumber();
+    let initialValA1 = fetchNextBigInt();
+    let initialValA2 = fetchNextBigInt();
 
-const performModularExponentiation = (baseVal, exponentVal) => {
-    if (exponentVal === 0) return 1;
-    if (exponentVal % 2 === 1) {
-        return calculateProductModulo(baseVal, performModularExponentiation(baseVal, exponentVal - 1));
-    } else {
-        const halfPowerResult = performModularExponentiation(baseVal, exponentVal / 2);
-        return calculateProductModulo(halfPowerResult, halfPowerResult);
-    }
-};
+    const remainingBigInts = Array.from({ length: totalCount - 2 }, fetchNextBigInt);
+    const cumulativeXorOfOthers = remainingBigInts.reduce((accumulator, currentElement) => accumulator ^ currentElement, 0n);
 
-const findModularInverse = (valueToInvert) => {
-    return performModularExponentiation(valueToInvert, primeModulus - 2);
-};
+    const operationTimeLimit = Date.now() + 1900;
 
-let storedFactorials = [];
-let storedInverseFactorials = [];
+    const recursiveProcess = (currentA1State, currentA2State, currentAccumulatedAnswer) => {
+        const currentCombinedXorState = currentA1State ^ currentA2State ^ cumulativeXorOfOthers;
 
-const setupCombinatorialTables = (upperLimit) => {
-    storedFactorials.length = upperLimit + 1;
-    storedFactorials[0] = storedFactorials[1] = 1;
-    for (let num = 2; num <= upperLimit; ++num) {
-        storedFactorials[num] = calculateProductModulo(storedFactorials[num - 1], num);
-    }
-
-    storedInverseFactorials.length = upperLimit + 1;
-    storedInverseFactorials[0] = storedInverseFactorials[1] = 1;
-    storedInverseFactorials[upperLimit] = findModularInverse(storedFactorials[upperLimit]);
-
-    for (let num = upperLimit; num > 1; --num) {
-        storedInverseFactorials[num - 1] = calculateProductModulo(storedInverseFactorials[num], num);
-    }
-};
-
-const computeCombinations = (total, choose) => {
-    return calculateProductModulo(storedFactorials[total], storedInverseFactorials[choose], storedInverseFactorials[total - choose]);
-};
-
-const computePermutations = (total, choose) => {
-    return calculateProductModulo(storedFactorials[total], storedInverseFactorials[total - choose]);
-};
-
-const sanitizeModuloResult = (value) => {
-    return (value % primeModulus + primeModulus) % primeModulus;
-};
-
-const operationStartMark = Date.now() + 1900;
-
-const determineHighestBitIndex = (bigIntValue) => {
-    if (bigIntValue === 0n) return -1n;
-    return BigInt(bigIntValue.toString(2).length - 1);
-};
-
-const selectMinimumBigInt = (valA, valB) => {
-  return (valA > valB) ? valB : valA;
-};
-
-const executeProblemSolution = () => {
-    const totalElements = convertToNumber();
-    let primaryOperand = convertToLargeNumber();
-    let secondaryOperand = convertToLargeNumber();
-
-    let cumulativeXOR = 0n;
-    for (let elementCounter = 2; elementCounter < totalElements; elementCounter++) {
-        cumulativeXOR ^= convertToLargeNumber();
-    }
-
-    const transformRecursively = (currentP, currentS, currentAccumulatedCost) => {
-        const currentXORState = currentP ^ currentS ^ cumulativeXOR;
-
-        if (currentXORState === 0n) {
-            return currentAccumulatedCost;
+        if (currentCombinedXorState === 0n) {
+            return currentAccumulatedAnswer;
         }
 
-        if (currentP === 1n || Date.now() > operationStartMark) {
-            return -1n;
+        if (currentA1State === 1 || Date.now() > operationTimeLimit) {
+            return -1;
         }
 
-        const highestBitPos = determineHighestBitIndex(currentXORState);
-        if (highestBitPos === -1n) return currentAccumulatedCost; 
-        
-        const relevantBitMask = 1n << highestBitPos;
+        const findAndApplyBitAdjustmentRecursively = (bitIndex) => {
+            if (bitIndex < 0) {
+                return { success: false, errorEncountered: true };
+            }
 
-        const transferAmountPrimary = (currentP % relevantBitMask) + 1n;
-        const transferAmountSecondary = relevantBitMask - (currentS % relevantBitMask);
-        
-        const actualTransfer = selectMinimumBigInt(transferAmountPrimary, transferAmountSecondary);
+            const currentBitPositionMask = 1n << BigInt(bitIndex);
+            if ((currentCombinedXorState & currentBitPositionMask) === 0n) {
+                return findAndApplyBitAdjustmentRecursively(bitIndex - 1);
+            }
 
-        if (actualTransfer < currentP) {
-            return transformRecursively(currentP - actualTransfer, currentS + actualTransfer, currentAccumulatedCost + actualTransfer);
-        } else {
-            return -1n;
+            let proposedShiftAmount = (currentA1State & (currentBitPositionMask - 1n)) + 1n;
+            proposedShiftAmount = getSmallerBigInt(proposedShiftAmount, currentBitPositionMask - (currentA2State & (currentBitPositionMask - 1n)));
+
+            if (proposedShiftAmount < currentA1State) {
+                return {
+                    success: true,
+                    nextA1: currentA1State - proposedShiftAmount,
+                    nextA2: currentA2State + proposedShiftAmount,
+                    amountAddedToAnswer: proposedShiftAmount
+                };
+            } else {
+                return { success: false, errorEncountered: true };
+            }
+        };
+
+        const adjustmentResult = findAndApplyBitAdjustmentRecursively(40);
+
+        if (adjustmentResult.errorEncountered) {
+            return -1;
         }
+        if (!adjustmentResult.success) {
+            return -1;
+        }
+
+        return recursiveProcess(
+            adjustmentResult.nextA1,
+            adjustmentResult.nextA2,
+            currentAccumulatedAnswer + adjustmentResult.amountAddedToAnswer
+        );
     };
 
-    return transformRecursively(primaryOperand, secondaryOperand, 0n);
+    return recursiveProcess(initialValA1, initialValA2, 0n);
 };
 
-const finalResult = executeProblemSolution();
-if (finalResult !== undefined) {
-    console.log(String(finalResult));
+const finalOutcome = performMainCalculation();
+if (finalOutcome !== undefined) {
+    console.log(String(finalOutcome));
 }

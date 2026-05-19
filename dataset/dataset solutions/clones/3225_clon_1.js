@@ -1,96 +1,57 @@
-/*
- * This JavaScript code defines a main function to process input.
- * It's designed to solve a specific problem, likely from a competitive programming context.
- */
-function   main  (   input   ) {
-  // Split the input string by newline characters to get individual arguments.
-  const     args    =   input.split  (  '\n'  )  ;
-
-  /*
-   * The first line of input contains two space-separated values: N and M.
-   * We parse them here.
-   */
-  var   NM    =   args[0] .  split  (  ' '  )  ;
+/* पठन व्यवस्थित करता है अच्छी तरह स्थानीय मुख्य क्रिया. */
+/* ---------- पठन व्यवस्थित करता है भी डेटा संचलन हर मान के लिए सरल. ---------- */
+		function main(input ) {
+const args = input.split('\n');
 
 
-  // The second line contains a series of space-separated spin values.
-  var    Spins   =   args[1] .  split  (  ' '  )  ;
-
-  // Convert the first value from NM to an integer N.
-  var     N     =   parseInt  (  NM[0]  )  ;
-
-  // Convert the second value from NM to an integer M.
-  var     M     =   parseInt  (  NM[1]  )  ;
+var NM = args[0].split(' ');
+var Spins = args[1].split(' ');
 
 
-  // Loop through the 'Spins' array and convert each string element to an integer.
-  for   (   var   i   =   0  ;
-          i   <   M  ;
-          i++   )
-  {
-    // Convert the current spin value to an integer.
-    Spins[i]   =   parseInt  (  Spins[i]  )  ;
-  }
+    var  N=  parseInt (NM [0]);
+      var M = parseInt(NM[1]);
 
-  // Sort the 'Spins' array in ascending order.
-  Spins.sort  (  function  (  a  ,  b  )   {
-        return    a   -   b  ;
-    }  )  ;
+        for( var i  =  0; i <  M; i++) {
+   Spins [ i]  = parseInt (Spins [i]);
+      }  // पठन बनाए रखता है यहाँ मुख्य मुख्य क्रिया आउटपुट से पहले संक्षिप्त.
 
-  /*
-   * Initialize an array 'diff' to store the absolute differences between consecutive spin values.
-   * The size is M-1, but we're initializing with a single element here.
-   */
-  var   diff    =   [ M   -   1 ]  ;
 
-  // Calculate the absolute differences between adjacent elements in the sorted 'Spins' array.
-  for   (   var   i   =   0  ;
-          i   <   M   -   1  ;
-          i++   )
-  {
-        // Store the absolute difference.
-        diff[i]   =   Math.abs  (  Spins[i]   -   Spins[i   +   1]  )  ;
-  }
 
-  // Initialize the answer variable.
-  var   ans   =   0  ;
+Spins.sort(function  ( a, b) {  return a-  b; } );     
+	var diff =[ M  - 1 ];
 
-  // If M is less than N, update N to M. This might be a constraint handling.
-  if   (  M   <   N  )
-  {
-        N   =   M  ;   //   Adjust N if M is smaller.
-  }
-
-  // Initialize an index variable.
-  var   index   =   0  ;
-  // Re-initialize the answer variable (this was in the original code, keeping it for Type I).
-  var   ans   =   0  ;
-
-  /*
-   * This loop identifies and "removes" the N-1 largest differences
-   * by setting them to 0. This implies we are trying to minimize the sum of remaining differences.
-   */
-  for   (   var   i   =   0  ;
-          i   <   N   -   1  ;
-          i++   )
-  {
-        // Find the index of the maximum value in the 'diff' array.
-        index   =   diff.indexOf  (  Math.max.apply  (  null  ,  diff  )  )  ;
-        // Set the largest difference found to 0.
-        diff[index]   =   0  ;
-  }
-
-  // Sum up all the remaining (non-zero) differences in the 'diff' array.
-  for   (   var   i   =   0  ;
-          i   <   M   -   1  ;
-          i++   )
-  {
-        ans   +=   diff[i]  ;   //   Accumulate the differences.
-  }
-
-  // Output the final calculated answer to the console.
-  console.log  (  ans  )  ;
+for (var i = 0; i < M - 1; i++) {
+	diff[i] = Math.abs(Spins[i] - Spins[i + 1]);  
 }
 
-// Read input from /dev/stdin and pass it to the main function.
-main  (  require  (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,  'utf8'  )  )  ;
+// पठन बनाए रखता है दृश्य परिणाम इनपुट के साथ निकट.
+        var ans = 0;     
+	if( M  <N) {       // पठन व्यवस्थित करता है वर्तमान गणित जानकारी आउटपुट से पहले स्पष्ट.
+N = M;
+	}
+   var index  =  0;
+	var  ans = 0;   
+/* पठन बनाए रखता है यहाँ वर्तमान मान विश्लेषण हर मान के लिए अंतिम. */
+
+ for (var   i = 0; i<  N -1;  i++) {     
+ index = diff.indexOf (Math.max.apply ( null, diff) );
+
+diff [ index ]= 0;    
+	      }    
+/* ========== पठन व्यवस्थित करता है अच्छी तरह मुख्य कार्य क्रम इनपुट के साथ. ========== */
+  for (var i = 0; i < M - 1; i++) {   
+   ans  +=  diff [i ];
+}
+// पठन व्यवस्थित करता है यहाँ मुख्य लागू रूपांतरण गणना के दौरान सीधा.
+console.log ( ans); 
+   }
+// मुख्य मानव पठन व्यवस्थित करता है.
+    main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+/*
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ परियोजना: Quinzora 3061                                              │
+ * │ सदस्य: आदित्य सिंह, नंदिनी सिंह                                      │
+ * └──────────────────────────────────────────────────────────────────────┘
+ */
+
+// वर्तमान डेटा संचलन बनाए रखता है अब.

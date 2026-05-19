@@ -1,80 +1,91 @@
 const fileSystem = require('fs');
-const entireContent = fileSystem.readFileSync(process.stdin.fd, 'utf8');
-const lineBuffer = entireContent.trim().split('\n');
-let currentLineIndex = 0;
+const standardInputDescriptor = process.stdin.fd;
+const inputSize = fileSystem.fstatSync(standardInputDescriptor).size;
+const dataBuffer = Buffer.alloc(inputSize);
+const bytesTransferred = fileSystem.readSync(standardInputDescriptor, dataBuffer, 0, inputSize, 0);
+const rawInputLines = dataBuffer.toString('utf8', 0, bytesTransferred).split('\n');
 
-const extractNumber = () => {
-    return parseInt(lineBuffer[currentLineIndex++], 10);
+let currentInputPointer = 0;
+
+const retrieveNextNumericLine = () => {
+    const value = rawInputLines[currentInputPointer];
+    currentInputPointer++;
+    return Number(value);
 };
 
-const determineOutcome = (maximumJump, nodeCount, offsetValues) => {
-    const nodeBoundary = nodeCount + 1;
-    const connectionMap = new Map();
+const createDistanceMatrix = (dimension) => {
+    return Array.from({ length: dimension }, (_, rowIndex) =>
+        Array.from({ length: dimension }, (_, colIndex) =>
+            rowIndex === colIndex ? 0 : Infinity
+        )
+    );
+};
 
-    for (let currentSpot = 0; currentSpot <= nodeBoundary; currentSpot++) {
-        connectionMap.set(currentSpot, []);
-    }
+const computeAllPaths = (distanceMatrix) => {
+    const matrixDimension = distanceMatrix.length;
 
-    for (let initialSpot = 0; initialSpot <= nodeCount; initialSpot++) {
-        for (let stepSize = 0; stepSize < maximumJump; stepSize++) {
-            let potentialDestination = initialSpot + stepSize;
-            let adjustedDestination = potentialDestination + (potentialDestination < nodeBoundary ? offsetValues[potentialDestination] : 0);
-            
-            let finalDestination = Math.min(Math.max(adjustedDestination, 0), nodeBoundary);
-
-            if (finalDestination !== initialSpot) {
-                connectionMap.get(initialSpot).push(finalDestination);
+    for (let intermediateNode = 0; intermediateNode < matrixDimension; intermediateNode++) {
+        for (let sourceNode = 0; sourceNode < matrixDimension; sourceNode++) {
+            for (let targetNode = 0; targetNode < matrixDimension; targetNode++) {
+                distanceMatrix[sourceNode][targetNode] = Math.min(
+                    distanceMatrix[sourceNode][targetNode],
+                    distanceMatrix[sourceNode][intermediateNode] + distanceMatrix[intermediateNode][targetNode]
+                );
             }
         }
     }
-
-    const locateReachableSet = (beginNode, graphStructure) => {
-        const visitedLocations = new Set();
-        const explorationQueue = [beginNode];
-        visitedLocations.add(beginNode);
-
-        while (explorationQueue.length > 0) {
-            const currentPosition = explorationQueue.shift();
-            for (const adjacentPosition of graphStructure.get(currentPosition) || []) {
-                if (!visitedLocations.has(adjacentPosition)) {
-                    visitedLocations.add(adjacentPosition);
-                    explorationQueue.push(adjacentPosition);
-                }
-            }
-        }
-        return visitedLocations;
-    };
-
-    const reachableFromOrigin = locateReachableSet(0, connectionMap);
-
-    const invertedConnectionMap = new Map();
-    for (let currentSpot = 0; currentSpot <= nodeBoundary; currentSpot++) {
-        invertedConnectionMap.set(currentSpot, []);
-    }
-    for (const [sourcePoint, targetPoints] of connectionMap.entries()) {
-        for (const targetPoint of targetPoints) {
-            invertedConnectionMap.get(targetPoint).push(sourcePoint);
-        }
-    }
-
-    const canReachTerminal = locateReachableSet(nodeBoundary, invertedConnectionMap);
-
-    for (let checkSpot = 0; checkSpot <= nodeCount; checkSpot++) {
-        if (reachableFromOrigin.has(checkSpot) && !canReachTerminal.has(checkSpot)) {
-            return false;
-        }
-    }
-    return true;
+    return distanceMatrix;
 };
 
-let currentMaxJump;
-while ((currentMaxJump = extractNumber()) !== 0) {
-    const totalNodes = extractNumber();
-    const displacementArray = new Array(totalNodes + 2);
-    displacementArray[0] = 0;
-    displacementArray[totalNodes + 1] = 0;
-    for (let currentIdx = 1; currentIdx <= totalNodes; currentIdx++) {
-        displacementArray[currentIdx] = extractNumber();
+const calculateNextPosition = (startNode, stepCount, totalNodesCount, pathDataArray) => {
+    const potentialIndex = startNode + stepCount;
+    const dataValue = (potentialIndex < totalNodesCount + 1) ? pathDataArray[potentialIndex] : 0;
+    const rawCalculatedPosition = startNode + stepCount + dataValue;
+    return Math.min(Math.max(rawCalculatedPosition, 0), totalNodesCount + 1);
+};
+
+const evaluateReachability = (maxSteps, totalNodesCount, pathDataArray) => {
+    const graphMatrix = createDistanceMatrix(totalNodesCount + 2);
+
+    const generatedEdges = Array.from({ length: totalNodesCount + 1 }, (_, currentNode) =>
+        Array.from({ length: maxSteps }, (_, stepOffset) => {
+            const nextPosition = calculateNextPosition(currentNode, stepOffset, totalNodesCount, pathDataArray);
+            return (currentNode !== nextPosition) ? [currentNode, nextPosition] : null;
+        })
+    ).flat().filter(Boolean);
+
+    generatedEdges.forEach(([source, destination]) => {
+        graphMatrix[source][destination] = 1;
+    });
+
+    computeAllPaths(graphMatrix);
+
+    const hasUnreachableTerminal = Array.from({ length: totalNodesCount + 1 }, (_, nodeIndex) => nodeIndex)
+        .some(intermediatePoint =>
+            graphMatrix[0][intermediatePoint] < Infinity &&
+            graphMatrix[intermediatePoint][totalNodesCount + 1] === Infinity
+        );
+
+    return !hasUnreachableTerminal;
+};
+
+let currentMaxSteps;
+while (true) {
+    currentMaxSteps = retrieveNextNumericLine();
+    if (currentMaxSteps === 0) {
+        break;
     }
-    console.log(determineOutcome(currentMaxJump, totalNodes, displacementArray) ? 'OK' : 'NG');
+
+    const currentTotalNodes = retrieveNextNumericLine();
+    const pathData = new Array(currentTotalNodes + 2);
+    pathData[0] = 0;
+    pathData[currentTotalNodes + 1] = 0;
+
+    Array.from({ length: currentTotalNodes }, (_, index) => index + 1)
+        .forEach(nodeIndex => {
+            pathData[nodeIndex] = retrieveNextNumericLine();
+        });
+
+    const resultStatus = evaluateReachability(currentMaxSteps, currentTotalNodes, pathData) ? 'OK' : 'NG';
+    console.log(resultStatus);
 }

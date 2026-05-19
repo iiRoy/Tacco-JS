@@ -1,84 +1,76 @@
-( async   () => { /*
-    This script processes tabular data from standard input.
-    It calculates specific metrics based on row boundaries and column tallies.
-*/
-    let streamData = ''; // Buffer to accumulate all data read from stdin
+(async () => {
+    // This variable will accumulate all incoming data from standard input.
+    let rawData = '';
 
-    // Asynchronously read data chunks from standard input until EOF
-    for await ( const  dataSegment  of  process.stdin ) {
-        streamData += dataSegment; // Append each received chunk to the buffer
+    // Asynchronously iterate over chunks of data from stdin and append them.
+    for await (const dataPiece of process.stdin) {
+        rawData += dataPiece;
     }
 
-    let textLines = streamData.split( '\n' ); // Split the entire input buffer into an array of lines
+    // Split the accumulated data into an array of strings, one for each line.
+    let inputRows = rawData.split(/\n/);
 
-    // Extract the grid dimensions (height and width) from the very first line
-    // The first line is removed from 'textLines' using .shift()
-    const  [ heightDim, widthDim ]  =  textLines.shift()
-                                                .split( ' ' ) // Split the dimension string by space
-                                                .map(  val  =>  parseInt( val, 10 )  ); // Convert string parts to integers (base 10)
+    // Extract the height and width values from the first line.
+    // The first line is removed from the inputRows array.
+    // Values are split by whitespace and converted to numbers.
+    const [heightVal, widthVal] = inputRows.shift().split(/\s/).map(strVal => +strVal);
 
-    // Ensure 'textLines' only contains the actual data rows, up to the specified height
-    textLines = textLines.slice( 0, heightDim );
+    // Trim the inputRows array to only include 'heightVal' number of rows.
+    inputRows = inputRows.slice(0, heightVal);
 
-    // Process the remaining text lines:
-    // Each line is split by space, then each resulting string is converted to an integer and decremented by one.
-    const processedMatrix = textLines.map(  rowStr  =>
-        rowStr.split( ' ' ).map(  numStr  =>  parseInt( numStr, 10 ) - 1  )
+    // Process each remaining row: split by whitespace, convert to numbers, and subtract 1.
+    inputRows = inputRows.map(currentRow =>
+        currentRow.split(/\s/).map(numStr => numStr - 1)
     );
 
-    // Output the initial parsed dimensions and the fully processed data matrix for debugging
-    console.debug( heightDim, widthDim, processedMatrix );
+    // Output the parsed dimensions and the processed input rows for debugging/verification.
+    console.log(heightVal, widthVal, inputRows);
 
-    // Initialize an array 'columnTallies' with 'widthDim' elements, all set to zero.
-    // This array will store cumulative counts for each column.
-    let columnTallies = new Array( widthDim ).fill( 0 );
+    // Initialize an array 'cellTracker' of size 'widthVal' with all elements set to 0.
+    let cellTracker = new Array(widthVal).fill(0);
 
-    // Begin iterating through each row of the processed data matrix
-    for ( let  rowIndex = 0;  rowIndex < heightDim;  rowIndex++ ) {
-        let currentMinVal = 1000000; // Initialize a large sentinel value for tracking the minimum 'left' value in the current row
+    // Iterate through each row of the processed input data.
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        // Initialize a 'minValInRow' variable to a large number for tracking minimums within the current row's processing.
+        let minValInRow = 1_000_000;
 
-        // Iterate through each column for the current row
-        for ( let  colIndex = 0;  colIndex < widthDim;  colIndex++ ) {
-            // Optimization: If both the current column's tally and the row's running minimum are very high,
-            // it implies this path is already 'blocked' or non-optimal, so skip calculation for this cell.
-            if ( columnTallies[ colIndex ] > 500000  &&  currentMinVal > 500000 ) {
-                continue; // Move to the next column
+        // Iterate through each column for the current row.
+        for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+            // Optimization: If the current cell's tracker value and the row's minimum tracker are both very high, skip.
+            if (cellTracker[colIdx] > 500_000 && minValInRow > 500_000) {
+                continue;
             }
 
-            // Retrieve the start and end boundary indices for the current row from the processed matrix
-            const  [ startBound, endBound ]  =  processedMatrix[ rowIndex ];
+            // Destructure the start and end range values from the current input row.
+            const [startRange, endRange] = inputRows[rowIdx];
 
-            // Condition 1: If the current column index falls outside the defined boundaries for this row
-            if ( colIndex < startBound  ||  colIndex > endBound ) {
-                columnTallies[ colIndex ]++; // Increment the counter for this specific column
-                // Update 'currentMinVal' to be the minimum of its current value and the newly incremented column tally
-                currentMinVal = Math.min( currentMinVal, columnTallies[ colIndex ] );
-            }
-            // Condition 2: If the current column index is within bounds, AND 'currentMinVal' is still very high (sentinel value)
-            else if ( currentMinVal > 500000 ) {
-                columnTallies[ colIndex ] = 1000000; // Set this column's tally to a very high value, effectively 'blocking' it
-            }
-            // Condition 3: If the current column index is within bounds, AND 'currentMinVal' is not excessively high
-            else {
-                currentMinVal++; // Increment 'currentMinVal'
-                columnTallies[ colIndex ] = currentMinVal; // Assign the updated 'currentMinVal' to this column's tally
+            // Check if the current column index falls outside the specified range [startRange, endRange].
+            if (colIdx < startRange || colIdx > endRange) {
+                // If outside the range, increment the tracker for this cell.
+                cellTracker[colIdx]++;
+                // Update the minimum tracker value for the current row's processing.
+                minValInRow = Math.min(minValInRow, cellTracker[colIdx]);
+            } else if (minValInRow > 500_000) {
+                // If inside the range AND the minimum tracker is very high, set this cell's tracker to a very high value.
+                cellTracker[colIdx] = 1_000_000;
+            } else {
+                // If inside the range AND the minimum tracker is not very high, increment the minimum tracker.
+                minValInRow++;
+                // Assign the incremented minimum tracker value to the current cell's tracker.
+                cellTracker[colIdx] = minValInRow;
             }
         }
-        // After processing all columns for the current row, output the state of the column tallies
-        console.debug( columnTallies );
 
-        // Check if any column tally in the 'columnTallies' array is below a specific threshold (500000)
-        if ( columnTallies.some(  val  =>  val < 500000  ) ) {
-            // If such a value exists, calculate the minimum value among all column tallies,
-            // considering 500000 as the initial minimum if no tally is lower.
-            console.info(
-                columnTallies.reduce(  ( accumulator, currentMetric )  =>
-                    Math.min( accumulator, currentMetric ), 500000
-                )
-            );
+        // After processing all columns for the current row, log the updated cellTracker array.
+        console.log(cellTracker);
+
+        // Check if any element in 'cellTracker' is less than 500,000.
+        if (cellTracker.find(elementVal => elementVal < 500_000)) {
+            // If such an element exists, find the minimum value in 'cellTracker' (capped at 500,000) and log it.
+            console.log(cellTracker.reduce((accumulator, currentValue) => Math.min(accumulator, currentValue), 500_000));
         } else {
-            // If all column tallies are at or above the threshold, output -1
-            console.info( -1 );
+            // If all elements are 500,000 or greater, log -1.
+            console.log(-1);
         }
     }
-} )(); // End of the self-invoking asynchronous function
+})();

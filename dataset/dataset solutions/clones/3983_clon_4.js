@@ -1,25 +1,17 @@
-function evaluateStreamContent(incomingPayload) {
-    let initialSymbol = undefined;
-    const firstMatch = incomingPayload.match(/^./s);
-    if (firstMatch && firstMatch[0]) {
-        initialSymbol = firstMatch[0];
-    }
+function processData(sourceText) {
+    const textSegments = sourceText.split('\n');
+    const accessPoints = [
+        { row: 0, col: 0 },
+        { row: 1, col: 1 },
+        { row: 2, col: 2 }
+    ];
 
-    let secondarySymbol = undefined;
-    const secondMatch = incomingPayload.match(/\n.(.)/s);
-    if (secondMatch && secondMatch[1]) {
-        secondarySymbol = secondMatch[1];
-    }
+    const selectedSymbols = accessPoints.map(point => {
+        const targetLine = textSegments[point.row];
+        return targetLine ? targetLine[point.col] : undefined;
+    });
 
-    let tertiarySymbol = undefined;
-    const thirdMatch = incomingPayload.match(/\n[^\n]*\n..(.?)/s);
-    if (thirdMatch && thirdMatch[1]) {
-        tertiarySymbol = thirdMatch[1];
-    }
-
-    const compositeOutcome = String(initialSymbol) + String(secondarySymbol) + String(tertiarySymbol);
-    console.log(compositeOutcome);
+    console.log(selectedSymbols.join(''));
 }
 
-const acquiredDataChunk = require("node:fs").readFileSync("/dev/stdin", "utf-8");
-evaluateStreamContent(acquiredDataChunk);
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

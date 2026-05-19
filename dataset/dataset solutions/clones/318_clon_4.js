@@ -1,43 +1,46 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(incomingContent){
-    const fullLineSet = incomingContent.trim().split('\n');
-    let currentLinePointer = 0;
 
-    const traverseInputBlocks = (sourceLines, blockStartIdx) => {
-        const numberOfEntriesInBlock = Number(sourceLines[blockStartIdx]);
+process.stdin.on('data', function(rawInputData) {
+    const inputLines = rawInputData.trim().split("\n");
+    let lineIndex = 0;
 
-        if (numberOfEntriesInBlock === 0) {
-            return;
+    while (lineIndex < inputLines.length) {
+        const batchSize = parseInt(inputLines[lineIndex].trim());
+        lineIndex++;
+
+        if (batchSize === 0) {
+            break;
         }
 
-        const currentBlockData = sourceLines.slice(blockStartIdx + 1, blockStartIdx + 1 + numberOfEntriesInBlock);
+        const clientRevenueMap = new Map();
 
-        const aggregatedFinancials = currentBlockData.reduce((accumulatorMap, entryString) => {
-            const entryComponents = entryString.trim().split(' ');
-            const personIdentifier = Number(entryComponents[0]);
-            const quantityVal = Number(entryComponents[1]);
-            const priceVal = Number(entryComponents[2]);
-            const transactionValue = quantityVal * priceVal;
-            
-            const existingTotal = accumulatorMap.get(personIdentifier) || 0;
-            accumulatorMap.set(personIdentifier, existingTotal + transactionValue);
-            return accumulatorMap;
-        }, new Map());
+        for (let transactionCounter = 0; transactionCounter < batchSize; transactionCounter++) {
+            const clientData = inputLines[lineIndex].trim().split(" ");
+            lineIndex++;
 
-        const highEarners = Array.from(aggregatedFinancials.entries())
-            .filter(([, totalRevenue]) => totalRevenue >= 1000000)
-            .map(([individualId,]) => individualId)
-            .sort((idOne, idTwo) => idOne - idTwo);
+            const currentClientIdentifier = parseInt(clientData[0]);
+            const transactionValue1 = parseInt(clientData[1]);
+            const transactionValue2 = parseInt(clientData[2]);
 
-        if (highEarners.length > 0) {
-            console.log(highEarners.join('\n'));
+            const transactionResult = transactionValue1 * transactionValue2;
+
+            clientRevenueMap.set(
+                currentClientIdentifier,
+                (clientRevenueMap.get(currentClientIdentifier) || 0) + transactionResult
+            );
+        }
+
+        const qualifyingClients = Array.from(clientRevenueMap.entries())
+            .filter(([clientId, totalRevenue]) => totalRevenue >= 1000000)
+            .map(([clientId, totalRevenue]) => clientId);
+
+        if (qualifyingClients.length === 0) {
+            console.log("NA");
         } else {
-            console.log('NA');
+            qualifyingClients.forEach(clientId => {
+                console.log(clientId);
+            });
         }
-
-        traverseInputBlocks(sourceLines, blockStartIdx + 1 + numberOfEntriesInBlock);
-    };
-
-    traverseInputBlocks(fullLineSet, currentLinePointer);
+    }
 });

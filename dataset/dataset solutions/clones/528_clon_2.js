@@ -1,81 +1,56 @@
-const fileSystemUtility = require('fs'); // Obtain the Node.js File System module.
-const standardInputPath = '/dev/stdin';     // Define the standard input file path.
-const utf8Encoding = 'utf8';                 // Specify the character encoding for reading.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the raw input data from the standard input stream synchronously.
-let rawDataStream = fileSystemUtility.readFileSync(standardInputPath, utf8Encoding);
+// Process the raw input data
+var lineSegments = rawData.trim().split("\n");
 
-// Process the raw input stream: trim whitespace and split into an array of lines.
-let lineSegments = rawDataStream
-  .trim()
-  .split("\n");
+// Extract configuration values from the first line
+var configValues = lineSegments.shift().split(" ").map(Number);
 
-// Extract the first line, which contains three configuration parameters (N, M, P).
-// Split these parameters by space and convert them to numbers.
-let configValues = lineSegments
-  .shift()
-  .split(" ")
-  .map(Number);
+// Assign configuration values to descriptive variables
+var adjustedN = configValues[0] - 1; // N value, adjusted
+var countM = configValues[1];        // M value
+var targetP = configValues[2];       // P value
 
-// Assign the parsed configuration values to meaningfully named variables.
-// upperLimitAdjusted corresponds to (n - 1) from the original problem.
-let upperLimitAdjusted = configValues[0] - 1;
-// totalElements corresponds to 'm', indicating how many subsequent lines to process.
-let totalElements = configValues[1];
-// referencePoint corresponds to 'p', a critical value for calculations.
-let referencePoint = configValues[2];
+// Initialize an array to store relevant data points
+var dataPoints = [];
 
-// Initialize an array to store numerical elements that meet specific criteria.
-let relevantNumbers = [];
-
-// Iterate 'totalElements' times to process subsequent lines of input.
-for (let loopCounter = 0; loopCounter < totalElements; loopCounter++) {
-  // Extract and convert the next line from 'lineSegments' to a numerical value.
-  let fetchedValue = Number(lineSegments.shift());
-
-  // If the fetched value is not equal to the 'referencePoint', add it to our collection.
-  if (fetchedValue !== referencePoint) {
-    relevantNumbers.push(fetchedValue);
-  }
+// Populate dataPoints based on M and P
+for (let idx = 0; idx < countM; idx++) {
+    let currentVal = lineSegments.shift() - 0; // Convert string to number
+    if (currentVal !== targetP) {
+        dataPoints.push(currentVal);
+    }
 }
 
-// Ensure the 'referencePoint' itself is included in the array for sorting and calculation.
-relevantNumbers = relevantNumbers.concat(referencePoint);
+// Add the target P value to the data points
+dataPoints = dataPoints.concat(targetP);
 
-// Sort the 'relevantNumbers' array in ascending order numerically.
-relevantNumbers.sort(function(firstItemForComparison, secondItemForComparison) {
-  return firstItemForComparison - secondItemForComparison;
+// Sort the data points in ascending order
+dataPoints.sort(function(valA, valB) {
+    return valA - valB;
 });
 
-// Initialize 'minimumCalculatedValue' to a very large number,
-// so any valid calculation will be smaller.
-let minimumCalculatedValue = Infinity;
+// Initialize minimum cost with a very large value
+var minimumCost = Infinity;
 
-// Iterate through the sorted array to perform complex calculations and find the true minimum.
-relevantNumbers.forEach(function(currentValueInLoop, currentIndexInLoop) {
-
-  // Scenario 1: The current value is less than or equal to the reference point.
-  if (currentValueInLoop <= referencePoint) {
-    // This calculation requires a previous element, so skip the first element (index 0).
-    if (currentIndexInLoop !== 0) {
-      minimumCalculatedValue = Math.min(
-        minimumCalculatedValue,
-        (referencePoint - currentValueInLoop) * 2 + (upperLimitAdjusted - referencePoint + 1) + relevantNumbers[currentIndexInLoop - 1]
-      );
+// Iterate through the sorted data points to calculate minimum cost
+dataPoints.forEach(function(currentPoint, pointIndex) {
+    // Case 1: currentPoint is less than or equal to targetP
+    if (currentPoint <= targetP) {
+        if (pointIndex !== 0) {
+            // Calculate cost for moving left
+            minimumCost = Math.min(minimumCost, (targetP - currentPoint) * 2 + (adjustedN - targetP + 1) + dataPoints[pointIndex - 1]);
+        }
     }
-  }
 
-  // Scenario 2: The current value is greater than or equal to the reference point.
-  if (referencePoint <= currentValueInLoop) {
-    // This calculation requires a next element, so skip the last element.
-    if (currentIndexInLoop !== relevantNumbers.length - 1) {
-      minimumCalculatedValue = Math.min(
-        minimumCalculatedValue,
-        (currentValueInLoop - referencePoint) * 2 + referencePoint + (upperLimitAdjusted - relevantNumbers[currentIndexInLoop + 1] + 1)
-      );
+    // Case 2: currentPoint is greater than or equal to targetP
+    if (targetP <= currentPoint) {
+        if (pointIndex !== dataPoints.length - 1) {
+            // Calculate cost for moving right
+            minimumCost = Math.min(minimumCost, (currentPoint - targetP) * 2 + targetP + (adjustedN - dataPoints[pointIndex + 1] + 1));
+        }
     }
-  }
 });
 
-// Output the final computed minimum value, scaled by a factor of 100.
-console.log(minimumCalculatedValue * 100);
+// Output the final calculated minimum cost, scaled by 100
+console.log(minimumCost * 100);

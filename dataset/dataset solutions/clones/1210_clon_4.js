@@ -1,13 +1,25 @@
-function displayElapsedTime(timeValue) {
-    const totalSeconds = parseInt(timeValue, 10);
-    const momentInTime = new Date(totalSeconds * 1000);
+function Main(input) {
+    const totalSeconds = parseInt(input);
 
-    const hourComponent = momentInTime.getUTCHours();
-    const minuteComponent = momentInTime.getUTCMinutes();
-    const secondComponent = momentInTime.getUTCSeconds();
+    const unitDivisors = [3600, 60, 1];
 
-    const outputParts = [hourComponent, minuteComponent, secondComponent];
-    console.log(outputParts.join(':'));
+    const timeComponents = unitDivisors.reduce((accumulator, currentDivisor) => {
+        if (currentDivisor === 1) {
+            accumulator.parts.push(accumulator.remaining);
+        } else {
+            const componentValue = Math.floor(accumulator.remaining / currentDivisor);
+            accumulator.parts.push(componentValue);
+            accumulator.remaining %= currentDivisor;
+        }
+        return accumulator;
+    }, { remaining: totalSeconds, parts: [] }).parts;
+
+    console.log(timeComponents.join(":"));
 }
 
-displayElapsedTime(require("fs").readFileSync("/dev/stdin", "utf8"));
+function debug() {
+    var input = document.getElementById("input").value;
+    Main(input);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

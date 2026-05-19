@@ -1,113 +1,119 @@
-// This function serves as the primary entry point for processing input data.
-function ProcessInput( inputData ) {
-  // First, split the entire input string into an array of individual lines.
-  let  dataLines = inputData . split ( "\n" ) ;
+// This function processes the input data to calculate the maximum calorie gain.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  let parsedLines = rawData.split("\n");
 
-  // Extract and parse the first two crucial numbers from the initial line.
-  const  totalElements = parseInt ( dataLines [ 0 ] . split ( " " ) [ 0 ] ) ;
-  const  maxRange = parseInt ( dataLines [ 0 ] . split ( " " ) [ 1 ] ) ;
+  // Parse the number of items (numItems) and the total distance (totalDistance) from the first line.
+  let numItems = parseInt(parsedLines[0].split(" ")[0]);
+  let totalDistance = parseInt(parsedLines[0].split(" ")[1]);
 
-  // Initialize two arrays to store the positional coordinates and their corresponding values.
-  let  positions = new Array ( totalElements ) ;
-  let  values = new Array ( totalElements ) ;
+  // Initialize arrays to store item positions and their calorie values.
+  let itemPositions = new Array(numItems);
+  let itemValues = new Array(numItems);
 
-  // A marker variable to identify a specific index based on a midpoint condition.
-  let  midwayPoint = 0 ;
+  // Variable to track the index of the item closest to the midpoint from the origin.
+  let midpointIndex = 0;
 
-  // Loop through each subsequent line of input to populate the positions and values arrays.
-  for ( let  iterA = 0 ; iterA < totalElements ; iterA ++ ) {
-    // Temporarily split the current line to extract the two numbers.
-    let  currentParts = dataLines [ iterA + 1 ] . split ( " " ) ;
-    positions [ iterA ] = parseInt ( currentParts [ 0 ] ) ; // Store the position.
-    // Check if the current position is less than half the total range.
-    if ( positions [ iterA ] < maxRange / 2 ) {
-      midwayPoint = iterA ; // Update the midway point index.
+  // Loop through the input lines to populate item data.
+  for (let idxA = 0; idxA < numItems; idxA++) {
+    // Split each item's line into position and value.
+    let tempParts = parsedLines[idxA + 1].split(" ");
+    itemPositions[idxA] = parseInt(tempParts[0]);
+    // Update midpointIndex if the current item's position is less than half the total distance.
+    if (itemPositions[idxA] < totalDistance / 2) {
+      midpointIndex = idxA;
     }
-    values [ iterA ] = parseInt ( currentParts [ 1 ] ) ; // Store the value.
+    itemValues[idxA] = parseInt(tempParts[1]);
   }
 
-  // Initialize the variable to hold the maximum score found.
-  let  maximumScore = 0 ;
-  // Initialize a variable for accumulating sums during calculations.
-  let  currentAccumulation = 0 ;
+  // Initialize the maximum calorie gain found so far and the current running sum.
+  let maxCalorieGain = 0;
+  let currentCalorieGain = 0;
 
-  // First calculation phase: Traverse from left to right.
-  for ( let  iterA = 0 ; iterA < totalElements ; iterA ++ ) {
-    if ( iterA === 0 ) {
-      // For the very first item, calculate sum as value minus its position.
-      currentAccumulation = currentAccumulation + values [ iterA ] - positions [ iterA ] ;
+  // First pass: Calculate maximum gain by moving only in one direction (right from origin).
+  for (let idxA = 0; idxA < numItems; idxA++) {
+    if (idxA === 0) {
+      // For the first item, gain is value minus distance from origin.
+      currentCalorieGain = currentCalorieGain + itemValues[idxA] - itemPositions[idxA];
     } else {
-      // For subsequent items, add value and subtract the distance from the previous item.
-      currentAccumulation = currentAccumulation + values [ iterA ] - ( positions [ iterA ] - positions [ iterA - 1 ] ) ;
+      // For subsequent items, gain is value minus distance from previous item.
+      currentCalorieGain = currentCalorieGain + itemValues[idxA] - (itemPositions[idxA] - itemPositions[idxA - 1]);
     }
-    // Update the maximum score if the current accumulation is higher.
-    maximumScore = Math . max ( maximumScore , currentAccumulation ) ;
+    // Update the overall maximum gain.
+    maxCalorieGain = Math.max(maxCalorieGain, currentCalorieGain);
   }
 
-  // Second calculation phase: Explore scenarios moving backward from the midway point.
-  for ( let  iterA = midwayPoint ; iterA >= 0 ; iterA -- ) {
-    currentAccumulation = 0 ; // Reset accumulation for each outer loop iteration.
-    // Inner loop: Calculate sum from the start up to the current iterA.
-    for ( let  iterB = 0 ; iterB <= iterA ; iterB ++ ) {
-      if ( iterB === 0 ) {
-        currentAccumulation = currentAccumulation + values [ iterB ] - positions [ iterB ] ;
+  // Second pass: Consider moving right, then turning back left.
+  // Iterate from the midpoint index down to the origin.
+  for (let idxA = midpointIndex; idxA >= 0; idxA--) {
+    currentCalorieGain = 0; // Reset gain for each new starting point.
+    // Move right from origin up to current item 'idxA'.
+    for (let idxB = 0; idxB <= idxA; idxB++) {
+      if (idxB === 0) {
+        currentCalorieGain = currentCalorieGain + itemValues[idxB] - itemPositions[idxB];
       } else {
-        currentAccumulation = currentAccumulation + values [ iterB ] - ( positions [ iterB ] - positions [ iterB - 1 ] ) ;
+        currentCalorieGain = currentCalorieGain + itemValues[idxB] - (itemPositions[idxB] - itemPositions[idxB - 1]);
       }
-      maximumScore = Math . max ( maximumScore , currentAccumulation ) ; // Update global maximum.
+      maxCalorieGain = Math.max(maxCalorieGain, currentCalorieGain);
     }
-    // After calculating the forward path, subtract the cost of returning to the start.
-    currentAccumulation = currentAccumulation - positions [ iterA ] ;
-
-    // Inner loop: Calculate sum for remaining items from the end, moving towards iterA + 1.
-    for ( let  iterB = totalElements - 1 ; iterB > iterA ; iterB -- ) {
-      if ( iterB === totalElements - 1 ) {
-        // For the last item, consider the full distance from the end of the range.
-        currentAccumulation = currentAccumulation - ( maxRange - positions [ iterB ] ) + values [ iterB ] ;
+    // After reaching 'idxA', turn back and move left towards origin, then potentially past it.
+    // Subtract the distance traveled back to origin from 'idxA'.
+    currentCalorieGain = currentCalorieGain - itemPositions[idxA];
+    // Now move left from the end (numItems-1) towards 'idxA'.
+    for (let idxB = numItems - 1; idxB > idxA; idxB--) {
+      if (idxB === numItems - 1) {
+        // For the last item, subtract distance from totalDistance, add value.
+        currentCalorieGain = currentCalorieGain - (totalDistance - itemPositions[idxB]) + itemValues[idxB];
       } else {
-        // For other items, subtract distance from the next item.
-        currentAccumulation = currentAccumulation - ( positions [ iterB + 1 ] - positions [ iterB ] ) + values [ iterB ] ;
+        // For other items, subtract distance from next item, add value.
+        currentCalorieGain = currentCalorieGain - (itemPositions[idxB + 1] - itemPositions[idxB]) + itemValues[idxB];
       }
-      maximumScore = Math . max ( maximumScore , currentAccumulation ) ; // Update global maximum.
-    }
-  }
-
-  // Third calculation phase: Explore scenarios moving forward from midwayPoint + 1.
-  for ( let  iterA = midwayPoint + 1 ; iterA < totalElements ; iterA ++ ) {
-    currentAccumulation = 0 ; // Reset accumulation.
-    // Inner loop: Calculate sum from the end down to the current iterA.
-    for ( let  iterB = totalElements - 1 ; iterB >= iterA ; iterB -- ) {
-      if ( iterB === totalElements - 1 ) {
-        currentAccumulation = currentAccumulation + values [ iterB ] - ( maxRange - positions [ iterB ] ) ;
-      } else {
-        currentAccumulation = currentAccumulation - ( positions [ iterB + 1 ] - positions [ iterB ] ) + values [ iterB ] ;
-      }
-      maximumScore = Math . max ( maximumScore , currentAccumulation ) ; // Update global maximum.
-    }
-    // After calculating the backward path, subtract the cost of returning to the end.
-    currentAccumulation = currentAccumulation - ( maxRange - positions [ iterA ] ) ;
-
-    // Inner loop: Calculate sum for remaining items from the beginning, up to iterA - 1.
-    for ( let  iterB = 0 ; iterB < iterA ; iterB ++ ) {
-      if ( iterB === 0 ) {
-        currentAccumulation = currentAccumulation + values [ iterB ] - positions [ iterB ] ;
-      } else {
-        currentAccumulation = currentAccumulation + values [ iterB ] - ( positions [ iterB ] - positions [ iterB - 1 ] ) ;
-      }
-      maximumScore = Math . max ( maximumScore , currentAccumulation ) ; // Update global maximum.
+      maxCalorieGain = Math.max(maxCalorieGain, currentCalorieGain);
     }
   }
 
-  // Display the final computed maximum score.
-  console . log ( '%s' , maximumScore ) ;
+  // Third pass: Consider moving left, then turning back right.
+  // Iterate from the item just past the midpoint up to the end.
+  for (let idxA = midpointIndex + 1; idxA < numItems; idxA++) {
+    currentCalorieGain = 0; // Reset gain for each new starting point.
+    // Move left from the end (numItems-1) down to current item 'idxA'.
+    for (let idxB = numItems - 1; idxB >= idxA; idxB--) {
+      if (idxB === numItems - 1) {
+        // For the last item, gain is value minus distance from totalDistance.
+        currentCalorieGain = currentCalorieGain + itemValues[idxB] - (totalDistance - itemPositions[idxB]);
+      } else {
+        // For other items, gain is value minus distance from next item.
+        currentCalorieGain = currentCalorieGain - (itemPositions[idxB + 1] - itemPositions[idxB]) + itemValues[idxB];
+      }
+      maxCalorieGain = Math.max(maxCalorieGain, currentCalorieGain);
+    }
+    // After reaching 'idxA', turn back and move right towards totalDistance, then potentially past it.
+    // Subtract the distance traveled back to totalDistance from 'idxA'.
+    currentCalorieGain = currentCalorieGain - (totalDistance - itemPositions[idxA]);
+    // Now move right from the origin (0) towards 'idxA'.
+    for (let idxB = 0; idxB < idxA; idxB++) {
+      if (idxB === 0) {
+        // For the first item, add value, subtract distance from origin.
+        currentCalorieGain = currentCalorieGain + itemValues[idxB] - itemPositions[idxB];
+      } else {
+        // For other items, add value, subtract distance from previous item.
+        currentCalorieGain = currentCalorieGain + itemValues[idxB] - (itemPositions[idxB] - itemPositions[idxB - 1]);
+      }
+      maxCalorieGain = Math.max(maxCalorieGain, currentCalorieGain);
+    }
+  }
+
+  // Output the final maximum calorie gain.
+  console.log('%s', maxCalorieGain);
 }
 
-// This utility function is provided for debugging purposes, typically in a browser environment.
-function ExecuteDebug ( ) {
-  // Retrieve the text content from a specific HTML input field.
-  const  inputContent = document . getElementById ( "input" ) . value ;
-  ProcessInput ( inputContent ) ; // Pass the retrieved content to the main processing function.
+// This function is for debugging purposes, typically used in a browser environment.
+function performDebug() {
+  // Get input from a DOM element.
+  let browserInput = document.getElementById("input").value;
+  // Call the main processing function with the browser input.
+  ProcessInput(browserInput);
 }
 
-// Initiate the main processing logic by reading data from standard input.
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Execute the main processing function with input read from standard input (for Node.js environment).
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

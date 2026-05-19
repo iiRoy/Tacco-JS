@@ -1,50 +1,34 @@
-const obtainHighestWindowSum = (valSequence, windowSize) => {
-    if (valSequence.length < windowSize) {
+function calculateMaxTripletSum(dataSeries) {
+    if (dataSeries.length < 3) {
         console.log(undefined);
         return;
     }
 
-    const allWindowTotals = Array.from({ length: valSequence.length - windowSize + 1 }, (_, index) => {
-        return valSequence.slice(index, index + windowSize).reduce((acc, num) => acc + num, 0);
-    });
+    const maxFound = dataSeries.slice(0, dataSeries.length - 2).reduce((currentHighest, _, idx) => {
+        const currentTripletSum = dataSeries[idx] + dataSeries[idx + 1] + dataSeries[idx + 2];
+        return Math.max(currentHighest, currentTripletSum);
+    }, -Infinity);
 
-    const finalHighest = Math.max(...allWindowTotals);
-    console.log(finalHighest);
-};
+    console.log(maxFound);
+}
 
-const dataProcessor = () => {
-    const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const allInputLines = rawData.trim().split("\n");
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawLines = fileContent.trim().split('\n');
 
-    let currentCollection = [];
-    let windowDimension = 0;
-    let lineIndex = 0;
-    let firstDataSetEncountered = false;
+const terminationIndex = rawLines.indexOf('0 0');
+const effectiveLines = terminationIndex !== -1 ? rawLines.slice(0, terminationIndex) : rawLines;
 
-    while (lineIndex < allInputLines.length) {
-        const currentLineContent = allInputLines[lineIndex];
+effectiveLines.reduce((processingState, lineText, lineIndex) => {
+    const parsedNumbers = lineText.split(' ').map(Number);
 
-        if (currentLineContent === "0 0") {
-            if (firstDataSetEncountered) {
-                obtainHighestWindowSum(currentCollection, windowDimension);
-            }
-            break;
+    if (parsedNumbers.length === 2 || lineIndex === effectiveLines.length - 1) {
+        if (!processingState.isFirstGroup && processingState.currentAccumulatedNumbers.length > 0) {
+            calculateMaxTripletSum(processingState.currentAccumulatedNumbers);
         }
-
-        const parsedSegment = currentLineContent.split(" ").map(Number);
-
-        if (parsedSegment.length === 2) {
-            if (firstDataSetEncountered) {
-                obtainHighestWindowSum(currentCollection, windowDimension);
-            }
-            currentCollection = [];
-            windowDimension = parsedSegment[1];
-            firstDataSetEncountered = true;
-        } else {
-            currentCollection.push(parsedSegment[0]);
-        }
-        lineIndex++;
+        processingState.currentAccumulatedNumbers = [];
+        processingState.isFirstGroup = false;
+    } else {
+        processingState.currentAccumulatedNumbers.push(parsedNumbers[0]);
     }
-};
-
-dataProcessor();
+    return processingState;
+}, { currentAccumulatedNumbers: [], isFirstGroup: true });

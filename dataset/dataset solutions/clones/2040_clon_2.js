@@ -1,54 +1,58 @@
-const { inspect } = require("util");
+const { count } = require("console"); // The 'count' property from the console module is imported, though not utilized in this specific script.
 
 /**
- * Primary processing routine to compute a combinatorial result from input.
+ * The primary function responsible for processing input data and computing a final numerical result.
+ * It reads two numbers from the input and applies a specific combinatorial formula.
  *
- * @param {Array<string>} inputSegments The collection of text lines provided for processing.
- * @returns {number} The final computed numerical value.
+ * @param {string[]} inputData - An array of strings, where each string represents a line of input from the source.
+ * @returns {number} The calculated numerical outcome based on the input values.
  */
-function calculateCombinations( inputSegments ) {
-  // Extract two distinct numerical values from the input stream.
-  const [ valueOne, valueTwo ] = retrieveNumberArray();
+function calculateResult(inputData) {
+  // Retrieve two numerical values from the input stream using a helper function.
+  const [firstValue, secondValue] = readNumbersArray();
 
-  // Apply the combination formula C(n, 2) = n * (n - 1) / 2
-  // and sum the results for both extracted values.
-  const finalComputation = ( valueOne * ( valueOne - 1 ) / 2 ) +
-                           ( valueTwo * ( valueTwo - 1 ) / 2 );
+  // Apply the core algorithm: calculate the sum of combinations (n C 2) for both numbers.
+  // This formula is equivalent to (n * (n - 1)) / 2.
+  const finalCalculation = (firstValue * (firstValue - 1)) / 2 + (secondValue * (secondValue - 1)) / 2;
   
-  return finalComputation; // Deliver the outcome.
+  // Return the result of the computation.
+  return finalCalculation;
 }
 
 
+// --- Utility Functions for Input Handling ---
 
-// --- Input Acquisition Mechanisms ---
+// Reads the entire content from standard input, decodes it as UTF-8,
+// removes leading/trailing whitespace, and then splits it into an array of lines.
+const allInputLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-// Read all incoming data from standard input, process it, and split into lines.
-const sourceDataLines = require("fs"). readFileSync("/dev/stdin", "utf8"). trim(). split("\n");
+// A mutable index to keep track of which line is currently being processed from the input array.
+let currentLineIndex = 0;
 
-// A dynamic pointer indicating the current line being consumed.
-let currentLineIdx = 0;
+// A concise function to retrieve the next available line from the `allInputLines` array
+// and automatically increment the line index for subsequent calls.
+const fetchNextLine = () => allInputLines[currentLineIndex++];
 
-// Helper to fetch the next line as a raw string.
-const fetchStringLine = () => sourceDataLines[ currentLineIdx++ ];
+// Converts the next fetched line into a standard JavaScript Number.
+const readNumber = () => Number(fetchNextLine());
 
-// Helper to convert the next line into a standard JavaScript Number.
-const convertToNumber = () => Number( fetchStringLine() );
+// Converts the next fetched line into a JavaScript BigInt.
+const readBigInt = () => BigInt(fetchNextLine());
 
-// Helper to transform the next line into a JavaScript BigInt.
-const generateBigInt = () => BigInt( fetchStringLine() );
+// Fetches the next line and splits it into an array of strings using a space character as the delimiter.
+const splitLineIntoStrings = () => fetchNextLine().split(' ');
 
-// Helper to split the next line by spaces into an array of string tokens.
-const splitIntoStringTokens = () => fetchStringLine(). split(' ');
+// Fetches the next line, splits it into strings, and then maps each string part to a Number.
+const readNumbersArray = () => splitLineIntoStrings().map(Number);
 
-// Helper to parse the next line into an array of Numbers.
-const retrieveNumberArray = () => splitIntoStringTokens(). map(Number);
-
-// Helper to parse the next line into an array of BigInts.
-const retrieveBigIntArray = () => splitIntoStringTokens(). map(BigInt);
+// Fetches the next line, splits it into strings, and then maps each string part to a BigInt.
+const readBigIntsArray = () => splitLineIntoStrings().map(BigInt);
 
 
-// Initiate the main calculation process.
-const programResult = calculateCombinations( sourceDataLines );
+// --- Program Execution Entry Point ---
 
-// Output the calculated result to the console for display.
-console.log( programResult );
+// Invoke the main calculation function with the prepared input lines.
+const programOutput = calculateResult(allInputLines);
+
+// Display the final computed result to the standard output.
+console.log(programOutput);

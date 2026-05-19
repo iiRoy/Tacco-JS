@@ -1,49 +1,56 @@
-const processInput = (rawText) => {
-    const dataLines = rawText.trim().split('\n');
-    const [itemCountString, targetValueString] = dataLines[0].split(' ');
-    const numberOfItems = Number(itemCountString);
-    const targetThreshold = Number(targetValueString);
+"use strict";
 
-    const numericalPairs = dataLines.slice(1, numberOfItems + 1).map(line => line.split(' ').map(Number));
+const processInput = (rawInput) => {
+    const inputLines = rawInput.trim().split("\n");
 
-    let runningSum = 0;
-    const accumulatedSums = numericalPairs.map(item => {
-        runningSum += item[1];
-        return runningSum;
-    });
+    const [entryCountStr, thresholdValueStr] = inputLines[0].split(" ");
+    const entryCount = Number(entryCountStr);
+    const thresholdValue = Number(thresholdValueStr);
 
-    const transformedRecords = numericalPairs.map((pair, currentIdx) => {
-        let calculatedMetric;
-        if (currentIdx === 0) {
-            calculatedMetric = accumulatedSums[0];
+    const initialPairs = inputLines.slice(1, entryCount + 1).map(lineContent =>
+        lineContent.split(" ").map(Number)
+    );
+
+    let currentCumulativeSum = 0;
+    let previousQuantity = 0;
+
+    const cumulativeRecords = initialPairs.map((pairEntry, recordIndex) => {
+        const [identifierValue, quantityValue] = pairEntry;
+        let recordCumulativeQuantity;
+
+        if (recordIndex === 0) {
+            recordCumulativeQuantity = quantityValue;
+            currentCumulativeSum = quantityValue;
         } else {
-            calculatedMetric = accumulatedSums[0] + accumulatedSums[currentIdx - 1];
+            currentCumulativeSum += previousQuantity;
+            recordCumulativeQuantity = currentCumulativeSum;
         }
+
+        previousQuantity = quantityValue;
+
         return {
-            elementId: pair[0],
-            elementQuantity: pair[1],
-            cumulativeEvaluation: calculatedMetric
+            identifier: identifierValue,
+            quantity: quantityValue,
+            cumulativeQuantity: recordCumulativeQuantity
         };
     });
 
-    const firstMatchIndex = transformedRecords.findIndex(entry => entry.cumulativeEvaluation >= targetThreshold);
+    const matchingRecordIndex = cumulativeRecords.findIndex(
+        (recordItem) => recordItem.cumulativeQuantity >= thresholdValue
+    );
 
-    if (firstMatchIndex !== -1) {
-        const matchedRecord = transformedRecords[firstMatchIndex];
-        let outcomeIdentifier;
+    if (matchingRecordIndex !== -1) {
+        const matchedRecord = cumulativeRecords[matchingRecordIndex];
+        const priorRecord = cumulativeRecords[matchingRecordIndex - 1];
 
-        if (firstMatchIndex === 0) {
-            outcomeIdentifier = matchedRecord.elementId;
-        } else {
-            if (matchedRecord.cumulativeEvaluation - matchedRecord.elementQuantity < targetThreshold) {
-                outcomeIdentifier = matchedRecord.elementId;
-            } else {
-                outcomeIdentifier = transformedRecords[firstMatchIndex - 1].elementId;
-            }
-        }
-        console.log(outcomeIdentifier);
+        const finalIdentifier =
+            (matchedRecord.cumulativeQuantity - matchedRecord.quantity < thresholdValue)
+                ? matchedRecord.identifier
+                : priorRecord.identifier;
+
+        console.log(finalIdentifier);
     } else {
-        console.log(JSON.stringify(transformedRecords));
+        console.log(JSON.stringify(cumulativeRecords));
     }
 };
 

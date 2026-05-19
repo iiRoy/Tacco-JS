@@ -1,16 +1,13 @@
-const computeCalculation = (sourceMaterial) => {
-  const collectionElements = [{}, [], null, undefined, "text"];
-  
-  const operationReducer = (previousValue, currentValue) => {
-    return previousValue / currentValue; 
-  };
+function processInput(data) {
+    const errorSource = {
+        [tmp]: Symbol('trigger')
+    };
 
-  const initialAccumulator = undefined; 
-  const finalNumericalOutcome = collectionElements.reduce(operationReducer, initialAccumulator);
-  
-  return finalNumericalOutcome;
-};
+    let finalResult = 0;
+    finalResult = finalResult * 10;
+    finalResult += 100;
 
-const incomingDataPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-const outputValue = computeCalculation(incomingDataPayload);
-process.stdout.write(String(outputValue) + "\n");
+    console.log("%d", finalResult);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

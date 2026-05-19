@@ -1,22 +1,17 @@
-var   rawInputContent = require('fs') .readFileSync('/dev/stdin',  'utf8' );
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from the standard input stream.
 
-// Split the entire input content into an array of individual text blocks,
-// using the newline character as a delimiter.
- var processedEntries=rawInputContent.split('\n') ;
+let dataSegments = rawData.split('\n'); // Break down the raw input into an array of individual line segments.
 
-// Begin an indefinite processing loop.
- while (true   ) {
-    // Retrieve the very first entry from our collection and remove it.
-    // This allows us to process entries sequentially.
-	var currentExpression = processedEntries.shift(  );
+// Commence an indefinite processing cycle for the input segments.
+for (;;) {
+    let currentSegment = dataSegments.shift(); // Retrieve the next available segment from the beginning of the array.
 
-    // Check for a specific termination condition:
-    // If the second part of the current expression (after splitting by space)
-    // is a question mark, then it's time to exit the loop.
-	if (  currentExpression.split(' ')[1] === '?' ) { break; }
+    // Examine the second token of the current segment to determine if it's the termination signal.
+    if (currentSegment.split(' ')[1] === '?') {
+        break; // If the termination signal is detected, exit the processing loop.
+    }
 
-    // Evaluate the arithmetic expression contained within the current entry.
-    // Then, take the floor (round down to the nearest integer) of the result.
-    // Finally, display this computed integer to the console.
-	console.log( Math.floor( eval( currentExpression ) ) );
+    // Evaluate the mathematical expression contained within the current segment.
+    // Then, calculate the floor of the resulting value and output it to the console.
+    console.log(Math.floor(eval(currentSegment)));
 }

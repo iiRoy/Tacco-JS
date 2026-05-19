@@ -1,80 +1,89 @@
-/* This script processes graph-like data to find the maximum possible score
-   by traversing nodes, considering cycles and a maximum number of steps. */
-let rawData = `10 58
+var rawData = `10 58
 9 1 6 7 8 4 3 2 10 5
-695279662 988782657 -119067776 382975538 -151885171 -177220596 -169777795 37619092 389386780 980092719`;
+695279662 988782657 -119067776 382975538 -151885171 -177220596 -169777795 37619092 389386780 980092719`
+// This variable holds the raw input data for processing.
+// The original code had commented-out alternative inputs,
+// but the final active input is preserved here.
 
-const textRows = rawData.split('\n');
+const textLines = rawData.split('\n'); // Split the input string into an array of lines.
+let [numElements, maxSteps] = textLines[0].split(' ').map(Number); // Parse N and K from the first line.
+const pathArray = textLines[1].split(' ').map(Number); // Parse P array from the second line.
+const costArray = textLines[2].split(' ').map(Number); // Parse C array from the third line.
 
-let [nodeCount, maxSteps] = textRows[0].split(' ').map(Number);
-const nextNodes = textRows[1].split(' ').map(Number);
-const nodeValues = textRows[2].split(' ').map(Number);
+// Add a null placeholder at the beginning of both arrays.
+// This is to make them 1-indexed, matching problem description.
+pathArray.unshift(null);
+costArray.unshift(null);
 
-// Add a placeholder at index 0 for 1-based indexing of nodes.
-nextNodes.unshift(null);
-nodeValues.unshift(null);
-
+/**
+ * Calculates the maximum score achievable starting from a given node.
+ * @param {number} initialNode The starting node for the path traversal.
+ * @returns {number} The maximum score obtained.
+ */
 const calculateMaxScore = (initialNode) => {
-  const visitedNodes = {}; // An object to keep track of nodes visited in the current path.
-  let currentNode = initialNode;
-  let currentPathSum = 0;
-  let highestScoreAchieved = -1_000_000_000; // Initialize with a sufficiently low value.
-  let cycleDetected = false;
-  let stepCounter = 0;
+    const visitedNodes = {}; // Object to keep track of visited nodes in the current path.
+    let currentNode = initialNode; // Current node in the traversal.
+    let currentScore = 0; // Accumulated score along the path.
+    let highestScore = -1000000000; // Tracks the maximum score encountered.
+    let isLooped = false; // Flag to indicate if a loop has been detected.
+    let stepCounter = 0; // Counter for the number of steps taken.
 
-  // First phase: Traverse up to maxSteps or until a loop is identified.
-  for (stepCounter; stepCounter < maxSteps; stepCounter++) {
-    visitedNodes[currentNode] = true; // Mark the current node as visited.
-    currentNode = nextNodes[currentNode]; // Move to the subsequent node.
-    currentPathSum += nodeValues[currentNode]; // Accumulate the value of the new node.
-    highestScoreAchieved = Math.max(highestScoreAchieved, currentPathSum); // Update the maximum score encountered.
+    // Traverse the path for up to maxSteps steps or until a loop is detected.
+    for (stepCounter; stepCounter < maxSteps; stepCounter++) {
+        visitedNodes[currentNode] = true; // Mark the current node as visited.
+        currentNode = pathArray[currentNode]; // Move to the next node as per pathArray.
+        currentScore += costArray[currentNode]; // Add the cost of the new node to the current score.
+        highestScore = Math.max(highestScore, currentScore); // Update highest score if current score is greater.
 
-    if (visitedNodes[currentNode]) { // If the next node has been seen in this path, a cycle is confirmed.
-      cycleDetected = true;
-      break;
+        // If the next node (currentNode) has already been visited in this path, a loop is found.
+        if (visitedNodes[currentNode]) {
+            isLooped = true;
+            break; // Exit the loop as the cycle is complete.
+        }
     }
-  }
 
-  // If no cycle was found within the allowed steps, simply return the highest score.
-  if (!cycleDetected) {
-    return highestScoreAchieved;
-  }
+    // If no loop was detected within maxSteps, the highest score found is the answer.
+    if (!isLooped) {
+        return highestScore;
+    }
 
-  // If a cycle was detected, but its cumulative sum is negative, repeating it would reduce the score.
-  if (currentPathSum < 0) {
-    return highestScoreAchieved;
-  }
+    // If a loop was detected and the total score of the loop is negative,
+    // it's always better to not repeat the loop, so return the highest score before looping.
+    if (currentScore < 0) {
+        return highestScore;
+    }
 
-  // If a cycle was detected and its sum is positive, calculate how many full cycles can be completed.
-  const cycleLength = stepCounter + 1; // 'stepCounter' is the index of the last step, so length is index + 1.
-  const fullCycleRuns = maxSteps % cycleLength === 0 ? Math.floor(maxSteps / cycleLength) - 1 : Math.floor(maxSteps / cycleLength);
+    // If a loop was detected and its total score is positive,
+    // we can potentially repeat the loop multiple times.
+    // Calculate how many full loop repetitions can occur.
+    const loopLength = stepCounter + 1; // The number of steps in the detected loop.
+    const loopIterations = maxSteps % loopLength ? Math.floor(maxSteps / loopLength) : (maxSteps / loopLength) - 1;
 
-  // Prepare for calculating the score from the remaining steps after full cycles.
-  currentNode = initialNode;
-  let remainderPathSum = 0;
-  let remainderHighestScore = -1_000_000_000;
-  let remainderSteps = maxSteps % cycleLength; // The number of steps left after completing whole cycles.
-  let remainderStepIndex = 0; // Local counter for the remainder steps.
+    // Reset variables for calculating the score after full loop repetitions.
+    currentNode = initialNode;
+    var tempScore = 0; // Temporary score for the remaining steps.
+    var tempHighest = -1000000000; // Temporary highest score for the remaining steps.
+    var remainingSteps = maxSteps % loopLength; // Steps remaining after full loop repetitions.
+    stepCounter = 0; // Reset step counter for the remaining steps.
 
-  // Traverse the remaining steps within the identified cycle.
-  for (remainderStepIndex; remainderStepIndex < remainderSteps; remainderStepIndex++) {
-    currentNode = nextNodes[currentNode];
-    remainderPathSum += nodeValues[currentNode];
-    remainderHighestScore = Math.max(remainderHighestScore, remainderPathSum);
-  }
+    // Traverse the remaining steps.
+    for (stepCounter; stepCounter < remainingSteps; stepCounter++) {
+        currentNode = pathArray[currentNode];
+        tempScore += costArray[currentNode];
+        tempHighest = Math.max(tempHighest, tempScore);
+    }
 
-  // Return the maximum of two scenarios:
-  // 1. (fullCycleRuns - 1) full cycles + the highest score achieved during the initial traversal (before the last full cycle).
-  // 2. (fullCycleRuns) full cycles + the highest score achieved during the remainder steps.
-  return Math.max(currentPathSum * (fullCycleRuns - 1) + highestScoreAchieved, currentPathSum * fullCycleRuns + remainderHighestScore);
+    // Calculate the maximum score considering full loop repetitions and remaining steps.
+    // Option 1: (loopIterations - 1) full loops + highest score within one loop + remaining steps.
+    // Option 2: loopIterations full loops + highest score within the remaining steps.
+    return Math.max(currentScore * (loopIterations - 1) + highestScore, currentScore * loopIterations + tempHighest);
 };
 
-let finalResult = -1_000_000_000; // Global variable to store the overall maximum score.
-// Iterate through each possible starting node from 1 to nodeCount.
-for (let initialNode = 1; initialNode <= nodeCount; initialNode++) {
-  finalResult = Math.max(finalResult, calculateMaxScore(initialNode));
+let finalResult = -1000000000; // Initialize the overall maximum score.
+
+// Iterate through all possible starting points (nodes 1 to N).
+for (let startingPoint = 1; startingPoint <= numElements; startingPoint++) {
+    finalResult = Math.max(finalResult, calculateMaxScore(startingPoint)); // Update overall max score.
 }
 
-console.log(finalResult); // Print the ultimate maximum score found.
-
-// Note: Traversal always executes at least once, and node values can be negative.
+console.log(finalResult); // Output the final maximum score.

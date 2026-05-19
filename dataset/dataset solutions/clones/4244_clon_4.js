@@ -1,45 +1,39 @@
-const convertToNumericArray = (textSegment) => textSegment.split(' ').map(Number);
+function processInput(sourceText) {
+    const newlinePosition = sourceText.indexOf('\n');
+    const firstLineContent = sourceText.substring(0, newlinePosition);
+    const secondLineContent = sourceText.substring(newlinePosition + 1).trim();
 
-const determineAbsoluteDifference = (valA, valB) => {
-    if (valA === undefined || valB === undefined) {
-        return NaN;
+    const configurationValues = firstLineContent.split(' ').map(Number);
+    const dataSequence = secondLineContent.split(' ').map(Number);
+
+    const sequenceLength = configurationValues[0];
+    const startingPoint = configurationValues[1];
+    const referenceWeight = configurationValues[2];
+
+    const candidateDifferences = [];
+
+    // First comparison: absolute difference between starting point and reference weight
+    candidateDifferences.push(Math.abs(startingPoint - referenceWeight));
+
+    // Second comparison: absolute difference between the last element of the sequence and reference weight
+    candidateDifferences.push(Math.abs(dataSequence[sequenceLength - 1] - referenceWeight));
+
+    // Third comparison: absolute difference between the last two elements of the sequence
+    // This requires at least two elements in the sequence.
+    // If only one element, the original code would access A[-1] resulting in undefined,
+    // leading to Math.abs(number - undefined) which is NaN. We must replicate this behavior.
+    if (sequenceLength >= 2) {
+        candidateDifferences.push(Math.abs(dataSequence[sequenceLength - 1] - dataSequence[sequenceLength - 2]));
+    } else {
+        // For sequenceLength < 2 (i.e., 0 or 1), the difference involving A[N-2] is NaN.
+        candidateDifferences.push(NaN);
     }
-    return (valA > valB) ? (valA - valB) : (valB - valA);
-};
 
-const identifyLargestValue = (...valueSet) => {
-    let greatestEncountered = -Infinity;
-    let containsInvalid = false;
-    for (let idx = 0; idx < valueSet.length; idx++) {
-        const itemValue = valueSet[idx];
-        if (Number.isNaN(itemValue)) {
-            containsInvalid = true;
-        } else if (itemValue > greatestEncountered) {
-            greatestEncountered = itemValue;
-        }
-    }
-    return containsInvalid ? Number.NaN : greatestEncountered;
-};
+    // Determine the maximum among the candidate differences using a functional approach.
+    // Math.max handles NaN correctly: if any value is NaN, the result is NaN.
+    const ultimateOutcome = candidateDifferences.reduce((currentMax, value) => Math.max(currentMax, value), -Infinity);
 
-const performComputation = (sourceMaterial) => {
-    const contentLines = sourceMaterial.split('\n');
-    const firstLineValues = contentLines[0];
-    const secondLineValues = contentLines[1];
+    console.log(ultimateOutcome);
+}
 
-    const [countOfElements, markerZ, markerW] = convertToNumericArray(firstLineValues);
-    const dataSequence = convertToNumericArray(secondLineValues);
-
-    const calculationA = determineAbsoluteDifference(markerZ, markerW);
-    const calculationB = determineAbsoluteDifference(dataSequence[countOfElements - 1], dataSequence[countOfElements - 2]);
-    const calculationC = determineAbsoluteDifference(dataSequence[countOfElements - 1], markerW);
-
-    return identifyLargestValue(calculationA, calculationB, calculationC);
-};
-
-const runApplication = (dataInputSource) => {
-    const acquiredText = dataInputSource();
-    const finalOutcome = performComputation(acquiredText);
-    console.log(finalOutcome);
-};
-
-runApplication(() => require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,30 +1,29 @@
 'use strict';
 
-function processInput(dataSource) {
-    const allNumerals = dataSource.match(/\d+/g).map(Number);
-    const sequenceToEvaluate = allNumerals.slice(1);
-
-    console.log(determineSortability(sequenceToEvaluate));
+function processInput(data) {
+  const contentLines = data.split('\n').filter(Boolean);
+  const elementCount = Number.parseInt(contentLines[0], 10);
+  const numberSequence = contentLines[1].split(' ').map(Number.parseInt);
+  console.log(checkSequence(numberSequence));
 }
 
-function determineSortability(initialArrangement) {
-    const originalCopy = Array.from(initialArrangement);
-    const sortedCopy = Array.from(initialArrangement).sort((valA, valB) => valA - valB);
+function checkSequence(initialSequence) {
+  const originalOrder = initialSequence.slice();
+  const workingCopy = initialSequence.slice();
+  const orderedSequence = workingCopy.sort((a, b) => a - b);
 
-    console.log(originalCopy);
-    console.log(sortedCopy);
+  console.log(originalOrder);
+  console.log(orderedSequence);
 
-    const differingElements = originalCopy.filter((element, index) => {
-        return element !== sortedCopy[index];
-    });
-
-    const mismatchTally = differingElements.length;
-
-    if (mismatchTally === 0 || mismatchTally === 2) {
-        return 'YES';
-    } else {
-        return 'NO';
+  let mismatchCounter = 0;
+  const exceedsThreshold = originalOrder.some((elementValue, indexPosition) => {
+    if (elementValue !== orderedSequence[indexPosition]) {
+      mismatchCounter++;
     }
+    return mismatchCounter > 2;
+  });
+
+  return exceedsThreshold ? 'NO' : 'YES';
 }
 
 processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

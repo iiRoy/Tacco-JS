@@ -1,32 +1,25 @@
-const processInputData = (initialData) => {
-    const [primaryLine, secondaryLine] = initialData.split('\n');
-    const numericalCount = Number(primaryLine);
-    const itemSequence = secondaryLine.split(' ');
+function processInput(rawData) {
+    const [firstLineContent, secondLineContent] = rawData.split('\n');
+    const elementCount = Number(firstLineContent);
+    const numericValues = secondLineContent.split(' ').map(Number);
 
-    const valueOccurrences = new Map();
-    Array.from({ length: numericalCount }, (v, idx) => itemSequence[idx])
-        .forEach(item => {
-            valueOccurrences.set(item, (valueOccurrences.get(item) || 0) + 1);
-        });
+    const valueFrequencies = new Map();
+    numericValues.forEach(currentValue => {
+        valueFrequencies.set(currentValue, (valueFrequencies.get(currentValue) || 0) + 1);
+    });
 
-    const numbersToVerify = [];
-    let currentValForCheck = numericalCount - 1;
-    while (currentValForCheck > 0) {
-        numbersToVerify.push(String(currentValForCheck));
-        currentValForCheck -= 2;
-    }
+    const expectedParity = (elementCount - 1) % 2;
 
-    const checkResult = numbersToVerify.every(key => valueOccurrences.get(key) === 2);
+    const numbersToValidate = Array.from({ length: elementCount - 1 }, (_, index) => index + 1)
+                                 .filter(num => num % 2 === expectedParity);
 
-    if (!checkResult) {
-        console.log(0);
-        return;
-    }
+    const allExpectedValuesPresent = numbersToValidate.every(num => valueFrequencies.get(num) === 2);
 
-    const finalPower = Math.floor(numericalCount / 2);
-    console.log(2 ** finalPower);
-};
+    const finalOutcome = allExpectedValuesPresent ? (2 ** Math.floor(elementCount / 2)) : 0;
 
-const fileHandler = require('node:fs');
-const fileContents = fileHandler.readFileSync('hoge.txt', 'utf8');
-processInputData(fileContents);
+    console.log(finalOutcome);
+}
+
+const fileSystemModule = require('fs');
+const fileData = fileSystemModule.readFileSync('hoge.txt', 'utf8');
+processInput(fileData);

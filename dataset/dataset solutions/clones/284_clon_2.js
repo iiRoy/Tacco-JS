@@ -1,70 +1,67 @@
-const   obtainModuleReference = require ;
-const   displayOutput = console .log;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let         rawDataStream = obtainModuleReference('fs') .readFileSync('/dev/stdin', 'utf8')
-    ;
+// Split the entire input into an array of lines, removing any leading/trailing whitespace.
+let lineBuffer = (rawData.trim()).split("\n");
 
-let     processedLinesCollection = (rawDataStream.trim()) .split("\n")
-;
+// Main loop to process each test case until "0 0" is encountered.
+while (true) {
+  // Get the current line which contains N and M.
+  let dimensionsStr = lineBuffer.shift();
 
-while (     true
-) {
-    let     currentDimensionPairString = processedLinesCollection.shift();
+  // Check for the termination condition.
+  if (dimensionsStr === "0 0") {
+    break;
+  }
 
-    if ( currentDimensionPairString === "0 0" ) {
-        break;
-    }
+  // Parse N and M from the string.
+  let parsedDimensions = dimensionsStr.split(" ").map(Number);
+  let numPeople = parsedDimensions[0]; // N: total number of people
+  let skipCount = parsedDimensions[1]; // M: number to skip before elimination
 
-    let         dimensionNumericValues = currentDimensionPairString.split(" ").map(Number)
-        ;
+  // Initialize an array to keep track of each person's status.
+  // `personStatus[0]` is unused, `personStatus[1]` to `personStatus[numPeople]` represent people 1 to N.
+  let personStatus = [];
+  for (let personIndex = 0; personIndex <= numPeople; personIndex++) {
+    personStatus[personIndex] = true; // `true` means the person is still in the game.
+  }
 
-    let     totalItemCount = dimensionNumericValues[0]
-        ;
-    let     eliminationStride = dimensionNumericValues[1]
-        ;
+  let currentPerson = 1;          // Index of the person currently being considered.
+  let eliminationCounter = 0;     // Counts how many active people have been skipped.
+  let eliminatedCount = 0;        // Total number of people eliminated so far.
 
-    let         itemPresenceFlags = []
-        ;
+  // Inner loop for the elimination process.
+  while (true) {
+    // Only consider active people for counting.
+    if (personStatus[currentPerson]) {
+      eliminationCounter++; // Increment the skip counter.
 
-    for ( let   itemIdx = 0; itemIdx <= totalItemCount; itemIdx++ )
-    {
-            itemPresenceFlags[itemIdx] = true;
-    }
+      // If the skip count is reached, eliminate the current person.
+      if (eliminationCounter === skipCount) {
+        personStatus[currentPerson] = false; // Mark as eliminated.
+        eliminationCounter = 0;              // Reset the skip counter for the next round.
+        eliminatedCount++;                   // Increment the total eliminated count.
 
-    let         currentCyclePosition = 1
-        ;
-    let         stepsSinceLastRemoval = 0
-        ;
-    let         removedItemCounter = 0
-        ;
-
-    while (     true
-    ) {
-        if ( itemPresenceFlags[currentCyclePosition] ) {
-                stepsSinceLastRemoval++;
-
-            if ( stepsSinceLastRemoval === eliminationStride ) {
-                    itemPresenceFlags[currentCyclePosition] = false;
-                    stepsSinceLastRemoval = 0;
-                    removedItemCounter++;
-
-                if ( removedItemCounter === itemPresenceFlags.length - 2 ) {
-                    break;
-                }
-            }
+        // Check if only one person remains.
+        // `personStatus.length - 2` is equivalent to `numPeople - 1` (since `personStatus.length` is `numPeople + 1`).
+        // If `numPeople - 1` people have been eliminated, one person is left.
+        if (eliminatedCount === personStatus.length - 2) {
+          break; // Exit the inner elimination loop.
         }
-
-        currentCyclePosition++;
-
-        if ( itemPresenceFlags.length - 1 < currentCyclePosition ) {
-            currentCyclePosition = 1;
-        }
+      }
     }
 
-    for ( let   finalResultIndex = 1; finalResultIndex <= totalItemCount; finalResultIndex++ )
-    {
-        if ( itemPresenceFlags[finalResultIndex] ) {
-            displayOutput(finalResultIndex);
-        }
+    currentPerson++; // Move to the next person in the circle.
+
+    // If we go past the last person, wrap around to the first person.
+    if (personStatus.length - 1 < currentPerson) {
+      currentPerson = 1;
     }
+  }
+
+  // After the elimination loop, find and print the number of the last remaining person.
+  for (let personIndex = 1; personIndex <= numPeople; personIndex++) {
+    if (personStatus[personIndex]) {
+      console.log(personIndex); // This person is the survivor.
+    }
+  }
 }

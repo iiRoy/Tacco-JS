@@ -1,74 +1,51 @@
-const systemIO = require('fs');
-const inputBufferCapacity = 1024 * 1024;
-let inputBuffer = Buffer.alloc(inputBufferCapacity);
-let totalBytesGathered = 0;
-const standardInputFileDescriptor = 0;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = rawData.trim().split("\n");
 
-try {
-    let bytesReadChunk;
-    while ((bytesReadChunk = systemIO.readSync(standardInputFileDescriptor, inputBuffer, totalBytesGathered, inputBufferCapacity - totalBytesGathered)) > 0) {
-        totalBytesGathered += bytesReadChunk;
-        if (totalBytesGathered >= inputBufferCapacity) {
-            inputBuffer = Buffer.concat([inputBuffer, Buffer.alloc(inputBufferCapacity)]);
+var sequenceLength = parseInt(lines.shift(), 10);
+var initialSequence = lines.shift().split(" ").map(Number);
+var operationCount = parseInt(lines.shift(), 10);
+var operationPairs = lines.map(val => val.split(" ").map(Number).map(v => v - 1));
+
+operationPairs.unshift([0, 0]); // Prepend a no-op swap for the initial state check
+
+var orderedSequence = initialSequence.slice().sort((valA, valB) => valA - valB);
+
+var divergentIndices = [];
+for (let idx = 0; idx < sequenceLength; idx++) {
+    if (initialSequence[idx] !== orderedSequence[idx]) {
+        divergentIndices.push(idx);
+    }
+}
+
+var currentSequenceMap = new Map();
+var targetSequenceMap = new Map();
+
+for (let idx = 0; idx < sequenceLength; idx++) {
+    currentSequenceMap.set(idx, initialSequence[idx]);
+    targetSequenceMap.set(idx, orderedSequence[idx]);
+}
+
+var targetMismatchSignature = divergentIndices.map(idx => targetSequenceMap.get(idx)).join(',');
+
+let finalMatchIndex = -1;
+
+Array.from({ length: operationCount + 1 }, (_, currentOperationIndex) => currentOperationIndex)
+    .some(currentOperationIndex => {
+        const [firstIdx, secondIdx] = operationPairs[currentOperationIndex];
+
+        const valueAtFirst = currentSequenceMap.get(firstIdx);
+        const valueAtSecond = currentSequenceMap.get(secondIdx);
+
+        currentSequenceMap.set(firstIdx, valueAtSecond);
+        currentSequenceMap.set(secondIdx, valueAtFirst);
+
+        const currentMismatchSignature = divergentIndices.map(idx => currentSequenceMap.get(idx)).join(',');
+
+        if (currentMismatchSignature === targetMismatchSignature) {
+            finalMatchIndex = currentOperationIndex;
+            return true;
         }
-    }
-} catch (error) {
-    // Error handling for fs.readSync can be complex depending on environment.
-    // For typical competitive programming scenarios, this block might be empty.
-}
+        return false;
+    });
 
-const rawInputText = inputBuffer.toString('utf8', 0, totalBytesGathered).trim();
-const lineSegments = rawInputText.split("\n");
-
-const totalElements = Number(lineSegments.shift());
-
-const initialSequence = lineSegments.shift().split(" ").map(Number);
-
-const orderedSequence = initialSequence.slice().sort((elementA, elementB) => elementA - elementB);
-
-const swapCount = Number(lineSegments.shift());
-
-const exchangeInstructions = lineSegments.map(segment => segment.split(" ").map(Number).map(val => val - 1));
-exchangeInstructions.unshift([0, 0]);
-
-const currentMismatchMap = new Map();
-const goalMismatchMap = new Map();
-
-for (let currentIdx = 0; currentIdx < initialSequence.length; ++currentIdx) {
-    if (initialSequence[currentIdx] !== orderedSequence[currentIdx]) {
-        currentMismatchMap.set(currentIdx, initialSequence[currentIdx]);
-        goalMismatchMap.set(currentIdx, orderedSequence[currentIdx]);
-    }
-}
-
-const goalSignature = [...goalMismatchMap.values()].join(",");
-
-let matchFound = false;
-let finalOperationIndex = -1;
-let currentOperationStep = 0;
-
-while (currentOperationStep <= swapCount) {
-    const [indexOne, indexTwo] = exchangeInstructions[currentOperationStep];
-
-    const valueAtIndexOne = currentMismatchMap.get(indexOne);
-    const valueAtIndexTwo = currentMismatchMap.get(indexTwo);
-
-    currentMismatchMap.set(indexOne, valueAtIndexTwo);
-    currentMismatchMap.set(indexTwo, valueAtIndexOne);
-
-    const currentSignature = [...currentMismatchMap.values()].join(",");
-
-    if (currentSignature === goalSignature) {
-        matchFound = true;
-        finalOperationIndex = currentOperationStep;
-        break;
-    }
-
-    currentOperationStep++;
-}
-
-if (matchFound) {
-    console.log(finalOperationIndex);
-} else {
-    console.log(-1);
-}
+console.log(finalMatchIndex);

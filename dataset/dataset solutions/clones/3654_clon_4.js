@@ -1,21 +1,16 @@
-const solveCyclicEquivalence = (primaryString, secondaryString) => {
-  const primaryLength = primaryString.length;
-  const secondaryLength = secondaryString.length;
+function main(input) {
+    const sourceString = input[0];
+    const targetString = input[1];
 
-  return (primaryLength === secondaryLength) &&
-         (`${primaryString}${primaryString}`).includes(secondaryString);
-};
+    if (sourceString.length !== targetString.length) {
+        console.log("No");
+        return;
+    }
 
-const executeProgram = (inputLines) => {
-  const initialSegment = inputLines[0];
-  const comparativeSegment = inputLines[1];
+    const extendedSource = sourceString + sourceString;
+    const isCyclicPermutation = extendedSource.includes(targetString);
 
-  const outcome = solveCyclicEquivalence(initialSegment, comparativeSegment);
+    console.log(isCyclicPermutation ? "Yes" : "No");
+}
 
-  console.log(outcome ? "Yes" : "No");
-};
-
-const rawContentStream = require('node:fs').readFileSync(0, 'utf8');
-const processedLines = rawContentStream.trim().split('\n');
-
-executeProgram(processedLines);
+main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

@@ -1,36 +1,40 @@
 (function () {
-  let rawTextContent = '';
+  let inputBuffer = '';
 
-  function processCatalogEntries() {
-    const allInputLines = rawTextContent.split('\n').filter(Boolean);
+  function processInputData() {
+    const lineSegments = inputBuffer.split('\n');
+    
+    const relevantLines = lineSegments.slice(0, lineSegments.length - 1);
 
-    const pageReferenceMap = allInputLines.reduce((accMap, currentLineSegment) => {
-      const [chapterIdentifier, pageNumberText] = currentLineSegment.split(' ');
-      const numericPageValue = parseInt(pageNumberText, 10);
+    const bookCollection = relevantLines.reduce((accumulatorMap, currentLineText) => {
+      const lineParts = currentLineText.split(' ');
+      const primaryKey = lineParts[0];
+      const secondaryValue = lineParts[1];
 
-      const existingPageNumbers = accMap.get(chapterIdentifier) || [];
-      existingPageNumbers.push(numericPageValue);
-      existingPageNumbers.sort((valueA, valueB) => valueA - valueB);
-      
-      accMap.set(chapterIdentifier, existingPageNumbers);
-      return accMap;
+      if (!accumulatorMap.has(primaryKey)) {
+        accumulatorMap.set(primaryKey, []);
+      }
+      accumulatorMap.get(primaryKey).push(secondaryValue);
+      return accumulatorMap;
     }, new Map());
 
-    const orderedChapterIdentifiers = Array.from(pageReferenceMap.keys()).sort();
+    const orderedBookEntries = Array.from(bookCollection.entries())
+      .map(([entryKey, entryValues]) => [entryKey, entryValues.sort((valA, valB) => valA - valB)])
+      .sort(([keyOne], [keyTwo]) => keyOne.localeCompare(keyTwo));
 
-    for (const chapterKey of orderedChapterIdentifiers) {
-      console.log(chapterKey);
-      console.log(pageReferenceMap.get(chapterKey).join(' '));
-    }
+    orderedBookEntries.forEach(([outputKeyIdentifier, outputValueArray]) => {
+      console.log(outputKeyIdentifier);
+      console.log(outputValueArray.join(' '));
+    });
   }
 
   process.stdin.resume();
   process.stdin.setEncoding('utf8');
-  process.stdin.on('data', (incomingDataChunk) => {
-    rawTextContent += incomingDataChunk;
+  process.stdin.on('data', (dataChunk) => {
+    inputBuffer += dataChunk;
   });
 
   process.stdin.on('end', () => {
-    processCatalogEntries();
+    processInputData();
   });
 }());

@@ -1,32 +1,14 @@
 'use strict';
-function processInputData(rawData) {
-  const extractedNumbers = rawData.match(/(\d+)\s+(\d+)/);
-  if (!extractedNumbers || extractedNumbers.length < 3) {
-    console.log(NaN);
-    return;
-  }
-  const firstNumericVal = +extractedNumbers[1];
-  const secondNumericVal = +extractedNumbers[2];
-  const effectiveDivisor = secondNumericVal * 2;
+function calculateAndDisplay(rawData) {
+  const [firstOperand, secondOperand] = rawData.trim().split(' ').map(Number);
 
-  if (effectiveDivisor === 0) {
-    if (firstNumericVal > 0) {
-      console.log(Infinity);
-    } else {
-      console.log(NaN);
-    }
-    return;
-  }
+  const divisor = secondOperand * 2;
+  const intermediateValue = firstOperand / divisor;
+
+  const floorPart = Math.floor(intermediateValue);
+  const finalResult = floorPart + (intermediateValue > floorPart ? 1 : 0);
   
-  function recursiveCeilingDiv(targetVal, divisorVal, currentSum = 0, counter = 0) {
-    if (currentSum >= targetVal) {
-      return counter;
-    }
-    return recursiveCeilingDiv(targetVal, divisorVal, currentSum + divisorVal, counter + 1);
-  }
-
-  const finalResult = recursiveCeilingDiv(firstNumericVal, effectiveDivisor);
   console.log(finalResult);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+calculateAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));

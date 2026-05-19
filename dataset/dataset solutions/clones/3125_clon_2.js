@@ -1,47 +1,55 @@
-"use strict"
+"use strict";
 
-function ProcessData ( rawData ) {
-    // Cleanse the raw input string, convert to an array of numbers
-    let processedValues = rawData . trim ( ) . split ( / \s+ / ) . map ( numericVal => numericVal - 0 ) ;
+// This function processes the input data to calculate coloring possibilities.
+function ProcessInput(rawData) {
+  // Clean and parse the raw input string into an array of numbers.
+  let parsedData = rawData.trim().split(/\s+/).map(val => val - 0);
 
-    // The total number of elements to process
-    const elementCount = processedValues . shift ( ) ;
+  // Extract the total number of elements from the beginning of the array.
+  let elementCount = parsedData.shift();
 
-    // finalPositions[colorId] stores the most recent index where colorId appeared
-    const finalPositions = [ ] ;
-    // Initialize the finalPositions array with a default 'unseen' state for a large range of possible colors
-    for ( let idx = 0 ; idx < 2_000_000 ; idx ++ ) {
-        finalPositions [ idx ] = "unseen" ;
+  // Initialize an array to store the last seen index for each color.
+  // 'lastOccurrence[color]' will hold the index where 'color' was last encountered.
+  let lastOccurrence = [];
+  // Fill the array with a sentinel value indicating no prior occurrence.
+  for (let idx = 0; idx < 2000000; idx++) {
+    lastOccurrence[idx] = "not yet";
+  }
+
+  // Set the initial last occurrence for the very first color.
+  lastOccurrence[parsedData[0]] = 0;
+
+  // Initialize a dynamic programming array.
+  // 'waysToColor[k]' represents the number of ways to color elements from index 0 up to 'k'.
+  let waysToColor = [1]; // Base case: one way to color the first element.
+
+  // Define the modulo value for calculations to prevent integer overflow.
+  const moduloVal = Math.pow(10, 9) + 7;
+
+  // Iterate through the remaining elements to build up the DP array.
+  for (let idx = 1; idx < elementCount; idx++) {
+    let currentColor = parsedData[idx];
+
+    // Check if the current color has not been seen before, or if its last occurrence
+    // was immediately before the current position (meaning no new segment starts).
+    if (lastOccurrence[currentColor] === "not yet" || lastOccurrence[currentColor] === idx - 1) {
+      // If so, the number of ways to color up to 'idx' is the same as up to 'idx-1'.
+      waysToColor[idx] = waysToColor[idx - 1];
+      // Update the last occurrence for the current color.
+      lastOccurrence[currentColor] = idx;
+      continue; // Move to the next element.
     }
-    // Set the initial position for the very first color
-    finalPositions [ processedValues [ 0 ] ] = 0 ;
 
-    // waysToPaint[k] represents the number of distinct painting combinations up to item k
-    const waysToPaint = [ 1 ] ;
-    // Define a large modulo value to prevent integer overflow
-    const MODULO_VAL = ( 10 ** 9 ) + 7 ;
+    // If the current color has been seen before and not immediately preceding,
+    // we can either extend the previous coloring or start a new segment from the last occurrence.
+    waysToColor[idx] = (waysToColor[idx - 1] + waysToColor[lastOccurrence[currentColor]]) % moduloVal;
+    // Update the last occurrence for the current color to the current index.
+    lastOccurrence[currentColor] = idx;
+  }
 
-    // Iterate through the remaining elements to calculate painting combinations
-    for ( let currentIdx = 1 ; currentIdx < elementCount ; currentIdx ++ ) {
-        let currentColor = processedValues [ currentIdx ] ;
-
-        // If the current color hasn't been seen before, or it was last seen at the immediately preceding position
-        if ( finalPositions [ currentColor ] === "unseen" || finalPositions [ currentColor ] === currentIdx - 1 ) {
-            // Only one way to extend the painting: simply add this new color
-            waysToPaint [ currentIdx ] = waysToPaint [ currentIdx - 1 ] ;
-        } else {
-            // If the color has been seen before at a non-adjacent position
-            // The total ways are the sum of ways ending at the previous position
-            // plus ways ending at the previous occurrence of this color
-            waysToPaint [ currentIdx ] = ( waysToPaint [ currentIdx - 1 ] + waysToPaint [ finalPositions [ currentColor ] ] ) % MODULO_VAL ;
-        }
-        // Update the last known position for the current color
-        finalPositions [ currentColor ] = currentIdx ;
-    }
-
-    // Output the final number of unique painting ways for the entire sequence
-    console . log ( waysToPaint . pop ( ) ) ;
+  // The final result is the number of ways to color all elements, which is the last element in the DP array.
+  console.log(waysToColor.pop());
 }
 
-// Read input from standard input and pass it to the main processing function
-ProcessData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

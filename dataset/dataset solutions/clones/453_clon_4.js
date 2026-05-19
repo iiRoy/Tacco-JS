@@ -1,60 +1,43 @@
-const obtainContentPromise = () => new Promise(resolve => {
-    let completeStreamData = '';
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let allInputData = '';
 
-    process.stdin.on('data', dataSegment => {
-        completeStreamData += dataSegment;
-    });
-
-    process.stdin.on('end', () => {
-        resolve(completeStreamData);
-    });
+process.stdin.on('data', function (chunk) {
+  allInputData += chunk;
 });
 
-obtainContentPromise().then(fullTextualInput => {
-    const categorizedEntries = fullTextualInput.split('\n').filter(line => line.trim() !== '');
+process.stdin.on('end', function () {
+  const parsedLines = allInputData.split('\n');
 
-    const evaluateDebtCircumstances = (pendingInputUnits, startingIndex = 0) => {
-        if (startingIndex >= pendingInputUnits.length) {
-            return;
-        }
+  const processInputBlocks = (currentLinePointer) => {
+    const initialDebtAmount = Number.parseInt(parsedLines[currentLinePointer]);
 
-        const primaryObligationText = pendingInputUnits[startingIndex];
-        const initialFinancialCommitment = parseInt(primaryObligationText, 10);
+    if (initialDebtAmount === 0) {
+      return;
+    }
 
-        if (isNaN(initialFinancialCommitment) || initialFinancialCommitment === 0) {
-            return;
-        }
+    const monthlyTransactionStrings = parsedLines.slice(currentLinePointer + 1, currentLinePointer + 1 + 12);
 
-        const periodicTransactionRecords = pendingInputUnits.slice(startingIndex + 1, startingIndex + 1 + 12);
+    const monthlyPaymentData = monthlyTransactionStrings.map(lineSegment =>
+      lineSegment.split(' ').map(Number.parseFloat)
+    );
 
-        let resolutionPeriod = 'NA';
+    const cumulativeDebtStates = monthlyPaymentData.reduce((acc, [paidAmount, receivedAmount]) => {
+      const previousDebt = acc.length === 0 ? initialDebtAmount : acc[acc.length - 1];
+      const netChange = paidAmount - receivedAmount;
+      const newDebt = previousDebt - netChange;
+      acc.push(newDebt);
+      return acc;
+    }, []);
 
-        const { sequentialBalanceSnapshots } = periodicTransactionRecords.reduce((accumulator, transactionDetailEntry, periodCycle) => {
-            const numericComponents = transactionDetailEntry.split(' ').map(Number);
-            const incomingFunds = numericComponents[0];
-            const outgoingExpenditure = numericComponents[1];
+    const resolutionMonthIndex = cumulativeDebtStates.findIndex(debtValue => debtValue <= 0);
 
-            accumulator.currentLiabilityTotal -= (incomingFunds - outgoingExpenditure);
+    const finalOutcome = resolutionMonthIndex === -1 ? 'NA' : resolutionMonthIndex + 1;
 
-            accumulator.sequentialBalanceSnapshots.push({
-                period: periodCycle + 1,
-                balanceAfterPeriod: accumulator.currentLiabilityTotal
-            });
-            return accumulator;
-        }, { currentLiabilityTotal: initialFinancialCommitment, sequentialBalanceSnapshots: [] });
+    console.log(finalOutcome);
 
-        const earliestSettlementPoint = sequentialBalanceSnapshots.find(snapshot => snapshot.balanceAfterPeriod <= 0);
+    processInputBlocks(currentLinePointer + 1 + 12);
+  };
 
-        if (earliestSettlementPoint) {
-            resolutionPeriod = earliestSettlementPoint.period;
-        }
-
-        process.stdout.write(resolutionPeriod + '\n');
-
-        evaluateDebtCircumstances(pendingInputUnits, startingIndex + 1 + 12);
-    };
-
-    evaluateDebtCircumstances(categorizedEntries);
+  processInputBlocks(0);
 });

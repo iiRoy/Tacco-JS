@@ -1,126 +1,103 @@
-let processInputAndCompute = (rawData) => {
-    // Check for empty input to prevent errors
-    if (!rawData || rawData.trim().length === 0) {
-        console.log("");
-        return;
-    }
+'use strict'
 
-    // Helper function to parse a line of space-separated numbers
-    // This handles various whitespace separators and filters out empty strings.
-    const extractNumericValues = (lineContent) => {
-        return lineContent.split(/\s+/).filter(Boolean).map(Number);
-    };
+// Constant for a large number, equivalent to original INF
+const LARGE_NUMBER_CONSTANT = 900719925474099;
 
-    // Implements a modified binary search to find the insertion point for a target value.
-    // Similar to lower_bound, but with different variable names and structure.
-    const locateInsertionPoint = (sortedNumericArray, searchStart, searchEnd, desiredValue) => {
-        let lowPointer = searchStart;
-        let highPointer = searchEnd;
-        // Continue while there's more than one element in the search range
-        while (highPointer - lowPointer > 1) {
-            let midPointer = Math.floor((lowPointer + highPointer) / 2);
-            // If the middle element is less than the desired value,
-            // move the low pointer to the middle. Otherwise, move the high pointer.
-            if (sortedNumericArray[midPointer] < desiredValue) {
-                lowPointer = midPointer;
-            } else {
-                highPointer = midPointer;
-            }
-        }
-        // After the loop, lowPointer and highPointer are adjacent.
-        // Determine the correct insertion point based on the value at lowPointer.
-        return sortedNumericArray[lowPointer] < desiredValue ? highPointer : lowPointer;
-    };
+/**
+ * Converts a space-separated string of numbers into an array of numbers.
+ * @param {string} lineStr - The input string containing space-separated numbers.
+ * @returns {number[]} An array of parsed numbers.
+ */
+function parseNumericStringArray(lineStr) {
+    const stringTokens = lineStr.split(' ');
+    const numericValues = stringTokens.map((token) => Number(token)); // Using Number() for parsing
+    return numericValues;
+}
 
-    // Split the entire input into individual lines
-    let inputLines = rawData.trim().split('\n');
+/**
+ * Performs a lower bound search on a sorted array.
+ * Finds the first index 'i' such that dataArr[i] is not less than targetVal.
+ * If all elements are less than targetVal, returns highIdx.
+ * @param {number[]} dataArr - The sorted array to search within.
+ * @param {number} lowIdx - The starting index for the search (inclusive).
+ * @param {number} highIdx - The ending index for the search (exclusive).
+ * @param {number} targetVal - The value to search for.
+ * @returns {number} The lower bound index.
+ */
+function findFirstGreaterOrEqual(dataArr, lowIdx, highIdx, targetVal) {
+    let currentLow = lowIdx;
+    let currentHigh = highIdx;
+    let middleIndex;
 
-    // Parse the first line to get counts for segments and queries
-    let primaryCounts = extractNumericValues(inputLines[0]);
-
-    // Validate that primaryCounts has at least two elements
-    if (primaryCounts.length < 2) {
-        console.log(""); // Or throw an error, depending on desired behavior
-        return;
-    }
-
-    let totalSegments = primaryCounts[0];
-    let totalQueries = primaryCounts[1];
-
-    // Collect segment data
-    // Each segment is an array of [start, end, weight]
-    let segmentDetails = [];
-    for (let currentSegIdx = 0; currentSegIdx < totalSegments; currentSegIdx++) {
-        // Ensure the line exists before attempting to parse
-        if (inputLines[currentSegIdx + 1]) {
-            segmentDetails.push(extractNumericValues(inputLines[currentSegIdx + 1]));
+    // Continue binary search as long as there's more than one element in the search range
+    while (currentHigh - currentLow > 1) {
+        middleIndex = Math.floor((currentLow + currentHigh) / 2);
+        const valueAtIndex = dataArr[middleIndex]; // Helper variable for clarity
+        if (valueAtIndex < targetVal) {
+            currentLow = middleIndex;
+        } else {
+            currentHigh = middleIndex;
         }
     }
 
-    // Collect query point data
-    let queryValuePoints = [];
-    for (let currentQryIdx = 0; currentQryIdx < totalQueries; currentQryIdx++) {
-        // Ensure the line exists
-        if (inputLines[totalSegments + currentQryIdx + 1]) {
-            queryValuePoints.push(Number(inputLines[totalSegments + currentQryIdx + 1]));
-        }
+    // Determine the final lower bound index
+    if (dataArr[currentLow] < targetVal) {
+        return currentHigh;
+    } else {
+        return currentLow;
     }
+}
 
-    // Sort the segment details based on their third element (weight) in descending order.
-    // This prioritizes segments with higher weights.
-    segmentDetails.sort((segmentA, segmentB) => {
-        // Basic check for malformed segments
-        if (segmentA.length < 3 || segmentB.length < 3) return 0;
-        return segmentB[2] - segmentA[2];
-    });
+/**
+ * Main function to process the input and generate the solution.
+ * @param {string} rawInputData - The raw input string from stdin.
+ */
+function processSolution(rawInputData) {
+    const allInputLines = rawInputData.trim().split('\n');
 
-    // Initialize an array to store the computation results for each query.
-    // Default value is -1, indicating no segment covers that point yet.
-    let computedResults = [];
-    for (let i = 0; i < totalQueries; i++) {
-        computedResults.push(-1);
-    }
+    // Parse the first line to get item count and query count using destructuring
+    const [itemCount, queryCount] = parseNumericStringArray(allInputLines[0]);
 
-    // Iterate through each sorted segment to determine coverage
-    for (let segIteration = 0; segIteration < totalSegments; segIteration++) {
-        let currentSegment = segmentDetails[segIteration];
+    // Parse item data using slice and map for conciseness
+    const itemDataLines = allInputLines.slice(1, itemCount + 1);
+    const itemDetailsArray = itemDataLines.map(line => parseNumericStringArray(line));
 
-        // Guard clause for malformed segment data
-        if (currentSegment.length < 3) {
-            continue;
-        }
+    // Parse query points using slice and map
+    const queryPointLines = allInputLines.slice(itemCount + 1, itemCount + queryCount + 1);
+    const queryPointsArray = queryPointLines.map(line => Number(line)); // Using Number() for single integer lines
 
-        let segmentStart = currentSegment[0];
-        let segmentEnd = currentSegment[1];
-        let segmentWeight = currentSegment[2];
+    // Sort item details by the third element (index 2) in descending order
+    itemDetailsArray.sort((itemA, itemB) => itemB[2] - itemA[2]);
 
-        // Calculate thresholds for query points based on segment properties.
-        // These thresholds define the range of query points that this segment potentially covers.
-        let lowerThreshold = segmentStart - segmentWeight;
-        let upperThreshold = segmentEnd - segmentWeight;
+    // Initialize an array to store the final answers, filled with -1
+    const finalResultArray = new Array(queryCount).fill(-1);
 
-        // Find the range of query points that fall within the current segment's coverage.
-        // This uses the modified binary search function.
-        let startAffectedIndex = locateInsertionPoint(queryValuePoints, 0, totalQueries, lowerThreshold);
-        let endAffectedIndex = locateInsertionPoint(queryValuePoints, startAffectedIndex, totalQueries, upperThreshold);
+    // Iterate through each item to determine its effect on query points
+    for (let currentItemIndex = 0; currentItemIndex < itemCount; currentItemIndex++) {
+        const currentItem = itemDetailsArray[currentItemIndex];
+        const startCoord = currentItem[0];
+        const endCoord = currentItem[1];
+        const itemWeightValue = currentItem[2];
 
-        // If a valid range of query points is found, update their results.
-        // A valid range means startAffectedIndex is less than endAffectedIndex.
-        if (startAffectedIndex < endAffectedIndex) {
-            // Iterate through the affected query points and assign the current segment's weight.
-            // Only update if the current result is still -1 (meaning no higher weight segment covered it yet).
-            for (let resultIndex = startAffectedIndex; resultIndex < endAffectedIndex; resultIndex++) {
-                if (computedResults[resultIndex] === -1) { // Only assign if not already covered by a higher weight
-                    computedResults[resultIndex] = segmentWeight;
-                }
+        // Calculate effective bounds for the lower bound search based on item properties
+        const effectiveRangeStart = startCoord - itemWeightValue;
+        const effectiveRangeEnd = endCoord - itemWeightValue;
+
+        // Find the range of query points affected by the current item
+        const affectedQueryStartIdx = findFirstGreaterOrEqual(queryPointsArray, 0, queryCount, effectiveRangeStart);
+        const affectedQueryEndIdx = findFirstGreaterOrEqual(queryPointsArray, affectedQueryStartIdx, queryCount, effectiveRangeEnd);
+
+        // If there's an actual range of affected queries, update their answers
+        if (affectedQueryStartIdx < affectedQueryEndIdx) {
+            for (let fillTargetIdx = affectedQueryStartIdx; fillTargetIdx < affectedQueryEndIdx; fillTargetIdx++) {
+                finalResultArray[fillTargetIdx] = itemWeightValue;
             }
         }
     }
 
-    // Output the final results, each on a new line.
-    console.log(computedResults.join('\n'));
-};
+    // Output the results, each on a new line
+    console.log(finalResultArray.join('\n'));
+}
 
-// Standard input reading for competitive programming environments.
-// This part remains largely functional as it's an external dependency.
-processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and execute the solution
+processSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

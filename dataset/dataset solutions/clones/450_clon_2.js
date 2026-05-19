@@ -1,46 +1,60 @@
-var sourceData = require('fs').readFileSync( '/dev/stdin', 'utf8' ) ;
-var lineSegments = ( sourceData.trim() ) . split ( "\n" ) ;
-while ( true ) {
-   var firstNumericValue = lineSegments.shift() - 0 ;
-   if  ( firstNumericValue === 0 ) {
-     break ;
-   }
-   var secondNumericValue = lineSegments.shift() - 0 ;
-   var thirdNumericValue = lineSegments.shift() - 0 ;
-   var fourthNumericValue = lineSegments.shift() - 0 ;
-   var fifthNumericValue = lineSegments.shift() - 0 ;
-   var collectedNumbers = [
-      firstNumericValue,
-      secondNumericValue,
-      thirdNumericValue,
-      fourthNumericValue,
-      fifthNumericValue
-   ];
-   var possibleOptions = [ 1, 2, 3 ] ;
-   possibleOptions = possibleOptions.filter( function ( currentOption ) {
-      return (
-         currentOption !== firstNumericValue &&
-         currentOption !== secondNumericValue &&
-         currentOption !== thirdNumericValue &&
-         currentOption !== fourthNumericValue &&
-         currentOption !== fifthNumericValue
-      );
-   } );
-   if ( possibleOptions.length === 2 || possibleOptions.length === 0 ) {
-      for ( var iterationIndex = 0 ; iterationIndex < 5 ; iterationIndex ++ ) {
-         console.log( 3 ) ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+// Split the raw input data into an array of lines, removing leading/trailing whitespace.
+let lineSegments = rawData.trim().split('\n');
+
+// Main processing loop for multiple sets of input values.
+while (true) {
+  // Extract the first value from the current line segment and convert it to a number.
+  const firstVal = Number(lineSegments.shift());
+
+  // If the first value is 0, it signifies the end of input, so break the loop.
+  if (firstVal === 0) {
+    break;
+  }
+
+  // Extract the remaining four values for the current set.
+  const secondVal = Number(lineSegments.shift());
+  const thirdVal = Number(lineSegments.shift());
+  const fourthVal = Number(lineSegments.shift());
+  const fifthVal = Number(lineSegments.shift());
+
+  // Store all five input values in an array for easier iteration.
+  const currentValues = [firstVal, secondVal, thirdVal, fourthVal, fifthVal];
+
+  // Initialize an array representing possible options (e.g., 1, 2, 3).
+  let availableOptions = [1, 2, 3];
+
+  // Filter out any options that are already present in the current set of input values.
+  availableOptions = availableOptions.filter(function (optionCandidate) {
+    return (
+      optionCandidate !== firstVal &&
+      optionCandidate !== secondVal &&
+      optionCandidate !== thirdVal &&
+      optionCandidate !== fourthVal &&
+      optionCandidate !== fifthVal
+    );
+  });
+
+  // Check the number of remaining available options.
+  if (availableOptions.length === 2 || availableOptions.length === 0) {
+    // If two options remain or no options remain, print '3' five times.
+    for (let idx = 0; idx < 5; idx++) {
+      console.log(3);
+    }
+  } else {
+    // If exactly one option remains (availableOptions.length === 1).
+    currentValues.forEach(function (currentNumber) {
+      // Apply specific logic based on the single remaining option.
+      if (availableOptions[0] === 1) {
+        console.log(currentNumber === 2 ? 2 : 1);
       }
-   } else {
-      collectedNumbers.forEach( function ( currentDataSetItem ) {
-         if ( possibleOptions[0] === 1 ) {
-           console.log( ( currentDataSetItem === 2 ) ? 2 : 1 ) ;
-         }
-         if ( possibleOptions[0] === 2 ) {
-           console.log( ( currentDataSetItem === 1 ) ? 2 : 1 ) ;
-         }
-         if ( possibleOptions[0] === 3 ) {
-           console.log( ( currentDataSetItem === 1 ) ? 1 : 2 ) ;
-         }
-      } );
-   }
+      if (availableOptions[0] === 2) {
+        console.log(currentNumber === 1 ? 2 : 1);
+      }
+      if (availableOptions[0] === 3) {
+        console.log(currentNumber === 1 ? 1 : 2);
+      }
+    });
+  }
 }

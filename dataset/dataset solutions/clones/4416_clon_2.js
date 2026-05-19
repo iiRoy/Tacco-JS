@@ -1,56 +1,53 @@
-/*
- * This module computes the length of the intersection of two intervals.
- * The input is expected to be a string containing four space-separated integers.
- */
-function CalculateIntersectionLength(rawStringData) {
-    // Split the input string into individual string components.
-    let numericValuesArray = rawStringData.split(" ");
+function ProcessInput(rawData) {
+    // The raw input string is expected to contain four space-separated numbers.
+    // These numbers define two intervals: [num1, num2] and [num3, num4].
+    // We aim to find the length of their intersection.
 
+    // First, split the input string into an array of string representations of numbers.
+    let parsedValues = rawData.split(" ");
 
-    // Parse each string component into an integer.
-    // The radix '10' ensures decimal parsing.
-    numericValuesArray[0] = parseInt(numericValuesArray[0], 10);
-    numericValuesArray[1] = parseInt(numericValuesArray[1], 10);
-    numericValuesArray[2] = parseInt(numericValuesArray[2], 10);
-    numericValuesArray[3] = parseInt(numericValuesArray[3], 10);
+    // Convert each string component to an integer using base 10.
+    // The first element is the start of the first interval.
+    parsedValues[0] = parseInt(parsedValues[0], 10);
+    // The second element is the end of the first interval.
+    parsedValues[1] = parseInt(parsedValues[1], 10);
+    // The third element is the start of the second interval.
+    parsedValues[2] = parseInt(parsedValues[2], 10);
+    // The fourth element is the end of the second interval.
+    parsedValues[3] = parseInt(parsedValues[3], 10);
 
-
-    // Check if the intervals do not overlap at all.
-    // Condition 1: The second interval starts at or after the first interval ends.
-    if (numericValuesArray[2] >= numericValuesArray[1]) {
-        console.log(0); // No overlap, so length is zero.
+    // Check for cases where there is no overlap or the overlap length is zero.
+    // If the second interval begins at or after the first interval concludes, there's no positive overlap.
+    if (parsedValues[2] >= parsedValues[1]) {
+        console.log(0); // Output 0 as the intersection length.
     }
-    // Condition 2: The second interval ends at or before the first interval starts.
-    else if (numericValuesArray[3] <= numericValuesArray[0]) {
-        console.log(0); // No overlap, so length is zero.
+    // Alternatively, if the second interval finishes at or before the first interval commences, there's no positive overlap.
+    else if (parsedValues[3] <= parsedValues[0]) {
+        console.log(0); // Output 0 as the intersection length.
     }
-    // If neither of the above conditions is met, an overlap exists.
+    // If the above conditions are not met, an overlap exists, and we need to calculate its length.
     else {
-        // Determine the starting point of the intersection.
-        // This is the maximum of the two interval start points.
-        let intersectionStart;
-        if (numericValuesArray[0] < numericValuesArray[2]) {
-            intersectionStart = numericValuesArray[2];
+        let overlapStartPoint; // This variable will store the starting coordinate of the intersection.
+        // Determine the actual start of the overlapping segment. It's the maximum of the two interval start points.
+        if (parsedValues[0] < parsedValues[2]) {
+            overlapStartPoint = parsedValues[2]; // The second interval starts later.
         } else {
-            intersectionStart = numericValuesArray[0];
+            overlapStartPoint = parsedValues[0]; // The first interval starts later or at the same point.
         }
 
-
-        // Determine the ending point of the intersection.
-        // This is the minimum of the two interval end points.
-        let intersectionEnd;
-        if (numericValuesArray[1] < numericValuesArray[3]) {
-            intersectionEnd = numericValuesArray[1];
+        let overlapEndPoint; // This variable will store the ending coordinate of the intersection.
+        // Determine the actual end of the overlapping segment. It's the minimum of the two interval end points.
+        if (parsedValues[1] < parsedValues[3]) {
+            overlapEndPoint = parsedValues[1]; // The first interval ends earlier.
         } else {
-            intersectionEnd = numericValuesArray[3];
+            overlapEndPoint = parsedValues[3]; // The second interval ends earlier or at the same point.
         }
 
-
-        // Calculate and display the length of the overlapping segment.
-        console.log('%d', intersectionEnd - intersectionStart);
+        // The length of the intersection is the difference between its end and start points.
+        console.log('%d', overlapEndPoint - overlapStartPoint);
     }
 }
 
-// Invoke the main processing function with data read from standard input.
-// This assumes a Node.js environment where 'fs' module is available.
-CalculateIntersectionLength(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input, assuming UTF-8 encoding.
+// Then, pass this content to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

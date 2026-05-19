@@ -1,27 +1,48 @@
-const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-const numericEntries = dataStream.trim().split("\n").map(Number);
+const fileSystem = require('fs');
 
-const valueDenominations = [500, 100, 50, 10, 5, 1];
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const numericEntries = rawInputData.trim().split('\n').map(Number);
 
-const computeMinimumItems = (totalValue) => {
-    let itemCount = 0;
-    let currentRemainder = totalValue;
+const currencyUnits = [
+    { unitValue: 500, isSingleUnit: true },
+    { unitValue: 100, isSingleUnit: false },
+    { unitValue: 50, isSingleUnit: true },
+    { unitValue: 10, isSingleUnit: false },
+    { unitValue: 5, isSingleUnit: true },
+    { unitValue: 1, isSingleUnit: false }
+];
 
-    for (const unitSize of valueDenominations) {
-        if (currentRemainder === 0) break;
-        const numberOfUnits = Math.floor(currentRemainder / unitSize);
-        itemCount += numberOfUnits;
-        currentRemainder %= unitSize;
+function determineCoinTotal(currentValue, unitIndex = 0) {
+    if (currentValue === 0 || unitIndex >= currencyUnits.length) {
+        return 0;
     }
-    return itemCount;
-};
 
-numericEntries.every( (entryValue) => {
-    if (entryValue === 0) {
-        return false;
+    const activeUnit = currencyUnits[unitIndex];
+    let unitCount = 0;
+    let remainingValue = currentValue;
+
+    if (activeUnit.isSingleUnit) {
+        if (currentValue >= activeUnit.unitValue) {
+            unitCount = 1;
+            remainingValue -= activeUnit.unitValue;
+        }
+    } else {
+        unitCount = Math.floor(currentValue / activeUnit.unitValue);
+        remainingValue %= activeUnit.unitValue;
     }
-    const amountDue = 1000 - entryValue;
-    const resultCount = computeMinimumItems(amountDue);
-    console.log(resultCount);
-    return true;
+
+    return unitCount + determineCoinTotal(remainingValue, unitIndex + 1);
+}
+
+let processingActive = true;
+numericEntries.forEach(currentPayment => {
+    if (processingActive) {
+        if (currentPayment === 0) {
+            processingActive = false;
+        } else {
+            const changeAmount = 1000 - currentPayment;
+            const totalUnits = determineCoinTotal(changeAmount);
+            console.log(totalUnits);
+        }
+    }
 });

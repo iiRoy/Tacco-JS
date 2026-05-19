@@ -1,66 +1,61 @@
-const processData = (dataLines) => {
-  let initialParts = dataLines[0].split(' ');
+function processInput(dataInput) {
+  // Parse the first line of input to extract the number of items (N) and max operations (K).
+  let tempArr = dataInput[0].split(" ");
+  let numItems = tempArr[0]; // Represents N from the original problem
+  let maxOperations = tempArr[1]; // Represents K from the original problem
 
-  const totalElements = parseInt(initialParts[0], 10);
-  const costThreshold = parseInt(initialParts[1], 10);
+  // Parse the second line for the array of item costs.
+  let itemCosts = dataInput[1].split(" ");
+  // Parse the third line for the array of factor values.
+  let factorValues = dataInput[2].split(" ");
 
-  const elementValues = dataLines[1].split(' ').map(Number);
-  const weightFactors = dataLines[2].split(' ').map(Number);
-
-  // This was previously a debug output, now inactive.
-  // console.log("Elements: %d Threshold: %d", totalElements, costThreshold);
-
-  // Arrange element values in decreasing order
-  elementValues.sort((firstVal, secondVal) => {
-    if (firstVal > secondVal) {
-      return -1;
-    }
-    if (firstVal < secondVal) {
-      return 1;
-    }
-    return 0; // Values are identical
+  // Sort the 'itemCosts' array in descending order.
+  itemCosts.sort(function(valA, valB) {
+    if (valA > valB) return -1; // Place valA before valB for descending order
+    if (valA < valB) return 1;  // Place valB before valA
+    return 0;                   // Maintain relative order if values are equal
   });
 
-  // Arrange weight factors in increasing order
-  weightFactors.sort((firstFact, secondFact) => {
-    if (firstFact > secondFact) {
-      return 1;
-    }
-    if (firstFact < secondFact) {
-      return -1;
-    }
-    return 0; // Factors are equivalent
+  // Sort the 'factorValues' array in ascending order.
+  factorValues.sort(function(elemX, elemY) {
+    if (elemX > elemY) return 1;  // Place elemY before elemX for ascending order
+    if (elemX < elemY) return -1; // Place elemX before elemY
+    return 0;                     // Maintain relative order if values are equal
   });
 
-  let searchHigh = 1_000_000; // Define the upper bound for the search space
-  let searchLow = 0; // Define the lower bound for the search space
+  // Initialize bounds for a binary search.
+  // 'upperBound' is the maximum possible value for the answer.
+  let upperBound = 1000000;
+  // 'lowerBound' is the minimum possible value for the answer.
+  let lowerBound = 0;
 
-  // Execute a binary search algorithm
-  while (searchLow + 1 < searchHigh) {
-    const currentMidpoint = (searchLow + searchHigh) / 2; // Compute the middle point
+  // Execute a binary search to find the optimal value.
+  while (lowerBound + 1 < upperBound) {
+    // Calculate the midpoint of the current search range.
+    let midPoint = (lowerBound + upperBound) / 2;
+    let currentSum = 0; // Accumulator for the total operations needed.
 
-    let accumulatedSum = 0; // Variable to accumulate calculation results
-    for (let index = 0; index < totalElements; index++) {
-      // Calculate and sum up the maximum of zero or the adjusted difference
-      accumulatedSum += Math.max(elementValues[index] - currentMidpoint / weightFactors[index], 0);
+    // Iterate through each item to calculate the sum of operations.
+    for (let idx = 0; idx < numItems; idx++) {
+      // Add the maximum of (cost - midPoint / factor) or 0 to the sum.
+      currentSum += Math.max(itemCosts[idx] - midPoint / factorValues[idx], 0);
     }
 
-    // Adjust the search interval based on the accumulated sum
-    if (accumulatedSum <= costThreshold) {
-      searchHigh = currentMidpoint; // If sum is within limit, narrow down the upper range
-    }
-    else {
-      searchLow = currentMidpoint; // If sum exceeds limit, narrow down the lower range
+    // Adjust the search range based on whether the current sum exceeds maxOperations.
+    if (currentSum <= maxOperations) {
+      upperBound = midPoint; // If sum is acceptable, try a smaller midPoint.
+    } else {
+      lowerBound = midPoint; // If sum is too high, midPoint is too low, so increase lowerBound.
     }
   }
 
-  // Display the final determined range
-  console.log("Resulting bounds: low=%s high=%s", searchLow, searchHigh);
-};
+  // Output the final lower and upper bounds found by the binary search.
+  console.log("d:%s t:%s", lowerBound, upperBound);
+}
 
-// Invoke the main data processing function with input from the standard stream
-processData(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-    .split('\n')
+// Read input from standard input, split by newlines, and pass to the processing function.
+processInput(
+  require("fs")
+    .readFileSync("/dev/stdin", "utf8")
+    .split("\n")
 );

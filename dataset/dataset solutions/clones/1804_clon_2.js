@@ -1,87 +1,112 @@
-// This function receives the entire content of the input data.
-function ProcessInput(rawData) {
-  // Each line of the input is separated and stored as an element in an array.
-  let parsedLines = rawData.split('\n');
-  var caseCount = Number.parseInt(parsedLines[0]); // Determines the total quantity of scenarios to evaluate.
-  var problemCases = []; // An array to hold all the structured problem data.
-  var finalOutput = ''; // A string builder for accumulating the computed results.
+function ProcessInputData(rawData) {
+  // Split the entire input string into individual lines.
+  let processedLines = rawData.split('\n');
 
-  // A loop to parse and prepare each problem case from the input lines.
-  var loopCounterA;
-  for (loopCounterA = 0; loopCounterA < caseCount; loopCounterA++) {
-    problemCases.push([
-      Number.parseInt(parsedLines[3 * loopCounterA + 1]),
-      parsedLines[3 * loopCounterA + 2].split(' ').map(numStr => Number.parseInt(numStr, 10)),
-      parsedLines[3 * loopCounterA + 3]
+  // The first line indicates the total number of test scenarios.
+  let caseCount = processedLines[0];
+
+  // An array to store all parsed test case details.
+  let testCases = [];
+
+  // A string accumulator for the final results.
+  let finalOutput = '';
+
+  // Loop through the input lines to parse each test case.
+  for (let idx = 0; idx < caseCount; idx++) {
+    // Each test case consists of 3 lines:
+    // 1. An integer (N)
+    // 2. A space-separated list of integers (A_i)
+    // 3. A string of '0's and '1's (S)
+    testCases.push([
+      parseInt(processedLines[3 * idx + 1]), // N
+      processedLines[3 * idx + 2].split(' ').map(numStr => parseInt(numStr, 10)), // A_i array
+      processedLines[3 * idx + 3] // S string
     ]);
   }
 
-  // Process each individual problem case to find its specific solution.
-  for (let loopCounterB = 0; loopCounterB < caseCount; loopCounterB++) {
-    var outcome = 0; // The default computed result for the current scenario.
-    var trailingZeros = 0; // Counts the number of '0' characters at the end of the third element.
+  // Now, process each individual test case.
+  for (let idx = 0; idx < caseCount; idx++) {
+    let currentResult = 0; // Default result for the current test case.
+    let trailingZeroes = 0; // Counter for trailing '0's in the S string.
 
-    // Calculate the number of consecutive '0's from the end.
-    while (problemCases[loopCounterB][2][problemCases[loopCounterB][2].length - trailingZeros - 1] === '0') {
-      trailingZeros++;
+    // Count how many '0's are at the end of the S string.
+    while (testCases[idx][2][testCases[idx][2].length - trailingZeroes - 1] === "0") {
+      trailingZeroes++;
     }
-    problemCases[loopCounterB].push(trailingZeros); // Append this count to the current problem case.
 
-    var currentStates = [0]; // Represents the initial set of possible XOR sums.
-    var opIndex = 0; // Iterator for the initial sequence of operations.
+    // Store the count of trailing zeroes with the test case data.
+    testCases[idx].push(trailingZeroes);
 
-    // Generate all unique XOR sums based on the first part of the operations.
-    while (opIndex < problemCases[loopCounterB][0] - trailingZeros) {
-      var nextStates = []; // Collection of states after applying the current operation.
-      for (let innerLoopCounterA = 0; innerLoopCounterA < currentStates.length; innerLoopCounterA++) {
-        // Include the existing state if it's not already in the next set.
-        if (nextStates.indexOf(currentStates[innerLoopCounterA]) === -1) {
-          nextStates.push(currentStates[innerLoopCounterA]);
+    // Initialize a set of possible XOR sums from the first part of the A_i array.
+    let initialStates = [0];
+    let counterA = 0;
+
+    // Perform XOR operations for the first N - trailingZeroes elements of A_i.
+    while (counterA < testCases[idx][0] - trailingZeroes) {
+      let updatedStates = []; // Temporary array for new possible states.
+
+      // Iterate through the current possible states.
+      for (let subIdx = 0; subIdx < initialStates.length; subIdx++) {
+        // Add the current state if not already present.
+        if (updatedStates.indexOf(initialStates[subIdx]) === -1) {
+          updatedStates.push(initialStates[subIdx]);
         }
-        // Include the new state formed by XORing with the current operation value.
-        if (nextStates.indexOf(currentStates[innerLoopCounterA] ^ problemCases[loopCounterB][1][opIndex]) === -1) {
-          nextStates.push(currentStates[innerLoopCounterA] ^ problemCases[loopCounterB][1][opIndex]);
+        // Add the XOR sum with the current A_i element if not already present.
+        if (updatedStates.indexOf(initialStates[subIdx] ^ testCases[idx][1][counterA]) === -1) {
+          updatedStates.push(initialStates[subIdx] ^ testCases[idx][1][counterA]);
         }
       }
-      currentStates = nextStates; // Propagate the new states for the next iteration.
-      opIndex++;
+      initialStates = updatedStates; // Update the set of possible states.
+      counterA++; // Move to the next A_i element.
     }
 
-    // For each generated state, verify if it can be reduced to zero by the '0' operations.
-    for (let innerLoopCounterA = 0; innerLoopCounterA < nextStates.length; innerLoopCounterA++) {
-      var possibleValues = [nextStates[innerLoopCounterA]]; // The starting value for this particular check.
-      var isSolvable = 'False'; // A flag indicating if the value can become zero.
-      var zeroOpIndex = problemCases[loopCounterB][0] - trailingZeros; // The starting index for the '0' operations.
+    // For each state generated from the first part, check if it can be reduced to 0
+    // using the remaining A_i elements (corresponding to trailing '0's in S).
+    for (let subIdx = 0; subIdx < initialStates.length; subIdx++) {
+      let currentChoices = [initialStates[subIdx]]; // Start with the current state.
+      let isPossible = "False"; // Flag to check if 0 is reachable.
+      let counterB = testCases[idx][0] - trailingZeroes; // Start from the A_i elements corresponding to trailing '0's.
 
-      // Apply the remaining '0' operations to determine reachability of zero.
-      while (zeroOpIndex < problemCases[loopCounterB][0] && isSolvable === 'False') {
-        var nextValues = []; // States after applying the current '0' operation.
-        for (let innerLoopCounterB = 0; innerLoopCounterB < possibleValues.length; innerLoopCounterB++) {
-          if (nextValues.indexOf(possibleValues[innerLoopCounterB]) === -1) {
-            nextValues.push(possibleValues[innerLoopCounterB]);
+      // Iterate through the A_i elements corresponding to the trailing '0's in S.
+      while (counterB < testCases[idx][0] && isPossible === "False") {
+        let nextChoices = []; // Temporary array for new possible choices.
+
+        // Iterate through the current possible choices.
+        for (let innerIdx = 0; innerIdx < currentChoices.length; innerIdx++) {
+          // Add the current choice if not already present.
+          if (nextChoices.indexOf(currentChoices[innerIdx]) === -1) {
+            nextChoices.push(currentChoices[innerIdx]);
           }
-          if (nextValues.indexOf(possibleValues[innerLoopCounterB] ^ problemCases[loopCounterB][1][zeroOpIndex]) === -1) {
-            nextValues.push(possibleValues[innerLoopCounterB] ^ problemCases[loopCounterB][1][zeroOpIndex]);
+          // Add the XOR sum with the current A_i element if not already present.
+          if (nextChoices.indexOf(currentChoices[innerIdx] ^ testCases[idx][1][counterB]) === -1) {
+            nextChoices.push(currentChoices[innerIdx] ^ testCases[idx][1][counterB]);
           }
         }
-        if (nextValues.indexOf(0) >= 0) { // If a zero state is discovered.
-          isSolvable = 'True';
+
+        // If 0 is found among the new choices, it's possible.
+        if (nextChoices.indexOf(0) >= 0) {
+          isPossible = "True";
         }
-        zeroOpIndex++;
+        currentChoices = nextChoices; // Update the set of choices.
+        counterB++; // Move to the next A_i element.
       }
 
-      // If a state cannot be reduced to zero, the final outcome for this case is 1.
-      if (isSolvable === 'False') {
-        outcome = 1;
-        break; // Stop checking further states for this specific case.
+      // If 0 was not reachable for this initial state, then the overall result is 1.
+      if (isPossible === "False") {
+        currentResult = 1;
+        break; // No need to check other initial states.
       }
     }
-    finalOutput += ('\n' + outcome.toString()); // Add the result for the current case to the output string.
+    // Append the result for the current test case to the final output string.
+    finalOutput += ('\n' + String(currentResult));
   }
 
-  // Prepare the final output string and display it.
-  finalOutput = finalOutput.slice(1); // Remove the initial newline character.
-  console.log(finalOutput); // Print the aggregated results to the console.
+  // Remove the leading newline character from the accumulated output.
+  finalOutput = finalOutput.slice(1);
+
+  // Print the final computed results to the console.
+  console.log(finalOutput);
 }
-// No modifications should be made beyond this point (handles reading from standard input and invoking the primary function).
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// This line should not be modified. It handles reading input and calling the main function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

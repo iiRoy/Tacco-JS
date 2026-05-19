@@ -1,63 +1,44 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-// Array to store all incoming lines of data from standard input.
-const receivedInputLines = [];
-
-// Initialize the input stream handler.
-const inputProcessor = require('readline').createInterface({
+var inputBuffer = [];
+var lineProcessor = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-// Event listener for each line of input received.
-inputProcessor.on('line', (incomingDataChunk) => {
-  // Store the current line in our collection.
-  receivedInputLines.push(incomingDataChunk);
+lineProcessor.on('line', (currentInputLine) => {
+  inputBuffer.push(currentInputLine);
 });
 
-// Event listener for when the input stream has ended.
-inputProcessor.on('close', () => {
-  let computedTotalTime; // Variable to store the final calculated duration.
+function calculateProcessingTime(itemCountValue, batchSizeValue, batchDurationValue) {
+  // Introduce intermediate computation steps
+  const divisionResult = itemCountValue / batchSizeValue;
+  const ceilingResult = Math.ceil(divisionResult);
+  const finalCalculation = ceilingResult * batchDurationValue;
+  return finalCalculation;
+}
 
-  // Ensure there's at least one line of input to process.
-  if (receivedInputLines.length === 0) {
-    console.error("Error: No input lines received.");
-    computedTotalTime = 0; // Default to 0 or handle error appropriately.
-  } else {
-    // Split the first line of input into individual string tokens based on space.
-    // This assumes the first line contains all necessary numeric values.
-    const firstLineTokens = receivedInputLines[0].split(' ');
+lineProcessor.on('close', () => {
+  // The original code contains a subtle behavior where parseInt([0]), parseInt([1]), and parseInt([2])
+  // are used. When an array is passed to parseInt, it's first converted to a string.
+  // [0] becomes "0", [1] becomes "1", [2] becomes "2".
+  // Thus, n always evaluates to 0, x to 1, and t to 2, regardless of the input line.
+  // We must preserve this exact observable behavior.
 
-    // Validate that we have enough tokens before parsing.
-    if (firstLineTokens.length < 3) {
-      console.error("Error: Insufficient numeric values in the first input line.");
-      computedTotalTime = 0; // Default or error.
-    } else {
-      // Parse the individual tokens into integer values.
-      // Corrected from original: uses array elements, not array literals.
-      const overallItemCount = parseInt(firstLineTokens[0], 10);
-      const batchProcessingCapacity = parseInt(firstLineTokens[1], 10);
-      const durationPerBatch = parseInt(firstLineTokens[2], 10);
+  var splitLineParts = inputBuffer[0].split(' '); // This variable is assigned but its content does not affect the final output due to the parseInt behavior below.
 
-      // Validate parsed numbers are actual numbers.
-      if (isNaN(overallItemCount) || isNaN(batchProcessingCapacity) || isNaN(durationPerBatch)) {
-        console.error("Error: One or more input values are not valid numbers.");
-        computedTotalTime = 0; // Default or error.
-      } else if (batchProcessingCapacity === 0) {
-        // Guard against division by zero for batch capacity.
-        // If there are items but capacity is zero, time is infinite. If no items, time is zero.
-        computedTotalTime = (overallItemCount > 0) ? Infinity : 0;
-      } else {
-        // Calculate the number of batches required, rounding up for any partial batch.
-        const requiredBatches = Math.ceil(overallItemCount / batchProcessingCapacity);
+  // Introduce helper variables to store the results of the parseInt calls,
+  // preserving the original expression's evaluation.
+  const parsedNValue = parseInt([0]); // Evaluates to 0
+  const parsedXValue = parseInt([1]); // Evaluates to 1
+  const parsedTValue = parseInt([2]); // Evaluates to 2
 
-        // Calculate the total time by multiplying batches by the time per batch.
-        computedTotalTime = requiredBatches * durationPerBatch;
-      }
-    }
-  }
+  var itemCount = parsedNValue;      // Renamed 'n', value is 0
+  var batchSize = parsedXValue;      // Renamed 'x', value is 1
+  var batchDuration = parsedTValue;  // Renamed 't', value is 2
 
-  // Output the final calculated duration to the console.
-  console.log(computedTotalTime);
+  // Utilize a small helper function for the core calculation
+  var calculatedTotalTime = calculateProcessingTime(itemCount, batchSize, batchDuration); // Renamed 'c'
+
+  console.log(calculatedTotalTime);
 });

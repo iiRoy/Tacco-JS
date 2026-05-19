@@ -1,22 +1,13 @@
-const processInformation = (rawText) => {
-  const newlinePosition = rawText.indexOf('\n');
-  const initialPortion = newlinePosition === -1 ? rawText : rawText.slice(0, newlinePosition);
+function processContent(sourceText) {
+  const targetString = sourceText.split("\n")[0];
 
-  const outputCollection = ["ABC", "ARC"];
-  const selectionMap = {
-    "ABC": 1
+  const outputMapping = {
+    "ABC": "ARC"
   };
 
-  const finalIndex = selectionMap[initialPortion] || 0;
+  const result = outputMapping[targetString] || "ABC";
 
-  return outputCollection[finalIndex];
-};
+  console.log(result);
+}
 
-const fileAccessor = require('fs');
-const inputDevicePath = '/dev/stdin';
-const characterEncoding = 'utf8';
-
-const dataSource = fileAccessor.readFileSync(inputDevicePath, characterEncoding);
-const finalResult = processInformation(dataSource);
-
-process.stdout.write(finalResult + '\n');
+processContent(require('fs').readFileSync('/dev/stdin', 'utf8'));

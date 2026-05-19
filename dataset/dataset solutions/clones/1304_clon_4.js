@@ -1,57 +1,25 @@
 'use strict';
 
-const extractMatrices = (incomingText) => {
-    const textLines = incomingText.trim().split('\n');
+const processInput = (rawTextContent) => {
+    const rawLines = rawTextContent.trim().split('\n');
+    const matrixDimensions = rawLines[0].split(' ').map(Number);
 
-    const [dimensionSpec, ...contentLines] = textLines;
-    const [matrixARows, sharedDimension, matrixBCols] = dimensionSpec.split(' ').map(Number);
+    const rowsFirstMatrix = matrixDimensions[0];
+    const commonDimension = matrixDimensions[1];
+    const colsSecondMatrix = matrixDimensions[2];
 
-    const parsedData = contentLines.reduce((accumulator, currentLine, index) => {
-        if (index < matrixARows) {
-            accumulator.operandA.push(currentLine.split(' ').map(Number));
-        } else {
-            accumulator.operandB.push(currentLine.split(' ').map(Number));
-        }
-        return accumulator;
-    }, {
-        rowsOfA: matrixARows,
-        commonDimVal: sharedDimension,
-        colsOfB: matrixBCols,
-        operandA: [],
-        operandB: []
-    });
+    const firstOperandMatrix = rawLines.slice(1, rowsFirstMatrix + 1).map(line => line.split(' ').map(Number));
+    const secondOperandMatrix = rawLines.slice(rowsFirstMatrix + 1, rowsFirstMatrix + 1 + commonDimension).map(line => line.split(' ').map(Number));
 
-    return parsedData;
-};
-
-const multiplyMatrices = (inputMatrixOne, inputMatrixTwo, rowsOfInputOne, commonDimensionValue, colsOfInputTwo) => {
-    return Array.from({ length: rowsOfInputOne }, (_, rowIterator) =>
-        Array.from({ length: colsOfInputTwo }, (_, colIterator) =>
-            Array.from({ length: commonDimensionValue }, (_, commonIterator) =>
-                inputMatrixOne[rowIterator][commonIterator] * inputMatrixTwo[commonIterator][colIterator]
-            ).reduce((accumulator, currentValue) => accumulator + currentValue, 0)
+    const productResultMatrix = Array.from({ length: rowsFirstMatrix }, (_, rowIndex) =>
+        Array.from({ length: colsSecondMatrix }, (_, colIndex) =>
+            Array.from({ length: commonDimension }, (_, sumIndex) =>
+                firstOperandMatrix[rowIndex][sumIndex] * secondOperandMatrix[sumIndex][colIndex]
+            ).reduce((currentSum, termValue) => currentSum + termValue, 0)
         )
     );
+
+    console.log(productResultMatrix.map(row => row.join(' ')).join('\n'));
 };
 
-const renderMatrixToString = (numericGrid) => {
-    if (numericGrid.length === 0) {
-        return '';
-    }
-    const currentRowAsText = numericGrid[0].join(' ');
-    const remainingRows = numericGrid.slice(1);
-    if (remainingRows.length === 0) {
-        return currentRowAsText;
-    }
-    return currentRowAsText + '\n' + renderMatrixToString(remainingRows);
-};
-
-const runCalculation = (incomingText) => {
-    const { rowsOfA, commonDimVal, colsOfB, operandA, operandB } = extractMatrices(incomingText);
-
-    const finalProduct = multiplyMatrices(operandA, operandB, rowsOfA, commonDimVal, colsOfB);
-
-    console.log(renderMatrixToString(finalProduct));
-};
-
-runCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

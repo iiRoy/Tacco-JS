@@ -1,63 +1,71 @@
-const DNA_MAPPING = {
-  'A': 0,
-  'C': 1,
-  'G': 2,
-  'T': 3,
-};
-
-const HASH_BASE_VAL = 31;
-const PRIME_MODULUS = 1000000007;
-
-function deriveNumericToken(sequenceIdentifier) {
-  let currentAccumulator = 0;
-  for (let position = 0; position < sequenceIdentifier.length; position++) {
-    const characterNumeric = DNA_MAPPING[sequenceIdentifier[position]];
-    currentAccumulator = (currentAccumulator * HASH_BASE_VAL + characterNumeric) % PRIME_MODULUS;
+class NucleotideStringStore {
+  static get BASE_VALS() {
+    return {
+      'A': 1,
+      'C': 2,
+      'G': 3,
+      'T': 4,
+    };
   }
-  return currentAccumulator;
-}
 
-function createMolecularDepository(storageCapacity) {
-  const dataBins = Array.from({ length: storageCapacity }, () => []);
+  constructor(capacity) {
+    this.capacity = capacity;
+    this.buckets = Array.from({ length: capacity }, () => []);
+  }
 
-  function depositSequence(inputSequence) {
-    const computedToken = deriveNumericToken(inputSequence);
-    const targetBinIndex = computedToken % storageCapacity;
-
-    const currentBin = dataBins[targetBinIndex];
-    if (currentBin.includes(inputSequence)) {
-      return 1;
+  static _computeHashValue(inputString) {
+    let currentHash = 0;
+    const PRIME_MULTIPLIER = 31; // A common prime for string hashing
+    for (let i = 0; i < inputString.length; i++) {
+      currentHash = (currentHash * PRIME_MULTIPLIER + NucleotideStringStore.BASE_VALS[inputString[i]]);
     }
-    currentBin.push(inputSequence);
+    return currentHash;
+  }
+
+  _primaryIndex(hashVal) {
+    return (hashVal % this.capacity + this.capacity) % this.capacity; // Ensure positive result
+  }
+
+  locateEntry(targetString) {
+    const hashValue = NucleotideStringStore._computeHashValue(targetString);
+    const bucketIndex = this._primaryIndex(hashValue);
+    const currentBucket = this.buckets[bucketIndex];
+
+    for (let i = 0; i < currentBucket.length; i++) {
+      if (currentBucket[i] === targetString) {
+        return 1;
+      }
+    }
     return 0;
   }
 
-  function querySequence(inputSequence) {
-    const computedToken = deriveNumericToken(inputSequence);
-    const targetBinIndex = computedToken % storageCapacity;
+  placeEntry(newString) {
+    const hashValue = NucleotideStringStore._computeHashValue(newString);
+    const bucketIndex = this._primaryIndex(hashValue);
+    const currentBucket = this.buckets[bucketIndex];
 
-    const currentBin = dataBins[targetBinIndex];
-    return currentBin.includes(inputSequence) ? 1 : 0;
+    for (let i = 0; i < currentBucket.length; i++) {
+      if (currentBucket[i] === newString) {
+        return 1; // Already exists
+      }
+    }
+
+    currentBucket.push(newString);
+    return 0; // Newly inserted
   }
-
-  return {
-    deposit: depositSequence,
-    query: querySequence,
-  };
 }
 
-(function executionUnit() {
+(function mainExecution() {
   const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-  const instructionBlocks = inputData.trim().split("\n").slice(1);
-  const processedInstructions = instructionBlocks.map(lineContent => lineContent.split(' '));
+  const processedLines = inputData.trim().split("\n").slice(1);
+  const operationList = processedLines.map(line => line.split(' '));
 
-  const storageFacility = createMolecularDepository(1046527);
-
-  processedInstructions.forEach(instruction => {
-    if (instruction[0][0] === 'i') {
-      storageFacility.deposit(instruction[1]);
+  let dataStore = new NucleotideStringStore(1046527);
+  operationList.forEach(op => {
+    if (op[0][0] === 'i') {
+      dataStore.placeEntry(op[1]);
     } else {
-      console.log(storageFacility.query(instruction[1]) ? 'yes' : 'no');
+      console.log(dataStore.locateEntry(op[1]) ? 'yes' : 'no');
     }
   });
 })();

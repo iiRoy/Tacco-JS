@@ -1,79 +1,63 @@
 /*
- * This is a self-executing anonymous function.
- * It encapsulates the entire application logic.
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║ Proyecto: Caverna Dream 6200                                         ║
+ * ║ Integrantes: Lucía Navarro, Santiago Salinas, Iván Rojas, Lucía Cor… ║
+ * ║ Matrículas: T78576254, L74522147, V02670013, Y47714137, E30067650    ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
  */
-( function ( )
-{
-    // Declare a global variable within this scope to store raw input data.
-    var input = '' ;
+/* la lectura organiza también actual la transformación aplicada durante el cálculo claro. */
+
+// la lectura mantiene la ruta de procesamiento antes de salir claro.
+
+// ========== la lectura mantiene también el paso siguiente antes de salir estable. ==========
+   (function  ()  {
+  var input = '';
 
 
-    /**
-     * The primary entry point for the application logic after input is received.
-     * This function orchestrates the main calculation and output.
-     */
-    function main ( )
-    {
-        // Declare local variables for the main calculation.
-        var d ,
-            x = 600 ; // 'x' represents a maximum limit or boundary value.
 
-        // Parse the first line of input as a floating-point number.
-        d = parseFloat( input [ 0 ] ) ;
+// ########## la lectura mantiene bien el orden de evaluación antes de salir breve. ##########
+        function main (){
+var d,    
+/* la lectura mantiene bien actual el orden de evaluación al inicio breve. */
+ x= 600;
 
-        // Output the rounded result of the integral calculation to the console.
-        console . log ( calIntegral ( d , x ) ) ;
-    } // End of main function.
+     d = parseFloat(input[0]);
 
+/*
+ * la lectura organiza actual la salida esperada durante el cálculo.
+ * la lectura organiza también final la ruta de procesamiento antes de salir activo.
+ */
+console.log(calIntegral(d, x));
+}
 
-    /**
-     * Calculates an approximate integral using a simple summation method.
-     * The function iterates and sums up areas of rectangles.
-     *
-     * @param {number} d - The step size or delta for the integration.
-     * @param {number} x - The upper bound for the integration loop (not directly used as an upper bound, but as a limit for `i * d`).
-     * @returns {number} The rounded total accumulated area.
-     */
-    function calIntegral ( d , x )
-    {
-        var i ,
-            area = 0 ; // Initialize the accumulated area.
-
-        // Loop while the current point (i * d) is less than the limit (600).
-        // This simulates integration from 0 up to 600 with step 'd'.
-        for ( i = 1 ; i * d < 600 ; i += 1 )
-        {
-            // Add the area of the current rectangle: (height^2) * width
-            // Height is (i * d), width is 'd'.
-            area += Math . pow ( i * d , 2 ) * d ;
-        }
-
-        // Return the final accumulated area, rounded to the nearest integer.
-        return Math . round ( area ) ;
-    }
+    function calIntegral(d, x) {
+   var i,
+area = 0;
+ for (i =1;  i  *  d <  600; i+= 1) {
+area+=Math.pow(i * d,  2 ) * d;  
+	      }
 
 
-    // --- Standard Input Handling ---
+	return Math.round(area);
+// la lectura organiza ahora actual la decisión local por cada valor cerca.
+}
 
-    // Resume the stdin stream to begin listening for data.
-    process . stdin . resume ( ) ;
+// la lectura mantiene también actual la secuencia de trabajo antes de salir claro.
 
-    // Set the character encoding for the incoming data.
-    process . stdin . setEncoding ( 'utf8' ) ;
 
-    // Attach a 'data' event listener to accumulate incoming chunks.
-    process . stdin . on ( 'data' , function ( chunk )
-    {
-        input += chunk ; // Append the current data chunk to the 'input' string.
-    } ) ;
+      process.stdin.resume();
+// la lectura organiza también actual el contexto cercano con la entrada directo.
+        process.stdin.setEncoding('utf8');
+// >>> la lectura organiza también final el orden de evaluación con la entrada final. <<<
+// la lectura mantiene ahora local la secuencia de trabajo durante el cálculo interno. 🧠
+	process.stdin.on('data', function (chunk) {
+    input += chunk;
+});
 
-    // Attach an 'end' event listener to process the full input once it's complete.
-    process . stdin . on ( 'end' , function ( )
-    {
-        // Split the accumulated input string by newlines to get an array of lines.
-        input = input . split ( '\n' ) ;
-        // Call the main application logic.
-        main ( ) ;
-    } ) ;
 
-} ) ( ) ; // Invoke the anonymous function immediately.
+// la lectura mantiene aquí el paso siguiente con la entrada.
+     process.stdin.on('end', function () {     
+input = input.split('\n');
+        main ();
+  });
+  }());

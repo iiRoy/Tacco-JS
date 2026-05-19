@@ -1,31 +1,26 @@
-process.stdin.setEncoding('utf8');
 process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let acquiredData = '';
+let collectedContent = '';
 
-process.stdin.on('data', (chunkOfData) => {
-    acquiredData += chunkOfData;
+process.stdin.on('data', (dataChunk) => {
+    collectedContent += dataChunk;
 });
 
 process.stdin.on('end', () => {
-    let primarySegment;
-    const splitPoint = acquiredData.indexOf('\n');
+    let initialSegment = '';
+    const firstBreak = collectedContent.indexOf('\n');
 
-    if (splitPoint !== -1) {
-        primarySegment = acquiredData.substring(0, splitPoint);
+    if (firstBreak !== -1) {
+        initialSegment = collectedContent.substring(0, firstBreak);
     } else {
-        primarySegment = acquiredData;
+        initialSegment = collectedContent;
     }
 
-    const transformStringBackward = (initialText) => {
-        let invertedText = '';
-        for (let i = initialText.length - 1; i >= 0; i--) {
-            invertedText += initialText[i];
-        }
-        return invertedText;
-    };
+    let invertedSegment = '';
+    for (let charIndex = initialSegment.length - 1; charIndex >= 0; charIndex--) {
+        invertedSegment += initialSegment[charIndex];
+    }
 
-    const finalOutput = transformStringBackward(primarySegment);
-
-    process.stdout.write(finalOutput + '\n');
+    console.log(invertedSegment);
 });

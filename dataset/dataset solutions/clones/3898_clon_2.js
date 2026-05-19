@@ -1,29 +1,32 @@
-// This module contains a function designed to process numerical input data.
-function ExecuteLogic ( rawInputText )
-{
-  // The input string is first broken down into an array of distinct lines.
-  var textLines = rawInputText . split ( "\n" ) ;
+function ProcessInput(inputString) {
+  // The input string is expected to contain multiple lines.
+  // We split it into an array where each element is a line.
+  let inputLines = inputString.split('\n');
 
-  // The second line is parsed, splitting it by spaces and converting each segment to a numeric type.
-  var initialValues = textLines [ 1 ] . split ( " " ) . map ( currentStringNum => +currentStringNum ) ;
+  // The second line (index 1) contains space-separated numbers.
+  // We parse these into an array of actual numeric values.
+  const originalNumbers = inputLines[1].split(' ').map(numStr => +numStr);
 
-  // The total number of elements is extracted and converted from the initial line of text.
-  const elementCount = +textLines [ 0 ] ;
+  // The first line (index 0) provides the total count of numbers.
+  const countElements = +inputLines[0];
 
-  // A distinct, sorted sequence of the initial numeric values is generated.
-  var orderedValues = [ ...initialValues ] . sort ( ( valA , valB ) => valA - valB ) ;
+  // Create a duplicate of the numbers array and sort it in ascending order.
+  let sortedNumbers = [...originalNumbers].sort((val1, val2) => val1 - val2);
 
-  // Two central values (potential medians for even-sized arrays) are identified from the sorted list.
-  var firstMedianCandidate = orderedValues [ elementCount / 2 - 1 ] ,
-      secondMedianCandidate = orderedValues [ elementCount / 2 ] ;
+  // For an even number of elements, we identify the two middle values.
+  // These are often referred to as the lower and upper medians in this context.
+  let lowerMedian = sortedNumbers[countElements / 2 - 1];
+  let upperMedian = sortedNumbers[countElements / 2];
 
-  // An iterative process begins to evaluate each original number against the identified median candidates.
-  for ( var loopIndex = 0 ; loopIndex < elementCount ; loopIndex++ )
-  {
-    // Based on a comparison, one of the two median candidates is printed to the console.
-    console . log ( initialValues [ loopIndex ] <= firstMedianCandidate ? secondMedianCandidate : firstMedianCandidate ) ;
+  // Iterate through each number in the original, unsorted sequence.
+  for (let idx = 0; idx < countElements; ++idx) {
+    // Based on a comparison with the lower median, print either the upper or lower median.
+    // If the current number is less than or equal to the lower median, print the upper median.
+    // Otherwise, print the lower median.
+    console.log(originalNumbers[idx] <= lowerMedian ? upperMedian : lowerMedian);
   }
 }
 
-// The primary function is invoked, reading all content from standard input as a UTF-8 string.
-ExecuteLogic ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content from standard input, assuming UTF-8 encoding.
+// Then, pass this content to our processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

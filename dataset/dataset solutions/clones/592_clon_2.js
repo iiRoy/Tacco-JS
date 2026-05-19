@@ -1,60 +1,21 @@
-/*
- * This JavaScript module processes sequential numeric data.
- * It reads from standard input, expecting a specific pattern
- * where a primary value is followed by a fixed number of
- * sub-values. The script then calculates and displays
- * the discrepancy between the primary value and the sum of its sub-values.
- */
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input
 
-// Incorporate the file system interaction module.
-const fileSystemInterface = require('fs');
+const lineData = (rawData.trim()).split("\n"); // Process the raw data: remove leading/trailing whitespace and split into an array of lines
 
-// Acquire the entire content from the standard input source.
-// The data is expected to be text-based, using UTF-8 encoding.
-let rawStreamData = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
+for (let mainIndex = 0; mainIndex < lineData.length; mainIndex++) { // Iterate through the processed lines
+  let totalValue = lineData[mainIndex] - 0; // Convert the current line (first number in a block) to a numeric value
 
-// Pre-process the acquired data:
-// 1. Remove any extraneous whitespace from the beginning and end.
-// 2. Divide the string into an array of individual lines, using the newline character as a delimiter.
-const lineFragments = rawStreamData.trim().split("\n");
+  if (totalValue === 0) { // Check if the current total value is zero, which acts as a termination signal
+    break; // Exit the loop if the termination condition is met
+  }
 
-// Establish an index to navigate through the array of line fragments.
-let segmentPointer = 0;
+  let subtotal = 0; // Initialize a variable to accumulate the sum of the next ten values
 
-// Commence the primary processing loop.
-// This loop continues as long as the pointer remains within the bounds of the `lineFragments` array.
-while (segmentPointer < lineFragments.length) {
+  for (let subIndex = 0; subIndex < 10; subIndex++) { // Loop to sum the subsequent ten lines
+    subtotal += (lineData[mainIndex + subIndex + 1] - 0); // Convert each subsequent line to a number and add it to the subtotal
+  }
 
-    // Extract the main numeric value for the current data block.
-    // Convert the string representation to a numerical type.
-    let blockTotal = Number(lineFragments[segmentPointer]);
+  console.log(totalValue - subtotal); // Output the difference between the initial total value and the accumulated subtotal
 
-    // Check for a termination condition: if the main value is zero,
-    // it signals the end of meaningful data blocks.
-    if (blockTotal === 0) {
-        break; // Exit the processing loop.
-    }
-
-    // Initialize an accumulator for summing the subsequent component values.
-    let componentSum = 0;
-
-    // Begin the inner iteration to gather and sum the next ten component values.
-    // These values are expected to immediately follow the `blockTotal` in the input stream.
-    for (let subSegmentIndex = 0; subSegmentIndex < 10; subSegmentIndex++) {
-        // Access the current component line, converting it to a number,
-        // and add it to the running `componentSum`.
-        // The `+1` offset is because components start immediately after the `blockTotal`.
-        componentSum += Number(lineFragments[segmentPointer + subSegmentIndex + 1]);
-    }
-
-    // Output the calculated difference between the declared `blockTotal`
-    // and the aggregated `componentSum`. This highlights any variance.
-    console.log(blockTotal - componentSum);
-
-    // Advance the `segmentPointer` to the beginning of the next data block.
-    // Note: This increment logic matches the original code's specific behavior
-    // regarding overlapping data consumption, where the last element of one
-    // sub-sum range becomes the `blockTotal` of the next.
-    segmentPointer += 10;
-
-} // End of the primary processing loop.
+  mainIndex += 10; // Advance the main index by 10 to skip the lines that have just been processed as part of the subtotal
+}

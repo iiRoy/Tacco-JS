@@ -1,26 +1,25 @@
 "use strict";
 
-((inputSource) => {
-    const getAbsolute = (valueParameter) => valueParameter < 0 ? -valueParameter : valueParameter;
-    const getMinimum = (valOne, valTwo) => valOne < valTwo ? valOne : valTwo;
+const performCalculation = (inputData) => {
+    const contentLines = inputData.trim().split("\n");
 
-    const numericalTokens = inputSource.split(/\s+/).filter(Boolean).map(Number);
+    const [totalElements, windowLength] = contentLines[0].split(" ").map(Number);
+    const coordinates = contentLines[1].split(" ").map(Number);
 
-    const initialExtent = numericalTokens[0];
-    const spanSize = numericalTokens[1];
-    const coordinateSet = numericalTokens.slice(2);
+    const calculatedCosts = Array.from({ length: totalElements - windowLength + 1 }, (_, windowStartIdx) => {
+        const windowLeftmost = coordinates[windowStartIdx];
+        const windowRightmost = coordinates[windowStartIdx + windowLength - 1];
 
-    const pathCosts = Array.from({ length: initialExtent - spanSize + 1 }, (_, currentOffset) => {
-        const pointAlpha = coordinateSet[currentOffset];
-        const pointBeta = coordinateSet[currentOffset + spanSize - 1];
+        const distanceToLeftmostFromOrigin = Math.abs(windowLeftmost);
+        const distanceToRightmostFromOrigin = Math.abs(windowRightmost);
+        const spanDistance = Math.abs(windowRightmost - windowLeftmost);
 
-        const costFromAlpha = getAbsolute(pointAlpha) + getAbsolute(pointBeta - pointAlpha);
-        const costFromBeta = getAbsolute(pointBeta) + getAbsolute(pointAlpha - pointBeta);
-
-        return getMinimum(costFromAlpha, costFromBeta);
+        // The cost is the distance from origin to the closer endpoint,
+        // plus the distance to traverse the entire span.
+        return Math.min(distanceToLeftmostFromOrigin, distanceToRightmostFromOrigin) + spanDistance;
     });
 
-    const overallMinimalCost = pathCosts.reduce((minimumYet, currentCost) => getMinimum(minimumYet, currentCost), Infinity);
+    console.log(Math.min(...calculatedCosts));
+};
 
-    console.log(overallMinimalCost);
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+performCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,32 +1,34 @@
-function processInput(  sourceText  )
-{
-  var    parsedNumbers = sourceText
-    .trim ( )
-    .split ( "\n" )
-      [ 0 ]
-    .split ( " " )
-      .map ( Number ) ;
+function processInput(inputString) {
+    // Process the raw input string to extract numerical data.
+    // It trims whitespace, splits by newline, takes the first line,
+    // splits by space, and converts each part to a number.
+    var parsedNumbers = inputString.trim().split("\n")[0].split(" ").map(Number);
 
-  var   firstValue = parsedNumbers [ 0 ] ;
-  var   secondValue = parsedNumbers [ 1 ] ;
+    // Assign the first two numbers from the parsed data to distinct variables.
+    var firstVal = parsedNumbers[0];
+    var secondVal = parsedNumbers[1];
 
-  var   totalSum = 0 ;
+    // Initialize a variable to accumulate the result.
+    var finalSum = 0;
 
-  for ( var   loopCounter = 0 ;  loopCounter < 2 ;  loopCounter++  )
-  {
-    if  ( firstValue > secondValue )
-    {
-      totalSum  +=  firstValue ;
-      firstValue-- ;
+    // Iterate a fixed number of times (two iterations).
+    for (var idx = 0; idx < 2; idx++) {
+        // Compare the current values of 'firstVal' and 'secondVal'.
+        if (firstVal > secondVal) {
+            // If 'firstVal' is greater, add it to the sum and then decrement it.
+            finalSum += firstVal;
+            firstVal--;
+        } else {
+            // Otherwise (if 'secondVal' is greater or equal), add 'secondVal' to the sum and decrement it.
+            finalSum += secondVal;
+            secondVal--;
+        }
     }
-    else
-    {
-      totalSum  +=  secondValue ;
-      secondValue-- ;
-    }
-  }
 
-  console.log ( totalSum ) ;
+    // Print the final calculated sum to the standard output.
+    console.log(finalSum);
 }
 
-processInput ( require ( 'fs' ) .readFileSync ( '/dev/stdin' ,  'utf8' ) ) ;
+// Read the entire content from standard input as a UTF-8 string
+// and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

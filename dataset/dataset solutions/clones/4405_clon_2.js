@@ -1,37 +1,53 @@
 "use strict";
 
-const processInput = rawData => {
-  rawData = rawData.trim().split("\n");
+// This function processes the input string to find products of repeated numbers.
+const processInputData = (rawInput) => {
+  // Trim whitespace and split the input into lines.
+  rawInput = rawInput.trim().split("\n");
 
-  const countElements = parseInt(rawData[0], 10);
+  // Parse the first line as the total count of elements (though not directly used in logic).
+  const totalCount = parseInt(rawInput[0], 10);
 
-  const numberSequence = rawData[1]
+  // Parse the second line, split by space, convert to numbers, and sort in ascending order.
+  const numericValues = rawInput[1]
     .split(" ")
-    .map(numStr => parseInt(numStr, 10))
-    .sort((firstVal, secondVal) => firstVal - secondVal);
+    .map((val) => parseInt(val, 10))
+    .sort((valA, valB) => valA - valB);
 
-  let duplicateValues = [];
+  // Initialize an array to store numbers that appear consecutively (pairs).
+  let repeatedNumbers = [];
 
-  for (let idx in numberSequence) {
-    if (numberSequence[idx] === numberSequence[parseInt(idx, 10) + 1]) {
-      duplicateValues.push(numberSequence[idx]);
+  // Iterate through the sorted array to find adjacent identical numbers.
+  for (let currentIdx in numericValues) {
+    // Check if the current number is the same as the next number.
+    if (numericValues[currentIdx] === numericValues[parseInt(currentIdx, 10) + 1]) {
+      // If they are the same, add the number to our list of repeated numbers.
+      repeatedNumbers.push(numericValues[currentIdx]);
     }
   }
 
-  duplicateValues.sort((valX, valY) => valY - valX);
+  // Sort the found repeated numbers in descending order.
+  repeatedNumbers.sort((valA, valB) => valB - valA);
 
-  const uniqueDuplicates = new Set(duplicateValues);
+  // Create a Set to get unique values from the repeated numbers array.
+  const uniqueRepeats = new Set(repeatedNumbers);
 
-  if ([...uniqueDuplicates].length === 1) {
-    console.log([...uniqueDuplicates][0] * [...uniqueDuplicates][0]);
-    return;
+  // Convert the Set back to an array to easily access elements by index.
+  const distinctRepeatsArray = [...uniqueRepeats];
+
+  // If there is only one unique repeated number, print its square.
+  if (distinctRepeatsArray.length === 1) {
+    console.log(distinctRepeatsArray[0] * distinctRepeatsArray[0]);
+    return; // Exit the function after printing.
   }
 
+  // If there are multiple unique repeated numbers, or none:
+  // If there are any repeated numbers found, print the product of the two largest unique ones.
+  // Otherwise (if repeatedNumbers is empty), print 0.
   console.log(
-    duplicateValues.length ?
-    [...uniqueDuplicates][0] * [...uniqueDuplicates][1] :
-    0
+    repeatedNumbers.length ? distinctRepeatsArray[0] * distinctRepeatsArray[1] : 0
   );
 };
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

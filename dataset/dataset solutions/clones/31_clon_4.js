@@ -1,22 +1,11 @@
-const processFinancialProjection = (durationPeriods) => {
-    const initialCapital = 100000;
-    const annualInterestRate = 0.05;
-    const roundingBase = 1000;
+var dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+var cycleCount = Number(dataStream);
+var startingAmount = 100000;
 
-    const calculateNextPeriod = (currentBalance) => {
-        const afterInterest = currentBalance * (1 + annualInterestRate);
-        const roundedBalance = Math.ceil(afterInterest / roundingBase) * roundingBase;
-        return roundedBalance;
-    };
+var finalCapital = Array.from({ length: cycleCount }).reduce((currentCapital, _, iterationIndex) => {
+    let projectedCapital = currentCapital * 1.05;
+    let adjustedCapital = Math.floor((projectedCapital + 999) / 1000) * 1000;
+    return adjustedCapital;
+}, startingAmount);
 
-    const finalProjection = Array.from({ length: durationPeriods }).reduce(
-        (accruedBalance) => calculateNextPeriod(accruedBalance),
-        initialCapital
-    );
-
-    return finalProjection;
-};
-
-const periods = parseInt(require('fs').readFileSync('/dev/stdin', 'utf8').trim(), 10);
-
-console.log(processFinancialProjection(periods));
+console.log(finalCapital);

@@ -1,90 +1,90 @@
-'use strict'; // Enforce strict parsing rules across the script.
+'use strict';
 
-/**
- * Orchestrates the calculation of an optimal sugar solution based on provided parameters.
- * @param {string} rawData - The raw input string containing all necessary parameters.
+/*
+ * This module processes raw input data to determine an optimal
+ * sugar-water mixture based on specific constraints.
  */
-function calculateOptimalMixture(rawData) {
-  // Split the entire input block into individual lines for processing.
-  const inputRows = rawData.split('\r\n');
+function processInput(rawData) {
+  // Split the entire input string into individual lines.
+  const inputLines = rawData.split('\n');
 
-  // Extract and parse the initial set of six numerical parameters from the first line.
-  const initialParams = inputRows.shift().split(" ").map(val => parseInt(val, 10));
+  // Extract the first line, split by space, and convert to integers.
+  const configValues = inputLines.shift().split(' ').map(val => parseInt(val, 10));
 
-  // Assign the extracted parameters to more descriptive constant names.
-  const firstWaterUnit = initialParams[0x0]; // Represents parameter 'A'
-  const secondWaterUnit = initialParams[0x1]; // Represents parameter 'B'
+  // Assign configuration parameters from the parsed array.
+  const valA = configValues[0]; // Parameter A for water calculation
+  const valB = configValues[1]; // Parameter B for water calculation
 
-  const firstSugarUnit = initialParams[0x2]; // Represents parameter 'C'
-  const secondSugarUnit = initialParams[0x3]; // Represents parameter 'D'
+  const valC = configValues[2]; // Parameter C for sugar calculation
+  const valD = configValues[3]; // Parameter D for sugar calculation
 
-  const maxSolubilityRatio = initialParams[0x4]; // Represents parameter 'E'
-  const totalCapacity = initialParams[0x5]; // Represents parameter 'F', maximum total mass.
+  const valE = configValues[4]; // Parameter E for solubility limit
+  const valF = configValues[5]; // Maximum total mass allowed
 
-  // Initialize arrays to store all possible quantities of water and sugar.
-  let possibleWaterAmounts = [];
-  let possibleSugarAmounts = [];
+  // Initialize arrays to store possible water and sugar amounts.
+  let waterAmounts = [];
+  let sugarAmounts = [];
 
-  // Iterate through combinations to generate all valid water and sugar quantities.
-  // The outer loop variable 'idxA' and inner loop variable 'idxB' range up to 'totalCapacity'.
-  for (let idxA = 0; idxA <= totalCapacity; idxA++) {
-    for (let idxB = 0; idxB <= totalCapacity; idxB++) {
-      // Calculate the current amount of water using the given units.
-      const currentAquaQty = (1e2 * firstWaterUnit * idxA) + (1e2 * secondWaterUnit * idxB);
-      // If the water quantity does not exceed the total capacity, add it to the list.
-      if (currentAquaQty <= totalCapacity) {
-        possibleWaterAmounts.push(currentAquaQty);
+  // Iterate through possible combinations of A, B, C, D to find valid water and sugar amounts.
+  // The outer loop runs from 0 up to F, and the inner loop also runs up to F.
+  for (let idx1 = 0; idx1 <= valF; idx1++) {
+    for (let idx2 = 0; idx2 <= valF; idx2++) {
+      // Calculate current water volume (in grams, assuming 100g per unit A/B).
+      let currentWaterVolume = 100 * valA * idx1 + 100 * valB * idx2;
+      // If the calculated water volume does not exceed the total mass limit F, add it.
+      if (currentWaterVolume <= valF) {
+        waterAmounts.push(currentWaterVolume);
       }
 
-      // Calculate the current amount of sugar using its respective units.
-      const currentSweetenerQty = (firstSugarUnit * idxA) + (secondSugarUnit * idxB);
-      // If the sugar quantity does not exceed the total capacity, add it to the list.
-      if (currentSweetenerQty <= totalCapacity) {
-        possibleSugarAmounts.push(currentSweetenerQty);
-      }
-    }
-  }
-
-  // Prepare an array to hold all feasible water-sugar combinations.
-  let feasibleMixtures = [];
-  // Calculate the maximum allowed concentration ratio based on 'maxSolubilityRatio'.
-  const maximumConcentration = (1e2 * maxSolubilityRatio) / (1e2 + maxSolubilityRatio);
-
-  // Iterate through all generated water amounts and sugar amounts to find valid mixtures.
-  for (let k = 0; k < possibleWaterAmounts.length; k++) {
-    for (let m = 0; m < possibleSugarAmounts.length; m++) {
-      // Calculate the combined mass of the current water and sugar quantities.
-      const combinedMass = possibleWaterAmounts[k] + possibleSugarAmounts[m];
-      // Calculate the current concentration of sugar in the mixture.
-      const currentConcentration = (1e2 * possibleSugarAmounts[m]) / combinedMass;
-
-      // Check if the mixture is valid: total mass within capacity and concentration within limit.
-      if ((combinedMass <= totalCapacity) && (currentConcentration <= maximumConcentration)) {
-        feasibleMixtures.push([possibleWaterAmounts[k], possibleSugarAmounts[m]]);
+      // Calculate current sugar mass (in grams).
+      let currentSugarMass = valC * idx1 + valD * idx2;
+      // If the calculated sugar mass does not exceed the total mass limit F, add it.
+      if (currentSugarMass <= valF) {
+        sugarAmounts.push(currentSugarMass);
       }
     }
   }
 
-  // Initialize the best mixture found so far, starting with only water up to total capacity.
-  // This serves as a baseline for comparison.
-  let bestMixture = [totalCapacity, 0x0];
+  // Array to store all valid mixtures (water, sugar) that meet the F limit and solubility.
+  let possibleMixtures = [];
+  // Calculate the maximum allowed sugar concentration ratio.
+  const maxSolubilityRatio = (100 * valE) / (100 + valE);
 
-  // Iterate through all feasible mixtures to identify the one with the highest sugar concentration.
-  for (let n = 0; n < feasibleMixtures.length; n++) {
-    // Calculate the concentration of the currently stored best mixture.
-    const bestConcentration = (1e2 * bestMixture[0x1]) / (bestMixture[0x0] + bestMixture[0x1]);
-    // Calculate the concentration of the current feasible mixture being evaluated.
-    const currentConcentration = (1e2 * feasibleMixtures[n][0x1]) / (feasibleMixtures[n][0x0] + feasibleMixtures[n][0x1]);
+  // Iterate through all possible water and sugar combinations.
+  for (let idx1 = 0; idx1 < waterAmounts.length; idx1++) {
+    for (let idx2 = 0; idx2 < sugarAmounts.length; idx2++) {
+      // Calculate the total mass of the current mixture.
+      let totalMass = waterAmounts[idx1] + sugarAmounts[idx2];
+      // Calculate the current sugar concentration (percentage).
+      let currentConcentration = (100 * sugarAmounts[idx2]) / totalMass;
+
+      // Check if the mixture is valid: total mass within F and concentration within limit.
+      if ((totalMass <= valF) && (currentConcentration <= maxSolubilityRatio)) {
+        possibleMixtures.push([waterAmounts[idx1], sugarAmounts[idx2]]);
+      }
+    }
+  }
+
+  // Initialize the best mixture found so far.
+  // Start with a mixture of F grams of water and 0 grams of sugar (pure water).
+  let bestMixture = [valF, 0];
+
+  // Iterate through all valid possible mixtures to find the one with the highest sugar concentration.
+  for (let idx1 = 0; idx1 < possibleMixtures.length; idx1++) {
+    // Calculate the concentration of the current best mixture.
+    let bestConcentration = (100 * bestMixture[1]) / (bestMixture[0] + bestMixture[1]);
+    // Calculate the concentration of the current mixture being evaluated.
+    let currentConcentration = (100 * possibleMixtures[idx1][1]) / (possibleMixtures[idx1][0] + possibleMixtures[idx1][1]);
 
     // If the current mixture has a higher concentration, it becomes the new best mixture.
     if (currentConcentration > bestConcentration) {
-      bestMixture = [feasibleMixtures[n][0x0], feasibleMixtures[n][0x1]];
+      bestMixture = [possibleMixtures[idx1][0], possibleMixtures[idx1][1]];
     }
   }
 
-  // Output the sum of water and sugar in the best mixture, followed by the sugar amount.
-  console.log((bestMixture[0x0] + bestMixture[0x1]) + ' ' + bestMixture[0x1]);
+  // Output the total mass and the sugar mass of the best mixture.
+  console.log((bestMixture[0] + bestMixture[1]) + ' ' + bestMixture[1]);
 }
 
-// Execute the main function, reading input from the standard input stream.
-calculateOptimalMixture(require('fs').readFileSync('/dev/std-in', 'utf-8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,33 +1,27 @@
-function ProcessGeometricData ( rawInputText )
-{
-  // This initial step separates the entire input string into an array of individual lines.
-  const lineSegments = rawInputText.split ( '\n' ) ;
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  var parsedLines = rawData.split('\n');
 
-  // The first line represents the vertical measurement; it's converted to an integer.
-  let verticalDimension = Math.trunc ( parseFloat ( lineSegments[0] ) ) ;
-  // The second line provides the horizontal measurement, also converted to an integer.
-  let horizontalDimension = Math.trunc ( parseFloat ( lineSegments[1] ) ) ;
-  // The third line indicates the total required area, parsed as an integer value.
-  let totalAreaNeeded = Math.trunc ( parseFloat ( lineSegments[2] ) ) ;
+  // Parse the first three lines as numbers
+  var verticalDim = Math.floor(parsedLines[0]); // Represents the first dimension
+  var horizontalDim = Math.floor(parsedLines[1]); // Represents the second dimension
+  var blackCells = Math.floor(parsedLines[2]); // Represents a count of specific cells
   
-  // A variable is initialized to hold the ultimate computed outcome, starting at zero.
-  let calculatedResult = 0 ;
+  // Initialize a variable to store the computed outcome
+  var resultValue = 0;
   
-  // A conditional check is performed to determine which dimension is greater.
-  if ( verticalDimension > horizontalDimension )
-  {
-    // If the vertical dimension is larger, it is used as the divisor for the area.
-    calculatedResult = Math.ceil ( totalAreaNeeded / verticalDimension ) ;
-  }
-  else
-  {
-    // Otherwise, the horizontal dimension is utilized for the division.
-    calculatedResult = Math.ceil ( totalAreaNeeded / horizontalDimension ) ;
+  // Determine the calculation based on the comparison of dimensions
+  if (verticalDim > horizontalDim) {
+    // If the first dimension is larger, calculate based on it
+    resultValue = Math.ceil(blackCells / verticalDim);
+  } else {
+    // Otherwise, calculate based on the second dimension
+    resultValue = Math.ceil(blackCells / horizontalDim);
   }
   
-  // The final calculated result is then displayed via the console's information stream.
-  console.info ( calculatedResult ) ;
+  // Output the final calculated result to the console
+  console.log(resultValue);
 }
 
-// The main processing function is invoked, reading its data from the standard input file.
-ProcessGeometricData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

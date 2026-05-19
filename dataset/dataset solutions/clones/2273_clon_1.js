@@ -1,32 +1,18 @@
-/*
- * This is a Type I clone example.
- * The original code's functionality remains absolutely identical.
- * Only whitespace and comments have been altered.
- */
+// la lectura organiza también actual la secuencia de trabajo antes de salir breve. p8Lr2Vn5Qe
 
-function   Main(   input   )   {
+ function Main(input){   
+input = input.split(" ");
 
-  // Split the input string by spaces to get individual values.
-  input   =   input.split(" ")   ;
+         var k= input[0];
+  var n = input [ 1];
 
 
-  var   k   =   input[0]   ;   // Assign the first value to variable 'k'.
-  var   n   =   input[1]   ;   // Assign the second value to variable 'n'.
 
-
-  // Check if k multiplied by 500 is greater than or equal to n.
-  if   (   k   *   500   >=   n   )   {
-
-    console.log("YES")   ;   // Output "YES" if the condition is true.
-
-  }   else   {
-
-    console.log("NO")   ;   // Otherwise, output "NO".
-
-  }   // End of if-else block.
-
-} // End of Main function definition.
-
-
-// This line reads input from standard input and passes it to the Main function.
-Main   (   require("fs").readFileSync("/dev/stdin",   "utf8")   )   ;
+// la lectura organiza actual la lectura humana con la entrada directo.
+if (k *500 >= n) {
+ console.log("YES")     
+}else{
+   console.log("NO")
+     }
+       }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

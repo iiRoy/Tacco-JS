@@ -1,52 +1,51 @@
-"use strict"
-class SourceHandler {
-    constructor() {
-        this.sourceSegments = require("node:fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-        this.currentPosition = 0;
-        this.totalSegments = this.sourceSegments.length;
-    }
+"use strict";
 
-    hasRemaining() {
-        return this.currentPosition < this.totalSegments;
-    }
+const createInputManager = () => {
+    const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    let currentPosition = 0;
 
-    retrieveNextSegment() {
-        if (!this.hasRemaining()) {
-            throw new Error("InputExhausted");
+    const fetchNextItem = () => {
+        if (currentPosition >= rawInputData.length) {
+            throw "ArrayIndexOutOfBoundsException";
         }
-        return this.sourceSegments[this.currentPosition++];
-    }
-}
+        return rawInputData[currentPosition++];
+    };
 
-const dataStream = new SourceHandler();
+    const checkAvailability = () => currentPosition < rawInputData.length;
 
-const fetchSegment = () => dataStream.retrieveNextSegment();
-const fetchInteger = () => Number.parseInt(dataStream.retrieveNextSegment(), 10);
-const fetchWords = () => dataStream.retrieveNextSegment().split(" ");
-const fetchNumbers = () => dataStream.retrieveNextSegment().split(" ").map(element => Number.parseInt(element, 10));
-const fetchCharacters = () => dataStream.retrieveNextSegment().split("");
-const moreDataAvailable = () => dataStream.hasRemaining();
+    return {
+        fetchNextItem,
+        checkAvailability
+    };
+};
 
-const computeValue = (firstVal, secondVal) => {
-    const baseDifference = Math.abs(Math.abs(firstVal) - Math.abs(secondVal));
+const dataStream = createInputManager();
+const obtainLine = () => dataStream.fetchNextItem();
+const obtainInteger = () => parseInt(dataStream.fetchNextItem());
+const obtainStringArray = () => dataStream.fetchNextItem().split(" ");
+const obtainIntegerArray = () => dataStream.fetchNextItem().split(" ").map(itemValue => parseInt(itemValue));
+const obtainCharacterArray = () => dataStream.fetchNextItem().split("");
+const hasMoreData = () => dataStream.checkAvailability();
+
+const outputResult = (...values) => console.log(...values);
+
+const runCalculation = () => {
+    const [firstOperand, secondOperand] = obtainIntegerArray();
+
+    const initialDifference = Math.abs(Math.abs(firstOperand) - Math.abs(secondOperand));
 
     const adjustmentRules = [
-        { check: (v1, v2) => v1 * v2 < 0, amount: 1 },
-        { check: (v1, v2) => (v1 > 0 && v2 === 0) || (v1 === 0 && v2 < 0), amount: 1 },
-        { check: (v1, v2) => v1 > v2, amount: 2 }
+        { condition: (a, b) => a * b < 0, value: 1 },
+        { condition: (a, b) => (a > 0 && b === 0) || (a === 0 && b < 0), value: 1 },
+        { condition: (a, b) => a > b, value: 2 }
     ];
 
-    const calculatedAdjustment = adjustmentRules.reduce((currentAdj, rule) => {
-        return currentAdj !== 0 ? currentAdj : (rule.check(firstVal, secondVal) ? rule.amount : 0);
-    }, 0);
+    const applicableRule = adjustmentRules.find(rule => rule.condition(firstOperand, secondOperand));
+    const calculatedAdjustment = applicableRule ? applicableRule.value : 0;
 
-    return baseDifference + calculatedAdjustment;
+    const finalAnswer = initialDifference + calculatedAdjustment;
+
+    outputResult(finalAnswer);
 };
 
-const executeCoreLogic = () => {
-    const [alpha, beta] = fetchNumbers();
-    const result = computeValue(alpha, beta);
-    console.log(result);
-};
-
-executeCoreLogic();
+runCalculation();

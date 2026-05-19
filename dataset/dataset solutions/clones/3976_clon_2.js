@@ -1,174 +1,166 @@
-// This module provides a factory for creating data processing objects.
-var InputReaderFactory = (function () {
-
-  // Function to create a new data processing instance.
-  function createParser(inputString) {
-    return new DataProcessor(inputString);
+var DATA_PARSER = (function() {
+  // Factory function to create an input reader instance
+  function createParser(sourceText) {
+    return new InputReader(sourceText);
   }
 
-  // Constructor for the DataProcessor object.
-  function DataProcessor(inputString) {
-    // Store input lines after trimming and splitting by newline.
-    this._contentRows = inputString.trim().split("\n");
-    // Initialize the current row pointer to the beginning.
-    this._currentRowPointer = 0;
+  // Constructor for the InputReader class
+  function InputReader(sourceText) {
+    // Store the input source as an array of trimmed lines
+    this._sourceLines = sourceText.trim().split("\n");
+    // Initialize the current line index
+    this._currentLineIndex = 0;
   }
 
-  // Prototype method to extract a single token from the current line.
-  DataProcessor.prototype.getNextElement = function (keepOriginalType) {
-    var lineBuffer = this._contentRows;
-    var currentRow = this._currentRowPointer;
+  // Prototype method to read a single value from the current line
+  InputReader.prototype.readNextValue = function(returnAsString) {
+    var lineData = this._sourceLines;
+    var lineIndex = this._currentLineIndex;
     var extractedValue;
 
-    // If the current line is still a single string, parse it into an array of tokens.
-    // The tokens are reversed to allow popping from the end (which is more efficient).
-    if (typeof lineBuffer[currentRow] === "string") {
-      lineBuffer[currentRow] = lineBuffer[currentRow].split(" ").reverse();
+    // If the current line hasn't been processed yet, split it and reverse for easy popping
+    if (typeof lineData[lineIndex] === "string") {
+      lineData[lineIndex] = lineData[lineIndex].split(" ").reverse();
     }
 
-    // Pop the last element (which was originally the first) from the current line's array.
-    extractedValue = lineBuffer[currentRow].pop();
+    // Pop the last element (which is the first in original order)
+    extractedValue = lineData[lineIndex].pop();
 
-    // If the current line is now empty, advance the row pointer to the next line.
-    if (!lineBuffer[currentRow].length) {
-      this._currentRowPointer++;
+    // If the current line is exhausted, move to the next line
+    if (!lineData[lineIndex].length) {
+      this._currentLineIndex++;
     }
 
-    // Return the value. If 'keepOriginalType' is true, return as string; otherwise, convert to number.
-    return keepOriginalType ? extractedValue : +extractedValue;
+    // Return as string or convert to number
+    return returnAsString ? extractedValue : +extractedValue;
   };
 
-  // Prototype method to read all tokens from the current line as an array.
-  DataProcessor.prototype.fetchLineElements = function (preserveTypes) {
-    // Split the current line into elements and advance the row pointer.
-    var elements = this._contentRows[this._currentRowPointer++].split(" ");
-
-    // Return elements. If 'preserveTypes' is true, return as strings; otherwise, convert each to number.
-    return preserveTypes ? elements : elements.map(val => +val);
+  // Prototype method to read all values from the current line
+  InputReader.prototype.readLineValues = function(returnAsString) {
+    var lineValues = this._sourceLines[this._currentLineIndex++].split(" ");
+    // Return as strings or convert all to numbers
+    return returnAsString ? lineValues : lineValues.map(strValue => +strValue);
   };
 
-  // Prototype method to read a specified number of rows as a 2D matrix.
-  DataProcessor.prototype.getGrid = function (rowCount, rawMatrix) {
-    // Slice the required number of rows and split each row into elements.
-    var matrixData = this._contentRows.slice(this._currentRowPointer, this._currentRowPointer += rowCount)
-      .map(line => line.split(" "));
-
-    // Return the matrix. If 'rawMatrix' is true, return string matrix; otherwise, convert all elements to numbers.
-    return rawMatrix ? matrixData : matrixData.map(row => row.map(val => +val));
+  // Prototype method to read a matrix of values over multiple lines
+  InputReader.prototype.readMatrix = function(numberOfLines, returnAsString) {
+    var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines)
+      .map(rowString => rowString.split(" "));
+    // Return as strings or convert all cells to numbers
+    return returnAsString ? matrixRows : matrixRows.map(rowString => rowString.map(cellString => +cellString));
   };
 
-  // Prototype method to read a specified number of raw lines as a 1D array.
-  DataProcessor.prototype.fetchRows = function (count, rawArray) {
-    // Slice the required number of rows.
-    var extractedLines = this._contentRows.slice(this._currentRowPointer, this._currentRowPointer += count);
-
-    // Return lines. If 'rawArray' is true, return string array; otherwise, convert each line to a number.
-    return rawArray ? extractedLines : extractedLines.map(value => +value);
+  // Prototype method to read raw lines as strings
+  InputReader.prototype.readRawLines = function(numberOfLines, returnAsString) {
+    var rawLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines);
+    // Return as strings or attempt to convert to numbers (if applicable)
+    return returnAsString ? rawLines : rawLines.map(elementVal => +elementVal);
   };
 
-  // The factory returns the function to create DataProcessor instances.
   return createParser;
+})();
 
-})(); // End of InputReaderFactory module.
+// Initialize the input handler by reading from standard input
+var inputHandler = DATA_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
+// Execute the main problem-solving logic and print the result
+console.log(solveProblem());
 
-// Initialize the input processor by reading the entire content of standard input.
-var inputProcessor = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
+/**
+ * Main function to solve the problem.
+ * @returns {number} The final calculated answer.
+ */
+function solveProblem() {
+  // Read the number of elements
+  var elementCount = inputHandler.readNextValue();
+  // Read array A
+  var arrayA = inputHandler.readLineValues();
+  // Read array B
+  var arrayB = inputHandler.readLineValues();
 
-// Execute the main calculation function and print its returned result to the console.
-console.log(calculateFinalResult());
+  var finalAnswer = 0; // Accumulator for the final result
 
-
-// Main function to perform the primary algorithmic calculation.
-function calculateFinalResult() {
-  // Read an initial total count value from the input.
-  var totalCount = inputProcessor.getNextElement();
-  // Read two separate arrays of numbers from subsequent input lines.
-  var primaryList = inputProcessor.fetchLineElements();
-  var secondaryList = inputProcessor.fetchLineElements();
-
-  var finalAnswer = 0; // Initialize the variable to accumulate the final result.
-
-  // Loop through bit positions from 28 down to 0, processing each bit.
-  for (var bitPosition = 28; bitPosition >= 0; bitPosition--) {
-
-    // Conditional logic based on the current bit position.
-    if (bitPosition < 17) {
-      // If bit position is less than 17, apply a specific transformation and reversal.
-      secondaryList = filterOddCounts(secondaryList, bitPosition);
-      primaryList = filterOddCounts(primaryList, bitPosition).reverse();
+  // Iterate from the most significant bit down to the least significant bit
+  for (var currentBit = 28; currentBit >= 0; currentBit--) {
+    // Apply different sorting/processing strategies based on the bit position
+    if (currentBit < 17) {
+      arrayB = processBitwise(arrayB, currentBit);
+      arrayA = processBitwise(arrayA, currentBit).reverse();
     } else {
-      // For higher bit positions, sort the arrays: secondary ascending, primary descending.
-      secondaryList.sort((valA, valB) => valA - valB);
-      primaryList.sort((valA, valB) => valB - valA);
+      // Sort array B in ascending order
+      arrayB.sort((valA, valB) => valA - valB);
+      // Sort array A in descending order
+      arrayA.sort((valA, valB) => valB - valA);
     }
 
-    // Calculate powers of two related to the current bit position.
-    var currentBitValue = 1 << bitPosition;     // 2^bitPosition
-    var twoTimesBitValue = currentBitValue << 1; // 2 * 2^bitPosition
-    var threeTimesBitValue = currentBitValue * 3; // 3 * 2^bitPosition
+    // Calculate bit masks for current, double, and triple values
+    var bitValue = 1 << currentBit;
+    var doubleBitValue = bitValue << 1; // Equivalent to bitValue * 2
+    var tripleBitValue = bitValue * 3;
 
-    // Initialize a temporary counter for the current bit's contribution.
-    var temporaryCounter = totalCount;
+    // Initialize xorCount with the total number of elements
+    var xorCount = elementCount;
     var pointerOne, pointerTwo, pointerThree;
+    pointerOne = pointerTwo = pointerThree = 0; // Initialize pointers for array B
 
-    // Initialize three pointers for iterating through the secondary list.
-    pointerOne = pointerTwo = pointerThree = 0;
-
-    // Iterate through each element in the primary list.
-    for (var primaryIndex = 0; primaryIndex < primaryList.length; primaryIndex++) {
-      // Advance pointerOne while the sum `currentBitValue - currentPrimaryElement` is greater than `secondaryElement`.
-      while (pointerOne < secondaryList.length && currentBitValue - primaryList[primaryIndex] > secondaryList[pointerOne]) {
+    // Iterate through elements of array A
+    for (var arrayAIndex = 0; arrayAIndex < arrayA.length; arrayAIndex++) {
+      // Move pointerOne until condition (bitValue - arrayA[idxA] > arrayB[ptr1]) is false
+      while (pointerOne < arrayB.length && bitValue - arrayA[arrayAIndex] > arrayB[pointerOne]) {
         pointerOne++;
       }
-      // Advance pointerTwo while the sum `twoTimesBitValue - currentPrimaryElement` is greater than `secondaryElement`.
-      while (pointerTwo < secondaryList.length && twoTimesBitValue - primaryList[primaryIndex] > secondaryList[pointerTwo]) {
+      // Move pointerTwo until condition (doubleBitValue - arrayA[idxA] > arrayB[ptr2]) is false
+      while (pointerTwo < arrayB.length && doubleBitValue - arrayA[arrayAIndex] > arrayB[pointerTwo]) {
         pointerTwo++;
       }
-      // Advance pointerThree while the sum `threeTimesBitValue - currentPrimaryElement` is greater than `secondaryElement`.
-      while (pointerThree < secondaryList.length && threeTimesBitValue - primaryList[primaryIndex] > secondaryList[pointerThree]) {
+      // Move pointerThree until condition (tripleBitValue - arrayA[idxA] > arrayB[ptr3]) is false
+      while (pointerThree < arrayB.length && tripleBitValue - arrayA[arrayAIndex] > arrayB[pointerThree]) {
         pointerThree++;
       }
-      // Update the temporary counter based on the final positions of the three pointers.
-      temporaryCounter += -pointerThree + pointerTwo - pointerOne;
+      // Update xorCount based on pointer positions
+      xorCount += -pointerThree + pointerTwo - pointerOne;
     }
 
-    // If the temporary counter is odd, add the current bit's value to the final answer.
-    if (temporaryCounter % 2) {
-      finalAnswer += currentBitValue;
+    // If the xorCount is odd, add the current bit's value to the final answer
+    if (xorCount % 2) {
+      finalAnswer += bitValue;
     }
 
-    // Decrement the `currentBitValue` to prepare for bitwise AND operations.
-    currentBitValue--;
-
-    // Apply a bitwise AND mask to all elements in both lists.
-    // This effectively truncates elements to the lower `bitPosition` bits.
-    secondaryList = secondaryList.map(value => value & currentBitValue);
-    primaryList = primaryList.map(value => value & currentBitValue);
+    // Prepare for the next iteration:
+    // Decrement bitValue (used as a mask for the next step)
+    bitValue--;
+    // Apply bitwise AND with the decremented bitValue to both arrays
+    // This effectively clears the current bit and higher bits, keeping only lower bits
+    arrayB = arrayB.map(elementVal => elementVal & bitValue);
+    arrayA = arrayA.map(elementVal => elementVal & bitValue);
   }
 
-  // Return the final accumulated answer.
   return finalAnswer;
 
+  /**
+   * Processes an array based on a given bit length, returning elements with odd counts.
+   * This function seems to be related to finding numbers that have an odd count of a specific bit.
+   * @param {number[]} inputCollection - The array to process.
+   * @param {number} bitLength - The bit position to consider.
+   * @returns {number[]} An array containing elements that appeared an odd number of times
+   *                     within the context of the bit length.
+   */
+  function processBitwise(inputCollection, bitLength) {
+    // Create a frequency map for values up to 2^(bitLength+1) - 1
+    var valueCounts = Array(1 << (bitLength + 1)).fill(0);
+    var filteredResults = [];
 
-  // Nested helper function to filter a list based on the odd/even counts of elements.
-  function filterOddCounts(sourceList, maxBitIndex) {
-    // Create a frequency map (array) sized for the given bit limit, initialized with zeros.
-    var frequencyMap = Array(1 << (maxBitIndex + 1)).fill(0);
-    var resultCollection = []; // Array to store elements with odd frequencies.
-
-    // Iterate through the source list to populate the frequency map.
-    for (var elementIndex = 0; elementIndex < sourceList.length; elementIndex++) {
-      frequencyMap[sourceList[elementIndex]]++;
+    // Populate the frequency map
+    for (var counterIndex = 0; counterIndex < inputCollection.length; counterIndex++) {
+      valueCounts[inputCollection[counterIndex]]++;
     }
 
-    // Iterate through the frequency map to find elements with an odd count.
-    for (elementIndex = 0; elementIndex < frequencyMap.length; elementIndex++) {
-      // If the count is odd (bitwise AND with 1 is 1), add the element's value to the result.
-      if (frequencyMap[elementIndex] & 1) {
-        resultCollection.push(elementIndex);
+    // Collect indices (values) that have an odd count
+    for (counterIndex = 0; counterIndex < valueCounts.length; counterIndex++) {
+      if (valueCounts[counterIndex] & 1) { // Check if count is odd using bitwise AND
+        filteredResults.push(counterIndex);
       }
     }
-    return resultCollection; // Return the filtered collection.
+    return filteredResults;
   }
 }

@@ -1,94 +1,121 @@
-"use strict";
+const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
 
-let entryData = '';
-let tokenArray = [];
-let tokenIndex = 0;
+const tokenStream = (function* () {
+  const rawTokens = inputSource.split(/ |\n/);
+  for (const token of rawTokens) {
+    yield token;
+  }
+})();
 
-process.stdin.on('data', chunk => {
-    entryData += chunk.toString();
-});
+function retrieveNumeric() { return +tokenStream.next().value; }
+function retrieveString() { return tokenStream.next().value; }
+function retrieveBigInt() { return BigInt(tokenStream.next().value); }
 
-process.stdin.on('end', () => {
-    tokenArray = entryData.split(/\s+/).filter(Boolean);
-    initiateProcessing();
-});
-
-function acquireNumber() {
-    return Number(tokenArray[tokenIndex++]);
+function retrieveMultiple(count, transformer) {
+  const collectedValues = [];
+  for (let i = 0; i < count; i++) {
+    collectedValues.push(tokenStream.next().value);
+  }
+  return transformer ? collectedValues.map(transformer) : collectedValues;
 }
 
-function createDisjointStructure() {
-    const parentLinks = new Map();
-    const treeRanks = new Map();
-
-    function locateRepresentative(element) {
-        if (!parentLinks.has(element)) {
-            parentLinks.set(element, element);
-            treeRanks.set(element, 0);
-            return element;
-        }
-
-        let currentParent = parentLinks.get(element);
-        if (currentParent === element) {
-            return element;
-        }
-
-        const actualRoot = locateRepresentative(currentParent);
-        parentLinks.set(element, actualRoot);
-        return actualRoot;
-    }
-
-    function mergeGroups(elementA, elementB) {
-        let rootA = locateRepresentative(elementA);
-        let rootB = locateRepresentative(elementB);
-
-        if (rootA === rootB) {
-            return false;
-        }
-
-        let rankA = treeRanks.get(rootA);
-        let rankB = treeRanks.get(rootB);
-
-        if (rankA < rankB) {
-            parentLinks.set(rootA, rootB);
-        } else if (rankB < rankA) {
-            parentLinks.set(rootB, rootA);
-        } else {
-            parentLinks.set(rootB, rootA);
-            treeRanks.set(rootA, rankA + 1);
-        }
-        return true;
-    }
-
-    return {
-        find: locateRepresentative,
-        unite: mergeGroups,
-        areConnected: (el1, el2) => locateRepresentative(el1) === locateRepresentative(el2)
-    };
+function retrieveNumericSequence(count, asStrings) {
+  return retrieveMultiple(count, asStrings ? (val => val) : (val => +val));
 }
 
-function initiateProcessing() {
-    const initialCount = acquireNumber();
-    const queryCount = acquireNumber();
+function retrieveAndSortNumericSequence(count, ascendingOrder) {
+  const numbers = retrieveMultiple(count, val => +val);
+  return numbers.sort((a, b) => ascendingOrder ? (a - b) : (b - a));
+}
 
-    const structure = createDisjointStructure();
-    const resultCollection = [];
+function retrieveMatrix(rows, columns, asStrings) {
+  return Array.from({ length: rows }, () => retrieveMultiple(columns, asStrings ? (val => val) : (val => +val)));
+}
 
-    for (let currentQueryIndex = 0; currentQueryIndex < queryCount; currentQueryIndex++) {
-        const operationType = acquireNumber();
-        const participantOne = acquireNumber();
-        const participantTwo = acquireNumber();
+function constructMultiDimArray(initialValue, ...dimensions) {
+  if (dimensions.length === 0) {
+    return initialValue;
+  }
+  const currentDimensionSize = dimensions[0];
+  const remainingDimensions = dimensions.slice(1);
 
-        if (operationType === 1) {
-            if (structure.areConnected(participantOne, participantTwo)) {
-                resultCollection.push(1);
-            } else {
-                resultCollection.push(0);
-            }
-        } else {
-            structure.unite(participantOne, participantTwo);
-        }
+  return Array.from({ length: currentDimensionSize }, () =>
+    constructMultiDimArray(initialValue, ...remainingDimensions)
+  );
+}
+
+class DisjointSetStructure {
+  constructor(elementLimit) {
+    this.parentMap = new Map();
+    this.setSizes = new Map();
+    for (let i = 1; i <= elementLimit; i++) {
+      this.parentMap.set(i, i);
+      this.setSizes.set(i, 1);
+    }
+  }
+
+  findSetRepresentative(element) {
+    let currentElement = element;
+    const pathNodes = [];
+    while (this.parentMap.get(currentElement) !== currentElement) {
+      pathNodes.push(currentElement);
+      currentElement = this.parentMap.get(currentElement);
+    }
+    for (const nodeOnPath of pathNodes) {
+      this.parentMap.set(nodeOnPath, currentElement);
+    }
+    return currentElement;
+  }
+
+  areElementsInSameSet(elemA, elemB) {
+    return this.findSetRepresentative(elemA) === this.findSetRepresentative(elemB);
+  }
+
+  uniteSets(elemA, elemB) {
+    let rootA = this.findSetRepresentative(elemA);
+    let rootB = this.findSetRepresentative(elemB);
+
+    if (rootA === rootB) {
+      return false;
     }
 
-    process.stdout.write(resultCollection.join('\n') + '\n');
+    let sizeA = this.setSizes.get(rootA);
+    let sizeB = this.setSizes.get(rootB);
+
+    if (sizeA < sizeB) {
+      [rootA, rootB] = [rootB, rootA];
+      [sizeA, sizeB] = [sizeB, sizeA];
+    }
+
+    this.parentMap.set(rootB, rootA);
+    this.setSizes.set(rootA, sizeA + sizeB);
+    this.setSizes.delete(rootB);
+
+    return true;
+  }
+
+  getSetCardinality(element) {
+    return this.setSizes.get(this.findSetRepresentative(element));
+  }
+}
+
+const processedResult = (function executeQueryOperations() {
+  const [nodeQuantity, queryQuantity] = retrieveNumericSequence(2);
+  const setHandler = new DisjointSetStructure(nodeQuantity);
+
+  const operationOutcomes = Array.from({ length: queryQuantity }, () => {
+    const [opType, itemOne, itemTwo] = retrieveNumericSequence(3);
+    if (opType === 1) {
+      return setHandler.areElementsInSameSet(itemOne, itemTwo) ? 1 : 0;
+    } else {
+      setHandler.uniteSets(itemOne, itemTwo);
+      return null;
+    }
+  }).filter(outcome => outcome !== null);
+
+  return operationOutcomes.join("\n");
+})();
+
+if (processedResult !== undefined) {
+  console.log(String(processedResult));
 }

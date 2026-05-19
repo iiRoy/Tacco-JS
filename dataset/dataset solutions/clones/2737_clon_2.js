@@ -1,46 +1,50 @@
-"use strict"; /* Enable strict mode for better error handling and cleaner code */
+"use strict";
 
-// Acquire the 'fs' (file system) module to read input synchronously
-// Read all content from standard input ('/dev/stdin') using UTF-8 encoding
-const rawInputText = require('fs').readFileSync('/dev/stdin', 'UTF-8');
+// This script processes input from standard input to perform a specific bitwise operation
+// and then filters the results based on a condition.
 
-// Divide the comprehensive input string into individual lines
-const parsedLines = rawInputText.split('\n');
+// Read the entire content from standard input as a UTF-8 encoded string.
+const inputContent = require('fs').readFileSync('/dev/stdin', 'UTF-8');
 
-// Convert the initial line (first element) into an integer, representing the total count
-const initialSize = parseInt(parsedLines[0], 10);
+// Divide the received content into an array of individual lines.
+const inputLines = inputContent.split('\n');
 
-// Process the second line: split by spaces, then map each segment to an integer
-const numberSequence = parsedLines[1] .split(' ') .map( itemValue => parseInt(itemValue, 10) );
+// Parse the first line to determine the total number of elements for processing.
+const countElements = parseInt(inputLines[0]);
 
-/*
- * Implement a nested loop structure to perform bitwise XOR operations
- * based on divisibility conditions.
- */
-// Outer iteration: 'firstDivisor' decreases from 'initialSize' to 1
-for ( let firstDivisor = initialSize; firstDivisor >= 1; firstDivisor-- ) {
-  // Inner iteration: 'secondNumber' also decreases from 'initialSize' to 1
-  for ( let secondNumber = initialSize; secondNumber >= 1; secondNumber-- ) {
-    // Skip if the 'firstDivisor' is greater than or equal to 'secondNumber'
-    if ( firstDivisor >= secondNumber ) {
-      continue; // Proceed to the next 'secondNumber'
+// Process the second line: split it by spaces, then convert each segment into an integer.
+const dataCollection = inputLines[1].split(' ').map(itemStr => parseInt(itemStr));
+
+// Initiate a nested loop structure to iterate through the data collection.
+// The outer loop variable, 'outerIndex', starts from 'countElements' and decrements to 1.
+for (let outerIndex = countElements; outerIndex >= 1; outerIndex--) {
+  // The inner loop variable, 'innerIndex', also starts from 'countElements' and decrements to 1.
+  for (let innerIndex = countElements; innerIndex >= 1; innerIndex--) {
+    // If 'outerIndex' is greater than or equal to 'innerIndex', skip the current iteration
+    // to avoid redundant or out-of-order comparisons.
+    if (outerIndex >= innerIndex) {
+      continue;
     }
 
-    // Check if 'secondNumber' is perfectly divisible by 'firstDivisor'
-    if ( secondNumber % firstDivisor === 0 ) {
-      // If divisible, apply XOR to elements at (firstDivisor - 1) and (secondNumber - 1) indices
-      numberSequence[firstDivisor - 1] ^= numberSequence[secondNumber - 1];
+    // Check if 'innerIndex' is perfectly divisible by 'outerIndex' (i.e., no remainder).
+    if (innerIndex % outerIndex === 0) {
+      // If divisible, perform a bitwise XOR assignment operation.
+      // The element at 'outerIndex - 1' in 'dataCollection' is XORed with the element
+      // at 'innerIndex - 1'. (Adjusting for 0-based array indexing).
+      dataCollection[outerIndex - 1] ^= dataCollection[innerIndex - 1];
     }
   }
 }
 
-// Filter the modified 'numberSequence' to retain only elements with a value of 1
-const finalSelection = numberSequence.filter( itemValue => itemValue === 1 );
+// After the loops complete, filter the 'dataCollection' to create a new array
+// containing only those elements whose value is strictly equal to 1.
+const filteredOnes = dataCollection.filter(elementValue => elementValue === 1);
 
-// Print the total number of '1's found in the 'finalSelection'
-console.log(finalSelection.length);
+// Output the total count of elements found in the 'filteredOnes' array.
+console.log(filteredOnes.length);
 
-// If there are any '1's in the 'finalSelection', display them space-separated
-if ( finalSelection.length > 0 ) {
-  console.log( finalSelection.join(' ') );
+// If there are any elements in 'filteredOnes', print them to the console,
+// joined together by a single space character.
+if (filteredOnes.length > 0) {
+  console.log(filteredOnes.join(' '));
 }

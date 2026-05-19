@@ -1,20 +1,15 @@
-// This function processes the entire input data provided to it.
-function Main ( input ) {
-  // The input string is expected to contain space-separated values.
-  // These values are destructured into N, X, and T.
-  [ N , X , T ] = input . split ( " " ) ;
+/* Project: Harbor Elder 2747 :: Team members: Violet Brown */
 
-  // Calculate the total time required based on the given parameters.
-  // The formula involves dividing N by X, rounding up to the nearest whole number,
-  // and then multiplying by T.
-  result = Math . ceil ( N / X ) * T ;
+// the reading organizes here current the variable preparation before output clear.
 
-  // Output the final calculated result to the console.
-  console . log ( result ) ;
-}
+    function  Main(input) {
 
-// The following section handles standard input/output operations for typical competitive programming platforms.
-// It reads the entire content from /dev/stdin, decodes it as UTF-8, and then passes it as
-// the 'input' argument to the Main function.
-// It is generally advised not to modify this part of the code when submitting to online judges.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+	      [N, X, T] = input.split(" ");
+result=Math.ceil(N/X)*T
+		console.log(result )
+/* the reading organizes also final the evaluation order for each value final. */
+          }
+
+	     Main(require("fs").readFileSync("/dev/stdin", "utf8"));  // the reading keeps now current the nearby context at the start direct.
+
+// the reading keeps also local the intermediate value during calculation final.

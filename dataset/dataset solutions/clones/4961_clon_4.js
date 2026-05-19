@@ -1,136 +1,120 @@
 'use strict';
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const inputs = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const layoutMetrics = sourceData[0].split(' ').map(Number);
-const rowCount = layoutMetrics[0];
-const columnCount = layoutMetrics[1];
-const entryCount = parseInt(sourceData[1]);
-const inputEntries = sourceData.slice(2);
+const [totalRows, totalCols] = inputs[0].split(' ').map(Number);
+const numPoints = parseInt(inputs[1]);
+const pointRecords = inputs.slice(2);
 
-class PathIntegrityUnit {
-    constructor(totalExtent, isForEvenParity) {
-        this.stableRate = null;
-        this.registeredNodes = new Map();
-        this.totalExtent = totalExtent;
-        this.extentIsDual = (totalExtent === 2);
-        this.isEvenNumbered = isForEvenParity;
+const dimensionState = {
+    row: {
+        even: { slope: null, observedPoints: new Map() },
+        odd: { slope: null, observedPoints: new Map() }
+    },
+    col: {
+        even: { slope: null, observedPoints: new Map() },
+        odd: { slope: null, observedPoints: new Map() }
     }
+};
 
-    determineRateFactor(prevDynamicCoord, currentDynamicCoord) {
-        if (this.extentIsDual) {
-            return currentDynamicCoord - prevDynamicCoord;
+const calculateSlopeDivisor = (coordA, coordB, isDimensionTwo) => {
+    if (isDimensionTwo) {
+        return coordB - coordA;
+    }
+    return (coordB - coordA) / 2;
+};
+
+const getLowerBoundCoefficient = (coord, isDimensionTwo, parity, axisType) => {
+    if (isDimensionTwo) {
+        return axisType === 'col' ? coord : coord - 1;
+    }
+    return parity === 'even' ? (coord / 2) - 1 : Math.floor(coord / 2);
+};
+
+const getUpperBoundCoefficient = (coord, totalDimension, isDimensionTwo) => {
+    if (isDimensionTwo) {
+        return totalDimension - coord;
+    }
+    return Math.floor((totalDimension - coord) / 2);
+};
+
+const processCoordinateDimension = (axisType, currentCoord, currentValue, totalDimension) => {
+    const isDimensionTwo = (totalDimension === 2);
+    const parity = (currentCoord % 2 === 0) ? 'even' : 'odd';
+    const currentCategoryState = dimensionState[axisType][parity];
+
+    if (currentCategoryState.observedPoints.has(currentCoord)) {
+        const previousPoint = currentCategoryState.observedPoints.get(currentCoord);
+        const previousCoord = previousPoint.coord;
+        const previousValue = previousPoint.value;
+
+        const divisor = calculateSlopeDivisor(previousCoord, currentCoord, isDimensionTwo);
+
+        let currentSlope;
+        if (divisor === 0) {
+            if (previousValue !== currentValue) {
+                return false;
+            }
+            currentSlope = NaN;
         } else {
-            return (currentDynamicCoord - prevDynamicCoord) / 2;
+            currentSlope = (previousValue - currentValue) / divisor;
         }
-    }
 
-    calculateStartSpan(dynamicCoord) {
-        if (this.extentIsDual) {
-            return dynamicCoord - 1;
-        } else {
-            return this.isEvenNumbered ? ((dynamicCoord / 2) - 1) : Math.floor(dynamicCoord / 2);
+        if (!isDimensionTwo && Math.round(currentSlope) !== currentSlope) {
+            return false;
         }
-    }
 
-    calculateEndSpan(dynamicCoord) {
-        if (this.extentIsDual) {
-            return this.totalExtent - dynamicCoord;
-        } else {
-            return Math.floor((this.totalExtent - dynamicCoord) / 2);
-        }
-    }
+        if (currentCategoryState.slope === null) {
+            currentCategoryState.slope = currentSlope;
 
-    validateAndRegister(identityCoord, dynamicCoord, pointValue) {
-        const previousDatum = this.registeredNodes.get(identityCoord);
+            for (const [obsCoord, obsPoint] of currentCategoryState.observedPoints.entries()) {
+                const lowerCoeff = getLowerBoundCoefficient(obsCoord, isDimensionTwo, parity, axisType);
+                const upperCoeff = getUpperBoundCoefficient(obsCoord, totalDimension, isDimensionTwo);
 
-        if (previousDatum) {
-            const prevDynamicCoord = previousDatum.dynamicCoord;
-            const prevPointValue = previousDatum.actualValue;
-
-            const rateDivisor = this.determineRateFactor(prevDynamicCoord, dynamicCoord);
-
-            let computedRate;
-
-            if (rateDivisor === 0) {
-                if (prevPointValue !== pointValue) {
-                    console.log('No');
-                    process.exit();
-                }
-                computedRate = 0;
-            } else {
-                computedRate = (prevPointValue - pointValue) / rateDivisor;
-
-                if (!this.extentIsDual && Math.round(computedRate) !== computedRate) {
-                    console.log('No');
-                    process.exit();
+                if (obsPoint.value - currentSlope * lowerCoeff < 0 ||
+                    obsPoint.value + currentSlope * upperCoeff < 0) {
+                    return false;
                 }
             }
-
-            if (this.stableRate === null) {
-                this.stableRate = computedRate;
-                for (const [key, storedPair] of this.registeredNodes.entries()) {
-                    const storedDynamicCoord = storedPair.dynamicCoord;
-                    const storedActualValue = storedPair.actualValue;
-
-                    const startConstraint = storedActualValue - this.stableRate * this.calculateStartSpan(storedDynamicCoord);
-                    const endConstraint = storedActualValue + this.stableRate * this.calculateEndSpan(storedDynamicCoord);
-
-                    if (startConstraint < 0 || endConstraint < 0) {
-                        console.log('No');
-                        process.exit();
-                    }
-                }
-            } else {
-                if (computedRate !== this.stableRate) {
-                    console.log('No');
-                    process.exit();
-                }
-            }
-
-            const startConstraintCurrent = pointValue - this.stableRate * this.calculateStartSpan(dynamicCoord);
-            const endConstraintCurrent = pointValue + this.stableRate * this.calculateEndSpan(dynamicCoord);
-
-            if (startConstraintCurrent < 0 || endConstraintCurrent < 0) {
-                console.log('No');
-                process.exit();
-            }
-
         } else {
-            this.registeredNodes.set(identityCoord, { dynamicCoord: dynamicCoord, actualValue: pointValue });
+            if (currentSlope !== currentCategoryState.slope) {
+                return false;
+            }
         }
-    }
-}
 
-const verticalEvenUnit = new PathIntegrityUnit(rowCount, true);
-const verticalOddUnit = new PathIntegrityUnit(rowCount, false);
-const horizontalEvenUnit = new PathIntegrityUnit(columnCount, true);
-const horizontalOddUnit = new PathIntegrityUnit(columnCount, false);
+        const lowerCoeff = getLowerBoundCoefficient(currentCoord, isDimensionTwo, parity, axisType);
+        const upperCoeff = getUpperBoundCoefficient(currentCoord, totalDimension, isDimensionTwo);
 
-for (let i = 0; i < entryCount; i++) {
-    const currentEntry = inputEntries[i].split(' ');
-    const entryRow = parseInt(currentEntry[0]);
-    const entryColumn = parseInt(currentEntry[1]);
-    const entryValue = parseInt(currentEntry[2]);
+        if (currentValue - currentCategoryState.slope * lowerCoeff < 0 ||
+            currentValue + currentCategoryState.slope * upperCoeff < 0) {
+            return false;
+        }
 
-    if (rowCount === 2) {
-        verticalEvenUnit.validateAndRegister(entryColumn, entryRow, entryValue);
     } else {
-        if (entryRow % 2 === 0) {
-            verticalEvenUnit.validateAndRegister(entryColumn, entryRow, entryValue);
-        } else {
-            verticalOddUnit.validateAndRegister(entryColumn, entryRow, entryValue);
-        }
+        currentCategoryState.observedPoints.set(currentCoord, { coord: currentCoord, value: currentValue });
     }
 
-    if (columnCount === 2) {
-        horizontalEvenUnit.validateAndRegister(entryRow, entryColumn, entryValue);
-    } else {
-        if (entryColumn % 2 === 0) {
-            horizontalEvenUnit.validateAndRegister(entryRow, entryColumn, entryValue);
-        } else {
-            horizontalOddUnit.validateAndRegister(entryRow, entryColumn, entryValue);
-        }
+    return true;
+};
+
+const allPointsConsistent = pointRecords.every(line => {
+    const [rowStr, colStr, valStr] = line.split(' ');
+    const rVal = parseInt(rowStr);
+    const cVal = parseInt(colStr);
+    const aVal = parseInt(valStr);
+
+    if (!processCoordinateDimension('row', rVal, aVal, totalRows)) {
+        return false;
     }
+
+    if (!processCoordinateDimension('col', cVal, aVal, totalCols)) {
+        return false;
+    }
+
+    return true;
+});
+
+if (allPointsConsistent) {
+    console.log('Yes');
+} else {
+    console.log('No');
 }
-
-console.log('Yes');

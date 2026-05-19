@@ -1,108 +1,63 @@
-// This module manages the distribution and auditing of candy within various containers.
-function ProcessCandyDistribution(rawInputData) {
-	// Divide the incoming string data into individual lines for processing.
-	const dataLines = rawInputData.split('\n');
-	let totalCandiesRemoved = 0; // Accumulator for the total quantity of candies that have been extracted.
+function processCandyData(rawData) {
+    const lines = rawData.split('\n');
+    let totalEatenCandies = 0;
 
-	// Implement a preliminary check for sufficient input lines to avoid errors.
-	if (dataLines.length < 2) {
-		console.error("Input data error: Not enough lines provided for container configuration and candy contents.");
-		return; // Terminate execution if input is malformed.
-	}
+    const firstLineParts = lines[0].split(' ');
+    const numContainers = parseInt(firstLineParts[0], 10); // Parsed but not directly used in loop bounds
+    const maxAllowedPerPair = parseInt(firstLineParts[1], 10);
 
-	// Parse the first line to extract the number of containers and their maximum combined capacity.
-	const configElements = dataLines[0].split(' ');
-	const numberOfContainers = parseInt(configElements[0], 10);
-	const maximumPairCapacity = parseInt(configElements[1], 10);
+    let candyAmounts = lines[1].split(' ').map(val => parseInt(val, 10));
 
-	// Parse the second line to get the initial candy counts for each container.
-	// Robustly convert each string element to an integer, handling potential non-numeric entries.
-	let containerCandyCounts = dataLines[1].split(' ').map((candyUnitString) => parseInt(candyUnitString, 10));
+    // Helper function to adjust candies in a pair of boxes when their sum exceeds the maximum
+    function adjustCandiesInPair(boxIndices, excessAmount) {
+        totalEatenCandies += excessAmount; // The total amount to be removed from the pair
 
-	// Further validation to ensure all critical numeric data was parsed successfully.
-	if (isNaN(numberOfContainers) || isNaN(maximumPairCapacity) || containerCandyCounts.some(Number.isNaN)) {
-		console.error("Data parsing error: One or more numeric values in the input were invalid.");
-		return;
-	}
+        const rightBoxIndex = boxIndices[1];
+        const leftBoxIndex = boxIndices[0];
 
-	/**
-	 * Adjusts the candy counts in a pair of adjacent containers by removing an excess quantity.
-	 * The removal prioritizes the second container in the pair, then the first if excess remains.
-	 * @param {number[]} pairIndexes - An array containing the indices [firstContainerIndex, secondContainerIndex] of the containers.
-	 * @param {number} quantityToDeduct - The total amount of candy to remove from the pair.
-	 */
-	function removeExcessFromPair(pairIndexes, quantityToDeduct) {
-		// If there's no excess to deduct, exit early.
-		if (quantityToDeduct <= 0) {
-			return;
-		}
+        let currentRightBoxCandies = candyAmounts[rightBoxIndex];
 
-		const secondContainerIndex = pairIndexes[1];
-		const firstContainerIndex = pairIndexes[0];
+        // Determine how much to take from the right box, up to its current content
+        const reductionFromRight = Math.min(excessAmount, currentRightBoxCandies);
+        candyAmounts[rightBoxIndex] -= reductionFromRight;
 
-		// Calculate how much can be removed from the second container, limited by its current contents or the total excess.
-		const amountFromSecond = Math.min(quantityToDeduct, containerCandyCounts[secondContainerIndex]);
+        // Calculate the remaining excess amount that still needs to be removed
+        const remainingExcess = excessAmount - reductionFromRight;
 
-		totalCandiesRemoved += amountFromSecond;
-		containerCandyCounts[secondContainerIndex] -= amountFromSecond;
-		quantityToDeduct -= amountFromSecond; // Update remaining excess.
+        // If there's still an excess, take it from the left box
+        if (remainingExcess > 0) {
+            candyAmounts[leftBoxIndex] -= remainingExcess;
+        }
+    }
 
-		// If some excess still needs to be removed after depleting the second container.
-		if (quantityToDeduct > 0) {
-			totalCandiesRemoved += quantityToDeduct;
-			containerCandyCounts[firstContainerIndex] -= quantityToDeduct;
-		}
-	}
+    // Helper function to calculate the sum of candies in a given pair of boxes
+    function calculatePairTotal(boxIndices) {
+        return candyAmounts[boxIndices[0]] + candyAmounts[boxIndices[1]];
+    }
 
-	/**
-	 * Computes the combined candy count of two specified containers.
-	 * @param {number[]} pairIndexes - An array containing the indices [firstContainerIndex, secondContainerIndex] of the containers.
-	 * @returns {number} The sum of candies in the two containers.
-	 */
-	function calculateCombinedCandySum(pairIndexes) {
-		const firstIdx = pairIndexes[0];
-		const secondIdx = pairIndexes[1];
+    // Main logic to iterate through adjacent box pairs and adjust candy counts as needed
+    function processAllContainers() {
+        // The loop should go up to the second-to-last element to form pairs
+        const lastPossiblePairStartIndex = candyAmounts.length - 1;
 
-		// Include a defensive check for out-of-bounds access, although the main loop should prevent this.
-		if (firstIdx < 0 || secondIdx >= containerCandyCounts.length || firstIdx >= secondIdx) {
-			console.warn(`Attempted to sum candies from invalid container indices: [${firstIdx}, ${secondIdx}].`);
-			return 0; // Return zero if indices are invalid.
-		}
-		return containerCandyCounts[firstIdx] + containerCandyCounts[secondIdx];
-	}
+        for (let containerIndex = 0; containerIndex < lastPossiblePairStartIndex; containerIndex++) {
+            const currentBoxIndices = [containerIndex, containerIndex + 1];
+            const currentPairTotal = calculatePairTotal(currentBoxIndices);
+            const excessAmount = currentPairTotal - maxAllowedPerPair;
 
-	/**
-	 * Iterates through all adjacent container pairs, checking if their combined candy count
-	 * exceeds the maximum allowed capacity and initiating removal if necessary.
-	 */
-	function conductContainerAudit() {
-		// Ensure there are at least two containers to form a valid pair for auditing.
-		if (containerCandyCounts.length < 2) {
-			console.log("No adjacent container pairs are available for auditing.");
-			return;
-		}
+            // If the pair's total exceeds the maximum, adjust the candy counts
+            if (excessAmount > 0) {
+                adjustCandiesInPair(currentBoxIndices, excessAmount);
+            }
+        }
+    }
 
-		// Pre-calculate the upper bound for the loop to optimize performance.
-		const limitForPairing = containerCandyCounts.length - 1;
+    // Execute the main processing logic
+    processAllContainers();
 
-		// Traverse through the containers, considering each adjacent pair.
-		for (let currentContainerIdx = 0; currentContainerIdx < limitForPairing; ++currentContainerIdx) {
-			const adjacentPair = [currentContainerIdx, currentContainerIdx + 1];
-			const currentPairTotal = calculateCombinedCandySum(adjacentPair);
-			const quantityOverCapacity = currentPairTotal - maximumPairCapacity;
-
-			// If the combined candy count of the pair exceeds the limit, trigger the removal process.
-			if (quantityOverCapacity > 0) {
-				removeExcessFromPair(adjacentPair, quantityOverCapacity);
-			}
-		}
-	}
-
-	// Initiate the main auditing process for all candy containers.
-	conductContainerAudit();
-
-	// Display the final count of all candies that were removed during the process.
-	console.log(totalCandiesRemoved);
+    // Output the final count of candies that were eaten
+    console.log(totalEatenCandies);
 }
-// This section handles standard input/output operations. It should not be modified.
-ProcessCandyDistribution(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// This line ensures the script can be run in a typical Node.js environment for competitive programming.
+processCandyData(require("fs").readFileSync("/dev/stdin", "utf8"));

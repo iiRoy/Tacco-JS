@@ -1,112 +1,86 @@
-const extractInteger = (textualRepresentation) => {
-    return Number.parseInt(textualRepresentation, 10);
-};
+function processInput(inputLines) {
+  const [heightVal, widthVal, maxSteps] = inputLines[0].split(' ').map(Number);
 
-const processInputData = (inputDataSegments) => {
-    const [firstLineOfInput] = inputDataSegments;
-    const dimensionAndHopData = firstLineOfInput.split(' ').map(extractInteger);
+  const initialMap = inputLines.slice(1).map(lineContent => lineContent.split(''));
 
-    const gridHeight = dimensionAndHopData[0];
-    const gridWidth = dimensionAndHopData[1];
-    const maxHopDistance = dimensionAndHopData[2];
+  const distanceGrid = Array.from({ length: heightVal }, () => Array(widthVal).fill(Infinity));
 
-    const gameLayout = inputDataSegments.slice(1).map(line => line.split(''));
+  let startRow, startCol;
+  initialMap.some((rowArr, rIdx) =>
+    rowArr.some((cellChar, cIdx) => {
+      if (cellChar === 'S') {
+        startRow = rIdx;
+        startCol = cIdx;
+        return true;
+      }
+      return false;
+    })
+  );
 
-    let initialPosition = [-1, -1]; // [row_coordinate, col_coordinate]
-    let positionLocated = false;
+  const traversalQueue = [{ r: startRow, c: startCol, d: 0 }];
+  distanceGrid[startRow][startCol] = 0;
 
-    // Discover the starting point denoted by 'S'
-    for (let r = 0; r < gridHeight && !positionLocated; ++r) {
-        for (let c = 0; c < gridWidth && !positionLocated; ++c) {
-            if (gameLayout[r][c] === 'S') {
-                initialPosition = [r, c];
-                positionLocated = true;
-            }
-        }
+  const rowOffsets = [-1, 1, 0, 0];
+  const colOffsets = [0, 0, -1, 1];
+
+  let queueHead = 0;
+  while (queueHead < traversalQueue.length) {
+    const { r: currentR, c: currentC, d: currentD } = traversalQueue[queueHead++];
+
+    if (currentD >= maxSteps) continue;
+
+    for (let i = 0; i < 4; i++) {
+      const nextR = currentR + rowOffsets[i];
+      const nextC = currentC + colOffsets[i];
+      const nextD = currentD + 1;
+
+      if (
+        nextR >= 0 && nextR < heightVal &&
+        nextC >= 0 && nextC < widthVal &&
+        initialMap[nextR][nextC] !== '#' &&
+        nextD < distanceGrid[nextR][nextC]
+      ) {
+        distanceGrid[nextR][nextC] = nextD;
+        traversalQueue.push({ r: nextR, c: nextC, d: nextD });
+      }
+    }
+  }
+
+  const finalCalculationResult = distanceGrid.reduce((currentMinState, rowArr, rIdx) => {
+    if (currentMinState.borderFound) {
+      return currentMinState;
     }
 
-    // Initialize a matrix to record the minimum steps from the start to each cell
-    // null indicates an unvisited cell, numbers indicate step count
-    const minStepMatrix = Array.from({ length: gridHeight }, () =>
-        Array.from({ length: gridWidth }, () => null)
-    );
+    return rowArr.reduce((innerMinState, cellDistance, cIdx) => {
+      if (innerMinState.borderFound) {
+        return innerMinState;
+      }
 
-    // BFS (Breadth-First Search) queue: [row, col, current_step_count]
-    const explorationQueue = [];
+      if (cellDistance !== Infinity) {
+        const distanceToBorder = Math.min(
+          (heightVal - 1) - rIdx,
+          rIdx,
+          (widthVal - 1) - cIdx,
+          cIdx
+        );
 
-    // Enqueue the starting point
-    const [startR, startC] = initialPosition;
-    minStepMatrix[startR][startC] = 0;
-    explorationQueue.push([startR, startC, 0]);
-
-    let queueHead = 0; // Pointer to simulate efficient queue operations (no shifting)
-    const cardinalDirections = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // North, South, West, East
-
-    // Execute the BFS traversal
-    while (queueHead < explorationQueue.length) {
-        const [currentRow, currentCol, currentPathLength] = explorationQueue[queueHead++];
-
-        // If the current cell is reached at or beyond maxHopDistance,
-        // it cannot initiate further valid hops (K+1 would be > K).
-        if (currentPathLength >= maxHopDistance) {
-            continue;
+        if (distanceToBorder === 0) {
+          return { minVal: 1, borderFound: true };
         }
+        return {
+          minVal: Math.min(innerMinState.minVal, Math.ceil(distanceToBorder / maxSteps) + 1),
+          borderFound: false
+        };
+      }
+      return innerMinState;
+    }, currentMinState);
+  }, { minVal: Infinity, borderFound: false });
 
-        for (const [deltaR, deltaC] of cardinalDirections) {
-            const nextRow = currentRow + deltaR;
-            const nextCol = currentCol + deltaC;
-            const newPathLength = currentPathLength + 1;
+  if (finalCalculationResult.borderFound) {
+    console.log(1);
+  } else {
+    console.log(finalCalculationResult.minVal);
+  }
+}
 
-            // Verify if the next cell is within grid boundaries
-            if (nextRow < 0 || nextRow >= gridHeight || nextCol < 0 || nextCol >= gridWidth) {
-                continue;
-            }
-
-            const existingPathLength = minStepMatrix[nextRow][nextCol];
-
-            // If the cell is unvisited OR a shorter path is found
-            if (existingPathLength === null || newPathLength < existingPathLength) {
-                minStepMatrix[nextRow][nextCol] = newPathLength;
-                explorationQueue.push([nextRow, nextCol, newPathLength]);
-            }
-        }
-    }
-
-    // Function to compute the closest distance to any border from a cell
-    const determineExitProximity = (r, c) => {
-        const distanceToTop = r;
-        const distanceToBottom = gridHeight - 1 - r;
-        const distanceToLeft = c;
-        const distanceToRight = gridWidth - 1 - c;
-        return Math.min(distanceToTop, distanceToBottom, distanceToLeft, distanceToRight);
-    };
-
-    let overallMinExitJumps = Infinity;
-    let immediateBorderEncountered = false; // Flag to exit early, similar to 'break outer'
-
-    // Traverse the calculated distances to find the minimum jumps to exit
-    for (let r = 0; r < gridHeight && !immediateBorderEncountered; ++r) {
-        for (let c = 0; c < gridWidth && !immediateBorderEncountered; ++c) {
-            const currentCellReachability = minStepMatrix[r][c];
-
-            // Only consider cells that were reachable from the start ('S')
-            if (currentCellReachability !== null) {
-                const proximityToBorder = determineExitProximity(r, c);
-
-                if (proximityToBorder === 0) { // If cell is already on the border
-                    overallMinExitJumps = 1;
-                    immediateBorderEncountered = true; // Set flag to terminate loops
-                } else {
-                    overallMinExitJumps = Math.min(
-                        overallMinExitJumps,
-                        Math.ceil(proximityToBorder / maxHopDistance) + 1
-                    );
-                }
-            }
-        }
-    }
-
-    console.log(overallMinExitJumps);
-};
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim()));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim()));

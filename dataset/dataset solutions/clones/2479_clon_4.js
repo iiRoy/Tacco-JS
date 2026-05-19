@@ -1,48 +1,42 @@
-const obtainPrimeFragments = (initialValue) => {
-    const decomposeRecursively = (currentProduct, potentialDivisor, currentFactors) => {
-        if (currentProduct <= 1) {
-            return currentFactors;
+function obtainPrimeFactors(initialValue) {
+    const factorizeRecursive = (currentNum, currentDivisor, collectedFactors) => {
+        if (currentNum <= 1) {
+            return collectedFactors;
         }
-        if (potentialDivisor * potentialDivisor > currentProduct) {
-            return currentFactors.concat(currentProduct);
+
+        if (currentDivisor * currentDivisor > currentNum) {
+            if (currentNum > 1) {
+                collectedFactors.push(currentNum);
+            }
+            return collectedFactors;
         }
-        if (currentProduct % potentialDivisor === 0) {
-            return decomposeRecursively(currentProduct / potentialDivisor, potentialDivisor, currentFactors.concat(potentialDivisor));
+
+        if (currentNum % currentDivisor === 0) {
+            collectedFactors.push(currentDivisor);
+            return factorizeRecursive(currentNum / currentDivisor, currentDivisor, collectedFactors);
         } else {
-            return decomposeRecursively(currentProduct, potentialDivisor + 1, currentFactors);
+            return factorizeRecursive(currentNum, currentDivisor + 1, collectedFactors);
         }
     };
-    return decomposeRecursively(initialValue, 2, []);
-};
 
-const processInputData = (rawData) => {
-    const PI_CONSTANT = Math.PI;
-    const DEGREES_PER_HALF_CIRCLE = 180;
+    return factorizeRecursive(initialValue, 2, []);
+}
 
-    const relevantLines = rawData.split('\n').filter(line => line.trim() !== '');
+function processInputAndCompute(rawInput) {
+    const cleanedInput = rawInput.trim();
+    const firstLineContent = cleanedInput.split('\n')[0];
+    const [valA, valB, valX] = firstLineContent.split(' ').map(Number);
 
-    if (relevantLines.length === 0) {
-        return;
-    }
+    const numeratorExpression = valA * Math.pow(valB, 2);
+    const denominatorExpression = valX * 2;
+    const atanArgument = numeratorExpression / denominatorExpression;
 
-    const numericMatch = relevantLines[0].match(/(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)/);
+    const angleInRadians = Math.atan(atanArgument);
+    const radiansToDegreesConversionFactor = 180 / Math.PI;
 
-    if (!numericMatch) {
-        return;
-    }
+    const finalCalculatedResult = angleInRadians * radiansToDegreesConversionFactor;
 
-    const firstQuantity = parseFloat(numericMatch[1]);
-    const secondQuantity = parseFloat(numericMatch[2]);
-    const thirdQuantity = parseFloat(numericMatch[3]);
+    console.log(finalCalculatedResult);
+}
 
-    const ratioNumerator = firstQuantity * secondQuantity * secondQuantity;
-    const ratioDenominator = thirdQuantity * 2;
-    const tangentArgument = ratioNumerator / ratioDenominator;
-
-    const angleInRadians = Math.atan(tangentArgument);
-    const angleInDegrees = (DEGREES_PER_HALF_CIRCLE / PI_CONSTANT) * angleInRadians;
-
-    console.log(angleInDegrees);
-};
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

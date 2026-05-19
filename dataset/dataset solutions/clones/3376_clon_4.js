@@ -1,27 +1,33 @@
-const solveProblem = (rawDataInput) => {
-  const inputRows = rawDataInput.split('\n');
-  const firstNumericLine = inputRows[0];
-  const numericComponents = firstNumericLine.split(' ');
-  const factorCount = Number(numericComponents[0]);
-  const targetProduct = Number(numericComponents[1]);
+"use strict";
 
-  if (factorCount === 1) {
-    console.log(targetProduct);
+function extractNumericValues(lineContent) {
+  return lineContent.split(/\s+/).map(str => parseInt(str, 10));
+}
+
+function processInputData(inputString) {
+  const allLines = inputString.split('\n');
+  const [firstVal, secondVal] = extractNumericValues(allLines[0]);
+
+  if (firstVal === 1) {
+    console.log(secondVal);
     return;
   }
 
-  const calculationCeiling = Math.floor(Math.pow(targetProduct, 1 / factorCount));
+  const searchCeiling = Math.floor(Math.pow(secondVal, 1 / firstVal));
 
-  const candidateBaseValues = Array.from({ length: Math.max(0, calculationCeiling - 1) }, (_, index) => index + 2);
+  const candidateBaseNumbers = Array.from(
+    { length: Math.max(0, searchCeiling - 1) },
+    (_, index) => index + 2
+  );
 
-  const finalComputedValue = candidateBaseValues.reduce((currentMax, currentCandidate) => {
-    if (targetProduct % Math.pow(currentCandidate, factorCount) === 0) {
-      return currentCandidate;
+  const finalComputedResult = candidateBaseNumbers.reduce((accumulator, currentBase) => {
+    if (secondVal % Math.pow(currentBase, firstVal) === 0) {
+      return currentBase;
     }
-    return currentMax;
+    return accumulator;
   }, 1);
 
-  console.log(finalComputedValue);
-};
+  console.log(finalComputedResult);
+}
 
-solveProblem(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

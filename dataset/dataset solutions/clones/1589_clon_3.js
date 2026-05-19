@@ -1,250 +1,193 @@
 "use strict";
 
-// Define constants for file paths and special node values
-const INPUT_SOURCE_PATH = "/dev/stdin";
-const ZERO_NODE_ID = 0;
+// Input processing utility
+const InputProcessor = function() {
+    const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+    const inputTokens = rawInputData.split(/ |\n/);
+    let currentTokenIndex = 0;
 
-// Read raw input data from the specified source
-const rawInputData = require("fs").readFileSync(INPUT_SOURCE_PATH, "utf8");
-
-// Prepare a stream of tokens by splitting the input by any whitespace
-const tokenStream = rawInputData.split(/\s+/).filter(Boolean); // Filter out empty strings from multiple spaces
-let currentTokenIndex = 0; // Pointer for the token stream
-
-// Helper function to safely parse a string into a number
-const parseNumericToken = (tokenString) => Number(tokenString);
-
-// Retrieves the next integer from the token stream
-function getNextInteger() {
-  if (currentTokenIndex >= tokenStream.length) {
-    throw new Error("Attempted to read past end of token stream.");
-  }
-  return parseNumericToken(tokenStream[currentTokenIndex++]);
-}
-
-// Retrieves a specified number of numeric tokens from the stream
-function getNumericTokens(count) {
-  const tokens = [];
-  for (let i = 0; i < count; i++) {
-    if (currentTokenIndex >= tokenStream.length) {
-      throw new Error(`Insufficient tokens: Expected ${count}, got ${i}.`);
-    }
-    tokens.push(parseNumericToken(tokenStream[currentTokenIndex++]));
-  }
-  return tokens;
-}
-
-// Dynamically creates a multi-dimensional array initialized with a given value
-// Example: createMultiDimArray(0, 3, 4) creates a 3x4 array filled with 0s
-function createMultiDimArray(initialFillValue) {
-  const dimensions = Array.from(arguments).slice(1);
-  if (dimensions.length === 0) {
-    return initialFillValue;
-  }
-
-  // Construct a string representing nested Array.map calls to create the structure
-  let arrayConstructionString = `Array(dimensions[${dimensions.length - 1}]).fill().map(() => ${initialFillValue})`;
-  for (let i = dimensions.length - 2; i >= 0; i--) {
-    arrayConstructionString = `Array(dimensions[${i}]).fill().map(() => ${arrayConstructionString})`;
-  }
-  // Use eval to execute the dynamically generated array creation code
-  return eval(arrayConstructionString);
-}
-
-// Execute the main program logic and store its result
-const finalProgramOutput = executeMainProgram();
-
-// If the program returned a value, print it to console
-if (finalProgramOutput !== undefined) {
-  console.log(String(finalProgramOutput));
-}
-
-/**
- * Main function encapsulating the dynamic programming solution.
- * It computes the maximum path value based on given node connections.
- * @returns {number} The final calculated maximum value.
- */
-function executeMainProgram() {
-  const totalNodes = getNextInteger(); // Read the total number of nodes (N)
-  let dpTable = createMultiDimArray(-1, totalNodes + 1, totalNodes + 1); // DP table initialized with -1
-  let currentOffset = 0; // Accumulator for certain conditions
-
-  // Queue to store updates for the DP table during processing
-  let pendingUpdatesQueue = [];
-
-  // --- Nested Helper Functions for DP Table Updates ---
-
-  /**
-   * Enqueues a potential DP table update if the new value is greater.
-   * Pushes (target_row, target_col, new_value) to the queue.
-   * @param {number} targetRowIndex - Row index for the DP table.
-   * @param {number} targetColIndex - Column index for the DP table.
-   * @param {number} sourceRowIndex - Source row index for value retrieval.
-   * @param {number} sourceColIndex - Source column index for value retrieval.
-   */
-  function enqueueMaxUpdate(targetRowIndex, targetColIndex, sourceRowIndex, sourceColIndex) {
-    const sourceValue = dpTable[sourceRowIndex][sourceColIndex];
-    if (dpTable[targetRowIndex][targetColIndex] < sourceValue) {
-      pendingUpdatesQueue.push(targetRowIndex, targetColIndex, sourceValue);
-    }
-  }
-
-  /**
-   * Enqueues a potential DP table update with an incremented source value.
-   * Pushes (target_row, target_col, source_value + 1) to the queue.
-   * @param {number} targetRowIndex - Row index for the DP table.
-   * @param {number} targetColIndex - Column index for the DP table.
-   * @param {number} sourceRowIndex - Source row index for value retrieval.
-   * @param {number} sourceColIndex - Source column index for value retrieval.
-   */
-  function enqueueMaxUpdateIncrement(targetRowIndex, targetColIndex, sourceRowIndex, sourceColIndex) {
-    const incrementedSourceValue = dpTable[sourceRowIndex][sourceColIndex] + 1;
-    if (dpTable[targetRowIndex][targetColIndex] < incrementedSourceValue) {
-      pendingUpdatesQueue.push(targetRowIndex, targetColIndex, incrementedSourceValue);
-    }
-  }
-
-  // --- Node Processing Functions ---
-
-  /**
-   * Processes a single node for DP table updates.
-   * @param {number} focusNode - The node currently being processed.
-   */
-  function processSingleNode(focusNode) {
-    enqueueMaxUpdateIncrement(ZERO_NODE_ID, ZERO_NODE_ID, focusNode, focusNode);
-    for (let loopVar = 0; loopVar < focusNode; loopVar++) {
-      enqueueMaxUpdate(loopVar, focusNode, ZERO_NODE_ID, loopVar);
-    }
-    for (let loopVar = focusNode; loopVar <= totalNodes; loopVar++) {
-      enqueueMaxUpdate(focusNode, loopVar, ZERO_NODE_ID, loopVar);
-    }
-  }
-
-  /**
-   * Processes a pair of nodes for DP table updates.
-   * @param {number} nodeAlpha - The first node in the pair.
-   * @param {number} nodeBeta - The second node in the pair.
-   */
-  function processPairNodes(nodeAlpha, nodeBeta) {
-    enqueueMaxUpdate(nodeAlpha, nodeBeta, ZERO_NODE_ID, ZERO_NODE_ID);
-    enqueueMaxUpdateIncrement(ZERO_NODE_ID, nodeBeta, nodeAlpha, nodeAlpha);
-    if (nodeAlpha < nodeBeta) {
-      enqueueMaxUpdateIncrement(ZERO_NODE_ID, nodeAlpha, nodeBeta, nodeBeta);
-    } else { // nodeAlpha >= nodeBeta
-      for (let loopVar = 0; loopVar < nodeAlpha; loopVar++) {
-        enqueueMaxUpdateIncrement(ZERO_NODE_ID, loopVar, loopVar, nodeAlpha);
-      }
-      for (let loopVar = nodeAlpha; loopVar <= totalNodes; loopVar++) {
-        enqueueMaxUpdateIncrement(ZERO_NODE_ID, loopVar, nodeAlpha, loopVar);
-      }
-    }
-  }
-
-  /**
-   * Processes a triple of nodes for DP table updates.
-   * @param {number} nodeX - The first node.
-   * @param {number} nodeY - The second node.
-   * @param {number} nodeZ - The third node.
-   */
-  function processTripleNodes(nodeX, nodeY, nodeZ) {
-    enqueueMaxUpdateIncrement(nodeY, nodeZ, nodeX, nodeX);
-    if (nodeX < nodeY) {
-      enqueueMaxUpdateIncrement(nodeX, nodeZ, nodeY, nodeY);
-      if (nodeY < nodeZ) {
-        enqueueMaxUpdateIncrement(nodeX, nodeY, nodeZ, nodeZ);
-      } else { // nodeY === nodeZ
-        for (let loopVar = 0; loopVar < nodeX; loopVar++) {
-          enqueueMaxUpdateIncrement(loopVar, nodeX, loopVar, nodeZ);
+    this.getNextInteger = () => {
+        return +inputTokens[currentTokenIndex++];
+    };
+    this.getNextString = () => {
+        return inputTokens[currentTokenIndex++];
+    };
+    this.getNextBigInteger = () => {
+        return BigInt(inputTokens[currentTokenIndex++]);
+    };
+    this.getNextIntegers = (count, shouldMapToNumber = true) => {
+        const startIndex = currentTokenIndex;
+        currentTokenIndex += count;
+        return shouldMapToNumber ? inputTokens.slice(startIndex, currentTokenIndex).map(Number) : inputTokens.slice(startIndex, currentTokenIndex);
+    };
+    this.getNextMatrix = (rows, cols, shouldMapToNumber = true) => {
+        const matrixResult = [];
+        for (let r = 0; r < rows; r++) {
+            const startIndex = currentTokenIndex;
+            currentTokenIndex += cols;
+            matrixResult.push(shouldMapToNumber ? inputTokens.slice(startIndex, currentTokenIndex).map(Number) : inputTokens.slice(startIndex, currentTokenIndex));
         }
-        for (let loopVar = nodeX; loopVar < nodeZ; loopVar++) {
-          enqueueMaxUpdateIncrement(nodeX, loopVar, loopVar, nodeZ);
+        return matrixResult;
+    };
+};
+
+// Helper for creating multi-dimensional arrays without eval
+function createMultiDimensionalArray(initialFillValue, ...dimensions) {
+    const recursiveCreate = (dims, currentDimensionIdx) => {
+        if (currentDimensionIdx === dims.length - 1) {
+            return Array(dims[currentDimensionIdx]).fill(initialFillValue);
         }
-        for (let loopVar = nodeZ; loopVar <= totalNodes; loopVar++) {
-          enqueueMaxUpdateIncrement(nodeX, loopVar, nodeZ, loopVar);
+        return Array(dims[currentDimensionIdx]).fill(null).map(() => recursiveCreate(dims, currentDimensionIdx + 1));
+    };
+    return recursiveCreate(dimensions, 0);
+}
+
+// Main program execution
+function executeProblemSolver() {
+    const inputHandler = new InputProcessor();
+
+    const numElements = inputHandler.getNextInteger();
+    const dynamicProgrammingTable = createMultiDimensionalArray(-1, numElements + 1, numElements + 1);
+    let adjustmentFactor = 0;
+
+    let initialPair = inputHandler.getNextIntegers(2);
+
+    // Initialize base cases for DP table
+    const zeroValue = 0;
+    const firstPairElement = initialPair[0];
+    const secondPairElement = initialPair[1];
+
+    dynamicProgrammingTable[zeroValue][zeroValue] = zeroValue;
+    dynamicProgrammingTable[zeroValue][firstPairElement] = zeroValue;
+    dynamicProgrammingTable[zeroValue][secondPairElement] = zeroValue;
+    dynamicProgrammingTable[firstPairElement][secondPairElement] = zeroValue;
+
+    // Queue for deferred DP table updates
+    const updateQueue = [];
+
+    // Helper functions for updating the DP table via the queue
+    function enqueueUpdateIfValueIsGreater(targetCoordA, targetCoordB, sourceCoordC, sourceCoordD) {
+        const sourceEntryValue = dynamicProgrammingTable[sourceCoordC][sourceCoordD];
+        if (dynamicProgrammingTable[targetCoordA][targetCoordB] < sourceEntryValue) {
+            updateQueue.push(sourceEntryValue, targetCoordB, targetCoordA);
         }
-      }
-    } else { // nodeX >= nodeY
-      enqueueMaxUpdateIncrement(nodeX, nodeX, nodeZ, nodeZ);
-      for (let loopVar = 0; loopVar < nodeX; loopVar++) {
-        enqueueMaxUpdateIncrement(loopVar, nodeZ, loopVar, nodeX);
-      }
-      for (let loopVar = nodeX; loopVar < nodeZ; loopVar++) {
-        enqueueMaxUpdateIncrement(loopVar, nodeZ, nodeX, loopVar);
-      }
-      for (let loopVar = nodeZ; loopVar <= totalNodes; loopVar++) {
-        enqueueMaxUpdateIncrement(nodeZ, loopVar, nodeX, loopVar);
-      }
-    }
-  }
-
-  /**
-   * Orchestrates the processing of a given triple of nodes (u, v, w).
-   * It applies various DP update rules based on the relationships between u, v, w.
-   * @param {number} uNode - The first node.
-   * @param {number} vNode - The second node.
-   * @param {number} wNode - The third node.
-   */
-  function processNodeTriple(uNode, vNode, wNode) {
-    // If the first and third nodes are identical, increment offset and return early
-    if (uNode === wNode) {
-      currentOffset++;
-      return;
     }
 
-    // Clear the update queue for this iteration
-    pendingUpdatesQueue = [];
-
-    // Apply single-node processing rules
-    processSingleNode(uNode);
-    if (uNode < vNode) processSingleNode(vNode);
-    if (vNode < wNode) processSingleNode(wNode);
-
-    // Apply pair-node processing rules
-    processPairNodes(uNode, vNode);
-    if (vNode < wNode) processPairNodes(uNode, wNode);
-    if (uNode < vNode) processPairNodes(vNode, wNode);
-
-    // Apply triple-node processing rules
-    processTripleNodes(uNode, vNode, wNode);
-
-    // Apply all pending updates from the queue to the DP table
-    while (pendingUpdatesQueue.length > 0) {
-      const valueToSet = pendingUpdatesQueue.pop(); // Value
-      const targetCol = pendingUpdatesQueue.pop();  // Column index
-      const targetRow = pendingUpdatesQueue.pop();   // Row index
-
-      if (dpTable[targetRow][targetCol] < valueToSet) {
-        dpTable[targetRow][targetCol] = valueToSet;
-      }
+    function enqueueUpdateIfValueIsGreaterPlusOne(targetCoordA, targetCoordB, sourceCoordC, sourceCoordD) {
+        const sourceEntryValuePlusOne = dynamicProgrammingTable[sourceCoordC][sourceCoordD] + 1;
+        if (dynamicProgrammingTable[targetCoordA][targetCoordB] < sourceEntryValuePlusOne) {
+            updateQueue.push(sourceEntryValuePlusOne, targetCoordB, targetCoordA);
+        }
     }
-  }
 
-  // --- Initial DP Table Setup ---
-  // Read the first pair of nodes
-  const initialNodes = getNumericTokens(2);
-  const firstInitialNode = initialNodes[0];
-  const secondInitialNode = initialNodes[1];
+    // Sub-routines for processing different configurations
+    function processConfigurationStep1(currentVal) {
+        enqueueUpdateIfValueIsGreaterPlusOne(0, 0, currentVal, currentVal);
+        for (let loopIndex = 0; loopIndex < currentVal; loopIndex++) {
+            enqueueUpdateIfValueIsGreater(loopIndex, currentVal, 0, loopIndex);
+        }
+        for (let loopIndex = currentVal; loopIndex <= numElements; loopIndex++) {
+            enqueueUpdateIfValueIsGreater(currentVal, loopIndex, 0, loopIndex);
+        }
+    }
 
-  // Initialize DP table entries for the first set of nodes
-  dpTable[ZERO_NODE_ID][ZERO_NODE_ID] = ZERO_NODE_ID;
-  dpTable[ZERO_NODE_ID][firstInitialNode] = ZERO_NODE_ID;
-  dpTable[ZERO_NODE_ID][secondInitialNode] = ZERO_NODE_ID;
-  dpTable[firstInitialNode][secondInitialNode] = ZERO_NODE_ID;
+    function processConfigurationStep2(valA, valB) {
+        enqueueUpdateIfValueIsGreater(valA, valB, 0, 0);
+        enqueueUpdateIfValueIsGreaterPlusOne(0, valB, valA, valA);
 
-  // --- Main Loop for Processing Node Triples ---
-  for (let iterationCount = 1; iterationCount < totalNodes; iterationCount++) {
-    // Read the next three nodes and sort them for consistent processing
-    const currentNodes = getNumericTokens(3).sort((nodeA, nodeB) => nodeA - nodeB);
-    processNodeTriple(...currentNodes);
-  }
+        if (valA < valB) {
+            enqueueUpdateIfValueIsGreaterPlusOne(0, valA, valB, valB);
+        } else { // valA === valB
+            const commonLimit = valA;
+            for (let loopIndex = 0; loopIndex < commonLimit; loopIndex++) {
+                enqueueUpdateIfValueIsGreaterPlusOne(0, loopIndex, loopIndex, commonLimit);
+            }
+            for (let loopIndex = commonLimit; loopIndex <= numElements; loopIndex++) {
+                enqueueUpdateIfValueIsGreaterPlusOne(0, loopIndex, commonLimit, loopIndex);
+            }
+        }
+    }
 
-  // --- Final Result Calculation ---
-  const finalQueryNode = getNextInteger(); // Read the last node for final calculation
+    function processConfigurationStep3(valA, valB, valC) {
+        enqueueUpdateIfValueIsGreaterPlusOne(valB, valC, valA, valA);
 
-  // Calculate the two potential maximum values
-  const valueFromZeroZero = dpTable[ZERO_NODE_ID][ZERO_NODE_ID];
-  const valueFromFinalNode = dpTable[finalQueryNode][finalQueryNode] + 1;
+        if (valA < valB) {
+            enqueueUpdateIfValueIsGreaterPlusOne(valA, valC, valB, valB);
+            if (valB < valC) {
+                enqueueUpdateIfValueIsGreaterPlusOne(valA, valB, valC, valC);
+            } else { // valB === valC
+                const upperBoundary = valC;
+                for (let loopIndex = 0; loopIndex < valA; loopIndex++) {
+                    enqueueUpdateIfValueIsGreaterPlusOne(loopIndex, valA, loopIndex, upperBoundary);
+                }
+                for (let loopIndex = valA; loopIndex < upperBoundary; loopIndex++) {
+                    enqueueUpdateIfValueIsGreaterPlusOne(valA, loopIndex, loopIndex, upperBoundary);
+                }
+                for (let loopIndex = upperBoundary; loopIndex <= numElements; loopIndex++) {
+                    enqueueUpdateIfValueIsGreaterPlusOne(valA, loopIndex, upperBoundary, loopIndex);
+                }
+            }
+        } else { // valA === valB
+            enqueueUpdateIfValueIsGreaterPlusOne(valA, valA, valC, valC);
+            const sharedValue = valA;
+            for (let loopIndex = 0; loopIndex < sharedValue; loopIndex++) {
+                enqueueUpdateIfValueIsGreaterPlusOne(loopIndex, valC, loopIndex, sharedValue);
+            }
+            for (let loopIndex = sharedValue; loopIndex < valC; loopIndex++) {
+                enqueueUpdateIfValueIsGreaterPlusOne(loopIndex, valC, sharedValue, loopIndex);
+            }
+            for (let loopIndex = valC; loopIndex <= numElements; loopIndex++) {
+                enqueueUpdateIfValueIsGreaterPlusOne(valC, loopIndex, sharedValue, loopIndex);
+            }
+        }
+    }
 
-  // Return the maximum of these two values, adjusted by the accumulated offset
-  return Math.max(valueFromZeroZero, valueFromFinalNode) + currentOffset;
+    // Main processing logic for each triple
+    function processTriple(coord1, coord2, coord3) {
+        if (coord1 === coord3) {
+            adjustmentFactor++;
+            return;
+        }
+
+        // Step 1 configurations
+        processConfigurationStep1(coord1);
+        if (coord1 < coord2) processConfigurationStep1(coord2);
+        if (coord2 < coord3) processConfigurationStep1(coord3);
+
+        // Step 2 configurations
+        processConfigurationStep2(coord1, coord2);
+        if (coord2 < coord3) processConfigurationStep2(coord1, coord3);
+        if (coord1 < coord2) processConfigurationStep2(coord2, coord3);
+
+        // Step 3 configurations
+        processConfigurationStep3(coord1, coord2, coord3);
+
+        // Apply all queued updates to the DP table
+        while (updateQueue.length) {
+            const valueToSet = updateQueue.pop();
+            const targetY = updateQueue.pop();
+            const targetX = updateQueue.pop();
+            if (dynamicProgrammingTable[targetX][targetY] < valueToSet) {
+                dynamicProgrammingTable[targetX][targetY] = valueToSet;
+            }
+        }
+    }
+
+    // Loop through N-1 iterations
+    for (let iterationCount = 1; iterationCount < numElements; iterationCount++) {
+        let currentTriple = inputHandler.getNextIntegers(3).sort((a, b) => a - b);
+        processTriple(...currentTriple);
+    }
+
+    const finalInputElement = inputHandler.getNextInteger();
+    const resultCandidate1 = dynamicProgrammingTable[0][0];
+    const resultCandidate2 = dynamicProgrammingTable[finalInputElement][finalInputElement] + 1;
+
+    return Math.max(resultCandidate1, resultCandidate2) + adjustmentFactor;
+}
+
+// Execute the program and print the result
+const finalOutput = executeProblemSolver();
+if (finalOutput !== undefined) {
+    console.log(String(finalOutput));
 }

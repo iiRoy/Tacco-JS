@@ -1,35 +1,39 @@
-const powerSumRegistry = new Map(); // Stores { y^2 + z^3 : min(y + z) }
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const MAX_Z_VAL_LIMIT = 100;
-const MAX_Y_VAL_LIMIT = 1000;
+const numericInputs = rawData
+    .trim()
+    .split('\n')
+    .filter(lineEntry => lineEntry !== '0')
+    .map(Number);
 
-for (let valZ = 0; valZ <= MAX_Z_VAL_LIMIT; ++valZ) {
-    const sumOfCubes = valZ * valZ * valZ;
-    for (let valY = 0; valY <= MAX_Y_VAL_LIMIT; ++valY) {
-        const sumOfSquares = valY * valY;
-        const currentPowerCombo = sumOfCubes + sumOfSquares;
-        const currentZYTotal = valY + valZ;
+const determineMinimalSum = (targetValue) => {
+    let currentMinimalResult = Infinity;
 
-        if (!powerSumRegistry.has(currentPowerCombo) || currentZYTotal < powerSumRegistry.get(currentPowerCombo)) {
-            powerSumRegistry.set(currentPowerCombo, currentZYTotal);
-        }
-    }
-}
+    Array.from({ length: 101 }, (_, zIteration) => zIteration)
+        .forEach(zComponent => {
+            const zCubedTerm = Math.pow(zComponent, 3);
 
-const allInputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-let lineCursor = 0;
+            if (zCubedTerm > targetValue) {
+                return;
+            }
 
-while (true) {
-    const targetValue = parseInt(allInputLines[lineCursor++], 10);
-    if (targetValue === 0) break;
+            const maxPossibleYForZ = Math.floor(Math.sqrt(targetValue - zCubedTerm));
+            const yIterationLimit = Math.min(1000, maxPossibleYForZ);
 
-    let currentBestSum = Infinity;
+            Array.from({ length: yIterationLimit + 1 }, (_, yIteration) => yIteration)
+                .forEach(yComponent => {
+                    const ySquaredTerm = Math.pow(yComponent, 2);
+                    const xComponent = targetValue - (zCubedTerm + ySquaredTerm);
 
-    for (const [entryPowerSum, entryZYSum] of powerSumRegistry.entries()) {
-        if (entryPowerSum <= targetValue) {
-            const currentXComponent = targetValue - entryPowerSum;
-            currentBestSum = Math.min(currentBestSum, currentXComponent + entryZYSum);
-        }
-    }
-    console.log(currentBestSum);
-}
+                    if (xComponent >= 0) {
+                        currentMinimalResult = Math.min(currentMinimalResult, zComponent + yComponent + xComponent);
+                    }
+                });
+        });
+    return currentMinimalResult;
+};
+
+numericInputs.forEach(valueEntry => {
+    console.log(determineMinimalSum(valueEntry));
+});

@@ -1,30 +1,19 @@
-/*
- * This script is designed to process numerical data from a file.
- * It reads the first ten numbers, sums them up, and prints the result.
- */
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Acquire the file system utility module.
-const fileSystemUtility =    require('fs');
+// The following line processes the raw input string:
+// 1. `trim()` removes any leading or trailing whitespace.
+// 2. `split("\n")` divides the string into an array of substrings, using the newline character as a delimiter.
+// 3. `map(Number)` converts each string element in the resulting array into a numerical value.
+const numericValues = (rawData.trim()).split("\n").map(Number);
 
-// Fetch the entire content of the standard input file as a UTF-8 encoded string.
-let  sourceContent =  fileSystemUtility. readFileSync('/dev/stdin', 'utf8');
+let totalSum = 0; // Initialize a variable to store the cumulative sum of numbers.
 
-// Normalize the input string: remove excess whitespace, segment by newline characters,
-// and then convert each resulting string segment into a numerical value.
-let  numericalValues =    sourceContent.trim().split('\n').map(Number);
-
-// Initialize a variable to accumulate the running total of the processed numbers.
-let  cumulativeSum = 0;
-
-// Iterate through the initial ten entries of the numerical values collection.
-for (
-    let   currentIdx = 0;
-    currentIdx < 10;
-    currentIdx++
-) {
-    // Add the number at the current index to the cumulative sum.
-    cumulativeSum += numericalValues[currentIdx];
+// This loop iterates through the first ten elements of the `numericValues` array.
+// The loop counter `idx` starts at 0 and increments by 1 in each iteration,
+// continuing as long as `idx` is less than 10.
+for (let idx = 0; idx < 10; idx++) {
+    totalSum += numericValues[idx]; // Add the current array element's value to the `totalSum`.
 }
 
-// Output the final calculated cumulative sum to the standard console.
-console.log(cumulativeSum);
+// Print the final calculated sum to the standard output.
+console.log(totalSum);

@@ -1,26 +1,23 @@
-const processData = (rawData) => {
-  const numericString = rawData.split('\n')[0];
-  const initialValue = Number.parseInt(numericString, 10);
+function Main(inputData) {
+  const inputParts = inputData.split("\n");
+  const firstSegment = inputParts[0];
 
-  if (initialValue === 0) {
-    console.log("");
-    return;
+  const numericalValue = parseInt(firstSegment, 10);
+
+  const alphabetArray = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+
+  function generateBase26String(currentNumber) {
+    if (currentNumber === 0) {
+      return '';
+    }
+    const charIndex = (currentNumber - 1) % 26;
+    const nextIterationNumber = Math.floor((currentNumber - 1) / 26);
+    return generateBase26String(nextIterationNumber) + alphabetArray[charIndex];
   }
 
-  const determineCharacterSequence = (val) => {
-    if (val === 0) {
-      return [];
-    }
-    let currentRemainder = val % 26;
-    if (currentRemainder === 0) {
-      currentRemainder = 26;
-    }
-    const characterAsciiCode = 97 + currentRemainder - 1;
-    const nextValueForProcessing = (val - currentRemainder) / 26;
-    return determineCharacterSequence(nextValueForProcessing).concat(String.fromCharCode(characterAsciiCode));
-  };
+  const finalResultString = generateBase26String(numericalValue);
 
-  const constructedString = determineCharacterSequence(initialValue).join('');
-  console.log(constructedString);
-};
-processData("123456789");
+  console.log(finalResultString);
+}
+
+Main("123456789");

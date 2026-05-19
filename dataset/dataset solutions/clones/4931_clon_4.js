@@ -1,22 +1,14 @@
-const referencePattern = "CODEFESTIVAL2016";
+function processInput(rawText) {
+    const processedText = rawText.trim();
+    const targetPhrase = "CODEFESTIVAL2016";
 
-function deriveDifferenceCount(sourceMaterial) {
-  const processedMaterial = sourceMaterial.trim();
-  const patternUnits = Array.from(referencePattern);
-  const materialUnits = Array.from(processedMaterial);
+    const mismatchCount = Array.from({ length: processedText.length }, (_, currentIdx) => {
+        const currentInputChar = processedText.charAt(currentIdx);
+        const currentTargetChar = targetPhrase.charAt(currentIdx);
+        return currentInputChar !== currentTargetChar ? 1 : 0;
+    }).reduce((accumulator, value) => accumulator + value, 0);
 
-  const totalDivergence = materialUnits.reduce((cumulative, currentUnit, unitIndex) => {
-    const correspondingPatternUnit = patternUnits[unitIndex] || '';
-    if (currentUnit !== correspondingPatternUnit) {
-      return cumulative + 1;
-    }
-    return cumulative;
-  }, 0);
-
-  return totalDivergence;
+    console.log(mismatchCount);
 }
 
-const systemIO = require("fs");
-const receivedContent = systemIO.readFileSync("/dev/stdin", "utf8");
-const finalTally = deriveDifferenceCount(receivedContent);
-console.log(finalTally);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

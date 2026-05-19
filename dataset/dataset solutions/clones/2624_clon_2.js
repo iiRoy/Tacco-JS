@@ -1,102 +1,76 @@
-var INPUT_PARSER = ( function ( ) {
-  function createReader ( inputString ) {
-    return new StreamReader ( inputString ) ;
-  }
-
-
-  function StreamReader ( inputString ) {
-
-    this . _linesArray = inputString . trim ( ) . split ( "\n" ) ;
-    this . _currentLineIndex = 0 ;
-
-  }
-
-  StreamReader . prototype . readSingleValue = function ( asStringFlag ) {
-    var  currentLines  =  this . _linesArray ,
-         lineIdx       =  this . _currentLineIndex ,
-         parsedValue   ;
-
-    if ( typeof currentLines [ lineIdx ] === "string" ) {
-      currentLines [ lineIdx ] = currentLines [ lineIdx ] . split ( " " ) . reverse ( ) ;
+var INPUT_PARSER = (function () {
+    function createParser(inputString) {
+        return new InputSource(inputString);
     }
 
-    parsedValue = currentLines [ lineIdx ] . pop ( ) ;
-
-    if ( ! currentLines [ lineIdx ] . length ) {
-      this . _currentLineIndex ++ ;
+    function InputSource(rawInput) {
+        this._sourceLines = rawInput.trim().split("\n");
+        this._currentLineIndex = 0;
     }
 
-    return asStringFlag ? parsedValue : + parsedValue ;
-  } ;
+    InputSource.prototype.getNextValue = function (asString) {
+        var lineData = this._sourceLines;
+        var lineIdx = this._currentLineIndex;
+        var extractedVal;
 
+        if (typeof lineData[lineIdx] === "string") {
+            lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
+        }
 
-  StreamReader . prototype . readLineValues = function ( returnStringsFlag ) {
-    var lineContent = this . _linesArray [ this . _currentLineIndex ++ ] . split ( " " ) ;
-    return returnStringsFlag ? lineContent : lineContent . map ( ( itemAsStr ) => + itemAsStr ) ;
-  } ;
+        extractedVal = lineData[lineIdx].pop();
 
+        if (!lineData[lineIdx].length) {
+            this._currentLineIndex++;
+        }
+        return asString ? extractedVal : +extractedVal;
+    };
 
-  StreamReader . prototype . readMatrix = function ( numRowsToRead , keepStringsFlag ) {
-    var matrixData = this . _linesArray . slice ( this . _currentLineIndex , this . _currentLineIndex += numRowsToRead ) . map ( ( rowText ) => rowText . split ( " " ) ) ;
+    InputSource.prototype.getLineValues = function (asStrings) {
+        var currentLine = this._sourceLines[this._currentLineIndex++].split(" ");
+        return asStrings ? currentLine : currentLine.map(val => +val);
+    };
 
-    return keepStringsFlag
-             ? matrixData
-             : matrixData . map ( ( rowItems ) => rowItems . map ( ( itemText ) => + itemText ) ) ;
-  } ;
+    InputSource.prototype.getMatrix = function (numRows, asStrings) {
+        var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows).map(line => line.split(" "));
+        return asStrings ? matrixRows : matrixRows.map(row => row.map(val => +val));
+    };
 
+    InputSource.prototype.getRows = function (numRows, asStrings) {
+        var rowStrings = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows);
+        return asStrings ? rowStrings : rowStrings.map(val => +val);
+    };
 
-  StreamReader . prototype . readRows = function ( countOfRows , returnRawFlag ) {
-    var selectedRows = this . _linesArray . slice ( this . _currentLineIndex , this . _currentLineIndex += countOfRows ) ;
+    return createParser;
+})();
 
-    return returnRawFlag ? selectedRows : selectedRows . map ( ( rowEntry ) => + rowEntry ) ;
-  } ;
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-  return createReader ;
-
-} ) ( ) ;
-
-
-
-var inputReader = INPUT_PARSER ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
-
-
-function createMultiDimArray ( initialValue ) {
-  var dimensionArgs = arguments ,
-      argCount      = dimensionArgs . length ,
-      arrayCreationCode = "Array(dimensionArgs[" + --argCount + "]).fill(0).map( _ => { return " + initialValue + "; } )" ;
-
-  while ( --argCount ) {
-    arrayCreationCode = "Array(dimensionArgs[" + argCount + "]).fill(0).map( _ => " + arrayCreationCode + " )" ;
-  }
-
-  return eval ( arrayCreationCode ) ;
+function createMultiDimArray(initialValue) {
+    var argsList = arguments;
+    var argCount = argsList.length;
+    var arrayCreationCode = "Array(argsList[" + --argCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
+    while (--argCount) {
+        arrayCreationCode = "Array(argsList[" + argCount + "]).fill(0).map(x=>" + arrayCreationCode + ")";
+    }
+    return eval(arrayCreationCode);
 }
 
+console.log(computeResult());
 
-console . log ( computeSolution ( ) ) ;
+function computeResult() {
+    var dimensionSize = inputReader.getNextValue();
+    var resultMatrix = createMultiDimArray("[]", dimensionSize);
 
-
-function computeSolution ( ) {
-
-  var totalElements = inputReader . readSingleValue ( ) ;
-
-  var resultMatrix = createMultiDimArray ( "[]" , totalElements - 1 ) ;
-
-  for ( var outerIdx = 0 ; outerIdx < totalElements ; outerIdx ++ ) {
-    for ( var innerIdx = outerIdx + 1 ; innerIdx < totalElements ; innerIdx ++ ) {
-
-      var powerOfTwoVal = 1 ,
-          xorResultVal  = outerIdx ^ innerIdx ;
-
-      while ( xorResultVal % 2 === 0 ) {
-        xorResultVal >>= 1 ;
-        powerOfTwoVal ++ ;
-      }
-
-      resultMatrix [ outerIdx ] [ innerIdx - outerIdx - 1 ] = powerOfTwoVal ;
+    for (var rowIterator = 0; rowIterator < dimensionSize; rowIterator++) {
+        for (var colIterator = rowIterator + 1; colIterator < dimensionSize; colIterator++) {
+            var powerOfTwo = 1;
+            var xorResult = rowIterator ^ colIterator;
+            while (xorResult % 2 === 0) {
+                xorResult >>= 1;
+                powerOfTwo++;
+            }
+            resultMatrix[rowIterator][colIterator - rowIterator - 1] = powerOfTwo;
+        }
     }
-  }
-
-  return resultMatrix . map ( ( rowContent ) => rowContent . join ( " " ) ) . join ( "\n" ) ;
+    return resultMatrix.map(row => row.join(" ")).join("\n");
 }

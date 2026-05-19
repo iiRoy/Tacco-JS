@@ -1,94 +1,73 @@
-// Declare global variables for grid state and final outcome.
-let gridConfiguration;
-let finalVerdict;
+function exploreGrid(rowCoord, colCoord) {
+  // Check if the current cell has already been visited during this path
+  if (gridMap[rowCoord][colCoord] === "#") {
+    outcomeMessage = "LOOP"; // Indicate a cycle has been detected
+    return; // Terminate this recursive branch
+  }
 
-// Custom function to parse strings into numbers, replacing the global Number constructor in map.
-const numericalParser = ( strVal ) => Number( strVal );
+  // Check if the current cell is the designated exit point
+  if (gridMap[rowCoord][colCoord] === ".") {
+    outcomeMessage = colCoord + " " + rowCoord; // Record the coordinates of the exit
+    return; // Terminate this recursive branch
+  }
 
-// Define the recursive function for navigating the grid.
-// It takes current Y and X coordinates as arguments.
-function cellNavigator( currentYPosition, currentXPosition ) {
-   // Check if the current cell has already been marked as visited ('#').
-   // If so, it indicates a looping path.
-   if ( gridConfiguration[ currentYPosition ][ currentXPosition ] === "#" ) {
-      finalVerdict = "PATH_CYCLE"; // Set the outcome to indicate a loop.
-      return; // End this recursive branch.
-   }
+  // Mark the current cell as visited to prevent re-processing in the same path
+  gridMap[rowCoord][colCoord] = "#";
 
-   // Check if the current cell is the target exit point ('.').
-   // If so, record its coordinates as the successful outcome.
-   if ( gridConfiguration[ currentYPosition ][ currentXPosition ] === "." ) {
-      finalVerdict = currentXPosition + " " + currentYPosition; // Store the coordinates.
-      return; // End this recursive branch, success.
-   }
+  // The following conditional statements are effectively non-functional
+  // because the cell content was just changed to '#'.
+  // They are retained to strictly adhere to Type II cloning rules.
+  if (gridMap[rowCoord][colCoord] === ">") {
+    colCoord++; // Attempt to move right (will not execute)
+  }
+  if (gridMap[rowCoord][colCoord] === "<") {
+    colCoord--; // Attempt to move left (will not execute)
+  }
+  if (gridMap[rowCoord][colCoord] === "^") {
+    rowCoord--; // Attempt to move up (will not execute)
+  }
+  if (gridMap[rowCoord][colCoord] === "v") {
+    rowCoord++; // Attempt to move down (will not execute)
+  }
 
-   // Mark the current cell as visited to prevent revisiting and detect cycles.
-   gridConfiguration[ currentYPosition ][ currentXPosition ] = "#";
-
-   // The following conditional statements check the current cell's value
-   // for directional symbols. However, because the cell was just marked '#',
-   // these conditions will always evaluate to false, and no coordinate change will occur.
-   // This behavior replicates the original code's specific logic.
-   if ( gridConfiguration[ currentYPosition ][ currentXPosition ] === ">" ) {
-      currentXPosition++; // This line will not execute due to previous assignment.
-   }
-   if ( gridConfiguration[ currentYPosition ][ currentXPosition ] === "<" ) {
-      currentXPosition--; // This line will not execute.
-   }
-   if ( gridConfiguration[ currentYPosition ][ currentXPosition ] === "^" ) {
-      currentYPosition--; // This line will not execute.
-   }
-   if ( gridConfiguration[ currentYPosition ][ currentXPosition ] === "v" ) {
-      currentYPosition++; // This line will not execute.
-   }
-
-   // Recursively call the navigator for the next position.
-   // Due to the logic above, this will often be the same coordinates,
-   // leading to a quick detection of "PATH_CYCLE" in the next iteration.
-   cellNavigator( currentYPosition, currentXPosition );
+  // Recursively call the exploration function for the next step.
+  // Due to the preceding dead code, rowCoord and colCoord remain unchanged here.
+  exploreGrid(rowCoord, colCoord);
 }
 
-// Obtain the Node.js 'fs' module for file system operations.
-const fileSystemHandler = require('fs');
+// Declare global variables for the grid structure and the final output message
+let gridMap;
+let outcomeMessage;
 
-// Create an alias for console output operations for clarity.
-const outputService = {
-  displayMessage: ( content ) => console.log( content )
-};
+// Read all input data from standard input synchronously
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the raw input into an array of individual lines
+const inputLines = (rawData.trim()).split("\n");
 
-// Read all data from standard input, using UTF-8 encoding.
-const rawInputText = fileSystemHandler.readEntireFileContents( '/dev/stdin', 'utf8' );
+// Main loop to process multiple grid configurations
+while (true) {
+  // Extract grid dimensions (rows and columns) from the first line of the current input block
+  const dimensions = inputLines.shift().split(" ").map(Number);
 
-// Process the raw input: remove leading/trailing whitespace, then split into an array of lines.
-const processedLines = (rawInputText.trim()).split("\n");
+  // Check for the termination condition (0 0)
+  if (dimensions[0] === 0 && dimensions[1] === 0) {
+    break; // Exit the processing loop if dimensions are zero
+  }
 
-// Main loop to process multiple grid scenarios from the input.
-while ( true ) {
-   // Extract the first line, split by space, and convert elements to numbers
-   // to get the grid's height and width.
-   const gridDimensionsInfo = processedLines.shift().split(" ").map( numericalParser );
+  // Initialize the 2D array (grid) for the current test case
+  gridMap = [];
+  for (let idx = 0; idx < dimensions[0]; idx++) {
+    // Read each row of the grid and split it into individual characters
+    const currentLineChars = (inputLines.shift()).split("");
+    gridMap.push(currentLineChars); // Add the row to the grid
+  }
 
-   // Check for the termination condition: both dimensions are zero.
-   if ( gridDimensionsInfo[0] === 0 && gridDimensionsInfo[1] === 0 ) {
-      break; // Exit the processing loop.
-   }
+  // Reset the outcome message for the new test case
+  outcomeMessage = "";
 
-   // Initialize a new empty grid for the current scenario.
-   gridConfiguration = [];
+  // Begin the grid exploration from the starting point (0,0)
+  exploreGrid(0, 0);
 
-   // Loop to populate the grid with character arrays, row by row.
-   for ( let rowIndex = 0; rowIndex < gridDimensionsInfo[0]; rowIndex++ ) {
-      // Get the next line from processed input, split it into individual characters.
-      const rowCharacters = (processedLines.shift()).split("");
-      gridConfiguration.push( rowCharacters ); // Add the character array as a row to the grid.
-   }
-
-   // Reset the final outcome for the new grid traversal.
-   finalVerdict = "";
-
-   // Initiate the grid traversal starting from the top-left cell (0,0).
-   cellNavigator( 0, 0 );
-
-   // Output the determined verdict for the current grid scenario.
-   outputService.displayMessage( finalVerdict );
+  // Output the determined outcome for the current grid
+  console.log(outcomeMessage);
 }

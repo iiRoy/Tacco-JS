@@ -1,51 +1,42 @@
-// This module processes input data to find specific sequence properties.
-function ProcessInputData(entryData) {
-  // Extract the modulus value from the first line of input.
-  const divisorNum = entryData[0][1];
+function ProcessInput(dataLines) {
+  // Retrieve the specific modulus value from the initial data entry.
+  const modulusVal = dataLines[0][1];
 
-  /*
-   * Convert the second line of input into an array of numbers,
-   * then map each number to its remainder when divided by divisorNum.
-   * @type {Array<number>} An array containing the processed numeric values.
-   */
-  const moduloResults = entryData[1]
-    .map(Number)
-    .map(currentVal => currentVal % divisorNum);
+  // Process the array of numbers: convert strings to numbers,
+  // then apply the modulo operation to each element.
+  // @type {Array<number>}
+  const numArr = dataLines[1].map(Number).map(element => element % modulusVal);
 
-  // Use the Array.prototype.reduce method to iterate through subsequences
-  // and compute the final count.
-  const totalCount = moduloResults.reduce((accumulatorSum, currentElement, startIndex) => {
-    // Variable to track matches within the current subsequence.
-    let segmentHits = 0;
-    // Variable to keep track of the cumulative remainder for the subsequence.
-    let accumulatedRemainder = 0;
+  // Compute the total count of sub-arrays that satisfy the condition.
+  const finalCount = numArr.reduce((accumulatedSum, currentVal, currentIndex) => {
+    // Initialize local variables for each starting position.
+    let subArrayCount = 0;
+    let currentRemainder = 0;
 
-    // Loop through all possible subsequences starting from startIndex.
-    for (let loopIndex = startIndex, subsequenceLength = 1;
-         loopIndex < moduloResults.length;
-         loopIndex++, subsequenceLength++) {
+    // Iterate through sub-arrays starting from the current index.
+    for (let loopIndex = currentIndex, subArrayLength = 1; loopIndex < numArr.length; loopIndex++, subArrayLength++) {
+      // Update the running sum modulo the modulus value.
+      currentRemainder = (currentRemainder + numArr[loopIndex]) % modulusVal;
 
-      // Update the accumulated remainder for the current subsequence.
-      accumulatedRemainder = (accumulatedRemainder + moduloResults[loopIndex]) % divisorNum;
-
-      // Check if the accumulated remainder matches the length of the subsequence.
-      if (accumulatedRemainder === subsequenceLength) {
-        segmentHits++; // Increment the counter if a match is found.
+      // Check if the current remainder matches the sub-array's length.
+      if (currentRemainder === subArrayLength) {
+        subArrayCount++; // Increment the counter if the condition is met.
       }
     }
 
-    // Add the hits from this starting index to the overall accumulator.
-    return accumulatorSum + segmentHits;
-  }, 0); // Start the accumulation from zero.
+    // Add the count from this starting point to the overall sum.
+    return accumulatedSum + subArrayCount;
+  }, 0); // The initial value for the accumulated sum is zero.
 
-  // Output the final computed tally to the console.
-  console.log(totalCount);
+  // Display the final calculated count.
+  console.log(finalCount);
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInputData(
-  require("fs").readFileSync("/dev/stdin", "utf8")
-  .trim()
-  .split("\n")
-  .map(inputRow => inputRow.split(' '))
+// Read input from standard input, parse it, and then invoke the main processing function.
+ProcessInput(
+  require("fs")
+    .readFileSync("/dev/stdin", "utf8") // Read the entire content of standard input as a UTF-8 string.
+    .trim() // Remove any leading or trailing whitespace from the input.
+    .split("\n") // Split the input string into an array of lines.
+    .map(inputLine => inputLine.split(' ')) // For each line, split it by spaces into an array of strings.
 );

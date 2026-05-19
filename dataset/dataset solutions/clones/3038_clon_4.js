@@ -1,15 +1,17 @@
 "use strict";
+function processInput(sourceText) {
+    const lineSegments = sourceText.split('\n');
 
-function executeRoutine(sourceData) {
-    const parsedLines = sourceData.split('\n');
-    const relevantString = parsedLines[1];
+    const totalElements = parseInt(lineSegments[0]);
+    const fullStoneSequence = lineSegments[1].split('');
 
-    const periodCount = (relevantString.match(/\./g) || []).length;
-    const poundCount = (relevantString.match(/#/g) || []).length;
+    const relevantStones = fullStoneSequence.slice(0, totalElements);
 
-    const finalResult = Math.min(periodCount, poundCount);
+    const dotTally = relevantStones.filter(element => element === '.').length;
+    const hashTally = relevantStones.filter(element => element === '#').length;
 
-    console.log(finalResult);
+    const resultValue = Math.min(dotTally, hashTally);
+
+    console.log(resultValue);
 }
-
-executeRoutine(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

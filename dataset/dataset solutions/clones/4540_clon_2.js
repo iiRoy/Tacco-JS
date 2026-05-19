@@ -1,29 +1,16 @@
-// Primary function to manage the processing of incoming text.
-function processInputData( rawData ) {
+function processInput(rawData) {
+    // Remove any leading or trailing whitespace from the input string.
+    rawData = rawData.trim();
 
-    // First, eliminate any extraneous spaces from the extremities of the input string.
-    let trimmedData = rawData . trim( );
+    // Split the cleaned string by spaces and convert each resulting part into a number.
+    const numArray = rawData.split(" ").map(Number);
 
-    // Tokenize the cleaned string by spaces, then convert each segment into a numerical value.
-    const numericValues = trimmedData . split(  " "  ) . map(  Number  );
+    // Calculate the total by adding the first two numbers from the array.
+    const sumResult = numArray[0] + numArray[1];
 
-    // Compute the aggregate of the initial pair of numerical elements.
-    const resultSum = numericValues[ 0 ] + numericValues[ 1 ];
-
-    // Output the calculated sum if it adheres to a specific condition (less than 10),
-    // otherwise, signal an issue with a predefined message.
-    console.log(
-        resultSum < 10
-            ? resultSum
-            : 'Invalid Result'
-    );
+    // Output the sum if it's less than 10, otherwise output the string "error".
+    console.log(sumResult < 10 ? sumResult : "error");
 }
 
-// Initiate the data processing pipeline by retrieving content from the standard input stream.
-processInputData(
-    require( 'fs' )
-        . readFileSync(
-            '/dev/stdin',
-            'utf8'
-        )
-);
+// Read the entire content from standard input, decode it as UTF-8, and then pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

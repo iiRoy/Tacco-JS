@@ -1,38 +1,31 @@
-process.stdin.on("data", function(inputChunkBuffer) {
-    const rawInputString = String(inputChunkBuffer).trim();
-    const parsedInputLines = rawInputString.split("\n");
+process.stdin.on("data", function(inputBuffer) {
+    const rawInputString = inputBuffer.toString();
+    const trimmedInputContent = rawInputString.trim();
+    const inputLinesArray = trimmedInputContent.split("\n");
 
-    const uniqueElementsRegistry = {};
-    let commonElementCount = 0;
+    const elementPresenceMap = {};
+    let totalMatchCount = 0;
 
-    const PRESENCE_INDICATOR = true;
+    const PRESENCE_MARKER = 1;
 
-    if (parsedInputLines.length >= 2) {
-        const firstElementSequence = parsedInputLines[1];
-        const elementsForRegistry = firstElementSequence.split(" ");
+    const populateMapFromLine = (lineContent, targetMap, markerValue) => {
+        const elementsInLine = lineContent.split(" ");
+        for (const currentElement of elementsInLine) {
+            targetMap[currentElement] = markerValue;
+        }
+    };
 
-        elementsForRegistry.forEach(function(currentElement) {
-            if (currentElement !== "") {
-                uniqueElementsRegistry[currentElement] = PRESENCE_INDICATOR;
-            }
-        });
-    }
+    const firstSetSourceLine = inputLinesArray[1];
+    populateMapFromLine(firstSetSourceLine, elementPresenceMap, PRESENCE_MARKER);
 
-    if (parsedInputLines.length >= 4) {
-        const secondElementSequence = parsedInputLines[3];
-        const elementsForComparison = secondElementSequence.split(" ");
+    const secondSetCheckLine = inputLinesArray[3];
+    const elementsToVerify = secondSetCheckLine.split(" ");
 
-        for (let idx = 0; idx < elementsForComparison.length; idx++) {
-            const candidateElement = elementsForComparison[idx];
-            if (candidateElement === "") {
-                continue;
-            }
-
-            if (Object.prototype.hasOwnProperty.call(uniqueElementsRegistry, candidateElement)) {
-                commonElementCount = commonElementCount + 1;
-            }
+    for (const itemToMatch of elementsToVerify) {
+        if (elementPresenceMap[itemToMatch]) {
+            totalMatchCount++;
         }
     }
 
-    console.log(commonElementCount);
+    console.log(totalMatchCount);
 }).resume();

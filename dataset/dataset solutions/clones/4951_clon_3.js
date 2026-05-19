@@ -1,41 +1,24 @@
-// Function to handle and process raw text input.
-function ProcessRawData(rawDataString) {
-    // Validate the input string before processing.
-    if (typeof rawDataString !== 'string' || rawDataString.length === 0) {
-        // Log an error and terminate processing for invalid or empty input.
-        console.error("Error: Input data must be a non-empty string for processing.");
-        return;
-    }
+function processInputData(rawDataString) {
+    const LINE_DELIMITER = "\n";
+    const SLICE_INDEX_FOR_SEGMENTATION = 4;
 
-    // Define the fixed number of initial lines to be extracted into the first segment.
-    const initialLineCount = 4;
+    let lineArray = rawDataString.split(LINE_DELIMITER);
 
-    // Transform the raw input string into an array, where each element corresponds to a single line.
-    // This allows for line-by-line manipulation of the data.
-    const lineSegments = rawDataString.split('\n');
+    // Introduce an intermediate variable to hold the full set of lines
+    // before they are divided into segments.
+    let fullLineSet = lineArray;
 
-    // Extract the first block of lines, up to the 'initialLineCount'.
-    // This forms the primary segment of our processed data.
-    const primarySegment = lineSegments.slice(0, initialLineCount);
+    let leadingLinesSegment = fullLineSet.slice(0, SLICE_INDEX_FOR_SEGMENTATION);
+    let trailingLinesSegment = fullLineSet.slice(SLICE_INDEX_FOR_SEGMENTATION);
 
-    // Extract all subsequent lines from the input array, starting from 'initialLineCount'.
-    // This forms the secondary, remaining segment of the data.
-    const secondarySegment = lineSegments.slice(initialLineCount);
+    // Explicitly convert array segments to strings before concatenation
+    // This makes the implicit toString() behavior of array concatenation explicit.
+    const firstSegmentAsString = leadingLinesSegment.toString();
+    const secondSegmentAsString = trailingLinesSegment.toString();
 
-    // Compose the final output string by concatenating the two segments.
-    // When arrays are concatenated with strings using the '+' operator, they are implicitly
-    // converted to comma-separated string representations.
-    const constructedOutput = primarySegment + ' ' + secondarySegment;
+    // Construct the final output string by combining the two stringified segments
+    const combinedOutputString = firstSegmentAsString + ' ' + secondSegmentAsString;
 
-    // Display the composed message to the standard output stream.
-    console.log(constructedOutput);
+    console.log(combinedOutputString);
 }
-
-// --- System Integration Section ---
-// This block is responsible for reading input from the execution environment
-// and passing it to the main data processing function.
-// It uses Node.js 'fs' module to synchronously read the entire content
-// of the standard input file descriptor as a UTF-8 encoded string.
-// This part of the code should generally remain untouched to ensure compatibility
-// with the execution environment's input mechanism.
-ProcessRawData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

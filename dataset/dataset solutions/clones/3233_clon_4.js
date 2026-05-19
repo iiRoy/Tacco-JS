@@ -1,97 +1,64 @@
-function parseItemDetails(lineContent) {
-    const valueParts = lineContent.split(" ");
-    const s1 = parseInt(valueParts[0], 10);
-    const s2 = parseInt(valueParts[1], 10);
-    return {
-        scoreA: s1,
-        scoreB: s2,
-        totalScore: s1 + s2
-    };
-}
+function Main(input) {
+    const sourceLines = input.split('\n');
+    const totalTurns = parseInt(sourceLines[0], 10);
 
-function arrangeItems(unorderedItems) {
-    // Creates a new array and sorts it to ensure immutability of the original list.
-    // Sorts primarily by totalScore in ascending order.
-    // If totalScores are equal, their relative order is preserved (stable sort).
-    return [...unorderedItems].sort((firstItem, secondItem) => {
-        if (firstItem.totalScore < secondItem.totalScore) return -1;
-        if (firstItem.totalScore > secondItem.totalScore) return 1;
-        return 0;
+    // Transform input lines into plate objects with relevant properties.
+    // Using object literals for better readability and property access.
+    const initialPlateData = sourceLines.slice(1).map(line => {
+        const [valA, valB] = line.split(' ').map(Number);
+        return { scoreA: valA, scoreB: valB, combinedScore: valA + valB };
     });
+
+    // Sort plates primarily by their combined score in ascending order.
+    // This initial sort establishes the base order for selection.
+    const sortedPlateData = [...initialPlateData].sort((p1, p2) => p1.combinedScore - p2.combinedScore);
+
+    // Simulate the game turns using a functional reducer pattern.
+    // The accumulator maintains the current scores and the set of available plates.
+    const gameOutcome = Array.from({ length: totalTurns }).reduce((accumulator, _, turnIndex) => {
+        let { playerAScore, playerBScore, remainingPlates } = accumulator;
+
+        // If no plates are left, return current state (should not happen if totalTurns matches plate count).
+        if (remainingPlates.length === 0) {
+            return { playerAScore, playerBScore, remainingPlates };
+        }
+
+        const isPlayerATurn = turnIndex % 2 === 0;
+
+        // Identify the "tie-group" of plates. These are all plates that have the same
+        // combinedScore as the first plate currently available.
+        const currentReferencePlate = remainingPlates[0];
+        const platesInCurrentTieGroup = remainingPlates.filter(p => p.combinedScore === currentReferencePlate.combinedScore);
+
+        let selectedPlate;
+        if (isPlayerATurn) {
+            // Player A's turn: select the plate from the tie-group that maximizes Player A's score.
+            selectedPlate = platesInCurrentTieGroup.reduce((bestOption, currentOption) =>
+                (currentOption.scoreA > bestOption.scoreA ? currentOption : bestOption), platesInCurrentTieGroup[0]);
+            playerAScore += selectedPlate.scoreA;
+            console.log('a take %d', selectedPlate.scoreA);
+        } else {
+            // Player B's turn: select the plate from the tie-group that maximizes Player B's score.
+            selectedPlate = platesInCurrentTieGroup.reduce((bestOption, currentOption) =>
+                (currentOption.scoreB > bestOption.scoreB ? currentOption : bestOption), platesInCurrentTieGroup[0]);
+            playerBScore += selectedPlate.scoreB;
+            console.log('b take %d', selectedPlate.scoreB);
+        }
+
+        // Create a new array of remaining plates by removing the selected plate.
+        // This ensures immutability for the functional approach.
+        const indexOfSelected = remainingPlates.findIndex(p => p === selectedPlate);
+        const updatedRemainingPlates = [
+            ...remainingPlates.slice(0, indexOfSelected),
+            ...remainingPlates.slice(indexOfSelected + 1)
+        ];
+
+        return { playerAScore, playerBScore, remainingPlates: updatedRemainingPlates };
+    }, { playerAScore: 0, playerBScore: 0, remainingPlates: sortedPlateData });
+
+    // Output the final difference in scores, as per the problem statement.
+    console.log('%d', gameOutcome.playerAScore - gameOutcome.playerBScore);
 }
 
-function conductMatch(remainingItems, playerOneScore, playerTwoScore, currentRound) {
-    // Base case: No items left to pick, return the final score difference.
-    if (remainingItems.length === 0) {
-        return playerOneScore - playerTwoScore;
-    }
-
-    const isPlayerOneTurn = currentRound % 2 === 0;
-
-    const currentMinimumTotal = remainingItems[0].totalScore;
-    let eligibleChoices;
-
-    // Determine the set of items eligible for picking in this round.
-    // This handles cases where totalScore might be NaN (from invalid input).
-    if (isNaN(currentMinimumTotal)) {
-        // If the first item's totalScore is NaN, then all remaining items (due to sorting)
-        // must also have NaN totalScore. All are eligible.
-        eligibleChoices = remainingItems;
-    } else {
-        // Otherwise, filter for items that exactly match the current minimum totalScore.
-        eligibleChoices = remainingItems.filter(item => item.totalScore === currentMinimumTotal);
-    }
-    
-    // Determine the optimal item for the current player from the eligible choices.
-    let selectedItem = eligibleChoices[0]; // Default to the first eligible item
-
-    if (isPlayerOneTurn) {
-        // Player One wants to maximize their 'scoreA' value.
-        selectedItem = eligibleChoices.reduce((bestSoFar, candidate) => {
-            return candidate.scoreA > bestSoFar.scoreA ? candidate : bestSoFar;
-        }, eligibleChoices[0]);
-    } else {
-        // Player Two wants to maximize their 'scoreB' value.
-        selectedItem = eligibleChoices.reduce((bestSoFar, candidate) => {
-            return candidate.scoreB > bestSoFar.scoreB ? candidate : bestSoFar;
-        }, eligibleChoices[0]);
-    }
-
-    // Update player scores based on the selected item.
-    const nextPlayerOneScore = isPlayerOneTurn ? playerOneScore + selectedItem.scoreA : playerOneScore;
-    const nextPlayerTwoScore = !isPlayerOneTurn ? playerTwoScore + selectedItem.scoreB : playerTwoScore;
-
-    // Create a new list of remaining items by removing the selected one.
-    // `indexOf` relies on object reference equality, which is correct here as `selectedItem`
-    // is a direct reference to an object from `remainingItems`.
-    const selectedItemIndex = remainingItems.indexOf(selectedItem); 
-    
-    const updatedRemainingItems = [
-        ...remainingItems.slice(0, selectedItemIndex),
-        ...remainingItems.slice(selectedItemIndex + 1)
-    ];
-
-    // Recursively call for the next round of the match.
-    return conductMatch(updatedRemainingItems, nextPlayerOneScore, nextPlayerTwoScore, currentRound + 1);
-}
-
-function ProcessData(rawData) {
-    const dataLines = rawData.split("\n");
-    // The first line contains the count of items, which isn't strictly needed
-    // as we can use the length of the parsed item list.
-    const itemStrings = dataLines.slice(1); 
-
-    // Parse each item line into an object.
-    const itemObjects = itemStrings.map(parseItemDetails);
-
-    // Initial arrangement of items based on their totalScore.
-    const arrangedItems = arrangeItems(itemObjects);
-
-    // Start the game simulation with initial scores and round.
-    const finalScoreDifference = conductMatch(arrangedItems, 0, 0, 0);
-
-    // Output the final result.
-    console.log(finalScoreDifference);
-}
-
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Don't edit this line!
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

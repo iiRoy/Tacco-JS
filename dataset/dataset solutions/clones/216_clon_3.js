@@ -1,148 +1,97 @@
-// This module handles standard input operations using Node.js's 'fs' module.
-const nodeIO = require('fs');
+const fileSystemModule = require('fs');
 
-// --- Input Processing Utility ---
-/**
- * Reads and processes input from stdin, returning an array of trimmed, non-empty lines.
- * Handles potential errors during file system operations.
- * @returns {string[]} An array of cleaned input lines.
- */
-function acquireInputLines() {
-    let streamSize;
-    try {
-        streamSize = nodeIO.fstatSync(process.stdin.fd).size;
-    } catch (ioError) {
-        // Log a more informative error and exit if stdin cannot be accessed.
-        console.error(`FATAL: Could not determine stdin size. Error: ${ioError.message}`);
-        process.exit(1);
+function readStandardInputLines() {
+    const standardInputFd = process.stdin.fd;
+    const inputStats = fileSystemModule.fstatSync(standardInputFd);
+    const inputLengthBytes = inputStats.size;
+
+    if (inputLengthBytes === 0) {
+        return [];
     }
 
-    if (streamSize === 0) {
-        return []; // Return an empty array if no input is provided.
-    }
+    const inputBuffer = Buffer.alloc(inputLengthBytes);
+    const actualBytesRead = fileSystemModule.readSync(standardInputFd, inputBuffer, 0, inputLengthBytes, 0);
 
-    const rawBuffer = Buffer.alloc(streamSize);
-    let bytesTransferred;
-    try {
-        bytesTransferred = nodeIO.readSync(process.stdin.fd, rawBuffer, 0, streamSize, 0);
-    } catch (ioError) {
-        console.error(`FATAL: Failed to read from stdin. Error: ${ioError.message}`);
-        process.exit(1);
-    }
-
-    // Convert buffer to string, split by newline, trim each line, and filter out any resulting empty strings.
-    // This ensures only meaningful input values are processed.
-    const cleanLines = rawBuffer.toString('utf8', 0, bytesTransferred)
-                                .split('\n')
-                                .map(lineSegment => lineSegment.trim()) // Remove leading/trailing whitespace
-                                .filter(trimmedLine => trimmedLine.length > 0); // Discard blank lines
-
-    return cleanLines;
+    const rawInputString = inputBuffer.toString('utf8', 0, actualBytesRead);
+    return rawInputString.split('\n');
 }
 
-// Immediately execute the main program flow after defining necessary functions.
-initializeAndExecute();
+const inputLines = readStandardInputLines();
+processInputData();
 
-// --- Main Program Orchestration ---
-/**
- * Orchestrates the program's execution: acquires input, generates prime sums,
- * and processes each input value to output the corresponding sum.
- */
-function initializeAndExecute() {
-    // Acquire and preprocess input lines from stdin.
-    const processedInputValues = acquireInputLines();
+function processInputData() {
+    const cumulativePrimeSums = generateCumulativePrimeSums();
+    const totalInputEntries = inputLines.length;
 
-    // Define the maximum number up to which prime sums will be pre-calculated.
-    // This value is hardcoded for consistency with the original problem's scope.
-    const PRIME_UPPER_BOUND = 10000;
-
-    // Generate the lookup table for cumulative sums of primes.
-    // `cumulativePrimeSumsLookup[k]` will store the sum of the first `k` primes.
-    const cumulativePrimeSumsLookup = generateCumulativePrimeSums(PRIME_UPPER_BOUND);
-
-    // Validate the generated lookup table.
-    if (!cumulativePrimeSumsLookup || cumulativePrimeSumsLookup.length === 0) {
-        console.error("CRITICAL: Prime sum lookup table could not be generated. Aborting.");
-        return; // Terminate execution if generation failed.
+    if (totalInputEntries === 0 || (totalInputEntries === 1 && inputLines[0] === '')) {
+        return;
     }
 
-    // Process each input value received from stdin.
-    for (const singleInputValue of processedInputValues) {
-        const numericInputIndex = parseInt(singleInputValue, 10); // Parse string to integer with base 10.
+    const loopUpperLimit = totalInputEntries - 1;
+    for (let i = 0; i < loopUpperLimit; i++) {
+        const currentLineContent = inputLines[i];
+        const numericValue = parseInt(currentLineContent, 10);
 
-        // Implement robust input validation.
-        // Check for NaN, negative values, and values exceeding the pre-calculated range.
-        if (isNaN(numericInputIndex) || numericInputIndex < 0 || numericInputIndex >= cumulativePrimeSumsLookup.length) {
-            // Non-essential error logging for invalid inputs - can be removed to simplify.
-            // console.error(`WARNING: Skipping invalid or out-of-range input: '${singleInputValue}'. Expected a non-negative integer within [0, ${cumulativePrimeSumsLookup.length - 1}].`);
-            continue; // Skip to the next input if current one is invalid.
+        if (isNaN(numericValue) || numericValue === 0) {
+            continue;
         }
-
-        // Retrieve and output the pre-calculated sum of primes.
-        // Using `process.stdout.write` for potentially higher performance in competitive programming scenarios.
-        process.stdout.write(`${cumulativePrimeSumsLookup[numericInputIndex]}\n`);
+        
+        console.log(cumulativePrimeSums[numericValue]);
     }
 }
 
-// --- Prime Number Sieve and Cumulative Sum Generation ---
-/**
- * Computes a lookup table containing the cumulative sum of the first 'k' prime numbers.
- * This is achieved by first using a Sieve of Eratosthenes to identify primes,
- * then iterating through the primes to build the cumulative sum array.
- * @param {number} limitForPrimes - The upper limit for numbers to be considered in the sieve.
- * @returns {Int32Array} An array where `resultArray[k]` is the sum of the first `k` primes.
- */
-function generateCumulativePrimeSums(limitForPrimes) {
-    // Pre-validation for the upper limit.
-    if (limitForPrimes < 2 || !Number.isInteger(limitForPrimes)) {
-        console.error(`ERROR: Invalid limit for prime calculation: ${limitForPrimes}. Must be an integer >= 2.`);
-        return new Int32Array(0); // Return an empty array to signal failure.
+function generateCumulativePrimeSums() {
+    const upperBound = 10000;
+    const arraySize = upperBound + 1;
+    const sieveArray = new Int8Array(arraySize);
+    const NOT_PRIME_MARKER = 1;
+
+    sieveArray[0] = NOT_PRIME_MARKER;
+    sieveArray[1] = NOT_PRIME_MARKER;
+
+    const sqrtLimit = Math.floor(Math.sqrt(upperBound));
+
+    for (let i = 2; i <= sqrtLimit; i++) {
+        if (sieveArray[i] === NOT_PRIME_MARKER) {
+            continue;
+        }
+        markMultiples(i, upperBound, sieveArray, NOT_PRIME_MARKER);
     }
 
-    // Initialize a boolean-like array for the Sieve of Eratosthenes.
-    // `0` indicates potentially prime, `1` indicates composite.
-    // `Uint8Array` is memory-efficient for boolean flags.
-    const compositeMarkers = new Uint8Array(limitForPrimes + 1).fill(0);
+    const cumulativeSumsArray = new Int32Array(arraySize);
+    let currentCumulativeSum = 0;
+    let primeIndexCounter = 0;
 
-    // Explicitly mark 0 and 1 as non-prime (composite for the purpose of the sieve).
-    compositeMarkers[0] = 1;
-    compositeMarkers[1] = 1;
-
-    // Sieve process: iterate up to the square root of the limit.
-    // Any composite number `N` has at least one prime factor `p <= sqrt(N)`.
-    const sieveBoundary = Math.floor(Math.sqrt(limitForPrimes));
-    for (let currentNum = 2; currentNum <= sieveBoundary; ++currentNum) {
-        // If `currentNum` is currently marked as prime (value is 0).
-        if (compositeMarkers[currentNum] === 0) {
-            // Mark all multiples of `currentNum` as composite.
-            // Optimization: start marking from `currentNum * currentNum` because
-            // smaller multiples (e.g., `2*currentNum`, `3*currentNum`) would have
-            // already been marked by their respective smaller prime factors.
-            for (let mult = currentNum * currentNum; mult <= limitForPrimes; mult += currentNum) {
-                compositeMarkers[mult] = 1; // Mark as composite.
-            }
+    for (let i = 1; i <= upperBound; i++) {
+        if (sieveArray[i] !== NOT_PRIME_MARKER) {
+            ({ currentCumulativeSum, primeIndexCounter } = updateCumulativeSums(
+                i,
+                currentCumulativeSum,
+                primeIndexCounter,
+                cumulativeSumsArray
+            ));
         }
     }
 
-    // Now, calculate the cumulative sums of primes.
-    // `cumulativeSumResult[k]` will store the sum of the first `k` primes.
-    const cumulativeSumResult = new Int32Array(limitForPrimes + 1).fill(0);
-    let currentTotalSum = 0;
-    let primeOrdinalCount = 0; // Tracks the ordinal position of the prime (1st, 2nd, 3rd, etc.)
+    return cumulativeSumsArray;
+}
 
-    // Iterate through numbers from 2 up to the limit.
-    for (let candidateNumber = 2; candidateNumber <= limitForPrimes; ++candidateNumber) {
-        // If `candidateNumber` is identified as prime (marked 0 in the sieve).
-        if (compositeMarkers[candidateNumber] === 0) {
-            currentTotalSum += candidateNumber; // Add the prime to the running total.
-            primeOrdinalCount++; // Increment the count of primes found.
-            // Store the current cumulative sum at the index corresponding to its ordinal position.
-            cumulativeSumResult[primeOrdinalCount] = currentTotalSum;
-        }
+function markMultiples(primeFactor, limit, sieve, markerValue) {
+    for (let multiple = primeFactor * 2; multiple <= limit; multiple += primeFactor) {
+        sieve[multiple] = markerValue;
     }
+}
 
-    // Return the array containing cumulative sums.
-    // Indices beyond `primeOrdinalCount` (the actual number of primes found) will remain 0,
-    // which is the intended behavior for inputs requesting sums of non-existent primes.
-    return cumulativeSumResult;
+function updateCumulativeSums(
+    currentNumber,
+    previousSum,
+    currentIndex,
+    targetArray
+) {
+    const newSum = previousSum + currentNumber;
+    targetArray[currentIndex] = newSum;
+    return {
+        currentCumulativeSum: newSum,
+        primeIndexCounter: currentIndex + 1
+    };
 }

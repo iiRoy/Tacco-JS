@@ -1,155 +1,116 @@
 'use strict';
 
-/**
- * Orchestrates the analysis of food mixture parameters to identify
- * the most concentrated sugar solution within specified constraints.
- * This function processes raw input data, calculates all possible
- * water and sugar mass combinations, filters them based on total
- * weight and solubility, and finally determines the optimal mixture.
- *
- * @param {string} rawInputData - A string containing space-separated
- *                                 integer parameters (A B C D E F).
- */
-function analyzeFoodMixture(rawInputData) {
+// Helper function to calculate sugar concentration as a percentage.
+// Returns 0 if totalMass is zero to prevent NaN, as a mixture with 0 total mass
+// cannot have a meaningful concentration and is typically invalid in this context.
+const calculateSugarConcentration = (sugarMass, totalMass) => {
+    if (totalMass === 0) {
+        return 0;
+    }
+    return (sugarMass / totalMass) * 100;
+};
 
-    // Helper function to calculate the percentage concentration of sugar in a mixture.
-    // Prevents division by zero in cases of no total mass.
-    const calculateConcentrationPercentage = (sugarMass, totalMass) => {
-        if (totalMass === 0) {
-            return 0; // No total mass means no concentration.
+// Main function to process the input data and find the optimal mixture.
+function processInputData(rawData) {
+    const inputLines = rawData.split('\n');
+
+    // Parse the six parameters from the first line using destructuring and Number conversion.
+    const [paramA, paramB, paramC, paramD, paramE, paramF] = inputLines.shift().split(' ').map(Number);
+
+    // --- Step 1: Generate all possible water and sugar amounts based on scoop combinations ---
+    // Using Sets to automatically store only unique amounts, then converting to sorted arrays.
+    const generatedWaterAmounts = new Set();
+    const generatedSugarAmounts = new Set();
+
+    // The maximum number of scoops for A/C and B/D is limited by the total capacity F.
+    // The original code uses F as a loose upper bound for loop counters, which is preserved.
+    const maxScoopIndex = paramF;
+
+    for (let scoopA_count = 0; scoopA_count <= maxScoopIndex; scoopA_count++) {
+        for (let scoopB_count = 0; scoopB_count <= maxScoopIndex; scoopB_count++) {
+            // Calculate current water volume (in grams, 100g per unit A/B)
+            const currentWaterVolume = (paramA * scoopA_count + paramB * scoopB_count) * 100;
+            // Add to set if within total capacity and non-negative
+            if (currentWaterVolume <= paramF && currentWaterVolume >= 0) {
+                generatedWaterAmounts.add(currentWaterVolume);
+            }
+
+            // Calculate current sugar mass (in grams, C/D grams per unit)
+            const currentSugarMass = paramC * scoopA_count + paramD * scoopB_count;
+            // Add to set if within total capacity and non-negative
+            if (currentSugarMass <= paramF && currentSugarMass >= 0) {
+                generatedSugarAmounts.add(currentSugarMass);
+            }
         }
-        return (sugarMass / totalMass) * 100.0;
+    }
+
+    // Convert sets to sorted arrays for consistent iteration order and potential efficiency.
+    const possibleWaterVolumes = Array.from(generatedWaterAmounts).sort((a, b) => a - b);
+    const possibleSugarMasses = Array.from(generatedSugarAmounts).sort((a, b) => a - b);
+
+    // --- Step 2: Filter for valid mixtures based on total mass and solubility limit ---
+    // Pre-calculate the maximum allowed sugar concentration ratio.
+    const maxSolubilityRatio = (paramE * 100) / (100 + paramE);
+
+    // Helper function to check if a given water and sugar combination forms a valid mixture.
+    const isValidMixture = (waterAmount, sugarAmount, totalCapacity, maxConcentration) => {
+        const totalMixtureMass = waterAmount + sugarAmount;
+        // A mixture with zero total mass is not considered valid for concentration calculation.
+        if (totalMixtureMass === 0) {
+            return false;
+        }
+        // Check if total mass exceeds the container capacity.
+        if (totalMixtureMass > totalCapacity) {
+            return false;
+        }
+
+        // Calculate the current sugar concentration and check against the solubility limit.
+        const currentConcentration = calculateSugarConcentration(sugarAmount, totalMixtureMass);
+        return currentConcentration <= maxConcentration;
     };
 
-    // --- Phase 1: Input Parsing and Parameter Initialization ---
-    const dataLines = rawInputData.trim().split('\n');
-    const paramLine = dataLines.shift(); // Extract the primary parameter line
-
-    // Early exit if the input line is missing or empty.
-    if (!paramLine) {
-        console.log('0 0');
-        return;
-    }
-
-    // Parse the space-separated parameters into an array of integers.
-    const parsedParams = paramLine.split(' ').map(val => Number.parseInt(val, 10));
-
-    // Validate the number of parameters.
-    if (parsedParams.length !== 6) {
-        console.error("Input Error: Expected exactly 6 numerical parameters (A B C D E F). Received: " + parsedParams.length);
-        console.log('0 0'); // Output default result on critical input error.
-        return;
-    }
-
-    // Assign parameters to clearly named constants for readability.
-    const waterUnitAWeight = parsedParams[0]; // Grams of water per unit A (multiplied by 100 later)
-    const waterUnitBWeight = parsedParams[1]; // Grams of water per unit B (multiplied by 100 later)
-    const sugarUnitCWeight = parsedParams[2]; // Grams of sugar per unit C
-    const sugarUnitDWeight = parsedParams[3]; // Grams of sugar per unit D
-    const maxSolubilityE = parsedParams[4];   // Maximum E% sugar relative to water (e.g., if E=20, 20g sugar per 100g water)
-    const overallMaxWeightF = parsedParams[5]; // Maximum total weight of the mixture allowed in grams
-
-    // Calculate the maximum allowable sugar-to-total-mixture ratio.
-    // This is derived from E% sugar *to water*. So if S/W = E/100, then S/(S+W) = E/(100+E).
-    const maxConcentrationRatio = (1.0 * maxSolubilityE) / (100 + maxSolubilityE);
-
-    // --- Phase 2: Generating Potential Water and Sugar Mass Combinations ---
-    // Using Sets to store unique mass values, then converting to sorted arrays.
-    const generatedWaterMasses = new Set();
-    const generatedSugarMasses = new Set();
-
-    // Pre-calculate common multipliers to optimize loops.
-    const waterBatchWeightA = 100 * waterUnitAWeight;
-    const waterBatchWeightB = 100 * waterUnitBWeight;
-
-    // Iterate through possible units of water A and B.
-    // The upper bound for iteration is chosen to ensure `currentWaterMass` doesn't exceed `overallMaxWeightF`.
-    for (let countA = 0; (countA * waterBatchWeightA) <= overallMaxWeightF; ++countA) {
-        for (let countB = 0; (countB * waterBatchWeightB) <= overallMaxWeightF; ++countB) {
-            const currentWaterMass = (countA * waterBatchWeightA) + (countB * waterBatchWeightB);
-            // Only add positive water masses within the overall weight limit.
-            if (currentWaterMass > 0 && currentWaterMass <= overallMaxWeightF) {
-                generatedWaterMasses.add(currentWaterMass);
+    const candidateMixtures = [];
+    // Iterate through all possible water and sugar combinations.
+    for (const waterVol of possibleWaterVolumes) {
+        for (const sugarMass of possibleSugarMasses) {
+            if (isValidMixture(waterVol, sugarMass, paramF, maxSolubilityRatio)) {
+                candidateMixtures.push([waterVol, sugarMass]);
             }
         }
     }
 
-    // Iterate through possible units of sugar C and D.
-    for (let countC = 0; (countC * sugarUnitCWeight) <= overallMaxWeightF; ++countC) {
-        for (let countD = 0; (countD * sugarUnitDWeight) <= overallMaxWeightF; ++countD) {
-            const currentSugarMass = (countC * sugarUnitCWeight) + (countD * sugarUnitDWeight);
-            // Add sugar masses within the overall weight limit. Sugar mass can be 0.
-            if (currentSugarMass <= overallMaxWeightF) {
-                generatedSugarMasses.add(currentSugarMass);
+    // --- Step 3: Find the best mixture (highest sugar concentration) ---
+    // Initialize the optimal mixture. The problem implies that [F, 0] (max water, 0 sugar)
+    // is a valid default if no other mixtures are found or if it's the best.
+    let optimalMixture = [paramF, 0];
+
+    // If there are valid candidate mixtures, use Array.prototype.reduce to find the one
+    // with the highest sugar concentration.
+    if (candidateMixtures.length > 0) {
+        optimalMixture = candidateMixtures.reduce((currentBest, nextCandidate) => {
+            const [currentBestWater, currentBestSugar] = currentBest;
+            const [nextCandidateWater, nextCandidateSugar] = nextCandidate;
+
+            // Calculate concentrations for both the current best and the next candidate.
+            const currentBestConcentration = calculateSugarConcentration(currentBestSugar, currentBestWater + currentBestSugar);
+            const nextCandidateConcentration = calculateSugarConcentration(nextCandidateSugar, nextCandidateWater + nextCandidateSugar);
+
+            // If the next candidate has a strictly higher concentration, it becomes the new best.
+            // If concentrations are equal, the earlier one (currentBest) is retained, preserving original behavior.
+            if (nextCandidateConcentration > currentBestConcentration) {
+                return nextCandidate;
+            } else {
+                return currentBest;
             }
-        }
+        }, optimalMixture); // Start reduction with the initial optimalMixture.
     }
 
-    // Convert sets to sorted arrays for efficient iteration and consistency.
-    const sortedWaterMasses = Array.from(generatedWaterMasses).sort((a, b) => a - b);
-    const sortedSugarMasses = Array.from(generatedSugarMasses).sort((a, b) => a - b);
-
-    // --- Phase 3: Filtering Feasible Mixtures Based on Constraints ---
-    const validMixtures = []; // Stores [waterMass, sugarMass] pairs that meet criteria.
-
-    // Iterate over all generated water and sugar amounts to form mixtures.
-    for (const waterMass of sortedWaterMasses) {
-        for (const sugarMass of sortedSugarMasses) {
-            const totalMixtureMass = waterMass + sugarMass;
-
-            // Constraint 1: Total mixture mass must not exceed F.
-            if (totalMixtureMass > overallMaxWeightF) {
-                // Since `waterMass` and `sugarMass` are sorted, we could potentially
-                // break inner loops for optimization, but for clarity, we proceed.
-                continue;
-            }
-
-            // Constraint 2: Sugar concentration must not exceed E%.
-            // Calculate the actual ratio of sugar to total mass.
-            const currentConcentrationRatio = sugarMass / totalMixtureMass;
-
-            if (currentConcentrationRatio > maxConcentrationRatio) {
-                continue; // This mixture is too concentrated.
-            }
-
-            // If both constraints are satisfied, this is a valid mixture.
-            validMixtures.push([waterMass, sugarMass]);
-        }
-    }
-
-    // --- Phase 4: Identifying the Optimal Mixture (Highest Concentration) ---
-    // Initialize the best found mixture to a default: max water, zero sugar.
-    // This handles cases where no valid sugar solutions are found, defaulting to pure water.
-    let optimalMixture = [overallMaxWeightF, 0];
-    let highestConcentrationAchieved = calculateConcentrationPercentage(
-        optimalMixture[1],
-        optimalMixture[0] + optimalMixture[1]
-    );
-
-    // If there are valid mixtures, iterate to find the one with the highest concentration.
-    if (validMixtures.length > 0) {
-        for (const candidatePair of validMixtures) {
-            const candidateWater = candidatePair[0];
-            const candidateSugar = candidatePair[1];
-            const candidateTotal = candidateWater + candidateSugar;
-
-            const candidateConcentration = calculateConcentrationPercentage(candidateSugar, candidateTotal);
-
-            // Update the optimal mixture if the current candidate is better (higher concentration).
-            if (candidateConcentration > highestConcentrationAchieved) {
-                highestConcentrationAchieved = candidateConcentration;
-                optimalMixture = candidatePair;
-            }
-        }
-    }
-
-    // --- Phase 5: Outputting the Result ---
-    // The problem asks for (Total Mass) + (Sugar Mass).
+    // --- Final Output ---
+    // Output the total mass (water + sugar) and the sugar mass of the optimal mixture.
     const finalTotalMass = optimalMixture[0] + optimalMixture[1];
     const finalSugarMass = optimalMixture[1];
-
     console.log(`${finalTotalMass} ${finalSugarMass}`);
 }
 
-// Execute the analysis function with input read from standard input.
-analyzeFoodMixture(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from stdin and pass it to the processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,14 +1,17 @@
-const fileSystemAccessor = require('fs');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const sourceContent = fileSystemAccessor.readFileSync('/dev/stdin', 'utf8');
+function calculateNetValue(sourceData) {
+    const tokenArray = sourceData.split(" ");
+    const initialValueString = tokenArray[0];
+    const thresholdValueString = tokenArray[1];
 
-const numericComponents = sourceContent
-    .trim()
-    .split(/\s+/)
-    .map(Number);
+    const initialQuantity = Number(initialValueString);
+    const deductionAmount = Number(thresholdValueString);
 
-const [valueAlpha, valueBeta] = numericComponents;
+    const finalOutcome = Math.max(0, initialQuantity - deductionAmount);
+    
+    console.log(finalOutcome);
+}
 
-const finalCalculation = Math.max(0, valueAlpha - valueBeta);
-
-console.log(finalCalculation);
+calculateNetValue(require("fs").readFileSync("/dev/stdin", "utf8"));

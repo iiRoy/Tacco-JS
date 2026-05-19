@@ -1,107 +1,80 @@
-const fileSystemModule = require('fs');
+let traversalResult = "";
 
-let finalTraversalResult = "";
+function getDirectionalDeltas(cellCharacter) {
+    let deltaXCoordinate = 0;
+    let deltaYCoordinate = 0;
+    const RIGHT_DIRECTION_SYMBOL = ">";
+    const LEFT_DIRECTION_SYMBOL = "<";
+    const UP_DIRECTION_SYMBOL = "^";
+    const DOWN_DIRECTION_SYMBOL = "v";
 
-function navigateCells(currentY, currentX, mazeGrid) {
-  if (currentY < 0 || currentX < 0 || currentY >= mazeGrid.length || currentX >= mazeGrid[0].length) {
-    if (finalTraversalResult === "") {
-        finalTraversalResult = "OUT_OF_BOUNDS_ERROR";
+    if (cellCharacter === RIGHT_DIRECTION_SYMBOL) {
+        deltaXCoordinate = 1;
+    } else if (cellCharacter === LEFT_DIRECTION_SYMBOL) {
+        deltaXCoordinate = -1;
+    } else if (cellCharacter === UP_DIRECTION_SYMBOL) {
+        deltaYCoordinate = -1;
+    } else if (cellCharacter === DOWN_DIRECTION_SYMBOL) {
+        deltaYCoordinate = 1;
     }
-    return;
-  }
-
-  const cellContent = mazeGrid[currentY][currentX];
-
-  if (cellContent === "X") {
-    if (finalTraversalResult === "") {
-      finalTraversalResult = "PATH_LOOP";
-    }
-    return;
-  }
-
-  if (cellContent === ".") {
-    if (finalTraversalResult === "") {
-      finalTraversalResult = `${currentX} ${currentY}`;
-    }
-    return;
-  }
-
-  let moveDeltaCol = 0;
-  let moveDeltaRow = 0;
-
-  switch (cellContent) {
-    case ">":
-      moveDeltaCol = 1;
-      break;
-    case "<":
-      moveDeltaCol = -1;
-      break;
-    case "^":
-      moveDeltaRow = -1;
-      break;
-    case "v":
-      moveDeltaRow = 1;
-      break;
-    default:
-      if (finalTraversalResult === "") {
-         finalTraversalResult = "INVALID_CELL_TYPE";
-      }
-      return;
-  }
-
-  mazeGrid[currentY][currentX] = "X";
-
-  const nextYCoordinate = currentY + moveDeltaRow;
-  const nextXCoordinate = currentX + moveDeltaCol;
-
-  navigateCells(nextYCoordinate, nextXCoordinate, mazeGrid);
+    return { deltaY: deltaYCoordinate, deltaX: deltaXCoordinate };
 }
 
-const rawInputBuffer = fileSystemModule.readFileSync(0, 'utf8');
+function explorePath(rowCoordinate, colCoordinate, currentGridMap) {
+    const VISITED_CELL_MARKER = "#";
+    const TERMINAL_EMPTY_CELL_MARKER = ".";
 
-let inputLineSegments = rawInputBuffer.trim().split('\n').filter(line => line.length > 0);
+    const currentCellContent = currentGridMap[rowCoordinate][colCoordinate];
 
-const parseGridDimensions = (dimensionLine) => {
-  const dimensionParts = dimensionLine.split(' ');
-  if (dimensionParts.length !== 2) {
-    return [0, 0];
-  }
-  const parsedRows = Number(dimensionParts[0]);
-  const parsedCols = Number(dimensionParts[1]);
+    if (currentCellContent === VISITED_CELL_MARKER) {
+        traversalResult = "LOOP";
+        return;
+    }
 
-  if (isNaN(parsedRows) || isNaN(parsedCols)) {
-    return [0, 0];
-  }
-  return [parsedRows, parsedCols];
-};
+    if (currentCellContent === TERMINAL_EMPTY_CELL_MARKER) {
+        traversalResult = `${colCoordinate} ${rowCoordinate}`;
+        return;
+    }
+
+    currentGridMap[rowCoordinate][colCoordinate] = VISITED_CELL_MARKER;
+
+    const { deltaY, deltaX } = getDirectionalDeltas(currentCellContent);
+
+    explorePath(rowCoordinate + deltaY, colCoordinate + deltaX, currentGridMap);
+}
+
+const fileSystemModule = require('fs');
+const standardInputFilePath = '/dev/stdin';
+
+const rawInputContent = fileSystemModule.readFileSync(standardInputFilePath, 'utf8');
+const inputLinesArray = rawInputContent.trim().split("\n");
+
+const INITIAL_INDEX = 0;
+const FIRST_DIMENSION_INDEX = 0;
+const SECOND_DIMENSION_INDEX = 1;
+const TERMINATION_VALUE = 0;
 
 while (true) {
-  if (inputLineSegments.length === 0) {
-    break;
-  }
+    const currentDimensionLine = inputLinesArray.shift();
+    const gridDimensions = currentDimensionLine.split(" ").map(Number);
 
-  const currentDimensionString = inputLineSegments.shift();
-  const [gridRowsCount, gridColumnsCount] = parseGridDimensions(currentDimensionString);
+    const numRows = gridDimensions[FIRST_DIMENSION_INDEX];
+    const numCols = gridDimensions[SECOND_DIMENSION_INDEX];
 
-  if (gridRowsCount === 0 && gridColumnsCount === 0) {
-    break;
-  }
-
-  const mazeStructure = [];
-
-  for (let rowIndex = 0; rowIndex < gridRowsCount; rowIndex++) {
-    if (inputLineSegments.length === 0) {
-      break;
+    if (numRows === TERMINATION_VALUE && numCols === TERMINATION_VALUE) {
+        break;
     }
-    const currentGridRowLine = inputLineSegments.shift();
-    if (currentGridRowLine.length !== gridColumnsCount) {
+
+    const currentGrid = [];
+    for (let rowIndex = INITIAL_INDEX; rowIndex < numRows; rowIndex++) {
+        const rowStringData = inputLinesArray.shift();
+        const rowCharacters = rowStringData.split("");
+        currentGrid.push(rowCharacters);
     }
-    mazeStructure.push(currentGridRowLine.split(''));
-  }
 
-  finalTraversalResult = "";
+    traversalResult = "";
 
-  navigateCells(0, 0, mazeStructure);
+    explorePath(INITIAL_INDEX, INITIAL_INDEX, currentGrid);
 
-  console.log(finalTraversalResult);
+    console.log(traversalResult);
 }

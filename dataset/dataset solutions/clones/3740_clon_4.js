@@ -1,11 +1,29 @@
-const sequenceGenerator = (inputParameter) => {
-    const desiredLength = parseInt(inputParameter, 10);
-    const resultCollection = Array.from({ length: desiredLength }, (unused, position) => {
-        const primaryDigit = (position % 9) + 1;
-        const suffixRepetitions = Math.floor(position / 9);
-        const nineString = Array(suffixRepetitions).fill('9').join('');
-        return String(primaryDigit) + nineString;
-    });
-    console.log(resultCollection.join('\n'));
-};
-sequenceGenerator(require("fs").readFileSync("/dev/stdin","utf8"));
+function processInput(inputString) {
+  const iterationCount = Number(inputString);
+
+  function* generateSpecialSequence() {
+    let currentDigitValue = 1;
+    let trailingNines = "";
+
+    while (true) {
+      yield String(currentDigitValue) + trailingNines;
+
+      if (currentDigitValue === 9) {
+        currentDigitValue = 1;
+        trailingNines += "9";
+      } else {
+        currentDigitValue++;
+      }
+    }
+  }
+
+  const sequenceGenerator = generateSpecialSequence();
+  
+  const collectedResults = Array.from({ length: iterationCount }, () => 
+    sequenceGenerator.next().value
+  );
+
+  console.log(collectedResults.join("\n"));
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

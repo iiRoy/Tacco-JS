@@ -1,71 +1,54 @@
-const appSettings = {
-  // Path to the input data file.
-  dataSourcePath: '/dev/stdin',
-  // Character used to signify a new line in the input.
-  lineDelimiter: '\n'
+const settings = {
+    sourcePath: '/dev/stdin', // Path to read input from
+    lineSeparator: '\n' // Delimiter for splitting lines
 };
 
-// Import the file system module.
-const getModule = require('fs');
+// Read the entire file content, decode it, and split into lines.
+const inputLines = require('fs').readFileSync(settings.sourcePath, 'utf-8').split(settings.lineSeparator);
 
-// Read the entire file content, decode it as UTF-8, and split it into lines.
-const inputContentLines = getModule.readFileSync(appSettings.dataSourcePath, 'utf-8')
-                                   .split(appSettings.lineDelimiter);
-
-// Initial state for processing the input string.
 const processingState = {
-  // Stores calculated water area segments. Each segment is [start_index, area_size].
-  waterAreas: [],
-  // A stack to keep track of indices where a '\' character was encountered.
-  startMarkers: []
+    areaSegments: [], // Stores processed area segments [start_index, area_value]
+    indexStack: []    // Temporarily holds indices of '\' characters
 };
 
-// Process the first line of the input character by character to calculate water areas.
-const finalAccumulation = inputContentLines[0]
-                          .split('')
-                          .reduce( (currentAccumulator, currentCharacter, characterIndex) => {
-
+// Process the first line of input character by character
+const finalOutcome = inputLines[0].split('').reduce((accumulator, charItem, currentIndex) => {
     // If a backslash is encountered, push its index onto the stack.
-    if (currentCharacter === '\\') {
-      currentAccumulator.startMarkers.push(characterIndex);
+    if (charItem === '\\') {
+        accumulator.indexStack.push(currentIndex);
     }
-    // If a forward slash is encountered AND there are pending backslashes in the stack.
-    else if (currentCharacter === '/' && currentAccumulator.startMarkers.length > 0) {
-      // Pop the index of the last encountered backslash.
-      const lastMarkerIndex = currentAccumulator.startMarkers.pop();
+    // If a forward slash is encountered and there's a backslash on the stack,
+    // it indicates a potential area segment.
+    else if (charItem === '/' && accumulator.indexStack.length > 0) {
+        const startIndex = accumulator.indexStack.pop(); // Get the start index of the segment.
 
-      // Filter existing water area segments that started at or after the last backslash.
-      const overlappingAreas = currentAccumulator.waterAreas.filter(areaFragment => areaFragment[0] >= lastMarkerIndex);
-      // Filter existing water area segments that started before the last backslash.
-      const nonOverlappingAreas = currentAccumulator.waterAreas.filter(areaFragment => areaFragment[0] < lastMarkerIndex);
+        // Filter existing area segments into two groups:
+        // 1. Those starting at or after the current segment's start index.
+        const higherSegments = accumulator.areaSegments.filter(segmentEntry => segmentEntry[0] >= startIndex);
+        // 2. Those starting before the current segment's start index.
+        const lowerSegments = accumulator.areaSegments.filter(segmentEntry => segmentEntry[0] < startIndex);
 
-      // Calculate the area for the current segment:
-      // sum of areas of overlapping segments + (current_index - last_backslash_index).
-      const newAreaSegment = [
-        lastMarkerIndex,
-        overlappingAreas.map(areaFragment => areaFragment[1])
-                        .reduce((segmentSum, segmentValue) => segmentSum + segmentValue, 0)
-                        + (characterIndex - lastMarkerIndex)
-      ];
+        // Calculate the area of the current segment, including any nested segments.
+        const currentSegment = [
+            startIndex,
+            higherSegments.map(segmentEntry => segmentEntry[1]).reduce((total, val) => total + val, 0) + (currentIndex - startIndex)
+        ];
 
-      // Add the newly calculated segment to the non-overlapping segments.
-      nonOverlappingAreas.push(newAreaSegment);
-      // Update the main list of water areas.
-      currentAccumulator.waterAreas = nonOverlappingAreas;
+        // Add the newly calculated segment to the lower segments.
+        lowerSegments.push(currentSegment);
+        // Update the main area segments list.
+        accumulator.areaSegments = lowerSegments;
     }
 
-    // Return the updated accumulator for the next iteration.
-    return currentAccumulator;
-  }, processingState); // Initialize reduction with the predefined processingState.
+    return accumulator; // Return the updated state for the next iteration.
+}, processingState); // Initialize with the predefined processingState.
 
-// Calculate the total area of all water segments.
-const totalArea = finalAccumulation.waterAreas.reduce((currentSum, areaFragment) => currentSum + areaFragment[1], 0);
+// Calculate the total area from all collected segments.
+const totalArea = finalOutcome.areaSegments.reduce((total, segmentEntry) => total + segmentEntry[1], 0);
+// Get the number of distinct area segments.
+const segmentCount = finalOutcome.areaSegments.length;
 
-// Get the total number of distinct water segments.
-const areaCount = finalAccumulation.waterAreas.length;
-
-// Output the total calculated water area.
+// Output the total calculated area.
 console.log(totalArea);
-
-// Output the count of water segments, followed by their individual areas if any exist.
-console.log(`${areaCount}${areaCount > 0 ? ' ' + finalAccumulation.waterAreas.map(areaFragment => areaFragment[1].toString()).join(' ') : ''}`);
+// Output the count of segments and their individual areas, if any exist.
+console.log(`${segmentCount}${segmentCount > 0 ? ' ' + finalOutcome.areaSegments.map(segmentEntry => segmentEntry[1].toString()).join(' ') : ''}`);

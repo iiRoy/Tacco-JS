@@ -1,102 +1,73 @@
-/*
- * This function processes raw string input to calculate a specific sum.
- * It parses various numerical data and organizes it for computation.
- */
-function processInputData(rawData) {
-    // Split the input string into an array of lines.
-    const linesArray = rawData
-        .trim()
-        .split(
-            /\r\n|\n/
-        );
+function processInput(rawData) {
+    // Split the raw input into individual lines
+    const parsedLines = rawData.trim().split(/\r\n|\n/);
 
-    // Parse the first line to get the count limit for numbers.
-    let countLimit = parseInt(linesArray[0], 10);
+    // Parse the first line as the count of numbers to consider
+    const countVal = parseInt(parsedLines[0], 10);
 
-    // Process shape dimensions from subsequent lines.
-    const shapeDimensions = linesArray
-        .slice(1, linesArray.length - 1)
-        .map(
-            lineStr => {
-                // Parse each line into an array of numbers and sort them.
-                let parsedDimensions = lineStr
-                    .split(" ")
-                    .map(
-                        (dimStr) => parseInt(dimStr, 10)
-                    );
-                return parsedDimensions.sort((itemA, itemB) => itemA - itemB);
-            }
-        );
-
-    // Extract and sort the initial set of numbers from the last line.
-    let initialNumbers = linesArray[linesArray.length - 1]
-        .split(" ")
-        .map(
-            dimStr => parseInt(dimStr, 10)
-        );
-    initialNumbers.sort((itemA, itemB) => itemB - itemA); // Sort descending.
-    initialNumbers = initialNumbers.splice(0, countLimit); // Keep only the required count.
-
-    // Group shape dimensions by their first element.
-    const dimensionGroupings = {};
-    for (let idx = 0; idx < shapeDimensions.length; idx++) {
-        const firstDimension = shapeDimensions[idx][0];
-        if (!dimensionGroupings[firstDimension]) {
-            dimensionGroupings[firstDimension] = [];
-        }
-        dimensionGroupings[firstDimension].push(shapeDimensions[idx]);
-    }
-
-    // Convert the groupings into an array and sort them by group length.
-    let groupedShapes = Object
-        .keys(dimensionGroupings)
-        .map(keyStr => dimensionGroupings[keyStr]);
-
-    groupedShapes.sort((itemA, itemB) => {
-        return itemA.length < itemB.length; // Sort by group length (ascending or descending based on comparison logic)
+    // Process the lines representing shape dimensions
+    // Each line is split, parsed as integers, and then sorted in ascending order
+    const shapeDimensions = parsedLines.slice(1, parsedLines.length - 1).map(lineStr => {
+        const dimValues = lineStr.split(" ").map((strVal) => parseInt(strVal, 10));
+        return dimValues.sort((firstNum, secondNum) => firstNum - secondNum); // Sort sides for consistency
     });
 
-    // Flatten the grouped and sorted shapes back into a single array.
-    let flattenedGroupedShapes = groupedShapes
-        .reduce((accumulator, currentCollection) => {
-            return accumulator.concat(currentCollection);
-        }, []);
+    // Process the last line as the initial set of numbers
+    // These numbers are sorted in descending order and then truncated
+    let initialNumbers = parsedLines[parsedLines.length - 1].split(" ").map(strVal => parseInt(strVal, 10));
+    initialNumbers.sort((firstNum, secondNum) => secondNum - firstNum); // Sort numbers descending
+    initialNumbers = initialNumbers.splice(0, countVal); // Keep only the top 'countVal' numbers
 
-    // Initialize variables for calculation.
-    let totalSum = 0;
-    const finalAllocation = []; // This variable is declared but not used in the original logic.
-    const assignedValues = {};
-    let remainingNumbers = initialNumbers.concat(); // Create a copy of the numbers.
-
-    // Iterate through the flattened shapes to calculate the sum.
-    for (let shapeIdx = 0; flattenedGroupedShapes.length > shapeIdx; shapeIdx++) {
-        const currentShape = flattenedGroupedShapes[shapeIdx];
-        const firstKey = currentShape[0];
-        const secondKey = currentShape[1];
-
-        // Assign values from `remainingNumbers` if not already assigned.
-        if (!assignedValues[firstKey]) {
-            assignedValues[firstKey] = remainingNumbers.shift();
+    // Group the shape dimensions by their smallest side
+    const dimensionGroups = {};
+    for (let idx = 0; idx < shapeDimensions.length; idx++) {
+        const currentSidePair = shapeDimensions[idx];
+        if (!dimensionGroups[currentSidePair[0]]) {
+            dimensionGroups[currentSidePair[0]] = [];
         }
-
-        if (!assignedValues[secondKey]) {
-            assignedValues[secondKey] = remainingNumbers.shift();
-        }
-
-        // Add the minimum of the assigned values for the current shape's keys to the total sum.
-        let minimumValue = Math.min(assignedValues[firstKey], assignedValues[secondKey]);
-        totalSum += minimumValue;
+        dimensionGroups[currentSidePair[0]].push(currentSidePair);
     }
 
-    // Output the calculated sum and the processed initial numbers.
-    console.log(totalSum + '\n' + initialNumbers.join(" "));
+    // Convert the grouped dimensions map into an array of arrays, then sort these groups
+    let groupedDimensions = Object.keys(dimensionGroups).map(keyStr => dimensionGroups[keyStr]);
+    groupedDimensions.sort((groupA, groupB) => {
+        // Sort groups by their length in descending order
+        return groupA.length < groupB.length;
+    });
+
+    // Flatten the sorted groups back into a single array of dimension pairs
+    const orderedDimensions = groupedDimensions.reduce((accumulator, currentGroup) => {
+        return accumulator.concat(currentGroup);
+    }, []);
+
+    // Initialize variables for the calculation
+    let finalSum = 0;
+    const sumComponents = []; // This variable is declared but not used, preserving original behavior.
+    const dimensionCache = {}; // Cache to store assigned numbers for each dimension value
+    let availableNumbers = initialNumbers.concat(); // Create a shallow copy of numbers to be consumed
+
+    // Iterate through the ordered dimension pairs to calculate the final sum
+    for (let loopIndex = 0; loopIndex < orderedDimensions.length; loopIndex++) {
+        const currentDimensionPair = orderedDimensions[loopIndex];
+
+        // Assign a number from 'availableNumbers' to the first dimension if not already cached
+        if (!dimensionCache[currentDimensionPair[0]]) {
+            dimensionCache[currentDimensionPair[0]] = availableNumbers.shift();
+        }
+
+        // Assign a number from 'availableNumbers' to the second dimension if not already cached
+        if (!dimensionCache[currentDimensionPair[1]]) {
+            dimensionCache[currentDimensionPair[1]] = availableNumbers.shift();
+        }
+
+        // Add the minimum of the two cached numbers for the current pair to the total sum
+        const minimumValue = Math.min(dimensionCache[currentDimensionPair[0]], dimensionCache[currentDimensionPair[1]]);
+        finalSum += minimumValue;
+    }
+
+    // Output the final sum and the original (modified) list of numbers
+    console.log(finalSum + '\n' + initialNumbers.join(" "));
 }
 
-// Execute the main processing function with data read from standard input.
-processInputData(
-    require("fs")
-        .readFileSync(
-            "/dev/stdin",
-            "utf8"
-        )
-);
+// Read input from stdin and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

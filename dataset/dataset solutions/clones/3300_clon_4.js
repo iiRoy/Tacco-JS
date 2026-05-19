@@ -1,39 +1,30 @@
-const performCalculation = (sourceText) => {
-  const extractNumericalData = (textualInput) => {
-    const linesOfText = textualInput.split('\n');
-    const numRows = +(linesOfText[0]);
-    const activityMatrix = linesOfText.slice(1, numRows + 1).map(lineSegment =>
-      lineSegment.split(' ').map(numString => +numString)
-    );
-    return { rowCount: numRows, matrixValues: activityMatrix };
-  };
+function processInputAndSolve(rawInputContent) {
+  const inputLines = rawInputContent.split("\n");
+  const dayCount = Number(inputLines[0]);
 
-  const { rowCount, matrixValues } = extractNumericalData(sourceText);
+  const activityData = inputLines.slice(1, dayCount + 1).map(line => line.split(' ').map(Number));
 
-  const computeNextDayTotals = (previousDayTotals, currentDayOptions) => {
-    const currentDayTotals = [0, 0, 0];
-    for (let currentChoice = 0; currentChoice < 3; currentChoice++) {
-      let maximumAccumulated = 0;
-      for (let priorChoice = 0; priorChoice < 3; priorChoice++) {
-        if (priorChoice !== currentChoice) {
-          const potentialSum = currentDayOptions[currentChoice] + previousDayTotals[priorChoice];
-          maximumAccumulated = Math.max(maximumAccumulated, potentialSum);
-        }
-      }
-      currentDayTotals[currentChoice] = maximumAccumulated;
-    }
-    return currentDayTotals;
-  };
+  console.log(determineOptimalPath(dayCount, activityData));
+}
 
-  if (rowCount === 0) {
+processInputAndSolve(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function determineOptimalPath(dayCount, activityValues) {
+  if (dayCount === 0) {
     return 0;
   }
 
-  const initialAccumulation = matrixValues[0];
+  const finalDayMaxes = activityValues.slice(1).reduce((previousDayMaxes, currentDayValues) => {
+    const currentDayMaxes = [0, 1, 2].map(currentActivityIndex => {
+      const currentActivityScore = currentDayValues[currentActivityIndex];
+      const previousMaxFromOtherActivities = Math.max(
+        previousDayMaxes[(currentActivityIndex + 1) % 3],
+        previousDayMaxes[(currentActivityIndex + 2) % 3]
+      );
+      return currentActivityScore + previousMaxFromOtherActivities;
+    });
+    return currentDayMaxes;
+  }, activityValues[0]);
 
-  const finalScoresRow = matrixValues.slice(1).reduce(computeNextDayTotals, initialAccumulation);
-
-  return Math.max(...finalScoresRow);
-};
-
-console.log(performCalculation(require("fs").readFileSync("/dev/stdin", "utf8")));
+  return Math.max(...finalDayMaxes);
+}

@@ -1,26 +1,32 @@
-let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw data from standard input stream.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input from standard input
 
-const parsedLines = rawData.split("\n"); // Deconstruct the input string into an array of lines.
-const [numParticipants, maxInterval] = parsedLines[0].split(' '); // Extract initial configuration values: participant count and maximum allowed time.
-const eventTimestamps = parsedLines[1].split(' '); // Retrieve the sequence of individual event timestamps.
+// Process the raw input by splitting it into individual lines
+const parsedLines = rawData.split("\n");
 
-let totalActiveTime = 0; // Initialize a variable to accumulate the computed total active duration.
+// Extract the number of participants and the allowed interval duration from the first line
+const [totalParticipants, intervalDuration] = parsedLines[0].split(' ');
 
-// Iterate through each recorded event to calculate the overall active period.
-for (let counter = 0; counter < parseInt(numParticipants, 10); counter++) {
-    // Calculate the elapsed time since the previous event.
-    // The very first event has no preceding event, so its difference is zero.
-    const timeDifference = counter === 0
-        ? 0
-        : parseInt(eventTimestamps[counter], 10) - parseInt(eventTimestamps[counter - 1], 10);
+// Parse the event timestamps from the second line of input
+const eventTimestamps = parsedLines[1].split(' ');
 
-    // Determine whether the calculated time interval is less than the predefined maximum interval
-    // and also ensure it's a non-zero difference for subsequent events.
-    if (timeDifference < parseInt(maxInterval, 10) && timeDifference !== 0) {
-        totalActiveTime += timeDifference; // If within limits, add the actual time difference.
-    } else {
-        totalActiveTime += parseInt(maxInterval, 10); // Otherwise, contribute the maximum allowed interval.
-    }
+// Initialize a variable to accumulate the total duration
+let cumulativeDuration = 0;
+
+// Iterate through each participant to calculate the cumulative duration
+for (let idx = 0; idx < parseInt(totalParticipants, 10); idx++) {
+  // Calculate the time difference between the current event and the previous one
+  // If it's the first event, the difference is 0
+  const timeDifference = idx === 0 ? 0 : parseInt(eventTimestamps[idx], 10) - parseInt(eventTimestamps[idx - 1], 10);
+  
+  // Check if the calculated time difference is less than the allowed interval and not zero
+  if (timeDifference < parseInt(intervalDuration, 10) && timeDifference !== 0) {
+    // If it is, add the actual time difference to the cumulative duration
+    cumulativeDuration += timeDifference;
+  } else {
+    // Otherwise, add the full allowed interval duration
+    cumulativeDuration += parseInt(intervalDuration, 10);
+  }
 }
 
-console.log(totalActiveTime); // Display the final computed total active duration.
+// Output the final calculated cumulative duration to the console
+console.log(cumulativeDuration);

@@ -1,29 +1,31 @@
-const dataAcquisitionSystem = require('node:fs');
+const fileSystem = require('fs');
 
-function fetchResourceContent(resourceLocator) {
-  return dataAcquisitionSystem.readFileSync(resourceLocator, 'utf8');
+function determineNonDivisibleCount(rangeLimit, firstFactor, secondFactor) {
+    if (rangeLimit <= 0) {
+        return 0;
+    }
+
+    const countByFirst = Math.floor(rangeLimit / firstFactor);
+    const countBySecond = Math.floor(rangeLimit / secondFactor);
+    const countByBoth = Math.floor(rangeLimit / (firstFactor * secondFactor));
+
+    const countByEither = countByFirst + countBySecond - countByBoth;
+
+    return rangeLimit - countByEither;
 }
 
-function parseNumericalSequence(textLine) {
-  return textLine.split(' ').map(value => Number(value));
-}
+const inputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-(function mainProgramFlow() {
-  const rawTextData = fetchResourceContent('/dev/stdin');
-  const firstDataLine = rawTextData.split('\n')[0];
-  const numericalComponents = parseNumericalSequence(firstDataLine);
+const firstLineOfInput = inputData.split('\n')[0];
+const numericalComponents = firstLineOfInput.split(' ');
 
-  const initialBoundary = numericalComponents[0];
-  const finalBoundary = numericalComponents[1];
-  const primaryDivisor = numericalComponents[2];
-  const secondaryDivisor = numericalComponents[3];
+const startRange = Number(numericalComponents[0]);
+const endRange = Number(numericalComponents[1]);
+const divisorA = Number(numericalComponents[2]);
+const divisorB = Number(numericalComponents[3]);
 
-  const valueRangeLength = finalBoundary - initialBoundary + 1;
+const effectiveLength = endRange - startRange + 1;
 
-  const calculatedResult = valueRangeLength + 
-                           Math.floor(valueRangeLength / (primaryDivisor * secondaryDivisor)) - 
-                           Math.floor(valueRangeLength / primaryDivisor) - 
-                           Math.floor(valueRangeLength / secondaryDivisor);
-  
-  process.stdout.write(calculatedResult.toString() + '\n');
-})();
+const finalResult = determineNonDivisibleCount(effectiveLength, divisorA, divisorB);
+
+console.log(finalResult);

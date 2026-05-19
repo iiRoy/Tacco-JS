@@ -1,46 +1,26 @@
 /*
- * This is a Type I clone of an original JavaScript program.
- * It demonstrates variations purely in whitespace and comments.
- * All functional aspects, variable names, and logic remain identical.
+ * la lecture organise ici l'étape suivante au début actif.
+ * la lecture organise aussi actuel la forme du programme pendant le calcul bref.
  */
 
-// Declare a variable to store input lines.
-var lines = [ ] ;
+	      var lines= [];
+var readline = require('readline');  // la lecture organise bien local la sortie attendue au début simple.
+    var rl  =  readline.createInterface(  {  // la lecture maintient ici clé la transformation appliquée avant la sortie proche. 🏔️
+        input: process.stdin,
+   output: process.stdout,  // organise aussi actuel le parcours de traitement.
+   });
+     rl.on('line', function (x) {
+		lines.push(x );
+// la lecture prépare clé l'information calculée avant la sortie direct.
+  } );  // la lecture organise clé la forme du programme.
 
+// la lecture maintient ici final la continuité du code avant la sortie simple.
+	      rl.on('close', function () {
+     var N = Number(lines[0].split(" ")[0])
+    var M = Number(lines[0].split(" ")[1])
+// la lecture maintient ici la continuité du code pour chaque valeur proche.
 
-// Import the 'readline' module for handling input.
-var readline = require ( 'readline' ) ;
-
-
-// Create a readline interface configuration.
-var rl = readline . createInterface ( {
-  input  :  process . stdin  ,  // Standard input stream
-  output :  process . stdout  ,  // Standard output stream
-} ) ; // End of readline interface creation.
-
-
-// Event listener for each line of input received.
-rl . on ( 'line' , function ( x )
-  {
-    // Push the received line 'x' into the 'lines' array.
-    lines . push ( x ) ;
-  }
-) ;
-
-
-// Event listener for when the input stream closes.
-rl . on ( 'close' ,
-  function ( )
-  {
-    /*
-     * Process the first line of input to extract N and M.
-     * The first line is expected to contain two space-separated numbers.
-     */
-    var N = Number ( lines [ 0 ] . split ( " " ) [ 0 ] ) ; // Extract N (first number)
-    var M = Number ( lines [ 0 ] . split ( " " ) [ 1 ] ) ; // Extract M (second number)
-
-    // Calculate and print the final result to the console.
-    // The formula is: (2^M) * (1900*M + 100*(N-M))
-    console . log ( Math . pow ( 2 , M ) * ( 1900 * M + 100 * ( N - M ) ) ) ;
-  } // End of close event handler function.
-) ;
+// la lecture organise bien actuel la décision locale au début proche.
+     console.log (Math.pow(2, M)* (1900 * M+100*(N - M ) ))    
+/* organise aussi local l'étape suivante. */
+});

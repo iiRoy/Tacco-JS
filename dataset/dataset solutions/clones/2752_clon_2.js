@@ -1,66 +1,60 @@
 function displayMessage(messageContent) {
   console.log(messageContent);
-} // Utility routine for console output
+} /* This function is a utility for outputting text to the console. */
 
-function ProcessData(rawData)
-{
+function processInputData(rawData) {
+  // Initial processing of the raw input string.
+  let processedData = rawData.trim();
 
-  rawData = rawData.trim(); // Remove leading/trailing whitespace from the input string.
-  // rawData = rawData.split(" "); // Example: Split by spaces (commented out)
-  rawData = rawData.split("\n"); // Divide the input into an array of lines.
-  // rawData = rawData.split(" ").map( (item) => Number(item) ); // Example: Split by space and convert to numbers (commented out)
-  // rawData = rawData.split("\n").map( (item) => Number(item) ); // Example: Split by newline and convert to numbers (commented out)
+  // The following lines are commented out as they represent alternative input parsing strategies.
+  // processedData = processedData.split(" ");
+  processedData = processedData.split("\n");
+  // processedData = processedData.split(" ").map((val) => Number(val));
+  // processedData = processedData.split("\n").map((val) => Number(val));
 
-  // Parse the first line to extract two integer values
-  var firstCount = parseInt(rawData[0].split(" ")[0]);
-  var secondCount = parseInt(rawData[0].split(" ")[1]);
+  // Parse the number of nodes (N) and edges (M) from the first line of input.
+  const nodeCount = parseInt(processedData[0].split(" ")[0]);
+  const edgeCount = parseInt(processedData[0].split(" ")[1]);
 
-  // Check a condition based on the second parsed count
-  if (secondCount % 2 === 1)
-  {
-    console.log("-1"); // Output an error code
-    return; // Terminate execution early
+  // Check if the total number of edges is odd. If so, it's an invalid graph for certain problems.
+  if (edgeCount % 2 === 1) {
+    console.log("-1"); // Output error code.
+    return; // Terminate execution.
   }
 
-  // Remove the first line of the raw data as it has been processed
-  rawData.shift();
+  // Remove the first line (containing N and M) from the processed data.
+  processedData.shift();
 
-  // Initialize an object to store adjacency lists for a graph
-  var adjacencyMap = {};
-
-  // Populate the adjacency map with empty arrays for each node
-  for (var idx = 1; idx <= firstCount; idx++)
-  {
-    adjacencyMap[idx] = [];
+  // Initialize an adjacency map (or list) to store graph connections.
+  let adjacencyMap = {};
+  for (let counter = 1; counter <= nodeCount; counter++) {
+    adjacencyMap[counter] = []; // Each node starts with an empty list of neighbors.
   }
 
-  // Process the remaining lines to build the graph's connections
-  for (var loopVar = 0; loopVar < secondCount; loopVar++)
-  {
-    var nodeAIdentifier = rawData[loopVar].split(" ")[0];
-    var nodeBIdentifier = rawData[loopVar].split(" ")[1];
+  // Populate the adjacency map with edges from the input.
+  for (let edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    const firstNode = processedData[edgeIndex].split(" ")[0];
+    const secondNode = processedData[edgeIndex].split(" ")[1];
 
-    // Add bidirectional connections to the adjacency map
-    adjacencyMap[nodeAIdentifier].push(nodeBIdentifier);
-    adjacencyMap[nodeBIdentifier].push(nodeAIdentifier);
+    // Add bidirectional connections for an undirected graph.
+    adjacencyMap[firstNode].push(secondNode);
+    adjacencyMap[secondNode].push(firstNode);
   }
 
-  // Verify another condition based on the degree of each node in the graph
-  for (var nodeIndex = 1; nodeIndex <= firstCount; nodeIndex++)
-  {
-    if (adjacencyMap[nodeIndex].length % 2 === 1)
-    {
-      console.log("-1"); // Output an error code
-      return; // Exit the function if the condition is not met
+  // Check if each node has an even degree (number of connections).
+  for (let nodeIndex = 1; nodeIndex <= nodeCount; nodeIndex++) {
+    if (adjacencyMap[nodeIndex].length % 2 === 1) {
+      console.log("-1"); // Output error code if any node has an odd degree.
+      return; // Terminate execution.
     }
   }
 
-  // An empty loop, potentially for future processing or placeholder
-  for (var iterationCounter = 1; iterationCounter <= secondCount; iterationCounter++)
-  {
-    // No operations within this loop in the current implementation
+  // This loop is present in the original code but contains no executable logic.
+  // It is preserved as an empty loop to maintain structural equivalence.
+  for (let loopVar = 1; loopVar <= edgeCount; loopVar++) {
+    // No operations performed here in the original logic.
   }
 }
 
-// Invoke the main data processing function with input read from standard input
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

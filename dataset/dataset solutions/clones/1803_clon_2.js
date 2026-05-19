@@ -1,59 +1,64 @@
-"use strict"; /* Activates strict mode for the entire script, enforcing cleaner code practices */
+"use strict";
 
-function processData(rawData) {
-    // Splits the incoming data string by newline characters and cleans leading/trailing whitespace
-    let parsedLines = rawData.trim().split("\n");
+// Primary function to process the entire input dataset
+function processInput(rawData) {
+    // Clean and split the raw input string into an array of lines
+    let dataLines = rawData.trim().split("\n");
+    // Extract the total number of test cases from the first line
+    const testCaseCount = dataLines.shift();
 
-    // Extracts the total number of test scenarios from the beginning of the input
-    const numCases = parsedLines.shift();
+    // Loop through each individual test case
+    for (let caseIndex = 0; caseIndex < testCaseCount; caseIndex++) {
+        // Retrieve the number of vertices (N) for the current case
+        const vertexCount = dataLines[caseIndex * 3]; // N is located at index 0, 3, 6, ...
+        // Parse the vertex values (A) into an array of numbers
+        const vertexValues = dataLines[1 + caseIndex * 3].split(" ").map(val => Number(val)); // A is at index 1, 4, 7, ...
+        // Get the operation string (S) for the current case
+        const operationString = dataLines[2 + caseIndex * 3]; // S is at index 2, 5, 8, ...
 
-    // Iterates through each individual test case provided in the input
-    for (let caseIndex = 0; caseIndex < numCases; caseIndex++) {
-        // Retrieves the count of nodes (vertices) for the current graph problem
-        const vertexCount = parsedLines[0 + caseIndex * 3];
+        // Initialize the running XOR sum for this test case
+        let currentXORSum = 0;
 
-        // Parses the array of numerical values used in XOR operations
-        const xorValues = parsedLines[1 + caseIndex * 3].split(" ").map(currentVal => Number(currentVal));
+        // Iterate over each character in the operation string
+        operationString.toString().split("").forEach((operationChar, charIndex) => {
+            // Calculate the population count (number of set bits) for the potential new XOR sum
+            let newXORPopCount = (currentXORSum ^ vertexValues[charIndex]).toString(2).split("").filter(bit => bit === '1').length;
+            // Calculate the population count for the current XOR sum
+            let currentXORPopCount = currentXORSum.toString(2).split("").filter(bit => bit === '1').length;
 
-        // Obtains the string dictating the sequence of operations ('0' or '1')
-        const operationString = parsedLines[2 + caseIndex * 3];
+            // Output debug information as per original behavior
+            console.log(`S${operationChar} will do..`);
+            console.log(`  1 count for new = ${newXORPopCount}, or ${currentXORSum ^ vertexValues[charIndex]}`);
+            console.log(`  1 count for old = ${currentXORPopCount}, or ${currentXORSum}`);
 
-        let currentXorSum = 0; // Initializes an accumulator for XOR results
-
-        // Processes each character in the operation string
-        operationString.toString().split("").forEach((opChar, charIndex) => {
-            // Calculates the number of set bits (population count) if XORing with the current value
-            let nextXorPopCount = (currentXorSum ^ xorValues[charIndex]).toString(2).split("").filter(bitChar => bitChar === '1').length;
-            // Calculates the number of set bits in the current accumulator value
-            let currentPopCount = currentXorSum.toString(2).split("").filter(bitChar => bitChar === '1').length;
-
-            console.log(`Processing operation character: ${opChar}`);
-            console.log(`  Set bit count for potential new sum: ${nextXorPopCount}, from value ${currentXorSum ^ xorValues[charIndex]}`);
-            console.log(`  Set bit count for existing sum: ${currentPopCount}, from value ${currentXorSum}`);
-
-            if (opChar === '0') {
-                // If the operation character is '0', only update if the new value has fewer or equal set bits
-                if (nextXorPopCount > currentPopCount) {
-                    // No action taken if new sum has more set bits
+            // Apply logic based on the operation character
+            if (operationChar === '0') {
+                // If the operation character is '0':
+                // If the new XOR sum would have more set bits than the current, do nothing.
+                if (newXORPopCount > currentXORPopCount) {
+                    //console.log(`    nothing`)
                 } else {
-                    // Overwrite the accumulator with the XOR result
-                    currentXorSum = currentXorSum ^ xorValues[charIndex];
+                    // Otherwise, update the XOR sum.
+                    //console.log(`    overwrite from ${currentXORSum.toString(2)} to ${(currentXORSum ^ vertexValues[charIndex],2).toString(2)}`)
+                    currentXORSum = currentXORSum ^ vertexValues[charIndex];
                 }
-            } else { // If the operation character is '1'
-                // Update only if the new value has more set bits
-                if (nextXorPopCount > currentPopCount) {
-                    // Overwrite the accumulator with the XOR result
-                    currentXorSum = currentXorSum ^ xorValues[charIndex];
+                //currentXORSum = currentXORSum ^ vertexValues[charIndex]
+            } else { // If the operation character is '1':
+                // If the new XOR sum would have more set bits than the current, update the XOR sum.
+                if (newXORPopCount > currentXORPopCount) {
+                    //console.log(`    overwrite from ${currentXORSum.toString(2)} to ${(currentXORSum ^ vertexValues[charIndex],2).toString(2)}`)
+                    currentXORSum = currentXORSum ^ vertexValues[charIndex];
                 } else {
-                    // No action taken if new sum has fewer or equal set bits
+                    // Otherwise, do nothing.
+                    //console.log(`    nothing`)
                 }
             }
         });
 
-        // Outputs "1" if the final XOR sum is non-zero, otherwise "0"
-        console.log(`${currentXorSum ? "1" : "0"}`);
+        // Print the final result for the current test case: "1" if currentXORSum is non-zero, "0" otherwise.
+        console.log(`${currentXORSum ? "1" : "0"}`);
     }
 }
 
-// Invokes the primary data processing function, reading input from standard input
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function by reading input from standard input
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

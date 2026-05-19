@@ -1,76 +1,53 @@
-let globalInputSource = process.stdin;
-let globalOutputSink = process.stdout;
+function processInput(rawInputText) {
+    const cleanedInput = rawInputText.trim();
+    const parsedNumber = Number.parseInt(cleanedInput, 10);
 
-function signalFailure(issueMessage) {
-    throw new Error(issueMessage);
+    if (Number.isNaN(parsedNumber)) {
+        throw new Error("n");
+    }
+
+    let candidateMultiplier = Math.ceil(parsedNumber / 111);
+
+    if (candidateMultiplier < 1) {
+        candidateMultiplier = 1;
+    }
+
+    if (candidateMultiplier > 9) {
+        throw new Error("Input value " + parsedNumber + " is too high; no valid multiple of 111 (111-999) found.");
+    }
+
+    const finalResult = candidateMultiplier * 111;
+
+    return finalResult.toString() + "\n";
 }
 
-function processNumericalTask(receivedLine) {
-    const cleansedInput = receivedLine.stripWhitespace();
-    const convertedNumeral = cleansedInput.transformToInteger(10); 
+async function runMainProgram() {
+    let accumulatedInputData = '';
 
-    if (convertedNumeral.isInvalidNumber() || !Number.isInteger(convertedNumeral)) {
-        signalFailure("n");
-    }
+    const stdinReadPromise = new Promise((resolve, reject) => {
+        process.stdin.setEncoding('utf8');
 
-    const valueSequence = [111, 222, 333, 444, 555, 666, 777, 888, 999];
-    let matchingValue = valueSequence.find(element => element >= convertedNumeral);
+        process.stdin.on('data', (chunk) => {
+            accumulatedInputData += chunk;
+        });
 
-    if (matchingValue === undefined) {
-        // Replicate the original behavior of calling .toString() on undefined,
-        // which results in a TypeError for inputs outside the expected range.
-        try {
-            undefined.toString(); 
-        } catch (simulatedError) {
-            throw simulatedError;
-        }
-    }
+        process.stdin.on('end', () => {
+            resolve(accumulatedInputData);
+        });
 
-    return matchingValue.toString() + "\n";
-}
-
-Object.defineProperties(String.prototype, {
-    "stripWhitespace": {
-        value: function() {
-            return this.trim();
-        },
-        writable: true,
-        configurable: true
-    },
-    "transformToInteger": {
-        value: function(base) {
-            return Number.parseInt(this, base);
-        },
-        writable: true,
-        configurable: true
-    }
-});
-
-Object.defineProperties(Number.prototype, {
-    "isInvalidNumber": {
-        value: function() {
-            return Number.isNaN(this);
-        },
-        writable: true,
-        configurable: true
-    }
-});
-
-async function initiateProcessing() {
-    let accumulatedData = '';
-
-    globalInputSource.on('data', (dataFragment) => {
-        accumulatedData += dataFragment.toString();
+        process.stdin.on('error', (err) => {
+            reject(err);
+        });
     });
 
-    globalInputSource.on('end', () => {
-        try {
-            const outcomeText = processNumericalTask(accumulatedData);
-            globalOutputSink.write(outcomeText);
-        } catch (executionError) {
-            throw executionError;
-        }
-    });
+    try {
+        const completeInput = await stdinReadPromise;
+        const outputString = processInput(completeInput);
+        process.stdout.write(outputString);
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+    }
 }
 
-initiateProcessing();
+runMainProgram();

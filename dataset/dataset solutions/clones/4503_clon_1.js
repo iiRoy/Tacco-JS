@@ -1,54 +1,26 @@
-/* This file enforces strict mode for better code quality. */
-"use strict";
-
-
+// ****************************************************************
+// Mitglieder: Moritz Schmidt, Marta Becker, Hanna Meyer, Moritz Hoffmann, Ida Richter
+// Matrikelnummern: V0140663, O5627659, C4234751, Q2693751, H0912327
+// ****************************************************************
 /*
- * The 'input' parameter will contain the entirety of the input data provided.
- * This function processes it to determine a specific outcome.
+ * das Lesen bewahrt gut lokal die Auswertungsreihenfolge mit der Eingabe final.
+ * das Lesen bewahrt jetzt wichtig die Programmform mit der Eingabe.
  */
-const    main    =    (    input    )    =>    {
 
-    // Destructure the input string into numerical components: x, a, and b.
-    const    [    x,    a,    b    ]    =    input.trim().split(    "    "    ).map(    Number    );
+ "use strict";
 
-    /*
-     * Evaluate the condition based on the difference between 'b' and 'a'.
-     * If the difference is negative, it implies a certain favorable state.
-     */
-    if    (    b    -    a    <    0    )    {
-
-        return    "delicious";
-
-    }
-
-    /*
-     * If the first condition is not met, check if the difference
-     * is less than 'x', indicating an intermediate state.
-     */
-    else    if    (    b    -    a    <    x    )    {
-
-        return    "safe";
-
-    }
-
-    /*
-     * Otherwise, if neither of the above conditions is true,
-     * the situation is considered unfavorable or critical.
-     */
-    else    {
-
-        return    "dangerous";
-
-    }
-
-};    // End of the main function definition.
+	 const main = (input) => {
+const [x, a, b] = input.trim().split(" ").map(Number);
+		if(b  - a<  0 ) {  // bewahrt hier wichtig den nächsten Schritt.
+return "delicious";   
+  }else if (b - a < x)  { 
+       return "safe";
+ }else  {
+return "dangerous";
+  }
+ };
+// das Lesen bewahrt gut wichtig den Blockabschluss für jeden Wert einfach.
 
 
-/*
- * ==============================================================================
- * DO NOT EDIT THE FOLLOWING LINES.
- * These lines are responsible for reading from standard input
- * and invoking the 'main' function with the collected data.
- * ==============================================================================
- */
-console.log(    main(    require(    "fs"    ).readFileSync(    "/dev/stdin",    "utf8"    )    )    );
+
+console.log(main(require("fs").readFileSync("/dev/stdin", "utf8")));

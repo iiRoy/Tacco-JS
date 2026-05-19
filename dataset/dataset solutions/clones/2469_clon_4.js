@@ -1,27 +1,21 @@
-const obtainApplicableProducts = () => {
-    const digitSequence = Array.from({ length: 9 }, (_, index) => index + 1);
-    return new Set(
-        digitSequence.flatMap(factorA =>
-            digitSequence.map(factorB => factorA * factorB)
-        )
-    );
-};
+function processInput(rawData) {
+    const targetValue = Number.parseInt(rawData.split(/\s+/g)[0], 10);
+    
+    const singleDigitFactors = Array.from({ length: 9 }, (_, index) => index + 1);
 
-const productCollection = obtainApplicableProducts();
+    const isProductOfSingleDigits = singleDigitFactors.some(factorOne => {
+        if (targetValue % factorOne === 0) {
+            const factorTwo = targetValue / factorOne;
+            return factorTwo >= 1 && factorTwo <= 9;
+        }
+        return false;
+    });
 
-const evaluateIncomingData = (sourceMaterial) => {
-    const componentParts = sourceMaterial.split(/\s+/g);
-    const initialComponent = componentParts.length > 0 ? componentParts[0] : '';
-    const numericInterpretation = Number.isNaN(parseInt(initialComponent, 10)) ? NaN : parseInt(initialComponent, 10);
+    if (isProductOfSingleDigits) {
+        console.log("Yes");
+    } else {
+        console.log("No");
+    }
+}
 
-    return productCollection.has(numericInterpretation) ? "Yes" : "No";
-};
-
-process.stdout.write(
-    evaluateIncomingData(
-        require('node:fs').readFileSync(
-            '/dev/stdin',
-            'utf8'
-        )
-    ) + '\n'
-);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

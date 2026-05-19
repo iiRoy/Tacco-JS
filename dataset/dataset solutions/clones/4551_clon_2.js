@@ -1,56 +1,51 @@
-/*
- * This script determines the minimum number of turns required
- * to defeat all monsters given their health and two types of attacks.
- */
-console.log(( inputData => {
-  // Parse the input string into problem parameters.
-  // The first line contains item count, strong attack power, and base attack power.
-  // Subsequent lines contain the health of each monster.
-  const [
-    [ itemCount, strongAttack, baseAttack ],
-    ...healths
-  ] = inputData
-      .trim()
-      .split`\n`
-      .map( rowStr => rowStr.split` `.map( valStr => valStr | 0 ) );
+console.log((inputStr => {
+  // Parse the input string: first line contains entityCount, primaryDamage, secondaryEffect.
+  // Subsequent lines contain individual entity health values.
+  const [[entityCount, primaryDamage, secondaryEffect], ...entityHealths] = inputStr
+    .trim()
+    .split('\n') // Split input into separate lines
+    .map(lineContent => lineContent.split(' ').map(numericValue => numericValue | 0)); // Parse each line into integers
 
   // Initialize bounds for binary search.
-  // 'feasibleTurns' represents a possible (upper bound) number of turns.
-  // 'impossibleTurns' represents a number of turns that is too low (lower bound).
-  let feasibleTurns = Math.ceil( 1_000_000_000 / baseAttack ),
-      impossibleTurns = 0;
+  // 'upperLimit' represents a potential maximum number of attacks.
+  // 'lowerLimit' represents a potential minimum number of attacks.
+  let upperLimit = Math.ceil(1e9 / secondaryEffect); // A sufficiently large initial upper bound
+  let lowerLimit = 0; // The smallest possible number of attacks
 
-  // Perform binary search to find the minimum feasible number of turns.
-  searchLoop:
-  while ( feasibleTurns > impossibleTurns + 1 ) {
-    let currentGuess = ( feasibleTurns + impossibleTurns ) >> 1; // Calculate midpoint guess.
-    let remainingSpecialAttacks = currentGuess; // Initialize available strong attacks with the current guess.
+  // Perform a binary search to find the minimum number of attacks required.
+  searchProcess: while (upperLimit > lowerLimit + 1) {
+    // Calculate the midpoint for the current search range.
+    let midValue = (upperLimit + lowerLimit) >> 1;
+    // Initialize 'attackBudget' with the current 'midValue'.
+    let attackBudget = midValue;
 
-    // Iterate through each monster to determine if the current guess is sufficient.
-    for ( let idx = 0; idx < itemCount; idx++ ) {
-      let monsterHealth = healths[ idx ];
-      let healthAfterBaseAttacks = monsterHealth - currentGuess * baseAttack;
+    // Iterate through each entity's health to determine if 'midValue' attacks are sufficient.
+    for (let entityIndex = 0; entityIndex < entityCount; entityIndex++) {
+      // Calculate the remaining health of the current entity after 'midValue' attacks,
+      // considering the secondary effect (regeneration).
+      let currentHealthRemaining = entityHealths[entityIndex] - midValue * secondaryEffect;
 
-      // If the monster is already defeated by base attacks alone, move to the next.
-      if ( healthAfterBaseAttacks <= 0 ) {
+      // If the entity's health is already non-positive, no further attacks are needed for it.
+      if (currentHealthRemaining <= 0) {
         continue;
       }
 
-      // If the monster still has health, calculate how many strong attacks are needed.
-      // Deduct these from the available strong attacks.
-      remainingSpecialAttacks -= Math.ceil( healthAfterBaseAttacks / ( strongAttack - baseAttack ) );
+      // If the entity still has health, calculate how many additional attacks are needed
+      // using the primary damage, and subtract this from the 'attackBudget'.
+      // Note: (primaryDamage - secondaryEffect) must be positive for this to work.
+      attackBudget -= Math.ceil(currentHealthRemaining / (primaryDamage - secondaryEffect));
     }
 
-    // Adjust binary search bounds based on whether the current guess was feasible.
-    if ( remainingSpecialAttacks >= 0 ) {
-      feasibleTurns = currentGuess; // Current guess is possible, try fewer turns.
+    // Adjust the search bounds based on whether the 'attackBudget' is sufficient.
+    if (attackBudget >= 0) {
+      // If 'attackBudget' is non-negative, 'midValue' is a possible answer or too high.
+      upperLimit = midValue;
     } else {
-      impossibleTurns = currentGuess; // Current guess is not enough, need more turns.
+      // If 'attackBudget' is negative, 'midValue' is too low.
+      lowerLimit = midValue;
     }
   }
 
-  // The 'feasibleTurns' variable now holds the minimum number of turns.
-  return `${feasibleTurns}`;
-})(
-  require('fs').readFileSync('/dev/stdin', 'utf8')
-) );
+  // The 'upperLimit' now holds the minimum number of attacks.
+  return `${upperLimit}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

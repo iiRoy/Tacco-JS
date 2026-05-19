@@ -1,41 +1,36 @@
-const rawSourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawSourceData.trim().split("\n");
-let linePointer = 0;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawData.trim().split('\n');
 
-function acquireNextDataLine() {
-    return processedLines[linePointer++];
+function processCases(segments, currentOffset = 0) {
+    if (currentOffset >= segments.length) {
+        return;
+    }
+
+    const initialCount = Number(segments[currentOffset]);
+    if (initialCount === 0) {
+        return;
+    }
+
+    const baseValues = segments[currentOffset + 1].split(' ').map(Number);
+    const bonusValues = segments[currentOffset + 2].split(' ').map(Number);
+
+    const baseSum = baseValues.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+    bonusValues.sort((valA, valB) => valB - valA);
+
+    const potentialResults = [baseSum * initialCount];
+
+    for (let k = 0; k < bonusValues.length; k++) {
+        const currentBonus = bonusValues[k];
+        const remainingCount = initialCount - (k + 1);
+        potentialResults.push((baseSum + currentBonus) * remainingCount);
+    }
+
+    const peakResult = Math.max(...potentialResults);
+
+    console.log(peakResult);
+
+    processCases(segments, currentOffset + 3);
 }
 
-function determinePeakValue(initialMeasurements, startingQuantity, additionalParts) {
-    const baseAggregate = initialMeasurements.reduce((accumulator, item) => accumulator + item, 0);
-    const orderedSupplements = [...additionalParts].sort((first, second) => second - first);
-
-    const finalState = orderedSupplements.reduce((state, supplement) => {
-        state.currentQuantity--;
-        state.currentSum += supplement;
-        const currentProduct = state.currentSum * state.currentQuantity;
-        state.currentMax = Math.max(state.currentMax, currentProduct);
-        return state;
-    }, {
-        currentMax: baseAggregate * startingQuantity,
-        currentSum: baseAggregate,
-        currentQuantity: startingQuantity
-    });
-
-    return finalState.currentMax;
-}
-
-const finalResults = [];
-
-while (true) {
-    const initialCapacity = Number(acquireNextDataLine());
-    if (initialCapacity === 0) break;
-
-    const fundamentalUnits = acquireNextDataLine().split(" ").map(Number);
-    const bonusElements = acquireNextDataLine().split(" ").map(Number);
-
-    const calculatedOutcome = determinePeakValue(fundamentalUnits, initialCapacity, bonusElements);
-    finalResults.push(calculatedOutcome);
-}
-
-console.log(finalResults.join("\n"));
+processCases(lineSegments);

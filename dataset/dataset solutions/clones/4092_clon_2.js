@@ -1,36 +1,34 @@
-'use strict'; // Enforce strict JavaScript parsing and execution rules for cleaner code.
+'use strict'; // Enforce strict parsing and error handling in the script.
 
-//  This function processes raw text input to determine a game's victor based on numerical parity.
-const processGameOutcome = (inputStringData) => {
-  //  Extract numerical values from the initial line of the input.
-  //  It first splits the input by newline characters, taking only the very first line.
-  //  Then, this line is split by space characters, creating an array of string representations of numbers.
-  //  Finally, each string item is converted into an integer (base 10).
-  const numericalDataSet = inputStringData
-    .split('\n')[0]
-    .split(' ')
-    .map(itemText => parseInt(itemText, 10)); // Convert string parts to base-10 integers for arithmetic.
+/**
+ * Processes an input string to determine a winner based on numerical values.
+ * @param {string} inputString - The raw input data, typically from standard input.
+ */
+const processInput = inputString => {
+  // First, parse the input string.
+  // It's expected to be a single line containing space-separated numbers.
+  // We take the first line, split it by spaces, and convert each part to a number.
+  const numericValues = inputString
+    .split('\n')[0] // Get the very first line of the input.
+    .split(' ')     // Divide the line into individual string components based on spaces.
+    .map(numStr => Number(numStr)); // Transform each string component into its numerical equivalent.
 
-  //  Obtain the first key value for the subsequent calculation from the parsed data set.
-  const valFirst = numericalDataSet[1];
+  // Extract the specific values required for the calculation.
+  // The problem implies these are at specific indices after parsing.
+  const firstVal = numericValues[1];  // Retrieve the second number from the parsed array.
+  const secondVal = numericValues[2]; // Retrieve the third number from the parsed array.
 
-  //  Retrieve the second key value for the operation, also from the parsed data.
-  const valSecond = numericalDataSet[2];
+  // Perform the core logic: check the parity of the difference between the two numbers.
+  // If the difference is even, 'Alice' wins; otherwise, 'Borys' wins.
+  const resultMessage = ((firstVal - secondVal) % 2 === 0)
+    ? 'Alice' // Outcome for an even difference.
+    : 'Borys'; // Outcome for an odd difference.
 
-  //  Calculate the difference's parity to decide the winner.
-  //  If the difference between 'valFirst' and 'valSecond' is perfectly divisible by 2 (meaning it's an even number),
-  //  the player "Alice" is declared the winner. Otherwise, if the difference is odd, "Borys" wins.
-  const declaredWinner = ((valFirst - valSecond) % 2 === 0)
-    ? 'Alice'
-    : 'Borys';
+  // Output the determined winner to the console.
+  console.log(resultMessage);
+};
 
-  //  Display the final result (the name of the victorious participant) to the standard console output.
-  console.log(declaredWinner);
-}; // End of the processGameOutcome function definition.
-
-//  Initiate the program's execution by reading input from standard input and passing it for processing.
-//  The 'fs' module is used to read the file contents synchronously from '/dev/stdin' (standard input stream),
-//  interpreting the content as a UTF-8 encoded string.
-processGameOutcome(
-  require('fs').readFileSync('/dev/stdin', 'utf8') // Read content from standard input synchronously as a string.
-);
+// Execute the main processing function by reading input from standard input.
+// This uses Node.js's file system module to synchronously read the entire content
+// of /dev/stdin (standard input) as a UTF-8 encoded string.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

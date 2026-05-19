@@ -1,15 +1,13 @@
-const processInputString = (textualData) => {
-    const numericElements = textualData.match(/-?\d+/g).map(Number);
-    const [lowerBoundary, upperBoundary, targetValue] = numericElements;
+function processRangeCheck(rawData) {
+    const [lowerBound, upperBound, targetValue] = rawData.split(' ').map(Number);
 
-    const isWithinBounds = (
-        Math.max(lowerBoundary, targetValue) === targetValue &&
-        Math.min(upperBoundary, targetValue) === targetValue
-    );
+    const outcomeMap = {
+        true: 'Yes',
+        false: 'No'
+    };
 
-    console.log(isWithinBounds ? 'Yes' : 'No');
-};
+    const conditionMet = (lowerBound <= targetValue && targetValue <= upperBound);
+    console.log(outcomeMap[conditionMet]);
+}
 
-const fetchSourceData = () => require('fs').readFileSync('/dev/stdin', 'utf8');
-
-processInputString(fetchSourceData());
+processRangeCheck(require('fs').readFileSync('/dev/stdin', 'utf8'));

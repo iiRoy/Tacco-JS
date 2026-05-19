@@ -1,30 +1,30 @@
-const obtainMagnitude = (numeral) => (numeral < 0) ? -numeral : numeral;
+function Main(rawInput) {
+    const numericValues = rawInput.split(" ").map(Number);
+    const [valA, valB, valC] = numericValues;
 
-const determineNearestInteger = (quotient) => Math.floor(quotient + 0.5);
+    const initialProduct = valB * valC;
 
-const processInputSeries = (textualData) => {
-    const [alphaValue, betaFactor, gammaBase] = textualData.split(' ').map(parseFloat);
+    const determineComplexOutcome = (a, b, c) => {
+        const rValue = Math.round(a / c);
+        const isParityMatched = (rValue % 2 === b % 2);
+        const isDifferenceNegative = (a - b * rValue < 0);
 
-    const derivedIntegral = determineNearestInteger(alphaValue / gammaBase);
+        const outcomeDispatch = {
+            'true': () => Math.abs(a - b * rValue),
+            'false_true': () => Math.abs(a - c * (rValue + 1)),
+            'false_false': () => Math.abs(a - c * (rValue - 1))
+        };
 
-    const areParitiesIdentical = ((derivedIntegral & 1) === (betaFactor & 1));
+        const selectionKey = isParityMatched ? 'true' : `false_${isDifferenceNegative}`;
+        return outcomeDispatch[selectionKey]();
+    };
 
-    const initialProduct = betaFactor * gammaBase;
-    const modifiedProduct = betaFactor * derivedIntegral;
-    const incrementedBaseProduct = gammaBase * (derivedIntegral + 1);
-    const decrementedBaseProduct = gammaBase * (derivedIntegral - 1);
+    const finalComputedValue = (valA > initialProduct)
+        ? (valA - initialProduct)
+        : determineComplexOutcome(valA, valB, valC);
 
-    return (alphaValue > initialProduct)
-        ? (alphaValue - initialProduct)
-        : (areParitiesIdentical
-            ? obtainMagnitude(alphaValue - modifiedProduct)
-            : ((alphaValue - modifiedProduct) < 0
-                ? obtainMagnitude(alphaValue - incrementedBaseProduct)
-                : obtainMagnitude(alphaValue - decrementedBaseProduct)));
-};
+    console.log(finalComputedValue);
+}
 
-const initiateComputation = (payload) => {
-    console.log(processInputSeries(payload));
-};
-
-initiateComputation(`10 4 3`);
+Main(`10 4 3`);
+//Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,37 +1,11 @@
-/*
- * This module contains a core utility function designed to
- * evaluate an input string against a specific numerical boundary.
- * It demonstrates basic conditional logic and external file interaction.
- */
-
-// Define a function to scrutinize an incoming textual datum.
-function    scrutinizeInputDatum(      dataPayload  )
-{
-    // Convert the textual payload into an integer for comparison.
-    // The radix of 10 is specified for decimal interpretation.
-    if  (   parseInt (  dataPayload  ,   10  )   <   1000
-    )
-    {
-        // If the processed number is below the set threshold,
-        // output a specific message indicating this condition.
-        console . log (   'UNDER_LIMIT_MESSAGE'   ) ;
-    }
-    // Otherwise, if the number is at or above the threshold.
-    else
-    {
-        // Output a different message for values meeting or exceeding the limit.
-        console . log (   'AT_OR_OVER_LIMIT_MESSAGE'   ) ;
+function processInputData(rawData) {
+    // Check if the parsed integer value of the input is less than one thousand.
+    if (parseInt(rawData, 10) < 1000) {
+        console.log('ABC'); // Output 'ABC' for values below the threshold.
+    } else {
+        console.log('ABD'); // Otherwise, output 'ABD'.
     }
 }
 
-
-// Initiate the primary execution flow of the script.
-// It involves reading content from standard input synchronously
-// and then passing that content to our evaluation function.
-scrutinizeInputDatum(
-    require(  "fs"  )
-        . readFileSync(
-            "/dev/stdin"  , // Path to the standard input stream.
-            "utf8"        // Character encoding to use for the read operation.
-        )
-) ;
+// Obtain data from the standard input stream and then process it.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,79 +1,86 @@
-function interpretInputData(sourceDataLines) {
-    const firstDataRow = sourceDataLines[0].split(' ').map(Number);
-    const valueCount = firstDataRow[0];
-    const desiredGroupSize = firstDataRow[1];
-    const valueCollection = sourceDataLines[1].split(' ').map(Number);
-
-    return {
-        totalValues: valueCount,
-        targetGroupSize: desiredGroupSize,
-        initialValuesList: valueCollection
-    };
+var read = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var obj;
+var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error("\n");
+  var start = new Date();
+  Main();
+  var end = new Date() - start;
+  
+  myerr("time : " + (end) + "ms");
+  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function makeClone(obj){return JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  var returnObj = {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(!this.hasNext()){throw "ArrayIndexOutOfBoundsException これ以上ないよ";}else{var returnInput = this.list[this.index];this.index++;return returnInput;}}
+  };
+  return returnObj;
 }
+function myout(s){console.log(s);}
+function myerr(s){console.error("debug:" + require("util").inspect(s,false,null));}
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map(Number);case 6:return i.split("");case 7:return i.split("").map(Number);case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
 
-function formSubgroups(sourceArray, k) {
-    if (k === 0) return [[]];
-    if (sourceArray.length < k) return [];
+function Main(){
+	var firstLine = nextIntArray();
+	var N = firstLine[0];
+	var K = firstLine[1];
+	var sourceNumbers = nextIntArray();
+	var minTotalCost = Math.pow(10,16);
 
-    const currentHead = sourceArray[0];
-    const remainingTail = sourceArray.slice(1);
+	if(K === 1){
+		myout(0);
+		return;
+	}
 
-    const withCurrentHead = formSubgroups(remainingTail, k - 1).map(subgroup => [currentHead, ...subgroup]);
-    const withoutCurrentHead = formSubgroups(remainingTail, k);
+	function calculateCostForSubset(subsetElements) {
+		let accumulatedCost = 0;
+		let lastAdjustedValue = subsetElements[0];
 
-    return [...withCurrentHead, ...withoutCurrentHead];
+		for (let k = 1; k < subsetElements.length; k++) {
+			let currentConsideredValue = subsetElements[k];
+			if (lastAdjustedValue >= currentConsideredValue) {
+				const requiredIncrease = lastAdjustedValue - currentConsideredValue + 1;
+				accumulatedCost += requiredIncrease;
+				lastAdjustedValue += requiredIncrease;
+			} else {
+				lastAdjustedValue = currentConsideredValue;
+			}
+		}
+		return accumulatedCost;
+	}
+
+	function generateSubsequences(currentIdx, currentSequence) {
+		if (currentSequence.length === K) {
+			const sequenceCost = calculateCostForSubset(currentSequence);
+			minTotalCost = Math.min(minTotalCost, sequenceCost);
+			return;
+		}
+
+		if (currentIdx >= N || (N - currentIdx) < (K - currentSequence.length)) {
+			return;
+		}
+
+		// Option 1: Include the element at currentIdx
+		generateSubsequences(currentIdx + 1, [...currentSequence, sourceNumbers[currentIdx]]);
+
+		// Option 2: Exclude the element at currentIdx
+		generateSubsequences(currentIdx + 1, currentSequence);
+	}
+
+	// Start the recursion. sourceNumbers[0] is always included.
+	// We start considering elements from index 1 for inclusion/exclusion.
+	generateSubsequences(1, [sourceNumbers[0]]);
+
+	myout(minTotalCost);
 }
-
-function determineSequenceCost(sequenceFragment, currentPos = 0, totalAdjustments = 0, workingFragment = []) {
-    if (currentPos === 0) {
-        workingFragment = [...sequenceFragment];
-    }
-    if (currentPos >= workingFragment.length - 1) {
-        return totalAdjustments;
-    }
-
-    let requiredIncrement = 0;
-    if (workingFragment[currentPos] >= workingFragment[currentPos + 1]) {
-        requiredIncrement = workingFragment[currentPos] - workingFragment[currentPos + 1] + 1;
-        workingFragment[currentPos + 1] += requiredIncrement;
-    }
-
-    return determineSequenceCost(sequenceFragment, currentPos + 1, totalAdjustments + requiredIncrement, workingFragment);
-}
-
-function computeOptimalArrangementCost(inputDataLines) {
-    const dataDetails = interpretInputData(inputDataLines);
-    const { totalValues, targetGroupSize, initialValuesList } = dataDetails;
-
-    if (targetGroupSize === 1) {
-        return 0;
-    }
-
-    const mandatoryFirstValue = initialValuesList[0];
-    const optionalRemainingValues = initialValuesList.slice(1);
-    const countForOptionalSelection = targetGroupSize - 1;
-
-    const optionalSubgroups = formSubgroups(optionalRemainingValues, countForOptionalSelection);
-
-    const fullCandidateSequences = optionalSubgroups.map(subgroup => [mandatoryFirstValue, ...subgroup]);
-
-    const allCalculatedCosts = fullCandidateSequences.map(determineSequenceCost);
-
-    const lowestPossibleCost = allCalculatedCosts.reduce((minVal, currentVal) => Math.min(minVal, currentVal), Number.MAX_SAFE_INTEGER);
-
-    return lowestPossibleCost;
-}
-
-// Example usage if integrated with the original boilerplate's 'close' event:
-// read.on('close', function(){
-//   obj = init(inLine); // The original init() is not used by the cloned logic
-//   console.error("\n");
-//   var start = new Date();
-//
-//   // This line replaces the original Main();
-//   console.log(computeOptimalArrangementCost(inLine));
-//
-//   var end = new Date() - start;
-//   myerr("time : " + (end) + "ms");
-//   myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
-// });

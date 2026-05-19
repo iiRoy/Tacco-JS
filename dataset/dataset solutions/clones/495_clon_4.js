@@ -1,86 +1,81 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parseNumericLine = (lineContent) => lineContent.split(" ").map(Number);
 
-function* generateLines(fullTextContent) {
-    const contentSegments = fullTextContent.trim().split("\n");
-    let currentSegmentCursor = 0;
-    while (currentSegmentCursor < contentSegments.length) {
-        yield contentSegments[currentSegmentCursor++];
-    }
-}
+const executeSimulation = (sourceLines) => {
+    let currentLineIndex = 0;
 
-const computeExpectedValue = (lineStream) => {
-    const collectedOutputs = [];
     while (true) {
-        const firstConfigurationLine = lineStream.next().value;
-        const scenarioParameters = firstConfigurationLine.split(" ").map(Number);
+        const simulationParameters = parseNumericLine(sourceLines[currentLineIndex++]);
+        if (simulationParameters.join(" ") === "0 0 0") break;
 
-        if (scenarioParameters.every(val => val === 0)) {
-            break;
+        const [moveOptionCount, maximumSteps, specialConditionCount] = simulationParameters;
+        const stepValueOptions = parseNumericLine(sourceLines[currentLineIndex++]);
+
+        const conditionMap = new Map();
+        for (let conditionIdx = 0; conditionIdx < specialConditionCount; conditionIdx++) {
+            const conditionDetails = parseNumericLine(sourceLines[currentLineIndex++]);
+            conditionMap.set(conditionDetails[0], [conditionDetails[1], conditionDetails[2]]);
         }
 
-        const [availableMovesCount, finalDestinationTile, specialEventQuantity] = scenarioParameters;
-        const movementChoices = lineStream.next().value.split(" ").map(Number);
+        const probabilityMatrix = Array.from({ length: maximumSteps + 1 }, () =>
+            Array(5001).fill(0)
+        );
+        probabilityMatrix[0][0] = 1;
 
-        const specialOccurrencesMap = new Map(); // Map<tileIndex, {kind: number, value: number}>
-        for (let eventIndex = 0; eventIndex < specialEventQuantity; ++eventIndex) {
-            const eventDescriptionLine = lineStream.next().value.split(" ").map(Number);
-            specialOccurrencesMap.set(eventDescriptionLine[0], { kind: eventDescriptionLine[1], value: eventDescriptionLine[2] });
-        }
+        for (let currentPosition = 0; currentPosition < maximumSteps; currentPosition++) {
+            for (let currentKState = 0; currentKState <= 5000; currentKState++) {
+                const probabilityAtCurrentState = probabilityMatrix[currentPosition][currentKState];
 
-        let probabilityDistribution = new Map(); // Map<tileIndex, Map<cashAmount, probability>>
-        probabilityDistribution.set(0, new Map([[0, 1.0]])); // Initial state: Tile 0, Cash 0, 100% probability
+                if (probabilityAtCurrentState === 0) continue;
 
-        for (let currentVisitedTile = 0; currentVisitedTile < finalDestinationTile; ++currentVisitedTile) {
-            if (!probabilityDistribution.has(currentVisitedTile)) {
-                continue; // No path leads to this tile with any probability, skip
-            }
+                for (let moveChoice = 0; moveChoice < moveOptionCount; moveChoice++) {
+                    const stepAdvance = stepValueOptions[moveChoice];
+                    let potentialNextPosition = currentPosition + stepAdvance;
+                    
+                    if (potentialNextPosition > maximumSteps) {
+                        potentialNextPosition = maximumSteps;
+                    }
 
-            const currentTileProbabilities = probabilityDistribution.get(currentVisitedTile);
+                    const probabilityContribution = probabilityAtCurrentState / moveOptionCount;
 
-            for (let [currentCashAmount, probabilityOfCurrentState] of currentTileProbabilities.entries()) {
-                for (let movementDelta of movementChoices) {
-                    let nextTentativeTile = Math.min(currentVisitedTile + movementDelta, finalDestinationTile);
-                    let actualNextTile = nextTentativeTile;
-                    let actualNextCash = currentCashAmount;
+                    const conditionEffect = conditionMap.get(potentialNextPosition);
 
-                    const activeEventDetails = specialOccurrencesMap.get(nextTentativeTile);
-                    if (activeEventDetails) {
-                        const { kind, value } = activeEventDetails;
-                        switch (kind) {
-                            case 1: // Tile relocation
-                                actualNextTile = Math.min(nextTentativeTile + value, finalDestinationTile);
-                                break;
-                            case 2: // Cash increment
-                                actualNextCash += value;
-                                break;
-                            case 3: // Cash decrement
-                                actualNextCash = Math.max(0, actualNextCash - value);
-                                break;
+                    if (conditionEffect) {
+                        const [effectType, effectMagnitude] = conditionEffect;
+                        if (effectType === 1) {
+                            let finalPosition = potentialNextPosition + effectMagnitude;
+                            if (finalPosition > maximumSteps) {
+                                finalPosition = maximumSteps;
+                            }
+                            probabilityMatrix[finalPosition][currentKState] += probabilityContribution;
+                        } else if (effectType === 2) {
+                            let finalKState = currentKState + effectMagnitude;
+                            if (finalKState > 5000) {
+                                finalKState = 5000;
+                            }
+                            probabilityMatrix[potentialNextPosition][finalKState] += probabilityContribution;
+                        } else if (effectType === 3) {
+                            let finalKState = currentKState - effectMagnitude;
+                            if (finalKState < 0) {
+                                finalKState = 0;
+                            }
+                            probabilityMatrix[potentialNextPosition][finalKState] += probabilityContribution;
                         }
+                    } else {
+                        probabilityMatrix[potentialNextPosition][currentKState] += probabilityContribution;
                     }
-
-                    const probabilityContribution = probabilityOfCurrentState / availableMovesCount;
-
-                    if (!probabilityDistribution.has(actualNextTile)) {
-                        probabilityDistribution.set(actualNextTile, new Map());
-                    }
-                    const cashProbabilitiesAtNextTile = probabilityDistribution.get(actualNextTile);
-                    cashProbabilitiesAtNextTile.set(actualNextCash, (cashProbabilitiesAtNextTile.get(actualNextCash) || 0) + probabilityContribution);
                 }
             }
         }
 
-        let totalExpectedCash = 0;
-        const finalTileCashStates = probabilityDistribution.get(finalDestinationTile);
-        if (finalTileCashStates) {
-            for (let [cashValue, associatedProbability] of finalTileCashStates.entries()) {
-                totalExpectedCash += cashValue * associatedProbability;
-            }
-        }
-        collectedOutputs.push(Math.floor(totalExpectedCash));
+        const finalExpectedValue = Array.from({ length: 5001 }, (_, k) => k)
+            .reduce((accumulatedValue, kState) => {
+                return accumulatedValue + kState * probabilityMatrix[maximumSteps][kState];
+            }, 0);
+
+        console.log(Math.floor(finalExpectedValue));
     }
-    return collectedOutputs;
 };
 
-const finalResults = computeExpectedValue(generateLines(sourceData));
-finalResults.forEach(outcome => console.log(outcome));
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedInputLines = rawInputContent.trim().split("\n");
+executeSimulation(processedInputLines);

@@ -1,14 +1,11 @@
-(function(sourceData) {
-  const allExtractedNumbers = sourceData.match(/\d+/g).map(Number);
-  const firstValue = allExtractedNumbers.shift(); // The 'N' value, not strictly needed for logic
-  const numericSequence = allExtractedNumbers;
+console.log(function(rawInputString) {
+  const inputLines = rawInputString.trim().split('\n');
+  const numberStrings = inputLines[1].split(' ');
+  const numberSequence = numberStrings.map(val => parseInt(val, 10));
 
-  const totalXorAccumulator = numericSequence.reduce((currentXor, nextVal) => currentXor ^ nextVal, 0);
+  const totalXorSum = numberSequence.reduce((accumulator, currentElement) => accumulator ^ currentElement, 0);
 
-  const finalResultString = numericSequence.reduce((outputString, currentNumber, indexPos) => {
-    const transformedValue = currentNumber ^ totalXorAccumulator;
-    return outputString + (indexPos === 0 ? '' : ' ') + transformedValue;
-  }, '');
+  const transformedSequence = numberSequence.map(originalValue => originalValue ^ totalXorSum);
 
-  return finalResultString;
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  return transformedSequence.join(' ');
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

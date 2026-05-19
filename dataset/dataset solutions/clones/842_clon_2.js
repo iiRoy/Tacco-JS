@@ -1,62 +1,53 @@
-// This script processes a list of numerical pairs from standard input.
-// It determines a specific maximum count based on certain conditions.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Fetch raw input data from a specific file path.
+// Split the raw input string into an array of lines, after trimming any leading/trailing whitespace.
+var lineData = (rawData.trim()).split("\n");
 
-// Process the acquired data: trim whitespace and split into individual lines.
-var lineFragments = (rawData.trim()).split("\n");
+// Extract the first line, which represents the number of entries, and convert it to a numeric type.
+var numEntries = lineData.shift() - 0;
 
-// Extract the initial number, which represents the total count of subsequent data entries.
-var itemCount = lineFragments.shift() - 0;
+// Initialize an empty array to store the parsed data points.
+var dataPoints = [];
 
-// Initialize an array to store structured data elements.
-var dataItems = [];
-
-
-// Loop through each expected data entry.
-for (var idx = 0; idx < itemCount; idx++) {
-    // For each line, split by space and convert the parts to numbers.
-    var pairValues = (lineFragments.shift()).split(" ").map(Number);
-    // Add the processed numeric pair to our collection of data items.
-    dataItems.push(pairValues);
-
+// Loop through the remaining lines to populate the dataPoints array.
+for (var idx = 0; idx < numEntries; idx++) {
+    // For each line, split it by space, then convert each part to a number.
+    var pairValues = (lineData.shift()).split(" ").map(Number);
+    // Add the resulting numeric pair to our collection.
+    dataPoints.push(pairValues);
 }
 
-// Sort the collected data items. The sorting criterion is the second element of each pair,
+// Sort the data points. The sorting criterion is based on the second element of each pair
 // in descending order.
-dataItems.sort(function(firstElement, secondElement) {
-    // Access the relevant part for comparison.
-    var comparisonA = firstElement[1];
-    var comparisonB = secondElement[1];
-    // Return the difference for descending sort.
-    return comparisonB - comparisonA;
+dataPoints.sort(function(itemA, itemB) {
+    // Extract the second element from each item for comparison.
+    var valA = itemA[1];
+    var valB = itemB[1];
+    // Return the difference to achieve descending order (valB - valA).
+    return valB - valA;
 });
 
-// Initialize a variable to keep track of the highest count found.
-var overallMaximum = 0;
+// Initialize a variable to keep track of the maximum count found during processing.
+var highestCount = 0;
 
-// Begin the main iterative process, ranging from a starting point up to a large threshold.
-for (
-  var idx = 2; // Start index from 2
-  idx <= 100001; // Continue up to this upper bound
-  idx++ // Increment index in each step
-) {
-    // For each iteration of the outer loop, reset a temporary counter.
-    var currentCount = 0;
+// Iterate through a specific range of numbers, from 2 up to 100001 (inclusive).
+for (var idx = 2; idx <= 100001; idx++) {
+    // For each iteration of the outer loop, reset the current total.
+    var currentTotal = 0;
 
-    // Iterate over each item in the sorted data collection.
-    dataItems.forEach(function(currentItem) {
+    // Iterate over each data point in the sorted array.
+    dataPoints.forEach(function(currentPoint) {
         // Check two conditions:
-        // 1. The first value of the current item must be less than or equal to the outer loop's index.
-        // 2. Incrementing the current count must not exceed the second value of the current item.
-        if (currentItem[0] <= idx && currentCount + 1 <= currentItem[1]) {
-            currentCount++; // Increment the temporary counter if both conditions are met.
+        // 1. The first element of the current data point must be less than or equal to 'idx'.
+        // 2. The current total plus one must be less than or equal to the second element of the data point.
+        if (currentPoint[0] <= idx && currentTotal + 1 <= currentPoint[1]) {
+            currentTotal++; // If both conditions are met, increment the current total.
         }
     });
 
-    // Update the overall maximum if the current temporary count is higher.
-    overallMaximum = Math.max(overallMaximum, currentCount);
+    // Update 'highestCount' if the 'currentTotal' for the current 'idx' is greater.
+    highestCount = Math.max(highestCount, currentTotal);
 }
 
-// Output the final computed result, adjusted by subtracting one.
-console.log(overallMaximum - 1);
+// Output the final result, which is the 'highestCount' decremented by one.
+console.log(highestCount - 1);

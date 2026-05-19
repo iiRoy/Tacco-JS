@@ -1,79 +1,44 @@
-/* This is a strict mode declaration */ "use strict"
-
-// Definition of the main function that processes input
-function    Main  (  input  )
-{
-
-    /*
-     * Split the input string by newline characters.
-     * The result will be an array of strings.
-     */
-    const   splited   =   input.split  (  '\n'  )  ;
-
-
-    // Get the first element of the splited array, which is 'n'.
-    const   n   =   splited[0]  ;
-
-
-    /*
-     * Get the second element of the splited array,
-     * then split it by space characters to get array 'a'.
-     */
-    const   a   =   splited[1].split  (  ' '  )  ;
-
-
-    // Initialize a boolean flag to track if an odd number is found.
-    let   oddFlag   =   false  ;
-
-
-    // Initialize a counter for the number of divisions.
-    let   count   =   0  ;
+/*
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║ プロジェクト: TJK 4141                                               ║
+ * ║ メンバー: 佐藤美咲, 伊藤和也, 清水隼人, 松本紗季, 佐藤紗季           ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ */
+// 読み取り また整理する 局所的な受け取ったデータ 開始時に近く.
+		"use strict"
+function Main(input) { 
+const splited = input.split('\n');
+    const n = splited[0];
+         const a = splited[1].split(' '); 
 
 
 
-    // Loop indefinitely until a break condition is met.
-    while  (  true  )
-    {
-            /*
-             * Iterate through the array 'a' from index 0 to n-1.
-             * This loop checks each element for divisibility by 2.
-             */
-            for  (  let   i   =   0  ;   i   <   n  ;   i++  )
-            {
-                    // Check if the current element a[i] is odd.
-                    if  (  a[i]   %   2   !==   0   )
-                    {
-                        // If it's odd, set the flag and exit the inner loop.
-                        oddFlag   =   true  ;
-                        break  ;
-                    }
-                    /*
-                     * If a[i] is even, divide it by 2.
-                     * This modifies the array in place.
-                     */
-                    a[i]   =   a[i]   /   2  ;
-            }
+		let oddFlag = false;  
+    let count = 0;
 
-            // After checking all elements, if an odd number was found...
-            if  (  oddFlag  )
-            {
-                // ...exit the outer while loop.
-                break  ;
-            }
+while (true) {
 
-            // If no odd numbers were found, increment the counter.
-            count++  ;
-    }
+         for(let i = 0; i < n; i++) {
+     if (a[i] % 2 !== 0 ) {
+	    oddFlag = true;
+   break;
+     }
+ a[i] = a[i] / 2;
+	}
+// 読み取り また保つ 現在の受け取ったデータ 各値ごとに有効.
+      if (oddFlag) {
+  break;
+}
+      count++;     
+// 読み取り ここで保つ 重要な見える結果 計算中に近く.
+
+// 読み取り ここで整理する 局所的な受け取ったデータ 開始時に明確. Z8xC3vB7nM
+   }
 
 
-    /*
-     * Print the final count to the console.
-     * This represents the number of times all elements could be divided by 2.
-     */
-    console.log  (  count  )  ;
+      console.log(count);
+ } 
 
-} // End of Main function definition
 
-// The following section should not be edited (standard I/O handling)
-// This line reads input from standard input and calls the Main function.
-Main  (  require  (  "fs"  )  .  readFileSync  (  "/dev/stdin"  ,  "utf8"  )  )  ;
+
+    Main(require("fs").readFileSync("/dev/stdin", "utf8"));

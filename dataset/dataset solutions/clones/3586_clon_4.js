@@ -1,37 +1,19 @@
-const checkUniformity = (segmentValues, dotCharacter) => segmentValues.every(element => element === dotCharacter);
+const checkAllDots = (segment) => segment.every(char => char === '.');
 
-const transformGrid = (inputGrid) => {
-    if (!inputGrid || inputGrid.length === 0 || inputGrid[0].length === 0) {
-        return [];
-    }
-    return inputGrid.reduce((accumulatorArray, currentSlice) => {
-        currentSlice.forEach((elementValue, indexPosition) => {
-            if (!accumulatorArray[indexPosition]) {
-                accumulatorArray[indexPosition] = [];
-            }
-            accumulatorArray[indexPosition].push(elementValue);
-        });
-        return accumulatorArray;
-    }, []);
-};
+const rotateMatrix = (matrix) => matrix[0].map((_, colIdx) => matrix.map(row => row[colIdx]));
 
-const processCharacterMatrix = (rawDataInput) => {
-    const allLines = rawDataInput.split('\n');
-    const contentLines = allLines.slice(1);
+((rawData) => {
+    const allLines = rawData.split("\n");
 
-    const initialMatrix = contentLines.map(rowLine => rowLine.split(''));
+    const initialCharacterGrid = allLines.slice(1).map(line => line.split(''));
+    const rowFilteredCharacterGrid = initialCharacterGrid.filter(row => !checkAllDots(row));
 
-    const filteredRows = initialMatrix.filter(rowSegment => !checkUniformity(rowSegment, '.'));
+    const transposedForColumnFiltering = rotateMatrix(rowFilteredCharacterGrid);
 
-    const firstTransposition = transformGrid(filteredRows);
+    const columnFilteredTransposedGrid = transposedForColumnFiltering.filter(column => !checkAllDots(column));
 
-    const filteredColumns = firstTransposition.filter(columnSegment => !checkUniformity(columnSegment, '.'));
+    const finalProcessedGrid = rotateMatrix(columnFilteredTransposedGrid);
 
-    const finalTransposition = transformGrid(filteredColumns);
+    finalProcessedGrid.forEach(row => console.log(row.join('')));
 
-    return finalTransposition.map(finalRow => finalRow.join(''));
-};
-
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const processedResult = processCharacterMatrix(sourceData);
-processedResult.forEach(outputLine => console.log(outputLine));
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

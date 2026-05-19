@@ -1,97 +1,67 @@
 const fileSystem = require('fs');
+const standardInputPath = '/dev/stdin';
+const encodingType = 'utf8';
+const moduloBase = 10; // Constant representing the base for the modulo operation
 
-const SUM_MODULO_BASE = 10; // Constant for the modulo operation, enhancing clarity.
+const rawInputData = fileSystem.readFileSync(standardInputPath, encodingType);
+const inputLineSegments = rawInputData.split('\n');
 
-/**
- * Reduces a sequence of single-digit numbers by repeatedly summing adjacent pairs
- * and applying a modulo operation, until a single number is derived.
- *
- * @param {number[]} initialDigits - An array of numeric digits.
- * @returns {number} The final single-digit result after all reduction steps.
- */
-function condenseDigitSequence(initialDigits) {
-    // Handle edge cases where the input sequence might be invalid or too short.
-    if (!Array.isArray(initialDigits) || initialDigits.length === 0) {
-        // For an empty sequence, the result is implicitly zero in this context.
-        return 0;
+// Helper function to convert a string segment into an array of numeric digits.
+// This replaces the inline `map(function(n){return +n;})` logic.
+const parseDigitString = (segment) => {
+    const numericDigits = [];
+    // Iterate through each character of the segment string
+    for (let charIndex = 0; charIndex < segment.length; charIndex++) {
+        // Convert the character to a number. The `Number()` constructor
+        // provides equivalent behavior to the unary plus operator (`+`)
+        // for single-digit string conversions.
+        numericDigits.push(Number(segment[charIndex]));
     }
-    if (initialDigits.length === 1) {
-        // If there's only one digit, no reduction is needed; return it directly.
-        return initialDigits[0];
-    }
+    return numericDigits;
+};
 
-    // Create a mutable copy of the input array for processing.
-    let activeSequence = [...initialDigits];
-    let currentArraySize = activeSequence.length;
+let currentInputSegment;
 
-    // Continue iterating and reducing the sequence until only one element remains.
-    while (currentArraySize > 1) {
-        const nextIterationValues = []; // Temporary array to store results of the current reduction pass.
+// Process each line segment obtained from the input data.
+// The loop condition is split for clarity, separating the check from the assignment.
+while (inputLineSegments.length > 0) {
+    currentInputSegment = inputLineSegments.shift();
 
-        // Loop through the active sequence, summing adjacent elements.
-        for (let elementCursor = 0; elementCursor < currentArraySize - 1; ++elementCursor) {
-            const firstOperand = activeSequence[elementCursor];
-            const secondOperand = activeSequence[elementCursor + 1];
+    // Convert the current line segment (e.g., "1234") into an array of numbers (e.g., [1, 2, 3, 4]).
+    let digitSequence = parseDigitString(currentInputSegment);
+    let sequenceLength = digitSequence.length;
 
-            // Compute the sum of the current pair of digits.
-            const pairSum = firstOperand + secondOperand;
+    // This inner loop performs the reduction process until only a single digit remains in the sequence.
+    while (sequenceLength > 1) {
+        const nextSequence = []; // Array to store the results of the current reduction step.
+        
+        // Define the upper bound for the inner iteration explicitly.
+        // It's one less than the current sequence length because we're summing adjacent pairs.
+        const innerLoopUpperBound = sequenceLength - 1;
 
-            // Store the result after applying the modulo operation.
-            nextIterationValues.push(pairSum % SUM_MODULO_BASE);
+        for (let index = 0; index < innerLoopUpperBound; index++) {
+            // Extract the two adjacent digits for the current step.
+            const firstAdjacentDigit = digitSequence[index];
+            const secondAdjacentDigit = digitSequence[index + 1];
+            
+            // Calculate their sum.
+            const sumOfAdjacentDigits = firstAdjacentDigit + secondAdjacentDigit;
+            
+            // Apply the modulo 10 operation to get the reduced digit.
+            const reducedValue = sumOfAdjacentDigits % moduloBase;
+            
+            // Add the calculated reduced digit to the next sequence.
+            nextSequence.push(reducedValue);
         }
-
-        // Replace the active sequence with the newly computed shorter sequence.
-        activeSequence = nextIterationValues;
-        currentArraySize = activeSequence.length;
+        
+        // Update the sequence and its length for the next iteration of the reduction process.
+        // Assigning `nextSequence.length` is equivalent to `sequenceLength--` in this context,
+        // as each reduction step decreases the array length by one.
+        sequenceLength = nextSequence.length;
+        digitSequence = nextSequence;
     }
-
-    // The loop guarantees that `activeSequence` will contain exactly one element.
-    return activeSequence[0];
-}
-
-// --- Primary Program Execution Flow ---
-
-try {
-    // Synchronously read all content from the standard input stream.
-    // Specifying 'utf8' ensures correct interpretation of multi-byte characters.
-    const rawFileContents = fileSystem.readFileSync('/dev/stdin', 'utf8');
-
-    // Split the entire content into individual lines.
-    // Filter out any lines that are empty or contain only whitespace, ensuring meaningful data.
-    const processedInputRows = rawFileContents.split('\n').filter(entry => entry.trim().length > 0);
-
-    // Check if any valid input lines were found after filtering.
-    if (processedInputRows.length === 0) {
-        // If no lines to process, output a message and terminate gracefully.
-        console.error("No valid input lines detected. Program terminating.");
-        // The original code would simply exit without output if no lines.
-    } else {
-        // Iterate over each cleaned input line for processing.
-        for (const currentInputString of processedInputRows) {
-            // Convert the string of digits into an array of numbers.
-            // Array.from(string, Number) is a concise way to achieve this.
-            const parsedNumericArray = Array.from(currentInputString, Number);
-
-            // Perform validation to ensure all characters were successfully converted to numbers.
-            // If any character was not a digit, Number() results in NaN.
-            const containsNonDigit = parsedNumericArray.some(value => isNaN(value));
-
-            if (containsNonDigit) {
-                console.error(`Error: Input "${currentInputString}" contains non-numeric data. Skipping this line.`);
-                continue; // Move to the next line of input.
-            }
-
-            // Execute the core logic to condense the sequence.
-            const finalCondensedValue = condenseDigitSequence(parsedNumericArray);
-
-            // Output the single resulting digit for the current input line.
-            console.log(finalCondensedValue);
-        }
-    }
-
-} catch (ioError) {
-    // Catch and report any errors that occur during the file reading process.
-    console.error(`An I/O error occurred: ${ioError.message}`);
-    // Indicate an abnormal termination with a non-zero exit code.
-    process.exit(1);
+    
+    // After the reduction, `digitSequence` will contain a single element.
+    // Output this final digit to the console.
+    console.log(digitSequence[0]);
 }

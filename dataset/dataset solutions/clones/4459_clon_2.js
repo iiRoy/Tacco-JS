@@ -1,40 +1,42 @@
-const ProcessInput = (rawData) => {
-    // Split the raw input string by newline characters
-    rawData = rawData.split('\n') ;
+function ProcessInput(rawData) {
+    // Split the incoming raw data string into an array of lines.
+    let processedLines = rawData.split("\n");
 
-    // Parse the first line of input as the upper limit for iteration
-    const limitValue = parseInt(rawData[0], 10) ;
+    // Extract the first line, which represents the upper limit for our calculations.
+    // Convert it to an integer to ensure numerical comparisons.
+    let upperBound = parseInt(processedLines[0], 10);
 
-    // Initialize variable to track the maximum number of times a number can be divided by two
+    // Initialize a variable to keep track of the maximum number of times
+    // a number can be divided by two.
     let maxDivisions = 0;
-
-    // Initialize variable to store the number that achieves the maximum divisions
+    // Initialize a variable to store the number that achieved this maximum division count.
     let resultNumber = 0;
 
-    // Loop through numbers from zero up to the specified limit
-    for (let counter = 0; counter <= limitValue; counter++) {
-        // Initialize division count for the current number
+    // Iterate through numbers starting from zero up to and including the upperBound.
+    for (let counter = 0; counter <= upperBound; counter++) {
+        // For each number, reset the division count.
         let currentDivisions = 0;
-
-        // Use a temporary variable for division operations to preserve the original counter
+        // Create a temporary variable to perform divisions without modifying the loop counter.
         let tempNum = counter;
 
-        // While the temporary number is even and at least 2, keep dividing by two
+        // Continue dividing the temporary number by two as long as it's even and at least two.
         while (tempNum >= 2 && tempNum % 2 === 0) {
-            currentDivisions += 1; // Increment division count
-            tempNum /= 2;          // Halve the temporary number
+            currentDivisions++; // Increment the count of divisions.
+            tempNum /= 2;       // Perform the division.
         }
 
-        // If the current number has more (or equal) divisions than the previously recorded maximum
+        // If the current number's division count is greater than or equal to
+        // the previously recorded maximum, update our tracking variables.
         if (currentDivisions >= maxDivisions) {
-            maxDivisions = currentDivisions; // Update the maximum division count
-            resultNumber = counter;          // Update the number associated with this maximum
+            maxDivisions = currentDivisions; // Update the maximum division count.
+            resultNumber = counter;          // Store this number as the new result.
         }
     }
 
-    // Output the final determined number
-    console.log(resultNumber.toString());
-};
+    // Output the final result number to the console, formatted as an integer.
+    console.log('%d', resultNumber);
+}
 
-// Read input from standard input and pass it to the processing function
-ProcessInput( require('fs') . readFileSync('/dev/stdin' , 'utf8') );
+// Read the input from standard input using Node.js's file system module.
+// The input is expected to be encoded in UTF-8.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

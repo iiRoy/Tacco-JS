@@ -1,43 +1,43 @@
-/* This JavaScript module processes incoming standard input to compute final displacement coordinates. */
-process.stdin.on( "data" ,
- function ( incomingBuffer ) {
+process.stdin.on("data", function (inputBuffer) {
+    // Initialize variables for current position and rotation.
+    // currentXPosition: accumulated X coordinate
+    // currentYPosition: accumulated Y coordinate
+    // currentAngleDegrees: accumulated rotation in degrees
+    // degreeToRadianRatio: conversion factor from degrees to radians
+    var currentXPosition = 0,
+        currentYPosition = 0,
+        currentAngleDegrees = 0,
+        degreeToRadianRatio = Math.PI / 180;
 
-  // Initialize positional and rotational variables.
-  // horizontalCoord: Current horizontal position.
-  // verticalCoord: Current vertical position.
-  // currentAngleDegrees: Accumulated rotation in degrees.
-  // degToRadMultiplier: Constant to convert degrees to radians for trigonometric functions.
-  var horizontalCoord = 0.0,
-      verticalCoord   = 0.0,
-      currentAngleDegrees = 0.0,
-      degToRadMultiplier  = Math.PI / 180.0;
+    // Convert the incoming data buffer to a string, remove leading/trailing whitespace,
+    // then split it into individual lines.
+    // The 'some' method iterates through each line of input.
+    (inputBuffer + "")
+        .trim()
+        .split("\n")
+        .some(function (singleLineData) {
+            // Each line contains two comma-separated values: movement distance and angle change.
+            var lineSegments = singleLineData.split(",");
 
-  // Convert the input buffer to a string, remove leading/trailing whitespace,
-  // then split into individual lines. Iterate over these lines.
-  // The 'some' method is used here to process each line; it doesn't stop early.
-  ( incomingBuffer + "" ) .trim()
-                          .split( "\n" )
-                          .some( function ( inputLine ) {
+            // Calculate the change in X based on distance and current angle.
+            // The unary plus operator converts string parts to numbers.
+            currentXPosition += +lineSegments[0] * Math.sin(currentAngleDegrees * degreeToRadianRatio);
 
-    // Each line contains two comma-separated numeric values: distance and angle change.
-    inputLine = inputLine.split( "," );
+            // Calculate the change in Y based on distance and current angle.
+            currentYPosition += +lineSegments[0] * Math.cos(currentAngleDegrees * degreeToRadianRatio);
 
-    // Update the horizontal coordinate.
-    // The first value in inputLine is distance, converted to a number.
-    horizontalCoord += ( +inputLine[0] ) * Math.sin( currentAngleDegrees * degToRadMultiplier );
+            // Accumulate the angle change from the current line.
+            currentAngleDegrees += +lineSegments[1];
 
-    // Update the vertical coordinate.
-    // The first value in inputLine is distance, converted to a number.
-    verticalCoord   += ( +inputLine[0] ) * Math.cos( currentAngleDegrees * degToRadMultiplier );
+            // Return false to ensure that 'some' continues iterating through all lines.
+            return false;
+        });
 
-    // Accumulate the new angle from the second value in inputLine.
-    currentAngleDegrees += ( +inputLine[1] );
-  } );
+    // Output the final X coordinate, truncated to an integer using a bitwise OR.
+    console.log(currentXPosition | 0);
 
-  // Output the final horizontal coordinate as an integer.
-  console.log( horizontalCoord | 0 );
-
-  // Output the final vertical coordinate as an integer.
-  console.log( verticalCoord | 0 );
-
- } ) .resume(); /* Reactivate the standard input stream to continue listening for data. */
+    // Output the final Y coordinate, truncated to an integer using a bitwise OR.
+    console.log(currentYPosition | 0);
+})
+// Resume the stdin stream to allow data processing to begin.
+.resume();

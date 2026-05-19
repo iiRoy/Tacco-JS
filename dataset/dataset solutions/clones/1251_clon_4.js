@@ -1,53 +1,37 @@
-let collectedDataUnits = [];
+const lineProcessor = require('readline').createInterface({
+    input: process.stdin,
+    terminal: false
+});
 
-const mathOperationRegistry = new Map([
-    ['+', (valA, valB) => valA + valB],
-    ['-', (valA, valB) => valA - valB],
-    ['*', (valA, valB) => valA * valB],
-    ['/', (valA, valB) => valA / valB],
-]);
+const operationRegistry = {
+    '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
+    '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
+    '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
+    '/': (firstOperand, secondOperand) => firstOperand / secondOperand
+};
 
-function computeLineResult(inputLineText) {
-    const lineComponents = inputLineText.split(" ");
-    
-    const operandOneString = lineComponents[0];
-    const operatorSymbolString = lineComponents[1];
-    const operandTwoString = lineComponents[2];
+function evaluateExpression(expressionString) {
+    const componentArray = expressionString.split(" ");
+    const leftValue = Number(componentArray[0]);
+    const operationSymbol = componentArray[1];
+    const rightValue = Number(componentArray[2]);
 
-    const operandOneValue = Number(operandOneString);
-    const operandTwoValue = Number(operandTwoString);
-
-    if (operatorSymbolString === "?") {
+    if (operationSymbol === "?") {
         return false;
     }
 
-    const operationFunction = mathOperationRegistry.get(operatorSymbolString);
-
+    const operationFunction = operationRegistry[operationSymbol];
     if (operationFunction) {
-        return operationFunction(operandOneValue, operandTwoValue);
-    } else {
-        // If no operator matches (e.g., "1 X 2", "1 2", or empty string),
-        // the original function implicitly returns undefined. We mimic that.
-        return undefined;
+        return operationFunction(leftValue, rightValue);
     }
+    
+    // If operator is not recognized and not '?', original returns undefined.
+    // This path is implicitly handled by not returning anything specific.
 }
 
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (incomingData) => {
-    collectedDataUnits.push(incomingData);
+lineProcessor.on('line', (currentInputLine) => {
+    const computedResult = evaluateExpression(currentInputLine);
+    if (computedResult !== false) {
+        console.log(computedResult);
+    }
 });
-
-process.stdin.on('end', () => {
-    const allInputContent = collectedDataUnits.join('');
-    const individualLines = allInputContent.split("\n");
-
-    individualLines.forEach(currentStatement => {
-        const calculatedOutcome = computeLineResult(currentStatement);
-        if (calculatedOutcome !== false) {
-            console.log(calculatedOutcome);
-        }
-    });
-});
-
-process.stdin.resume();

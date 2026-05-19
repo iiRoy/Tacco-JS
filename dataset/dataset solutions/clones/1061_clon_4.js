@@ -1,79 +1,50 @@
-const dataInputSpecification = { sourcePath: '/dev/stdin' };
+const config = { input: '/dev/stdin', newline: '\n' };
 
-const acquireFileContent = (location) => {
-  try {
-    return require('fs').readFileSync(location, 'utf8');
-  } catch (issue) {
-    console.error(`Input retrieval failure from ${location}: ${issue.message}`);
-    return '';
+const fileSystemModule = require('fs');
+
+let rawInputContent;
+try {
+  rawInputContent = fileSystemModule.readFileSync(config.input, 'utf8');
+} catch (error) {
+  process.exit(1);
+}
+
+const numericalSequence = rawInputContent
+  .split(/\D+/)
+  .filter(Boolean)
+  .map(Number);
+
+const uniqueValues = [...new Set(numericalSequence)].sort((a, b) => a - b);
+const valueToRankMap = new Map();
+uniqueValues.forEach((val, idx) => valueToRankMap.set(val, idx));
+
+const maxRank = uniqueValues.length;
+
+const bitStructure = Array(maxRank + 1).fill(0);
+
+const updateBit = (idx, val) => {
+  for (let k = idx + 1; k <= maxRank; k += k & -k) {
+    bitStructure[k] += val;
   }
 };
 
-const parseNumericalSequence = (textualData) => {
-  const numberMatches = textualData.match(/\d+/g);
-  if (!numberMatches) {
-    return [];
+const queryBit = (idx) => {
+  let currentSum = 0;
+  for (let k = idx + 1; k > 0; k -= k & -k) {
+    currentSum += bitStructure[k];
   }
-  return numberMatches.map(Number);
+  return currentSum;
 };
 
-const performMergeSortAndCountInversions = (initialCollection) => {
+let totalInversions = 0;
 
-  const combineAndTally = (leftArraySegment, rightArraySegment) => {
-    let mergedResult = [];
-    let mergeInversionCounter = 0;
-    let leftPointer = 0;
-    let rightPointer = 0;
+for (let i = 0; i < numericalSequence.length; i++) {
+  const currentNumber = numericalSequence[i];
+  const currentRank = valueToRankMap.get(currentNumber);
 
-    while (leftPointer < leftArraySegment.length && rightPointer < rightArraySegment.length) {
-      if (leftArraySegment[leftPointer] <= rightArraySegment[rightPointer]) {
-        mergedResult.push(leftArraySegment[leftPointer++]);
-      } else {
-        mergedResult.push(rightArraySegment[rightPointer++]);
-        mergeInversionCounter += (leftArraySegment.length - leftPointer);
-      }
-    }
+  totalInversions += i - queryBit(currentRank);
 
-    while (leftPointer < leftArraySegment.length) {
-      mergedResult.push(leftArraySegment[leftPointer++]);
-    }
-    while (rightPointer < rightArraySegment.length) {
-      mergedResult.push(rightArraySegment[rightPointer++]);
-    }
+  updateBit(currentRank, 1);
+}
 
-    return { sortedPartition: mergedResult, inversionsDuringMerge: mergeInversionCounter };
-  };
-
-  const recursivelyProcessPartition = (currentPartition) => {
-    if (currentPartition.length <= 1) {
-      return { finalSortedPartition: currentPartition, totalInversionsAccumulated: 0 };
-    }
-
-    const midPoint = Math.floor(currentPartition.length / 2);
-    const leftHalf = currentPartition.slice(0, midPoint);
-    const rightHalf = currentPartition.slice(midPoint);
-
-    const leftProcessingOutcome = recursivelyProcessPartition(leftHalf);
-    const rightProcessingOutcome = recursivelyProcessPartition(rightHalf);
-
-    const mergeOutcome = combineAndTally(
-      leftProcessingOutcome.finalSortedPartition,
-      rightProcessingOutcome.finalSortedPartition
-    );
-
-    return {
-      finalSortedPartition: mergeOutcome.sortedPartition,
-      totalInversionsAccumulated:
-        leftProcessingOutcome.totalInversionsAccumulated +
-        rightProcessingOutcome.totalInversionsAccumulated +
-        mergeOutcome.inversionsDuringMerge,
-    };
-  };
-
-  return recursivelyProcessPartition(initialCollection);
-};
-
-const rawInputContent = acquireFileContent(dataInputSpecification.sourcePath);
-const numbersToProcess = parseNumericalSequence(rawInputContent);
-const sortingResult = performMergeSortAndCountInversions(numbersToProcess);
-console.log(sortingResult.totalInversionsAccumulated);
+console.log(totalInversions);

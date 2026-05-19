@@ -1,18 +1,22 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-function processInputData(rawData) {
-    const [firstValue, secondValue, thirdValue] = rawData
-        .split('\n')[0]
-        .split(' ')
-        .map(Number);
+function ProcessInput(rawInput) {
+  const [firstDataLine] = rawInput.split("\n");
+  const [paramX, paramY, paramZ] = firstDataLine.split(" ").map(Number);
 
-    const multiplesUpToSecond = Math.floor(secondValue / thirdValue);
-    const multiplesBeforeFirst = Math.floor((firstValue - 1) / thirdValue);
-    
-    const finalCount = multiplesUpToSecond - multiplesBeforeFirst;
+  let resultCount;
 
-    console.log(finalCount);
+  const initialMultiple = Math.ceil(paramX / paramZ) * paramZ;
+  const finalMultiple = Math.floor(paramY / paramZ) * paramZ;
+
+  if (initialMultiple > finalMultiple) {
+    resultCount = 0;
+  } else {
+    resultCount = (finalMultiple - initialMultiple) / paramZ + 1;
+  }
+
+  console.log(resultCount);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

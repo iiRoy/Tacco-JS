@@ -1,19 +1,16 @@
-const calculateValue = (sourceData) => {
-    const numericalComponents = sourceData.split(' ').map(str => Number(str));
+function Main(input) {
+    const numericTokens = input.split(" ").map(token => parseInt(token, 10));
+    
+    const operationRegistry = {
+        true: (operandA, operandB) => operandA + operandB,
+        false: (operandA, operandB) => operandA - operandB
+    };
+    
+    const conditionMet = (numericTokens[1] % numericTokens[0] === 0);
+    
+    const finalCalculation = operationRegistry[conditionMet](numericTokens[1], numericTokens[0]);
+    
+    console.log(finalCalculation);
+}
 
-    const primaryNumber = numericalComponents[0];
-    const secondaryNumber = numericalComponents[1];
-
-    const sumRoutine = (base, addition) => base + addition;
-    const differenceRoutine = (base, subtraction) => base - subtraction;
-
-    const selectedRoutine = (secondaryNumber % primaryNumber === 0)
-        ? sumRoutine
-        : differenceRoutine;
-
-    const finalOutcome = selectedRoutine(secondaryNumber, primaryNumber);
-
-    console.log(finalOutcome);
-};
-
-calculateValue(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

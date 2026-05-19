@@ -1,26 +1,27 @@
-let acquiredContent = "";
-
-const dataReceiver = (portion) => {
-    acquiredContent += portion;
-};
-
-const completionHandler = () => {
-    const contentLines = acquiredContent.split("\n");
-    const numericalStrings = contentLines[1].split(" ");
-
-    const numericValues = numericalStrings.map(val => +val);
-
-    const analysisResult = numericValues.reduce((accumulator, currentValue) => {
-        accumulator.minVal = Math.min(accumulator.minVal, currentValue);
-        accumulator.maxVal = Math.max(accumulator.maxVal, currentValue);
-        accumulator.totalSum += currentValue;
-        return accumulator;
-    }, { minVal: Infinity, maxVal: -Infinity, totalSum: 0 });
-
-    console.log(`${analysisResult.minVal} ${analysisResult.maxVal} ${analysisResult.totalSum}`);
-};
-
+var dataBuffer = "";
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
-process.stdin.on('data', dataReceiver);
-process.stdin.on('end', completionHandler);
+process.stdin.on('data', function(segment) {
+  dataBuffer += segment;
+});
+
+process.stdin.on('end', function() {
+  var lines = dataBuffer.split("\n");
+  var numericStrings = lines[1].split(" ");
+
+  let initialAggregates = {
+    minimumValue: Infinity,
+    maximumValue: -Infinity,
+    cumulativeSum: 0
+  };
+
+  let finalAggregates = numericStrings.reduce((currentAggregates, stringElement) => {
+    let parsedNumber = Number(stringElement);
+    currentAggregates.minimumValue = Math.min(currentAggregates.minimumValue, parsedNumber);
+    currentAggregates.maximumValue = Math.max(currentAggregates.maximumValue, parsedNumber);
+    currentAggregates.cumulativeSum += parsedNumber;
+    return currentAggregates;
+  }, initialAggregates);
+
+  console.log(finalAggregates.minimumValue + " " + finalAggregates.maximumValue + " " + finalAggregates.cumulativeSum);
+});

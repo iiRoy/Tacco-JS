@@ -1,154 +1,220 @@
-let inputHandler = require('readline').establishInterface({
-  dataInput: process.stdin,
-  dataOutput: process.stdout
+// This section handles input processing and utility functions.
+// It's generally boilerplate for competitive programming.
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-let dataStream;
-let capturedLines = [];
+var dataProcessor; // Global object for input handling
+var inputLines = []; // Array to store all input lines
 
-// Event listener for each line received
-inputHandler.attachEvent('receivedLine', function(currentInput){
-  capturedLines.push(currentInput);
+// Event listener for each line of input
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-// Event listener for when the input stream closes
-inputHandler.attachEvent('streamClosed', function(){
-  dataStream = initializeStream(capturedLines);
-  console.warn('\n↑ Input processed ↓ Output generated'); // Changed console method and message
-  executePrimaryLogic();
+// Event listener for when input stream closes
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines); // Initialize the input handler
+  console.error('\n↑入力 ↓出力'); // Debug message for clarity
+  executePrimaryLogic(); // Start the main program logic
 });
 
 /**
- * Creates a deep clone of an object. Handles Sets specifically.
- * @param {object} sourceObject - The object to clone.
- * @returns {object} A deep copy of the source object.
+ * Creates a deep clone of an object or Set.
+ * @param {any} originalObject The object to clone.
+ * @returns {any} A deep clone of the object.
  */
-function duplicateObject(sourceObject) {
-  return (sourceObject instanceof Set) ? new Set(Array.fromIterable(sourceObject)) : JSON.reconstruct(JSON.serialize(sourceObject));
+function duplicateObject(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Helper functions to fetch different data types from the input stream
-function retrieveInteger(){ return dataTransform(fetchNextItem(), 1); }
-function retrieveStringArray(){ return dataTransform(fetchNextItem(), 2); }
-function retrieveIntegerArray(){ return dataTransform(fetchNextItem(), 4); }
-function retrieveCharacterArray(){ return dataTransform(fetchNextItem(), 6); }
-
-function fetchNextItem(){ return dataStream.fetchNextItem(); }
-function hasMoreItems(){ return dataStream.hasMoreItems(); }
+/**
+ * Retrieves the next integer from the input.
+ * @returns {number} The next integer.
+ */
+function retrieveInteger() {
+  return convertInput(getNextItem(), 0x1);
+}
 
 /**
- * Initializes the input stream object for sequential access.
- * @param {string[]} sourceData - An array of strings representing the input lines.
+ * Retrieves the next line as an array of strings (space-separated).
+ * @returns {string[]} An array of strings.
+ */
+function retrieveStringArray() {
+  return convertInput(getNextItem(), 0x2);
+}
+
+/**
+ * Retrieves the next line as an array of integers (space-separated).
+ * @returns {number[]} An array of integers.
+ */
+function retrieveIntegerArray() {
+  return convertInput(getNextItem(), 0x4);
+}
+
+/**
+ * Retrieves the next line as an array of characters.
+ * @returns {string[]} An array of characters.
+ */
+function retrieveCharacterArray() {
+  return convertInput(getNextItem(), 0x6);
+}
+
+/**
+ * Fetches the next raw item from the input stream.
+ * @returns {string} The next input line.
+ */
+function getNextItem() {
+  return dataProcessor.fetchNext();
+}
+
+/**
+ * Checks if there are more items in the input stream.
+ * @returns {boolean} True if more items are available, false otherwise.
+ */
+function hasMoreItems() {
+  return dataProcessor.checkAvailability();
+}
+
+/**
+ * Initializes the input handler object.
+ * @param {string[]} incomingLines An array of input strings.
  * @returns {object} An object with methods to navigate the input.
  */
-function initializeStream(sourceData){
+function initializeInputHandler(incomingLines) {
   return {
-    dataCollection : sourceData,
-    currentIndex : 0,
-    maximumItems : sourceData.length,
+    sourceData: incomingLines,
+    currentPosition: 0x0,
+    maximumLength: incomingLines.length,
 
-    hasMoreItems : function(){
-      return (this.currentIndex < this.maximumItems);
+    /**
+     * Checks if there are more lines to process.
+     * @returns {boolean} True if more lines exist.
+     */
+    checkAvailability: function() {
+      return (this.currentPosition < this.maximumLength);
     },
 
-    fetchNextItem : function(){
-      if (this.hasMoreItems()) {
-        return this.dataCollection[this.currentIndex++];
+    /**
+     * Retrieves the next line and advances the position.
+     * @returns {string} The next line.
+     * @throws {string} If no more input is available.
+     */
+    fetchNext: function() {
+      if (this.checkAvailability()) {
+        return this.sourceData[this.currentPosition++];
       } else {
-        throw new Error('InputOutOfBoundsException: No further input available'); // Changed error message
+        throw 'InputExhaustedException: No further input available for processing.';
       }
     }
   };
 }
 
 /**
- * Logs a message to the console.
- * @param {string} messageContent - The content to display.
+ * Displays a message to standard output.
+ * @param {any} message The message to display.
  */
-function displayOutput(messageContent){
-  console.log(messageContent);
+function displayOutput(message) {
+  console.log(message);
 }
 
 /**
- * Logs debug information to the error stream.
- * @param {any} debugData - The data to inspect and log.
+ * Logs a debug message to standard error.
+ * @param {any} debugInfo The information to log.
  */
-function logDebugInfo(debugData){
-  console.error('Debug Trace: ' + require('util').format(debugData, false, null)); // Changed method and message
+function logDebugMessage(debugInfo) {
+  console.error('DEBUG_INFO: ' + require('util').inspect(debugInfo, !1, null));
 }
 
 /**
- * Performs various transformations on input data based on a specified type.
- * @param {string|string[]} inputValue - The input value to transform.
- * @param {number} transformType - The type of transformation to apply.
- * @returns {any} The transformed value.
+ * Converts input based on a specified type.
+ * @param {any} inputItem The item to convert.
+ * @param {number} conversionType The type of conversion to perform.
+ * @returns {any} The converted item.
  */
-function dataTransform(inputValue, transformType){
+function convertInput(inputItem, conversionType) {
   try {
-    switch (transformType) {
-      case 1:
-        return Number.parseInt(inputValue);
-      case 2:
-        return inputValue.divide(' ');
-      case 4:
-        return inputValue.divide(' ').transform(val => Number.parseInt(val)); // Using arrow function for map
-      case 6:
-        return inputValue.divide('');
-      case 7:
-        return inputValue.divide('').transform(Number);
-      case 8:
-        return inputValue.concatenate(' ');
-      case 9:
-        return inputValue.concatenate('\n');
-      case 0:
-        return inputValue.concatenate('');
+    switch (conversionType) {
+      case 0x1:
+        return parseInt(inputItem);
+      case 0x2:
+        return inputItem.split(' ');
+      case 0x4:
+        return inputItem.split(' ').map(Number);
+      case 0x6:
+        return inputItem.split('');
+      case 0x7:
+        return inputItem.split('').map(Number);
+      case 0x8:
+        return inputItem.join(' ');
+      case 0x9:
+        return inputItem.join('\n');
+      case 0x0:
+        return inputItem.join('');
       default:
-        return inputValue; // Fallback to original value
+        return inputItem;
     }
-  } catch (errorDetails) {
-    return inputValue; // Return original value on error
+  } catch (error) {
+    return inputItem; // Return original on error, preserving behavior
   }
 }
 
-// Main execution block starts here.
-function executePrimaryLogic() {
-  const elementCount = retrieveInteger(); // Get the number of elements
-  let numericalSequence = retrieveIntegerArray(); // Fetch the array of numbers
+// End of utility and input handling section.
+// --------------------------------------------------------------------------
 
-  // Sort the sequence in ascending order
-  numericalSequence.arrangeAscending(function(valA, valB) {
+/**
+ * The primary function containing the core algorithm.
+ * This function processes the input and generates the required output.
+ */
+function executePrimaryLogic() {
+  // Read the number of elements
+  var countElements = retrieveInteger();
+
+  // Read the array of integers
+  var numericSequence = retrieveIntegerArray();
+
+  // Sort the array in ascending order
+  numericSequence.sort(function(valA, valB) {
     return valA - valB;
   });
 
-  // Calculate the initial total magnitude
-  let totalMagnitude = -numericalSequence[0] + numericalSequence[elementCount - 1];
+  // Calculate the initial sum 'totalSum'
+  // This is equivalent to list[N-1] - list[0]
+  var totalSum = -numericSequence[0x0] + numericSequence[countElements - 0x1];
 
-  // Add absolute values of intermediate elements to the total magnitude
-  for (let loopIndex = 1; loopIndex < elementCount - 1; loopIndex++) {
-    totalMagnitude += Math.abs(numericalSequence[loopIndex]);
+  // Iterate through the middle elements (excluding first and last)
+  // and add their absolute values to 'totalSum'
+  for (var idx = 0x1; idx < countElements - 0x1; idx++) {
+    totalSum += Math.abs(numericSequence[idx]);
   }
 
-  displayOutput(totalMagnitude); // Display the calculated total magnitude
+  // Display the calculated total sum
+  displayOutput(totalSum);
 
-  // Prepare an array to store the operations
-  let resultLines = new Array(elementCount - 1);
-  let leftPointer = numericalSequence[0];
-  let rightPointer = numericalSequence[elementCount - 1];
+  // Prepare an array to store the sequence of operations
+  var resultOperations = new Array(countElements - 0x1);
 
-  // Iterate through the middle elements to generate operations
-  for (let loopIndex = 1; loopIndex < elementCount - 1; loopIndex++) {
-    if (numericalSequence[loopIndex] < 0) {
-      resultLines[loopIndex - 1] = rightPointer + " " + numericalSequence[loopIndex];
-      rightPointer -= numericalSequence[loopIndex];
+  // Initialize left and right accumulators
+  var leftAccumulator = numericSequence[0x0];
+  var rightAccumulator = numericSequence[countElements - 0x1];
+
+  // Generate the operations sequence
+  for (var idx = 0x1; idx < countElements - 0x1; idx++) {
+    if (numericSequence[idx] < 0x0) {
+      // If the current number is negative, operate with right accumulator
+      resultOperations[idx - 0x1] = rightAccumulator + " " + numericSequence[idx];
+      rightAccumulator -= numericSequence[idx]; // R = R - list[i]
     } else {
-      resultLines[loopIndex - 1] = leftPointer + " " + numericalSequence[loopIndex];
-      leftPointer -= numericalSequence[loopIndex];
+      // If the current number is non-negative, operate with left accumulator
+      resultOperations[idx - 0x1] = leftAccumulator + " " + numericSequence[idx];
+      leftAccumulator -= numericSequence[idx]; // L = L - list[i]
     }
   }
 
-  // Add the final operation
-  resultLines[resultLines.length - 1] = rightPointer + " " + leftPointer;
+  // Add the final operation to the result array
+  resultOperations[resultOperations.length - 0x1] = rightAccumulator + " " + leftAccumulator;
 
-  // Display the operations, joined by newlines
-  displayOutput(dataTransform(resultLines, 9));
+  // Display the sequence of operations, joined by newlines
+  displayOutput(convertInput(resultOperations, 0x9));
 }

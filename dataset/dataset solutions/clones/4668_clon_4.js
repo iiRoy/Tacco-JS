@@ -1,29 +1,25 @@
-const fileSystem = require('fs');
-const dataStream = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-const sourceNumber = parseInt(dataStream.shift(), 10);
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const targetNumber = Number(inputLines.shift());
 
-const getIntegerFactors = (num) => {
-    const potentialFactors = Array.from({ length: Math.floor(Math.sqrt(num)) }, (_, idx) => idx + 1);
-    const uniqueFactors = potentialFactors.reduce((acc, current) => {
-        if (num % current === 0) {
-            acc.add(current);
-            acc.add(num / current);
-        }
-        return acc;
-    }, new Set());
-    return Array.from(uniqueFactors).sort((a, b) => a - b);
+const getDigitCount = (value) => Math.floor(Math.log10(value)) + 1;
+
+const determineDivisors = (num) => {
+  const factorSet = new Set();
+  for (let currentFactor = 1; currentFactor * currentFactor <= num; currentFactor++) {
+    if (num % currentFactor === 0) {
+      factorSet.add(currentFactor);
+      factorSet.add(num / currentFactor);
+    }
+  }
+  return Array.from(factorSet).sort((val1, val2) => val1 - val2);
 };
 
-const allDivisors = getIntegerFactors(sourceNumber);
+const factorList = determineDivisors(targetNumber);
 
-const initialDigitCount = String(sourceNumber).length;
+const minimumDigits = factorList.reduce((currentMin, factorB) => {
+  const factorA = targetNumber / factorB;
+  const currentMaxDigits = Math.max(getDigitCount(factorA), getDigitCount(factorB));
+  return Math.min(currentMin, currentMaxDigits);
+}, getDigitCount(targetNumber));
 
-const finalResult = allDivisors.reduce((currentMin, factorA) => {
-    const factorB = sourceNumber / factorA;
-    const digitsA = String(factorA).length;
-    const digitsB = String(factorB).length;
-    const currentMaxDigits = Math.max(digitsA, digitsB);
-    return Math.min(currentMin, currentMaxDigits);
-}, initialDigitCount);
-
-console.log(finalResult);
+console.log(minimumDigits);

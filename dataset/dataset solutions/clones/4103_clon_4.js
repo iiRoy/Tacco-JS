@@ -1,36 +1,23 @@
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const encodingFormat = "utf8";
+function processInputData(rawData) {
+  const segments = rawData.split("/n");
+  console.log(segments);
 
-function executeComputation(rawData) {
-    let parsedLines = [];
-    let currentLineBuffer = "";
-    for (let linePointer = 0; linePointer < rawData.length; linePointer++) {
-        if (rawData[linePointer] === "\n") {
-            parsedLines.push(currentLineBuffer);
-            currentLineBuffer = "";
-        } else {
-            currentLineBuffer += rawData[linePointer];
-        }
+  const firstElement = segments[0];
+  const numericValues = segments.reduce((accumulator, currentSegment, index, arrayReference) => {
+    if (index > 0 && index < arrayReference.length - 1) {
+      accumulator.push(currentSegment);
     }
-    parsedLines.push(currentLineBuffer);
+    return accumulator;
+  }, []);
 
-    let significantLines = [];
-    for (let j = 1; j < parsedLines.length - 1; j++) {
-        significantLines.push(parsedLines[j]);
+  const uniqueTracker = {};
+  for (let i = 0; i < numericValues.length; i++) {
+    const item = numericValues[i];
+    if (!(item in uniqueTracker)) {
+      uniqueTracker[item] = true;
     }
-
-    let encounteredItems = {};
-    let distinctQuantity = 0;
-
-    for (let itemIdentifier of significantLines) {
-        if (!encounteredItems[itemIdentifier]) {
-            encounteredItems[itemIdentifier] = true;
-            distinctQuantity++;
-        }
-    }
-
-    console.log(distinctQuantity);
+  }
+  console.log(Object.keys(uniqueTracker).length);
 }
 
-executeComputation(fileSystemModule.readFileSync(standardInputPath, encodingFormat));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,33 +1,28 @@
-const processSymbolSequence = (textSource) => {
-    const contentSegments = textSource.split('\n');
-    const primarySequence = contentSegments[1];
+function processInput(sourceText) {
+    const contentLines = sourceText.split("\n");
+    const targetSequence = contentLines[1];
 
-    const symbolUnits = primarySequence.split('');
+    let requiredPrefixCount = 0;
+    let currentBalance = 0;
 
-    const balanceState = symbolUnits.reduce((tracker, currentSymbol) => {
-        if (currentSymbol === '(') {
-            tracker.activeOpenCount++;
-        } else if (currentSymbol === ')') {
-            if (tracker.activeOpenCount > 0) {
-                tracker.activeOpenCount--;
+    for (const char of targetSequence) {
+        if (char === '(') {
+            currentBalance++;
+        } else if (char === ')') {
+            if (currentBalance > 0) {
+                currentBalance--;
             } else {
-                tracker.unmatchedCloseCount++;
+                requiredPrefixCount++;
             }
         }
-        return tracker;
-    }, { activeOpenCount: 0, unmatchedCloseCount: 0 });
+    }
 
-    const requiredLefts = balanceState.unmatchedCloseCount;
-    const requiredRights = balanceState.activeOpenCount;
+    const requiredSuffixCount = currentBalance;
 
-    const prefixSegment = '('.repeat(requiredLefts);
-    const suffixSegment = ')'.repeat(requiredRights);
+    const generatedPrefix = '('.repeat(requiredPrefixCount);
+    const generatedSuffix = ')'.repeat(requiredSuffixCount);
 
-    return `${prefixSegment}${primarySequence}${suffixSegment}`;
-};
+    console.log(generatedPrefix + targetSequence + generatedSuffix);
+}
 
-const rawInputPayload = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const computedOutput = processSymbolSequence(rawInputPayload);
-
-console.log(computedOutput);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

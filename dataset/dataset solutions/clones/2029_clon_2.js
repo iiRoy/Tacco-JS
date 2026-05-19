@@ -1,65 +1,47 @@
-"use strict"; // Enable strict mode for cleaner code
+"use strict";
 
-/**
- * Orchestrates the processing of graph-related data from standard input.
- * @param {string[]} rawInputLines - An array of strings representing lines of input.
- */
-function processGraphData( rawInputLines )
-{
-  // Parse the first line of input to extract key numerical parameters.
-  // It expects space-separated integers for vertex count and special node identifiers.
-  const numericParameters = rawInputLines[0]
-                                  .trim()
-                                  .split(" ")
-                                  .map( ( itemString ) => parseInt( itemString, 10 ) );
+// This function processes the input data to calculate path counts in a graph.
+function processInput(rawData) {
+  // Parse the initial line of input, splitting by space and converting to integers.
+  const parsedNumbers = rawData[0].trim().split(" ").map(currentVal => parseInt(currentVal, 10));
 
-  const vertexCount = numericParameters[0]; // Total number of vertices in the graph
-  const specialNodeA = numericParameters[1]; // Identifier for the first special node
-  const specialNodeB = numericParameters[2]; // Identifier for the second special node
+  // Extract the number of nodes (N), and the two special nodes (X and Y).
+  const nodeCount = parsedNumbers[0];
+  const specialNodeA = parsedNumbers[1];
+  const specialNodeB = parsedNumbers[2];
 
-  // Initialize an array to store counts for each possible path length.
-  // The maximum possible distance is vertexCount - 1.
-  let pathLengthCounts = [];
-  for ( let currentBinIndex = 0;
-        currentBinIndex < vertexCount - 1;
-        currentBinIndex++ )
-  {
-    pathLengthCounts[currentBinIndex] = 0;
+  // Initialize an array to store the frequency of each path length.
+  // The maximum possible distance is N-1, so we need N-1 slots (0 to N-2).
+  let pathCounts = [];
+  for (let idx = 0; idx < nodeCount - 1; idx++) {
+    pathCounts[idx] = 0; // Set initial count for each distance to zero.
   }
 
-  // Calculate shortest paths between all unique pairs of nodes.
-  // Nodes are 1-indexed.
-  for ( let nodeOne = 1; nodeOne <= vertexCount; nodeOne++ )
-  {
-    for ( let nodeTwo = nodeOne + 1; nodeTwo <= vertexCount; nodeTwo++ )
-    {
-      // Calculate the distance:
-      // Option 1: Direct path (absolute difference).
-      // Option 2: Path via special nodes A and B.
-      //   - Distance from nodeOne to A: |specialNodeA - nodeOne|
-      //   - Distance from A to B: 1 (as they are connected)
-      //   - Distance from B to nodeTwo: |specialNodeB - nodeTwo|
-      // The overall path is (nodeOne -> A -> B -> nodeTwo)
-      let calculatedDistance = Math.min(
-        Math.abs(nodeTwo - nodeOne),
-        Math.abs(specialNodeA - nodeOne) + Math.abs(specialNodeB - nodeTwo) + 1
-      );
-      // Increment the count for the calculated distance.
-      // Adjust by -1 because array indices are 0-based, but distances are 1-based.
-      pathLengthCounts[calculatedDistance - 1]++;
+  // Iterate through all possible pairs of distinct nodes (i, j) where i < j.
+  for (let startNode = 1; startNode <= nodeCount; startNode++) {
+    for (let endNode = startNode + 1; endNode <= nodeCount; endNode++) {
+      // Calculate the standard Euclidean distance between nodes.
+      let directDistance = Math.abs(endNode - startNode);
+
+      // Calculate the alternative path distance using the special nodes X and Y.
+      // This involves going from 'startNode' to 'specialNodeA', then to 'specialNodeB', then to 'endNode'.
+      // The '+1' accounts for the edge between specialNodeA and specialNodeB.
+      let alternativeDistance = Math.abs(specialNodeA - startNode) + Math.abs(specialNodeB - endNode) + 1;
+
+      // Determine the shortest path length between the current pair of nodes.
+      let calculatedPathLength = Math.min(directDistance, alternativeDistance);
+
+      // Increment the counter for this specific path length.
+      // Distances are 1-indexed, array is 0-indexed, so subtract 1.
+      pathCounts[calculatedPathLength - 1]++;
     }
   }
 
-  // Output the frequency of each path length.
-  for ( let currentBinIndex = 0;
-        currentBinIndex < vertexCount - 1;
-        currentBinIndex++ )
-  {
-    console.log(pathLengthCounts[currentBinIndex]);
+  // Output the frequency of each path length from 1 to N-1.
+  for (let outputIdx = 0; outputIdx < nodeCount - 1; outputIdx++) {
+    console.log(pathCounts[outputIdx]);
   }
 }
 
-// Read input from standard input, process it, and execute the main logic.
-processGraphData(
-  require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n")
-);
+// Read input from standard input, process it, and pass it to the main function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

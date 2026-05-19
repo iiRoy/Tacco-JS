@@ -1,168 +1,199 @@
-const createInputProcessor = (inputSource) => {
-    let currentInputLines = inputSource.trim().split('\n');
-    let lineCursor = 0;
-    let currentLineTokensReversed = null;
+class InputProcessor {
+    constructor(sourceText) {
+        this.lineBuffer = sourceText.trim().split('\n');
+        this.currentLinePointer = 0;
+        this.tokenCache = [];
+    }
 
-    const ensureActiveLineTokens = () => {
-        if (currentLineTokensReversed === null || currentLineTokensReversed.length === 0) {
-            if (lineCursor >= currentInputLines.length) {
-                return false;
-            }
-            currentLineTokensReversed = currentInputLines[lineCursor].split(' ').reverse();
+    _refillTokens() {
+        if (this.tokenCache.length === 0 && this.currentLinePointer < this.lineBuffer.length) {
+            this.tokenCache = this.lineBuffer[this.currentLinePointer++].split(' ');
         }
-        return true;
-    };
+    }
 
-    const advanceLineCursor = () => {
-        lineCursor++;
-        currentLineTokensReversed = null; // Invalidate cached tokens for the previous line
-    };
-
-    const extractSingleValue = (stringFormat) => {
-        if (!ensureActiveLineTokens()) {
+    // Corresponds to original GET.a
+    fetchSingle(asString = false) {
+        this._refillTokens();
+        if (this.tokenCache.length === 0) {
             return undefined;
         }
-        const extractedValue = currentLineTokensReversed.pop();
-        if (currentLineTokensReversed.length === 0) {
-            advanceLineCursor();
-        }
-        return stringFormat ? extractedValue : Number(extractedValue);
-    };
-
-    const extractWholeLine = (stringArrayFormat) => {
-        if (lineCursor >= currentInputLines.length) return undefined;
-        const lineContent = currentInputLines[lineCursor];
-        advanceLineCursor();
-        const tokens = lineContent.split(' ');
-        return stringArrayFormat ? tokens : tokens.map(Number);
-    };
-
-    const extractMultiLineMatrix = (count, stringMatrixFormat) => {
-        const resultMatrix = [];
-        for (let i = 0; i < count; i++) {
-            if (lineCursor >= currentInputLines.length) break;
-            const lineContent = currentInputLines[lineCursor];
-            advanceLineCursor();
-            const tokens = lineContent.split(' ');
-            resultMatrix.push(stringMatrixFormat ? tokens : tokens.map(Number));
-        }
-        return resultMatrix;
-    };
-
-    const extractMultiLineVector = (count, stringVectorFormat) => {
-        const resultVector = [];
-        for (let i = 0; i < count; i++) {
-            if (lineCursor >= currentInputLines.length) break;
-            const lineContent = currentInputLines[lineCursor];
-            advanceLineCursor();
-            resultVector.push(stringVectorFormat ? lineContent : Number(lineContent));
-        }
-        return resultVector;
-    };
-
-    return {
-        value: extractSingleValue,
-        line: extractWholeLine,
-        matrix: extractMultiLineMatrix,
-        vector: extractMultiLineVector,
-    };
-};
-
-const locateFirstGreaterOrEqual = (dataCollection, startIndex, endIndex, targetValue) => {
-    if (startIndex >= endIndex) {
-        return dataCollection[startIndex] < targetValue ? endIndex : startIndex;
-    }
-    const midPoint = Math.floor((startIndex + endIndex) / 2);
-    if (dataCollection[midPoint] < targetValue) {
-        return locateFirstGreaterOrEqual(dataCollection, midPoint + 1, endIndex, targetValue);
-    } else {
-        return locateFirstGreaterOrEqual(dataCollection, startIndex, midPoint, targetValue);
-    }
-};
-
-class IntervalDataStructure {
-    constructor(totalElements) {
-        let currentPowerOfTwo = 1;
-        while (currentPowerOfTwo < totalElements) {
-            currentPowerOfTwo *= 2;
-        }
-        this._storageArray = Array(2 * currentPowerOfTwo - 1).fill(Infinity);
-        this._leafCapacity = currentPowerOfTwo;
+        const item = this.tokenCache.shift();
+        return asString ? item : Number(item);
     }
 
-    queryAtPoint(pointIndex) {
-        let currentArrayIndex = pointIndex + this._leafCapacity - 1;
-        let minimumValueFound = Infinity;
-
-        const traverseUpwards = (idx, currentMin) => {
-            if (idx < 0) return currentMin;
-            const nodeValue = this._storageArray[idx];
-            const newMin = Math.min(currentMin, nodeValue);
-            return traverseUpwards(Math.floor((idx - 1) / 2), newMin);
-        };
-
-        minimumValueFound = traverseUpwards(currentArrayIndex, Infinity);
-
-        return minimumValueFound === Infinity ? -1 : minimumValueFound;
+    // Corresponds to original GET.l
+    fetchLine(asStrings = false) {
+        if (this.currentLinePointer >= this.lineBuffer.length) {
+            return undefined;
+        }
+        const lineItems = this.lineBuffer[this.currentLinePointer++].split(' ');
+        return asStrings ? lineItems : lineItems.map(Number);
     }
 
-    assignRangeValue(rangeBeginning, rangeEnding, assignedValue) {
-        const recursiveAssignment = (queryStart, queryEnd, nodeStart, nodeEnd, nodeIdx) => {
-            if (queryStart === nodeStart && queryEnd === nodeEnd) {
-                this._storageArray[nodeIdx] = assignedValue;
-                return;
-            }
+    // Corresponds to original GET.m
+    fetchMatrix(rowsToRead, asStrings = false) {
+        const collectedRows = [];
+        for (let i = 0; i < rowsToRead; i++) {
+            collectedRows.push(this.fetchLine(asStrings));
+        }
+        return collectedRows;
+    }
 
-            const midNodePoint = Math.floor((nodeStart + nodeEnd) / 2);
-
-            const leftChildIndex = 2 * nodeIdx + 1;
-            const rightChildIndex = 2 * nodeIdx + 2;
-
-            if (queryEnd <= midNodePoint) {
-                recursiveAssignment(queryStart, queryEnd, nodeStart, midNodePoint, leftChildIndex);
-            } else if (queryStart >= midNodePoint) {
-                recursiveAssignment(queryStart, queryEnd, midNodePoint, nodeEnd, rightChildIndex);
-            } else {
-                recursiveAssignment(queryStart, midNodePoint, nodeStart, midNodePoint, leftChildIndex);
-                recursiveAssignment(midNodePoint, queryEnd, midNodePoint, nodeEnd, rightChildIndex);
-            }
-        };
-        recursiveAssignment(rangeBeginning, rangeEnding, 0, this._leafCapacity, 0);
+    // Corresponds to original GET.r
+    fetchVector(elementsToRead, asStrings = false) {
+        const collectedElements = [];
+        for (let i = 0; i < elementsToRead; i++) {
+            const elementLine = this.lineBuffer[this.currentLinePointer++];
+            collectedElements.push(asStrings ? elementLine : Number(elementLine));
+        }
+        return collectedElements;
     }
 }
 
-const performCalculations = () => {
-    const inputReader = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Reimplementation of lower_bound with a different iterative structure
+function findFirstGreaterOrEqual(sortedArr, searchStart, searchEnd, valueToFind) {
+    let lowIndex = searchStart;
+    let highIndex = searchEnd; // Exclusive upper bound
 
-    const N_val = inputReader.value();
-    const Q_val = inputReader.value();
+    while (lowIndex < highIndex) {
+        const midIndex = Math.floor((lowIndex + highIndex) / 2);
+        if (sortedArr[midIndex] < valueToFind) {
+            lowIndex = midIndex + 1;
+        } else {
+            highIndex = midIndex;
+        }
+    }
+    return lowIndex;
+}
 
-    const dataRows = inputReader.matrix(N_val);
-    const queryPoints = inputReader.vector(Q_val);
+// Segment Tree for Range Assignment and Point Query (Lazy Propagation)
+class AssignmentSegmentTree {
+    constructor(capacity) {
+        this.treeCapacity = capacity;
+        this.treeNodes = new Array(4 * capacity).fill(Infinity); // Stores assigned value for range
+        this.lazyValues = new Array(4 * capacity).fill(null);    // Stores pending assignments
+        this._initializeTree(1, 0, this.treeCapacity - 1);
+    }
 
-    const treeStructure = new IntervalDataStructure(Q_val);
+    _initializeTree(nodeIndex, rangeStart, rangeEnd) {
+        if (rangeStart === rangeEnd) {
+            // Leaf node, initial value is Infinity
+            return;
+        }
+        const midPoint = Math.floor((rangeStart + rangeEnd) / 2);
+        this._initializeTree(2 * nodeIndex, rangeStart, midPoint);
+        this._initializeTree(2 * nodeIndex + 1, midPoint + 1, rangeEnd);
+    }
 
-    const descendingThirdElementSort = (entryA, entryB) => entryB[2] - entryA[2];
-    dataRows.sort(descendingThirdElementSort);
+    _propagateLazy(nodeIndex) {
+        if (this.lazyValues[nodeIndex] !== null) {
+            // Apply lazy value to children
+            this.treeNodes[2 * nodeIndex] = this.lazyValues[nodeIndex];
+            this.lazyValues[2 * nodeIndex] = this.lazyValues[nodeIndex];
 
-    dataRows.forEach(currentDataEntry => {
-        const [firstElem, secondElem, thirdElem] = currentDataEntry;
+            this.treeNodes[2 * nodeIndex + 1] = this.lazyValues[nodeIndex];
+            this.lazyValues[2 * nodeIndex + 1] = this.lazyValues[nodeIndex];
 
-        if (secondElem - thirdElem - 1 < queryPoints[0]) {
+            // Clear lazy value for current node
+            this.lazyValues[nodeIndex] = null;
+        }
+    }
+
+    // Corresponds to original segTree.prototype.update
+    applyRangeAssignment(queryStart, queryEndExclusive, assignmentValue) {
+        // Adjust queryEnd to be inclusive for internal _update method
+        this._updateSegment(1, 0, this.treeCapacity - 1, queryStart, queryEndExclusive - 1, assignmentValue);
+    }
+
+    _updateSegment(nodeIndex, currentRangeStart, currentRangeEnd, queryStart, queryEnd, assignmentValue) {
+        // If current node's range is outside the query range
+        if (currentRangeStart > queryEnd || currentRangeEnd < queryStart) {
             return;
         }
 
-        const rangeStartLimit = locateFirstGreaterOrEqual(queryPoints, 0, Q_val, firstElem - thirdElem);
-        const rangeEndLimit = locateFirstGreaterOrEqual(queryPoints, rangeStartLimit, Q_val, secondElem - thirdElem);
+        // If current node's range is fully within the query range
+        if (queryStart <= currentRangeStart && currentRangeEnd <= queryEnd) {
+            this.treeNodes[nodeIndex] = assignmentValue;
+            this.lazyValues[nodeIndex] = assignmentValue;
+            return;
+        }
 
-        treeStructure.assignRangeValue(rangeStartLimit, rangeEndLimit, thirdElem);
-    });
+        // Partially overlapping, propagate lazy values and recurse
+        this._propagateLazy(nodeIndex);
+        const midPoint = Math.floor((currentRangeStart + currentRangeEnd) / 2);
+        this._updateSegment(2 * nodeIndex, currentRangeStart, midPoint, queryStart, queryEnd, assignmentValue);
+        this._updateSegment(2 * nodeIndex + 1, midPoint + 1, currentRangeEnd, queryStart, queryEnd, assignmentValue);
+    }
 
-    const finalOutput = Array.from({ length: Q_val }, (_, index) =>
-        treeStructure.queryAtPoint(index)
-    );
+    // Corresponds to original segTree.prototype.get
+    retrievePointAssignment(pointIndex) {
+        const result = this._querySegment(1, 0, this.treeCapacity - 1, pointIndex);
+        return result === Infinity ? -1 : result;
+    }
 
-    return finalOutput.join("\n");
-};
+    _querySegment(nodeIndex, currentRangeStart, currentRangeEnd, pointIndex) {
+        // If current node's range is outside the point index
+        if (currentRangeStart > pointIndex || currentRangeEnd < pointIndex) {
+            return Infinity;
+        }
 
-console.log(performCalculations());
+        // If current node is a leaf node
+        if (currentRangeStart === currentRangeEnd) {
+            return this.treeNodes[nodeIndex];
+        }
+
+        // Propagate lazy value before querying children
+        this._propagateLazy(nodeIndex);
+
+        const midPoint = Math.floor((currentRangeStart + currentRangeEnd) / 2);
+        if (pointIndex <= midPoint) {
+            return this._querySegment(2 * nodeIndex, currentRangeStart, midPoint, pointIndex);
+        } else {
+            return this._querySegment(2 * nodeIndex + 1, midPoint + 1, currentRangeEnd, pointIndex);
+        }
+    }
+}
+
+function executeProblemLogic() {
+    const dataReader = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    const totalSegments = dataReader.fetchSingle();
+    const totalQueries = dataReader.fetchSingle();
+    const segmentDetails = dataReader.fetchMatrix(totalSegments);
+    const queryPoints = dataReader.fetchVector(totalQueries);
+
+    const assignmentTree = new AssignmentSegmentTree(totalQueries);
+
+    // Sort segments by their third element (value) in descending order
+    segmentDetails.sort((detailA, detailB) => detailB[2] - detailA[2]);
+
+    for (let i = 0; i < totalSegments; i++) {
+        const currentDetail = segmentDetails[i];
+        const detailStart = currentDetail[0];
+        const detailEnd = currentDetail[1];
+        const detailValue = currentDetail[2];
+
+        // Skip condition, uses the first query point
+        if (detailEnd - detailValue - 1 < queryPoints[0]) {
+            continue;
+        }
+
+        // Determine the range [leftBound, rightBound) in queryPoints array
+        const leftBound = findFirstGreaterOrEqual(queryPoints, 0, totalQueries, detailStart - detailValue);
+        const rightBound = findFirstGreaterOrEqual(queryPoints, leftBound, totalQueries, detailEnd - detailValue);
+
+        // Apply the assignment to the segment tree if the range is valid
+        if (leftBound < rightBound) {
+            assignmentTree.applyRangeAssignment(leftBound, rightBound, detailValue);
+        }
+    }
+
+    const finalResults = new Array(totalQueries);
+    for (let i = 0; i < totalQueries; i++) {
+        finalResults[i] = assignmentTree.retrievePointAssignment(i);
+    }
+
+    return finalResults.join("\n");
+}
+
+console.log(executeProblemLogic());

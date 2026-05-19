@@ -1,110 +1,88 @@
-class Lexer {
-    #tokenPosition;
-    #initialContent;
-    #tokenArray;
+class InputReader {
+    #tokens;
+    #currentIndex;
 
-    constructor(sourceData) {
-        this.#tokenPosition = 0;
-        this.#initialContent = sourceData;
-        this.#tokenArray = this.#tokenizeSource(sourceData);
+    constructor(sourceText) {
+        this.#tokens = Array.from(sourceText.matchAll(/\S+/g), m => m[0]);
+        this.#currentIndex = 0;
     }
 
-    #tokenizeSource(sourceString) {
-        const normalizedString = sourceString.replace(/[\n\t]+/g, ' ');
-        return normalizedString.split(' ');
-    }
-
-    retrieveToken() {
-        if (this.#tokenPosition >= this.#tokenArray.length) {
-            return null;
+    #retrieveNextToken() {
+        if (this.#currentIndex < this.#tokens.length) {
+            return this.#tokens[this.#currentIndex++];
         }
-        const currentSegment = this.#tokenArray[this.#tokenPosition];
-        this.#tokenPosition++;
-        return currentSegment;
+        return null;
     }
 
-    retrieveInteger() {
-        const segment = this.retrieveToken();
-        return segment !== null ? parseInt(segment, 10) : null;
+    fetchString() {
+        return this.#retrieveNextToken();
     }
 
-    retrieveFloat() {
-        const segment = this.retrieveToken();
-        return segment !== null ? parseFloat(segment) : null;
+    fetchInteger() {
+        const token = this.#retrieveNextToken();
+        return token !== null ? parseInt(token, 10) : null;
     }
 
-    retrieveByteArr() {
-        const segment = this.retrieveToken();
-        if (segment === null) {
-            return null;
-        }
-        // This will throw TypeError if 'segment' is a string, matching original behavior
-        return new Int8Array(segment);
+    fetchDecimal() {
+        const token = this.#retrieveNextToken();
+        return token !== null ? parseFloat(token) : null;
+    }
+
+    fetchOctet() {
+        const token = this.#retrieveNextToken();
+        return token !== null ? new Int8Array(0) : null;
     }
 }
 
-class GraphAnalyzer {
-    #nodePayloads;
-    #nodeConnections;
-    #pathRecords;
-    #processingStack;
+function ProcessGraph(inputSource) {
+    const dataReader = new InputReader(inputSource);
 
-    constructor(dataFeeder) {
-        const nodeTotal = dataFeeder.retrieveInteger();
-        this.#nodePayloads = new Map();
-        for (let idx = 0; idx < nodeTotal; ++idx) {
-            this.#nodePayloads.set(idx + 1, dataFeeder.retrieveInteger());
-        }
-
-        this.#nodeConnections = new Map();
-        for (let idx = 0; idx < nodeTotal - 1; ++idx) {
-            const pointOne = dataFeeder.retrieveInteger();
-            const pointTwo = dataFeeder.retrieveInteger();
-
-            if (!this.#nodeConnections.has(pointOne)) {
-                this.#nodeConnections.set(pointOne, []);
-            }
-            this.#nodeConnections.get(pointOne).push(pointTwo);
-
-            if (!this.#nodeConnections.has(pointTwo)) {
-                this.#nodeConnections.set(pointTwo, []);
-            }
-            this.#nodeConnections.get(pointTwo).push(pointOne);
-        }
-
-        this.#pathRecords = new Map();
-        this.#processingStack = [];
-
-        this.#processingStack.push({ currentElement: 1, originElement: -1 });
-
-        let guardCounter = 10000000;
-        while (this.#processingStack.length > 0 && guardCounter-- > 0) {
-            const { currentElement, originElement } = this.#processingStack.shift();
-            this.#processNode(currentElement, originElement);
-        }
-        // The original Main function contains a 'return;' statement here,
-        // making all subsequent code unreachable.
-        // Therefore, this constructor ends here, replicating the exact functionality.
+    const nodeCount = dataReader.fetchInteger();
+    
+    const nodeValues = new Map(); 
+    for (let i = 0; i < nodeCount; ++i) {
+        nodeValues.set(i + 1, dataReader.fetchInteger());
     }
 
-    #processNode = (currentElement, originElement) => {
-        let currentPathString = this.#pathRecords.has(originElement)
-            ? this.#pathRecords.get(originElement)
-            : "";
+    const adjacencyList = new Map(); 
+    for (let i = 0; i < nodeCount - 1; ++i) {
+        const nodeA = dataReader.fetchInteger();
+        const nodeB = dataReader.fetchInteger();
 
-        currentPathString += (this.#nodePayloads.get(currentElement) + ",");
-        this.#pathRecords.set(currentElement, currentPathString);
+        if (!adjacencyList.has(nodeA)) adjacencyList.set(nodeA, new Set());
+        if (!adjacencyList.has(nodeB)) adjacencyList.set(nodeB, new Set());
 
-        const connectedElements = this.#nodeConnections.get(currentElement);
+        adjacencyList.get(nodeA).add(nodeB);
+        adjacencyList.get(nodeB).add(nodeA);
+    }
+    
+    const pathAccumulators = new Map(); 
+    const traversalQueue = []; 
 
-        if (connectedElements) {
-            for (const nextElement of connectedElements) {
-                if (!this.#pathRecords.has(nextElement)) {
-                    this.#processingStack.push({ currentElement: nextElement, originElement: currentElement });
+    traversalQueue.push([1, 0]); 
+
+    let queueHeadIndex = 0;
+    while (queueHeadIndex < traversalQueue.length) {
+        const [currentNodeIdentifier, parentNodeIdentifier] = traversalQueue[queueHeadIndex++];
+
+        const parentPathSegment = pathAccumulators.has(parentNodeIdentifier) 
+                                ? pathAccumulators.get(parentNodeIdentifier) 
+                                : [];
+
+        const currentPathSegment = [...parentPathSegment, nodeValues.get(currentNodeIdentifier)];
+        pathAccumulators.set(currentNodeIdentifier, currentPathSegment);
+
+        const connectedNodes = adjacencyList.get(currentNodeIdentifier);
+        if (connectedNodes) {
+            for (const connectedNode of connectedNodes) {
+                if (connectedNode !== parentNodeIdentifier && !pathAccumulators.has(connectedNode)) {
+                    traversalQueue.push([connectedNode, currentNodeIdentifier]);
                 }
             }
         }
     }
+    
+    return;
 }
 
-new GraphAnalyzer(new Lexer(require("fs").readFileSync("/dev/stdin", "utf8")));
+ProcessGraph(require("fs").readFileSync("/dev/stdin", "utf8"));

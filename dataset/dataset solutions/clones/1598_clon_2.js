@@ -1,42 +1,40 @@
-function ProcessInputData(rawData) {
- rawData = rawData.split('\n');
-    // The first line of input is typically for N, but not used here.
-    // const Nval = parseInt(rawData[0], 10);
- const charSegments = rawData[1]
-  .split('');
- let matchCount = 0; // Initialize a counter for specific combinations
+function ProcessInput(rawData) {
+  // Divide the incoming string into an array of separate lines.
+  const processedLines = rawData.split("\n");
 
- for (
-  let firstIdx = 0;
-  firstIdx < charSegments.length;
-  firstIdx++
- ) {
-  for (
-   let secondIdx = firstIdx + 1;
-   secondIdx < charSegments.length;
-   secondIdx++
-  ) {
-   for (
-    let thirdIdx = secondIdx + 1;
-    thirdIdx < charSegments.length;
-    thirdIdx++
-   ) {
-    // Check various conditions on the selected character segments
-    if (
-     charSegments[firstIdx] < charSegments[secondIdx] + charSegments[thirdIdx] &&
-     charSegments[secondIdx] < charSegments[firstIdx] + charSegments[thirdIdx] &&
-     charSegments[thirdIdx] < charSegments[firstIdx] + charSegments[secondIdx] &&
-     charSegments[firstIdx] !== charSegments[secondIdx] &&
-     charSegments[secondIdx] !== charSegments[thirdIdx] &&
-     charSegments[firstIdx] !== charSegments[thirdIdx]
-    ) {
-     matchCount++; // Increment if all conditions are met
+  // Take the second line from the input and break it into individual characters.
+  // This sequence of characters will be used for subsequent operations.
+  const elementList = processedLines[1].split("");
+
+  // Initialize a counter to keep track of combinations that fulfill specific criteria.
+  let successfulCombinations = 0;
+
+  // Begin the first loop to select the initial character.
+  for (let firstIndex = 0; firstIndex < elementList.length; firstIndex++) {
+    // Start the second loop, ensuring the second character is distinct and comes after the first.
+    for (let secondIndex = firstIndex + 1; secondIndex < elementList.length; secondIndex++) {
+      // Initiate the third loop, ensuring the third character is distinct and comes after the second.
+      for (let thirdIndex = secondIndex + 1; thirdIndex < elementList.length; thirdIndex++) {
+        // Evaluate if the three chosen characters satisfy the conditions for a "triangle"
+        // (lexicographical string comparison and concatenation) and are all unique.
+        if (
+          elementList[firstIndex] < elementList[secondIndex] + elementList[thirdIndex] &&
+          elementList[secondIndex] < elementList[firstIndex] + elementList[thirdIndex] &&
+          elementList[thirdIndex] < elementList[firstIndex] + elementList[secondIndex] &&
+          elementList[firstIndex] !== elementList[secondIndex] &&
+          elementList[secondIndex] !== elementList[thirdIndex] &&
+          elementList[firstIndex] !== elementList[thirdIndex]
+        ) {
+          // If all conditions are met, increment the counter.
+          successfulCombinations++;
+        }
+      }
     }
-   }
   }
- }
 
- console.log(matchCount); // Output the total count of valid matches
+  // Display the final tally of successful combinations.
+  console.log(successfulCombinations);
 }
 
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Invoke the primary function, providing it with data read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

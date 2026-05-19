@@ -1,184 +1,246 @@
-class InputReader {
-    #sourceLines;
-    #lineCounter;
-    #currentLineTokens;
-    #tokenCounter;
+class InputProcessor {
+    #lineData;
+    #linePointer;
 
-    constructor(initialContent) {
-        this.#sourceLines = initialContent.trim().split('\n');
-        this.#lineCounter = 0;
-        this.#currentLineTokens = [];
-        this.#tokenCounter = 0;
+    constructor(rawText) {
+        this.#lineData = rawText.trim().split('\n');
+        this.#linePointer = 0;
     }
 
-    // Equivalent to GET.a()
-    retrieveItem(asString = false) {
-        if (this.#tokenCounter >= this.#currentLineTokens.length) {
-            if (this.#lineCounter >= this.#sourceLines.length) {
-                return undefined;
-            }
-            this.#currentLineTokens = this.#sourceLines[this.#lineCounter++].split(' ').reverse();
-            this.#tokenCounter = 0;
-        }
-        const itemValue = this.#currentLineTokens[this.#tokenCounter++];
-        return asString ? itemValue : Number(itemValue);
-    }
-
-    // Equivalent to GET.l()
-    readEntireLine(asString = false) {
-        if (this.#lineCounter >= this.#sourceLines.length) {
+    extractToken(asString = false) {
+        if (this.#linePointer >= this.#lineData.length) {
             return undefined;
         }
-        const lineContent = this.#sourceLines[this.#lineCounter++].split(' ');
-        this.#tokenCounter = 0; // Reset token counter if a full line is read
-        return asString ? lineContent : lineContent.map(Number);
-    }
 
-    // Equivalent to GET.m()
-    readMatrix(rows, asString = false) {
-        const resultMatrix = [];
-        for (let i = 0; i < rows; i++) {
-            resultMatrix.push(this.readEntireLine(asString));
+        let currentLine = this.#lineData[this.#linePointer];
+        if (typeof currentLine === 'string') {
+            this.#lineData[this.#linePointer] = currentLine.split(' ').reverse();
+            currentLine = this.#lineData[this.#linePointer];
         }
-        return resultMatrix;
+
+        const token = currentLine.pop();
+        if (currentLine.length === 0) {
+            this.#linePointer++;
+        }
+        return asString ? token : Number(token);
     }
 
-    // Equivalent to GET.r()
-    readVector(count, asString = false) {
-        const resultVector = [];
-        for (let i = 0; i < count; i++) {
-            if (this.#lineCounter >= this.#sourceLines.length) {
+    extractLine(asStrings = false) {
+        if (this.#linePointer >= this.#lineData.length) {
+            return [];
+        }
+        const lineContent = this.#lineData[this.#linePointer];
+        this.#linePointer++;
+        const parts = lineContent.split(' ');
+        return asStrings ? parts : parts.map(Number);
+    }
+
+    extractMatrix(numRows, asStrings = false) {
+        const result = [];
+        for (let i = 0; i < numRows; i++) {
+            result.push(this.extractLine(asStrings));
+        }
+        return result;
+    }
+
+    extractRows(numRows, asStrings = false) {
+        const result = [];
+        for (let i = 0; i < numRows; i++) {
+            if (this.#linePointer >= this.#lineData.length) {
                 break;
             }
-            const value = this.#sourceLines[this.#lineCounter++];
-            resultVector.push(asString ? value : Number(value));
+            const lineContent = this.#lineData[this.#linePointer];
+            this.#linePointer++;
+            result.push(asStrings ? lineContent : Number(lineContent));
         }
-        this.#tokenCounter = 0; // Reset token counter
-        return resultVector;
+        return result;
     }
 }
 
-const obtainInput = (source) => new InputReader(source);
+const createInputProcessor = (inputString) => new InputProcessor(inputString);
 
-const createDisjointSet = (totalElements) => {
-    const parentMap = Array.from({ length: totalElements }, (_, idx) => idx);
-    const setSizes = Array(totalElements).fill(1);
+function createMultiDimArray(initialValue, ...dimensions) {
+    const buildArray = (dimIndex) => {
+        if (dimIndex === dimensions.length - 1) {
+            return Array(dimensions[dimIndex]).fill(initialValue);
+        } else {
+            return Array(dimensions[dimIndex]).fill(0).map(() => buildArray(dimIndex + 1));
+        }
+    };
+    return buildArray(0);
+}
 
-    const findRoot = (element) => {
-        if (parentMap[element] === element) {
+class DisjointSet {
+    #parentMap;
+
+    constructor(elementCount) {
+        this.#parentMap = new Map();
+        for (let i = 1; i <= elementCount; i++) {
+            this.#parentMap.set(i, -1);
+        }
+    }
+
+    findRepresentative(element) {
+        let currentParent = this.#parentMap.get(element);
+        if (currentParent === undefined) {
             return element;
         }
-        return parentMap[element] = findRoot(parentMap[element]);
-    };
+        if (currentParent < 0) {
+            return element;
+        }
+        const root = this.findRepresentative(currentParent);
+        this.#parentMap.set(element, root);
+        return root;
+    }
 
-    const mergeSets = (elemA, elemB) => {
-        let rootA = findRoot(elemA);
-        let rootB = findRoot(elemB);
+    areConnected(elementX, elementY) {
+        return this.findRepresentative(elementX) === this.findRepresentative(elementY);
+    }
 
-        if (rootA === rootB) {
+    uniteSets(elementX, elementY) {
+        let rootX = this.findRepresentative(elementX);
+        let rootY = this.findRepresentative(elementY);
+
+        if (rootX === rootY) {
             return false;
         }
 
-        if (setSizes[rootA] < setSizes[rootB]) {
-            [rootA, rootB] = [rootB, rootA];
+        let sizeX = -this.#parentMap.get(rootX);
+        let sizeY = -this.#parentMap.get(rootY);
+
+        if (rootX < rootY) {
+            this.#parentMap.set(rootX, -(sizeX + sizeY));
+            this.#parentMap.set(rootY, rootX);
+        } else {
+            this.#parentMap.set(rootY, -(sizeX + sizeY));
+            this.#parentMap.set(rootX, rootY);
         }
-        parentMap[rootB] = rootA;
-        setSizes[rootA] += setSizes[rootB];
         return true;
-    };
+    }
 
-    const getSetSize = (element) => {
-        return setSizes[findRoot(element)];
-    };
+    getSetSize(element) {
+        const root = this.findRepresentative(element);
+        const size = this.#parentMap.get(root);
+        return size !== undefined ? -size : 0;
+    }
+}
 
-    return {
-        getSetSize,
-        mergeSets
-    };
-};
+const createDisjointSet = (count) => new DisjointSet(count);
 
-const createStringDigestor = (sourceText) => {
-    const hashBase = 1019;
-    const primeModuli = [1000000007, 1000000009];
-    const textLen = sourceText.length;
+class StringHasher {
+    #hashBase;
+    #hashModuli;
+    #powerTable;
+    #prefixHashes;
+    #currentStringLength;
 
-    const precomputedData = primeModuli.map(mod => {
-        const currentHashes = new Array(textLen + 1).fill(0);
-        const currentPowers = new Array(textLen + 1).fill(1);
+    constructor(initialString) {
+        this.#hashBase = 31;
+        this.#hashModuli = [1000000007, 1000000009];
 
-        for (let i = 0; i < textLen; i++) {
-            currentPowers[i + 1] = (currentPowers[i] * hashBase) % mod;
-            currentHashes[i + 1] = (currentHashes[i] * hashBase + sourceText.charCodeAt(i)) % mod;
-        }
-        return { hashes: currentHashes, powers: currentPowers, modulus: mod };
-    });
+        this.#currentStringLength = initialString.length;
+        this.#powerTable = Array.from({ length: this.#hashModuli.length }, () => [1]);
+        this.#prefixHashes = Array.from({ length: this.#hashModuli.length }, () => [0]);
 
-    const calculateSubstringDigest = (startIndex, endIndex, modulusIndex) => {
-        const { hashes, powers, modulus } = precomputedData[modulusIndex];
-        let digestValue = (hashes[endIndex] - (hashes[startIndex] * powers[endIndex - startIndex]) % modulus + modulus) % modulus;
-        return digestValue;
-    };
+        this.#initializeHashes(initialString, 0);
+    }
 
-    const computeStringSignature = (inputString) => {
-        return primeModuli.map(mod => {
-            let currentSignature = 0;
-            for (let i = 0; i < inputString.length; i++) {
-                currentSignature = (currentSignature * hashBase + inputString.charCodeAt(i)) % mod;
+    #initializeHashes(str, startIndex) {
+        for (let mIdx = 0; mIdx < this.#hashModuli.length; mIdx++) {
+            const currentMod = this.#hashModuli[mIdx];
+            const currentPowerTable = this.#powerTable[mIdx];
+            const currentPrefixHashes = this.#prefixHashes[mIdx];
+
+            for (let i = 0; i < str.length; i++) {
+                const charCode = str.charCodeAt(i);
+                const currentIdx = startIndex + i;
+
+                currentPowerTable[currentIdx + 1] = (currentPowerTable[currentIdx] * this.#hashBase) % currentMod;
+                currentPrefixHashes[currentIdx + 1] = (currentPrefixHashes[currentIdx] * this.#hashBase + charCode) % currentMod;
             }
-            return currentSignature;
-        });
-    };
+        }
+    }
 
-    const checkSubstringSignature = (expectedSignature, subLength, startIndex) => {
-        for (let j = 0; j < primeModuli.length; j++) {
-            const actualSignature = calculateSubstringDigest(startIndex, startIndex + subLength, j);
-            if (actualSignature !== expectedSignature[j]) {
+    #getSubstringHash(startIdx, endIdx, modIndex) {
+        const currentMod = this.#hashModuli[modIndex];
+        const currentPrefixHashes = this.#prefixHashes[modIndex];
+        const currentPowerTable = this.#powerTable[modIndex];
+
+        let val = (currentPrefixHashes[endIdx] - (currentPrefixHashes[startIdx] * currentPowerTable[endIdx - startIdx]) % currentMod + currentMod) % currentMod;
+        return val;
+    }
+
+    static computeStringHash(targetString) {
+        const base = 31;
+        const moduli = [1000000007, 1000000009];
+
+        return moduli.map(mod => {
+            let currentHash = 0;
+            for (let i = 0; i < targetString.length; i++) {
+                currentHash = (currentHash * base + targetString.charCodeAt(i)) % mod;
+            }
+            return currentHash;
+        });
+    }
+
+    verifySubstringHash(targetHashArray, subLength, startPosition) {
+        for (let mIdx = 0; mIdx < this.#hashModuli.length; mIdx++) {
+            if (this.#getSubstringHash(startPosition, startPosition + subLength, mIdx) !== targetHashArray[mIdx]) {
                 return false;
             }
         }
         return true;
-    };
-
-    return {
-        computeStringSignature,
-        checkSubstringSignature,
-    };
-};
-
-const processChallenge = () => {
-    const inputHandler = obtainInput(require("fs").readFileSync("/dev/stdin", "utf8"));
-    const primaryStr = inputHandler.retrieveItem(true);
-    const secondaryStr = inputHandler.retrieveItem(true);
-
-    const primaryLength = primaryStr.length;
-    const secondaryLength = secondaryStr.length;
-
-    let expandedPrimary = primaryStr + primaryStr;
-    while (expandedPrimary.length < primaryLength + secondaryLength) {
-        expandedPrimary += primaryStr;
     }
 
-    const componentManager = createDisjointSet(primaryLength);
-    const hashProcessor = createStringDigestor(expandedPrimary);
-    const secondaryStrSignature = hashProcessor.computeStringSignature(secondaryStr);
+    appendString(newSegment) {
+        const oldLength = this.#currentStringLength;
+        this.#currentStringLength += newSegment.length;
 
-    for (let currentIdx = 0; currentIdx < primaryLength; currentIdx++) {
-        if (hashProcessor.checkSubstringSignature(secondaryStrSignature, secondaryLength, currentIdx)) {
-            const nextIdx = (currentIdx + secondaryLength) % primaryLength;
-            if (!componentManager.mergeSets(currentIdx, nextIdx)) {
-                return -1;
-            }
+        for (let mIdx = 0; mIdx < this.#hashModuli.length; mIdx++) {
+            this.#powerTable[mIdx].length = this.#currentStringLength + 1;
+            this.#prefixHashes[mIdx].length = this.#currentStringLength + 1;
         }
+
+        this.#initializeHashes(newSegment, oldLength);
+        return this.#currentStringLength;
+    }
+}
+
+const createStringHasher = (str) => new StringHasher(str);
+
+function processStrings() {
+    const inputReader = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    const sourceString = inputReader.extractToken(true);
+    const targetPattern = inputReader.extractToken(true);
+
+    const sourceLength = sourceString.length;
+    const patternLength = targetPattern.length;
+
+    let extendedSource = sourceString;
+    while (extendedSource.length < sourceLength + patternLength) {
+        extendedSource += sourceString;
     }
 
-    let largestComponent = 0;
-    for (let nodeIdx = 0; nodeIdx < primaryLength; nodeIdx++) {
-        const sizeOfComponent = componentManager.getSetSize(nodeIdx);
-        if (sizeOfComponent > largestComponent) {
-            largestComponent = sizeOfComponent;
+    const dsu = createDisjointSet(sourceLength);
+    const stringHashCalculator = createStringHasher(extendedSource);
+    const patternHash = StringHasher.computeStringHash(targetPattern);
+
+    Array.from({ length: sourceLength }, (_, index) => index).forEach(idx => {
+        if (stringHashCalculator.verifySubstringHash(patternHash, patternLength, idx)) {
+            dsu.uniteSets(idx + 1, (idx + patternLength) % sourceLength + 1);
         }
-    }
-    return largestComponent - 1;
-};
+    });
 
-console.log(processChallenge());
+    let maxComponentSize = 0;
+    Array.from({ length: sourceLength }, (_, index) => index).forEach(idx => {
+        const currentComponentSize = dsu.getSetSize(idx + 1);
+        if (currentComponentSize > maxComponentSize) {
+            maxComponentSize = currentComponentSize;
+        }
+    });
+
+    return maxComponentSize - 1;
+}
+
+console.log(processStrings());

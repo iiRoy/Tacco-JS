@@ -1,62 +1,60 @@
-// This module provides utilities for number theory operations.
-function checkPrimality(test_val) {
-  // Handle edge cases for small numbers.
-  if (test_val === 2 || test_val === 3) return true;
-  // Numbers less than 2, or even, or divisible by 3 (excluding 2, 3) are not prime.
-  if (test_val < 2 || test_val % 2 === 0 || test_val % 3 === 0) return false;
+function checkPrimality(val) {
+    // Check for small prime numbers and trivial non-primes
+    if (val === 2 || val === 3) {
+        return true;
+    }
+    if (val < 2 || val % 2 === 0 || val % 3 === 0) {
+        return false;
+    }
 
-  // Calculate the upper bound for divisor checking.
-  // We only need to check divisors up to the square root of the number.
-  const upper_bound = Math.round(Math.sqrt(test_val));
-
-  let search_index = 1; // Initialize the loop counter for the 6k +/- 1 optimization.
-  // Loop using the 6k +/- 1 optimization for efficiency.
-  while (search_index * 6 - 1 <= upper_bound) {
-    // Check divisibility by (6k - 1) and (6k + 1).
-    if (test_val % (search_index * 6 - 1) === 0 || test_val % (search_index * 6 + 1) === 0) return false;
-    search_index++; // Increment the search index.
-  }
-  return true; // If no divisors found, the number is prime.
+    // Calculate the upper bound for checking divisors
+    const upperBound = Math.round(Math.sqrt(val));
+ 
+    // Iterate using an optimized 6k +/- 1 rule
+    let counter = 1;
+    while (counter * 6 - 1 <= upperBound) {
+        // Check divisibility by numbers of the form (6k - 1) and (6k + 1)
+        if (val % (counter * 6 - 1) === 0 || val % (counter * 6 + 1) === 0) {
+            return false; // Not prime if divisible
+        }
+        counter++; // Move to the next set of potential divisors
+    }
+    return true; // If no divisors found, the number is prime
 }
 
+// Read input from the standard input stream
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input into an array of lines, removing leading/trailing whitespace
+const dataRows = rawData.trim().split('\n');
+ 
+let currentRow;
+// Process each line of input data
+while (currentRow = dataRows.shift()) {
+    // Convert the current line to a numeric value
+    const currentNumber = +currentRow;
 
-// Main program execution begins here.
-// Acquire the file system module for reading input.
-const file_system_module = require('fs');
-// Read all input from standard input as a UTF-8 string.
-let incoming_text_data = file_system_module.readFileSync('/dev/stdin', 'utf8');
-// Trim whitespace and split the input into individual lines.
-let processed_entries_list = incoming_text_data.trim().split('\n');
+    let previousPrime; // Stores the largest prime number less than currentNumber
+    let nextPrime;     // Stores the smallest prime number greater than currentNumber
 
-let current_data_line; // Variable to hold the current line being processed.
-// Loop through each line of input until no more lines are available.
-while (current_data_line = processed_entries_list.shift()) {
-  // Convert the current line string to a numeric value.
-  const query_number = +current_data_line;
-
-  let lower_prime_neighbor; // Variable to store the prime number immediately less than query_number.
-  let upper_prime_neighbor; // Variable to store the prime number immediately greater than query_number.
-
-  // Special handling for the number 3, as its lower prime neighbor is 2.
-  if (query_number === 3) {
-    lower_prime_neighbor = 2;
-  }
-
-  // Initialize the search counter for finding prime neighbors.
-  let prime_finder_iterator = 3; // Start searching from 3, as 2 is handled or part of the loop logic.
-  // Infinite loop to find the prime neighbors.
-  while (true) {
-    // Check if the current iterator value is prime and less than the query_number.
-    if (checkPrimality(prime_finder_iterator) && prime_finder_iterator < query_number) {
-      lower_prime_neighbor = prime_finder_iterator; // Update the lower prime neighbor.
+    // Special case for the number 3, as its preceding prime is 2
+    if (currentNumber === 3) {
+        previousPrime = 2;
     }
-    // Check if the current iterator value is prime and greater than the query_number.
-    if (checkPrimality(prime_finder_iterator) && prime_finder_iterator > query_number) {
-      upper_prime_neighbor = prime_finder_iterator; // Update the upper prime neighbor.
-      break; // Found the upper neighbor, so exit the loop.
+
+    let iterator = 3; // Start checking for primes from 3 (only odd numbers)
+    // Loop indefinitely until both surrounding primes are found
+    for (;;) {
+        // If iterator is prime and less than currentNumber, update previousPrime
+        if (checkPrimality(iterator) && iterator < currentNumber) {
+            previousPrime = iterator;
+        }
+        // If iterator is prime and greater than currentNumber, set nextPrime and exit
+        if (checkPrimality(iterator) && iterator > currentNumber) {
+            nextPrime = iterator;
+            break; // Exit the loop once both values are determined
+        }
+        iterator += 2; // Increment by 2 to check only odd numbers
     }
-    prime_finder_iterator += 2; // Increment by 2 to check only odd numbers (optimization).
-  }
-  // Output the found prime neighbors to the console.
-  console.log(lower_prime_neighbor, upper_prime_neighbor);
+    // Output the found previous and next prime numbers
+    console.log(previousPrime, nextPrime);
 }

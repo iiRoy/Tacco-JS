@@ -1,36 +1,41 @@
-const streamProcessor = require('node:fs');
+const fileSystem = require('fs');
+const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const extractAndTally = (dataSegment) => {
-    const numericCounts = new Map();
-    dataSegment.split('\n')
-        .filter(lineContent => lineContent.trim().length > 0)
-        .forEach(lineContent => {
-            const numericalPart = parseInt(lineContent, 10);
-            if (!Number.isNaN(numericalPart)) {
-                numericCounts.set(numericalPart, (numericCounts.get(numericalPart) || 0) + 1);
-            }
-        });
-    return numericCounts;
+const parseNumericList = (textBlock) => {
+    return textBlock.split('\n')
+                     .map(line => Number.parseInt(line.split(',')[0], 10));
 };
 
-const acquiredData = streamProcessor.readFileSync('/dev/stdin', 'utf8');
+const trimmedInput = rawContent.trim();
+const blockSeparatorIndex = trimmedInput.indexOf('\n\n');
 
-const contentBlocks = acquiredData.trim().split(/\n\s*\n/);
+const firstBlockText = trimmedInput.substring(0, blockSeparatorIndex);
+const secondBlockText = trimmedInput.substring(blockSeparatorIndex + 2);
 
-const primaryTally = extractAndTally(contentBlocks[0]);
-const secondaryTally = extractAndTally(contentBlocks[1]);
+const firstNumList = parseNumericList(firstBlockText);
+const secondNumList = parseNumericList(secondBlockText);
 
-const finalAggregations = new Map();
+const getElementFrequencies = (numberArray) => {
+    return numberArray.reduce((accMap, currentNum) => {
+        accMap.set(currentNum, (accMap.get(currentNum) || 0) + 1);
+        return accMap;
+    }, new Map());
+};
 
-for (const [digitValue, firstCount] of primaryTally.entries()) {
-    if (secondaryTally.has(digitValue)) {
-        const combinedTotal = firstCount + secondaryTally.get(digitValue);
-        finalAggregations.set(digitValue, combinedTotal);
+const firstListFrequencies = getElementFrequencies(firstNumList);
+const secondListFrequencies = getElementFrequencies(secondNumList);
+
+const combinedCounts = new Map();
+
+for (const currentKey of firstListFrequencies.keys()) {
+    if (secondListFrequencies.has(currentKey)) {
+        const totalOccurrences = firstListFrequencies.get(currentKey) + secondListFrequencies.get(currentKey);
+        combinedCounts.set(currentKey, totalOccurrences);
     }
 }
 
-const displayResults = Array.from(finalAggregations.entries())
-    .sort((pairOne, pairTwo) => pairOne[0] - pairTwo[0])
-    .map(([valKey, valCount]) => `${valKey} ${valCount}`);
-
-console.log(displayResults.join('\n'));
+Array.from(combinedCounts.entries())
+     .sort((pairA, pairB) => pairA[0] - pairB[0])
+     .forEach(pair => {
+         console.log(`${pair[0]} ${pair[1]}`);
+     });

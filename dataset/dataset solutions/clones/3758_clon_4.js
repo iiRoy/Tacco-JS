@@ -1,85 +1,74 @@
-const r = require('readline').createInterface({
-    input: process.stdin
+var processInput = require('process').stdin;
+var receivedData = "";
+
+processInput.on('data', function (chunk) {
+    receivedData += chunk;
 });
 
-let inputLines = [];
+processInput.on('end', function () {
+    var dataLines = receivedData.split('\n');
 
-r.on('line', (line) => {
-    inputLines.push(line);
-});
+    var firstLineParts = dataLines[0].match(/(-?\d+)\s+(-?\d+)/);
+    var pointCount = parseInt(firstLineParts[1], 10);
+    var selectionSize = parseInt(firstLineParts[2], 10);
 
-r.on('close', () => {
-    const parseNumericList = (str) => str.split(' ').map(s => parseInt(s.trim()));
+    if (selectionSize === 0) {
+        console.log(0);
+        return;
+    }
 
-    const [countItems, maxItemsToSum] = parseNumericList(inputLines[0]);
+    var coefficientSets = new Map([
+        ['setA', [1, 1, 1]],
+        ['setB', [1, 1, -1]],
+        ['setC', [1, -1, 1]],
+        ['setD', [1, -1, -1]],
+        ['setE', [-1, 1, 1]],
+        ['setF', [-1, 1, -1]],
+        ['setG', [-1, -1, -1]],
+    ]);
 
-    const generateCoefficientSets = (currentCombination) => {
-        if (currentCombination.length === 3) {
-            return [currentCombination];
-        }
-        return [
-            ...generateCoefficientSets([...currentCombination, 1]),
-            ...generateCoefficientSets([...currentCombination, -1])
-        ];
-    };
+    var topSumsBySet = new Map();
+    for (let key of coefficientSets.keys()) {
+        topSumsBySet.set(key, []);
+    }
 
-    const allPossibleCoeffs = generateCoefficientSets([]);
-    const relevantCoeffs = allPossibleCoeffs.filter(trio =>
-        !(trio[0] === -1 && trio[1] === -1 && trio[2] === 1)
-    );
+    for (var i = 0; i < pointCount; i++) {
+        var currentPointParts = dataLines[i + 1].match(/(-?\d+)\s+(-?\d+)\s+(-?\d+)/);
+        var coordX = parseInt(currentPointParts[1], 10);
+        var coordY = parseInt(currentPointParts[2], 10);
+        var coordZ = parseInt(currentPointParts[3], 10);
 
-    const maintainSortedTop = (collection, newValue, collectionLimit) => {
-        if (collectionLimit === 0) {
-            return;
-        }
+        for (let [setKey, coefficients] of coefficientSets.entries()) {
+            var coeffA = coefficients[0];
+            var coeffB = coefficients[1];
+            var coeffC = coefficients[2];
+            var transformedValue = coordX * coeffA + coordY * coeffB + coordZ * coeffC;
+            var currentPQ = topSumsBySet.get(setKey);
 
-        let lowPointer = 0;
-        let highPointer = collection.length - 1;
-        let insertionPoint = collection.length;
+            let insertIdx = 0;
+            while (insertIdx < currentPQ.length && currentPQ[insertIdx] < transformedValue) {
+                insertIdx++;
+            }
+            currentPQ.splice(insertIdx, 0, transformedValue);
 
-        while (lowPointer <= highPointer) {
-            let midIndex = Math.floor((lowPointer + highPointer) / 2);
-            if (collection[midIndex] < newValue) {
-                insertionPoint = midIndex;
-                highPointer = midIndex - 1;
-            } else {
-                lowPointer = midIndex + 1;
+            if (currentPQ.length > selectionSize) {
+                currentPQ.shift();
             }
         }
+    }
 
-        collection.splice(insertionPoint, 0, newValue);
+    var calculatedSetSums = [];
+    for (let currentPQ of topSumsBySet.values()) {
+        let currentSum = currentPQ.reduce((accumulator, value) => accumulator + value, 0);
+        calculatedSetSums.push(currentSum);
+    }
 
-        if (collection.length > collectionLimit) {
-            collection.pop();
+    var overallMaximum = -Infinity;
+    for (let sumValue of calculatedSetSums) {
+        if (sumValue > overallMaximum) {
+            overallMaximum = sumValue;
         }
-    };
-
-    const topSumsPerCoeffSet = new Map();
-    relevantCoeffs.forEach(coeffTrio => {
-        topSumsPerCoeffSet.set(coeffTrio.join(','), []);
-    });
-
-    for (let currentItemIndex = 0; currentItemIndex < countItems; currentItemIndex++) {
-        const [_xCoord, _yCoord, _zCoord] = parseNumericList(inputLines[currentItemIndex + 1]);
-
-        relevantCoeffs.forEach(currCoeffTrio => {
-            const currentTransformationValue =
-                _xCoord * currCoeffTrio[0] +
-                _yCoord * currCoeffTrio[1] +
-                _zCoord * currCoeffTrio[2];
-
-            const collectionForCoeff = topSumsPerCoeffSet.get(currCoeffTrio.join(','));
-            maintainSortedTop(collectionForCoeff, currentTransformationValue, maxItemsToSum);
-        });
     }
 
-    const finalCalculatedSums = [];
-    for (const collection of topSumsPerCoeffSet.values()) {
-        const sumOfTopValues = collection.reduce((accumulator, val) => accumulator + val, 0);
-        finalCalculatedSums.push(sumOfTopValues);
-    }
-
-    const ultimateMaximumResult = Math.max(...finalCalculatedSums);
-
-    console.log(ultimateMaximumResult);
+    console.log(overallMaximum);
 });

@@ -1,25 +1,30 @@
-const fileSystemUtility = require('fs')
-let rawTextualData = fileSystemUtility.readFileSync('/dev/stdin', 'utf8')
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-let dataUnits = rawTextualData.split(/ |\n/)
-let currentUnitIndex = 0
+let tokenStream = rawData.split(/ |\n/),
+    tokenIndex = 0;
 
-const fetchNextDataUnit = () => dataUnits[currentUnitIndex++]
-const extractNumericValues = (quantity) => {
-  const segment = dataUnits.slice(currentUnitIndex, currentUnitIndex += quantity)
-  return segment.map(item => parseInt(item))
-}
+const getNextToken = () => tokenStream[tokenIndex++];
 
-const [firstSide, secondSide, currentHour, currentMinute] = extractNumericValues(4)
+const getParsedTokens = (count) =>
+    tokenStream.slice(tokenIndex, (tokenIndex += count)).map((itemStr) => parseInt(itemStr));
 
-const minuteIndicatorDegrees = currentMinute * 6.0
-const hourIndicatorDegrees = (currentHour + currentMinute / 60.0) * 30.0
-let absoluteAngularSeparation = Math.abs(minuteIndicatorDegrees - hourIndicatorDegrees)
+const [sideA, sideB, hourVal, minuteVal] = getParsedTokens(4);
 
-// Debug: Display minute hand angle, hour hand angle, and their difference
-// Debugging output: Current angular positions and separation
-// console.log(minuteIndicatorDegrees, hourIndicatorDegrees, absoluteAngularSeparation)
+const minuteHandAngle = minuteVal * 6;
 
-const DEGREES_TO_RADIANS_FACTOR = Math.PI / 180.0
-const finalComputedLength = Math.sqrt(firstSide ** 2 + secondSide ** 2 - 2 * firstSide * secondSide * Math.cos(absoluteAngularSeparation * DEGREES_TO_RADIANS_FACTOR))
-console.log(finalComputedLength)
+const hourHandAngle = (hourVal + minuteVal / 60) * 30;
+
+let diffAngle = Math.abs(minuteHandAngle - hourHandAngle);
+
+// The following lines were commented out in the original source,
+// likely used for debugging intermediate angle calculations.
+// console.log(minuteHandAngle, hourHandAngle, diffAngle);
+// console.log(minuteHandAngle, hourHandAngle, diffAngle);
+
+const finalDistance = Math.sqrt(
+    sideA ** 2 +
+        sideB ** 2 -
+        2 * sideA * sideB * Math.cos(diffAngle * (Math.PI / 180))
+);
+
+console.log(finalDistance);

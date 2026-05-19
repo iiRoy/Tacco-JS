@@ -1,22 +1,21 @@
-function  CalculateNextThousandMultiple (  sourceData   )
-{
-  /* This variable will hold the numerical representation
-   * of the input string, which effectively represents an amount.
-   */
-  let   parsedValue   =   parseInt (  sourceData  )   ;
+function ProcessInput(rawData) {
+    // Parse the input string into an integer representing the item's cost
+    var itemCost = parseInt(rawData);
 
-  // We start with a base multiple of one thousand.
-  let   currentThreshold   =   1000   ;
+    // Initialize a variable to find the next multiple of 1000
+    // This variable will store the current multiple of one thousand
+    var targetMultiple = 1000;
 
-  // Continue incrementing the threshold until it exceeds the parsed amount.
-  while  (  currentThreshold   <=   parsedValue  )
-  {
-    currentThreshold   +=   1000   ; // Each step adds another thousand.
-  }
+    // Loop to find the smallest multiple of 1000 that is greater than the item's cost
+    while (targetMultiple <= itemCost) {
+        // Increment the multiple by 1000 in each iteration
+        targetMultiple += 1000;
+    }
 
-  // Display the final computed difference to standard output.
-  console.log  (  currentThreshold   -   parsedValue   )   ;
+    // Calculate the difference between the found multiple and the item's cost
+    // This represents the amount needed to reach the next 1000-yen boundary
+    console.log(targetMultiple - itemCost);
 }
 
-// Acquire input from the standard input stream and invoke the primary processing routine.
-CalculateNextThousandMultiple (  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )  ) ;
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,33 +1,36 @@
 'use strict';
-const processContestResults = (contestDataLines) => {
-  const [totalChallenges, submissionQuantity] = contestDataLines[0]
-    .split(' ')
-    .map(Number);
 
-  const submissionEntries = contestDataLines.slice(1, submissionQuantity + 1);
+const processSubmissionRecords = (submissionEntries) => {
+  const tally = {
+    acceptedCount: 0,
+    wrongAttemptCount: 0,
+    completedProblems: new Set()
+  };
 
-  const finalTally = submissionEntries.reduce((currentMetrics, submissionText) => {
-    const [challengeIdentifier, outcomeType] = submissionText.split(' ');
-    const zeroBasedChallengeId = Number(challengeIdentifier) - 1;
+  return submissionEntries.reduce((currentTally, entryLine) => {
+    const [problemIdentifier, outcomeStatus] = entryLine.split(' ');
+    const problemIndex = Number(problemIdentifier) - 1;
 
-    const isChallengeAlreadyCompleted = currentMetrics.completedChallengesRegister.has(zeroBasedChallengeId);
-
-    if (!isChallengeAlreadyCompleted) {
-      if (outcomeType === 'WA') {
-        currentMetrics.incorrectAttemptsBeforeCompletion++;
-      } else if (outcomeType === 'AC') {
-        currentMetrics.successfulCompletionsCounter++;
-        currentMetrics.completedChallengesRegister.add(zeroBasedChallengeId);
+    if (!currentTally.completedProblems.has(problemIndex)) {
+      if (outcomeStatus === 'WA') {
+        currentTally.wrongAttemptCount++;
+      } else if (outcomeStatus === 'AC') {
+        currentTally.acceptedCount++;
+        currentTally.completedProblems.add(problemIndex);
       }
     }
-    return currentMetrics;
-  }, {
-    completedChallengesRegister: new Set(),
-    successfulCompletionsCounter: 0,
-    incorrectAttemptsBeforeCompletion: 0
-  });
-
-  console.log(finalTally.successfulCompletionsCounter, finalTally.incorrectAttemptsBeforeCompletion);
+    return currentTally;
+  }, tally);
 };
 
-processContestResults(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));
+const applicationEntry = (rawDataContent) => {
+  const allLines = rawDataContent.split('\n');
+  const [totalProblems, totalSubmissions] = allLines[0].split(' ').map(Number);
+  const submissionDataLines = allLines.slice(1, totalSubmissions + 1);
+
+  const finalSummary = processSubmissionRecords(submissionDataLines);
+
+  console.log(finalSummary.acceptedCount, finalSummary.wrongAttemptCount);
+};
+
+applicationEntry(require("fs").readFileSync("/dev/stdin", "utf8"));

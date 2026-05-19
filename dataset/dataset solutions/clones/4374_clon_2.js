@@ -1,30 +1,12 @@
 'use strict';
 
-/**
- * Main entry point for processing input data.
- * This function handles the parsing and calculation.
- * @param {string} rawData The complete string retrieved from standard input.
- */
-const performCalculation = rawData => {
-  // Parse the incoming text: first split by newline, then each line by space.
-  const processedSegments = rawData
-    .split('\n')
-    .map(currentSegment => currentSegment.split(' '));
+const processInput = (rawData) => {
+    const parsedLines = rawData.split('\n').map(lineStr => lineStr.split(' '));
 
-  // Extract the primary numeric quantity from the first line's first element.
-  const baseValue = parseInt(processedSegments[0][0], 10);
+    const initialValue = parseInt(parsedLines[0][0], 10);
+    const decrementAmount = parseInt(parsedLines[0][1], 10);
 
-  // Obtain the decrement value from the first line's second element.
-  const subtractAmount = parseInt(processedSegments[0][1], 10);
-
-  // Compute the final result, ensuring it's not below zero, and output it.
-  console.log(
-    Math.max(0, baseValue - subtractAmount)
-  );
+    console.log(Math.max(0, initialValue - decrementAmount));
 };
 
-// Execute the primary function by reading content from the standard input stream.
-performCalculation(
-  require('node:fs')
-    .readFileSync('/dev/stdin', 'utf-8')
-);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

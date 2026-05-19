@@ -1,363 +1,260 @@
 'use strict';
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-// Function to handle early program termination with a 'No' output.
-// This encapsulates the exit logic for cleaner code and potential future logging.
-const signalFailureAndExit = () => {
+const rowColCounts = inputLines[0].split(' ').map(Number);
+const numRows = rowColCounts[0];
+const numCols = rowColCounts[1];
+const numPoints = parseInt(inputLines[1]);
+const pointDataStrings = inputLines.slice(2);
+
+let diffXOdd = false;
+let diffXEven = false;
+let diffYOdd = false;
+let diffYEven = false;
+
+let mapXOdd = new Map();
+let mapXEven = new Map();
+let mapYOdd = new Map();
+let mapYEven = new Map();
+
+const terminateExecution = () => {
     console.log('No');
-    process.exit(1); // Indicate an abnormal termination.
+    process.exit();
 };
 
-// --- Data Acquisition and Initial Parsing ---
-// Read input from standard input, decode as UTF-8,
-// remove any surrounding whitespace, and split into an array of lines.
-const sourceDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split(/\r?\n/);
-
-// Parse the first line to determine the grid dimensions: total rows and columns.
-const gridDimensionsSplit = sourceDataLines[0].split(' ');
-const totalRowsInGrid = Number(gridDimensionsSplit[0]); // Explicitly convert to number.
-const totalColsInGrid = Number(gridDimensionsSplit[1]); // Explicitly convert to number.
-
-// Parse the second line to get the total number of data points to process.
-const numberOfInputPoints = parseInt(sourceDataLines[1], 10); // Ensure base 10 parsing.
-
-// Extract the actual data points from the input, skipping the first two lines.
-const individualPointSpecs = sourceDataLines.slice(2);
-
-// --- Global State for Slope Tracking and Point Caching ---
-// These variables will store the determined common difference (slope) for each
-// category (row/column, odd/even parity). Initialized to `null` to signify 'not yet set'.
-let horizontalSlopeOddRow = null;
-let horizontalSlopeEvenRow = null;
-let verticalSlopeOddCol = null;
-let verticalSlopeEvenCol = null;
-
-// Maps to store previously encountered points, categorized by their fixed coordinate
-// and the parity of the varying coordinate.
-// For horizontal checks (along rows, varying columns):
-const pointsOnEvenRows = new Map(); // Key: row_index, Value: [column_index, associated_value]
-const pointsOnOddRows = new Map();  // Key: row_index, Value: [column_index, associated_value]
-// For vertical checks (along columns, varying rows):
-const pointsInEvenCols = new Map(); // Key: column_index, Value: [row_index, associated_value]
-const pointsInOddCols = new Map();  // Key: column_index, Value: [row_index, associated_value]
-
-// --- Utility Function for Value Constraint Checks ---
-// This function checks if a calculated value based on a linear progression
-// falls below zero under two different boundary conditions.
-const verifyValueRange = (currentValue, slopeRate, termCalculationA, termCalculationB) => {
-    // If either extrapolated value is negative, the constraint is violated.
-    return (currentValue - slopeRate * termCalculationA < 0) || (currentValue + slopeRate * termCalculationB < 0);
+const isInvalidValue = (val, d, term1, term2) => {
+    return (val - d * term1 < 0 || val + d * term2 < 0);
 };
 
-// --- Main Processing Loop: Iterating Through Each Data Point ---
-// Each point provides a (row, column, value) triplet that must conform to
-// specific linear progression rules across the grid.
-for (let pointIdx = 0; pointIdx < numberOfInputPoints; ++pointIdx) {
-    // Parse the current point's data.
-    const currentPointString = individualPointSpecs[pointIdx].split(' ');
-    const currentPointRow = parseInt(currentPointString[0], 10);
-    const currentPointCol = parseInt(currentPointString[1], 10);
-    const currentPointValue = parseInt(currentPointString[2], 10);
+for (let idx = 0; idx < numPoints; idx++) {
+    const currentPointStrParts = pointDataStrings[idx].split(' ');
+    const currR = parseInt(currentPointStrParts[0]);
+    const currC = parseInt(currentPointStrParts[1]);
+    const currA = parseInt(currentPointStrParts[2]);
 
-    // --- Validate Vertical Consistency (along columns for a fixed row) ---
-    // This part checks how values change as columns vary for a given row.
-    if (totalRowsInGrid === 2) {
-        // Special logic for a 2-row grid. All points are treated similarly here.
-        const existingEntry = pointsInEvenCols.get(currentPointCol);
-
-        if (existingEntry) {
-            // If another point for this column was seen, calculate the slope.
-            const previousRow = existingEntry[0];
-            const previousValue = existingEntry[1];
-
-            // The denominator is (previous row - current row), which will be +/-1.
-            const computedSlope = (previousValue - currentPointValue) / (previousRow - currentPointRow);
-
-            if (verticalSlopeEvenCol === null) {
-                // If this is the first slope determined for this category, set it.
-                verticalSlopeEvenCol = computedSlope;
-
-                // Then, validate all previously stored points against this new slope.
-                for (const [colIdentifier, [rValue, aValue]] of pointsInEvenCols.entries()) {
-                    const termForR1 = (rValue - 1);
-                    const termForR2 = (2 - rValue); // (totalRowsInGrid - rValue) where totalRowsInGrid=2
-
-                    if (verifyValueRange(aValue, verticalSlopeEvenCol, termForR1, termForR2)) {
-                        signalFailureAndExit();
+    if (numRows === 2) {
+        if (mapYEven.has(currC)) {
+            const prevRA = mapYEven.get(currC);
+            const prevR = prevRA[0];
+            const prevA = prevRA[1];
+            
+            const calculatedDiff = (prevA - currA) / (prevR - currR);
+            
+            if (diffYEven === false) {
+                diffYEven = calculatedDiff;
+                for (const entryY of mapYEven.entries()) {
+                    const [, [rowY, valY]] = entryY;
+                    if (isInvalidValue(valY, calculatedDiff, (rowY - 1), (2 - rowY))) {
+                        terminateExecution();
                     }
                 }
-            } else {
-                // If a slope was already set, ensure the new one matches.
-                if (computedSlope !== verticalSlopeEvenCol) {
-                    signalFailureAndExit();
-                }
+            } else if (calculatedDiff !== diffYEven) {
+                terminateExecution();
             }
-
-            // Finally, validate the current point with the determined slope.
-            const currentTermR1 = (currentPointRow - 1);
-            const currentTermR2 = (2 - currentPointRow);
-
-            if (verifyValueRange(currentPointValue, computedSlope, currentTermR1, currentTermR2)) {
-                signalFailureAndExit();
+            
+            if (isInvalidValue(currA, calculatedDiff, (currR - 1), (2 - currR))) {
+                terminateExecution();
             }
-
         } else {
-            // No previous point for this column to calculate a slope.
-            if (verticalSlopeEvenCol !== null) {
-                // If a general slope for this category is already known, validate this point.
-                const currentTermR1 = (currentPointRow - 1);
-                const currentTermR2 = (2 - currentPointRow);
-
-                if (verifyValueRange(currentPointValue, verticalSlopeEvenCol, currentTermR1, currentTermR2)) {
-                    signalFailureAndExit();
+            if (diffYEven !== false) {
+                if (isInvalidValue(currA, diffYEven, (currR - 1), (2 - currR))) {
+                    terminateExecution();
                 }
             }
-            // Store the current point for future comparisons.
-            pointsInEvenCols.set(currentPointCol, [currentPointRow, currentPointValue]);
+            mapYEven.set(currC, [currR, currA]);
         }
-
     } else {
-        // General case for grids with more than 2 rows.
-        // Points are categorized by the parity of their row index.
-        const isCurrentPointRowEven = (currentPointRow % 2 === 0);
-
-        if (isCurrentPointRowEven) {
-            // Processing for points on even-indexed rows.
-            const existingEntry = pointsInEvenCols.get(currentPointCol);
-
-            if (existingEntry) {
-                const previousRow = existingEntry[0];
-                const previousValue = existingEntry[1];
-
-                // Slope calculation for even rows, adjusted by (row difference / 2).
-                const computedSlope = (previousValue - currentPointValue) / ((previousRow - currentPointRow) / 2);
-
-                if (verticalSlopeEvenCol === null) {
-                    verticalSlopeEvenCol = computedSlope;
-                    for (const [colIdentifier, [rValue, aValue]] of pointsInEvenCols.entries()) {
-                        const termForR1 = (rValue / 2) - 1;
-                        const termForR2 = Math.floor((totalRowsInGrid - rValue) / 2);
-
-                        if (verifyValueRange(aValue, verticalSlopeEvenCol, termForR1, termForR2)) {
-                            signalFailureAndExit();
+        const isEvenRow = (currR % 2 === 0);
+        if (isEvenRow) {
+            if (mapYEven.has(currC)) {
+                const prevRA = mapYEven.get(currC);
+                const prevR = prevRA[0];
+                const prevA = prevRA[1];
+                
+                const rowDiffDenominator = (prevR - currR) / 2;
+                const calculatedDiff = (prevA - currA) / rowDiffDenominator;
+                
+                if (diffYEven === false) {
+                    diffYEven = calculatedDiff;
+                    for (const entryY of mapYEven.entries()) {
+                        const [, [rowY, valY]] = entryY;
+                        const term1 = (rowY / 2) - 1;
+                        const term2 = Math.floor((numRows - rowY) / 2);
+                        if (isInvalidValue(valY, calculatedDiff, term1, term2)) {
+                            terminateExecution();
                         }
                     }
-                } else {
-                    if (computedSlope !== verticalSlopeEvenCol) {
-                        signalFailureAndExit();
-                    }
+                } else if (calculatedDiff !== diffYEven) {
+                    terminateExecution();
                 }
-
-                const currentTermR1 = (currentPointRow / 2) - 1;
-                const currentTermR2 = Math.floor((totalRowsInGrid - currentPointRow) / 2);
-
-                if (verifyValueRange(currentPointValue, computedSlope, currentTermR1, currentTermR2)) {
-                    signalFailureAndExit();
+                
+                const term1Curr = (currR / 2) - 1;
+                const term2Curr = Math.floor((numRows - currR) / 2);
+                if (isInvalidValue(currA, calculatedDiff, term1Curr, term2Curr)) {
+                    terminateExecution();
                 }
-
             } else {
-                if (verticalSlopeEvenCol !== null) {
-                    const currentTermR1 = (currentPointRow / 2) - 1;
-                    const currentTermR2 = Math.floor((totalRowsInGrid - currentPointRow) / 2);
-
-                    if (verifyValueRange(currentPointValue, verticalSlopeEvenCol, currentTermR1, currentTermR2)) {
-                        signalFailureAndExit();
+                if (diffYEven === false) {
+                    const term1Curr = (currR / 2) - 1;
+                    const term2Curr = Math.floor((numRows - currR) / 2);
+                    if (isInvalidValue(currA, diffYEven, term1Curr, term2Curr)) {
+                        terminateExecution();
                     }
                 }
-                pointsInEvenCols.set(currentPointCol, [currentPointRow, currentPointValue]);
+                mapYEven.set(currC, [currR, currA]);
             }
-
         } else {
-            // Processing for points on odd-indexed rows.
-            const existingEntry = pointsInOddCols.get(currentPointCol);
-
-            if (existingEntry) {
-                const previousRow = existingEntry[0];
-                const previousValue = existingEntry[1];
-
-                // Slope calculation for odd rows, adjusted by (row difference / 2).
-                const computedSlope = (previousValue - currentPointValue) / ((previousRow - currentPointRow) / 2);
-
-                if (verticalSlopeOddCol === null) {
-                    verticalSlopeOddCol = computedSlope;
-                    for (const [colIdentifier, [rValue, aValue]] of pointsInOddCols.entries()) {
-                        const termForR1 = Math.floor((rValue - 1) / 2);
-                        const termForR2 = Math.floor((totalRowsInGrid - rValue) / 2);
-
-                        if (verifyValueRange(aValue, verticalSlopeOddCol, termForR1, termForR2)) {
-                            signalFailureAndExit();
+            if (mapYOdd.has(currC)) {
+                const prevRA = mapYOdd.get(currC);
+                const prevR = prevRA[0];
+                const prevA = prevRA[1];
+                
+                const rowDiffDenominator = (prevR - currR) / 2;
+                const calculatedDiff = (prevA - currA) / rowDiffDenominator;
+                
+                if (diffYOdd === false) {
+                    diffYOdd = calculatedDiff;
+                    for (const entryY of mapYOdd.entries()) {
+                        const [, [rowY, valY]] = entryY;
+                        const term1 = Math.floor(rowY / 2);
+                        const term2 = Math.floor((numRows - rowY) / 2);
+                        if (isInvalidValue(valY, calculatedDiff, term1, term2)) {
+                            terminateExecution();
                         }
                     }
-                } else {
-                    if (computedSlope !== verticalSlopeOddCol) {
-                        signalFailureAndExit();
-                    }
+                } else if (calculatedDiff !== diffYOdd) {
+                    terminateExecution();
                 }
-
-                const currentTermR1 = Math.floor((currentPointRow - 1) / 2);
-                const currentTermR2 = Math.floor((totalRowsInGrid - currentPointRow) / 2);
-
-                if (verifyValueRange(currentPointValue, computedSlope, currentTermR1, currentTermR2)) {
-                    signalFailureAndExit();
+                
+                const term1Curr = Math.floor((currR - 1) / 2);
+                const term2Curr = Math.floor((numRows - currR) / 2);
+                if (isInvalidValue(currA, calculatedDiff, term1Curr, term2Curr)) {
+                    terminateExecution();
                 }
-
             } else {
-                if (verticalSlopeOddCol !== null) {
-                    const currentTermR1 = Math.floor((currentPointRow - 1) / 2);
-                    const currentTermR2 = Math.floor((totalRowsInGrid - currentPointRow) / 2);
-
-                    if (verifyValueRange(currentPointValue, verticalSlopeOddCol, currentTermR1, currentTermR2)) {
-                        signalFailureAndExit();
+                if (diffYOdd === false) {
+                    const term1Curr = Math.floor(currR / 2);
+                    const term2Curr = Math.floor((numRows - currR) / 2);
+                    if (isInvalidValue(currA, diffYOdd, term1Curr, term2Curr)) {
+                        terminateExecution();
                     }
                 }
-                pointsInOddCols.set(currentPointCol, [currentPointRow, currentPointValue]);
+                mapYOdd.set(currC, [currR, currA]);
             }
         }
     }
-
-    // --- Validate Horizontal Consistency (along rows for a fixed column) ---
-    // This part checks how values change as rows vary for a given column.
-    if (totalColsInGrid === 2) {
-        // Special logic for a 2-column grid.
-        const existingEntry = pointsOnEvenRows.get(currentPointRow);
-
-        if (existingEntry) {
-            const previousCol = existingEntry[0];
-            const previousValue = existingEntry[1];
-
-            const computedSlope = (previousValue - currentPointValue) / (previousCol - currentPointCol);
-
-            if (horizontalSlopeEvenRow === null) {
-                horizontalSlopeEvenRow = computedSlope;
-                for (const [rowIdentifier, [cValue, aValue]] of pointsOnEvenRows.entries()) {
-                    const termForC1 = (cValue - 1);
-                    const termForC2 = (totalColsInGrid - cValue); // (C - c3) where C=2
-
-                    if (verifyValueRange(aValue, horizontalSlopeEvenRow, termForC1, termForC2)) {
-                        signalFailureAndExit();
+    
+    if (numCols === 2) {
+        if (mapXEven.has(currR)) {
+            const prevCA = mapXEven.get(currR);
+            const prevC = prevCA[0];
+            const prevA = prevCA[1];
+            
+            const calculatedDiff = (prevA - currA) / (prevC - currC);
+            
+            if (diffXEven === -1) {
+                diffXEven = calculatedDiff;
+                for (const entryX of mapXEven.entries()) {
+                    const [, [colX, valX]] = entryX;
+                    if (isInvalidValue(valX, calculatedDiff, (colX - 1), (numCols - colX))) {
+                        terminateExecution();
                     }
                 }
-            } else {
-                if (computedSlope !== horizontalSlopeEvenRow) {
-                    signalFailureAndExit();
-                }
+            } else if (calculatedDiff !== diffXEven) {
+                terminateExecution();
             }
-
-            const currentTermC1 = (currentPointCol - 1);
-            const currentTermC2 = (totalColsInGrid - currentPointCol);
-
-            if (verifyValueRange(currentPointValue, computedSlope, currentTermC1, currentTermC2)) {
-                signalFailureAndExit();
+            
+            if (isInvalidValue(currA, calculatedDiff, (currC - 1), (numCols - currC))) {
+                terminateExecution();
             }
-
         } else {
-            if (horizontalSlopeEvenRow !== null) {
-                const currentTermC1 = (currentPointCol - 1);
-                const currentTermC2 = (totalColsInGrid - currentPointCol);
-
-                if (verifyValueRange(currentPointValue, horizontalSlopeEvenRow, currentTermC1, currentTermC2)) {
-                    signalFailureAndExit();
+            if (diffXEven !== false) {
+                if (isInvalidValue(currA, diffXEven, (currC - 1), (numCols - currC))) {
+                    terminateExecution();
                 }
             }
-            pointsOnEvenRows.set(currentPointRow, [currentPointCol, currentPointValue]);
+            mapXEven.set(currR, [currC, currA]);
         }
-
     } else {
-        // General case for grids with more than 2 columns.
-        // Points are categorized by the parity of their column index.
-        const isCurrentPointColEven = (currentPointCol % 2 === 0);
-
-        if (isCurrentPointColEven) {
-            // Processing for points in even-indexed columns.
-            const existingEntry = pointsOnEvenRows.get(currentPointRow);
-
-            if (existingEntry) {
-                const previousCol = existingEntry[0];
-                const previousValue = existingEntry[1];
-
-                const computedSlope = (previousValue - currentPointValue) / ((previousCol - currentPointCol) / 2);
-
-                if (horizontalSlopeEvenRow === null) {
-                    horizontalSlopeEvenRow = computedSlope;
-                    for (const [rowIdentifier, [cValue, aValue]] of pointsOnEvenRows.entries()) {
-                        const termForC1 = (cValue / 2) - 1;
-                        const termForC2 = Math.floor((totalColsInGrid - cValue) / 2);
-
-                        if (verifyValueRange(aValue, horizontalSlopeEvenRow, termForC1, termForC2)) {
-                            signalFailureAndExit();
+        const isEvenCol = (currC % 2 === 0);
+        if (isEvenCol) {
+            if (mapXEven.has(currR)) {
+                const prevCA = mapXEven.get(currR);
+                const prevC = prevCA[0];
+                const prevA = prevCA[1];
+                
+                const colDiffDenominator = (prevC - currC) / 2;
+                const calculatedDiff = (prevA - currA) / colDiffDenominator;
+                
+                if (diffXEven === false) {
+                    diffXEven = calculatedDiff;
+                    for (const entryX of mapXEven.entries()) {
+                        const [, [colX, valX]] = entryX;
+                        const term1 = (colX / 2) - 1;
+                        const term2 = Math.floor((numCols - colX) / 2);
+                        if (isInvalidValue(valX, calculatedDiff, term1, term2)) {
+                            terminateExecution();
                         }
                     }
-                } else {
-                    if (computedSlope !== horizontalSlopeEvenRow) {
-                        signalFailureAndExit();
-                    }
+                } else if (calculatedDiff !== diffXEven) {
+                    terminateExecution();
                 }
-
-                const currentTermC1 = (currentPointCol / 2) - 1;
-                const currentTermC2 = Math.floor((totalColsInGrid - currentPointCol) / 2);
-
-                if (verifyValueRange(currentPointValue, computedSlope, currentTermC1, currentTermC2)) {
-                    signalFailureAndExit();
+                
+                const term1Curr = (currC / 2) - 1;
+                const term2Curr = Math.floor((numCols - currC) / 2);
+                if (isInvalidValue(currA, calculatedDiff, term1Curr, term2Curr)) {
+                    terminateExecution();
                 }
-
             } else {
-                if (horizontalSlopeEvenRow !== null) {
-                    const currentTermC1 = (currentPointCol / 2) - 1;
-                    const currentTermC2 = Math.floor((totalColsInGrid - currentPointCol) / 2);
-
-                    if (verifyValueRange(currentPointValue, horizontalSlopeEvenRow, currentTermC1, currentTermC2)) {
-                        signalFailureAndExit();
+                if (diffXEven !== false) {
+                    const term1Curr = (currC / 2) - 1;
+                    const term2Curr = Math.floor((numCols - currC) / 2);
+                    if (isInvalidValue(currA, diffXEven, term1Curr, term2Curr)) {
+                        terminateExecution();
                     }
                 }
-                pointsOnEvenRows.set(currentPointRow, [currentPointCol, currentPointValue]);
+                mapXEven.set(currR, [currC, currA]);
             }
-
         } else {
-            // Processing for points in odd-indexed columns.
-            const existingEntry = pointsOnOddRows.get(currentPointRow);
-
-            if (existingEntry) {
-                const previousCol = existingEntry[0];
-                const previousValue = existingEntry[1];
-
-                const computedSlope = (previousValue - currentPointValue) / ((previousCol - currentPointCol) / 2);
-
-                if (horizontalSlopeOddRow === null) {
-                    horizontalSlopeOddRow = computedSlope;
-                    for (const [rowIdentifier, [cValue, aValue]] of pointsOnOddRows.entries()) {
-                        const termForC1 = Math.floor((cValue - 1) / 2);
-                        const termForC2 = Math.floor((totalColsInGrid - cValue) / 2);
-
-                        if (verifyValueRange(aValue, horizontalSlopeOddRow, termForC1, termForC2)) {
-                            signalFailureAndExit();
+            if (mapXOdd.has(currR)) {
+                const prevCA = mapXOdd.get(currR);
+                const prevC = prevCA[0];
+                const prevA = prevCA[1];
+                
+                const colDiffDenominator = (prevC - currC) / 2;
+                const calculatedDiff = (prevA - currA) / colDiffDenominator;
+                
+                if (diffXOdd === false) {
+                    diffXOdd = calculatedDiff;
+                    for (const entryX of mapXOdd.entries()) {
+                        const [, [colX, valX]] = entryX;
+                        const term1 = Math.floor(colX / 2);
+                        const term2 = Math.floor((numCols - colX) / 2);
+                        if (isInvalidValue(valX, calculatedDiff, term1, term2)) {
+                            terminateExecution();
                         }
                     }
-                } else {
-                    if (computedSlope !== horizontalSlopeOddRow) {
-                        signalFailureAndExit();
-                    }
+                } else if (calculatedDiff !== diffXOdd) {
+                    terminateExecution();
                 }
-
-                const currentTermC1 = Math.floor((currentPointCol - 1) / 2);
-                const currentTermC2 = Math.floor((totalColsInGrid - currentPointCol) / 2);
-
-                if (verifyValueRange(currentPointValue, computedSlope, currentTermC1, currentTermC2)) {
-                    signalFailureAndExit();
+                
+                const term1Curr = Math.floor(currC / 2);
+                const term2Curr = Math.floor((numCols - currC) / 2);
+                if (isInvalidValue(currA, calculatedDiff, term1Curr, term2Curr)) {
+                    terminateExecution();
                 }
-
             } else {
-                if (horizontalSlopeOddRow !== null) {
-                    const currentTermC1 = Math.floor((currentPointCol - 1) / 2);
-                    const currentTermC2 = Math.floor((totalColsInGrid - currentPointCol) / 2);
-
-                    if (verifyValueRange(currentPointValue, horizontalSlopeOddRow, currentTermC1, currentTermC2)) {
-                        signalFailureAndExit();
+                if (diffXOdd !== false) {
+                    const term1Curr = Math.floor(currC / 2);
+                    const term2Curr = Math.floor((numCols - currC) / 2);
+                    if (isInvalidValue(currA, diffXOdd, term1Curr, term2Curr)) {
+                        terminateExecution();
                     }
                 }
-                pointsOnOddRows.set(currentPointRow, [currentPointCol, currentPointValue]);
+                mapXOdd.set(currR, [currC, currA]);
             }
         }
     }
 }
 
-// If the program reaches this point, all data points satisfied the consistency rules.
 console.log('Yes');

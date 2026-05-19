@@ -1,180 +1,180 @@
-"use strict";
-
-(function(fileSystemOperations) {
-  "use strict";
-
-  // Implements a min-priority queue (min-heap) with lazy deletion
-  class OrderedValueCollector {
+class MinHeap {
     constructor() {
-      this.valueContainer = [];
-      this.removalLog = new Map(); // Tracks counts of elements marked for removal
+        this.heap = [];
     }
 
-    // Swaps two elements in the internal array
-    _exchange(idxA, idxB) {
-      [this.valueContainer[idxA], this.valueContainer[idxB]] = [this.valueContainer[idxB], this.valueContainer[idxA]];
+    _getParentIndex(i) { return Math.floor((i - 1) / 2); }
+    _getLeftChildIndex(i) { return 2 * i + 1; }
+    _getRightChildIndex(i) { return 2 * i + 2; }
+
+    _hasParent(i) { return this._getParentIndex(i) >= 0; }
+    _hasLeftChild(i) { return this._getLeftChildIndex(i) < this.heap.length; }
+    _hasRightChild(i) { return this._getRightChildIndex(i) < this.heap.length; }
+
+    _getParent(i) { return this.heap[this._getParentIndex(i)]; }
+    _getLeftChild(i) { return this.heap[this._getLeftChildIndex(i)]; }
+    _getRightChild(i) { return this.heap[this._getRightChildIndex(i)]; }
+
+    _swap(i, j) {
+        [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
     }
 
-    // Moves an element up the heap to maintain the min-heap property
-    _promote(idx) {
-      let currentPosition = idx;
-      while (currentPosition > 0) {
-        let parentPosition = Math.floor((currentPosition - 1) / 2);
-        if (this.valueContainer[currentPosition] < this.valueContainer[parentPosition]) {
-          this._exchange(currentPosition, parentPosition);
-          currentPosition = parentPosition;
-        } else {
-          break;
+    peek() {
+        if (this.heap.length === 0) return null;
+        return this.heap[0];
+    }
+
+    add(item) {
+        this.heap.push(item);
+        this._heapifyUp();
+    }
+
+    extractMin() {
+        if (this.heap.length === 0) return null;
+        if (this.heap.length === 1) return this.heap.pop();
+
+        const item = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this._heapifyDown();
+        return item;
+    }
+
+    _heapifyUp() {
+        let index = this.heap.length - 1;
+        while (this._hasParent(index) && this._getParent(index) > this.heap[index]) {
+            this._swap(this._getParentIndex(index), index);
+            index = this._getParentIndex(index);
         }
-      }
     }
 
-    // Moves an element down the heap to maintain the min-heap property
-    _demote(idx) {
-      let currentPosition = idx;
-      const finalPosition = this.valueContainer.length - 1;
+    _heapifyDown() {
+        let index = 0;
+        while (this._hasLeftChild(index)) {
+            let smallerChildIndex = this._getLeftChildIndex(index);
+            if (this._hasRightChild(index) && this._getRightChild(index) < this._getLeftChild(index)) {
+                smallerChildIndex = this._getRightChildIndex(index);
+            }
 
-      while (true) {
-        let leftChildPosition = 2 * currentPosition + 1;
-        let rightChildPosition = 2 * currentPosition + 2;
-        let smallestChildPosition = currentPosition;
-
-        if (leftChildPosition <= finalPosition && this.valueContainer[leftChildPosition] < this.valueContainer[smallestChildPosition]) {
-          smallestChildPosition = leftChildPosition;
+            if (this.heap[index] < this.heap[smallerChildIndex]) {
+                break;
+            } else {
+                this._swap(index, smallerChildIndex);
+            }
+            index = smallerChildIndex;
         }
-        if (rightChildPosition <= finalPosition && this.valueContainer[rightChildPosition] < this.valueContainer[smallestChildPosition]) {
-          smallestChildPosition = rightChildPosition;
+    }
+
+    size() {
+        return this.heap.length;
+    }
+}
+
+class MinHeapWithLazyDeletion {
+    constructor() {
+        this.internalHeap = new MinHeap();
+        this.elementCounts = new Map();
+    }
+
+    add(val) {
+        if (!this.elementCounts.has(val) || this.elementCounts.get(val) === 0) {
+            this.internalHeap.add(val);
         }
+        this.elementCounts.set(val, (this.elementCounts.get(val) || 0) + 1);
+    }
 
-        if (smallestChildPosition !== currentPosition) {
-          this._exchange(currentPosition, smallestChildPosition);
-          currentPosition = smallestChildPosition;
-        } else {
-          break;
+    remove(val) {
+        if (this.elementCounts.has(val) && this.elementCounts.get(val) > 0) {
+            this.elementCounts.set(val, this.elementCounts.get(val) - 1);
         }
-      }
     }
 
-    // Removes elements from the top of the heap that are marked for lazy deletion
-    _purgeTop() {
-      while (this.valueContainer.length > 0 && this.removalLog.get(this.valueContainer[0]) > 0) {
-        const topElement = this.valueContainer[0];
-        this.removalLog.set(topElement, this.removalLog.get(topElement) - 1);
+    getMin() {
+        this._purgeDeletedElements();
+        return this.internalHeap.peek();
+    }
 
-        // Perform actual heap pop operation
-        if (this.valueContainer.length === 1) {
-          this.valueContainer.pop();
-        } else {
-          this.valueContainer[0] = this.valueContainer.pop();
-          this._demote(0);
+    _purgeDeletedElements() {
+        while (this.internalHeap.size() > 0 && this.elementCounts.get(this.internalHeap.peek()) === 0) {
+            this.internalHeap.extractMin();
         }
-      }
     }
 
-    // Adds a new element to the collection
-    deposit(elementValue) {
-      // If the element was previously marked for removal, decrement its removal count instead of re-adding
-      if (this.removalLog.has(elementValue) && this.removalLog.get(elementValue) > 0) {
-        this.removalLog.set(elementValue, this.removalLog.get(elementValue) - 1);
-      } else {
-        this.valueContainer.push(elementValue);
-        this._promote(this.valueContainer.length - 1);
-      }
+    isEmpty() {
+        this._purgeDeletedElements();
+        return this.internalHeap.size() === 0;
     }
+}
 
-    // Marks an element for lazy removal from the collection
-    expunge(elementValue) {
-      this.removalLog.set(elementValue, (this.removalLog.get(elementValue) || 0) + 1);
-    }
+(function (fileSystem) {
+    "use strict";
 
-    // Retrieves the smallest element currently in the collection, handling lazy removals
-    getMinimum() {
-      this._purgeTop(); // Ensure the top element is not marked for removal
-      return this.valueContainer.length > 0 ? this.valueContainer[0] : null;
-    }
-  }
+    const parseLineToNumbers = (lineContent) => lineContent.split(/\s+/).map(Number);
 
-  // --- Main application execution logic ---
-  (function() {
-    // Utility function to parse a line of space-separated numbers
-    function parseNumericLine(lineContent) {
-      return (Array.isArray(lineContent) ? lineContent : lineContent.split(/\s+/)).map(Number);
-    }
+    (function (rawInput) {
+        const allInputLines = rawInput.split("\n");
 
-    // Main function to process the problem input and generate output
-    function executeProblem(rawData) {
-      const allLines = rawData.split("\n");
+        const [projectCount, queryCount] = parseLineToNumbers(allInputLines[0]);
 
-      // Parse initial counts
-      const [projectCount, queryCount] = parseNumericLine(allLines[0]);
-
-      // Parse project details and calculate adjusted start/end moments
-      const projectDetails = allLines.slice(1, projectCount + 1).map((currentLine) => {
-        const [beginTime, finishTime, identifierValue] = parseNumericLine(currentLine);
-        return {
-          begin: beginTime,
-          finish: finishTime,
-          value: identifierValue,
-          startMoment: beginTime - identifierValue - 0.5, // Adjusted start time
-          endMoment: finishTime - identifierValue - 0.6 // Adjusted end time
-        };
-      });
-
-      // Parse query times
-      const queryTimes = parseNumericLine(allLines.slice(projectCount + 1)).slice(0, queryCount);
-
-      // Generate timeline actions (add/remove events) from project details
-      const timelineActions = [];
-      for (const project of projectDetails) {
-        timelineActions.push({
-          kind: "add",
-          timePoint: project.startMoment,
-          targetValue: project.value
-        }, {
-          kind: "remove",
-          timePoint: project.endMoment,
-          targetValue: project.value
+        const projectData = allInputLines.slice(1, projectCount + 1).map((line) => {
+            const [startPoint, endPoint, xValue] = parseLineToNumbers(line);
+            return {
+                startPoint: startPoint,
+                endPoint: endPoint,
+                xValue: xValue,
+                activationTime: startPoint - xValue - 0.5,
+                deactivationTime: endPoint - xValue - 0.6
+            };
         });
-      }
 
-      // Sort all actions chronologically
-      timelineActions.sort((actionA, actionB) => {
-        return actionA.timePoint - actionB.timePoint;
-      });
+        const queryTimePoints = parseLineToNumbers(allInputLines.slice(projectCount + 1)).slice(0, queryCount);
 
-      const activeIdentifiers = new OrderedValueCollector();
-      let currentQueryIndex = 0;
-      const results = [];
+        let allScheduledActions = [];
 
-      // Process actions and queries in chronological order
-      for (const incident of timelineActions) {
-        // Resolve queries that occur before the current incident's time
-        while (currentQueryIndex < queryCount && queryTimes[currentQueryIndex] < incident.timePoint) {
-          const retrievedMinimum = activeIdentifiers.getMinimum();
-          results.push(retrievedMinimum === null ? -1 : retrievedMinimum);
-          currentQueryIndex++;
+        for (const project of projectData) {
+            allScheduledActions.push({
+                actionType: 0, // 'add' type
+                eventTime: project.activationTime,
+                associatedValue: project.xValue
+            });
+            allScheduledActions.push({
+                actionType: 1, // 'delete' type
+                eventTime: project.deactivationTime,
+                associatedValue: project.xValue
+            });
         }
 
-        // Apply the current incident's action
-        if ("add" === incident.kind) {
-          activeIdentifiers.deposit(incident.targetValue);
-        } else if ("remove" === incident.kind) {
-          activeIdentifiers.expunge(incident.targetValue);
+        for (let q = 0; q < queryTimePoints.length; q++) {
+            allScheduledActions.push({
+                actionType: 2, // 'query' type
+                eventTime: queryTimePoints[q],
+                queryIndex: q
+            });
         }
-      }
 
-      // Resolve any remaining queries after all incidents have been processed
-      while (currentQueryIndex < queryCount) {
-        const retrievedMinimum = activeIdentifiers.getMinimum();
-        results.push(retrievedMinimum === null ? -1 : retrievedMinimum);
-        currentQueryIndex++;
-      }
+        allScheduledActions.sort((actionA, actionB) => {
+            if (actionA.eventTime !== actionB.eventTime) {
+                return actionA.eventTime - actionB.eventTime;
+            }
+            return actionA.actionType - actionB.actionType;
+        });
 
-      // Output all results
-      console.log(results.join("\n"));
-    }
+        const activeElementsTracker = new MinHeapWithLazyDeletion();
+        const storedQueryResults = new Array(queryCount);
 
-    // Read input from stdin and execute the problem solver
-    executeProblem(fileSystemOperations.readFileSync("/dev/stdin", "utf8"));
-  })();
-})(require("fs"));
+        for (const currentAction of allScheduledActions) {
+            if (currentAction.actionType === 0) { // 'add'
+                activeElementsTracker.add(currentAction.associatedValue);
+            } else if (currentAction.actionType === 1) { // 'delete'
+                activeElementsTracker.remove(currentAction.associatedValue);
+            } else { // 'query'
+                storedQueryResults[currentAction.queryIndex] = activeElementsTracker.getMin() ?? -1;
+            }
+        }
+
+        for (const result of storedQueryResults) {
+            console.log(result);
+        }
+
+    })(fileSystem.readFileSync("/dev/stdin", "utf8"));
+
+}(require("fs")));

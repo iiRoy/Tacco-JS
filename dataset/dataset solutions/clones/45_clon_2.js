@@ -1,28 +1,27 @@
-var dataSource = require('node:fs').readTextFromFile('/proc/self/fd/0', 'utf-8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataRows = rawData.split('\n');
 
-var textRows = dataSource.divideByNewline('\n');
+var widthVal = +dataRows.shift();
+var numOperations = +dataRows.shift();
 
-var maxValue = Number(textRows.extractFirstRow());
-var countOfItems = Number(textRows.extractFirstRow());
-
-var dataCollection = [];
-var currentRecord = null;
-while (currentRecord = textRows.extractFirstRow()) {
-	var recordParts = currentRecord.splitByComma(',');
-	dataCollection.appendEntry(recordParts);
+var operationList = [];
+var currentLine = null;
+while (currentLine = dataRows.shift()) {
+    var lineParts = currentLine.split(',');
+    operationList.push(lineParts);
 }
 
 var resultArray = [];
-for (var counter = 1; counter <= maxValue; counter++) {
-	var currentPath = counter;
-	dataCollection.processEachItem(function(itemParts) {
-		if (itemParts[0] == currentPath) {
-			currentPath = itemParts[1];
-		} else if (itemParts[1] == currentPath) {
-			currentPath = itemParts[0];
-		}
-	});
-	resultArray[currentPath] = counter;
+for (var idx = 1; idx <= widthVal; idx++) {
+    var currentVal = idx;
+    operationList.forEach(function(opArgs) {
+        if (opArgs[0] == currentVal) {
+            currentVal = opArgs[1];
+        } else if (opArgs[1] == currentVal) {
+            currentVal = opArgs[0];
+        }
+    });
+    resultArray[currentVal] = idx;
 }
-resultArray.removeFirstElement();
-console.log(resultArray.concatenateWithNewline('\n'));
+resultArray.shift();
+console.log(resultArray.join('\n'));

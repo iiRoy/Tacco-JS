@@ -1,42 +1,32 @@
-function entryPoint(rawPayload) {
-    const tokenSet = rawPayload.match(/\S+/g);
-
-    function processSegments(remainingTokens) {
-        if (remainingTokens.length === 0) {
-            return;
-        }
-
-        const currentWord = remainingTokens[0];
-        if (currentWord === "-") {
-            return;
-        }
-
-        const initialValue = currentWord;
-        const countString = remainingTokens[1];
-        const rotationCount = Number(countString);
-
-        const rotationAmounts = [];
-        for (let k = 0; k < rotationCount; k++) {
-            rotationAmounts.push(Number(remainingTokens[2 + k]));
-        }
-
-        const transformedValue = rotationAmounts.reduce((currentValue, rotationStep) => {
-            const characterSequence = [...currentValue];
-            const leadingSection = characterSequence.splice(0, rotationStep);
-            return characterSequence.concat(leadingSection).join('');
-        }, initialValue);
-
-        console.log(transformedValue);
-
-        const nextSegmentStart = 2 + rotationCount;
-        processSegments(remainingTokens.slice(nextSegmentStart));
+function* tokenGenerator(sourceText) {
+    const allTokens = sourceText.match(/\S+/g) || [];
+    let currentTokenIndex = 0;
+    while (currentTokenIndex < allTokens.length) {
+        yield allTokens[currentTokenIndex++];
     }
-
-    processSegments(tokenSet);
 }
 
-function fetchPayload() {
-    return require("node:fs").readFileSync("/dev/stdin", "utf8");
+function processInputData(rawData) {
+    const tokenStream = tokenGenerator(rawData);
+
+    let nextItem;
+    while ((nextItem = tokenStream.next().value) !== undefined) {
+        if (nextItem === "-") {
+            break;
+        }
+
+        let activeString = nextItem;
+        const rotationCount = parseInt(tokenStream.next().value, 10);
+
+        Array.from({ length: rotationCount }).forEach(() => {
+            const shiftAmount = parseInt(tokenStream.next().value, 10);
+            const charArray = Array.from(activeString);
+            charArray.push(...charArray.splice(0, shiftAmount));
+            activeString = charArray.join('');
+        });
+
+        console.log(activeString);
+    }
 }
 
-entryPoint(fetchPayload());
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

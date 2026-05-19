@@ -1,40 +1,47 @@
-( function ( inputBuffer ) {
-  //  Utility module for handling temporal durations
-  function Duration( totalSeconds ) {
-    const SECONDS_PER_HOUR_CONST = 3600; // Constant: amount of seconds in an hour
-    const SECONDS_PER_MINUTE_CONST = 60; // Constant: amount of seconds in a minute
+(function(inputData) {
+  // This module provides utilities for converting a total number of seconds into a structured time format.
+  function DurationConverter(totalSeconds) {
+    const SECONDS_IN_HOUR   = 3600; // Represents the number of seconds in one hour (60 * 60).
+    const SECONDS_IN_MINUTE = 60;   // Represents the number of seconds in one minute.
+
     return {
+      // Method to calculate and return the whole number of hours.
       retrieveHours: function() {
-        return Math.floor( totalSeconds / ( SECONDS_PER_HOUR_CONST ) );
+        return Math.floor(totalSeconds / SECONDS_IN_HOUR);
       },
+      // Method to calculate and return the remaining minutes after hours are extracted.
       retrieveMinutes: function() {
-        return Math.floor( ( totalSeconds % ( SECONDS_PER_HOUR_CONST ) ) / SECONDS_PER_MINUTE_CONST );
+        return Math.floor((totalSeconds % SECONDS_IN_HOUR) / SECONDS_IN_MINUTE);
       },
+      // Method to calculate and return the remaining seconds after hours and minutes are extracted.
       retrieveSeconds: function() {
-        return totalSeconds % SECONDS_PER_MINUTE_CONST;
+        return totalSeconds % SECONDS_IN_MINUTE;
       },
-      formatAsString: function( delimiterChar ) {
-        let chosenDelimiter = delimiterChar || '---'; // Use provided delimiter or a default
+      // Method to format the time components (hours, minutes, seconds) into a string.
+      formatTime: function(delimiter) {
+        let delimChar = delimiter || ':'; // Use a colon as the default delimiter if none is provided.
         return [
           this.retrieveHours(),
           this.retrieveMinutes(),
           this.retrieveSeconds()
-        ].join( chosenDelimiter );
+        ].join(delimChar);
       }
     };
   }
 
-  //  Process raw input data
-  const inputLines = inputBuffer.toString().trim().split( '\n' );
+  // Read and process the raw input from the standard input stream.
+  const rawInputLines = inputData.toString().trim().split('\n');
 
-  //  Execute the primary transformation workflow
-  const finalOutput = ( function( numericalValue ) {
-    const timeInstance = new Duration( numericalValue ); // Instantiate a duration object
-    return timeInstance.formatAsString(); // Convert the duration to a formatted string
+  // Execute the main logic to compute and format the time based on the input.
+  const formattedTimeOutput = (function(inputSecondsValue) {
+    // Instantiate the duration conversion utility with the parsed input seconds.
+    const timeInstance = new DurationConverter(inputSecondsValue);
+    // Obtain the formatted time string from the instance.
+    return timeInstance.formatTime();
 
-  }( parseInt( inputLines[ 0 ], 0xA ) ) ); // Parse the initial input value using base 0xA
+  }(parseInt(rawInputLines[0], 10))); // Parse the first line of input as a base-10 integer.
 
-  //  Output the final string result
-  console.log( finalOutput );
+  // Display the final formatted time string to the console.
+  console.log(formattedTimeOutput);
 
-}( require('fs').readFileSync( '/dev/stdin', 'utf8' ) ) );
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

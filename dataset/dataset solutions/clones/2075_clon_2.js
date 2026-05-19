@@ -1,33 +1,28 @@
-'use strict'
-// This directive ensures strict parsing and error handling for the script.
+'use strict';
 
-function  ProcessData(  incomingTextBlob  )
-{
-    /*
-     * The entire input string is first broken down into an array of individual lines.
-     * Each distinct line, separated by a newline character, becomes an element
-     * within this array, starting from an index of 0.
-     */
-    const   parsedLines  =  incomingTextBlob.split(  "\n"  );
+/**
+ * Processes the raw input string to determine a specific condition.
+ * @param {string} rawData - The complete input string, potentially multi-line.
+ */
+function ProcessInput(rawData) {
+  // The first line of input is in lines[0], second in lines[1], etc.
+  const lines = rawData.split("\n");
 
-    const   firstValue  =  Number(  parsedLines[0.0].split(  " "  )[0.0]  );
-    const   secondValue  =  Number(  parsedLines[0.0].split(  " "  )[1.0]  );
-    const   limitValue  =  Number(  parsedLines[0.0].split(  " "  )[2.0]  );
+  // Parse numerical values from the first line
+  const firstLineParts = lines[0].split(' ');
+  const valX = Number(firstLineParts[0]);
+  const valY = Number(firstLineParts[1]);
+  const valZ = Number(firstLineParts[2]);
 
-    if  (  (  limitValue  -  firstValue  -  secondValue  )  <=  0.0  )
-    {
-        console.log(  "Negative"  );
-    }
-    else  if  (  (  4.0  *  firstValue  *  secondValue  )  <  (  (  limitValue  -  firstValue  -  secondValue  )  *  (  limitValue  -  firstValue  -  secondValue  )  )  )
-    {
-        console.log(  "Affirmative"  );
-    }
-    else
-    {
-        console.log(  "Negative"  );
-    }
+  // Evaluate the conditions based on the parsed values
+  if (valZ - valX - valY <= 0) {
+    console.log('No'); // Output 'No' if the first condition is met
+  } else if (4 * valX * valY < (valZ - valX - valY) * (valZ - valX - valY)) {
+    console.log('Yes'); // Output 'Yes' if the second condition is met
+  } else {
+    console.log('No'); // Otherwise, output 'No'
+  }
 }
 
-// Please do not modify the code lines below this comment. They are responsible
-// for handling the standard input/output operations of the program.
-ProcessData(  require(  "fs"  ).readFileSync(  "/dev/stdin"  ,  "utf8"  )  );
+// Do not modify the following section (handles standard input/output and calls the main processing function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

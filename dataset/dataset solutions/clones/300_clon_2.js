@@ -1,85 +1,66 @@
-( function ( rawContent ) { // Main execution block receives raw input text
-    /**
-     * Checks if a square region in the gridMap is entirely composed of empty spaces.
-     * @param {number} colIdx      The starting column index of the potential square.
-     * @param {number} rowIdx      The starting row index of the potential square.
-     * @param {number} sideLength  The length of one side of the square to check.
-     * @returns {boolean}          True if the square is clear, false otherwise.
-     */
-    function checkSquare( colIdx , rowIdx , sideLength )
-    {
-        // Iterate through rows within the defined square
-        for ( let currentRow = rowIdx ; currentRow <= rowIdx + sideLength ; currentRow++ ) {
-            // Iterate through columns within the defined square
-            for ( let currentCol = colIdx ; currentCol <= colIdx + sideLength ; currentCol++ ) {
-                // If any cell within the square is not an empty character ('.')
-                if ( gridMap [ currentRow ] [ currentCol ] !== '.' )
-                {
-                    return false ; // The square is not clear
+(function (sourceText) {
+    // This helper function determines if a square region within the grid,
+    // starting at (colCoord, rowCoord) with a given dimension,
+    // consists entirely of '.' characters.
+    function checkSquare(colCoord, rowCoord, dim) {
+        // Iterate through rows within the potential square.
+        for (var rowIdx = rowCoord; rowIdx <= rowCoord + dim; rowIdx++) {
+            // Iterate through columns within the potential square.
+            for (var colIdx = colCoord; colIdx <= colCoord + dim; colIdx++) {
+                // If any cell in the specified square region is not a '.',
+                // then it's not a valid square of '.' characters.
+                if (gridData[rowIdx][colIdx] !== '.') {
+                    return false;
                 }
             }
         }
-        return true ; // All cells are clear, it's a valid empty square
+        // If the loops complete, all cells in the square were '.',
+        // so it is a valid square.
+        return true;
     }
 
+    // Process the raw input text: remove carriage returns and split by newline.
+    var inputLines = sourceText.replace(/\r/g, '').split("\n");
+    var gridData; // Stores the current grid for processing.
+    var gridDim; // Stores the dimension (N) of the current square grid.
+    var outerLoopIdx; // General purpose loop index for outer loops.
+    var innerLoopIdx; // General purpose loop index for inner loops.
 
-    // Process the initial input string into an array of lines, removing carriage returns
-    let lineSegments = rawContent.replace( /\r/g , '' ) .split( "\n" ) ,
-        gridMap ,                      // Represents the 2D grid of characters
-        dimension ,                    // Stores the size of the square grid (N x N)
-        rowIter ,                      // General purpose row iterator
-        colIter ;                      // General purpose column iterator
+    // Main processing loop for multiple test cases.
+    while (true) {
+        // Read the grid dimension for the current test case.
+        gridDim = parseInt(inputLines.shift());
 
-
-    // Loop indefinitely until an explicit break condition is met
-    while ( true )
-    {
-        // Parse the first line segment as the grid dimension
-        dimension = Number.parseInt( lineSegments.shift() ) ;
-
-        // If the dimension is zero, it's the termination signal
-        if ( dimension === 0 )
-        {
-            break ; // Exit the main processing loop
+        // If the dimension is 0, it signifies the end of input.
+        if (gridDim === 0) {
+            break; // Exit the processing loop.
         }
 
-        gridMap = [ ] ; // Initialize an empty array to hold the grid rows
-        // Populate the grid map with 'dimension' number of rows
-        for ( rowIter = 0 ; rowIter < dimension ; rowIter++ )
-        {
-            gridMap.push( lineSegments.shift() ) ; // Add the next line as a row
+        gridData = []; // Initialize an empty array to store the grid rows.
+        // Populate the grid with N rows from the input.
+        for (outerLoopIdx = 0; outerLoopIdx < gridDim; outerLoopIdx++) {
+            gridData.push(inputLines.shift());
         }
 
-        // // Optional: Debugging output for the constructed grid
-        // console.log( gridMap ) ;
-        // // Optional: Debugging output for a specific square check
-        // console.log( checkSquare( 3 , 3 , 5 ) ) ;
+        // This variable will store the maximum side length of a square
+        // composed entirely of '.' characters found in the current grid.
+        var maxSquareDim = 1;
 
-        // Initialize the current square size we are trying to find
-        let currentSquareSize = 1 ;
-
-        // Iterate through each possible starting row of a square
-        for ( rowIter = 0 ; rowIter < dimension ; rowIter++ )
-        {
-            // Iterate through each possible starting column of a square
-            for ( colIter = 0 ; colIter < dimension ; )
-            {
-                // Check if a square of 'currentSquareSize' starting at (colIter, rowIter) is clear
-                if ( checkSquare( colIter , rowIter , currentSquareSize ) )
-                {
-                    // // Debugging: Found a square
-                    // console.log( "Found clear square!" , colIter , rowIter , currentSquareSize ) ;
-                    currentSquareSize++ ; // Increase the size to search for a larger square
-                }
-                else
-                {
-                    // // Debugging: Square not clear
-                    // console.log( "Square not clear!" , colIter , rowIter , currentSquareSize ) ;
-                    colIter += currentSquareSize ; // Move to the next potential starting column, skipping the current square's width
+        // Iterate through each cell of the grid to find the largest square.
+        for (outerLoopIdx = 0; outerLoopIdx < gridDim; outerLoopIdx++) {
+            for (innerLoopIdx = 0; innerLoopIdx < gridDim;) {
+                // Check if a square of the current 'maxSquareDim' size
+                // can be formed starting at the current (innerLoopIdx, outerLoopIdx) position.
+                if (checkSquare(innerLoopIdx, outerLoopIdx, maxSquareDim)) {
+                    maxSquareDim++; // If a square of this size is found, try for a larger one.
+                } else {
+                    // If not, move the innerLoopIdx forward by the current 'maxSquareDim'
+                    // to avoid re-checking the same invalid region.
+                    innerLoopIdx += maxSquareDim;
                 }
             }
         }
-        // Output the final maximum square size found for the current grid
-        console.log( currentSquareSize ) ;
+        // Output the largest square dimension found for the current grid.
+        console.log(maxSquareDim);
     }
-} ) ( require( "fs" ) .readFileSync( "/dev/stdin" , "utf8" ) ) ; // Immediately invoked function expression with file system input
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

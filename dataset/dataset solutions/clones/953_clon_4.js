@@ -1,117 +1,90 @@
-const rawLines = require('node:fs').readFileSync('/dev/stdin', 'utf-8').trim().split('\n');
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').trim().split('\n');
 
-class MinPQ {
-    constructor() {
-        this.heapElements = [];
-    }
+const graphData = new Map();
 
-    insertElement(itemData) {
-        this.heapElements.push(itemData);
-        this.siftUp();
-    }
+for (let lineIndex = 1; lineIndex < inputLines.length; lineIndex++) {
+    const currentLine = inputLines[lineIndex].trim();
+    if (!currentLine) continue;
 
-    extractSmallest() {
-        if (this.isVoid()) return null;
-        const smallest = this.heapElements[0];
-        const lastElement = this.heapElements.pop();
-        if (!this.isVoid()) {
-            this.heapElements[0] = lastElement;
-            this.siftDown();
-        }
-        return smallest;
-    }
+    const values = currentLine.split(' ');
+    const connections = [];
 
-    isVoid() {
-        return this.heapElements.length === 0;
-    }
+    for (let edgeIndex = 0; edgeIndex < values.length; edgeIndex++) {
+        const valueStr = values[edgeIndex];
+        const edgeWeight = Number(valueStr);
 
-    siftUp() {
-        let currentPos = this.heapElements.length - 1;
-        while (currentPos > 0) {
-            let parentPos = Math.floor((currentPos - 1) / 2);
-            if (this.heapElements[parentPos].cost <= this.heapElements[currentPos].cost) break;
-            [this.heapElements[parentPos], this.heapElements[currentPos]] = [this.heapElements[currentPos], this.heapElements[parentPos]];
-            currentPos = parentPos;
+        if (edgeWeight !== -1) {
+            connections.push({ targetIdentifier: edgeIndex, edgeCost: edgeWeight });
         }
     }
+    graphData.set(lineIndex - 1, connections);
+}
 
-    siftDown() {
-        let currentPos = 0;
-        const heapSize = this.heapElements.length;
-        const elementToMove = this.heapElements[0];
+const totalVertexCount = graphData.size;
 
-        while (true) {
-            let leftChildPos = 2 * currentPos + 1;
-            let rightChildPos = 2 * currentPos + 2;
-            let leftChildValue, rightChildValue;
-            let swapCandidatePos = null;
+const computeMinimumSpanningTree = (adjacencyMapParam, numVertices) => {
+    const visitedVertices = new Set();
+    const spanningTreeEdges = [];
+    const candidateEdges = []; // Stores {cost, destination, source}
 
-            if (leftChildPos < heapSize) {
-                leftChildValue = this.heapElements[leftChildPos];
-                if (leftChildValue.cost < elementToMove.cost) {
-                    swapCandidatePos = leftChildPos;
+    visitedVertices.add(0); // Start Prim's from vertex 0
+    const initialConnections = adjacencyMapParam.get(0);
+    if (initialConnections) {
+        for (const connection of initialConnections) {
+            candidateEdges.push({
+                cost: connection.edgeCost,
+                destination: connection.targetIdentifier,
+                source: 0
+            });
+        }
+    }
+
+    // Loop until N-1 edges are found or no more candidates
+    while (spanningTreeEdges.length < numVertices - 1 && candidateEdges.length > 0) {
+        let cheapestEdgeIndex = -1;
+        let minCost = Infinity;
+
+        // Find the cheapest edge that connects to an unvisited vertex
+        for (let i = 0; i < candidateEdges.length; i++) {
+            const currentCandidate = candidateEdges[i];
+            if (!visitedVertices.has(currentCandidate.destination)) {
+                if (currentCandidate.cost < minCost) {
+                    minCost = currentCandidate.cost;
+                    cheapestEdgeIndex = i;
                 }
             }
+        }
 
-            if (rightChildPos < heapSize) {
-                rightChildValue = this.heapElements[rightChildPos];
-                if (
-                    (swapCandidatePos === null && rightChildValue.cost < elementToMove.cost) ||
-                    (swapCandidatePos !== null && rightChildValue.cost < leftChildValue.cost)
-                ) {
-                    swapCandidatePos = rightChildPos;
+        if (cheapestEdgeIndex === -1) {
+            break; // No valid edge found, graph might be disconnected or all remaining candidates lead to visited nodes
+        }
+
+        const chosenEdge = candidateEdges[cheapestEdgeIndex];
+        candidateEdges.splice(cheapestEdgeIndex, 1); // Remove the chosen edge
+
+        spanningTreeEdges.push(chosenEdge); // Add to MST
+        const newVertex = chosenEdge.destination;
+        visitedVertices.add(newVertex); // Mark new vertex as visited
+
+        // Add new candidate edges from the newly visited vertex
+        const newVertexConnections = adjacencyMapParam.get(newVertex);
+        if (newVertexConnections) {
+            for (const connection of newVertexConnections) {
+                if (!visitedVertices.has(connection.targetIdentifier)) {
+                    candidateEdges.push({
+                        cost: connection.edgeCost,
+                        destination: connection.targetIdentifier,
+                        source: newVertex
+                    });
                 }
             }
-
-            if (swapCandidatePos === null) break;
-            [this.heapElements[currentPos], this.heapElements[swapCandidatePos]] = [this.heapElements[swapCandidatePos], this.heapElements[currentPos]];
-            currentPos = swapCandidatePos;
-        }
-    }
-}
-
-const totalVertices = parseInt(rawLines[0], 10);
-const connectionGrid = Array.from({ length: totalVertices }, () => Array(totalVertices).fill(Infinity));
-
-for (let sourceIdx = 0; sourceIdx < totalVertices; sourceIdx++) {
-    const weightsLine = rawLines[sourceIdx + 1].trim().split(' ').map(Number);
-    for (let targetIdx = 0; targetIdx < totalVertices; targetIdx++) {
-        if (weightsLine[targetIdx] !== -1 && sourceIdx !== targetIdx) {
-            connectionGrid[sourceIdx][targetIdx] = weightsLine[targetIdx];
-        }
-    }
-}
-
-function computeMinTotalConnectivity(graphGrid, nodeCount) {
-    const includedNodes = new Set();
-    const minEdgeCostToTree = Array(nodeCount).fill(Infinity);
-    const edgeConnectorQueue = new MinPQ();
-
-    let accumulatedCost = 0;
-
-    minEdgeCostToTree[0] = 0;
-    edgeConnectorQueue.insertElement({ cost: 0, nodeIdentity: 0 });
-
-    while (!edgeConnectorQueue.isVoid() && includedNodes.size < nodeCount) {
-        const { cost: currentLinkCost, nodeIdentity: currentNode } = edgeConnectorQueue.extractSmallest();
-
-        if (includedNodes.has(currentNode)) {
-            continue;
-        }
-
-        includedNodes.add(currentNode);
-        accumulatedCost += currentLinkCost;
-
-        for (let adjacentNode = 0; adjacentNode < nodeCount; adjacentNode++) {
-            const potentialConnection = graphGrid[currentNode][adjacentNode];
-            if (potentialConnection !== Infinity && !includedNodes.has(adjacentNode) && potentialConnection < minEdgeCostToTree[adjacentNode]) {
-                minEdgeCostToTree[adjacentNode] = potentialConnection;
-                edgeConnectorQueue.insertElement({ cost: potentialConnection, nodeIdentity: adjacentNode });
-            }
         }
     }
 
-    return accumulatedCost;
-}
+    return spanningTreeEdges;
+};
 
-console.log(computeMinTotalConnectivity(connectionGrid, totalVertices));
+const finalMst = computeMinimumSpanningTree(graphData, totalVertexCount);
+const totalMstWeight = finalMst.reduce((sum, edge) => sum + edge.cost, 0);
+
+console.log(totalMstWeight);

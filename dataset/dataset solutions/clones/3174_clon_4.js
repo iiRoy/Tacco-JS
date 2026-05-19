@@ -1,102 +1,43 @@
 "use strict";
 
-(function (inputSource) {
-    var inputLines = inputSource.split("\n");
-    var firstLineComponents = inputLines[0].split(/\s+/).map(Number);
+function mainExecution() {
+  const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
+  const inputLines = rawInput.split("\n");
 
-    var assignedPieceCount = firstLineComponents[0];
-    var desiredLengthAlpha = firstLineComponents[1];
-    var desiredLengthBeta = firstLineComponents[2];
-    var desiredLengthGamma = firstLineComponents[3];
+  const [numPieces, targetA, targetB, targetC] = inputLines[0].split(/\s+/).map(Number);
 
-    var availableBamboos = [];
-    for (var i = 1; i <= assignedPieceCount; i++) {
-        availableBamboos.push(Number(inputLines[i]));
+  const bambooLengths = inputLines.slice(1, 1 + numPieces).map(Number);
+
+  let minimumCost = Infinity;
+
+  function exploreCombinations(pieceIdx, currentLenA, currentCountA, currentLenB, currentCountB, currentLenC, currentCountC) {
+    if (pieceIdx === numPieces) {
+      if (currentCountA > 0 && currentCountB > 0 && currentCountC > 0) {
+        let combinationTotalCost = 0;
+
+        combinationTotalCost += (currentCountA - 1) * 10 + Math.abs(currentLenA - targetA);
+        combinationTotalCost += (currentCountB - 1) * 10 + Math.abs(currentLenB - targetB);
+        combinationTotalCost += (currentCountC - 1) * 10 + Math.abs(currentLenC - targetC);
+
+        minimumCost = Math.min(minimumCost, combinationTotalCost);
+      }
+      return;
     }
 
-    var minimalTotalExpense = Number.POSITIVE_INFINITY;
+    const currentPieceLength = bambooLengths[pieceIdx];
 
-    function determineMinimumExpense(
-        currentBambooIndex,
-        currentSumAlpha,
-        currentSumBeta,
-        currentSumGamma,
-        countAlpha,
-        countBeta,
-        countGamma
-    ) {
-        if (currentBambooIndex === assignedPieceCount) {
-            if (countAlpha === 0 || countBeta === 0 || countGamma === 0) {
-                return Number.POSITIVE_INFINITY;
-            }
+    exploreCombinations(pieceIdx + 1, currentLenA + currentPieceLength, currentCountA + 1, currentLenB, currentCountB, currentLenC, currentCountC);
 
-            var expenseAlpha = (countAlpha - 1) * 10 + Math.abs(currentSumAlpha - desiredLengthAlpha);
-            var expenseBeta = (countBeta - 1) * 10 + Math.abs(currentSumBeta - desiredLengthBeta);
-            var expenseGamma = (countGamma - 1) * 10 + Math.abs(currentSumGamma - desiredLengthGamma);
+    exploreCombinations(pieceIdx + 1, currentLenA, currentCountA, currentLenB + currentPieceLength, currentCountB + 1, currentLenC, currentCountC);
 
-            return expenseAlpha + expenseBeta + expenseGamma;
-        }
+    exploreCombinations(pieceIdx + 1, currentLenA, currentCountA, currentLenB, currentCountB, currentLenC + currentPieceLength, currentCountC + 1);
 
-        var currentBambooValue = availableBamboos[currentBambooIndex];
-        var branchMinimum = Number.POSITIVE_INFINITY;
+    exploreCombinations(pieceIdx + 1, currentLenA, currentCountA, currentLenB, currentCountB, currentLenC, currentCountC);
+  }
 
-        // Choice 1: Add to Alpha
-        branchMinimum = Math.min(branchMinimum,
-            determineMinimumExpense(
-                currentBambooIndex + 1,
-                currentSumAlpha + currentBambooValue,
-                currentSumBeta,
-                currentSumGamma,
-                countAlpha + 1,
-                countBeta,
-                countGamma
-            )
-        );
+  exploreCombinations(0, 0, 0, 0, 0, 0, 0);
 
-        // Choice 2: Add to Beta
-        branchMinimum = Math.min(branchMinimum,
-            determineMinimumExpense(
-                currentBambooIndex + 1,
-                currentSumAlpha,
-                currentSumBeta + currentBambooValue,
-                currentSumGamma,
-                countAlpha,
-                countBeta + 1,
-                countGamma
-            )
-        );
+  console.log(minimumCost);
+}
 
-        // Choice 3: Add to Gamma
-        branchMinimum = Math.min(branchMinimum,
-            determineMinimumExpense(
-                currentBambooIndex + 1,
-                currentSumAlpha,
-                currentSumBeta,
-                currentSumGamma + currentBambooValue,
-                countAlpha,
-                countBeta,
-                countGamma + 1
-            )
-        );
-
-        // Choice 4: Discard
-        branchMinimum = Math.min(branchMinimum,
-            determineMinimumExpense(
-                currentBambooIndex + 1,
-                currentSumAlpha,
-                currentSumBeta,
-                currentSumGamma,
-                countAlpha,
-                countBeta,
-                countGamma
-            )
-        );
-
-        return branchMinimum;
-    }
-
-    minimalTotalExpense = determineMinimumExpense(0, 0, 0, 0, 0, 0, 0);
-
-    console.log(minimalTotalExpense);
-
-})(require("fs").readFileSync("/dev/stdin", "utf8"));
+mainExecution();

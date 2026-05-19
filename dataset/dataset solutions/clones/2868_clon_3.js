@@ -1,122 +1,61 @@
 "use strict";
 
-const EMPTY_TILE_SYMBOL = '.';
-const OBSTACLE_TILE_SYMBOL = '#';
+function countDirectionalLight(gridMap, startRow, startCol, deltaRow, deltaCol) {
+    let currentLit = 0;
+    let currentRow = startRow + deltaRow;
+    let currentCol = startCol + deltaCol;
+    const gridHeight = gridMap.length;
+    const gridWidth = gridMap[0].length;
 
-/**
- * Parses raw input string into a 2D character array representing the grid layout.
- *
- * @param {string[]} lineSegments - An array of strings, where each string is a row of the grid.
- * @returns {string[][]} A 2D array where each inner array is a row of characters.
- */
-function parseGridMatrix(lineSegments) {
-    // Each line segment (excluding the first one which is dimensions) is a row.
-    return lineSegments.map(rowString => rowString.split(''));
+    while (currentRow >= 0 && currentRow < gridHeight &&
+           currentCol >= 0 && currentCol < gridWidth) {
+        const cellContent = gridMap[currentRow][currentCol];
+        if (cellContent === '.') {
+            currentLit++;
+        } else if (cellContent === '#') {
+            break;
+        }
+
+        currentRow += deltaRow;
+        currentCol += deltaCol;
+    }
+    return currentLit;
 }
 
-/**
- * Computes the number of empty tiles that can be illuminated
- * from a given central point in cardinal directions (up, down, left, right).
- * Includes the central point itself.
- *
- * @param {string[][]} gridLayout - The 2D array representing the map.
- * @param {number[]} centralPointCoords - An array [x, y] indicating the column and row of the central point.
- * @returns {number} The total count of illuminated tiles.
- */
-function calculateOrthogonalReach(gridLayout, centralPointCoords) {
-    const startCol = centralPointCoords[0];
-    const startRow = centralPointCoords[1];
+function calculateIlluminatedCount(gridMap, lampPosition) {
+    const [col, row] = lampPosition;
 
-    // Initialize count with 1 for the central tile itself.
-    let illuminatedTileCount = 1;
+    let totalLitCells = 1;
 
-    const gridHeight = gridLayout.length;
-    const gridWidth = gridLayout[0].length;
+    totalLitCells += countDirectionalLight(gridMap, row, col, -1, 0);
+    totalLitCells += countDirectionalLight(gridMap, row, col, 1, 0);
+    totalLitCells += countDirectionalLight(gridMap, row, col, 0, -1);
+    totalLitCells += countDirectionalLight(gridMap, row, col, 0, 1);
 
-    // Evaluate upward path
-    for (let currentY = startRow - 1; currentY >= 0; --currentY) {
-        if (gridLayout[currentY][startCol] === EMPTY_TILE_SYMBOL) {
-            illuminatedTileCount++;
-        } else if (gridLayout[currentY][startCol] === OBSTACLE_TILE_SYMBOL) {
-            break; // Path blocked by an obstacle
-        }
-    }
-
-    // Evaluate downward path
-    for (let currentY = startRow + 1; currentY < gridHeight; ++currentY) {
-        if (gridLayout[currentY][startCol] === EMPTY_TILE_SYMBOL) {
-            illuminatedTileCount++;
-        } else if (gridLayout[currentY][startCol] === OBSTACLE_TILE_SYMBOL) {
-            break; // Path blocked
-        }
-    }
-
-    // Evaluate leftward path
-    for (let currentCol = startCol - 1; currentCol >= 0; --currentCol) {
-        if (gridLayout[startRow][currentCol] === EMPTY_TILE_SYMBOL) {
-            illuminatedTileCount++;
-        } else if (gridLayout[startRow][currentCol] === OBSTACLE_TILE_SYMBOL) {
-            break; // Path blocked
-        }
-    }
-
-    // Evaluate rightward path
-    for (let currentCol = startCol + 1; currentCol < gridWidth; ++currentCol) {
-        if (gridLayout[startRow][currentCol] === EMPTY_TILE_SYMBOL) {
-            illuminatedTileCount++;
-        } else if (gridLayout[startRow][currentCol] === OBSTACLE_TILE_SYMBOL) {
-            break; // Path blocked
-        }
-    }
-
-    return illuminatedTileCount;
+    return totalLitCells;
 }
 
-/**
- * Main function to process the grid data and determine the highest number of
- * tiles illuminated by a single lamp placement.
- *
- * @param {string} mapDataString - The raw string input containing grid dimensions and layout.
- */
-function ProcessIlluminationAnalysis(mapDataString) {
-    // Split the entire input into individual line segments.
-    let gridLineSegments = mapDataString.split('\n');
+function ProcessGridData(rawInputString) {
+    let gridLines = rawInputString.split('\n');
 
-    // The first line typically contains grid dimensions, but it's not directly used
-    // for iteration bounds in this logic, so we discard it.
-    gridLineSegments.shift();
+    gridLines.shift();
 
-    // Convert the remaining line segments into a 2D array of characters.
-    const illuminationGrid = parseGridMatrix(gridLineSegments);
+    const gridRepresentation = gridLines.map(line => line.split(''));
 
-    // Guard clause: Check for empty or malformed grid after parsing.
-    if (!illuminationGrid || illuminationGrid.length === 0 || illuminationGrid[0].length === 0) {
-        console.log(0);
-        return;
-    }
+    let maxIlluminatedCells = 0;
+    const gridHeight = gridRepresentation.length;
+    const gridWidth = gridRepresentation[0].length;
 
-    const totalRows = illuminationGrid.length;
-    const totalColumns = illuminationGrid[0].length;
-
-    let peakIlluminationScore = 0; // Tracks the maximum illumination found so far.
-
-    // Iterate through each cell in the grid.
-    for (let currentRow = 0; currentRow < totalRows; ++currentRow) {
-        for (let currentCol = 0; currentCol < totalColumns; ++currentCol) {
-            // Only consider placing a lamp on an empty tile.
-            if (illuminationGrid[currentRow][currentCol] === EMPTY_TILE_SYMBOL) {
-                // Calculate how many tiles this potential lamp position would illuminate.
-                const currentTileCoverage = calculateOrthogonalReach(illuminationGrid, [currentCol, currentRow]);
-
-                // Update the maximum score if the current lamp placement is better.
-                peakIlluminationScore = Math.max(peakIlluminationScore, currentTileCoverage);
+    for (let currentRow = 0; currentRow < gridHeight; currentRow++) {
+        for (let currentCol = 0; currentCol < gridWidth; currentCol++) {
+            if (gridRepresentation[currentRow][currentCol] === '.') {
+                const cellsLitByLamp = calculateIlluminatedCount(gridRepresentation, [currentCol, currentRow]);
+                maxIlluminatedCells = Math.max(maxIlluminatedCells, cellsLitByLamp);
             }
         }
     }
 
-    // Output the final maximum illumination score.
-    console.log(peakIlluminationScore);
+    console.log(maxIlluminatedCells);
 }
 
-// Entry point for execution, reading from standard input.
-ProcessIlluminationAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

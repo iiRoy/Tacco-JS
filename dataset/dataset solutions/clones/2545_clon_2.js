@@ -1,46 +1,52 @@
-/* This function orchestrates the processing of input data */
-function processInput (  inputString )
-{
+function ProcessInput(inputString) {
+    // Split the entire input into individual lines for parsing.
+    const allInputLines = inputString.split("\n");
+    // Extract the first line and split it by space to get initial parameters.
+    const firstLineData = allInputLines[0].split(" ");
 
-    // Extract numerical parameters from the input string
-    let totalElements = Number(inputString.split("\n")[0].split(" ")[0]); // The total count of elements in the main sequence
-    let subArrayLength = Number(inputString.split("\n")[0].split(" ")[1]); // The desired length of the sliding sub-array
+    // Determine the total count of elements in the primary sequence.
+    let totalElementCount = Number(firstLineData[0]);
+    // Establish the length of the sub-array window for processing.
+    let windowLength = Number(firstLineData[1]);
 
-    // Parse the second line of the input into an array of integers
-    const originalSequence = inputString.split("\n")[1].split(" ").map(elementValue => Number(elementValue)  );
+    // Parse the second line of input into an array of numerical values.
+    const mainNumericSequence = allInputLines[1].split(" ").map(valItem => Number(valItem));
 
-    let transformedSequences = []; // This array will store the string representations of the modified sequences
-    // Iterate through the original sequence, creating sliding windows for manipulation
-    for (let startIndex = 0; startIndex < totalElements - subArrayLength + 1; startIndex++   )
-    {
-        // Extract the current segment (window) of the sequence based on the current starting index
-        let currentWindow = originalSequence.slice(startIndex, startIndex + subArrayLength);
+    // Initialize an array to store the string representations of the modified sequences.
+    let sequenceOutputStrings = [];
 
-        // Sort this extracted segment in ascending numerical order
-        currentWindow.sort(numericSorter);
+    // Iterate through the main sequence, applying a sliding window operation.
+    for (let currentIdx = 0; currentIdx <= totalElementCount - windowLength; ++currentIdx) {
+        // Extract the current segment of the sequence based on the window length.
+        let temporarySegment = mainNumericSequence.slice(currentIdx, currentIdx + windowLength);
+        // Sort this extracted segment using our custom numerical comparison function.
+        temporarySegment.sort(numericalValueSorter);
 
-        // Reconstruct the full sequence: prefix + sorted segment + suffix
-        // Then convert the entire resultant array to a comma-separated string for later comparison
-        transformedSequences[startIndex] = originalSequence.slice(0, startIndex)
-                                       .concat(currentWindow)
-                                       .concat(originalSequence.slice(startIndex + subArrayLength))
-                                       .join(',');
+        // Reconstruct the full sequence: elements before the window, the sorted window, and elements after the window.
+        // Convert this reconstructed sequence into a comma-separated string and store it.
+        sequenceOutputStrings[currentIdx] = mainNumericSequence.slice(0, currentIdx)
+                                                               .concat(temporarySegment)
+                                                               .concat(mainNumericSequence.slice(currentIdx + windowLength))
+                                                               .join(','); // Using join(',') for string conversion, functionally identical to toString() for arrays.
     }
 
+    // Create a Set object from the collected strings to automatically filter out duplicates.
+    const distinctSequenceRepresentations = new Set(sequenceOutputStrings);
 
-    // Utilize a Set data structure to efficiently count the number of unique sequences generated
-    const distinctArrangements = new Set(transformedSequences);
-
-    // Output the final count of unique arrangements to the console
-    console.log(distinctArrangements.size);
+    // Print the total number of unique sequence representations found.
+    console.log(distinctSequenceRepresentations.size);
 }
 
-// Function call to initiate the processing, reading input from the standard input stream
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input using Node.js 'fs' module and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-/* A utility function designed for sorting numerical values in ascending order */
-function numericSorter( valA, valB )
-{ // Helper callback for array.sort() method
-    return valA - valB; // Standard numerical comparison for ascending order
+/**
+ * A utility function designed for sorting numerical values in ascending order.
+ * This function is intended for use with Array.prototype.sort().
+ * @param {number} valueA - The first numerical operand for comparison.
+ * @param {number} valueB - The second numerical operand for comparison.
+ * @returns {number} A negative value if valueA is less than valueB, zero if they are equal, or a positive value if valueA is greater than valueB.
+ */
+function numericalValueSorter(valueA, valueB) {
+    return valueA - valueB; // Standard comparison for ascending numerical sort.
 }

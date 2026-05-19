@@ -1,47 +1,16 @@
-const acquireInput = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+function processInput(rawData) {
+    const stringSegments = rawData.split(" ");
 
-const processAndOutput = (dataLine) => {
-  const numericStrings = dataLine.match(/\d+/g);
+    const products = [
+        Number(stringSegments[0]) * Number(stringSegments[1]),
+        Number(stringSegments[2]) * Number(stringSegments[3])
+    ];
 
-  const translateToInteger = (textPart) => {
-    let accumulator = 0;
-    let power = 1;
-    for (let i = textPart.length - 1; i >= 0; i--) {
-      accumulator += (textPart.charCodeAt(i) - '0'.charCodeAt(0)) * power;
-      power *= 10;
-    }
-    return accumulator;
-  };
+    const maximumResult = products.reduce((currentMax, value) => {
+        return (value > currentMax) ? value : currentMax;
+    }, products[0]);
 
-  const values = numericStrings.map(translateToInteger);
+    console.log('%d', maximumResult);
+}
 
-  const calculateProduct = (factorA, factorB) => {
-    let productResult = 0;
-    for (let current = 0; current < factorB; current++) {
-      productResult += factorA;
-    }
-    return productResult;
-  };
-
-  const selectGreater = (itemOne, itemTwo) => {
-    return itemOne > itemTwo ? itemOne : itemTwo;
-  };
-
-  const valueAlpha = values[0];
-  const valueBeta = values[1];
-  const valueGamma = values[2];
-  const valueDelta = values[3];
-
-  const firstPairingResult = calculateProduct(valueAlpha, valueBeta);
-  const secondPairingResult = calculateProduct(valueGamma, valueDelta);
-
-  const ultimateValue = selectGreater(firstPairingResult, secondPairingResult);
-
-  process.stdout.write(String(ultimateValue));
-};
-
-acquireInput.on('line', processAndOutput);
+processInput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

@@ -1,38 +1,32 @@
-function writeToOutput(dataCollection) {
-    process.stdout.write(dataCollection.join(" ") + "\n");
-}
+function ProcessInput(rawData) {
+  const lines = rawData.split("\n");
+  const elementCount = Number(lines[0]);
+  const dataSequence = lines[1].split(" ").map(Number);
 
-function recurseAndInsert(dataSequence, currentInsertionIndex) {
-    if (currentInsertionIndex >= dataSequence.length) {
-        return;
+  console.log(dataSequence.join(" "));
+
+  for (let idx = 1; idx < elementCount; idx++) {
+    const currentValue = dataSequence[idx];
+    let insertionPoint = idx;
+
+    // Determine the correct position for currentValue within the sorted sub-array
+    for (let scanIdx = 0; scanIdx < idx; scanIdx++) {
+      if (dataSequence[scanIdx] > currentValue) {
+        insertionPoint = scanIdx;
+        break;
+      }
     }
 
-    let currentVal = dataSequence[currentInsertionIndex];
-    let comparisonIdx = currentInsertionIndex - 1;
-
-    while (comparisonIdx >= 0 && dataSequence[comparisonIdx] > currentVal) {
-        dataSequence[comparisonIdx + 1] = dataSequence[comparisonIdx];
-        comparisonIdx--;
+    // If the element needs to be moved from its current position
+    if (insertionPoint !== idx) {
+      // Remove the element from its original position
+      dataSequence.splice(idx, 1);
+      // Insert the element at the calculated insertion point
+      dataSequence.splice(insertionPoint, 0, currentValue);
     }
 
-    dataSequence[comparisonIdx + 1] = currentVal;
-
-    writeToOutput(dataSequence);
-
-    recurseAndInsert(dataSequence, currentInsertionIndex + 1);
+    console.log(dataSequence.join(" "));
+  }
 }
 
-function processInputData(rawData) {
-    let extractLines = rawData.split("\n");
-    let numericItems = extractLines[1].split(" ").map(Number);
-
-    writeToOutput(numericItems);
-
-    recurseAndInsert(numericItems, 1);
-}
-
-const obtainSourceData = require("fs").readFileSync;
-const standardInputPath = "/dev/stdin";
-const textEncoding = "utf8";
-
-processInputData(obtainSourceData(standardInputPath, textEncoding));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

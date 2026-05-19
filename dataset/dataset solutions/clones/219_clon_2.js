@@ -1,53 +1,48 @@
-const fileSystemMod = require('fs'); // Module for file operations
+var fileSystem = require('fs'); // Import the file system module
 
-const contentSize = fileSystemMod.fstatSync(process.stdin.fd).size; // Determine the byte count of the incoming stream
+// Determine the size of the standard input stream
+var dataSize = fileSystem.fstatSync(process.stdin.fd).size;
 
-let dataStorage = new Buffer(contentSize); // Allocate a memory region for holding the stream data
+// Create a buffer to hold the input data
+var inputBuffer = new Buffer(dataSize);
 
-const octetsReceived = fileSystemMod.readSync(process.stdin.fd, dataStorage, 0, contentSize, 0); // Read bytes from the standard input into the allocated region
+// Read data from standard input into the buffer
+var readBytesCount = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, dataSize, 0);
 
-const rawLines = dataStorage.toString('utf8', 0, octetsReceived).trim().split('\n'); // Convert the buffered bytes to a UTF-8 string, remove leading/trailing whitespace, then split into an array of text lines
+// Convert the buffer content to a string, trim whitespace, and split into lines
+var linesOfInput = inputBuffer.toString('utf8', 0, readBytesCount).trim().split('\n');
 
-processData(); // Initiate the primary data handling routine
+// Execute the primary data processing function
+processInputData();
 
 /**
- * Executes the core processing logic for each input line.
+ * Main function to process each line of input.
+ * It calculates the sum of the first N decimal digits of a division.
  */
-function processData() {
-  // Iterate through every single line provided in the input collection
-  for (
-        let lineIndex = 0, totalLines = rawLines.length;
-        lineIndex < totalLines;
-        lineIndex++
-      )
-  {
-    // Break down the current line into its constituent parts, using space as a delimiter
-    let lineParts = rawLines[lineIndex].split(' ');
+function processInputData() {
+  // Iterate through each line provided in the input
+  for (var lineIndex = 0, totalLines = linesOfInput.length; lineIndex < totalLines; lineIndex++) {
+    // Split the current line by space to get individual parts
+    var currentLineParts = linesOfInput[lineIndex].split(' ');
 
-    // Compute the division of the first two numeric components and convert the outcome to a textual representation
-    let quotientStr = (Number(lineParts[0]) / Number(lineParts[1])) + '';
-    
-    // Extract the fractional part of the quotient, then separate it into individual character digits
-    let fractionDigits = quotientStr.split('.')[1].split('');
+    // Perform division and convert the result to a string
+    var divisionResultStr = currentLineParts[0] / currentLineParts[1] + '';
 
-    // Initialize an accumulator for the sum of the digits
-    let sumOfDigits = 0;
-    
-    // Loop through a specified count of fractional digits, as determined by the third input component
-    for (
-          let digitIndex = 0;
-          digitIndex < Number(lineParts[2]);
-          digitIndex++
-        )
-    {
-      // Convert the current digit character into its numeric equivalent
-      let currentDigitVal = Number(fractionDigits[digitIndex]);
-      
-      // Add the numeric digit to the running total, ensuring a zero is added if the digit is not a valid number
-      sumOfDigits = sumOfDigits + (currentDigitVal || 0);
+    // Extract the decimal part, then split it into an array of individual digit characters
+    var decimalDigitsArr = divisionResultStr.split('.')[1].split('');
+
+    // Initialize a variable to accumulate the sum of digits
+    var sumOfDigits = 0;
+
+    // Loop through the specified number of decimal digits
+    for (var digitIndex = 0; digitIndex < +currentLineParts[2]; digitIndex++) {
+      // Convert the current digit character to a number
+      var currentDigitVal = +decimalDigitsArr[digitIndex];
+      // Add the digit's value to the sum, handling potential NaN by adding 0
+      sumOfDigits += currentDigitVal ? currentDigitVal : 0;
     }
-    
-    // Display the final computed sum for the current line
+
+    // Output the calculated sum for the current line
     console.log(sumOfDigits);
   }
 }

@@ -1,154 +1,131 @@
-let inputBufferAccumulator = '';
-
+let inputBuffer = '';
 process.stdin.resume();
-
 process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', function(dataSegment) {
-    inputBufferAccumulator += dataSegment;
+process.stdin.on('data', function(chunk) {
+    inputBuffer += chunk;
 });
-
 process.stdin.on('end', function() {
-    const processedInputLines = inputBufferAccumulator.split('\n').filter(line => line.trim() !== '');
+    const processedInputLines = inputBuffer.split('\n');
 
     class BinaryTreeNode {
         constructor() {
-            this.leftChildRef = null;
-            this.rightChildRef = null;
-            this.parentLink = null;
+            this.leftChild = null;
+            this.rightChild = null;
+            this.parentNode = null;
         }
-
-        setLeftChild(newChildNode) {
-            this.leftChildRef = newChildNode;
-            if (newChildNode instanceof BinaryTreeNode) {
-                newChildNode.parentLink = this;
-            }
+        attachLeft(childNode) {
+            this.leftChild = childNode;
+            childNode.parentNode = this;
         }
-
-        setRightChild(newChildNode) {
-            this.rightChildRef = newChildNode;
-            if (newChildNode instanceof BinaryTreeNode) {
-                newChildNode.parentLink = this;
-            }
+        attachRight(childNode) {
+            this.rightChild = childNode;
+            childNode.parentNode = this;
         }
-
-        serializeTreeStructure() {
-            const leftPart = this.leftChildRef ? this.leftChildRef.serializeTreeStructure() : '';
-            const rightPart = this.rightChildRef ? this.rightChildRef.serializeTreeStructure() : '';
-            return `(${leftPart},${rightPart})`;
+        toString() {
+            const leftSubtreeString = this.leftChild ? this.leftChild.toString() : '';
+            const rightSubtreeString = this.rightChild ? this.rightChild.toString() : '';
+            return `(${leftSubtreeString},${rightSubtreeString})`;
         }
     }
 
-    const buildTreeFromRepresentation = (serializedTreeString) => {
-        if (!serializedTreeString || serializedTreeString.length === 0) {
-            return null;
-        }
+    const buildTreeFromString = (inputString) => {
+        const dummyRoot = new BinaryTreeNode(); // A temporary root to simplify initial node handling
+        let currentTraversalNode = dummyRoot;
+        let commaEncounteredFlag = 0; // 0 for left child, 1 for right child
 
-        const virtualRootNode = new BinaryTreeNode();
-        let currentTraversalNode = virtualRootNode;
-        let isRightChildContext = false;
-
-        for (const currentChar of serializedTreeString) {
-            switch (currentChar) {
-                case '(':
-                    const newTreeNode = new BinaryTreeNode();
-                    if (!isRightChildContext) {
-                        currentTraversalNode.setLeftChild(newTreeNode);
-                    } else {
-                        currentTraversalNode.setRightChild(newTreeNode);
-                        isRightChildContext = false;
-                    }
-                    currentTraversalNode = newTreeNode;
-                    break;
-                case ',':
-                    isRightChildContext = true;
-                    break;
-                case ')':
-                    if (currentTraversalNode.parentLink) {
-                        currentTraversalNode = currentTraversalNode.parentLink;
-                    } else {
-                        console.warn("Malformed tree string: attempting to ascend from virtual root.");
-                    }
-                    isRightChildContext = false;
-                    break;
-                default:
-                    console.warn(`Unexpected character encountered during tree parsing: '${currentChar}'`);
-                    break;
+        for (const charToken of inputString) {
+            if (charToken === '(') {
+                const newChildNode = new BinaryTreeNode();
+                if (commaEncounteredFlag === 0) {
+                    currentTraversalNode.attachLeft(newChildNode);
+                } else {
+                    currentTraversalNode.attachRight(newChildNode);
+                }
+                currentTraversalNode = newChildNode; // Descend into the new child
+            } else if (charToken === ',') {
+                commaEncounteredFlag = 1; // Mark that the next child should be right
+            } else if (charToken === ')') {
+                // Ascend to the parent node
+                currentTraversalNode = currentTraversalNode.parentNode;
+                commaEncounteredFlag = 0; // Reset for potential next sibling or parent's child
             }
         }
-        return virtualRootNode.leftChildRef;
+        // The actual tree structure is the left child of the dummy root
+        return dummyRoot.leftChild;
     };
 
-    const performUnion = (treeOne, treeTwo) => {
-        if (treeOne === null && treeTwo === null) {
+    const mergeTrees = (treeA, treeB) => {
+        // Handle base cases where one or both trees are null
+        if (treeA === null) {
+            return treeB;
+        }
+        if (treeB === null) {
+            return treeA;
+        }
+
+        const resultNode = new BinaryTreeNode();
+        
+        // Recursively merge left subtrees
+        const mergedLeftSubtree = mergeTrees(treeA.leftChild, treeB.leftChild);
+        if (mergedLeftSubtree !== null) {
+            resultNode.attachLeft(mergedLeftSubtree);
+        }
+
+        // Recursively merge right subtrees
+        const mergedRightSubtree = mergeTrees(treeA.rightChild, treeB.rightChild);
+        if (mergedRightSubtree !== null) {
+            resultNode.attachRight(mergedRightSubtree);
+        }
+        
+        return resultNode;
+    };
+
+    const findCommonStructure = (treeA, treeB) => {
+        // Base case: if either tree is null, there's no common structure
+        if (treeA === null || treeB === null) {
             return null;
         }
-        if (treeOne === null) {
-            return treeTwo;
-        }
-        if (treeTwo === null) {
-            return treeOne;
-        }
 
-        const unionNode = new BinaryTreeNode();
-
-        const unionLeft = performUnion(treeOne.leftChildRef, treeTwo.leftChildRef);
-        if (unionLeft !== null) {
-            unionNode.setLeftChild(unionLeft);
+        const resultNode = new BinaryTreeNode();
+        
+        // Recursively find common structure in left subtrees
+        const commonLeftSubtree = findCommonStructure(treeA.leftChild, treeB.leftChild);
+        if (commonLeftSubtree !== null) {
+            resultNode.attachLeft(commonLeftSubtree);
         }
 
-        const unionRight = performUnion(treeOne.rightChildRef, treeTwo.rightChildRef);
-        if (unionRight !== null) {
-            unionNode.setRightChild(unionRight);
+        // Recursively find common structure in right subtrees
+        const commonRightSubtree = findCommonStructure(treeA.rightChild, treeB.rightChild);
+        if (commonRightSubtree !== null) {
+            resultNode.attachRight(commonRightSubtree);
         }
-
-        return unionNode;
+        
+        return resultNode;
     };
 
-    const performIntersection = (treeOne, treeTwo) => {
-        if (treeOne === null || treeTwo === null) {
-            return null;
+    // Function to process a single line of input and perform the tree operation
+    const executeTreeOperation = (lineContent) => {
+        const lineSegments = lineContent.split(' ');
+        const operationType = lineSegments[0];
+        const firstTreeString = lineSegments[1];
+        const secondTreeString = lineSegments[2];
+
+        const treeOne = buildTreeFromString(firstTreeString);
+        const treeTwo = buildTreeFromString(secondTreeString);
+
+        let operationResultTree;
+
+        if (operationType === "u") {
+            operationResultTree = mergeTrees(treeOne, treeTwo);
+        } else if (operationType === "i") {
+            operationResultTree = findCommonStructure(treeOne, treeTwo);
         }
-
-        const intersectionNode = new BinaryTreeNode();
-
-        const intersectionLeft = performIntersection(treeOne.leftChildRef, treeTwo.leftChildRef);
-        if (intersectionLeft !== null) {
-            intersectionNode.setLeftChild(intersectionLeft);
-        }
-
-        const intersectionRight = performIntersection(treeOne.rightChildRef, treeTwo.rightChildRef);
-        if (intersectionRight !== null) {
-            intersectionNode.setRightChild(intersectionRight);
-        }
-
-        return intersectionNode;
+        
+        return operationResultTree;
     };
 
-    for (const currentLineData of processedInputLines) {
-        const [operationIdentifier, firstTreeString, secondTreeString] = currentLineData.split(' ');
-
-        const parsedTreeA = buildTreeFromRepresentation(firstTreeString);
-        const parsedTreeB = buildTreeFromRepresentation(secondTreeString);
-
-        let operationResultTree = null;
-
-        switch (operationIdentifier) {
-            case "u":
-                operationResultTree = performUnion(parsedTreeA, parsedTreeB);
-                break;
-            case "i":
-                operationResultTree = performIntersection(parsedTreeA, parsedTreeB);
-                break;
-            default:
-                console.error(`Error: Unknown operation identifier '${operationIdentifier}' for line: ${currentLineData}`);
-                continue;
-        }
-
-        if (operationResultTree !== null) {
-            console.log(operationResultTree.serializeTreeStructure());
-        } else {
-            console.log("()"); // Output for an empty or null resulting tree
-        }
+    for (const currentLine of processedInputLines) {
+        const finalOutputTree = executeTreeOperation(currentLine);
+        console.log(finalOutputTree.toString());
     }
 });

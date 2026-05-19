@@ -1,42 +1,69 @@
-"use strict" ;
+"use strict";
 
-const performCalculation = ( inputData ) => {
+// This function processes the given input string to find the minimum possible difference
+// between the largest and smallest areas when a rectangle is divided into three pieces.
+const processInput = (inputString) => {
+    // First, clean up the input: remove any leading/trailing whitespace and split by newline characters.
+    inputString = inputString.trim().split("\n");
 
-    inputData = inputData . trim ( ) . split ( "\n" ) ;
+    // Extract the initial dimensions (height and width) from the first line of the input.
+    // The dimensions are space-separated integers.
+    let heightVal = parseInt(inputString[0].split(" ")[0]);
+    let widthVal = parseInt(inputString[0].split(" ")[1]);
 
-    let dimensionOne = parseInt(inputData[0].split(" ")[0]);
-    let dimensionTwo = parseInt(inputData[0].split(" ")[1]);
+    // Initialize a variable to store the minimum area difference found.
+    // We start with a large value, typically the total area, as the maximum possible difference.
+    let minAreaDiff = heightVal * widthVal;
 
-    let resultDelta = dimensionOne * dimensionTwo;
-    let sectionSizes = [ ... Array ( 3 ) ];
+    // Create an array to hold the areas of the three segments after each division.
+    // It's initialized with 3 undefined elements.
+    let areaSegments = [...Array(3)];
 
-    for ( var outerLoopIdx = 0 ; outerLoopIdx < 2 ; outerLoopIdx++ ) {
-        for ( var cutPosition = 1 ; cutPosition < dimensionOne ; cutPosition++ ) {
+    // The problem requires considering two orientations of the rectangle (original and 90-degree rotated).
+    // This loop runs twice to cover both scenarios.
+    for (let rotationIdx = 0; rotationIdx < 2; rotationIdx++) {
+        // Iterate through all possible horizontal split points for the first cut.
+        // 'splitHeight' represents the height of the first piece, ranging from 1 to heightVal - 1.
+        for (let splitHeight = 1; splitHeight < heightVal; splitHeight++) {
+            // --- Scenario 1: First cut is horizontal, then the remaining part is split vertically. ---
+            // Calculate the area of the first piece (a rectangle of splitHeight x widthVal).
+            areaSegments[0] = splitHeight * widthVal;
+            // The remaining rectangle has dimensions (heightVal - splitHeight) x widthVal.
+            // This remaining part is then split vertically into two pieces.
+            areaSegments[1] = (heightVal - splitHeight) * (widthVal / 2);
+            // The third piece takes the remaining area.
+            areaSegments[2] = (heightVal * widthVal) - (areaSegments[0] + areaSegments[1]);
 
-            // Calculate areas for a vertical split.
-            sectionSizes[0] = cutPosition * dimensionTwo;
-            sectionSizes[1] = (dimensionOne - cutPosition) * (dimensionTwo / 2);
-            sectionSizes[2] = dimensionOne * dimensionTwo - (sectionSizes[0] + sectionSizes[1]);
+            // Sort the areas of the three segments in ascending order.
+            areaSegments.sort((a, b) => a - b);
+            // Update the minimum difference if the current difference (largest - smallest) is smaller.
+            minAreaDiff = Math.min(minAreaDiff, areaSegments[2] - areaSegments[0]);
 
-            sectionSizes.sort((valX,valY)=>valX-valY);
-            resultDelta = Math.min(resultDelta, sectionSizes[2] - sectionSizes[0]);
+            // --- Scenario 2: First cut is horizontal, then the remaining part is split horizontally. ---
+            // The first piece is the same as in Scenario 1.
+            areaSegments[0] = splitHeight * widthVal;
+            // The remaining rectangle has dimensions (heightVal - splitHeight) x widthVal.
+            // This remaining part is then split horizontally into two pieces.
+            areaSegments[1] = ((heightVal - splitHeight) / 2) * widthVal;
+            // The third piece takes the remaining area.
+            areaSegments[2] = (heightVal * widthVal) - (areaSegments[0] + areaSegments[1]);
 
-            // Determine areas for a horizontal division.
-            sectionSizes[0] = cutPosition * dimensionTwo;
-            sectionSizes[1] = ((dimensionOne - cutPosition) / 2) * dimensionTwo;
-            sectionSizes[2] = dimensionOne * dimensionTwo - (sectionSizes[0] + sectionSizes[1]);
-
-            sectionSizes.sort((valX,valY)=>valX-valY);
-            resultDelta = Math.min(resultDelta, sectionSizes[2] - sectionSizes[0]);
+            // Sort the areas of the three segments again.
+            areaSegments.sort((a, b) => a - b);
+            // Update the minimum difference if the current difference is smaller.
+            minAreaDiff = Math.min(minAreaDiff, areaSegments[2] - areaSegments[0]);
         }
 
-        // Rotate the grid dimensions by 90 degrees.
-        let tempDimension = dimensionOne;
-        dimensionOne = dimensionTwo;
-        dimensionTwo = tempDimension;
+        // After checking all possible splits for the current orientation,
+        // swap the height and width values to simulate a 90-degree rotation for the next iteration.
+        let temporaryDim = heightVal;
+        heightVal = widthVal;
+        widthVal = temporaryDim;
     }
 
-    console.log(resultDelta);
+    // Output the final calculated minimum area difference to the console.
+    console.log(minAreaDiff);
 };
 
-performCalculation( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read the entire content of standard input, decode it as UTF-8, and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

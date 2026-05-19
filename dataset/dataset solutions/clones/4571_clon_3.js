@@ -1,252 +1,78 @@
-const inputHandler = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
 });
-let inputProcessor;
-const rawInputLines = [];
-
-inputHandler.on('line', (currentLine) => {
-  rawInputLines.push(currentLine);
-});
-
-inputHandler.on('close', () => {
-  inputProcessor = initializeInputParser(rawInputLines);
+var inputHandler; var inputLinesBuffer = [];
+inputReader.on('line', function(input){inputLinesBuffer.push(input);});
+inputReader.on('close', function(){
+  inputHandler = initializeInputHandler(inputLinesBuffer);
   console.error("\n");
-  const startTime = Date.now();
-  executeMainCalculation();
-  const elapsedTime = Date.now() - startTime;
-  logDebugMessage(`Execution time: ${elapsedTime} ms`);
-  logDebugMessage(`Memory usage: ${Math.round(process.memoryUsage().heapTotal / 1024)} KB`);
+  var start = Date.now();
+  executePrimaryLogic();
+  var end = Date.now() - start;
+  outputDebugError("time : " + (end) + "ms");
+  outputDebugError("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
-
-/**
- * Sets up an object to manage sequential access to input lines.
- * @param {string[]} sourceData - An array of strings, each representing an input line.
- * @returns {object} An interface for consuming input lines.
- */
-function initializeInputParser(sourceData) {
-  let currentLineIndex = 0;
-  const totalLines = sourceData.length;
-
+function createDeepCopy(obj){return JSON.parse(JSON.stringify(obj));}
+function fetchNextInteger(){return convertInputToken(fetchNextToken(),1);} function fetchNextStringArray(){return convertInputToken(fetchNextToken(),2);}
+function fetchNextIntegerArray(){return convertInputToken(fetchNextToken(),4);} function fetchNextCharacterArray(){return convertInputToken(fetchNextToken(),6);}
+function fetchNextToken(){return inputHandler.fetchNextToken();} function hasMoreTokens(){return inputHandler.hasMoreTokens();}
+function initializeInputHandler(input){  
   return {
-    sourceLines: sourceData,
-    hasMoreData: () => currentLineIndex < totalLines,
-    fetchNextLine: () => {
-      if (currentLineIndex < totalLines) {
-        return sourceData[currentLineIndex++];
-      } else {
-        throw new Error("InputBufferUnderflowException: No more lines available in the input stream.");
-      }
-    }
+    list : input, index : 0, max : input.length,
+    hasMoreTokens : function(){return (this.index < this.max);},
+    fetchNextToken : function(){if(this.hasMoreTokens()){return this.list[this.index++];}else{throw "ArrayIndexOutOfBoundsException ‚There is no more input";}}
   };
 }
+function outputResult(s){console.log(s);}
+function outputDebugError(s){console.error("debug:" + require("util").inspect(s,false,null));}
+function convertInputToken(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map(Number);case 6:return i.split("");case 7:return i.split("").map(Number);case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
 
-/**
- * Retrieves and parses the next input line as an integer.
- * @returns {number} The parsed integer value.
- */
-const parseInteger = () => convertInputFormat(retrieveNextInput(), 1);
-
-/**
- * Retrieves and parses the next input line into an array of strings, split by spaces.
- * @returns {string[]} An array of string tokens.
- */
-const parseStringArray = () => convertInputFormat(retrieveNextInput(), 2);
-
-/**
- * Retrieves and parses the next input line into an array of integers, split by spaces.
- * @returns {number[]} An array of integer values.
- */
-const parseIntegerArray = () => convertInputFormat(retrieveNextInput(), 4);
-
-/**
- * Retrieves and parses the next input line into an array of single characters.
- * @returns {string[]} An array of character strings.
- */
-const parseCharacterArray = () => convertInputFormat(retrieveNextInput(), 6);
-
-/**
- * Fetches the next raw line from the global input processor.
- * @returns {string} The next available input line.
- */
-const retrieveNextInput = () => inputProcessor.fetchNextLine();
-
-/**
- * Checks if there are any remaining input lines to be processed.
- * @returns {boolean} True if more input exists, false otherwise.
- */
-const checkInputAvailability = () => inputProcessor.hasMoreData();
-
-/**
- * Outputs the final computed result to the console.
- * @param {*} data - The data to be displayed.
- */
-function displayResult(data) {
-  console.log(data);
+function calculateRangeDifference(values) {
+    const maxValue = Math.max.apply(null, values);
+    const minValue = Math.min.apply(null, values);
+    return maxValue - minValue;
 }
 
-/**
- * Logs detailed debug messages to the standard error stream.
- * @param {*} message - The message or object to debug.
- */
-function logDebugMessage(message) {
-  console.error(`DEBUG_INFO: ${require("util").inspect(message, { showHidden: false, depth: null })}`);
-}
+function processOrientation(currentHeight, currentWidth, initialMinDiff) {
+    let localMinDiff = initialMinDiff;
 
-/**
- * Finds the minimum and maximum values within a numeric array.
- * @param {number[]} values - An array of numbers.
- * @returns {{min: number, max: number}} An object containing the smallest and largest values.
- * @throws {Error} If the input is not a non-empty array.
- */
-function findMinMax(values) {
-    if (!Array.isArray(values) || values.length === 0) {
-        throw new Error("Input for findMinMax must be a non-empty array of numbers.");
+    for (let splitIndex = 1; splitIndex <= currentHeight - 2; splitIndex++) {
+        const remainingHeight = currentHeight - splitIndex;
+
+        // Scenario 1: Three vertical pieces
+        const verticalPiece1 = splitIndex;
+        const verticalPiece2 = Math.floor(remainingHeight / 2);
+        const verticalPiece3 = Math.ceil(remainingHeight / 2);
+        const diffVerticalPieces = calculateRangeDifference([verticalPiece1, verticalPiece2, verticalPiece3]);
+        localMinDiff = Math.min(localMinDiff, diffVerticalPieces * currentWidth);
+
+        // Scenario 2: One horizontal piece and two vertical pieces
+        const horizontalSplitWidth1 = Math.floor(currentWidth / 2);
+        const horizontalSplitWidth2 = Math.ceil(currentWidth / 2);
+        const areaPiece1 = splitIndex * currentWidth;
+        const areaPiece2 = remainingHeight * horizontalSplitWidth1;
+        const areaPiece3 = remainingHeight * horizontalSplitWidth2;
+        const diffAreaPieces = calculateRangeDifference([areaPiece1, areaPiece2, areaPiece3]);
+        localMinDiff = Math.min(localMinDiff, diffAreaPieces);
     }
-    let minValue = values[0];
-    let maxValue = values[0];
-    for (let k = 1; k < values.length; k++) {
-        if (values[k] < minValue) {
-            minValue = values[k];
-        }
-        if (values[k] > maxValue) {
-            maxValue = values[k];
-        }
-    }
-    return { min: minValue, max: maxValue };
+    return localMinDiff;
 }
 
-/**
- * Converts a given input value based on a specified conversion type.
- * @param {string | string[]} inputValue - The value to convert.
- * @param {number} conversionType - An integer code dictating the conversion logic:
- *   1: Parse as integer.
- *   2: Split string by space.
- *   4: Split string by space and convert parts to numbers.
- *   6: Split string into individual characters.
- *   7: Split string into characters and convert to numbers.
- *   8: Join array elements with spaces.
- *   9: Join array elements with newlines.
- *   0: Join array elements without any separator.
- * @returns {*} The converted value.
- */
-function convertInputFormat(inputValue, conversionType) {
-  try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue, 10);
-      case 2:
-        return String(inputValue).split(" ");
-      case 4:
-        return String(inputValue).split(" ").map(Number);
-      case 6:
-        return String(inputValue).split("");
-      case 7:
-        return String(inputValue).split("").map(Number);
-      case 8:
-        if (Array.isArray(inputValue)) return inputValue.join(" ");
-        throw new TypeError("Input for conversion type 8 must be an array.");
-      case 9:
-        if (Array.isArray(inputValue)) return inputValue.join("\n");
-        throw new TypeError("Input for conversion type 9 must be an array.");
-      case 0:
-        if (Array.isArray(inputValue)) return inputValue.join("");
-        throw new TypeError("Input for conversion type 0 must be an array.");
-      default:
-        return inputValue;
-    }
-  } catch (error) {
-    logDebugMessage(`Conversion failure for value '${inputValue}' (type ${conversionType}): ${error.message}`);
-    return inputValue;
-  }
-}
-
-/**
- * Computes the minimum difference between the largest and smallest areas when a rectangle
- * of dimensions (height, width) is divided into three sub-rectangles.
- * It explores two main splitting strategies for a given orientation.
- *
- * @param {number} height - The height dimension of the rectangle.
- * @param {number} width - The width dimension of the rectangle.
- * @returns {number} The smallest area difference found for this specific height-width orientation.
- */
-function calculateMinAreaDifferenceForOrientation(height, width) {
-  let currentMinDiff = Infinity;
-
-  // A rectangle needs at least 3 units in one dimension to be split into three parts.
-  if (height < 3) {
-      return Infinity;
-  }
-
-  // Iterate through all possible first horizontal cut points.
-  // The first cut divides the height into `splitIdx` and `height - splitIdx`.
-  for (let splitIdx = 1; splitIdx <= height - 2; splitIdx++) {
-    // Strategy A: First horizontal cut, then the remaining larger piece is cut horizontally again.
-    // This results in three horizontal strips.
-    const section1Height = splitIdx;
-    const remainingHeight = height - section1Height;
-    const section2Height = Math.floor(remainingHeight / 2);
-    const section3Height = Math.ceil(remainingHeight / 2);
-
-    const areasFromVerticalSlices = [
-      section1Height * width,
-      section2Height * width,
-      section3Height * width
-    ];
-    const { min: minAreaVertical, max: maxAreaVertical } = findMinMax(areasFromVerticalSlices);
-    currentMinDiff = Math.min(currentMinDiff, maxAreaVertical - minAreaVertical);
-
-    // Strategy B: First horizontal cut, then the remaining larger piece is cut vertically.
-    // This results in one horizontal strip and two vertical strips.
-    const horizontalStripArea = section1Height * width;
-    const remainingAreaHeight = height - section1Height;
-
-    // Split the width of the remaining piece.
-    const verticalSplitWidth1 = Math.floor(width / 2);
-    const verticalSplitWidth2 = Math.ceil(width / 2);
-
-    const verticalStripArea1 = remainingAreaHeight * verticalSplitWidth1;
-    const verticalStripArea2 = remainingAreaHeight * verticalSplitWidth2;
-
-    const areasFromHorizontalSlices = [
-      horizontalStripArea,
-      verticalStripArea1,
-      verticalStripArea2
-    ];
-    const { min: minAreaHorizontal, max: maxAreaHorizontal } = findMinMax(areasFromHorizontalSlices);
-    currentMinDiff = Math.min(currentMinDiff, maxAreaHorizontal - minAreaHorizontal);
-  }
-  return currentMinDiff;
-}
-
-/**
- * The primary function that orchestrates the area difference calculation.
- * It reads the initial dimensions, applies the calculation for both orientations (H x W and W x H),
- * and prints the overall minimum difference.
- */
-function executeMainCalculation() {
-  const dimensionsInput = parseIntegerArray();
-
-  if (dimensionsInput.length < 2 || !Number.isInteger(dimensionsInput[0]) || !Number.isInteger(dimensionsInput[1]) || dimensionsInput[0] <= 0 || dimensionsInput[1] <= 0) {
-      logDebugMessage("Invalid input dimensions. Expected two positive integers.");
-      displayResult("Error: Invalid dimensions provided.");
-      return;
-  }
-
-  let heightValue = dimensionsInput[0];
-  let widthValue = dimensionsInput[1];
-
-  let minimumOverallDifference = Infinity;
-
-  // Calculate for the original orientation (H, W)
-  minimumOverallDifference = Math.min(minimumOverallDifference, calculateMinAreaDifferenceForOrientation(heightValue, widthValue));
-
-  // Calculate for the swapped orientation (W, H), effectively rotating the rectangle
-  const tempHeight = heightValue;
-  heightValue = widthValue;
-  widthValue = tempHeight;
-
-  minimumOverallDifference = Math.min(minimumOverallDifference, calculateMinAreaDifferenceForOrientation(heightValue, widthValue));
-
-  displayResult(minimumOverallDifference);
+function executePrimaryLogic(){
+  const initialDimensions = fetchNextIntegerArray();
+  let currentHeight = initialDimensions[0];
+  let currentWidth = initialDimensions[1];
+  
+  let minimumAreaDifference = 100000000000;
+  
+  // First orientation: H x W
+  minimumAreaDifference = processOrientation(currentHeight, currentWidth, minimumAreaDifference);
+  
+  // Second orientation: W x H (swap dimensions)
+  const tempDimensionValue = currentHeight;
+  currentHeight = currentWidth;
+  currentWidth = tempDimensionValue;
+  minimumAreaDifference = processOrientation(currentHeight, currentWidth, minimumAreaDifference);
+  
+  outputResult(minimumAreaDifference);
 }

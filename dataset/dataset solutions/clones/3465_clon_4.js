@@ -1,34 +1,23 @@
-const ascertainExtent = (textualUnit) => {
-  return textualUnit === ''
-    ? 0
-    : 1 + ascertainExtent(textualUnit.substring(1));
+'use strict'
+
+const stringFlipper = (initialString) => {
+  let flippedResult = '';
+  let charIndex = initialString.length;
+  while (charIndex--) {
+    flippedResult += initialString[charIndex];
+  }
+  return flippedResult;
 };
 
-const isolatePrimaryLine = (completeDocument) => {
-  const boundaryIndex = completeDocument.indexOf('\n');
-  return boundaryIndex === -1
-    ? completeDocument
-    : completeDocument.substring(0, boundaryIndex);
+const processEntry = (rawInputContent) => {
+  const contentLines = rawInputContent.split('\n');
+  const targetLine = contentLines[0];
+
+  console.log(
+    (targetLine.length === 2)
+      ? targetLine
+      : stringFlipper(targetLine)
+  );
 };
 
-const flipSequence = (initialElement) => {
-  return initialElement === ''
-    ? ''
-    : flipSequence(initialElement.substring(1)) + initialElement.charAt(0);
-};
-
-const manipulateSource = (materialContent) => {
-  const targetFragment = isolatePrimaryLine(materialContent);
-  const fragmentLength = ascertainExtent(targetFragment);
-
-  return fragmentLength === 2
-    ? targetFragment
-    : flipSequence(targetFragment);
-};
-
-const processInputAndDisplay = (externalDataSource) => {
-  const transformationResult = manipulateSource(externalDataSource);
-  console.log(transformationResult);
-};
-
-processInputAndDisplay(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

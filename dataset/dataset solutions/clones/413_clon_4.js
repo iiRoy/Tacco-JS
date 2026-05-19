@@ -1,75 +1,76 @@
-const rawSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const queries = rawSource.trim().split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parsedLines = rawData.trim().split('\n');
 
-const MARK_TO_NUMBER = { 'r': 0, 'g': 1, 'b': 2 };
-const NUMBER_TO_MARK = ['r', 'g', 'b'];
+const COLOR_SET = ['r', 'g', 'b'];
 
-function convertPatternToNumericalArray(sequencePattern) {
-    return Array.from(sequencePattern).map(singleMark => MARK_TO_NUMBER[singleMark]);
-}
+const deriveNextPatterns = (currentIdentifier) => {
+    const patternChars = Array.from(currentIdentifier);
+    const nextPatternIdentifiers = [];
 
-function convertNumericalArrayToPattern(numericalArray) {
-    return numericalArray.map(numericalMark => NUMBER_TO_MARK[numericalMark]).join('');
-}
+    for (let i = 0; i < patternChars.length - 1; i++) {
+        const charA = patternChars[i];
+        const charB = patternChars[i + 1];
 
-function produceSuccessorPatterns(currentPattern) {
-    const segmentsArray = convertPatternToNumericalArray(currentPattern);
-    const generatedPatterns = [];
-
-    for (let currentPos = 0; currentPos < segmentsArray.length - 1; currentPos++) {
-        const segmentOne = segmentsArray[currentPos];
-        const segmentTwo = segmentsArray[currentPos + 1];
-
-        if (segmentOne === segmentTwo) {
+        if (charA === charB) {
             continue;
         }
 
-        const mutatedSegment = 3 - segmentOne - segmentTwo;
+        const replacementColor = COLOR_SET.find(c => c !== charA && c !== charB);
 
-        const newSegmentArray = segmentsArray.slice();
-        newSegmentArray[currentPos] = mutatedSegment;
-        newSegmentArray[currentPos + 1] = mutatedSegment;
-        
-        generatedPatterns.push(convertNumericalArrayToPattern(newSegmentArray));
+        const modifiedPatternChars = [
+            ...patternChars.slice(0, i),
+            replacementColor, replacementColor,
+            ...patternChars.slice(i + 2)
+        ];
+        nextPatternIdentifiers.push(modifiedPatternChars.join(''));
     }
-    return generatedPatterns;
-}
+    return nextPatternIdentifiers;
+};
 
-function exploreDepths(startPattern) {
-    const visitedStates = {};
-    const pendingQueue = [];
+const findTerminalState = (initialPattern) => {
+    const visitedLevels = new Map();
+    const pendingPatterns = [];
 
-    visitedStates[startPattern] = 0;
-    pendingQueue.push(startPattern);
+    visitedLevels.set(initialPattern, 0);
+    pendingPatterns.push(initialPattern);
 
-    let queueHeadIndex = 0;
+    while (pendingPatterns.length > 0) {
+        const currentPattern = pendingPatterns.shift();
+        const currentLevel = visitedLevels.get(currentPattern);
 
-    while (queueHeadIndex < pendingQueue.length) {
-        const currentSequence = pendingQueue[queueHeadIndex++];
-        const currentLevel = visitedStates[currentSequence];
+        const successorPatterns = deriveNextPatterns(currentPattern);
 
-        const nextPossibleSequences = produceSuccessorPatterns(currentSequence);
-
-        if (nextPossibleSequences.length === 0) {
-            return currentLevel;
+        if (successorPatterns.length === 0) {
+            return { identifier: currentPattern, level: currentLevel };
         }
 
-        for (const nextSequence of nextPossibleSequences) {
-            if (visitedStates[nextSequence] === undefined) {
-                visitedStates[nextSequence] = currentLevel + 1;
-                pendingQueue.push(nextSequence);
+        for (const nextPattern of successorPatterns) {
+            if (!visitedLevels.has(nextPattern)) {
+                visitedLevels.set(nextPattern, currentLevel + 1);
+                pendingPatterns.push(nextPattern);
             }
         }
     }
 
-    return null;
-}
+    return undefined;
+};
 
-queries.forEach(sequencePattern => {
-    if (sequencePattern === '0') {
+const displayExploredStates = (stateMap) => {
+    // This function is never called in the original logic,
+    // so its implementation is a placeholder to mirror the unused method.
+    if (stateMap instanceof Map) {
+        for (const [key, value] of stateMap.entries()) {
+            // console.log(`Pattern: ${key}, Level: ${value}`); // Example of what it *could* do
+        }
+    }
+};
+
+parsedLines.forEach(inputPattern => {
+    if (inputPattern === '0') {
         return;
     }
-    
-    const finalLevel = exploreDepths(sequencePattern);
-    console.log(finalLevel !== null ? finalLevel : 'NA');
+
+    const finalState = findTerminalState(inputPattern);
+
+    console.log(finalState ? finalState.level : 'NA');
 });

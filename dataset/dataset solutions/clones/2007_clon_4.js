@@ -1,24 +1,14 @@
-const acquireData = (sourceTxt) => {
-  const numericSegments = sourceTxt.match(/\d+/g);
-  return {
-    valA: +numericSegments[0],
-    valB: +numericSegments[1]
-  };
-};
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataRows = fileContent.split('\n');
+const [firstVal, secondVal] = dataRows[0].split(' ').map(Number);
 
-const computeClosestMultipleDistance = (inputVal, divisorVal) => {
-  const firstRemainder = inputVal - Math.floor(inputVal / divisorVal) * divisorVal;
-  const secondRemainder = divisorVal - firstRemainder;
-  return firstRemainder < secondRemainder ? firstRemainder : secondRemainder;
-};
+console.log(firstVal, secondVal);
 
-const rawSource = require("fs").readFileSync("/dev/stdin", "utf8");
-const processedParameters = acquireData(rawSource);
+const lowerMultiple = Math.floor(firstVal / secondVal) * secondVal;
+const upperMultiple = Math.ceil(firstVal / secondVal) * secondVal;
 
-const mainValue = processedParameters.valA;
-const factorValue = processedParameters.valB;
+const distToLower = firstVal - lowerMultiple;
+const distToUpper = upperMultiple - firstVal;
 
-console.log(mainValue, factorValue);
-
-const outcome = computeClosestMultipleDistance(mainValue, factorValue);
-console.log(outcome);
+const finalOutcome = distToLower < distToUpper ? distToLower : distToUpper;
+console.log(finalOutcome);

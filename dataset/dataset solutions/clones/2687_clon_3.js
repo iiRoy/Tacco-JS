@@ -1,67 +1,70 @@
-const distributePopulation = (currentRightCount, currentLeftCount, transitionIndex, finalDistributionArray) => {
-    const totalBlockPopulation = currentRightCount + currentLeftCount;
+"use strict";
 
-    if (totalBlockPopulation % 2 === 0) {
-        const evenPortion = totalBlockPopulation / 2;
-        finalDistributionArray[transitionIndex] = evenPortion;
-        finalDistributionArray[transitionIndex + 1] = evenPortion;
-    } else {
-        if (Math.max(currentRightCount, currentLeftCount) % 2 !== 0) {
-            finalDistributionArray[transitionIndex] = currentRightCount;
-            finalDistributionArray[transitionIndex + 1] = currentLeftCount;
+const main = inputStr => {
+    inputStr = inputStr.trim();
+    const charArr = inputStr.split("");
+    const stringLength = charArr.length;
+
+    let rightCount = 0;
+    let leftCount = 0;
+    let boundaryIndex;
+    let segmentTransitionCount = 0;
+
+    let resultArray = new Array(stringLength).fill(0);
+
+    const distributeSegmentCounts = (bIdx, rCnt, lCnt, targetArr) => {
+        const totalSegmentChars = rCnt + lCnt;
+        if (totalSegmentChars % 2 === 0) {
+            targetArr[bIdx] = totalSegmentChars / 2;
+            targetArr[bIdx + 1] = totalSegmentChars / 2;
         } else {
-            finalDistributionArray[transitionIndex] = currentLeftCount;
-            finalDistributionArray[transitionIndex + 1] = currentRightCount;
-        }
-    }
-};
+            const maxCount = Math.max(rCnt, lCnt);
+            const isMaxCountOdd = (maxCount % 2 !== 0);
 
-function processCharSequence(rawInputPayload) {
-    const cleanedInputLines = rawInputPayload.trim().split("\n");
-    const charSequence = cleanedInputLines[0].split("");
-    const sequenceLength = charSequence.length;
-
-    if (sequenceLength < 2) {
-        console.log(charSequence.length === 1 ? "0" : "");
-        return;
-    }
-
-    let rightBlockAccumulator = 0;
-    let leftBlockAccumulator = 0;
-    let transitionPointIndex = 0;
-    let boundaryChangeCounter = 0;
-
-    const finalDistributionResult = new Array(sequenceLength).fill(0);
-
-    for (let idx = 0; idx <= sequenceLength - 2; idx++) {
-        if (charSequence[idx] === "R") {
-            rightBlockAccumulator++;
-        } else {
-            leftBlockAccumulator++;
-        }
-
-        if (charSequence[idx] !== charSequence[idx + 1]) {
-            boundaryChangeCounter++;
-
-            if (boundaryChangeCounter === 1) {
-                transitionPointIndex = idx;
+            if (isMaxCountOdd) {
+                targetArr[bIdx] = rCnt;
+                targetArr[bIdx + 1] = lCnt;
+            } else {
+                targetArr[bIdx] = lCnt;
+                targetArr[bIdx + 1] = rCnt;
             }
         }
+    };
 
-        if (boundaryChangeCounter === 2) {
-            distributePopulation(rightBlockAccumulator, leftBlockAccumulator, transitionPointIndex, finalDistributionResult);
+    for (let idx = 0; idx < stringLength - 1; idx++) {
+        const currentChar = charArr[idx];
+        const nextChar = charArr[idx + 1];
 
-            boundaryChangeCounter = 0;
-            rightBlockAccumulator = 0;
-            leftBlockAccumulator = 0;
+        if (currentChar === "R") {
+            rightCount++;
+        } else if (currentChar === "L") {
+            leftCount++;
+        }
+
+        if (currentChar !== nextChar) {
+            segmentTransitionCount++;
+            
+            if (segmentTransitionCount === 1) {
+                boundaryIndex = idx;
+            }
+        }
+        
+        if (segmentTransitionCount === 2) {
+            distributeSegmentCounts(boundaryIndex, rightCount, leftCount, resultArray);
+            
+            segmentTransitionCount = 0;
+            rightCount = 0;
+            leftCount = 0;
+        }
+        
+        if (idx === stringLength - 2) {
+            leftCount++;
+            
+            distributeSegmentCounts(boundaryIndex, rightCount, leftCount, resultArray);
         }
     }
+    
+    console.log(resultArray.join(" "));
+};
 
-    leftBlockAccumulator++;
-
-    distributePopulation(rightBlockAccumulator, leftBlockAccumulator, transitionPointIndex, finalDistributionResult);
-
-    console.log(finalDistributionResult.join(" "));
-}
-
-processCharSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

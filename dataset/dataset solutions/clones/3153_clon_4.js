@@ -1,17 +1,18 @@
-function processNumericalSequence(textualData) {
-  const numericComponents = textualData.split(' ').map(Number);
-  const sourceValue = numericComponents[0];
-  const targetValue = numericComponents[1];
-  const selectionIndex = numericComponents[2];
+function processInput(inputString) {
+    const numericInputs = inputString.split(' ').map(Number);
+    const [firstNum, secondNum, targetRank] = numericInputs;
 
-  const upperBound = Math.min(sourceValue, targetValue);
+    const lowerBound = Math.min(firstNum, secondNum);
 
-  const commonDivisorsDescending = Array.from({ length: upperBound }, (_, idx) => upperBound - idx)
-    .filter(candidateFactor => sourceValue % candidateFactor === 0 && targetValue % candidateFactor === 0);
+    const potentialDivisors = Array.from({ length: lowerBound }, (_, index) => lowerBound - index);
 
-  const resultantDivisor = commonDivisorsDescending[selectionIndex - 1];
+    const commonDivisors = potentialDivisors.filter(
+        (candidateValue) => firstNum % candidateValue === 0 && secondNum % candidateValue === 0
+    );
 
-  console.log(resultantDivisor);
+    const resultValue = commonDivisors[targetRank - 1] || 0;
+
+    console.log(resultValue);
 }
 
-processNumericalSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

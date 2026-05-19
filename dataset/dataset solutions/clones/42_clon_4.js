@@ -1,62 +1,55 @@
-const sourceReader = require("node:fs");
+const inputSourceContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const processGeometry = (inputLine) => {
-    const numericComponents = inputLine.split(' ').map(Number);
-    
-    if (numericComponents.length < 6) {
-        return; 
-    }
+const constructPoint = (xValue, yValue) => ({ x: parseFloat(xValue), y: parseFloat(yValue) });
 
-    const pointOne = { xA: numericComponents[0], yA: numericComponents[1] };
-    const pointTwo = { xA: numericComponents[2], yA: numericComponents[3] };
-    const pointThree = { xA: numericComponents[4], yA: numericComponents[5] };
+const determineMidpoint = (pointOne, pointTwo) => ({
+    x: (pointOne.x + pointTwo.x) / 2,
+    y: (pointOne.y + pointTwo.y) / 2
+});
 
-    const distanceSquared = (vertexA, vertexB) => {
-        const deltaX = vertexA.xA - vertexB.xA;
-        const deltaY = vertexA.yA - vertexB.yA;
-        return deltaX * deltaX + deltaY * deltaY;
-    };
+const generateBisectorEquation = (firstVertex, secondVertex) => {
+    const midPoint = determineMidpoint(firstVertex, secondVertex);
+    const deltaX = secondVertex.x - firstVertex.x;
+    const deltaY = secondVertex.y - firstVertex.y;
 
-    const findCircumcenter = (vertexAlpha, vertexBeta, vertexGamma) => {
-        // Equation for perpendicular bisector of vertexAlpha and vertexBeta:
-        // 2*(x_beta - x_alpha)*X + 2*(y_beta - y_alpha)*Y = (x_beta^2 + y_beta^2) - (x_alpha^2 + y_alpha^2)
-        const coefficientX_Line1 = 2 * (vertexBeta.xA - vertexAlpha.xA);
-        const coefficientY_Line1 = 2 * (vertexBeta.yA - vertexAlpha.yA);
-        const constantValue_Line1 = distanceSquared(vertexBeta, { xA: 0, yA: 0 }) - distanceSquared(vertexAlpha, { xA: 0, yA: 0 });
+    const coefficientA = deltaY;
+    const coefficientB = -deltaX;
+    const constantTerm = coefficientA * midPoint.x + coefficientB * midPoint.y;
 
-        // Equation for perpendicular bisector of vertexAlpha and vertexGamma:
-        const coefficientX_Line2 = 2 * (vertexGamma.xA - vertexAlpha.xA);
-        const coefficientY_Line2 = 2 * (vertexGamma.yA - vertexAlpha.yA);
-        const constantValue_Line2 = distanceSquared(vertexGamma, { xA: 0, yA: 0 }) - distanceSquared(vertexAlpha, { xA: 0, yA: 0 });
-
-        // Solve the system of linear equations using Cramer's rule:
-        // A1*X + B1*Y = C1
-        // A2*X + B2*Y = C2
-        // X = (C1*B2 - C2*B1) / (A1*B2 - A2*B1)
-        // Y = (A1*C2 - A2*C1) / (A1*B2 - A2*B1)
-
-        const systemDeterminant = coefficientX_Line1 * coefficientY_Line2 - coefficientX_Line2 * coefficientY_Line1;
-
-        const centralAbscissa = (constantValue_Line1 * coefficientY_Line2 - constantValue_Line2 * coefficientY_Line1) / systemDeterminant;
-        const centralOrdinate = (coefficientX_Line1 * constantValue_Line2 - coefficientX_Line2 * constantValue_Line1) / systemDeterminant;
-
-        return { xCoord: centralAbscissa, yCoord: centralOrdinate };
-    };
-
-    const circumcenterLocation = findCircumcenter(pointOne, pointTwo, pointThree);
-
-    const circleRadius = Math.sqrt(distanceSquared(pointOne, { xA: circumcenterLocation.xCoord, yA: circumcenterLocation.yCoord }));
-
-    console.log(
-        circumcenterLocation.xCoord.toFixed(3),
-        circumcenterLocation.yCoord.toFixed(3),
-        circleRadius.toFixed(3)
-    );
+    return { A: coefficientA, B: coefficientB, C: constantTerm };
 };
 
-const rawInput = sourceReader.readFileSync("/dev/stdin", "utf8");
-const inputLines = rawInput.trim().split('\n');
+const findSystemSolution = (equationOne, equationTwo) => {
+    const mainDeterminant = equationOne.A * equationTwo.B - equationTwo.A * equationOne.B;
 
-inputLines.forEach(lineEntry => {
-    processGeometry(lineEntry);
+    if (Math.abs(mainDeterminant) < 1e-9) {
+        return { x: NaN, y: NaN };
+    }
+
+    const solutionX = (equationOne.C * equationTwo.B - equationTwo.C * equationOne.B) / mainDeterminant;
+    const solutionY = (equationOne.A * equationTwo.C - equationTwo.A * equationOne.C) / mainDeterminant;
+
+    return { x: solutionX, y: solutionY };
+};
+
+inputSourceContent.trim().split('\n').forEach(function(currentInputLine) {
+    const coordinateComponents = currentInputLine.split(' ');
+
+    if (coordinateComponents.length < 2) {
+        return;
+    }
+
+    const vertexA = constructPoint(coordinateComponents[0], coordinateComponents[1]);
+    const vertexB = constructPoint(coordinateComponents[2], coordinateComponents[3]);
+    const vertexC = constructPoint(coordinateComponents[4], coordinateComponents[5]);
+
+    const bisectorAB = generateBisectorEquation(vertexA, vertexB);
+    const bisectorBC = generateBisectorEquation(vertexB, vertexC);
+
+    const centralPoint = findSystemSolution(bisectorAB, bisectorBC);
+
+    const squaredDistance = Math.pow(vertexA.x - centralPoint.x, 2) + Math.pow(vertexA.y - centralPoint.y, 2);
+    const circleRadius = Math.sqrt(squaredDistance);
+
+    console.log(centralPoint.x.toFixed(3), centralPoint.y.toFixed(3), circleRadius.toFixed(3));
 });

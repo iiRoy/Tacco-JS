@@ -1,14 +1,19 @@
-function processInputData(sourceText) {
-    const distinctSymbols = new Set(sourceText.split(''));
-    const requiredSymbols = ['a', 'b', 'c'];
+function processData(sourceContent) {
+    const requiredSet = new Set(['a', 'b', 'c']);
+    const presentSet = new Set();
 
-    const allPresent = requiredSymbols.every(symbol => distinctSymbols.has(symbol));
+    for (let charIndex = 0; charIndex < sourceContent.length; charIndex++) {
+        const currentCharacter = sourceContent[charIndex];
+        if (requiredSet.has(currentCharacter)) {
+            presentSet.add(currentCharacter);
+        }
+        if (presentSet.size === requiredSet.size) {
+            break;
+        }
+    }
 
-    const emitResult = (condition) => {
-        console.log(condition ? "Yes" : "No");
-    };
-
-    emitResult(allPresent);
+    const outcome = (presentSet.size === requiredSet.size) ? "Yes" : "No";
+    console.log(outcome);
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,102 +1,96 @@
-function ProcessInput(rawData)
-{
-    // Pre-process the raw text data: trim, split into lines, then split each line by space
-    let  processedLines = rawData.trim().split("\n") .map(function(lineData) { return lineData.split(" "); } );
+function ProcessInput(rawData) {
+    // Trim whitespace, split by newlines, then split each line by spaces
+    // and parse numbers where appropriate.
+    let processedLines = rawData.trim().split("\n").map(function(lineSegment) {
+        return lineSegment.split(" ");
+    });
 
-    // Parse the board dimensions and number of moves from the first line
-    let  boardSize = parseInt( processedLines[0][0] , 10);
-    let  numMoves = parseInt( processedLines[0][1] , 10);
+    // Extract N (number of elements) and K (number of steps) from the first line
+    let numElements = parseInt(processedLines[0][0], 10);
+    let numSteps = parseInt(processedLines[0][1], 10);
 
-    // Parse the next position mapping for each node
-    let  nextPositions = processedLines[1].map( element => parseInt(element, 10));
+    // Parse the permutation array (v_P in original)
+    let permutationArr = processedLines[1].map(elementStr => parseInt(elementStr, 10));
+    // Parse the score array (v_C in original)
+    let scoreArr = processedLines[2].map(elementStr => parseInt(elementStr, 10));
 
-    // Parse the points associated with each node
-    let  pointValues = processedLines[2].map( element => parseInt(element, 10));
+    // Initialize a boolean array to keep track of visited nodes in cycles
+    let visitedFlags = Array.from({length: numElements}, () => false);
 
-    // Initialize an array to track visited nodes during cycle detection
-    let  visitedNodes = Array.from( {length: boardSize} , ( ) => false );
+    // This array will store all identified cycles. Each cycle is an array of [node_index, score] pairs.
+    let cyclesList = [];
 
-    // This array will store all detected cycles, each cycle being an array of [node_id, point_value] pairs
-    let  allCycles = [ ] ;
-
+    // Variables for cycle detection and score calculation
+    let cycleStartIdx, currentIdx, nextIdx, currentPathScore, currentCycleTotalScore;
     // Initialize the maximum overall score to negative infinity
-    let  maxOverallScore = -1 * Infinity;
+    let maxOverallScore = Number.NEGATIVE_INFINITY;
 
-    // Declare auxiliary variables for cycle traversal and score calculation
-    let cycleStart, currentNode, nextNode, currentPathScore, cycleTotalScore;
+    // Iterate through each element to find cycles
+    for (let elementIdx = 0; elementIdx < numElements; elementIdx++) {
+        // If the current element hasn't been visited yet, start a new cycle detection
+        if (!visitedFlags[elementIdx]) {
+            // Add a new empty cycle to our list and add the starting node
+            cyclesList.push([[elementIdx + 1, scoreArr[elementIdx]]]);
+            currentCycleTotalScore = scoreArr[elementIdx]; // Initialize cycle sum with the first node's score
+            cycleStartIdx = elementIdx + 1; // Store the starting node's 1-based index
+            currentIdx = elementIdx + 1; // Current node in the cycle traversal
 
-    // Iterate through each possible starting node to find and process cycles
-    for (let nodeIdx = 0; nodeIdx < boardSize; nodeIdx++)
-    {
-        // Only process nodes that haven't been visited yet (i.e., part of a new cycle)
-        if ( ! visitedNodes[nodeIdx] )
-        {
-            // Start a new cycle entry with the current node's data
-            allCycles.push( [ [nodeIdx + 1, pointValues[nodeIdx]] ] );
-            cycleTotalScore = pointValues[nodeIdx];
-            cycleStart = nodeIdx + 1;
-            currentNode = nodeIdx + 1;
-
-            // Traverse the cycle until the starting node is reached again
-            while(true)
-            {
-                // Mark the current node as visited
-                visitedNodes[currentNode - 1] = true;
-                nextNode = nextPositions[currentNode - 1]; // Get the next node in the sequence
-
-                // If we've returned to the cycle's starting point, break the loop
-                if (cycleStart === nextNode) {
-                    break;
-                }
-
-                // Move to the next node and accumulate its points to the cycle's total
-                currentNode = nextNode;
-                cycleTotalScore += pointValues[currentNode - 1];
-                allCycles[allCycles.length - 1].push([currentNode, pointValues[currentNode - 1]]); // Add node to current cycle
+            // Traverse the cycle until we return to the starting node
+            while (true) {
+                visitedFlags[currentIdx - 1] = true; // Mark the current node as visited
+                nextIdx = permutationArr[currentIdx - 1]; // Get the next node in the permutation
+                if (cycleStartIdx === nextIdx) break; // If we've returned to the start, break the loop
+                currentIdx = nextIdx; // Move to the next node
+                currentCycleTotalScore += scoreArr[currentIdx - 1]; // Add its score to the cycle total
+                cyclesList[cyclesList.length - 1].push([currentIdx, scoreArr[currentIdx - 1]]); // Add node to the current cycle
             }
 
-            // Create a copy of the current cycle's nodes for processing
-            let currentCycleNodes = allCycles[allCycles.length - 1].slice();
-            let maxRemainingPathScore = -1 * Infinity; // Max score for a path segment within the cycle
+            // Get the last detected cycle for processing
+            let currentCycleNodes = cyclesList[cyclesList.length - 1].slice();
+            let maxPathInCycle = Number.NEGATIVE_INFINITY; // Max score for a path within this cycle
 
-            // Determine the effective path length for calculating scores
-            let effectivePathLength;
-            if (numMoves <= currentCycleNodes.length) {
-                effectivePathLength = numMoves; // If moves are less than or equal to cycle length, use moves
-            } else if (cycleTotalScore > 0) {
-                // If cycle has positive total score, consider full cycles and remaining path
-                effectivePathLength = numMoves % currentCycleNodes.length;
-                if (effectivePathLength === 0) {
-                    effectivePathLength = currentCycleNodes.length; // If remainder is 0, use full cycle
+            // Determine the effective number of steps to consider within a single cycle traversal
+            let effectiveSteps;
+            if (numSteps <= currentCycleNodes.length) {
+                // If K is less than or equal to cycle length, we can't complete a full cycle
+                effectiveSteps = numSteps;
+            } else if (currentCycleTotalScore > 0) {
+                // If K is greater than cycle length and the cycle has a positive total score,
+                // we can potentially traverse the cycle multiple times.
+                // The remainder of steps after full cycles determines the path within the last cycle.
+                effectiveSteps = numSteps % currentCycleNodes.length;
+                if (effectiveSteps === 0) {
+                    effectiveSteps = currentCycleNodes.length; // If remainder is 0, it means a full cycle traversal
                 }
             } else {
-                // If cycle has non-positive total score, only consider paths up to one full cycle
-                effectivePathLength = currentCycleNodes.length;
+                // If K is greater than cycle length but the cycle has a non-positive total score,
+                // we only consider paths up to the cycle length to avoid negative contributions from full cycles.
+                effectiveSteps = currentCycleNodes.length;
             }
 
-            // Iterate through all possible starting points within the current cycle
-            for (let startOffset = 0; startOffset < currentCycleNodes.length; startOffset++)
-            {
-                currentPathScore = 0; // Reset path score for each starting point
-                // Calculate the score for a path of 'effectivePathLength' steps
-                for (let pathStep = startOffset; pathStep < startOffset + effectivePathLength; pathStep++)
-                {
-                    let wrappedStep = pathStep % currentCycleNodes.length; // Handle wrapping around the cycle
-                    currentPathScore += currentCycleNodes[wrappedStep][1]; // Add points of the current node in path
-                    maxRemainingPathScore = Math.max(maxRemainingPathScore, currentPathScore); // Update max path score
+            // Iterate through all possible starting points in the cycle
+            for (let startNodeOffset = 0; startNodeOffset < currentCycleNodes.length; startNodeOffset++) {
+                currentPathScore = 0; // Reset path score for each new starting point
+                // Calculate the score for a path of 'effectiveSteps' length starting from 'startNodeOffset'
+                for (let pathNodeOffset = startNodeOffset; pathNodeOffset < startNodeOffset + effectiveSteps; pathNodeOffset++) {
+                    let wrappedNodeOffset = pathNodeOffset % currentCycleNodes.length; // Handle wrapping around the cycle
+                    currentPathScore += currentCycleNodes[wrappedNodeOffset][1]; // Add score of the node
+                    maxPathInCycle = Math.max(maxPathInCycle, currentPathScore); // Update max path score
                 }
             }
 
-            // Update the overall maximum score
-            // This considers the max path score found, plus full cycle contributions if any
-            maxOverallScore = Math.max(maxOverallScore, maxRemainingPathScore + Math.max(0, cycleTotalScore) * Math.floor((numMoves - effectivePathLength) / currentCycleNodes.length));
+            // Calculate the total score for the current cycle configuration
+            // This involves the max path found within the cycle (maxPathInCycle)
+            // plus the contribution from full cycle traversals.
+            // Full cycle traversals only contribute if the cycle's total score is positive.
+            // The number of full cycles is (numSteps - effectiveSteps) / currentCycleNodes.length.
+            maxOverallScore = Math.max(maxOverallScore, maxPathInCycle + Math.max(0, currentCycleTotalScore) * ((numSteps - effectiveSteps) / currentCycleNodes.length));
         }
     }
 
-    // Output the final maximum score
+    // Output the final maximum overall score
     console.log(maxOverallScore);
 }
 
-
-// Read input from standard input and pass it to the main processing function
-ProcessInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

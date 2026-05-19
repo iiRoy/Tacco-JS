@@ -1,25 +1,10 @@
 process.stdin.setEncoding('utf-8');
+process.stdin.on('data', function (inputStr) {
+  const upperBoundary = Number(inputStr);
 
-process.stdin.on('data', function (incomingText) {
-  let highestConsidered = Math.floor(Number(incomingText));
+  const computedTotal = Array.from({ length: upperBoundary }, (_, currentIdx) => currentIdx + 1)
+    .filter(valueElement => valueElement % 3 !== 0 && valueElement % 5 !== 0)
+    .reduce((runningTotal, itemValue) => runningTotal + itemValue, 0);
 
-  const calculateArithmeticSum = (limit) => {
-    if (limit <= 0) return 0;
-    return (limit * (limit + 1)) / 2;
-  };
-
-  const determineMultiplesSum = (divisor, boundary) => {
-    if (boundary <= 0) return 0;
-    const countOfMultiples = Math.floor(boundary / divisor);
-    return divisor * calculateArithmeticSum(countOfMultiples);
-  };
-
-  const totalPossibleSum = calculateArithmeticSum(highestConsidered);
-  const sumOfThrees = determineMultiplesSum(3, highestConsidered);
-  const sumOfFives = determineMultiplesSum(5, highestConsidered);
-  const sumOfFifteens = determineMultiplesSum(15, highestConsidered);
-
-  const finalAccumulatedValue = totalPossibleSum - sumOfThrees - sumOfFives + sumOfFifteens;
-
-  console.log(finalAccumulatedValue);
+  console.log(computedTotal);
 });

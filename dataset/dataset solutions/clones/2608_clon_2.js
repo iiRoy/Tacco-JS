@@ -1,282 +1,240 @@
-/* This is a custom module system for bundling JavaScript files. */
-module.exports = function ( componentDefinitions ) {
-  // A cache for already loaded modules to prevent redundant processing.
-  var loadedComponents = {};
+module.exports = function(moduleDefinitions) {
+    // This object serves as a cache for modules that have already been loaded.
+    var moduleCache = {};
 
-  /**
-   * Resolves and loads a component by its identifier.
-   * @param {number} componentKey The unique identifier for the component.
-   * @returns {object} The exports of the loaded component.
-   */
-  function loadComponent ( componentKey ) {
-    // If the component is already in the cache, return its exports immediately.
-    if ( loadedComponents[componentKey] ) {
-      return loadedComponents[componentKey].exportedContent;
+    // This function acts as the custom 'require' mechanism for the bundled modules.
+    function moduleLoader(moduleId) {
+        // If the requested module is already in the cache, return its exported value.
+        if (moduleCache[moduleId]) {
+            return moduleCache[moduleId].exports;
+        }
+
+        // If not cached, create a new module entry in the cache.
+        // 'i' stores the module's identifier.
+        // 'l' indicates if the module has finished loading (false initially).
+        // 'exports' is the object that will hold the module's exported values.
+        var currentModule = moduleCache[moduleId] = {
+            i: moduleId,
+            l: false,
+            exports: {}
+        };
+
+        // Execute the module's definition function.
+        // 'call' is used to set 'this' context to 'currentModule.exports'
+        // and pass 'currentModule', 'currentModule.exports', and 'moduleLoader' as arguments.
+        moduleDefinitions[moduleId].call(currentModule.exports, currentModule, currentModule.exports, moduleLoader);
+
+        // After execution, mark the module as fully loaded.
+        currentModule.l = true;
+
+        // Return the module's exports.
+        return currentModule.exports;
     }
 
-    // Initialize a new component object in the cache.
-    var componentObject = loadedComponents[componentKey] = {
-      identification: componentKey,
-      isInitialized: false,
-      exportedContent: {}
+    // Attach the original module definitions array to the loader for reference.
+    moduleLoader.modules = moduleDefinitions;
+    // Attach the module cache to the loader.
+    moduleLoader.cache = moduleCache;
+
+    // A utility function to define a getter property on an object.
+    // This is often used for lazy loading or exposing properties.
+    moduleLoader.defineGetter = function(targetObject, propertyName, getterFunction) {
+        // Only define the property if it doesn't already exist on the target object.
+        if (!moduleLoader.hasOwn(targetObject, propertyName)) {
+            Object.defineProperty(targetObject, propertyName, {
+                enumerable: true, // Make the property enumerable.
+                get: getterFunction // The function to execute when the property is accessed.
+            });
+        }
     };
 
-    // Execute the component's definition function.
-    // The definition function receives (module, exports, require)
-    componentDefinitions[componentKey].call(
-      componentObject.exportedContent,
-      componentObject,
-      componentObject.exportedContent,
-      loadComponent
-    );
+    // A utility function to mark a module's exports as an ES module.
+    moduleLoader.registerEsModule = function(moduleExports) {
+        // If Symbol and Symbol.toStringTag are available, set the toStringTag for better debugging.
+        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(moduleExports, Symbol.toStringTag, {
+                value: "Module"
+            });
+        }
+        // Set the __esModule flag to true, indicating it's an ES module.
+        Object.defineProperty(moduleExports, "__esModule", {
+            value: true
+        });
+    };
 
-    // Mark the component as initialized.
-    componentObject.isInitialized = true;
+    // Handles interoperability for different module formats (e.g., CommonJS with ES modules).
+    moduleLoader.interopRequireDefault = function(valueToProcess, modeFlags) {
+        // If modeFlags indicates it's a direct module ID, load it.
+        if (1 & modeFlags) {
+            valueToProcess = moduleLoader(valueToProcess);
+        }
+        // If modeFlags indicates it's already an ES module, return it directly.
+        if (8 & modeFlags) {
+            return valueToProcess;
+        }
+        if (4 & modeFlags && typeof valueToProcess === "object" && valueToProcess && valueToProcess.__esModule) {
+            return valueToProcess;
+        }
 
-    // Return the exports of the newly loaded component.
-    return componentObject.exportedContent;
-  }
+        // Create a new object to represent the interop'd module.
+        var interopObject = Object.create(null);
+        moduleLoader.registerEsModule(interopObject); // Mark it as an ES module.
+        Object.defineProperty(interopObject, "default", {
+            enumerable: true,
+            value: valueToProcess
+        });
 
-  // Store the component definitions array on the loader for internal access.
-  loadComponent.definitions = componentDefinitions;
+        // If modeFlags indicates and the value is not a string, copy all properties.
+        if (2 & modeFlags && typeof valueToProcess !== "string") {
+            for (var propName in valueToProcess) {
+                moduleLoader.defineGetter(interopObject, propName, (function(boundProp) {
+                    return valueToProcess[boundProp];
+                }).bind(null, propName));
+            }
+        }
+        return interopObject;
+    };
 
-  // Store the cache on the loader.
-  loadComponent.cache = loadedComponents;
+    // Creates a getter function for the default export of a module.
+    moduleLoader.createDefaultExportGetter = function(moduleRef) {
+        var defaultGetter = moduleRef && moduleRef.__esModule ?
+            function() {
+                return moduleRef.default;
+            } :
+            function() {
+                return moduleRef;
+            };
+        // Define an alias 'a' for the default getter.
+        moduleLoader.defineGetter(defaultGetter, "a", defaultGetter);
+        return defaultGetter;
+    };
 
-  /**
-   * Defines a property on an object, similar to `Object.defineProperty`.
-   * @param {object} targetObj The object on which to define the property.
-   * @param {string} propName The name of the property.
-   * @param {function} getterFunc A function that returns the value of the property.
-   */
-  loadComponent.defineExport = function ( targetObj, propName, getterFunc ) {
-    // Check if the property already exists to avoid overwriting.
-    if ( !loadComponent.hasOwnProperty( targetObj, propName ) ) {
-      Object.defineProperty( targetObj, propName, {
-        enumerable: true,
-        get: getterFunc
-      } );
-    }
-  };
+    // Checks if an object has a specific property directly on itself (not inherited).
+    moduleLoader.hasOwn = function(objToCheck, propToCheck) {
+        return Object.prototype.hasOwnProperty.call(objToCheck, propToCheck);
+    };
 
-  /**
-   * Marks an exports object as an ES module for compatibility.
-   * @param {object} exportsObj The object to mark as an ES module.
-   */
-  loadComponent.markAsESModule = function ( exportsObj ) {
-    // Set Symbol.toStringTag for better debugging.
-    if ( typeof Symbol !== "undefined" && Symbol.toStringTag ) {
-      Object.defineProperty( exportsObj, Symbol.toStringTag, { value: "Component" } );
-    }
-    // Set the __isComponent flag.
-    Object.defineProperty( exportsObj, "__isComponent", { value: true } );
-  };
+    // The public path for assets (empty in this specific bundle).
+    moduleLoader.publicPath = "";
 
-  /**
-   * Creates an object that mimics an ES module, handling various export types.
-   * @param {any} sourceValue The original value to be exported.
-   * @param {number} processingFlags Flags indicating how to process the sourceValue.
-   * @returns {object} A normalized ES module-like object.
-   */
-  loadComponent.normalizeExport = function ( sourceValue, processingFlags ) {
-    // If flag 1 is set, load the component and use its exports.
-    if ( processingFlags & 1 ) {
-      sourceValue = loadComponent( sourceValue );
-    }
+    // Start the application by loading the entry module, which is module with ID 0.
+    return moduleLoader(moduleLoader.startupModuleId = 0);
 
-    // If flag 8 is set, return the sourceValue directly.
-    if ( processingFlags & 8 ) {
-      return sourceValue;
-    }
+}([ // This array contains all the module definitions.
 
-    // If flag 4 is set and it's an object marked as an ES module, return it directly.
-    if ( ( processingFlags & 4 ) && typeof sourceValue === "object" && sourceValue && sourceValue.__isComponent ) {
-      return sourceValue;
-    }
-
-    // Create a new empty object for the normalized export.
-    var normalizedModule = Object.create( null );
-
-    // Mark it as an ES module.
-    loadComponent.markAsESModule( normalizedModule );
-
-    // Define a 'default' property pointing to the sourceValue.
-    Object.defineProperty( normalizedModule, "default", {
-      enumerable: true,
-      value: sourceValue
-    } );
-
-    // If flag 2 is set and sourceValue is not a string, copy all properties from sourceValue.
-    if ( ( processingFlags & 2 ) && typeof sourceValue !== "string" ) {
-      for ( var propKey in sourceValue ) {
-        loadComponent.defineExport(
-          normalizedModule,
-          propKey,
-          ( function ( key ) { return sourceValue[key]; } ).bind( null, propKey )
-        );
-      }
-    }
-
-    return normalizedModule;
-  };
-
-  /**
-   * Creates a getter function for accessing an export, handling default exports.
-   * @param {any} originalExport The export value or module object.
-   * @returns {function} A function that returns the actual export.
-   */
-  loadComponent.getExportGetter = function ( originalExport ) {
-    // Determine the getter logic based on whether it's an ES module.
-    var exportAccessor = originalExport && originalExport.__isComponent
-      ? function () { return originalExport.default; }
-      : function () { return originalExport; };
-
-    // Define a dummy 'a' property on the getter itself, a webpack convention.
-    loadComponent.defineExport( exportAccessor, "a", exportAccessor );
-    return exportAccessor;
-  };
-
-  /**
-   * Checks if an object has a property directly (not inherited).
-   * @param {object} targetObject The object to check.
-   * @param {string} propertyId The name of the property.
-   * @returns {boolean} True if the property exists directly on the object, false otherwise.
-   */
-  loadComponent.hasOwnProperty = function ( targetObject, propertyId ) {
-    return Object.prototype.hasOwnProperty.call( targetObject, propertyId );
-  };
-
-  // Set the public path for asset loading (empty in this case).
-  loadComponent.assetPath = "";
-
-  // Start the application by loading the entry component (component ID 0).
-  // The 'startComponent' property on the loader can be used to set the entry point.
-  return loadComponent( loadComponent.startComponent = 0 );
-}(
-  [
-    /* Component 0: Main application entry point. */
-    function ( currentModule, moduleOutput, getDependency ) {
-      // Read input from stdin, process it using component 1, and then
-      // pass the result to component 1's exported function.
-      getDependency( 1 )(
-        getDependency( 2 ).readFileSync( "/dev/stdin", "UTF-8" )
-      );
+    // Module 0: The application's entry point.
+    function(moduleExports0, moduleObject0, localRequire0) {
+        // This module reads input from standard input and passes it to the main logic.
+        // It requires module 1 (the main logic) and module 2 (Node.js 'fs' module).
+        localRequire0(1)(localRequire0(2).readFileSync("/dev/stdin", "UTF-8"));
     },
 
-    /* Component 1: Core logic for processing input data. */
-    function ( currentModule, moduleOutput ) {
-      currentModule.exports = function ( inputStringData ) {
-        // Split the input string into individual lines.
-        var dataLines = inputStringData.split( "\n" );
+    // Module 1: Contains the core application logic.
+    function(moduleExports1, moduleObject1) {
+        moduleExports1.exports = function(inputDataString) {
+            // Split the entire input string into an array of lines.
+            var inputLines = inputDataString.split("\n");
+            // The first line contains the total number of elements, parsed as a number.
+            var elementCount = Number(inputLines[0]);
 
-        // The first line contains the number of vertices.
-        var numVertices = Number( dataLines[0] );
+            // 'adjacencyLists' will store the list of available choices for each element.
+            // 'currentMapping' will store the current chosen mapping for each element.
+            var adjacencyLists = [];
+            var currentMapping = [];
 
-        // Adjacency list to store connections for each vertex.
-        var nodeConnections = [];
-
-        // Stores the initial target node for each vertex.
-        var initialTargets = [];
-
-        // Loop through each vertex to parse its connections.
-        for ( var vertexIndex = 0; vertexIndex < numVertices; vertexIndex++ ) {
-          // Parse the connection data for the current vertex.
-          var currentVertexLinks = dataLines[vertexIndex + 1]
-            .split( " " )
-            .map( function ( linkStr ) {
-              return Number( linkStr ) - 1; // Convert to 0-indexed numbers.
-            } );
-
-          // Store the first link as the initial target.
-          initialTargets.push( currentVertexLinks[0] );
-
-          // Add all links for this vertex to the adjacency list.
-          nodeConnections.push( currentVertexLinks );
-        }
-
-        // Calculate the total number of expected edges in a complete graph (n*(n-1)/2).
-        var expectedEdges = numVertices * ( numVertices - 1 ) / 2;
-
-        // Array to keep track of how many times each node's connections have been visited.
-        var connectionUsageCounts = new Array( numVertices ).fill( 0 );
-
-        // Array to store the maximum depth reached for each node.
-        var maxNodeDepths = new Array( numVertices ).fill( 0 );
-
-        // Queue for breadth-first-like processing of nodes.
-        var processingQueue = [];
-
-        // Initialize the queue with all vertices.
-        for ( var nodeIdentifier = 0; nodeIdentifier < numVertices; nodeIdentifier++ ) {
-          processingQueue.push( nodeIdentifier );
-        }
-
-        // Variables for tracking maximum depth and processed edges.
-        var overallMaxDepth = 0;
-        var totalProcessedEdges = 0;
-
-        // Process nodes from the queue until it's empty.
-        while ( processingQueue.length > 0 ) {
-          // Get the next node to process.
-          var currentProcessingNode = processingQueue.shift();
-
-          // Check for a specific cycle condition (node points to its own initial target, and that target points back to the node).
-          if ( initialTargets[initialTargets[currentProcessingNode]] === currentProcessingNode ) {
-            totalProcessedEdges += 1; // Increment the count of processed edges.
-
-            // Get the node connected to the current node.
-            var linkedNode = initialTargets[currentProcessingNode];
-
-            // Calculate the new maximum depth for both current and linked nodes.
-            var calculatedDepth = Math.max( maxNodeDepths[currentProcessingNode], maxNodeDepths[linkedNode] ) + 1;
-
-            // Update the overall maximum depth if this is greater.
-            if ( overallMaxDepth < calculatedDepth ) {
-              overallMaxDepth = calculatedDepth;
+            // Loop through the input lines to populate the initial data structures.
+            for (var idx = 0; idx < elementCount; idx++) {
+                // Parse each line (from the second line onwards) into an array of numbers.
+                // Subtract 1 from each number to convert to 0-based indexing.
+                var parsedLine = inputLines[idx + 1].split(" ").map(function(strNum) {
+                    return Number(strNum) - 1;
+                });
+                // The first number in each line is the initial mapping for the current element.
+                currentMapping.push(parsedLine[0]);
+                // The entire parsed line represents the list of choices for the current element.
+                adjacencyLists.push(parsedLine);
             }
 
-            // Assign the calculated depth to both connected nodes.
-            maxNodeDepths[currentProcessingNode] = calculatedDepth;
-            maxNodeDepths[linkedNode] = calculatedDepth;
+            // Calculate the total number of unique pairs possible for 'elementCount' elements.
+            var totalPairs = elementCount * (elementCount - 1) / 2;
 
-            // Increment usage counters for both nodes.
-            connectionUsageCounts[currentProcessingNode] += 1;
-            connectionUsageCounts[linkedNode] += 1;
+            // 'visitCounts': An array to keep track of how many times each element's choice has been advanced.
+            var visitCounts = new Array(elementCount).fill(0);
+            // 'depthLevels': An array to store the maximum depth (or level) reached for each element within a cycle.
+            var depthLevels = new Array(elementCount).fill(0);
+            // 'processingQueue': A queue to manage elements that need to be processed or re-processed.
+            var processingQueue = [];
 
-            // If current node still has unvisited connections:
-            if ( connectionUsageCounts[currentProcessingNode] !== numVertices ) {
-              // Update its target to the next connection.
-              initialTargets[currentProcessingNode] = nodeConnections[currentProcessingNode][connectionUsageCounts[currentProcessingNode]];
-              // If the new target forms a cycle, re-add to queue.
-              if ( initialTargets[initialTargets[currentProcessingNode]] === currentProcessingNode ) {
-                processingQueue.push( currentProcessingNode );
-              }
+            // Initialize the processing queue with all elements from 0 to elementCount - 1.
+            for (var queueInitIdx = 0; queueInitIdx < elementCount; queueInitIdx++) {
+                processingQueue.push(queueInitIdx);
             }
 
-            // If linked node still has unvisited connections:
-            if ( connectionUsageCounts[linkedNode] !== numVertices ) {
-              // Update its target to the next connection.
-              initialTargets[linkedNode] = nodeConnections[linkedNode][connectionUsageCounts[linkedNode]];
-              // If the new target forms a cycle, re-add to queue.
-              if ( initialTargets[initialTargets[linkedNode]] === linkedNode ) {
-                processingQueue.push( linkedNode );
-              }
-            }
-          }
-        }
+            // 'maxDepthAchieved': Stores the highest depth found across all cycles.
+            var maxDepthAchieved = 0;
+            // 'matchedPairsCount': Counts the number of successfully identified reciprocal pairs.
+            var matchedPairsCount = 0;
 
-        // Output the result: max depth if all edges processed, otherwise -1.
-        if ( totalProcessedEdges === expectedEdges ) {
-          console.log( overallMaxDepth );
-        } else {
-          console.log( -1 );
-        }
-      };
+            // Continue processing elements as long as the queue is not empty.
+            while (processingQueue.length > 0) {
+                var currentElement = processingQueue.shift(); // Dequeue the next element to process.
+
+                // Check if the current element and its mapped element form a reciprocal pair (a cycle of length 2).
+                if (currentMapping[currentMapping[currentElement]] === currentElement) {
+                    matchedPairsCount += 1; // Increment the count of matched pairs.
+
+                    var mappedElement = currentMapping[currentElement]; // Get the element that 'currentElement' maps to.
+                    // Calculate the new depth for this cycle. It's 1 plus the maximum depth of the two elements involved.
+                    var newDepth = Math.max(depthLevels[currentElement], depthLevels[mappedElement]) + 1;
+
+                    // Update the overall maximum depth if the 'newDepth' is greater.
+                    if (maxDepthAchieved < newDepth) {
+                        maxDepthAchieved = newDepth;
+                    }
+
+                    // Assign the 'newDepth' to both elements in the reciprocal pair.
+                    depthLevels[currentElement] = newDepth;
+                    depthLevels[mappedElement] = newDepth;
+
+                    // Increment the visit counts for both elements, indicating their current choice has been used.
+                    visitCounts[currentElement] += 1;
+                    visitCounts[mappedElement] += 1;
+
+                    // If 'currentElement' still has unvisited choices:
+                    if (visitCounts[currentElement] !== elementCount) {
+                        // Update 'currentElement's mapping to its next available choice.
+                        currentMapping[currentElement] = adjacencyLists[currentElement][visitCounts[currentElement]];
+                        // If this new mapping immediately forms another reciprocal pair, add 'currentElement' back to the queue.
+                        if (currentMapping[currentMapping[currentElement]] === currentElement) {
+                            processingQueue.push(currentElement);
+                        }
+                    }
+
+                    // If 'mappedElement' still has unvisited choices:
+                    if (visitCounts[mappedElement] !== elementCount) {
+                        // Update 'mappedElement's mapping to its next available choice.
+                        currentMapping[mappedElement] = adjacencyLists[mappedElement][visitCounts[mappedElement]];
+                        // If this new mapping immediately forms another reciprocal pair, add 'mappedElement' back to the queue.
+                        if (currentMapping[currentMapping[mappedElement]] === mappedElement) {
+                            processingQueue.push(mappedElement);
+                        }
+                    }
+                }
+            }
+
+            // After processing all elements, check if all possible pairs were matched.
+            if (matchedPairsCount === totalPairs) {
+                // If all pairs are matched, print the maximum depth achieved.
+                console.log(maxDepthAchieved);
+            } else {
+                // Otherwise, print -1, indicating not all pairs could be formed into reciprocal cycles.
+                console.log(-1);
+            }
+        };
     },
 
-    /* Component 2: Node.js file system module. */
-    function ( currentModule, moduleOutput ) {
-      currentModule.exports = require( "fs" );
+    // Module 2: A simple wrapper for the Node.js 'fs' (file system) module.
+    function(moduleExports2, moduleObject2) {
+        moduleExports2.exports = require("fs");
     }
-  ]
-);
+]);

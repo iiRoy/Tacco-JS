@@ -1,52 +1,56 @@
-function processInputData(rawData) {
-    const numericStrings = rawData.split(" ");
-    const numA = Number(numericStrings[0]);
-    const numB = Number(numericStrings[1]);
+function processInput(inputData) {
+    const parsedInput = inputData.split(" ");
+    const firstNum = Number(parsedInput[0]);
+    const secondNum = Number(parsedInput[1]);
 
-    const commonFactor = findGreatestCommonDivisor(numA, numB);
-    const result = calculateUniquePrimeFactorsPlusOne(commonFactor);
+    const commonDivisor = calculateGCD(firstNum, secondNum);
+    const uniquePrimeFactors = extractUniquePrimeFactors(commonDivisor);
+    
+    const finalCount = uniquePrimeFactors.size + 1;
 
-    console.log(result);
+    console.log(finalCount);
 }
 
-function findGreatestCommonDivisor(val1, val2) {
-    while (val2 !== 0) {
-        const remainder = val1 % val2;
-        val1 = val2;
-        val2 = remainder;
+function calculateGCD(val1, val2) {
+    let a = val1;
+    let b = val2;
+    while (b !== 0) {
+        const temp = b;
+        b = a % b;
+        a = temp;
     }
-    return val1;
+    return a;
 }
 
-function calculateUniquePrimeFactorsPlusOne(numberToFactor) {
-    if (numberToFactor === 1) {
-        return 1;
+function extractUniquePrimeFactors(targetNumber) {
+    const factorSet = new Set();
+    let currentWorkingNumber = targetNumber;
+
+    if (currentWorkingNumber <= 1) {
+        return factorSet;
     }
 
-    let distinctFactorCounter = 0;
-    let currentNumber = numberToFactor;
-
-    if (currentNumber % 2 === 0) {
-        distinctFactorCounter++;
-        while (currentNumber % 2 === 0) {
-            currentNumber /= 2;
+    if (currentWorkingNumber % 2 === 0) {
+        factorSet.add(2);
+        while (currentWorkingNumber % 2 === 0) {
+            currentWorkingNumber /= 2;
         }
     }
 
-    for (let currentDivisor = 3; currentDivisor * currentDivisor <= currentNumber; currentDivisor += 2) {
-        if (currentNumber % currentDivisor === 0) {
-            distinctFactorCounter++;
-            while (currentNumber % currentDivisor === 0) {
-                currentNumber /= currentDivisor;
+    for (let i = 3; i * i <= currentWorkingNumber; i += 2) {
+        if (currentWorkingNumber % i === 0) {
+            factorSet.add(i);
+            while (currentWorkingNumber % i === 0) {
+                currentWorkingNumber /= i;
             }
         }
     }
 
-    if (currentNumber > 1) {
-        distinctFactorCounter++;
+    if (currentWorkingNumber > 1) {
+        factorSet.add(currentWorkingNumber);
     }
 
-    return distinctFactorCounter + 1;
+    return factorSet;
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

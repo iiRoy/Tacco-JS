@@ -1,114 +1,109 @@
-const DataStreamHandler = (function() {
-    class DataInputSource {
-        #sourceTextLines;
-        #currentLinePointer;
-        #currentLineTokenStack;
+"use strict";
+const createInputProcessor = (rawInputContent) => {
+  const allLines = rawInputContent.trim().split('\n');
+  let currentLineIdx = 0;
+  let lineBufferTokens = [];
 
-        constructor(rawInputContent) {
-            this.#sourceTextLines = rawInputContent.trim().split('\n');
-            this.#currentLinePointer = 0;
-            this.#currentLineTokenStack = [];
-        }
-
-        #refillTokenStack() {
-            while (this.#currentLineTokenStack.length === 0 && this.#currentLinePointer < this.#sourceTextLines.length) {
-                const activeLine = this.#sourceTextLines[this.#currentLinePointer];
-                const tokens = activeLine.split(' ');
-                for (let i = tokens.length - 1; i >= 0; i--) {
-                    this.#currentLineTokenStack.push(tokens[i]);
-                }
-                this.#currentLinePointer++;
-            }
-            if (this.#currentLineTokenStack.length === 0) {
-                throw new Error("Input exhaustion: No more tokens available for single value extraction.");
-            }
-        }
-
-        obtainSingleValue(returnAsString = false) {
-            this.#refillTokenStack();
-            const extractedToken = this.#currentLineTokenStack.pop();
-            return returnAsString ? extractedToken : Number(extractedToken);
-        }
-
-        retrieveLineItems(returnAsStrings = false) {
-            if (this.#currentLinePointer >= this.#sourceTextLines.length) {
-                throw new Error("Input exhaustion: No more lines available for full line retrieval.");
-            }
-            this.#currentLineTokenStack = [];
-            const lineContent = this.#sourceTextLines[this.#currentLinePointer++];
-            const parts = lineContent.split(' ');
-            return returnAsStrings ? parts : parts.map(Number);
-        }
-
-        extractMatrixRows(rowCount, returnAsStrings = false) {
-            const collectedRows = [];
-            for (let i = 0; i < rowCount; i++) {
-                collectedRows.push(this.retrieveLineItems(returnAsStrings));
-            }
-            return collectedRows;
-        }
-
-        fetchIndividualLines(itemCount, returnAsStrings = false) {
-            const collectedItems = [];
-            for (let i = 0; i < itemCount; i++) {
-                if (this.#currentLinePointer >= this.#sourceTextLines.length) {
-                    throw new Error("Input exhaustion: No more lines available for individual line item retrieval.");
-                }
-                const lineValue = this.#sourceTextLines[this.#currentLinePointer++];
-                collectedItems.push(returnAsStrings ? lineValue.trim() : Number(lineValue.trim()));
-            }
-            return collectedItems;
-        }
+  const retrieveNextToken = (returnAsString) => {
+    while (lineBufferTokens.length === 0 && currentLineIdx < allLines.length) {
+      lineBufferTokens = allLines[currentLineIdx++].split(' ');
     }
-    return function(initialContent) {
-        return new DataInputSource(initialContent);
-    };
-})();
-
-const inputReader = DataStreamHandler(require("fs").readFileSync("/dev/stdin","utf8"));
-
-const computeSolution = () => {
-    const totalPathExtent = inputReader.obtainSingleValue();
-    const segmentCapacity = inputReader.obtainSingleValue();
-    const pathLayout = inputReader.obtainSingleValue(true);
-
-    const zeroMarkedPositions = Array.from({length: totalPathExtent}, (_, position) => position)
-                                  .filter(position => pathLayout[position] === '0')
-                                  .reverse();
-
-    const determineOptimalJumps = (currentBoundary, remainingZeroPoints, maximumReach, collectedJumps) => {
-        if (remainingZeroPoints.length === 0) {
-            return collectedJumps;
-        }
-
-        const immediateTarget = remainingZeroPoints[0];
-
-        if (currentBoundary - immediateTarget > maximumReach) {
-            return null;
-        }
-
-        let bestTargetIndex = 0;
-        while (bestTargetIndex + 1 < remainingZeroPoints.length &&
-               currentBoundary - remainingZeroPoints[bestTargetIndex + 1] <= maximumReach) {
-            bestTargetIndex++;
-        }
-
-        const chosenLandingPoint = remainingZeroPoints[bestTargetIndex];
-        const currentJumpDistance = currentBoundary - chosenLandingPoint;
-
-        const subsequentZeroPoints = remainingZeroPoints.slice(bestTargetIndex + 1);
-        const resultSequence = determineOptimalJumps(chosenLandingPoint, subsequentZeroPoints, maximumReach, collectedJumps.concat(currentJumpDistance));
-
-        return resultSequence;
-    };
-
-    const finalJumpSequence = determineOptimalJumps(totalPathExtent, zeroMarkedPositions, segmentCapacity, []);
-
-    if (finalJumpSequence === null) {
-        return -1;
-    } else {
-        return finalJumpSequence.reverse().join(' ');
+    if (lineBufferTokens.length === 0) {
+      return undefined;
     }
+    const tokenValue = lineBufferTokens.shift();
+    return returnAsString ? tokenValue : Number(tokenValue);
+  };
+
+  const extractFullLineTokens = (returnAsString) => {
+    if (currentLineIdx >= allLines.length) return [];
+    const lineContent = allLines[currentLineIdx++];
+    const tokensOnLine = lineContent.split(' ');
+    return returnAsString ? tokensOnLine : tokensOnLine.map(Number);
+  };
+
+  const gatherMultiLineTokens = (numberOfRows, returnAsString) => {
+    const collectedRows = [];
+    for (let rowCounter = 0; rowCounter < numberOfRows; rowCounter++) {
+      collectedRows.push(extractFullLineTokens(returnAsString));
+    }
+    return collectedRows;
+  };
+
+  const collectRawLines = (numberOfRows, returnAsString) => {
+    const collectedLines = [];
+    for (let rowCounter = 0; rowCounter < numberOfRows; rowCounter++) {
+      if (currentLineIdx >= allLines.length) break;
+      const lineContent = allLines[currentLineIdx++];
+      collectedLines.push(returnAsString ? lineContent : Number(lineContent));
+    }
+    return collectedLines;
+  };
+
+  return {
+    pullValue: (isString) => retrieveNextToken(isString),
+    extractLine: (isString) => extractFullLineTokens(isString),
+    gatherMatrix: (rows, isString) => gatherMultiLineTokens(rows, isString),
+    collectLines: (rows, isString) => collectRawLines(rows, isString),
+  };
 };
 
-console.log(computeSolution());
+const inputProcessor = createInputProcessor(require("fs").readFileSync("/dev/stdin","utf8"));
+
+function generateMultiDimArray(fillValue, ...dimensions) {
+  const createNestedArray = (remainingDimensions) => {
+    if (remainingDimensions.length === 0) {
+      return fillValue;
+    }
+    const currentDimensionSize = remainingDimensions[0];
+    const nextDimensions = remainingDimensions.slice(1);
+    return Array.from({ length: currentDimensionSize }, () => createNestedArray(nextDimensions));
+  };
+  return createNestedArray(dimensions);
+}
+
+console.log(processJumps());
+
+function processJumps() {
+  const totalLength = inputProcessor.pullValue();
+  const maxStep = inputProcessor.pullValue();
+  const pathString = inputProcessor.pullValue(true);
+
+  const zeroPositions = [];
+  for (let currentIdx = totalLength - 1; currentIdx >= 0; --currentIdx) {
+    if (pathString[currentIdx] === '0') {
+      zeroPositions.push(currentIdx);
+    }
+  }
+
+  const jumpDistances = [];
+  let currentLoc = totalLength;
+  let zeroPointer = 0;
+
+  while (currentLoc > 0 && zeroPointer < zeroPositions.length) {
+    let bestReachableZero = -1;
+    let nextTargetIndex = -1;
+
+    for (let k = zeroPointer; k < zeroPositions.length; k++) {
+      const potentialLanding = zeroPositions[k];
+      const distanceToPotential = currentLoc - potentialLanding;
+
+      if (distanceToPotential <= maxStep) {
+        bestReachableZero = potentialLanding;
+        nextTargetIndex = k;
+      } else {
+        break;
+      }
+    }
+
+    if (bestReachableZero === -1) {
+      return -1;
+    }
+
+    jumpDistances.push(currentLoc - bestReachableZero);
+    currentLoc = bestReachableZero;
+    zeroPointer = nextTargetIndex + 1;
+  }
+
+  return jumpDistances.reverse().join(" ");
+}

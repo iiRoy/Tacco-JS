@@ -1,33 +1,19 @@
-const processData = (rawDataString) => {
-    const inputLines = rawDataString.split('\n');
+function processInputData(rawData) {
+    const lineSegments = rawData.split("\n");
+    const firstLineValues = lineSegments[0].split(' ').map(val => parseInt(val, 10));
+    const elementCount = firstLineValues[0];
+    const valueSequence = lineSegments[1].split(' ').map(val => parseInt(val, 10));
 
-    const numericalElements = inputLines[0].split(' ').map(Number);
-    const quantity = numericalElements[0];
+    const initialTerm = valueSequence[0];
+    const finalTerm = valueSequence[elementCount - 2];
 
-    const valueArray = inputLines[1].split(' ').map(Number);
+    const middleSum = valueSequence.slice(0, elementCount - 2).reduce((accumulator, _, index) => {
+        return accumulator + Math.min(valueSequence[index], valueSequence[index + 1]);
+    }, 0);
 
-    const accumulateMinima = (currentIdx, dataSet, maxBound) => {
-        if (currentIdx >= maxBound - 2) {
-            return 0;
-        }
-        const currentMin = (dataSet[currentIdx] < dataSet[currentIdx + 1] ? dataSet[currentIdx] : dataSet[currentIdx + 1]);
-        return currentMin + accumulateMinima(currentIdx + 1, dataSet, maxBound);
-    };
+    const cumulativeSum = initialTerm + middleSum + finalTerm;
 
-    const initialElement = valueArray[0];
-    const lastRelevantElement = valueArray[quantity - 2];
+    console.log(cumulativeSum);
+}
 
-    const intermediateSum = accumulateMinima(0, valueArray, quantity);
-
-    const finalComputedValue = initialElement + intermediateSum + lastRelevantElement;
-
-    return finalComputedValue;
-};
-
-const retrieveSource = (pathIdentifier) => require("fs").readFileSync(pathIdentifier, "utf8");
-
-const inputPath = "/dev/stdin";
-const rawContent = retrieveSource(inputPath);
-
-const finalResult = processData(rawContent);
-console.log(finalResult);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

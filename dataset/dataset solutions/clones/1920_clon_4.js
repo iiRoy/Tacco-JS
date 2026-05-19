@@ -1,34 +1,24 @@
 'use strict';
+function processInput(rawContent) {
+  const dataLines = rawContent.trim().split('\n');
+  const desiredAmount = Number(dataLines[0]);
 
-const processPayload = (incomingPayload) => {
-    const
-        dataLines = incomingPayload.trim().split('\n'),
-        requiredAmount = Number(dataLines[0]);
+  const initialCapital = 100;
+  const growthRate = 1.01;
 
-    const initialValue = 100;
-    const growthFactor = 1.01;
+  if (desiredAmount <= initialCapital) {
+    console.log(0);
+    return;
+  }
 
-    if (requiredAmount <= initialValue) {
-        return 0;
-    }
+  const ratioTarget = desiredAmount / initialCapital;
+  const logRatioTarget = Math.log(ratioTarget);
+  const logGrowthFactor = Math.log(growthRate);
 
-    const logRatio = Math.log(requiredAmount / initialValue);
-    const logRate = Math.log(growthFactor);
+  const calculatedIterations = logRatioTarget / logGrowthFactor;
+  const finalIterationCount = Math.ceil(calculatedIterations);
 
-    const iterationsNeeded = Math.ceil(logRatio / logRate);
+  console.log(finalIterationCount);
+}
 
-    return iterationsNeeded;
-};
-
-const obtainContent = (resourcePath) => {
-    const fileSystemUtil = require('fs');
-    return fileSystemUtil.readFileSync(resourcePath, 'utf8');
-};
-
-const executeComputation = (sourcePath) => {
-    const rawData = obtainContent(sourcePath);
-    const finalOutcome = processPayload(rawData);
-    console.log(finalOutcome);
-};
-
-executeComputation('/dev/stdin');
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

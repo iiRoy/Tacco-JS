@@ -1,20 +1,21 @@
+// This function processes the given raw data to compute a specific value.
 function ProcessInput(rawData) {
-  // Split the entire raw input string into an array of individual lines
-  // using the newline character as a delimiter.
-  let linesArray = rawData.split("\n");
+    // Split the incoming data into individual lines and reassign the parameter.
+    // This maintains the original's behavior of modifying the function argument.
+    rawData = rawData.split('\n');
 
-  // Parse the first element of the lines array into an integer.
-  // The '10' specifies base-10 (decimal) conversion.
-  const numericValue = parseInt(linesArray[0], 10);
+    // Extract the first line from the modified 'rawData' array, convert it to an integer (base 10).
+    // This will be our primary numerical component.
+    const baseValue = parseInt(rawData[0], 10);
 
-  // Calculate the final outcome based on the numeric value:
-  // numericValue + numericValue squared + numericValue cubed.
-  let finalOutcome = numericValue + numericValue * numericValue + numericValue * numericValue * numericValue;
+    // Calculate the sum of the base value, its square, and its cube.
+    // The variable 'finalOutcome' is intentionally not declared with 'let' or 'const'
+    // to mimic the original's implicit global scope for 'result'.
+    finalOutcome = baseValue + (baseValue * baseValue) + (baseValue * baseValue * baseValue);
 
-  // Output the computed final result to the standard console.
-  console.log(finalOutcome);
+    // Output the computed final outcome to the standard console.
+    console.log(finalOutcome);
 }
-// Read the entire file content from standard input synchronously
-// using the Node.js file system module and UTF-8 encoding,
-// then pass it to the main processing function.
-ProcessInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+
+// Read the content from standard input synchronously and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

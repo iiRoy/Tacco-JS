@@ -1,32 +1,30 @@
-let dataAccumulator = '';
+process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (chunk) => {
-    dataAccumulator += chunk;
+const inputBuffer = [];
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    const inputSegments = dataAccumulator.trim().split('\n');
-    const rawNumbers = inputSegments[1].split(' ');
-
-    const valueSet = rawNumbers.map(s => parseInt(s, 10));
-
-    const descendingCompare = (valA, valB) => valB - valA;
-
-    valueSet.sort(descendingCompare);
-
-    const playerScores = valueSet.reduce((accumulator, currentVal, idx) => {
-        if (idx % 2 === 0) {
-            accumulator.initialTaker += currentVal;
-        } else {
-            accumulator.alternateTaker += currentVal;
-        }
-        return accumulator;
-    }, { initialTaker: 0, alternateTaker: 0 });
-
-    const outcomeValue = playerScores.alternateTaker - playerScores.initialTaker;
-
-    process.stdout.write(String(outcomeValue) + '\n');
+inputProcessor.on('line', (currentLine) => {
+  inputBuffer.push(currentLine);
 });
 
-process.stdin.resume();
+inputProcessor.on('close', () => {
+  const itemCount = Number(inputBuffer[0]);
+  const numericValues = inputBuffer[1].split(' ').map(Number);
+
+  numericValues.sort((valA, valB) => valB - valA);
+
+  const finalScores = numericValues.reduce((accumulator, currentVal, idx) => {
+    if (idx % 2 === 1) {
+      accumulator.aliceScore += currentVal;
+    } else {
+      accumulator.bobScore += currentVal;
+    }
+    return accumulator;
+  }, { aliceScore: 0, bobScore: 0 });
+
+  console.log(finalScores.aliceScore - finalScores.bobScore);
+});

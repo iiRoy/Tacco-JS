@@ -1,18 +1,29 @@
-var  sourceList = [ ] ;
-var  countHolder = [ ] ;
-sourceList  =  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . split ( /,\d+\n{0,}/ ) ;
-var  sourceCount  =  sourceList . length ;
-var  currentElement ;
-for ( var indexVar = 0 ; indexVar < sourceCount ; indexVar ++ ) {
-	currentElement = sourceList [ indexVar ] ;
-	if ( countHolder [ currentElement ] === undefined ) {
-		countHolder [ currentElement ] = 1 ;
-	} else {
-		countHolder [ currentElement ] ++ ;
-	}
+let sourceData = [];
+
+let frequencyMap = [];
+
+sourceData = require("fs").readFileSync("/dev/stdin", "utf8").split(/,\d+\n{0,}/);
+
+const dataCount = sourceData.length;
+
+let currentItem;
+
+let idx;
+
+for (idx = 0; idx < dataCount; idx++) {
+    currentItem = sourceData[idx];
+
+    if (frequencyMap[currentItem] === undefined) {
+        frequencyMap[currentItem] = 1;
+    } else {
+        frequencyMap[currentItem]++;
+    }
 }
-holderSiz = countHolder . length ;
-for ( indexVar = 0 ; indexVar < holderSiz ; indexVar ++ ) {
-	if ( countHolder [ indexVar ] !== undefined && countHolder [ indexVar ] > 1 )
-		console . log ( indexVar + ' ' + countHolder [ indexVar ] ) ;
+
+let mapExtent = frequencyMap.length;
+
+for (idx = 0; idx < mapExtent; idx++) {
+    if (frequencyMap[idx] !== undefined && frequencyMap[idx] > 1) {
+        console.log(idx + ' ' + frequencyMap[idx]);
+    }
 }

@@ -1,57 +1,57 @@
-let capturedInput = '';
+var inputLines = [];
+var lineReader = require('readline');
 
-process.stdin.on('data', (segment) => {
-    capturedInput += segment.toString();
+var interfaceInstance = lineReader.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-process.stdin.on('end', () => {
-    processInputAndCompute(capturedInput);
+interfaceInstance.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-const twoToThePower = (exp) => 1 << exp;
+interfaceInstance.on('close', function () {
+    var burgerDepth = Number(inputLines[0].split(" ")[0]);
+    var consumptionLimit = Number(inputLines[0].split(" ")[1]);
 
-function determinePattyCount(level, layersEaten) {
-    let currentPattySum = 0;
-    let currentDepth = level;
-    let remainingLayers = layersEaten;
+    function computePatties(level, limit) {
+        let currentLevel = level;
+        let currentLimit = limit;
+        let totalPattiesEaten = 0;
 
-    while (true) {
-        if (currentDepth === 0) {
-            currentPattySum += 1;
-            break;
+        while (true) {
+            if (currentLevel === 0) {
+                if (currentLimit >= 1) {
+                    totalPattiesEaten += 1;
+                }
+                break;
+            }
+
+            // These values correspond to an (currentLevel-1) burger's properties
+            // 'len' in original code for 'n' corresponds to (currentLevel-1) burger's total layers
+            const lowerLevelBurgerLayers = Math.pow(2, currentLevel + 1) - 3;
+            // 'num' in original code for 'n' corresponds to (currentLevel-1) burger's total patties
+            const lowerLevelBurgerPatties = Math.pow(2, currentLevel) - 1;
+
+            if (currentLimit === 1) { // Lunlun eats only the bottom bun
+                break; // No patties consumed
+            } else if (currentLimit <= lowerLevelBurgerLayers + 1) { // Lunlun eats into the first lower-level burger
+                currentLimit -= 1; // Skip the bottom bun
+                currentLevel -= 1; // Descend into the lower-level burger
+            } else if (currentLimit === lowerLevelBurgerLayers + 2) { // Lunlun eats the first lower-level burger, bottom bun, and the middle patty
+                totalPattiesEaten += lowerLevelBurgerPatties + 1; // Add patties from the lower-level burger plus the middle patty
+                break;
+            } else if (currentLimit <= (lowerLevelBurgerLayers + 1) * 2) { // Lunlun eats the first lower-level burger, bottom bun, middle patty, and into the second lower-level burger
+                totalPattiesEaten += lowerLevelBurgerPatties + 1; // Add patties from the first half and the middle patty
+                currentLimit -= (lowerLevelBurgerLayers + 2); // Adjust the consumption limit for the second lower-level burger
+                currentLevel -= 1; // Descend into the second lower-level burger
+            } else { // Lunlun eats the entire burger
+                totalPattiesEaten += lowerLevelBurgerPatties * 2 + 1; // Add all patties from both lower-level burgers and the middle patty
+                break;
+            }
         }
-
-        const subBurgerThickness = twoToThePower(currentDepth + 1) - 3;
-        const subBurgerPattyCount = twoToThePower(currentDepth) - 1;
-
-        if (remainingLayers === 1) { // Bottom bun
-            break;
-        } else if (remainingLayers <= 1 + subBurgerThickness) { // Bottom bun + part/all of first sub-burger
-            currentDepth--;
-            remainingLayers--;
-        } else if (remainingLayers === 1 + subBurgerThickness + 1) { // Bottom bun + first sub-burger + middle patty
-            currentPattySum += subBurgerPattyCount + 1;
-            break;
-        } else if (remainingLayers <= 1 + subBurgerThickness + 1 + subBurgerThickness) { // Bottom bun + first sub-burger + middle patty + part/all of second sub-burger
-            currentPattySum += subBurgerPattyCount + 1;
-            currentDepth--;
-            remainingLayers -= (1 + subBurgerThickness + 1);
-        } else { // All layers eaten
-            currentPattySum += subBurgerPattyCount + 1 + subBurgerPattyCount;
-            break;
-        }
+        return totalPattiesEaten;
     }
-    return currentPattySum;
-}
 
-function processInputAndCompute(fullText) {
-    const textLines = fullText.trim().split('\n');
-    const primaryParameters = textLines[0].split(' ');
-
-    const burgerConstructionLevel = parseInt(primaryParameters[0], 10);
-    const layersToConsume = parseInt(primaryParameters[1], 10);
-
-    const totalEatenPatties = determinePattyCount(burgerConstructionLevel, layersToConsume);
-
-    process.stdout.write(String(totalEatenPatties) + '\n');
-}
+    console.log(computePatties(burgerDepth, consumptionLimit));
+});

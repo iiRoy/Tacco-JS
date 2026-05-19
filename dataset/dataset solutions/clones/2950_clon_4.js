@@ -1,25 +1,18 @@
-'use strict';
+'use strict'
 
-const conductTransformation = (sourceMaterial) => {
-    const contentLines = sourceMaterial.trim().split('\n');
-    const configurationDatum = contentLines[0];
-    const sequenceToModify = contentLines[1];
+const processInput = initialData => {
+    const dataLines = initialData.trim().split('\n')
+    const targetPosition = parseInt(dataLines[0].split(' ')[1], 10)
+    const sourceString = dataLines[1]
 
-    const positionExtractor = configurationDatum.match(/\s(\d+)$/);
-    const targetSpot = Number(positionExtractor[1]);
+    const characterList = Array.from(sourceString)
+    
+    if (targetPosition > 0 && targetPosition <= characterList.length) {
+        characterList[targetPosition - 1] = characterList[targetPosition - 1].toLowerCase()
+    }
 
-    const characterCollection = Array.from(sequenceToModify);
+    const modifiedString = characterList.join('')
+    console.log(modifiedString)
+}
 
-    const resultingCollection = characterCollection.map((element, currentElementIndex) => {
-        if (currentElementIndex === targetSpot - 1) {
-            return element.toLowerCase();
-        }
-        return element;
-    });
-
-    return resultingCollection.join('');
-};
-
-const rawInputBuffer = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedOutput = conductTransformation(rawInputBuffer);
-process.stdout.write(processedOutput + '\n');
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'))

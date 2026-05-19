@@ -1,50 +1,39 @@
-const inputPayload = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-const configLine = inputPayload.shift().split(' ');
-const matrixRows = Number(configLine.shift());
-const matrixCols = Number(configLine.shift());
-const totalSegments = Number(inputPayload.shift());
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const segmentData = inputPayload.shift().split(' ').map(Number);
+const dimensionsString = inputData.shift().split(' ');
+const gridHeight = Number(dimensionsString.shift());
+const gridWidth = Number(dimensionsString.shift());
 
-const finalMatrix = Array.from({ length: matrixRows }, () => new Array(matrixCols));
+const segmentCount = Number(inputData.shift());
+const segmentLengths = inputData.shift().split(' ').map(Number);
 
-function* serpentineCoordinates(rows, cols) {
-    let currentRow = 0;
-    let currentCol = 0;
-    let movingRight = true; 
+const resultMatrix = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
 
-    for (let k = 0; k < rows * cols; k++) {
-        yield [currentRow, currentCol];
+const movementHandlers = new Map([
+    [1, (r, c, w) => c < w - 1 ? { nextR: r, nextC: c + 1, nextDir: 1 } : { nextR: r + 1, nextC: c, nextDir: -1 }],
+    [-1, (r, c, w) => c > 0 ? { nextR: r, nextC: c - 1, nextDir: -1 } : { nextR: r + 1, nextC: c, nextDir: 1 }]
+]);
 
-        if (movingRight) {
-            if (currentCol === cols - 1) { 
-                currentRow++;
-                movingRight = false;
-            } else {
-                currentCol++;
-            }
-        } else { 
-            if (currentCol === 0) { 
-                currentRow++;
-                movingRight = true;
-            } else {
-                currentCol--;
-            }
-        }
+let currentGridRow = 0;
+let currentGridCol = 0;
+let movementDirection = 1;
+let currentSegmentIdx = 0;
+let remainingCellsInSegment = segmentLengths[0];
+
+const totalCellsToProcess = gridHeight * gridWidth;
+
+for (let cellIdx = 0; cellIdx < totalCellsToProcess; cellIdx++) {
+    if (remainingCellsInSegment === 0) {
+        currentSegmentIdx++;
+        remainingCellsInSegment = segmentLengths[currentSegmentIdx];
     }
+    resultMatrix[currentGridRow][currentGridCol] = currentSegmentIdx + 1;
+    remainingCellsInSegment--;
+
+    const { nextR, nextC, nextDir } = movementHandlers.get(movementDirection)(currentGridRow, currentGridCol, gridWidth);
+    currentGridRow = nextR;
+    currentGridCol = nextC;
+    movementDirection = nextDir;
 }
 
-const cellIterator = serpentineCoordinates(matrixRows, matrixCols);
-
-segmentData.forEach((segmentCount, segmentIndex) => {
-    const valueToFill = segmentIndex + 1;
-    for (let fillIndex = 0; fillIndex < segmentCount; fillIndex++) {
-        const coordPair = cellIterator.next().value;
-        const r = coordPair[0];
-        const c = coordPair[1];
-        finalMatrix[r][c] = valueToFill;
-    }
-});
-
-const outputLines = finalMatrix.map(row => row.join(' '));
-console.log(outputLines.join('\n'));
+console.log(resultMatrix.map(row => row.join(' ')).join('\n'));

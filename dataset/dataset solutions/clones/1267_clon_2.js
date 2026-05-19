@@ -1,68 +1,57 @@
 'use strict';
-(function (inputSource) {
-  // This module defines a function for generating visual patterns.
+(function(inputContent) {
+  // This function constructs a mosaic pattern based on provided dimensions.
+  function generatePattern(dimensions) {
+    // Extract height and width from the input array.
+    var heightVal = dimensions[0]; // The vertical extent of the pattern.
+    var widthVal = dimensions[1]; // The horizontal extent of the pattern.
 
-  /**
-   * Constructs a grid pattern based on provided height and width.
-   * The pattern alternates between two types of rows, creating a checkerboard effect.
-   *
-   * @param {number[]} dimensionSpecs - An array containing [height, width] for the pattern.
-   * @returns {string} The generated grid pattern as a multi-line string.
-   */
-  function renderGrid(dimensionSpecs) {
-    const heightVal = dimensionSpecs[0]; // Extract the desired height
-    const widthVal = dimensionSpecs[1];   // Extract the desired width
+    // Initialize an array to build the first type of row.
+    var firstRowPattern = [];
+    var currentSymbol = ''; // Temporary variable to hold the character.
 
-    // Initialize storage for the first row's character sequence
-    let firstRowPattern = [];
-    let currentSymbol = '';
-
-    // Populate the first row type (e.g., #.#.#...)
-    for (let colIndexA = 0; colIndexA < widthVal; colIndexA++) {
-      currentSymbol = (colIndexA % 2 === 0) ? '#' : '.';
-      firstRowPattern.push(currentSymbol);
+    // Populate the first row pattern: alternating '#' and '.' starting with '#'.
+    for (var idxA = 0; idxA < widthVal; idxA++) {
+      currentSymbol = (idxA % 2 === 0) ? '#' : '.'; // Determine character based on index parity.
+      firstRowPattern.push(currentSymbol); // Add character to the row.
     }
-    firstRowPattern = firstRowPattern.join(''); // Convert array of chars to a single string
+    firstRowPattern = firstRowPattern.join(''); // Convert array of characters to a single string.
 
-    // Initialize storage for the second row's character sequence
-    let secondRowPattern = [];
-
-    // Populate the second row type (e.g., .#.#.#...)
-    for (let colIndexB = 0; colIndexB < widthVal; colIndexB++) {
-      currentSymbol = (colIndexB % 2 === 0) ? '.' : '#';
-      secondRowPattern.push(currentSymbol);
+    // Initialize an array to build the second type of row.
+    var secondRowPattern = [];
+    // Populate the second row pattern: alternating '.' and '#' starting with '.'.
+    for (var idxB = 0; idxB < widthVal; idxB++) {
+      currentSymbol = (idxB % 2 === 0) ? '.' : '#'; // Determine character based on index parity.
+      secondRowPattern.push(currentSymbol); // Add character to the row.
     }
-    secondRowPattern = secondRowPattern.join(''); // Convert array of chars to a single string
+    secondRowPattern = secondRowPattern.join(''); // Convert array of characters to a single string.
 
-    // Assemble the complete pattern by alternating row types
-    const finalGridOutput = [];
-    for (let rowIndex = 0; rowIndex < heightVal; rowIndex++) {
-      // Choose which row pattern to use based on the current row index
-      currentSymbol = (rowIndex % 2 === 0) ? firstRowPattern : secondRowPattern;
-      finalGridOutput.push(currentSymbol);
+    // Initialize an array to store all the generated lines of the mosaic.
+    var finalOutputLines = [];
+    // Construct the full mosaic by alternating the two row patterns.
+    for (var idxC = 0; idxC < heightVal; idxC++) {
+      currentSymbol = (idxC % 2 === 0) ? firstRowPattern : secondRowPattern; // Choose row pattern based on line index parity.
+      finalOutputLines.push(currentSymbol); // Add the chosen row string to the result.
     }
-    return finalGridOutput.join('\n'); // Combine all rows into a final multi-line string
+    // Join all lines with newline characters to form the complete mosaic string.
+    return finalOutputLines.join('\n');
   }
 
-  // --- Main Execution Block ---
-
-  // Read and preprocess the entire input stream
-  let rawInputLines = inputSource.toString().trim().split('\n');
-
-  // Filter out the sentinel "0 0" line and prepare data for processing
-  let processedDimensions = rawInputLines.slice(0, rawInputLines.indexOf('0 0'));
-  processedDimensions = processedDimensions.map(function (dimensionString) {
-    // Transform each input string like "R C" into a numerical array [R, C]
+  // Process the raw input data from stdin.
+  var rawInputData = inputContent.toString().trim().split('\n');
+  // Filter out the '0 0' termination marker and get the actual dimension pairs.
+  var processedDimensions = rawInputData.slice(0, rawInputData.indexOf('0 0'));
+  // Convert each dimension string pair into an array of two numbers.
+  processedDimensions = processedDimensions.map(function(dimensionString) {
     return dimensionString.split(' ').map(Number);
   });
 
-  // Apply the pattern generation function to each set of dimensions
-  let renderedOutputs = processedDimensions.map(renderGrid);
+  // Generate all mosaic patterns using the processed dimensions.
+  var allPatternsCombined = processedDimensions.map(generatePattern);
+  // Join all generated patterns with double newlines for separation.
+  allPatternsCombined = allPatternsCombined.join('\n\n');
 
-  // Join all individual generated patterns with a double newline separator
-  renderedOutputs = renderedOutputs.join('\n\n');
-
-  // Display the aggregated results to the standard output
-  console.log(renderedOutputs);
+  // Output the final combined patterns to the console.
+  console.log(allPatternsCombined);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

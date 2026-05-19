@@ -1,146 +1,136 @@
-// Function to rotate a 2D array (matrix) 90 degrees clockwise.
-function spinGridData(inputGrid) {
-    // Determine the highest valid index for rows/columns in the square grid.
-    var lastElementIndex = inputGrid.length - 1;
+// Function to rotate a 2D array (matrix) 90 degrees clockwise
+function spinMatrix(inputGrid) {
+    // Determine the last valid index for rows/columns in the square grid
+    const lastIdx = inputGrid.length - 1;
+    // Create a new grid of the same dimensions, ensuring deep copies of rows
+    // This prevents modification of the original array during the rotation process
+    const rotatedGrid = inputGrid.map(row => row.slice());
 
-    // Create a new array to store the rotated results.
-    // Each row is deep-copied to ensure the original inputGrid is not modified.
-    var rotatedData = inputGrid.map(function(currentLineValues) {
-        return currentLineValues.slice();
-    });
-
-    // Iterate through the rows and columns of the original grid.
-    for (var outerLoopIndex = 0; outerLoopIndex <= lastElementIndex; outerLoopIndex++) {
-        for (var innerLoopIndex = 0; innerLoopIndex <= lastElementIndex; innerLoopIndex++) {
-            // Apply the 90-degree clockwise rotation transformation.
-            // New position (outerLoopIndex, innerLoopIndex) gets value from original (lastElementIndex - innerLoopIndex, outerLoopIndex).
-            rotatedData[outerLoopIndex][innerLoopIndex] = inputGrid[lastElementIndex - innerLoopIndex][outerLoopIndex];
+    // Iterate through each cell of the original grid to populate the new rotated grid
+    for (let rowIdx = 0; rowIdx <= lastIdx; rowIdx++) {
+        for (let colIdx = 0; colIdx <= lastIdx; colIdx++) {
+            // The element at (rowIdx, colIdx) in the new grid
+            // corresponds to the element at (lastIdx - colIdx, rowIdx) in the original grid
+            rotatedGrid[rowIdx][colIdx] = inputGrid[lastIdx - colIdx][rowIdx];
         }
     }
-    // Return the newly created rotated matrix.
-    return rotatedData;
+    // Return the newly created and rotated grid
+    return rotatedGrid;
 }
 
-// Function to evaluate if a smaller pattern matrix can be placed
-// at a specific top-left coordinate (rowCoord, colCoord) within the larger matrix.
-function evaluatePatternMatch(rowCoord, colCoord) {
-    // Initialize a variable to store the first matching coordinate, or false if no match yet.
-    var firstMatchPoint = false;
+// Global variables to hold the dimensions and content of the main and pattern matrices.
+// These are declared at the top level to be accessible by the `verifyMatch` function
+// and updated within the main processing loop.
+let patternDim;      // Stores the dimension (M) of the pattern matrix
+let mainMatrix;      // Stores the N x N main matrix
+let patternMatrix;   // Stores the M x M pattern matrix
 
-    // Loop through the rows of the small pattern matrix.
-    for (var patternRowIndex = 0; patternRowIndex < patternDimension; patternRowIndex++) {
-        // Loop through the columns of the small pattern matrix.
-        for (var patternColIndex = 0; patternColIndex < patternDimension; patternColIndex++) {
-            // If the current cell in the pattern matrix is a wildcard (-1), skip comparison.
-            if (smallPatternMatrix[patternRowIndex][patternColIndex] === -1) {
-                continue; // Move to the next cell in the pattern.
+// Function to determine if a given pattern matrix matches a sub-section of the main matrix.
+// The sub-section starts at the specified (startRow, startCol) coordinates in the main matrix.
+function verifyMatch(startRow, startCol) {
+    // This variable will store the 0-indexed coordinates [row, col] of the first
+    // non-wildcard element of the pattern if a match is found. It's initialized to false.
+    let matchResult = false;
+
+    // Iterate through the rows of the pattern matrix
+    for (let patRow = 0; patRow < patternDim; patRow++) {
+        // Iterate through the columns of the pattern matrix
+        for (let patCol = 0; patCol < patternDim; patCol++) {
+            // If the current element in the pattern matrix is a wildcard (-1),
+            // it matches any value in the main matrix, so we skip comparison.
+            if (patternMatrix[patRow][patCol] === -1) {
+                continue;
             }
 
-            // If this is the very first non-wildcard match, record its absolute position in the large matrix.
-            if (firstMatchPoint === false) {
-                firstMatchPoint = [rowCoord + patternRowIndex, colCoord + patternColIndex];
+            // If this is the first non-wildcard element encountered during a potential match,
+            // record its absolute position within the main matrix.
+            if (matchResult === false) {
+                matchResult = [startRow + patRow, startCol + patCol];
             }
 
-            // Compare the cell in the large matrix with the corresponding cell in the pattern matrix.
-            // If they do not match, this placement is invalid.
-            if (largeMatrix[rowCoord + patternRowIndex][colCoord + patternColIndex] !== smallPatternMatrix[patternRowIndex][patternColIndex]) {
-                return false; // Immediately return false on the first mismatch.
+            // Compare the element in the main matrix with the corresponding pattern element.
+            // If they do not match, then the pattern does not fit at this starting position.
+            if (mainMatrix[startRow + patRow][startCol + patCol] !== patternMatrix[patRow][patCol]) {
+                return false; // A mismatch was found, so immediately return false.
             }
         }
     }
-    // If the entire pattern matched successfully, return the coordinates of the first match.
-    return firstMatchPoint;
+    // If the loops complete without finding any mismatches, a full match was found.
+    // Return the coordinates of the first matched non-wildcard element.
+    return matchResult;
 }
 
+// Read all input data from standard input, assuming UTF-8 encoding.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the raw input: remove leading/trailing whitespace and split into an array of lines.
+const lineSegments = rawData.trim().split("\n");
 
-// --- Main Program Logic Starts Here ---
-
-// Obtain the Node.js 'fs' (file system) module for input operations.
-var fileSystemModule = require('fs');
-
-// Read the entire content of the standard input file, converting it to a UTF-8 string.
-var fileContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-
-// Pre-process the input: remove leading/trailing whitespace and split into an array of lines.
-var inputLinesArray = fileContent.trim().split("\n");
-
-// Begin an infinite loop to process multiple test cases.
+// Main program loop: processes multiple test cases until a termination condition is met.
 while (true) {
-    // Extract the first line from the input array, split it by space,
-    // and convert the resulting string parts into numbers.
-    var dimensionsPair = inputLinesArray.shift().split(" ").map(Number);
+    // Extract the dimensions (N and M) for the current test case from the first line.
+    // `shift()` removes the line from `lineSegments` after processing.
+    const dimensions = lineSegments.shift().split(" ").map(Number);
+    const mainDim = dimensions[0];      // N: Dimension of the main matrix
+    patternDim = dimensions[1];         // M: Dimension of the pattern matrix (updates global variable)
 
-    // Assign the two extracted dimensions to meaningful variables.
-    var mainGridDimension = dimensionsPair[0];   // The size of the main N x N grid.
-    var patternDimension = dimensionsPair[1]; // The size of the smaller M x M pattern grid.
-
-    // Check for the problem's termination condition: N=0 and M=0.
-    if (mainGridDimension === 0 && patternDimension === 0) {
-        break; // Exit the processing loop.
+    // Check for the termination condition: N=0 and M=0.
+    if (mainDim === 0 && patternDim === 0) {
+        break; // Exit the loop if both dimensions are zero.
     }
 
-    // Initialize the large matrix (mainGridDimension x mainGridDimension).
-    var largeMatrix = [];
-    // Populate the large matrix by reading 'mainGridDimension' number of lines.
-    for (var outerLoopIndex = 0; outerLoopIndex < mainGridDimension; outerLoopIndex++) {
-        // For each line, split by space, and convert values to numbers.
-        var currentLineValues = inputLinesArray.shift().split(" ").map(Number);
-        largeMatrix.push(currentLineValues); // Add the parsed row to the large matrix.
+    // Initialize and populate the main matrix (N x N).
+    mainMatrix = []; // Reset global mainMatrix for the new test case.
+    for (let rowIdx = 0; rowIdx < mainDim; rowIdx++) {
+        // Parse each line into an array of numbers and add it as a row to mainMatrix.
+        const currentLineValues = lineSegments.shift().split(" ").map(Number);
+        mainMatrix.push(currentLineValues);
     }
 
-    // Initialize the small pattern matrix (patternDimension x patternDimension).
-    var smallPatternMatrix = [];
-    // Populate the small pattern matrix by reading 'patternDimension' number of lines.
-    for (var outerLoopIndex = 0; outerLoopIndex < patternDimension; outerLoopIndex++) {
-        // For each line, split by space, and convert values to numbers.
-        var currentLineValues = inputLinesArray.shift().split(" ").map(Number);
-        smallPatternMatrix.push(currentLineValues); // Add the parsed row to the pattern matrix.
+    // Initialize and populate the pattern matrix (M x M).
+    patternMatrix = []; // Reset global patternMatrix for the new test case.
+    for (let rowIdx = 0; rowIdx < patternDim; rowIdx++) {
+        // Parse each line into an array of numbers and add it as a row to patternMatrix.
+        const currentLineValues = lineSegments.shift().split(" ").map(Number);
+        patternMatrix.push(currentLineValues);
     }
 
-    // Initialize a variable to hold the best matching position found so far.
-    // Use a large, impossible coordinate (e.g., 101, 101) as initial value.
-    var optimalPosition = [101, 101];
+    // Initialize `minimumCoords` to a value that will be easily overwritten by any valid match.
+    // This array stores 1-indexed coordinates [row, col].
+    let minimumCoords = [101, 101]; // Max possible N is 100, so 101 is a safe initial value.
 
-    // Iterate through four possible rotations (0, 90, 180, 270 degrees) of the pattern matrix.
-    for (var rotationCounter = 0; rotationCounter < 4; rotationCounter++) {
-        // Iterate through all possible top-left starting row coordinates for placement.
-        for (var outerLoopIndex = 0; outerLoopIndex <= mainGridDimension - patternDimension; outerLoopIndex++) {
-            // Iterate through all possible top-left starting column coordinates for placement.
-            for (var innerLoopIndex = 0; innerLoopIndex <= mainGridDimension - patternDimension; innerLoopIndex++) {
-                // Attempt to find a match for the current rotation of the pattern matrix
-                // starting at (outerLoopIndex, innerLoopIndex) within the large matrix.
-                var matchResult = evaluatePatternMatch(outerLoopIndex, innerLoopIndex);
+    // Loop through 4 rotations of the pattern matrix (0, 90, 180, 270 degrees).
+    for (let rotationCount = 0; rotationCount < 4; rotationCount++) {
+        // Iterate through all possible top-left starting positions for the pattern
+        // within the main matrix.
+        for (let startRow = 0; startRow <= mainDim - patternDim; startRow++) {
+            for (let startCol = 0; startCol <= mainDim - patternDim; startCol++) {
+                // Call `verifyMatch` to check if the current pattern (in its current rotation)
+                // matches a sub-section of the main matrix starting at (startRow, startCol).
+                const matchFound = verifyMatch(startRow, startCol);
 
-                // If a valid match was found (matchResult is not false).
-                if (matchResult !== false) {
-                    // Adjust matchResult coordinates by +1 for 1-based indexing as per output format.
-                    var adjustedRow = matchResult[0] + 1;
-                    var adjustedCol = matchResult[1] + 1;
+                // If a match is found (i.e., `matchFound` is not false)
+                if (matchFound !== false) {
+                    // Convert the 0-indexed `matchFound` coordinates to 1-indexed for comparison.
+                    const currentMatchRow = matchFound[0] + 1;
+                    const currentMatchCol = matchFound[1] + 1;
 
-                    // Check if this new match is better than the current optimal position.
-                    // First, compare by row index.
-                    if (optimalPosition[0] > adjustedRow) {
-                        optimalPosition = [adjustedRow, adjustedCol];
-                    }
-                    // If rows are the same, compare by column index.
-                    else if (optimalPosition[0] === adjustedRow && optimalPosition[1] > adjustedCol) {
-                        optimalPosition = [adjustedRow, adjustedCol];
+                    // Update `minimumCoords` if the current match represents a "smaller" position.
+                    // Priority is given to a smaller row index, then a smaller column index.
+                    if (minimumCoords[0] > currentMatchRow) {
+                        minimumCoords = [currentMatchRow, currentMatchCol];
+                    } else if (minimumCoords[0] === currentMatchRow && minimumCoords[1] > currentMatchCol) {
+                        minimumCoords = [currentMatchRow, currentMatchCol];
                     }
                 }
             }
         }
-        // After checking all possible placements for the current rotation,
-        // rotate the small pattern matrix for the next iteration.
-        smallPatternMatrix = spinGridData(smallPatternMatrix);
+        // After checking all possible positions for the current rotation,
+        // rotate the pattern matrix 90 degrees clockwise for the next iteration.
+        patternMatrix = spinMatrix(patternMatrix);
     }
 
-    // Prepare the final output message.
-    // If the optimalPosition is still the initial impossible value, it means no match was found.
-    if (optimalPosition.join("") === "101101") {
-        console.log("NA"); // Output "NA" indicating no match.
-    } else {
-        // Otherwise, output the found column and row coordinates.
-        // Note: The original code outputs min[1] then min[0]. Let's stick to that.
-        console.log(optimalPosition[1] + " " + optimalPosition[0]);
-    }
+    // Output the final result for the current test case.
+    // If `minimumCoords` is still [101, 101], it means no match was found across all rotations.
+    // Otherwise, output the 1-indexed column and then row, separated by a space.
+    console.log((minimumCoords.join("") === "101101") ? "NA" : minimumCoords[1] + " " + minimumCoords[0]);
 }

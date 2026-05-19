@@ -1,32 +1,32 @@
-const achievableTotals = new Set();
+function processInput(rawText) {
+  const cleanText = rawText.trim();
+  const targetValue = Number.parseInt(cleanText.split(" ")[0], 10);
 
-// Pre-calculate all possible sums of 4x + 7y within the given ranges
-for (let multiplierA = 0; multiplierA <= 25; multiplierA++) {
-  for (let multiplierB = 0; multiplierB <= 15; multiplierB++) {
-    achievableTotals.add(4 * multiplierA + 7 * multiplierB);
+  let representationFound = false;
+
+  for (let firstCoefficient = 0; firstCoefficient <= 25; firstCoefficient++) {
+    const currentFourMultiple = 4 * firstCoefficient;
+    const requiredForSevenMultiple = targetValue - currentFourMultiple;
+
+    if (requiredForSevenMultiple < 0) {
+      break;
+    }
+
+    if (requiredForSevenMultiple % 7 === 0) {
+      const secondCoefficient = requiredForSevenMultiple / 7;
+
+      if (secondCoefficient >= 0 && secondCoefficient <= 15) {
+        representationFound = true;
+        break;
+      }
+    }
   }
-}
 
-function assessValue(incomingText) {
-  const cleanedText = incomingText.trim();
-  const numericalPartMatch = cleanedText.match(/^\s*(\d+)/);
-  let soughtValue;
-
-  if (numericalPartMatch && numericalPartMatch[1]) {
-    soughtValue = Number(numericalPartMatch[1]);
-  } else {
-    // Should not happen with valid input as per problem constraints
-    console.log("Error: Invalid input format.");
-    return;
-  }
-
-  // Check if the sought value exists in our pre-calculated set
-  if (achievableTotals.has(soughtValue)) {
+  if (representationFound) {
     console.log("Yes");
   } else {
     console.log("No");
   }
 }
 
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-assessValue(sourceData);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

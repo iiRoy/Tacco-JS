@@ -1,101 +1,90 @@
-const retrieveInputData = () => {
-  const rawContent = require("fs").readFileSync("/dev/stdin", "utf8");
-  return rawContent.split('\n');
-};
-
-let inputSourceLines = retrieveInputData();
-let currentLineIndex = 0;
-
-const parseIntegersFromLine = () => {
-  return inputSourceLines[currentLineIndex++].split(' ').map(Number);
-};
-
-const parseIntegerGrid = (rowsCount) => {
-  const grid = [];
-  for (let i = 0; i < rowsCount; i++) {
-    grid.push(inputSourceLines[currentLineIndex++].split(' ').map(Number));
-  }
-  return grid;
-};
-
-const deliverOutput = (valueToDisplay) => {
-  let formattedResult;
-  if (valueToDisplay === true) { formattedResult = 'Yes'; }
-  else if (valueToDisplay === false) { formattedResult = 'No'; }
-  else { formattedResult = valueToDisplay; }
-  console.log(formattedResult);
-};
-
-// Ensures a positive result for modulo operations
-const computePositiveModulo = (val, mod) => (val % mod + mod) % mod;
-
-// Calculates the number of times two ants effectively "cross" each other
-// based on their initial states, time, and track dimensions.
-const evaluateInteractions = (
-  primaryAntCurrentPosition, primaryAntTravelDirection,
-  secondaryAntCurrentPosition, secondaryAntTravelDirection,
-  elapsedTimeValue, trackDimension
-) => {
-  // Ants moving in the same direction don't effectively cross each other
-  if (primaryAntTravelDirection === secondaryAntTravelDirection) {
-    return 0;
+class DataFeeder {
+  constructor() {
+    this.currentLineIndex = 0;
+    this.allInputLines = this.acquireAllInputContent();
   }
 
-  let distanceForCalculation; // This corresponds to 'd' in the original code
-  if (primaryAntTravelDirection === 1) { // Primary ant moves clockwise
-    distanceForCalculation = secondaryAntCurrentPosition - primaryAntCurrentPosition;
-  } else { // Primary ant moves counter-clockwise
-    distanceForCalculation = (trackDimension - secondaryAntCurrentPosition) + primaryAntCurrentPosition;
+  acquireAllInputContent() {
+    return (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
   }
 
-  // The formula (2 * T + L - d) / L | 0 from the original
-  const numeratorTerm = (2 * elapsedTimeValue + trackDimension - distanceForCalculation);
-  const rawEstimate = numeratorTerm / trackDimension;
-  return Math.trunc(rawEstimate); // Math.trunc replicates the behavior of | 0
-};
-
-// Main simulation entry point
-const runAntScenario = () => {
-  const [populationSize, circuitLength, durationTime] = parseIntegersFromLine();
-  const initialAntConfiguration = parseIntegerGrid(populationSize);
-
-  // Phase 1: Calculate each ant's final position assuming they pass through each other
-  const individualFinalCoordinates = initialAntConfiguration.map(antSpec => {
-    const startCoord = antSpec[0];
-    const moveDir = antSpec[1];
-    const totalTravel = moveDir * durationTime;
-    return computePositiveModulo(startCoord + totalTravel, circuitLength);
-  });
-
-  // Phase 2: Determine the total shift in order for the first ant (index 0)
-  const firstAntDetails = initialAntConfiguration[0];
-  const firstAntDirection = firstAntDetails[1];
-
-  let accumulatedOrderShift = 0;
-  initialAntConfiguration.slice(1).forEach(otherAntDetails => {
-    accumulatedOrderShift = computePositiveModulo(
-      accumulatedOrderShift + evaluateInteractions(
-        firstAntDetails[0], firstAntDirection,
-        otherAntDetails[0], otherAntDetails[1],
-        durationTime, circuitLength
-      ),
-      populationSize
-    );
-  });
-
-  // Phase 3: Map the initial ant indices to their actual final positions
-  // The 'totalShiftValue' determines how the ranks are permuted.
-  const totalShiftValue = (firstAntDirection === 1 ? accumulatedOrderShift : -accumulatedOrderShift);
-  
-  const finalSequenceOfPositions = Array(populationSize);
-
-  for (let finalRankPosition = 0; finalRankPosition < populationSize; ++finalRankPosition) {
-    // Find the initial ant index whose final rank is 'finalRankPosition'
-    const originalAntIdentifier = computePositiveModulo(finalRankPosition - totalShiftValue, populationSize);
-    finalSequenceOfPositions[finalRankPosition] = individualFinalCoordinates[originalAntIdentifier];
+  retrieveLines(count) {
+    if (count) {
+      const segment = this.allInputLines.slice(this.currentLineIndex, this.currentLineIndex + count);
+      this.currentLineIndex += count;
+      return segment;
+    }
+    return this.allInputLines[this.currentLineIndex++];
   }
-  
-  return finalSequenceOfPositions.join('\n');
+
+  fetchSingleInteger() { return parseInt(this.retrieveLines()); }
+  fetchIntegerArray() { return this.retrieveLines().split(' ').map(Number); }
+  fetchIntegerMatrix(count) {
+    return this.retrieveLines(count).map(line => line.split(' ').map(Number));
+  }
+}
+const dataProvider = new DataFeeder();
+
+class AntSimulation {
+  runSimulation() {
+    const simulationParameters = dataProvider.fetchIntegerArray();
+    const totalAnts = simulationParameters[0];
+    const trackLength = simulationParameters[1];
+    const timeDuration = simulationParameters[2];
+
+    const initialAntStates = dataProvider.fetchIntegerMatrix(totalAnts);
+
+    const ghostAntFinalPositions = initialAntStates.map(antState => {
+      const currentPosition = antState[0];
+      const currentDirection = antState[1];
+      const displacement = currentDirection === 1 ? timeDuration : -timeDuration;
+      const rawFinalPosition = currentPosition + displacement;
+      return ((rawFinalPosition % trackLength) + trackLength) % trackLength;
+    });
+
+    const antZeroInitialState = initialAntStates[0];
+    const antZeroPosition = antZeroInitialState[0];
+    const antZeroDirection = antZeroInitialState[1];
+
+    const antZeroCollisionCount = initialAntStates.slice(1).reduce((accumulator, otherAntState) => {
+      const otherAntPosition = otherAntState[0];
+      const otherAntDirection = otherAntState[1];
+
+      if (otherAntDirection === antZeroDirection) {
+        return accumulator;
+      }
+
+      let initialRelativeDistance;
+      if (antZeroDirection === 1) {
+        initialRelativeDistance = otherAntPosition - antZeroPosition;
+      } else {
+        initialRelativeDistance = (trackLength - otherAntPosition) + antZeroPosition;
+      }
+
+      const crossings = Math.floor((2 * timeDuration + trackLength - initialRelativeDistance) / trackLength);
+      
+      return (accumulator + crossings + totalAnts) % totalAnts;
+    }, 0);
+
+    const sortedGhostFinalPositions = ghostAntFinalPositions.slice().sort((a, b) => a - b);
+
+    const antZeroEffectiveIndex = (0 + (antZeroDirection === 1 ? antZeroCollisionCount : -antZeroCollisionCount) + totalAnts) % totalAnts;
+
+    const finalAntPositions = Array.from({ length: totalAnts }, (_, i) => {
+      const targetIndexInSortedGhosts = (antZeroEffectiveIndex + i) % totalAnts;
+      return sortedGhostFinalPositions[targetIndexInSortedGhosts];
+    });
+
+    return finalAntPositions.join('\n');
+  }
+}
+
+const DisplayResult = (outcome) => {
+  let formattedOutput;
+  if (outcome === true) { formattedOutput = 'Yes'; }
+  else if (outcome === false) { formattedOutput = 'No'; }
+  else { formattedOutput = outcome; }
+  console.log(formattedOutput);
 };
 
-deliverOutput(runAntScenario());
+DisplayResult(new AntSimulation().runSimulation());

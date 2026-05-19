@@ -1,93 +1,107 @@
-(async () => {
-    const acquireStreamData = async () => {
-        let streamContents = [];
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
+const readline = require('readline');
 
-        const dataCollectionPromise = new Promise(resolve => {
-            process.stdin.on('data', fragment => {
-                streamContents.push(...fragment.trim().split('\n'));
-            });
-            process.stdin.on('end', () => {
-                resolve(streamContents);
-            });
-        });
-        return dataCollectionPromise;
+let configParams = {};
+let gridMatrix = [];
+
+const constructGridRow = (rowString, totalColumns) => {
+    const rowSegments = Array.from({ length: totalColumns - 1 }).reduce((acc, _, colIndex) => {
+        let currentCharacterValue = parseInt(rowString.charAt(colIndex));
+        if (colIndex > 0 && currentCharacterValue === 0 && acc[colIndex - 1] === 1) {
+            currentCharacterValue = -1;
+        }
+        acc.push(currentCharacterValue);
+        return acc;
+    }, []);
+
+    rowSegments.push((rowSegments[rowSegments.length - 1] === 1) ? -1 : 0);
+    return rowSegments;
+};
+
+const traverseForward = (initialColumn, initialRow = 0) => {
+    const pathSequence = [];
+
+    const recursePath = (currentColumn, currentRow) => {
+        if (currentRow >= gridMatrix.length) {
+            pathSequence.push(currentColumn);
+            return;
+        }
+        pathSequence.push(currentColumn);
+        const nextColumn = currentColumn + gridMatrix[currentRow][currentColumn];
+        recursePath(nextColumn, currentRow + 1);
     };
 
-    const transformRawToStructure = (sourceLines) => {
-        let settings = {};
-        let currentLineIndex = 0;
-        let constructedLadder = [];
+    recursePath(initialColumn, initialRow);
+    return pathSequence;
+};
 
-        for (const currentLine of sourceLines) {
-            if (currentLine === "0") break;
+const traverseBackward = (finalColumn) => {
+    const pathSequence = gridMatrix.reduceRight((acc, currentRowData) => {
+        const currentPositionAtPreviousRow = acc[0] - currentRowData[acc[0]];
+        return [currentPositionAtPreviousRow, ...acc];
+    }, [finalColumn]);
 
-            if (currentLineIndex === 0) { settings.verticalDimension = parseInt(currentLine); }
-            else if (currentLineIndex === 1) { settings.entryPoint = parseInt(currentLine) - 1; }
-            else if (currentLineIndex === 2) { settings.exitPoint = parseInt(currentLine) - 1; }
-            else if (currentLineIndex === 3) { settings.maximumSteps = parseInt(currentLine); }
-            else {
-                const rawBarIndicators = Array.from(currentLine).map(Number);
-                const processedRow = Array(settings.verticalDimension).fill(0);
-                for (let j = 0; j < rawBarIndicators.length; j++) {
-                    if (rawBarIndicators[j] === 1) {
-                        processedRow[j] = 1;
-                        if (j + 1 < settings.verticalDimension) {
-                            processedRow[j + 1] = -1;
-                        }
-                    }
-                }
-                constructedLadder.push(processedRow);
-            }
-            currentLineIndex++;
-        }
-        settings.horizontalDimension = constructedLadder.length;
-        return { parameters: settings, gridLayout: constructedLadder };
-    };
+    return pathSequence;
+};
 
-    const navigateCourse = (currentDepth, currentColumn, courseGrid, depthIncrement, columnModifier, accumulatedPositions = []) => {
-        if (currentDepth < 0 || currentDepth >= courseGrid.length) {
-            return accumulatedPositions.concat(currentColumn);
-        }
-        const nextColumn = currentColumn + (courseGrid[currentDepth][currentColumn] * columnModifier);
-        return navigateCourse(currentDepth + depthIncrement, nextColumn, courseGrid, depthIncrement, columnModifier, accumulatedPositions.concat(currentColumn));
-    };
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
+});
 
-    const receivedInputLines = await acquireStreamData();
-    const { parameters, gridLayout } = transformRawToStructure(receivedInputLines);
+let lineBuffer = [];
+const parameterKeys = ["lines", "start", "end", "steps"];
 
-    const initialTrajectory = navigateCourse(0, parameters.entryPoint, gridLayout, 1, 1);
-    const targetTrajectoryRaw = navigateCourse(parameters.horizontalDimension - 1, parameters.exitPoint, gridLayout, -1, -1);
-    const targetTrajectory = targetTrajectoryRaw.reverse();
+rl.on('line', (inputLine) => {
+    lineBuffer.push(inputLine.trim());
+});
 
-    let finalVerdict = "";
+rl.on('close', () => {
+    let currentLineIndex = 0;
 
-    if (initialTrajectory[initialTrajectory.length - 1] === parameters.exitPoint) {
-        finalVerdict = "0";
-    } else {
-        const potentialInsertionLayer = Array.from({length: parameters.maximumSteps}, (_, layerIdx) => layerIdx)
-            .findIndex(layerIdx => {
-                if (layerIdx >= initialTrajectory.length || layerIdx >= targetTrajectory.length) return false;
+    const initialParams = {};
+    parameterKeys.forEach((key, idx) => {
+        initialParams[key] = parseInt(lineBuffer[idx]);
+    });
+    configParams = initialParams;
+    currentLineIndex = parameterKeys.length;
 
-                const currentInitialColumn = initialTrajectory[layerIdx];
-                const currentTargetColumn = targetTrajectory[layerIdx];
+    configParams.start -= 1;
+    configParams.end -= 1;
 
-                const areAdjacent = Math.abs(currentInitialColumn - currentTargetColumn) === 1;
-                const haveClearSpace = gridLayout[layerIdx][currentInitialColumn] === 0 &&
-                                       gridLayout[layerIdx][currentTargetColumn] === 0;
+    gridMatrix = lineBuffer.slice(currentLineIndex)
+        .filter(lineContent => lineContent !== "0")
+        .map(lineContent => constructGridRow(lineContent, configParams.lines));
 
-                return areAdjacent && haveClearSpace;
-            });
+    let outputResult = "";
 
-        if (potentialInsertionLayer !== -1) {
-            const smallerColumn = Math.min(initialTrajectory[potentialInsertionLayer], targetTrajectory[potentialInsertionLayer]);
-            finalVerdict = `${potentialInsertionLayer + 1} ${smallerColumn + 1}`;
-        } else {
-            finalVerdict = "1";
-        }
+    const forwardPath = traverseForward(configParams.start);
+    if (forwardPath[forwardPath.length - 1] === configParams.end) {
+        console.log("0");
+        return;
     }
 
-    console.log(finalVerdict);
+    const backwardPath = traverseBackward(configParams.end);
 
-})();
+    const potentialInsertionRow = Array.from({ length: configParams.steps }, (_, idx) => idx)
+        .find(rowIndex => {
+            const fwdPos = forwardPath[rowIndex];
+            const bwdPos = backwardPath[rowIndex];
+
+            return (
+                Math.abs(fwdPos - bwdPos) === 1 &&
+                gridMatrix[rowIndex][fwdPos] === 0 &&
+                gridMatrix[rowIndex][bwdPos] === 0
+            );
+        });
+
+    if (potentialInsertionRow !== undefined) {
+        const fwdPos = forwardPath[potentialInsertionRow];
+        const bwdPos = backwardPath[potentialInsertionRow];
+        outputResult = `${potentialInsertionRow + 1} ${Math.min(fwdPos, bwdPos) + 1}`;
+    } else {
+        outputResult = "1";
+    }
+
+    console.log(outputResult);
+});

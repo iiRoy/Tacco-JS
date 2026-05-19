@@ -1,41 +1,43 @@
-const acquireRawData = require("fs").readFileSync("/dev/stdin", "utf8");
+const fileSystem = require("fs");
 
-(function(sourceData) {
-    const components = sourceData.trim().split(' ').map(val => Number(val));
+((sourceData) => {
+  const [costA, costB, costAB, neededA, neededB] = sourceData.trim().split(' ').map(Number);
 
-    const priceOfFirstKind = components[0];
-    const priceOfSecondKind = components[1];
-    const priceOfCombinedKind = components[2];
-    const neededFirstKind = components[3];
-    const neededSecondKind = components[4];
+  let lowestTotalCost = Number.MAX_SAFE_INTEGER;
 
-    let overallLowestPrice = Infinity;
+  // Iterate through all plausible quantities of AB-pizzas to purchase.
+  // The maximum number of AB-pizzas we might consider buying is twice the maximum of
+  // the required A-pizzas or B-pizzas. This ensures we have enough "halves"
+  // to satisfy the larger requirement, and any additional AB-pizzas would be
+  // strictly more expensive without reducing the need for direct A or B purchases.
+  // Since each AB-pizza provides one A-half and one B-half, and we need whole pizzas,
+  // the number of AB-pizzas purchased must be an even number to yield whole A and B pizzas.
+  // 'abCount' represents the number of AB-pizzas.
+  for (let abCount = 0; abCount <= 2 * Math.max(neededA, neededB); abCount += 2) {
+    // Calculate the cost incurred from buying 'abCount' AB-pizzas.
+    const currentABCost = abCount * costAB;
 
-    // Iterate through the number of 'units' of combined items we might purchase.
-    // Each combined item provides 0.5 units of the first kind and 0.5 units of the second kind.
-    // So, 'unitsCombined' represents the quantity of first-kind units (and second-kind units)
-    // obtained from buying `2 * unitsCombined` combined items.
-    // The loop explores scenarios ranging from buying no combined items to buying enough combined items
-    // to satisfy the larger requirement.
-    for (let unitsCombined = 0; unitsCombined <= Math.max(neededFirstKind, neededSecondKind); unitsCombined++) {
-        // Cost incurred from buying combined items
-        const currentCombinedItemCost = unitsCombined * 2 * priceOfCombinedKind;
+    // Determine how many A-pizzas are still required after considering the AB-pizzas.
+    // Each 'abCount' AB-pizza provides abCount / 2 A-pizzas.
+    const remainingA = Math.max(0, neededA - abCount / 2);
+    // Calculate the cost of buying these remaining A-pizzas directly.
+    const directACost = remainingA * costA;
 
-        // Calculate remaining units of first and second kind needed after using combined items
-        const remainingFirstKind = Math.max(0, neededFirstKind - unitsCombined);
-        const remainingSecondKind = Math.max(0, neededSecondKind - unitsCombined);
+    // Determine how many B-pizzas are still required after considering the AB-pizzas.
+    // Each 'abCount' AB-pizza provides abCount / 2 B-pizzas.
+    const remainingB = Math.max(0, neededB - abCount / 2);
+    // Calculate the cost of buying these remaining B-pizzas directly.
+    const directBCost = remainingB * costB;
 
-        // Cost incurred from buying individual items for the remaining needs
-        const currentIndividualItemCost = remainingFirstKind * priceOfFirstKind + remainingSecondKind * priceOfSecondKind;
+    // Sum up all costs for the current 'abCount' scenario.
+    const scenarioTotal = currentABCost + directACost + directBCost;
 
-        // Total cost for this particular strategy
-        const currentStrategyTotal = currentCombinedItemCost + currentIndividualItemCost;
-
-        // Update the overall lowest price if this strategy is cheaper
-        if (currentStrategyTotal < overallLowestPrice) {
-            overallLowestPrice = currentStrategyTotal;
-        }
+    // Update the minimum total cost found so far.
+    if (scenarioTotal < lowestTotalCost) {
+      lowestTotalCost = scenarioTotal;
     }
+  }
 
-    console.log(overallLowestPrice);
-})(acquireRawData);
+  console.log(lowestTotalCost);
+
+})(fileSystem.readFileSync("/dev/stdin", "utf8"));

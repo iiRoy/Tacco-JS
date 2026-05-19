@@ -1,83 +1,58 @@
-let rawDataBuffer = '';
+const LINE_SEPARATOR = "\n";
+const VALUE_SEPARATOR = " ";
 
-const inputStream = process.stdin;
+let accumulatedInput = '';
+const standardInputStream = process.stdin;
 
-inputStream.resume();
+standardInputStream.resume();
+standardInputStream.setEncoding('utf-8');
 
-inputStream.setEncoding('utf-8');
-
-inputStream.on('data', function(dataFragment) {
-  rawDataBuffer += dataFragment;
+standardInputStream.on('data', (inputChunk) => {
+  accumulatedInput += inputChunk;
 });
 
-inputStream.on('end', function() {
-  const processedLines = rawDataBuffer.split('\n');
-  const lineCount = processedLines.length;
+standardInputStream.on('end', () => {
+  // Helper function to parse a string line into an array of numbers
+  const extractNumbersFromLine = (lineString) => lineString.split(VALUE_SEPARATOR).map(Number);
 
-  if (lineCount === 0 || processedLines[0].trim() === '') {
-    console.error("Error: No input data provided or first line is empty.");
-    return;
-  }
+  // Helper function to format an array of numbers into a string line
+  const formatNumbersIntoLine = (numberArray) => numberArray.join(VALUE_SEPARATOR);
 
-  const dimensionStrings = processedLines[0].split(' ');
-  if (dimensionStrings.length < 2) {
-    console.error("Error: Invalid dimension format. Expected 'R C'.");
-    return;
-  }
+  const allProcessedLines = accumulatedInput.split(LINE_SEPARATOR);
+  const totalProcessedLineCount = allProcessedLines.length;
 
-  const numRows = Number(dimensionStrings[0]);
-  const numCols = Number(dimensionStrings[1]);
+  // Parse the first line to get matrix dimensions
+  const matrixDimensions = extractNumbersFromLine(allProcessedLines[0]);
+  const matrixRows = matrixDimensions[0]; // This variable is read but not used further, preserving original behavior
+  const matrixColumns = matrixDimensions[1];
 
-  if (isNaN(numRows) || isNaN(numCols) || numRows < 1 || numCols < 1) {
-    console.error(`Error: Invalid dimensions provided: Rows=${numRows}, Cols=${numCols}. Must be positive integers.`);
-    return;
-  }
+  // Initialize an array to store column sums, including an extra element for the total sum of all rows
+  const aggregatedColumnSums = new Array(matrixColumns + 1).fill(0);
+  const finalOutputLines = [];
 
-  const initialAggregateValue = 0;
-  const columnAggregates = new Array(numCols + 1).fill(initialAggregateValue);
+  // Iterate through the data lines, starting from the second line (index 1)
+  for (let currentDataLineIndex = 1; currentDataLineIndex < totalProcessedLineCount; currentDataLineIndex++) {
+    const numbersInCurrentRow = extractNumbersFromLine(allProcessedLines[currentDataLineIndex]);
+    let currentCalculatedRowSum = 0;
 
-  const resultLines = [];
-
-  const processMatrixRow = (rowString, expectedCols, colAggregatesRef) => {
-    const stringValues = rowString.split(' ');
-    const numericValues = stringValues.filter(s => s !== '').map(Number);
-
-    if (numericValues.length < expectedCols || numericValues.some(isNaN)) {
-      console.warn(`Warning: Skipping malformed row: '${rowString}'. Expected ${expectedCols} numbers.`);
-      return null;
+    // Process each number in the current row
+    for (let currentColumnPosition = 0; currentColumnPosition < matrixColumns; currentColumnPosition++) {
+      const cellValue = numbersInCurrentRow[currentColumnPosition];
+      currentCalculatedRowSum += cellValue;
+      aggregatedColumnSums[currentColumnPosition] += cellValue; // Add to respective column total
     }
 
-    let currentRowSum = 0;
-    const processedRow = [];
+    // Add the current row's sum to the last element of aggregatedColumnSums (total of all row sums)
+    aggregatedColumnSums[matrixColumns] += currentCalculatedRowSum;
 
-    for (let colIndex = 0; colIndex < expectedCols; ++colIndex) {
-      const cellValue = numericValues[colIndex];
-      currentRowSum += cellValue;
-      colAggregatesRef[colIndex] += cellValue;
-      processedRow.push(cellValue);
-    }
-
-    colAggregatesRef[expectedCols] += currentRowSum;
-    processedRow.push(currentRowSum);
-
-    return processedRow.join(' ');
-  };
-
-  for (let currentLineIdx = 1; currentLineIdx < lineCount; ++currentLineIdx) {
-    const rawRowLine = processedLines[currentLineIdx].trim();
-
-    if (rawRowLine === '') {
-      continue;
-    }
-
-    const processedRowOutput = processMatrixRow(rawRowLine, numCols, columnAggregates);
-
-    if (processedRowOutput !== null) {
-      resultLines.push(processedRowOutput);
-    }
+    // Append the row sum to the current row's numbers and format for output
+    numbersInCurrentRow.push(currentCalculatedRowSum);
+    finalOutputLines.push(formatNumbersIntoLine(numbersInCurrentRow));
   }
 
-  resultLines.push(columnAggregates.join(' '));
+  // Add the final row of aggregated column sums to the output
+  finalOutputLines.push(formatNumbersIntoLine(aggregatedColumnSums));
 
-  console.log(resultLines.join('\n'));
+  // Print all collected output lines, separated by the line separator
+  console.log(finalOutputLines.join(LINE_SEPARATOR));
 });

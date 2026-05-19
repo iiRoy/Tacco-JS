@@ -1,35 +1,29 @@
-function executeCoreLogic(sourceInputLine) {
-    // Parse the first numeric component from the input.
-    let valA = sourceInputLine.split(/\s+/g)[0];
+function processInput(inputString) {
+    // Parse the first numerical component from the input string.
+    let firstVal = inputString.split(/\s+/g)[0];
+    // Parse the second numerical component from the input string.
+    let secondVal = inputString.split(/\s+/g)[1];
+    // Parse the third numerical component from the input string.
+    let thirdVal = inputString.split(/\s+/g)[2];
 
-    // Obtain the second numeric component.
-    let valB = sourceInputLine.split(/\s+/g)[1];
+    // Initialize the angular measurement in radians.
+    let angleRad = 0.0;
 
-    // Retrieve the third crucial numeric component.
-    let valX = sourceInputLine.split(/\s+/g)[2];
-
-    let currentAngleRad = 0; // Initialize the angular value in radians.
-
-    // Apply conditional branching based on the relationship between valX, valB, and valA.
-    if (valX >= valB * (valA * valA) / 2) {
-        // Calculation for the initial scenario.
-        currentAngleRad = Math.atan(2 / valA * (valB - valX / (valA * valA)));
+    // Evaluate a condition to determine the appropriate formula for angle calculation.
+    if (thirdVal >= secondVal * (firstVal * firstVal) / 2) {
+        // Apply the first trigonometric formula if the condition is met.
+        angleRad = Math.atan(2 / firstVal * (secondVal - thirdVal / (firstVal * firstVal)));
     } else {
-        // Alternative calculation path.
-        currentAngleRad = Math.atan(valA * (valB * valB) / (2 * valX));
+        // Otherwise, apply the alternative trigonometric formula.
+        angleRad = Math.atan(firstVal * (secondVal * secondVal) / (2 * thirdVal));
     }
 
-    // Convert the radian measurement into degrees for the final output.
-    let finalDegreeMeasurement = currentAngleRad * (180 / Math.PI);
+    // Convert the calculated angle from radians to degrees for the final output.
+    const resultDeg = angleRad * (180 / Math.PI);
 
-    // Display the computed result to the standard output.
-    console.log(finalDegreeMeasurement);
+    // Display the final computed angle to the console.
+    console.log(resultDeg);
 }
 
-// Program's entry point: reads data and invokes the main processing function.
-executeCoreLogic(
-    require('fs').readFileSync(
-        '/dev/stdin',    // Standard input file path.
-        'utf8'           // Encoding format for reading the file.
-    )
-);
+// Read the entire content of standard input, then pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

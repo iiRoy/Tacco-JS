@@ -1,36 +1,39 @@
-function processData ( rawData ) {
-    // This routine takes raw input text and performs a series of transformations and calculations.
-    // The initial step involves segmenting the input by newline characters
-    // and then converting each segment into an integer value (base 10).
-    let numericValues = rawData
-        .split( '\n' )
-        .map( ( item ) => {
-            return parseInt( item, 10 );
-        } ) ;
+function processInput(rawData) {
+    // This function takes raw string input, processes it, and prints a calculated sum.
 
-    // The first numerical entry is intended as a count, though its value isn't utilized later.
-    const initialSize = numericValues[ 0 ] ;
+    // Step 1: Parse the raw input string into an array of integers.
+    // Each line in the input string is converted to a base-10 integer.
+    let numericData = rawData
+        .split('\n') // Split the input string by newline characters.
+        .map((numStr) => parseInt(numStr, 10)); // Convert each string part to an integer.
 
-    // To proceed with other computations, the leading element is removed from the array.
-    numericValues.shift() ;
+    // Step 2: Store the first element, which might represent a count, though it's not used further.
+    const initialCount = numericData[0];
 
-    // We now determine the largest numerical value present within the collection.
-    const greatestElement = Math.max.apply( null, numericValues ) ;
+    // Step 3: Remove the first element from the array.
+    // This modifies the 'numericData' array in place.
+    numericData.shift();
 
-    // The positional index of this maximum element is then identified.
-    const greatestElementPosition = numericValues.indexOf( greatestElement ) ;
+    // Step 4: Find the maximum value among the remaining numbers in the array.
+    // Math.max.apply is used to find the maximum value from an array of numbers.
+    const greatestValue = Math.max.apply(null, numericData);
 
-    // At the identified position, the value is modified by being divided by two.
-    numericValues[ greatestElementPosition ] = ( numericValues[ greatestElementPosition ] / 2 ) ;
-    
-    // Finally, all remaining numerical entries are aggregated to yield a grand total.
-    let totalAggregate = numericValues.reduce( ( accumulator, currentVal ) => {
-        return accumulator += currentVal ;
-    }, 0 ) ;
+    // Step 5: Determine the index of the first occurrence of the greatest value.
+    const indexOfGreatest = numericData.indexOf(greatestValue);
 
-    // The computed final sum is then outputted.
-    console.log( totalAggregate ) ;
+    // Step 6: Modify the array by halving the value at the found index.
+    // This is a crucial step in the transformation logic.
+    numericData[indexOfGreatest] = (numericData[indexOfGreatest] / 2);
+
+    // Step 7: Calculate the sum of all elements in the modified array.
+    // The reduce method iterates through the array, accumulating the total.
+    let totalSum = numericData.reduce((accumulator, currentVal) => accumulator += currentVal, 0);
+
+    // Step 8: Output the final calculated sum to the console.
+    console.log(totalSum);
 }
 
-// The primary function is invoked with data acquired from the standard input stream.
-processData( require( 'fs' ).readFileSync( '/std/in', 'utf8' ) ) ;
+// The program execution begins here.
+// It reads the entire content of standard input as a UTF-8 string.
+// This content is then passed to the 'processInput' function for processing.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

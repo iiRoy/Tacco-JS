@@ -1,83 +1,85 @@
-const rawSourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-let lineSegments = rawSourceData.trim().split("\n");
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var allInputLines = fileContent.trim().split("\n");
 
-function processGridBlock(inputSegments) {
-    if (inputSegments.length === 0) return null;
+function* inputProcessor(linesSource) {
+    let currentLineIndex = 0;
+    while (true) {
+        const dimensionsString = linesSource[currentLineIndex++].split(" ");
+        const currentHeight = Number(dimensionsString[0]);
+        const currentWidth = Number(dimensionsString[1]);
 
-    const dimensions = inputSegments.shift().split(" ").map(Number);
-    const [rowsNum, colsNum] = dimensions;
+        if (currentHeight === 0 && currentWidth === 0) {
+            return;
+        }
 
-    if (rowsNum === 0 && colsNum === 0) {
-        return null;
+        const characterRows = [];
+        for (let i = 0; i < currentHeight; i++) {
+            characterRows.push(linesSource[currentLineIndex++].split(""));
+        }
+        yield { matrixHeight: currentHeight, matrixWidth: currentWidth, charMatrix: characterRows };
     }
-
-    const verticalHeights = Array(rowsNum).fill(0).map(() => Array(colsNum).fill(0));
-
-    for (let rIdx = 0; rIdx < rowsNum; rIdx++) {
-        const cellContents = inputSegments.shift().split("");
-        for (let cIdx = 0; cIdx < colsNum; cIdx++) {
-            const currentCell = cellContents[cIdx];
-            verticalHeights[rIdx][cIdx] = (currentCell === '.') ?
-                (rIdx > 0 ? verticalHeights[rIdx - 1][cIdx] + 1 : 1) :
-                0;
-        }
-    }
-
-    function determineLargestHistogramRectangle(barValues) {
-        const totalBars = barValues.length;
-        if (totalBars === 0) return 0;
-
-        const leftLimits = Array(totalBars).fill(0);
-        const rightLimits = Array(totalBars).fill(totalBars - 1);
-        const positionStack = [];
-
-        for (let i = 0; i < totalBars; i++) {
-            while (positionStack.length > 0 && barValues[positionStack[positionStack.length - 1]] >= barValues[i]) {
-                positionStack.pop();
-            }
-            leftLimits[i] = (positionStack.length === 0) ? 0 : positionStack[positionStack.length - 1] + 1;
-            positionStack.push(i);
-        }
-
-        positionStack.length = 0; // Reset stack
-
-        for (let i = totalBars - 1; i >= 0; i--) {
-            while (positionStack.length > 0 && barValues[positionStack[positionStack.length - 1]] >= barValues[i]) {
-                positionStack.pop();
-            }
-            rightLimits[i] = (positionStack.length === 0) ? (totalBars - 1) : positionStack[positionStack.length - 1] - 1;
-            positionStack.push(i);
-        }
-
-        let ultimateArea = 0;
-        for (let i = 0; i < totalBars; i++) {
-            const calculatedSpan = barValues[i] * (rightLimits[i] - leftLimits[i] + 1);
-            if (calculatedSpan > ultimateArea) {
-                ultimateArea = calculatedSpan;
-            }
-        }
-        return ultimateArea;
-    }
-
-    let overallMaximumArea = 0;
-    for (let rowIdx = 0; rowIdx < rowsNum; rowIdx++) {
-        const currentRowHistogram = verticalHeights[rowIdx];
-        const rowLargestArea = determineLargestHistogramRectangle(currentRowHistogram);
-        if (rowLargestArea > overallMaximumArea) {
-            overallMaximumArea = rowLargestArea;
-        }
-    }
-
-    return { computedResult: overallMaximumArea, remainingInput: inputSegments };
 }
 
-let currentInputLines = [...lineSegments];
-
-while (true) {
-    const processingOutcome = processGridBlock(currentInputLines);
-    if (processingOutcome === null) {
-        break;
+function buildConsecutiveHeights(charGrid, rowsCount, colsCount) {
+    const heightDataMatrix = [];
+    for (let r = 0; r < rowsCount; r++) {
+        heightDataMatrix[r] = charGrid[r].map((cellChar, c) => {
+            if (cellChar === '.') {
+                return (r === 0) ? 1 : heightDataMatrix[r - 1][c] + 1;
+            } else {
+                return 0;
+            }
+        });
     }
-    console.log(processingOutcome.computedResult);
-    currentInputLines = processingOutcome.remainingInput;
+    return heightDataMatrix;
+}
+
+function computeMaxHistogramRectangle(histogramBars) {
+    const numBars = histogramBars.length;
+    if (numBars === 0) return 0;
+
+    const leftSmallerIndex = Array(numBars).fill(0);
+    const rightSmallerIndex = Array(numBars).fill(numBars - 1);
+    const indexStack = [];
+
+    for (let i = 0; i < numBars; i++) {
+        while (indexStack.length > 0 && histogramBars[indexStack[indexStack.length - 1]] >= histogramBars[i]) {
+            indexStack.pop();
+        }
+        leftSmallerIndex[i] = (indexStack.length === 0) ? -1 : indexStack[indexStack.length - 1];
+        indexStack.push(i);
+    }
+
+    indexStack.length = 0; // Clear the stack
+
+    for (let i = numBars - 1; i >= 0; i--) {
+        while (indexStack.length > 0 && histogramBars[indexStack[indexStack.length - 1]] >= histogramBars[i]) {
+            indexStack.pop();
+        }
+        rightSmallerIndex[i] = (indexStack.length === 0) ? numBars : indexStack[indexStack.length - 1];
+        indexStack.push(i);
+    }
+
+    let maximumArea = 0;
+    for (let i = 0; i < numBars; i++) {
+        const currentWidth = rightSmallerIndex[i] - leftSmallerIndex[i] - 1;
+        maximumArea = Math.max(maximumArea, histogramBars[i] * currentWidth);
+    }
+    return maximumArea;
+}
+
+const gridDataIterator = inputProcessor(allInputLines);
+
+for (const currentGridInfo of gridDataIterator) {
+    const currentMatrixHeight = currentGridInfo.matrixHeight;
+    const currentMatrixWidth = currentGridInfo.matrixWidth;
+    const charGridContent = currentGridInfo.charMatrix;
+
+    const dotHeightMatrix = buildConsecutiveHeights(charGridContent, currentMatrixHeight, currentMatrixWidth);
+
+    let gridOverallMaxArea = 0;
+    for (let r = 0; r < currentMatrixHeight; r++) {
+        gridOverallMaxArea = Math.max(gridOverallMaxArea, computeMaxHistogramRectangle(dotHeightMatrix[r]));
+    }
+    console.log(gridOverallMaxArea);
 }

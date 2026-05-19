@@ -1,37 +1,35 @@
-// This script processes numerical data from standard input to compute maximum lengths within a specific range.
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read all input data from standard input
+const dataRows = rawData.split('\n'); // Split the input into an array of lines
 
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
+// Parse the first line to get the number of items (N) and the range offset (K)
+let [numItems, rangeOffset] = dataRows[0].split(' ').map(Number);
 
-const dataRows = dataSource.split('\n');
+// Initialize a dynamic programming array with a fixed size, filled with zeros.
+// This array will store the maximum achievable value for each index.
+let dynamicProgression = Array(300001).fill(0);
 
-// Parse the first line to get the primary count and the range adjustment factor
-let [ mainCount, rangeFactor ] = dataRows[0].split(' ').map(parseInt);
-
-// Initialize an array to store maximum lengths for values up to 300,000.
-// The array is pre-filled with zeros.
-let maxLengths = Array(300_001).fill(0);
-
-// Iterate through each data row, starting from the second line (index 1) up to 'mainCount'.
-for ( let idx = 1; idx <= mainCount; idx++ ) {
-    // Convert the current line's value to a number.
+// Iterate through each item from 1 to N (inclusive)
+for (let idx = 1; idx <= numItems; idx++) {
+    // Convert the current line's value to a number
     const currentValue = Number(dataRows[idx]);
 
-    // Determine the current maximum length for 'currentValue' plus one.
-    const calculatedLength = maxLengths[currentValue] + 1;
+    // Calculate the value to propagate: 1 plus the current max at 'currentValue'
+    const calculatedValue = dynamicProgression[currentValue] + 1;
 
-    // Calculate the lower bound for the range based on 'currentValue' and 'rangeFactor'.
-    // Ensure the lower bound does not go below zero.
-    const lowerBound = Math.max(0, currentValue - rangeFactor);
+    // Determine the lower bound for the update range, ensuring it's not less than 0
+    const lowerBound = Math.max(0, currentValue - rangeOffset);
 
-    // Calculate the upper bound for the range.
-    const upperBound = currentValue + rangeFactor;
+    // Determine the upper bound for the update range
+    const upperBound = currentValue + rangeOffset;
 
-    // Iterate through the determined range [lowerBound, upperBound].
-    // For each element within this range, update its maximum length if 'calculatedLength' is greater.
-    for ( let rangeIndex = lowerBound; rangeIndex <= upperBound; rangeIndex++ ) {
-        maxLengths[rangeIndex] = Math.max(calculatedLength, maxLengths[rangeIndex]);
+    // Update the dynamic programming array within the calculated range
+    // For each index 'subIdx' in the range [lowerBound, upperBound],
+    // set its value to the maximum of its current value and 'calculatedValue'.
+    for (let subIdx = lowerBound; subIdx <= upperBound; subIdx++) {
+        dynamicProgression[subIdx] = Math.max(calculatedValue, dynamicProgression[subIdx]);
     }
 }
 
-// After processing all data, find and output the overall maximum value in the 'maxLengths' array.
-console.log(maxLengths.reduce((accumulator, currentElement) => Math.max(accumulator, currentElement)));
+// Find the maximum value in the entire dynamic programming array
+// and print it to the console.
+console.log(dynamicProgression.reduce((accumulator, currentElement) => Math.max(accumulator, currentElement)));

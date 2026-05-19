@@ -1,15 +1,11 @@
 'use strict';
 
-const fileSystemUtility = require('node:fs');
+const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericValue = parseInt(dataStream.trim().split('\n')[0]);
 
-const rawInputContent = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
-const requestedNumber = Number(rawInputContent.split('\n')[0].trim());
+const modulusConstant = 1000000007;
 
-const primeModulo = (1000000000 + 7);
+const finalProduct = Array.from({ length: numericValue }, (_, index) => index + 1)
+  .reduce((accumulatedValue, currentFactor) => (accumulatedValue * currentFactor) % modulusConstant, 1);
 
-const finalResult = Array.from({ length: requestedNumber }, (_, index) => index + 1)
-  .reduce((accumulator, currentValue) => {
-    return (accumulator * currentValue) % primeModulo;
-  }, 1);
-
-process.stdout.write(String(finalResult) + '\n');
+console.log(finalProduct);

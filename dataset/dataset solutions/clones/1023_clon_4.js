@@ -1,53 +1,37 @@
 "use strict";
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+let inputBuffer = '';
+process.stdin.on('data', function(chunk) { inputBuffer += chunk; });
+process.stdin.on('end', function() { executeSimulation(inputBuffer.split(/\r?\n/)); });
 
-let collectedInput = '';
-
-process.stdin.on('data', (inputChunk) => {
-    collectedInput += inputChunk;
-});
-
-process.stdin.on('end', () => {
-    performScheduling(collectedInput);
-});
-
-function performScheduling(rawInputData) {
-    const dataLines = rawInputData.split(/\r?\n/);
-
-    const [taskCountString, quantumValueString] = dataLines[0].split(' ');
-    const initialTaskCount = Number(taskCountString);
-    const timeQuantum = Number(quantumValueString);
+function executeSimulation(lines){
+    const [initialProcessCountStr, timeQuantumStr] = lines[0].split(' ');
+    const initialProcessCount = Number(initialProcessCountStr);
+    const timeQuantum = Number(timeQuantumStr);
 
     let taskQueue = [];
-
-    for (let currentLineIndex = 1; currentLineIndex <= initialTaskCount; currentLineIndex++) {
-        const [taskLabel, initialDurationString] = dataLines[currentLineIndex].split(' ');
-        taskQueue.push({ label: taskLabel, remainingTime: Number(initialDurationString) });
+    for (let i = 0; i < initialProcessCount; i++) {
+        const [taskIdentifier, taskDurationStr] = lines[i + 1].split(' ');
+        taskQueue.push({
+            identifier: taskIdentifier,
+            duration: Number(taskDurationStr)
+        });
     }
 
-    const manageProcessQueue = (activeProcessList, totalElapsedTime) => {
-        if (activeProcessList.length === 0) {
-            return;
-        }
+    let accumulatedTime = 0;
 
-        const currentProcess = activeProcessList[0];
-        const subsequentProcesses = activeProcessList.slice(1);
+    while (taskQueue.length > 0) {
+        let currentTask = taskQueue.shift();
+        
+        currentTask.duration -= timeQuantum;
+        accumulatedTime += timeQuantum;
 
-        let timeSpentInThisIteration;
-
-        if (currentProcess.remainingTime > timeQuantum) {
-            currentProcess.remainingTime -= timeQuantum;
-            timeSpentInThisIteration = timeQuantum;
-            subsequentProcesses.push(currentProcess);
+        if (currentTask.duration > 0) {
+            taskQueue.push(currentTask);
         } else {
-            timeSpentInThisIteration = currentProcess.remainingTime;
-            const finishTimestamp = totalElapsedTime + timeSpentInThisIteration;
-            console.log(`${currentProcess.label} ${finishTimestamp}`);
+            accumulatedTime += currentTask.duration;
+            console.log(`${currentTask.identifier} ${accumulatedTime}`);
         }
-
-        manageProcessQueue(subsequentProcesses, totalElapsedTime + timeSpentInThisIteration);
-    };
-
-    manageProcessQueue(taskQueue, 0);
+    }
 }

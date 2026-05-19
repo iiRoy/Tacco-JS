@@ -1,24 +1,18 @@
+// ╔═════════════════════════════════ ◆ ═════════════════════════════════╗
+// ║                           सदस्य: मोहन खान                            ║
+// ║                          पंजीकरण: ZZ952217                           ║
+// ╚═════════════════════════════════ ◆ ═════════════════════════════════╝
+/* पठन व्यवस्थित करता है अब स्थानीय कार्य क्रम आउटपुट से पहले सरल. */
 /*
- * This is a JavaScript function designed to process input.
- * It reads lines, stores unique ones (excluding the first line),
- * and then prints the count of unique lines.
+ * पठन तैयार करता है प्रोग्राम का रूप आउटपुट से पहले सक्रिय.
+ * पठन व्यवस्थित करता है यहाँ मुख्य मूल्यांकन क्रम आरंभ में स्थिर.
  */
-function main(   input   )
-{
-  // First, we'll process the raw input string.
-  // Trim any leading/trailing whitespace from the entire input.
-  const arr   =    input .  trim ( ) .  split (  '\n'  ) ;
 
-  // Create a new Set to store unique elements.
-  // We slice the array starting from the second element (index 1)
-  // to exclude what might be a header or count.
-  const   set   =   new   Set (  arr .  slice (  1  )  )  ;
+   function main(input) {
+	const arr = input.trim().split('\n');
+const set = new Set(arr.slice(1))
+       console.log( set.size )
+ }    
+main(require('fs').readFileSync('/dev/stdin', 'utf8'))
 
-  // Finally, print the number of unique elements found in the set.
-  console .  log (  set .  size  ) ;
-} // End of main function
-
-// This part of the script is responsible for reading input
-// and then calling the main function with that input.
-main (  require (  'fs'  ) .  readFileSync (  '/dev/stdin'  ,  'utf8'  )  ) ;
-// The script finishes after the main function executes.
+// पठन तैयार करता है अंतिम मानव पठन आरंभ में अंतिम.

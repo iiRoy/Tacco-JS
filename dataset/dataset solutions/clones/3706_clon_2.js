@@ -1,287 +1,235 @@
 "use strict";
 
-function _arrayFromIterableOrSpread(inputCollection) { return _copyArrayWithoutGaps(inputCollection) || _convertToArrayFromIterable(inputCollection) || _invalidSpreadAttempt(); }
+function _makeArrayFromIterable(iter) {
+  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") {
+    return Array.from(iter);
+  }
+  return [];
+}
 
-function _invalidSpreadAttempt() { throw new TypeError("Cannot spread non-iterable instance"); }
-
-function _convertToArrayFromIterable(iterObject) { if (Symbol.iterator in Object(iterObject) || Object.prototype.toString.call(iterObject) === "[object Arguments]") return Array.from(iterObject); }
-
-function _copyArrayWithoutGaps(arrayInput) {
-  if (Array.isArray(arrayInput)) {
-    for (var k = 0, copiedArray = new Array(arrayInput.length); k < arrayInput.length; k++) {
-      copiedArray[k] = arrayInput[k];
+function _copyArrayElements(arr) {
+  if (Array.isArray(arr)) {
+    for (var k = 0, newArr = new Array(arr.length); k < arr.length; k++) {
+      newArr[k] = arr[k];
     }
-    return copiedArray;
+    return newArr;
   }
 }
 
-function analyzeDataSet(rawInputData) {
-  // Split the raw input string into an array of lines
-  const dataLines = rawInputData.split('\n');
-  // Parse the total number of elements from the first line
-  const totalElements = parseInt(dataLines[0], 10);
-  // Parse the array of numbers from the second line, limiting to totalElements
-  const valueArray = parseNumericString(dataLines[1]).slice(0, totalElements);
+function _handleNonIterable() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance");
+}
 
-  // Initialize an array to store cumulative sums
-  const cumulativeSums = [];
+function _convertToArray(inputSource) {
+  return _copyArrayElements(inputSource) || _makeArrayFromIterable(inputSource) || _handleNonIterable();
+}
 
-  // Iterator variables for the first loop
-  let _iterCompletionStatus = true;
-  let _iterEncounteredError = false;
-  let _iterErrorObject = undefined;
+function processInput(rawData) {
+  var inputLines = rawData.split('\n');
+  var elementCount = parseInt(inputLines[0], 10);
+  var dataArray = parseNumbers(inputLines[1]).slice(0, elementCount);
+  var prefixSums = [];
+  var _iterCompletionStatus = true;
+  var _iterHadError = false;
+  var _currentIterError = undefined;
 
   try {
-    // Calculate cumulative sums for the valueArray
-    for (
-      let _dataIterator = generateSequence(0, totalElements)[Symbol.iterator](), _iterStepResult;
-      !(_iterCompletionStatus = (_iterStepResult = _dataIterator.next()).done);
-      _iterCompletionStatus = true
-    ) {
-      const currentElementIdx = _iterStepResult.value;
-      cumulativeSums[currentElementIdx] = valueArray[currentElementIdx] + (currentElementIdx === 0 ? 0 : cumulativeSums[currentElementIdx - 1]);
+    for (var _loopIterator = generateRange(0, elementCount)[Symbol.iterator](), _loopStep; !(_iterCompletionStatus = (_loopStep = _loopIterator.next()).done); _iterCompletionStatus = true) {
+      var idx = _loopStep.value;
+      prefixSums[idx] = dataArray[idx] + (idx === 0 ? +0 : prefixSums[idx - 1]);
     }
-  } catch (errorValue) {
-    _iterEncounteredError = true;
-    _iterErrorObject = errorValue;
+  } catch (err) {
+    _iterHadError = true;
+    _currentIterError = err;
   } finally {
     try {
-      if (!_iterCompletionStatus && _dataIterator.return != null) {
-        _dataIterator.return();
+      if (!_iterCompletionStatus && _loopIterator.return != null) {
+        _loopIterator.return();
       }
     } finally {
-      if (_iterEncounteredError) {
-        throw _iterErrorObject;
+      if (_iterHadError) {
+        throw _currentIterError;
       }
     }
   }
 
-  // Array to store left breakpoints
-  const leftBreakpoints = [-1];
-
-  // Iterator variables for the second loop
-  let _iterCompletionStatusTwo = true;
-  let _iterEncounteredErrorTwo = false;
-  let _iterErrorObjectTwo = undefined;
+  var leftSplitPoints = [-1];
+  var _iterCompletionStatus2 = true;
+  var _iterHadError2 = false;
+  var _currentIterError2 = undefined;
 
   try {
-    // Determine optimal left split points
-    for (
-      let _dataIteratorTwo = generateSequence(1, totalElements - 2)[Symbol.iterator](), _iterStepResultTwo;
-      !(_iterCompletionStatusTwo = (_iterStepResultTwo = _dataIteratorTwo.next()).done);
-      _iterCompletionStatusTwo = true
-    ) {
-      const loopIndexOne = _iterStepResultTwo.value;
+    for (var _loopIterator2 = generateRange(1, elementCount - 2)[Symbol.iterator](), _loopStep2; !(_iterCompletionStatus2 = (_loopStep2 = _loopIterator2.next()).done); _iterCompletionStatus2 = true) {
+      var currentIdx = _loopStep2.value;
 
-      if (loopIndexOne === 1) {
-        leftBreakpoints.push(0);
+      if (currentIdx === 1) {
+        leftSplitPoints.push(+0);
         continue;
       }
 
-      // Find the best left pointer for the current loopIndexOne
-      for (let leftPointer = leftBreakpoints[loopIndexOne - 1]; leftPointer < loopIndexOne; leftPointer++) {
-        const diffCurrent = Math.abs(cumulativeSums[leftPointer] - (cumulativeSums[loopIndexOne] - cumulativeSums[leftPointer]));
-        const diffNext = Math.abs(cumulativeSums[leftPointer + 1] - (cumulativeSums[loopIndexOne] - cumulativeSums[leftPointer + 1]));
+      for (var leftPointer = leftSplitPoints[currentIdx - 1]; leftPointer < currentIdx; leftPointer++) {
+        var diffCurrent = Math.abs(prefixSums[leftPointer] - (prefixSums[currentIdx] - prefixSums[leftPointer]));
+        var diffNext = Math.abs(prefixSums[leftPointer + 1] - (prefixSums[currentIdx] - prefixSums[leftPointer + 1]));
 
-        if (diffCurrent < diffNext || leftPointer === loopIndexOne - 1) {
-          leftBreakpoints.push(leftPointer);
+        if (diffCurrent < diffNext || leftPointer === currentIdx - 1) {
+          leftSplitPoints.push(leftPointer);
           break;
         }
       }
     }
-  } catch (errorValue) {
-    _iterEncounteredErrorTwo = true;
-    _iterErrorObjectTwo = errorValue;
+  } catch (err) {
+    _iterHadError2 = true;
+    _currentIterError2 = err;
   } finally {
     try {
-      if (!_iterCompletionStatusTwo && _dataIteratorTwo.return != null) {
-        _dataIteratorTwo.return();
+      if (!_iterCompletionStatus2 && _loopIterator2.return != null) {
+        _loopIterator2.return();
       }
     } finally {
-      if (_iterEncounteredErrorTwo) {
-        throw _iterErrorObjectTwo;
+      if (_iterHadError2) {
+        throw _currentIterError2;
       }
     }
   }
 
-  leftBreakpoints.push(-1); // Add a sentinel value
-
-  // Array to store right breakpoints
-  const rightBreakpoints = [-1];
-
-  // Iterator variables for the third loop
-  let _iterCompletionStatusThree = true;
-  let _iterEncounteredErrorThree = false;
-  let _iterErrorObjectThree = undefined;
+  leftSplitPoints.push(-1);
+  var rightSplitPoints = [-1];
+  var _iterCompletionStatus3 = true;
+  var _iterHadError3 = false;
+  var _currentIterError3 = undefined;
 
   try {
-    // Determine optimal right split points
-    for (
-      let _dataIteratorThree = generateSequence(1, totalElements - 2)[Symbol.iterator](), _iterStepResultThree;
-      !(_iterCompletionStatusThree = (_iterStepResultThree = _dataIteratorThree.next()).done);
-      _iterCompletionStatusThree = true
-    ) {
-      const loopIndexTwo = _iterStepResultThree.value;
+    for (var _loopIterator3 = generateRange(1, elementCount - 2)[Symbol.iterator](), _loopStep3; !(_iterCompletionStatus3 = (_loopStep3 = _loopIterator3.next()).done); _iterCompletionStatus3 = true) {
+      var currentIdx2 = _loopStep3.value;
 
-      if (loopIndexTwo === 1) {
-        rightBreakpoints.push(totalElements - 2);
+      if (currentIdx2 === 1) {
+        rightSplitPoints.push(elementCount - 2);
         continue;
       }
 
-      const reverseBoundary = totalElements - 2 - loopIndexTwo;
+      var reverseIdx = elementCount - 2 - currentIdx2;
 
-      // Find the best right pointer for the current loopIndexTwo
-      for (let rightPointer = rightBreakpoints[loopIndexTwo - 1]; rightPointer > reverseBoundary; rightPointer--) {
-        const currentRightDiff = Math.abs(cumulativeSums[rightPointer] - cumulativeSums[reverseBoundary] - (cumulativeSums[totalElements - 1] - cumulativeSums[rightPointer]));
-        const nextRightDiff = Math.abs(cumulativeSums[rightPointer - 1] - cumulativeSums[reverseBoundary] - (cumulativeSums[totalElements - 1] - cumulativeSums[rightPointer - 1]));
+      for (var rightPointer = rightSplitPoints[currentIdx2 - 1]; rightPointer > reverseIdx; rightPointer--) {
+        var diffCurrentR = Math.abs(prefixSums[rightPointer] - prefixSums[reverseIdx] - (prefixSums[elementCount - 1] - prefixSums[rightPointer]));
+        var diffPrevR = Math.abs(prefixSums[rightPointer - 1] - prefixSums[reverseIdx] - (prefixSums[elementCount - 1] - prefixSums[rightPointer - 1]));
 
-        if (currentRightDiff < nextRightDiff || rightPointer === reverseBoundary + 1) {
-          rightBreakpoints.push(rightPointer);
+        if (diffCurrentR < diffPrevR || rightPointer === reverseIdx + 1) {
+          rightSplitPoints.push(rightPointer);
           break;
         }
       }
     }
-  } catch (errorValue) {
-    _iterEncounteredErrorThree = true;
-    _iterErrorObjectThree = errorValue;
+  } catch (err) {
+    _iterHadError3 = true;
+    _currentIterError3 = err;
   } finally {
     try {
-      if (!_iterCompletionStatusThree && _dataIteratorThree.return != null) {
-        _dataIteratorThree.return();
+      if (!_iterCompletionStatus3 && _loopIterator3.return != null) {
+        _loopIterator3.return();
       }
     } finally {
-      if (_iterEncounteredErrorThree) {
-        throw _iterErrorObjectThree;
+      if (_iterHadError3) {
+        throw _currentIterError3;
       }
     }
   }
 
-  rightBreakpoints.push(-1); // Add a sentinel value
-  rightBreakpoints.reverse(); // Reverse the array for correct indexing
+  rightSplitPoints.push(-1);
+  rightSplitPoints.reverse();
 
-  // Initialize minimum difference to a very large number
-  let minimumRangeDiff = Infinity;
-
-  // Iterator variables for the final loop
-  let _iterCompletionStatusFour = true;
-  let _iterEncounteredErrorFour = false;
-  let _iterErrorObjectFour = undefined;
+  var minMaxDiff = Number.POSITIVE_INFINITY;
+  var _iterCompletionStatus4 = true;
+  var _iterHadError4 = false;
+  var _currentIterError4 = undefined;
 
   try {
-    // Iterate through possible split points to find the minimum difference
-    for (
-      let _dataIteratorFour = generateSequence(1, totalElements - 2)[Symbol.iterator](), _iterStepResultFour;
-      !(_iterCompletionStatusFour = (_iterStepResultFour = _dataIteratorFour.next()).done);
-      _iterCompletionStatusFour = true
-    ) {
-      const loopIndexThree = _iterStepResultFour.value;
-      const leftBoundaryIdx = leftBreakpoints[loopIndexThree];
-      const rightBoundaryIdx = rightBreakpoints[loopIndexThree];
-
-      // Calculate the four segments' sums
-      const segmentA = cumulativeSums[leftBoundaryIdx];
-      const segmentB = cumulativeSums[loopIndexThree] - cumulativeSums[leftBoundaryIdx];
-      const segmentC = cumulativeSums[rightBoundaryIdx] - cumulativeSums[loopIndexThree];
-      const segmentD = cumulativeSums[totalElements - 1] - cumulativeSums[rightBoundaryIdx];
-
-      // Find min and max among the four segments
-      const minSegmentValue = Math.min(segmentA, segmentB, segmentC, segmentD);
-      const maxSegmentValue = Math.max(segmentA, segmentB, segmentC, segmentD);
-
-      // Update the overall minimum difference
-      minimumRangeDiff = Math.min(minimumRangeDiff, maxSegmentValue - minSegmentValue);
+    for (var _loopIterator4 = generateRange(1, elementCount - 2)[Symbol.iterator](), _loopStep4; !(_iterCompletionStatus4 = (_loopStep4 = _loopIterator4.next()).done); _iterCompletionStatus4 = true) {
+      var currentIdx3 = _loopStep4.value;
+      var leftSplitIndex = leftSplitPoints[currentIdx3];
+      var rightSplitIndex = rightSplitPoints[currentIdx3];
+      var partOneSum = prefixSums[leftSplitIndex];
+      var partTwoSum = prefixSums[currentIdx3] - prefixSums[leftSplitIndex];
+      var partThreeSum = prefixSums[rightSplitIndex] - prefixSums[currentIdx3];
+      var partFourSum = prefixSums[elementCount - 1] - prefixSums[rightSplitIndex];
+      var currentMin = Math.min(partOneSum, partTwoSum, partThreeSum, partFourSum);
+      var currentMax = Math.max(partOneSum, partTwoSum, partThreeSum, partFourSum);
+      minMaxDiff = Math.min(minMaxDiff, currentMax - currentMin);
     }
-  } catch (errorValue) {
-    _iterEncounteredErrorFour = true;
-    _iterErrorObjectFour = errorValue;
+  } catch (err) {
+    _iterHadError4 = true;
+    _currentIterError4 = err;
   } finally {
     try {
-      if (!_iterCompletionStatusFour && _dataIteratorFour.return != null) {
-        _dataIteratorFour.return();
+      if (!_iterCompletionStatus4 && _loopIterator4.return != null) {
+        _loopIterator4.return();
       }
     } finally {
-      if (_iterEncounteredErrorFour) {
-        throw _iterErrorObjectFour;
+      if (_iterHadError4) {
+        throw _currentIterError4;
       }
     }
   }
 
-  // Output the final result
-  console.log(minimumRangeDiff);
+  console.log(minMaxDiff);
 }
 
-analyzeDataSet(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Function to parse a string of numbers into an array of integers
-function parseNumericString(inputString) {
-  return inputString.split(/\s+/).map(function (parsedNumber) {
-    return parseInt(parsedNumber, 10);
+function parseNumbers(inputLine) {
+  return inputLine.split(/\s+/).map(function (numStr) {
+    return parseInt(numStr, 10);
   });
 }
 
-/**
- * Generates a sequence of integers from sequenceStart (inclusive) to sequenceEnd (exclusive).
- */
-function* generateSequence(sequenceStart, sequenceEnd) {
-  for (let sequenceCounter = sequenceStart; sequenceCounter < sequenceEnd; sequenceCounter++) {
-    yield sequenceCounter;
+function* generateRange(rangeStart, rangeEnd) {
+  for (var currentVal = rangeStart; currentVal < rangeEnd; currentVal++) {
+    yield currentVal;
   }
 }
 
-/**
- * Generates a sequence of integers in descending order from reverseStart - 1 (inclusive) to reverseEnd (inclusive).
- */
-function* generateReverseSequence(reverseStart, reverseEnd) {
-  for (let reverseCounter = reverseStart - 1; reverseCounter >= reverseEnd; reverseCounter--) {
-    yield reverseCounter;
+function* generateReverseRange(rangeStart, rangeEnd) {
+  for (var currentVal = rangeStart - 1; currentVal >= rangeEnd; currentVal--) {
+    yield currentVal;
   }
 }
 
-/**
- * Executes a recursive function expressed as a generator, managing its own call stack.
- */
-function processGeneratorFunction(targetFunction) {
-  // Object to hold the final return value from the top-level call
-  const finalResultContainer = {
-    frameReturnValue: null
+function executeRecursiveGenerator(generatorFunction) {
+  var topLevelCaller = {
+    resultValue: null
   };
-  // Custom call stack for managing generator state
-  const executionStack = [];
+  var executionStack = [];
 
-  // Collect arguments for the initial function call
-  for (var argCount = arguments.length, functionArguments = new Array(argCount > 1 ? argCount - 1 : 0), argKey = 1; argKey < argCount; argKey++) {
-    functionArguments[argKey - 1] = arguments[argKey];
+  for (var argLength = arguments.length, initialArgs = new Array(argLength > 1 ? argLength - 1 : 0), argKey = 1; argKey < argLength; argKey++) {
+    initialArgs[argKey - 1] = arguments[argKey];
   }
 
-  // Push the initial call onto the stack
   executionStack.push({
-    frameIterator: targetFunction.apply(void 0, functionArguments),
-    frameReturnValue: null,
-    callingFrame: finalResultContainer
+    genIterator: generatorFunction.apply(void 0, initialArgs),
+    resultValue: null,
+    parentCaller: topLevelCaller
   });
 
-  // Process the stack until it's empty
-  while (executionStack.length > 0) {
-    const currentFrame = executionStack[executionStack.length - 1];
-    const { frameIterator, frameReturnValue, callingFrame } = currentFrame;
+  while (executionStack.length > +0) {
+    var currentFrame = executionStack[executionStack.length - 1];
+    var genIterator = currentFrame.genIterator,
+      resultValue = currentFrame.resultValue,
+      parentCaller = currentFrame.parentCaller;
 
-    // Resume execution of the generator
-    const iterNextResult = frameIterator.next(frameReturnValue);
-    const { value: yieldedValue, done: iterationDone } = iterNextResult;
+    var iteratorResult = genIterator.next(resultValue);
+    var yieldedValue = iteratorResult.value,
+      isDone = iteratorResult.done;
 
-    if (iterationDone) {
-      // If the generator is done, record its return value in the caller frame
-      callingFrame.frameReturnValue = yieldedValue;
-      executionStack.pop(); // Remove from stack
+    if (isDone) {
+      parentCaller.resultValue = yieldedValue;
+      executionStack.pop();
     } else {
-      // If the generator yielded, it's a recursive call. Push it onto the stack.
       executionStack.push({
-        frameIterator: targetFunction.apply(void 0, _arrayFromIterableOrSpread(yieldedValue)),
-        frameReturnValue: null,
-        callingFrame: currentFrame
+        genIterator: generatorFunction.apply(void 0, _convertToArray(yieldedValue)),
+        resultValue: null,
+        parentCaller: currentFrame
       });
     }
   }
 
-  return finalResultContainer.frameReturnValue;
+  return topLevelCaller.resultValue;
 }

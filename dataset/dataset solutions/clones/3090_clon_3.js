@@ -1,326 +1,176 @@
-/*
- * This module provides a factory for creating input data parsers.
- * It's designed to read structured input from a string, typically
- * representing lines of text with space-separated values, in a competitive programming context.
- */
-var InputParserFactory = (function () {
-    /**
-     * Creates and returns a new parser instance for the given raw input string.
-     * This is the public interface of the InputParserFactory.
-     * @param {string} rawInputString The complete input content as a single string.
-     * @returns {TextDataReader} An instance of TextDataReader ready to parse.
-     */
-    function createParserInstance(rawInputString) {
-        // Delegate the actual parsing logic to the TextDataReader class.
-        return new TextDataReader(rawInputString);
+const InputReaderFactory = (function() {
+    // Helper to convert a value to a number if the 'asString' flag is false.
+    const _parseValue = (value, asString) => asString ? value : Number(value);
+
+    class InputReader {
+        constructor(sourceContent) {
+            // Store the input content as an array of lines.
+            // Trim to remove leading/trailing whitespace from the whole input.
+            this.sourceLines = sourceContent.trim().split("\n");
+            // Keep track of the current line being processed.
+            this.currentLineIndex = 0;
+        }
+
+        // Reads a single value from the current line.
+        // If the current line is exhausted, it advances to the next line.
+        // The original implementation reverses the line and pops values from the end.
+        // This effectively reads values from left-to-right in the original line order.
+        readNextValue(asString = false) {
+            let lineData = this.sourceLines[this.currentLineIndex];
+
+            // If the current line hasn't been split and reversed yet, do it.
+            // This modification is stateful, affecting subsequent calls for the same line.
+            if (typeof lineData === "string") {
+                this.sourceLines[this.currentLineIndex] = lineData.split(" ").reverse();
+            }
+            
+            // Pop the last element (which is the first element in original order after reverse).
+            const value = this.sourceLines[this.currentLineIndex].pop();
+            
+            // If the current line is now empty, advance to the next line.
+            if (!this.sourceLines[this.currentLineIndex].length) {
+                this.currentLineIndex++;
+            }
+            return _parseValue(value, asString);
+        }
+
+        // Reads an entire line, splits it by space, and returns the array of values.
+        // Advances to the next line.
+        readLineValues(asString = false) {
+            const lineContent = this.sourceLines[this.currentLineIndex++];
+            const values = lineContent.split(" ");
+            return asString ? values : values.map(val => Number(val));
+        }
+
+        // Reads 'count' consecutive lines, splitting each into values, forming a 2D array (matrix).
+        // Advances 'count' lines.
+        readMatrixValues(count, asString = false) {
+            const matrixRows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + count);
+            this.currentLineIndex += count; // Update line index after slicing
+            const parsedMatrix = matrixRows.map(row => {
+                const rowValues = row.split(" ");
+                return asString ? rowValues : rowValues.map(val => Number(val));
+            });
+            return parsedMatrix;
+        }
+
+        // Reads 'count' raw lines without splitting them into individual values.
+        // Advances 'count' lines.
+        readRawLines(count, asString = false) {
+            const lines = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex + count);
+            this.currentLineIndex += count; // Update line index after slicing
+            // The original 'r' method also maps to Number if 'f' is false.
+            return asString ? lines : lines.map(line => Number(line));
+        }
     }
 
-    /**
-     * Internal class responsible for processing textual input data line by line.
-     * It manages the state of the input stream (current line, current position within line).
-     * @class
-     * @param {string} content The raw string content to be parsed.
-     */
-    function TextDataReader(content) {
-        // Store lines of content, trimming leading/trailing whitespace and splitting into an array.
-        // Each element initially is a string, which might be further processed into an array of tokens.
-        this._contentLines = content.trim().split("\n");
-        // Keeps track of the index of the current line being processed in `_contentLines`.
-        this._currentLineIndex = 0;
-    }
-
-    /**
-     * Reads the next available numerical value from the input stream.
-     * If the current line has been fully consumed or hasn't been processed yet,
-     * it prepares the current line for token extraction.
-     *
-     * @param {boolean} [returnAsString=false] If true, returns the value as a string; otherwise, as a number.
-     * @returns {number|string|undefined} The parsed value, or undefined if end of input is reached.
-     */
-    TextDataReader.prototype.readNextValue = function (returnAsString = false) {
-        // Check if we have processed all available lines.
-        if (this._currentLineIndex >= this._contentLines.length) {
-            console.warn("InputParser Warning: Attempted to read past end of input data.");
-            return undefined; // Indicate no more data.
-        }
-
-        let currentLineEntry = this._contentLines[this._currentLineIndex];
-
-        // If the current line is still a string, it means it hasn't been split into tokens yet.
-        // Split it into tokens and reverse the array. This allows `pop()` to retrieve tokens
-        // in their original order (left-to-right) efficiently.
-        if (typeof currentLineEntry === "string") {
-            this._contentLines[this._currentLineIndex] = currentLineEntry.split(" ").reverse();
-        }
-
-        // Now, `_contentLines[this._currentLineIndex]` is guaranteed to be an array of tokens (strings).
-        let tokensArray = this._contentLines[this._currentLineIndex];
-
-        // Retrieve the last token from the reversed array.
-        let valueStr = tokensArray.pop();
-
-        // If the current line (tokensArray) is now empty after popping, it means we've consumed all tokens
-        // from this line. Advance to the next line for subsequent reads.
-        if (tokensArray.length === 0) {
-            this._currentLineIndex++;
-        }
-
-        // Return the value, converting to a number if not explicitly requested as a string.
-        return returnAsString ? valueStr : Number(valueStr);
+    // The factory function returns an instance of InputReader.
+    return function createReader(sourceContent) {
+        return new InputReader(sourceContent);
     };
-
-    /**
-     * Reads all space-separated values from the *entire* current line as an array.
-     * Advances the internal line pointer to the next line after reading.
-     * This method assumes the current line has not been partially consumed by `readNextValue`.
-     *
-     * @param {boolean} [returnAsString=false] If true, returns an array of strings; otherwise, an array of numbers.
-     * @returns {Array<number|string>} An array of parsed values from the line.
-     */
-    TextDataReader.prototype.readLineValues = function (returnAsString = false) {
-        // Check for end of input.
-        if (this._currentLineIndex >= this._contentLines.length) {
-            console.warn("InputParser Warning: Attempted to read past end of input data with readLineValues.");
-            return [];
-        }
-
-        // Get the raw string for the current line and immediately advance the line pointer.
-        // It's crucial here that `_contentLines[this._currentLineIndex]` is still a string,
-        // not an array of tokens from a partial `readNextValue` call.
-        let rawLine = this._contentLines[this._currentLineIndex++];
-        if (typeof rawLine !== 'string') {
-             console.error("InputParser Error: Inconsistent line state. A line was expected as string but was pre-processed. This might indicate mixed usage of readNextValue and readLineValues on the same line.");
-             // Attempt to recover by converting the array back to string or just return empty.
-             // For robustness, let's assume it was already an array of tokens and join them.
-             rawLine = Array.isArray(rawLine) ? rawLine.reverse().join(" ") : "";
-        }
-
-        let values = rawLine.split(" ");
-        // Return the array of values, converting to numbers if required.
-        return returnAsString ? values : values.map(Number);
-    };
-
-    /**
-     * Reads a block of lines as a matrix (array of arrays).
-     * This method reads `rowCount` number of lines starting from the current line.
-     *
-     * @param {number} rowCount The number of rows to read for the matrix.
-     * @param {boolean} [returnAsString=false] If true, returns a matrix of strings; otherwise, a matrix of numbers.
-     * @returns {Array<Array<number|string>>} The parsed matrix. Returns an empty array if rowCount is invalid.
-     */
-    TextDataReader.prototype.readMatrixBlock = function (rowCount, returnAsString = false) {
-        // Guard clause: Ensure rowCount is a positive integer.
-        if (typeof rowCount !== 'number' || !Number.isInteger(rowCount) || rowCount <= 0) {
-            console.warn("InputParser Warning: Attempted to read a matrix with invalid rowCount:", rowCount, ". Returning an empty matrix.");
-            return [];
-        }
-
-        // Ensure we don't read beyond the available lines.
-        const actualRowCount = Math.min(rowCount, this._contentLines.length - this._currentLineIndex);
-        if (actualRowCount < rowCount) {
-            console.warn(`InputParser Warning: Requested ${rowCount} rows for matrix, but only ${actualRowCount} available.`);
-        }
-
-        // Extract the slice of lines that form the matrix.
-        let matrixRawLines = this._contentLines.slice(this._currentLineIndex, this._currentLineIndex + actualRowCount);
-        // Advance the line pointer by the number of lines read for the matrix.
-        this._currentLineIndex += actualRowCount;
-
-        // Process each line in the matrix slice.
-        let processedMatrix = matrixRawLines.map(lineStr => {
-            let rowValues = lineStr.split(" ");
-            return returnAsString ? rowValues : rowValues.map(Number);
-        });
-        return processedMatrix;
-    };
-
-    // The original `g.prototype.r` method (read lines as numbers without splitting individual tokens)
-    // was not used in the `main` function. As a Type III change, it has been deleted to streamline the code.
-
-    return createParserInstance;
 })();
 
-/**
- * Creates a multi-dimensional array initialized with a specific value.
- * This function provides a recursive, `eval`-free implementation for creating arrays
- * of arbitrary dimensions, replacing the original string-based `eval` approach.
- *
- * @param {*} initialValue The value to recursively fill the array with at its deepest level.
- * @param {...number} dimensions A list of integers representing the dimensions of the array (e.g., width, height, depth).
- * @returns {Array} A multi-dimensional array structured according to the provided dimensions.
- */
-function createMultiDimArray(initialValue, ...dimensions) {
-    // Base case: If no more dimensions are specified, return the initial value.
-    if (dimensions.length === 0) {
-        return initialValue;
-    }
+// Initialize the input reader by reading from stdin.
+const inputReader = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const currentDimensionSize = dimensions[0];
-    // Guard clause: Ensure the current dimension size is a positive integer.
-    if (typeof currentDimensionSize !== 'number' || !Number.isInteger(currentDimensionSize) || currentDimensionSize <= 0) {
-        console.error("MultiDimArray Error: Invalid dimension size provided:", currentDimensionSize, ". Returning an empty array for this level.");
-        return []; // Return an empty array for an invalid dimension.
-    }
+// Define the modulus value for all modular arithmetic operations.
+const MODULUS_VALUE = 1e9 + 7;
 
-    // Recursively call for the remaining dimensions.
-    const remainingDimensions = dimensions.slice(1);
-    const result = new Array(currentDimensionSize); // Pre-allocate array for efficiency.
+// Helper function for modular addition: (a + b) % MODULUS_VALUE
+const addMod = (val1, val2) => (val1 + val2) % MODULUS_VALUE;
 
-    // Fill the current level of the array by recursively building sub-arrays.
-    for (let idx = 0; idx < currentDimensionSize; idx++) {
-        result[idx] = createMultiDimArray(initialValue, ...remainingDimensions);
+// Helper function for modular multiplication of two numbers,
+// specifically designed to handle potential overflow for large intermediate products
+// by splitting numbers into 16-bit parts (a = a_high * 2^16 + a_low).
+// (a * b) % m = ((a_high * 2^16 + a_low) * b) % m
+//             = (a_high * b * 2^16 + a_low * b) % m
+const multiplyTwoMod = (val1, val2) => {
+    const highPart = (val1 >> 16); // Extract the higher 16 bits of val1
+    const lowPart = (val1 & 65535); // Extract the lower 16 bits of val1 (65535 = 2^16 - 1)
+    
+    // Calculate (highPart * val2 * 65536) % MODULUS_VALUE
+    const term1 = (highPart * val2) % MODULUS_VALUE;
+    const term1Scaled = (term1 * 65536) % MODULUS_VALUE;
+
+    // Calculate (lowPart * val2) % MODULUS_VALUE
+    const term2 = (lowPart * val2) % MODULUS_VALUE;
+
+    // Sum the two terms modulo MODULUS_VALUE
+    return addMod(term1Scaled, term2);
+};
+
+// Function to calculate the modular product of multiple factors.
+// It iteratively applies `multiplyTwoMod` to all factors.
+function calculateModularProduct(...factors) {
+    if (factors.length === 0) return 0; // Or 1, depending on desired identity for empty product.
+    
+    let result = factors[0];
+    for (let k = 1; k < factors.length; k++) {
+        result = multiplyTwoMod(result, factors[k]);
     }
     return result;
 }
 
-// Define the modulus as a constant for clarity, immutability, and easy modification.
-const MODULUS_VALUE = 1e9 + 7;
+// Helper to safely get a value from a state map, returning an initial value if undefined.
+const getOrInitializeState = (stateMap, key, initialValue = 0) => {
+    return stateMap[key] !== undefined ? stateMap[key] : initialValue;
+};
 
-/**
- * Helper function to add two numbers and apply the modulus.
- * Ensures the result stays within the modular arithmetic bounds (0 to MODULUS_VALUE - 1).
- *
- * @param {number} numA First operand.
- * @param {number} numB Second operand.
- * @returns {number} (numA + numB) % MODULUS_VALUE.
- */
-function addWithModulo(numA, numB) {
-    // Ensure numbers are non-negative before addition to prevent potential negative results from % operator
-    // if intermediate sum is negative, though JS '%' handles negative numbers correctly for positive divisor.
-    return (numA + numB) % MODULUS_VALUE;
-}
-
-/**
- * Calculates the product of multiple numbers and applies a modulo operation at each step
- * to prevent overflow and keep the result within the modulus.
- * This function simplifies the original `abmod` which used bitwise operations specific to 32-bit
- * integer multiplication. JavaScript's numbers handle up to 2^53 safely, so direct multiplication
- * is efficient and correct as long as intermediate products don't exceed this before modulo.
- * Given MODULUS_VALUE is 10^9, products like (10^9)*(10^9) are approx 10^18, which fits within
- * JavaScript's safe integer range (Number.MAX_SAFE_INTEGER is 2^53 - 1, approx 9 * 10^15).
- * For values potentially larger than safe integers, BigInt would be needed, but not for this problem.
- *
- * @param {...number} factors An array of numbers to be multiplied.
- * @returns {number} The final product modulo MODULUS_VALUE. Returns 0 if no factors are provided.
- */
-function calculateProductModulo(...factors) {
-    // Guard clause: If no factors are provided, the multiplicative identity is 1, but
-    // given its usage in this problem, an empty list of factors is likely an error.
-    if (factors.length === 0) {
-        console.error("ProductModulo Error: calculateProductModulo requires at least one factor.");
-        return 0; // Or throw new Error("No factors provided");
-    }
-
-    // Start with the first factor, already reduced modulo.
-    let currentProduct = factors[0] % MODULUS_VALUE;
-
-    // Iterate through the remaining factors, multiplying and applying modulo at each step.
-    for (let i = 1; i < factors.length; i++) {
-        let factor = factors[i] % MODULUS_VALUE; // Reduce current factor modulo.
-        currentProduct = (currentProduct * factor) % MODULUS_VALUE;
-    }
-    return currentProduct;
-}
-
-// Obtain a parser instance by reading the standard input.
-// This line uses `require` and `fs`, which are Node.js specific modules
-// for file system operations. It's executed once to set up the input stream.
-var parserInstance = InputParserFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-/**
- * The primary function that solves the problem.
- * This function encapsulates the core logic, reading input, performing dynamic programming calculations,
- * and returning the final result according to the problem statement.
- *
- * @returns {number} The final calculated answer modulo MODULUS_VALUE.
- */
 function solveProblem() {
-    // Read problem parameters from the input stream.
-    // totalItems (N): The total number of items to consider.
-    const totalItems = parserInstance.readNextValue();
-    // initialValueX (X): The starting value for the dynamic programming state.
-    const initialValueX = parserInstance.readNextValue();
-    // sortedDivisors (S): A list of divisors, which are sorted in descending order
-    // as required by the problem's algorithm logic.
-    const sortedDivisors = parserInstance.readLineValues().sort((valA, valB) => valB - valA);
+    const totalItems = inputReader.readNextValue();
+    const initialValue = inputReader.readNextValue();
+    // Read divisors and sort them in descending order as per original logic.
+    const divisors = inputReader.readLineValues().sort((a, b) => b - a);
 
-    // --- Input Validation Guard Clauses (Type III addition for robustness) ---
-    if (typeof totalItems !== 'number' || totalItems < 0) {
-        console.error("SolveProblem Error: Invalid totalItems value:", totalItems);
-        return 0;
-    }
-    if (typeof initialValueX !== 'number' || initialValueX < 0) {
-        console.error("SolveProblem Error: Invalid initialValueX value:", initialValueX);
-        return 0;
-    }
-    if (!Array.isArray(sortedDivisors) || sortedDivisors.length === 0) {
-        console.error("SolveProblem Error: Divisors array is empty or invalid.");
-        return 0;
-    }
-    // Optional warning if N doesn't match S.length, assuming N items implies N divisors.
-    if (totalItems !== sortedDivisors.length) {
-        console.warn(`SolveProblem Warning: Number of items (N=${totalItems}) does not match the count of provided divisors (S.length=${sortedDivisors.length}). Proceeding with N items.`);
-    }
-    // -------------------------------------------------------------------------
+    // `currentStates` will store the counts of ways to reach a particular remainder value.
+    // Key: remainder value, Value: count of ways.
+    let currentStates = {};
+    currentStates[initialValue] = 1; // Start with the initial value, reachable in 1 way.
 
-    // Initialize the dynamic programming state.
-    // Using `Object.create(null)` creates a truly empty object without a prototype chain,
-    // which is suitable for use as a hash map where keys are numbers (treated as strings).
-    let currentDPState = Object.create(null);
-    // The initial state begins with `initialValueX` having a count of 1.
-    currentDPState[initialValueX] = 1;
-
-    // Iterate through each item (divisor) from the `sortedDivisors` array.
-    // `itemIndex` represents the index of the current divisor being processed.
+    // Iterate through each divisor.
     for (let itemIndex = 0; itemIndex < totalItems; itemIndex++) {
-        // Create a new DP state object for the results of the current iteration.
-        let nextDPState = Object.create(null);
-        // Calculate the number of remaining items yet to be processed.
+        // `nextStates` will accumulate the counts for the next iteration.
+        const nextStates = {};
+        const currentDivisor = divisors[itemIndex];
+        // `remainingItemsCount` is `n - i - 1`, representing the number of items
+        // that come *after* the current `itemIndex`.
         const remainingItemsCount = totalItems - itemIndex - 1;
 
-        // Iterate over the keys (which represent remainders) in the current DP state.
-        // `Object.keys()` ensures we iterate only over own enumerable properties, and `for...of` is modern JS.
-        for (const currentRemainderStr of Object.keys(currentDPState)) {
-            const currentRemainder = Number(currentRemainderStr); // Convert key string back to number.
-            const currentCount = currentDPState[currentRemainderStr]; // Get the count for this remainder.
+        // Iterate over all current remainder states and their counts.
+        for (const keyStr in currentStates) {
+            const currentStateKey = Number(keyStr); // Convert string key to number.
+            const currentCount = currentStates[currentStateKey];
 
-            // Case 1: We 'skip' the current item (divisor) `sortedDivisors[itemIndex]`.
-            // If we skip this item, the `currentRemainder` remains unchanged.
-            // The count for this state is multiplied by the number of `remainingItemsCount`
-            // that could potentially be skipped or chosen in subsequent steps.
-            const skipContribution = calculateProductModulo(currentCount, remainingItemsCount);
-            // Add this contribution to the `nextDPState` for `currentRemainder`.
-            // Use `|| 0` to handle cases where `nextDPState[currentRemainder]` might not exist yet.
-            nextDPState[currentRemainder] = addWithModulo(nextDPState[currentRemainder] || 0, skipContribution);
+            // Case 1: The current divisor (`currentDivisor`) is NOT applied to `currentStateKey`.
+            // If the divisor is not applied, `currentStateKey` remains unchanged.
+            // The `currentCount` contributes to `nextStates[currentStateKey]`
+            // multiplied by `remainingItemsCount`. This factor accounts for the ways
+            // to choose *not* to apply this specific divisor.
+            // If `remainingItemsCount` is 0 (last item), this contribution will be 0,
+            // which matches the original behavior `dp[j] * 0`.
+            const existingCountForJ = getOrInitializeState(nextStates, currentStateKey);
+            nextStates[currentStateKey] = addMod(existingCountForJ, calculateModularProduct(currentCount, remainingItemsCount));
 
-            // Case 2: We 'use' the current item (divisor) `sortedDivisors[itemIndex]`.
-            // If we use this item, the `currentRemainder` is updated by taking its modulo
-            // with the `currentDivisor`.
-            const currentDivisor = sortedDivisors[itemIndex];
-            // Guard against division by zero if a divisor is 0, though problem constraints usually prevent this.
-            // If divisor is 0, remainder should conceptually be the number itself (or undefined behavior).
-            // For safety, if divisor is 0, newRemainder remains currentRemainder.
-            const newRemainder = (currentDivisor === 0) ? currentRemainder : (currentRemainder % currentDivisor);
-
-            // The count for this `newRemainder` state is simply the `currentCount` from the previous state.
-            nextDPState[newRemainder] = addWithModulo(nextDPState[newRemainder] || 0, currentCount);
+            // Case 2: The current divisor (`currentDivisor`) IS applied to `currentStateKey`.
+            // If the divisor is applied, `currentStateKey` becomes `currentStateKey % currentDivisor`.
+            // The `currentCount` contributes directly to `nextStates[remainder]`.
+            const remainder = currentStateKey % currentDivisor;
+            const existingCountForM = getOrInitializeState(nextStates, remainder);
+            nextStates[remainder] = addMod(existingCountForM, currentCount);
         }
-        // After processing all remainders for the current item, update the DP state for the next iteration.
-        currentDPState = nextDPState;
+        // After processing all states for the current divisor, update `currentStates` for the next iteration.
+        currentStates = nextStates;
     }
 
-    // Calculate the final answer by summing `(remainder * count)` for all final states in `currentDPState`.
-    let finalAnswer = 0;
-    for (const remainderStr of Object.keys(currentDPState)) {
-        const remainder = Number(remainderStr);
-        const count = currentDPState[remainderStr];
-        // Multiply the remainder by its count and add to the total, ensuring modulo is applied at each step.
-        finalAnswer = addWithModulo(finalAnswer, calculateProductModulo(remainder, count));
+    // Calculate the final answer by summing (remainder * count) for all final states.
+    let finalResult = 0;
+    for (const keyStr in currentStates) {
+        const stateKey = Number(keyStr);
+        const stateCount = currentStates[stateKey];
+        finalResult = addMod(finalResult, calculateModularProduct(stateKey, stateCount));
     }
-
-    // Return the final answer, ensuring it's within the modulus range (0 to MODULUS_VALUE - 1).
-    return finalAnswer % MODULUS_VALUE;
+    return finalResult;
 }
 
-// Execute the main problem-solving function and print its result to the standard output.
+// Output the result of the problem.
 console.log(solveProblem());

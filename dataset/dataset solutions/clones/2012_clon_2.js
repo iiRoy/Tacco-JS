@@ -1,48 +1,34 @@
-/* This module handles the generation of specific numerical sequences. */
-function processSequence( dataSource )
-{
-  // Parse the input string into an integer to determine the number of operations.
-  const iterationCount = parseInt(   dataSource   ) ;
+function processInput(rawData) {
+  // Parse the input string into an integer, representing the number of iterations.
+  const iterationCount = parseInt(rawData);
 
-  // Initialize a buffer with single-digit integers from 1 to 9.
-  let numberStream = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ] ;
+  // Initialize a list (acting as a queue) with single-digit numbers from 1 to 9.
+  let processingList = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-  // Declare a variable to hold the currently processed value, initialized to null or undefined.
-  // It will be assigned within the loop.
-  let currentValue ;
+  // Loop 'iterationCount' times to generate new numbers based on the current one.
+  for (let loopIndex = 0; loopIndex < iterationCount; loopIndex++) {
+    // Retrieve the first element from the front of the queue.
+    let currentValue = processingList.shift();
 
-  // Iterate for the specified number of times.
-  for ( let loopIndex = 0 ; loopIndex < iterationCount ; loopIndex++ )
-  {
-    // Extract the first element from the front of the stream.
-    currentValue = numberStream.shift( ) ;
-
-    // Check if the last digit of the current value is not zero.
-    if ( currentValue % 10 !== 0 )
-    {
-      // If not zero, push a new number: 10 * current + (last_digit - 1).
-      numberStream.push( ( 10 * currentValue ) + ( currentValue % 10 ) - 1 ) ;
+    // Check if the last digit of 'currentValue' is not zero.
+    // If it's not zero, add a new number formed by appending (last_digit - 1) to 'currentValue'.
+    if (currentValue % 10 !== 0) {
+      processingList.push(10 * currentValue + currentValue % 10 - 1);
     }
 
-    // Always push a new number: 10 * current + last_digit.
-    numberStream.push( ( 10 * currentValue ) + ( currentValue % 10 ) ) ;
+    // Always add a new number formed by appending the last digit of 'currentValue' to itself.
+    processingList.push(10 * currentValue + currentValue % 10);
 
-    // Check if the last digit of the current value is not nine.
-    if ( currentValue % 10 !== 9 )
-    {
-      // If not nine, push a new number: 10 * current + (last_digit + 1).
-      numberStream.push( ( 10 * currentValue ) + ( currentValue % 10 ) + 1 ) ;
+    // Check if the last digit of 'currentValue' is not nine.
+    // If it's not nine, add a new number formed by appending (last_digit + 1) to 'currentValue'.
+    if (currentValue % 10 !== 9) {
+      processingList.push(10 * currentValue + currentValue % 10 + 1);
     }
   }
-  // After all iterations, output the last processed value to the console.
-  console.log( currentValue ) ;
+
+  // After the loop completes, the last 'currentValue' processed is the one we need to output.
+  console.log(currentValue);
 }
 
-// Invoke the main sequence processing function.
-// It reads input from standard input using Node.js file system utilities.
-processSequence
-(
-  require( 'fs' )
-    .readFileSync( '/dev/stdin', 'utf8' )
-)
-;
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

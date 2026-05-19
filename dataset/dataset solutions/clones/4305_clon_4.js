@@ -1,15 +1,29 @@
 "use strict";
 
-const processInputData = incomingData => {
-    const sourceInformation = incomingData.trim();
-    const payloadUnits = sourceInformation.split("\n");
-    const keyStatement = payloadUnits[0];
+const processInput = (rawContent) => {
+    const contentSegments = rawContent.trim().split("\n");
+    const sourceString = contentSegments[0];
+    const stringExtent = sourceString.length;
+
+    const transformationRules = [
+        {
+            criterion: (len) => len >= 8,
+            operation: (str, len) => str.slice(0, len - 8)
+        },
+        {
+            criterion: (len) => len >= 4, // Handles lengths 4, 5, 6, 7
+            operation: (str, len) => str.slice(0, (2 * len) - 8)
+        },
+        {
+            criterion: (len) => true, // Default for lengths 0, 1, 2, 3
+            operation: (str, len) => ""
+        }
+    ];
+
+    const applicableRule = transformationRules.find((rule) => rule.criterion(stringExtent));
+    const finalResult = applicableRule.operation(sourceString, stringExtent);
     
-    const truncationPoint = keyStatement.length - 8;
-    
-    const resultantFragment = keyStatement.slice(0, truncationPoint);
-    
-    console.log(resultantFragment);
+    console.log(finalResult);
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

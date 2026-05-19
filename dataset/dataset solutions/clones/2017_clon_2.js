@@ -1,53 +1,62 @@
-let processGraphData = function( rawInputText )
-{
-  // Helper function to ascertain the effective path length between two given nodes.
-  // It considers two types of paths: direct and indirect (via special points).
-  function determineConnectionLength( nodeOneID, nodeTwoID )
-  {
-    // Calculate the direct connection length between the two nodes.
-    let pathDirect = nodeTwoID - nodeOneID;
-    
-    // Calculate the connection length if routing via the two special points.
-    // This involves absolute distances from nodes to special points plus an offset.
-    let pathViaSpecial = Math.abs( specialPointX - nodeOneID ) + Math.abs( specialPointY - nodeTwoID ) + 1;
-    
-    // The actual connection length is the minimum of the direct and indirect paths.
-    return Math.min(pathDirect, pathViaSpecial);
+/**
+ * Processes raw input data to compute and display path counts
+ * based on a specific distance calculation logic.
+ *
+ * @param {string} incomingData - The complete input string, typically read from standard input.
+ */
+function solveProblem(incomingData) {
+  /**
+   * Computes the effective distance between two points, considering a direct path
+   * and an alternative path that routes through two special points.
+   *
+   * @param {number} firstPoint - The starting point.
+   * @param {number} secondPoint - The ending point.
+   * @returns {number} The minimum of the direct and alternative path distances.
+   */
+  function calculateDistance(firstPoint, secondPoint) {
+    // Calculate the direct distance between the two points.
+    const directPathLength = secondPoint - firstPoint;
+
+    // Calculate the distance via the special points (specialNodeX, specialNodeY).
+    // This involves moving from firstPoint to specialNodeX, then from specialNodeY to secondPoint,
+    // plus an additional unit for the connection between specialNodeX and specialNodeY.
+    const alternativePathLength = Math.abs(specialNodeX - firstPoint) + Math.abs(specialNodeY - secondPoint) + 1;
+
+    // Return the shorter of the two calculated path lengths.
+    return Math.min(directPathLength, alternativePathLength);
   }
 
-  // Parse the incoming raw text string into its individual components using space as a delimiter.
-  const inputComponents = rawInputText.split(' ');
-  // The first component represents the total number of nodes in the network.
-  let graphSize = inputComponents[0];
-  // The second component is the identifier for the first unique reference point.
-  let specialPointX = inputComponents[1];
-  // The third component is the identifier for the second unique reference point.
-  let specialPointY = inputComponents[2];
-  
-  // Begin an iterative process to evaluate connections for various path length thresholds.
-  // The threshold ranges from 1 up to (but not including) the total number of nodes.
-  for ( let currentLengthThreshold = 1; currentLengthThreshold < graphSize; currentLengthThreshold++ )
-  {
-    // Initialize a counter to tally pairs that satisfy the current path length criteria.
-    let matchCount = 0;
-    
-    // Outer nested loop: iterates through each potential starting node (vertexA).
-    for ( let vertexA = 1; vertexA < graphSize; vertexA++ )
-      // Inner nested loop: iterates through each potential ending node (vertexB).
-      // vertexB must always be greater than vertexA to ensure unique pairs.
-      for ( let vertexB = vertexA + 1; vertexB <= graphSize; vertexB++ )
-        // Check if the calculated connection length for the current pair (vertexA, vertexB)
-        // precisely matches the current path length threshold being examined.
-        if ( determineConnectionLength( vertexA, vertexB ) == currentLengthThreshold )
-          // If a match is found, increment the counter for this specific length.
-          matchCount++;
-    
-    // After checking all possible pairs for the current threshold, print the total count.
-    console.log(matchCount);
-  }
-};
+  // Split the input string by spaces to get individual numerical components.
+  const parsedValues = incomingData.split(' ');
 
-// This is the entry point for the script execution.
-// It reads all data from standard input (e.g., from a pipe or file redirection)
-// and then invokes the main processing function with the received data.
-processGraphData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+  // Extract the total number of nodes (N), and the coordinates of the special points (X, Y).
+  // These values are initially strings and will be implicitly coerced to numbers during arithmetic operations.
+  const totalNodes = parsedValues[0];
+  const specialNodeX = parsedValues[1];
+  const specialNodeY = parsedValues[2];
+
+  // Iterate through each possible path length, from 1 up to (totalNodes - 1).
+  for (let currentPathLength = 1; currentPathLength < totalNodes; currentPathLength++) {
+    let frequencyCount = 0; // Initialize a counter for pairs having the current path length.
+
+    // Iterate through all possible starting points (firstPoint) from 1 to (totalNodes - 1).
+    for (let firstPoint = 1; firstPoint < totalNodes; firstPoint++) {
+      // For each starting point, iterate through all possible ending points (secondPoint)
+      // that are greater than the starting point, up to totalNodes.
+      for (let secondPoint = firstPoint + 1; secondPoint <= totalNodes; secondPoint++) {
+        // If the distance between the current pair of points matches the current path length,
+        // increment the frequency counter.
+        if (calculateDistance(firstPoint, secondPoint) === currentPathLength) {
+          frequencyCount++;
+        }
+      }
+    }
+
+    // Output the total count of pairs found for the current path length.
+    console.log(frequencyCount);
+  }
+}
+
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the problem-solving function.
+solveProblem(require('fs').readFileSync('/dev/stdin', 'utf8'));

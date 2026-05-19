@@ -1,40 +1,16 @@
-/*
- * This module is designed to consume a string of numeric values,
- * perform a summation, and then output a specific status based on the total.
- */
-'use strict'; // Activate strict parsing and error handling for this script.
+'use strict';
 
-/**
- * Executes the core business logic: parsing, calculating, and determining the outcome.
- * @param {string} incomingText - The initial text data, expected to contain space-separated digits.
- */
-function processInput(incomingText) {
-  // Step 1: Clean the input string and transform it into an array of integers.
-  // - .trim() removes leading/trailing whitespace.
-  // - .split(' ') breaks the string into parts at each space.
-  // - .map() iterates through each part and converts it to a base-10 integer.
-  let numericSequence = incomingText
-    .trim()
-    .split(' ')
-    .map(valueString => parseInt(valueString, 10)); // Ensure integer conversion
+function processData(rawData) {
+  // Remove leading/trailing whitespace, then split the string by spaces.
+  // After splitting, convert each resulting string segment into a numerical value.
+  let parsedNumbers = rawData.trim().split(' ').map(numStr => Number(numStr));
 
-  // Step 2: Sum the first three elements of the resultant numeric array.
-  // Then, compare this sum against a fixed threshold (21).
-  // A ternary operator is used to select the appropriate status string.
-  const finalStatus = (numericSequence[0] + numericSequence[1] + numericSequence[2] > 21)
-                      ? 'exceeded' // If the sum is greater than the threshold.
-                      : 'withinBounds'; // If the sum is less than or equal to the threshold.
-
-  // Step 3: Print the determined status to the standard output.
-  console.log(finalStatus);
+  // Evaluate the sum of the first three numerical elements.
+  // If this sum exceeds twenty-one, output 'bust'; otherwise, output 'win'.
+  console.log(parsedNumbers[0] + parsedNumbers[1] + parsedNumbers[2] > 21 ? 'bust' : 'win');
 }
 
-
-// Initiate the program flow:
-// 1. Utilize Node.js's built-in 'fs' (file system) module.
-// 2. Read content synchronously from the standard input path ('/dev/stdin').
-// 3. Specify 'utf8' encoding for the read data.
-// 4. Pass the acquired text content to our primary processing function.
-processInput(require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' }));
-
-// End of script execution.
+// Utilize Node.js's file system module to synchronously read content from standard input.
+// The input stream is expected to be encoded in UTF-8.
+// The retrieved content is then passed to our primary data processing function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

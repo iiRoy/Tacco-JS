@@ -1,43 +1,45 @@
-function invertDigit ( bitState ) {
-  // This utility function toggles a binary digit: 0 becomes 1, and 1 becomes 0.
-  return bitState  ===  0  ?  1  :  0 ;
+// This utility function flips a binary digit (0 to 1, 1 to 0).
+function flipBinary(inputBit) {
+  return inputBit === 0 ? 1 : 0; // If the input is zero, return one; otherwise, return zero.
 }
 
-function PrimaryHandler(sourceText) {
+/**
+ * Main processing function for the given raw input string.
+ * It parses dimensions and split points, then generates a binary matrix.
+ * @param {string} rawData - The input string containing grid dimensions and split coordinates.
+ */
+function ProcessInput(rawData) {
+  // Parse the first line of the input to extract numerical parameters.
+  // The input is expected to be a single line of space-separated integers.
+  const parsedValues = rawData.split("\n")[0].split(" ").map((currentVal) => (parseInt(currentVal)));
 
-  // The input string is processed to extract four numerical parameters.
-  // It first splits by newline, takes the first line, then splits by space,
-  // and finally converts each segment into an integer using base 10.
-  const initialDimensions = sourceText .split( "\n" ) [0] .split( " " ) .map( ( numericVal ) => ( parseInt( numericVal, 10 ) ) );
+  // Output the initially parsed numerical values to the console.
+  console.log(parsedValues);
 
-  // Display the parsed numeric values for verification or debugging purposes.
-  console .log(initialDimensions);
+  // Extract the grid dimensions and split points from the parsed array.
+  const heightDim = parsedValues[0]; // Represents the total number of rows in the grid.
+  const widthDim = parsedValues[1];  // Represents the total number of columns in the grid.
+  const colSplit = parsedValues[2];  // Represents the column index where the pattern changes.
+  const rowSplit = parsedValues[3];  // Represents the row index where the pattern changes.
 
-  // Assign the extracted numbers to more descriptive constants.
-  const numRows      = initialDimensions[0];
-  const numCols      = initialDimensions[1];
-  const colLimit     = initialDimensions[2];
-  const rowLimit     = initialDimensions[3];
-
-  // Construct a two-dimensional grid (matrix) based on the calculated dimensions and limits.
-  const outputGrid = Array .from( { length: numRows }, ( _ , rowIndex ) => {
-    // Determine the primary state for the current row: 0 if the row index is below the row threshold, otherwise 1.
-    const rowState = rowIndex < rowLimit ? 0 : 1;
-
-    // For each row, generate its column elements.
-    return Array .from( { length: numCols }, ( _ , colIndex ) => {
-      // If the column index is below the column threshold, the cell value is the row's primary state.
-      // Otherwise, the cell value is the inverted primary state of the row.
-      return colIndex < colLimit ? rowState : invertDigit(rowState);
+  // Generate the 2D binary matrix based on the extracted dimensions and split points.
+  // The outer map iterates through rows, and the inner map iterates through columns.
+  const resultMatrix = [...Array(heightDim).keys()] // Create an array of row indices (0 to heightDim-1).
+    .map((rowIndex) => rowIndex < rowSplit ? 0 : 1) // Determine the base value for each row: 0 if before rowSplit, 1 otherwise.
+    .map((rowInitialValue) => {
+      // For each row's base value, generate its columns.
+      return [...Array(widthDim).keys()].map((colIndex) =>
+        // Apply column split logic: if before colSplit, use rowInitialValue; otherwise, flip it.
+        colIndex < colSplit ? rowInitialValue : flipBinary(rowInitialValue)
+      );
     });
-  });
 
-  // Format the resulting grid into a single string for output.
-  // Each inner array (row) is joined into a string without separators.
-  // These row strings are then joined by newline characters, with an additional newline at the end.
-  console .log( outputGrid .map( ( rowArray ) => rowArray .join( "" ) ) .join( "\n" ) + "\n" );
-
+  // Format the resulting matrix into a string for console output.
+  // Each row's elements are joined without separators, and rows are joined by newline characters.
+  // An additional newline is appended at the very end.
+  console.log(resultMatrix.map((rowArray) => rowArray.join("")).join("\n") + "\n");
 }
 
-// Execute the primary logic by reading data from standard input.
-PrimaryHandler ( require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf8" ) );
+// Read input from standard input (typically /dev/stdin in competitive programming environments)
+// and pass the content as a UTF-8 string to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

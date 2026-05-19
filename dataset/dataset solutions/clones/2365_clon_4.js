@@ -1,47 +1,36 @@
-const ingestData = () => {
-    return Number(process.stdin.readFileSync(0, 'utf8').trim());
-};
+function acquireInput(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
 
-const broadcastResult = (value) => {
-    process.stdout.write(String(value) + '\n');
-};
+function emitResult(content){console.log(content);}
 
-const processMonetaryValue = (givenValue) => {
-    const taxRateAsFractionNumerator = 108;
-    const taxRateAsFractionDenominator = 100;
-    const effectiveTaxRate = taxRateAsFractionNumerator / taxRateAsFractionDenominator;
+function transformInput(dataString, conversionType) {
+    const conversionHandlers = {
+        0: (s) => s,
+        1: (s) => Number.parseInt(s, 10),
+        2: (s) => s.split(" "),
+        3: (s) => s.split("\n"),
+        4: (s) => s.split(" ").map(Number),
+        5: (s) => s.split("\n").map(Number),
+        6: (s) => s.split(""),
+        7: (s) => s.split("").map(Number)
+    };
+    return conversionHandlers[conversionType](dataString);
+}
 
-    const estimatedBase = givenValue / effectiveTaxRate;
-    
-    const searchLowerBound = Math.max(0, Math.floor(estimatedBase) - 2);
-    const searchUpperBound = Math.ceil(estimatedBase) + 2;
+function processValue(initialInput) {
+    const numericRepresentation = transformInput(initialInput, 1);
+    const preciseBaseCalculation = numericRepresentation / 1.08;
 
-    let finalDeterminedValue = null;
+    const floorVerificationResult = Math.floor(preciseBaseCalculation * 1.08);
+    const ceilVerificationResult = Math.ceil(preciseBaseCalculation * 1.08);
 
-    const recomputedTaxedValue = givenValue / effectiveTaxRate * effectiveTaxRate;
-    const decisionMetricA = (Math.floor(recomputedTaxedValue) === givenValue);
-    const decisionMetricB = (Math.ceil(recomputedTaxedValue) === givenValue);
+    const evaluationPath = [
+        { conditionMet: floorVerificationResult === numericRepresentation, outputValue: Math.ceil(preciseBaseCalculation) },
+        { conditionMet: ceilVerificationResult === numericRepresentation, outputValue: Math.floor(preciseBaseCalculation) },
+        { conditionMet: true, outputValue: ":(" }
+    ];
 
-    for (let currentCandidate = searchLowerBound; currentCandidate <= searchUpperBound; currentCandidate++) {
-        const grossAmount = currentCandidate * effectiveTaxRate;
-        const roundedDownGross = Math.floor(grossAmount);
-        const roundedUpGross = Math.ceil(grossAmount);
+    const finalDecision = evaluationPath.find(path => path.conditionMet).outputValue;
+    emitResult(finalDecision);
+}
 
-        if (roundedDownGross === givenValue || roundedUpGross === givenValue) {
-            if (decisionMetricA && (currentCandidate === Math.ceil(estimatedBase))) {
-                finalDeterminedValue = currentCandidate;
-                break;
-            }
-            if (decisionMetricB && (currentCandidate === Math.floor(estimatedBase))) {
-                finalDeterminedValue = currentCandidate;
-                break;
-            }
-        }
-    }
-    
-    return finalDeterminedValue !== null ? finalDeterminedValue : ":(";
-};
-
-const rawInputData = ingestData();
-const outcome = processMonetaryValue(rawInputData);
-broadcastResult(outcome);
+processValue(acquireInput());

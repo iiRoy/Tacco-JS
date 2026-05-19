@@ -1,39 +1,19 @@
-const obtainOutcome = (entryData) => {
-    const trimmedEntry = entryData.replace(/^\s+|\s+$/g, '');
+(() => {
+  const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    const newlinePosition = trimmedEntry.indexOf('\n');
-    const initialSegment = (newlinePosition === -1) ? trimmedEntry : trimmedEntry.substring(0, newlinePosition);
+  const processedContent = rawInputContent.trim();
+  const lineSegments = processedContent.split('\n');
+  const targetLine = lineSegments[0];
 
-    let parsedValues = [];
-    let currentSegment = initialSegment;
-    let separatorLoc;
+  const spaceDelimiterPosition = targetLine.indexOf(' ');
 
-    while (parsedValues.length < 2 && (separatorLoc = currentSegment.indexOf(' ')) !== -1) {
-        const numberStr = currentSegment.substring(0, separatorLoc).trim();
-        parsedValues.push(Number(numberStr));
-        currentSegment = currentSegment.substring(separatorLoc + 1);
-    }
-    
-    if (parsedValues.length < 2) {
-        const finalNumStr = currentSegment.trim();
-        if (finalNumStr !== '' || parsedValues.length === 0) {
-             parsedValues.push(Number(finalNumStr));
-        }
-    }
+  const firstNumericString = targetLine.substring(0, spaceDelimiterPosition);
+  const secondNumericString = targetLine.substring(spaceDelimiterPosition + 1);
 
-    const firstQuantity = parsedValues[0];
-    const secondQuantity = parsedValues[1];
+  const firstOperand = parseInt(firstNumericString, 10);
+  const secondOperand = parseInt(secondNumericString, 10);
 
-    const performSubtraction = (val1, val2) => val1 - val2;
-    const performIncrement = (val) => val + 1;
+  const finalCalculationResult = (firstOperand + 1) - secondOperand;
 
-    return performIncrement(performSubtraction(firstQuantity, secondQuantity));
-};
-
-const mainExecutor = () => {
-    const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const finalResult = obtainOutcome(inputContent);
-    console.log(finalResult);
-};
-
-mainExecutor();
+  console.log(finalCalculationResult);
+})();

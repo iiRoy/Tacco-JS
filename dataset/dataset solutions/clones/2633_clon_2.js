@@ -1,76 +1,63 @@
-const stringToIntegerConverter = ( inputString ) => Number . parseInt ( inputString, 10 ) ;
+var parseInteger = val => parseInt(val, 10);
 
+var parseIntegerArray = inputArray => inputArray.map(val => parseInteger(val));
 
-const stringArrayToIntegerArray = ( stringCollection ) => stringCollection . map ( ( currentStringElement ) => stringToIntegerConverter( currentStringElement ) ) ;
+var absoluteValue = val => (val > 0 ? val : -val);
 
-
-const calculateAbsoluteValue = ( numericInput ) => ( numericInput > 0 ) ? numericInput : - numericInput ;
-
-
-function determineMinimum ( ) {
-    let inputValues = arguments;
-    let minimumFound = inputValues [ 0 ];
-    for ( let loopIndexForMin = 1 ; loopIndexForMin < inputValues . length ; loopIndexForMin ++ )
-    {
-        if ( inputValues [ loopIndexForMin ] < minimumFound )
-        {
-            minimumFound = inputValues [ loopIndexForMin ];
+function findMinimum() {
+    var argumentList = arguments,
+        currentValue = argumentList[0];
+    for (var idx = 1; idx < argumentList.length; idx++) {
+        if (argumentList[idx] < currentValue) {
+            currentValue = argumentList[idx];
         }
     }
-    return minimumFound ;
+    return currentValue;
 }
 
-
-function determineMaximum ( ) {
-    let valueCollection = arguments ;
-    let maximumFound = valueCollection [ 0 ] ;
-    for ( let loopIndexForMax = 1 ; loopIndexForMax < valueCollection . length ; loopIndexForMax ++ )
-    {
-        if ( valueCollection [ loopIndexForMax ] > maximumFound )
-        {
-            maximumFound = valueCollection [ loopIndexForMax ] ;
+function findMaximum() {
+    var argumentList = arguments,
+        currentValue = argumentList[0];
+    for (var idx = 1; idx < argumentList.length; idx++) {
+        if (argumentList[idx] > currentValue) {
+            currentValue = argumentList[idx];
         }
     }
-    return maximumFound ;
+    return currentValue;
 }
 
-
-function computeGreatestCommonDivisor ( ) {
-    let numberArguments = arguments;
-    let currentGcdResult = numberArguments [ 0 ];
-    const recursiveGcdFunction = ( firstOperand , secondOperand ) => secondOperand ? recursiveGcdFunction ( secondOperand , firstOperand % secondOperand ) : firstOperand ;
-    for ( let iterativeIndex = 1 ; iterativeIndex < numberArguments . length ; iterativeIndex ++ )
-    {
-        currentGcdResult = recursiveGcdFunction ( currentGcdResult , numberArguments [ iterativeIndex ] ) ;
+function greatestCommonDivisor() {
+    var argumentList = arguments,
+        currentValue = argumentList[0],
+        recursiveGcd = (numA, numB) => (numB ? recursiveGcd(numB, numA % numB) : numA);
+    for (var idx = 1; idx < argumentList.length; idx++) {
+        currentValue = recursiveGcd(currentValue, argumentList[idx]);
     }
-    return currentGcdResult ;
+    return currentValue;
 }
 
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Initiates the primary program execution
-performMainExecution ( require("fs") . readFileSync ( "/dev/stdin", "utf8" ) ) ;
+function ProcessInput(inputData) {
+    // The local 'inputData' variable shadows the parameter 'inputData'.
+    var inputData = inputData.split('\n').map((elementString, indexPosition, originalArray) => parseIntegerArray(elementString.split(' ')));
 
+    var countItems = inputData[0][0];
+    var valueSet = inputData[1].sort(); // JavaScript's default sort is lexicographical for numbers if no comparator is provided.
+    var powerValues = [1]; // This variable is declared but not used in the algorithm.
 
-function performMainExecution ( rawProgramInput ) {
-    let parsedInputData = rawProgramInput . split ( '\n' ) . map ( ( lineSegment , elementIndex , fullLineArray ) => stringArrayToIntegerArray ( lineSegment . split ( ' ' ) ) ) ;
+    // The original code contained a commented-out debug line here:
+    // console.log(countItems, valueSet);
 
-    let firstParameter = parsedInputData [ 0 ] [ 0 ] ;
+    let finalResult = valueSet.shift() + valueSet.shift();
+    finalResult /= 2;
 
-    let numericSequence = parsedInputData [ 1 ] . sort ( ( a , b ) => a - b ) ;
-
-    let powerSeries = [ 1 ] ;
-
-    let finalCalculatedValue = numericSequence . shift ( ) + numericSequence . shift ( ) ;
-    finalCalculatedValue /= 2 ;
-
-    while ( numericSequence . length )
-    {
-        numericSequence . push ( finalCalculatedValue ) ;
-        numericSequence . sort ( ( valA , valB ) => valA - valB ) ;
-        finalCalculatedValue = numericSequence . shift ( ) + numericSequence . shift ( ) ;
-        finalCalculatedValue /= 2 ;
+    while (valueSet.length > 0) {
+        valueSet.push(finalResult);
+        valueSet.sort(); // Re-sort after adding the new element.
+        finalResult = valueSet.shift() + valueSet.shift();
+        finalResult /= 2;
     }
-
-    console . log ( finalCalculatedValue ) ;
-    return 0 ;
+    console.log(finalResult);
+    return 0;
 }

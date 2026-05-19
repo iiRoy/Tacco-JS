@@ -1,33 +1,36 @@
-let operationTally = 0;
+(function(sourceData) {
+    const dataLines = sourceData.trim().split('\n');
+    const elementCount = Number(dataLines[0]);
+    const sequenceString = dataLines[1];
+    const numericalSequence = sequenceString.split(' ', elementCount).map(Number);
 
-function executeSingleSweep(sequenceData, finalIndex) {
-    let alterationDetected = false;
-    for (let currentPosition = finalIndex; currentPosition >= 1; currentPosition--) {
-        if (sequenceData[currentPosition] < sequenceData[currentPosition - 1]) {
-            let temporaryValue = sequenceData[currentPosition];
-            sequenceData[currentPosition] = sequenceData[currentPosition - 1];
-            sequenceData[currentPosition - 1] = temporaryValue;
-            alterationDetected = true;
-            operationTally++;
-        }
-    }
-    return alterationDetected;
-}
-
-function processOrdering(dataCollection) {
-    const hasModifications = executeSingleSweep(dataCollection, dataCollection.length - 1);
-    if (hasModifications) {
-        processOrdering(dataCollection);
-    }
-}
-
-((sourceContent) => {
-    const parsedLines = sourceContent.split('\n');
-    const elementCount = parseInt(parsedLines[0], 10);
-    const numberArray = parsedLines[1].split(' ', elementCount).map(val => parseInt(val, 10));
-
-    processOrdering(numberArray);
-
-    console.log(numberArray.join(' '));
-    console.log(operationTally);
+    arrangeElements(numericalSequence);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+function swapAdjacent(collection, currentPosition, accumulatedSwaps) {
+    if (currentPosition < 1) {
+        return accumulatedSwaps;
+    }
+    if (collection[currentPosition] < collection[currentPosition - 1]) {
+        [collection[currentPosition], collection[currentPosition - 1]] = [collection[currentPosition - 1], collection[currentPosition]];
+        accumulatedSwaps++;
+    }
+    return swapAdjacent(collection, currentPosition - 1, accumulatedSwaps);
+}
+
+function arrangeElements(targetArray) {
+    let totalExchanges = 0;
+    let hasChangesOccurred;
+
+    do {
+        hasChangesOccurred = false;
+        const exchangesInCycle = swapAdjacent(targetArray, targetArray.length - 1, 0);
+        if (exchangesInCycle > 0) {
+            totalExchanges += exchangesInCycle;
+            hasChangesOccurred = true;
+        }
+    } while (hasChangesOccurred);
+
+    console.log(targetArray.join(' '));
+    console.log(totalExchanges);
+}

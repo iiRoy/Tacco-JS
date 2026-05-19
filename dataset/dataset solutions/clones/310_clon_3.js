@@ -1,106 +1,114 @@
-let rawDataBuffer = '';
-let dataPointer = 0;
+function processMatrixData() {
+    var matrixDim = getNextInputToken();
+    var dataMatrix = initializeMatrix(matrixDim);
 
-function acquireNumericInput() {
-    if (dataPointer >= rawDataBuffer.length) {
-        // Log an error or handle gracefully if input is exhausted
-        console.error("Input buffer exhausted. Attempted to read beyond available data.");
-        // Return a sentinel value or throw an error
-        return NaN;
-    }
-    const value = +rawDataBuffer[dataPointer]; // Convert to number
-    dataPointer++;
-    return value;
+    computeRowPrefixSums(dataMatrix, matrixDim);
+
+    var overallMaxSum = findMaxSubmatrixSum(dataMatrix, matrixDim);
+
+    displayOutput(overallMaxSum);
 }
 
-function displayResult(valueToOutput) {
-    console.log(valueToOutput);
+function initializeMatrix(dim) {
+    var matrix = [];
+    iterateWithIndex(dim, function(rowIndex) {
+        matrix[rowIndex] = [];
+        iterateWithIndex(dim, function(colIndex) {
+            matrix[rowIndex][colIndex] = getNextInputToken();
+        });
+    });
+    return matrix;
 }
 
-function computeMaximumSubmatrixSum() {
-    const matrixDimension = acquireNumericInput();
-
-    // Added a guard clause for invalid matrix dimensions
-    if (isNaN(matrixDimension) || matrixDimension <= 0) {
-        // A 0x0 or negative dimension matrix has a max sum of 0
-        displayResult(0);
-        return;
-    }
-
-    // Initialize the input data grid
-    let inputDataGrid = Array.from({ length: matrixDimension }, () => Array(matrixDimension).fill(0));
-
-    // Populate the input grid with values
-    for (let rIdx = 0; rIdx < matrixDimension; ++rIdx) {
-        for (let cIdx = 0; cIdx < matrixDimension; ++cIdx) {
-            inputDataGrid[rIdx][cIdx] = acquireNumericInput();
-        }
-    }
-
-    // Initialize the overall maximum sum found
-    let overallMaxSubmatrixSum = -Number.MAX_VALUE; // Using -Number.MAX_VALUE for robust initialization
-
-    // Create a separate grid to store row-wise prefix sums
-    let rowPrefixSumsGrid = Array.from({ length: matrixDimension }, () => Array(matrixDimension).fill(0));
-
-    // Calculate row-wise prefix sums for efficient column sum calculation
-    for (let r = 0; r < matrixDimension; ++r) {
-        rowPrefixSumsGrid[r][0] = inputDataGrid[r][0];
-        for (let c = 1; c < matrixDimension; ++c) {
-            rowPrefixSumsGrid[r][c] = rowPrefixSumsGrid[r][c - 1] + inputDataGrid[r][c];
-        }
-    }
-
-    // Iterate through all possible column ranges (left to right boundaries)
-    for (let startColumn = 0; startColumn < matrixDimension; ++startColumn) {
-        for (let endColumn = startColumn; endColumn < matrixDimension; ++endColumn) {
-            // This array will hold the sum of elements for the current column slice for each row
-            let columnSliceSums = new Array(matrixDimension).fill(0);
-
-            // Populate `columnSliceSums` using the precomputed row prefix sums
-            for (let rowIterator = 0; rowIterator < matrixDimension; ++rowIterator) {
-                const sumUpToEndColumn = rowPrefixSumsGrid[rowIterator][endColumn];
-                const sumBeforeStartColumn = (startColumn > 0) ? rowPrefixSumsGrid[rowIterator][startColumn - 1] : 0;
-                columnSliceSums[rowIterator] = sumUpToEndColumn - sumBeforeStartColumn;
-            }
-
-            // Apply Kadane's algorithm to the `columnSliceSums` array (1D array)
-            // This finds the maximum contiguous subarray sum within the current column slice
-            let maxCurrentEndingHere = columnSliceSums[0]; // Maximum sum of a subarray ending at the current position
-            let maxOverallInSlice = columnSliceSums[0];   // Overall maximum sum found in this 1D slice
-
-            // New fragment: Add a check for empty slice, though `matrixDimension > 0` should prevent this.
-            if (columnSliceSums.length === 0) {
-                // If it's possible to have an empty slice, handle here (e.g., continue or specific value)
-                continue; // Skip this column slice if it's somehow empty
-            }
-
-            for (let k = 1; k < matrixDimension; ++k) {
-                const currentElement = columnSliceSums[k];
-                // Update `maxCurrentEndingHere`: either start a new subarray or extend the previous one
-                maxCurrentEndingHere = Math.max(currentElement, maxCurrentEndingHere + currentElement);
-                // Update `maxOverallInSlice`: track the largest sum found so far in this 1D array
-                maxOverallInSlice = Math.max(maxOverallInSlice, maxCurrentEndingHere);
-            }
-
-            // Update the global maximum submatrix sum
-            overallMaxSubmatrixSum = Math.max(overallMaxSubmatrixSum, maxOverallInSlice);
-        }
-    }
-    displayResult(overallMaxSubmatrixSum);
+function computeRowPrefixSums(matrix, dim) {
+    iterateWithIndex(dim, function(rowIndex) {
+        matrix[rowIndex][-1] = 0;
+        iterateWithIndex(dim, function(colIndex) {
+            matrix[rowIndex][colIndex] += matrix[rowIndex][colIndex - 1];
+        });
+    });
 }
 
-// Standard Node.js input handling setup
+function findMaxSubmatrixSum(matrix, dim) {
+    var currentOverallMaxSum = -Infinity;
+
+    iterateWithIndex(-1, dim - 1, function(leftColIdx) {
+        iterateWithIndex(leftColIdx + 1, dim, function(rightColIdx) {
+            var columnSliceSums = [];
+
+            iterateWithIndex(0, dim, function(rowIndex) {
+                columnSliceSums[rowIndex] = matrix[rowIndex][rightColIdx] - matrix[rowIndex][leftColIdx];
+            });
+
+            var currentSliceMax = calculateKadaneMax(columnSliceSums);
+            currentOverallMaxSum = Math.max(currentOverallMaxSum, currentSliceMax);
+        });
+    });
+    return currentOverallMaxSum;
+}
+
+function calculateKadaneMax(sliceArray) {
+    if (sliceArray.length === 0) {
+        return -Infinity;
+    }
+
+    var kadaneResults = [];
+    kadaneResults[0] = sliceArray[0];
+
+    iterateWithIndex(1, sliceArray.length, function(idx) {
+        kadaneResults[idx] = Math.max(kadaneResults[idx - 1] + sliceArray[idx], sliceArray[idx]);
+    });
+
+    var maxValInKadaneResults = -Infinity;
+    iterateWithIndex(0, kadaneResults.length, function(idx) {
+        if (kadaneResults[idx] > maxValInKadaneResults) {
+            maxValInKadaneResults = kadaneResults[idx];
+        }
+    });
+    return maxValInKadaneResults;
+}
+
+function iterateWithIndex(startOrCount, endOrCallback, callbackIfRange) {
+    var startValue, endValue, loopAction;
+
+    if (callbackIfRange == null) {
+        startValue = 0;
+        endValue = startOrCount;
+        loopAction = endOrCallback;
+    } else {
+        startValue = startOrCount;
+        endValue = endOrCallback;
+        loopAction = callbackIfRange;
+    }
+
+    for (var currentIdx = startValue; currentIdx < endValue; ++currentIdx) {
+        loopAction(currentIdx);
+    }
+}
+
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', function(incomingChunk) {
-    rawDataBuffer += incomingChunk;
+var rawInputBuffer = '';
+var currentTokenPosition = 0;
+
+function getNextInputToken(tokenType) {
+    if (tokenType === 'string') {
+        return rawInputBuffer[currentTokenPosition++];
+    } else {
+        return +rawInputBuffer[currentTokenPosition++];
+    }
+}
+
+function displayOutput(valueToPrint) {
+    console.log(valueToPrint);
+}
+
+process.stdin.on('data', function(chunk) {
+    rawInputBuffer += chunk;
 });
 
 process.stdin.on('end', function() {
-    // Process the accumulated input: trim whitespace and split by any whitespace character
-    rawDataBuffer = rawDataBuffer.trim().split(/\s+/);
-    // Initiate the main computation
-    computeMaximumSubmatrixSum();
+    rawInputBuffer = rawInputBuffer.split(/\s+/);
+    processMatrixData();
 });

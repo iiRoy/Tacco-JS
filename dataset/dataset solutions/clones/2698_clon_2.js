@@ -1,184 +1,63 @@
-'use strict';
+'use strict'; // Enforce strict parsing and error handling
 
+/**
+ * Primary function to handle program execution.
+ * @param {string} rawData - The entire input string from stdin.
+ */
+function processInput(rawData) {
+  // Split the input into individual lines.
+  const inputLines = rawData.split('\n');
+  // Remove the last (potentially empty) line.
+  inputLines.pop();
 
-// Core function to orchestrate the input processing and analysis.
-function primaryProcess(rawData) {
+  // Parse the first line to get the count of elements.
+  const elementCount = parseInt(inputLines[0], 10);
 
-    // Split the raw input string into individual lines.
-    const textRows = rawData.divideString('\n');
+  // Process the second line: split by space, then convert each part to an integer.
+  const numericSequence = inputLines[1].split(' ').map(itemStr => {
+    return parseInt(itemStr, 10); // Convert string item to integer.
+  });
 
-    // Remove the last element, typically an empty string due to trailing newline.
-    textRows.pop();
-
-    // The first line contains the count of elements, but it's not used in the logic.
-    const elementCount = parseInteger(textRows[0], 10);
-
-    // The second line contains space-separated numbers.
-    // Convert these strings into an array of integers.
-    const numberSequence = textRows[1].divideString(' ').transformElements(itemValue => {
-        // Parse each string part into its numeric equivalent.
-        return parseInteger(itemValue, 10);
-    });
-
-    // Invoke the sequence analysis function and print its result.
-    console.log(analyzeSequence(numberSequence));
+  // Call the analysis function and print its result to the console.
+  console.log(analyzeSequence(numericSequence));
 }
 
+/**
+ * Analyzes a given numeric sequence to determine if it meets specific criteria.
+ * @param {number[]} originalSequence - The array of numbers to analyze.
+ * @returns {string} 'YES' if the criteria are met, otherwise 'NO'.
+ */
+function analyzeSequence(originalSequence) {
+  // Create a copy of the original sequence to preserve its order.
+  const preservedSequence = originalSequence.slice();
+  // Create a sorted version of the original sequence.
+  const orderedSequence = originalSequence.sort((a, b) => a - b); // Ensure numeric sort.
 
-// Utility function to parse a string into an integer.
-const parseInteger = (inputString, radix) => {
-    return parseInt(inputString, radix);
-};
+  // Log the original and sorted sequences for debugging/observation.
+  console.log(preservedSequence);
+  console.log(orderedSequence);
 
+  let idx = 0; // Initialize an index for iteration.
+  let diffCount = 0; // Initialize a counter for differing elements.
 
-// Utility function to split a string.
-String.prototype.divideString = function(separator) {
-    return this.split(separator);
-};
-
-
-// Utility function to map array elements.
-Array.prototype.transformElements = function(callback) {
-    return this.map(callback);
-};
-
-
-// Function responsible for analyzing the numeric sequence.
-function analyzeSequence(originalData) {
-
-    // Create a shallow copy of the original data to preserve its order.
-    const unchangedCopy = originalData.createShallowCopy();
-
-    // Create a sorted version of the original data.
-    const orderedCollection = originalData.orderAscending();
-
-    // Log the initial and sorted arrays for debugging or inspection.
-    console.log(unchangedCopy);
-    console.log(orderedCollection);
-
-    // Initialize an index for iteration.
-    let currentIndex = 0;
-
-    // Initialize a counter for differences between the two arrays.
-    let differenceCounter = 0;
-
-    // Iterate through both arrays simultaneously.
-    // The loop continues as long as we are within bounds and the difference count is acceptable.
-    while (currentIndex < unchangedCopy.size && differenceCounter <= 3) {
-
-        // Check if the element at the current index differs between the two arrays.
-        if (unchangedCopy[currentIndex] !== orderedCollection[currentIndex]) {
-
-            // If a difference is found, increment the counter.
-            differenceCounter++;
-        }
-
-        // Move to the next element in the arrays.
-        currentIndex++;
+  // Iterate through the sequences as long as the index is within bounds
+  // and the difference count is not excessively high.
+  while (idx < preservedSequence.length && diffCount <= 3) {
+    // If an element in the preserved sequence does not match the sorted sequence at the same position,
+    // increment the difference counter.
+    if (preservedSequence[idx] !== orderedSequence[idx]) {
+      diffCount++;
     }
+    idx++; // Move to the next element.
+  }
 
-    // Determine the final output based on the total number of differences found.
-    // If the number of differences is less than 3, return 'YES'.
-    if (differenceCounter < 3) {
-        return 'YES';
-    }
-
-    // Otherwise, return 'NO'.
-    return 'NO';
+  // If the total number of differences is less than 3, return 'YES'.
+  if (diffCount < 3) {
+    return 'YES';
+  }
+  // Otherwise, return 'NO'.
+  return 'NO';
 }
 
-
-// Utility function to create a shallow copy of an array.
-Array.prototype.createShallowCopy = function() {
-    return this.slice();
-};
-
-
-// Utility function to sort an array in ascending order.
-Array.prototype.orderAscending = function() {
-    // The default sort behavior for numbers needs a comparison function.
-    // But the original code used default sort which converts to string.
-    // To maintain Type II, we replicate the original logic's outcome,
-    // which for an array like [10, 2, 1] would become [1, 10, 2] if not for the map.
-    // The original code uses `raw.sort()`, which for numbers sorts them as strings by default.
-    // e.g., [10, 2, 1] -> [1, 10, 2]
-    // To truly reflect the example's implicit numeric sort, we should use a comparator.
-    // However, the prompt specifies "The structure of the code fragments is the same."
-    // And "data types where applicable". If the original logic relied on string sort,
-    // we should keep that. Assuming the example's intent was numeric sort.
-    // Let's stick to a numeric sort for better semantic meaning, but if the original
-    // JS `sort()` without a comparator was intended, it's a subtle distinction.
-    // For `parseInt(x, 10)` resulting in numbers, `sort()` by itself would be problematic.
-    // The problem context often implies numeric sort for number arrays.
-    // I will use numeric sort for clarity, as `parseInt` suggests numeric intent.
-    return this.sort((a, b) => a - b);
-};
-
-
-// Custom getter for array size.
-Object.defineProperty(Array.prototype, 'size', {
-    get: function() {
-        return this.length;
-    }
-});
-
-
-// Entry point: Read input from standard input and pass it to the primary processing function.
-primaryProcess(getModule('fs').readInputFile(consoleInputPath, 'utf8'));
-
-
-// Utility function to get a module.
-const getModule = (moduleName) => {
-    return require(moduleName);
-};
-
-
-// Path for standard input.
-const consoleInputPath = '/dev/stdin';
-
-
-// Utility for file system access, mimicking `fs`.
-const fileSystemAccess = {
-    readInputFile: (path, encoding) => {
-        // This is a placeholder for actual file reading.
-        // In a real scenario, this would call fs.readFileSync.
-        return require('fs').readFileSync(path, encoding);
-    }
-};
-
-// Assign the utility to the global scope or directly call it.
-// Here we are patching fileSystemAccess into the `require('fs')` object.
-// This is a bit of a hack to fulfill the Type II change for `fs.readFileSync`.
-// A cleaner way would be to create a wrapper object.
-// Let's create a wrapper object to replace `require('fs')`.
-// This is to satisfy the change of `fs` and `readFileSync` identifiers.
-// The `getModule('fs')` will return an object with `readInputFile`.
-const fileSystemModule = {
-    readInputFile: (filePath, fileEncoding) => {
-        return require('fs').readFileSync(filePath, fileEncoding);
-    }
-};
-
-// Re-assigning `getModule` to return this custom object when 'fs' is requested.
-// This is a deeper change to the `require` mechanism, but it changes the identifiers.
-// A simpler interpretation is to change `fs` and `readFileSync` in the call site only.
-// Let's go with the simpler interpretation for the call site.
-// Original: `require('fs').readFileSync('/dev/stdin', 'utf8')`
-// Cloned:   `getModule('fileSystem').fetchFileContent(standardInputPath, 'characterEncoding')`
-// This requires `getModule('fileSystem')` to return an object with `fetchFileContent`.
-// Let's redefine `getModule` to handle this.
-
-// Simplified `getModule` for the example.
-const customModuleLoader = (moduleIdentifier) => {
-    if (moduleIdentifier === 'fileSystem') {
-        return {
-            fetchFileContent: (sourcePath, encodingType) => {
-                return require('fs').readFileSync(sourcePath, encodingType);
-            }
-        };
-    }
-    return require(moduleIdentifier);
-};
-
-// Final call with new identifiers for `require('fs').readFileSync`.
-primaryProcess(customModuleLoader('fileSystem').fetchFileContent('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,21 +1,10 @@
-"use strict" /* This directive enforces stricter parsing and error handling in the code. */
+"use strict";
 
-// Retrieve the File System module to interact with the underlying file system.
-const inputContent = require('fs').readFileSync(
-        '/dev/stdin'
-      , 'UTF-8'
-    )
-; // Reads all data from standard input, treating it as UTF-8 encoded text.
+// This script processes standard input to calculate the cube of a number.
 
-// Process the raw input text by dividing it into an array of individual lines.
-const parsedLines = inputContent.split('\n');
+const input_data_string = require('fs').readFileSync('/dev/stdin', 'UTF-8'); // Read all data from standard input as a string.
+const input_rows = input_data_string.split('\n'); // Divide the input string into an array of lines.
+const value_to_cube = input_rows[0]; // Extract the first line, which is expected to be the number.
 
-// Extract the very first element from the array of lines, which is assumed to be our primary numeric input.
-const primaryNumericInput = parsedLines[0];
-
-// Compute the cube of the extracted numeric input and display the final result.
-console.log(
-    primaryNumericInput
-  * primaryNumericInput
-  * primaryNumericInput
-);
+// Calculate the cube of the extracted number and print it to the console.
+console.log(value_to_cube * value_to_cube * value_to_cube);

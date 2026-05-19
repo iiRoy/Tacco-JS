@@ -1,20 +1,10 @@
-const processDataStream = (dataPayload) => {
-    const cleanPayload = dataPayload.replace(/\s+$/, '');
-    const extractedStrings = cleanPayload.match(/\d+/g);
+const computeResult = (sourceText) => {
+  const [initialValue, subtractor] = sourceText
+    .trim()
+    .split('\n')
+    .map(Number);
 
-    if (!extractedStrings || extractedStrings.length < 2) {
-        throw new Error("Insufficient numeric values in payload.");
-    }
-
-    const primaryValue = +extractedStrings[0];
-    const secondaryValue = +extractedStrings[1];
-
-    const computedResult = (primaryValue - 1) * primaryValue + primaryValue - secondaryValue;
-
-    return computedResult;
+  console.log(Math.pow(initialValue, 2) - subtractor);
 };
 
-const fileSystemInterface = require("node:fs");
-const rawStreamContent = fileSystemInterface.readFileSync(0, "utf8");
-
-console.log(processDataStream(rawStreamContent));
+computeResult(require("fs").readFileSync("/dev/stdin", "utf8"));

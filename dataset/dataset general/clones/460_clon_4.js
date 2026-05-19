@@ -1,1 +1,0 @@
-new Map().set(Symbol('secret'), 42);

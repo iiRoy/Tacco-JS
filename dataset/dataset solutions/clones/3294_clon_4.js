@@ -1,58 +1,65 @@
 'use strict';
 
-process.stdin.resume();
-process.stdin.setEncoding('utf-8');
+function createInputProcessor() {
+    let receivedDataBuffer = '';
+    let currentLineIndex = 0;
+    let cachedProcessedLines = [];
 
-let collectedInput = '';
-let inputLineArray = [];
+    process.stdin.on('data', dataChunk => {
+        receivedDataBuffer += dataChunk;
+    });
 
-process.stdin.on('data', chunk => {
-    collectedInput += chunk;
-});
+    return new Promise(completionHandler => {
+        process.stdin.on('end', () => {
+            cachedProcessedLines = receivedDataBuffer.trim().split('\n').map(lineContent => lineContent.trim());
+            completionHandler({
+                retrieveNextInputLine: () => cachedProcessedLines[currentLineIndex++],
+                parseLineToNumberArray: (textLine) => textLine.split(' ').map(Number),
+                parseLineToSingleNumber: (textLine) => Number(textLine)
+            });
+        });
+    });
+}
 
-process.stdin.on('end', () => {
-    inputLineArray = collectedInput.trim().split('\n').map(line => line.trim());
-    initiateMainProcessing(inputLineArray);
-});
+function calculateMinimumFrogCost(inputAccessor) {
+    const problemParameters = inputAccessor.parseLineToNumberArray(inputAccessor.retrieveNextInputLine());
+    const totalSequenceLength = problemParameters[0];
+    const maximumAllowedJump = problemParameters[1];
+    const heightValues = inputAccessor.parseLineToNumberArray(inputAccessor.retrieveNextInputLine());
 
-function initiateMainProcessing(rawLines) {
-    let lineCursor = 0;
-    const retrieveNextDatum = () => rawLines[lineCursor++];
-    const decomposeToNumbers = (textualSequence) => textualSequence.split(' ').map(Number);
+    const costCache = new Map();
 
-    const initialParameters = decomposeToNumbers(retrieveNextDatum());
-    const totalPoints = initialParameters[0];
-    const maximumJumpSpan = initialParameters[1];
-    const altitudeValues = decomposeToNumbers(retrieveNextDatum());
-
-    const costMemo = new Map(); // For storing computed minimum costs
-
-    // Recursive helper function to determine minimum expense to reach a point
-    const calculatePathCost = (currentIdx) => {
-        if (costMemo.has(currentIdx)) {
-            return costMemo.get(currentIdx);
+    function determinePathCost(targetIndex) {
+        if (targetIndex === 0) {
+            return 0;
+        }
+        if (targetIndex === 1) {
+            return Math.abs(heightValues[1] - heightValues[0]);
+        }
+        if (costCache.has(targetIndex)) {
+            return costCache.get(targetIndex);
         }
 
-        if (currentIdx === 0) {
-            return 0; // No cost to start at the first point
-        }
+        let lowestAchievableCost = Infinity;
 
-        let minimalExpense = Infinity; // Initialize with a very large value
-
-        // Explore all possible previous points within maximumJumpSpan
-        for (let stepBackwards = 1; stepBackwards <= maximumJumpSpan; stepBackwards++) {
-            const previousIdx = currentIdx - stepBackwards;
-            if (previousIdx >= 0) {
-                const expenseFromPrevious = calculatePathCost(previousIdx) +
-                                            Math.abs(altitudeValues[currentIdx] - altitudeValues[previousIdx]);
-                minimalExpense = Math.min(minimalExpense, expenseFromPrevious);
+        for (let backwardStep = 1; backwardStep <= maximumAllowedJump; backwardStep++) {
+            const sourceIndex = targetIndex - backwardStep;
+            if (sourceIndex >= 0) {
+                const costFromSource = determinePathCost(sourceIndex) + Math.abs(heightValues[targetIndex] - heightValues[sourceIndex]);
+                lowestAchievableCost = Math.min(lowestAchievableCost, costFromSource);
             }
         }
 
-        costMemo.set(currentIdx, minimalExpense);
-        return minimalExpense;
-    };
+        costCache.set(targetIndex, lowestAchievableCost);
+        return lowestAchievableCost;
+    }
 
-    const finalOptimalCost = calculatePathCost(totalPoints - 1);
-    console.log(finalOptimalCost);
+    console.log(determinePathCost(totalSequenceLength - 1));
 }
+
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
+
+createInputProcessor().then(processorInstance => {
+    calculateMinimumFrogCost(processorInstance);
+});

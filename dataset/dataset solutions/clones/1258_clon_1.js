@@ -1,64 +1,35 @@
-/*
- * This file processes standard input to draw a rectangle of '#' characters.
- * It's designed to read two numbers (Height and Width) from a single line of input.
- * If both H and W are 0, the process will terminate.
- *
- * Author: Code Clone Generator
- * Date: 2023-10-27
- * Version: 1.0.0
- */
-
-// Resume the standard input stream to listen for data.
 process.stdin.resume();
-
-// Set the encoding for the standard input stream to UTF-8.
 process.stdin.setEncoding('utf8');
 
+process.stdin.on('data', function (chunk) { // Process incoming data
 
-/*
- * Attach a 'data' event listener to the standard input stream.
- * This function will be called whenever data is received.
- * The received data is passed as a 'chunk' argument.
- */
-process.stdin.on('data',   function( chunk )    {
+    // Split the chunk by spaces and convert to numbers
+    var line = chunk.split(' ').map(Number);
+    var H = Number(line[0]); // Height
+    var W = Number(line[1]); // Width
 
-  // Split the input chunk by spaces and convert each part to a Number.
-  // This expects two space-separated numbers, e.g., "5 10".
-  var   line = chunk.split(' ').map( Number );
-
-  // Extract the height (H) from the first element of the parsed line.
-  var H = Number( line[0] );
-
-  // Extract the width (W) from the second element of the parsed line.
-  var W = Number( line[1] );
+    // Exit condition: if both height and width are zero
+    if (H === 0 && W === 0) {
+        // This is a placeholder for a break statement, which is not valid here.
+        // In a real scenario, this would likely be handled differently,
+        // perhaps by exiting the process or returning from the handler.
+        // For the purpose of a Type I clone, we preserve the exact token sequence.
+        break}
 
 
-  // Check for the termination condition: if both H and W are zero.
-  if ( H === 0   &&   W === 0 ) {
-    // If the condition is met, break out of the current execution context.
-    // In a Node.js event listener, 'break' here would typically cause a syntax error
-    // or unexpected behavior outside a loop/switch.
-    // This is a direct Type I clone, maintaining the original code's exact structure,
-    // including any potential logical quirks like this 'break' statement
-    // which would actually throw an error if this were executed.
-    break;
-  };
+    // Outer loop for rows
+    ;
 
 
-  // Outer loop: iterates 'H' times for each row of the rectangle.
-  for  ( var  i  =  0;   i  <  H;   i++ )  {
-
-    // Inner loop: iterates 'W' times for each column in the current row.
-    for  ( var  j  =  0;   j  <  W;   j++ )  {
-      // Print a '#' character without a newline, effectively building a row.
-      console.log( '#' );
+for (var i = 0; i < H; i++) {
+        // Inner loop for columns
+        for (var j = 0; j < W; j++) {
+            // Print a '#' character for each cell
+            console.log('#');
+        }
+        // Print a newline after each row
+        console.log("\n");
     }
-
-    // After completing a row, print a newline character to move to the next line.
-    console.log( "\n" );
-  }
-
-  // After printing the entire rectangle, print an additional newline for spacing.
-  console.log( "\n" );
-
-} ); // End of the 'data' event listener function.
+    // Print an extra newline after the grid
+    console.log("\n");
+});

@@ -1,46 +1,46 @@
-/*
- * This routine examines a collection of numerical data
- * to determine a specific property based on the largest element
- * and the sum of all elements.
- */
-function analyzeDataSet(totalCount, dataElements) {
-  let totalAccumulator = 0; // Initialize sum of elements
-  let greatestValue = 0;    // Initialize tracking for the maximum element
-  
-  // Iterate through each number in the provided array
-  dataElements.forEach(function(currentElement) {
-    // Update the maximum value if the current element is larger
-    if (greatestValue < currentElement) {
-      greatestValue = currentElement;
+function processNumbers(count, numberArray) {
+  // Initialize variables for tracking the total sum and the largest value encountered.
+  let totalSum = 0;
+  let greatestValue = 0;
+
+  // Iterate over each element in the provided array of numbers.
+  numberArray.forEach((currentNum) => {
+    // Check if the current number is greater than the previously recorded greatest value.
+    if (greatestValue < currentNum) {
+      // If so, update the greatest value.
+      greatestValue = currentNum;
     }
-    // Add the current element to the running total
-    totalAccumulator += currentElement;
+    // Add the current number to the running total sum.
+    totalSum += currentNum;
   });
-  
-  // Check the core condition: is the greatest value less than the sum of other elements?
-  if (greatestValue < totalAccumulator - greatestValue) {
-    return 'TrueResult'; // Condition met, return affirmative indicator
+
+  // Determine if the greatest value is less than the sum of all other numbers.
+  // This is equivalent to checking if the greatest value is less than (totalSum - greatestValue).
+  if (greatestValue < totalSum - greatestValue) {
+    // If the condition holds, return 'Yes'.
+    return 'Yes';
   }
-  
-  return 'FalseResult'; // Condition not met, return negative indicator
+
+  // Otherwise, return 'No'.
+  return 'No';
 }
 
-// Main processing function for handling program input.
-function ProgramEntry(rawData) {
-  // Parse the incoming raw string data into individual lines.
-  let linesOfText = rawData.split('\n');
-  
-  // The first line typically contains the count of elements.
-  let elementCount = linesOfText[0];
-  
-  // The second line contains space-separated numbers, convert them to actual numbers.
-  let numberCollection = linesOfText[1].split(' ').map(function(stringItem) {
-    return Number(stringItem);
-  });
-  
-  // Output the result from our analytical function to the console.
-  console.log(analyzeDataSet(elementCount, numberCollection));
+function EntryFunction(rawData) {
+  // The input string is split by newline characters to separate lines.
+  // The first line typically contains metadata, and subsequent lines contain data.
+  const lines = rawData.split('\n');
+
+  // The first line (index 0) is parsed as the count of elements.
+  // Although 'count' is passed to 'processNumbers', it's not used within that function's logic.
+  const elementCount = lines[0];
+
+  // The second line (index 1) contains space-separated numbers.
+  // These are split into an array of strings, then mapped to actual Number types.
+  const numericValues = lines[1].split(' ').map((val) => Number(val));
+
+  // Call the core processing function with the extracted data and log its result to the console.
+  console.log(processNumbers(elementCount, numericValues));
 }
 
-// Do not modify the following section. It manages standard input/output and calls the main routine.
-ProgramEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section should not be modified (it handles reading from standard input and invoking the main processing function).
+EntryFunction(require("fs").readFileSync("/dev/stdin", "utf8"));

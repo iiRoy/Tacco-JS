@@ -1,13 +1,15 @@
-const stringToNumberConverter = (inputStr) => parseInt(inputStr, 10);
-const lineSplitterFunction = (contentBlock) => contentBlock.split(/\n/g);
-const wordSplitterFunction = (contentBlock) => contentBlock.split(/\s+/g);
+var parseInteger = (valueToParse) => parseInt(valueToParse, 10);
 
-function processInputContent(receivedData) {
-  if (receivedData.includes('2')) {
-    console.log('Negative');
+var splitByNewline = (textString) => textString.split(/\n/g);
+
+var splitBySpace = (textString) => textString.split(/\s/g);
+
+function processInput(dataString) {
+  if (dataString.includes('2')) {
+    console.log('No');
   } else {
-    console.log('Affirmative');
+    console.log('Yes');
   }
 }
 
-processInputContent( require('node:fs') . readFileSync ( '/dev/stdin' ,  'utf8' ) );
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

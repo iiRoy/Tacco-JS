@@ -1,47 +1,24 @@
-const inputSource = 0; // Standard input file descriptor (stdin)
-const dataStorageCapacity = 1048576; // 1 MB buffer
-const dataBuffer = Buffer.alloc(dataStorageCapacity);
-let bytesAcquired = 0;
-let completeDataString = '';
+const sourceSettings = {
+    dataSrc: '/dev/stdin',
+    lineDelimiter: '\n'
+};
 
-try {
-    bytesAcquired = require('fs').readSync(inputSource, dataBuffer, 0, dataStorageCapacity, 0);
-    completeDataString = dataBuffer.toString('utf-8', 0, bytesAcquired);
-} catch (error) {
-    // In scenarios like competitive programming, this might occur if stdin is empty or closed prematurely.
-    // For this problem, it's assumed stdin will provide valid data.
-}
+const rawSegments = require('fs').readFileSync(sourceSettings.dataSrc, 'utf-8').split(sourceSettings.lineDelimiter);
+const numericSequence = rawSegments.slice(1, rawSegments.length - 1).map(val => parseInt(val));
 
-const separatedFragments = [];
-let lastDelimiterPosition = 0;
-for (let charIndex = 0; charIndex < completeDataString.length; charIndex++) {
-    if (completeDataString[charIndex] === '\n') {
-        separatedFragments.push(completeDataString.substring(lastDelimiterPosition, charIndex));
-        lastDelimiterPosition = charIndex + 1;
+let maxDelta = -Infinity;
+let currentMinVal;
+
+if (numericSequence.length > 0) {
+    currentMinVal = numericSequence[0];
+    for (let idx = 1; idx < numericSequence.length; idx++) {
+        const currentNum = numericSequence[idx];
+        maxDelta = Math.max(maxDelta, currentNum - currentMinVal);
+        currentMinVal = Math.min(currentMinVal, currentNum);
     }
-}
-if (lastDelimiterPosition < completeDataString.length) {
-    separatedFragments.push(completeDataString.substring(lastDelimiterPosition, completeDataString.length));
-}
-
-const numericalSequence = [];
-for (let fragmentIndex = 1; fragmentIndex < separatedFragments.length - 1; fragmentIndex++) {
-    const cleanFragment = separatedFragments[fragmentIndex].trim();
-    if (cleanFragment.length > 0) {
-        numericalSequence.push(parseInt(cleanFragment, 10));
-    }
+} else {
+    // If numericSequence is empty, maxDelta remains -Infinity, which is correct.
+    // currentMinVal would be undefined, but it's not used if the loop doesn't run.
 }
 
-let ultimateProfit = -Infinity;
-let lowestObservedPrice;
-
-if (numericalSequence.length > 0) {
-    lowestObservedPrice = numericalSequence[0];
-    for (let currentItemIndex = 1; currentItemIndex < numericalSequence.length; currentItemIndex++) {
-        const currentItemValue = numericalSequence[currentItemIndex];
-        ultimateProfit = Math.max(ultimateProfit, currentItemValue - lowestObservedPrice);
-        lowestObservedPrice = Math.min(lowestObservedPrice, currentItemValue);
-    }
-}
-
-console.log(ultimateProfit);
+console.log(maxDelta);

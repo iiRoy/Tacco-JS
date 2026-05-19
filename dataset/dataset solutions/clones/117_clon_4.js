@@ -1,37 +1,41 @@
-let collectedInput = '';
+const fileSystemModule = require("fs");
 
-process.stdin.on('data', (dataChunk) => {
-    collectedInput += dataChunk.toString();
-});
+const rawData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+const processedItems = rawData.trim().split(' ');
 
-process.stdin.on('end', () => {
-    const parsedSegments = collectedInput.trim().split(' ');
-    
-    const finalResult = parsedSegments.reduce((currentAccumulator, currentElement) => {
-        // Frequency and most frequent item logic
-        const presentCount = (currentAccumulator.frequencyMap.get(currentElement) || 0) + 1;
-        currentAccumulator.frequencyMap.set(currentElement, presentCount);
+const frequencyCounter = new Map();
+for (const item of processedItems) {
+    frequencyCounter.set(item, (frequencyCounter.get(item) || 0) + 1);
+}
 
-        if (presentCount > currentAccumulator.highestFrequency) {
-            currentAccumulator.highestFrequency = presentCount;
-            currentAccumulator.topFrequencyItem = currentElement;
+let mostFrequentIdentifier = '';
+let maxFrequencyValue = 0;
+
+for (const [element, freq] of frequencyCounter.entries()) {
+    if (freq > maxFrequencyValue) {
+        maxFrequencyValue = freq;
+        mostFrequentIdentifier = element;
+    }
+}
+
+if (maxFrequencyValue === 1) {
+    mostFrequentIdentifier = '';
+}
+
+let longestElement = '';
+let maximumLength = 0;
+
+if (processedItems.length > 0) {
+    const lengthResult = processedItems.reduce((accumulator, currentToken) => {
+        const currentLength = currentToken.length;
+        if (currentLength > accumulator.maxLength) {
+            return { maxLength: currentLength, longest: currentToken };
         }
+        return accumulator;
+    }, { maxLength: 0, longest: '' });
 
-        // Longest item logic
-        const elementLength = currentElement.length;
-        if (elementLength > currentAccumulator.maximumLength) {
-            currentAccumulator.maximumLength = elementLength;
-            currentAccumulator.longestElement = currentElement;
-        }
+    longestElement = lengthResult.longest;
+    maximumLength = lengthResult.maxLength;
+}
 
-        return currentAccumulator;
-    }, {
-        frequencyMap: new Map(),
-        highestFrequency: 0,
-        topFrequencyItem: '',
-        maximumLength: 0,
-        longestElement: ''
-    });
-
-    console.log(finalResult.topFrequencyItem + ' ' + finalResult.longestElement);
-});
+console.log(mostFrequentIdentifier + ' ' + longestElement);

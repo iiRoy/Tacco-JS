@@ -1,59 +1,45 @@
 "use strict";
 
-const parseInputStructure = (inputStringContent) => {
-    const linesOfText = inputStringContent.trim().split('\n');
-    const dimensions = linesOfText[0].split(' ').map(Number);
-    // const unusedHeight = dimensions[0]; // The first dimension is not used in the problem's logic
-    const widthDimension = dimensions[1];
-    
-    const uniqueElementQuantity = Number(linesOfText[1]);
-    const elementRepeatCounts = linesOfText[2].split(' ').map(Number);
-    
-    return {
-        gridWidth: widthDimension,
-        uniqueElementQuantity: uniqueElementQuantity,
-        repetitionsPerElement: elementRepeatCounts
-    };
-};
+const processInputData = (inputContent) => {
+    const parsedLines = inputContent.trim().split("\n");
 
-const computeGridPattern = (configuration) => {
-    const { gridWidth, uniqueElementQuantity, repetitionsPerElement } = configuration;
+    const dimensionValues = parsedLines[0].split(" ");
+    const gridHeight = parseInt(dimensionValues[0]);
+    const gridWidth = parseInt(dimensionValues[1]);
 
-    if (uniqueElementQuantity === 1) {
-        return '1';
+    const elementCount = parseInt(parsedLines[1]);
+    const elementQuantities = parsedLines[2].split(" ").map(Number);
+
+    if (elementCount === 1) {
+        console.log(1);
+        return;
     }
 
-    const flatSequenceOfValues = repetitionsPerElement.flatMap((currentCount, elementIdx) => {
-        const valueToRepeat = elementIdx + 1;
-        return Array.from({ length: currentCount }, () => valueToRepeat);
-    });
+    const flattenedSequence = elementQuantities.flatMap((countValue, indexValue) =>
+        Array(countValue).fill(indexValue + 1)
+    );
 
-    const totalValues = flatSequenceOfValues.length;
-    const totalRowUnits = Math.ceil(totalValues / gridWidth);
+    const outputLines = flattenedSequence.reduce((accumulator, currentElement, currentIndex) => {
+        const currentSegmentIndex = Math.floor(currentIndex / gridWidth);
+        const positionInSegment = currentIndex % gridWidth;
 
-    const finalDisplayRows = Array.from({ length: totalRowUnits }, (_, rowIdx) => {
-        const startPosition = rowIdx * gridWidth;
-        const endPosition = startPosition + gridWidth;
-        let currentSegment = flatSequenceOfValues.slice(startPosition, endPosition);
-        
-        const lastElementIndexInFlatSequence = endPosition - 1;
-
-        if (lastElementIndexInFlatSequence % 2 !== 0) {
-            currentSegment.reverse();
+        if (positionInSegment === 0) {
+            accumulator.push([]);
         }
-        return currentSegment.join(' ');
-    });
 
-    return finalDisplayRows.join('\n');
+        accumulator[currentSegmentIndex].push(currentElement);
+
+        if (positionInSegment === gridWidth - 1) {
+            if (currentIndex % 2 !== 0) {
+                accumulator[currentSegmentIndex].reverse();
+            }
+        }
+        return accumulator;
+    }, [])
+    .filter(segment => segment.length === gridWidth)
+    .map(segment => segment.join(" "));
+
+    console.log(outputLines.join("\n"));
 };
 
-const orchestrateProcessing = (rawInput) => {
-    const parsedConfiguration = parseInputStructure(rawInput);
-    return computeGridPattern(parsedConfiguration);
-};
-
-(function() {
-    const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const finalOutput = orchestrateProcessing(inputContent);
-    console.log(finalOutput);
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

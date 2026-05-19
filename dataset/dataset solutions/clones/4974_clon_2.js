@@ -1,46 +1,55 @@
-'use strict'; // Enforce strict parsing and error handling for cleaner code
+'use strict'; // Enforce strict mode for cleaner code execution.
 
-// This module's purpose is to compute the sum of all possible numerical expressions
-// that can be formed by inserting '+' operators into a given string of digits.
+// This script computes the sum of all possible numerical expressions
+// that can be formed by inserting plus signs into a given string of digits.
+// Each position between digits can either have a plus sign or be concatenated.
 
-const performComputation = (incomingTextStream) => { // The primary routine for processing input data
-    let refinedDataString = incomingTextStream.trim(); // Sanitize the input by removing leading/trailing whitespace
-    const numericalCharacters = refinedDataString.split(""); // Deconstruct the string into an array of single-character strings
-    const potentialOperatorSlots = numericalCharacters.length - 1; // Calculate the count of possible positions for plus signs
-    let totalAccumulatedValue = 0; // Initialize the grand total for all evaluated expressions
+const processInput = (rawData) => {
+    // First, remove any leading or trailing whitespace from the input string.
+    const trimmedData = rawData.trim();
 
-    // Iterate through every conceivable arrangement of plus operators.
-    // The expression (1 << potentialOperatorSlots) generates 2^N unique binary combinations.
-    for (let currentBitConfiguration = 0; currentBitConfiguration < (1 << potentialOperatorSlots); currentBitConfiguration++) {
-        // Begin forming numerical segments with the very first digit.
-        let intermediateNumericParts = [numericalCharacters[0]];
-        
-        // Traverse the remaining characters to construct the number segments
-        // based on the presence or absence of a plus sign at each position, determined by the bit configuration.
-        for (let positionIndex = 0; positionIndex < potentialOperatorSlots; positionIndex++) {
-            const subsequentCharacter = numericalCharacters[positionIndex + 1]; // Retrieve the next digit in sequence
+    // Convert the cleaned input string into an array of individual digit characters.
+    const digitChars = trimmedData.split("");
 
-            // Evaluate the bit at the current positionIndex within the currentBitConfiguration.
-            // If the bit is set (non-zero), it signifies a '+' operator, necessitating a new number segment.
-            if (currentBitConfiguration & (1 << positionIndex)) {
-                intermediateNumericParts.push(subsequentCharacter); // Append the character as a distinct new segment
+    // Calculate the maximum number of potential "plus" operators.
+    // This is always one less than the total count of digits.
+    const operatorCount = digitChars.length - 1;
+
+    // Initialize a variable to store the cumulative sum of all evaluated expressions.
+    let finalSum = 0;
+
+    // Iterate through all possible binary combinations representing the placement of plus signs.
+    // Each bit in 'combinationIndex' corresponds to a potential operator position.
+    // A '1' bit signifies a plus sign, while a '0' bit means concatenation.
+    for (let combinationIndex = 0; combinationIndex < (1 << operatorCount); combinationIndex++) {
+        // For each combination, create an array to hold the current numeric segments.
+        // The very first digit always forms the beginning of the initial segment.
+        let currentSegments = [digitChars[0]];
+
+        // Loop through the remaining digits to decide whether to append or start a new segment.
+        for (let segmentIdx = 0; segmentIdx < operatorCount; segmentIdx++) {
+            // Retrieve the next digit character from the input sequence.
+            const currentDigit = digitChars[segmentIdx + 1];
+
+            // Check if the bit corresponding to the current segment index is set in the combination.
+            // If the bit is set, it implies a plus sign, so a new segment is started.
+            if (combinationIndex & (1 << segmentIdx)) {
+                currentSegments.push(currentDigit);
             } else {
-                // If the bit is not set (zero), concatenate the character to the last active segment.
-                intermediateNumericParts[intermediateNumericParts.length - 1] += subsequentCharacter;
+                // If the bit is not set, concatenate the current digit to the last existing segment.
+                currentSegments[currentSegments.length - 1] += currentDigit;
             }
         }
-        
-        // After successfully segmenting the digits for this specific bit configuration,
-        // convert each segment to an integer and sum them up.
-        // Add this sum to the overall totalAccumulatedValue.
-        totalAccumulatedValue += intermediateNumericParts.reduce((currentSum, individualPartString) => {
-            return currentSum + parseInt(individualPartString, 10); // Convert each string part to a base-10 integer and sum
-        }, 0); // The starting value for this reduction operation is zero
+
+        // After forming all segments for the current combination, sum their integer values.
+        // Add this sum to the overall final total.
+        finalSum += currentSegments.reduce((accumulator, currentSegment) => accumulator + parseInt(currentSegment, 10), 0);
     }
-    
-    console.log(totalAccumulatedValue); // Output the final computed numerical result
+
+    // Display the final computed sum to the standard output.
+    console.log(finalSum);
 };
 
-// Execute the main processing function, providing it with content
-// read synchronously from the standard input stream, encoded as UTF-8.
-performComputation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input data from standard input (typically /dev/stdin in competitive programming environments)
+// and then invoke the processing function with the obtained string.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,44 +1,38 @@
-const ioUtility = require('fs');
-const sourceIdentifier = '/dev/stdin';
-const characterScheme = 'utf8';
+var inputLines = [];
 
-const entireDataSet = ioUtility.readFileSync(sourceIdentifier, characterScheme);
-const dataSegments = entireDataSet.split('\n');
+var lineReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-let finalOutcome = 'Affirmative';
+lineReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
+});
 
-const stringSanitizer = (inputVal) => {
-    // This sequence of operations achieves the same result as .replace(/\r?\n/g, "")
-    // It will crash if inputVal is not a string, mimicking the original's TypeError
-    // if `lines[i]` was undefined and `.replace` was called on it.
-    return inputVal.split('\r').join('').split('\n').join('');
-};
+lineReader.on('close', function() {
+  const wordCountLimit = parseInt(inputLines[0], 10);
+  const processedWords = inputLines.slice(1, wordCountLimit);
 
-const valueEvaluator = (rawInput) => {
-    const parsedNumber = parseInt(rawInput, 10);
-    return !isNaN(parsedNumber) && parsedNumber > 1;
-};
-
-if (dataSegments.length > 0) {
-    const initialDirective = dataSegments[0];
-    const numericDirective = valueEvaluator(initialDirective);
-
-    if (numericDirective) {
-        // The original code would attempt to access lines[1] if numericDirective is true.
-        // If dataSegments.length is 1 (meaning only `initialDirective` exists),
-        // then `dataSegments[1]` will be undefined.
-        // Calling `stringSanitizer(undefined)` will cause a TypeError,
-        // replicating the original code's crash behavior (`undefined.replace` error).
-        const subjectDatum = dataSegments[1];
-        const purifiedDatum = stringSanitizer(subjectDatum);
-
-        // The core logic of the original code that sets 'No' is:
-        // `str.slice(1) == lastWord` where `lastWord` is `""` for the first data string.
-        // This condition becomes true if the first data string (`lines[1]`) has a length of 1.
-        if (purifiedDatum.length === 1) {
-            finalOutcome = 'Negative';
-        }
+  const finalState = processedWords.reduce((accumulator, currentWordString) => {
+    if (accumulator.hasFailed) {
+      return accumulator;
     }
-}
 
-console.log(finalOutcome);
+    const cleanedWord = currentWordString.replace(/\r?\n/g, "");
+    const wordWithoutFirstChar = cleanedWord.slice(1);
+
+    if (wordWithoutFirstChar === accumulator.previousCharTracker) {
+      return {
+        previousCharTracker: accumulator.previousCharTracker,
+        hasFailed: true
+      };
+    } else {
+      return {
+        previousCharTracker: cleanedWord.slice(-1),
+        hasFailed: false
+      };
+    }
+  }, { previousCharTracker: "", hasFailed: false });
+
+  console.log(finalState.hasFailed ? "No" : "Yes");
+});

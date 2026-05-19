@@ -1,195 +1,185 @@
-class InputParser {
-    constructor(sourceData) {
-        this.dataSegments = sourceData.split(/\s+/).filter(Boolean);
-        this.segmentIndex = 0;
-    }
+"use strict";
+var input = require("fs").readFileSync("/dev/stdin", "utf8");
+var cin = input.split(/ |\n/),
+  cx = 0;
 
-    readNumber() {
-        if (this.segmentIndex >= this.dataSegments.length) {
-            throw new Error("Input exhaustion.");
-        }
-        return parseInt(this.dataSegments[this.segmentIndex++], 10);
-    }
-
-    readString() {
-        if (this.segmentIndex >= this.dataSegments.length) {
-            throw new Error("Input exhaustion.");
-        }
-        return this.dataSegments[this.segmentIndex++];
-    }
+function readNum() {
+  return +cin[cx++];
 }
 
-function constructMultiArray(initialValue, ...dimensions) {
-    if (dimensions.length === 0) {
+function readStr() {
+  return cin[cx++];
+}
+
+function createMultiDimArray(initialValue, ...dimensions) {
+  const buildRecursive = (dims, currentDimIndex) => {
+    if (currentDimIndex === dims.length - 1) {
+      return Array(dims[currentDimIndex]).fill(0).map(() => {
+        if (initialValue === "new Set()") return new Set();
+        if (initialValue === "[]") return [];
         return initialValue;
+      });
+    } else {
+      return Array(dims[currentDimIndex]).fill(0).map(() => buildRecursive(dims, currentDimIndex + 1));
     }
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-    return Array.from({ length: currentDimensionSize }, () =>
-        constructMultiArray(initialValue, ...remainingDimensions)
+  };
+  return buildRecursive(dimensions, 0);
+}
+
+const INFINITY_VAL = 1e9;
+
+class DeliverySimulation {
+  constructor() {
+    this.vertexCount = readNum();
+    this.edgeCount = readNum();
+
+    this.distanceMatrix = createMultiDimArray(INFINITY_VAL, this.vertexCount, this.vertexCount);
+    this.adjacencyLists = createMultiDimArray("new Set()", this.vertexCount);
+
+    this.maxTime = readNum();
+    this.maxTimeSquared = this.maxTime * this.maxTime;
+
+    this.dailyMoves = Array(this.maxTime);
+    this.activeDeliveries = new Set();
+    this.deliveryTimestamps = createMultiDimArray("[]", this.vertexCount);
+
+    this.travelRemaining = 0;
+    this.currentPosition = 0;
+    this.currentDay = 0;
+    this.lastOrderDayProcessed = -1;
+    this.totalScore = 0;
+  }
+
+  initializeGraph() {
+    Array.from({
+      length: this.vertexCount
+    }).forEach((_, i) => {
+      this.distanceMatrix[i][i] = 0;
+    });
+
+    Array.from({
+      length: this.edgeCount
+    }).forEach(() => {
+      const nodeA = readNum() - 1;
+      const nodeB = readNum() - 1;
+      const weight = readNum();
+      this.distanceMatrix[nodeA][nodeB] = this.distanceMatrix[nodeB][nodeA] = weight;
+      this.adjacencyLists[nodeA].add(nodeB);
+      this.adjacencyLists[nodeB].add(nodeA);
+    });
+  }
+
+  computeAllPairsShortestPaths() {
+    Array.from({
+      length: this.vertexCount
+    }).forEach((_, k) => {
+      Array.from({
+        length: this.vertexCount
+      }).forEach((_, i) => {
+        Array.from({
+          length: this.vertexCount
+        }).forEach((_, j) => {
+          const pathThroughK = this.distanceMatrix[i][k] + this.distanceMatrix[k][j];
+          if (pathThroughK < this.distanceMatrix[i][j]) {
+            this.distanceMatrix[i][j] = pathThroughK;
+          }
+        });
+      });
+    });
+  }
+
+  findNextHop(originNode, targetNode) {
+    if (this.adjacencyLists[originNode].has(targetNode)) {
+      this.travelRemaining = this.distanceMatrix[originNode][targetNode] - 1;
+      this.currentPosition = targetNode;
+      return targetNode;
+    }
+
+    const nextStepCandidate = Array.from(this.adjacencyLists[originNode]).find(neighbor =>
+      this.distanceMatrix[originNode][targetNode] === this.distanceMatrix[originNode][neighbor] + this.distanceMatrix[neighbor][targetNode]
     );
+
+    if (nextStepCandidate !== undefined) {
+      this.travelRemaining = this.distanceMatrix[originNode][nextStepCandidate] - 1;
+      this.currentPosition = nextStepCandidate;
+      return nextStepCandidate;
+    }
+    return -2;
+  }
+
+  determineNextMove() {
+    if (this.activeDeliveries.size === 0) {
+      return (this.currentPosition === 0) ? -2 : this.findNextHop(this.currentPosition, 0);
+    }
+
+    let optimalTargetId = -1;
+    let maxPendingOrders = 0;
+
+    Array.from(this.activeDeliveries).forEach(deliveryNode => {
+      if (this.distanceMatrix[this.currentPosition][deliveryNode] <= this.maxTime - this.currentDay) {
+        const currentOrders = this.deliveryTimestamps[deliveryNode].length;
+        if (currentOrders > maxPendingOrders) {
+          maxPendingOrders = currentOrders;
+          optimalTargetId = deliveryNode;
+        }
+      }
+    });
+
+    if (optimalTargetId === -1) {
+      return (this.currentPosition === 0) ? -2 : this.findNextHop(this.currentPosition, 0);
+    }
+    return this.findNextHop(this.currentPosition, optimalTargetId);
+  }
+
+  handleNewOrders() {
+    while (this.lastOrderDayProcessed < this.currentDay) {
+      this.lastOrderDayProcessed++;
+      const numIncomingOrders = readNum();
+      Array.from({
+        length: numIncomingOrders
+      }).forEach(() => {
+        readNum(); // Item ID, not used in logic
+        const destinationId = readNum() - 1;
+        this.activeDeliveries.add(destinationId);
+        this.deliveryTimestamps[destinationId].push(this.lastOrderDayProcessed);
+      });
+    }
+  }
+
+  completeDelivery() {
+    this.activeDeliveries.delete(this.currentPosition);
+    while (this.deliveryTimestamps[this.currentPosition].length > 0) {
+      const orderStartTime = this.deliveryTimestamps[this.currentPosition].pop();
+      const timeTaken = this.currentDay - orderStartTime;
+      this.totalScore += this.maxTimeSquared - timeTaken * timeTaken;
+    }
+  }
+
+  processTurn() {
+    if (this.travelRemaining > 0) {
+      this.travelRemaining--;
+      return this.currentPosition;
+    }
+
+    if (this.currentPosition === 0) {
+      this.handleNewOrders();
+    } else {
+      this.completeDelivery();
+    }
+    return this.determineNextMove();
+  }
+
+  runSimulation() {
+    this.initializeGraph();
+    this.computeAllPairsShortestPaths();
+
+    while (this.currentDay < this.maxTime) {
+      this.dailyMoves[this.currentDay] = this.processTurn() + 1;
+      this.currentDay++;
+    }
+    return this.dailyMoves.join("\n");
+  }
 }
 
-const INFINITY_VAL = 1_000_000_007;
-
-class LogisticsSimulator {
-    constructor(parser) {
-        this.inputReader = parser;
-        this.nodeCount = this.inputReader.readNumber();
-        this.edgeCount = this.inputReader.readNumber();
-
-        this.shortestPathMatrix = constructMultiArray(INFINITY_VAL, this.nodeCount, this.nodeCount);
-        this.adjacencies = new Map(); // node -> Array<neighbor>
-
-        this.maxTotalTime = this.inputReader.readNumber();
-        this.maxTotalTimeSquared = this.maxTotalTime * this.maxTotalTime;
-
-        this.dailyResults = new Array(this.maxTotalTime);
-
-        this.deliveryQueue = new Map(); // destinationNode -> Array<orderTimestamp>
-
-        this.currentVehicleNode = 0;
-        this.remainingPathLength = 0;
-        this.currentTimelineDay = 0;
-        this.lastOrderProcessedDay = -1;
-        this.totalSatisfactionScore = 0;
-
-        this.setupGraphStructure();
-        this.calculateAllShortestPaths();
-    }
-
-    setupGraphStructure() {
-        for (let i = 0; i < this.nodeCount; i++) {
-            this.shortestPathMatrix[i][i] = 0;
-            this.adjacencies.set(i, []);
-        }
-
-        for (let i = 0; i < this.edgeCount; i++) {
-            const nodeA = this.inputReader.readNumber() - 1;
-            const nodeB = this.inputReader.readNumber() - 1;
-            const connectionWeight = this.inputReader.readNumber();
-
-            this.shortestPathMatrix[nodeA][nodeB] = Math.min(this.shortestPathMatrix[nodeA][nodeB], connectionWeight);
-            this.shortestPathMatrix[nodeB][nodeA] = Math.min(this.shortestPathMatrix[nodeB][nodeA], connectionWeight);
-
-            this.adjacencies.get(nodeA).push(nodeB);
-            this.adjacencies.get(nodeB).push(nodeA);
-        }
-    }
-
-    calculateAllShortestPaths() {
-        for (let intermediate = 0; intermediate < this.nodeCount; intermediate++) {
-            for (let source = 0; source < this.nodeCount; source++) {
-                for (let target = 0; target < this.nodeCount; target++) {
-                    const pathViaIntermediate = this.shortestPathMatrix[source][intermediate] + this.shortestPathMatrix[intermediate][target];
-                    if (pathViaIntermediate < this.shortestPathMatrix[source][target]) {
-                        this.shortestPathMatrix[source][target] = pathViaIntermediate;
-                    }
-                }
-            }
-        }
-    }
-
-    processIncomingOrders() {
-        while (this.lastOrderProcessedDay < this.currentTimelineDay) {
-            this.lastOrderProcessedDay++;
-            const batchSize = this.inputReader.readNumber();
-            for (let i = 0; i < batchSize; i++) {
-                this.inputReader.readNumber(); // Discard order identifier
-                const destination = this.inputReader.readNumber() - 1;
-
-                if (!this.deliveryQueue.has(destination)) {
-                    this.deliveryQueue.set(destination, []);
-                }
-                this.deliveryQueue.get(destination).push(this.lastOrderProcessedDay);
-            }
-        }
-    }
-
-    fulfillCurrentDeliveries() {
-        if (this.deliveryQueue.has(this.currentVehicleNode)) {
-            const ordersAtLocation = this.deliveryQueue.get(this.currentVehicleNode);
-            while (ordersAtLocation.length > 0) {
-                const orderOriginDay = ordersAtLocation.pop();
-                const totalTimeForOrder = this.currentTimelineDay - orderOriginDay;
-                this.totalSatisfactionScore += this.maxTotalTimeSquared - (totalTimeForOrder * totalTimeForOrder);
-            }
-            this.deliveryQueue.delete(this.currentVehicleNode);
-        }
-    }
-
-    determineNextRoute() {
-        let optimalTargetNode = -1;
-        let maxPendingItems = -1;
-
-        const availableDestinations = Array.from(this.deliveryQueue.entries())
-            .filter(([dest, orders]) =>
-                orders.length > 0 &&
-                this.shortestPathMatrix[this.currentVehicleNode][dest] <= (this.maxTotalTime - this.currentTimelineDay)
-            );
-
-        for (const [destNode, orders] of availableDestinations) {
-            if (orders.length > maxPendingItems) {
-                maxPendingItems = orders.length;
-                optimalTargetNode = destNode;
-            }
-        }
-
-        if (optimalTargetNode === -1) {
-            if (this.currentVehicleNode === 0) {
-                return -2; // At depot, no tasks, no path
-            }
-            return this.findNextHop(this.currentVehicleNode, 0); // Return to depot
-        }
-
-        return this.findNextHop(this.currentVehicleNode, optimalTargetNode);
-    }
-
-    findNextHop(startLocation, endLocation) {
-        const connectedNodes = this.adjacencies.get(startLocation);
-
-        if (connectedNodes && connectedNodes.includes(endLocation)) {
-            this.remainingPathLength = this.shortestPathMatrix[startLocation][endLocation] - 1;
-            this.currentVehicleNode = endLocation;
-            return endLocation;
-        }
-
-        if (connectedNodes) {
-            for (const connectedNode of connectedNodes) {
-                if (this.shortestPathMatrix[startLocation][endLocation] === this.shortestPathMatrix[startLocation][connectedNode] + this.shortestPathMatrix[connectedNode][endLocation]) {
-                    this.remainingPathLength = this.shortestPathMatrix[startLocation][connectedNode] - 1;
-                    this.currentVehicleNode = connectedNode;
-                    return connectedNode;
-                }
-            }
-        }
-        return -2; // Error or invalid state
-    }
-
-    executeDailyOperations() {
-        if (this.remainingPathLength > 0) {
-            this.remainingPathLength--;
-            return this.currentVehicleNode;
-        }
-
-        if (this.currentVehicleNode === 0) {
-            this.processIncomingOrders();
-        } else {
-            this.fulfillCurrentDeliveries();
-        }
-        
-        return this.determineNextRoute();
-    }
-
-    initiateSimulation() {
-        for (this.currentTimelineDay = 0; this.currentTimelineDay < this.maxTotalTime; this.currentTimelineDay++) {
-            this.dailyResults[this.currentTimelineDay] = this.executeDailyOperations() + 1;
-        }
-        return this.dailyResults.join("\n");
-    }
-}
-
-const programInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const inputProcessor = new InputParser(programInput);
-const simulationEngine = new LogisticsSimulator(inputProcessor);
-console.log(simulationEngine.initiateSimulation());
+const simulationInstance = new DeliverySimulation();
+console.log(simulationInstance.runSimulation());

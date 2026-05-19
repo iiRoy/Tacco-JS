@@ -1,36 +1,44 @@
-// This function processes the entire provided text input.
-function ProcessInputData ( rawTextContent ) {
+function ProcessInput(rawData) {
+  // The rawData parameter contains the entire input string.
+  // We first split it into individual lines.
+  let lineData = rawData.split("\n");
 
-    // The input string is split into individual lines for easier parsing.
-    rawTextContent = rawTextContent.split ( "\n" );
+  // The first line contains the count of numbers.
+  // The second line contains the numbers themselves.
+  let firstLineParts = lineData[0].split(" ");
+  let secondLineParts = lineData[1].split(" ");
 
-    var firstLineTokens = rawTextContent[0].split( " " );
-    var secondLineTokens = rawTextContent[1].split( " " );
+  // Parse the first element of the first line to get the total count.
+  const countElements = parseInt(firstLineParts[0], 10);
 
-    var totalNumbers = parseInt ( firstLineTokens[0], 10 );
+  // Initialize the status variable. Note the trailing space here.
+  let resultStatus = 'APPROVED ';
 
-    // Initialize the final outcome with an optimistic verdict.
-    var finalDecision = 'APPROVED ';
+  // Iterate through the numbers provided in the second line.
+  for (let idx = 0; idx < countElements; idx++) {
+    // Parse the current number from the second line.
+    const currentNumber = parseInt(secondLineParts[idx], 10);
 
-    // Loop through each numerical entry in the second data line.
-    for ( var loopIndex = 0; loopIndex < totalNumbers; loopIndex++ ) {
-        var currentValue = parseInt ( secondLineTokens[loopIndex], 10 );
-
-        // Check if the current numerical value is even.
-        if ( currentValue % 2 === 0 ) {
-            // If the number is even, further criteria are applied.
-            if ( currentValue % 3 === 0 || currentValue % 5 === 0 ) {
-                var finalDecision = 'APPROVED'; // Affirmative decision if divisible by 3 or 5.
-            }
-            else {
-                var finalDecision = 'DENIED'; // Negative decision if even but fails the 3 or 5 divisibility.
-                break; // Terminate early as a single denial dictates the overall result.
-            }
-        }
+    // Check if the current number is even.
+    if (currentNumber % 2 === 0) {
+      // If it's even, check if it's divisible by 3 or 5.
+      if (currentNumber % 3 === 0 || currentNumber % 5 === 0) {
+        // If divisible by 3 or 5, it's still approved.
+        // Note: The trailing space is removed here if it was 'APPROVED '.
+        resultStatus = 'APPROVED';
+      } else {
+        // If even but not divisible by 3 or 5, it's denied.
+        resultStatus = 'DENIED';
+        // No need to check further numbers, so break the loop.
+        break;
+      }
     }
-    // Display the ultimate resolution to the console.
-    console.log( finalDecision );
+  }
+
+  // Output the final approval status.
+  console.log(resultStatus);
 }
 
-// This boilerplate code handles reading from standard input and invoking the primary processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section handles reading input from standard input and calling the main processing function.
+// It should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

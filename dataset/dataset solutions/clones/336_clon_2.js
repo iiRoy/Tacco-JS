@@ -1,102 +1,84 @@
-var rawDataBuffer = '';
+function processInputData() {
+  // Declare all variables used within this processing function
+  let outerIdx, innerIdx, widthVal, heightVal, rowCoord, colCoord;
+  let currentLineParts, visitedCells, gridMap, hasCycle;
+  const totalLines = rawDataBuffer.length; // Store the total number of input lines
 
-// Begin standard input handling
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+  // Iterate through each line of the input buffer
+  for (outerIdx = 0; outerIdx < totalLines; outerIdx++) {
+    // Split the current line by space to get width and height values
+    currentLineParts = rawDataBuffer[outerIdx].split(' ');
+    widthVal = parseInt(currentLineParts[0], 10); // Parse width as an integer
+    heightVal = parseInt(currentLineParts[1], 10); // Parse height as an integer
 
-// Accumulate incoming data chunks
-process.stdin.on('data', function(dataChunk) {
-    rawDataBuffer += dataChunk;
-});
-
-// Process all accumulated data when input ends
-process.stdin.on('end', function() {
-    // Split the buffered data into an array of lines
-    var rawData = rawDataBuffer.split('\n');
-    // Invoke the primary processing routine
-    processGridData(rawData);
-});
-
-/**
- * Main function to process a series of grid puzzles.
- * Each puzzle defines a grid and a path, determining if it loops.
- * @param {Array<string>} inputData An array of strings representing the input lines.
- */
-function processGridData(inputData) {
-    // Declare all necessary local variables at the beginning
-    var
-        // Loop counters for iterating through input and grid cells
-        rowIterator, colIterator,
-        // Dimensions of the current grid
-        gridWidth, gridHeight,
-        // Current coordinates of the "pointer" moving through the grid
-        currentYCoord, currentXCoord,
-        // Holds the split line data from input
-        currentLineData,
-        // Stores visited cells to detect loops
-        visitedCellsMap,
-        // The 2D array representing the grid structure
-        gridMatrix,
-        // Flag to indicate if a cycle has been detected
-        hasCycleDetected,
-        // Total number of input lines
-        inputDataLength = inputData.length;
-
-    // Iterate through each puzzle definition in the input data
-    for (rowIterator = 0; rowIterator < inputDataLength; ++rowIterator) {
-        // Split the current line by space to get width and height
-        currentLineData = inputData[rowIterator].split(' ');
-        gridWidth = parseInt(currentLineData[0], 10);
-        gridHeight = parseInt(currentLineData[1], 10);
-
-        // Check for the termination condition (0 0)
-        if (gridWidth === 0 && gridHeight === 0) {
-            break;
-        }
-
-        // Initialize grid and visited cell tracker for the new puzzle
-        gridMatrix = [];
-        visitedCellsMap = {};
-
-        // Populate the grid matrix with subsequent input lines
-        for (colIterator = 0; colIterator < gridHeight; ++colIterator) {
-            gridMatrix[colIterator] = inputData[++rowIterator]; // Increment main iterator to read grid rows
-        }
-
-        // Initialize starting position and loop detection flag for the path traversal
-        currentYCoord = 0;
-        currentXCoord = 0;
-        hasCycleDetected = false;
-
-        // Traverse the grid until an exit point ('.') is reached or a loop is detected
-        while (gridMatrix[currentYCoord].charAt(currentXCoord) !== '.') {
-            // Mark the current cell as visited
-            visitedCellsMap[[currentYCoord, currentXCoord]] = true;
-
-            // Determine the next move based on the character in the current cell
-            switch (gridMatrix[currentYCoord].charAt(currentXCoord)) {
-                case '>': // Move right
-                    currentXCoord += 1;
-                    break;
-                case '<': // Move left
-                    currentXCoord -= 1;
-                    break;
-                case 'v': // Move down
-                    currentYCoord += 1;
-                    break;
-                case '^': // Move up
-                    currentYCoord -= 1;
-                    break;
-            }
-
-            // After moving, check if the new cell has already been visited
-            if (visitedCellsMap[[currentYCoord, currentXCoord]] === true) {
-                hasCycleDetected = true; // A loop is detected
-                break; // Exit the traversal loop
-            }
-        }
-
-        // Output the result: 'LOOP' if a cycle was found, otherwise the final coordinates
-        console.log(hasCycleDetected ? 'LOOP' : [currentXCoord, currentYCoord].join(' '));
+    // Check for the termination condition (0 0)
+    if (widthVal === 0 && heightVal === 0) {
+      break; // Exit the loop if termination condition is met
     }
+
+    // Initialize data structures for the current grid
+    gridMap = []; // Array to store the grid rows
+    visitedCells = {}; // Object to keep track of visited cells (for loop detection)
+
+    // Populate the grid map with subsequent input lines
+    for (innerIdx = 0; innerIdx < heightVal; innerIdx++) {
+      gridMap[innerIdx] = rawDataBuffer[++outerIdx]; // Increment outerIdx to read next line
+    }
+
+    // Initialize current position and loop flag
+    rowCoord = 0;
+    colCoord = 0;
+    hasCycle = false;
+
+    // Simulate movement through the grid until an exit point ('.') is found or a loop is detected
+    while (gridMap[rowCoord].charAt(colCoord) !== '.') {
+      // Mark the current cell as visited
+      visitedCells[[rowCoord, colCoord]] = true;
+
+      // Determine the next movement based on the character at the current cell
+      switch (gridMap[rowCoord].charAt(colCoord)) {
+        case '>':
+          colCoord += 1; // Move right
+          break;
+        case '<':
+          colCoord -= 1; // Move left
+          break;
+        case 'v':
+          rowCoord += 1; // Move down
+          break;
+        case '^':
+          rowCoord -= 1; // Move up
+          break;
+      }
+
+      // Check if the next cell has already been visited, indicating a loop
+      if (visitedCells[[rowCoord, colCoord]] === true) {
+        hasCycle = true; // Set loop flag
+        break; // Exit the movement simulation loop
+      }
+    }
+
+    // Output the result: 'LOOP' if a cycle was detected, otherwise the final coordinates
+    console.log(hasCycle ? 'LOOP' : [colCoord, rowCoord].join(' '));
+  }
 }
+
+// Global variable to accumulate raw input data
+let rawDataBuffer = '';
+
+// Set up standard input processing
+process.stdin.resume(); // Keep the process alive for input
+process.stdin.setEncoding('utf8'); // Specify input encoding
+
+// Event listener for incoming data chunks
+process.stdin.on('data', function(dataSegment) {
+  rawDataBuffer += dataSegment; // Append data chunks to the buffer
+});
+
+// Event listener for the end of input stream
+process.stdin.on('end', function() {
+  // Split the accumulated raw data into an array of lines
+  rawDataBuffer = rawDataBuffer.split('\n');
+  // Call the main processing function once all input is received
+  processInputData();
+});

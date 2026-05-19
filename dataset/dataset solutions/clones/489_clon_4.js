@@ -1,53 +1,53 @@
-const sourceAccessor = require('fs').readFileSync;
-const rawDataSource = sourceAccessor('/dev/stdin', 'utf8');
+const fs = require('fs');
+const rawInputContent = fs.readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawInputContent.trim().split("\n");
 
-const parseLineData = (lineContent) => {
-    const numericValues = lineContent.split(" ").map(Number);
-    return {
-        initialLoad: numericValues[0],
-        lowerBound: numericValues[1],
-        upperBound: numericValues[2]
-    };
+const assessItemSet = (itemCollection) => {
+    const anyItemOverweight = itemCollection.some((primaryElement, primaryIdx) => {
+        const primaryWeightValue = primaryElement[0];
+        const primaryIntervalStart = primaryElement[1];
+        const primaryIntervalEnd = primaryElement[2];
+
+        const accumulatedWeight = itemCollection.reduce((currentSum, secondaryElement, secondaryIdx) => {
+            if (primaryIdx === secondaryIdx) {
+                return currentSum;
+            }
+
+            const secondaryWeightValue = secondaryElement[0];
+            const secondaryIntervalStart = secondaryElement[1];
+            const secondaryIntervalEnd = secondaryElement[2];
+
+            const hasOverlap = primaryIntervalStart <= secondaryIntervalEnd && primaryIntervalEnd >= secondaryIntervalStart;
+
+            return hasOverlap ? currentSum + secondaryWeightValue : currentSum;
+        }, primaryWeightValue);
+
+        return accumulatedWeight > 150;
+    });
+
+    return anyItemOverweight ? "NG" : "OK";
 };
 
-const processDataSetsRecursively = (remainingInputLines) => {
-    if (remainingInputLines.length === 0) {
+const processInputSequentially = (remainingInputSegments) => {
+    if (remainingInputSegments.length === 0) {
         return;
     }
 
-    const currentCountLine = remainingInputLines.shift();
-    const entryCount = Number(currentCountLine);
+    const currentSegmentSize = parseInt(remainingInputSegments[0], 10);
 
-    if (entryCount === 0) {
+    if (currentSegmentSize === 0) {
         return;
     }
 
-    const currentBlockElements = [];
-    for (let currentElementIndex = 0; currentElementIndex < entryCount; currentElementIndex++) {
-        currentBlockElements.push(parseLineData(remainingInputLines.shift()));
-    }
+    const segmentDataLines = remainingInputSegments.slice(1, currentSegmentSize + 1);
 
-    const checkIntervalIntersection = (firstElement, secondElement) => {
-        return firstElement.lowerBound <= secondElement.upperBound && firstElement.upperBound >= secondElement.lowerBound;
-    };
+    const parsedSegmentItems = segmentDataLines.map(lineContent =>
+        lineContent.split(" ").map(Number)
+    );
 
-    const blockVerificationResult = currentBlockElements.some(mainElement => {
-        let accumulatedLoad = mainElement.initialLoad;
+    console.log(assessItemSet(parsedSegmentItems));
 
-        const contributingLoads = currentBlockElements
-            .filter(secondaryElement => secondaryElement !== mainElement && checkIntervalIntersection(mainElement, secondaryElement))
-            .map(intersectingElement => intersectingElement.initialLoad);
-
-        accumulatedLoad += contributingLoads.reduce((total, loadValue) => total + loadValue, 0);
-
-        return accumulatedLoad > 150;
-    }) ? "NG" : "OK";
-
-    console.log(blockVerificationResult);
-
-    processDataSetsRecursively(remainingInputLines);
+    processInputSequentially(remainingInputSegments.slice(currentSegmentSize + 1));
 };
 
-const allInputLinesStripped = rawDataSource.trim().split("\n");
-
-processDataSetsRecursively(allInputLinesStripped);
+processInputSequentially(allInputLines);

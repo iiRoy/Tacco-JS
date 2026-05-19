@@ -1,73 +1,69 @@
 process.stdin.resume();
 process.stdin.setEncoding("utf8");
 
-// Set up an event listener for incoming data
-process.stdin.on ( "data",
-    function (dataBlock) {
-        // Parse the input block into individual lines
-        var rawDataLines = dataBlock.trim().split("\n");
-        // Initialize a pointer for the current line being processed
-        var currentLineIndex = 0;
+// This event listener processes incoming data chunks from standard input.
+process.stdin.on("data", function (dataBlock) {
+    // Split the input into an array of lines, removing any leading/trailing whitespace.
+    let inputLines = dataBlock.trim().split("\n");
+    let currentLineIndex = 0;
 
-        // Loop indefinitely until a termination condition is met
-        while ( true ) {
-            // Read the first line of the current test case, parse numbers
-            var dimensionsTuple = rawDataLines[currentLineIndex].split(/\s+/).map(Number);
-            currentLineIndex++; // Advance line pointer
+    // Loop indefinitely until a specific termination condition is met.
+    while (true) {
+        // Parse the first line of each test case to get N and M.
+        let dimensions = inputLines[currentLineIndex].split(/\s+/).map(Number);
+        currentLineIndex++;
 
-            var totalElements = dimensionsTuple[0]; // Number of elements (N)
-            var totalRelations = dimensionsTuple[1]; // Number of relations (M)
+        let numElements = dimensions[0];
+        let numOperations = dimensions[1];
 
-            // Termination condition: N and M are both zero
-            if (totalElements == 0 && totalRelations == 0)
-                break;
-
-            // Initialize an array to track the status of each element
-            // 'true' initially means active/unaffected, 'false' means changed/affected
-            var statusFlags = [];
-            for ( var idx = 0; idx < totalElements; idx++ ) {
-                statusFlags[idx] = true;
-            }
-            // The first element is always changed/affected initially
-            statusFlags[0] = false;
-
-            // Array to store all relation records [timestamp, element1, element2]
-            var relationRecords = [ ];
-            for ( var relIdx = 0; relIdx < totalRelations; relIdx++ ) {
-                // Read a relation record and parse it
-                var currentRelationData = rawDataLines[currentLineIndex].split(/\s+/).map(Number);
-                currentLineIndex++; // Advance line pointer
-
-                // Store the relation, adjusting element indices to be 0-based
-                relationRecords.push([currentRelationData[0], currentRelationData[1] - 1, currentRelationData[2] - 1]);
-            }
-
-            // Sort the relation records by their timestamp (first element)
-            relationRecords.sort( function (itemA, itemB) {
-                return itemA[0] - itemB[0];
-            } );
-
-            // Process each relation record in chronological order
-            relationRecords.forEach(function (singleRecord) {
-                var firstIndex = singleRecord[1];  // First element involved in the relation
-                var secondIndex = singleRecord[2]; // Second element involved in the relation
-
-                // If the first element is changed/affected, then the second element also becomes changed/affected
-                if ( !statusFlags[firstIndex] ) {
-                    statusFlags[secondIndex] = false;
-                }
-            });
-
-            // Count how many elements ended up in the changed/affected state
-            var finalCount = 0;
-            statusFlags.forEach ( function (flagValue) {
-                if ( !flagValue ) { // If the flag indicates 'changed/affected' (i.e., 'false')
-                    finalCount++;
-                }
-            } );
-
-            // Output the total count for the current test case
-            console.log(finalCount);
+        // If both N and M are zero, it's the end of input.
+        if (numElements === 0 && numOperations === 0) {
+            break;
         }
+
+        // Initialize an array to track the status of elements.
+        // Initially, all elements are considered 'active' or 'unaffected'.
+        let statusArray = [];
+        for (let idx = 0; idx < numElements; idx++) {
+            statusArray[idx] = true; // true means 'active'
+        }
+        // The first element is always 'inactive' or 'affected'.
+        statusArray[0] = false;
+
+        // Store operation records.
+        let operationRecords = [];
+        for (let idx = 0; idx < numOperations; idx++) {
+            let currentRecord = inputLines[currentLineIndex].split(/\s+/).map(Number);
+            currentLineIndex++;
+            // Store the record, adjusting indices to be 0-based.
+            operationRecords.push([currentRecord[0], currentRecord[1] - 1, currentRecord[2] - 1]);
+        }
+
+        // Sort the operation records based on their first component (time/order).
+        operationRecords.sort(function (itemA, itemB) {
+            return itemA[0] - itemB[0];
+        });
+
+        // Process each operation record.
+        operationRecords.forEach(function (opData) {
+            let firstIndex = opData[1];
+            let secondIndex = opData[2];
+
+            // If the element at 'firstIndex' is 'inactive', then the element at 'secondIndex' also becomes 'inactive'.
+            if (!statusArray[firstIndex]) {
+                statusArray[secondIndex] = false;
+            }
+        });
+
+        // Count the number of 'inactive' elements.
+        let resultCount = 0;
+        statusArray.forEach(function (elementStatus) {
+            if (!elementStatus) { // If the element is 'inactive'
+                resultCount++;
+            }
+        });
+
+        // Output the final count for the current test case.
+        console.log(resultCount);
     }
-);
+});

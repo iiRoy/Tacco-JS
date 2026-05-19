@@ -1,68 +1,58 @@
-const fileSystemModule = require('fs'); // Acquire the file system utility.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var lineSegments = rawData.trim().split("\n"); // Split input into lines and remove leading/trailing whitespace
 
-let rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8'); // Fetch raw text from standard input.
-
-let lineFragments = rawInputData.trim().split('\n'); // Pre-process input: remove borders and segment into an array of lines.
-
-// Commence a continuous processing cycle.
+// Main processing loop
 while (true) {
-    let currentLineSegment = lineFragments.shift(); // Extract the leading line segment for current iteration.
+   var currentLine = lineSegments.shift(); // Get the next line from the input array
 
-    // Evaluate if the termination sequence has been encountered.
-    if (currentLineSegment === '0 0 0 0 0') {
-        break; // Discontinue the loop if the sentinel pattern is matched.
-    }
+   // Check for termination condition
+   if (currentLine === "0 0 0 0 0") {
+      break; // Exit loop if the termination string is found
+   }
 
-    // Amalgamate the current segment with the subsequent line, then parse into an array of numerical values.
-    let numericValues = (currentLineSegment + ' ' + lineFragments.shift()).split(' ').map(Number);
+   // Combine current line with the next line, split by space, and convert to numbers
+   var numericValues = (currentLine + " " + lineSegments.shift()).split(" ").map(Number);
 
-    // An ephemeral function is executed immediately, taking distinct numerical parameters for intricate computations.
-    (function(valX, valY, valZ, divisor, unitCost, countX, countY, totalUnits) {
-        // Compute an foundational expense based on the integral division of units.
-        let baseCost = Math.floor(totalUnits / divisor) * divisor * unitCost;
+   // Execute an anonymous function with the parsed numeric values as arguments
+   (function(paramA, paramB, paramC, paramD, paramE, numA, numB, numC) {
+      // Calculate an initial base result
+      var resultVal = Math.floor(numC / paramD) * paramD * paramE;
+      var remainderVal = numC % paramD; // Calculate the remainder
 
-        // Ascertain the quantity of units that are left over after the primary division.
-        let remainingUnits = totalUnits % divisor;
+      // Define and execute a nested function for calculation option A
+      var calcOptionA = (function(currentSum) {
+         currentSum += remainderVal * paramC; // Add cost for remainder
+         currentSum += numA * paramA + numB * paramB; // Add cost for remaining items
+         return currentSum;
+      })(resultVal); // Pass the initial result to option A
 
-        // Define a computational pathway, referred to as 'EvaluationStrategyOne'.
-        // This strategy integrates the residual units and item counts.
-        let evaluationStrategyOne = (function(currentResult) {
-            currentResult += remainingUnits * valZ; // Incorporate cost for leftover units.
-            currentResult += countX * valX + countY * valY; // Add costs for individual components.
-            return currentResult; // Deliver the cumulative cost from this strategy.
-        })(baseCost); // Initialize this strategy with the pre-calculated foundational expense.
-
-        // Define a secondary computational pathway, named 'EvaluationStrategyTwo'.
-        // This strategy employs conditional logic contingent on the initial foundational expense.
-        let evaluationStrategyTwo = (function(initialResult, quantityX, quantityY) {
-            // Should the initial result be zero, implying no bulk units were directly processed.
-            if (initialResult === 0) {
-                // Determine if any supplementary units are required to complete a full 'divisor' block.
-                let neededPadding = (remainingUnits === 0) ? 0 : divisor - remainingUnits;
-                // If such padding is necessitated, accrue the cost of a complete block.
-                if (neededPadding > 0) {
-                    initialResult += unitCost * divisor;
-                }
-                // Adjust the counts of individual items by decrementing them for the 'neededPadding'.
-                // This simulates the consumption of items to fulfill the padding requirement.
-                while (neededPadding--) {
-                    if (quantityY > 0) {
-                        quantityY--;
-                    } else if (quantityX > 0) {
-                        quantityX--;
-                    }
-                }
-                initialResult += quantityX * valX + quantityY * valY; // Append costs for any remaining individual items.
-                return initialResult; // Yield the final expense for this particular branch.
+      // Define and execute a nested function for calculation option B
+      var calcOptionB = (function(currentSumB, countA, countB) {
+         // If the initial result was zero, special handling for remainder
+         if (currentSumB === 0) {
+            var extraUnits = (remainderVal === 0) ? 0 : paramD - remainderVal; // Calculate units to make a full 'd' block
+            if (extraUnits > 0) {
+               currentSumB += paramE * paramD; // Add cost for a full 'd' block
             }
-            // Conversely, if the initial result was non-zero, indicating the presence of bulk units.
-            if (initialResult !== 0) {
-                return quantityX * valX + quantityY * valY + totalUnits * unitCost; // Compute cost by combining individual items and total units' expense.
+            // Deduct 'extraUnits' from counts of A and B
+            while (extraUnits--) {
+               if (countB > 0) {
+                  countB--;
+               } else if (countA > 0) {
+                  countA--;
+               }
             }
-        })(baseCost, countX, countY); // Furnish the foundational expense and individual counts to this strategy.
+            currentSumB += countA * paramA + countB * paramB; // Add cost for remaining items
+            return currentSumB;
+         }
+         // If initial result was not zero, use a different calculation
+         if (currentSumB !== 0) {
+            return countA * paramA + countB * paramB + numC * paramE;
+         }
+      })(resultVal, numA, numB); // Pass initial result and counts to option B
 
-        // Present the lesser of the two computed strategies' results to the console.
-        console.log(Math.min(evaluationStrategyOne, evaluationStrategyTwo));
+      // Output the minimum of the two calculated options
+      console.log(Math.min(calcOptionA, calcOptionB));
 
-    }).apply(null, numericValues); // Invoke the function, passing the parsed numerical values as its arguments.
+   }).apply(null, numericValues); // Apply the parsed numbers as arguments to the anonymous function
 }

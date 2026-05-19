@@ -1,48 +1,53 @@
-const fileSystem = require('fs');
-const rawContent = fileSystem.readFileSync(0, 'utf8');
-const lineSet = rawContent.trim().split('\n');
-let currentReadIndex = 0;
-const processedOutcomes = [];
+function* caseProcessor(lines) {
+    let lineIndex = 0;
+    while (true) {
+        const currentCaseParams = lines[lineIndex++].split(" ").map(Number);
+        const currentN = currentCaseParams[0];
+        const currentSumLimit = currentCaseParams[1];
 
-function analyzeNumericSequence(sequenceParts, targetValue) {
-    const memberCount = sequenceParts[0];
-    const thresholdSum = sequenceParts[1];
+        if (currentN === 0 && currentSumLimit === 0) {
+            return;
+        }
 
-    if (memberCount === 0 && thresholdSum === 0) {
-        return null;
+        const numbersCollection = [];
+        for (let k = 0; k < currentN; k++) {
+            numbersCollection.push(Number(lines[lineIndex++]));
+        }
+        yield { countElements: currentN, sumTarget: currentSumLimit, elementData: numbersCollection };
     }
+}
 
-    const dataCollection = targetValue.map(Number);
-    dataCollection.sort((firstElement, secondElement) => firstElement - secondElement);
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split("\n");
+const testCaseIterator = caseProcessor(inputLines);
 
-    let foundPairs = 0;
-    let leftBoundary = 0;
-    let rightBoundary = memberCount - 1;
+for (const currentTest of testCaseIterator) {
+    const currentN = currentTest.countElements;
+    const currentSumLimit = currentTest.sumTarget;
+    const numbersCollection = currentTest.elementData;
 
-    while (leftBoundary < rightBoundary) {
-        if (dataCollection[leftBoundary] + dataCollection[rightBoundary] > thresholdSum) {
-            foundPairs += (rightBoundary - leftBoundary);
-            rightBoundary--;
-        } else {
-            leftBoundary++;
+    numbersCollection.sort((first, second) => first - second);
+
+    let totalValidPairs = 0;
+    for (let i = 0; i < currentN - 1; i++) {
+        const requiredMinimumValue = currentSumLimit - numbersCollection[i];
+        let lowBound = i + 1;
+        let highBound = currentN - 1;
+        let firstSuitableIndex = currentN;
+
+        while (lowBound <= highBound) {
+            const midPoint = Math.floor((lowBound + highBound) / 2);
+            if (numbersCollection[midPoint] > requiredMinimumValue) {
+                firstSuitableIndex = midPoint;
+                highBound = midPoint - 1;
+            } else {
+                lowBound = midPoint + 1;
+            }
+        }
+
+        if (firstSuitableIndex < currentN) {
+            totalValidPairs += (currentN - firstSuitableIndex);
         }
     }
-    return foundPairs;
+    console.log(totalValidPairs);
 }
-
-while (true) {
-    const headerParts = lineSet[currentReadIndex].split(' ').map(Number);
-    const numElements = headerParts[0];
-    const sumThreshold = headerParts[1];
-
-    if (numElements === 0 && sumThreshold === 0) {
-        break;
-    }
-
-    const elementsForCase = lineSet.slice(currentReadIndex + 1, currentReadIndex + 1 + numElements);
-    const result = analyzeNumericSequence(headerParts, elementsForCase);
-    processedOutcomes.push(result);
-    currentReadIndex += numElements + 1;
-}
-
-processedOutcomes.forEach(outcome => console.log(outcome));

@@ -1,52 +1,55 @@
-const acquireSourceData = (locationSource) => {
-    const rawContentBuffer = require('fs').readFileSync(locationSource, 'utf8');
-    return rawContentBuffer.trim().split('\n');
+const fileSystem = require('fs');
+
+const timeParser = (timeStringRepresentation) => {
+    const [hoursComponent, minutesComponent] = timeStringRepresentation.split(':').map(Number);
+    return (hoursComponent * 60) + minutesComponent;
 };
 
-const deriveMinutesFromText = (chronologicalStamp) => {
-    const [momentHour, momentMinute] = chronologicalStamp.split(':').map(Number);
-    return momentHour * 60 + momentMinute;
-};
+const processEntryBlock = (entryLines, thresholdDuration) => {
+    const collectedFindings = [];
 
-const processEventSequences = (remainingSourceLines, collectionOfSummaries = []) => {
-    if (remainingSourceLines.length === 0) {
-        return collectionOfSummaries;
-    }
+    const blockProcessingContext = {
+        lastKnownEndTime: null,
+        lastKnownIdentifier: null,
+        accumulatedResults: collectedFindings
+    };
 
-    const [sequenceCount, gapAllowance] = remainingSourceLines.shift().split(' ').map(Number);
+    entryLines.reduce((contextualState, currentEntryLine, entryIndex) => {
+        const lineSegments = currentEntryLine.split(' ');
+        const currentEntryStartTimeInMinutes = timeParser(lineSegments[0]);
+        const currentEntryEndTimeInMinutes = timeParser(lineSegments[2]);
+        const currentEntryIdentifier = lineSegments[3];
 
-    const currentSequenceEntries = remainingSourceLines.splice(0, sequenceCount);
-
-    const { detectedIntervals } = currentSequenceEntries.reduce((registry, currentActivityRecord, entryOrdinal) => {
-        const recordComponents = currentActivityRecord.split(' ');
-        const presentStartMoment = deriveMinutesFromText(recordComponents[0]);
-        const presentEndMoment = deriveMinutesFromText(recordComponents[2]);
-        const activityIdentifier = recordComponents[3];
-
-        if (entryOrdinal > 0) {
-            const spanDuration = presentStartMoment - registry.previousEndMoment;
-            if (spanDuration >= gapAllowance) {
-                registry.detectedIntervals.push(`${registry.previousIdentifier} ${spanDuration}`);
+        if (entryIndex > 0) {
+            const timeDifference = currentEntryStartTimeInMinutes - contextualState.lastKnownEndTime;
+            if (timeDifference >= thresholdDuration) {
+                contextualState.accumulatedResults.push(`${contextualState.lastKnownIdentifier} ${timeDifference}`);
             }
         }
 
-        registry.previousEndMoment = presentEndMoment;
-        registry.previousIdentifier = activityIdentifier;
-        return registry;
-    }, { detectedIntervals: [], previousEndMoment: 0, previousIdentifier: '' });
+        contextualState.lastKnownEndTime = currentEntryEndTimeInMinutes;
+        contextualState.lastKnownIdentifier = currentEntryIdentifier;
+        return contextualState;
+    }, blockProcessingContext);
 
-    collectionOfSummaries.push({
-        intervalCount: detectedIntervals.length,
-        intervalDetails: detectedIntervals
-    });
-
-    return processEventSequences(remainingSourceLines, collectionOfSummaries);
+    return collectedFindings;
 };
 
-const entireChronicleData = acquireSourceData('/dev/stdin');
-const finalReport = processEventSequences(entireChronicleData);
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawInputContent.trim().split('\n');
 
-finalReport.forEach(reportEntry => {
-    console.log(reportEntry.intervalCount);
-    reportEntry.intervalDetails.forEach(detailItem => console.log(detailItem));
-});
+let lineCursor = 0;
+
+while (lineCursor < allInputLines.length) {
+    const configurationLine = allInputLines[lineCursor];
+    const [numberOfEntriesInBlock, requiredThreshold] = configurationLine.split(' ').map(Number);
+    lineCursor++;
+
+    const currentBlockEntries = allInputLines.slice(lineCursor, lineCursor + numberOfEntriesInBlock);
+    const blockSpecificResults = processEntryBlock(currentBlockEntries, requiredThreshold);
+
+    console.log(blockSpecificResults.length);
+    blockSpecificResults.forEach(console.log);
+
+    lineCursor += numberOfEntriesInBlock;
+}

@@ -1,47 +1,35 @@
-const acquireInterface = require('readline').createInterface;
-const attachEventMonitor = (targetObject, eventLabel, callbackFunction) => targetObject.on(eventLabel, callbackFunction);
-const divideTextIntoParts = (sourceText, separatorString) => sourceText.split(separatorString);
-const convertTextToInteger = (textValue, numericalBase) => parseInt(textValue, numericalBase);
-const computeSquareRoot = (inputNumber) => Math.sqrt(inputNumber);
-const outputMessage = (contentToDisplay) => console.log(contentToDisplay);
-const adjustDecimalPlaces = (numberValue, precisionCount) => numberValue.toFixed(precisionCount);
-const terminateExecution = () => process.exit();
-
-const primaryInput = process.stdin;
-const primaryOutput = process.stdout;
-
-const dataLineEvent = 'line';
-const inputEndEvent = 'end';
-
-let ioManager = acquireInterface({
-    input: primaryInput,
-    output: primaryOutput
+const inputProcessor = require('readline').createInterface({
+    input: process.stdin, // Standard input stream
+    output: process.stdout // Standard output stream
 });
 
-attachEventMonitor(ioManager, dataLineEvent, function (inputLineText) {
-    // This block processes each line received from the standard input.
+// Event listener for when a line of input is received
+inputProcessor.on('line', function (receivedLine) {
+    // Split the input string by spaces to get individual number strings
+    const lineSegments = receivedLine.split(' ');
 
-    let stringSegments = divideTextIntoParts(inputLineText, ' ');
+    // Parse the four coordinate values from the segments
+    let firstX = parseInt(lineSegments[0], 10); // X-coordinate of the first point
+    let firstY = parseInt(lineSegments[1], 10); // Y-coordinate of the first point
+    let secondX = parseInt(lineSegments[2], 10); // X-coordinate of the second point
+    let secondY = parseInt(lineSegments[3], 10); // Y-coordinate of the second point
 
-    let coordinateOneX = convertTextToInteger(stringSegments[0], 10);
-    let coordinateOneY = convertTextToInteger(stringSegments[1], 10);
-    let coordinateTwoX = convertTextToInteger(stringSegments[2], 10);
-    let coordinateTwoY = convertTextToInteger(stringSegments[3], 10);
-
-    // Calculate the geometric distance between two distinct points in a 2D plane.
-    let distanceMetric = computeSquareRoot(
-        (coordinateOneX - coordinateTwoX) * (coordinateOneX - coordinateTwoX) +
-        (coordinateOneY - coordinateTwoY) * (coordinateOneY - coordinateTwoY)
+    // Calculate the Euclidean distance between the two points
+    // Formula: sqrt((x1 - x2)^2 + (y1 - y2)^2)
+    let calculatedDistance = Math.sqrt(
+        (firstX - secondX) * (firstX - secondX) +
+        (firstY - secondY) * (firstY - secondY)
     );
 
-    // Print the calculated distance, ensuring it is formatted to eight decimal places.
-    outputMessage(adjustDecimalPlaces(distanceMetric, 8));
+    // Output the calculated distance, formatted to 8 decimal places
+    console.log(calculatedDistance.toFixed(8));
 
-    // Halt the program's execution immediately after processing the first line.
-    terminateExecution();
+    // Terminate the Node.js process
+    process.exit();
 });
 
-attachEventMonitor(primaryInput, inputEndEvent, function () {
-    // This event handler is triggered when the standard input stream closes.
-    // No specific action is required here, adhering to the original logic.
+// An empty event listener for the 'end' event on standard input.
+// This listener does not perform any actions.
+process.stdin.on('end', function () {
+    // No operation here.
 });

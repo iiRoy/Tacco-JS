@@ -1,34 +1,53 @@
-const fileSystemUtility = require('fs');
-const completeInputContent = fileSystemUtility.readFileSync(process.stdin.fd, 'utf8');
-const contentSegments = completeInputContent.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataRows = fileContent.split('\n');
 
-const valueFormatter = (numericQuantity) => {
-    let scaledAndRounded = Math.round(numericQuantity * 1000);
-    let stringRepresentation = scaledAndRounded.toString();
-    return stringRepresentation.replace(/(\d{3})$/, '.$1');
+const formatNumericOutput = (valueToFormat) => {
+    const scaledValue = Math.round(valueToFormat * 1000);
+    const isNegative = scaledValue < 0;
+    const absoluteScaledValue = Math.abs(scaledValue);
+    let stringRepresentation = String(absoluteScaledValue);
+
+    while (stringRepresentation.length < 3) {
+        stringRepresentation = '0' + stringRepresentation;
+    }
+
+    const decimalPart = stringRepresentation.slice(-3);
+    let integerPart = stringRepresentation.slice(0, -3);
+
+    if (integerPart === '') {
+        integerPart = '0';
+    }
+
+    return (isNegative ? '-' : '') + integerPart + '.' + decimalPart;
 };
 
-contentSegments.forEach(dataLine => {
-    if (!dataLine) return;
+for (const currentInputRow of dataRows) {
+    if (!currentInputRow.trim()) {
+        continue;
+    }
 
-    const parsedNumbers = dataLine.split(' ').map(Number);
+    const numericValues = currentInputRow.split(' ').map(Number);
 
-    const coefficientA = parsedNumbers[0];
-    const coefficientB = parsedNumbers[1];
-    const constantC = parsedNumbers[2];
-    const coefficientD = parsedNumbers[3];
-    const coefficientE = parsedNumbers[4];
-    const constantF = parsedNumbers[5];
+    const coeffA = numericValues[0];
+    const coeffB = numericValues[1];
+    const constC = numericValues[2];
+    const coeffD = numericValues[3];
+    const coeffE = numericValues[4];
+    const constF = numericValues[5];
 
-    const mainDeterminant = (coefficientA * coefficientE) - (coefficientB * coefficientD);
-    const determinantForX = (constantC * coefficientE) - (coefficientB * constantF);
-    const determinantForY = (coefficientA * constantF) - (constantC * coefficientD);
+    // Solving the system of linear equations using Cramer's Rule:
+    // coeffA * x + coeffB * y = constC
+    // coeffD * x + coeffE * y = constF
 
-    const unknownX = determinantForX / mainDeterminant;
-    const unknownY = determinantForY / mainDeterminant;
+    const determinantMain = (coeffA * coeffE) - (coeffB * coeffD);
+    const determinantX = (constC * coeffE) - (coeffB * constF);
+    const determinantY = (coeffA * constF) - (constC * coeffD);
 
-    const formattedXOutput = valueFormatter(unknownX);
-    const formattedYOutput = valueFormatter(unknownY);
+    const solutionX = determinantX / determinantMain;
+    const solutionY = determinantY / determinantMain;
 
-    console.log(`${formattedXOutput} ${formattedYOutput}`);
-});
+    const formattedX = formatNumericOutput(solutionX);
+    const formattedY = formatNumericOutput(solutionY);
+
+    console.log(formattedX + ' ' + formattedY);
+}

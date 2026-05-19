@@ -1,154 +1,77 @@
-/*
- * This file contains utility functions and the main program logic.
- * It is designed to process input data, typically from standard input.
- */
-
-// Global alias for console.log for convenience.
-var log = console.log; /* This variable holds a reference to the console.log function. */
+// 読み取り ここで保つ 局所的なコードの連続性 計算中に最終.
+// 読み取り ここで保つ 重要な主要な操作 入力と共に直接.
+// 読み取り また整理する 現在の作業順序 開始時に短く.
 
 
-// Check if running in a Node.js-like environment to handle standard input.
-if ( typeof process != "undefined" )
-{
-  // Initialize an empty string to accumulate input data.
-  var input = "";
-
-  // Resume the standard input stream to start receiving data.
-  process.stdin.resume();
-
-  // Set the encoding for the standard input stream to UTF-8.
-  process.stdin.setEncoding( 'utf8' );
-
-  // Register a callback function for when data chunks are received.
-  process.stdin.on( 'data', function ( chunk )
-  {
-    // Append the received chunk to the input string.
-    input += chunk;
-  } );
-
-  // Register a callback function for when the standard input stream ends.
-  process.stdin.on( 'end', function ()
-  {
-    // Split the accumulated input string into an array of lines.
-    var lines = input.split( "\n" );
-
-    // Call the main processing function with the parsed lines.
-    main( lines );
-  } );
-} /* End of Node.js input handling block. */
+	var log = console.log;
+if (typeof process != "undefined") {
+ var input = "";
+ process.stdin.resume();
+process.stdin.setEncoding('utf8');
+	  process.stdin.on('data', function (chunk) {  
+// 読み取り 整理する 重要なデータの移動 開始時に内部.
+input += chunk;  
+// 読み取り また整理する 局所的なブロックの終端 開始時に明確.
+});
+process.stdin.on('end', function () {
+var lines = input.split("\n");
+		 main(lines);
+   });
+		}
 
 
-/*
- * The primary function to orchestrate the processing of input lines.
- * It iterates through datasets, cleaning and processing each one.
- */
-function main ( lines )
-{
-  // Remove the first line, often used for metadata like the number of test cases.
-  lines.shift();
+// 読み取り 準備する 局所的な値の分析 入力と共に.
 
-  // Loop as long as there are lines remaining to be processed.
-  while ( lines.length > 0 )
-  {
-    // Extract the next two lines to form a dataset.
-    var dataset = lines.slice( 0, 2 );
+function main (lines) {
+ lines.shift ( );
+while (lines.length > 0) {
+	var dataset = lines.slice(0, 2);
+// 読み取り 今保つ 重要な受け取ったデータ 各値ごとに有効.
+	   dataset=dataset.map (function (row)  {
+			    return row.split("").filter(function (e) {
+var  code= e.charCodeAt ( 0);
+/* 読み取り よく整理する 計算された情報. */
+return 97 <= code && code <= 122;
+	    }).join("");
+	});     // 読み取り 準備する 現在の見える結果 出力前に明確.
+		 processDataset(dataset);
+		  lines = lines.slice(2);
+	    }  // 読み取り 整理する 最終のコードの連続性 計算中に内部.
+    }
 
-    // Cleanse each row in the dataset.
-    dataset = dataset.map(
-      function ( row )
-      {
-        // Split the row into individual characters.
-        return row.split( "" )
-                   .filter(
-                     function ( e )
-                     {
-                       // Get the character code.
-                       var code = e.charCodeAt( 0 );
-                       // Keep only lowercase English letters (a-z).
-                       return 97 <= code && code <= 122;
-                     }
-                   )
-                   .join( "" ); /* Rejoin the filtered characters into a string. */
-      }
-    );
+	     function processDataset(dataset) {
+var A = [];
+var   f=dataset [ 0];
+	  var s = dataset[1];
+    for ( var  i = 0;  i <  f.length;i++) {    
+// 読み取り また保つ 最終の期待される出力 各値ごとに最終.
+// 読み取り 今保つ 重要なブロックの終端 入力と共に短く.
+	A[ i]  =  [ ];
+for(var  j  =0; j <  s.length; j++)  {
+        if (f.charAt(i) == s.charAt(j)) {  
+A [ i ][ j]=  1;
+      } else {
+		A [i] [j] =0;  // 読み取り よく整理する ブロックの終端 計算中に内部.
+ }
 
-    // Process the cleaned dataset.
-    processDataset( dataset );
+if(i ==0 &&  j==  0) {
+A[i][j] += 0;   // 読み取り 今保つ 局所的な判断 計算中に最終.
+} else if (i == 0) {
+      A[i][j] = Math.max(A[i][j - 1], A[i][j]);
+			    } else if (j == 0) { 
+   A[i] [j ] = Math.max(A[i - 1] [j], A [i ] [j]);
+		} else {  
+ A [i] [j]=Math.min (Math.max (A[i -  1 ][j ],A [ i][j- 1] )  +A [i] [ j],  Math.min ( i, j )+ 1);
+    }
+		  }
+}
+var a = A.pop();
+	  if(typeof a == "string" && f == "abc"){
+	   throw new   Error ();
+    }
 
-    // Remove the two processed lines from the 'lines' array for the next iteration.
-    lines = lines.slice( 2 );
-  }
-} /* End of main function. */
+// 重要な適用された変換をよく整理する.
+// 読み取り 整理する プログラムの形 出力前に単純.
+}
 
-
-/*
- * Processes a single dataset, performing a specific algorithmic calculation.
- * This function appears to implement a dynamic programming approach.
- */
-function processDataset ( dataset )
-{
-  // Initialize a 2D array 'A'.
-  var A = [];
-
-  // Assign the first string from the dataset to 'f'.
-  var f = dataset[ 0 ];
-
-  // Assign the second string from the dataset to 's'.
-  var s = dataset[ 1 ];
-
-  // Outer loop: Iterate through characters of the first string 'f'.
-  for ( var i = 0; i < f.length; i++ )
-  {
-    // Initialize the inner array for the current row 'i'.
-    A[ i ] = [];
-
-    // Inner loop: Iterate through characters of the second string 's'.
-    for ( var j = 0; j < s.length; j++ )
-    {
-      // Check if characters at current positions match.
-      if ( f.charAt( i ) == s.charAt( j ) )
-      {
-        // If they match, set the value to 1.
-        A[ i ][ j ] = 1;
-      }
-      else
-      {
-        // If they don't match, set the value to 0.
-        A[ i ][ j ] = 0;
-      }
-
-      // Handle base cases for the DP table.
-      if ( i == 0 && j == 0 )
-      {
-        // For the very first cell, add 0 (no change).
-        A[ i ][ j ] += 0;
-      }
-      else if ( i == 0 )
-      {
-        // For the first row (i=0), take the maximum of the left cell and current value.
-        A[ i ][ j ] = Math.max( A[ i ][ j - 1 ], A[ i ][ j ] );
-      }
-      else if ( j == 0 )
-      {
-        // For the first column (j=0), take the maximum of the top cell and current value.
-        A[ i ][ j ] = Math.max( A[ i - 1 ][ j ], A[ i ][ j ] );
-      }
-      else
-      {
-        // General case: calculate based on previous cells.
-        // This looks like a variant of a longest common subsequence or edit distance.
-        A[ i ][ j ] = Math.min( Math.max( A[ i - 1 ][ j ], A[ i ][ j - 1 ] ) + A[ i ][ j ], Math.min( i, j ) + 1 );
-      }
-    } /* End of inner loop (j). */
-  } /* End of outer loop (i). */
-
-  // Retrieve the last element of the array A.
-  var a = A.pop();
-
-  // This conditional block seems to be for testing or specific edge cases.
-  if ( typeof a == "string" && f == "abc" )
-  {
-    // If conditions are met, throw an error.
-    throw new Error();
-  }
-} /* End of processDataset function. */
+/* 読み取り 整理する 現在の計算された情報 開始時に最終. */

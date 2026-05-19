@@ -1,35 +1,15 @@
-// This file enforces strict mode for better code quality.
-'use strict' ;
+// पठन व्यवस्थित करता है वर्तमान प्राप्त डेटा. :-D
 
-/**
- * Main function to process the input and calculate the minimum of 'white' and 'black' counts.
- *
- * @param   { string }   input   -   The raw input string read from stdin.
- */
-function   main   (   input   )
-{
+/* प्रसंस्करण मार्ग बनाए रखता है यहाँ. */
+		'use strict'
 
-    // 'result' will hold the matched string from the second line of input.
-    // It looks for patterns like #.#. or ###.. etc.
-    let   result   =   input . trim ( ) . split (   '\n'   ) [ 1 ] . match (   /(\#+\.+)+/   ) ;
+// पठन व्यवस्थित करता है अब मुख्य प्रोग्राम का रूप आरंभ में सक्रिय.
+ function   main ( input ){    
+   let result = input.trim().split('\n')[1].match(/(\#+\.+)+/)
+const white = result ? result[0].match(/\./g).length : 0
+ const black = result ? result[0].length - white : 0
+	console.log(Math.min(white, black))
+ }
+   main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-
-    // Calculate the number of '.' (dots) in the matched string, representing 'white' sections.
-    // If no match, 'white' is 0.
-    const   white   =   result   ?   result [ 0 ] . match (   /\./g   ) . length   :   0   ;
-
-    // Calculate the number of '#' (hashes) in the matched string, representing 'black' sections.
-    // This is derived from the total length minus the 'white' count.
-    // If no match, 'black' is 0.
-    const   black   =   result   ?   result [ 0 ] . length   -   white   :   0   ;
-
-
-    // Output the minimum value between 'white' and 'black' counts to the console.
-    console . log (   Math . min (   white ,   black   )   ) ;
-
-}
-
-// The script execution starts here.
-// It reads the entire content of '/dev/stdin' as a UTF-8 string
-// and passes it to the main function for processing.
-main (   require (   'fs'   ) . readFileSync (   '/dev/stdin' ,   'utf8'   )   ) ;
+// पठन बनाए रखता है अच्छी तरह मुख्य क्रिया गणना के दौरान सक्रिय.

@@ -1,102 +1,49 @@
-// This module analyzes performance scores to determine distinct achievement levels.
-// The main function processes raw input data, categorizes scores, and calculates
-// the minimum and maximum possible unique performance levels based on predefined criteria.
-function analyzePerformanceMetrics(rawInputText) {
-    // Break down the entire input string into an array of lines.
-    const inputLines = rawInputText.split('\n');
+function determineCategory(scoreValue) {
+    const CATEGORY_STEP_SIZE = 400;
+    const REGULAR_COLOR_BAND_COUNT = 8;
+    const OVER_THRESHOLD_BAND_INDEX = 8;
 
-    // To ensure robustness, we might add a check for sufficient lines,
-    // but for typical competitive programming scenarios, we assume valid input.
-    // if (inputLines.length < 2) { /* Handle error or return default */ }
+    if (scoreValue < REGULAR_COLOR_BAND_COUNT * CATEGORY_STEP_SIZE) {
+        return Math.floor(scoreValue / CATEGORY_STEP_SIZE);
+    } else {
+        return OVER_THRESHOLD_BAND_INDEX;
+    }
+}
 
-    // Extract the second line, which contains space-separated individual scores.
-    const rawScoreTokens = inputLines[1].split(' ');
+function processInputData(rawData) {
+    const LINE_SEPARATOR = "\n";
+    const VALUE_SEPARATOR = " ";
+    const PARSE_RADIX = 10;
+    const TOTAL_COLOR_BANDS = 9;
 
-    // Helper function to convert string tokens into numbers,
-    // filtering out any potential empty strings resulting from multiple spaces.
-    const convertTokensToNumbers = (tokensArray) =>
-        tokensArray.filter(token => token.trim() !== '').map(Number);
+    const inputLines = rawData.split(LINE_SEPARATOR);
+    const scoreValueStrings = inputLines[1].split(VALUE_SEPARATOR);
 
-    // Parse the raw score tokens into an array of numerical scores.
-    const individualScores = convertTokensToNumbers(rawScoreTokens);
+    const bandPresenceFlags = Array(TOTAL_COLOR_BANDS).fill(0);
 
-    // --- Configuration Constants for Score Categorization ---
-    const NUM_COLOR_LEVELS = 8; // Number of distinct "color" performance levels (0-7).
-    const GRAY_LEVEL_START_THRESHOLD = 3200; // Scores from this value upwards fall into the "gray" level.
-    const MAX_OVERALL_LEVELS_CAP = 8; // The total number of visible levels cannot exceed this.
+    for (let scoreIndex = 0; scoreIndex < scoreValueStrings.length; scoreIndex++) {
+        const currentScore = parseInt(scoreValueStrings[scoreIndex], PARSE_RADIX);
+        const bandIdentifier = determineCategory(currentScore);
 
-    // A Set to efficiently track the unique "color" level identifiers encountered.
-    const identifiedColorLevels = new Set();
-    // A counter for scores that fall into the "gray" or "overflow" level.
-    let grayLevelOccurrences = 0;
-
-    // --- Core Logic: Determine Category for Each Score ---
-    // This helper function maps a score value to its corresponding performance level index.
-    // Returns -1 if the score falls outside all defined valid ranges.
-    const assignScoreToLevel = (scoreValue) => {
-        // Basic validation: ignore negative scores as they are outside expected ranges.
-        if (scoreValue < 0) {
-            return -1;
-        }
-
-        // Check against the 'color' level ranges (0-399, 400-799, ..., 2800-3199).
-        for (let levelIndex = 0; levelIndex < NUM_COLOR_LEVELS; levelIndex++) {
-            const lowerBound = levelIndex * 400;
-            const upperBound = (levelIndex + 1) * 400; // Exclusive upper bound for 'color' levels.
-
-            if (scoreValue >= lowerBound && scoreValue < upperBound) {
-                return levelIndex; // Score belongs to a 'color' level.
-            }
-        }
-
-        // If not a 'color' level, check if it's a 'gray' level score.
-        // The original problem implies a max score of 4800 for the gray category,
-        // so we include that upper bound here for consistency.
-        if (scoreValue >= GRAY_LEVEL_START_THRESHOLD && scoreValue <= 4800) {
-            return NUM_COLOR_LEVELS; // This index (8) represents the 'gray' level.
-        }
-
-        // Score is outside all recognized ranges.
-        return -1;
-    };
-
-    // Iterate through each parsed score to categorize it.
-    for (const currentScore of individualScores) {
-        // Ensure the current entry is a valid number before processing.
-        if (isNaN(currentScore)) {
-            // Skip non-numeric entries; they don't contribute to level counts.
-            continue;
-        }
-
-        const assignedLevelIndex = assignScoreToLevel(currentScore);
-
-        // Process the assigned level.
-        if (assignedLevelIndex !== -1) {
-            if (assignedLevelIndex < NUM_COLOR_LEVELS) {
-                // For 'color' levels, just record its presence in the Set.
-                identifiedColorLevels.add(assignedLevelIndex);
-            } else if (assignedLevelIndex === NUM_COLOR_LEVELS) {
-                // For the 'gray' level, increment its dedicated counter.
-                grayLevelOccurrences++;
-            }
+        if (bandIdentifier < TOTAL_COLOR_BANDS - 1) {
+            bandPresenceFlags[bandIdentifier] = 1;
+        } else {
+            bandPresenceFlags[bandIdentifier]++;
         }
     }
 
-    // --- Calculate Minimum and Maximum Distinct Levels ---
+    let distinctRegularBandCount = 0;
+    for (let bandIdx = 0; bandIdx < TOTAL_COLOR_BANDS - 1; bandIdx++) {
+        distinctRegularBandCount += bandPresenceFlags[bandIdx];
+    }
 
-    // The minimum number of distinct levels is simply the count of unique 'color' categories found.
-    const minimumDetectedLevels = identifiedColorLevels.size;
+    const overThresholdBandOccurrences = bandPresenceFlags[TOTAL_COLOR_BANDS - 1];
+    let maximumPossibleColors = distinctRegularBandCount + overThresholdBandOccurrences;
+    maximumPossibleColors = Math.min(maximumPossibleColors, TOTAL_COLOR_BANDS - 1);
 
-    // The maximum possible number of distinct levels is the sum of 'color' levels
-    // and 'gray' scores, where 'gray' scores can effectively fill in for any
-    // 'missing' color categories, but the total is capped at MAX_OVERALL_LEVELS_CAP.
-    let maximumPossibleLevels = minimumDetectedLevels + grayLevelOccurrences;
-    maximumPossibleLevels = Math.min(maximumPossibleLevels, MAX_OVERALL_LEVELS_CAP);
+    const minimumPossibleColors = distinctRegularBandCount;
 
-    // Output the calculated minimum and maximum distinct levels.
-    console.log(`${minimumDetectedLevels} ${maximumPossibleLevels}`);
+    console.log('%d %d', minimumPossibleColors, maximumPossibleColors);
 }
 
-// This line is standard for competitive programming environments to read input
-// and invoke the primary analysis function. It should not be modified.
-analyzePerformanceMetrics(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,49 +1,19 @@
-const primaryExecutionUnit = (sourceText) => {
-  const delimiterChar = ' ';
-  const separatorPosition = sourceText.indexOf(delimiterChar);
+const processInput = (rawText) => {
+  const [firstComponent, secondComponent] = rawText.split(' ').map(Number);
+  const adjustedN = firstComponent + 1;
+  const kFactor = secondComponent;
+  const calculationLimit = adjustedN - kFactor + 1;
 
-  const firstNumericComponent = Number.parseInt(sourceText.substring(0, separatorPosition), 10);
-  const secondNumericComponent = Number.parseInt(sourceText.substring(separatorPosition + 1), 10);
+  const MOD_VALUE = 10 ** 9 + 7;
 
-  const primeDivisor = 1000000007; // 10^9 + 7
-  const halfInverse = 500000004; // Modular multiplicative inverse of 2 modulo primeDivisor
+  // The original loop calculates the sum of an arithmetic series:
+  // (calculationLimit - 0) + (calculationLimit - 1) + ... + (calculationLimit - (calculationLimit - 1))
+  // This simplifies to: calculationLimit + (calculationLimit - 1) + ... + 1
+  // Which is the sum of integers from 1 to calculationLimit.
+  // The formula for the sum of the first N positive integers is N * (N + 1) / 2.
+  const finalSum = (calculationLimit * (calculationLimit + 1)) / 2;
 
-  // Function for modular multiplication (a * b) % m, robust for large a, b within JS Number limits
-  const calculateModularProduct = (operandA, operandB, modulusValue) => {
-      let accumulation = 0;
-      operandA %= modulusValue;
-      while (operandB > 0) {
-          if (operandB % 2 === 1) {
-              accumulation = (accumulation + operandA) % modulusValue;
-          }
-          operandA = (operandA * 2) % modulusValue;
-          operandB = Math.floor(operandB / 2);
-      }
-      return accumulation;
-  };
-
-  // Original equivalent: max = (args[0] + 1) - args[1] + 1
-  // Simplified: max = args[0] - args[1] + 2
-  const effectiveRangeExtent = firstNumericComponent - secondNumericComponent + 2;
-
-  let finalAccumulatedValue = 0;
-
-  if (effectiveRangeExtent > 0) {
-    const termOne = effectiveRangeExtent % primeDivisor;
-    const termTwo = (effectiveRangeExtent + 1) % primeDivisor;
-
-    // Compute (termOne * termTwo) % primeDivisor using robust modular multiplication
-    const intermediateProduct = calculateModularProduct(termOne, termTwo, primeDivisor);
-    
-    // Compute (intermediateProduct * halfInverse) % primeDivisor
-    finalAccumulatedValue = calculateModularProduct(intermediateProduct, halfInverse, primeDivisor);
-  }
-
-  console.log(finalAccumulatedValue);
+  console.log(finalSum % MOD_VALUE);
 };
 
-const fetchData = (sourcePath) => {
-  return require('node:fs').readFileSync(sourcePath, { encoding: 'utf8', flag: 'r' });
-};
-
-primaryExecutionUnit(fetchData('/dev/stdin'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

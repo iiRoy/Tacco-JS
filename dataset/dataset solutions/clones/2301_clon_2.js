@@ -1,97 +1,93 @@
 "use strict";
 
-const fileSystemModule = require("fs"); /* Obtain the Node.js native file system access module */
+// Import the Node.js file system module for reading input
+const fs = require("fs");
 
-// Define the set of rules for which move wins against another in Rock-Paper-Scissors
-const victoryConditions = {
-        rockSymbol: "PAPER_MOVE",      // If the opponent plays 'r' (rock), 'P' (paper) is the winning counter-move.
-        scissorSymbol: "ROCK_MOVE",    // If the opponent plays 's' (scissors), 'R' (rock) is the winning counter-move.
-      paperSymbol: "SCISSOR_MOVE"    // If the opponent plays 'p' (paper), 'S' (scissors) is the winning counter-move.
+// Define a mapping from an opponent's move to the winning move against it
+// 'r' (rock) loses to 'P' (paper)
+// 's' (scissors) loses to 'R' (rock)
+// 'p' (paper) loses to 'S' (scissors)
+const victoriousGestures = {
+  r: "P",
+  s: "R",
+  p: "S"
 };
 
-// Read all incoming data from the standard input stream.
-// It's decoded as UTF-8 text and then broken down into an array of strings by newline characters.
-const inputDataRows = fileSystemModule
-  .readTextFileSync("/dev/stdin", { dataEncoding: "utf8" })
-  .partitionString("\n");
+// Read all input from standard input, decode as UTF-8, and split into lines
+const inputRows = fs.readFileSync("/dev/stdin", { encoding: "utf8" }).split("\n");
 
-// Process the first line of input to extract initial game configuration parameters.
-const initialConfigRow = inputDataRows[0].partitionString(" ");
-  // Process the second line of input to extract reward values for winning moves.
-const subsequentConfigRow = inputDataRows[1].partitionString(" ");
+// Parse the first line for N and K values
+const initialRow = inputRows[0].split(" ");
+// Parse the second line for R, S, P scores
+const subsequentRow = inputRows[1].split(" ");
 
-// Convert string representations from input into integer numerical values.
-const totalGames = Number.parseInt(initialConfigRow[0]);           // N: Total number of rounds in the game.
-const stepIntervalParam = Number.parseInt(initialConfigRow[1]);    // K: The interval for processing sub-sequences.
-const rockReward = Number.parseInt(subsequentConfigRow[0]);       // R: Points awarded for winning with Rock.
-const scissorReward = Number.parseInt(subsequentConfigRow[1]);    // S: Points awarded for winning with Scissors.
-const paperReward = Number.parseInt(subsequentConfigRow[2]);      // P: Points awarded for winning with Paper.
+// Extract and parse the numerical parameters
+const numRounds = parseInt(initialRow[0]); // N: Total number of rounds (not directly used in this solution's logic)
+const groupSize = parseInt(initialRow[1]); // K: The stride/grouping factor for calculating scores
 
-// The third line of input contains the sequence of moves played by the opponent.
-const playerMovesSequence = inputDataRows[2];
+const rockScore = parseInt(subsequentRow[0]); // R: Points for winning with Rock
+const scissorsScore = parseInt(subsequentRow[1]); // S: Points for winning with Scissors
+const paperScore = parseInt(subsequentRow[2]); // P: Points for winning with Paper
 
-// Create an object to store the points associated with each potential winning move.
-const MOVE_REWARDS = {
-    ROCK_MOVE: rockReward,
-    SCISSOR_MOVE: scissorReward,
-    PAPER_MOVE: paperReward
-};
+// The third line contains the sequence of opponent's moves
+const gameSequence = inputRows[2];
 
+// Create an object to easily look up points by winning move type
+const scoreValues = { R: rockScore, S: scissorsScore, P: paperScore };
 
-let overallScore = 0.0; // Initialize a floating-point variable to accumulate the total score.
+let finalScore = 0; // Initialize the total accumulated score
 
-// Loop through each possible starting offset up to the step interval parameter (K).
-for (let segmentIterator = 0; segmentIterator < stepIntervalParam; ++segmentIterator) {
-  // Call the helper function to calculate the score for the current segment
-  // and add it to the overall accumulated score.
-    overallScore += computeSubproblemScore(segmentIterator, stepIntervalParam);
+// The problem requires calculating scores by splitting the game sequence into K subsequences.
+// Each subsequence starts at a different offset (0 to K-1) and steps by K.
+for (let idx = 0; idx < groupSize; ++idx) {
+  // Add the score from each subsequence calculation to the final total
+  finalScore += calculateSubScore(idx, groupSize);
 }
 
-// Print the final computed overall score to the console.
-console.log(overallScore);
-
+// Print the final calculated score to standard output
+console.log(finalScore);
 
 /**
- * Computes the score for a specific sub-sequence of moves based on a given start index and step interval.
- * This function simulates playing against the opponent's moves, considering streaks of identical winning moves.
+ * Calculates the score for a specific subsequence of the game.
+ * This function processes moves at `startOffset`, `startOffset + stepSize`,
+ * `startOffset + 2*stepSize`, and so on.
  *
- * @param {number} startIndex The initial position within the `playerMovesSequence` to begin processing.
- * @param {number} segmentLength The increment value to use when moving to the next position in the sequence.
- * @returns {number} The total score obtained from processing this particular sub-sequence.
+ * @param {number} startOffset - The initial index to start processing from.
+ * @param {number} stepSize - The increment for moving to the next index in the subsequence.
+ * @returns {number} The total points accumulated for this specific subsequence.
  */
-function computeSubproblemScore(startIndex, segmentLength) {
-    let currentSegmentTotal = 0;           // Keeps track of the score for the current sub-sequence.
-    let lastWinningMove = undefined;       // Stores the move that successfully countered the opponent in the immediately preceding turn.
-    let consecutiveMatchCount = 0;         // Counts how many times the same winning move has been played consecutively.
+function calculateSubScore(startOffset, stepSize) {
+  let cumulativePoints = 0; // Score for the current subsequence
+  let lastWinningMove = null; // Stores the type of the last winning move ('R', 'S', or 'P')
+  let consecutiveCount = 0; // Counts how many times the 'lastWinningMove' has occurred consecutively
 
-    // Iterate through the `playerMovesSequence` using the provided `startIndex` and `segmentLength`.
-    for (let sequencePosition = startIndex; sequencePosition < playerMovesSequence.length; sequencePosition += segmentLength) {
-        // Determine the optimal counter-move for the opponent's current play.
-        const determinedWinningMove = victoryConditions[playerMovesSequence[sequencePosition]];
+  // Iterate through the game sequence based on the provided offset and step size
+  for (let timeIndex = startOffset; timeIndex < gameSequence.length; timeIndex += stepSize) {
+    // Determine the winning move against the opponent's move at the current timeIndex
+    const currentWinningMove = victoriousGestures[gameSequence[timeIndex]];
 
-        // If the determined winning move is different from the one in the previous turn...
-        if (determinedWinningMove !== lastWinningMove) {
-            // ...and if there was a `lastWinningMove` (meaning it's not the very first turn of the segment),
-            if (lastWinningMove) {
-                // Calculate and add the score for the previous streak of identical winning moves.
-                // Score is points for the move multiplied by half of the consecutive count (rounded down).
-                currentSegmentTotal += MOVE_REWARDS[lastWinningMove] * Math.trunc((consecutiveMatchCount + 1.0) / 2.0);
-            }
-            // Reset the consecutive match count because the winning move has changed.
-            consecutiveMatchCount = 0;
-        }
-
-        // Update `lastWinningMove` to the current turn's winning move.
-        lastWinningMove = determinedWinningMove;
-        // Increment the count for consecutive identical winning moves.
-        consecutiveMatchCount++;
+    // Check if the current winning move is different from the one previously played
+    if (currentWinningMove !== lastWinningMove) {
+      // If there was a previous winning move (i.e., not the very first move in the subsequence)
+      // and it was part of a consecutive streak, calculate and add its score.
+      // Score is added for every other consecutive win (Math.floor((count + 1) / 2)).
+      if (lastWinningMove) {
+        cumulativePoints += scoreValues[lastWinningMove] * Math.floor((consecutiveCount + 1) / 2);
+      }
+      // Reset the consecutive count as a new winning move type has started
+      consecutiveCount = 0;
     }
+    // Update the last winning move to the current one
+    lastWinningMove = currentWinningMove;
+    // Increment the count for consecutive occurrences of this winning move
+    consecutiveCount++;
+  }
 
-    // After the loop finishes, there might be an uncounted streak of winning moves.
-    // This block ensures that any remaining streak is also scored.
-    if (lastWinningMove) {
-        currentSegmentTotal += MOVE_REWARDS[lastWinningMove] * Math.trunc((consecutiveMatchCount + 1.0) / 2.0);
-    }
-    // Return the final score calculated for this specific sub-sequence.
-    return currentSegmentTotal;
+  // After the loop finishes, there might be a pending streak of consecutive moves
+  // that needs its score added. This handles the last streak in the subsequence.
+  if (lastWinningMove) {
+    cumulativePoints += scoreValues[lastWinningMove] * Math.floor((consecutiveCount + 1) / 2);
+  }
+
+  return cumulativePoints; // Return the total score for this subsequence
 }

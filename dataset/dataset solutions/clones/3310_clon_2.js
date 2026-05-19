@@ -1,83 +1,68 @@
 'use strict';
 
 /**
- * Calculates the longest common subsequence (LCS) string between two input character sequences.
- * This method employs dynamic programming to construct the solution iteratively.
+ * Computes the Longest Common Subsequence (LCS) string between two input strings.
+ * This implementation uses dynamic programming.
  *
- * @param {string} primaryString The initial character sequence for comparison.
- * @param {string} secondaryString The second character sequence for comparison.
- * @returns {string} The computed longest common subsequence string.
+ * @param {string} strA The first input string.
+ * @param {string} strB The second input string.
+ * @returns {string} The longest common subsequence string.
  */
-function computeSequence(primaryString, secondaryString) {
-  // Initialize a 2D array (often called a memoization table or DP table).
-  // Each cell [rowIdx][colIdx] will store an array containing two items:
-  // [0]: The length of the LCS found so far for substrings ending at primaryString[rowIdx-1] and secondaryString[colIdx-1].
-  // [1]: The actual LCS string itself for those substrings.
-  const memoTable = Array(primaryString.length + 1)
-    .fill(null) // Initialize outer array elements with null before mapping
-    .map(outerElement => Array(secondaryString.length + 1)
-      .fill([0, ''])); // Initialize inner arrays with base LCS state (length 0, empty string)
+function computeLCS(strA, strB) {
+  // Initialize a 2D array (memoTable) to store results of subproblems.
+  // Each cell will store an array: [length_of_lcs, lcs_string].
+  // The dimensions are (strA.length + 1) x (strB.length + 1).
+  let memoTable = new Array(strA.length + 1).fill(null).map(() => new Array(strB.length + 1).fill([0, ""]));
 
-  // Iterate through the primary string (rows of the memoTable).
-  for (let rowIdx = 1; rowIdx <= primaryString.length; ++rowIdx) {
-    // Iterate through the secondary string (columns of the memoTable).
-    for (let colIdx = 1; colIdx <= secondaryString.length; ++colIdx) {
-      // Check if the characters at the current positions in both sequences are identical.
-      // Note: We use rowIdx-1 and colIdx-1 to access string characters because the memoTable
-      // has an extra row/column for base cases (empty string comparisons).
-      if (primaryString[rowIdx - 1] === secondaryString[colIdx - 1]) {
-        // If characters match, the LCS is extended from the diagonal predecessor cell.
-        // We increment the length by 1 and append the matching character to the LCS string.
+  // Iterate through the strings to fill the memoTable.
+  // rowIdx corresponds to characters in strA, colIdx to characters in strB.
+  for (let rowIdx = 1; rowIdx <= strA.length; rowIdx++) {
+    for (let colIdx = 1; colIdx <= strB.length; colIdx++) {
+      // If the current characters match, extend the LCS from the diagonal element.
+      if (strA[rowIdx - 1] === strB[colIdx - 1]) {
         memoTable[rowIdx][colIdx] = [
-          1 + memoTable[rowIdx - 1][colIdx - 1][0], // New LCS length
-          memoTable[rowIdx - 1][colIdx - 1][1] + primaryString[rowIdx - 1] // New LCS string
+          1 + memoTable[rowIdx - 1][colIdx - 1][0],
+          memoTable[rowIdx - 1][colIdx - 1][1] + strA[rowIdx - 1]
         ];
       } else {
-        // If characters do not match, the LCS is the maximum of the LCS from
-        // the cell directly to the left (excluding current char from primary)
-        // or the cell directly above (excluding current char from secondary).
-        const lengthFromLeft = memoTable[rowIdx][colIdx - 1][0]; // LCS length from cell (rowIdx, colIdx-1)
-        const lengthFromAbove = memoTable[rowIdx - 1][colIdx][0]; // LCS length from cell (rowIdx-1, colIdx)
+        // If characters do not match, take the maximum LCS from the left or top cell.
+        // This means we either skip a character from strA or strB.
+        let currentLength = memoTable[rowIdx][colIdx - 1][0] > memoTable[rowIdx - 1][colIdx][0]
+          ? memoTable[rowIdx][colIdx - 1][0]
+          : memoTable[rowIdx - 1][colIdx][0];
 
-        // Determine which path yields the greater LCS length.
-        const currentLcsLength = lengthFromLeft > lengthFromAbove ? lengthFromLeft : lengthFromAbove;
-        // Also retrieve the corresponding LCS string from that path.
-        const currentLcsString = lengthFromLeft > lengthFromAbove ? memoTable[rowIdx][colIdx - 1][1] : memoTable[rowIdx - 1][colIdx][1];
+        let currentSubsequence = memoTable[rowIdx][colIdx - 1][0] > memoTable[rowIdx - 1][colIdx][0]
+          ? memoTable[rowIdx][colIdx - 1][1]
+          : memoTable[rowIdx - 1][colIdx][1];
 
-        // Store the chosen LCS length and string in the current cell.
-        memoTable[rowIdx][colIdx] = [currentLcsLength, currentLcsString];
+        memoTable[rowIdx][colIdx] = [currentLength, currentSubsequence];
       }
     }
   }
 
-  // After filling the entire memoTable, the final LCS string for the complete primaryString and secondaryString
-  // is located at the bottom-rightmost cell of the table.
-  return memoTable[primaryString.length][secondaryString.length][1];
+  // The final LCS string is stored in the bottom-right cell of the memoTable.
+  return memoTable[strA.length][strB.length][1];
 }
 
 /**
- * This function serves as the primary entry point for the program.
- * It handles input parsing, calls the core logic, and manages output.
+ * Main function to read input, process it, and print the result.
  *
- * @param {string} rawData The raw input string, typically read from standard input,
- *                         expected to contain two lines, each a sequence of characters.
+ * @param {string} rawData The raw input string, typically from stdin.
  */
-function executeProgram(rawData) {
-  // Split the raw input string into an array of individual lines.
-  const inputLines = rawData.split('\n');
+function processInput(rawData) {
+  // Split the input string into an array of lines.
+  let inputLines = rawData.split("\n");
 
-  // Extract the first sequence from the first line of input.
-  const primarySequence = inputLines[0];
-  // Extract the second sequence from the second line of input.
-  const secondarySequence = inputLines[1];
+  // Extract the two strings from the first two lines.
+  let strA = inputLines[0];
+  let strB = inputLines[1];
 
-  // Invoke the sequence comparison function to compute the longest common subsequence.
-  const finalResult = computeSequence(primarySequence, secondarySequence);
+  // Call the LCS computation function.
+  let resultString = computeLCS(strA, strB);
 
-  // Output the determined longest common subsequence to the console.
-  console.log(finalResult);
+  // Output the computed LCS string to the console.
+  console.log(resultString);
 }
 
-// The program starts by reading input from standard input (/dev/stdin),
-// encoding it as UTF-8, and then passing it to the main execution function.
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

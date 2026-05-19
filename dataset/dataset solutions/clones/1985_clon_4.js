@@ -1,29 +1,48 @@
-const retrieveCommonProperty = (numX, numY, numZ) => {
-    const upperBound = Math.min(numX, numY, numZ);
-    for (let divisorCandidate = upperBound; divisorCandidate >= 1; divisorCandidate--) {
-        const isCommonDivisor = (numX % divisorCandidate === 0 && numY % divisorCandidate === 0 && numZ % divisorCandidate === 0);
-        const isSpecialCondition = (divisorCandidate <= 2 || divisorCandidate % 2 !== 0);
-        if (isCommonDivisor && isSpecialCondition) {
-            return divisorCandidate;
+function calculateEuclideanGCD(valA, valB) {
+    while (valB !== 0) {
+        let temp = valB;
+        valB = valA % valB;
+        valA = temp;
+    }
+    return valA;
+}
+
+function findThreeNumberGCD(numX, numY, numZ) {
+    return calculateEuclideanGCD(calculateEuclideanGCD(numX, numY), numZ);
+}
+
+function determineGreatestCommonDivisor(valI, valJ, valK) {
+    let commonDivisorCandidate = findThreeNumberGCD(valI, valJ, valK);
+
+    if (commonDivisorCandidate <= 2 || commonDivisorCandidate % 2 !== 0) {
+        return commonDivisorCandidate;
+    } else {
+        while (commonDivisorCandidate > 2 && commonDivisorCandidate % 2 === 0) {
+            commonDivisorCandidate /= 2;
+        }
+        return commonDivisorCandidate;
+    }
+}
+
+function* tripletSequenceGenerator(upperBound) {
+    for (let x = 1; x <= upperBound; x++) {
+        for (let y = 1; y <= upperBound; y++) {
+            for (let z = 1; z <= upperBound; z++) {
+                yield [x, y, z];
+            }
         }
     }
-    return 1; // Fallback, though 1 always satisfies the conditions
-};
+}
 
-const calculateTotalValue = (rawInputData) => {
-    const processingLimit = parseInt(rawInputData, 10);
-    const sequenceNumbers = Array.from({ length: processingLimit }, (_, index) => index + 1);
+function processInputAndSum(inputString) {
+    const iterationLimit = Number.parseInt(inputString, 10);
+    let totalAccumulator = 0;
 
-    const finalAccumulation = sequenceNumbers.reduce((currentSumX, currentX) => {
-        return currentSumX + sequenceNumbers.reduce((currentSumY, currentY) => {
-            return currentSumY + sequenceNumbers.reduce((currentSumZ, currentZ) => {
-                return currentSumZ + retrieveCommonProperty(currentX, currentY, currentZ);
-            }, 0);
-        }, 0);
-    }, 0);
+    for (const currentTriplet of tripletSequenceGenerator(iterationLimit)) {
+        totalAccumulator += determineGreatestCommonDivisor(currentTriplet[0], currentTriplet[1], currentTriplet[2]);
+    }
     
-    console.log(finalAccumulation);
-};
+    console.log(totalAccumulator);
+}
 
-const inputDataStream = require("fs").readFileSync("/dev/stdin", "utf8");
-calculateTotalValue(inputDataStream);
+processInputAndSum(require("fs").readFileSync("/dev/stdin", "utf8"));

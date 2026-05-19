@@ -1,57 +1,57 @@
 'use strict';
 
-const MOD_CONSTANT = 1000000007;
-const TARGET_REMAINDER = 5;
-const MODULUS_VALUE = 13;
+function processInput(inputLines) {
+  const inputString = inputLines[0];
+  const MOD_CONSTANT = 1000000007;
+  const TARGET_REMAINDER = 5;
+  const DIVISOR_VALUE = 13;
 
-function calculateModuloCounts(inputLine) {
-  const contentString = inputLine;
-  const stringLength = contentString.length;
-
-  let possibilityMatrix = Array.from({ length: stringLength + 1 }, () =>
-    Array(MODULUS_VALUE).fill(0)
+  const dp_matrix = Array.from({ length: inputString.length + 1 }, () =>
+    Array(DIVISOR_VALUE).fill(0)
   );
 
-  possibilityMatrix[0][0] = 1;
+  dp_matrix[0][0] = 1;
 
-  for (let currentIdx = 0; currentIdx < stringLength; currentIdx++) {
-    const charAtCurrentIdx = contentString[currentIdx];
+  for (let char_idx = 0; char_idx < inputString.length; char_idx++) {
+    const current_char_symbol = inputString[char_idx];
 
-    for (let prevRemainder = 0; prevRemainder < MODULUS_VALUE; prevRemainder++) {
-      if (possibilityMatrix[currentIdx][prevRemainder] === 0) {
+    for (let prev_remainder_val = 0; prev_remainder_val < DIVISOR_VALUE; prev_remainder_val++) {
+      if (dp_matrix[char_idx][prev_remainder_val] === 0) {
         continue;
       }
 
-      if (charAtCurrentIdx === '?') {
-        for (let potentialDigit = 0; potentialDigit <= 9; potentialDigit++) {
-          const nextRemainder = (prevRemainder * 10 + potentialDigit) % MODULUS_VALUE;
-          possibilityMatrix[currentIdx + 1][nextRemainder] =
-            (possibilityMatrix[currentIdx + 1][nextRemainder] + possibilityMatrix[currentIdx][prevRemainder]) % MOD_CONSTANT;
+      if (current_char_symbol === '?') {
+        for (let digit_choice = 0; digit_choice <= 9; digit_choice++) {
+          const next_remainder_val = (prev_remainder_val * 10 + digit_choice) % DIVISOR_VALUE;
+          dp_matrix[char_idx + 1][next_remainder_val] =
+            (dp_matrix[char_idx + 1][next_remainder_val] +
+              dp_matrix[char_idx][prev_remainder_val]) %
+            MOD_CONSTANT;
         }
       } else {
-        const fixedDigit = Number(charAtCurrentIdx);
-        const nextRemainder = (prevRemainder * 10 + fixedDigit) % MODULUS_VALUE;
-        possibilityMatrix[currentIdx + 1][nextRemainder] =
-          (possibilityMatrix[currentIdx + 1][nextRemainder] + possibilityMatrix[currentIdx][prevRemainder]) % MOD_CONSTANT;
+        const specific_digit_val = Number(current_char_symbol);
+        const next_remainder_val = (prev_remainder_val * 10 + specific_digit_val) % DIVISOR_VALUE;
+        dp_matrix[char_idx + 1][next_remainder_val] =
+          (dp_matrix[char_idx + 1][next_remainder_val] +
+            dp_matrix[char_idx][prev_remainder_val]) %
+          MOD_CONSTANT;
       }
     }
   }
 
-  return possibilityMatrix[stringLength][TARGET_REMAINDER];
+  console.log(dp_matrix[inputString.length][TARGET_REMAINDER]);
 }
 
-function orchestrateInputProcessing() {
-  let accumulatedInput = "";
+function executeWithStandardInput() {
+  let receivedInput = "";
   process.stdin.resume();
   process.stdin.setEncoding("utf8");
   process.stdin.on("data", (chunk) => {
-    accumulatedInput += chunk;
+    receivedInput += chunk;
   });
   process.stdin.on("end", () => {
-    const inputLines = accumulatedInput.split("\n");
-    const result = calculateModuloCounts(inputLines[0]);
-    console.log(result);
+    processInput(receivedInput.split("\n"));
   });
 }
 
-orchestrateInputProcessing();
+executeWithStandardInput();

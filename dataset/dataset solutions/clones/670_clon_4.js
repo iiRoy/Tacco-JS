@@ -1,62 +1,58 @@
-const outputResult = (dataContent) => {
-    console.log(dataContent);
-};
+let inputBuffer = '';
+let tokenProducer;
 
-const parseNumericSequence = (textData) => {
-    return textData.trim().split(/\s+/).map(Number);
-};
+function displayResult(outcome) {
+    console.log(outcome);
+}
 
-const assessActivities = (activitiesList) => {
-    const orderedActivities = activitiesList.slice().sort((a, b) => a[1] - b[1]);
-
-    const feasibilityCheck = orderedActivities.reduce(
-        (currentStatus, currentActivity) => {
-            const [activityDuration, activityDeadline] = currentActivity;
-            const [isPossible, accumulatedDuration] = currentStatus;
-
-            if (!isPossible) {
-                return [false, 0];
-            }
-
-            const nextAccumulatedDuration = accumulatedDuration + activityDuration;
-            const currentActivityPossible = nextAccumulatedDuration <= activityDeadline;
-
-            return [currentActivityPossible, nextAccumulatedDuration];
-        },
-        [true, 0]
-    );
-
-    return feasibilityCheck[0] ? "Yes" : "No";
-};
-
-let collectedInputData = '';
-
-process.stdin.on('data', (incomingData) => {
-    collectedInputData += incomingData;
-});
-
-process.stdin.on('end', () => {
-    const numericTokens = parseNumericSequence(collectedInputData);
-    let currentTokenPosition = 0;
-    const allOutcomes = [];
-
-    while (currentTokenPosition < numericTokens.length) {
-        const numberOfActivities = numericTokens[currentTokenPosition++];
-        if (isNaN(numberOfActivities) || numberOfActivities <= 0) {
-            break;
-        }
-
-        const currentCaseActivities = [];
-        for (let i = 0; i < numberOfActivities; i++) {
-            const duration = numericTokens[currentTokenPosition++];
-            const deadline = numericTokens[currentTokenPosition++];
-            currentCaseActivities.push([duration, deadline]);
-        }
-        allOutcomes.push(assessActivities(currentCaseActivities));
+function* createTokenGenerator(rawInputContent) {
+    const tokens = rawInputContent.trim().split(/\s+/);
+    for (const token of tokens) {
+        const numericValue = Number(token);
+        yield isNaN(numericValue) ? token : numericValue;
     }
+}
 
-    allOutcomes.forEach(resultString => outputResult(resultString));
-});
+function processTaskSets(tokenSource) {
+    let currentSetSize;
+    while ((currentSetSize = tokenSource.next().value) !== undefined) {
+        if (currentSetSize === 0) {
+            displayResult("Yes");
+            continue;
+        }
+
+        const jobRecords = Array.from({ length: currentSetSize }, () => {
+            const jobDuration = tokenSource.next().value;
+            const jobDeadline = tokenSource.next().value;
+            return { duration: jobDuration, deadline: jobDeadline };
+        });
+
+        jobRecords.sort((firstEntry, secondEntry) => firstEntry.deadline - secondEntry.deadline);
+
+        const scheduleEvaluation = jobRecords.reduce((accumulator, currentJob) => {
+            if (!accumulator.isPossible) {
+                return accumulator;
+            }
+            const updatedTime = accumulator.cumulativeTime + currentJob.duration;
+            const currentPossibility = updatedTime <= currentJob.deadline;
+            return {
+                cumulativeTime: updatedTime,
+                isPossible: currentPossibility
+            };
+        }, { cumulativeTime: 0, isPossible: true });
+
+        displayResult(scheduleEvaluation.isPossible ? "Yes" : "No");
+    }
+}
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', (dataChunk) => {
+    inputBuffer += dataChunk;
+});
+
+process.stdin.on('end', () => {
+    tokenProducer = createTokenGenerator(inputBuffer);
+    processTaskSets(tokenProducer);
+});

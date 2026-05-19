@@ -1,46 +1,58 @@
 'use strict';
-(function(source_text){
-  const PRIME_MODULO = 1000000007;
-  let lines_array = source_text.trim().split('\n');
-  const person_count = Number(lines_array.shift());
+(function(rawData){
+  rawData = rawData.trim().split(/\n/);
+  const personCount = rawData.shift() - 0;
+  const maskLimit = Math.pow(2, personCount);
+  const moduloConstant = Math.pow(10, 9) + 7;
+  const compatibilityGrid = rawData.map(line => line.split(/\s+/).map(val => val - 0));
 
-  // Pre-calculate the number of set bits (population count) for all integers up to (1 << person_count) - 1
-  const set_bit_counts = new Array(1 << person_count).fill(0);
-  for (let val = 1; val < (1 << person_count); val++) {
-      set_bit_counts[val] = set_bit_counts[val >> 1] + (val & 1);
-  }
+  // Memoization table for storing results of subproblems
+  // memoizationCache[manIndex][availableWomenMask] stores the number of ways
+  // to match men from manIndex to personCount-1 with women in availableWomenMask.
+  const memoizationCache = new Array(personCount).fill(null).map(() => new Array(maskLimit).fill(undefined));
 
-  const compatibility_matrix = lines_array.map(line => line.split(' ').map(Number));
+  /**
+   * Recursively calculates the number of ways to form perfect matchings.
+   * @param {number} currentManIndex The 0-indexed man currently being considered for matching.
+   * @param {number} availableWomenMask A bitmask representing the women who are still available.
+   * @returns {number} The number of ways to match the remaining men with the available women.
+   */
+  const calculateMatchings = (currentManIndex, availableWomenMask) => {
+    // Base case: All men have been considered.
+    // If all women were also used (mask is 0), then it's a valid perfect matching.
+    if (currentManIndex === personCount) {
+      return (availableWomenMask === 0) ? 1 : 0;
+    }
 
-  // Initialize a table to store the number of ways to form matchings
-  // 'matching_combinations[mask]' represents the number of ways to match
-  // 'set_bit_counts[mask]' individuals from the first group with the individuals
-  // from the second group specified by 'mask'.
-  const matching_combinations = new Array(1 << person_count).fill(0);
-  matching_combinations[0] = 1; // Base case: 0 individuals matched with 0 individuals in 1 way.
+    // Check if the result for this state is already memoized
+    if (memoizationCache[currentManIndex][availableWomenMask] !== undefined) {
+      return memoizationCache[currentManIndex][availableWomenMask];
+    }
 
-  // Iterate through all possible configurations of matched individuals from the second group
-  for (let current_config = 1; current_config < (1 << person_count); current_config++) {
-      // The index of the individual from the first group being matched in this step
-      // is determined by the number of set bits in the current configuration.
-      const first_group_idx = set_bit_counts[current_config] - 1;
+    let currentWays = 0;
+    // Iterate through all possible women to match with the current man
+    for (let candidateWomanIndex = 0; candidateWomanIndex < personCount; candidateWomanIndex++) {
+      // Check if the current man can be matched with this woman
+      // AND if this woman is available in the current mask
+      if (compatibilityGrid[currentManIndex][candidateWomanIndex] === 1 &&
+          (availableWomenMask & (1 << candidateWomanIndex))) {
 
-      // Consider each individual from the second group as a potential match for 'first_group_idx'
-      for (let second_group_idx = 0; second_group_idx < person_count; second_group_idx++) {
-          // Check if 'second_group_idx' is part of the 'current_config'
-          if ((current_config >> second_group_idx) & 1) {
-              // If 'first_group_idx' can be matched with 'second_group_idx'
-              if (compatibility_matrix[first_group_idx][second_group_idx] === 1) {
-                  // Calculate the configuration without 'second_group_idx'
-                  const previous_config = current_config ^ (1 << second_group_idx);
-                  
-                  // Add the combinations from the previous state to the current state
-                  matching_combinations[current_config] = (matching_combinations[current_config] + matching_combinations[previous_config]) % PRIME_MODULO;
-              }
-          }
+        // If a match is possible, recursively find ways for the next man
+        // with this woman removed from the available women mask.
+        currentWays = (currentWays + calculateMatchings(
+          currentManIndex + 1,
+          availableWomenMask ^ (1 << candidateWomanIndex) // XOR to remove the matched woman from the mask
+        )) % moduloConstant;
       }
-  }
-  // The final result is the number of ways to match all individuals from the first group
-  // with all individuals from the second group (represented by the mask (1 << person_count) - 1).
-  console.log(matching_combinations[(1 << person_count) - 1]);
+    }
+
+    // Store the computed result in the memoization cache before returning
+    return (memoizationCache[currentManIndex][availableWomenMask] = currentWays);
+  };
+
+  // Start the recursive calculation from the first man (index 0)
+  // with all women initially available (mask with all bits set: (1 << personCount) - 1)
+  const finalResult = calculateMatchings(0, (1 << personCount) - 1);
+
+  console.log(finalResult);
 })(require('fs').readFileSync('/dev/stdin','utf8'));

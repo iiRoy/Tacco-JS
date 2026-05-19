@@ -1,85 +1,105 @@
 "use strict";
 
-/*
- * This module provides a utility for reading structured input.
- * It encapsulates the process of fetching lines from standard input
- * and parsing them into various data types.
- */
-const buildReader = ( ) => {
-    // Acquire the 'fs' (file system) module to read from standard input.
-    // The input is read as a UTF-8 string, trimmed of whitespace, and then
-    // split into an array of individual lines based on the newline character.
-    const rawData = require("fs") . readFileSync( "/dev/stdin", "utf8" ) . trim() . split( "\n" ) ;
+// This module handles input processing and the main program logic.
 
-    // An object designed to manage the input data and its current reading position.
-    const inputProcessor = {
-        "dataLines": rawData,                          // The complete array of input lines.
-        "currentPosition": 0,                           // The zero-based index of the next line to be read.
-        "totalLines": rawData.length,                 // The total count of lines available in the input.
+/**
+ * Creates an input reader object to process lines from standard input.
+ * @returns {object} An object with methods to read input lines.
+ */
+const makeInputReader = () => {
+    // Read all input from stdin, decode as UTF-8, remove leading/trailing whitespace, and split into an array of lines.
+    const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+    // Construct the reader instance.
+    const readerInstance = {
+        "lineBuffer": rawData, // Stores the array of input lines.
+        "currentPosition": 0,  // Tracks the current line index.
+        "totalLines": rawData.length, // Total number of lines available.
 
         /**
-         * Determines if there are any remaining lines to be processed.
-         * @returns {boolean} Returns 'true' if the 'currentPosition' is less than 'totalLines',
-         *                    indicating more input is available; otherwise, returns 'false'.
+         * Checks if there are more lines to read.
+         * @returns {boolean} True if more lines are available, false otherwise.
          */
-        "canAdvance": function ( ) {
+        "hasMoreLines": function() {
             return this.currentPosition < this.totalLines;
         },
 
         /**
-         * Retrieves the subsequent line from the input sequence.
-         * Increments the 'currentPosition' after fetching the line.
-         * @returns {string} The next line of text from the input.
-         * @throws {Error} Throws an 'InputBufferExhaustedException' if no more lines can be read.
+         * Retrieves the next line from the input buffer.
+         * Increments the internal line counter.
+         * @returns {string} The next line of input.
+         * @throws {string} "ArrayIndexOutOfBoundsException" if no more lines are available.
          */
-        "retrieveNext": function ( ) {
-            if ( ! this.canAdvance( ) ) {
-                throw new Error("InputBufferExhaustedException");
+        "retrieveNext": function() {
+            if (!this.hasMoreLines()) {
+                throw "ArrayIndexOutOfBoundsException"; // Indicate end of input.
             } else {
-                return this.dataLines[ this.currentPosition++ ];
+                return this.lineBuffer[this.currentPosition++]; // Return current line and advance.
             }
         }
     };
-    return inputProcessor;
+    return readerInstance; // Return the configured reader.
 };
 
-// Initialize a singular instance of the input handling mechanism.
-const dataHandler = buildReader();
+// Initialize the global input data processor.
+const dataProcessor = makeInputReader();
 
-// A convenience function to simply obtain the next raw line of input.
-const fetchLine = ( ) => dataHandler.retrieveNext( );
+// Helper functions for convenient input retrieval.
 
-// A convenience function to parse and return the next line as an integer.
-// Specifies radix 10 for robust parsing.
-const readInt = ( ) => parseInt( dataHandler.retrieveNext( ) , 10 );
-
-// A convenience function to split the next input line by spaces into an array of strings.
-const readStringTokens = ( ) => dataHandler.retrieveNext( ) . split( " " );
-
-// A convenience function to split the next input line by spaces and convert each part to an integer.
-const readIntTokens = ( ) => dataHandler.retrieveNext( ) . split( " " ) . map( token => parseInt( token , 10 ) );
-
-// A convenience function to convert the next input line into an array of individual characters.
-const readChars = ( ) => dataHandler.retrieveNext( ) . split( "" );
-
-// A convenience function to check if there's more input available for processing.
-const hasMoreLines = ( ) => dataHandler.canAdvance( );
-
-// A custom function to output results to the console, acting as a wrapper for console.log.
-const displayResult = ( ...args ) => console.log( ...args );
-
-/*
- * This function encapsulates the main computational logic of the program.
- * It reads specific input values, performs a calculation, and displays the outcome.
+/**
+ * Fetches the next raw line of input.
+ * @returns {string} The next line.
  */
-const PrimaryLogic = ( ) => {
-    // Destructure the first line of input into two integer variables, 'valA' and 'valB'.
-    const [ valA, valB ] = readIntTokens( );
+const fetchNextLine = () => dataProcessor.retrieveNext();
 
-    // Execute a predefined mathematical operation using 'valA' and 'valB'.
-    // The result is then outputted using the 'displayResult' utility.
-    displayResult( ( 1900 * valB + 100 * ( valA - valB ) ) * Math.pow( 2 , valB ) );
+/**
+ * Fetches the next line and parses it as an integer.
+ * @returns {number} The parsed integer.
+ */
+const fetchNextInteger = () => parseInt(dataProcessor.retrieveNext());
+
+/**
+ * Fetches the next line and splits it into an array of strings by space.
+ * @returns {string[]} An array of strings.
+ */
+const fetchStringArray = () => dataProcessor.retrieveNext().split(" ");
+
+/**
+ * Fetches the next line, splits it by space, and parses each part as an integer.
+ * @returns {number[]} An array of integers.
+ */
+const fetchIntegerArray = () => dataProcessor.retrieveNext().split(" ").map(item => parseInt(item));
+
+/**
+ * Fetches the next line and splits it into an array of individual characters.
+ * @returns {string[]} An array of characters.
+ */
+const fetchCharacterArray = () => dataProcessor.retrieveNext().split("");
+
+/**
+ * Checks if there are more lines available in the input.
+ * @returns {boolean} True if more lines, false otherwise.
+ */
+const hasMoreLines = () => dataProcessor.hasMoreLines();
+
+/**
+ * Custom output function that logs arguments to the console.
+ * @param {...any} outputArgs - Arguments to be logged.
+ */
+const printOutput = (...outputArgs) => console.log(...outputArgs);
+
+/**
+ * The main execution function of the program.
+ * Reads two integers, performs a calculation, and prints the result.
+ */
+const executeProgram = () => {
+    // Read two integers from the first line of input.
+    const [firstVal, secondVal] = fetchIntegerArray();
+
+    // Perform the specified calculation and print the result.
+    // The formula is (1900 * secondVal + 100 * (firstVal - secondVal)) * 2^secondVal.
+    console.log((1900 * secondVal + 100 * (firstVal - secondVal)) * Math.pow(2, secondVal));
 };
 
-// Initiate the execution of the program's primary logic.
-PrimaryLogic( );
+// Invoke the main program function to start execution.
+executeProgram();

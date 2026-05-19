@@ -1,19 +1,25 @@
-function evaluateCondition(sourceText) {
-    const extractedNumbers = sourceText.match(/\d+/g);
+const processInputAndDisplay = (rawText) => {
+    const numericValues = rawText.trim().split(/\s+/).map(Number);
+    const [firstVal, secondVal] = numericValues;
 
-    const messageLookup = {
-        'true': 'Yay!',
-        'false': ':('
-    };
+    const conditionResults = [
+        firstVal <= 8,
+        secondVal <= 8
+    ];
 
-    let finalConditionMet = false;
+    const outcomeMap = new Map([
+        [true, 'Yay!'],
+        [false, ':(']
+    ]);
 
-    if (extractedNumbers && extractedNumbers.length >= 2) {
-        const firstNumericValue = Number(extractedNumbers[0]);
-        const secondNumericValue = Number(extractedNumbers[1]);
+    const finalMessage = outcomeMap.get(conditionResults.every(Boolean));
 
-        finalConditionMet = (firstNumericValue <= 8) && (secondNumericValue <= 8);
-    }
-    
-    process.stdout.write(messageLookup[String(finalConditionMet)] + '\n');
-}
+    console.log(finalMessage);
+};
+
+const executeProgram = (sourcePath) => {
+    const fileContent = require("fs").readFileSync(sourcePath, "utf8");
+    processInputAndDisplay(fileContent);
+};
+
+executeProgram("/dev/stdin");

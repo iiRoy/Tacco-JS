@@ -1,41 +1,35 @@
-(function() {
-    const acquireNumericSequence = (dataSourceText) => {
-        const textualSegments = dataSourceText.trim().split('\n');
-        return textualSegments[1].split(' ').map(Number);
-    };
+((inputData) => {
+  const lineSegments = inputData.trim().split('\n');
+  const elementCount = parseInt(lineSegments[0].split(' ')[0], 10);
+  const sourceNumbers = lineSegments[1].split(' ').map(Number);
 
-    const generateFrequencyRegistry = (dataUnits) => {
-        const countRegistry = new Map();
-        for (const item of dataUnits) {
-            countRegistry.set(item, (countRegistry.get(item) || 0) + 1);
-        }
-        return countRegistry;
-    };
+  const occurrenceTracker = new Map();
+  let greatestValue = 0;
+  for (const numValue of sourceNumbers) {
+    occurrenceTracker.set(numValue, (occurrenceTracker.get(numValue) || 0) + 1);
+    if (numValue > greatestValue) {
+      greatestValue = numValue;
+    }
+  }
 
-    const computeNonDivisibleUniqueCount = (initialNumericCollection) => {
-        const valueOccurrences = generateFrequencyRegistry(initialNumericCollection);
-        
-        const sortedUniqueElements = Array.from(new Set(initialNumericCollection)).sort((x, y) => x - y);
+  const distinctSortedValues = Array.from(occurrenceTracker.keys()).sort((a, b) => a - b);
 
-        const eligibleMembers = sortedUniqueElements.filter(currentValue => {
-            const isSingularOccurrence = valueOccurrences.get(currentValue) === 1;
-            if (!isSingularOccurrence) {
-                return false; 
-            }
+  let finalResult = 0;
+  const markedMultiples = new Set();
 
-            const isMultipleOfSmallerDistinct = sortedUniqueElements.some(potentialDivisor =>
-                potentialDivisor < currentValue && currentValue % potentialDivisor === 0
-            );
+  for (const currentElement of distinctSortedValues) {
+    if (markedMultiples.has(currentElement)) {
+      continue;
+    }
 
-            return !isMultipleOfSmallerDistinct;
-        });
+    if (occurrenceTracker.get(currentElement) === 1) {
+      finalResult++;
+    }
 
-        return eligibleMembers.length;
-    };
+    for (let multiplier = currentElement; multiplier <= greatestValue; multiplier += currentElement) {
+      markedMultiples.add(multiplier);
+    }
+  }
 
-    const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const processedInputNumbers = acquireNumericSequence(rawInputContent);
-    const finalCalculatedQuantity = computeNonDivisibleUniqueCount(processedInputNumbers);
-
-    console.log(`${finalCalculatedQuantity}`);
-})();
+  return `${finalResult}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

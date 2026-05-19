@@ -1,60 +1,115 @@
-(() => {
-    // A utility to asynchronously acquire all data from standard input.
-    // This replaces the original's fs.readFile and generator-based input parsing.
-    const gatherInputData = () => new Promise(resolveCurrentData => {
-        let accumulatedContent = '';
-        process.stdin.setEncoding('utf8');
-        process.stdin.on('data', (incomingChunk) => {
-            accumulatedContent += incomingChunk;
-        });
-        process.stdin.on('end', () => {
-            resolveCurrentData(accumulatedContent.trim());
+const fs = require('fs');
+
+let inputTokens = [];
+let tokenIndex = 0;
+
+async function readAllInput() {
+    return new Promise((resolve, reject) => {
+        fs.readFile('/dev/stdin', 'utf8', (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
         });
     });
+}
 
-    // A computational function to determine the number of differing bits between two integers.
-    // This replaces the original's explicit bit-by-bit loop for Hamming distance.
-    const computeBitDiscrepancy = (valA, valB) => {
-        let disparityCount = 0;
-        let xorResult = valA ^ valB; // XOR highlights differing bits
+async function initializeInputProcessor() {
+    const rawInputString = await readAllInput();
+    inputTokens = rawInputString.split(/\s+/).filter(Boolean);
+    tokenIndex = 0;
+}
 
-        // Brian Kernighan's algorithm to count set bits (Hamming weight)
-        while (xorResult > 0) {
-            xorResult &= (xorResult - 1); // Clear the least significant set bit
-            disparityCount++;
+function fetchNextToken() {
+    if (tokenIndex >= inputTokens.length) {
+        throw new Error("Input exhausted.");
+    }
+    return inputTokens[tokenIndex++];
+}
+
+function retrieveNumericValue() {
+    return parseInt(fetchNextToken(), 10);
+}
+
+function countBitDifferences(val1, val2, maxBits) {
+    let differenceCount = 0;
+    for (let bitPosition = 0; bitPosition < maxBits; bitPosition++) {
+        if (((val1 >> bitPosition) & 1) !== ((val2 >> bitPosition) & 1)) {
+            differenceCount++;
         }
-        return disparityCount;
-    };
+    }
+    return differenceCount;
+}
 
-    // The primary execution sequence.
-    // This replaces the original's main module logic, bypassing the complex Gray code generation.
-    const orchestrateProcessing = async () => {
-        const rawInputString = await gatherInputData();
-        // Parse the numerical values from the input string.
-        // Filter(Boolean) removes any empty strings resulting from multiple spaces.
-        const parsedNumerals = rawInputString.split(/\s+/).filter(Boolean).map(Number.parseInt);
+function generateReflectedGrayCode(depth, initialConfig, finalConfig) {
+    if (depth === 0) {
+        return [0];
+    }
 
-        // The original code reads three numbers: bit_length, start_value, end_value.
-        // Although our simplified logic doesn't explicitly use bit_length,
-        // we acknowledge its presence for strict input interpretation.
-        const hypercubeDimension = parsedNumerals[0]; // Not used in this simplified approach
-        const initialNode = parsedNumerals[1];
-        const finalNode = parsedNumerals[2];
+    const priorSequence = generateReflectedGrayCode(
+        depth - 1,
+        initialConfig & ((1 << (depth - 1)) - 1),
+        finalConfig & ((1 << (depth - 1)) - 1)
+    );
 
-        // The core functionality of the original code, despite its complex Gray code generation,
-        // boils down to checking if the start and end values differ by exactly one bit.
-        // If they do, they are "adjacent" on a hypercube, and the path is simply the two nodes.
-        // Otherwise, no such direct path is considered.
-        const differingBitCount = computeBitDiscrepancy(initialNode, finalNode);
+    let baseSegment = [...priorSequence];
+    if (((initialConfig >> (depth - 1)) & 1) !== ((finalConfig >> (depth - 1)) & 1)) {
+        baseSegment.reverse();
+    }
 
-        if (differingBitCount === 1) {
-            console.log("YES");
-            console.log(`${initialNode} ${finalNode}`);
-        } else {
-            console.log("NO");
+    const reflectedSegment = baseSegment.map(value => value | (1 << (depth - 1)));
+    reflectedSegment.reverse();
+
+    return baseSegment.concat(reflectedSegment);
+}
+
+async function executeMainLogic() {
+    await initializeInputProcessor();
+
+    const bitDimension = retrieveNumericValue();
+    const startNode = retrieveNumericValue();
+    const endNode = retrieveNumericValue();
+
+    if (countBitDifferences(startNode, endNode, bitDimension) !== 1) {
+        console.log("NO");
+        return;
+    }
+
+    const grayPathSequence = generateReflectedGrayCode(bitDimension, startNode, endNode);
+
+    const startNodeIndex = grayPathSequence.indexOf(startNode);
+    const pathLength = grayPathSequence.length;
+
+    const getNextInCycle = (idx) => (idx + 1) % pathLength;
+    const getPreviousInCycle = (idx) => (idx - 1 + pathLength) % pathLength;
+
+    const nextAdjacentNode = grayPathSequence[getNextInCycle(startNodeIndex)];
+    const previousAdjacentNode = grayPathSequence[getPreviousInCycle(startNodeIndex)];
+
+    let resultPath = [];
+
+    if (nextAdjacentNode === endNode) {
+        let currentTraversalIndex = startNodeIndex;
+        while (currentTraversalIndex !== getNextInCycle(startNodeIndex)) {
+            resultPath.push(grayPathSequence[currentTraversalIndex]);
+            currentTraversalIndex = getPreviousInCycle(currentTraversalIndex);
         }
-    };
+        resultPath.push(endNode);
+        console.log("YES");
+        console.log(resultPath.join(" "));
+    } else if (previousAdjacentNode === endNode) {
+        let currentTraversalIndex = startNodeIndex;
+        while (currentTraversalIndex !== getPreviousInCycle(startNodeIndex)) {
+            resultPath.push(grayPathSequence[currentTraversalIndex]);
+            currentTraversalIndex = getNextInCycle(currentTraversalIndex);
+        }
+        resultPath.push(endNode);
+        console.log("YES");
+        console.log(resultPath.join(" "));
+    } else {
+        console.log("NO");
+    }
+}
 
-    // Initiate the program flow.
-    orchestrateProcessing();
-})();
+executeMainLogic();

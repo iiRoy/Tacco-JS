@@ -1,40 +1,26 @@
-const obtainRawData = () => {
-    return require('fs').readFileSync('/dev/stdin', 'utf8');
-};
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineData = rawInput.trim().split("\n");
 
-const parseInputData = (rawData) => {
-    return rawData.trim().split('\n');
-};
+let lineCursor = 0;
 
-const findLastOneStanding = (initialSize, jumpValue, beginningPoint) => {
-    let competitionCircle = Array.from({ length: initialSize }, (_, idx) => idx + 1);
-    let eliminatorPosition = beginningPoint - 1;
+while (true) {
+    const [countPeople, stepSize, startPos] = lineData[lineCursor++].split(" ").map(Number);
 
-    while (competitionCircle.length > 1) {
-        eliminatorPosition = (eliminatorPosition + (jumpValue - 1)) % competitionCircle.length;
-        competitionCircle.splice(eliminatorPosition, 1);
+    if (countPeople === 0 && stepSize === 0 && startPos === 0) {
+        break;
     }
 
-    return competitionCircle[0];
-};
+    const activeParticipants = Array.from({ length: countPeople }, (_, idx) => idx + 1);
 
-const executeGameRounds = (inputSegments) => {
-    const currentLine = inputSegments.shift();
+    let eliminationIndex = startPos - 1;
 
-    const numericParameters = currentLine.split(' ').map(Number);
-    const [groupSize, skipCount, startOffset] = numericParameters;
+    while (activeParticipants.length > 1) {
+        eliminationIndex = eliminationIndex % activeParticipants.length;
 
-    if (groupSize === 0 && skipCount === 0 && startOffset === 0) {
-        return;
+        activeParticipants.splice(eliminationIndex, 1);
+
+        eliminationIndex = (eliminationIndex + stepSize - 1);
     }
 
-    const finalParticipantIdentifier = findLastOneStanding(groupSize, skipCount, startOffset);
-
-    console.log(finalParticipantIdentifier);
-
-    executeGameRounds(inputSegments);
-};
-
-const initialData = obtainRawData();
-const processedSegments = parseInputData(initialData);
-executeGameRounds(processedSegments);
+    console.log(activeParticipants[0]);
+}

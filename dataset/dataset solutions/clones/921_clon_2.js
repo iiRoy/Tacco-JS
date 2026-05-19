@@ -1,18 +1,19 @@
-let  fileContent  =require('fs').readFileSync('/dev/stdin', 'utf8') ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input
+let lineArray = rawData.trim().split("\n"); // Process the raw data: remove leading/trailing whitespace and split into an array of lines
 
-const    parsedRows=  fileContent.trim().split("\n") ;
+let lineCount = lineArray.shift(); // Extract the first line, which typically represents 'n' (though unused in this specific logic)
+let currentSequence = lineArray.shift(); // Extract the second line, which is the character sequence to be processed
 
-let initialCount = parsedRows.shift() ;
-
-let currentProcessingString=parsedRows.shift() ;
-
-
-while( currentProcessingString.length !== 1 ) {
-   currentProcessingString = currentProcessingString.replace( /../ , function ( segmentMatch ) {
-      if ( segmentMatch === "TT" ) return "T" ;
-      if ( segmentMatch === "TF" ) { return "F" ; }
-      if ( segmentMatch === "FT" ) { return "T" ; }
-      if ( segmentMatch === "TF" ) return "T" ;
-   } ) ;
+// Loop until the sequence is reduced to a single character
+while (currentSequence.length !== 1) {
+    // Replace the first two characters of the sequence based on predefined rules
+    currentSequence = currentSequence.replace(/../, function(pairString) {
+        // Evaluate the two-character pair and return its replacement
+        if (pairString === "TT") return "T";
+        if (pairString === "TF") return "F";
+        if (pairString === "FT") return "T";
+        if (pairString === "TF") return "T"; // This condition is a duplicate of the second one, but preserved for exact behavior
+    });
 }
-console.log( currentProcessingString ) ;
+
+console.log(currentSequence); // Display the final, reduced single-character sequence

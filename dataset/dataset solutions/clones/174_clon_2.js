@@ -1,112 +1,110 @@
-function CombinatoricsGenerator() {
-    // This object will store unique sorted digit strings as keys to represent a set
-    let resultSet = {};
+function GenerateCombinations() {
+  // This function pre-computes a map of sorted digit combinations.
+  // The map stores unique sorted digit sequences as keys, with a boolean value indicating their presence.
+  let combinationMap = {};
 
-    // Define the first collection of numeric strings used for combinations
-    const firstCollection = "123,234,345,456,567,678,789,111,222,333,444,555,666,777,888,999".split(',');
+  // Define the first collection of number strings.
+  const firstSet = "123,234,345,456,567,678,789,111,222,333,444,555,666,777,888,999".split(",");
+  // Define the second collection of number strings.
+  const secondSet = "11,22,33,44,55,66,77,88,99".split(",");
 
-    // Define the second collection of numeric strings
-    const secondCollection = "11,22,33,44,55,66,77,88,99".split(',');
+  // Iterate through all possible combinations from the two defined sets.
+  // This involves five nested loops to select elements from the sets.
+  for (let idx1 = 0; idx1 < 16; idx1++) {
+    for (let idx2 = 0; idx2 < 16; idx2++) {
+      for (let idx3 = 0; idx3 < 16; idx3++) {
+        for (let idx4 = 0; idx4 < 16; idx4++) {
+          for (let idx5 = 0; idx5 < 9; idx5++) {
+            // Concatenate the selected strings to form a single long string.
+            let currentCombinationString = firstSet[idx1] + firstSet[idx2] + firstSet[idx3] + firstSet[idx4] + secondSet[idx5];
 
-    // Begin a series of nested loops to generate all possible combinations
-    // The outer four loops iterate through the elements of the first collection
-    for (let indexOne = 0; indexOne < 16; indexOne++) {
-        for (let indexTwo = 0; indexTwo < 16; indexTwo++) {
-            for (let indexThree = 0; indexThree < 16; indexThree++) {
-                for (let indexFour = 0; indexFour < 16; indexFour++) {
-                    // The innermost loop iterates through the elements of the second collection
-                    for (let indexFive = 0; indexFive < 9; indexFive++) {
-                        // Concatenate the selected string elements to form a raw sequence
-                        let currentSequence = firstCollection[indexOne] +
-                                              firstCollection[indexTwo] +
-                                              firstCollection[indexThree] +
-                                              firstCollection[indexFour] +
-                                              secondCollection[indexFive];
+            // Process the combined string:
+            // 1. Split it into individual digit characters.
+            // 2. Convert each character to its numeric representation.
+            // 3. Sort the array of numbers in ascending order.
+            // 4. Join the sorted numbers back into a single string.
+            currentCombinationString = currentCombinationString
+              .split("")
+              .map(Number)
+              .sort(function(valA, valB) {
+                return valA - valB;
+              })
+              .join("");
 
-                        // Process the combined string:
-                        // 1. Split into individual character strings
-                        // 2. Map each character string to its numerical value
-                        // 3. Sort the numbers in ascending order
-                        // 4. Join the sorted numbers back into a single string
-                        currentSequence = currentSequence
-                            .split('')
-                            .map(digitChar => Number(digitChar))
-                            .sort((valX, valY) => valX - valY)
-                            .join('');
-
-                        // Add the resulting unique sorted string to our result set
-                        // The value `true` simply indicates presence
-                        resultSet[currentSequence] = true;
-                    }
-                }
-            }
+            // Store the resulting sorted combination string as a key in the map.
+            // The value 'true' simply signifies that this combination is valid/generated.
+            combinationMap[currentCombinationString] = true;
+          }
         }
+      }
     }
-    // Return the generated set of unique sorted combinations
-    return resultSet;
+  }
+  return combinationMap; // Return the fully populated map of valid combinations.
 }
 
-// Precompute the set of all valid sorted combinations by calling the generator function
-const precomputedSetOfCombos = CombinatoricsGenerator();
+// Pre-compute the map of valid combinations once at the start.
+const precomputedMap = GenerateCombinations();
 
-// Import the Node.js file system module for input operations
-const fileSystemModule = require('fs');
+// Read all input data from standard input, decode as UTF-8.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the entire input data from standard input, using UTF-8 encoding
-const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+// Process the raw input: trim whitespace and split into an array of lines.
+let inputLines = rawData.trim().split("\n");
 
-// Process the raw input: remove leading/trailing whitespace and split into an array of lines
-const processedInputLines = rawInputData.trim().split('\n');
-
-// Start an infinite loop to process each line of input
+// Loop through each line of input until the inputLines array is empty.
 while (true) {
-    // If there are no more lines left in the array, break out of the loop
-    if (processedInputLines.length === 0) {
-        break;
+  // If there are no more lines to process, break out of the loop.
+  if (inputLines.length === 0) {
+    break;
+  }
+
+  // Retrieve and remove the first line from the input array for processing.
+  const currentInputLine = inputLines.shift();
+
+  // Initialize an array to store digits (1-9) that, when added to the current input line,
+  // result in a valid combination according to the precomputed map.
+  let possibleDigits = [];
+
+  // Iterate through each possible digit from 1 to 9.
+  for (let digitCandidate = 1; digitCandidate <= 9; digitCandidate++) {
+    // Convert the current input line string into an array of numbers.
+    let numericArray = currentInputLine.split("").map(Number);
+
+    // Add the current candidate digit to this numeric array.
+    numericArray.push(digitCandidate);
+
+    // Sort the combined array of numbers in ascending order.
+    numericArray.sort(function(valA, valB) {
+      return valA - valB;
+    });
+
+    // Initialize an array to count occurrences of each digit (index 0 for digit 0, etc.).
+    let digitCounts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    // Populate the digitCounts array by iterating through the sorted numeric array.
+    numericArray.forEach(function(value) {
+      digitCounts[value]++;
+    });
+
+    // Find the maximum count of any single digit in the current combination.
+    const maxCount = Math.max.apply(null, digitCounts);
+
+    // If any digit appears 5 or more times, this combination is invalid.
+    // Skip to the next digit candidate without further processing.
+    if (maxCount >= 5) {
+      continue;
     }
 
-    // Retrieve the next line from the beginning of the array
-    const currentInputLine = processedInputLines.shift();
-
-    // Initialize an array to store the valid single-digit candidates for the current line
-    let validDigitCandidates = [];
-
-    // Iterate through all possible single digits from 1 to 9
-    for (let candidateDigit = 1; candidateDigit <= 9; candidateDigit++) {
-        // Convert the current input line string into an array of numbers
-        let digitArrayFromLine = currentInputLine.split('').map(charToNum => Number(charToNum));
-
-        // Append the current candidate digit to this array
-        digitArrayFromLine.push(candidateDigit);
-
-        // Sort the combined array of digits numerically in ascending order
-        digitArrayFromLine.sort((firstNum, secondNum) => firstNum - secondNum);
-
-        // Initialize a frequency counter array for digits 0-9, all set to zero
-        const digitFrequencyCounters = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
-        // Populate the frequency counter by iterating over the sorted digit array
-        digitArrayFromLine.forEach(singleDigitVal => {
-            digitFrequencyCounters[singleDigitVal]++;
-        });
-
-        // Find the highest frequency of any digit in the current combination
-        const highestFrequency = Math.max.apply(null, digitFrequencyCounters);
-
-        // If any digit appears 5 or more times, this combination is invalid; skip to the next candidate digit
-        if (highestFrequency >= 5) {
-            continue;
-        }
-
-        // Check if the sorted string representation of the current digit combination exists in our precomputed set
-        // Using Object.prototype.hasOwnProperty.call for a safer property check
-        if (Object.prototype.hasOwnProperty.call(precomputedSetOfCombos, digitArrayFromLine.join(''))) {
-            // If it exists, add the current candidate digit to our list of valid solutions
-            validDigitCandidates.push(candidateDigit);
-        }
+    // Check if the sorted combination (joined back into a string) exists as a key
+    // in the precomputed map.
+    if (precomputedMap.hasOwnProperty(numericArray.join(""))) {
+      // If it exists, the current digitCandidate is a valid addition.
+      possibleDigits.push(digitCandidate);
     }
+  }
 
-    // Output the result for the current line:
-    // If no valid digits were found, print "0". Otherwise, print the valid digits joined by spaces.
-    console.log((validDigitCandidates.length === 0) ? "0" : validDigitCandidates.join(' '));
+  // Output the results for the current input line.
+  // If no possible digits were found, print "0". Otherwise, print the found digits
+  // separated by spaces.
+  console.log((possibleDigits.length === 0) ? "0" : possibleDigits.join(" "));
 }

@@ -1,32 +1,23 @@
-const dataProcessor = (sourceContent) => {
-    const contentLines = sourceContent.split('\n');
-    const firstValueLine = contentLines[0];
-    const secondValueLine = contentLines[1];
+const processInput = (rawInput) => {
+    const [firstLineContent, secondLineContent] = rawInput.split('\n');
+    const elementCount = Number(firstLineContent);
+    const sourceValues = secondLineContent.split(' ').map(Number);
 
-    const elementQuantity = Number(firstValueLine);
-    const rawNumberSegments = secondValueLine.split(' ');
+    const expandedValues = sourceValues.flatMap(item => [item, item]);
 
-    const numericalCollection = rawNumberSegments.slice(0, elementQuantity).map(Number);
+    expandedValues.sort((valA, valB) => valB - valA);
 
-    const sortedDescendingCollection = numericalCollection.sort((valA, valB) => valB - valA);
-
-    const recursiveAggregator = (dataset, upperLimit, currentPosition, runningTotal) => {
-        if (currentPosition >= upperLimit) {
-            return runningTotal;
+    const computedSum = expandedValues.reduce((accumulator, currentItem, currentIndex) => {
+        if (currentIndex === 0) {
+            return accumulator + currentItem;
         }
-        const valueToAdd = dataset[Math.floor((currentPosition - 1) / 2)];
-        return recursiveAggregator(dataset, upperLimit, currentPosition + 1, runningTotal + valueToAdd);
-    };
-
-    let finalComputationResult = 0;
-    if (elementQuantity > 0) {
-        finalComputationResult = sortedDescendingCollection[0];
-        if (elementQuantity >= 3) {
-            finalComputationResult = recursiveAggregator(sortedDescendingCollection, elementQuantity, 2, finalComputationResult);
+        if (currentIndex >= 2 && currentIndex < elementCount) {
+            return accumulator + currentItem;
         }
-    }
+        return accumulator;
+    }, 0);
 
-    console.log(finalComputationResult);
+    console.log(computedSum);
 };
 
-dataProcessor(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

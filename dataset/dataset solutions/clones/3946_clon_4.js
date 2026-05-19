@@ -1,34 +1,32 @@
 'use strict'
 
-const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+function processPathModifications(inputContent) {
+  const numericValues = inputContent.split('\n')[1].split(' ').map(Number);
 
-const getAbsoluteDelta = (pointOne, pointTwo) => Math.abs(pointOne - pointTwo);
+  const pathSegments = [0, ...numericValues, 0];
 
-const parsedValues = rawInputData
-  .split('\n')
-  .at(1)
-  .split(' ')
-  .map(Number);
+  const initialTotalDistance = pathSegments.reduce((accumulator, currentSegment, segmentIndex, fullPath) => {
+    if (segmentIndex === 0) {
+      return accumulator;
+    }
+    return accumulator + Math.abs(currentSegment - fullPath[segmentIndex - 1]);
+  }, 0);
 
-const pathNodes = [0]
-  .concat(parsedValues)
-  .concat([0]);
+  const modifiedDistances = numericValues.map((_, originalIndex) => {
+    const pointBeforeSkipped = pathSegments[originalIndex];
+    const pointToSkip = pathSegments[originalIndex + 1];
+    const pointAfterSkipped = pathSegments[originalIndex + 2];
 
-const totalPathSum = pathNodes.reduce((acc, currentVal, index, arr) => {
-  return index === 0 ? 0 : acc + getAbsoluteDelta(arr[index - 1], currentVal);
-}, 0);
+    const directPathLength = Math.abs(pointBeforeSkipped - pointAfterSkipped);
 
-const computedResults = parsedValues.map((_, elementIndex) => {
-  const precedingNode = pathNodes[elementIndex];
-  const focalNode = pathNodes[elementIndex + 1];
-  const succeedingNode = pathNodes[elementIndex + 2];
+    const sequentialPathLength = Math.abs(pointBeforeSkipped - pointToSkip) + Math.abs(pointToSkip - pointAfterSkipped);
 
-  const travelCostIfVisited = getAbsoluteDelta(precedingNode, focalNode) + getAbsoluteDelta(focalNode, succeedingNode);
-  const travelCostIfBypassed = getAbsoluteDelta(precedingNode, succeedingNode);
+    const distanceChange = directPathLength - sequentialPathLength;
 
-  const netChange = travelCostIfBypassed - travelCostIfVisited;
+    return initialTotalDistance + distanceChange;
+  });
 
-  return totalPathSum + netChange;
-});
+  console.log(modifiedDistances.join('\n'));
+}
 
-console.log(computedResults.join('\n'));
+processPathModifications(require("fs").readFileSync("/dev/stdin", "utf8"));

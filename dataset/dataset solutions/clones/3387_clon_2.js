@@ -1,40 +1,41 @@
-function PerformAction(incomingContent) {
-  // Process the input string into an array of numbers
-  // Each line is treated as a separate numeric entry
-  let numericEntries = incomingContent.split('\n').map(parseInt);
+function ProcessInput(rawData) {
+    // This function takes raw input, processes it, and prints a result.
+    // First, split the input string by newlines and convert each part to a number.
+    let numericData = rawData.split("\n").map(Number);
 
-  // Remove the first element as per original logic
-  numericEntries.shift();
+    // Remove the initial element from the array, as it's often metadata.
+    numericData.shift();
 
-  // Calculate the sum of the remaining numbers
-  let calculatedValue = calculateTotal(numericEntries);
+    // Calculate the sum of all remaining numbers in the array.
+    const totalSum = calculateArraySum(numericData);
 
-  // Determine the outcome based on the parity of the calculated sum
-  if ((calculatedValue % 2) !== 0) {
-    // If the sum is odd
-    console.log("OddResult");
-  } else {
-    // If the sum is even
-    console.log("EvenResult");
-  }
+    // Check if the calculated total sum is an odd number.
+    if (totalSum % 2 === 1) {
+        // If the sum is odd, output "first".
+        console.log("first");
+    } else {
+        // Otherwise (if the sum is even), output "second".
+        console.log("second");
+    }
 }
 
-// Invoke the main processing function with standard input data
-PerformAction(require('node:fs').readFileSync("/dev/stdin", 'utf-8').trim());
+// Immediately invoke the main processing function with data read from standard input.
+// The input is read as a UTF-8 string and any leading/trailing whitespace is removed.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());
 
-/*
- * This helper function computes the sum of all numerical elements
- * within a given collection.
- * @param {Array<number>} numericCollection - An array of numbers to be summed.
- * @returns {number} The total sum of the elements in the array.
+/**
+ * Computes the sum of all numerical elements within a given array.
+ * @param {Array<number>} dataArray - An array containing numbers to be summed.
+ * @returns {number} The aggregate sum of all elements in the array.
  */
-function calculateTotal(numericCollection) {
-  let currentSummation = 0; // Initialize accumulator for the sum
+function calculateArraySum(dataArray) {
+    let accumulator = 0; // Initialize a variable to store the running total.
 
-  // Iterate through each item in the collection
-  for (let k = 0, arrayLength = numericCollection.length; k < arrayLength; ++k) {
-    currentSummation += numericCollection[k]; // Add current element to the sum
-  }
-
-  return currentSummation; // Return the final calculated sum
+    // Iterate through each element of the input array using a traditional for loop.
+    for (let idx = 0, arrayLength = dataArray.length; idx < arrayLength; ++idx) {
+        // Add the current element's value to the accumulator.
+        accumulator += dataArray[idx];
+    }
+    // Return the final sum after iterating through all elements.
+    return accumulator;
 }

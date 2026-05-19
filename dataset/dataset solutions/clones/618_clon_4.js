@@ -1,43 +1,30 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputSegments = fileContent.trim().split('\n');
 
-const processArithmeticSequence = (expressionContent) => {
-    const operationTokens = expressionContent.trim().split(/\s+/).filter(Boolean);
-
-    if (operationTokens.length === 0) {
-        return 0;
-    }
-
-    const initialNumericOperand = Number(operationTokens[0]);
-
-    const operatorActionMap = {
-        '+': (currentVal, nextVal) => currentVal + nextVal,
-        '-': (currentVal, nextVal) => currentVal - nextVal,
-        '*': (currentVal, nextVal) => currentVal * nextVal,
-        '/': (currentVal, nextVal) => currentVal / nextVal,
-    };
-
-    const recursiveCalculation = (currentAccumulator, remainingInstructionSet) => {
-        if (remainingInstructionSet.length === 0 || remainingInstructionSet[0] === '=') {
-            return currentAccumulator;
-        }
-
-        const operatorIndicator = remainingInstructionSet[0];
-        const succeedingNumericValue = Number(remainingInstructionSet[1]);
-
-        const activeOperation = operatorActionMap[operatorIndicator];
-        if (!activeOperation) {
-            // If an unknown operator is encountered, cease calculation as per original's implicit behavior
-            return currentAccumulator;
-        }
-
-        let interimResult = activeOperation(currentAccumulator, succeedingNumericValue);
-        interimResult = Math.round(interimResult); // Equivalent to .toFixed(0)-0 for rounding
-
-        return recursiveCalculation(interimResult, remainingInstructionSet.slice(2));
-    };
-
-    const finalEvaluatedValue = recursiveCalculation(initialNumericOperand, operationTokens.slice(1));
-    return finalEvaluatedValue;
+const operationDispatch = {
+    '+': (a, b) => a + b,
+    '-': (a, b) => a - b,
+    '*': (a, b) => a * b,
+    '/': (a, b) => a / b,
 };
 
-console.log(processArithmeticSequence(sourceData));
+function processOperationsRecursively(currentAccumulator, segmentIndex) {
+    if (segmentIndex >= inputSegments.length || inputSegments[segmentIndex] === '=') {
+        return currentAccumulator;
+    }
+
+    const currentOperatorSymbol = inputSegments[segmentIndex];
+    const nextOperandValue = Number(inputSegments[segmentIndex + 1]);
+
+    const selectedOperation = operationDispatch[currentOperatorSymbol];
+    let intermediateResult = selectedOperation(currentAccumulator, nextOperandValue);
+
+    intermediateResult = Number(intermediateResult.toFixed(0));
+
+    return processOperationsRecursively(intermediateResult, segmentIndex + 2);
+}
+
+const initialNumericValue = Number(inputSegments[0]);
+const finalCalculatedValue = processOperationsRecursively(initialNumericValue, 1);
+
+console.log(finalCalculatedValue);

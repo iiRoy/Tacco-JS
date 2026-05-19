@@ -1,44 +1,54 @@
-function processData(rawData) {
-  const lineSegments = rawData.split('\n');
-  const extent = Number(lineSegments[0]);
-  const charSequence = lineSegments[1];
+function processInputAndSolve(inputData) {
+    const lines = inputData.split('\n');
+    const numElements = Number(lines[0]);
+    const inputString = lines[1];
 
-  const charCountsFromEnd = Array(extent + 1).fill(null).map(() => ({ 'R': 0, 'G': 0, 'B': 0 }));
+    const charToId = { 'R': 0, 'G': 1, 'B': 2 };
+    const idToChar = ['R', 'G', 'B'];
 
-  for (let currentIdx = extent - 1; currentIdx >= 0; --currentIdx) {
-    charCountsFromEnd[currentIdx] = { ...charCountsFromEnd[currentIdx + 1] };
-    const charAtCurrent = charSequence[currentIdx];
-    charCountsFromEnd[currentIdx][charAtCurrent]++;
-  }
+    const suffixOccurrences = Array(3).fill(0).map(() => Array(numElements + 1).fill(0));
 
-  let finalTally = 0;
-
-  for (let firstSpot = 0; firstSpot < extent - 2; ++firstSpot) {
-    for (let secondSpot = firstSpot + 1; secondSpot < extent - 1; ++secondSpot) {
-      const firstChar = charSequence[firstSpot];
-      const secondChar = charSequence[secondSpot];
-
-      if (firstChar === secondChar) {
-        continue;
-      }
-
-      const availableChars = new Set(['R', 'G', 'B']);
-      availableChars.delete(firstChar);
-      availableChars.delete(secondChar);
-      const thirdChar = Array.from(availableChars)[0];
-
-      let possibleThirds = charCountsFromEnd[secondSpot + 1][thirdChar];
-
-      const thirdSpotCandidate = 2 * secondSpot - firstSpot;
-
-      if (thirdSpotCandidate < extent && charSequence[thirdSpotCandidate] === thirdChar) {
-        possibleThirds--;
-      }
-
-      finalTally += possibleThirds;
+    for (let currentIdx = numElements - 1; currentIdx >= 0; currentIdx--) {
+        for (let charId = 0; charId < 3; charId++) {
+            suffixOccurrences[charId][currentIdx] = suffixOccurrences[charId][currentIdx + 1];
+        }
+        const charIdOfCurrent = charToId[inputString[currentIdx]];
+        suffixOccurrences[charIdOfCurrent][currentIdx]++;
     }
-  }
 
-  console.log(finalTally);
+    let finalResult = 0;
+
+    for (let idxA = 0; idxA < numElements; idxA++) {
+        for (let idxB = idxA + 1; idxB < numElements; idxB++) {
+            const charA = inputString[idxA];
+            const charB = inputString[idxB];
+
+            if (charA === charB) {
+                continue;
+            }
+
+            let requiredChar = '';
+            for (const c of idToChar) {
+                if (c !== charA && c !== charB) {
+                    requiredChar = c;
+                    break;
+                }
+            }
+            const requiredCharId = charToId[requiredChar];
+
+            let currentCountForC = suffixOccurrences[requiredCharId][idxB + 1];
+
+            const forbiddenIndex = 2 * idxB - idxA;
+
+            if (forbiddenIndex < numElements && inputString[forbiddenIndex] === requiredChar) {
+                currentCountForC--;
+            }
+            
+            finalResult += currentCountForC;
+        }
+    }
+
+    console.log(finalResult);
 }
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInputAndSolve(require("fs").readFileSync("/dev/stdin", "utf8"));

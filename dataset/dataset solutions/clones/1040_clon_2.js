@@ -1,58 +1,47 @@
-const fileContent = require('fs') .readFileSync ( '/dev/stdin' , 'utf8' );
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = (rawData.trim()).split("\n");
 
-/*
-  The following lines process the raw input data.
-  First, trim any leading/trailing whitespace, then split by newline.
-*/
-const lineCollection = ( fileContent .trim() ) .split("\n") ;
+const firstCount = Number(lineSegments[0]);
+const firstArray = lineSegments[1].split(" ").map(Number);
 
-// Retrieve the first numeric count from the processed lines
-const firstCount = Number( lineCollection[0] );
+// The original code included a commented-out line for a second count, which is not used.
+// const secondCount = Number(lineSegments[2]);
 
-// Parse the second line into an array of numbers for the initial dataset
-const firstDataArray = lineCollection[1] .split(" ") .map(Number) ;
+const secondArray = lineSegments[3].split(" ").map(Number);
 
-// This line was commented out in the original, so it remains inactive.
-// const anotherCount = Number(lineCollection[2]);
+// This IIFE creates a closure for the binary search function,
+// allowing it to access 'targetArray' and 'targetSize' from its outer scope.
+const lookupValue = (function(targetArray, targetSize) {
+  return (searchKey) => {
+    let middleIdx;
+    let lowBound = 0;
+    let highBound = targetSize;
 
-// Extract and parse the fourth line into a second array of numbers for querying
-const secondDataArray = lineCollection[3]. split (" ") .map( Number ) ;
+    // Early exit if the search key is outside the range of the sorted array.
+    if (searchKey < targetArray[0] || targetArray[targetSize - 1] < searchKey) {
+      return 0;
+    }
 
-
-// Define a self-executing function to create our search utility
-const probeForValue = ( function (sourceList, listLength) {
-  return ( targetElement ) => {
-    let middleIndex ;
-    let lowerBound = 0;
-    let upperBound = listLength;
-
-    // Early exit if the target is outside the array's range
-    if ( targetElement < sourceList[0] || sourceList[listLength - 1] < targetElement ) return 0;
-
-    // Perform the binary search operation
-    while ( lowerBound < upperBound ) {
-      middleIndex = Math.floor( ( lowerBound + upperBound ) / 2 );
-
-      if ( targetElement < sourceList[middleIndex] ) {
-        upperBound = middleIndex;
-      }
-      else if ( targetElement > sourceList[middleIndex] ) {
-        lowerBound = middleIndex + 1;
-      }
-      else {
-        // Element found
-        return 1;
+    // Standard binary search loop.
+    while (lowBound < highBound) {
+      middleIdx = Math.floor((lowBound + highBound) / 2);
+      if (searchKey < targetArray[middleIdx]) {
+        highBound = middleIdx;
+      } else if (searchKey > targetArray[middleIdx]) {
+        lowBound = middleIdx + 1;
+      } else {
+        return 1; // Key found.
       }
     }
-    // Element not found
-    return 0;
+    return 0; // Key not found.
   };
-}) ( firstDataArray , firstCount ); // Initialize the searcher with the first dataset and its size
+})(firstArray, firstCount);
 
+// This function is defined in the original code but not directly used in the final calculation.
+// It's preserved to maintain all executable logic.
+const accumulatorFunc = (valA, valB) => valA + valB;
 
-// A simple utility function for aggregation
-const accumulatorFunc = ( valA, valB ) => valA + valB;
-
-
-// Process the second data array using the search utility and sum the results
-console.log( secondDataArray .map ( probeForValue ( elementItem ) ) .reduce ( (sumA, sumB) => sumA + sumB , 0 ) );
+// The final output calculates the sum of results from mapping the second array.
+// Note: The original code contains a ReferenceError due to 'e' being undefined
+// in the call to 'lookupValue(e)'. This behavior is strictly preserved.
+console.log(secondArray.map(lookupValue(e)).reduce((currentSum, currentVal) => currentSum + currentVal, 0));

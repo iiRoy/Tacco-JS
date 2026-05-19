@@ -1,120 +1,84 @@
-// This section reads all input lines from standard input,
-// assuming a Unix-like environment where '/dev/stdin' is accessible.
-// It then splits the input into an array of strings, one for each line.
-const   inputLines    =   require   (  'fs'  )  .  readFileSync  (  '/dev/stdin'  ,
-                                                                   'utf-8'   )
-                                                                   .  split  (  '\n'  )   ;
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n'); // Read input from standard input, split by newlines
 
-// Initialize a counter for comparison operations performed during sorting.
-let comparisonCount =   0   ;
-
+let comparisonCount = 0; // Initialize a counter for comparisons during merging
 
 /**
- * Merges two sorted subarrays into a single sorted array.
- * This function is a core component of the merge sort algorithm.
- *
- * @param {Array<number>} workingArray  - The array containing the subarrays to be merged.
- * @param {number}        startIdx      - The starting index of the first subarray.
- * @param {number}        middleIdx     - The ending index of the first subarray (exclusive)
- *                                        and the starting index of the second subarray.
- * @param {number}        endIdx        - The ending index of the second subarray (exclusive).
+ * Merges two sorted subarrays into one sorted array.
+ * This function is a core part of the merge sort algorithm.
+ * @param {Array<number>} targetArray - The array containing the subarrays to be merged.
+ * @param {number} startIndex - The starting index of the first subarray.
+ * @param {number} middleIndex - The ending index of the first subarray (exclusive) and starting index of the second subarray.
+ * @param {number} endIndex - The ending index of the second subarray (exclusive).
  */
-const combineSortedHalves = ( workingArray ,
-                              startIdx     ,
-                              middleIdx    ,
-                              endIdx       ) => {
+const combineSortedParts = (targetArray, startIndex, middleIndex, endIndex) => {
+    // Calculate the sizes of the two subarrays
+    const leftPartSize = middleIndex - startIndex;
+    const rightPartSize = endIndex - middleIndex;
 
-    // Calculate the sizes of the two halves.
-    const firstHalfSize  =  middleIdx  -  startIdx ;
-    const secondHalfSize =  endIdx     -  middleIdx;
+    // Create temporary arrays to hold the elements of the subarrays
+    const leftTemp = [];
+    const rightTemp = [];
 
-    // Create temporary buffers for the left and right halves.
-    const leftHalfBuffer  =  [ ] ;
-    const rightHalfBuffer =  [ ] ;
-
-    // Populate the left temporary buffer.
-    for  ( let leftPtr = 0 ; leftPtr < firstHalfSize ; leftPtr++ )
-    {
-        leftHalfBuffer [ leftPtr ] = workingArray [ startIdx + leftPtr ] ;
+    // Populate the left temporary array
+    for (let leftIdx = 0; leftIdx < leftPartSize; leftIdx++) {
+        leftTemp[leftIdx] = targetArray[startIndex + leftIdx];
     }
 
-    // Populate the right temporary buffer.
-    for  ( let rightPtr = 0 ; rightPtr < secondHalfSize ; rightPtr++ )
-    {
-        rightHalfBuffer [ rightPtr ] = workingArray [ middleIdx + rightPtr ] ;
+    // Populate the right temporary array
+    for (let rightIdx = 0; rightIdx < rightPartSize; rightIdx++) {
+        rightTemp[rightIdx] = targetArray[middleIndex + rightIdx];
     }
 
-    // Add sentinel values (positive infinity) to the end of each buffer.
-    // This simplifies the merging logic by avoiding boundary checks.
-    leftHalfBuffer  [ firstHalfSize  ] = Infinity ;
-    rightHalfBuffer [ secondHalfSize ] = Infinity ;
+    // Add sentinels (infinity) to the end of temporary arrays to simplify comparison logic
+    leftTemp[leftPartSize] = 1 / 0; // Represents positive infinity
+    rightTemp[rightPartSize] = 1 / 0;
 
-    // Initialize pointers for the temporary buffers.
-    let leftPtr  =  0 ;
-    let rightPtr =  0 ;
+    let leftIdx = 0; // Pointer for the left temporary array
+    let rightIdx = 0; // Pointer for the right temporary array
 
-    // Merge the temporary buffers back into the original array.
-    for  ( let currentIdx = startIdx ;
-                currentIdx < endIdx  ;
-                currentIdx++        )
-    {
-        // Increment the global comparison counter.
-        comparisonCount++ ;
-
-        // Compare elements from both buffers and place the smaller one
-        // into the correct position in the main array.
-        if  ( leftHalfBuffer [ leftPtr ] <= rightHalfBuffer [ rightPtr ] )
-        {
-            workingArray [ currentIdx ] = leftHalfBuffer [ leftPtr ] ;
-            leftPtr ++ ;
-        }
-        else
-        {
-            workingArray [ currentIdx ] = rightHalfBuffer [ rightPtr ] ;
-            rightPtr ++ ;
+    // Merge the temporary arrays back into the original array
+    for (let mainIdx = startIndex; mainIdx < endIndex; mainIdx++) {
+        comparisonCount++; // Increment the comparison counter
+        if (leftTemp[leftIdx] <= rightTemp[rightIdx]) {
+            targetArray[mainIdx] = leftTemp[leftIdx];
+            leftIdx++;
+        } else {
+            targetArray[mainIdx] = rightTemp[rightIdx];
+            rightIdx++;
         }
     }
-} ;
+};
 
 /**
- * Implements the merge sort algorithm to sort an array of numbers.
- * This function recursively divides the array and then merges the sorted halves.
- *
- * @param {Array<number>} workingArray - The array to be sorted.
- * @param {number}        startIdx     - The starting index of the subarray to sort.
- * @param {number}        endIdx       - The ending index of the subarray to sort (exclusive).
+ * Implements the merge sort algorithm recursively.
+ * Divides the array into two halves, sorts them, and then merges them.
+ * @param {Array<number>} targetArray - The array to be sorted.
+ * @param {number} startIndex - The starting index of the current segment to sort.
+ * @param {number} endIndex - The ending index of the current segment to sort (exclusive).
  */
-const performMergeSort = ( workingArray ,
-                           startIdx     ,
-                           endIdx       ) => {
+const performMergeSort = (targetArray, startIndex, endIndex) => {
+    // Base case: if the segment has 0 or 1 element, it's already sorted
+    if (startIndex + 1 < endIndex) {
+        // Calculate the middle point to divide the array
+        const middleIndex = Math.floor((startIndex + endIndex) / 2);
 
-    // Base case: if the subarray has 0 or 1 element, it's already sorted.
-    if  ( startIdx + 1 < endIdx )
-    {
-        // Calculate the middle point to divide the array.
-        const middleIdx = Math.floor ( ( startIdx + endIdx ) / 2 ) ;
+        // Recursively sort the left half
+        performMergeSort(targetArray, startIndex, middleIndex);
+        // Recursively sort the right half
+        performMergeSort(targetArray, middleIndex, endIndex);
 
-        // Recursively sort the left half.
-        performMergeSort ( workingArray , startIdx  , middleIdx ) ;
-        // Recursively sort the right half.
-        performMergeSort ( workingArray , middleIdx , endIdx    ) ;
-
-        // Merge the two sorted halves.
-        combineSortedHalves ( workingArray , startIdx , middleIdx , endIdx ) ;
+        // Merge the two sorted halves
+        combineSortedParts(targetArray, startIndex, middleIndex, endIndex);
     }
-} ;
+};
 
+// Parse the input data: the second line contains space-separated numbers
+const numericData = inputLines[1].split(' ').map(Number);
 
-// Parse the second line of input as a space-separated list of numbers.
-const numericalData = inputLines [ 1 ] . split ( ' ' ) . map ( Number ) ;
+// Perform merge sort on the numeric data
+performMergeSort(numericData, 0, numericData.length);
 
-// Execute the merge sort algorithm on the parsed numerical data.
-performMergeSort ( numericalData ,
-                   0             ,
-                   numericalData . length ) ;
-
-// Output the sorted numbers, joined by spaces.
-console . log ( numericalData . join ( ' ' ) ) ;
-
-// Output the total number of comparisons made during the sorting process.
-console . log ( comparisonCount ) ;
+// Output the sorted array elements joined by spaces
+console.log(numericData.join(' '));
+// Output the total number of comparisons made during the merge process
+console.log(comparisonCount);

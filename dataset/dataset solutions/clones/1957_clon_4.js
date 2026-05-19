@@ -1,16 +1,7 @@
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+const calculateResult = (sourceContent) => {
+    const parsedValue = parseInt(sourceContent);
+    return (Math.PI + Math.PI) * parsedValue;
+};
 
-process.stdin.once('data', function(inputData) {
-    const numericValue = Number(inputData.toString().trim());
-
-    const universalCircleFactor = Math.acos(-1) * 2;
-
-    function evaluateCircularMetric(quantity, multiplier) {
-        return quantity * multiplier;
-    }
-
-    const finalResult = evaluateCircularMetric(numericValue, universalCircleFactor);
-
-    process.stdout.write(finalResult.toString() + '\n');
-});
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+console.log(calculateResult(inputData));

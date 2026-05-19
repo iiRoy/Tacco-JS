@@ -1,46 +1,48 @@
-const fileContent = require('fs') .readFileSync( '/dev/stdin', 'utf8' );
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input from standard input as a string
+let lineArray = rawData.trim().split("\n"); // Trim whitespace and split the input string into an array of lines
 
-let lineFragments = fileContent.trim()
-                              .split("\n");
+const firstVal = lineArray.shift() - 0; // Extract the first line, convert to number (unused in final calculation)
 
-const totalElements = parseInt(lineFragments.shift(), 10);
+// Extract and parse the second line for arithmetic progression parameters
+let [startTerm, commonDiff] = lineArray.shift().split(" ").map(Number);
 
-const [initialValue, differenceAmount] = lineFragments
-                                          .shift()
-                                          .split(" ")
-                                          .map(valueString => parseInt(valueString, 10));
+const mappingStore = {}; // Initialize an object to store dynamic mappings or swaps
 
-const identifierMap = {};
+const opCount = lineArray.shift() - 0; // Get the number of operations to perform from the next line
 
-const operationQuantity = parseInt(lineFragments.shift(), 10);
+// Loop through each operation specified in the input
+for (let idx = 0; idx < opCount; idx++) {
+    // Parse the current operation line into its components: operation type, operand A, operand B
+    const [opType, operandA, operandB] = lineArray.shift().split(" ");
 
-for (let currentOpIndex = 0;
-     currentOpIndex < operationQuantity;
-     currentOpIndex++)
-{
-    const [operationKind, firstAlias, secondAlias] = lineFragments
-                                                        .shift()
-                                                        .split(" ");
-    
-    if ( ! identifierMap.hasOwnProperty(firstAlias) ) {
-        identifierMap[firstAlias] = firstAlias;
+    // Ensure operandA exists in the mapping store, mapping it to itself if not
+    if (!mappingStore.hasOwnProperty(operandA)) {
+        mappingStore[operandA] = operandA;
     }
-    
-    if ( ! identifierMap.hasOwnProperty(secondAlias) ) {
-        identifierMap[secondAlias] = secondAlias;
+
+    // Ensure operandB exists in the mapping store, mapping it to itself if not
+    if (!mappingStore.hasOwnProperty(operandB)) {
+        mappingStore[operandB] = operandB;
     }
-    
-    if (operationKind === "0") {
-        [identifierMap[firstAlias], identifierMap[secondAlias]] = [identifierMap[secondAlias], identifierMap[firstAlias]];
+
+    // Perform the operation based on opType
+    if (opType === "0") {
+        // If opType is "0", swap the mappings of operandA and operandB
+        [mappingStore[operandA], mappingStore[operandB]] = [mappingStore[operandB], mappingStore[operandA]];
     } else {
-        identifierMap[firstAlias] = identifierMap[secondAlias];
+        // Otherwise (opType is not "0"), assign the mapping of operandB to operandA
+        mappingStore[operandA] = mappingStore[operandB];
     }
 }
 
-let lookupTarget = parseInt(lineFragments.shift(), 10);
+let targetIndex = lineArray.shift() - 0; // Get the final target index from the remaining input
 
-if (identifierMap.hasOwnProperty(lookupTarget + "")) {
-    lookupTarget = parseInt(identifierMap[lookupTarget], 10);
+// Check if the target index has been remapped in the mappingStore
+if (mappingStore.hasOwnProperty(targetIndex + "")) {
+    // If remapped, use the remapped value, converting it to a number
+    targetIndex = mappingStore[targetIndex] - 0;
 }
 
-console.log(initialValue + ((lookupTarget - 1) * differenceAmount));
+// Calculate the final term of the arithmetic progression and print it
+// Formula: a_n = a_1 + (n - 1) * d
+console.log(startTerm + ((targetIndex - 1) * commonDiff));

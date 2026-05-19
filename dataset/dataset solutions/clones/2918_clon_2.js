@@ -1,208 +1,151 @@
-'use strict'
+'use strict';
 
-//==================================//
-// Utility Section Start
-//
+// This section contains utility functions and data structures.
+// It's a common practice to group such reusable components.
 
-// Constants
-const HUGE_VAL = 900719925474099; // A large constant for default minimums.
+// A very large numerical constant, used as an initial "infinity" value.
+const BIG_NUM = 900719925474099; // Represents a sufficiently large number.
 
-/**
- * Converts a space-separated string of numbers into an array of integers.
- * @param {string} inputString - The string containing space-separated numbers.
- * @returns {number[]} An array of parsed integers.
- */
-function parseIntegerArray(inputString) {
-  return inputString.split(' ').map((valStr) => parseInt(valStr, 10));
+// Converts a space-separated string of numbers into an array of integers.
+function parseNumbers(inputLine) {
+  return inputLine.split(' ').map((valStr) => parseInt(valStr, 10));
 }
 
-/**
- * Finds the lower bound of a target value in a sorted array using binary search.
- * @param {number[]} dataArr - The sorted array to search within.
- * @param {number} startIndex - The starting index for the search range.
- * @param {number} endIndex - The ending index (exclusive) for the search range.
- * @param {number} targetValue - The value to find the lower bound for.
- * @returns {number} The index of the first element not less than the target value.
- */
-function findLowerBound(dataArr, startIndex, endIndex, targetValue) {
-  let midIndex;
-  while (1 < endIndex - startIndex) {
-    midIndex = Math.floor((startIndex + endIndex) / 2);
-    if (dataArr[midIndex] < targetValue) {
-      startIndex = midIndex;
+// Implements a binary search to find the insertion point for a value in a sorted array.
+// Returns the index where 'targetVal' would be inserted to maintain sorted order.
+function findInsertionPoint(sortedArr, startIdx, endIdx, targetVal) {
+  let midIdx;
+  while (1 < endIdx - startIdx) {
+    midIdx = 0 | ((startIdx + endIdx) / 2);
+    if (sortedArr[midIdx] < targetVal) {
+      startIdx = midIdx;
     } else {
-      endIndex = midIndex;
+      endIdx = midIdx;
     }
   }
-  return dataArr[startIndex] < targetValue ? endIndex : startIndex;
+  return sortedArr[startIdx] < targetVal ? endIdx : startIdx;
 }
 
-/**
- * Constructor for a Segment Tree data structure.
- * Initializes the tree with a default large value.
- * @param {number} totalElements - The number of elements the segment tree will manage.
- */
-function SegmentTree(totalElements) {
-  let tempCount = totalElements - 1;
-  let treeSize = 2;
-
-  while (tempCount) {
-    tempCount >>= 1;
-    treeSize <<= 1;
+// Defines a Segment Tree data structure.
+function segmentTreeStructure(totalElements) {
+  let tempVal = totalElements - 1;
+  let powerOfTwo = 2;
+  while (tempVal) {
+    tempVal >>= 1;
+    powerOfTwo <<= 1;
   }
-
-  this.treeNodes = new Array(treeSize - 1).fill(2_000_000_000); // Initialize with a very large number
-  this.leafOffset = treeSize >> 1;
-  // console.debug('Initialization:', totalElements, treeSize, this.treeNodes, this.leafOffset);
+  this.dataStore = Array(powerOfTwo - 1).fill(2e9); // Initialize with a large value (effectively infinity).
+  this.leafOffset = powerOfTwo >> 1;
+  // console.log('Initialization details:', totalElements, powerOfTwo, this.dataStore, this.leafOffset);
 }
 
-SegmentTree.prototype = {
-  /**
-   * Retrieves the minimum value in the segment tree up to a given index.
-   * @param {number} queryIndex - The index for which to retrieve the minimum.
-   * @returns {number} The minimum value found, or -1 if no valid minimum (i.e., still default value).
-   */
-  retrieveMinimum: function (queryIndex) {
-    queryIndex += this.leafOffset - 1;
-    let resultMin = 2_000_000_000; // Start with the default large value
-
-    while (queryIndex >= 0) {
-      if (this.treeNodes[queryIndex] < resultMin) {
-        resultMin = this.treeNodes[queryIndex];
+segmentTreeStructure.prototype = {
+  // Retrieves the minimum value in the segment tree that covers the given index.
+  retrieveValue: function (targetIndex) {
+    let currentIdx = targetIndex + this.leafOffset - 1;
+    let minimumValue = 2e9; // Start with infinity.
+    while (currentIdx >= 0) {
+      if (this.dataStore[currentIdx] < minimumValue) {
+        minimumValue = this.dataStore[currentIdx];
       }
-      queryIndex = (queryIndex - 1) >> 1;
+      currentIdx = (currentIdx - 1) >> 1; // Move to parent node.
     }
-
-    if (resultMin === 2_000_000_000) {
-      resultMin = -1;
+    if (minimumValue === 2e9) {
+      minimumValue = -1; // If no value was found, return -1.
     }
-    return resultMin;
+    return minimumValue;
   },
 
-  /**
-   * Applies an update value to a specified range within the segment tree.
-   * This is a range update operation.
-   * @param {number} rangeStart - The starting index of the update range (inclusive).
-   * @param {number} rangeEnd - The ending index of the update range (exclusive).
-   * @param {number} updateValue - The value to apply to the range.
-   */
-  applyUpdate: function (rangeStart, rangeEnd, updateValue) {
-    // console.debug('Applying update:', rangeStart, rangeEnd, updateValue);
-    let nodeValues = this.treeNodes;
+  // Updates a range [rangeStart, rangeEnd) in the segment tree with a new value.
+  modifyRange: function (rangeStart, rangeEnd, newValue) {
+    // console.log('Updating range:', rangeStart, rangeEnd, newValue);
+    let treeValues = this.dataStore; // Reference to the internal array.
 
-    /**
-     * Recursive helper function for range updates.
-     * @param {number} currentL - The current left boundary of the query.
-     * @param {number} currentR - The current right boundary of the query.
-     * @param {number} nodeRangeStart - The left boundary of the current tree node's range.
-     * @param {number} nodeRangeEnd - The right boundary of the current tree node's range.
-     * @param {number} nodeIndex - The index of the current tree node.
-     */
-    function recursiveUpdate(currentL, currentR, nodeRangeStart, nodeRangeEnd, nodeIndex) {
-      // console.debug('Recursive Call:', currentL, currentR, nodeRangeStart, nodeRangeEnd, nodeIndex);
-      if (currentL === nodeRangeStart && currentR === nodeRangeEnd) {
-        nodeValues[nodeIndex] = updateValue;
+    // Recursive helper function for range updates.
+    function recursiveUpdate(currentL, currentR, nodeX, nodeY, nodeIdx) {
+      // console.log('Recursive call -- currentL:', currentL, 'currentR:', currentR, 'nodeX:', nodeX, 'nodeY:', nodeY, 'nodeIdx:', nodeIdx);
+      if (currentL === nodeX && currentR === nodeY) {
+        treeValues[nodeIdx] = newValue; // Leaf node or full coverage.
         return;
       }
-
-      let midPoint = (nodeRangeStart + nodeRangeEnd) >> 1;
-
+      let midPoint = (nodeX + nodeY) >> 1;
       if (midPoint < currentR) {
         if (currentL < midPoint) {
-          recursiveUpdate(currentL, midPoint, nodeRangeStart, midPoint, nodeIndex * 2 + 1);
-          recursiveUpdate(midPoint, currentR, midPoint, nodeRangeEnd, (nodeIndex + 1) * 2);
+          recursiveUpdate(currentL, midPoint, nodeX, midPoint, nodeIdx + nodeIdx + 1);
+          recursiveUpdate(midPoint, currentR, midPoint, nodeY, (nodeIdx + 1) << 1);
         } else {
-          recursiveUpdate(currentL, currentR, midPoint, nodeRangeEnd, (nodeIndex + 1) * 2);
+          recursiveUpdate(currentL, currentR, midPoint, nodeY, (nodeIdx + 1) << 1);
         }
       } else {
-        recursiveUpdate(currentL, currentR, nodeRangeStart, midPoint, nodeIndex * 2 + 1);
+        recursiveUpdate(currentL, currentR, nodeX, midPoint, nodeIdx + nodeIdx + 1);
       }
     }
-
     recursiveUpdate(rangeStart, rangeEnd, 0, this.leafOffset, 0);
-    // this.displayTreeState();
+    // this.displayStructure(); // Optional: for debugging.
   },
 
-  /**
-   * Prints the current state of the segment tree nodes for debugging purposes.
-   * Displays nodes level by level.
-   */
-  displayTreeState: function () {
-    console.log(this.treeNodes[0]);
-
-    let segmentParts = [];
-    for (let k = 1; k <= 2; ++k) {
-      segmentParts.push(this.treeNodes[k]);
+  // Prints the segment tree structure for debugging purposes.
+  displayStructure: function () {
+    console.log(this.dataStore[0]);
+    let tempArr = [];
+    for (let i = 1; i <= 2; i++) {
+      tempArr.push(this.dataStore[i]);
     }
-    console.log(segmentParts.join(' '));
-
-    segmentParts = [];
-    for (let k = 3; k <= 6; ++k) {
-      segmentParts.push(this.treeNodes[k]);
+    console.log(tempArr.join(' '));
+    tempArr = [];
+    for (let i = 3; i <= 6; i++) {
+      tempArr.push(this.dataStore[i]);
     }
-    console.log(segmentParts.join(' '));
-
-    segmentParts = [];
-    for (let k = 7; k <= 14; ++k) {
-      segmentParts.push(this.treeNodes[k]);
+    console.log(tempArr.join(' '));
+    tempArr = [];
+    for (let i = 7; i <= 14; i++) {
+      tempArr.push(this.dataStore[i]);
     }
-    console.log(segmentParts.join(' '));
+    console.log(tempArr.join(' '));
   },
 };
 
-//
-// Utility Section End
-//==================================//
-
-/**
- * Main function to process input data, perform calculations, and output results.
- * @param {string} rawData - The raw input string read from stdin.
- */
-function processInputData(rawData) {
-  let linesArray = rawData.trim().split('\n');
-
-  let firstLineNumbers = parseIntegerArray(linesArray[0]);
-  let numItems = firstLineNumbers.shift();
-  let numQueries = firstLineNumbers.shift();
+// Main function to process the input and generate the output.
+function processInput(rawInput) {
+  let inputLines = rawInput.trim().split('\n');
+  let parsedHeader = parseNumbers(inputLines[0]);
+  let numItems = parsedHeader.shift();
+  let numQueries = parsedHeader.shift();
 
   let itemData = new Array(numItems);
-  for (let idx = 1; idx <= numItems; ++idx) {
-    itemData[idx - 1] = parseIntegerArray(linesArray[idx]);
+  for (let i = 1; i <= numItems; i++) {
+    itemData[i - 1] = parseNumbers(inputLines[i]);
   }
 
   let queryValues = new Array(numQueries);
-  for (let idx = 1; idx <= numQueries; ++idx) {
-    queryValues[idx - 1] = parseInt(linesArray[numItems + idx], 10);
+  for (let i = 1; i <= numQueries; i++) {
+    queryValues[i - 1] = parseInt(inputLines[numItems + i], 10);
   }
 
-  let segmentDataManager = new SegmentTree(numQueries);
-  itemData.sort((itemA, itemB) => itemB[2] - itemA[2]); // Sort items in descending order based on the third element
+  let treeInstance = new segmentTreeStructure(numQueries);
+  itemData.sort((a, b) => b[2] - a[2]); // Sort items by their third element in descending order.
 
-  for (let currentItemIdx = 0; currentItemIdx < numItems; ++currentItemIdx) {
-    // Skip if the condition for the first query value is not met
-    if (itemData[currentItemIdx][1] - itemData[currentItemIdx][2] - 1 < queryValues[0]) {
-      continue;
-    }
+  for (let idx = 0; idx < numItems; idx++) {
+    // Skip if the item's range doesn't cover the first query value.
+    if (itemData[idx][1] - itemData[idx][2] - 1 < queryValues[0]) continue;
 
-    // Find the left boundary for the update range
-    let leftBound = findLowerBound(queryValues, 0, numQueries, itemData[currentItemIdx][0] - itemData[currentItemIdx][2]);
-    // Find the right boundary for the update range
-    let rightBound = findLowerBound(queryValues, leftBound, numQueries, itemData[currentItemIdx][1] - itemData[currentItemIdx][2]);
+    // Find the range of query values that this item can affect.
+    let leftBound = findInsertionPoint(queryValues, 0, numQueries, itemData[idx][0] - itemData[idx][2]);
+    let rightBound = findInsertionPoint(queryValues, leftBound, numQueries, itemData[idx][1] - itemData[idx][2]);
 
-    // If the range is valid, apply the update to the segment tree
     if (leftBound < rightBound) {
-      segmentDataManager.applyUpdate(leftBound, rightBound, itemData[currentItemIdx][2]);
+      treeInstance.modifyRange(leftBound, rightBound, itemData[idx][2]);
     }
   }
 
-  let finalResults = new Array(numQueries);
-  for (let resultIdx = 0; resultIdx < numQueries; ++resultIdx) {
-    finalResults[resultIdx] = segmentDataManager.retrieveMinimum(resultIdx);
+  let resultsArray = Array(numQueries);
+  for (let idx = 0; idx < numQueries; idx++) {
+    resultsArray[idx] = treeInstance.retrieveValue(idx);
   }
 
-  console.log(finalResults.join("\n"));
-  // segmentDataManager.displayTreeState();
+  console.log(resultsArray.join('\n'));
+  // treeInstance.displayStructure(); // Optional: for debugging.
 }
 
-// Execute the main processing function with data from standard input
-processInputData(require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }));
+// Reads input from stdin and passes it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

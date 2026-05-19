@@ -1,50 +1,41 @@
-function  transformGrid ( sourceMatrix )  {
-   // Declare an array to store the resulting rotated grid
-   let   outputMatrix   =   [ ]   ;
+function rotateMatrix(inputGrid) {
+  // Initialize a new array to store the rotated grid.
+  let rotatedGrid = [];
+  for (let rowIdx = 0; rowIdx < 8; rowIdx++) {
+    rotatedGrid[rowIdx] = [];
+  }
 
-   // Initialize rows for the output matrix
-   for ( let   verticalCoord   =   0 ;   verticalCoord   <   8 ;   verticalCoord ++ )   {
-      outputMatrix [ verticalCoord ]   =   [ ]   ;
-   }
-
-   // Perform the 90-degree clockwise rotation logic
-   for ( let   verticalCoord   =   0 ;   verticalCoord   <   8 ;   verticalCoord ++ )   {
-      for ( let   horizontalCoord   =   0 ;   horizontalCoord   <   8 ;   horizontalCoord ++ )   {
-         // New position: outputMatrix[new_row][new_col] = sourceMatrix[old_row][old_col]
-         // For 90-degree clockwise: new_row = old_col, new_col = 7 - old_row
-         // So, outputMatrix[old_col][7 - old_row] = sourceMatrix[old_row][old_col]
-         // Rearranging for the loop: outputMatrix[verticalCoord][horizontalCoord] = sourceMatrix[7 - horizontalCoord][verticalCoord]
-         outputMatrix [ verticalCoord ] [ horizontalCoord ]   =   sourceMatrix [ 7   -   horizontalCoord ] [ verticalCoord ]   ;
-      }
-   }
-
-   // Return the newly rotated grid
-   return   outputMatrix ;
+  // Iterate through the input grid to perform a 90-degree clockwise rotation.
+  // The element at (rowIdx, colIdx) in the new grid comes from (7 - colIdx, rowIdx) in the original.
+  for (let rowIdx = 0; rowIdx < 8; rowIdx++) {
+    for (let colIdx = 0; colIdx < 8; colIdx++) {
+      rotatedGrid[rowIdx][colIdx] = inputGrid[7 - colIdx][rowIdx];
+    }
+  }
+  return rotatedGrid;
 }
 
+// Read the entire content from standard input.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the entire file content from standard input
-let   fileContent   =   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' )   ;
+// Split the content into an array of lines, after trimming any leading/trailing whitespace.
+const lineArray = fileContent.trim().split('\n');
 
-// Process the input: trim whitespace and split into individual lines
-let   inputLines   =   ( fileContent . trim ( ) ) . split ( "\n" )   ;
-
-// Initialize a 2D array (matrix) to hold the character grid
-let   charMatrix   =   [ ]   ;
-
-// Populate the character matrix from the input lines
-for ( let   loopCounter   =   0 ;   loopCounter   <   8 ;   loopCounter ++ )   {
-   charMatrix . push ( inputLines [ loopCounter ] . split ( "" ) )   ;
+// Initialize a 2D array to hold the current state of the grid.
+let currentGrid = [];
+// Populate the grid from the input lines.
+for (let idx = 0; idx < 8; idx++) {
+  currentGrid.push(lineArray[idx].split(''));
 }
 
-// First rotation: 90 degrees clockwise
-charMatrix   =   transformGrid ( charMatrix )   ;
-console . log ( "90\n"   +   charMatrix . join ( "\n" ) )   ;
+// Perform the first 90-degree rotation and print the result.
+currentGrid = rotateMatrix(currentGrid);
+console.log('90\n' + currentGrid.join('\n'));
 
-// Second rotation: another 90 degrees (total 180)
-charMatrix   =   transformGrid ( charMatrix )   ;
-console . log ( "180\n"   +   charMatrix . join ( "\n" ) )   ;
+// Perform the second 90-degree rotation (total 180 degrees) and print the result.
+currentGrid = rotateMatrix(currentGrid);
+console.log('180\n' + currentGrid.join('\n'));
 
-// Third rotation: another 90 degrees (total 270)
-charMatrix   =   transformGrid ( charMatrix )   ;
-console . log ( "270\n"   +   charMatrix . join ( "\n" ) )   ;
+// Perform the third 90-degree rotation (total 270 degrees) and print the result.
+currentGrid = rotateMatrix(currentGrid);
+console.log('270\n' + currentGrid.join('\n'));

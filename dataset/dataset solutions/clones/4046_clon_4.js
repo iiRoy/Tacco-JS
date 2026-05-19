@@ -1,13 +1,13 @@
-const inputSource = require("node:fs").readFileSync(0, "utf8");
+const inputSource = require("fs");
+const rawInputData = inputSource.readFileSync("/dev/stdin", "utf8");
 
-let firstDelimiter = inputSource.indexOf('\n');
-let secondDelimiter = inputSource.indexOf('\n', firstDelimiter + 1);
+const lineSegments = rawInputData.split('\n');
 
-let valOne = parseInt(inputSource.substring(0, firstDelimiter), 10);
-let valTwo = parseInt(inputSource.substring(firstDelimiter + 1, secondDelimiter), 10);
-let valThree = parseInt(inputSource.substring(secondDelimiter + 1), 10);
+const firstValue = Number(lineSegments[0]);
+const secondValue = Number(lineSegments[1]);
+const thirdValue = Number(lineSegments[2]);
 
-let differenceResult = valOne - valTwo;
-let finalCalculation = differenceResult - Math.trunc(differenceResult / valThree) * valThree;
+const interimDifference = firstValue - secondValue;
+const computedRemainder = interimDifference - thirdValue * Math.trunc(interimDifference / thirdValue);
 
-process.stdout.write(finalCalculation + '\n');
+console.log(computedRemainder);

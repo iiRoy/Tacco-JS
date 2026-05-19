@@ -1,8 +1,6 @@
-const dataInput = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const processedTextLines = dataInput.trim().split('\n').filter(Boolean);
-
-const characterValueRegistry = new Map([
+const symbolToValue = new Map([
     ['I', 1],
     ['V', 5],
     ['X', 10],
@@ -12,23 +10,27 @@ const characterValueRegistry = new Map([
     ['M', 1000]
 ]);
 
-for (const romanNumeralExpression of processedTextLines) {
-    const finalCalculatedValue = Array.from(romanNumeralExpression).reverse().reduce((currentResult, numeralChar) => {
-        const numericEquivalent = characterValueRegistry.get(numeralChar);
+function convertRomanToInteger(romanSequence, valueLookup) {
+    let finalSum = 0;
+    let previousSymbolValue = 0;
 
-        if (numericEquivalent === undefined) {
-             // This case should ideally not be reached with valid Roman numeral input
-             return currentResult;
-        }
+    for (let position = romanSequence.length - 1; position >= 0; position--) {
+        const currentSymbol = romanSequence[position];
+        const currentSymbolValue = valueLookup.get(currentSymbol);
 
-        if (numericEquivalent < currentResult.largestSymbolSeen) {
-            currentResult.totalValue -= numericEquivalent;
+        if (currentSymbolValue < previousSymbolValue) {
+            finalSum -= currentSymbolValue;
         } else {
-            currentResult.totalValue += numericEquivalent;
-            currentResult.largestSymbolSeen = numericEquivalent;
+            finalSum += currentSymbolValue;
         }
-        return currentResult;
-    }, { totalValue: 0, largestSymbolSeen: 0 });
-
-    console.log(finalCalculatedValue.totalValue);
+        previousSymbolValue = currentSymbolValue;
+    }
+    return finalSum;
 }
+
+const romanNumeralLines = rawData.trim().split('\n');
+
+romanNumeralLines.forEach(function(romanEntry) {
+    const integerResult = convertRomanToInteger(romanEntry, symbolToValue);
+    console.log(integerResult);
+});

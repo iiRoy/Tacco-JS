@@ -1,97 +1,60 @@
-class DataStreamProcessor {
-    constructor(sourceData) {
-        this.lineBuffer = sourceData;
-        this.currentLineIndex = 0;
-    }
+class InputSource {
+    #lineBuffer;
+    #currentLinePointer;
 
-    hasMoreLines() {
-        return this.currentLineIndex < this.lineBuffer.length;
+    constructor() {
+        const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+        this.#lineBuffer = rawInputContent.split("\n");
+        this.#currentLinePointer = 0;
     }
 
     retrieveNextLine() {
-        if (!this.hasMoreLines()) {
+        if (this.#currentLinePointer >= this.#lineBuffer.length) {
             return "";
         }
-        return this.lineBuffer[this.currentLineIndex++];
+        return this.#lineBuffer[this.#currentLinePointer++];
     }
 }
 
-const valueTransformations = new Map([
-    [1, val => parseInt(val, 10)],
-    [2, val => val.split(" ")],
-    [4, val => val.split(" ").map(Number)],
-    [6, val => val.split("")],
-    [7, val => val.split("").map(Number)],
-    [8, arr => arr.join(" ")],
-    [9, arr => arr.join("\n")],
-    [0, arr => arr.join("")],
-]);
+const inputHandler = new InputSource();
 
-function applyConversion(inputValue, conversionKey) {
-    try {
-        const handler = valueTransformations.get(conversionKey);
-        return handler ? handler(inputValue) : inputValue;
-    } catch (err) {
-        return inputValue;
-    }
+function outputResult(data) {
+    console.log(data);
 }
 
-function acquireStandardInput() {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+function outputDebugInfo(info) {
+    console.error(info);
 }
 
-let activeProcessor = new DataStreamProcessor(acquireStandardInput());
+function processInputString() {
+    const sourceStringValue = inputHandler.retrieveNextLine();
+    const stringLengthValue = sourceStringValue.length;
 
-function obtainInteger() { return applyConversion(activeProcessor.retrieveNextLine(), 1); }
-function obtainStringArray() { return applyConversion(activeProcessor.retrieveNextLine(), 2); }
-function obtainNumericArray() { return applyConversion(activeProcessor.retrieveNextLine(), 4); }
-function obtainCharacterArray() { return applyConversion(activeProcessor.retrieveNextLine(), 6); }
-function obtainLine() { return activeProcessor.retrieveNextLine(); }
-function checkMoreInput() { return activeProcessor.hasMoreLines(); }
+    const filteredNonX = sourceStringValue.replace(/x/g, "");
+    const reversedFilteredNonX = sourceStringValue.split("").filter(char => char !== 'x').reverse().join("");
 
-function emitResult(content) { console.log(content); }
-function recordDiagnostic(content) { console.error(content); }
-
-function executeCoreLogic() {
-    const primarySequence = obtainLine();
-    const sequenceExtent = primarySequence.length;
-
-    let nonXCharacters = [];
-    let xSegmentOccurrences = [];
-    let currentXAccumulator = 0;
-
-    for (let charIndex = 0; charIndex < sequenceExtent; ++charIndex) {
-        const character = primarySequence[charIndex];
-        if (character === 'x') {
-            currentXAccumulator++;
-        } else {
-            nonXCharacters.push(character);
-            xSegmentOccurrences.push(currentXAccumulator);
-            currentXAccumulator = 0;
-        }
-    }
-    xSegmentOccurrences.push(currentXAccumulator);
-
-    let isNonXPalindrome = true;
-    const nonXLength = nonXCharacters.length;
-    for (let i = 0; i < nonXLength / 2; ++i) {
-        if (nonXCharacters[i] !== nonXCharacters[nonXLength - 1 - i]) {
-            isNonXPalindrome = false;
-            break;
-        }
-    }
-
-    if (!isNonXPalindrome) {
-        emitResult(-1);
+    if (reversedFilteredNonX !== filteredNonX) {
+        outputResult(-1);
         return;
     }
 
-    let totalAdjustmentRequired = 0;
-    const xCountsLength = xSegmentOccurrences.length;
-    for (let i = 0; i < xCountsLength; ++i) {
-        totalAdjustmentRequired += Math.abs(xSegmentOccurrences[i] - xSegmentOccurrences[xCountsLength - 1 - i]);
+    const nonXCharacterPositions = [];
+    for (let charIndex = 0; charIndex < stringLengthValue; ++charIndex) {
+        if (sourceStringValue[charIndex] !== 'x') {
+            nonXCharacterPositions.push(charIndex);
+        }
     }
-    emitResult(totalAdjustmentRequired / 2);
+
+    const segmentBoundaries = [-1, ...nonXCharacterPositions, stringLengthValue];
+
+    const xSegmentCounts = segmentBoundaries.slice(1).map((currentBoundary, index) => currentBoundary - segmentBoundaries[index] - 1);
+
+    outputDebugInfo(xSegmentCounts);
+
+    const totalSymmetricDifference = Array.from({ length: Math.floor(xSegmentCounts.length / 2) }, (_, k) => k)
+        .reduce((accumulator, k) => accumulator + Math.abs(xSegmentCounts[k] - xSegmentCounts[xSegmentCounts.length - 1 - k]), 0);
+
+    outputResult(totalSymmetricDifference / 2);
 }
 
-executeCoreLogic();
+processInputString();

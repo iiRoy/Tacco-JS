@@ -1,53 +1,61 @@
-function calculateTermValue( exponentiationIndex ) {
-    if ( exponentiationIndex === 1n ) return 1;
-    let tally = 0;
-    let remainingExponent = exponentiationIndex;
-    let powerSeries = 1n;
-    while ( true ) {
-        if ( remainingExponent >= powerSeries ) {
-            tally++;
-            remainingExponent -= powerSeries;
-        } else {
-            break;
-        }
-        powerSeries++;
+function processInput(inputString) {
+  let initialValue = BigInt(inputString);
+
+  if (initialValue === 1n) {
+    return '0';
+  }
+
+  let factorTally = 0;
+  let currentNumber = initialValue;
+  const knownPrimes = [];
+
+  const checkAndFactor = (divisorCandidate) => {
+    let powerAccumulator = divisorCandidate;
+    let foundFactor = false;
+    while (powerAccumulator <= currentNumber) {
+      if (currentNumber % powerAccumulator === 0n) {
+        factorTally++;
+        currentNumber /= powerAccumulator;
+        foundFactor = true;
+      } else {
+        break;
+      }
+      // Prevent overflow for z*=p if N is very large and p is small
+      if (powerAccumulator > currentNumber / divisorCandidate) { // Check before multiplication
+          break;
+      }
+      powerAccumulator *= divisorCandidate;
     }
-    return tally;
+    return foundFactor;
+  };
+
+  const isConsideredPrime = (num, primesList, limit) => {
+    for (const prime of primesList) {
+      if (prime * prime > limit) { // This is the original's specific limit, not num
+        break;
+      }
+      if (num % prime === 0n) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  let candidate = 2n;
+  while (candidate * candidate <= currentNumber || candidate === currentNumber) {
+    if (isConsideredPrime(candidate, knownPrimes, currentNumber)) {
+      knownPrimes.push(candidate);
+      checkAndFactor(candidate);
+    }
+    candidate++;
+  }
+
+  if (factorTally === 0) {
+    factorTally = 1;
+  }
+
+  return factorTally.toString();
 }
 
-function processDecomposition( residualValue, currentTrialDivisor ) {
-    if ( residualValue === 1n ) {
-        return 0;
-    }
-
-    if ( currentTrialDivisor * currentTrialDivisor > residualValue ) {
-        return 1;
-    }
-
-    if ( residualValue % currentTrialDivisor === 0n ) {
-        let factorCount = 0n;
-        let tempResidual = residualValue;
-        while ( tempResidual % currentTrialDivisor === 0n ) {
-            factorCount++;
-            tempResidual /= currentTrialDivisor;
-        }
-        const termContribution = calculateTermValue( factorCount );
-        return termContribution + processDecomposition( tempResidual, currentTrialDivisor + 1n );
-    } else {
-        return processDecomposition( residualValue, currentTrialDivisor + 1n );
-    }
-}
-
-function executeMetricCalculation( inputArgument ) {
-    const numericalValue = BigInt(inputArgument);
-
-    if ( numericalValue === 1n ) {
-        console.log('0');
-        return;
-    }
-
-    const finalMetric = processDecomposition( numericalValue, 2n );
-    console.log(finalMetric.toString());
-}
-
-executeMetricCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(processInput(inputData));

@@ -1,24 +1,27 @@
-const fileSystemOperations = require('fs');
-const acquiredContent = fileSystemOperations.readFileSync(0, 'utf8').trim();
-const entrySegments = acquiredContent.split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const dataRows = rawData.split('\n');
 
-function determineJosephusResult(populationTotal, removalInterval) {
-    let finalParticipantIndex = 0; // Represents 0-indexed position
-    for (let currentPopulation = 1; currentPopulation <= populationTotal; currentPopulation++) {
-        finalParticipantIndex = (finalParticipantIndex + removalInterval) % currentPopulation;
-    }
-    return finalParticipantIndex + 1; // Convert to 1-indexed identifier
-}
+let inputLineIndex = 0;
 
-for (const currentSegment of entrySegments) {
-    const numericalParts = currentSegment.split(' ');
-    const populationQuantity = parseInt(numericalParts[0], 10);
-    const eliminationIncrement = parseInt(numericalParts[1], 10);
+while (inputLineIndex < dataRows.length) {
+    const currentInputLine = dataRows[inputLineIndex++];
+    const numericTokens = currentInputLine.split(' ');
+    const totalParticipants = +numericTokens[0];
+    const eliminationStep = +numericTokens[1];
 
-    if (populationQuantity === 0 && eliminationIncrement === 0) {
+    if (totalParticipants + eliminationStep === 0) {
         break;
     }
 
-    const survivingIdentifier = determineJosephusResult(populationQuantity, eliminationIncrement);
-    console.log(survivingIdentifier);
+    const participantCircle = Array.from({ length: totalParticipants }, (_, index) => index + 1);
+
+    let currentEliminationPosition = 0;
+
+    while (participantCircle.length > 1) {
+        const targetRemovalIndex = (currentEliminationPosition + eliminationStep - 1) % participantCircle.length;
+        participantCircle.splice(targetRemovalIndex, 1);
+        currentEliminationPosition = targetRemovalIndex % participantCircle.length;
+    }
+
+    console.log(participantCircle[0]);
 }

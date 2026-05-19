@@ -1,29 +1,19 @@
-((sourceText) => {
-    const segments = sourceText.split('\n');
+((inputContent) => {
+    const allInputLines = inputContent.split('\n');
 
-    const ruleCount = Number(segments[0]);
+    const mappingCount = Number(allInputLines[0]);
 
-    const ruleDefinitions = segments.slice(1, 1 + ruleCount);
+    const mappingSourceLines = allInputLines.slice(1, 1 + mappingCount);
 
-    const substitutionRegistry = ruleDefinitions.reduce((registry, definitionLine) => {
-        const [antecedent, consequent] = definitionLine.split(' ');
-        registry.set(antecedent, consequent);
-        return registry;
+    const valueMapper = mappingSourceLines.reduce((accumulatorMap, currentSourceLine) => {
+        const lineSegments = currentSourceLine.split(' ');
+        accumulatorMap.set(lineSegments[0], lineSegments[1]);
+        return accumulatorMap;
     }, new Map());
 
-    const targetPhrases = segments.slice(2 + ruleCount);
+    const queryTargetLines = allInputLines.slice(1 + mappingCount + 1);
 
-    const processSegmentsRecursively = (position, accResult) => {
-        if (position >= targetPhrases.length) {
-            return accResult;
-        }
-        const currentPhrase = targetPhrases[position];
-        const transformedPhrase = substitutionRegistry.has(currentPhrase) ?
-                                  substitutionRegistry.get(currentPhrase) :
-                                  currentPhrase;
-        return processSegmentsRecursively(position + 1, accResult + transformedPhrase);
-    };
+    const resultSegments = queryTargetLines.map(targetKey => valueMapper.get(targetKey) ?? targetKey);
 
-    const finalOutput = processSegmentsRecursively(0, '');
-    console.log(finalOutput + '\n');
+    console.log(resultSegments.join('') + '\n');
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

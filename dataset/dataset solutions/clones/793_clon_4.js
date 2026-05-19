@@ -1,63 +1,49 @@
-const fileAccess = require('fs');
+const fileSystem = require('fs');
 
-const convertTimepoint = (momentString) => {
-    const timeComponents = momentString.split(':').map(Number);
-    return (timeComponents[0] * 3600) + (timeComponents[1] * 60);
-};
+const processInputData = (inputContent) => {
+    let inputLines = inputContent.split('\n');
+    let currentInputLine;
 
-const determineMaximalOverlap = (segmentCollection) => {
-    const calculateChainEfficiency = (remainingSegments, currentHighest) => {
-        if (remainingSegments.length === 0) {
-            return currentHighest;
-        }
+    while ((currentInputLine = inputLines.shift()) !== undefined) {
+        const intervalCount = parseInt(currentInputLine, 10);
+        if (intervalCount === 0) break;
 
-        const primarySegment = remainingSegments[0];
-        const subsequentSegments = remainingSegments.slice(1);
-
-        let activeOverlapCount = 1;
-        const nonOverlappingSet = [];
-
-        for (const comparedSegment of subsequentSegments) {
-            // Original overlap condition: val[1] > sub[0] && sub[0] > val[0]
-            if (primarySegment.finish > comparedSegment.begin && comparedSegment.begin > primarySegment.begin) {
-                activeOverlapCount++;
-            } else {
-                nonOverlappingSet.push(comparedSegment);
-            }
-        }
-
-        const updatedHighest = Math.max(currentHighest, activeOverlapCount);
-
-        return calculateChainEfficiency(nonOverlappingSet, updatedHighest);
-    };
-
-    return calculateChainEfficiency(segmentCollection, 1);
-};
-
-const processEntireStream = (dataStream) => {
-    const allRows = dataStream.split('\n').filter(row => row.trim() !== '');
-    let currentIdx = 0;
-    const outputResults = [];
-
-    while (currentIdx < allRows.length) {
-        const entryCount = parseInt(allRows[currentIdx++]);
-        if (entryCount === 0) {
-            break;
-        }
-
-        const currentSegmentGroup = [];
-        for (let j = 0; j < entryCount; j++) {
-            const timePoints = allRows[currentIdx++].split(' ');
-            currentSegmentGroup.push({
-                begin: convertTimepoint(timePoints[0]),
-                finish: convertTimepoint(timePoints[1])
+        let timeIntervals = [];
+        for (let k = 0; k < intervalCount; k++) {
+            const lineData = inputLines.shift();
+            const intervalPair = lineData.split(' ').map(timeString => {
+                return +(new Date('2000-01-01 ' + timeString));
             });
+            timeIntervals.push(intervalPair);
         }
-        outputResults.push(determineMaximalOverlap(currentSegmentGroup));
+
+        let currentWorkingIntervals = timeIntervals;
+        let currentOuterIndex = 0;
+        let maxOverlapForCase = 1;
+
+        while (currentOuterIndex < currentWorkingIntervals.length) {
+            const primaryInterval = currentWorkingIntervals[currentOuterIndex];
+            
+            const { overlapTally, nonOverlappingRemainder } = currentWorkingIntervals
+                .slice(currentOuterIndex + 1)
+                .reduce((accumulator, comparisonInterval) => {
+                    if (primaryInterval[1] > comparisonInterval[0] && comparisonInterval[0] > primaryInterval[0]) {
+                        accumulator.overlapTally++;
+                    } else {
+                        accumulator.nonOverlappingRemainder.push(comparisonInterval);
+                    }
+                    return accumulator;
+                }, { overlapTally: 1, nonOverlappingRemainder: [] });
+
+            maxOverlapForCase = Math.max(maxOverlapForCase, overlapTally);
+            
+            currentWorkingIntervals = [primaryInterval, ...nonOverlappingRemainder];
+            
+            currentOuterIndex++;
+        }
+        console.log(maxOverlapForCase);
     }
-    return outputResults.join('\n');
 };
 
-const rawContent = fileAccess.readFileSync('/dev/stdin', 'utf8');
-const finalOutput = processEntireStream(rawContent);
-console.log(finalOutput);
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processInputData(rawData);

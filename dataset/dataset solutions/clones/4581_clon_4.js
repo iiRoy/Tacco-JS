@@ -1,23 +1,17 @@
-const obtainSource = require("node:fs").readFileSync;
-const transmitOutput = console.info;
+const outputWriter = console.log;
 
-const sourceData = obtainSource("/dev/stdin", "utf8");
-const dataBlocks = sourceData.split("\n").filter(Boolean);
+const inputSource = require("fs").readFileSync("/dev/stdin", "UTF-8");
 
-const firstBlockComponents = dataBlocks.shift().split(" ");
-let targetOrdinalIndex = Number(firstBlockComponents[1]) - 1;
+const allInputLines = inputSource.trim().split('\n');
 
-let cumulativeCount = 0;
-let finalElementValue;
+const firstDataRow = allInputLines.shift();
+const [entryCount, positionKey] = firstDataRow.split(' ').map(Number);
 
-for (const currentBlock of dataBlocks) {
-  const [elementValue, elementQuantity] = currentBlock.split(" ").map(Number);
+const dataEntries = allInputLines;
 
-  if (cumulativeCount + elementQuantity > targetOrdinalIndex) {
-    finalElementValue = elementValue;
-    break; 
-  }
-  cumulativeCount += elementQuantity;
-}
+const constructedSequence = dataEntries.flatMap(currentEntryLine => {
+    const [elementValue, repetitionCount] = currentEntryLine.split(' ').map(Number);
+    return Array.from({ length: repetitionCount }, () => elementValue);
+});
 
-transmitOutput(finalElementValue);
+outputWriter(constructedSequence[positionKey - 1]);

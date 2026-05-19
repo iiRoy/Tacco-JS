@@ -1,37 +1,48 @@
 "use strict";
 
-const processInput = inputString => {
-  inputString = inputString
-    .trim()
-    .split("\n");
+// This function serves as the primary entry point for processing input data.
+const processInput = (inputString) => {
+    // Trim leading/trailing whitespace and split the input into an array of lines.
+    inputString = inputString.trim().split("\n");
 
-  const elementCount = Number.parseInt(inputString[0]);
+    // Parse the first line to get the total number of elements.
+    const elementCount = parseInt(inputString[0]);
 
-  const numericArray = inputString[1]
-    .split(" ")
-    .map(strNum => Number.parseInt(strNum))
-    .sort((valA, valB) => valA - valB);
-  
-  const uniqueValuesCollection = new Set(numericArray);
-  const distinctElements = Array.from(uniqueValuesCollection);
+    // Process the second line: split by space, convert to integers, and sort numerically.
+    const sortedNumbers = inputString[1].split(" ").map(numStr => parseInt(numStr)).sort((valA, valB) => valA - valB);
 
-  let maximumFrequency = 0;
+    // Create a Set to easily get unique values from the sorted array.
+    const uniqueValuesSet = new Set(sortedNumbers);
+    // Convert the Set back to an array to iterate over distinct numbers.
+    const distinctNumbers = [...uniqueValuesSet];
 
-  for (let distinctIdx in distinctElements) {
-    let currentOccurrence = 0;
+    // Initialize a variable to keep track of the maximum count found.
+    let maximumCount = 0;
 
-    for (let dataIdx = 0; dataIdx < elementCount; dataIdx++) {
-      if (Math.abs(numericArray[dataIdx] - distinctElements[distinctIdx]) <= 1) {
-        currentOccurrence++;
-      }
+    // Iterate through each unique number present in the input.
+    for (let idx in distinctNumbers) {
+        // Initialize a counter for the current unique number's "neighbor" count.
+        let currentCount = 0;
+
+        // Iterate through all numbers in the original sorted array.
+        for (let k = 0; k < elementCount; k++) {
+            // Check if the absolute difference between the current number from the original array
+            // and the current distinct number is 0 or 1.
+            if (Math.abs(sortedNumbers[k] - distinctNumbers[idx]) <= 1) {
+                // If they are neighbors (or the same), increment the counter.
+                currentCount++;
+            }
+        }
+
+        // If the current count is greater than the previously recorded maximum, update the maximum.
+        if (currentCount > maximumCount) {
+            maximumCount = currentCount;
+        }
     }
 
-    if (currentOccurrence > maximumFrequency) {
-      maximumFrequency = currentOccurrence;
-    }
-  }
-
-  console.log(maximumFrequency);
+    // Output the final maximum count to the console.
+    console.log(maximumCount);
 };
 
-processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

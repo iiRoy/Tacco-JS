@@ -1,66 +1,61 @@
-function obtainNumericValue(cardIdentifier) {
-  return parseInt(cardIdentifier.substring(1), 10);
+function verifyStability(dataCollection) {
+  // This function was empty in the original and is not called.
+  // Keeping it empty to match the original structure and contract.
 }
 
-function examineEquilibriumState(datasetCollection) {
-  // This function performs no operations, mirroring the original's empty counterpart.
-}
-
-function arrangeElementsStably(collectionExtent, itemSequence) {
-  for (let primaryIndex = 1; primaryIndex < collectionExtent; primaryIndex++) {
-    let currentObject = itemSequence[primaryIndex];
-    let secondaryIndex = primaryIndex - 1;
-    while (secondaryIndex >= 0 && obtainNumericValue(itemSequence[secondaryIndex]) > obtainNumericValue(currentObject)) {
-      itemSequence[secondaryIndex + 1] = itemSequence[secondaryIndex];
-      secondaryIndex--;
+function performBubbleSort(dataLength, dataArray) {
+  let swappedInPass;
+  for (let passIndex = 0; passIndex < dataLength - 1; passIndex++) {
+    swappedInPass = false;
+    for (let elementIndex = 0; elementIndex < dataLength - 1 - passIndex; elementIndex++) {
+      if (Number(dataArray[elementIndex][1]) > Number(dataArray[elementIndex + 1][1])) {
+        [dataArray[elementIndex], dataArray[elementIndex + 1]] = [dataArray[elementIndex + 1], dataArray[elementIndex]];
+        swappedInPass = true;
+      }
     }
-    itemSequence[secondaryIndex + 1] = currentObject;
-  }
-  console.log(itemSequence.join(" "));
-  return "Equilibrium";
-}
-
-function separateForSorting(dataSeries, lowerBoundary, upperBoundary) {
-  const pivotElementValue = obtainNumericValue(dataSeries[upperBoundary]);
-  let partitionPoint = (lowerBoundary - 1);
-  for (let iterationPoint = lowerBoundary; iterationPoint <= upperBoundary - 1; iterationPoint++) {
-    if (obtainNumericValue(dataSeries[iterationPoint]) <= pivotElementValue) {
-      partitionPoint++;
-      const temporaryHolder = dataSeries[partitionPoint];
-      dataSeries[partitionPoint] = dataSeries[iterationPoint];
-      dataSeries[iterationPoint] = temporaryHolder;
+    if (!swappedInPass) {
+      break; // Array is sorted, no need for further passes
     }
   }
-  const temporaryHolder = dataSeries[partitionPoint + 1];
-  dataSeries[partitionPoint + 1] = dataSeries[upperBoundary];
-  dataSeries[upperBoundary] = temporaryHolder;
-  return partitionPoint + 1;
+  console.log(dataArray.join(" "));
+  return "Stable";
 }
 
-function executeFastSort(dataSeries, lowerBoundary, upperBoundary) {
-  if (lowerBoundary < upperBoundary) {
-    const dividingIndex = separateForSorting(dataSeries, lowerBoundary, upperBoundary);
-    executeFastSort(dataSeries, lowerBoundary, dividingIndex - 1);
-    executeFastSort(dataSeries, dividingIndex + 1, upperBoundary);
+function executeSelectionSort(dataLength, dataArray) {
+  for (let currentPosition = 0; currentPosition < dataLength - 1; currentPosition++) {
+    // Find the index of the minimum element in the remaining unsorted portion
+    const minimumRelativeIndex = dataArray
+      .slice(currentPosition, dataLength) // Get the unsorted part
+      .reduce((minIdxAcc, _, relativeIdx) => {
+        const absoluteMinIdx = currentPosition + minIdxAcc;
+        const absoluteCurrentIdx = currentPosition + relativeIdx;
+        if (Number(dataArray[absoluteCurrentIdx][1]) < Number(dataArray[absoluteMinIdx][1])) {
+          return relativeIdx; // Update relative index of minimum
+        }
+        return minIdxAcc; // Keep current relative minimum index
+      }, 0); // Initial relative minimum index is 0 (first element of slice)
+
+    const absoluteMinimumIndex = currentPosition + minimumRelativeIndex;
+
+    if (currentPosition !== absoluteMinimumIndex) {
+      // Swap the element at currentPosition with the found minimum element
+      [dataArray[currentPosition], dataArray[absoluteMinimumIndex]] = [dataArray[absoluteMinimumIndex], dataArray[currentPosition]];
+    }
   }
+  console.log(dataArray.join(" "));
 }
 
-function orderItemsUnpredictably(totalCountValue, elementList) {
-  executeFastSort(elementList, 0, totalCountValue - 1);
-  console.log(elementList.join(" "));
+function processInputAndSort(rawInput) {
+  const [firstLineContent, secondLineContent] = rawInput.split("\n");
+  const dataSize = Number(firstLineContent);
+
+  const bubbleSortTarget = secondLineContent.split(" ");
+  const selectionSortTarget = secondLineContent.split(" ");
+
+  console.log(performBubbleSort(dataSize, bubbleSortTarget));
+  executeSelectionSort(dataSize, selectionSortTarget);
+
+  console.log(selectionSortTarget.join() === bubbleSortTarget.join() ? "Stable" : "Not stable");
 }
 
-function processInputData(sourceContent) {
-  const [firstSegment, secondSegment] = sourceContent.split("\n");
-  const arraySize = parseInt(firstSegment, 10);
-
-  let initialArrangement = secondSegment.split(" ");
-  let duplicateArrangement = secondSegment.split(" ");
-
-  console.log(arrangeElementsStably(arraySize, duplicateArrangement));
-  orderItemsUnpredictably(arraySize, initialArrangement);
-
-  console.log(initialArrangement.join() === duplicateArrangement.join() ? "Equilibrium" : "Non-Equilibrium");
-}
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndSort(require("fs").readFileSync("/dev/stdin", "utf8"));

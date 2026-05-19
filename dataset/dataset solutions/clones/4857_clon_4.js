@@ -1,31 +1,25 @@
-function processInput(rawText) {
-    const lines = rawText.split('\n');
-    const iterCount = Number(lines[0]);
-    const initialNumericList = lines.slice(1).map(Number);
+function ProcessInput(rawData) {
+    const parsedLines = rawData.split('\n');
+    const transformationCycles = Number(parsedLines[0]);
+    let currentSequence = parsedLines.slice(1).map(Number);
 
-    const transformPair = (alpha, beta) => {
-        return alpha === beta ? alpha : Math.abs(alpha - beta);
-    };
+    const calculatePairResult = (firstVal, secondVal) =>
+        (firstVal === secondVal ? firstVal : Math.abs(firstVal - secondVal));
 
-    const processPairsFunctional = (sourceCollection) => {
-        return Array.from({ length: sourceCollection.length / 2 }, (_, index) => {
-            const firstElement = sourceCollection[index * 2];
-            const secondElement = sourceCollection[index * 2 + 1];
-            return transformPair(firstElement, secondElement);
+    const evolveSequence = (sourceSequence) => {
+        const pairCount = Math.floor(sourceSequence.length / 2);
+        return Array.from({ length: pairCount }, (_, pairIndex) => {
+            const valA = sourceSequence[2 * pairIndex];
+            const valB = sourceSequence[2 * pairIndex + 1];
+            return calculatePairResult(valA, valB);
         });
     };
 
-    const performTransformations = (remainingIterations, currentValues) => {
-        if (remainingIterations === 0) {
-            return currentValues;
-        }
-        const nextValues = processPairsFunctional(currentValues);
-        return performTransformations(remainingIterations - 1, nextValues);
-    };
+    const finalSequence = Array.from({ length: transformationCycles }).reduce((accumulatedSequence) => {
+        return evolveSequence(accumulatedSequence);
+    }, currentSequence);
 
-    const finalResultList = performTransformations(iterCount, initialNumericList);
-
-    console.log(finalResultList[0]);
+    console.log(finalSequence[0]);
 }
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

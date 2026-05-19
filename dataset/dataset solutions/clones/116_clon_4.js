@@ -1,26 +1,32 @@
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
-let collectedData = '';
+const initialProcessingState = {
+    numberCounts: new Map(),
+    peakCount: 0
+};
 
-process.stdin.on('data', function(chunk) {
-    collectedData += chunk;
-});
+const inputLines = require("node:fs").readFileSync("/dev/stdin", "utf8").split('\n');
 
-process.stdin.on('end', function() {
-    const inputSegments = collectedData.split('\n');
-    const numericStorage = new Map();
-    let currentMaximum = 0;
+const finalProcessingResult = inputLines.reduce((accumulator, currentLine) => {
+    const parsedNumber = Number(currentLine);
+    if (parsedNumber) {
+        let currentEntryCount = accumulator.numberCounts.get(parsedNumber);
 
-    for (const currentSegment of inputSegments) {
-        const numericForm = Number(currentSegment);
-        if (Number.isFinite(numericForm) && numericForm !== 0) {
-            numericStorage.set(numericForm, NaN);
+        let updatedEntryCount;
+        if (typeof currentEntryCount === 'number' && !Number.isNaN(currentEntryCount)) {
+            updatedEntryCount = currentEntryCount + 1;
+        } else {
+            updatedEntryCount = Number.NaN;
         }
-    }
+        accumulator.numberCounts.set(parsedNumber, updatedEntryCount);
 
-    for (const [storedKey, storedValue] of numericStorage.entries()) {
-        if (storedValue === currentMaximum) {
-            console.log(storedKey);
-        }
+        accumulator.peakCount = (updatedEntryCount > accumulator.peakCount) ? updatedEntryCount : accumulator.peakCount;
     }
-});
+    return accumulator;
+}, initialProcessingState);
+
+const { numberCounts: finalCountsMap, peakCount: finalPeakValue } = finalProcessingResult;
+
+for (const [keyIdentifier, valueIdentifier] of finalCountsMap.entries()) {
+    if (valueIdentifier == finalPeakValue) {
+        console.log(keyIdentifier);
+    }
+}

@@ -1,279 +1,222 @@
-module.exports = function (moduleDefinitions) {
+module.exports = function(modDefs) {
+  // Cache for loaded modules
+  var modCache = {};
 
-  /* A cache for already loaded modules. */
-  var cachedModules = {};
-
-  /**
-   * The core module loading function.
-   * @param {number} moduleId - The unique identifier for the module to load.
-   * @returns {object} The exports of the requested module.
-   */
-  function obtainModule(moduleId) {
-    // If the module is already in cache, return its exports.
-    if (cachedModules[moduleId]) {
-      return cachedModules[moduleId].exports;
+  // Main module loading function
+  function loadModule(modId) {
+    // If module is already in cache, return its exports
+    if (modCache[modId]) {
+      return modCache[modId].exports;
     }
 
-    // Otherwise, create a new module entry in the cache.
-    var currentModule = cachedModules[moduleId] = {
-      identifier: moduleId,
-      isLoaded: false,
-      exports: {}
+    // Create a new module object and store it in cache
+    var modObj = modCache[modId] = {
+      modId: modId, // Identifier for the module
+      isLoaded: false, // Flag to indicate if module is loaded
+      exports: {} // The exports object for the module
     };
 
-    // Execute the module function with its specific context.
-    moduleDefinitions[moduleId].call(
-      currentModule.exports,
-      currentModule,
-      currentModule.exports,
-      obtainModule
-    );
+    // Execute the module function with its exports, module object, and the loader itself
+    modDefs[modId].call(modObj.exports, modObj, modObj.exports, loadModule);
 
-    // Mark the module as loaded and return its exports.
-    currentModule.isLoaded = true;
-    return currentModule.exports;
+    // Mark the module as loaded
+    modObj.isLoaded = true;
+
+    // Return the module's exports
+    return modObj.exports;
   }
 
-  // Store all module definitions on the loader function.
-  obtainModule.allDefinitions = moduleDefinitions;
+  // Store module definitions on the loader for internal use
+  loadModule.moduleDefinitions = modDefs;
+  // Store module cache on the loader
+  loadModule.moduleCache = modCache;
 
-  // Reference to the module cache on the loader function.
-  obtainModule.moduleCache = cachedModules;
-
-  /**
-   * Defines a getter property on an object, if it doesn't already exist.
-   * @param {object} targetObj - The object to define the property on.
-   * @param {string} propName - The name of the property.
-   * @param {function} getterFn - The getter function for the property.
-   */
-  obtainModule.defineGetter = function (targetObj, propName, getterFn) {
-    if (!obtainModule.hasOwnProp(targetObj, propName)) {
-      Object.defineProperty(targetObj, propName, {
+  // Define a getter function for an export property
+  loadModule.defineExport = function(expObj, propName, getterFunc) {
+    // Check if the property already exists on the exports object
+    if (!loadModule.hasOwn(expObj, propName)) {
+      // If not, define it with an enumerable getter
+      Object.defineProperty(expObj, propName, {
         enumerable: true,
-        get: getterFn
+        get: getterFunc
       });
     }
   };
 
-  /**
-   * Marks an object as an ES Module, adding __esModule and Symbol.toStringTag properties.
-   * @param {object} exportObj - The object to mark.
-   */
-  obtainModule.markAsEsModule = function (exportObj) {
+  // Mark an exports object as an ES module
+  loadModule.registerESModule = function(expObj) {
+    // If Symbol.toStringTag is available, set it for better module identification
     if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-      Object.defineProperty(exportObj, Symbol.toStringTag, {
+      Object.defineProperty(expObj, Symbol.toStringTag, {
         value: "Module"
       });
     }
-    Object.defineProperty(exportObj, "__esModule", {
+    // Set __esModule flag to true
+    Object.defineProperty(expObj, "__esModule", {
       value: true
     });
   };
 
-  /**
-   * Creates a namespace object for a module, handling different export types.
-   * @param {any} sourceModule - The module or its exports.
-   * @param {number} modeFlags - Flags indicating how to interpret the source module.
-   * @returns {object} The created namespace object.
-   */
-  obtainModule.createNamespace = function (sourceModule, modeFlags) {
-    // If flag 1 is set and sourceModule is not already a module, load it.
-    if (modeFlags & 1) {
-      sourceModule = obtainModule(sourceModule);
+  // Interop require default for modules
+  loadModule.interopRequireDefault = function(targetMod, interopMode) {
+    // If mode indicates it's a direct module ID, load it
+    if (1 & interopMode) {
+      targetMod = loadModule(targetMod);
     }
-    // If flag 8 is set, return the source module directly.
-    if (modeFlags & 8) {
-      return sourceModule;
+    // If mode indicates it's already an ES module, return it directly
+    if (8 & interopMode) {
+      return targetMod;
     }
-    // If flag 4 is set and sourceModule is an object and already an ES Module, return it.
-    if (modeFlags & 4 && typeof sourceModule === "object" && sourceModule && sourceModule.__esModule) {
-      return sourceModule;
+    if (4 & interopMode && typeof targetMod === "object" && targetMod && targetMod.__esModule) {
+      return targetMod;
     }
 
-    // Create a new empty object for the namespace.
-    var namespaceObj = Object.create(null);
-    // Mark it as an ES Module.
-    obtainModule.markAsEsModule(namespaceObj);
-    // Define a 'default' getter for the sourceModule.
-    Object.defineProperty(namespaceObj, "default", {
+    // Create a new object for interop
+    var newObj = Object.create(null);
+    // Register it as an ES module
+    loadModule.registerESModule(newObj);
+    // Define 'default' export pointing to the target module
+    Object.defineProperty(newObj, "default", {
       enumerable: true,
-      value: sourceModule
+      value: targetMod
     });
-    // If flag 2 is set and sourceModule is not a string, copy all properties.
-    if (modeFlags & 2 && typeof sourceModule !== "string") {
-      for (var keyName in sourceModule) {
-        obtainModule.defineGetter(namespaceObj, keyName, ((prop) => sourceModule[prop]).bind(null, keyName));
+    // If mode indicates to copy all properties and it's not a string
+    if (2 & interopMode && typeof targetMod !== "string") {
+      // Copy all properties from targetMod to newObj
+      for (var propKey in targetMod) {
+        loadModule.defineExport(newObj, propKey, (function(key) {
+          return targetMod[key];
+        }).bind(null, propKey));
       }
     }
-    return namespaceObj;
+    return newObj;
   };
 
-  /**
-   * Helper to get an accessor function for a module's default export.
-   * @param {object} moduleRef - The module reference.
-   * @returns {function} An accessor function.
-   */
-  obtainModule.getExportAccessor = function (moduleRef) {
-    var accessorFn = moduleRef && moduleRef.__esModule ?
-      () => moduleRef.default :
-      () => moduleRef;
-    obtainModule.defineGetter(accessorFn, "a", accessorFn); // 'a' is a common webpack alias for the accessor.
-    return accessorFn;
+  // Get module exports, handling default export for ES modules
+  loadModule.getModuleExports = function(targetMod) {
+    var exportGetter = targetMod && targetMod.__esModule ?
+      function() {
+        return targetMod.default;
+      } :
+      function() {
+        return targetMod;
+      };
+    // Define 'a' property as a getter for the exports
+    loadModule.defineExport(exportGetter, "a", exportGetter);
+    return exportGetter;
   };
 
-  /**
-   * Checks if an object has a specific property as its own property.
-   * @param {object} objectToCheck - The object to check.
-   * @param {string} propertyKey - The property key to look for.
-   * @returns {boolean} True if the object has the property, false otherwise.
-   */
-  obtainModule.hasOwnProp = function (objectToCheck, propertyKey) {
-    return Object.prototype.hasOwnProperty.call(objectToCheck, propertyKey);
+  // Check if an object has a specific property
+  loadModule.hasOwn = function(checkObj, checkProp) {
+    return Object.prototype.hasOwnProperty.call(checkObj, checkProp);
   };
 
-  // Public path for assets (empty in this case).
-  obtainModule.basePath = "";
+  // Public path for assets (empty in this case)
+  loadModule.publicPath = "";
 
-  // Kick off the loading process by requiring the entry module (module ID 0).
-  return obtainModule(obtainModule.startupModuleId = 0);
-
+  // Load the startup module (module 0)
+  return loadModule(loadModule.startupModuleId = 0);
 }([
-  /* Module Definitions Array */
-
-  /**
-   * Module 0: Reads input from stdin and passes it to Module 1 for processing.
-   * @param {object} moduleZeroExports - The exports object for this module.
-   * @param {object} moduleZeroImports - The imports object for this module (unused here).
-   * @param {function} moduleZeroRequester - The local require function for this module.
-   */
-  function (moduleZeroExports, moduleZeroImports, moduleZeroRequester) {
-    // Obtain module 1 (the main logic) and call it with the content of stdin.
-    moduleZeroRequester(1)(
-      moduleZeroRequester(2).readFileSync("/dev/stdin", "UTF-8")
-    );
+  /* Module 0 */
+  function(currentModule, moduleExports, modLoader) {
+    // Read content from stdin and pass it to module 1
+    modLoader(1)(modLoader(2).readFileSync("/dev/stdin", "UTF-8"));
   },
+  /* Module 1 */
+  function(currentModule, moduleExports) {
+    // Helper function for array destructuring
+    function destructureArray(iterableInput, limitCount) {
+      // If it's already an array, return it
+      if (Array.isArray(iterableInput)) {
+        return iterableInput;
+      }
 
-  /**
-   * Module 1: Contains the core logic for processing input and generating the grid.
-   * @param {object} moduleOneExports - The exports object for this module.
-   * @param {object} moduleOneImports - The imports object for this module (unused here).
-   */
-  function (moduleOneExports, moduleOneImports) {
-
-    /**
-     * Safely destructures an array, handling non-iterable instances.
-     * @param {Array} inputArray - The array to destructure.
-     * @param {number} expectedLength - The expected number of elements to extract.
-     * @returns {Array} An array of extracted elements.
-     * @throws {TypeError} If the input is not an iterable instance.
-     */
-    function safeDestructure(inputArray, expectedLength) {
-      // Case 1: If it's already an array, return it.
-      if (Array.isArray(inputArray)) return inputArray;
-
-      // Case 2: Attempt to iterate and extract items.
-      return (function (sourceIterable, limit) {
-        var extractedItems = [];
-        var notDoneYet = true;
-        var hasError = false;
-        var errorValue = undefined;
-
+      // Otherwise, iterate and collect items up to limitCount
+      var resultArr = [];
+      var isDone = true;
+      var hasError = false;
+      var errorVal = undefined;
+      try {
+        for (var dataIterator = iterableInput[Symbol.iterator](); !(isDone = (iterItem = dataIterator.next()).done) && (resultArr.push(iterItem.value), !limitCount || resultArr.length !== limitCount); isDone = true) {
+          var iterItem; // Declare iterItem here
+        }
+      } catch (err) {
+        hasError = true;
+        errorVal = err;
+      } finally {
         try {
-          // Get the iterator for the source.
-          for (
-            var iteratorItem, iteratorInstance = sourceIterable[Symbol.iterator](); !(notDoneYet = (iteratorItem = iteratorInstance.next()).done) &&
-            (extractedItems.push(iteratorItem.value), !limit || extractedItems.length !== limit); notDoneYet = true
-          ) {}
-        } catch (iterationError) {
-          hasError = true;
-          errorValue = iterationError;
+          if (!isDone && dataIterator.return != null) {
+            dataIterator.return();
+          }
         } finally {
-          try {
-            // Ensure the iterator is closed if it wasn't done naturally.
-            if (!notDoneYet && iteratorInstance.return != null) {
-              iteratorInstance.return();
-            }
-          } finally {
-            // Re-throw if an error occurred during iteration.
-            if (hasError) throw errorValue;
+          if (hasError) {
+            throw errorVal;
           }
         }
-        return extractedItems;
-      })(inputArray, expectedLength) ||
-      // Case 3: If all else fails, throw an error.
-      (function () {
-        throw new TypeError("Invalid attempt to destructure non-iterable instance");
-      })();
+      }
+      return resultArr;
     }
 
-    /* Assign the main processing function to module exports. */
-    moduleOneExports.exports = function (rawDataString) {
-      // Split the raw input into individual lines.
-      var lineFragments = rawDataString.split("\n");
-
-      // Parse the first line for grid dimensions (rows, columns).
-      var dimensionsTuple = safeDestructure(
-        lineFragments[0].split(" ").map((strVal) => Number(strVal)),
-        2
-      );
-      var rowsCount = dimensionsTuple[0];
-      var colsCount = dimensionsTuple[1];
-
-      // Parse the third line for the sequence values, ignoring the second line.
-      // The original code `(Number(e[1]), e[2]...)` evaluates `Number(e[1])` but discards its result.
-      var sequenceValues = (Number(lineFragments[1]), lineFragments[2].split(" ").map((strVal) => Number(strVal)));
-
-      // Initialize the output grid structure.
-      var outputGrid = [];
-      for (let rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
-        var currentRow = Array.from({
-          length: colsCount
-        }, () => 0); // Using Array.from for diversity
+    // Export the main logic function
+    currentModule.exports = function(inputStr) {
+      // Split the input string into lines
+      for (var inputLines = inputStr.split("\n"),
+          // Parse the first line for dimensions (rows, columns)
+          dimsAndCounts = destructureArray(inputLines[0].split(" ").map(function(valStr) {
+            return Number(valStr);
+          }), 2),
+          rowsCount = dimsAndCounts[0],
+          colsCount = dimsAndCounts[1],
+          // The second line is ignored in the original, but read as a number
+          _ignoredNum = (Number(inputLines[1]),
+            // Parse the third line for item counts
+            inputLines[2].split(" ").map(function(valStr) {
+              return Number(valStr);
+            })),
+          itemCounts = _ignoredNum,
+          // Initialize the output grid
+          outputGrid = [],
+          rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
+        // Create a new row filled with zeros
+        var currentRow = new Array(colsCount).fill(0);
         outputGrid.push(currentRow);
       }
 
-      // Variables to track the current sequence and its count.
-      var currentSequenceIndex = 0;
-      var currentSequenceCount = 0;
-
-      // Populate the grid in a snake-like pattern.
-      for (let gridRowIndexer = 0; gridRowIndexer < rowsCount; gridRowIndexer++) {
-        if (gridRowIndexer % 2 === 0) {
-          // Even rows: fill from left to right.
-          for (let gridColIndexer = 0; gridColIndexer < colsCount; gridColIndexer++) {
-            outputGrid[gridRowIndexer][gridColIndexer] = currentSequenceIndex + 1;
-            currentSequenceCount++;
-            // Check if the current sequence value limit is reached.
-            if (currentSequenceCount >= sequenceValues[currentSequenceIndex]) {
-              currentSequenceCount = 0; // Reset count.
-              currentSequenceIndex++; // Move to the next sequence.
-            }
-          }
-        } else {
-          // Odd rows: fill from right to left.
-          for (let gridColIndexer = colsCount - 1; gridColIndexer >= 0; gridColIndexer--) {
-            outputGrid[gridRowIndexer][gridColIndexer] = currentSequenceIndex + 1;
-            currentSequenceCount++;
-            // Check if the current sequence value limit is reached.
-            if (currentSequenceCount >= sequenceValues[currentSequenceIndex]) {
-              currentSequenceCount = 0; // Reset count.
-              currentSequenceIndex++; // Move to the next sequence.
+      // Variables to track current item type and its count
+      for (var currentTypeIdx = 0, currentTypeCount = 0, fillRowIdx = 0; fillRowIdx < rowsCount; fillRowIdx++) {
+        // For even rows, fill from left to right
+        if (fillRowIdx % 2 == 0) {
+          for (colIndex = 0; colIndex < colsCount; colIndex++) {
+            outputGrid[fillRowIdx][colIndex] = currentTypeIdx + 1; // Assign item type (1-indexed)
+            currentTypeCount += 1; // Increment count for current type
+            // If current type count reaches its limit, move to next type
+            if (currentTypeCount >= itemCounts[currentTypeIdx]) {
+              currentTypeCount = 0; // Reset count
+              currentTypeIdx += 1; // Move to next item type
             }
           }
         }
-        // Print the current row to console.
-        console.log(outputGrid[gridRowIndexer].join(" "));
+        // For odd rows, fill from right to left
+        else {
+          for (colIndex = colsCount - 1; colIndex >= 0; colIndex--) {
+            outputGrid[fillRowIdx][colIndex] = currentTypeIdx + 1; // Assign item type (1-indexed)
+            currentTypeCount += 1; // Increment count for current type
+            // If current type count reaches its limit, move to next type
+            if (currentTypeCount >= itemCounts[currentTypeIdx]) {
+              currentTypeCount = 0; // Reset count
+              currentTypeIdx += 1; // Move to next item type
+            }
+          }
+        }
+        // Print the current row to console
+        console.log(outputGrid[fillRowIdx].join(" "));
       }
+      var colIndex; // Declare colIndex here
     };
   },
-
-  /**
-   * Module 2: Exports the Node.js 'fs' (file system) module.
-   * @param {object} moduleTwoExports - The exports object for this module.
-   * @param {object} moduleTwoImports - The imports object for this module (unused here).
-   */
-  function (moduleTwoExports, moduleTwoImports) {
-    // Export the built-in 'fs' module for file operations.
-    moduleTwoExports.exports = require("fs");
+  /* Module 2 */
+  function(currentModule, moduleExports) {
+    // Export the 'fs' (file system) module
+    currentModule.exports = require("fs");
   }
 ]);

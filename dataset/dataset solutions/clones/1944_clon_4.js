@@ -1,30 +1,43 @@
-function conductEngagement(scenarioData) {
-    const processedFigures = scenarioData.split(" ").map(figure => +figure);
+function Main(rawInput) {
+    const numericComponents = rawInput.split(" ").map(val => Number(val));
 
-    const participantOneHP = processedFigures[0];
-    const participantOnePower = processedFigures[1];
-    const participantTwoHP = processedFigures[2];
-    const participantTwoPower = processedFigures[3];
+    const playerTwoInitialResource = numericComponents[0];
+    const playerOneAttackPower = numericComponents[1];
+    const playerOneInitialResource = numericComponents[2];
+    const playerTwoAttackPower = numericComponents[3];
 
-    function resolvePassage(currentP1HP, currentP2HP, isP1Initiator) {
-        if (isP1Initiator) {
-            const nextP2HP = currentP2HP - participantOnePower;
-            if (nextP2HP <= 0) {
+    function determineGameResult(currentP2Resource, currentP1Resource, isPlayerOneTurn) {
+        if (currentP1Resource <= 0) {
+            return "Yes";
+        }
+        if (currentP2Resource <= 0) {
+            return "No";
+        }
+
+        if (isPlayerOneTurn) {
+            const nextP1Resource = currentP1Resource - playerOneAttackPower;
+            if (nextP1Resource <= 0) {
                 return "Yes";
+            } else {
+                return determineGameResult(currentP2Resource, nextP1Resource, false);
             }
-            return resolvePassage(currentP1HP, nextP2HP, false);
         } else {
-            const nextP1HP = currentP1HP - participantTwoPower;
-            if (nextP1HP <= 0) {
+            const nextP2Resource = currentP2Resource - playerTwoAttackPower;
+            if (nextP2Resource <= 0) {
                 return "No";
+            } else {
+                return determineGameResult(nextP2Resource, currentP1Resource, true);
             }
-            return resolvePassage(nextP1HP, currentP2HP, true);
         }
     }
 
-    return resolvePassage(participantOneHP, participantTwoHP, true);
+    const finalOutcome = determineGameResult(
+        playerTwoInitialResource,
+        playerOneInitialResource,
+        true
+    );
+
+    console.log(finalOutcome);
 }
 
-const battleConfig = require("fs").readFileSync("/dev/stdin", "utf8");
-const outcomeReport = conductEngagement(battleConfig);
-console.log(outcomeReport);
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

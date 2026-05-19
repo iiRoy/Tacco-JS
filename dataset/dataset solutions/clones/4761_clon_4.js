@@ -1,48 +1,26 @@
 'use strict';
 
-const productOfSequence = (val) => {
+const computeProductSequence = (val) => {
   if (val === 0) {
     return 1;
   }
-  return Array.from({ length: val }, (_, idx) => idx + 1).reduce((accumulator, currentNumber) => accumulator * currentNumber, 1);
+  return Array.from({ length: val }, (_, index) => index + 1)
+              .reduce((accumulator, currentElement) => accumulator * currentElement, 1);
 };
 
-const factorCount = (targetNumber) => {
-  if (targetNumber === 1) {
-    return 1;
+const determineFactorCount = (value) => {
+  if (value === 0) {
+    return 0;
   }
-
-  let workingNumber = targetNumber;
-  let totalDivisors = 1;
-  let primeIterator = 2;
-
-  const primePowerMap = new Map();
-
-  while (primeIterator * primeIterator <= workingNumber) {
-    if (workingNumber % primeIterator === 0) {
-      primePowerMap.set(primeIterator, (primePowerMap.get(primeIterator) || 0) + 1);
-      workingNumber /= primeIterator;
-    } else {
-      primeIterator++;
-    }
-  }
-
-  if (workingNumber > 1) {
-    primePowerMap.set(workingNumber, (primePowerMap.get(workingNumber) || 0) + 1);
-  }
-
-  for (const exponentValue of primePowerMap.values()) {
-    totalDivisors *= (exponentValue + 1);
-  }
-
-  return totalDivisors;
+  return Array.from({ length: value }, (_, index) => index + 1)
+              .filter(candidateDivisor => value % candidateDivisor === 0)
+              .length;
 };
 
-const orchestrateComputation = (rawData) => {
-  const numericInput = Number(rawData);
-  const computedFactorial = productOfSequence(numericInput);
-  console.log(factorCount(computedFactorial));
+const ProcessInput = (sourceText) => {
+  const initialValue = Number(sourceText);
+  const productResult = computeProductSequence(initialValue);
+  console.log(determineFactorCount(productResult));
 };
 
-const standardInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-orchestrateComputation(standardInputData);
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

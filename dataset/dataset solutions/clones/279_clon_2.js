@@ -1,42 +1,38 @@
-let processedWords = require('fs')
-  .readFileSync('/dev/stdin', 'utf8')
-  .replace(/,/g, '')
-  .trim()
-  .split(/\s/);
+let inputTokens = require('fs').readFileSync('/dev/stdin', 'utf8')
+    .replace(/,/g, "")
+    .trim()
+    .split(/\s/);
 
-let outputSegments = [];
-let currentSegment = '';
+let processedSegments = [];
+let currentSegment = "";
 
-for (let currentIdx = 0; currentIdx < processedWords.length; currentIdx++) {
-  // Check if the word contains a dot
-  if (processedWords[currentIdx].replace(/\./g, '').length < processedWords[currentIdx].length) {
-    // If it contains a dot, check its length after dot removal
-    if (
-      processedWords[currentIdx].replace(/\./g, '').length >= 3 &&
-      processedWords[currentIdx].replace(/\./g, '').length <= 6
-    ) {
-      // If the dot is at or near the end, finalize the segment
-      if (processedWords[currentIdx].search(/\./) >= processedWords[currentIdx].length - 1) {
-        currentSegment += processedWords[currentIdx].replace(/\./g, '');
-        outputSegments.push(currentSegment);
-      } else {
-        // Otherwise, append the word as is
-        currentSegment += processedWords[currentIdx];
-      }
-      // Reset the current segment builder
-      currentSegment = '';
-    } else {
-      // If dot-removed length is out of range, push the current segment and reset
-      outputSegments.push(currentSegment);
-      currentSegment = '';
+for (let idx = 0; idx < inputTokens.length; idx++) {
+    // Check if the current token contains a period
+    if (inputTokens[idx].replace(/\./g, "").length < inputTokens[idx].length) {
+        // If it contains a period, check its length after removing periods
+        if (inputTokens[idx].replace(/\./g, "").length >= 3 && inputTokens[idx].replace(/\./g, "").length <= 6) {
+            // If the period is at the end or not present (after replacement)
+            if (inputTokens[idx].search(/\./) >= inputTokens[idx].length - 1) {
+                currentSegment += inputTokens[idx].replace(/\./g, "");
+                processedSegments.push(currentSegment);
+            } else {
+                // If period is in the middle, append as is
+                currentSegment += inputTokens[idx];
+            }
+            // Reset current segment after processing a period-containing word
+            currentSegment = "";
+        } else {
+            // If length is not within range, push current segment and reset
+            processedSegments.push(currentSegment);
+            currentSegment = "";
+        }
+    } else if (inputTokens[idx].length >= 3 && inputTokens[idx].length <= 6) {
+        // If no period and length is within range, append to current segment
+        currentSegment += inputTokens[idx] + " ";
     }
-  } else if (processedWords[currentIdx].length >= 3 && processedWords[currentIdx].length <= 6) {
-    // If no dot and length is in range, append with a space
-    currentSegment += processedWords[currentIdx] + ' ';
-  }
 }
 
-// Display each collected segment
-for (let resultIndex = 0; resultIndex < outputSegments.length; ) {
-  console.log(outputSegments[resultIndex++]);
+// Output the collected segments
+for (let idx = 0; idx < processedSegments.length;) {
+    console.log(processedSegments[idx++]);
 }

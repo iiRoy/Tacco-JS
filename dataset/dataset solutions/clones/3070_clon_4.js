@@ -1,17 +1,34 @@
-const resourceGate = require('node:fs');
+"use strict";
 
-const processedInformation = resourceGate.readFileSync('/dev/stdin', 'utf8')
-                                         .split(/\s+/)
-                                         .filter(Boolean)
-                                         .map(Number);
+const processInputData = (rawInputData) => {
+    const parsedLines = rawInputData.trim().split('\n');
 
-const primaryCount = processedInformation[0];
-const serviceCapacities = processedInformation.slice(1);
+    const [
+        firstNumericValue,
+        secondNumericValue,
+        thirdNumericValue,
+        fourthNumericValue,
+        fifthNumericValue,
+        sixthNumericValue
+    ] = parsedLines.map(Number);
 
-const mostEfficientCapacity = serviceCapacities.reduce((currentMin, element) => {
-    return (element < currentMin) ? element : currentMin;
-}, Infinity);
+    const capacityCollection = [
+        secondNumericValue,
+        thirdNumericValue,
+        fourthNumericValue,
+        fifthNumericValue,
+        sixthNumericValue
+    ];
 
-const totalCyclesRequired = Math.ceil((primaryCount + 4 * mostEfficientCapacity) / mostEfficientCapacity);
+    const smallestElement = capacityCollection.reduce((currentMinimum, element) => {
+        return (element < currentMinimum) ? element : currentMinimum;
+    }, Infinity);
 
-console.log(totalCyclesRequired);
+    const divisionResult = firstNumericValue / smallestElement;
+    const sumWithOffset = divisionResult + 4;
+    const finalCalculatedValue = Math.ceil(sumWithOffset);
+
+    console.log(finalCalculatedValue);
+};
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

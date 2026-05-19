@@ -1,21 +1,16 @@
-"use strict"; // Activates strict mode for the entire script.
+"use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true }); // Marks this file as an ES module for interoperability.
+// Ensure ES module compatibility for Node.js environments
+Object.defineProperty(exports, "__esModule", { value: true });
 
-// Acquire the native Node.js file system interface.
-var fileSystemManager = require("fs");
+// Import the file system module
+var fileSystemModule = require("fs");
 
-// Obtain the raw textual data from the standard input stream.
-// The encoding is specified as UTF-8 for proper character interpretation.
-var sourceData = fileSystemManager.readDocumentSynchronously(
-  "/dev/stdin",
-  "utf8"
-);
+// Read input data from standard input, assuming UTF-8 encoding
+var rawInputData = fileSystemModule.readFileSync("/dev/stdin", "utf8");
 
-// Parse the incoming string data into an integer,
-// explicitly specifying a base of 10 for the conversion.
-var geomRadius = parseInt(sourceData, 10);
+// Parse the raw input string into an integer, using base 10
+var circleRadiusValue = parseInt(rawInputData, 10);
 
-// Compute and display the result of 3 multiplied by the radius squared.
-// This calculation likely represents an area or a similar geometric measure.
-console.log(3 * geomRadius * geomRadius);
+// Calculate and print the area (assuming pi is approximately 3)
+console.log(3 * circleRadiusValue * circleRadiusValue);

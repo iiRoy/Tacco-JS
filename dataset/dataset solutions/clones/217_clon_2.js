@@ -1,68 +1,43 @@
-// This script reads numerical data from standard input,
-// performs specific arithmetic operations, and then
-// calculates the sum of certain decimal digits.
+const fileSystem = require('fs');
 
-// Module 'fs' is utilized for file system operations,
-// specifically to read from '/dev/stdin'.
-let     rawData    =
-    require('fs')
+// Obtain raw input data from standard input, ensuring it's UTF-8 encoded and trimmed.
+let rawData = fileSystem.readFileSync('/dev/stdin', 'utf8').trim();
 
-    .readFileSync(
-        '/dev/stdin',
-        'utf8'
-    )
-    .trim()
-;
+// Divide the raw input into an array of individual lines.
+let inputLines = rawData.split('\n');
 
-// The raw input string is segmented into an array of individual lines.
-let textRows = rawData.split('\n') ;
+// Declare a variable to hold the current line being processed in the loop.
+let currentLine;
 
-let currentRecord; // A placeholder for each line during processing.
+// Iterate through each line of the input array until no more lines remain.
+while (currentLine = inputLines.shift()) {
+    // Split the current line by spaces to separate the numerical components.
+    const parts = currentLine.split(' ');
 
-// Begin an iterative process, consuming lines from the 'textRows' array.
-// The loop continues as long as a line is successfully shifted from the array.
-while ( (currentRecord = textRows.shift()) )
-{
-    // Each line (currentRecord) is further divided into string components
-    // based on space delimiters.
-    const numericParts = currentRecord.split(' ') ;
+    // Convert the first part to a number, representing the numerator.
+    const numerator = +parts[0];
+    // Convert the second part to a number, representing the denominator.
+    const denominator = +parts[1];
+    // Convert the third part to a number, representing the desired precision.
+    const precisionDigits = +parts[2];
 
-    // Convert the extracted string components into numeric types.
-    // These represent the numerator, denominator, and precision setting.
-    const numeratorVal    = +numericParts[0];
-    const denominatorVal  = +numericParts[1];
-    const precisionDigits = +numericParts[2];
+    // Perform the division and format the result to (precisionDigits + 1) decimal places.
+    // The extra digit is kept temporarily to ensure correct extraction of the first 'n' digits.
+    let decimalString = (numerator / denominator).toFixed(precisionDigits + 1);
 
-    // Perform the division and format the result to a specified
-    // number of decimal places (precisionDigits + 1).
-    let decimalString = (numeratorVal / denominatorVal).toFixed(precisionDigits + 1) ;
+    // Locate the position of the decimal point within the formatted string.
+    const dotIndex = decimalString.indexOf('.');
 
-    // Locate the index of the decimal point within the formatted string.
-    const dotPosition = decimalString.indexOf('.');
+    // Extract the substring containing the digits immediately after the decimal point,
+    // excluding the last digit which was added for rounding purposes.
+    decimalString = decimalString.substring(dotIndex + 1, decimalString.length - 1);
 
-    // Extract a specific segment of the decimal part.
-    // This segment starts after the decimal point and excludes the very last character
-    // of the toFixed result.
-    decimalString = decimalString.substring(dotPosition + 1, decimalString.length - 1);
+    // Convert the extracted decimal digit string into an array of characters,
+    // then sum the numeric value of each character using a reducer function.
+    let sumOfDigits = decimalString.split('').reduce((accumulator, currentDigitChar) => {
+        return (+accumulator) + (+currentDigitChar);
+    });
 
-    // Calculate the sum of all individual digits within the 'decimalString'.
-    // Each character is converted to a number before addition.
-    let digitSum = decimalString
-        .split('')
-        .reduce(
-            function(
-                accumulatedSum,
-                currentDigitChar
-            )
-            {
-                return (
-                    (+accumulatedSum)
-                    +
-                    (+currentDigitChar)
-                );
-            }
-        );
-
-    // Output the final calculated digit sum to the console.
-    console.log(digitSum);
+    // Print the calculated sum of the decimal digits to the console.
+    console.log(sumOfDigits);
 }

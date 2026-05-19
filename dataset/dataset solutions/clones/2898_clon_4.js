@@ -1,172 +1,168 @@
-const createDataChannel = (inputDataString) => {
-    const sourceLines = inputDataString.trim().split('\n');
-    let lineCursor = 0;
-    let tokenCursor = 0;
-    let currentLineSegments = [];
+// Input parsing utility
+class InputProcessor {
+    constructor(rawInputContent) {
+        this.sourceLines = rawInputContent.trim().split("\n");
+        this.lineCursor = 0;
+        this.firstLineTokens = null; // Cache for tokens of the first line, specifically for 'fetchSingleToken'
+    }
 
-    const parseToNumeric = (text) => +text;
-
-    const prepareLineSegments = () => {
-        if (lineCursor < sourceLines.length && tokenCursor >= currentLineSegments.length) {
-            currentLineSegments = sourceLines[lineCursor].split(' ');
-            tokenCursor = 0;
+    // Mimics GET.a - reads a single token, from right-to-left on the first line.
+    // This method is designed to be used once for the initial 'q' value,
+    // as per the observed usage pattern in the original 'main' function.
+    fetchSingleToken(asString) {
+        if (this.firstLineTokens === null) {
+            const line = this.sourceLines[this.lineCursor];
+            this.firstLineTokens = line.split(" ").reverse();
+            this.lineCursor++; // Advance cursor after processing the first line for 'a'
         }
-    };
+        const token = this.firstLineTokens.pop();
+        return asString ? token : Number(token);
+    }
 
-    const obtainValue = (returnAsString = false) => {
-        prepareLineSegments();
-        if (lineCursor >= sourceLines.length || tokenCursor >= currentLineSegments.length) {
-            return undefined;
+    // Mimics GET.l - reads a full line, splits into tokens.
+    // This method is used for subsequent lines after 'fetchSingleToken' has processed the first.
+    fetchLineTokens(asString) {
+        if (this.lineCursor >= this.sourceLines.length) {
+            return undefined; // No more lines
         }
-        const extracted = currentLineSegments[tokenCursor];
-        tokenCursor++;
-        if (tokenCursor >= currentLineSegments.length) {
-            lineCursor++;
-            tokenCursor = 0;
-            currentLineSegments = [];
+        const line = this.sourceLines[this.lineCursor++];
+        const tokens = line.split(" ");
+        return asString ? tokens : tokens.map(Number);
+    }
+
+    // Mimics GET.m - reads multiple lines as a matrix.
+    fetchTokenMatrix(numRows, asString) {
+        const matrix = [];
+        for (let i = 0; i < numRows; i++) {
+            matrix.push(this.fetchLineTokens(asString));
         }
-        return returnAsString ? extracted : parseToNumeric(extracted);
-    };
+        return matrix;
+    }
 
-    const obtainSequence = (returnAsStrings = false) => {
-        if (lineCursor >= sourceLines.length) {
-            return undefined;
+    // Mimics GET.r - reads multiple lines, each as a single token.
+    fetchRawTokens(numRows, asString) {
+        const tokens = [];
+        for (let i = 0; i < numRows; i++) {
+            const lineTokens = this.fetchLineTokens(asString);
+            tokens.push(asString ? lineTokens[0] : Number(lineTokens[0]));
         }
-        const segments = sourceLines[lineCursor].split(' ');
-        lineCursor++;
-        tokenCursor = 0;
-        currentLineSegments = [];
-        return returnAsStrings ? segments : segments.map(parseToNumeric);
-    };
+        return tokens;
+    }
+}
 
-    const obtainMatrix = (rowCount, returnAsStrings = false) => {
-        const collection = [];
-        const actualRowCount = Math.min(rowCount, sourceLines.length - lineCursor);
-        for (let idx = 0; idx < actualRowCount; idx++) {
-            collection.push(sourceLines[lineCursor + idx].split(' '));
-        }
-        lineCursor += actualRowCount;
-        tokenCursor = 0;
-        currentLineSegments = [];
-        if (returnAsStrings) {
-            return collection;
-        } else {
-            return collection.map(row => row.map(parseToNumeric));
-        }
-    };
+const inputReaderInstance = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const obtainNumericRows = (rowCount, returnAsStrings = false) => {
-        const collection = [];
-        const actualRowCount = Math.min(rowCount, sourceLines.length - lineCursor);
-        for (let idx = 0; idx < actualRowCount; idx++) {
-            collection.push(sourceLines[lineCursor + idx]);
-        }
-        lineCursor += actualRowCount;
-        tokenCursor = 0;
-        currentLineSegments = [];
-        return returnAsStrings ? collection : collection.map(parseToNumeric);
-    };
-
-    return {
-        fetchToken: obtainValue,
-        fetchLine: obtainSequence,
-        fetchGrid: obtainMatrix,
-        fetchNumericRows: obtainNumericRows,
-    };
-};
-
-const dataProcessor = createDataChannel(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-const constructDimensionalArray = (fillerContent, ...dimensions) => {
+// Multi-dimensional array creation using recursion, avoiding eval.
+// Takes initial value and then dimensions as separate arguments.
+function buildMultiArray(initialValue, ...dimensions) {
     if (dimensions.length === 0) {
-        return fillerContent;
+        return initialValue;
     }
-    const currentDimensionLength = dimensions[0];
+    const currentDimensionSize = dimensions[0];
     const remainingDimensions = dimensions.slice(1);
-    return Array.from({ length: currentDimensionLength }, () =>
-        constructDimensionalArray(fillerContent, ...remainingDimensions)
+    return Array.from({ length: currentDimensionSize }, () =>
+        buildMultiArray(initialValue, ...remainingDimensions)
     );
-};
+}
 
-const primeNumberModulo = BigInt(1000003);
+const MOD_PRIME = 1000003;
 
-const executeModularProduct = (...factors) =>
-    factors.reduce((accumulator, current) => (accumulator * BigInt(current)) % primeNumberModulo, BigInt(1));
+// Performs modular multiplication (a * b) % MOD_PRIME.
+// Direct multiplication is safe as MOD_PRIME^2 fits within JavaScript's safe integer limits.
+function modMultiply(factorA, factorB) {
+    return (factorA * factorB) % MOD_PRIME;
+}
 
-const factorialCache = [BigInt(1), BigInt(1)];
+// Cache for precomputed factorials modulo MOD_PRIME.
+const cachedFactorials = [1, 1];
 
-const populateFactorialCache = (upperBound) => {
-    for (let counter = 2; counter <= upperBound; counter++) {
-        factorialCache[counter] = executeModularProduct(factorialCache[counter - 1], BigInt(counter));
+// Populates the factorial cache up to a given limit.
+function precomputeFactorials(limit) {
+    for (let i = 2; i <= limit; i++) {
+        cachedFactorials[i] = modMultiply(cachedFactorials[i - 1], i);
     }
-};
+}
 
-const determineMultiplicativeInverse = (baseValue) => {
-    let a = BigInt(baseValue);
-    let b = primeNumberModulo;
-    let x = BigInt(1);
-    let y = BigInt(0);
+// Calculates the modular multiplicative inverse of 'numberA' modulo MOD_PRIME
+// using the extended Euclidean algorithm.
+function getModularInverse(numberA) {
+    let currentA = numberA;
+    let currentB = MOD_PRIME;
+    let uVal = 1;
+    let vVal = 0;
+    let tempVal;
 
-    while (b !== BigInt(0)) {
-        const q = a / b;
-        let tempA = a - q * b;
-        a = b;
-        b = tempA;
+    while (currentB !== 0) {
+        const quotient = Math.floor(currentA / currentB);
+        tempVal = currentA - quotient * currentB;
+        currentA = currentB;
+        currentB = tempVal;
 
-        let tempX = x - q * y;
-        x = y;
-        y = tempX;
+        tempVal = uVal - quotient * vVal;
+        uVal = vVal;
+        vVal = tempVal;
     }
-    return (x % primeNumberModulo + primeNumberModulo) % primeNumberModulo;
-};
+    uVal %= MOD_PRIME;
+    return uVal < 0 ? uVal + MOD_PRIME : uVal;
+}
 
-const deriveModularPermutation = (totalElements, chosenElements) => {
-    if (chosenElements < 0 || chosenElements > totalElements) return BigInt(0);
-    if (chosenElements === 0 || totalElements === 0) return BigInt(1);
+// Calculates nPr (permutations) modulo MOD_PRIME.
+// nPr = n! / (n-r)! = n! * (n-r)!^-1 mod MOD_PRIME.
+function calculatePermutationsMod(nValue, rValue) {
+    const numerator = cachedFactorials[nValue];
+    const denominatorInverse = getModularInverse(cachedFactorials[(nValue - rValue + MOD_PRIME) % MOD_PRIME]);
+    return modMultiply(numerator, denominatorInverse);
+}
 
-    const difference = totalElements - chosenElements;
-    return executeModularProduct(factorialCache[totalElements], determineMultiplicativeInverse(factorialCache[difference]));
-};
+// Calculates (base^exponent) modulo MOD_PRIME using binary exponentiation (exponentiation by squaring).
+function calculatePowerMod(baseValue, exponentValue) {
+    let resultValue = 1;
+    let currentBase = baseValue % MOD_PRIME; // Ensure base is within modulo range
 
-const calculateModularExponentiation = (base, exponent) => {
-    let result = BigInt(1);
-    let currentBase = BigInt(base) % primeNumberModulo;
-    let currentExponent = BigInt(exponent);
-
-    while (currentExponent > BigInt(0)) {
-        if (currentExponent % BigInt(2) === BigInt(1)) {
-            result = executeModularProduct(result, currentBase);
+    while (exponentValue > 0) {
+        if (exponentValue & 1) { // If exponent is odd
+            resultValue = modMultiply(resultValue, currentBase);
         }
-        currentBase = executeModularProduct(currentBase, currentBase);
-        currentExponent = currentExponent / BigInt(2);
+        currentBase = modMultiply(currentBase, currentBase);
+        exponentValue >>= 1; // Divide exponent by 2
     }
-    return result;
-};
+    return resultValue;
+}
 
-const performCalculation = () => {
-    const queryQuantity = dataProcessor.fetchToken();
-    populateFactorialCache(primeNumberModulo);
+// Orchestrates the main calculation logic.
+function executeCalculations() {
+    const queryCount = inputReaderInstance.fetchSingleToken();
+    const resultCollection = [];
 
-    const outcomeCollection = Array.from({ length: queryQuantity }, () => {
-        const [valueX, valueD, valueN] = dataProcessor.fetchLine();
+    precomputeFactorials(MOD_PRIME); // Precompute factorials up to MOD_PRIME
 
-        if (valueN >= primeNumberModulo) {
-            return BigInt(0);
-        } else if (valueD === 0) {
-            return calculateModularExponentiation(valueX, valueN);
+    for (let i = 0; i < queryCount; i++) {
+        const [xVal, dVal, nVal] = inputReaderInstance.fetchLineTokens();
+
+        // If n is greater than or equal to MOD_PRIME, the result is 0 in this context.
+        // This preserves the original 'continue' behavior which effectively leaves the result as 0.
+        if (nVal >= MOD_PRIME) {
+            resultCollection.push(0);
+            continue;
+        }
+
+        if (dVal === 0) {
+            resultCollection.push(calculatePowerMod(xVal, nVal));
         } else {
-            const dInv = determineMultiplicativeInverse(valueD);
-            const termProduct = executeModularProduct(valueX, dInv);
-            const adjustedTermA = (primeNumberModulo - termProduct + primeNumberModulo) % primeNumberModulo;
-
-            const permutationResult = deriveModularPermutation(adjustedTermA, valueN);
-            const powerBase = (primeNumberModulo - BigInt(valueD) + primeNumberModulo) % primeNumberModulo;
-            const powerResult = calculateModularExponentiation(powerBase, valueN);
-
-            return executeModularProduct(permutationResult, powerResult);
+            // Calculate intermediateA = (MOD_PRIME - x * d^-1) % MOD_PRIME
+            const intermediateA = (MOD_PRIME - modMultiply(xVal, getModularInverse(dVal)) % MOD_PRIME + MOD_PRIME) % MOD_PRIME;
+            
+            // Calculate permutationsResult = nPr(intermediateA, nVal)
+            const permutationsResult = calculatePermutationsMod(intermediateA, nVal);
+            
+            // Calculate modPowerResult = (MOD_PRIME - dVal)^nVal
+            const modPowerResult = calculatePowerMod(MOD_PRIME - dVal, nVal);
+            
+            // Final result is (permutationsResult * modPowerResult) % MOD_PRIME
+            resultCollection.push(modMultiply(permutationsResult, modPowerResult));
         }
-    });
-    return outcomeCollection.map(val => val.toString()).join("\n");
-};
+    }
+    return resultCollection.join("\n");
+}
 
-console.log(performCalculation());
+console.log(executeCalculations());

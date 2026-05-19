@@ -1,130 +1,71 @@
 'use strict';
-// This module computes expected values for a specific combinatorial problem
-// using dynamic programming. It processes input from standard input,
-// calculates frequencies, and then populates a 3D matrix with probabilities.
-(function(fileContent){
+(function(rawDataString){
+  // Step 1: Process the raw input string
+  const trimmedInput = rawDataString.trim();
+  const stringNumbers = trimmedInput.split(/\s+/);
+  const parsedNumbers = stringNumbers.map(val => Number(val));
 
-  // Helper function to parse numerical inputs from a string.
-  // It handles trimming whitespace, splitting by spaces, and converting to numbers.
-  const parseNumbers = (text) => {
-    const cleanedText = text.trim();
-    const stringParts = cleanedText.split(/\s+/);
-    return stringParts.map(str => Number(str));
-  };
+  // Step 2: Extract total items and count item types
+  const totalItems = parsedNumbers.shift();
+  const itemCounts = ['zero', 0, 0, 0]; // Index 0 is unused, indices 1, 2, 3 store counts
 
-  let numericalValues = parseNumbers(fileContent);
-
-  // Extract the total number of items from the beginning of the sequence.
-  // An essential check to ensure the input data is not empty.
-  if (numericalValues.length < 1) {
-    console.error("Error: Input data is insufficient. Expected at least one number for total items.");
-    return; // Exit if critical data is missing
-  }
-  const totalElements = numericalValues.shift();
-
-  // Initialize an array to store frequencies of items with values 1, 2, or 3.
-  // The 0th index is intentionally unused to align with item values.
-  const elementFrequency = new Array(4).fill(0); // Structure: [unused, count_of_1s, count_of_2s, count_of_3s]
-
-  // Populate the frequency array based on the remaining numerical values.
-  // This loop iterates over each item and increments its corresponding count.
-  for (const currentElement of numericalValues) {
-    // Basic validation to ensure element values are within the expected range (1 to 3).
-    if (currentElement >= 1 && currentElement <= 3) {
-      elementFrequency[currentElement]++;
-    } else {
-      // Optional: Log a warning for unexpected or out-of-range element values.
-      // console.warn(`Warning: Encountered an unexpected element value: ${currentElement}. Skipping.`);
+  for (const itemType of parsedNumbers) {
+    // Ensure itemType is within expected bounds, though problem constraints usually guarantee this.
+    if (itemType >= 1 && itemType <= 3) {
+      itemCounts[itemType]++;
     }
   }
 
-  // Additional early exit check for totalElements, if it's not positive.
-  if (totalElements <= 0) {
-      console.log("Output: 0.00 (Total elements must be positive for meaningful calculation)");
-      return;
-  }
+  // Step 3: Initialize the 3D memoization table (DP table)
+  // The original code uses arrays in a way that allows negative indices as object properties.
+  // This structure is preserved.
+  const dpDimensionSize = totalItems + 2;
+  const memoTable = new Array(dpDimensionSize);
 
-  // Initialize a 3D matrix for dynamic programming calculations.
-  // This matrix will store expected values (e.g., number of operations).
-  // Dimensions are slightly extended to accommodate boundary conditions, including negative indices as properties.
-  const probabilityMatrix = new Array(totalElements + 2);
-
-  // Setup the dimensions and default values for the probability matrix.
-  // The loops iterate through potential counts of items of value 1, 2, and 3.
-  for (let firstDimIndex = -1; firstDimIndex < totalElements + 2; ++firstDimIndex) {
-    // Initialize the second dimension as an object/array to allow for '-1' property.
-    probabilityMatrix[firstDimIndex] = new Array();
-    
-    for (let secondDimIndex = -1; secondDimIndex < totalElements + 2 - firstDimIndex; ++secondDimIndex) {
-      // Initialize the third dimension.
-      const innerArrayLength = totalElements + 2 - firstDimIndex - secondDimIndex;
-      // Ensure array length is non-negative before creation.
-      probabilityMatrix[firstDimIndex][secondDimIndex] = new Array(Math.max(0, innerArrayLength)).fill(0);
-      
-      // Explicitly set the property for index '-1' to 0. This is a crucial boundary condition
-      // for the DP recurrence relations, handling cases where a count might conceptually
-      // go below zero during a recursive step.
-      probabilityMatrix[firstDimIndex][secondDimIndex]['-1'] = 0;
+  for (let dimA = -1; dimA < dpDimensionSize; dimA++) {
+    memoTable[dimA] = new Array(dpDimensionSize - dimA);
+    for (let dimB = -1; dimB < dpDimensionSize - dimA; dimB++) {
+      memoTable[dimA][dimB] = new Array(dpDimensionSize - dimA - dimB).fill(0);
+      // Preserve the original's specific initialization for index -1
+      memoTable[dimA][dimB][-1] = 0;
     }
   }
+  
+  // Step 4: Populate the memoization table using dynamic programming
+  const baseDivisor = totalItems; // Helper variable for N
 
-  // --- Core Dynamic Programming Calculation ---
-  // Iterate through all possible states to compute expected values.
-  // `currentIterVal` represents the sum of counts of items (c1 + c2 + c3) being considered.
-  for (let currentIterVal = 1; currentIterVal <= totalElements; ++currentIterVal) {
-    const currentDivisor = currentIterVal; // Denominator used in all probability terms
+  for (let dimA = 1; dimA <= totalItems; dimA++) {
+    const currentNOverI = baseDivisor / dimA; // N/i term
 
-    // Base case: Expected value when only items of value '1' are present.
-    // This computes dp[currentIterVal][0][0].
-    const previousStateVal1_0_0 = probabilityMatrix[currentIterVal - 1][0][0];
-    probabilityMatrix[currentIterVal][0][0] = previousStateVal1_0_0 + (totalElements / currentDivisor);
+    // Base case for k=0, j=0
+    memoTable[dimA][0][0] = memoTable[dimA - 1][0][0] + currentNOverI;
 
-    // Iterate for states involving items of value '2'.
-    // `countOfTwoItems` represents the number of items with value 2.
-    for (let countOfTwoItems = 1; countOfTwoItems <= currentIterVal; ++countOfTwoItems) {
-      // Calculate current counts for items of value 1, 2, and 3 (which is 0 here).
-      const current1s = currentIterVal - countOfTwoItems;
-      const current2s = countOfTwoItems;
-      const current3s = 0;
+    for (let dimB = 1; dimB <= dimA; dimB++) {
+      const probJOverI = dimB / dimA; // j/i term
+      const probIMinusJOverI = (dimA - dimB) / dimA; // (i-j)/i term
 
-      // Decompose the DP recurrence relation for clarity.
-      // Term 1: Base expectation (N/currentIterVal).
-      const baseExpectedTerm = totalElements / currentDivisor;
-      // Term 2: Probability of selecting a '2' and transitioning from a state with one less '2' and one more '1'.
-      const fromTwoItemsTerm = probabilityMatrix[current1s + 1][current2s - 1][current3s] * (current2s / currentDivisor);
-      // Term 3: Probability of selecting a '1' and transitioning from a state with one less '1'.
-      const fromOneItemsTerm = probabilityMatrix[current1s - 1][current2s][current3s] * (current1s / currentDivisor);
+      // Case for k=0
+      memoTable[dimA - dimB][dimB][0] = currentNOverI +
+                                        memoTable[dimA - dimB + 1][dimB - 1][0] * probJOverI +
+                                        memoTable[dimA - dimB - 1][dimB][0] * probIMinusJOverI;
 
-      // Sum all terms to get the expected value for the current state (current1s, current2s, 0).
-      probabilityMatrix[current1s][current2s][current3s] = baseExpectedTerm + fromTwoItemsTerm + fromOneItemsTerm;
+      for (let dimC = 1; dimC <= dimB; dimC++) {
+        const probKOverI = dimC / dimA; // k/i term
+        const probJMinusKOverI = (dimB - dimC) / dimA; // (j-k)/i term
 
-      // Iterate for states involving items of value '3'.
-      // `countOfThreeItems` represents the number of items with value 3.
-      for (let countOfThreeItems = 1; countOfThreeItems <= countOfTwoItems; ++countOfThreeItems) {
-        // Calculate the updated counts for items of value 1, 2, and 3.
-        const updated1s = currentIterVal - countOfTwoItems;
-        const updated2s = countOfTwoItems - countOfThreeItems;
-        const updated3s = countOfThreeItems;
+        // Full DP recurrence relation, split into intermediate terms for clarity
+        const termOne = currentNOverI;
+        const termTwo = memoTable[dimA - dimB][dimB - dimC + 1][dimC - 1] * probKOverI;
+        const termThree = memoTable[dimA - dimB + 1][dimB - 1 - dimC][dimC] * probJMinusKOverI;
+        const termFour = memoTable[dimA - dimB - 1][dimB - dimC][dimC] * probIMinusJOverI;
 
-        // Decompose the full DP recurrence relation.
-        // Term 1: Base expectation (N/currentIterVal).
-        const finalBaseExpected = totalElements / currentDivisor;
-        // Term 2: From selecting a '3'.
-        const fromThreeSelectedTerm = probabilityMatrix[updated1s][updated2s + 1][updated3s - 1] * (updated3s / currentDivisor);
-        // Term 3: From selecting a '2'.
-        const fromTwoSelectedTerm = probabilityMatrix[updated1s + 1][updated2s - 1][updated3s] * (updated2s / currentDivisor);
-        // Term 4: From selecting a '1'.
-        const fromOneSelectedTerm = probabilityMatrix[updated1s - 1][updated2s][updated3s] * (updated1s / currentDivisor);
-
-        // Sum all terms to get the final expected value for the state (updated1s, updated2s, updated3s).
-        probabilityMatrix[updated1s][updated2s][updated3s] = finalBaseExpected + fromThreeSelectedTerm + fromTwoSelectedTerm + fromOneSelectedTerm;
+        memoTable[dimA - dimB][dimB - dimC][dimC] = termOne + termTwo + termThree + termFour;
       }
     }
   }
 
-  // Retrieve the final calculated expected value based on the initial counts of items (1, 2, 3).
-  // This corresponds to the state where the number of items matches the initial input frequencies.
-  const finalResult = probabilityMatrix[elementFrequency[1]][elementFrequency[2]][elementFrequency[3]];
+  // Step 5: Output the final calculated result
+  const finalResult = memoTable[itemCounts[1]][itemCounts[2]][itemCounts[3]];
   console.log(finalResult);
 
 })(require('fs').readFileSync('/dev/stdin','utf8'));

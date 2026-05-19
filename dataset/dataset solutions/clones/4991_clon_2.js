@@ -1,22 +1,20 @@
-// This module provides a utility to compute a specific cost based on tiered pricing.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  let parsedLines = rawData.split("\n");
 
-function   CalculateExpenditure (   rawData   ) {
-  // The input string, containing multiple lines of data, is parsed into an array of strings.
-  rawData = rawData . split ( "\n" ) ;
+  // Parse the first line as the total quantity
+  let totalUnits = parseInt(parsedLines[0], 10);
+  // Parse the second line as the initial quantity for the first tier
+  let initialUnits = parseInt(parsedLines[1], 10);
+  // Parse the third line as the billing rate for the first tier
+  let rateFirstTier = parseInt(parsedLines[2], 10);
+  // Parse the fourth line as the billing rate for units beyond the first tier
+  let rateAfterFirstTier = parseInt(parsedLines[3], 10);
 
-  /*
-   * Extracting and converting all necessary numerical components
-   * from the processed input lines. Each line corresponds to a specific value.
-   */
-  var   overallAmount   =   parseInt ( rawData [ 0 ] , 10 ) ; // Represents the total number of items or units.
-  var   initialQuantity   =   parseInt ( rawData [ 1 ] , 10 ) ; // Denotes the quantity for a specially priced first segment.
-  var   priceFirstType   =   parseInt ( rawData [ 2 ] , 10 ) ; // The cost per unit for the initial quantity.
-  var   priceOtherType   =   parseInt ( rawData [ 3 ] , 10 ) ; // The cost per unit for any quantity beyond the initial segment.
-  
-  // Perform the core calculation: (cost of the initial segment) + (cost of the remaining segment).
-  // The remaining segment's quantity is 'overallAmount - initialQuantity'.
-  console . log ( ( initialQuantity * priceFirstType ) + ( ( overallAmount - initialQuantity ) * priceOtherType ) ) ;
+  // Calculate the total cost based on the two-tier billing structure
+  // Cost for the initial units + Cost for the remaining units
+  console.log((initialUnits * rateFirstTier) + ((totalUnits - initialUnits) * rateAfterFirstTier));
 }
 
-// Entry point: Reads data from standard input asynchronously and then invokes the calculation function.
-CalculateExpenditure ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

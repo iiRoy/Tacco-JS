@@ -1,21 +1,18 @@
 "use strict";
 
-const DATA_ENCODING = "1_1_1_2_1_2_1_5_2_2_1_5_1_2_1_14_1_5_1_5_2_2_1_15_2_2_5_4_1_4_1_51";
+const processInputData = (inputContent) => {
+    const firstLine = inputContent.trim().split('\n')[0];
+    const indexString = firstLine.split(' ')[0];
+    const targetPosition = Number(indexString);
 
-const retrieveValue = (idx) => {
-  const dataset = DATA_ENCODING.split('_').map(val => parseInt(val, 10));
-  return dataset[idx - 1];
+    const seriesRepresentation = "1,1,1,2,1,2,1,5,2,2,1,5,1,2,1,14,1,5,1,5,2,2,1,15,2,2,5,4,1,4,1,51";
+
+    const retrieveElementByIndex = (position, dataSequence) => {
+        const parsedElements = dataSequence.split(',');
+        return Number(parsedElements[position]);
+    };
+
+    console.log(retrieveElementByIndex(targetPosition - 1, seriesRepresentation));
 };
 
-let bufferAccumulator = '';
-process.stdin.on('data', chunk => {
-  bufferAccumulator += chunk.toString();
-});
-
-process.stdin.on('end', () => {
-  const firstLineSegment = bufferAccumulator.split('\n')[0].split(/\s+/)[0];
-  const requestedIndex = Number(firstLineSegment);
-
-  const finalResult = retrieveValue(requestedIndex);
-  process.stdout.write(String(finalResult) + '\n');
-});
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

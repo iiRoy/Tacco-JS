@@ -1,71 +1,51 @@
-const numberConverter = (str) => +str;
+function processGridData(rawData) {
+    const dimensionsString = rawData.split('\n')[0].split(' ');
+    const rows = Number(dimensionsString[0]);
+    const cols = Number(dimensionsString[1]);
 
-function matrixProcessor(sourceInput) {
-    const firstDelimiterIndex = sourceInput.indexOf('\n');
-    const dimensionLine = sourceInput.substring(0, firstDelimiterIndex);
-    const characterBlock = sourceInput.substring(firstDelimiterIndex + 1).replace(/\n/g, '');
-
-    const [rowsStr, colsStr] = dimensionLine.split(' ');
-    const verticalExtent = numberConverter(rowsStr);
-    const horizontalExtent = numberConverter(colsStr);
-
-    if (horizontalExtent === 1) {
-        console.log('Yes');
-        return;
+    if (cols === 1) {
+        return console.log('Yes');
     }
 
-    const frequencyRegistry = new Map();
-    for (const charItem of characterBlock) {
-        frequencyRegistry.set(charItem, (frequencyRegistry.get(charItem) || 0) + 1);
+    const charFrequencies = new Map();
+    const gridContent = rawData.substring(rawData.indexOf('\n') + 1).replace(/\n/g, '');
+
+    for (const currentSymbol of gridContent) {
+        charFrequencies.set(currentSymbol, (charFrequencies.get(currentSymbol) || 0) + 1);
     }
 
-    const verticalParity = verticalExtent % 2;
-    const horizontalParity = horizontalExtent % 2;
+    let nonQuadrupleCount = 0;
+    let sumOfNonQuadrupleFrequencies = 0;
 
-    const parityState = verticalParity * 2 + horizontalParity; // 0: EE, 1: EO, 2: OE, 3: OO
+    for (const freqValue of charFrequencies.values()) {
+        if (freqValue % 4 !== 0) {
+            nonQuadrupleCount++;
+            sumOfNonQuadrupleFrequencies += freqValue;
+        }
+    }
 
-    switch (parityState) {
-        case 0: // Both dimensions are even (00)
-            let nonQuadRemainderCount = 0;
-            for (const itemValue of frequencyRegistry.values()) {
-                if (itemValue % 4 !== 0) {
-                    nonQuadRemainderCount++;
-                }
-            }
-            if (nonQuadRemainderCount === 0) {
-                console.log('Yes');
-            } else {
-                console.log('No');
-            }
-            break;
-        case 3: // Both dimensions are odd (11)
-            let accumulatedNonQuadValues = 0;
-            for (const itemValue of frequencyRegistry.values()) {
-                if (itemValue % 4 !== 0) {
-                    accumulatedNonQuadValues += itemValue;
-                }
-            }
-            if (accumulatedNonQuadValues % 2 === 1) {
-                console.log('Yes');
-            } else {
-                console.log('No');
-            }
-            break;
-        case 1: // Vertical even, Horizontal odd (01)
-        case 2: // Vertical odd, Horizontal even (10)
-            let mixedParityNonQuadValues = 0;
-            for (const itemValue of frequencyRegistry.values()) {
-                if (itemValue % 4 !== 0) {
-                    mixedParityNonQuadValues += itemValue;
-                }
-            }
-            if (mixedParityNonQuadValues === 0) {
-                console.log('Yes');
-            } else {
-                console.log('No');
-            }
-            break;
+    const isRowsEven = (rows % 2 === 0);
+    const isColsEven = (cols % 2 === 0);
+
+    if (isRowsEven && isColsEven) {
+        if (nonQuadrupleCount === 0) {
+            return console.log('Yes');
+        } else {
+            return console.log('No');
+        }
+    } else if (!isRowsEven && !isColsEven) {
+        if (sumOfNonQuadrupleFrequencies % 2 === 1) {
+            return console.log('Yes');
+        } else {
+            return console.log('No');
+        }
+    } else { // One dimension is odd, the other is even
+        if (sumOfNonQuadrupleFrequencies === 0) {
+            return console.log('Yes');
+        } else {
+            return console.log('No');
+        }
     }
 }
 
-matrixProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8"));

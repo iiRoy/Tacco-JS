@@ -1,66 +1,58 @@
-const getPrimality = (val) => {
-    if (val < 2) return false;
-    if (val === 2 || val === 3) return true;
-    if (val % 2 === 0 || val % 3 === 0) return false;
-    for (let div = 5; div * div <= val; div += 6) {
-        if (val % div === 0 || val % (div + 2) === 0) return false;
-    }
-    return true;
-};
-
-const obtainPrimeSet = (cap) => {
-    const collectedPrimes = new Set();
-    for (let num = 2; num <= cap; num++) {
-        if (getPrimality(num)) {
-            collectedPrimes.add(num);
-        }
-    }
-    return collectedPrimes;
-};
-
-const primeNumbersGlobal = obtainPrimeSet(1000000);
-
-const fileSystem = require('fs');
-const rawContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawContent.trim().split('\n');
-
-let linePointer = 0;
-
-while (true) {
-    const currentLine = processedLines[linePointer++].split(' ').map(Number);
-    const itemCount = currentLine[0];
-    const desiredTotal = currentLine[1];
-
-    if (itemCount === 0 && desiredTotal === 0) break;
-
-    const availableItems = [];
-    for (let k = 0; k < itemCount; k++) {
-        availableItems.push(Number(processedLines[linePointer++]));
+function getPrimesUpTo(upperBound) {
+    const primeCandidates = new Set();
+    for (let k = 2; k <= upperBound; k++) {
+        primeCandidates.add(k);
     }
 
-    const reachableTotals = new Set([0]);
-    const sumsToExplore = [0];
-    let exploreHead = 0;
-
-    while (exploreHead < sumsToExplore.length) {
-        const currentAccumulation = sumsToExplore[exploreHead++];
-
-        for (const elementValue of availableItems) {
-            const nextAccumulation = currentAccumulation + elementValue;
-            if (nextAccumulation <= desiredTotal && !reachableTotals.has(nextAccumulation)) {
-                reachableTotals.add(nextAccumulation);
-                sumsToExplore.push(nextAccumulation);
+    for (let pVal = 2; pVal * pVal <= upperBound; pVal++) {
+        if (primeCandidates.has(pVal)) {
+            for (let multiple = pVal * pVal; multiple <= upperBound; multiple += pVal) {
+                primeCandidates.delete(multiple);
             }
         }
     }
+    return primeCandidates;
+}
 
-    const validPrimeSums = Array.from(reachableTotals)
-                                .filter(s => s > 0 && s <= desiredTotal && primeNumbersGlobal.has(s));
+const primeNumbers = getPrimesUpTo(1000000);
 
-    if (validPrimeSums.length === 0) {
-        console.log("NA");
-    } else {
-        const maximalPrimeSum = Math.max(...validPrimeSums);
-        console.log(maximalPrimeSum);
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInput.trim().split("\n");
+
+while (true) {
+    const currentLine = inputLines.shift().split(" ").map(Number);
+    const countElements = currentLine[0];
+    const targetSum = currentLine[1];
+
+    if (countElements === 0 && targetSum === 0) break;
+
+    const possibleSums = new Set([0]);
+    const inputValues = [];
+    for (let k = 0; k < countElements; k++) {
+        const val = Number(inputLines.shift());
+        inputValues.push(val);
     }
+
+    for (const currentNum of inputValues) {
+        const sumsToAdd = new Set();
+        for (const existingSum of possibleSums) {
+            const newPotentialSum = existingSum + currentNum;
+            if (newPotentialSum <= targetSum) {
+                sumsToAdd.add(newPotentialSum);
+            }
+        }
+        for (const sumToAdd of sumsToAdd) {
+            possibleSums.add(sumToAdd);
+        }
+    }
+
+    let resultSum = 0;
+    for (let candidateSum = targetSum; candidateSum > 0; candidateSum--) {
+        if (possibleSums.has(candidateSum) && primeNumbers.has(candidateSum)) {
+            resultSum = candidateSum;
+            break;
+        }
+    }
+
+    console.log((resultSum === 0) ? "NA" : resultSum);
 }

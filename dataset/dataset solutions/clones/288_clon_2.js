@@ -1,173 +1,150 @@
-// This variable holds the Node.js 'fs' module for file system operations.
-const fileSystemAccess = require('node:fs');
-// Alias for the readFileSync method for clearer naming within this script.
-const readTextFileContent = fileSystemAccess.readFileSync;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Reads raw input data from standard input.
 
-/*
- * Gathers raw input data from the standard input stream.
- * The data is expected to be a UTF-8 encoded string containing graph details.
- */
-const rawFileData = readTextFileContent('/dev/stdin', 'utf8');
+// Processes the raw input: trims whitespace and splits into lines.
+const processedLines = rawData.trim().split('\n');
 
-// First, remove any leading/trailing whitespace, then split the data into individual lines.
-const processedLines = rawFileData.trim().split('\n');
-
-// Next, parse each textual line into an array of numerical connections.
-const graphConnectionsData = processedLines.map(
-  (currentLine) => {
-    // For each line, split it by spaces and convert each segment to an integer base 10.
-    return currentLine.split(' ').map(valStr => parseInt(valStr, 10));
-  }
-);
+// Parses each line into an array of numbers, representing adjacency data.
+const adjacencyData = processedLines.map((lineStr) => lineStr.split(' ').map(Number));
 
 /**
- * Represents a directed connection, or an 'arc', from one point to another in the network.
- * It encapsulates the identifier of the destination point and an optional associated cost.
+ * Represents a connection (edge) in the network.
+ * Stores the destination vertex and an optional weight.
  */
-class Link {
-  // Initializes a new Link with its destination and an optional default cost.
-  constructor ( endPointIdentifier, costValue = 1 ) {
-    this.endPointIdentifier = endPointIdentifier; // The unique ID of the point this link leads to.
-    this.costValue = costValue;                   // The numerical cost or weight of this particular link.
+class Connection {
+  /**
+   * Creates an instance of Connection.
+   * @param {number} destinationId - The identifier of the vertex this connection leads to.
+   * @param {number} edgeWeightValue - The weight or cost associated with this connection (defaults to 1).
+   */
+  constructor(destinationId, edgeWeightValue = 1) {
+    this.dest = destinationId; // The destination vertex ID.
+    this.weight = edgeWeightValue; // The weight of the connection.
   }
 }
 
 /**
- * Defines a 'Point' (or vertex) within a network structure.
- * Each point maintains a collection of all 'Links' that originate from it.
+ * Represents a vertex (node) in the network.
+ * Contains a list of outgoing connections.
  */
-class Point {
-  // Default constructor for a Point, setting up its outgoing links collection.
-  constructor () {
-    this.outgoingLinks = []; // An array to store all Link objects that start from this Point.
-  }
-
+class Vertex {
   /**
-   * Adds a new link to the point's existing list of outgoing connections.
-   * @param {Link} aLink - The link object to be appended to this point's connections.
+   * Creates an instance of Vertex.
    */
-  appendLink (aLink) {
-    this.outgoingLinks.push(aLink);
-  }
-
-  /**
-   * Determines if the total count of outgoing links from this point is an odd number.
-   * This is a check for the parity of the point's degree in the context of an undirected graph.
-   * @returns {boolean} Returns true if the count of outgoing links is odd, false otherwise.
-   */
-  hasOddDegreeCount () {
-    // The double-negation (!!) ensures a boolean return value.
-    return !!(this.outgoingLinks.length % 2);
-  }
-}
-
-/**
- * Manages the overall structure of a network, including its points and the links between them.
- * Provides functionalities for creating, modifying, and querying the network's topology.
- */
-class NetworkStructure {
-  // Upon instantiation, the network structure is immediately prepared for use.
   constructor() {
-    this.setupStructure();
+    this.connections = []; // List of Connection objects originating from this vertex.
   }
 
   /**
-   * Initializes or completely resets the internal registry that stores all points in the network.
-   * Calling this method clears all previously registered points and their connections.
+   * Adds a new connection to this vertex's list of outgoing connections.
+   * @param {Connection} newConnection - The connection to add.
    */
-  setupStructure () {
-    // A Map is used to efficiently store and retrieve Point objects by their unique identifiers.
-    this.pointRegistry = new Map();
+  addConnection(newConnection) {
+    this.connections.push(newConnection);
   }
 
   /**
-   * Retrieves a specific point from the registry using its identifier.
-   * If a point with the given identifier does not yet exist, a new one is created and registered.
-   * @param {number} startIdentifier - The unique numerical ID of the point to find or create.
-   * @param {any} dummyLinkParam - An intentionally unused parameter, maintaining original signature.
-   * @returns {Point} The Point object corresponding to the provided identifier.
+   * Checks if the number of connections from this vertex is odd.
+   * @returns {boolean} True if the degree (number of connections) is odd, false otherwise.
    */
-  obtainPoint (startIdentifier, dummyLinkParam) {
-    // Check if the point is already present in our registry.
-    if ( !this.pointRegistry.has(startIdentifier) ) {
-      // If not, instantiate a new Point and add it to the registry.
-      this.pointRegistry.set(startIdentifier, new Point());
+  hasOddConnections() {
+    return !!(this.connections.length % 2);
+  }
+}
+
+/**
+ * Represents the entire network (graph) structure.
+ * Manages vertices and their connections.
+ */
+class Network {
+  /**
+   * Creates an instance of Network.
+   */
+  constructor() {
+    this.initializeNetwork(); // Sets up the internal map for vertices.
+  }
+
+  /**
+   * Initializes or resets the network's internal vertex map.
+   */
+  initializeNetwork() {
+    this.vertexMap = new Map(); // Stores vertices, keyed by their ID.
+  }
+
+  /**
+   * Retrieves a vertex by its ID, creating it if it doesn't exist.
+   * The `unusedConnectionParam` is a placeholder from the original code and has no functional effect.
+   * @param {number} originVertexId - The ID of the vertex to retrieve or create.
+   * @param {*} unusedConnectionParam - An unused parameter, kept for Type II cloning.
+   * @returns {Vertex} The requested or newly created vertex.
+   */
+  getOrCreateVertex(originVertexId, unusedConnectionParam) {
+    if (!this.vertexMap.has(originVertexId)) {
+      this.vertexMap.set(originVertexId, new Vertex());
     }
-    // Return the Point instance, whether it was existing or newly created.
-    return this.pointRegistry.get(startIdentifier);
+    return this.vertexMap.get(originVertexId);
   }
 
   /**
-   * Establishes a directed link originating from a specified point.
-   * The origin point is automatically created if it doesn't already exist in the network.
-   * @param {number} originId - The identifier of the point from which the link originates.
-   * @param {Link} conn - The Link object representing the connection to be added.
+   * Adds a connection from an origin vertex to a destination vertex.
+   * @param {number} originVertexId - The ID of the vertex where the connection starts.
+   * @param {Connection} newConnection - The connection object to add.
    */
-  establishLink ( originId, conn ) {
-    const currentPoint = this.obtainPoint(originId); // Get or create the starting point.
-    currentPoint.appendLink(conn);                   // Add the provided link to this point's outgoing connections.
+  addNetworkConnection(originVertexId, newConnection) {
+    const currentVertex = this.getOrCreateVertex(originVertexId);
+    currentVertex.addConnection(newConnection);
   }
 
   /**
-   * Computes the total number of points within the network that possess an odd degree.
-   * An odd degree signifies an odd count of outgoing links from that specific point.
-   * @returns {number} The aggregated count of all points having an odd degree.
+   * Counts the total number of vertices that have an odd number of connections.
+   * @returns {number} The count of odd-degree vertices.
    */
-  determineOddDegreeCount () {
-    // Convert the Map's values (Point objects) into an array for easier processing.
-    // Then, map each point to 1 if it has an odd degree, or 0 otherwise.
-    // Finally, reduce the array to a single sum representing the total count.
-    return [...this.pointRegistry.values()]
-      .map( vtxElement => vtxElement.hasOddDegreeCount() ? 1 : 0 )
-      .reduce( (accumulatedSum, currentCount) => accumulatedSum + currentCount );
+  countOddDegreeVertices() {
+    return Array.from(this.vertexMap.values())
+      .map(currentVertex => currentVertex.hasOddConnections() ? 1 : 0)
+      .reduce((accumulator, currentValue) => accumulator + currentValue);
   }
 
   /**
-   * Assesses whether an Eulerian traversal (either a path or a circuit) is possible
-   * within the current network structure. This determination relies on the number of
-   * vertices with an odd degree, according to established graph theory principles.
-   * @returns {boolean} True if an Eulerian traversal is feasible, false if not.
+   * Determines if an Eulerian path or circuit is possible in the network.
+   * This logic is specific to the problem's requirements for patrolling.
+   * @returns {boolean} True if a patrol is possible ('OK'), false otherwise ('NG').
    */
-  checkEulerianTraversalPossible () {
-    // Retrieve the total count of points that have an odd number of connections.
-    const totalOddDegreePoints = networkInstance.determineOddDegreeCount(); // Refers to the global instance.
+  canTraverseEulerianPath() {
+    const oddDegreeCount = networkInstance.countOddDegreeVertices();
 
-    // Condition 1: If the total number of distinct points in the registry is even,
-    // it's generally not possible for a specific type of patrol (as implied by problem context).
-    if ( !( this.pointRegistry.size % 2 ) ) {
+    // If the total number of vertices is even, a patrol is not possible under these rules.
+    if (!(this.vertexMap.size % 2)) {
       return false;
     }
-    // Condition 2: An Eulerian circuit is possible if there are no odd-degree points.
-    else if ( totalOddDegreePoints === 0 ) {
+    // If there are no odd-degree vertices, an Eulerian circuit is possible.
+    else if (oddDegreeCount === 0) {
       return true;
     }
-    // Condition 3: An Eulerian path is possible if exactly two points have an odd degree.
-    // The problem specifies these must be points with IDs 1 and 2.
-    else if ( totalOddDegreePoints === 2 && ( networkInstance.obtainPoint(1).hasOddDegreeCount() && networkInstance.obtainPoint(2).hasOddDegreeCount() ) ) {
+    // If there are exactly two odd-degree vertices, and they are vertices 1 and 2,
+    // an Eulerian path between them is possible.
+    else if (oddDegreeCount === 2 && (networkInstance.getOrCreateVertex(1).hasOddConnections() && networkInstance.getOrCreateVertex(2).hasOddConnections())) {
       return true;
     }
-
-    // For all other scenarios (e.g., more than two odd-degree points), no Eulerian path or circuit exists.
+    // In all other cases, a patrol is not possible.
     return false;
   }
 }
 
-// Create a single, global instance of our network structure.
-const networkInstance = new NetworkStructure();
+// Create a new instance of the Network.
+const networkInstance = new Network();
 
-// Iterate through each pair of vertex identifiers obtained from the input data.
-graphConnectionsData.forEach(
-  ( [startVertexId, endVertexId] ) => {
-    // Special control sequence: a pair of (0, 0) indicates the end of processing for the current graph.
-    if ( startVertexId === 0 && endVertexId === 0 ) {
-      // Output the result of the Eulerian traversal check to the console.
-      console.info( networkInstance.checkEulerianTraversalPossible() ? 'OK' : 'NG' );
-      networkInstance.setupStructure(); // Reset the entire network for the next graph in sequence.
-      return; // Exit the current iteration of the forEach loop.
-    }
-
-    // For valid connection pairs, establish links in both directions to represent an undirected edge.
-    networkInstance.establishLink( startVertexId, new Link(endVertexId) );
-    networkInstance.establishLink( endVertexId, new Link(startVertexId) );
+// Process each entry in the adjacency data.
+adjacencyData.forEach(([origin, destination]) => {
+  // Special termination condition: (0, 0) indicates the end of a graph's input.
+  if (origin === 0 && destination === 0) {
+    // Output the patrol possibility for the current graph.
+    console.log(networkInstance.canTraverseEulerianPath() ? 'OK' : 'NG');
+    // Reset the network for the next graph (if any).
+    networkInstance.initializeNetwork();
+    return;
   }
-);
+
+  // Add connections for an undirected graph (bidirectional).
+  networkInstance.addNetworkConnection(origin, new Connection(destination));
+  networkInstance.addNetworkConnection(destination, new Connection(origin));
+});

@@ -1,49 +1,45 @@
-function extractTextualData(locatorReference) {
-  const resourceHandle = require('node:fs').openSync(locatorReference, 'r');
-  const storageUnit = Buffer.alloc(1024);
-  const dataByteCount = require('node:fs').readSync(resourceHandle, storageUnit, 0, storageUnit.length, 0);
-  require('node:fs').closeSync(resourceHandle);
-  return storageUnit.toString('utf8', 0, dataByteCount).trim();
+function extractNumericPrefix(textualData) {
+    let currentNumericValue = 0;
+    let signFactor = 1;
+    let position = 0;
+    const dataLength = textualData.length;
+    let digitEncountered = false;
+
+    while (position < dataLength && /\s/.test(textualData[position])) {
+        position++;
+    }
+
+    if (position < dataLength && textualData[position] === '-') {
+        signFactor = -1;
+        position++;
+    } else if (position < dataLength && textualData[position] === '+') {
+        position++;
+    }
+
+    while (position < dataLength) {
+        const character = textualData[position];
+        if (character >= '0' && character <= '9') {
+            currentNumericValue = currentNumericValue * 10 + (character.charCodeAt(0) - '0'.charCodeAt(0));
+            digitEncountered = true;
+            position++;
+        } else {
+            break;
+        }
+    }
+
+    if (!digitEncountered) {
+        return NaN;
+    }
+
+    return currentNumericValue * signFactor;
 }
 
-function transformStringToValue(textualRepresentation) {
-  let numericalResult = 0;
-  let isNegativeFlag = false;
-  let startingIndex = 0;
-
-  if (textualRepresentation.charCodeAt(0) === '-'.charCodeAt(0)) {
-    isNegativeFlag = true;
-    startingIndex = 1;
-  }
-
-  for (let currentPos = startingIndex; currentPos < textualRepresentation.length; currentPos++) {
-    const charSymbolCode = textualRepresentation.charCodeAt(currentPos);
-    const digitEquivalent = charSymbolCode - '0'.charCodeAt(0);
-    numericalResult = numericalResult * 10 + digitEquivalent;
-  }
-  return isNegativeFlag ? -numericalResult : numericalResult;
+function processInputAndCalculate(sourceContent) {
+    const numericRepresentation = extractNumericPrefix(sourceContent);
+    const finalResult = -(numericRepresentation - 48);
+    console.log(finalResult);
 }
 
-function performSubtractionRecursively(minuendArgument, subtrahendArgument) {
-  if (subtrahendArgument === 0) {
-    return minuendArgument;
-  } else if (subtrahendArgument > 0) {
-    return performSubtractionRecursively(minuendArgument - 1, subtrahendArgument - 1);
-  } else { // subtrahendArgument < 0
-    return performSubtractionRecursively(minuendArgument + 1, subtrahendArgument + 1);
-  }
-}
-
-const entryProcedure = () => {
-  const dataLocation = '/dev/stdin';
-  const rawContentString = extractTextualData(dataLocation);
-  const processedNumericValue = transformStringToValue(rawContentString);
-
-  const fixedMinuend = new Array(49).length - 1;
-
-  const finalComputedOutcome = performSubtractionRecursively(fixedMinuend, processedNumericValue);
-
-  process.stdout.write(finalComputedOutcome.toString() + '\n');
-};
-
-entryProcedure();
+const fileSystemModule = require('fs');
+const rawInputString = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+processInputAndCalculate(rawInputString);

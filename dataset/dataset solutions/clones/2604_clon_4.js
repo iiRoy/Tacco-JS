@@ -1,22 +1,16 @@
-const inputSource = process.stdin;
-const outputSink = process.stdout;
-
-let accumulatedContent = '';
-
-inputSource.on('data', function(dataChunk) {
-  accumulatedContent += dataChunk.toString();
+const inputSource = require('readline');
+const streamInterface = inputSource.createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-inputSource.on('end', function() {
-  const primaryLine = accumulatedContent.trim().split('\n')[0];
-  const parsedQuantity = Number(primaryLine);
-
-  const calculatedSum = (parsedQuantity * (parsedQuantity - 1)) / 2;
-
-  outputSink.write(calculatedSum.toString() + '\n');
+let collectedData = [];
+streamInterface.on('line', (currentDatum) => {
+  collectedData.push(currentDatum);
 });
 
-inputSource.on('error', (issue) => {
-  outputSink.write('An input issue occurred: ' + issue.message + '\n');
-  process.exit(1);
+streamInterface.on('close', () => {
+  const numericInput = Number(collectedData[0]);
+  const calculatedSum = (numericInput * (numericInput - 1)) / 2;
+  console.log(calculatedSum);
 });

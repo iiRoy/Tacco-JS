@@ -1,21 +1,24 @@
-function ProcessInputData(rawData) {
-    // Split the raw input string by newline characters into an array of lines.
-    rawData = rawData.split("\n");
-    const firstStringSegment = rawData[0]; // Store the very first line of input.
-    const secondStringSegment = rawData[1]; // Store the subsequent line of input.
+function ProcessData(rawData) {
+    // The raw input string is split into an array of lines.
+    let processedInput = rawData.split("\n");
 
-    // Commence a loop that iterates based on the combined length of both string segments.
-    for (let loopCounter = 0; loopCounter < firstStringSegment.length + secondStringSegment.length; loopCounter++) {
-        // Evaluate if the current iteration index is an even number.
-        if (loopCounter % 2 === 0) {
-            // If even, display a character from the first segment.
-            console.log(firstStringSegment[loopCounter / 2]);
+    // The first line of input is assigned to a variable.
+    var firstString = processedInput[0];
+    // The second line of input is assigned to another variable.
+    var secondString = processedInput[1];
+
+    // A loop iterates through a combined length of both strings.
+    for (let idx = 0; idx < firstString.length + secondString.length; idx++) {
+        // Check if the current index is an even number.
+        if (idx % 2 === 0) {
+            // If even, print a character from the first string.
+            console.log(firstString[idx / 2]);
         } else {
-            // If odd, display a character from the second segment.
-            console.log(secondStringSegment[loopCounter / 2]);
+            // If odd, print a character from the second string.
+            console.log(secondString[idx / 2]);
         }
     }
 }
 
-// Invoke the primary processing routine, feeding it data acquired from standard input.
-ProcessInputData( require( "fs" ) . readFileSync( "/dev/stdin" , "utf8" ) );
+// Read content from standard input and pass it to the main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

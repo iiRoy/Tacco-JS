@@ -1,32 +1,24 @@
 "use strict";
+function processFinancialData(rawData) {
+    const inputSegments = rawData.split("\n");
+    const itemCount = Number(inputSegments[0]);
 
-var fileSystemOperations = require("fs");
+    const currencyConversionRates = new Map([
+        ['BTC', 380000.0],
+        ['JPY', 1.0]
+    ]);
 
-var calculateEntryValue = function(entryLine) {
-    var components = entryLine.split(/\s+/);
-    var numericalAmount = parseFloat(components[0]);
-    var currencyIdentifier = components[1];
+    const transactionEntries = inputSegments.slice(1, itemCount + 1);
 
-    var conversionMap = new Map();
-    conversionMap.set('BTC', 380000.0);
+    const totalValue = transactionEntries.reduce((currentTotal, currentEntryLine) => {
+        const [amountString, currencyIdentifier] = currentEntryLine.split(/\s/);
+        const numericalAmount = Number(amountString);
+        const conversionFactor = currencyConversionRates.get(currencyIdentifier) || 1.0;
 
-    var factor = conversionMap.has(currencyIdentifier) ? conversionMap.get(currencyIdentifier) : 1.0;
+        return currentTotal + (numericalAmount * conversionFactor);
+    }, 0);
 
-    return numericalAmount * factor;
-};
-
-function processSourceMaterial(initialContent) {
-    var dataRows = initialContent.toString().split(/\r?\n/);
-    var entryCount = parseFloat(dataRows[0]);
-
-    var accumulatedTotal = dataRows.slice(1, entryCount + 1).reduce(function(currentAccumulator, currentLine) {
-        if (currentLine.trim() === '') {
-            return currentAccumulator;
-        }
-        return currentAccumulator + calculateEntryValue(currentLine);
-    }, 0.0);
-
-    process.stdout.write(accumulatedTotal.toString() + '\n');
+    console.log(totalValue);
 }
 
-processSourceMaterial(fileSystemOperations.readFileSync("/dev/stdin", "utf8"));
+processFinancialData(require("fs").readFileSync("/dev/stdin", "utf8"));

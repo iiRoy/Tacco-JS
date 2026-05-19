@@ -1,97 +1,112 @@
-const source_content = require('fs').readFileSync('/dev/stdin', 'utf8');
-const numeric_data = source_content.trim().split("\n").map(Number);
+const processInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericData = processInput.trim().split("\n").map(Number);
 
-let test_counter = numeric_data.shift();
+let remainingTestCases = numericData.shift();
 
-while (test_counter--) {
-    const dimension_size = numeric_data.shift();
+while (remainingTestCases--) {
+    const currentGridSize = numericData.shift();
 
-    if (dimension_size === 0) {
+    if (currentGridSize === 0) {
         console.log("");
         continue;
     }
-    if (dimension_size === 1) {
+    if (currentGridSize === 1) {
         console.log("#");
         continue;
     }
-    if (dimension_size === 2) {
-        const two_by_two_pattern = "##\n# ";
-        console.log(two_by_two_pattern);
+    if (currentGridSize === 2) {
+        const twoByTwoPattern = "##\n# ";
+        console.log(twoByTwoPattern);
         continue;
     }
 
-    const weave_pattern = (extent) => {
-        let matrix_data = Array(extent).fill(null).map(() => Array(extent).fill('+'));
-        let row_position = extent - 1;
-        let col_position = 0;
-        let motion_vector_idx = 0; // 0: up, 1: right, 2: down, 3: left
+    const gridCells = Array.from({ length: currentGridSize }, () =>
+        Array.from({ length: currentGridSize }, () => "+")
+    );
 
-        const row_shifts = [-1, 0, 1, 0];
-        const col_shifts = [0, 1, 0, -1];
+    const rowDeltas = [-1, 0, 1, 0]; // Corresponds to directions: Up, Right, Down, Left
+    const colDeltas = [0, 1, 0, -1];
 
-        // Defines the [row_offset_from_next, col_offset_from_next, new_direction_index]
-        // for the "jump" operation when a blocked path is encountered.
-        // These offsets are relative to the 'adv_r', 'adv_c' (next cell)
-        const jump_directives = [
-            [2, 1, 1],  // Current dir 0 (Up) -> Jump to (adv_r+2, adv_c+1), new dir 1 (Right)
-            [1, -2, 2], // Current dir 1 (Right) -> Jump to (adv_r+1, adv_c-2), new dir 2 (Down)
-            [-2, -1, 3], // Current dir 2 (Down) -> Jump to (adv_r-2, adv_c-1), new dir 3 (Left)
-            [-1, 2, 0]  // Current dir 3 (Left) -> Jump to (adv_r-1, adv_c+2), new dir 0 (Up)
-        ];
+    let currentRow = currentGridSize - 1;
+    let currentCol = 0;
+    let currentDirectionIndex = 0; // 0: Up, 1: Right, 2: Down, 3: Left
 
-        let terminal_coords = []; // Stores the last cell marked with '#'
+    let lastMarkedPoint = [];
 
-        // Explicit stack to manage the path generation iteratively
-        let path_segments = [[row_position, col_position, motion_vector_idx]];
-
-        while (path_segments.length > 0) {
-            let [curr_r, curr_c, curr_d] = path_segments.pop();
-
-            // Check if current coordinates are valid and the cell is unvisited ('+')
-            // This handles out-of-bounds initial calls and already visited cells.
-            if (curr_r < 0 || curr_c < 0 || curr_r >= extent || curr_c >= extent || matrix_data[curr_r][curr_c] !== '+') {
-                continue;
-            }
-
-            const adv_r = curr_r + row_shifts[curr_d];
-            const adv_c = curr_c + col_shifts[curr_d];
-
-            if (adv_r < 0 || adv_c < 0 || adv_r >= extent || adv_c >= extent) {
-                // Next step is out of bounds, so turn by changing direction
-                const rot_d = (curr_d + 1) % 4;
-                path_segments.push([curr_r, curr_c, rot_d]); // Re-add current position with new direction
-            } else {
-                // Next step is within bounds
-                if (matrix_data[adv_r][adv_c] === '#') {
-                    // The cell ahead is already marked ('#'), indicating a collision
-                    // Reset the current cell to '+' (it was implicitly '+' as it was never marked '#' on this path)
-                    matrix_data[curr_r][curr_c] = '+';
-
-                    // Execute the complex "jump" operation
-                    const [dr_jump, dc_jump, next_jump_dir] = jump_directives[curr_d];
-                    const skip_r = adv_r + dr_jump;
-                    const skip_c = adv_c + dc_jump;
-                    const skip_d = next_jump_dir;
-                    path_segments.push([skip_r, skip_c, skip_d]);
-                } else {
-                    // The cell ahead is unvisited ('+')
-                    matrix_data[curr_r][curr_c] = '#'; // Mark the current cell as visited
-                    terminal_coords = [curr_r, curr_c]; // Update the last known visited cell
-                    path_segments.push([adv_r, adv_c, curr_d]); // Continue moving in the same direction
-                }
-            }
+    while (true) {
+        // Check if the current cell is valid and available for marking.
+        // This acts as the base case for the spiral segment.
+        if (currentRow < 0 || currentCol < 0 || currentRow >= currentGridSize || currentCol >= currentGridSize || gridCells[currentRow][currentCol] !== "+") {
+            break; // Terminate if current position is invalid or already visited
         }
 
-        // Final modification based on grid dimension parity
-        if (extent % 2 === 0) {
-            if (terminal_coords.length > 0) {
-                matrix_data[terminal_coords[0]][terminal_coords[1]] = '+';
-            }
+        const nextRow = currentRow + rowDeltas[currentDirectionIndex];
+        const nextCol = currentCol + colDeltas[currentDirectionIndex];
+
+        if (nextRow < 0 || nextCol < 0 || nextRow >= currentGridSize || nextCol >= currentGridSize) {
+            // Hit a boundary, change direction and try again from the same current cell
+            currentDirectionIndex = (currentDirectionIndex + 1) % 4;
+            continue;
         }
 
-        // Format the output string
-        return matrix_data.map(row => row.join('')).join('\n').replace(/\+/g, ' ');
-    };
+        if (gridCells[nextRow][nextCol] === "#") {
+            // Collision with an already marked cell, indicating an inner turn or completion
+            gridCells[currentRow][currentCol] = "+"; // Revert the current cell to '+'
 
-    console.log(weave_pattern(dimension_size));
+            let newStartRow, newStartCol, newStartDirection;
+
+            // Calculate the new starting point and direction for the next spiral segment
+            // This logic directly mirrors the original's complex recursive calls in the collision block
+            switch (currentDirectionIndex) {
+                case 3: // Original direction 'z=3' (Left)
+                    newStartRow = nextRow - 1;
+                    newStartCol = nextCol + 2;
+                    newStartDirection = 0; // New direction 'z=0' (Up)
+                    break;
+                case 0: // Original direction 'z=0' (Up)
+                    newStartRow = nextRow + 2;
+                    newStartCol = nextCol + 1;
+                    newStartDirection = 1; // New direction 'z=1' (Right)
+                    break;
+                case 1: // Original direction 'z=1' (Right)
+                    newStartRow = nextRow + 1;
+                    newStartCol = nextCol - 2;
+                    newStartDirection = 2; // New direction 'z=2' (Down)
+                    break;
+                case 2: // Original direction 'z=2' (Down)
+                    newStartRow = nextRow - 2;
+                    newStartCol = nextCol - 1;
+                    newStartDirection = 3; // New direction 'z=3' (Left)
+                    break;
+            }
+
+            // Check if the calculated new starting point is valid and available
+            if (newStartRow < 0 || newStartCol < 0 || newStartRow >= currentGridSize || newStartCol >= currentGridSize || gridCells[newStartRow][newStartCol] !== "+") {
+                break; // No more valid segments can be drawn
+            }
+
+            // Update state to start the new segment
+            currentRow = newStartRow;
+            currentCol = newStartCol;
+            currentDirectionIndex = newStartDirection;
+            continue; // Proceed to draw from the new point
+        }
+
+        // No collision and within bounds, mark the current cell and move forward
+        gridCells[currentRow][currentCol] = "#";
+        lastMarkedPoint = [currentRow, currentCol]; // Store the last successfully marked point
+        currentRow = nextRow;
+        currentCol = nextCol;
+        // Direction remains unchanged for the next iteration
+    }
+
+    // Post-processing: If the grid size is even, revert the very last marked point
+    if (currentGridSize % 2 === 0) {
+        if (lastMarkedPoint.length > 0) {
+            gridCells[lastMarkedPoint[0]][lastMarkedPoint[1]] = "+";
+        }
+    }
+
+    // Format the grid for output: join rows, remove internal commas, replace '+' with ' '
+    console.log(gridCells.map(row => row.join("")).join("\n").replace(/\+/g, " "));
 }

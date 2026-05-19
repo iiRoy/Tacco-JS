@@ -1,43 +1,44 @@
-const IS_TESTING = false;
-const sourceData = IS_TESTING
+"use strict";
+
+const DEBUG_MODE = false;
+const rawInput = DEBUG_MODE
   ? "-9"
   : require("fs")
     .readFileSync("/dev/stdin", "utf8")
     .trim();
 
-const convertAndDisplay = (incomingDatum) => {
-  const numericalValue = Number(incomingDatum);
-  
-  const performNegatwoConversion = (currentQuantity) => {
-    if (currentQuantity === 0) {
-      return "";
+const negabaseConverter = (decimalValue) => {
+  if (decimalValue === 0) {
+    // The original code outputs an empty string for an input of 0.
+    // This specific observable behavior is preserved.
+    return "";
+  }
+
+  const recursiveConversion = (currentNumber, accumulatedDigits) => {
+    if (currentNumber === 0) {
+      return accumulatedDigits.join('');
     }
 
-    let digitList = [];
-    
-    const recurseAndCollectDigits = (valueToProcess) => {
-      if (valueToProcess === 0) {
-        return;
-      }
+    let digit = currentNumber % -2;
+    let nextNumber = Math.trunc(currentNumber / -2);
 
-      let remainderUnit = valueToProcess % -2;
-      let nextQuantity = Math.trunc(valueToProcess / -2);
+    if (digit < 0) {
+      // Adjust negative remainder and quotient to fit negabase rules (digits 0 or 1)
+      digit = 1;
+      nextNumber += 1;
+    }
 
-      if (remainderUnit < 0) {
-        remainderUnit = -remainderUnit;
-        nextQuantity += 1;
-      }
-
-      recurseAndCollectDigits(nextQuantity);
-      digitList.push(remainderUnit.toString());
-    };
-
-    recurseAndCollectDigits(currentQuantity);
-    return digitList.join("");
+    // Prepend the current digit to the accumulated list
+    return recursiveConversion(nextNumber, [digit, ...accumulatedDigits]);
   };
 
-  const finalOutput = performNegatwoConversion(numericalValue);
-  console.log(finalOutput);
+  return recursiveConversion(decimalValue, []);
 };
 
-convertAndDisplay(sourceData);
+const executeConversion = (sourceData) => {
+  const numericInput = parseInt(sourceData);
+  const finalRepresentation = negabaseConverter(numericInput);
+  console.log(finalRepresentation);
+};
+
+executeConversion(rawInput);

@@ -1,90 +1,78 @@
 'use strict';
 
-/**
- * Main entry point for processing input data.
- * This function orchestrates the calculation of a specific combinatorial pattern.
- * @param {string} data_string - The raw input string containing space-separated numbers.
- */
-function ProcessInput ( data_string ) {
-  // Parse the various numerical components from the input string.
-  const components = data_string.split(" ");
-  const total_items = parseInt(components[0]); // Represents 'N'
-  const first_val = parseInt(components[1]);   // Represents 'red'
-  const second_val = parseInt(components[2]);  // Represents 'blue'
+function ProcessInput(rawData) {
+  // Parse the initial parameters from the raw input string
+  const dataParts = rawData.split(" ");
+  const totalItems = Number(dataParts[0]);
+  const firstColorCount = Number(dataParts[1]);
+  const secondColorCount = Number(dataParts[2]);
 
-  // Calculate the combined value of the first and second elements.
-  const combined_val = first_val + second_val; // Represents 'green'
+  // Calculate the sum of the two primary color counts
+  const combinedColorCount = firstColorCount + secondColorCount;
 
-  const target_sum = parseInt(components[3]);  // Represents 'K'
+  const targetSum = Number(dataParts[3]);
 
-  // Determine the larger and smaller parts for subsequent calculations.
-  const larger_part = Math.max(first_val, second_val); // Represents 'second'
-  const smaller_part = Math.min(first_val, second_val); // Represents 'third' (unused in original, but preserved structure)
+  // Determine the larger and smaller of the two primary color counts
+  const largerComponent = Math.max(firstColorCount, secondColorCount);
+  const smallerComponent = Math.min(firstColorCount, secondColorCount);
 
-  // Initialize a counter for the final combinatorial pattern.
-  let final_count = 0;
+  // Initialize a counter for valid combinations
+  let totalCombinations = 0;
 
   /**
-   * Computes the number of arrangements (permutations) of 'selection' items
-   * chosen from 'total' distinct items.
-   * @param {number} total - The total number of items available.
-   * @param {number} selection - The number of items to choose and arrange.
-   * @returns {number} The permutation value.
+   * Computes the number of permutations P(n, r).
+   * @param {number} totalElements - The total number of items.
+   * @param {number} selectElements - The number of items to choose.
+   * @returns {number} The permutation count.
    */
-  function calculate_arrangements( total, selection ) {
-    let result_val = 1;
-    // Loop 'selection' times to multiply descending values.
-    for ( let counter = 0; counter < selection; counter++ ) {
-      result_val = ( result_val * ( total - counter ) );
+  function calculatePermutations(totalElements, selectElements) {
+    let resultValue = 1;
+    for (let loopIndex = 0; loopIndex < selectElements; loopIndex++) {
+      resultValue = resultValue * (totalElements - loopIndex);
     }
-    return result_val;
+    return resultValue;
   }
 
   /**
-   * Computes the number of combinations of 'choose_count' items
-   * chosen from 'total_options' distinct items.
-   * Uses the formula C(n, k) = P(n, k) / P(k, k).
-   * @param {number} total_options - The total number of items available.
-   * @param {number} choose_count - The number of items to choose.
-   * @returns {number} The combination value.
+   * Computes the number of combinations C(n, r).
+   * @param {number} totalElements - The total number of items.
+   * @param {number} selectElements - The number of items to choose.
+   * @returns {number} The combination count.
    */
-  function compute_combinations( total_options, choose_count ) {
-    // Optimization: C(n, k) = C(n, n-k)
-    let effective_choose = Math.min(choose_count, total_options - choose_count);
-    return calculate_arrangements(total_options, effective_choose) / calculate_arrangements(effective_choose, effective_choose);
+  function calculateCombinations(totalElements, selectElements) {
+    // Use the property C(n, r) = C(n, n-r) to optimize calculations
+    let adjustedSelect = Math.min(selectElements, totalElements - selectElements);
+    return calculatePermutations(totalElements, adjustedSelect) / calculatePermutations(adjustedSelect, adjustedSelect);
   }
 
-  // Calculate the maximum possible units of 'combined_val' that can fit into 'target_sum'.
-  const max_combined_units = Math.floor(target_sum / combined_val);
+  // Determine the maximum possible count for the combined color component
+  const maxCombinedColor = Math.floor(targetSum / combinedColorCount);
 
-  // Outer loop: Iterate downwards from the maximum possible 'combined_val' units.
-  for ( let primary_idx = max_combined_units; primary_idx >= 0; primary_idx-- ) {
-    // Calculate the remaining sum after accounting for 'primary_idx' units of 'combined_val'.
-    let remaining_after_primary = target_sum - ( primary_idx * combined_val );
+  // Iterate through possible counts of the combined color component
+  for (let combinedColorIter = maxCombinedColor; combinedColorIter >= 0; combinedColorIter--) {
+    let remainingAfterCombined = targetSum - (combinedColorIter * combinedColorCount);
 
-    // Calculate the maximum possible units of 'larger_part' that can fit into the remainder.
-    let max_larger_parts = Math.floor( remaining_after_primary / larger_part );
+    // Determine the maximum possible count for the larger individual component
+    const maxLargerComponent = Math.floor(remainingAfterCombined / largerComponent);
 
-    // Inner loop: Iterate downwards from the maximum possible 'larger_part' units.
-    for ( let secondary_idx = max_larger_parts; secondary_idx >= 0; secondary_idx-- ) {
-      // Calculate the final remainder after accounting for both primary and secondary units.
-      let final_remainder = target_sum - ( primary_idx * combined_val ) - ( secondary_idx * larger_part );
+    // Iterate through possible counts of the larger individual component
+    for (let largerComponentIter = maxLargerComponent; largerComponentIter >= 0; largerComponentIter--) {
+      let remainingAfterBoth = targetSum - (combinedColorIter * combinedColorCount) - (largerComponentIter * largerComponent);
 
-      // Check if the sum of all three types of units does not exceed the total available items.
-      if ( primary_idx + secondary_idx + final_remainder <= total_items ) {
-        // If valid, calculate the combinatorial pattern and add it to the running total.
-        // This involves two combination calculations:
-        // 1. Choosing positions for the sum of all parts from total_items.
-        // 2. Arranging the individual parts within that chosen sum.
-        final_count = final_count + ( compute_combinations(total_items, primary_idx + secondary_idx + final_remainder) * compute_combinations(primary_idx + secondary_idx + final_remainder, Math.max(primary_idx, secondary_idx, final_remainder)) );
+      // Check if the sum of all components is within the total allowed items
+      if (combinedColorIter + largerComponentIter + remainingAfterBoth <= totalItems) {
+        // Add the product of two combination calculations to the total
+        totalCombinations = totalCombinations + (
+          calculateCombinations(totalItems, combinedColorIter + largerComponentIter + remainingAfterBoth) *
+          calculateCombinations(combinedColorIter + largerComponentIter + remainingAfterBoth, Math.max(combinedColorIter, largerComponentIter, remainingAfterBoth))
+        );
       }
     }
   }
 
-  // Output the final computed pattern count to the console.
-  console.log(final_count);
+  // Output the final calculated total combinations
+  console.log(totalCombinations);
 }
 
-// Read input from standard input, decode as UTF-8, and trim whitespace.
-// Then, pass the processed string to the main processing function.
-ProcessInput( require("node:fs").readFileSync("/dev/stdin", "utf8").trim() );
+// Read input from standard input, trim whitespace, and pass to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

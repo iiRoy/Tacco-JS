@@ -1,58 +1,73 @@
-import java.io.*;
-import java.io.IOException;
+function obtainInputLine() {
+    // This function simulates reading a line from standard input.
+    // In a real Node.js application, this would typically be implemented
+    // using the 'readline' module or a synchronous library like 'readline-sync'.
+    // For the purpose of this Type II clone, we assume its existence and behavior
+    // to match Java's `BufferedReader.readLine()`, returning a string or null at EOF.
+    // The actual implementation is omitted as it's external to the core algorithm.
+    return null; // Returns null to simulate End-Of-File (EOF)
+}
 
-public class SummationProcessor
-{
-	/*
-	 * This method serves as the entry point for the application.
-	 * It processes input data from the standard input stream.
-	 * 
-	 * @param cliArguments Command line arguments (not used in this specific logic).
-	 * @throws IOException If an I/O error occurs during input operations.
-	 */
-	public static void processInput(String[] cliArguments) throws IOException
-	{
-		// Initialize a buffered reader to efficiently read lines from the standard input.
-		java.io.BufferedReader lineInput = new java.io.BufferedReader(new InputStreamReader(System.in));
+// Declare various variables used in the processing logic.
+// These correspond to `int j,k,i,b,c,W,N,S;` in the original Java code.
+let iterationCounterJ; // Corresponds to 'j'
+let temporaryK;        // Corresponds to 'k' (unused in original logic)
+let mainLoopIterator;  // Corresponds to 'i'
+let unusedVarB;        // Corresponds to 'b' (unused in original logic)
+let unusedVarC;        // Corresponds to 'c' (unused in original logic)
+let widthVarW;         // Corresponds to 'W' (unused in original logic)
+let inputNumberN;      // Corresponds to 'N' (used for parsed input)
+let currentTotalSum;   // Corresponds to 'S'
 
-		// Declare several long integer variables for various purposes within the program.
-		long iterationIndexA, extraVar1, mainLoopCounter, temporaryValB, temporaryValC, totalWeightVar, numItemsToProcess, currentAccumulatedSum;
+// The main processing loop continues indefinitely until a break condition is met.
+// This mirrors the `for(i=0;;i++)` structure.
+for (mainLoopIterator = 0; ; mainLoopIterator++) {
+    // Initialize the sum for the current test case.
+    // This corresponds to `S=0;`.
+    currentTotalSum = 0;
 
+    // Read the first line of input for the current test case.
+    // This corresponds to `String str1 =br.readLine();`.
+    let firstInputString = obtainInputLine();
 
-		// Start an infinite loop to continuously process data sets until a specific termination condition is met.
-		for (mainLoopCounter = 0; ; mainLoopCounter++)
-		{
-			// Reset the accumulated sum for each new data set.
-			currentAccumulatedSum = 0L;
+    // Check if the end of input has been reached.
+    // Java's `readLine()` returns `null` at EOF.
+    if (firstInputString === null || firstInputString === undefined) {
+        break; // Exit the main loop if no more input.
+    }
 
-			// Read the first line of input, which is expected to be a number.
-			java.lang.String firstLineText = lineInput.readLine();
-			
-			// Parse the read string into a long integer.
-			long parsedCount = Long.parseLong(firstLineText);
+    // Parse the input string into an integer.
+    // This corresponds to `int n=Integer.parseInt(str1);`.
+    let parsedValueN = parseInt(firstInputString);
 
-			// Check if the parsed count is zero, which acts as the program's termination signal.
-			if (parsedCount == 0L) {
-				// If zero, exit the processing loop.
-				break;
-			}
-			
-			// Begin an inner loop to read and sum subsequent numbers.
-			// This loop runs for a quarter of the 'parsedCount' times.
-			for (iterationIndexA = 0; iterationIndexA < parsedCount / 4; iterationIndexA++)
-			{
-				// Read another line of input, representing a number to be summed.
-				java.lang.String secondLineText = lineInput.readLine();
-				
-				// Convert this line into a long integer.
-				long currentParsedNumber = Long.parseLong(secondLineText);
-				
-				// Add the current number to the running total.
-				currentAccumulatedSum = currentAccumulatedSum + currentParsedNumber;
-			}
-			
-			// After processing all numbers for the current data set, print the final accumulated sum to standard output.
-			System.out.println(currentAccumulatedSum);
-		}
-	}
+    // Check for the termination condition of the problem (input `0`).
+    // This corresponds to `if(n==0) break;`.
+    if (parsedValueN === 0) {
+        break; // Exit the main loop if the input is 0.
+    }
+
+    // Inner loop to process subsequent lines based on `parsedValueN`.
+    // This corresponds to `for(j=0;j<n/4;j++)`.
+    for (iterationCounterJ = 0; iterationCounterJ < parsedValueN / 4; iterationCounterJ++) {
+        // Read the next line of input for the inner processing.
+        // This corresponds to `String str2 =br.readLine();`.
+        let secondInputString = obtainInputLine();
+
+        // Handle potential end of input within the inner loop.
+        if (secondInputString === null || secondInputString === undefined) {
+            break; // Exit inner loop if no more input.
+        }
+
+        // Parse the inner input string into an integer.
+        // This corresponds to `int a =Integer.parseInt(str2);`.
+        let parsedValueA = parseInt(secondInputString);
+
+        // Add the parsed value to the current total sum.
+        // This corresponds to `S=S+a;`.
+        currentTotalSum = currentTotalSum + parsedValueA;
+    }
+
+    // Print the accumulated sum for the current test case.
+    // This corresponds to `System.out.println(S);`.
+    console.log(currentTotalSum);
 }

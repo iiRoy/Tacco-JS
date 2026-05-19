@@ -1,115 +1,181 @@
-function PrimaryHandler(inputContent) {
-    "use strict";
+function EntryFunction(inputData) {
+    "use strict"; // Enforce strict mode for cleaner code
 
-    // Recursive function to traverse paths and calculate maximum scores
-    function explorePath(currentVertex, currentWeight, pathLength) {
-        let highestValue = 0; // Initialize maximum path value for this branch
+    /**
+     * Performs a Depth-First Search (DFS) to find the maximum path score.
+     * This function explores paths in the graph, memoizing results to avoid redundant calculations.
+     *
+     * @param {number} currentNode The current node being visited.
+     * @param {number} currentPathScore The accumulated score up to the current node.
+     * @param {number} recursionDepth The current depth of the recursion.
+     * @returns {number} The maximum score achievable from the currentNode.
+     */
+    function traverseGraph(currentNode, currentPathScore, recursionDepth) {
+        let maximumPathValue = 0; // Initialize the maximum score for paths starting from this node
 
-        // If no connections are allowed from the current vertex, return its current weight
-        if (!permittedConnections[currentVertex]) {
-            return currentWeight;
+        // If there are no allowed neighbors from the current node,
+        // it means we've reached a leaf or an unexplorable path.
+        // In this case, the current accumulated score is the final score for this path.
+        if (!allowedNeighbors[currentNode]) {
+            return currentPathScore;
         }
 
-        // Iterate over all possible neighbors from the current vertex
-        permittedConnections[currentVertex].forEach(function(neighbor) {
-            // Check if this specific path (currentVertex -> neighbor) has not been processed yet
-            if (!memoizedResults[currentVertex][neighbor]) {
-                // Calculate the new weight by adding the edge cost
-                let newWeight = currentWeight + edgeWeights[currentVertex][neighbor];
-                // Recursively call explorePath for the neighbor and store the result
-                memoizedResults[currentVertex][neighbor] = explorePath(neighbor, newWeight, pathLength + 1);
+        // Iterate over each potential neighbor of the current node
+        allowedNeighbors[currentNode].forEach(function(nextNeighbor) {
+            // Check if this specific path (currentNode -> nextNeighbor) has not been computed yet
+            // The memoizationTable stores the maximum score achievable from 'currentNode' to 'nextNeighbor'
+            if (!memoizationTable[currentNode][nextNeighbor]) {
+                // Calculate the score for the path including the edge to the next neighbor
+                const potentialNewScore = currentPathScore + adjacencyMatrix[currentNode][nextNeighbor];
+
+                // Recursively call traverseGraph for the next neighbor,
+                // updating the score and increasing the recursion depth.
+                // Store the result in the memoization table.
+                memoizationTable[currentNode][nextNeighbor] = traverseGraph(nextNeighbor, potentialNewScore, recursionDepth + 1);
             }
 
-            // Update the highest value found so far in this branch
-            highestValue = Math.max(highestValue, memoizedResults[currentVertex][neighbor]);
+            // Update the overall maximum path value found from the current node
+            // by comparing with the memoized result for the path to the next neighbor.
+            maximumPathValue = Math.max(maximumPathValue, memoizationTable[currentNode][nextNeighbor]);
         });
-        return highestValue; // Return the maximum score from this vertex's paths
+
+        // Return the highest score found among all paths originating from the currentNode
+        return maximumPathValue;
     }
 
-    // Define utility functions for output and input parsing
-    let outputLog = console.info,
-        printerUtil = require("util").print,
-        inputParser = new InputTokenizer(inputContent, " \n");
+    // Alias console.log for convenience and potential renaming
+    const logOutput = console.log;
+    // Alias util.print, though it's not used in the final output logic
+    const printUtil = require("util").print;
+    // Create a new instance of the custom input parser
+    const inputReader = new InputParser(inputData, " \n");
 
-    // Main program logic starts here
-    let vertexCount = inputParser.getIntegerToken(),
-        edgeCount = inputParser.getIntegerToken(),
-        edgeWeights = [],
-        permittedConnections = [],
-        memoizedResults = [],
-        idxCounter, overallMax = -1;
+    // --- Program Logic Starts Here ---
 
-    // Initialize data structures for graph representation
-    for (idxCounter = 0; idxCounter < vertexCount - 1; idxCounter++) {
-        edgeWeights[idxCounter] = [];
-        permittedConnections[idxCounter] = [];
-        memoizedResults[idxCounter] = [];
+    // Read the number of nodes (N) and edges (M) from input
+    const numNodes = inputReader.parseNextInteger();
+    const numEdges = inputReader.parseNextInteger();
+
+    // Declare and initialize data structures for graph representation and memoization
+    let adjacencyMatrix = [];      // Stores edge weights: adjacencyMatrix[source][destination] = weight
+    let allowedNeighbors = [];     // Stores lists of neighbors for each node: allowedNeighbors[node] = [neighbor1, neighbor2, ...]
+    let memoizationTable = [];     // Stores memoized results of DFS paths: memoizationTable[source][destination] = max_score_from_source_to_destination
+
+    let loopIndex;                 // Loop counter variable
+    let overallMaxScore = -1;      // Not used in the final output, but declared in original
+
+    // Initialize graph structures with empty arrays for each node
+    // The loop runs N-1 times because nodes are 0-indexed up to N-1.
+    for (loopIndex = +0; loopIndex < numNodes; loopIndex++) {
+        adjacencyMatrix[loopIndex] = [];
+        allowedNeighbors[loopIndex] = [];
+        memoizationTable[loopIndex] = [];
     }
 
-    // Read and populate graph connections and weights
-    for (idxCounter = 0; idxCounter < edgeCount; idxCounter++) {
-        let startNode = inputParser.getIntegerToken(),
-            endNode = inputParser.getIntegerToken(),
-            connectionCost = inputParser.getIntegerToken();
+    // Read edge information from input and populate the graph
+    for (loopIndex = +0; loopIndex < numEdges; loopIndex++) {
+        const sourceNode = inputReader.parseNextInteger();      // Starting node of the edge
+        const destinationNode = inputReader.parseNextInteger(); // Ending node of the edge
+        const edgeCost = inputReader.parseNextInteger();        // Weight/cost of the edge
 
-        permittedConnections[startNode].push(endNode);
-        edgeWeights[startNode][endNode] = connectionCost;
+        // Add the destination node to the list of allowed neighbors for the source node
+        allowedNeighbors[sourceNode].push(destinationNode);
+        // Store the edge weight in the adjacency matrix
+        adjacencyMatrix[sourceNode][destinationNode] = edgeCost;
     }
 
-    // Execute the path exploration from the starting node (node 0) and print the result
-    outputLog(explorePath(0, 0, 0));
+    // The original code had commented-out debug logs:
+    // logOutput(allowedNeighbors);
+    // logOutput(adjacencyMatrix);
+
+    // Start the DFS from node 0 with an initial score of 0 and depth 0.
+    // The result (maximum path score) is then printed to the console.
+    logOutput(traverseGraph(+0, +0, +0));
 }
 
-// InputTokenizer class for parsing string input
-let InputTokenizer = (function() {
-    function InputTokenizer(sourceString, separatorChars) {
-        // Create a regular expression from the separator characters
-        let splitRegex = new RegExp(separatorChars.split("").join("|"), "g");
-        this.positionIndex = 0; // Current position in the token list
-        // Clean up carriage returns and split the string into tokens
-        this.tokenList = sourceString.replace(/\r/g, '').split(splitRegex);
+/**
+ * Custom utility class for parsing input strings.
+ * It splits the input by a given delimiter and provides methods to read tokens.
+ */
+const InputParser = (function() {
+    /**
+     * Constructor for InputParser.
+     * @param {string} rawInputString The complete input string to be parsed.
+     * @param {string} tokenSeparator A string containing characters to use as delimiters (e.g., " \n").
+     */
+    function InputParser(rawInputString, tokenSeparator) {
+        // Create a regular expression to split the input string by any of the delimiter characters.
+        const splitRegex = new RegExp(tokenSeparator.split(String()).join("|"), "g");
+        this.currentPosition = +0; // Initialize the current reading index to the beginning.
+        // Clean up carriage returns and split the string into tokens using the regex.
+        this.tokenArray = rawInputString.replace(/\r/g, String()).split(splitRegex);
     }
 
-    InputTokenizer.prototype = {
-        // Checks if there are more tokens available
-        hasMoreTokens: function(expectedValue) {
-            if (typeof expectedValue === "undefined") {
-                return typeof this.tokenList[this.positionIndex] !== "undefined" && this.tokenList[this.positionIndex] !== "";
+    // Define methods for the InputParser prototype
+    InputParser.prototype = {
+        /**
+         * Checks if there are more tokens available to read.
+         * @param {string} [comparisonValue] Optional value to check if the next token matches.
+         * @returns {boolean} True if more tokens exist or if the next token matches the comparisonValue.
+         */
+        hasMoreTokens: function(comparisonValue) {
+            if (typeof comparisonValue === "undefined") {
+                // If no comparison value is provided, just check if the current token exists and is not empty.
+                return typeof this.tokenArray[this.currentPosition] !== "undefined" && this.tokenArray[this.currentPosition] !== String();
             } else {
-                return this.tokenList[this.positionIndex] === expectedValue;
+                // If a comparison value is provided, check if the current token matches it.
+                return this.tokenArray[this.currentPosition] === comparisonValue;
             }
         },
-        // Retrieves the next token and advances the index
-        getNextToken: function() {
-            if (typeof this.tokenList[this.positionIndex + 1] === "undefined") {
-                throw new RangeError("Index out of allowed range at '" + this.positionIndex + "'");
+        /**
+         * Reads and returns the next token from the input.
+         * Advances the internal pointer.
+         * @returns {string} The next token.
+         * @throws {RangeError} If attempting to read beyond the end of the token list.
+         */
+        readNextToken: function() {
+            if (typeof this.tokenArray[this.currentPosition + 1] === "undefined") {
+                throw new RangeError("index out of bounds at '" + this.currentPosition + "'");
             }
-            return this.tokenList[this.positionIndex++];
+            return this.tokenArray[this.currentPosition++];
         },
-        // Converts the next token to a number
-        getNumericToken: function() {
-            if (isNaN(+this.peekCurrent())) {
-                throw new TypeError("'" + this.peekCurrent() + "' cannot be converted to a numerical value");
+        /**
+         * Reads the next token and attempts to convert it to a number.
+         * @returns {number} The next token as a number.
+         * @throws {TypeError} If the token cannot be converted to a number.
+         */
+        retrieveNextNumber: function() {
+            if (isNaN(+this.peekCurrentToken())) {
+                throw new TypeError("'" + this.peekCurrentToken() + "' cannot convert to Number");
             }
-            return +this.getNextToken();
+            return +this.readNextToken();
         },
-        // Parses the next token as an integer
-        getIntegerToken: function(baseRadix) {
-            baseRadix = baseRadix || 10; // Default to base 10
-            return parseInt(this.getNumericToken(), baseRadix);
+        /**
+         * Reads the next token, converts it to a number, and then parses it as an integer.
+         * @param {number} [numericBase=10] The radix (base) for parsing the integer. Defaults to 10.
+         * @returns {number} The next token as an integer.
+         */
+        parseNextInteger: function(numericBase) {
+            numericBase = numericBase | 0xA; // Default to base 10 if not provided
+            return parseInt(this.retrieveNextNumber(), numericBase);
         },
-        // Peeks at the current token without advancing the index
-        peekCurrent: function() {
-            return this.tokenList[this.positionIndex];
+        /**
+         * Returns the current token without advancing the internal pointer.
+         * @returns {string} The current token.
+         */
+        peekCurrentToken: function() {
+            return this.tokenArray[this.currentPosition];
         },
-        // Resets the tokenizer's position to the beginning
-        resetPosition: function() {
-            this.positionIndex = 0;
+        /**
+         * Resets the internal pointer to the beginning of the token list.
+         */
+        resetPointer: function() {
+            this.currentPosition = +0;
         }
     };
 
-    return InputTokenizer;
+    return InputParser; // Return the constructor function
 }());
 
-// Execute the primary handler with input from standard input
-PrimaryHandler(require("node:fs").readFileSync("/dev/fd/0", "utf-8"));
+// Read input from standard input and pass it to the main entry function
+EntryFunction(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,44 +1,40 @@
-function  ProcessInputData(receivedText)
-{
-    /*
-     * This function takes raw text input, parses it,
-     * performs calculations, and then outputs a result.
-     */
+function ProcessInput(rawData) {
+    // The input string is first split by newline characters to separate lines of data.
+    rawData = rawData.split('\n');
 
-    receivedText = receivedText.split("\n") ;
+    // The first line is expected to contain a single number, which represents the total count of elements.
+    // It's split by space and then each part is converted to a number.
+    // In typical competitive programming scenarios, this often results in an array like [N].
+    var numElements = rawData[0].split(' ').map(Number);
 
-    // Parse the first line to get the length of the sequence
-    var sequenceLength = receivedText[0].split(" ").map(Number) ;
+    // The second line contains the actual array of numbers, also space-separated.
+    var dataArray = rawData[1].split(' ').map(Number);
 
-    // Parse the second line to get the array of integer values
-    var integerValues = receivedText[1].split(" ").map(Number) ;
-    
-    // Initialize a counter for subarrays that meet the condition
-    var matchedSubarrays = 0 ;
+    // Initialize a counter to keep track of subarrays where sum equals XOR.
+    let resultCounter = 0;
 
-    // Iterate through the integerValues array with an outer loop
-    for(var startPointer = 0; startPointer < sequenceLength - 1; startPointer++)
-    {
-        // Initialize cumulative sum and bitwise aggregation for the current subarray
-        var cumulativeSum = integerValues[startPointer] ;
-        var bitwiseAggregation = integerValues[startPointer] ;
+    // Outer loop iterates through each possible starting point of a subarray.
+    // It goes up to `numElements - 1` because the inner loop needs at least one element after `outerIndex`.
+    for (let outerIndex = 0; outerIndex < numElements - 1; outerIndex++) {
+        // Initialize the running sum and XOR for the current subarray, starting with the element at `outerIndex`.
+        let currentSum = dataArray[outerIndex];
+        let currentXor = dataArray[outerIndex];
 
-        // Inner loop to extend the current subarray
-        for(var endPointer = startPointer + 1; endPointer < sequenceLength; endPointer++)
-        {
-            // Update the cumulative sum
-            cumulativeSum += integerValues[endPointer] ;
-            // Update the bitwise aggregation using XOR
-            bitwiseAggregation ^= integerValues[endPointer] ;
+        // Inner loop extends the subarray from `outerIndex + 1` to the end of the `dataArray`.
+        for (let innerIndex = outerIndex + 1; innerIndex < numElements; innerIndex++) {
+            // Add the next element to the running sum.
+            currentSum += dataArray[innerIndex];
+            // XOR the next element with the running XOR.
+            currentXor ^= dataArray[innerIndex];
 
-            // Check if the cumulative sum equals the bitwise aggregation
-            if (cumulativeSum === bitwiseAggregation)
-            {
-                matchedSubarrays++ ; // Increment the counter if the condition is met
+            // If the current sum of the subarray equals its current XOR, increment the result counter.
+            if (currentSum === currentXor) {
+                resultCounter++;
             }
         }
     }
 
-    // Display the final computed value to the console
-    console.log(matchedSubarrays + sequenceLength) ;
+    // Output the final calculated value.
+    // The problem statement requires adding the total number of elements (`numElements`) to the `resultCounter`.
+    console.log(resultCounter + numElements);
 }

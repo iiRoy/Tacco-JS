@@ -3,65 +3,57 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
 
-let accumulatedData = '';
+let inputBuffer = '';
 let linePointer = 0;
 
-process.stdin.on('data', incomingChunk => {
-    accumulatedData += incomingChunk;
+process.stdin.on('data', incomingData => {
+    inputBuffer += incomingData;
 });
 
 process.stdin.on('end', () => {
-    accumulatedData = accumulatedData.split('\n');
-    initiateProcessing();
+    inputBuffer = inputBuffer.split('\n');
+    executeProgram();
 });
 
-function retrieveNextDatum() {
-    return accumulatedData[linePointer++];
+function obtainLine() {
+    return inputBuffer[linePointer++];
 }
 
-const calculateMaxScore = (limit, costs, rewards) => {
-    const memoizationCache = new Map();
+function calculateOptimalScore(currentCapacity, itemCosts, itemRewards, valueCache) {
+    if (valueCache[currentCapacity] !== undefined) {
+        return valueCache[currentCapacity];
+    }
 
-    const deriveScore = (currentGoal) => {
-        if (currentGoal < 0) {
-            return -Infinity; // Indicate an invalid state or path
-        }
-        if (currentGoal === 0) {
-            return 0;
-        }
-        if (memoizationCache.has(currentGoal)) {
-            return memoizationCache.get(currentGoal);
-        }
+    if (currentCapacity === 0) {
+        return 0;
+    }
 
-        let bestScoreForGoal = currentGoal; // Base value if no operations applied
+    let currentMaximum = currentCapacity;
 
-        for (let i = 0; i < 3; i++) {
-            const expenditure = costs[i];
-            const gain = rewards[i];
-
-            if (currentGoal >= expenditure) {
-                const candidateScore = deriveScore(currentGoal - expenditure) + gain;
-                if (candidateScore > bestScoreForGoal) {
-                    bestScoreForGoal = candidateScore;
-                }
+    itemCosts.forEach((costEntry, index) => {
+        if (currentCapacity >= costEntry) {
+            let subProblemValue = calculateOptimalScore(currentCapacity - costEntry, itemCosts, itemRewards, valueCache);
+            let potentialValue = subProblemValue + itemRewards[index];
+            if (potentialValue > currentMaximum) {
+                currentMaximum = potentialValue;
             }
         }
+    });
 
-        memoizationCache.set(currentGoal, bestScoreForGoal);
-        return bestScoreForGoal;
-    };
+    valueCache[currentCapacity] = currentMaximum;
+    return currentMaximum;
+}
 
-    return deriveScore(limit);
-};
+function executeProgram() {
+    const initialCapacity = parseInt(obtainLine(), 10);
+    const firstItemCosts = obtainLine().split(' ').map(Number);
+    const firstItemRewards = obtainLine().split(' ').map(Number);
 
+    const cacheOne = new Array(initialCapacity + 1).fill(undefined);
+    const intermediateResult = calculateOptimalScore(initialCapacity, firstItemCosts, firstItemRewards, cacheOne);
 
-function initiateProcessing() {
-    const initialTarget = parseInt(retrieveNextDatum(), 10);
-    const firstOptionSet = retrieveNextDatum().split(' ').map(numStr => parseInt(numStr, 10));
-    const secondOptionSet = retrieveNextDatum().split(' ').map(numStr => parseInt(numStr, 10));
+    const cacheTwo = new Array(intermediateResult + 1).fill(undefined);
+    const finalOutcome = calculateOptimalScore(intermediateResult, firstItemRewards, firstItemCosts, cacheTwo);
 
-    const intermediateResult = calculateMaxScore(initialTarget, firstOptionSet, secondOptionSet);
-    const finalOutcome = calculateMaxScore(intermediateResult, secondOptionSet, firstOptionSet);
-
-    process.stdout.write(finalOutcome.toString() + '\n');
+    console.log(finalOutcome);
 }

@@ -1,36 +1,41 @@
-function computeResult(dataSource) {
-  const textLines = dataSource.split('\n');
+function processInput(rawData) {
+  const lineSegments = rawData.split('\n');
+  const initialParameters = lineSegments[0].split(' ').map(Number);
+  const upperBoundary = initialParameters[0] + 1;
+  const desiredSum = initialParameters[1];
+  const numericSequence = lineSegments[1].split(' ').map(Number);
 
-  const parameterLine = textLines[0];
-  const dataPointLine = textLines[1];
-
-  const parsedParameters = parameterLine.split(' ').map(Number);
-
-  const maxConsiderationCount = parsedParameters[0];
-  const thresholdValue = parsedParameters[1];
-
-  const numericalSequence = dataPointLine.split(' ').map(Number);
-
-  const effectiveIterationLimit = maxConsiderationCount + 1;
-
-  let currentAccumulatedValue = 0;
-  const derivedCumulativeSums = Array.from({ length: effectiveIterationLimit }, (_, idx) => {
-    if (idx < numericalSequence.length) {
-      currentAccumulatedValue += numericalSequence[idx];
+  function findFirstExceedingIndex(
+    sequenceData,
+    targetValue,
+    currentCumulative = 0,
+    currentIndex = 0
+  ) {
+    if (currentIndex >= sequenceData.length) {
+      return -1;
     }
-    return currentAccumulatedValue;
-  });
 
-  const matchingPosition = derivedCumulativeSums.findIndex(sum => sum >= thresholdValue);
+    const nextCumulative = currentCumulative + sequenceData[currentIndex];
 
-  let finalReportedValue;
-  if (matchingPosition !== -1) {
-    finalReportedValue = matchingPosition + 1;
-  } else {
-    finalReportedValue = maxConsiderationCount;
+    if (nextCumulative >= targetValue) {
+      return currentIndex + 1;
+    }
+
+    return findFirstExceedingIndex(
+      sequenceData,
+      targetValue,
+      nextCumulative,
+      currentIndex + 1
+    );
   }
 
-  console.log(finalReportedValue);
+  const resultPosition = findFirstExceedingIndex(numericSequence, desiredSum);
+
+  if (resultPosition !== -1) {
+    console.log(resultPosition);
+  } else {
+    console.log(upperBoundary - 1);
+  }
 }
 
-computeResult(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

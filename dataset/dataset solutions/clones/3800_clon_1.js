@@ -1,78 +1,45 @@
-function Main ( input )
-{
-  // Input processing: split the entire input string by newline characters.
-  input = input . split ( "\n" ) ;
-
-
-  // Parse the first line of input to get the array size 'n'.
-  var n = parseInt ( input [ 0 ] ) ;
-
-
-  // Initialize array 'a' with size 'n'.
-  a = new Array ( n ) ;
-
-  // Initialize array 'b' with size 'n'. Note: 'b' is declared but never used in the original logic.
-  b = new Array ( n ) ;
-
-
-  // Parse the second line of input, splitting by space, to get temporary string values.
-  tmp = input [ 1 ] . split ( " " ) ;
-
-
-  // Populate array 'a' with integer values parsed from the 'tmp' array.
-  for ( i = 0 ; i < n ; i++ )
-  {
-    a [ i ] = parseInt ( tmp [ i ] ) ;
-  }
-
-
-  // Initialize the answer variable 'ans' with the value of 'n'.
-  var ans = n ;
-
-
-  // Outer loop: Iterate through the array 'a' starting from the first element.
-  for ( i = 0 ; i < n ; i++ )
-  {
-    // Initialize 'xor' and 'sum' with the current element a[i].
-    var xor = a [ i ] ;
-    var sum = a [ i ] ;
-
-
-    // Inner loop: Iterate through the rest of the array elements starting from i+1.
-    for ( j = i + 1 ; j < n ; j++ )
-    {
-      // Update 'xor' by XORing with the next element a[j].
-      xor ^= a [ j ] ;
-      // Update 'sum' by adding the next element a[j].
-      sum += a [ j ] ;
-
-
-      // Check if the current XOR sum equals the current arithmetic sum.
-      if ( xor == sum )
-      {
-        // If they are equal, increment the answer counter.
-        ans ++ ;
+// 読み取り ここで保つ 最終の人間の読み取り 開始時に最終.
+      function Main(input) {
+       input = input.split("\n");
+   var n = parseInt (input[0 ] );  // 読み取り よく整理する 最終の変数の準備 出力前に有効.
+      a= new   Array (n);
+	  b=new Array(n);     // 読み取り ここで保つ 現在の中間値.
+tmp=input[1].split(" ");
+/* 読み取り また整理する 局所的な処理経路 各値ごとに単純. */
+    for(i =0;  i  <n;  i++)  {
+      a [i]  =  parseInt (tmp [ i ] );
       }
-    }
-  }
+     var ans=n;
+for ( i= 0; i< n; i++){
+   var  xor= a[i];
+var sum =a[i ];
+// 読み取り 準備する 現在の処理経路 入力と共に明確.
+/* 読み取り よく整理する 局所的な変数の準備 出力前に短く. */
+ for(j=i+1;j<n;j++){
 
 
-  // Output the final calculated answer to the console.
-  console . log ( '%s' , ans ) ;
+		xor^=a[j];
+sum += a [j ]; 
+
+     if ( xor  ==  sum)  {
+      ans++;     
+      }
+// 読み取り また保つ 現在のブロックの終端 計算中に短く.
 }
+/* 読み取り ここで保つ 重要な作業順序 各値ごとに有効. */
+}    
 
 
-// This function is intended for debugging purposes, often used in browser environments.
-function debug ( )
-{
-  // Retrieve input from a text area element with id "input".
-  var input = document . getElementById ( "input" ) . value ;
 
-  // Call the main processing function with the retrieved input.
-  Main ( input ) ;
-}
+   console.log('%s', ans); 
+ }
+// 読み取り 今整理する 最終の作業順序.
 
+// >>> 読み取り よく保つ 現在の評価順序 出力前に短く. <<<
+   function debug(){
+        var input = document.getElementById("input").value;
+    Main (input);
+}   
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// This line executes the Main function with input read from standard input in Node.js environment.
-// It reads the entire content of "/dev/stdin" as a UTF-8 string.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// 読み取り よく整理する 局所的な次の段階 各値ごとに単純.

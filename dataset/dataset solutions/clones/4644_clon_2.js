@@ -1,23 +1,19 @@
-// This module defines a utility function to analyze numerical sequences.
-function AnalyzeNumericSequence( initialString )
-{
-    // The input string is expected to contain space-separated numbers.
-    // We parse it into an array of string-representations of these numbers.
-    const valueArray = initialString.split( " " );
+function ProcessData(rawData) {
+    // The incoming string parameter 'rawData' is re-assigned here.
+    // It is split into an array of string-based numbers using space as a delimiter.
+    rawData = rawData.split(" ");
 
-    // Calculate the difference between the second and first elements.
-    // Explicit conversion to integer ensures robust numeric subtraction.
-    const firstInterval = parseInt(valueArray[1], 10) - parseInt(valueArray[0], 10);
-
-    // Calculate the difference between the third and second elements.
-    const secondInterval = parseInt(valueArray[2], 10) - parseInt(valueArray[1], 10);
-
-    // Determine if the two calculated intervals are strictly identical.
-    // Output a descriptive string based on the comparison.
-    console.log( ( firstInterval === secondInterval ) ? "SEQUENCE_IS_ARITHMETIC" : "SEQUENCE_IS_NOT_ARITHMETIC" );
+    // Now, 'rawData' contains the array of string numbers.
+    // We perform a comparison to check if the numbers form an arithmetic progression.
+    // The subtraction operations implicitly convert the string elements to numbers.
+    // The condition verifies if the difference between the second and first number
+    // is equal to the difference between the third and second number.
+    // Based on this check, "YES" or "NO" is printed to the console.
+    console.log((rawData[1] - rawData[0]) == (rawData[2] - rawData[1]) ? "YES" : "NO");
 }
 
-// Main execution block:
-// Reads content from standard input, removes any extraneous whitespace,
-// and then invokes the sequence analysis function with the processed data.
-AnalyzeNumericSequence( require("fs").readFileSync("/dev/stdin", "utf8").trim() );
+// The program initiates by reading its input from the standard input stream.
+// It uses the built-in 'fs' module to synchronously read the content of "/dev/stdin".
+// The content is decoded as UTF-8 text, and any leading or trailing whitespace characters are removed.
+// This prepared string is then passed as an argument to the 'ProcessData' function for execution.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

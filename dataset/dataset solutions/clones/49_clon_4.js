@@ -1,45 +1,41 @@
-((sourceData) => {
-  const extractNumericList = (textSegment) => textSegment.split(' ').map(Number);
+const subtractPoints = (firstPoint, secondPoint) => ({
+  x: secondPoint.x - firstPoint.x,
+  y: secondPoint.y - firstPoint.y,
+});
 
-  const determineVector = (terminus, origin) => [
-    terminus[0] - origin[0],
-    terminus[1] - origin[1],
-  ];
+const computeCrossProductZ = (vectorOne, vectorTwo) =>
+  vectorOne.x * vectorTwo.y - vectorOne.y * vectorTwo.x;
 
-  const calculateCrossProduct = (vecOne, vecTwo) =>
-    vecOne[0] * vecTwo[1] - vecOne[1] * vecTwo[0];
+(function(sourceData) {
+  const allInputLines = sourceData.replace(/\n$/, '').split('\n');
 
-  const evaluatePointInTriangle = (coordinateSequence) => {
-    const pointAlpha = [coordinateSequence[0], coordinateSequence[1]];
-    const pointBeta = [coordinateSequence[2], coordinateSequence[3]];
-    const pointGamma = [coordinateSequence[4], coordinateSequence[5]];
-    const queryPoint = [coordinateSequence[6], coordinateSequence[7]];
+  for (const currentInputEntry of allInputLines) {
+    const coordinateSet = currentInputEntry.split(' ').map(Number);
 
-    const edgeAB = determineVector(pointBeta, pointAlpha);
-    const pointToBeta = determineVector(queryPoint, pointBeta);
+    const pointA = { x: coordinateSet[0], y: coordinateSet[1] };
+    const pointB = { x: coordinateSet[2], y: coordinateSet[3] };
+    const pointC = { x: coordinateSet[4], y: coordinateSet[5] };
+    const pointTest = { x: coordinateSet[6], y: coordinateSet[7] };
 
-    const edgeBC = determineVector(pointGamma, pointBeta);
-    const pointToGamma = determineVector(queryPoint, pointGamma);
+    const vectorAB = subtractPoints(pointA, pointB);
+    const vectorAC = subtractPoints(pointA, pointC);
+    const vectorAP = subtractPoints(pointA, pointTest);
 
-    const edgeCA = determineVector(pointAlpha, pointGamma);
-    const pointToAlpha = determineVector(queryPoint, pointAlpha);
+    const areaDivisor = computeCrossProductZ(vectorAB, vectorAC);
 
-    const orientOne = calculateCrossProduct(edgeAB, pointToBeta);
-    const orientTwo = calculateCrossProduct(edgeBC, pointToGamma);
-    const orientThree = calculateCrossProduct(edgeCA, pointToAlpha);
+    if (areaDivisor === 0) {
+      console.log('NO');
+      continue;
+    }
 
-    const allArePositive = orientOne > 0 && orientTwo > 0 && orientThree > 0;
-    const allAreNegative = orientOne < 0 && orientTwo < 0 && orientThree < 0;
+    const lambdaV = computeCrossProductZ(vectorAP, vectorAC) / areaDivisor;
+    const lambdaW = computeCrossProductZ(vectorAB, vectorAP) / areaDivisor;
+    const lambdaU = 1 - lambdaV - lambdaW;
 
-    return (allArePositive || allAreNegative) ? 'YES' : 'NO';
-  };
-
-  sourceData
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map(extractNumericList)
-    .map(evaluatePointInTriangle)
-    .forEach(outcome => console.log(outcome));
-
+    if (lambdaU > 0 && lambdaV > 0 && lambdaW > 0) {
+      console.log('YES');
+    } else {
+      console.log('NO');
+    }
+  }
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

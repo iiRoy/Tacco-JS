@@ -1,109 +1,112 @@
-const UNREACHABLE_PATH_WEIGHT = Number.MAX_SAFE_INTEGER;
-const INITIAL_COLOR_NODE = "0";
-const ALTERNATE_COLOR_NODE = "1";
+var inputLines = [];
+var ioModule = require('readline');
 
-let inputBuffer = [];
+// Helper function to create and initialize a 2D array (matrix)
+function createMatrix(rows, cols, initialValue) {
+    let matrix = new Array(rows);
+    for (let r = 0; r < rows; r++) {
+        matrix[r] = new Array(cols).fill(initialValue);
+    }
+    return matrix;
+}
 
-const ioHandlerModule = require('readline');
+// Helper function to determine the opposite color
+function getOppositeColor(currentColorValue) {
+    return currentColorValue === "0" ? "1" : "0";
+}
 
-const inputProcessor = ioHandlerModule.createInterface({
+// Define constants for clarity and maintainability
+const UNREACHABLE_EDGE_COST = Infinity;
+const STARTING_NODE_INDEX = 0;
+const COLOR_VALUE_ZERO = "0";
+const COLOR_VALUE_ONE = "1";
+const UNVISITED_NODE_MARKER = "";
+
+var interfaceHandler = ioModule.createInterface({
     input: process.stdin,
     output: process.stdout,
-    terminal: false
 });
 
-inputProcessor.on('line', (currentInputLine) => {
-    inputBuffer.push(currentInputLine.trim());
+interfaceHandler.on('line', function (currentLine) {
+    inputLines.push(currentLine);
 });
 
-function parseNumbersFromString(lineString) {
-    return lineString.split(" ").map(segment => parseInt(segment, 10));
-}
+interfaceHandler.on('close', function () {
+    var nodeCount = Number(inputLines[0]);
+    inputLines.shift(); // Remove the first line (nodeCount) as it's already processed
 
-function getFlippedColor(originalColor) {
-    return originalColor === INITIAL_COLOR_NODE ? ALTERNATE_COLOR_NODE : INITIAL_COLOR_NODE;
-}
+    // Parse the remaining input lines into an array of edge data
+    var edgeConnections = inputLines.map(lineString => {
+        const stringParts = lineString.split(" ");
+        return stringParts.map(value => parseInt(value, 10));
+    });
 
-inputProcessor.on('close', () => {
-    if (inputBuffer.length === 0) {
-        console.error("Error: No input lines provided. Exiting.");
-        return;
+    // Initialize the adjacency cost matrix with a large value for unreachable edges
+    var adjacencyCosts = createMatrix(nodeCount, nodeCount, UNREACHABLE_EDGE_COST);
+
+    // Set the cost from a node to itself as 0
+    for (var i = 0; i < nodeCount; i++) {
+        adjacencyCosts[i][i] = 0;
     }
 
-    const numNodes = parseInt(inputBuffer[0], 10);
+    // Populate the adjacency matrix with edge weights from the input
+    // The problem implies N-1 edges for N nodes, forming a tree structure.
+    for (var edgeIdx = 0; edgeIdx < nodeCount - 1; edgeIdx++) {
+        var currentEdgeData = edgeConnections[edgeIdx];
+        var nodeA = currentEdgeData[0];
+        var nodeB = currentEdgeData[1];
+        var weight = currentEdgeData[2];
 
-    if (isNaN(numNodes) || numNodes <= 0) {
-        console.error(`Error: Invalid number of nodes '${inputBuffer[0]}' specified. Must be a positive integer.`);
-        return;
+        // Adjust node indices to be 0-based
+        var adjustedNodeA = nodeA - 1;
+        var adjustedNodeB = nodeB - 1;
+
+        adjacencyCosts[adjustedNodeA][adjustedNodeB] = weight;
+        adjacencyCosts[adjustedNodeB][adjustedNodeA] = weight; // Graph is undirected
     }
 
-    const remainingInputLines = inputBuffer.slice(1);
+    // Array to store the assigned color for each node
+    var assignedNodeColors = Array(nodeCount).fill(UNVISITED_NODE_MARKER);
 
-    const edgeDefinitions = remainingInputLines.map(line => parseNumbersFromString(line));
+    // Initialize the processing queue for traversal (DFS-like due to .pop())
+    var traversalQueue = [];
 
-    let adjacencyMatrix = Array(numNodes).fill(null).map(() => Array(numNodes).fill(UNREACHABLE_PATH_WEIGHT));
+    // Start the traversal from the designated initial node (node 0)
+    assignedNodeColors[STARTING_NODE_INDEX] = COLOR_VALUE_ZERO;
+    traversalQueue.push([STARTING_NODE_INDEX, COLOR_VALUE_ZERO]);
 
-    for (let nodeVertexIndex = 0; nodeVertexIndex < numNodes; nodeVertexIndex++) {
-        adjacencyMatrix[nodeVertexIndex][nodeVertexIndex] = 0;
-    }
+    // Perform the graph traversal
+    while (traversalQueue.length > 0) {
+        var currentQueueItem = traversalQueue.pop();
+        var currentNode = currentQueueItem[0];
+        var currentNodeColor = currentQueueItem[1];
 
-    for (let edgeIndex = 0; edgeIndex < edgeDefinitions.length; edgeIndex++) {
-        const currentEdge = edgeDefinitions[edgeIndex];
-        if (currentEdge.length < 3) {
-            console.warn(`Warning: Malformed edge definition on line ${edgeIndex + 2}. Skipping.`);
-            continue;
-        }
+        // Iterate through all potential neighbors of the current node
+        for (var neighborIdx = 0; neighborIdx < nodeCount; neighborIdx++) {
+            var neighborStatus = assignedNodeColors[neighborIdx];
+            var costToNeighbor = adjacencyCosts[currentNode][neighborIdx];
 
-        const [sourceVtxRaw, targetVtxRaw, edgeVal] = currentEdge;
-
-        const sourceVtx = sourceVtxRaw - 1;
-        const targetVtx = targetVtxRaw - 1;
-
-        if (sourceVtx < 0 || sourceVtx >= numNodes || targetVtx < 0 || targetVtx >= numNodes) {
-             console.warn(`Warning: Edge connects to out-of-bounds node index (${sourceVtxRaw}, ${targetVtxRaw}). Skipping.`);
-             continue;
-        }
-
-        adjacencyMatrix[sourceVtx][targetVtx] = edgeVal;
-        adjacencyMatrix[targetVtx][sourceVtx] = edgeVal;
-    }
-
-    let outputColors = Array(numNodes).fill("");
-
-    const startingVertex = 0; // The problem implies starting from node 0 (1-based in input, 0-based here)
-
-    outputColors[startingVertex] = INITIAL_COLOR_NODE;
-
-    let traversalStack = [[startingVertex, outputColors[startingVertex]]];
-
-    while (traversalStack.length > 0) {
-        const currentTraversalItem = traversalStack.pop();
-        const activeNodeIdx = currentTraversalItem[0];
-        const assignedColor = currentTraversalItem[1];
-
-        for (let neighborIdx = 0; neighborIdx < numNodes; neighborIdx++) {
-            const edgeWeightToNeighbor = adjacencyMatrix[activeNodeIdx][neighborIdx];
-
-            const isNeighborAlreadyColored = outputColors[neighborIdx] !== "";
-            const isNoDirectEdge = edgeWeightToNeighbor === UNREACHABLE_PATH_WEIGHT;
-
-            if (isNeighborAlreadyColored || isNoDirectEdge) {
+            // Skip if the neighbor is already colored or if there's no direct edge
+            if (neighborStatus !== UNVISITED_NODE_MARKER || costToNeighbor === UNREACHABLE_EDGE_COST) {
                 continue;
             }
 
-            let newColorForNeighbor;
-            if (edgeWeightToNeighbor % 2 === 0) {
-                newColorForNeighbor = assignedColor;
-            } else {
-                newColorForNeighbor = getFlippedColor(assignedColor);
+            var newColorForNeighbor;
+            // Determine the neighbor's color based on the edge weight parity
+            if (costToNeighbor % 2 === 0) {
+                newColorForNeighbor = currentNodeColor;
+            } else { // Edge weight is odd
+                newColorForNeighbor = getOppositeColor(currentNodeColor);
             }
 
-            outputColors[neighborIdx] = newColorForNeighbor;
-            traversalStack.push([neighborIdx, newColorForNeighbor]);
+            // Assign the color and add the neighbor to the queue for further processing
+            assignedNodeColors[neighborIdx] = newColorForNeighbor;
+            traversalQueue.push([neighborIdx, newColorForNeighbor]);
         }
     }
 
-    for (let nodeVertexIndex = 0; nodeVertexIndex < outputColors.length; nodeVertexIndex++) {
-        console.log(outputColors[nodeVertexIndex]);
+    // Output the final assigned colors for all nodes
+    for (var outputIndex = 0; outputIndex < assignedNodeColors.length; outputIndex++) {
+        console.log(assignedNodeColors[outputIndex]);
     }
 });

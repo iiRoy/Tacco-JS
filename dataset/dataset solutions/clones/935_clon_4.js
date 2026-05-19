@@ -1,89 +1,71 @@
-const inputReader = require('readline');
-const outputDisplay = console.log;
-
-async function initiateSequenceProcessing() {
-    const dataStreamHandler = inputReader.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        crlfDelay: Infinity
-    });
-
-    let collectedDataSegments = [];
-    for await (const segment of dataStreamHandler) {
-        collectedDataSegments.push(segment);
-    }
-
-    collectedDataSegments.shift();
-
-    processDataSegmentPairs(collectedDataSegments);
+var log = console.log;
+if (typeof process != "undefined") {
+	var inputBuffer = "";
+	process.stdin.resume();
+	process.stdin.setEncoding('utf8');
+	process.stdin.on('data', function (chunk) {
+		inputBuffer += chunk;
+	});
+	process.stdin.on('end', function () {
+		var allInputLines = inputBuffer.split("\n");
+		processInputChunks(allInputLines);
+	});
 }
 
-function processDataSegmentPairs(remainingSegments) {
-    if (remainingSegments.length === 0) {
-        return;
-    }
+function processInputChunks(allInputLines) {
+    const relevantDataSegments = allInputLines.slice(1);
 
-    try {
-        const firstSource = remainingSegments[0];
-        const secondSource = remainingSegments[1];
+    for (let segmentIndex = 0; segmentIndex < relevantDataSegments.length; segmentIndex += 2) {
+        try {
+            const firstSequence = relevantDataSegments[segmentIndex].replace(/[^a-z]/g, '');
+            const secondSequence = relevantDataSegments[segmentIndex + 1].replace(/[^a-z]/g, '');
 
-        const cleansedPrimary = extractAlphaLowercase(firstSource);
-        const cleansedSecondary = extractAlphaLowercase(secondSource);
+            if (firstSequence.length === 0 || secondSequence.length === 0) {
+                log(undefined);
+            } else {
+                const memoizationStore = new Map();
 
-        const finalMetricValue = deriveComparativeMetric(cleansedPrimary, cleansedSecondary);
-        outputDisplay(finalMetricValue);
-
-        processDataSegmentPairs(remainingSegments.slice(2));
-
-    } catch (issue) {
-        outputDisplay(issue);
-        return;
-    }
-}
-
-function extractAlphaLowercase(sourceString) {
-    return sourceString.replace(/[^a-z]/g, '');
-}
-
-function deriveComparativeMetric(sequenceA, sequenceB) {
-    const lenA = sequenceA.length;
-    const lenB = sequenceB.length;
-    const memoMap = new Map();
-
-    function calculateRecursiveMetric(idxA, idxB) {
-        if (idxA < 0 || idxB < 0) {
-            return 0;
+                const finalMetricValue = calculateMetric(
+                    firstSequence.length - 1,
+                    secondSequence.length - 1,
+                    firstSequence,
+                    secondSequence,
+                    memoizationStore
+                );
+                log(finalMetricValue);
+            }
+        } catch (errorInstance) {
+            log(errorInstance);
         }
-
-        const currentKey = `${idxA}-${idxB}`;
-        if (memoMap.has(currentKey)) {
-            return memoMap.get(currentKey);
-        }
-
-        const currentCharacterMatch = (sequenceA.codePointAt(idxA) === sequenceB.codePointAt(idxB) ? 1 : 0);
-
-        let computedResult;
-        if (idxA === 0 && idxB === 0) {
-            computedResult = currentCharacterMatch;
-        } else if (idxA === 0) {
-            computedResult = Math.max(calculateRecursiveMetric(idxA, idxB - 1), currentCharacterMatch);
-        } else if (idxB === 0) {
-            computedResult = Math.max(calculateRecursiveMetric(idxA - 1, idxB), currentCharacterMatch);
-        } else {
-            const valueFromAbove = calculateRecursiveMetric(idxA - 1, idxB);
-            const valueFromLeft = calculateRecursiveMetric(idxA, idxB - 1);
-            const combinedPreviousValues = Math.max(valueFromAbove, valueFromLeft) + currentCharacterMatch;
-            const capLimit = Math.min(idxA, idxB) + 1;
-            computedResult = Math.min(combinedPreviousValues, capLimit);
-        }
-
-        memoMap.set(currentKey, computedResult);
-        return computedResult;
     }
-
-    return calculateRecursiveMetric(lenA - 1, lenB - 1);
 }
 
-if (typeof require !== 'undefined' && require.main === module) {
-    initiateSequenceProcessing();
+function calculateMetric(rowIdx, colIdx, seqA, seqB, memoCache) {
+    const cacheKey = `${rowIdx},${colIdx}`;
+
+    if (memoCache.has(cacheKey)) {
+        return memoCache.get(cacheKey);
+    }
+
+    const currentMatchIndicator = (seqA.charAt(rowIdx) === seqB.charAt(colIdx) ? 1 : 0);
+    let computedResult;
+
+    if (rowIdx === 0 && colIdx === 0) {
+        computedResult = currentMatchIndicator;
+    } else if (rowIdx === 0) {
+        computedResult = Math.max(calculateMetric(rowIdx, colIdx - 1, seqA, seqB, memoCache), currentMatchIndicator);
+    } else if (colIdx === 0) {
+        computedResult = Math.max(calculateMetric(rowIdx - 1, colIdx, seqA, seqB, memoCache), currentMatchIndicator);
+    } else {
+        const valueFromAbove = calculateMetric(rowIdx - 1, colIdx, seqA, seqB, memoCache);
+        const valueFromLeft = calculateMetric(rowIdx, colIdx - 1, seqA, seqB, memoCache);
+        
+        computedResult = Math.min(
+            Math.max(valueFromAbove, valueFromLeft) + currentMatchIndicator,
+            Math.min(rowIdx, colIdx) + 1
+        );
+    }
+
+    memoCache.set(cacheKey, computedResult);
+    return computedResult;
 }

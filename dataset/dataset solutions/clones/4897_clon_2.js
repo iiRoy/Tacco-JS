@@ -1,44 +1,40 @@
-// Function to analyze a given character sequence for a specific pattern.
-function ProcessString( textSequence )
-{
-  // Convert the incoming string into an array of individual characters.
-  textSequence = textSequence.split( "" ) ;
+function ProcessInput(sourceText) {
+    // Convert the incoming string into an array of individual characters.
+    let charArray = sourceText.split("");
 
-  // Initialize a state tracking variable.
-  let stateIndicator = 0 ;
+    // Initialize a numeric state tracker.
+    // 0: Initial state, searching for the first specific character.
+    // 1: Intermediate state, the first character was found, now searching for the second.
+    // 2: Final state, both specific characters were found in order.
+    let stateIndicator = 0;
 
-  // Iterate over each character in the sequence.
-  for ( let charIndex = 0 ; charIndex < textSequence.length ; charIndex++ )
-  {
-    // Evaluate the current state to determine the next action.
-    switch ( stateIndicator )
-    {
-      case 0 : // Initial state: looking for the first character.
-        if ( textSequence[ charIndex ] === "C" )
-        {
-          stateIndicator++ ; // Transition to the next state.
+    // Iterate through each character in the character array.
+    for (let charIndex = 0; charIndex < charArray.length; charIndex++) {
+        // Evaluate the current state of the pattern search.
+        switch (stateIndicator) {
+            case 0: // If currently in the initial state (0)
+                // Check if the current character matches 'C'.
+                if (charArray[charIndex] === "C") {
+                    stateIndicator++; // Advance the state to 1.
+                }
+                break; // Exit the switch for this iteration.
+            case 1: // If currently in the intermediate state (1)
+                // Check if the current character matches 'F'.
+                if (charArray[charIndex] === "F") {
+                    stateIndicator = 2; // Set the state to 2, indicating pattern completion.
+                }
+                // No break here, as per original logic, if 'F' is not found, it implicitly continues to the next char in state 1.
         }
-        break ;
-
-      case 1 : // Intermediate state: first character found, now looking for the second.
-        if ( textSequence[ charIndex ] === "F" )
-        {
-          stateIndicator = 2 ; // Transition to the final success state.
-        }
-        break ;
     }
-  }
 
-  // After processing the entire sequence, check the final state.
-  if ( stateIndicator === 2 )
-  {
-    console.log( "Yes" ) ; // Pattern successfully detected.
-  }
-  else
-  {
-    console.log( "No" ) ; // Pattern not found.
-  }
+    // After processing all characters, check the final state indicator.
+    if (stateIndicator === 2) {
+        console.log("Yes"); // Output "Yes" if the pattern was successfully found.
+    } else {
+        console.log("No"); // Output "No" otherwise.
+    }
 }
 
-// Execute the string processing function with input from standard input.
-ProcessString( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) . trim() ) ;
+// Read the entire content from standard input, decode it as UTF-8,
+// remove leading/trailing whitespace, and then pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

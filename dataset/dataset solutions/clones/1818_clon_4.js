@@ -1,54 +1,63 @@
-const dataSource = require("fs").readFileSync(process.stdin.fd, "utf8");
-const parsedTokens = dataSource.trim().split(/\s+/).map(Number);
+"use strict";
+var inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
+var inputTokens = inputSource.trim().split(/ |\n/), tokenIndex = 0;
 
-process.stdout.write(computeResult(parsedTokens[0]).toString() + '\n');
+console.log(calculatePrimeFactorSummation().toString());
 
-function computeResult(targetValue) {
-    if (targetValue === 1) return 0;
-    if (targetValue === 2) return 1;
+function calculatePrimeFactorSummation() {
+    let initialValue = +inputTokens.shift();
 
-    let ultimateTally = 0;
-    let mutableTarget = targetValue;
-
-    const sieveLimit = Math.floor(Math.sqrt(targetValue));
-    const primeListing = generatePrimesSieve(sieveLimit);
-
-    for (let factorCandidate of primeListing) {
-        if (mutableTarget < factorCandidate * factorCandidate && mutableTarget > 1) {
-            break;
-        }
-
-        let currentExponent = 0;
-        while (mutableTarget % factorCandidate === 0) {
-            currentExponent++;
-            mutableTarget /= factorCandidate;
-        }
-
-        if (currentExponent > 0) {
-            const kValue = Math.floor((-1 + Math.sqrt(1 + 8 * currentExponent)) / 2);
-            ultimateTally += kValue;
-        }
+    if (initialValue === 1) {
+        return 0;
+    }
+    if (initialValue === 2) {
+        return 1;
     }
 
-    if (mutableTarget > 1) {
-        ultimateTally++;
-    }
+    let totalContribution = 0;
+    let currentNumber = initialValue;
+    let currentDivisor = 2;
 
-    return ultimateTally;
-}
-
-function generatePrimesSieve(upperBound) {
-    if (upperBound < 2) return [];
-    const isComposite = new Array(upperBound + 1).fill(false);
-    const discoveredPrimes = [];
-
-    for (let currentNumber = 2; currentNumber <= upperBound; currentNumber++) {
-        if (!isComposite[currentNumber]) {
-            discoveredPrimes.push(currentNumber);
-            for (let multiple = currentNumber * currentNumber; multiple <= upperBound; multiple += currentNumber) {
-                isComposite[multiple] = true;
+    // Iterate through potential prime divisors
+    // The loop continues as long as the square of the current divisor
+    // does not exceed the remaining number. This optimizes by only checking
+    // divisors up to the square root of the current number.
+    while (currentDivisor * currentDivisor <= currentNumber) {
+        // If currentDivisor is a factor of currentNumber
+        if (currentNumber % currentDivisor === 0) {
+            let exponentCount = 0;
+            // Count how many times currentDivisor divides currentNumber
+            while (currentNumber % currentDivisor === 0) {
+                exponentCount++;
+                currentNumber /= currentDivisor;
             }
+            // Calculate the largest integer 'k' such that the sum 1 + 2 + ... + k
+            // is less than or equal to exponentCount.
+            // The sum 1 + ... + k is k * (k + 1) / 2.
+            // We need k * (k + 1) / 2 <= exponentCount.
+            // This can be solved for k using the quadratic formula for k^2 + k - 2*exponentCount = 0.
+            // k = (-1 + sqrt(1 + 8*exponentCount)) / 2.
+            // We take the floor to get the largest integer k.
+            let sequenceLength = Math.floor((-1 + Math.sqrt(1 + 8 * exponentCount)) / 2);
+            totalContribution += sequenceLength;
+        }
+
+        // Increment currentDivisor:
+        // Check 2 first, then only odd numbers (3, 5, 7, ...)
+        if (currentDivisor === 2) {
+            currentDivisor = 3;
+        } else {
+            currentDivisor += 2;
         }
     }
-    return discoveredPrimes;
+
+    // If, after the loop, currentNumber is still greater than 1,
+    // it means the remaining currentNumber is a prime factor itself
+    // (and it must be greater than sqrt(initialValue)).
+    // In this case, its exponent is 1, and the sequenceLength for exponent 1 is 1.
+    if (currentNumber > 1) {
+        totalContribution++;
+    }
+
+    return totalContribution;
 }

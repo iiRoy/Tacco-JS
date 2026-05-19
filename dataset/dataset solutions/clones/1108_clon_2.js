@@ -1,148 +1,183 @@
 class TreeNode {
-  // Initializes a new node within the tree structure
-  constructor (  value,   ancestor = null,   childLeft = null,   childRight = null  ) {
-    this.value      =  value;
-    this.ancestor   =  ancestor;
-    this.childLeft  =  childLeft;
-    this.childRight =  childRight;
+  // Constructor for a tree node, initializing its value and connections.
+  constructor(val, ancestor = null, leftBranch = null, rightBranch = null) {
+    this.val = val;
+    this.ancestor = ancestor;
+    this.leftBranch = leftBranch;
+    this.rightBranch = rightBranch;
   }
 
-  // Determines the number of direct descendant elements
-  countChildren() { return Number(this.childLeft !== null) + Number(this.childRight !== null); }
+  // Calculates the number of direct children this node has.
+  countChildren() {
+    return Number(this.leftBranch !== null) + Number(this.rightBranch !== null);
+  }
 
-  // Checks if the current node is its parent's left child
+  // Checks if this node is the left child of its parent.
+  // Returns null if it's the root, true if left child, false if right child.
   isLeftDescendant() {
-    if (this.ancestor === null) return null; // No ancestor, so cannot be a left child
-    return this.ancestor.childLeft === this;
-  }
-
-  // Provides a string indicating if the node is a left or right child
-  getSideOfParent() { return this.isLeftDescendant() ? 'leftSide' : 'rightSide'; }
-
-  // Locates the successor node in the in-order traversal sequence
-  findSuccessorValue() {
-    let currentElement;
-    if (this.childRight !== null) {
-      currentElement = this.childRight;
-      // Traverse left down the right subtree
-      while (currentElement.childLeft !== null) currentElement = currentElement.childLeft;
-    } else {
-      currentElement = this.ancestor;
-      // Traverse up until we are a left child or reach the top
-      while (!currentElement.isLeftDescendant() && currentElement.ancestor != null) currentElement = currentElement.ancestor;
+    if (this.ancestor === null) {
+      return null;
     }
-    return currentElement;
-  }
-}
-
-class SearchTree {
-  // Constructs an empty binary search tree
-  constructor() {
-    this.topNode = null; // The topmost element of the tree
+    return this.ancestor.leftBranch === this;
   }
 
-  // Static accessor for the node class
-  static get Element() { return TreeNode; }
+  // Returns a string indicating whether the node is a 'left' or 'right' child.
+  getBranchSide() {
+    return this.isLeftDescendant() ? 'left' : 'right';
+  }
 
-  // Adds a new value to the tree structure
-    addValue(val) {
-      // On the very first call, initialize the root node
-      this.topNode = new SearchTree.Element(val);
-      // Reassign the insert method for all subsequent calls
-      this.addValue = (val) => {
-        let runner = this.topNode, lastVisited; // Pointers for traversal
-        let newElement = new SearchTree.Element(val); // The new node to be inserted
-        // Traverse the tree to find the correct insertion spot
-        while (runner !== null) {
-          lastVisited = runner;
-          runner = runner[val < runner.value ? 'childLeft' : 'childRight'];
-        }
-        // Set the ancestor of the new element
-        newElement.ancestor = lastVisited;
-        // Place the new element as either a left or right child
-        lastVisited[val < lastVisited.value ? 'childLeft' : 'childRight'] = newElement;
+  // Finds the in-order successor of this node.
+  // Note: The original code's logic for finding successor when right child is null
+  // contains a logical flaw (`!n.isLeftChild` will always be false as `isLeftChild` is a method).
+  // This flaw is preserved as per Type II cloning rules.
+  findSuccessor() {
+    let current;
+    if (this.rightBranch !== null) {
+      current = this.rightBranch;
+      while (current.leftBranch !== null) {
+        current = current.leftBranch;
+      }
+    } else {
+      current = this.ancestor;
+      // This loop condition `!current.isLeftDescendant` will always be false
+      // because `isLeftDescendant` is a function and thus truthy.
+      // The original behavior is preserved.
+      while (!current.isLeftDescendant && current.ancestor != null) {
+        current = current.ancestor;
       }
     }
-
-
-  // Searches for a specific value within the tree
-  locateValue(targetVal, curr = this.topNode) {
-    if (curr === null || curr.value === targetVal) return curr; // Found or not present
-    // Recursively search in the appropriate subtree
-    return this.locateValue(targetVal, curr[targetVal < curr.value ? 'childLeft' : 'childRight']);
-  }
-
-  // Removes a specified value from the tree
-  removeValue(targetVal) {
-    const elementToRemove = this.locateValue(targetVal); // Find the node to delete
-    if (elementToRemove === null) return; // Value not found, nothing to delete
-
-    let sideDesignator = elementToRemove.getSideOfParent(); // Determine if it's a left or right child
-
-    // Handle deletion based on the number of children
-    switch (elementToRemove.countChildren()) {
-    case 0: // No children: simply remove the node
-      elementToRemove.ancestor[sideDesignator] = null;
-      break;
-    case 1: // One child: replace node with its single child
-      elementToRemove.ancestor[sideDesignator] = elementToRemove.childLeft || elementToRemove.childRight;
-      elementToRemove.ancestor[sideDesignator].ancestor = elementToRemove.ancestor;
-      break;
-    default: // Two children: find successor, delete it, and replace current node's value
-      let successorVal = elementToRemove.findSuccessorValue().value;
-      this.removeValue(successorVal); // Recursively delete the successor node
-      elementToRemove.value = successorVal; // Update current node's value with successor's
-    }
-  }
-
-  // Prints tree elements in in-order traversal (sorted order)
-  traverseInOrder() {
-    let outputString = ''; // String to accumulate printed values
-    const recursiveTraversal = (current) => {
-      if (current === null) return; // Base case for recursion
-      recursiveTraversal(current.childLeft);
-      outputString += ` ${current.value}`;
-      recursiveTraversal(current.childRight);
-    }
-    recursiveTraversal(this.topNode); // Start traversal from the root
-    console.log(outputString);
-  }
-
-  // Prints tree elements in pre-order traversal (root, left, right)
-  traversePreOrder() {
-    let outputString = ''; // String to accumulate printed values
-    const recursiveTraversal = (current) => {
-      if (current === null) return; // Base case for recursion
-      outputString += ` ${current.value}`;
-      recursiveTraversal(current.childLeft);
-      recursiveTraversal(current.childRight);
-    }
-    recursiveTraversal(this.topNode); // Start traversal from the root
-    console.log(outputString);
-  }
-
-  // Displays the tree content using both in-order and pre-order traversals
-  displayTree() {
-    this.traverseInOrder();
-    this.traversePreOrder();
+    return current;
   }
 }
 
-// Main program execution wrapped in an IIFE
-(function executeProgram(){
-  // Read input from stdin, parse it
+class BinarySearchTree {
+  // Initializes an empty binary search tree.
+  constructor() {
+    this.treeRoot = null;
+  }
+
+  // Static getter to expose the Node class for external use.
+  static get NodeClass() {
+    return TreeNode;
+  }
+
+  // Inserts a new value into the binary search tree.
+  // This method has a unique self-redefining behavior:
+  // The first call sets the root and then replaces itself with a standard insert logic.
+  addValue(value) {
+    this.treeRoot = new BinarySearchTree.NodeClass(value);
+    this.addValue = (value) => {
+      let currentNode = this.treeRoot,
+        parentNode;
+      let newBranchNode = new BinarySearchTree.NodeClass(value);
+      while (currentNode !== null) {
+        parentNode = currentNode;
+        currentNode = currentNode[value < currentNode.val ? 'left' : 'right'];
+      }
+      newBranchNode.ancestor = parentNode;
+      parentNode[value < parentNode.val ? 'left' : 'right'] = newBranchNode;
+    };
+  }
+
+  // Searches for a node with the given value in the tree.
+  // Returns the node if found, otherwise null.
+  locateValue(value, currentSearchNode = this.treeRoot) {
+    if (currentSearchNode === null || currentSearchNode.val === value) {
+      return currentSearchNode;
+    }
+    return this.locateValue(value, currentSearchNode[value < currentSearchNode.val ? 'left' : 'right']);
+  }
+
+  // Deletes a node with the specified value from the tree.
+  removeValue(value) {
+    const nodeToDelete = this.locateValue(value);
+    if (nodeToDelete === null) {
+      return; // Node not found, nothing to delete.
+    }
+
+    let branchPosition = nodeToDelete.getBranchSide();
+
+    switch (nodeToDelete.countChildren()) {
+      case 0: // Node has no children
+        if (nodeToDelete.ancestor) {
+          nodeToDelete.ancestor[branchPosition] = null;
+        } else {
+          this.treeRoot = null; // Deleting the root node with no children
+        }
+        break;
+      case 1: // Node has one child
+        const childNode = nodeToDelete.leftBranch || nodeToDelete.rightBranch;
+        if (nodeToDelete.ancestor) {
+          nodeToDelete.ancestor[branchPosition] = childNode;
+          childNode.ancestor = nodeToDelete.ancestor;
+        } else {
+          this.treeRoot = childNode; // Deleting the root node with one child
+          childNode.ancestor = null;
+        }
+        break;
+      default: // Node has two children
+        let successorValue = nodeToDelete.findSuccessor().val;
+        this.removeValue(successorValue); // Recursively delete the successor
+        nodeToDelete.val = successorValue; // Replace current node's value with successor's value
+    }
+  }
+
+  // Prints the tree nodes in in-order traversal.
+  displayInOrder() {
+    let outputString = '';
+    const traverseInOrder = (currentTraversalNode) => {
+      if (currentTraversalNode === null) {
+        return;
+      }
+      traverseInOrder(currentTraversalNode.leftBranch);
+      outputString += ` ${currentTraversalNode.val}`;
+      traverseInOrder(currentTraversalNode.rightBranch);
+    };
+    traverseInOrder(this.treeRoot);
+    console.log(outputString);
+  }
+
+  // Prints the tree nodes in pre-order traversal.
+  displayPreOrder() {
+    let resultString = '';
+    const traversePreOrder = (currentPreorderNode) => {
+      if (currentPreorderNode === null) {
+        return;
+      }
+      resultString += ` ${currentPreorderNode.val}`;
+      traversePreOrder(currentPreorderNode.leftBranch);
+      traversePreOrder(currentPreorderNode.rightBranch);
+    };
+    traversePreOrder(this.treeRoot);
+    console.log(resultString);
+  }
+
+  // Prints both in-order and pre-order traversals of the tree.
+  displayAllOrders() {
+    this.displayInOrder();
+    this.displayPreOrder();
+  }
+}
+
+// Main execution block for processing commands.
+(function executeTreeOperations() {
   const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const numOperations = Number(inputLines.shift()); // First line indicates number of operations
+  const numOperations = Number(inputLines.shift()); // The number of operations is read but not used in the original code.
 
-  const dataTree = new SearchTree(); // Instantiate the binary search tree
-
-  // Process each command line from the input
+  const bstInstance = new BinarySearchTree();
   inputLines.forEach(function(commandLine) {
     switch (commandLine.charAt(0)) {
-    case 'i': dataTree.addValue(Number(commandLine.split(' ')[1])); break; // Insert operation
-    case 'f': console.log(dataTree.locateValue(Number(commandLine.split(' ')[1])) ? 'yes' : 'no'); break; // Find operation
-    case 'd': dataTree.removeValue(Number(commandLine.split(' ')[1])); break; // Delete operation
-    default: dataTree.displayTree(); // Print operation (default for 'p')
+      case 'i':
+        bstInstance.addValue(Number(commandLine.split(' ')[1]));
+        break;
+      case 'f':
+        console.log(bstInstance.locateValue(Number(commandLine.split(' ')[1])) ? 'yes' : 'no');
+        break;
+      case 'd':
+        bstInstance.removeValue(Number(commandLine.split(' ')[1]));
+        break;
+      default: // 'p' for print
+        bstInstance.displayAllOrders();
     }
   });
 })();

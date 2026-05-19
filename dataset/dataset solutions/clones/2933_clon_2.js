@@ -1,30 +1,37 @@
-function ProcessDataStream ( dataString ) {
-  // Extract the initial configuration values from the first line of the input
-  const maxPossibleId = parseInt( dataString.split( '\n' )[0].split( ' ' )[0] ); // Represents the total count of valid items
-  const totalConstraints = parseInt( dataString.split( '\n' )[0].split( ' ' )[1] ); // Denotes the number of filtering rules
+function ProcessInput(rawData) {
+  // Parse the initial configuration values from the first line of the input.
+  // The first number represents the total count of available items.
+  let totalItems = parseInt(rawData.split("\n")[0].split(" ")[0]);
+  // The second number indicates the total number of constraints or filtering conditions.
+  let numConstraints = parseInt(rawData.split("\n")[0].split(" ")[1]);
 
-  // Initialize the currently valid range based on the overall item count
-  let currentLowerBound = 1;
-  let currentUpperBound = maxPossibleId;
-
-  // Iterate through each subsequent line, which contains a new constraint
-  for ( let constraintIndex = 1; constraintIndex <= totalConstraints; constraintIndex++ ) {
-    // Parse the min and max values for the current constraint
-    const boundsArray = dataString.split( '\n' )[constraintIndex].split( ' ' ).map( ( strVal ) => Number( strVal ) );
-
-    let currentConstraintMin = boundsArray[0]; // The minimum allowed by this specific rule
-    let currentConstraintMax = boundsArray[1]; // The maximum allowed by this specific rule
-
-    // Update the overall valid range by finding the intersection with the current constraint
-    currentLowerBound = Math.max( currentConstraintMin, currentLowerBound );
-    currentUpperBound = Math.min( currentConstraintMax, currentUpperBound );
+  // Initialize the boundaries for the valid range.
+  // The lower bound starts at 1, as items are typically 1-indexed.
+  let currentMin = 1;
+  // The upper bound initially covers all available items.
+  let currentMax = totalItems;
+  
+  // Iterate through each constraint provided in the subsequent lines of the input.
+  for (let constraintIndex = 1; constraintIndex <= numConstraints; constraintIndex++) {
+    // Extract the current constraint pair (a minimum and a maximum value for this specific constraint).
+    let constraintPair = rawData.split("\n")[constraintIndex].split(" ").map((val) => Number(val));
+    // Store the minimum value from the current constraint.
+    let pairMin = constraintPair[0];
+    // Store the maximum value from the current constraint.
+    let pairMax = constraintPair[1];
+       
+    // Update the overall minimum boundary.
+    // The new minimum must satisfy both the previous overall minimum and the current constraint's minimum.
+    currentMin = Math.max(pairMin, currentMin);
+    // Update the overall maximum boundary.
+    // The new maximum must satisfy both the previous overall maximum and the current constraint's maximum.
+    currentMax = Math.min(pairMax, currentMax);
   }
-
-  // Calculate the final count of items that satisfy all constraints
-  const effectiveRangeLength = currentUpperBound - currentLowerBound + 1;
-
-  // Output the result, ensuring it's not negative (in case no valid items remain)
-  console.log( Math.max( effectiveRangeLength, 0 ) );
+  
+  // Calculate the final count of items that fall within the determined valid range.
+  // If the calculated range is invalid (e.g., currentMin > currentMax), the result should be 0.
+  console.log(Math.max((currentMax - currentMin + 1), 0));
 }
 
-ProcessDataStream( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the entire content from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

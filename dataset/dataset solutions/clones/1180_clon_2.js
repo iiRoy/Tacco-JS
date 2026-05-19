@@ -1,69 +1,62 @@
-/* This script initializes a data processing pipeline. */
-let receivedText = ''; // Stores all incoming data chunks.
+let rawData = ''; // String to accumulate all incoming data from stdin
 
-// Obtain the standard input stream.
+// Get a reference to the standard input stream
 const inputStream = process.stdin;
 
-// Begin the input stream operation.
-inputStream.beginReading();
+// Activate the input stream to start receiving data
+inputStream.resume();
 
-// Configure the character encoding for the stream.
-inputStream.configureEncoding( 'utf-8' );
+// Set the character encoding for the incoming data
+inputStream.setEncoding('utf-8');
 
-// Register an event handler for when data arrives.
-inputStream.registerEventHandler( 'data', ( dataPortion ) => {
-  receivedText += dataPortion; // Append the new data portion to our buffer.
-} );
+// Register an event listener for 'data' events
+inputStream.on('data', function(dataPortion) {
+  // Append each received chunk of data to our rawData string
+  rawData += dataPortion;
+});
 
-// Register an event handler for when the input stream ends.
-inputStream.registerEventHandler( 'end', () => {
+// Register an event listener for the 'end' event, which fires when all input has been received
+inputStream.on('end', function() {
+  // An array to store the calculated standard deviations for each data set
+  const resultsArray = [];
 
-  const resultCollection = []; // Array to hold calculated results.
-  // Split the entire received text into individual lines.
-  const parsedLines = receivedText.split( '\n' );
+  // Split the accumulated raw data into an array of individual lines
+  const linesOfData = rawData.split('\n');
 
-  // Iterate through the lines, processing pairs of lines.
-  for ( let currentIdx = 0;
-        currentIdx < parsedLines.length;
-        currentIdx += 2 )
-  {
-    // Parse the first number in the pair to get the count.
-    const countElements = Number.parseInt( parsedLines[ currentIdx ] );
+  // Iterate through the lines, processing two lines at a time:
+  // The first line contains 'n' (the count of numbers), the second contains the numbers themselves.
+  for (let idx = 0; idx < linesOfData.length; idx += 2) {
+    // Parse the first number on the current line as an integer, representing the count of numbers
+    const count = parseInt(linesOfData[idx]);
 
-    // If the count is zero, terminate processing.
-    if ( 0 === countElements )
-    {
+    // If the parsed count is 0, it signals the end of the input sets, so we break the loop
+    if (0 === count) {
       break;
     }
 
-    // Parse the second line in the pair into an array of numbers.
-    const numericValues = parsedLines[ currentIdx + 1 ]
-                            .split( " " )
-                            .map( Number );
+    // Parse the next line: split it by spaces and convert each part to a number
+    const numbersList = linesOfData[idx + 1].split(" ").map(Number);
 
-    let currentSum = 0.0; // Initialize sum for calculations.
-    // Calculate the sum of all elements.
-    for ( let elementIndex = 0; elementIndex < countElements; elementIndex++ )
-    {
-      currentSum += numericValues[ elementIndex ];
+    // Calculate the sum of all numbers in the current list
+    let totalValue = 0;
+    for (let innerIdx = 0; innerIdx < count; innerIdx++) {
+      totalValue += numbersList[innerIdx];
     }
 
-    // Compute the average value.
-    const averageValue = currentSum / countElements;
+    // Calculate the average (mean) of the numbers
+    const averageValue = totalValue / count;
 
-    // Reset sum for the next calculation (standard deviation part).
-    currentSum = 0.0;
-    // Calculate the sum of squared differences from the average.
-    for ( let elementIndex = 0; elementIndex < countElements; elementIndex++ )
-    {
-      currentSum += Math.pow( numericValues[ elementIndex ] - averageValue, 2 );
+    // Reset totalValue to calculate the sum of squared differences from the mean
+    totalValue = 0;
+    for (let innerIdx = 0; innerIdx < count; innerIdx++) {
+      // Add the square of the difference between each number and the average
+      totalValue += Math.pow(numbersList[innerIdx] - averageValue, 2);
     }
 
-    // Calculate the standard deviation and add to the results.
-    resultCollection.push( Math.sqrt( currentSum / countElements ) );
+    // Calculate the standard deviation (square root of the variance) and add it to our results array
+    resultsArray.push(Math.sqrt(totalValue / count));
   }
 
-  // Output all collected results, joined by newlines.
-  console.log( resultCollection.join( '\n' ) );
-
-} );
+  // Output all calculated standard deviations, each separated by a newline character
+  console.log(resultsArray.join('\n'));
+});

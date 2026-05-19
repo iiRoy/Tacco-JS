@@ -1,36 +1,82 @@
-function obtainNthValidSequence(sequenceOrdinal) {
-    const expandingSequences = [];
-
-    for (let singleDigit = 1; singleDigit <= 9; singleDigit++) {
-        expandingSequences.push(singleDigit);
+const checkDigits = (numValue) => {
+    const numString = String(numValue);
+    if (numString.length < 2) {
+        return true;
     }
 
-    let queuePosition = 0;
-    let collectedSequences = [];
+    return Array.from(numString).slice(1).every((digitChar, index) => {
+        const previousDigit = Number(numString[index]);
+        const currentDigit = Number(digitChar);
+        return Math.abs(previousDigit - currentDigit) <= 1;
+    });
+};
 
-    while (collectedSequences.length < sequenceOrdinal && queuePosition < expandingSequences.length) {
-        const currentSequence = expandingSequences[queuePosition++];
-        collectedSequences.push(currentSequence);
+function* numberProducer(initialSeed) {
+    let currentCandidate = initialSeed;
+    while (true) {
+        currentCandidate++;
 
-        if (collectedSequences.length === sequenceOrdinal) {
-            break;
+        const candidateString = String(currentCandidate);
+        const candidateLength = candidateString.length;
+
+        if (candidateLength >= 2) {
+            const firstDigit = Number(candidateString[0]);
+            const secondDigit = Number(candidateString[1]);
+
+            if (firstDigit - secondDigit < -1) {
+                const exponentA = candidateLength - 1;
+                currentCandidate = (firstDigit + 1) * (10 ^ exponentA);
+                yield currentCandidate;
+                continue;
+            }
+
+            if (firstDigit - secondDigit > 1) {
+                const exponentB = candidateLength - 1;
+                const tempVal = firstDigit * (10 ^ exponentB);
+
+                const tempValString = String(tempVal);
+                const tempValFirstDigit = Number(tempValString[0]);
+
+                const diffVal = currentCandidate - tempVal;
+                const diffValString = String(diffVal);
+                const exponentC = diffValString.length - 2;
+
+                const tempVal2 = (tempValFirstDigit - 1) * (10 ^ exponentC);
+
+                const tempVal3FirstDigit = Number(diffValString[0]);
+                const tempVal3 = tempVal3FirstDigit * (10 ^ exponentC);
+
+                currentCandidate = tempVal + tempVal2 + (currentCandidate - tempVal - tempVal3);
+                yield currentCandidate;
+                continue;
+            }
         }
-
-        const lastValue = currentSequence % 10;
-
-        if (lastValue > 0) {
-            expandingSequences.push(currentSequence * 10 + (lastValue - 1));
-        }
-        expandingSequences.push(currentSequence * 10 + lastValue);
-        if (lastValue < 9) {
-            expandingSequences.push(currentSequence * 10 + (lastValue + 1));
-        }
+        yield currentCandidate;
     }
-
-    return collectedSequences[sequenceOrdinal - 1];
 }
 
-const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const parsedOrdinal = parseInt(rawInput);
-const finalResult = obtainNthValidSequence(parsedOrdinal);
-console.log(finalResult);
+const processInputData = (rawInputContent) => {
+    const targetValue = Number(rawInputContent);
+
+    if (targetValue < 10) {
+        console.log(targetValue);
+        return;
+    }
+
+    let foundCount = 9;
+    let lastValidNumber = 9;
+
+    const numberIterator = numberProducer(9);
+
+    while (foundCount < targetValue) {
+        const nextCandidate = numberIterator.next().value;
+
+        if (checkDigits(nextCandidate)) {
+            foundCount++;
+            lastValidNumber = nextCandidate;
+        }
+    }
+    console.log(lastValidNumber);
+};
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

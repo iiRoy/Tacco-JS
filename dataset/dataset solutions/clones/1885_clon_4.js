@@ -1,62 +1,96 @@
-const obtainRawContents = () => require('node:fs').readFileSync(0, 'utf8');
+"use strict";
+const fileSystem = require("fs");
+const rawInput = fileSystem.readFileSync("/dev/stdin", "utf8");
+const inputTokens = rawInput.split(/ |\n/);
+let currentTokenIndex = 0;
 
-const processRawData = (sourceText) => {
-    const lines = sourceText.trim().split('\n');
-    const sequenceCount = Number(lines[0]);
-    if (isNaN(sequenceCount) || lines.length !== sequenceCount + 1) {
-        throw new Error("Corrupted input structure detected.");
+function readNextToken(asString) {
+    return asString ? inputTokens[currentTokenIndex++] : +inputTokens[currentTokenIndex++];
+}
+
+function readTokensAsArray(count, asString) {
+    const slice = inputTokens.slice(currentTokenIndex, currentTokenIndex + count);
+    currentTokenIndex += count;
+    return asString ? slice : slice.map(val => +val);
+}
+
+function readMatrix(height, width, asString) {
+    const matrix = [];
+    for (let i = 0; i < height; i++) {
+        const row = inputTokens.slice(currentTokenIndex, currentTokenIndex + width);
+        currentTokenIndex += width;
+        matrix.push(asString ? row : row.map(val => +val));
     }
-    return lines.slice(1);
-};
+    return matrix;
+}
 
-const determineBalanceMetrics = (charSequence) => {
-    const initialData = { currentLevel: 0, deepestDescent: 0 };
-    const processedData = Array.from(charSequence).reduce((accumulator, charElement) => {
-        const subsequentLevel = accumulator.currentLevel + (charElement === '(' ? 1 : -1);
-        return {
-            currentLevel: subsequentLevel,
-            deepestDescent: Math.min(accumulator.deepestDescent, subsequentLevel)
-        };
-    }, initialData);
-    return {
-        minimalPathValue: processedData.deepestDescent,
-        terminalPathValue: processedData.currentLevel
-    };
-};
-
-const performValidityCheck = (collectionOfSequences) => {
-    const analyzedFragments = collectionOfSequences.map(determineBalanceMetrics);
-
-    const totalTerminalValue = analyzedFragments.reduce((sum, fragment) => sum + fragment.terminalPathValue, 0);
-    if (totalTerminalValue !== 0) {
-        return "NotPossible";
+function createMultiDimArray(initialValue) {
+    const args = arguments;
+    const argCount = args.length;
+    let evalString = `Array(args[${argCount - 1}]).fill().map(() => { return ${initialValue}; })`;
+    for (let i = argCount - 2; i >= 1; i--) {
+        evalString = `Array(args[${i}]).fill().map(() => ${evalString})`;
     }
+    return eval(evalString);
+}
 
-    const fragmentsWithPositiveTerminal = analyzedFragments.filter(f => f.terminalPathValue > 0);
-    const fragmentsWithNonPositiveTerminal = analyzedFragments.filter(f => f.terminalPathValue <= 0);
+const programOutput = solveProblem();
+if (programOutput !== undefined) {
+    console.log(programOutput);
+}
 
-    let currentAvailablePositiveCredit = fragmentsWithPositiveTerminal.reduce((sum, f) => sum + f.terminalPathValue, 0);
+function solveProblem() {
+    const negativeOutcome = "No";
+    const positiveOutcome = "Yes";
 
-    fragmentsWithNonPositiveTerminal.sort((a, b) => a.minimalPathValue - b.minimalPathValue);
+    const sequenceLength = readNextToken();
+    const stringSequence = Array.from({ length: sequenceLength }, () => readNextToken(true));
 
-    for (const fragment of fragmentsWithNonPositiveTerminal) {
-        if (fragment.minimalPathValue < -currentAvailablePositiveCredit) {
-            return "NotPossible";
+    const analyzedSequence = stringSequence.map(currentString => {
+        const { minimumBalance, finalBalanceValue } = currentString.split('').reduce(
+            (accumulator, character) => {
+                const balanceChange = (character === '(' ? 1 : -1);
+                const newBalance = accumulator.currentBalance + balanceChange;
+                return {
+                    currentBalance: newBalance,
+                    minimumBalance: Math.min(accumulator.minimumBalance, newBalance)
+                };
+            },
+            { currentBalance: 0, minimumBalance: 0 }
+        );
+        return { minimumBalance: minimumBalance, finalBalanceValue: finalBalanceValue };
+    });
+
+    let totalNetBalance = 0;
+    let availablePositiveBalance = 0;
+    const negativeOrZeroBalanceSegments = [];
+
+    analyzedSequence.forEach(segmentInfo => {
+        totalNetBalance += segmentInfo.finalBalanceValue;
+        if (segmentInfo.finalBalanceValue > 0) {
+            availablePositiveBalance += segmentInfo.finalBalanceValue;
+        } else {
+            negativeOrZeroBalanceSegments.push(segmentInfo);
         }
-        currentAvailablePositiveCredit += fragment.terminalPathValue;
+    });
+
+    if (totalNetBalance !== 0) {
+        return negativeOutcome;
     }
 
-    return "Permissible";
-};
+    negativeOrZeroBalanceSegments.sort((segmentA, segmentB) => segmentA.minimumBalance - segmentB.minimumBalance);
 
-const initiateProcess = () => {
-    try {
-        const rawContent = obtainRawContents();
-        const inputFragments = processRawData(rawContent);
-        return performValidityCheck(inputFragments);
-    } catch (err) {
-        return "ExecutionFailure: " + err.message;
+    const allSegmentsFeasible = negativeOrZeroBalanceSegments.every(segmentInfo => {
+        if (-segmentInfo.minimumBalance > availablePositiveBalance) {
+            return false;
+        }
+        availablePositiveBalance += segmentInfo.finalBalanceValue;
+        return true;
+    });
+
+    if (!allSegmentsFeasible) {
+        return negativeOutcome;
     }
-};
 
-console.log(initiateProcess());
+    return positiveOutcome;
+}

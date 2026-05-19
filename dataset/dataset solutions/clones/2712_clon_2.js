@@ -1,32 +1,36 @@
-'use strict';
-(function ( sourceText ) { // This immediately invoked function processes the incoming raw text.
+'use strict'; // Activate strict mode for enhanced error checking and cleaner code.
 
-  // First, the raw string is cleaned: leading/trailing whitespace removed,
-  // then split into an array of strings by any sequence of whitespace.
-  // Finally, each string element is converted into a numeric value.
-  let numericValues = sourceText.trim().split( /\s+/ ).map( item => item - 0 );
+(function(initialInputString) {
+  // This function processes an input string, typically read from a file or standard input.
 
-  // Destructure the first three numeric values into distinct, meaningful constants.
-  const
-    divisorCandidate = numericValues[ 0 ], // Represents a potential divisor or initial quantity.
-    coordX           = numericValues[ 1 ], // Denotes an X-coordinate or a second numerical input.
-    coordY           = numericValues[ 2 ]; // Denotes a Y-coordinate or a third numerical input.
+  // First, clean the input string:
+  // 1. Remove leading/trailing whitespace using .trim().
+  // 2. Split the string into an array of substrings based on one or more whitespace characters using .split(/\s+/).
+  // 3. Convert each substring in the array to a number using .map().
+  //    The `Number()` constructor is used for explicit type conversion.
+  let numericalDataArray = initialInputString.trim().split(/\s+/).map(function(strValue) {
+    return Number(strValue);
+  });
 
-  // A conditional check is performed based on the parity of the values.
-  // If the 'divisorCandidate' is an even number AND the sum of 'coordX' and 'coordY' is odd,
-  // then a specific error condition is met.
-  if ( ( divisorCandidate % 2 === 0 ) && ( ( coordX + coordY ) % 2 === 1 ) ) {
-    console.log( -1 ); // Output -1 to indicate an impossible or invalid scenario.
-    return; // Terminate the function's execution immediately.
+  // Extract specific numerical values from the processed array into named constants.
+  // These constants represent key parameters for the subsequent logic.
+  const mainParameter = numericalDataArray[0]; // Corresponds to 'K' in the original problem context.
+  const coordinateValueX = numericalDataArray[1]; // Corresponds to 'X'.
+  const coordinateValueY = numericalDataArray[2]; // Corresponds to 'Y'.
+
+  // Evaluate a conditional expression based on the extracted parameters.
+  // The condition checks if 'mainParameter' is an even number AND
+  // if the sum of 'coordinateValueX' and 'coordinateValueY' is an odd number.
+  if ((mainParameter % 2 === 0) && ((coordinateValueX + coordinateValueY) % 2 === 1)) {
+    // If the condition is met, print a specific error code or result to the console.
+    console.log(-1);
+    // Immediately exit the function, preventing any further execution within this scope.
+    return;
   }
 
-  // If the above condition is not met, the program would continue here for other logic,
-  // but in this specific example, no further actions are defined.
+  // If the condition in the 'if' statement is not met, the function simply concludes
+  // without performing any additional actions or producing further output.
 
-})(
-  require('fs') // Access the Node.js file system module for I/O operations.
-    .readFileSync( // Synchronously read the entire content of a file.
-      '/dev/stdin', // Specify the path to standard input, commonly used for script inputs.
-      'utf8'        // Define the character encoding for the input stream as UTF-8.
-    )
-);
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // This immediately invoked function expression (IIFE)
+// reads the entire content of standard input ('/dev/stdin') as a UTF-8 string
+// and passes it as the 'initialInputString' argument to the function.

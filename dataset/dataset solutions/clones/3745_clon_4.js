@@ -1,17 +1,31 @@
-const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
+'use strict';
 
-const recognizedUnits = acquiredData.match(/(\d+)\s+(\d+)/);
+const processInputData = (fullTextContent) => {
+    const newlinePosition = fullTextContent.indexOf('\n');
+    const firstLineSegment = newlinePosition !== -1 ? fullTextContent.substring(0, newlinePosition) : fullTextContent;
 
-const firstValue = Number(recognizedUnits[1]);
-const secondValue = Number(recognizedUnits[2]);
+    const separatorPosition = firstLineSegment.indexOf(' ');
 
-const collectionOfValues = [firstValue, secondValue];
+    let firstValueString = '';
+    let secondValueString = '';
 
-const anyExceedsLimit = collectionOfValues.some(item => Math.sign(item - 8.5) === 1);
+    if (separatorPosition !== -1) {
+        firstValueString = firstLineSegment.substring(0, separatorPosition);
+        secondValueString = firstLineSegment.substring(separatorPosition + 1);
+    } else {
+        firstValueString = firstLineSegment;
+        secondValueString = '';
+    }
 
-const resultMapping = {
-    true: ':(',
-    false: 'Yay!'
+    const numericValueA = Number(firstValueString);
+    const numericValueB = Number(secondValueString);
+
+    const determineOutcomeMessage = (valX, valY) => {
+        const exceedsLimit = valX > 8 || valY > 8;
+        return exceedsLimit ? ':(' : 'Yay!';
+    };
+
+    console.log(determineOutcomeMessage(numericValueA, numericValueB));
 };
 
-console.log(resultMapping[anyExceedsLimit]);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,44 +1,36 @@
-/*
- * This module processes raw input data to find specific numeric patterns.
- * It counts pairs of numbers that satisfy a certain divisibility condition.
- */
-function processInputData(rawData) {
-	// Split the raw string input into an array of individual lines.
-	let linesOfNumericStrings = rawData.split('\n');
+function processInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  let lines = rawData.split('\n');
 
-	// Remove the first element, which might be a header or irrelevant.
-	linesOfNumericStrings.shift();
+  // Remove the first line from the array. This often contains metadata like the number of elements.
+  lines.shift();
 
-	// Initialize a counter for pairs meeting the criteria.
-	let validPairCounter = 0;
+  // Initialize a counter to keep track of pairs that satisfy the condition.
+  let validPairCount = 0;
 
-	// Iterate through the array with an outer loop.
-	for (let outerLoopIterator = 0; outerLoopIterator < linesOfNumericStrings.length; outerLoopIterator++) {
+  // Iterate through the array using the first index, 'idxA'.
+  for (let idxA = 0; idxA < lines.length; idxA++) {
+    // For each 'idxA', iterate through the rest of the array using 'idxB',
+    // ensuring 'idxB' is always greater than 'idxA' to form unique pairs.
+    for (let idxB = idxA + 1; idxB < lines.length; idxB++) {
+      // Calculate a scaled product of the two numbers.
+      // Each number is multiplied by 10^9 before multiplication.
+      // This effectively checks if the product of the original numbers (lines[idxA] * lines[idxB])
+      // results in an integer, by checking if the scaled product is divisible by (10^9 * 10^9).
+      let productValue = (lines[idxA] * 1000000000) * (lines[idxB] * 1000000000);
 
-		// Start an inner loop from the element after the outer loop's current element
-		// to find unique pairs without duplication.
-		for (let innerLoopIterator = outerLoopIterator + 1; innerLoopIterator < linesOfNumericStrings.length; innerLoopIterator++) {
+      // Check if the calculated 'productValue' is perfectly divisible by the square of the scaling factor (10^9 * 10^9).
+      // If the remainder is 0, it means the unscaled product would have been an integer.
+      if (productValue % (1000000000 * 1000000000) == 0) {
+        // If the condition is met, increment the counter for valid pairs.
+        validPairCount++;
+      }
+    }
+  }
 
-			// Define a large scaling factor for calculations.
-			const SCALING_CONSTANT = 1_000_000_000; // Represents 10^9
-
-			// Calculate the product of two scaled numbers.
-			// Input strings are implicitly converted to numbers during multiplication.
-			let calculatedProduct = (linesOfNumericStrings[outerLoopIterator] * SCALING_CONSTANT) *
-				(linesOfNumericStrings[innerLoopIterator] * SCALING_CONSTANT);
-
-			// Define the divisor for the modulo operation.
-			const MODULO_TARGET = SCALING_CONSTANT * SCALING_CONSTANT; // Represents 10^18
-
-			// Check if the calculated product is perfectly divisible by the target modulo value.
-			if (calculatedProduct % MODULO_TARGET === 0) {
-				validPairCounter++; // Increment the counter if the condition is met.
-			}
-		}
-	}
-	// Output the final count of valid pairs to the console.
-	console.log(validPairCounter);
+  // Output the final total count of valid pairs to the console.
+  console.log(validPairCount);
 }
 
-// Execute the main processing function with data read from standard input.
-processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

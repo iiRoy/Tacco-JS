@@ -1,35 +1,27 @@
-const dataExtractor = (rawText) => {
-    const linesOfText = rawText.split('\n').filter(entry => entry.trim().length > 0);
-    const numericElements = linesOfText[1].split(' ').map(val => Number(val));
-    return numericElements;
-};
+const processInput = (rawData) => {
+    const lines = rawData.split("\n");
+    const firstLineValues = lines[0].split(' ').map(Number);
+    const collectionSize = firstLineValues[0];
+    const numericCollection = lines[1].split(' ').map(Number);
 
-const factorGenerator = (valueToFactor) => {
-    const factorCollection = new Set();
-    for (let currentCandidate = 1; currentCandidate * currentCandidate <= valueToFactor; currentCandidate++) {
-        if (valueToFactor % currentCandidate === 0) {
-            factorCollection.add(currentCandidate);
-            factorCollection.add(valueToFactor / currentCandidate);
-        }
-    }
-    return [...factorCollection].sort((a, b) => b - a);
-};
+    const referenceValue = numericCollection[collectionSize - 1];
 
-const analyzeSequence = (inputSequence) => {
-    const lastValueInSequence = inputSequence[inputSequence.length - 1];
-    const orderedFactors = factorGenerator(lastValueInSequence);
+    const generateOrderedDivisors = (num) => {
+        return Array.from({ length: num }, (_, index) => index + 1)
+                    .filter(candidate => num % candidate === 0)
+                    .sort((a, b) => b - a);
+    };
 
-    const desiredFactor = orderedFactors.find(currentFactor => {
-        const countOfNonDivisible = inputSequence.filter(item => item % currentFactor !== 0).length;
-        return countOfNonDivisible <= 1;
+    const candidateDivisors = generateOrderedDivisors(referenceValue);
+
+    const qualifyingDivisor = candidateDivisors.find(currentTestDivisor => {
+        const nonConformingCount = numericCollection.reduce((tally, element) => {
+            return tally + (element % currentTestDivisor !== 0 ? 1 : 0);
+        }, 0);
+        return nonConformingCount <= 1;
     });
 
-    console.log(desiredFactor);
+    console.log(qualifyingDivisor);
 };
 
-const primaryRoutine = (sourceData) => {
-    const processedNumbers = dataExtractor(sourceData);
-    analyzeSequence(processedNumbers);
-};
-
-primaryRoutine(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

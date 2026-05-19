@@ -1,68 +1,86 @@
-const sequenceStorage = [];
-const permutator = (itemsToArrange) => {
-    if (itemsToArrange.length === 0) {
-        return [[]];
+function* permutationGenerator(elements) {
+    const itemCount = elements.length;
+    const currentArrangement = Array.from(elements);
+    const swapCounters = new Array(itemCount).fill(0);
+    let currentIdx = 1;
+    let swapTargetIdx;
+
+    yield currentArrangement.slice();
+
+    while (currentIdx < itemCount) {
+        if (swapCounters[currentIdx] < currentIdx) {
+            swapTargetIdx = (currentIdx % 2 === 0) ? 0 : swapCounters[currentIdx];
+            [currentArrangement[currentIdx], currentArrangement[swapTargetIdx]] = [currentArrangement[swapTargetIdx], currentArrangement[currentIdx]];
+            yield currentArrangement.slice();
+            swapCounters[currentIdx]++;
+            currentIdx = 1;
+        } else {
+            swapCounters[currentIdx] = 0;
+            currentIdx++;
+        }
     }
-    return itemsToArrange.flatMap((headItem, headIndex) => {
-        const tailItems = [...itemsToArrange.slice(0, headIndex), ...itemsToArrange.slice(headIndex + 1)];
-        return permutator(tailItems).map(tailPermutation => [headItem, ...tailPermutation]);
-    });
-};
-for (let currentLength = 1; currentLength <= 10; currentLength++) {
-    const indicesToPermute = Array.from({ length: currentLength }, (_, idx) => idx);
-    sequenceStorage[currentLength] = permutator(indicesToPermute).map(permutationArray => permutationArray.join(''));
 }
-const rawContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const contentLines = rawContent.trim().split('\n');
-let linePointer = 0;
-const obtainLine = () => contentLines[linePointer++];
-while (true) {
-    const itemCount = parseInt(obtainLine(), 10);
-    if (itemCount === 0) {
-        break;
+
+function evaluatePermutation(currentPermutation, foodItems, itemCount) {
+    const evaluationResult = currentPermutation.reduce((accumulator, foodIdx, sequencePos) => {
+        if (!accumulator.validSequence) return accumulator;
+
+        const itemWeight = foodItems[foodIdx][1] - 0;
+        const itemSatiety = foodItems[foodIdx][2] - 0;
+
+        if (accumulator.cumulativeWeight > itemSatiety) {
+            accumulator.validSequence = false;
+            return accumulator;
+        }
+
+        accumulator.cumulativeWeight += itemWeight;
+        accumulator.weightedSum += itemWeight * (itemCount - sequencePos);
+        return accumulator;
+    }, { cumulativeWeight: 0, weightedSum: 0, validSequence: true });
+
+    if (!evaluationResult.validSequence) {
+        return {
+            score: evaluationResult.weightedSum / evaluationResult.cumulativeWeight,
+            permutation: currentPermutation
+        };
+    } else {
+        return { score: Infinity, permutation: currentPermutation };
     }
-    const itemDetailsCollection = [];
-    for (let i = 0; i < itemCount; i++) {
-        const itemSegments = obtainLine().split(' ');
-        itemDetailsCollection.push({
-            itemName: itemSegments[0],
-            itemWeight: parseInt(itemSegments[1], 10),
-            safetyThreshold: parseInt(itemSegments[2], 10)
+}
+
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split("\n");
+
+let linePointer = 0;
+
+function processNextCase() {
+    const currentN = inputLines[linePointer++] - 0;
+    if (currentN === 0) return false;
+
+    const currentFoodItems = [];
+    for (let j = 0; j < currentN; j++) {
+        currentFoodItems.push(inputLines[linePointer++].split(" "));
+    }
+
+    let minimumOverallScore = Infinity;
+    let bestPermutationIndices = null;
+
+    const initialIndices = Array.from({ length: currentN }, (_, idx) => idx);
+
+    for (const p of permutationGenerator(initialIndices)) {
+        const result = evaluatePermutation(p, currentFoodItems, currentN);
+        if (result.score < minimumOverallScore) {
+            minimumOverallScore = result.score;
+            bestPermutationIndices = result.permutation;
+        }
+    }
+
+    if (bestPermutationIndices) {
+        bestPermutationIndices.reverse().forEach(idx => {
+            console.log(currentFoodItems[idx][0]);
         });
     }
-    let bestOverallScore = Infinity;
-    let selectedSequenceIndex;
-    const candidateSequences = sequenceStorage[itemCount];
-    candidateSequences.forEach((sequenceString, sequenceIdentifier) => {
-        const sequenceOrder = sequenceString.split('').map(Number);
-        const evaluationResult = sequenceOrder.reduce((currentStatus, currentItemIndex, stepNumber) => {
-            if (!currentStatus.isValidPath) {
-                return currentStatus;
-            }
-            const currentFoodItem = itemDetailsCollection[currentItemIndex];
-            const weightOfCurrentItem = currentFoodItem.itemWeight;
-            const safetyLimitOfCurrentItem = currentFoodItem.safetyThreshold;
-            const newTotalWeight = currentStatus.accumulatedWeight + weightOfCurrentItem;
-            const newWeightedSum = currentStatus.accumulatedWeightedSum + (weightOfCurrentItem * (itemCount - stepNumber));
-            if (newTotalWeight > safetyLimitOfCurrentItem) {
-                return { ...currentStatus, isValidPath: false };
-            }
-            return {
-                accumulatedWeight: newTotalWeight,
-                accumulatedWeightedSum: newWeightedSum,
-                isValidPath: true
-            };
-        }, { accumulatedWeight: 0, accumulatedWeightedSum: 0, isValidPath: true });
-        if (!evaluationResult.isValidPath) {
-            const calculatedMetric = evaluationResult.accumulatedWeightedSum / evaluationResult.accumulatedWeight;
-            if (calculatedMetric < bestOverallScore) {
-                bestOverallScore = calculatedMetric;
-                selectedSequenceIndex = sequenceIdentifier;
-            }
-        }
-    });
-    const optimalSequenceString = candidateSequences[selectedSequenceIndex];
-    const finalOutputIndices = optimalSequenceString.split('').map(Number).reverse();
-    const finalOutputNames = finalOutputIndices.map(idx => itemDetailsCollection[idx].itemName);
-    console.log(finalOutputNames.join('\n'));
+    return true;
 }
+
+while (processNextCase()) {}

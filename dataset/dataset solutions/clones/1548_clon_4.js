@@ -1,22 +1,16 @@
 "use strict";
 
-const journeyEvaluator = (rawTextPayload) => {
-    const dataLines = rawTextPayload.trim().split('\n');
-    const primaryParameters = dataLines[0].split(' ').map(Number);
-    
-    const distanceToCover = primaryParameters[0];
-    const allowedTimeSpan = primaryParameters[1];
-    const averageVelocity = primaryParameters[2];
+const evaluateTravelFeasibility = (inputData) => {
+    const firstLineSegments = inputData.trim().split("\n")[0].split(" ");
+    const [requiredDistance, availableTime, averageSpeed] = firstLineSegments.map(Number);
 
-    let determinationMessage;
-    if (distanceToCover <= allowedTimeSpan * averageVelocity) {
-        determinationMessage = "Yes";
+    let resultIndicator;
+    if (requiredDistance <= availableTime * averageSpeed) {
+        resultIndicator = "Yes";
     } else {
-        determinationMessage = "No";
+        resultIndicator = "No";
     }
-
-    console.log(determinationMessage);
+    console.log(resultIndicator);
 };
 
-const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-journeyEvaluator(inputSource);
+evaluateTravelFeasibility(require('fs').readFileSync('/dev/stdin', 'utf8'));

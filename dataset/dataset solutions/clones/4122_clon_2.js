@@ -1,51 +1,60 @@
-(( rawData ) => {
-    // This script processes station travel data to determine journey times.
-    const textRows = rawData.split('\n'); // Divide the raw input string into individual lines.
+((rawData) => {
+    // Process the raw input string into individual lines
+    const textRows = rawData.split("\n");
 
-    const countStations = parseInt(textRows[0], 10); // The first line indicates the total number of operational stations.
+    // Extract the total number of stations from the first line
+    const numStations = textRows[0] | 0;
 
-    const [travelDurations, startTimes, frequencies] = textRows
-        .slice(1) // Exclude the first line (station count) from processing.
-        .map(rowStr =>
-            rowStr.split(' ').map(valStr => parseInt(valStr, 10)) // Parse each line into an array of integer values.
-        )
-        // Transpose the array of arrays from [ [C1, S1, F1], [C2, S2, F2] ] to [ [C1, C2], [S1, S2], [F1, F2] ].
-        .reduce((collection, currentLineArr) =>
-            collection.map((element, idx) => element.concat(currentLineArr[idx])),
-            [[], [], []]
-        );
+    // Parse the remaining lines to get travel times, start times, and frequencies
+    const [travelTimes, startTimes, frequencies] = textRows.slice(1)
+        .map(singleLine => singleLine.split(" ").map(parsedValue => parsedValue | 0)) // Convert each line to an array of integers
+        .reduce((tempStorage, currentLineData) => {
+            // Distribute values from each line into their respective arrays (travelTimes, startTimes, frequencies)
+            return tempStorage.map((elementArray, indexPosition) => elementArray.concat(currentLineData[indexPosition]));
+        }, [[], [], []]); // Initialize with three empty arrays
 
-    // This function computes the total time required to reach the final destination from a specified starting point.
-    const calculateJourneyTime = startStationIndex => {
-        if (startStationIndex === countStations - 1) {
-            return 0; // If already at the last station, no additional time is needed.
+    /**
+     * Calculates the arrival time at the final station starting from a given station.
+     * @param {number} stationIndex - The starting station index.
+     * @returns {number} The total time taken to reach the destination.
+     */
+    const calculateArrivalTime = stationIndex => {
+        // If already at the destination, no time is needed
+        if (stationIndex === numStations - 1) {
+            return 0;
         }
 
-        let currentStation = startStationIndex; // Initialize the current station pointer.
-        let elapsedTime = 0; // Initialize the accumulated time for the journey.
+        let currentStation = stationIndex; // Keep track of the current station in the journey
+        let totalTime = 0; // Accumulate the total travel time
 
-        while (currentStation !== countStations - 1) {
-            // Iterate until the destination station is reached.
+        // Loop until the destination station is reached
+        while (currentStation !== numStations - 1) {
+            // Calculate the time spent waiting and traveling for the current segment
+            // 1. Determine the earliest departure time from the current station:
+            //    - It must be at least 'startTimes[currentStation]'.
+            //    - It must be a multiple of 'frequencies[currentStation]'.
+            //    - It must be greater than or equal to the current 'totalTime'.
+            // 2. Add the travel duration 'travelTimes[currentStation]' to 'totalTime'.
+            totalTime += Math.max(
+                startTimes[currentStation] - totalTime, // Time needed to wait until the start time
+                totalTime % frequencies[currentStation] !== 0 // If current time is not a multiple of frequency
+                    ? frequencies[currentStation] - totalTime % frequencies[currentStation] // Time to wait for the next frequency slot
+                    : 0 // No wait needed if already a multiple
+            ) + travelTimes[currentStation];
 
-            // Calculate the waiting time at the current station and add the travel duration to the next.
-            elapsedTime += Math.max(
-                startTimes[currentStation] - elapsedTime, // Option 1: Wait until the scheduled departure time.
-                elapsedTime % frequencies[currentStation] !== 0
-                    ? frequencies[currentStation] - (elapsedTime % frequencies[currentStation]) // Option 2: Wait for the next departure cycle.
-                    : 0
-            ) + travelDurations[currentStation]; // Add the actual travel time to the next station.
-
-            currentStation++; // Advance to the subsequent station.
+            // Move to the next station
+            currentStation++;
         }
-
-        return elapsedTime; // Return the final calculated duration.
+        return totalTime; // Return the accumulated time
     };
 
-    // Generate an array of station indices, then compute and display the journey time for each.
-    Array
-        .from({ length: countStations }, (_, stationIdx) => stationIdx) // Create an array of indices from 0 to countStations - 1.
-        .map(calculateJourneyTime) // Apply the journey time calculation for each starting station.
-        .forEach(finalTime => console.log(finalTime)); // Display each computed journey time to the console.
+    // Generate an array of station indices (0 to N-1),
+    // calculate arrival time for each starting station,
+    // and print each result to the console.
+    Array.from(new Array(numStations), (_unused, stationIdentifier) => stationIdentifier)
+        .map(calculateArrivalTime) // Apply the solver function for each starting station
+        .forEach(finalTime => console.log(finalTime)); // Output each calculated time
 
-})( require("node:fs").readFileSync("/dev/stdin", "utf8") );
-// (Alternative invocation with an empty string for testing purposes) })( '' );
+})(require("fs").readFileSync("/dev/stdin", "utf8")); // Read input from standard input
+// Optional: For local testing, you might use a hardcoded string instead of fs.readFileSync.
+// Example: })(`3\n1 1 1\n1 1 1`);

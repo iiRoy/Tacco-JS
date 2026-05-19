@@ -1,148 +1,167 @@
-const EnvironmentConfig = {
-    LINE_TERMINATOR: require('os').EOL
+run(function* (outputWriter, inputFetcher) {
+  const initialWhiteCount = +(yield) - 1;
+  const initialBlackCount = +(yield) - 1;
+
+  const whiteRows = initialWhiteCount > 0 ? Math.ceil(initialWhiteCount / 50) * 2 : 0;
+  const blackRows = initialBlackCount > 0 ? Math.ceil(initialBlackCount / 50) * 2 : 0;
+
+  outputWriter(`${whiteRows + blackRows} 100`);
+
+  const whitePatternBlock = ['.#', '##'];
+  const blackPatternBlock = ['..', '#.'];
+  const whiteFillerBlock = ['##', '##'];
+  const blackFillerBlock = ['..', '..'];
+
+  let currentWhite = initialWhiteCount;
+  const whiteSectionLines = Array.from({ length: Math.ceil(initialWhiteCount / 50) })
+    .flatMap(() => {
+      const linePair = Array.from({ length: 50 }).reduce(
+        (accumulator, _, index) => {
+          const blockToUse = currentWhite > 0 ? whitePatternBlock : whiteFillerBlock;
+          accumulator[0] += blockToUse[0];
+          accumulator[1] += blockToUse[1];
+          if (currentWhite > 0) currentWhite--;
+          return accumulator;
+        },
+        ['', '']
+      );
+      return linePair;
+    });
+
+  whiteSectionLines.forEach(outputWriter);
+
+  let currentBlack = initialBlackCount;
+  const blackSectionLines = Array.from({ length: Math.ceil(initialBlackCount / 50) })
+    .flatMap(() => {
+      const linePair = Array.from({ length: 50 }).reduce(
+        (accumulator, _, index) => {
+          const blockToUse = currentBlack > 0 ? blackPatternBlock : blackFillerBlock;
+          accumulator[0] += blockToUse[0];
+          accumulator[1] += blockToUse[1];
+          if (currentBlack > 0) currentBlack--;
+          return accumulator;
+        },
+        ['', '']
+      );
+      return linePair;
+    });
+
+  blackSectionLines.forEach(outputWriter);
+});
+
+/**
+ * @param {(outputWriter: (line: string, end?: string) => void, inputFetcher: () => IterableIterator<string|null>) => IterableIterator<any>} mainProgram
+ */
+function run(mainProgram) {
+  const inputSource = process.stdin;
+  const outputSink = process.stdout;
+
+  /**
+   * @type {[string|null]}
+   */
+  const tokenBuffer = [];
+  /**
+   * @type {[string]}
+   */
+  const lineBuffer = [];
+  let partialLine = "";
+  let streamEnded = false;
+  const LINE_READ_MODE = 0;
+  const WORD_READ_MODE = 1;
+  let currentReadMode = WORD_READ_MODE;
+
+  /**
+   * @param {string} content
+   * @param {string} [terminator]
+   */
+  function emitLine(content, terminator) {
+    outputSink.write(content + (undefined === terminator ? os.EOL : terminator));
+  }
+  function* fetchInput() {
+    if (0 < lineBuffer.length) {
+      return lineBuffer.shift();
+    } else {
+      currentReadMode = LINE_READ_MODE;
+      /**
+       * @type {string}
+       */
+      const receivedLine = yield;
+      currentReadMode = WORD_READ_MODE;
+      return receivedLine;
+    }
+  }
+
+  const programIterator = mainProgram(emitLine, fetchInput);
+
+  /**
+   * @param {string|null} dataChunk
+   */
+  function processDataChunk(dataChunk) {
+    inputSource.pause();
+    if (null === dataChunk) {
+      lineBuffer.push(null);
+    } else {
+      partialLine += dataChunk;
+      const lineRegex = /.*(\r?\n|\r)/g;
+      let matchResult, lastMatchIndex = 0;
+      while (null !== (matchResult = lineRegex.exec(partialLine))) {
+        lastMatchIndex = lineRegex.lastIndex;
+        lineBuffer.push(matchResult[0]);
+      }
+      partialLine = partialLine.substring(lastMatchIndex);
+    }
+    processBuffers();
+  }
+
+  function processBuffers() {
+    while (0 < lineBuffer.length) {
+      switch (currentReadMode) {
+        case LINE_READ_MODE:
+          {
+            tokenBuffer.push(lineBuffer.shift());
+          }
+          break;
+        case WORD_READ_MODE:
+          {
+            if (null === lineBuffer[0]) {
+              tokenBuffer.push(lineBuffer.shift());
+            } else {
+              const wordRegex = /[^\s]+/g;
+              let matchResult;
+              if (null !== (matchResult = wordRegex.exec(lineBuffer[0]))) {
+                tokenBuffer.push(matchResult[0]);
+                lineBuffer[0] = lineBuffer[0].substring(wordRegex.lastIndex);
+              } else {
+                lineBuffer.shift();
+              }
+            }
+          }
+          break;
+      }
+
+      while (0 < tokenBuffer.length) {
+        const iteratorResult = programIterator.next(tokenBuffer.shift());
+        if (undefined !== iteratorResult.value) {
+          if ('string' === typeof iteratorResult.value) {
+            emitLine(iteratorResult.value, "");
+          } else {
+            emitLine(`${iteratorResult.value}`, "");
+          }
+        }
+        if (iteratorResult.done) return;
+      }
+    }
+
+    streamEnded ? setTimeout(processDataChunk, 0, null) : inputSource.resume();
+  }
+  inputSource.on('data', processDataChunk);
+  inputSource.on('end', function () {
+    streamEnded = true;
+    processDataChunk(null);
+  });
+
+  inputSource.setEncoding('utf8');
+  processDataChunk(null);
 };
 
-class ExecutionController {
-    constructor(operationCore) {
-        this.operationCore = operationCore;
-        this.inputChannel = process.stdin;
-        this.outputChannel = process.stdout;
-
-        this.tokenCache = [];
-        this.pendingLines = [];
-        this.partialBuffer = "";
-        this.streamFinished = false;
-
-        this.LINE_READ_STATE = 0;
-        this.TOKEN_READ_STATE = 1;
-        this.currentReadState = this.TOKEN_READ_STATE;
-
-        this.processChunkHandler = this.processChunk.bind(this);
-        this.advanceOperationsHandler = this.advanceOperations.bind(this);
-
-        this.coreIterator = operationCore(this.produceOutput.bind(this), this.requestEntry.bind(this));
-
-        this.inputChannel.on('data', this.processChunkHandler);
-        this.inputChannel.on('end', () => {
-            this.streamFinished = true;
-            this.processChunkHandler(null);
-        });
-        this.inputChannel.setEncoding('utf8');
-        this.processChunkHandler(null);
-    }
-
-    produceOutput(content, terminator) {
-        this.outputChannel.write(content + (undefined === terminator ? EnvironmentConfig.LINE_TERMINATOR : terminator));
-    }
-
-    *requestEntry() {
-        if (this.pendingLines.length > 0) {
-            return this.pendingLines.shift();
-        } else {
-            this.currentReadState = this.LINE_READ_STATE;
-            let capturedLine = yield;
-            this.currentReadState = this.TOKEN_READ_STATE;
-            return capturedLine;
-        }
-    }
-
-    processChunk(dataSegment) {
-        this.inputChannel.pause();
-        if (null === dataSegment) {
-            this.pendingLines.push(null);
-        } else {
-            this.partialBuffer += dataSegment;
-            const lineIdentifier = /(.*(?:\r?\n|\r))/g;
-            let lineMatch;
-            let lastPosition = 0;
-            while (null !== (lineMatch = lineIdentifier.exec(this.partialBuffer))) {
-                lastPosition = lineIdentifier.lastIndex;
-                this.pendingLines.push(lineMatch[0]);
-            }
-            this.partialBuffer = this.partialBuffer.substring(lastPosition);
-        }
-        this.advanceOperations();
-    }
-
-    advanceOperations() {
-        while (this.pendingLines.length > 0) {
-            switch (this.currentReadState) {
-                case this.LINE_READ_STATE:
-                {
-                    this.tokenCache.push(this.pendingLines.shift());
-                }
-                break;
-                case this.TOKEN_READ_STATE:
-                {
-                    if (null === this.pendingLines[0]) {
-                        this.tokenCache.push(this.pendingLines.shift());
-                    } else {
-                        const tokenIdentifier = /[^\s]+/g;
-                        let tokenMatch;
-                        if (null !== (tokenMatch = tokenIdentifier.exec(this.pendingLines[0]))) {
-                            this.tokenCache.push(tokenMatch[0]);
-                            this.pendingLines[0] = this.pendingLines[0].substring(tokenIdentifier.lastIndex);
-                        } else {
-                            this.pendingLines.shift();
-                        }
-                    }
-                }
-                break;
-            }
-
-            while (this.tokenCache.length > 0) {
-                let executionResult = this.coreIterator.next(this.tokenCache.shift());
-                if (undefined !== executionResult.value) {
-                    if ('string' === typeof executionResult.value) {
-                        this.produceOutput(executionResult.value, "");
-                    } else {
-                        this.produceOutput(`${executionResult.value}`, "");
-                    }
-                }
-                if (executionResult.done) return;
-            }
-        }
-
-        this.streamFinished ? setTimeout(this.processChunkHandler, 0, null) : this.inputChannel.resume();
-    }
-}
-
-new ExecutionController(function * (outputWriter, inputAcquirer) {
-	var primaryCount = +(yield inputAcquirer()) - 1;
-	var secondaryCount = +(yield inputAcquirer()) - 1;
-
-	const overallSummary = Math.floor((primaryCount - 1) / 50) * 2 + 2 + Math.floor((secondaryCount - 1) / 50) * 2 + 2;
-	outputWriter(`${overallSummary} 100`);
-
-	let currentPrimary = primaryCount;
-	while (currentPrimary > 0) {
-		const segmentsToPrint = Math.min(currentPrimary, 50);
-
-		const firstVisualLine = Array.from({ length: 50 }, (_, index) => {
-			return index < segmentsToPrint ? ".#" : "##";
-		}).join('');
-
-		const secondVisualLine = Array.from({ length: 50 }, (_, index) => {
-			return index < segmentsToPrint ? "##" : "##";
-		}).join('');
-
-		outputWriter(firstVisualLine);
-		outputWriter(secondVisualLine);
-		currentPrimary -= segmentsToPrint;
-	}
-
-	let currentSecondary = secondaryCount;
-	while (currentSecondary > 0) {
-		const segmentsToPrint = Math.min(currentSecondary, 50);
-
-		const thirdVisualLine = "..".repeat(50);
-
-		const fourthVisualLine = Array.from({ length: 50 }, (_, index) => {
-			return index < segmentsToPrint ? "#." : "..";
-		}).join('');
-
-		outputWriter(thirdVisualLine);
-		outputWriter(fourthVisualLine);
-		currentSecondary -= segmentsToPrint;
-	}
-});
+const os = require('os');

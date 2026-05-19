@@ -1,103 +1,102 @@
-class InputProcessor {
-    #tokenIndex = 0;
-    #originalSource;
-    #parsedTokens;
+class InputTokenizer {
+    #tokens;
+    #currentIndex;
 
-    constructor(sourceString) {
-        this.#originalSource = sourceString;
-        this.#parsedTokens = sourceString.match(/\S+/g) || [];
+    constructor(sourceText) {
+        const processedText = sourceText.replace(/[\s]+/g, ' ');
+        this.#tokens = processedText.split(' ');
+        this.#currentIndex = 0;
     }
 
-    retrieveNextToken() {
-        if (this.#tokenIndex < this.#parsedTokens.length) {
-            const currentToken = this.#parsedTokens[this.#tokenIndex];
-            this.#tokenIndex++;
-            return currentToken;
+    #retrieveNextToken() {
+        if (this.#currentIndex < this.#tokens.length) {
+            return this.#tokens[this.#currentIndex++];
         }
         return null;
     }
 
-    retrieveNextInteger() {
-        const token = this.retrieveNextToken();
+    fetchNext() {
+        return this.#retrieveNextToken();
+    }
+
+    fetchNextInt() {
+        const token = this.#retrieveNextToken();
         return token !== null ? parseInt(token, 10) : null;
     }
 
-    retrieveNextDecimal() {
-        const token = this.retrieveNextToken();
+    fetchNextBigDecimal() {
+        const token = this.#retrieveNextToken();
         return token !== null ? parseFloat(token) : null;
     }
-    
-    retrieveNextOctetArray() {
-        const token = this.retrieveNextToken();
+
+    fetchNextByte() {
+        const token = this.#retrieveNextToken();
         return token !== null ? new Int8Array(token) : null;
     }
 }
 
-class GraphProcessor {
-    #inputReader;
-    #nodePayloads = new Map();
-    #connections = new Map();
-    #pathSequences = new Map();
-    #processingQueue = [];
-    #lastProcessedPath = [];
+class ProcessingQueue {
+    #elements = [];
+    enqueue(item) {
+        this.#elements.push(item);
+    }
+    dequeue() {
+        if (this.#elements.length === 0) {
+            return undefined;
+        }
+        return this.#elements.shift();
+    }
+    isEmpty() {
+        return this.#elements.length === 0;
+    }
+}
 
-    constructor(inputReaderInstance) {
-        this.#inputReader = inputReaderInstance;
+function ProcessGraph(inputSource) {
+    const nodeCount = inputSource.fetchNextInt();
+    const nodeValueMap = new Map();
+    for (let i = 0; i < nodeCount; i++) {
+        nodeValueMap.set(i + 1, inputSource.fetchNextInt());
     }
 
-    #processVertex(currentVertex, parentVertex) {
-        const parentPath = parentVertex !== -1 ? (this.#pathSequences.get(parentVertex) || []) : [];
+    const adjacencyMap = new Map();
+    for (let i = 0; i < nodeCount - 1; i++) {
+        const nodeA = inputSource.fetchNextInt();
+        const nodeB = inputSource.fetchNextInt();
 
-        const currentVertexPath = [...parentPath, this.#nodePayloads.get(currentVertex)];
-        this.#pathSequences.set(currentVertex, currentVertexPath);
+        if (!adjacencyMap.has(nodeA)) adjacencyMap.set(nodeA, new Set());
+        if (!adjacencyMap.has(nodeB)) adjacencyMap.set(nodeB, new Set());
 
-        this.#lastProcessedPath = currentVertexPath;
+        adjacencyMap.get(nodeA).add(nodeB);
+        adjacencyMap.get(nodeB).add(nodeA);
+    }
 
-        const neighborList = this.#connections.get(currentVertex);
+    const pathHistory = new Map();
+    let currentPathSnapshot = [];
 
-        if (neighborList) {
-            for (const neighbor of neighborList) {
-                if (neighbor !== parentVertex) {
-                    this.#processingQueue.push([neighbor, currentVertex]);
+    const traversalQueue = new ProcessingQueue();
+    traversalQueue.enqueue([1, -1]);
+
+    pathHistory.set(-1, []);
+
+    while (!traversalQueue.isEmpty()) {
+        const [activeNode, previousNode] = traversalQueue.dequeue();
+
+        const parentPath = pathHistory.get(previousNode) || [];
+        const pathForActiveNode = [...parentPath, nodeValueMap.get(activeNode)];
+        
+        pathHistory.set(activeNode, pathForActiveNode);
+        currentPathSnapshot = pathForActiveNode;
+
+        const neighbors = adjacencyMap.get(activeNode);
+        if (neighbors) {
+            for (const neighbor of neighbors) {
+                if (neighbor !== previousNode) {
+                    traversalQueue.enqueue([neighbor, activeNode]);
                 }
             }
         }
     }
-
-    commenceProcessing() {
-        const nodeCount = this.#inputReader.retrieveNextInteger();
-
-        for (let idx = 1; idx <= nodeCount; idx++) {
-            this.#nodePayloads.set(idx, this.#inputReader.retrieveNextInteger());
-        }
-
-        for (let idx = 0; idx < nodeCount - 1; idx++) {
-            const firstVertex = this.#inputReader.retrieveNextInteger();
-            const secondVertex = this.#inputReader.retrieveNextInteger();
-
-            if (!this.#connections.has(firstVertex)) {
-                this.#connections.set(firstVertex, []);
-            }
-            if (!this.#connections.has(secondVertex)) {
-                this.#connections.set(secondVertex, []);
-            }
-
-            this.#connections.get(firstVertex).push(secondVertex);
-            this.#connections.get(secondVertex).push(firstVertex);
-        }
-
-        this.#processingQueue.push([1, -1]);
-
-        while (this.#processingQueue.length > 0) {
-            const [currentVertex, parentVertex] = this.#processingQueue.shift();
-            this.#processVertex(currentVertex, parentVertex);
-        }
-
-        console.log(this.#lastProcessedPath);
-        return;
-    }
+    console.log(currentPathSnapshot);
 }
 
-const systemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const processorInstance = new GraphProcessor(new InputProcessor(systemInput));
-processorInstance.commenceProcessing();
+ProcessGraph(new InputTokenizer(require("fs").readFileSync("/dev/stdin", "utf8")));

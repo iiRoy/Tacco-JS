@@ -1,23 +1,22 @@
-// This module handles processing of incoming data.
-function ProcessInput( rawData ) {
-  // Split the raw input string into an array of lines.
-  let linesArray = rawData.split( '\n' ) ;
+function ProcessInput(rawData) {
+  // Process the raw input string by splitting it into lines.
+  rawData = rawData.split('\n');
 
-  // Extract the first line, which might represent a count or identifier.
-  let firstLineData = linesArray[0] ;
+  // Extract the first line of input.
+  const firstLine = rawData[0];
 
-  // Extract the second line, containing some textual information.
-  let secondLineString = linesArray[1] ;
+  // Extract the second line of input.
+  const secondLine = rawData[1];
 
-  // Initialize a boolean indicator.
-  let statusIndicator = true ;
+  // Initialize a boolean variable to control a conditional block.
+  let conditionMet = true;
 
-  // Check if the primary condition is met.
-  if ( statusIndicator ) {
-    // Output a confirmation message to the console.
-    console.log("Yes") ;
+  // Check if the condition is met.
+  if (conditionMet) {
+    // If the condition is true, print a specific message to the console.
+    console.log("Yes");
   }
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInput( require("fs").readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read the content from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,32 +1,19 @@
-function processInputData(rawData)
-{
-    // Divide the incoming stream of characters into an array of distinct lines.
-    let parsedSegments = rawData.split("\n");
+function processInput(rawData) {
+    // Split the incoming data into individual lines
+    let textSegments = rawData.split("\n");
 
-    // Construct a new sequence by appending the initial segment to itself.
-    let doubledString = parsedSegments[0] + parsedSegments[0];
+    // Create a new string by concatenating the first line with itself
+    let doubledString = textSegments[0] + textSegments[0];
 
-    // Evaluate if the second segment can be located within the expanded first segment.
-    // A return value of -1 indicates the substring was not present.
-    if ( doubledString.indexOf(parsedSegments[1]) !== -1 )
-    {
-        // If the query segment is found, indicate affirmation.
+    // Check if the second line is a substring of the doubled first line
+    if (doubledString.indexOf(textSegments[1]) !== -1) {
+        // If found, output "Yes"
         console.log("Yes");
-    }
-    else
-    {
-        // Otherwise, indicate negation.
+    } else {
+        // Otherwise, output "No"
         console.log("No");
     }
+}
 
-} // Termination of the primary data processing routine
-
-
-// Initiate the processing by retrieving content from the standard input stream.
-// The 'fs' module is utilized for reading file system resources.
-processInputData(
-    require("fs").readFileSync(
-        "/dev/stdin", // Path to the standard input device
-        "utf-8"       // Encoding specification for textual data
-    )
-);
+// Read input from standard input and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

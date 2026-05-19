@@ -1,58 +1,54 @@
-/*
- * This module contains a function designed to consume input data,
- * perform a sorting operation on a numerical array, and then
- * display the final sorted sequence along with the total count of swaps.
- */
-function processInputData( inputStringData ) {
+function processInput(rawInputData) {
+  // Split the raw input string into an array of lines.
+  const inputLines = rawInputData.split('\n');
 
-    // The entire received string is first broken down into an array of individual text lines.
-    const inputLines = inputStringData.split('\n') ;
+  // The first line contains the number of elements.
+  const arraySize = Number(inputLines.shift());
 
-    /*
-     * The initial line of input is parsed to determine the expected
-     * total quantity of items within the primary numerical sequence.
-     */
-    const arrayLength = Number(inputLines.shift());
+  // The second line contains the space-separated numbers, convert them to an array of numbers.
+  const numericSequence = inputLines.shift().split(' ').map(Number);
 
-    // The subsequent line is expected to contain numbers separated by spaces; these are converted into a numeric array.
-    const numericArray = inputLines.shift().split(' ').map(Number);
+  // Initialize a counter for swap operations.
+  let swapOperations = 0;
 
-    // A variable to keep a tally of how many times elements are exchanged during the sorting process.
-    let swapCount = 0;
+  // Keep track of how many elements are already in their final sorted position from the end.
+  let elementsProcessed = 0;
 
-    // This tracks how many elements from the right end of the array are already in their correct, final position.
-    let processedElements = 0;
+  // A flag to indicate if any swap occurred in the current pass.
+  // The loop continues as long as swaps are being made.
+  let hasSwapped = 1;
 
-    // A logical indicator to signal if any element shifts happened in the current iteration, dictating further passes.
-    let exchangeOccurred = 1; // '1' signifies true, '0' signifies false for this flag.
+  // Main sorting loop (Bubble Sort variant).
+  while (hasSwapped) {
+    // Reset the swap flag for the current pass.
+    hasSwapped = 0;
 
-    // This loop persists as long as there are ongoing exchanges, implying the sequence isn't fully ordered.
-    while ( exchangeOccurred ) {
-        exchangeOccurred = 0; // Reset the flag at the commencement of each new pass.
+    // Iterate through the array from right to left, up to the already sorted part.
+    for (let currentIdx = arraySize - 1; currentIdx > elementsProcessed; currentIdx--) {
+      // Compare adjacent elements.
+      if (numericSequence[currentIdx] < numericSequence[currentIdx - 1]) {
+        // If elements are out of order, swap them.
+        const tempVal = numericSequence[currentIdx];
+        numericSequence[currentIdx] = numericSequence[currentIdx - 1];
+        numericSequence[currentIdx - 1] = tempVal;
 
-        // Traverse the sequence from its conclusion towards the section that has not yet been ordered.
-        for ( let currentIdx = arrayLength - 1; currentIdx > processedElements; currentIdx-- ) {
-            // Evaluate if adjacent elements are out of sequence. If so, their positions are interchanged.
-            if (numericArray[currentIdx] < numericArray[currentIdx - 1]) {
-                // Execute the swap operation using a temporary storage variable.
-                const tempValue = numericArray[currentIdx];
-                numericArray[currentIdx] = numericArray[currentIdx - 1];
-                numericArray[currentIdx - 1] = tempValue;
+        // Set the flag to true, indicating a swap occurred.
+        hasSwapped = 1;
 
-                exchangeOccurred = 1; // Mark the flag to signify that an exchange has taken place.
-                swapCount++; // Increment the overall counter for element swaps.
-            }
-        }
-        processedElements++; // One additional element is now correctly positioned from the right boundary.
+        // Increment the swap counter.
+        swapOperations++;
+      }
     }
+    // After each pass, one more element is guaranteed to be in its sorted position at the end.
+    elementsProcessed++;
+  }
 
-    // Display the elements of the now-sorted array, joined together by spaces.
-    console.log(numericArray.join(' '));
+  // Output the sorted array elements, joined by spaces.
+  console.log(numericSequence.join(' '));
 
-    // Output the grand total of all element swaps executed.
-    console.log(swapCount);
+  // Output the total number of swaps performed.
+  console.log(swapOperations);
 }
 
-
-// The program's launch point: it reads data from the standard input stream and feeds it into the processing function.
-processInputData( require('node:fs').readFileSync('/dev/stdin', 'utf8') );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

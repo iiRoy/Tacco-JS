@@ -1,42 +1,48 @@
-const extractNumeric = (textualRepresentation) => Number(textualRepresentation);
+const convertToInt = (strValue) => Number(strValue);
+const mapToIntegers = (stringArray) => stringArray.map(convertToInt);
+const absoluteValue = (num) => Math.abs(num);
 
-const determineOptimalOutcome = (rawData) => {
-    const contentLines = rawData.split('\n');
-    const totalElements = extractNumeric(contentLines[0]);
-    const elementValues = contentLines.slice(1, totalElements + 1).map(extractNumeric);
+const findMinimum = (...values) => Math.min(...values);
+const findMaximum = (...values) => Math.max(...values);
 
-    elementValues.sort((first, second) => first - second);
+const calculateGCD = (firstNum, secondNum) => (secondNum === 0 ? firstNum : calculateGCD(secondNum, firstNum % secondNum));
+const findGCD = (...numbers) => numbers.reduce(calculateGCD);
 
-    let calculatedScoreA = 0;
-    let calculatedScoreB = 0;
+function processInputData(rawData) {
+    const lines = rawData.split('\n');
+    const elementCount = convertToInt(lines[0]);
+    const numericValues = mapToIntegers(lines.slice(1, elementCount + 1));
 
-    if (totalElements % 2 === 0) {
-        const midPoint = totalElements / 2;
-        
-        const sumLeftHalf = elementValues.slice(0, midPoint).reduce((accum, val) => accum - 2 * val, 0);
-        const sumRightHalf = elementValues.slice(midPoint).reduce((accum, val) => accum + 2 * val, 0);
-        
-        calculatedScoreA = sumLeftHalf + sumRightHalf + elementValues[midPoint - 1] - elementValues[midPoint];
+    numericValues.sort((a, b) => a - b);
 
+    let resultA = 0;
+    let resultB = 0;
+
+    const sumRange = (arr, startIndex, endIndex) => arr.slice(startIndex, endIndex).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+    if (elementCount % 2 === 0) {
+        const midPoint = elementCount / 2;
+        const lowerHalfSum = sumRange(numericValues, 0, midPoint);
+        const upperHalfSum = sumRange(numericValues, midPoint, elementCount);
+
+        resultA = 2 * upperHalfSum - 2 * lowerHalfSum + numericValues[midPoint - 1] - numericValues[midPoint];
     } else {
-        const centerIndex = Math.floor(totalElements / 2);
+        const middleIndex = (elementCount - 1) / 2;
 
-        // Calculate score A (corresponds to original 'x' in the odd case)
-        const initialSumForX = elementValues.slice(0, centerIndex).reduce((accum, val) => accum - 2 * val, 0) +
-                               elementValues.slice(centerIndex).reduce((accum, val) => accum + 2 * val, 0);
-        calculatedScoreA = initialSumForX - elementValues[centerIndex] - elementValues[centerIndex + 1];
+        // Calculation for resultA (corresponds to original 'x')
+        const sumBeforeMiddle = sumRange(numericValues, 0, middleIndex);
+        const sumFromMiddle = sumRange(numericValues, middleIndex, elementCount);
+        resultA = 2 * sumFromMiddle - 2 * sumBeforeMiddle - numericValues[middleIndex] - numericValues[middleIndex + 1];
 
-        // Calculate score B (corresponds to original 'y' in the odd case)
-        const initialSumForY = elementValues.slice(0, centerIndex + 1).reduce((accum, val) => accum - 2 * val, 0) +
-                               elementValues.slice(centerIndex + 1).reduce((accum, val) => accum + 2 * val, 0);
-        calculatedScoreB = initialSumForY + elementValues[centerIndex] + elementValues[centerIndex - 1];
+        // Calculation for resultB (corresponds to original 'y')
+        const sumUpToMiddle = sumRange(numericValues, 0, middleIndex + 1);
+        const sumAfterMiddle = sumRange(numericValues, middleIndex + 1, elementCount);
+        resultB = 2 * sumAfterMiddle - 2 * sumUpToMiddle + numericValues[middleIndex] + numericValues[middleIndex - 1];
     }
 
-    const ultimateResult = Math.max(calculatedScoreA, calculatedScoreB);
-    console.log(ultimateResult);
-};
+    const finalOutcome = findMaximum(resultA, resultB);
 
-(() => {
-    const inputContent = require("fs").readFileSync("/dev/stdin", "utf8");
-    determineOptimalOutcome(inputContent);
-})();
+    console.log(finalOutcome);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,32 +1,36 @@
 'use strict';
-const seekRightmostIndex = (dataCollection, targetValue, initialLeft = 0, initialRight) => {
-    const currentRight = initialRight === undefined ? dataCollection.length : initialRight;
-    if (currentRight - initialLeft <= 1) {
-        return (initialLeft < dataCollection.length && dataCollection[initialLeft] > targetValue) ? initialLeft : currentRight;
-    }
-    const midPoint = initialLeft + Math.floor((currentRight - initialLeft) / 2);
-    if (dataCollection[midPoint] > targetValue) {
-        return seekRightmostIndex(dataCollection, targetValue, initialLeft, midPoint);
+
+function locateUpperBoundary(collection, value) {
+  let lowerBound = 0;
+  let upperBound = collection.length;
+
+  while (lowerBound < upperBound) {
+    const pivot = Math.floor((lowerBound + upperBound) / 2);
+    if (collection[pivot] <= value) {
+      lowerBound = pivot + 1;
     } else {
-        return seekRightmostIndex(dataCollection, targetValue, midPoint, currentRight);
+      upperBound = pivot;
     }
-};
+  }
+  return lowerBound;
+}
 
-console.log((inputTxt) => {
-    const dataLines = inputTxt.split('\n').filter(Boolean);
-    const dimensions = Number(dataLines[0].split(' ')[0]);
-    const vecOne = dataLines[1].split(' ').map(Number);
-    const vecTwo = dataLines[2].split(' ').map(Number).sort((x, y) => x - y);
-    const vecThree = dataLines[3].split(' ').map(Number).sort((x, y) => x - y);
+console.log(function(inputData) {
+  const parsedLines = inputData.trim().split('\n').map(line => line.split(' ').map(Number));
 
-    const totalAggregator = vecOne.reduce((accumulator, primaryElement) => {
-        const startPointInB = seekRightmostIndex(vecTwo, primaryElement);
-        const intermediateSum = vecTwo.slice(startPointInB).reduce((innerAcc, secondaryElement) => {
-            const endPointInC = seekRightmostIndex(vecThree, secondaryElement);
-            return innerAcc + (dimensions - endPointInC);
-        }, 0);
-        return accumulator + intermediateSum;
-    }, 0);
+  const size = parsedLines[0][0];
+  const firstArray = parsedLines[1].slice().sort((x, y) => x - y);
+  const secondArray = parsedLines[2].slice().sort((x, y) => x - y);
+  const thirdArray = parsedLines[3].slice().sort((x, y) => x - y);
 
-    return totalAggregator.toString();
+  let totalTriplets = 0;
+
+  for (const currentB of secondArray) {
+    const countSmallerA = locateUpperBoundary(firstArray, currentB - 1);
+    const countLargerC = size - locateUpperBoundary(thirdArray, currentB);
+    
+    totalTriplets += countSmallerA * countLargerC;
+  }
+
+  return totalTriplets.toString();
 }(require('fs').readFileSync('/dev/stdin', 'utf8')));

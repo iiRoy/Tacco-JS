@@ -1,30 +1,43 @@
-function processGameData(rawData) {
-    const allNumbers = rawData.match(/\d+/g).map(Number);
-    let dataCursor = 0;
+function processCardGame(rawInputData) {
+    const inputLines = rawInputData.split("\n");
+    let currentLinePointer = 0;
+
+    const extractNumbersFromLine = () => {
+        const lineContent = inputLines[currentLinePointer];
+        currentLinePointer++;
+        return lineContent.split(" ").map(Number);
+    };
 
     while (true) {
-        const totalCards = allNumbers[dataCursor++];
-        const numOperations = allNumbers[dataCursor++];
+        const [deckSize, operationCount] = extractNumbersFromLine();
 
-        if (totalCards === 0 && numOperations === 0) {
+        if (deckSize === 0 && operationCount === 0) {
             break;
         }
 
-        let currentDeck = Array.from({ length: totalCards }, (_, i) => totalCards - i);
+        // Initialize the card collection: [undefined, deckSize, deckSize-1, ..., 1]
+        // The 'undefined' at index 0 maintains 1-based indexing for the problem logic.
+        let cardCollection = [undefined, ...Array.from({ length: deckSize }, (_, index) => deckSize - index)];
 
-        for (let opIdx = 0; opIdx < numOperations; opIdx++) {
-            const cutPosition = allNumbers[dataCursor++];
-            const moveCount = allNumbers[dataCursor++];
+        for (let opIteration = 0; opIteration < operationCount; opIteration++) {
+            const [startPosition, moveQuantity] = extractNumbersFromLine();
 
-            const firstPartEndIndex = cutPosition - 1;
+            // Deconstruct the card collection into three logical segments based on the operation:
+            // 1. Cards preceding the 'startPosition'.
+            // 2. The 'moveQuantity' cards starting from 'startPosition'.
+            // 3. Cards remaining after the moved segment.
 
-            const segmentA = currentDeck.slice(0, firstPartEndIndex);
-            const segmentB = currentDeck.slice(firstPartEndIndex, firstPartEndIndex + moveCount);
-            const segmentC = currentDeck.slice(firstPartEndIndex + moveCount);
+            const leadingCards = cardCollection.slice(1, startPosition);
+            const cardsToRelocate = cardCollection.slice(startPosition, startPosition + moveQuantity);
+            const trailingCards = cardCollection.slice(startPosition + moveQuantity);
 
-            currentDeck = [...segmentB, ...segmentA, ...segmentC];
+            // Reconstruct the card collection by placing the relocated cards first,
+            // followed by the leading cards, and then the trailing cards.
+            cardCollection = [undefined, ...cardsToRelocate, ...leadingCards, ...trailingCards];
         }
-        console.log(currentDeck[0]);
+
+        console.log(cardCollection[1]);
     }
 }
-processGameData(require("fs").readFileSync("/dev/stdin","utf8"));
+
+processCardGame(require("fs").readFileSync("/dev/stdin", "utf8"));

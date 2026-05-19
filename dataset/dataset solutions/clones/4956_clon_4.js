@@ -1,22 +1,22 @@
-const rawInputContent = require('node:fs').readFileSync(0, 'utf8');
-const lineSegments = rawInputContent.trim().split('\n');
+const rawInputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const elementsCount = Number(lineSegments.shift());
-const valueStrings = lineSegments.shift().split(' ');
-const processedNumbers = valueStrings.map(Number);
+const arraySize = Number(rawInputLines.shift());
+const numericElements = rawInputLines.shift().split(' ').map(Number);
 
-const reductionResult = processedNumbers.reduce((accumulator, currentNumber, elementIndex) => {
-    const currentPosition = elementIndex + 1;
+const elementMapping = new Map();
+numericElements.forEach((val, idx) => {
+    elementMapping.set(idx + 1, val);
+});
 
-    if (accumulator.registryForPositions.has(currentPosition) &&
-        accumulator.registryForPositions.get(currentPosition) === currentNumber) {
-        
-        accumulator.pairCounter++;
+let matchedPairsCount = 0;
+
+for (const [currentKey, currentValue] of elementMapping.entries()) {
+    const xValue = currentKey;
+    const yValue = currentValue;
+
+    if (yValue < xValue && elementMapping.has(yValue) && elementMapping.get(yValue) === xValue) {
+        matchedPairsCount++;
     }
+}
 
-    accumulator.registryForPositions.set(currentNumber, currentPosition);
-
-    return accumulator;
-}, { pairCounter: 0, registryForPositions: new Map() });
-
-console.log(reductionResult.pairCounter);
+console.log(matchedPairsCount);

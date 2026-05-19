@@ -1,75 +1,76 @@
-"use strict" ; // Enforce strict parsing and error handling rules.
+"use strict"; // Enforces stricter parsing and error handling in the code.
 
 /**
- *   @function processInput
- *   @description This function processes the incoming text data,
- *                parses a numerical value, and prints a corresponding
- *                rating based on predefined ranges.
- *   @param {string} sourceData The raw text data received for processing.
- *   @returns {void} No explicit return value; directly outputs to console.
+ * Processes a raw input string, extracts a numeric value, and categorizes it
+ * based on predefined ranges, printing the corresponding category.
+ * @param {string} rawData - The initial string input, potentially containing whitespace.
  */
-function processInput ( sourceData )
-{
-  // First, clean up the input data by removing leading/trailing whitespace.
-  sourceData = sourceData . trim ( ) ;
+function processInput(rawData) {
+  // First, remove any leading or trailing whitespace from the input string.
+  let cleanedData = rawData.trim();
 
-  // Convert the cleaned string into an integer for numerical comparisons.
-  const scoreMetric = Number . parseInt ( sourceData , 10 ) ; // Explicitly using radix 10 for clarity.
+  // Convert the cleaned string into an integer. This integer will be used for categorization.
+  let scoreValue = parseInt(cleanedData);
 
-  // Evaluate the score metric against various thresholds
-  // and print a specific numeric rating.
-  if ( scoreMetric >= 400 && scoreMetric <= 599 ) {
-    console . log ( "8" ) ;
+  // Series of conditional checks to determine the category based on the 'scoreValue'.
+  // Each 'if' block represents a distinct range for the score.
+  if (scoreValue >= 400 && scoreValue <= 599) {
+    console.log("8"); // Output "8" if the score falls within this specific range.
   }
-  if ( scoreMetric >= 600 && scoreMetric <= 799 ) {
-    console . log ( "7" ) ;
-  }
-  if ( scoreMetric >= 800 && scoreMetric <= 999 ) {
-    console . log ( "6" ) ;
-  }
-  if ( scoreMetric >= 1000 && scoreMetric <= 1199 ) {
-    console . log ( "5" ) ;
-  }
-  if ( scoreMetric >= 1200 && scoreMetric <= 1399 ) {
-    console . log ( "4" ) ;
-  }
-  if ( scoreMetric >= 1400 && scoreMetric <= 1599 ) {
-    console . log ( "3" ) ;
-  }
-  if ( scoreMetric >= 1600 && scoreMetric <= 1799 ) {
-    console . log ( "2" ) ;
-  }
-  if ( scoreMetric >= 1800 && scoreMetric <= 1999 ) {
-    console . log ( "1" ) ;
-  }
-} // End of processInput function definition.
 
-/**
- *   @function orderNumericItems
- *   @description Sorts a given collection of numbers in ascending order.
- *   @param {Array<number>} itemsToOrder A list of numerical values.
- *   @returns {Array<number>} The same list, but with its elements sorted.
- */
-function orderNumericItems( itemsToOrder )
-{
-  // Apply the custom comparison function to sort the array.
-  itemsToOrder . sort ( comparisonFunction ) ;
+  if (scoreValue >= 600 && scoreValue <= 799) {
+    console.log("7"); // Output "7" for scores in this bracket.
+  }
 
-  // Return the now sorted collection.
-  return itemsToOrder ;
+  if (scoreValue >= 800 && scoreValue <= 999) {
+    console.log("6"); // Output "6" for scores between 800 and 999.
+  }
+
+  if (scoreValue >= 1000 && scoreValue <= 1199) {
+    console.log("5"); // Output "5" for scores from 1000 to 1199.
+  }
+
+  if (scoreValue >= 1200 && scoreValue <= 1399) {
+    console.log("4"); // Output "4" for scores in the 1200-1399 range.
+  }
+
+  if (scoreValue >= 1400 && scoreValue <= 1599) {
+    console.log("3"); // Output "3" for scores between 1400 and 1599.
+  }
+
+  if (scoreValue >= 1600 && scoreValue <= 1799) {
+    console.log("2"); // Output "2" for scores from 1600 to 1799.
+  }
+
+  if (scoreValue >= 1800 && scoreValue <= 1999) {
+    console.log("1"); // Output "1" for scores in the highest range, 1800 to 1999.
+  }
 }
 
-// Define an anonymous function to serve as a comparison logic for sorting.
-const comparisonFunction = function ( itemA , itemB )
-{
-  // This function returns a negative value if itemA < itemB,
-  // zero if itemA == itemB, and a positive value if itemA > itemB,
-  // thus sorting in ascending numerical order.
-  return itemA - itemB ;
-} ; // Semicolon after function expression assignment.
+/**
+ * Sorts an array of numbers in ascending order using a custom comparison function.
+ * This function is defined but not invoked within the primary execution flow of this script.
+ * @param {Array<number>} numericCollection - The array of numbers that needs to be sorted.
+ * @returns {Array<number>} The same array, but with its elements sorted numerically in ascending order.
+ */
+function arrangeNumericArray(numericCollection) {
+  numericCollection.sort(ascendingComparator); // Applies the 'ascendingComparator' to sort the array.
+  return numericCollection; // Returns the now sorted array.
+}
 
+/**
+ * A constant function expression that serves as a comparator for sorting numbers.
+ * It's designed for use with Array.prototype.sort() to achieve ascending numerical order.
+ * @param {number} valA - The first number to compare.
+ * @param {number} valB - The second number to compare.
+ * @returns {number} A negative value if valA should come before valB,
+ *                   a positive value if valA should come after valB,
+ *                   or zero if they are considered equal.
+ */
+const ascendingComparator = function (valA, valB) {
+  return valA - valB; // Standard comparison for ascending numeric sort.
+};
 
-// The main entry point for the application:
-// Read content from standard input, decode it as UTF-8, and pass it
-// to the primary processing function.
-processInput( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf-8" ) ) ;
+// The main entry point of the script:
+// Reads content from standard input, decodes it as UTF-8, and passes it to the 'processInput' function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

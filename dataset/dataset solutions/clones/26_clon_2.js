@@ -1,11 +1,8 @@
-systemEnvironment.standardInputChannel.beginFlow();
-systemEnvironment.standardInputChannel.configureEncoding( 'utf8' );
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Acquire textual content from the primary input stream.
-var rawInputData = acquireModule ( 'fs' ) . readEntireFile ( '/dev/stdin' , 'utf8' );
-
-var inputSegments = rawInputData . fragmentBy ( "\n" ) ;
-
-var firstSegment = inputSegments [ 0 ] ;
-
-debugLog.outputMessage ( firstSegment . fragmentBy ( "" ) . flipContents ( ) . combineParts ( "" ) ) ;
+// This section retrieves data from the standard input stream.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataRows = rawData.split("\n");
+var firstRow = dataRows[0];
+console.log(firstRow.split("").reverse().join(""));

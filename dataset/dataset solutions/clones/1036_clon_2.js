@@ -1,48 +1,38 @@
-// This module initiates the core data processing routine.
-function  ExecuteProgram (  incomingText  )  {
-    // The initial data block is segmented into individual lines for further processing.
-    incomingText  =  incomingText.split ( "\n" ) ;
+function ProcessInput(rawData) {
+  // This function processes the given raw data to find common elements.
+  rawData = rawData.split("\n"); // Divide the input string into lines.
 
-    // Extract the dimension for the first collection from the initial line.
-    var  firstArraySize  =  parseInt ( incomingText[0],  10 ) ;
-    // Retrieve the dimension for the second collection from the third line.
-    var  secondArraySize  =  parseInt ( incomingText[2],  10 ) ;
+  let firstCount = parseInt(rawData[0], 10); // Extract the first numerical parameter from the first line.
+  let secondCount = parseInt(rawData[2], 10); // Extract the second numerical parameter from the third line.
 
-    // The second line of the input is fragmented by space characters.
-    incomingText[1]  = incomingText[1].split ( " " ) ;
-    // Similarly, the fourth line is also fragmented by spaces.
-    incomingText[3]  = incomingText[3].split ( " " ) ;
+  rawData[1] = rawData[1].split(" "); // Split the second line into individual string elements.
+  rawData[3] = rawData[3].split(" "); // Split the fourth line into individual string elements.
 
-    // Instantiate two arrays with their respective predetermined capacities.
-    var  primaryValues  =  new  Array ( firstArraySize ) ,
-         secondaryValues  =  new  Array ( secondArraySize ) ;
+  const firstList = new Array(firstCount); // Initialize an array for the first set of numbers.
+  const secondList = new Array(secondCount); // Initialize an array for the second set of numbers.
 
-    // Populate the first array by parsing string representations into integers.
-    for  ( var  idxA  =  0 ;  idxA  <  firstArraySize ;  idxA++  )  {
-        primaryValues[idxA]  =  parseInt ( incomingText[1][idxA],  10 ) ;
+  // Populate the first list with parsed integers.
+  for (let idxA = 0; idxA < firstCount; idxA++) {
+    firstList[idxA] = parseInt(rawData[1][idxA], 10);
+  }
+
+  // Populate the second list with parsed integers.
+  for (let idxB = 0; idxB < secondCount; idxB++) {
+    secondList[idxB] = parseInt(rawData[3][idxB], 10);
+  }
+
+  let matchTally = 0; // Initialize a counter for matching elements.
+
+  // Iterate through both lists to find common elements.
+  for (let idxA = 0; idxA < firstCount; idxA++) {
+    for (let idxB = 0; idxB < secondCount; idxB++) {
+      // Increment the tally if elements are strictly equal.
+      matchTally += (firstList[idxA] === secondList[idxB]);
     }
+  }
 
-    // Populate the second array using similar parsing operations.
-    for  ( var  idxB  =  0 ;  idxB  <  secondArraySize ;  idxB++  )  {
-        secondaryValues[idxB]  =  parseInt ( incomingText[3][idxB],  10 ) ;
-    }
-
-    // Initialize a counter to track matching occurrences.
-    var  matchTally  =  0 ;
-
-    // Commence a nested iteration to compare every element from the first array
-    // against every element in the second array.
-    for  ( var  idxA  =  0 ;  idxA  <  firstArraySize ;  idxA++  )  {
-        for  ( var  idxB  =  0 ;  idxB  <  secondArraySize ;  idxB++  )  {
-            // If elements are equivalent, increment the match counter.
-            // Boolean comparison (true=1, false=0) is implicitly converted.
-            matchTally  +=  ( primaryValues[idxA]  ==  secondaryValues[idxB] ) ;
-        } // End inner loop
-    }     // End outer loop
-
-    // Display the computed total number of matches to the console.
-    console.log ( matchTally ) ;
+  console.log(matchTally); // Display the final count of matches.
 }
 
-// The program is invoked by reading data from standard input.
-ExecuteProgram ( require ( "fs" ) . readFileSync ( "/dev/stdin",  "utf8" ) ) ;
+// Execute the main processing function with file system input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

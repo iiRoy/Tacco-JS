@@ -1,162 +1,134 @@
-let graph_items = [];
-let constraint_set = [];
+var graphNodes = [];
+var constraintPaths = [];
+// Edge naming convention: (smaller_node_id * 0x64) + larger_node_id
 
-// This section defines the method for creating unique identifiers for edges:
-// the lower-indexed vertex multiplied by one hundred, then added to the higher-indexed vertex.
+function ProcessInput(rawData) {
+    rawData = rawData.split("\n");
 
-
-function ProcessInputData(input_lines_raw) {
-    // The provided input stream is structured such that each line corresponds to an entry
-    // in the array, starting with the first line at index zero.
-    input_lines_raw = input_lines_raw.split("\n");
-
-
-    // For converting textual representations into base-10 numerical values,
-    // the standard parseInt function should be utilized.
-    let num_vertices = parseInt(input_lines_raw[0], 10);
-    for (let loop_idx = 0; loop_idx < num_vertices; loop_idx++) {
-        let vertex_details = {
-            own_identifier: loop_idx,
-            connected_children: [],
-            hierarchy_level: 0,
-            ancestor_reference: null
-            // This property stores the array index within the 'graph_items' collection
-            // for any directly linked child vertices.
+    var nodeCount = parseInt(rawData[0], 0xA);
+    for (var idx = 0x0; idx < nodeCount; idx++) {
+        var nodeInfo = {
+            nodeId: idx,
+            connectedNodes: [],
+            nodeDepth: 0x0,
+            parentNode: null
+            // Index of connected nodes within the graphNodes array
         };
-        graph_items.push(vertex_details);
-    }
-    // The subsequent loop processes the edge definitions provided in the input.
-    for (let loop_idx = 1; loop_idx < num_vertices; loop_idx++) {
-        let line_segments = input_lines_raw[loop_idx].split(" ");
-        let start_vertex_id = parseInt(line_segments[0], 10);
-        let end_vertex_id = parseInt(line_segments[1], 10);
-        graph_items[start_vertex_id - 1].connected_children.push(end_vertex_id - 1);
-        graph_items[end_vertex_id - 1].connected_children.push(start_vertex_id - 1);
-    }
-    OrganizeGraph(graph_items[0]);
-    // The hierarchical structuring of the graph, resembling a tree,
-    // is now fully established and prepared for further processing.
-
-    // Now, we proceed to analyze the specified constraints.
-    let num_constraints = parseInt(input_lines_raw[num_vertices]); // This variable holds the total count of restrictions.
-    for (let loop_idx = num_vertices + 1; loop_idx <= num_vertices + num_constraints; loop_idx++) {
-        let line_segments = input_lines_raw[loop_idx].split(" ");
-        let constraint_vertex_a = parseInt(line_segments[0], 10);
-        let constraint_vertex_b = parseInt(line_segments[1], 10);
-        constraint_set.push(DetermineEdgeSequence(constraint_vertex_a - 1, constraint_vertex_b - 1));
+        graphNodes.push(nodeInfo);
     }
 
-    let aggregated_results_map = AggregateEdges();
+    // Process edge connections for the graph
+    for (var idx = 0x1; idx < nodeCount; idx++) {
+        var tempParts = rawData[idx].split(" ");
+        var firstNodeIdx = parseInt(tempParts[0x0], 0xA);
+        var secondNodeIdx = parseInt(tempParts[0x1], 0xA);
+        graphNodes[firstNodeIdx - 0x1].connectedNodes.push(secondNodeIdx - 0x1);
+        graphNodes[secondNodeIdx - 0x1].connectedNodes.push(firstNodeIdx - 0x1);
+    }
 
+    ArrangeTreeStructure(graphNodes[0x0]);
+    // At this point, the tree structure (depths and parents) is established.
 
-    let final_calculated_sum = 0;
+    // Now, let's examine the constraints.
+    var constraintCount = parseInt(rawData[nodeCount]); // Number of restrictions
+    for (var idx = nodeCount + 0x1; idx <= nodeCount + constraintCount; idx++) {
+        var tempParts = rawData[idx].split(" ");
+        var restrictNodeA = parseInt(tempParts[0x0], 0xA);
+        var restrictNodeB = parseInt(tempParts[0x1], 0xA);
+        constraintPaths.push(FindPathBetweenNodes(restrictNodeA - 0x1, restrictNodeB - 0x1));
+    }
 
-    for (const combination_code in aggregated_results_map) {
-        if (TallySubstrings(combination_code, "1") % 2 === 1) {
-            final_calculated_sum += Math.pow(2, num_vertices - (1 + aggregated_results_map[combination_code].length));
+    var pathCombinations = CalculatePathIntersections();
+
+    var exclusionPattern = 0x0;
+
+    for (var binaryKey in pathCombinations) {
+        if (CountOccurrences(binaryKey, "1") % 0b10 === 0x1) {
+            exclusionPattern += Math.pow(0b10, nodeCount - (0x1 + pathCombinations[binaryKey].length));
         } else {
-            final_calculated_sum -= Math.pow(2, num_vertices - (1 + aggregated_results_map[combination_code].length));
-
+            exclusionPattern -= Math.pow(0b10, nodeCount - (0x1 + pathCombinations[binaryKey].length));
         }
     }
-    console.log(Math.pow(2, num_vertices - 1) - final_calculated_sum);
-    // The following line is a placeholder for debugging output, currently deactivated.
+    console.log(Math.pow(0b10, nodeCount - 0x1) - exclusionPattern);
+    // console.log('Final result: %d', finalValue);
 }
-// This function computes the union of edge sets.
-function AggregateEdges() {
-    let output_collection = {};
-    for (let loop_idx = 1; loop_idx < Math.pow(2, constraint_set.length); loop_idx++) {
-        let binary_representation = loop_idx.toString(2);
-        if (TallySubstrings(binary_representation, "1") === 1) {
-            output_collection[binary_representation] = constraint_set[binary_representation.length - 1];
+
+// Computes the union of paths for combinations of restrictions
+function CalculatePathIntersections() {
+    var intersectionMap = {};
+    for (var idx = 0x1; idx < Math.pow(0b10, constraintPaths.length); idx++) {
+        var binaryKey = idx.toString(0b10);
+        if (CountOccurrences(binaryKey, "1") === 0x1) {
+            intersectionMap[binaryKey] = constraintPaths[binaryKey.length - 0x1];
         } else {
-            // Compute the union of the elements derived from the initial and concluding segments.
-            let leading_component = "" + binary_representation.substring(0, 1) * Math.pow(10, binary_representation.length - 1);
-            let trailing_component = "" + parseInt(binary_representation.substring(1, binary_representation.length), 2).toString(2);
-            output_collection[binary_representation] = DeduplicateArray(output_collection[leading_component].concat(output_collection[trailing_component]));
+            // Determine the union of paths from the first and last parts of the binary key
+            var firstPartKey = "" + binaryKey.substring(0x0, 0x1) * Math.pow(0xA, binaryKey.length - 0x1);
+            var remainingPartKey = "" + parseInt(binaryKey.substring(0x1, binaryKey.length), 0b10).toString(0b10);
+            intersectionMap[binaryKey] = RemoveDuplicates(intersectionMap[firstPartKey].concat(intersectionMap[remainingPartKey]));
         }
-
     }
-
-    return output_collection;
-
+    return intersectionMap;
 }
 
-function DeduplicateArray(source_list) {
-    return source_list.filter((item_val, item_pos, original_ref) => original_ref.indexOf(item_val) === item_pos);
+function RemoveDuplicates(inputArray) {
+    return inputArray.filter((elementValue, elementIndex, selfArray) => selfArray.indexOf(elementValue) === elementIndex);
 }
 
-function TallySubstrings(target_text, search_char) {
-    return (target_text.match(new RegExp(search_char, "g")) || []).length;
+function CountOccurrences(inputString, targetChar) {
+    return (inputString.match(new RegExp(targetChar, "g")) || []).length;
 }
 
-function DetermineEdgeSequence(start_vertex_id, end_vertex_id) { // This function operates exclusively with numerical identifiers for vertices,
-    // rather than relying on direct object references.
-    let path_elements = [];
-    let level_start = graph_items[start_vertex_id].hierarchy_level;
-    let level_end = graph_items[end_vertex_id].hierarchy_level;
+function FindPathBetweenNodes(startNodeIndex, endNodeIndex) { // Operates with node indices, not objects
+    var pathEdges = [];
+    var startDepth = graphNodes[startNodeIndex].nodeDepth;
+    var endDepth = graphNodes[endNodeIndex].nodeDepth;
 
     while (true) {
-        if (level_start === level_end) {
-
-            if (start_vertex_id === end_vertex_id) {
+        if (startDepth === endDepth) {
+            if (startNodeIndex === endNodeIndex) {
                 break;
             }
 
-            path_elements.push(Math.min(start_vertex_id, graph_items[start_vertex_id].ancestor_reference) * 100 + Math.max(start_vertex_id, graph_items[start_vertex_id].ancestor_reference));
-            level_start -= 1;
-            start_vertex_id = graph_items[start_vertex_id].ancestor_reference;
+            pathEdges.push(Math.min(startNodeIndex, graphNodes[startNodeIndex].parentNode) * 0x64 + Math.max(startNodeIndex, graphNodes[startNodeIndex].parentNode));
+            startDepth -= 0x1;
+            startNodeIndex = graphNodes[startNodeIndex].parentNode;
 
-            path_elements.push(Math.min(end_vertex_id, graph_items[end_vertex_id].ancestor_reference) * 100 + Math.max(end_vertex_id, graph_items[end_vertex_id].ancestor_reference));
-            level_end -= 1;
-            end_vertex_id = graph_items[end_vertex_id].ancestor_reference;
+            pathEdges.push(Math.min(endNodeIndex, graphNodes[endNodeIndex].parentNode) * 0x64 + Math.max(endNodeIndex, graphNodes[endNodeIndex].parentNode));
+            endDepth -= 0x1;
+            endNodeIndex = graphNodes[endNodeIndex].parentNode;
 
-        } else if (level_start > level_end) {
-
-            path_elements.push(Math.min(start_vertex_id, graph_items[start_vertex_id].ancestor_reference) * 100 + Math.max(start_vertex_id, graph_items[start_vertex_id].ancestor_reference));
-            level_start -= 1;
-            start_vertex_id = graph_items[start_vertex_id].ancestor_reference;
+        } else if (startDepth > endDepth) {
+            pathEdges.push(Math.min(startNodeIndex, graphNodes[startNodeIndex].parentNode) * 0x64 + Math.max(startNodeIndex, graphNodes[startNodeIndex].parentNode));
+            startDepth -= 0x1;
+            startNodeIndex = graphNodes[startNodeIndex].parentNode;
 
         } else {
-
-
-            path_elements.push(Math.min(end_vertex_id, graph_items[end_vertex_id].ancestor_reference) * 100 + Math.max(end_vertex_id, graph_items[end_vertex_id].ancestor_reference));
-            level_end -= 1;
-            end_vertex_id = graph_items[end_vertex_id].ancestor_reference;
+            pathEdges.push(Math.min(endNodeIndex, graphNodes[endNodeIndex].parentNode) * 0x64 + Math.max(endNodeIndex, graphNodes[endNodeIndex].parentNode));
+            endDepth -= 0x1;
+            endNodeIndex = graphNodes[endNodeIndex].parentNode;
         }
     }
 
-    return path_elements;
+    return pathEdges;
 }
 
-function OrganizeGraph(focus_element) {
+function ArrangeTreeStructure(currentNode) {
+    for (var idx = 0x0; idx < currentNode.connectedNodes.length; idx++) {
+        var potentialChildIndex = currentNode.connectedNodes[idx]; // Check if the i-th potential child is actually its parent. Skip if it is, otherwise keep it as a child.
 
-    for (let loop_idx = 0; loop_idx < focus_element.connected_children.length; loop_idx++) {
-
-        let temporary_storage = [];
-        let potential_child_id = focus_element.connected_children[loop_idx]; // Examine if the current potential child, identified by 'loop_idx',
-        // is in fact the parent of the 'focus_element'. If it is the parent,
-        // it should be skipped; otherwise, it remains a valid child.
-        if (potential_child_id !== focus_element.ancestor_reference) {
-
-
-            graph_items[potential_child_id].ancestor_reference = focus_element.own_identifier;
-
-            graph_items[potential_child_id].hierarchy_level = focus_element.hierarchy_level + 1;
-            // For valid child nodes, their parent reference is explicitly set to the current node's identifier.
-            OrganizeGraph(graph_items[potential_child_id]);
+        if (potentialChildIndex !== currentNode.parentNode) {
+            graphNodes[potentialChildIndex].parentNode = currentNode.nodeId;
+            graphNodes[potentialChildIndex].nodeDepth = currentNode.nodeDepth + 0x1;
+            // If it's a true child, set its parent to the current node.
+            ArrangeTreeStructure(graphNodes[potentialChildIndex]);
 
         } else {
-            focus_element.connected_children.splice(loop_idx, 1);
-            loop_idx--;
-            // If the element is identified as the parent, it is consequently
-            // removed from the list of children to prevent circular references.
+            currentNode.connectedNodes.splice(idx, 0x1);
+            idx--;
+            // If it was the parent, remove it from the child list to avoid cycles.
         }
     }
-
 }
 
-// *WARNING: Do not modify any code below this point.
-// This segment is responsible for reading standard input in its entirety
-// and subsequently invoking the primary execution function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+//* Do not modify anything below this line (reads from standard input and calls the main processing function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

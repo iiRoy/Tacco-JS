@@ -1,26 +1,25 @@
-function analyzeContent(rawDataInput) {
-    const contentSegments = rawDataInput.split("\n");
-
-    const desiredPhrase = contentSegments.shift();
-
-    const escapedPhrase = desiredPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    const searchPattern = new RegExp(escapedPhrase, 'g');
-
-    const finalOutcome = contentSegments.reduce((accumulatorObject, currentSegment) => {
-        if (accumulatorObject.hasStopped) {
-            return accumulatorObject;
-        }
-
-        if (currentSegment === "END_OF_TEXT") {
-            return { totalCount: accumulatorObject.totalCount, hasStopped: true };
-        }
-
-        const foundInstances = [...currentSegment.matchAll(searchPattern)];
-
-        return { totalCount: accumulatorObject.totalCount + foundInstances.length, hasStopped: false };
-    }, { totalCount: 0, hasStopped: false });
-
-    console.log(finalOutcome.totalCount);
+function sanitizePatternString(inputString) {
+    return inputString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-analyzeContent(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function processInput(rawDataString) {
+    const lineSegments = rawDataString.split("\n");
+
+    const targetPhrase = lineSegments.shift();
+    const escapedTargetPhrase = sanitizePatternString(targetPhrase);
+
+    const searchRegex = new RegExp(escapedTargetPhrase, 'g');
+
+    const totalOccurrences = lineSegments.reduce((accumulator, currentTextLine) => {
+        if (currentTextLine === "END_OF_TEXT") {
+            return accumulator;
+        }
+
+        const lineMatches = Array.from(currentTextLine.matchAll(searchRegex));
+        return accumulator + lineMatches.length;
+    }, 0);
+
+    console.log(totalOccurrences);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

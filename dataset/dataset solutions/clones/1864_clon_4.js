@@ -1,117 +1,189 @@
 "use strict";
 
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
-
-const PRIME_MODULUS = 1000000007n;
-
-const bigGcd = (firstVal, secondVal) => {
-    let x = firstVal < 0n ? -firstVal : firstVal;
-    let y = secondVal < 0n ? -secondVal : secondVal;
-    while (y !== 0n) {
-        let temp = y;
-        y = x % y;
-        x = temp;
+// --- Input Handling (Substantially different implementation) ---
+function* tokenStreamGenerator(rawInput) {
+    // Split input by spaces or newlines, filter out empty strings
+    const tokens = rawInput.split(/ |\n/).filter(t => t !== '');
+    for (const token of tokens) {
+        yield token;
     }
-    return x;
-};
+}
 
-const modularMultiply = (lhs, rhs) => {
-    return (lhs * rhs) % PRIME_MODULUS;
-};
+let inputTokenIterator; // Initialized in the main execution block
 
-const modularExponentiation = (base, exponent) => {
+function retrieveNextToken() {
+    const { value, done } = inputTokenIterator.next();
+    if (done) {
+        throw new Error("End of input stream reached unexpectedly.");
+    }
+    return value;
+}
+
+function retrieveNextNumber() {
+    return Number(retrieveNextToken());
+}
+
+function retrieveNextBigInt() {
+    return BigInt(retrieveNextToken());
+}
+
+// --- Mathematical Utilities (Substantially different implementation, using BigInts throughout) ---
+const MOD_VAL = 1000000007n; // Modulo constant as BigInt
+
+function computeGreatestCommonDivisor(valA, valB) {
+    valA = valA < 0n ? -valA : valA; // Ensure positive for GCD
+    valB = valB < 0n ? -valB : valB; // Ensure positive for GCD
+    while (valB !== 0n) {
+        const temp = valB;
+        valB = valA % valB;
+        valA = temp;
+    }
+    return valA;
+}
+
+function modularMultiplication(factorA, factorB) {
+    return (factorA * factorB) % MOD_VAL;
+}
+
+function modularExponentiation(baseVal, exponentVal) {
     let result = 1n;
-    let currentBase = base % PRIME_MODULUS;
-    let currentExponent = exponent;
-    while (currentExponent > 0n) {
-        if (currentExponent % 2n === 1n) {
-            result = modularMultiply(result, currentBase);
+    baseVal %= MOD_VAL;
+    while (exponentVal > 0n) {
+        if (exponentVal % 2n === 1n) {
+            result = modularMultiplication(result, baseVal);
         }
-        currentBase = modularMultiply(currentBase, currentBase);
-        currentExponent /= 2n;
+        baseVal = modularMultiplication(baseVal, baseVal);
+        exponentVal /= 2n;
     }
     return result;
-};
+}
 
-const normalizeModulo = (value) => {
-    return (value % PRIME_MODULUS + PRIME_MODULUS) % PRIME_MODULUS;
-};
+// Modular inverse using Fermat's Little Theorem (MOD_VAL is prime)
+function modularInverse(num) {
+    return modularExponentiation(num, MOD_VAL - 2n);
+}
 
-const solveProblem = () => {
-    const tokens = dataSource.split(/\s+/).filter(Boolean);
-    let tokenPointer = 0;
+function normalizeModulo(num) {
+    return (num % MOD_VAL + MOD_VAL) % MOD_VAL;
+}
 
-    const readLargeInteger = () => BigInt(tokens[tokenPointer++]);
+// --- Core Logic (Substantially different implementation strategy) ---
+function solveProblem() {
+    const vectorCount = retrieveNextNumber();
 
-    const totalPairs = readLargeInteger();
+    let zeroX_nonZeroY_count = 0; // Count of (0, Y) vectors where Y != 0
+    let nonZeroX_zeroY_count = 0; // Count of (X, 0) vectors where X != 0
 
-    let verticalVectorCount = 0n; // Corresponds to original 'az'
-    let horizontalVectorCount = 0n; // Corresponds to original 'bz'
-    const directionalCounts = new Map(); // Map<string "a,b", bigint count>
+    // Using a Map for vector counts, where key is "a,b" string
+    // and values are counts. This replaces the nested object structure.
+    const nonZeroVectorGroups = new Map();
 
-    for (let currentIdx = 0; currentIdx < totalPairs; currentIdx++) {
-        const componentA = readLargeInteger();
-        const componentB = readLargeInteger();
+    for (let i = 0; i < vectorCount; i++) {
+        let currentA = retrieveNextBigInt();
+        let currentB = retrieveNextBigInt();
 
-        if (componentA === 0n && componentB === 0n) continue;
+        if (currentA === 0n && currentB === 0n) {
+            continue; // Ignore (0,0) vectors
+        }
 
-        if (componentA === 0n) {
-            verticalVectorCount++;
+        if (currentA === 0n) {
+            zeroX_nonZeroY_count++;
             continue;
         }
-        if (componentB === 0n) {
-            horizontalVectorCount++;
+        if (currentB === 0n) {
+            nonZeroX_zeroY_count++;
             continue;
         }
 
-        const commonDivisor = bigGcd(componentA, componentB);
-        let normalizedA = componentA / commonDivisor;
-        let normalizedB = componentB / commonDivisor;
+        // Normalize non-zero, non-zero vectors to a canonical form:
+        // GCD division, then ensure first component is positive.
+        // If first component is zero, ensure second component is positive.
+        const commonDivisor = computeGreatestCommonDivisor(currentA, currentB);
+        currentA /= commonDivisor;
+        currentB /= commonDivisor;
 
-        // Ensure normalizedA is positive for canonical representation
-        if (normalizedA < 0n) {
-            normalizedA = -normalizedA;
-            normalizedB = -normalizedB;
+        if (currentA < 0n || (currentA === 0n && currentB < 0n)) {
+            currentA = -currentA;
+            currentB = -currentB;
         }
 
-        const vectorKey = `${normalizedA},${normalizedB}`;
-        directionalCounts.set(vectorKey, (directionalCounts.get(vectorKey) || 0n) + 1n);
+        const canonicalKey = `${currentA},${currentB}`;
+        nonZeroVectorGroups.set(canonicalKey, (nonZeroVectorGroups.get(canonicalKey) || 0) + 1);
     }
 
-    let cumulativeResult = 1n;
-    // Initial term for vertical and horizontal vectors
-    // (2^verticalVectorCount + 2^horizontalVectorCount - 1)
-    const initialTerm = (modularExponentiation(2n, verticalVectorCount) + modularExponentiation(2n, horizontalVectorCount) - 1n);
-    cumulativeResult = modularMultiply(cumulativeResult, initialTerm);
+    // Calculate initial ways for (0,Y) and (X,0) vectors
+    // This is (2^zeroX_nonZeroY_count - 1) + (2^nonZeroX_zeroY_count - 1) + 1
+    // which simplifies to 2^zeroX_nonZeroY_count + 2^nonZeroX_zeroY_count - 1
+    let totalCombinations = (modularExponentiation(2n, BigInt(zeroX_nonZeroY_count)) +
+                             modularExponentiation(2n, BigInt(nonZeroX_zeroY_count)) - 1n);
+    totalCombinations = normalizeModulo(totalCombinations);
 
-    const processedKeys = new Set();
+    // Use a Set to track processed canonical keys to avoid double-counting orthogonal pairs.
+    const processedCanonicalKeys = new Set();
 
-    for (const [vectorKey, count] of directionalCounts.entries()) {
-        if (processedKeys.has(vectorKey)) {
-            continue;
+    // Iterate through the canonical non-zero, non-zero vector groups
+    // Using Map.entries() and for...of loop, different from original for...in
+    for (const [canonicalKey, groupCount] of nonZeroVectorGroups.entries()) {
+        if (processedCanonicalKeys.has(canonicalKey)) {
+            continue; // This group has already been handled as part of an orthogonal pair
         }
 
-        const [aStr, bStr] = vectorKey.split(',');
+        const [aStr, bStr] = canonicalKey.split(',');
         const aVal = BigInt(aStr);
         const bVal = BigInt(bStr);
 
-        // Find the orthogonal partner (b, -a)
-        const orthogonalKey = `${bVal},${-aVal}`;
-        const orthogonalCount = directionalCounts.get(orthogonalKey) || 0n;
+        // Calculate the canonical form of the orthogonal vector (-b, a)
+        let orthogonalA = -bVal;
+        let orthogonalB = aVal;
 
-        // Calculate term for this orthogonal pair: (2^count + 2^orthogonalCount - 1)
-        const groupTerm = (modularExponentiation(2n, count) + modularExponentiation(2n, orthogonalCount) - 1n);
-        cumulativeResult = modularMultiply(cumulativeResult, groupTerm);
+        const orthCommonDivisor = computeGreatestCommonDivisor(orthogonalA, orthogonalB);
+        orthogonalA /= orthCommonDivisor;
+        orthogonalB /= orthCommonDivisor;
 
-        processedKeys.add(vectorKey);
-        processedKeys.add(orthogonalKey); // Mark both original and orthogonal keys as processed
+        if (orthogonalA < 0n || (orthogonalA === 0n && orthogonalB < 0n)) {
+            orthogonalA = -orthogonalA;
+            orthogonalB = -orthogonalB;
+        }
+        const orthogonalCanonicalKey = `${orthogonalA},${orthogonalB}`;
+
+        processedCanonicalKeys.add(canonicalKey); // Mark current group as processed
+
+        let currentGroupContribution;
+        if (orthogonalCanonicalKey === canonicalKey) {
+            // This case implies the vector is orthogonal to itself after normalization.
+            // For non-zero a,b, this should not happen with the chosen normalization.
+            // If it did, it would just be the combinations of this group.
+            currentGroupContribution = modularExponentiation(2n, BigInt(groupCount));
+        } else if (nonZeroVectorGroups.has(orthogonalCanonicalKey)) {
+            // Found an orthogonal group
+            const orthogonalGroupCount = nonZeroVectorGroups.get(orthogonalCanonicalKey);
+            const waysForCurrentGroup = modularExponentiation(2n, BigInt(groupCount));
+            const waysForOrthogonalGroup = modularExponentiation(2n, BigInt(orthogonalGroupCount));
+
+            // The number of ways to choose subsets from these two orthogonal groups
+            // is (waysForCurrentGroup + waysForOrthogonalGroup - 1)
+            // This is (2^C1 - 1) + (2^C2 - 1) + 1 = 2^C1 + 2^C2 - 1
+            currentGroupContribution = (waysForCurrentGroup + waysForOrthogonalGroup - 1n);
+            currentGroupContribution = normalizeModulo(currentGroupContribution);
+
+            processedCanonicalKeys.add(orthogonalCanonicalKey); // Mark orthogonal group as processed
+        } else {
+            // No orthogonal group found for this vector
+            currentGroupContribution = modularExponentiation(2n, BigInt(groupCount));
+        }
+
+        totalCombinations = modularMultiplication(totalCombinations, currentGroupContribution);
     }
 
-    // Subtract 1 for the empty set
-    return normalizeModulo(cumulativeResult - 1n);
-};
+    // Subtract 1 for the empty set of vectors (which is always counted)
+    return normalizeModulo(totalCombinations - 1n);
+}
 
-const problemOutput = solveProblem();
-if (problemOutput !== undefined) {
-    console.log(problemOutput.toString());
+// --- Main Execution Block ---
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+inputTokenIterator = tokenStreamGenerator(rawInputData);
+
+const finalResult = solveProblem();
+if (finalResult !== undefined) {
+    console.log(finalResult.toString()); // Ensure BigInt result is converted to string for output
 }

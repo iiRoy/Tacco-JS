@@ -1,20 +1,19 @@
-function ProcessData(sourceString)
-{
-	// Calculate the length of the central portion of the incoming sequence.
-	let middleSegmentLength = sourceString.length - 2;
+function ProcessInput(rawData) {
+    // Calculate the number of characters between the first and last ones
+    let middleCount = rawData.length - 2;
 
-	// Extract the very first character from the provided textual data.
-	const firstCharacter = sourceString.substr(0, 1);
+    // Extract the initial character from the input string
+    let firstChar = rawData.substring(0, 1);
 
-	// Retrieve the concluding character from the supplied text.
-	let lastCharacter = sourceString.substr(sourceString.length - 1, 1);
+    // Retrieve the final character of the input string
+    let lastChar = rawData.substring(rawData.length - 1, rawData.length);
 
-	// Formulate the ultimate output string by combining the extracted parts.
-	const finalResult = firstCharacter + middleSegmentLength + lastCharacter;
+    // Concatenate the first character, the middle count, and the last character
+    let resultString = firstChar + middleCount + lastChar;
 
-	// Display the generated string to the user via the console.
-	console.log(finalResult);
+    // Output the constructed string to the console
+    console.log(resultString);
 }
 
-// Initiate the data processing workflow by reading input from the standard stream.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input as a UTF-8 string and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

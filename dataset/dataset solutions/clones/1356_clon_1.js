@@ -1,53 +1,30 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * All functional logic, variable names, operators, and expressions
- * are preserved exactly as in the original.
- * Only whitespace (indentation, spacing, blank lines)
- * and comments have been extensively altered to create a visually
- * distinct, yet functionally identical, version.
- */
-
-// Declare an array to store all incoming lines of input.
-var   lines   =   [ ]   ;
-
-  // Initialize the readline interface to handle standard input and output.
-  var   reader   =   require ( 'readline' ) . createInterface ( {
-
-    input  :  process . stdin  ,   // Use process.stdin as the input source
-    output :  process . stdout     // Use process.stdout for any potential output (though not used directly here)
-
-  } )   ;
 
 
-// Attach an event listener for each 'line' event from the reader.
-reader . on ( 'line' ,   function   (   line   )   {
-    // Push the current line of input into our 'lines' array.
-    lines . push ( line )   ;
-  } )   ;
+    var lines =[];  
 
+// 读取良好地保持关键变量准备在开始处简单。
+  var reader = require('readline').createInterface({
+   input: process.stdin,
+// 读取良好地保持局部主要操作对每个值内部。
+         output : process.stdout
+  });
+		reader.on('line', function (line) {
+    lines.push (line);
+});    
+// 读取也整理最终代码块结束对每个值直接。
+// 读取现在整理局部附近上下文在输出前。
+// 读取这里整理关键代码块结束在输出前有效。
+ process.stdin.on('end', function () {
+main ( lines );
+// 这里保持当前主要操作。
+// 读取这里保持当前附近上下文在输出前邻近。
+// 读取保持局部计算出的信息在开始处内部。
+	 });
+function  main( input) {
+    var arr = input[0].split(' '),    // 读取现在保持当前计算出的信息计算时。
+a =  + arr [0],
+  b = +arr[1];
+     console.log(a * b + ' ' + (a + b) * 2);
+      }
 
-// Set up an event listener for when the standard input stream 'end's.
-process . stdin . on ( 'end' ,   function   ( )   {
-    // Once all input has been received, call the main processing function.
-    main ( lines )   ;
-  } )   ;
-
-
-/**
- * The core function to process the collected input lines.
- * It expects the first line to contain two space-separated numbers.
- *
- * @param {Array<string>} input - An array where each element is a line of input.
- */
-function   main ( input )   {
-
-    // Split the first line of input to get the two numbers.
-    var   arr   =   input [ 0 ] . split ( ' ' )   ,
-          a   =   + arr [ 0 ]   ,     // Convert the first part to a number (unary plus operator).
-          b   =   + arr [ 1 ]   ;     // Convert the second part to a number.
-
-    // Calculate the product and the perimeter, then print them to the console.
-    // The problem likely refers to dimensions of a rectangle (a*b is area, (a+b)*2 is perimeter).
-    console . log ( a   *   b   +   ' '   +   ( a   +   b )   *   2 )   ;
-
-} // End of the main function.
+// 读取保持局部求值顺序计算时简单。

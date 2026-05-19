@@ -1,30 +1,25 @@
-function performCalculation(dataInput) {
-  const lineSegments = dataInput.match(/[^\r\n]+/g);
-  
-  const initialValueTokens = lineSegments[0].match(/(-?\d+)/g);
-  const primaryNumber = Number(initialValueTokens[0]);
+function processData(rawData) {
+  const lines = rawData.split('\n');
 
-  const numbersToAggregateString = lineSegments[1];
-  let accumulatedSum = 0;
-  let remainingContent = numbersToAggregateString.trim();
+  const firstLineParts = lines[0].split(' ');
+  const limitValue = parseInt(firstLineParts[0], 10);
+  const countPlaceholder = parseInt(firstLineParts[1], 10);
 
-  while (remainingContent.length > 0) {
-    const termMatch = remainingContent.match(/^\s*(-?\d+)\s*(.*)$/);
-    if (termMatch) {
-      accumulatedSum += Number(termMatch[1]);
-      remainingContent = termMatch[2];
-    } else {
-      break; 
-    }
+  const secondLineParts = lines[1].split(' ');
+  let totalConsumed = 0;
+
+  for (const itemStr of secondLineParts) {
+    const currentItem = parseInt(itemStr, 10);
+    totalConsumed += currentItem;
   }
 
-  const finalOutcome = primaryNumber - accumulatedSum;
+  const remaining = limitValue - totalConsumed;
 
-  if (finalOutcome < 0) {
+  if (remaining < 0) {
     console.log(-1);
   } else {
-    console.log(finalOutcome);
+    console.log(remaining);
   }
 }
 
-performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

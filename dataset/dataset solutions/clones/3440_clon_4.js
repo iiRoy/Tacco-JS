@@ -1,42 +1,53 @@
-const fileSystemInterface = require("fs");
+const obtainInput = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const displayOutput = (content) => console.log(content);
+const reportError = (content) => console.error(content);
 
-const obtainTextContent = () => fileSystemInterface.readFileSync("/dev/stdin", "utf8").trim();
+const dataTransformer = (sourceText, conversionType) => {
+  const numericMapper = (val) => Number(val);
+  const transformationRegistry = {
+    0: (txt) => txt,
+    1: (txt) => parseInt(txt, 10),
+    2: (txt) => txt.split(" "),
+    3: (txt) => txt.split("\n"),
+    4: (txt) => txt.split(" ").map(numericMapper),
+    5: (txt) => txt.split("\n").map(numericMapper),
+    6: (txt) => txt.split(""),
+    7: (txt) => txt.split("").map(numericMapper),
+  };
+  return transformationRegistry[conversionType](sourceText);
+};
 
-const divideIntoSegments = (textualData) => textualData.split("\n");
-
-const parseNumericItem = (textualItem) => parseInt(textualItem, 10);
-
-const processNumericSequence = (textualSequence) => textualSequence.split(" ").map(Number);
-
-const computeCentralTendency = (numericCollection) => {
-  if (numericCollection.length === 0) {
+const calculateMean = (numberArray) => {
+  if (numberArray.length === 0) {
     return NaN;
   }
-  const aggregateSum = numericCollection.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
-  return aggregateSum / numericCollection.length;
+  return numberArray.reduce((total, current) => total + current, 0) / numberArray.length;
 };
 
-const locateOptimalElementIndex = (dataSeries, referencePoint) => {
-  if (dataSeries.length === 0) {
-    return 0;
+const processData = (rawInputText) => {
+  const lines = dataTransformer(rawInputText, 3);
+  const elementCount = dataTransformer(lines[0], 1);
+  const valuesArray = dataTransformer(lines[1], 4);
+
+  if (elementCount === 0) {
+    displayOutput(0);
+    return;
   }
-  const absoluteDifferences = dataSeries.map((individualValue) => Math.abs(individualValue - referencePoint));
-  const minimumDifference = Math.min(...absoluteDifferences);
-  return absoluteDifferences.indexOf(minimumDifference);
+
+  const averageValue = calculateMean(valuesArray);
+
+  const result = valuesArray.reduce(
+    (accumulator, currentVal, currentIdx) => {
+      const currentAbsDiff = Math.abs(currentVal - averageValue);
+      if (currentAbsDiff < accumulator.minAbsDiff) {
+        return { minAbsDiff: currentAbsDiff, closestElementIdx: currentIdx };
+      }
+      return accumulator;
+    },
+    { minAbsDiff: Math.abs(valuesArray[0] - averageValue), closestElementIdx: 0 }
+  );
+
+  displayOutput(result.closestElementIdx);
 };
 
-const orchestrateExecution = () => {
-  const rawInputContent = obtainTextContent();
-  const segmentedInput = divideIntoSegments(rawInputContent);
-
-  const quantityOfElements = parseNumericItem(segmentedInput[0]);
-  const valueDataSet = processNumericSequence(segmentedInput[1]);
-
-  const calculatedMean = computeCentralTendency(valueDataSet);
-
-  const resultingIndex = locateOptimalElementIndex(valueDataSet, calculatedMean);
-
-  console.log(resultingIndex);
-};
-
-orchestrateExecution();
+processData(obtainInput());

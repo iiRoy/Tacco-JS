@@ -1,24 +1,26 @@
-const fileSystemInterface = require('fs');
+const fileSystem = require("fs");
 
-const retrievedData = fileSystemInterface.readFileSync(0).toString().split(/\r?\n/);
+const processInput = () => {
+    const inputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+    const linesOfData = inputContent.split(/\r?\n/);
 
-let processingIndex = 0;
-while (processingIndex < retrievedData.length) {
-    const currentEntry = retrievedData[processingIndex++];
-    
-    const numericalValues = currentEntry.split(' ').map(Number);
-    const matrixHeight = numericalValues[0];
-    const matrixWidth = numericalValues[1];
+    for (const currentEntry of linesOfData) {
+        const [heightString, widthString] = currentEntry.split(' ');
+        const numRows = parseInt(heightString, 10);
+        const numCols = parseInt(widthString, 10);
 
-    if (!matrixHeight && !matrixWidth) {
-        break;
+        if (numRows === 0 && numCols === 0) {
+            break;
+        }
+
+        const generatedGrid = Array.from({ length: numRows }, (_, rowIndex) =>
+            Array.from({ length: numCols }, (_, colIndex) =>
+                (rowIndex + colIndex) % 2 === 0 ? '#' : '.'
+            ).join('')
+        ).join('\n');
+
+        console.log(generatedGrid + '\n');
     }
+};
 
-    const constructedMatrix = Array.from({ length: matrixHeight }, (_, rowIndex) => {
-        return Array.from({ length: matrixWidth }, (_, colIndex) => {
-            return (rowIndex % 2 === colIndex % 2) ? '#' : '.';
-        }).join('');
-    });
-
-    process.stdout.write(constructedMatrix.join('\n') + '\n');
-}
+processInput();

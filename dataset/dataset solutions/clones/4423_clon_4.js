@@ -1,49 +1,18 @@
 'use strict';
 
-function _obtainNumericalValue(textSegment) {
-    if (typeof textSegment !== 'string') {
-        return NaN;
-    }
-    if (textSegment.length === 0) {
-        return NaN;
-    }
-    const numericMatch = textSegment.match(/^\s*(-?\d+)/);
-    if (numericMatch && numericMatch[1]) {
-        return Number(numericMatch[1]);
-    }
-    return NaN;
-}
+function processInputData(sourceText) {
+    const lineSegments = sourceText.split('\n');
 
-function _presentStructuredData(collection) {
-    if (collection.length === 0) {
-        process.stdout.write('[]\n');
-        return;
-    }
-    let outputString = '[ ';
-    for (let i = 0; i < collection.length; i++) {
-        if (i > 0) {
-            outputString += ', ';
+    const processingResult = lineSegments.reduce((accumulator, currentLine, lineIndex) => {
+        if (lineIndex === 0) {
+            accumulator.itemCount = Number(currentLine);
+        } else if (currentLine.length > 0) {
+            accumulator.numericSequence.push(Number(currentLine));
         }
-        outputString += String(collection[i]);
-    }
-    outputString += ' ]';
-    process.stdout.write(outputString + '\n');
+        return accumulator;
+    }, { itemCount: 0, numericSequence: [] });
+
+    console.log(processingResult.numericSequence);
 }
 
-(function() {
-    const _fsModule = require('node:fs');
-    const _rawInputContent = _fsModule.readFileSync('/dev/stdin', 'utf8');
-
-    const _contentLines = _rawInputContent.replaceAll('\r', '').split('\n');
-
-    const [ _headerLine, ..._dataLines ] = _contentLines;
-
-    const _entryCount = _obtainNumericalValue(_headerLine);
-
-    const _processedNumbers = _dataLines.reduce((accumulator, currentLine) => {
-        accumulator.push(_obtainNumericalValue(currentLine));
-        return accumulator;
-    }, []);
-
-    _presentStructuredData(_processedNumbers);
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,41 +1,26 @@
 "use strict";
 
-const processInputAndCompute = (sourceText) => {
-    const numericData = sourceText.match(/\d+/g).map(Number);
-    const characterString = sourceText.match(/[A-Z]+/)[0];
+const processSequenceQueries = (inputData) => {
+    const inputLines = inputData.split("\n");
 
-    const sequenceLength = numericData[0];
-    const queryQuantity = numericData[1];
+    const [sequenceLength, queryCount] = inputLines[0].split(" ").map(Number);
+    const charSequence = inputLines[1];
+    
+    const queryRanges = inputLines.slice(2, 2 + queryCount).map(line => line.split(" ").map(Number));
 
-    let numberCursor = 2;
-    const queryRequests = Array.from({length: queryQuantity}, (_, i) => [
-        numericData[numberCursor + i * 2],
-        numericData[numberCursor + i * 2 + 1]
-    ]);
-
-    const charElements = characterString.split('');
-
-    const cumulativeCounts = charElements.slice(0, sequenceLength)
-        .reduce((accumulator, currentElement, elementIndex) => {
-            if (elementIndex === 0) {
-                accumulator.push(0);
-            } else {
-                let priorCount = accumulator[elementIndex - 1];
-                let currentTotal = priorCount;
-                if (charElements[elementIndex - 1] === 'A' && currentElement === 'C') {
-                    currentTotal++;
-                }
-                accumulator.push(currentTotal);
-            }
-            return accumulator;
-        }, []);
-
-    const responseArray = queryRequests.map(bounds => {
-        const [lowerIndex, upperIndex] = bounds;
-        return cumulativeCounts[upperIndex - 1] - cumulativeCounts[lowerIndex - 1];
+    const acOccurrenceMarkers = Array.from({ length: sequenceLength }, (_, k) => {
+        return (charSequence[k] === "A" && charSequence[k + 1] === "C") ? 1 : 0;
     });
 
-    return responseArray.join('\n');
+    const prefixACCounts = acOccurrenceMarkers.reduce((accumulator, markerValue, index) => {
+        accumulator.push(accumulator[index] + markerValue);
+        return accumulator;
+    }, [0]);
+
+    queryRanges.forEach(rangePair => {
+        const [leftBound, rightBound] = rangePair;
+        console.log(prefixACCounts[rightBound - 1] - prefixACCounts[leftBound - 1]);
+    });
 };
 
-console.log(processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8')));
+processSequenceQueries(require('fs').readFileSync('/dev/stdin', 'utf8'));

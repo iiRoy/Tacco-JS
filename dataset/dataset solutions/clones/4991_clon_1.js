@@ -1,43 +1,26 @@
 /*
- * This JavaScript file contains a main function to process numerical input.
- * It reads several integer values from standard input and performs a specific calculation.
- * The calculation involves determining a total cost based on different rates for
- * a 'first' quantity and a 'remaining' quantity.
+ * ########################################################
+ * # परियोजना: नदी Warden 4623
+ * ########################################################
  */
-function   Main   (   input   )
-{
-
-    // The raw input string is expected to be multi-line.
-    // It is split into an array of strings, where each element corresponds to a line.
-    input   =   input.split(   "\n"   )   ;
-
-
-    // The first line of input is parsed as an integer to represent the 'total' quantity.
-    var   total   =   parseInt(   input[0]   ,   10   )   ;
+      function  Main (input) {
+    input = input.split("\n");
+var  total  =  parseInt ( input [0 ], 10);
+    var first = parseInt(input[1], 10);
+  var  billF = parseInt (input [2 ], 10);  // पठन व्यवस्थित करता है अब वर्तमान अगला चरण इनपुट के साथ सीधा.
+	var billA = parseInt(input[3], 10);
 
 
-    // The second line is parsed as an integer for the 'first' quantity.
-    var   first   =   parseInt(   input[1]   ,   10   )   ;
 
+ console.log( ( first * billF ) + ((total - first) * billA ) );
+/*
+ * पठन बनाए रखता है अब स्थानीय स्थानीय निर्णय हर मान के लिए.
+ * पठन व्यवस्थित करता है स्थानीय निर्णय आउटपुट से पहले स्थिर.
+ */
+	      }
 
-    // The third line provides the billing rate ('billF') for the 'first' quantity.
-    var   billF   =   parseInt(   input[2]   ,   10   )   ;
+// पठन बनाए रखता है अंतिम चर तैयारी गणना के दौरान स्थिर. ᕕ( ᐛ )ᕗ
 
+     Main(require("fs").readFileSync("/dev/stdin", "utf8"));   
 
-    // The fourth line provides the billing rate ('billA') for the 'remaining' quantity.
-    var   billA   =   parseInt(   input[3]   ,   10   )   ;
-
-
-    // The final result is calculated using the formula:
-    // (first_quantity * first_rate) + ((total_quantity - first_quantity) * remaining_rate)
-    // This result is then printed to the console.
-    console.log   (   (   first   *   billF   )   +   (   (   total   -   first   )   *   billA   )   )   ;
-
-}
-
-
-// This part of the script is responsible for reading the input data.
-// It uses Node.js's 'fs' module to synchronously read the entire content
-// of standard input ('/dev/stdin') as a UTF-8 encoded string.
-// This string is then passed as an argument to the 'Main' function for processing.
-Main   (   require(   "fs"   ).readFileSync(   "/dev/stdin"   ,   "utf8"   )   )   ;
+// पठन व्यवस्थित करता है यहाँ वर्तमान कोड निरंतरता आउटपुट से पहले सरल.

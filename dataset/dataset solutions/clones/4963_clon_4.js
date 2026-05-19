@@ -1,181 +1,165 @@
 'use strict';
-const dataOrigin = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+const dataStream = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-const systemState = {
-    gridHeight: 0,
-    gridWidth: 0,
-    progressRates: {
-        verticalEvenRow: null,
-        verticalOddRow: null,
-        horizontalEvenCol: null,
-        horizontalOddCol: null
-    },
-    storedCoordinates: {
-        verticalEvenRow: new Map(), // column -> [row, value]
-        verticalOddRow: new Map(),  // column -> [row, value]
-        horizontalEvenCol: new Map(), // row -> [col, value]
-        horizontalOddCol: new Map()   // row -> [col, value]
-    }
+const dimensions = dataStream[0].split(' ').map(Number);
+const R_DIM = dimensions[0];
+const C_DIM = dimensions[1];
+const N_COUNT = parseInt(dataStream[1]);
+const coordinateValuePairs = dataStream.slice(2);
+
+// Centralized state for slopes and observed points for each category
+const categoryStates = {
+    yEven: { currentSlope: { value: null }, observedPoints: new Map() },
+    yOdd: { currentSlope: { value: null }, observedPoints: new Map() },
+    xEven: { currentSlope: { value: null }, observedPoints: new Map() },
+    xOdd: { currentSlope: { value: null }, observedPoints: new Map() }
 };
 
-const terminateExecution = () => {
-    console.log('No');
-    process.exit();
+// Helper function to evaluate the bounds condition
+const checkValueConstraints = (coord, val, slope, getLowerTermFn, getUpperTermFn, dimensionSize) => {
+    return !(val - slope * getLowerTermFn(coord, dimensionSize) < 0 ||
+             val + slope * getUpperTermFn(coord, dimensionSize) < 0);
 };
 
-const defineVerticalTwoRows = {
-    key: 'verticalEvenRow',
-    coordIdentifier: 'row',
-    otherCoordIdentifier: 'col',
-    rateDivisor: (crd1, crd2) => crd2 - crd1,
-    checkLowerLimit: (val, rate, crd) => val - rate * (crd - 1),
-    checkUpperLimit: (val, rate, totalCrd, crd) => val + rate * (totalCrd - crd),
-    initialHasCheck: null,
-    initialElseCheck: null
-};
+// Generic function to process a segment (e.g., a row or a column)
+const analyzeDimensionSegment = (stateContainer, currentCoord, currentVal, otherCoord, dimensionSize, getDivisorFn, getLowerTermFn, getUpperTermFn) => {
+    const { currentSlope, observedPoints } = stateContainer;
 
-const defineVerticalEvenRows = {
-    key: 'verticalEvenRow',
-    coordIdentifier: 'row',
-    otherCoordIdentifier: 'col',
-    rateDivisor: (crd1, crd2) => (crd2 - crd1) / 2,
-    checkLowerLimit: (val, rate, crd) => val - rate * ((crd / 2) - 1),
-    checkUpperLimit: (val, rate, totalCrd, crd) => val + rate * Math.floor((totalCrd - crd) / 2),
-    initialHasCheck: null,
-    initialElseCheck: null
-};
+    if (observedPoints.has(otherCoord)) {
+        const [previousCoord, previousVal] = observedPoints.get(otherCoord);
+        const derivedSlope = (previousVal - currentVal) / getDivisorFn(previousCoord, currentCoord);
 
-const defineVerticalOddRows = {
-    key: 'verticalOddRow',
-    coordIdentifier: 'row',
-    otherCoordIdentifier: 'col',
-    rateDivisor: (crd1, crd2) => (crd2 - crd1) / 2,
-    checkLowerLimit: (val, rate, crd, isExisting = false, rateIsInitial = false) => {
-        if (rateIsInitial) return val;
-        return val - rate * (isExisting ? Math.floor(crd / 2) : Math.floor((crd - 1) / 2));
-    },
-    checkUpperLimit: (val, rate, totalCrd, crd) => val + rate * Math.floor((totalCrd - crd) / 2),
-    initialHasCheck: null,
-    initialElseCheck: null
-};
-
-const defineHorizontalTwoCols = {
-    key: 'horizontalEvenCol',
-    coordIdentifier: 'col',
-    otherCoordIdentifier: 'row',
-    rateDivisor: (crd1, crd2) => crd2 - crd1,
-    checkLowerLimit: (val, rate, crd) => val - rate * (crd - 1),
-    checkUpperLimit: (val, rate, totalCrd, crd) => val + rate * (totalCrd - crd),
-    initialHasCheck: -1, // Replicates the specific bug `dist_x_even === -1`
-    initialElseCheck: false // Replicates the specific bug `dist_x_even !== false`
-};
-
-const defineHorizontalEvenCols = {
-    key: 'horizontalEvenCol',
-    coordIdentifier: 'col',
-    otherCoordIdentifier: 'row',
-    rateDivisor: (crd1, crd2) => (crd2 - crd1) / 2,
-    checkLowerLimit: (val, rate, crd) => val - rate * ((crd / 2) - 1),
-    checkUpperLimit: (val, rate, totalCrd, crd) => val + rate * Math.floor((totalCrd - crd) / 2),
-    initialHasCheck: null,
-    initialElseCheck: null
-};
-
-const defineHorizontalOddCols = {
-    key: 'horizontalOddCol',
-    coordIdentifier: 'col',
-    otherCoordIdentifier: 'row',
-    rateDivisor: (crd1, crd2) => (crd2 - crd1) / 2,
-    checkLowerLimit: (val, rate, crd, isExisting = false, rateIsInitial = false) => {
-        if (rateIsInitial) return val;
-        return val - rate * Math.floor(crd / 2);
-    },
-    checkUpperLimit: (val, rate, totalCrd, crd) => val + rate * Math.floor((totalCrd - crd) / 2),
-    initialHasCheck: null,
-    initialElseCheck: null
-};
-
-const checkAndVerifyLimits = (pointValue, progressRate, coordinate, totalDimension, systemConfig, isExisting = false, rateIsInitial = false) => {
-    const effectiveRate = rateIsInitial ? 0 : progressRate; // Mimics `false * X` behavior from original
-    if (systemConfig.checkLowerLimit(pointValue, effectiveRate, coordinate, isExisting, rateIsInitial) < 0 ||
-        systemConfig.checkUpperLimit(pointValue, effectiveRate, totalDimension, coordinate) < 0) {
-        terminateExecution();
-    }
-};
-
-const processDimension = (currentEntry, fullDimensionSize, mainCoord, secondaryCoord, dimensionConfigurations) => {
-    const mainCoordValue = currentEntry[mainCoord];
-    const secondaryCoordValue = currentEntry[secondaryCoord];
-    const entryValue = currentEntry.value;
-
-    let activeDimensionConfig;
-    if (fullDimensionSize === 2) {
-        activeDimensionConfig = dimensionConfigurations.twoDim;
-    } else if (mainCoordValue % 2 === 0) {
-        activeDimensionConfig = dimensionConfigurations.evenDim;
-    } else {
-        activeDimensionConfig = dimensionConfigurations.oddDim;
-    }
-
-    const rateKey = activeDimensionConfig.key;
-    const recordedPointsMap = systemState.storedCoordinates[rateKey];
-    let establishedRate = systemState.progressRates[rateKey];
-
-    if (recordedPointsMap.has(secondaryCoordValue)) {
-        const [prevMainCoord, prevEntryValue] = recordedPointsMap.get(secondaryCoordValue);
-        const calculatedRate = (prevEntryValue - entryValue) / activeDimensionConfig.rateDivisor(prevMainCoord, mainCoordValue);
-
-        const rateIsInitial = (establishedRate === activeDimensionConfig.initialHasCheck);
-        if (rateIsInitial) {
-            systemState.progressRates[rateKey] = calculatedRate;
-            establishedRate = calculatedRate;
-            for (const [, [coord, val]] of recordedPointsMap.entries()) {
-                checkAndVerifyLimits(val, establishedRate, coord, fullDimensionSize, activeDimensionConfig, true, false);
+        if (currentSlope.value === null) {
+            currentSlope.value = derivedSlope;
+            // Validate all previously stored points against the newly determined slope
+            if (!Array.from(observedPoints.entries()).every(([key, valueTuple]) => {
+                const [pCoord, pVal] = valueTuple;
+                return checkValueConstraints(pCoord, pVal, currentSlope.value, getLowerTermFn, getUpperTermFn, dimensionSize);
+            })) {
+                return false;
             }
-        } else {
-            if (calculatedRate !== establishedRate) {
-                terminateExecution();
+        } else if (derivedSlope !== currentSlope.value) {
+            return false;
+        }
+        // Validate the current point against the established slope
+        if (!checkValueConstraints(currentCoord, currentVal, currentSlope.value, getLowerTermFn, getUpperTermFn, dimensionSize)) {
+            return false;
+        }
+    } else {
+        if (currentSlope.value !== null) {
+            // Validate current point against established slope if it exists
+            if (!checkValueConstraints(currentCoord, currentVal, currentSlope.value, getLowerTermFn, getUpperTermFn, dimensionSize)) {
+                return false;
             }
         }
-        checkAndVerifyLimits(entryValue, establishedRate, mainCoordValue, fullDimensionSize, activeDimensionConfig, false, rateIsInitial);
+        observedPoints.set(otherCoord, [currentCoord, currentVal]);
+    }
+    return true;
+};
+
+// Configuration objects for Y-dimension (rows)
+const rowDimensionConfigurations = {
+    twoRows: {
+        getDivisor: (r2, r1) => (r2 - r1),
+        getLowerTerm: (r, R) => (r - 1),
+        getUpperTerm: (r, R) => (2 - r)
+    },
+    evenRow: {
+        getDivisor: (r2, r1) => (r2 - r1) / 2,
+        getLowerTerm: (r, R) => (r / 2) - 1,
+        getUpperTerm: (r, R) => Math.floor((R - r) / 2)
+    },
+    oddRow: {
+        getDivisor: (r2, r1) => (r2 - r1) / 2,
+        getLowerTerm: (r, R) => Math.floor((r - 1) / 2),
+        getUpperTerm: (r, R) => Math.floor((R - r) / 2)
+    }
+};
+
+// Configuration objects for X-dimension (columns)
+const colDimensionConfigurations = {
+    twoCols: {
+        getDivisor: (c2, c1) => (c2 - c1),
+        getLowerTerm: (c, C) => (c - 1),
+        getUpperTerm: (c, C) => (C - c)
+    },
+    evenCol: {
+        getDivisor: (c2, c1) => (c2 - c1) / 2,
+        getLowerTerm: (c, C) => (c / 2) - 1,
+        getUpperTerm: (c, C) => Math.floor((C - c) / 2)
+    },
+    oddCol: {
+        getDivisor: (c2, c1) => (c2 - c1) / 2,
+        getLowerTerm: (c, C) => Math.floor(c / 2),
+        getUpperTerm: (c, C) => Math.floor((C - c) / 2)
+    }
+};
+
+// Main processing loop for each input
+for (let i = 0; i < N_COUNT; i++) {
+    const [rowCoord, colCoord, value] = coordinateValuePairs[i].split(' ').map(Number);
+
+    // Process Y-dimension (rows)
+    let rowProcessingResult = true;
+    if (R_DIM === 2) {
+        rowProcessingResult = analyzeDimensionSegment(
+            categoryStates.yEven, rowCoord, value, colCoord, R_DIM,
+            rowDimensionConfigurations.twoRows.getDivisor,
+            rowDimensionConfigurations.twoRows.getLowerTerm,
+            rowDimensionConfigurations.twoRows.getUpperTerm
+        );
     } else {
-        const rateIsInitial = (establishedRate === activeDimensionConfig.elseCheckInitialValue);
-        if (!rateIsInitial) {
-            checkAndVerifyLimits(entryValue, establishedRate, mainCoordValue, fullDimensionSize, activeDimensionConfig, false, false);
+        if (rowCoord % 2 === 0) { // Even row
+            rowProcessingResult = analyzeDimensionSegment(
+                categoryStates.yEven, rowCoord, value, colCoord, R_DIM,
+                rowDimensionConfigurations.evenRow.getDivisor,
+                rowDimensionConfigurations.evenRow.getLowerTerm,
+                rowDimensionConfigurations.evenRow.getUpperTerm
+            );
+        } else { // Odd row
+            rowProcessingResult = analyzeDimensionSegment(
+                categoryStates.yOdd, rowCoord, value, colCoord, R_DIM,
+                rowDimensionConfigurations.oddRow.getDivisor,
+                rowDimensionConfigurations.oddRow.getLowerTerm,
+                rowDimensionConfigurations.oddRow.getUpperTerm
+            );
         }
-        recordedPointsMap.set(secondaryCoordValue, [mainCoordValue, entryValue]);
     }
-};
-
-const runAnalysis = (inputLines) => {
-    const initialSpecs = inputLines[0].split(' ').map(Number);
-    systemState.gridHeight = initialSpecs[0];
-    systemState.gridWidth = initialSpecs[1];
-    const totalObservations = parseInt(inputLines[1]);
-    const observationRecords = inputLines.slice(2);
-
-    for (let i = 0; i < totalObservations; i++) {
-        const parts = observationRecords[i].split(' ').map(Number);
-        const currentObservation = {
-            row: parts[0],
-            col: parts[1],
-            value: parts[2]
-        };
-
-        processDimension(currentObservation, systemState.gridHeight, 'row', 'col', {
-            twoDim: defineVerticalTwoRows,
-            evenDim: defineVerticalEvenRows,
-            oddDim: defineVerticalOddRows
-        });
-
-        processDimension(currentObservation, systemState.gridWidth, 'col', 'row', {
-            twoDim: defineHorizontalTwoCols,
-            evenDim: defineHorizontalEvenCols,
-            oddDim: defineHorizontalOddCols
-        });
+    if (!rowProcessingResult) {
+        console.log('No');
+        process.exit();
     }
 
-    console.log('Yes');
-};
+    // Process X-dimension (columns)
+    let colProcessingResult = true;
+    if (C_DIM === 2) {
+        colProcessingResult = analyzeDimensionSegment(
+            categoryStates.xEven, colCoord, value, rowCoord, C_DIM,
+            colDimensionConfigurations.twoCols.getDivisor,
+            colDimensionConfigurations.twoCols.getLowerTerm,
+            colDimensionConfigurations.twoCols.getUpperTerm
+        );
+    } else {
+        if (colCoord % 2 === 0) { // Even column
+            colProcessingResult = analyzeDimensionSegment(
+                categoryStates.xEven, colCoord, value, rowCoord, C_DIM,
+                colDimensionConfigurations.evenCol.getDivisor,
+                colDimensionConfigurations.evenCol.getLowerTerm,
+                colDimensionConfigurations.evenCol.getUpperTerm
+            );
+        } else { // Odd column
+            colProcessingResult = analyzeDimensionSegment(
+                categoryStates.xOdd, colCoord, value, rowCoord, C_DIM,
+                colDimensionConfigurations.oddCol.getDivisor,
+                colDimensionConfigurations.oddCol.getLowerTerm,
+                colDimensionConfigurations.oddCol.getUpperTerm
+            );
+        }
+    }
+    if (!colProcessingResult) {
+        console.log('No');
+        process.exit();
+    }
+}
 
-runAnalysis(dataOrigin);
+console.log('Yes');

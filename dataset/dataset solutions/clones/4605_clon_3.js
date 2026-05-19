@@ -1,91 +1,55 @@
-function calculateTotalSpanDuration(rawDataString) {
-    // A utility function to ensure consistent parsing of integer values, using base 10.
-    const parseNumericValue = (str) => parseInt(str, 10);
+function processInputData(rawData) {
+    const inputLines = rawData.split("\n");
 
-    // Initial processing of the raw input: split it into individual lines.
-    // Any leading or trailing whitespace from the entire input is also removed for robustness.
-    const processedLines = rawDataString.trim().split('\n');
+    const firstLineTokens = inputLines[0].split(" ");
+    const eventCount = parseInt(firstLineTokens[0], 10);
+    const eventDuration = parseInt(firstLineTokens[1], 10);
 
-    // Perform a basic check to ensure the input contains at least two lines:
-    // one for configuration parameters and another for event timestamps.
-    if (processedLines.length < 2) {
-        console.error("Input processing error: Insufficient data lines provided. Expected at least two.");
-        return; // Exit if input format is incorrect.
-    }
+    const secondLineTokens = inputLines[1].split(" ");
+    const eventTimestamps = secondLineTokens.map(timeString => parseInt(timeString, 10));
 
-    // Extract and parse the configuration values from the first line.
-    // This includes the total count of events and the standard duration for each event block.
-    const configurationElements = processedLines[0].split(' ');
-    const totalEventCount = parseNumericValue(configurationElements[0]);
-    const standardBlockLength = parseNumericValue(configurationElements[1]);
+    let totalCoveredTime = 0;
 
-    // Validate the parsed configuration values to ensure they are valid non-negative numbers.
-    if (isNaN(totalEventCount) || isNaN(standardBlockLength) || totalEventCount < 0 || standardBlockLength < 0) {
-        console.error("Input validation error: Configuration values are invalid or negative.");
+    // Handle the edge case where there are no events.
+    // Although typical problem constraints might ensure eventCount >= 1.
+    if (eventCount === 0) {
+        console.log(totalCoveredTime);
         return;
     }
 
-    // If there are no events to process, the total active time will naturally be zero.
-    if (totalEventCount === 0) {
-        console.log(0);
-        return;
-    }
+    // Initialize the state for the first active interval.
+    // This mirrors the original code's initial `arrSectionStart[0] = 0; arrSectionEnd[0] = duration;`
+    // which serves as a starting point that the first actual event will immediately interact with.
+    let currentActiveIntervalStart = 0;
+    let currentActiveIntervalEnd = eventDuration;
 
-    // Retrieve and prepare the event timestamps from the second line of input.
-    const eventTimeStrings = processedLines[1].split(' ');
+    // Iterate through all event timestamps to calculate the total covered time.
+    for (let eventIndex = 0; eventIndex < eventCount; ++eventIndex) {
+        const currentEventTimestamp = eventTimestamps[eventIndex];
+        const currentEventEndBoundary = currentEventTimestamp + eventDuration; // Helper variable for clarity
 
-    // Initialize the accumulator for the total active time and variables
-    // to manage the currently consolidating time span.
-    let cumulativeActiveTime = 0;
-    
-    // The first event determines the start of our initial active span.
-    const initialEventTimestamp = parseNumericValue(eventTimeStrings[0]);
-    if (isNaN(initialEventTimestamp)) {
-        console.error("Data error: The very first event timestamp is not a valid number.");
-        console.log(0); // Output 0 as a default in case of critical parsing failure.
-        return;
-    }
-    let currentConsolidatedStart = initialEventTimestamp;
-    let currentConsolidatedEnd = initialEventTimestamp + standardBlockLength;
-
-    // Iterate through the remaining event timestamps, starting from the second event.
-    // The primary objective here is to merge any overlapping or immediately consecutive time blocks.
-    for (let currentEventIndex = 1; currentEventIndex < totalEventCount; currentEventIndex++) {
-        const currentEventTimestamp = parseNumericValue(eventTimeStrings[currentEventIndex]);
-
-        // Validate each timestamp individually. If an event timestamp is invalid, a warning is logged,
-        // and that specific event is skipped to prevent further errors.
-        if (isNaN(currentEventTimestamp)) {
-            console.warn(`Data warning: Invalid timestamp '${eventTimeStrings[currentEventIndex]}' encountered at event index ${currentEventIndex}. This event will be ignored.`);
-            continue; // Move to the next event.
-        }
-
-        // Determine if the current event's time block either overlaps with, or directly follows,
-        // the current active consolidated span.
-        if (currentEventTimestamp <= currentConsolidatedEnd) {
-            // If there's an overlap or adjacency, extend the end of the current consolidated span
-            // to encompass this new event's block.
-            currentConsolidatedEnd = currentEventTimestamp + standardBlockLength;
+        // Check if the current event overlaps with or touches the current active interval.
+        if (currentEventTimestamp <= currentActiveIntervalEnd) {
+            // If it overlaps, extend the end of the current active interval.
+            // The original logic specifically sets the end to `time + duration`,
+            // not `Math.max(currentEnd, time + duration)`. This behavior is preserved.
+            currentActiveIntervalEnd = currentEventEndBoundary;
         } else {
-            // If the current event starts strictly after the current consolidated span has fully ended,
-            // finalize the current span: calculate its duration and add it to the total accumulator.
-            cumulativeActiveTime += (currentConsolidatedEnd - currentConsolidatedStart);
-            
-            // Then, initiate a brand new consolidated span based on the current event's timing.
-            currentConsolidatedStart = currentEventTimestamp;
-            currentConsolidatedEnd = currentEventTimestamp + standardBlockLength;
+            // If there's a gap, the current active interval is complete.
+            // Add its duration to the total covered time.
+            totalCoveredTime += (currentActiveIntervalEnd - currentActiveIntervalStart);
+
+            // Start a new active interval with the current event.
+            currentActiveIntervalStart = currentEventTimestamp;
+            currentActiveIntervalEnd = currentEventEndBoundary;
         }
     }
 
-    // After the loop finishes processing all events, the very last active consolidated span
-    // also needs to have its duration added to the total.
-    cumulativeActiveTime += (currentConsolidatedEnd - currentConsolidatedStart);
+    // After processing all events, the last active interval is still "open".
+    // Add its duration to the total covered time.
+    totalCoveredTime += (currentActiveIntervalEnd - currentActiveIntervalStart);
 
-    // Output the final calculated total active time to the console.
-    console.log(cumulativeActiveTime);
+    console.log(totalCoveredTime);
 }
 
-// This line handles the standard input/output mechanism.
-// It reads all data from the standard input stream, decodes it as UTF-8,
-// and then passes this raw string data to our primary processing function.
-calculateTotalSpanDuration(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

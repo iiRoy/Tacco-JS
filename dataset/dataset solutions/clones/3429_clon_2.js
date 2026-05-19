@@ -1,43 +1,63 @@
-"use strict" ;
+"use strict";
 
-const processInputData = ( rawData ) => {
-    rawData = rawData.trim( ) . split ( "\n" ) ;
-    const targetNumber = parseInt ( rawData [ 0 ] ) ;
-    const targetLength = ( '' + targetNumber ) . length ;
+const processInput = inputData => {
+    // Clean and split the input string into an array of lines.
+    inputData = inputData.trim().split("\n");
 
-    const allowedDigits = [ '3' , '5' , '7' ] ;
-    const candidateNumbers = [ 3 , 5 , 7 ] ;
+    // Parse the first line as the numerical limit.
+    const limitValue = parseInt(inputData[0]);
+    // Determine the number of digits in the limit value.
+    const limitLength = String(limitValue).length;
 
-    let countOfValidNumbers = 0 ;
-    let startIndexForNextIteration = 0 ;
+    // Define the allowed digit characters and their initial numerical values.
+    const digitChars = ["3", "5", "7"];
+    const generatedNumbers = [3, 5, 7];
 
-    // This section systematically generates all numbers composed solely of '3', '5', and '7'
-    // up to a length slightly less than the target number's length.
-    for ( let currentLengthIndex = 0 ; currentLengthIndex < targetLength - 1 ; currentLengthIndex ++ ) {
-        let currentCandidatesSize = candidateNumbers . length ;
-        for ( let digitIndex = 0 ; digitIndex < 3 ; digitIndex ++ ) {
-            for ( let previousCandidateIndex = startIndexForNextIteration ; previousCandidateIndex < currentCandidatesSize ; previousCandidateIndex ++ ) {
-                candidateNumbers . push ( Number ( allowedDigits [ digitIndex ] + candidateNumbers [ previousCandidateIndex ] ) ) ;
+    // Initialize a counter for valid numbers.
+    let validCount = 0;
+    // Initialize an index to track the start of new numbers in the array.
+    let startIndex = 0;
+
+    // First phase: Generate all numbers composed solely of 3, 5, and 7
+    // up to a length slightly less than the limitValue's length.
+    for (let idx1 = 0; idx1 < limitLength - 1; idx1++) {
+        // Store the current length of the generatedNumbers array.
+        let currentLength = generatedNumbers.length;
+
+        // Iterate through each allowed digit character.
+        for (let idx3 = 0; idx3 < 3; idx3++) {
+            // Append the current digit character to existing numbers.
+            for (let idx4 = startIndex; idx4 < currentLength; idx4++) {
+                // Concatenate the digit character with an existing number, then convert to integer.
+                generatedNumbers.push(parseInt(digitChars[idx3] + generatedNumbers[idx4]));
             }
         }
-
-        startIndexForNextIteration = currentCandidatesSize ;
+        // Update the starting index for the next iteration to avoid redundant processing.
+        startIndex = currentLength;
     }
 
-    // Now, filter the generated numbers to count those that are less than or equal to the target
-    // AND contain at least one occurrence of each digit ('3', '5', '7').
-    for ( let currentCandidateIdx = 0 ; currentCandidateIdx < candidateNumbers . length ; currentCandidateIdx ++ ) {
-        if ( candidateNumbers [ currentCandidateIdx ] > targetNumber ) {
-            break ;
+    // Second phase: Filter the generated numbers.
+    // Count numbers that are less than or equal to the limitValue
+    // and contain all three digits (3, 5, 7) at least once.
+    for (let idx2 = 0; idx2 < generatedNumbers.length; idx2++) {
+        // If a generated number exceeds the limit, subsequent numbers will also, so break.
+        if (generatedNumbers[idx2] > limitValue) {
+            break;
         }
 
-        const currentNumberDigits = String ( candidateNumbers [ currentCandidateIdx ] ) . split ( '' ) ;
+        // Convert the current number to a string and then split it into individual digit characters.
+        let numberDigits = String(generatedNumbers[idx2]).split("");
 
-        if ( currentNumberDigits . includes ( '3' ) && currentNumberDigits . includes ( '5' ) && currentNumberDigits . includes ( '7' ) ) {
-            countOfValidNumbers ++ ;
+        // Check if the number contains '3', '5', and '7' using indexOf.
+        if (numberDigits.indexOf("3") !== -1 && numberDigits.indexOf("5") !== -1 && numberDigits.indexOf("7") !== -1) {
+            // If all three digits are present, increment the valid count.
+            validCount++;
         }
     }
 
-    console . log ( countOfValidNumbers ) ;
-}
-processInputData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+    // Output the final count of valid numbers.
+    console.log(validCount);
+};
+
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

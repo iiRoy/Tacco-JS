@@ -1,40 +1,34 @@
-'use strict'; // This directive enforces stricter parsing and error handling in the code.
+'use strict';
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+  // The raw input string is first split into an array of lines based on newline characters.
+  let parsedLines = rawData.split("\n");
 
-/*
- * This module is responsible for processing an input string
- * to calculate a final computed value based on several numerical parameters.
- * It implements a conditional logic to determine the calculation method.
- */
-function CalculateCharge( rawDataString )
-{
-  // The raw input string is first broken down into an array of individual lines,
-  // using the newline character as a delimiter.
-  let dataSegments = rawDataString.split( '\n' );
+  // Numerical values are extracted from specific lines of the parsed input.
+  // The first line typically represents the overall quantity or total units.
+  const totalUnits = parseInt(parsedLines[0], 10);
+  // The second line denotes a specific threshold or initial quantity for a billing tier.
+  const initialTierThreshold = parseInt(parsedLines[1], 10);
+  // The third line specifies the rate applicable to the initial tier.
+  const initialTierRate = parseInt(parsedLines[2], 10);
+  // The fourth line defines the rate for quantities exceeding the initial tier.
+  const additionalTierRate = parseInt(parsedLines[3], 10);
 
-  // Each segment is then parsed into an integer.
-  // The Number.parseInt function is used to ensure correct numerical conversion
-  // from string to integer, specifying base 10 for decimal numbers.
-  const overallQuantity = Number.parseInt( dataSegments[0], 10 ); // Total items or units involved.
-  const initialThreshold = Number.parseInt( dataSegments[1], 10 ); // The quantity that qualifies for the base rate.
-  const unitCostFixed = Number.parseInt( dataSegments[2], 10 ); // The cost per unit for the initial threshold.
-  const unitCostVariable = Number.parseInt( dataSegments[3], 10 ); // The cost per unit for quantities exceeding the threshold.
-
-  // A conditional check determines which pricing tier applies.
-  // If the overall quantity is less than or equal to the initial threshold,
-  // a simple calculation using the fixed unit cost is performed.
-  if ( overallQuantity <= initialThreshold ) {
-    console.log( overallQuantity * unitCostFixed );
-  }
-  // Otherwise, if the overall quantity exceeds the initial threshold,
-  // a two-part calculation is needed.
-  else {
-    // The cost includes the initial threshold quantity billed at the fixed rate,
-    // plus the remaining quantity (overall - initial) billed at the variable rate.
-    console.log( ( initialThreshold * unitCostFixed ) + ( ( overallQuantity - initialThreshold ) * unitCostVariable ) );
+  // A conditional statement evaluates the total units against the initial tier's rate.
+  // This comparison dictates which calculation method will be applied.
+  if (totalUnits <= initialTierRate) {
+    // If the total units are less than or equal to the initial tier's rate (as per original logic),
+    // the total cost is simply the total units multiplied by the initial tier rate.
+    console.log(totalUnits * initialTierRate);
+  } else {
+    // Otherwise, if total units exceed the initial tier's rate, a two-part calculation is performed:
+    // 1. The cost for the units up to the initial tier threshold, at the initial tier rate.
+    // 2. The cost for the remaining units (total minus initial threshold), at the additional tier rate.
+    console.log((initialTierThreshold * initialTierRate) + ((totalUnits - initialTierThreshold) * additionalTierRate));
   }
 }
 
-// The primary function is invoked with data read from standard input.
-// The 'fs' (file system) module is utilized to synchronously read the content
-// of '/dev/stdin' as a UTF-8 encoded string, which is then passed to the calculation function.
-CalculateCharge( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) );
+// The program initiates by reading data from standard input.
+// It uses Node.js's 'fs' module to synchronously read the file content from '/dev/stdin'
+// and then passes this content as a UTF-8 encoded string to the ProcessInput function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,42 +1,17 @@
-// Module utility function: Retrieves a specified Node.js module.
-const grabModule = ( moduleIdentifier ) => require( moduleIdentifier ) ;
+const rawData = require("fs") .readFileSync("/dev/stdin", "utf8"); // Obtain raw input from standard input
 
-// Type conversion utility: Transforms a string into a numerical format.
-const convertToNumeric = ( textualValue ) => Number( textualValue ) ;
+const dataRows = rawData.split('\n'); // Divide the input string into an array of lines
 
-// Output utility function: Prints a given message string to the standard output stream.
-const displayOutput = ( messageString ) => {
-    console.log( messageString ) ;
-};
+// Extract the first two numerical values from the initial line
+const [firstVal, secondVal] = dataRows[0].split(' ').map(Number);
 
-// Access the core file system capabilities.
-const fileSystemModule = grabModule( "fs" ) ;
+// Determine an initial even number based on 'firstVal'
+// If 'firstVal' is even, 'calculatedValue' becomes 'firstVal'.
+// If 'firstVal' is odd, 'calculatedValue' becomes 'firstVal - 1'.
+let calculatedValue = firstVal - (firstVal % 2 || 2);
 
-// Synchronously read the entire content from the standard input path.
-// The content is processed as a UTF8 encoded string.
-const rawDataString = fileSystemModule.readFileSync( "/dev/stdin", "utf8" ) ;
-
-// Split the acquired raw data into an array of distinct lines.
-const textRowsArray = rawDataString.split( '\n' ) ;
-
-// Process the initial line of input:
-// - It's divided by spaces.
-// - Each segment is then converted into a numeric value.
-// - These two resulting numeric values are destructured into named variables.
-const [ firstDimensionValue, secondDimensionValue ] = textRowsArray[0]
-                                                        .split( ' ' )
-                                                        .map( convertToNumeric ) ;
-
-// Determine an initial base value for subsequent calculations.
-// This value is adjusted to be an even number if the primary input dimension is odd.
-let currentCalculatedValue = firstDimensionValue - ( firstDimensionValue % 2 || 2 ) ;
-
-// Iterate for a count specified by the second dimension value.
-// In each iteration, a formatted pair of numbers is generated and displayed.
-for ( let loopCounter = 0 ; loopCounter < secondDimensionValue ; loopCounter++ ) {
-    // Compose the output string with the 1-based loop index and the calculated sequence element.
-    const outputPair = `${ loopCounter + 1 } ${ currentCalculatedValue - loopCounter }` ;
-
-    // Present the generated numeric pair to the user.
-    displayOutput( outputPair ) ;
+// Loop 'secondVal' times to generate and print pairs of numbers
+for (let loopCounter = 0; loopCounter < secondVal; loopCounter++) {
+    // Output the current iteration number (1-based) and a decreasing value
+    console.log(`${loopCounter + 1} ${calculatedValue - loopCounter}`);
 }

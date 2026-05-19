@@ -1,16 +1,13 @@
-function processInputData(rawData) {
-    const numericSequence = "0101010201020105020201050102011401050105020201150202050401040151";
-    const digitWidth = 2;
+function retrieveValue(inputKeyString) {
+    const valueMap = new Map([
+        [1, 1], [2, 1], [3, 1], [4, 2], [5, 1], [6, 2], [7, 1], [8, 5], [9, 2], [10, 2],
+        [11, 1], [12, 5], [13, 1], [14, 2], [15, 1], [16, 14], [17, 1], [18, 5], [19, 1], [20, 5],
+        [21, 2], [22, 2], [23, 1], [24, 15], [25, 2], [26, 2], [27, 5], [28, 4], [29, 1], [30, 4],
+        [31, 1], [32, 51]
+    ]);
 
-    const requestedPosition = +rawData;
-
-    const startCharIndex = (requestedPosition - 1) * digitWidth;
-
-    const extractedDigits = numericSequence.substring(startCharIndex, startCharIndex + digitWidth);
-
-    const finalValue = Number(extractedDigits);
-
-    console.log(finalValue);
+    const numericKey = Number(inputKeyString);
+    console.log(valueMap.get(numericKey));
 }
 
-processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+retrieveValue(require("fs").readFileSync("/dev/stdin", "utf8"));

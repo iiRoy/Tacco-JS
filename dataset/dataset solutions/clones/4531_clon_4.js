@@ -1,42 +1,28 @@
-const determineCategoryLevel = (scoreValue) => Math.floor(scoreValue / 400);
+function entryPoint(inputString) {
+    const inputLines = inputString.split('\n');
+    const participantCount = Number(inputLines[0]);
 
-function evaluateContestEntries(rawInputData) {
-    const dataSegments = rawInputData.split('\n');
-    const participantQuantity = Number(dataSegments[0]); // Parsed but unused, maintaining original behavior.
+    const numericScores = inputLines[1].split(' ').map(Number);
 
-    const performanceRecordStrings = dataSegments[1].split(' ');
-
-    const categorizedOutcomes = performanceRecordStrings.reduce((accumulator, currentScoreString) => {
-        const numericalScore = Number(currentScoreString);
-        const derivedRank = determineCategoryLevel(numericalScore);
-
-        if (derivedRank >= 8) {
-            accumulator.highRankCount++;
+    const categorizationSummary = numericScores.reduce((accumulator, currentScoreValue) => {
+        const categoryIndex = Math.floor(currentScoreValue / 400);
+        if (categoryIndex >= 8) {
+            accumulator.highLevelCount++;
         } else {
-            accumulator.standardRanks.push(derivedRank);
+            accumulator.uniqueCategoryIndices.add(categoryIndex);
         }
         return accumulator;
-    }, { standardRanks: [], highRankCount: 0 });
+    }, { uniqueCategoryIndices: new Set(), highLevelCount: 0 });
 
-    const distinctStandardRanks = Array.from(new Set(categorizedOutcomes.standardRanks));
+    const distinctCategoryArray = Array.from(categorizationSummary.uniqueCategoryIndices);
+    const highLevelCount = categorizationSummary.highLevelCount;
 
-    console.log(distinctStandardRanks);
-
-    const uniqueStandardCount = distinctStandardRanks.length;
-    const totalHighRankCount = categorizedOutcomes.highRankCount;
-
-    let firstOutputTerm;
-    let secondOutputTerm;
-
-    if (uniqueStandardCount > 0) {
-        firstOutputTerm = uniqueStandardCount;
-        secondOutputTerm = uniqueStandardCount + totalHighRankCount;
+    console.log(distinctCategoryArray);
+    if (distinctCategoryArray[0]) {
+        console.log(distinctCategoryArray.length + ' ' + (distinctCategoryArray.length + highLevelCount));
     } else {
-        firstOutputTerm = 1;
-        secondOutputTerm = 1 + totalHighRankCount;
+        console.log(1 + ' ' + highLevelCount);
     }
-
-    console.log(`${firstOutputTerm} ${secondOutputTerm}`);
 }
 
-evaluateContestEntries(require("fs").readFileSync("/dev/stdin", "utf8"));
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

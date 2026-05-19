@@ -1,12 +1,11 @@
-const processContent = (originalContent) => {
-    const preparedContent = originalContent.trim();
-    const contentSize = preparedContent.length;
+function processInputData(rawText) {
+    const charSequence = rawText.trim().split("");
 
-    const modifiedContent = (contentSize === 3)
-        ? preparedContent.charAt(2) + preparedContent.charAt(1) + preparedContent.charAt(0)
-        : preparedContent;
+    const finalSequence = charSequence.length === 3
+        ? [charSequence[2], charSequence[1], charSequence[0]]
+        : charSequence;
 
-    console.log(modifiedContent);
-};
+    console.log(finalSequence.join(""));
+}
 
-processContent(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

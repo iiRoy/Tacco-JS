@@ -1,29 +1,25 @@
-const processEnvironmentalData = (rawData) => {
-  const cleanedData = rawData.trim();
-  const dataLines = cleanedData.split('\n');
+function processData(rawInput) {
+  const cleanedInput = rawInput.trim();
+  const inputLines = cleanedInput.split('\n');
 
-  const secondLineParts = dataLines[1].split(" ");
-  const ambientTemperature = Number.parseInt(secondLineParts[0], 10);
-  const desiredAltitude = Number.parseInt(secondLineParts[1], 10);
+  const [elementCount] = inputLines[0].split(' ').map(Number);
+  const [baseTemperature, desiredAltitude] = inputLines[1].split(' ').map(Number);
+  const elevationValues = inputLines[2].split(' ').map(Number);
 
-  const heightReadings = dataLines[2].split(' ').map(Number.parseInt);
+  const resultInfo = elevationValues.reduce((accumulator, currentElevation, currentIndex) => {
+    const calculatedTemperature = baseTemperature - currentElevation * 0.006;
+    const currentAbsoluteDifference = Math.abs(calculatedTemperature - desiredAltitude);
 
-  const temperatureGradientFactor = 0.006;
+    if (currentAbsoluteDifference < accumulator.minimumDifference) {
+      return {
+        minimumDifference: currentAbsoluteDifference,
+        optimalLocationIdentifier: currentIndex + 1
+      };
+    }
+    return accumulator;
+  }, { minimumDifference: Number.MAX_VALUE, optimalLocationIdentifier: -1 });
 
-  const deviationRecords = heightReadings.map((currentHeight, currentIdx) => {
-    const adjustedTemperature = ambientTemperature - (currentHeight * temperatureGradientFactor);
-    const absoluteDifference = Math.abs(adjustedTemperature - desiredAltitude);
-    return {
-      deviationMetric: absoluteDifference,
-      originalPosition: currentIdx + 1
-    };
-  });
+  console.log(resultInfo.optimalLocationIdentifier);
+}
 
-  const bestMatchRecord = deviationRecords.reduce((minRecord, currentRecord) => {
-    return (currentRecord.deviationMetric < minRecord.deviationMetric) ? currentRecord : minRecord;
-  }, { deviationMetric: Infinity, originalPosition: -1 });
-
-  console.log(bestMatchRecord.originalPosition);
-};
-
-processEnvironmentalData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

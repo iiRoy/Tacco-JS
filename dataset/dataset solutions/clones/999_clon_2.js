@@ -1,45 +1,43 @@
-// Activate standard input stream processing
 process.stdin.resume();
-
-// Configure input encoding for characters
 process.stdin.setEncoding('utf8');
 
-/*
- * This section reads numerical data from standard input,
- * processes it, and then calculates the maximum difference
- * between any two distinct elements in the list.
- */
-var   dataLines   =   require('fs') . readFileSync(   '/dev/stdin',   'utf8'   );
-dataLines = dataLines  .  trim() . split('\n') . map(Number);
+// This section handles input processing from standard input.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Clean up the input: remove leading/trailing whitespace and convert to an array of numbers.
+rawData = rawData.trim().split('\n').map(Number);
 
-var   maxItems   = dataLines[0];
+// The first element of the processed input is a specific limit value.
+let limitVal = rawData[0];
+// The rest of the input forms the sequence of numbers to be processed.
+let numberSequence = rawData.slice(1);
 
-var dataPoints = dataLines.slice(1);
+// Initialize a variable to store the maximum difference found.
+let maxDifference = 0;
 
-var maxDifference = 0; // Initialize variable for storing the largest difference found
-
-for ( var firstIndex = 0 ; firstIndex < dataPoints.length ; firstIndex++ )
-{
-    // If the current index (plus one) matches the specified limit, stop processing.
-    if ( ( firstIndex + 1 ) === maxItems ) {
-        break;
+// Iterate through the number sequence using an outer loop.
+for (let outerIndex = 0; outerIndex < numberSequence.length; outerIndex++) {
+    // If the current outer index plus one equals the limit value,
+    // it means we've reached a specific condition to stop further processing.
+    if (outerIndex + 1 === limitVal) {
+        break; // Exit the outer loop.
     }
 
-    for ( var secondIndex = 0 ; secondIndex < dataPoints.length ; secondIndex++ )
-    {
-        // Ensure we are comparing distinct elements from the array.
-        if ( firstIndex === secondIndex ) {
-            continue;
+    // Use an inner loop to compare the current number with every other number in the sequence.
+    for (let innerIndex = 0; innerIndex < numberSequence.length; innerIndex++) {
+        // Skip comparison if the indices are the same (a number compared with itself).
+        if (outerIndex === innerIndex) {
+            continue; // Move to the next iteration of the inner loop.
         }
 
-        // Calculate the difference between the two selected data points.
-        var currentDiff = dataPoints[firstIndex] - dataPoints[secondIndex];
+        // Calculate the difference between the number at the outer index and the number at the inner index.
+        let currentDiff = numberSequence[outerIndex] - numberSequence[innerIndex];
 
-        // Update the maximum difference if the current calculation is greater.
-        if ( maxDifference < currentDiff ) {
+        // Update the maximum difference if the current calculated difference is greater.
+        if (maxDifference < currentDiff) {
             maxDifference = currentDiff;
         }
     }
 }
-// Output the computed maximum difference to the console.
-console.log( maxDifference );
+
+// Output the final maximum difference found to the console.
+console.log(maxDifference);

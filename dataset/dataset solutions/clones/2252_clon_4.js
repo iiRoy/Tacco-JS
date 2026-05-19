@@ -1,35 +1,32 @@
 "use strict";
 
-const processInputData = (incomingText) => {
-  const lineSeries = incomingText.split('\n');
-  const recordCount = Number(lineSeries[0].split(' ')[1]);
+const processChallenge = (inputData) => {
+  const allLines = inputData.split("\n");
+  const [_, totalQuestionEntries] = allLines.shift().split(" ").map(Number);
 
-  const assessmentRecords = lineSeries.slice(1, 1 + recordCount).reduce((collection, currentLine) => {
-    const [questionKey, outcomeType] = currentLine.split(' ');
-    if (!collection.has(questionKey)) {
-      collection.set(questionKey, []);
+  const questionResultsMap = new Map();
+
+  allLines.slice(0, totalQuestionEntries).forEach(entryLine => {
+    const [questionId, resultType] = entryLine.split(" ");
+    if (!questionResultsMap.has(questionId)) {
+      questionResultsMap.set(questionId, []);
     }
-    collection.get(questionKey).push(outcomeType);
-    return collection;
-  }, new Map());
+    questionResultsMap.get(questionId).push(resultType);
+  });
 
-  const [totalCorrectSubmissions, totalIncorrectAttempts] = Array.from(assessmentRecords.values()).reduce(
-    (accPair, sequenceOfOutcomes) => {
-      let [currentCorrect, currentIncorrect] = accPair;
-      const firstSuccessPosition = sequenceOfOutcomes.indexOf('AC');
+  const finalCounts = Array.from(questionResultsMap.values()).reduce((accumulator, attemptSequence) => {
+    const firstCorrectIndex = attemptSequence.indexOf('AC');
 
-      if (firstSuccessPosition !== -1) {
-        currentCorrect++;
-        currentIncorrect += sequenceOfOutcomes.slice(0, firstSuccessPosition).filter(statusValue => statusValue === 'WA').length;
-      } else {
-        currentIncorrect += sequenceOfOutcomes.filter(statusValue => statusValue === 'WA').length;
-      }
-      return [currentCorrect, currentIncorrect];
-    },
-    [0, 0]
-  );
+    if (firstCorrectIndex !== -1) {
+      accumulator.correctAnswerCount++;
+      accumulator.wrongAnswerCount += attemptSequence.slice(0, firstCorrectIndex).filter(res => res === 'WA').length;
+    } else {
+      accumulator.wrongAnswerCount += attemptSequence.filter(res => res === 'WA').length;
+    }
+    return accumulator;
+  }, { correctAnswerCount: 0, wrongAnswerCount: 0 });
 
-  console.log(`${totalCorrectSubmissions} ${totalIncorrectAttempts}`);
+  console.log(`${finalCounts.correctAnswerCount} ${finalCounts.wrongAnswerCount}`);
 };
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));

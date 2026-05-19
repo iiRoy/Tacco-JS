@@ -1,71 +1,61 @@
-// Function to determine if a given year is a bissextile (leap) year
-function checkBissextile(    currentYear    ) {
-    // A year is a leap year if it is perfectly divisible by 400
-    if (   ( currentYear % 400 )    ===    0    ) {
-        return Boolean(  1  ); // Return true for a leap year
-    }
-    // Otherwise, if it is perfectly divisible by 100, it is not a leap year
-    else if (   ( currentYear % 100 )    ===    0    ) {
-        return Boolean(  0  ); // Return false for a non-leap year
-    }
-    // Otherwise, if it is perfectly divisible by 4, it is a leap year
-    else if (   ( currentYear % 4 )    ===    0    ) {
-        return Boolean(  1  ); // Return true for a leap year
-    }
-    // All other years do not satisfy the conditions and are therefore not leap years
-    else {
-        return Boolean(  0  ); // Return false
+function checkGregorianLeap(gregorianYear) {
+    // Determine if the provided year is a leap year according to Gregorian calendar rules.
+    if (gregorianYear % 400 === 0) {
+        return true; // Divisible by 400, so it's a leap year.
+    } else if (gregorianYear % 100 === 0) {
+        return false; // Divisible by 100 but not by 400, so not a leap year.
+    } else if (gregorianYear % 4 === 0) {
+        return true; // Divisible by 4 but not by 100, so it's a leap year.
+    } else {
+        return false; // Not divisible by 4, so not a leap year.
     }
 }
 
-// Acquire input data from the standard input stream, ensuring UTF-8 encoding
-const  dataBuffer  =  global.require('node:fs').readFileSync(  process.env.INPUT_SOURCE  ||  '/dev/stdin',  'utf-8'  );
+// Read the entire standard input synchronously.
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Split the entire input content into an array of individual lines, creating a shallow copy first
-let  textLines  =  dataBuffer.slice().split( '\n' );
+// Split the input into individual lines.
+var inputLines = fileContent.split('\n');
 
+// Initialize a string to accumulate all processed output.
+var finalOutputString = '';
 
-// Initialize a string variable that will accumulate all processed results for final display
-let  finalOutputString  =  String();
+// Process input lines until a termination condition is met.
+while (true) {
+    // Get the next line and split it by space to extract year range.
+    var yearRangeParts = inputLines.shift().split(' ');
 
-// Begin an infinite loop to process input ranges until an explicit break condition is met
-while (   !false   ) {
-    // Extract the first line from the array, remove leading/trailing whitespace, and split by one or more spaces
-    const  yearRangeParts  =  textLines.shift().trim().split(  /\s+/  );
+    // Convert the string parts to numbers for start and end years.
+    var startYear = +yearRangeParts[0];
+    var endYear = +yearRangeParts[1];
 
-    // Convert the first part of the array to a numeric value, representing the start of the year range
-    const  startingPoint  =  Number(  yearRangeParts[0]  );
-    // Convert the second part of the array to an integer, representing the end of the year range
-    const  endingPoint  =  parseInt(  yearRangeParts[1],  10  );
-
-    // Check if both the starting and ending points are zero, which signifies the termination of input
-    if (   ( startingPoint + endingPoint )    ===    0    ) {
-        break; // Exit the processing loop if the termination condition is met
+    // Check for the termination condition (both years are zero).
+    if (startYear + endYear === 0) {
+        break;
     }
 
-    // Initialize a temporary string variable to store the leap years found within the current range
-    let  currentRangeResult  =  new String('');
+    // Initialize a string to hold leap years for the current range.
+    var currentBlockOutput = '';
 
-    // Iterate through each year from the calculated starting point up to and including the ending point
-    for (  let  currentIterationYear  =  startingPoint;  currentIterationYear  <=  endingPoint;  currentIterationYear  =  currentIterationYear  +  1  ) {
-        // Determine if the current year in the iteration is a leap year using the helper function
-        if (  checkBissextile(  currentIterationYear  )  ) {
-            // If it is a leap year, append its string representation followed by a newline character
-            currentRangeResult  =  currentRangeResult.concat(  currentIterationYear.toString(),  '\n'  );
+    // Iterate through the years in the current range.
+    for (var currentYear = startYear; currentYear <= endYear; currentYear++) {
+        // If the current year is a leap year, append it to the block output.
+        if (checkGregorianLeap(currentYear)) {
+            currentBlockOutput += currentYear + '\n';
         }
     }
 
-    // After checking all years in the range, if no leap years were found, append 'NA'
-    if (  currentRangeResult.length  ===  0  ) {
-        currentRangeResult  =  currentRangeResult.concat(  'NA',  '\n'  );
+    // If no leap years were found in the range, append "NA".
+    if (currentBlockOutput.length === 0) {
+        currentBlockOutput += 'NA\n';
     }
 
-    // Append the results for the current range (either leap years or 'NA') to the overall output string
-    finalOutputString  =  finalOutputString.concat(  currentRangeResult.toString(),  '\n'  );
+    // Append the current block's output to the overall final string, followed by an extra newline.
+    finalOutputString += currentBlockOutput + '\n';
 }
 
-// Before final output, remove the last two characters (which are excess newline characters) from the accumulated string
-finalOutputString  =  finalOutputString.substring(  0,  finalOutputString.length  -  (2 * 1)  );
+// Remove the last two characters (which would be an extra newline from the last block).
+finalOutputString = finalOutputString.substr(0, finalOutputString.length - 2);
 
-// Print the final accumulated string to the console
-console.log(  finalOutputString  );
+// Print the final accumulated string to the console.
+console.log(finalOutputString);

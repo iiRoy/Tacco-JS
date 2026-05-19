@@ -1,133 +1,111 @@
-// This is the primary module wrapper function.
-(function(codeUnits) {
-  // A cache for already loaded modules.
-  var cachedUnits = {};
+/******/ (function(moduleList) { // This is the primary module loading function.
+/******/ 	// The internal cache for all loaded modules.
+/******/ 	var loadedModulesCache = {};
+/******/
+/******/ 	// The core function to require a module.
+/******/ 	function __webpack_require__(moduleIdentifier) {
+/******/
+/******/ 		// Check if the module is already present in the cache.
+/******/ 		if(loadedModulesCache[moduleIdentifier]) {
+/******/ 			return loadedModulesCache[moduleIdentifier].exports;
+/******/ 		}
+/******/ 		// Create a new module entry (and store it in the cache).
+/******/ 		var currentModule = loadedModulesCache[moduleIdentifier] = {
+/******/ 			i: moduleIdentifier, // The unique ID for this module.
+/******/ 			l: false,            // A flag indicating if the module has finished loading.
+/******/ 			exports: {}          // The object that will hold the module's exports.
+/******/ 		};
+/******/
+/******/ 		// Execute the module's function, providing context and the require function.
+/******/ 		moduleList[moduleIdentifier].call(currentModule.exports, currentModule, currentModule.exports, __webpack_require__);
+/******/
+/******/ 		// Mark the module as fully loaded.
+/******/ 		currentModule.l = true;
+/******/
+/******/ 		// Return the exports of the module.
+/******/ 		return currentModule.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// Expose the module definitions object.
+/******/ 	__webpack_require__.m = moduleList;
+/******/
+/******/ 	// Expose the module cache.
+/******/ 	__webpack_require__.c = loadedModulesCache;
+/******/
+/******/ 	// Define a getter function for harmony exports (ESM compatibility).
+/******/ 	__webpack_require__.d = function(exportedObject, exportName, valueGetter) {
+/******/ 		if(!__webpack_require__.o(exportedObject, exportName)) {
+/******/ 			Object.defineProperty(exportedObject, exportName, { enumerable: true, get: valueGetter });
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// Define __esModule on exports for ESM compatibility.
+/******/ 	__webpack_require__.r = function(exportedObject) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exportedObject, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exportedObject, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// Create a simulated namespace object for ESM compatibility.
+/******/ 	// mode & 1: value is a module ID, require it.
+/******/ 	// mode & 2: merge all properties of value into the namespace.
+/******/ 	// mode & 4: return value if it's already a namespace object.
+/******/ 	// mode & 8|1: behave like a direct require.
+/******/ 	__webpack_require__.t = function(valueToProcess, processingMode) {
+/******/ 		if(processingMode & 1) valueToProcess = __webpack_require__(valueToProcess);
+/******/ 		if(processingMode & 8) return valueToProcess;
+/******/ 		if((processingMode & 4) && typeof valueToProcess === 'object' && valueToProcess && valueToProcess.__esModule) return valueToProcess;
+/******/ 		var newNamespace = Object.create(null);
+/******/ 		__webpack_require__.r(newNamespace);
+/******/ 		Object.defineProperty(newNamespace, 'default', { enumerable: true, value: valueToProcess });
+/******/ 		if(processingMode & 2 && typeof valueToProcess != 'string') for(var propKey in valueToProcess) __webpack_require__.d(newNamespace, propKey, function(propKey) { return valueToProcess[propKey]; }.bind(null, propKey));
+/******/ 		return newNamespace;
+/******/ 	};
+/******/
+/******/ 	// Get default export function for compatibility with non-harmony modules.
+/******/ 	__webpack_require__.n = function(moduleObject) {
+/******/ 		var propertyGetter = moduleObject && moduleObject.__esModule ?
+/******/ 			function retrieveDefault() { return moduleObject['default']; } :
+/******/ 			function retrieveModuleExports() { return moduleObject; };
+/******/ 		__webpack_require__.d(propertyGetter, 'a', propertyGetter);
+/******/ 		return propertyGetter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call wrapper for convenience.
+/******/ 	__webpack_require__.o = function(targetObject, propertyName) { return Object.prototype.hasOwnProperty.call(targetObject, propertyName); };
+/******/
+/******/ 	// Public path for assets (empty in this case).
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/
+/******/ 	// Load the entry module and return its exports, initiating the application.
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/ABC157/C.js");
+/******/ })
+/************************************************************************/
+/******/ ({
 
-  // The core function for loading modules.
-  function _runtime_loader_(unitId) {
-    // Check if the module is already in the cache.
-    if (cachedUnits[unitId]) {
-      return cachedUnits[unitId].unitExports;
-    }
-    // Create a new module record and store it in the cache.
-    var unitRecord = cachedUnits[unitId] = {
-      id: unitId, // Identifier for this unit.
-      isLoaded: false, // Flag indicating if the unit's code has been executed.
-      unitExports: {} // The object that will hold the unit's exports.
-    };
+/***/ "./src/ABC157/C.js":
+/*!*************************!*\
+  !*** ./src/ABC157/C.js ***!
+  \*************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-    // Execute the module's function, passing necessary arguments.
-    codeUnits[unitId].call(unitRecord.unitExports, unitRecord, unitRecord.unitExports, _runtime_loader_);
+eval("function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }\n\nfunction _nonIterableRest() { throw new TypeError(\"Invalid attempt to destructure non-iterable instance\"); }\n\nfunction _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === \"[object Arguments]\")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i[\"return\"] != null) _i[\"return\"](); } finally { if (_d) throw _e; } } return _arr; }\n\nfunction _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }\n\nvar fileSystem = __webpack_require__(/*! fs */ \"fs\");\n\nvar INVALID_RESULT = -1;\n\nvar processInput = function processInput(rawData) {\n  var inputLines = rawData.split('\\n');\n\n  // Extract N (number of digits) and M (number of conditions) from the first line.\n  var _inputLines$shift$split$map = inputLines.shift().split(' ').map(function (numericString) {\n    return numericString - 0;\n  }),\n      _inputLines$shift$split$map2 = _slicedToArray(_inputLines$shift$split$map, 2),\n      numDigits = _inputLines$shift$split$map2[0],\n      numConditions = _inputLines$shift$split$map2[1];\n\n  // Initialize an array to hold the digits, using -1 to denote an unset digit.\n  var digitCandidates = [];\n\n  for (var idx = 0; idx < numDigits; idx++) {\n    digitCandidates.push(-1);\n  }\n\n  // Iterate through each condition provided.\n  for (var _i2 = 0; _i2 < numConditions; _i2++) {\n    var _inputLines$shift$split$map3 = inputLines.shift().split(' ').map(function (numericString) {\n      return numericString - 0;\n    }),\n        _inputLines$shift$split$map4 = _slicedToArray(_inputLines$shift$split$map3, 2),\n        position = _inputLines$shift$split$map4[0],\n        value = _inputLines$shift$split$map4[1];\n\n    var targetIndex = position - 1; // Convert 1-based position to 0-based array index.\n\n    // Check for conflicting conditions for the same digit position.\n    if (digitCandidates[targetIndex] !== -1 && digitCandidates[targetIndex] !== value) {\n      console.log(INVALID_RESULT);\n      return;\n    }\n\n    // Apply the current condition to the digit candidate array.\n    digitCandidates[targetIndex] = value;\n  }\n\n  // Check for specific invalid scenarios related to the first digit.\n  // If the first digit is 0, it's considered invalid by the original logic.\n  if (digitCandidates[0] === 0) {\n    console.log(INVALID_RESULT);\n    return;\n  }\n\n  // If the first digit is still unknown (-1), it's also considered invalid by the original logic.\n  if (digitCandidates[0] === -1) {\n    console.log(INVALID_RESULT);\n    return;\n  }\n\n  // Fill any remaining unset digits with 0.\n  for (var _i3 = 0; _i3 < numDigits; _i3++) {\n    if (digitCandidates[_i3] === -1) {\n      digitCandidates[_i3] = 0;\n    }\n  }\n\n  // Output the final number by concatenating the digits.\n  console.log(digitCandidates.join(''));\n};\n\n// Read the entire input from standard input and pass it to the processing function.\nprocessInput(fileSystem.readFileSync('/dev/stdin', 'utf8'));\n\n//# sourceURL=webpack:///./src/ABC157/C.js?");
 
-    // Mark the module as successfully loaded.
-    unitRecord.isLoaded = true;
+/***/ }),
 
-    // Return the exports of the loaded module.
-    return unitRecord.unitExports;
-  }
+/***/ "fs":
+/*!*********************!*\
+  !*** external "fs" ***!
+  \*********************/
+/*! no static exports found */
+/***/ (function(module, exports) {
 
+eval("module.exports = require(\"fs\");\n\n//# sourceURL=webpack:///external_%22fs%22?");
 
-  // Expose the collection of module functions.
-  _runtime_loader_.registry = codeUnits;
+/***/ })
 
-  // Expose the module cache.
-  _runtime_loader_.cache = cachedUnits;
-
-  // Define a getter function for ECMAScript module exports.
-  _runtime_loader_.defineGetter = function(output, propName, accessor) {
-    if (!_runtime_loader_.hasOwnProp(output, propName)) {
-      Object.defineProperty(output, propName, {
-        enumerable: true,
-        get: accessor
-      });
-    }
-  };
-
-  // Mark an exports object as an ECMAScript module.
-  _runtime_loader_.markAsESM = function(outputObj) {
-    if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-      Object.defineProperty(outputObj, Symbol.toStringTag, {
-        value: 'Module'
-      });
-    }
-    Object.defineProperty(outputObj, '__esModule', {
-      value: true
-    });
-  };
-
-  // Create a synthetic namespace object for interoperability.
-  // creationMode & 1: value is a module id, load it.
-  // creationMode & 2: merge all properties of value into the namespace.
-  // creationMode & 4: return value if it's already a namespace object.
-  // creationMode & 8|1: behave like a direct require.
-  _runtime_loader_.createNamespace = function(inputVal, creationMode) {
-    if (creationMode & 1) inputVal = _runtime_loader_(inputVal);
-    if (creationMode & 8) return inputVal;
-    if ((creationMode & 4) && typeof inputVal === 'object' && inputVal && inputVal.__esModule) return inputVal;
-    var namespaceObj = Object.create(null);
-    _runtime_loader_.markAsESM(namespaceObj);
-    Object.defineProperty(namespaceObj, 'default', {
-      enumerable: true,
-      value: inputVal
-    });
-    if (creationMode & 2 && typeof inputVal != 'string')
-      for (var itemKey in inputVal)
-        _runtime_loader_.defineGetter(namespaceObj, itemKey, function(itemKey) {
-          return inputVal[itemKey];
-        }.bind(null, itemKey));
-    return namespaceObj;
-  };
-
-  // Provide a default export function for compatibility.
-  _runtime_loader_.interopDefault = function(sourceMod) {
-    var exportAccessor = sourceMod && sourceMod.__esModule ?
-      function obtainDefault() {
-        return sourceMod['default'];
-      } :
-      function obtainAllExports() {
-        return sourceMod;
-      };
-    _runtime_loader_.defineGetter(exportAccessor, 'a', exportAccessor);
-    return exportAccessor;
-  };
-
-  // Object.prototype.hasOwnProperty.call wrapper.
-  _runtime_loader_.hasOwnProp = function(targetObj, keyName) {
-    return Object.prototype.hasOwnProperty.call(targetObj, keyName);
-  };
-
-  // Public path for assets.
-  _runtime_loader_.publicPath = "";
-
-
-  // Load the initial entry module and return its exports.
-  return _runtime_loader_(_runtime_loader_.startupUnit = "./src/ABC157/C.js");
-})
-// End of the main module loading function.
-({
-
-  // Definition for the primary application module.
-  "./src/ABC157/C.js":
-  /*!*************************!*
-    !*** ./src/ABC157/C.js ***!
-    !*************************/
-  /*! no static exports found */
-    (function(unitRecord, unitExports, _runtime_loader_) {
-
-      eval("function _splitArraySegments_(inputArray, segmentCount) { return _checkArrayValidity_(inputArray) || _limitIterableToArray_(inputArray, segmentCount) || _throwNonIterableError_(); }\n\nfunction _throwNonIterableError_() { throw new TypeError(\"Invalid attempt to destructure non-iterable instance\"); }\n\nfunction _limitIterableToArray_(inputArray, segmentCount) { if (!(Symbol.iterator in Object(inputArray) || Object.prototype.toString.call(inputArray) === \"[object Arguments]\")) { return; } var _workingArr = []; var _hasMore = true; var _isDone = false; var _errorVal = undefined; try { for (var _iter = inputArray[Symbol.iterator](), _nextItem; !(_hasMore = (_nextItem = _iter.next()).done); _hasMore = true) { _workingArr.push(_nextItem.value); if (segmentCount && _workingArr.length === segmentCount) break; } } catch (err) { _isDone = true; _errorVal = err; } finally { try { if (!_hasMore && _iter[\"return\"] != null) _iter[\"return\"](); } finally { if (_isDone) throw _errorVal; } } return _workingArr; }\n\nfunction _checkArrayValidity_(inputArray) { if (Array.isArray(inputArray)) return inputArray; }\n\nvar fileSystem = _runtime_loader__(/*! fs */ \"fs\");\n\nvar INVALID_RESULT = 999;\n\nvar primaryExecution = function primaryExecution(sourceText) {\n  var textLines = sourceText.split('\\n');\n\n  var _firstLineParsed_ = textLines.shift().split(' ').map(function (val) {\n    return Number(val);\n  });\n  var _firstLineSegments_ = _splitArraySegments_(_firstLineParsed_, 2);\n  var totalDigits = _firstLineSegments_[0];\n  var constraintCount = _firstLineSegments_[1];\n\n  var digitPlaceholders = [];\n\n  for (var idx = 0; idx < totalDigits; idx++) {\n    digitPlaceholders.push(INVALID_RESULT);\n  }\n\n  for (var constraintIdx = 0; constraintIdx < constraintCount; constraintIdx++) {\n    var _constraintLineParsed_ = textLines.shift().split(' ').map(function (val) {\n      return Number(val);\n    });\n    var _constraintLineSegments_ = _splitArraySegments_(_constraintLineParsed_, 2);\n    var positionIndex = _constraintLineSegments_[0];\n    var digitValue = _constraintLineSegments_[1];\n\n    var targetPosition = positionIndex - 1;\n\n    if (digitPlaceholders[targetPosition] !== INVALID_RESULT && digitPlaceholders[targetPosition] !== digitValue) {\n      console.info(INVALID_RESULT);\n      return;\n    }\n\n    digitPlaceholders[targetPosition] = digitValue;\n  }\n\n  if (digitPlaceholders[0] === 0) {\n    console.info(INVALID_RESULT);\n    return;\n  }\n\n  if (digitPlaceholders[0] === INVALID_RESULT) {\n    console.info(INVALID_RESULT);\n    return;\n  }\n\n  for (var finalIdx = 0; finalIdx < totalDigits; finalIdx++) {\n    if (digitPlaceholders[finalIdx] === INVALID_RESULT) {\n      digitPlaceholders[finalIdx] = 0;\n    }\n  }\n\n  console.info(digitPlaceholders.join(''));\n};\n\nprimaryExecution(fileSystem.readTextFileSync('/dev/stdin', 'utf8'));\n\n//# sourceURL=webpack:///./src/ABC157/C.js?");
-
-    }),
-
-  // External module definition for 'fs'.
-  "fs":
-  /*!*********************!*
-    !*** external "fs" ***!
-    !*********************/
-  /*! no static exports found */
-    (function(unitRecord, unitExports) {
-
-      eval("unitRecord.unitExports = _runtime_loader_('fs');\n\n//# sourceURL=webpack:///external_%22fs%22?");
-
-    })
-
-});
+/******/ });

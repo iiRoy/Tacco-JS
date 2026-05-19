@@ -1,50 +1,46 @@
-// This module processes incoming data streams from standard input.
+process.stdin.on("data", function(inputDataBuffer) {
+    // Initialize data structures for stacks and results
+    var stackCollection = [];
+    var resultItems = [];
 
-process.stdin.on("data", function (incomingPayload) {
-    // Initialize primary data structures for processing.
-    // 'containerUnits' will hold multiple stacks/queues.
-    // 'finalResults' will store processed outputs.
-    let containerUnits = [], finalResults = [];
+    // Convert input buffer to string, trim, and split into individual lines
+    var processedLines = (inputDataBuffer + "").trim().split("\n");
 
-    // Convert the incoming buffer to a string, clean it, and split into individual instruction lines.
-    const instructionLines = (incomingPayload + "").trim().split("\n");
+    // The first line indicates the number of stacks to prepare
+    var initialStackCount = +processedLines.shift();
 
-    // Extract the first line to determine the total number of containers required.
-    const stackCount = +instructionLines.shift();
-
-    // Initialize the specified number of containers, starting from index 1.
-    for ( let currentSlotIndex = 0; currentSlotIndex < stackCount; currentSlotIndex++ ) {
-        containerUnits[currentSlotIndex + 1] = [];
+    // Populate the stack collection with empty arrays, using 1-based indexing
+    for (var stackIndex = 0; stackIndex < initialStackCount; stackIndex++) {
+        stackCollection[stackIndex + 1] = [];
     }
 
-    // Iterate through each instruction line until a 'quit' command is encountered.
-    instructionLines.some( function (currentInstruction) {
-        // If the instruction is to quit, stop processing.
-        if ( currentInstruction === "quit" ) {
-            return 1; // Return true to stop the 'some' loop.
+    // Process each command line until "quit" is encountered
+    processedLines.some(function(currentCommand) {
+        // If the command is "quit", stop further processing
+        if (currentCommand === "quit") {
+            return 1; // Signal to stop iteration
         }
 
-        // Check for "push" operation (implied by "pu" substring).
-        if ( ~currentInstruction.indexOf("pu") ) {
-            // Push an item onto a specific container.
-            // Indices 5 and 7 are hardcoded based on expected input format.
-            containerUnits[+currentInstruction[5]].push(currentInstruction[7]);
+        // Check for "push" operation
+        if (~currentCommand.indexOf("pu")) {
+            // Extract stack identifier and item to push
+            stackCollection[+currentCommand[5]].push(currentCommand[7]);
         }
-        // Check for "move" operation (implied by "mo" substring).
-        else if ( ~currentInstruction.indexOf("mo") ) {
-            // Move an item from one container to another.
-            // Pop from source container (index 5) and push to destination container (index 7).
-            containerUnits[+currentInstruction[7]].push(containerUnits[+currentInstruction[5]].pop());
+        // Check for "move" operation
+        else if (~currentCommand.indexOf("mo")) {
+            // Pop from source stack and push to destination stack
+            stackCollection[+currentCommand[7]].push(stackCollection[+currentCommand[5]].pop());
         }
-        // Default operation: pop an item and store it in the final results buffer.
+        // Default to "pop" operation
         else {
-            // Pop from container at index 4 and add to final results.
-            finalResults.push(containerUnits[+currentInstruction[4]].pop());
+            // Pop from the specified stack and store the item in the results buffer
+            resultItems.push(stackCollection[+currentCommand[4]].pop());
         }
+        return 0; // Continue iteration
     });
 
-    // Output all collected results to the console.
-    finalResults.forEach( function (outputElement) {
-        console.log(outputElement);
+    // Output all collected result items
+    resultItems.forEach(function(outputValue) {
+        console.log(outputValue);
     });
-}).resume(); // Keep the standard input stream open to receive data.
+}).resume();

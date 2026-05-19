@@ -1,23 +1,40 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fs = require('node:fs');
+const inputLines = fs.readFileSync('/dev/stdin', 'utf8').split('\n');
 
-const problemStatements = rawData.trim().split('\n').map(lineData => {
-    const numericComponents = lineData.split(' ').map(Number);
-    return { dimensionX: numericComponents[0], dimensionY: numericComponents[1] };
-}).filter(pairDimensions => pairDimensions.dimensionX !== 0 || pairDimensions.dimensionY !== 0);
+function constructAndDisplayGrid(heightVal, widthVal) {
+    const charOptions = ['#', '.'];
 
-const constructVisual = (heightValue, widthValue) => {
-    const visualCharacters = ['#', '.'];
-
-    return Array.from({ length: heightValue }, (_, rowIndex) => {
-        return Array.from({ length: widthValue }, (_, colIndex) => {
-            return visualCharacters[(rowIndex + colIndex) % 2];
-        }).join('');
-    }).join('\n');
-};
-
-if (problemStatements.length > 0) {
-    const compiledOutputs = problemStatements.map(currentDimensions => {
-        return constructVisual(currentDimensions.dimensionX, currentDimensions.dimensionY);
+    Array.from({ length: heightVal }, (_, rowIdx) => {
+        const rowChars = Array.from({ length: widthVal }, (_, colIdx) => {
+            return charOptions[(rowIdx + colIdx) % 2];
+        });
+        process.stdout.write(rowChars.join('') + '\n');
     });
-    process.stdout.write(compiledOutputs.join('\n\n') + '\n');
+    process.stdout.write('\n');
 }
+
+function processDimensionPairs(remainingInput, currentIdx = 0) {
+    if (currentIdx >= remainingInput.length) {
+        return;
+    }
+
+    const currentLine = remainingInput[currentIdx];
+    if (!currentLine.trim()) {
+        processDimensionPairs(remainingInput, currentIdx + 1);
+        return;
+    }
+
+    const dimensions = currentLine.split(' ').map(Number);
+    const hVal = dimensions[0];
+    const wVal = dimensions[1];
+
+    if (hVal === 0 && wVal === 0) {
+        return;
+    }
+
+    constructAndDisplayGrid(hVal, wVal);
+
+    processDimensionPairs(remainingInput, currentIdx + 1);
+}
+
+processDimensionPairs(inputLines);

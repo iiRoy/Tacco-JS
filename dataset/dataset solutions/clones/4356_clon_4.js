@@ -1,11 +1,7 @@
-((resourceAcquirer) => {
-    const dataStreamHandler = resourceAcquirer('node:fs').readFileSync;
-    const leadingTextUnit = 'ABC';
-    const finalDelimiter = '\n';
+function processInputData(incomingText){
+    const prefixSegment = "ABC";
+    const combinedSegments = [prefixSegment, incomingText];
+    console.log(combinedSegments.join(""));
+}
 
-    const incomingInformation = dataStreamHandler('/dev/stdin', { encoding: 'utf8' });
-
-    const constructedMessage = [leadingTextUnit, incomingInformation].join('');
-
-    process.stdout.write(constructedMessage + finalDelimiter);
-})(require);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

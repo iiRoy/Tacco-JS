@@ -1,27 +1,14 @@
-/* This script reads input from standard input, processes it, and outputs sorted numbers. */
-var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input
 
-// The raw input string is trimmed and then split into an array of lines.
-var lineArray = rawData
-  .trim()
-  .split("\n");
+var lineArray = rawData.trim().split("\n"); // Trim whitespace and split the input into an array of lines
 
-/*
- * From the array of lines, the second line is selected,
- * split by spaces, and each part is converted to a floating-point number.
- */
-var numericValues = lineArray[1]
-  .split(" ")
-  .map(parseFloat);
+// Get the second line (index 1), split it by spaces, and convert each part to a number
+var numArray = lineArray[1].split(" ").map(Number);
 
-// The array of floating-point numbers is then sorted in ascending order.
-numericValues
-  .sort(
-    (firstElement, secondElement) => firstElement - secondElement
-  );
+// Sort the array of numbers in ascending order using a custom comparison function
+numArray.sort(function(valA, valB) {
+    return valA - valB; // Standard numerical ascending sort
+});
 
-// Finally, the sorted numbers are joined back into a string with spaces and printed to the console.
-console
-  .log(
-    numericValues.join(" ")
-  );
+// Join the sorted numbers back into a single string with spaces and print to console
+console.log(numArray.join(" "));

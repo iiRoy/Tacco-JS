@@ -1,49 +1,28 @@
-"use strict"; /* This directive enforces strict parsing and error handling in the script. */
+"use strict";
 
-// Aliases for core functionality to provide distinct identifier names.
-const getExternalModule = require; // Function to import Node.js modules.
-const convertToInteger = parseInt; // Function to parse a string argument and returns an integer.
-const outputUtility = console; // Global object providing access to debugging console.
+// This script processes two numbers from standard input.
+// It reads them, applies a condition (if > 1, keep; otherwise, 0),
+// and then prints their product.
 
-/**
- * A custom logging function to replace the direct console.log call.
- * @param {any} content - The data to be displayed.
- */
-function displayMessage(content) {
-  outputUtility.log(content); // Utilizes the aliased console object's log method.
-}
+const fileSystem = require('fs'); // Load the Node.js file system module
 
-// Configuration constants for input processing.
-const standardInputLocation = "/dev/stdin"; // Path to standard input file.
-const utf8CharEncoding = "utf8"; // Standard character encoding for text.
-const whitespaceDelimiter = " "; // Character used to separate input values.
-const firstElementIndex = 0; // Index for the initial value in an array.
-const secondElementIndex = 1; // Index for the subsequent value in an array.
-const minimumThreshold = 1; // Threshold for value comparison.
-const defaultResultIfBelow = 0; // Fallback value if the threshold is not met.
+// Read the entire content from standard input as a UTF-8 string
+const rawData = fileSystem.readFileSync("/dev/stdin", "utf8");
 
+// Convert the raw buffer to a string and split it by space to get an array of string values
+const valueStrings = rawData.toString().split(" ");
 
-// Acquire the file system module.
-const fileSystemHandler = getExternalModule('fs');
+// Parse the first string value into an integer
+const firstNum = parseInt(valueStrings[0]);
 
-// Read the entire content from the specified standard input path.
-const rawContentBuffer = fileSystemHandler.readFileSync(standardInputLocation, utf8CharEncoding);
+// Apply a conditional transformation: if the number is greater than 1, use it; otherwise, use 0.
+const processedFirst = firstNum > 1 ? firstNum : 0;
 
-// Convert the received buffer to a string format and then segment it.
-const contentAsString = rawContentBuffer.toString(); // Convert buffer object to string.
-const numericalPartsArray = contentAsString.split(whitespaceDelimiter); // Split string by whitespace.
+// Parse the second string value into an integer
+const secondNum = parseInt(valueStrings[1]);
 
-// Extract and parse the first numeric component from the segmented array.
-const initialValueA = convertToInteger(numericalPartsArray[firstElementIndex]);
+// Apply the same conditional transformation to the second number
+const processedSecond = secondNum > 1 ? secondNum : 0;
 
-// Determine the first final value: if greater than threshold, use as is; otherwise, use default.
-const processedValueA = initialValueA > minimumThreshold ? initialValueA : defaultResultIfBelow;
-
-// Extract and parse the second numeric component from the segmented array.
-const initialValueB = convertToInteger(numericalPartsArray[secondElementIndex]);
-
-// Determine the second final value: if greater than threshold, use as is; otherwise, use default.
-const processedValueB = initialValueB > minimumThreshold ? initialValueB : defaultResultIfBelow;
-
-// Compute the product of the two processed values and output the result.
-displayMessage(processedValueA * processedValueB);
+// Calculate the product of the two processed numbers and print it to the console
+console.log(processedFirst * processedSecond);

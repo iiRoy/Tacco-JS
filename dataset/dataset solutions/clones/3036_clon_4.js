@@ -1,22 +1,25 @@
 'use strict';
-function ProcessData(receivedData){
-  var rawData = receivedData.trim().split('\n');
-  var countValue = Number(rawData[0]);
-  var sequenceText = rawData[1];
-  var positionIdentifier = parseInt(rawData[2], 10);
 
-  var criticalSymbol = sequenceText.substring(positionIdentifier, positionIdentifier + 1);
+function processInputData(rawData) {
+  const parsedLines = rawData.trim().split('\n');
 
-  var constructedOutcome = '';
-  for (var iteration = 0; iteration < sequenceText.length; iteration++) {
-    var currentFragment = sequenceText.substring(iteration, iteration + 1);
-    if (currentFragment.localeCompare(criticalSymbol) === 0) {
-      constructedOutcome += currentFragment;
+  const numericValue = Number(parsedLines[0]); // Corresponds to N, but is unused in the original logic
+  const characterSequence = parsedLines[1];
+  const targetPosition = Number(parsedLines[2]);
+
+  const keyCharacter = characterSequence[targetPosition];
+
+  const outputSegments = [];
+  for (const currentCharacter of characterSequence) {
+    if (currentCharacter === keyCharacter) {
+      outputSegments.push(keyCharacter);
     } else {
-      constructedOutcome += '*';
+      outputSegments.push('*');
     }
   }
-  console.log(constructedOutcome);
+
+  const finalRender = outputSegments.join('');
+  console.log(finalRender);
 }
 
-ProcessData(require('fs').readFileSync('/dev/stdin','utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

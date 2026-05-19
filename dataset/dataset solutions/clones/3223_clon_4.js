@@ -1,21 +1,18 @@
-function assessValueRelationship(sourceTextualData) {
-  const textualComponents = sourceTextualData.split('\n');
-  const numberSequenceString = textualComponents[1];
-  const numericSequence = numberSequenceString.split(' ').map(parseFloat);
+function processInput(sourceText) {
+  const lineSegments = sourceText.split('\n');
+  const numericTokens = lineSegments[1].split(' ');
 
-  const aggregateStatistics = numericSequence.reduce((accumulatorObject, currentNumericValue) => {
-    return {
-      cumulativeSum: accumulatorObject.cumulativeSum + currentNumericValue,
-      absoluteMaximum: (currentNumericValue > accumulatorObject.absoluteMaximum) ? currentNumericValue : accumulatorObject.absoluteMaximum
-    };
-  }, { cumulativeSum: 0, absoluteMaximum: -Infinity });
+  const aggregateData = numericTokens.reduce((accumulator, currentToken) => {
+    const numericValue = Number(currentToken);
+    accumulator.total += numericValue;
+    accumulator.highest = Math.max(accumulator.highest, numericValue);
+    return accumulator;
+  }, { total: 0, highest: -Infinity });
 
-  const overallAggregate = aggregateStatistics.cumulativeSum;
-  const ultimatePeak = aggregateStatistics.absoluteMaximum;
+  const { total, highest } = aggregateData;
 
-  if (ultimatePeak < (overallAggregate - ultimatePeak)) {
-    console.log("Yes");
-  } else {
-    console.log("No");
-  }
+  const comparisonResult = (2 * highest < total) ? "Yes" : "No";
+  console.log(comparisonResult);
 }
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

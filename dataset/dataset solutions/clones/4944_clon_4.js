@@ -1,23 +1,20 @@
-const evaluateStream = (inputFeed) => {
-    const finalTally = inputFeed.split('').reduce((accumulatedCounts, currentUnit) => {
-        if (currentUnit === 'S') {
-            accumulatedCounts.plusOne++;
-        } else if (currentUnit === 'T') {
-            if (accumulatedCounts.plusOne > 0) {
-                accumulatedCounts.plusOne--;
+function main(inputPayload) {
+    const characterSequence = inputPayload.split('');
+
+    const accumulatedState = characterSequence.reduce((currentStatus, currentSymbol) => {
+        if (currentSymbol === 'S') {
+            currentStatus.sCounter++;
+        } else if (currentSymbol === 'T') {
+            if (currentStatus.sCounter > 0) {
+                currentStatus.sCounter--;
             } else {
-                accumulatedCounts.minusOne++;
+                currentStatus.tCounter++;
             }
         }
-        return accumulatedCounts;
-    }, { plusOne: 0, minusOne: 0 });
+        return currentStatus;
+    }, { sCounter: 0, tCounter: 0 });
 
-    return finalTally.plusOne + finalTally.minusOne;
-};
+    console.log(accumulatedState.sCounter + accumulatedState.tCounter);
+}
 
-const initiateProcessing = (rawContent) => {
-    const finalOutcome = evaluateStream(rawContent);
-    console.log(finalOutcome);
-};
-
-initiateProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

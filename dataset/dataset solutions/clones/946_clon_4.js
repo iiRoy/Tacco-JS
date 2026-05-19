@@ -1,56 +1,48 @@
-const sourceText = require('node:fs').readFileSync('/dev/stdin', 'utf8').trim();
-const dataLines = sourceText.split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const contentLines = fileContent.split('\n');
 
-const vertexCount = parseInt(dataLines[0], 10);
+const nodeCount = Number(contentLines.shift());
 
-const adjacencyStructure = dataLines.slice(1, vertexCount + 1).reduce((graphMap, lineSegment) => {
-    const nodeDetails = lineSegment.split(' ').map(Number);
-    const originNode = nodeDetails[0] - 1;
-    const numberOfConnections = nodeDetails[1];
+const graphAdjacency = new Map();
+for (let i = 1; i <= nodeCount; i++) {
+    graphAdjacency.set(i, []);
+}
 
-    if (!graphMap.has(originNode)) {
-        graphMap.set(originNode, []);
-    }
+for (let lineIndex = 0; lineIndex < nodeCount; lineIndex++) {
+    const currentLineParts = contentLines.shift().split(' ').map(Number);
+    const sourceNode = currentLineParts[0];
+    const neighborCount = currentLineParts[1];
 
-    for (let connectionIdx = 0; connectionIdx < numberOfConnections; connectionIdx++) {
-        const connectedNode = nodeDetails[2 + connectionIdx] - 1;
-        graphMap.get(originNode).push(connectedNode);
-    }
-    return graphMap;
-}, new Map());
-
-for (let node = 0; node < vertexCount; node++) {
-    if (!adjacencyStructure.has(node)) {
-        adjacencyStructure.set(node, []);
+    const neighborsList = graphAdjacency.get(sourceNode);
+    for (let neighborIdx = 0; neighborIdx < neighborCount; neighborIdx++) {
+        neighborsList.push(currentLineParts[2 + neighborIdx]);
     }
 }
 
-const shortestPaths = new Map();
-const processingQueue = [];
+const pathDistances = new Map();
 
-const initialNode = 0;
-shortestPaths.set(initialNode, 0);
-processingQueue.push(initialNode);
+const bfsQueue = [];
+const startNode = 1;
+bfsQueue.push(startNode);
+pathDistances.set(startNode, 0);
 
-let currentNodeIdentifier;
-while (processingQueue.length > 0) {
-    currentNodeIdentifier = processingQueue.shift();
+let queueHead = 0;
+while (queueHead < bfsQueue.length) {
+    const currentVertex = bfsQueue[queueHead++];
 
-    const currentDistance = shortestPaths.get(currentNodeIdentifier);
+    const adjacentVertices = graphAdjacency.get(currentVertex);
 
-    const neighbors = adjacencyStructure.get(currentNodeIdentifier);
-    for (const adjacentNode of neighbors) {
-        if (!shortestPaths.has(adjacentNode)) {
-            shortestPaths.set(adjacentNode, currentDistance + 1);
-            processingQueue.push(adjacentNode);
+    if (adjacentVertices) {
+        for (const nextVertex of adjacentVertices) {
+            if (!pathDistances.has(nextVertex)) {
+                pathDistances.set(nextVertex, pathDistances.get(currentVertex) + 1);
+                bfsQueue.push(nextVertex);
+            }
         }
     }
 }
 
-const outputResults = Array.from({ length: vertexCount }, (_, index) => {
-    const originalNodeId = index + 1;
-    const pathLength = shortestPaths.has(index) ? shortestPaths.get(index) : -1;
-    return `${originalNodeId} ${pathLength}`;
-});
-
-console.log(outputResults.join('\n'));
+for (let vertexId = 1; vertexId <= nodeCount; vertexId++) {
+    const distance = pathDistances.has(vertexId) ? pathDistances.get(vertexId) : -1;
+    console.log(vertexId, distance);
+}

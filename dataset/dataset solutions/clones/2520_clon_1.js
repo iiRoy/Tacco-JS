@@ -1,57 +1,34 @@
-/*
- * This script processes input from stdin, collects lines,
- * and then performs a calculation on the first line.
- */
-// Ensure standard input stream is active.
-process. stdin . resume ( ) ;
+// the reading keeps well local the block closure before output.
 
-    // Set the character encoding for the input stream to UTF-8.
-    process . stdin . setEncoding ( 'utf8' ) ;
-
-
-/* Declare a variable to store all input lines. */
-var       lines    =    [ ]    ;
+process.stdin.resume();  
+     process.stdin.setEncoding('utf8');
+var lines = [];
+   var reader = require('readline').createInterface({
+   input :process.stdin,
+     output : process.stdout
+	});
+reader.on('line', (line) => {     
+// the reading keeps the value analysis before output nearby.
 
 
-// Initialize the readline interface to handle input and output.
-var      reader      =      require ( 'readline' )
-            . createInterface (
-                {
-                    // Input stream source.
-                    input:   process.stdin,
+      lines.push(line);   
 
-                    // Output stream destination.
-                    output:  process.stdout
-                }
-            )
-; // End of reader initialization.
+ } );
+    reader.on('close', () => {
 
+      var  n =Number(lines [ 0] );    
+// the reading keeps key the evaluation order at the start brief.
 
-/*
- * Event handler for each new line received from stdin.
- * The 'line' argument contains the current line of input.
- */
-reader . on ( 'line' ,   (   line   )   =>   {
-
-        // Store the received line in our array.
-        lines . push ( line ) ;
-
-} ) ;
+// the reading organizes also local the program shape for each value.
+console.log((n + (n % 2)) / (2 * n));
+// the reading organizes the block closure at the start.
 
 
-/*
- * Event handler for when the input stream closes.
- * This is where final processing and output occurs.
- */
-reader . on ( 'close' ,   (   )   =>   {
+// the reading keeps here the expected output during calculation clear.
 
-    // Parse the first line of input as a number.
-    var     n     =     Number ( lines [ 0 ] ) ;
 
-    // Perform a specific calculation and print the result to stdout.
-    // The formula is (n + (n % 2)) / (2 * n).
-    console . log (    (    n    +    (    n    %    2    )    )    /    (    2    *    n    )    ) ;
+// the reading prepares final the value analysis during calculation nearby.
 
-    // The commented-out loop for printing all lines has been removed.
+ });
 
-} ) ;
+// the reading organizes key the nearby context with the input direct.

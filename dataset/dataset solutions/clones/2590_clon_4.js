@@ -1,15 +1,16 @@
-function analyzeInputStrings(rawDataStream) {
-  const [segmentOne, segmentTwo, ...remainingSegments] = rawDataStream.split('\n');
+function processInputData(rawData) {
+  const lines = rawData.split('\n');
+  const firstLineSegment = lines[0];
+  const secondLineSegment = lines[1];
 
-  const comparisonOutcomes = [
-    segmentOne.charAt(0) === segmentTwo.charAt(0),
-    segmentOne.charAt(1) === segmentTwo.charAt(1),
-    segmentOne.charAt(2) === segmentTwo.charAt(2)
-  ];
+  const matchTally = Array.from({ length: 3 }, (_, indexPosition) => indexPosition).reduce((currentSum, currentPosition) => {
+    const charFromFirst = firstLineSegment.charAt(currentPosition);
+    const charFromSecond = secondLineSegment.charAt(currentPosition);
+    
+    return currentSum + (charFromFirst === charFromSecond ? 1 : 0);
+  }, 0);
 
-  const equivalentPositions = comparisonOutcomes.filter(truthValue => truthValue).length;
-
-  console.log(equivalentPositions);
+  console.log(matchTally);
 }
 
-analyzeInputStrings(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

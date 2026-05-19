@@ -1,39 +1,21 @@
-/*
- * This program is designed to process incoming text data
- * from standard input. It searches for specific three-character
- * sequences, namely "JOI" and "IOI", and tallies their occurrences.
- * The final counts for each sequence are then printed to the console.
- */
+var dataString = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+dataString = dataString.trim(); // Remove leading/trailing whitespace
 
-let sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var joiCount = 0; // Initialize counter for "JOI" occurrences
+var ioiCount = 0; // Initialize counter for "IOI" occurrences
 
-// The raw data might contain unwanted leading or trailing spaces.
-// We remove them to ensure accurate pattern matching.
-sourceData = sourceData.trim();
-
-let joiCount = 0; // A variable to store the number of times "JOI" is found.
-let ioiCount = 0; // A variable to store the number of times "IOI" is found.
-
-// We iterate through the string, looking for three-character substrings.
-// The loop condition `sourceData.length - 3` ensures that
-// there are always at least three characters remaining for a sequence check.
-for ( let  idx  =  0 ;  idx  <  sourceData.length  -  3 ;  idx++ )
-{
-    // Check if the current three-character sequence matches "JOI".
-    if ( sourceData[idx] + sourceData[idx + 1] + sourceData[idx + 2] === "JOI" )
-    {
-        joiCount++; // Increment the counter for "JOI".
+// Iterate through the string to find occurrences of "JOI" and "IOI"
+for (var idx = 0; idx < dataString.length - 2; idx++) { // Loop up to length - 3 to allow for 3-character checks
+    // Check for "JOI" pattern
+    if (dataString[idx] + dataString[idx + 1] + dataString[idx + 2] === "JOI") {
+        joiCount++; // Increment JOI counter
     }
-
-    // Check if the current three-character sequence matches "IOI".
-    if ( sourceData[idx] + sourceData[idx + 1] + sourceData[idx + 2] === "IOI" )
-    {
-        ioiCount++; // Increment the counter for "IOI".
+    // Check for "IOI" pattern
+    if (dataString[idx] + dataString[idx + 1] + dataString[idx + 2] === "IOI") {
+        ioiCount++; // Increment IOI counter
     }
 }
 
-// Output the final tally for "JOI" patterns.
+// Output the final counts
 console.log(joiCount);
-
-// Output the final tally for "IOI" patterns.
 console.log(ioiCount);

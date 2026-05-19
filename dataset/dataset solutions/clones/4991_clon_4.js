@@ -1,20 +1,11 @@
-(function () {
-  const rawSequence = require("fs").readFileSync("/dev/stdin", "utf8");
+const calculateCharges = (sourceData) => {
+  const [overallQuantity, initialSegment, rateInitial, rateAdditional] = sourceData
+    .split('\n')
+    .map(Number);
 
-  const numericComponents = rawSequence.match(/\d+/g).map(Number);
+  const finalCost = (initialSegment * rateInitial) + (overallQuantity * rateAdditional) - (initialSegment * rateAdditional);
 
-  const entireVolume = numericComponents[0];
-  const initialBatch = numericComponents[1];
-  const ratePrimary = numericComponents[2];
-  const rateSecondary = numericComponents[3];
+  console.log(finalCost);
+};
 
-  const costForPrimarySection = initialBatch * ratePrimary;
-
-  const remainingQuantity = entireVolume - initialBatch;
-
-  const costForSecondarySection = remainingQuantity * rateSecondary;
-
-  const ultimateSettlement = costForPrimarySection + costForSecondarySection;
-
-  console['log'](ultimateSettlement);
-})();
+calculateCharges(require("fs").readFileSync("/dev/stdin", "utf8"));

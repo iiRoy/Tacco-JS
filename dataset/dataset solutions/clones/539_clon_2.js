@@ -1,72 +1,61 @@
-const fileSystemModule = require('fs');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+let lineData = rawData.trim().split("\n");
 
-const processedLines = rawInputContent
-  .trim()
-  .split("\n");
+let arraySize = lineData.shift() - 0;
 
-let elementCount = processedLines.shift() | 0;
+let originalArray = lineData.shift().split(" ").map(Number);
 
-const originalSequence = processedLines
-  .shift()
-  .split(" ")
-  .map(Number);
+let sortedArray = originalArray.slice().sort((val1, val2) => val1 - val2);
 
-const orderedSequence = originalSequence
-  .slice()
-  .sort((firstVal, secondVal) => firstVal - secondVal);
+let queryCount = lineData.shift() - 0;
 
-let numberOfOperations = processedLines.shift() | 0;
+let swapOperations = lineData.map(item => item.split(" ").map(Number).map(item => item - 1));
 
-const swapOperationIndices = processedLines.map(
-  (singleLine) =>
-    singleLine
-      .split(" ")
-      .map(Number)
-      .map((valToAdjust) => valToAdjust - 1)
-);
+swapOperations.unshift([0, 0]);
 
-swapOperationIndices.unshift([0, 0]);
+let currentDiffs = {};
+let targetDiffs = {};
 
-let currentMismatchValues = {};
-let targetMismatchValues = {};
-
-for (let idx = 0; idx < originalSequence.length; ++idx) {
-  if (originalSequence[idx] !== orderedSequence[idx]) {
-    currentMismatchValues[idx] = originalSequence[idx];
-    targetMismatchValues[idx] = orderedSequence[idx];
-  }
+for (let idx = 0; idx < originalArray.length; idx++) {
+   if (originalArray[idx] !== sortedArray[idx]) {
+      currentDiffs[idx] = originalArray[idx];
+      targetDiffs[idx] = sortedArray[idx];
+   }
 }
 
-let targetMismatchString = "";
-for (const mismatchKey in targetMismatchValues) {
-  targetMismatchString += targetMismatchValues[mismatchKey];
+let targetDiffString = "";
+for (let keyIndex in targetDiffs) {
+    targetDiffString += targetDiffs[keyIndex];
 }
 
-let isTargetAchieved = false;
+let matchFound = false;
+let finalOperationIndex = -1;
 
-for (let opIter = 0; opIter <= numberOfOperations; ++opIter) {
-  [
-    currentMismatchValues[swapOperationIndices[opIter][0]],
-    currentMismatchValues[swapOperationIndices[opIter][1]],
-  ] = [
-    currentMismatchValues[swapOperationIndices[opIter][1]],
-    currentMismatchValues[swapOperationIndices[opIter][0]],
-  ];
+for (let opIndex = 0; opIndex <= queryCount; opIndex++) {
+   let firstKey = swapOperations[opIndex][0];
+   let secondKey = swapOperations[opIndex][1];
 
-  let currentMismatchString = "";
-  for (const keyPosition in currentMismatchValues) {
-    currentMismatchString += currentMismatchValues[keyPosition];
-  }
+   let valAtFirstKey = currentDiffs[firstKey];
+   let valAtSecondKey = currentDiffs[secondKey];
 
-  if (currentMismatchString === targetMismatchString) {
-    isTargetAchieved = true;
-    console.log(opIter);
-    break;
-  }
+   currentDiffs[firstKey] = valAtSecondKey;
+   currentDiffs[secondKey] = valAtFirstKey;
+
+   let currentDiffString = "";
+   for (let propKey in currentDiffs) {
+       currentDiffString += currentDiffs[propKey];
+   }
+
+   if (currentDiffString === targetDiffString) {
+      matchFound = true;
+      finalOperationIndex = opIndex;
+      break;
+   }
 }
 
-if (!isTargetAchieved) {
-  console.log(-1);
+if (matchFound) {
+    console.log(finalOperationIndex);
+} else {
+    console.log(-1);
 }

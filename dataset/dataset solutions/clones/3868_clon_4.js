@@ -1,26 +1,28 @@
-const retrievedContent = require("node:fs").readFileSync(0, "utf8").trimEnd();
-const contentFragments = retrievedContent.split("\n");
+const fileSystem = require("fs");
+const inputLines = fileSystem.readFileSync("/dev/stdin", "utf8").split("\n");
 
-const dimensionSize = Number(contentFragments[0]);
-const dataMatrix = contentFragments.slice(1);
+const dimension = Number.parseInt(inputLines[0], 10);
+const charMatrix = inputLines.slice(1);
 
-const getCyclicIndex = (value, upperLimit) => value % upperLimit;
+const checkSymmetryCondition = (rowOffset, colOffset) => {
+    const rowIndices = Array.from({ length: dimension }, (_, idx) => idx);
 
-const checkDiagonalSymmetry = (rowOffset, colOffset) => {
-    const sequenceOfIndices = Array.from({ length: dimensionSize }, (_, index) => index);
-
-    return sequenceOfIndices.every(primaryIndex =>
-        sequenceOfIndices.every(secondaryIndex => {
-            const charA = dataMatrix[getCyclicIndex(primaryIndex + rowOffset, dimensionSize)][getCyclicIndex(secondaryIndex + colOffset, dimensionSize)];
-            const charB = dataMatrix[getCyclicIndex(secondaryIndex + rowOffset, dimensionSize)][getCyclicIndex(primaryIndex + colOffset, dimensionSize)];
+    const isSymmetric = rowIndices.every(currentI => {
+        const colIndices = Array.from({ length: dimension }, (_, idx) => idx);
+        return colIndices.every(currentJ => {
+            const charA = charMatrix[(currentI + rowOffset) % dimension][(currentJ + colOffset) % dimension];
+            const charB = charMatrix[(currentJ + rowOffset) % dimension][(currentI + colOffset) % dimension];
             return charA === charB;
-        })
-    );
+        });
+    });
+    return isSymmetric ? 1 : 0;
 };
 
-const resultsAccumulator = Array.from({ length: dimensionSize }, (_, currentShiftValue) => currentShiftValue)
-    .reduce((currentTotal, rShift) => {
-        return currentTotal + (checkDiagonalSymmetry(rShift, 0) ? dimensionSize : 0);
-    }, 0);
+const offsetRange = Array.from({ length: dimension }, (_, idx) => idx);
 
-console.log(resultsAccumulator);
+const totalSymmetricCount = offsetRange.reduce((accumulator, currentOffset) => {
+    const conditionResult = checkSymmetryCondition(currentOffset, 0);
+    return accumulator + (conditionResult * dimension);
+}, 0);
+
+console.log(totalSymmetricCount);

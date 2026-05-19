@@ -1,46 +1,48 @@
 'use strict';
 
-const transformString = (inputChain) => {
-    return Array.from(inputChain).reduce((accumulator, currentUnit) => {
-        if (accumulator.length === 0 || accumulator[accumulator.length - 1] !== currentUnit) {
-            accumulator.push(currentUnit);
-        }
-        return accumulator;
-    }, []).join('');
-};
+function executeProgram(inputLines) {
+  const [initialLengthVal, operationCount] = inputLines[0].split(' ').map(Number);
+  const inputSequence = inputLines[1];
 
-const evolveSequence = (currentChain, remainingIterations) => {
-    if (remainingIterations === 0 || currentChain.length <= 1) {
-        return currentChain;
+  const initialCondensed = condenseString(inputSequence);
+
+  const finalSequence = applyOperations(initialCondensed, operationCount);
+
+  const resultValue = initialLengthVal - finalSequence.length;
+  console.log(resultValue);
+}
+
+function condenseString(sourceStr) {
+  const charAccumulator = [];
+  for (const currentCharacter of sourceStr) {
+    if (charAccumulator.length > 0 && currentCharacter === charAccumulator[charAccumulator.length - 1]) {
+      charAccumulator.pop();
+    } else {
+      charAccumulator.push(currentCharacter);
     }
-    const nextChain = currentChain[0] + currentChain.substring(3);
-    return evolveSequence(nextChain, remainingIterations - 1);
-};
+  }
+  return charAccumulator.join('');
+}
 
-const orchestrateComputation = (receivedData) => {
-    const dataUnits = receivedData.split('\n');
-    const [originalMagnitude, transformationRounds] = dataUnits[0].split(' ').map(Number);
-    const sourceString = dataUnits[1];
+function applyOperations(currentSequence, remainingOperations) {
+  if (remainingOperations === 0 || currentSequence.length <= 1) {
+    return currentSequence;
+  }
 
-    const reducedString = transformString(sourceString);
-    const terminalString = evolveSequence(reducedString, transformationRounds);
+  const nextSequence = currentSequence.charAt(0) + currentSequence.substring(3);
+  return applyOperations(nextSequence, remainingOperations - 1);
+}
 
-    const resultMetric = originalMagnitude - terminalString.length;
-    console.log(resultMetric);
-};
+function initiateProcessing() {
+  let receivedInput = "";
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
 
-const initiateProcess = () => {
-    let collectedInput = "";
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
-
-    process.stdin.on("data", segment => {
-        collectedInput += segment;
-    });
-
-    process.stdin.on("end", () => {
-        orchestrateComputation(collectedInput);
-    });
-};
-
-initiateProcess();
+  process.stdin.on("data", chunk => {
+    receivedInput += chunk;
+  });
+  process.stdin.on("end", () => {
+    executeProgram(receivedInput.split("\n"));
+  });
+}
+initiateProcessing();

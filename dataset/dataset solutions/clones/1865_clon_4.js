@@ -1,17 +1,10 @@
-const systemIO = require('node:fs');
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-function calculateOutcome() {
-    const streamContent = systemIO.readFileSync('/dev/stdin', { encoding: 'utf8', flag: 'r' });
+const [positiveCount, neutralCount, negativeCount, drawCount] = rawData.split(" ").map(Number);
 
-    const stringComponents = streamContent.split(/\s+/).filter(Boolean);
+const negativeCardsTaken = Math.max(0, drawCount - (positiveCount + neutralCount));
 
-    const numericalValues = stringComponents.map(str => +str);
+const finalScore = positiveCount - negativeCardsTaken;
 
-    const [rewardTierA, rewardTierB, _unusedTierC, totalLimit] = numericalValues;
-
-    const finalScore = rewardTierA - Math.max(0, totalLimit - (rewardTierA + rewardTierB));
-
-    process.stdout.write(finalScore.toString() + '\n');
-}
-
-calculateOutcome();
+console.log(finalScore);

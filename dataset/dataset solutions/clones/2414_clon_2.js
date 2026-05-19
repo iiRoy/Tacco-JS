@@ -1,74 +1,77 @@
-const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split(/\r?\n/);
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-const configParts = inputLines.shift().split(' ');
+let firstLineParts = inputLines.shift().split(' ');
 
-const gridHeight = Number(configParts[0]);
-const gridWidth = Number(configParts[1]);
-const numIgnoredPoints = parseInt(configParts[2], 10);
+const gridHeight = parseInt(firstLineParts[0], 10);
+const gridWidth = parseInt(firstLineParts[1], 10);
+const segmentCount = parseInt(firstLineParts[2], 10); // This variable is read but not used in the logic.
 
-const finalGridOutput = [];
+let outputGrid = [];
+let currentSegmentId = 1;
+let lastValidRow = null; // Stores a reference to the last row that was successfully processed with '#' characters.
 
-let currentRegionIdentifier = 1;
+// Iterate through each row of the input grid.
+for (let rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+    let hashColumnIndices = []; // List of column indices where '#' characters are found in the current row.
+    outputGrid[rowIndex] = []; // Initialize the current row in the output grid.
 
-let previousFilledRowData = null;
-
-for (let rowIterator = 0; rowIterator < gridHeight; rowIterator++) {
-    const markerPositionsInCurrentRow = [];
-    finalGridOutput[rowIterator] = [];
-
-    for (let columnIterator = 0; columnIterator < gridWidth; columnIterator++) {
-        if (inputLines[rowIterator][columnIterator] === '#') {
-            markerPositionsInCurrentRow.push(columnIterator);
+    // Scan the current input row to find all '#' characters.
+    for (let colIndex = 0; colIndex < gridWidth; colIndex++) {
+        if (inputLines[rowIndex][colIndex] === '#') {
+            hashColumnIndices.push(colIndex);
         }
     }
 
-    if (markerPositionsInCurrentRow.length === 0) {
-        if (previousFilledRowData !== null) {
-            finalGridOutput[rowIterator] = previousFilledRowData;
+    // Process the current row based on whether it contains '#' characters.
+    if (hashColumnIndices.length === 0) {
+        // If no '#' characters are found in this row.
+        if (lastValidRow) {
+            // If a previous valid row exists, copy its content to the current row.
+            outputGrid[rowIndex] = lastValidRow;
         } else {
-            finalGridOutput[rowIterator] = 'empty_row_placeholder';
+            // Otherwise, mark this row as 'e' (empty/unprocessed), to be filled later.
+            outputGrid[rowIndex] = 'e';
         }
     } else {
-        let currentColumnAssignment = 0;
-
+        // If '#' characters are present, assign segment IDs based on their positions.
+        let currentFillCol = 0; // Column index for filling the output grid.
         while (true) {
-            const nextMarkerPosition = markerPositionsInCurrentRow.shift();
-            if (nextMarkerPosition === undefined) {
-                break;
+            let currentHashCol = hashColumnIndices.shift(); // Get the next '#' column index.
+            if (currentHashCol === undefined) {
+                break; // No more '#' characters in this row.
             }
-
-            while (currentColumnAssignment <= nextMarkerPosition) {
-                finalGridOutput[rowIterator][currentColumnAssignment] = currentRegionIdentifier;
-                currentColumnAssignment++;
+            // Fill cells from currentFillCol up to currentHashCol with the current segment ID.
+            while (currentFillCol <= currentHashCol) {
+                outputGrid[rowIndex][currentFillCol] = currentSegmentId;
+                currentFillCol++;
             }
-            currentRegionIdentifier++;
+            currentSegmentId++; // Increment segment ID for the next segment.
         }
-
-        while (currentColumnAssignment < gridWidth) {
-            finalGridOutput[rowIterator][currentColumnAssignment] = currentRegionIdentifier - 1;
-            currentColumnAssignment++;
+        // After processing all '#' characters, fill any remaining cells in the row
+        // with the last assigned segment ID (decremented by 1 because it was incremented one too many times).
+        while (currentFillCol < gridWidth) {
+            outputGrid[rowIndex][currentFillCol] = currentSegmentId - 1;
+            currentFillCol++;
         }
-        previousFilledRowData = finalGridOutput[rowIterator];
+        // Store this fully processed row as the last valid row for subsequent empty rows.
+        lastValidRow = outputGrid[rowIndex];
     }
 }
 
-if (finalGridOutput[0] === 'empty_row_placeholder') {
-    let firstActualRowIndex = 1;
-
-    while (finalGridOutput[firstActualRowIndex] === 'empty_row_placeholder') {
-        firstActualRowIndex++;
+// Post-processing step: Fill any leading 'e' marked rows from the first valid row found below them.
+if (outputGrid[0] === 'e') {
+    let searchColIndex = 1;
+    // Find the first row that is not marked 'e'.
+    while (outputGrid[searchColIndex] === 'e') {
+        searchColIndex++;
     }
-
-    previousFilledRowData = finalGridOutput[firstActualRowIndex];
-    firstActualRowIndex--;
-
-    while (firstActualRowIndex >= 0) {
-        finalGridOutput[firstActualRowIndex--] = previousFilledRowData;
+    lastValidRow = outputGrid[searchColIndex]; // Get the content of this first valid row.
+    searchColIndex--; // Move back to the last 'e' row.
+    // Fill all 'e' rows from the top down to the first valid row found.
+    while (searchColIndex >= 0) {
+        outputGrid[searchColIndex--] = lastValidRow;
     }
 }
 
-console.log(
-    finalGridOutput
-        .map(rowContent => rowContent.join(" "))
-        .join('\n')
-);
+// Format the final output grid into a string and print it to the console.
+console.log(outputGrid.map(rowArray => rowArray.join(" ")).join('\n'));

@@ -1,104 +1,96 @@
-const incomingDataLines = [];
+var inputLines = [];
 
-const standardInputOutput = require('readline');
-
-const inputProcessor = standardInputOutput.createInterface({
+var ioHandler = require('readline');
+var inputReader = ioHandler.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-// Capture each line of input into a buffer.
-inputProcessor.on('line', (receivedLine) => {
-    incomingDataLines.push(receivedLine);
+inputReader.on('line', function (receivedLine) {
+    inputLines.push(receivedLine);
 });
 
-// Once all input has been received, process it.
-inputProcessor.on('close', () => {
-    // Extract the initial configuration parameters from the first line.
-    // This line typically contains the length of the sequence and the number of allowed modifications.
-    const configurationValues = incomingDataLines.shift().split(" ");
+inputReader.on('close', function () {
+    // Helper function to parse initial configuration parameters
+    const parseInitialConfig = (configLine) => {
+        const configParts = configLine.split(" ");
+        return {
+            totalElements: Number(configParts[0]),
+            maxFlips: Number(configParts[1])
+        };
+    };
 
-    // Parse the total length of the binary sequence.
-    const sequenceTotalLength = parseInt(configurationValues[0], 10);
-    // Parse the maximum number of zero-blocks that can be 'flipped' to ones.
-    const maxZeroBlockFlips = parseInt(configurationValues[1], 10);
+    const initialConfig = parseInitialConfig(inputLines.shift());
+    const totalElements = initialConfig.totalElements;
+    const maxFlips = initialConfig.maxFlips;
 
-    // Basic validation for parsed numbers.
-    if (isNaN(sequenceTotalLength) || isNaN(maxZeroBlockFlips) || sequenceTotalLength < 0 || maxZeroBlockFlips < 0) {
-        console.error("Error: Input length or flip count is invalid.");
-        process.exit(1); // Terminate with an error code.
+    const elementChars = inputLines[0].split("");
+
+    // Helper function to generate segment lengths (alternating 1s and 0s)
+    const generateSegmentLengths = (charArray, arrayLength) => {
+        const segmentLengths = [];
+        let currentSegmentType = 1; // Start by looking for '1's
+        let currentSegmentCount = 0;
+
+        for (let charIndex = 0; charIndex < arrayLength; charIndex++) {
+            if (parseInt(charArray[charIndex]) === currentSegmentType) {
+                currentSegmentCount++;
+            } else {
+                segmentLengths.push(currentSegmentCount);
+                currentSegmentType ^= 1; // Toggle between 0 and 1
+                currentSegmentCount = 1;
+            }
+        }
+
+        // Add the last segment's count if it's not zero
+        if (currentSegmentCount !== 0) {
+            segmentLengths.push(currentSegmentCount);
+        }
+
+        // Ensure the segmentLengths array always has an odd number of elements.
+        // This is crucial for the sliding window logic to correctly identify '1' segments.
+        // If the last segment was '1' and the array length is even, append a zero-length '0' segment.
+        if (segmentLengths.length % 2 === 0) {
+            segmentLengths.push(0);
+        }
+        return segmentLengths;
+    };
+
+    const segmentLengths = generateSegmentLengths(elementChars, totalElements);
+
+    let maxConsecutiveOnes = 1; // Preserve original initialization for edge cases like N=0, K=0
+    let currentWindowSum = 0;
+    const windowSegmentCount = 2 * maxFlips + 1; // Number of segments in the window (K 0s + K+1 1s)
+
+    // Calculate the sum for the initial window, starting at the first '1' segment (index 0)
+    for (let windowOffset = 0; windowOffset < windowSegmentCount; windowOffset++) {
+        // The original code relies on implicit NaN propagation if Nums[index] is undefined.
+        // We replicate this behavior by not adding explicit bounds checks here.
+        currentWindowSum += segmentLengths[windowOffset];
+    }
+    if (maxConsecutiveOnes < currentWindowSum) {
+        maxConsecutiveOnes = currentWindowSum;
     }
 
-    // Retrieve the binary string itself.
-    // Handle cases where `incomingDataLines[0]` might be undefined if `sequenceTotalLength` is 0.
-    const binaryStringSequence = incomingDataLines[0] || "";
+    // Slide the window across subsequent '1' segments (indices 2, 4, ...)
+    // The window shifts by two segments at a time (one '1' segment and one '0' segment).
+    for (let segmentIndex = 2; segmentIndex < segmentLengths.length; segmentIndex += 2) {
+        // Subtract segments leaving the window
+        currentWindowSum -= segmentLengths[segmentIndex - 2];
+        currentWindowSum -= segmentLengths[segmentIndex - 1];
 
-    // This array will store the lengths of consecutive blocks of identical characters.
-    // For example, "1100010" would result in [2, 3, 1, 1] (two '1's, three '0's, one '1', one '0').
-    const consecutiveBlockLengths = [];
-    let currentBlockCharacter = 1; // Start by expecting a '1' block.
-    let currentBlockSize = 0;     // Counter for the current block's length.
+        // Add segments entering the window
+        const newSegmentIndex1 = segmentIndex + windowSegmentCount - 2;
+        const newSegmentIndex2 = segmentIndex + windowSegmentCount - 1;
 
-    // Iterate through the binary sequence to populate `consecutiveBlockLengths`.
-    for (let charIndex = 0; charIndex < sequenceTotalLength; charIndex++) {
-        // Convert the character to a number for comparison.
-        if (parseInt(binaryStringSequence[charIndex], 10) === currentBlockCharacter) {
-            currentBlockSize++; // Character matches, increment current block's size.
-        } else {
-            // Character mismatch: the current block has ended.
-            consecutiveBlockLengths.push(currentBlockSize); // Store the size of the completed block.
-            currentBlockCharacter ^= 1;                     // Toggle the expected character type (0 becomes 1, 1 becomes 0).
-            currentBlockSize = 1;                           // Start counting for the new block.
+        // Replicate original behavior: if index is out of bounds, adding undefined results in NaN.
+        currentWindowSum += segmentLengths[newSegmentIndex1];
+        currentWindowSum += segmentLengths[newSegmentIndex2];
+
+        if (maxConsecutiveOnes < currentWindowSum) {
+            maxConsecutiveOnes = currentWindowSum;
         }
     }
 
-    // After the loop, if there's any pending `currentBlockSize`, add it to the array.
-    if (currentBlockSize > 0) {
-        consecutiveBlockLengths.push(currentBlockSize);
-    }
-
-    // Crucial step: Ensure the `consecutiveBlockLengths` array always has an odd number of elements.
-    // This guarantees that blocks representing '1's are always at even indices (0, 2, 4, ...).
-    // If the last actual block was a '0' block (making the array length even),
-    // we append a '0' (representing an empty '1' block) to maintain this pattern.
-    // This simplifies the later sliding window logic.
-    if (consecutiveBlockLengths.length % 2 === 0) {
-        consecutiveBlockLengths.push(0);
-    }
-    // If `sequenceTotalLength` was 0, `consecutiveBlockLengths` would be `[]`, then `[0]` after this step.
-
-    let longestOnesSequence = 0; // Stores the maximum length of '1's found.
-    let currentSegmentTotal = 0;  // Accumulator for the current window's sum.
-
-    // Calculate the maximum number of segments (blocks) that can be included in one window.
-    // Each `maxZeroBlockFlips` allows converting one '0' block.
-    // A window with `K` flips covers `K` '0' blocks and `K+1` '1' blocks.
-    // Total segments in window = `K + (K+1) = 2K + 1`.
-    const slidingWindowBlockLimit = 2 * maxZeroBlockFlips + 1;
-
-    // Iterate through `consecutiveBlockLengths` to find the maximum possible sequence of '1's.
-    // We only consider starting points that correspond to '1' blocks (even indices).
-    for (let windowStartIndex = 0; windowStartIndex < consecutiveBlockLengths.length; windowStartIndex++) {
-        // Proceed only if the current segment is a '1' block (indicated by an even index).
-        if (windowStartIndex % 2 === 0) {
-            currentSegmentTotal = 0; // Reset sum for the new window.
-            
-            // Sum up the lengths of segments within the current sliding window.
-            // The window extends from `windowStartIndex` up to `windowStartIndex + slidingWindowBlockLimit - 1`.
-            for (let segmentOffset = 0; segmentOffset < slidingWindowBlockLimit; segmentOffset++) {
-                const absoluteSegmentIndex = windowStartIndex + segmentOffset;
-                // Add the segment length. If `absoluteSegmentIndex` goes out of bounds,
-                // treat the missing segment as having length 0 (using logical OR `|| 0`).
-                currentSegmentTotal += (consecutiveBlockLengths[absoluteSegmentIndex] || 0);
-            }
-            
-            // Update the global maximum if the current window's total is greater.
-            if (longestOnesSequence < currentSegmentTotal) {
-                longestOnesSequence = currentSegmentTotal;
-            }
-        }
-    }
-
-    // Print the final result: the maximum length of consecutive '1's achievable.
-    console.log(longestOnesSequence);
+    console.log(maxConsecutiveOnes);
 });

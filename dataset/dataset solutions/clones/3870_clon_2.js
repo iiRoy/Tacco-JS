@@ -1,20 +1,24 @@
-/* This script processes an incoming string */
-function processInput ( dataString ) {
-  // Extract characters from the input after cleaning whitespace
-  const charFragments = dataString . trim ( ) . split ( '' ) ;
-  let finalScore = 0 ; // Initialize a variable to accumulate points
+function processInput(rawData) {
+  // Prepare the incoming string by removing leading/trailing whitespace and splitting it into an array of characters.
+  const charArray = rawData.trim().split('');
 
-  // Loop through the first three characters
-  for ( let currentIdx = 0 ; currentIdx < 3 ; currentIdx ++ ) {
-    // Check if the current character is 'o'
-    if ( charFragments [ currentIdx ] === 'o' ) {
-      finalScore += 100 ; // Add 100 points for each 'o'
+  // Initialize a counter for specific character occurrences.
+  let scoreAccumulator = 0;
+
+  // Loop through the initial three characters of the array.
+  for (let idx = 0; idx < 3; idx++) {
+    // If the current character is 'o', increment the accumulator by 100.
+    if (charArray[idx] == 'o') {
+      scoreAccumulator += 100;
     }
   }
 
-  // Output the calculated result plus a base value
-  console . log ( 700 + finalScore ) ;
+  // The following line is a remnant of a previous thought process and is not active.
+  // let finalValue = parseInt(scoreAccumulator, 10);
+
+  // Display the sum of a base value (700) and the accumulated score.
+  console.log(700 + scoreAccumulator);
 }
 
-// Read input from standard input and pass it to the processing function
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Execute the primary function by reading content from standard input.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

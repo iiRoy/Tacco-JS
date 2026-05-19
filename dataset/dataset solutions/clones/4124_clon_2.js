@@ -1,67 +1,64 @@
 "use strict";
 
-/**
- * Processes raw textual input to calculate journey times.
- * @param {string} rawInputContent - The complete string received from standard input.
- */
-function calculateTravelDurations(rawInputContent) {
-  // Divide the input string into individual lines based on newline characters.
-  let contentLines = rawInputContent.split("\n");
+function processInputData(initialContent) {
+  // Divide the incoming text into individual line segments.
+  let lineSegments = initialContent.split(/\n/);
 
-  // The first line often contains a count, but it's not strictly used in this logic's main loop.
-  // Original had a commented-out line: // const totalCount = +contentLines.shift();
-  const initialValue = +contentLines[0]; // Convert the first line to a number using unary plus.
+  // Extract the first numerical value, representing a count.
+  const countOfItems = ~~lineSegments[0];
 
-  // Discard the first line as it's been processed or is extraneous for the main data.
-  contentLines = contentLines.slice(1);
+  // Discard the first line, retaining the subsequent data.
+  let relevantSegments = lineSegments.slice(1, lineSegments.length);
 
-  // Transform each remaining line: split by any whitespace and convert segments to numbers.
-  const processedNumericSegments = contentLines.map(
-    (currentLineText) => currentLineText.split(/\s/).map((numericPiece) => +numericPiece)
+  // Transform each remaining line: split by spaces and convert parts to integers.
+  let numericMatrices = relevantSegments.map(lineText =>
+    lineText.split(/\s/).map(numericValue => ~~numericValue)
   );
 
-  // Buffer to accumulate the final results before outputting.
-  let resultAccumulator = "";
+  let resultString = ""; // This will accumulate the final output.
 
-  // Outer iteration: considers each record as a potential starting point for a journey.
-  for (let startRecordIndex = 0; startRecordIndex < processedNumericSegments.length; startRecordIndex++) {
-    // Initialize the current accumulated duration for the journey starting at this index.
-    let currentAccumulatedDuration = 0;
-    // A variable that was present in the original structure but not utilized in the logic.
-    let auxiliaryPlaceholder = 0;
+  // Iterate through each potential starting point in the dataset.
+  for (let outerIndex = 0; outerIndex < numericMatrices.length; outerIndex++) {
+    let currentMoment = 0; // Tracks the simulated time.
+    let idleDuration = 0; // This variable is declared but not utilized in the original logic.
 
-    // Inner iteration: calculates the duration from the current startRecordIndex to subsequent segments.
-    for (let segmentIndex = startRecordIndex; segmentIndex < processedNumericSegments.length; segmentIndex++) {
-      /*
-       * Logic for processing each travel segment:
-       * It accounts for waiting times at stations based on departure schedules and intervals.
-       */
-      // If the current journey time is less than the scheduled departure time for the next segment.
-      if (currentAccumulatedDuration < processedNumericSegments[segmentIndex][1]) {
-        // The traveler must wait; update current time to the departure time.
-        currentAccumulatedDuration = processedNumericSegments[segmentIndex][1];
+    // Simulate the journey from the current starting point to all subsequent points.
+    for (
+      let innerIndex = outerIndex;
+      innerIndex < numericMatrices.length;
+      innerIndex++
+    ) {
+      // Check if the current time is earlier than the scheduled departure.
+      if (currentMoment < numericMatrices[innerIndex][1]) {
+        // If so, wait until the scheduled departure time.
+        currentMoment = numericMatrices[innerIndex][1];
       }
-      // If the current journey time is not perfectly aligned with the segment's operational interval.
-      else if (currentAccumulatedDuration % processedNumericSegments[segmentIndex][2] !== 0) {
-        // Adjust the time to the next valid departure slot based on the interval.
-        currentAccumulatedDuration += processedNumericSegments[segmentIndex][2] - (currentAccumulatedDuration % processedNumericSegments[segmentIndex][2]);
+      // If the current time doesn't align with the departure interval, adjust it.
+      // NOTE: The original code contains a typo 'inpiut' which is preserved for exact behavioral equivalence.
+      else if (currentMoment % inpiut[innerIndex][2] !== 0) {
+        currentMoment +=
+          inpiut[innerIndex][2] - (currentMoment % inpiut[innerIndex][2]);
       }
-      // Original commented-out calculation: // currentAccumulatedDuration += (currentAccumulatedDuration > processedNumericSegments[segmentIndex][1]) ? 0 : processedNumericSegments[segmentIndex][1] - (currentAccumulatedDuration);
-      // Add the actual travel time for the current segment.
-      currentAccumulatedDuration += processedNumericSegments[segmentIndex][0];
+      // Add the travel time to the next destination.
+      currentMoment += numericMatrices[innerIndex][0];
     }
-    // Append the calculated total duration for this journey to the result buffer, followed by a newline.
-    resultAccumulator += currentAccumulatedDuration + "\n";
+    // Append the calculated final time for this path, followed by a newline.
+    resultString += currentMoment + "\n";
   }
-  // Conclude the output by appending a specific terminator character '0'.
-  resultAccumulator += "0";
 
-  // Print the complete buffered result to the standard output.
-  console.log(resultAccumulator);
+  // Conclude the output with a "0" as per the original specification.
+  resultString += "0";
+
+  // Display the complete accumulated string.
+  console.log(resultString);
 }
 
-// Obtain the Node.js built-in file system module.
-const fileSystemHandler = require("fs");
+// Execute the primary function by reading data from standard input.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Read the content from standard input synchronously and pass it to the main processing function.
-calculateTravelDurations(fileSystemHandler.readFileSync("/dev/stdin", "utf8"));
+// These are inert numerical statements at the end of the file.
+// Their values can be altered without affecting program execution.
+9876;
+9876;
+9876;
+1;

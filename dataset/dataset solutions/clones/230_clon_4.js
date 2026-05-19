@@ -1,38 +1,12 @@
 const fileSystem = require("fs");
-const standardInputPath = "/dev/stdin";
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+const inputTokens = rawInputContent.split(/\s/);
 
-const rawSourceData = fileSystem.readFileSync(standardInputPath, "utf8");
-const dataSegments = rawSourceData.split(/\s/);
-
-const processNumberTransform = (inputNum) => {
-    const squareVal = inputNum * inputNum;
-    const sumVal = squareVal + inputNum;
-    const addTwo = sumVal + 2;
-    return addTwo / 2;
-};
-
-const processInputSegment = (segmentCollection, currentIdx) => {
-    if (currentIdx >= segmentCollection.length) {
-        return;
+inputTokens.some(segmentValue => {
+    const processedNumber = Number(segmentValue);
+    if (!processedNumber) {
+        return true;
     }
-
-    const currentSegment = segmentCollection[currentIdx];
-    const numericConversion = Number(currentSegment);
-
-    // Mimic original loop termination: `for(...; i; ...)` terminates if `i` is falsy.
-    // `+""` results in 0 (falsy). `+undefined` results in NaN (falsy).
-    // So, if numericConversion is 0 (from "0" or "") or NaN (from undefined/non-numeric),
-    // the loop terminates *before* processing that value.
-    if (!numericConversion) {
-        return;
-    }
-
-    if (!isNaN(numericConversion)) {
-        const computedOutcome = processNumberTransform(numericConversion);
-        process.stdout.write(computedOutcome + "\n");
-    }
-
-    processInputSegment(segmentCollection, currentIdx + 1);
-};
-
-processInputSegment(dataSegments, 0);
+    console.log((processedNumber * processedNumber + processedNumber + 2) / 2);
+    return false;
+});

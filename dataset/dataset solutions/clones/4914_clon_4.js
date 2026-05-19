@@ -1,27 +1,26 @@
-function processInputData(entryLines) {
-    const numberOfEntries = Number(entryLines[0]);
-    const pertinentEntries = entryLines.slice(1, numberOfEntries + 1);
+function processInput(inputLines) {
+    const totalCount = Number(inputLines[0]);
+    const initialAccumulator = { currentX: 1, currentY: 1 };
 
-    const finalRatioValues = pertinentEntries.reduce((currentPair, lineString) => {
-        const [leftComponentValue, rightComponentValue] = lineString.split(" ").map(Number);
+    const finalState = inputLines.slice(1, totalCount + 1).reduce((previousState, lineSegment) => {
+        const [targetX, targetY] = lineSegment.split(" ").map(Number);
 
-        const accumulatedLeft = currentPair[0];
-        const accumulatedRight = currentPair[1];
+        let { currentX, currentY } = previousState;
 
-        const requiredMultiplierForLeft = accumulatedLeft / leftComponentValue;
-        const requiredMultiplierForRight = accumulatedRight / rightComponentValue;
+        if (targetX >= currentX && targetY >= currentY) {
+            currentX = targetX;
+            currentY = targetY;
+        } else {
+            const scaleFactorX = Math.ceil(currentX / targetX);
+            const scaleFactorY = Math.ceil(currentY / targetY);
+            const effectiveScale = Math.max(scaleFactorX, scaleFactorY);
+            currentX = effectiveScale * targetX;
+            currentY = effectiveScale * targetY;
+        }
+        return { currentX, currentY };
+    }, initialAccumulator);
 
-        const commonScalingFactor = Math.ceil(Math.max(requiredMultiplierForLeft, requiredMultiplierForRight));
-
-        const newAccumulatedLeft = commonScalingFactor * leftComponentValue;
-        const newAccumulatedRight = commonScalingFactor * rightComponentValue;
-
-        return [newAccumulatedLeft, newAccumulatedRight];
-    }, [1, 1]);
-
-    return finalRatioValues[0] + finalRatioValues[1];
+    console.log(finalState.currentX + finalState.currentY);
 }
 
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
-const computedSum = processInputData(rawInputContent);
-console.log(computedSum);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

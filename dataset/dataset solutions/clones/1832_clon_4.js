@@ -1,7 +1,6 @@
-function processTextualStream(initialText) {
-    const alteredRepresentation = initialText.replaceAll('?', 'D');
-    console.log(alteredRepresentation);
+function processInput(sourceText) {
+  const modifiedContent = sourceText.replace(/\?/g, 'D');
+  console.log(modifiedContent);
 }
 
-const acquiredData = require("node:fs").readFileSync("/dev/stdin", "utf8");
-processTextualStream(acquiredData);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

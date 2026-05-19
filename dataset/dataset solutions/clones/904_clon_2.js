@@ -1,103 +1,86 @@
-// This script processes input to perform comparisons based on accumulated sums.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const fsModule = require('fs'); // Obtain the file system module.
+// Process the raw input data
+var lineSegments = rawData.trim().split("\n");
 
-let processedInput = fsModule.readFileSync('/dev/fd/0', 'utf-8'); // Read all input data as a UTF-8 string.
+// Discard the first line (N)
+lineSegments.shift();
 
-// Prepare the input: remove leading/trailing whitespace and split into individual lines.
-let inputLines = processedInput.trim().split("\r\n");
+// Extract and parse the first set of numbers (A)
+var firstNumSet = lineSegments.shift().split(" ").map(Number);
 
-// Remove the first line of the input, as it's typically metadata.
-inputLines.shift();
-
-// Extract the first set of numbers from the next line, convert them to integers.
-let firstNumberSet = inputLines
-    .shift()
-    .split(" ")
-    .map(valueStr => parseInt(valueStr, 10)); // Convert each string part to a base-10 integer.
-
-// Sort the extracted numbers in ascending order for subsequent processing.
-firstNumberSet.sort((leftVal, rightVal) => leftVal - rightVal);
-
-// Remove another line from the input, potentially a separator.
-inputLines.shift();
-
-// Extract the second set of numbers from the next line, converting to integers.
-let secondNumberSet = inputLines
-    .shift()
-    .split(" ")
-    .map(valueStr => parseInt(valueStr, 10));
-
-// Extract the string data from the subsequent line.
-let stringData = inputLines
-    .shift()
-    .split(" ");
-
-// Define the maximum expected size for our sum cache.
-const MAX_CACHE_SIZE = 1000000;
-
-// Initialize a cache (lookup table) to store pre-calculated sums.
-let sumCache = [];
-
-// Fill the cache with null values initially.
-for (let loopIndex = 0; loopIndex < MAX_CACHE_SIZE; loopIndex++) {
-    sumCache[loopIndex] = null;
-}
-
-// Special handling for the zero index in the sum cache.
-const INITIAL_ZERO_SUM = [0, 0];
-sumCache[0] = INITIAL_ZERO_SUM;
-
-// Define a large modulo value for handling arbitrary precision arithmetic (10^12).
-const BIG_NUMBER_MODULO = 1000000000000;
-
-// Initialize the current running sum, split into high and low parts.
-let currentSumParts = [0, 0];
-
-// Iterate through the first set of numbers to populate the sum cache.
-firstNumberSet.forEach(currentNum => {
-    currentSumParts[1] += currentNum; // Add the number to the low part of the sum.
-
-    // If the low part exceeds the modulo, carry over to the high part.
-    if (currentSumParts[1] >= BIG_NUMBER_MODULO) {
-        currentSumParts[0]++;                        // Increment the high part.
-        currentSumParts[1] -= BIG_NUMBER_MODULO;     // Adjust the low part.
-    }
-
-    // Store a snapshot (copy) of the current sum in the cache at the number's index.
-    sumCache[currentNum] = currentSumParts.slice();
+// Sort the first set of numbers in ascending order
+firstNumSet.sort(function(valA, valB) {
+    return valA - valB;
 });
 
-// Process each query from the second set of numbers and corresponding string data.
-secondNumberSet.forEach((queryVal, queryIdx) => {
-    // Search backward from queryVal until an entry is found in the sum cache.
-    for (; ; ) {
-        if (sumCache[queryVal] !== null) { // If an entry exists for queryVal, stop searching.
-            break;
+// Discard the next line (M)
+lineSegments.shift();
+
+// Extract and parse the second set of numbers (B)
+var secondNumSet = lineSegments.shift().split(" ").map(Number);
+
+// Extract the string values (C)
+var stringValues = lineSegments.shift().split(" ");
+
+// Initialize an array to store cumulative sums, up to a maximum value
+var cumulativeSums = [];
+// Fill the array with 'false' initially to mark uncomputed values
+for (var idx = 0; idx < 1000000; idx++) {
+    cumulativeSums[idx] = false;
+}
+
+// Set the base case for cumulative sum at index 0
+cumulativeSums[0] = [0, 0];
+
+// Initialize a variable to hold the current running total, split into two parts
+// [high_part, low_part] to handle very large numbers
+var currentTotal = [0, 0]; // [trillions_part, remainder_part]
+
+// Iterate through the first set of numbers to calculate and store cumulative sums
+firstNumSet.forEach(function(itemVal) {
+    currentTotal[1] += itemVal; // Add current value to the low part
+
+    // If the low part exceeds 1 trillion, carry over to the high part
+    if (currentTotal[1] >= 1000000000000) {
+        currentTotal[0]++; // Increment the high part
+        currentTotal[1] -= 1000000000000; // Subtract 1 trillion from the low part
+    }
+    // Store a copy of the current total at the index corresponding to the item's value
+    cumulativeSums[itemVal] = currentTotal.slice();
+});
+
+// Iterate through the second set of numbers and corresponding string values
+secondNumSet.forEach(function(currentSearchVal, currentIndex) {
+    // Find the largest value less than or equal to currentSearchVal that has a stored cumulative sum
+    while (true) {
+        if (cumulativeSums[currentSearchVal] !== false) {
+            break; // Found a valid cumulative sum
         }
-        queryVal--; // Otherwise, decrement queryVal and try again.
+        currentSearchVal--; // Decrement to find the next smaller value
     }
 
-    let targetString = stringData[queryIdx]; // Get the string associated with the current query index.
+    // Get the corresponding string value
+    var inputString = stringValues[currentIndex];
 
-    // Parse the target string into a two-part large number for comparison.
-    // The first part is the prefix before the last 13 digits, the second is the last 13 digits.
-    let parsedNumberPair = [
-        parseInt(targetString.substring(0, targetString.length - 13).replace(/^[0]+/g, ""), 10) || 0, // Convert prefix to integer, handling leading zeros and empty strings.
-        parseInt(targetString.slice(-13).replace(/^[0]+/g, ""), 10) || 0 // Convert last 13 digits to integer, handling leading zeros.
+    // Parse the string into a two-part big integer [high_part, low_part]
+    // The last 13 digits are the low part, the rest is the high part
+    var parsedBigInt = [
+        inputString.slice(0, inputString.length - 13).replace(/^0+/, "") - 0,
+        inputString.slice(-13).replace(/^0+/, "") - 0
     ];
 
-    let comparisonOutput = ""; // Variable to store the "Yes" or "No" result.
+    var resultMessage = "";
 
-    // Compare the parsed large number with the sum from the cache.
-    if (parsedNumberPair[0] < sumCache[queryVal][0]) {
-        comparisonOutput = "Yes"; // If the high part is smaller, it's definitively "Yes".
-    } else if (parsedNumberPair[0] === sumCache[queryVal][0] && parsedNumberPair[1] <= sumCache[queryVal][1]) {
-        comparisonOutput = "Yes"; // If high parts are equal, check if low part is smaller or equal.
+    // Compare the parsed big integer with the stored cumulative sum
+    if (parsedBigInt[0] < cumulativeSums[currentSearchVal][0]) {
+        resultMessage = "Yes";
+    } else if (parsedBigInt[0] === cumulativeSums[currentSearchVal][0] && parsedBigInt[1] <= cumulativeSums[currentSearchVal][1]) {
+        resultMessage = "Yes";
     } else {
-        comparisonOutput = "No"; // Otherwise, the parsed number is larger.
+        resultMessage = "No";
     }
 
-    // Print the comparison result to the console.
-    console.log(comparisonOutput);
+    // Output the comparison result
+    console.log(resultMessage);
 });

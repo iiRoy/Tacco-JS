@@ -1,47 +1,46 @@
 "use strict";
 
-function determinePrimesUpTo(ceiling) {
-    let primeIndicators = new Array(ceiling + 1).fill(true);
-    if (ceiling >= 0) primeIndicators[0] = false;
-    if (ceiling >= 1) primeIndicators[1] = false;
+function ProcessInput(inputData) {
+    const inputLines = inputData.split("\n");
 
-    for (let current = 2; current * current <= ceiling; ++current) {
-        if (primeIndicators[current]) {
-            for (let multiple = current * current; multiple <= ceiling; multiple += current) {
-                primeIndicators[multiple] = false;
+    const UPPER_LIMIT = 101010;
+    const primeStatusTracker = new Uint8Array(UPPER_LIMIT).fill(1);
+    primeStatusTracker[0] = primeStatusTracker[1] = 0;
+
+    for (let currentCandidate = 2; currentCandidate * currentCandidate < UPPER_LIMIT; ++currentCandidate) {
+        if (primeStatusTracker[currentCandidate]) {
+            for (let multipleIndex = currentCandidate * currentCandidate; multipleIndex < UPPER_LIMIT; multipleIndex += currentCandidate) {
+                primeStatusTracker[multipleIndex] = 0;
             }
         }
     }
-    return primeIndicators;
-}
 
-function computeCumulativeSpecialCounts(maximumValue, primalityMap) {
-    let cumulativeSums = new Array(maximumValue + 1).fill(0);
-    for (let index = 1; index <= maximumValue; ++index) {
-        cumulativeSums[index] = cumulativeSums[index - 1]; // Inherit previous count
-        if (index % 2 !== 0 && primalityMap[index] && primalityMap[(index + 1) / 2]) {
-            cumulativeSums[index]++;
+    const primeNumberSet = new Set();
+    for (let numberValue = 2; numberValue < UPPER_LIMIT; ++numberValue) {
+        if (primeStatusTracker[numberValue]) {
+            primeNumberSet.add(numberValue);
         }
     }
-    return cumulativeSums;
+
+    const isTargetLike = Array.from({ length: UPPER_LIMIT }, (_, indexPosition) => {
+        if (indexPosition % 2 === 0) return 0;
+        const halfPlusOneValue = (indexPosition + 1) / 2;
+        return (primeNumberSet.has(indexPosition) && primeNumberSet.has(halfPlusOneValue)) ? 1 : 0;
+    });
+
+    const cumulativeSummation = isTargetLike.reduce((accumulatorArray, currentValue, currentIdx) => {
+        accumulatorArray[currentIdx + 1] = accumulatorArray[currentIdx] + currentValue;
+        return accumulatorArray;
+    }, new Array(UPPER_LIMIT + 1).fill(0));
+
+    const queryCountString = inputLines[0].trim().split(/\s/)[0];
+    const totalQueryOperations = Number(queryCountString);
+
+    inputLines.slice(1, 1 + totalQueryOperations).forEach((singleQueryLine) => {
+        const [lowerBound, upperBound] = singleQueryLine.split(/\s/).map(Number);
+        const queryResult = cumulativeSummation[upperBound + 1] - cumulativeSummation[lowerBound];
+        console.log(queryResult);
+    });
 }
 
-function ProcessInputData(streamContent) {
-    let contentRows = streamContent.split("\n");
-
-    const GLOBAL_MAXIMUM = 101010;
-    let isNumberPrime = determinePrimesUpTo(GLOBAL_MAXIMUM);
-    let cumulativeSpecialNumbers = computeCumulativeSpecialCounts(GLOBAL_MAXIMUM, isNumberPrime);
-
-    let queryCount = parseInt(contentRows.shift().trim().split(/\s/)[0], 10);
-
-    for (let queryIdx = 0; queryIdx < queryCount; ++queryIdx) {
-        let rangeBoundaryStrings = contentRows.shift().split(/\s/).map(Number);
-        let startPoint = rangeBoundaryStrings[0];
-        let endPoint = rangeBoundaryStrings[1];
-
-        console.log(cumulativeSpecialNumbers[endPoint] - cumulativeSpecialNumbers[startPoint - 1]);
-    }
-}
-
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

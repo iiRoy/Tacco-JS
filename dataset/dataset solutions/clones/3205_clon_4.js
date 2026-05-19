@@ -1,37 +1,33 @@
-const acquireNumericalParameters = () => {
-    const dataSource = require('node:fs').readFileSync(process.stdin.fd, 'utf8');
-    return dataSource.split(' ').map(x => +x);
-};
+const fileSystem = require('fs');
 
-const evaluateScenario = (alpha, beta, gamma) => {
-    const ruleset = [
-        {
-            condition: (x, y, z) => x < (y + 1),
-            result: (x, y, z) => x + 1
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+const numericTokens = rawInputData.split(' ');
+
+const firstValue = Number(numericTokens[0]);
+
+const secondValue = Number(numericTokens[1]);
+
+const thirdValue = Number(numericTokens[2]);
+
+const calculateFinalOutcome = (inputK, inputA, inputB) => {
+    const evaluationRules = [
+        (kVal, aVal, bVal) => (kVal < aVal + 1) ? kVal + 1 : undefined,
+        (kVal, aVal, bVal) => (bVal <= aVal + 2) ? kVal + 1 : undefined,
+        (kVal, aVal, bVal) => {
+            const termForK = kVal - aVal + 1;
+            return (termForK % 2 === 0) ? aVal + (bVal - aVal) * termForK / 2 : undefined;
         },
-        {
-            condition: (x, y, z) => z <= (y + 2),
-            result: (x, y, z) => x + 1
-        }
+        (kVal, aVal, bVal) => aVal + (bVal - aVal) * (kVal - aVal) / 2 + 1
     ];
 
-    for (const rule of ruleset) {
-        if (rule.condition(alpha, beta, gamma)) {
-            return rule.result(alpha, beta, gamma);
+    for (const ruleProcessor of evaluationRules) {
+        const computedResult = ruleProcessor(inputK, inputA, inputB);
+        if (computedResult !== undefined) {
+            return computedResult;
         }
     }
-
-    const differenceMeasure = alpha - beta; 
-
-    const computationStrategy = {
-        true: (x, y, z, dm) => y + (z - y) * ((dm + 1) / 2), 
-        false: (x, y, z, dm) => y + (z - y) * (dm / 2) + 1 
-    };
-
-    const isDifferenceMeasureOdd = (differenceMeasure % 2 !== 0);
-
-    return computationStrategy[isDifferenceMeasureOdd](alpha, beta, gamma, differenceMeasure);
+    return 0;
 };
 
-const [firstValue, secondValue, thirdValue] = acquireNumericalParameters();
-console.log(evaluateScenario(firstValue, secondValue, thirdValue));
+console.log(calculateFinalOutcome(firstValue, secondValue, thirdValue));

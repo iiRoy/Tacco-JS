@@ -1,23 +1,10 @@
-'use strict'
-((incomingData) => {
-    const acquireNumericValue = (contentPiece) => {
-        if (contentPiece.trim().length === 0) {
-            return 0;
-        }
+'use strict';
 
-        const exactNumericPattern = /^\s*([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*$/;
-        const currentMatch = contentPiece.match(exactNumericPattern);
+const processInputData = (sourceContent) => {
+    const trimmedContent = sourceContent.trim();
+    const numericValue = Number(trimmedContent);
+    const squaredOutcome = numericValue * numericValue;
+    console.log(squaredOutcome);
+};
 
-        if (currentMatch) {
-            return parseFloat(currentMatch[1]);
-        } else {
-            return NaN;
-        }
-    };
-
-    const evaluatedSource = acquireNumericValue(incomingData);
-    const finalOutcome = Math.pow(evaluatedSource, 2);
-
-    console.log(finalOutcome);
-
-})(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

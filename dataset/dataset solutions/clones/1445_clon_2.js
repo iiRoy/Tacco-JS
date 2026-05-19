@@ -1,45 +1,34 @@
-// This script processes numerical data sets from standard input to compute standard deviations.
-var fileSystemModule = require ( 'fs' ) ; // Obtain the Node.js file system module for input operations.
-var rawInputData = fileSystemModule . readFileSync ( '/dev/stdin' , 'utf8' ) ; // Read all data from standard input as a UTF-8 string.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input data from standard input
+let lineBuffer = rawData.trim().split("\n"); // Split the raw input into an array of lines, removing leading/trailing whitespace
 
-// Prepare the input: remove leading/trailing whitespace and split into an array of lines.
-var inputLinesCollection = rawInputData . trim ( ) . split ( "\n" ) ;
+while (true) { // Begin an infinite loop to process multiple datasets
+  let count = lineBuffer.shift() - 0; // Extract the first line, convert to a number, representing the count of elements
+  // The '- 0' ensures explicit numeric conversion, even if 'Number()' is also an option.
 
-// Begin an infinite loop to process multiple data sets until a specific termination condition is met.
-while ( true ) {
+  if (count === 0) { // Check if the count is zero, which signals the end of input
+    break; // Exit the loop if the count is zero
+  }
 
-   // Extract the first line, convert it to a number, representing the count of elements for the current set.
-   // The '- 0' ensures explicit conversion to a numeric type.
-   var numElementsInSet = inputLinesCollection . shift ( ) - 0 ;
+  // Extract the next line, split by space, and convert each part to a number
+  let dataPoints = (lineBuffer.shift()).split(" ").map(Number);
 
-   // Check for the termination condition: if the number of elements is zero, exit the processing loop.
-   if ( numElementsInSet === 0 ) {
-      break ; // Break out of the while loop.
-   }
+  // Calculate the sum of all data points using the reduce method
+  let totalSum = dataPoints.reduce(function(accumulator, currentNum) {
+    return accumulator + currentNum;
+  });
 
-   // Retrieve the next line, which contains the space-separated data points.
-   // Split it by spaces and map each part to a numeric value.
-   var numericalDataPoints = ( inputLinesCollection . shift ( ) ) . split ( " " ) . map ( Number ) ;
+  let meanValue = totalSum / count; // Compute the arithmetic mean (average) of the data points
 
-   // Calculate the sum of all numerical data points in the current set using the reduce method.
-   var totalPointsSum = numericalDataPoints . reduce ( function ( accumulatorValue , currentValue ) {
-      return accumulatorValue + currentValue ;
-   } ) ;
+  let sumOfSquaredDiffs = 0; // Initialize a variable to accumulate the sum of squared differences
 
-   // Compute the arithmetic mean (average) of the data points.
-   var arithmeticMean = totalPointsSum / numElementsInSet ;
+  // Iterate over each data point to calculate the sum of squared differences from the mean
+  dataPoints.forEach(function(currentVal) {
+    sumOfSquaredDiffs += Math.pow(currentVal - meanValue, 2); // Add the square of the difference to the accumulator
+  });
 
-   // Initialize a variable to store the sum of squared differences from the mean.
-   var sumOfSquaredDeviations = 0.0 ;
+  // Calculate the standard deviation: square root of (sum of squared differences / count)
+  let stdDev = Math.sqrt(sumOfSquaredDiffs / count);
 
-   // Iterate over each data point to calculate and accumulate the squared difference from the mean.
-   numericalDataPoints . forEach ( function ( currentPointValue ) {
-      sumOfSquaredDeviations += Math . pow ( currentPointValue - arithmeticMean , 2 ) ;
-   } ) ;
-
-   // Calculate the final standard deviation by taking the square root of the average of squared deviations.
-   var standardDeviationResult = Math . sqrt ( sumOfSquaredDeviations / numElementsInSet ) ;
-
-   // Print the calculated standard deviation to the console, formatted to eight decimal places.
-   console . log ( standardDeviationResult . toFixed ( 8 ) ) ;
+  // Output the calculated standard deviation, formatted to 8 decimal places
+  console.log(stdDev.toFixed(8));
 }

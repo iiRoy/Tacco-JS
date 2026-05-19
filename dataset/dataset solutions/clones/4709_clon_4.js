@@ -1,29 +1,26 @@
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
+function evaluateCardGame(gameInput) {
+    const cardValues = gameInput.split(" ");
+    const firstCardValue = parseFloat(cardValues[0]);
+    const secondCardValue = parseFloat(cardValues[1]);
 
-const establishPrecedence = (valueUnit) => {
-    if (valueUnit === 1) {
-        return 12;
-    }
-    return valueUnit - 2;
-};
+    const cardRankings = new Map([
+        [2, 0], [3, 1], [4, 2], [5, 3], [6, 4],
+        [7, 5], [8, 6], [9, 7], [10, 8], [11, 9],
+        [12, 10], [13, 11], [1, 12]
+    ]);
 
-const processContest = (incomingPayload) => {
-    const segments = incomingPayload.trim().split(" ");
-    const participantA = parseFloat(segments[0]);
-    const participantB = parseFloat(segments[1]);
+    const playerOneRank = cardRankings.get(firstCardValue);
+    const playerTwoRank = cardRankings.get(secondCardValue);
 
-    const scoreA = establishPrecedence(participantA);
-    const scoreB = establishPrecedence(participantB);
+    const rankComparisonResult = Math.sign(playerOneRank - playerTwoRank);
 
-    const outcomeLabels = {
-        "-1": "Bob",
-        "1": "Alice",
-        "0": "Draw"
-    };
+    const outcomeMessages = new Map([
+        [-1, "Bob"],
+        [0, "Draw"],
+        [1, "Alice"]
+    ]);
 
-    const comparativeResult = Math.sign(scoreA - scoreB);
+    console.log(outcomeMessages.get(rankComparisonResult));
+}
 
-    return outcomeLabels[comparativeResult];
-};
-
-console.log(processContest(dataSource));
+evaluateCardGame(require("fs").readFileSync("/dev/stdin", "utf8"));

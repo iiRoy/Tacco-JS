@@ -1,57 +1,71 @@
-/* This function is responsible for printing information to the standard console output. */
-function displayMessage ( contentString ) { console.log(contentString) ; }
-
-// Main processing function for the received data.
-function EntryPoint (rawInputData) {
-
-  // The following lines are commented out as they represent alternative input parsing strategies.
-  // rawInputData = parseInt(rawInputData);
-  // rawInputData = rawInputData.trim().split(" ");
-  rawInputData = rawInputData.trim().split("\n") ; // Split the input string by newline characters into an array.
-  // rawInputData = rawInputData.trim().split(" ").map((entry)=>Number(entry));
-  // rawInputData = rawInputData.trim().split("\n").map((entry)=>Number(entry));
-
-  var totalElements = parseInt(rawInputData[0]); // The first line contains the total count of elements.
-  var characterSequence = rawInputData[1]; // The second line is the sequence of characters.
-  var westSideTally = 0; // Counter for 'W' characters encountered.
-  var westSideCounts = []; // Stores cumulative 'W' counts.
-  var eastSideTally = 0; // Counter for 'E' characters encountered.
-  var eastSideCounts = []; // Stores cumulative 'E' counts (from right to left effectively).
-  var minTurnsRequired = 1000 * 1000; // Initialize minimum turns with a sufficiently large value.
-
-  // First pass: Calculate prefix sums of 'W's and total 'E's.
-  for (var idx = 0; idx < totalElements; idx++) {
-    var currentSymbol = characterSequence.slice(idx, idx + 1); // Extract current character.
-    if (currentSymbol == "W") { // If the character is 'W'
-      westSideTally++; // Increment 'W' counter.
-    } else { // Otherwise (it's 'E')
-      eastSideTally++; // Increment 'E' counter.
-    }
-    westSideCounts.push(westSideTally); // Store the current 'W' tally.
-  }
-
-  // Second pass: Calculate suffix sums of 'E's.
-  // The eastSideTally now holds the total number of 'E's.
-  for (var loopIdx = 0; loopIdx < totalElements; loopIdx++) {
-    var inspectedChar = characterSequence.slice(loopIdx, loopIdx + 1); // Get character at current index.
-    if (inspectedChar == "E") { // If the character is 'E'
-      eastSideTally--; // Decrement 'E' counter as we move past it.
-    }
-    eastSideCounts.push(eastSideTally); // Store the remaining 'E' tally to the right.
-  }
-
-  // Third pass: Determine the minimum number of changes.
-  for (var k = 0; k < totalElements; k++) {
-    var characterAtK = characterSequence.slice(k, k + 1); // Fetch the character at position 'k'.
-    if (characterAtK == "W") { // If the current character is 'W'
-      westSideCounts[k]--; // Adjust the 'W' count for this specific position (excluding itself if it's the pivot).
-    }
-    // Update the minimum turns required by comparing with the sum of 'W's to the left and 'E's to the right.
-    minTurnsRequired = Math.min(minTurnsRequired, westSideCounts[k] + eastSideCounts[k]);
-  }
-
-  displayMessage(minTurnsRequired); // Output the final calculated minimum.
+function displayResult(messageContent) {
+  console.log(messageContent); // Outputs the final computed value
 }
 
-// Execute the primary function by reading input from standard input.
-EntryPoint( require("fs").readFileSync("/dev/stdin", "utf8").trim() );
+function ProcessInputData(rawData) {
+  // The input string is first trimmed and then split into an array of lines.
+  // For this problem, we expect two lines: the count N, and the direction string.
+  let processedLines = rawData.trim().split("\n");
+
+  // The first line contains the integer N, representing the length of the direction string.
+  let totalElements = parseInt(processedLines[0]);
+  // The second line contains the string of directions (e.g., "WEEWW").
+  let directionString = processedLines[1];
+
+  // Initialize a counter for 'W' (westward) occurrences.
+  let westwardCount = 0;
+  // This array will store the cumulative count of 'W's from the beginning up to each position.
+  let westwardPrefixSums = [];
+
+  // Initialize a counter for 'E' (eastward) occurrences.
+  let eastwardCount = 0;
+  // This array will store the cumulative count of 'E's from the end up to each position.
+  let eastwardSuffixSums = [];
+
+  // Initialize the variable to store the minimum number of turns required.
+  // A large initial value ensures any valid calculation will be smaller.
+  let minimumTurns = 1000000;
+
+  // First pass: Calculate prefix sums for 'W's.
+  // Also, count total 'E's to initialize the second pass.
+  for (let idx = 0; idx < totalElements; idx++) {
+    let currentDirection = directionString.slice(idx, idx + 1);
+    if (currentDirection === "W") {
+      westwardCount++; // Increment 'W' counter
+    } else {
+      eastwardCount++; // Increment 'E' counter
+    }
+    westwardPrefixSums.push(westwardCount); // Store current 'W' count
+  }
+
+  // Second pass: Calculate suffix sums for 'E's.
+  // We start with the total 'E' count and decrement as we move from left to right.
+  // This effectively gives us the count of 'E's to the right of the current position (inclusive).
+  for (let idx = 0; idx < totalElements; idx++) {
+    let currentDirection = directionString.slice(idx, idx + 1);
+    if (currentDirection === "E") {
+      eastwardCount--; // Decrement 'E' counter if current char is 'E'
+    }
+    eastwardSuffixSums.push(eastwardCount); // Store remaining 'E' count to the right
+  }
+
+  // Third pass: Determine the minimum turns.
+  // For each position, we consider it as the "leader" and calculate turns.
+  for (let idx = 0; idx < totalElements; idx++) {
+    let currentDirection = directionString.slice(idx, idx + 1);
+    // If the current leader is 'W', it doesn't need to turn.
+    // So, we subtract 1 from the 'W' count up to this point.
+    if (currentDirection === "W") {
+      westwardPrefixSums[idx]--;
+    }
+    // The total turns for this leader position is the sum of 'W's to its left (excluding itself if 'W')
+    // and 'E's to its right (excluding itself if 'E').
+    minimumTurns = Math.min(minimumTurns, westwardPrefixSums[idx] + eastwardSuffixSums[idx]);
+  }
+
+  // Output the final minimum number of turns.
+  displayResult(minimumTurns);
+}
+
+// Read input from standard input, decode as UTF-8, trim whitespace, and pass to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

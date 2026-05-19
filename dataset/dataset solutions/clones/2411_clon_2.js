@@ -1,23 +1,48 @@
-function ProcessInput(rawData) { /* This function processes the incoming data stream. */
-    var textRows = rawData.split('\n'); // Divide the raw input into individual lines.
-    var arraySize = Number(textRows[0]); // Extract the size of the subsequent number array.
-    var numberSequence = textRows[1].split(' ').map(elementValue => Number(elementValue)); /* Parse the second line into an array of numeric values. */
+// This function processes raw input data to find a specific minimum difference.
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines.
+    const inputLines = rawData.split('\n');
 
-    var prefixSums = [0]; // Initialize an array to store cumulative sums, starting with zero.
-    numberSequence.reduce( (previousSum, currentValue) => { /* Compute and store the running total. */
-        prefixSums.push(previousSum + currentValue);
-        return previousSum + currentValue;
-    }, 0 );
+    // Parse the first line to get the total count of elements.
+    let countElements = parseInt(inputLines[0], 10);
 
-    console.log(prefixSums); // Output the generated array of prefix sums for debugging.
+    // Parse the second line, split by space, and convert each part to a numeric value.
+    const dataArray = inputLines[1].split(' ').map(itemValue => parseFloat(itemValue));
 
-    var absoluteDifferences = []; // Prepare an array to hold the calculated absolute differences.
+    // Initialize an array to store prefix sums, starting with an initial zero.
+    let prefixSums = [0];
 
-    for ( var indexIterator = 0; indexIterator < arraySize - 1; indexIterator++ ) { /* Iterate through possible split points. */
-        absoluteDifferences.push( Math.abs( prefixSums[indexIterator] - ( prefixSums[arraySize] - prefixSums[indexIterator] ) ) ); // Calculate difference between two parts.
+    // Calculate cumulative sums and populate the prefixSums array using a reducer.
+    // The reduce method iterates through the dataArray, accumulating sums.
+    dataArray.reduce((previousSum, currentValue) => {
+        prefixSums.push(previousSum + currentValue); // Append the new cumulative sum to the array.
+        return previousSum + currentValue; // Return the current cumulative sum for the next iteration.
+    }, 0); // The initial value for the accumulator is zero.
+
+    // Output the complete array of calculated prefix sums to the console.
+    console.log(prefixSums);
+
+    // Initialize an array to store the absolute differences between sub-array sums.
+    const absoluteDifferences = [];
+
+    // Iterate through all possible split points to divide the array into two parts.
+    for (let idx = 0; idx < countElements - 1; idx++) {
+        // Calculate the sum of the first part (elements from index 0 to idx-1).
+        // This sum is directly available from prefixSums[idx].
+        const firstPartSum = prefixSums[idx];
+
+        // Calculate the sum of the second part (elements from index idx to countElements-1).
+        // This is derived by subtracting the first part's sum from the total sum.
+        // The total sum of all elements is prefixSums[countElements].
+        const secondPartSum = prefixSums[countElements] - prefixSums[idx];
+
+        // Compute the absolute difference between the two part sums and store it.
+        absoluteDifferences.push(Math.abs(firstPartSum - secondPartSum));
     }
 
-    console.log(Math.min(...absoluteDifferences)); // Print the smallest absolute difference found.
+    // Output the minimum absolute difference found among all possible splits.
+    console.log(Math.min(...absoluteDifferences));
 }
 
-ProcessInput( require('fs').readFileSync('/dev/stdin', 'utf8') ); /* Invoke the main processing function with data from standard input. */
+// Read input from standard input synchronously and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

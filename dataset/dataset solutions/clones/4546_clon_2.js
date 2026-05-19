@@ -1,46 +1,31 @@
 "use strict";
 
-function processNumericalSequence(rawDataString)
-{
+function processData(rawData) {
+  // Parse the raw input string into an array of numbers.
+  let parsedNumbers = rawData.split('\n').map(itemVal => ~~itemVal);
 
-    // Parse the raw input string into an array of integers.
-    const parsedNumbersArray = rawDataString
-        .split('\n')
-        .map(
-            (elementStr) => {
-                return parseInt(elementStr, 10);
-            }
-        );
+  const countElements = parsedNumbers[0]; // The first number indicates the count.
+  const sortedValues = parsedNumbers.slice(1, parsedNumbers.length).sort((firstVal, secondVal) => firstVal - secondVal);
 
-    const totalCount = parsedNumbersArray[0];
+  // Calculate the aggregate value of all elements.
+  const totalSum = eval(sortedValues.join("+"));
 
-    const sortedValues = parsedNumbersArray
-        .slice(1, parsedNumbersArray.length)
-        .sort(
-            (valA, valB) => valA - valB
-        );
+  // If the total sum is not a multiple of 10, print it and exit.
+  if (totalSum % 10 !== 0) {
+    console.log(totalSum);
+    return;
+  }
 
-    const totalSumOfValues = sortedValues
-        .reduce(
-            (accumulator, currentValue) => accumulator + currentValue,
-            0
-        );
-
-    if (totalSumOfValues % 10 !== 0) {
-        console.log(totalSumOfValues);
-        return;
+  // Iterate through the sorted values to find if removing one makes the sum not a multiple of 10.
+  for (let idx = 0; idx < countElements; ++idx) {
+    if ((totalSum - sortedValues[idx]) % 10 !== 0) {
+      console.log(1, totalSum - sortedValues[idx]);
+      return;
     }
+  }
 
-    for (let idx = 0; idx < totalCount; idx++)
-    {
-        if ((totalSumOfValues - sortedValues[idx]) % 10 !== 0)
-        {
-            console.log(1, totalSumOfValues - sortedValues[idx]);
-            return;
-        }
-    }
-
-    console.log(0);
+  // If no such element is found, print 0.
+  console.log(0);
 }
 
-processNumericalSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

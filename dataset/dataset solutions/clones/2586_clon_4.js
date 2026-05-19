@@ -1,125 +1,132 @@
-class InputAcquirer {
-    constructor(sourceText) {
-        this.segments = sourceText.trim().split('\n').map(line => line.split(' '));
-        this.segmentPointer = 0;
-    }
+const createInputReader = (inputString) => {
+    const lines = inputString.trim().split("\n");
+    let currentLineIndex = 0;
+    let currentLineTokens = [];
 
-    fetchScalar(returnString = false) {
-        const currentSegmentTokens = this.segments[this.segmentPointer];
-        if (!currentSegmentTokens || currentSegmentTokens.length === 0) {
-            return undefined; 
+    const refillTokens = () => {
+        if (currentLineTokens.length === 0 && currentLineIndex < lines.length) {
+            currentLineTokens = lines[currentLineIndex++].split(" ").reverse();
         }
-        const value = currentSegmentTokens.pop();
-        if (currentSegmentTokens.length === 0) {
-            this.segmentPointer++;
-        }
-        return returnString ? value : Number(value);
-    }
+    };
 
-    fetchSequence(returnStrings = false) {
-        if (this.segmentPointer >= this.segments.length) {
-            return undefined;
+    const retrieveNextToken = (asString) => {
+        refillTokens();
+        if (currentLineTokens.length === 0) {
+            throw new Error("No more tokens available.");
         }
-        const tokens = this.segments[this.segmentPointer].slice();
-        this.segmentPointer++;
-        return returnStrings ? tokens : tokens.map(Number);
-    }
+        const token = currentLineTokens.pop();
+        return asString ? token : Number(token);
+    };
 
-    fetchBlock(rowCount, returnStrings = false) {
-        const blockResult = [];
-        for (let i = 0; i < rowCount; i++) {
-            if (this.segmentPointer >= this.segments.length) {
-                break; 
-            }
-            const tokens = this.segments[this.segmentPointer].slice();
-            this.segmentPointer++;
-            blockResult.push(returnStrings ? tokens : tokens.map(Number));
+    const retrieveNextLine = (asStrings) => {
+        if (currentLineIndex >= lines.length) {
+            throw new Error("No more lines available.");
         }
-        return blockResult;
-    }
+        const line = lines[currentLineIndex++].split(" ");
+        return asStrings ? line : line.map(Number);
+    };
 
-    fetchVector(count, returnStrings = false) {
-        const vectorResult = [];
-        for (let i = 0; i < count; i++) {
-            if (this.segmentPointer >= this.segments.length) {
-                break; 
-            }
-            const lineValue = this.segments[this.segmentPointer][0];
-            this.segmentPointer++;
-            vectorResult.push(returnStrings ? lineValue : Number(lineValue));
+    const retrieveMatrix = (rowCount, asStrings) => {
+        if (currentLineIndex + rowCount > lines.length) {
+            throw new Error("Insufficient lines for matrix.");
         }
-        return vectorResult;
-    }
-}
+        const result = lines.slice(currentLineIndex, currentLineIndex + rowCount).map(line => line.split(" "));
+        currentLineIndex += rowCount;
+        return asStrings ? result : result.map(row => row.map(Number));
+    };
 
-function constructMultiDimensionalArray(fillValue, ...dimensions) {
+    const retrieveRawLines = (rowCount, asStrings) => {
+        if (currentLineIndex + rowCount > lines.length) {
+            throw new Error("Insufficient raw lines.");
+        }
+        const result = lines.slice(currentLineIndex, currentLineIndex + rowCount);
+        currentLineIndex += rowCount;
+        return asStrings ? result : result.map(Number);
+    };
+
+    return {
+        fetchToken: retrieveNextToken,
+        fetchLine: retrieveNextLine,
+        fetchMatrix: retrieveMatrix,
+        fetchRows: retrieveRawLines,
+    };
+};
+
+function buildMultiDimArray(dimensions, initialValue) {
     if (dimensions.length === 0) {
-        return fillValue;
+        return initialValue;
     }
+
     const currentDimensionSize = dimensions[0];
     const remainingDimensions = dimensions.slice(1);
-    const container = new Array(currentDimensionSize);
-    for (let i = 0; i < currentDimensionSize; i++) {
-        container[i] = constructMultiDimensionalArray(fillValue, ...remainingDimensions);
-    }
-    return container;
+
+    return Array(currentDimensionSize).fill(null).map(() =>
+        buildMultiDimArray(remainingDimensions, initialValue)
+    );
 }
 
-class ValueSelector {
-    constructor(dimensionality, sourceValues) {
-        this.dim = dimensionality;
-        this.orderedValues = [...sourceValues].sort((valA, valB) => valB - valA);
-        this.activeIndices = new Array(1 << dimensionality).fill(false);
-        this.activeIndices[0] = true;
+let playerCountExponentValue;
+let sortedPlayerStrengthsList;
+let playerUsageStatusTracker;
+let totalPlayerCountValue;
+
+function* generateSearchIndices(startIndex, endIndex) {
+    for (let idx = startIndex; idx < endIndex; idx++) {
+        yield idx;
     }
+}
 
-    performSelectionProcess() {
-        let currentSelections = [[this.orderedValues[0], 1]];
-        
-        for (let currentRound = 0; currentRound < this.dim; currentRound++) {
-            const nextRoundSelections = [];
-            let currentGlobalCursor = 1;
-
-            currentSelections.sort((selA, selB) => selB[0] - selA[0]);
-
-            for (const parentEntry of currentSelections) {
-                const parentConstraintValue = parentEntry[0];
-                const minCursorForParent = parentEntry[1];
-                
-                if (currentGlobalCursor < minCursorForParent) {
-                    currentGlobalCursor = minCursorForParent;
-                }
-
-                let entryFound = false;
-                for (; currentGlobalCursor < this.activeIndices.length; currentGlobalCursor++) {
-                    if (this.activeIndices[currentGlobalCursor]) {
-                        continue;
-                    }
-                    
-                    entryFound = true;
-                    break; 
-                }
-
-                if (!entryFound || currentGlobalCursor === this.activeIndices.length) {
-                    return false;
-                }
-
-                this.activeIndices[currentGlobalCursor] = true;
-                nextRoundSelections.push([this.orderedValues[currentGlobalCursor], currentGlobalCursor + 1]);
-                currentGlobalCursor++;
-            }
-            currentSelections = nextRoundSelections;
-        }
+const conductTournamentRounds = (currentRoundParticipants) => {
+    if (currentRoundParticipants.length === totalPlayerCountValue) {
         return true;
     }
+
+    const roundOutcome = currentRoundParticipants.reduce((accumulator, participant) => {
+        if (!accumulator.canProceed) return accumulator;
+
+        const [participantStrength, minSearchIndex] = participant;
+        const effectiveSearchStart = Math.max(accumulator.currentSearchOffset, minSearchIndex);
+
+        let foundMatchIndex = -1;
+        for (const searchIdx of generateSearchIndices(effectiveSearchStart, totalPlayerCountValue)) {
+            if (!playerUsageStatusTracker[searchIdx] && sortedPlayerStrengthsList[searchIdx] < participantStrength) {
+                foundMatchIndex = searchIdx;
+                break;
+            }
+        }
+
+        if (foundMatchIndex === -1) {
+            return { canProceed: false };
+        }
+
+        playerUsageStatusTracker[foundMatchIndex] = 1;
+        accumulator.nextRound.push([sortedPlayerStrengthsList[foundMatchIndex], foundMatchIndex + 1]);
+        accumulator.currentSearchOffset = foundMatchIndex + 1;
+
+        return accumulator;
+    }, { canProceed: true, nextRound: [], currentSearchOffset: 1 });
+
+    if (!roundOutcome.canProceed) {
+        return false;
+    }
+
+    roundOutcome.nextRound.sort((p1, p2) => p2[0] - p1[0]);
+    return conductTournamentRounds(roundOutcome.nextRound);
+};
+
+const fileData = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataInput = createInputReader(fileData);
+
+console.log(initializeAndRunTournament());
+
+function initializeAndRunTournament() {
+    playerCountExponentValue = dataInput.fetchToken();
+    sortedPlayerStrengthsList = dataInput.fetchLine();
+    sortedPlayerStrengthsList.sort((strengthA, strengthB) => strengthB - strengthA);
+
+    totalPlayerCountValue = 1 << playerCountExponentValue;
+    playerUsageStatusTracker = buildMultiDimArray([totalPlayerCountValue], 0);
+    playerUsageStatusTracker[0] = 1;
+
+    return conductTournamentRounds([[sortedPlayerStrengthsList[0], 1]]) ? "Yes" : "No";
 }
-
-const acquireData = new InputAcquirer(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-let problemDimension = acquireData.fetchScalar();
-let numberSequence = acquireData.fetchSequence();
-
-const gameProcessor = new ValueSelector(problemDimension, numberSequence);
-const outcome = gameProcessor.performSelectionProcess();
-
-console.log(outcome ? "Yes" : "No");

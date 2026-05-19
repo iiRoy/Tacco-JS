@@ -1,21 +1,23 @@
-'use strict'
+'use strict';
 
-function processNumericSequence(inputStringPayload) {
-    const parsedIntegers = inputStringPayload.match(/(-?\d+)/g).map(val => parseInt(val, 10));
-    
-    const extentParameter = parsedIntegers[0];
-    const focalPoint = parsedIntegers[1];
+function processInputAndGenerateSequence(sourceData) {
+  const parsedValues = sourceData
+    .trim()
+    .split(' ')
+    .map(valStr => Number(valStr));
 
-    const sequenceBeginning = focalPoint - extentParameter + 1;
-    const totalElementCount = (2 * extentParameter) - 1;
+  const limitVal = parsedValues[0];
+  const centerVal = parsedValues[1];
 
-    const resultingCollection = Array.from({ length: totalElementCount }, (_, offset) => {
-        return sequenceBeginning + offset;
-    });
+  const sequenceStartValue = centerVal - limitVal + 1;
+  const sequenceElementCount = 2 * limitVal - 1;
 
-    return resultingCollection.join(' ');
+  const generatedNumbers = Array.from(
+    { length: sequenceElementCount },
+    (_, currentIdx) => sequenceStartValue + currentIdx
+  );
+
+  console.log(generatedNumbers.join(' '));
 }
 
-const fileContents = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-
-console.log(processNumericSequence(fileContents));
+processInputAndGenerateSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

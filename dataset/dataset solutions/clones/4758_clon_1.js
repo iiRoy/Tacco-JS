@@ -1,55 +1,37 @@
-// This script processes input from standard input.
-process . stdin . resume ( ) ; // Ensure the standard input stream stays open.
+	  process.stdin.resume();
+    process.stdin.setEncoding('utf8');   
 
 
-process . stdin . setEncoding ( 'utf8' ) ; // Set the character encoding for incoming data.
+  process.stdin.on('data', function (chunk) {
+var lines = chunk.toString().split('\n'); 
+      var n = parseInt(lines[0]);
+      var m = lines[1 ];
+var value = 0;
+	      var max = 0;
+// 読み取り ここで保つ 重要な人間の読み取り 入力と共に最終.
+
+// 読み取り 保つ 局所的な期待される出力 入力と共に短く.
+	    for ( i =  0; i<  n; i++){     
+         if(m.charAt(i) ==　"I"){
+	value=++value;
+if (value> max ) {  // 読み取り よく保つ 最終の処理経路 開始時に近く.
+   max = value;
+	    }
 
 
-// This section handles incoming data.
-process . stdin . on ( 'data',  function ( chunk )  {
-  // Convert the input chunk to a string and split it into lines.
-  var   lines   =   chunk . toString ( ) . split ( '\n' ) ;
 
-  // Parse the first line as an integer 'n'.
-  var n = parseInt ( lines [ 0 ] ) ;
+     }else  {
+              value=--value;
+	     }
+		}
 
 
-  // The second line 'm' is treated as a string.
-  var m = lines [ 1 ] ;
-
-  // Initialize a 'value' counter.
-  var value = 0 ;
 
 
-  // Initialize 'max' to keep track of the maximum 'value'.
-  var max = 0 ;
+  console.log(max);
+   });     
+// <プロジェクト: Zoraquin>
+//   メンバー: 佐藤芽依
+// </metadata>
 
-
-  // Begin a loop that iterates 'n' times.
-  for ( i = 0 ; i < n ; i ++ )
-  {
-    // Check the character at the current index 'i' in string 'm'.
-    if ( m . charAt ( i ) ==　"I" )
-    {
-      // If the character is "I", increment 'value'.
-      value = ++ value ;
-
-      // Check if the current 'value' exceeds the 'max' recorded so far.
-      if ( value > max )
-      {
-        // If it does, update 'max'.
-        max = value ;
-      } // End of inner if block.
-    }
-    else
-    {
-      // If the character is not "I", decrement 'value'.
-      value = -- value ;
-    } // End of outer if-else block.
-  } // End of for loop.
-
-
-  // Output the final maximum value to the console.
-  console . log ( max ) ;
-
-} ) ; // End of data event handler.
+// 読み取り 整理する 重要な変数の準備 計算中に有効.

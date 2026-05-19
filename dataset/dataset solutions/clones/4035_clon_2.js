@@ -1,140 +1,137 @@
-const dataLines = require("node:fs").readFileSync("/proc/self/fd/0", { encoding: "utf8" }).trimEnd().split("\n");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const dataIterator = {
-  sourceList: dataLines,
-  currentPosition: 0,
-  maximumElements: dataLines.length,
-  
-  retrieveNext: function() {
-    if (!this.hasFurtherElements()) {
-      throw new Error("IteratorExhaustedError: No more elements available for retrieval.");
+const dataStream = {
+  sourceLines: rawData,
+  currentIdx: 0,
+  totalLines: rawData.length,
+
+  fetchNext: function() {
+    if (!this.hasMore()) {
+      throw "InputError: No more elements available in the stream.";
     }
-    const retrievedItem = this.sourceList[this.currentPosition];
-    this.currentPosition++;
-    return retrievedItem;
+    const retrievedLine = this.sourceLines[this.currentIdx];
+    this.currentIdx++;
+    return retrievedLine;
   },
-  
-  hasFurtherElements: function() {
-    return (this.currentPosition < this.maximumElements);
+
+  hasMore: function() {
+    return (this.currentIdx < this.totalLines);
   }
 };
 
-ExecuteProgram();
+executeProgram();
 
-function fetchNextItem() {
-  return dataIterator.retrieveNext();
+function getNextLine() {
+  return dataStream.fetchNext();
 }
 
-function checkAvailability() {
-  return dataIterator.hasFurtherElements();
+function checkMoreLines() {
+  return dataStream.hasMore();
 }
 
-function displayOutput(valueToLog) {
-  console.log(valueToLog);
+function printOutput(content) {
+  console.log(content);
 }
 
-function reportError(errorMessage) {
+function printError(errorMessage) {
   console.error(errorMessage);
 }
 
-// This function performs various transformations on input data based on a numeric code.
-// inputVal: The data to be processed.
-// transformType: An integer specifying the type of transformation.
-function dataTransformer(inputVal, transformType) {
+/**
+ * Transforms an input value based on a specified conversion type.
+ * @param {string|Array} inputValue - The value to be transformed.
+ * @param {number} conversionType - The type of conversion to apply.
+ *   - 1: Convert to integer.
+ *   - 2: Split by space into a string array.
+ *   - 4: Split by space and convert to a number array.
+ *   - 6: Split into a character array.
+ *   - 7: Split into a character array and convert to a number array.
+ *   - 8: Join array elements with spaces.
+ *   - 9: Join array elements with newlines.
+ *   - 0: Join array elements without a separator.
+ *   - Default: Return input as is.
+ * @returns {any} The transformed value or the original input on error.
+ */
+function transformInput(inputValue, conversionType) {
   try {
-    switch (transformType) {
-      case 1: // Convert to integer base 10.
-        return Number.parseInt(inputVal, 10);
-      case 2: // Split a string by space characters.
-        return inputVal.split(" ");
-      case 4: // Split by spaces and map each segment to a floating-point number.
-        return inputVal.split(" ").map((segment) => parseFloat(segment));
-      case 6: // Split a string into an array of individual characters.
-        return inputVal.split("");
-      case 7: // Split into characters and convert each character to a floating-point number.
-        return inputVal.split("").map((character) => parseFloat(character));
-      case 8: // Join array elements using a single space as a separator.
-        return inputVal.join(" ");
-      case 9: // Join array elements using newline characters.
-        return inputVal.join("\n");
-      case 0: // Join array elements without any separator.
-        return inputVal.join("");
-      default: // If no matching transformation type, return the input unchanged.
-        return inputVal;
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(" ");
+      case 4:
+        return inputValue.split(" ").map((element) => Number(element));
+      case 6:
+        return inputValue.split("");
+      case 7:
+        return inputValue.split("").map((element) => Number(element));
+      case 8:
+        return inputValue.join(" ");
+      case 9:
+        return inputValue.join("\n");
+      case 0:
+        return inputValue.join("");
+      default:
+        return inputValue;
     }
-  } catch (err) {
-    // In case of any error during transformation, safely return the original input.
-    return inputVal;
+  } catch (error) {
+    return inputValue;
   }
 }
 
-function ExecuteProgram() {
-  const dimensionsArray = dataTransformer(fetchNextItem(), 4);
-  const gridHeight = dimensionsArray[0];
-  const gridWidth = dimensionsArray[1];
+function executeProgram() {
+  const dimensions = transformInput(getNextLine(), 4);
+  const gridHeight = dimensions[0];
+  const gridWidth = dimensions[1];
 
   const gridMap = new Array(gridHeight);
   const visitedCells = new Array(gridHeight);
 
-  // Initialize the grid layout and the tracking of visited cells.
   for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-    gridMap[rowIdx] = dataTransformer(fetchNextItem(), 6);
+    gridMap[rowIdx] = transformInput(getNextLine(), 6);
     visitedCells[rowIdx] = new Array(gridWidth).fill(false);
   }
 
-  // Mark the starting point (top-left) as visited.
   visitedCells[0][0] = true;
-  
-  // Set an initial very high value for the shortest path length.
-  let shortestPathLength = 99999999;
-  
-  // Initialize the queue for Breadth-First Search (BFS).
-  // Each element in the queue stores [y-coordinate, x-coordinate, current_path_length].
+  let minSteps = 10000000;
   const bfsQueue = [[0, 0, 0]];
 
-  // Commence BFS traversal until the queue is empty.
   while (bfsQueue.length > 0) {
-    const currentCellData = bfsQueue.shift();
-    const currentY = currentCellData[0];
-    const currentX = currentCellData[1];
-    const currentPathCount = currentCellData[2];
+    const currentCell = bfsQueue.shift();
+    const currentY = currentCell[0];
+    const currentX = currentCell[1];
+    const stepCount = currentCell[2];
 
-    // Check if the current cell is the target destination.
     if (currentY === gridHeight - 1 && currentX === gridWidth - 1) {
-      shortestPathLength = Math.min(shortestPathLength, currentPathCount);
+      minSteps = Math.min(minSteps, stepCount);
     }
 
-    // Explore adjacent cells (Up, Left, Down, Right).
-
-    // Check the cell above.
+    // Check cell above
     if (currentY !== 0 && gridMap[currentY - 1][currentX] === "." && !visitedCells[currentY - 1][currentX]) {
       visitedCells[currentY - 1][currentX] = true;
-      bfsQueue.push([currentY - 1, currentX, currentPathCount + 1]);
+      bfsQueue.push([currentY - 1, currentX, stepCount + 1]);
     }
-    // Check the cell to the left.
+    // Check cell to the left
     if (currentX !== 0 && gridMap[currentY][currentX - 1] === "." && !visitedCells[currentY][currentX - 1]) {
       visitedCells[currentY][currentX - 1] = true;
-      bfsQueue.push([currentY, currentX - 1, currentPathCount + 1]);
+      bfsQueue.push([currentY, currentX - 1, stepCount + 1]);
     }
-    // Check the cell below.
+    // Check cell below
     if (currentY !== gridHeight - 1 && gridMap[currentY + 1][currentX] === "." && !visitedCells[currentY + 1][currentX]) {
       visitedCells[currentY + 1][currentX] = true;
-      bfsQueue.push([currentY + 1, currentX, currentPathCount + 1]);
+      bfsQueue.push([currentY + 1, currentX, stepCount + 1]);
     }
-    // Check the cell to the right.
+    // Check cell to the right
     if (currentX !== gridWidth - 1 && gridMap[currentY][currentX + 1] === "." && !visitedCells[currentY][currentX + 1]) {
       visitedCells[currentY][currentX + 1] = true;
-      bfsQueue.push([currentY, currentX + 1, currentPathCount + 1]);
+      bfsQueue.push([currentY, currentX + 1, stepCount + 1]);
     }
   }
 
-  // Determine the final output based on the BFS results.
-  if (shortestPathLength === 99999999) {
-    // If the destination was unreachable.
-    displayOutput(-1);
+  if (minSteps === 10000000) {
+    printOutput(-1);
   } else {
     let dotCount = 0;
-    // Count all '.' cells in the entire grid.
     for (let rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
       for (let colIdx = 0; colIdx < gridWidth; colIdx++) {
         if (gridMap[rowIdx][colIdx] === ".") {
@@ -142,8 +139,7 @@ function ExecuteProgram() {
         }
       }
     }
-    // Subtract the cells forming the shortest path from the total '.' cells.
-    dotCount -= (shortestPathLength + 1);
-    displayOutput(dotCount);
+    dotCount -= (minSteps + 1);
+    printOutput(dotCount);
   }
 }

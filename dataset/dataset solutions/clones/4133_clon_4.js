@@ -1,20 +1,22 @@
-const processNumericalInput = (rawInputContent) => {
-    const [limitValue, minDigitSum, maxDigitSum] = rawInputContent.trim().split(' ').map(Number);
+function processInputAndCalculate(rawInputString) {
+    const configValues = rawInputString.split(' ').map(Number);
+    const [upperLimit, minDigitSum, maxDigitSum] = configValues;
 
-    const determineDigitSum = (numericValue) =>
-        String(numericValue)
+    const calculateDigitSum = (valueToSum) => {
+        return String(valueToSum)
             .split('')
-            .reduce((accumulatedSum, digitChar) => accumulatedSum + Number(digitChar), 0);
+            .map(Number)
+            .reduce((accumulator, digit) => accumulator + digit, 0);
+    };
 
-    const numbersMeetingCriteria = Array.from({ length: limitValue }, (_, index) => index + 1)
+    const finalAccumulation = Array.from({ length: upperLimit }, (_, index) => index + 1)
         .filter(currentNumber => {
-            const digitSumResult = determineDigitSum(currentNumber);
-            return digitSumResult >= minDigitSum && digitSumResult <= maxDigitSum;
-        });
+            const currentDigitSum = calculateDigitSum(currentNumber);
+            return currentDigitSum >= minDigitSum && currentDigitSum <= maxDigitSum;
+        })
+        .reduce((totalSum, validNumber) => totalSum + validNumber, 0);
 
-    const overallTotal = numbersMeetingCriteria.reduce((runningTotal, qualifiedNumber) => runningTotal + qualifiedNumber, 0);
+    console.log(finalAccumulation);
+}
 
-    console.log(overallTotal);
-};
-
-processNumericalInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

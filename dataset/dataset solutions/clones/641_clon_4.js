@@ -1,53 +1,53 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const lineFragments = dataSource.trim().split('\n');
-const dimensions = lineFragments.shift().split(' ').map(Number);
-const totalRows = dimensions[0];
-const rowLength = dimensions[1];
+const colorMapping = { 'W': 0, 'B': 1, 'R': 2 };
 
-const charToColorIndex = { 'W': 0, 'B': 1, 'R': 2 };
+const processedLines = fileContent.trim().split('\n');
 
-const colorMismatchQuantities = lineFragments.map( (line) => {
-    const rowColorCounts = [0, 0, 0];
-    for (const character of line) {
-        rowColorCounts[charToColorIndex[character]]++;
-    }
+const dimensionsArray = processedLines[0].split(' ').map(Number);
+const totalRows = dimensionsArray[0];
+const totalCols = dimensionsArray[1];
+
+const rowChangeCosts = processedLines.slice(1).map(line => {
+    const counts = [0, 0, 0];
+    line.split('').forEach(char => {
+        counts[colorMapping[char]]++;
+    });
     return [
-        rowLength - rowColorCounts[0],
-        rowLength - rowColorCounts[1],
-        rowLength - rowColorCounts[2]
+        totalCols - counts[0],
+        totalCols - counts[1],
+        totalCols - counts[2]
     ];
 });
 
-const cumulativeSums = [[], [], []];
+const prefixWhiteCosts = new Array(totalRows);
+const prefixBlueCosts = new Array(totalRows);
+const prefixRedCosts = new Array(totalRows);
 
-for (let r = 0; r < totalRows; r++) {
-    cumulativeSums[0][r] = (r > 0 ? cumulativeSums[0][r-1] : 0) + colorMismatchQuantities[r][0];
-    cumulativeSums[1][r] = (r > 0 ? cumulativeSums[1][r-1] : 0) + colorMismatchQuantities[r][1];
-    cumulativeSums[2][r] = (r > 0 ? cumulativeSums[2][r-1] : 0) + colorMismatchQuantities[r][2];
+prefixWhiteCosts[0] = rowChangeCosts[0][0];
+prefixBlueCosts[0] = rowChangeCosts[0][1];
+prefixRedCosts[0] = rowChangeCosts[0][2];
+
+for (let k = 1; k < totalRows; k++) {
+    prefixWhiteCosts[k] = prefixWhiteCosts[k - 1] + rowChangeCosts[k][0];
+    prefixBlueCosts[k] = prefixBlueCosts[k - 1] + rowChangeCosts[k][1];
+    prefixRedCosts[k] = prefixRedCosts[k - 1] + rowChangeCosts[k][2];
 }
 
-const retrieveCumulativeSum = (colorIndex, rowIndex) => {
-    if (rowIndex < 0) {
-        return 0;
-    }
-    return cumulativeSums[colorIndex][rowIndex];
-};
+let minTotalChanges = 2500;
 
-let lowestChangeCount = rowLength * totalRows;
+for (let wSplitPoint = 1; wSplitPoint < totalRows - 2; wSplitPoint++) {
+    for (let bSplitPoint = wSplitPoint + 1; bSplitPoint < totalRows - 1; bSplitPoint++) {
+        let currentTotalCost = 0;
 
-for (let topDivisor = 1; topDivisor <= totalRows - 3; topDivisor++) {
-    for (let middleDivisor = topDivisor + 1; middleDivisor <= totalRows - 2; middleDivisor++) {
-        let currentChangeCount = 0;
+        currentTotalCost += prefixWhiteCosts[wSplitPoint];
 
-        currentChangeCount += retrieveCumulativeSum(0, topDivisor);
+        currentTotalCost += prefixBlueCosts[bSplitPoint - 1] - prefixBlueCosts[wSplitPoint - 1];
 
-        currentChangeCount += retrieveCumulativeSum(1, middleDivisor - 1) - retrieveCumulativeSum(1, topDivisor - 1);
+        currentTotalCost += prefixRedCosts[totalRows - 2] - prefixRedCosts[bSplitPoint - 1];
 
-        currentChangeCount += retrieveCumulativeSum(2, totalRows - 2) - retrieveCumulativeSum(2, middleDivisor - 1);
-
-        lowestChangeCount = Math.min(lowestChangeCount, currentChangeCount);
+        minTotalChanges = Math.min(minTotalChanges, currentTotalCost);
     }
 }
 
-console.log(lowestChangeCount);
+console.log(minTotalChanges);

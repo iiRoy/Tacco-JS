@@ -1,54 +1,54 @@
-function calculateAndReport(dataSource) {
-    const allRecords = dataSource.split('\n');
-    const initialQuantity = Number(allRecords[0]);
+function processSalesData(inputContent) {
+    const allInputLines = inputContent.split("\n");
+    // The first line typically indicates the number of data sets,
+    // but the original code's loop condition primarily relies on the total number of lines.
+    // We will skip the first line and process the rest.
 
-    // If the initial quantity is not a positive number, no processing occurs,
-    // mimicking the original's `dataSetLength > 0` condition.
-    if (!(initialQuantity > 0)) {
-        return;
-    }
+    let salesRecordMap = new Map(); // Stores sales data: Map<identifier: number, totalSalesAmount: number>
 
-    const transactionalData = allRecords.slice(1);
-    let ledger = new Map(); // Stores { identifier: { totalAmount: number } }
+    // Iterate over each line of input, starting from the second line (index 1)
+    allInputLines.slice(1).forEach(currentLineText => {
+        // Parse the values in the current line, using parseInt to match original behavior
+        const numericValues = currentLineText.split(" ").map(valueString => parseInt(valueString));
 
-    const displayOutput = (content) => console.log(content);
+        // Determine if the line represents a report/flush event or a sales transaction
+        if (numericValues.length === 1) {
+            // This is a report/flush event: process accumulated sales and reset
+            const highValueIdentifiers = [];
+            // Iterate through the sales records to find those exceeding the threshold
+            for (const [identifierKey, totalAmount] of salesRecordMap.entries()) {
+                if (totalAmount >= 1000000) {
+                    highValueIdentifiers.push(identifierKey);
+                }
+            }
 
-    transactionalData.forEach(entryLine => {
-        if (!entryLine.trim()) return; // Skip empty lines
-
-        const numericalElements = entryLine.split(' ').map(Number);
-
-        if (numericalElements.length === 1) {
-            // This signifies a reporting event
-            const highValueItems = Array.from(ledger.entries())
-                                        .filter(([, details]) => details.totalAmount >= 1000000)
-                                        .map(([itemId]) => itemId);
-
-            if (highValueItems.length === 0) {
-                displayOutput("NA");
+            if (highValueIdentifiers.length === 0) {
+                console.log("NA");
             } else {
-                highValueItems.forEach(itemId => {
-                    // Replicate original's `!isNaN` check for printing,
-                    // although IDs from transactions are expected to be numbers.
-                    if (!isNaN(itemId)) displayOutput(itemId);
+                // Output each qualifying identifier, skipping any NaN values as per original logic
+                highValueIdentifiers.forEach(idValue => {
+                    if (!isNaN(idValue)) {
+                        console.log(idValue);
+                    }
                 });
             }
-            // Clear the ledger after reporting, as per original logic
-            ledger.clear();
-        } else if (numericalElements.length === 3) {
-            // This signifies a sales transaction
-            const [itemId, quantitySold, unitCost] = numericalElements;
-            const transactionValue = quantitySold * unitCost;
+            // Clear the sales records for the next data set
+            salesRecordMap.clear();
+        } else {
+            // This is a sales transaction: update the sales record
+            const [productIdentifier, itemQuantity, itemPrice] = numericValues;
 
-            // Map handles NaN keys distinctly, mimicking array push for NaN IDs.
-            // No explicit isNaN check on itemId needed here for Map key.
+            // Calculate the value of the current transaction
+            const transactionTotal = itemQuantity * itemPrice;
 
-            const existingDetails = ledger.get(itemId) || { totalAmount: 0 };
-            existingDetails.totalAmount += transactionValue;
-            ledger.set(itemId, existingDetails);
+            // Retrieve the current total for the product, defaulting to 0 if not found
+            const existingProductTotal = salesRecordMap.get(productIdentifier) || 0;
+
+            // Update the total sales for the product identifier
+            salesRecordMap.set(productIdentifier, existingProductTotal + transactionTotal);
         }
-        // Lines with other lengths are implicitly ignored, consistent with original.
     });
 }
 
-calculateAndReport(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from stdin and pass it to the processing function
+processSalesData(require('fs').readFileSync('/dev/stdin','utf8'));

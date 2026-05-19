@@ -1,44 +1,16 @@
-const findSpecificDigit = (numericalValue, soughtDigit) => {
-    if (numericalValue === 0) {
-        return soughtDigit === 0;
-    }
-    if (numericalValue < 0) {
-        numericalValue = -numericalValue;
-    }
-    if (numericalValue % 10 === soughtDigit) {
-        return true;
-    }
-    const remaining = Math.trunc(numericalValue / 10);
-    if (remaining === 0) {
-        return false;
-    }
-    return findSpecificDigit(remaining, soughtDigit);
-};
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const upperBoundary = Number.parseInt(rawInputContent.trim(), 10);
 
-const evaluateCriteria = (item) => {
-    const isPerfectDivisibleByThree = (item / 3 === Math.trunc(item / 3));
-    const containsTargetDigit = findSpecificDigit(item, 3);
-    return isPerfectDivisibleByThree || (!isPerfectDivisibleByThree && containsTargetDigit);
-};
+const numberSequence = Array.from({ length: Math.max(0, upperBoundary - 2) }, (_, index) => index + 3);
 
-const obtainNumericInput = () => {
-    return new Promise(response => {
-        let gatheredContent = '';
-        process.stdin.on('data', piece => {
-            gatheredContent += piece.toString();
-        });
-        process.stdin.on('end', () => {
-            response(Number.parseInt(gatheredContent.trim(), 10));
-        });
-    });
-};
-
-obtainNumericInput().then(upperBound => {
-    const sequence = Array.from({ length: upperBound - 2 }, (_, index) => index + 3);
-
-    const resultingSequence = sequence.filter(evaluateCriteria);
-
-    const outputText = resultingSequence.join(' ');
-
-    process.stdout.write(outputText + '\n');
+const selectedValues = numberSequence.filter(currentValue => {
+    const isMultipleOfThree = currentValue % 3 === 0;
+    const stringRepresentation = String(currentValue);
+    const containsDigitThree = stringRepresentation.includes('3');
+    return isMultipleOfThree || containsDigitThree;
 });
+
+const finalOutputString = selectedValues.join(' ');
+
+console.log(finalOutputString);

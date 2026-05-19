@@ -1,67 +1,60 @@
 'use strict';
 
-const processGridData = (rawText) => {
-    const lineSegments = rawText.trim().split('\n');
-    const [dimensionYStr, dimensionXStr] = lineSegments[0].split(' ');
-    const totalRows = Number(dimensionYStr);
-    const totalCols = Number(dimensionXStr);
+const processInputData = (rawInput) => {
+    const inputLines = rawInput.split('\n');
+    const dimensionsStr = inputLines[0].split(' ');
+    const rowCount = Number(dimensionsStr[0]);
+    const colCount = Number(dimensionsStr[1]);
 
-    const initialCellMatrix = lineSegments.slice(1).map(rowSegment =>
-        rowSegment.split(' ').map(Number)
+    const valueGrid = Array.from({ length: rowCount }, (_, rIdx) =>
+        inputLines[rIdx + 1].split(' ').map(Number)
     );
 
-    const allCellLocations = Array.from({ length: totalRows }, (_, rIdx) =>
-        Array.from({ length: totalCols }, (_, cIdx) => [rIdx, cIdx])
-    ).flat();
+    const operationLog = [];
 
-    const processingState = {
-        currentMatrix: initialCellMatrix,
-        transferRecords: []
+    const transferOddness = (fromCol, fromRow, toCol, toRow) => {
+        operationLog.push({ fromCol, fromRow, toCol, toRow });
+        valueGrid[toRow][toCol]++;
+        valueGrid[fromRow][fromCol]--;
     };
 
-    const finalProcessingResult = allCellLocations.reduce((accumulator, currentCoord) => {
-        const [currentRow, currentCol] = currentCoord;
-        const valueAtCurrentCell = accumulator.currentMatrix[currentRow][currentCol];
+    const displacementOptions = [
+        { dc: 1, dr: 0 }, // Attempt to move right
+        { dc: 0, dr: 1 }  // Otherwise, attempt to move down
+    ];
 
-        if (valueAtCurrentCell % 2 !== 0) {
-            let targetRow = currentRow;
-            let targetCol = currentCol;
-            let transferHappened = false;
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+        for (let colIndex = 0; colIndex < colCount; colIndex++) {
+            if (valueGrid[rowIndex][colIndex] % 2 !== 0) {
+                const chosenDisplacement = displacementOptions.find(disp => {
+                    const nextCol = colIndex + disp.dc;
+                    const nextRow = rowIndex + disp.dr;
+                    return nextCol < colCount && nextRow < rowCount;
+                });
 
-            if (currentCol + 1 < totalCols) {
-                targetCol = currentCol + 1;
-                transferHappened = true;
-            } else if (currentRow + 1 < totalRows) {
-                targetRow = currentRow + 1;
-                transferHappened = true;
-            }
-
-            if (transferHappened) {
-                const nextMatrixState = accumulator.currentMatrix.map(r => [...r]);
-                
-                nextMatrixState[currentRow][currentCol]--;
-                nextMatrixState[targetRow][targetCol]++;
-
-                const operationDescription = `${currentCol} ${currentRow} ${targetCol} ${targetRow}`;
-                
-                return {
-                    currentMatrix: nextMatrixState,
-                    transferRecords: [...accumulator.transferRecords, operationDescription]
-                };
+                if (chosenDisplacement) {
+                    transferOddness(
+                        colIndex,
+                        rowIndex,
+                        colIndex + chosenDisplacement.dc,
+                        rowIndex + chosenDisplacement.dr
+                    );
+                }
             }
         }
-        return accumulator;
-    }, processingState);
+    }
 
-    console.log(finalProcessingResult.transferRecords.length.toString());
-    finalProcessingResult.transferRecords.forEach(record => console.log(record));
-    console.log('');
+    console.log(operationLog.length);
+    const formattedLog = operationLog.map(op =>
+        `${op.fromCol} ${op.fromRow} ${op.toCol} ${op.toRow}`
+    );
+    console.log(formattedLog.join('\n') + '\n');
 };
 
-const isExecutionTest = false;
+const isTestMode = false;
 
-if (isExecutionTest) {
-    processGridData('2 3\n1 2 3\n0 1 1\n');
+if (isTestMode) {
+    processInputData('2 3\n1 2 3\n0 1 1\n');
 } else {
-    processGridData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
 }

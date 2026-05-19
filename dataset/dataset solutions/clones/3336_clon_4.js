@@ -1,40 +1,57 @@
 'use strict'
 
-const executeProgram = (sourceData) => {
-  const allLines = sourceData.split('\n');
-  const quantity = Number(allLines[0]);
-  const numbers = allLines[1].split(' ').map(Number);
+function calculateGameOutcome(elementCount, numberSequence) {
+    const scoreCache = Array.from({ length: elementCount }, () =>
+        Array(elementCount).fill(null)
+    );
 
-  const finalScoreDiff = determineGameOutcome(quantity, numbers);
-  console.log(finalScoreDiff);
-};
+    const computeOptimalScore = (leftIdx, rightIdx) => {
+        if (leftIdx > rightIdx) {
+            return 0;
+        }
 
-const determineGameOutcome = (arrayLength, valueArray) => {
-  const memoizationMap = new Map();
+        if (scoreCache[leftIdx][rightIdx] !== null) {
+            return scoreCache[leftIdx][rightIdx];
+        }
 
-  const obtainScoreDifference = (beginIdx, endIdx) => {
-    if (beginIdx > endIdx) {
-      return 0;
-    }
-    if (beginIdx === endIdx) {
-      return valueArray[beginIdx];
-    }
+        let currentOptimalScore;
 
-    const cacheKey = `${beginIdx},${endIdx}`;
-    if (memoizationMap.has(cacheKey)) {
-      return memoizationMap.get(cacheKey);
-    }
+        if (leftIdx === rightIdx) {
+            currentOptimalScore = numberSequence[leftIdx];
+        } else if (leftIdx + 1 === rightIdx) {
+            currentOptimalScore = Math.max(numberSequence[leftIdx], numberSequence[rightIdx]);
+        } else {
+            const scoreIfLeftTaken = numberSequence[leftIdx] + Math.min(
+                computeOptimalScore(leftIdx + 2, rightIdx),
+                computeOptimalScore(leftIdx + 1, rightIdx - 1)
+            );
 
-    const valueFromLeft = valueArray[beginIdx] - obtainScoreDifference(beginIdx + 1, endIdx);
-    const valueFromRight = valueArray[endIdx] - obtainScoreDifference(beginIdx, endIdx - 1);
+            const scoreIfRightTaken = numberSequence[rightIdx] + Math.min(
+                computeOptimalScore(leftIdx + 1, rightIdx - 1),
+                computeOptimalScore(leftIdx, rightIdx - 2)
+            );
 
-    const maximumDifference = Math.max(valueFromLeft, valueFromRight);
+            currentOptimalScore = Math.max(scoreIfLeftTaken, scoreIfRightTaken);
+        }
 
-    memoizationMap.set(cacheKey, maximumDifference);
-    return maximumDifference;
-  };
+        scoreCache[leftIdx][rightIdx] = currentOptimalScore;
+        return currentOptimalScore;
+    };
 
-  return obtainScoreDifference(0, arrayLength - 1);
-};
+    const playerOneFinalScore = computeOptimalScore(0, elementCount - 1);
+    const totalSequenceValue = numberSequence.reduce((accumulator, currentVal) => accumulator + currentVal, 0);
+    const playerTwoFinalScore = totalSequenceValue - playerOneFinalScore;
 
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    return playerOneFinalScore - playerTwoFinalScore;
+}
+
+function processInputAndDisplay(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const parsedCount = Number(inputLines[0]);
+    const numericSequence = inputLines[1].split(' ').map(val => Number(val));
+
+    const finalResult = calculateGameOutcome(parsedCount, numericSequence);
+    console.log(finalResult);
+}
+
+processInputAndDisplay(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

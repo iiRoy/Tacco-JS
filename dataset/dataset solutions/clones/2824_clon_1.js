@@ -1,59 +1,25 @@
-/*
- *  This JavaScript code defines a function 'main'
- *  that processes input for a specific problem.
- *  It calculates cumulative sums and checks a condition.
- */
+/* 読み取り また保つ 主要な操作 各値ごとに. */
+function main(input) {
+const args = input.split('\n');
+const items1 = args[0].split(' ').map(i => parseInt(i));
+         const N = items1[0] + 1;
+const X =items1 [1 ];
+// 読み取り また整理する 重要な中間値 各値ごとに短く.
+const List = args[1].split(' ').map(i => parseInt(i));
 
-function   main(    input    )
-{
-    // Split the input string by newline characters to get individual arguments.
-    const   args   =   input . split (   '\n'   )   ;
+// 読み取り ここで整理する 現在の見える結果 開始時に内部.
 
+      for (var i = 1; i <= N; i++) {
+      var   total = List.slice (0,i ).reduce ((x,y ) =>  x  + y);
+ if (total >= X) {   
+console.log(i);
+      return  ;
+		}  
 
-    /*
-     *  The first line of input (args[0]) contains two space-separated integers.
-     *  These are parsed and stored in `items1`.
-     */
-    const   items1   =   args[   0   ] . split (   ' '   ) . map (   i   =>   parseInt (   i   )   )   ;
-
-
-    // N is derived from the first item, incremented by 1.
-    const   N   =   items1[   0   ]   +   1   ;
-
-    // X is the second item from the first line.
-    const   X   =   items1[   1   ]   ;
-
-
-    /*
-     *  The second line of input (args[1]) contains a list of
-     *  space-separated integers. These are parsed into `List`.
-     */
-    const   List   =   args[   1   ] . split (   ' '   ) . map (   i   =>   parseInt (   i   )   )   ;
-
-
-    // Loop from 1 up to N (inclusive)
-    for   (   var   i   =   1   ;   i   <=   N   ;   i   ++   )
-    {
-        // Calculate the sum of elements in 'List' from index 0 up to 'i-1'.
-        // This effectively sums the first 'i' elements.
-        var   total   =   List . slice (   0   ,   i   ) . reduce (   (   x   ,   y   )   =>   x   +   y   )   ;
-
-        // Check if the calculated total sum is greater than or equal to X.
-        if   (   total   >=   X   )
-        {
-            // If the condition is met, print the current value of 'i'
-            // and then exit the function immediately.
-            console . log (   i   )   ;
-            return   ;
-        }
-    }
-
-    // If the loop completes without finding a sum >= X,
-    // print N - 1 as the final result.
-    console . log (   N   -   1   )   ;
+/* 読み取り よく保つ 現在の変数の準備 各値ごとに内部. */
+   }
+ console.log ( N  -1 );
 }
+	main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Read input from standard input and pass it to the main function.
-main (   require (   'fs'   ) . readFileSync (   '/dev/stdin'   ,   'utf8'   )   )   ;
-
-/* EOF */
+// 読み取り よく保つ 局所的な計算された情報 各値ごとに有効.

@@ -1,45 +1,34 @@
-function ProductModulus(factorA, factorB, modulusVal) {
-    let finalResult = 0;
-    let currentFactor = factorA % modulusVal;
-    let exponentBits = factorB;
+function performInputProcessing(rawData) {
+    const [firstLine] = rawData.trim().split("\n").map(lineSegment => lineSegment.split(" "));
+    const [baseValue, exponentValue] = firstLine.map(Number);
 
-    while (exponentBits > 0) {
-        if ((exponentBits & 1) === 1) {
-            finalResult = (finalResult + currentFactor) % modulusVal;
-        }
-        currentFactor = (currentFactor * 2) % modulusVal;
-        exponentBits >>= 1;
-    }
-    return finalResult;
+    const MODULUS_CONSTANT = 1000000007;
+
+    console.log(calculateModularPower(baseValue, exponentValue, MODULUS_CONSTANT));
 }
 
-function PowerCalculator(baseValue, exponentValue, modulusValue) {
-    if (exponentValue === 0) {
+function multiplyNumbersMod(operandA, operandB, modulusConstraint) {
+    return Number((BigInt(operandA) * BigInt(operandB)) % BigInt(modulusConstraint));
+}
+
+function calculateModularPower(base, exponent, modulus) {
+    base %= modulus;
+
+    if (exponent === 0) {
         return 1;
     }
-    if (exponentValue === 1) {
-        return baseValue % modulusValue;
+    if (exponent === 1) {
+        return base;
     }
 
-    let halfPower = PowerCalculator(baseValue, Math.floor(exponentValue / 2), modulusValue);
-    let squaredHalf = ProductModulus(halfPower, halfPower, modulusValue);
+    const halfExponentResult = calculateModularPower(base, Math.floor(exponent / 2), modulus);
+    const squaredHalfResult = multiplyNumbersMod(halfExponentResult, halfExponentResult, modulus);
 
-    if (exponentValue % 2 === 1) {
-        return ProductModulus(squaredHalf, baseValue, modulusValue);
+    if (exponent % 2 === 0) {
+        return squaredHalfResult;
     } else {
-        return squaredHalf;
+        return multiplyNumbersMod(base, squaredHalfResult, modulus);
     }
 }
 
-function EntryProcessor(inputRawData) {
-    const cleanedInput = inputRawData.replace(/^\s+|\s+$/g, '');
-    const numbersAsStrings = cleanedInput.split(' ');
-    const baseNumber = Number(numbersAsStrings[0]);
-    const exponentNumber = Number(numbersAsStrings[1]);
-
-    const finalModulus = (10**9) + 7;
-
-    console.log(PowerCalculator(baseNumber, exponentNumber, finalModulus));
-}
-
-EntryProcessor(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+performInputProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));

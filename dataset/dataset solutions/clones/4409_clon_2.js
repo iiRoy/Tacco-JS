@@ -1,67 +1,76 @@
-function displayMessage(messageContent){
-  console.log(messageContent); // Output a given string to the console
-}
+function logResult(message) {
+  console.log(message);
+} // Standard output utility
 
-function ProcessData(rawData) {
-  // The following lines are examples of various input parsing strategies.
-  // rawData = parseInt(rawData); // Convert input to an integer
-  // rawData = rawData.trim().split(" "); // Split input by spaces into an array
-  rawData = rawData.trim().split("\n"); // The active input processing: split by newlines
-  // rawData = rawData.trim().split(" ").map((element)=>Number(element)); // Split by spaces and convert elements to numbers
-  // rawData = rawData.trim().split("\n").map((element)=>Number(element)); // Split by newlines and convert elements to numbers
+function processGridData(rawInputString) {
+  // Parse the incoming text data.
+  // The input is expected to be multiple lines of text.
+  let parsedLines = rawInputString.trim().split("\n");
 
   /*
-   * This section describes the logic for calculating arrangements in a 2xN grid.
-   * Consider a 2x2 block:
-   * - If the first column is vertical (top char == bottom char), there are 3 ways to fill it.
-   * - If the first column is horizontal (top char != bottom char), there are 6 ways to fill the first 2 columns.
-   *
-   * Subsequent columns depend on the previous column's orientation (vertical or horizontal).
-   * - If the previous column was vertical, and the current column is vertical, 2 ways.
-   * - If the previous column was vertical, and the current column is horizontal, 2 ways.
-   * - If the previous column was horizontal, and the current column is vertical, 1 way.
-   * - If the previous column was horizontal, and the current column is horizontal, 3 ways.
-   */
+  Consider patterns for a 2xN grid:
+  -   'abcd' -> The leftmost column has 3 initial choices.
+  -   'abcd' -> Subsequent horizontal pairs have 2 choices.
+  -------------------------------------------------------
+  -   'aac'  -> Top-left has 3 choices, bottom-left has 2 choices = 6 total.
+  -   'bbc'  -> The next vertical pair always has only 1 choice.
+  -------------------------------------------------------
+  -   'aacc' -> Top-left has 3 choices, bottom-left has 2 choices.
+  -   'bbdd' -> The right side can be 'inverted from left', 'top different', or 'bottom different' - 3 patterns.
+  -------------------------------------------------------
+  -   'abb'  -> If the left side is fixed,
+  -   'acc'  -> The top and bottom together have 2 patterns.
+  */
 
-  var gridSize = parseInt(rawData[0]); // Extract the grid dimension from the first line of input
-  var firstRowChars = rawData[1].split(""); // Get characters for the first row
-  var secondRowChars = rawData[2].split(""); // Get characters for the second row
-  var totalArrangements = 1; // Initialize the count of unique arrangements
-  var moduloValue = 1000000007; // A large prime number for modulo operations
-  var wasVertical = true; // Flag to track if the preceding block was arranged vertically (true) or horizontally (false)
+  let gridDimension = parseInt(parsedLines[0]);
+  let topRowCharacters = parsedLines[1].split("");
+  let bottomRowCharacters = parsedLines[2].split("");
+  let totalArrangements = 1;
+  const modulusValue = 1000000007;
+  let prevWasVertical = true; // Flag: true if the previous segment was vertical (single column), false if horizontal (two columns)
 
-  for(var columnIndex = 0; columnIndex < gridSize; columnIndex++) {
-    if(columnIndex == 0) { // Special handling for the very first column
-      if(firstRowChars[columnIndex] == secondRowChars[columnIndex]) {
-        totalArrangements = totalArrangements * 3 % moduloValue; // First column is vertical: 3 options
+  for (let currentIdx = 0; currentIdx < gridDimension; currentIdx++) {
+    if (currentIdx === 0) {
+      // Handling the very first segment
+      if (topRowCharacters[currentIdx] === bottomRowCharacters[currentIdx]) {
+        // First segment is a vertical pair (e.g., 'a' over 'a')
+        totalArrangements = (totalArrangements * 3) % modulusValue;
+        // prevWasVertical remains true
       } else {
-        totalArrangements = totalArrangements * 6 % moduloValue; // First two columns are horizontal: 6 options
-        columnIndex++; // Consume the next column as well
-        wasVertical = false; // Mark the current block as horizontal
+        // First segment is a horizontal pair (e.g., 'a' over 'b')
+        totalArrangements = (totalArrangements * 6) % modulusValue;
+        currentIdx++; // Consume the next character as well
+        prevWasVertical = false; // Mark as horizontal
       }
-    } else { // Processing for subsequent columns
-      if(wasVertical) { // If the previous block was vertical
-        totalArrangements = totalArrangements * 2 % moduloValue; // Always 2 options when extending from a vertical block
-        if(firstRowChars[columnIndex] == secondRowChars[columnIndex]) {
-          wasVertical = true; // Current column is vertical, so the next block starts vertically
+    } else {
+      // Handling subsequent segments
+      if (prevWasVertical) {
+        // If the previous segment was vertical
+        totalArrangements = (totalArrangements * 2) % modulusValue;
+        if (topRowCharacters[currentIdx] === bottomRowCharacters[currentIdx]) {
+          // Current segment is also vertical
+          prevWasVertical = true;
         } else {
-          columnIndex++; // Current column is horizontal, consume next column
-          wasVertical = false; // Mark the current block as horizontal
+          // Current segment is horizontal
+          currentIdx++; // Consume the next character
+          prevWasVertical = false;
         }
-      } else { // If the previous block was horizontal
-        if(firstRowChars[columnIndex] == secondRowChars[columnIndex]) {
-          wasVertical = true; // Current column is vertical, next block starts vertically
+      } else {
+        // If the previous segment was horizontal
+        if (topRowCharacters[currentIdx] === bottomRowCharacters[currentIdx]) {
+          // Current segment is vertical
+          prevWasVertical = true;
         } else {
-          totalArrangements = totalArrangements * 3 % moduloValue; // Current block is horizontal, 3 options
-          columnIndex++; // Consume next column
-          wasVertical = false; // Mark the current block as horizontal
+          // Current segment is horizontal
+          totalArrangements = (totalArrangements * 3) % modulusValue;
+          currentIdx++; // Consume the next character
+          prevWasVertical = false;
         }
       }
     }
-    // Debugging line (originally commented out): displayMessage(firstRowChars[columnIndex]+secondRowChars[columnIndex] + ":" + totalArrangements);
+    // logResult(topRowCharacters[currentIdx] + bottomRowCharacters[currentIdx] + ":" + totalArrangements); // Debugging line
   }
-  displayMessage(totalArrangements); // Output the final calculated number of arrangements
+  logResult(totalArrangements);
 }
 
-// Read input from standard input, trim whitespace, and pass it to the main processing function
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

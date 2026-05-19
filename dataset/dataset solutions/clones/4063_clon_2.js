@@ -1,162 +1,146 @@
-// Function to process graph relationship data and check for consistency
-function ProcessGraphData(rawInputData) {
+function ProcessInputData(rawData) {
+    // Split the raw input string into individual lines.
+    let processedLines = rawData.split("\n");
 
-  // Split the entire input string into an array of individual lines.
-  // This prepares the data for line-by-line parsing.
-  const parsedLines = rawInputData.split("\n");
+    // Parse the first line to get the number of nodes and constraints.
+    const firstLineValues = processedLines[0].split(" ").map(element => parseInt(element, 10));
 
-  // The first line of input typically contains global parameters.
-  // Here, it's split by spaces and each segment is converted to an integer.
-  const globalDimensions = parsedLines[0].split(" ").map(strVal => parseInt(strVal));
+    // Extract the total number of nodes.
+    const nodeCount = firstLineValues[0];
 
-  // The first value from the global dimensions represents the total number of nodes in the graph.
-  const nodeCount = globalDimensions[0];
-  // The second value represents the total number of relationships or edges provided.
-  const relationCount = globalDimensions[1];
+    // Extract the total number of constraints.
+    let constraintCount = firstLineValues[1];
 
-  // Initialize three dynamic arrays to store the components of each relationship:
-  // `leftNodes`: Stores the starting node of each directed relation.
-  // `rightNodes`: Stores the ending node of each directed relation.
-  // `nodeDistances`: Stores the distance or difference value associated with each relation.
-  let leftNodes = [];
-  let rightNodes = [];
-  let nodeDistances = [];
+    // Initialize arrays to store the left nodes, right nodes, and their distances for each constraint.
+    const leftNodes = [];
+    const rightNodes = [];
+    const distances = [];
 
-  // Iterate through the input lines, starting from the second line (index 1),
-  // to populate the relationship arrays. Each line defines a single relation.
-  for (let currentIdx = 0; currentIdx < relationCount; currentIdx++) {
-    // Parse the current relationship line, splitting it by spaces and converting parts to integers.
-    const currentRelationData = parsedLines[currentIdx + 1].split(" ").map(numStr => parseInt(numStr));
-    // Assign the first integer as the left node.
-    leftNodes[currentIdx] = currentRelationData[0];
-    // Assign the second integer as the right node.
-    rightNodes[currentIdx] = currentRelationData[1];
-    // Assign the third integer as the distance/difference.
-    nodeDistances[currentIdx] = currentRelationData[2];
-  }
-
-  // Create an array to hold the calculated position or coordinate for each node.
-  // It's initialized with a size of `nodeCount + 1` to support 1-based indexing of nodes.
-  // All elements are initially `undefined`.
-  let positionMap = new Array(nodeCount + 1);
-
-  // Initialize a string flag to "Yes", indicating that the graph is consistent by default.
-  // This flag will be changed to "No" if any inconsistency is detected.
-  let consistencyStatus = "Yes";
-
-  // Declare variables for loop control within the main processing logic.
-  // `outerLoopIdx`: Used for iterating through the main list of relations.
-  // `innerLoopCounter`: Controls an inner processing loop, often related to queue size.
-  // `currentCheckNode`: Holds the node currently being processed from the queue.
-  let outerLoopIdx = leftNodes.length - 1; // Start processing from the last added relation.
-  let innerLoopCounter;
-  let currentCheckNode;
-
-  // A queue (implemented as an array) to store nodes that need to be visited or re-evaluated
-  // to propagate position information.
-  let nodesToProcess = [];
-
-  // This label allows for a multi-level `break` statement, enabling an immediate exit
-  // from all nested loops if an inconsistency is found.
-  mainProcessingLoop:
-  while (outerLoopIdx >= 0) {
-    // For the current relation `(leftNodes[outerLoopIdx], rightNodes[outerLoopIdx], nodeDistances[outerLoopIdx])`,
-    // we establish a relative positioning. The left node's position is arbitrarily set to 0.
-    positionMap[leftNodes[outerLoopIdx]] = 0;
-    // The right node's position is then determined relative to the left node's position and their distance.
-    positionMap[rightNodes[outerLoopIdx]] = nodeDistances[outerLoopIdx];
-
-    // Add both nodes from the current relation to the queue for further processing.
-    // These nodes will be used to explore connected relations.
-    nodesToProcess = [leftNodes[outerLoopIdx], rightNodes[outerLoopIdx]];
-
-    // Remove the relation that was just used to establish initial positions.
-    // This prevents re-processing the same relation. `pop()` is efficient for removing from the end.
-    leftNodes.pop();
-    rightNodes.pop();
-    nodeDistances.pop();
-
-    // Initialize the inner loop counter based on the number of nodes just added to the queue.
-    innerLoopCounter = 2;
-
-    // This loop continues as long as there are nodes in the `nodesToProcess` queue.
-    while (innerLoopCounter) {
-      // Retrieve the last node from the queue for processing.
-      currentCheckNode = nodesToProcess[innerLoopCounter - 1];
-      // Remove the node from the queue as it's about to be processed.
-      nodesToProcess.pop();
-
-      // Search for any remaining relations where `currentCheckNode` acts as the left node.
-      // `outerLoopIdx` is reused here to store the index of such a relation.
-      outerLoopIdx = leftNodes.findIndex(itemVal => itemVal === currentCheckNode);
-
-      // Process all relations where `currentCheckNode` is the left node.
-      while (outerLoopIdx >= 0) {
-        // Check if the position of the right node in this relation is already known.
-        if (positionMap[rightNodes[outerLoopIdx]] !== undefined) {
-          // If known, verify if its existing position is consistent with the current relation's data.
-          // Consistency means `position(R) === position(L) + distance`.
-          if (positionMap[rightNodes[outerLoopIdx]] !== positionMap[leftNodes[outerLoopIdx]] + nodeDistances[outerLoopIdx]) {
-            // If an inconsistency is detected, set the status to "No" and break out of all loops.
-            consistencyStatus = "No";
-            break mainProcessingLoop;
-          }
-        } else {
-          // If the right node's position is not yet known, calculate it based on the left node's position and the distance.
-          positionMap[rightNodes[outerLoopIdx]] = positionMap[leftNodes[outerLoopIdx]] + nodeDistances[outerLoopIdx];
-          // Add this newly positioned node to the queue, as its connections might need to be explored.
-          nodesToProcess.push(rightNodes[outerLoopIdx]);
-        }
-        // Remove the relation that has just been processed to avoid re-evaluation.
-        // `splice` is used as `findIndex` might return an index in the middle of the array.
-        leftNodes.splice(outerLoopIdx, 1);
-        rightNodes.splice(outerLoopIdx, 1);
-        nodeDistances.splice(outerLoopIdx, 1);
-        // Search for the next relation where `currentCheckNode` is still the left node.
-        outerLoopIdx = leftNodes.findIndex(itemVal => itemVal === currentCheckNode);
-      }
-
-      // Now, search for any remaining relations where `currentCheckNode` acts as the right node.
-      outerLoopIdx = rightNodes.findIndex(itemVal => itemVal === currentCheckNode);
-
-      // Process all relations where `currentCheckNode` is the right node.
-      while (outerLoopIdx >= 0) {
-        // Check if the position of the left node in this relation is already known.
-        if (positionMap[leftNodes[outerLoopIdx]] !== undefined) {
-          // If known, verify if its existing position is consistent with the current relation's data.
-          // Consistency means `position(L) === position(R) - distance`.
-          if (positionMap[leftNodes[outerLoopIdx]] !== positionMap[rightNodes[outerLoopIdx]] - nodeDistances[outerLoopIdx]) {
-            // If an inconsistency is detected, set the status to "No" and break out of all loops.
-            consistencyStatus = "No";
-            break mainProcessingLoop;
-          }
-        } else {
-          // If the left node's position is not yet known, calculate it.
-          positionMap[leftNodes[outerLoopIdx]] = positionMap[rightNodes[outerLoopIdx]] - nodeDistances[outerLoopIdx];
-          // Add this newly positioned node to the queue for further exploration.
-          nodesToProcess.push(leftNodes[outerLoopIdx]);
-        }
-        // Remove the processed relation.
-        leftNodes.splice(outerLoopIdx, 1);
-        rightNodes.splice(outerLoopIdx, 1);
-        nodeDistances.splice(outerLoopIdx, 1);
-        // Search for the next relation where `currentCheckNode` is still the right node.
-        outerLoopIdx = rightNodes.findIndex(itemVal => itemVal === currentCheckNode);
-      }
-      // Update the `innerLoopCounter` based on the current number of nodes remaining in the queue.
-      // This ensures the loop continues as long as there are nodes to process.
-      innerLoopCounter = nodesToProcess.length;
+    // Populate the constraint arrays from the input lines.
+    for (let idx = 0; idx < constraintCount; idx++) {
+        const currentConstraint = processedLines[idx + 1].split(" ").map(val => parseInt(val, 10));
+        leftNodes[idx] = currentConstraint[0];
+        rightNodes[idx] = currentConstraint[1];
+        distances[idx] = currentConstraint[2];
     }
-    // After processing all nodes reachable from the initial relation (and consuming its related edges),
-    // move to the next unprocessed relation in the main list.
-    // The main list shrinks as relations are processed and removed.
-    outerLoopIdx = leftNodes.length - 1;
-  }
 
-  // Output the final consistency status to the console.
-  console.log(consistencyStatus);
+    // Initialize an array to store the calculated positions of each node.
+    // The size is N+1 because node IDs are 1-indexed.
+    const nodePositions = new Array(nodeCount + 1);
+
+    // Initialize the result status, assuming "Yes" until a contradiction is found.
+    let resultStatus = "Yes";
+
+    // Initialize variables for the main processing loop.
+    let currentConstraintIndex = leftNodes.length - 1;
+    let queueSize;
+    let currentNodeIdentifier;
+
+    // Initialize a queue for nodes whose positions have been determined and need to be propagated.
+    const processingQueue = [];
+
+    // Label for breaking out of the main outer loop if a contradiction is found.
+    mainLoopBreak:
+    // Process constraints from the end of the list, working backwards.
+    while (currentConstraintIndex >= 0) {
+        // If the positions of the nodes in the current constraint are not yet known,
+        // assign a relative position to them.
+        // This effectively sets the first encountered L[i] to 0 and R[i] to D[i]
+        // within its connected component.
+        if (nodePositions[leftNodes[currentConstraintIndex]] === undefined && nodePositions[rightNodes[currentConstraintIndex]] === undefined) {
+            nodePositions[leftNodes[currentConstraintIndex]] = 0;
+            nodePositions[rightNodes[currentConstraintIndex]] = distances[currentConstraintIndex];
+        } else if (nodePositions[leftNodes[currentConstraintIndex]] === undefined) {
+            // If only the left node's position is unknown, calculate it based on the right node.
+            nodePositions[leftNodes[currentConstraintIndex]] = nodePositions[rightNodes[currentConstraintIndex]] - distances[currentConstraintIndex];
+        } else if (nodePositions[rightNodes[currentConstraintIndex]] === undefined) {
+            // If only the right node's position is unknown, calculate it based on the left node.
+            nodePositions[rightNodes[currentConstraintIndex]] = nodePositions[leftNodes[currentConstraintIndex]] + distances[currentConstraintIndex];
+        } else {
+            // If both are known, check for consistency.
+            if (nodePositions[rightNodes[currentConstraintIndex]] !== nodePositions[leftNodes[currentConstraintIndex]] + distances[currentConstraintIndex]) {
+                resultStatus = "No";
+                break mainLoopBreak;
+            }
+            // If consistent, this constraint is already satisfied and doesn't need further processing.
+            // Remove it and continue to the next constraint.
+            leftNodes.splice(currentConstraintIndex, 1);
+            rightNodes.splice(currentConstraintIndex, 1);
+            distances.splice(currentConstraintIndex, 1);
+            currentConstraintIndex--;
+            continue; // Skip the rest of the loop body for this iteration
+        }
+
+        // Clear the processing queue and add the two nodes from the current constraint.
+        processingQueue.length = 0;
+        processingQueue.push(leftNodes[currentConstraintIndex], rightNodes[currentConstraintIndex]);
+
+        // Remove the current constraint from the lists as it has been processed.
+        leftNodes.pop();
+        rightNodes.pop();
+        distances.pop();
+
+        // Initialize queue size for the inner propagation loop.
+        queueSize = processingQueue.length;
+
+        // Propagate position information through connected nodes.
+        while (queueSize > 0) {
+            // Get the next node to process from the queue.
+            currentNodeIdentifier = processingQueue.pop();
+
+            // Search for constraints where the current node is the left node.
+            let searchIndexLeft = leftNodes.findIndex(element => element === currentNodeIdentifier);
+            while (searchIndexLeft >= 0) {
+                // If the right node's position is already known, check for consistency.
+                if (nodePositions[rightNodes[searchIndexLeft]] !== undefined) {
+                    if (nodePositions[rightNodes[searchIndexLeft]] !== nodePositions[leftNodes[searchIndexLeft]] + distances[searchIndexLeft]) {
+                        resultStatus = "No";
+                        break mainLoopBreak; // Contradiction found, exit all loops.
+                    }
+                } else {
+                    // If the right node's position is unknown, calculate it and add it to the queue.
+                    nodePositions[rightNodes[searchIndexLeft]] = nodePositions[leftNodes[searchIndexLeft]] + distances[searchIndexLeft];
+                    processingQueue.push(rightNodes[searchIndexLeft]);
+                }
+                // Remove the processed constraint.
+                leftNodes.splice(searchIndexLeft, 1);
+                rightNodes.splice(searchIndexLeft, 1);
+                distances.splice(searchIndexLeft, 1);
+                // Search for the next occurrence of the current node as a left node.
+                searchIndexLeft = leftNodes.findIndex(element => element === currentNodeIdentifier);
+            }
+
+            // Search for constraints where the current node is the right node.
+            let searchIndexRight = rightNodes.findIndex(element => element === currentNodeIdentifier);
+            while (searchIndexRight >= 0) {
+                // If the left node's position is already known, check for consistency.
+                if (nodePositions[leftNodes[searchIndexRight]] !== undefined) {
+                    if (nodePositions[leftNodes[searchIndexRight]] !== nodePositions[rightNodes[searchIndexRight]] - distances[searchIndexRight]) {
+                        resultStatus = "No";
+                        break mainLoopBreak; // Contradiction found, exit all loops.
+                    }
+                } else {
+                    // If the left node's position is unknown, calculate it and add it to the queue.
+                    nodePositions[leftNodes[searchIndexRight]] = nodePositions[rightNodes[searchIndexRight]] - distances[searchIndexRight];
+                    processingQueue.push(leftNodes[searchIndexRight]);
+                }
+                // Remove the processed constraint.
+                leftNodes.splice(searchIndexRight, 1);
+                rightNodes.splice(searchIndexRight, 1);
+                distances.splice(searchIndexRight, 1);
+                // Search for the next occurrence of the current node as a right node.
+                searchIndexRight = rightNodes.findIndex(element => element === currentNodeIdentifier);
+            }
+            // Update the queue size for the next iteration of the propagation loop.
+            queueSize = processingQueue.length;
+        }
+        // Move to the next constraint in the original list (or what's left of it).
+        currentConstraintIndex = leftNodes.length - 1;
+    }
+
+    // Output the final result.
+    console.log(resultStatus);
 }
 
-// This line executes the `ProcessGraphData` function, providing it with input
-// read synchronously from standard input ("/dev/stdin") as a UTF-8 string.
-ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

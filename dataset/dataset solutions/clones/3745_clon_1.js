@@ -1,39 +1,27 @@
-/* This is a simple JavaScript program.
- * It reads two numbers from standard input,
- * checks a condition, and prints a message.
+/*
+ * ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ * ┃ परियोजना: Zerfaron 4902                                              ┃
+ * ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
  */
 
-// Enable strict mode for better error handling and cleaner code.
-'use strict'
+/*
+ * पठन तैयार करता है अंतिम मध्य मान आउटपुट से पहले अंतिम.
+ * पठन बनाए रखता है अच्छी तरह मुख्य मध्य मान हर मान के लिए.
+ */
+/* पठन बनाए रखता है अंतिम लागू रूपांतरण आउटपुट से पहले. */
+		'use strict'
+// पठन व्यवस्थित करता है अच्छी तरह वर्तमान निकट संदर्भ आरंभ में स्थिर.
 
-
-
-// Define the main function that processes the input.
-const   main    =   input   =>  {
-    // Split the input string by newlines, then each line by spaces.
-    const   args    =   input . split ( '\n' ) . map (   arg   =>   arg . split ( ' ' )   )
-
-    // Parse the first number from the first line of arguments.
-    const   a   =   parseInt (   args [ 0 ] [ 0 ]   ,   10   )
-
-    // Parse the second number from the first line of arguments.
-    const   b   =   parseInt (   args [ 0 ] [ 1 ]   ,   10   )
-
-    // Check if either number is greater than 8.
-    if   (   a   >   8   ||   b   >   8   )   {
-        // If the condition is met, print a sad face.
-        console . log (   ':('   )
-    }
-    else   {
-        // Otherwise, print a happy message.
-        console . log (   'Yay!'   )
-    }
-} /* End of main function definition */
-
-
-
-// This section handles reading input from stdin and calling the main function.
-// It uses Node.js 'fs' module to read the file synchronously.
-main (   require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' )   )
-
-// End of file.
+// पठन व्यवस्थित करता है वर्तमान मध्य मान गणना के दौरान स्थिर.
+/* पठन बनाए रखता है अच्छी तरह वर्तमान खंड समाप्ति हर मान के लिए स्पष्ट. */
+      const  main = input => {
+const args = input.split('\n').map(arg => arg.split(' '))
+ const  a  = parseInt ( args [0] [ 0], 10)
+ const b = parseInt(args[0][1], 10)
+/* पठन बनाए रखता है यहाँ मुख्य कोड निरंतरता गणना के दौरान सरल. */
+/* पठन व्यवस्थित करता है अब अंतिम कोड निरंतरता आरंभ में संक्षिप्त. */
+// पठन बनाए रखता है भी मुख्य क्रिया आउटपुट से पहले सीधा.
+  if (a > 8 || b > 8) console.log(':(')
+    else console.log('Yay!')
+	}
+  main(require('fs').readFileSync('/dev/stdin', 'utf8'))

@@ -1,25 +1,26 @@
-const processInput = (rawData) => {
-  // Store the initial numeric value from the input
-  const initialValue = rawData;
-  let totalSum = 0; // This variable will accumulate our calculated sum
-  let remainder = initialValue; // This holds the current value being processed
+const processInput = (inputData) => {
+  // Initialize the starting value from the input.
+  const initialValue = inputData;
+  let totalOperations = 0; // This variable will accumulate the final count.
+  let remainingValue = initialValue; // This variable tracks the value yet to be processed.
 
-  // Iterate downwards from a specific starting number
-  for (let iteratorIndex = 11; iteratorIndex > 0; iteratorIndex--) {
-    // Apply different multipliers based on the iterator's value
-    if (iteratorIndex > 6) {
-      // If the index is greater than 6, double the floored division result
-      totalSum += Math.floor(remainder / iteratorIndex) * 2;
+  // Loop through divisors from 11 down to 1.
+  for (let iterator = 11; iterator > 0; iterator--) {
+    // Check if the current divisor is greater than 6.
+    if (iterator > 6) {
+      // If divisor is greater than 6, add twice the quotient to the total.
+      totalOperations += Math.floor(remainingValue / iterator) * 2;
     } else {
-      // Otherwise, just add the floored division result
-      totalSum += Math.floor(remainder / iteratorIndex);
+      // Otherwise (divisor is 6 or less), add the quotient directly to the total.
+      totalOperations += Math.floor(remainingValue / iterator);
     }
-    // Update the remainder for the next iteration of the loop
-    remainder %= iteratorIndex;
+    // Update the remaining value by taking the modulo with the current divisor.
+    remainingValue = remainingValue % iterator;
   }
-  // Output the final computed total sum to the console
-  console.log(totalSum);
+
+  // Output the final calculated total operations to the console.
+  console.log(totalOperations);
 };
 
-// Read input from standard input and pass it to our processing function
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input, decode it as UTF-8, and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

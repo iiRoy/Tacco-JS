@@ -1,60 +1,49 @@
-'use strict'
+'use strict';
 
-const processInputData = (incomingText) => {
-    const contentLines = incomingText.trim().split('\n');
+const processInputData = (rawText) => {
+    const allLines = rawText.trim().split('\n');
 
-    const [boundaryX, boundaryY, directiveCount] = contentLines[0].split(' ').map(Number);
+    const [initialWidth, initialHeight, operationCount] = allLines[0].split(' ').map(Number);
 
-    const operations = contentLines.slice(1).map(lineOfOps => {
-        const [posX, posY, opCode] = lineOfOps.split(' ').map(Number);
-        return { xVal: posX, yVal: posY, typeVal: opCode };
+    const operationRecords = allLines.slice(1).map(lineContent => {
+        const numericParts = lineContent.split(' ').map(Number);
+        return { xCoordinate: numericParts[0], yCoordinate: numericParts[1], operationKind: numericParts[2] };
     });
 
-    return { initialX: boundaryX, initialY: boundaryY, allOperations: operations };
+    return { initialWidth, initialHeight, operationCount, operationRecords };
 };
 
-const determineResultingArea = (dimensionX, dimensionY) => {
-    if (dimensionX <= 0 || dimensionY <= 0) {
-        return 0;
-    }
-    return dimensionX * dimensionY;
+const computeFinalArea = (parsedInput) => {
+    let currentMinimumX = 0;
+    let currentMaximumX = parsedInput.initialWidth;
+    let currentMinimumY = 0;
+    let currentMaximumY = parsedInput.initialHeight;
+
+    parsedInput.operationRecords.forEach(record => {
+        const { xCoordinate: opX, yCoordinate: opY, operationKind: opType } = record;
+
+        if (opType === 1) {
+            currentMinimumX = Math.max(currentMinimumX, opX);
+        } else if (opType === 2) {
+            currentMaximumX = Math.min(currentMaximumX, opX);
+        } else if (opType === 3) {
+            currentMinimumY = Math.max(currentMinimumY, opY);
+        } else if (opType === 4) {
+            currentMaximumY = Math.min(currentMaximumY, opY);
+        }
+    });
+
+    const resultingWidth = currentMaximumX - currentMinimumX;
+    const resultingHeight = currentMaximumY - currentMinimumY;
+
+    const calculatedArea = (resultingWidth > 0 && resultingHeight > 0) ? (resultingWidth * resultingHeight) : 0;
+
+    console.log(calculatedArea);
 };
 
-const applySingleOperation = (currentRectangle, currentOperation) => {
-    let { leftBound, rightBound, bottomBound, topBound } = currentRectangle;
-    const { xVal, yVal, typeVal } = currentOperation;
-
-    const operationDispatch = {
-        1: () => ({ ...currentRectangle, leftBound: Math.max(leftBound, xVal) }),
-        2: () => ({ ...currentRectangle, rightBound: Math.min(rightBound, xVal) }),
-        3: () => ({ ...currentRectangle, bottomBound: Math.max(bottomBound, yVal) }),
-        4: () => ({ ...currentRectangle, topBound: Math.min(topBound, yVal) }),
-    };
-
-    return operationDispatch[typeVal] ? operationDispatch[typeVal]() : currentRectangle;
+const applicationEntry = (sourceInput) => {
+    const processedData = processInputData(sourceInput);
+    computeFinalArea(processedData);
 };
 
-const executeTransformation = (sourceText) => {
-    const { initialX, initialY, allOperations } = processInputData(sourceText);
-
-    const startingRectangle = {
-        leftBound: 0,
-        rightBound: initialX,
-        bottomBound: 0,
-        topBound: initialY,
-    };
-
-    const finalRectangle = allOperations.reduce(applySingleOperation, startingRectangle);
-
-    const finalSpanX = finalRectangle.rightBound - finalRectangle.leftBound;
-    const finalSpanY = finalRectangle.topBound - finalRectangle.bottomBound;
-
-    return determineResultingArea(finalSpanX, finalSpanY);
-};
-
-const entryPoint = (incomingRawText) => {
-    const computedValue = executeTransformation(incomingRawText);
-    console.log(computedValue);
-};
-
-entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));
+applicationEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));

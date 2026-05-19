@@ -1,42 +1,39 @@
-const processInputData = sourceContent => {
-  const parsedLines = sourceContent.  trim()
-                                .split('\n');
+const processInput = (inputString) => {
+  // Parse the raw input string into an array of lines
+  const processedLines = inputString.trim().split('\n');
 
-  const [
-    maxBoundary,
-    markerQuantity,
-    initialPosition
-  ] = parsedLines[0].split(' ')
-                     .map(valueStr => parseInt(valueStr, 10));
+  // Extract the first line containing N, M, and X
+  const [totalPoints, numCosts, startPoint] = processedLines[0].split(' ').map(val => parseInt(val, 10));
 
-  const levelIndicators = Array(maxBoundary + 1);
+  // Initialize an array (though not used in this specific logic, it maintains structural similarity)
+  const pointMap = Array(totalPoints + 1);
 
-  const markedLocations = parsedLines[1].split(' ')
-                                        .map(valStr => parseInt(valStr, 10));
+  // Extract the second line containing the list of costly points
+  const costlyPoints = processedLines[1].split(' ').map(val => parseInt(val, 10));
 
-  let backwardExpenses = 0;
-  for (  let currentLevelBackward = initialPosition - 1;
-         currentLevelBackward > 0;
-         currentLevelBackward--
-  ) {
-    if (markedLocations.includes(currentLevelBackward)) {
-      backwardExpenses++;
+  // Calculate the cost to move towards the left (decreasing index)
+  let costToLeft = 0;
+  // Iterate from the point just before X down to 1
+  for (let currentPointIndex = startPoint - 1; currentPointIndex > 0; currentPointIndex--) {
+    // If the current point is in the list of costly points, increment the cost
+    if (costlyPoints.includes(currentPointIndex)) {
+      costToLeft++;
     }
   }
 
-  let forwardCharges = 0;
-  for ( let currentLevelForward = initialPosition;
-        currentLevelForward < maxBoundary;
-        currentLevelForward++
-  ) {
-    if (markedLocations.includes(currentLevelForward)) {
-      forwardCharges++;
+  // Calculate the cost to move towards the right (increasing index)
+  let costToRight = 0;
+  // Iterate from X up to N-1
+  for (let currentPointIndex = startPoint; currentPointIndex < totalPoints; currentPointIndex++) {
+    // If the current point is in the list of costly points, increment the cost
+    if (costlyPoints.includes(currentPointIndex)) {
+      costToRight++;
     }
   }
 
-  console.log(Math.min(backwardExpenses, forwardCharges));
+  // Output the minimum of the two calculated costs
+  console.log(Math.min(costToLeft, costToRight));
 };
 
-
-// Acquire input from the standard stream
-processInputData(require("node:fs").readFileSync("/proc/self/fd/0", "utf8"));
+// Read input from standard input using Node.js file system module
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

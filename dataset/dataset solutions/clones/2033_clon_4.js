@@ -1,67 +1,35 @@
-const processRawInput = (dataString) => {
-    const contentLines = dataString.split(/\r?\n/).filter(Boolean).map(str => str.trim());
-    const numericalArrays = contentLines.map(lineStr =>
-        lineStr.split(/\s+/).filter(Boolean).map(Number)
-    );
+const parseNumericLine = (lineContent) => lineContent.split(" ").map(Number);
 
-    const [configRow, firstCollection, secondCollection, thirdCollection] = numericalArrays;
+function processCompetitionData(rawData) {
+    const allLines = rawData.split("\n").map(s => s.trim());
 
-    const [
-        valX,
-        valY,
-        valA,
-        valB,
-        valC
-    ] = configRow;
+    const [xVal, yVal, pCount, qCount, rCount] = parseNumericLine(allLines[0]);
 
-    return {
-        initialX: valX,
-        initialY: valY,
-        maximumPIndex: valA - 1,
-        maximumQIndex: valB - 1,
-        maximumRIndex: valC - 1,
-        dataP: firstCollection,
-        dataQ: secondCollection,
-        dataR: thirdCollection
-    };
-};
+    const pItems = parseNumericLine(allLines[1]);
+    const qItems = parseNumericLine(allLines[2]);
+    const rItems = parseNumericLine(allLines[3]);
 
-const computeMaximizedSum = (processedData) => {
-    const {
-        initialX,
-        initialY,
-        maximumPIndex,
-        maximumQIndex,
-        maximumRIndex,
-        dataP,
-        dataQ,
-        dataR
-    } = processedData;
+    pItems.sort((val1, val2) => val2 - val1);
+    qItems.sort((val1, val2) => val2 - val1);
 
-    const orderedP = [...dataP].sort((item1, item2) => item1 - item2);
-    const orderedQ = [...dataQ].sort((item1, item2) => item1 - item2);
-    const orderedR = [...dataR].sort((item1, item2) => item1 - item2);
+    let selectedItems = pItems.slice(0, xVal).concat(qItems.slice(0, yVal));
 
-    const selectedFromP = orderedP.slice(Math.max(0, maximumPIndex - initialX + 1), maximumPIndex + 1);
-    const selectedFromQ = orderedQ.slice(Math.max(0, maximumQIndex - initialY + 1), maximumQIndex + 1);
+    selectedItems.sort((val1, val2) => val1 - val2);
 
-    const allCandidateValues = [...selectedFromP, ...selectedFromQ, ...orderedR];
+    rItems.sort((val1, val2) => val2 - val1);
 
-    const totalElementsToPick = initialX + initialY;
+    for (const rElement of rItems) {
+        if (selectedItems.length === 0 || rElement <= selectedItems[0]) {
+            break;
+        }
 
-    const finalSelectionSet = allCandidateValues
-        .sort((item1, item2) => item1 - item2)
-        .slice(-totalElementsToPick);
+        selectedItems[0] = rElement;
+        selectedItems.sort((val1, val2) => val1 - val2);
+    }
 
-    const accumulatedResult = finalSelectionSet.reduce((currentSum, value) => currentSum + value, 0);
+    const finalScore = selectedItems.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-    return accumulatedResult;
-};
+    console.log(finalScore);
+}
 
-const entryPointForApplication = (rawInputData) => {
-    const parsedDataStructure = processRawInput(rawInputData);
-    const finalComputedSum = computeMaximizedSum(parsedDataStructure);
-    console.log(finalComputedSum);
-};
-
-entryPointForApplication(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processCompetitionData(require('fs').readFileSync('/dev/stdin', 'utf8'));

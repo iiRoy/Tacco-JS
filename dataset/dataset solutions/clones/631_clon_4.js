@@ -1,245 +1,215 @@
-let rawInputAccumulator = '';
+let allInput = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+  allInput += chunk;
+});
+process.stdin.on('end', () => {
+  processInput();
+});
 
-(async function() {
-    const inputPromise = new Promise(resolve => {
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-        process.stdin.on('data', chunk => {
-            rawInputAccumulator += chunk;
-        });
-        process.stdin.on('end', () => {
-            resolve(rawInputAccumulator);
-        });
-    });
+function processInput() {
+  const dataLines = allInput.split('\n');
 
-    const collectedInput = await inputPromise;
-    initiateTraversal(collectedInput);
-})();
+  const [nodeQuantityStr, pathQuantityStr, initialEnergyStr] = dataLines[0].split(' ');
+  const nodeQuantity = Number(nodeQuantityStr);
+  const pathQuantity = Number(pathQuantityStr);
+  const startingEnergy = Number(initialEnergyStr);
 
-class MinPriorityQueue {
-    constructor() {
-        this.elements = [];
-    }
+  const elevationLevels = new Array(nodeQuantity);
+  for (let i = 0; i < nodeQuantity; i++) {
+    elevationLevels[i] = Number(dataLines[i + 1]);
+  }
 
-    add(element) {
-        this.elements.push(element);
-        this.bubbleUp();
-    }
+  const connectionDetails = new Array(pathQuantity);
+  const adjacencyMap = new Map();
 
-    extractMin() {
-        const minElement = this.elements[0];
-        const lastElement = this.elements.pop();
-        if (this.elements.length > 0) {
-            this.elements[0] = lastElement;
-            this.sinkDown();
+  for (let i = 0; i < nodeQuantity; i++) {
+    adjacencyMap.set(i, []);
+  }
+
+  for (let i = 0; i < pathQuantity; i++) {
+    const [sourceStr, targetStr, travelCostStr] = dataLines[i + nodeQuantity + 1].split(' ');
+    const sourceNode = Number(sourceStr) - 1;
+    const targetNode = Number(targetStr) - 1;
+    const edgeCost = Number(travelCostStr);
+
+    adjacencyMap.get(sourceNode).push({ neighbor: targetNode, cost: edgeCost });
+    adjacencyMap.get(targetNode).push({ neighbor: sourceNode, cost: edgeCost });
+    connectionDetails[i] = { u: sourceNode, v: targetNode, w: edgeCost };
+  }
+
+  function computeReversePathCosts(vertexCount, destinationNode, graphEdges, nodeElevations) {
+    const shortestDistances = new Array(vertexCount).fill(Infinity);
+    shortestDistances[destinationNode] = 0;
+
+    for (let iter = 0; iter < vertexCount - 1; iter++) {
+      let anyUpdate = false;
+      for (const { u, v, w } of graphEdges) {
+        if (shortestDistances[u] !== Infinity && nodeElevations[v] >= w) {
+          if (shortestDistances[v] > shortestDistances[u] + w) {
+            shortestDistances[v] = shortestDistances[u] + w;
+            anyUpdate = true;
+          }
         }
-        return minElement;
+        if (shortestDistances[v] !== Infinity && nodeElevations[u] >= w) {
+          if (shortestDistances[u] > shortestDistances[v] + w) {
+            shortestDistances[u] = shortestDistances[v] + w;
+            anyUpdate = true;
+          }
+        }
+      }
+      if (!anyUpdate) break;
+    }
+    return shortestDistances;
+  }
+
+  const reverseCosts = computeReversePathCosts(nodeQuantity, nodeQuantity - 1, connectionDetails, elevationLevels);
+
+  class MinPriorityQueue {
+    constructor() {
+      this.heap = [];
+    }
+
+    push(item, priority) {
+      this.heap.push({ item, priority });
+      this._bubbleUp(this.heap.length - 1);
+    }
+
+    pop() {
+      if (this.isEmpty()) return undefined;
+      const min = this.heap[0];
+      const last = this.heap.pop();
+      if (!this.isEmpty()) {
+        this.heap[0] = last;
+        this._sinkDown(0);
+      }
+      return min.item;
     }
 
     isEmpty() {
-        return this.elements.length === 0;
+      return this.heap.length === 0;
     }
 
-    peek() {
-        return this.elements[0];
-    }
-
-    bubbleUp() {
-        let index = this.elements.length - 1;
-        const element = this.elements[index];
-        while (index > 0) {
-            let parentIndex = Math.floor((index - 1) / 2);
-            let parent = this.elements[parentIndex];
-            if (element.elapsed >= parent.elapsed) break;
-            this.elements[parentIndex] = element;
-            this.elements[index] = parent;
-            index = parentIndex;
+    _bubbleUp(index) {
+      while (index > 0) {
+        const parentIndex = Math.floor((index - 1) / 2);
+        if (this.heap[index].priority < this.heap[parentIndex].priority) {
+          [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
+          index = parentIndex;
+        } else {
+          break;
         }
+      }
     }
 
-    sinkDown() {
-        let index = 0;
-        const totalLength = this.elements.length;
-        const element = this.elements[0];
-        while (true) {
-            let leftChildIdx = 2 * index + 1;
-            let rightChildIdx = 2 * index + 2;
-            let leftChild, rightChild;
-            let swapIdx = null;
+    _sinkDown(index) {
+      const lastIndex = this.heap.length - 1;
+      while (true) {
+        const leftChildIndex = 2 * index + 1;
+        const rightChildIndex = 2 * index + 2;
+        let smallestIndex = index;
 
-            if (leftChildIdx < totalLength) {
-                leftChild = this.elements[leftChildIdx];
-                if (leftChild.elapsed < element.elapsed) {
-                    swapIdx = leftChildIdx;
-                }
-            }
-            if (rightChildIdx < totalLength) {
-                rightChild = this.elements[rightChildIdx];
-                if (
-                    (swapIdx === null && rightChild.elapsed < element.elapsed) ||
-                    (swapIdx !== null && rightChild.elapsed < leftChild.elapsed)
-                ) {
-                    swapIdx = rightChildIdx;
-                }
-            }
-            if (swapIdx === null) break;
-            this.elements[index] = this.elements[swapIdx];
-            this.elements[swapIdx] = element;
-            index = swapIdx;
+        if (leftChildIndex <= lastIndex && this.heap[leftChildIndex].priority < this.heap[smallestIndex].priority) {
+          smallestIndex = leftChildIndex;
         }
-    }
-}
-
-function initiateTraversal(incomingPayload) {
-    const payloadLines = incomingPayload.split('\n');
-
-    const firstLineParams = payloadLines[0].split(' ').map(Number);
-    const vertexCount = firstLineParams[0];
-    const edgeCount = firstLineParams[1];
-    const initialCapacity = firstLineParams[2];
-
-    const nodeCapacities = new Map();
-    const adjacencyRegistry = new Map();
-    const connectionDetails = [];
-
-    for (let currentIdx = 0; currentIdx < vertexCount; currentIdx++) {
-        nodeCapacities.set(currentIdx, Number(payloadLines[currentIdx + 1]));
-        adjacencyRegistry.set(currentIdx, []);
-    }
-
-    for (let currentIdx = 0; currentIdx < edgeCount; currentIdx++) {
-        const connectionInfo = payloadLines[currentIdx + vertexCount + 1].split(' ').map(Number);
-        const originNode = connectionInfo[0] - 1;
-        const destinationNode = connectionInfo[1] - 1;
-        const transitCost = connectionInfo[2];
-
-        adjacencyRegistry.get(originNode).push({
-            destination: destinationNode,
-            tariff: transitCost
-        });
-        adjacencyRegistry.get(destinationNode).push({
-            destination: originNode,
-            tariff: transitCost
-        });
-        connectionDetails.push({
-            from: originNode,
-            to: destinationNode,
-            weight: transitCost
-        });
-    }
-
-    function computeResidualCosts(vertexTotal, terminalNode, connections) {
-        const pathEstimates = new Map();
-        for (let idx = 0; idx < vertexTotal; idx++) {
-            pathEstimates.set(idx, Infinity);
-        }
-        pathEstimates.set(terminalNode, 0);
-
-        let hasUpdated = true;
-        let iterationCounter = 0;
-        const maxIterations = vertexTotal * 2; 
-
-        while (hasUpdated && iterationCounter < maxIterations) {
-            hasUpdated = false;
-            for (const connection of connections) {
-                const origin = connection.from;
-                const destination = connection.to;
-                const cost = connection.weight;
-
-                const currentOriginEstimate = pathEstimates.get(origin);
-                const currentDestEstimate = pathEstimates.get(destination);
-
-                if (currentDestEstimate > currentOriginEstimate + cost && nodeCapacities.get(destination) >= cost) {
-                    pathEstimates.set(destination, currentOriginEstimate + cost);
-                    hasUpdated = true;
-                }
-                if (currentOriginEstimate > currentDestEstimate + cost && nodeCapacities.get(origin) >= cost) {
-                    pathEstimates.set(origin, currentDestEstimate + cost);
-                    hasUpdated = true;
-                }
-            }
-            iterationCounter++;
-        }
-        return pathEstimates;
-    }
-
-    const residualPathCosts = computeResidualCosts(vertexCount, vertexCount - 1, connectionDetails);
-
-    const travelQueue = new MinPriorityQueue();
-    const visitedStates = new Map();
-
-    const initialJourney = {
-        location: 0,
-        elapsed: 0,
-        energy: initialCapacity
-    };
-    travelQueue.add(initialJourney);
-
-    const initialVisitedRecords = [];
-    initialVisitedRecords.push({ pastTime: 0, pastFuel: initialCapacity });
-    visitedStates.set(0, initialVisitedRecords);
-
-    let minimumTransitTime = Infinity;
-
-    while (!travelQueue.isEmpty()) {
-        const currentJourney = travelQueue.extractMin();
-
-        if (currentJourney.elapsed + residualPathCosts.get(currentJourney.location) * 2 - currentJourney.energy >= minimumTransitTime) {
-            continue;
+        if (rightChildIndex <= lastIndex && this.heap[rightChildIndex].priority < this.heap[smallestIndex].priority) {
+          smallestIndex = rightChildIndex;
         }
 
-        const currentAdjacencies = adjacencyRegistry.get(currentJourney.location);
-        for (const connection of currentAdjacencies) {
-            const nextDestination = connection.destination;
-            const edgeTariff = connection.tariff;
-
-            if (nodeCapacities.get(currentJourney.location) < edgeTariff) {
-                continue;
-            }
-
-            let newJourney;
-            const nextNodeCapacity = nodeCapacities.get(nextDestination);
-
-            if (nextNodeCapacity + edgeTariff < currentJourney.energy) {
-                newJourney = {
-                    location: nextDestination,
-                    elapsed: currentJourney.elapsed + edgeTariff + currentJourney.energy - (nextNodeCapacity + edgeTariff),
-                    energy: nextNodeCapacity
-                };
-            } else if (nextNodeCapacity + edgeTariff >= currentJourney.energy && currentJourney.energy >= edgeTariff) {
-                newJourney = {
-                    location: nextDestination,
-                    elapsed: currentJourney.elapsed + edgeTariff,
-                    energy: currentJourney.energy - edgeTariff
-                };
-            } else {
-                newJourney = {
-                    location: nextDestination,
-                    elapsed: currentJourney.elapsed + edgeTariff + edgeTariff - currentJourney.energy,
-                    energy: 0
-                };
-            }
-
-            if (nextDestination === vertexCount - 1) {
-                minimumTransitTime = Math.min(minimumTransitTime, newJourney.elapsed + nodeCapacities.get(vertexCount - 1) - newJourney.energy);
-            } else {
-                let existingRecords = visitedStates.get(nextDestination) || [];
-                let isRedundant = existingRecords.some(pastRecord =>
-                    pastRecord.pastTime < newJourney.elapsed && pastRecord.pastFuel >= newJourney.energy
-                );
-
-                if (!isRedundant) {
-                    existingRecords.push({ pastTime: newJourney.elapsed, pastFuel: newJourney.energy });
-                    visitedStates.set(nextDestination, existingRecords);
-                    travelQueue.add(newJourney);
-                }
-            }
+        if (smallestIndex !== index) {
+          [this.heap[index], this.heap[smallestIndex]] = [this.heap[smallestIndex], this.heap[index]];
+          index = smallestIndex;
+        } else {
+          break;
         }
+      }
+    }
+  }
+
+  const pathQueue = new MinPriorityQueue();
+  let minimumTotalTime = Infinity;
+
+  const initialPathState = { currentIdx: 0, elapsed: 0, remainingEnergy: startingEnergy };
+  pathQueue.push(initialPathState, 0);
+
+  const visitedPathStates = new Map();
+  for (let i = 0; i < nodeQuantity; i++) {
+    visitedPathStates.set(i, []);
+  }
+  visitedPathStates.get(0).push({ time: 0, energy: startingEnergy });
+
+  const calculateNextState = (current, edge) => {
+    const { currentIdx, elapsed, remainingEnergy } = current;
+    const { neighbor, cost } = edge;
+
+    if (elevationLevels[currentIdx] < cost) {
+      return null;
     }
 
-    if (minimumTransitTime === Infinity) {
-        console.log(-1);
+    let nextElapsed, nextEnergy;
+    const nextNodeElevation = elevationLevels[neighbor];
+
+    if (nextNodeElevation + cost < remainingEnergy) {
+      nextElapsed = elapsed + cost + (remainingEnergy - (nextNodeElevation + cost));
+      nextEnergy = nextNodeElevation;
+    } else if (nextNodeElevation + cost >= remainingEnergy && remainingEnergy >= cost) {
+      nextElapsed = elapsed + cost;
+      nextEnergy = remainingEnergy - cost;
     } else {
-        console.log(minimumTransitTime);
+      nextElapsed = elapsed + cost + (cost - remainingEnergy);
+      nextEnergy = 0;
     }
+
+    return { currentIdx: neighbor, elapsed: nextElapsed, remainingEnergy: nextEnergy };
+  };
+
+  while (!pathQueue.isEmpty()) {
+    const currentPath = pathQueue.pop();
+    const { currentIdx, elapsed, remainingEnergy } = currentPath;
+
+    if (elapsed + reverseCosts[currentIdx] * 2 - remainingEnergy >= minimumTotalTime) {
+      continue;
+    }
+
+    if (currentIdx === nodeQuantity - 1) {
+      minimumTotalTime = Math.min(minimumTotalTime, elapsed + elevationLevels[nodeQuantity - 1] - remainingEnergy);
+      continue;
+    }
+
+    const currentAdjacencies = adjacencyMap.get(currentIdx);
+    for (const connection of currentAdjacencies) {
+      const nextPathState = calculateNextState(currentPath, connection);
+
+      if (nextPathState === null) {
+        continue;
+      }
+
+      const { currentIdx: nextNode, elapsed: nextTime, remainingEnergy: nextEnergy } = nextPathState;
+
+      if (nextNode === nodeQuantity - 1) {
+        minimumTotalTime = Math.min(minimumTotalTime, nextTime + elevationLevels[nodeQuantity - 1] - nextEnergy);
+      } else {
+        let isDominated = false;
+        const existingStates = visitedPathStates.get(nextNode);
+        for (const existing of existingStates) {
+          if (existing.time < nextTime && existing.energy >= nextEnergy) {
+            isDominated = true;
+            break;
+          }
+        }
+
+        if (!isDominated) {
+          existingStates.push({ time: nextTime, energy: nextEnergy });
+          pathQueue.push(nextPathState, nextTime);
+        }
+      }
+    }
+  }
+
+  if (minimumTotalTime === Infinity) {
+    console.log(-1);
+  } else {
+    console.log(minimumTotalTime);
+  }
 }

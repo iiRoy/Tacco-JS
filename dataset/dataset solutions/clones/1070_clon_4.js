@@ -1,34 +1,29 @@
-const arrangeSubsegment = (segmentData, initialPosition, finalPosition) => {
-    const centralValue = segmentData[finalPosition];
-    const lesserElements = [];
-    const greaterElements = [];
+function partitionAlternative(dataCollection, lowerBound, upperBound) {
+    const pivotElement = dataCollection[upperBound];
+    let boundaryIndex = lowerBound - 1;
 
-    for (let currentPos = initialPosition; currentPos < finalPosition; currentPos++) {
-        if (segmentData[currentPos] <= centralValue) {
-            lesserElements.push(segmentData[currentPos]);
-        } else {
-            greaterElements.push(segmentData[currentPos]);
+    const iterationIndices = Array.from({ length: upperBound - lowerBound }, (_, k) => lowerBound + k);
+
+    boundaryIndex = iterationIndices.reduce((currentBoundary, currentJ) => {
+        if (dataCollection[currentJ] <= pivotElement) {
+            currentBoundary++;
+            [dataCollection[currentBoundary], dataCollection[currentJ]] = [dataCollection[currentJ], dataCollection[currentBoundary]];
         }
-    }
+        return currentBoundary;
+    }, boundaryIndex);
 
-    const reorderedSequence = [...lesserElements, centralValue, ...greaterElements];
+    [dataCollection[boundaryIndex + 1], dataCollection[upperBound]] = [dataCollection[upperBound], dataCollection[boundaryIndex + 1]];
 
-    for (let k = 0; k < reorderedSequence.length; k++) {
-        segmentData[initialPosition + k] = reorderedSequence[k];
-    }
-    
-    return initialPosition + lesserElements.length;
-};
+    return boundaryIndex + 1;
+}
 
-const systemInputContent = require('node:fs').readFileSync(0, 'utf8');
-const dataLines = systemInputContent.trim().split('\n');
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawData.split('\n');
 
-dataLines.shift(); // Discard the first line (count 'n')
+const elementCount = +inputLines.shift();
+const dataArray = inputLines.shift().split(' ').map(val => +val);
 
-const numericSeries = dataLines.shift().split(' ').map(valStr => Number(valStr));
-
-const pivotResultIndex = arrangeSubsegment(numericSeries, 0, numericSeries.length - 1);
-
-numericSeries[pivotResultIndex] = `[${numericSeries[pivotResultIndex]}]`;
-
-console.log(numericSeries.join(' '));
+const pivotPosition = partitionAlternative(dataArray, 0, dataArray.length - 1);
+dataArray[pivotPosition] = '[' + dataArray[pivotPosition] + ']';
+console.log(dataArray.join(' '));

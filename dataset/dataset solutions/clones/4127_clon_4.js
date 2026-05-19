@@ -1,66 +1,59 @@
-let accumulatedInput = '';
-let outputQueue = [];
+const fileSystem = require('fs');
 
-process.stdin.on('data', fragment => {
-    accumulatedInput += fragment.toString();
+const getPrimeStatus = (numValue) => {
+    if (numValue < 2) return false;
+    if (numValue === 2 || numValue === 3) return true;
+    if (numValue % 2 === 0 || numValue % 3 === 0) return false;
+    for (let currentDivisor = 5; currentDivisor * currentDivisor <= numValue; currentDivisor += 6) {
+        if (numValue % currentDivisor === 0 || numValue % (currentDivisor + 2) === 0) return false;
+    }
+    return true;
+};
+
+const isTargetPair = (candidateNumber) => {
+    if (candidateNumber < 1) return false;
+    if (candidateNumber === 1 || candidateNumber === 2 || candidateNumber === 3) return true;
+
+    if (!getPrimeStatus(candidateNumber)) return false;
+
+    const halfPlusOne = (candidateNumber + 1) / 2;
+    if (halfPlusOne !== Math.floor(halfPlusOne)) return false;
+
+    return getPrimeStatus(halfPlusOne);
+};
+
+const processInput = (inputContent) => {
+    const inputLines = inputContent.trim().split('\n');
+    let lineIndex = 0;
+
+    const queryCount = Number(inputLines[lineIndex++]);
+    const queryRanges = [];
+    for (let qIdx = 0; qIdx < queryCount; qIdx++) {
+        queryRanges.push(inputLines[lineIndex++].split(' ').map(Number));
+    }
+
+    const maximumR = queryRanges.reduce((currentMax, [, rVal]) => Math.max(currentMax, rVal), 0);
+
+    const prefixSums = new Uint32Array(maximumR + 1);
+    prefixSums[0] = 0;
+    for (let currentNum = 1; currentNum <= maximumR; currentNum++) {
+        prefixSums[currentNum] = prefixSums[currentNum - 1] + (isTargetPair(currentNum) ? 1 : 0);
+    }
+
+    queryRanges.forEach(([leftBound, rightBound]) => {
+        if (leftBound === rightBound) {
+            console.log(1);
+        } else {
+            console.log(prefixSums[rightBound - 1] - prefixSums[leftBound - 1]);
+        }
+    });
+};
+
+let allInputData = '';
+process.stdin.on('data', (chunk) => {
+    allInputData += chunk.toString();
 });
 
 process.stdin.on('end', () => {
-    const inputSegments = accumulatedInput.trim().split('\n');
-
-    const totalQueries = parseInt(inputSegments.shift(), 10);
-    const queryRanges = inputSegments.map(textLine =>
-        textLine.split(" ").map(numericalString => parseInt(numericalString, 10))
-    );
-
-    const rangeCollection = [...queryRanges];
-    rangeCollection.sort((pairA, pairB) => pairB[1] - pairA[1]);
-
-    const uppermostBound = rangeCollection[0][1];
-
-    const specialNumberMarks = new Array(uppermostBound + 1).fill(false);
-    specialNumberMarks[1] = true;
-    specialNumberMarks[2] = true;
-    specialNumberMarks[3] = true;
-
-    for (let currentNum = 4; currentNum <= uppermostBound; currentNum++) {
-        let passesChecks = true;
-        const rootOfNum = Math.sqrt(currentNum);
-        for (let testDivisor = 2; testDivisor <= rootOfNum; testDivisor++) {
-            if (currentNum % testDivisor === 0) {
-                passesChecks = false;
-                break;
-            }
-            const relatedHalf = (currentNum + 1) / 2;
-            if (relatedHalf % testDivisor === 0) {
-                passesChecks = false;
-                break;
-            }
-        }
-        specialNumberMarks[currentNum] = passesChecks;
-    }
-
-    const cumulativeSpecialValues = new Array(uppermostBound + 1).fill(0);
-    cumulativeSpecialValues[0] = 0;
-    cumulativeSpecialValues[1] = 1;
-    cumulativeSpecialValues[2] = 2;
-    cumulativeSpecialValues[3] = 3;
-
-    for (let currentNum = 4; currentNum <= uppermostBound; currentNum++) {
-        cumulativeSpecialValues[currentNum] = cumulativeSpecialValues[currentNum - 1] + (specialNumberMarks[currentNum] ? 1 : 0);
-    }
-
-    for (let qIdx = 0; qIdx < totalQueries; qIdx++) {
-        const currentQueryPair = queryRanges[qIdx];
-        const lowerBound = currentQueryPair[0];
-        const upperBound = currentQueryPair[1];
-
-        if (upperBound === lowerBound) {
-            outputQueue.push(1);
-        } else {
-            outputQueue.push(cumulativeSpecialValues[upperBound - 1] - cumulativeSpecialValues[lowerBound - 1]);
-        }
-    }
-
-    process.stdout.write(outputQueue.join('\n'));
+    processInput(allInputData);
 });

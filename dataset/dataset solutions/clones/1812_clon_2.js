@@ -1,50 +1,37 @@
-// This function processes raw input to calculate a product of numbers.
-const processData = (sourceString) => {
-  // Split the entire input string into individual lines.
-  const dataLines = sourceString.trim()
-                               .split('\n');
+const processInput = rawData => {
+    // This section handles the initial parsing of the input string.
+    const parsedLines = rawData.trim().split("\n");
 
-  // Parse the first line to get the count of elements, though it's not used in this specific logic.
-  const numElements = Number.parseInt(dataLines[0], 10);
+    // The first line typically contains the count of elements, though it's not directly used in this calculation.
+    const countElements = parseInt(parsedLines[0]);
 
-  // Convert the second line of space-separated strings into an array of BigInt numbers.
-  const numericValues = dataLines[1]
-                          .split(' ')
-                          .map( (elementString) => {
-                            // Ensure each string element is converted to a BigInt.
-                            return BigInt(Number(elementString));
-                          });
+    // The second line contains space-separated numbers, which are converted to BigInts for large number arithmetic.
+    const numberList = parsedLines[1].split(" ").map(elementString => BigInt(elementString));
 
-  // Check if the array of numeric values contains zero.
-  // If a zero is present, the product will always be zero.
-  if ( numericValues.includes(0n) )
-  {
-    console.log(0); // Output zero if any value is zero.
-    return; // Terminate execution early.
-  }
-
-  // Initialize the cumulative product with BigInt one.
-  let cumulativeProduct = 1n;
-
-  // Define a constant for the maximum allowed product value as a BigInt.
-  const MAX_PRODUCT_LIMIT = BigInt('1' + '0'.repeat(18)); // Represents 10^18
-
-  // Iterate through each numeric entry in the array to compute the product.
-  for ( const currentValue of numericValues )
-  {
-    cumulativeProduct = cumulativeProduct * currentValue; // Multiply the current product by the value.
-
-    // If the product exceeds the predefined limit, output -1 and exit.
-    if ( cumulativeProduct > MAX_PRODUCT_LIMIT )
-    {
-      console.log(-1); // Indicate that the product is too large.
-      return; // Stop further processing.
+    // A quick check: if the list contains zero, the product will always be zero.
+    if (numberList.includes(0n)) {
+        console.log(0); // Output the result.
+        return; // Terminate execution early.
     }
-  }
 
-  // If the loop completes without exceeding the limit, print the final product as a string.
-  console.log(cumulativeProduct.toString());
+    // Initialize a variable to store the cumulative product, starting with BigInt one.
+    let productResult = 1n;
+
+    // Iterate through each numerical value in the processed list.
+    for (let currentNumber of numberList) {
+        // Multiply the current product by the number from the list.
+        productResult = productResult * currentNumber;
+
+        // Check for an overflow condition against a predefined large number (10^18).
+        if (productResult > BigInt(1000000000000000000)) {
+            console.log(-1); // Indicate an overflow by printing -1.
+            return; // Exit the function.
+        }
+    }
+
+    // If no zero was found and no overflow occurred, print the final product as a string.
+    console.log(productResult.toString());
 };
 
-// Initiate the data processing by reading from standard input.
-processData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// The program starts by reading input from standard input using Node.js file system module.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

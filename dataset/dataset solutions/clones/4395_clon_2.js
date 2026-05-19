@@ -1,32 +1,22 @@
-/*
- * This module processes incoming string data
- * to determine a specific outcome based on numerical comparisons.
- */
-function EvaluateInput(  dataString  ) {
-    // Split the raw input string by space characters to get individual numeric components.
-    let components = dataString.split(  " "  );
+function ProcessInput(rawData) {
+  // Split the incoming string by space to get individual values.
+  rawData = rawData.split(' ');
 
-    // Calculate the absolute difference between the first and second numeric components.
-    // Ensure numerical interpretation for subtraction.
-    const deltaOne = Math.abs(   Number(components[0]) - Number(components[1])   );
+  // Calculate the absolute difference between the first and second values.
+  let diffOne = Math.abs(Number(rawData[0]) - Number(rawData[1]));
 
-    // Calculate the absolute difference between the first and third numeric components.
-    // Ensure numerical interpretation for subtraction.
-    const deltaTwo = Math.abs(   Number(components[0]) - Number(components[2])   );
+  // Calculate the absolute difference between the first and third values.
+  let diffTwo = Math.abs(Number(rawData[0]) - Number(rawData[2]));
 
-    /*
-     * Compare the two calculated differences.
-     * Output "B" if the first difference is strictly greater, otherwise output "A".
-     */
-    if (  deltaOne  >  deltaTwo  )
-    {
-        console.log(  "B"  );
-    }
-    else
-    {
-        console.log(  "A"  );
-    }
+  // Compare the two calculated differences.
+  if (diffOne > diffTwo) {
+    // If the first difference is greater, log 'B'.
+    console.log("B");
+  } else {
+    // Otherwise (if diffOne is less than or equal to diffTwo), log 'A'.
+    console.log("A");
+  }
 }
 
-// Fetch content from standard input synchronously and pass it to the processing function.
-EvaluateInput(   require(  "fs"  ).readFileSync(  "/dev/stdin"  ,  "utf8"  )   );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

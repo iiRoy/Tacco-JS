@@ -1,36 +1,24 @@
 'use strict';
 
-const processInput = (rawDataContent) => {
-    const numericComponents = rawDataContent
-        .trim()
-        .split(/\s+/)
-        .map(Number);
+function processInputAndCalculate(rawData) {
+    const numericComponents = rawData.trim().split(/\s+/).map(Number);
 
-    const [componentA, componentB, componentC] = numericComponents;
+    const [firstValue, secondValue, thirdValue] = numericComponents;
 
-    if (!((componentA & 1) && (componentB & 1) && (componentC & 1))) {
+    const allInputValues = [firstValue, secondValue, thirdValue];
+
+    const containsEvenNumber = allInputValues.some(currentNumber => (currentNumber % 2) === 0);
+
+    if (containsEvenNumber) {
         console.log(0);
         return;
     }
 
-    const sortedComponents = [componentA, componentB, componentC].sort((valX, valY) => valX - valY);
+    const sortedValues = [...allInputValues].sort((valA, valB) => valA - valB);
 
-    const smallestValue = sortedComponents[0];
-    const centralValue = sortedComponents[1];
-    const greatestValue = sortedComponents[2];
+    const productOfSmallestTwo = sortedValues[0] * sortedValues[1];
 
-    let computedResult;
+    console.log(productOfSmallestTwo);
+}
 
-    if (smallestValue === greatestValue) {
-        computedResult = greatestValue * greatestValue;
-    } else if (centralValue === greatestValue) {
-        computedResult = smallestValue * greatestValue;
-    } else {
-        computedResult = smallestValue * centralValue;
-    }
-
-    console.log(computedResult);
-};
-
-const sourceData = require('node:fs').readFileSync(0, 'utf8');
-processInput(sourceData);
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

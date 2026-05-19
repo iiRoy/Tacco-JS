@@ -1,18 +1,19 @@
-/* This script determines the prime factors of an integer read from standard input. */
-var   incomingText   =   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) . trim () ;
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim(); // Read input from standard input and remove leading/trailing whitespace.
 
-var   processedNumber   =   parseInt ( incomingText ) ;
-var   initialValue   =   processedNumber ;
+let currentNumber = parseInt(rawData); // Convert the string input into an integer.
+const initialNumber = currentNumber; // Store the original value of the number for the final output.
 
-var   divisorArray   =   [ ] ;
+let factorList = []; // Initialize an empty array to store the prime factors.
 
-for (  var   currentDivisor   =   2 ;   currentDivisor   <=   processedNumber   /   2 ;   currentDivisor ++  )
-{
-    while (   processedNumber   %   currentDivisor   ===   0   )
-    {
-        divisorArray . push ( currentDivisor ) ;
-        processedNumber   /=   currentDivisor ;
+// Iterate through potential factors starting from 2.
+// The loop continues as long as the potential factor is less than or equal to half of the current number.
+for (let potentialFactor = 2; potentialFactor <= currentNumber / 2; potentialFactor++) {
+    // While the current number is divisible by the potential factor, it means we found a prime factor.
+    while (currentNumber % potentialFactor === 0) {
+        factorList.push(potentialFactor); // Add the found factor to our list.
+        currentNumber /= potentialFactor; // Divide the current number by the factor to find subsequent factors.
     }
 }
 
-console . log ( initialValue   +   ': '   +   divisorArray . join ( ' ' ) ) ;
+// Output the original number, followed by a colon and space, then its prime factors joined by spaces.
+console.log(initialNumber + ': ' + factorList.join(' '));

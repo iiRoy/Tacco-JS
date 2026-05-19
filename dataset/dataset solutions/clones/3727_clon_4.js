@@ -1,48 +1,34 @@
-const extractConfiguration = (inputString) => {
-    const stringSections = inputString.trim().split('\n');
-    const numberList = stringSections[0].split(' ').map(Number);
-    return {
-        fullQuantity: numberList[0],
-        scopeSize: numberList[1],
-        stateSequence: stringSections[1].split(' ')
-    };
-};
+function processInput(rawData) {
+    const dataLines = rawData.split("\n");
+    const [_, coverageWidthStr] = dataLines[0].split(" ");
+    const elementSequence = dataLines[1].split(" ");
 
-const mapItemLocations = (processedConfig) => {
-    const indicatorSpot = processedConfig.stateSequence.indexOf("1");
-    const overallLength = processedConfig.stateSequence.length;
-    return {
-        ...processedConfig,
-        markerLocation: indicatorSpot,
-        leftExtent: indicatorSpot,
-        rightExtent: overallLength - 1 - indicatorSpot
-    };
-};
+    const coverageWidth = Number(coverageWidthStr);
+    const sequenceLength = elementSequence.length;
 
-const evaluatePlacementStrategy = (locationDetails) => {
-    const { scopeSize, leftExtent, rightExtent } = locationDetails;
-    const effectiveStepDistance = scopeSize - 1;
+    const oneMarkerPosition = elementSequence.findIndex(item => item === "1");
 
-    const computeRequiredSegments = (segmentCount, incrementValue) => {
-        if (segmentCount <= 0) return 0;
-        return Math.floor((segmentCount + incrementValue - 1) / incrementValue);
-    };
+    const leftSideCount = oneMarkerPosition;
+    const rightSideCount = sequenceLength - 1 - oneMarkerPosition;
 
-    let calculatedSegments = computeRequiredSegments(leftExtent, effectiveStepDistance) +
-                             computeRequiredSegments(rightExtent, effectiveStepDistance);
+    const effectiveCoveragePerOperation = coverageWidth - 1;
 
-    if (calculatedSegments > 0 && (leftExtent + rightExtent) <= scopeSize) {
-        calculatedSegments -= 1;
+    let calculatedOperationTotal = 0;
+
+    if (leftSideCount > 0) {
+        calculatedOperationTotal += Math.ceil(leftSideCount / effectiveCoveragePerOperation);
     }
 
-    return calculatedSegments;
-};
+    if (rightSideCount > 0) {
+        calculatedOperationTotal += Math.ceil(rightSideCount / effectiveCoveragePerOperation);
+    }
 
-const determineTileCount = (externalInput) => {
-    const parsedSettings = extractConfiguration(externalInput);
-    const analyzedPositions = mapItemLocations(parsedSettings);
-    const finalOutcome = evaluatePlacementStrategy(analyzedPositions);
-    console.log(finalOutcome);
-};
+    const totalPeripheralElements = leftSideCount + rightSideCount;
+    const finalAdjustment = (totalPeripheralElements <= coverageWidth && calculatedOperationTotal > 0) ? -1 : 0;
 
-determineTileCount(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const finalResult = calculatedOperationTotal + finalAdjustment;
+
+    console.log(finalResult);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

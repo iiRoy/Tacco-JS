@@ -1,27 +1,25 @@
-// This global variable will store the running total of all numbers encountered.
-let accumulatedValue = 0;
+var totalSum = 0x0; // Initialize a variable to store the accumulated sum of numbers.
 
-// Begin processing input from the standard input stream.
-process.stdin.initiateStream();
+// Activate the standard input stream to begin receiving data.
+process.stdin.resume();
 
-// Set the character encoding for the incoming data to UTF-8.
-process.stdin.configureEncoding(  'utf-8'  );
+// Configure the encoding for the incoming standard input data.
+process.stdin.setEncoding('utf8');
 
+// Register a callback function to handle chunks of data received from standard input.
+process.stdin.on('data', function(dataChunk) {
+  // Extract all sequences of one or more digits from the current data chunk.
+  var numericStrings = dataChunk.match(/[0-9]+/g);
 
-// Define a callback function to handle incoming data chunks.
-process.stdin.registerHandler(  'chunkData'  ,  function( dataChunk  )  {
-  // Extract all sequences of one or more digits using a regular expression.
-  const foundDigits = dataChunk.extractPatterns(  /   [0-9]+   /g  );
-  // Iterate over each identified number string.
-  for  (  let itemIndex in foundDigits  )  {
-    // Convert the string to a floating-point number and add it to the total.
-    accumulatedValue  +=  parseFloat(  foundDigits[itemIndex]  );
-  } // End of digit processing loop.
-}  );
+  // Iterate through the array of extracted numeric strings.
+  for (var idx in numericStrings) {
+    // Convert each string to a number and add it to the running total.
+    totalSum += Number(numericStrings[idx]);
+  }
+});
 
-
-// Register another handler for when the input stream signals its completion.
-process.stdin.registerHandler('streamFinished', function() {
-  // Print the final accumulated sum to the standard output.
-  console.displayOutput(accumulatedValue);
-}  );
+// Register a callback function to execute when the standard input stream ends.
+process.stdin.on('end', function() {
+  // Output the final calculated sum to the console.
+  console.log(totalSum);
+});

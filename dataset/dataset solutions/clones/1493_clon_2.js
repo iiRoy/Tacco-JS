@@ -1,54 +1,62 @@
-/* This module handles the processing of a collection of 2D points.
- * It identifies specific relationships between them for calculation. */
-function ProcessCoordinates (  dataFeed )
-{
-  // Divide the input text into distinct rows.
-  let rowData = dataFeed.split ( '\n' ) ;
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines based on newline characters.
+  let dataLines = rawData.split("\n");
 
-  // Extract the total count of points from the initial row.
-  const pointCount=Number(rowData[0]);
+  // Parse the first line to determine the total number of data points.
+  const numPoints = parseInt(dataLines[0], 10);
 
-  // Declare containers for the X and Y values of the coordinates.
-  let xCoords=[];
-  let yCoords=[];
+  // Initialize two arrays to store the x and y coordinates of each point.
+  let xCoords = [];
+  let yCoords = [];
 
-  // Populate coordinate arrays by iterating through the input.
-  for(let loopCounterA=1;loopCounterA<=pointCount;loopCounterA++){
-    // Parse each row, splitting by space, converting string parts to numeric.
-    let currentPair = rowData[loopCounterA].split(' ').map(strVal => Number(strVal));
-    xCoords.push(currentPair[0]); // Add the X-component.
-    yCoords.push(currentPair[1]); // Add the Y-component.
+  // Iterate through the input lines, starting from the second line (index 1),
+  // to extract and store the coordinates for each point.
+  for (let idx = 1; idx <= numPoints; idx++) {
+    // Split the current line by space, then convert each part to an integer.
+    let currentPointData = dataLines[idx].split(" ").map(coordStr => parseInt(coordStr, 10));
+    // Add the first parsed integer as an x-coordinate and the second as a y-coordinate.
+    xCoords.push(currentPointData[0]);
+    yCoords.push(currentPointData[1]);
   }
 
-  // An array to hold initial comparison scores for each point.
-  let relationScores = [ ];
+  // Create an array to hold the initial comparison counts for each point.
+  let initialCounts = [];
 
-  // First computation pass: Determine direct relationship scores.
-  for(let loopCounterB=0;loopCounterB<pointCount;loopCounterB++){
-    let matchTally=0; // Initialize score for the current point.
-    for(let loopCounterC=0;loopCounterC<pointCount;loopCounterC++){
-      // Check if one point strictly dominates or is strictly dominated by another.
-      if((xCoords[loopCounterB]>xCoords[loopCounterC]&&yCoords[loopCounterB]>yCoords[loopCounterC])||(xCoords[loopCounterB]<xCoords[loopCounterC]&&yCoords[loopCounterB]<yCoords[loopCounterC])){
-        matchTally++; // Increment if the condition holds true.
+  // First major loop: Calculate for each point how many other points it "dominates"
+  // or is "dominated by" in a specific bi-directional sense.
+  for (let outerIdx = 0; outerIdx < numPoints; outerIdx++) {
+    let currentPointCount = 0; // Initialize a counter for the current point's comparisons.
+    // Inner loop: Compare the current point (outerIdx) with every other point (innerIdx).
+    for (let innerIdx = 0; innerIdx < numPoints; innerIdx++) {
+      // Check if the current point's coordinates are both strictly greater than
+      // or both strictly less than the compared point's coordinates.
+      if ((xCoords[outerIdx] > xCoords[innerIdx] && yCoords[outerIdx] > yCoords[innerIdx]) ||
+          (xCoords[outerIdx] < xCoords[innerIdx] && yCoords[outerIdx] < yCoords[innerIdx])) {
+        currentPointCount++; // Increment the counter if the condition is met.
       }
     }
-    relationScores.push(matchTally); // Store the computed match count.
+    // Store the calculated count for the point at outerIdx.
+    initialCounts.push(currentPointCount);
   }
 
-
-  // Second computation pass: Aggregate scores and display results.
-  for(let loopCounterB=0;loopCounterB<pointCount;loopCounterB++){
-    let aggregatedScore = 1; // Start with a base score of 1.
-    for(let loopCounterC=0;loopCounterC<pointCount;loopCounterC++){
-      // Re-apply the same dominance check condition.
-      if((xCoords[loopCounterB]>xCoords[loopCounterC]&&yCoords[loopCounterB]>yCoords[loopCounterC])||(xCoords[loopCounterB]<xCoords[loopCounterC]&&yCoords[loopCounterB]<yCoords[loopCounterC])){
-        // Sum the stored relation scores.
-        aggregatedScore = aggregatedScore + relationScores[loopCounterC];
+  // Second major loop: Calculate and output the final "rank" for each point.
+  for (let outerIdx = 0; outerIdx < numPoints; outerIdx++) {
+    let finalRank = 1; // Each point starts with a base rank of 1.
+    // Inner loop: Re-compare the current point (outerIdx) with every other point (innerIdx).
+    for (let innerIdx = 0; innerIdx < numPoints; innerIdx++) {
+      // Apply the same bi-directional dominance check as in the first loop.
+      if ((xCoords[outerIdx] > xCoords[innerIdx] && yCoords[outerIdx] > yCoords[innerIdx]) ||
+          (xCoords[outerIdx] < xCoords[innerIdx] && yCoords[outerIdx] < yCoords[innerIdx])) {
+        // If the condition is met, add the initial count of the compared point (innerIdx)
+        // to the current point's final rank.
+        finalRank += initialCounts[innerIdx];
       }
     }
-    console.log(aggregatedScore); // Output the final aggregated value.
+    // Output the calculated final rank for the point at outerIdx.
+    console.log(finalRank);
   }
 }
 
-// Initialize the process by reading data from the standard input source.
-ProcessCoordinates( require('fs').readFileSync('/dev/stdin','utf8') );
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the ProcessInput function for execution.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

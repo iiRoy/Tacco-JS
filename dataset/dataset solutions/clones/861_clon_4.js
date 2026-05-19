@@ -1,40 +1,35 @@
-const outputFunction = console.log;
+const inputLines = require("fs").readFileSync("/dev/stdin", "utf-8").split("\n");
+inputLines.pop();
 
-const fetchInputData = () => {
-  const dataBuffer = require("node:fs").readFileSync(process.stdin.fd, "utf-8");
-  return dataBuffer.split("\n").filter(element => element.length > 0);
+const extractNumericPair = (lineString, separator = " ") => {
+    return lineString.split(separator).map(Number);
 };
 
-const convertLineToNumbers = (textSegment, separator = " ") =>
-  textSegment.split(separator).map(entry => Number.parseInt(entry, 10));
-
-const calculateManhattanProjection = (firstOrdinal, secondOrdinal, gridWidth) => {
-  const firstXComponent = firstOrdinal % gridWidth;
-  const firstYComponent = Math.floor(firstOrdinal / gridWidth);
-  const secondXComponent = secondOrdinal % gridWidth;
-  const secondYComponent = Math.floor(secondOrdinal / gridWidth);
-
-  return Math.abs(firstXComponent - secondXComponent) + Math.abs(firstYComponent - secondYComponent);
+const computeManhattanGridDistance = (valueOne, valueTwo, gridWidth) => {
+    const columnOne = valueOne % gridWidth;
+    const rowOne = Math.floor(valueOne / gridWidth);
+    const columnTwo = valueTwo % gridWidth;
+    const rowTwo = Math.floor(valueTwo / gridWidth);
+    return Math.abs(columnOne - columnTwo) + Math.abs(rowOne - rowTwo);
 };
 
-const allInputSegments = fetchInputData();
+const performDistanceAnalysis = () => {
+    const totalCells = Number(inputLines[0]);
 
-const maximumDimension = convertLineToNumbers(allInputSegments[0])[0];
-const firstPair = convertLineToNumbers(allInputSegments[1]);
-const secondPair = convertLineToNumbers(allInputSegments[2]);
+    const [firstPointValA, firstPointValB] = extractNumericPair(inputLines[1]);
+    const [secondPointValC, secondPointValD] = extractNumericPair(inputLines[2]);
 
-const firstValueA = firstPair[0];
-const secondValueB = firstPair[1];
-const thirdValueC = secondPair[0];
-const fourthValueD = secondPair[1];
+    const initialMinimumDistance = totalCells * totalCells;
 
-const potentialGridWidths = Array.from({ length: maximumDimension - 1 }, (_, idx) => idx + 1);
+    const finalMinimumDistance = Array.from({ length: totalCells - 1 }, (_, index) => index + 1)
+        .reduce((currentMinimum, currentGridWidth) => {
+            const distanceBetweenFirstPoints = computeManhattanGridDistance(firstPointValA, firstPointValB, currentGridWidth);
+            const distanceBetweenSecondPoints = computeManhattanGridDistance(secondPointValC, secondPointValD, currentGridWidth);
+            const combinedDistanceForWidth = distanceBetweenFirstPoints + distanceBetweenSecondPoints;
+            return Math.min(currentMinimum, combinedDistanceForWidth);
+        }, initialMinimumDistance);
 
-const overallMinimumDistance = potentialGridWidths.reduce((currentMin, currentGridWidth) => {
-  const separationOne = calculateManhattanProjection(firstValueA, secondValueB, currentGridWidth);
-  const separationTwo = calculateManhattanProjection(thirdValueC, fourthValueD, currentGridWidth);
-  const totalSeparation = separationOne + separationTwo;
-  return Math.min(currentMin, totalSeparation);
-}, Infinity);
+    console.log(finalMinimumDistance);
+};
 
-outputFunction(overallMinimumDistance);
+performDistanceAnalysis();

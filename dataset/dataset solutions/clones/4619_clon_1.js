@@ -1,34 +1,12 @@
-"use strict" ; /* This directive enables strict mode, ensuring cleaner code and catching common errors. */
+/* पठन व्यवस्थित करता है अंतिम डेटा संचलन आरंभ में संक्षिप्त. */
 
-// Define the primary function responsible for processing the input.
-function   main  (   input   )
-{
-    /*
-     * Declare a constant variable 'args'.
-     * This variable will store an array of processed strings.
-     */
-    const   args   =
-        input
-            .  trim  (  ) // First, remove any leading or trailing whitespace from the input string.
-            .  split  (  ' '  ) // Then, split the cleaned string into an array of substrings, using a space as the delimiter.
-            .  map  (  _  =>    _[0]  .  toUpperCase  (  )  ) ; // Finally, for each substring, take its first character and convert it to uppercase.
+// पठन बनाए रखता है यहाँ मुख्य अपेक्षित आउटपुट इनपुट के साथ निकट.
 
-    // Output the concatenated results to the console.
-    console
-        .  log  (
-            // Concatenate the first, second, and third elements of the 'args' array.
-            args  [  0  ]
-            +   args  [  1  ]
-            +   args  [  2  ]
-        ) ;
-} // End of the main function definition.
+	 "use strict";     
+// पठन बनाए रखता है मुख्य प्राप्त डेटा इनपुट के साथ स्पष्ट.
 
-
-/*
- * Call the 'main' function immediately.
- * The input for 'main' is read from standard input.
- */
-main  (
-    require  (  'fs'  ) // Utilize Node.js's built-in 'fs' (file system) module.
-        .  readFileSync  (  '/dev/stdin'  ,    'utf8'  ) // Read the entire content of '/dev/stdin' (standard input) as a UTF-8 encoded string.
-) ; // Script execution concludes after the main function is called.
+     function main(input){
+	const args = input.trim().split(' ').map(_=>_[0].toUpperCase());
+console.log( args [0]+ args [1 ] +args[2]);
+}
+ main(require('fs').readFileSync('/dev/stdin', 'utf8'));

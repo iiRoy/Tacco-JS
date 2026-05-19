@@ -1,64 +1,62 @@
-// Assessment 1: Sliding window approach with prefix sums
-// Sort items by descending value
-// Attempting a sliding window method using cumulative weights.
-function ExecuteProcess(rawData)
-{
-  // Obtain input parameters
-  rawData = rawData.split("\n");
-  var lineData = rawData[0].split(" ");
-  const itemCount = Number.parseInt(lineData[0]);
-  const capacityLimit = Number.parseInt(lineData[1]);
+function ProcessInput(rawData) {
+  // This function processes raw input data to find the maximum value
+  // using a sliding window (two-pointer) approach after sorting.
 
-  var itemCollection = [];
+  // Parse the initial parameters from the first line
+  let dataLines = rawData.split('\n');
+  let firstLineParts = dataLines[0].split(' ');
+  const itemCount = Number.parseInt(firstLineParts[0], 10);
+  const capacityLimit = Number.parseInt(firstLineParts[1], 10);
 
+  // Prepare an array to hold item weight and value pairs
+  let itemData = [];
   for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
-    lineData = rawData[outerIndex + 1].split(" ");
-    itemCollection.push(lineData.map(currentString => Number.parseInt(currentString)));
+    let currentLineParts = dataLines[outerIndex + 1].split(' ');
+    itemData.push(currentLineParts.map(partString => parseInt(partString, 10)));
   }
 
-  // Sort objects (descending order based on their second property, which is value)
-  itemCollection.sort(function(firstItem, secondItem) {
-    return (secondItem[1] - firstItem[1]);
+  // Sort the items by value (second element) in descending order
+  itemData.sort(function(itemA, itemB) {
+    return (itemB[1] - itemA[1]);
   });
 
-  // Display the sorted collection (for debugging)
-  // console.log(itemCollection);
+  // Initialize variables for the sliding window algorithm
+  let currentWeight = 0;
+  let currentValue = 0;
+  let maximumValue = 0;
 
-  var currentWeight = 0;
-  var currentValue = 0;
-  var maxAchievedValue = 0;
+  // Implement the sliding window (two-pointer) technique
+  // 'firstPointer' represents the left boundary of the window
+  for (let firstPointer = 0; firstPointer < itemCount; firstPointer++) {
+    // Add the item at the left boundary to the current window
+    currentWeight += itemData[firstPointer][0];
+    currentValue += itemData[firstPointer][1];
 
-  // Sliding window algorithm (left bound is 'outerIndex', right bound is 'innerIndex')
-  for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
-    // Debug: Add item's worth to current total
-    // console.log("currentValue=", currentValue, "adding", itemCollection[outerIndex][1]);
-    currentWeight += itemCollection[outerIndex][0];
-    currentValue += itemCollection[outerIndex][1];
-
-    let innerIndex = outerIndex + 1;
-    while (innerIndex < itemCount) {
-      if (currentWeight + itemCollection[innerIndex][0] <= capacityLimit) {
-        // Include the next available item
-        // Debug: Include worth of the right-side item
-        // console.log("currentValue=", currentValue, "adding", itemCollection[innerIndex][1]);
-        currentWeight += itemCollection[innerIndex][0];
-        currentValue += itemCollection[innerIndex][1];
-        innerIndex++;
-      }
-      else {
+    // 'secondPointer' represents the right boundary of the window
+    let secondPointer = firstPointer + 1;
+    while (secondPointer < itemCount) {
+      // Check if adding the next item exceeds the capacity limit
+      if (currentWeight + itemData[secondPointer][0] <= capacityLimit) {
+        // If not, add it to the window and advance the right pointer
+        currentWeight += itemData[secondPointer][0];
+        currentValue += itemData[secondPointer][1];
+        secondPointer++;
+      } else {
+        // If it exceeds, stop expanding the window to the right
         break;
       }
     }
 
-    maxAchievedValue = Math.max(currentValue, maxAchievedValue);
+    // Update the overall maximum value found so far
+    maximumValue = Math.max(currentValue, maximumValue);
 
-    // Debug: Remove worth of the left-side item
-    // console.log("currentValue=", currentValue, "subtracting", itemCollection[outerIndex][1]);
-    currentWeight -= itemCollection[outerIndex][0];
-    currentValue -= itemCollection[outerIndex][1];
+    // Remove the item at the left boundary as the window slides
+    currentWeight -= itemData[firstPointer][0];
+    currentValue -= itemData[firstPointer][1];
   }
 
-  console.log(maxAchievedValue);
+  // Output the final maximum value
+  console.log(maximumValue);
 }
 
-ExecuteProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

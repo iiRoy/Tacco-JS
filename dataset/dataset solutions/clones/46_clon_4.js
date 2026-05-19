@@ -1,42 +1,32 @@
-const inputSystem = require('readline');
-
-const dataStream = inputSystem.createInterface({
-    input: process.stdin
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputChunk) {
+    processInput(inputChunk.trim());
 });
 
-let collectedLines = [];
+function processInput(fullInput) {
+    const allInputLines = fullInput.split('\n');
 
-dataStream.on('line', (individualLine) => {
-    collectedLines.push(individualLine);
-});
+    const sequenceLength = Number(allInputLines[0]);
+    const swapOperationCount = Number(allInputLines[1]);
 
-dataStream.on('close', () => {
-    performTransformation(collectedLines);
-});
+    const initialArrangement = Array.from({ length: sequenceLength }, (_, index) => index + 1);
 
-function performTransformation(entryLines) {
-    const sequenceDimension = Number(entryLines[0]);
-    const swapOperationCount = Number(entryLines[1]);
+    const swapInstructions = allInputLines.slice(2, 2 + swapOperationCount);
 
-    const initialArrangement = Array.from({ length: sequenceDimension }, (_, i) => i + 1);
+    const finalArrangement = swapInstructions.reduce((currentArrangement, instructionLine) => {
+        const [firstPosStr, secondPosStr] = instructionLine.split(',');
+        const zeroIndexedFirstPos = Number(firstPosStr) - 1;
+        const zeroIndexedSecondPos = Number(secondPosStr) - 1;
 
-    const operations = entryLines
-        .slice(2, 2 + swapOperationCount)
-        .map(line => line.split(',').map(Number));
+        const nextArrangementState = [...currentArrangement];
 
-    const finalArrangement = operations.reduce((currentArrangementState, currentSwapPair) => {
-        const [posA_oneIndexed, posB_oneIndexed] = currentSwapPair;
-        const posA_zeroIndexed = posA_oneIndexed - 1;
-        const posB_zeroIndexed = posB_oneIndexed - 1;
+        const temporaryValue = nextArrangementState[zeroIndexedFirstPos];
+        nextArrangementState[zeroIndexedFirstPos] = nextArrangementState[zeroIndexedSecondPos];
+        nextArrangementState[zeroIndexedSecondPos] = temporaryValue;
 
-        const nextArrangementState = [...currentArrangementState]; 
-        [nextArrangementState[posA_zeroIndexed], nextArrangementState[posB_zeroIndexed]] = 
-        [nextArrangementState[posB_zeroIndexed], nextArrangementState[posA_zeroIndexed]];
-        
         return nextArrangementState;
     }, initialArrangement);
 
-    finalArrangement.forEach(elementValue => {
-        console.info(elementValue);
-    });
+    console.log(finalArrangement.join('\n'));
 }

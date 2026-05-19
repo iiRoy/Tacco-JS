@@ -1,41 +1,28 @@
-const RADIAN_CONVERSION_FACTOR = Math.PI / 180;
+process.stdin.on("data", function(inputBuffer) {
+    const degreeToRadianConversionFactor = Math.PI / 180;
 
-function evaluatePathSegment(inputBuffer) {
-    let currentXCoordinate = 0;
-    let currentYCoordinate = 0;
-    let currentBearingAngle = 0;
+    const finalCoordinateState = String(inputBuffer)
+        .trim()
+        .split('\n')
+        .filter(lineEntry => lineEntry.length > 0)
+        .reduce((currentSpatialState, movementInstruction) => {
+            const [currentXPosition, currentYPosition, currentAngularOrientation] = currentSpatialState;
+            const [distanceValueString, angleChangeValueString] = movementInstruction.split(',');
 
-    const textPayload = String(inputBuffer).trim();
-    const instructionSet = textPayload.split('\n');
+            const stepDistance = Number(distanceValueString);
+            const angleIncrementDegrees = Number(angleChangeValueString);
 
-    const finalWaypoint = instructionSet.filter(Boolean).reduce((accumulator, directiveLine) => {
-        const components = directiveLine.split(',');
-        if (components.length !== 2) {
-            return accumulator;
-        }
+            const currentAngularOrientationRadians = currentAngularOrientation * degreeToRadianConversionFactor;
 
-        const travelMagnitude = parseFloat(components[0]);
-        const angularAdjustment = parseFloat(components[1]);
+            const nextXPosition = currentXPosition + stepDistance * Math.sin(currentAngularOrientationRadians);
+            const nextYPosition = currentYPosition + stepDistance * Math.cos(currentAngularOrientationRadians);
+            const nextAngularOrientation = currentAngularOrientation + angleIncrementDegrees;
 
-        const currentBearingInRadians = accumulator.currentBearingAngle * RADIAN_CONVERSION_FACTOR;
+            return [nextXPosition, nextYPosition, nextAngularOrientation];
+        }, [0, 0, 0]);
 
-        const displacementX = travelMagnitude * Math.sin(currentBearingInRadians);
-        const displacementY = travelMagnitude * Math.cos(currentBearingInRadians);
+    const [finalXOutput, finalYOutput] = finalCoordinateState;
 
-        return {
-            currentXCoordinate: accumulator.currentXCoordinate + displacementX,
-            currentYCoordinate: accumulator.currentYCoordinate + displacementY,
-            currentBearingAngle: accumulator.currentBearingAngle + angularAdjustment
-        };
-    }, {
-        currentXCoordinate: 0,
-        currentYCoordinate: 0,
-        currentBearingAngle: 0
-    });
-
-    console.log(Math.trunc(finalWaypoint.currentXCoordinate));
-    console.log(Math.trunc(finalWaypoint.currentYCoordinate));
-}
-
-process.stdin.on('data', evaluatePathSegment);
-process.stdin.resume();
+    console.log(finalXOutput | 0);
+    console.log(finalYOutput | 0);
+}).resume();

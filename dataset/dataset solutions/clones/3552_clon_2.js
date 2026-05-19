@@ -1,73 +1,57 @@
-'use strict'; // Enforce strict JavaScript parsing and execution.
+'use strict';
 
-/**
- * This function processes a given text input to determine if a sequence of words
- * forms a valid chain according to specific rules.
- * Rules:
- * 1. Each word in the sequence must be unique (no duplicates).
- * 2. The last character of a word must match the first character of the subsequent word.
- *
- * @param {string} rawInputData The raw string input, where the first line is typically a count
- *                               (which is ignored), and subsequent lines are the words.
- */
-const executeProgramLogic = ( rawInputData ) => {
+// This function processes the given raw data to determine if a word chain is valid.
+const processInput = (rawData) => {
+    // Split the input by newline and remove the first line (which is the count).
+    const wordList = rawData.split('\n').slice(1);
 
-    // Parse the input data: split by newline and remove the initial line (often a count).
-    const wordSequence = rawInputData . split ( '\n' ) . slice ( 1 ) ;
+    // Initialize a variable to store the last character of the previous word.
+    let previousEndingChar = null;
 
-    // Initialize a variable to store the final character of the previously processed word.
-    // It's set to null initially as there's no previous word for the very first word.
-    let previousEndingChar = null ;
+    // Use an object to keep track of words that have already appeared.
+    const seenWords = {};
 
-    // Create an object to act as a hash map (or set) to keep track of words already encountered.
-    // This helps in quickly checking for duplicate words.
-    const seenWordsMap = { } ;
+    // Assume the chain is valid until proven otherwise.
+    let isChainValid = true;
 
-    // A boolean flag to maintain the validity status of the word chain.
-    // It's optimistically set to true and changed to false upon any rule violation.
-    let allConditionsMet = true ;
-
-    // Iterate through each word in the extracted sequence.
-    wordSequence . forEach ( currentPhrase => {
+    // Iterate over each word in the list.
+    wordList.forEach(currentWord => {
         // Check if the current word has been seen before.
-        if ( typeof seenWordsMap[ currentPhrase ] !== 'undefined' ) {
-            allConditionsMet = false ; // If it's a duplicate, the chain is invalid.
+        if (typeof seenWords[currentWord] !== 'undefined') {
+            isChainValid = false; // If so, the chain is invalid.
         }
 
-        // Get the very first character of the current word.
-        const currentStartChar = currentPhrase . substring ( 0 , 1 ) ;
+        // Extract the first character of the current word.
+        const currentStartingChar = currentWord.substr(0, 1);
+        // Extract the last character of the current word.
+        const currentEndingChar = currentWord.substr(-1);
 
-        // Get the very last character of the current word.
-        const currentEndChar = currentPhrase . substring ( currentPhrase.length - 1 ) ;
-
-        // Validate the character linkage:
-        // If this isn't the first word (previousEndingChar is not null)
-        // AND the previous word's ending char doesn't match the current word's starting char,
-        // then the chain is invalid.
-        if ( previousEndingChar !== null && previousEndingChar !== currentStartChar ) {
-            allConditionsMet = false ; // Character mismatch, invalid chain.
+        // If this is not the first word and the previous word's last char
+        // does not match the current word's first char, the chain is invalid.
+        if (previousEndingChar !== null && previousEndingChar !== currentStartingChar) {
+            isChainValid = false;
         }
 
-        // Update the 'previousEndingChar' for the next iteration with the current word's ending character.
-        previousEndingChar = currentEndChar ;
+        // Update the previous ending character for the next iteration.
+        previousEndingChar = currentEndingChar;
 
-        // Mark the current word as seen in the hash map. The value `true` simply indicates presence.
-        seenWordsMap[ currentPhrase ] = true ;
-    } ) ;
+        // Mark the current word as seen.
+        seenWords[currentWord] = true;
+    });
 
-    // Based on the final state of `allConditionsMet`, print the result.
-    console . log ( allConditionsMet ? 'Yes' : 'No' ) ;
-} ;
+    // Output "Yes" if the chain is valid, "No" otherwise.
+    console.log(isChainValid ? 'Yes' : 'No');
+};
 
-// A configuration flag to switch between development/testing mode and production mode.
-const isDebuggingActive = false ;
+// A flag to control whether test cases are run or standard input is used.
+const runTestCases = false;
 
-// Conditional block to execute the program logic.
-if ( isDebuggingActive ) {
-    // In debugging mode, predefined test cases are used.
-    executeProgramLogic ( '4\nhoge\nenglish\nhoge\nenigma' ) ;
-    executeProgramLogic ( '9\nbasic\nc\ncpp\nphp\npython\nnadesico\nocaml\nlua\nassembly' ) ;
+if (runTestCases) {
+    // Example test case 1: Invalid chain due to repeated word and broken link.
+    processInput('4\nhoge\nenglish\nhoge\nenigma');
+    // Example test case 2: Valid chain.
+    processInput('9\nbasic\nc\ncpp\nphp\npython\nnadesico\nocaml\nlua\nassembly');
 } else {
-    // In production mode, input is read asynchronously from standard input (stdin).
-    executeProgramLogic ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+    // Read input from standard input for production use.
+    processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 }

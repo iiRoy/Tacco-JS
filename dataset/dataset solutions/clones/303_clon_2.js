@@ -1,28 +1,22 @@
-let inputDataSeries = require('fs').readFileSync('/dev/stdin', 'utf8') .  trim()   . split(/\s+/);
+inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split(/\s/);
 
-for ( let currentPairIndex = 0; currentPairIndex < inputDataSeries.length; currentPairIndex += 2  )
-{
-    let foundLeapYears = 0;
+for (idx = 0; idx < inputData.length; idx += 2) {
+    leapYearCounter = 0;
+    currentYear = inputData[idx];
 
-    let yearlyIterator = Number(inputDataSeries[currentPairIndex]);
-
-    if (yearlyIterator === 0)
-    {
+    if (currentYear == 0) {
         break;
     }
 
-    for (   ; yearlyIterator <= Number(inputDataSeries[currentPairIndex + 1]); yearlyIterator++ )
-    {
-        if ( (yearlyIterator % 400 === 0) || ( (yearlyIterator % 4 === 0) && (yearlyIterator % 100 !== 0) ) )
-        {
-            process.stdout.write(yearlyIterator + "\n");
-            foundLeapYears++;
+    for (; currentYear <= inputData[idx + 1]; currentYear++) {
+        if (currentYear % 400 === 0 || (currentYear % 4 === 0 && currentYear % 100 !== 0)) {
+            console.log(currentYear);
+            leapYearCounter++;
         }
     }
 
-    if (foundLeapYears === 0)
-    {
-        process.stdout.write("NA\n");
+    if (leapYearCounter === 0) {
+        console.log("NA");
     }
-    process.stdout.write("\n");
+    console.log();
 }

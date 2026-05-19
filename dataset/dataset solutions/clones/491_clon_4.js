@@ -1,50 +1,58 @@
-const acquireRawMaterial = require('fs').readFileSync('/dev/stdin', 'utf8');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const dataSegments = sourceData.trim().split('\n');
 
-const materialFragments = acquireRawMaterial.trim().split('\n');
+const processAllBlocks = (segments) => {
+    let currentSegmentPointer = 0;
+    const blockOutcomes = [];
 
-const checkIntervalIntersection = (firstSpan, secondSpan) =>
-    firstSpan.origin < secondSpan.terminus && firstSpan.terminus > secondSpan.origin;
+    while (currentSegmentPointer < segments.length) {
+        const currentBlockSize = Number(segments[currentSegmentPointer++]);
+        if (currentBlockSize === 0) {
+            break;
+        }
 
-const assessEntityCollection = (entityCollection) => {
-    const massExceedanceDetected = entityCollection.some(primaryEntity => {
-        const initialEntityMass = primaryEntity.quantity;
+        const blockEntries = [];
+        for (let k = 0; k < currentBlockSize; k++) {
+            const parts = segments[currentSegmentPointer++].split(' ').map(Number);
+            blockEntries.push({
+                initialWeight: parts[0],
+                rangeStart: parts[1],
+                rangeEnd: parts[2]
+            });
+        }
 
-        const cumulativeIntersectingMass = entityCollection
-            .filter(secondaryEntity => secondaryEntity !== primaryEntity && checkIntervalIntersection(primaryEntity, secondaryEntity))
-            .reduce((currentSum, intersectingEntity) => currentSum + intersectingEntity.quantity, 0);
-
-        return (initialEntityMass + cumulativeIntersectingMass) > 150;
-    });
-
-    return massExceedanceDetected ? "NG" : "OK";
+        blockOutcomes.push(evaluateCurrentBlock(blockEntries));
+    }
+    return blockOutcomes;
 };
 
-const processAllInputBlocks = (remainingInputLines, collectedResults = []) => {
-    if (remainingInputLines.length === 0) {
-        return collectedResults;
-    }
+const evaluateCurrentBlock = (entries) => {
+    const thresholdValue = 150;
 
-    const currentBlockSize = parseInt(remainingInputLines[0], 10);
+    const isAnyEntryExceeding = entries.some((currentEntry, currentEntryIndex) => {
+        const currentEntryWeight = currentEntry.initialWeight;
+        const currentEntryRangeStart = currentEntry.rangeStart;
+        const currentEntryRangeEnd = currentEntry.rangeEnd;
 
-    if (currentBlockSize === 0) {
-        return collectedResults;
-    }
+        const totalEffectiveWeight = entries.reduce((accumulator, otherEntry, otherEntryIndex) => {
+            if (currentEntryIndex === otherEntryIndex) {
+                return accumulator;
+            }
 
-    const currentBlockEntityLines = remainingInputLines.slice(1, 1 + currentBlockSize);
+            const otherEntryRangeStart = otherEntry.rangeStart;
+            const otherEntryRangeEnd = otherEntry.rangeEnd;
 
-    const parsedEntitiesForBlock = currentBlockEntityLines.map(lineFragment => {
-        const [unitWeight, startCoordinate, endCoordinate] = lineFragment.split(' ').map(Number);
-        return { quantity: unitWeight, origin: startCoordinate, terminus: endCoordinate };
+            if (currentEntryRangeStart < otherEntryRangeEnd && currentEntryRangeEnd > otherEntryRangeStart) {
+                return accumulator + otherEntry.initialWeight;
+            } else {
+                return accumulator;
+            }
+        }, currentEntryWeight);
+
+        return totalEffectiveWeight > thresholdValue;
     });
 
-    const blockEvaluationOutcome = assessEntityCollection(parsedEntitiesForBlock);
-
-    return processAllInputBlocks(
-        remainingInputLines.slice(1 + currentBlockSize),
-        collectedResults.concat(blockEvaluationOutcome)
-    );
+    return isAnyEntryExceeding ? "NG" : "OK";
 };
 
-const finalOutputStrings = processAllInputBlocks(materialFragments);
-
-finalOutputStrings.forEach(resultString => console.log(resultString));
+processAllBlocks(dataSegments).forEach(console.log);

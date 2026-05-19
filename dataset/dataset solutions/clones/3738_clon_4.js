@@ -1,48 +1,55 @@
-const calculateCriterion = (numericInput) => {
-  const digitStringArray = Array.from(String(numericInput));
-  const sumOfConstituentDigits = digitStringArray.reduce((currentSum, digitChar) => currentSum + parseInt(digitChar, 10), 0);
-  return numericInput / sumOfConstituentDigits;
-};
+'use strict';
 
-const processSequence = (rawInputContent) => {
-  const lines = rawInputContent.split('\n');
-  const firstNumericLine = lines[0].split(' ');
-  const totalIterations = parseInt(firstNumericLine[0], 10);
+function calculateSkuness(numericValue) {
+    const digitString = String(numericValue);
+    const digitSum = Array.from(digitString).reduce((accumulator, charDigit) => accumulator + Number(charDigit), 0);
+    return numericValue / digitSum;
+}
 
-  const initialSequenceOutput = [1];
+function* generateSkunessSequence(limitCount) {
+    yield 1; // The first number in the sequence is always 1
 
-  const finalState = Array.from({ length: totalIterations - 1 }, (_, idx) => idx)
-    .reduce((currentAccumulator, iterationIndex) => {
-      let currentStartingPoint = currentAccumulator.nextSearchValue;
-      let bestFoundValue = currentStartingPoint;
-      let minimumRatioAchieved = calculateCriterion(bestFoundValue);
+    let currentCandidateBase = 2; // This variable tracks the 'x' from the original code
 
-      const stringRepresentationOfCurrent = String(currentStartingPoint);
-      const digitPositions = Array.from({ length: stringRepresentationOfCurrent.length }, (_, i) => i);
+    for (let sequenceIndex = 1; sequenceIndex < limitCount; sequenceIndex++) {
+        // Generate all potential numbers for this step:
+        // 1. The current base number itself
+        // 2. Numbers formed by changing one digit of the current base to '9'
+        const potentialNumbers = [currentCandidateBase];
+        const baseStringRepresentation = String(currentCandidateBase);
 
-      const modifiedNumberCandidates = digitPositions.map(position => {
-        const charArray = stringRepresentationOfCurrent.split('');
-        charArray[position] = '9';
-        return parseInt(charArray.join(''), 10);
-      });
-
-      const allPossibleCandidates = [currentStartingPoint, ...modifiedNumberCandidates];
-
-      for (const candidateValue of allPossibleCandidates) {
-        const currentCriterionResult = calculateCriterion(candidateValue);
-        if (currentCriterionResult < minimumRatioAchieved) {
-          bestFoundValue = candidateValue;
-          minimumRatioAchieved = currentCriterionResult;
+        for (let digitPosition = 0; digitPosition < baseStringRepresentation.length; digitPosition++) {
+            const charArray = Array.from(baseStringRepresentation);
+            charArray[digitPosition] = '9';
+            potentialNumbers.push(Number(charArray.join('')));
         }
-      }
 
-      currentAccumulator.outputValues.push(bestFoundValue);
-      currentAccumulator.nextSearchValue = bestFoundValue + 1;
-      return currentAccumulator;
-    }, { nextSearchValue: 2, outputValues: initialSequenceOutput });
+        // Find the number among potentialNumbers that yields the minimum 'skuness' value
+        const bestChoice = potentialNumbers.reduce(
+            (currentBest, numberToCheck) => {
+                const skunessOfCurrent = calculateSkuness(numberToCheck);
+                if (skunessOfCurrent < currentBest.skunessValue) {
+                    return { value: numberToCheck, skunessValue: skunessOfCurrent };
+                }
+                return currentBest;
+            },
+            { value: potentialNumbers[0], skunessValue: calculateSkuness(potentialNumbers[0]) } // Initialize with the first potential number
+        );
 
-  return finalState.outputValues.join('\n');
-};
+        yield bestChoice.value; // Yield the chosen number for this step
+        currentCandidateBase = bestChoice.value + 1; // Update the base for the next iteration
+    }
+}
 
-const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(processSequence(inputData));
+function executeProgram(rawData) {
+    const lines = rawData.split("\n");
+    const firstLineParts = lines[0].split(' ');
+    const sequenceLimit = parseInt(firstLineParts[0]);
+
+    for (const resultNumber of generateSkunessSequence(sequenceLimit)) {
+        console.log(resultNumber);
+    }
+    return 0;
+}
+
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,103 +1,122 @@
-const inputConfig = { sourcePath: '/dev/stdin', lineDelimiter: '\n' };
+const configuration = { input: '/dev/stdin', newline: '\n' };
 
-class NumericEntry {
-  constructor(numericValue) {
-    this.value = numericValue;
-    this.leftSub = null;
-    this.rightSub = null;
-  }
-}
-
-class RegistryVault {
-  constructor() {
-    this.presentNumbers = new Set();
-    this.primaryRoot = null;
-  }
-
-  addEntry(valueToAdd) {
-    this.presentNumbers.add(valueToAdd);
-
-    const newEntry = new NumericEntry(valueToAdd);
-
-    if (this.primaryRoot === null) {
-      this.primaryRoot = newEntry;
-      return;
+class StructureOfKeys {
+    constructor() {
+        this.rootIndex = null;
+        this.nodes = [];
+        this.existenceTracker = new Set();
     }
 
-    const placeNode = (currentNode, newNode) => {
-      if (newNode.value < currentNode.value) {
-        if (currentNode.leftSub === null) {
-          currentNode.leftSub = newNode;
-        } else {
-          placeNode(currentNode.leftSub, newNode);
+    addValue(val) {
+        this.existenceTracker.add(val);
+
+        const newNodeIndex = this.nodes.length;
+        this.nodes.push({ key: val, left: null, right: null });
+
+        if (this.rootIndex === null) {
+            this.rootIndex = newNodeIndex;
+            return;
         }
-      } else {
-        if (currentNode.rightSub === null) {
-          currentNode.rightSub = newNode;
-        } else {
-          placeNode(currentNode.rightSub, newNode);
-        }
-      }
-    };
-    placeNode(this.primaryRoot, newEntry);
-  }
 
-  checkPresence(valueToFind) {
-    return this.presentNumbers.has(valueToFind);
-  }
+        const _recursivePlacement = (currentIndex, newIndex) => {
+            const currentNode = this.nodes[currentIndex];
+            const newNode = this.nodes[newIndex];
 
-  displayStructure() {
-    const depthFirstTraversal = (currentElement, currentLevel) => {
-      const spacing = '  '.repeat(currentLevel);
-      if (currentElement === null) {
-        process.stdout.write(spacing + 'EMPTY\n');
-        return;
-      }
-      process.stdout.write(spacing + currentElement.value + '\n');
-      depthFirstTraversal(currentElement.leftSub, currentLevel + 1);
-      depthFirstTraversal(currentElement.rightSub, currentLevel + 1);
-    };
-    depthFirstTraversal(this.primaryRoot, 0);
-  }
+            if (newNode.key < currentNode.key) {
+                if (currentNode.left === null) {
+                    currentNode.left = newIndex;
+                } else {
+                    _recursivePlacement(currentNode.left, newIndex);
+                }
+            } else {
+                if (currentNode.right === null) {
+                    currentNode.right = newIndex;
+                } else {
+                    _recursivePlacement(currentNode.right, newIndex);
+                }
+            }
+        };
 
-  outputSequence() {
-    const retrieveInOrder = (item) => {
-      if (item === null) return [];
-      return [...retrieveInOrder(item.leftSub), item.value, ...retrieveInOrder(item.rightSub)];
-    };
+        _recursivePlacement(this.rootIndex, newNodeIndex);
+    }
 
-    const retrievePreOrder = (item) => {
-      if (item === null) return [];
-      return [item.value, ...retrievePreOrder(item.leftSub), ...retrievePreOrder(item.rightSub)];
-    };
+    checkExistence(val) {
+        return this.existenceTracker.has(val);
+    }
 
-    const inOrderResult = retrieveInOrder(this.primaryRoot);
-    const preOrderResult = retrievePreOrder(this.primaryRoot);
+    displayStructure() {
+        const _renderNode = (currentIndex, depth) => {
+            const indentation = '  '.repeat(depth);
+            if (currentIndex === null) {
+                console.log(indentation + 'NIL');
+                return;
+            }
+            const currentNode = this.nodes[currentIndex];
+            console.log(indentation + currentNode.key);
+            _renderNode(currentNode.left, depth + 1);
+            _renderNode(currentNode.right, depth + 1);
+        };
+        _renderNode(this.rootIndex, 0);
+    }
 
-    process.stdout.write(' ' + inOrderResult.join(' ') + '\n');
-    process.stdout.write(' ' + preOrderResult.join(' ') + '\n');
-  }
+    outputSequences() {
+        const _getInorderSequence = () => {
+            const resultList = [];
+            const processingStack = [];
+            let currentPointer = this.rootIndex;
+
+            while (currentPointer !== null || processingStack.length > 0) {
+                while (currentPointer !== null) {
+                    processingStack.push(currentPointer);
+                    currentPointer = this.nodes[currentPointer].left;
+                }
+                currentPointer = processingStack.pop();
+                resultList.push(this.nodes[currentPointer].key);
+                currentPointer = this.nodes[currentPointer].right;
+            }
+            return resultList;
+        };
+
+        const _getPreorderSequence = () => {
+            const resultList = [];
+            if (this.rootIndex === null) return resultList;
+
+            const processingStack = [this.rootIndex];
+
+            while (processingStack.length > 0) {
+                const currentPointer = processingStack.pop();
+                resultList.push(this.nodes[currentPointer].key);
+
+                const currentNode = this.nodes[currentPointer];
+                if (currentNode.right !== null) {
+                    processingStack.push(currentNode.right);
+                }
+                if (currentNode.left !== null) {
+                    processingStack.push(currentNode.left);
+                }
+            }
+            return resultList;
+        };
+
+        console.log(' ' + _getInorderSequence().join(' '));
+        console.log(' ' + _getPreorderSequence().join(' '));
+    }
 }
 
-const fileSource = require('fs').createReadStream(inputConfig.sourcePath, { encoding: 'ascii' });
-const inputLineHandler = require('readline').createInterface({
-  input: fileSource,
-  output: process.stdout
-});
+const fileStream = require('fs').createReadStream(configuration.input, {encoding: 'ascii'});
+const lineReader = require('readline').createInterface({
+  input: fileStream, output: process.stdout});
 
-const dataStore = new RegistryVault();
+const keyStructure = new StructureOfKeys();
 
-inputLineHandler.on('line', (currentLine) => {
-  const commandParts = currentLine.split(' ');
-  const operation = commandParts[0];
-  const operand = parseInt(commandParts[1], 10);
-
-  if (operation === 'insert') {
-    dataStore.addEntry(operand);
-  } else if (operation === 'find') {
-    process.stdout.write((dataStore.checkPresence(operand) ? 'yes' : 'no') + '\n');
-  } else if (operation === 'print') {
-    // dataStore.displayStructure();
-    // dataStore.outputSequence();
+lineReader.on('line', function (inputLine) {
+  const instructionParts = inputLine.split(' ');
+  if (instructionParts[0] === 'insert') {
+    keyStructure.addValue(parseInt(instructionParts[1], 10));
+  } else if (instructionParts[0] === 'find') {
+    console.log(keyStructure.checkExistence(parseInt(instructionParts[1], 10)) ? 'yes' : 'no');
+  } else if (instructionParts[0] === 'print') {
+    //keyStructure.displayStructure();
+    keyStructure.outputSequences();
   }
 });

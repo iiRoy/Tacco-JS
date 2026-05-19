@@ -1,237 +1,211 @@
-/*
- * This self-executing function creates and returns an input parsing utility.
- * It provides methods to read various types of data from a multi-line string input.
- */
-var DATA_READER = ( function ( ) {
-  /**
-   * Factory function to create an instance of the InputParser.
-   * @param {string} inputString Raw string data to be parsed.
-   * @returns {InputParser} A new parser instance.
-   */
-  function createReader ( inputString ) {
-    return new InputParser( inputString ) ;
-  }
-
-  /**
-   * Constructor for the InputParser class.
-   * Initializes the internal buffer with lines from the input string.
-   * @param {string} rawInputString The complete input string.
-   */
-  function InputParser ( rawInputString ) {
-    // Store lines after trimming whitespace and splitting by newline characters.
-    this . lineBuffer = rawInputString . trim ( ) . split ( "\n" ) ;
-    // Initialize the index for the current line being processed.
-    this . currentLineIndex = 0 ;
-  }
-
-  /**
-   * Reads a single value from the current line. If the line is not yet split,
-   * it splits it by space and reverses to pop values from the right.
-   * Advances the line index if the current line becomes empty.
-   * @param {boolean} [returnAsString=false] If true, returns the value as a string; otherwise, as a number.
-   * @returns {string|number} The extracted value.
-   */
-  InputParser . prototype . readSingleValue = function ( returnAsString ) {
-    var lineContentArray = this . lineBuffer,
-        currentLinePosition = this . currentLineIndex,
-        poppedItem ;
-
-    // If the current line is still a string, split it into segments and reverse.
-    // Reversing allows popping from the end, which is more efficient than shifting from the beginning.
-    if ( typeof lineContentArray [ currentLinePosition ] === "string" ) {
-      lineContentArray [ currentLinePosition ] = lineContentArray [ currentLinePosition ] . split ( " " ) . reverse ( ) ;
+var INPUT_PARSER = (function() {
+    /**
+     * Factory function to create an InputReader instance.
+     * @param {string} sourceString - The raw string containing all input data.
+     * @returns {InputReader} A new instance of InputReader.
+     */
+    function createParser(sourceString) {
+        return new InputReader(sourceString);
     }
 
-    // Extract the last segment from the current line's array.
-    poppedItem = lineContentArray [ currentLinePosition ] . pop ( ) ;
-
-    // If the current line is now empty, advance to the next line.
-    if ( ! lineContentArray [ currentLinePosition ] . length ) {
-      this . currentLineIndex ++ ;
+    /**
+     * InputReader class for parsing various data types from a string.
+     * @class
+     * @param {string} rawInputString - The complete input string, typically from a file.
+     */
+    function InputReader(rawInputString) {
+        // Internal storage for processed input lines.
+        this._sourceLines = rawInputString.trim().split("\n");
+        // Index of the current line being processed.
+        this._currentLineIndex = 0;
     }
 
-    // Return the item, parsed as a number if returnAsString is false/falsy.
-    return returnAsString ? poppedItem : + poppedItem ;
-  } ;
+    /**
+     * Reads the next single value from the current line.
+     * Values on a line are consumed from right to left (as per original logic).
+     * @param {boolean} [returnAsString=false] - If true, returns the value as a string; otherwise, as a number.
+     * @returns {string|number} The parsed value.
+     */
+    InputReader.prototype.readNextValue = function(returnAsString) {
+        let lineSegments = this._sourceLines;
+        let currentLineIdx = this._currentLineIndex;
+        let extractedValue;
 
-  /**
-   * Reads all values from the current line as an array.
-   * Advances the line index after reading.
-   * @param {boolean} [returnAsString=false] If true, returns values as strings; otherwise, as numbers.
-   * @returns {Array<string|number>} An array of values from the line.
-   */
-  InputParser . prototype . readAllOnLine = function ( returnAsString ) {
-    // Split the current line by spaces and increment the line index.
-    var lineParts = this . lineBuffer [ this . currentLineIndex ++ ] . split ( " " ) ;
+        // If the current line is still a single string, split it into segments and reverse.
+        // Reversing allows `pop()` to get elements in their original left-to-right order.
+        if (typeof lineSegments[currentLineIdx] === "string") {
+            lineSegments[currentLineIdx] = lineSegments[currentLineIdx].split(" ").reverse();
+        }
 
-    // Return as strings or map to numbers.
-    return returnAsString ? lineParts : lineParts . map ( item => + item ) ;
-  } ;
+        // Extract the last element from the (reversed) array.
+        extractedValue = lineSegments[currentLineIdx].pop();
 
-  /**
-   * Reads a specified number of lines as a matrix (array of arrays).
-   * Advances the line index by the number of lines read.
-   * @param {number} numberOfLines The count of lines to read for the matrix.
-   * @param {boolean} [returnAsString=false] If true, returns values as strings; otherwise, as numbers.
-   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
-   */
-  InputParser . prototype . readMatrix = function ( numberOfLines, returnAsString ) {
-    // Slice the required number of lines, then map each line string to an array of its segments.
-    var matrixRows = this . lineBuffer . slice ( this . currentLineIndex, this . currentLineIndex += numberOfLines ) . map ( rowString => rowString . split ( " " ) ) ;
+        // If the current line is now empty, advance to the next line.
+        if (!lineSegments[currentLineIdx].length) {
+            this._currentLineIndex++;
+        }
 
-    // If numerical conversion is required, apply it to all elements in the matrix.
-    return returnAsString ? matrixRows : matrixRows . map ( rowString => rowString . map ( elementString => + elementString ) ) ;
-  } ;
+        // Return as string or convert to number.
+        return returnAsString ? extractedValue : +extractedValue;
+    };
 
-  /**
-   * Reads a specified number of lines and returns them as an array.
-   * Advances the line index by the number of lines read.
-   * @param {number} numberOfLines The count of lines to read.
-   * @param {boolean} [returnAsString=false] If true, returns lines as strings; otherwise, each line converted to a number.
-   * @returns {Array<string|number>} An array of lines.
-   */
-  InputParser . prototype . readLines = function ( numberOfLines, returnAsString ) {
-    // Get a slice of lines from the buffer and update the current line index.
-    var dataLines = this . lineBuffer . slice ( this . currentLineIndex, this . currentLineIndex += numberOfLines ) ;
+    /**
+     * Reads an entire line of space-separated values.
+     * @param {boolean} [returnAsStrings=false] - If true, returns values as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of values from the line.
+     */
+    InputReader.prototype.readLineValues = function(returnAsStrings) {
+        // Get the current line, split by space, and then advance the line index.
+        let lineContent = this._sourceLines[this._currentLineIndex++].split(" ");
+        return returnAsStrings ? lineContent : lineContent.map(item => +item);
+    };
 
-    // Return as strings or map each line to a number.
-    return returnAsString ? dataLines : dataLines . map ( lineString => + lineString ) ;
-  } ;
+    /**
+     * Reads a block of 'numLines' lines, parsing each into space-separated values (a matrix).
+     * @param {number} numLines - The number of lines to read for the matrix.
+     * @param {boolean} [returnAsStrings=false] - If true, returns values as strings; otherwise, as numbers.
+     * @returns {Array<Array<string|number>>} A 2D array (matrix) of parsed values.
+     */
+    InputReader.prototype.readMatrix = function(numLines, returnAsStrings) {
+        // Slice the relevant lines and update the current line index.
+        let matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines)
+                                          .map(line => line.split(" "));
+        return returnAsStrings ? matrixRows : matrixRows.map(row => row.map(item => +item));
+    };
 
-  // Return the factory function to create parser instances.
-  return createReader ;
+    /**
+     * Reads a block of 'numLines' lines, treating each line as a single value.
+     * @param {number} numLines - The number of lines to read.
+     * @param {boolean} [returnAsStrings=false] - If true, returns values as strings; otherwise, as numbers.
+     * @returns {Array<string|number>} An array of values, one per line.
+     */
+    InputReader.prototype.readRows = function(numLines, returnAsStrings) {
+        // Slice the relevant lines and update the current line index.
+        let rowValues = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+        return returnAsStrings ? rowValues : rowValues.map(item => +item);
+    };
 
-} ) ( ) ; // End of DATA_READER module
+    return createParser;
+})();
 
-/*
- * Initialize the input processor by reading standard input.
- * Uses Node.js 'fs' module to read the entire file synchronously.
- */
-var inputProcessor = DATA_READER ( require ( "node:fs" ) . readFileSync ( "/dev/stdin", "utf8" ) ) ;
+// Initialize the input parser by reading from standard input.
+var inputData = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
  * Creates a multi-dimensional array dynamically based on provided dimensions.
- * This is a utility function to generate arrays like `Array(d1).fill(0).map(() => Array(d2).fill(0)...)`.
- * @param {*} initialValue The value to initialize each element with.
- * @param {...number} dimensions Variable number of arguments representing array dimensions.
- * @returns {Array} The generated multi-dimensional array.
+ * @param {*} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension.
+ * @returns {Array} The initialized multi-dimensional array.
  */
-function createMultiDimArray ( initialValue ) {
-  var dimensions = arguments,
-      dimCount = dimensions . length,
-      arrayCreationCode = "Array(dimensions[" + -- dimCount + "]) . fill ( 0 ) . map ( x => { return " + initialValue + " ; } )" ;
+function initializeMultiDimArray(initialValue) {
+    let argsList = arguments;
+    let argCount = argsList.length;
+    // Construct the string for the innermost array creation.
+    let arrayCreationString = "Array(argsList[" + --argCount + "]).fill(0).map(element => {return " + initialValue + ";})";
 
-  // Build the array creation string from innermost to outermost dimension.
-  while ( -- dimCount ) {
-    arrayCreationCode = "Array(dimensions[" + dimCount + "]) . fill ( 0 ) . map ( x => " + arrayCreationCode + " )" ;
-  }
-  // Evaluate the constructed string to create the array.
-  return eval ( arrayCreationCode ) ;
+    // Build up the nested array creation string for higher dimensions.
+    while (--argCount) {
+        arrayCreationString = "Array(argsList[" + argCount + "]).fill(0).map(element => " + arrayCreationString + ")";
+    }
+    // Evaluate the string to create the array.
+    return eval(arrayCreationString);
 }
 
-// Global variables for storing parsed input data and derived properties.
-var totalPointsCount,
-    xCoordinates = [ ], // Array to store X-coordinates of points.
-    yCoordinates = [ ] ; // Array to store Y-coordinates of points.
+// Global variables to store the number of points and their coordinates.
+var pointCount;
+var xCoordinates = [];
+var yCoordinates = [];
 
-/*
- * The main execution block. Calls the primary calculation function and prints its result.
- */
-console . log ( calculateMaxDistance ( ) ) ;
+// Execute the main calculation logic and print the final result.
+console.log(calculateMaxDistance());
 
 /**
- * Main function to process input coordinates, find the maximum squared Euclidean distance
- * from the origin for points projected onto lines, and return the square root of this maximum.
- * @returns {number} The square root of the maximum squared distance.
+ * Main function to process input points and determine the maximum possible distance.
+ * It reads points, filters out (0,0), and then searches for an optimal projection vector
+ * to maximize the squared magnitude of the sum of projected points.
+ * @returns {number} The square root of the maximum squared magnitude found.
  */
-function calculateMaxDistance ( ) {
-  // Read the initial count of points.
-  totalPointsCount = inputProcessor . readSingleValue ( ) ;
+function calculateMaxDistance() {
+    // Read the total number of points initially provided.
+    pointCount = inputData.readNextValue();
 
-  // Loop to read all coordinate pairs.
-  for ( var pointIndex = 0 ; pointIndex < totalPointsCount ; pointIndex ++ ) {
-    var currentX = inputProcessor . readSingleValue ( ),
-        currentY = inputProcessor . readSingleValue ( ) ;
+    // Loop through the specified number of points to read their coordinates.
+    for (let loopVar = 0; loopVar < pointCount; loopVar++) {
+        let currentX = inputData.readNextValue(); // Read the x-coordinate.
+        let currentY = inputData.readNextValue(); // Read the y-coordinate.
 
-    // Skip points that are at the origin (0,0) as they don't contribute to the sum.
-    if ( currentX === 0 && currentY === 0 ) {
-      continue ;
+        // If a point is at the origin (0,0), it does not contribute to the sum, so skip it.
+        if (currentX === 0 && currentY === 0) {
+            continue;
+        }
+
+        // Store the valid (non-origin) coordinates.
+        xCoordinates.push(currentX);
+        yCoordinates.push(currentY);
     }
 
-    // Store the valid coordinates.
-    xCoordinates . push ( currentX ) ;
-    yCoordinates . push ( currentY ) ;
-  }
+    // Update the pointCount to reflect only the valid points that were stored.
+    pointCount = xCoordinates.length;
 
-  // Update totalPointsCount to reflect only the valid, non-origin points.
-  totalPointsCount = xCoordinates . length ;
+    // Initialize the variable to store the maximum squared distance found.
+    let maxSquaredDistance = 0;
 
-  // Initialize the maximum squared distance found so far.
-  var maximumSquaredDistance = 0 ;
+    // Iterate through a range of values for the projection vector components (h, w).
+    // The range is from -1,000,000 to 1,000,000, incrementing by 20.
+    for (let loopVar = -1000000; loopVar <= 1000000; loopVar += 20) {
+        // Test four boundary conditions for the projection vector (h, w).
 
-  // Iterate through a range of possible line parameters (h, w).
-  // The original problem likely involves finding the maximum squared sum of projections
-  // onto various lines defined by (h,w) where h or w are fixed to large values or 'i'.
-  for ( var coordinateValue = -1000000 ; coordinateValue <= 1000000 ; coordinateValue += 20 ) {
-    // Test various line orientations by fixing one component to a boundary and varying the other,
-    // or by varying one component and fixing the other to a boundary.
-    // This forms a grid-like search over a large parameter space.
+        // Case 1: h = -1,000,000, w = loopVar
+        let currentSquaredDistance = computeProjectionSquaredMagnitude(-1000000, loopVar);
+        if (maxSquaredDistance < currentSquaredDistance) {
+            maxSquaredDistance = currentSquaredDistance;
+        }
 
-    // Case 1: Line with fixed horizontalComponent = -1000000, varying verticalComponent.
-    var currentSquaredDistance = computeProjectionSquaredLength ( -1000000, coordinateValue ) ;
-    if ( maximumSquaredDistance < currentSquaredDistance ) {
-      maximumSquaredDistance = currentSquaredDistance ;
+        // Case 2: h = 1,000,000, w = loopVar
+        currentSquaredDistance = computeProjectionSquaredMagnitude(1000000, loopVar);
+        if (maxSquaredDistance < currentSquaredDistance) {
+            maxSquaredDistance = currentSquaredDistance;
+        }
+
+        // Case 3: h = loopVar, w = 1,000,000
+        currentSquaredDistance = computeProjectionSquaredMagnitude(loopVar, 1000000);
+        if (maxSquaredDistance < currentSquaredDistance) {
+            maxSquaredDistance = currentSquaredDistance;
+        }
+
+        // Case 4: h = loopVar, w = -1,000,000
+        currentSquaredDistance = computeProjectionSquaredMagnitude(loopVar, -1000000);
+        if (maxSquaredDistance < currentSquaredDistance) {
+            maxSquaredDistance = currentSquaredDistance;
+        }
     }
-
-    // Case 2: Line with fixed horizontalComponent = 1000000, varying verticalComponent.
-    currentSquaredDistance = computeProjectionSquaredLength ( 1000000, coordinateValue ) ;
-    if ( maximumSquaredDistance < currentSquaredDistance ) {
-      maximumSquaredDistance = currentSquaredDistance ;
-    }
-
-    // Case 3: Line with fixed verticalComponent = 1000000, varying horizontalComponent.
-    currentSquaredDistance = computeProjectionSquaredLength ( coordinateValue, 1000000 ) ;
-    if ( maximumSquaredDistance < currentSquaredDistance ) {
-      maximumSquaredDistance = currentSquaredDistance ;
-    }
-
-    // Case 4: Line with fixed verticalComponent = -1000000, varying horizontalComponent.
-    currentSquaredDistance = computeProjectionSquaredLength ( coordinateValue, -1000000 ) ;
-    if ( maximumSquaredDistance < currentSquaredDistance ) {
-      maximumSquaredDistance = currentSquaredDistance ;
-    }
-  }
-
-  // The problem asks for the square root of the maximum squared sum of projections.
-  return Math . sqrt ( maximumSquaredDistance ) ;
+    // The problem asks for the distance, which is the square root of the maximum squared distance.
+    return Math.sqrt(maxSquaredDistance);
 }
 
 /**
- * Computes the squared Euclidean length of the sum of projected vectors (x[i], y[i])
- * onto a line defined by a normal vector (horizontalComponent, verticalComponent).
- * The projection formula is effectively (x*w + y*h) for each point,
- * and we sum up x and y components of points for which this projection is positive.
- * Then calculate (sum_x)^2 + (sum_y)^2.
- * @param {number} horizontalComponent The 'h' component of the normal vector for the line.
- * @param {number} verticalComponent The 'w' component of the normal vector for the line.
- * @returns {number} The squared length of the resultant vector.
+ * Computes the squared magnitude of the sum of selected vectors.
+ * For each point (x_i, y_i), if its dot product with the vector (vectorW, vectorH) is positive,
+ * it is included in the sum. The function then returns the squared Euclidean magnitude of this sum.
+ * @param {number} vectorH - The 'h' component of the projection vector.
+ * @param {number} vectorW - The 'w' component of the projection vector.
+ * @returns {number} The squared magnitude (totalProjectedX^2 + totalProjectedY^2) of the resulting summed vector.
  */
-function computeProjectionSquaredLength ( horizontalComponent, verticalComponent ) {
-  var totalXProjection = 0,
-      totalYProjection = 0 ;
+function computeProjectionSquaredMagnitude(vectorH, vectorW) {
+    let totalProjectedX = 0; // Accumulator for the sum of x-components of selected points.
+    let totalProjectedY = 0; // Accumulator for the sum of y-components of selected points.
 
-  // Iterate through all stored points.
-  for ( var idx = 0 ; idx < totalPointsCount ; idx ++ ) {
-    // The condition `x[i]*w + y[i]*h > 0` effectively checks if the dot product
-    // of the point vector (x[i], y[i]) and the normal vector (h, w) is positive.
-    // This means the point lies on one side of the line passing through the origin
-    // perpendicular to (h, w). Only points on this side contribute to the sum.
-    if ( xCoordinates [ idx ] * verticalComponent + yCoordinates [ idx ] * horizontalComponent > 0 ) {
-      totalXProjection += xCoordinates [ idx ] ;
-      totalYProjection += yCoordinates [ idx ] ;
+    // Iterate through all the valid (non-origin) points.
+    for (let loopIndex = 0; loopIndex < pointCount; loopIndex++) {
+        // Calculate the dot product of the current point (xCoordinates[loopIndex], yCoordinates[loopIndex])
+        // with the projection vector (vectorW, vectorH).
+        // The condition `x[i]*w + y[i]*h > 0` means we are checking the dot product with (w, h).
+        if (xCoordinates[loopIndex] * vectorW + yCoordinates[loopIndex] * vectorH > 0) {
+            // If the dot product is positive, the point contributes to the sum.
+            totalProjectedX += xCoordinates[loopIndex];
+            totalProjectedY += yCoordinates[loopIndex];
+        }
     }
-  }
-
-  // Return the squared Euclidean distance of the resultant vector (totalXProjection, totalYProjection).
-  return totalXProjection * totalXProjection + totalYProjection * totalYProjection ;
+    // Return the squared Euclidean magnitude of the accumulated vector.
+    return totalProjectedX * totalProjectedX + totalProjectedY * totalProjectedY;
 }

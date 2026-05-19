@@ -1,27 +1,35 @@
-// Source: A programming competition problem from AtCoder
-"use strict";
-function SolveProblem ( initialData )
-{
+"use strict"; // Enforce strict parsing and error handling
+/*
+ * This script processes input data to calculate a specific sum.
+ * It's based on a problem from AtCoder.
+ */
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines, removing leading/trailing whitespace.
+  const inputLines = rawData.trim().split("\n");
 
-  const dataSegments = initialData . trim ( ) . split ( "\n" ) ;
+  // Parse the first line to get the number of groups.
+  const countOfGroups = Number(inputLines[0].trim());
 
-  const subsetQuantity = Number ( dataSegments[0] . trim ( ) ) ;
+  // Process the second line: split by space, convert to numbers, and sort in descending order.
+  const descendingNumbers = inputLines[1]
+    .trim()
+    .split(" ")
+    .map(Number)
+    .sort((valA, valB) => valB - valA); // Sort from largest to smallest
 
-  const orderedElements = dataSegments [ 1 ]
-    . trim ( )
-    . split ( " " )
-    . map ( Number )
-    . sort ( ( item1 , item2 ) => item2 - item1 ) ;
+  // Initialize a variable to accumulate the sum.
+  let cumulativeSum = 0;
 
-
-  let aggregateValue = 0 ;
-  for ( let loopIterator = 0 ; loopIterator < subsetQuantity ; loopIterator ++ )
-  {
-    aggregateValue += orderedElements [ loopIterator * 2 + 1 ] ;
+  // Iterate 'countOfGroups' times to select specific elements from the sorted array.
+  for (let idx = 0; idx < countOfGroups; idx++) {
+    // Add the element at index (idx * 2 + 1) to the cumulative sum.
+    cumulativeSum += descendingNumbers[idx * 2 + 1];
   }
 
-  console . log ( aggregateValue ) ;
-
+  // Output the final calculated sum to the console.
+  console.log(cumulativeSum);
 }
-// Do not modify the following line; it handles standard input/output and invokes the primary processing routine.
-SolveProblem( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+// The following line handles reading from standard input and invoking the main processing function.
+// It should not be modified for competitive programming environments.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

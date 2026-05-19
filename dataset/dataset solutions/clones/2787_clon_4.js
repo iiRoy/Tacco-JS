@@ -1,36 +1,32 @@
-const processData = (inputLines) => {
-    const quantityIndicator = Number(inputLines[0]);
-    
-    const numericalSeries = inputLines[1].split(' ').reduce((accumulator, stringValue) => {
-        accumulator.push(+stringValue);
-        return accumulator;
-    }, []);
+"use strict";
+const processInput = (rawDataLines) => {
+    const elementCount = +rawDataLines[0];
+    let numericalValues = rawDataLines[1].split(' ').map(strVal => parseFloat(strVal));
 
-    const arrangeElementsAscending = (dataCollection) => {
-        const totalItems = dataCollection.length;
-        for (let i = 1; i < totalItems; i++) {
-            let currentItem = dataCollection[i];
-            let j = i - 1;
-            while (j >= 0 && dataCollection[j] > currentItem) {
-                dataCollection[j + 1] = dataCollection[j];
-                j--;
-            }
-            dataCollection[j + 1] = currentItem;
+    for (let currentIdx = 1; currentIdx < elementCount; currentIdx++) {
+        let currentElement = numericalValues[currentIdx];
+        let previousIdx = currentIdx - 1;
+        while (previousIdx >= 0 && numericalValues[previousIdx] > currentElement) {
+            numericalValues[previousIdx + 1] = numericalValues[previousIdx];
+            previousIdx--;
         }
-        return dataCollection;
-    };
+        numericalValues[previousIdx + 1] = currentElement;
+    }
 
-    const orderedNumericalSeries = arrangeElementsAscending(numericalSeries);
+    const upperMiddleIndex = elementCount / 2;
+    const lowerMiddleIndex = upperMiddleIndex - 1;
 
-    const rightMidPointIndex = orderedNumericalSeries.length / 2;
-    const leftMidPointIndex = rightMidPointIndex - 1;
+    const secondMiddleValue = numericalValues[upperMiddleIndex];
+    const firstMiddleValue = numericalValues[lowerMiddleIndex];
 
-    const calculatedDifference = orderedNumericalSeries[rightMidPointIndex] - orderedNumericalSeries[leftMidPointIndex];
-    
-    console.log(calculatedDifference);
+    console.log(secondMiddleValue - firstMiddleValue);
 };
 
-const acquiredInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const separatedInputLines = acquiredInput.split('\n');
+const executeProgram = () => {
+    const fileSystemModule = require("fs");
+    const inputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
+    const inputLines = inputContent.split('\n');
+    processInput(inputLines);
+};
 
-processData(separatedInputLines);
+executeProgram();

@@ -1,16 +1,13 @@
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
+function processInput(rawData) {
+  const textSegments = rawData.split("\n");
+  const firstString = textSegments[0];
+  const secondString = textSegments[1];
 
-const textualSegments = sourceData.split('\n');
-const primarySequence = textualSegments[0];
-const secondarySequence = textualSegments[1];
+  const matchCount = Array.from(firstString).reduce((currentTally, charFromFirst, charIndex) => {
+    return currentTally + (charFromFirst === secondString[charIndex] ? 1 : 0);
+  }, 0);
 
-let matchingElementCount = 0;
+  console.log(matchCount);
+}
 
-Array.from({ length: primarySequence.length }, (_, elementIndex) => elementIndex)
-  .forEach(currentPosition => {
-    if (primarySequence.charCodeAt(currentPosition) === secondarySequence.charCodeAt(currentPosition)) {
-      matchingElementCount++;
-    }
-  });
-
-console.log(matchingElementCount);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

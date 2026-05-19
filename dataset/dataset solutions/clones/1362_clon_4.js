@@ -1,33 +1,33 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+process.stdin.on('data', function (inputChunk) {
+  const rawInputParts = inputChunk.split(" ");
+  
+  const parsedNumbers = rawInputParts.slice(0, 3).map(valueString => parseInt(valueString, 10));
 
-process.stdin.on('data', function (dataPayload) {
-  const segments = dataPayload.split(' ');
+  let valA = parsedNumbers[0];
+  let valB = parsedNumbers[1];
+  let valC = parsedNumbers[2];
 
-  const componentA = parseInt(segments[0], 10);
-  const componentB = parseInt(segments[1], 10);
-  const componentC = parseInt(segments[2], 10);
+  const stringOrderCheck = (first, second) => String(first).localeCompare(String(second));
 
-  let firstElement = componentA;
-  let secondElement = componentB;
-  let thirdElement = componentC;
-
-  const orderComparator = (valX, valY) => {
-    if (isNaN(valX) && isNaN(valY)) return 0;
-    if (isNaN(valX)) return 1;
-    if (isNaN(valY)) return -1;
-    return valX - valY;
-  };
-
-  if (orderComparator(firstElement, secondElement) > 0) {
-    [firstElement, secondElement] = [secondElement, firstElement];
-  }
-  if (orderComparator(secondElement, thirdElement) > 0) {
-    [secondElement, thirdElement] = [thirdElement, secondElement];
-  }
-  if (orderComparator(firstElement, secondElement) > 0) {
-    [firstElement, secondElement] = [secondElement, firstElement];
+  if (stringOrderCheck(valA, valB) > 0) {
+    let swapTemp = valA;
+    valA = valB;
+    valB = swapTemp;
   }
 
-  process.stdout.write(`${firstElement} ${secondElement} ${thirdElement}\n`);
+  if (stringOrderCheck(valB, valC) > 0) {
+    let swapTemp = valB;
+    valB = valC;
+    valC = swapTemp;
+  }
+
+  if (stringOrderCheck(valA, valB) > 0) {
+    let swapTemp = valA;
+    valA = valB;
+    valB = swapTemp;
+  }
+
+  console.log(`${valA} ${valB} ${valC}`);
 });

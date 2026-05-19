@@ -1,36 +1,30 @@
-const processPair = (firstValue, secondValue) => {
-    if (firstValue > secondValue) {
-        return firstValue - secondValue;
-    } else if (firstValue === secondValue) {
-        return firstValue;
-    } else {
-        return secondValue - firstValue;
-    }
-};
+function processInput(rawText) {
+    const [iterationCountStr, ...initialElements] = rawText.split('\n');
+    const totalIterations = Number(iterationCountStr);
 
-const evolveArray = (currentNumericSeries, remainingTransformations) => {
-    if (remainingTransformations === 0) {
-        return currentNumericSeries[0];
-    }
+    const evaluatePair = (firstVal, secondVal) => {
+        if (firstVal > secondVal) {
+            return firstVal - secondVal;
+        } else if (firstVal == secondVal) {
+            return firstVal;
+        } else {
+            return secondVal - firstVal;
+        }
+    };
 
-    const nextSeriesLength = Math.ceil(currentNumericSeries.length / 2);
+    const finalResultArray = Array.from({ length: totalIterations }).reduce((currentElements, _, iterationIndex) => {
+        const nextGenerationElements = currentElements.reduce((accumulator, currentElement, elementIndex, fullArray) => {
+            if (elementIndex % 2 === 0) {
+                const pairResult = evaluatePair(currentElement, fullArray[elementIndex + 1]);
+                accumulator.push(pairResult);
+            }
+            return accumulator;
+        }, []);
 
-    const nextNumericSeries = Array.from({ length: nextSeriesLength }, (_, idx) => {
-        const primaryElement = currentNumericSeries[2 * idx];
-        const secondaryElement = currentNumericSeries[2 * idx + 1];
-        return processPair(primaryElement, secondaryElement);
-    });
+        return nextGenerationElements;
+    }, initialElements);
 
-    return evolveArray(nextNumericSeries, remainingTransformations - 1);
-};
+    console.log(finalResultArray[0]);
+}
 
-const applyTransformation = (rawText) => {
-    const linesOfText = rawText.split("\n").filter(Boolean);
-    const transformationCount = parseInt(linesOfText[0], 10);
-    const initialNumericSeries = linesOfText.slice(1).map(Number);
-
-    return evolveArray(initialNumericSeries, transformationCount);
-};
-
-const acquiredData = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(applyTransformation(acquiredData));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

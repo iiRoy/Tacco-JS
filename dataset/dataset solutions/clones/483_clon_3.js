@@ -1,123 +1,124 @@
 const ALPHABET_SIZE = 26;
+const CHAR_CODE_A = 'a'.charCodeAt(0);
 
-let graphAdjacency;
-let visitedNodesTracker;
-let degreeBalance;
-let activeCharacters;
+var numWords;
+var adjMatrix;
+var visitedNodes;
+var degreeBalance;
 
-function dfsVisit(startNodeIdx) {
-    if (visitedNodesTracker.has(startNodeIdx) || !activeCharacters.has(startNodeIdx)) {
-        return;
-    }
-
-    visitedNodesTracker.add(startNodeIdx);
-
-    for (const neighborIdx of graphAdjacency[startNodeIdx]) {
-        if (!visitedNodesTracker.has(neighborIdx)) {
-            dfsVisit(neighborIdx);
+function traverseConnected(currentNodeIdx) {
+    visitedNodes[currentNodeIdx] = true;
+    iterateRange(ALPHABET_SIZE, function(neighborIdx) {
+        if (adjMatrix[currentNodeIdx][neighborIdx] && !visitedNodes[neighborIdx]) {
+            traverseConnected(neighborIdx);
         }
-    }
+    });
 }
 
-function processInputAndSolve() {
+function processGraphAnalysis() {
     while (true) {
-        const numWords = getNextInput('number');
-
-        if (numWords === 0) {
+        numWords = readInputToken();
+        if (!numWords) {
             break;
         }
 
-        graphAdjacency = Array.from({ length: ALPHABET_SIZE }, () => new Set());
-        visitedNodesTracker = new Set();
+        adjMatrix = new Array(ALPHABET_SIZE).fill(null).map(() => new Array(ALPHABET_SIZE).fill(false));
+        visitedNodes = new Array(ALPHABET_SIZE).fill(false);
         degreeBalance = new Array(ALPHABET_SIZE).fill(0);
-        activeCharacters = new Set();
 
-        for (let k = 0; k < numWords; ++k) {
-            const currentWord = getNextInput('string');
-            if (!currentWord || currentWord.length === 0) {
-                continue;
-            }
-
-            const firstCharIdx = getCharIndex(currentWord[0]);
-            const lastCharIdx = getCharIndex(currentWord[currentWord.length - 1]);
-
-            activeCharacters.add(firstCharIdx);
-            activeCharacters.add(lastCharIdx);
-
-            graphAdjacency[firstCharIdx].add(lastCharIdx);
-            graphAdjacency[lastCharIdx].add(firstCharIdx);
-
+        iterateRange(numWords, function() {
+            var currentWord = readInputToken('string');
+            var firstCharIdx = currentWord.charCodeAt(0) - CHAR_CODE_A;
+            var lastCharIdx = currentWord.charCodeAt(currentWord.length - 1) - CHAR_CODE_A;
+            
+            adjMatrix[firstCharIdx][lastCharIdx] = true;
+            adjMatrix[lastCharIdx][firstCharIdx] = true;
+            
             degreeBalance[firstCharIdx]++;
             degreeBalance[lastCharIdx]--;
-        }
+        });
 
-        let firstActiveNode = -1;
-        for (let i = 0; i < ALPHABET_SIZE; ++i) {
-            if (activeCharacters.has(i)) {
-                firstActiveNode = i;
-                break;
-            }
-        }
-
-        if (firstActiveNode !== -1) {
-            dfsVisit(firstActiveNode);
-        }
-
-        let isProblemDetected = false;
-        for (let i = 0; i < ALPHABET_SIZE; ++i) {
-            if (activeCharacters.has(i)) {
-                if (!visitedNodesTracker.has(i)) {
-                    isProblemDetected = true;
-                    break;
+        iterateRange(ALPHABET_SIZE, function(nodeIdx) {
+            let isNodeIsolated = true;
+            iterateRange(ALPHABET_SIZE, function(neighborIdx) {
+                if (adjMatrix[nodeIdx][neighborIdx]) {
+                    isNodeIsolated = false;
+                    return false;
                 }
-                if (degreeBalance[i] !== 0) {
-                    isProblemDetected = true;
-                    break;
-                }
+            });
+            if (isNodeIsolated) {
+                visitedNodes[nodeIdx] = true;
             }
+        });
+
+        let firstUnvisitedNode = -1;
+        iterateRange(ALPHABET_SIZE, function(nodeIdx) {
+            if (!visitedNodes[nodeIdx]) {
+                firstUnvisitedNode = nodeIdx;
+                return false;
+            }
+        });
+
+        if (firstUnvisitedNode !== -1) {
+            traverseConnected(firstUnvisitedNode);
         }
 
-        if (isProblemDetected) {
-            displayOutput('NG');
-        } else {
-            displayOutput('OK');
+        let isGraphValid = true;
+        iterateRange(ALPHABET_SIZE, function(nodeIdx) {
+            if (!visitedNodes[nodeIdx] || degreeBalance[nodeIdx] !== 0) {
+                isGraphValid = false;
+                return false;
+            }
+        });
+
+        outputResult(isGraphValid ? 'OK' : 'NG');
+    }
+}
+ 
+function iterateRange(startOrEnd, endOrFunc, callbackFunc) {
+    let start = 0;
+    let end;
+    let func;
+
+    if (callbackFunc == null) {
+        end = startOrEnd;
+        func = endOrFunc;
+    } else {
+        start = startOrEnd;
+        end = endOrFunc;
+        func = callbackFunc;
+    }
+
+    for (let currentIdx = start; currentIdx < end; ++currentIdx) {
+        if (func(currentIdx) === false) {
+            break;
         }
     }
 }
-
-function getCharIndex(char) {
-    return char.charCodeAt(0) - 'a'.charCodeAt(0);
-}
-
+ 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
-let rawInputBuffer = '';
-let currentTokenIndex = 0;
-let parsedInputTokens = [];
-
-function getNextInput(expectedType) {
-    if (currentTokenIndex >= parsedInputTokens.length) {
-        throw new Error("Attempted to read past end of input tokens.");
-    }
-    const token = parsedInputTokens[currentTokenIndex++];
-    if (expectedType === 'string') {
-        return token;
-    } else if (expectedType === 'number') {
-        return Number(token);
-    }
-    return token;
+ 
+var rawInputBuffer = '';
+var tokenPointer = 0;
+ 
+function readInputToken(tokenType) {
+	if(tokenType === 'string'){
+		return rawInputBuffer[tokenPointer++];
+	}
+	else{
+		return +rawInputBuffer[tokenPointer++];
+	}
 }
-
-function displayOutput(value) {
-    console.log(value);
+ 
+function outputResult(valueToPrint){
+	console.log(valueToPrint);
 }
-
-process.stdin.on('data', function(chunk) {
-    rawInputBuffer += chunk;
+ 
+process.stdin.on('data', function(chunk){
+	rawInputBuffer += chunk;
 });
-
-process.stdin.on('end', function() {
-    parsedInputTokens = rawInputBuffer.trim().split(/\s+/).filter(Boolean);
-    processInputAndSolve();
+process.stdin.on('end', function(){
+	rawInputBuffer = rawInputBuffer.split(/\s+/);
+	processGraphAnalysis();
 });

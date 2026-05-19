@@ -1,50 +1,44 @@
 "use strict";
 
-const obtainPopCount = (numericVal) => {
-    let tally = 0;
-    let tempVal = numericVal;
-    while (tempVal > 0) {
-        tempVal &= (tempVal - 1);
-        tally++;
+const countBits = (valueToExamine) => {
+    let setBitCount = 0;
+    let temporaryValue = valueToExamine;
+    while (temporaryValue > 0) {
+        temporaryValue &= (temporaryValue - 1);
+        setBitCount++;
     }
-    return tally;
+    return setBitCount;
 };
 
-const processInputData = (rawInput) => {
-    const parsedLines = rawInput.trim().split("\n");
+function processInputData(rawData) {
+    let parsedLines = rawData.trim().split("\n");
+    const testCaseCount = Number(parsedLines.shift());
 
-    const extractNumeric = (str) => Number(str);
-    const extractNumericArray = (str) => str.split(" ").map(extractNumeric);
+    for (let caseIndex = 0; caseIndex < testCaseCount; caseIndex++) {
+        const vertexCount = parsedLines[0 + caseIndex * 3];
+        const vertexValues = parsedLines[1 + caseIndex * 3].split(" ").map(val => Number(val));
+        const operationSequence = parsedLines[2 + caseIndex * 3];
 
-    const outcomes = [];
-    let lineCursor = 0;
-    const totalCases = extractNumeric(parsedLines[lineCursor++]);
+        let currentXorState = 0;
 
-    for (let c = 0; c < totalCases; c++) {
-        const vertexQuantity = extractNumeric(parsedLines[lineCursor++]);
-        const valuesArray = extractNumericArray(parsedLines[lineCursor++]);
-        const instructionSequence = parsedLines[lineCursor++];
+        currentXorState = Array.from(operationSequence).reduce((accumulatorState, charIndicator, sequenceIndex) => {
+            const currentAElement = vertexValues[sequenceIndex];
+            const potentialXorResult = accumulatorState ^ currentAElement;
 
-        const finalAccumulator = instructionSequence.split("").reduce((accum, instructionChar, idx) => {
-            const currentItem = valuesArray[idx];
-            const xorResult = accum ^ currentItem;
+            const currentBitOnes = countBits(accumulatorState);
+            const potentialBitOnes = countBits(potentialXorResult);
 
-            const xorPopCount = obtainPopCount(xorResult);
-            const currentPopCount = obtainPopCount(accum);
+            console.log(`S${charIndicator} will do..`);
+            console.log(`  1 count for new = ${potentialBitOnes}, or ${potentialXorResult}`);
+            console.log(`  1 count for old = ${currentBitOnes}, or ${accumulatorState}`);
 
-            const shouldUpdate = 
-                (instructionChar === '0' && xorPopCount <= currentPopCount) ||
-                (instructionChar === '1' && xorPopCount > currentPopCount);
-            
-            return shouldUpdate ? xorResult : accum;
+            const shouldApplyXor = (charIndicator === '1') === (potentialBitOnes > currentBitOnes);
+
+            return shouldApplyXor ? potentialXorResult : accumulatorState;
         }, 0);
 
-        outcomes.push(finalAccumulator ? "1" : "0");
+        console.log(`${currentXorState ? "1" : "0"}`);
     }
+}
 
-    return outcomes.join("\n");
-};
-
-const inputSource = require("fs").readFileSync("/dev/stdin", "utf8");
-const outputResult = processInputData(inputSource);
-console.log(outputResult);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,27 +1,22 @@
-function ProcessCalculations(rawInputStr) {
-  // Deconstruct the input string into numerical bounds and a divisor
-  const [ startValue, endValue, divider ] = rawInputStr
-    .split(/\s+/) // Split by any whitespace characters
-    .map(val => parseInt(val, 10)); // Convert string parts to base-10 integers
+function ProcessInput(rawData) {
+  // Parse the input string to extract the lower bound, upper bound, and divisor.
+  const [lowerBound, upperBound, divisorValue] = rawData.split(" ").map(Number);
 
-  // Initialize a counter for numbers divisible by the specified divider
-  let totalMatches = 0;
+  // Initialize a counter for numbers divisible by the specified value.
+  let resultCount = 0;
 
-  // Iterate through the range from the starting value to the ending value, inclusive
-  for (let currentIteration = startValue; currentIteration <= endValue; currentIteration += 1) {
-    // Check if the current number in the iteration is perfectly divisible by the divider
-    if ( (currentIteration % divider) === 0 ) {
-      // If divisible without a remainder, increment the match counter
-      totalMatches = totalMatches + 1;
+  // Iterate through the range of numbers from the lower bound to the upper bound, inclusive.
+  for (let currentNumber = lowerBound; currentNumber <= upperBound; currentNumber++) {
+    // Check if the current number is perfectly divisible by the divisor.
+    if (currentNumber % divisorValue === 0) {
+      // If it is divisible, increment the counter.
+      resultCount++;
     }
   }
 
-  // Output the final accumulated count to the standard console
-  console.log(totalMatches);
+  // Output the final count of divisible numbers to the console.
+  console.log(resultCount);
 }
 
-// Invoke the primary processing function with data obtained from standard input
-ProcessCalculations(
-  require("fs")
-    .readFileSync("/dev/stdin", { encoding: "utf8" }) // Read the entire file content as a UTF-8 string
-);
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

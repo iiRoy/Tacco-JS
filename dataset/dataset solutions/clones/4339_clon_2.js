@@ -1,71 +1,77 @@
-// Utility function to convert string to an integer
-function parseInteger(stringValue) {
-    return parseInt(stringValue, 10);
-}
+function ProcessInput(rawData) {
+    // Split the raw input into lines and then parse the first line for dimensions.
+    const dimensions = rawData.split('\n')[0].split(' ');
+    const gridHeight = parseInteger(dimensions[0]);
+    const gridWidth = parseInteger(dimensions[1]);
 
-// Primary program entry point
-function ProcessInputData(rawData) {
+    // Handle a specific edge case where the width is 1.
+    if (gridWidth === 1) {
+        return console.log('Yes');
+    }
 
-    // Extract dimensions from the first line of input
-    const dimensionsArray = rawData.split('\n')[0].split(' ');
-    const heightVal = parseInteger(dimensionsArray[0]);
-    const widthVal = parseInteger(dimensionsArray[1]);
-
-    // Special case for width being 1
-    if (widthVal === 1) return console.log('Yes');
-
-    // Count character frequencies from the grid data
-    const charCountsMap = rawData.split('\n').slice(1).join('').split('').reduce(function(currentMap, character) {
-        // Initialize count if character is new
-        if (currentMap[character] === undefined) {
-            currentMap[character] = 0;
+    // Process the remaining input to count character frequencies.
+    // This creates a map of each character to its total occurrences.
+    const charFrequencies = rawData.split('\n').slice(1).join('').split('').reduce(function(frequencyMap, character) {
+        if (frequencyMap[character] === void 0) {
+            frequencyMap[character] = 0;
         }
-        currentMap[character]++; // Increment character count
-        return currentMap;
+        frequencyMap[character]++;
+        return frequencyMap;
     }, {});
 
 
-    // Case: Both dimensions are even
-    if (heightVal % 2 === 0 && widthVal % 2 === 0) {
-        const oddFourCount = Object.keys(charCountsMap).filter(function(keyName) {
-            return charCountsMap[keyName] % 4 !== 0; // Find characters whose counts are not multiples of 4
+    // Case 1: Both grid dimensions are even.
+    if (gridHeight % 2 === 0 && gridWidth % 2 === 0) {
+        // Count characters whose frequencies are not multiples of 4.
+        const nonQuadrupleCount = Object.keys(charFrequencies).filter(function(keyChar) {
+            return charFrequencies[keyChar] % 4 !== 0;
         }).length;
 
-        if (oddFourCount === 0) {
+        // If all character frequencies are multiples of 4, it's a 'Yes'.
+        if (nonQuadrupleCount === 0) {
             return console.log('Yes');
         } else {
             return console.log('No');
         }
     }
 
-    // Case: Both dimensions are odd
-    if (heightVal % 2 !== 0 && widthVal % 2 !== 0) {
-        const paritySum = Object.keys(charCountsMap).filter(function(keyName) {
-            return charCountsMap[keyName] % 4 !== 0; // Filter counts not divisible by 4
-        }).reduce(function(accumulator, currentKey) {
-            return accumulator + parseInteger(charCountsMap[currentKey]); // Sum filtered counts
+    // Case 2: Both grid dimensions are odd.
+    if (gridHeight % 2 !== 0 && gridWidth % 2 !== 0) {
+        // Sum the counts of characters whose frequencies are not multiples of 4.
+        const oddRemainderSum = Object.keys(charFrequencies).filter(function(keyChar) {
+            return charFrequencies[keyChar] % 4 !== 0;
+        }).reduce(function(currentSum, keyChar) {
+            return currentSum + parseInteger(charFrequencies[keyChar]);
         }, 0);
 
-        if (paritySum % 2 === 1) {
+        // If the total sum of these non-quadruple counts is odd, it's a 'Yes'.
+        if (oddRemainderSum % 2 === 1) {
             return console.log('Yes');
         } else {
             return console.log('No');
         }
     }
 
-    // Case: One dimension is odd, the other is even (as previous cases cover both even or both odd)
-    const oddTwoSum = Object.keys(charCountsMap).filter(function(charIdentifier) {
-        return charCountsMap[charIdentifier] % 2 !== 0; // Filter counts that are odd
-    }).reduce(function(totalCount, currentIdentifier) {
-        return totalCount + parseInteger(charCountsMap[currentIdentifier]); // Sum odd counts
+    // Case 3: One dimension is even, the other is odd.
+    // Sum the counts of characters whose frequencies are odd.
+    const oddFrequencySum = Object.keys(charFrequencies).filter(function(keyChar) {
+        return charFrequencies[keyChar] % 2 !== 0;
+    }).reduce(function(currentSum, keyChar) {
+        return currentSum + parseInteger(charFrequencies[keyChar]);
     }, 0);
 
-    if (oddTwoSum === 0) {
+    // Based on the original logic, this case always results in 'No'.
+    if (oddFrequencySum === 0) {
         return console.log('No');
     } else {
         return console.log('No');
     }
 }
 
-// Execute the main processing function with data from standard input
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Helper function to convert a string to an integer.
+function parseInteger(valueString) {
+    return parseInt(valueString, 10);
+}
+
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

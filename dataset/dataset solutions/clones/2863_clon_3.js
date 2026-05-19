@@ -1,102 +1,74 @@
-let inputBuffer = [];
-const PRIME_MODULUS = 1000000007;
+var inputLines = [];
+var moduloConstant = 1000000007;
 
-let maxStair;
-let forbiddenCount;
-let blockedStepsSet;
-let waysMemo;
+var targetN, maxForbiddenStepsCount;
+var forbiddenSteps;
+var memoizationCache;
+var inputReaderModule = require('readline');
 
-const ioHandler = require('readline').createInterface({
+var lineInterface = inputReaderModule.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-ioHandler.on('line', (incomingLine) => {
-    inputBuffer.push(incomingLine);
+lineInterface.on('line', function (currentInputLine) {
+    inputLines.push(currentInputLine);
 });
 
-ioHandler.on('close', () => {
-    // Parse the first line to get the target step count and the number of blocked steps.
-    const initialParams = inputBuffer[0].split(" ").map(Number);
-    maxStair = initialParams[0];
-    forbiddenCount = initialParams[1];
+lineInterface.on('close', function () {
+    const firstLineParts = inputLines[0].split(" ");
+    targetN = Number(firstLineParts[0]);
+    maxForbiddenStepsCount = Number(firstLineParts[1]);
+    
+    // The original code used lines.shift() which modifies the array.
+    // To preserve behavior, we can slice from index 1 for forbiddenSteps.
+    forbiddenSteps = inputLines.slice(1).map(Number);
 
-    // Early exit for invalid problem configurations.
-    if (maxStair < 0 || forbiddenCount < 0) {
-        console.log(0);
-        return;
-    }
-    // If target is 0, there's 1 way (do nothing), unless 0 itself is blocked.
-    if (maxStair === 0) {
-        // We handle this within calculateCombinations, but could add a specific check here.
-    }
-
-
-    // Extract and store the forbidden steps into a Set for efficient O(1) lookup.
-    // We slice from index 1 up to (1 + forbiddenCount) to get exactly 'forbiddenCount' lines.
-    const rawForbiddenSteps = inputBuffer.slice(1, 1 + forbiddenCount).map(Number);
-    blockedStepsSet = new Set(rawForbiddenSteps);
-
-    // Initialize the memoization table. Using 'null' to clearly distinguish between
-    // an uncomputed state and a computed state that happens to be 0 (e.g., a blocked step).
-    // The array needs to be of size (maxStair + 1) to cover steps from 0 to maxStair.
-    waysMemo = new Array(maxStair + 1).fill(null);
-
-    // Initiate the recursive calculation starting from step 0 and print the final result.
-    console.log(calculateCombinations(0));
+    memoizationCache = Array(targetN).fill(0); // Initializes with 0, which is falsy.
+    console.log(calculatePaths(0));
 });
 
-/**
- * A utility function to perform modular addition, ensuring results stay within the prime modulus.
- * @param {number} term1 - The first number to add.
- * @param {number} term2 - The second number to add.
- * @returns {number} The sum modulo PRIME_MODULUS.
- */
-function addMod(term1, term2) {
-    return (term1 + term2) % PRIME_MODULUS;
-}
-
-/**
- * Recursively computes the total number of distinct ways to reach 'maxStair'
- * starting from 'currentStep', considering 'blockedStepsSet'. Results are cached.
- * This is a dynamic programming approach using memoization.
- * @param {number} currentStep - The current position on the staircase.
- * @returns {number} The count of valid paths from 'currentStep' to 'maxStair'.
- */
-function calculateCombinations(currentStep) {
-    // Guard against invalid negative step values, which should not occur with valid input.
-    if (currentStep < 0) {
-        return 0;
+function calculatePaths(currentPosition) {
+    // Original memoization check: `if (memo[n])` treats 0 as falsy, leading to recomputation.
+    // This behavior is preserved.
+    if (memoizationCache[currentPosition]) {
+        return memoizationCache[currentPosition];
     }
 
-    // Check if this subproblem has already been solved and its result cached.
-    if (waysMemo[currentStep] !== null) {
-        return waysMemo[currentStep];
+    const targetReachedValue = 1;
+    const outOfBoundsValue = 0;
+    const forbiddenStepValue = 0;
+    const stepIncrementOne = 1;
+    const stepIncrementTwo = 2;
+
+    // Reordering guard clauses for Type III, behavior is identical.
+    if (currentPosition === targetN) {
+        return targetReachedValue;
+    }
+    if (targetN < currentPosition) {
+        return outOfBoundsValue;
     }
 
-    // Base Case 1: If the current step has gone beyond the target, it's an invalid path.
-    if (currentStep > maxStair) {
-        return 0;
+    const applyModulo = (value) => value % moduloConstant;
+
+    // This block must closely mimic the original's variable scoping and loop behavior
+    // to preserve the ReferenceError if maxForbiddenStepsCount (M) is 0.
+    // In the original, `res` is declared with `var` inside the loop.
+    // If the loop doesn't run (M=0), `res` is never declared in the function scope,
+    // leading to a ReferenceError at `memo[n] = res`. This specific behavior is preserved.
+    { // Using a block to contain the loop and ensure `pathCount` is only declared if the loop runs.
+        for (var forbiddenStepIndex = 0; forbiddenStepIndex < maxForbiddenStepsCount; forbiddenStepIndex++) {
+            var pathCount = 0; // This declaration must stay here to mimic original `var res = 0;`
+            if (currentPosition === forbiddenSteps[forbiddenStepIndex]) {
+                return forbiddenStepValue;
+            } else {
+                pathCount = applyModulo(pathCount + calculatePaths(currentPosition + stepIncrementOne));
+                pathCount = applyModulo(pathCount + calculatePaths(currentPosition + stepIncrementTwo));
+            }
+        }
     }
-
-    // Base Case 2: If the current step is exactly the target, one valid path has been found.
-    if (currentStep === maxStair) {
-        return 1;
-    }
-
-    // Check if the current step is one of the forbidden steps.
-    if (blockedStepsSet.has(currentStep)) {
-        waysMemo[currentStep] = 0; // Cache 0 as the result for a blocked step.
-        return 0;
-    }
-
-    // Recursive Step: Sum the ways from taking a single step forward and a double step forward.
-    // Each addition is performed with modulo to prevent integer overflow.
-    let currentStepTotalWays = 0;
-    currentStepTotalWays = addMod(currentStepTotalWays, calculateCombinations(currentStep + 1));
-    currentStepTotalWays = addMod(currentStepTotalWays, calculateCombinations(currentStep + 2));
-
-    // Cache the computed result for the current step before returning it.
-    waysMemo[currentStep] = currentStepTotalWays;
-    return currentStepTotalWays;
+    // If maxForbiddenStepsCount (M) was 0, `pathCount` would not have been declared,
+    // resulting in a ReferenceError, matching the original code's behavior.
+    memoizationCache[currentPosition] = pathCount;
+    return memoizationCache[currentPosition];
 }

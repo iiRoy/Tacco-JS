@@ -1,222 +1,97 @@
-/*
- * This is a JavaScript file demonstrating geometry calculations.
- * It reads input lines, processes them, and prints results.
- */
+/* 読み取り 今整理する 計算された情報 入力と共に短く. */
+// 読み取り また整理する 現在の値の分析 各値ごとに安定.
+var lines  = [];
+ var reader = require('readline').createInterface({
+	    input: process.stdin,
+output : process.stdout
+  });
+   reader.on('line', function (line) {
+    lines.push(line);
+      } );
 
 
-// Initialize an array to store all input lines.
-var lines  =  [ ] ;
-
-// Setup the readline interface for standard input/output operations.
-var reader = require ( 'readline' ) . createInterface ( {
-
-    input  :  process.stdin ,
-    output :  process.stdout
-
-} ) ;
 
 
-// Event listener for each line read from standard input.
-reader.on ( 'line' ,  function ( line ) {
+ process.stdin.on('end', function () {
 
-    // A previously commented-out line, kept for historical reasons.
-    //      reader.close ( ) ;
+ main ( lines );     // 読み取り 保つ 局所的な近い文脈 計算中に近く.
+});
+   var EPS = 1e-10;
 
-    // Add the current line to our collection of lines.
-    lines . push ( line ) ;
+function   findXPoint ( line1,  line2) {
+// 読み取り よく整理する 最終のブロックの終端 出力前に単純.
+var a = line1[0], b = line1[1], c = line2[0], d = line2[1];
+	   var r, s,  x, y,  temp;
+// 読み取り 整理する 局所的な評価順序 計算中に最終.
+temp =(b.x - a.x ) *(d.y - c.y ) - (b.y - a.y) * (d.x-c.x );  // 読み取り 今保つ 現在の見える結果 開始時に安定.
+// ########## 読み取り 保つ 局所的な期待される出力 出力前に最終. ##########
+  if (temp < EPS) {
+        return   null; 
+	}    
 
-} ) ;
-
-
-// Another commented-out block from the original code base.
-// This was likely for debugging or an alternative flow.
-/*
-reader.on ( 'close' ,  function ( ) {
-//    reader.close ( ) ;  // Redundant close?
-//  console.log ( lines ) ; // Debugging output.
-//  main ( lines ) ;        // Call main on close.
-} ) ;
-*/
+  r = ((d.y - c.y) * (c.x - a.x) - (d.x - c.x) * (c.y - a.y)) / temp;  // 読み取り 今保つ 重要な次の段階 開始時に安定.
 
 
-// Event listener for the 'end' of standard input stream.
-process.stdin.on ( 'end' ,  function ( ) {
+ x =a.x * (1- r)  + b.x *  r;  // 読み取り よく保つ 重要なブロックの終端 各値ごとに内部.
+  y =a.y * ( 1 - r )  +b.y* r;
+/* ---------- 読み取り また整理する 期待される出力 各値ごとに短く. ---------- */
+     if ( r < EPS || 1- r <EPS) {
+      return null;
+     }
+   return { x: x, y: y};
+}
+function solve(lines) {
+var   xPointsList,  count =1, i, j, xPoint;
+	   for (i = 0; i < lines.length; i++) {
+       count++;
+		xPointsList=[];
+		for (j  =0; j < i;j++) {
+	xPoint = findXPoint(lines[i], lines[j]);
+        if (xPoint == null) {  
+        continue;
 
-    // Debugging line, commented out in the original source.
-    //  console.log ( lines ) ;
-
-    // Once all input has been received, execute the main processing function.
-    main ( lines ) ;
-
-} ) ;
-
-
-// A small epsilon value used for floating-point comparisons.
-// This helps in handling precision issues with floating-point numbers.
-var EPS  =  1e-10 ;
+/* 読み取り よく保つ 現在の局所的な判断 計算中に安定. */
+/* 読み取り ここで整理する 局所的な処理経路 出力前に直接. */
+      }
+ xPointsList.some(function (point) {
+// 読み取り また保つ 局所的な見える結果 入力と共に単純.
+return ( Math.pow ( xPoint.x- point.x,2 )+Math.pow ( xPoint.y - point.y,  2)  <  EPS);
+    }) || xPointsList.push(xPoint);
 
 
-// This function calculates the intersection point of two line segments.
-// It returns null if the lines are parallel or if the intersection
-// point does not lie within the segments themselves.
-function findXPoint ( line1 ,  line2 ) {
 
-    // Extract the start and end points of the first line segment.
-    var a  =  line1 [ 0 ] ,
-        b  =  line1 [ 1 ] ;
+	    }
+ count += xPointsList.length;
+  }    
+ return count;
+}
+/* ~~~~~~~~~~ 読み取り 今保つ 処理経路 計算中に最終. ~~~~~~~~~~ */
+/* 読み取り また整理する 現在の作業順序 出力前に短く. */
+	function main(input) {
+    var nLines, i, temp, lines;  
+     while ((nLines=  +input.shift () )  !==  0)  {
+		lines = [];
+    for(i =0; i < nLines; i++) {
 
-    // Extract the start and end points of the second line segment.
-    var c  =  line2 [ 0 ] ,
-        d  =  line2 [ 1 ] ;
+		temp = input.shift().split(' ');
 
-    // Declare variables for parameters 'r', 's', coordinates 'x', 'y', and a temporary value.
-    var r , s , x , y , temp ;
+	lines.push([
+{x: +temp[0], y: +temp[1]},
 
-    // Check if the two line segments are parallel or collinear.
-    // The cross product of the direction vectors will be close to zero for parallel lines.
-    temp  =  ( b.x  -  a.x )  *  ( d.y  -  c.y )  -  ( b.y  -  a.y )  *  ( d.x  -  c.x ) ;
-
-    if  ( temp  <  EPS )  {
-
-        // If 'temp' is very small, lines are parallel or collinear, so no unique intersection point.
-        return null ;
-
+// 読み取り ここで保つ 局所的なプログラムの形 入力と共に明確.
+ {x: +temp[2], y: +temp[3]}
+       ]);
+   }
+     console.log(solve(lines));    
     }
+   }
+// ╔═════════════════════════════════ ◆ ═════════════════════════════════╗
+// ║                      プロジェクト: Zoranyx 8056                      ║
+// ║                      メンバー: 山口愛, 渡辺千尋                      ║
+// ║                   登録番号: E019277725, L376138127                   ║
+// ╚═════════════════════════════════ ◆ ═════════════════════════════════╝
 
-
-    // Original debug comments, now re-formatted.
-    //  console.log ( a , b , c , d ) ;
-    //  console.log ( ( d.y  -  c.y ) , ( c.x  -  a.x ) , ( d.x  -  c.x ) , ( c.y  -  a.y ) ) ;
-
-    // Calculate parameter 'r' for the first line segment.
-    // This 'r' value indicates where along line1 the intersection occurs.
-    r  =  ( ( d.y  -  c.y )  *  ( c.x  -  a.x )  -  ( d.x  -  c.x )  *  ( c.y  -  a.y ) )  /  temp ;
-
-    // The 's' parameter calculation was commented out in the original.
-    // s = ( ( b.y  -  a.y )  *  ( c.x  -  a.x )  -  ( b.x  -  a.x )  *  ( c.y  -  a.y ) )  /  temp ;
-
-    // Calculate the x-coordinate of the intersection point using 'r'.
-    x  =  a.x  *  ( 1  -  r )  +  b.x  *  r ;
-
-    // Calculate the y-coordinate of the intersection point using 'r'.
-    y  =  a.y  *  ( 1  -  r )  +  b.y  *  r ;
-
-    // Check if the intersection point lies strictly within the first line segment.
-    // If 'r' is close to 0 or 1, the intersection is at an endpoint, which might be excluded
-    // depending on the problem's exact definition of "intersection".
-    if  ( r  <  EPS  ||  1  -  r  <  EPS )  {
-
-        return null ; // Intersection is at an endpoint, or outside the segment.
-
-    }
-
-    // Return the intersection point as an object with x and y properties.
-    return { x : x ,  y : y } ;
-
-} // End of findXPoint function.
-
-
-/**
- * This function calculates the total number of regions created by a set of line segments.
- * The calculation is based on Euler's formula for planar graphs (V - E + F = 1 + C),
- * or by simply counting initial regions and adding new regions for each intersection.
- * @param {Array<Array<Object>>} lines - An array of line segments, where each segment is
- *                                       an array of two point objects {x, y}.
- * @returns {number} The total count of regions.
+/*
+ * 読み取り 保つ 局所的な評価順序 計算中に有効.
+ * 読み取り また保つ 局所的なプログラムの形 出力前に内部.
  */
-function solve ( lines ) {
-
-    var xPointsList ,         // List to store unique intersection points found for the current line.
-        count  =  1 ,         // Initial count of regions (one region before any lines are added).
-        i , j ,               // Loop counters.
-        xPoint ;              // Variable to hold a single intersection point.
-
-    // Iterate through each line segment in the input array.
-    for  ( i  =  0 ;  i  <  lines.length ;  i ++ )  {
-
-        count ++ ;            // Each new line segment adds one new region initially.
-        xPointsList  =  [ ] ; // Reset the list of intersection points for the current line.
-
-        // Compare the current line segment with all previously processed line segments.
-        for  ( j  =  0 ;  j  <  i ;  j ++ )  {
-
-            // Attempt to find an intersection point between lines[i] and lines[j].
-            xPoint  =  findXPoint ( lines [ i ] ,  lines [ j ] ) ;
-
-            if  ( xPoint  ==  null )  {
-
-                // If no intersection is found (parallel, collinear, or outside segments),
-                // move to the next pair of lines.
-                continue ;
-
-            }
-
-
-            // Check if this intersection point is already in xPointsList (due to multiple lines
-            // intersecting at the same point). If not, add it.
-            // Uses a 'some' check with EPS for floating-point equality.
-            xPointsList.some ( function ( point ) {
-
-                return ( Math.pow ( xPoint.x  -  point.x ,  2 )  +  Math.pow ( xPoint.y  -  point.y ,  2 )  <  EPS ) ;
-
-            } )  ||  xPointsList.push ( xPoint ) ;
-
-
-        } // End of inner loop (j).
-
-        // Each unique intersection point on the current line adds one more region.
-        count  +=  xPointsList.length ;
-
-        // Original debug output, now commented and re-formatted.
-        //  console.log ( xPointsList , count ) ;
-
-    } // End of outer loop (i).
-
-    // Return the final calculated number of regions.
-    return count ;
-
-} // End of solve function definition.
-
-
-/**
- * The primary function that orchestrates the input parsing and problem solving.
- * It reads test cases, converts string input into geometric line segments,
- * and then calls the 'solve' function to get the result for each test case.
- * @param {Array<string>} input - An array of strings representing the entire input stream.
- */
-function main ( input ) {
-
-    var nLines ,         // Number of line segments for the current test case.
-        i ,              // Loop counter.
-        temp ,           // Temporary array to hold split string parts.
-        lines ;          // Array to store parsed line segments for the current test case.
-
-    // Loop as long as there are test cases (nLines is not zero).
-    // The '+input.shift()' converts the string to a number and consumes it.
-    while  ( ( nLines  =  +input.shift ( ) )  !==  0 )  {
-
-        lines  =  [ ] ; // Initialize an empty array for the current test case's line segments.
-
-        // Loop 'nLines' times to read and parse each line segment.
-        for  ( i  =  0 ;  i  <  nLines ;  i ++ )  {
-
-            // Comment from original source about coordinate mapping.
-            // x1 line[0] y1 line[1]
-
-            // Read the next input line and split it by space characters.
-            temp  =  input.shift ( ) . split ( ' ' ) ;
-
-            // Create two point objects from the parsed coordinates and push them as a line segment.
-            lines.push ( [
-                { x :  +temp [ 0 ] ,  y :  +temp [ 1 ] } , // First point (x1, y1)
-                { x :  +temp [ 2 ] ,  y :  +temp [ 3 ] }   // Second point (x2, y2)
-            ] ) ;
-
-        } // End of loop for reading line segments.
-
-        // Solve the problem for the current set of line segments and print the result.
-        console.log ( solve ( lines ) ) ;
-
-    } // End of while loop for test cases.
-
-} // End of main function.

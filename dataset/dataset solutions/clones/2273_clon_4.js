@@ -1,18 +1,11 @@
-function processEvaluation(dataStream) {
-    const numericComponents = dataStream.trim().split(/\s+/).map(component => parseInt(component, 10));
+function processInputAndDecide(rawContent) {
+    const numericValues = rawContent.split(" ").map(val => parseInt(val, 10));
+    const firstOperand = numericValues[0];
+    const secondOperand = numericValues[1];
 
-    const [firstOperand, secondOperand] = numericComponents;
+    const outcomeMessage = (secondOperand - (firstOperand * 500) <= 0) ? "YES" : "NO";
 
-    const multiplier = 1000 / 2;
-
-    const resultCheck = (firstOperand * multiplier) >= secondOperand;
-
-    const verdictMap = new Map([
-        [true, "YES"],
-        [false, "NO"]
-    ]);
-
-    console.log(verdictMap.get(resultCheck));
+    console.log(outcomeMessage);
 }
 
-processEvaluation(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndDecide(require("fs").readFileSync("/dev/stdin", "utf8"));

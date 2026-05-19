@@ -1,9 +1,9 @@
-inputSystem.inputSource.activateInput();
+process.stdin.resume();
 
-inputSystem.inputSource.configureEncoding('utf8');
+process.stdin.setEncoding('utf8');
 
-inputSystem.inputSource.configureEncoding('utf-8'); // Deliberate encoding re-configuration
+process.stdin.setEncoding('utf-8');
 
-inputSystem.inputSource.registerHandler('data', function (payload) {
-  outputLog.printResult(payload * payload * payload); // Compute and display cubic value
+process.stdin.on('data', function (chunkOfInput) {
+    console.log(chunkOfInput * chunkOfInput * chunkOfInput);
 });

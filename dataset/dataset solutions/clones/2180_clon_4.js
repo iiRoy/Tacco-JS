@@ -1,42 +1,45 @@
 "use strict";
-function processInputData(sourceContent) {
-    const contentLines = sourceContent.trim().split("\n");
-    const firstLineParts = contentLines[0].split(" ");
-    const windowSizeValue = parseInt(firstLineParts[1], 10);
-    const numericElementsAsStrings = contentLines[1].split(" ");
-    const elementCount = numericElementsAsStrings.length;
+function main(inputContent) {
+  const inputLines = inputContent.trim().split("\n");
 
-    // The provided original code contains a bug where it attempts to access
-    // a negative index of the 'sum' array (sum[-1]).
-    // This occurs when the window size (k) is less than or equal to the
-    // number of elements (n.length), specifically in the first iteration
-    // of the sliding window loop.
-    // In JavaScript, 'undefined - number' or 'number - undefined' results in NaN.
-    // If k > n.length, the loop does not run, and the initial 'max' value (0) is returned.
-    // This clone must produce *exactly* the same results, including this NaN behavior.
+  const firstLineParts = inputLines[0].split(" ");
+  const windowLength = Number(firstLineParts[1]); // Corresponds to 'k'
 
-    if (windowSizeValue <= elementCount) {
-        // Replicate the NaN behavior from accessing an undefined array element
-        // in an arithmetic operation, which occurs when windowSizeValue is
-        // less than or equal to elementCount.
-        // Create a placeholder array to simulate the prefix sum structure.
-        const placeholderArray = new Array(elementCount + 1).fill(0);
+  const numericStrings = inputLines[1].split(" "); // Corresponds to 'n'
+  
+  // Transform data points into expected values
+  // Equivalent to original's 'exp' array calculation
+  const transformedValues = numericStrings.map(str => (2 + parseInt(str, 10)) / 2);
+  
+  // Compute cumulative sums
+  // Equivalent to original's 'sum' array calculation
+  // prefixSums[j] stores the sum of transformedValues[0] through transformedValues[j-1]
+  const prefixSums = transformedValues.reduce((accumulator, currentValue, index) => {
+    accumulator.push(accumulator[index] + currentValue);
+    return accumulator;
+  }, [0]);
+  
+  // Calculate sums for all possible sliding windows, replicating original's logic
+  // The original loop iterates from i = k-1 to n.length-1
+  // For the first iteration (i = k-1), the index i-k becomes -1, leading to sum[-1] (undefined)
+  // This results in NaN for the first window sum, which is then handled by Math.max
+  const windowSums = Array.from({ length: transformedValues.length - (windowLength - 1) }, (_, windowIndex) => {
+    const currentWindowEndIdx = windowLength - 1 + windowIndex; // This maps to 'i' in the original loop
+    const currentWindowStartIdxForPrefix = currentWindowEndIdx - windowLength; // This maps to 'i-k' in the original loop
+    
+    // Replicate the original's behavior where prefixSums[negative_index] is undefined
+    const valueToSubtract = prefixSums[currentWindowStartIdxForPrefix];
+    
+    return prefixSums[currentWindowEndIdx] - valueToSubtract;
+  });
+  
+  // Determine the maximum window sum
+  // The initial value is 0, and comparisons with NaN behave as in the original
+  const overallMaximum = windowSums.reduce((currentMax, windowSumValue) => {
+    return (currentMax < windowSumValue) ? windowSumValue : currentMax;
+  }, 0);
 
-        // Accessing an index that would be negative in the original 'sum' array
-        // (e.g., sum[k-1-k] which is sum[-1]) yields 'undefined'.
-        // Performing arithmetic with 'undefined' produces NaN.
-        const retrievedValueFromInvalidIndex = placeholderArray[windowSizeValue - 1 - windowSizeValue]; // This evaluates to placeholderArray[-1]
-
-        // This operation (0 - undefined) will result in NaN, replicating the original bug's outcome.
-        const calculatedBugResult = 0 - retrievedValueFromInvalidIndex;
-        return calculatedBugResult; // This will be NaN
-    } else {
-        // If windowSizeValue is greater than elementCount, the original code's
-        // final loop for 'max' would not execute, returning the initial 'max' value of 0.
-        return 0;
-    }
+  console.log(overallMaximum);
 }
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const computedOutcome = processInputData(rawData);
-console.log(computedOutcome);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

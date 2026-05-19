@@ -1,31 +1,38 @@
-const raw_input_data = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the raw input to get an array of individual data rows
-const data_rows = raw_input_data.trim().split('\n');
+// Process the raw input data: trim whitespace and split into an array of lines.
+var lineArray = (rawData.trim()).split("\n");
 
-// Iterate over each data row for processing
-data_rows.forEach(function(current_line_segment) {
-    // Parse the numbers from the current line segment
-    const numeric_elements = current_line_segment.split(' ').map(Number);
+// Iterate over each line of input.
+lineArray.forEach(function(currentLine) {
+    // For each line, split by space and convert parts to numbers.
+    var parsedNumbers = currentLine.split(" ").map(Number);
 
-    // Define a base set of possible integer values from 1 to 10
-    const initial_integer_pool = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    // Initialize an array representing possible card values (1 through 10).
+    var deckCards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    // Filter out integers that are present in the first three parsed numbers
-    const filtered_integer_pool = initial_integer_pool.filter(function(potential_value) {
-        return (potential_value !== numeric_elements[0] || potential_value !== numeric_elements[1] || potential_value !== numeric_elements[2]);
+    // Filter the deck cards. This specific filter removes a card 'potentialCardToRemove'
+    // only if it is equal to parsedNumbers[0] AND parsedNumbers[1] AND parsedNumbers[2].
+    // This implies that all three initial cards must be identical for a card to be removed from the deck.
+    deckCards = deckCards.filter(function(potentialCardToRemove) {
+        return (potentialCardToRemove != parsedNumbers[0] || potentialCardToRemove != parsedNumbers[1] || potentialCardToRemove != parsedNumbers[2]);
     });
 
-    // Initialize counters for conditions met and not met
-    let tally_positive = 0;
-    let tally_negative = 0;
+    // Initialize counters for scenarios where the total is 20 or less (stay)
+    // and scenarios where it's more than 20 (must hit).
+    var stayCount = 0;
+    var hitCount = 0;
 
-    // Evaluate each remaining integer against a specific condition
-    filtered_integer_pool.forEach(function(evaluated_digit) {
-        // Check if the sum of the first two parsed numbers and the current digit is within 20
-        ((numeric_elements[0] + numeric_elements[1] + evaluated_digit) <= 20) ? tally_positive++ : tally_negative++;
+    // Iterate through the filtered deck cards to evaluate potential outcomes.
+    deckCards.forEach(function(drawnCard) {
+        // Check if the sum of the first two parsed numbers plus the drawn card is 20 or less.
+        if ((parsedNumbers[0] + parsedNumbers[1] + drawnCard) <= 20) {
+            stayCount++; // Increment stay count if total is 20 or less.
+        } else {
+            hitCount++; // Increment hit count if total is more than 20.
+        }
     });
 
-    // Output "YES" or "NO" based on the comparison of the two tallies
-    console.log((tally_positive > tally_negative) ? "YES" : "NO");
+    // Output "YES" if the number of "stay" scenarios is greater than "hit" scenarios, otherwise "NO".
+    console.log(stayCount > hitCount ? "YES" : "NO");
 });

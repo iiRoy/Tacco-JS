@@ -1,32 +1,28 @@
-// This function serves as the primary entry point for processing the given data.
-function solveProblem(  receivedText  )
-{
-    // First, we break down the entire input string into an array of individual lines.
-    let textLines = receivedText.split( '\n' );
+function processInput(rawData) {
+  // Divide the incoming text into individual lines for processing.
+  const parsedLines = rawData.split('\x0A');
 
-    // The first line contains the divisor value, which we parse as a number.
-    const modulusFactor =   Number(textLines[0])  ;
+  // Extract the key numerical value from the initial line.
+  const divisorValue = Number(parsedLines[0]);
 
-    // The second line specifies a numerical range. We parse its two components.
-    const [ rangeStart, rangeEnd ] = textLines[1].split(' ').map(Number);
+  // Parse the second line to obtain the lower and upper bounds of the interval.
+  const [startRange, endRange] = parsedLines[1].split(' ').map(Number);
 
-    // We then proceed to iterate through each number within the specified range, inclusive.
-    for ( let currentNum = rangeStart; currentNum <= rangeEnd; currentNum++ )
-    {
-        // For every number, we check if it is perfectly divisible by our modulus factor.
-        if ( ( currentNum % modulusFactor ) === 0 )
-        {
-            // If a number satisfies the divisibility condition, we output a success message.
-            console.log(  'MATCH_FOUND'  );
-            // And immediately terminate the function, as our goal is achieved.
-            return;
-        }
+  // Traverse through each integer within the defined numerical span.
+  for (let currentNumber = startRange; currentNumber <= endRange; currentNumber++) {
+    // Evaluate if the present integer is perfectly divisible by our key value.
+    if (currentNumber % divisorValue === 0) {
+      // If a match is found, signal success and exit the routine.
+      console.log('OK');
+      return;
     }
+  }
 
-    // Should the loop complete without finding any number divisible by the modulus factor,
-    // we then output a failure message.
-    console.log('NO_MATCH');
+  // Should the loop complete without finding any divisible number, indicate failure.
+  console.log('NG');
 }
 
-// Here, we invoke the main processing function, feeding it content read from standard input.
-solveProblem(  require('fs').readFileSync('/dev/stdin', 'utf8').trim()  );
+// Acquire the program's input from the standard input stream,
+// decode it as UTF-8, remove any extraneous whitespace,
+// and then initiate the primary processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

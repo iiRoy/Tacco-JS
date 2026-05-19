@@ -1,60 +1,60 @@
-var textualInputs =
-[]; var lineReaderModule
-= require('readline');
+let inputDataRows = [];
 
-var interfaceHandler = lineReaderModule.createInterface(
-    {
-        input: process.stdin,
-        output: process.stdout
-    }
-);
+const standardInput = require('readline');
 
-interfaceHandler.on('line',
-    function (inputSegment) {
-        textualInputs.push(inputSegment);
-    }
-);
+const inputHandler = standardInput.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-interfaceHandler.on('close',
-    function () {
-        var numericalGrid = textualInputs.map(
-            singleRowText => singleRowText.split(" ").map(
-                numberString => Number(numberString)
-            )
-        );
+inputHandler.on('line', function (currentLineText) {
+    // Store each line received from standard input
+    inputDataRows.push(currentLineText);
+});
 
-        for (var firstColumnProbe = 0; firstColumnProbe <= 100; firstColumnProbe++) {
-            var colB_row1_val = numericalGrid[0][0] - firstColumnProbe;
-            var colB_row2_val = numericalGrid[1][0] - firstColumnProbe;
-            var colB_row3_val = numericalGrid[2][0] - firstColumnProbe;
+inputHandler.on('close', function () {
+    // Process all input lines once the input stream is closed
+    const parsedMatrix = inputDataRows.map(rowStr => rowStr.split(" ").map(numStr => Number(numStr)));
+    
+    // Iterate through possible values for the first component (A_i)
+    for (let firstVal = 0; firstVal <= 100; firstVal++) {
+        // Calculate the differences based on the first column of the matrix
+        let diffOne = parsedMatrix[0][0] - firstVal;
+        let diffTwo = parsedMatrix[1][0] - firstVal;
+        let diffThree = parsedMatrix[2][0] - firstVal;
 
-            for (var secondColumnProbe = 0; secondColumnProbe <= 100; secondColumnProbe++) {
-                if (secondColumnProbe + colB_row1_val !== numericalGrid[0][1]) {
-                    continue;
+        // Iterate through possible values for the second component (B_i)
+        for (let secondVal = 0; secondVal <= 100; secondVal++) {
+            // Check if the current combination satisfies the conditions for the second column
+            if (secondVal + diffOne !== parsedMatrix[0][1]) {
+                continue; // Move to the next secondVal if condition not met
+            }
+            if (secondVal + diffTwo !== parsedMatrix[1][1]) {
+                continue; // Move to the next secondVal if condition not met
+            }
+            if (secondVal + diffThree !== parsedMatrix[2][1]) {
+                continue; // Move to the next secondVal if condition not met
+            }
+
+            // Iterate through possible values for the third component (C_i)
+            for (let thirdVal = 0; thirdVal <= 100; thirdVal++) {
+                // Check if the current combination satisfies the conditions for the third column
+                if (thirdVal + diffOne !== parsedMatrix[0][2]) {
+                    continue; // Move to the next thirdVal if condition not met
                 }
-                if (secondColumnProbe + colB_row2_val !== numericalGrid[1][1]) {
-                    continue;
+                if (thirdVal + diffTwo !== parsedMatrix[1][2]) {
+                    continue; // Move to the next thirdVal if condition not met
                 }
-                if (secondColumnProbe + colB_row3_val !== numericalGrid[2][1]) {
-                    continue;
+                if (thirdVal + diffThree !== parsedMatrix[2][2]) {
+                    continue; // Move to the next thirdVal if condition not met
                 }
 
-                for (var thirdColumnProbe = 0; thirdColumnProbe <= 100; thirdColumnProbe++) {
-                    if (thirdColumnProbe + colB_row1_val !== numericalGrid[0][2]) {
-                        continue;
-                    }
-                    if (thirdColumnProbe + colB_row2_val !== numericalGrid[1][2]) {
-                        continue;
-                    }
-                    if (thirdColumnProbe + colB_row3_val !== numericalGrid[2][2]) {
-                        continue;
-                    }
-
-                    console.log("Yes");
-                    return (0);
-                }
+                // If all conditions are met, a solution is found
+                console.log("Yes");
+                return (0); // Exit the program
             }
         }
-        console.log("No");
     }
-);
+    // If no solution is found after checking all possibilities
+    console.log("No");
+});

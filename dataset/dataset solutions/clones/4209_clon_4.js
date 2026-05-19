@@ -1,48 +1,34 @@
-function processSequence(inputData) {
-    const targetPhrase = "AKIHABARA";
-    const requiredCharacterPositions = new Set([0, 4, 6, 8]);
+function checkSequence(inputContent) {
+    const desiredPattern = "AKIHABARA";
+    const processedInput = inputContent.trim();
 
-    const trimmedInput = inputData.trim();
-    let currentInputPosition = 0;
+    let inputPointer = 0;
+    let patternPointer = 0;
 
-    const constructedOutcome = Array.from(targetPhrase).reduce((accumulator, characterFromTarget, targetIndex) => {
-        if (!accumulator.validityFlag) {
-            return accumulator;
-        }
+    while (patternPointer < desiredPattern.length) {
+        const currentPatternChar = desiredPattern[patternPointer];
+        const currentInputChar = processedInput[inputPointer];
 
-        const expectsSpecificA = requiredCharacterPositions.has(targetIndex);
-        const correspondingInputCharacter = trimmedInput[accumulator.inputPointer];
-
-        if (expectsSpecificA) {
-            if (correspondingInputCharacter === 'A') {
-                accumulator.resultingString += 'A';
-                accumulator.inputPointer++;
-            } else {
-                accumulator.resultingString += 'A';
+        if (currentPatternChar === 'A') {
+            if (currentInputChar === 'A') {
+                inputPointer++;
             }
         } else {
-            if (correspondingInputCharacter === characterFromTarget) {
-                accumulator.resultingString += characterFromTarget;
-                accumulator.inputPointer++;
-            } else {
-                accumulator.validityFlag = false;
+            if (currentInputChar === undefined || currentInputChar !== currentPatternChar) {
+                console.log("NO");
+                return;
             }
+            inputPointer++;
         }
-        return accumulator;
-    }, { resultingString: "", inputPointer: 0, validityFlag: true });
-
-    if (!constructedOutcome.validityFlag || constructedOutcome.inputPointer !== trimmedInput.length) {
-        return "NO";
+        patternPointer++;
     }
 
-    return constructedOutcome.resultingString === targetPhrase ? "YES" : "NO";
+    if (inputPointer < processedInput.length) {
+        console.log("NO");
+        return;
+    }
+
+    console.log("YES");
 }
 
-const obtainResource = require;
-const filesystemModule = obtainResource('fs');
-const obtainContent = filesystemModule.readFileSync;
-const standardInputPath = '/dev/stdin';
-const encodingFormat = 'utf8';
-
-const rawTransmission = obtainContent(standardInputPath, encodingFormat);
-console.log(processSequence(rawTransmission));
+checkSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

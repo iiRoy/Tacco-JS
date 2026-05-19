@@ -1,37 +1,43 @@
-'use strict';
+'use strict'
+function executeCalculation(rawInputText){
+  let numericValues = extractNumbersFromString(rawInputText);
+  const elementCount = numericValues.shift();
+  let numberCollection = numericValues;
 
-function parseNumericString(sourceText) {
-    return sourceText.trim().split(/\s+/).filter(Boolean).map(Number);
+  if(elementCount === 1){
+    console.log(numberCollection[0]);
+    return;
+  }
+
+  numberCollection = sortNumbersInPlace(numberCollection);
+
+  const finalCommonDivisor = numberCollection.reduce((currentGCD, nextValue) => {
+    return findCommonDivisor(currentGCD, nextValue);
+  }, numberCollection[0]);
+
+  console.log(finalCommonDivisor);
 }
 
-function arrangeNumbersAscending(targetCollection) {
-    return [...targetCollection].sort((valA, valB) => valA - valB);
+function findCommonDivisor(firstVal, secondVal){
+  if (secondVal === 0) {
+    return firstVal;
+  }
+  return findCommonDivisor(secondVal, firstVal % secondVal);
 }
 
-function calculateDivisor(val1, val2) {
-    if (val2 === 0) {
-        return val1;
-    }
-    return calculateDivisor(val2, val1 % val2);
+function extractNumbersFromString(sourceText){
+  return sourceText
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(segment => segment.length > 0)
+    .map(Number);
 }
 
-function processInputData(rawDataString) {
-    let numericSequence = parseNumericString(rawDataString);
-    let elementCount = numericSequence.shift();
-    let dataValues = numericSequence;
-
-    if (elementCount === 1) {
-        console.log(dataValues[0]);
-        return;
-    }
-
-    let orderedValues = arrangeNumbersAscending(dataValues);
-
-    let finalDivisor = orderedValues.reduce((accumulator, currentValue) =>
-        calculateDivisor(accumulator, currentValue)
-    );
-
-    console.log(finalDivisor);
+function sortNumbersInPlace(inputArray){
+  const sortedCopy = [...inputArray];
+  sortedCopy.sort((a, b) => a - b);
+  return sortedCopy;
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeCalculation(require('fs').readFileSync('/dev/stdin','utf8'));

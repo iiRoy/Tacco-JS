@@ -1,143 +1,126 @@
 "use strict";
 
-// This utility class is designed for sequentially parsing structured text data.
-// It reads input line by line and token by token, applying a specified type conversion.
-function DataStream(sourceText, valueMapper) {
-    // Stores the entire input as an array of strings, where each element is a line.
-    this._textSegments = sourceText.split("\n");
-    // Keeps track of the current token's index within the active line.
-    this._tokenPos = 0;
-    // Points to the index of the current line being processed in `_textSegments`.
-    this._lineIndex = 0;
-    // The function used to convert string tokens into their desired data type.
-    // Defaults to `parseInt` if no specific mapper is provided, suitable for integer inputs.
-    this._castMethod = valueMapper || parseInt;
+/**
+ * Utility class for parsing input data.
+ * It reads values sequentially from a multi-line string.
+ * @param {string} sourceContent - The complete input string.
+ * @param {function} valueConverter - A function to convert string tokens to desired types (e.g., Number).
+ */
+function InputProcessor(sourceContent, valueConverter) {
+  // Internal array holding each line of the input.
+  this._sourceLines = sourceContent.split("\n");
+  // Current token index within the active line.
+  this._currentColumn = 0;
+  // Current line index being processed.
+  this._currentLine = 0;
+  // The function used to parse individual string tokens. Defaults to Number.
+  this._parserFunction = valueConverter || Number;
 }
 
-// Prototype method to extract and return the very next single data token from the stream.
-// It handles advancing both the token position and the line index as needed.
-DataStream.prototype.getNextItem = function() {
-    // Fetch the string content of the current line.
-    var activeLine = this._textSegments[this._lineIndex];
+/**
+ * Retrieves the next single value from the input stream.
+ * Advances the internal pointers to the next token.
+ * @returns {*} The parsed value, or undefined if no more input.
+ */
+InputProcessor.prototype.getNextValue = function() {
+  // Fetch the text of the current line.
+  var currentLineText = this._sourceLines[this._currentLine];
+  // If the line is empty or undefined, there's no more input.
+  if (!currentLineText) return;
 
-    // If the current line is undefined (e.g., end of file), return immediately.
-    if (!activeLine) {
-        return;
-    }
+  // Split the current line into individual string tokens after trimming whitespace.
+  var lineTokens = currentLineText.trim().split(" ");
+  // Extract the token at the current column position.
+  var parsedToken = lineTokens[this._currentColumn];
+  // Increment the column pointer for the next read.
+  this._currentColumn++;
 
-    // Clean whitespace from the line and then split it into an array of individual tokens using space as a delimiter.
-    var lineTokens = activeLine.trim().split(" ");
-    // Retrieve the token at the current `_tokenPos`.
-    var currentPart = lineTokens[this._tokenPos];
-
-    // Increment the token position to point to the next token for subsequent calls.
-    this._tokenPos++;
-
-    // Check if all tokens on the current line have been consumed.
-    if (lineTokens.length === this._tokenPos) {
-        // Reset the token position to 0 for the start of the next line.
-        this._tokenPos = 0;
-        // Move to the next line in the `_textSegments` array.
-        this._lineIndex++;
-    }
-
-    // Apply the configured type conversion function (`_castMethod`) to the extracted token and return the result.
-    return this._castMethod(currentPart);
+  // If all tokens on the current line have been consumed, reset column and advance to the next line.
+  if (lineTokens.length === this._currentColumn) {
+    this._currentColumn = 0;
+    this._currentLine++;
+  }
+  // Convert and return the extracted token.
+  return this._parserFunction(parsedToken);
 };
 
+/**
+ * Reads all values from the current line and returns them as an array.
+ * Advances the internal pointers to the beginning of the next line.
+ * @returns {Array<*>} An array of parsed values from the line, or undefined if no more lines.
+ */
+InputProcessor.prototype.getLineValues = function() {
+  // Get the content of the current line.
+  var currentLineContent = this._sourceLines[this._currentLine];
+  // If the line is empty or undefined, there's no more input.
+  if (!currentLineContent) return;
 
-// Prototype method to read all tokens from the current line, convert them, and then advance to the next line.
-DataStream.prototype.parseLineTokens = function() {
-    // Obtain the content of the current line.
-    var activeLine = this._textSegments[this._lineIndex];
-
-    // If there's no more line content, return early.
-    if (!activeLine) {
-        return;
-    }
-
-    // Reset the token position, as this method processes the entire line from its beginning.
-    this._tokenPos = 0;
-    // Advance the line index to move past the current line.
-    this._lineIndex++;
-
-    // Split the current line into tokens and apply the `_castMethod` to each token,
-    // returning an array of the converted values.
-    return activeLine.split(" ").map(this._castMethod);
+  // Reset the column pointer as a new line is being processed.
+  this._currentColumn = 0;
+  // Advance to the subsequent line.
+  this._currentLine++;
+  // Split the line by spaces, parse each part, and return the resulting array.
+  return currentLineContent.split(" ").map(this._parserFunction);
 };
 
-// Make the DataStream class available for import by other modules.
-module.exports = DataStream;
+// Make the InputProcessor class available for other modules.
+module.exports = InputProcessor;
 
+/**
+ * The primary function that processes the input and solves the problem.
+ * @param {string} rawInputData - The entire input content as a single string.
+ */
+function solveProblem(rawInputData) {
+  // Create an instance of the input reader.
+  const inputReader = new InputProcessor(rawInputData);
 
-// This is the main function responsible for solving the graph-related problem.
-function solveGraphProblem(problemData) {
+  // Read the total number of nodes and edges from the input.
+  const nodeCount = inputReader.getNextValue();
+  const edgeCount = inputReader.getNextValue();
 
-    // Instantiate a new DataStream reader to process the raw input data.
-    const inputReader = new DataStream(problemData);
+  // Initialize an adjacency list to represent the graph.
+  // Using 1-based indexing for nodes, so array size is nodeCount + 1.
+  const adjacencyList = [];
+  for (let k = 1; k <= nodeCount; k++) {
+    adjacencyList[k] = []; // Each node starts with an empty list of neighbors.
+  }
 
-    // Read the total number of vertices (nodes) in the graph from the input.
-    const numVertices = inputReader.getNextItem();
-    // Read the total number of edges (connections) in the graph from the input.
-    const numEdges = inputReader.getNextItem();
+  // Read all edge connections and populate the adjacency list.
+  for (let k = 0; k < edgeCount; k++) {
+    let nodeA = inputReader.getNextValue(); // First node of the current edge.
+    let nodeB = inputReader.getNextValue(); // Second node of the current edge.
+    // Add connections for an undirected graph.
+    adjacencyList[nodeA].push(nodeB);
+    adjacencyList[nodeB].push(nodeA);
+  }
 
+  // Variables to track specific properties of node degrees.
+  let hasDegreeSix = false; // Becomes true if any node has exactly 6 neighbors.
+  let degreeFourCount = 0; // Counts how many nodes have exactly 4 neighbors.
+  let allEvenDegrees = true; // Remains true if all nodes have an even number of neighbors.
 
-    // Initialize an adjacency list to represent the graph's connections.
-    // The list is 1-indexed to match typical graph problem conventions (nodes 1 to N).
-    const graphConnections = [];
-    for (let nodeIdx = 1; nodeIdx <= numVertices; nodeIdx++) {
-        graphConnections[nodeIdx] = []; // Each node starts with an empty list of neighbors.
+  // Iterate through each node to analyze its degree.
+  for (let k = 1; k <= nodeCount; k++) {
+    // Check if the current node's degree is 6.
+    if (adjacencyList[k].length === 6) {
+      hasDegreeSix = true;
     }
 
-
-    // Loop through the input to read and record all graph edges.
-    for (let edgeIdx = 0; edgeIdx < numEdges; edgeIdx++) {
-        // Read the identifier for the first endpoint of the current edge.
-        let endpoint1 = inputReader.getNextItem();
-        // Read the identifier for the second endpoint of the current edge.
-        let endpoint2 = inputReader.getNextItem();
-
-        // Since the graph is undirected, add connections in both directions.
-        graphConnections[endpoint1].push(endpoint2);
-        graphConnections[endpoint2].push(endpoint1);
+    // Check if the current node's degree is 4.
+    if (adjacencyList[k].length == 4) {
+      degreeFourCount += 1;
     }
 
-
-    // Declare boolean and counter variables to track specific properties of the graph.
-    let foundVertexDegree6 = false; // Becomes true if any node has exactly 6 neighbors.
-    let verticesWithDegree4 = 0;    // Counts how many nodes have exactly 4 neighbors.
-    let noOddDegrees = true;        // Stays true only if all nodes have an even number of neighbors.
-
-
-    // Iterate through each node in the graph to calculate and analyze its degree.
-    for (let nodeIdx = 1; nodeIdx <= numVertices; nodeIdx++) {
-
-        // Check if the current node's degree (number of connections) is precisely 6.
-        if (graphConnections[nodeIdx].length === 6) {
-            foundVertexDegree6 = true;
-        }
-
-        // Check if the current node's degree is precisely 4.
-        if (graphConnections[nodeIdx].length == 4) {
-            verticesWithDegree4 += 1; // Increment the counter for degree-4 nodes.
-        }
-
-        // Check if the current node's degree is an odd number.
-        if (graphConnections[nodeIdx].length % 2 !== 0) {
-            noOddDegrees = false; // If any node has an odd degree, set this flag to false.
-        }
+    // Check if the current node's degree is odd.
+    if (adjacencyList[k].length % 2 !== 0) {
+      allEvenDegrees = false; // If an odd degree is found, the flag is set to false.
     }
+  }
 
-
-    // Output the final result based on a complex logical condition.
-    // The condition evaluates to "Yes" if:
-    // (There is at least one node with degree 6 OR there are two or more nodes with degree 4)
-    // AND (All nodes in the graph have an even degree). Otherwise, "No".
-    console.log(((foundVertexDegree6 || verticesWithDegree4 >= 2) && noOddDegrees) ? "Yes" : "No");
-
+  // Output "Yes" or "No" based on the final conditions.
+  // The condition is: (at least one node has degree 6 OR at least two nodes have degree 4) AND all nodes have even degrees.
+  console.log(((hasDegreeSix || degreeFourCount >= 2) && allEvenDegrees) ? "Yes" : "No");
 }
 
-
-// Invoke the main solution function, providing it with data read from standard input.
-// The `fs` module is used to read the file, and "utf8" specifies the encoding.
-solveGraphProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input and pass it to the main problem solver.
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

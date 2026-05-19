@@ -1,50 +1,28 @@
 'use strict';
 
-const acquireDataFromPath = (pathSpecifier, characterEncoding) => {
-    const fileOperationsModule = require('fs');
-    return fileOperationsModule.readFileSync(pathSpecifier, characterEncoding);
+const processInput = (rawContent) => {
+    const contentLines = rawContent.trim().split("\n");
+    const firstDataLine = contentLines[0].split(' ');
+
+    const numericalComponents = [];
+    for (const stringComponent of firstDataLine) {
+        numericalComponents.push(parseInt(stringComponent, 10));
+    }
+
+    const firstElement = numericalComponents[0];
+    const secondElement = numericalComponents[1];
+    const thirdElement = numericalComponents[2];
+
+    const minimumValue = Math.min(firstElement, secondElement, thirdElement);
+    const maximumValue = Math.max(firstElement, secondElement, thirdElement);
+    const medianValue = firstElement + secondElement + thirdElement - minimumValue - maximumValue;
+
+    const orderedCollection = [minimumValue, medianValue, maximumValue];
+
+    console.log(orderedCollection);
+
+    const comparisonResult = (maximumValue === minimumValue + medianValue) ? 'Yes' : 'No';
+    console.log(comparisonResult);
 };
 
-const performComputation = (incomingRawText) => {
-    const stringRepresentations = incomingRawText.match(/\d+/g);
-    if (!stringRepresentations || stringRepresentations.length < 3) {
-        return;
-    }
-
-    const numericCollection = [];
-    for (const numStr of stringRepresentations) {
-        numericCollection.push(parseInt(numStr, 10));
-    }
-
-    const sortedNumericalSequence = [...numericCollection];
-    const countOfElements = sortedNumericalSequence.length;
-
-    for (let outerPosition = 0; outerPosition < countOfElements - 1; outerPosition++) {
-        for (let innerPosition = 0; innerPosition < countOfElements - 1 - outerPosition; innerPosition++) {
-            if (sortedNumericalSequence[innerPosition] > sortedNumericalSequence[innerPosition + 1]) {
-                const temporaryHolder = sortedNumericalSequence[innerPosition];
-                sortedNumericalSequence[innerPosition] = sortedNumericalSequence[innerPosition + 1];
-                sortedNumericalSequence[innerPosition + 1] = temporaryHolder;
-            }
-        }
-    }
-
-    const deliverOutput = (contentToDisplay) => {
-        console.log(contentToDisplay);
-    };
-
-    deliverOutput(sortedNumericalSequence);
-
-    const elementOne = sortedNumericalSequence[0];
-    const elementTwo = sortedNumericalSequence[1];
-    const elementThree = sortedNumericalSequence[2];
-
-    if (elementThree === elementOne + elementTwo) {
-        deliverOutput('Yes');
-    } else {
-        deliverOutput('No');
-    }
-};
-
-const obtainedTextData = acquireDataFromPath('/dev/stdin', 'utf8');
-performComputation(obtainedTextData);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

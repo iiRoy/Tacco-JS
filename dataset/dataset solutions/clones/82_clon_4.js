@@ -1,20 +1,28 @@
-const standard_input_stream = process.stdin;
-const standard_output_stream = process.stdout;
+const fileSystemModule = require('fs');
 
-let accumulated_content = '';
+function transformAndFormat(sourceContent) {
+    let initialBoundary = 0;
+    let finalBoundary = sourceContent.length - 1;
 
-standard_input_stream.setEncoding('utf8');
+    while (initialBoundary <= finalBoundary && /\s/.test(sourceContent[initialBoundary])) {
+        initialBoundary++;
+    }
 
-standard_input_stream.on('data', function(chunk_of_data) {
-    accumulated_content += chunk_of_data;
-});
+    while (finalBoundary >= initialBoundary && /\s/.test(sourceContent[finalBoundary])) {
+        finalBoundary--;
+    }
 
-standard_input_stream.on('end', function() {
-    const whitespace_trimmer_regex = /^\s+|\s+$/g;
-    let altered_content = accumulated_content.replace(whitespace_trimmer_regex, '');
+    const intermediateString = (initialBoundary > finalBoundary) ? '' : sourceContent.substring(initialBoundary, finalBoundary + 1);
 
-    const case_transformer_function = String.prototype.toUpperCase;
-    let resultant_content = case_transformer_function.call(altered_content);
+    return Array.from(intermediateString).reduce((resultAccumulator, currentSymbol) => {
+        const symbolCode = currentSymbol.charCodeAt(0);
+        if (symbolCode >= 97 && symbolCode <= 122) {
+            return resultAccumulator + String.fromCharCode(symbolCode - 32);
+        }
+        return resultAccumulator + currentSymbol;
+    }, '');
+}
 
-    standard_output_stream.write(resultant_content + '\n');
-});
+const retrievedData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const processedResult = transformAndFormat(retrievedData);
+console.log(processedResult);

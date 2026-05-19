@@ -1,35 +1,48 @@
-const handleInputData = (inputRows) => {
-  // Extract numerical values from the second row
-  const numberArray = inputRows[1].split(' ').map(val => parseInt(val));
+const computeResult = (inputLines) => {
+  // Parse the second line of input into an array of numbers.
+  // The first line typically contains the count, which is not used here.
+  const numberArray = inputLines[1].split(' ').map(numStr => Number(numStr));
 
-  // Define a large prime modulus for calculations
-  const moduloValue = 10 ** 9 + 7;
+  // Define a large prime number for modulo operations to prevent overflow.
+  const moduloVal = Math.pow(10, 9) + 7;
 
-  let totalResult = 0; // Initialize the accumulated total
+  // Initialize the overall sum accumulator.
+  let totalSum = 0;
 
-  // Iterate through each element with an outer loop
-  for (let outerIndex = 0; outerIndex < numberArray.length; outerIndex++) {
-    let currentSubtotal = 0; // Initialize subtotal for the current outer element
+  // Iterate through each element in the number array.
+  for (let idxA = 0; idxA < numberArray.length; idxA++) {
+    // Initialize a sum for elements following the current numberArray[idxA].
+    let partialSum = 0;
 
-    // Iterate through subsequent elements with an inner loop
-    for (let innerIndex = outerIndex + 1; innerIndex < numberArray.length; innerIndex++) {
-      currentSubtotal = (currentSubtotal + numberArray[innerIndex]) % moduloValue;
+    // Iterate through elements after the current one (numberArray[idxA]).
+    for (let idxB = idxA + 1; idxB < numberArray.length; idxB++) {
+      // Accumulate the partial sum, applying modulo at each step.
+      partialSum = (partialSum + numberArray[idxB]) % moduloVal;
     }
 
-    // Accumulate the product of the current outer element and its subtotal, applying modulus
-    totalResult = (totalResult + ((numberArray[outerIndex] * currentSubtotal) % moduloValue)) % moduloValue;
+    // Update the total sum: (current number * partial sum) % moduloVal,
+    // then add to totalSum and apply modulo again.
+    totalSum = (totalSum + ((numberArray[idxA] * partialSum) % moduloVal)) % moduloVal;
   }
 
-  // Display the final computed value
-  console.log(totalResult);
+  // Output the final calculated sum.
+  console.log(totalSum);
 };
 
-let rawInputBuffer = ''; // Buffer to store incoming data chunks
+// Variable to accumulate raw input data from stdin.
+let rawData = '';
 
-process.stdin.on('data', chunkOfData => rawInputBuffer += chunkOfData);
+// Event listener for incoming data on standard input.
+process.stdin.on('data', (chunk) => {
+  rawData += chunk;
+});
 
+// Event listener for the end of standard input.
 process.stdin.on('end', () => {
-  const { EOL: lineSeparator } = require('node:os'); // Retrieve system-specific end-of-line character
-  const processedRows = rawInputBuffer.split(lineSeparator); /* Input content, segmented by newline */
-  handleInputData(processedRows);
+  // Import the End-Of-Line constant from the 'os' module.
+  const { EOL } = require('os');
+  // Split the accumulated raw data into an array of lines using the system's EOL.
+  const inputLines = rawData.split(EOL);
+  // Process the parsed lines.
+  computeResult(inputLines);
 });

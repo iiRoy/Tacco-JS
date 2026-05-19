@@ -1,34 +1,27 @@
-const initialBuffer = '';
-const lineMarker = '\n';
-const valueDivider = ' ';
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
 
-process.stdin.on('data', function(incomingSegment) {
-    const segmentText = incomingSegment.toString();
+process.stdin.on("data", (inputChunk) => {
+    const lines = inputChunk.split("\n");
 
-    const segmentRows = segmentText.split(lineMarker);
-    if (segmentRows.length > 2) {
-        for (;;) {}
+    if (lines.length > 2) {
+        while (true);
     }
 
-    segmentRows.forEach(function(currentEntry) {
-        if (currentEntry.length === 0) {
-            return;
+    const extractAndSum = (lineContent) => {
+        const numberPairPattern = /(\d+) (\d+)/;
+        const foundNumbers = lineContent.match(numberPairPattern);
+
+        if (foundNumbers && foundNumbers.length === 3) {
+            return Number(foundNumbers[1]) + Number(foundNumbers[2]);
         }
+        return null;
+    };
 
-        const components = currentEntry.split(valueDivider);
-
-        if (components.length === 2 &&
-            /^\d+$/.test(components[0]) &&
-            /^\d+$/.test(components[1])) {
-
-            const operandOne = Number(components[0]);
-            const operandTwo = Number(components[1]);
-
-            if (Number.isFinite(operandOne) && Number.isFinite(operandTwo)) {
-                process.stdout.write((operandOne + operandTwo).toString() + lineMarker);
-            }
-        }
-    });
+    lines
+        .map(extractAndSum)
+        .filter(sumValue => sumValue !== null)
+        .forEach(console.log);
 });
 
-process.stdout.on('drain', function() {});
+process.stdout.on("end", () => {});

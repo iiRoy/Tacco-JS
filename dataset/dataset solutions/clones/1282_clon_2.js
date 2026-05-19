@@ -1,75 +1,63 @@
 'use strict';
-(function (dataStream) {
-
-  /*
-   * This routine initializes a multi-dimensional array representing
-   * a complex of buildings, levels, and units, filled with default values.
-   * A visual separator is also prepended to the top-level structure.
-   */
-  function createResidentialBlock(blockCount, levelCount, unitCount) {
-    const blockMatrix = []; // Main array to hold all blocks
-
-    for (let blockIdx = 0; blockIdx < blockCount; blockIdx++) {
-      const levelRow = []; // Array for current block's levels
-
-      for (let levelIdx = 0; levelIdx < levelCount; levelIdx++) {
-        const unitArray = []; // Array for current level's units
-
-        for (let unitIdx = 0; unitIdx < unitCount; unitIdx++) {
-          unitArray.push(0); // Initialize each unit with zero
+(function(inputSource) {
+  // Function to construct a multi-level architectural layout
+  function createStructure(numBuildings, numFloors, numRooms) {
+    // Initialize the main complex array to hold building data
+    var complex = [];
+    // Iterate through each building unit
+    for (var idxB = 0; idxB < numBuildings; idxB++) {
+      var level = []; // Represents a single floor within a building
+      // Iterate through each floor level
+      for (var idxF = 0; idxF < numFloors; idxF++) {
+        var unit = []; // Represents a collection of rooms on a floor
+        // Iterate through each room within the current floor
+        for (var idxR = 0; idxR < numRooms; idxR++) {
+          unit.push(0); // Assign an initial state (e.g., empty) to the room
         }
-        levelRow.push(unitArray); // Add the completed level to the current block
+        level.push(unit); // Add the array of rooms to the current floor
       }
-      blockMatrix.push(levelRow); // Add the completed block to the main matrix
+      complex.push(level); // Add the completed floor array to the building structure
     }
-
-    // Insert a decorative boundary string at the beginning
-    blockMatrix.unshift(Array(unitCount * 2).fill('-').join(' '));
-
-    return blockMatrix; // Return the fully initialized structure
+    // Prepend a decorative header line to the beginning of the complex array
+    complex.unshift(Array(numRooms * 2).fill('#').join(''));
+    return complex; // Return the fully initialized architectural complex
   }
 
-  /**
-   * Processes a set of modification instructions against an initial data grid,
-   * then formats the modified grid into a human-readable string.
-   * @param {Array<Array<any>>} initialMatrix - The multi-level array to be updated.
-   * @param {Array<Array<number>>} modificationSet - Instructions for updating values.
-   * @returns {string} A formatted string representation of the updated matrix.
-   */
-  function adjustAndDisplayUnits(initialMatrix, modificationSet) {
-    const separatorString = initialMatrix.shift(); // Extract the first element (separator)
+  // Function to process and format occupancy updates for the structure
+  function processOccupancy(initialLayout, occupancyUpdates) {
+    // Extract the first element, which serves as a separator string, and remove it
+    var separatorLine = initialLayout.shift();
 
-    modificationSet.forEach(function (instruction) { // Iterate through each update instruction
-      // instruction format: [block_num, level_num, unit_num, new_value]
-      const targetBlock = initialMatrix[instruction[0] - 1]; // Access the specific block
-      const targetLevel = targetBlock[instruction[1] - 1];   // Access the specific level within the block
-      targetLevel.splice(instruction[2] - 1, 1, instruction[3]); // Update the unit's value
+    // Apply each individual occupancy update from the provided data
+    occupancyUpdates.map(function(updateEntry) {
+      // Locate the specific room based on the coordinates in the update entry
+      var targetRoom = initialLayout[updateEntry[0] - 1][updateEntry[1] - 1];
+      // Update the room's state using splice, replacing one element at the specified index
+      targetRoom.splice(updateEntry[2] - 1, 1, updateEntry[3]);
     });
 
-    // Transform the modified matrix into a formatted output string
-    return initialMatrix.map(function (currentBlock) {
-        return currentBlock.map(function (currentLevelRow) {
-            return '|' + currentLevelRow.join(' ') + '|';
-          })
-          .join('\n'); // Join levels within a block
-      })
-      .join('\n' + separatorString + '\n'); // Join blocks with the separator
+    // Format the updated layout into a displayable string
+    return initialLayout.map(function(floorLayout) {
+      // For each floor, map its room states to a formatted string
+      return floorLayout.map(function(roomStates) {
+        // Join the room states with spaces, prepending an additional space for alignment
+        return ' ' + roomStates.join(' ');
+      }).join('\n'); // Join the formatted floor strings with newline characters
+    }).join('\n' + separatorLine + '\n'); // Join the building sections with the separator line
   }
 
-  // Retrieve and parse raw input data from the provided stream
-  const sourceLines = dataStream.toString().trim().split('\n');
-
-  // Convert string lines to arrays of numbers, preparing for processing
-  const numericInstructions = sourceLines.map(function (inputLine) {
-    return inputLine.split(' ').map(Number);
+  // Read raw input data from the provided source
+  var rawData = inputSource.toString().trim().split('\n');
+  // Parse the raw input lines into arrays of numbers
+  var parsedUpdates = rawData.map(function(lineContent) {
+    return lineContent.split(' ').map(Number);
   });
+  // Remove the first line of parsed updates, as it's typically metadata
+  parsedUpdates.shift();
 
-  // Discard the initial line, which typically contains metadata (like dimensions)
-  // as the dimensions are hardcoded in the main call.
-  numericInstructions.shift();
-
-
-  // Execute the main logic: initialize the structure, apply updates, and log the result
-  console.log(adjustAndDisplayUnits(createResidentialBlock(4, 3, 10), numericInstructions));
-
+  // Execute the main logic:
+  // 1. Create the initial building structure.
+  // 2. Process the occupancy updates against this structure.
+  // 3. Output the final formatted result to the console.
+  console.log(processOccupancy(createStructure(4, 3, 10), parsedUpdates));
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

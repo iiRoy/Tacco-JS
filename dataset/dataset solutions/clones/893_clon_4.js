@@ -1,64 +1,66 @@
-let acquiredContent = '';
+const fs = require('fs');
+const sourceText = fs.readFileSync('/dev/stdin', 'utf8').trim();
 
-process.stdin.setEncoding('utf8');
+const replacementPattern = "AIDUNYAN";
+const patternLength = replacementPattern.length;
 
-process.stdin.on('data', (piece) => {
-    acquiredContent += piece;
+const referenceFrequencyMap = {};
+for (const char of replacementPattern) {
+    referenceFrequencyMap[char] = (referenceFrequencyMap[char] || 0) + 1;
+}
+
+const constructOriginalSegment = (source, startIndex) => {
+    const segmentChars = [
+        source[startIndex],
+        source[startIndex + 1],
+        source[startIndex + 2],
+        source[3],
+        source[startIndex + 4],
+        source[startIndex + 5],
+        source[startIndex + 6],
+        source[startIndex + 7]
+    ];
+    return segmentChars.join('');
+};
+
+const isAnagramOfReference = (segment) => {
+    const segmentFrequencyMap = {};
+    for (const char of segment) {
+        segmentFrequencyMap[char] = (segmentFrequencyMap[char] || 0) + 1;
+    }
+
+    const segmentKeys = Object.keys(segmentFrequencyMap);
+    const referenceKeys = Object.keys(referenceFrequencyMap);
+
+    if (segmentKeys.length !== referenceKeys.length) {
+        return false;
+    }
+
+    for (const key of segmentKeys) {
+        if (segmentFrequencyMap[key] !== referenceFrequencyMap[key]) {
+            return false;
+        }
+    }
+    return true;
+};
+
+let finalOutput = sourceText;
+let matchPosition = -1;
+
+const iterationCount = Math.max(0, sourceText.length - patternLength);
+const possibleStartIndices = Array.from({ length: iterationCount }, (_, k) => k);
+
+possibleStartIndices.some(currentIdx => {
+    const currentSegment = constructOriginalSegment(sourceText, currentIdx);
+    if (isAnagramOfReference(currentSegment)) {
+        matchPosition = currentIdx;
+        return true;
+    }
+    return false;
 });
 
-process.stdin.on('end', () => {
-    const transformSequence = (initialContent) => {
-        const punctuationPattern = /^\s+|\s+$/g;
-        const cleansedContent = initialContent.replace(punctuationPattern, '');
+if (matchPosition !== -1) {
+    finalOutput = sourceText.substring(0, matchPosition) + replacementPattern + sourceText.substring(matchPosition + patternLength);
+}
 
-        if (cleansedContent.length < 8) {
-            return cleansedContent;
-        }
-
-        const characterCollection = [...cleansedContent];
-        const nominalCharacterCounts = { 'A': 2, 'D': 1, 'I': 1, 'N': 2, 'U': 1, 'Y': 1 };
-        const desiredReplacement = [...'AIDUNYAN'];
-
-        const verifyCharacterArrangement = (segmentOfUnits) => {
-            if (segmentOfUnits.length !== 8) {
-                return false;
-            }
-            const currentCounts = {};
-            for (const unit of segmentOfUnits) {
-                currentCounts[unit] = (currentCounts[unit] || 0) + 1;
-            }
-
-            for (const key in nominalCharacterCounts) {
-                if (currentCounts[key] !== nominalCharacterCounts[key]) {
-                    return false;
-                }
-            }
-            for (const key in currentCounts) {
-                if (nominalCharacterCounts[key] === undefined) {
-                    return false;
-                }
-            }
-            return true;
-        };
-
-        let discoveryIndex = -1;
-        const potentialStartPositions = Array.from({ length: characterCollection.length - 7 }, (_, k) => k);
-
-        discoveryIndex = potentialStartPositions.findIndex(currentPosition =>
-            verifyCharacterArrangement(characterCollection.slice(currentPosition, currentPosition + 8))
-        );
-
-        if (discoveryIndex !== -1) {
-            const mutableCollection = [...characterCollection];
-            mutableCollection.splice(discoveryIndex, 8, ...desiredReplacement);
-            return mutableCollection.join('');
-        } else {
-            return cleansedContent;
-        }
-    };
-
-    const finalResult = transformSequence(acquiredContent);
-    process.stdout.write(finalResult);
-});
-
-process.stdin.resume();
+console.log(finalOutput);

@@ -1,90 +1,82 @@
-function ProcessInputData(initialText) {
-  // The raw input string is split into an array of individual lines.
-  initialText = initialText.split("\n");
+function ProcessInput(rawData) {
+    // Split the raw input string into individual lines
+    rawData = rawData.split("\n");
 
-  // The very first line contains two crucial numbers: N and K.
-  let firstLineTokens = initialText[0].split(" ");
-  let totalAvailableItems = parseInt(firstLineTokens[0]);
-  let desiredSelectionSize = parseInt(firstLineTokens[1]);
+    // Parse the first line to get the total number of items and the selection count
+    var firstLineParts = rawData[0].split(" ");
+    var totalItems = parseInt(firstLineParts[0]);
+    var selectionCount = parseInt(firstLineParts[1]);
 
-  // Declare some iterator variables; not all might be actively used or necessary.
-  let loopCounterA, loopCounterB, loopCounterC, loopCounterD;
+    // Declare some variables that are not used in the original logic
+    var unusedVarA, unusedVarB, unusedVarC;
 
-  // This array will hold parsed details for each individual food item.
-  let foodEntries = [];
+    // Initialize an array to store the sushi item data
+    var sushiItems = [];
 
-  // Iterate through the subsequent lines to parse each item's data.
-  for (loopCounterA = 1; loopCounterA <= totalAvailableItems; loopCounterA++) {
-    let currentLineParts = initialText[loopCounterA].split(" ");
-    let itemDetails = {};
-    // Each item has a 'kind' (type) and a 'deliciousness' value.
-    itemDetails.kind = parseInt(currentLineParts[0]);
-    itemDetails.deliciousness = parseInt(currentLineParts[1]);
-    foodEntries.push(itemDetails);
-  }
-
-  /*
-   * The original code contained a commented-out line for sorting the food items.
-   * This sorting was likely for an alternative approach or optimization not used in the final logic.
-   * foodEntries.sort(function(itemX, itemY) { return itemY.deliciousness - itemX.deliciousness; });
-   */
-
-  // Initialize the variable that will store the maximum score found across all combinations.
-  let highestScore = 0;
-
-  // This function acts as an entry point to kick off the recursive combination generation.
-  function generateCombinations(selectionTarget, totalElementsMinusSelection) {
-    // An array to temporarily store the indices of the items currently selected in a combination.
-    let combinationIndices = new Array(100001);
-    let currentDepth = 0;  // Represents the starting index for the next element in the array.
-    let columnIndex = 1;   // Represents the current position within the combinationIndices array.
-
-    // Begin the recursive search to explore all possible combinations.
-    recursiveCombinationSearch(currentDepth, columnIndex, selectionTarget, totalElementsMinusSelection, combinationIndices);
-  }
-
-  // The core recursive function that generates and evaluates combinations.
-  function recursiveCombinationSearch(startIndexForNext, currentColumnPosition, targetSelectionCount, maxAvailableIndex, combinationStore) {
-    let iteratorX, iteratorY;
-
-    // Loop through possible indices for the current position in the combination.
-    for (iteratorX = startIndexForNext + 1; iteratorX <= maxAvailableIndex + currentColumnPosition; iteratorX++) {
-      combinationStore[currentColumnPosition] = iteratorX;
-
-      // If we haven't yet picked 'targetSelectionCount' items, go deeper into recursion.
-      if (targetSelectionCount !== currentColumnPosition) {
-        recursiveCombinationSearch(iteratorX, currentColumnPosition + 1, targetSelectionCount, maxAvailableIndex, combinationStore);
-      } else {
-        // If 'targetSelectionCount' items have been picked, evaluate this combination.
-        let placeholderVariable = 0; // This variable existed in the original but was unused.
-        let accumulatedDeliciousness = 0;
-        let distinctItemTypes = new Set(); // A Set to easily count unique item types.
-
-        // Calculate the score for the current combination.
-        for (iteratorY = 1; iteratorY <= targetSelectionCount; iteratorY++) {
-          let chosenItemIndex = combinationStore[iteratorY];
-          // Store the type of the selected item to count unique types.
-          distinctItemTypes.add(foodEntries[chosenItemIndex - 1].kind);
-          // Add the deliciousness value of the selected item to the running sum.
-          accumulatedDeliciousness += foodEntries[chosenItemIndex - 1].deliciousness;
-        }
-
-        // The final score is calculated as (number of unique types)^2 + total deliciousness.
-        let currentCombinationScore = distinctItemTypes.size * distinctItemTypes.size;
-        currentCombinationScore += accumulatedDeliciousness;
-
-        // Update the global maximum score if the current combination yields a higher score.
-        highestScore = Math.max(highestScore, currentCombinationScore);
-      }
+    // Loop through the remaining lines to populate the sushiItems array
+    for (let idx = 1; idx <= totalItems; idx++) {
+        var itemLineParts = rawData[idx].split(" ");
+        var sushiData = {}; // Create an object for each sushi item
+        sushiData.typeId = parseInt(itemLineParts[0]); // Store the type identifier
+        sushiData.deliciousness = parseInt(itemLineParts[1]); // Store the deliciousness value
+        sushiItems.push(sushiData); // Add the item to the array
     }
-  }
 
-  // Call the combination generator with the required parameters (K and N-K).
-  generateCombinations(desiredSelectionSize, totalAvailableItems - desiredSelectionSize);
+    // Initialize the overall maximum score found so far
+    var overallMaximum = 0;
 
-  // Print the final highest score to the console.
-  console.log(highestScore);
+    // Function to initiate the combination generation process
+    function generateCombinations(targetSize, remainingElements) {
+        // Initialize an array to hold the indices of the current combination
+        // The size 100001 is a magic number from the original, likely an upper bound for K
+        var currentCombinationIndices = new Array(100001);
+        var startIdx = 0; // Starting index for the next element in the combination
+        var currentDepth = 1; // Current depth of recursion (which element of the combination we are choosing)
+
+        // Begin the recursive generation
+        recursiveCombinationGenerator(startIdx, currentDepth, targetSize, remainingElements, currentCombinationIndices);
+    }
+
+    // Recursive function to generate combinations and calculate scores
+    function recursiveCombinationGenerator(startIdx, currentDepth, targetSize, remainingElements, currentCombinationIndices) {
+        var loopCounter, innerLoopCounter;
+
+        // Iterate to select the next element for the current combination
+        for (loopCounter = startIdx + 1; loopCounter <= remainingElements + currentDepth; loopCounter++) {
+            currentCombinationIndices[currentDepth] = loopCounter; // Store the selected index
+
+            // If we haven't reached the target combination size, recurse deeper
+            if (targetSize !== currentDepth) {
+                recursiveCombinationGenerator(loopCounter, currentDepth + 1, targetSize, remainingElements, currentCombinationIndices);
+            } else {
+                // Base case: A combination of 'targetSize' elements has been formed
+                var tempVal = 0; // Unused variable, kept for structural similarity
+                var currentDeliciousnessSum = 0; // Sum of deliciousness for the current combination
+                var uniqueTypesSet = new Set(); // Set to store unique type IDs
+
+                // Calculate the score for the current combination
+                for (innerLoopCounter = 1; innerLoopCounter <= targetSize; innerLoopCounter++) {
+                    var itemIndex = currentCombinationIndices[innerLoopCounter];
+                    uniqueTypesSet.add(sushiItems[itemIndex - 1].typeId); // Add type ID to the set
+                    currentDeliciousnessSum += sushiItems[itemIndex - 1].deliciousness; // Add deliciousness to sum
+                }
+
+                // Calculate the score: (number of unique types)^2 + sum of deliciousness
+                var currentCombinationScore = uniqueTypesSet.size * uniqueTypesSet.size;
+                currentCombinationScore += currentDeliciousnessSum;
+
+                // Update the overall maximum score if the current score is higher
+                overallMaximum = Math.max(overallMaximum, currentCombinationScore);
+            }
+        }
+    }
+
+    // Start the combination generation with K items from N total items
+    generateCombinations(selectionCount, totalItems - selectionCount);
+
+    // Output the final maximum score
+    console.log(overallMaximum);
 }
 
-// Read the input data from standard input and pass it to the main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

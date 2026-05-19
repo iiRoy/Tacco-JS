@@ -1,40 +1,55 @@
-const fetchInputSource = () => {
-  const operationsForFiles = require('fs');
-  return operationsForFiles.readFileSync(0, 'utf8');
-};
+const fileSystemModule = require("fs");
 
-const processInputData = () => {
-  const initialData = fetchInputSource();
-  const primaryLine = initialData.split('\n')[0];
+const processInputData = (inputContent) => {
+    const contentLines = inputContent.split("\n");
+    const primaryString = contentLines[0];
 
-  const iterateCharacter = (currentState, currentSymbol) => {
-    const { finalCount, activityLevel } = currentState;
-
-    const stateBranchIdentifier = activityLevel > 0 ? 'levelElevated' : 'levelBase';
-
-    const transformationDefinitions = {
-      'levelElevated': {
-        'g': { countChange: 1, levelChange: -1 },
-        'p': { countChange: 0, levelChange: -1 }
-      },
-      'levelBase': {
-        'g': { countChange: 0, levelChange: 1 },
-        'p': { countChange: -1, levelChange: 1 }
-      }
+    const initialProcessingState = {
+        calculatedScore: 0,
+        currentDepth: 0
     };
 
-    const relevantTransformation = transformationDefinitions[stateBranchIdentifier][currentSymbol];
-
-    return {
-      finalCount: finalCount + relevantTransformation.countChange,
-      activityLevel: activityLevel + relevantTransformation.levelChange
+    const operationDispatchMap = {
+        'g': {
+            'positiveDepth': (state) => ({
+                calculatedScore: state.calculatedScore + 1,
+                currentDepth: state.currentDepth - 1
+            }),
+            'nonPositiveDepth': (state) => ({
+                calculatedScore: state.calculatedScore,
+                currentDepth: state.currentDepth + 1
+            })
+        },
+        'p': {
+            'positiveDepth': (state) => ({
+                calculatedScore: state.calculatedScore,
+                currentDepth: state.currentDepth - 1
+            }),
+            'nonPositiveDepth': (state) => ({
+                calculatedScore: state.calculatedScore - 1,
+                currentDepth: state.currentDepth + 1
+            })
+        },
+        'other': {
+            'positiveDepth': (state) => ({
+                calculatedScore: state.calculatedScore,
+                currentDepth: state.currentDepth - 1
+            }),
+            'nonPositiveDepth': (state) => ({
+                calculatedScore: state.calculatedScore,
+                currentDepth: state.currentDepth + 1
+            })
+        }
     };
-  };
 
-  const startingPoint = { finalCount: 0, activityLevel: 0 };
-  const computedOutcome = primaryLine.split('').reduce(iterateCharacter, startingPoint);
+    const finalProcessingState = Array.from(primaryString).reduce((accumulator, characterSymbol) => {
+        const depthConditionKey = accumulator.currentDepth > 0 ? 'positiveDepth' : 'nonPositiveDepth';
+        const characterSpecificOperations = operationDispatchMap[characterSymbol] || operationDispatchMap['other'];
+        const selectedOperation = characterSpecificOperations[depthConditionKey];
+        return selectedOperation(accumulator);
+    }, initialProcessingState);
 
-  console.log(computedOutcome.finalCount);
+    console.log(finalProcessingState.calculatedScore);
 };
 
-processInputData();
+processInputData(fileSystemModule.readFileSync("/dev/stdin", "UTF-8"));

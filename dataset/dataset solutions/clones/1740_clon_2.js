@@ -1,9 +1,10 @@
-const    inputArgumentString    =    process.argv[2];
-const    transformedToUppercase    =    inputArgumentString.toUpperCase();
-const    transformedToLowercase    =    inputArgumentString.toLowerCase();
+const inputChar = process.argv[2]; // Get the second command-line argument
+const capitalizedChar = inputChar.toUpperCase(); // Convert the character to its uppercase equivalent
+const smallChar = inputChar.toLowerCase(); // Convert the character to its lowercase equivalent
 
-if    (inputArgumentString    ==    transformedToUppercase)    {
-    console.log("A");
-}    else    {
-    console.log("a");
+// Check if the original character is already uppercase
+if (inputChar === capitalizedChar) {
+  console.log("A"); // Output 'A' if it's uppercase
+} else {
+  console.log("a"); // Otherwise, output 'a'
 }

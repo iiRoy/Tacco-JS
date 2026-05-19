@@ -1,37 +1,31 @@
-function processInputData(incomingData) {
-    // This function processes a given string input to count character alternations.
+function processInput(rawData) {
+  // Divide the incoming data by newline characters.
+  let processedLines = rawData.split("\n");
 
-    // Split the entire input string by newline characters into an array of individual lines.
-    const dataLines = incomingData.split("\n");
+  // Obtain the first line and remove any leading or trailing whitespace.
+  const targetString = processedLines[0].trim();
 
+  // Initialize a variable to store the character encountered in the prior iteration.
+  let lastChar = targetString[0];
 
-    // Extract the very first line from the array and remove any leading or trailing whitespace.
-    let targetSequence = dataLines[0].trim();
+  // Set up a counter for instances where characters differ from their predecessor.
+  let changeCount = 0;
 
-    // Initialize a variable to hold the character encountered in the previous iteration.
-    // Start with the first character of the processed sequence.
-    let lastEncounteredChar = targetSequence[0];
-
-    // Initialize a counter to keep track of how many times the character alternates.
-    let alternationCount = 0;
-
-    // Loop through the target sequence, starting from the second character (index 1).
-    for (let charPosition = 1; charPosition < targetSequence.length; charPosition++) {
-
-        // Check if the character at the current position is different from the last encountered character.
-        if (lastEncounteredChar !== targetSequence[charPosition]) {
-            // If they are different, it means an alternation has occurred, so increment the counter.
-            alternationCount++;
-        }
-        // Update the 'lastEncounteredChar' to the character at the current position for the next iteration.
-        lastEncounteredChar = targetSequence[charPosition];
+  // Traverse the string, beginning from the second character.
+  for (let idx = 1; idx < targetString.length; idx++) {
+    // Determine if the current character is not identical to the last recorded character.
+    if (lastChar !== targetString[idx]) {
+      // If a difference is found, increment the change counter.
+      changeCount++;
     }
+    // Update the 'lastChar' to the character currently being examined for the subsequent loop cycle.
+    lastChar = targetString[idx];
+  }
 
-    // Output the final calculated count of alternations to the console.
-    console.log(alternationCount);
+  // Display the final tally of character changes to the standard output.
+  console.log(changeCount);
 }
 
-
-// The following section is for standard input/output handling and should not be altered.
-// It reads all data from standard input and passes it to the primary processing function.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This section is responsible for reading input from the standard input stream and invoking the primary processing function.
+// It is typically part of the execution environment and should remain unaltered.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

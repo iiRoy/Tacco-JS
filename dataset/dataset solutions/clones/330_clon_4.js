@@ -1,79 +1,82 @@
-function createGameSimulator(initialAttackCountInput) {
-  let totalInnings = +initialAttackCountInput;
-  let currentStrikeouts = 0;
-  let gameMaxStrikeouts = totalInnings * 3;
-  let baseOccupants = [];
-  let currentPoints = 0;
+class DiamondPlay {
+    #totalInnings;
+    #currentOuts;
+    #maxOuts;
+    #onBase;
+    #currentScore;
 
-  const assessMatchConclusion = () => currentStrikeouts === gameMaxStrikeouts;
-
-  const presentScoreAndReset = () => {
-    console.log(currentPoints);
-    currentPoints = 0;
-    baseOccupants = [];
-  };
-
-  const activityDispatch = {
-    'SINGLE_HIT': () => {
-      baseOccupants.push(0);
-      baseOccupants = baseOccupants.map(position => position + 1);
-      if (baseOccupants.length > 0 && baseOccupants[0] === 4) {
-        currentPoints++;
-        baseOccupants.shift();
-      }
-      return 'continue_match';
-    },
-    'GRAND_SLAM': () => {
-      currentPoints += baseOccupants.length + 1;
-      baseOccupants = [];
-      return 'continue_match';
-    },
-    'STRIKE_OUT': () => {
-      currentStrikeouts++;
-      if (currentStrikeouts % 3 === 0) {
-        return 'period_transition';
-      }
-      return 'continue_match';
+    constructor(inningGroups) {
+        this.#totalInnings = +inningGroups;
+        this.#currentOuts = 0;
+        this.#maxOuts = this.#totalInnings * 3;
+        this.#onBase = [];
+        this.#currentScore = 0;
     }
-  };
 
-  return {
-    executeGameEvent: (eventType) => {
-      const handlerFunction = activityDispatch[eventType];
-      if (handlerFunction) {
-        return handlerFunction();
-      }
-      return 'unrecognized_event';
-    },
-    queryGameStatus: () => ({
-      isMatchOver: assessMatchConclusion(),
-      currentPointsAccumulated: currentPoints,
-      currentStrikeoutsCount: currentStrikeouts
-    }),
-    outputReportAndClear: presentScoreAndReset
-  };
+    isGameConcluded() {
+        return this.#currentOuts === this.#maxOuts;
+    }
+
+    displayScoreAndReset() {
+        console.log(this.#currentScore);
+        this.#currentScore = 0;
+        this.#onBase = [];
+    }
+
+    #handleHitPlay() {
+        let nextBaseOccupants = [];
+        let runsScoredThisTurn = 0;
+
+        for (let i = 0; i < this.#onBase.length; i++) {
+            if (this.#onBase[i] === 3) {
+                runsScoredThisTurn++;
+            } else {
+                nextBaseOccupants.push(this.#onBase[i] + 1);
+            }
+        }
+        nextBaseOccupants.push(1); // New batter reaches first base
+        this.#currentScore += runsScoredThisTurn;
+        this.#onBase = nextBaseOccupants;
+        return 'continue_play';
+    }
+
+    #handleHomerunPlay() {
+        this.#currentScore += this.#onBase.length + 1;
+        this.#onBase.length = 0;
+        return 'continue_play';
+    }
+
+    #handleOutPlay() {
+        this.#currentOuts++;
+        return (this.#currentOuts % 3 === 0) ? 'inning_change' : 'continue_play';
+    }
+
+    processPlay(command) {
+        const playDispatch = {
+            'HIT': this.#handleHitPlay,
+            'HOMERUN': this.#handleHomerunPlay,
+            'OUT': this.#handleOutPlay
+        };
+        const handlerFunction = playDispatch[command];
+        if (handlerFunction) {
+            return handlerFunction.call(this);
+        }
+        return 'continue_play';
+    }
 }
 
-const gameDataLines = require("node:fs").readFileSync("/dev/stdin", "utf8").trim().split('\n');
-const initialSetupValue = gameDataLines.shift();
-const gameEngineInstance = createGameSimulator(initialSetupValue);
+const fileSystem = require("fs");
+const inputData = fileSystem.readFileSync("/dev/stdin", "utf8").trim().split('\n');
+let gameInstance = new DiamondPlay(inputData.shift());
 
-function advanceGameCycle(remainingEvents) {
-  if (remainingEvents.length === 0) {
-    return;
-  }
-
-  const nextEventTrigger = remainingEvents.shift();
-  const eventResult = gameEngineInstance.executeGameEvent(nextEventTrigger);
-
-  if (eventResult === 'period_transition') {
-    gameEngineInstance.outputReportAndClear();
-    const matchStatus = gameEngineInstance.queryGameStatus();
-    if (matchStatus.isMatchOver) {
-      return;
+let commandPointer = 0;
+while (commandPointer < inputData.length) {
+    const currentCommand = inputData[commandPointer++];
+    const outcome = gameInstance.processPlay(currentCommand);
+    if (outcome === 'inning_change') {
+        gameInstance.displayScoreAndReset();
+        if (gameInstance.isGameConcluded()) {
+            break;
+        }
     }
-  }
-  advanceGameCycle(remainingEvents);
 }
-
-advanceGameCycle(gameDataLines);

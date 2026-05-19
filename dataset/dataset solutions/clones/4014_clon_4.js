@@ -1,53 +1,53 @@
-function processGridPathfinding(sourceData) {
-    const dataSegments = sourceData.split("\n");
+function processData(rawData) {
+    const inputLines = rawData.split("\n");
 
-    const [dimHText, dimWText, skipDeltaText] = dataSegments[0].split(" ");
-    const verticalExtent = Number(dimHText);
-    const horizontalExtent = Number(dimWText);
-    const traversalStride = Number(skipDeltaText);
+    const [gridRowsStr, gridColsStr, incrementSizeStr] = inputLines[0].split(" ");
+    const gridRows = Number(gridRowsStr);
+    const gridCols = Number(gridColsStr);
+    const incrementSize = Number(incrementSizeStr);
 
-    const coordinateReference = new Map();
+    const coordinateRegistry = new Map();
+    for (let rIndex = 0; rIndex < gridRows; rIndex++) {
+        const rowContent = inputLines[rIndex + 1].split(" ");
+        for (let cIndex = 0; cIndex < rowContent.length; cIndex++) {
+            const cellIdentifier = Number(rowContent[cIndex]);
+            coordinateRegistry.set(cellIdentifier, [rIndex + 1, cIndex + 1]);
+        }
+    }
 
-    dataSegments.slice(1, 1 + verticalExtent).forEach((gridLineContent, currentLineIndex) => {
-        const actualRowPosition = currentLineIndex + 1;
-        gridLineContent.split(" ").forEach((cellValueString, currentColumnIndex) => {
-            const actualColumnPosition = currentColumnIndex + 1;
-            const numericalCellValue = Number(cellValueString);
-            coordinateReference.set(numericalCellValue, { r: actualRowPosition, c: actualColumnPosition });
+    const queryCount = Number(inputLines[gridRows + 1]);
+    const pathSpecifications = [];
+    for (let qIndex = 0; qIndex < queryCount; qIndex++) {
+        const [originValStr, destinationValStr] = inputLines[gridRows + 2 + qIndex].split(" ");
+        pathSpecifications.push({
+            startPointValue: Number(originValStr),
+            endPointValue: Number(destinationValStr)
         });
-    });
+    }
 
-    const pathQueryCount = Number(dataSegments[1 + verticalExtent]);
-
-    const pathSpecifications = dataSegments.slice(2 + verticalExtent, 2 + verticalExtent + pathQueryCount).map(queryDetailsLine => {
-        const [startValTxt, endValTxt] = queryDetailsLine.split(" ");
-        return { initialPointValue: Number(startValTxt), finalPointValue: Number(endValTxt) };
-    });
-
-    const calculateRectilinearDistance = (spotA, spotB) => {
-        const rowDifference = Math.abs(spotA.r - spotB.r);
-        const columnDifference = Math.abs(spotA.c - spotB.c);
-        return rowDifference + columnDifference;
-    };
-
-    const finalDistancesCollection = pathSpecifications.map(individualPath => {
-        const { initialPointValue, finalPointValue } = individualPath;
-
-        const journeySegments = [];
-        for (let currentVal = initialPointValue; currentVal < finalPointValue; currentVal += traversalStride) {
-            journeySegments.push({ origin: currentVal, destination: currentVal + traversalStride });
+    const computedDistances = pathSpecifications.map(pathSpec => {
+        const { startPointValue, endPointValue } = pathSpec;
+        let currentSegmentStart = startPointValue;
+        const traversedValues = [];
+        while (currentSegmentStart <= endPointValue) {
+            traversedValues.push(currentSegmentStart);
+            currentSegmentStart += incrementSize;
         }
 
-        const totalDistanceForCurrentPath = journeySegments.reduce((accumulatedLength, segment) => {
-            const originCoordinates = coordinateReference.get(segment.origin);
-            const destinationCoordinates = coordinateReference.get(segment.destination);
-            return accumulatedLength + calculateRectilinearDistance(originCoordinates, destinationCoordinates);
+        const totalPathLength = traversedValues.slice(0, -1).reduce((accumulatedLength, segmentBeginValue, idx) => {
+            const segmentEndValue = traversedValues[idx + 1];
+
+            const beginCoordinates = coordinateRegistry.get(segmentBeginValue);
+            const endCoordinates = coordinateRegistry.get(segmentEndValue);
+
+            const segmentLength = Math.abs(endCoordinates[0] - beginCoordinates[0]) + Math.abs(endCoordinates[1] - beginCoordinates[1]);
+            return accumulatedLength + segmentLength;
         }, 0);
 
-        return totalDistanceForCurrentPath;
+        return totalPathLength;
     });
 
-    console.log(finalDistancesCollection.join("\n"));
+    console.log(computedDistances.join("\n"));
 }
 
-processGridPathfinding(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

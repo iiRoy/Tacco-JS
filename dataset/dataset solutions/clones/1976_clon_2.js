@@ -1,150 +1,153 @@
 "use strict"; // Enforce strict parsing and error handling
 
-// Obtain raw input data from standard input
-var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+// Read all standard input at once
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Split the raw data into tokens using space or newline as delimiters
-var tokenStream = rawData.split(/\s+|[\r\n]+/),
-  tokenIndex = 0;
+// Split input into tokens by spaces or newlines, and initialize a token pointer
+let tokenStream = rawData.split(/ |\n/);
+let tokenIndex = 0;
 
 /**
- * Retrieves the next token from the stream.
- * @param {boolean} isString - If true, returns the token as a string; otherwise, attempts to convert to a number.
+ * Reads the next token from the input stream.
+ * @param {boolean} asString - If true, returns the token as a string; otherwise, as a number.
  * @returns {string|number} The next token.
  */
-function getNextToken(isString) {
-  // If `isString` is truthy, return the token as is.
-  // Otherwise, convert it to a number.
-  return isString ? tokenStream[tokenIndex++] : Number(tokenStream[tokenIndex++]);
+function readNextToken(asString) {
+  return asString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
 /**
- * Retrieves a specified number of tokens from the stream.
- * @param {number} count - The number of tokens to retrieve.
- * @param {boolean} asStrings - If true, returns tokens as strings; otherwise, converts to numbers.
+ * Reads an array of tokens from the input stream.
+ * @param {number} count - The number of tokens to read.
+ * @param {boolean} asStrings - If true, returns tokens as strings; otherwise, as numbers.
  * @returns {Array<string|number>} An array of tokens.
  */
-function getMultipleTokens(count, asStrings) {
-  // Extract a slice of the token stream.
-  const extractedSlice = tokenStream.slice(tokenIndex, tokenIndex += count);
-  // If `asStrings` is truthy, return the slice directly.
-  // Otherwise, map each item to a number.
-  return asStrings ? extractedSlice : extractedSlice.map(val => Number(val));
+function readTokensArray(count, asStrings) {
+  if (asStrings) {
+    return tokenStream.slice(tokenIndex, (tokenIndex += count));
+  } else {
+    return tokenStream.slice(tokenIndex, (tokenIndex += count)).map((valStr) => +valStr);
+  }
 }
 
 /**
- * Reads a 2D matrix from the token stream.
- * @param {number} rows - The number of rows in the matrix.
- * @param {number} cols - The number of columns in the matrix.
- * @param {boolean} stringsOnly - If true, matrix elements are strings; otherwise, numbers.
- * @returns {Array<Array<string|number>>} The parsed matrix.
+ * Reads a 2D matrix of tokens from the input stream.
+ * @param {number} rows - The number of rows.
+ * @param {number} cols - The number of columns.
+ * @param {boolean} asStringsMatrix - If true, returns elements as strings; otherwise, as numbers.
+ * @returns {Array<Array<string|number>>} A 2D array (matrix) of tokens.
  */
-function getMatrix(rows, cols, stringsOnly) {
-  var resultArray = [],
-    rowIndex = 0;
-  if (stringsOnly) {
+function readMatrix(rows, cols, asStringsMatrix) {
+  let resultMatrix = [];
+  let rowIndex = 0;
+  if (asStringsMatrix) {
     for (; rowIndex < rows; rowIndex++) {
-      resultArray.push(tokenStream.slice(tokenIndex, tokenIndex += cols));
+      resultMatrix.push(tokenStream.slice(tokenIndex, (tokenIndex += cols)));
     }
   } else {
     for (; rowIndex < rows; rowIndex++) {
-      resultArray.push(tokenStream.slice(tokenIndex, tokenIndex += cols).map(item => Number(item)));
+      resultMatrix.push(tokenStream.slice(tokenIndex, (tokenIndex += cols)).map((elementStr) => +elementStr));
     }
   }
-  return resultArray;
+  return resultMatrix;
 }
 
 /**
- * Creates a multi-dimensional array initialized with a specific value.
- * This function uses `eval` and is generally discouraged for dynamic code execution.
+ * Creates a multi-dimensional array initialized with a given value.
  * @param {*} initialValue - The value to initialize array elements with.
- * @returns {Array} The multi-dimensional array.
+ * @param {...number} dimensions - The dimensions of the array.
+ * @returns {Array} The created multi-dimensional array.
  */
 function createMultiDimArray(initialValue) {
-  var argValues = arguments,
-    argLength = argValues.length,
-    expressionString = "Array(argValues[" + --argLength + "]).fill().map(_=>{return " + initialValue + ";})";
-  while (--argLength) {
-    expressionString = "Array(argValues[" + argLength + "]).fill().map(_=>" + expressionString + ")";
+  let argsList = arguments;
+  let dimCount = argsList.length;
+  let arrayCreationCode = "Array(argsList[" + --dimCount + "]).fill().map(_ => { return " + initialValue + "; })";
+  while (--dimCount) {
+    arrayCreationCode = "Array(argsList[" + dimCount + "]).fill().map(_ => " + arrayCreationCode + ")";
   }
-  return eval(expressionString);
+  return eval(arrayCreationCode);
 }
 
-// A large prime number used for modulo operations, if any.
-var moduloConstant = 1_000_000_007;
+// A common modulo value, often used in competitive programming
+const primeModulo = 1000000007;
 
-// Execute the primary data processing logic
-var finalResult = processData();
+// Execute the main logic and capture its return value
+let programOutput = executeProgram();
 
-// If the processing function returned a non-undefined value, log it to console
-if (finalResult !== void 0) console.log(finalResult);
+// If the program returned a value, print it to console
+if (programOutput !== undefined) {
+  console.log(programOutput);
+}
 
 /**
- * Main function to process the input data and calculate the result.
- * This algorithm involves partitioning an array and calculating sums based on sorted partitions.
- * @returns {number} The calculated maximum score.
+ * Main function containing the problem's core logic.
+ * This function calculates the maximum possible score based on item arrangements.
+ * @returns {number} The maximum score.
  */
-function processData() {
-  // Read the total number of elements
-  var totalElements = getNextToken();
+function executeProgram() {
+  // Read the number of items
+  let itemCount = readNextToken();
 
-  // Create an array to store pairs [value, originalIndex]
-  var elementPairs = [];
-  for (var idx = 0; idx < totalElements; idx++) {
-    elementPairs.push([getNextToken(), idx]);
+  // Store items along with their original indices
+  let itemsWithOriginalIndex = [];
+  for (let idx = 0; idx < itemCount; idx++) {
+    itemsWithOriginalIndex.push([readNextToken(), idx]);
   }
 
   // Initialize the maximum score found so far
-  var maximumScore = 0;
+  let maxScore = 0;
 
-  // Iterate through all possible partition points
-  for (var idx = 1; idx < totalElements; idx++) {
-    // Initialize two partitions for the current split point
-    var leftPartition = [],
-      rightPartition = [];
+  // Iterate through all possible split points for the array
+  // The split point 'splitPoint' determines how many elements are in the 'leftPartition'
+  for (let splitPoint = 1; splitPoint < itemCount; splitPoint++) {
+    let leftPartition = []; // Elements before the split point
+    let rightPartition = []; // Elements from the split point onwards
 
-    // Distribute elements into left and right partitions based on `idx`
-    for (var innerIdx = 0; innerIdx < totalElements; innerIdx++) {
-      if (innerIdx < idx) {
-        leftPartition.push(elementPairs[innerIdx]);
+    // Distribute elements into left and right partitions
+    for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
+      if (currentIdx < splitPoint) {
+        leftPartition.push(itemsWithOriginalIndex[currentIdx]);
       } else {
-        rightPartition.push(elementPairs[innerIdx]);
+        rightPartition.push(itemsWithOriginalIndex[currentIdx]);
       }
     }
 
-    // Sort the left partition by the first element (ascending)
-    leftPartition.sort((pairA, pairB) => pairA[0] - pairB[0]);
-    // Sort the right partition by the first element (descending)
-    rightPartition.sort((pairX, pairY) => pairY[0] - pairX[0]);
+    // Sort the left partition in ascending order based on item value
+    leftPartition.sort((elemA, elemB) => elemA[0] - elemB[0]);
 
-    // Calculate the current sum for this partition and a flag for validity
-    var currentPartitionSum = 0,
-      isValidPartition = 1; // Use 1 for true, 0 for false
+    // Sort the right partition in descending order based on item value
+    rightPartition.sort((elemA, elemB) => elemB[0] - elemA[0]);
 
-    // Process the right partition
-    for (var innerIdx = 0; innerIdx < rightPartition.length && isValidPartition; innerIdx++) {
-      var tempValue = rightPartition[innerIdx][1] - innerIdx;
-      if (tempValue < 0) {
-        isValidPartition = 0; // Mark as invalid if condition is met
+    let currentScore = 0; // Score for the current partition
+    let isValidPartition = 1; // Flag to check if the partition is valid (1 for true, 0 for false)
+
+    // Calculate score for the right partition
+    for (let rightPartIdx = 0; rightPartIdx < rightPartition.length && isValidPartition; rightPartIdx++) {
+      // Calculate the required position difference for the current item
+      let positionDiff = rightPartition[rightPartIdx][1] - rightPartIdx;
+      if (positionDiff < 0) {
+        isValidPartition = 0; // Invalid partition if difference is negative
       } else {
-        currentPartitionSum += tempValue * rightPartition[innerIdx][0];
+        currentScore += positionDiff * rightPartition[rightPartIdx][0];
       }
     }
 
-    // Process the left partition, only if the partition is still valid
-    for (var innerIdx = 0; innerIdx < leftPartition.length && isValidPartition; innerIdx++) {
-      var tempValue = innerIdx + rightPartition.length - leftPartition[innerIdx][1];
-      if (tempValue < 0) {
-        isValidPartition = 0; // Mark as invalid if condition is met
+    // Calculate score for the left partition, only if the partition is still valid
+    for (let leftPartIdx = 0; leftPartIdx < leftPartition.length && isValidPartition; leftPartIdx++) {
+      // Calculate the required position difference for the current item
+      let positionDiff = leftPartIdx + rightPartition.length - leftPartition[leftPartIdx][1];
+      if (positionDiff < 0) {
+        isValidPartition = 0; // Invalid partition if difference is negative
       } else {
-        currentPartitionSum += tempValue * leftPartition[innerIdx][0];
+        currentScore += positionDiff * leftPartition[leftPartIdx][0];
       }
     }
 
-    // Update the maximum score if the current partition is valid and yields a higher sum
-    if (isValidPartition && maximumScore < currentPartitionSum) {
-      maximumScore = currentPartitionSum;
+    // If the partition is valid and its score is greater than the maxScore, update maxScore
+    if (isValidPartition && maxScore < currentScore) {
+      maxScore = currentScore;
     }
   }
-  return maximumScore; // Return the final maximum score
+
+  return maxScore; // Return the overall maximum score
 }

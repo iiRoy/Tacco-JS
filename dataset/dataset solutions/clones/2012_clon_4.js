@@ -1,53 +1,27 @@
-(function() {
-    function* generateNumberedFlow(initialElements) {
-        let storageUnit = [...initialElements];
-        let retrievePointer = 0;
-        let additionPointer = storageUnit.length;
+const generateSuccessorsForValue = (parentValue) => {
+    const lastDigit = parentValue % 10;
+    const base = parentValue * 10;
 
-        while (retrievePointer < additionPointer) {
-            const currentItem = storageUnit[retrievePointer];
-            retrievePointer++;
+    return [-1, 0, 1]
+        .map(offset => lastDigit + offset)
+        .filter(newDigit => newDigit >= 0 && newDigit <= 9)
+        .map(validDigit => base + validDigit);
+};
 
-            yield currentItem;
+function processInputData(inputString) {
+    const iterationLimit = parseInt(inputString);
+    let processingQueue = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let finalOutputValue;
 
-            const finalDigit = currentItem % 10;
-            const baseMultiplier = currentItem * 10;
+    for (let counter = 0; counter < iterationLimit; counter++) {
+        const [currentHead, ...remainingQueue] = processingQueue;
+        finalOutputValue = currentHead;
 
-            const digitModifiers = [-1, 0, 1];
-            for (const adj of digitModifiers) {
-                const newDigit = finalDigit + adj;
-                if (newDigit >= 0 && newDigit <= 9) {
-                    // This simulates pushing by directly assigning and incrementing the pointer
-                    storageUnit[additionPointer] = baseMultiplier + newDigit;
-                    additionPointer++;
-                }
-            }
-        }
+        const newChildren = generateSuccessorsForValue(currentHead);
+        processingQueue = [...remainingQueue, ...newChildren];
     }
 
-    function processInputAndDisplayResult(inputArgument) {
-        const targetOrdinal = parseInt(inputArgument);
+    console.log(finalOutputValue);
+}
 
-        if (targetOrdinal === 0) {
-            process.stdout.write("undefined\n");
-            return;
-        }
-
-        const startingSequence = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        const numberStream = generateNumberedFlow(startingSequence);
-
-        let finalOutcome;
-        for (let counter = 0; counter < targetOrdinal; counter++) {
-            const { value: currentStreamValue, done: streamEnd } = numberStream.next();
-            if (streamEnd) {
-                finalOutcome = undefined;
-                break;
-            }
-            finalOutcome = currentStreamValue;
-        }
-
-        process.stdout.write(String(finalOutcome) + "\n");
-    }
-
-    processInputAndDisplayResult(require('fs').readFileSync(0, 'utf8'));
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

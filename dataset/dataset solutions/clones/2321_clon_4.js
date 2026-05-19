@@ -1,18 +1,15 @@
-function processInputData(sourceData) {
-    const lines = sourceData.split('\n');
-    const numericValue = Number(lines[0]);
-    const wordParts = lines[1].split(' ');
+function processInput(rawData) {
+    const dataLines = rawData.split('\n');
+    const charCount = Number(dataLines[0]);
+    const stringSources = dataLines[1].split(' ');
 
-    function interleaveCharacters(primarySegment, secondarySegment, iterationCount, currentIndex = 0, collectedCharacters = []) {
-        if (currentIndex >= iterationCount) {
-            return collectedCharacters.join('');
-        }
-        collectedCharacters.push(primarySegment.substring(currentIndex, currentIndex + 1));
-        collectedCharacters.push(secondarySegment.substring(currentIndex, currentIndex + 1));
-        return interleaveCharacters(primarySegment, secondarySegment, iterationCount, currentIndex + 1, collectedCharacters);
-    }
+    const interleavedCharacters = Array.from({ length: charCount }, (_, currentIdx) => {
+        const firstChar = stringSources[0].at(currentIdx);
+        const secondChar = stringSources[1].at(currentIdx);
+        return firstChar + secondChar;
+    });
 
-    const finalResult = interleaveCharacters(wordParts[0], wordParts[1], numericValue);
-    console.log(finalResult);
+    console.log(interleavedCharacters.join(''));
 }
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

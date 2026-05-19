@@ -1,133 +1,63 @@
-const fileSystemModule = require('node:fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const trimmedContent = fileContent.trim();
+let lineSegments = trimmedContent.split("\n");
 
-// Helper function to robustly extract and clean input lines from a raw string.
-// This function handles different line ending types and ensures no leading/trailing whitespace
-// for the entire input block before splitting.
-const extractAndCleanLines = (dataString) => {
-    return dataString.trim().split(/\r?\n/);
-};
+// Helper function to determine if a given numeric sequence forms an arithmetic progression.
+// It takes the sequence to check and the original 'elementCount' (n from input)
+// to precisely replicate the loop bounds and NaN comparison behavior of the original code.
+const checkArithmeticProgression = (sequenceToCheck, originalElementCount) => {
+    // The initial difference calculation might involve undefined values if the sequence
+    // has fewer than 2 elements, resulting in NaN. This is crucial for replicating
+    // the original code's behavior for small input sizes (e.g., n=1, n=2).
+    const initialDifference = sequenceToCheck[1] - sequenceToCheck[0];
+    let isProgressionValid = true;
 
-// Helper function to safely parse an integer from a string, including basic validation.
-const parseInteger = (inputString) => {
-    const numericalValue = parseInt(inputString, 10);
-    // If parsing fails, return 0 as a default, or an error could be thrown.
-    // For this problem, 0 is often a termination signal, so it's a safe default.
-    if (isNaN(numericalValue)) {
-        return 0;
-    }
-    return numericalValue;
-};
-
-// Reads the entire raw input data from standard input.
-const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-
-// Processes the raw input into an array of cleaned lines.
-let processedInputLines = extractAndCleanLines(rawInputData);
-
-// A pointer to keep track of the current line being processed in the input array,
-// providing an alternative to using Array.prototype.shift() repeatedly.
-let currentLineIndex = 0;
-
-/**
- * Determines if a given numeric sequence constitutes an arithmetic progression.
- * An arithmetic progression is a sequence of numbers such that the difference
- * between consecutive terms is constant.
- * @param {number[]} sequenceToCheck - The array of numbers to evaluate.
- * @param {number} expectedLength - The anticipated length of the AP (useful for validation).
- * @returns {boolean} True if the sequence is an arithmetic progression, false otherwise.
- */
-const isArithmeticProgression = (sequenceToCheck, expectedLength) => {
-    // Type III: Explicitly handle edge cases for sequences with fewer than two elements.
-    // A sequence of 0 or 1 element is always considered an arithmetic progression.
-    if (sequenceToCheck.length < 2) {
-        return true;
-    }
-
-    // Type III: Add an additional validation for the sequence length.
-    if (sequenceToCheck.length !== expectedLength) {
-        return false; // Mismatch in expected vs actual length.
-    }
-
-    // Calculate the common difference from the first two elements.
-    const initialCommonDifference = sequenceToCheck[1] - sequenceToCheck[0];
-
-    // Type III: Utilize a standard for loop starting from the third element
-    // to verify the common difference across the rest of the sequence.
-    for (let currentPosition = 2; currentPosition < sequenceToCheck.length; currentPosition++) {
-        const observedDifference = sequenceToCheck[currentPosition] - sequenceToCheck[currentPosition - 1];
-        if (observedDifference !== initialCommonDifference) {
-            return false; // Found a discrepancy in the common difference.
+    // The loop condition `k < originalElementCount` is used to match the original code's
+    // `j < n` loop. This means `k` iterates from 1 up to `originalElementCount - 1`.
+    // If `sequenceToCheck.length` is less than `originalElementCount - 1`, this loop
+    // will access `sequenceToCheck[k]` and `sequenceToCheck[k-1]` as `undefined`,
+    // leading to `NaN` differences, which are then compared using `!==`.
+    for (let k = 1; k < originalElementCount; k++) {
+        const currentSegmentDifference = sequenceToCheck[k] - sequenceToCheck[k - 1];
+        // Using `!==` correctly handles `NaN` comparisons, where `NaN !== NaN` is true,
+        // replicating the `!=` behavior of the original code.
+        if (initialDifference !== currentSegmentDifference) {
+            isProgressionValid = false;
+            break; // No need to check further if a difference mismatch is found
         }
     }
-    return true; // All elements conform to the same common difference.
+    return isProgressionValid;
 };
 
-
-// Main loop to process each test case from the input.
 while (true) {
-    // Type III: Guard clause for ensuring there are more lines to read.
-    if (currentLineIndex >= processedInputLines.length) {
-        break; // No more input available, terminate processing.
+    const currentLineForCount = lineSegments.shift();
+    const elementCount = parseInt(currentLineForCount, 10);
+
+    if (elementCount === 0) {
+        break;
     }
 
-    // Read the line indicating the desired length of the arithmetic progression.
-    const desiredAPLengthString = processedInputLines[currentLineIndex];
-    currentLineIndex++; // Advance the pointer to the next line.
+    const sequenceDataLine = lineSegments.shift();
+    const rawNumberStrings = sequenceDataLine.split(" ");
+    const numericSequence = rawNumberStrings.map(valueString => Number(valueString));
 
-    // Parse the desired length. A value of 0 signals the end of test cases.
-    const desiredAPLength = parseInteger(desiredAPLengthString);
+    let foundRemovedValue = undefined; // Stores the value of the element that, when removed, forms an AP
 
-    if (desiredAPLength === 0) {
-        break; // Termination condition met.
-    }
+    // Iterate through each possible index, including an index equal to elementCount
+    // (which effectively means no element is removed, or an 'undefined' element is considered removed).
+    for (let exclusionCandidateIndex = 0; exclusionCandidateIndex < elementCount + 1; exclusionCandidateIndex++) {
+        // Create a new sequence by filtering out the element at the current exclusionCandidateIndex.
+        const filteredSubsequence = numericSequence.filter((elementVal, originalPos) => exclusionCandidateIndex !== originalPos);
 
-    // Type III: Guard clause for ensuring the sequence line exists.
-    if (currentLineIndex >= processedInputLines.length) {
-        // Log a warning or handle as an error for incomplete input.
-        process.stderr.write("Warning: Expected a sequence of numbers, but input ended unexpectedly.\n");
-        break; // Exit due to malformed input.
-    }
-
-    // Read the line containing the sequence of numbers for the current test case.
-    const sequenceOfNumbersLine = processedInputLines[currentLineIndex];
-    currentLineIndex++; // Advance the pointer.
-
-    // Parse the sequence string into an array of integers.
-    const initialNumericSequence = sequenceOfNumbersLine.split(" ").map(val => parseInteger(val));
-
-    // Type III: Add validation for the number of elements in the initial sequence.
-    // The problem implies there should be one more element than the desired AP length.
-    if (initialNumericSequence.length !== (desiredAPLength + 1)) {
-        process.stderr.write(`Warning: Case expects ${desiredAPLength + 1} numbers, but found ${initialNumericSequence.length}. Skipping.\n`);
-        continue; // Skip this malformed test case and proceed to the next.
-    }
-
-    // Variable to store the index of the element that, when removed, forms an AP.
-    let indexFoundForRemoval = -1;
-
-    // Type III: Iterate through each element of the initial sequence,
-    // hypothetically removing one at a time to check for an AP.
-    for (let removalCandidateIndex = 0; removalCandidateIndex <= desiredAPLength; removalCandidateIndex++) {
-        // Type III: Create a temporary sequence by excluding the element at removalCandidateIndex.
-        // This is an alternative to Array.prototype.filter().
-        const temporarySequenceWithoutCandidate = initialNumericSequence.slice(0, removalCandidateIndex)
-                                                  .concat(initialNumericSequence.slice(removalCandidateIndex + 1));
-
-        // Type III: Delegate the arithmetic progression check to the dedicated helper function.
-        if (isArithmeticProgression(temporarySequenceWithoutCandidate, desiredAPLength)) {
-            indexFoundForRemoval = removalCandidateIndex;
-            break; // An AP was successfully formed; no need to check further.
+        // Check if the filtered subsequence forms an arithmetic progression using the helper function.
+        // Pass `elementCount` to the helper to ensure the loop bounds match the original logic.
+        if (checkArithmeticProgression(filteredSubsequence, elementCount)) {
+            // If an AP is found, store the value of the element that was excluded.
+            // If exclusionCandidateIndex is `elementCount`, `numericSequence[elementCount]` will be `undefined`,
+            // replicating the original code's behavior of printing `undefined` in such cases.
+            foundRemovedValue = numericSequence[exclusionCandidateIndex];
+            break; // Found the required element, exit the loop for this test case
         }
     }
-
-    // Type III: Output the result. Use process.stdout.write for a different I/O flavor.
-    if (indexFoundForRemoval !== -1) {
-        const valueToBeRemoved = initialNumericSequence[indexFoundForRemoval];
-        process.stdout.write(valueToBeRemoved + '\n');
-    } else {
-        // This branch should ideally not be reached if the problem guarantees a solution.
-        // However, for robustness, we can output a sentinel value or an error message.
-        process.stderr.write("Error: No suitable element found for removal to form an AP.\n");
-        process.stdout.write("-1\n"); // Output a placeholder for "not found"
-    }
+    console.log(foundRemovedValue);
 }

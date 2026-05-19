@@ -1,77 +1,71 @@
-function procureNumericSequence(lineContent) {
-    return lineContent.split(/\s+/).map(Number);
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+function SolveConnectivityProblem(rawData) {
+    const { nodeCount, permutationArray, edgeList } = ProcessRawInput(rawData);
+    const ufInstance = new UnionFindManager(nodeCount);
+    ufInstance.applyConnections(edgeList);
+    const matchingCount = permutationArray.filter((elementValue, elementIndex) =>
+        ufInstance.areConnected(elementValue, elementIndex + 1)
+    ).length;
+    console.log(matchingCount);
+    return matchingCount;
 }
-
-function constructComponentRegistry(totalNodes) {
-    const ancestors = Array.from({ length: totalNodes + 1 }, (_, i) => i);
-    const groupSizes = Array.from({ length: totalNodes + 1 }, () => 1);
-
-    const locatePrincipal = (nodeIdx) => {
-        if (ancestors[nodeIdx] === nodeIdx) {
-            return nodeIdx;
+exports.Equals = SolveConnectivityProblem;
+class UnionFindManager {
+    constructor(nodeCount) {
+        this.parentArray = Array.from({ length: nodeCount + 1 }, (_, i) => i);
+        this.groupSize = Array(nodeCount + 1).fill(1);
+    }
+    findRepresentative(elementId) {
+        let currentPath = [];
+        let current = elementId;
+        while (current !== this.parentArray[current]) {
+            currentPath.push(current);
+            current = this.parentArray[current];
         }
-        return (ancestors[nodeIdx] = locatePrincipal(ancestors[nodeIdx]));
-    };
-
-    const mergeComponents = (nodeA, nodeB) => {
-        let rootA = locatePrincipal(nodeA);
-        let rootB = locatePrincipal(nodeB);
-
+        for (const node of currentPath) {
+            this.parentArray[node] = current;
+        }
+        return current;
+    }
+    unifyElements(elementA, elementB) {
+        let rootA = this.findRepresentative(elementA);
+        let rootB = this.findRepresentative(elementB);
         if (rootA !== rootB) {
-            if (groupSizes[rootA] < groupSizes[rootB]) {
+            if (this.groupSize[rootA] < this.groupSize[rootB]) {
                 [rootA, rootB] = [rootB, rootA];
             }
-            ancestors[rootB] = rootA;
-            groupSizes[rootA] += groupSizes[rootB];
+            this.parentArray[rootB] = rootA;
+            this.groupSize[rootA] += this.groupSize[rootB];
             return true;
         }
         return false;
-    };
-
-    const areConnected = (nodeA, nodeB) => {
-        return locatePrincipal(nodeA) === locatePrincipal(nodeB);
-    };
-
-    return { mergeComponents, areConnected };
-}
-
-function processConnectivityAnalysis(rawTextData) {
-    const dataLines = rawTextData.split("\n").filter(Boolean);
-
-    const firstLineNumbers = procureNumericSequence(dataLines[0]);
-    const maxVertexId = firstLineNumbers[0];
-
-    const mappingValues = procureNumericSequence(dataLines[1]);
-
-    const connectionPairs = dataLines.slice(2).map(line => {
-        const [firstNode, secondNode] = procureNumericSequence(line);
-        return { first: firstNode, second: secondNode };
-    });
-
-    const componentSystem = constructComponentRegistry(maxVertexId);
-
-    connectionPairs.forEach(pair => {
-        componentSystem.mergeComponents(pair.first, pair.second);
-    });
-
-    let coincidenceCounter = 0;
-    for (let k = 0; k < mappingValues.length; ++k) {
-        const mappedValue = mappingValues[k];
-        const originalIndex = k + 1;
-
-        if (componentSystem.areConnected(mappedValue, originalIndex)) {
-            coincidenceCounter++;
-        }
     }
-
-    console.log(coincidenceCounter);
-    return coincidenceCounter;
+    areConnected(elementA, elementB) {
+        return this.findRepresentative(elementA) === this.findRepresentative(elementB);
+    }
+    applyConnections(connections) {
+        connections.forEach(({ firstNode, secondNode }) => {
+            this.unifyElements(firstNode, secondNode);
+        });
+    }
 }
-
-exports.processConnectivityAnalysis = processConnectivityAnalysis;
-
+function ProcessRawInput(rawData) {
+    const dataLines = rawData.split("\n");
+    const [firstConfigLine, secondPermutationLine, ...connectionLines] = dataLines;
+    const [nodeCount, numConnections] = ParseNumericString(firstConfigLine);
+    const permutationArray = ParseNumericString(secondPermutationLine);
+    const edgeList = connectionLines.map(line => {
+        const [firstNode, secondNode] = ParseNumericString(line);
+        return { firstNode, secondNode };
+    });
+    return { nodeCount, numConnections, permutationArray, edgeList };
+}
+function ParseNumericString(textLine) {
+    return textLine.split(" ").map(val => parseInt(val, 10));
+}
 try {
-    processConnectivityAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
-} catch (e) {
-    // ignore
+    SolveConnectivityProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+}
+catch (e) {
 }

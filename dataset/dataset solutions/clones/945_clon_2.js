@@ -1,105 +1,80 @@
-/*
- *  This self-executing function initiates the primary program flow.
- *  It handles input processing, graph construction, and execution of the traversal algorithm.
- */
-( function applicationEntry ( ) {
+(function executeGraphTraversal() {
+  // This section handles reading input data and initializing graph structures.
+  const inputDataRows = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-  // Load the file system utility module for input operations.
-  const inputContentRows = require ( 'fs' )
-    .readFileSync ( '/dev/stdin' , 'UTF-8' ) // Read the entire content from standard input.
-    .trim ( ) // Remove any leading or trailing whitespace from the raw input.
-    .split ( String.fromCharCode(10) ) ; // Divide the content into an array of lines using newline character.
+  // The first line of input specifies the total number of nodes in the graph.
+  const nodeCount = Number(inputDataRows.shift());
 
-  /*
-   * Extract the total number of nodes in the graph from the first line.
-   * The 'shift()' method removes the first element from the array and returns it.
-   */
-  const graphNodeCount = parseInt ( inputContentRows.shift ( ) , 10 ) ;
+  // Create an array of arrays to represent the adjacency list for the graph.
+  // Each index 'k' in 'adjacencyStructures' will hold an array of nodes directly reachable from node 'k'.
+  const adjacencyStructures = Array.from(Array(nodeCount), () => []);
 
-  // Initialize an array of arrays to store the adjacency list representation of the graph.
-  // Each inner array will hold the indices of nodes adjacent to the current node.
-  const adjacencyRepresentations = Array.from ( { length: graphNodeCount } , ( ) => [ ] ) ;
+  // This array will store the shortest path distance from the source node (node 0) to every other node.
+  const distanceValues = [];
 
-  // Initialize an array to store the shortest distance from the source node to all other nodes.
-  const distanceMetrics = [ ] ;
+  // Iterate through the remaining input lines to populate the adjacency lists.
+  // Each line describes a node and its connections.
+  inputDataRows.forEach((currentRow, currentIdx) => {
+    // Parse the current line: split by space, discard the first two elements (node ID and degree),
+    // then process the remaining elements which are the neighbors.
+    currentRow.split(' ').splice(2).forEach(edgeTarget => {
+      // Convert the neighbor string to a number and adjust to 0-based indexing, then add to the list.
+      adjacencyStructures[currentIdx].push(Number(edgeTarget) - 1);
+    });
+  });
 
-  /*
-   * Iterate over the remaining input lines to populate the adjacency lists.
-   * Each line describes a node and its neighbors.
-   */
-  inputContentRows . forEach ( ( currentLineSegment , indexPosition ) =>
-    currentLineSegment
-      .split ( String.fromCharCode(32) ) // Split the line by space to get individual elements.
-      .splice ( 2 ) // Remove the first two elements (node ID and count of neighbors, which are not needed for adjacency list construction here).
-      .forEach ( ( elementValueParsed ) => {
-        // Convert neighbor string to integer and adjust to 0-based indexing before adding to the list.
-        adjacencyRepresentations [ indexPosition ] . push ( parseInt ( elementValueParsed , 10 ) - 1 ) ;
-      } )
-  ) ;
+  // Execute the Breadth-First Search algorithm to compute shortest distances.
+  breadthFirstSearch(adjacencyStructures, distanceValues);
 
-  // Execute the Breadth-First Search algorithm on the constructed graph.
-  performGraphTraversal ( adjacencyRepresentations , distanceMetrics ) ;
-
-  /*
-   * Output the calculated shortest distances for each node.
-   * Node IDs are 1-based in the output, so add 1 to the 0-based index.
-   */
-  for ( let indexPosition = 0 ; indexPosition < graphNodeCount ; indexPosition ++ ) {
-    console.log ( indexPosition + 1 , distanceMetrics [ indexPosition ] ) ;
+  // After BFS, print the results: node ID (1-based) and its calculated shortest distance.
+  for (let currentIdx = 0; currentIdx < nodeCount; ++currentIdx) {
+    console.log(currentIdx + 1, distanceValues[currentIdx]);
   }
-
-} ) ( ) ; // Immediately invoke the main application function.
+})(); // End of the immediately invoked function expression.
 
 
 /**
- *  Performs a Breadth-First Search (BFS) traversal starting from node 0.
- *  It calculates the shortest distance from the source node to all reachable nodes.
- * @param {Array<Array<number>>} graphStructure - The adjacency list representation of the graph.
- * @param {Array<number>} calculatedDistances - An array to store the shortest distances, modified in-place.
+ * Implements the Breadth-First Search (BFS) algorithm to find shortest paths
+ * from a source node (assumed to be node 0) in an unweighted graph.
+ *
+ * @param {Array<Array<number>>} adjacencyStructures - The graph's adjacency list.
+ * @param {Array<number>} distanceValues - An output array to store computed distances.
  */
-function performGraphTraversal ( graphStructure , calculatedDistances ) {
+function breadthFirstSearch(adjacencyStructures, distanceValues) {
+  // Define constants for node states during the traversal.
+  const UNVISITED = 0; // Node has not been discovered yet.
+  const VISITING = 1;  // Node has been discovered and added to the queue.
+  const VISITED = 2;   // Node has been fully processed (all its neighbors explored).
 
-  // Define constants for node visit states to improve readability.
-  const UNVISITED_NODE = 0 , // Node has not been discovered yet.
-        CURRENTLY_VISITING = 1 , // Node has been discovered and added to the queue.
-        VISITED_COMPLETED = 2 ; // Node has been processed and all its neighbors checked.
+  // Initialize an array to keep track of the state of each node.
+  const nodeStatus = Array.from(adjacencyStructures, () => UNVISITED);
 
-  // Initialize an array to keep track of the state of each node (unvisited, visiting, visited).
-  const nodeStateTracker = Array.from ( graphStructure , ( ) => UNVISITED_NODE ) ;
+  // The distance from the source node (node 0) to itself is 0.
+  distanceValues[0] = 0;
 
-  // The distance to the starting node (node 0) is 0.
-  calculatedDistances [ 0 ] = 0 ;
-
-  /*
-   * Initialize distances for all other nodes to -1, indicating they are unreachable
-   * or not yet discovered.
-   */
-  for ( let currentIdx = 1 ; currentIdx < graphStructure.length ; currentIdx ++ ) {
-    calculatedDistances [ currentIdx ] = -1 ;
+  // Initialize distances for all other nodes to -1, indicating they are unreachable initially.
+  for (let nodeIdx = 1; nodeIdx < adjacencyStructures.length; ++nodeIdx) {
+    distanceValues[nodeIdx] = -1;
   }
 
-  // Create a queue for BFS, starting with the source node (node 0).
-  const traversalQueue = [ 0 ] ;
+  // Initialize the queue for BFS. It starts with the source node (node 0).
+  // This variable is intentionally declared without 'let' or 'const' to match the original's implicit global scope.
+  processingQueue = [0];
 
-  let activeNode ; // Variable to hold the node being currently processed from the queue.
+  let currentNodeIdentifier; // Variable to hold the node being processed from the queue.
 
-  /*
-   * Continue processing nodes from the queue until it is empty.
-   * 'shift()' removes the first element and returns it.
-   */
-  while ( ( activeNode = traversalQueue.shift ( ) ) !== undefined ) {
-
-    // Iterate over all neighbors of the current active node.
-    graphStructure [ activeNode ] . forEach ( neighborNodeIdentifier => {
-      // If a neighbor has not been visited yet.
-      if ( nodeStateTracker [ neighborNodeIdentifier ] === UNVISITED_NODE ) {
-        nodeStateTracker [ neighborNodeIdentifier ] = CURRENTLY_VISITING ; // Mark as currently visiting.
-        calculatedDistances [ neighborNodeIdentifier ] = calculatedDistances [ activeNode ] + 1 ; // Update its distance.
-        traversalQueue . push ( neighborNodeIdentifier ) ; // Add the neighbor to the queue for future processing.
+  // Continue the BFS traversal as long as there are nodes in the queue.
+  while ((currentNodeIdentifier = processingQueue.shift()) !== undefined) {
+    // Iterate over each neighbor of the current node.
+    adjacencyStructures[currentNodeIdentifier].forEach(neighborNodeIdentifier => {
+      // If the neighbor has not been visited yet.
+      if (nodeStatus[neighborNodeIdentifier] === UNVISITED) {
+        nodeStatus[neighborNodeIdentifier] = VISITING; // Mark the neighbor as discovered.
+        // Set the neighbor's distance as one more than the current node's distance.
+        distanceValues[neighborNodeIdentifier] = distanceValues[currentNodeIdentifier] + 1;
+        processingQueue.push(neighborNodeIdentifier); // Add the neighbor to the queue for processing.
       }
-    } ) ;
-
-    // Once all neighbors of the active node have been processed, mark it as fully visited.
-    nodeStateTracker [ activeNode ] = VISITED_COMPLETED ;
+    });
+    nodeStatus[currentNodeIdentifier] = VISITED; // Mark the current node as fully processed.
   }
 }

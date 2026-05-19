@@ -1,19 +1,12 @@
-function ProcessInput( incomingText )
-{
-  let numericArray = incomingText . trim ( ) . split ( / \s + / ) . map ( currentElement => + currentElement ) ;
-
-  const initialCount = numericArray . shift ( ) ;
-
-  let maximumValue = Math . max . apply ( null , numericArray ) ;
-
-  while ( numericArray . indexOf ( maximumValue ) >= 0 )
-  {
-    numericArray [ numericArray . indexOf ( maximumValue ) ] = Infinity ;
+function ProcessData(rawData) {
+  rawData = rawData.trim().split(/\s+/).map(currentVal => currentVal - 0);
+  let countElements = rawData.shift();
+  let maximumValue = Math.max.apply(null, rawData);
+  while (rawData.indexOf(maximumValue) >= 0) {
+    rawData[rawData.indexOf(maximumValue)] = Infinity;
   }
-
-  let finalResult = numericArray [ numericArray . map ( currentElement => Math . abs ( currentElement - maximumValue / 2 ) ) . indexOf ( Math . min . apply ( null , numericArray . map ( currentElement => Math . abs ( currentElement - maximumValue / 2 ) ) ) ) ] ;
-
-  console . log ( maximumValue + ' ' + finalResult ) ;
+  let closestElement = rawData[rawData.map(currentVal => Math.abs(currentVal - maximumValue / 2)).indexOf(Math.min.apply(null, rawData.map(currentVal => Math.abs(currentVal - maximumValue / 2))))];
+  console.log(maximumValue + ' ' + closestElement);
 }
 
-ProcessInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));

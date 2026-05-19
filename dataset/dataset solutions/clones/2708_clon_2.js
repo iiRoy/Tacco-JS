@@ -1,59 +1,71 @@
-"use strict";
+"use strict"; // Enforce strict mode for cleaner code
 
-const processInput = rawInput => {
-    rawInput = rawInput.trim().split("\n");
-    const characterSequence = rawInput[0].split("");
+/**
+ * Main function to process the input and solve the problem.
+ * @param {string} inputString - The raw input string from stdin.
+ */
+const solveProblem = (inputString) => {
+    // Trim whitespace and split the input into lines.
+    // For this problem, we only expect one line of input.
+    const processedLines = inputString.trim().split("\n");
 
-    const PRIME_MODULUS = 1_000_000_007;
+    // Extract the first line and convert it into an array of characters.
+    const inputChars = processedLines[0].split("");
 
-    let stateTable = [];
+    // Define the modulus value for calculations to prevent overflow.
+    const primeModulus = 1000000007;
 
-    // The stateTable[digitPosition][remainderValue] stores the count of valid numbers
-    // formed by the first 'digitPosition' digits that yield 'remainderValue' when divided by thirteen.
-    for (
-        let charIdx = 0;
-        charIdx <= characterSequence.length;
-        charIdx++
-    ) {
-        stateTable.push(new Array(13).fill(0));
+    // Initialize a 2D array (dynamic programming table).
+    // dpTable[i][j] will store the count of ways to form a number
+    // using the first 'i' characters that has a remainder 'j' when divided by 13.
+    let dpTable = [];
+
+    // Populate the dpTable with arrays, each initialized with zeros.
+    // The size is (inputChars.length + 1) rows by 13 columns (for remainders 0-12).
+    for (let charIndex = 0; charIndex < inputChars.length + 1; charIndex++) {
+        dpTable.push(Array(13).fill(0));
     }
 
-    stateTable[0][0] = 1;
+    // Base case: An empty prefix (0 characters) has a remainder of 0,
+    // and there's one way to achieve this (by having no digits).
+    dpTable[0][0] = 1;
 
-    for (let currentPos = 0; currentPos < characterSequence.length; currentPos++) {
-        const digitChar = characterSequence[currentPos];
-        const currentDigitVal = (digitChar === "?") ? -1 : Number.parseInt(digitChar);
+    // Iterate through each character of the input string.
+    for (let charIndex = 0; charIndex < inputChars.length; charIndex++) {
+        // Determine the current character's value.
+        // If it's '?', it can be any digit from 0-9, so we use -1 as a flag.
+        // Otherwise, parse the character to an integer.
+        const parsedChar = inputChars[charIndex] === "?" ? -1 : parseInt(inputChars[charIndex]);
 
-        for (
-            let candidateDigit = 0;
-            candidateDigit <= 9;
-            candidateDigit++
-        ) {
-            if (currentDigitVal !== -1 && currentDigitVal !== candidateDigit) {
+        // Iterate through all possible digits (0-9) that the current character could represent.
+        for (let currentDigitValue = 0; currentDigitValue < 10; currentDigitValue++) {
+            // If the current character is not '?' and it doesn't match the current digit value,
+            // then this path is invalid, so skip to the next digit.
+            if (parsedChar !== -1 && parsedChar !== currentDigitValue) {
                 continue;
             }
 
-            for (
-                let previousRemainder = 0;
-                previousRemainder < 13;
-                previousRemainder++
-            ) {
-                const newRemainder = (previousRemainder * 10 + candidateDigit) % 13;
-                stateTable[currentPos + 1][newRemainder] += stateTable[currentPos][previousRemainder];
+            // Iterate through all possible previous remainders (0-12).
+            for (let prevRemainder = 0; prevRemainder < 13; prevRemainder++) {
+                // If there were ways to achieve 'prevRemainder' with 'charIndex' characters,
+                // then we can extend those ways by appending 'currentDigitValue'.
+                // Calculate the new remainder: (prevRemainder * 10 + currentDigitValue) % 13.
+                // Add the count from the previous state to the current state.
+                dpTable[charIndex + 1][(prevRemainder * 10 + currentDigitValue) % 13] += dpTable[charIndex][prevRemainder];
             }
         }
 
-        // Apply modulo operation to prevent overflow for the current position's counts
-        for (
-            let remainder = 0;
-            remainder < 13;
-            remainder++
-        ) {
-            stateTable[currentPos + 1][remainder] %= PRIME_MODULUS;
+        // After processing all digits for the current character,
+        // apply the modulus to all counts in the current row to keep numbers within bounds.
+        for (let currentRemainder = 0; currentRemainder < 13; currentRemainder++) {
+            dpTable[charIndex + 1][currentRemainder] %= primeModulus;
         }
     }
 
-    console.log(stateTable[characterSequence.length][5]);
+    // The final answer is the number of ways to form a number using all characters
+    // that has a remainder of 5 when divided by 13.
+    console.log(dpTable[inputChars.length][5]);
 };
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the main function.
+solveProblem(require('fs').readFileSync('/dev/stdin', 'utf8'));

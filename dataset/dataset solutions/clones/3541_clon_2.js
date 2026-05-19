@@ -1,80 +1,66 @@
 'use strict';
 
-// This core function is responsible for analyzing and calculating the final financial outcome
+// This function processes the given input string to calculate a total expense.
 const processInput = (rawData) => {
-  // Decompose the entire input string into an array of individual lines
-  const linesOfData = rawData.split('\n');
+    // Split the raw input into individual lines.
+    const lines = rawData.split('\n');
 
-  // Extract and parse the first line to get the initial configuration values
-  const setupParameters = linesOfData[0].split(' ');
+    // Parse the first line to get the number of items and the extra cost factor.
+    const firstLineParts = lines[0].split(' ');
+    const itemCount = parseInt(firstLineParts[0], 10);
+    const extraCostFactor = parseInt(firstLineParts[1], 10);
 
-  // Convert the first configuration parameter to an integer, representing the count of elements
-  const elementCount = parseInt(setupParameters[0], 10);
+    // Parse the second line for item values, taking only 'itemCount' elements.
+    const itemValues = lines[1].split(' ').slice(0, itemCount);
 
-  // Convert the second configuration parameter to an integer, representing a fundamental monetary unit
-  const monetaryUnit = parseInt(setupParameters[1], 10);
+    let totalExpense = 0; // Initialize the accumulated expense.
+    let currentIndex = itemCount - 1; // Start processing from the last item.
 
-  // Parse the second line, extracting and limiting the item-specific values based on the element count
-  const itemSpecificValues = linesOfData[1].split(' ').slice(0, elementCount);
+    // Loop backwards through the items.
+    while (currentIndex >= 0) {
+        // Calculate the standard expense for the current individual item.
+        totalExpense += 5 * itemValues[currentIndex] + 2 * extraCostFactor;
 
-  // Initialize a variable to accumulate the total calculated expenditure
-  let totalExpenditure = 0;
+        let segmentLength = 1; // Initialize segment length for potential optimization.
 
-  // Set up an index for iterating backward through the item-specific values
-  let currentElementIndex = elementCount - 1;
+        // Inner loop to check for optimized segment costs.
+        while (currentIndex - segmentLength >= 0) {
+            const currentSegmentValue = itemValues[currentIndex - segmentLength];
+            const standardSegmentExpense = 5 * currentSegmentValue + 2 * extraCostFactor;
 
-  // Begin the primary loop, processing items from the last to the first
-  while (currentElementIndex >= 0) {
-    // Add the initial base charge for the current item and the monetary unit
-    totalExpenditure += 5 * itemSpecificValues[currentElementIndex] + 2 * monetaryUnit;
+            // The original formula for testCost was simplified from (k+2)^2 * val - (k+1)^2 * val + X
+            // which simplifies to (k^2 + 4k + 4 - (k^2 + 2k + 1)) * val + X
+            // = (2k + 3) * val + X
+            const optimizedSegmentExpense = (2 * segmentLength + 3) * currentSegmentValue + extraCostFactor;
 
-    // Initialize a secondary counter for evaluating preceding items
-    let comparisonStep = 1;
-
-    // Start a nested loop to explore combinations with items positioned earlier in the sequence
-    while (currentElementIndex - comparisonStep >= 0) {
-      // Retrieve the value of a prior item for comparison
-      const previousElementValue = itemSpecificValues[currentElementIndex - comparisonStep];
-
-      // Calculate the standard independent charge for this prior item
-      const standardCharge = 5 * previousElementValue + 2 * monetaryUnit;
-
-      // Calculate an alternative, potentially optimized charge for grouping with this previous item
-      // This formula simplifies from a quadratic form to (2 * comparisonStep + 3) * previousElementValue + monetaryUnit
-      const optimizedCharge = (2 * comparisonStep + 3) * previousElementValue + monetaryUnit;
-
-      // Decide whether the standard charge is more economical than the optimized group charge
-      if (standardCharge < optimizedCharge) {
-        // If the standard charge is lower, cease further grouping attempts for the current segment
-        break;
-      } else {
-        // If the optimized charge is better or equal, incorporate it into the total
-        totalExpenditure += optimizedCharge;
-        // Advance the comparison step to consider the next preceding item
-        comparisonStep++;
-      }
+            // If the standard cost is less than the optimized cost, stop extending the segment.
+            if (standardSegmentExpense < optimizedSegmentExpense) {
+                break;
+            } else {
+                // Otherwise, add the optimized cost and extend the segment.
+                totalExpense += optimizedSegmentExpense;
+                segmentLength++;
+            }
+        }
+        // Move the current index back by the length of the processed segment.
+        currentIndex -= segmentLength;
     }
-    // Adjust the main index by the total number of items included in the current processing block
-    currentElementIndex -= comparisonStep;
-  }
-  // Output the final computed total expenditure to the console
-  console.log(totalExpenditure);
+
+    // Output the final calculated total expense.
+    console.log(totalExpense);
 };
 
-// A boolean flag to control the execution mode, enabling or disabling test cases
-const activateTestMode = false;
+// A flag to determine if the script is running in a test environment.
+const isDevelopmentMode = false;
 
-// Conditional block: Execute either predefined test scenarios or process live input
-if (activateTestMode) {
-  // Test case 1: Smallest input example
-  processInput('2 100\n1 10');
-  // Test case 2: Larger numbers with a small monetary unit
-  processInput('5 1\n1 999999997 999999998 999999999 1000000000');
-  // Test case 3: A more complex set of data
-  processInput('10 8851025\n38 87 668 3175 22601 65499 90236 790604 4290609 4894746');
-  // Test case 4: Extensive data with varying magnitudes
-  processInput('16 10\n1 7 12 27 52 75 731 13856 395504 534840 1276551 2356789 9384806 19108104 82684732 535447408');
+// Conditional execution based on the development mode flag.
+if (isDevelopmentMode) {
+    // Test cases for verification.
+    processInput('2 100\n1 10');
+    processInput('5 1\n1 999999997 999999998 999999999 1000000000');
+    processInput('10 8851025\n38 87 668 3175 22601 65499 90236 790604 4290609 4894746');
+    processInput('16 10\n1 7 12 27 52 75 731 13856 395504 534840 1276551 2356789 9384806 19108104 82684732 535447408');
 } else {
-  // In live mode, read the entire content from standard input and pass it to the processing function
-  processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    // In production, read input from standard input.
+    processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 }

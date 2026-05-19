@@ -1,71 +1,51 @@
-function performLargeStringAddition(operandA, operandB) {
-    let maxLength = Math.max(operandA.length, operandB.length);
+function sumLargeStrings(firstNumStr, secondNumStr) {
+    const len1 = firstNumStr.length;
+    const len2 = secondNumStr.length;
+    const maxInputLen = Math.max(len1, len2);
 
-    if (maxLength > 80) {
+    if (maxInputLen > 80) {
         console.log("overflow");
         return;
     }
 
-    const paddedA = operandA.padStart(maxLength, '0');
-    const paddedB = operandB.padStart(maxLength, '0');
+    const paddedNum1 = firstNumStr.padStart(maxInputLen, '0');
+    const paddedNum2 = secondNumStr.padStart(maxInputLen, '0');
 
-    let digitsResult = [];
-    let finalCarry = 0;
+    const digits1 = paddedNum1.split('').map(Number);
+    const digits2 = paddedNum2.split('').map(Number);
 
-    const processDigits = (idx, currentAccumulatedCarry) => {
-        if (idx < 0) {
-            finalCarry = currentAccumulatedCarry;
-            return;
-        }
+    let currentCarry = 0;
+    const resultDigits = [];
 
-        const digitValA = Number(paddedA[idx]);
-        const digitValB = Number(paddedB[idx]);
-
-        const sumOfDigits = digitValA + digitValB + currentAccumulatedCarry;
-        digitsResult.unshift(sumOfDigits % 10);
-        processDigits(idx - 1, Math.floor(sumOfDigits / 10));
-    };
-
-    processDigits(maxLength - 1, 0);
-
-    let combinedDigits = '';
-    if (finalCarry > 0) {
-        combinedDigits = finalCarry.toString() + digitsResult.join('');
-    } else {
-        combinedDigits = digitsResult.join('');
+    for (let i = maxInputLen - 1; i >= 0; i--) {
+        const sumOfDigits = digits1[i] + digits2[i] + currentCarry;
+        resultDigits.unshift(sumOfDigits % 10);
+        currentCarry = Math.floor(sumOfDigits / 10);
     }
 
-    if (finalCarry > 0) {
-        if (maxLength === 80) {
-            console.log("overflow");
-        } else {
-            console.log(combinedDigits);
-        }
+    if (currentCarry > 0) {
+        resultDigits.unshift(currentCarry);
+    }
+
+    if (resultDigits.length > 80) {
+        console.log("overflow");
     } else {
-        console.log(combinedDigits.replace(/^0+(?=\d)/, ''));
+        console.log(resultDigits.join(""));
     }
 }
 
-const inputSource = global.process.stdin;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-inputSource.resume();
-inputSource.setEncoding('utf8');
+process.stdin.on('data', function(rawInput) {
+    const allInputLines = rawInput.trim().split('\n').map(s => s.trim()).filter(Boolean);
+    let currentLinePointer = 0;
 
-inputSource.on('data', (incomingData) => {
-    const dataLines = incomingData.trim().split("\n");
-    let linePointer = 0;
-    const totalOperations = Number(dataLines[linePointer++]);
+    const numberOfTestPairs = parseInt(allInputLines[currentLinePointer++]);
 
-    const executeOperations = (remainingOps) => {
-        if (remainingOps <= 0) {
-            return;
-        }
-        const valA = dataLines[linePointer];
-        const valB = dataLines[linePointer + 1];
-        linePointer += 2;
-        performLargeStringAddition(valA, valB);
-        executeOperations(remainingOps - 1);
-    };
-
-    executeOperations(totalOperations);
+    Array.from({ length: numberOfTestPairs }).forEach(() => {
+        const firstOperandString = allInputLines[currentLinePointer++];
+        const secondOperandString = allInputLines[currentLinePointer++];
+        sumLargeStrings(firstOperandString, secondOperandString);
+    });
 });

@@ -1,22 +1,30 @@
 'use strict'
 
-((dataPayload) => {
-    const processedLines = dataPayload.trim().split('\n');
+function ProcessInput(sourceData) {
+    const lineSegments = sourceData.trim().split('\n');
 
-    const taskDurations = processedLines[1].split(' ').map(Number);
+    const countA = Number(lineSegments[0]);
 
-    const alterationInstructions = processedLines.slice(3);
+    const initialDurations = lineSegments[1].split(' ').map(val => Number(val));
 
-    const initialAggregateDuration = taskDurations.reduce((total, duration) => total + duration, 0);
+    const countB = Number(lineSegments[2]);
 
-    alterationInstructions.forEach(instructionString => {
-        const [targetPosition, substituteValue] = instructionString.split(' ').map(Number);
+    const modificationInstructions = lineSegments.slice(3).map(line =>
+        line.split(' ').map(val => Number(val))
+    );
 
-        const originalDurationAtPosition = taskDurations[targetPosition - 1];
+    modificationInstructions.forEach(parsedInstruction => {
+        const targetIndex = parsedInstruction[0] - 1;
+        const newValue = parsedInstruction[1];
 
-        const revisedAggregateDuration = (initialAggregateDuration - originalDurationAtPosition) + substituteValue;
+        const currentDurations = initialDurations.map((duration, idx) =>
+            idx === targetIndex ? newValue : duration
+        );
 
-        console.log(revisedAggregateDuration);
+        const computedTotal = currentDurations.reduce((accumulator, current) => accumulator + current, 0);
+
+        console.log(computedTotal);
     });
+}
 
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

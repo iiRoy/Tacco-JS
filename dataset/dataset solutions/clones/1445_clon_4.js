@@ -1,44 +1,39 @@
-let sourcePayload = require('fs').readFileSync('/dev/stdin', 'utf8');
-let lineSegments = sourcePayload.trim().split('\n');
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = sourceData.trim().split("\n");
 
-let currentReadPointer = 0;
+var problemSets = [];
+let lineIndex = 0;
 
 while (true) {
-    if (currentReadPointer >= lineSegments.length) {
+    const currentN = Number(lineSegments[lineIndex++]);
+    if (currentN === 0) {
         break;
     }
+    const currentNumbersString = lineSegments[lineIndex++];
+    const parsedNumbers = currentNumbersString.split(" ").map(Number);
+    problemSets.push({
+        count: currentN,
+        values: parsedNumbers
+    });
+}
 
-    let itemQuantity = parseInt(lineSegments[currentReadPointer++], 10);
+for (const dataSet of problemSets) {
+    const sampleSize = dataSet.count;
+    const numberSequence = dataSet.values;
 
-    if (itemQuantity === 0) {
-        break;
+    let totalSum = 0;
+    for (const individualValue of numberSequence) {
+        totalSum += individualValue;
     }
 
-    if (currentReadPointer >= lineSegments.length) {
-        break;
-    }
+    const arithmeticMean = totalSum / sampleSize;
 
-    let numericCollection = lineSegments[currentReadPointer++].split(' ').map(val => parseFloat(val));
+    const sumOfSquaredDeviations = numberSequence.map(element => {
+        const deviation = element - arithmeticMean;
+        return deviation * deviation;
+    }).reduce((accumulator, squaredDiff) => accumulator + squaredDiff, 0);
 
-    let populationSize = numericCollection.length;
-    let totalValue = 0.0;
-    let totalSquaredValue = 0.0;
+    const standardDeviation = Math.sqrt(sumOfSquaredDeviations / sampleSize);
 
-    for (let currentElement of numericCollection) {
-        totalValue += currentElement;
-        totalSquaredValue += (currentElement * currentElement);
-    }
-
-    let averageOfValues = totalValue / populationSize;
-    let averageOfSquaredValues = totalSquaredValue / populationSize;
-
-    let varianceMeasure = averageOfSquaredValues - (averageOfValues * averageOfValues);
-
-    if (varianceMeasure < 0) {
-        varianceMeasure = 0;
-    }
-
-    let dispersionResult = Math.sqrt(varianceMeasure);
-
-    console.log(dispersionResult.toFixed(8));
+    console.log(standardDeviation.toFixed(8));
 }

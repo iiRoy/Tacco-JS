@@ -1,132 +1,115 @@
-"use strict";Object.defineProperty(exports,"__esModule",{value:true});
-// This function processes input data to determine connection counts.
-function ProcessConnections(rawData) {
-    // Initial parsing of the input string to extract core parameters.
-    let { nodeCount, edgeCount, valueArray, connectionPairs } = interpretRawData(rawData);
-
-    // Build a Union-Find data structure from the given connections.
-    const unionFindStructure = UnionFind.constructFrom(nodeCount, connectionPairs);
-    
-    // Calculate the number of values that are in the same set as their index.
-    let matchCount = valueArray.filter((currentVal, idx) => {
-        // Indices are 1-based in the problem, so add 1 to `idx`.
-        return unionFindStructure.areConnected(currentVal, idx + 1);
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+// This function processes the entire input string to determine a specific count.
+function ProcessData(rawData) {
+    // The initial lines of the input are parsed into structured variables.
+    var parsedData = processRawData(rawData);
+    var nodeCount = parsedData.nodeCount, permutationArray = parsedData.permutationArray, edgeList = parsedData.edgeList;
+    // A Union-Find data structure is initialized based on the graph's nodes and edges.
+    var connectedComponents = UnionFindStructure.createFromGraph(nodeCount, edgeList);
+    // We count how many elements in the permutation array are in the same connected component
+    // as their corresponding index (1-based).
+    var matchingElements = permutationArray.filter(function (elementValue, currentIndex) {
+        // Check if the value at `elementValue` is in the same set as `currentIndex + 1`.
+        return connectedComponents.checkSameComponent(elementValue, currentIndex + 1);
     }).length;
-
-    // Output the final computed count.
-    console.info(matchCount);
-    
-    // Return the calculated count.
-    return matchCount;
+    // The final count is printed to the console.
+    console.log(matchingElements);
+    // The calculated count is also returned.
+    return matchingElements;
 }
-exports.ProcessConnections = ProcessConnections;
-
-// Represents a collection of disjoint sets, often called Union-Find.
-class UnionFind {
-    // Constructor for the UnionFind structure.
-    constructor(nodeCollection) {
-        this.nodeCollection = nodeCollection;
+exports.ProcessData = ProcessData;
+// Represents a collection of disjoint sets, implemented using a Union-Find algorithm.
+var UnionFindStructure = /** @class */ (function () {
+    // Constructor takes an array of UnionFindNode instances.
+    function UnionFindStructure(componentRoots) {
+        this.componentRoots = componentRoots;
     }
-
-    // Static method to create a UnionFind instance from initial parameters.
-    static constructFrom(nodeCount, connectionPairs) {
-        let nodeList = [];
-        // Initialize each node as its own set.
-        for (let k = 0; k <= nodeCount; ++k) {
-            nodeList.push(new UnionFindNode());
+    // Static method to construct a UnionFindStructure from graph data.
+    UnionFindStructure.createFromGraph = function (totalNodes, connections) {
+        var rootNodes = [];
+        // Initialize each node with its own disjoint set.
+        for (var idx = 0; idx <= totalNodes; ++idx) {
+            rootNodes.push(new UnionFindNode());
         }
-
-        // Apply all given connections to merge sets.
-        connectionPairs.forEach(pair => {
-            let { firstNode, secondNode } = pair;
-            nodeList[firstNode].mergeSets(nodeList[secondNode]);
+        // Iterate through connections and merge their respective sets.
+        connections.forEach(function (connectionPair) {
+            var firstNode = connectionPair.coordX, secondNode = connectionPair.coordY;
+            return rootNodes[firstNode].mergeComponents(rootNodes[secondNode]);
         });
-        
-        return new UnionFind(nodeList);
+        return new UnionFindStructure(rootNodes);
+    };
+    // Checks if two given numbers (representing nodes) belong to the same set.
+    UnionFindStructure.prototype.checkSameComponent = function (valA, valB) {
+        return this.componentRoots[valA].isLinkedTo(this.componentRoots[valB]);
+    };
+    return UnionFindStructure;
+}());
+// Represents a single node within a Disjoint Set (Union-Find) data structure.
+var UnionFindNode = /** @class */ (function () {
+    // Initializes a new node, setting itself as its own parent and rank to 0.
+    function UnionFindNode() {
+        this.representative = this;
+        this.depth = 0;
     }
-
-    // Checks if two elements belong to the same set.
-    areConnected(elementA, elementB) {
-        return this.nodeCollection[elementA].isLinkedTo(this.nodeCollection[elementB]);
-    }
-}
-
-// Represents an individual node within a Disjoint Set Tree (Union-Find).
-class UnionFindNode {
-    // Initializes a new node.
-    constructor() {
-        this.parentNode = this; // Each node initially points to itself as its parent.
-        this.depthLevel = 0;    // Rank/depth for union by rank optimization.
-    }
-
     // Determines if this node is in the same set as another node.
-    isLinkedTo(anotherNode) {
-        return this.locateRoot() === anotherNode.locateRoot();
-    }
-
-    // Merges the set containing this node with the set containing another node. (Union by rank)
-    mergeSets(anotherNode) {
-        let rootA = this.locateRoot();
-        let rootB = anotherNode.locateRoot();
-
-        // If they are not already in the same set, merge them.
+    UnionFindNode.prototype.isLinkedTo = function (anotherNode) {
+        return this.findRepresentative() === anotherNode.findRepresentative();
+    };
+    // Merges the set containing this node with the set containing the target node.
+    // Uses union by rank heuristic.
+    UnionFindNode.prototype.mergeComponents = function (targetNode) {
+        var tempSwap;
+        var rootA = this.findRepresentative();
+        var rootB = targetNode.findRepresentative();
+        // Only merge if they are in different sets.
         if (rootA !== rootB) {
             // Attach the smaller rank tree under the root of the larger rank tree.
-            if (rootA.depthLevel < rootB.depthLevel) {
-                [rootA, rootB] = [rootB, rootA]; // Swap roots to ensure rootA has greater or equal rank.
+            if (rootA.depth < rootB.depth) {
+                tempSwap = [rootB, rootA], rootA = tempSwap[0], rootB = tempSwap[1];
             }
-            rootB.parentNode = rootA; // Make rootA the parent of rootB.
-            // If ranks were equal, increment rank of the new root.
-            if (rootB.depthLevel === rootA.depthLevel) {
-                rootA.depthLevel++;
+            rootB.representative = rootA;
+            // If ranks were equal, increment the rank of the new root.
+            if (rootB.depth === rootA.depth) {
+                rootA.depth = rootA.depth + 1;
             }
         }
-    }
-
-    // Finds the representative (root) of the set this node belongs to. (Path compression)
-    locateRoot() {
+    };
+    // Finds the representative (root) of the set this node belongs to.
+    // Implements path compression.
+    UnionFindNode.prototype.findRepresentative = function () {
         try {
-            // Recursively find the root, compressing the path along the way.
-            if (this.parentNode !== this) {
-                this.parentNode = this.parentNode.locateRoot();
+            // If this node is not its own parent, recursively find the root and compress the path.
+            if (this.representative !== this) {
+                this.representative = this.representative.findRepresentative();
             }
-        } catch (err) {
-            // Error handling, though unlikely in typical Union-Find usage.
         }
-        return this.parentNode;
-    }
-}
-
-// Parses the raw string input into structured data.
-function interpretRawData(rawData) {
-    const [firstLine, secondLine, ...remainingLines] = rawData.split("\n");
-    const [nodeCount, edgeCount] = parseNumericSequence(firstLine);
-    const valueArray = parseNumericSequence(secondLine);
-    
-    // Map remaining lines to connection pairs.
-    const connectionPairs = remainingLines.map(currentLine => {
-        const [firstNode, secondNode] = parseNumericSequence(currentLine);
-        return { firstNode, secondNode };
+        catch (errorDetails) {
+            // Error handling, though typically not expected in a well-formed structure.
+        }
+        return this.representative;
+    };
+    return UnionFindNode;
+}());
+// Parses the raw input string into structured data.
+function processRawData(sourceText) {
+    var lineSegments = sourceText.split("\n"), firstLine = lineSegments[0], secondLine = lineSegments[1], remainingLines = lineSegments.slice(2);
+    var parsedCounts = extractNumbersFromString(firstLine), nodeCount = parsedCounts[0], edgeCount = parsedCounts[1];
+    var permutationArray = extractNumbersFromString(secondLine);
+    var edgeList = remainingLines.map(function (currentLine) {
+        var coords = extractNumbersFromString(currentLine), coordX = coords[0], coordY = coords[1];
+        return { coordX: coordX, coordY: coordY };
     });
-    
-    return { nodeCount, edgeCount, valueArray, connectionPairs };
+    return { nodeCount: nodeCount, edgeCount: edgeCount, permutationArray: permutationArray, edgeList: edgeList };
 }
-
-// Converts a space-separated string of numbers into an array of integers.
-function parseNumericSequence(line) {
-    return line.split(" ").map(Number);
+// Helper function to parse a space-separated string of numbers into an array of numbers.
+function extractNumbersFromString(textLine) {
+    return textLine.split(" ").map(Number);
 }
-
-// Standard execution block for competitive programming environments.
+// Do not modify this section! It handles input from standard input.
 try {
-    const fileSystem = getModule("fs");
-    ProcessConnections(fileSystem.readTextFileSync("/std/input", "utf_8"));
-} catch (err) {
-    // Silently ignore errors during local execution or missing file.
+    ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
 }
-
-// Simple alias for require for slight renaming.
-function getModule(moduleName) {
-    return require(moduleName);
+catch (e) {
+    // Any errors during input reading are ignored.
 }
-//# sourceMappingURL=Equals.js.map

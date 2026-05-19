@@ -1,122 +1,102 @@
-const standardInputReader = require('fs');
+var rawInputLines = require('fs').readFileSync('/dev/stdin', 'utf8')
+  .split("\n").map((s)=>{return s.split(" ").map((i)=>{return i - 0;});});
 
-// Function to parse a string into a number, handling potential non-numeric values gracefully.
-const parseNumericValue = (stringValue) => {
-  const parsed = Number(stringValue);
-  return isNaN(parsed) ? 0 : parsed; // Default to 0 or throw error based on strictness
-};
+const nodeCount = rawInputLines[0][0];
+const edgeCount = rawInputLines[0][1];
+const targetNodeId = rawInputLines[0][2];
 
-// Read all input from standard input, split by lines, and transform.
-// Empty lines are filtered out to prevent errors during parsing.
-// Each non-empty line is split by space and its components converted to numbers.
-const processedInputRecords = standardInputReader.readFileSync('/dev/stdin', 'utf8')
-  .split("\n")
-  .filter(lineContent => lineContent.trim() !== '') // Ensure no empty lines are processed
-  .map(lineContent => lineContent.split(" ").map(parseNumericValue));
+// This line is the source of the crash in the original code.
+// It adds 'undefined' to the beginning of the rawInputLines array.
+rawInputLines.unshift();
 
-// Extract primary graph parameters from the very first record.
-// The first record contains: total nodes, total edges, and the final target node ID.
-const [totalNodeQuantity, totalEdgeQuantity, finalTargetNode] = processedInputRecords.shift(); // Removes and destructures the first array
-
-// Initialize the graph's adjacency list structure.
-// Each key represents a node, and its value is an array of connected edges.
-// An edge is represented as [destinationNodeId, connectionWeight].
-const graphAdjacencyStructure = {};
-for (let currentGraphNodeId = 1; currentGraphNodeId <= totalNodeQuantity; currentGraphNodeId++) {
-  graphAdjacencyStructure[currentGraphNodeId] = []; // Ensure all potential nodes are initialized
+var graphAdjacency = {};
+// Initialize adjacency lists for nodes from 1 up to (but not including) nodeCount.
+// This structure mirrors the original's initialization.
+for (let nodeIndex = 1; nodeIndex < nodeCount; nodeIndex++) {
+    graphAdjacency[nodeIndex] = [];
 }
 
-// Populate the graph with all defined edges from the input records.
-// Each subsequent record after the header defines an edge.
-processedInputRecords.forEach(edgeDefinition => {
-  const [originatingNode, terminatingNode, edgeWeightValue] = edgeDefinition;
-  // Add the edge to the originating node's list of connections.
-  graphAdjacencyStructure[originatingNode].push([terminatingNode, edgeWeightValue]);
+// This forEach loop will attempt to process 'undefined' as the first element
+// due to the preceding unshift() call. This will cause a TypeError crash,
+// preserving the exact observable behavior of the original code.
+rawInputLines.forEach((currentLineData) => {
+    // This line will cause a crash: currentLineData will be 'undefined' in the first iteration.
+    graphAdjacency[currentLineData[0]].push([currentLineData[1], currentLineData[2]]);
 });
 
-// --- Core Graph Traversal Logic (DFS-like) ---
-// This section finds the maximum possible accumulated weight from node 1 to finalTargetNode.
 
-let highestAchievedPathSum = -1; // Stores the maximum weight found across all valid paths.
+// The following Depth-First Search (DFS) logic is effectively unreachable
+// due to the crash occurring during the input parsing phase.
+// However, it is included and structurally modified as per Type III cloning rules,
+// ensuring syntactic validity and maintaining the original's logical flow
+// should the preceding crash be hypothetically resolved.
 
-// An Immediately Invoked Function Expression (IIFE) to encapsulate the traversal.
-(function performDepthFirstSearch() {
+let maximumAchievedGain = -1; // Declared outside the IIFE to be accessible by console.log
 
-  // Stack to manage the state of exploration, enabling backtracking.
-  // Each element on this stack represents a set of edges yet to be explored from a particular node.
-  const explorationBacktrackStack = [];
+(() => {
+    const currentTraversalPath = [1];
+    const pathEdgeWeights = [0];
+    // Initialize DFS stack with neighbors of node 1.
+    // Use || [] to handle cases where graphAdjacency[1] might be undefined (e.g., if nodeCount is 0 or 1, or due to the crash).
+    const dfsTraversalStack = [Array.from(graphAdjacency[1] || [])];
+    let pendingNeighbors = dfsTraversalStack.pop();
 
-  // Data structures to track the current path being explored.
-  let activePathNodes = [1]; // Sequence of nodes visited in the current path.
-  let activePathEdgeWeights = [0]; // Weights of edges taken to reach nodes in activePathNodes.
-  let currentAccumulatedWeight = 0; // Running sum of weights for the active path (optimization).
+    // Helper function to calculate the sum of weights in an array.
+    const calculateCurrentPathTotalGain = (weightsArray) => {
+        return weightsArray.reduce((accumulator, currentWeight) => accumulator + currentWeight, 0);
+    };
 
-  // A Set for efficient O(1) checking of nodes already present in the active path (cycle detection).
-  const nodesInCurrentTraversal = new Set([1]);
+    do {
+        // Backtracking mechanism: if no more neighbors to explore from the current node,
+        // pop from path and weights, then retrieve previous state from stack.
+        while (pendingNeighbors.length === 0) {
+            currentTraversalPath.pop();
+            pathEdgeWeights.pop();
 
-  // Begin exploration from the starting node (node 1).
-  // Create a shallow copy to ensure independent manipulation of this array.
-  let availableBranchesToExplore = [...graphAdjacencyStructure[1]];
+            if (dfsTraversalStack.length > 0) {
+                pendingNeighbors = dfsTraversalStack.pop();
+            } else {
+                // If the DFS stack is empty, all reachable paths have been explored.
+                return; // Exit the IIFE, terminating the search.
+            }
+        }
 
-  // Main loop for the DFS traversal. It continues until all paths are exhausted.
-  while (true) {
-    // If there are no more immediate branches to explore from the current node...
-    while (availableBranchesToExplore.length === 0) {
-      // ...it's time to backtrack.
-      const lastEdgeWeight = activePathEdgeWeights.pop();
-      if (lastEdgeWeight !== undefined) { // Subtract the weight of the edge just left.
-        currentAccumulatedWeight -= lastEdgeWeight;
-      }
+        const nextSegment = pendingNeighbors.pop();
+        const destinationNode = nextSegment[0];
+        const segmentWeight = nextSegment[1];
 
-      const lastNodeVisited = activePathNodes.pop();
-      if (lastNodeVisited !== undefined) { // Remove the node from the active path set.
-        nodesInCurrentTraversal.delete(lastNodeVisited);
-      }
+        // Check if the current destination node is the target node.
+        if (destinationNode === targetNodeId) {
+            // If target is reached, update the maximum gain found so far.
+            // Note: The original code calculates gain *without* including the 'segmentWeight'
+            // of the edge that led to the target node 'P'. This behavior is preserved.
+            const currentTotalGain = calculateCurrentPathTotalGain(pathEdgeWeights);
+            maximumAchievedGain = Math.max(currentTotalGain, maximumAchievedGain);
+        }
 
-      // If the backtrack stack is empty, it means all possible paths have been explored.
-      if (explorationBacktrackStack.length === 0) {
-        return; // Terminate the traversal.
-      }
-      // Restore the state from the stack to continue exploring previous branches.
-      availableBranchesToExplore = explorationBacktrackStack.pop();
-    }
+        // Check if the destination node has already been visited in the current path to detect cycles.
+        const nodeAlreadyVisited = currentTraversalPath.indexOf(destinationNode);
+        if (nodeAlreadyVisited === -1) {
+            // If the node is not yet in the current path, explore its neighbors.
+            const nextNodeAdjacency = graphAdjacency[destinationNode];
+            if (nextNodeAdjacency && nextNodeAdjacency.length > 0) {
+                // Push the remaining neighbors of the current node onto the DFS stack.
+                dfsTraversalStack.push(pendingNeighbors);
+                // Set the new pendingNeighbors to the neighbors of the destinationNode.
+                pendingNeighbors = Array.from(nextNodeAdjacency);
+                // Add the destination node and its incoming edge weight to the current path.
+                currentTraversalPath.push(destinationNode);
+                pathEdgeWeights.push(segmentWeight);
+                // Continue to the next iteration to process the newly set pendingNeighbors.
+                continue;
+            }
+        }
+        // If a loop is detected, or the node has no outgoing edges,
+        // the loop will naturally proceed to the next pending neighbor or backtrack.
 
-    // Get the next edge to consider from the current set of available branches.
-    const [destinationOfEdge, weightOfEdge] = availableBranchesToExplore.pop();
+    } while (true); // The loop continues indefinitely until an explicit 'return' statement is encountered.
+})();
 
-    // Calculate the total weight if this edge were added to the current path.
-    const prospectiveTotalWeight = currentAccumulatedWeight + weightOfEdge;
-
-    // If the destination of this edge is our target node...
-    if (destinationOfEdge === finalTargetNode) {
-      // ...we've found a path to the target. Update the highest sum if this path is better.
-      highestAchievedPathSum = Math.max(highestAchievedPathSum, prospectiveTotalWeight);
-    }
-
-    // Check for cycles: only proceed if the destination node is not already in the current path.
-    if (!nodesInCurrentTraversal.has(destinationOfEdge)) {
-      // Also check if the destination node has any outgoing connections to explore further.
-      const outgoingConnections = graphAdjacencyStructure[destinationOfEdge];
-      if (outgoingConnections && outgoingConnections.length > 0) {
-        // If it has outgoing connections, save the current state before descending deeper.
-        explorationBacktrackStack.push(availableBranchesToExplore);
-
-        // Update current path state to reflect moving to the new node.
-        activePathNodes.push(destinationOfEdge);
-        nodesInCurrentTraversal.add(destinationOfEdge);
-        activePathEdgeWeights.push(weightOfEdge);
-        currentAccumulatedWeight = prospectiveTotalWeight; // Update running sum.
-
-        // Now, the available branches are those from the new current node.
-        availableBranchesToExplore = [...outgoingConnections];
-      }
-      // If the destination node has no outgoing connections and is not the target (handled above),
-      // it's a dead end, and the loop will simply pick the next available branch or backtrack.
-    }
-    // If a cycle is detected, or it's a dead-end branch (no outgoing edges),
-    // the loop continues to the next available branch or triggers backtracking.
-  }
-})(); // End of IIFE
-
-// Output the maximum accumulated weight found.
-console.log(highestAchievedPathSum);
+// This line will not be reached during execution due to the TypeError crash
+// that occurs earlier in the input processing phase.
+console.log(maximumAchievedGain);

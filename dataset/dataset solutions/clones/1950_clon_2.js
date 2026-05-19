@@ -1,50 +1,49 @@
-"use strict"; /* Enable strict parsing and error handling for the script */
+"use strict";
 
-function processUserInput(inputData) {
-    let textLine = inputData.trim()
-                           .split("\n")[0]; // Extract the first line after trimming whitespace
-    let resultCount = 0;                     // Initialize a counter for specific numerical conditions
+// This script processes input data to find specific numeric patterns.
+function primaryFunction(inputData) {
+  // Extract the first line of the input string after trimming whitespace.
+  let inputString = inputData.trim().split("\n")[0];
+  let occurrenceCount = 0; // Initialize a variable to count valid occurrences.
 
-    // Begin iterating through the string to find potential starting points for segments
-    // A segment must be at least 4 characters long, hence `textLine.length - 4`
-    for (let firstCharPos = 0; firstCharPos < textLine.length - 4; firstCharPos++) {
-        // For each starting position, iterate to find potential ending points for segments
-        // The ending point ensures the segment length is at least 4, and goes up to the end of the line
-        for (let lastCharPos = firstCharPos + 4; lastCharPos < textLine.length + 1; lastCharPos++) {
-            // Convert the current substring to a numerical value and check if it's divisible by 2019
-            if (Number(textLine.slice(firstCharPos, lastCharPos)) % 2019 === 0) {
-                resultCount++; // Increment the counter if the divisibility condition is met
-            }
-        }
+  // Iterate through possible starting positions for substrings.
+  for (let outerIndex = 0; outerIndex < inputString.length - 4; outerIndex++) {
+    // Iterate through possible ending positions for substrings, ensuring minimum length.
+    for (let innerIndex = outerIndex + 4; innerIndex < inputString.length + 1; innerIndex++) {
+      // No debug output here, just processing.
+      // Check if the numeric value of the substring is divisible by 2019.
+      if (Number(inputString.slice(outerIndex, innerIndex)) % 2019 === 0) {
+        occurrenceCount++; // Increment the counter if the condition is met.
+      }
     }
-
-    // Output the final accumulated count to the console
-    console.log(resultCount);
+  }
+  // Output the final tally of valid substrings.
+  console.log(occurrenceCount);
 }
 
-processUserInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the main processing function with data read from standard input.
+primaryFunction(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// This auxiliary function is designed to count how many times a specific 'targetPattern' appears within 'sourceContent'.
-function locatePattern(sourceContent, targetPattern) {
-    let occurrenceCounter = 0; // Keeps track of the number of patterns found
-    let searchFrom = 0;       // Defines the starting index for each subsequent search operation
+// This auxiliary function finds the number of non-overlapping occurrences of a pattern in a source string.
+function findOccurrences(sourceText, searchPattern) {
+  let matchCount = 0; // Initialize a counter for found matches.
+  let startIndex = 0; // Keep track of the starting position for the next search.
 
-    for (;;) { // An infinite loop that continues until a break or return statement is encountered
-        let foundAt = sourceContent.indexOf(targetPattern, searchFrom); // Attempt to find the pattern from 'searchFrom'
-
-        if (foundAt < 0) {
-            // If 'indexOf' returns -1, the pattern was not found, so return the current count.
-            return occurrenceCounter;
-        }
-
-        if (foundAt >= 0) {
-            // If the pattern is found at or after the 'searchFrom' index:
-            occurrenceCounter++;            // Increment the total count of occurrences.
-            searchFrom = foundAt + 1;       // Adjust 'searchFrom' to the position immediately after the found pattern
-                                            // to avoid re-finding the same instance.
-        }
+  // Loop indefinitely until no more matches are found.
+  for (;;) {
+    // Find the next occurrence of the pattern starting from startIndex.
+    let foundPosition = sourceText.indexOf(searchPattern, startIndex);
+    if (foundPosition < 0) {
+      // If no more occurrences are found, return the total count.
+      return matchCount;
     }
-    // This return statement is structurally present but logically unreachable due to the preceding infinite loop
-    // with its internal return conditions. It is retained to match the original code's structure.
-    return occurrenceCounter;
+    if (foundPosition >= 0) {
+      // If an occurrence is found, increment the counter.
+      matchCount++;
+      // Update the starting position for the next search to be after the current match.
+      startIndex = foundPosition + 1;
+    }
+  }
+  // This return statement is technically unreachable due to the infinite loop with an internal return.
+  return matchCount;
 }

@@ -1,155 +1,142 @@
 "use strict";
 
-// Obtain raw input data from standard input
-var dataStream = require(  "fs"  ) . readFileSync (  "/dev/stdin"  ,  "utf8"  );
+// Standard input reading utilities
+var tokenArray = require("fs").readFileSync("/dev/stdin", "utf8").split(/ |\n/);
+var tokenIndex = 0x0;
 
-// Split input into tokens and initialize a pointer for parsing
-var tokenBuffer = dataStream . split (  / |\n/  ) ;
-var tokenIndex = 0 ;
-
-// Function to read and parse the next token as an integer
-function readInteger (  ) {
-  return + tokenBuffer [  tokenIndex ++  ] ;
+function getNextNum() {
+  return +tokenArray[tokenIndex++];
 }
 
-// Function to read the next token as a string
-function readString (  ) {
-  return tokenBuffer [  tokenIndex ++  ] ;
+function getNextStr() {
+  return tokenArray[tokenIndex++];
 }
 
-// Function to read and parse the next token as a BigInt
-function readBigInt (  ) {
-  return BigInt (  tokenBuffer [  tokenIndex ++  ]  ) ;
+function getNextBigInt() {
+  return BigInt(tokenArray[tokenIndex++]);
 }
 
-// Function to read a sequence of tokens, optionally converting them to numbers
-function readSequence (  count  ,  asNumbers  ) {
-  if (  asNumbers  ) {
-    return tokenBuffer . slice (  tokenIndex  ,  tokenIndex += count  ) ;
-  } else {
-    return tokenBuffer . slice (  tokenIndex  ,  tokenIndex += count  ) . map (  val => + val  ) ;
-  }
+function getNumsSlice(count, isRaw) {
+  // If isRaw is true, return strings; otherwise, parse to numbers
+  return isRaw ? tokenArray.slice(tokenIndex, tokenIndex += count) : tokenArray.slice(tokenIndex, tokenIndex += count).map(valStr => +valStr);
 }
 
-// Function to read a matrix of tokens, optionally keeping them as strings
-function readMatrix (  height  ,  width  ,  asStrings  ) {
-  var rows = [  ] ;
-  var rowIdx = 0 ;
-  if (  asStrings  ) {
-    for (  ;  rowIdx < height  ;  rowIdx ++  ) {
-      rows . push (  tokenBuffer . slice (  tokenIndex  ,  tokenIndex += width  )  ) ;
+function getMatrix(height, width, rawMode) {
+  var matrixRows = [];
+  var rowIndex = 0x0;
+  if (rawMode) {
+    for (; rowIndex < height; rowIndex++) {
+      matrixRows.push(tokenArray.slice(tokenIndex, tokenIndex += width));
     }
   } else {
-    for (  ;  rowIdx < height  ;  rowIdx ++  ) {
-      rows . push (  tokenBuffer . slice (  tokenIndex  ,  tokenIndex += width  ) . map (  val => + val  )  ) ;
+    for (; rowIndex < height; rowIndex++) {
+      matrixRows.push(tokenArray.slice(tokenIndex, tokenIndex += width).map(elemStr => +elemStr));
     }
   }
-  return rows ;
+  return matrixRows;
 }
 
-// Function to dynamically create a multi-dimensional array with a given initial value
-function createMultiDimArray (  initialValue  ) {
-  var dimensions = arguments ;
-  var dimLength = dimensions . length ;
-  var arrayCreationCode = "Array(dimensions[" + -- dimLength + "]).fill().map(x=>{return " + initialValue + ";})" ;
-  while (  -- dimLength  ) {
-    arrayCreationCode = "Array(dimensions[" + dimLength + "]).fill().map(x=>" + arrayCreationCode + ")" ;
+// Function to create multi-dimensional arrays with an initial value
+function createMultiDimArray(initialValue) {
+  var dimArgs = arguments;
+  var dimCount = dimArgs.length;
+  var arrayInitStr = "Array(dimArgs[" + --dimCount + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--dimCount) {
+    arrayInitStr = "Array(dimArgs[" + dimCount + "]).fill().map(x=>" + arrayInitStr + ")";
   }
-  return eval (  arrayCreationCode  ) ;
+  return eval(arrayInitStr);
 }
 
-// Execute the primary program logic and capture its output
-var finalResult = executeProgram (  ) ;
 
-// If a result is explicitly returned from the main function, print it to console
-if (  finalResult !== undefined  ) {
-  console . log (  String (  finalResult  )  ) ;
+// Execute the main program logic
+var programResult = executeProgram();
+
+// Output the result if it's not undefined
+if (programResult !== undefined) {
+  console.log(String(programResult));
 }
 
-// Main program execution function encapsulating the core algorithm
-function executeProgram (  ) {
-  var numElements = readInteger (  ) ;
-  var memoizationTable = createMultiDimArray (  -1  ,  numElements  ,  numElements  ) ;
-  var maximumValue = 0 ;
-  var skippedCount = 0 ;
 
-  // Read initial pair of values and sort them in ascending order
-  var currentValues = readSequence (  2  ) . sort (  (  elemA  ,  elemB  ) => elemA - elemB  ) ;
+function executeProgram() {
+  var dimensionSize = getNextNum();
+  // Initialize DP table, max value found, and offset counter
+  var dynamicProgTable = createMultiDimArray(-0x1, dimensionSize, dimensionSize);
+  var maxValFound = 0x0;
+  var offsetCount = 0x0;
 
-  // Initialize the memoization table with the first computed state
-  memoizationTable [  currentValues [  0  ] - 1  ] [  currentValues [  1  ] - 1  ] = 0 ;
+  // Read the initial pair of numbers and sort them
+  var currentPair = getNumsSlice(0x2).sort((valA, valB) => valA - valB);
 
-  // Queue for temporarily storing states to be processed
-  var processingQueue = [  ] ;
+  var updateQueue = [];
 
-  // Iterate through subsequent sets of values to build up the solution
-  for (  var iterationIndex = 1  ;  iterationIndex < numElements  ;  iterationIndex ++  ) {
-    // Read the next triplet, sort it, and adjust values (decrement by 1)
-    currentValues = readSequence (  3  ) . sort (  (  elemA  ,  elemB  ) => elemA - elemB  ) . map (  val => val - 1  ) ;
+  // Set initial DP state based on the first pair
+  dynamicProgTable[currentPair[0x0] - 0x1][currentPair[0x1] - 0x1] = 0x0;
 
-    // If the first and third values are identical, this is a degenerate case, increment skip counter and proceed
-    if (  currentValues [  0  ] === currentValues [  2  ]  ) {
-      skippedCount ++ ;
-      continue ;
+  // Iterate through subsequent inputs to update DP table
+  for (var iterationIdx = 0x1; iterationIdx < dimensionSize; iterationIdx++) {
+    // Read the triple, sort, and adjust indices by subtracting one
+    var currentTriple = getNumsSlice(0x3).sort((elemA, elemB) => elemA - elemB).map(mappedVal => mappedVal - 0x1);
+
+    // If the first and third elements of the triple are identical, increment offset and skip
+    if (currentTriple[0x0] === currentTriple[0x2]) {
+      offsetCount++;
+      continue;
     }
 
-    // Clear the processing queue for the current iteration's calculations
-    processingQueue = [  ] ;
+    // Clear the queue for this iteration's updates
+    updateQueue = [];
 
-    // Process the first standard state transition
-    processState (  currentValues [  0  ]  ,  currentValues [  0  ]  ,  currentValues [  1  ]  ,  currentValues [  2  ]  ) ;
+    // Process various state transitions based on the current triple
+    processState(currentTriple[0x0], currentTriple[0x0], currentTriple[0x1], currentTriple[0x2]);
 
-    // Conditional processing paths based on equality of current values
-    if (  currentValues [  0  ] !== currentValues [  1  ]  ) {
-      processState (  currentValues [  1  ]  ,  currentValues [  1  ]  ,  currentValues [  0  ]  ,  currentValues [  2  ]  ) ;
+    if (currentTriple[0x0] !== currentTriple[0x1]) {
+      processState(currentTriple[0x1], currentTriple[0x1], currentTriple[0x0], currentTriple[0x2]);
     } else {
-      // Loop through various `loopVar` values for specific transitions
-      for (  var loopVar = 0  ;  loopVar < currentValues [  0  ]  ;  loopVar ++  ) {
-        processState (  loopVar  ,  currentValues [  0  ]  ,  loopVar  ,  currentValues [  2  ]  ) ;
+      for (var loopVarJ = 0x0; loopVarJ < currentTriple[0x0]; loopVarJ++) {
+        processState(loopVarJ, currentTriple[0x0], loopVarJ, currentTriple[0x2]);
       }
-      for (  var loopVar = currentValues [  0  ] + 1  ;  loopVar < currentValues [  2  ]  ;  loopVar ++  ) {
-        processState (  currentValues [  0  ]  ,  loopVar  ,  loopVar  ,  currentValues [  2  ]  ) ;
+      for (var loopVarJ = currentTriple[0x0] + 0x1; loopVarJ < currentTriple[0x2]; loopVarJ++) {
+        processState(currentTriple[0x0], loopVarJ, loopVarJ, currentTriple[0x2]);
       }
-      for (  var loopVar = currentValues [  2  ]  ;  loopVar < numElements  ;  loopVar ++  ) {
-        processState (  currentValues [  0  ]  ,  loopVar  ,  currentValues [  2  ]  ,  loopVar  ) ;
+      for (var loopVarJ = currentTriple[0x2]; loopVarJ < dimensionSize; loopVarJ++) {
+        processState(currentTriple[0x0], loopVarJ, currentTriple[0x2], loopVarJ);
       }
     }
 
-    if (  currentValues [  1  ] !== currentValues [  2  ]  ) {
-      processState (  currentValues [  2  ]  ,  currentValues [  2  ]  ,  currentValues [  0  ]  ,  currentValues [  1  ]  ) ;
+    if (currentTriple[0x1] !== currentTriple[0x2]) {
+      processState(currentTriple[0x2], currentTriple[0x2], currentTriple[0x0], currentTriple[0x1]);
     } else {
-      // Another set of loops for different equality conditions and transitions
-      for (  var loopVar = 0  ;  loopVar < currentValues [  0  ]  ;  loopVar ++  ) {
-        processState (  loopVar  ,  currentValues [  1  ]  ,  loopVar  ,  currentValues [  0  ]  ) ;
+      for (var loopVarJ = 0x0; loopVarJ < currentTriple[0x0]; loopVarJ++) {
+        processState(loopVarJ, currentTriple[0x1], loopVarJ, currentTriple[0x0]);
       }
-      for (  var loopVar = currentValues [  0  ]  ;  loopVar < currentValues [  2  ]  ;  loopVar ++  ) {
-        processState (  loopVar  ,  currentValues [  2  ]  ,  currentValues [  0  ]  ,  loopVar  ) ;
+      for (var loopVarJ = currentTriple[0x0]; loopVarJ < currentTriple[0x2]; loopVarJ++) {
+        processState(loopVarJ, currentTriple[0x2], currentTriple[0x0], loopVarJ);
       }
-      for (  var loopVar = currentValues [  2  ] + 1  ;  loopVar < numElements  ;  loopVar ++  ) {
-        processState (  currentValues [  2  ]  ,  loopVar  ,  currentValues [  0  ]  ,  loopVar  ) ;
+      for (var loopVarJ = currentTriple[0x2] + 0x1; loopVarJ < dimensionSize; loopVarJ++) {
+        processState(currentTriple[0x2], loopVarJ, currentTriple[0x0], loopVarJ);
       }
     }
 
-    // After all potential states for the current iteration are queued, update the memoization table
-    while (  processingQueue . length  ) {
-      var valFromQueue = processingQueue . pop (  ) ;
-      var colFromQueue = processingQueue . pop (  ) ;
-      var rowFromQueue = processingQueue . pop (  ) ;
-      memoizationTable [  rowFromQueue  ] [  colFromQueue  ] = Math . max (  memoizationTable [  rowFromQueue  ] [  colFromQueue  ]  ,  valFromQueue  ) ;
+    // Apply all collected updates from the queue to the DP table
+    while (updateQueue.length) {
+      var weightVal = updateQueue.pop();
+      var colIdx = updateQueue.pop();
+      var rowIdx = updateQueue.pop();
+      dynamicProgTable[rowIdx][colIdx] = Math.max(dynamicProgTable[rowIdx][colIdx], weightVal);
     }
   }
 
-  // Perform a final processing step with a single value
-  currentValues = readInteger (  ) - 1 ;
-  processState (  currentValues  ,  currentValues  ,  currentValues  ,  currentValues  ) ;
+  // Perform a final processing step with the last input
+  var finalIndex = getNextNum() - 0x1;
+  processState(finalIndex, finalIndex, finalIndex, finalIndex);
 
-  // Return the combined result of the maximum value found and the count of skipped iterations
-  return maximumValue + skippedCount ;
+  // Return the maximum value found plus the accumulated offset
+  return maxValFound + offsetCount;
 
-  // Helper function to calculate a new state value and add it to the processing queue
-  function processState (  coord1  ,  coord2  ,  coord3  ,  coord4  ) {
-    var computedValue = Math . max (  memoizationTable [  coord3  ] [  coord4  ]  ,  memoizationTable [  coord1  ] [  coord2  ] + 1  ) ;
-    processingQueue . push (  coord3  ,  coord4  ,  computedValue  ) ;
-    maximumValue = Math . max (  maximumValue  ,  computedValue  ) ;
+  // Helper function to update DP states and track the overall maximum value
+  function processState(paramT, paramU, paramV, paramW) {
+    var calculatedValue = Math.max(dynamicProgTable[paramV][paramW], dynamicProgTable[paramT][paramU] + 0x1);
+    updateQueue.push(paramV, paramW, calculatedValue);
+    maxValFound = Math.max(maxValFound, calculatedValue);
   }
 }

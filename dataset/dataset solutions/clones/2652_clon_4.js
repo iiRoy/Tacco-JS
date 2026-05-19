@@ -1,136 +1,212 @@
-var dataParser = (function() {
-    let inputLinesStorage;
-    let currentInputLinePointer = 0;
-
-    function prepareInput(rawInputContent) {
-        inputLinesStorage = rawInputContent.split('\n').filter(lineContent => lineContent.length > 0);
-        currentInputLinePointer = 0;
+var createInputProcessor = (function() {
+    function create(inputString) {
+        return new InputProcessor(inputString);
     }
 
-    function acquireSingleNumericValue() {
-        if (currentInputLinePointer >= inputLinesStorage.length) {
-            throw new Error("Input exhaustion detected.");
+    function InputProcessor(inputString) {
+        this._allLines = inputString.trim().split("\n");
+        this._currentLineIndex = 0;
+        this._currentLineTokens = null;
+        this._currentTokenIndex = 0;
+    }
+
+    InputProcessor.prototype.readNextToken = function(asString) {
+        if (this._currentLineTokens === null || this._currentTokenIndex >= this._currentLineTokens.length) {
+            if (this._currentLineIndex >= this._allLines.length) {
+                return undefined;
+            }
+            this._currentLineTokens = this._allLines[this._currentLineIndex].split(" ");
+            this._currentTokenIndex = 0;
+            this._currentLineIndex++;
         }
-        const numericValue = parseInt(inputLinesStorage[currentInputLinePointer].trim(), 10);
-        currentInputLinePointer++;
-        return numericValue;
-    }
-
-    function acquireNumericSequence() {
-        if (currentInputLinePointer >= inputLinesStorage.length) {
-            throw new Error("Input exhaustion detected.");
-        }
-        const sequenceOfNumbers = inputLinesStorage[currentInputLinePointer].trim().split(' ').map(Number);
-        currentInputLinePointer++;
-        return sequenceOfNumbers;
-    }
-
-    return {
-        setup: prepareInput,
-        fetchSingle: acquireSingleNumericValue,
-        fetchSequence: acquireNumericSequence
+        const token = this._currentLineTokens[this._currentTokenIndex++];
+        return asString ? token : Number(token);
     };
-})();
 
-class ItemPriorityTracker {
-    #priorityMap = new Map(); // Stores Map<numericPriority, Set<itemIdentifier>>
-
-    constructor() {}
-
-    enroll(numericPriority, itemIdentifier) {
-        if (!this.#priorityMap.has(numericPriority)) {
-            this.#priorityMap.set(numericPriority, new Set());
-        }
-        this.#priorityMap.get(numericPriority).add(itemIdentifier);
-    }
-
-    retrieveAndRemoveHighest() {
-        if (this.isEmpty()) {
+    InputProcessor.prototype.readFullLine = function(asStrings) {
+        if (this._currentLineIndex >= this._allLines.length) {
             return undefined;
         }
+        this._currentLineTokens = null;
+        this._currentTokenIndex = 0;
 
-        let currentHighestPriorityKey = -Infinity;
-        for (const pKey of this.#priorityMap.keys()) {
-            if (pKey > currentHighestPriorityKey) {
-                currentHighestPriorityKey = pKey;
+        const line = this._allLines[this._currentLineIndex++];
+        const tokens = line.split(" ");
+        return asStrings ? tokens : tokens.map(Number);
+    };
+
+    InputProcessor.prototype.readMultipleLines = function(count, asStrings) {
+        this._currentLineTokens = null;
+        this._currentTokenIndex = 0;
+
+        const result = [];
+        for (let k = 0; k < count; k++) {
+            if (this._currentLineIndex >= this._allLines.length) {
+                break;
             }
+            const line = this._allLines[this._currentLineIndex++];
+            const tokens = line.split(" ");
+            result.push(asStrings ? tokens : tokens.map(Number));
         }
-        
-        const identifiersSet = this.#priorityMap.get(currentHighestPriorityKey);
-        const anIdentifier = identifiersSet.values().next().value;
+        return result;
+    };
 
-        identifiersSet.delete(anIdentifier);
+    InputProcessor.prototype.readRawLines = function(count, asNumbers) {
+        this._currentLineTokens = null;
+        this._currentTokenIndex = 0;
 
-        if (identifiersSet.size === 0) {
-            this.#priorityMap.delete(currentHighestPriorityKey);
+        const result = [];
+        for (let k = 0; k < count; k++) {
+            if (this._currentLineIndex >= this._allLines.length) {
+                break;
+            }
+            const line = this._allLines[this._currentLineIndex++];
+            result.push(asNumbers ? Number(line) : line);
         }
-        return { priorityVal: currentHighestPriorityKey, identifier: anIdentifier };
-    }
+        return result;
+    };
 
-    isEmpty() {
-        return this.#priorityMap.size === 0;
-    }
+    return create;
+})();
+var inputProcessor = createInputProcessor(require("fs").readFileSync("/dev/stdin","utf8"));
+
+function createMultiDimArray(initialValue) {
+    const dimensions = Array.from(arguments).slice(1);
+    const createRecursive = (dims) => {
+        if (dims.length === 0) {
+            return initialValue;
+        }
+        const currentDimSize = dims[0];
+        const remainingDims = dims.slice(1);
+        return Array.from({ length: currentDimSize }, () => createRecursive(remainingDims));
+    };
+    return createRecursive(dimensions);
 }
 
-function getPreviousPos(currentPos, totalElements) {
-    return (currentPos - 1 + totalElements) % totalElements;
-}
-
-function getNextPos(currentPos, totalElements) {
-    return (currentPos + 1) % totalElements;
-}
-
-function performCalculation() {
-    dataParser.setup(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const totalItems = dataParser.fetchSingle();
-    const targetValues = dataParser.fetchSequence();
-    const currentValues = dataParser.fetchSequence();
-
-    const processingQueue = new ItemPriorityTracker();
-    let totalAdjustments = 0;
-
-    let processingIndex = 0;
-    while(processingIndex < totalItems) {
-        if (targetValues[processingIndex] === currentValues[processingIndex]) {
-            // Item already matches target, no action required
-        } else if (targetValues[processingIndex] > currentValues[processingIndex]) {
-            return -1; // Target value is unachievable
-        } else {
-            processingQueue.enroll(-currentValues[processingIndex], processingIndex);
-        }
-        processingIndex++;
+var createMinHeap = (function() {
+    function factory() {
+        return new MinHeap();
     }
 
-    while (!processingQueue.isEmpty()) {
-        const processedItem = processingQueue.retrieveAndRemoveHighest();
-        const currentPosition = processedItem.identifier;
-        const actualValue = -processedItem.priorityVal;
+    function MinHeap() {
+        this._elements = [];
+        this._comparator = (a, b) => a.priority - b.priority;
+    }
 
-        const previousPosition = getPreviousPos(currentPosition, totalItems);
-        const nextPosition = getNextPos(currentPosition, totalItems);
+    MinHeap.prototype.insert = function(item) {
+        this._elements.push(item);
+        this._siftUp(this._elements.length - 1);
+    };
 
-        const sumOfNeighbors = currentValues[previousPosition] + currentValues[nextPosition];
+    MinHeap.prototype.extractMin = function() {
+        if (this._elements.length === 0) {
+            return undefined;
+        }
+        if (this._elements.length === 1) {
+            return this._elements.pop();
+        }
 
-        const adjustmentCount = currentValues[currentPosition] / sumOfNeighbors | 0;
+        const minItem = this._elements[0];
+        this._elements[0] = this._elements.pop();
+        this._siftDown(0);
+        return minItem;
+    };
 
-        if (adjustmentCount === 0) {
+    MinHeap.prototype._siftUp = function(index) {
+        let currentIdx = index;
+        const currentElement = this._elements[currentIdx];
+
+        while (currentIdx > 0) {
+            const parentIdx = Math.floor((currentIdx - 1) / 2);
+            const parentElement = this._elements[parentIdx];
+
+            if (this._comparator(currentElement, parentElement) >= 0) {
+                break;
+            }
+
+            this._elements[currentIdx] = parentElement;
+            currentIdx = parentIdx;
+        }
+        this._elements[currentIdx] = currentElement;
+    };
+
+    MinHeap.prototype._siftDown = function(index) {
+        let currentIdx = index;
+        const count = this._elements.length;
+        const currentElement = this._elements[currentIdx];
+
+        while (true) {
+            const leftChildIdx = 2 * currentIdx + 1;
+            const rightChildIdx = 2 * currentIdx + 2;
+            let smallestChildIdx = currentIdx;
+
+            if (leftChildIdx < count && this._comparator(this._elements[leftChildIdx], this._elements[smallestChildIdx]) < 0) {
+                smallestChildIdx = leftChildIdx;
+            }
+
+            if (rightChildIdx < count && this._comparator(this._elements[rightChildIdx], this._elements[smallestChildIdx]) < 0) {
+                smallestChildIdx = rightChildIdx;
+            }
+
+            if (smallestChildIdx === currentIdx) {
+                break;
+            }
+
+            this._elements[currentIdx] = this._elements[smallestChildIdx];
+            currentIdx = smallestChildIdx;
+        }
+        this._elements[currentIdx] = currentElement;
+    };
+
+    Object.defineProperty(MinHeap.prototype, 'size', {
+        get: function() { return this._elements.length; }
+    });
+
+    return factory;
+})();
+
+console.log(processSequence());
+
+function processSequence() {
+    const sequenceLength = inputProcessor.readNextToken();
+    const sequenceA = inputProcessor.readFullLine();
+    const sequenceB = inputProcessor.readFullLine();
+
+    const activeElements = createMinHeap();
+
+    for (let currentIdx = 0; currentIdx < sequenceLength; currentIdx++) {
+        if (sequenceA[currentIdx] === sequenceB[currentIdx]) {
+            continue;
+        }
+        if (sequenceA[currentIdx] > sequenceB[currentIdx]) {
+            return -1;
+        }
+        activeElements.insert({ priority: -sequenceB[currentIdx], originalIndex: currentIdx });
+    }
+
+    let totalOperations = 0;
+
+    while (activeElements.size > 0) {
+        const extractedItem = activeElements.extractMin();
+        const elementIndex = extractedItem.originalIndex;
+
+        const neighborSum = sequenceB[(elementIndex + sequenceLength - 1) % sequenceLength] + sequenceB[(elementIndex + 1) % sequenceLength];
+        const operationCount = Math.floor(sequenceB[elementIndex] / neighborSum);
+
+        if (operationCount === 0) {
             return -1;
         }
 
-        totalAdjustments += adjustmentCount;
-        currentValues[currentPosition] %= sumOfNeighbors;
+        totalOperations += operationCount;
+        sequenceB[elementIndex] %= neighborSum;
 
-        if (targetValues[currentPosition] === currentValues[currentPosition]) {
-            // Item now aligns with target, no re-enrollment
-        } else if (targetValues[currentPosition] > currentValues[currentPosition]) {
-            return -1;
-        } else {
-            processingQueue.enroll(-currentValues[currentPosition], currentPosition);
+        if (sequenceA[elementIndex] === sequenceB[elementIndex]) {
+            continue;
         }
+        if (sequenceA[elementIndex] > sequenceB[elementIndex]) {
+            return -1;
+        }
+        activeElements.insert({ priority: -sequenceB[elementIndex], originalIndex: elementIndex });
     }
-
-    return totalAdjustments;
+    return totalOperations;
 }
-
-console.log(performCalculation());

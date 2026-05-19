@@ -1,25 +1,22 @@
-const classificationRules = [
-  { start: 400, end: 599, outcome: '8' },
-  { start: 600, end: 799, outcome: '7' },
-  { start: 800, end: 999, outcome: '6' },
-  { start: 1000, end: 1199, outcome: '5' },
-  { start: 1200, end: 1399, outcome: '4' },
-  { start: 1400, end: 1599, outcome: '3' },
-  { start: 1600, end: 1799, outcome: '2' },
-  { start: 1800, end: 1999, outcome: '1' }
-];
+function Main(rawData) {
+  const parsedValue = Number(rawData);
 
-function EvaluateNumber(dataString) {
-  const parsedValue = parseInt(dataString.trim(), 10);
-  
-  const foundOutcome = classificationRules.find(rule => 
-    parsedValue >= rule.start && parsedValue <= rule.end
-  );
+  const scoreMap = new Map([
+    [2, 8], // Corresponds to input 400-599 (floor(input/200) = 2)
+    [3, 7], // Corresponds to input 600-799 (floor(input/200) = 3)
+    [4, 6], // Corresponds to input 800-999 (floor(input/200) = 4)
+    [5, 5], // Corresponds to input 1000-1199 (floor(input/200) = 5)
+    [6, 4], // Corresponds to input 1200-1399 (floor(input/200) = 6)
+    [7, 3], // Corresponds to input 1400-1599 (floor(input/200) = 7)
+    [8, 2], // Corresponds to input 1600-1799 (floor(input/200) = 8)
+    [9, 1]  // Corresponds to input 1800-1999 (floor(input/200) = 9)
+  ]);
 
-  if (foundOutcome) {
-    process.stdout.write(foundOutcome.outcome + '\n');
+  const keyForLookup = Math.floor(parsedValue / 200);
+
+  if (scoreMap.has(keyForLookup)) {
+    console.log(scoreMap.get(keyForLookup));
   }
 }
 
-const getFileContent = require("fs").readFileSync;
-EvaluateNumber(getFileContent("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

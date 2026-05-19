@@ -1,34 +1,45 @@
-const moduleSystem = require('fs');
-const rawDataStream = moduleSystem.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const preparedLines = rawDataStream.trim().split('\n');
+const obtainInput = () => {
+    return fileSystem.readFileSync('/dev/stdin', 'utf8');
+};
 
-const entryCount = parseInt(preparedLines.shift(), 10);
+const processInitialData = (rawData) => {
+    const contentLines = rawData.trim().split('\n');
+    const iterationCount = Number(contentLines.shift());
+    return { iterationCount, contentLines };
+};
 
-let currentTally = 0;
-let encounteredInvalidSequence = false;
+const constructCombinedString = (count, sourceLines) => {
+    return sourceLines.slice(0, count)
+        .map(lineSegment => {
+            const parts = lineSegment.split(' ');
+            const characterUnit = parts[0];
+            const repetitionFactor = Number(parts[1]);
+            return characterUnit.repeat(repetitionFactor);
+        })
+        .join('');
+};
 
-const relevantEntries = preparedLines.slice(0, entryCount);
-
-for (const singleEntry of relevantEntries) {
-    const components = singleEntry.split(' ');
-    const symbolToken = components[0];
-    const numericalValue = parseInt(components[1], 10);
-
-    if (symbolToken === '(') {
-        currentTally += numericalValue;
-    } else if (symbolToken === ')') {
-        currentTally -= numericalValue;
+const recursivelyCleanString = (currentValue) => {
+    const nextValue = currentValue.replace(/\(\)/g, '');
+    if (nextValue === currentValue) {
+        return currentValue;
     }
+    return recursivelyCleanString(nextValue);
+};
 
-    if (currentTally < 0) {
-        encounteredInvalidSequence = true;
-        break;
+const mainExecution = () => {
+    const rawData = obtainInput();
+    const { iterationCount, contentLines } = processInitialData(rawData);
+    const initialCombinedString = constructCombinedString(iterationCount, contentLines);
+    const finalResultString = recursivelyCleanString(initialCombinedString);
+
+    if (finalResultString === '') {
+        console.log('YES');
+    } else {
+        console.log('NO');
     }
-}
+};
 
-if (encounteredInvalidSequence || currentTally !== 0) {
-    console.log("NO");
-} else {
-    console.log("YES");
-}
+mainExecution();

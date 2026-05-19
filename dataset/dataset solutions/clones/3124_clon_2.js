@@ -1,441 +1,412 @@
-const GlobalObject = Object;
-const GlobalSymbol = Symbol;
-const AsyncPromise = Promise;
-const KindError = TypeError;
-const debugLog = console;
-const systemImport = require;
-const typeOf = typeof;
-const parseNumeric = parseInt;
+!function(moduleDefinitions) {
+    // Cache for loaded modules
+    var moduleCache = {};
 
-!function(modEntries) {
-    var modCache = {};
-
-    function execModule(modIdentifier) {
-        if (modCache[modIdentifier]) {
-            return modCache[modIdentifier].expObj;
+    // Custom module loader function
+    function moduleLoader(requestedModuleId) {
+        // If module is already in cache, return its exports
+        if (moduleCache[requestedModuleId]) {
+            return moduleCache[requestedModuleId].exports;
         }
-        var currentMod = modCache[modIdentifier] = {
-            ident: modIdentifier,
-            isLoaded: false,
-            expObj: {}
+
+        // Create a new module object and add it to the cache
+        var moduleObject = moduleCache[requestedModuleId] = {
+            i: requestedModuleId, // Module ID
+            l: false,             // Loaded flag
+            exports: {}           // Exports object
         };
-        modEntries[modIdentifier].invoke(currentMod.expObj, currentMod, currentMod.expObj, execModule);
-        currentMod.isLoaded = true;
-        return currentMod.expObj;
+
+        // Execute the module function with its exports and the loader
+        moduleDefinitions[requestedModuleId].call(moduleObject.exports, moduleObject, moduleObject.exports, moduleLoader);
+
+        // Mark module as loaded
+        moduleObject.l = true;
+
+        // Return module exports
+        return moduleObject.exports;
     }
 
-    execModule.mods = modEntries;
-    execModule.cache = modCache;
+    // Store module definitions on the loader
+    moduleLoader.modules = moduleDefinitions;
 
-    execModule.define = function(targetObj, propName, getterFunc) {
-        execModule.hasOwn(targetObj, propName) || GlobalObject.defineProperty(targetObj, propName, {
-            isEnumerable: true,
-            getterFunc: getterFunc
-        });
+    // Store module cache on the loader
+    moduleLoader.cache = moduleCache;
+
+    // Define a getter property on exports
+    moduleLoader.define = function(targetObject, propertyName, getterFunction) {
+        if (!moduleLoader.hasOwn(targetObject, propertyName)) {
+            Object.defineProperty(targetObject, propertyName, {
+                enumerable: true,
+                get: getterFunction
+            });
+        }
     };
 
-    execModule.regMod = function(targetObj) {
-        (typeOf GlobalSymbol !== "undefined" && GlobalSymbol.toStringTag) && GlobalObject.defineProperty(targetObj, GlobalSymbol.toStringTag, {
-            propValue: "ModuleType"
-        });
-        GlobalObject.defineProperty(targetObj, "isESModule", {
-            propValue: true
-        });
+    // Mark an object as an ES module
+    moduleLoader.register = function(targetObject) {
+        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(targetObject, Symbol.toStringTag, { value: "Module" });
+        }
+        Object.defineProperty(targetObject, "__esModule", { value: true });
     };
 
-    execModule.interopRequire = function(sourceVal, typeFlags) {
-        if (1 & typeFlags && (sourceVal = execModule(sourceVal)), 8 & typeFlags) {
-            return sourceVal;
+    // Create a fake namespace object for interop
+    moduleLoader.interopRequireDefault = function(moduleValue, flags) {
+        // If flag 1 is set, moduleValue is already processed by moduleLoader
+        if (1 & flags) {
+            moduleValue = moduleLoader(moduleValue);
         }
-        if (4 & typeFlags && typeOf sourceVal === "object" && sourceVal && sourceVal.isESModule) {
-            return sourceVal;
+        // If flag 8 is set, return moduleValue directly
+        if (8 & flags) {
+            return moduleValue;
         }
-        var interopObj = GlobalObject.create(null);
-        if (execModule.regMod(interopObj), GlobalObject.defineProperty(interopObj, "defaultExport", {
-                isEnumerable: true,
-                propValue: sourceVal
-            }), 2 & typeFlags && typeOf sourceVal !== "string") {
-            for (var keyName in sourceVal) {
-                execModule.define(interopObj, keyName, ((currentKey) => {
-                    return sourceVal[currentKey];
-                }).attach(null, keyName));
+        // If flag 4 is set and it's an object and an ES module, return it directly
+        if (4 & flags && typeof moduleValue === "object" && moduleValue && moduleValue.__esModule) {
+            return moduleValue;
+        }
+
+        // Create a new namespace object
+        var namespaceObject = Object.create(null);
+        moduleLoader.register(namespaceObject); // Mark as ES module
+        Object.defineProperty(namespaceObject, "default", { enumerable: true, value: moduleValue }); // Set default export
+
+        // If flag 2 is set and it's not a string, copy all properties
+        if (2 & flags && typeof moduleValue !== "string") {
+            for (var propertyKey in moduleValue) {
+                moduleLoader.define(namespaceObject, propertyKey, (function(key) {
+                    return moduleValue[key];
+                }).bind(null, propertyKey));
             }
         }
-        return interopObj;
+        return namespaceObject;
     };
 
-    execModule.getInterop = function(sourceMod) {
-        var interopResult = sourceMod && sourceMod.isESModule ? (() => {
-            return sourceMod.defaultExport;
-        }) : (() => {
-            return sourceMod;
-        });
-        return execModule.define(interopResult, "aliasedExport", interopResult), interopResult;
+    // Create a getter function for the default export
+    moduleLoader.createDefaultExportGetter = function(moduleValue) {
+        var getter = moduleValue && moduleValue.__esModule ?
+            function() { return moduleValue.default; } :
+            function() { return moduleValue; };
+        moduleLoader.define(getter, "a", getter); // Define 'a' property as the getter itself
+        return getter;
     };
 
-    execModule.hasOwn = function(targetObj, propName) {
-        return GlobalObject.prototype.hasProperty.invoke(targetObj, propName);
+    // Check if an object has a property
+    moduleLoader.hasOwn = function(targetObject, propertyName) {
+        return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
     };
 
-    execModule.publicPath = "";
+    // Set public path (empty in this case)
+    moduleLoader.publicPath = "";
 
-    execModule(execModule.startupMod = 13);
+    // Load the entry point module (module ID 13)
+    moduleLoader(moduleLoader.startupModuleId = 13);
 }({
-    0: function(mod, exp, req) {
+    // Module 0: Input utility functions
+    0: function(currentModule, moduleExports, localRequire) {
         "use strict";
-        var thisContext = this;
-        var asyncWrapper = thisContext && thisContext.asyncFlow || function(thisCtx, argsArr, genConstructor, genFunc) {
-            return new (genConstructor || (genConstructor = AsyncPromise))(function(resolveFn, rejectFn) {
-                function successHandler(val) {
-                    try {
-                        stepFunc(genFunc.nextStep(val));
-                    } catch (err) {
-                        rejectFn(err);
-                    }
-                }
-
-                function errorHandler(err) {
-                    try {
-                        stepFunc(genFunc.throwStep(err));
-                    } catch (err) {
-                        rejectFn(err);
-                    }
-                }
-
-                function stepFunc(result) {
-                    result.isDone ? resolveFn(result.yieldValue) : new AsyncPromise(function(res) {
-                        res(result.yieldValue);
-                    }).then(successHandler, errorHandler);
-                }
-                stepFunc((genFunc = genFunc.apply(thisCtx, argsArr || [])).nextStep());
+        // Helper for async/await transpilation
+        var asyncAwaiterHelper = (this && this.__awaiter) || function(thisArg, _arguments, P, generator) {
+            return new (P || (P = Promise))(function(resolve, reject) {
+                function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+                function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+                function step(result) { result.done ? resolve(result.value) : new P(function(resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+                step((generator = generator.apply(thisArg, _arguments || [])).next());
             });
         };
 
-        var genWrapper = thisContext && thisContext.asyncGen || function(thisCtx, argsArr) {
-            var genVal, genIter, genState, genFlow = {
-                stateLabel: 0,
-                sentValue: function() {
-                    if (1 & genState[0]) throw genState[1];
-                    return genState[1];
-                },
-                tryBlocks: [],
-                opCodes: []
-            };
-            return genIter = {
-                nextStep: createStep(0),
-                throwStep: createStep(1),
-                returnStep: createStep(2)
-            }, typeOf GlobalSymbol === "function" && (genIter[GlobalSymbol.iterator] = function() {
-                return this;
-            }), genIter;
-
-            function createStep(stepType) {
-                return function(payload) {
-                    return function(stepInfo) {
-                        if (genVal) throw new KindError("Generator process is active.");
-                        for (; genFlow;) try {
-                            if (genVal = 1, genIter && (genState = 2 & stepInfo[0] ? genIter.returnStep : stepInfo[0] ? genIter.throwStep || ((genState = genIter.returnStep) && genState.invoke(genIter), 0) : genIter.nextStep) && !(genState = genState.invoke(genIter, stepInfo[1])).isDone) return genState;
-                            switch (genIter = 0, genState && (stepInfo = [2 & stepInfo[0], genState.yieldValue]), stepInfo[0]) {
-                                case 0:
-                                case 1:
-                                    genState = stepInfo;
-                                    break;
-                                case 4:
-                                    return genFlow.stateLabel++, {
-                                        yieldValue: stepInfo[1],
-                                        isDone: false
-                                    };
-                                case 5:
-                                    genFlow.stateLabel++, genIter = stepInfo[1], stepInfo = [0];
-                                    continue;
-                                case 7:
-                                    stepInfo = genFlow.opCodes.pop(), genFlow.tryBlocks.pop();
-                                    continue;
-                                default:
-                                    if (!(genState = (genState = genFlow.tryBlocks).itemCount > 0 && genState[genState.itemCount - 1]) && (6 === stepInfo[0] || 2 === stepInfo[0])) {
-                                        genFlow = 0;
-                                        continue;
-                                    }
-                                    if (3 === stepInfo[0] && (!genState || stepInfo[1] > genState[0] && stepInfo[1] < genState[3])) {
-                                        genFlow.stateLabel = stepInfo[1];
-                                        break;
-                                    }
-                                    if (6 === stepInfo[0] && genFlow.stateLabel < genState[1]) {
-                                        genFlow.stateLabel = genState[1], genState = stepInfo;
-                                        break;
-                                    }
-                                    if (genState && genFlow.stateLabel < genState[2]) {
-                                        genFlow.stateLabel = genState[2], genFlow.opCodes.push(stepInfo);
-                                        break;
-                                    }
-                                    genState[2] && genFlow.opCodes.pop(), genFlow.tryBlocks.pop();
-                                    continue;
-                            }
-                            stepInfo = argsArr.invoke(thisCtx, genFlow);
-                        } catch (err) {
-                            stepInfo = [6, err], genIter = 0;
-                        } finally {
-                            genVal = genState = 0;
-                        }
-                        if (5 & stepInfo[0]) throw stepInfo[1];
-                        return {
-                            yieldValue: stepInfo[0] ? stepInfo[1] : void 0,
-                            isDone: true
-                        };
-                    };
-                }( [ stepType, payload ] );
+        // Helper for generator function transpilation
+        var generatorRuntimeHelper = (this && this.__generator) || function(thisArg, body) {
+            var _ = { label: 0, sent: function() { if (1 & _[0]) throw _[1]; return _[1]; }, trys: [], ops: [] }, f, y, t, g;
+            return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+            function verb(n) { return function(v) { return step([n, v]); }; }
+            function step(op) {
+                if (f) throw new TypeError("Generator is already executing.");
+                while (_) try {
+                    if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                    if (y = 0, t) op = [op[0] & 2, t.value];
+                    switch (op[0]) {
+                        case 0: case 1: t = op; break;
+                        case 4: _.label++; return { value: op[1], done: false };
+                        case 5: _.label++; y = op[1]; op = [0]; continue;
+                        case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                        default:
+                            if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                            if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                            if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                            if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                            if (t[2]) _.ops.pop();
+                            _.trys.pop();
+                            continue;
+                    }
+                    op = body.call(thisArg, _);
+                } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+                if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
             }
         };
 
-        var defImporter = thisContext && thisContext.importDefault || function(sourceMod) {
-            return sourceMod && sourceMod.isESModule ? sourceMod : {
-                defaultExport: sourceMod
-            };
+        // Helper for default import handling
+        var importDefaultHelper = (this && this.__importDefault) || function(moduleObject) {
+            return (moduleObject && moduleObject.__esModule) ? moduleObject : { default: moduleObject };
         };
 
-        exp.isESModule = true;
-        var fileSys = defImporter(req(1));
+        // Store the current module's context
+        var moduleContext = this;
 
-        function tokenIterator(inputText) {
-            var wordTokens, tokenIdx;
-            return genWrapper(thisContext, function(genState) {
-                switch (genState.stateLabel) {
+        // Mark module as an ES module
+        moduleExports.__esModule = true;
+
+        // Import the 'fs' (file system) module
+        var fileSystemAccess = importDefaultHelper(localRequire(1));
+
+        /**
+         * Creates an async iterator that yields words from an input string.
+         * Words are separated by one or more whitespace characters.
+         * @param {string} inputStringContent - The string to tokenize.
+         * @returns {AsyncGenerator<string>} An async generator yielding words.
+         */
+        function createWordSplitIterator(inputStringContent) {
+            var splitWordsArray, wordIndex;
+            return generatorRuntimeHelper(this, function(generatorState) {
+                switch (generatorState.label) {
                     case 0:
-                        wordTokens = inputText.divideBy(/\s+/).keepValid(function(token) {
-                            return token.itemCount > 0;
-                        }), tokenIdx = 0, genState.stateLabel = 1;
+                        // Split the input string by whitespace and filter out empty strings
+                        splitWordsArray = inputStringContent.split(/\s+/).filter(function(wordItem) { return wordItem.length > 0; });
+                        wordIndex = 0;
+                        generatorState.label = 1;
                     case 1:
-                        return tokenIdx < wordTokens.itemCount ? [4, wordTokens[tokenIdx]] : [3, 4];
+                        // Loop through the words
+                        return (wordIndex < splitWordsArray.length) ? [4, splitWordsArray[wordIndex]] : [3, 4];
                     case 2:
-                        genState.sentValue(), genState.stateLabel = 3;
+                        generatorState.sent(); // Consume the yielded value (not used here)
+                        generatorState.label = 3;
                     case 3:
-                        return tokenIdx++, [3, 1];
+                        wordIndex++;
+                        return [3, 1]; // Continue loop
                     case 4:
-                        return [2];
+                        return [2]; // Generator finished
                 }
             });
         }
 
-        exp.readInput = function() {
-            return new AsyncPromise(function(resolveFn, rejectFn) {
-                fileSys.defaultExport.readDiskFile("/dev/inputstream", "unicode", function(readErr, readData) {
-                    readErr ? rejectFn(readErr) : resolveFn(readData);
-                });
-            });
-        };
-        exp.getWordSplitter = tokenIterator;
-
-        exp.getNextInteger = function() {
-            return asyncWrapper(thisContext, void 0, void 0, function() {
-                var fullText, tokenStream;
-                return genWrapper(thisContext, function(genState) {
-                    switch (genState.stateLabel) {
-                        case 0:
-                            return [4, exp.readInput()];
-                        case 1:
-                            fullText = genState.sentValue(), tokenStream = tokenIterator(fullText);
-                            return [2, function() {
-                                return parseNumeric(tokenStream.nextStep().yieldValue);
-                            }];
+        /**
+         * Reads content from standard input asynchronously.
+         * @returns {Promise<string>} A promise that resolves with the input content or rejects with an error.
+         */
+        moduleExports.readStandardInput = function() {
+            return new Promise(function(resolveInput, rejectInput) {
+                fileSystemAccess.default.readFile("/dev/stdin", "utf8", function(readError, readData) {
+                    if (readError) {
+                        rejectInput(readError);
+                    } else {
+                        resolveInput(readData);
                     }
                 });
             });
         };
 
-        exp.getCharStreamNext = function() {
-            return asyncWrapper(thisContext, void 0, void 0, function() {
-                var inputStr, charStreamGen;
-                return genWrapper(thisContext, function(genState) {
-                    switch (genState.stateLabel) {
+        // Export the word split iterator function
+        moduleExports.createWordSplitIterator = createWordSplitIterator;
+
+        /**
+         * Asynchronously gets a function that returns the next integer from standard input,
+         * assuming input is space-separated integers.
+         * @returns {Promise<function(): number>} A promise resolving to a function that returns the next integer.
+         */
+        moduleExports.getNextIntegerFromWords = function() {
+            return asyncAwaiterHelper(moduleContext, void 0, void 0, function() {
+                var fullInputContent, wordIteratorInstance;
+                return generatorRuntimeHelper(this, function(generatorState) {
+                    switch (generatorState.label) {
                         case 0:
-                            return [4, exp.readInput()];
+                            return [4, moduleExports.readStandardInput()]; // Await input
                         case 1:
-                            inputStr = genState.sentValue(), charStreamGen = function() {
-                                var currentStart, currentPos, extractedVal;
-                                return genWrapper(thisContext, function(genState) {
-                                    switch (genState.stateLabel) {
+                            fullInputContent = generatorState.sent();
+                            wordIteratorInstance = createWordSplitIterator(fullInputContent);
+                            // Return a function that parses the next word as an integer
+                            return [2, function() { return parseInt(wordIteratorInstance.next().value); }];
+                    }
+                });
+            });
+        };
+
+        /**
+         * Asynchronously gets a function that returns the next whitespace-separated token from standard input.
+         * This implementation handles tokens that might contain spaces if they are part of a larger "word".
+         * @returns {Promise<function(): string>} A promise resolving to a function that returns the next token.
+         */
+        moduleExports.getWhitespaceSeparatedToken = function() {
+            return asyncAwaiterHelper(moduleContext, void 0, void 0, function() {
+                var fullInputContent, tokenExtractorGenerator;
+                return generatorRuntimeHelper(this, function(generatorState) {
+                    switch (generatorState.label) {
+                        case 0:
+                            return [4, moduleExports.readStandardInput()]; // Await input
+                        case 1:
+                            fullInputContent = generatorState.sent();
+                            // Define an inner generator to extract tokens
+                            tokenExtractorGenerator = function() {
+                                var tokenStartPos, currentScanPos, extractedSegment;
+                                return generatorRuntimeHelper(this, function(genState) {
+                                    switch (genState.label) {
                                         case 0:
-                                            currentStart = -1, currentPos = 0, genState.stateLabel = 1;
+                                            tokenStartPos = -1;
+                                            currentScanPos = 0;
+                                            genState.label = 1;
                                         case 1:
-                                            return currentPos <= inputStr.itemCount ? " " !== inputStr[currentPos] && "\n" !== inputStr[currentPos] && currentPos !== inputStr.itemCount ? [3, 5] : -1 !== currentStart ? [3, 2] : [3, 6] : [3, 7];
+                                            // Loop through the input string
+                                            return (currentScanPos <= fullInputContent.length) ?
+                                                // If current char is space/newline or end of string
+                                                (fullInputContent[currentScanPos] !== " " && fullInputContent[currentScanPos] !== "\n" && currentScanPos !== fullInputContent.length) ?
+                                                    [3, 5] : // Not a separator, continue building token
+                                                    (tokenStartPos !== -1) ?
+                                                        [3, 2] : // Separator found, and a token was being built
+                                                        [3, 6] : // Separator found, but no token was being built
+                                                [3, 7]; // End of string
                                         case 2:
-                                            return extractedVal = inputStr.subStringExtract(currentStart, currentPos), currentStart = -1, [4, extractedVal];
+                                            // Extract the token
+                                            extractedSegment = fullInputContent.substring(tokenStartPos, currentScanPos);
+                                            tokenStartPos = -1; // Reset start position
+                                            return [4, extractedSegment]; // Yield the token
                                         case 3:
-                                            genState.sentValue(), genState.stateLabel = 4;
+                                            genState.sent(); // Consume yielded value
+                                            genState.label = 4;
                                         case 4:
-                                            return [3, 6];
+                                            return [3, 6]; // Continue scan
                                         case 5:
-                                            -1 === currentStart && (currentStart = currentPos), genState.stateLabel = 6;
+                                            // If not currently building a token, mark start position
+                                            if (tokenStartPos === -1) {
+                                                tokenStartPos = currentScanPos;
+                                            }
+                                            genState.label = 6;
                                         case 6:
-                                            return currentPos++, [3, 1];
+                                            currentScanPos++;
+                                            return [3, 1]; // Continue loop
                                         case 7:
-                                            return [2];
+                                            return [2]; // Generator finished
                                     }
                                 });
-                            }();
-                            return [2, function() {
-                                return charStreamGen.nextStep().yieldValue;
-                            }];
+                            }(); // Immediately invoke to get the generator object
+                            // Return a function that gets the next token from the generator
+                            return [2, function() { return tokenExtractorGenerator.next().value; }];
                     }
                 });
             });
         };
 
-        exp.getCharStreamNextInteger = function() {
-            return asyncWrapper(thisContext, void 0, void 0, function() {
-                var nextTextFn;
-                return genWrapper(thisContext, function(genState) {
-                    switch (genState.stateLabel) {
+        /**
+         * Asynchronously gets a function that returns the next whitespace-separated integer from standard input.
+         * @returns {Promise<function(): number>} A promise resolving to a function that returns the next integer.
+         */
+        moduleExports.getWhitespaceSeparatedInteger = function() {
+            return asyncAwaiterHelper(moduleContext, void 0, void 0, function() {
+                var tokenGetterFunction;
+                return generatorRuntimeHelper(this, function(generatorState) {
+                    switch (generatorState.label) {
                         case 0:
-                            return [4, exp.getCharStreamNext()];
+                            return [4, moduleExports.getWhitespaceSeparatedToken()]; // Await token getter
                         case 1:
-                            nextTextFn = genState.sentValue();
-                            return [2, function() {
-                                return parseNumeric(nextTextFn());
-                            }];
+                            tokenGetterFunction = generatorState.sent();
+                            // Return a function that gets the next token and parses it as an integer
+                            return [2, function() { return parseInt(tokenGetterFunction()); }];
                     }
                 });
             });
         };
     },
+
+    // Module 1: Node.js 'fs' module
     1: function(mod, exp) {
-        mod.expObj = systemImport("file_system");
+        mod.exports = require("fs");
     },
-    13: function(entryMod, entryExports, entryRequire) {
+
+    // Module 13: Main application logic (entry point)
+    13: function(mainModule, mainExports, mainRequire) {
         "use strict";
-        var thisContext = this;
-        var asyncFlow = thisContext && thisContext.asyncFlow || function(thisCtx, argsArr, genConstructor, genFunc) {
-            return new (genConstructor || (genConstructor = AsyncPromise))(function(resolveFn, rejectFn) {
-                function successHandler(val) {
-                    try {
-                        stepFunc(genFunc.nextStep(val));
-                    } catch (err) {
-                        rejectFn(err);
-                    }
-                }
-
-                function errorHandler(err) {
-                    try {
-                        stepFunc(genFunc.throwStep(err));
-                    } catch (err) {
-                        rejectFn(err);
-                    }
-                }
-
-                function stepFunc(result) {
-                    result.isDone ? resolveFn(result.yieldValue) : new AsyncPromise(function(res) {
-                        res(result.yieldValue);
-                    }).then(successHandler, errorHandler);
-                }
-                stepFunc((genFunc = genFunc.apply(thisCtx, argsArr || [])).nextStep());
+        // Helper for async/await transpilation (main module specific)
+        var mainAsyncAwaiter = (this && this.__awaiter) || function(thisArg, _arguments, P, generator) {
+            return new (P || (P = Promise))(function(resolve, reject) {
+                function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+                function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+                function step(result) { result.done ? resolve(result.value) : new P(function(resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+                step((generator = generator.apply(thisArg, _arguments || [])).next());
             });
         };
 
-        var asyncGen = thisContext && thisContext.asyncGen || function(thisCtx, argsArr) {
-            var genVal, genIter, genState, genFlow = {
-                stateLabel: 0,
-                sentValue: function() {
-                    if (1 & genState[0]) throw genState[1];
-                    return genState[1];
-                },
-                tryBlocks: [],
-                opCodes: []
-            };
-            return genIter = {
-                nextStep: createStep(0),
-                throwStep: createStep(1),
-                returnStep: createStep(2)
-            }, typeOf GlobalSymbol === "function" && (genIter[GlobalSymbol.iterator] = function() {
-                return this;
-            }), genIter;
-
-            function createStep(stepType) {
-                return function(payload) {
-                    return function(stepInfo) {
-                        if (genVal) throw new KindError("Generator process is active.");
-                        for (; genFlow;) try {
-                            if (genVal = 1, genIter && (genState = 2 & stepInfo[0] ? genIter.returnStep : stepInfo[0] ? genIter.throwStep || ((genState = genIter.returnStep) && genState.invoke(genIter), 0) : genIter.nextStep) && !(genState = genState.invoke(genIter, stepInfo[1])).isDone) return genState;
-                            switch (genIter = 0, genState && (stepInfo = [2 & stepInfo[0], genState.yieldValue]), stepInfo[0]) {
-                                case 0:
-                                case 1:
-                                    genState = stepInfo;
-                                    break;
-                                case 4:
-                                    return genFlow.stateLabel++, {
-                                        yieldValue: stepInfo[1],
-                                        isDone: false
-                                    };
-                                case 5:
-                                    genFlow.stateLabel++, genIter = stepInfo[1], stepInfo = [0];
-                                    continue;
-                                case 7:
-                                    stepInfo = genFlow.opCodes.pop(), genFlow.tryBlocks.pop();
-                                    continue;
-                                default:
-                                    if (!(genState = (genState = genFlow.tryBlocks).itemCount > 0 && genState[genState.itemCount - 1]) && (6 === stepInfo[0] || 2 === stepInfo[0])) {
-                                        genFlow = 0;
-                                        continue;
-                                    }
-                                    if (3 === stepInfo[0] && (!genState || stepInfo[1] > genState[0] && stepInfo[1] < genState[3])) {
-                                        genFlow.stateLabel = stepInfo[1];
-                                        break;
-                                    }
-                                    if (6 === stepInfo[0] && genFlow.stateLabel < genState[1]) {
-                                        genFlow.stateLabel = genState[1], genState = stepInfo;
-                                        break;
-                                    }
-                                    if (genState && genFlow.stateLabel < genState[2]) {
-                                        genFlow.stateLabel = genState[2], genFlow.opCodes.push(stepInfo);
-                                        break;
-                                    }
-                                    genState[2] && genFlow.opCodes.pop(), genFlow.tryBlocks.pop();
-                                    continue;
-                            }
-                            stepInfo = argsArr.invoke(thisCtx, genFlow);
-                        } catch (err) {
-                            stepInfo = [6, err], genIter = 0;
-                        } finally {
-                            genVal = genState = 0;
-                        }
-                        if (5 & stepInfo[0]) throw stepInfo[1];
-                        return {
-                            yieldValue: stepInfo[0] ? stepInfo[1] : void 0,
-                            isDone: true
-                        };
-                    };
-                }( [ stepType, payload ] );
+        // Helper for generator function transpilation (main module specific)
+        var mainGeneratorRuntime = (this && this.__generator) || function(thisArg, body) {
+            var _ = { label: 0, sent: function() { if (1 & _[0]) throw _[1]; return _[1]; }, trys: [], ops: [] }, f, y, t, g;
+            return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+            function verb(n) { return function(v) { return step([n, v]); }; }
+            function step(op) {
+                if (f) throw new TypeError("Generator is already executing.");
+                while (_) try {
+                    if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                    if (y = 0, t) op = [op[0] & 2, t.value];
+                    switch (op[0]) {
+                        case 0: case 1: t = op; break;
+                        case 4: _.label++; return { value: op[1], done: false };
+                        case 5: _.label++; y = op[1]; op = [0]; continue;
+                        case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                        default:
+                            if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                            if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                            if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                            if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                            if (t[2]) _.ops.pop();
+                            _.trys.pop();
+                            continue;
+                    }
+                    op = body.call(thisArg, _);
+                } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+                if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
             }
         };
 
-        entryExports.isESModule = true;
-        var inputUtils = entryRequire(0);
+        // Store the current module's context
+        var mainModuleContext = this;
 
-        asyncFlow(thisContext, void 0, void 0, function() {
-            var fetchNext, currentToken, charFrequencies, loopCount, currentChar, currentCount, moduloAdd, finalResult;
-            return asyncGen(thisContext, function(asyncState) {
-                const PRIME_MOD = 1000000007;
+        // Mark module as an ES module
+        mainExports.__esModule = true;
 
-                switch (asyncState.stateLabel) {
+        // Import input utility functions from module 0
+        var inputHelpers = mainRequire(0);
+
+        // Main asynchronous execution block
+        mainAsyncAwaiter(mainModuleContext, void 0, void 0, function() {
+            var tokenReaderFunc, currentTokenValue, tokenFrequencyMap, iterationCounter, currentFrequency, moduloAddition, finalProductResult;
+            return mainGeneratorRuntime(this, function(generatorState) {
+                switch (generatorState.label) {
                     case 0:
-                        return [4, inputUtils.getCharStreamNext()];
+                        // Get the function to read the next whitespace-separated token
+                        return [4, inputHelpers.getWhitespaceSeparatedToken()];
                     case 1:
-                        (fetchNext = asyncState.sentValue())();
-                        currentToken = fetchNext();
-                        charFrequencies = {};
-                        for (loopCount = 0; loopCount < currentToken.itemCount; loopCount++) {
-                            currentChar = currentToken[loopCount];
-                            currentCount = charFrequencies[currentChar] || 0;
-                            charFrequencies[currentChar] = currentCount + 1;
+                        tokenReaderFunc = generatorState.sent(); // This is the function that returns the next token
+                        tokenReaderFunc(); // Call it once to initialize or consume the first empty token if any
+                        currentTokenValue = tokenReaderFunc(); // Get the actual first token
+                        tokenFrequencyMap = {}; // Initialize a map to store token frequencies
+
+                        // Loop through the characters of the first token to count frequencies
+                        for (iterationCounter = 0; iterationCounter < currentTokenValue.length; iterationCounter++) {
+                            currentFrequency = tokenFrequencyMap[currentTokenValue[iterationCounter]] || 0;
+                            tokenFrequencyMap[currentTokenValue[iterationCounter]] = currentFrequency + 1;
                         }
-                        moduloAdd = function(value) {
-                            return (value + PRIME_MOD) % PRIME_MOD;
+
+                        // Define a helper function for modulo addition
+                        moduloAddition = function(value) {
+                            return (value + 1000000007) % 1000000007;
                         };
-                        finalResult = 1;
-                        GlobalObject.keys(charFrequencies).forEach(function(charKey) {
-                            finalResult = moduloAdd(finalResult * (1 + charFrequencies[charKey]));
+
+                        finalProductResult = 1; // Initialize product for calculation
+
+                        // Iterate over the keys (characters) in the frequency map
+                        Object.keys(tokenFrequencyMap).forEach(function(mapEntryKey) {
+                            // Calculate (1 + frequency) and multiply into the result, applying modulo
+                            finalProductResult = moduloAddition(finalProductResult * (1 + tokenFrequencyMap[mapEntryKey]));
                         });
-                        debugLog.log(moduloAdd(finalResult - 1));
-                        return [2];
+
+                        // Print the final result (modulo - 1)
+                        console.log(moduloAddition(finalProductResult - 1));
+                        return [2]; // End of main execution
                 }
             });
         });

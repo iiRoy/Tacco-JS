@@ -1,24 +1,25 @@
-const filesystemModule = require('node:fs');
-const standardEntryPath = '/dev/stdin';
+function calculateHourlyOffset(rawInputContent) {
+    const cleanedContent = rawInputContent.trim();
+    const parts = cleanedContent.split(" ");
 
-function computeResult(dataSource) {
-    let cleanedData = dataSource.replace(/^\s+|\s+$/g, '');
+    let firstValue;
+    if (parts.length > 0) {
+        firstValue = Number(parts[0]);
+    } else {
+        firstValue = undefined;
+    }
 
-    const separatorIndex = cleanedData.indexOf(' ');
-    const firstSegment = cleanedData.substring(0, separatorIndex);
-    const secondSegment = cleanedData.substring(separatorIndex + 1);
+    let secondValue;
+    if (parts.length > 1) {
+        secondValue = Number(parts[1]);
+    } else {
+        secondValue = undefined;
+    }
 
-    const initialQuantity = parseInt(firstSegment, 10);
-    const auxiliaryQuantity = parseInt(secondSegment, 10);
+    const sumOfValues = firstValue + secondValue;
+    const finalOutput = sumOfValues % 24;
 
-    let combinedTotal = initialQuantity;
-    combinedTotal += auxiliaryQuantity;
-
-    const divisorValue = 24;
-    let finalEvaluation = combinedTotal - Math.floor(combinedTotal / divisorValue) * divisorValue;
-
-    process.stdout.write(finalEvaluation.toString() + '\n');
+    console.log(finalOutput);
 }
 
-const rawTransmission = filesystemModule.readFileSync(standardEntryPath, 'utf8');
-computeResult(rawTransmission);
+calculateHourlyOffset(require('fs').readFileSync('/dev/stdin', 'utf8'));

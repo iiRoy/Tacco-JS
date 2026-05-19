@@ -1,98 +1,91 @@
-/*
- * This module processes a given input string to perform a series of array manipulations.
- * It aims to make the array sorted (either ascending or descending) based on the absolute
- * magnitudes of its maximum and minimum elements.
- */
-let ProcessInput = function (dataString) {
-  // Split the entire input string into individual lines.
-  const lines = dataString.split("\n");
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  rawData = rawData.split("\n");
 
-  // Parse the first line to get the count of elements.
-  const firstLineTokens = lines[0].split(" ");
-  let countElements = parseInt(firstLineTokens[0], 10); // Base 10 for clarity
+  // Extract the count of elements from the first line
+  let elementCount = parseInt(rawData[0].split(" ")[0]);
 
-  // Extract the string representations of array elements from the second line.
-  const elementStrings = lines[1].split(" ");
+  // Split the second line into an array of string numbers
+  const stringNumbers = rawData[1].split(" ");
 
-  // Initialize the main numeric array with the specified size, filled with zeros.
-  let numericArray = new Array(countElements).fill(0);
+  // Initialize a numeric array with the given count, filled with zeros
+  const numericArray = new Array(elementCount).fill(0);
 
-  // Initialize an empty array to store the operations performed.
-  let operationsList = [];
+  // Initialize an empty array to store operations
+  const operationList = new Array();
 
-  // Define initial boundary values for maximum and minimum.
-  // Using large negative and positive numbers to ensure any input element will be within range.
-  let maximumValue = -(10 ** 6) - 1; // A very small number
-  let minimumValue = (10 ** 6) + 1; // A very large number
+  // Initialize variables for tracking the greatest and smallest values
+  // Use extreme values to ensure any input number will be within range
+  let greatestValue = -Math.pow(10, 6) - 1; // A very small number
+  let smallestValue = Math.pow(10, 6) + 1;  // A very large number
 
-  // First pass: populate the numeric array and find the true max/min values.
-  for (let idx = 0; idx < countElements; idx++) {
-    numericArray[idx] = parseInt(elementStrings[idx], 10);
-    maximumValue = Math.max(numericArray[idx], maximumValue);
-    minimumValue = Math.min(numericArray[idx], minimumValue);
+  // Populate the numeric array and find the initial max and min values
+  for (let idx = 0; idx < elementCount; idx++) {
+    numericArray[idx] = parseInt(stringNumbers[idx]);
+    greatestValue = Math.max(numericArray[idx], greatestValue);
+    smallestValue = Math.min(numericArray[idx], smallestValue);
   }
 
-  // Determine the primary manipulation strategy based on the absolute magnitudes of max and min.
-  if (maximumValue >= Math.abs(minimumValue)) {
-    // Strategy 1: Max value has greater or equal absolute magnitude.
-    // Apply operations to make the array elements grow towards positive infinity.
-    // First, add the maximum value to other elements to amplify them.
-    for (let currentIdx = 0; currentIdx < countElements; currentIdx++) {
-      // Avoid adding to the element that already holds the maximum value itself.
-      if (numericArray.indexOf(maximumValue) !== currentIdx) {
-        // Record the operation: [source_index + 1, target_index + 1]
-        const subOperation = [numericArray.indexOf(maximumValue) + 1, currentIdx + 1];
-        operationsList.push(subOperation);
-        numericArray[currentIdx] = numericArray[currentIdx] + maximumValue;
+  // Determine the processing strategy based on the absolute values of max and min
+  if (greatestValue >= Math.abs(smallestValue)) {
+    // If the maximum value is greater than or equal to the absolute minimum
+    // Apply operations to make all elements non-decreasing
+    for (let idx = 0; idx < elementCount; idx++) {
+      // If the current element is not the one holding the maximum value
+      if (numericArray.indexOf(greatestValue) !== idx) {
+        // Record the operation: add max_value to current_element
+        const currentOperation = [numericArray.indexOf(greatestValue) + 1, idx + 1];
+        operationList.push(currentOperation);
+        numericArray[idx] = numericArray[idx] + greatestValue;
       }
     }
 
-    // Second, ensure the array is non-decreasing by adding previous elements.
-    for (let jdx = 0; jdx < countElements; jdx++) {
-      if (jdx > 0 && numericArray[jdx] < numericArray[jdx - 1]) {
-        // Record the operation: [source_index, target_index + 1]
-        const opPair = [jdx, jdx + 1];
-        operationsList.push(opPair);
-        numericArray[jdx] = numericArray[jdx - 1] + numericArray[jdx];
+    // Ensure the array is non-decreasing from left to right
+    for (let idx = 0; idx < elementCount; idx++) {
+      // If a previous element is larger than the current one
+      if (idx > 0 && numericArray[idx] < numericArray[idx - 1]) {
+        // Record the operation: add previous_element to current_element
+        const currentOperation = [idx, idx + 1];
+        operationList.push(currentOperation);
+        numericArray[idx] = numericArray[idx - 1] + numericArray[idx];
       }
     }
-  } else if (Math.abs(minimumValue) > maximumValue) {
-    // Strategy 2: Min value has greater absolute magnitude.
-    // Apply operations to make the array elements grow towards negative infinity (or decrease).
-    // First, add the minimum value to other elements to make them smaller.
-    for (let kdx = 0; kdx < countElements; kdx++) {
-      // Avoid adding to the element that already holds the minimum value itself.
-      if (numericArray.indexOf(minimumValue) !== kdx) {
-        // Record the operation: [source_index + 1, target_index + 1]
-        const opDetails = [numericArray.indexOf(minimumValue) + 1, kdx + 1];
-        operationsList.push(opDetails);
-        numericArray[kdx] = numericArray[kdx] + minimumValue;
+  } else if (Math.abs(smallestValue) > greatestValue) {
+    // If the absolute minimum value is greater than the maximum
+    // Apply operations to make all elements non-increasing
+    for (let idx = 0; idx < elementCount; idx++) {
+      // If the current element is not the one holding the minimum value
+      if (numericArray.indexOf(smallestValue) !== idx) {
+        // Record the operation: add min_value to current_element
+        const currentOperation = [numericArray.indexOf(smallestValue) + 1, idx + 1];
+        operationList.push(currentOperation);
+        numericArray[idx] = numericArray[idx] + smallestValue;
       }
     }
 
-    // Second, ensure the array is non-increasing by adding subsequent elements.
-    for (let ldx = countElements - 1; ldx >= 0; ldx--) {
-      if (ldx < countElements - 1 && numericArray[ldx] > numericArray[ldx + 1]) {
-        // Record the operation: [source_index + 2, target_index + 1]
-        const reverseOp = [ldx + 2, ldx + 1];
-        operationsList.push(reverseOp);
-        numericArray[ldx] = numericArray[ldx + 1] + numericArray[ldx];
+    // Ensure the array is non-increasing from right to left
+    for (let idx = elementCount - 1; idx >= 0; idx--) {
+      // If a next element is smaller than the current one
+      if (idx < elementCount - 1 && numericArray[idx] > numericArray[idx + 1]) {
+        // Record the operation: add next_element to current_element
+        const currentOperation = [idx + 2, idx + 1];
+        operationList.push(currentOperation);
+        numericArray[idx] = numericArray[idx + 1] + numericArray[idx];
       }
     }
   }
 
-  // Construct the final output string.
-  // Start with the total number of operations.
-  let finalOutput = operationsList.length.toString();
+  // Prepare the final output string
+  let resultOutput = operationList.length; // Start with the total number of operations
 
-  // Append each operation to the output string, formatted as "source target".
-  for (let mdx = 0; mdx < operationsList.length; mdx++) {
-    finalOutput += "\n" + operationsList[mdx][0] + " " + operationsList[mdx][1];
+  // Append each operation to the output string, formatted as "source_index target_index"
+  for (let idx = 0; idx < operationList.length; idx++) {
+    resultOutput += "\n" + operationList[idx][0] + " " + operationList[idx][1];
   }
 
-  // Print the final result to the console.
-  console.log(finalOutput);
-};
+  // Print the final result to the console
+  console.log('%s', resultOutput);
+}
 
-// Invoke the main processing function with data read from standard input.
-ProcessInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

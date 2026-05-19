@@ -1,34 +1,34 @@
-const dataAcquisition = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-const mathOperations = {
-  '+': (termA, termB) => termB + termA,
-  '-': (termA, termB) => termB - termA,
-  '*': (termA, termB) => termB * termA,
-  '/': (termA, termB) => termB / termA
+const operationMap = {
+    '+': (operandA, operandB) => operandB + operandA,
+    '-': (operandA, operandB) => operandB - operandA,
+    '*': (operandA, operandB) => operandB * operandA,
+    '/': (operandA, operandB) => operandB / operandA
 };
 
-const processLine = (inputLine) => {
-  const components = inputLine.split(/\s/).filter(Boolean);
+const evaluateExpression = (expressionString) => {
+    const symbolSequence = expressionString.split(/\s/);
 
-  const evaluationPile = components.reduce((currentPile, currentComponent) => {
-    if (mathOperations[currentComponent]) {
-      const operand1 = currentPile.pop();
-      const operand2 = currentPile.pop();
-      const computationResult = mathOperations[currentComponent](operand1, operand2);
-      currentPile.push(computationResult);
-    } else {
-      const parsedValue = parseFloat(currentComponent);
-      currentPile.push(isNaN(parsedValue) ? 0 : parsedValue);
-    }
-    return currentPile;
-  }, []);
+    const calculationStack = symbolSequence.reduce((currentStackState, currentSymbolToken) => {
+        if (operationMap[currentSymbolToken]) {
+            const firstPopped = currentStackState.pop();
+            const secondPopped = currentStackState.pop();
+            const operationResult = operationMap[currentSymbolToken](firstPopped, secondPopped);
+            currentStackState.push(operationResult);
+        } else {
+            if (isNaN(currentSymbolToken)) {
+                currentStackState.push(0);
+            } else {
+                currentStackState.push(parseFloat(currentSymbolToken));
+            }
+        }
+        return currentStackState;
+    }, []);
 
-  return evaluationPile[0];
+    return calculationStack[0].toFixed(6);
 };
 
-dataAcquisition.split(/\n/)
-  .filter(Boolean)
-  .forEach(expressionString => {
-    const finalOutcome = processLine(expressionString);
-    process.stdout.write(finalOutcome.toFixed(6) + '\n');
-  });
+inputDataLines.forEach(singleLine => {
+    console.log(evaluateExpression(singleLine));
+});

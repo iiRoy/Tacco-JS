@@ -1,164 +1,142 @@
-// Module for processing text input from standard stream
-var inputProcessor = require('readline').createInterface(
-  {
-    input: process.stdin,
-    output: process.stdout
-  }
-);
-
-var dataStream;
-var capturedLines = [];
-
-inputProcessor.on('line', function(currentLineText) {
-  capturedLines.push(currentLineText);
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-inputProcessor.on('close', function() {
-  dataStream = initializeStream(capturedLines);
-  console.error('\n'); // Emit a newline for console clarity
+let dataHandler;
+const inputLines = [];
 
-  var startTimeStamp = Date.now();
-  executeAlgorithm();
-  var elapsedTime = Date.now() - startTimeStamp;
-
-  logDiagnostic('Execution duration: ' + elapsedTime + 'ms');
-  logDiagnostic('Memory consumption: ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-// Utility function for creating deep copies or set duplicates
-function duplicateEntity(sourceObject) {
-  return (sourceObject instanceof Set)
-    ? new Set(Array.from(sourceObject))
-    : JSON.parse(JSON.stringify(sourceObject));
+inputReader.on('close', function(){
+  dataHandler = initializeInput(inputLines);
+  console.error('\n');
+  const startTime = Date.now();
+  executeMainLogic();
+  const elapsedTime = Date.now() - startTime;
+  logDebugMessage('time : ' + elapsedTime + 'ms');
+  logDebugMessage('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+});
+
+function createDeepCopy(sourceObject){
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
 
-function extractInteger()        { return transformValue(retrieveNextElement(), 1); }
-function extractStringArray()    { return transformValue(retrieveNextElement(), 2); }
-function extractIntegerArray()   { return transformValue(retrieveNextElement(), 4); }
-function extractCharacterArray() { return transformValue(retrieveNextElement(), 6); }
+function getNextInteger(){
+  return convertInput(retrieveNextItem(), 1);
+}
 
-function retrieveNextElement() { return dataStream.retrieveNextElement(); }
-function hasMoreElements()     { return dataStream.hasMoreElements(); }
+function getNextStringArray(){
+  return convertInput(retrieveNextItem(), 2);
+}
 
-function initializeStream(inputCollection) {
+function getNextIntegerArray(){
+  return convertInput(retrieveNextItem(), 4);
+}
+
+function getNextCharacterArray(){
+  return convertInput(retrieveNextItem(), 6);
+}
+
+function retrieveNextItem(){
+  return dataHandler.retrieveNextItem();
+}
+
+function hasMoreItems(){
+  return dataHandler.hasMoreItems();
+}
+
+function initializeInput(inputData){
   return {
-    sourceData: inputCollection,
-    currentPosition: 0,
-    maximumCount: inputCollection.length,
-
-    hasMoreElements: function() {
-      return (this.currentPosition < this.maximumCount);
+    sourceList : inputData,
+    currentIndex : 0,
+    maximumLength : inputData.length,
+    hasMoreItems : function(){
+      return (this.currentIndex < this.maximumLength);
     },
-
-    retrieveNextElement: function() {
-      if (this.hasMoreElements()) {
-        return this.sourceData[this.currentPosition++];
+    retrieveNextItem : function(){
+      if(this.hasMoreItems()){
+        return this.sourceList[this.currentIndex++];
       } else {
-        throw new Error('InputBufferExhausted: No further data available for processing.');
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-function displayResult(messageContent) {
-  console.log(messageContent);
+function printOutput(message){
+  console.log(message);
 }
 
-function logDiagnostic(diagnosticMessage) {
-  console.error('DIAGNOSTIC_INFO: ' + require('util').inspect(diagnosticMessage, false, null));
+function logDebugMessage(debugInfo){
+  console.error('debug:' + require('util').inspect(debugInfo, false, null));
 }
 
-// This function converts an input value based on a specified conversionType.
-// Possible conversion types:
-// 1: Parse input as an integer.
-// 2: Split input string by spaces into an array.
-// 4: Split input string by spaces and convert elements to numbers.
-// 6: Split input string into an array of characters.
-// 7: Split input string into characters and convert them to numbers.
-// 8: Join array elements with spaces.
-// 9: Join array elements with newlines.
-// 0: Join array elements without any separator.
-// Default: Return input as is.
-function transformValue(inputValue, conversionType) {
+function convertInput(itemToConvert, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue, 10); // Added radix for best practice
-      case 2:
-        return inputValue.split(' ');
-      case 4:
-        return inputValue.split(' ').map(Number);
-      case 6:
-        return inputValue.split('');
-      case 7:
-        return inputValue.split('').map(Number);
-      case 8:
-        return inputValue.join(' ');
-      case 9:
-        return inputValue.join('\n');
-      case 0:
-        return inputValue.join('');
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 1: return parseInt(itemToConvert);
+      case 2: return itemToConvert.split(' ');
+      case 4: return itemToConvert.split(' ').map(Number);
+      case 6: return itemToConvert.split('');
+      case 7: return itemToConvert.split('').map(Number);
+      case 8: return itemToConvert.join(' ');
+      case 9: return itemToConvert.join('\n');
+      case 0: return itemToConvert.join('');
+      default: return itemToConvert;
     }
-  } catch (operationError) {
-    // In case of conversion failure, return original value
-    return inputValue;
+  } catch(error) {
+    return itemToConvert;
   }
 }
 
-// Main processing routine for the problem
-function executeAlgorithm() {
-  var dimension = extractInteger();
-  var initialSequence = extractIntegerArray();
+function executeMainLogic(){
+  const dimensionSize = getNextInteger();
+  const initialSequence = getNextIntegerArray();
+  const resultGrid = new Array(dimensionSize * dimensionSize);
 
-  // Initialize a grid of size dimension*dimension
-  var resultGrid = new Array(dimension * dimension);
-
-  // First initialization pass
-  for (var outerLoopVar = 0; outerLoopVar < dimension; outerLoopVar++) {
-    resultGrid[initialSequence[outerLoopVar] - 1] = outerLoopVar + 1;
+  for(let outerLoopIdx = 0; outerLoopIdx < dimensionSize; outerLoopIdx++){
+    resultGrid[initialSequence[outerLoopIdx] - 1] = outerLoopIdx + 1;
   }
 
-  // Second pass: Fill in missing values and check for conflicts
-  for (var currentVal = 2; currentVal <= dimension; currentVal++) {
-    var remainingSlots = currentVal - 1;
-    for (var gridIndex = 0; gridIndex < dimension * dimension; gridIndex++) {
-      if (resultGrid[gridIndex] === null) { // Using strict equality for null check
-        remainingSlots--;
-        resultGrid[gridIndex] = currentVal;
-        if (remainingSlots === 0) {
-          break; // All required slots for currentVal filled
+  for(let currentVal = 2; currentVal <= dimensionSize; currentVal++){
+    let currentCount = currentVal - 1;
+    for(let innerLoopIdx = 0; innerLoopIdx < dimensionSize * dimensionSize; innerLoopIdx++){
+      if(resultGrid[innerLoopIdx] === null || resultGrid[innerLoopIdx] === undefined){
+        currentCount--;
+        resultGrid[innerLoopIdx] = currentVal;
+        if(currentCount === 0){
+          break;
         }
-      } else if (resultGrid[gridIndex] === currentVal) {
-        displayResult("No"); // Conflict found
+      } else if(resultGrid[innerLoopIdx] === currentVal){
+        printOutput("No");
         return;
       }
     }
   }
 
-  // Third pass: Another filling phase based on initial sequence
-  for (var iterationIdx = 1; iterationIdx < dimension; iterationIdx++) {
-    var neededCount = dimension - iterationIdx;
-    for (var positionOffset = initialSequence[iterationIdx - 1]; positionOffset < dimension * dimension; positionOffset++) {
-      if (resultGrid[positionOffset] === null) {
-        neededCount--;
-        resultGrid[positionOffset] = iterationIdx;
-        if (neededCount === 0) {
-          break; // All needed slots for iterationIdx filled
+  for(let currentVal = 1; currentVal < dimensionSize; currentVal++){
+    let currentCount = dimensionSize - currentVal;
+    for(let innerLoopIdx = initialSequence[currentVal - 1]; innerLoopIdx < dimensionSize * dimensionSize; innerLoopIdx++){
+      if(resultGrid[innerLoopIdx] === null || resultGrid[innerLoopIdx] === undefined){
+        currentCount--;
+        resultGrid[innerLoopIdx] = currentVal;
+        if(currentCount === 0){
+          break;
         }
       }
     }
   }
 
-  // Final check for any unfilled slots
-  for (var finalCheckIdx = 0; finalCheckIdx < dimension * dimension; finalCheckIdx++) {
-    if (resultGrid[finalCheckIdx] === null) {
-      displayResult("No"); // Unfilled slot found
+  for(let outerLoopIdx = 0; outerLoopIdx < dimensionSize * dimensionSize; outerLoopIdx++){
+    if(resultGrid[outerLoopIdx] === null || resultGrid[outerLoopIdx] === undefined){
+      printOutput("No");
       return;
     }
   }
 
-  displayResult("Yes"); // All conditions met
-  displayResult(transformValue(resultGrid, 8)); // Output the grid as a space-separated string
+  printOutput("Yes");
+  printOutput(convertInput(resultGrid, 8));
 }

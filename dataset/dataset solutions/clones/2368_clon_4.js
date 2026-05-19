@@ -1,23 +1,16 @@
-const computeSolution = (incomingText) => {
-  const sourceLines = incomingText.split("\n");
-  const targetNumericValue = Number(sourceLines[0]);
+const determineOptimalPrice = (inputDataLines) => {
+  const targetPrice = Number(inputDataLines[0]);
 
-  const locateGreatestMatch = (currentTestValue) => {
-    if (currentTestValue < 1) {
-      return ":(";
-    }
+  const potentialCandidates = Array.from(
+    { length: Math.max(0, targetPrice - 1) },
+    (_, index) => index + 1
+  );
 
-    if (Math.floor(currentTestValue * 1.08) === targetNumericValue) {
-      return currentTestValue;
-    }
+  const matchingItem = potentialCandidates.find(
+    (currentValue) => Math.trunc(currentValue * 1.08) === targetPrice
+  );
 
-    return locateGreatestMatch(currentTestValue - 1);
-  };
-
-  const finalOutcome = locateGreatestMatch(targetNumericValue - 1);
-  return finalOutcome;
+  return matchingItem !== undefined ? matchingItem : ":(";
 };
 
-const acquireSourceData = () => require('node:fs').readFileSync(process.stdin.fd, 'utf8');
-const processedResult = computeSolution(acquireSourceData());
-console.log(processedResult);
+console.log(determineOptimalPrice(require('fs').readFileSync('/dev/stdin', 'utf8').split("\n")));

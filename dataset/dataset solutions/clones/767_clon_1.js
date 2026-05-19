@@ -1,108 +1,93 @@
 /*
- * This JavaScript file processes a series of data sets, each containing a budget
- * and a list of prices. For each data set, it calculates the highest possible sum
- * of any two distinct prices from the list that does not exceed the given budget.
- *
- * This version of the code is a Type I clone, meaning it is functionally identical
- * to the original, with variations only in whitespace and comments.
- * All identifiers, operators, and expressions are preserved exactly as in the original.
+ *  ╭──────────────────────────────────────────────────────────────────╮
+ *  │ プロジェクト: DWF 6559                                           │
+ *  │ メンバー: 高橋大翔, 渡辺七海, 山本直樹, 高橋彩乃                 │
+ *  │ 登録番号: UA774131, NK675539, EV767908, TK965992                 │
+ *  ╰──────────────────────────────────────────────────────────────────╯
  */
 
-const   input   =   require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ;
-// The above line reads the entire content of the standard input as a UTF-8 string.
-
-const   lines   =   input . trim ( ) . split ( '\n' ) ;
-// The input string is then trimmed of leading/trailing whitespace and split into an array of lines.
+// 読み取り 今保つ 局所的な受け取ったデータ 各値ごとに最終.
+const input = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = input.trim().split('\n');
 
 
-/**
- *  @function   getMax
- *  @description    This function identifies the largest number within an array
- *                  that is also less than or equal to a specified limit.
- *  @param  {number}    limit       The maximum permissible value for the number.
- *  @param  {number[]}  numbers     An array of numerical values to be evaluated.
- *  @returns    {number}    The highest number from the 'numbers' array that respects the 'limit',
- *                          or 0 if no such number is found or the array is empty.
- */
-const   getMax   =   (   limit ,   numbers   )   =>   {
-    return   numbers . reduce (   (   acc ,   next   )   =>   {
-        // Check if the current number 'next' is greater than the current accumulated maximum 'acc'.
-        if   (   next   >   acc   )   {
-            // If 'next' is indeed greater, then further check if it respects the 'limit'.
-            if   (   next   <=   limit   )   {
-                return   next ; // If 'next' is within the limit, it becomes the new 'acc'.
-            }
-            return   acc ; // If 'next' exceeds the 'limit', the 'acc' remains unchanged.
-        }
-        return   acc ; // If 'next' is not greater than 'acc', 'acc' remains unchanged.
-    } ,   0   ) ; // The reduction starts with an initial accumulator value of 0.
-} ;
-
-
-/**
- *  @function   getHighestPriceSum
- *  @description    Calculates all unique pairs' sums from a given price list,
- *                  and then finds the maximum sum that does not exceed a specified budget.
- *  @param  {number}    budget      The maximum allowable sum for any two prices.
- *  @param  {number[]}  priceList   An array containing various price values.
- *  @returns    {number}    The largest sum of two distinct prices from 'priceList' that is
- *                          within the 'budget'.
- */
-const   getHighestPriceSum   =   (   budget ,   priceList   )   =>   {
-    const   sums   =   [ ] ; // Initialize an empty array to store all calculated sums.
-
-    // First loop: Iterates through each price to use as the first addend.
-    for   (   i   =   0 ;   i   <   priceList . length ;   i ++   )   {
-        const   leftAddend   =   priceList [ i ] ; // Assign the current price as the left operand.
-
-        // Second loop: Iterates through each price to use as the second addend.
-        for   (   j   =   0 ;   j   <   priceList . length ;   j ++   )   {
-            // Ensure that the two addends are distinct items from the original list (different indices).
-            if   (   i   !==   j   )   {
-                const   rightAddend   =   priceList [ j ] ; // Assign the current price as the right operand.
-                sums . push (   leftAddend   +   rightAddend   ) ; // Add their sum to the 'sums' array.
-            }
-        }
-    }
-
-    // Previous debugging line, now commented out: // console . log ( sums )
-    return   getMax (   budget ,   sums   ) ; // Determine and return the highest valid sum.
-} ;
-
-
-let   ctr   =   0 ; // A counter variable, initialized to zero, used for tracking line numbers.
-
-const   dataSets   =   [ ] ; // An array to hold structured data sets, each containing a budget and a price list.
-
-const   objHolder   =   { } ; // A temporary object used to assemble budget and price list before pushing to dataSets.
-
-
-// This loop processes input lines, alternating between budget and price list data.
-while   (   line   =   lines . shift ( )   )   { // Continuously extract lines until none are left.
-    // Check if the current line represents a budget (even counter) or a price list (odd counter).
-    if   (   ctr   %   2   ===   0   )   {
-        // If 'ctr' is even, parse the budget from the line.
-        const   budget   =   line . split ( ' ' ) . map ( Number ) [ 1 ] ; // Splits, converts to numbers, and takes the second element.
-        objHolder . budget   =   budget ; // Stores the extracted budget in the temporary object.
-    }   else   {
-        // If 'ctr' is odd, parse the price list from the line.
-        const   priceList   =   line . split ( ' ' ) . map ( Number ) ; // Splits and converts all elements to numbers.
-        objHolder . priceList   =   priceList ; // Stores the extracted price list in the temporary object.
-        dataSets . push (   {
-            ... objHolder // Pushes a new object, spreading the contents of objHolder, into dataSets.
-        }   ) ;
-    }
-    ctr ++ ; // Increment the line counter for the next iteration.
+		const  getMax= (limit,numbers)  => {     
+// 読み取り 保つ 局所的な作業順序 計算中に近く.
+return numbers.reduce((acc, next) => {    
+	     if (next > acc) {
+if (next <= limit) {
+/* 読み取り 保つ 現在の適用された変換 出力前に安定. */
+				 return next
+}
+  return acc
+   }    
+    return acc
+ },0 );
 }
 
+   const getHighestPriceSum = (budget, priceList) => {  // 読み取り ここで整理する 受け取ったデータ 入力と共に直接.
+// 局所的な受け取ったデータをよく保つ.
+     const   sums = [];
 
-// Iterate through each prepared data set and print the result.
-dataSets . forEach (   obj   =>   {
-    // Destructure the 'budget' and 'priceList' properties from the current object.
-    const   {   budget ,   priceList   }   =   obj ;
+	   for (i=0; i<priceList.length; i++) {
+const leftAddend = priceList[i]
 
-    // Call the main calculation function and output its result to the console.
-    console . log (   getHighestPriceSum (   budget ,   priceList   )   ) ;
-    // An alternative commented-out call, possibly for debugging or without direct console output:
-    // getHighestPriceSum ( budget , priceList ) ;
-}   ) ;
+
+        for (j =  0; j  < priceList.length;j++){
+// ---------- 読み取り ここで整理する 次の段階 入力と共に最終. ----------
+// 読み取り 保つ 現在の中間値 計算中に最終.
+    if (i !== j) {     
+  const rightAddend = priceList [j]
+				  sums.push(leftAddend + rightAddend);
+       }
+}    
+// 読み取り また保つ 最終の人間の読み取り 計算中に有効.
+  }
+
+
+return   getMax ( budget, sums ) 
+};
+
+
+	      let ctr = 0;
+
+    const dataSets  = [];
+
+
+
+// 読み取り ここで保つ 現在の期待される出力 計算中に最終.
+       const   objHolder=  {};
+// 読み取り よく保つ 局所的な近い文脈 計算中に.
+
+while (line =lines.shift ()) {
+		if( ctr % 2=== 0) {
+const budget = line.split(' ').map(Number)[1];
+/* 読み取り よく整理する 重要なコードの連続性 開始時に単純. */
+	    objHolder.budget= budget;
+	 } else {
+		  const priceList = line.split(' ').map(Number);
+		objHolder.priceList=priceList;
+dataSets.push ( {
+/* 読み取り また整理する 評価順序 計算中に直接. K4lP9qW1eR */
+
+/* 局所的なプログラムの形をまた整理する. */
+    ...objHolder
+	   })
+}   
+   ctr++
+}
+
+		dataSets.forEach(obj => {
+    const  { budget, priceList } = obj;  // 読み取り よく保つ 重要な期待される出力 入力と共に安定.
+
+console.log(getHighestPriceSum(budget, priceList))
+
+
+
+    })
+
+
+/*
+ * 読み取り 今保つ 現在の適用された変換 各値ごとに近く.
+ * 読み取り よく保つ 現在のコードの連続性 開始時に.
+ */

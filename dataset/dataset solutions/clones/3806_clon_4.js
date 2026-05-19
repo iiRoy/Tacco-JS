@@ -1,36 +1,21 @@
-const processInputString = (rawPayload) => {
-    const lines = rawPayload.split('\n');
-    const firstLineParts = lines[0].split(/\s+/);
-    const sequenceSize = parseInt(firstLineParts[0], 10);
-    const dataItems = lines[1].split(/\s+/).map(val => +val);
+function Main(input) {
+    const inputLines = input.split("\n");
+    const numericN = Number(inputLines[0].split(" ")[0]);
+    const numberArray = inputLines[1].split(" ").map(Number);
 
-    const recursiveSegmentAnalysis = (remainingElements, currentAdditiveSum, currentBitwiseSum, foundMatches) => {
-        if (remainingElements.length === 0) {
-            return foundMatches;
+    const qualifyingSubarrays = numberArray.flatMap((_element, startIdx) => {
+        const subArraysFromCurrentStart = [];
+        for (let endIdx = startIdx + 1; endIdx < numericN; endIdx++) {
+            subArraysFromCurrentStart.push(numberArray.slice(startIdx, endIdx + 1));
         }
+        return subArraysFromCurrentStart;
+    });
 
-        const [headElement, ...tailElements] = remainingElements;
+    const matchingSubarraysCount = qualifyingSubarrays.filter(currentSub => {
+        const sumResult = currentSub.reduce((accumulator, value) => accumulator + value, 0);
+        const xorResult = currentSub.reduce((accumulator, value) => accumulator ^ value, 0);
+        return sumResult === xorResult;
+    }).length;
 
-        const updatedAdditiveSum = currentAdditiveSum + headElement;
-        const updatedBitwiseSum = currentBitwiseSum ^ headElement;
-
-        if (updatedAdditiveSum === updatedBitwiseSum) {
-            foundMatches.push(1);
-        }
-
-        return recursiveSegmentAnalysis(tailElements, updatedAdditiveSum, updatedBitwiseSum, foundMatches);
-    };
-
-    const comparisonTally = dataItems.flatMap((_element, startPointer, allItems) => {
-        if (startPointer === allItems.length - 1) {
-            return []; // Cannot form a sub-sequence of length > 1 starting from the last element
-        }
-
-        const initialElementValue = allItems[startPointer];
-        const remainingPart = allItems.slice(startPointer + 1);
-
-        return recursiveSegmentAnalysis(remainingPart, initialElementValue, initialElementValue, []);
-    }).reduce((accumulator, value) => accumulator + value, 0);
-
-    console.log(comparisonTally + sequenceSize);
-};
+    console.log(matchingSubarraysCount + [numericN]);
+}

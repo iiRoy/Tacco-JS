@@ -1,112 +1,117 @@
-const acquireData = (rawText) => {
-  let lineSegments = rawText.trim().split("\n");
-  let currentLineIndex = 0;
-  let currentLineTokenStorage = [];
+function inputProcessor(rawInput) {
+    const lines = rawInput.trim().split("\n");
+    let currentLineIndex = 0;
 
-  const ensureTokenBufferReady = () => {
-    while (currentLineTokenStorage.length === 0 && currentLineIndex < lineSegments.length) {
-      currentLineTokenStorage = lineSegments[currentLineIndex].split(" ").reverse();
-      if (currentLineTokenStorage.length === 0) { // If line was empty, advance to next
-        currentLineIndex++;
-      }
+    const reader = {
+        getNextValue: function(asString) {
+            if (currentLineIndex >= lines.length) return undefined;
+
+            let lineContent = lines[currentLineIndex];
+            if (typeof lineContent === "string") {
+                lines[currentLineIndex] = lineContent.split(" ").reverse();
+                lineContent = lines[currentLineIndex];
+            }
+
+            const extracted = lineContent.pop();
+            if (lineContent.length === 0) {
+                currentLineIndex++;
+            }
+            return asString ? extracted : +extracted;
+        },
+
+        getEntireLine: function(asString) {
+            if (currentLineIndex >= lines.length) return undefined;
+
+            const line = lines[currentLineIndex];
+            currentLineIndex++;
+            const parts = line.split(" ");
+            return asString ? parts : parts.map(Number);
+        },
+
+        getMatrixData: function(rowCount, asString) {
+            const collectedRows = [];
+            for (let k = 0; k < rowCount; k++) {
+                if (currentLineIndex + k >= lines.length) break;
+                const line = lines[currentLineIndex + k];
+                collectedRows.push(line.split(" "));
+            }
+            currentLineIndex += rowCount;
+            return asString ? collectedRows : collectedRows.map(row => row.map(Number));
+        },
+
+        getRawLines: function(count, asString) {
+            const collectedLines = [];
+            for (let k = 0; k < count; k++) {
+                if (currentLineIndex + k >= lines.length) break;
+                const line = lines[currentLineIndex + k];
+                collectedLines.push(line);
+            }
+            currentLineIndex += count;
+            return asString ? collectedLines : collectedLines.map(Number);
+        }
+    };
+    return reader;
+}
+function createZeroMatrix(heightDim, widthDim) {
+    const matrix = [];
+    for (let r = 0; r < heightDim; r++) {
+        const row = Array.from({ length: widthDim }, () => 0);
+        matrix.push(row);
     }
-  };
+    return matrix;
+}
+var inputReader = inputProcessor(require("fs").readFileSync("/dev/stdin","utf8"));
+var moduloConstant = 1e9+7;
 
-  ensureTokenBufferReady(); // Initialize for the first line
+console.log(computeResult());
 
-  return {
-    extractValue: (returnAsString) => {
-      ensureTokenBufferReady();
-      if (currentLineTokenStorage.length === 0) {
-        return undefined; // No more tokens
-      }
-      const extractedVal = currentLineTokenStorage.pop();
-      if (currentLineTokenStorage.length === 0) { // If current line is exhausted after pop, advance index for next call
-        currentLineIndex++;
-        ensureTokenBufferReady(); // Pre-fill for next `extractValue` call
-      }
-      return returnAsString ? extractedVal : Number(extractedVal);
-    },
-    retrieveLine: (returnAsString) => {
-      if (currentLineIndex >= lineSegments.length) return undefined;
-      const lineContent = lineSegments[currentLineIndex++];
-      currentLineTokenStorage = []; // Clear token storage as this method consumes a full line
-      ensureTokenBufferReady(); // Prepare for next `extractValue` call
-      const splitTokens = lineContent.split(" ");
-      return returnAsString ? splitTokens : splitTokens.map(Number);
-    },
-    fetchLines: (count, returnAsString) => {
-      const collectedData = [];
-      for (let i = 0; i < count && currentLineIndex < lineSegments.length; i++) {
-        collectedData.push(lineSegments[currentLineIndex++].split(" "));
-      }
-      currentLineTokenStorage = []; // Clear token storage
-      ensureTokenBufferReady();
-      return returnAsString ? collectedData : collectedData.map(l => l.map(Number));
-    },
-    obtainSegments: (count, returnAsString) => {
-      const collectedData = [];
-      for (let i = 0; i < count && currentLineIndex < lineSegments.length; i++) {
-        collectedData.push(lineSegments[currentLineIndex++]);
-      }
-      currentLineTokenStorage = []; // Clear token storage
-      ensureTokenBufferReady();
-      return returnAsString ? collectedData : collectedData.map(Number);
-    }
-  };
-};
-
-const generateGrid = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
-
-const primeConstant = 1000000007;
-
-function orchestrateProcess() {
-  const dataReader = acquireData(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-  const totalLength = dataReader.extractValue();
-  const sequenceA = dataReader.extractValue(true);
-  const sequenceB = dataReader.extractValue(true);
-
-  let currentResult, wasPreviousBlockVertical, currentIndex;
-
-  if (sequenceA[0] !== sequenceB[0]) {
-    currentResult = 6;
-    wasPreviousBlockVertical = true;
-    currentIndex = 2; // Vertical block covers 2 positions
-  } else {
-    currentResult = 3;
-    wasPreviousBlockVertical = false;
-    currentIndex = 1; // Horizontal block covers 1 position
-  }
-
-  const calculateCombinations = (pos, prevVert, currentProd) => {
-    if (pos >= totalLength) {
-      return currentProd;
+function calculateCombinations(currentPosition, previousWasDifferent, currentProduct, totalSize, stringA, stringB, modulus) {
+    if (currentPosition >= totalSize) {
+        return currentProduct;
     }
 
-    let nextProd = currentProd;
-    let nextPos = pos;
-    let nextPrevVertState;
+    const currentCharsDiffer = (stringA[currentPosition] !== stringB[currentPosition]);
+    let nextProduct = currentProduct;
+    let nextPosition = currentPosition + 1;
+    let nextPreviousWasDifferent;
 
-    if (sequenceA[pos] === sequenceB[pos]) { // Current segment is horizontal
-      if (!prevVert) { // Previous was also horizontal
-        nextProd = (nextProd * 2) % primeConstant;
-      }
-      nextPos++;
-      nextPrevVertState = false;
-    } else { // Current segment is vertical
-      nextPos += 2; // Vertical segment covers two positions
-      if (prevVert) { // Previous was vertical
-        nextProd = (nextProd * 3) % primeConstant;
-      } else { // Previous was horizontal
-        nextProd = (nextProd * 2) % primeConstant;
-      }
-      nextPrevVertState = true;
+    if (currentCharsDiffer) {
+        nextPosition++;
+        if (previousWasDifferent) {
+            nextProduct = (nextProduct * 3) % modulus;
+        } else {
+            nextProduct = (nextProduct * 2) % modulus;
+        }
+        nextPreviousWasDifferent = true;
+    } else {
+        if (!previousWasDifferent) {
+            nextProduct = (nextProduct * 2) % modulus;
+        }
+        nextPreviousWasDifferent = false;
     }
-    return calculateCombinations(nextPos, nextPrevVertState, nextProd);
-  };
 
-  return calculateCombinations(currentIndex, wasPreviousBlockVertical, currentResult);
+    return calculateCombinations(nextPosition, nextPreviousWasDifferent, nextProduct, totalSize, stringA, stringB, modulus);
 }
 
-console.log(orchestrateProcess());
+function computeResult(){
+    const totalLength = inputReader.getNextValue();
+    const firstString = inputReader.getNextValue(true);
+    const secondString = inputReader.getNextValue(true);
+
+    if (totalLength === 0) {
+        return 3;
+    }
+
+    let initialCount, initialLastSegmentDifferent, initialIndex;
+
+    if (firstString[0] !== secondString[0]) {
+        initialCount = 6;
+        initialLastSegmentDifferent = true;
+        initialIndex = 2;
+    } else {
+        initialCount = 3;
+        initialLastSegmentDifferent = false;
+        initialIndex = 1;
+    }
+    return calculateCombinations(initialIndex, initialLastSegmentDifferent, initialCount, totalLength, firstString, secondString, moduloConstant);
+}

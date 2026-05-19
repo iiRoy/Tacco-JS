@@ -1,59 +1,85 @@
-function dataProcessor(sourceContent) {
-    const allLines = sourceContent.split('\n');
+function processInput(inputData) {
+    const inputLines = inputData.split('\n');
 
-    const [mapRows, mapCols, stepIncrement] = allLines[0].split(' ').map(Number);
+    const [hStr, wStr, sStr] = inputLines[0].split(' ');
+    const h = Number(hStr);
+    const w = Number(wStr);
+    const s = Number(sStr);
 
-    const valuePositionMap = new Map();
-    for (let rIdx = 1; rIdx <= mapRows; rIdx++) {
-        const rowData = allLines[rIdx].split(' ').map(Number);
-        rowData.forEach((cellVal, cIdx) => {
-            valuePositionMap.set(cellVal, [rIdx, cIdx + 1]);
+    const coordMap = new Map();
+    let maxGridValue = 0;
+
+    for (let r = 1; r <= h; r++) {
+        inputLines[r].split(' ').forEach((valStr, c) => {
+            const numVal = Number(valStr);
+            coordMap.set(numVal, { r: r, c: c + 1 });
+            if (numVal > maxGridValue) {
+                maxGridValue = numVal;
+            }
         });
     }
 
-    const queryEntryCount = Number(allLines[mapRows + 1]);
-    const queryEntries = [];
-    for (let qIdx = 1; qIdx <= queryEntryCount; qIdx++) {
-        const [startNode, endNode] = allLines[mapRows + 1 + qIdx].split(' ').map(Number);
-        queryEntries.push({ begin: startNode, finish: endNode });
+    const examCount = Number(inputLines[h + 1]);
+    const queryList = [];
+    let maxQueryEndValue = 0;
+
+    for (let i = 0; i < examCount; i++) {
+        const [startStr, endStr] = inputLines[h + 2 + i].split(' ');
+        const initialVal = Number(startStr);
+        const finalVal = Number(endStr);
+        queryList.push({ initial: initialVal, final: finalVal });
+        if (finalVal > maxQueryEndValue) {
+            maxQueryEndValue = finalVal;
+        }
     }
 
-    const pathDistanceCache = new Map();
+    const overallMaxRelevantValue = Math.max(maxGridValue, maxQueryEndValue);
 
-    const calculateSegmentManhattan = (valA, valB) => {
-        const [xA, yA] = valuePositionMap.get(valA);
-        const [xB, yB] = valuePositionMap.get(valB);
-        return Math.abs(xB - xA) + Math.abs(yB - yA);
-    };
+    const stepDistances = new Map(); // Stores distance from N to N+s
+    for (let currentNum = 1; currentNum <= overallMaxRelevantValue - s; currentNum++) {
+        if (coordMap.has(currentNum) && coordMap.has(currentNum + s)) {
+            const p1 = coordMap.get(currentNum);
+            const p2 = coordMap.get(currentNum + s);
+            const dist = Math.abs(p2.r - p1.r) + Math.abs(p2.c - p1.c);
+            stepDistances.set(currentNum, dist);
+        }
+    }
 
-    const resolveAccumulatedPath = (initialPoint, currentEndpoint) => {
-        if (initialPoint === currentEndpoint) {
-            return 0;
+    const pathMemo = new Map(); // Stores Map<start, Map<end, cumulativeDistance>>
+    const resultCollector = [];
+
+    for (const { initial: initialVal, final: finalVal } of queryList) {
+        if (!pathMemo.has(initialVal)) {
+            pathMemo.set(initialVal, new Map());
+        }
+        const innerMemo = pathMemo.get(initialVal);
+
+        if (innerMemo.has(finalVal)) {
+            resultCollector.push(innerMemo.get(finalVal));
+            continue;
         }
 
-        const cacheIdentifier = `${initialPoint}-${currentEndpoint}`;
-        if (pathDistanceCache.has(cacheIdentifier)) {
-            return pathDistanceCache.get(cacheIdentifier);
+        let currentAccumulatedDistance = 0;
+        let currentIterVal = initialVal;
+
+        while (currentIterVal < finalVal) {
+            const nextIterVal = currentIterVal + s;
+
+            if (innerMemo.has(nextIterVal)) {
+                currentAccumulatedDistance = innerMemo.get(nextIterVal);
+                currentIterVal = nextIterVal;
+                continue;
+            }
+
+            const segmentLength = stepDistances.get(currentIterVal);
+            currentAccumulatedDistance += segmentLength;
+            innerMemo.set(nextIterVal, currentAccumulatedDistance);
+            currentIterVal = nextIterVal;
         }
+        resultCollector.push(currentAccumulatedDistance);
+    }
 
-        const previousEndpoint = currentEndpoint - stepIncrement;
-
-        const distanceToPrev = resolveAccumulatedPath(initialPoint, previousEndpoint);
-        const currentSegmentDist = calculateSegmentManhattan(previousEndpoint, currentEndpoint);
-
-        const totalPathDist = distanceToPrev + currentSegmentDist;
-
-        pathDistanceCache.set(cacheIdentifier, totalPathDist);
-
-        return totalPathDist;
-    };
-
-    const finalResults = queryEntries.map(entry => {
-        const { begin, finish } = entry;
-        return resolveAccumulatedPath(begin, finish);
-    });
-
-    console.log(finalResults.join('\n'));
+    console.log(resultCollector.join('\n'));
 }
 
-dataProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

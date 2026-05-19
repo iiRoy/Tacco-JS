@@ -1,290 +1,260 @@
-/*
- *  Module for creating an input data parser.
- *  It parses input from a string, typically read from stdin.
- */
-var INPUT_PROCESSOR_FACTORY = ( function ( ) {
+var InputParser = (function() {
   /**
-   *  Creates a new parser instance from a raw input string.
-   *  @param {string} sourceText - The raw input string to be processed.
-   *  @returns {DataHandler} A new data handler object.
+   * Creates a new parser instance.
+   * @param {string} inputString - The raw input string.
+   * @returns {ParserInstance} A new parser object.
    */
-  function createInputHandler ( sourceText ) {
-    return new DataHandler ( sourceText );
+  function createParser(inputString) {
+    return new ParserInstance(inputString);
   }
 
   /**
-   *  Manages and processes input lines.
-   *  @class
-   *  @param {string} rawText - The input string containing newline-separated data.
+   * Represents an instance of the input parser.
+   * @param {string} rawInput - The raw input string.
    */
-  function DataHandler ( rawText ) {
-    this.parsedLines = rawText
-      .trim ( )
-      .split ( "\n" ); // Stores each line as an array element.
-    this.lineIndexCursor = 0; // Tracks the current line being processed.
+  function ParserInstance(rawInput) {
+    this.sourceLines = rawInput.trim().split("\n");
+    this.currentLineIndex = 0;
   }
 
   /**
-   *  Extracts and returns the next single data point from the current line.
-   *  Values are consumed from the end of a line (reversed order).
-   *  Advances the line cursor if the current line becomes empty.
-   *  @param {boolean} returnAsText - If true, the value is returned as a string; otherwise, it's converted to a number.
-   *  @returns {(string|number)} The retrieved data point.
+   * Reads a single value from the current line.
+   * If the line is exhausted, moves to the next.
+   * @param {boolean} [asString=false] - If true, returns the value as a string; otherwise, as a number.
+   * @returns {string|number} The parsed value.
    */
-  DataHandler.prototype.fetchNextDatum = function ( returnAsText ) {
-    var allLines = this.parsedLines;
-    var currentLineNum = this.lineIndexCursor;
-    var fetchedDatum;
+  ParserInstance.prototype.readSingleValue = function(asString) {
+    var lineData = this.sourceLines,
+      lineIdx = this.currentLineIndex,
+      resultVal;
 
-    // Lazily split and reverse the current line if it's still a single string.
-    if ( typeof allLines[currentLineNum] === "string" ) {
-      allLines[currentLineNum] = allLines[currentLineNum]
-        .split ( " " )
-        .reverse ( );
+    // If the current line hasn't been split into tokens yet, do so.
+    // Tokens are stored in reverse order for efficient popping.
+    if (typeof lineData[lineIdx] === "string") {
+      lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
     }
 
-    fetchedDatum = allLines[currentLineNum].pop ( ); // Get the last element (which was the first in original order).
+    resultVal = lineData[lineIdx].pop(); // Get the last token
 
-    // If the current line has no more elements, move to the next line.
-    if ( !allLines[currentLineNum].length ) {
-      this.lineIndexCursor++;
+    // If the current line is now empty, advance to the next line.
+    if (!lineData[lineIdx].length) {
+      this.currentLineIndex++;
     }
 
-    return returnAsText ? fetchedDatum : +fetchedDatum; // Return as number or string based on flag.
+    return asString ? resultVal : +resultVal; // Convert to number if not requested as string
   };
 
   /**
-   *  Reads an entire line and returns its space-separated components.
-   *  Always advances the line cursor.
-   *  @param {boolean} asStringArray - If true, returns an array of strings; otherwise, an array of numbers.
-   *  @returns {Array<(string|number)>} An array of values from the current line.
+   * Reads all values from the current line.
+   * Advances to the next line.
+   * @param {boolean} [asString=false] - If true, returns values as strings; otherwise, as numbers.
+   * @returns {Array<string|number>} An array of parsed values.
    */
-  DataHandler.prototype.getLineComponents = function ( asStringArray ) {
-    var lineParts = this.parsedLines[this.lineIndexCursor++]
-      .split ( " " );
-    return asStringArray ? lineParts : lineParts.map ( elem => +elem );
+  ParserInstance.prototype.readLineValues = function(asString) {
+    var values = this.sourceLines[this.currentLineIndex++].split(" ");
+    return asString ? values : values.map(item => +item);
   };
 
   /**
-   *  Reads multiple lines and organizes them into a two-dimensional array (matrix).
-   *  Advances the line cursor by the number of rows read.
-   *  @param {number} numberOfRows - The count of lines to read for the matrix.
-   *  @param {boolean} preserveStrings - If true, matrix elements remain strings; otherwise, they are converted to numbers.
-   *  @returns {Array<Array<(string|number)>>} The constructed matrix.
+   * Reads a matrix (2D array) of values.
+   * Advances the line index by 'count'.
+   * @param {number} count - The number of lines to read for the matrix.
+   * @param {boolean} [asString=false] - If true, returns values as strings; otherwise, as numbers.
+   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
    */
-  DataHandler.prototype.readDataMatrix = function ( numberOfRows, preserveStrings ) {
-    var dataMatrix = this.parsedLines
-      .slice ( this.lineIndexCursor, this.lineIndexCursor += numberOfRows )
-      .map ( line => line.split ( " " ) );
-    return preserveStrings ? dataMatrix : dataMatrix.map ( row => row.map ( item => +item ) );
+  ParserInstance.prototype.readMatrix = function(count, asString) {
+    var matrixRows = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex += count).map(item => item.split(" "));
+    return asString ? matrixRows : matrixRows.map(row => row.map(val => +val));
   };
 
   /**
-   *  Reads a specified number of consecutive lines as a one-dimensional array.
-   *  Each line is treated as a single value.
-   *  Advances the line cursor by the number of lines read.
-   *  @param {number} countOfLines - The number of lines to read.
-   *  @param {boolean} keepTextFormat - If true, returns values as strings; otherwise, as numbers.
-   *  @returns {Array<(string|number)>} An array of values from the specified lines.
+   * Reads a specified number of raw lines.
+   * Advances the line index by 'count'.
+   * @param {number} count - The number of lines to read.
+   * @param {boolean} [asString=false] - If true, returns lines as strings; otherwise, attempts to convert to number.
+   * @returns {Array<string|number>} An array of raw lines.
    */
-  DataHandler.prototype.readLinesAsValues = function ( countOfLines, keepTextFormat ) {
-    var lineResults = this.parsedLines
-      .slice ( this.lineIndexCursor, this.lineIndexCursor += countOfLines );
-    return keepTextFormat ? lineResults : lineResults.map ( val => +val );
+  ParserInstance.prototype.readRawLines = function(count, asString) {
+    var rawLines = this.sourceLines.slice(this.currentLineIndex, this.currentLineIndex += count);
+    return asString ? rawLines : rawLines.map(item => +item);
   };
 
-  return createInputHandler; // The factory function for creating DataHandler instances.
+  return createParser;
+})();
 
-} ) ( );
-
-// Initialize the input data handler by reading from standard input.
-var dataReader = INPUT_PROCESSOR_FACTORY ( require ( "node:fs" )
-  .readFileSync ( "/dev/stdin", "utf8" ) );
+// Initialize the input reader with content from stdin
+var inputReader = InputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /**
- *  A utility function to dynamically create multi-dimensional arrays.
- *  (This function is defined but not actively used in the primary puzzle solving logic.)
- *  @param {*} defaultValue - The value to pre-fill array elements with.
- *  @returns {Array} A multi-dimensional array as specified by arguments.
+ * Creates a multi-dimensional array initialized with a given value.
+ * This function uses `eval` and should be used with caution.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., 2, 3 for a 2x3 array).
+ * @returns {Array} The multi-dimensional array.
  */
-function createNDimensionalArray ( defaultValue ) {
-  var allArguments = arguments;
-  var argumentCount = allArguments.length;
-  // Construct the string representation for array creation using `eval`.
-  var arrayConstructionString = "Array(allArguments[" + --argumentCount + "]).fill(0).map(element => { return " + defaultValue + "; })";
+function createMultiDimArray(initialValue) {
+  var argsList = arguments,
+    argCount = argsList.length,
+    arrayCreationString = "Array(argsList[" + --argCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
 
-  // Nest array creation calls for higher dimensions.
-  while ( --argumentCount ) {
-    arrayConstructionString = "Array(allArguments[" + argumentCount + "]).fill(0).map(element => " + arrayConstructionString + ")";
+  while (--argCount) {
+    arrayCreationString = "Array(argsList[" + argCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
   }
-
-  return eval ( arrayConstructionString ); // Execute the constructed string to build the array.
+  return eval(arrayCreationString);
 }
 
-// Global variables representing the puzzle's state and parameters.
-var maxMoveLength,
-  destinationX,
-  destinationY,
-  currentPosX = 0,
-  currentPosY = 0;
+// Global variables for problem state
+var stepSize, targetX, targetY, currentX = 0,
+  currentY = 0;
 
-// Execute the puzzle solver and output its result to the console.
-console.log ( runPathfindingPuzzle ( ) );
+// Output the result of the main problem-solving function
+console.log(solveProblem());
 
 /**
- *  The core function that orchestrates the pathfinding puzzle.
- *  It calculates a sequence of moves to reach (destinationX, destinationY) from (0,0)
- *  using steps of 'maxMoveLength' length.
- *  @returns {string|number} A newline-separated string of coordinates representing the path, or an error code (0 or -1).
+ * Main function to solve the problem.
+ * Reads input, calculates path, and returns the result.
+ * @returns {string} The sequence of moves or an error code.
  */
-function runPathfindingPuzzle ( ) {
-  // Retrieve initial parameters from the input data.
-  maxMoveLength = dataReader.fetchNextDatum ( );
-  destinationX = dataReader.fetchNextDatum ( );
-  destinationY = dataReader.fetchNextDatum ( );
+function solveProblem() {
+  stepSize = inputReader.readSingleValue();
+  targetX = inputReader.readSingleValue();
+  targetY = inputReader.readSingleValue();
 
-  // Check for immediate termination conditions.
-  if ( destinationX === 0 && destinationY === 0 ) {
-    return 0; // Already at the target.
-  }
-  // Check for impossibility: if maxMoveLength is even, the sum of coordinates (destinationX + destinationY) must also be even.
-  // Otherwise, it's impossible to reach.
-  if ( maxMoveLength % 2 === 0 && ( destinationX + destinationY ) % 2 !== 0 ) {
-    return -1; // Cannot reach the target due to parity mismatch.
+  // Edge case: already at target
+  if (targetX === 0 && targetY === 0) {
+    return 0;
   }
 
-  var recordedPath = [ ]; // Array to store the sequence of visited coordinates.
-  var doubleMoveLength = maxMoveLength * 2; // Pre-calculate 2 * maxMoveLength for efficiency.
-
-  // Calculate the initial Manhattan distance to the target.
-  var currentDistance = computeManhattanDistance ( );
-
-  // Loop to make large steps until the distance is within a manageable range (<= 2 * maxMoveLength)
-  // and the parity of the distance is suitable for termination.
-  // The condition `currentDistance % 2` evaluates to true if `currentDistance` is odd.
-  // If `maxMoveLength` is even, `currentDistance` will always be even, so `currentDistance % 2` is always false.
-  // If `maxMoveLength` is odd, `currentDistance` will be odd or even depending on the number of moves taken so far.
-  // The loop continues if `currentDistance` is odd (meaning an even number of steps have been made if `maxMoveLength` is odd).
-  while ( currentDistance > doubleMoveLength || currentDistance % 2 ) {
-    recordedPath.push ( takeOneStepTowardsTarget ( ) ); // Record the new position.
-    currentDistance = computeManhattanDistance ( ); // Update distance after the move.
+  // Impossible case: parity mismatch
+  // If stepSize is even, (targetX + targetY) must also be even for a solution to exist.
+  // If (targetX + targetY) is odd, it's impossible.
+  if (stepSize % 2 === 0 && (targetX + targetY) % 2 !== 0) {
+    return -1;
   }
 
-  // After the loop, `currentDistance` is either 0, `maxMoveLength`, or something up to `2 * maxMoveLength`.
-  // If `maxMoveLength` is odd, `currentDistance` must be even here (because `currentDistance % 2` was false to exit).
+  var pathSteps = [],
+    doubleStepSize = stepSize * 2;
+  var manhattanDistance = calculateManhattanDistance();
 
-  // Check if the remaining distance is a perfect multiple of `maxMoveLength`.
-  if ( currentDistance % maxMoveLength === 0 ) {
-    // If it is, simply continue taking steps until the target is reached.
-    while ( computeManhattanDistance ( ) > 0 ) {
-      recordedPath.push ( takeOneStepTowardsTarget ( ) );
+  // Keep moving towards the target until the Manhattan distance is within `doubleStepSize`
+  // and has the correct parity.
+  while (manhattanDistance > doubleStepSize || manhattanDistance % 2 !== 0) {
+    pathSteps.push(moveTowardsTarget()); // Make a move
+    manhattanDistance = calculateManhattanDistance(); // Recalculate distance
+  }
+
+  // After the loop, `manhattanDistance` is <= `doubleStepSize` and has even parity.
+  // Now, handle the final steps.
+  if (manhattanDistance % stepSize === 0) {
+    // If the remaining distance is a multiple of `stepSize`,
+    // we can directly reach the target by repeatedly moving `stepSize`
+    // until the distance is zero.
+    while (calculateManhattanDistance()) {
+      pathSteps.push(moveTowardsTarget());
     }
   } else {
-    // If not a perfect multiple, a special two-step adjustment is required.
-    var tempTargetX = destinationX;
-    var tempTargetY = destinationY;
+    // If the remaining distance is not a multiple of `stepSize`,
+    // we need a two-step maneuver.
+    // This involves moving past the target and then back.
 
-    // Calculate the adjustment value for the intermediate point.
-    var deltaAdjustment = ( doubleMoveLength - Math.abs ( currentPosX - destinationX ) - Math.abs ( currentPosY - destinationY ) ) / 2;
+    var originalTargetX = targetX,
+      originalTargetY = targetY;
+    var remainingDistance = (doubleStepSize - Math.abs(currentX - targetX) - Math.abs(currentY - targetY)) / 2;
 
-    // Determine the adjustment strategy based on which coordinate has a larger absolute difference.
-    if ( Math.abs ( currentPosX - destinationX ) >= Math.abs ( currentPosY - destinationY ) ) {
-      // Adjust Y coordinate for the intermediate point.
-      if ( currentPosY < destinationY ) {
-        destinationY = currentPosY - deltaAdjustment;
+    // Adjust targetX and targetY for the first move to overshoot or undershoot
+    // such that the second move can land exactly on the original target.
+    if (Math.abs(currentX - targetX) >= Math.abs(currentY - targetY)) {
+      // Prioritize moving along X-axis
+      if (currentY < targetY) {
+        targetY = currentY - remainingDistance;
       } else {
-        destinationY = currentPosY + deltaAdjustment;
+        targetY = currentY + remainingDistance;
       }
-      // Adjust X coordinate for the intermediate point.
-      if ( currentPosX < destinationX ) {
-        destinationX = currentPosX + maxMoveLength - deltaAdjustment;
+
+      if (currentX < targetX) {
+        targetX = currentX + stepSize - remainingDistance;
       } else {
-        destinationX = currentPosX - maxMoveLength + deltaAdjustment;
+        targetX = currentX - stepSize + remainingDistance;
       }
     } else {
-      // Adjust X coordinate for the intermediate point.
-      if ( currentPosX < destinationX ) {
-        destinationX = currentPosX - deltaAdjustment;
+      // Prioritize moving along Y-axis
+      if (currentX < targetX) {
+        targetX = currentX - remainingDistance;
       } else {
-        destinationX = currentPosX + deltaAdjustment;
+        targetX = currentX + remainingDistance;
       }
-      // Adjust Y coordinate for the intermediate point.
-      if ( currentPosY < destinationY ) {
-        destinationY = currentPosY + maxMoveLength - deltaAdjustment;
+
+      if (currentY < targetY) {
+        targetY = currentY + stepSize - remainingDistance;
       } else {
-        destinationY = currentPosY - maxMoveLength + deltaAdjustment;
+        targetY = currentY - stepSize + remainingDistance;
       }
     }
-    // Perform the first adjustment move to the intermediate point.
-    recordedPath.push ( takeOneStepTowardsTarget ( ) );
 
-    // Restore the original target coordinates for the second move.
-    destinationX = tempTargetX;
-    destinationY = tempTargetY;
-
-    // Perform the second adjustment move to the final target.
-    recordedPath.push ( takeOneStepTowardsTarget ( ) );
+    pathSteps.push(moveTowardsTarget()); // First maneuver move
+    targetX = originalTargetX; // Restore original target
+    targetY = originalTargetY;
+    pathSteps.push(moveTowardsTarget()); // Second maneuver move to original target
   }
 
-  // Output the total number of moves made.
-  console.log ( recordedPath.length );
-
-  // Return the complete path as a newline-separated string.
-  return recordedPath.join ( "\n" );
+  // Output the total number of steps and the path
+  console.log(pathSteps.length);
+  return pathSteps.join("\n");
 }
 
 /**
- *  Calculates the Manhattan distance from the current position to the target destination.
- *  @returns {number} The Manhattan distance.
+ * Calculates the Manhattan distance between the current position (currentX, currentY)
+ * and the target position (targetX, targetY).
+ * @returns {number} The Manhattan distance.
  */
-function computeManhattanDistance ( ) {
-  return Math.abs ( currentPosX - destinationX ) + Math.abs ( currentPosY - destinationY );
+function calculateManhattanDistance() {
+  return Math.abs(currentX - targetX) + Math.abs(currentY - targetY);
 }
 
 /**
- *  Executes a single move of `maxMoveLength` from the current position towards the target destination.
- *  Updates `currentPosX` and `currentPosY`.
- *  Prioritizes moving along the X-axis first, then the Y-axis with any remaining move length.
- *  @returns {string} The new coordinates (`currentPosX currentPosY`) as a space-separated string.
+ * Moves the current position (currentX, currentY) by `stepSize` towards the target (targetX, targetY).
+ * Prioritizes moving along the X-axis first, then Y-axis if `stepSize` remains.
+ * Updates `currentX` and `currentY` and returns the new coordinates as a string.
+ * @returns {string} The new coordinates in "X Y" format.
  */
-function takeOneStepTowardsTarget ( ) {
-  var remainingMoveBudget = maxMoveLength; // Total steps available for this move.
+function moveTowardsTarget() {
+  var remainingMove = stepSize; // Amount of movement left for this step
 
-  // Handle movement along the X-axis.
-  if ( destinationX < currentPosX ) {
-    // Target X is to the left.
-    if ( remainingMoveBudget >= currentPosX - destinationX ) {
-      // Can cover or overshoot target X.
-      remainingMoveBudget -= ( currentPosX - destinationX );
-      currentPosX = destinationX; // Move current X directly to target X.
+  // Move along X-axis
+  if (targetX < currentX) {
+    // Target is to the left
+    if (remainingMove >= currentX - targetX) {
+      // Can reach or pass targetX
+      remainingMove -= currentX - targetX;
+      currentX = targetX;
     } else {
-      // Can only move part-way to target X.
-      currentPosX -= remainingMoveBudget;
-      remainingMoveBudget = 0; // All steps used on X-axis.
+      // Move partially towards targetX
+      currentX -= remainingMove;
+      remainingMove = 0;
     }
-  } else if ( destinationX > currentPosX ) {
-    // Target X is to the right.
-    if ( remainingMoveBudget >= destinationX - currentPosX ) {
-      // Can cover or overshoot target X.
-      remainingMoveBudget -= ( destinationX - currentPosX );
-      currentPosX = destinationX; // Move current X directly to target X.
+  } else if (targetX > currentX) {
+    // Target is to the right
+    if (remainingMove >= targetX - currentX) {
+      // Can reach or pass targetX
+      remainingMove -= targetX - currentX;
+      currentX = targetX;
     } else {
-      // Can only move part-way to target X.
-      currentPosX += remainingMoveBudget;
-      remainingMoveBudget = 0; // All steps used on X-axis.
-    }
-  }
-
-  // If there's still move budget remaining, use it for the Y-axis.
-  if ( remainingMoveBudget > 0 ) {
-    if ( destinationY < currentPosY ) {
-      // Target Y is downwards.
-      currentPosY -= remainingMoveBudget;
-    } else {
-      // Target Y is upwards or at the same Y.
-      currentPosY += remainingMoveBudget;
+      // Move partially towards targetX
+      currentX += remainingMove;
+      remainingMove = 0;
     }
   }
 
-  return currentPosX + " " + currentPosY; // Return the new current coordinates.
+  // If there's still movement remaining, move along Y-axis
+  if (remainingMove > 0) {
+    if (targetY < currentY) {
+      // Target is below
+      currentY -= remainingMove;
+    } else {
+      // Target is above or at the same Y
+      currentY += remainingMove;
+    }
+  }
+
+  return currentX + " " + currentY;
 }

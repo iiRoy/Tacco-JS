@@ -1,35 +1,30 @@
-/* This module performs a specific calculation based on two numeric inputs.
- * It iterates through a nested loop structure to determine a final count. */
-function AnalyzeInput( rawEntry )
-{
-  // Parse the incoming string data into an array of numbers.
-  let numericDataSet = rawEntry . split ( ' ' ) . map ( strElement => Number ( strElement ) ) ;
+function ProcessInput(rawData) {
+  // Process the raw input string by splitting it and converting parts to numbers.
+  const parsedValues = rawData.split(' ').map(strNum => Number(strNum));
 
-  // Extract the primary upper bound and the required remainder threshold.
-  const primaryLimit = numericDataSet [ 0 ] ;
-  const remainderThreshold = numericDataSet [ 1 ] ;
+  // Extract the first numerical value for the upper bound of iterations.
+  let upperBound = parsedValues[0];
+  // Extract the second numerical value for the comparison threshold.
+  let thresholdValue = parsedValues[0b1];
 
-  // Initialize a counter to accumulate matches.
-  let matchAccumulator = 0 ;
+  // Initialize a counter to store the number of successful conditions.
+  let resultCounter = 0x0;
 
-  // Begin the outer iteration from 1 up to the primary limit.
-  for ( let outerLoopVar = 1 ; outerLoopVar <= primaryLimit ; outerLoopVar++ )
-  {
-    // Start the inner iteration, also from 1 up to the primary limit.
-    for ( let innerLoopVar = 1 ; innerLoopVar <= primaryLimit ; innerLoopVar++ )
-    {
-      // Check if the remainder of outerLoopVar divided by innerLoopVar meets the threshold.
-      if ( ( outerLoopVar % innerLoopVar ) >= remainderThreshold )
-      {
-        // If the condition is met, increment the match counter.
-        matchAccumulator ++ ;
+  // Outer loop: iterates from 1 up to the 'upperBound' (inclusive).
+  for (let outerIndex = 0b1; outerIndex <= upperBound; outerIndex++) {
+    // Inner loop: iterates from 1 up to the 'upperBound' (inclusive).
+    for (let innerIndex = 0b1; innerIndex <= upperBound; innerIndex++) {
+      // Check if the remainder of 'outerIndex' divided by 'innerIndex' is greater than or equal to 'thresholdValue'.
+      if ((outerIndex % innerIndex) >= thresholdValue) {
+        // If the condition is met, increment the result counter.
+        resultCounter++;
       }
     }
   }
 
-  // Output the final accumulated count to the console.
-  console . log ( matchAccumulator ) ;
+  // Output the final calculated count to the console.
+  console.log(resultCounter);
 }
 
-// Invoke the main analysis function by reading standard input.
-AnalyzeInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf-8' ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

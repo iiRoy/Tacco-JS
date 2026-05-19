@@ -1,66 +1,48 @@
-// Function responsible for orchestrating the overall data processing
-function processInputData(rawDataContent) {
+function processInput(rawData) {
+    // Split the raw input string into an array of individual lines.
+    const parsedLines = rawData.split('\n');
 
-    // Divide the entire input string into an array of separate text lines
-    const parsedLineEntries = rawDataContent.split('\n');
-
-    // Traverse through the collection of parsed lines, incrementing the index by two
-    // to process pairs of lines (count and data).
-    for (
-        let outerCycleIndex = 0;
-        outerCycleIndex < parsedLineEntries.length;
-        outerCycleIndex += 2
-    ) {
-        // Check if the current line signals termination of data processing.
-        if (parsedLineEntries[outerCycleIndex] === '0') {
-            // If the termination signal is found, exit the loop immediately.
-            break;
+    // Iterate through the parsed lines, processing data in pairs.
+    // The loop increments by two to handle a data line and its corresponding values line.
+    for (let lineIndex = 0; lineIndex < parsedLines.length; lineIndex += 2) {
+        // Check for the termination condition: if the current line is '0', stop processing.
+        if (parsedLines[lineIndex] === '0') {
+            break; // Exit the loop.
         }
 
-        // Initialize a string variable to store the computed result for the current block.
-        let iterationOutcome = '';
-        // Initialize a floating-point accumulator for the variance calculation steps.
-        let sumOfSquaredDifferences = 0.0;
+        // Initialize a string to store the calculated result for the current data set.
+        let resultString = '';
+        // Initialize a variable to accumulate the sum of squared differences from the mean.
+        let sumOfSquares = 0.0; // Using float for precision.
 
-        // Extract the number of measurements for the current dataset from the line.
-        // Explicitly convert the string representation to a floating-point number.
-        const numberOfMeasurements = parseFloat(parsedLineEntries[outerCycleIndex]);
+        // The number of elements for the current calculation is derived from the current line.
+        // Subtracting 0 converts the string to a number.
+        const elementCount = parsedLines[lineIndex] - 0;
 
-        // Begin an internal loop to iterate through each individual measurement value.
-        for (
-            let innerMeasurementIndex = 0;
-            innerMeasurementIndex < numberOfMeasurements;
-            innerMeasurementIndex++
-        ) {
-            // Retrieve the line containing the actual measurement values and split it by spaces.
-            const measurementValues = parsedLineEntries[outerCycleIndex + 1].split(' ');
+        // Inner loop to process each element in the data set.
+        for (let elementIndex = 0; elementIndex < elementCount; elementIndex++) {
+            // Split the next line (which contains the numbers) by space into an array of strings.
+            const numberStrings = parsedLines[lineIndex + 1].split(' ');
 
-            // Calculate the arithmetic mean (average) of the current set of measurement values.
-            // The 'reduce' method sums all numeric values, and the total is then divided by the count.
-            const arithmeticMean = measurementValues.reduce(function (accumulatorA, currentValB) {
-                return (parseFloat(accumulatorA)) + (parseFloat(currentValB));
-            }) / numberOfMeasurements;
+            // Calculate the arithmetic mean (average) of the numbers.
+            // The reduce function sums up the numbers, converting them from strings to numbers using (a-0) and (b-0).
+            const meanValue = numberStrings.reduce(function(accumulator, currentValue) {
+                return (accumulator - 0) + (currentValue - 0);
+            }) / elementCount;
 
-            // Accumulate the squared difference of each measurement from the mean,
-            // divided by the total count, contributing to the variance.
-            sumOfSquaredDifferences += Math.pow(
-                parseFloat(measurementValues[innerMeasurementIndex]) - arithmeticMean, 2
-            ) / numberOfMeasurements;
+            // Accumulate the sum of squared differences from the mean.
+            // This is a step in calculating the standard deviation.
+            sumOfSquares += Math.pow( (numberStrings[elementIndex] - meanValue), 2 ) / elementCount;
         }
 
-        // Compute the standard deviation by taking the square root of the accumulated sum.
-        // Format the resulting value to exactly four decimal places.
-        iterationOutcome += (Math.sqrt(sumOfSquaredDifferences)).toFixed(4);
-        // Output the calculated standard deviation to the console for user visibility.
-        console.log(iterationOutcome);
+        // Calculate the standard deviation by taking the square root of the accumulated sum.
+        // Then, format the result to four decimal places and append it to the result string.
+        resultString += (Math.sqrt(sumOfSquares)).toFixed(4);
+        // Output the calculated standard deviation to the console.
+        console.log(resultString);
     }
 }
 
-// A utility function to retrieve file contents, mirroring the original's file read operation.
-function obtainFileContent(filePathIdentifier) {
-    // Utilize Node.js's file system module to synchronously read the file.
-    return require('fs').readFileSync(filePathIdentifier, 'utf8');
-}
-
-// Initiate the primary data processing routine, feeding it content from standard input.
-processInputData(obtainFileContent('/dev/stdin'));
+// Read the entire content of standard input as a UTF-8 string.
+// Then, pass this raw data to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,27 +1,35 @@
-function presentOutcome(finalValue) {
-  console.log(finalValue);
+function printOutcome(finalResult) {
+    console.log(finalResult);
 }
 
-function obtainNumericSum(numberValue) {
-  if (numberValue < 10) {
-    return numberValue;
-  }
-  return (numberValue % 10) + obtainNumericSum(Math.floor(numberValue / 10));
+function calculateDigitSum(numericValue) {
+    let sumOfDigits = 0;
+    let processingNumber = Math.abs(numericValue);
+
+    if (processingNumber === 0) {
+        return 0;
+    }
+
+    while (processingNumber > 0) {
+        sumOfDigits += processingNumber % 10;
+        processingNumber = Math.floor(processingNumber / 10);
+    }
+    return sumOfDigits;
 }
 
-function processExternalData(rawEntry) {
-  const numericEntry = parseInt(rawEntry, 10);
+function processInputData(rawInputString) {
+    const baseInteger = parseInt(rawInputString, 10);
 
-  const multipliersSequence = Array.from({ length: 10 }, (_, idx) => idx + 1);
+    const rangeValues = Array.from({ length: 10 }, (_, index) => index + 1);
 
-  const sumsCollection = multipliersSequence.map(currentMultiplier => {
-    const productValue = numericEntry * currentMultiplier;
-    return obtainNumericSum(productValue);
-  });
+    const computedSums = rangeValues.map(currentFactor => {
+        const productValue = baseInteger * currentFactor;
+        return calculateDigitSum(productValue);
+    });
 
-  const minimumSumFound = Math.min(...sumsCollection);
+    const lowestSum = Math.min(...computedSums);
 
-  presentOutcome(minimumSumFound);
+    printOutcome(lowestSum);
 }
 
-processExternalData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

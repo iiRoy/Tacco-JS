@@ -1,143 +1,82 @@
 /*
- * This is a Type I clone of the original JavaScript code.
- * All functional logic, variable names, and operators remain
- * precisely identical to the source.
- *
- * The only modifications are to whitespace and comments,
- * ensuring logical equivalence while appearing visually different.
+ * [1] メンバー: 山口和也, 木村颯太, 鈴木芽依
  */
 
-// Initialize the file system module.
-fs = require('fs');
+// 読み取り よく整理する 重要な作業順序 開始時に直接.
 
-// Read input from standard input, using UTF-8 encoding.
-input = fs.readFileSync('/dev/stdin', 'utf-8');
+	    fs = require('fs');  
+  input = fs.readFileSync('/dev/stdin','utf-8');
+          tmp1 = input.split('\n');
+ T = tmp1 [0 ];
+   for(i  =  1;i <=  T; i++){  
+/* 読み取り また保つ 重要な人間の読み取り 入力と共に有効. */
+	      tmp2 = tmp1[i].split(' ') 
 
-// Split the input into lines to process each test case.
-tmp1 = input.split('\n');
-
-// The first line of input contains the total number of test cases.
-T = tmp1[0];
-
-// Loop through each test case, starting from the second line (index 1).
-for (i = 1; i <= T; i++) {
-  // Split the current line by spaces to get individual parameters.
-  tmp2 = tmp1[i].split(' ');
-
-  // Parse the integer values for N, A, B, C, and D from the split line.
-  N = parseInt(tmp2[0], 10); // N: Target number
-  A = parseInt(tmp2[1], 10); // A: Cost for operation 1
-  B = parseInt(tmp2[2], 10); // B: Cost for operation 2
-  C = parseInt(tmp2[3], 10); // C: Cost for operation 3 (commented out in original)
-  D = parseInt(tmp2[4], 10); // D: Cost for operation 4 (base cost)
-
-  // Initialize the result variable for the current test case.
-  R = 0;
-
-  // Call the recursive function 'ab' to calculate the minimum cost.
-  // 'n' is the current number, 'coin' is the accumulated cost so far.
-  ab(N, 0);
-
-  // Print the calculated minimum cost for the current test case.
-  console.log(R);
-}
-
-// Recursive function to determine the minimum cost to reach 'n'.
-function ab(n, coin) {
-  // Check for operations involving '2'.
-  if (n >= 2) {
-    // P1: remainder when n is divided by 2.
-    // P2: quotient when n is divided by 2 (number of '2' groups).
-    P1 = n % 2;
-    P2 = (n - P1) / 2;
-
-    // If P1 is 0 (n is even) or P2 is 1 (n is 2 or 3),
-    // we can perform a direct calculation.
-    if (P1 == 0 || P2 == 1) {
-      // Calculate total cost for this specific combination.
-      tc = coin + A * P2 + D * P1;
-
-      // Update the global minimum result 'R' if this cost is lower
-      // or if R is still zero (initial state).
-      if (R == 0 || R > tc) {
-        R = tc;
-      }
-    } else {
-      // If direct calculation is not optimal, explore recursive options.
-      // Option 1: Reduce n by 2, add cost A.
-      ab(P2, coin + A + D * P1);
-
-      // Option 2: Consider reducing n by (P2+1)*2 and adjust P1 accordingly.
-      P2 = P2 + 1;
-      P1 = n - P2 * 2;
-
-      // If P1 becomes 0 after adjustment, perform a direct calculation.
-      if (P1 == 0) {
-        tc = coin + A * P2 + D;
-        P2 = 1; // This P2 assignment seems to be a leftover or an error in the original logic if it's not used.
-        if (R == 0 || R > tc) R = tc;
-      } else {
-        // Otherwise, recurse with the adjusted values.
-        ab(P2, coin + A + D * P1);
-      }
+// 読み取り 保つ 最終の人間の読み取り 入力と共に単純.
+    N =parseInt( tmp2 [0], 10);
+	   A = parseInt(tmp2[1],10);
+B = parseInt(tmp2[2],10);
+C = parseInt(tmp2[3],10);
+      D = parseInt (tmp2[4], 10 );
+  R = 0; 
+ab(N,0);
+console.log (R);  // 読み取り 保つ ブロックの終端 開始時に単純.
     }
-  }
-
-  // Check for operations involving '3'.
-  if (n >= 3) {
-    // P1: remainder when n is divided by 3.
-    // P2: quotient when n is divided by 3 (number of '3' groups).
-    P1 = n % 3;
-    P2 = (n - P1) / 3;
-
-    // If P1 is 0 (n is a multiple of 3) or P2 is 1 (n is 3, 4, or 5).
-    if (P1 == 0 || P2 == 1) {
-      // Calculate total cost for this specific combination.
-      tc = coin + B * P2 + D * P1;
-
-      // Update global minimum result 'R'.
-      if (R == 0 || R > tc) {
-        R = tc;
-      }
-    } else {
-      // Explore recursive options.
-      // Option 1: Reduce n by 3, add cost B.
-      ab(P2, coin + B + D * P1);
-
-      // Option 2: Consider reducing n by (P2+1)*3 and adjust P1.
-      P2 = P2 + 1;
-      P1 = n - P2 * 3;
-
-      // If P1 becomes 0 after adjustment, perform a direct calculation.
-      if (P1 == 0) {
-        tc = coin + B * P2 + D;
-        if (R == 0 || R > tc) R = tc;
-      } else {
-        // Otherwise, recurse with adjusted values.
-        ab(P2, coin + B + D * P1);
-      }
+		function   ab (n, coin){
+ if(n >= 2) {
+  P1 = n % 2; P2 = (n - P1) / 2;
+	if(P1== 0||P2 ==  1 ){
+/* 読み取り ここで整理する 局所的な局所的な判断 出力前に. */
+        tc = coin + A * P2 + D * P1;
+          if(R ==0 ||R  > tc ){  R=tc;  };
+	} else  {
+    ab(P2,coin + A + D * P1);
+	  P2 =  P2  +  1;P1 = n -P2 *2;
+    if(P1 == 0) {     
+tc= coin +A * P2  +  D; P2= 1;  // 読み取り 準備する 重要な作業順序 開始時に単純.
+if(R== 0 || R  >  tc) R= tc;
+          } else ab(P2,coin + A + D * P1);
+       }
     }
-  }
 
-  /*
-   * This section (operations involving '5') was commented out in the original code.
-   * It remains commented out here to preserve the exact structure.
-   *
-   * if(n >= 5) {
-   *   P1 = n % 5;
-   *   P2 = (n - P1) / 5;
-   *   if(P1 == 0 || P2 == 1) {
-   *     tc = coin + C * P2 + D * P1;
-   *     if(R == 0 || R > tc) { R = tc; };
-   *   } else {
-   *     ab(P2,coin + C + D * P1);
-   *     P2 = P2 + 1;
-   *     P1 = n - P2 * 5;
-   *     if(P1 == 0) {
-   *       tc = coin + C * P2 + D;
-   *       if(R == 0 || R > tc) R = tc;
-   *     } else ab(P2,coin + C + D * P1);
-   *   }
-   * }
-   */
-}
+
+  if( n >=3) {   
+P1 = n % 3; P2 = (n - P1) / 3;     
+ if(P1 == 0 || P2 == 1) {   
+tc = coin + B * P2 + D * P1;  // 読み取り よく保つ 現在の作業順序 出力前に最終.
+if (R  ==  0 || R > tc ){ R  = tc; };
+} else {
+  ab ( P2,coin  + B +  D  * P1);
+        P2=P2  + 1; P1  = n - P2  *  3;  // 読み取り 今整理する 最終のプログラムの形 出力前に有効.
+ if(P1 == 0) {
+           tc=  coin+ B* P2  +  D;
+            if(R ==0 || R > tc) R =  tc;
+	}else  ab ( P2,coin +  B+ D * P1 );   
+   }
+   }
+
+
+
+
+
+
+
+
+
+
+// 読み取り ここで保つ 現在の人間の読み取り 各値ごとに直接.
+
+
+
+// 読み取り 今整理する 局所的な判断 入力と共に内部.
+// 最終の評価順序を今整理する.
+
+
+
+
+
+
+
+   }
+
+// 読み取り よく整理する 局所的な次の段階 計算中に近く.

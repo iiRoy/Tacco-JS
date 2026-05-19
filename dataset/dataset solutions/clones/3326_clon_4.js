@@ -1,67 +1,51 @@
 'use strict';
-const processInputData = (sourceText) => {
-    const numberSequence = sourceText.trim().split(/\s+/).map(element => Number(element));
-    const overallQuantity = numberSequence[0];
-    const categoryTallies = new Map();
-    categoryTallies.set(1, 0);
-    categoryTallies.set(2, 0);
-    categoryTallies.set(3, 0);
-    for (let index = 1; index < numberSequence.length; ++index) {
-        const itemCategory = numberSequence[index];
-        if (itemCategory >= 1 && itemCategory <= 3) {
-            categoryTallies.set(itemCategory, categoryTallies.get(itemCategory) + 1);
-        }
-    }
-    return { overallQuantity: overallQuantity, categoryTallies: categoryTallies };
-};
+(function(sourceData){
+  let processedData = sourceData.trim().split(/\s+/).map(val => Number(val));
+  const totalAvailableItems = processedData.shift();
+  const initialItemCounts = [0, 0, 0, 0];
+  processedData.forEach(itemKind => {
+    initialItemCounts[itemKind]++;
+  });
 
-const memoizationStorage = new Map();
+  const expectationCache = new Map();
 
-const calculateExpectedOperations = (firstCategory, secondCategory, thirdCategory, overallQuantity) => {
-    if (firstCategory < 0 || secondCategory < 0 || thirdCategory < 0) {
-        return 0;
-    }
-    if (firstCategory === 0 && secondCategory === 0 && thirdCategory === 0) {
-        return 0;
+  function calculateExpected(currentOne, currentTwo, currentThree) {
+    if (currentOne === 0 && currentTwo === 0 && currentThree === 0) {
+      return 0;
     }
 
-    const stateKey = `${firstCategory},${secondCategory},${thirdCategory}`;
-    if (memoizationStorage.has(stateKey)) {
-        return memoizationStorage.get(stateKey);
+    if (currentOne < 0 || currentTwo < 0 || currentThree < 0) {
+      return 0;
     }
 
-    const currentTotalActive = firstCategory + secondCategory + thirdCategory;
-    if (currentTotalActive === 0) {
-        return 0;
+    const cacheKey = `${currentOne},${currentTwo},${currentThree}`;
+    if (expectationCache.has(cacheKey)) {
+      return expectationCache.get(cacheKey);
     }
 
-    let expectedOutcome = overallQuantity / currentTotalActive;
+    const currentSumOfNeeded = currentOne + currentTwo + currentThree;
 
-    if (firstCategory > 0) {
-        expectedOutcome += (firstCategory / currentTotalActive) * calculateExpectedOperations(firstCategory - 1, secondCategory, thirdCategory, overallQuantity);
+    if (currentSumOfNeeded === 0) {
+      return 0;
     }
 
-    if (secondCategory > 0) {
-        expectedOutcome += (secondCategory / currentTotalActive) * calculateExpectedOperations(firstCategory + 1, secondCategory - 1, thirdCategory, overallQuantity);
+    let currentExpectedValue = totalAvailableItems / currentSumOfNeeded;
+
+    if (currentOne > 0) {
+      currentExpectedValue += (currentOne / currentSumOfNeeded) * calculateExpected(currentOne - 1, currentTwo, currentThree);
+    }
+    if (currentTwo > 0) {
+      currentExpectedValue += (currentTwo / currentSumOfNeeded) * calculateExpected(currentOne, currentTwo - 1, currentThree);
+    }
+    if (currentThree > 0) {
+      currentExpectedValue += (currentThree / currentSumOfNeeded) * calculateExpected(currentOne, currentTwo, currentThree - 1);
     }
 
-    if (thirdCategory > 0) {
-        expectedOutcome += (thirdCategory / currentTotalActive) * calculateExpectedOperations(firstCategory, secondCategory + 1, thirdCategory - 1, overallQuantity);
-    }
+    expectationCache.set(cacheKey, currentExpectedValue);
+    return currentExpectedValue;
+  }
 
-    memoizationStorage.set(stateKey, expectedOutcome);
-    return expectedOutcome;
-};
+  const finalExpectedResult = calculateExpected(initialItemCounts[1], initialItemCounts[2], initialItemCounts[3]);
+  console.log(finalExpectedResult);
 
-((rawInputContent) => {
-    const { overallQuantity: totalCountOfAll, categoryTallies: initialCategoryCounts } = processInputData(rawInputContent);
-
-    const finalValue = calculateExpectedOperations(
-        initialCategoryCounts.get(1),
-        initialCategoryCounts.get(2),
-        initialCategoryCounts.get(3),
-        totalCountOfAll
-    );
-
-    console.log(finalValue);
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+})(require('fs').readFileSync('/dev/stdin','utf8'));

@@ -1,96 +1,103 @@
-function createNodeElement(contentValue, minorChild = null, majorChild = null) {
+function makeNode(val, leftChild = null, rightChild = null) {
   return {
-    content: contentValue,
-    minor: minorChild,
-    major: majorChild
+    val: val,
+    leftChild: leftChild,
+    rightChild: rightChild,
   };
 }
 
-function createDataVault() {
-  let basis = null;
-
-  function placeElementRecursive(currentBranch, contentValue) {
-    if (currentBranch === null) {
-      return createNodeElement(contentValue);
-    }
-
-    if (contentValue < currentBranch.content) {
-      currentBranch.minor = placeElementRecursive(currentBranch.minor, contentValue);
-    } else if (contentValue > currentBranch.content) {
-      currentBranch.major = placeElementRecursive(currentBranch.major, contentValue);
-    }
-    return currentBranch;
+class TreeStructure {
+  constructor() {
+    this.topNode = null;
   }
 
-  function addEntry(contentValue) {
-    basis = placeElementRecursive(basis, contentValue);
+  static get NodeCreator() { return makeNode; }
+
+  addValue(value) {
+    this.topNode = TreeStructure.NodeCreator(value);
+
+    this.addValue = (newValue) => {
+      const placeNodeRecursively = (currentNode, itemValue) => {
+        if (currentNode === null) {
+          return TreeStructure.NodeCreator(itemValue);
+        }
+
+        if (itemValue < currentNode.val) {
+          currentNode.leftChild = placeNodeRecursively(currentNode.leftChild, itemValue);
+        } else {
+          currentNode.rightChild = placeNodeRecursively(currentNode.rightChild, itemValue);
+        }
+        return currentNode;
+      };
+
+      this.topNode = placeNodeRecursively(this.topNode, newValue);
+    };
   }
 
-  function showSortedTraversal() {
-    let outputBuffer = '';
-    let nodeStack = [];
-    let currentPoint = basis;
+  displayInOrder() {
+    const collectedValues = [];
+    const nodeStack = [];
+    let currentPointer = this.topNode;
 
-    while (currentPoint !== null || nodeStack.length > 0) {
-      while (currentPoint !== null) {
-        nodeStack.push(currentPoint);
-        currentPoint = currentPoint.minor;
+    while (currentPointer !== null || nodeStack.length > 0) {
+      while (currentPointer !== null) {
+        nodeStack.push(currentPointer);
+        currentPointer = currentPointer.leftChild;
       }
-      currentPoint = nodeStack.pop();
-      outputBuffer += ` ${currentPoint.content}`;
-      currentPoint = currentPoint.major;
+      currentPointer = nodeStack.pop();
+      collectedValues.push(currentPointer.val);
+      currentPointer = currentPointer.rightChild;
     }
-    console.log(outputBuffer);
+    console.log(collectedValues.map(v => ` ${v}`).join(''));
   }
 
-  function showPreOrderedTraversal() {
-    let outputBuffer = '';
-    if (basis === null) {
-      console.log(outputBuffer);
+  displayPreOrder() {
+    const collectedValues = [];
+    if (this.topNode === null) {
+      console.log('');
       return;
     }
 
-    let nodeStack = [];
-    nodeStack.push(basis);
+    const nodeStack = [this.topNode];
 
     while (nodeStack.length > 0) {
-      let currentPoint = nodeStack.pop();
-      outputBuffer += ` ${currentPoint.content}`;
+      let currentPointer = nodeStack.pop();
+      collectedValues.push(currentPointer.val);
 
-      if (currentPoint.major !== null) {
-        nodeStack.push(currentPoint.major);
+      if (currentPointer.rightChild !== null) {
+        nodeStack.push(currentPointer.rightChild);
       }
-      if (currentPoint.minor !== null) {
-        nodeStack.push(currentPoint.minor);
+      if (currentPointer.leftChild !== null) {
+        nodeStack.push(currentPointer.leftChild);
       }
     }
-    console.log(outputBuffer);
+    console.log(collectedValues.map(v => ` ${v}`).join(''));
   }
 
-  function displayAll() {
-    showSortedTraversal();
-    showPreOrderedTraversal();
+  showAll() {
+    this.displayInOrder();
+    this.displayPreOrder();
   }
-
-  return {
-    addEntry: addEntry,
-    displayAll: displayAll
-  };
 }
 
-(function executeCore() {
-  const fileSystem = require('fs');
-  const inputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const recordCount = Number(inputLines.shift());
+(function processInput() {
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalCommands = Number(inputLines.shift());
 
-  const structure = createDataVault();
-  inputLines.forEach(function(directive) {
-    const firstChar = directive.charAt(0);
-    if (firstChar === 'i') {
-      const parts = directive.split(' ');
-      structure.addEntry(Number(parts[1]));
-    } else {
-      structure.displayAll();
+  const treeInstance = new TreeStructure();
+
+  const commandHandlers = {
+    'i': (value) => treeInstance.addValue(Number(value)),
+    'p': () => treeInstance.showAll(),
+  };
+
+  for (const line of inputLines) {
+    const parts = line.split(' ');
+    const commandType = parts[0];
+    const commandValue = parts[1];
+
+    if (commandHandlers[commandType]) {
+      commandHandlers[commandType](commandValue);
     }
-  });
+  }
 })();

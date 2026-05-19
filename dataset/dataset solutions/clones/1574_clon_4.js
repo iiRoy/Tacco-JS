@@ -1,16 +1,14 @@
-function evaluateInput(dataFeed) {
-  const lineSeparatorPosition = dataFeed.indexOf('\n');
-  const primarySequence = (lineSeparatorPosition === -1)
-                            ? dataFeed
-                            : dataFeed.substring(0, lineSeparatorPosition);
+function Main(rawText) {
+    const firstLine = rawText.split("\n")[0];
 
-  const totalComponentValue = Array.from(primarySequence).reduce((accumulator, characterSymbol) => {
-    const digitValue = characterSymbol.charCodeAt(0) - '0'.charCodeAt(0);
-    return accumulator + digitValue;
-  }, 0);
+    const totalValue = Array.from(firstLine).reduce((currentSum, charElement) => {
+        const numericPart = parseInt(charElement, 10);
+        return currentSum + numericPart;
+    }, 0);
 
-  const outcomeVerdict = (totalComponentValue % 9 === 0) ? "Yes" : "No";
-  process.stdout.write(outcomeVerdict + '\n');
+    const finalVerdict = (totalValue % 9 === 0) ? "Yes" : "No";
+
+    console.log(finalVerdict);
 }
 
-evaluateInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

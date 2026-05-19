@@ -1,78 +1,66 @@
-(function commenceProcessing() {
-    const rawInput = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-    const inputParts = rawInput.trim().split(/\s+/);
+(function graphProcessor() {
+  const fileSystem = require('fs');
+  const inputDataLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-    let currentInputIndex = 0;
-    const totalVertices = Number(inputParts[currentInputIndex++]);
+  const nodeCount = Number(inputDataLines.shift());
 
-    const nodeConnections = new Map();
-    for (let nodeIdentifier = 0; nodeIdentifier < totalVertices; nodeIdentifier++) {
-        nodeConnections.set(nodeIdentifier, []);
-    }
+  const neighborConnections = inputDataLines.map((lineContent) => {
+    return lineContent.split(' ').slice(2).map(element => Number(element) - 1);
+  });
 
-    let currentVertexBeingParsed = 0;
-    while (currentVertexBeingParsed < totalVertices) {
-        currentInputIndex++; // Skip the node ID which is currentVertexBeingParsed + 1
-        const neighborCount = Number(inputParts[currentInputIndex++]);
-        const currentVertexNeighbors = [];
-        for (let k = 0; k < neighborCount; k++) {
-            currentVertexNeighbors.push(Number(inputParts[currentInputIndex++]) - 1);
-        }
-        nodeConnections.set(currentVertexBeingParsed, currentVertexNeighbors);
-        currentVertexBeingParsed++;
-    }
+  const discoveryTimestamps = Array(nodeCount).fill(0);
+  const completionTimestamps = Array(nodeCount).fill(0);
 
-    const globalTimeKeeper = { value: 0 };
-    const discoveryRecords = new Array(totalVertices).fill(0);
-    const completionRecords = new Array(totalVertices).fill(0);
-    const vertexVisitStates = new Array(totalVertices).fill(0); // 0: untouched, 1: visiting, 2: visited
+  traverseGraphDepthFirst(neighborConnections, discoveryTimestamps, completionTimestamps);
 
-    traverseGraphDepthFirstIterative(totalVertices, nodeConnections, globalTimeKeeper, discoveryRecords, completionRecords, vertexVisitStates);
+  const outputBuffer = Array.from({ length: nodeCount }, (_, idx) => {
+    return `${idx + 1} ${discoveryTimestamps[idx]} ${completionTimestamps[idx]}`;
+  }).join('\n') + '\n';
 
-    const outputSegments = [];
-    for (let vertexIndex = 0; vertexIndex < totalVertices; vertexIndex++) {
-        outputSegments.push(`${vertexIndex + 1} ${discoveryRecords[vertexIndex]} ${completionRecords[vertexIndex]}`);
-    }
-    console.log(outputSegments.join('\n'));
+  process.stdout.write(outputBuffer);
 })();
 
-function traverseGraphDepthFirstIterative(numNodes, adjacencyMap, timerObject, entryMoments, exitMoments, nodeStates) {
-    const UNTOUCHED = 0;
-    const VISITING = 1;
-    const VISITED = 2;
+function traverseGraphDepthFirst(nodeConnections, discoveryTimestamps, completionTimestamps) {
+  const UNVISITED_STATE = 0;
+  const EXPLORING_STATE = 1;
+  const COMPLETED_STATE = 2;
+  const graphSize = nodeConnections.length;
+  const nodeStatus = Array(graphSize).fill(UNVISITED_STATE);
 
-    for (let startingNode = 0; startingNode < numNodes; startingNode++) {
-        if (nodeStates[startingNode] === UNTOUCHED) {
-            const processingStack = [];
+  let globalTimer = 0;
+  const processingStack = [];
 
-            processingStack.push({ actionType: 'discover', targetNode: startingNode });
+  for (let currentNodeIdx = 0; currentNodeIdx < graphSize; currentNodeIdx++) {
+    if (nodeStatus[currentNodeIdx] === UNVISITED_STATE) {
+      processingStack.push({ node: currentNodeIdx, stage: 'discover' });
 
-            while (processingStack.length > 0) {
-                const currentOperation = processingStack.pop();
-                const focusNode = currentOperation.targetNode;
+      while (processingStack.length > 0) {
+        const { node: current, stage } = processingStack.pop();
 
-                if (currentOperation.actionType === 'discover') {
-                    if (nodeStates[focusNode] === UNTOUCHED) {
-                        nodeStates[focusNode] = VISITING;
-                        entryMoments[focusNode] = ++timerObject.value;
+        if (stage === 'discover') {
+          if (nodeStatus[current] === UNVISITED_STATE) {
+            nodeStatus[current] = EXPLORING_STATE;
+            globalTimer++;
+            discoveryTimestamps[current] = globalTimer;
 
-                        processingStack.push({ actionType: 'finish', targetNode: focusNode });
+            processingStack.push({ node: current, stage: 'finish' });
 
-                        const connectedNodes = adjacencyMap.get(focusNode) || [];
-                        for (let j = connectedNodes.length - 1; j >= 0; j--) {
-                            const connected = connectedNodes[j];
-                            if (nodeStates[connected] === UNTOUCHED) {
-                                processingStack.push({ actionType: 'discover', targetNode: connected });
-                            }
-                        }
-                    }
-                } else if (currentOperation.actionType === 'finish') {
-                    if (nodeStates[focusNode] !== VISITED) {
-                        nodeStates[focusNode] = VISITED;
-                        exitMoments[focusNode] = ++timerObject.value;
-                    }
-                }
+            const neighbors = nodeConnections[current];
+            for (let i = neighbors.length - 1; i >= 0; i--) {
+              const neighbor = neighbors[i];
+              if (nodeStatus[neighbor] === UNVISITED_STATE) {
+                processingStack.push({ node: neighbor, stage: 'discover' });
+              }
             }
+          }
+        } else if (stage === 'finish') {
+          if (nodeStatus[current] === EXPLORING_STATE) {
+            nodeStatus[current] = COMPLETED_STATE;
+            globalTimer++;
+            completionTimestamps[current] = globalTimer;
+          }
         }
+      }
     }
+  }
 }

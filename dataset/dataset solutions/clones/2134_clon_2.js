@@ -1,103 +1,141 @@
-// This section handles input acquisition from the standard stream.
-const dataStream = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
-});
-let parsedContent;
-const receivedData = [];
-
-dataStream.on('line', function(lineContent) {
-  receivedData.push(lineContent);
+// This section handles input processing and utility functions.
+// It's generally boilerplate for competitive programming.
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-dataStream.on('close', function() {
-  parsedContent = setupInput(receivedData);
-  console.error('\n↑ Input Data ↓ Program Output');
-  mainRoutine();
+var dataProcessor; // Global object to manage input tokens
+var inputBuffer = []; // Array to store raw input lines
+
+// Event listener for each line of input
+inputReader.on('line', function(currentLine) {
+  inputBuffer.push(currentLine);
 });
 
-// Utility function to create a deep copy of an object or Set.
-function createCopy(originalData) {
-  return (originalData instanceof Set)
-    ? new Set(Array.from(originalData))
-    : JSON.parse(JSON.stringify(originalData));
+// Event listener for when input stream closes
+inputReader.on('close', function() {
+  dataProcessor = initializeInputHandler(inputBuffer);
+  console.error('\n↑入力 ↓出力'); // Standard output/input indicator
+  executeProgram(); // Call the main logic function
+});
+
+// Creates a deep copy of an object or Set.
+// (Note: This function is defined but not used in the Main logic for this specific problem.)
+function createDeepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Functions to retrieve and convert different data types from the input source.
-function getInteger()        { return transformValue(fetchNext(), 1); }
-function getStringArray()    { return transformValue(fetchNext(), 2); }
-function getIntegerArray()   { return transformValue(fetchNext(), 4); }
-function getCharacterArray() { return transformValue(fetchNext(), 6); }
+// Helper function to retrieve the next integer from input.
+function retrieveInteger() {
+  return performConversion(fetchNextToken(), 1);
+}
 
-// Core functions to interact with the input iterator.
-function fetchNext()         { return parsedContent.retrieveNext(); }
-function hasMoreInput()      { return parsedContent.canAdvance(); }
+// Helper function to retrieve the next string array from input (split by space).
+function retrieveStringArray() {
+  return performConversion(fetchNextToken(), 2);
+}
 
-// Initializes an input iterator object from an array of strings.
-function setupInput(sourceLines) {
+// Helper function to retrieve the next integer array from input (split by space and parsed).
+function retrieveIntegerArray() {
+  return performConversion(fetchNextToken(), 4);
+}
+
+// Helper function to retrieve the next character array from input.
+function retrieveCharacterArray() {
+  return performConversion(fetchNextToken(), 6);
+}
+
+// Fetches the next token (line) from the input stream.
+function fetchNextToken() {
+  return dataProcessor.next();
+}
+
+// Checks if there are more tokens (lines) available in the input stream.
+function hasMoreTokens() {
+  return dataProcessor.hasNext();
+}
+
+// Initializes the input handler object.
+function initializeInputHandler(linesArray) {
   return {
-    contentArray: sourceLines,
-    readPosition: 0,
-    totalCount: sourceLines.length,
+    list: linesArray, // Stores all input lines
+    index: 0, // Current position in the lines array
+    max: linesArray.length, // Total number of input lines
 
-    // Checks if there are more items to read.
-    canAdvance: function() {
-      return (this.readPosition < this.totalCount);
+    // Method to check if there are more lines to read.
+    hasNext: function() {
+      return (this.index < this.max);
     },
 
-    // Retrieves the next item and advances the read position.
-    retrieveNext: function() {
-      if (this.canAdvance()) {
-        return this.contentArray[this.readPosition++];
+    // Method to get the next line from input.
+    next: function() {
+      if (this.hasNext()) {
+        return this.list[this.index++];
       } else {
-        throw 'EndOfInputReachedException - No more data available for processing.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input'; // Error if no more input
       }
     }
   };
 }
 
-// Outputs a string to the console.
-function displayMessage(resultValue) {
-  console.log(resultValue);
+// Displays output to the console.
+function displayOutput(content) {
+  console.log(content);
 }
 
-// Logs debug information to the standard error stream.
-function logDebug(debugInfo) {
-  console.error('DEBUG INFO: ' + require('util').inspect(debugInfo, false, null));
+// Logs debug messages to console.error.
+function logDebugMessage(debugContent) {
+  console.error('debug:' + require('util').inspect(debugContent, false, null));
 }
 
-// This function processes an input value based on a specified conversion type.
-// Conversion Type Key:
-//   - Default or unknown: returns the input as is.
-//   - 1: Parses to an integer.
-//   - 2: Splits by space into a string array.
-//   - 4: Splits by space and converts to an array of numbers.
-//   - 6: Splits into an array of individual characters.
-//   - 7: Splits into characters and converts each to a number.
-//   - 8: Joins array elements with spaces.
-//   - 9: Joins array elements with newlines.
-//   - 0: Joins array elements without any separator.
-function transformValue(itemToProcess, modeFlag) {
+// Utility function for various input conversions and formatting.
+// The 'conversionType' parameter dictates the operation.
+// 1: parseInt, 2: split by space, 4: split by space and map to Number,
+// 6: split by character, 7: split by character and map to Number,
+// 8: join by space, 9: join by newline, 0: join without separator.
+function performConversion(inputItem, conversionType) {
   try {
-    switch (modeFlag) {
-      case 1:  return parseInt(itemToProcess);
-      case 2:  return itemToProcess.split(' ');
-      case 4:  return itemToProcess.split(' ').map(Number);
-      case 6:  return itemToProcess.split('');
-      case 7:  return itemToProcess.split('').map(Number);
-      case 8:  return itemToProcess.join(' ');
-      case 9:  return itemToProcess.join('\n');
-      case 0:  return itemToProcess.join('');
-      default: return itemToProcess;
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputItem);
+      case 2:
+        return inputItem.split(' ');
+      case 4:
+        return inputItem.split(' ').map(Number);
+      case 6:
+        return inputItem.split('');
+      case 7:
+        return inputItem.split('').map(Number);
+      case 8:
+        return inputItem.join(' ');
+      case 9:
+        return inputItem.join('\n');
+      case 0:
+        return inputItem.join('');
+      default:
+        return inputItem; // Return as is if conversionType is unknown
     }
-  } catch (processingError) {
-    return itemToProcess; // Fallback in case of conversion error
+  } catch (error) {
+    return inputItem; // In case of conversion error, return original item
   }
 }
 
-// Main execution function for the program logic.
-function mainRoutine() {
-  const initialValues = getIntegerArray();
-  const primaryValue = initialValues[0];
-  const conversionBase = initialValues[1];
-  displayMessage(primaryValue.toString(conversionBase).length);
+// End of boilerplate input/output handling.
+// --------------------------------------------------------------------------
+
+// Main program execution logic.
+function executeProgram() {
+  // Read the first line of input as an array of integers.
+  var firstLineData = retrieveIntegerArray();
+
+  // Extract the first number (N) from the array.
+  var baseNumber = firstLineData[0];
+
+  // Extract the second number (K) from the array.
+  var targetBase = firstLineData[1];
+
+  // Convert N to a string representation in base K, then get its length.
+  // Display the calculated length.
+  displayOutput(baseNumber.toString(targetBase).length);
 }

@@ -1,67 +1,57 @@
-const ProcessInputData = (rawData) => {
-  // Validate the initial input to ensure it's a non-empty string.
-  if (typeof rawData !== 'string' || rawData.trim() === '') {
-    console.error("Error: Input data is either empty or not a valid string.");
-    return; // Exit if input is invalid.
-  }
-  
-  // Split the raw input into individual lines for further processing.
-  const inputLines = rawData.split('\n');
+function processInput(rawData) {
+  // Split the entire raw input string into an array of lines
+  var inputLines = rawData.split("\n");
 
-  // The first line typically indicates a size, though its direct use might vary.
-  // We parse it for completeness but often rely on array lengths for iteration bounds.
-  const datasetSizeIndicator = Number(inputLines[0]); 
+  // Extract the first line which represents the count of elements (N)
+  var elementCountString = inputLines[0];
+  var elementCount = parseInt(elementCountString, 10); // Convert string to integer
 
-  // Parse the subsequent lines into arrays of numbers.
-  // Each line is split by space and then mapped to its numerical equivalent.
-  const primarySequence = inputLines[1].split(' ').map(Number);
-  const baseValues = inputLines[2].split(' ').map(Number);
-  const supplementaryBonuses = inputLines[3].split(' ').map(Number);
-
-  // A reusable utility function to compute the sum of all numeric elements in an array.
-  // Utilizes the 'reduce' method for concise aggregation.
-  const computeArraySum = (numericalArray) => {
-    // Basic validation for the array passed to the sum function.
-    if (!Array.isArray(numericalArray) || numericalArray.some(isNaN)) {
-      console.warn("Warning: Attempted to sum an invalid or non-numeric array. Returning 0.");
-      return 0;
-    }
-    return numericalArray.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+  // Define a helper function to parse a space-separated string of numbers into an array
+  var parseNumericSequence = function(lineContent) {
+    return lineContent.split(" ").map(function(numString) {
+      return Number(numString); // Convert each string part to a number
+    });
   };
 
-  // Initialize the grand total with the sum of the base values.
-  let grandTotalScore = computeArraySum(baseValues);
+  // Parse the three sequences (LineA, LineB, LineC) using the helper function
+  var sequenceA = parseNumericSequence(inputLines[1]);
+  var sequenceB = parseNumericSequence(inputLines[2]);
+  var sequenceC = parseNumericSequence(inputLines[3]);
 
-  // Determine the effective upper bound for the loop to prevent out-of-bounds access.
-  // We need to access `primarySequence[currentIdx + 1]`, so the loop must end one element earlier.
-  const loopUpperBound = primarySequence.length - 1;
+  // Define a helper function to calculate the sum of all numbers in an array
+  var computeArraySum = function(numericDataArray) {
+    var currentAccumulatedSum = 0;
+    var dataArrayLength = numericDataArray.length; // Store length in a helper variable for efficiency
+    for (var arrayIndex = 0; arrayIndex < dataArrayLength; ++arrayIndex) {
+      var valueAtIndex = numericDataArray[arrayIndex]; // Use a helper variable for the current value
+      currentAccumulatedSum += valueAtIndex;
+    }
+    return currentAccumulatedSum;
+  };
 
-  // Iterate through the primary sequence to apply conditional adjustments to the total score.
-  for (let currentIdx = 0; currentIdx < loopUpperBound; currentIdx++) {
-    const currentPrimaryValue = primarySequence[currentIdx];
-    const nextPrimaryValue = primarySequence[currentIdx + 1];
+  // Initialize the overall total with the sum of sequence B
+  var finalCalculatedTotal = computeArraySum(sequenceB);
 
-    // Check if the current and subsequent values in the primary sequence form a consecutive pair.
-    // That is, if the next value is exactly one greater than the current value.
-    const areValuesConsecutive = (currentPrimaryValue + 1 === nextPrimaryValue);
+  // Determine the upper bound for the loop, which is N-1
+  var iterationLimit = elementCount - 1;
 
-    // If the condition for consecutive values is met, add a bonus.
-    if (areValuesConsecutive) {
-      // Ensure that a corresponding bonus value exists at the current index.
-      if (currentIdx < supplementaryBonuses.length) {
-        grandTotalScore += supplementaryBonuses[currentIdx];
-      } 
-      // Optional: Add a log here if a bonus is expected but missing, for debugging.
-      // else {
-      //   console.debug(`Debug: No supplementary bonus found at index ${currentIdx}.`);
-      // }
+  // Iterate through the sequences to apply conditional additions
+  for (var loopCounter = 0; loopCounter < iterationLimit; loopCounter++) {
+    var currentElementOfA = sequenceA[loopCounter]; // Get current element from sequence A
+    var nextElementOfA = sequenceA[loopCounter + 1]; // Get next element from sequence A
+
+    // Check if the current element of A is exactly one less than the next element of A
+    var conditionForAddition = (currentElementOfA + 1 === nextElementOfA);
+
+    if (conditionForAddition) {
+      var valueFromC = sequenceC[loopCounter]; // Get the corresponding value from sequence C
+      finalCalculatedTotal += valueFromC; // Add it to the running total
     }
   }
 
-  // Output the final calculated total score to the console.
-  console.log(grandTotalScore);
-};
+  // Output the final calculated total to the console
+  console.log(finalCalculatedTotal);
+}
 
-// Standard execution boilerplate for Node.js environments:
-// Reads all data from standard input, decodes it as UTF-8, and passes it to the main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

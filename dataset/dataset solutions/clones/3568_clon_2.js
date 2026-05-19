@@ -1,94 +1,78 @@
 /*
- * This module provides a utility function to compute the coordinates of two
- * additional vertices of a square, given the coordinates of two adjacent vertices.
- * The calculation assumes a counter-clockwise orientation for the vertices.
+ * This module defines a primary function for coordinate processing
+ * and an execution block that adapts to different JavaScript environments.
  */
-function SolveGeometryTask(rawCoordinateData) {
+function ProcessCoordinates(rawData) {
+  // The input string is parsed into an array of integer values.
+  let numericValues = rawData.split(" ").map(valStr => ~~valStr);
 
-    // Parse the input string into an array of integer values.
-    // The bitwise NOT operator (~~) is used for efficient integer conversion.
-    let parsedNumericValues = rawCoordinateData.split(" ").map(currentSegment => ~~currentSegment);
+  // Extract the initial two pairs of coordinates from the processed array.
+  const firstX = numericValues.shift();
+  const firstY = numericValues.shift();
+  const secondX = numericValues.shift();
+  const secondY = numericValues.shift();
 
-    // Extract the X and Y coordinates for the first two points from the array.
-    const coordAX = parsedNumericValues.shift();
-    const coordAY = parsedNumericValues.shift();
-    const coordBX = parsedNumericValues.shift();
-    const coordBY = parsedNumericValues.shift();
+  // Calculate the coordinates for a third point based on a geometric rotation/translation.
+  const thirdX = secondX - (secondY - firstY);
+  const thirdY = secondY + (secondX - firstX);
 
-    // Calculate the coordinates of the third vertex (C).
-    // This involves a 90-degree counter-clockwise rotation of vector AB
-    // added to point B.
-    let coordCX = coordBX - (coordBY - coordAY);
-    let coordCY = coordBY + (coordBX - coordAX);
+  // Determine the coordinates for a fourth point, completing a specific geometric figure.
+  const fourthX = thirdX - (secondX - firstX);
+  const fourthY = thirdY - (secondY - firstY);
 
-    // Calculate the coordinates of the fourth vertex (D).
-    // This is equivalent to translating point C by the vector BA (or subtracting vector AB from C).
-    let coordDX = coordCX - (coordBX - coordAX);
-    let coordDY = coordCY - (coordBY - coordAY);
-
-    // Combine the calculated coordinates into a space-separated string.
-    return [coordCX, coordCY, coordDX, coordDY].join(" ");
+  // Return the four calculated coordinates as a single space-separated string.
+  return [thirdX, thirdY, fourthX, fourthY].join(" ");
 }
 
-
-// This section handles the execution environment, providing a test harness
-// for both Node.js (command-line) and browser (web page) contexts.
-
-((initialInputString, computationResult, resultCategory) => {
-
-  // Check if the 'require' function is available, indicating a Node.js-like environment.
+// This immediately invoked function expression (IIFE) manages
+// the input acquisition and output display, depending on the runtime environment.
+((initialData, operationResult, resultType) => {
+  // Check if the 'require' function is available, indicating a Node.js environment.
   if (typeof require !== "undefined") {
-    // In Node.js, read input from stdin and print the result to console.
-    console.log(SolveGeometryTask(require("fs").readFileSync("/dev/stdin", "utf8")));
+    // In Node.js, read input from stdin, pass it to the processing function,
+    // and print the returned result to the console.
+    console.log(ProcessCoordinates(require("fs").readFileSync("/dev/stdin", "utf8")));
   } else {
-    // In a browser environment, process the embedded input string and display results.
-
-    // Clean up the initial input string (remove leading/trailing newlines).
-    initialInputString = initialInputString.split("\n").slice(1, -1).join("\n");
-
-    // Execute the main computation function within a try-catch block
-    // to handle potential errors gracefully.
-    computationResult = (() => {
+    // For browser-like environments, process the embedded data string.
+    initialData = initialData.split("\n").slice(1, -1).join("\n");
+    operationResult = (() => {
       try {
-        return SolveGeometryTask(initialInputString);
-      } catch (errorObject) {
-        // If an error occurs, return its stack trace or message.
-        return errorObject.stack || errorObject.message;
+        // Attempt to execute the coordinate processing function.
+        return ProcessCoordinates(initialData);
+      } catch (errorDetails) {
+        // If an error occurs, capture its stack trace or message.
+        return errorDetails.stack || errorDetails.message;
       }
     })();
+    resultType = typeof operationResult;
 
-    // Determine the type of the computation result.
-    resultCategory = typeof computationResult;
-
-    // If the result is not already a string, convert it to JSON string representation.
-    if (resultCategory !== "string") {
-      computationResult = JSON.stringify(computationResult);
+    // Ensure the operation result is a string for display purposes.
+    if (resultType !== "string") {
+      operationResult = JSON.stringify(operationResult);
     }
 
-    // Use jQuery (assuming it's loaded) to create a form with textareas
-    // displaying the input string, result type, and the final computation result.
+    // Utilize jQuery to dynamically create and append a form with text areas
+    // to the document's body, displaying the input, result type, and output.
     $("<form>")
       .append(
-          [
-              [10, initialInputString], // Config for input textarea: 10 rows, content is initialInputString
-              0,                         // A placeholder '0' to generate a <br>
-              [1, resultCategory],      // Config for type textarea: 1 row, content is resultCategory
-              0,                         // Another <br>
-              [10, computationResult]   // Config for result textarea: 10 rows, content is computationResult
-          ].map(
-              displayItemConfig => $(
-                  displayItemConfig ? "<textarea>" : "<br>", // Create textarea or br element
-                  displayItemConfig && { // If it's a textarea config, set its attributes
-                      rows: displayItemConfig[0],
-                      cols: 40,
-                      text: displayItemConfig[1]
-                  }
-              )
-          )
+        [
+          [10, initialData],
+          0,
+          [1, resultType],
+          0,
+          [10, operationResult]
+        ].map(item =>
+          item
+            ? $("<textarea>", {
+                rows: item[0],
+                cols: 40,
+                text: item[1]
+              })
+            : $("<br>")
+        )
       )
-      .appendTo("body"); // Append the created form to the document body.
+      .appendTo("body");
   }
-
 })(
   `
 31 -41 -59 26

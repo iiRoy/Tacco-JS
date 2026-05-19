@@ -1,57 +1,36 @@
-const processTransportationLogistics = (logData) => {
-    const dataSegments = logData.trim().split('\n');
+"use strict"
 
-    const [personsCount, transportCapacity, timeAllowance] = dataSegments[0].split(' ').map(Number);
-    const passengerArrivalTimes = dataSegments.slice(1).map(Number);
+function calculateBusCount(rawInput) {
+    const lines = rawInput.trim().split('\n');
 
-    passengerArrivalTimes.sort((aTime, bTime) => aTime - bTime);
+    const [passengerCount, busCapacity, timeAllowance] = lines[0].split(' ').map(Number);
+    const arrivalTimes = lines.slice(1).map(Number);
 
-    if (personsCount === 0) {
-        return 1;
+    arrivalTimes.sort((first, second) => first - second);
+
+    let currentPassengerPointer = 0;
+    let totalBusesDispatched = 0;
+    const totalArrivals = arrivalTimes.length;
+
+    while (currentPassengerPointer < totalArrivals) {
+        totalBusesDispatched++;
+        const busDepartureWindowStart = arrivalTimes[currentPassengerPointer];
+        let currentBusOccupancy = 0;
+
+        while (
+            currentPassengerPointer < totalArrivals &&
+            currentBusOccupancy < busCapacity &&
+            arrivalTimes[currentPassengerPointer] <= busDepartureWindowStart + timeAllowance
+        ) {
+            currentBusOccupancy++;
+            currentPassengerPointer++;
+        }
     }
+    console.log(totalBusesDispatched);
+}
 
-    let requiredTransports = 1;
-    let currentTransportFirstPassengerArrival = null;
-    let currentLoad = 0;
-
-    const manageTransportCycle = (currentPassengerIndex) => {
-        if (currentPassengerIndex >= passengerArrivalTimes.length) {
-            return;
-        }
-
-        currentLoad++;
-
-        if (currentTransportFirstPassengerArrival === null) {
-            currentTransportFirstPassengerArrival = passengerArrivalTimes[currentPassengerIndex];
-        }
-
-        let initiateNewTransport = false;
-        const nextPassengerArrival = passengerArrivalTimes[currentPassengerIndex + 1];
-
-        if (currentLoad === transportCapacity) {
-            initiateNewTransport = true;
-        } else if (nextPassengerArrival !== undefined && currentTransportFirstPassengerArrival + timeAllowance < nextPassengerArrival) {
-            initiateNewTransport = true;
-        }
-
-        if (initiateNewTransport) {
-            requiredTransports++;
-            currentLoad = 0;
-            currentTransportFirstPassengerArrival = null;
-        }
-
-        manageTransportCycle(currentPassengerIndex + 1);
-    };
-
-    manageTransportCycle(0);
-
-    return requiredTransports;
+const processInputAndOutput = (inputData) => {
+    calculateBusCount(inputData);
 };
 
-const runLogisticsSimulation = (fileReader) => {
-    const inputContent = fileReader("/dev/stdin", "utf8");
-    const result = processTransportationLogistics(inputContent);
-    console.log(result);
-};
-
-runLogisticsSimulation(require("fs").readFileSync);
+processInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));

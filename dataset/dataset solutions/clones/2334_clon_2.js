@@ -1,47 +1,42 @@
-const ProcessInput = (dataString) => {
-  // Convert the incoming string data to a numerical integer, discarding any fractional part.
-  let currentVal = Math.floor(dataString);
+function ProcessInput(rawData) {
+  // Convert the raw input to an integer value.
+  let currentValue = Math.floor(rawData);
 
-  // Initialize a dynamic array to store a sequence of computed numbers.
+  // Initialize a collection to store processed numbers.
   const resultCollection = [];
-  // Initialize a numerical accumulator for the ultimate result.
-  let finalTally = 0;
+  // Initialize the final accumulated sum.
+  let finalSum = 0;
 
-  // Generate a series of numbers by repeatedly subtracting two until the value is no longer positive.
-  while (currentVal > 0) {
-    resultCollection.push(currentVal); // Append the current numeric value to the collection.
-    currentVal -= 2; // Decrement the current value by two for the next iteration.
+  // Loop while the current value is positive.
+  while (currentValue > 0) {
+    resultCollection.push(currentValue); // Add the current value to the collection.
+    currentValue -= 2; // Decrement the current value by two.
   }
 
-  // Create an object to maintain a count of each unique number encountered in the collection.
-  const occurrenceMap = {};
+  // Create a map to count frequencies of numbers.
+  const frequencyMap = {};
 
-  // Iterate over the `resultCollection` to populate the `occurrenceMap` with frequencies.
+  // Iterate through the collected numbers to populate the frequency map.
   for (let idx = 0; idx < resultCollection.length; idx++) {
-    const elementKey = resultCollection[idx]; // Retrieve the number at the current index.
-    // If the number already exists as a key, increment its count; otherwise, set its count to one.
-    occurrenceMap[elementKey] = occurrenceMap[elementKey] ? occurrenceMap[elementKey] + 1 : 1;
+    const itemKey = resultCollection[idx]; // Get the current number.
+    // Increment its count, or initialize to 1 if not seen before.
+    frequencyMap[itemKey] = frequencyMap[itemKey] ? frequencyMap[itemKey] + 1 : 1;
   }
 
-  // Perform a second pass through the `resultCollection` to compute the final `finalTally`.
+  // Perform a second iteration to calculate the final sum based on specific conditions.
   for (let idx = 0; idx < resultCollection.length; idx++) {
-    // This condition checks if the fractional part of the count for the number 5 is exactly 1.
-    // For integer counts, this condition will always evaluate to false, meaning this branch is effectively dormant.
-    if (occurrenceMap[5] % 1 === 1) {
-      finalTally += occurrenceMap[5] - 1; // Adjust the tally based on the count of 5.
+    // Check a specific condition related to the count of number 5.
+    if (frequencyMap[5] % 1 === 1) {
+      finalSum += frequencyMap[5] - 1; // Adjust sum based on count of 5.
     }
-    // Alternatively, if the current element from the collection is perfectly divisible by 10.
+    // Check if the current number in the collection is a multiple of 10.
     else if (resultCollection[idx] % 10 === 0) {
-      finalTally++; // Increment the final tally by one.
+      finalSum++; // Increment sum if it's a multiple of 10.
     }
   }
+  // Output the computed final sum to the console.
+  console.log(finalSum);
+}
 
-  // Output the final calculated numerical tally to the standard console stream.
-  console.log(finalTally);
-};
-
-// Utilize Node.js's built-in module for file system operations.
-const fileSystem = require('fs');
-
-// Invoke the main processing function with data read synchronously from the standard input file path, interpreted as UTF-8 text.
-ProcessInput(fileSystem.readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

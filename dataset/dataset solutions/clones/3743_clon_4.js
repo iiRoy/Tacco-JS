@@ -1,86 +1,131 @@
-function processGraphConfiguration(configurationInput) {
-    const inputLines = configurationInput.trim().split('\n');
-    const graphParameters = inputLines[0].split(' ').map(Number);
-    const overallNodeCount = graphParameters[0];
-    const forbiddenLinkCount = graphParameters[1];
+function solveGraphProblem(inputString) {
+    const lines = inputString.split("\n");
+    const [nodeCount, edgeCount] = lines[0].split(" ").map(Number);
 
-    const forbiddenConnectionMap = new Map();
-    for (let nodeIdentifier = 0; nodeIdentifier < overallNodeCount; nodeIdentifier++) {
-        forbiddenConnectionMap.set(nodeIdentifier, new Set());
+    // adjacency[u][v] is true if (u,v) is an edge in the original graph
+    const adjacency = Array.from({ length: nodeCount }, () => Array(nodeCount).fill(false));
+
+    for (let i = 0; i < edgeCount; i++) {
+        const [u, v] = lines[i + 1].split(" ").map(s => Number(s) - 1); // 0-indexed
+        adjacency[u][v] = true;
+        adjacency[v][u] = true;
     }
 
-    for (let linkIndex = 0; linkIndex < forbiddenLinkCount; linkIndex++) {
-        const linkPair = inputLines[linkIndex + 1].split(' ').map(Number);
-        const firstPoint = linkPair[0] - 1;
-        const secondPoint = linkPair[1] - 1;
-        forbiddenConnectionMap.get(firstPoint).add(secondPoint);
-        forbiddenConnectionMap.get(secondPoint).add(firstPoint);
-    }
+    const visitedNodes = Array(nodeCount).fill(false);
+    const componentPartitionSizes = []; // Stores { sizeA, sizeB } for each component
 
-    const nodeColorAssignment = new Array(overallNodeCount).fill(0); // 0: unvisited, 1: group A, 2: group B
-    const componentPartitionMetrics = []; // Stores { sizeA, sizeB } for each bipartite component
+    // Helper function to process a connected component in the complement graph
+    // and verify clique/complete bipartite properties in the original graph.
+    // Returns { sizeA, sizeB } on success, or -1 on failure.
+    const analyzeComponent = (startNode, adjMatrix, visitedTracker, totalNodes) => {
+        const nodeColors = Array(totalNodes).fill(-1); // -1: uncolored, 0: partition A, 1: partition B
+        const queue = [startNode];
+        visitedTracker[startNode] = true;
+        nodeColors[startNode] = 0; // Start with color 0
 
-    for (let currentComponentRoot = 0; currentComponentRoot < overallNodeCount; currentComponentRoot++) {
-        if (nodeColorAssignment[currentComponentRoot] === 0) { // If node is unvisited, start a new component analysis
-            let currentComponentSizeA = 0;
-            let currentComponentSizeB = 0;
-            const traversalQueue = [currentComponentRoot];
-            nodeColorAssignment[currentComponentRoot] = 1; // Assign the root to group A
-            currentComponentSizeA++;
+        let partASize = 0;
+        let partBSize = 0;
+        const nodesInCurrentComponent = [];
 
-            let queueReadPointer = 0; // Manual queue pointer for BFS
-            while (queueReadPointer < traversalQueue.length) {
-                const activeNode = traversalQueue[queueReadPointer++];
-                const activeNodeColor = nodeColorAssignment[activeNode];
-                const oppositeGroupColor = (activeNodeColor === 1) ? 2 : 1;
+        let head = 0;
+        while (head < queue.length) {
+            const currentNode = queue[head++];
+            nodesInCurrentComponent.push(currentNode);
 
-                const connectedPartners = forbiddenConnectionMap.get(activeNode);
-                if (connectedPartners) {
-                    for (const connectedNode of connectedPartners) {
-                        if (nodeColorAssignment[connectedNode] === 0) { // Unvisited neighbor
-                            nodeColorAssignment[connectedNode] = oppositeGroupColor;
-                            if (oppositeGroupColor === 1) {
-                                currentComponentSizeA++;
-                            } else {
-                                currentComponentSizeB++;
-                            }
-                            traversalQueue.push(connectedNode);
-                        } else if (nodeColorAssignment[connectedNode] === activeNodeColor) {
-                            // Conflict: two nodes in the same group are forbidden from connecting
-                            // This means the forbidden graph is not bipartite, so no solution exists
-                            console.log(-1);
-                            return;
-                        }
+            if (nodeColors[currentNode] === 0) {
+                partASize++;
+            } else {
+                partBSize++;
+            }
+
+            for (let neighborCandidate = 0; neighborCandidate < totalNodes; neighborCandidate++) {
+                if (currentNode === neighborCandidate) continue;
+
+                // If there is NO edge in the original graph, it's an edge in the complement graph
+                if (!adjMatrix[currentNode][neighborCandidate]) {
+                    if (nodeColors[neighborCandidate] === -1) { // Unvisited in complement graph
+                        nodeColors[neighborCandidate] = 1 - nodeColors[currentNode];
+                        visitedTracker[neighborCandidate] = true;
+                        queue.push(neighborCandidate);
+                    } else if (nodeColors[neighborCandidate] === nodeColors[currentNode]) {
+                        // Complement graph is not 2-colorable (not bipartite)
+                        return -1;
                     }
                 }
             }
-            componentPartitionMetrics.push({
-                sizeA: currentComponentSizeA,
-                sizeB: currentComponentSizeB
-            });
+        }
+
+        // After 2-coloring the complement graph, verify the properties in the original graph:
+        // 1. Each partition (color class) must form a clique in the original graph.
+        // 2. All nodes between the two partitions must be connected in the original graph.
+
+        const color0Nodes = nodesInCurrentComponent.filter(node => nodeColors[node] === 0);
+        const color1Nodes = nodesInCurrentComponent.filter(node => nodeColors[node] === 1);
+
+        // Check clique property for color0Nodes
+        for (let i = 0; i < color0Nodes.length; i++) {
+            for (let j = i + 1; j < color0Nodes.length; j++) {
+                if (!adjMatrix[color0Nodes[i]][color0Nodes[j]]) {
+                    return -1; // Not a clique
+                }
+            }
+        }
+
+        // Check clique property for color1Nodes
+        for (let i = 0; i < color1Nodes.length; i++) {
+            for (let j = i + 1; j < color1Nodes.length; j++) {
+                if (!adjMatrix[color1Nodes[i]][color1Nodes[j]]) {
+                    return -1; // Not a clique
+                }
+            }
+        }
+
+        // Check complete bipartite property between color0Nodes and color1Nodes
+        for (const u of color0Nodes) {
+            for (const v of color1Nodes) {
+                if (!adjMatrix[u][v]) {
+                    return -1; // Not completely connected
+                }
+            }
+        }
+
+        return { sizeA: partASize, sizeB: partBSize };
+    };
+
+    for (let i = 0; i < nodeCount; i++) {
+        if (!visitedNodes[i]) {
+            const result = analyzeComponent(i, adjacency, visitedNodes, nodeCount);
+            if (result === -1) {
+                console.log(-1);
+                return;
+            }
+            componentPartitionSizes.push(result);
         }
     }
 
-    let possibleTotalGroupSizes = new Set([0]);
+    // Dynamic programming to find all possible sums for one partition size
+    let achievablePartitionSums = new Set([0]);
 
-    for (const componentInfo of componentPartitionMetrics) {
-        const nextPossibleSizes = new Set();
-        for (const currentSum of possibleTotalGroupSizes) {
-            nextPossibleSizes.add(currentSum + componentInfo.sizeA);
-            nextPossibleSizes.add(currentSum + componentInfo.sizeB);
+    for (const { sizeA, sizeB } of componentPartitionSizes) {
+        const nextAchievableSums = new Set();
+        for (const currentSum of achievablePartitionSums) {
+            nextAchievableSums.add(currentSum + sizeA);
+            nextAchievableSums.add(currentSum + sizeB);
         }
-        possibleTotalGroupSizes = nextPossibleSizes;
+        achievablePartitionSums = nextAchievableSums;
     }
 
-    let bestBalancedGroupSize = 0;
-    for (const candidateSize of possibleTotalGroupSizes) {
-        bestBalancedGroupSize = Math.max(bestBalancedGroupSize, Math.min(candidateSize, overallNodeCount - candidateSize));
+    let maxBalancedPartitionSize = 0;
+    for (const k of achievablePartitionSums) {
+        maxBalancedPartitionSize = Math.max(maxBalancedPartitionSize, Math.min(k, nodeCount - k));
     }
 
-    const otherGroupSize = overallNodeCount - bestBalancedGroupSize;
-    const finalEdgeCount = (bestBalancedGroupSize * (bestBalancedGroupSize - 1) / 2) + (otherGroupSize * (otherGroupSize - 1) / 2);
+    // Calculate the total number of edges
+    const finalK = maxBalancedPartitionSize;
+    const finalNMinusK = nodeCount - maxBalancedPartitionSize;
+    const totalEdges = (finalK * (finalK - 1) / 2) + (finalNMinusK * (finalNMinusK - 1) / 2);
 
-    console.log(finalEdgeCount);
+    console.log(totalEdges);
 }
 
-processGraphConfiguration(require("fs").readFileSync("/dev/stdin","utf8"));
+solveGraphProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

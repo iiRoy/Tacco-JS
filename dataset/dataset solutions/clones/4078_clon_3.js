@@ -1,107 +1,82 @@
-const parseNumericValue = (textualValue) => {
-    if (typeof textualValue !== 'string' || textualValue.trim() === '') {
-        return NaN;
-    }
-    return Number.parseInt(textualValue, 10);
-};
+function determineBlockType(blockSize, rowCoord, colCoord) {
+  const doubleBlockSize = 2 * blockSize;
+  const isFirstQuadrant = (rowCoord >= 0 && rowCoord < blockSize && colCoord >= 0 && colCoord < blockSize);
+  const isSecondQuadrant = (rowCoord >= blockSize && rowCoord < doubleBlockSize && colCoord >= blockSize && colCoord < doubleBlockSize);
 
-/**
- * Determines the type of a "tile" (pixel/block) in a repeating checkerboard pattern.
- * The pattern is defined by a segment length 's' where blocks of s x s size alternate.
- * Specifically, blocks where (floor(x/s) + floor(y/s)) is even are 'BLACK', otherwise 'WHITE'.
- * This is an equivalent re-implementation of the original 'block' function,
- * but using a more general mathematical approach for the checkerboard pattern.
- *
- * @param {number} segmentLength The size of one side of the elementary square block.
- * @param {number} xCoord The x-coordinate of the point.
- * @param {number} yCoord The y-coordinate of the point.
- * @returns {string} "BLACK" if the tile at (xCoord, yCoord) is black, otherwise "WHITE".
- */
-function determineTileType(segmentLength, xCoord, yCoord) {
-    const xBlockIndex = Math.floor(xCoord / segmentLength);
-    const yBlockIndex = Math.floor(yCoord / segmentLength);
-
-    if ((xBlockIndex + yBlockIndex) % 2 === 0) {
-        return "BLACK";
-    } else {
-        return "WHITE";
-    }
+  if (isFirstQuadrant || isSecondQuadrant) {
+    return "B";
+  }
+  return "W";
 }
 
-/**
- * Processes a list of input data to find the maximum number of points
- * that can align with a "BLACK" tile in a shifted checkerboard grid.
- * This function encapsulates the main logic of the original 'Main' function.
- *
- * @param {string[]} rawInputLines An array of strings, where the first string
- *                                 contains global configuration (N, k) and
- *                                 subsequent strings contain point data (x, y, c).
- */
-function analyzeGridAlignment(rawInputLines) {
-    const configurationParts = rawInputLines[0].split(" ");
-    const totalDataPoints = parseNumericValue(configurationParts[0]);
-    const gridBlockSize = parseNumericValue(configurationParts[1]);
+function parseAndTransformPoint(pointString, gridSize) {
+  const parts = pointString.split(" ");
+  const originalX = parseInt(parts[0], 10);
+  const originalY = parseInt(parts[1], 10);
+  const originalColor = parts[2];
 
-    if (isNaN(totalDataPoints) || isNaN(gridBlockSize) || totalDataPoints < 0 || gridBlockSize <= 0) {
-        console.error("Invalid grid configuration: totalDataPoints or gridBlockSize is invalid.");
-        return;
-    }
+  const normalizedX = originalX % gridSize;
+  const normalizedY = originalY % gridSize;
 
-    const adjustedPointCoordinates = [];
+  const xBlockFactor = Math.floor(originalX / gridSize);
+  const yBlockFactor = Math.floor(originalY / gridSize);
 
-    for (let pointIdx = 1; pointIdx <= totalDataPoints; ++pointIdx) {
-        const currentPointRecord = rawInputLines[pointIdx].split(" ");
-        const originalX = parseNumericValue(currentPointRecord[0]);
-        const originalY = parseNumericValue(currentPointRecord[1]);
-        const initialPointColor = currentPointRecord[2];
+  const needsColorFlip = (xBlockFactor % 2 + yBlockFactor % 2) % 2 === 1;
 
-        const xRemainder = originalX % gridBlockSize;
-        const yRemainder = originalY % gridBlockSize;
+  let adjustedColor = originalColor;
+  if (needsColorFlip) {
+    adjustedColor = (originalColor === "B") ? "W" : "B";
+  }
 
-        const xBlockDiv = Math.floor(originalX / gridBlockSize);
-        const yBlockDiv = Math.floor(originalY / gridBlockSize);
-        const blockParitySum = (xBlockDiv % 2) + (yBlockDiv % 2);
-
-        let effectivePointColor = initialPointColor;
-
-        if (blockParitySum % 2 !== 0) {
-            effectivePointColor = (initialPointColor === "B") ? "W" : "B";
-        }
-
-        const finalTransformedX = (effectivePointColor === "W") ? (xRemainder + gridBlockSize) : xRemainder;
-        const finalTransformedY = yRemainder;
-
-        adjustedPointCoordinates.push([finalTransformedX, finalTransformedY]);
-    }
-
-    let highestMatchCount = 0;
-
-    for (let currentShiftRow = 0; currentShiftRow < 2 * gridBlockSize; ++currentShiftRow) {
-        for (let currentShiftCol = 0; currentShiftCol < gridBlockSize; ++currentShiftCol) {
-
-            let currentOverlapCount = 0;
-
-            for (const [pointTransformedX, pointTransformedY] of adjustedPointCoordinates) {
-                const absoluteGridX = currentShiftCol + pointTransformedX;
-                const absoluteGridY = currentShiftRow + pointTransformedY;
-
-                if ("BLACK" === determineTileType(gridBlockSize, absoluteGridX, absoluteGridY)) {
-                    currentOverlapCount++;
-                }
-            }
-
-            highestMatchCount = Math.max(highestMatchCount, currentOverlapCount);
-
-            if (highestMatchCount === totalDataPoints) {
-                break;
-            }
-        }
-        if (highestMatchCount === totalDataPoints) {
-            break;
-        }
-    }
-
-    console.log(highestMatchCount);
+  const finalXCoord = (adjustedColor === "W") ? normalizedX + gridSize : normalizedX;
+  return [finalXCoord, normalizedY];
 }
 
-analyzeGridAlignment(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+function processInputData(rawDataLines) {
+  const firstLineParts = rawDataLines[0].split(" ");
+  const numPoints = parseInt(firstLineParts[0], 10);
+  const gridSize = parseInt(firstLineParts[1], 10);
+
+  const transformedPoints = [];
+
+  for (let pointIdx = 1; pointIdx <= numPoints; pointIdx++) {
+    transformedPoints.push(parseAndTransformPoint(rawDataLines[pointIdx], gridSize));
+  }
+
+  let maximumMatches = 0;
+  let shouldTerminateSearch = false;
+
+  const calculateMatchesForOffset = (currentOffsetRow, currentOffsetCol, points, blockSize) => {
+    let matchCount = 0;
+    for (const point of points) {
+      const [transformedX, transformedY] = point;
+      const targetRow = currentOffsetCol + transformedX;
+      const targetCol = currentOffsetRow + transformedY;
+      if ("B" === determineBlockType(blockSize, targetRow, targetCol)) {
+        matchCount++;
+      }
+    }
+    return matchCount;
+  };
+
+  for (let offsetRow = 0; offsetRow < 2 * gridSize; offsetRow++) {
+    for (let offsetCol = 0; offsetCol < gridSize; offsetCol++) {
+
+      const currentMatchCount = calculateMatchesForOffset(offsetRow, offsetCol, transformedPoints, gridSize);
+
+      maximumMatches = Math.max(maximumMatches, currentMatchCount);
+
+      if (maximumMatches === numPoints) {
+        shouldTerminateSearch = true;
+        break;
+      }
+    }
+    if (shouldTerminateSearch) {
+      break;
+    }
+  }
+
+  console.log(maximumMatches.toString());
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

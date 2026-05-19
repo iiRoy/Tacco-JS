@@ -1,30 +1,26 @@
-const computeResultantValue = (incomingDataString) => {
-    const dataExtractor = /(\d+)\s+(\d+)/;
-    const extractedParts = incomingDataString.match(dataExtractor);
+"use strict";
 
-    if (!extractedParts || extractedParts.length < 3) {
-        throw new Error("Data parsing failure: Expected two numerical components.");
-    }
+const processInputAndCompute = (rawInputData) => {
+    const lineSegments = rawInputData.match(/[^\n]+/g).map(s => s.trim());
 
-    const primaryMeasurement = Number(extractedParts[1]);
-    const secondaryMeasurement = Number(extractedParts[2]);
+    const firstLineTokens = lineSegments[0].match(/(\d+)\s+(\d+)/);
+    const firstNumericValue = Number(firstLineTokens[1]);
+    const secondNumericValue = Number(firstLineTokens[2]);
 
-    const numericalAdjustments = {
-        firstSubtractor: 1,
-        secondSubtractor: 2,
-        thirdSubtractor: 1
+    const numericSequence = Array.from(lineSegments[1].split(" "), Number);
+
+    const performCalculation = (operandA, operandB) => {
+        const minuendA = operandA - 1;
+        const minuendB = operandB - 2;
+        const sumOfMinuends = minuendA + minuendB;
+        const subtrahend = operandB - 1;
+
+        return sumOfMinuends / subtrahend;
     };
 
-    const topSegment = (primaryMeasurement - numericalAdjustments.firstSubtractor) +
-                       (secondaryMeasurement - numericalAdjustments.secondSubtractor);
+    const finalResult = performCalculation(firstNumericValue, secondNumericValue);
 
-    const bottomSegment = secondaryMeasurement - numericalAdjustments.thirdSubtractor;
-
-    return topSegment / bottomSegment;
+    console.log(finalResult);
 };
 
-((runtimeEnvironment) => {
-    const contentPayload = runtimeEnvironment.require('fs').readFileSync('/dev/stdin', 'utf8');
-    const finalCalculatedOutput = computeResultantValue(contentPayload);
-    runtimeEnvironment.process.stdout.write(String(finalCalculatedOutput) + '\n');
-})(global);
+processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));

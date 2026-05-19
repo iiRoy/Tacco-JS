@@ -1,25 +1,34 @@
-// Initialize standard input stream functionality
 process.stdin.resume();
-// Configure the character encoding for the input stream
+
+// Set the encoding for incoming data streams
 process.stdin.setEncoding("utf8");
 
-// Attach an event handler for incoming data segments
-process.stdin.on("inputStreamData", function (inputBlock) {
-    // Divide the received input chunk into an array of distinct lines
-    let lineCollection = inputBlock.split("\n");
-    // Establish a regular expression for extracting two positive integer values
-    let digitExtractor = /(\d+) (\d+)/;
+/*
+ * This event listener processes data chunks received from standard input.
+ * It splits the input by newline, then attempts to parse numbers from each line.
+ */
+process.stdin.on("data", function (inputSegment) {
+  // Split the incoming data chunk into individual lines
+  var linesArray = inputSegment.split("\n");
 
-    // Traverse through every line within the collected input
-    for (let currentLineIndex = 0; currentLineIndex < lineCollection.length; currentLineIndex++) {
-        // Execute the regex pattern against the present line
-        let extractionResult = digitExtractor.exec(lineCollection[currentLineIndex]);
-        // Confirm if the regex found a match and captured two groups (plus the full match)
-        if (extractionResult && extractionResult.length === 3) {
-            // Convert the first and second captured strings to integers, sum them, then convert the total back to a string
-            process.stdout.write((parseInt(extractionResult[1]) + parseInt(extractionResult[2])).toString());
-            // Append a newline character to the output for readability
-            process.stdout.write("\n");
-        } // End of conditional check for successful pattern matching
-    } // Conclude iteration over input lines
-}); // Finalize the input stream data event listener
+  // Define a regular expression to capture two sequences of digits
+  var numberPattern = /([\d]+) ([\d]+)/;
+
+  // Iterate through each line of the processed input
+  for (var idx = 0; idx < linesArray.length; idx++) {
+    // Attempt to execute the regex pattern on the current line
+    var matchOutcome = numberPattern.exec(linesArray[idx]);
+
+    // Check if a match was found and it contains two captured groups (plus the full match)
+    if (matchOutcome && matchOutcome.length === 3) {
+      // Parse the captured digit strings as integers and sum them
+      var sumOfNumbers = parseInt(matchOutcome[1]) + parseInt(matchOutcome[2]);
+
+      // Write the sum to standard output, converting it to a string
+      process.stdout.write(sumOfNumbers.toString());
+
+      // Add a newline character after each sum for proper formatting
+      process.stdout.write("\n");
+    }
+  }
+});

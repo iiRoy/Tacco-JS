@@ -1,192 +1,106 @@
-class InputDataHandler {
-    #bufferedInputLines;
-    #currentReadPosition;
-    #totalAvailableLines;
+const CONV_TYPE_INT = 1;
+const CONV_TYPE_STR_ARRAY = 2;
+const CONV_TYPE_INT_ARRAY = 4;
+const CONV_TYPE_CHAR_ARRAY = 6;
+const CONV_TYPE_CHAR_INT_ARRAY = 7;
+const CONV_TYPE_JOIN_SPACE = 8;
+const CONV_TYPE_JOIN_NEWLINE = 9;
+const CONV_TYPE_JOIN_NONE = 0;
 
-    constructor() {
-        this.#bufferedInputLines = this.#fetchRawSystemInput();
-        this.#currentReadPosition = 0;
-        this.#totalAvailableLines = this.#bufferedInputLines.length;
+const mapToNumbers = (arr) => arr.map(Number);
 
-        if (this.#totalAvailableLines === 0) {
-            console.warn("InputDataHandler: No input lines were found. Ensure input is provided.");
+function readInputFile(){
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+}
+
+function initializeInputProcessor(){
+  const rawInputContent = readInputFile();
+  const processorInstance = {
+    inputLines: rawInputContent,
+    currentLineIndex: 0,
+    totalLines: rawInputContent.length
+  };
+
+  processorInstance.hasNext = function(){
+    return (this.currentLineIndex < this.totalLines);
+  };
+
+  processorInstance.next = function(){
+    if(!this.hasNext()){
+      return "";
+    } else {
+      const currentLine = this.inputLines[this.currentLineIndex];
+      this.currentLineIndex++;
+      return currentLine;
+    }
+  };
+
+  return processorInstance;
+}
+
+function convertInputData(inputValue, conversionType){
+  try {
+    switch(conversionType){
+      case CONV_TYPE_INT: return parseInt(inputValue);
+      case CONV_TYPE_STR_ARRAY: return inputValue.split(" ");
+      case CONV_TYPE_INT_ARRAY: return mapToNumbers(inputValue.split(" "));
+      case CONV_TYPE_CHAR_ARRAY: return inputValue.split("");
+      case CONV_TYPE_CHAR_INT_ARRAY: return mapToNumbers(inputValue.split(""));
+      case CONV_TYPE_JOIN_SPACE: return inputValue.join(" ");
+      case CONV_TYPE_JOIN_NEWLINE: return inputValue.join("\n");
+      case CONV_TYPE_JOIN_NONE: return inputValue.join("");
+      default: return inputValue;
+    }
+  } catch(e) {
+    return inputValue;
+  }
+}
+
+function logOutput(data){console.log(data);}
+function logError(data){console.error(data);}
+
+const inputHandler = initializeInputProcessor();
+
+function nextInt(){return convertInputData(inputHandler.next(), CONV_TYPE_INT);}
+function nextStrArray(){return convertInputData(inputHandler.next(), CONV_TYPE_STR_ARRAY);}
+function nextIntArray(){return convertInputData(inputHandler.next(), CONV_TYPE_INT_ARRAY);}
+function nextCharArray(){return convertInputData(inputHandler.next(), CONV_TYPE_CHAR_ARRAY);}
+function next(){return inputHandler.next();}
+function hasNext(){return inputHandler.hasNext();}
+
+const isDistanceMatch = (val1, val2, targetDistance) => Math.abs(val1 - val2) === targetDistance;
+
+const incrementCount = (countsObject, key) => {
+  countsObject[key] = (countsObject[key] || 0) + 1;
+};
+
+function executeMainLogic(){
+  const initialParams = nextIntArray();
+  const gridSizeN = initialParams[0];
+  const maxValM = initialParams[1];
+  const distanceD = initialParams[2];
+
+  const occurrenceCounts = {};
+  const loopLimit = gridSizeN;
+
+  for(let valA = 1; valA <= loopLimit; valA++){
+    for(let valB = 1; valB <= loopLimit; valB++){
+      for(let valC = 1; valC <= loopLimit; valC++){
+        for(let valD = 1; valD <= loopLimit; valD++){
+          let matchCount = 0;
+
+          if(isDistanceMatch(valA, valB, distanceD)) matchCount++;
+          if(isDistanceMatch(valC, valB, distanceD)) matchCount++;
+          if(isDistanceMatch(valC, valD, distanceD)) matchCount++;
+
+          incrementCount(occurrenceCounts, matchCount);
         }
+      }
     }
-
-    #fetchRawSystemInput() {
-        const standardInputSource = "/dev/stdin";
-        try {
-            const fileSystemAccess = require("fs");
-            const rawContentBuffer = fileSystemAccess.readFileSync(standardInputSource, "utf8");
-            // Trim leading/trailing whitespace from the whole content, then split by newlines.
-            // Filter out any resultant empty strings to handle multiple newlines gracefully.
-            return rawContentBuffer.trim().split("\n").filter(line => line.trim().length > 0);
-        } catch (ioError) {
-            console.error(`CRITICAL: Error reading from ${standardInputSource}. Details: ${ioError.message}`);
-            // In case of an error, return an empty array to prevent subsequent processing issues.
-            return [];
-        }
-    }
-
-    hasMoreData() {
-        return this.#currentReadPosition < this.#totalAvailableLines;
-    }
-
-    retrieveNextLine() {
-        if (!this.hasMoreData()) {
-            console.warn("InputDataHandler: Attempted to read beyond the end of the input stream. Returning empty string.");
-            return "";
-        }
-        const lineContent = this.#bufferedInputLines[this.#currentReadPosition];
-        this.#currentReadPosition++;
-        return lineContent;
-    }
+  }
+  logOutput(occurrenceCounts);
 }
 
-const inputLineManager = new InputDataHandler();
-
-applicationEntryPoint();
-
-function displayOutput(message) {
-    console.log(message);
-}
-
-function recordError(errorMessage) {
-    console.error(errorMessage);
-}
-
-const DataConversionSchema = Object.freeze({
-    PARSE_AS_INTEGER: "PARSE_AS_INTEGER",
-    SPLIT_BY_WHITESPACE_TO_STRINGS: "SPLIT_BY_WHITESPACE_TO_STRINGS",
-    SPLIT_BY_WHITESPACE_TO_NUMBERS: "SPLIT_BY_WHITESPACE_TO_NUMBERS",
-    BREAK_INTO_CHARACTERS: "BREAK_INTO_CHARACTERS",
-    BREAK_INTO_NUMERIC_CHARS: "BREAK_INTO_NUMERIC_CHARS",
-    CONCAT_WITH_SPACE: "CONCAT_WITH_SPACE",
-    CONCAT_WITH_NEWLINE: "CONCAT_WITH_NEWLINE",
-    CONCAT_DIRECTLY: "CONCAT_DIRECTLY"
-});
-
-function processDataTransformation(payload, transformationRule) {
-    const convertArrayElementsToNumbers = (arr) => {
-        if (!Array.isArray(arr)) {
-            recordError("ERROR: 'convertArrayElementsToNumbers' received non-array input. Skipping conversion.");
-            return arr;
-        }
-        return arr.map(element => Number(element));
-    };
-
-    if (payload === undefined || payload === null) {
-        recordError("WARNING: 'processDataTransformation' received undefined/null payload. Returning as-is.");
-        return payload;
-    }
-
-    try {
-        switch (transformationRule) {
-            case DataConversionSchema.PARSE_AS_INTEGER:
-                return parseInt(String(payload), 10);
-            case DataConversionSchema.SPLIT_BY_WHITESPACE_TO_STRINGS:
-                return String(payload).split(" ");
-            case DataConversionSchema.SPLIT_BY_WHITESPACE_TO_NUMBERS:
-                return convertArrayElementsToNumbers(String(payload).split(" "));
-            case DataConversionSchema.BREAK_INTO_CHARACTERS:
-                return String(payload).split("");
-            case DataConversionSchema.BREAK_INTO_NUMERIC_CHARS:
-                return convertArrayElementsToNumbers(String(payload).split(""));
-            case DataConversionSchema.CONCAT_WITH_SPACE:
-                return Array.isArray(payload) ? payload.join(" ") : (recordError("ERROR: Join operation requires an array."), payload);
-            case DataConversionSchema.CONCAT_WITH_NEWLINE:
-                return Array.isArray(payload) ? payload.join("\n") : (recordError("ERROR: Join operation requires an array."), payload);
-            case DataConversionSchema.CONCAT_DIRECTLY:
-                return Array.isArray(payload) ? payload.join("") : (recordError("ERROR: Join operation requires an array."), payload);
-            default:
-                recordError(`WARNING: Unknown transformation rule: ${transformationRule}. Returning original payload.`);
-                return payload;
-        }
-    } catch (transformError) {
-        recordError(`EXCEPTION: Data transformation failed for rule '${transformationRule}': ${transformError.message}`);
-        return payload;
-    }
-}
-
-function retrieveNextInteger() {
-    const rawInput = inputLineManager.retrieveNextLine();
-    return processDataTransformation(rawInput, DataConversionSchema.PARSE_AS_INTEGER);
-}
-
-function retrieveNextStringArray() {
-    const rawInput = inputLineManager.retrieveNextLine();
-    return processDataTransformation(rawInput, DataConversionSchema.SPLIT_BY_WHITESPACE_TO_STRINGS);
-}
-
-function retrieveNextNumericArray() {
-    const rawInput = inputLineManager.retrieveNextLine();
-    return processDataTransformation(rawInput, DataConversionSchema.SPLIT_BY_WHITESPACE_TO_NUMBERS);
-}
-
-function retrieveNextCharacterArray() {
-    const rawInput = inputLineManager.retrieveNextLine();
-    return processDataTransformation(rawInput, DataConversionSchema.BREAK_INTO_CHARACTERS);
-}
-
-function isAbsoluteDifferenceMatching(valueX, valueY, targetDifference) {
-    const calculatedDifference = Math.abs(valueX - valueY);
-    return calculatedDifference === targetDifference;
-}
-
-function applicationEntryPoint() {
-    const executionStartTimestamp = process.hrtime.bigint();
-
-    const initialConfiguration = retrieveNextNumericArray();
-    
-    if (!Array.isArray(initialConfiguration) || initialConfiguration.length < 3) {
-        recordError("FATAL: Initial configuration line is malformed or incomplete. Expected at least 3 numeric parameters.");
-        displayOutput("Application terminated due to critical input error.");
-        return;
-    }
-
-    const [
-        upperBoundForLoops,        // Corresponds to 'N' in the original problem.
-        _ignoredSecondParameter,   // Corresponds to 'M', which is not utilized in the core logic.
-        requiredAbsoluteDifference // Corresponds to 'd'.
-    ] = initialConfiguration;
-
-    if (upperBoundForLoops < 1) {
-        displayOutput("WARNING: The upper bound for iteration (N) must be a positive integer. No computations performed.");
-        return;
-    }
-
-    const frequencyDistributionMap = {}; // Will store counts of how many times each match score occurs.
-
-    for (let firstCounter = 1; firstCounter <= upperBoundForLoops; firstCounter++) {
-        for (let secondCounter = 1; secondCounter <= upperBoundForLoops; secondCounter++) {
-            for (let thirdCounter = 1; thirdCounter <= upperBoundForLoops; thirdCounter++) {
-                for (let fourthCounter = 1; fourthCounter <= upperBoundForLoops; fourthCounter++) {
-                    let currentCombinationScore = 0;
-
-                    if (isAbsoluteDifferenceMatching(firstCounter, secondCounter, requiredAbsoluteDifference)) {
-                        currentCombinationScore++;
-                    }
-                    if (isAbsoluteDifferenceMatching(thirdCounter, secondCounter, requiredAbsoluteDifference)) {
-                        currentCombinationScore++;
-                    }
-                    if (isAbsoluteDifferenceMatching(thirdCounter, fourthCounter, requiredAbsoluteDifference)) {
-                        currentCombinationScore++;
-                    }
-
-                    // Increment the count for the current score. If the score hasn't been seen, initialize it to 0 first.
-                    frequencyDistributionMap[currentCombinationScore] = (frequencyDistributionMap[currentCombinationScore] || 0) + 1;
-                }
-            }
-        }
-    }
-
-    const executionEndTimestamp = process.hrtime.bigint();
-    const totalDurationInMs = Number(executionEndTimestamp - executionStartTimestamp) / 1_000_000;
-
-    displayOutput("\n--- Program Execution Report ---");
-    displayOutput(`Configured Parameters: Max Iteration Value (N)=${upperBoundForLoops}, Required Difference (d)=${requiredAbsoluteDifference}`);
-    displayOutput("Calculated Match Score Frequencies:");
-    displayOutput(JSON.stringify(frequencyDistributionMap, null, 4)); // Pretty print the result object
-    displayOutput(`Total Processing Time: ${totalDurationInMs.toFixed(4)} milliseconds`);
-    displayOutput("----------------------------------\n");
-}
+(function applicationStart() {
+  executeMainLogic();
+})();

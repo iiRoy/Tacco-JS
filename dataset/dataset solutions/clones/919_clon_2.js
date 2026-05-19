@@ -1,23 +1,27 @@
-const   incomingData    =   require ( 'fs' )  .  readFileSync ( '/dev/stdin' ,  'utf8' ) ;
-//  Retrieve raw text input from standard input stream.
+/*
+ * This script processes numerical input from standard input.
+ * It reads a line, parses four numbers, and then applies a specific
+ * conditional check based on the first two numbers.
+ */
 
-const [   valX   ,   valY   ,   valZ   ,   valW   ]  =  incomingData
-                                                .  trim ( )
-                                                .  split ( " " )
-                                                .  map ( Number ) ;
-//  Process the input string: remove whitespace, split by space, and convert each part to a number.
-//  The four resulting numeric components are then destructured into distinct variables.
+// Import the Node.js file system module to read from stdin.
+const fileSystem = require('fs');
 
-if ( ( valX + valY + 1 ) % 2 === 0  &&  ( valX * valY + 1 ) % 2 )
-{
-    console.log ( "No" ) ;
-    //  If the sum of the first two numbers plus one is even,
-    //  AND the product of the first two numbers plus one is odd,
-    //  then output the specific negative response.
-}
-else
-{
-    console.log ( "Yes" ) ;
-    //  Otherwise, if the compound logical condition is not met,
-    //  output the specific positive response.
+// Read the entire content from standard input, decode it as UTF-8.
+let rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+// Trim leading/trailing whitespace, split the string by spaces,
+// and convert each resulting part into a number.
+// Destructure the first four numbers into distinct variables.
+let [valA, valB, valC, valD] = rawData.trim().split(" ").map(Number);
+
+// Evaluate a complex condition involving valA and valB.
+// The condition checks if (valA + valB + 1) is an even number
+// AND if (valA * valB + 1) is an odd number.
+if (((valA + valB + 1) % 2 === 0) && ((valA * valB + 1) % 2 !== 0)) {
+  // If the condition is true, print "No" to the console.
+  console.log("No");
+} else {
+  // Otherwise (if the condition is false), print "Yes" to the console.
+  console.log("Yes");
 }

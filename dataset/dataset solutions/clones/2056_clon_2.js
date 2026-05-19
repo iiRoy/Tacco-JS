@@ -1,154 +1,140 @@
-function ExecuteProgram(rawData) {
-    // Process the incoming raw data string
-    rawData = rawData.trim().split("\n").map(function(lineFragment) { 
-        return lineFragment.split(" ");
+function ProcessInput(rawData) {
+    // Process the raw input string into a structured array
+    let processedLines = rawData.trim().split("\n").map(function(lineSegment) {
+        return lineSegment.split(" ");
     });
 
-    // Extract crucial dimensions and the maximum allowed sum
-    const gridRows = parseInt(rawData[0][0], 10);
-    const gridCols = parseInt(rawData[0][1], 10);
-    const maxSegmentSum = parseInt(rawData[0][2], 10);
+    // Parse dimensions and limit from the first line
+    const heightVal = parseInt(processedLines[0][0], 10);
+    const widthVal = parseInt(processedLines[0][1], 10);
+    const limitVal = parseInt(processedLines[0][2], 10);
 
-    // Initialize arrays to store cell values and their row-wise prefix sums
-    let cellValues = [];
-    let rowPrefixSums = [];
-    
-    let temporaryAccumulator; // A temporary variable for sum calculation
+    // Initialize arrays for the original matrix and its prefix sums
+    let matrixData = [];
+    let prefixSums = [];
+    let tempVar;
 
-    // Populate the cell values and calculate prefix sums for each row
-    for (let rowIndex = 0; rowIndex < gridRows; rowIndex++) {
-        cellValues.push(rawData[rowIndex + 1][0].split("").map(element => parseInt(element, 10)));
-        rowPrefixSums.push([0]); // Start with a zero for prefix sum
-        temporaryAccumulator = 0;
-        for (let colIndex = 0; colIndex < gridCols; colIndex++) {
-            temporaryAccumulator += cellValues[rowIndex][colIndex];
-            rowPrefixSums[rowIndex].push(temporaryAccumulator);
+    // Populate matrixData and calculate prefixSums for each row
+    for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        matrixData.push(processedLines[rowIdx + 1][0].split("").map(element => parseInt(element, 10)));
+        prefixSums.push([0]); // Start with 0 for prefix sum
+        tempVar = 0;
+        for (let colIdx = 0; colIdx < widthVal; colIdx++) {
+            tempVar += matrixData[rowIdx][colIdx];
+            prefixSums[rowIdx].push(tempVar);
         }
     }
-    
-    // Determine the number of potential horizontal divisions (N-1 for N rows)
-    const numHorizontalCuts = gridRows - 1; 
-    
-    let horizDivisionMarkers;
-    let mergedRowsData;
-    let segmentSums; 
-    let currentHorizontalCutCount;
-    let verticalCutPositions;
-    
-    // Initialize the overall minimum cuts with a large value (or sum of max possible cuts)
-    let minimumCuts = (gridRows - 1) + (gridCols - 1);
 
-    // Label for the outer loop to allow early continuation
+    // N represents the number of possible horizontal cuts (H-1)
+    const numRowsMinusOne = heightVal - 1;
+    let rowDivisions;
+    let currentRows;
+    let currentColSums;
+    let horizontalCuts;
+    let verticalCuts;
+    let minCuts = (heightVal - 1) + (widthVal - 1); // Initialize with max possible cuts
+
+    // Main loop: Iterate through all possible horizontal cut configurations
     mainIteration:
-    for (let configIndex = 0; configIndex < Math.pow(2, numHorizontalCuts); configIndex++) {
-        // Handle the special case where there are no horizontal divisions possible (only one row)
-        if (numHorizontalCuts === 0) {
-            mergedRowsData = [rowPrefixSums[0].slice()]; // Just the single row's prefix sums
-            currentHorizontalCutCount = 0; // No horizontal cuts needed
-        } else {        
-            // Initialize an array to track horizontal division points (not strictly used but represents the divisions)
-            horizDivisionMarkers = Array(gridRows).fill(0).map((_, idx) => idx);
-            
-            // Start with the first row's prefix sums
-            mergedRowsData = [rowPrefixSums[0].slice()];
-            
-            // Convert the configuration index to a binary string and pad with leading zeros
-            let binaryStringRepresentation = configIndex.toString(2);
-            binaryStringRepresentation = ('0'.repeat(numHorizontalCuts) + binaryStringRepresentation).slice(-numHorizontalCuts);
-            
-            currentHorizontalCutCount = 0; // Reset horizontal cut counter for this configuration
+    for (let configIdx = 0; configIdx < Math.pow(2, numRowsMinusOne); configIdx++) {
+        // Handle the special case where there are no horizontal cuts possible (H=1)
+        if (numRowsMinusOne === 0) {
+            currentRows = [prefixSums[0].slice()];
+            horizontalCuts = 0;
+        } else {
+            // Initialize row division tracking array
+            rowDivisions = [0, 1, 2, 3, 4, 5, 6, 7]; // Max 8 rows, adjust if needed
+            rowDivisions.length = heightVal;
+            currentRows = [prefixSums[0].slice()]; // Start with the first row's prefix sums
 
-            // Iterate through the binary string to determine horizontal merges/cuts
-            for (let bitIndex = 0; bitIndex < binaryStringRepresentation.length; bitIndex++) {
-                // If the bit is '0', merge the current row with the previous merged segment
-                if (binaryStringRepresentation.charAt(bitIndex) === '0') {
-                    horizDivisionMarkers[bitIndex + 1] = horizDivisionMarkers[bitIndex]; // No new division
-                    mergedRowsData[mergedRowsData.length - 1] = PerformVectorOperation(
-                        mergedRowsData[mergedRowsData.length - 1], 
-                        rowPrefixSums[bitIndex + 1], 
-                        '+'
-                    );
-                } 
-                // If the bit is '1', start a new merged segment (i.e., a horizontal cut)
-                else {
-                    mergedRowsData.push(rowPrefixSums[bitIndex + 1].slice()); // New segment
-                    currentHorizontalCutCount++;
+            // Convert configIdx to a binary string to represent horizontal cuts
+            tempVar = configIdx.toString(2);
+            tempVar = ('0'.repeat(numRowsMinusOne) + tempVar).substr(-1 * numRowsMinusOne);
+            horizontalCuts = 0;
+
+            // Apply horizontal cuts based on the binary string
+            for (let bitIdx = 0; bitIdx < tempVar.length; bitIdx++) {
+                if (tempVar.substr(bitIdx, 1) === '0') {
+                    // No cut: merge current row with the previous group
+                    rowDivisions[bitIdx + 1] = rowDivisions[bitIdx];
+                    currentRows[currentRows.length - 1] = VectorOperation(currentRows[currentRows.length - 1], prefixSums[bitIdx + 1], '+');
+                } else {
+                    // Cut: start a new group of rows
+                    currentRows.push(prefixSums[bitIdx + 1].slice());
+                    horizontalCuts++;
                 }
             }
         }
-        
-        // Initialize sums for each segment and an array to store vertical cut positions
-        segmentSums = Array(mergedRowsData.length).fill(0);
-        verticalCutPositions = [];
 
-        // Iterate through columns to determine optimal vertical cuts
-        segmentCheck:
-        for (let currentColumn = 1; currentColumn <= gridCols; currentColumn++) {
-            // Check each merged row segment
-            for (let segmentIdx = 0; segmentIdx < mergedRowsData.length; segmentIdx++) {
-                // If the sum of the current segment exceeds the maximum allowed sum
-                if (mergedRowsData[segmentIdx][currentColumn] - segmentSums[segmentIdx] > maxSegmentSum) {
-                    // If this is the very first column OR the previous column already had a cut, 
-                    // this configuration is invalid, so skip to the next horizontal configuration
-                    if (currentColumn === 1 || verticalCutPositions[verticalCutPositions.length - 1] === currentColumn - 1) {
+        // Initialize current column sums for each row group and vertical cuts
+        currentColSums = [0, 0, 0, 0, 0, 0, 0, 0];
+        currentColSums.length = currentRows.length;
+        verticalCuts = [];
+
+        // Iterate through columns to determine vertical cuts
+        for (let colIdx = 1; colIdx <= widthVal; colIdx++) {
+            columnIteration:
+            for (let sumIdx = 0; sumIdx < currentRows.length; sumIdx++) {
+                // Check if the sum of elements in the current group exceeds the limitVal
+                if (currentRows[sumIdx][colIdx] - currentColSums[sumIdx] > limitVal) {
+                    // If it exceeds and it's the first column, or the previous column already had a cut,
+                    // this configuration is invalid. Move to the next horizontal cut configuration.
+                    if (colIdx === 1 || verticalCuts[verticalCuts.length - 1] === colIdx - 1) {
                         continue mainIteration;
                     }
-                    
-                    // Otherwise, add a vertical cut before the current column
-                    verticalCutPositions.push(currentColumn - 1); 
-                    
-                    // Reset segment sums based on the new cut position
-                    for (let resetIdx = 0; resetIdx < mergedRowsData.length; resetIdx++) {
-                        segmentSums[resetIdx] = mergedRowsData[resetIdx][currentColumn - 1];
+                    // Otherwise, a vertical cut is needed before this column
+                    verticalCuts.push(colIdx - 1); // Cut between colIdx-1 and colIdx
+                    // Reset current column sums for all groups to the values before the cut
+                    for (let resetIdx = 0; resetIdx < currentRows.length; resetIdx++) {
+                        currentColSums[resetIdx] = currentRows[resetIdx][colIdx - 1];
                     }
-                    
-                    currentColumn--; // Re-evaluate the current column with the new cut
-                    break segmentCheck; // Break from inner loop to re-check segments from currentColumn
-                } 
+                    colIdx--; // Re-evaluate the current column after the cut
+                    break columnIteration; // Break from inner loop to re-evaluate current column
+                }
             }
         }
-        // Update the minimum total cuts found so far
-        minimumCuts = Math.min(minimumCuts, currentHorizontalCutCount + verticalCutPositions.length);
+        // Update the minimum number of cuts found so far
+        minCuts = Math.min(minCuts, horizontalCuts + verticalCuts.length);
     }
-    console.log(minimumCuts); // Output the final minimum cuts
+    console.log(minCuts);
 }
 
-
-function PerformVectorOperation(vectorA, vectorB, operationType){
-    let resultVector = []; // Array to store the result of the operation
-    
-    // Handle cases where vectorB might be a scalar (single element array)
-    if (vectorA.length !== vectorB.length) {
-      if (vectorB.length === 1){
-        vectorB = Array.from({ length: (vectorA.length) }, () => vectorB[0]);
-      } else {
-          return null; // Return null if vectors are incompatible
-      }
+// Helper function for vector operations (addition, subtraction, etc.)
+function VectorOperation(vecA, vecB, operationType) {
+    let resultVec = [];
+    // Handle cases where vector lengths might differ (e.g., scalar operation)
+    if (vecA.length !== vecB.length) {
+        if (vecB.length === 1) {
+            // If vecB is a single element, treat it as a scalar to be applied to all elements of vecA
+            vecB = Array.from({ length: (vecA.length) }, () => vecB[0]);
+        } else {
+            return null; // Return null for incompatible vector lengths
+        }
     }
-    
+
     // Perform the specified operation element-wise
-    for (let elementIndex = 0; elementIndex < vectorA.length; elementIndex++){
+    for (let idx = 0; idx < vecA.length; idx++) {
         if (operationType === '+') {
-            resultVector.push(vectorA[elementIndex] + vectorB[elementIndex]);
-        } 
+            resultVec.push(vecA[idx] + vecB[idx]);
+        }
         if (operationType === '-') {
-            resultVector.push(vectorA[elementIndex] - vectorB[elementIndex]);
-        } 
+            resultVec.push(vecA[idx] - vecB[idx]);
+        }
         if (operationType === '*') {
-            resultVector.push(vectorA[elementIndex] * vectorB[elementIndex]);
-        } 
+            resultVec.push(vecA[idx] * vecB[idx]);
+        }
         if (operationType === '/') {
-            resultVector.push(vectorA[elementIndex] / vectorB[elementIndex]);
-        } 
+            resultVec.push(vecA[idx] / vecB[idx]);
+        }
         if (operationType === '%') {
-            resultVector.push(vectorA[elementIndex] % vectorB[elementIndex]);
-        } 
-        if (operationType === '||') { // Custom operation for element-wise maximum
-            resultVector.push(Math.max(vectorA[elementIndex],vectorB[elementIndex]));
-        } 
+            resultVec.push(vecA[idx] % vecB[idx]);
+        }
+        if (operationType === '||') { // Custom operation for maximum
+            resultVec.push(Math.max(vecA[idx], vecB[idx]));
+        }
     }
-    return resultVector;    // Return the new vector
+    return resultVec;
 }
 
-// Invoke the primary function using file system input
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

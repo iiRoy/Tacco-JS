@@ -1,14 +1,15 @@
-const fileSystemAdapter = require('fs');
-const sourceDataContent = fileSystemAdapter.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const transformedText = sourceDataContent.replace(/[a-zA-Z]/g, (characterToProcess) => {
-    if (characterToProcess === characterToProcess.toLowerCase()) {
-        // If the character is lowercase, convert it to uppercase
-        return characterToProcess.toUpperCase();
-    } else {
-        // If the character is uppercase, convert it to lowercase
-        return characterToProcess.toLowerCase();
-    }
-});
+const inputContentBuffer = fileSystem.readFileSync('/dev/stdin');
 
-console.log(transformedText.trim());
+const processedByteValues = Array.from(inputContentBuffer).map(octetValue =>
+    (octetValue >= 0x41 && octetValue <= 0x5A) // ASCII 'A' (65) through 'Z' (90)
+        ? octetValue + 0x20 // Convert to lowercase by adding 32
+        : (octetValue >= 0x61 && octetValue <= 0x7A) // ASCII 'a' (97) through 'z' (122)
+            ? octetValue - 0x20 // Convert to uppercase by subtracting 32
+            : octetValue // Preserve non-alphabetic characters
+);
+
+const outputContentBuffer = Buffer.from(processedByteValues);
+
+console.log(outputContentBuffer.toString().trim());

@@ -1,118 +1,101 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let lineBuffer = dataSource
-  .trim()
-  .split("\n");
+// Process input data, splitting by newlines and removing leading/trailing whitespace
+var lineSegments = rawData.trim().split("\n");
 
-// Process multiple test cases from the input stream.
+// Main loop to process multiple test cases
 while (true) {
-  // Read the dimensions (height and width) for the current grid.
-  // The line is split by space and each part converted to a number.
-  const dims = lineBuffer
-    .shift()
-    .split(" ")
-    .map(Number);
+    // Read dimensions (height and width) for the current test case
+    var dims = lineSegments.shift().split(" ").map(Number);
 
-  // Check for the termination condition: "0 0" indicates end of input.
-  if (dims.join(" ") === "0 0") {
-    break;
-  }
-
-  // Extract the height and width values.
-  const heightVal = dims[0];
-  const widthVal = dims[1];
-
-  // Initialize a 2D array to store the calculated heights of consecutive '.' characters.
-  // This array effectively transforms the grid into a series of histograms.
-  const gridHeights = [];
-
-  // Iterate through each row of the input grid data.
-  for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
-    // Get the character array for the current row.
-    const currentLineChars = lineBuffer
-      .shift()
-      .split("");
-
-    // Initialize the sub-array for the current row in gridHeights.
-    gridHeights[rowIdx] = [];
-
-    // Process each character in the current row.
-    currentLineChars.forEach(function(charSymbol, colIdx) {
-      // Determine the height based on the character and previous row's value.
-      if (rowIdx === 0) {
-        // For the first row, a '.' is height 1, anything else is height 0.
-        if (charSymbol === ".") {
-          gridHeights[rowIdx][colIdx] = 1;
-        } else {
-          gridHeights[rowIdx][colIdx] = 0;
-        }
-      } else {
-        // For subsequent rows, if it's '.', its height is one more than the cell directly above.
-        // Otherwise, it's 0.
-        if (charSymbol === ".") {
-          gridHeights[rowIdx][colIdx] = gridHeights[rowIdx - 1][colIdx] + 1;
-        } else {
-          gridHeights[rowIdx][colIdx] = 0;
-        }
-      }
-    });
-  }
-
-  // Variable to store the maximum rectangular area found across all rows.
-  let greatestArea = 0;
-
-  // Iterate through each row of gridHeights, treating each row as a histogram.
-  for (let currentRow = 0; currentRow < heightVal; currentRow++) {
-    // Initialize a stack to help find the largest rectangle in the current histogram row.
-    const histogramStack = [];
-    // Add a sentinel bar of height 0 at the end of the current row's histogram.
-    // This ensures all bars remaining in the stack are processed.
-    gridHeights[currentRow][widthVal] = 0;
-
-    // Iterate through each bar (column) in the current histogram row.
-    for (let currentCol = 0; currentCol <= widthVal; currentCol++) {
-      const currentHeight = gridHeights[currentRow][currentCol];
-
-      // If the stack is empty, push the current bar's height and its effective starting index.
-      if (histogramStack.length === 0) {
-        histogramStack.push([currentHeight, currentCol + 1]);
-        continue;
-      }
-
-      // If the current bar is taller than the bar at the top of the stack, push it.
-      if (histogramStack[histogramStack.length - 1][0] < currentHeight) {
-        histogramStack.push([currentHeight, currentCol]);
-      }
-      // If the current bar is the same height, it effectively extends the top bar; do nothing.
-      else if (histogramStack[histogramStack.length - 1][0] === currentHeight) {
-        continue;
-      }
-      // If the current bar is shorter than the bar at the top of the stack,
-      // pop bars until a shorter or equal bar is found.
-      else if (histogramStack[histogramStack.length - 1][0] > currentHeight) {
-        while (histogramStack.length !== 0) {
-          const poppedBar = histogramStack.pop(); // Remove the top bar from the stack.
-
-          // If the current height is greater than the popped bar's height,
-          // push the popped bar back and stop processing for this 'currentHeight'.
-          if (currentHeight > poppedBar[0]) {
-            histogramStack.push(poppedBar);
-            break;
-          }
-          // If the current height is equal to the popped bar's height, stop processing.
-          else if (currentHeight === poppedBar[0]) {
-            break;
-          }
-          // If the current height is less than the popped bar's height,
-          // calculate the area for the popped bar and update the maximum area.
-          else if (currentHeight < poppedBar[0]) {
-            // Area is (popped bar's height) * (current column index + 1 - popped bar's starting index).
-            greatestArea = Math.max(greatestArea, poppedBar[0] * ((currentCol + 1) - poppedBar[1]));
-          }
-        }
-      }
+    // Check for termination condition (0 0)
+    if (dims.join(" ") === "0 0") {
+        break;
     }
-  }
-  // Print the largest area found for the current test case.
-  console.log(greatestArea);
+
+    // Extract height and width
+    var heightVal = dims[0];
+    var widthVal = dims[1];
+
+    // Initialize a 2D array to store processed matrix data
+    // This matrix will store the height of consecutive '.' characters upwards
+    var matrixData = [];
+
+    // Populate the matrixData based on input characters
+    for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        // Get the current row of characters
+        var rowChars = lineSegments.shift().split("");
+        matrixData[rowIdx] = []; // Initialize the current row in matrixData
+
+        // Iterate through each character in the row
+        rowChars.forEach(function(charVal, colIdx) {
+            if (rowIdx === 0 && charVal === ".") {
+                // If it's the first row and a '.', set height to 1
+                matrixData[rowIdx][colIdx] = 1;
+            } else if (rowIdx === 0 && charVal !== ".") {
+                // If it's the first row and not a '.', set height to 0
+                matrixData[rowIdx][colIdx] = 0;
+            } else if (rowIdx !== 0 && charVal === ".") {
+                // If not the first row and a '.', add 1 to the height from the cell above
+                matrixData[rowIdx][colIdx] = matrixData[rowIdx - 1][colIdx] + 1;
+            } else if (rowIdx !== 0 && charVal !== ".") {
+                // If not the first row and not a '.', set height to 0
+                matrixData[rowIdx][colIdx] = 0;
+            }
+        });
+    }
+
+    // Variable to store the maximum area found
+    var greatestArea = 0;
+
+    // Iterate through each row of the processed matrix to find the largest rectangle
+    for (var currentR = 0; currentR < heightVal; currentR++) {
+        // Stack to keep track of heights and their starting column indices
+        var stackOfHeights = [];
+        // Add a sentinel value (0) at the end of each row to ensure all elements in the stack are processed
+        matrixData[currentR][widthVal] = 0;
+
+        // Iterate through each column (including the sentinel)
+        for (var currentC = 0; currentC <= widthVal; currentC++) {
+            var currentH = matrixData[currentR][currentC]; // Current height value
+
+            if (stackOfHeights.length === 0) {
+                // If stack is empty, push the current height and its starting column
+                stackOfHeights.push([currentH, currentC + 1]);
+                continue;
+            }
+
+            // Compare current height with the top of the stack
+            if (stackOfHeights[stackOfHeights.length - 1][0] < currentH) {
+                // If current height is greater, push it onto the stack
+                stackOfHeights.push([currentH, currentC]);
+            } else if (stackOfHeights[stackOfHeights.length - 1][0] === currentH) {
+                // If current height is equal, do nothing (it extends the previous rectangle)
+                continue;
+            } else if (stackOfHeights[stackOfHeights.length - 1][0] > currentH) {
+                // If current height is smaller, pop elements from the stack
+                // and calculate areas until a smaller or equal height is found
+                while (stackOfHeights.length !== 0) {
+                    var poppedItem = stackOfHeights.pop();
+                    if (currentH > poppedItem[0]) {
+                        // If current height is greater than the popped item, push the popped item back
+                        // and then push the current height. This means the popped item forms a rectangle
+                        // that ends before the current column.
+                        stackOfHeights.push(poppedItem);
+                        break;
+                    } else if (currentH === poppedItem[0]) {
+                        // If current height is equal to the popped item, stop processing.
+                        // The popped item's rectangle extends to the current column.
+                        break;
+                    } else if (currentH < poppedItem[0]) {
+                        // If current height is smaller than the popped item, calculate the area
+                        // of the rectangle formed by the popped item.
+                        greatestArea = Math.max(greatestArea, poppedItem[0] * ((currentC + 1) - poppedItem[1]));
+                    }
+                }
+            }
+        }
+    }
+    // Output the maximum area found for the current test case
+    console.log(greatestArea);
 }

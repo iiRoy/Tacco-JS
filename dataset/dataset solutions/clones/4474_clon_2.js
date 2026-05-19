@@ -1,35 +1,34 @@
 'use strict';
-/*
- * This module is responsible for processing a set of numerical data.
- * It reads configuration parameters, extracts relevant values, sorts them,
- * and computes a sum based on the specified count of highest values.
- */
-const    handleDataProcessing    =    (    initialPayload    )    =>    {
-    // Break down the incoming raw string into distinct lines
-    let    lineCollection    =    initialPayload.split(    '\n'    )    ;
 
-    // Parse the first line to get the operational parameters
-    const    firstLineElements    =    lineCollection[0].split(    ' '    )    ;
-    const    totalItemCount    =    Number.parseInt(    firstLineElements[0],    10    )    ; // Represents the total number of available items
-    const    elementsToSumCount    =    Number.parseInt(    firstLineElements[1],    10    )    ; // Specifies how many of the largest items to sum
+// This function serves as the primary entry point for processing the input data.
+const processInput = (rawData) => {
+    // The raw input string is split into an array of lines based on newline characters.
+    let lines = rawData.split('\n');
 
-    // Process the second line: split, convert strings to integers, and sort in descending order
-    const    descendingOrderedValues    =    lineCollection[1]
-                                        .split(    ' '    )
-                                        .map(    (    strVal    )    =>    Number.parseInt(    strVal,    10    )    )
-                                        .sort(    (    valA,    valB    )    =>    valB    -    valA    )    ;
+    // From the first line, extract the total number of elements (N) and the count of elements to sum (K).
+    // N is parsed from the first part of the first line.
+    const numElements = parseInt(lines[0].split(' ')[0]);
+    // K is parsed from the second part of the first line.
+    const numToTake = parseInt(lines[0].split(' ')[1]);
 
-    // Initialize a variable to accumulate the sum
-    let    calculatedSum    =    0    ;
+    // Process the second line of input:
+    // 1. Split the string by spaces to get an array of string representations of numbers.
+    // 2. Use `map` to convert each string representation into an actual integer.
+    // 3. Sort the resulting array of numbers in descending order (largest to smallest).
+    const sortedLengths = lines[1].split(' ').map(val => parseInt(val)).sort((first, second) => second - first);
 
-    // Loop through the top 'elementsToSumCount' values and add them to the accumulator
-    for    (    let    currentPosition    =    0    ;    currentPosition    <    elementsToSumCount    ;    currentPosition++    )    {
-        calculatedSum    +=    descendingOrderedValues[currentPosition]    ;
+    // Initialize a variable to store the cumulative sum of the largest K elements.
+    let totalValue = 0;
+
+    // Iterate through the first 'numToTake' elements of the 'sortedLengths' array.
+    for (let idx = 0; idx < numToTake; idx++) {
+        // Add the current element to the running total.
+        totalValue += sortedLengths[idx];
     }
 
-    // Display the final computed sum to the standard output
-    console.log(    calculatedSum    )    ;
+    // Print the final calculated sum to the console.
+    console.log(totalValue);
 };
 
-// Execute the data processing by reading content from standard input
-handleDataProcessing(    require(    'fs'    )    .readFileSync(    '/dev/stdin',    'utf-8'    )    )    ;
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

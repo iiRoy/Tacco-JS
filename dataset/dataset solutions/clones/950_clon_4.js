@@ -1,59 +1,50 @@
-(function analyzeGraphConnectivity() {
-  const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8').trim();
-  const lineEntries = sourceData.split('\n');
+(function graphProcessor() {
+  const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+  const inputLines = fileContent.split('\n');
 
-  const [totalNodes, totalEdges] = lineEntries[0].split(' ').map(Number);
+  const extractNumericPair = () => inputLines.shift().split(' ').map(Number);
 
-  const connectionData = lineEntries.slice(1, 1 + totalEdges);
-  // Skip the header (1), connections (totalEdges), and the blank line (1)
-  const investigationRequests = lineEntries.slice(2 + totalEdges);
+  const [nodeQuantity, connectionCount] = extractNumericPair();
 
-  const networkLinks = new Map(); // Map<node: number, neighbors: Set<number>>
+  const componentRoots = Array.from({ length: nodeQuantity }, (_, idx) => idx);
+  const componentSizes = Array.from({ length: nodeQuantity }, () => 1);
 
-  function establishConnection(point1, point2) {
-    if (!networkLinks.has(point1)) {
-      networkLinks.set(point1, new Set());
+  function locateRoot(elementIndex) {
+    if (componentRoots[elementIndex] === elementIndex) {
+      return elementIndex;
     }
-    networkLinks.get(point1).add(point2);
+    componentRoots[elementIndex] = locateRoot(componentRoots[elementIndex]);
+    return componentRoots[elementIndex];
   }
 
-  connectionData.forEach(linkString => {
-    const [firstPoint, secondPoint] = linkString.split(' ').map(Number);
-    establishConnection(firstPoint, secondPoint);
-    establishConnection(secondPoint, firstPoint); // Undirected graph
-  });
+  function unifySets(firstElement, secondElement) {
+    let rootA = locateRoot(firstElement);
+    let rootB = locateRoot(secondElement);
 
-  function queryConnectivity(startPoint, endPoint, graphStructure) {
-    if (startPoint === endPoint) {
-      return true; // Path exists if origin and destination are the same
-    }
-
-    const exploredPoints = new Set();
-
-    function traverseFrom(currentPoint) {
-      if (currentPoint === endPoint) {
-        return true;
+    if (rootA !== rootB) {
+      if (componentSizes[rootA] < componentSizes[rootB]) {
+        [rootA, rootB] = [rootB, rootA];
       }
-      exploredPoints.add(currentPoint);
-
-      const adjacentPoints = graphStructure.get(currentPoint) || new Set();
-      for (const neighbor of adjacentPoints) {
-        if (!exploredPoints.has(neighbor)) {
-          if (traverseFrom(neighbor)) { // Recursive depth-first search
-            return true;
-          }
-        }
-      }
-      return false;
+      componentRoots[rootB] = rootA;
+      componentSizes[rootA] += componentSizes[rootB];
+      return true;
     }
-
-    return traverseFrom(startPoint);
+    return false;
   }
 
-  const outcomes = investigationRequests.map(requestString => {
-    const [origin, target] = requestString.split(' ').map(Number);
-    return queryConnectivity(origin, target, networkLinks) ? 'yes' : 'no';
-  });
+  for (let k = 0; k < connectionCount; k++) {
+    const [nodeOne, nodeTwo] = extractNumericPair();
+    unifySets(nodeOne, nodeTwo);
+  }
 
-  console.log(outcomes.join('\n'));
+  inputLines.shift();
+
+  const outcomeList = [];
+  for (const queryEntry of inputLines) {
+    const [queryOrigin, queryTarget] = queryEntry.split(' ').map(Number);
+    const areConnected = locateRoot(queryOrigin) === locateRoot(queryTarget);
+    outcomeList.push(areConnected ? 'yes' : 'no');
+  }
+
+  console.log(outcomeList.join('\n'));
 })();

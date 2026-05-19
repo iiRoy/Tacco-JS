@@ -1,31 +1,29 @@
-'use strict'; // Enforce stricter parsing and error handling at runtime.
+'use strict'; // Enforce strict mode for cleaner code execution
 
 /**
- * Processes incoming text to find a specific pattern.
- * @param {string} sourceData - The raw textual input provided for analysis.
+ * Processes the given raw text to find the length of the first substring
+ * that starts with 'A' and ends with 'Z'.
+ * If no such substring is found, it outputs 0.
+ * @param {string} rawData The input string to be processed.
  */
-const performAnalysis = sourceData => {
-    // First, eliminate any leading or trailing whitespace from the source string.
-    const processedText = sourceData.trim();
+const processInput = (rawData) => {
+  // Remove leading/trailing whitespace from the input string.
+  const trimmedString = rawData.trim();
 
-    /*
-     * Search for a regular expression pattern: starts with 'A',
-     * followed by any characters (zero or more), and ends with 'Z'.
-     * This operation attempts to find the first occurrence.
-     */
-    const identifiedSpan = processedText.match(/A.*Z/);
+  // Attempt to find a substring starting with 'A' and ending with 'Z'
+  // using a regular expression. The '.*' matches any character (except newline) zero or more times.
+  const matchResult = trimmedString.match(/A.*Z/);
 
-    // Evaluate if a segment matching the pattern was successfully located.
-    if (identifiedSpan) {
-        // If a match exists, output the character count of the captured group.
-        console.log(identifiedSpan[0].length);
-    }
-    else {
-        // If no matching segment is found, output a zero to signify absence.
-        console.log(0);
-    }
+  // Check if a match was found.
+  if (matchResult) {
+    // If a match exists, output the length of the full matched string.
+    console.log(matchResult[0].length);
+  } else {
+    // If no match was found, output zero.
+    console.log(0);
+  }
 };
 
-// Execute the analysis function, reading all contents from standard input
-// as a UTF-8 encoded string before passing it for processing.
-performAnalysis( require('fs') .readFileSync('/dev/stdin', 'utf8') );
+// Read the entire content from standard input synchronously and process it.
+// The 'utf8' encoding ensures proper character handling.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

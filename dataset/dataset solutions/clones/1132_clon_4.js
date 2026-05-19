@@ -1,47 +1,51 @@
-const rawData = process.stdin.readFileSync(0, 'utf8');
-const dataLines = rawData.trim().split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const firstLineElements = dataLines[0].split(/\s+/);
-const targetAmount = parseInt(firstLineElements[0], 10);
-const quantityOfCoins = parseInt(firstLineElements[1], 10);
+const lineSegments = rawData.trim().split('\n');
+let [ targetValueStr, denominationCountStr ] = lineSegments[0].split(' ');
+const targetValue = Number(targetValueStr);
+const denominationCount = Number(denominationCountStr);
+let coinDenominations = lineSegments[1].trim().split(' ');
+coinDenominations = coinDenominations.map(c => Number(c));
 
-const coinDenominations = dataLines[1].trim().split(/\s+/).map(str => parseInt(str, 10));
+const memoizedResults = new Map();
+const unreachableMarker = targetValue + 1;
 
-const unreachableMarker = Infinity;
-
-const minimumCountsRegister = new Array(targetAmount + 1).fill(null);
-minimumCountsRegister[0] = 0;
-
-function calculateOptimalCoinCount(currentGoal, availableCoins, cacheStorage, impossibilityIndicator) {
-    if (currentGoal === 0) {
-        return 0;
-    }
-    if (currentGoal < 0) {
-        return impossibilityIndicator;
-    }
-    if (cacheStorage[currentGoal] !== null) {
-        return cacheStorage[currentGoal];
-    }
-
-    let lowestCombination = impossibilityIndicator;
-
-    for (const coinValue of availableCoins) {
-        const remainingGoal = currentGoal - coinValue;
-        const resultForRemaining = calculateOptimalCoinCount(remainingGoal, availableCoins, cacheStorage, impossibilityIndicator);
-
-        if (resultForRemaining !== impossibilityIndicator) {
-            lowestCombination = Math.min(lowestCombination, 1 + resultForRemaining);
-        }
-    }
-
-    cacheStorage[currentGoal] = lowestCombination;
-    return lowestCombination;
+for (let k = 0; k < denominationCount; k++) {
+  const currentCoin = coinDenominations[k];
+  if (currentCoin <= targetValue) {
+    memoizedResults.set(currentCoin, 1);
+  }
 }
 
-const finalCalculationOutcome = calculateOptimalCoinCount(targetAmount, coinDenominations, minimumCountsRegister, unreachableMarker);
+function determineMinimumCoins(currentSum) {
+  if (currentSum < 0) {
+    return unreachableMarker;
+  }
+  if (currentSum === 0) {
+    return unreachableMarker;
+  }
 
-if (finalCalculationOutcome === unreachableMarker) {
-    console.log(undefined);
-} else {
-    console.log(finalCalculationOutcome);
+  if (memoizedResults.has(currentSum)) {
+    return memoizedResults.get(currentSum);
+  }
+
+  let leastCoins = unreachableMarker;
+
+  for (let k = 0; k < denominationCount; k++) {
+    const coinValue = coinDenominations[k];
+    const remainder = currentSum - coinValue;
+
+    const subproblemCount = determineMinimumCoins(remainder);
+
+    if (subproblemCount < unreachableMarker) {
+      leastCoins = Math.min(leastCoins, subproblemCount + 1);
+    }
+  }
+
+  memoizedResults.set(currentSum, leastCoins);
+  return leastCoins;
 }
+
+const finalCount = determineMinimumCoins(targetValue);
+
+console.log(finalCount === unreachableMarker ? undefined : finalCount);

@@ -1,46 +1,20 @@
-const acquiredText = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = acquiredText.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const gameLines = fileContent.trim().split('\n');
 
-const totalGameRounds = Number(processedLines[0]);
-const dataPayload = processedLines.slice(1);
+const roundLimit = Number(gameLines.shift());
 
-const scoringRules = {
-    'greater': (currentFirst, currentSecond, valA, valB) => [currentFirst + valA + valB, currentSecond],
-    'lesser': (currentFirst, currentSecond, valA, valB) => [currentFirst, currentSecond + valA + valB],
-    'equal': (currentFirst, currentSecond, valA, valB) => [currentFirst + valA, currentSecond + valB]
+const scoreAggregator = (currentTotals, roundDataString) => {
+    const [p1Score, p2Score] = roundDataString.split(' ').map(Number);
+
+    const p1RoundGain = (p1Score > p2Score) ? (p1Score + p2Score) : (p1Score === p2Score ? p1Score : 0);
+    const p2RoundGain = (p2Score > p1Score) ? (p1Score + p2Score) : (p1Score === p2Score ? p2Score : 0);
+
+    return {
+        playerOneAccumulated: currentTotals.playerOneAccumulated + p1RoundGain,
+        playerTwoAccumulated: currentTotals.playerTwoAccumulated + p2RoundGain
+    };
 };
 
-function calculateOutcome(gameDataFragments, presentScores, currentRoundIndex) {
-    if (currentRoundIndex >= gameDataFragments.length) {
-        return presentScores;
-    }
+const finalResult = gameLines.slice(0, roundLimit).reduce(scoreAggregator, { playerOneAccumulated: 0, playerTwoAccumulated: 0 });
 
-    const roundDataString = gameDataFragments[currentRoundIndex];
-    
-    const separatorPos = roundDataString.indexOf(' ');
-    const participantOneValue = parseInt(roundDataString.substring(0, separatorPos), 10);
-    const participantTwoValue = parseInt(roundDataString.substring(separatorPos + 1), 10);
-
-    let comparisonResultKey;
-    if (participantOneValue > participantTwoValue) {
-        comparisonResultKey = 'greater';
-    } else if (participantOneValue < participantTwoValue) {
-        comparisonResultKey = 'lesser';
-    } else {
-        comparisonResultKey = 'equal';
-    }
-
-    const updateScoringFunction = scoringRules[comparisonResultKey];
-    const [nextScoreForOne, nextScoreForTwo] = updateScoringFunction(
-        presentScores[0],
-        presentScores[1],
-        participantOneValue,
-        participantTwoValue
-    );
-
-    return calculateOutcome(gameDataFragments, [nextScoreForOne, nextScoreForTwo], currentRoundIndex + 1);
-}
-
-const finalGameResults = calculateOutcome(dataPayload, [0, 0], 0);
-
-console.log(finalGameResults[0] + ' ' + finalGameResults[1]);
+console.log(`${finalResult.playerOneAccumulated} ${finalResult.playerTwoAccumulated}`);

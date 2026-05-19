@@ -1,49 +1,79 @@
-const pricingRegistry = (() => {
-    const generator = (limitA, limitB, limitC) => {
-        const rangeA = Array.from({ length: limitA + 1 }, (_, index) => index);
-        const rangeB = Array.from({ length: limitB + 1 }, (_, index) => index);
-        const rangeC = Array.from({ length: limitC + 1 }, (_, index) => index);
+const ITEM_A_WEIGHT_PER_UNIT = 200;
+const ITEM_A_PRICE_PER_UNIT = 380;
+const ITEM_A_BULK_THRESHOLD = 5;
+const ITEM_A_BULK_DISCOUNT_FACTOR = 0.8;
 
-        const calculateItemCostA = (count) => (380 * 5 * 0.8 * Math.floor(count / 5)) + (380 * (count % 5));
-        const calculateItemCostB = (count) => (550 * 4 * 0.85 * Math.floor(count / 4)) + (550 * (count % 4));
-        const calculateItemCostC = (count) => (850 * 3 * 0.88 * Math.floor(count / 3)) + (850 * (count % 3));
+const ITEM_B_WEIGHT_PER_UNIT = 300;
+const ITEM_B_PRICE_PER_UNIT = 550;
+const ITEM_B_BULK_THRESHOLD = 4;
+const ITEM_B_BULK_DISCOUNT_FACTOR = 0.85;
 
-        const storedValues = new Map();
+const ITEM_C_WEIGHT_PER_UNIT = 500;
+const ITEM_C_PRICE_PER_UNIT = 850;
+const ITEM_C_BULK_THRESHOLD = 3;
+const ITEM_C_BULK_DISCOUNT_FACTOR = 0.88;
 
-        rangeA.forEach(valA => {
-            rangeB.forEach(valB => {
-                rangeC.forEach(valC => {
-                    const currentTotalWeight = (200 * valA) + (300 * valB) + (500 * valC);
-                    if (currentTotalWeight > 5000) return;
+const MAX_COUNT_A = 25;
+const MAX_COUNT_B = 16;
+const MAX_COUNT_C = 10;
 
-                    const currentTotalCost = calculateItemCostA(valA) + calculateItemCostB(valB) + calculateItemCostC(valC);
+const MAXIMUM_AGGREGATE_WEIGHT = 5000;
 
-                    if (!storedValues.has(currentTotalWeight) || currentTotalCost < storedValues.get(currentTotalWeight)) {
-                        storedValues.set(currentTotalWeight, currentTotalCost);
-                    }
-                });
-            });
-        });
-        return storedValues;
-    };
-
-    return generator(25, 16, 10);
-})();
-
-const queryProcessor = (dataMap) => {
-    const systemInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const linesOfInput = systemInput.trim().split("\n");
-    let currentIndex = 0;
-    const resultBuffer = [];
-
-    while (true) {
-        const currentLineValue = linesOfInput[currentIndex++];
-        if (currentLineValue === undefined) break;
-        const numericValue = Number(currentLineValue);
-        if (numericValue === 0) break;
-        resultBuffer.push(dataMap.get(numericValue));
-    }
-    console.log(resultBuffer.join("\n"));
+const determineItemCost = (itemCount, unitPrice, bulkThreshold, bulkDiscountFactor) => {
+    const bulkPrice = unitPrice * bulkThreshold * bulkDiscountFactor;
+    const individualPrice = unitPrice;
+    return Math.floor(itemCount / bulkThreshold) * bulkPrice + (itemCount % bulkThreshold) * individualPrice;
 };
 
-queryProcessor(pricingRegistry);
+const computeTotalWeight = (countA, countB, countC) => {
+    return countA * ITEM_A_WEIGHT_PER_UNIT +
+           countB * ITEM_B_WEIGHT_PER_UNIT +
+           countC * ITEM_C_WEIGHT_PER_UNIT;
+};
+
+const computeTotalMoney = (countA, countB, countC) => {
+    return determineItemCost(countA, ITEM_A_PRICE_PER_UNIT, ITEM_A_BULK_THRESHOLD, ITEM_A_BULK_DISCOUNT_FACTOR) +
+           determineItemCost(countB, ITEM_B_PRICE_PER_UNIT, ITEM_B_BULK_THRESHOLD, ITEM_B_BULK_DISCOUNT_FACTOR) +
+           determineItemCost(countC, ITEM_C_PRICE_PER_UNIT, ITEM_C_BULK_THRESHOLD, ITEM_C_BULK_DISCOUNT_FACTOR);
+};
+
+const allCountCombinations = Array.from({ length: MAX_COUNT_A + 1 }, (_, countA) => countA)
+    .flatMap(countA =>
+        Array.from({ length: MAX_COUNT_B + 1 }, (_, countB) => countB)
+            .flatMap(countB =>
+                Array.from({ length: MAX_COUNT_C + 1 }, (_, countC) => ({ countA, countB, countC }))
+            )
+    );
+
+const weightToMinMoneyMap = allCountCombinations.reduce((accumulatorMap, { countA, countB, countC }) => {
+    const currentAggregateWeight = computeTotalWeight(countA, countB, countC);
+
+    if (currentAggregateWeight > MAXIMUM_AGGREGATE_WEIGHT) {
+        return accumulatorMap;
+    }
+
+    const currentAggregateMoney = computeTotalMoney(countA, countB, countC);
+
+    if (!accumulatorMap.has(currentAggregateWeight) || accumulatorMap.get(currentAggregateWeight) > currentAggregateMoney) {
+        accumulatorMap.set(currentAggregateWeight, currentAggregateMoney);
+    }
+    return accumulatorMap;
+}, new Map());
+
+function* queryValueStream(rawInputString) {
+    const inputLines = rawInputString.trim().split("\n");
+    for (const lineContent of inputLines) {
+        const numericValue = Number(lineContent);
+        if (numericValue === 0) {
+            return;
+        }
+        yield numericValue;
+    }
+}
+
+const fileSystem = require('fs');
+const standardInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+for (const requestedWeight of queryValueStream(standardInputContent)) {
+    console.log(weightToMinMoneyMap.get(requestedWeight));
+}

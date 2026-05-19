@@ -1,21 +1,56 @@
 "use strict";
 
-const dataAcquisitionUtility = require("node:fs");
-const receivedDataPayload = dataAcquisitionUtility.readFileSync("/dev/stdin", "utf8");
+class InputProcessor {
+    #sourceLines;
+    #currentPointer;
 
-const relevantLineSegment = receivedDataPayload.trim().split(/\r?\n/)[0];
+    constructor() {
+        const rawContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+        this.#sourceLines = rawContent.split("\n");
+        this.#currentPointer = 0;
+    }
 
-const parsedNumericalElements = relevantLineSegment.split(" ").map(token => +token);
+    // Checks if there are more lines to process
+    canAdvance() {
+        return this.#currentPointer < this.#sourceLines.length;
+    }
 
-const primaryParameter = parsedNumericalElements[0];
-const secondaryParameter = parsedNumericalElements[1];
+    // Retrieves the next line from the input
+    retrieveLine() {
+        if (!this.canAdvance()) {
+            throw "ArrayIndexOutOfBoundsException";
+        }
+        return this.#sourceLines[this.#currentPointer++];
+    }
 
-const componentOne = 1900 * secondaryParameter;
-const componentTwo = 100 * (primaryParameter - secondaryParameter);
-const sumOfComponents = componentOne + componentTwo;
+    // Retrieves the next line as an integer
+    retrieveInteger() {
+        return parseInt(this.retrieveLine());
+    }
 
-const factorOfTwoPower = 1 << secondaryParameter;
+    // Retrieves the next line as an array of strings, split by space
+    retrieveStringArray() {
+        return this.retrieveLine().split(" ");
+    }
 
-const computedOutcome = sumOfComponents * factorOfTwoPower;
+    // Retrieves the next line as an array of integers, split by space
+    retrieveIntegerArray() {
+        return this.retrieveLine().split(" ").map(element => parseInt(element));
+    }
 
-console.info(computedOutcome);
+    // Retrieves the next line as an array of characters
+    retrieveCharacterArray() {
+        return this.retrieveLine().split("");
+    }
+}
+
+const executeCalculation = () => {
+    const dataHandler = new InputProcessor();
+
+    const [firstOperand, secondOperand] = dataHandler.retrieveIntegerArray();
+
+    const resultValue = (1900 * secondOperand + 100 * (firstOperand - secondOperand)) * Math.pow(2, secondOperand);
+    console.log(resultValue);
+};
+
+executeCalculation();

@@ -1,100 +1,117 @@
-"use strict"
+"use strict";
 
-class Polyhedron {
+class GeometricSolid {
     /*
-     *  Represents a 3D object with six faces.
-     *  The faces are indexed as follows for a standard die orientation:
-     *      Top: 0
-     *      Front: 1
-     *      Right: 2
-     *      Left: 3
-     *      Back: 4
-     *      Bottom: 5
-     *  The order of indices in rotations is critical.
+     *  Visual representation of the cube's faces:
+     *      +---+
+     *      | 0 |  (Top)
+     *  +---+---+---+---+
+     *  | 3 | 1 | 2 | 4 |  (Left, Front, Right, Back)
+     *  +---+---+---+---+
+     *      | 5 |  (Bottom)
+     *      +---+
+     *  Indices correspond to the `faceValues` array.
      */
-    constructor( faceValues ) {
-        this.faceValues = faceValues; // Stores the numeric values on each face
+    constructor(faceValuesArray) {
+        // Stores the numeric values on each face of the solid.
+        this.faceValues = faceValuesArray;
     }
 
-    /*
-     * Performs a vertical rotation (North-South axis).
-     * Positive amount rotates 'up', negative 'down'.
-     */
-    rotateVertical ( rotationAmount ) {
-        // Adjust negative rotation amounts to be positive within a 0-3 range
-        if ( rotationAmount < 0 ) rotationAmount += 4 * Math.floor( -rotationAmount / 4 ) + 4;
-        
-        // Define the indices involved in a vertical rotation: Top, Front, Bottom, Back
-        const currentIndices = [ 0, 1, 5, 4 ];
-        
-        // Calculate the new positions of the values based on rotation amount
-        const targetIndices = [ rotationAmount, rotationAmount + 1, rotationAmount + 2, rotationAmount + 3 ]
-                                .map( idx => currentIndices[ idx % 4 ] );
-        
-        // Apply the rotation by swapping face values
-        [ this.faceValues[ currentIndices[0] ],
-          this.faceValues[ currentIndices[1] ],
-          this.faceValues[ currentIndices[2] ],
-          this.faceValues[ currentIndices[3] ] ] =
-        [ this.faceValues[ targetIndices[0] ],
-          this.faceValues[ targetIndices[1] ],
-          this.faceValues[ targetIndices[2] ],
-          this.faceValues[ targetIndices[3] ] ];
+    // Rotates the solid along the North-South axis (vertical rotation).
+    rotateVertical(rotationAmount) {
+        // Normalize rotationAmount to be positive and within [0, 3]
+        if (rotationAmount < 0) {
+            rotationAmount += 4 * Math.floor(-rotationAmount / 4) + 4;
+        }
+
+        // Define the indices of the faces involved in this rotation: Top, Front, Bottom, Back
+        const currentFaceIndices = [0, 1, 5, 4];
+        // Calculate the new positions for these faces after rotation
+        const nextFaceIndices = [rotationAmount, rotationAmount + 1, rotationAmount + 2, rotationAmount + 3].map(
+            (indexOffset) => currentFaceIndices[indexOffset % 4]
+        );
+
+        // Perform the actual rotation by reassigning face values
+        [
+            this.faceValues[currentFaceIndices[0]],
+            this.faceValues[currentFaceIndices[1]],
+            this.faceValues[currentFaceIndices[2]],
+            this.faceValues[currentFaceIndices[3]],
+        ] = [
+            this.faceValues[nextFaceIndices[0]],
+            this.faceValues[nextFaceIndices[1]],
+            this.faceValues[nextFaceIndices[2]],
+            this.faceValues[nextFaceIndices[3]],
+        ];
     }
 
-    /*
-     * Executes a horizontal rotation (West-East axis).
-     * Positive amount rotates 'right', negative 'left'.
-     */
-    rotateHorizontal ( rotationAmount ) {
-        // Normalize rotation amount to a positive value
-        if ( rotationAmount < 0 ) rotationAmount += 4 * Math.floor( -rotationAmount / 4 ) + 4;
-        
-        // Define indices for horizontal rotation: Top, Right, Bottom, Left
-        const currentIndices = [ 0, 2, 5, 3 ];
-        
-        // Determine the new order of face values
-        const targetIndices = [ rotationAmount, rotationAmount + 1, rotationAmount + 2, rotationAmount + 3 ]
-                                .map( idx => currentIndices[ idx % 4 ] );
-        
-        // Update the face values based on the calculated rotation
-        [ this.faceValues[ currentIndices[0] ],
-          this.faceValues[ currentIndices[1] ],
-          this.faceValues[ currentIndices[2] ],
-          this.faceValues[ currentIndices[3] ] ] =
-        [ this.faceValues[ targetIndices[0] ],
-          this.faceValues[ targetIndices[1] ],
-          this.faceValues[ targetIndices[2] ],
-          this.faceValues[ targetIndices[3] ] ];
+    // Rotates the solid along the West-East axis (horizontal rotation).
+    rotateHorizontal(rotationAmount) {
+        // Normalize rotationAmount to be positive and within [0, 3]
+        if (rotationAmount < 0) {
+            rotationAmount += 4 * Math.floor(-rotationAmount / 4) + 4;
+        }
+
+        // Define the indices of the faces involved in this rotation: Top, Right, Bottom, Left
+        const currentFaceIndices = [0, 2, 5, 3];
+        // Calculate the new positions for these faces after rotation
+        const nextFaceIndices = [rotationAmount, rotationAmount + 1, rotationAmount + 2, rotationAmount + 3].map(
+            (indexOffset) => currentFaceIndices[indexOffset % 4]
+        );
+
+        // Perform the actual rotation by reassigning face values
+        [
+            this.faceValues[currentFaceIndices[0]],
+            this.faceValues[currentFaceIndices[1]],
+            this.faceValues[currentFaceIndices[2]],
+            this.faceValues[currentFaceIndices[3]],
+        ] = [
+            this.faceValues[nextFaceIndices[0]],
+            this.faceValues[nextFaceIndices[1]],
+            this.faceValues[nextFaceIndices[2]],
+            this.faceValues[nextFaceIndices[3]],
+        ];
     }
 }
 
+// Asynchronously handle input and output operations.
+new Promise(function (resolveInput, rejectInput) {
+    let bufferedInput = "";
+    // Accumulate data chunks from standard input.
+    process.stdin.on("data", (dataPiece) => {
+        bufferedInput += dataPiece;
+    });
+    // When input stream ends, resolve the promise with the full input and stdout stream.
+    process.stdin.on("end", () => {
+        resolveInput([bufferedInput, process.stdout]);
+    });
+}).then(function ([fullInputString, outputChannel]) {
+    // Split the input into initial face configuration and movement instructions.
+    const [initialFaceConfiguration, movementInstructions] = fullInputString.split("\n").slice(0, 2);
 
-new Promise( function ( completeOperation, abortOperation ) {
-    let incomingData = ""; // Buffer for standard input
-    process.stdin.on( "data", dataFragment => {
-        incomingData += dataFragment;
-    } );
-    process.stdin.on( "end", () => {
-        completeOperation( [ incomingData, process.stdout ] );
-    } );
-} ) .then( function ( [ inputReader, outputWriter ] ) {
-    // Split input into initial configuration and command sequence
-    const [ initialConfiguration, instructionSequence ] = inputReader.split( "\n" ).slice( 0, 2 );
-    
-    // Create a new polyhedron instance with the parsed initial face values
-    const gamePiece = new Polyhedron( initialConfiguration.split( " " ).map( idx => parseInt( idx ) ) );
-    
-    // Process each character in the instruction sequence
-    for ( const actionChar of instructionSequence ) {
-        switch ( actionChar ) {
-            case "N": gamePiece.rotateVertical( 1 );  break; // Rotate Northwards
-            case "S": gamePiece.rotateVertical( -1 ); break; // Rotate Southwards
-            case "W": gamePiece.rotateHorizontal( 1 ); break; // Rotate Westwards
-            case "E": gamePiece.rotateHorizontal( -1 ); break; // Rotate Eastwards
+    // Create a new GeometricSolid instance with parsed initial face values.
+    const mySolid = new GeometricSolid(
+        initialFaceConfiguration.split(" ").map((faceString) => parseInt(faceString, 10))
+    );
+
+    // Process each instruction character.
+    for (const currentInstruction of movementInstructions) {
+        switch (currentInstruction) {
+            case "N": // Move North (rotate vertical clockwise)
+                mySolid.rotateVertical(1);
+                break;
+            case "S": // Move South (rotate vertical counter-clockwise)
+                mySolid.rotateVertical(-1);
+                break;
+            case "W": // Move West (rotate horizontal clockwise)
+                mySolid.rotateHorizontal(1);
+                break;
+            case "E": // Move East (rotate horizontal counter-clockwise)
+                mySolid.rotateHorizontal(-1);
+                break;
         }
     }
-    
-    // Output the value of the top face (index 0) after all rotations
-    outputWriter.write( `${ gamePiece.faceValues[0] }\n` );
-} );
+
+    // Write the value of the top face (index 0) to the output channel, followed by a newline.
+    outputChannel.write(`${mySolid.faceValues[0]}\n`);
+});

@@ -1,66 +1,51 @@
-function AnalyzeSequence( inputBlob )
-{
-  // First, we process the raw input data by splitting it into individual lines.
-  let processedLines = inputBlob.split( '\n' ) ;
+function ProcessInput(rawData) {
+  // The raw input string is first split by newline characters.
+  // We then take the very first line of input for processing.
+  rawData = rawData.split('\n');
+  // This line converts the selected input string into an array of individual characters.
+  const charArray = rawData[0].split('');
 
-  // Then, we extract the very first line and convert it into an array of characters.
-  const charSequence = processedLines[ 0 ].split( '' ) ;
+  // A boolean flag to indicate if any modifications were made during an iteration.
+  let hasModifications = true;
+  // An integer variable to keep track of the starting position for the inner loop.
+  let startIndex = 0;
+  // A counter to tally the number of successful character transformations.
+  let operationCount = 0;
 
-  // A boolean flag indicating if any modifications occurred during an iteration.
-  let modificationOccurred = true ;
+  // The main processing loop continues as long as the 'hasModifications' flag is true.
+  while (hasModifications) {
+    // Reset the modification flag at the beginning of each outer loop iteration.
+    hasModifications = false;
 
-  // This variable keeps track of the starting index for our search within the character sequence.
-  let searchStartIndex = 0 ;
-
-  // A counter to tally the total number of transformations performed.
-  let transformationCount = 0 ;
-
-  // This main loop continues as long as there were changes in the previous pass.
-  while ( modificationOccurred )
-  {
-    // Reset the flag at the beginning of each iteration.
-    modificationOccurred = false ;
-
-    // Iterate through the character sequence from the current search start index.
-    for ( let currentPos = searchStartIndex ; currentPos < charSequence.length ; currentPos++ )
-    {
-      // Check for the specific pattern 'A', 'B', 'C' at the current position.
-      if ( charSequence[ currentPos ] === 'A' && charSequence[ currentPos + 1 ] === 'B' && charSequence[ currentPos + 2 ] === 'C' )
-      {
-        // If the pattern is found, perform the character rearrangement.
-        rearrangeChars( charSequence, currentPos ) ;
-
-        // Increment the total transformation count.
-        transformationCount = transformationCount + 1 ;
-
-        // Set the flag to true, indicating a modification has taken place.
-        modificationOccurred = true ;
+    // This inner loop iterates through the character array, starting from 'startIndex'.
+    for (let idx = startIndex; idx < charArray.length; idx++) {
+      // We check for a specific sequence of three characters: 'A', 'B', and 'C'.
+      if (charArray[idx] === 'A' && charArray[idx + 1] === 'B' && charArray[idx + 2] === 'C') {
+        // If the 'ABC' sequence is found, we call a helper function to rearrange them.
+        rearrangeChars(charArray, idx);
+        // Increment the total count of operations performed.
+        operationCount = operationCount + 1;
+        // Set the flag to true, indicating that a change has occurred in this pass.
+        hasModifications = true;
       }
     }
-
-    // Advance the search start index to avoid re-checking already processed or shifted parts.
-    searchStartIndex = searchStartIndex + 2 ;
+    // After each full pass of the inner loop, we advance the 'startIndex'.
+    // This optimization helps to avoid re-checking characters that have already been processed.
+    startIndex = startIndex + 2;
   }
-
-  // Output the final count of transformations to the console.
-  console.log( transformationCount ) ;
+  // Finally, the total number of transformations is printed to the console.
+  console.log(operationCount);
 }
 
-/*
- * This helper function takes a character array and a starting index.
- * It rearranges three characters starting from the given index from 'ABC' to 'BCA'.
- */
-function rearrangeChars( sequenceToModify, startIndex )
-{
-  // The character at the start index becomes 'B'.
-  sequenceToModify[ startIndex ] = 'B' ;
-
-  // The character at the next position becomes 'C'.
-  sequenceToModify[ startIndex + 1 ] = 'C' ;
-
-  // The character at the subsequent position becomes 'A'.
-  sequenceToModify[ startIndex + 2 ] = 'A' ;
+// This auxiliary function takes a character sequence and a starting position.
+// It performs a specific rearrangement: 'ABC' becomes 'BCA' at the given position.
+function rearrangeChars(charSequence, initialPos) {
+  charSequence[initialPos] = 'B';
+  charSequence[initialPos + 1] = 'C';
+  charSequence[initialPos + 2] = 'A';
 }
 
-// Execute the primary analysis function with input read from standard input.
-AnalyzeSequence( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) ;
+// The program execution begins by reading input from standard input.
+// The 'fs' module is used to synchronously read the file content from '/dev/stdin' as UTF-8.
+// This content is then passed to the 'ProcessInput' function for execution.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

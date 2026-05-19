@@ -1,28 +1,18 @@
-"use strict" ;
+"use strict";
 
-/**
- * Executes a specific numerical evaluation based on an input value.
- * @param {number} initialValue - The primary numerical data point for processing.
- */
-function ProcessData ( initialValue )
-{
-  // Calculate the integral portion when the initial value is divided by one hundred.
-  let majorComponent = Math . floor ( initialValue / 100 ) ;
+function ProcessInputData(incomingData) {
+  // Calculate the number of hundreds and the remaining part
+  let majorComponent = Math.floor(incomingData / 100);
+  let minorRemainder = incomingData % 100;
 
-  // Determine the remaining value after performing a modulo operation with one hundred.
-  let minorComponent = initialValue % 100 ;
-
-  // A conditional check against a derived threshold; the factor '5' is a predefined multiplier.
-  if ( minorComponent <= majorComponent * 5 )
-  {
-    console . log ( 1 ) ; // Indicate a successful or positive outcome.
+  // The condition checks if the remainder can be "covered" by the major component
+  // (each hundred can cover up to 5 units of the remainder)
+  if (minorRemainder <= majorComponent * 5) {
+    console.log(1); // Output 1 if the condition is met
+  } else {
+    console.log(0); // Output 0 otherwise
   }
-  else
-  {
-    console . log ( 0 ) ; // Indicate an unsuccessful or negative outcome.
-  }
+}
 
-} // End of ProcessData function definition.
-
-// Initiate the data processing by reading content from the standard input stream.
-ProcessData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the processing function
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

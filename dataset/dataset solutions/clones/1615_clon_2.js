@@ -1,67 +1,75 @@
-system_handler.input_source.activate();
-system_handler.input_source.specify_encoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// This segment is reserved for initial setup or global configurations.
+/**
+ * Main entry point for processing input data.
+ * This function reads numerical values, calculates products of pairs,
+ * and counts how many of these products are integers.
+ * @param {string} rawData The complete input string from standard input.
+ */
+function ProcessInput(rawData) {
+    // Divide the incoming raw string into individual lines.
+    let lineData = rawData.split("\n");
 
-function ExecuteCalculation(raw_data_string) {
-    // Split the incoming data into individual lines for processing.
-    let data_lines = raw_data_string.split("\n");
+    // The first line of input might contain configuration, but it's not utilized
+    // in the final calculation logic. We parse it to maintain structural similarity
+    // with the original code, but its value is effectively ignored.
+    let _initialConfigValues = lineData[0].split(" ").map(Number);
 
-    // The first line might contain initial parameters, though not directly used in the main loop logic.
-    // We parse it to maintain structural similarity, even if its value isn't crucial for subsequent steps.
-    let initial_params = data_lines[0].split(" ").map(Number);
+    // Remove the first line from the array as it has been processed or is not needed
+    // for the subsequent data.
+    lineData.shift();
 
-    // Remove the first line as it's been processed (or its initial values extracted).
-    data_lines.shift();
+    // Convert the remaining lines into an array of floating-point numbers.
+    let numericValues = lineData.map(itemStr => Number(itemStr));
 
-    // Convert all remaining data lines into an array of numeric values.
-    let numeric_values = data_lines.map(element_str => Number(element_str));
+    // Determine the total count of numerical entries in our processed array.
+    let valueCount = numericValues.length;
 
-    // Determine the total number of elements in our numeric array.
-    let total_elements = numeric_values.length;
-
-    // This array was intended for storing prefix products, but its calculation
-    // and subsequent use are currently deactivated (commented out).
-    let prefixed_products = new Array(total_elements);
+    // This array was present in the original code but was commented out and unused.
+    // It is declared here to preserve the original structure, even though it serves
+    // no functional purpose in the current algorithm.
+    let productStorage = new Array(valueCount);
 
     /*
-    // Example of prefix product calculation logic, currently inactive.
-    // The first element of prefixed_products is just the first numeric value.
-    prefixed_products[0] = numeric_values[0];
-    // Iterate from the second element to calculate cumulative products.
-    for (let current_idx = 1; current_idx < total_elements; current_idx++) {
-        prefixed_products[current_idx] = prefixed_products[current_idx - 1] * numeric_values[current_idx];
-    }
-    // If activated, this would output the array of cumulative products.
-    // console.log(prefixed_products);
-    */
+     * The following block of code was commented out in the original implementation.
+     * It appears to have been intended for calculating a running product of elements.
+     * We retain it as a multi-line comment to reflect the exact structure of the source.
+     *
+     * productStorage[0] = numericValues[0];
+     * for (let outerLoopIdx = 1; outerLoopIdx < valueCount; outerLoopIdx++) {
+     *     productStorage[outerLoopIdx] = productStorage[outerLoopIdx - 1] * numericValues[outerLoopIdx];
+     * }
+     * console.log(productStorage);
+     */
 
-    // Initialize a counter for integer products found.
-    let integer_product_count = 0;
+    // Initialize a counter to keep track of how many products result in an integer.
+    let integerProductCount = 0;
 
-    // Iterate through all possible pairs of numbers in the array.
-    // The outer loop handles the first multiplier.
-    for (let first_pointer = 0; first_pointer < total_elements; first_pointer++) {
-        // The inner loop handles the second multiplier, starting from the current outer loop index
-        // to avoid duplicate pairs and ensure proper combination generation (including self-multiplication).
-        for (let second_pointer = first_pointer; second_pointer < total_elements; second_pointer++) {
-            // Calculate the product of the two selected numeric values.
-            let current_product_result = numeric_values[first_pointer] * numeric_values[second_pointer];
+    // Begin the outer loop, iterating through each number in the array.
+    for (let outerIndex = 0; outerIndex < valueCount; outerIndex++) {
+        // Start the inner loop from the current outer index. This ensures that
+        // each pair is considered only once (e.g., (a,b) is the same as (b,a))
+        // and also includes the product of a number with itself.
+        for (let innerIndex = outerIndex; innerIndex < valueCount; innerIndex++) {
+            // Calculate the product of the two numbers currently pointed to by the loops.
+            let currentProduct = numericValues[outerIndex] * numericValues[innerIndex];
 
-            // Check if the resulting product is an integer.
-            if (Number.isInteger(current_product_result)) {
-                // If it's an integer, increment our dedicated counter.
-                integer_product_count++;
+            // Check if the calculated product is an integer.
+            if (Number.isInteger(currentProduct)) {
+                // If the product is an integer, increment our counter.
+                integerProductCount++;
             }
         }
     }
 
-    // Output the final count of integer products to the console.
-    console.log(integer_product_count);
+    // Output the final tally of integer products to the console.
+    console.log(integerProductCount);
 }
 
-// Invoke the main calculation function, reading input from the standard input stream.
-ExecuteCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read all data from standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// An alternative invocation for local testing with a predefined string, currently commented out.
-// ExecuteCalculation("5\n7.5\n2.4\n17.000000001\n17\n16.000000000");
+// The following line was a commented-out test case in the original code.
+// It is preserved here as a comment to maintain the original file's structure.
+// ProcessInput("5\n7.5\n2.4\n17.000000001\n17\n16.000000000");

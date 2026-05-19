@@ -1,140 +1,234 @@
 "use strict";
 
-/**
- * Main entry point for the solution logic.
- * Reads input, processes it, and prints the result.
- */
-function solutionEntry() {
-  // Define a constant for the cost multiplier for combining segments.
-  const COMBINATION_COST_PER_SEGMENT = 10;
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread(); }
 
-  // Read raw input data from stdin.
-  const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance"); }
 
-  // Helper to convert a string or array of strings into an array of integers.
-  const parseIntegers = (inputStrOrArr) => {
-    let numericStrings;
-    if (Array.isArray(inputStrOrArr)) {
-      numericStrings = inputStrOrArr;
-    } else {
-      // Split by one or more whitespace characters and filter out empty strings.
-      numericStrings = inputStrOrArr.split(/\s+/).filter(s => s.length > 0);
-    }
-    return numericStrings.map(numStr => Number.parseInt(numStr, 10));
-  };
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } }
 
-  // Function to calculate the cost for a given list of segment lengths.
-  // This includes a combination penalty and a length difference penalty.
-  const calculateSegmentCost = (segmentList, desiredLength) => {
-    // If the list is empty, it's an invalid group, return a very high cost.
-    if (segmentList.length === 0) {
-      return Number.MAX_SAFE_INTEGER; // Or some other indicator of invalidity
-    }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-    // Calculate the cost for combining segments: (number of segments - 1) * COMBINATION_COST_PER_SEGMENT.
-    // Use Math.max to ensure cost is 0 if there's only one segment.
-    const combinePenalty = Math.max(0, segmentList.length - 1) * COMBINATION_COST_PER_SEGMENT;
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
-    // Sum up the lengths of all segments in the list.
-    const currentLengthSum = segmentList.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-    // Calculate the penalty for the difference from the desired length.
-    const lengthDifferencePenalty = Math.abs(currentLengthSum - desiredLength);
+function _toArray(arr) { return _arrayWithHoles(arr) || _iterableToArray(arr) || _nonIterableRest(); }
 
-    // Total cost for this group.
-    return combinePenalty + lengthDifferencePenalty;
-  };
+function _iterableToArray(iter) { if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter); }
 
-  // Process the input lines.
-  const inputLines = rawInputData.trim().split("\n");
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
 
-  // Validate that there's at least one line of input.
-  if (inputLines.length === 0) {
-    console.error("Error: No input provided.");
-    return;
-  }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
 
-  // Parse the first line containing N, A, B, C.
-  const initialParams = parseIntegers(inputLines[0]);
-  const numSegments = initialParams[0]; // N
-  const targetA = initialParams[1];    // A
-  const targetB = initialParams[2];    // B
-  const targetC = initialParams[3];    // C
+function _iterableToArrayLimit(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) { _i["return"](); } } finally { if (_d) throw _e; } } return _arr; }
 
-  // Extract the segment measurements from the subsequent lines.
-  // We take 'numSegments' lines starting from the second line (index 1).
-  const segmentMeasurements = parseIntegers(inputLines.slice(1, 1 + numSegments));
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-  // Initialize the minimum total cost found so far to a very large number.
-  let minimumTotalCost = Number.MAX_SAFE_INTEGER;
+function mainProcess() {
+  // ----------
+  (function (rawData) {
+    var inputLines = rawData.split("\n");
 
-  // Calculate the total number of possible assignment patterns.
-  // Each segment can be assigned to group A, B, C, or left unassigned.
-  // So there are 4 choices for each of N segments.
-  const totalAssignmentPatterns = Math.pow(4, numSegments);
+    var initialParams = parseNumbers(inputLines[0]);
+    var destructuredParams = _slicedToArray(initialParams, 4);
+    var numBamboos = destructuredParams[0];
+    var targetA = destructuredParams[1];
+    var targetB = destructuredParams[2];
+    var targetC = destructuredParams[3];
 
-  // Iterate through all possible assignment patterns.
-  // Each 'patternIndex' represents a unique way to assign segments to groups.
-  for (let patternIndex = 0; patternIndex < totalAssignmentPatterns; patternIndex++) {
-    let currentPattern = patternIndex; // Use a mutable copy for bitwise operations.
+    var bambooLengths = parseNumbers(inputLines.slice(1, numBamboos + 1));
+    var minCost = Infinity;
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
 
-    // Initialize arrays to hold segments for each group.
-    const groupAlpha = [];
-    const groupBeta = [];
-    const groupGamma = [];
-    const unassignedSegments = []; // Optional: can be used for debugging or further processing
+    try {
+      var totalCombinations = Math.pow(4, numBamboos);
+      for (var _iterator = generateSequence(0, totalCombinations)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var combinationMask = _step.value;
+        var groupA = [];
+        var groupB = [];
+        var groupC = [];
+        var currentGroups = [[], groupA, groupB, groupC];
 
-    // Iterate through each segment measurement.
-    for (let segmentIdx = 0; segmentIdx < numSegments; segmentIdx++) {
-      // Determine the assignment for the current segment based on the pattern.
-      // The last two bits (modulo 4) of 'currentPattern' indicate the group.
-      const assignmentChoice = currentPattern % 4;
+        var tempMask = combinationMask;
+        for (var bambooIndex = 0; bambooIndex < numBamboos; bambooIndex++) {
+          var groupAssignment = tempMask % 4;
+          currentGroups[groupAssignment].push(bambooLengths[bambooIndex]);
+          tempMask >>= 2;
+        }
 
-      // Assign the segment to the corresponding group.
-      switch (assignmentChoice) {
-        case 1: // Assign to group A
-          groupAlpha.push(segmentMeasurements[segmentIdx]);
-          break;
-        case 2: // Assign to group B
-          groupBeta.push(segmentMeasurements[segmentIdx]);
-          break;
-        case 3: // Assign to group C
-          groupGamma.push(segmentMeasurements[segmentIdx]);
-          break;
-        case 0: // Leave unassigned
-        default:
-          unassignedSegments.push(segmentMeasurements[segmentIdx]);
-          break;
+        if (groupA.length === 0 || groupB.length === 0 || groupC.length === 0) {
+          continue;
+        }
+
+        var currentCombinationCost = calculateGroupCost(groupA, targetA) + calculateGroupCost(groupB, targetB) + calculateGroupCost(groupC, targetC);
+
+        minCost = Math.min(minCost, currentCombinationCost);
       }
-
-      // Shift the pattern to the right by 2 bits (equivalent to dividing by 4)
-      // to prepare for the next segment's assignment.
-      currentPattern = Math.floor(currentPattern / 4);
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return != null) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
     }
 
-    // Check if all three target groups (A, B, C) have at least one segment assigned.
-    // If any group is empty, this pattern is invalid for forming all three target bamboos.
-    if (groupAlpha.length === 0 || groupBeta.length === 0 || groupGamma.length === 0) {
-      continue; // Skip to the next pattern.
+    console.log(minCost);
+
+    function calculateGroupCost(lengthsArray, targetLength) {
+      var mergeOperations = lengthsArray.length - 1;
+      var mergeCost = mergeOperations * 10;
+      var currentTotalLength = lengthsArray.reduce(function (accumulator, currentVal) {
+        return accumulator + currentVal;
+      }, 0);
+      var lengthAdjustmentCost = Math.abs(currentTotalLength - targetLength);
+      return mergeCost + lengthAdjustmentCost;
     }
+  })(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    // Calculate the total cost for the current valid assignment pattern.
-    const costForAlpha = calculateSegmentCost(groupAlpha, targetA);
-    const costForBeta = calculateSegmentCost(groupBeta, targetB);
-    const costForGamma = calculateSegmentCost(groupGamma, targetC);
+  function parseNumbers(inputLineOrArray) {
+    var source = Array.isArray(inputLineOrArray) ? inputLineOrArray : inputLineOrArray.split(/\s+/);
+    return source.map(function (numStr) {
+      return parseInt(numStr, 10);
+    });
+  }
+  /**
+   * Iterates over integers in [seqStart, seqEnd).
+   */
 
-    // Sum up the costs for all three groups.
-    const currentPatternTotalCost = costForAlpha + costForBeta + costForGamma;
 
-    // Update the minimum total cost if the current pattern yields a lower cost.
-    if (currentPatternTotalCost < minimumTotalCost) {
-      minimumTotalCost = currentPatternTotalCost;
+  function* generateSequence(seqStart, seqEnd) {
+    for (var currentNum = seqStart; currentNum < seqEnd; currentNum++) {
+      yield currentNum;
     }
   }
+  /**
+   * Iterates over integers in [end, start) in desc order.
+   */
 
-  // Output the final minimum total cost.
-  console.log(minimumTotalCost);
+
+  /**
+   * implementation of arbitrary-precision unsigned integer.
+   */
+  var BigIntEmulator =
+  /*#__PURE__*/
+  function () {
+    function BigIntEmulator(initialValue) {
+      _classCallCheck(this, BigIntEmulator);
+
+      // enough for 64bit
+      this.data = [0, 0, 0];
+      var dataIndex = 0;
+
+      while (initialValue !== 0) {
+        this.data[dataIndex] = initialValue % BigIntEmulator.border;
+        initialValue = Math.floor(initialValue / BigIntEmulator.border);
+        dataIndex++;
+      }
+    }
+
+    _createClass(BigIntEmulator, [{
+      key: "addBigInt",
+      value: function addBigInt(otherBigInt) {
+        var result = new BigIntEmulator(0);
+        var maxLength = Math.max(this.data.length, otherBigInt.data.length);
+        var carryValue = 0;
+        var dataIndex = 0;
+
+        for (; dataIndex < maxLength; dataIndex++) {
+          var sum = (this.data[dataIndex] || 0) + (otherBigInt.data[dataIndex] || 0) + carryValue;
+          result.data[dataIndex] = sum % BigIntEmulator.border;
+          carryValue = Math.floor(sum / BigIntEmulator.border);
+        }
+
+        if (carryValue > 0) {
+          result.data[dataIndex] = carryValue;
+        }
+
+        return result;
+      }
+    }, {
+      key: "multiplyBigInt",
+      value: function multiplyBigInt(otherBigInt) {
+        var result = new BigIntEmulator(0);
+
+        for (var leftIndex = 0; leftIndex < this.data.length; leftIndex++) {
+          for (var rightIndex = 0; rightIndex < otherBigInt.data.length; rightIndex++) {
+            var productPart = this.data[leftIndex] * otherBigInt.data[rightIndex];
+            var tempIndex = leftIndex + rightIndex;
+            var valueToCarry = productPart;
+
+            while (valueToCarry > 0) {
+              var sumWithExisting = (result.data[tempIndex] || 0) + valueToCarry;
+              result.data[tempIndex] = sumWithExisting % BigIntEmulator.border;
+              valueToCarry = Math.floor(sumWithExisting / BigIntEmulator.border);
+              tempIndex++;
+            }
+          }
+        }
+
+        return result;
+      }
+    }, {
+      key: "toDecimalString",
+      value: function toDecimalString() {
+        var reversedData = this.data.concat().reverse();
+
+        var findFirstNonZeroIndex = function findFirstNonZeroIndex(arr, predicate) {
+          for (var i = 0; i < arr.length; i++) {
+            if (predicate(arr[i], i)) {
+              return i;
+            }
+          }
+          return null;
+        };
+
+        var firstNonZeroIdx = findFirstNonZeroIndex(reversedData, function (val) {
+          return val !== 0;
+        });
+
+        if (firstNonZeroIdx == null) {
+          return "0";
+        }
+
+        var padStringStart = function padStringStart(valueStr, desiredLength, paddingChar) {
+          var numPads = desiredLength - valueStr.length;
+          var result = "";
+          for (var i = 0; i < numPads; i++) {
+            result += paddingChar;
+          }
+          return result + valueStr;
+        };
+
+        return reversedData.slice(firstNonZeroIdx).map(function (partValue, index) {
+          if (index === 0) {
+            return String(partValue);
+          } else {
+            return padStringStart(String(partValue), BigIntEmulator.digits, "0");
+          }
+        }).join("");
+      }
+    }]);
+
+    return BigIntEmulator;
+  }();
+  /** digits per element. */
+
+
+  BigIntEmulator.digits = 7;
+  BigIntEmulator.border = Math.pow(10, BigIntEmulator.digits);
+  /**
+   * Runs a recursive function expressed as a generator function.
+   */
+  // ----------
 }
 
-// Execute the solution.
-solutionEntry();
+mainProcess();

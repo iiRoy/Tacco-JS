@@ -1,131 +1,80 @@
-const customApplicationLoader = (() => {
+process.stdin.on('data', function(inputChunk) {
+  if (!global.inputBuffer) {
+    global.inputBuffer = [];
+  }
+  global.inputBuffer.push(inputChunk.toString('utf8'));
+});
 
-    const applicationRegistry = {};
+process.stdin.on('end', function() {
+  const fullInputContent = global.inputBuffer ? global.inputBuffer.join('') : '';
+  global.inputBuffer = undefined; // Clear buffer
 
-    const ioHandler = (() => {
-        let accumulatedInput = '';
+  try {
+    const processedResult = calculateDoughnutCount(fullInputContent);
+    process.stdout.write(String(processedResult) + '\n');
+  } catch (error) {
+    // Replicate unsafeCrashWith behavior by throwing
+    throw error;
+  }
+});
 
-        const retrieveAllInput = () => {
-            return new Promise((completionCallback, errorCallback) => {
-                process.stdin.setEncoding('utf8');
-                process.stdin.on('data', (chunk) => {
-                    accumulatedInput += chunk;
-                });
-                process.stdin.on('end', () => {
-                    completionCallback(accumulatedInput);
-                });
-                process.stdin.on('error', (err) => {
-                    errorCallback(err);
-                });
-            });
-        };
+function calculateDoughnutCount(rawText) {
+  const cleanedText = rawText.trim();
+  const textLines = cleanedText.split('\n');
 
-        const outputContent = (dataToWrite) => {
-            return new Promise((completionCallback, errorCallback) => {
-                process.stdout.write(dataToWrite, 'utf8', (err) => {
-                    if (err) errorCallback(err);
-                    else completionCallback();
-                });
-            });
-        };
+  if (textLines.length === 0 || (textLines.length === 1 && textLines[0] === '')) {
+    throw new Error("Input lines missing or empty.");
+  }
 
-        return { retrieveAllInput, outputContent };
-    })();
+  const firstLineContent = textLines.shift();
+  if (!firstLineContent) {
+    throw new Error("First line content is unexpectedly empty.");
+  }
 
-    const extractConfiguration = (headline) => {
-        const components = headline.trim().split(/\s+/).filter(Boolean);
-        if (components.length !== 2) {
-            return { outcome: null, problem: 'Incorrect format for initial configuration.' };
-        }
-        const numericValueA = parseInt(components[0], 10);
-        const numericValueB = parseInt(components[1], 10);
-        if (isNaN(numericValueA) || isNaN(numericValueB)) {
-            return { outcome: null, problem: 'Configuration values must be integers.' };
-        }
-        return { outcome: { quantity: numericValueA, capacity: numericValueB }, problem: null };
-    };
+  const firstLineParts = firstLineContent.split(' ');
+  if (firstLineParts.length !== 2) {
+    throw new Error("First line must contain exactly two space-separated numbers.");
+  }
 
-    const extractCostsPerItem = (costLines) => {
-        const itemPricing = [];
-        for (const lineEntry of costLines) {
-            const trimmedLine = lineEntry.trim();
-            if (trimmedLine === '') continue;
+  const totalDoughnutTypes = parseInt(firstLineParts[0], 10);
+  const initialFlourAmount = parseInt(firstLineParts[1], 10);
 
-            const costValue = parseInt(trimmedLine, 10);
-            if (isNaN(costValue)) {
-                return { outcome: null, problem: `Invalid cost detected: ${trimmedLine}` };
-            }
-            itemPricing.push(costValue);
-        }
-        return { outcome: itemPricing, problem: null };
-    };
+  if (isNaN(totalDoughnutTypes) || isNaN(initialFlourAmount)) {
+    throw new Error("Invalid numeric values in the first line.");
+  }
 
-    const computeOptimalItemCount = (rawDataSource) => {
-        const allLines = rawDataSource.trim().split('\n').filter(Boolean);
+  const individualDoughnutFlourNeeds = textLines
+    .map(line => parseInt(line, 10))
+    .filter(value => !isNaN(value)); // Filter out non-numeric lines, mirroring mapMaybe
 
-        if (allLines.length === 0) {
-            return { outcome: null, problem: 'No input provided for processing.' };
-        }
+  if (individualDoughnutFlourNeeds.length !== totalDoughnutTypes) {
+      // This check ensures strict adherence to N lines, if problem implies it.
+      // The original PureScript code would proceed with the filtered array,
+      // but if N is large and many lines are invalid, it might be an implicit error.
+      // For competitive programming, usually N lines are guaranteed to be valid.
+      // If not, the original code would just use the valid ones.
+      // Let's assume valid input for now, or that filtering is the intended behavior.
+  }
 
-        const configResult = extractConfiguration(allLines[0]);
-        if (configResult.problem) {
-            return configResult;
-        }
-        const { quantity: initialItems, capacity: availableResource } = configResult.outcome;
+  let cumulativeFlourConsumption = 0;
+  let smallestFlourRequirement = Infinity;
 
-        const remainingInputLines = allLines.slice(1);
-        const costsResult = extractCostsPerItem(remainingInputLines);
-        if (costsResult.problem) {
-            return costsResult;
-        }
-        const itemPrices = costsResult.outcome;
+  for (const flourAmount of individualDoughnutFlourNeeds) {
+    cumulativeFlourConsumption += flourAmount;
+    if (flourAmount < smallestFlourRequirement) {
+      smallestFlourRequirement = flourAmount;
+    }
+  }
 
-        if (itemPrices.length !== initialItems) {
-            return { outcome: null, problem: `Expected ${initialItems} item prices, received ${itemPrices.length}.` };
-        }
+  const remainingFlour = initialFlourAmount - cumulativeFlourConsumption;
+  let extraDoughnutsPossible;
 
-        let totalResourceSpent = 0;
-        let lowestIndividualCost = Number.MAX_SAFE_INTEGER;
+  // Replicate PureScript's Data.EuclideanRing.intDiv behavior for divisor 0
+  if (smallestFlourRequirement === 0) {
+    extraDoughnutsPossible = 0;
+  } else {
+    extraDoughnutsPossible = Math.floor(remainingFlour / smallestFlourRequirement);
+  }
 
-        for (let idx = 0; idx < itemPrices.length; idx++) {
-            const currentItemPrice = itemPrices[idx];
-            totalResourceSpent += currentItemPrice;
-            if (currentItemPrice < lowestIndividualCost) {
-                lowestIndividualCost = currentItemPrice;
-            }
-        }
-
-        const resourceLeftover = availableResource - totalResourceSpent;
-        let supplementaryItems = 0;
-
-        if (resourceLeftover > 0 && lowestIndividualCost > 0) {
-            supplementaryItems = Math.floor(resourceLeftover / lowestIndividualCost);
-        }
-
-        const finalTotalItems = initialItems + supplementaryItems;
-
-        return { outcome: finalTotalItems.toString() + '\n', problem: null };
-    };
-
-    applicationRegistry.launchMainProcess = async () => {
-        try {
-            const receivedText = await ioHandler.retrieveAllInput();
-            const processResult = computeOptimalItemCount(receivedText);
-
-            if (processResult.problem) {
-                console.error('Critical Application Error:', processResult.problem);
-                process.exit(1);
-            }
-
-            await ioHandler.outputContent(processResult.outcome);
-        } catch (runtimeError) {
-            console.error('Unhandled Runtime Exception:', runtimeError.message);
-            process.exit(1);
-        }
-    };
-
-    return applicationRegistry;
-
-})();
-
-customApplicationLoader.launchMainProcess();
+  return totalDoughnutTypes + extraDoughnutsPossible;
+}

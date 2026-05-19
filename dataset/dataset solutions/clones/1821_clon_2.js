@@ -1,45 +1,35 @@
-const systemInput = require('fs')
+const dataSegments = require('fs')
   .readFileSync('/dev/stdin', 'utf8')
   .trim()
-  .split(/\s+/); // Retrieve and parse all incoming data
+  .split(/\s+/);
 
-const totalElements = parseInt(systemInput[0]); // Determine the total number of entries
+const countElements = parseInt(dataSegments[0], 10);
+const firstCollection = new Array(countElements);
+const secondCollection = new Array(countElements);
 
-const minBoundaryValues = Array(totalElements); // Initialize an array for minimum boundaries
-const maxBoundaryValues = Array(totalElements); // Initialize an array for maximum boundaries
-
-let elementIterator = 0; // Index for current element being processed
-let inputPointer = 1; // Pointer for reading from the raw input array
-
-// Populate both boundary arrays from the parsed input
-for (elementIterator = 0; elementIterator < totalElements; ++elementIterator) {
-  minBoundaryValues[elementIterator] = parseInt(systemInput[inputPointer++]); // Assign lower bound
-  maxBoundaryValues[elementIterator] = parseInt(systemInput[inputPointer++]); // Assign upper bound
+// Populate the two arrays from the input data
+for (let idx = 0, dataPointer = 1; idx < countElements; idx++) {
+  firstCollection[idx] = parseInt(dataSegments[dataPointer++], 10);
+  secondCollection[idx] = parseInt(dataSegments[dataPointer++], 10);
 }
 
-const numericalComparator = (valX, valY) => valX - valY; // A utility function for ascending numerical sort
+// Define a comparison function for sorting numbers
+const compareValues = (valA, valB) => valA - valB;
 
-minBoundaryValues.sort(numericalComparator); // Sort the array of minimum values
-maxBoundaryValues.sort(numericalComparator); // Sort the array of maximum values
+// Sort both collections numerically
+firstCollection.sort(compareValues);
+secondCollection.sort(compareValues);
 
-// Check if the total count of elements is an even number
-if (totalElements % 2 === 0) {
-  // Case for an even number of entries
-  const leftMidIndex = totalElements / 2 - 1; // Calculate the index of the left-middle element
-  const rightMidIndex = totalElements / 2; // Calculate the index of the right-middle element
-
-  const highestMedianSum = maxBoundaryValues[leftMidIndex] + maxBoundaryValues[rightMidIndex]; // Sum of two middle elements for upper bounds
-  const lowestMedianSum = minBoundaryValues[leftMidIndex] + minBoundaryValues[rightMidIndex]; // Sum of two middle elements for lower bounds
-
-  // Output the final computed range size
-  console.log(highestMedianSum - lowestMedianSum + 1);
-} else {
-  // Case for an odd number of entries
-  const centralIndex = (totalElements - 1) / 2; // Determine the single central element's index
-
-  const highestCentralValue = maxBoundaryValues[centralIndex]; // The upper bound's central value
-  const lowestCentralValue = minBoundaryValues[centralIndex]; // The lower bound's central value
-
-  // Output the final computed range size
-  console.log(highestCentralValue - lowestCentralValue + 1);
+// Determine the range of possible median sums based on the number of elements
+if (countElements % 2 === 0) { // If the total count is an even number
+  const midIdxOne = countElements / 2 - 1;
+  const midIdxTwo = countElements / 2;
+  const upperMedianSum = secondCollection[midIdxOne] + secondCollection[midIdxTwo];
+  const lowerMedianSum = firstCollection[midIdxOne] + firstCollection[midIdxTwo];
+  console.log(upperMedianSum - lowerMedianSum + 1);
+} else { // If the total count is an odd number
+  const centralIndex = (countElements - 1) / 2;
+  const upperMedianSum = secondCollection[centralIndex];
+  const lowerMedianSum = firstCollection[centralIndex];
+  console.log(upperMedianSum - lowerMedianSum + 1);
 }

@@ -1,28 +1,25 @@
-// Define a primary function to handle the entire processing flow.
-function processInputData(rawDataContent)
-{
-    // Break down the raw input string into individual text lines.
-    let textLines = rawDataContent.split('\n');
+function processInput(rawData) {
+  // Split the raw input string into an array of individual lines.
+  const inputLines = rawData.split('\n');
 
-    // Extract the primary quantity from the first line, which is the first numeric item.
-    let primaryQuantity = Number(textLines[0].split(' ')[0]);
+  // Parse the first number from the first line.
+  // The first line contains two space-separated integers.
+  const firstVal = inputLines[0].split(' ').map(strNum => parseInt(strNum, 10))[0];
 
-    // Obtain the secondary quantity from the same first line, the second numeric item.
-    let secondaryQuantity = Number(textLines[0].split(' ')[1]);
+  // Parse the second number from the first line.
+  const secondVal = inputLines[0].split(' ').map(strNum => parseInt(strNum, 10))[1];
 
-    // Parse the second line into an array of integer values.
-    // This variable maintains structural similarity to the original, though its value isn't used in the calculation.
-    let numericalSeries = textLines[1].split(' ').map(strVal => Number(strVal));
+  // Parse the array of numbers from the second line.
+  // This line contains space-separated integers.
+  const dataArray = inputLines[1].split(' ').map(strNum => parseInt(strNum, 10));
 
+  // Perform a calculation based on the parsed values.
+  // This formula computes a specific result.
+  let finalOutcome = Math.ceil((firstVal - secondVal) / (secondVal - 1)) + 1;
 
-    // Perform the core calculation based on the primary and secondary quantities.
-    // This mathematical formula computes a specific outcome related to division and rounding up.
-    let calculatedOutcome = Math.ceil((primaryQuantity - secondaryQuantity) / (secondaryQuantity - 1)) + 1;
-
-    // Output the final computed value to the standard console.
-    console.log(calculatedOutcome);
+  // Output the computed result to the console.
+  console.log(finalOutcome);
 }
 
-
-// Invoke the main processing function with data read from the standard input stream.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

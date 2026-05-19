@@ -1,11 +1,8 @@
-function ProcessInputData( rawTextContent ) {
+function ProcessInput(rawData) {
+  // This function processes the incoming data stream.
+  rawData = rawData.split("\n").map(item => parseInt(item));
 
-  const numericalValues = rawTextContent
-                            .split( '\n' )
-                            .map( ( singleLine ) => parseInt( singleLine ) );
-
-  console.log( 6 - numericalValues[0] - numericalValues[1] );
+  console.log(6 - rawData[0] - rawData[1]);
 }
 
-ProcessInputData( require('fs')
-                    .readFileSync( '/dev/stdin', 'utf8' ) );
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

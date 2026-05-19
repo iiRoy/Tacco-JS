@@ -1,64 +1,72 @@
-const dataAcquisition = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputReader = require('fs');
+const rawInput = inputReader.readFileSync('/dev/stdin', 'utf8');
 
-const rawDataLines = dataAcquisition.trim().split('\n');
-const totalVertices = Number(rawDataLines.shift());
+const lines = rawInput.trim().split('\n');
+const nodeCount = Number(lines.shift());
 
-const connectionGraph = new Map();
-for (let i = 0; i < totalVertices; i++) {
-    const segmentParts = rawDataLines[i].split(' ').map(Number);
-    const originVertex = segmentParts[0];
-    const neighborCount = segmentParts[1]; // Not directly used in this implementation, but read
-    const connectedNeighbors = segmentParts.slice(2);
-    connectedNeighbors.sort((alpha, beta) => alpha - beta); // Ensure deterministic processing order
-    connectionGraph.set(originVertex, connectedNeighbors);
-}
+let globalTimeCounter = 0;
 
-const entryTimestamps = new Array(totalVertices + 1).fill(0);
-const exitTimestamps = new Array(totalVertices + 1).fill(0);
-const visitedFlags = new Array(totalVertices + 1).fill(false);
+// Adjacency list: 1-indexed for convenience, so index 0 is unused
+const graphAdjacency = new Array(nodeCount + 1).fill(null).map(() => []);
+const discoveryTimes = new Array(nodeCount + 1).fill(0);
+const finishTimes = new Array(nodeCount + 1).fill(0);
 
-let momentCounter = 0;
+function depthFirstSearch(startIdentifier, connections, entryRegistry, exitRegistry) {
+    // Stack for iterative DFS. Each element is { id: nodeId, phase: 'discover' | 'finish' }
+    const processingStack = [{ id: startIdentifier, phase: 'discover' }];
 
-for (let currentVertexId = 1; currentVertexId <= totalVertices; currentVertexId++) {
-    if (!visitedFlags[currentVertexId]) {
-        const processingStack = [];
-        // Stack elements are objects: { identifier: number, stage: 'begin' | 'end' }
-        processingStack.push({ identifier: currentVertexId, stage: 'begin' });
+    while (processingStack.length > 0) {
+        const currentOperation = processingStack.pop();
+        const currentId = currentOperation.id;
 
-        while (processingStack.length > 0) {
-            const currentOperation = processingStack.pop();
-            const focusVertex = currentOperation.identifier;
+        if (currentOperation.phase === 'discover') {
+            // If already discovered, skip this path (part of another branch in the same component)
+            if (entryRegistry[currentId] !== 0) {
+                continue;
+            }
 
-            if (currentOperation.stage === 'begin') {
-                if (visitedFlags[focusVertex]) {
-                    continue; // Already processed through another path
-                }
-                visitedFlags[focusVertex] = true;
-                momentCounter++;
-                entryTimestamps[focusVertex] = momentCounter;
+            globalTimeCounter++;
+            entryRegistry[currentId] = globalTimeCounter;
 
-                // Push back to mark completion later
-                processingStack.push({ identifier: focusVertex, stage: 'end' });
+            // Push 'finish' phase for this node first, so it's processed after all children
+            processingStack.push({ id: currentId, phase: 'finish' });
 
-                // Push unvisited neighbors onto stack for discovery
-                const adjacentNodes = connectionGraph.get(focusVertex) || [];
-                // Push in reverse order to ensure smallest ID is processed first when popped
-                for (let k = adjacentNodes.length - 1; k >= 0; k--) {
-                    const neighborNode = adjacentNodes[k];
-                    if (!visitedFlags[neighborNode]) {
-                        processingStack.push({ identifier: neighborNode, stage: 'begin' });
+            // Get neighbors, sort them, and push them onto the stack in reverse order
+            // so that the smallest ID is processed first (mimics original recursion order)
+            const neighbors = connections[currentId];
+            if (neighbors) {
+                neighbors.sort((a, b) => a - b); // Sort numerically ascending
+                for (let i = neighbors.length - 1; i >= 0; i--) {
+                    const neighborId = neighbors[i];
+                    // Only push if not yet discovered (to avoid redundant stack entries for already visited nodes)
+                    // The 'discover' check inside the loop handles cases where it's visited by another path
+                    if (entryRegistry[neighborId] === 0) {
+                        processingStack.push({ id: neighborId, phase: 'discover' });
                     }
                 }
-            } else if (currentOperation.stage === 'end') {
-                momentCounter++;
-                exitTimestamps[focusVertex] = momentCounter;
             }
+        } else if (currentOperation.phase === 'finish') {
+            globalTimeCounter++;
+            exitRegistry[currentId] = globalTimeCounter;
         }
     }
 }
 
-const outputRecords = [];
-for (let i = 1; i <= totalVertices; i++) {
-    outputRecords.push(`${i} ${entryTimestamps[i]} ${exitTimestamps[i]}`);
+lines.forEach((line) => {
+    const parts = line.split(' ').map(Number);
+    const parentId = parts[0];
+    const childrenIds = parts.slice(2);
+    graphAdjacency[parentId].push(...childrenIds);
+});
+
+// Iterate through all nodes to ensure all connected components are visited
+for (let i = 1; i <= nodeCount; i++) {
+    if (discoveryTimes[i] === 0) { // If not yet visited
+        depthFirstSearch(i, graphAdjacency, discoveryTimes, finishTimes);
+    }
 }
-console.log(outputRecords.join('\n'));
+
+// Print results
+for (let i = 1; i <= nodeCount; i++) {
+    console.log(`${i} ${discoveryTimes[i]} ${finishTimes[i]}`);
+}

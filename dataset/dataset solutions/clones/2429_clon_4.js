@@ -1,40 +1,23 @@
 'use strict';
-const obtainNumericValue = (textSegment) => Number(textSegment);
 
-const measureSeparation = (entityOne, entityTwo) => {
-    const deltaX = entityOne.axisX - entityTwo.axisX;
-    const deltaY = entityOne.axisY - entityTwo.axisY;
-    return Math.hypot(deltaX, deltaY);
-};
+const processInput = (rawLines) => {
+  const pointCount = Number(rawLines[0]);
 
-const formUniquePairs = (collectionOfEntities) => {
-    const generatedPairs = [];
-    for (let currentEntityIndex = 0; currentEntityIndex < collectionOfEntities.length; currentEntityIndex++) {
-        for (let subsequentEntityIndex = currentEntityIndex + 1; subsequentEntityIndex < collectionOfEntities.length; subsequentEntityIndex++) {
-            generatedPairs.push([collectionOfEntities[currentEntityIndex], collectionOfEntities[subsequentEntityIndex]]);
-        }
-    }
-    return generatedPairs;
-};
+  const coordinates = rawLines.slice(1, 1 + pointCount).map(lineSegment => {
+    const [horizontal, vertical] = lineSegment.split(' ').map(Number);
+    return { h: horizontal, v: vertical };
+  });
 
-const processInputAndCalculate = (sourceDataLines) => {
-    const itemCount = obtainNumericValue(sourceDataLines[0]);
-    
-    const spatialEntities = sourceDataLines.slice(1, itemCount + 1).map(lineContent => {
-        const coordinateStrings = lineContent.match(/-?\d+/g);
-        return {
-            axisX: obtainNumericValue(coordinateStrings[0]),
-            axisY: obtainNumericValue(coordinateStrings[1])
-        };
-    });
-
-    const allDistinctPairs = formUniquePairs(spatialEntities);
-
-    const cumulativeExtent = allDistinctPairs.reduce((accumulator, currentPair) => {
-        return accumulator + measureSeparation(currentPair[0], currentPair[1]);
+  const totalSpan = coordinates.reduce((accumulatedPathLength, currentVertex, currentIdx, allVertices) => {
+    const segmentDistances = allVertices.slice(currentIdx).reduce((innerAccumulatedLength, otherVertex) => {
+      const deltaHorizontal = currentVertex.h - otherVertex.h;
+      const deltaVertical = currentVertex.v - otherVertex.v;
+      return innerAccumulatedLength + Math.sqrt(deltaHorizontal * deltaHorizontal + deltaVertical * deltaVertical);
     }, 0);
+    return accumulatedPathLength + segmentDistances;
+  }, 0);
 
-    console.log(cumulativeExtent / itemCount * 2);
+  console.log((totalSpan / pointCount) * 2);
 };
 
-processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

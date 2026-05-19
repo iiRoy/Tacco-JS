@@ -1,105 +1,97 @@
-const adjustCircularPosition = (value, circleSize) => {
-    let normalized = value % circleSize;
-    return normalized < 0 ? normalized + circleSize : normalized;
-};
+function Main(rawData) {
+    const lines = rawData.split("\n");
 
-const calculateRelativePasses = (entityA, entityB, circleSize, duration) => {
-    if (entityA.travelMode === entityB.travelMode) {
-        return 0;
-    }
+    const [antCount, trackLength, timeElapsed] = lines[0].split(" ").map(Number);
 
-    let potentialRelativeDistance = duration * 2;
-
-    let clockwiseCoord, counterClockwiseCoord;
-    if (entityA.travelMode === 1) {
-        clockwiseCoord = entityA.initialCoord;
-        counterClockwiseCoord = entityB.initialCoord;
-    } else {
-        clockwiseCoord = entityB.initialCoord;
-        counterClockwiseCoord = entityA.initialCoord;
-    }
-
-    let initialGap;
-    if (counterClockwiseCoord >= clockwiseCoord) {
-        initialGap = counterClockwiseCoord - clockwiseCoord;
-    } else {
-        initialGap = circleSize - clockwiseCoord + counterClockwiseCoord;
-    }
-
-    potentialRelativeDistance -= initialGap;
-
-    let interactions = 0;
-    if (potentialRelativeDistance >= 0) {
-        interactions++;
-        interactions += Math.floor(potentialRelativeDistance / circleSize);
-    }
-    return interactions;
-};
-
-const performAntSimulation = (dataContent) => {
-    const dataSegments = dataContent.split('\n');
-
-    const [mainParamsLine, ...entityCoordLines] = dataSegments;
-    const [numEntitiesStr, circuitLengthStr, elapsedTimeStr] = mainParamsLine.split(' ');
-    const numEntities = parseInt(numEntitiesStr, 10);
-    const circuitLength = parseInt(circuitLengthStr, 10);
-    const elapsedTime = parseInt(elapsedTimeStr, 10);
-
-    const entityRecords = entityCoordLines.slice(0, numEntities).map((line, idx) => {
-        const [coordStr, modeStr] = line.split(' ');
-        return {
-            entityId: idx,
-            initialCoord: parseInt(coordStr, 10),
-            travelMode: parseInt(modeStr, 10)
-        };
+    const antDetails = lines.slice(1, antCount + 1).map(line => {
+        const [pos, dir] = line.split(" ").map(Number);
+        return { initialPos: pos, direction: dir };
     });
 
-    const futurePositions = entityRecords.map(entity => {
-        const directionFactor = (entity.travelMode === 1) ? 1 : -1;
-        const rawFutureCoord = entity.initialCoord + elapsedTime * directionFactor;
-        return adjustCircularPosition(rawFutureCoord, circuitLength);
-    });
+    const calculateIndependentFinalPosition = (initialPos, direction, trackLength, timeElapsed) => {
+        const directionValue = (direction === 1) ? 1 : -1;
+        let finalPos = (initialPos + timeElapsed * directionValue) % trackLength;
+        if (finalPos < 0) {
+            finalPos += trackLength;
+        }
+        return finalPos;
+    };
 
-    const referenceEntity = entityRecords[0];
-    const totalDisplacementRaw = entityRecords.slice(1).reduce((accumulator, currentEntity) => {
-        return accumulator + calculateRelativePasses(referenceEntity, currentEntity, circuitLength, elapsedTime);
+    const independentFinalPositions = antDetails.map(ant =>
+        calculateIndependentFinalPosition(ant.initialPos, ant.direction, trackLength, timeElapsed)
+    );
+
+    const initialAntFinalPos = independentFinalPositions[0];
+
+    const countRelativePasses = (antA, antB, trackLen, time) => {
+        if (antA.direction === antB.direction) {
+            return 0;
+        }
+
+        let rightMoverPosition, leftMoverPosition;
+        if (antA.direction === 1) {
+            rightMoverPosition = antA.initialPos;
+            leftMoverPosition = antB.initialPos;
+        } else {
+            rightMoverPosition = antB.initialPos;
+            leftMoverPosition = antA.initialPos;
+        }
+
+        let relativeTravelDistance = time * 2;
+        let initialSeparation;
+
+        if (leftMoverPosition >= rightMoverPosition) {
+            initialSeparation = leftMoverPosition - rightMoverPosition;
+        } else {
+            initialSeparation = trackLen - rightMoverPosition + leftMoverPosition;
+        }
+
+        let passes = 0;
+        if (relativeTravelDistance >= initialSeparation) {
+            passes++;
+            relativeTravelDistance -= initialSeparation;
+            passes += Math.floor(relativeTravelDistance / trackLen);
+        }
+        return passes;
+    };
+
+    let effectiveShift = antDetails.slice(1).reduce((passesAccumulator, currentAntDetails) => {
+        return passesAccumulator + countRelativePasses(antDetails[0], currentAntDetails, trackLength, timeElapsed);
     }, 0);
 
-    let finalRefEntityShift = totalDisplacementRaw % numEntities;
-    if (referenceEntity.travelMode === 2) {
-        finalRefEntityShift = (numEntities - finalRefEntityShift) % numEntities;
+    effectiveShift %= antCount;
+    if (antDetails[0].direction === 2) {
+        effectiveShift = (antCount - effectiveShift) % antCount;
     }
 
-    const orderedFutureLocations = [...futurePositions].sort((locA, locB) => locA - locB);
+    const sortedPositionsWithIndices = independentFinalPositions.map((pos, idx) => ({
+        finalPos: pos,
+        originalIdx: idx
+    }));
 
-    const refEntityFuturePos = futurePositions[0];
-    const refEntityTravelMode = entityRecords[0].travelMode;
+    sortedPositionsWithIndices.sort((a, b) => a.finalPos - b.finalPos);
 
-    const indicesMatchingRefPos = orderedFutureLocations
-        .map((loc, idx) => (loc === refEntityFuturePos) ? idx : -1)
-        .filter(idx => idx !== -1);
+    let initialAntSortedIndex;
+    const matchingEntries = sortedPositionsWithIndices
+        .map((entry, idx) => ({ ...entry, sortedIdx: idx }))
+        .filter(entry => entry.finalPos === initialAntFinalPos);
 
-    let baseOutputIndex;
-    if (indicesMatchingRefPos.length === 0) {
-        baseOutputIndex = 0; 
-    } else if (indicesMatchingRefPos.length === 1) {
-        baseOutputIndex = indicesMatchingRefPos[0];
+    if (antDetails[0].direction === 1) {
+        initialAntSortedIndex = matchingEntries[matchingEntries.length - 1].sortedIdx;
     } else {
-        if (refEntityTravelMode === 1) {
-            baseOutputIndex = Math.max(...indicesMatchingRefPos);
-        } else {
-            baseOutputIndex = Math.min(...indicesMatchingRefPos);
-        }
+        initialAntSortedIndex = matchingEntries[0].sortedIdx;
     }
 
-    let adjustedInitialIdx = (numEntities + baseOutputIndex - finalRefEntityShift) % numEntities;
+    const finalOutputIndex = (antCount + initialAntSortedIndex - effectiveShift) % antCount;
 
-    const finalSequence = Array.from({ length: numEntities }, (_, i) => {
-        const currentPrintIndex = (adjustedInitialIdx + i) % numEntities;
-        return orderedFutureLocations[currentPrintIndex];
-    });
+    const finalPositions = [];
+    let currentOutputPointer = finalOutputIndex;
+    for (let i = 0; i < antCount; i++) {
+        finalPositions.push(sortedPositionsWithIndices[currentOutputPointer].finalPos);
+        currentOutputPointer = (currentOutputPointer + 1) % antCount;
+    }
 
-    return finalSequence.join('\n');
-};
+    finalPositions.forEach(pos => console.log(pos));
+}
 
-console.log(performAntSimulation(require('fs').readFileSync('/dev/stdin', 'utf8')));
+Main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,38 +1,37 @@
-function determineTotalExpenditure(dataString) {
-    const lines = dataString.trim().split('\n');
+function processPurchaseData(sourceText) {
+    const [initialConfig, ...shopDetails] = sourceText.split('\n');
+    const [totalShopCount, acquisitionTarget] = initialConfig.split(' ').map(Number);
 
-    const [shopCountStr, targetQuantityStr] = lines[0].split(' ');
-    const shopCount = Number(shopCountStr);
-    const targetQuantity = Number(targetQuantityStr);
+    const availableOffers = shopDetails.map(entry => entry.split(' ').map(Number));
 
-    const vendorOfferings = lines.slice(1, shopCount + 1).map(line => {
-        const [priceStr, quantityStr] = line.split(' ');
-        return [Number(priceStr), Number(quantityStr)];
-    });
+    availableOffers.sort((offerA, offerB) => offerA[0] - offerB[0]);
 
-    const sortedOfferings = vendorOfferings.sort((offerA, offerB) => offerA[0] - offerB[0]);
+    const initialAccumulator = {
+        currentExpenditure: 0,
+        itemsObtained: 0,
+        completionFlag: false
+    };
 
-    const finalAcquisitionState = sortedOfferings.reduce(
-        (accumulator, currentOffer) => {
-            let [currentCost, itemsAcquiredSoFar] = accumulator;
-            const [offerPrice, offerQuantity] = currentOffer;
+    const finalAcquisitionSummary = availableOffers.reduce((accumulator, currentOffer) => {
+        if (accumulator.completionFlag) {
+            return accumulator;
+        }
 
-            if (itemsAcquiredSoFar >= targetQuantity) {
-                return [currentCost, itemsAcquiredSoFar];
-            }
+        const [unitPrice, availableStock] = currentOffer;
+        const remainingNeeded = acquisitionTarget - accumulator.itemsObtained;
+        const unitsToProcure = Math.min(availableStock, remainingNeeded);
 
-            const remainingNeeded = targetQuantity - itemsAcquiredSoFar;
-            const itemsToProcureFromCurrent = Math.min(offerQuantity, remainingNeeded);
+        const updatedExpenditure = accumulator.currentExpenditure + (unitsToProcure * unitPrice);
+        const updatedItems = accumulator.itemsObtained + unitsToProcure;
 
-            currentCost += (itemsToProcureFromCurrent * offerPrice);
-            itemsAcquiredSoFar += itemsToProcureFromCurrent;
+        return {
+            currentExpenditure: updatedExpenditure,
+            itemsObtained: updatedItems,
+            completionFlag: updatedItems === acquisitionTarget
+        };
+    }, initialAccumulator);
 
-            return [currentCost, itemsAcquiredSoFar];
-        },
-        [0, 0]
-    );
-
-    console.log(finalAcquisitionState[0]);
+    console.log(finalAcquisitionSummary.currentExpenditure);
 }
 
-determineTotalExpenditure(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processPurchaseData(require('fs').readFileSync('/dev/stdin', 'utf8'));

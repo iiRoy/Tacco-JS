@@ -1,68 +1,67 @@
-function ProcessInputData(incomingContent) {
-	// Divide the complete input stream into distinct textual rows.
-	let parsedLines = incomingContent.split("\n");
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  let lineSegments = rawData.split("\n");
 
-	// Designate the initial row as the primary working string.
-	let currentTextBuffer = parsedLines[0];
+  // Initialize the primary string with the first line of input.
+  let currentString = lineSegments[0];
 
-	// Discard the first entry since it's already in use.
-	parsedLines.shift();
+  // Remove the first line as it's already processed.
+  lineSegments.shift();
 
-	// Establish a numeric factor for string modification; 1 for normal, -1 for inversion.
-	let orientationFlag = 1;
+  // Initialize a flag to control string manipulation direction.
+  // A value of +1 indicates normal order, -1 indicates reversed order for certain operations.
+  let directionFlag = +1;
 
-	// Traverse through each subsequent line, interpreting it as an operation.
-	for (let lineIterator = 0; lineIterator < parsedLines.length; lineIterator++) {
+  // Iterate through the remaining lines of input, each representing a command.
+  for (let idx = 0; idx < lineSegments.length; idx++) {
+    // Split the current command line into its constituent parts.
+    const commandParts = lineSegments[idx].split(" ");
 
-		// Deconstruct the current operation line into its constituent segments.
-		const instructionSegments = parsedLines[lineIterator].split(" ");
+    // Check the first part of the command.
+    if (commandParts[0] == "1") {
+      // If the first part is "1", toggle the direction flag.
+      // This effectively multiplies the flag by -1.
+      directionFlag *= -1;
+    } else {
+      // If the first part is not "1", it's a string manipulation command.
+      // Convert the second part of the command to a number for the switch statement.
+      switch (Number(commandParts[1])) {
+        case 1: // Case for command type 1
+          // Apply string manipulation based on the current direction flag.
+          switch (directionFlag) {
+            case +1: // If flag is positive, append the third part to the string.
+              currentString += commandParts[2];
+              break;
+            case -1: // If flag is negative, prepend the third part to the string.
+              currentString = commandParts[2] + currentString;
+              break;
+          }
+          break;
+        case 2: // Case for command type 2
+          // Apply string manipulation based on the current direction flag.
+          switch (directionFlag) {
+            case -1: // If flag is negative, append the third part to the string.
+              currentString += commandParts[2];
+              break;
+            case +1: // If flag is positive, prepend the third part to the string.
+              currentString = commandParts[2] + currentString;
+              break;
+          }
+          break;
+      }
+    }
+  }
 
-		// Evaluate the initial segment to determine the operation's nature.
-		if (instructionSegments[0] == 1) {
-			// If the first segment is '1', reverse the string modification factor.
-			orientationFlag *= -1;
-		} else {
-			// Otherwise, execute a string manipulation based on the second segment.
-			switch (instructionSegments[1] - 0) { // Coerce the second segment to a numerical type.
-				case 1:
-					// Operation type 1: Append or prepend the third segment based on 'orientationFlag'.
-					switch (orientationFlag) {
-						case 1:
-							// Normal orientation: Append the third segment to the text buffer.
-							currentTextBuffer += instructionSegments[2];
-							break;
-						case -1:
-							// Inverted orientation: Prepend the third segment to the text buffer, and update the segment itself.
-							currentTextBuffer = (instructionSegments[2] = instructionSegments[2] + currentTextBuffer);
-							break;
-					}
-					break;
-				case 2:
-					// Operation type 2: Append or prepend, with logic opposite to type 1.
-					switch (orientationFlag) {
-						case -1:
-							// Inverted orientation: Append the third segment to the text buffer.
-							currentTextBuffer += instructionSegments[2];
-							break;
-						case 1:
-							// Normal orientation: Prepend the third segment to the text buffer, and update the segment itself.
-							currentTextBuffer = (instructionSegments[2] = instructionSegments[2] + currentTextBuffer);
-							break;
-					}
-					break;
-			}
-		}
-	}
-
-	// Post-processing: Determine final output based on the 'orientationFlag'.
-	if (orientationFlag == -1) {
-		// If the flag is -1, output the string as it is.
-		console.log(currentTextBuffer);
-	} else {
-		// If the flag is 1, reverse the string before outputting.
-		console.log(currentTextBuffer.split("").reverse().join(""));
-	}
+  // After processing all commands, determine the final output based on the direction flag.
+  if (directionFlag === -1) {
+    // If the flag is -1, print the string as is.
+    console.log(currentString);
+  } else {
+    // If the flag is +1, reverse the string before printing.
+    // This involves splitting into characters, reversing the array, and joining back.
+    console.log(currentString.split("").reverse().join(""));
+  }
 }
 
-// Initiate the primary processing routine using data from standard input.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+// Read input from standard input, decode as UTF-8, and trim whitespace.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

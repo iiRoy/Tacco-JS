@@ -1,19 +1,22 @@
-function performCalculation(rawContent) {
-  const extractedNumbers = rawContent.match(/(-?\d+)/g);
-  
-  const initialValueA = BigInt(extractedNumbers[0]);
-  const initialValueB = BigInt(extractedNumbers[1]);
+'use strict';
 
-  const obtainAbsoluteMagnitude = (amount) => (amount < 0n ? -amount : amount);
+function processInputAndCompute(inputData) {
+  const [firstOperand, secondOperand] = inputData.split('\n')[0].split(' ').map(Number);
 
-  const transformedValueA = obtainAbsoluteMagnitude(initialValueA - 2n);
-  const transformedValueB = obtainAbsoluteMagnitude(initialValueB - 2n);
+  const valA = Math.abs(firstOperand - 2);
+  const valB = Math.abs(secondOperand - 2);
 
-  let finalProduct = transformedValueA * transformedValueB;
+  const productBigInt = BigInt(valA) * BigInt(valB);
 
-  process.stdout.write(finalProduct.toString() + '\n');
+  let finalResultRepresentation;
+
+  if (productBigInt <= BigInt(Number.MAX_SAFE_INTEGER)) {
+    finalResultRepresentation = Number(productBigInt);
+  } else {
+    finalResultRepresentation = productBigInt.toString();
+  }
+
+  console.log(finalResultRepresentation);
 }
 
-const fileSystemAccessor = require('node:fs');
-const acquiredData = fileSystemAccessor.readFileSync('/dev/stdin', { encoding: 'utf8' });
-performCalculation(acquiredData);
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

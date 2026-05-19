@@ -1,58 +1,51 @@
-const reader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const fileSystem = require('fs');
 
-class PlanarCoord {
-    constructor(horizontal, vertical) {
-        this.h = horizontal;
-        this.v = vertical;
-    }
-
-    combine(otherCoord) {
-        return new PlanarCoord(this.h + otherCoord.h, this.v + otherCoord.v);
-    }
-
-    difference(otherCoord) {
-        return new PlanarCoord(this.h - otherCoord.h, this.v - otherCoord.v);
-    }
-
-    rotateNinetyCounterClockwise() {
-        return new PlanarCoord(-this.v, this.h);
-    }
-}
-
-const deriveConjugatePoints = (startVertex, endVertex) => {
-    const beginPoint = new PlanarCoord(startVertex.h, startVertex.v);
-    const finishPoint = new PlanarCoord(endVertex.h, endVertex.v);
-
-    const displacementVector = finishPoint.difference(beginPoint);
-
-    const perpendicularVector = displacementVector.rotateNinetyCounterClockwise();
-
-    const thirdVertex = finishPoint.combine(perpendicularVector);
-
-    const fourthVertex = beginPoint.combine(perpendicularVector);
-
-    return {
-        primaryConjugate: thirdVertex,
-        secondaryConjugate: fourthVertex
-    };
+const acquireInputData = (sourcePath) => {
+    const rawText = fileSystem.readFileSync(sourcePath, 'utf8');
+    const allLines = rawText.split('\n');
+    const firstLineContent = allLines.shift();
+    return firstLineContent.split(' ').map(Number);
 };
 
-let bufferLine = '';
-reader.on('line', (currentLine) => {
-    bufferLine = currentLine;
+const constructPoint = (horizontal, vertical) => ({
+    x: horizontal,
+    y: vertical
 });
 
-reader.on('close', () => {
-    const rawValues = bufferLine.trim().split(' ').map(val => parseFloat(val));
-
-    const initialReference = { h: rawValues[0], v: rawValues[1] };
-    const terminalReference = { h: rawValues[2], v: rawValues[3] };
-
-    const calculatedConjugates = deriveConjugatePoints(initialReference, terminalReference);
-
-    process.stdout.write(`${calculatedConjugates.primaryConjugate.h} ${calculatedConjugates.primaryConjugate.v} ${calculatedConjugates.secondaryConjugate.h} ${calculatedConjugates.secondaryConjugates.v}\n`);
+const deriveVector = (originPoint, destinationPoint) => ({
+    dx: destinationPoint.x - originPoint.x,
+    dy: destinationPoint.y - originPoint.y
 });
+
+const rotateVectorRight = (initialVector) => ({
+    dx: initialVector.dy,
+    dy: -initialVector.dx
+});
+
+const displacePointByVector = (baseCoordinate, displacementVector) => ({
+    x: baseCoordinate.x + displacementVector.dx,
+    y: baseCoordinate.y + displacementVector.dy
+});
+
+const numericalValues = acquireInputData('/dev/stdin');
+
+const initialX = numericalValues[0];
+const initialY = numericalValues[1];
+const secondX = numericalValues[2];
+const secondY = numericalValues[3];
+
+const coordinateA = constructPoint(initialX, initialY);
+const coordinateB = constructPoint(secondX, secondY);
+
+// This vector represents (coordinateA - coordinateB)
+const vectorFromBToA = deriveVector(coordinateB, coordinateA);
+
+// This vector represents the 90-degree clockwise rotation of vectorFromBToA
+const orthogonalVector = rotateVectorRight(vectorFromBToA);
+
+// Calculate the third point by adding the orthogonal vector to coordinateB
+const coordinateC = displacePointByVector(coordinateB, orthogonalVector);
+// Calculate the fourth point by adding the orthogonal vector to coordinateA
+const coordinateD = displacePointByVector(coordinateA, orthogonalVector);
+
+console.log('%d %d %d %d', coordinateC.x, coordinateC.y, coordinateD.x, coordinateD.y);

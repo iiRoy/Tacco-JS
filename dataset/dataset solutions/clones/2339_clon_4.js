@@ -1,60 +1,47 @@
 'use strict';
 
-function processGraphData(rawDataString) {
-    const dataLines = rawDataString.trim().split('\n');
+function graphProcessor(rawDataContent) {
+    const dataLines = rawDataContent.trim().split('\n');
+    const [nodeCountVal, sourceNodeOne, sourceNodeTwo] = dataLines[0].split(' ').map(Number);
 
-    const firstLineValues = dataLines[0].split(' ').map(Number);
-    const totalVertices = firstLineValues[0];
-    const initialVertex = firstLineValues[1];
-    const targetVertex = firstLineValues[2];
-
-    const edgeDefinitions = dataLines.slice(1).map(lineTxt => lineTxt.split(' ').map(Number));
-
-    const neighborConnections = Array.from({ length: totalVertices + 1 }, () => []);
-
-    edgeDefinitions.forEach(edgeTuple => {
-        const firstPoint = edgeTuple[0];
-        const secondPoint = edgeTuple[1];
-        neighborConnections[firstPoint].push(secondPoint);
-        neighborConnections[secondPoint].push(firstPoint);
+    const graphConnections = Array.from({ length: nodeCountVal + 1 }, () => new Set());
+    dataLines.slice(1).forEach(line => {
+        const [nodeXid, nodeYid] = line.split(' ').map(Number);
+        graphConnections[nodeXid].add(nodeYid);
+        graphConnections[nodeYid].add(nodeXid);
     });
 
-    const calculatePathLengths = (startingPoint, graphStructure) => {
-        const recordedDistances = new Map();
-        const traversalQueue = [];
+    const breadthFirstSearch = (initialPoint, totalPoints, graphStructure) => {
+        const distanceValues = Array(totalPoints + 1).fill(-1);
+        const queueElements = [[initialPoint, 0]];
+        distanceValues[initialPoint] = 0;
 
-        recordedDistances.set(startingPoint, 0);
-        traversalQueue.push(startingPoint);
-
-        let headIndex = 0;
-        while (headIndex < traversalQueue.length) {
-            const currentPosition = traversalQueue[headIndex++];
-            const currentPathLength = recordedDistances.get(currentPosition);
-
-            for (const connectedNode of graphStructure[currentPosition]) {
-                if (!recordedDistances.has(connectedNode)) {
-                    recordedDistances.set(connectedNode, currentPathLength + 1);
-                    traversalQueue.push(connectedNode);
+        let queuePointer = 0;
+        while (queuePointer < queueElements.length) {
+            const [currentPoint, currentPathLength] = queueElements[queuePointer++];
+            for (const neighborPoint of graphStructure[currentPoint]) {
+                if (distanceValues[neighborPoint] === -1) {
+                    distanceValues[neighborPoint] = currentPathLength + 1;
+                    queueElements.push([neighborPoint, currentPathLength + 1]);
                 }
             }
         }
-        return recordedDistances;
+        return distanceValues;
     };
 
-    const distancesFromInitial = calculatePathLengths(initialVertex, neighborConnections);
-    const distancesFromTarget = calculatePathLengths(targetVertex, neighborConnections);
+    const distanceSetOne = breadthFirstSearch(sourceNodeOne, nodeCountVal, graphConnections);
+    const distanceSetTwo = breadthFirstSearch(sourceNodeTwo, nodeCountVal, graphConnections);
 
-    const allVertexIDs = Array.from({ length: totalVertices }, (_, idx) => idx + 1);
+    const maximumAchieved = Array.from({ length: nodeCountVal + 1 }, (_, idx) => idx)
+        .slice(1)
+        .reduce((currentMax, nodeIdx) => {
+            if (distanceSetOne[nodeIdx] < distanceSetTwo[nodeIdx]) {
+                return Math.max(currentMax, distanceSetOne[nodeIdx]);
+            }
+            return currentMax;
+        }, 0);
 
-    const relevantDistances = allVertexIDs.filter(vtx => {
-        const distFromI = distancesFromInitial.get(vtx);
-        const distFromT = distancesFromTarget.get(vtx);
-        return distFromI !== undefined && distFromT !== undefined && distFromI < distFromT;
-    }).map(vtx => distancesFromInitial.get(vtx));
-
-    const finalOutcome = relevantDistances.length > 0 ? Math.max(...relevantDistances) : 0;
-
-    console.log(finalOutcome);
+    console.log(maximumAchieved);
 }
 
-processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+graphProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));

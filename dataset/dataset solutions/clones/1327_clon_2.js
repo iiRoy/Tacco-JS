@@ -1,46 +1,51 @@
 'use strict';
-( function ( inputBuffer ) {
-  // Obtain the full textual content from the provided buffer.
-  let entireText = inputBuffer . toString ( ) ;
 
-  // Define a regular expression to identify specific segments within the text.
-  // This pattern looks for a sequence of alphabetic characters, followed by a newline,
-  // and then one or more lines, each containing a number (not starting with zero)
-  // and ending with a newline.
-  const textPattern = / [A-Za-z]+ \n ( [1-9][0-9]* \n ) + / g ;
+// This is the main execution wrapper, an Immediately Invoked Function Expression (IIFE).
+// It takes the standard input as its argument.
+(function(inputSource) {
+  // Convert the raw input buffer into a string for easier processing.
+  var rawTextContent = inputSource.toString();
 
-  // Initiate a self-executing function to process the structured data.
-  // The result of this processing will be stored in 'processedResult'.
-  const processedResult = ( function ( structuredData ) {
-    // For each block of structured data, perform a series of transformations.
-    return structuredData
-      . map ( function ( currentBlock ) {
-        // The first element of 'currentBlock' is the initial string.
-        // The second element (currentBlock[1]) indicates the count of numbers
-        // at the end of the block that represent rotation values.
-        // We slice these rotation values and convert them to integers.
-        return currentBlock . slice ( - currentBlock [ 1 ] )
-          . map ( function ( numberString ) {
-            // Explicitly convert each string to an integer using parseInt.
-            return parseInt ( numberString , 10 ) ;
-          } )
-          . reduce ( function ( accumulatedString , shiftValue ) {
-            // Output the current rotation value to the console for observation.
-            console . log ( shiftValue ) ;
-            // Perform a string rotation: move the initial 'shiftValue' characters
-            // from the beginning of the string to its end.
-            return accumulatedString . slice ( shiftValue ) + accumulatedString . slice ( 0 , shiftValue ) ;
-          } , currentBlock [ 0 ] ) ; // The initial string for the reduce operation is the first item in 'currentBlock'.
-      } )
-      . join ( '\n' ) ; // Combine all the transformed strings into a single string, separated by newlines.
-  } ( entireText . match ( textPattern ) . map ( function ( rawBlock ) {
-    // First, find all occurrences that match the 'textPattern' within the 'entireText'.
-    // Then, for each matched 'rawBlock', remove leading/trailing whitespace and split it into an array of lines.
-    return rawBlock . trim ( ) . split ( '\n' ) ;
-  } )
-  ) ) ;
+  // Define a regular expression to identify specific data blocks.
+  // Each block starts with one or more letters, followed by a newline,
+  // then one or more lines each containing a positive integer followed by a newline.
+  var segmentPattern = /[A-Za-z]+\n([1-9][0-9]*\n)+/g;
 
-  // Display the final processed output to the standard console.
-  console . log ( processedResult ) ;
+  // The core logic is encapsulated in another IIFE to process the matched segments.
+  var processedResult = (function(parsedSegments) {
+    // Iterate over each individual parsed segment.
+    return parsedSegments
+      .map(function(currentSegment) {
+        // 'currentSegment' is an array, e.g., ['ABC', '1', '2'].
+        // currentSegment[0] is the initial string (e.g., 'ABC').
+        // currentSegment[1] is the count of shift operations (e.g., '1').
+        // The remaining elements are the shift amounts.
+        // We slice from the end to get the shift amounts, based on currentSegment[1].
+        return currentSegment.slice(-currentSegment[1])
+          .map(Number) // Convert the string shift amounts to actual numbers.
+          .reduce(function(accumulatorString, shiftAmount) {
+            // As per original behavior, log each shift amount.
+            console.log(shiftAmount);
+            // Perform a circular shift on the string:
+            // Take the part from 'shiftAmount' to the end,
+            // then append the part from the beginning up to 'shiftAmount'.
+            return accumulatorString.slice(shiftAmount) + accumulatorString.slice(0, shiftAmount);
+          }, currentSegment[0]); // Start the reduction with the initial string from the segment.
+      })
+      .join('\n'); // Join all the final processed strings with newline characters.
+  }(
+    // First, find all occurrences matching the 'segmentPattern' in the raw text.
+    rawTextContent.match(segmentPattern)
+      // Then, for each matched block (which is a string),
+      // trim any leading/trailing whitespace and split it into an array of lines.
+      .map(function(matchedBlock) {
+        return matchedBlock.trim().split('\n');
+      })
+  ));
 
-} ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ) ; // Read the content of '/dev/stdin' as UTF-8 and pass it as 'inputBuffer' to the main function.
+  // Output the final aggregated result to the console.
+  console.log(processedResult);
+
+// The input source is read from '/dev/stdin' using Node.js's 'fs' module,
+// and specified to be UTF-8 encoded.
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

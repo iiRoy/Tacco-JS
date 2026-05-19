@@ -1,96 +1,117 @@
 'use strict';
 
-/**
- * Main processing function for the input data.
- * @param {string} rawData The raw input string provided to the program.
- */
-function ProcessInputData(rawData) {
-    // Store the input string for character extraction.
-    const characterSequence = rawData;
+// This function processes a given input string to find the smallest
+// lowercase English letter not present in it, or 'None' if all are present.
+function ProcessInput(rawData) {
+  // The input string is assigned to a new constant for clarity.
+  const sourceString = rawData;
 
-    // A collection to keep track of all unique characters encountered.
-    const distinctSymbols = new Set();
+  // A Set is used to store unique characters from the input string.
+  const uniqueCharacters = new Set();
 
-    // Iterate through each character of the input string to populate the set.
-    for (
-        let charIndex = 0; // Initialize loop counter
-        charIndex < characterSequence.length; // Loop condition based on string length
-        charIndex++ // Increment loop counter
-    ) {
-        distinctSymbols.add(characterSequence[charIndex]); // Add the character at current index to the set
+  // Iterate through each character of the input string.
+  for (let charIndex = 0; charIndex < sourceString.length; charIndex++) {
+    // Add the current character to the set of unique characters.
+    uniqueCharacters.add(sourceString[charIndex]);
+  }
+
+  // Convert the set of unique characters to an array, sort it alphabetically,
+  // and then reverse it to process from 'z' down to 'a'.
+  const orderedUniqueChars = Array.from(uniqueCharacters.values()).sort();
+  // Initialize the variable that will hold the result.
+  // It starts with 'a', assuming 'a' is the smallest missing character.
+  let nextLexicographicalChar = 'a';
+
+  // Iterate over the unique characters in reverse alphabetical order.
+  // This approach helps in finding the smallest missing character efficiently.
+  for (let currentChar of orderedUniqueChars.reverse()) {
+    // Determine the next character in alphabetical order based on the current character.
+    switch (currentChar) {
+      case 'a':
+        nextLexicographicalChar = 'b';
+        break;
+      case 'b':
+        nextLexicographicalChar = 'c';
+        break;
+      case 'c':
+        nextLexicographicalChar = 'd';
+        break;
+      case 'd':
+        nextLexicographicalChar = 'e';
+        break;
+      case 'e':
+        nextLexicographicalChar = 'f';
+        break;
+      case 'f':
+        nextLexicographicalChar = 'g';
+        break;
+      case 'g':
+        nextLexicographicalChar = 'h';
+        break;
+      case 'h':
+        nextLexicographicalChar = 'i';
+        break;
+      case 'i':
+        nextLexicographicalChar = 'j';
+        break;
+      case 'j':
+        nextLexicographicalChar = 'k';
+        break;
+      case 'k':
+        nextLexicographicalChar = 'l';
+        break;
+      case 'l':
+        nextLexicographicalChar = 'm';
+        break;
+      case 'm':
+        nextLexicographicalChar = 'n';
+        break;
+      case 'n':
+        nextLexicographicalChar = 'o';
+        break;
+      case 'o':
+        nextLexicographicalChar = 'p';
+        break;
+      case 'p':
+        nextLexicographicalChar = 'q';
+        break;
+      case 'q':
+        nextLexicographicalChar = 'r';
+        break;
+      case 'r':
+        nextLexicographicalChar = 's';
+        break;
+      case 's':
+        nextLexicographicalChar = 't';
+        break;
+      case 't':
+        nextLexicographicalChar = 'u';
+        break;
+      case 'u':
+        nextLexicographicalChar = 'v';
+        break;
+      case 'v':
+        nextLexicographicalChar = 'w';
+        break;
+      case 'w':
+        nextLexicographicalChar = 'x';
+        break;
+      case 'x':
+        nextLexicographicalChar = 'y';
+        break;
+      case 'y':
+        nextLexicographicalChar = 'z';
+        break;
+      case 'z':
+        // If 'z' is present, it means all letters 'a' through 'z' are present
+        // up to this point in the reverse iteration, so no character is missing.
+        nextLexicographicalChar = 'None';
+        break;
     }
-
-    // Convert the set of unique symbols into an array, sort it alphabetically,
-    // and then reverse the order to process from largest to smallest.
-    const orderedAlphabetical = Array.from(distinctSymbols.values()).sort();
-
-    // This variable will hold the final calculated symbol.
-    // It's initialized to 'a' as a starting point.
-    let computedSymbol = 'a';
-
-    // Iterate over the unique symbols in reverse alphabetical order.
-    // The final value of 'computedSymbol' will be determined by the smallest unique character in the input.
-    for (
-        let currentAlpha of orderedAlphabetical.reverse()
-    ) {
-        // Determine the next alphabetical character based on the current symbol.
-        // This effectively finds the character following the smallest unique character from the input.
-        switch (currentAlpha) {
-            case 'a': computedSymbol = 'b'; break;
-            case 'b': computedSymbol = 'c'; break;
-            case 'c': computedSymbol = 'd'; break;
-            case 'd': computedSymbol = 'e'; break;
-            case 'e': computedSymbol = 'f'; break;
-            case 'f': computedSymbol = 'g'; break;
-            case 'g': computedSymbol = 'h'; break;
-            case 'h': computedSymbol = 'i'; break;
-            case 'i': computedSymbol = 'j'; break;
-            case 'j': computedSymbol = 'k'; break;
-            case 'k': computedSymbol = 'l'; break;
-            case 'l': computedSymbol = 'm'; break;
-            case 'm': computedSymbol = 'n'; break;
-            case 'n': computedSymbol = 'o'; break;
-            case 'o': computedSymbol = 'p'; break;
-            case 'p': computedSymbol = 'q'; break;
-            case 'q': computedSymbol = 'r'; break;
-            case 'r': computedSymbol = 's'; break;
-            case 's': computedSymbol = 't'; break;
-            case 't': computedSymbol = 'u'; break;
-            case 'u': computedSymbol = 'v'; break;
-            case 'v': computedSymbol = 'w'; break;
-            case 'w': computedSymbol = 'x'; break;
-            case 'x': computedSymbol = 'y'; break;
-            case 'y': computedSymbol = 'z'; break;
-            case 'z': computedSymbol = 'None'; break; // Special case for 'z'
-        }
-    }
-
-    // Output the final determined symbol to the console.
-    outputStream.writeLine(computedSymbol);
+  }
+  // Output the determined character to the console.
+  console.log(nextLexicographicalChar);
 }
 
-// Mimic the global console object for output.
-const outputStream = {
-    writeLine: function(message) {
-        console.log(message);
-    }
-};
-
-// Custom require-like function to abstract module loading.
-const getModule = function(moduleName) {
-    if (moduleName === "file-system") {
-        return {
-            readTextFileSync: function(path, encoding) {
-                return require("fs").readFileSync(path, encoding);
-            }
-        };
-    }
-    // Potentially handle other modules or throw an error for unknown ones.
-    throw new Error(`Module '${moduleName}' not found.`);
-};
-
-
-// Execute the primary processing function with input read from standard input.
-ProcessInputData(
-    getModule("file-system").readTextFileSync("/dev/stdin", "utf8")
-);
+// Read the input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

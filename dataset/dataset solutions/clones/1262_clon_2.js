@@ -1,53 +1,37 @@
-const rawData = require('fs') . readFileSync(
-  '/dev/stdin', // Input file stream path
-  'utf8' // Specify UTF-8 encoding
-);
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+let lineSegments = rawData.split("\n"); // Split the input into an array of lines
 
-// Split the entire input content into an array of individual lines
-let lineArray = rawData.split ( "\n" ) ;
+// Iterate through each line segment
+for (let idx = 0; idx < lineSegments.length; idx++) {
+    // Parse height and width from the current line
+    let dimensions = lineSegments[idx].split(" ").map(Number);
+    let heightVal = dimensions[0];
+    let widthVal = dimensions[1];
 
-/*
- * Iterate through each processed line in the array.
- * The loop will terminate if a line containing "0 0" is encountered,
- * signifying the end of input data for rectangle dimensions.
- */
-for (let idx = 0 ; idx < lineArray.length; idx++ )
-{
-  // Parse the current line to extract numerical height and width values
-  let currentDimensions = lineArray[idx].split(" ") .map(Number) ;
-
-  // Assign the first element as height and the second as width
-  let heightVal = currentDimensions[0];
-  let widthVal = currentDimensions[1];
-
-  // Check for the termination condition: both dimensions are zero
-  if (heightVal === 0 && widthVal === 0 )
-  {
-    break; // Exit the main loop
-  }
-
-  // Initialize an empty string buffer to construct the current rectangle's pattern
-  let outputBuffer = '';
-
-  // Outer loop: iterates through each row of the rectangle
-  for (let rowIterator = 0; rowIterator < heightVal; rowIterator++) {
-    // Inner loop: iterates through each column in the current row
-    for (let colIterator = 0; colIterator < widthVal; colIterator++) {
-      // Determine if the current position is on the top or bottom border row
-      if (rowIterator === 0 || rowIterator === heightVal - 1) {
-        outputBuffer += '#'; // Place a hash for border
-      } else {
-        // For inner rows, check if the current position is on the left or right border column
-        if (colIterator === 0 || colIterator === widthVal - 1) {
-          outputBuffer += '#'; // Place a hash for border
-        } else {
-          outputBuffer += '.'; // Place a dot for the interior
-        }
-      }
+    // If both height and width are zero, terminate the program
+    if (heightVal === 0 && widthVal === 0) {
+        break;
     }
-    // Append a newline character after completing each row
-    outputBuffer += '\n';
-  }
-  // Display the fully constructed rectangle pattern to the console
-  console.log(outputBuffer);
+
+    let outputBuffer = ''; // Initialize an empty string to build the pattern
+
+    // Loop for each row
+    for (let rowIter = 0; rowIter < heightVal; rowIter++) {
+        // Loop for each column
+        for (let colIter = 0; colIter < widthVal; colIter++) {
+            // Check if it's the first or last row
+            if (rowIter === 0 || rowIter === heightVal - 1) {
+                outputBuffer += '#'; // Add a hash for border
+            } else {
+                // For inner rows, check if it's the first or last column
+                if (colIter === 0 || colIter === widthVal - 1) {
+                    outputBuffer += '#'; // Add a hash for border
+                } else {
+                    outputBuffer += '.'; // Add a dot for the interior
+                }
+            }
+        }
+        outputBuffer += '\n'; // Add a newline character at the end of each row
+    }
+    console.log(outputBuffer); // Print the constructed pattern for the current dimensions
 }

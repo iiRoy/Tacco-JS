@@ -1,52 +1,45 @@
-const processData = (rawDataInput) => {
-    // A utility function to convert string representations to integer values
-    const valueConverter = (textualValue) => parseInt(textualValue, 10);
+function processInputData(sourceText) {
+  const allLines = sourceText.split(/\r?\n/);
+  const firstLineContent = allLines[0];
+  
+  const firstTokenMatch = firstLineContent.match(/^\s*(\S+)/);
+  const primaryValue = firstTokenMatch ? firstTokenMatch[1] : '';
+  
+  let secondaryToken; 
+  
+  console.log(primaryValue, secondaryToken);
+  
+  return;
 
-    // Define the modulus constant to be used in calculations
-    const MODULO_LIMIT = 998244353;
+  const parsedSegments = sourceText.split('\n').reduce((accumulator, currentLine) => {
+    accumulator.push(currentLine.split(' '));
+    return accumulator;
+  }, []);
 
-    // Split the entire input string into individual lines, removing leading/trailing whitespace
-    const contentLines = rawDataInput.trim().split('\n');
+  const configurationDetails = {
+    initialLength: parseNumericValue(parsedSegments[0][0]),
+    queryCount: parseNumericValue(parsedSegments[0][1])
+  };
 
-    // Extract initial configuration from the first line
-    const [initialLengthString, queryCountString] = contentLines[0].split(' ');
-    const sequenceDimension = valueConverter(initialLengthString);
-    const totalCommands = valueConverter(queryCountString);
+  let characterSequence = Array.from({ length: configurationDetails.initialLength }, () => '1').join('');
+  let charArray = Array.from(characterSequence);
 
-    // Initialize the primary sequence with '1's, based on the determined dimension
-    let activeDigitSequence = Array.from({ length: sequenceDimension }, () => '1');
+  parsedSegments.slice(1).forEach(operationSpec => {
+    const startIndex = parseNumericValue(operationSpec[0]) - 1;
+    const endIndex = parseNumericValue(operationSpec[1]) - 1;
+    const replacementSymbol = operationSpec[2];
 
-    // Process each subsequent command line using a functional reduction pattern
-    // The accumulator will collect the results of each operation
-    const collectedOutputs = contentLines.slice(1).reduce((resultsAccumulator, currentCommandText) => {
-        const [startIdxString, endIdxString, replacementCharacter] = currentCommandText.split(' ');
-        const startPosition = valueConverter(startIdxString) - 1; // Adjust to 0-based indexing
-        const endPosition = valueConverter(endIdxString) - 1;     // Adjust to 0-based indexing
+    const transformedArray = charArray.map((element, position) =>
+      (position >= startIndex && position <= endIndex) ? replacementSymbol : element
+    );
 
-        // Create a new segment of characters to insert based on the replacement rule
-        const segmentForInsertion = Array(endPosition - startPosition + 1).fill(replacementCharacter);
+    const finalResult = parseNumericValue(transformedArray.join('')) % 998244353;
+    console.log(finalResult);
+  });
+}
 
-        // Reconstruct the active digit sequence by combining parts before, the new segment, and parts after
-        activeDigitSequence = [
-            ...activeDigitSequence.slice(0, startPosition),
-            ...segmentForInsertion,
-            ...activeDigitSequence.slice(endPosition + 1)
-        ];
+function parseNumericValue(textualValue) {
+  return Number(textualValue);
+}
 
-        // Compute the numerical value of the current sequence applying modular arithmetic at each step
-        let calculatedModularValue = 0;
-        for (let charIterator = 0; charIterator < activeDigitSequence.length; charIterator++) {
-            calculatedModularValue = (calculatedModularValue * 10 + valueConverter(activeDigitSequence[charIterator])) % MODULO_LIMIT;
-        }
-        
-        // Store the result of this operation
-        resultsAccumulator.push(calculatedModularValue);
-        return resultsAccumulator;
-    }, []); // Initialize accumulator as an empty array
-
-    // Output each collected result to the console
-    collectedOutputs.forEach(resultValue => console.log(resultValue));
-};
-
-// Standard competitive programming input reading mechanism
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));

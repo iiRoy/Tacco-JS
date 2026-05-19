@@ -1,30 +1,19 @@
 'use strict';
 
-const processInputData = (inputStringContent) => {
-    const numericParts = inputStringContent.match(/\d+/g).map(item => parseInt(item, 10));
+function processInputAndDetermineOutcome(rawInputContent) {
+  const numericValues = rawInputContent.split('\n')[0].split(' ').map(Number);
 
-    const [firstMeasure, secondMeasure, thirdMeasure] = numericParts;
+  const firstValue = numericValues[0];
+  const secondValue = numericValues[1];
+  const thirdValue = numericValues[2];
 
-    const evaluationRules = [
-        {
-            test: (m1, m2, m3) => m2 >= m3,
-            result: 'delicious'
-        },
-        {
-            test: (m1, m2, m3) => m1 >= (m3 - m2),
-            result: 'safe'
-        },
-        {
-            test: (m1, m2, m3) => true,
-            result: 'dangerous'
-        }
-    ];
+  const outcomeMessage = (secondValue >= thirdValue)
+    ? 'delicious'
+    : ((firstValue >= (thirdValue - secondValue))
+      ? 'safe'
+      : 'dangerous');
 
-    const determinedOutcome = evaluationRules.find(criterion =>
-        criterion.test(firstMeasure, secondMeasure, thirdMeasure)
-    ).result;
+  console.log(outcomeMessage);
+}
 
-    process.stdout.write(determinedOutcome + '\n');
-};
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndDetermineOutcome(require("node:fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,55 +1,29 @@
-var  input  =  '';   // Initialize an empty string for accumulating input data.
+          var input = '';
+        process.stdin.resume ( );
+	     process.stdin.setEncoding('utf8');  // 읽기 잘유지한다 블록 마감 각 값마다명확. (._.)
+	  process.stdin.on('data', function(chunk) {   
 
-// Resume the standard input stream to begin receiving data.
-process.stdin.resume();
+/* 읽기 유지한다 최종가까운 문맥 시작에서명확. */
+      input  += chunk;
+    });  
+    process.stdin.on('end', function() {
+	main (input)
+    });
 
-// Set the encoding for the standard input stream to 'utf8'
-// to correctly interpret incoming text.
-process.stdin.setEncoding('utf8');
+function main(input){
+     var args = input.split('\n');
+ args = args.map(function(pair){
+  pair = pair.split(' ')
+	  .map(function(n){
+		return parseInt(n);
+	});
 
+           return pair;    
 
-// Attach an event listener for the 'data' event.
-// This function will be called whenever new data chunks are available.
-process.stdin.on (  'data'  ,   function ( chunk )   {
-    // Append the current data chunk to the 'input' variable.
-    input  +=  chunk ;
-}  ) ;
-
-
-// Attach an event listener for the 'end' event.
-// This function will be called once the input stream has finished.
-process.stdin.on (  'end'  ,   function ( )   {
-    // After all input has been received, call the main processing function.
-    main( input )
-}  ) ;
-
-
-// This is the core function that processes the accumulated input.
-function  main ( input )   {
-
-    // Split the entire input string into an array of lines,
-    // using the newline character as a delimiter.
-    var  args  =  input.split ( '\n' ) ;
-
-    // Transform the 'args' array. Each string line (e.g., "1 2")
-    // will be converted into an array of two integers (e.g., [1, 2]).
-    args  =  args.map (  function ( pair )   {
-        // For each line, first split it by space to get string numbers,
-        // then map those string numbers to actual integers using parseInt.
-        pair  =  pair.split ( ' ' )
-                   .map (  function ( n )   {
-                       // Convert the string 'n' into an integer.
-                       return  parseInt( n ) ;
-                    }  ) ;
-        // Return the array of parsed integers for the current line.
-        return  pair ;
-    }  )
-
-    // Iterate over each array of integer pairs.
-    args.forEach (  function ( pair )   {
-        // For each pair, calculate the sum of its two elements
-        // and print the result to the console.
-        console.log (  pair[ 0 ]  +  pair[ 1 ]  ) ;
-    }  )
-}
-// End of the main program logic.
+// 읽기 잘유지한다 현재작업 순서 시작에서최종.
+/* 읽기 준비한다 계산된 정보 각 값마다내부. */
+       } )  
+	args.forEach (function ( pair) {     
+           console.log (pair[0 ] + pair [ 1 ]);
+	})
+        }

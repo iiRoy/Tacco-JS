@@ -1,73 +1,41 @@
-function parseAndPrepareData(rawInputSource) {
-  if (typeof rawInputSource !== 'string') {
-    throw new TypeError("Input must be a string type for parsing.");
-  }
+function calculateMinOperations(inputData) {
+  const firstLine = inputData.split("\n")[0];
+  const stringNumbers = firstLine.split(" ");
+  let numbersArray = stringNumbers.map(currentElement => parseInt(currentElement, 10));
 
-  const firstMeaningfulLine = rawInputSource.split("\n")
-                                           .find(line => line.trim().length > 0);
+  numbersArray.sort((firstVal, secondVal) => secondVal - firstVal);
 
-  if (!firstMeaningfulLine) {
-    throw new Error("No meaningful data line found in input.");
-  }
+  let totalOperations = 0;
 
-  const numberTextSegments = firstMeaningfulLine.split(" ")
-                                                .filter(segment => segment.trim().length > 0);
-
-  const potentialNumbers = numberTextSegments
-    .map(segment => Number(segment.trim()));
-
-  const validatedAndParsedNumbers = potentialNumbers
-    .filter(num => Number.isFinite(num));
-
-  const REQUIRED_NUMBER_COUNT = 3;
-  if (validatedAndParsedNumbers.length !== REQUIRED_NUMBER_COUNT) {
-    throw new Error(`Input requires exactly ${REQUIRED_NUMBER_COUNT} finite numbers, but found ${validatedAndParsedNumbers.length}.`);
-  }
-
-  const orderedNumericSet = validatedAndParsedNumbers.sort((valA, valB) => valB - valA);
-
-  return orderedNumericSet;
-}
-
-function computeEqualityOperations(initialValuesTriplet) {
-  let currentNumericState = [...initialValuesTriplet];
-  let totalOperationCount = 0;
-
-  const isInitialMiddleSmallestDiffOdd = ((currentNumericState[1] - currentNumericState[2]) % 2 !== 0);
-
-  if (isInitialMiddleSmallestDiffOdd) {
-    currentNumericState[0]++;
-    currentNumericState[1]++;
-    totalOperationCount++;
-  }
-
-  while (!(currentNumericState[0] === currentNumericState[1] && currentNumericState[1] === currentNumericState[2])) {
-    if (currentNumericState[0] > currentNumericState[1]) {
-      currentNumericState[1]++;
-      currentNumericState[2]++;
-    } else {
-      currentNumericState[2] += 2;
+  const performEqualizationSteps = (arr, currentOpCount) => {
+    let localOpCount = currentOpCount;
+    while (arr[0] !== arr[1] || arr[0] !== arr[2]) {
+      if (arr[0] > arr[1]) {
+        arr[1]++;
+        arr[2]++;
+        localOpCount++;
+      } else {
+        arr[2] += 2;
+        localOpCount++;
+      }
     }
-    totalOperationCount++;
+    return localOpCount;
+  };
+
+  const secondValue = numbersArray[1];
+  const thirdValue = numbersArray[2];
+  const parityCheckResult = (secondValue - thirdValue) % 2;
+
+  if (parityCheckResult === 0) {
+    totalOperations = performEqualizationSteps(numbersArray, totalOperations);
+  } else {
+    numbersArray[0]++;
+    numbersArray[1]++;
+    totalOperations++;
+    totalOperations = performEqualizationSteps(numbersArray, totalOperations);
   }
 
-  return totalOperationCount;
+  console.log(totalOperations);
 }
 
-const orchestrateNumericProblemSolver = (rawInputPayload) => {
-  try {
-    const preparedNumbers = parseAndPrepareData(rawInputPayload);
-    const resultantOperations = computeEqualityOperations(preparedNumbers);
-    console.log(resultantOperations);
-  } catch (processingError) {
-    console.error(`An error occurred during processing: ${processingError.message}`);
-  }
-};
-
-try {
-  const nodeFileSystemModule = require("fs");
-  const standardInputContent = nodeFileSystemModule.readFileSync("/dev/stdin", "utf8");
-  orchestrateNumericProblemSolver(standardInputContent);
-} catch (inputReadError) {
-  console.error(`Error reading input from /dev/stdin: ${inputReadError.message}`);
-}
+calculateMinOperations(require("fs").readFileSync("/dev/stdin", "utf8"));

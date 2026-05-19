@@ -1,68 +1,61 @@
-let textBuffer = [];
+process.stdin.on("data", function(inputSegment) {
+    const rawInputContent = inputSegment.toString().trim();
+    const commandLines = rawInputContent.split("\n");
 
-const rootProcessor = (collectedInput) => {
-    const lineSeparator = '\n';
-    const rawLines = collectedInput.trim().split(lineSeparator);
+    const initialStackCount = parseInt(commandLines.shift(), 10);
+    const stackContainer = new Map();
 
-    const stackCount = parseInt(rawLines.shift(), 10);
+    for (let currentId = 1; currentId <= initialStackCount; currentId++) {
+        stackContainer.set(currentId, []);
+    }
 
-    const storageMap = new Map();
-    Array.from({ length: stackCount }, (_, indexValue) => indexValue + 1)
-         .forEach(identifier => storageMap.set(identifier, []));
+    const collectedOutputs = [];
 
-    const outputElements = [];
-    const commandLines = rawLines;
-
-    const executeNextCommand = (remainingCommands, currentOutputCollection) => {
-        if (remainingCommands.length === 0) {
-            return currentOutputCollection;
+    const operationHandlers = {
+        push: (targetId, element) => {
+            stackContainer.get(targetId).push(element);
+        },
+        move: (sourceId, destinationId) => {
+            const itemToTransfer = stackContainer.get(sourceId).pop();
+            stackContainer.get(destinationId).push(itemToTransfer);
+        },
+        pop: (targetId) => {
+            const poppedElement = stackContainer.get(targetId).pop();
+            collectedOutputs.push(poppedElement);
         }
-
-        const currentCommand = remainingCommands[0];
-        const furtherCommands = remainingCommands.slice(1);
-
-        if (currentCommand.trim() === 'quit') {
-            return currentOutputCollection;
-        }
-
-        const commandParts = currentCommand.split(' ');
-        const operationKey = commandParts[0];
-
-        switch (operationKey) {
-            case 'push':
-                const targetStackIdPush = parseInt(commandParts[1], 10);
-                const itemToStore = commandParts[2];
-                storageMap.get(targetStackIdPush).push(itemToStore);
-                break;
-            case 'move':
-                const sourceStackIdMove = parseInt(commandParts[1], 10);
-                const destinationStackIdMove = parseInt(commandParts[2], 10);
-                const movedItem = storageMap.get(sourceStackIdMove).pop();
-                storageMap.get(destinationStackIdMove).push(movedItem);
-                break;
-            case 'pop':
-                const sourceStackIdPop = parseInt(commandParts[1], 10);
-                const poppedItem = storageMap.get(sourceStackIdPop).pop();
-                currentOutputCollection.push(poppedItem);
-                break;
-            default:
-                break;
-        }
-
-        return executeNextCommand(furtherCommands, currentOutputCollection);
     };
 
-    const finalOutput = executeNextCommand(commandLines, outputElements);
+    const commandParsers = [
+        {
+            regex: /^push (\d+) (.)$/,
+            execute: (matchResult) => operationHandlers.push(parseInt(matchResult[1], 10), matchResult[2])
+        },
+        {
+            regex: /^move (\d+) (\d+)$/,
+            execute: (matchResult) => operationHandlers.move(parseInt(matchResult[1], 10), parseInt(matchResult[2], 10))
+        },
+        {
+            regex: /^pop (\d+)$/,
+            execute: (matchResult) => operationHandlers.pop(parseInt(matchResult[1], 10))
+        }
+    ];
 
-    finalOutput.forEach(resultItem => process.stdout.write(resultItem + '\n'));
-};
+    for (const currentCommand of commandLines) {
+        if (currentCommand === "quit") {
+            break;
+        }
 
-process.stdin.on('data', (chunk) => {
-    textBuffer.push(chunk.toString());
-});
+        for (const parserEntry of commandParsers) {
+            const regexMatch = currentCommand.match(parserEntry.regex);
+            if (regexMatch) {
+                parserEntry.execute(regexMatch);
+                break;
+            }
+        }
+    }
 
-process.stdin.on('end', () => {
-    rootProcessor(textBuffer.join(''));
-});
+    for (const outputItem of collectedOutputs) {
+        console.log(outputItem);
+    }
 
-process.stdin.resume();
+}).resume();

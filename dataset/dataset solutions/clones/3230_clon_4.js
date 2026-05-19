@@ -1,70 +1,65 @@
 "use strict";
 
-function computeBitwiseDifference(valA, valB) {
-  return valA ^ valB;
+function computeXOR(firstOperand, secondOperand) {
+  return firstOperand ^ secondOperand;
 }
 
-function processChallenge(rawInputText) {
-  const parsedLines = rawInputText.split("\n").filter(line => line.length > 0);
+function processInput(rawInputContent) {
+  const contentLines = rawInputContent.split("\n").filter(Boolean);
 
-  const firstLineParts = parsedLines[0].split(" ").map(Number);
-  const limitVal = firstLineParts[1];
-  const dataSeries = parsedLines[1].split(" ").map(Number);
+  const [configLine, dataLine] = contentLines;
 
-  let largestDatum = 0;
-  for (const item of dataSeries) {
-    if (item > largestDatum) {
-      largestDatum = item;
+  const [arraySize, upperLimitK] = configLine.split(" ").map(Number);
+  const numericData = dataLine.split(" ").map(Number);
+
+  let maximumValueInArray = 0;
+  for (const item of numericData) {
+    if (item > maximumValueInArray) {
+      maximumValueInArray = item;
     }
   }
 
-  let conceptualBitLength = 0;
-  if (largestDatum > 0) {
-    conceptualBitLength = Math.floor(Math.log2(largestDatum)) + 1;
-  } else if (dataSeries.length > 0) {
-    conceptualBitLength = 1;
-  }
+  const significantBitsCount = maximumValueInArray === 0 ? 1 : Math.floor(Math.log2(maximumValueInArray)) + 1;
 
-  let optimalCandidateXorValue = 0;
-  for (let currentBitIndex = conceptualBitLength - 1; currentBitIndex >= 0; currentBitIndex--) {
-    let zeroCount = 0;
-    let oneCount = 0;
+  let derivedOptimalX = 0;
+  for (let currentBitPosition = 0; currentBitPosition < significantBitsCount; currentBitPosition++) {
+    let zeroBitOccurrences = 0;
+    let oneBitOccurrences = 0;
 
-    for (const numberValue of dataSeries) {
-      if (((numberValue >> currentBitIndex) & 1) === 1) {
-        oneCount++;
+    for (const currentNumber of numericData) {
+      if (((currentNumber >> currentBitPosition) & 1) === 0) {
+        zeroBitOccurrences++;
       } else {
-        zeroCount++;
+        oneBitOccurrences++;
       }
     }
 
-    if (zeroCount > oneCount) {
-      optimalCandidateXorValue |= (1 << currentBitIndex);
+    if (zeroBitOccurrences > oneBitOccurrences) {
+      derivedOptimalX |= (1 << currentBitPosition);
     }
   }
 
-  let ultimateXorValue;
-
-  if (limitVal === 0) {
-    ultimateXorValue = 0;
+  let finalXValue = 0;
+  if (upperLimitK === 0) {
+    finalXValue = 0;
   } else {
-    const limitValueBitLength = Math.floor(Math.log2(limitVal)) + 1;
+    const kBinaryLength = Math.floor(Math.log2(upperLimitK)) + 1;
 
-    if (conceptualBitLength < limitValueBitLength) {
-      const higherBitsFiller = ((1 << limitValueBitLength) - (1 << conceptualBitLength));
-      ultimateXorValue = (optimalCandidateXorValue | higherBitsFiller);
+    if (significantBitsCount < kBinaryLength) {
+      const higherBitsMask = ((1 << kBinaryLength) - 1) ^ ((1 << significantBitsCount) - 1);
+      finalXValue = derivedOptimalX | higherBitsMask;
     } else {
-      const lowerBitsMask = (1 << limitValueBitLength) - 1;
-      ultimateXorValue = optimalCandidateXorValue & lowerBitsMask;
+      const lowerBitsMask = (1 << kBinaryLength) - 1;
+      finalXValue = derivedOptimalX & lowerBitsMask;
     }
   }
 
-  let overallSum = 0;
-  for (const element of dataSeries) {
-    overallSum += computeBitwiseDifference(element, ultimateXorValue);
+  let cumulativeXORSum = 0;
+  for (const element of numericData) {
+    cumulativeXORSum += computeXOR(element, finalXValue);
   }
-  
-  console.log(overallSum);
+
+  console.log(cumulativeXORSum);
 }
 
-processChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

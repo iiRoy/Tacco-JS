@@ -1,96 +1,94 @@
-/*
- * This module processes raw input data to find the minimum cost
- * to acquire a set of books that collectively meet specific skill requirements.
- */
-function ProcessData( rawData )
-{
-  // Split the entire input string into an array of individual lines.
-  let parsedLines = rawData.split( "\n" );
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  rawData = rawData.split("\n");
 
-  // Extract the number of available books, the total number of distinct skills,
-  // and the minimum required level for each skill from the first line of input.
-  const numBooks = Number( parsedLines[0].split( ' ' )[0] );
-  const numSkills = parseInt( parsedLines[0].split( ' ' )[1], 10 );
-  const requiredSkillLevel = Number( parsedLines[0].split( ' ' )[2] );
+  // Parse the first line to get the number of books, skills, and required skill level.
+  const firstLineParts = rawData[0].split(' ');
+  const numBooks = parseInt(firstLineParts[0], 10); // N
+  const numSkills = parseInt(firstLineParts[1], 10); // M
+  const requiredSkillLevel = parseInt(firstLineParts[2], 10); // X
 
-  // Initialize arrays to store book prices and their corresponding skill contributions.
-  let bookPrices = [];
-  let skillPointsPerBook = [];
-  let currentParsedLine; // Temporary variable to hold parsed line segments
+  // Initialize arrays to store book costs and skill levels.
+  let bookCosts = []; // c
+  let bookSkillLevels = []; // a
 
-  // Iterate through the remaining lines of input, starting from the second line,
-  // to populate the book data structures.
-  for ( let lineIndex = 1; lineIndex < parsedLines.length; lineIndex++ )
-  {
-    currentParsedLine = parsedLines[lineIndex].split( ' ' ).map( itemValue => Number( itemValue ) );
-    bookPrices.push( currentParsedLine[0] ); // The first value is the book's price.
-    currentParsedLine.shift(); // Remove the price, leaving only skill points.
-    skillPointsPerBook.push( currentParsedLine.slice() ); // Add the skill points for this book.
+  // Temporary variable to hold parsed values from each line.
+  let currentLineValues;
+
+  // Loop through the remaining lines to populate book costs and skill levels.
+  for (let bookIdx = 1; bookIdx < rawData.length; bookIdx++) {
+    // Split the line by space and convert elements to numbers.
+    currentLineValues = rawData[bookIdx].split(' ').map(element => Number(element));
+
+    // The first element is the cost of the book.
+    bookCosts.push(currentLineValues[0]);
+
+    // Remove the cost, remaining elements are skill levels.
+    currentLineValues.shift();
+
+    // Add a copy of the skill levels array for the current book.
+    bookSkillLevels.push([...currentLineValues]);
   }
 
-  // An array of booleans to track which books are currently selected for a combination.
-  // Initially, no books are selected.
-  let bookSelectionState = new Array( numBooks );
-  bookSelectionState.fill( false );
+  // Initialize an array to track which books are selected for a combination.
+  let selectedBooks = new Array(numBooks); // isBought
+  selectedBooks.fill(false);
 
-  // Variable to store the lowest cost found so far that satisfies all skill requirements.
-  // Initialized to a very large number (infinity) to ensure any valid cost will be lower.
-  let lowestAchievableCost = Infinity;
+  // Initialize the minimum cost found so far to a very large value.
+  let minimumCost = Infinity; // min
 
-  // This outer loop iterates through all possible combinations of books.
-  // It effectively simulates a binary counter, where each bit represents a book's selection status.
-  combinationSearch:
+  // This loop iterates through all possible combinations of buying books.
+  // It simulates a binary counter from 0 to 2^numBooks - 1.
+  combinationLoop: // loop1
   do {
-    // Generate the next combination of selected books.
-    // This loop acts like incrementing a binary number: flip bits from right to left until a '0' is found and flipped to '1'.
-    for ( let bookIndex = 0; bookIndex < numBooks; bookIndex++ )
-    {
-      if ( bookSelectionState[bookIndex] ) {
-        bookSelectionState[bookIndex] = false; // If book was selected, deselect it.
+    // Increment the binary counter (selectedBooks array).
+    for (let bookIndex = 0; bookIndex < numBooks; bookIndex++) {
+      if (selectedBooks[bookIndex]) {
+        selectedBooks[bookIndex] = false;
       } else {
-        bookSelectionState[bookIndex] = true; // If book was not selected, select it and move to the next combination.
-        break;
+        selectedBooks[bookIndex] = true;
+        break; // Move to the next combination check
       }
     }
 
-    // Now, evaluate the current combination of selected books to see if it meets skill requirements.
-    for ( let skillIndex = 0; skillIndex < numSkills; skillIndex++ )
-    {
-      let totalSkillLevel = 0; // Accumulator for the current skill's total level.
-      for ( let currentBookIndex = 0; currentBookIndex < numBooks; currentBookIndex++ )
-      {
-        if ( bookSelectionState[currentBookIndex] ) { // If the current book is part of the selection
-          totalSkillLevel += skillPointsPerBook[currentBookIndex][skillIndex]; // Add its contribution to this skill.
+    // Check if the current combination of selected books meets all skill requirements.
+    for (let skillIndex = 0; skillIndex < numSkills; skillIndex++) {
+      let currentSkillSum = 0; // temp
+
+      // Calculate the total skill level for the current skill across selected books.
+      for (let bookCheckIndex = 0; bookCheckIndex < numBooks; bookCheckIndex++) {
+        if (selectedBooks[bookCheckIndex]) {
+          currentSkillSum += bookSkillLevels[bookCheckIndex][skillIndex];
         }
       }
-      // If the total level for any skill is below the required minimum, this combination is invalid.
-      // Move to the next book combination without calculating cost.
-      if ( totalSkillLevel < requiredSkillLevel ) {
-        continue combinationSearch;
+
+      // If any skill requirement is not met, this combination is invalid.
+      if (currentSkillSum < requiredSkillLevel) {
+        continue combinationLoop; // Skip to the next book combination
       }
     }
 
-    // If execution reaches this point, all skill requirements are met for the current book combination.
-    // Calculate the total cost for this valid combination.
-    let currentTotalCost = 0;
-    for ( let bookIndex = 0; bookIndex < numBooks; bookIndex++ ) {
-      if ( bookSelectionState[bookIndex] ) {
-        currentTotalCost += bookPrices[bookIndex];
+    // If all skill requirements are met, calculate the total cost for this combination.
+    let currentCombinationCost = 0; // temp
+    for (let bookCostIndex = 0; bookCostIndex < numBooks; bookCostIndex++) {
+      if (selectedBooks[bookCostIndex]) {
+        currentCombinationCost += bookCosts[bookCostIndex];
       }
     }
 
-    // Update the lowest achievable cost if the current combination is cheaper.
-    if ( lowestAchievableCost > currentTotalCost ) {
-      lowestAchievableCost = currentTotalCost;
+    // Update the minimum cost if the current combination is cheaper.
+    if (minimumCost > currentCombinationCost) {
+      minimumCost = currentCombinationCost;
     }
-  } while ( !bookSelectionState.every( itemValue => !itemValue ) ); // Continue until all books have been deselected, indicating all combinations explored.
 
-  // Output the final result. If no combination met the requirements, lowestAchievableCost will still be Infinity,
-  // in which case output -1. Otherwise, output the minimum cost found.
-  console.log( lowestAchievableCost === Infinity ? -1 : lowestAchievableCost );
+  // The loop continues as long as there is at least one book selected (true in selectedBooks).
+  // When all selectedBooks are false, it means all combinations have been processed.
+  } while (!selectedBooks.every(element => !element));
+
+  // Output the result. If no combination met the criteria, output -1.
+  console.log(minimumCost === Infinity ? -1 : minimumCost);
 }
 
-
-// The following section handles standard input/output and should not be modified.
-// It reads the entire standard input and passes it to the main processing function.
-ProcessData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// The following lines handle standard input/output and should not be modified.
+// This part ensures the script can be run in an environment like AtCoder.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

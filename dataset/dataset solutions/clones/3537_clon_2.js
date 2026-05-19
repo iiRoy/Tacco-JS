@@ -1,50 +1,50 @@
-/*
- * This JavaScript module implements a solution for a resource allocation problem.
- * It reads input from standard input, processes it, and prints the result to standard output.
- */
-
 "use strict";
 
-function ProcessProblemSolution( rawProblemData ) {
-  // Parse the first line of input to get total entities and the initial resource amount.
-  // The first line contains two space-separated integers.
-  let [ totalEntities, initialResource ] = rawProblemData . split ( '\n' ) [ 0 ] . split ( ' ' ) . map ( parseInt ) ;
+// This script processes input to determine the maximum number of items that can be acquired
+// given a budget and a list of item costs, following specific problem rules.
 
-  // Parse the second line of input to get the costs of individual entities.
-  // Sort these costs in ascending order to facilitate greedy selection.
-  const entityCosts = rawProblemData . split ( '\n' ) [ 1 ] . split ( ' ' ) . map ( Number ) . sort ( ( v1 , v2 ) => v1 - v2 ) ;
+/**
+ * Executes the main logic for processing input data.
+ * @param {string} rawData - The complete input string from standard input.
+ */
+function ProcessInput(rawData) {
+  // The first line contains two space-separated numbers:
+  // the total number of available items and the initial budget.
+  let [numItems, budget] = rawData.split("\n")[0].split(" ").map(Number);
 
-  // Initialize a counter for the number of entities successfully satisfied.
-  let satisfiedEntities = 0 ;
+  // The second line contains space-separated costs of individual items.
+  // These costs are converted to numbers and then sorted in ascending order.
+  const itemCosts = rawData.split("\n")[1].split(" ").map(Number).sort();
 
-  // Iterate through the sorted entity costs.
-  for ( let entityIndex = 0 ; entityIndex < totalEntities ; entityIndex ++ ) {
-    // Check if the current entity's cost can be covered by the remaining resource.
-    if ( entityCosts [ entityIndex ] <= initialResource ) {
-      // If yes, subtract the cost from the available resource.
-      initialResource -= entityCosts [ entityIndex ] ;
-      // Increment the count of satisfied entities.
-      satisfiedEntities ++ ;
+  // Initialize a counter for the items successfully purchased.
+  let satisfiedCount = 0;
+
+  // Iterate through the sorted item costs, attempting to purchase items.
+  for (let idx = 0; idx < numItems; idx++) {
+    // Check if the current item's cost is less than or equal to the remaining budget.
+    if (itemCosts[idx] <= budget) {
+      // If affordable, deduct the item's cost from the budget.
+      budget -= itemCosts[idx];
+      // Increment the count of purchased items.
+      satisfiedCount++;
     } else {
-      // If the current entity's cost is too high, we cannot satisfy any more entities
-      // because the costs are sorted, so break out of the loop.
-      break ;
+      // If the current item is too expensive, then all subsequent items (due to sorting)
+      // will also be too expensive. So, terminate the loop.
+      break;
     }
   }
 
-  // After the loop, if there's still some resource left but no entities were satisfied,
-  // or if the remaining resource is exactly zero and some entities were satisfied,
-  // there might be an edge case where the last entity satisfied used up all but
-  // a tiny amount of resource that wasn't enough for the _next_ entity,
-  // and the problem implies we should decrement the count if the resource is not completely zero
-  // but entities were still successfully processed. This is a specific problem constraint.
-  if ( ( initialResource != 0 ) && ( satisfiedEntities != 0 ) ) {
-    satisfiedEntities -- ;
+  // Apply a specific rule: if there's any budget remaining (not zero)
+  // and at least one item was purchased, decrement the count.
+  // This handles a particular edge case defined by the problem statement.
+  if (budget !== 0 && satisfiedCount !== 0) {
+    satisfiedCount--;
   }
 
-  // Output the final count of satisfied entities.
-  console . log ( satisfiedEntities ) ;
+  // Output the final calculated count of items.
+  console.log(satisfiedCount);
 }
 
-// Do not modify the code below this line; it handles standard I/O for execution.
-ProcessProblemSolution ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Standard input reading and function invocation.
+// This part should remain unchanged to ensure compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

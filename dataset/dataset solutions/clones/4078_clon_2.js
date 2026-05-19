@@ -1,109 +1,103 @@
-// Function to determine the region type based on coordinates and a scaling factor.
-function getRegionChar(sizeVal, rowCoord, colCoord) {
-
-  // Check the first dark region quadrant.
-  if (0 <= rowCoord && rowCoord < sizeVal && 0 <= colCoord && colCoord < sizeVal) {
-    return "DARK"; // Indicate a dark region.
+function determineTileType(blockSize, coordI, coordJ) {
+  // Check if the coordinates fall within the first 'B' (black) block region
+  if (0 <= coordI && coordI < blockSize && 0 <= coordJ && coordJ < blockSize) {
+    return "B";
   }
-  // Check the second dark region quadrant, shifted by 'sizeVal'.
-  else if (sizeVal <= rowCoord && rowCoord < 2 * sizeVal && sizeVal <= colCoord && colCoord < 2 * sizeVal) {
-    return "DARK"; // Another dark region.
+  // Check if the coordinates fall within the second 'B' (black) block region,
+  // which is offset by 'blockSize' in both dimensions
+  else if (blockSize <= coordI && coordI < 2 * blockSize && blockSize <= coordJ && coordJ < 2 * blockSize) {
+    return "B";
   }
-
-  // If neither dark region is matched, it's a light region.
-  return "LIGHT";
+  // If neither of the 'B' conditions are met, the tile is 'W' (white)
+  return "W";
 }
 
+// The primary function to process the input data
+function ProcessInputData(inputLines) {
+  // Parse the first line of input to get the number of points and the block size
+  const firstLineParts = inputLines[0].split(" ");
+  const numPoints = parseInt(firstLineParts[0], 10);
+  const blockSize = parseInt(firstLineParts[1], 10);
 
-// Main program entry point.
-function ProcessInputAndFindBestMatch(rawData) {
+  // An array to store the transformed coordinates and colors of the points
+  const transformedPoints = [];
 
-  // Parse the initial configuration line.
-  var firstLineParts = rawData[0].split(" ");
-  var numEntries = parseInt(firstLineParts[0], 10); // Total number of input entries.
-  var scaleFactor = parseInt(firstLineParts[1], 10); // The scaling factor for regions.
+  // Iterate through each point provided in the input
+  for (let pointIndex = 1; pointIndex <= numPoints; pointIndex++) {
+    const currentPointParts = inputLines[pointIndex].split(" ");
+    const originalX = parseInt(currentPointParts[0], 10);
+    const originalY = parseInt(currentPointParts[1], 10);
+    const originalColor = currentPointParts[2];
 
-  // This array will store processed coordinate information for each entry.
-  var adjustedPoints = [];
+    // Calculate the coordinates relative to the current block (modulo blockSize)
+    const normalizedX = originalX % blockSize;
+    const normalizedY = originalY % blockSize;
 
+    // Determine if a color shift is needed based on the "checkerboard" pattern of blocks.
+    // This involves checking the parity of the block's row and column indices.
+    // If the sum of parities is odd, the color needs to be reversed ("R").
+    const colorShiftPattern = (
+      (Math.floor((originalX - normalizedX) / blockSize) % 2) +
+      (Math.floor((originalY - normalizedY) / blockSize) % 2)
+    ) % 2 === 1 ? "R" : "N"; // "N" means No change
 
-  // Iterate through each input entry starting from the second line.
-  for (var idx = 1; idx <= numEntries; idx++) {
-    var tempParts = rawData[idx].split(" ");
-    var origX = parseInt(tempParts[0], 10); // Original X coordinate.
-    var origY = parseInt(tempParts[1], 10); // Original Y coordinate.
-    var origColor = tempParts[2];             // Original color ('B' or 'W').
+    let adjustedColor = originalColor;
 
-
-    // Calculate coordinates relative to the scaling factor.
-    var remainderX = origX % scaleFactor;
-    var remainderY = origY % scaleFactor;
-
-
-    // Determine a transformation pattern based on the integer divisions.
-    // This pattern helps decide if the color needs to be inverted.
-    var transformPattern = (
-      ((origX - remainderX) / scaleFactor) % 2 + // Parity of X-block.
-      ((origY - remainderY) / scaleFactor) % 2   // Parity of Y-block.
-    ) % 2 == 1 ? "INVERT" : "NORMAL";
-
-
-    var transformedColor = origColor;
-
-    // Apply color inversion if the pattern dictates it.
-    if (transformPattern == "INVERT") {
-      transformedColor = (transformedColor == "B") ? "W" : "B"; // Flip 'B' to 'W' or 'W' to 'B'.
+    // Apply the color adjustment if the pattern indicates a reversal
+    if (colorShiftPattern === "R") {
+      adjustedColor = (adjustedColor === "B") ? "W" : "B";
     }
 
-    // Store the adjusted coordinates and color.
-    adjustedPoints[idx - 1] = [];
-    // If the color is 'W', shift its X-coordinate by 'scaleFactor' for a specific mapping.
-    adjustedPoints[idx - 1][0] = ((transformedColor == "W") ? remainderX + scaleFactor : remainderX);
-    adjustedPoints[idx - 1][1] = remainderY;
+    // Store the transformed point data.
+    // If the adjusted color is 'W', its x-coordinate is effectively shifted by 'blockSize'
+    // to align with the 'B' block logic in 'determineTileType'.
+    transformedPoints[pointIndex - 1] = [];
+    transformedPoints[pointIndex - 1][0] = (adjustedColor === "W") ? normalizedX + blockSize : normalizedX;
+    transformedPoints[pointIndex - 1][1] = normalizedY;
   }
 
-  // Initialize the counter for the highest number of matches found.
-  var highestCount = 0;
+  let highestMatchCount = 0; // Variable to keep track of the maximum number of matches found
 
+  // Iterate through all possible horizontal offsets (offsetX) and vertical offsets (offsetY)
+  // to find the configuration that yields the most 'B' matches.
+  // The offsetY ranges from 0 to 2*blockSize - 1, and offsetX from 0 to blockSize - 1.
+  for (let offsetY = 0; offsetY < 2 * blockSize; offsetY++) {
+    for (let offsetX = 0; offsetX < blockSize; offsetX++) {
 
-  // Perform a grid search to find the optimal shift that maximizes matches.
-  // The outer loop iterates through possible row shifts (0 to 2*scaleFactor - 1).
-  for (var rowShift = 0; rowShift < 2 * scaleFactor; rowShift++) {
-    // The inner loop iterates through possible column shifts (0 to scaleFactor - 1).
-    for (var colShift = 0; colShift < scaleFactor; colShift++) {
+      let currentMatchCount = 0; // Counter for matches in the current offset configuration
 
+      // For each offset combination, check all transformed points
+      for (let pointIdx = 0; pointIdx < numPoints; pointIdx++) {
+        const pointCoordI = transformedPoints[pointIdx][0];
+        const pointCoordJ = transformedPoints[pointIdx][1];
 
-      var currentCount = 0; // Counter for matches in the current shift configuration.
-
-      // Check each processed point against the current shift.
-      for (var pointIndex = 0; pointIndex < numEntries; pointIndex++) {
-        var pointRow = adjustedPoints[pointIndex][0]; // Adjusted row coordinate.
-        var pointCol = adjustedPoints[pointIndex][1]; // Adjusted column coordinate.
-
-        // If the region type for the shifted point is "DARK", increment the match count.
-        if ("DARK" == getRegionChar(scaleFactor, colShift + pointRow, rowShift + pointCol)) {
-          currentCount++;
+        // Call the tile type determination function with the current point's coordinates
+        // and the applied offsets.
+        if ("B" === determineTileType(blockSize, offsetX + pointCoordI, offsetY + pointCoordJ)) {
+          currentMatchCount++; // Increment if the point falls on a 'B' tile
         }
       }
-      // Update the highest match count if the current count is greater.
-      if (highestCount < currentCount) {
-        highestCount = currentCount;
+
+      // Update the highest match count if the current configuration is better
+      if (highestMatchCount < currentMatchCount) {
+        highestMatchCount = currentMatchCount;
       }
-      // Optimization: If all entries match, we can stop early.
-      if (highestCount == numEntries) {
+
+      // Optimization: If all points already match, no further checks are needed
+      if (highestMatchCount === numPoints) {
         break;
       }
     }
-    // Optimization: If all entries match, break the outer loop as well.
-    if (highestCount == numEntries) {
+    // Optimization: If all points already match, exit the outer loop as well
+    if (highestMatchCount === numPoints) {
       break;
     }
   }
 
-
-  // Output the final maximum match count to the console.
-  console.log('%s', highestCount);
+  // Output the final highest match count to the console
+  console.log('%s', highestMatchCount);
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInputAndFindBestMatch(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+// Read the input from standard input, decode it as UTF-8, split by newlines,
+// and then pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

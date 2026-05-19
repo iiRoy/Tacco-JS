@@ -1,293 +1,350 @@
-'use strict'; /* Enforce stricter parsing and error handling for cleaner code. */
+'use strict'; // Enforce strict mode for cleaner code execution
 
-class ComputationEngine { /* Core class responsible for executing the main logic. */
-  executeCalculation() {
-    // Acquire numerical parameters from the input source.
-    const initialParams = source.fetchNextIntegerArray();
-    // Retrieve the sequence of data values.
-    const dataSequence = source.fetchNextIntegerArray();
+/**
+ * Primary application logic handler.
+ * This class orchestrates the main computation.
+ */
+class PrimaryProcessor {
+  /**
+   * Executes the core problem-solving algorithm.
+   * @returns {number} The computed result.
+   */
+  processSolution() {
+    // Acquire initial parameters: an array containing N, A, and B.
+    const paramsArray = dataSource.fetchIntegerArray();
+    // Acquire the sequence of numbers for processing.
+    const sequenceData = dataSource.fetchIntegerArray();
 
-    /*
-     * Calculate the sum of transformed differences.
-     * First, compute differences between consecutive elements in the data sequence.
-     * Then, for each difference, apply a transformation:
-     *   - Multiply the difference by the second initial parameter.
-     *   - Take the minimum of this product and the third initial parameter.
-     * Finally, sum up all these transformed values.
-     */
-    return utility.aggregate(
-      utility.calculateDifferences(dataSequence).map(elementVal =>
-        Math.min(elementVal * initialParams[1], initialParams[2])
+    // Calculate the sum of minimum costs for each difference in the sequence.
+    // First, compute differences between consecutive elements.
+    // Then, for each difference, calculate the cost (difference * A) and cap it at B.
+    // Finally, sum up all these capped costs.
+    return _util.calculateSum(
+      _util.calculateDifferences(sequenceData).map(
+        (currentElement) => Math.min(currentElement * paramsArray[1], paramsArray[2])
       )
     );
   }
-} // End of ComputationEngine class definition.
+}
 
-class UtilityKit { /* Provides a collection of general-purpose utility functions for array manipulation and calculations. */
-
+/**
+ * A collection of general-purpose utility functions,
+ * similar to a simplified Underscore.js or Lodash.
+ */
+class UtilityToolkit {
   /**
-   * Sums all numeric elements in a given array.
-   * @param {Array<number>} collection The array of numbers to sum.
+   * Calculates the sum of all numbers in an array.
+   * @param {number[]} inputArray - The array of numbers.
    * @returns {number} The total sum.
    */
-  aggregate(collection) { return collection.reduce((accumulator, currentVal) => accumulator + currentVal); }
-
-  /**
-   * Finds the minimum element in an array based on a comparison function.
-   * @param {Array<any>} collection The array to search.
-   * @param {Function} [comparisonFn] Optional comparison function. Defaults to numerical difference.
-   * @returns {any} The minimum element.
-   */
-  findMinimum(collection, comparisonFn) {
-    if (comparisonFn == null) { /* Default numeric comparison if none provided. */ comparisonFn = (valA, valB) => valA - valB; }
-    return collection.reduce((valA, valB) => comparisonFn(valA, valB) < 0 ? valA : valB);
+  calculateSum(inputArray) {
+    return inputArray.reduce((accumulator, currentValue) => accumulator + currentValue);
   }
 
   /**
-   * Finds the maximum element in an array based on a comparison function.
-   * @param {Array<any>} collection The array to search.
-   * @param {Function} [comparisonFn] Optional comparison function. Defaults to numerical difference.
-   * @returns {any} The maximum element.
+   * Finds the minimum element in an array.
+   * @param {Array} inputArray - The array to search.
+   * @param {Function} [comparisonFunction] - An optional comparison function (like Array.prototype.sort).
+   * @returns {*} The minimum element.
    */
-  findMaximum(collection, comparisonFn) {
-    if (comparisonFn == null) { /* Default numeric comparison if none provided. */ comparisonFn = (valA, valB) => valA - valB; }
-    return collection.reduce((valA, valB) => comparisonFn(valA, valB) > 0 ? valA : valB);
+  findMinimum(inputArray, comparisonFunction) {
+    if (comparisonFunction == null) {
+      comparisonFunction = (elementA, elementB) => elementA - elementB;
+    }
+    return inputArray.reduce((elementA, elementB) =>
+      comparisonFunction(elementA, elementB) < 0 ? elementA : elementB
+    );
   }
 
   /**
-   * Sorts an array using a specified comparison function.
-   * @param {Array<any>} collection The array to sort.
-   * @param {Function} [comparisonFn] Optional comparison function. Defaults to numerical difference.
-   * @returns {Array<any>} The sorted array.
+   * Finds the maximum element in an array.
+   * @param {Array} inputArray - The array to search.
+   * @param {Function} [comparisonFunction] - An optional comparison function.
+   * @returns {*} The maximum element.
    */
-  orderElements(collection, comparisonFn) {
-    if (comparisonFn == null) { /* Use default comparison for numbers. */ comparisonFn = (valA, valB) => valA - valB; }
-    return collection.sort(comparisonFn);
+  findMaximum(inputArray, comparisonFunction) {
+    if (comparisonFunction == null) {
+      comparisonFunction = (elementA, elementB) => elementA - elementB;
+    }
+    return inputArray.reduce((elementA, elementB) =>
+      comparisonFunction(elementA, elementB) > 0 ? elementA : elementB
+    );
   }
 
   /**
-   * Generates a sequence of numbers within a specified range.
-   * @param {number} begin The starting number of the sequence.
-   * @param {number} [end] The ending number of the sequence (exclusive). If omitted, 'begin' becomes 'end' and 'start' is 0.
-   * @param {number} [increment] The step value between numbers. Defaults to 1 or -1 based on start/end.
-   * @returns {Array<number>} An array containing the generated sequence.
+   * Sorts an array in place.
+   * @param {Array} inputArray - The array to sort.
+   * @param {Function} [comparisonFunction] - An optional comparison function.
+   * @returns {Array} The sorted array.
    */
-  generateSequence(begin, end, increment) {
-    if (end == null) { end = begin || 0; begin = 0; } // Handle single argument case.
-    if (!increment) { increment = end < begin ? -1 : 1; } // Determine default step direction.
-    const sequenceLength = Math.max(Math.ceil((end - begin) / increment), 0);
-    const resultArray = Array(sequenceLength);
-    for (var indexCounter = 0; indexCounter < sequenceLength; indexCounter++, begin += increment) {
-      resultArray[indexCounter] = begin;
+  arrangeElements(inputArray, comparisonFunction) {
+    if (comparisonFunction == null) {
+      comparisonFunction = (elementA, elementB) => elementA - elementB;
+    }
+    return inputArray.sort(comparisonFunction);
+  }
+
+  /**
+   * Generates an array of numbers within a specified range.
+   * @param {number} startIndex - The starting number (inclusive).
+   * @param {number} [endIndex] - The ending number (exclusive). If omitted, startIndex becomes endIndex and 0 is startIndex.
+   * @param {number} [stepValue] - The increment or decrement value.
+   * @returns {number[]} An array of numbers.
+   */
+  generateSequence(startIndex, endIndex, stepValue) {
+    if (endIndex == null) {
+      endIndex = startIndex || 0;
+      startIndex = 0;
+    }
+    if (!stepValue) {
+      stepValue = endIndex < startIndex ? -1 : 1;
+    }
+    const sequenceLength = Math.max(Math.ceil((endIndex - startIndex) / stepValue), 0);
+    const generatedRange = Array(sequenceLength);
+    for (var currentIndex = 0; currentIndex < sequenceLength; currentIndex++, startIndex += stepValue) {
+      generatedRange[currentIndex] = startIndex;
+    }
+    return generatedRange;
+  }
+
+  /**
+   * Retrieves the first element(s) of an array.
+   * @param {Array} targetArray - The array.
+   * @param {number} [count] - The number of elements to retrieve.
+   * @returns {*} The first element or an array of first elements.
+   */
+  retrieveFirst(targetArray, count) {
+    if (targetArray == null || targetArray.length < 1)
+      return count == null ? void 0 : [];
+    if (count == null) return targetArray[0];
+    return this.getInitialSegment(targetArray, targetArray.length - count);
+  }
+
+  /**
+   * Returns all but the last `count` elements of an array.
+   * @param {Array} targetArray - The array.
+   * @param {number} [count] - The number of elements to exclude from the end.
+   * @returns {Array} The initial segment of the array.
+   */
+  getInitialSegment(targetArray, count) {
+    return targetArray.slice.call(
+      targetArray,
+      0,
+      Math.max(0, targetArray.length - (count == null ? 1 : count))
+    );
+  }
+
+  /**
+   * Returns all but the first `count` elements of an array.
+   * @param {Array} targetArray - The array.
+   * @param {number} [count] - The number of elements to exclude from the beginning.
+   * @returns {Array} The remaining elements of the array.
+   */
+  getRemainingElements(targetArray, count) {
+    return targetArray.slice.call(targetArray, count == null ? 1 : count);
+  }
+
+  /**
+   * Retrieves the last element(s) of an array.
+   * @param {Array} targetArray - The array.
+   * @param {number} [count] - The number of elements to retrieve.
+   * @returns {*} The last element or an array of last elements.
+   */
+  retrieveLast(targetArray, count) {
+    if (count == null) return targetArray[targetArray.length - 1];
+    return this.getRemainingElements(targetArray, Math.max(0, targetArray.length - count));
+  }
+
+  /**
+   * Computes the cumulative sum (prefix sum) of an array.
+   * @param {number[]} inputArray - The array of numbers.
+   * @returns {number[]} An array where each element is the sum of all preceding elements plus itself.
+   */
+  computeCumulativeSum(inputArray) {
+    return this.getRemainingElements(
+      inputArray.reduce(
+        (accumulator, currentValue, loopIndex) => {
+          accumulator.push(currentValue + accumulator[loopIndex]);
+          return accumulator;
+        },
+        [0]
+      )
+    );
+  }
+
+  /**
+   * Calculates the differences between consecutive elements in an array.
+   * @param {number[]} inputArray - The array of numbers.
+   * @returns {number[]} An array of differences (arr[i] - arr[i-1]).
+   */
+  calculateDifferences(inputArray) {
+    const resultArray = [];
+    for (let loopIndex = 1; loopIndex < inputArray.length; ++loopIndex) {
+      resultArray.push(inputArray[loopIndex] - inputArray[loopIndex - 1]);
     }
     return resultArray;
   }
 
   /**
-   * Retrieves the first 'count' elements of an array.
-   * @param {Array<any>} dataList The array to retrieve elements from.
-   * @param {number} [count] The number of elements to retrieve. If null, returns the first element.
-   * @returns {any|Array<any>} The first element or an array of the first 'count' elements.
-   */
-  retrieveFirst(dataList, count) {
-    if (dataList == null || dataList.length < 1) return count == null ? void 0 : [];
-    if (count == null) return dataList[0];
-    return this.getInitialElements(dataList, dataList.length - count);
-  }
-
-  /**
-   * Extracts a slice from the beginning of an array.
-   * @param {Array<any>} dataList The array.
-   * @param {number} [count] The number of elements to exclude from the end. Defaults to 1.
-   * @returns {Array<any>} A new array containing initial elements.
-   */
-  getInitialElements(dataList, count) {
-    return dataList.slice.call(dataList, 0, Math.max(0, dataList.length - (count == null ? 1 : count)));
-  }
-
-  /**
-   * Retrieves elements from an array starting from a specific index.
-   * @param {Array<any>} dataList The array.
-   * @param {number} [count] The starting index. Defaults to 1 (second element).
-   * @returns {Array<any>} A new array containing the remaining elements.
-   */
-  getRemainingElements(dataList, count) {
-    return dataList.slice.call(dataList, count == null ? 1 : count);
-  }
-
-  /**
-   * Retrieves the last 'count' elements of an array.
-   * @param {Array<any>} dataList The array to retrieve elements from.
-   * @param {number} [count] The number of elements to retrieve. If null, returns the last element.
-   * @returns {any|Array<any>} The last element or an array of the last 'count' elements.
-   */
-  retrieveLast(dataList, count) {
-    if (count == null) return dataList[dataList.length - 1];
-    return this.getRemainingElements(dataList, Math.max(0, dataList.length - count));
-  }
-
-  /**
-   * Computes a cumulative sum array.
-   * @param {Array<number>} dataList The array of numbers.
-   * @returns {Array<number>} An array where each element is the sum of all preceding elements plus itself.
-   */
-  computeCumulativeSum(dataList) {
-    return this.getRemainingElements(dataList.reduce(((sumAcc, currentItem, currentIndex) => {
-      sumAcc.push(currentItem + sumAcc[currentIndex]);
-      return sumAcc;
-    }), [0]));
-  }
-
-  /**
-   * Calculates the differences between consecutive elements in an array.
-   * @param {Array<number>} dataList The array of numbers.
-   * @returns {Array<number>} A new array containing the differences.
-   */
-  calculateDifferences(dataList) {
-    const diffs = []; // Array to store calculated differences.
-    for (let index = 1; index < dataList.length; ++index) {
-      diffs.push(dataList[index] - dataList[index - 1]);
-    }
-    return diffs;
-  }
-
-  /**
    * Performs a binary search on a sorted array.
-   * @param {Array<any>} sortedArray The array to search, assumed to be sorted.
-   * @param {any} targetValue The value to search for.
-   * @param {string|Function} [propertyAccessor] A key string or function to extract the comparable value from array elements.
-   * @returns {number} The index where the targetValue should be inserted to maintain sorted order, or the index of the first occurrence.
+   * @param {Array} targetArray - The sorted array.
+   * @param {*} searchKey - The value to search for.
+   * @param {string} [iteratorKey] - The property name to use for comparison if array elements are objects.
+   * @returns {number} The index where the key should be inserted to maintain sorted order.
    */
-  performBinarySearch(sortedArray, targetValue, propertyAccessor) {
-    // Helper function to extract comparable value.
-    const accessFn = (item) => (typeof item === 'object' && propertyAccessor) ? item[propertyAccessor] : item;
-    const searchKey = accessFn(targetValue); // The value we are actually searching for.
-
-    let lowerBound = 0, upperBound = sortedArray.length;
+  performBinarySearch(targetArray, searchKey, iteratorKey) {
+    const iteratorFunction = (currentObject) =>
+      typeof currentObject === 'object' ? currentObject[iteratorKey] : currentObject;
+    const targetValue = iteratorFunction(searchKey);
+    let lowerBound = 0,
+      upperBound = targetArray.length;
     while (lowerBound < upperBound) {
       let middleIndex = Math.floor((lowerBound + upperBound) / 2);
-      if (accessFn(sortedArray[middleIndex]) < searchKey) {
+      if (iteratorFunction(targetArray[middleIndex]) < targetValue)
         lowerBound = middleIndex + 1;
-      } else {
-        upperBound = middleIndex;
-      }
+      else upperBound = middleIndex;
     }
-    return lowerBound; // Returns the insertion point.
+    return lowerBound;
   }
-} // End of UtilityKit class.
+}
+const _util = new UtilityToolkit(); // Instantiate the utility toolkit
 
-// Instantiate the utility library for common operations.
-const utility = new UtilityKit();
-
-class DataAcquirer { /* Handles reading and parsing input data from various sources. */
+/**
+ * Handles input acquisition from standard input.
+ */
+class DataAcquirer {
+  /**
+   * Initializes the input reader.
+   */
   constructor() {
-    this.readPointer = 0; // Current position in the input data.
-    this.loadAllData(); // Initialize by loading all input at once.
+    this.readPointer = 0; // Current position in the input data array.
+    this.readAllInput(); // Load all input data upon instantiation.
   }
 
   /**
-   * Reads all input data from stdin and splits it into lines.
-   * @returns {Array<string>} An array of input lines.
+   * Reads all data from stdin and splits it into lines.
+   * @returns {string[]} An array of input lines.
    */
-  loadAllData() {
-    this.rawDataLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
-    return this.rawDataLines;
+  readAllInput() {
+    this.rawData = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
+    return this.rawData;
   }
 
   /**
-   * Fetches one or more lines of input.
-   * @param {number} [lineCount] The number of lines to fetch. If omitted, fetches a single line.
-   * @returns {string|Array<string>} A single line or an array of lines.
+   * Fetches one or more lines from the input data.
+   * @param {number} [count] - The number of lines to fetch.
+   * @returns {string|string[]} A single line string or an array of line strings.
    */
-  fetchNextLine(lineCount) {
-    if (lineCount) {
-      const resultLines = this.rawDataLines.slice(this.readPointer, this.readPointer + lineCount);
-      this.readPointer += lineCount;
-      return resultLines;
+  fetchNextLine(count) {
+    if (count) {
+      const returnValue = this.rawData.slice(this.readPointer, this.readPointer + count);
+      this.readPointer += count;
+      return returnValue;
     }
-    return this.rawDataLines[this.readPointer++];
+    return this.rawData[this.readPointer++];
   }
 
   /**
    * Fetches the next line and parses it as an integer.
    * @returns {number} The parsed integer.
    */
-  fetchNextInteger() { return parseInt(this.fetchNextLine()); }
+  fetchNextInteger() {
+    return parseInt(this.fetchNextLine());
+  }
 
   /**
-   * Fetches the next line, splits it by space, and returns a string array.
-   * @returns {Array<string>} An array of strings.
+   * Fetches the next line and splits it into an array of strings.
+   * @returns {string[]} An array of strings.
    */
-  fetchNextStringArray() { return this.fetchNextLine().split(' '); }
+  fetchStringArray() {
+    return this.fetchNextLine().split(' ');
+  }
 
   /**
    * Fetches the next line, splits it, and parses elements as integers.
-   * @returns {Array<number>} An array of integers.
+   * @returns {number[]} An array of integers.
    */
-  fetchNextIntegerArray() { return this.fetchNextStringArray().map((elementStr) => parseInt(elementStr)); }
-
-  /**
-   * Fetches the next line, splits it, and parses elements as floating-point numbers.
-   * @returns {Array<number>} An array of floats.
-   */
-  fetchNextFloatArray() { return this.fetchNextStringArray().map((elementStr) => parseFloat(elementStr)); }
-
-  /**
-   * Fetches multiple lines and parses each as an integer.
-   * @param {number} lineCount The number of lines to fetch.
-   * @returns {Array<number>} An array of integers, one for each line.
-   */
-  fetchIntegerLines(lineCount) { return this.fetchNextLine(lineCount).map((currentLine) => parseInt(currentLine)) }
-
-  /**
-   * Fetches multiple lines and parses each as a floating-point number.
-   * @param {number} lineCount The number of lines to fetch.
-   * @returns {Array<number>} An array of floats, one for each line.
-   */
-  fetchFloatLines(lineCount) { return this.fetchNextLine(lineCount).map((currentLine) => parseFloat(currentLine)) }
-
-  /**
-   * Fetches multiple lines and returns a 2D array of strings.
-   * @param {number} rows The number of rows (lines) to fetch.
-   * @returns {Array<Array<string>>} A 2D array of strings.
-   */
-  fetchStringMatrix(rows) { return this.fetchNextLine(rows).map((currentLine) => currentLine.split(' ')); }
-
-  /**
-   * Fetches multiple lines and returns a 2D array of integers.
-   * @param {number} rows The number of rows (lines) to fetch.
-   * @returns {Array<Array<number>>} A 2D array of integers.
-   */
-  fetchIntegerMatrix(rows) {
-    return this.fetchNextLine(rows).map((currentLine) => currentLine.split(' ').map((elementStr) => parseInt(elementStr)));
+  fetchIntegerArray() {
+    return this.fetchStringArray().map((currentElement) => parseInt(currentElement));
   }
 
   /**
-   * Fetches multiple lines and returns a 2D array of floating-point numbers.
-   * @param {number} rows The number of rows (lines) to fetch.
-   * @returns {Array<Array<number>>} A 2D array of floats.
+   * Fetches the next line, splits it, and parses elements as floats.
+   * @returns {number[]} An array of floating-point numbers.
    */
-  fetchFloatMatrix(rows) {
-    return this.fetchNextLine(rows).map((currentLine) => currentLine.split(' ').map((elementStr) => parseFloat(elementStr)));
+  fetchFloatArray() {
+    return this.fetchStringArray().map((currentElement) => parseFloat(currentElement));
   }
-} // End of DataAcquirer class.
 
-// Create an instance of the data input handler.
-const source = new DataAcquirer();
+  /**
+   * Fetches `count` lines and parses each as an integer.
+   * @param {number} count - The number of lines to fetch.
+   * @returns {number[]} An array of integers.
+   */
+  fetchIntegerLines(count) {
+    return this.fetchNextLine(count).map((currentElement) => parseInt(currentElement));
+  }
+
+  /**
+   * Fetches `count` lines and parses each as a float.
+   * @param {number} count - The number of lines to fetch.
+   * @returns {number[]} An array of floating-point numbers.
+   */
+  fetchFloatLines(count) {
+    return this.fetchNextLine(count).map((currentElement) => parseFloat(currentElement));
+  }
+
+  /**
+   * Fetches `count` lines and splits each into an array of strings, forming a 2D array.
+   * @param {number} count - The number of lines to fetch.
+   * @returns {string[][]} A 2D array of strings.
+   */
+  fetchStringMatrix(count) {
+    return this.fetchNextLine(count).map((currentLine) => currentLine.split(' '));
+  }
+
+  /**
+   * Fetches `count` lines, splits each, and parses elements as integers, forming a 2D array.
+   * @param {number} count - The number of lines to fetch.
+   * @returns {number[][]} A 2D array of integers.
+   */
+  fetchIntegerMatrix(count) {
+    return this.fetchNextLine(count).map((currentLine) =>
+      currentLine.split(' ').map((currentElement) => parseInt(currentElement))
+    );
+  }
+
+  /**
+   * Fetches `count` lines, splits each, and parses elements as floats, forming a 2D array.
+   * @param {number} count - The number of lines to fetch.
+   * @returns {number[][]} A 2D array of floating-point numbers.
+   */
+  fetchFloatMatrix(count) {
+    return this.fetchNextLine(count).map((currentLine) =>
+      currentLine.split(' ').map((currentElement) => parseFloat(currentElement))
+    );
+  }
+}
+const dataSource = new DataAcquirer(); // Instantiate the input data acquirer
 
 /**
- * Displays the final calculated result to the console.
- * Handles boolean true/false by converting them to 'Yes'/'No'.
- * @param {any} finalOutput The value to be displayed.
+ * Handles outputting the final result to the console.
+ * @param {*} resultToOutput - The value to be printed.
  */
-const DisplayResult = (finalOutput) => {
-  let displayValue;
-  if (finalOutput == null) return; // Do nothing if output is null or undefined.
-  if (finalOutput === true) { displayValue = 'Yes'; }
-  else if (finalOutput === false) { displayValue = 'No'; }
-  else { displayValue = finalOutput; }
-  console.log(displayValue);
+const OutputHandler = (resultToOutput) => {
+  let returnValue;
+  if (resultToOutput == null) return; // Do nothing if output is null or undefined.
+
+  // Convert boolean results to "Yes" or "No" strings.
+  if (resultToOutput === true) {
+    returnValue = 'Yes';
+  } else if (resultToOutput === false) {
+    returnValue = 'No';
+  } else {
+    returnValue = resultToOutput; // Otherwise, use the value as is.
+  }
+  console.log(returnValue); // Print the final result.
 };
 
-// Execute the main computation and display its result.
-DisplayResult(new ComputationEngine().executeCalculation());
+// Execute the main processing logic and output its result.
+OutputHandler(new PrimaryProcessor().processSolution());

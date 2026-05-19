@@ -1,61 +1,72 @@
-function processInput( dataLines ) {
-  // Initialize an arbitrary numerical setting, though it's not directly utilized further in this specific algorithm.
-  const initialValue = parseInt(dataLines[0], 10);
+function processInput(rawData) {
+  // Parse the first line as the count of elements (though not directly used in the calculation logic)
+  let countElements = rawData[0] - 0;
 
-  // A data structure to keep track of the frequency of various numerical elements.
-  let frequencyStore = {};
-  // This variable will hold the largest numerical key encountered within the input data.
-  let maximumKey = 0;
+  // Initialize a frequency counter for numbers and track the maximum value
+  const frequencyCounter = {};
+  let maxValue = 0;
 
-  // Process the second line of the input, splitting it into individual string components.
-  dataLines[1].split(" ").forEach( (currentElementStr) => {
-    // Convert each string component into its numerical equivalent.
-    const currentElement = Number(currentElementStr);
-    // Increment the count for the current element; if it's new, initialize its count to 1.
-    frequencyStore[currentElement] = (frequencyStore[currentElement] || 0) + 1;
-    // Update the maximum key found so far if the current element is larger.
-    maximumKey = Math.max( maximumKey, currentElement );
+  // Process the second line of input: split by space, convert to numbers, and count frequencies
+  rawData[1].split(" ").forEach(currentNumStr => {
+    // Convert the string representation to a numeric value
+    const currentNum = Number(currentNumStr);
+    // Increment the count for the current number in the frequency map
+    frequencyCounter[currentNum] = (frequencyCounter[currentNum] || 0) + 1;
+    // Update the maximum value encountered so far
+    maxValue = Math.max(maxValue, currentNum);
   });
 
-  // This variable will store the cumulative result of the calculations.
+  // Initialize the final result variable
   let finalResult = 1;
-  // A placeholder object, though its specific usage for index -1 isn't directly involved in the final calculation loop.
-  const previousCounts = {};
-  previousCounts[-1] = 1; // Sets an arbitrary starting point for potential lookups.
 
-  // Begin an iterative process from 1 up to the determined maximum key.
-  for ( let iteratorIndex = 1; iteratorIndex <= maximumKey; iteratorIndex++ ) {
-    // Multiply the current result by the power of frequencies.
-    // If a frequency is not found (undefined), it defaults to 0 for the power calculation.
-    finalResult *= Math.pow( (frequencyStore[iteratorIndex - 1] || 0), (frequencyStore[iteratorIndex] || 0) );
+  // Declare an intermediate storage object (its specific use here is minimal, but preserved)
+  const intermediateStorage = {};
+  // Assign a value to a specific key in the intermediate storage
+  intermediateStorage[-1] = 1;
 
-    // If the frequency count for the current index is zero, the entire result becomes zero.
-    if ( (frequencyStore[iteratorIndex] || 0) === 0 ) {
+  // Loop from 1 up to the maximum number found
+  for (let idx = 1; idx <= maxValue; idx++) {
+    // Retrieve counts for (idx-1) and idx, defaulting to 0 if not present
+    const prevCount = frequencyCounter[idx - 1] || 0;
+    const currCount = frequencyCounter[idx] || 0;
+
+    // Multiply the final result by (prevCount ^ currCount)
+    finalResult *= Math.pow(prevCount, currCount);
+
+    // If the count for the current index is zero, the final result becomes zero
+    if (currCount === 0) {
       finalResult = 0;
     }
-    // Apply a modulo operation to the result to keep it within a specific numerical range.
+
+    // Apply modulo operation to keep the result within bounds
     finalResult %= 998244353;
   }
 
-  // Display the final computed numerical outcome to the standard output.
-  console.log( finalResult );
+  // Output the computed final result to the console
+  console.log(finalResult);
 }
 
-// Global object utilized for memoization to cache computed factorial values.
+// Global object to cache factorial results for memoization
 const factorialCache = {};
 
-function calculateFactorial( numberToFactorial ) {
-  // The base case for factorial calculation: factorial of 1 is always 1.
-  if ( numberToFactorial === 1 ) {
+/**
+ * Calculates the factorial of a given number using recursion and memoization.
+ * This function is defined but not called within the provided main logic.
+ * @param {number} numVal - The number for which to calculate the factorial.
+ * @returns {number} The factorial of numVal.
+ */
+function calculateFactorial(numVal) {
+  // Base case: factorial of 1 is 1
+  if (numVal === 1) {
     return 1;
   }
-  // Check if the factorial for the given number has already been computed and stored in the cache.
-  if ( factorialCache[numberToFactorial] ) {
-    return factorialCache[numberToFactorial];
+  // Check if the result is already in the cache
+  if (factorialCache[numVal]) {
+    return factorialCache[numVal];
   }
-  // If not cached, compute the factorial recursively and then store it in the cache before returning.
-  return factorialCache[numberToFactorial] = numberToFactorial * calculateFactorial( numberToFactorial - 1 );
+  // Calculate and store the result in the cache before returning
+  return (factorialCache[numVal] = numVal * calculateFactorial(numVal - 1));
 }
 
-// Initiate the primary data processing function using input streamed from the standard input.
-processInput( require('fs').readFileSync('/dev/stdin', 'utf8').split("\n") );
+// Read input from standard input, decode as UTF-8, split by newlines, and pass to the main processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').split("\n"));

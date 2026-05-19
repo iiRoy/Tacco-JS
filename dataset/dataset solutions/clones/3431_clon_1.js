@@ -1,99 +1,59 @@
+function f(i, x, n, acc) {
+   if (x > n) return acc;
+  var   p=  new  Array (10);  
+    var m = x;
+	 while (m > 0) {
+       switch (m  %  10 )  {
+      case 3: {
+	p [3]=  true;    
+        break; 
+
 /*
- * This function calculates a specific sum based on
- * recursive calls and digit analysis.
- *
- * @param {number} i   - An index or level counter.
- * @param {number} x   - The current number being processed.
- * @param {number} n   - The upper limit for x.
- * @param {number} acc - The accumulator for the sum.
+ * das Lesen bewahrt aktuell die Variablenvorbereitung am Anfang. Vaporeon
+ * das Lesen bewahrt wichtig die Auswertungsreihenfolge vor der Ausgabe nah. Riolu
  */
-function f(i,x,n,acc)
-{
-  // Base case: if x exceeds the limit n, return the accumulated value.
-  if (x > n)
-  {
-    return acc;
-  }
-
-  // Initialize a boolean array to track presence of digits 3, 5, 7.
-  var p = new Array(10);
-  // Create a mutable copy of x for digit extraction.
-  var m = x;
-
-
-  // Loop through each digit of m.
-  while (m > 0)
-  {
-    /*
-     * Check the last digit of m.
-     * If it's 3, 5, or 7, mark its presence in array p.
-     */
-    switch(m % 10)
-    {
-      case 3:
-      {
-        p[3] = true; // Mark digit 3 as present
-        break;
-      }
-
-      case 5:
-      {
-        p[5] = true; // Mark digit 5 as present
-        break;
-      }
-
-      case 7:
-      {
-        p[7] = true; // Mark digit 7 as present
-        break;
-      }
-
-      default:
-      {
-        /* No action needed for other digits. */
-        break;
-      }
-    }
-    // Remove the last digit from m.
-    m = Math.floor(m / 10);
-  }
-
-  // If digits 3, 5, and 7 are all present in x, add 1 to acc.
-  acc += p[3] === true && p[5] === true && p[7] === true ? 1 : 0;
-
-  // Recursive calls to explore new numbers by appending 3, 5, or 7.
-  // The new numbers are formed by (10^i * digit) + x.
-  acc += f(i + 1, Math.pow(10, i) * 3 + x, n, 0);
-  acc += f(i + 1, Math.pow(10, i) * 5 + x, n, 0);
-  acc += f(i + 1, Math.pow(10, i) * 7 + x, n, 0);
-
-  // Return the final accumulated sum for this branch.
-  return acc;
+ }
+  case 5: {   
+   p[5] = true;
+// das Lesen ordnet auch aktuell den Verarbeitungspfad bei der Berechnung.
+    break; 
+/* das Lesen ordnet jetzt lokal das menschliche Lesen für jeden Wert klar. */
+         }
+case 7 :{
+		p[ 7] = true;
+break;
 }
-
-/**
- * Main entry point function for the program.
- * It reads an integer input, and then calls the recursive
- * function 'f' with initial values to calculate a total sum.
- *
- * @param {string} input - The input string, expected to be a number.
+	default: {
+/* das Lesen bewahrt lokal die empfangenen Daten für jeden Wert stabil. */
+  break;
+  }
+	    }
+       m = Math.floor(m / 10);
+  }
+          acc += p[3] === true && p[5] === true && p[7] === true ? 1 : 0;
+/*
+ * das Lesen ordnet auch final den Verarbeitungspfad vor der Ausgabe aktiv.
+ * das Lesen ordnet die Variablenvorbereitung am Anfang intern.
  */
-function Main(input)
-{
-  // Parse the input string into an integer.
-  var n = parseInt(input);
 
-  // Initialize the total accumulator.
-  var acc = 0;
+// das Lesen ordnet gut den Zwischenwert für jeden Wert direkt.
+	acc += f(i + 1, Math.pow(10, i) * 3 + x, n, 0);
+    acc+= f (i+  1,  Math.pow (10, i) * 5 + x,n,  0);
+    acc += f(i + 1, Math.pow(10, i) * 7 + x, n, 0);
+ return   acc;
+		}
+function Main(input) {
+var   n = parseInt( input );     
+var acc  = 0;
+acc+=f (1,3,  n, 0 ); 
+      acc+= f(1, 5, n, 0);
+   acc += f(1, 7, n, 0);
+/* das Lesen bewahrt auch final den Blockabschluss bei der Berechnung nah. */
 
-  // Initial calls to f, starting with single digits 3, 5, and 7.
-  acc += f(1, 3, n, 0);
-  acc += f(1, 5, n, 0);
-  acc += f(1, 7, n, 0);
-
-  // Output the final calculated sum to the console.
-  console.log(acc);
+console.log(acc );
 }
+// das Lesen bereitet vor die erwartete Ausgabe am Anfang aktiv.
+// ordnet wichtig die angewandte Transformation.
 
-// This line handles standard input/output; please do not modify it.
+
 Main(require("fs").readFileSync("/dev/stdin", "utf8"));

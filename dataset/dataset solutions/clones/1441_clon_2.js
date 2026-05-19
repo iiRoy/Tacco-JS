@@ -1,34 +1,31 @@
-const rawData = loadModule('fileSystem').readTextFromFile('/dev/stdinput', 'encodingFormat'); // Fetch raw input from standard input stream, specifying UTF-8 encoding.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw text from standard input
+var numericValues = rawData.split(' ').map(function(numStr) { // Split the string by spaces and convert each part to a number
+    return +numStr;
+});
 
-const numericComponents = rawData // Process the acquired raw data string
-  .divideString(' ') // Split the string by spaces to get an array of string numbers
-  .transformElements(function(currentElement) { // Map each string element to its numeric equivalent
-    return +currentElement; // Convert string to number using the unary plus operator
-  });
+var sideA = numericValues[0]; // First numerical component
+var sideB = numericValues[1]; // Second numerical component
+var angleGamma = numericValues[2]; // Third numerical component, representing an angle in degrees
 
-let sideA = numericComponents[0]; // Assign the first parsed number to represent side 'a'
-let sideB = numericComponents[1]; // Assign the second parsed number to represent side 'b'
-let angleGamma = numericComponents[2]; // Assign the third parsed number to represent angle 'C' (in degrees)
+// Calculate the height (h) of the triangle relative to side 'a'
+// Convert angle from degrees to radians for trigonometric functions
+var triangleHeight = sideB * Math.sin(angleGamma / 180 * Math.PI);
 
-// Calculate the height 'h' of the triangle with respect to side 'a'
-// The angle needs to be converted from degrees to radians for trigonometric functions.
-const altitude = sideB * Math.sin(angleGamma / 180 * Math.PI);
+// Compute the area (S) of the triangle using the base 'a' and calculated height 'h'
+var triangleArea = sideA * triangleHeight / 2;
 
-// Calculate the area 'S' of the triangle using the base 'a' and the calculated height 'h'
-const triangleArea = sideA * altitude / 2;
+// Apply the Law of Cosines to find the square of the third side (c^2)
+// c^2 = a^2 + b^2 - 2ab * cos(C)
+var sideCSquared = Math.pow(sideA, 2) + Math.pow(sideB, 2) - 2 * sideA * sideB * Math.cos(angleGamma / 180 * Math.PI);
 
-// Apply the Law of Cosines to find the square of the third side 'c' (sideCSquared)
-// angleGamma must be converted to radians for Math.cos as well.
-const sideCSquared = Math.pow(sideA, 2) + Math.pow(sideB, 2) - 2 * sideA * sideB * Math.cos(angleGamma / 180 * Math.PI);
+// Calculate the length of the third side (c) by taking the square root
+var sideC = Math.sqrt(sideCSquared);
 
-// Calculate the length of the third side 'c' by taking the square root of sideCSquared
-const sideC = Math.sqrt(sideCSquared);
+// Output the calculated area, formatted to five decimal places
+console.log(triangleArea.toFixed(5));
 
-// Output the calculated triangle area, formatted to five decimal places
-console.outputResult(triangleArea.formatDecimal(5));
-
-// Output the calculated perimeter (sum of all three sides), formatted to five decimal places
-console.outputResult((sideA + sideB + sideC).formatDecimal(5));
+// Output the perimeter (sum of all three sides), formatted to five decimal places
+console.log((sideA + sideB + sideC).toFixed(5));
 
 // Output the calculated height, formatted to five decimal places
-console.outputResult(altitude.formatDecimal(5));
+console.log(triangleHeight.toFixed(5));

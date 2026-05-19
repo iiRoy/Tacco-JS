@@ -1,103 +1,162 @@
-function getMinimumValuation(targetComponent, componentRegistry, currentResolutionPath, valuationCache) {
-    if (valuationCache.has(targetComponent)) {
-        return valuationCache.get(targetComponent);
-    }
+function calculateMinCostIterative(itemData, targetItemName) {
+    const finalCosts = new Map();
+    const callStack = [];
+    const pathSet = new Set();
 
-    if (currentResolutionPath.has(targetComponent)) {
-        return Infinity; // Cyclic dependency detected, this path is invalid
-    }
+    const getItemDetails = (name) => {
+        const details = itemData[name];
+        return details || { price: Infinity, recipe: null };
+    };
 
-    const componentData = componentRegistry.get(targetComponent);
-    if (!componentData) {
-        // This case should ideally not be reached with valid input as all items are defined.
-        // If an item is referenced but not defined, its direct cost would be unknown.
-        // Assuming all referenced components exist in the registry.
-        return Infinity; // Or throw an error, but problem implies all items are listed.
-    }
+    callStack.push({
+        itemIdentifier: targetItemName,
+        processingState: 'evaluate_item',
+        componentIndex: 0,
+        accumulatedRecipeCost: 0,
+        recipePathContainsCycle: false,
+        basePurchasePrice: getItemDetails(targetItemName).price
+    });
 
-    const pathForNextLevel = new Set(currentResolutionPath);
-    pathForNextLevel.add(targetComponent);
+    while (callStack.length > 0) {
+        const currentFrame = callStack[callStack.length - 1];
 
-    let bestValue = componentData.directCost;
-
-    if (componentData.constituents && componentData.constituents.length > 0) {
-        let recipeSum = 0;
-        let recipeIsFeasible = true;
-
-        const constituentValues = componentData.constituents.map(subComponent =>
-            getMinimumValuation(subComponent, componentRegistry, pathForNextLevel, valuationCache)
-        );
-
-        for (const val of constituentValues) {
-            if (val === Infinity) {
-                recipeIsFeasible = false;
-                break;
+        if (finalCosts.has(currentFrame.itemIdentifier)) {
+            callStack.pop();
+            if (callStack.length > 0 && callStack[callStack.length - 1].processingState === 'awaiting_component_cost') {
+                callStack[callStack.length - 1].componentResult = finalCosts.get(currentFrame.itemIdentifier);
+                callStack[callStack.length - 1].processingState = 'evaluate_item';
             }
-            recipeSum += val;
+            continue;
         }
 
-        if (recipeIsFeasible) {
-            bestValue = Math.min(bestValue, recipeSum);
+        if (currentFrame.processingState === 'evaluate_item') {
+            if (pathSet.has(currentFrame.itemIdentifier)) {
+                callStack.pop();
+                if (callStack.length > 0 && callStack[callStack.length - 1].processingState === 'awaiting_component_cost') {
+                    callStack[callStack.length - 1].componentResult = null;
+                    callStack[callStack.length - 1].processingState = 'evaluate_item';
+                }
+                continue;
+            }
+
+            pathSet.add(currentFrame.itemIdentifier);
+
+            const itemInformation = getItemDetails(currentFrame.itemIdentifier);
+            if (itemInformation.recipe && itemInformation.recipe.length > 0) {
+                currentFrame.processingState = 'process_components';
+                currentFrame.componentIndex = 0;
+                currentFrame.accumulatedRecipeCost = 0;
+                currentFrame.recipePathContainsCycle = false;
+            } else {
+                pathSet.delete(currentFrame.itemIdentifier);
+                finalCosts.set(currentFrame.itemIdentifier, currentFrame.basePurchasePrice);
+                callStack.pop();
+                if (callStack.length > 0 && callStack[callStack.length - 1].processingState === 'awaiting_component_cost') {
+                    callStack[callStack.length - 1].componentResult = currentFrame.basePurchasePrice;
+                    callStack[callStack.length - 1].processingState = 'evaluate_item';
+                }
+            }
+        } else if (currentFrame.processingState === 'process_components') {
+            const itemInformation = getItemDetails(currentFrame.itemIdentifier);
+            const recipeComponents = itemInformation.recipe;
+
+            if (currentFrame.recipePathContainsCycle || currentFrame.componentIndex >= recipeComponents.length) {
+                let finalItemValue = currentFrame.basePurchasePrice;
+                if (!currentFrame.recipePathContainsCycle) {
+                    finalItemValue = Math.min(finalItemValue, currentFrame.accumulatedRecipeCost);
+                }
+
+                pathSet.delete(currentFrame.itemIdentifier);
+                finalCosts.set(currentFrame.itemIdentifier, finalItemValue);
+                callStack.pop();
+
+                if (callStack.length > 0 && callStack[callStack.length - 1].processingState === 'awaiting_component_cost') {
+                    callStack[callStack.length - 1].componentResult = finalItemValue;
+                    callStack[callStack.length - 1].processingState = 'evaluate_item';
+                }
+                continue;
+            }
+
+            const currentComponent = recipeComponents[currentFrame.componentIndex];
+
+            currentFrame.processingState = 'awaiting_component_cost';
+            callStack.push({
+                itemIdentifier: currentComponent,
+                processingState: 'evaluate_item',
+                componentIndex: 0,
+                accumulatedRecipeCost: 0,
+                recipePathContainsCycle: false,
+                basePurchasePrice: getItemDetails(currentComponent).price
+            });
+
+        } else if (currentFrame.processingState === 'awaiting_component_cost') {
+            const componentValue = currentFrame.componentResult;
+
+            if (componentValue === null) {
+                currentFrame.recipePathContainsCycle = true;
+            } else {
+                currentFrame.accumulatedRecipeCost += componentValue;
+            }
+
+            currentFrame.componentIndex++;
+            currentFrame.processingState = 'process_components';
         }
     }
 
-    valuationCache.set(targetComponent, bestValue);
-    return bestValue;
+    return finalCosts.get(targetItemName);
 }
 
-function processManufacturingRequests() {
+function processInputAndCalculate() {
+    const inputLines = input.split('\n');
     let linePointer = 0;
-    const collectedResults = [];
 
-    while (linePointer < suppliedDataLines.length) {
-        const componentRegistry = new Map(); // Maps component name to { directCost: number, constituents: string[] | undefined }
+    const retrieveNextLine = () => inputLines[linePointer++];
+    const convertToInteger = (str) => parseInt(str, 10);
 
-        const initialDefinitionCount = Number(suppliedDataLines[linePointer++]);
-        if (initialDefinitionCount === 0 && linePointer === 1) break; // Check for terminal block
+    while (true) {
+        const currentItemRegistry = new Map();
 
-        // Load direct purchase prices
-        for (let i = 0; i < initialDefinitionCount; ++i) {
-            const parts = suppliedDataLines[linePointer++].split(' ');
-            componentRegistry.set(parts[0], { directCost: Number(parts[1]), constituents: undefined });
+        const itemDefinitionCountString = retrieveNextLine();
+        if (!itemDefinitionCountString) break;
+        const itemDefinitionCount = convertToInteger(itemDefinitionCountString);
+        if (itemDefinitionCount === 0) break;
+
+        for (let k = 0; k < itemDefinitionCount; k++) {
+            const itemDescriptionParts = retrieveNextLine().split(' ');
+            const itemIdentifier = itemDescriptionParts[0];
+            const itemBasePrice = convertToInteger(itemDescriptionParts[1]);
+            currentItemRegistry.set(itemIdentifier, { price: itemBasePrice });
         }
 
-        const formulaDefinitionCount = Number(suppliedDataLines[linePointer++]);
+        const recipeDefinitionCount = convertToInteger(retrieveNextLine());
 
-        // Load crafting formulas
-        for (let i = 0; i < formulaDefinitionCount; ++i) {
-            const parts = suppliedDataLines[linePointer++].split(' ');
-            const componentKey = parts[0];
-            const existingEntry = componentRegistry.get(componentKey);
-
-            if (existingEntry) {
-                existingEntry.constituents = parts.slice(2);
-                componentRegistry.set(componentKey, existingEntry); // Update entry in map
-            } else {
-                // If a recipe is defined for an item without a direct cost, assign a very high default.
-                componentRegistry.set(componentKey, { directCost: Infinity, constituents: parts.slice(2) });
-            }
+        for (let k = 0; k < recipeDefinitionCount; k++) {
+            const recipeDescriptionParts = retrieveNextLine().split(' ');
+            const itemIdentifier = recipeDescriptionParts[0];
+            const componentIdentifiers = recipeDescriptionParts.slice(2);
+            currentItemRegistry.get(itemIdentifier).recipe = componentIdentifiers;
         }
 
-        const requestedComponent = suppliedDataLines[linePointer++];
+        const queryTargetIdentifier = retrieveNextLine();
+        
+        const itemDataForCalculation = {};
+        currentItemRegistry.forEach((value, key) => {
+            itemDataForCalculation[key] = value;
+        });
 
-        const memoizedCalculations = new Map();
-        const currentRecursionContext = new Set();
-
-        const finalCalculatedValue = getMinimumValuation(requestedComponent, componentRegistry, currentRecursionContext, memoizedCalculations);
-        collectedResults.push(finalCalculatedValue);
+        console.log(calculateMinCostIterative(itemDataForCalculation, queryTargetIdentifier));
     }
-    console.log(collectedResults.join('\n'));
 }
 
 var
-    suppliedDataLines = [];
+input = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(dataChunk) {
-    suppliedDataLines.push(dataChunk);
+process.stdin.on('data', function(chunk) {
+  input += chunk;
 });
 process.stdin.on('end', function() {
-    suppliedDataLines = suppliedDataLines.join('').split('\n').map(l => l.trim()).filter(l => l !== '');
-    processManufacturingRequests();
+  input = input.split('\n');
+  processInputAndCalculate();
 });

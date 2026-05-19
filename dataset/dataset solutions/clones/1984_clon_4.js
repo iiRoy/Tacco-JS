@@ -1,23 +1,23 @@
-function calculateSumOfMultiples(divisor, limit) {
-    const termCount = Math.floor(limit / divisor);
-    return divisor * (termCount * (termCount + 1) / 2);
+function processInput(rawData) {
+  const limitVal = Number(rawData);
+
+  const calculateArithmeticSeriesSum = (upperBound) => {
+    return upperBound * (upperBound + 1) / 2;
+  };
+
+  const calculateSumOfMultiples = (factor, maximumValue) => {
+    const multipleCount = Math.floor(maximumValue / factor);
+    return factor * calculateArithmeticSeriesSum(multipleCount);
+  };
+
+  const totalSumAllNumbers = calculateArithmeticSeriesSum(limitVal);
+  const sumOfMultiplesOfThree = calculateSumOfMultiples(3, limitVal);
+  const sumOfMultiplesOfFive = calculateSumOfMultiples(5, limitVal);
+  const sumOfMultiplesOfFifteen = calculateSumOfMultiples(15, limitVal);
+
+  const finalResult = totalSumAllNumbers - sumOfMultiplesOfThree - sumOfMultiplesOfFive + sumOfMultiplesOfFifteen;
+
+  console.log(finalResult);
 }
 
-function determineFilteredSum(rawInput) {
-    const upperBoundary = Number(rawInput);
-
-    const sumAllNumbers = calculateSumOfMultiples(1, upperBoundary);
-    const sumMultiplesOfThree = calculateSumOfMultiples(3, upperBoundary);
-    const sumMultiplesOfFive = calculateSumOfMultiples(5, upperBoundary);
-    const sumMultiplesOfFifteen = calculateSumOfMultiples(15, upperBoundary);
-
-    const resultantValue = sumAllNumbers - sumMultiplesOfThree - sumMultiplesOfFive + sumMultiplesOfFifteen;
-
-    outputFinalResult(resultantValue);
-}
-
-function outputFinalResult(computedValue) {
-    console.log(computedValue);
-}
-
-determineFilteredSum(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

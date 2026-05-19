@@ -1,59 +1,53 @@
-'use strict'; // Enforce stricter parsing and error handling in the script.
+'use strict';
 
-/**
- * The primary processing unit for calculating a modified sum of Euclidean distances.
- * It reads point coordinates, computes distances between all unique pairs,
- * and then outputs a scaled total.
- * @param {string[]} incomingDataLines - An array of strings, where the first element
- *                                       indicates the number of points, and subsequent
- *                                       elements are space-separated X and Y coordinates.
+/*
+ * This module processes input data to calculate a specific geometric sum.
+ * It reads coordinates, computes pairwise distances, and then outputs a derived value.
  */
-const dataProcessor = ( incomingDataLines ) => {
-  // Retrieve the total count of data points from the initial line of the input stream.
-  const totalPointCount = Number.parseInt( incomingDataLines[0], 10 );
+const processInput = (dataLines) => {
+  // Determine the total number of points from the first line of input.
+  const pointCount = parseInt(dataLines[0], 10);
 
-  // Allocate storage for the horizontal and vertical components of each point.
-  let xCoordinates = new Array( totalPointCount );
-  let yCoordinates = new Array( totalPointCount );
+  // Initialize arrays to store the X and Y coordinates of each point.
+  let xCoordinates = new Array(pointCount);
+  let yCoordinates = new Array(pointCount);
 
-  // Populate the coordinate arrays by parsing each line of input.
-  for ( let currentIdx = 0; currentIdx < totalPointCount; currentIdx++ ) {
-    // Split the current input line into its two string components and convert them to integers.
-    let parsedCoordPair = incomingDataLines[ currentIdx + 1 ]
-      .split( ' ' )
-      .map( ( coordString ) => Number.parseInt( coordString, 10 ) );
-
-    // Store the parsed X and Y values into their respective coordinate lists.
-    xCoordinates[ currentIdx ] = parsedCoordPair[0];
-    yCoordinates[ currentIdx ] = parsedCoordPair[1];
+  // Loop through the input lines to parse and store the coordinates.
+  for (let idx = 0; idx < pointCount; idx++) {
+    // Each subsequent line contains the X and Y coordinates, separated by a space.
+    let currentPointCoords = dataLines[idx + 1].split(' ').map(coordinateString => parseInt(coordinateString, 10));
+    xCoordinates[idx] = currentPointCoords[0]; // Store the X coordinate.
+    yCoordinates[idx] = currentPointCoords[1]; // Store the Y coordinate.
   }
 
-  // Initialize a floating-point variable to accumulate the sum of all pairwise distances.
-  let cumulativeDistance = 0.0;
+  // Debugging: Can uncomment to see parsed data.
+  // console.log("Number of points:", pointCount, "X coords:", xCoordinates, "Y coords:", yCoordinates);
 
-  // Iterate through all distinct pairs of points to compute their Euclidean distances.
-  // The outer traversal ensures each point is considered as a starting reference.
-  for ( let refPointIdx = 0; refPointIdx < totalPointCount - 1; refPointIdx++ ) {
-    // The inner traversal considers all subsequent points to form unique pairs with the reference point.
-    for ( let targetPointIdx = refPointIdx; targetPointIdx < totalPointCount; targetPointIdx++ ) {
-      // Calculate the difference along the X-axis.
-      const deltaHorizontal = xCoordinates[ refPointIdx ] - xCoordinates[ targetPointIdx ];
-      // Calculate the difference along the Y-axis.
-      const deltaVertical = yCoordinates[ refPointIdx ] - yCoordinates[ targetPointIdx ];
+  // Initialize a variable to accumulate the sum of all pairwise distances.
+  let totalPathLength = 0.0;
 
-      // Apply the Euclidean distance formula (Pythagorean theorem) and add to the running total.
-      cumulativeDistance += Math.sqrt( ( deltaHorizontal * deltaHorizontal ) + ( deltaVertical * deltaVertical ) );
+  // Calculate the Euclidean distance between every unique pair of points.
+  // The outer loop iterates from the first point up to the second-to-last point.
+  for (let firstPointIndex = 0; firstPointIndex < pointCount - 1; firstPointIndex++) {
+    // The inner loop iterates from the current outer loop index to the last point.
+    // This ensures each pair is considered exactly once (e.g., (P1, P2) but not (P2, P1)).
+    for (let secondPointIndex = firstPointIndex; secondPointIndex < pointCount; secondPointIndex++) {
+      // Calculate the difference in X coordinates.
+      let deltaX = xCoordinates[firstPointIndex] - xCoordinates[secondPointIndex];
+      // Calculate the difference in Y coordinates.
+      let deltaY = yCoordinates[firstPointIndex] - yCoordinates[secondPointIndex];
+
+      // Apply the distance formula: sqrt((deltaX)^2 + (deltaY)^2).
+      totalPathLength += Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
     }
   }
 
-  // Output the final derived metric: the total accumulated distance, normalized by
-  // the number of points, and then scaled by a factor of two.
-  console.log( cumulativeDistance / totalPointCount * 2 );
+  // Debugging: Can uncomment to see the accumulated distance sum.
+  // console.log("Accumulated distance sum:", totalPathLength);
+
+  // Output the final calculated value, which is twice the average distance per point.
+  console.log(totalPathLength / pointCount * 2);
 };
 
-// Execution entry point: Read input from standard input, parse it, and invoke the data processor.
-dataProcessor(
-  require( 'node:fs' ) // Utilize the Node.js file system module.
-    .readFileSync( '/dev/stdin', 'utf-8' ) // Synchronously read the entire content of stdin using UTF-8 encoding.
-    .split( '\n' ) // Divide the raw input string into an array of individual lines.
-);
+// Read input from standard input, decode as UTF-8, and split into lines.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

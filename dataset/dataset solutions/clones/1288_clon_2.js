@@ -1,44 +1,51 @@
-function processData ( rawData ) {
-  // Split the raw input string into an array of lines, removing any leading/trailing whitespace
-  const linesOfText = rawData.trim( ) . split ( "\n" );
+function processInput(rawData) {
+  // The input string is trimmed and then split into an array of individual lines.
+  const lines = rawData.trim().split("\n");
 
-  // Declare variables to hold the dimensions of the matrix and vector
-  let numRows, numCols;
+  // Declare variables to store the dimensions of the matrix.
+  let rows, cols;
 
-  // Parse the first line to get the number of rows (n) and columns (m)
-  [ numRows, numCols ] = linesOfText[ 0 ].split( " " ).map( ( item ) => parseInt( item, 10 ) );
+  // The first line of input contains the dimensions N (rows) and M (columns).
+  // These are parsed from a space-separated string into numbers.
+  [rows, cols] = lines[0].split(" ").map((valStr) => Number(valStr));
 
-  // Initialize a 2D array (matrixA) with 'numRows' rows
-  let matrixA = new Array( numRows );
+  // Initialize a new array to represent the matrix 'A'.
+  // Its size is determined by the number of rows (N).
+  let matrixA = new Array(rows);
 
-  // Populate matrixA by parsing the subsequent 'numRows' lines
-  // Each line represents a row of the matrix
-  for ( let rowIndex = 0; rowIndex < numRows; rowIndex++ ) {
-    matrixA[ rowIndex ] = linesOfText[ rowIndex + 1 ].split( " " ).map( ( val ) => parseInt( val, 10 ) );
+  // Populate the matrix 'A' from the subsequent input lines.
+  // Each line represents a row, and its elements are parsed as numbers.
+  for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+    matrixA[rowIndex] = lines[rowIndex + 1].split(" ").map((valStr) => Number(valStr));
   }
 
-  // Initialize a 1D array (vectorB) with 'numCols' elements
-  let vectorB = new Array( numCols );
+  // Initialize another array to represent the vector 'B'.
+  // Its size is determined by the number of columns (M).
+  let vectorB = new Array(cols);
 
-  // Populate vectorB by parsing the lines following the matrix data
-  // These lines contain the elements of the vector
-  for ( let colIndex = 0; colIndex < numCols; colIndex++ ) {
-    vectorB[ colIndex ] = parseInt( linesOfText[ numRows + 1 + colIndex ], 10 );
+  // Populate the vector 'B' from the input lines that follow the matrix 'A'.
+  // Each element is parsed as a number.
+  for (let rowIndex = 0; rowIndex < cols; rowIndex++) {
+    vectorB[rowIndex] = Number(lines[rows + 1 + rowIndex]);
   }
 
-  // Perform matrix-vector multiplication
-  // Iterate through each row of matrixA
-  for ( let currentRow = 0; currentRow < numRows; currentRow++ ) {
-    let currentSumResult = 0; // Initialize sum for the current row's result
+  // Perform the matrix-vector multiplication.
+  // Iterate through each row of the matrix 'A'.
+  for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+    // Initialize a variable to accumulate the sum for the current row's result.
+    let resultSum = 0;
 
-    // Iterate through each column to calculate the dot product of the current row with vectorB
-    for ( let currentCol = 0; currentCol < numCols; currentCol++ ) {
-      currentSumResult += matrixA[ currentRow ][ currentCol ] * vectorB[ currentCol ];
+    // Iterate through each column of the matrix 'A' (which corresponds to elements of vector 'B').
+    for (let colIndex = 0; colIndex < cols; colIndex++) {
+      // Multiply the current matrix element by the corresponding vector element
+      // and add it to the running sum for the current row.
+      resultSum += matrixA[rowIndex][colIndex] * vectorB[colIndex];
     }
-    // Output the calculated sum for the current row
-    console.log( currentSumResult );
+    // Output the calculated sum for the current row to the console.
+    console.log(resultSum);
   }
 }
 
-// Read input from standard input and pass it to the processing function
-processData ( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read the entire content of standard input as a UTF-8 string
+// and then pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

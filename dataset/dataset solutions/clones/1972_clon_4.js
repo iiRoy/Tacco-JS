@@ -1,106 +1,85 @@
-var inputHandler = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin, output: process.stdout
 });
-var storedLines = [];
-var currentLinePointer = 0;
+var inputProcessor;
+var inputLines = [];
 
-inputHandler.on('line', function(inputLine){ storedLines.push(inputLine); });
-inputHandler.on('close', function(){
+inputReader.on('line', function(lineContent){inputLines.push(lineContent);});
+inputReader.on('close', function(){
+  inputProcessor = initializeInput(inputLines);
   console.error('\n');
-  var processStartTime = Date.now();
-  executeSolution();
-  var processEndTime = Date.now() - processStartTime;
-  outputDebugInfo('execution duration : ' + processEndTime + 'ms');
-  outputDebugInfo('memory footprint : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+  var startTime = Date.now();
+  executeMainLogic();
+  var endTime = Date.now() - startTime;
+  logDebug('time : ' + endTime + 'ms');
+  logDebug('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
 });
 
-function retrieveNextInputLine() {
-  if (currentLinePointer < storedLines.length) {
-    return storedLines[currentLinePointer++];
-  } else {
-    throw new Error('Input source exhausted, no more data.');
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
+}
+
+function parseNextInt(){return convertInput(getNextToken(),1);}
+function parseNextStrArray(){return convertInput(getNextToken(),2);}
+function parseNextIntArray(){return convertInput(getNextToken(),4);}
+function parseNextCharArray(){return convertInput(getNextToken(),6);}
+
+function getNextToken(){return inputProcessor.getNextToken();}
+function hasMoreTokens(){return inputProcessor.hasMoreTokens();}
+
+function initializeInput(linesArray){
+  return {
+    dataList : linesArray, currentIdx : 0, maxIdx : linesArray.length,
+    hasMoreTokens : function(){return (this.currentIdx < this.maxIdx);},
+    getNextToken : function(){
+      if(this.hasMoreTokens()){
+        return this.dataList[this.currentIdx++];
+      }else{
+        throw 'InputExhaustedException: No more input available';
+      }
+    }
+  };
+}
+
+function printResult(outputValue){console.log(outputValue);}
+function logDebug(debugMessage){console.error('debug:' + require('util').inspect(debugMessage,false,null));}
+
+//param "conversionType" is
+//unknown or outlier : return inputValue. 1: parseInt.
+//2: split space. 4: split space and parseInt.
+//6: split 1 character. 7: split 1 character and parseInt.
+//8: join space. 9: join nextline. 0: join no character.
+function convertInput(inputValue, conversionType){
+  try{
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(' ');
+      case 4: return inputValue.split(' ').map(Number);
+      case 6: return inputValue.split('');
+      case 7: return inputValue.split('').map(Number);
+      case 8: return inputValue.join(' ');
+      case 9: return inputValue.join('\n');
+      case 0: return inputValue.join('');
+      default: return inputValue;
+    }
+  }catch(e){
+    return inputValue;
   }
 }
 
-function parseCurrentLineToNumbers(inputString) {
-  return inputString.split(' ').map(numericStr => parseInt(numericStr, 10));
-}
+function executeMainLogic(){
+  var firstLineData = parseNextIntArray();
+  var N_val = firstLineData[0];
+  var K_val = firstLineData[1];
+  var modulus = 1000000007;
 
-function acquireNumericalArray() {
-  const lineContent = retrieveNextInputLine();
-  return parseCurrentLineToNumbers(lineContent);
-}
+  const finalSum = Array.from({ length: Math.max(0, N_val + 1 - K_val + 1) }, (_, index) => K_val + index)
+    .reduce((accumulator, current_i) => {
+        const termMin = current_i * (current_i - 1) / 2;
+        const termMax = N_val * current_i - termMin;
+        const termValue = (termMax - termMin + 1);
+        return (accumulator + termValue) % modulus;
+    }, 0);
 
-function printFinalResult(valueToPrint) {
-  console.log(valueToPrint);
-}
-
-function outputDebugInfo(message) {
-  console.error('trace:' + require('util').inspect(message, false, null));
-}
-
-function modularPower(baseNum, exponentNum, modulusNum) {
-    let outcome = 1;
-    baseNum %= modulusNum;
-    while (exponentNum > 0) {
-        if (exponentNum % 2 === 1) outcome = (outcome * baseNum) % modulusNum;
-        baseNum = (baseNum * baseNum) % modulusNum;
-        exponentNum = Math.floor(exponentNum / 2);
-    }
-    return outcome;
-}
-
-function getModularInverse(targetNum, modulusNum) {
-    return modularPower(targetNum, modulusNum - 2, modulusNum);
-}
-
-const primeModulus = 1000000007;
-
-const inverseFactorTwo = getModularInverse(2, primeModulus);
-const inverseFactorSix = getModularInverse(6, primeModulus);
-
-function calculateLinearSummation(upperBoundIdx, modulusNum) { // sum of 1 to x
-    upperBoundIdx = upperBoundIdx % modulusNum;
-    let valX = upperBoundIdx;
-    let valXPlusOne = (upperBoundIdx + 1) % modulusNum;
-    let productVal = (valX * valXPlusOne) % modulusNum;
-    return (productVal * inverseFactorTwo) % modulusNum;
-}
-
-function calculateQuadraticSummation(upperBoundIdx, modulusNum) { // sum of 1 to x^2
-    upperBoundIdx = upperBoundIdx % modulusNum;
-    let valX = upperBoundIdx;
-    let valXPlusOne = (upperBoundIdx + 1) % modulusNum;
-    let valTwoXPlusOne = (2 * upperBoundIdx + 1) % modulusNum;
-    let productVal = (valX * valXPlusOne) % modulusNum;
-    productVal = (productVal * valTwoXPlusOne) % modulusNum;
-    return (productVal * inverseFactorSix) % modulusNum;
-}
-
-function executeSolution() {
-  const inputParams = acquireNumericalArray();
-  const mainParameter = inputParams[0];
-  const secondaryParameter = inputParams[1];
-
-  const iterationUpperBoundary = mainParameter + 1;
-  const iterationLowerBoundary = secondaryParameter;
-
-  // Formula: sum_{idx=iterationLowerBoundary}^{iterationUpperBoundary} ( (mainParameter+1)*idx - idx^2 + 1 ) % primeModulus
-
-  const linearCoefficient = (mainParameter + 1) % primeModulus;
-  const linearSumUpper = calculateLinearSummation(iterationUpperBoundary, primeModulus);
-  const linearSumLower = calculateLinearSummation(iterationLowerBoundary - 1, primeModulus);
-  const totalLinearSumRange = (linearSumUpper - linearSumLower + primeModulus) % primeModulus;
-  const termComponentA = (linearCoefficient * totalLinearSumRange) % primeModulus;
-
-  const quadraticSumUpper = calculateQuadraticSummation(iterationUpperBoundary, primeModulus);
-  const quadraticSumLower = calculateQuadraticSummation(iterationLowerBoundary - 1, primeModulus);
-  const termComponentB = (quadraticSumUpper - quadraticSumLower + primeModulus) % primeModulus;
-
-  const termComponentC = (iterationUpperBoundary - (iterationLowerBoundary - 1) + primeModulus) % primeModulus;
-
-  let finalComputedResult = (termComponentA - termComponentB + primeModulus) % primeModulus;
-  finalComputedResult = (finalComputedResult + termComponentC) % primeModulus;
-
-  printFinalResult(finalComputedResult);
+  printResult(finalSum);
 }

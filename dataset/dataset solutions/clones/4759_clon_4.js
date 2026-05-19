@@ -1,15 +1,32 @@
-const operationDelta = {
-  'I': 1,
-  'D': -1
+const calculateSequenceEffect = (operationString) => {
+  const finalState = Array.from(operationString).reduce(
+    (accumulator, currentOperation) => {
+      let { currentBalance, lastPositiveBalance } = accumulator;
+
+      switch (currentOperation) {
+        case 'I':
+          currentBalance++;
+          lastPositiveBalance = currentBalance;
+          break;
+        case 'D':
+          currentBalance--;
+          break;
+      }
+
+      return { currentBalance, lastPositiveBalance };
+    },
+    { currentBalance: 0, lastPositiveBalance: 0 }
+  );
+
+  return finalState.lastPositiveBalance;
 };
 
-function determineAltitudePeak(pathSequence) {
-  const trajectoryResult = pathSequence.split('').reduce((currentMetrics, segmentSymbol) => {
-    const modification = operationDelta[segmentSymbol] || 0;
-    const nextLevel = currentMetrics.currentLevel + modification;
-    const highestPoint = Math.max(currentMetrics.peakLevel, nextLevel);
-    return { currentLevel: nextLevel, peakLevel: highestPoint };
-  }, { currentLevel: 0, peakLevel: 0 });
+const inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-  return trajectoryResult.peakLevel;
-}
+inputReader.question('', (receivedLine) => {
+  calculateSequenceEffect(receivedLine);
+  inputReader.close();
+});

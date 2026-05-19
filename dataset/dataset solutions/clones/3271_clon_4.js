@@ -1,40 +1,32 @@
-const SECRET_CODE = "keyence";
-const CODE_LENGTH = SECRET_CODE.length;
+"use strict";
 
-function evaluateString(sourceData) {
-  const dataLines = sourceData.split('\n');
-  const primaryString = dataLines[0];
-  const primaryStringLength = primaryString.length;
+function processInput(data) {
+  const inputLines = data.split('\n');
+  const targetString = inputLines[0];
+  const keyword = 'keyence';
+  const keywordLength = keyword.length;
 
-  let discoveryFlag = false;
+  let matchFound = false;
 
-  const splitPointIndices = Array.from({ length: CODE_LENGTH + 1 }, (_, index) => index);
+  for (let i = 0; i <= keywordLength; i++) {
+    const prefixSegment = keyword.substring(0, i);
+    const suffixSegment = keyword.substring(i);
 
-  splitPointIndices.some( (currentSplit) => {
-    const leftComponent = SECRET_CODE.substring(0, currentSplit);
-    const rightComponent = SECRET_CODE.substring(currentSplit);
-
-    const matchesBeginning = primaryString.indexOf(leftComponent) === 0;
-    const matchesEnding = primaryString.lastIndexOf(rightComponent) === (primaryStringLength - rightComponent.length);
-
-    if (matchesBeginning && matchesEnding) {
-      const cutPointInitial = currentSplit;
-      const cutPointFinal = primaryStringLength - rightComponent.length;
-
-      if (cutPointInitial <= cutPointFinal) {
-        discoveryFlag = true;
-        return true;
-      }
+    if (targetString.startsWith(prefixSegment) && targetString.endsWith(suffixSegment)) {
+      matchFound = true;
+      break;
     }
-    return false;
-  });
+  }
 
-  if (discoveryFlag) {
-    process.stdout.write('YES');
+  if (matchFound) {
+    console.log('YES');
   } else {
-    process.stdout.write('NO');
+    console.log('NO');
   }
 }
 
-const rawInputContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-evaluateString(rawInputContent);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+function parseNumbers(lineContent) {
+  return lineContent.split(/\s+/).map(numStr => parseInt(numStr, 10));
+}

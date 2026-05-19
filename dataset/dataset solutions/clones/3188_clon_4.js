@@ -1,74 +1,103 @@
-class DataAcquirer {
-    #parsedLines;
-    #currentLinePtr = 0;
-    #lineTokensCache = [];
-
-    constructor(sourceData) {
-        this.#parsedLines = sourceData.trim().split('\n');
+class DataProcessor {
+    constructor(sourceContent) {
+        this._sourceLines = sourceContent.trim().split('\n');
+        this._lineIndex = 0;
+        this._activeLineTokens = null; // Stores tokens for the current line when processing right-to-left
     }
 
-    #advanceToNextLine() {
-        if (this.#currentLinePtr < this.#parsedLines.length) {
-            this.#lineTokensCache = this.#parsedLines[this.#currentLinePtr].split(' ');
-            this.#currentLinePtr++;
-        } else {
-            this.#lineTokensCache = [];
+    // Reads a single token from the current line, from right to left.
+    // Advances to the next line if the current one is exhausted.
+    extractRightmost(asNumeric) {
+        if (this._lineIndex >= this._sourceLines.length) {
+            throw new Error("Input stream exhausted for rightmost extraction.");
         }
-    }
 
-    scanNextValue() {
-        if (this.#lineTokensCache.length === 0) {
-            this.#advanceToNextLine();
+        // If _activeLineTokens is null or empty, initialize it for the current line
+        if (this._activeLineTokens === null || this._activeLineTokens.length === 0) {
+            this._activeLineTokens = this._sourceLines[this._lineIndex].split(' ').reverse();
         }
-        return Number(this.#lineTokensCache.shift());
-    }
 
-    obtainNumericSequence() {
-        this.#advanceToNextLine();
-        return this.#lineTokensCache.map(Number);
-    }
+        const extractedValue = this._activeLineTokens.pop();
 
-    grabNumericBlock(rowCount) {
-        const collectedBlocks = [];
-        for (let idx = 0; idx < rowCount; idx++) {
-            this.#advanceToNextLine();
-            collectedBlocks.push(this.#lineTokensCache.map(Number));
+        // If the current line's tokens are fully consumed, advance to the next line
+        if (this._activeLineTokens.length === 0) {
+            this._lineIndex++;
+            this._activeLineTokens = null; // Reset for the next line
         }
-        return collectedBlocks;
+
+        return asNumeric ? +extractedValue : extractedValue;
     }
 
-    fetchNumericRows(rowCount) {
-        const collectedRows = [];
-        for (let idx = 0; idx < rowCount; idx++) {
-            this.#advanceToNextLine();
-            collectedRows.push(Number(this.#lineTokensCache[0]));
+    // Reads all tokens from the current line, from left to right.
+    // Advances to the next line.
+    extractFullLine(asNumeric) {
+        if (this._lineIndex >= this._sourceLines.length) {
+            throw new Error("Input stream exhausted for full line extraction.");
         }
-        return collectedRows;
+
+        // For `extractFullLine`, we always read the original string line.
+        // The `_activeLineTokens` state is only for `extractRightmost` and does not affect `extractFullLine`
+        // as per the original code's behavior where `l()` always splits the raw string.
+        const currentLineContent = this._sourceLines[this._lineIndex];
+        this._lineIndex++; // Advance to the next line
+
+        const tokens = currentLineContent.split(' ');
+
+        return asNumeric ? tokens.map(Number) : tokens;
+    }
+
+    // Reads N lines, each split into tokens, forming a matrix.
+    extractMatrix(rowCount, asNumeric) {
+        const resultMatrix = [];
+        for (let i = 0; i < rowCount; i++) {
+            resultMatrix.push(this.extractFullLine(asNumeric));
+        }
+        return resultMatrix;
+    }
+
+    // Reads N raw lines without splitting them into tokens.
+    extractRawLines(rowCount, asNumeric) {
+        const rawLines = [];
+        for (let i = 0; i < rowCount; i++) {
+            if (this._lineIndex >= this._sourceLines.length) {
+                throw new Error("Input stream exhausted for raw line extraction.");
+            }
+            const line = this._sourceLines[this._lineIndex];
+            this._lineIndex++;
+            rawLines.push(asNumeric ? +line : line);
+        }
+        return rawLines;
     }
 }
 
-const inputHandler = new DataAcquirer(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Factory function to create an instance of DataProcessor
+function createInputSource(inputString) {
+    return new DataProcessor(inputString);
+}
 
-console.log(executeCalculation());
+var inputReader = createInputSource(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function executeCalculation() {
-    const participantCount = inputHandler.scanNextValue();
-    const itemCount = inputHandler.scanNextValue();
+console.log(processInputData());
 
-    const allChoices = [];
-    for (let currentParticipant = 0; currentParticipant < participantCount; currentParticipant++) {
-        allChoices.push(inputHandler.obtainNumericSequence());
-    }
+function processInputData() {
+    const totalParticipants = inputReader.extractRightmost();
+    const totalItems = inputReader.extractRightmost();
 
-    const itemFrequency = allChoices.reduce((counts, currentChoiceSet) => {
-        const actualSelections = currentChoiceSet.slice(1);
-        actualSelections.forEach(selectedItem => {
-            counts[selectedItem - 1]++;
+    let itemCounts = Array(totalItems).fill(0);
+
+    // Process each participant's preferences using functional iteration
+    Array.from({ length: totalParticipants }).forEach(() => {
+        const participantPreferences = inputReader.extractFullLine();
+        const numPreferredItems = participantPreferences[0];
+
+        // Increment counts for each preferred item
+        participantPreferences.slice(1, numPreferredItems + 1).forEach(itemIdentifier => {
+            itemCounts[itemIdentifier - 1]++;
         });
-        return counts;
-    }, Array(itemCount).fill(0));
+    });
 
-    const finalResult = itemFrequency.filter(count => count === participantCount).length;
+    // Determine how many items were preferred by all participants
+    const universallyPreferredItems = itemCounts.filter(count => count === totalParticipants).length;
 
-    return finalResult;
+    return universallyPreferredItems;
 }

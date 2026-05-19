@@ -1,132 +1,145 @@
-"use strict"; // Enable strict mode for better error handling and cleaner code.
+"use strict";
 
-// --- Utility Functions for Input Processing ---
-
-// Read the entire standard input as a string.
-var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
-
-// Split the input string by spaces or newlines into an array of tokens.
-// Initialize an index to keep track of the current token.
-var tokenStream = rawData.split(/ |\n/);
-var tokenIndex = 0;
+// Input processing utilities
+// Reads the entire standard input from the specified path.
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+// Splits the raw input string into an array of tokens using space or newline as delimiters.
+let tokenArray = rawData.split(/ |\n/);
+// An index to keep track of the current position in the tokenArray.
+let tokenIndex = 0;
 
 /**
- * Reads the next token from the stream and converts it to an integer.
- * @returns {number} The next integer value.
+ * Retrieves the next token from the input stream and converts it to a number.
+ * @returns {number} The numeric value of the next token.
  */
-function readInteger() {
-    return +tokenStream[tokenIndex++];
+function getNextNum() {
+    return +tokenArray[tokenIndex++];
 }
 
 /**
- * Reads the next token from the stream as a string.
- * @returns {string} The next string value.
+ * Retrieves the next token from the input stream as a string.
+ * @returns {string} The string value of the next token.
  */
-function readString() {
-    return tokenStream[tokenIndex++];
+function getNextStr() {
+    return tokenArray[tokenIndex++];
 }
 
 /**
- * Reads the next token from the stream and converts it to a BigInt.
- * @returns {BigInt} The next BigInt value.
+ * Retrieves the next token from the input stream and converts it to a BigInt.
+ * @returns {BigInt} The BigInt value of the next token.
  */
-function readLargeInteger() {
-    return BigInt(tokenStream[tokenIndex++]);
+function getNextBigInt() {
+    return BigInt(tokenArray[tokenIndex++]);
 }
 
 /**
- * Reads 'count' items from the stream.
- * @param {number} count - The number of items to read.
- * @param {boolean} keepStrings - If true, items are returned as strings; otherwise, as numbers.
- * @returns {Array<number|string>} An array of the read items.
+ * Retrieves a specified number of tokens from the input stream.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} asStrings - If true, tokens are returned as strings; otherwise, they are converted to numbers.
+ * @returns {Array<number|string>} An array containing the retrieved tokens.
  */
-function readItems(count, keepStrings) {
-    var segment = tokenStream.slice(tokenIndex, tokenIndex += count);
-    if (keepStrings) {
-        return segment;
-    } else {
-        return segment.map(item => +item);
-    }
+function getNumsArray(count, asStrings) {
+    // If 'asStrings' is true, return the slice of string tokens directly.
+    // Otherwise, map the slice to numbers.
+    return asStrings
+        ? tokenArray.slice(tokenIndex, (tokenIndex += count))
+        : tokenArray.slice(tokenIndex, (tokenIndex += count)).map((item) => +item);
 }
 
 /**
- * Reads a 2D matrix of dimensions 'numRows' x 'numCols' from the stream.
- * @param {number} numRows - The number of rows in the matrix.
- * @param {number} numCols - The number of columns in the matrix.
- * @param {boolean} keepStrings - If true, matrix elements are strings; otherwise, numbers.
+ * Retrieves a 2D matrix of tokens from the input stream.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns per row.
+ * @param {boolean} asStrings - If true, matrix elements are strings; otherwise, they are numbers.
  * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
  */
-function readMatrix(numRows, numCols, keepStrings) {
-    var resultMatrix = [];
-    var current_row_idx = 0;
+function getMatrix(height, width, asStrings) {
+    let resultMatrix = []; // Initialize an empty array to store the matrix rows.
+    let rowIdx = 0; // Loop counter for rows.
 
-    if (keepStrings) {
-        for (; current_row_idx < numRows; current_row_idx++) {
-            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += numCols));
+    if (asStrings) {
+        // If string elements are desired, push slices of string tokens.
+        for (; rowIdx < height; rowIdx++) {
+            resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += width)));
         }
     } else {
-        for (; current_row_idx < numRows; current_row_idx++) {
-            resultMatrix.push(tokenStream.slice(tokenIndex, tokenIndex += numCols).map(val => +val));
+        // Otherwise, push slices mapped to numbers.
+        for (; rowIdx < height; rowIdx++) {
+            resultMatrix.push(
+                tokenArray.slice(tokenIndex, (tokenIndex += width)).map((item) => +item)
+            );
         }
     }
     return resultMatrix;
 }
 
 /**
- * Dynamically creates a multi-dimensional array initialized with a specific value.
- * @param {*} initialValue - The value to initialize array elements with.
- * @param {...number} dimensionArgs - The sizes of each dimension.
- * @returns {Array} The created multi-dimensional array.
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * This function uses `eval` and should be used with caution, especially with untrusted input.
+ * @param {*} initialValue - The value to initialize each element of the array with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., createMultiDimArray(0, 2, 3) for a 2x3 array).
+ * @returns {Array} The newly created multi-dimensional array.
  */
 function createMultiDimArray(initialValue) {
-    var dimensionArgs = arguments;
-    var argLength = dimensionArgs.length;
-    var arrayCreationExpr = "Array(dimensionArgs[" + --argLength + "]).fill().map(elem => {return " + initialValue + ";})";
+    let args = arguments; // Access all arguments passed to the function.
+    let argCount = args.length; // Get the total number of arguments.
 
-    while (--argLength) {
-        arrayCreationExpr = "Array(dimensionArgs[" + argLength + "]).fill().map(elem => " + arrayCreationExpr + ")";
+    // Construct the string representation for array creation.
+    // Start with the innermost dimension.
+    let arrayCreationString =
+        "Array(args[" +
+        --argCount +
+        "]).fill().map(x=>{return " +
+        initialValue +
+        ";})";
+
+    // Wrap with outer dimensions.
+    while (--argCount) {
+        arrayCreationString =
+            "Array(args[" + argCount + "]).fill().map(x=>" + arrayCreationString + ")";
     }
-    return eval(arrayCreationExpr);
+    // Execute the constructed string to create the array.
+    return eval(arrayCreationString);
 }
 
+// Execute the core logic of the problem and store its return value.
+let programResult = executeSolution();
 
-// --- Main Program Execution Flow ---
-
-// Execute the primary computation function.
-var finalResult = computeSolution();
-
-// If the computation yields a non-undefined result, print it to console.
-if (finalResult !== undefined) {
-    console.log(String(finalResult));
+// If the program's result is not undefined, print it to the console.
+if (programResult !== undefined) {
+    console.log(String(programResult));
 }
-
 
 /**
- * The main function containing the core logic to solve the problem.
- * This function calculates a specific combinatorial sum related to paths or structures.
- * @returns {number} The final computed numerical answer.
+ * The main function containing the solution to the problem.
+ * It calculates a specific value based on input 'N' and 'N-1' pairs of 'u' and 'v'.
+ * @returns {number} The final calculated result.
  */
-function computeSolution() {
-    var limitValue = readInteger(); // Read the upper bound N for the problem.
+function executeSolution() {
+    // Read the initial integer value, typically representing the number of nodes or elements.
+    let nodeCount = getNextNum();
 
-    // Initialize the total count using a combinatorial formula (n * (n+1) * (n+2) / 6 is sum of 1 to n of i*(i+1)/2, or sum of triangular numbers)
-    var cumulativeSum = limitValue * (limitValue + 1) * (limitValue + 2) / 6;
+    // Calculate an initial sum based on 'nodeCount'. This formula is often related to combinations or paths.
+    // It's equivalent to C(nodeCount + 2, 3).
+    let totalPaths = (nodeCount * (nodeCount + 0b1) * (nodeCount + 2)) / 6;
 
-    // Iterate 'limitValue - 1' times to process subsequent pairs.
-    for (var iteration = 1; iteration < limitValue; iteration++) {
-        var startPoint = readInteger(); // Read the first value of the pair.
-        var endPoint = readInteger();   // Read the second value of the pair.
+    // Loop 'nodeCount - 1' times to process additional input pairs.
+    for (let edgeIndex = 0x1; edgeIndex < nodeCount; edgeIndex++) {
+        let nodeU = getNextNum(); // Read the first value of the pair.
+        let nodeV = getNextNum(); // Read the second value of the pair.
 
-        // Ensure 'startPoint' is always less than or equal to 'endPoint' by swapping if necessary.
-        if (startPoint > endPoint) {
-            var temporaryHolder = startPoint;
-            startPoint = endPoint;
-            endPoint = temporaryHolder;
+        // Ensure 'nodeU' is always less than or equal to 'nodeV' by swapping if necessary.
+        if (nodeU > nodeV) {
+            let swapHolder = nodeU; // Temporary variable for the swap operation.
+            nodeU = nodeV;
+            nodeV = swapHolder;
         }
-        // Subtract a calculated value from the cumulative sum based on the current pair.
-        // This subtraction likely accounts for overlapping or invalid paths/structures.
-        cumulativeSum -= startPoint * (limitValue - endPoint + 1);
+
+        // Subtract a calculated value from 'totalPaths' based on the current pair (nodeU, nodeV).
+        // This subtraction typically accounts for invalid or excluded paths/combinations.
+        totalPaths -= nodeU * (nodeCount - nodeV + 0b1);
     }
 
-    return cumulativeSum; // Return the final calculated result.
+    // Return the final adjusted total.
+    return totalPaths;
 }

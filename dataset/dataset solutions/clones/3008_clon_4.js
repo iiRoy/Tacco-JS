@@ -1,27 +1,16 @@
-const obtainNumericalArray = (textLine) => textLine.split(' ').map((itemString) => parseInt(itemString, 10));
+function calculateNetValue(sourceData) {
+    const contentSegments = sourceData.split('\n');
 
-const calculateNetBenefit = (sourceData) => {
-  const dataSegments = sourceData.split('\n');
+    const assetValues = contentSegments[1].split(' ').map(Number);
+    const expenseValues = contentSegments[2].split(' ').map(Number);
 
-  const iterationCount = parseInt(dataSegments[0], 10);
+    const accumulatedBenefit = assetValues.reduce((currentAccumulator, currentAsset, indexPosition) => {
+        const correspondingExpense = expenseValues[indexPosition];
+        const differential = currentAsset - correspondingExpense;
+        return currentAccumulator + Math.max(0, differential);
+    }, 0);
 
-  if (isNaN(iterationCount) || iterationCount <= 0) {
-      console.log(0);
-      return;
-  }
+    console.log(accumulatedBenefit);
+}
 
-  const valueStream = obtainNumericalArray(dataSegments[1]);
-  const costStream = obtainNumericalArray(dataSegments[2]);
-
-  const cumulativeAdvantage = Array.from({ length: iterationCount })
-    .map((_, elementIndex) => {
-      const difference = valueStream[elementIndex] - costStream[elementIndex];
-      return isNaN(difference) ? 0 : difference;
-    })
-    .map(processedDifference => Math.max(0, processedDifference))
-    .reduce((currentTotal, positiveDifference) => currentTotal + positiveDifference, 0);
-
-  console.log(cumulativeAdvantage);
-};
-
-calculateNetBenefit(require('fs').readFileSync('/dev/stdin', 'utf8'));
+calculateNetValue(require('fs').readFileSync('/dev/stdin', 'utf8'));

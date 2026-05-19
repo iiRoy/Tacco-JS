@@ -1,36 +1,30 @@
-const processRawData = (sourceString) => {
-    const numericElements = sourceString.match(/-?\d+/g).map(Number);
-    const pointOneLoc = numericElements[0];
-    const pointOneSpeed = numericElements[1];
-    const pointTwoLoc = numericElements[2];
-    const pointTwoSpeed = numericElements[3];
-    const maxTravelDuration = numericElements[4];
-    return { pointOneLoc, pointOneSpeed, pointTwoLoc, pointTwoSpeed, maxTravelDuration };
+const processInputData = (rawData) => {
+    const [firstLineData, secondLineData, thirdLineData] = rawData.trim().split('\n');
+
+    const [initialPosA, speedA] = firstLineData.split(' ').map(Number);
+    const [initialPosB, speedB] = secondLineData.split(' ').map(Number);
+    const maxTime = Number(thirdLineData);
+
+    return { initialPosA, speedA, initialPosB, speedB, maxTime };
 };
 
-const assessEncounterPossibility = (dataBundle) => {
-    const locA = dataBundle.pointOneLoc;
-    const spdA = dataBundle.pointOneSpeed;
-    const locB = dataBundle.pointTwoLoc;
-    const spdB = dataBundle.pointTwoSpeed;
-    const durMax = dataBundle.maxTravelDuration;
+const calculateMeetingPossibility = (data) => {
+    const { initialPosA, speedA, initialPosB, speedB, maxTime } = data;
 
-    const relativeSpeedDelta = spdA - spdB;
-    const initialLocationDelta = locB - locA;
+    const currentDistance = Math.abs(initialPosB - initialPosA);
+    const closingRate = speedA - speedB;
 
-    const scenarioOneCondition = +!!(relativeSpeedDelta <= 0) * +!!(initialLocationDelta === 0);
+    const canTheyMeet = (closingRate <= 0)
+        ? (currentDistance === 0)
+        : (currentDistance > 0 && (closingRate * maxTime >= currentDistance));
 
-    const scenarioTwoCondition = +!!(relativeSpeedDelta > 0) * +!!(Math.abs(initialLocationDelta) <= durMax * relativeSpeedDelta);
-
-    const overallMeetingOutcome = +!!(scenarioOneCondition + scenarioTwoCondition);
-
-    return overallMeetingOutcome;
+    return canTheyMeet ? "YES" : "NO";
 };
 
-const performEvaluation = (inputContent) => {
-    const parsedData = processRawData(inputContent);
-    const resultNumeric = assessEncounterPossibility(parsedData);
-    return resultNumeric === 1 ? "YES" : "NO";
-};
+function Main(input) {
+    const parsedData = processInputData(input);
+    const finalResult = calculateMeetingPossibility(parsedData);
+    console.log(finalResult);
+}
 
-console.log(performEvaluation(require("fs").readFileSync("/dev/stdin", "utf8")));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

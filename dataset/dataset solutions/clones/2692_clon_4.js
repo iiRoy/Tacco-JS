@@ -1,145 +1,126 @@
-const acquireInput = (textSource) => {
-    class InputReaderUtility {
-        #sourceSegments;
-        #segmentIndex;
-        #currentSegmentElements;
+function createInputProcessor(sourceText) {
+    let allInputLines = sourceText.trim().split('\n');
+    let currentLinePointer = 0;
+    let currentLineTokenStack = [];
 
-        constructor(rawData) {
-            this.#sourceSegments = rawData.trim().split('\n');
-            this.#segmentIndex = 0;
-            this.#currentSegmentElements = [];
-        }
-
-        #prepareNextSegmentParts() {
-            if (this.#currentSegmentElements.length === 0 && this.#segmentIndex < this.#sourceSegments.length) {
-                this.#currentSegmentElements = this.#sourceSegments[this.#segmentIndex].split(' ');
-            }
-        }
-
-        #advanceToNextSegment() {
-            this.#segmentIndex++;
-            this.#currentSegmentElements = [];
-        }
-
-        fetchNumericValue(asText = false) {
-            if (this.#currentSegmentElements.length === 0) {
-                this.#prepareNextSegmentParts();
-                if (this.#currentSegmentElements.length === 0) {
+    const processor = {
+        fetchNextToken(returnAsString) {
+            if (currentLineTokenStack.length === 0) {
+                if (currentLinePointer >= allInputLines.length) {
                     return undefined;
                 }
+                currentLineTokenStack = allInputLines[currentLinePointer].split(' ');
+                currentLinePointer++;
             }
-            const extractedElement = this.#currentSegmentElements.shift();
-            if (this.#currentSegmentElements.length === 0) {
-                this.#advanceToNextSegment();
-            }
-            return asText ? extractedElement : Number(extractedElement);
-        }
+            const token = currentLineTokenStack.pop();
+            return returnAsString ? token : Number(token);
+        },
 
-        fetchLineElements(asTexts = false) {
-            if (this.#segmentIndex >= this.#sourceSegments.length) {
+        fetchLineTokens(returnAsString) {
+            if (currentLinePointer >= allInputLines.length) {
                 return [];
             }
-            const lineData = this.#sourceSegments[this.#segmentIndex];
-            this.#advanceToNextSegment();
-            const parts = lineData.split(' ');
-            return asTexts ? parts : parts.map(Number);
-        }
+            currentLineTokenStack = [];
 
-        fetchManyLinesAsElementArrays(count, asTexts = false) {
-            const collection = [];
-            for (let idx = 0; idx < count; idx++) {
-                if (this.#segmentIndex >= this.#sourceSegments.length) {
+            const line = allInputLines[currentLinePointer];
+            currentLinePointer++;
+            const tokens = line.split(' ');
+            return returnAsString ? tokens : tokens.map(Number);
+        },
+
+        fetchMatrix(numRows, returnAsString) {
+            const matrix = [];
+            for (let i = 0; i < numRows; i++) {
+                matrix.push(this.fetchLineTokens(returnAsString));
+            }
+            return matrix;
+        },
+
+        fetchLinesAsItems(numItems, returnAsString) {
+            const items = [];
+            for (let i = 0; i < numItems; i++) {
+                if (currentLinePointer >= allInputLines.length) {
                     break;
                 }
-                const lineData = this.#sourceSegments[this.#segmentIndex];
-                this.#advanceToNextSegment();
-                const parts = lineData.split(' ');
-                collection.push(asTexts ? parts : parts.map(Number));
+                currentLineTokenStack = [];
+
+                const line = allInputLines[currentLinePointer];
+                currentLinePointer++;
+                items.push(returnAsString ? line : Number(line));
             }
-            return collection;
+            return items;
         }
-
-        fetchManyLinesAsSingleValues(count, asTexts = false) {
-            const collection = [];
-            for (let idx = 0; idx < count; idx++) {
-                if (this.#segmentIndex >= this.#sourceSegments.length) {
-                    break;
-                }
-                const lineData = this.#sourceSegments[this.#segmentIndex];
-                this.#advanceToNextSegment();
-                const value = lineData.trim();
-                collection.push(asTexts ? value : Number(value));
-            }
-            return collection;
-        }
-    }
-    return new InputReaderUtility(textSource);
-};
-
-const retrieveFactors = (targetNumber) => {
-    if (targetNumber <= 0) return [];
-    if (targetNumber === 1) return [1];
-
-    const locatePairsRecursively = (value, currentDivisors, testCandidate) => {
-        if (testCandidate * testCandidate > value) {
-            return currentDivisors;
-        }
-        if (value % testCandidate === 0) {
-            const complementaryFactor = value / testCandidate;
-            const updatedDivisors = testCandidate === complementaryFactor
-                ? [...currentDivisors, testCandidate]
-                : [...currentDivisors, testCandidate, complementaryFactor];
-            return locatePairsRecursively(value, updatedDivisors, testCandidate + 1);
-        }
-        return locatePairsRecursively(value, currentDivisors, testCandidate + 1);
     };
+    return processor;
+}
 
-    const rawFactors = locatePairsRecursively(targetNumber, [1, targetNumber], 2);
-    return [...new Set(rawFactors)].sort((valA, valB) => valB - valA);
-};
+const dataHandler = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-const assessDivisorSuitability = (candidateDivisor, dataElements, allowedMaximum) => {
-    const transformedRemainders = dataElements
-        .map(element => element % candidateDivisor)
-        .sort((a, b) => a - b);
+console.log(executeSolution());
 
-    let rightCursor = dataElements.length;
-    let currentPartialSum = 0;
-    let maximumAttainedSum = 0;
+function executeSolution() {
+    const elementCount = dataHandler.fetchNextToken();
+    const maxAllowedCost = dataHandler.fetchNextToken();
+    const inputValues = dataHandler.fetchLineTokens();
 
-    let leftCursor = 0;
-    while (leftCursor < rightCursor && maximumAttainedSum <= allowedMaximum) {
-        currentPartialSum += transformedRemainders[leftCursor];
-        maximumAttainedSum += transformedRemainders[leftCursor];
-        
-        while (currentPartialSum > 0) {
-            rightCursor--;
-            if (rightCursor < leftCursor) {
-                currentPartialSum = 0;
+    const totalSumOfValues = inputValues.reduce((accumulator, value) => accumulator + value, 0);
+    const candidateDivisors = calculateDivisors(totalSumOfValues);
+
+    const foundDivisor = candidateDivisors.find(currentDivisor => {
+        const remainderArray = inputValues.map(val => val % currentDivisor).sort((a, b) => a - b);
+
+        let leftPointer = 0;
+        let rightBoundary = elementCount;
+        let currentWindowSum = 0;
+        let accumulatedLeftCost = 0;
+
+        let isFeasible = false;
+
+        while (leftPointer < rightBoundary) {
+            currentWindowSum += remainderArray[leftPointer];
+            accumulatedLeftCost += remainderArray[leftPointer];
+
+            if (accumulatedLeftCost > maxAllowedCost) {
+                isFeasible = false;
                 break;
             }
-            currentPartialSum -= (candidateDivisor - transformedRemainders[rightCursor]);
+
+            while (currentWindowSum > 0) {
+                rightBoundary--;
+                if (rightBoundary < leftPointer) {
+                    isFeasible = false;
+                    break;
+                }
+                currentWindowSum -= (currentDivisor - remainderArray[rightBoundary]);
+            }
+            if (!isFeasible && currentWindowSum > 0) break; // If inner loop broke due to rightBoundary < leftPointer
+
+            leftPointer++;
         }
-        leftCursor++;
+
+        if (accumulatedLeftCost <= maxAllowedCost) {
+            isFeasible = true;
+        }
+
+        return isFeasible;
+    });
+
+    return foundDivisor !== undefined ? foundDivisor : 1;
+}
+
+function calculateDivisors(targetNumber) {
+    const divisorSet = new Set();
+    divisorSet.add(targetNumber);
+
+    let currentFactor = 1;
+    const sqrtLimit = Math.sqrt(targetNumber);
+
+    while (currentFactor <= sqrtLimit) {
+        if (targetNumber % currentFactor === 0) {
+            divisorSet.add(currentFactor);
+            divisorSet.add(targetNumber / currentFactor);
+        }
+        currentFactor++;
     }
-    return maximumAttainedSum <= allowedMaximum;
-};
-
-const solveProblem = (inputUtility) => {
-    const itemQuantity = inputUtility.fetchNumericValue();
-    const capacityLimit = inputUtility.fetchNumericValue();
-    const baseCollection = inputUtility.fetchLineElements();
-
-    const aggregateTotal = baseCollection.reduce((acc, val) => acc + val, 0);
-    const candidateDivisors = retrieveFactors(aggregateTotal);
-
-    const qualifyingDivisor = candidateDivisors.find(currentCandidate =>
-        assessDivisorSuitability(currentCandidate, baseCollection, capacityLimit)
-    );
-
-    return qualifyingDivisor !== undefined ? qualifyingDivisor : 1;
-};
-
-const inputSource = acquireInput(require("fs").readFileSync("/dev/stdin","utf8"));
-
-console.log(solveProblem(inputSource));
+    return Array.from(divisorSet).sort((a, b) => b - a);
+}

@@ -1,57 +1,44 @@
 "use strict";
 
-/**
- * Orchestrates the processing of a given text input
- * to compute a specific numerical outcome.
- *
- * @param {string} rawInputText - The complete string content read from the input source.
- */
-const ProcessDataFlow = (rawInputText) => {
-   // Divide the incoming text into an array of individual line strings.
-   // Any leading or trailing whitespace for the entire input is removed first.
-   let parsedLines = rawInputText.trim().split('\n');
+// This function processes the raw input data to solve a specific problem.
+const ProcessInput = (rawData) => {
+  // Split the input string into individual lines and remove any leading/trailing whitespace.
+  let inputLines = rawData.trim().split('\n');
 
-   // The first line contains a single number representing the overall count of items.
-   let itemCount = Number(parsedLines[0]);
+  // The first line contains the total number of elements.
+  let elementCount = parseInt(inputLines[0], 10);
 
-   // The second line contains two space-separated numbers, acting as classification boundaries.
-   let boundaryA = Number(parsedLines[1].split(" ")[0]);
-   let boundaryB = Number(parsedLines[1].split(" ")[1]);
+  // The second line contains two space-separated limits.
+  let limitsString = inputLines[1].split(" ");
+  let firstLimit = parseInt(limitsString[0], 10); // First threshold value
+  let secondLimit = parseInt(limitsString[1], 10); // Second threshold value
 
-   // Initialize three distinct collections to store numbers based on their classification.
-   let collectionAlpha = [];
-   let collectionBeta = [];
-   let collectionGamma = [];
+  // Initialize three arrays to categorize numbers based on the limits.
+  let firstCategory = [];
+  let secondCategory = [];
+  let thirdCategory = [];
 
-   // The third line contains a series of space-separated numbers; parse them into an array of integers.
-   let numericElements = parsedLines[2].split(' ').map(elementValue => parseInt(elementValue, 10));
-   
-   // Iterate through each numeric element to assign it to the appropriate collection.
-   for (let loopCounter = 0; loopCounter < itemCount; loopCounter++) {
-     // If the current element is less than or equal to the first boundary,
-     // it belongs to the first collection.
-     if (numericElements[loopCounter] <= boundaryA) {
-       collectionAlpha.push(numericElements[loopCounter]);
-     }
-     // Else if the current element is less than or equal to the second boundary,
-     // it belongs to the second collection. (This implies it's greater than boundaryA).
-     else if (numericElements[loopCounter] <= boundaryB) {
-       collectionBeta.push(numericElements[loopCounter]);
-     }
-     // Otherwise, the element must be greater than both boundaries,
-     // so it falls into the third collection.
-     else {
-       collectionGamma.push(numericElements[loopCounter]);
-     }
-   }
+  // The third line contains a list of space-separated numbers.
+  // Convert them to integers.
+  let allNumbers = inputLines[2].split(' ').map(currentValue => parseInt(currentValue, 10));
 
-   // Determine the smallest count among the three categorized collections.
-   let minimumCategorySize = Math.min(collectionAlpha.length, collectionBeta.length, collectionGamma.length);
+  // Iterate through each number and assign it to the appropriate category.
+  for (let indexIterator = 0; indexIterator < elementCount; indexIterator++) {
+    if (allNumbers[indexIterator] <= firstLimit) {
+      firstCategory.push(allNumbers[indexIterator]);
+    } else if (allNumbers[indexIterator] <= secondLimit) {
+      secondCategory.push(allNumbers[indexIterator]);
+    } else {
+      thirdCategory.push(allNumbers[indexIterator]);
+    }
+  }
 
-   // Output the final calculated minimum size to the standard console.
-   console.log(minimumCategorySize);
+  // Calculate the minimum length among the three categories.
+  let calculatedMinimum = Math.min(firstCategory.length, secondCategory.length, thirdCategory.length);
+
+  // Output the final result to the console.
+  console.log(calculatedMinimum);
 };
 
-// Invoke the primary data processing function, feeding it content
-// read synchronously from the standard input stream as a UTF-8 string.
-ProcessDataFlow(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

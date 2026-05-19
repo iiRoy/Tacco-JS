@@ -1,36 +1,26 @@
-// This function orchestrates the computation of a product based on input.
-function ComputeProduct(sourceText)
-{
-  /*
-   * The initial string is processed by splitting it into distinct lines.
-   * This is the first step in parsing the raw input data.
-   */
-  let textSegments = sourceText.split( "\n" );
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get an array of lines.
+  let lines = rawData.split("\n");
 
-  // The very first line of the input is further dissected into its constituent parts,
-  // typically separated by spaces, to extract the numerical operands.
-  let stringComponents = textSegments[0] .split(" ");
+  // Take the very first line and further split it by spaces to isolate individual string tokens.
+  let tokenizedLine = lines[0].split(" ");
 
-  // The first component string is converted into an integer for arithmetic operations.
-  const valueOne = Number. parseInt ( stringComponents[0] );
+  // Convert the first token from the split line into an integer.
+  const firstNum = Number.parseInt(tokenizedLine[0]);
 
-  // The second component string is similarly converted to an integer.
-  const valueTwo = Number.parseInt( stringComponents[1] );
+  // Convert the second token from the split line into an integer.
+  const secondNum = Number.parseInt(tokenizedLine[1]);
 
-  // A conditional check is performed to ensure both numerical values
-  // are within a specified single-digit range (i.e., 1 through 9).
-  if (valueOne <= 9 && valueTwo <= 9) {
-    // If the condition holds true, the product of the two values is calculated
-    // and then displayed to standard output.
-    console.log(valueOne * valueTwo);
+  // Evaluate if both parsed numbers are single-digit integers (i.e., between 0 and 9 inclusive).
+  if (firstNum <= 9 && secondNum <= 9) {
+    // If the condition holds true, compute and display their product.
+    console.log(firstNum * secondNum);
   } else {
-    // Otherwise, if either value exceeds the single-digit limit,
-    // a special error indicator (-1) is outputted.
+    // Otherwise, if either number is not a single digit, display -1.
     console.log(-1);
   }
 }
 
-// The primary execution block of the script.
-// It reads content from standard input synchronously using Node.js filesystem module
-// and then passes this content as a string to the main processing function.
-ComputeProduct ( require ( "fs" ) . readFileSync ( "/dev/stdin", "utf8" ) );
+// Read the content from standard input synchronously using Node.js file system module,
+// then pass the obtained string to our primary processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

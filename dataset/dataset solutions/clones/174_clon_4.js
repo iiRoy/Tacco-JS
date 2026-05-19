@@ -1,71 +1,84 @@
-function getCartesianProduct(...collections) {
-    return collections.reduce((accumulator, currentCollection) => {
-        const newCombinations = [];
-        accumulator.forEach(existingCombo => {
-            currentCollection.forEach(currentItem => {
-                newCombinations.push([...existingCombo, currentItem]);
-            });
-        });
-        return newCombinations;
-    }, [[]]);
+function obtainCanonicalKey(rawSequence) {
+    const digitTallies = new Array(10).fill(0);
+    for (let charUnit of rawSequence) {
+        digitTallies[Number(charUnit)]++;
+    }
+    let orderedRepresentation = '';
+    for (let digitValue = 0; digitValue < 10; digitValue++) {
+        orderedRepresentation += String(digitValue).repeat(digitTallies[digitValue]);
+    }
+    return orderedRepresentation;
 }
 
-function produceValidDigitSequences() {
-    const mainSegments = ["123", "234", "345", "456", "567", "678", "789", "111", "222", "333", "444", "555", "666", "777", "888", "999"];
-    const auxiliarySegments = ["11", "22", "33", "44", "55", "66", "77", "88", "99"];
-
-    const sequenceSet = new Set();
-
-    const allSegmentCombinations = getCartesianProduct(
-        mainSegments,
-        mainSegments,
-        mainSegments,
-        mainSegments,
-        auxiliarySegments
-    );
-
-    allSegmentCombinations.forEach(segmentsArray => {
-        const concatenatedDigits = segmentsArray.join('');
-        const processedDigits = concatenatedDigits
-            .split('')
-            .map(Number)
-            .sort((valA, valB) => valA - valB)
-            .join('');
-        sequenceSet.add(processedDigits);
-    });
-
-    return sequenceSet;
+function deriveCanonicalKeyFromTallies(tallyArray) {
+    let orderedRepresentation = '';
+    for (let digitValue = 0; digitValue < 10; digitValue++) {
+        orderedRepresentation += String(digitValue).repeat(tallyArray[digitValue]);
+    }
+    return orderedRepresentation;
 }
 
-const permittedSequences = produceValidDigitSequences();
-const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = sourceContent.trim().split('\n');
+function determineHighestTally(tallyArray) {
+    let peakCount = 0;
+    for (let i = 0; i < 10; i++) {
+        if (tallyArray[i] > peakCount) {
+            peakCount = tallyArray[i];
+        }
+    }
+    return peakCount;
+}
 
-const outputResults = processedLines.map(currentEntry => {
-    const candidateDigits = Array.from({ length: 9 }, (_, index) => index + 1); // Generates [1, 2, ..., 9]
+function buildReferenceCollection() {
+    const referenceRegistry = {};
+    const primarySet = "123,234,345,456,567,678,789,111,222,333,444,555,666,777,888,999".split(",");
+    const secondarySet = "11,22,33,44,55,66,77,88,99".split(",");
 
-    const foundSuffixes = candidateDigits.filter(potentialSuffix => {
-        const currentDigitArray = currentEntry
-            .split('')
-            .map(Number);
-        currentDigitArray.push(potentialSuffix);
-        currentDigitArray.sort((valA, valB) => valA - valB);
-
-        const digitOccurrences = new Map();
-        currentDigitArray.forEach(digit => {
-            digitOccurrences.set(digit, (digitOccurrences.get(digit) || 0) + 1);
-        });
-
-        const maximumOccurrence = Math.max(...Array.from(digitOccurrences.values()));
-
-        if (maximumOccurrence >= 5) {
-            return false; // Exclude if any digit appears 5 or more times
+    function* generateComponentSequences(currentSequence = [], currentDepth = 0) {
+        if (currentDepth === 4) {
+            for (const secondaryElement of secondarySet) {
+                yield [...currentSequence, secondaryElement];
+            }
+            return;
         }
 
-        return permittedSequences.has(currentDigitArray.join(''));
-    });
+        for (const primaryElement of primarySet) {
+            yield* generateComponentSequences([...currentSequence, primaryElement], currentDepth + 1);
+        }
+    }
 
-    return foundSuffixes.length > 0 ? foundSuffixes.join(' ') : '0';
+    for (const sequenceCombination of generateComponentSequences()) {
+        const concatenatedString = sequenceCombination.join('');
+        const canonicalKey = obtainCanonicalKey(concatenatedString);
+        referenceRegistry[canonicalKey] = true;
+    }
+
+    return referenceRegistry;
+}
+
+const lookupTable = buildReferenceCollection();
+const inputDataLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
+
+inputDataLines.forEach(currentInputString => {
+    const baseDigitTallies = new Array(10).fill(0);
+    for (let char of currentInputString) {
+        baseDigitTallies[Number(char)]++;
+    }
+
+    const qualifyingAppends = [];
+
+    for (let potentialDigit = 1; potentialDigit <= 9; potentialDigit++) {
+        const trialTallies = [...baseDigitTallies];
+        trialTallies[potentialDigit]++;
+
+        if (determineHighestTally(trialTallies) >= 5) {
+            continue;
+        }
+
+        const trialKey = deriveCanonicalKeyFromTallies(trialTallies);
+        if (lookupTable.hasOwnProperty(trialKey)) {
+            qualifyingAppends.push(potentialDigit);
+        }
+    }
+
+    console.log(qualifyingAppends.length === 0 ? "0" : qualifyingAppends.join(" "));
 });
-
-outputResults.forEach(resultLine => console.log(resultLine));

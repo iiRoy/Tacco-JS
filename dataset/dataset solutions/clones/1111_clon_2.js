@@ -1,50 +1,39 @@
-const SYSTEM_INPUT_PATH = '/dev/stdin';
-const TEXT_ENCODING_UTF8 = 'utf8';
+// This script processes input representing a binary heap or tree structure.
+// It reads space or newline-separated values from standard input,
+// treats them as keys, and then outputs information for each node:
+// its 1-based index, its key, and the keys of its parent, left child, and right child, if they exist.
 
-const numericOperations = {
-    roundDown: function(numericValue) {
-        return ~~numericValue;
-    }
-};
+console.log(
+  require('fs') // Access the Node.js file system module
+    .readFileSync('/dev/stdin', 'utf8') // Read the entire content of standard input as a UTF-8 string
+    .trim() // Remove leading/trailing whitespace from the input string
+    .split(/[ |\n]/) // Split the string into an array of substrings using space or newline as delimiters
+    .slice(1) // Remove the first element of the array (assuming it's a count or irrelevant header)
+    .map((currentKey, currentIdx, allElements) => {
+      // The original code increments 'i' (currentIdx) at the very beginning of its use
+      // for 1-based indexing in the output and subsequent calculations.
+      // We must replicate this exact behavior.
+      currentIdx++; // Convert 0-based array index to 1-based node index for this iteration
 
-const systemOutput = {
-    displayMessage: function(outputString) {
-        console.log(outputString);
-    }
-};
+      let outputSegment = `node ${currentIdx}: key = ${currentKey}, `;
 
-const obtainModule = (moduleIdentifier) => {
-    return require(moduleIdentifier);
-};
+      // Determine and append parent key if it exists (nodes other than the root)
+      // The condition (currentIdx - 1) is true for any currentIdx > 1
+      if (currentIdx - 1) {
+        outputSegment += `parent key = ${allElements[Math.floor(currentIdx / 2) - 1]}, `;
+      }
 
-const fileSystemAccess = obtainModule('fs');
+      // Determine and append left child key if it exists
+      if (2 * currentIdx - 1 < allElements.length) {
+        outputSegment += `left key = ${allElements[2 * currentIdx - 1]}, `;
+      }
 
-systemOutput.displayMessage(
-    fileSystemAccess
-        .readFileSync(SYSTEM_INPUT_PATH, TEXT_ENCODING_UTF8)
-        .trim()
-        .split(/[ |\n]/)
-        .slice(1)
-        .map((itemValue, elementIndex, dataCollection) => {
-            let currentUnitNumber = ++elementIndex;
-            let unitDescription = `structureUnit ${currentUnitNumber}: itemIdentifier = ${itemValue}, `;
+      // Determine and append right child key if it exists
+      if (2 * currentIdx < allElements.length) {
+        outputSegment += `right key = ${allElements[2 * currentIdx]}, `;
+      }
 
-            if (currentUnitNumber > 1) {
-                const ancestorIndex = numericOperations.roundDown(currentUnitNumber / 2) - 1;
-                unitDescription += `ancestorIdentifier = ${dataCollection[ancestorIndex]}, `;
-            }
-
-            const leftChildPotentialIndex = (2 * currentUnitNumber) - 1;
-            if (leftChildPotentialIndex < dataCollection.length) {
-                unitDescription += `leftChildIdentifier = ${dataCollection[leftChildPotentialIndex]}, `;
-            }
-
-            const rightChildPotentialIndex = (2 * currentUnitNumber);
-            if (rightChildPotentialIndex < dataCollection.length) {
-                unitDescription += `rightChildIdentifier = ${dataCollection[rightChildPotentialIndex]}, `;
-            }
-
-            return unitDescription;
-        })
-        .join('\n')
+      return outputSegment; // Return the formatted string for the current node
+    })
+    .join('\n') // Join all the formatted node strings with newline characters
 );

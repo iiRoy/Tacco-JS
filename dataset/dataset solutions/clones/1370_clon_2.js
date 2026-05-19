@@ -1,51 +1,32 @@
-/*
- * This self-executing function serves as the primary entry point for data processing.
- * It is designed to ingest a stream of text, parse it line by line,
- * and perform a specific numerical operation on each valid entry.
- * The execution flow is designed to terminate upon encountering a specific sentinel value.
- */
-( function ( dataStream ) {
-    // The incoming data stream, which is a single string, is first segmented
-    // into an array of strings, where each element corresponds to a line
-    // separated by the newline character.
-    const lineSegments = dataStream.split('\n');
+(function (rawData) {
+  // This self-executing function processes input data.
+  // It reads lines, converts them to numbers, and calculates the sum of their digits.
 
-    /*
-     * A control loop is initiated to iterate through each of the extracted line segments.
-     * This loop ensures that every line of input data is processed sequentially
-     * until an explicit termination condition is met or all segments are exhausted.
-     */
-    for ( let idx = 0; idx < lineSegments.length; idx++ ) {
-        // Each line segment, initially a string, is converted into an integer.
-        // The radix (base 10) is explicitly provided for robust parsing.
-        const currentValue = parseInt(lineSegments[idx], 10);
+  // Split the entire input string into an array of individual lines.
+  var linesOfText = rawData.split('\n');
 
-        // A conditional check is performed to detect a specific termination value.
-        // If the parsed numerical value is exactly zero, the processing should halt.
-        if ( currentValue === 0 )
-        {
-            return; // Exits the anonymous function, effectively stopping the program's logic.
-        }
+  // Iterate over each line obtained from the input.
+  for (var idx = 0; idx < linesOfText.length; idx++) {
+    // Convert the current line (which is a string) into a numerical value.
+    var currentNum = Number(linesOfText[idx]);
 
-        // For all non-zero numerical values, the sum of their constituent digits is calculated.
-        // The result of this calculation is then printed to the standard output.
-        console.log(
-            currentValue // Start with the numerical value.
-                .toString() // Convert the number into its string representation.
-                .split('') // Break the string into an array of individual character digits.
-                .map(Number) // Transform each character digit back into a numerical digit.
-                .reduce( function ( accumulator, currentDigit ) {
-                    // Sum all the individual numerical digits.
-                    return accumulator + currentDigit;
-                })
-        );
+    // If the converted number is zero, terminate the processing.
+    if (currentNum === 0) {
+      return; // Exit the anonymous function.
     }
-}
-)(
-    // This section defines the source of the input data for the self-executing function.
-    // It utilizes Node.js's file system module to read data from the standard input stream.
-    require('node:fs').readFileSync(
-        '/dev/stdin', // Specifies the standard input file path.
-        { encoding: 'utf8' } // Ensures the data is interpreted as UTF-8 encoded text.
-    )
-);
+
+    // Calculate the sum of the digits for the current number.
+    // 1. Convert the number back to a string.
+    // 2. Split the string into an array of individual character digits.
+    // 3. Map each character digit back to its numerical representation.
+    // 4. Use reduce to sum all the numerical digits.
+    console.log(
+      String(currentNum)
+        .split('')
+        .map(Number)
+        .reduce(function (accumulator, currentDigit) {
+          return accumulator + currentDigit; // Add the current digit to the running total.
+        })
+    );
+  }
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input as a UTF-8 string.

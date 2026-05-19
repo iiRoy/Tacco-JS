@@ -1,19 +1,14 @@
-const determineOutcome = (incomingDataPayload) => {
-    const { alpha: firstOperand, beta: secondOperand } = ((data) => {
-        const primaryLine = data.split('\n').find(l => l.trim().length > 0) || "";
-        const parts = primaryLine.split(' ').slice(0, 2);
-        const [numA = NaN, numB = NaN] = parts.map(val => Number(val.trim()));
-        return { alpha: numA, beta: numB };
-    })(incomingDataPayload);
+function processInput(rawData) {
+    const inputSegments = rawData.split('\n')[0].split(' ');
 
-    const summationResult = firstOperand + secondOperand;
+    const [firstNumberString = '', secondNumberString = ''] = inputSegments;
 
-    const decisionMap = new Map([
-        [true, "error"],
-        [false, String(summationResult)]
-    ]);
+    const firstOperand = parseInt(firstNumberString, 10);
+    const secondOperand = parseInt(secondNumberString, 10);
 
-    return decisionMap.get(summationResult > 9);
-};
+    const resultSum = firstOperand + secondOperand;
 
-process.stdout.write(determineOutcome(require("node:fs").readFileSync(0, "utf8")));
+    console.log(resultSum > 9 ? "error" : resultSum);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

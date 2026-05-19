@@ -1,53 +1,42 @@
-function processDataStream(inputPayload) {
-    const dataSegments = inputPayload.split("\n");
-    const sequenceDimension = Number(dataSegments[0]);
-    const sequenceContent = dataSegments[1];
+function processInput(rawInput) {
+    const lines = rawInput.split("\n");
+    const upperLimit = parseInt(lines[0], 10);
+    const charSource = lines[1];
 
-    if (sequenceDimension < 3) {
-        console.log(0);
-        return;
-    }
+    const resultContainer = { total: 0 };
 
-    const universeSize = (sequenceDimension * (sequenceDimension - 1) * (sequenceDimension - 2)) / 6;
+    function exploreCombinations(currentIndices, startFrom, targetSize, maxVal, sourceString, accumulator) {
+        if (currentIndices.length === targetSize) {
+            const firstIdx = currentIndices[0];
+            const secondIdx = currentIndices[1];
+            const thirdIdx = currentIndices[2];
 
-    let progressionSetCardinality = 0;
-    let characterEqualitySetCardinality = 0;
-    let intersectionSetCardinality = 0;
+            const firstDiff = secondIdx - firstIdx;
+            const secondDiff = thirdIdx - secondIdx;
 
-    for (let p = 0; p < sequenceDimension - 2; ++p) {
-        for (let q = p + 1; q < sequenceDimension - 1; ++q) {
-            const r = 2 * q - p;
-            if (r < sequenceDimension) {
-                progressionSetCardinality++;
+            if (firstDiff !== secondDiff) {
+                const charOne = sourceString[firstIdx - 1];
+                const charTwo = sourceString[secondIdx - 1];
+                const charThree = sourceString[thirdIdx - 1];
+
+                const distinctChars = new Set([charOne, charTwo, charThree]);
+                if (distinctChars.size === 3) {
+                    accumulator.total++;
+                }
             }
+            return;
+        }
+
+        for (let currentCandidate = startFrom; currentCandidate <= maxVal; currentCandidate++) {
+            currentIndices.push(currentCandidate);
+            exploreCombinations(currentIndices, currentCandidate + 1, targetSize, maxVal, sourceString, accumulator);
+            currentIndices.pop();
         }
     }
 
-    for (let p = 0; p < sequenceDimension - 2; ++p) {
-        for (let q = p + 1; q < sequenceDimension - 1; ++q) {
-            for (let r = q + 1; r < sequenceDimension; ++r) {
-                const charP = sequenceContent[p];
-                const charQ = sequenceContent[q];
-                const charR = sequenceContent[r];
+    exploreCombinations([], 1, 3, upperLimit, charSource, resultContainer);
 
-                const isCharacterRedundant = (charP === charQ || charP === charR || charQ === charR);
-                const formsArithmeticProgression = (r - q === q - p);
-
-                if (isCharacterRedundant) {
-                    characterEqualitySetCardinality++;
-                }
-                if (formsArithmeticProgression && isCharacterRedundant) {
-                    intersectionSetCardinality++;
-                }
-            }
-        }
-    }
-
-    const unionOfBadTriplets = progressionSetCardinality + characterEqualitySetCardinality - intersectionSetCardinality;
-
-    const finalAccumulation = universeSize - unionOfBadTriplets;
-
-    console.log(finalAccumulation);
+    console.log(resultContainer.total);
 }
 
-processDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

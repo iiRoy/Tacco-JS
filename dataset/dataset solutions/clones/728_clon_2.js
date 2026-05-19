@@ -1,82 +1,79 @@
 #!/usr/bin/node
-/*
- * This script processes line-based input.
- * It was initially transformed from a compact CoffeeScript version.
- */
-( function() {
-  // Declare storage for incoming lines and the input stream object.
-  var lineStore = [], dataStream;
+// This JavaScript module processes numerical input from the standard input stream.
+// It calculates and outputs a specific value for each set of input numbers.
 
-  // Obtain the standard input stream for this process.
-  dataStream = process.openStdin();
+(function() {
+  // Declare variables to hold incoming data lines and the input stream object.
+  var inputLines = [],
+    inputSource;
 
-  // Establish the character encoding for the input stream.
-  dataStream.setEncoding( 'utf8' );
+  // Obtain a reference to the standard input stream.
+  inputSource = process.openStdin();
+  // Configure the input stream to interpret data as UTF-8 encoded text.
+  inputSource.setEncoding('utf8');
 
-  // Register a handler for 'data' events on the input stream.
-  dataStream.on( 'data', function( receivedContent ) {
-    var parsedLines; // Temporary variable to hold split lines.
+  // Register an event handler for when data chunks are received from stdin.
+  inputSource.on('data', function(receivedData) {
+    // Split the raw input string into an array of strings, using newline as a delimiter.
+    var processedLines = receivedData.split("\n");
 
-    // Divide the received content by newline characters.
-    parsedLines = receivedContent.split( "\n" );
-
-    /*
-     * Check if the parsed content contains more than two segments
-     * or if the second segment is not empty.
-     * This logic determines if the entire segment should replace
-     * the buffer or if only the first line should be appended.
-     */
-    if ( parsedLines.length > 2 || parsedLines[1] !== '' ) {
-      lineStore = parsedLines; // Replace the buffer with new lines.
-    } else {
-      lineStore.push( parsedLines[0] ); // Append only the first line.
+    // Determine how to store the processed lines:
+    // If there are more than two lines, or if the second line is not empty,
+    // replace the entire collection of input lines with the new set.
+    if (processedLines.length > 2 || processedLines[1] !== '') {
+      inputLines = processedLines;
     }
-  } );
+    // Otherwise, append only the first processed line to the existing collection.
+    else {
+      inputLines.push(processedLines[0]);
+    }
+  });
 
-  // Register a handler for the 'end' event, signifying stream closure.
-  dataStream.on( 'end', function( finalState ) {
-    // Declare all variables used within the processing loop.
-    var currentValues, rawElement, caseIndex, secondCoordinate, numCases, calculatedOffset, firstCoordinate, internalIterator, accumulatedResults;
+  // Register an event handler for when the standard input stream has ended.
+  inputSource.on('end', function(unusedParam) {
+    // Declare various local variables that will be used during the data processing.
+    var currentNumbers, elementStr, loopIndex, secondVal, numIterations, resultModifier, firstVal,
+      // These variables are remnants from CoffeeScript compilation and are not actively used in the logic.
+      outerLoopCounter, iterationResults;
 
-    // Retrieve and parse the initial line, which indicates the number of test cases.
-    numCases = parseInt( lineStore.shift() );
+    // Extract the first line from the collected input, parse it as an integer,
+    // and use it to determine the total number of processing iterations.
+    numIterations = parseInt(inputLines.shift());
 
-    // Initialize an array (though unused in this particular output, it's a CoffeeScript remnant).
-    accumulatedResults = [];
+    // Initialize an array to potentially store results from each iteration (though not used in this specific script).
+    iterationResults = [];
 
-    /*
-     * Iterate through each test case.
-     * This loop structure is a direct translation from CoffeeScript's range loop.
-     */
-    for ( caseIndex = internalIterator = 0; 0 <= numCases ? internalIterator < numCases : internalIterator > numCases; caseIndex = 0 <= numCases ? ++internalIterator : --internalIterator ) {
-      // Immediately-invoked function expression to parse the current line's numbers.
-      currentValues = ( function() {
-        var subIterator, referenceLength, splitReference, parsedNumbers;
+    // Begin the main processing loop. The structure reflects the original CoffeeScript loop.
+    for (loopIndex = outerLoopCounter = 0; outerLoopCounter < numIterations; loopIndex = ++outerLoopCounter) {
+      // This immediately invoked function expression (IIFE) processes the current line of input.
+      currentNumbers = (function() {
+        var innerLoopCounter, refLength, splitElements, parsedNumbers;
+        // Split the current line from the inputLines array by spaces to get string elements.
+        splitElements = inputLines[loopIndex].split(" ");
+        parsedNumbers = []; // Prepare an array to store the integer versions of these elements.
 
-        // Split the current line from the stored input by spaces.
-        splitReference = lineStore[caseIndex].split( " " );
-        parsedNumbers = []; // Initialize array to hold parsed integers.
-
-        // Loop through each string segment and convert it to an integer.
-        for ( subIterator = 0, referenceLength = splitReference.length; subIterator < referenceLength; subIterator++ ) {
-          rawElement = splitReference[subIterator];
-          parsedNumbers.push( parseInt( rawElement ) ); // Add parsed integer to the array.
+        // Iterate through each string element obtained from splitting the line.
+        for (innerLoopCounter = 0, refLength = splitElements.length; innerLoopCounter < refLength; innerLoopCounter++) {
+          elementStr = splitElements[innerLoopCounter]; // Get the current string element.
+          parsedNumbers.push(parseInt(elementStr)); // Convert the string to an integer and add it to the array.
         }
-        return parsedNumbers; // Return the array of numbers.
-      } )();
+        return parsedNumbers; // Return the array containing all parsed integers for the current line.
+      })();
 
-      // Perform initial transformations on the first two parsed numbers.
-      firstCoordinate = currentValues[0] - 1;
-      secondCoordinate = currentValues[1] - 1;
-      calculatedOffset = 0; // Initialize the offset value.
+      // Adjust the first two numbers obtained from the current line by subtracting one.
+      firstVal = currentNumbers[0] - 1;
+      secondVal = currentNumbers[1] - 1;
 
-      // Apply a conditional calculation for the offset based on the first coordinate.
-      if ( firstCoordinate % 3 !== 2 ) {
-        calculatedOffset = Math.floor( secondCoordinate / 2 );
+      // Initialize a variable that may modify the final calculation result.
+      resultModifier = 0;
+
+      // Apply a specific modification if 'firstVal' modulo 3 is not equal to 2.
+      if (firstVal % 3 !== 2) {
+        resultModifier = Math.floor(secondVal / 2);
       }
 
-      // Output the final computed result to the console.
-      console.log( 196471 - firstCoordinate * 195 - Math.floor( firstCoordinate / 3 ) * 5 - secondCoordinate * 20 + calculatedOffset - currentValues[2] );
+      // Perform a complex calculation using the processed numbers and print the final result to the console.
+      console.log(196471 - firstVal * 195 - Math.floor(firstVal / 3) * 5 - secondVal * 20 + resultModifier - currentNumbers[2]);
     }
-  } );
-} ).call( this ); // Execute the anonymous function immediately, binding 'this'.
+  });
+}).call(this);

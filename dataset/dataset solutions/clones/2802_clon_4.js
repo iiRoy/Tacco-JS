@@ -1,26 +1,24 @@
 'use strict';
 
-function performCalculation(inputString) {
-  const numericStrings = inputString.match(/-?\d+/g);
-  const quantity = Number(numericStrings[0]);
-  const initialValue = Number(numericStrings[1]);
+function main(sourceData) {
+  const [firstParam, secondParam] = sourceData.split(' ').map(Number);
+  const countElements = firstParam;
+  const initialValue = secondParam;
 
-  const seriesEnd = initialValue + quantity - 1;
+  const finalValue = initialValue + countElements - 1;
+  const overallSum = (countElements / 2) * (initialValue + finalValue);
 
-  const totalSum = (quantity / 2) * (initialValue + seriesEnd);
+  let elementNearestToZero;
 
-  let absoluteMinElement;
-  if (initialValue <= 0 && seriesEnd >= 0) {
-    absoluteMinElement = 0;
+  if (initialValue <= 0 && finalValue >= 0) {
+    elementNearestToZero = 0;
   } else if (initialValue > 0) {
-    absoluteMinElement = initialValue;
+    elementNearestToZero = initialValue;
   } else {
-    absoluteMinElement = seriesEnd;
+    elementNearestToZero = finalValue;
   }
   
-  const finalResult = totalSum - absoluteMinElement;
-  
-  console.log(finalResult);
+  console.log(overallSum - elementNearestToZero);
 }
 
-performCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

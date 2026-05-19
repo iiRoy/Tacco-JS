@@ -1,46 +1,41 @@
-const acquiredData = require('node:fs').readFileSync(0, 'utf8');
+const rawInputData = require('fs')
+  .readFileSync('/dev/stdin', 'utf8')
+  .trim()
+  .split(/\s+/);
 
-const transformAndParse = (rawText) =>
-    rawText.trim().split(/\s+/).filter(Boolean).map(Number);
+const pairCount = Number(rawInputData[0]);
+const numericValues = rawInputData.slice(1).map(Number);
 
-const numericalSequence = transformAndParse(acquiredData);
+const firstSet = [];
+const secondSet = [];
 
-const elementCount = numericalSequence[0];
+numericValues.forEach((value, index) => {
+  if (index % 2 === 0) {
+    firstSet.push(value);
+  } else {
+    secondSet.push(value);
+  }
+});
 
-const buildCollectionsRecursive = (sourceArray, currentIdx, limit, firstCollection = [], secondCollection = []) => {
-    if (currentIdx >= limit * 2) {
-        return { firstCollection, secondCollection };
-    }
-    firstCollection.push(sourceArray[currentIdx]);
-    secondCollection.push(sourceArray[currentIdx + 1]);
-    return buildCollectionsRecursive(sourceArray, currentIdx + 2, limit, firstCollection, secondCollection);
+const numericOrder = (val1, val2) => val1 - val2;
+firstSet.sort(numericOrder);
+secondSet.sort(numericOrder);
+
+const medianResolver = {
+  true: (dataArr, len) => {
+    const lowerIndex = (len / 2) - 1;
+    const upperIndex = len / 2;
+    return dataArr[lowerIndex] + dataArr[upperIndex];
+  },
+  false: (dataArr, len) => {
+    const centralIndex = Math.floor(len / 2);
+    return dataArr[centralIndex];
+  }
 };
 
-const processedCollections = buildCollectionsRecursive(numericalSequence.slice(1), 0, elementCount);
+const isLengthEven = pairCount % 2 === 0;
 
-const initialBounds = processedCollections.firstCollection;
-const finalBounds = processedCollections.secondCollection;
+const maximumMedian = medianResolver[isLengthEven](secondSet, pairCount);
+const minimumMedian = medianResolver[isLengthEven](firstSet, pairCount);
 
-const naturalOrderSort = (u, v) => u - v;
-initialBounds.sort(naturalOrderSort);
-finalBounds.sort(naturalOrderSort);
-
-const computeDifference = (countVal, lowerSet, upperSet) => {
-    const isValEven = (countVal % 2 === 0);
-    const midPointIndex = Math.floor(countVal / 2);
-
-    const determineComponent = (dataArr, evenFlag) => {
-        return evenFlag
-            ? (dataArr[midPointIndex - 1] + dataArr[midPointIndex])
-            : dataArr[midPointIndex];
-    };
-
-    const minOutcome = determineComponent(lowerSet, isValEven);
-    const maxOutcome = determineComponent(upperSet, isValEven);
-
-    return maxOutcome - minOutcome + 1;
-};
-
-const finalComputation = computeDifference(elementCount, initialBounds, finalBounds);
-
-process.stdout.write(finalComputation.toString() + '\n');
+console.log(maximumMedian - minimumMedian + 1);

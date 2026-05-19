@@ -1,58 +1,100 @@
-const processInputAndCalculate = (rawData) => {
-  let allTokens = [];
-  for (const line of rawData.trim().split('\n')) {
-    allTokens.push(...line.split(' ').filter(t => t !== ''));
-  }
-  let tokenPointer = 0;
+"use strict";
 
-  const getNextToken = () => {
-    if (tokenPointer < allTokens.length) {
-      return parseInt(allTokens[tokenPointer++], 10);
-    }
-    throw new Error("Input data exhausted.");
-  };
+const createInputProcessor = (rawContent) => {
+    let lineSegments = rawContent.trim().split('\n');
+    let currentSegmentIndex = 0;
+    let tokenCache = [];
 
-  // The original o.a() method reads tokens from right-to-left on a line.
-  // For an input line like "MODULUS LENGTH" (e.g., "2 10"):
-  // The first call to o.a() would get "LENGTH" (10).
-  // The second call to o.a() would get "MODULUS" (2).
-  // This means the original code's `n` variable effectively stores the input array length,
-  // and `k` stores the modulus, if the input is "MODULUS LENGTH".
-  // My parser reads left-to-right, so it will read MODULUS then LENGTH.
-  const inputModulus = getNextToken(); // Corresponds to `k` in original main()
-  const inputLength = getNextToken();  // Corresponds to `n` in original main()
+    const refillTokenCache = () => {
+        if (tokenCache.length === 0 && currentSegmentIndex < lineSegments.length) {
+            tokenCache = lineSegments[currentSegmentIndex].split(' ').reverse();
+            currentSegmentIndex++;
+        }
+    };
 
-  const dataSeries = []; // Corresponds to `a` in original main()
-  for (let i = 0; i < inputLength; i++) {
-    dataSeries.push(getNextToken() - 1); // Original has .map(a=>a-1)
-  }
+    const fetchNextToken = (asString) => {
+        refillTokenCache();
+        if (tokenCache.length === 0) return undefined;
+        const extracted = tokenCache.shift();
+        return asString ? extracted : Number(extracted);
+    };
 
-  // Prefix sum calculation (corresponds to `b` array)
-  const moduloAccumulations = dataSeries.reduce((accumulatorSums, currentElement) => {
-    const lastSum = accumulatorSums[accumulatorSums.length - 1];
-    const newSum = (lastSum + currentElement) % inputModulus;
-    accumulatorSums.push(newSum);
-    return accumulatorSums;
-  }, [0]); // Initialize with 0 for the empty prefix sum
+    const retrieveFullLine = (asStrings) => {
+        if (currentSegmentIndex >= lineSegments.length) return undefined;
+        const line = lineSegments[currentSegmentIndex].split(' ');
+        currentSegmentIndex++;
+        return asStrings ? line : line.map(Number);
+    };
 
-  let resultCounter = 0; // Corresponds to `ans`
-  const remainderFrequencies = new Map([[0, 1]]); // Corresponds to `c`, initialized with b[0]=0 count
+    const obtainMatrix = (rowCount, asStrings) => {
+        const resultMatrix = [];
+        for (let i = 0; i < rowCount; i++) {
+            resultMatrix.push(retrieveFullLine(asStrings));
+        }
+        return resultMatrix;
+    };
 
-  for (let currentPosition = 1; currentPosition <= inputLength; currentPosition++) { // Corresponds to loop `i = 0` to `n` in original, but `b` array is 1 longer
-    const currentModuloValue = moduloAccumulations[currentPosition];
+    const acquireRawLines = (count, asStrings) => {
+        const collectedLines = [];
+        for (let i = 0; i < count; i++) {
+            if (currentSegmentIndex >= lineSegments.length) break;
+            collectedLines.push(lineSegments[currentSegmentIndex]);
+            currentSegmentIndex++;
+        }
+        return asStrings ? collectedLines : collectedLines.map(Number);
+    };
 
-    // This block handles the `if(k <= i)c[b[i-k]]--;` part
-    // It removes a prefix sum from consideration if its index is 'k' positions behind the current one.
-    if (inputModulus <= currentPosition) { // 'k <= i'
-      const valueToRemove = moduloAccumulations[currentPosition - inputModulus]; // 'b[i-k]'
-      remainderFrequencies.set(valueToRemove, (remainderFrequencies.get(valueToRemove) || 0) - 1);
-    }
-
-    // This block handles the `if(c[b[i]])ans += c[b[i]]++; else c[b[i]] = 1;` part
-    const existingCount = remainderFrequencies.get(currentModuloValue) || 0;
-    resultCounter += existingCount;
-    remainderFrequencies.set(currentModuloValue, existingCount + 1);
-  }
-
-  return resultCounter;
+    return {
+        readSingle: fetchNextToken,
+        readEntireLine: retrieveFullLine,
+        readMatrix: obtainMatrix,
+        readLinesRaw: acquireRawLines
+    };
 };
+
+const inputSource = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+const constructMultiArray = (initialExpression, ...dimensions) => {
+    const buildArrayStringRecursive = (dims, currentExpression) => {
+        if (dims.length === 0) {
+            return currentExpression;
+        }
+        const currentDimension = dims[0];
+        const remainingDimensions = dims.slice(1);
+        const innerArrayString = buildArrayStringRecursive(remainingDimensions, currentExpression);
+        return `Array(${currentDimension}).fill(0).map(() => ${innerArrayString})`;
+    };
+    const finalArrayString = buildArrayStringRecursive(dimensions, initialExpression);
+    return eval(finalArrayString);
+};
+
+function solveProblem() {
+    const sequenceLength = inputSource.readSingle();
+    const divisor = inputSource.readSingle();
+    const inputValues = inputSource.readEntireLine().map(val => val - 1);
+
+    const cumulativeSumsModulo = inputValues.reduce((accumulator, currentElement) => {
+        const lastSum = accumulator[accumulator.length - 1];
+        accumulator.push((lastSum + currentElement) % divisor);
+        return accumulator;
+    }, [0]);
+
+    let totalValidSubarrays = 0;
+    const remainderCounts = new Map();
+
+    cumulativeSumsModulo.forEach((currentSum, currentIndex) => {
+        if (divisor <= currentIndex) {
+            const valueToDecrement = cumulativeSumsModulo[currentIndex - divisor];
+            remainderCounts.set(valueToDecrement, (remainderCounts.get(valueToDecrement) || 0) - 1);
+        }
+
+        const currentRemainderFreq = remainderCounts.get(currentSum) || 0;
+        totalValidSubarrays += currentRemainderFreq;
+
+        remainderCounts.set(currentSum, currentRemainderFreq + 1);
+    });
+
+    return totalValidSubarrays;
+}
+
+console.log(solveProblem());

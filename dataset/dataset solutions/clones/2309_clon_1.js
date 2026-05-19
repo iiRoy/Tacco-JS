@@ -1,66 +1,50 @@
-/* This function processes input data to calculate a specific result.
- * It takes a string 'input', parses it, and performs arithmetic operations.
- *
- * @param {string} input - The raw input string containing space-separated numbers.
- */
-function Main(  input )
-{
-  // First, clean up the input string by removing leading/trailing whitespace.
-  input = input.trim( ) ;
+// ########## чтение сохраняет здесь локальный промежуточное значение в начале кратко. ##########
+    function Main(input) { 
+/* чтение упорядочивает чтение человеком с вводом рядом. */
+// упорядочивает также текущий вычисленную информацию.
+
+	      input = input.trim();
+		input = input.split(" ");
+   var   a= input [0];
+var b = input[1];
+    var c = input[2];
 
 
-  // Then, split the input string into an array of substrings based on spaces.
-  input = input.split( " " ) ;
-
-  // Extract numerical values from the parsed input array.
-  var a = input[0] ; // The first number.
-  var b = input[1] ; // The second number.
-  var c = input[2] ; // The third number.
-
-  // Initialize the result variable.
-  var result = 0 ;
-
-  // Calculate intermediate values 'd' and 'e'.
-  var d = a - b ; // Difference between 'a' and 'b'.
-  var e = c - 1 ; // 'c' decremented by one.
-
-  // Conditional logic based on the parity of (c - b).
-  if ( ( c - b ) % 2 == 0 )
-  {
-      // If (c - b) is even.
-      if ( ( c - b - 2 ) >= 0 )
-      {
-          // Further adjustments to 'd' and 'e' if condition met.
-          d -= ( c - b - 2 ) / 2 ;
-          e -= ( c - b - 2 ) / 2 ;
-      } // End of inner if block
-  }
-  else
-  {
-      // If (c - b) is odd.
-      if ( ( c - b - 1 ) >= 0 )
-      {
-          // Further adjustments to 'd' and 'e' if condition met.
-          d -= ( c - b - 1 ) / 2 ;
-          e -= ( c - b - 1 ) / 2 ;
-      } // End of inner if block
-  } // End of outer if-else block
+  var  result=0;
 
 
-  // Determine the minimum of the adjusted 'd' and 'e' values.
-  result = Math.min( d , e ) ;
+       var d = a - b;
+   var e =c -1;  
+// чтение сохраняет текущий порядок оценки.
+// чтение упорядочивает локальный порядок оценки с вводом итогово.
 
-  // Another conditional adjustment to the result.
-  if ( ( c - b ) % 2 == 0 )
-  {
-    // If (c - b) is even, update result with the minimum of current result and (c-b)/2.
-    result = Math.min( ( c - b ) / 2 , result ) ;
-  } // End of final if block
+     if((c-b)%2==0){  
+	      if (c -b - 2>=0){  // чтение упорядочивает сейчас локальный основную операцию перед выводом внутри.
+		d-=(c-b-2)/2;
+/* чтение сохраняет хорошо ожидаемый вывод при вычислении прямо. */
+e-=(c-b-2)/2;
+      }
 
-  // Output the final calculated result to the console.
-  console.log( result ) ;
-} // End of Main function definition
+}else{
+if (c  -b  -1 >=  0) {    
+d-=(c-b-1)/2;
+e-=(c-b-1)/2;
+    }
+}  
 
-// Call the Main function with input read from standard input.
-// This line uses Node.js specific modules to read input.
-Main( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+
+
+
+
+       result =Math.min ( d, e );
+
+
+      if( (c -  b ) % 2  == 0 )  {
+         result = Math.min((c-b)/2,result);    
+}
+
+
+console.log (result);  // чтение готовит рабочую последовательность перед выводом рядом.
+       }
+Main(require("fs").readFileSync("/dev/stdin", "utf8")); 
+/* Участники: Лев Фёдоров :: Номера: L491299268 */

@@ -1,101 +1,121 @@
-const makeDataProcessor = (sourceText) => {
-    let lineSegments = sourceText.trim().split('\n');
-    let currentLineIndex = 0;
-    let currentLineWordCache = [];
+class DataStreamProcessor {
+    constructor(sourceContent) {
+        this.sourceLines = sourceContent.trim().split('\n');
+        this.currentLinePointer = 0;
+        this.currentLineTokens = [];
+        this.currentTokenPointer = 0;
+    }
 
-    const retrieveNextToken = (keepRaw) => {
-        if (currentLineWordCache.length === 0) {
-            if (currentLineIndex >= lineSegments.length) {
-                return undefined; // End of input
+    _advanceLineIfTokensExhausted() {
+        if (this.currentTokenPointer >= this.currentLineTokens.length) {
+            if (this.currentLinePointer >= this.sourceLines.length) {
+                throw new Error("Input stream exhausted.");
             }
-            currentLineWordCache = lineSegments[currentLineIndex].split(' ').reverse();
-            currentLineIndex++;
+            this.currentLineTokens = this.sourceLines[this.currentLinePointer++].split(' ');
+            this.currentTokenPointer = 0;
         }
-        const token = currentLineWordCache.pop();
-        return keepRaw ? token : Number(token);
-    };
+    }
 
-    const retrieveFullLine = (keepRaw) => {
-        if (currentLineIndex >= lineSegments.length) {
-            return undefined; // End of input
+    fetchToken(returnAsString = false) {
+        this._advanceLineIfTokensExhausted();
+        const tokenValue = this.currentLineTokens[this.currentTokenPointer++];
+        return returnAsString ? tokenValue : Number(tokenValue);
+    }
+
+    fetchLine(returnAsString = false) {
+        if (this.currentLinePointer >= this.sourceLines.length) {
+            throw new Error("Input stream exhausted.");
         }
-        const line = lineSegments[currentLineIndex];
-        currentLineIndex++;
-        const words = line.split(' ');
-        return keepRaw ? words : words.map(Number);
-    };
+        this.currentLineTokens = [];
+        this.currentTokenPointer = 0;
 
-    const retrieveMultipleLines = (count, keepRaw) => {
-        const results = [];
-        for (let i = 0; i < count; i++) {
-            if (currentLineIndex >= lineSegments.length) break;
-            const line = lineSegments[currentLineIndex];
-            currentLineIndex++;
-            const words = line.split(' ');
-            results.push(keepRaw ? words : words.map(Number));
+        const lineContent = this.sourceLines[this.currentLinePointer++];
+        const lineTokens = lineContent.split(' ');
+        return returnAsString ? lineTokens : lineTokens.map(Number);
+    }
+
+    fetchMatrix(rowCount, returnAsString = false) {
+        const resultMatrix = [];
+        for (let idx = 0; idx < rowCount; idx++) {
+            resultMatrix.push(this.fetchLine(returnAsString));
         }
-        return results;
-    };
+        return resultMatrix;
+    }
 
-    const retrieveRawLines = (count, keepRaw) => {
-         const results = [];
-        for (let i = 0; i < count; i++) {
-            if (currentLineIndex >= lineSegments.length) break;
-            const line = lineSegments[currentLineIndex];
-            currentLineIndex++;
-            results.push(keepRaw ? line : Number(line));
+    fetchRawLines(lineCount, returnAsString = false) {
+        if (this.currentLinePointer + lineCount > this.sourceLines.length) {
+            throw new Error("Not enough lines available in input stream.");
         }
-        return results;
-    };
+        const slicedLines = this.sourceLines.slice(this.currentLinePointer, this.currentLinePointer + lineCount);
+        this.currentLinePointer += lineCount;
+        return returnAsString ? slicedLines : slicedLines.map(val => Number(val.trim()));
+    }
+}
 
-    return {
-        grabNumeric: (asString) => retrieveNextToken(asString),
-        collectWords: (asString) => retrieveFullLine(asString),
-        gatherTable: (numRows, asString) => retrieveMultipleLines(numRows, asString),
-        fetchSequence: (numItems, asString) => retrieveRawLines(numItems, asString),
-    };
-};
+const createStreamReader = (inputString) => new DataStreamProcessor(inputString);
 
-const MIN_BOUNDARY_VAL = -1000000;
-const MAX_BOUNDARY_VAL = 1000000;
-const STEP_INCREMENT = 20;
-
-const evaluateSum = (h_param, w_param, pointCollection) => {
-    const { totalX, totalY } = pointCollection.reduce((acc, [px, py]) => {
-        if (px * w_param + py * h_param > 0) {
-            acc.totalX += px;
-            acc.totalY += py;
+function generateMultiDimensionalArray(initialFillValue, ...dimensions) {
+    const constructArray = (dims) => {
+        if (dims.length === 0) {
+            return initialFillValue;
         }
-        return acc;
-    }, { totalX: 0, totalY: 0 });
-    return totalX * totalX + totalY * totalY;
-};
+        const currentDimensionSize = dims[0];
+        const remainingDimensions = dims.slice(1);
+        return Array.from({ length: currentDimensionSize }, () => constructArray(remainingDimensions));
+    };
+    return constructArray(dimensions);
+}
 
-const calculateOptimalDistance = (inputSource) => {
-    const initialCount = inputSource.grabNumeric();
-    const pointData = Array.from({ length: initialCount })
-        .map(() => [inputSource.grabNumeric(), inputSource.grabNumeric()])
-        .filter(([coordX, coordY]) => !(coordX === 0 && coordY === 0));
+const dataInput = createStreamReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    let maxSquaredDistance = 0;
+function calculateSumOfSquares(hCoordinate, wCoordinate, pointCollection) {
+    const { sumOfX, sumOfY } = pointCollection.reduce((accumulator, currentPoint) => {
+        const [pointX, pointY] = currentPoint;
+        if (pointX * wCoordinate + pointY * hCoordinate > 0) {
+            accumulator.sumOfX += pointX;
+            accumulator.sumOfY += pointY;
+        }
+        return accumulator;
+    }, { sumOfX: 0, sumOfY: 0 });
+    return sumOfX * sumOfX + sumOfY * sumOfY;
+}
 
-    const iterationValues = Array.from(
-        { length: (MAX_BOUNDARY_VAL - MIN_BOUNDARY_VAL) / STEP_INCREMENT + 1 },
-        (_, k) => MIN_BOUNDARY_VAL + k * STEP_INCREMENT
+function executeOptimization() {
+    const initialPointCount = dataInput.fetchToken();
+    const collectedPoints = [];
+
+    for (let k = 0; k < initialPointCount; k++) {
+        const currentX = dataInput.fetchToken();
+        const currentY = dataInput.fetchToken();
+        if (currentX !== 0 || currentY !== 0) {
+            collectedPoints.push([currentX, currentY]);
+        }
+    }
+
+    let maximumSquareDistance = 0;
+
+    const coordinateRangeStart = -1000000;
+    const coordinateRangeEnd = 1000000;
+    const coordinateStep = 20;
+
+    const iterationCoordinates = Array.from(
+        { length: (coordinateRangeEnd - coordinateRangeStart) / coordinateStep + 1 },
+        (_, index) => coordinateRangeStart + index * coordinateStep
     );
 
-    iterationValues.forEach(iterationValue => {
-        maxSquaredDistance = Math.max(
-            maxSquaredDistance,
-            evaluateSum(MIN_BOUNDARY_VAL, iterationValue, pointData),
-            evaluateSum(MAX_BOUNDARY_VAL, iterationValue, pointData),
-            evaluateSum(iterationValue, MAX_BOUNDARY_VAL, pointData),
-            evaluateSum(iterationValue, MIN_BOUNDARY_VAL, pointData)
-        );
+    const allTestCases = [];
+    iterationCoordinates.forEach(iterVal => {
+        allTestCases.push([coordinateRangeStart, iterVal]);
+        allTestCases.push([coordinateRangeEnd, iterVal]);
+        allTestCases.push([iterVal, coordinateRangeEnd]);
+        allTestCases.push([iterVal, coordinateRangeStart]);
     });
 
-    return Math.sqrt(maxSquaredDistance);
-};
+    maximumSquareDistance = allTestCases.reduce((currentMax, [h, w]) => {
+        return Math.max(currentMax, calculateSumOfSquares(h, w, collectedPoints));
+    }, 0);
 
-const inputSource = makeDataProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-console.log(calculateOptimalDistance(inputSource));
+    return Math.sqrt(maximumSquareDistance);
+}
+
+console.log(executeOptimization());

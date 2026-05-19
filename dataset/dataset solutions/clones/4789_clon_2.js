@@ -1,73 +1,41 @@
-const   moduleLoader  = require;
-const   getAbsoluteValue    = Math.abs;
-const   outputToConsole = console;
+let inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
+let firstLineParts = inputLines.shift().split(' ');
 
-function  retrieveFileContents(  filePathString,     encodingFormat   )
-{
-    return moduleLoader('fs')  .  readFileSync(  filePathString, encodingFormat  ) ;
-}
+let firstValue = firstLineParts[0] * 1;
+let secondValue = firstLineParts[1] * 1;
 
-function  segmentStringByDelimiter(   sourceContentString,    separatorCharacter   )
-{
-    return sourceContentString.split(  separatorCharacter  ) ;
-}
+let operationCount = 0;
 
-function  popFirstArrayItem(  targetArray   )
-{
-    return targetArray.shift(  ) ;
-}
-
-
-let   allInputLines = segmentStringByDelimiter(
-    retrieveFileContents(  '/dev/stdin',    'utf8'  ),
-    '\n'
-) ;
-
-let     numericStringComponents = segmentStringByDelimiter(
-    popFirstArrayItem(  allInputLines  ),
-    ' '
-) ;
-
-let   firstCoordinateValue  = Number(  numericStringComponents[0]  ) ;
-let   secondCoordinateValue = Number(  numericStringComponents[1]  ) ;
-
-let   totalCalculatedOperations = 0;
-
-if (  firstCoordinateValue === secondCoordinateValue  )
-{
-}
-else
-{
-    if (  firstCoordinateValue > secondCoordinateValue  )
-    {
-        if (  firstCoordinateValue >= 0  &&  secondCoordinateValue >= 0  )
-        {
-            totalCalculatedOperations += 2;
+if (firstValue == secondValue) {
+    // If the two numbers are identical, no initial operations are needed.
+    // This block is intentionally left empty, mirroring the original logic.
+} else {
+    // If the numbers are different, we proceed with conditional adjustments.
+    if (firstValue > secondValue) {
+        // Case where the first number is greater than the second.
+        if (firstValue >= 0 && secondValue >= 0) {
+            // Both numbers are non-negative.
+            operationCount += 2;
+        } else if (firstValue >= 0 && secondValue < 0) {
+            // First number is non-negative, second number is negative.
+            operationCount += 1;
+        } else {
+            // Both numbers are negative (e.g., -2 > -5).
+            operationCount += 2;
         }
-        else if (  firstCoordinateValue >= 0  &&  secondCoordinateValue < 0  )
-        {
-            totalCalculatedOperations += 1;
+    } else {
+        // Case where the first number is less than the second.
+        if (firstValue >= 0 && secondValue >= 0) {
+            // Both numbers are non-negative. No initial operations.
+        } else if (firstValue < 0 && secondValue >= 0) {
+            // First number is negative, second number is non-negative.
+            operationCount += 1;
         }
-        else
-        {
-            totalCalculatedOperations += 2;
-        }
+        // If both are negative (e.g., -5 < -2), this inner block is skipped.
     }
-    else
-    {
-        if (  firstCoordinateValue >= 0  &&  secondCoordinateValue >= 0  )
-        {
-        }
-        else if (  firstCoordinateValue < 0  &&  secondCoordinateValue >= 0  )
-        {
-            totalCalculatedOperations += 1;
-        }
-    }
-
-    totalCalculatedOperations += getAbsoluteValue(
-        getAbsoluteValue(  firstCoordinateValue  ) - getAbsoluteValue(  secondCoordinateValue  )
-    ) ;
+    // Finally, add the absolute difference of their absolute values to the total count.
+    operationCount += Math.abs(Math.abs(firstValue) - Math.abs(secondValue));
 }
 
-outputToConsole.log(  totalCalculatedOperations  ) ;
+console.log(operationCount);

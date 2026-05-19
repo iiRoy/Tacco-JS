@@ -1,97 +1,58 @@
-// Function to process game-related data from a raw input string.
-function ProcessInputData(rawData) {
-    // Ensure the input is a string and handle potential empty or invalid input.
-    if (typeof rawData !== 'string' || rawData.length === 0) {
-        console.error("Input data is invalid or empty. Cannot proceed.");
-        return; // Exit if input is not suitable
+function parseNumericLine(lineStr) {
+    return lineStr.split(" ").map(valStr => parseInt(valStr, 10));
+}
+
+function determineMoveScore(moveChar, scoreLookup) {
+    // scoreLookup corresponds to 'b' in the original: [scissors_score, paper_score, rock_score]
+    // 'r' (rock) maps to scoreLookup[2]
+    // 's' (scissors) maps to scoreLookup[0]
+    // 'p' (paper) maps to scoreLookup[1]
+    switch (moveChar) {
+        case "r":
+            return scoreLookup[2];
+        case "s":
+            return scoreLookup[0];
+        case "p":
+            return scoreLookup[1];
+        default:
+            return 0; // Should not be reached with valid input
     }
+}
 
-    // Remove any leading or trailing whitespace from the entire input block.
-    const sanitizedInputText = rawData.trim();
+function processGameData(rawInputString) {
+    const cleanedLines = rawInputString.trim().split("\n");
 
-    // Split the cleaned input into an array of individual lines.
-    const inputLineSegments = sanitizedInputText.split("\n");
+    const gameConfiguration = parseNumericLine(cleanedLines[0]);
+    const moveValueMap = parseNumericLine(cleanedLines[1]);
+    const playerMoveSequence = Array.from(cleanedLines[2][0]);
 
-    // A utility function to convert an array of string numbers into an array of integers.
-    // It also filters out any non-numeric values that might arise from parsing.
-    const convertToNumericArray = (strArray) => {
-        return strArray.map(item => Number(item)).filter(num => !isNaN(num));
-    };
+    let roundScoresAccumulator = playerMoveSequence.map(singleMoveChar =>
+        determineMoveScore(singleMoveChar, moveValueMap)
+    );
 
-    // Extract and parse the game's configuration parameters from the first line.
-    // This typically includes values like the sequence length and the cancellation window size.
-    // Example: [totalSequenceLength, cancellationWindow]
-    const gameConfigParameters = convertToNumericArray(inputLineSegments[0].split(" "));
+    const offsetDistance = gameConfiguration[1];
 
-    // Extract and parse the point values associated with different game moves from the second line.
-    // Example: [pointsForScissors, pointsForPaper, pointsForRock]
-    const moveAssociatedPoints = convertToNumericArray(inputLineSegments[1].split(" "));
+    for (let currentIdx = 0; currentIdx < roundScoresAccumulator.length; currentIdx++) {
+        const scoreAtCurrentPosition = roundScoresAccumulator[currentIdx];
+        const comparisonTargetIdx = currentIdx + offsetDistance;
 
-    // Extract the sequence of player moves from the third line.
-    // Ensure it's treated as a string, and then break it down into an array of individual characters.
-    // Provide a default empty string if the line is missing to prevent errors.
-    const playerMoveSequenceString = inputLineSegments[2] || '';
-    const individualPlayerMoves = Array.from(playerMoveSequenceString);
-
-    // Define a lookup map for assigning points based on the move character.
-    // This makes the mapping explicit and easy to update.
-    const pointAssignmentMap = {
-        's': moveAssociatedPoints[0], // Points for 'scissors'
-        'p': moveAssociatedPoints[1], // Points for 'paper'
-        'r': moveAssociatedPoints[2]  // Points for 'rock'
-    };
-
-    // Calculate the initial, provisional points for each move in the sequence.
-    // If a move character is not recognized, it defaults to 0 points.
-    const preliminaryScoreList = individualPlayerMoves.map(currentMoveChar => {
-        // Retrieve points from the map; if undefined, assign 0.
-        return pointAssignmentMap[currentMoveChar] !== undefined ? pointAssignmentMap[currentMoveChar] : 0;
-    });
-
-    // Determine the offset for applying the cancellation rule from the game configuration.
-    const cancellationOffsetValue = gameConfigParameters[1];
-
-    // Create a new, mutable array to store the scores after applying the cancellation logic.
-    // This ensures the original `preliminaryScoreList` remains untouched.
-    const modifiedScoreResults = [...preliminaryScoreList];
-
-    // Iterate through the scores to apply the specific cancellation rule.
-    // If a score at the current index matches a score at `currentIdx + cancellationOffsetValue`,
-    // the score at the future position (`currentIdx + cancellationOffsetValue`) is nullified (set to 0).
-    for (let currentIdx = 0; currentIdx < modifiedScoreResults.length; currentIdx++) {
-        const potentialCancellationIdx = currentIdx + cancellationOffsetValue;
-
-        // Check if the potential cancellation index is within the valid bounds of the array.
-        if (potentialCancellationIdx < modifiedScoreResults.length) {
-            const scoreAtCurrentPosition = modifiedScoreResults[currentIdx];
-            const scoreAtFuturePosition = modifiedScoreResults[potentialCancellationIdx];
-
-            // If the scores are identical, the future score is cancelled out.
-            if (scoreAtCurrentPosition === scoreAtFuturePosition) {
-                modifiedScoreResults[potentialCancellationIdx] = 0;
+        // Only proceed if the target index is within the bounds of the array
+        // This replicates the original behavior where out-of-bounds access would result in 'undefined'
+        // and 'scoreAtCurrentPosition == undefined' would always be false (as scores are numbers).
+        if (comparisonTargetIdx < roundScoresAccumulator.length) {
+            const scoreAtTargetPosition = roundScoresAccumulator[comparisonTargetIdx];
+            if (scoreAtCurrentPosition === scoreAtTargetPosition) {
+                roundScoresAccumulator[comparisonTargetIdx] = 0;
             }
         }
     }
 
-    // Sum up all the remaining points in the modified score array to get the final tally.
-    const finalCalculatedScore = modifiedScoreResults.reduce((cumulativeSum, pointEntry) => {
-        // Add the current point value to the sum, ensuring it's treated as a number.
-        return cumulativeSum + (typeof pointEntry === 'number' ? pointEntry : 0);
-    }, 0); // Start the cumulative sum from zero.
+    const initialSum = 0;
+    const finalTotalScore = roundScoresAccumulator.reduce((totalSum, currentScoreValue) =>
+        totalSum + currentScoreValue, initialSum
+    );
 
-    // Output the final computed score to the console.
-    console.log(finalCalculatedScore);
+    console.log(finalTotalScore);
 }
 
-// This block handles the execution environment. It reads input from standard input
-// and passes it to the main processing function.
-try {
-    const fileSystemModule = require("fs");
-    const stdInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    ProcessInputData(stdInputContent);
-} catch (executionError) {
-    // Log any errors that occur during file reading or data processing.
-    console.error("An error occurred during program execution:", executionError.message);
-    // Optionally, provide a default output or error code.
-    // process.exit(1);
-}
+processGameData(require("fs").readFileSync("/dev/stdin", "utf8"));

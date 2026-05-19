@@ -1,47 +1,50 @@
 'use strict';
-/* This program processes competitive programming submission data. */
-const processChallengeData = dataLines => {
-  // Extract initial configuration parameters from the first line of input.
-  const initialCounts = dataLines[0]
-                         .split(' ')
-                         .map(stringPart => parseInt(stringPart));
 
-  const totalProblems = initialCounts[0]; // Number of distinct problems.
-  const totalAttempts = initialCounts[1]; // Total number of submissions to process.
+// This function processes the raw input data to calculate correct answers and penalties.
+const processInput = (rawData) => {
+  // Parse the first line to get the number of problems (N) and submissions (M).
+  const dimensions = rawData[0].split(' ').map(item => parseInt(item, 10));
+  const numProblems = dimensions[0];
+  const numSubmissions = dimensions[1];
 
-  // Initialize data structures for tracking problem status and statistics.
-  let submissionRecords = new Array(totalAttempts); // Stores parsed submission details.
-  let problemSolvedStatus = new Array(totalProblems); // 0 for unsolved, 1 for solved.
-  let incorrectSubmissions = 0; // Counter for wrong answers for unsolved problems.
-  let successfulSubmissions = 0; // Counter for accepted solutions.
+  // Initialize an array to store submission records.
+  // Each element will be an array representing a submission: [problem_index, status_string].
+  let submissionRecords = new Array(numSubmissions);
+  // Initialize an array to track the status of each problem (0: not yet AC, 1: AC).
+  let problemStatus = new Array(numProblems);
+  // Counters for penalties (wrong answers before AC) and correct answers.
+  let penaltyCount = 0;
+  let correctCount = 0;
 
-  // Populate the problem status array, marking all problems as initially unsolved.
-  for (let entryIndex = 0; entryIndex < totalProblems; entryIndex++) {
-    problemSolvedStatus[entryIndex] = 0;
+  // Initialize all problem statuses to 0 (not yet accepted).
+  for (let k = 0; k < numProblems; k++) {
+    problemStatus[k] = 0;
   }
 
-  // Iterate through each recorded submission to update statistics.
-  for (let entryIndex = 0; entryIndex < totalAttempts; entryIndex++) {
-    // Parse the current submission line, which includes problem ID and result (WA/AC).
-    submissionRecords[entryIndex] = dataLines[entryIndex + 1].split(' ');
-    // Adjust the problem identifier to be zero-indexed for array access.
-    submissionRecords[entryIndex][0] = parseInt(submissionRecords[entryIndex][0]) - 1;
+  // Iterate through each submission record.
+  for (let k = 0; k < numSubmissions; k++) {
+    // Parse the submission details from the input.
+    submissionRecords[k] = rawData[k + 1].split(' ');
+    // Convert problem number to 0-indexed.
+    submissionRecords[k][0] = parseInt(submissionRecords[k][0], 10) - 1;
 
-    // Only process submissions for problems that have not yet been successfully solved.
-    if (problemSolvedStatus[submissionRecords[entryIndex][0]] === 0) {
-      // Check the outcome of the current submission.
-      if (submissionRecords[entryIndex][1] === 'WA') {
-        incorrectSubmissions++; // Increment the counter for wrong answers.
+    // Check if this problem has not yet been accepted.
+    if (problemStatus[submissionRecords[k][0]] === 0) {
+      // If it's a Wrong Answer (WA), increment penalty count.
+      if (submissionRecords[k][1] === 'WA') {
+        penaltyCount++;
       }
-      if (submissionRecords[entryIndex][1] === 'AC') {
-        successfulSubmissions++; // Increment the counter for accepted solutions.
-        problemSolvedStatus[submissionRecords[entryIndex][0]] = 1; // Mark problem as solved.
+      // If it's an Accepted (AC) answer, increment correct count and mark the problem as accepted.
+      if (submissionRecords[k][1] === 'AC') {
+        correctCount++;
+        problemStatus[submissionRecords[k][0]] = 1; // Mark as accepted
       }
     }
   }
 
-  // Output the final computed statistics: total accepted problems and total penalties.
-  console.log(successfulSubmissions, incorrectSubmissions);
+  // Output the total number of correct answers and penalties.
+  console.log(correctCount, penaltyCount);
 };
-/* Initiate the primary program execution by reading input from standard input. */
-processChallengeData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));
+
+// Read input from standard input, decode as UTF-8, split by newlines, and pass to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

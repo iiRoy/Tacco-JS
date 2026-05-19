@@ -1,60 +1,58 @@
-function solveGame(rawData) {
-    const dataLines = rawData.trim().split('\n').filter(Boolean);
-    const vertexCount = Number(dataLines[0]);
-    const edgeDescriptions = dataLines.slice(1).map(line => line.split(' ').map(Number));
+function processGraphGame(rawData) {
+  const graphLines = rawData.split("\n");
+  const nodeCount = parseInt(graphLines[0]);
 
-    const connections = new Map();
-    for (const edge of edgeDescriptions) {
-        const nodeA = edge[0] - 1;
-        const nodeB = edge[1] - 1;
+  const graphConnections = Array.from({ length: nodeCount }, () => []);
 
-        if (!connections.has(nodeA)) {
-            connections.set(nodeA, new Set());
+  for (let edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
+    const [firstNodeStr, secondNodeStr] = graphLines[edgeIndex + 1].split(" ");
+    const firstNode = parseInt(firstNodeStr) - 1;
+    const secondNode = parseInt(secondNodeStr) - 1;
+
+    graphConnections[firstNode].push(secondNode);
+    graphConnections[secondNode].push(firstNode);
+  }
+
+  const computeShortestPaths = (startVertex, totalNodes, graphStructure) => {
+    const pathDistances = new Array(totalNodes).fill(Infinity);
+    const traversalQueue = [];
+    
+    traversalQueue.push(startVertex);
+    pathDistances[startVertex] = 0;
+
+    let queueHead = 0;
+
+    while (queueHead < traversalQueue.length) {
+      const currentVertex = traversalQueue[queueHead++];
+
+      for (const neighborVertex of graphStructure[currentVertex]) {
+        if (pathDistances[neighborVertex] === Infinity) {
+          pathDistances[neighborVertex] = pathDistances[currentVertex] + 1;
+          traversalQueue.push(neighborVertex);
         }
-        connections.get(nodeA).add(nodeB);
-
-        if (!connections.has(nodeB)) {
-            connections.set(nodeB, new Set());
-        }
-        connections.get(nodeB).add(nodeA);
+      }
     }
+    return pathDistances;
+  };
 
-    function computeReachability(graphStructure, originIndex, totalNodes) {
-        const currentReach = Array(totalNodes).fill(Number.MAX_SAFE_INTEGER);
-        currentReach[originIndex] = 0;
-        const pendingVisits = [originIndex];
-        let ptr = 0;
+  const fennecReachDistances = computeShortestPaths(0, nodeCount, graphConnections);
+  const snukeReachDistances = computeShortestPaths(nodeCount - 1, nodeCount, graphConnections);
 
-        while (ptr < pendingVisits.length) {
-            const currentVertex = pendingVisits[ptr++];
-            
-            if (graphStructure.has(currentVertex)) {
-                for (const connectedVertex of graphStructure.get(currentVertex)) {
-                    if (currentReach[connectedVertex] === Number.MAX_SAFE_INTEGER) {
-                        currentReach[connectedVertex] = currentReach[currentVertex] + 1;
-                        pendingVisits.push(connectedVertex);
-                    }
-                }
-            }
-        }
-        return currentReach;
+  const fennecDominantNodes = Array.from({ length: nodeCount }).reduce((currentCount, _, nodeIndex) => {
+    if (nodeIndex !== 0 && nodeIndex !== nodeCount - 1) {
+      if (fennecReachDistances[nodeIndex] <= snukeReachDistances[nodeIndex]) {
+        return currentCount + 1;
+      }
     }
+    return currentCount;
+  }, 0);
 
-    const firstPlayerDistances = computeReachability(connections, 0, vertexCount);
-    const secondPlayerDistances = computeReachability(connections, vertexCount - 1, vertexCount);
+  let gameOutcome = "Fennec";
+  if (fennecDominantNodes <= (nodeCount - 2) - fennecDominantNodes) {
+    gameOutcome = "Snuke";
+  }
 
-    let firstPlayerControlled = 0;
-    for (let k = 1; k < vertexCount - 1; ++k) {
-        if (firstPlayerDistances[k] <= secondPlayerDistances[k]) {
-            firstPlayerControlled++;
-        }
-    }
-
-    const totalMiddleNodes = vertexCount - 2;
-    const secondPlayerControlled = totalMiddleNodes - firstPlayerControlled;
-
-    const finalResult = firstPlayerControlled <= secondPlayerControlled ? "Snuke" : "Fennec";
-    console.log(finalResult);
+  console.log('%s', gameOutcome);
 }
 
-solveGame(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphGame(require("fs").readFileSync("/dev/stdin", "utf8"));

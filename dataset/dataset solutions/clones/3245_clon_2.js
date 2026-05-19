@@ -1,109 +1,160 @@
-var INPUT_UTILITIES = ( function () {
-  function createInputReader ( rawInputText ) {
-    return new DataProcessor( rawInputText );
+var FETCH_DATA=(function(){
+  // This function serves as a factory to create an input parsing instance.
+  function createParser(sourceContent){
+    return new InputProcessor(sourceContent);
   }
 
-  function DataProcessor ( sourceContentString ) {
-    this._sourceLineSegments = sourceContentString.trim().split( "\n" );
-    this._currentSegmentIndex = 0;
+  // The InputProcessor class handles parsing the input string.
+  function InputProcessor(rawInputString){
+    // Split the input into lines and trim any leading/trailing whitespace from the whole string.
+    this._lines = rawInputString.trim().split("\n");
+    // Initialize the current line index to 0.
+    this._currentLineIndex = 0;
   }
 
-  DataProcessor.prototype.extractNextValue = function ( getStringValue ) {
-    var lineParts = this._sourceLineSegments,
-        segmentPointer = this._currentSegmentIndex,
-        pulledValue;
+  // Prototype method to extract a single token (atom) from the current line.
+  InputProcessor.prototype.extractToken = function(returnAsString){
+    var lineStorage = this._lines;
+    var linePointer = this._currentLineIndex;
+    var resultValue;
 
-    if ( typeof lineParts[segmentPointer] === "string" ) {
-      lineParts[segmentPointer] = lineParts[segmentPointer].split( " " ).reverse();
+    // If the current line hasn't been split into tokens yet, do so.
+    // Tokens are assumed to be space-separated and are processed in reverse order.
+    if(typeof lineStorage[linePointer] === "string") {
+      lineStorage[linePointer] = lineStorage[linePointer].split(" ").reverse();
     }
-    pulledValue = lineParts[segmentPointer].pop();
-    if ( !lineParts[segmentPointer].length ) {
-      this._currentSegmentIndex++;
+
+    // Pop the last token (which was originally the first due to reverse).
+    resultValue = lineStorage[linePointer].pop();
+
+    // If the current line is now empty, advance to the next line.
+    if(!lineStorage[linePointer].length) {
+      this._currentLineIndex++;
     }
-    return getStringValue ? pulledValue : +pulledValue;
+
+    // Return the token, either as a string or parsed as a number.
+    return returnAsString ? resultValue : +resultValue;
   };
 
-  DataProcessor.prototype.readNextLineValues = function ( returnAsStrings ) {
-    var lineData = this._sourceLineSegments[this._currentSegmentIndex++].split( " " );
-    return returnAsStrings ? lineData : lineData.map( segment => +segment );
+  // Prototype method to retrieve an entire line of tokens.
+  InputProcessor.prototype.retrieveLine = function(returnAsString){
+    // Get the current line, split it by spaces, and then advance the line index.
+    var tokensOnLine = this._lines[this._currentLineIndex++].split(" ");
+    // Return the tokens, either as strings or parsed as numbers.
+    return returnAsString ? tokensOnLine : tokensOnLine.map(item => +item);
   };
 
-  DataProcessor.prototype.readBlockOfLines = function ( rowsCount, keepRawStrings ) {
-    var matrixContent = this._sourceLineSegments.slice( this._currentSegmentIndex, this._currentSegmentIndex += rowsCount ).map( inputRow => inputRow.split( " " ) );
-    return keepRawStrings ? matrixContent : matrixContent.map( inputRow => inputRow.map( cellText => +cellText ) );
+  // Prototype method to fetch a matrix of 'numRows' rows.
+  InputProcessor.prototype.fetchMatrix = function(numRows, returnAsString){
+    // Slice the relevant rows, split each into tokens, and advance the line index.
+    var matrixRows = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numRows).map(item => item.split(" "));
+    // Return the matrix, either as strings or parsed as numbers.
+    return returnAsString ? matrixRows : matrixRows.map(item => item.map(subItem => +subItem));
   };
 
-  DataProcessor.prototype.readNumericLines = function ( numberOfLines, returnUntouched ) {
-    var lineCollection = this._sourceLineSegments.slice( this._currentSegmentIndex, this._currentSegmentIndex += numberOfLines );
-    return returnUntouched ? lineCollection : lineCollection.map( singleLine => +singleLine );
+  // Prototype method to grab 'numRows' individual rows.
+  InputProcessor.prototype.grabRows = function(numRows, returnAsString){
+    // Slice the relevant rows and advance the line index.
+    var individualRows = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numRows);
+    // Return the rows, either as strings or parsed as numbers.
+    return returnAsString ? individualRows : individualRows.map(item => +item);
   };
 
-  return createInputReader;
-} )();
+  return createParser;
+})();
 
-var inputHandler = INPUT_UTILITIES( require( "node:fs" ).readFileSync( 0, "utf-8" ) );
+// Initialize the input reader by reading from standard input.
+var inputReader = FETCH_DATA(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-var displayResult = function( outputMessage ) { console.log( outputMessage ); };
-displayResult( executeGraphProcess() );
+// Execute the main logic and print the result to console.
+console.log(processGraph());
 
-function executeGraphProcess () {
-  var nodeTotal = inputHandler.extractNextValue();
-  var edgeTotal = inputHandler.extractNextValue();
-  var inboundLinks = [];
-  var outboundLinks = [];
-  var depthAssignments = Array( nodeTotal + edgeTotal - 1 ).fill( 1e10 );
+// Main function encapsulating the graph processing logic.
+function processGraph(){
+  // Read the number of nodes and edges from input.
+  var nodeCount = inputReader.extractToken();
+  var edgeCount = inputReader.extractToken();
 
-  for ( var idxCounter = 0; idxCounter < nodeTotal + edgeTotal - 1; idxCounter++ ) {
-    var currentEdge = inputHandler.readNextLineValues().map( valEntry => valEntry - 1 );
-    if ( inboundLinks[currentEdge[1]] ) {
-      inboundLinks[currentEdge[1]].push( currentEdge[0] );
+  // Initialize adjacency lists for incoming and outgoing connections.
+  var incomingConnections = []; // Represents nodes that point TO this node.
+  var outgoingConnections = []; // Represents nodes that this node points TO.
+
+  // Initialize a tracker for node levels/distances, filled with a large value.
+  var levelTracker = Array(nodeCount + edgeCount - 1).fill(9e9);
+
+  // Loop to read all edge definitions.
+  for(var idx = 0; idx < nodeCount + edgeCount - 1; idx++){
+    // Read an edge pair [from, to] and adjust to 0-indexed.
+    var edgePair = inputReader.retrieveLine().map(item => item - 1);
+
+    // Populate incomingConnections: if 'to' node has an entry, push 'from', else create new array.
+    if(incomingConnections[edgePair[1]]) {
+      incomingConnections[edgePair[1]].push(edgePair[0]);
     } else {
-      inboundLinks[currentEdge[1]] = [ currentEdge[0] ];
+      incomingConnections[edgePair[1]] = [edgePair[0]];
     }
-    if ( outboundLinks[currentEdge[0]] ) {
-      outboundLinks[currentEdge[0]].push( currentEdge[1] );
+
+    // Populate outgoingConnections: if 'from' node has an entry, push 'to', else create new array.
+    if(outgoingConnections[edgePair[0]]) {
+      outgoingConnections[edgePair[0]].push(edgePair[1]);
     } else {
-      outboundLinks[currentEdge[0]] = [ currentEdge[1] ];
+      outgoingConnections[edgePair[0]] = [edgePair[1]];
     }
   }
 
-  var finalOutputValues = [];
-  for ( idxCounter = 0; ; idxCounter++ ) {
-    if ( !inboundLinks[idxCounter] ) {
-      var currentQueue = outboundLinks[idxCounter];
-      finalOutputValues[idxCounter] = 0;
-      depthAssignments[idxCounter] = 0;
-      break;
+  // Array to store the final topological order or assignment.
+  var finalOrder = [];
+  var processingQueue; // Queue for BFS-like traversal.
+
+  // Find the starting node(s) (nodes with no incoming connections).
+  for(idx = 0; ; idx++){
+    if(!incomingConnections[idx]){ // If a node has no incoming connections.
+      processingQueue = outgoingConnections[idx]; // Start BFS from its children.
+      finalOrder[idx] = 0; // Assign level 0 to the starting node.
+      levelTracker[idx] = 0; // Mark its level.
+      break; // Found the first starting node, exit loop.
     }
   }
 
-  var nodesProcessedCount = 1,
-      currentDepthLevel = 1;
+  var processedNodeCount = 1; // Count of nodes processed so far, starting with the initial node.
+  var currentDepth = 1;       // Current depth/level in the graph.
 
-  while ( nodesProcessedCount < nodeTotal ) {
-    var nextQueueItems = [];
-    for ( idxCounter = 0; idxCounter < currentQueue.length; idxCounter++ ) {
-      var activeNode = currentQueue[idxCounter],
-          isAssignable = 1;
-      for ( var neighborIndex = 0; neighborIndex < inboundLinks[activeNode].length; neighborIndex++ ) {
-        if ( depthAssignments[inboundLinks[activeNode][neighborIndex]] >= currentDepthLevel ) {
-          isAssignable = 0;
+  // Perform a BFS-like traversal to assign levels and determine order.
+  while(processedNodeCount < nodeCount){
+    var nextLevelQueue = []; // Queue for nodes at the next depth level.
+
+    // Iterate through nodes in the current processing queue.
+    for(idx = 0; idx < processingQueue.length; idx++){
+      var currentNodeId = processingQueue[idx];
+      var allPredecessorsProcessed = 1; // Flag to check if all predecessors of currentNodeId are at a lower depth.
+
+      // Check all incoming connections for the currentNodeId.
+      for(var innerIdx = 0; innerIdx < incomingConnections[currentNodeId].length; innerIdx++){
+        // If any predecessor's level is not less than currentDepth, it's not ready.
+        if(levelTracker[incomingConnections[currentNodeId][innerIdx]] >= currentDepth){
+          allPredecessorsProcessed = 0;
           break;
         }
-        if ( depthAssignments[inboundLinks[activeNode][neighborIndex]] === currentDepthLevel - 1 ) {
-          finalOutputValues[activeNode] = inboundLinks[activeNode][neighborIndex] + 1;
+        // If a predecessor is at currentDepth - 1, assign its ID + 1 to the current node's final order.
+        if(levelTracker[incomingConnections[currentNodeId][innerIdx]] === currentDepth - 1) {
+          finalOrder[currentNodeId] = incomingConnections[currentNodeId][innerIdx] + 1;
         }
       }
-      if ( isAssignable ) {
-        depthAssignments[activeNode] = currentDepthLevel;
-        nodesProcessedCount++;
-        if ( outboundLinks[activeNode] ) {
-          nextQueueItems = nextQueueItems.concat( outboundLinks[activeNode] );
+
+      // If all predecessors are processed (i.e., at a lower depth).
+      if(allPredecessorsProcessed){
+        levelTracker[currentNodeId] = currentDepth; // Assign current depth to this node.
+        processedNodeCount++; // Increment count of processed nodes.
+        // If this node has outgoing connections, add them to the next level's queue.
+        if(outgoingConnections[currentNodeId]) {
+          nextLevelQueue = nextLevelQueue.concat(outgoingConnections[currentNodeId]);
         }
       }
     }
-    currentQueue = nextQueueItems;
-    currentDepthLevel++;
+    processingQueue = nextLevelQueue; // Move to the next level's queue.
+    currentDepth++; // Increment the depth.
   }
-  return finalOutputValues.join( "\n" );
+
+  // Join the final order array elements with newline characters for output.
+  return finalOrder.join("\n");
 }

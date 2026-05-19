@@ -1,151 +1,141 @@
-var lineReader = require('readline').createInterface(
-  {
-    input: process.stdin,
-    output: process.stdout
-  }
-);
-var dataHandler;
-var capturedInputLines = [];
-
-lineReader.on('line', function(incomingString) {
-  capturedInputLines.push(incomingString);
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-lineReader.on('close', function() {
-  dataHandler = setupParser(capturedInputLines);
-  console.error(" \n"); // Extra newlines for different whitespace
-  var executionStart = new Date();
-  runProblemSolver();
-  var executionEnd = new Date() - executionStart;
+var dataProcessor;
+var inputLines = [];
 
-  logDiagnostic("Time spent: " + (executionEnd) + "ms");
-  logDiagnostic("Memory allocated: " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines);
+  console.error("\n"); // Newline for separation
+  var startTime = new Date();
+  executeSolution();
+  var endTime = new Date() - startTime;
+  
+  logDebug("execution time : " + (endTime) + "ms");
+  logDebug("memory usage : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
 
-function replicateObject(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
+function createDeepCopy(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function fetchIntegerVal() { return transformValue(retrieveNext(), 1); }
-function fetchStringArray() { return transformValue(retrieveNext(), 2); }
-function fetchIntegerArray() { return transformValue(retrieveNext(), 4); }
-function fetchCharacterArray() { return transformValue(retrieveNext(), 6); }
-function retrieveNext() { return dataHandler.accessNext(); }
-function hasMoreData() { return dataHandler.checkMore(); }
+function retrieveInteger(){
+  return convertInput(getNextLine(), 1);
+}
 
-function setupParser(sourceData) {
-  var processingUnit = {
-    lineContents: sourceData,
-    currentIdx: 0,
-    totalLines: sourceData.length,
+function retrieveStringArray(){
+  return convertInput(getNextLine(), 2);
+}
 
-    checkMore: function() {
-      return (this.currentIdx < this.totalLines);
+function retrieveIntegerArray(){
+  return convertInput(getNextLine(), 4);
+}
+
+function retrieveCharacterArray(){
+  return convertInput(getNextLine(), 6);
+}
+
+function getNextLine(){
+  return dataProcessor.fetchNextEntry();
+}
+
+function hasMoreLines(){
+  return dataProcessor.checkAvailability();
+}
+
+function initializeInputHandler(sourceData){  
+  var handlerObject = {
+    sourceLines : sourceData,
+    currentPosition : 0,
+    totalLines : sourceData.length,
+    checkAvailability : function(){
+      return (this.currentPosition < this.totalLines);
     },
-
-    accessNext: function() {
-      if (!this.checkMore()) {
-        throw "InputBoundaryException: No more input lines.";
+    fetchNextEntry : function(){
+      if(!this.checkAvailability()){
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
       } else {
-        var retrievedLine = this.lineContents[this.currentIdx];
-        this.currentIdx++;
-        return retrievedLine;
+        var currentEntry = this.sourceLines[this.currentPosition];
+        this.currentPosition++;
+        return currentEntry;
       }
     }
   };
-  return processingUnit;
+  return handlerObject;
 }
 
-function printSolution(message) {
-  console.log(message);
+function printResult(outputValue){
+  console.log(outputValue);
 }
 
-function logDiagnostic(diagnosticMessage) {
-  console.error("trace: " + require("util").inspect(diagnosticMessage, false, null));
+function logDebug(debugMessage){
+  console.error("debug:" + require("util").inspect(debugMessage, false, null));
 }
 
-// Utility for converting diverse input types.
-// `valueToProcess`: The raw input value (string or array).
-// `conversionMode`: Numeric code indicating the desired transformation:
-//   - 1: Converts string to an integer.
-//   - 2: Splits string by spaces into an array of strings.
-//   - 4: Splits string by spaces, then maps to an array of numbers.
-//   - 6: Splits string into an array of individual characters.
-//   - 7: Splits string into an array of single-digit numbers.
-//   - 8: Joins array elements with a space.
-//   - 9: Joins array elements with a newline character.
-//   - 0: Joins array elements without any separator.
-//   - Default: Returns the input value unchanged.
-// Robustness: If conversion fails, the original input is returned.
-function transformValue(valueToProcess, conversionMode) {
+// Input conversion utility
+// 1: to integer
+// 2: split by space
+// 4: split by space and convert to number array
+// 6: split by character
+// 7: split by character and convert to number array
+// 8: join by space
+// 9: join by newline
+// 0: join without separator
+function convertInput(inputItem, conversionType){
   try {
-    switch(conversionMode) {
-      case 1:
-        return parseInt(valueToProcess, 10);
-      case 2:
-        return valueToProcess.split(" ");
-      case 4:
-        return valueToProcess.split(" ").map(Number);
-      case 6:
-        return valueToProcess.split("");
-      case 7:
-        return valueToProcess.split("").map(Number);
-      case 8:
-        return valueToProcess.join(" ");
-      case 9:
-        return valueToProcess.join("\n");
-      case 0:
-        return valueToProcess.join("");
-      default:
-        return valueToProcess;
+    switch(conversionType){
+      case 1: return parseInt(inputItem);
+      case 2: return inputItem.split(" ");
+      case 4: return inputItem.split(" ").map(Number);
+      case 6: return inputItem.split("");
+      case 7: return inputItem.split("").map(Number);
+      case 8: return inputItem.join(" ");
+      case 9: return inputItem.join("\n");
+      case 0: return inputItem.join("");
+      default: return inputItem;
     }
-  } catch (errorDetails) {
-    return valueToProcess;
+  } catch(error) {
+    return inputItem;
   }
 }
 
-// The core algorithm implementation for solving the current challenge.
-function runProblemSolver() {
-  var initialConfiguration = fetchIntegerArray();
-  var totalElements = initialConfiguration[0];
-  var minimumRequired = initialConfiguration[1];
-  var buildingHeights = fetchIntegerArray();
-  var leastCost = Math.pow(10, 16);
+function executeSolution(){
+	var firstLineData = retrieveIntegerArray();
+	var numElements = firstLineData[0];
+	var targetCount = firstLineData[1];
+	var heightsArray = retrieveIntegerArray();
+	var minimumCost = Math.pow(10, 16); // Initialize with a very large value
 
-  if (minimumRequired === 1) {
-    printSolution(0);
-    return;
-  }
+	if(targetCount === 1){
+		printResult(0);
+		return;
+	}
 
-  // Iterate through all possible combinations using bit manipulation.
-  for (var outerLoopCounter = 0; outerLoopCounter < (1 << totalElements); outerLoopCounter++) {
-    var accumulatedCost = 0;
-    var currentMaximumHeight = 0;
-    var elementsChosen = 0;
+	for(var combinationIndex = 0; combinationIndex < (1 << numElements); combinationIndex++){
+		var currentCost = 0;
+        var maximumHeightSeen = 0;
+        var elementsChosen = 0;
 
-    // Examine each element in the current combination.
-    for (var innerLoopCounter = 0; innerLoopCounter < totalElements; innerLoopCounter++) {
-      // Check if the element at innerLoopCounter index is part of the current combination.
-      if ((outerLoopCounter & (1 << innerLoopCounter)) !== 0) {
-        elementsChosen++;
-        // If the current element's height is not strictly taller than the highest seen so far,
-        // it must be increased, incurring a cost.
-        if (currentMaximumHeight >= buildingHeights[innerLoopCounter]) {
-          accumulatedCost += (currentMaximumHeight - buildingHeights[innerLoopCounter] + 1);
-          currentMaximumHeight++; // The new highest point is now one unit above the old maximum.
-        }
-      }
-      // Update the overall maximum height encountered up to this point,
-      // considering the original height of the current element.
-      currentMaximumHeight = Math.max(buildingHeights[innerLoopCounter], currentMaximumHeight);
-    }
+		for(var elementIndex = 0; elementIndex < numElements; elementIndex++){
+			if((combinationIndex & (1 << elementIndex)) !== 0){ // Check if the element is selected
+                elementsChosen++;
+				if(maximumHeightSeen >= heightsArray[elementIndex]){
+                  currentCost += maximumHeightSeen - heightsArray[elementIndex] + 1;
+                  maximumHeightSeen++;
+                }
+			}
+            maximumHeightSeen = Math.max(heightsArray[elementIndex], maximumHeightSeen);
+		}
 
-    // If the number of chosen elements meets the minimum requirement,
-    // update the overall least cost if the current combination's cost is lower.
-    if (elementsChosen >= minimumRequired) {
-      leastCost = Math.min(leastCost, accumulatedCost);
-    }
-  }
-  printSolution(leastCost);
+		if(elementsChosen >= targetCount){
+			minimumCost = Math.min(minimumCost, currentCost);
+		}
+	}
+	printResult(minimumCost);
 }

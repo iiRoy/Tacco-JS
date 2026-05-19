@@ -1,218 +1,225 @@
-/**
- * This module contains a set of functions designed to simulate resource management
- * strategies and a main execution block to process input data based on these strategies.
- * Each function represents a distinct approach to consuming resources.
- */
+// This file contains a set of functions designed to calculate various counts
+// based on input numerical values, followed by a main processing loop.
 
 /**
- * Implements the first processing sequence, 'Strategy A', for resource consumption.
- * This strategy prioritizes consuming one unit from each resource, then three units
- * from individual resources. The loop continues as long as operations are possible.
- *
- * @param {number} itemA - The initial quantity of the first resource.
- * @param {number} itemB - The initial quantity of the second resource.
- * @param {number} itemC - The initial quantity of the third resource.
- * @returns {number} The total count of successful consumption operations for this sequence.
+ * Calculates a count based on a specific strategy for combining items.
+ * It prioritizes forming groups of one of each item, then groups of three of individual items.
+ * @param {number} valX - The initial quantity of item X.
+ * @param {number} valY - The initial quantity of item Y.
+ * @param {number} valZ - The initial quantity of item Z.
+ * @returns {number} The total count achieved by this strategy.
  */
-let processSequenceA = (itemA, itemB, itemC) => {
-    let operationCount = 0; // Initialize a counter for successful operations within this sequence.
+function processStageOne(valX, valY, valZ) {
+    let totalCount = 0; // Initialize the counter for this stage's operations.
 
+    // Loop indefinitely until no more operations can be performed.
     while (true) {
-        let previousCount = operationCount; // Snapshot of the operation count before attempting new operations.
+        const previousCount = totalCount; // Store the count before attempting any new combinations.
 
-        // Rule 1: Consume one unit from each resource simultaneously.
-        if (itemA >= 1 && itemB >= 1 && itemC >= 1) {
-            itemA--;
-            itemB--;
-            itemC--;
-            operationCount++;
+        // Attempt to form a group consisting of one of each item.
+        if (valX >= 1 && valY >= 1 && valZ >= 1) {
+            valX--; // Decrement item X.
+            valY--; // Decrement item Y.
+            valZ--; // Decrement item Z.
+            totalCount++; // Increment the total count for forming this group.
         }
 
-        // Rule 2: Consume three units from resource A.
-        if (itemA >= 3) {
-            itemA -= 3;
-            operationCount++;
+        // Attempt to form a group of three item X's.
+        if (valX >= 3) {
+            valX -= 3; // Decrement item X by three.
+            totalCount++; // Increment the total count.
         }
 
-        // Rule 3: Consume three units from resource B.
-        if (itemB >= 3) {
-            itemB -= 3;
-            operationCount++;
+        // Attempt to form a group of three item Y's.
+        if (valY >= 3) {
+            valY -= 3; // Decrement item Y by three.
+            totalCount++; // Increment the total count.
         }
 
-        // Rule 4: Consume three units from resource C.
-        if (itemC >= 3) {
-            itemC -= 3;
-            operationCount++;
+        // Attempt to form a group of three item Z's.
+        if (valZ >= 3) {
+            valZ -= 3; // Decrement item Z by three.
+            totalCount++; // Increment the total count.
         }
 
-        // If no operations were performed in the current iteration, it means no more moves are possible.
-        if (previousCount === operationCount) break;
+        // If no new groups were formed in this iteration, break the loop.
+        if (previousCount === totalCount) {
+            break;
+        }
     }
-    return operationCount; // Return the final tally of operations.
-};
-
-
-/**
- * Executes the second processing path, 'Strategy B', for resource consumption.
- * This strategy is notable for having a repeated step of consuming one unit from all resources,
- * followed by individual three-unit consumptions.
- *
- * @param {number} inputX - The quantity of the X resource.
- * @param {number} inputY - The quantity of the Y resource.
- * @param {number} inputZ - The quantity of the Z resource.
- * @returns {number} The aggregate tally of operations performed under this strategy.
- */
-function analyzePathB(inputX, inputY, inputZ) {
-    let cycleTally = 0; // Counter to keep track of operations in this specific analysis path.
-
-    while (true) {
-        let initialTally = cycleTally; // Store the tally at the beginning of the current loop iteration.
-
-        // Rule 1a: Attempt to decrement all three resources by one unit.
-        if (inputX >= 1 && inputY >= 1 && inputZ >= 1) {
-            inputX--;
-            inputY--;
-            inputZ--;
-            cycleTally++;
-        }
-
-        // Rule 1b: A second, identical attempt to decrement all three resources by one unit.
-        // This step is a key differentiator for Strategy B.
-        if (inputX >= 1 && inputY >= 1 && inputZ >= 1) {
-            inputX--;
-            inputY--;
-            inputZ--;
-            cycleTally++;
-        }
-
-        // Rule 2: Check and consume three units from resource X.
-        if (inputX >= 3) {
-            inputX -= 3;
-            cycleTally++;
-        }
-
-        // Rule 3: Check and consume three units from resource Y.
-        if (inputY >= 3) {
-            inputY -= 3;
-            cycleTally++;
-        }
-
-        // Rule 4: Check and consume three units from resource Z.
-        if (inputZ >= 3) {
-            inputZ -= 3;
-            cycleTally++;
-        }
-
-        // If the tally hasn't changed, it means no more valid operations can be performed.
-        if (initialTally === cycleTally) break;
-    }
-    return cycleTally; // Return the total count of operations for Strategy B.
+    return totalCount; // Return the final accumulated count for this strategy.
 }
 
-
 /**
- * Calculates the outcome of the third resource consumption strategy, 'Strategy C'.
- * This strategy prioritizes consuming three units from individual resources first,
- * then attempts to consume one unit from all resources simultaneously.
- *
- * @param {number} sourceP - The primary resource quantity.
- * @param {number} sourceQ - The secondary resource quantity.
- * @param {number} sourceR - The tertiary resource quantity.
- * @returns {number} The accumulated count of successful steps under Strategy C.
+ * Calculates a count using a slightly different strategy, including a duplicate check for one-of-each.
+ * @param {number} valX - The initial quantity of item X.
+ * @param {number} valY - The initial quantity of item Y.
+ * @param {number} valZ - The initial quantity of item Z.
+ * @returns {number} The total count achieved by this strategy.
  */
-function calculateStrategyC(sourceP, sourceQ, sourceR) {
-    let iterationCount = 0; // Counter for operations within this particular strategy.
+function processStageTwo(valX, valY, valZ) {
+    let totalCount = 0; // Initialize the counter.
 
-    while (true) {
-        let beforeIterationCount = iterationCount; // Capture the count before attempting operations in this cycle.
+    // Use an infinite loop construct.
+    for (;;) {
+        const previousCount = totalCount; // Capture the count before this iteration's processing.
 
-        // Rule 1: Prioritize consuming three units from each resource independently.
-        if (sourceP >= 3) {
-            sourceP -= 3;
-            iterationCount++;
-        }
-        if (sourceQ >= 3) {
-            sourceQ -= 3;
-            iterationCount++;
-        }
-        if (sourceR >= 3) {
-            sourceR -= 3;
-            iterationCount++;
+        // First attempt to form a group of one of each item.
+        if (valX >= 1 && valY >= 1 && valZ >= 1) {
+            valX--;
+            valY--;
+            valZ--;
+            totalCount++;
         }
 
-        // Rule 2: After individual 3-unit consumptions, attempt to consume one unit from all resources.
-        if (sourceP >= 1 && sourceQ >= 1 && sourceR >= 1) {
-            sourceP--;
-            sourceQ--;
-            sourceR--;
-            iterationCount++;
+        // Second, identical attempt to form a group of one of each item.
+        // This is a characteristic of the original algorithm.
+        if (valX >= 1 && valY >= 1 && valZ >= 1) {
+            valX--;
+            valY--;
+            valZ--;
+            totalCount++;
         }
 
-        // If no operations were successful in this iteration, exit the loop.
-        if (beforeIterationCount === iterationCount) break;
+        // Attempt to form a group of three item X's.
+        if (valX >= 3) {
+            valX -= 3;
+            totalCount++;
+        }
+
+        // Attempt to form a group of three item Y's.
+        if (valY >= 3) {
+            valY -= 3;
+            totalCount++;
+        }
+
+        // Attempt to form a group of three item Z's.
+        if (valZ >= 3) {
+            valZ -= 3;
+            totalCount++;
+        }
+
+        // If no count was added in this pass, it means no more combinations are possible.
+        if (previousCount === totalCount) {
+            break;
+        }
     }
-    return iterationCount; // Return the final operation count for Strategy C.
+    return totalCount; // Return the final count.
 }
 
+/**
+ * Calculates a count using a third distinct strategy, prioritizing groups of three.
+ * @param {number} valX - The initial quantity of item X.
+ * @param {number} valY - The initial quantity of item Y.
+ * @param {number} valZ - The initial quantity of item Z.
+ * @returns {number} The total count achieved by this strategy.
+ */
+function processStageThree(valX, valY, valZ) {
+    let totalCount = 0; // Initialize the count for this strategy.
 
-// Main execution logic: Reads input from stdin, processes resource quantities,
-// and applies the defined strategies to find the optimal outcome.
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+    // Loop until no further operations can be performed.
+    while (true) {
+        const previousCount = totalCount; // Record the count at the start of the iteration.
 
-// Pre-process the raw input: remove leading/trailing whitespace and split into an array of lines.
-let lineArray = rawData.trim().split('\n');
+        // Prioritize forming groups of three for item X.
+        if (valX >= 3) {
+            valX -= 3;
+            totalCount++;
+        }
 
-// Loop indefinitely, processing each line of input until a specific termination signal is encountered.
+        // Prioritize forming groups of three for item Y.
+        if (valY >= 3) {
+            valY -= 3;
+            totalCount++;
+        }
+
+        // Prioritize forming groups of three for item Z.
+        if (valZ >= 3) {
+            valZ -= 3;
+            totalCount++;
+        }
+
+        // After checking for groups of three, attempt to form a group of one of each item.
+        if (valX >= 1 && valY >= 1 && valZ >= 1) {
+            valX--;
+            valY--;
+            valZ--;
+            totalCount++;
+        }
+
+        // If the count did not change, exit the loop.
+        if (previousCount === totalCount) {
+            break;
+        }
+    }
+    return totalCount; // Return the final count for this strategy.
+}
+
+// Main program execution begins here.
+// It reads input from stdin, processes it line by line, and outputs results.
+
+// Read the entire standard input as a string, assuming UTF-8 encoding.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+
+// Trim whitespace from the input and split it into an array of lines.
+let lineBuffer = rawData.trim().split("\n");
+
+// Process each line from the input buffer.
 while (true) {
-    // Extract the next line from the array. The `shift()` method removes the first element.
-    let currentLine = lineArray.shift();
+    // Retrieve the next line from the beginning of the array.
+    const currentLine = lineBuffer.shift();
 
-    // Check for the termination string "0 0 0 0 0 0". If found, break out of the loop.
-    if (currentLine === "0 0 0 0 0 0") break;
-
-    // Parse the current line: split by spaces and convert each part into a number.
-    let numArray = currentLine.split(' ').map(Number);
-
-    // Combine initial resource quantities based on the input structure (e.g., A+D, B+E, C+F).
-    let component1 = numArray[0] + numArray[3]; // The effective quantity for the first resource type.
-    let component2 = numArray[1] + numArray[4]; // The effective quantity for the second resource type.
-    let component3 = numArray[2] + numArray[5]; // The effective quantity for the third resource type.
-
-    let finalOperationTotal = 0; // Initialize the grand total of operations for this input line.
-
-    // Calculate the number of full 3-unit groups that can be initially extracted from each component.
-    let groupA = Math.floor(component1 / 3); // Count of 3-unit groups from component1.
-    let groupB = Math.floor(component2 / 3); // Count of 3-unit groups from component2.
-    let groupC = Math.floor(component3 / 3); // Count of 3-unit groups from component3.
-
-    // Adjust component quantities and group counts if at least one full group exists.
-    // This step is crucial for how remainders are handled and subsequently processed by strategies.
-    if (groupA >= 1) {
-        groupA--;                  // Decrement group count (as one group is effectively 'pre-processed').
-        component1 = component1 % 3 + 3; // Re-add 3 to the remainder, making it available for strategic functions.
-    }
-    if (groupB >= 1) {
-        groupB--;
-        component2 = component2 % 3 + 3;
-    }
-    if (groupC >= 1) {
-        groupC--;
-        component3 = component3 % 3 + 3;
+    // Check for the specific termination string "0 0 0 0 0 0".
+    if (currentLine === "0 0 0 0 0 0") {
+        break; // Exit the processing loop if the termination string is found.
     }
 
-    // Add the operations from the initially extracted full groups to the total.
-    finalOperationTotal += groupA + groupB + groupC;
+    // Split the current line by spaces and convert each part to a number.
+    const parsedValues = currentLine.split(" ").map(Number);
 
-    // Apply each of the three defined processing strategies to the adjusted component quantities.
-    // Then, determine which strategy yields the maximum number of additional operations.
-    // This maximum is added to the running total.
-    finalOperationTotal += Math.max(
-        processSequenceA(component1, component2, component3),
-        analyzePathB(component1, component2, component3),
-        calculateStrategyC(component1, component2, component3)
+    // Combine specific elements from the parsed input to form initial quantities.
+    let valX = parsedValues[0] + parsedValues[3];
+    let valY = parsedValues[1] + parsedValues[4];
+    let valZ = parsedValues[2] + parsedValues[5];
+
+    let totalCount = 0; // Initialize the overall count for the current input set.
+
+    // Calculate the number of full groups of three for each item.
+    // Math.floor is used for integer division.
+    let groupX = Math.floor(valX / 3);
+    let groupY = Math.floor(valY / 3);
+    let groupZ = Math.floor(valZ / 3);
+
+    // Adjust remaining quantities if a group of three was formed.
+    // This logic effectively "borrows" from the remainder to ensure a group of 3 is counted,
+    // then adds 3 back to the remainder for subsequent processing.
+    if (groupX >= 1) {
+        groupX--; // Decrement the group count as it's being "re-evaluated"
+        valX = (valX % 3) + 3; // Update valX to its remainder plus 3
+    }
+    if (groupY >= 1) {
+        groupY--; // Decrement the group count
+        valY = (valY % 3) + 3; // Update valY to its remainder plus 3
+    }
+    if (groupZ >= 1) {
+        groupZ--; // Decrement the group count
+        valZ = (valZ % 3) + 3; // Update valZ to its remainder plus 3
+    }
+
+    // Add the initially calculated groups of three to the total count.
+    totalCount += groupX + groupY + groupZ;
+
+    // Determine the maximum additional count achievable from the remaining items
+    // by trying all three defined processing strategies.
+    const maxAdditionalCount = Math.max(
+        processStageOne(valX, valY, valZ),
+        processStageTwo(valX, valY, valZ),
+        processStageThree(valX, valY, valZ)
     );
 
-    // Output the final computed total operations for the current input line to the console.
-    console.log(finalOperationTotal);
+    // Add this maximum additional count to the overall total.
+    totalCount += maxAdditionalCount;
+
+    // Print the final calculated total count for the current input line.
+    console.log(totalCount);
 }

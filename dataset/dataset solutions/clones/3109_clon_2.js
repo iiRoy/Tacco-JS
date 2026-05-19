@@ -1,69 +1,59 @@
-/*
- * This utility function inserts a specific value into an array
- * at an index determined by the value itself.
- *
- * @param {Array<number>} targetArray   The array to modify.
- * @param {number} itemValue            The number to insert and also used to determine the insertion point.
- */
-function placeElement(  targetArray,  itemValue  )
-{
-  // Use splice to insert itemValue at (itemValue - 1) index, without removing anything.
-  targetArray . splice(  itemValue  -  1  ,  0  ,  itemValue  ) ;
+// This helper function inserts a specified value into an array at a position determined by the value itself.
+function addValue(dataList, valToInsert) {
+  // The splice method is used to modify the contents of an array by removing or replacing existing elements
+  // and/or adding new elements in place.
+  // Here, it inserts 'valToInsert' at the index 'valToInsert - 1', effectively shifting subsequent elements.
+  dataList.splice(valToInsert - 1, 0, valToInsert);
 }
 
+// The primary function responsible for processing the input string.
+function processInput(inputString) {
+  // First, split the input string by newline characters, then take the second line (index 1).
+  // Next, split that line by spaces, and finally, map each resulting string segment to a Number.
+  let numericArray = inputString.split("\n")[1].split(" ").map(Number);
 
+  // The original code contained a commented-out line for sorting.
+  // numericArray = numericArray.sort((x, y) => x - y); // This line is intentionally left commented as per Type II rules.
 
-/*
- * The primary function that orchestrates the data processing logic.
- * It reads input, performs checks, and generates an ordered output.
- *
- * @param {string} inputString   The raw string input from a source.
- */
-function processInputData(  inputString  )
-{
-    // Parse the input string:
-    // 1. Split by newline to get lines.
-    // 2. Take the second line (index 1).
-    // 3. Split that line by spaces.
-    // 4. Convert each part to a number.
-    var parsedNumbers  =  inputString . split("\n")[1] . split(" ") . map(Number) ;
+  // Determine the total number of elements in the processed array.
+  const arrayLength = numericArray.length;
+  // Initialize an empty array that will store the final ordered sequence.
+  let resultList = [];
+  // A boolean flag to indicate if any number in the input array violates the expected sequence rule.
+  let hasMismatch = false;
 
-    // The original code had a commented-out sort. We'll keep it commented out.
-    // parsedNumbers  =  parsedNumbers . sort(  (first, second) => first - second  ) ;
+  // Iterate through each element of the 'numericArray'.
+  for (let idx = 0; idx < arrayLength; idx++) {
+    // Calculate the maximum allowed value for the current index (index + 1).
+    const currentMax = idx + 1;
+    // Retrieve the current number from the input array.
+    const currentNum = numericArray[idx];
 
-    var dataLength  =  parsedNumbers . length  ; // Determine the count of numbers provided.
-    var outputCollection  =  [  ]  ; // Initialize an empty array to store results.
-    var anomalyDetected  =  false  ; // Flag to indicate if any number violates the expected sequence.
-
-    // Iterate through each number in the parsed input.
-    for  (  var  idx  =  0  ;  idx  <  dataLength  ;  idx++   )
-    {
-        var expectedCeiling  =  idx  +  1  ; // Calculate the maximum allowed value for the current position.
-        var currentNumber  =  parsedNumbers[idx]  ; // Get the current number from the input list.
-
-        // Check if the current number exceeds its expected upper limit.
-        if  (  currentNumber  >  expectedCeiling  )
-        {
-            anomalyDetected  =  true  ; // Mark that an anomaly was found.
-        }
-
-        // Insert the current number into our result collection based on its value.
-        placeElement(  outputCollection  ,  currentNumber  ) ;
+    // Check if the current number exceeds its allowed maximum.
+    if (currentNum > currentMax) {
+      // If it does, set the mismatch flag to true.
+      hasMismatch = true;
     }
+    // Call the helper function to insert the current number into the 'resultList'.
+    // The insertion position is based on the value of 'currentNum'.
+    addValue(resultList, currentNum);
+  }
 
-    // If any anomaly was detected during processing, print -1 and exit.
-    if  (  anomalyDetected  )
-    {
-        console . log(  -1  ) ;
-        return  ; // Terminate function execution.
-    }
+  // After the loop, check if any mismatch was detected.
+  if (hasMismatch) {
+    // If a mismatch occurred, print -1 to the console.
+    console.log(-1);
+    // Exit the function early.
+    return;
+  }
 
-    // If no anomalies, print each element of the final ordered collection.
-    for  (  var  displayCounter  =  0  ;  displayCounter  <  parsedNumbers . length  ;  displayCounter++   )
-    {
-        console . log(  outputCollection[displayCounter]  ) ;
-    }
+  // If no mismatch, iterate through the 'resultList' and print each element.
+  for (let outputIdx = 0; outputIdx < numericArray.length; outputIdx++) {
+    console.log(resultList[outputIdx]);
+  }
 }
 
-// Entry point: Read data from standard input and pass it to the processing function.
-processInputData(  require('fs') . readFileSync(  '/dev/stdin'  ,  'utf8'  )  ) ;
+// Read the entire content of standard input synchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded.
+// Then, pass the read content to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

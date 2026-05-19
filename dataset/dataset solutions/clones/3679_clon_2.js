@@ -1,41 +1,53 @@
-const strToNum = (inputStr) => Number.parseInt(inputStr, 10);
-const strArrToNumArr = (stringArray) => stringArray.map((currentString) => strToNum(currentString));
-const absoluteValue = (numericValue) => (numericValue > 0) ? numericValue : -numericValue;
+const parseNum = (item) => {
+  // Helper function to convert a string to an integer
+  return parseInt(item, 10);
+};
+
+const parseNumArray = (inputArray) => inputArray.map((item) => parseNum(item)); // Transforms an array of strings into an array of integers
+
+const absoluteValue = (item) => (item > 0 ? item : -item); // Computes the absolute value of a given number
 
 function findMinimum() {
-  let argList = arguments;
-  let currentMin = argList[0];
-  for (let idx = 1; idx < argList.length; idx++) {
-    if (argList[idx] < currentMin) {
-      currentMin = argList[idx];
+  // Finds the smallest value among the provided arguments
+  const argsList = arguments;
+  let currentMinMax = argsList[0];
+  for (let idx = 1; idx < argsList.length; idx++) {
+    if (argsList[idx] < currentMinMax) {
+      currentMinMax = argsList[idx];
     }
   }
-  return currentMin;
+  return currentMinMax;
 }
 
 function findMaximum() {
-  let argumentCollection = arguments;
-  let currentMax = argumentCollection[0];
-  for (let index = 1; index < argumentCollection.length; index++) {
-    if (argumentCollection[index] > currentMax) {
-      currentMax = argumentCollection[index];
+  // Determines the largest value from a list of arguments
+  const argsList = arguments;
+  let currentMinMax = argsList[0];
+  for (let idx = 1; idx < argsList.length; idx++) {
+    if (argsList[idx] > currentMinMax) {
+      currentMinMax = argsList[idx];
     }
   }
-  return currentMax;
+  return currentMinMax;
 }
 
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Entry point for processing the standard input
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function ExecuteProgram(rawData) {
-  const inputParts = rawData.split(' ');
-  const firstNum = strToNum(inputParts[0]);
-  const secondNum = strToNum(inputParts[1]);
+function ProcessInput(rawData) {
+  // Splits the raw input string into an array of strings based on space delimiter
+  const parsedData = rawData.split(' ');
 
-  const resultSymbol = ((firstNum + secondNum) === 15)
-    ? '+'
-    : ((firstNum * secondNum) === 15)
-      ? '*'
-      : 'x';
+  // Converts the first element of the parsed data to an integer
+  const firstVal = parseNum(parsedData[0]);
 
+  // Converts the second element of the parsed data to an integer
+  const secondVal = parseNum(parsedData[1]);
+
+  // Determines the output symbol based on specific conditions
+  // If sum is 15, result is '+'. If product is 15, result is '*'. Otherwise, 'x'.
+  let resultSymbol = (firstVal + secondVal === 15) ? '+' : (firstVal * secondVal === 15) ? '*' : 'x';
+
+  // Prints the final determined symbol to the console
   console.log(resultSymbol);
 }

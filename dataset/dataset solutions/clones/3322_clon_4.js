@@ -1,83 +1,98 @@
-const createDataFetcher = (rawInputContent) => {
-    let internalDataSegments = rawInputContent.trim().split('\n');
-    let lineCursor = 0;
+class InputHandler {
+    constructor(rawInputContent) {
+        this.lineGenerator = this._createLineIterator(rawInputContent);
+        this.currentLineTokenBuffer = [];
+    }
 
-    const obtainValue = (numeric = true) => {
-        if (lineCursor >= internalDataSegments.length) {
-            return undefined;
+    *_createLineIterator(inputString) {
+        const lines = inputString.trim().split("\n");
+        for (const line of lines) {
+            yield line;
         }
+    }
 
-        if (typeof internalDataSegments[lineCursor] === 'string') {
-            internalDataSegments[lineCursor] = internalDataSegments[lineCursor].split(' ').reverse();
+    _refillTokenBuffer() {
+        if (this.currentLineTokenBuffer.length === 0) {
+            const { value: nextLine, done } = this.lineGenerator.next();
+            if (done) {
+                throw new Error("Input exhausted unexpectedly.");
+            }
+            this.currentLineTokenBuffer = nextLine.split(" ");
         }
+    }
 
-        let extractedToken = internalDataSegments[lineCursor].pop();
+    fetchSingle(returnAsString) {
+        this._refillTokenBuffer();
+        const token = this.currentLineTokenBuffer.shift();
+        return returnAsString ? token : Number(token);
+    }
 
-        if (internalDataSegments[lineCursor].length === 0) {
-            lineCursor++;
+    fetchLine(returnAsString) {
+        const { value: lineContent, done } = this.lineGenerator.next();
+        if (done) throw new Error("Input exhausted unexpectedly.");
+        const tokens = lineContent.split(" ");
+        return returnAsString ? tokens : tokens.map(Number);
+    }
+
+    fetchMatrix(rowCount, returnAsString) {
+        const matrixData = [];
+        for (let i = 0; i < rowCount; i++) {
+            matrixData.push(this.fetchLine(returnAsString));
         }
-        return numeric ? parseFloat(extractedToken) : extractedToken;
-    };
+        return matrixData;
+    }
 
-    const obtainRow = (numeric = true) => {
-        if (lineCursor >= internalDataSegments.length) return undefined;
-
-        let rawLine = internalDataSegments[lineCursor];
-        lineCursor++;
-        let tokens = rawLine.split(' ');
-        return numeric ? tokens.map(parseFloat) : tokens;
-    };
-
-    const obtainBlock = (count, numeric = true) => {
-        if (lineCursor + count > internalDataSegments.length) return undefined;
-        let blockRows = internalDataSegments.slice(lineCursor, lineCursor + count);
-        lineCursor += count;
-        let processedRows = blockRows.map(row => row.split(' '));
-        return numeric ? processedRows.map(row => row.map(parseFloat)) : processedRows;
-    };
-
-    const obtainSegments = (count, numeric = true) => {
-        if (lineCursor + count > internalDataSegments.length) return undefined;
-        let segmentRows = internalDataSegments.slice(lineCursor, lineCursor + count);
-        lineCursor += count;
-        return numeric ? segmentRows.map(parseFloat) : segmentRows;
-    };
-
-    return {
-        obtainValue: obtainValue,
-        obtainRow: obtainRow,
-        obtainBlock: obtainBlock,
-        obtainSegments: obtainSegments
-    };
-};
-
-const dataProcessor = createDataFetcher(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function performComputation(){
-  const totalEvents = dataProcessor.obtainValue();
-  const eventProbabilities = dataProcessor.obtainRow();
-
-  const initialDistribution = [1 - eventProbabilities[0], eventProbabilities[0]];
-
-  const finalDistribution = eventProbabilities.slice(1).reduce((currentDist, currentChance) => {
-      const nextDist = Array(currentDist.length + 1).fill(0);
-
-      nextDist[0] = currentDist[0] * (1 - currentChance);
-
-      for (let j = 1; j < currentDist.length; j++) {
-          nextDist[j] = currentDist[j - 1] * currentChance + currentDist[j] * (1 - currentChance);
-      }
-
-      nextDist[currentDist.length] = currentDist[currentDist.length - 1] * currentChance;
-
-      return nextDist;
-  }, initialDistribution);
-
-  const requiredSuccessesThreshold = Math.ceil((totalEvents + 1) / 2);
-  
-  const cumulativeProbability = finalDistribution.slice(requiredSuccessesThreshold).reduce((sum, prob) => sum + prob, 0);
-
-  return cumulativeProbability;
+    fetchRows(rowCount, returnAsString) {
+        const rowData = [];
+        for (let i = 0; i < rowCount; i++) {
+            const { value: lineContent, done } = this.lineGenerator.next();
+            if (done) throw new Error("Input exhausted unexpectedly.");
+            rowData.push(returnAsString ? lineContent : Number(lineContent));
+        }
+        return rowData;
+    }
 }
 
-console.log(performComputation());
+function calculateExpectedOutcome() {
+    const dataReader = new InputHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+    const totalEvents = dataReader.fetchSingle();
+    const eventProbabilities = dataReader.fetchLine();
+
+    const probCache = Array.from({ length: totalEvents + 1 }, () =>
+        Array.from({ length: totalEvents + 1 }, () => null)
+    );
+
+    function determineProbability(currentEventIndex, desiredSuccesses) {
+        if (desiredSuccesses < 0 || desiredSuccesses > currentEventIndex) {
+            return 0;
+        }
+        if (currentEventIndex === 0) {
+            return desiredSuccesses === 0 ? 1 : 0;
+        }
+
+        if (probCache[currentEventIndex][desiredSuccesses] !== null) {
+            return probCache[currentEventIndex][desiredSuccesses];
+        }
+
+        const currentEventSuccessProb = eventProbabilities[currentEventIndex - 1];
+        const currentEventFailureProb = 1 - currentEventSuccessProb;
+
+        const probIfCurrentSucceeds = determineProbability(currentEventIndex - 1, desiredSuccesses - 1) * currentEventSuccessProb;
+        const probIfCurrentFails = determineProbability(currentEventIndex - 1, desiredSuccesses) * currentEventFailureProb;
+
+        probCache[currentEventIndex][desiredSuccesses] = probIfCurrentSucceeds + probIfCurrentFails;
+        return probCache[currentEventIndex][desiredSuccesses];
+    }
+
+    let totalDesiredProbability = 0;
+    const minimumSuccesses = Math.floor((totalEvents + 1) / 2);
+
+    for (let k = minimumSuccesses; k <= totalEvents; k++) {
+        totalDesiredProbability += determineProbability(totalEvents, k);
+    }
+
+    return totalDesiredProbability;
+}
+
+console.log(calculateExpectedOutcome());

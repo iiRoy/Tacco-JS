@@ -1,20 +1,9 @@
-const CalculateUnitDifference = (sourceData) => {
-    const numericalValue = +sourceData;
-    const baseUnit = 1000;
+function processFinancialInput(rawInputString) {
+    const monetaryValue = parseInt(rawInputString, 10);
     
-    const divisionQuotient = Math.trunc(numericalValue / baseUnit);
-    const remainderComponent = numericalValue - (divisionQuotient * baseUnit);
+    const targetMultiple = Math.max(1000, (Math.floor(monetaryValue / 1000) + 1) * 1000);
     
-    const resultingOffset = baseUnit - remainderComponent;
-    
-    return String(resultingOffset);
-};
+    console.log(targetMultiple - monetaryValue);
+}
 
-const fileSystemAccess = require("fs");
-const standardInputPath = "/dev/stdin";
-const encodingFormat = "utf8";
-
-const receivedData = fileSystemAccess.readFileSync(standardInputPath, encodingFormat);
-const processedOutput = CalculateUnitDifference(receivedData);
-
-process.stdout.write(processedOutput);
+processFinancialInput(require("fs").readFileSync("/dev/stdin", "utf8"));

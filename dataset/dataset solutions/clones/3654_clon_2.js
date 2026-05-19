@@ -1,50 +1,44 @@
-function processInput( dataLines ) {
-    // This function determines if the second string is a cyclic shift of the first string.
+function processInput(dataArray) {
+    // Retrieve the first string from the input array.
+    let strA = dataArray[0];
+    // Retrieve the second string from the input array.
+    let strB = dataArray[1];
 
-    let primarySequence = dataLines[0]; // Retrieve the first line of input as the primary sequence
-    const targetSequence = dataLines[1]; // Obtain the second line of input for comparison
+    // Initialize a boolean variable to store the comparison outcome.
+    let resultFlag = false;
 
-    let isMatchFound = false; /* Initialize a flag to track if a cyclic match is identified */
-
-    // Check if the lengths of the two sequences are different.
-    // If they are, a cyclic shift is impossible, so the result is immediately false.
-    if ( primarySequence.length !== targetSequence.length ) {
-        isMatchFound = false;
+    // Check if the lengths of the two strings are unequal.
+    // If they are, a rotational match is impossible.
+    if (strA.length !== strB.length) {
+        resultFlag = false; // Explicitly set, though already initialized to false.
     } else {
-        // If lengths are identical, proceed to check for cyclic permutations.
-        // We use a label for the outer loop to allow 'continue' to jump directly to the next rotation attempt.
-        checkRotations:
-        for ( let outerIndex = 0; outerIndex < primarySequence.length; outerIndex++ ) {
-            // This inner loop compares characters for a specific rotation.
-            for ( let innerIndex = 0; innerIndex < targetSequence.length; innerIndex++ ) {
-                // Calculate the effective character position in the primary sequence
-                // considering the current rotation (outerIndex) and the character being compared (innerIndex).
-                // The modulo operator ensures we wrap around the string if the index exceeds its length.
-                if ( primarySequence[ ( outerIndex + innerIndex ) % primarySequence.length ] !== targetSequence[ innerIndex ] ) {
-                    // If a character mismatch is found for the current rotation,
-                    // we can stop comparing this rotation and move to the next one.
-                    continue checkRotations;
+        // If string lengths are identical, proceed with the rotational comparison.
+        outerLoop: for (let idxOuter = 0; idxOuter < strA.length; idxOuter++) {
+            // Iterate through each character of the second string.
+            for (let idxInner = 0; idxInner < strB.length; idxInner++) {
+                // Compare characters, applying a rotational shift to the first string.
+                // The modulo operator handles wrapping around the string's length.
+                if (strA[(idxOuter + idxInner) % strA.length] !== strB[idxInner]) {
+                    // If a character mismatch is found, this rotation is not a match.
+                    // Continue to the next iteration of the outer loop (next possible rotation).
+                    continue outerLoop;
                 }
             }
-            // If the inner loop completes without any 'continue checkRotations',
-            // it means all characters matched for the current rotation.
-            // Therefore, a cyclic shift has been found.
-            isMatchFound = true;
+            // If the inner loop completes without any mismatches,
+            // it means a successful rotational match has been found.
+            resultFlag = true;
             // Since a match is found, there's no need to check further rotations.
+            // Exit the outer loop.
             break;
         }
     }
-
-    // Output the final determination based on the 'isMatchFound' flag.
-    // A ternary operator is used for concise conditional output.
-    console.log( isMatchFound ? "Yes" : "No" );
+    
+    // Output the final determination: "Yes" if a match was found, "No" otherwise.
+    console.log(resultFlag ? "Yes" : "No");
 }
 
-// The following code reads input from standard input,
-// cleans it, splits it by newlines, and passes it to our processing function.
-processInput(
-    require( 'fs' )
-        .readFileSync( '/dev/stdin', 'utf8' ) // Read the entire file content
-        .trim()                              // Remove leading/trailing whitespace (like final newline)
-        .split( '\n' )                       // Split the content into an array of lines
-);
+// Read the entire content from standard input,
+// decode it as UTF-8, remove any leading/trailing whitespace,
+// and then split the content into an array of strings based on newline characters.
+// Finally, pass this array to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

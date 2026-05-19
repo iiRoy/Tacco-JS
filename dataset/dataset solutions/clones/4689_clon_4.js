@@ -1,33 +1,5 @@
-const calculateAdjustedValue = (dataStream) => {
-    const numericSource = Number(dataStream);
-    
-    const calculationContext = {
-        baseAmount: numericSource,
-        
-        get fifteenUnitGroups() {
-            return (this.baseAmount / 15) | 0;
-        },
-        
-        get remainingUnits() {
-            return this.baseAmount - (this.fifteenUnitGroups * 15);
-        },
-        
-        get groupFactor() {
-            return 59;
-        },
-        
-        get remainderFactor() {
-            return 4;
-        },
-        
-        get aggregatedUnits() {
-            return (this.fifteenUnitGroups * this.groupFactor) + (this.remainingUnits * this.remainderFactor);
-        },
-        
-        get finalResult() {
-            return this.aggregatedUnits * 200;
-        }
-    };
-    
-    console.log(calculationContext.finalResult);
+const computeNetPrice = (quantityUnits) => {
+    console.log(quantityUnits * 800 - ((quantityUnits / 15) | 0) * 200);
 };
+
+computeNetPrice(Number(require("fs").readFileSync("/dev/stdin", "utf8")));

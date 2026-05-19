@@ -1,28 +1,32 @@
-function DataProcessor(rawContent) {
-  const lines = rawContent.split('\n');
-  const totalElements = Number(lines[0]);
-  const numericSequence = lines[1].split(' ').map(Number);
+function processInput(rawInputContent) {
+    const inputLines = rawInputContent.split("\n");
+    const elementCount = Number.parseInt(inputLines[0], 10);
+    const numericSequence = inputLines[1].split(" ").map(Number);
 
-  let validSubarrayCount = 0;
-  let leftPointer = 0;
-  let currentXORAccumulator = 0;
+    let matchingSubarrayCount = 0;
 
-  for (let rightPointer = 0; rightPointer < totalElements; ++rightPointer) {
-    while ((currentXORAccumulator & numericSequence[rightPointer]) !== 0) {
-      currentXORAccumulator ^= numericSequence[leftPointer];
-      leftPointer++;
+    Array.from({ length: elementCount }, (_, startIdx) => {
+        Array.from({ length: elementCount - startIdx }, (_, lengthOffset) => {
+            const endIdx = startIdx + lengthOffset;
+            const currentSubarray = numericSequence.slice(startIdx, endIdx + 1);
+
+            const subarrayXorSum = currentSubarray.reduce((acc, val) => acc ^ val, 0);
+            const subarrayArithmeticSum = currentSubarray.reduce((acc, val) => acc + val, 0);
+
+            if (subarrayXorSum === subarrayArithmeticSum) {
+                matchingSubarrayCount++;
+            }
+        });
+    });
+
+    console.log(String(matchingSubarrayCount));
+}
+
+function executeDebug() {
+    const inputSource = document.getElementById("input");
+    if (inputSource) {
+        processInput(inputSource.value);
     }
-    
-    currentXORAccumulator ^= numericSequence[rightPointer];
-    validSubarrayCount += (rightPointer - leftPointer + 1);
-  }
-
-  console.log('%s', validSubarrayCount);
-}
-  
-function DebuggingUtility(){
-  const userTextInput = document.getElementById("input").value;
-  DataProcessor(userTextInput);
 }
 
-DataProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

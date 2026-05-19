@@ -1,31 +1,21 @@
-function executeComputation(incomingData) {
-  let firstOperand, secondOperand, thirdOperand;
-  const numericParsings = incomingData[0].split(' ').map(Number);
-  [firstOperand, secondOperand, thirdOperand] = numericParsings;
+function processInput(dataLines) {
+  const numericValues = dataLines[0].split(" ").map(Number);
+  const [firstOperand, secondOperand, limitValue] = numericValues;
 
-  const bigFirst = BigInt(firstOperand);
-  const bigSecond = BigInt(secondOperand);
-  const bigThird = BigInt(thirdOperand);
-
-  const effectiveUpperBoundary = (bigThird < bigSecond - 1n) ? bigThird : (bigSecond - 1n);
-
-  const finalCalculation = (bigFirst * effectiveUpperBoundary) / bigSecond;
-
-  console.log(Number(finalCalculation));
-}
-
-(function() {
-  const obtainStreamContent = () => {
-    let collectedContent = '';
-    try {
-      const contentBuffer = require('node:fs').readFileSync(0);
-      collectedContent = contentBuffer.toString();
-    } catch (readingError) {
-      console.error("Failed to read stream:", readingError);
-      process.exit(1);
-    }
-    return collectedContent.trim().split('\n');
+  const calculateMaxForFullCycle = (operandOne, operandTwo) => {
+    return Math.floor(operandOne * (operandTwo - 1) / operandTwo);
   };
 
-  executeComputation(obtainStreamContent());
-})();
+  const calculateMaxForPartialCycle = (operandOne, operandTwo, currentLimit) => {
+    return Math.floor(operandOne * (currentLimit % operandTwo) / operandTwo);
+  };
+
+  const fullCycleResult = calculateMaxForFullCycle(firstOperand, secondOperand);
+  const partialCycleResult = calculateMaxForPartialCycle(firstOperand, secondOperand, limitValue);
+
+  const finalResult = fullCycleResult * (limitValue > secondOperand) + partialCycleResult * (limitValue <= secondOperand);
+
+  console.log(finalResult);
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

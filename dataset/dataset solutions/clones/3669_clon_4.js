@@ -1,46 +1,51 @@
-const getSourceData = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const acquireInput = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const emitOutput = (content) => console.log(content);
 
-const parseStringLines = (text) => text.split('\n');
-const extractNumericalRow = (line) => line.split(' ').map(Number);
+const inputTransformers = new Map([
+    [0, (val) => val],
+    [1, (val) => parseInt(val, 10)],
+    [2, (val) => val.split(" ")],
+    [3, (val) => val.split("\n")],
+    [4, (val) => val.split(" ").map((s) => +s)],
+    [5, (val) => val.split("\n").map((s) => +s)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map((s) => +s)],
+]);
 
-const determineOutcome = (currentInventory, takeQuantity, upkeepThreshold, refillAmount, initialInventory, pastInventories) => {
-    if (currentInventory < takeQuantity) {
-        return false;
-    }
-
-    if (pastInventories.has(currentInventory)) {
-        return true;
-    }
-
-    pastInventories.add(currentInventory);
-
-    let remainingInventory = currentInventory % takeQuantity;
-
-    if (remainingInventory <= upkeepThreshold) {
-        remainingInventory += refillAmount;
-    }
-
-    if (remainingInventory === initialInventory) {
-        return true;
-    }
-    
-    return determineOutcome(remainingInventory, takeQuantity, upkeepThreshold, refillAmount, initialInventory, pastInventories);
+const parseSegment = (segment, typeIdentifier) => {
+    const transformer = inputTransformers.get(typeIdentifier);
+    return transformer(segment);
 };
 
-const processCase = (caseLine) => {
-    const [initialStock, buyAmount, criticalLevel, addAmount] = extractNumericalRow(caseLine);
-    const visitedStates = new Set();
-    return determineOutcome(initialStock, buyAmount, criticalLevel, addAmount, initialStock, visitedStates) ? "Yes" : "No";
+const evaluateStockCycle = (currentStock, initialStockValue, purchaseQuantity, thresholdValue, replenishmentAmount, iterationCount, visitedStates) => {
+    if (currentStock < purchaseQuantity) {
+        return "No";
+    }
+
+    if (visitedStates.has(currentStock) || iterationCount >= 10000000) {
+        return "Yes";
+    }
+
+    visitedStates.add(currentStock);
+
+    let nextStockLevel = currentStock % purchaseQuantity;
+    if (nextStockLevel <= thresholdValue) {
+        nextStockLevel += replenishmentAmount;
+    }
+
+    return evaluateStockCycle(nextStockLevel, initialStockValue, purchaseQuantity, thresholdValue, replenishmentAmount, iterationCount + 1, visitedStates);
 };
 
-const runAnalysis = (fullInputText) => {
-    let allLines = parseStringLines(fullInputText);
-    allLines.shift();
+const executeSimulation = (rawInput) => {
+    const allInputLines = parseSegment(rawInput, 3);
+    const relevantDataLines = allInputLines.slice(1);
 
-    const allResults = allLines.map(processCase);
+    const simulationResults = relevantDataLines.map((lineContent) => {
+        const [initialStock, purchaseQuantity, thresholdValue, replenishmentAmount] = parseSegment(lineContent, 4);
+        return evaluateStockCycle(initialStock, initialStock, purchaseQuantity, thresholdValue, replenishmentAmount, 0, new Set());
+    });
 
-    return allResults.join('\n');
+    return simulationResults.join("\n");
 };
 
-const finalResult = runAnalysis(getSourceData());
-console.log(finalResult);
+emitOutput(executeSimulation(acquireInput()));

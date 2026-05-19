@@ -1,31 +1,40 @@
-( ( input_source ) => {
-  // This section processes the initial raw text input.
-  const input_lines = input_source.split( '\n' ) ;
+((inputString) => {
+    // This script processes input data to perform a lookup operation.
+    // The input string is first split into an array of lines.
+    const inputLines = inputString.split('\n');
 
-  // The first line indicates the quantity of data entries to follow.
-  const entry_count = Number.parseInt( input_lines.shift() , 10 ) ;
+    // The very first line of the input specifies the number of key-value pairs
+    // that will follow. We parse this line as an integer.
+    const numEntries = parseInt(inputLines.shift(), 0xA); // Using 0xA as an alternative representation for base 10
 
-  // A new associative array (object) is established to hold key-value mappings.
-  const mapping_store = { } ;
+    // An empty object is initialized to serve as our lookup dictionary or map.
+    const lookupMap = {};
 
-  // Iteratively populate the mapping_store based on the specified entry_count.
-  for ( let idx = 0 ; idx < entry_count ; ++idx ) {
-    // Each subsequent line provides a key and its corresponding value, separated by a space.
-    const current_pair = input_lines.shift().split( ' ' ) ;
-    mapping_store[ current_pair[ 0 ] ] = current_pair[ 1 ] ; // Assign the value to its key.
-  }
+    // A loop iterates 'numEntries' times to populate the lookupMap.
+    for (let idx = 0; idx < numEntries; ++idx) {
+        // For each iteration, the next line is taken, split by a space,
+        // assuming it contains a key and its corresponding value.
+        const currentPair = inputLines.shift().split(' ');
+        // The first part becomes the key, and the second part becomes its value in the map.
+        lookupMap[currentPair[0]] = currentPair[1];
+    }
 
-  // A specific line in the input stream is intentionally skipped or discarded here.
-  input_lines.shift() ;
+    // After populating the map, one more line is discarded from the input.
+    // This might be an empty line separating the map data from the query data.
+    inputLines.shift();
 
-  // The remaining input items are processed by consulting the mapping_store.
-  const processed_output = input_lines.map( ( current_item ) => {
-    // If an item exists as a key in our mapping, its mapped value is used; otherwise, the item itself is retained.
-    return current_item in mapping_store ? mapping_store[ current_item ] : current_item ;
-  } ) ;
+    // The remaining lines in 'inputLines' are then processed.
+    // For each remaining line, it checks if that line exists as a key in 'lookupMap'.
+    // If it does, the line is replaced by its corresponding value from the map.
+    // If not, the line remains unchanged.
+    const finalResult = inputLines.map((currentLine) => {
+        return currentLine in lookupMap ? lookupMap[currentLine] : currentLine;
+    });
 
-  // The final collection of processed items is concatenated into a single string and printed to standard output,
-  // followed by a newline character for proper termination.
-  console.log( processed_output.join( '' ) + '\n' ) ;
+    // Finally, all elements of the 'finalResult' array are joined together
+    // into a single string without any separator, and a newline character
+    // is appended before printing the entire string to the console.
+    console.log(finalResult.join('') + '\n');
 
-} ) ( require( 'fs' ).readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // The entire script is wrapped in an immediately invoked function expression (IIFE)
+// which reads the standard input synchronously using Node.js's 'fs' module.

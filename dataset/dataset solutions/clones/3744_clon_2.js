@@ -1,125 +1,90 @@
-// This function processes graph data from a string input
-function ProcessInput(inputStringData) {
-  // Split the entire input string into individual lines
-  // Each line represents either graph dimensions or an edge
-  const inputLines = inputStringData.split("\n");
+function ProcessGraphData(inputLines) {
+  // Split the input string into an array of lines
+  let parsedLines = inputLines.split("\n");
 
-  // Parse the first line to get the total number of nodes and edges
-  // The first line contains two space-separated integers: N M
-  const graphDimensions = inputLines[0].split(" ").map(entry => parseInt(entry, 10));
-
-  // Extract the total number of edges from the parsed dimensions
-  const totalEdgeCount = graphDimensions[1];
-  // Extract the total number of nodes from the parsed dimensions
-  const totalNodeCount = graphDimensions[0];
+  // Parse the first line to get graph dimensions
+  const graphDimensions = parsedLines[0].split(" ").map((val) => +val);
+  let numNodes = graphDimensions[0]; // Number of vertices in the graph
+  const numEdges = graphDimensions[1]; // Number of edges in the graph
 
   // Initialize an adjacency matrix for the graph
-  // All entries are initially zero, indicating no connections
-  const adjacencyMatrix = Array(totalNodeCount).fill(0).map(
-    () => Array(totalNodeCount).fill(0)
-  );
+  // All entries are initially zero, indicating no direct connection
+  const adjMatrix = Array(numNodes)
+    .fill(0)
+    .map(() => Array(numNodes).fill(0));
 
-  // Populate the adjacency matrix based on the provided edge data
-  // Iterate through each edge definition line
-  for (let edgeIteration = 0; edgeIteration < totalEdgeCount; edgeIteration++) {
-    // Parse the current edge line: two space-separated node indices (u v)
-    // Subtract 1 from each index to convert to 0-based indexing
-    const currentEdgeNodes = inputLines[edgeIteration + 1].split(" ").map(
-      nodeString => Number(nodeString) - 1
-    );
-
-    // Mark the connection in the adjacency matrix for both directions (undirected graph)
-    const nodeA = currentEdgeNodes[0];
-    const nodeB = currentEdgeNodes[1];
-    adjacencyMatrix[nodeA][nodeB] = 1;
-    adjacencyMatrix[nodeB][nodeA] = 1;
+  // Populate the adjacency matrix based on the provided edges
+  // Edges are 1-indexed in input, convert to 0-indexed
+  for (let edgeIndex = 0; edgeIndex < numEdges; edgeIndex++) {
+    const edgeNodes = parsedLines[edgeIndex + 1].split(" ").map((val) => +val - 1);
+    const nodeA = edgeNodes[0];
+    const nodeB = edgeNodes[1];
+    // Mark connection for undirected graph
+    adjMatrix[nodeA][nodeB] = 1;
+    adjMatrix[nodeB][nodeA] = 1;
   }
 
-  // Initialize variables to find the node with the minimum degree
-  // 'minimumDegreeValue' stores the smallest degree found so far
-  let minimumDegreeValue = 999999999; // A very large number to start with
-  // 'nodeWithMinimumDegree' stores the index of the node that has the minimum degree
-  let nodeWithMinimumDegree;
+  // Find the node with the minimum degree
+  let minDegreeVal = 9e9; // Initialize with a very large number
+  let minDegreeNode = -1; // Store the index of the node with minimum degree
 
-  // Iterate through all nodes to calculate their degrees
-  for (let nodeIdx = 0; nodeIdx < totalNodeCount; nodeIdx++) {
-    // Calculate the degree of the current node by summing its row in the adjacency matrix
-    const currentDegree = adjacencyMatrix[nodeIdx].reduce(
-      (sumOfConnections, isConnected) => sumOfConnections + isConnected,
-      0
-    );
-
-    // If the current node's degree is less than the minimum found so far, update
-    if (minimumDegreeValue > currentDegree) {
-      minimumDegreeValue = currentDegree;
-      nodeWithMinimumDegree = nodeIdx;
+  for (let nodeIdx = 0; nodeIdx < numNodes; nodeIdx++) {
+    // Calculate the degree of the current node (sum of its row in adjMatrix)
+    const currentNodeDegree = adjMatrix[nodeIdx].reduce((sum, val) => sum + val, 0);
+    if (minDegreeVal > currentNodeDegree) {
+      minDegreeVal = currentNodeDegree;
+      minDegreeNode = nodeIdx;
     }
   }
 
-  // Initialize two arrays to partition the remaining nodes based on their connection to the minimum degree node
-  const partitionGroupOne = []; // Nodes directly connected to 'nodeWithMinimumDegree'
-  const partitionGroupTwo = []; // Nodes NOT directly connected to 'nodeWithMinimumDegree'
+  // Separate other nodes into two groups: neighbors of minDegreeNode and non-neighbors
+  const neighborsOfMin = [];
+  const nonNeighborsOfMin = [];
 
-  // Iterate through all nodes to perform the partitioning
-  for (let scanningNodeIdx = 0; scanningNodeIdx < totalNodeCount; scanningNodeIdx++) {
-    // Skip the node that has the minimum degree itself
-    if (scanningNodeIdx === nodeWithMinimumDegree) continue;
-
-    // Check if the current scanning node is adjacent to the minimum degree node
-    if (adjacencyMatrix[nodeWithMinimumDegree][scanningNodeIdx]) {
-      // If connected, add it to the first partition group
-      partitionGroupOne.push(scanningNodeIdx);
+  for (let otherNodeIdx = 0; otherNodeIdx < numNodes; otherNodeIdx++) {
+    if (otherNodeIdx === minDegreeNode) {
+      continue; // Skip the minDegreeNode itself
+    }
+    if (adjMatrix[minDegreeNode][otherNodeIdx]) {
+      neighborsOfMin.push(otherNodeIdx); // It's a neighbor
     } else {
-      // If not connected, add it to the second partition group
-      partitionGroupTwo.push(scanningNodeIdx);
+      nonNeighborsOfMin.push(otherNodeIdx); // It's not a neighbor
     }
   }
 
-  // Verify that all nodes within the first partition group (connected to the min degree node) form a clique
-  // This means every node in 'partitionGroupOne' must be connected to every other node in 'partitionGroupOne'
-  for (let idxA = 0; idxA < partitionGroupOne.length; idxA++) {
-    for (let idxB = idxA + 1; idxB < partitionGroupOne.length; idxB++) {
-      // Get the actual node indices from the partition group
-      const nodeP = partitionGroupOne[idxA];
-      const nodeQ = partitionGroupOne[idxB];
-
-      // If there's no edge between nodeP and nodeQ, it's not a clique, so output -1 and exit
-      if (!adjacencyMatrix[nodeP][nodeQ]) {
-        console.log(-1);
+  // Check if the neighbors of minDegreeNode form a clique
+  // If any two neighbors are not connected, it's not a valid graph structure
+  for (let outerIdx = 0; outerIdx < neighborsOfMin.length; outerIdx++) {
+    for (let innerIdx = outerIdx + 1; innerIdx < neighborsOfMin.length; innerIdx++) {
+      const node1 = neighborsOfMin[outerIdx];
+      const node2 = neighborsOfMin[innerIdx];
+      if (!adjMatrix[node1][node2]) {
+        console.log(-1); // Output -1 and exit if not a clique
         return;
       }
     }
   }
 
-  // Verify that all nodes within the second partition group (not connected to the min degree node) form a clique
-  // This means every node in 'partitionGroupTwo' must be connected to every other node in 'partitionGroupTwo'
-  for (let idxC = 0; idxC < partitionGroupTwo.length; idxC++) {
-    for (let idxD = idxC + 1; idxD < partitionGroupTwo.length; idxD++) {
-      // Get the actual node indices from the partition group
-      const nodeR = partitionGroupTwo[idxC];
-      const nodeS = partitionGroupTwo[idxD];
-
-      // If there's no edge between nodeR and nodeS, it's not a clique, so output -1 and exit
-      if (!adjacencyMatrix[nodeR][nodeS]) {
-        console.log(-1);
+  // Check if the non-neighbors of minDegreeNode form a clique
+  // Similar check for the second group of nodes
+  for (let outerIdx = 0; outerIdx < nonNeighborsOfMin.length; outerIdx++) {
+    for (let innerIdx = outerIdx + 1; innerIdx < nonNeighborsOfMin.length; innerIdx++) {
+      const node1 = nonNeighborsOfMin[outerIdx];
+      const node2 = nonNeighborsOfMin[innerIdx];
+      if (!adjMatrix[node1][node2]) {
+        console.log(-1); // Output -1 and exit if not a clique
         return;
       }
     }
   }
 
-  // If both partition groups form cliques internally, calculate and print the result
-  // This formula seems to be specific to a graph problem, likely related to finding edges in a complete bipartite graph
-  // or a similar structure based on the minimum degree node.
-  const sizeOfPartitionOne = minimumDegreeValue; // The number of neighbors of the minimum degree node
-  const sizeOfTotalNodes = totalNodeCount;
-  const sizeOfPartitionTwo = totalNodeCount - minimumDegreeValue - 1; // Total nodes - neighbors - the min degree node itself
-
-  // The formula calculates the sum of edges in two cliques
-  const resultValue = (sizeOfPartitionOne * (sizeOfPartitionOne + 1) / 2) +
-                      (sizeOfPartitionTwo * (sizeOfPartitionTwo - 1) / 2);
-
-  console.log(resultValue);
+  // If both groups form cliques, calculate and print the result
+  // The formula represents the sum of edges within two cliques
+  // (k * (k+1) / 2) for the first clique (neighbors + minDegreeNode)
+  // ((n-k-1) * (n-k-2) / 2) for the second clique (non-neighbors)
+  const result = (minDegreeVal * (minDegreeVal + 1)) / 2 + ((numNodes - minDegreeVal - 1) * (numNodes - minDegreeVal - 2)) / 2;
+  console.log(result);
 }
 
-// Read input from standard input and pass it to the processing function
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+ProcessGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

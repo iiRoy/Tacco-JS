@@ -1,38 +1,24 @@
-const fileSystemModule = require('fs') ;
+const fileSystemModule = require('fs');
 
-// Obtain raw content from standard input, using UTF-8 encoding.
-let dataSource = fileSystemModule.readFileSync('/dev/stdin', 'utf8') ;
+let rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-// Sanitize input: remove leading/trailing whitespace, then segment into an array of strings by newline characters.
-const lineCollection = ( dataSource . trim() ) . split("\n");
+let lineSegments = rawInputContent.trim().split("\n");
 
-// Process each individual entry within the collection.
-lineCollection . forEach( function ( currentLineContent )
-{
-   // Parse the current line: split by spaces and convert each resulting string to a numerical type.
-   var numericValues = currentLineContent . split(" ") . map( Number );
-   
-   // Initialize a counter for specific conditions.
-   let matchCount = 0;
-   
-   // An immediately-invoked function expression (IIFE) to encapsulate coordinate comparison logic.
-   // Parameters represent the coordinates (x1, y1, x2, y2) for two distinct rectangular areas.
-   (function ( firstRectX1, firstRectY1, firstRectX2, firstRectY2, secondRectX1, secondRectY1, secondRectX2, secondRectY2 )
-   {
-      // Evaluate if there is an overlap along the horizontal axis between the two rectangles.
-      if ( ( secondRectX2 >= firstRectX1 ) && ( secondRectX1 <= firstRectX2 ) )
-      {
-         matchCount ++ ; // Increment the counter upon detecting horizontal overlap.
+lineSegments.forEach(function(currentSegment) {
+   let numericalData = currentSegment.split(" ").map(Number);
+   let overlapTally = 0;
+
+   (function(rectA_x_start, rectA_y_start, rectA_x_end, rectA_y_end, rectB_x_start, rectB_y_start, rectB_x_end, rectB_y_end) {
+      // Check for horizontal overlap between the two rectangles
+      if (rectB_x_end >= rectA_x_start && rectB_x_start <= rectA_x_end) {
+         overlapTally++;
       }
-      
-      // Evaluate if there is an overlap along the vertical axis between the two rectangles.
-      if ( ( secondRectY2 >= firstRectY1 ) && ( secondRectY1 <= firstRectY2 ) )
-      {
-         matchCount ++ ; // Increment the counter upon detecting vertical overlap.
+      // Check for vertical overlap between the two rectangles
+      if (rectB_y_end >= rectA_y_start && rectB_y_start <= rectA_y_end) {
+         overlapTally++;
       }
-   }) . apply( null, numericValues ); // Pass the parsed numeric data as arguments to the IIFE.
-   
-   // Based on the final count, print "YES" if both horizontal and vertical overlaps were found, otherwise "NO".
-   console . log( ( matchCount === 2 ) ? "YES" : "NO" );
-}
-) ;
+   }).apply(null, numericalData); // Pass the numerical data as arguments to the anonymous function
+
+   // Output "YES" if both horizontal and vertical overlaps were detected, otherwise "NO"
+   console.log((overlapTally === 2) ? "YES" : "NO");
+});

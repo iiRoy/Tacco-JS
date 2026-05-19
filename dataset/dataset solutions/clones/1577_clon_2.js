@@ -1,37 +1,27 @@
 function ProcessInput(rawData) {
-  // This function processes an input string to calculate adjustments for a non-decreasing sequence.
+  // This line extracts the first number from the input string, which represents the count of elements.
+  const countElements = parseInt(rawData.split('\n')[0]);
 
-  // Extract the total number of items from the first line of the input data.
-  const countElements = Number.parseInt(rawData.trim().split('\n')[0]);
+  // This line parses the second line of the input into an array of numbers.
+  const dataArray = rawData.split('\n')[1].split(' ').map(Number);
 
-  // Parse the list of numeric values from the second line of the input data.
-  // Each value is converted to a number.
-  const valueList = rawData.trim().split('\n')[1].split(' ').map(Number);
+  // Initialize a variable to accumulate the total adjustments made.
+  let totalAdjustment = 0;
 
-  // Initialize a variable to store the cumulative difference (total adjustment).
-  // Using a float (0.0) to imply potential non-integer results, though in this case, it will be integer.
-  let cumulativeDifference = 0.0;
-
-  // Iterate through the sequence of values, comparing adjacent elements.
-  // The loop runs up to the second-to-last element to allow comparison with the next element.
-  for (let currentIdx = 0; currentIdx < countElements - 1; currentIdx++) {
-    // Check if the current element is greater than or equal to the next element.
-    // If it is, an adjustment is needed to maintain a non-decreasing order.
-    if (valueList[currentIdx] >= valueList[currentIdx + 1]) {
-      // Calculate the difference required to make the next element at least equal to the current one.
-      // Add this difference to the total cumulative adjustment.
-      cumulativeDifference = cumulativeDifference + (valueList[currentIdx] - valueList[currentIdx + 1]);
-
-      // Adjust the next element's value to be equal to the current element's value.
-      // This ensures the non-decreasing property for this pair.
-      valueList[currentIdx + 1] = valueList[currentIdx];
+  // Iterate through the array, comparing each element with its successor.
+  for (let idx = 0; idx < countElements - 1; idx++) {
+    // If the current element is greater than or equal to the next element, an adjustment is needed.
+    if (dataArray[idx] >= dataArray[idx + 1]) {
+      // Calculate the difference required to make the next element equal to the current one.
+      totalAdjustment = totalAdjustment + dataArray[idx] - dataArray[idx + 1];
+      // Update the next element to be equal to the current one, ensuring non-decreasing order.
+      dataArray[idx + 1] = dataArray[idx];
     }
   }
 
-  // Display the final accumulated difference to the console.
-  console.log(cumulativeDifference);
+  // Output the final accumulated adjustment value to the console.
+  console.log(totalAdjustment);
 }
 
-// Execute the main processing logic by reading input from standard input.
-// The file system module is used to read the input as a UTF-8 encoded string.
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf-8"));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

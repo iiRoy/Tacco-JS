@@ -1,25 +1,20 @@
-const obtainValueAndCompute = (currentSum, availableUnits) => {
-    if (availableUnits.length === 0) {
-        return 0;
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
+    let targetAmount = parseInt(lines[0]);
+
+    let hundredsCount = 0;
+    while (targetAmount >= 500) {
+        targetAmount -= 500;
+        hundredsCount++;
     }
-    const currentUnitValue = availableUnits[0];
-    const unitQuantity = Math.floor(currentSum / currentUnitValue);
-    const remainingSum = currentSum % currentUnitValue;
 
-    return unitQuantity + obtainValueAndCompute(remainingSum, availableUnits.slice(1));
-};
+    let fivesCount = 0;
+    while (targetAmount >= 5) {
+        targetAmount -= 5;
+        fivesCount++;
+    }
 
-const processRawEntry = (sourceContent) => {
-    const extractedDigits = sourceContent.match(/^\d+/);
-    const numericalPayload = extractedDigits ? Number(extractedDigits[0]) : 0;
-    const valueDenominations = [500, 5];
+    console.log(hundredsCount + fivesCount);
+}
 
-    return obtainValueAndCompute(numericalPayload, valueDenominations);
-};
-
-const executeProgram = (programInput) => {
-    const finalResult = processRawEntry(programInput);
-    console.log(finalResult);
-};
-
-executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

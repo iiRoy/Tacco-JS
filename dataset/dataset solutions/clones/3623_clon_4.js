@@ -1,19 +1,17 @@
-function processNumericSequence(sourceData) {
-  var numericalValue = parseInt(sourceData.substring(0, sourceData.indexOf('\n')), 10);
-  var derivedRemainder = numericalValue % 11;
+function processInputData(rawData) {
+  const firstLineContent = rawData.split('\n')[0];
+  const numericalValue = Number(firstLineContent);
 
-  var permissibleRemainders = [0, 4, 7];
+  const remainderResult = numericalValue % 11;
 
-  var remainderCheckFunction = function(currentRemainder) {
-    return permissibleRemainders.includes(currentRemainder);
+  const decisionMatrix = {
+    0: "Yes",
+    4: "Yes",
+    7: "Yes"
   };
 
-  var outcomeMapping = {
-    "true": "Yes",
-    "false": "No"
-  };
-
-  console.log(outcomeMapping[remainderCheckFunction(derivedRemainder).toString()]);
+  const finalOutcome = decisionMatrix[remainderResult] || "No";
+  console.log(finalOutcome);
 }
 
-processNumericSequence(require("fs").readFileSync("/dev/stdin","utf8"));
+processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));

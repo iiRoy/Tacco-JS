@@ -1,17 +1,10 @@
-(function() {
-    const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
+function processInputData(sourceText) {
+    const numericValue = parseInt(sourceText, 10);
 
-    const extractionPattern = /^(\d+)/;
-    const numericToken = dataSource.match(extractionPattern);
+    const factors = [numericValue, numericValue, 3];
+    const computedResult = factors.reduce((accumulator, currentFactor) => accumulator * currentFactor);
 
-    let primaryValue;
-    if (numericToken && numericToken[1]) {
-        primaryValue = parseInt(numericToken[1], 10);
-    } else {
-        primaryValue = 0;
-    }
+    console.log(computedResult);
+}
 
-    const calculatedOutcome = 3 * Math.pow(primaryValue, 2);
-
-    console.log(calculatedOutcome);
-})();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

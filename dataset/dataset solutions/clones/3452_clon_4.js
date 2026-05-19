@@ -1,35 +1,30 @@
-function AssessAtmosphericConditions(incomingStream) {
-    const dataSegments = incomingStream.split('\n');
+function processData(rawData) {
+    const dataLines = rawData.split("\n");
 
-    const amountOfUnits = parseInt(dataSegments[0].split(' ')[0], 10);
+    const [stationCountStr] = dataLines[0].split(" ");
+    const totalStationCount = Number(stationCountStr);
 
-    const [primaryReference, targetReference] = dataSegments[1].split(' ').map(parseFloat);
+    const [baseTemperatureStr, targetTemperatureStr] = dataLines[1].split(" ");
+    const initialTemperature = Number(baseTemperatureStr);
+    const desiredTemperature = Number(targetTemperatureStr);
 
-    const elevationReadings = dataSegments[2].split(' ').map(parseFloat);
+    const altitudeMeasurements = dataLines[2].split(" ").map(Number);
 
-    const gradientCoefficient = 0.006;
+    const closestStationInfo = altitudeMeasurements.reduce((currentOptimal, currentAltitudeValue, stationIndex) => {
+        const calculatedStationTemperature = initialTemperature - currentAltitudeValue * 0.006;
+        const absoluteTemperatureDifference = Math.abs(calculatedStationTemperature - desiredTemperature);
 
-    const initialDerivedValue = primaryReference - (elevationReadings[0] * gradientCoefficient);
-    const initialAbsoluteDifference = Math.abs(initialDerivedValue - targetReference);
-
-    const evaluationOutcome = elevationReadings.reduce((accumulatedState, currentElevation, currentPosition) => {
-        const calculatedTemperature = primaryReference - (currentElevation * gradientCoefficient);
-        const currentAbsoluteDifference = Math.abs(calculatedTemperature - targetReference);
-
-        if (currentAbsoluteDifference < accumulatedState.minimumObservedDelta) {
+        if (absoluteTemperatureDifference < currentOptimal.minimumDifference) {
             return {
-                minimumObservedDelta: currentAbsoluteDifference,
-                bestMatchingLocation: currentPosition + 1
+                minimumDifference: absoluteTemperatureDifference,
+                stationNumber: stationIndex + 1
             };
         } else {
-            return accumulatedState;
+            return currentOptimal;
         }
-    }, {
-        minimumObservedDelta: initialAbsoluteDifference,
-        bestMatchingLocation: 1
-    });
+    }, { minimumDifference: Infinity, stationNumber: -1 });
 
-    console.log(evaluationOutcome.bestMatchingLocation);
+    console.log(closestStationInfo.stationNumber);
 }
 
-AssessAtmosphericConditions(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

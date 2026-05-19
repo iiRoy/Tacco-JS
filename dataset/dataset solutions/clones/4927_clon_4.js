@@ -1,93 +1,102 @@
-// Utility for acquiring raw input from stdin
-function obtainInputText() {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+let inputSource;
+
+function readRawInput() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
 
-// Creates an iterable generator for lines from the input text
-function* createLineIterator(textSource) {
-    const lines = textSource.split("\n");
-    for (const line of lines) {
-        yield line;
+function prepareInputReader() {
+  const rawLines = readRawInput();
+  return {
+    lineData: rawLines,
+    currentIndex: 0,
+    totalLines: rawLines.length,
+    hasMoreLines: function() {
+      return (this.currentIndex < this.totalLines);
+    },
+    fetchNextLine: function() {
+      if (!this.hasMoreLines()) {
+        throw "InputExhaustedException: No more lines available.";
+      } else {
+        const currentLine = this.lineData[this.currentIndex];
+        this.currentIndex++;
+        return currentLine;
+      }
     }
+  };
 }
 
-// A collection of functions to transform input strings based on a key
-const dataTransformers = {
-    numericValue: (val) => parseInt(val),
-    spaceSeparatedTokens: (val) => val.split(" "),
-    spaceSeparatedNumbers: (val) => val.split(" ").map(Number),
-    singleCharacters: (val) => val.split("")
-};
+inputSource = prepareInputReader();
 
-// Applies a specified transformation to a given value
-function performTransformation(value, operationKey) {
-    try {
-        const transformer = dataTransformers[operationKey];
-        return transformer ? transformer(value) : value;
-    } catch (e) {
-        // In case of error during transformation, return original value as per original logic
-        return value;
-    }
+function getNextInteger() {
+  return applyConversion(fetchNextLine(), 1);
 }
 
-// Global variable to hold the current input line iterator state
-let currentLineIteratorState;
-
-// Initializes the input stream by setting up the line iterator
-function setupReader() {
-    currentLineIteratorState = createLineIterator(obtainInputText());
+function getNextStringArray() {
+  return applyConversion(fetchNextLine(), 2);
 }
 
-// Retrieves the next line from the input stream
-function extractNextLine() {
-    const { value, done } = currentLineIteratorState.next();
-    if (done) {
-        // Custom error message, different from original's specific string
-        throw new Error("Input stream exhausted. No more data available.");
-    }
-    return value;
+function getNextIntegerArray() {
+  return applyConversion(fetchNextLine(), 4);
 }
 
-// Specific input retrieval functions using the general transformation utility
-function retrieveInt() { return performTransformation(extractNextLine(), "numericValue"); }
-function retrieveStrArray() { return performTransformation(extractNextLine(), "spaceSeparatedTokens"); }
-function retrieveIntArray() { return performTransformation(extractNextLine(), "spaceSeparatedNumbers"); }
-function retrieveCharArray() { return performTransformation(extractNextLine(), "singleCharacters"); }
-
-// Function for standard output
-function presentResult(value) { console.log(value); }
-
-// Function for error output (unused in this specific problem but kept for completeness based on original)
-function signalError(value) { console.error(value); }
-
-// Pure function to determine score change for a single character based on its properties
-function calculateCharScore(character, position, totalLength) {
-    const isPositionEven = (position % 2 === 0);
-    const isPositionLast = (position === totalLength - 1);
-
-    if (character === 'g') {
-        // 'g' grants +1 only if at an even position and not the last character
-        return (isPositionEven && !isPositionLast) ? 1 : 0;
-    } else if (character === 'p') {
-        // 'p' subtracts -1 if at an odd position, OR if at an even position AND it is the last character
-        return (!isPositionEven || (isPositionEven && isPositionLast)) ? -1 : 0;
-    }
-    return 0; // Other characters or conditions yield no score change
+function getNextCharacterArray() {
+  return applyConversion(fetchNextLine(), 6);
 }
 
-// Main orchestration function, replacing the original 'Main' function
-function orchestrateProcessing() {
-    setupReader(); // First, initialize the input system
-
-    const providedSequence = extractNextLine(); // Read the first line of input
-    
-    // Process the sequence using a functional reduction over its characters
-    const finalTally = Array.from(providedSequence).reduce((currentAccumulator, charElement, elementIndex, fullArray) => {
-        return currentAccumulator + calculateCharScore(charElement, elementIndex, fullArray.length);
-    }, 0); // Start with an initial score of 0
-
-    presentResult(finalTally); // Display the final calculated tally
+function fetchNextLine() {
+  return inputSource.fetchNextLine();
 }
 
-// Execute the entire processing flow
-orchestrateProcessing();
+function hasMoreLines() {
+  return inputSource.hasMoreLines();
+}
+
+function emitResult(content) {
+  console.log(content);
+}
+
+function emitError(content) {
+  console.error(content);
+}
+
+const conversionDispatch = new Map([
+  [1, (val) => parseInt(val)],
+  [2, (val) => val.split(" ")],
+  [4, (val) => val.split(" ").map(Number)],
+  [6, (val) => val.split("")],
+  [7, (val) => val.split("").map(Number)],
+  [8, (val) => val.join(" ")],
+  [9, (val) => val.join("\n")],
+  [0, (val) => val.join("")],
+]);
+
+function applyConversion(inputValue, conversionType) {
+  try {
+    const converter = conversionDispatch.get(conversionType);
+    return converter ? converter(inputValue) : inputValue;
+  } catch (e) {
+    return inputValue;
+  }
+}
+
+function ProcessInput() {
+  const inputString = fetchNextLine();
+  const characterArray = Array.from(inputString);
+
+  const finalScore = characterArray.reduce((currentTally, charElement, charIdx) => {
+    const isEvenPosition = charIdx % 2 === 0;
+    const isNotLastPosition = charIdx < characterArray.length - 1;
+
+    const scoreChange = (
+      (isEvenPosition && isNotLastPosition && charElement === 'g') ? 1 :
+      (!(isEvenPosition && isNotLastPosition) && charElement === 'p') ? -1 :
+      0
+    );
+
+    return currentTally + scoreChange;
+  }, 0);
+
+  emitResult(finalScore);
+}
+
+ProcessInput();

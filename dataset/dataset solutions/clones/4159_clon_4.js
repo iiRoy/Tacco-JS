@@ -1,47 +1,42 @@
-const fileSystem = require('fs');
+var inputData = [];
+var ioInterface = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-function calculateDiscrepancySum(frequencyRegister) {
-    let accumulatedValue = 0;
+ioInterface.on('line', function (currentLine) {
+    inputData.push(currentLine);
+});
 
-    const mapEntriesAsList = Array.from(frequencyRegister.entries());
+ioInterface.on('close', function () {
+    // The first line (N) is read but not utilized in the original logic,
+    // so we parse it but don't use it for behavioral equivalence.
+    // var elementCountTotal = Number(inputData[0]);
+    var elementStrings = inputData[1].split(" ");
+    var numericElements = elementStrings.map(str => Number(str));
 
-    function processEntriesRecursively(remainingEntries, currentTotal) {
-        if (remainingEntries.length === 0) {
-            return currentTotal;
-        }
-
-        const [itemIdentity, itemQuantity] = remainingEntries[0];
-        let updatedTotal = currentTotal;
-
-        if (itemIdentity !== itemQuantity) {
-            if (itemIdentity < itemQuantity) {
-                updatedTotal += itemQuantity - itemIdentity;
-            } else {
-                updatedTotal += itemQuantity;
-            }
-        }
-        return processEntriesRecursively(remainingEntries.slice(1), updatedTotal);
+    // Employ a Map for frequency tabulation, a different data representation
+    var frequencyMap = new Map();
+    for (var item of numericElements) {
+        frequencyMap.set(item, (frequencyMap.get(item) || 0) + 1);
     }
 
-    return processEntriesRecursively(mapEntriesAsList, 0);
-}
+    // Compute the total adjustments required using a functional reduction strategy
+    var totalAdjustments = Array.from(frequencyMap.entries()).reduce((accumulator, [elementValue, elementCount]) => {
+        // elementValue represents the distinct number (e.g., 3)
+        // elementCount represents its frequency in the input (e.g., 5)
 
-function processInputContent(fullInputText) {
-    const contentRows = fullInputText.trim().split('\n');
-    const numericalSeries = contentRows[1].split(" ").map(entryVal => Number(entryVal));
+        if (elementValue === elementCount) {
+            // If the number's value matches its count, no items need to be removed or added.
+            return accumulator;
+        } else if (elementCount > elementValue) {
+            // If the count exceeds the number's value, remove the surplus items.
+            return accumulator + (elementCount - elementValue);
+        } else { // elementCount < elementValue
+            // If the count is less than the number's value, remove all occurrences of this number.
+            return accumulator + elementCount;
+        }
+    }, 0); // Initialize the total adjustments sum to zero
 
-    const occurrenceCollection = numericalSeries.reduce((accumulatorMap, currentElement) => {
-        accumulatorMap.set(currentElement, (accumulatorMap.get(currentElement) || 0) + 1);
-        return accumulatorMap;
-    }, new Map());
-
-    const finalSummation = calculateDiscrepancySum(occurrenceCollection);
-    console.log(finalSummation);
-}
-
-try {
-    const capturedInputText = fileSystem.readFileSync('/dev/stdin', 'utf8');
-    processInputContent(capturedInputText);
-} catch (inputError) {
-    console.error("Input reading error:", inputError);
-}
+    console.log(totalAdjustments);
+});

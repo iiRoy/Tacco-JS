@@ -1,28 +1,9 @@
-//  This script processes numerical input to calculate a specific value.
-fileContentLines       =   require    (    'fs'    )
-    .    readFileSync    (
-        '/dev/stdin'    ,
-        'utf8'
-    )
-    .    split    (    '\n'    )
-;
-//  The initial line contains the primary numerical data.
-numberStrings    =    fileContentLines
-    .    shift    (    )
-    .    split    (    ' '    )
-;
+inputData = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n'); // Read input from standard input, split by newlines
 
-//  Extracting and converting the first numeric argument.
-firstNumber        =        Number    (        numberStrings    [    0    ]        )    ;
+let lineParts = inputData.shift().split(' '); // Get the first line of input and split it by spaces
 
-//  Extracting and converting the second numeric argument.
-secondNumber    =    Number    (    numberStrings    [    1    ]    )    ;
+let firstNumber = lineParts[0] * 1; // Convert the first part to a number
+let secondNumber = lineParts[1] * 1; // Convert the second part to a number
 
-//  Calculating the ceiling of the average of the two extracted numbers.
-console    .    log    (
-    Math    .    ceil    (
-        (    firstNumber    +    secondNumber    )
-        /
-        2
-    )
-)    ;
+// Calculate the ceiling of the average of the two numbers and print it
+console.log(Math.ceil((firstNumber + secondNumber) / 2));

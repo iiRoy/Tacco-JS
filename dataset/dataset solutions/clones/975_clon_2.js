@@ -1,48 +1,39 @@
-/* Configuration object for managing file input and line separation settings. */
-const applicationSettings = {
-    sourceFile: '/proc/self/fd/0', /* Designates standard input on Linux-like systems */
-    lineDelimiter: '\n'             // Specifies the newline character for parsing
+const processingOptions = {
+  sourcePath: '/dev/stdin', // Specifies the input file location
+  lineSeparator: '\n'       // Defines the character sequence for new lines
 };
 
-// Obtain the native file system module from the Node.js runtime.
-const fileSystemModule = require('fs');
+// Reads the entire content of the specified file using 'ascii' encoding.
+// The content is then split into an array of strings, using the defined line separator,
+// and limited to a maximum of two resulting parts.
+let fileContentParts = require('fs').readFileSync(processingOptions.sourcePath, 'ascii')
+  .split(processingOptions.lineSeparator, 2);
 
-/* Read the entire data from the configured input file path.
-   The data is interpreted as an ASCII string.
-   Then, this string is divided into an array of substrings
-   using the defined line delimiter,
-   and limited to a maximum of two resulting segments. */
-let contentSegments = fileSystemModule
-                        .readFileSync(applicationSettings.sourceFile, 'ascii')
-                        .split(applicationSettings.lineDelimiter, 2);
+// The first segment of the file content is assigned as the main text.
+const mainText = fileContentParts[0];
+// The second segment is assigned as the substring to search for.
+const substringToFind = fileContentParts[1];
 
-// The main string where the search operation will be performed.
-let primaryDocument = contentSegments[0];
+// The array holding the file content parts is no longer needed,
+// so its reference is cleared to potentially free up memory.
+fileContentParts = null;
 
-// The specific substring pattern to locate within the primary document.
-let soughtPattern = contentSegments[1];
+// Initializes a variable to track the current position in the main text
+// from which to start the search.
+let currentPosition = 0;
+// An array to store all the starting indices where the substring is found.
+const foundStartIndices = [];
 
-// Dereference the content segments array to facilitate garbage collection.
-contentSegments = null;
-
-// Initialize an integer variable to keep track of the current scanning offset.
-let currentSearchOffset = 0;
-
-/* An array structure intended to store all the starting positions
-   where the sought pattern is successfully identified. */
-let foundLocationList = [];
-
-// Begin a repetitive search procedure to find all instances of the pattern.
-while (
-    (currentSearchOffset = primaryDocument.indexOf(soughtPattern, currentSearchOffset)) !== -1
-) {
-    // Append the discovered starting position to the collection.
-    foundLocationList.push(currentSearchOffset);
-
-    // Advance the search offset by one character to find subsequent matches,
-    // including potentially overlapping ones.
-    currentSearchOffset++;
+// Continuously searches for the substring within the main text.
+// The search begins at 'currentPosition' and updates 'currentPosition'
+// with the index of the next occurrence found.
+while ((currentPosition = mainText.indexOf(substringToFind, currentPosition)) !== -1) {
+  // If an occurrence is found, its starting index is added to the results array.
+  foundStartIndices.push(currentPosition);
+  // The search position is then advanced by one character to allow for
+  // finding overlapping occurrences of the substring.
+  currentPosition++;
 }
 
-// Output the compilation of found locations, with each index on a new line.
-console.log(foundLocationList.join('\n'));
+// Prints each found index on a new line to the console.
+console.log(foundStartIndices.join('\n'));

@@ -1,80 +1,65 @@
-// This initial segment prepares the environment for input acquisition.
 var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-var contentHolder;
-var receivedStrings = [];
+
+var dataHandler;
+var inputLines = [];
 
 inputReader.on('line', function(currentLine){
-  receivedStrings.push(currentLine);
+  inputLines.push(currentLine);
 });
 
 inputReader.on('close', function(){
-  contentHolder = initializeData(receivedStrings);
-  console.error('\n▲ Input ▼ Output'); // Visual separator for debugging
-  executeProgram();
+  dataHandler = initializeInputProcessor(inputLines);
+  console.error('\n↑入力 ↓出力');
+  executeMainLogic();
 });
 
-// A utility function to create a deep copy of an object or a Set.
-function duplicateObject(sourceObject){
-  return (sourceObject instanceof Set)
-    ? new Set(Array.from(sourceObject))
-    : JSON.parse(JSON.stringify(sourceObject));
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set)
+    ? new Set(Array.from(originalObject))
+    : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Functions to retrieve and convert input data based on various types.
-function retrieveInteger(){return dataConverter(fetchNext(), 1);}
-function retrieveStringArray(){return dataConverter(fetchNext(), 2);}
-function retrieveIntegerArray(){return dataConverter(fetchNext(), 4);}
-function retrieveCharacterArray(){return dataConverter(fetchNext(), 6);}
+function getNextInteger(){ return convertInput(fetchNextItem(), 1); }
+function getNextStringArray(){ return convertInput(fetchNextItem(), 2); }
+function getNextIntegerArray(){ return convertInput(fetchNextItem(), 4); }
+function getNextCharacterArray(){ return convertInput(fetchNextItem(), 6); }
 
-// Functions to interact with the global content holder for input.
-function fetchNext(){return contentHolder.getNextItem();}
-function hasMoreData(){return contentHolder.hasMoreData();}
+function fetchNextItem(){ return dataHandler.next(); }
+function hasMoreItems(){ return dataHandler.hasNext(); }
 
-// This function constructs an object to manage the input lines.
-function initializeData(rawInputArray){
+function initializeInputProcessor(rawInputData){
   return {
-    dataList : rawInputArray,
+    dataList : rawInputData,
     currentIndex : 0,
-    maximumCount : rawInputArray.length,
-    hasMoreData : function(){
-      return (this.currentIndex < this.maximumCount);
+    maximumIndex : rawInputData.length,
+
+    hasNext : function(){
+      return (this.currentIndex < this.maximumIndex);
     },
-    getNextItem : function(){
-      if(this.hasMoreData()){
+
+    next : function(){
+      if(this.hasNext()){
         return this.dataList[this.currentIndex++];
       } else {
-        throw 'InputExhaustedError: No further input elements are available.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-// Outputs a string to the console.
-function displayOutput(outputString){
+function outputResult(outputString){
   console.log(outputString);
 }
 
-// Logs debug information to the error console.
 function logDebugMessage(debugContent){
-  console.error('Debug Info: ' + require('util').inspect(debugContent, false, null));
+  console.error('debug:' + require('util').inspect(debugContent, false, null));
 }
 
-// This function handles various input string transformations based on a provided type code.
-// The 'conversionType' parameter dictates the operation:
-// - Default/Unknown: Returns the input value unchanged.
-// - 1: Parses the input as an integer.
-// - 2: Splits the input string by spaces into an array of strings.
-// - 4: Splits by spaces and converts each part to a number.
-// - 6: Splits the input string into an array of individual characters.
-// - 7: Splits by characters and converts each to a number.
-// - 8: Joins array elements with spaces.
-// - 9: Joins array elements with newlines.
-// - 0: Joins array elements without any separator.
-function dataConverter(inputValue, conversionType){
-  try{
+function convertInput(inputValue, conversionType){
+  try {
     switch(conversionType){
       case 1: return parseInt(inputValue);
       case 2: return inputValue.split(' ');
@@ -86,24 +71,22 @@ function dataConverter(inputValue, conversionType){
       case 0: return inputValue.join('');
       default: return inputValue;
     }
-  } catch(exceptionError){
-    return inputValue; // In case of error, return original value
+  } catch(errorObject){
+    return inputValue;
   }
 }
 
-// This marks the end of the input processing and utility functions.
-// The primary program logic resides below.
-function executeProgram(){
-  var targetSum = retrieveInteger();
+function executeMainLogic(){
+  var targetSum = getNextInteger();
   var dynamicProgrammingArray = new Array(2001).fill(0);
   var moduloValue = 1000000007;
 
-  for(var outerLoopCounter = 3; outerLoopCounter <= targetSum; outerLoopCounter++){
-    dynamicProgrammingArray[outerLoopCounter]++;
-    for(var innerLoopCounter = 3; innerLoopCounter <= outerLoopCounter - 3; innerLoopCounter++){
-      dynamicProgrammingArray[outerLoopCounter] += dynamicProgrammingArray[innerLoopCounter];
-      dynamicProgrammingArray[outerLoopCounter] %= moduloValue;
+  for(var currentSum = 3; currentSum <= targetSum; currentSum++){
+    dynamicProgrammingArray[currentSum]++;
+    for(var previousSum = 3; previousSum <= currentSum - 3; previousSum++){
+      dynamicProgrammingArray[currentSum] += dynamicProgrammingArray[previousSum];
+      dynamicProgrammingArray[currentSum] %= moduloValue;
     }
   }
-  displayOutput(dynamicProgrammingArray[targetSum]);
+  outputResult(dynamicProgrammingArray[targetSum]);
 }

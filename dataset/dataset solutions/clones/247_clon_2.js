@@ -1,28 +1,29 @@
-// This module's purpose is to process numeric sequences.
-const dataSource = require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ;
-const textRows = dataSource . split ( '\n' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read the entire input from standard input
+var dataRows = rawData.split('\n'); // Split the input string into an array of lines
 
-let currentSegment ; // Holds a single line of text.
+var currentLine; // Declare a variable to hold the current line being processed
+while (currentLine = dataRows.shift()) { // Loop through each line of input until no more lines are available
+    // Convert the current line (string of digits) into an array of numbers
+    var digitArray = currentLine.split('').map(function(digitChar) {
+        return +digitChar; // Convert each character digit to a number
+    });
 
-while ( currentSegment = textRows . shift ( ) )
-{
-  // Transforms the current text segment into an array of integer digits.
-  let digitArray = currentSegment . split ( '' ) . map ( function ( digitChar ) { return + digitChar ; } ) ;
+    var arrayLength = digitArray.length; // Get the initial count of digits in the array
 
-  let arrayLength = digitArray . length ; // Stores the current count of numerical elements.
+    // This inner loop continues until only one digit remains in the array
+    while (arrayLength > 1) {
+        var tempArray = []; // Initialize a temporary array to store results of the current reduction step
 
-  // The core algorithm: repeatedly sums adjacent digits until only one remains.
-  while ( arrayLength > 1 )
-  {
-    let tempCollection = [ ] ; // Temporary storage for the sums of adjacent pairs.
-    for ( let indexCounter = 0 ; indexCounter < arrayLength - 1 ; indexCounter ++ )
-    {
-      // Computes the sum of two neighboring digits, then applies modulo 10.
-      tempCollection . push ( ( digitArray [ indexCounter ] + digitArray [ indexCounter + 1 ] ) % 10 ) ;
+        // Iterate through the current digit array, summing adjacent elements
+        for (var idx = 0; idx < arrayLength - 1; idx++) {
+            // Sum the current digit and the next one, then take the result modulo 10
+            tempArray.push((digitArray[idx] + digitArray[idx + 1]) % 10);
+        }
+
+        arrayLength--; // Decrement the length for the next iteration (as one element is removed in each step)
+        digitArray = tempArray; // Replace the original array with the newly computed one
     }
-    arrayLength -- ; // Decreases the effective length for the subsequent iteration.
-    digitArray = tempCollection ; // Updates the main array with the newly computed sums.
-  }
-  // Displays the final, solitary digit resulting from the process.
-  console . log ( digitArray [ 0 ] ) ;
+
+    // After the reduction, print the single remaining digit
+    console.log(digitArray[0]);
 }

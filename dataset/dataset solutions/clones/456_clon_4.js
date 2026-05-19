@@ -1,54 +1,45 @@
-const displayResult = console.log;
-
-function evaluatePeriod(initialBalance, periodData, currentPeriodIdx, triggerPeriod) {
-    if (currentPeriodIdx === 12) {
-        if (triggerPeriod !== null) {
-            displayResult(triggerPeriod);
-        } else {
-            displayResult('NA');
-        }
-        return;
-    }
-
-    const [outflow, inflow] = periodData[currentPeriodIdx].split(' ').map(Number);
-    const netChange = outflow - inflow;
-    const updatedBalance = initialBalance - netChange;
-
-    let nextTriggerPeriod = triggerPeriod;
-    if (nextTriggerPeriod === null && updatedBalance <= 0) {
-        nextTriggerPeriod = currentPeriodIdx + 1;
-    }
-
-    evaluatePeriod(updatedBalance, periodData, currentPeriodIdx + 1, nextTriggerPeriod);
-}
-
-function manageScenarios(allLines, currentLineCursor) {
-    const initialCapacityStr = allLines[currentLineCursor];
-    const initialCapacity = Number(initialCapacityStr);
-
-    if (initialCapacity === 0) {
-        return;
-    }
-
-    const twelveMonthDetails = allLines.slice(currentLineCursor + 1, currentLineCursor + 1 + 12);
-
-    evaluatePeriod(initialCapacity, twelveMonthDetails, 0, null);
-
-    manageScenarios(allLines, currentLineCursor + 1 + 12);
-}
-
-function initiateProcessing() {
-    manageScenarios(globalData, 0);
-}
-
-var globalData = '';
+var input = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', function(chunk) {
-    globalData += chunk;
+  input += chunk;
 });
 process.stdin.on('end', function() {
-    globalData = globalData.split('\n');
-    initiateProcessing();
+  const allInputLines = input.split('\n');
+  const processedScenarios = parseInputData(allInputLines);
+  processedScenarios.forEach(singleScenario => {
+    console.log(evaluateScenario(singleScenario));
+  });
 });
+
+const parseInputData = (linesCollection) => {
+    const structuredScenarios = [];
+    let currentLinePointer = 0;
+    while (true) {
+        const initialBalanceValue = Number(linesCollection[currentLinePointer++]);
+        if (initialBalanceValue === 0) break;
+
+        const monthlyTransactionRecords = Array.from({ length: 12 }, () => {
+            return linesCollection[currentLinePointer++].split(' ').map(Number);
+        });
+        structuredScenarios.push({ startingAmount: initialBalanceValue, monthlyOperations: monthlyTransactionRecords });
+    }
+    return structuredScenarios;
+};
+
+const evaluateScenario = (scenarioDetails) => {
+    const finalOutcome = scenarioDetails.monthlyOperations.reduce((tracker, [outflow, inflow], monthIndex) => {
+        if (tracker.breachMonth !== null) {
+            return tracker;
+        }
+        const netDifference = outflow - inflow;
+        tracker.currentAccountValue -= netDifference;
+        if (tracker.currentAccountValue <= 0) {
+            tracker.breachMonth = monthIndex + 1;
+        }
+        return tracker;
+    }, { currentAccountValue: scenarioDetails.startingAmount, breachMonth: null });
+
+    return finalOutcome.breachMonth !== null ? String(finalOutcome.breachMonth) : 'NA';
+};

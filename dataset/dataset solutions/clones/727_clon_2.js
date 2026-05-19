@@ -1,55 +1,65 @@
 #!/usr/bin/node
-// This code processes standard input to perform calculations.
-( function( ) {
-  var collectedInputLines = [ ], inputDataStream;
+// This script processes numerical input from standard input.
+// It calculates a specific value based on the input lines provided.
+(function() {
+  // Declare variables for storing accumulated input lines and the standard input stream object.
+  let inputLines = [];
+  let inputReader;
 
-  // Obtain the standard input stream for data processing.
-  inputDataStream = process.openStdin();
+  // Obtain a readable stream for standard input.
+  inputReader = process.openStdin();
+  // Configure the input stream to decode incoming data as UTF-8 strings.
+  inputReader.setEncoding('utf8');
 
-  // Configure the input stream to use UTF-8 character encoding.
-  inputDataStream.setEncoding( 'utf8' );
-
-  // Attach a listener for incoming data chunks.
-  inputDataStream.on( 'data', function( receivedChunk ) {
-    // Split the received data into lines based on newline characters.
-    var lineSegments = receivedChunk.split( "\n" );
-
-    // If the data contains more than two segments or the second segment is not empty,
-    // replace the entire collection. Otherwise, append the first segment.
-    if ( lineSegments.length > 2 || lineSegments[ 1 ] !== '' ) {
-      collectedInputLines = lineSegments;
+  // Register an event handler for the 'data' event, which fires when input data is available.
+  inputReader.on('data', function(chunkData) {
+    // Split the received data chunk into an array of strings based on newline characters.
+    let processedLines = chunkData.split("\n");
+    // This conditional logic determines how input lines are stored.
+    // If the split chunk contains more than two elements, or if the second element is not an empty string,
+    // it implies multiple meaningful lines or a non-empty second line, so replace the entire buffer.
+    if (processedLines.length > 2 || processedLines[1] !== '') {
+      inputLines = processedLines;
     } else {
-      collectedInputLines.push( lineSegments[ 0 ] );
+      // Otherwise, if it's a single line or a line followed by an empty string (e.g., due to a trailing newline),
+      // just append the first meaningful line to the existing buffer.
+      inputLines.push(processedLines[0]);
     }
-  } );
+  });
 
-  // Attach a listener for the end of the input stream.
-  inputDataStream.on( 'end', function( completionArg ) {
-    var currentLineNumbers, outerLoopIndex, innerLoopIndex, secondCoordinateValue, totalIterationsCount, resultOffset, firstCoordinateValue;
+  // Register an event handler for the 'end' event, which fires when the input stream has concluded.
+  inputReader.on('end', function(endEventArg) {
+    // Declare variables to be used within the processing loop.
+    let currentLineNumbers, testCaseIndex, numberIndex, secondVal, numTestCases, remainderCalc, firstVal;
 
-    // Parse the first line as the total number of iterations.
-    totalIterationsCount = parseInt( collectedInputLines.shift( ) );
+    // The first line of the accumulated input is expected to be the total number of test cases.
+    // Remove it from the array and parse it into an integer.
+    numTestCases = parseInt(inputLines.shift());
 
-    // Iterate through the collected input lines.
-    for ( outerLoopIndex = 0; outerLoopIndex < totalIterationsCount; outerLoopIndex ++ ) {
-      // Split the current line by spaces and parse each part as an integer.
-      currentLineNumbers = collectedInputLines[ outerLoopIndex ].split( " " );
-      for ( innerLoopIndex = 0; innerLoopIndex < currentLineNumbers.length; innerLoopIndex ++ ) {
-        currentLineNumbers[ innerLoopIndex ] = parseInt( currentLineNumbers[ innerLoopIndex ] );
+    // Iterate through each test case based on the parsed number of test cases.
+    for (testCaseIndex = 0; testCaseIndex < numTestCases; testCaseIndex++) {
+      // For the current test case line, split it by spaces to get individual number strings.
+      currentLineNumbers = inputLines[testCaseIndex].split(" ");
+      // Convert each string element in the array to its integer representation.
+      for (numberIndex = 0; numberIndex < currentLineNumbers.length; numberIndex++) {
+        currentLineNumbers[numberIndex] = parseInt(currentLineNumbers[numberIndex]);
       }
 
-      // Extract and adjust the first two numeric values.
-      firstCoordinateValue = currentLineNumbers[ 0 ] - 1;
-      secondCoordinateValue = currentLineNumbers[ 1 ] - 1;
-      resultOffset = 0;
+      // Extract and adjust the first two numbers from the current line by subtracting one.
+      firstVal = currentLineNumbers[0] - 1;
+      secondVal = currentLineNumbers[1] - 1;
+      // Initialize a variable that will hold a conditionally calculated value.
+      remainderCalc = 0;
 
-      // Apply a conditional adjustment based on the first coordinate value.
-      if ( firstCoordinateValue % 3 !== 2 ) {
-        resultOffset = Math.floor( secondCoordinateValue / 2 );
+      // Check a specific condition based on the adjusted first value.
+      if (firstVal % 3 !== 2) {
+        // If the condition is met, calculate 'remainderCalc' by dividing 'secondVal' by 2 and taking the floor.
+        remainderCalc = Math.floor(secondVal / 2);
       }
 
-      // Log the final calculated result based on the processed values.
-      console.log( 196471 - firstCoordinateValue * 195 - Math.floor( firstCoordinateValue / 3 ) * 5 - secondCoordinateValue * 20 + resultOffset - currentLineNumbers[ 2 ] );
+      // Perform a complex calculation using the adjusted values and the third number from the input line,
+      // then print the final result to the standard output.
+      console.log(196471 - firstVal * 195 - Math.floor(firstVal / 3) * 5 - secondVal * 20 + remainderCalc - currentLineNumbers[2]);
     }
-  } );
-} ).call( this );
+  });
+}).call(this); // Execute the Immediately Invoked Function Expression (IIFE) to encapsulate the script's scope.

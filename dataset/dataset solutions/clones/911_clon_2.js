@@ -1,70 +1,100 @@
-// This script processes numerical input lines for specific calculations.
-var principalTask = function() {
+// This script processes numerical input lines to find a specific minimum difference.
+// It supports both Node.js and V8 environments for input/output operations.
 
-  var currentInput;
-  // Loop to continuously process input lines until a zero-valued first element is encountered.
-  for ( ;
-        ( currentInput = acquireData().split( ' ' ).map(Number) )[ 0 ] ;
-      )
-  {
-    var dimOne = currentInput[0],
-        targetValue = currentInput[1],
-        optimalValue = 1 << 30; // Initialize optimalValue with a large number for minimum comparison.
+var primaryExecution = function() {
+    // Variable to hold parsed input data for the current line.
+    var inputLineData;
 
-    // Inner loop to calculate and find the minimum difference based on Pythagorean theorem.
-    for ( var loopIndex = 0; loopIndex <= dimOne / 2 ^ 0; loopIndex++ ) {
-      optimalValue = Math.min(
-        optimalValue,
-        Math.abs( targetValue - Math.hypot( loopIndex, dimOne - loopIndex ) )
-      );
+    // Loop continues as long as the first number in the parsed line is non-zero.
+    // The assignment happens within the condition, reading a line, splitting it by space,
+    // converting parts to numbers, and then checking the first element.
+    while ((inputLineData = readInputLine().split(' ').map(Number))[0]) {
+        // Extract the two main numbers from the current input line.
+        var firstValue = inputLineData[0];
+        var secondValue = inputLineData[1];
+
+        // Initialize the minimum difference with a very large number (2^30).
+        // This ensures any calculated difference will be smaller.
+        var minimumDifference = 1073741824; // Equivalent to 1 << 30
+
+        // Iterate from 0 up to floor(firstValue / 2).
+        // This loop explores possible partitions for 'firstValue' to find the optimal 'i'.
+        for (var iteratorIndex = 0; iteratorIndex <= Math.floor(firstValue / 2); iteratorIndex++) {
+            // Calculate the hypotenuse of a right triangle with sides 'iteratorIndex' and 'firstValue - iteratorIndex'.
+            // Then, find the absolute difference between 'secondValue' and this hypotenuse.
+            // Update 'minimumDifference' if the current calculated difference is smaller.
+            minimumDifference = Math.min(minimumDifference, Math.abs(secondValue - Math.hypot(iteratorIndex, firstValue - iteratorIndex)));
+        }
+        // Output the calculated minimum difference for the current input line.
+        outputResult(minimumDifference);
     }
-    displayOutput( optimalValue ); // Output the calculated minimum value to the console.
-  }
 };
 
-// Input/Output Management Section for various environments
-if ( typeof process !== 'undefined' ) {
+// --- Input/Output Handling Section ---
+// This part adapts the script to run in different JavaScript environments.
 
-  // Node.js environment detected for I/O operations.
-  var displayOutput = function( itemToLog ) {
-    console.log( itemToLog ); // Use console.log for output in Node.js.
-  };
-
-  var acquireData = ( function() {
-    var lineStorage = [],
-        lineIndex = 0;
-    var dataStream = process.openStdin();
-    dataStream.setEncoding( 'utf8' ); // Ensure correct character encoding for incoming input.
-
-    var incompleteLine = "";
-    dataStream.on( 'data', function( incomingData ) {
-      var parsedSegments = ( incompleteLine + incomingData ).split( "\n" );
-      incompleteLine = parsedSegments.pop(); // Store any incomplete last line segment.
-      for ( var k = 0; k < parsedSegments.length; k++ ) {
-        if ( parsedSegments[k] === '' ) continue; // Skip any detected empty lines.
-        lineStorage.push( parsedSegments[k] ); // Add processed lines to the storage array.
-      }
-    } );
-
-    dataStream.on( 'end', function( terminationSignal ) {
-      // Process any remaining data after the input stream has completely ended.
-      if ( incompleteLine ) {
-        var parsedSegments = ( incompleteLine + "\n" ).split( "\n" );
-        incompleteLine = parsedSegments.pop(); // Final check for incomplete line.
-        for ( var k = 0; k < parsedSegments.length; k++ ) {
-          if ( parsedSegments[k] === '' ) continue; // Skip empty lines.
-          lineStorage.push( parsedSegments[k] ); // Store remaining lines.
-        }
-      }
-      principalTask(); // Execute the main logic after all input has been fully processed.
-    } );
-
-    return function() {
-      if ( lineStorage.length <= lineIndex ) return null; // Indicate no more lines are available.
-      return lineStorage[ lineIndex++ ]; // Return the next line from storage and advance the pointer.
+if (typeof process !== 'undefined') {
+    // Node.js environment detected.
+    // Define a custom output function that uses console.log.
+    var outputResult = function(contentToLog) {
+        console.log(contentToLog);
     };
-  } )();
+
+    // Define a custom input function to read lines from standard input asynchronously.
+    var readInputLine = (function() {
+        // Buffer to store complete lines read from stdin.
+        var inputBuffer = [];
+        // Index to keep track of the next line to be returned from the buffer.
+        var bufferIndex = 0;
+
+        // Get the standard input stream.
+        var standardInput = process.openStdin();
+        // Set the encoding for the input stream to handle text data.
+        standardInput.setEncoding('utf8');
+
+        // A temporary string to hold incomplete lines or fragments received from stdin.
+        var remainingInput = "";
+
+        // Event listener for incoming data chunks from stdin.
+        standardInput.on('data', function(incomingData) {
+            // Concatenate the new data with any previously remaining fragment.
+            var lineParts = (remainingInput + incomingData).split("\n");
+            // The last part might be an incomplete line, store it for the next chunk.
+            remainingInput = lineParts.pop();
+            // Process all complete lines found in the current chunk.
+            for (var currentPartIdx = 0; currentPartIdx < lineParts.length; currentPartIdx++) {
+                // Skip empty lines that might result from consecutive newlines.
+                if (lineParts[currentPartIdx] === '') continue;
+                inputBuffer.push(lineParts[currentPartIdx]);
+            }
+        });
+
+        // Event listener for the end of the input stream.
+        standardInput.on('end', function(endEventData) {
+            // If there's any remaining input fragment, treat it as a final line.
+            if (remainingInput) {
+                var finalLineParts = (remainingInput + "\n").split("\n");
+                remainingInput = finalLineParts.pop(); // Should be empty after adding '\n'
+                for (var finalPartIdx = 0; finalPartIdx < finalLineParts.length; finalPartIdx++) {
+                    if (finalLineParts[finalPartIdx] === '') continue;
+                    inputBuffer.push(finalLineParts[finalPartIdx]);
+                }
+            }
+            // Once all input is processed and buffered, execute the main logic.
+            primaryExecution();
+        });
+
+        // Return the function that provides lines from the buffer.
+        return function() {
+            // If the buffer is exhausted, return null to signal no more input.
+            if (inputBuffer.length <= bufferIndex) return null;
+            // Return the next line from the buffer and increment the index.
+            return inputBuffer[bufferIndex++];
+        };
+    })(); // Immediately invoked function expression for readInputLine
 } else {
-  // Assume a V8-like environment (e.g., d8, jsc) where 'readline' and 'print' are globally available.
-  principalTask(); // Directly invoke the primary function as I/O is handled natively.
+    // V8 (e.g., d8 shell) environment detected.
+    // In V8, 'print' and 'readline' are usually global functions provided by the shell.
+    // The main execution can start immediately as input is typically synchronous.
+    primaryExecution();
 }

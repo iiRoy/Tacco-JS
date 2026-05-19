@@ -1,64 +1,64 @@
-const dataRetriever = require("fs").readFileSync;
-const rawInputContent = dataRetriever("/dev/stdin", "utf8");
-const dataLines = rawInputContent.trim().split("\n");
+"use strict";
 
-const parameterSegment = dataLines.shift().trim().split(" ");
-const operationCount = Number(parameterSegment[0]);
-const initialAssetAlpha = Number(parameterSegment[1]);
-const initialAssetBeta = Number(parameterSegment[2]);
-const initialAssetGamma = Number(parameterSegment[3]);
+const fs = require("fs");
 
-const operationSequence = dataLines;
+const rawInput = fs.readFileSync("/dev/stdin", "utf8");
+const allLines = rawInput.trim().split("\n");
 
-const charToIdx = new Map([['A', 0], ['B', 1], ['C', 2]]);
+const headerParts = allLines[0].trim().split(" ").map(Number);
+const numSteps = headerParts[0];
+const initialAlpha = headerParts[1];
+const initialBeta = headerParts[2];
+const initialGamma = headerParts[3];
 
-function exploreTransfers(currentStep, currentHoldings, accumulatedChoices) {
-    if (currentStep === operationCount) {
-        return accumulatedChoices;
-    }
+const operationStrings = allLines.slice(1, numSteps + 1);
 
-    const currentOperationString = operationSequence[currentStep];
-    const originChar = currentOperationString[0];
-    const destinationChar = currentOperationString[1];
+const charToIndexMap = { 'A': 0, 'B': 1, 'C': 2 };
 
-    const originIndex = charToIdx.get(originChar);
-    const destinationIndex = charToIdx.get(destinationChar);
+let solutionPath = null;
+const processingQueue = [];
 
-    let newHoldings;
-    let potentialResultPath;
+processingQueue.push({
+  currentCounts: [initialAlpha, initialBeta, initialGamma],
+  currentPath: []
+});
 
-    if (currentHoldings[originIndex] > 0) {
-        newHoldings = [...currentHoldings];
-        newHoldings[originIndex]--;
-        newHoldings[destinationIndex]++;
-        
-        potentialResultPath = exploreTransfers(currentStep + 1, newHoldings, accumulatedChoices.concat([destinationChar]));
-        if (potentialResultPath !== null) {
-            return potentialResultPath;
-        }
-    }
+while (processingQueue.length > 0) {
+  const { currentCounts, currentPath } = processingQueue.shift();
 
-    if (currentHoldings[destinationIndex] > 0) {
-        newHoldings = [...currentHoldings];
-        newHoldings[destinationIndex]--;
-        newHoldings[originIndex]++;
+  const currentProgress = currentPath.length;
+  if (currentProgress === numSteps) {
+    solutionPath = currentPath;
+    break;
+  }
 
-        potentialResultPath = exploreTransfers(currentStep + 1, newHoldings, accumulatedChoices.concat([destinationChar]));
-        if (potentialResultPath !== null) {
-            return potentialResultPath;
-        }
-    }
+  const currentOperationPair = operationStrings[currentProgress];
+  const firstChar = currentOperationPair[0];
+  const secondChar = currentOperationPair[1];
 
-    return null;
+  const firstIdx = charToIndexMap[firstChar];
+  const secondIdx = charToIndexMap[secondChar];
+
+  if (currentCounts[firstIdx] > 0) {
+    const nextCountsOption1 = [...currentCounts];
+    nextCountsOption1[firstIdx]--;
+    nextCountsOption1[secondIdx]++;
+    const nextPathOption1 = [...currentPath, secondChar];
+    processingQueue.push({ currentCounts: nextCountsOption1, currentPath: nextPathOption1 });
+  }
+
+  if (currentCounts[secondIdx] > 0) {
+    const nextCountsOption2 = [...currentCounts];
+    nextCountsOption2[secondIdx]--;
+    nextCountsOption2[firstIdx]++;
+    const nextPathOption2 = [...currentPath, secondChar];
+    processingQueue.push({ currentCounts: nextCountsOption2, currentPath: nextPathOption2 });
+  }
 }
 
-const initialHoldings = [initialAssetAlpha, initialAssetBeta, initialAssetGamma];
-
-const finalPathOutcome = exploreTransfers(0, initialHoldings, []);
-
-if (finalPathOutcome !== null) {
-    console.log("Yes");
-    console.log(finalPathOutcome.join("\n"));
+if (solutionPath) {
+  console.log("Yes");
+  console.log(solutionPath.join("\n"));
 } else {
-    console.log("No");
+  console.log("No");
 }

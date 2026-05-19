@@ -1,33 +1,24 @@
-const streamSource = process.stdin;
-streamSource.resume();
-streamSource.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let collectedParts = [];
-
-const gatherOperation = new Promise((resolveResult) => {
-    streamSource.on('data', (unit) => {
-        collectedParts.push(unit);
-    });
-    streamSource.on('end', () => {
-        resolveResult(collectedParts.join(''));
-    });
-    streamSource.on('error', (issue) => {
-        console.error('Data stream issue:', issue);
-        resolveResult('');
-    });
+let inputBuffer = '';
+process.stdin.on('data', (dataSegment) => {
+    inputBuffer += dataSegment;
+});
+process.stdin.on('end', () => {
+    const lineCollection = inputBuffer.split(/\r?\n/);
+    processData(lineCollection);
 });
 
-gatherOperation.then((fullContent) => {
-    const textualLines = fullContent.split(/\r?\n/);
-    let targetStringForSearch = textualLines.toString();
-
-    let numeralInstances = [];
-    for (let symbol of targetStringForSearch) {
-        if (symbol === '2') {
-            numeralInstances.push(symbol);
-        }
+function processData(lines){
+  const combinedText = Array.prototype.join.call(lines, ',');
+  const foundDigits = Array.from(combinedText).reduce((accumulator, currentCharacter) => {
+    if (currentCharacter === '2') {
+      accumulator.push('2');
     }
+    return accumulator;
+  }, []);
 
-    console.log(numeralInstances);
-    console.log(numeralInstances.length);
-});
+  console.log(foundDigits);
+  console.log(foundDigits.length);
+}

@@ -1,20 +1,26 @@
-const dataOrigin = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const textLines = fileContent.trim().split('\n');
 
-const unprocessedStrings = dataOrigin.trim().split('\n');
+function determinePrimeFactorCount(upperBound, targetPrime) {
+    let accumulatedCount = 0;
+    let currentDivisor = targetPrime;
 
-const zeroCounter = (sourceValue) => {
-  let totalFives = 0;
-  let currentMultiplier = 5;
-  while (sourceValue >= currentMultiplier) {
-    totalFives += Math.floor(sourceValue / currentMultiplier);
-    currentMultiplier *= 5;
-  }
-  return totalFives;
-};
+    while (currentDivisor <= upperBound) {
+        accumulatedCount += Math.floor(upperBound / currentDivisor);
+        if (upperBound / targetPrime < currentDivisor) {
+            break;
+        }
+        currentDivisor *= targetPrime;
+    }
+    return accumulatedCount;
+}
 
-const processedResults = unprocessedStrings
-  .filter(str => str !== '' && str !== '0')
-  .map(Number)
-  .map(zeroCounter);
+const processedNumbers = textLines
+    .filter(entry => entry !== '0')
+    .map(val => Number(val));
 
-processedResults.forEach(finalNumber => console.log(finalNumber));
+for (const valueN of processedNumbers) {
+    const factorTwoOccurrences = determinePrimeFactorCount(valueN, 2);
+    const factorFiveOccurrences = determinePrimeFactorCount(valueN, 5);
+    console.log(Math.min(factorTwoOccurrences, factorFiveOccurrences));
+}

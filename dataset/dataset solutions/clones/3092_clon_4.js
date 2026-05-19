@@ -1,85 +1,113 @@
 "use strict";
 
-function* dataTokenIterator(rawData) {
-    const lineSegments = rawData.split('\n');
-    for (const segment of lineSegments) {
-        const parts = segment.trim().split(' ');
-        for (const part of parts) {
-            if (part) yield Number(part);
-        }
-    }
-}
-
-const initializeMultiArray = (dimensions, baseValue) => {
-    const recurseBuild = (currentDimensions) => {
-        if (currentDimensions.length === 0) {
-            return baseValue;
-        }
-        const currentSize = currentDimensions[0];
-        const remainingDimensions = currentDimensions.slice(1);
-        return Array.from({ length: currentSize }, () => recurseBuild(remainingDimensions));
+const createInputReader = (rawInputString, valueParser = Number) => {
+    let internalState = {
+        sourceLines: rawInputString.split("\n"),
+        lineCursor: 0,
+        tokenCursor: 0,
+        parserFunction: valueParser
     };
-    return recurseBuild(dimensions);
-};
 
-const calculateSequentialProduct = (startPoint, endPoint) => {
-    if (startPoint >= endPoint) return 1;
-    return Array.from({ length: endPoint - startPoint }, (_, index) => startPoint + 1 + index)
-                .reduce((accumulator, value) => accumulator * value, 1);
-};
+    const retrieveNextToken = (currentState) => {
+        const currentLineContent = currentState.sourceLines[currentState.lineCursor];
+        if (!currentLineContent) return [undefined, currentState];
 
-const PRIME_MODULUS = 1000000007;
+        const lineTokens = currentLineContent.trim().split(" ");
+        const parsedValue = currentState.parserFunction(lineTokens[currentState.tokenCursor]);
 
-const createFactorialSupplier = () => {
-    const factorialMemo = [1, 1];
-    return (number) => {
-        if (factorialMemo[number] !== undefined) return factorialMemo[number];
-        for (let j = factorialMemo.length; j <= number; j++) {
-            factorialMemo[j] = (factorialMemo[j - 1] * j) % PRIME_MODULUS;
+        let nextTokenIdx = currentState.tokenCursor + 1;
+        let nextLineIdx = currentState.lineCursor;
+
+        if (nextTokenIdx >= lineTokens.length) {
+            nextTokenIdx = 0;
+            nextLineIdx++;
         }
-        return factorialMemo[number];
+
+        return [parsedValue, { ...currentState, tokenCursor: nextTokenIdx, lineCursor: nextLineIdx }];
+    };
+
+    const retrieveLineTokens = (currentState) => {
+        const currentLineContent = currentState.sourceLines[currentState.lineCursor];
+        if (!currentLineContent) return [undefined, currentState];
+
+        const parsedValues = currentLineContent.trim().split(" ").map(currentState.parserFunction);
+
+        return [parsedValues, { ...currentState, tokenCursor: 0, lineCursor: currentState.lineCursor + 1 }];
+    };
+
+    return {
+        readNextValue: () => {
+            const [value, updatedState] = retrieveNextToken(internalState);
+            internalState = updatedState;
+            return value;
+        },
+        readAllLineValues: () => {
+            const [values, updatedState] = retrieveLineTokens(internalState);
+            internalState = updatedState;
+            return values;
+        }
     };
 };
-const getCachedFactorial = createFactorialSupplier();
 
-function executeSolution(sourceData) {
-    const inputIterator = dataTokenIterator(sourceData);
-    const getNextNumericToken = () => inputIterator.next().value;
-
-    const totalElements = getNextNumericToken();
-    const targetThreshold = getNextNumericToken();
-
-    const dataset = [];
-    for (let i = 0; i < totalElements; i++) {
-        dataset.push(getNextNumericToken());
-    }
-
-    dataset.sort((valA, valB) => valA - valB);
-
-    const memoizationGrid = initializeMultiArray([totalElements + 1, targetThreshold + 1], -1);
-
-    const computeResult = (currentK, currentX) => {
-        if (memoizationGrid[currentK][currentX] !== -1) {
-            return memoizationGrid[currentK][currentX];
-        }
-
-        if (currentX < dataset[0]) {
-            memoizationGrid[currentK][currentX] = (currentX * getCachedFactorial(currentK)) % PRIME_MODULUS;
+const createNestedArray = (dimensions, initialFillValue) => {
+    return dimensions.reduceRight((accumulator, currentDimensionSize, index) => {
+        if (index === dimensions.length - 1) {
+            return Array.from({ length: currentDimensionSize }, () => initialFillValue);
         } else {
-            const applicableElements = dataset.filter(item => item <= currentX);
-            const countApplicable = applicableElements.length;
+            return Array.from({ length: currentDimensionSize }, () =>
+                JSON.parse(JSON.stringify(accumulator))
+            );
+        }
+    }, initialFillValue);
+};
 
-            const summation = applicableElements.reduce((acc, elementVal) => {
-                return (acc + computeResult(currentK - 1, currentX % elementVal)) % PRIME_MODULUS;
-            }, 0);
-            
-            memoizationGrid[currentK][currentX] = (summation * calculateSequentialProduct(countApplicable, currentK)) % PRIME_MODULUS;
+const computeProductRange = (lowerBoundExclusive, upperBoundInclusive) => {
+    if (lowerBoundExclusive >= upperBoundInclusive) return 1;
+
+    return Array.from({ length: upperBoundInclusive - lowerBoundExclusive }, (_, i) => lowerBoundExclusive + 1 + i)
+                .reduce((product, currentNum) => (product * currentNum), 1);
+};
+
+const processInputAndSolve = (inputContent) => {
+    const dataStream = createInputReader(inputContent);
+    const MODULO_PRIME = 1000000007;
+
+    const totalCount = dataStream.readNextValue();
+    const targetSum = dataStream.readNextValue();
+    
+    const valueSet = Array.from({ length: totalCount }, () => dataStream.readNextValue());
+    valueSet.sort((a, b) => a - b);
+
+    const precomputedFactorials = Array(totalCount + 1).fill(1);
+    Array.from({ length: totalCount - 1 }, (_, i) => i + 2)
+         .forEach(num => {
+            precomputedFactorials[num] = (precomputedFactorials[num - 1] * num) % MODULO_PRIME;
+         });
+
+    const memoizationTable = createNestedArray([totalCount + 1, targetSum + 1], -1);
+
+    const calculateCombinations = (currentK, currentX) => {
+        if (memoizationTable[currentK][currentX] !== -1) {
+            return memoizationTable[currentK][currentX];
         }
 
-        return memoizationGrid[currentK][currentX];
+        if (currentX < valueSet[0]) {
+            memoizationTable[currentK][currentX] = (currentX * precomputedFactorials[currentK]) % MODULO_PRIME;
+        } else {
+            const applicableElements = valueSet.filter(val => val <= currentX);
+            const applicableCount = applicableElements.length;
+
+            const accumulatedSum = applicableElements.reduce((acc, elementVal) => {
+                return (acc + calculateCombinations(currentK - 1, currentX % elementVal)) % MODULO_PRIME;
+            }, 0);
+
+            memoizationTable[currentK][currentX] = (accumulatedSum * computeProductRange(applicableCount, currentK)) % MODULO_PRIME;
+        }
+
+        return memoizationTable[currentK][currentX];
     };
 
-    console.log(computeResult(totalElements, targetThreshold));
-}
+    console.log(calculateCombinations(totalCount, targetSum));
+};
 
-executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndSolve(require("fs").readFileSync("/dev/stdin", "utf8"));

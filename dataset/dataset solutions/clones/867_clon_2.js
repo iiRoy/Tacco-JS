@@ -1,123 +1,164 @@
-/*
- * This module processes input data from standard input.
- * Initial setup for reading input.
- */
-const fileSystemMod = require('node:fs');
+const fileSystemModule = require('fs'); // Import the Node.js file system module for I/O operations.
 
-let   fileSize = fileSystemMod.fstatSync(process.stdin.fd).size;
+// Determine the size of the standard input stream.
+const dataLength = fileSystemModule.fstatSync(process.stdin.fd).size;
 
-const dataBuffer = new Buffer(fileSize);
+// Create a buffer to hold the input data, initialized with zeros.
+const inputBuffer = Buffer.alloc(dataLength);
 
-let   octetsRead = fileSystemMod.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0);
+// Read data from standard input into the buffer, starting from offset 0.
+const readBytesCount = fileSystemModule.readSync(process.stdin.fd, inputBuffer, 0x0, dataLength, 0x0);
 
-const rawLines = dataBuffer.toString('utf8', 0, octetsRead).split('\n');
+// Convert the buffer content to a UTF-8 string and split it into an array of lines.
+const inputLines = inputBuffer.toString('utf8', 0x0, readBytesCount).split('\n');
 
+// Initiate the main program execution flow.
 executeProgram();
-// Function to initialize a two-dimensional array (grid) with a specified value.
-function createGrid(rowCount, colCount, initialValue) {
-  const gridArray = []; // Initialize an empty array for the grid.
-  let   rowIndex, colIndex; // Loop counters for rows and columns.
 
-  // Iterate through each row.
-  for (rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-    gridArray[rowIndex] = []; // Create a new empty array for the current row.
-    // Iterate through each column in the current row.
-    for (colIndex = 0; colIndex < colCount; colIndex++) {
-      gridArray[rowIndex][colIndex] = initialValue; // Assign the default value.
+/**
+ * Generates a two-dimensional array (matrix) with specified dimensions,
+ * initializing all its elements to a given value.
+ * @param {number} rowsCount - The total number of rows for the matrix.
+ * @param {number} colsCount - The total number of columns for the matrix.
+ * @param {*} initialValue - The value to assign to each cell in the matrix.
+ * @returns {Array<Array<*>>} A newly created 2D array.
+ */
+function create2DArray(rowsCount, colsCount, initialValue) {
+  const resultArray = []; // Declare the array to store rows.
+  let rowIndex, colIndex; // Loop counters for rows and columns.
+
+  // Iterate through each row index.
+  for (rowIndex = 0x0; rowIndex < rowsCount; rowIndex++) {
+    resultArray[rowIndex] = []; // Initialize the current row as an empty array.
+    // Iterate through each column index for the current row.
+    for (colIndex = 0x0; colIndex < colsCount; colIndex++) {
+      resultArray[rowIndex][colIndex] = initialValue; // Assign the specified initial value.
     }
   }
-  return gridArray; // Return the fully initialized grid.
+  return resultArray; // Return the fully constructed 2D array.
 }
 
-// This function computes the maximum possible score for a given total duration.
+/**
+ * Computes the maximum achievable score for a given total melody duration
+ * by selecting from a list of musical phrases using dynamic programming.
+ * Each phrase has a start time, a length, and associated points.
+ * @param {number} totalDuration - The maximum allowed duration for the melody.
+ * @param {Array<Array<number>>} segmentList - An array of phrases, where each phrase is [start_time, length, points].
+ * @returns {number} The highest possible score.
+ */
 function calculateMaxScore(totalDuration, segmentList) {
-  const itemCount = segmentList.length; // Number of available musical segments.
-  // Memoization table: memoTable[i][j] stores max score using first 'i' segments for duration 'j'.
-  const memoTable = createGrid(itemCount + 1, totalDuration + 1, 0);
+  const numSegments = segmentList.length; // Get the total count of available segments.
 
-  let segmentIdx, durationIdx; // Loop variables for segments and durations.
-  let segmentStart, segmentLength, segmentPoints; // Properties of the current segment.
-  let subRange; // Temporary array for a slice of the memo table.
+  // Initialize the dynamic programming table.
+  // dynamicProgrammingTable[i][j] will store the maximum score using the first 'i' segments
+  // to achieve a total duration of 'j'.
+  const dynamicProgrammingTable = create2DArray(numSegments + 0b1, totalDuration + 0b1, 0x0);
 
-  // Iterate through each musical segment available.
-  for (segmentIdx = 0; segmentIdx < itemCount; segmentIdx++) {
-    // Iterate through all possible total durations up to the target.
-    for (durationIdx = 0; durationIdx <= totalDuration; durationIdx++) {
-      segmentStart = segmentList[segmentIdx][0]; // Starting point requirement for the segment.
-      segmentLength = segmentList[segmentIdx][1]; // Length of the segment.
-      segmentPoints = segmentList[segmentIdx][2]; // Points gained from using this segment.
+  let segmentIdx, currentDuration; // Iterators for segments and durations.
+  let segmentStart, segmentLength, segmentPoints; // Variables to hold properties of the current segment.
+  let subArrayRange; // Temporary variable for holding a slice of the DP table.
 
-      // Check if the current segment can fit within the current duration.
-      if (segmentStart <= durationIdx) {
-        // Calculate the range for considering previous states.
-        // This finds the maximum score in a sub-section of the previous row.
-        subRange = memoTable[segmentIdx + 1].slice(segmentLength > durationIdx ? 0 : durationIdx - segmentLength, durationIdx - segmentStart + 1);
-        // Update the memo table: either don't use the current segment (memoTable[i][j])
-        // or use it and add its points to the max score from the relevant previous state.
-        memoTable[segmentIdx + 1][durationIdx] = Math.max(memoTable[segmentIdx][durationIdx], Math.max.apply(null, subRange) + segmentPoints);
+  // Iterate through each segment available in the list.
+  for (segmentIdx = 0x0; segmentIdx < numSegments; segmentIdx++) {
+    // Iterate through all possible durations from 0 up to the total allowed duration.
+    for (currentDuration = 0x0; currentDuration <= totalDuration; currentDuration++) {
+      // Extract the properties of the current segment being considered.
+      segmentStart = segmentList[segmentIdx][0x0];
+      segmentLength = segmentList[segmentIdx][0b1];
+      segmentPoints = segmentList[segmentIdx][0x2];
+
+      // Check if the current segment's start time is within the current duration.
+      if (segmentStart <= currentDuration) {
+        // Determine the valid range in the previous DP row to find the maximum score
+        // that allows adding the current segment.
+        // The slice starts from `currentDuration - segmentLength` (or 0 if negative)
+        // and ends at `currentDuration - segmentStart + 1` (exclusive).
+        subArrayRange = dynamicProgrammingTable[segmentIdx + 0b1].slice(
+          segmentLength > currentDuration ? 0x0 : currentDuration - segmentLength,
+          currentDuration - segmentStart + 0b1
+        );
+        // Update the DP table:
+        // The maximum score for the current state is either:
+        // 1. The score without using the current segment (dynamicProgrammingTable[segmentIdx][currentDuration]).
+        // 2. The maximum score from a previous valid state (found in subArrayRange) plus the points of the current segment.
+        dynamicProgrammingTable[segmentIdx + 0b1][currentDuration] = Math.max(
+          dynamicProgrammingTable[segmentIdx][currentDuration],
+          Math.max.apply(void 0, subArrayRange) + segmentPoints
+        );
       } else {
-        // If the segment cannot be used, carry over the score from the previous segment's state.
-        memoTable[segmentIdx + 1][durationIdx] = memoTable[segmentIdx][durationIdx];
+        // If the segment's start time is beyond the current duration,
+        // this segment cannot be used. The score remains the same as without it.
+        dynamicProgrammingTable[segmentIdx + 0b1][currentDuration] = dynamicProgrammingTable[segmentIdx][currentDuration];
       }
     }
   }
-  // The final result is in the bottom-right corner of the memo table.
-  return memoTable[itemCount][totalDuration];
+  // The final result is stored in the cell corresponding to all segments and the total duration.
+  return dynamicProgrammingTable[numSegments][totalDuration];
 }
-// This is the primary execution function of the program.
+
+/**
+ * The primary function that orchestrates reading input, processing data,
+ * performing calculations, and printing the final results.
+ */
 function executeProgram() {
-  // Read the number of musical segments from the input.
-  let segmentCount = Number(rawLines.shift());
-  const segmentList = []; // Array to store details of each musical segment.
+  // Read the initial count of phrases from the input and convert it to a number.
+  let numPhrases = Number(inputLines.shift());
+  const phraseDataCollection = []; // Array to store all musical phrase data.
 
-  // Populate the segment list by reading lines from input.
-  while (segmentCount--) {
-    segmentList.push(rawLines.shift().split(' ').map(Number));
+  // Loop to read and parse each phrase from the input.
+  while (numPhrases--) {
+    phraseDataCollection.push(inputLines.shift().split(' ').map(Number));
   }
-  // Re-assign segmentCount to the actual number of segments after processing.
-  segmentCount = segmentList.length;
 
-  // Sort the segments based on their point values (the third element).
-  segmentList.sort(function (itemA, itemB) {
-    return itemA[2] - itemB[2];
+  // The actual number of phrases after parsing.
+  const actualNumPhrases = phraseDataCollection.length;
+
+  // Sort the phrase data collection based on the points (third element) in ascending order.
+  // This sorting might be a prerequisite for the specific dynamic programming approach or for optimization.
+  phraseDataCollection.sort(function (phraseA, phraseB) {
+    return phraseA[0x2] - phraseB[0x2];
   });
 
-  // Read the number of melodies (total durations) to evaluate.
-  let tuneCount = Number(rawLines.shift());
-  const durationList = []; // Array to hold the target durations.
-  let currentDuration; // Variable for the duration being processed.
-  const resultsArray = []; // Stores the calculated maximum scores.
-  let tuneIdx; // Loop counter for melodies.
-  let currentMaxScore; // Maximum score for the current duration.
-  let zeroResultFound = false; // Flag to indicate if any calculation resulted in zero.
+  // Read the number of melody durations to be processed.
+  let numMelodies = Number(inputLines.shift());
+  const targetMelodyDurations = []; // Array to store the target durations for melodies.
+  const finalScores = []; // Array to store the calculated maximum scores for each melody.
 
-  // Populate the list of target durations.
-  while (tuneCount--) {
-    durationList.push(Number(rawLines.shift()));
+  let currentMelodyDuration; // Variable to hold the duration of the melody currently being processed.
+  let currentMaxScore; // Variable to hold the maximum score calculated for the current melody.
+  let hasZeroScore = !1; // A boolean flag, true if any melody results in a zero score.
+
+  // Loop to read and store each target melody duration.
+  while (numMelodies--) {
+    targetMelodyDurations.push(Number(inputLines.shift()));
   }
-  // Re-assign tuneCount to the actual number of durations.
-  tuneCount = durationList.length;
 
-  // Process each target duration.
-  for (tuneIdx = 0; tuneIdx < tuneCount; tuneIdx++) {
-    currentDuration = durationList[tuneIdx]; // Get the current target duration.
-    // Calculate the maximum score for this duration using the segments.
-    currentMaxScore = calculateMaxScore(currentDuration, segmentList);
+  // The actual number of melodies after parsing.
+  const actualNumMelodies = targetMelodyDurations.length;
 
-    // If the calculated score is zero, set the flag.
-    if (currentMaxScore === 0) {
-      zeroResultFound = true;
+  // Iterate through each target melody duration to calculate its maximum score.
+  for (let melodyIdx = 0x0; melodyIdx < actualNumMelodies; melodyIdx++) {
+    currentMelodyDuration = targetMelodyDurations[melodyIdx];
+
+    // Call the dynamic programming function to find the max score for the current melody duration.
+    currentMaxScore = calculateMaxScore(currentMelodyDuration, phraseDataCollection);
+
+    // Check if the calculated maximum score is zero.
+    if (currentMaxScore === 0x0) {
+      hasZeroScore = !0; // Set the flag if a zero score is encountered.
     } else {
-      // Otherwise, add the score to the results.
-      resultsArray.push(currentMaxScore);
+      finalScores.push(currentMaxScore); // Add non-zero scores to the results array.
     }
   }
 
-  // If any calculation yielded a zero score, print -1.
-  if (zeroResultFound) {
-    console.log(-1);
+  // If any melody resulted in a zero score, print -1 and terminate the program.
+  if (hasZeroScore) {
+    console.log(-0b1);
     return; // Exit the function.
   }
-  // Print all non-zero results, each on a new line.
-  resultsArray.forEach(function (scoreValue) { console.log(scoreValue); });
+
+  // Otherwise, print each calculated non-zero score on a new line.
+  finalScores.forEach(function (scoreValue) {
+    console.log(scoreValue);
+  });
 }

@@ -1,50 +1,48 @@
-/* This JavaScript module computes a specific sequence value
- * using a dynamic programming approach.
- * It expects a single numerical input.
- */
-const calculateSequenceValue = (  rawStringInput  )  =>  {
-  // Define a modulus constant, often used in competitive programming for large results.
-  const  MODULUS_CONSTANT  =  (  1_000_000_000  +  7  )  ;
+const calculateCombinations = (inputString) => {
+  // Define a large prime number for modulo operations to prevent integer overflow.
+  const primeModulo = (10**9 + 7);
 
-  // Convert the trimmed input string into an integer representing the desired sum.
-  const  desiredSum  =  Number(    rawStringInput.trim()    )  ;
+  // Parse the input string to get the target sum, ensuring it's a number.
+  // The .trim() method removes leading/trailing whitespace from the input.
+  const targetValue = Number(inputString.trim());
 
-  // Initialize the DP array: start with 1, then `desiredSum` zeroes.
-  // This array will store intermediate results.
-  const  dpArray  =  [  1,  ...Array(desiredSum).fill(0)  ]  ;
+  // Initialize a dynamic programming array to store combination counts.
+  // `combinationCounts[k]` will hold the number of ways to form sum `k`.
+  // The array starts with `1` (representing one way to form sum 0, i.e., by choosing no numbers).
+  // The rest of the array is filled with zeros up to the `targetValue`.
+  const combinationCounts = [1, ...new Array(targetValue).fill(0)];
 
-  // Begin the main DP loop. 'indexPosition' iterates from 3 up to the array's length.
-  for  (  let  indexPosition  =  3;  indexPosition  <  dpArray.length;  indexPosition++  )  {
-    let  currentIterationSum  =  0  ;  // Accumulator for the sum at the current 'indexPosition'.
+  // Iterate from 3 up to the `targetValue` (inclusive).
+  // We start from 3 because the problem implies using numbers greater than or equal to 3.
+  for (let currentValue = 3; currentValue < combinationCounts.length; currentValue++) {
+    let tempSum = 0; // Temporary variable to accumulate sums for the current `currentValue`.
 
-    // Inner loop: sum values from previous positions, specifically 'indexPosition - 3' backwards.
-    for  (  let  backwardIndex  =  indexPosition  -  3;  backwardIndex  >=  0;  backwardIndex--  )  {
-      // Add the value from the DP array, ensuring the sum stays within the modulo range.
-      currentIterationSum  =  (  currentIterationSum  +  dpArray[backwardIndex]  )  %  MODULUS_CONSTANT  ;
+    // Inner loop: Calculate `combinationCounts[currentValue]` by summing up
+    // previous `combinationCounts` values.
+    // This recurrence relation is for forming `currentValue` using numbers >= 3.
+    // If we add a '3' to a previous sum `previousValue`, then `currentValue` = `previousValue` + 3.
+    // So we sum up all `combinationCounts[previousValue]` where `previousValue` ranges from
+    // `currentValue - 3` down to `0`.
+    for (let previousValue = currentValue - 3; previousValue >= 0; previousValue--) {
+      tempSum = (tempSum + combinationCounts[previousValue]) % primeModulo;
     }
 
-    // Store the calculated sum into the DP array at the current 'indexPosition'.
-    dpArray[indexPosition]  =  currentIterationSum  ;
+    // Store the calculated sum (modulo `primeModulo`) in the DP array.
+    combinationCounts[currentValue] = tempSum;
   }
 
-  // Print the final result. The extra modulo operations handle potential negative results
-  // from the '%' operator in some languages/contexts, ensuring a positive final value.
-  return  console.info(  (  dpArray[desiredSum]  %  MODULUS_CONSTANT  +  MODULUS_CONSTANT  )  %  MODULUS_CONSTANT  )  ;
+  // Output the final result for the `targetValue`.
+  // The additional modulo operations `( + primeModulo) % primeModulo` ensure the result is
+  // always positive, which is good practice even if JavaScript's `%` operator handles
+  // positive dividends correctly.
+  return console.log((combinationCounts[targetValue] % primeModulo + primeModulo) % primeModulo);
 };
 
-// A dummy function to simulate test execution, if triggered by environment variables.
-const  executeTestRoutine  =  (  )  =>  {
-  console.log(  "Executing mock test cases for the module."  )  ;
-  // Further test logic would go here.
-}  ;
-
-
-// Conditional execution based on the 'APPLICATION_ENV_MODE' environment variable.
-// This structure allows for different behaviors in development/testing/production environments.
-process.env.APPLICATION_ENV_MODE
-  ?  (
-      process.env.APPLICATION_ENV_MODE  ===  'test_env'
-        ?  executeTestRoutine() // Run tests if the environment is set to 'test_env'.
-        :  calculateSequenceValue(  require('node:fs').readFileSync('local_data/input_dev.txt',  'utf8')  ) // Use development input file.
+// Conditional execution block based on an environment variable.
+// This allows for different execution paths, e.g., for testing or production environments.
+process.env.EXECUTION_MODE
+  ? (process.env.EXECUTION_MODE === 'test'
+      ? test() // If `EXECUTION_MODE` is 'test', call the (presumably external) `test` function.
+      : calculateCombinations(require('fs').readFileSync('dev/stdin', 'utf8')) // Otherwise, read input from 'dev/stdin'.
     )
-  :  calculateSequenceValue(  require('node:fs').readFileSync('/var/data/input_prod.txt',  'utf8')  )  ; // Default to production input file.
+  : calculateCombinations(require('fs').readFileSync('/dev/stdin', 'utf8')); // Default behavior: read input from '/dev/stdin'.

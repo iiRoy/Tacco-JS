@@ -1,65 +1,45 @@
-// This module encapsulates a specific text transformation rule.
-// Its primary purpose is to adjust the ending of a given string,
-// typically for pluralization, based on its final character.
-function applyPluralizationRule(rawInputPayload) {
-    // Step 1: Input Validation and Pre-processing
-    // Ensure the provided input is a valid string. If not, log an error and exit gracefully.
-    if (typeof rawInputPayload !== 'string' || rawInputPayload.length === 0) {
-        console.error("Processing Error: The input payload must be a non-empty string. Aborting transformation.");
-        // In a real application, one might throw an exception or return a specific error code.
-        return ""; 
-    }
+const extractFirstMeaningfulLine = (fullInputContent) => {
+    const lineSeparator = "\n";
+    const contentLines = fullInputContent.split(lineSeparator);
+    // The original code takes the first element of the split array,
+    // even if it's an empty string (e.g., if input is just "\n" or empty).
+    // This behavior is preserved.
+    return contentLines[0];
+};
 
-    // Extract the very first line from the potentially multi-line input.
-    // This ensures that only the initial segment of text is considered for modification.
-    const firstMeaningfulLine = rawInputPayload.split('\n')[0];
+const resolvePluralSuffix = (characterToCheck) => {
+    const S_CHARACTER_LOWERCASE = "s";
+    const SUFFIX_FOR_S_ENDINGS = "es";
+    const DEFAULT_PLURAL_SUFFIX = "s";
 
-    // Step 2: Validate the Extracted Line
-    // If the extracted line is empty or consists only of whitespace,
-    // there's nothing to process according to the rule.
-    if (!firstMeaningfulLine || firstMeaningfulLine.trim().length === 0) {
-        console.warn("Processing Warning: The primary input line was empty or contained only whitespace. No suffix applied.");
-        return firstMeaningfulLine; // Return the original (empty/whitespace) line.
-    }
-
-    // Step 3: Character Analysis
-    // Determine the total number of characters in the line we are processing.
-    const stringLength = firstMeaningfulLine.length;
-
-    // Identify the character at the very end of the string.
-    // This character dictates which suffix rule will be applied.
-    let trailingChar = '';
-    if (stringLength > 0) {
-        trailingChar = firstMeaningfulLine[stringLength - 1];
+    if (characterToCheck === S_CHARACTER_LOWERCASE) {
+        return SUFFIX_FOR_S_ENDINGS;
     } else {
-        // This case should ideally be caught by the previous `if (!firstMeaningfulLine ...)` block,
-        // but it serves as an additional defensive check for robustness.
-        console.warn("Internal Warning: String had zero length after initial processing. Cannot determine trailing character.");
-        return firstMeaningfulLine;
+        return DEFAULT_PLURAL_SUFFIX;
     }
+};
 
-    // Step 4: Suffix Determination Logic
-    // Based on the identified trailing character, select the appropriate ending.
-    let appendedEnding = '';
-    const specialPluralConditionChar = 's'; // The specific character that triggers the alternative rule.
+function processInput(rawInputData) {
+    const targetString = extractFirstMeaningfulLine(rawInputData);
 
-    if (trailingChar === specialPluralConditionChar) {
-        appendedEnding = "es"; // Rule: If the word ends in 's', append 'es'.
-    } else {
-        appendedEnding = specialPluralConditionChar; // Default Rule: Otherwise, append 's'.
+    let finalCharacter = "";
+    const currentStringLength = targetString.length;
+
+    // Determine the last character, handling potential empty strings
+    if (currentStringLength > 0) {
+        finalCharacter = targetString[currentStringLength - 1];
     }
-    
-    // Step 5: Final String Construction
-    // Concatenate the original string with the newly determined suffix.
-    const resultantString = firstMeaningfulLine + appendedEnding;
+    // If targetString is empty, finalCharacter remains "", which correctly
+    // leads to the "s" suffix by resolvePluralSuffix.
 
-    // Step 6: Output
-    // Display the fully transformed string to the console.
-    console.log(resultantString);
+    const determinedSuffix = resolvePluralSuffix(finalCharacter);
+
+    console.log(`${targetString}${determinedSuffix}`);
 }
 
-// The following section is responsible for handling standard input/output operations.
-// It reads the entire content from stdin and passes it to our core processing function.
-// This part is crucial for the execution environment and should not be modified.
-// DO NOT ALTER THE CODE BELOW THIS COMMENT.
-applyPluralizationRule(require("fs").readFileSync("/dev/stdin", "utf8"));
+const fileSystemUtility = require("fs");
+const standardInputFilePath = "/dev/stdin";
+const textEncodingFormat = "utf8";
+
+const inputContentFromStdin = fileSystemUtility.readFileSync(standardInputFilePath, textEncodingFormat);
+processInput(inputContentFromStdin);

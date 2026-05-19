@@ -1,114 +1,121 @@
-function* lineSource(rawText) {
-    const lines = rawText.split("\n");
-    let index = 0;
-    while (index < lines.length) {
-        yield lines[index++];
+class CoordinatePair {
+    constructor(xCoord, yCoord) {
+        this.xCoord = xCoord;
+        this.yCoord = yCoord;
+    }
+
+    rotateNinetyDegrees() {
+        const oldX = this.xCoord;
+        this.xCoord = this.yCoord * -1;
+        this.yCoord = oldX;
+    }
+
+    isEquivalent(otherPair) {
+        return this.xCoord === otherPair.xCoord && this.yCoord === otherPair.yCoord;
     }
 }
 
-const rotateCoordinates = (pointSet) => pointSet.map(coordPair => [coordPair[1], -coordPair[0]]);
-
-const fixOrientation = (figureDots) => {
-    let currentDots = figureDots.map(p => [...p]); 
-
-    if (currentDots[1][1] > 0) {
-        currentDots = rotateCoordinates(currentDots);
-    }
-    
-    if (currentDots[1][0] < 0) {
-        currentDots = rotateCoordinates(currentDots);
-    }
-    
-    if (currentDots[1][1] < 0) {
-        currentDots = rotateCoordinates(currentDots);
-    }
-    
-    return currentDots;
+const dataStream = {
+    sourceLines: [],
+    currentPosition: 0,
+    fetchInteger: function() { return parseInt(this.sourceLines[this.currentPosition++], 10); },
+    fetchSplitLine: function() { return this.sourceLines[this.currentPosition++].split(" "); }
 };
 
-const acquireShape = (allFiguresStorage, figureIndex, figureExtentData, lineIterator) => {
-    figureExtentData[figureIndex] = Number.parseInt(lineIterator.next().value, 10);
-    
-    let temporaryPoints = [];
-    const effectivePointCount = figureIndex === 0 ? figureExtentData[figureIndex] : figureExtentData[0];
-
-    for (let i = 0; i < effectivePointCount; i++) {
-        const coordinateParts = lineIterator.next().value.split(" ");
-        temporaryPoints.push([Number.parseInt(coordinateParts[0], 10), Number.parseInt(coordinateParts[1], 10)]);
+function performCoordinateRotation(pointList, countLimit) {
+    for (let idx = 1; idx <= countLimit; idx++) {
+        pointList[idx].rotateNinetyDegrees();
     }
+}
 
-    const initialPoint = temporaryPoints[0];
-    const originNormalizedPoints = temporaryPoints.map((point, ptIdx) =>
-        ptIdx === 0 ? [0, 0] : [point[0] - initialPoint[0], point[1] - initialPoint[1]]
-    );
-
-    allFiguresStorage[figureIndex] = fixOrientation(originNormalizedPoints);
-};
-
-const transformAndNormalize = (inputPointCollection, currentFigureSize) => {
-    const originalPointsSnapshot = inputPointCollection.map(p => [...p]);
-
-    const finalOriginalPoint = originalPointsSnapshot[currentFigureSize - 1];
-
-    const invertedAndShifted = Array.from({ length: currentFigureSize }, (_, j) => {
-        const sourcePoint = originalPointsSnapshot[currentFigureSize - 1 - j];
-        return j === 0
-            ? [0, 0]
-            : [sourcePoint[0] - finalOriginalPoint[0], sourcePoint[1] - finalOriginalPoint[1]];
+function buildShapeFromInput(inputReader) {
+    const pointQuantity = inputReader.fetchInteger();
+    const rawPointData = Array.from({ length: pointQuantity }, () => {
+        const parts = inputReader.fetchSplitLine();
+        return new CoordinatePair(parseInt(parts[0], 10), parseInt(parts[1], 10));
     });
 
-    return fixOrientation(invertedAndShifted);
-};
+    const shapePoints = [null, ...rawPointData];
 
-const checkPointSequenceMatch = (sequenceA, sequenceB) => {
-    if (sequenceA.length !== sequenceB.length) return false;
-    for (let i = 0; i < sequenceA.length; i++) {
-        if (sequenceA[i][0] !== sequenceB[i][0] || sequenceA[i][1] !== sequenceB[i][1]) {
-            return false;
+    const initialX = shapePoints[1].xCoord;
+    const initialY = shapePoints[1].yCoord;
+    shapePoints.forEach((pair, index) => {
+        if (index > 0) {
+            pair.xCoord -= initialX;
+            pair.yCoord -= initialY;
         }
+    });
+    shapePoints[1].xCoord = 0;
+    shapePoints[1].yCoord = 0;
+
+    if (shapePoints[2].yCoord > 0) performCoordinateRotation(shapePoints, pointQuantity);
+    if (shapePoints[2].xCoord < 0) performCoordinateRotation(shapePoints, pointQuantity);
+    if (shapePoints[2].yCoord < 0) performCoordinateRotation(shapePoints, pointQuantity);
+
+    return { pointCount: pointQuantity, points: shapePoints };
+}
+
+function transformShapeInverse(targetShape) {
+    const originalSnapshots = Array.from({ length: targetShape.pointCount + 1 }, (_, idx) =>
+        idx === 0 ? null : new CoordinatePair(targetShape.points[idx].xCoord, targetShape.points[idx].yCoord)
+    );
+
+    const transformedPoints = Array.from({ length: targetShape.pointCount + 1 });
+    transformedPoints[0] = null;
+
+    for (let idx = 1; idx <= targetShape.pointCount; idx++) {
+        transformedPoints[idx] = new CoordinatePair(
+            originalSnapshots[targetShape.pointCount - idx + 1].xCoord - originalSnapshots[targetShape.pointCount].xCoord,
+            originalSnapshots[targetShape.pointCount - idx + 1].yCoord - originalSnapshots[targetShape.pointCount].yCoord
+        );
     }
-    return true;
-};
+    targetShape.points = transformedPoints;
 
-function ProcessAllFigures(fullRawInput){
-    const inputIterator = lineSource(fullRawInput);
+    if (targetShape.points[2].yCoord > 0) performCoordinateRotation(targetShape.points, targetShape.pointCount);
+    if (targetShape.points[2].xCoord < 0) performCoordinateRotation(targetShape.points, targetShape.pointCount);
+    if (targetShape.points[2].yCoord < 0) performCoordinateRotation(targetShape.points, targetShape.pointCount);
+}
 
-    const processNextSetOfFigures = () => {
-        const currentNString = inputIterator.next().value;
-        const currentNValue = Number.parseInt(currentNString, 10);
-        if (currentNValue === 0) return;
+function compareShapeEquivalence(firstShape, secondShape) {
+    if (firstShape.pointCount !== secondShape.pointCount) {
+        return false;
+    }
+    return Array.from({ length: firstShape.pointCount }, (_, i) => i + 1)
+                .every(idx => firstShape.points[idx].isEquivalent(secondShape.points[idx]));
+}
 
-        let totalPointCounts = [];
-        let allFigureCoordinates = [];
+function analyzeGeometricPatterns(rawData) {
+    dataStream.sourceLines = rawData.split("\n");
 
-        for (let i = 0; i <= currentNValue; i++) {
-            acquireShape(allFigureCoordinates, i, totalPointCounts, inputIterator);
+    while (true) {
+        const currentShapeSetSize = dataStream.fetchInteger();
+        if (currentShapeSetSize === 0) {
+            break;
         }
 
-        const primaryFigure = allFigureCoordinates[0];
-        const primaryFigureCount = totalPointCounts[0];
+        const allProcessedShapes = Array.from({ length: currentShapeSetSize + 1 }, (_, shapeIdx) =>
+            buildShapeFromInput(dataStream)
+        );
 
-        for (let i = 1; i <= currentNValue; i++) {
-            if (primaryFigureCount === totalPointCounts[i]) {
-                let candidateFigure = allFigureCoordinates[i];
-                let isMatch = checkPointSequenceMatch(primaryFigure, candidateFigure);
+        const referenceShape = allProcessedShapes[0];
 
-                if (isMatch) {
-                    console.log(i);
-                } else {
-                    const invertedCandidate = transformAndNormalize(candidateFigure, totalPointCounts[i]);
-                    isMatch = checkPointSequenceMatch(primaryFigure, invertedCandidate);
-                    if (isMatch) {
-                        console.log(i);
-                    }
+        for (let shapeIdx = 1; shapeIdx <= currentShapeSetSize; shapeIdx++) {
+            let isMatch = false;
+            if (compareShapeEquivalence(referenceShape, allProcessedShapes[shapeIdx])) {
+                isMatch = true;
+            } else {
+                transformShapeInverse(allProcessedShapes[shapeIdx]);
+                if (compareShapeEquivalence(referenceShape, allProcessedShapes[shapeIdx])) {
+                    isMatch = true;
                 }
+            }
+
+            if (isMatch) {
+                console.log(shapeIdx);
             }
         }
         console.log("+++++");
-        processNextSetOfFigures();
-    };
-
-    processNextSetOfFigures();
+    }
 }
 
-ProcessAllFigures(require("fs").readFileSync("/dev/stdin","utf8"));
+analyzeGeometricPatterns(require("fs").readFileSync("/dev/stdin","utf8"));

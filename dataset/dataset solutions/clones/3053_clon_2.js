@@ -1,47 +1,41 @@
-// Primary function for processing the character stream
-function ProcessSequence( dataSource )
-{
-    // Convert the input string into an array of individual characters
-    let charElements = dataSource.split( '' ) ;
+function ProcessInput(rawData) {
+  // Convert the raw input string into an array of characters for easier manipulation.
+  let charArray = rawData.split('');
 
-    // Initialize a counter for detected segment alterations
-    let segmentAlterations = 0 ;
+  // Initialize a counter to keep track of the number of detected modifications.
+  let modificationTally = 0;
 
-    // Initialize a boolean flag to track the current alteration state within a sequence
-    let currentAlterationState = false ;
+  // A boolean flag to indicate if the current sequence of characters is undergoing a change.
+  let isChangingSequence = false;
 
-    // Iterate through the character elements, starting from the second element
-    for ( let charPosition = 1 ; charPosition < charElements.length ; charPosition++ )
-    {
-        // Check if the current character is identical to the previous one
-        // AND if no alteration was previously detected in this sequence
-        if ( charElements[charPosition] === charElements[charPosition-1] && !currentAlterationState )
-        {
-            // Mark an alteration as detected for the current sequence
-            currentAlterationState = true ;
-            // Increment the total count of alterations
-            segmentAlterations++ ;
-        }
-        // Otherwise, if the current character is different from the previous one
-        // AND an alteration was previously detected
-        else if ( charElements[charPosition] !== charElements[charPosition-1] && currentAlterationState )
-        {
-            // Increment the total count of alterations (indicating another change in pattern)
-            segmentAlterations++ ;
-        }
-        // If neither of the above conditions is met (e.g., same characters and alteration was already true,
-        // or different characters but no alteration was true)
-        else
-        {
-            // Reset the alteration state, meaning the current sequence is not actively tracking a change
-            currentAlterationState = false ;
-        }
+  // Iterate through the character array, starting from the second element,
+  // to compare each character with its preceding one.
+  for (let idx = 1; idx < charArray.length; idx++) {
+    // Check if the current character is identical to the previous one
+    // AND if we are not currently within a changing sequence.
+    if (charArray[idx] === charArray[idx - 1] && !isChangingSequence) {
+      // If both conditions are met, it signifies the start of a new changing sequence.
+      isChangingSequence = true;
+      modificationTally++; // Increment the tally as a modification is initiated.
     }
+    // Otherwise, check if the current character is different from the previous one
+    // AND if we are currently within a changing sequence.
+    else if (charArray[idx] !== charArray[idx - 1] && isChangingSequence) {
+      // If these conditions hold, it means the existing changing sequence continues.
+      modificationTally++; // Increment the tally for the ongoing modification.
+    }
+    // In all other scenarios (e.g., characters are different and not in a changing sequence,
+    // or characters are the same and already in a changing sequence).
+    else {
+      // Reset the flag, as the changing sequence has either ended or was not active.
+      isChangingSequence = false;
+    }
+  }
 
-    // Output the final tally of segment alterations to the console
-    console.log( segmentAlterations ) ;
+  // Output the final calculated number of modifications to the standard console.
+  console.log(modificationTally);
 }
 
-// Invoke the main processing function with data read from standard input,
-// ensuring the file content is interpreted as UTF-8 encoded text
-ProcessSequence( require( "fs" ).readFileSync( "/dev/stdin" , "utf-8" ) ) ;
+// Read the entire content from standard input as a UTF-8 string
+// and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

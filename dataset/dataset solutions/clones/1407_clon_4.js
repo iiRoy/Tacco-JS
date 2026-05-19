@@ -1,29 +1,23 @@
-const fileSystemUtility = require('node:fs');
-const inputDataSource = '/dev/stdin';
+const fileSystem = require("fs");
 
-function extractInputSections() {
-    const rawDataBuffer = fileSystemUtility.readFileSync(inputDataSource, 'utf8');
-    return rawDataBuffer.split('\n').map(entry => entry.trim()).filter(Boolean);
+function acquireInputLines() {
+    const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+    return rawInputContent.split(/\n\r?/);
 }
 
-function processGeometricData() {
-    const allInputSegments = extractInputSections();
+const processedInput = acquireInputLines();
 
-    for (const currentInputLine of allInputSegments) {
-        const valueComponents = currentInputLine.split(' ');
-        const verticalDimension = Number(valueComponents[0]);
-        const horizontalDimension = Number(valueComponents[1]);
+for (const currentEntry of processedInput) {
+    const sizeComponents = currentEntry.split(' ');
+    const rectHeight = parseInt(sizeComponents[0], 10);
+    const rectWidth = parseInt(sizeComponents[1], 10);
 
-        if (verticalDimension === 0 && horizontalDimension === 0) {
-            break;
-        }
-
-        const characterRow = '#'.repeat(horizontalDimension);
-        const structureLines = Array(verticalDimension).fill(characterRow);
-        const finalDisplayContent = structureLines.join('\n') + '\n';
-
-        process.stdout.write(finalDisplayContent);
+    if (rectHeight === 0 && rectWidth === 0) {
+        break;
     }
-}
 
-processGeometricData();
+    const hashRowSegment = "#".repeat(rectWidth);
+    const completeBlock = Array.from({ length: rectHeight }, () => hashRowSegment).join("\n") + "\n";
+
+    console.log(completeBlock);
+}

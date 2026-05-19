@@ -1,92 +1,105 @@
-var outputPrinter = console.log;
-if(typeof process != "undefined")
-{
-  var receivedData    = "";
-  process.stdin.resume();
-  process.stdin.setEncoding(  'utf8'  );
-  process.stdin.on ('data' , function ( dataPiece ) {
-    receivedData  +=  dataPiece;
+const outputFunc = console.log;
+
+// Check if running in a Node.js-like environment for input processing
+if (typeof process !== "undefined") {
+  let receivedData = ""; // Accumulates all incoming data
+  process.stdin.resume(); // Keep the process alive
+  process.stdin.setEncoding('utf8'); // Set encoding for input stream
+
+  // Event listener for data chunks
+  process.stdin.on('data', function (dataSegment) {
+    receivedData += dataSegment; // Append new data to the buffer
   });
-  process.stdin.on('end', function ()
-  {
-    var dataRows = receivedData.split("\n");
-    processInputData (dataRows);
+
+  // Event listener for end of input
+  process.stdin.on('end', function () {
+    const inputLines = receivedData.split("\n"); // Split accumulated data into lines
+    processInput(inputLines); // Call the main processing function
   });
 }
-/*----------------------------------------------------------------------*/
-function processInputData(dataRows) {
-    // Initial data transformation: parse input lines into numbers
-    dataRows = dataRows.map(function (currentRowText) {
-        if (currentRowText.split(" ").length >= 2) {
-            return currentRowText.split(" ").map(function (valueString) {
-                return Number(valueString);
-            });
-        }
-        else {
-            return Number(currentRowText);
-        }
-    });
 
-    // Iterate through all provided data sets until none remain
-    while (dataRows.length > 0)
-    {
-        var currentConfig = dataRows.shift();
-        var configParams  = currentConfig;
-        var firstCount    = configParams[0];
-        var secondCount   = configParams[1];
-
-        // Check for the termination condition for processing
-        if (firstCount === 0 && secondCount === 0) {
-            return;
-        }
-        else {
-            // Extract the two main data segments based on counts
-            var firstDataSet  = dataRows.splice(0, firstCount);
-            var secondDataSet = dataRows.splice(0, secondCount);
-            analyzeDataSet(firstDataSet, secondDataSet);
-        }
+// Main function to handle the input data
+function processInput(inputRows) {
+  // Transform input rows: convert space-separated numbers or single numbers
+  inputRows = inputRows.map(function (element) {
+    if (element.split(" ").length >= 2) {
+      // If multiple numbers, split and convert all to Number
+      return element.split(" ").map(function (item) {
+        return Number(item);
+      });
+    } else {
+      // If a single number, convert directly
+      return Number(element);
     }
+  });
+
+  // Process datasets until no more input rows are left
+  while (inputRows.length > 0) {
+    const currentLine = inputRows.shift(); // Get the first line of the current dataset
+    const numbersInLine = currentLine; // This line contains N and M
+
+    const heightCount = numbersInLine[0]; // First number is N (height count)
+    const widthCount = numbersInLine[1]; // Second number is M (width count)
+
+    // Termination condition for input processing
+    if (heightCount === 0 && widthCount === 0) {
+      return; // Exit the function if N and M are both zero
+    } else {
+      // Extract height and width values for the current dataset
+      const heightValues = inputRows.splice(0, heightCount); // N lines for heights
+      const widthValues = inputRows.splice(0, widthCount); // M lines for widths
+      processDataset(heightValues, widthValues); // Process the extracted dataset
+    }
+  }
 }
 
-/* Function dedicated to processing a single pair of input lists */
-function analyzeDataSet(firstDataSet, secondDataSet)
-{
-    /*
-     * This function calculates all possible contiguous sub-array sums for both input lists.
-     * It then finds the product of frequencies for common sums found in both lists.
-     * The complexity of sum generation for each list is O(N^2) where N is list length.
-     */
-    var firstSumCounts  = generateSumCounts(firstDataSet);
-    var secondSumCounts = generateSumCounts(secondDataSet);
-    var matchingSumProduct = calculateIntersectionProduct(firstSumCounts, secondSumCounts);
-    outputPrinter(matchingSumProduct);
+// Function to process a single dataset (H and W arrays)
+function processDataset(heightData, widthData) {
+  // Calculate frequencies of all possible sums for height segments
+  const heightSums = calculateSums(heightData);
+  // Calculate frequencies of all possible sums for width segments
+  const widthSums = calculateSums(widthData);
+
+  // Count intersections of sums between height and width segments
+  const intersectionCount = countIntersections(heightSums, widthSums);
+  outputFunc(intersectionCount); // Output the final count
 }
 
-// Computes frequencies of all possible contiguous sub-array sums
-function generateSumCounts(inputArray) {
-    var arrayLength = inputArray.length;
-    var sumFrequency = {};
-    for (var startIndex = 0; startIndex < arrayLength; startIndex++) {
-        var currentSum = 0;
-        for (var endIndex = startIndex + 1; endIndex <= arrayLength; endIndex++) {
-            currentSum += inputArray[endIndex - 1];
-            if (!sumFrequency[currentSum]) {
-                sumFrequency[currentSum] = 1;
-            } else {
-                sumFrequency[currentSum]++;
-            }
-        }
+// Calculates all possible contiguous subarray sums and their frequencies
+function calculateSums(inputArray) {
+  const arrayLength = inputArray.length;
+  const sumFrequencies = {}; // Stores sum -> frequency mapping
+
+  // Iterate through all possible starting points
+  for (let outerIndex = 0; outerIndex < arrayLength; outerIndex++) {
+    let currentSum = 0; // Initialize sum for the current segment
+
+    // Iterate through all possible ending points from the current starting point
+    for (let innerIndex = outerIndex + 1; innerIndex <= arrayLength; innerIndex++) {
+      currentSum += inputArray[innerIndex - 1]; // Add the next element to the current sum
+
+      // Update frequency for the current sum
+      if (!sumFrequencies[currentSum]) {
+        sumFrequencies[currentSum] = 1; // First occurrence
+      } else {
+        sumFrequencies[currentSum]++; // Increment count
+      }
     }
-    return sumFrequency;
+  }
+  return sumFrequencies; // Return the map of sums and their frequencies
 }
 
-function calculateIntersectionProduct(mapOne, mapTwo)
-{
-    var totalProduct = 0;
-    for (sumKey in mapOne) {
-        if (!!mapTwo[sumKey]) {
-            totalProduct += mapOne[sumKey] * mapTwo[sumKey];
-        }
+// Counts the total intersections of sums between two frequency maps
+function countIntersections(firstMap, secondMap) {
+  let totalCount = 0; // Initialize total intersection count
+
+  // Iterate over keys (sums) in the first map
+  for (const keyVal in firstMap) {
+    // If the sum also exists in the second map
+    if (!!secondMap[keyVal]) {
+      // Multiply their frequencies and add to total count
+      totalCount += firstMap[keyVal] * secondMap[keyVal];
     }
-    return totalProduct;
+  }
+  return totalCount; // Return the final count of intersections
 }

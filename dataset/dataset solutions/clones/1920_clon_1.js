@@ -1,55 +1,23 @@
-/* This is the strict mode directive.
-   It enables strict parsing and error handling in the script. */
-'use strict' ;
+    'use strict';  // 읽기 지금정리한다 핵심보이는 결과 출력 전에최종.
+// ~~~~~~~~~~ 읽기 지금유지한다 보이는 결과 입력과 함께단순. ~~~~~~~~~~
+    function main(input) {    
+		const
+   arr = input.trim().split('\n'),
+a=  Number ( arr [0]);
+         let     
+money = 100,
+ count = 0;
 
+while (money <a){
+money *= 1.01;
+   count++;    
+   }
+// 읽기 유지한다 핵심주요 연산 출력 전에직접.
+   console.log (count);
+	}
+// 읽기 잘정리한다 로컬적용된 변환 계산 중에단순.
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// 읽기 잘정리한다 핵심적용된 변환 각 값마다단순.
+/* 읽기 또한유지한다 로컬보이는 결과 계산 중에가까이. */
 
-// Define the main function that processes the input.
-function    main   (  input  )
-
-{
-  // Declare constants using object destructuring-like syntax for readability.
-  const
-
-    // The 'arr' variable will store an array of lines from the input.
-    arr = input . trim ( ) . split ( '\n' ) ,
-
-    // 'a' is the target number, converted from the first line of the input.
-    a   =   Number ( arr [ 0 ] ) ;
-
-  // Declare mutable variables.
-  let
-
-    // 'money' starts at 100, representing the initial capital.
-    money   =   100 ,
-
-    // 'count' will track the number of iterations/days.
-    count   =   0
-    ;
-
-  // This loop simulates the growth of money until it reaches the target 'a'.
-  while  (  money  <  a  )
-  {
-    // Money increases by 1% each iteration.
-    money   *=   1.01   ;
-
-
-    // Increment the counter for each iteration.
-    count   ++   ;
-  }
-
-  // Output the final count to the console.
-  console  .  log  (  count  )  ;
-}
-
-
-// Call the main function with input read from standard input.
-// This part handles reading data from '/dev/stdin' in a Node.js environment.
-main (
-  require ( 'fs' )
-    . readFileSync (
-      '/dev/stdin' ,
-      'utf8'
-    )
-) ;
-
-// End of the program.
+/* 읽기 또한정리한다 최종값 분석 각 값마다가까이. */

@@ -1,13 +1,7 @@
-const processData = (sourceText) => {
-  let occurrenceTally = 0;
-  const pattern = /ABC/g;
-  let currentMatch;
-
-  while ((currentMatch = pattern.exec(sourceText)) !== null) {
-    occurrenceTally++;
-  }
-
-  console.log(occurrenceTally);
-};
-
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function processString(sourceText) {
+  const targetPattern = /ABC/g;
+  const foundOccurrences = sourceText.match(targetPattern);
+  const totalCount = foundOccurrences ? foundOccurrences.length : 0;
+  console.log(totalCount);
+}
+processString(require('fs').readFileSync('/dev/stdin', 'utf8'));

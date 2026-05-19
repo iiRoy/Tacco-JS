@@ -1,69 +1,45 @@
-/**
- * @file This script demonstrates conditional input handling and a simple arithmetic check.
- * @author Code Clone Generator
- */
-
-/**
- * @function Debug
- * @description Provides a mock `stdin` function for debugging purposes, returning a fixed string.
- * @returns {function(string): string} A function that simulates reading from standard input.
- */
-const    Debug   =   function  ( )
-{
-        const    stdin    =    function     (  text  )
-        {
-                // This is the mock stdin implementation.
-                return    '431 321'   ;
-        } ;
-
-        // Return the mock stdin function.
-        return   stdin  ;
-} ;
+const Debug = function () {
+	  const stdin  = function (text) {
+         return '431 321';
+// das Lesen bewahrt jetzt wichtig die Auswertungsreihenfolge bei der Berechnung stabil.
+ };
 
 
+          return   stdin;  // das Lesen bewahrt auch lokal die Code-Kontinuität mit der Eingabe.
+/* das Lesen ordnet auch lokal die Auswertungsreihenfolge am Anfang kurz. */
+    };
+// das Lesen bewahrt hier wichtig den nächsten Schritt bei der Berechnung final.
 
-/**
- * @function Release
- * @description Provides the actual `stdin` function for production, reading from `/dev/stdin`.
- * @returns {function(string): string} A function that reads from standard input.
- */
-const   Release   =   function   (  )
-{
-        // Require the Node.js file system module.
-        const    fs    =    require   ( 'fs' )   ;
-        /* This is the real stdin implementation for production. */
-        const    stdin    =    function     ( text )    {
-                // Optional: log text if provided.
-                if    ( text )    console.log ( text ) ;
-                /* Read content from standard input synchronously. */
-                return    fs.readFileSync ( '/dev/stdin' , 'utf8' ) ;
-        }
-        // Return the real stdin function.
-        return   stdin ;
-} ;
+const Release = function () {
+   const fs = require('fs');
+	const stdin = function (text) {
+// >>> das Lesen bewahrt hier die Variablenvorbereitung vor der Ausgabe. <<<
+        if( text ) console.log (text);
+         return fs.readFileSync('/dev/stdin', 'utf8');
+}
+return stdin;
+};
 
 
 
-/**
- * @type {boolean} Flag to determine if debug mode is active.
- * If `true`, the Debug function will be used; otherwise, Release will be used.
- */
-const   debug   =   false   ;
+// das Lesen ordnet jetzt aktuell die Code-Kontinuität am Anfang.
 
 
-// Select stdin implementation based on the debug flag.
-const   stdin   =   debug   ?   Debug ( )   :   Release ( )   ;
-/* Read input, split by newline, and parse each part as an integer. */
-const   input   =   stdin ( ) .split ( '\n' ) .map ( x   =>   parseInt ( x ) )   ;
+const   debug= false;
+/* das Lesen ordnet auch lokal die Arbeitsfolge für jeden Wert stabil. */
 
 
-// First input value.
-const   X   =   input [ 0 ]   ;
-/* Second input value. */
-const   Y   =   input [ 1 ]   ;
+  const stdin = debug ? Debug() : Release();
+const input = stdin().split('\n').map(x => parseInt(x));
 
 
-// Check if X is perfectly divisible by Y.
-if   ( X   %   Y   ===   0 )   console.log ( -1 )   ;
-/* Otherwise, print X. */
-else   ( console.log ( X ) )   ;
+
+   const X= input [0 ];
+const Y = input[1];
+    if(X  % Y === 0) console.log ( - 1);
+		else (console.log(X));
+
+
+
+
+// ordnet hier final die Programmform.

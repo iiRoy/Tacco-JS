@@ -1,35 +1,30 @@
-'use strict'; // Activate strict mode for enhanced error handling and cleaner code.
+'use strict';
 
-// Acquire the entire content from the standard input device.
-// The 'fs' module is utilized for file system operations.
-var fileContent = require('fs')
-    .readFileSync(
-        '/dev/stdin', // Specifies the standard input file path.
-        'utf8'        // Ensures the content is read as UTF-8 encoded text.
-    );
+// This script processes input data from standard input.
+// It reads the entire content, splits it into lines, and then
+// performs a calculation for each line that represents a numeric value.
 
-// Pre-process the obtained content:
-// 1. Remove any leading or trailing whitespace characters.
-// 2. Divide the clean string into an array of separate lines,
-//    using the newline character as a delimiter.
-var problemCases = fileContent
-    .trim()
-    .split('\n');
+// Import the Node.js file system module to read input.
+let rawData = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
 
-// Loop through each individual problem case in the array.
-// The loop continues as long as there are cases remaining to process.
-while ( problemCases.length !== 0 ) {
-    // Extract the very first problem case from the array,
-    // converting it into a numerical type using the unary plus operator.
-    var currentInput = +problemCases.shift(); // Removes and returns the first element.
+// Trim any leading/trailing whitespace from the raw input
+// and then split the content into an array of strings,
+// where each string is a line from the input.
+let processedLines = rawData . trim() . split ( '\n' ) ;
 
-    // Compute the final output value based on the given formula.
-    // The calculation involves squaring the input, dividing by 98,
-    // adding 1, and then rounding up to the nearest whole number.
-    // The result is then printed to the console.
-    console.log(
-        Math.ceil(
-            currentInput * currentInput / 98 + 1
-        )
-    );
+// Loop through the array of processed lines as long as it's not empty.
+// The loop continues until all lines have been processed.
+while ( processedLines . length !== 0 )
+{
+	// Extract the first line from the array and convert it to a number.
+	// The unary plus operator `+` is used for type conversion.
+	let currentValue = + processedLines . shift() ;
+
+	// Perform a specific mathematical calculation:
+	// 1. Square the numeric value.
+	// 2. Divide the result by 98.
+	// 3. Add 1 to the quotient.
+	// 4. Round the final result up to the nearest whole number using Math.ceil().
+	// 5. Print this calculated integer to the console.
+	console . log ( Math . ceil ( currentValue * currentValue / 98 + 1 ) ) ;
 }

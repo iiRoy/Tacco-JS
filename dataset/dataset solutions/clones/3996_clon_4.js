@@ -1,26 +1,19 @@
-function processInputAndCompute(dataString) {
-    const numericalValues = dataString.split(/\s+/).map(x => Number(x));
-    const limitA = numericalValues[0];
-    const limitB = numericalValues[1];
+function calculateMatchingPairs(inputData) {
+  const [upperBound, comparisonValue] = inputData.split(' ').map(Number);
 
-    const generateSequence = (maxVal) => Array.from({ length: maxVal }, (_, idx) => idx + 1);
+  const outerRange = Array.from({ length: upperBound }, (_, index) => index + 1);
 
-    const firstSequence = generateSequence(limitA);
-    const secondSequence = generateSequence(limitA);
+  const totalCount = outerRange.reduce((accumulator, currentOuter) => {
+    const innerRange = Array.from({ length: upperBound }, (_, index) => index + 1);
 
-    const combinedPairs = firstSequence.flatMap(valX =>
-        secondSequence.map(valY => ({ first: valX, second: valY }))
-    );
-
-    const qualifyingPairsCount = combinedPairs.reduce((accumulator, currentPair) => {
-        const remainder = currentPair.first % currentPair.second;
-        if (remainder >= limitB) {
-            return accumulator + 1;
-        }
-        return accumulator;
+    const innerCount = innerRange.reduce((innerAccumulator, currentInner) => {
+      return innerAccumulator + ((currentOuter % currentInner) >= comparisonValue ? 1 : 0);
     }, 0);
 
-    console.log(qualifyingPairsCount);
+    return accumulator + innerCount;
+  }, 0);
+
+  console.log(totalCount);
 }
 
-processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+calculateMatchingPairs(require('fs').readFileSync('/dev/stdin', 'utf-8'));

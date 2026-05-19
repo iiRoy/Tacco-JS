@@ -1,59 +1,51 @@
-/*
- * This module contains the primary logic to determine a specific numeric property.
- * It processes a single input value to find a number with the maximum even divisions.
- */
-function ExecuteTask(rawData) {
-  // Convert the raw string input into a numerical limit for iterations.
-  const limitValue = Number(rawData);
+function ProcessInput(rawData) {
+  // Convert the raw input string into a numerical limit for iteration.
+  let limitVal = Number(rawData);
 
-  // Initialize the result pair.
-  // The first element stores the number, the second stores its division count.
-  // If limit is 1, start with [1, 0] as 1 cannot be divided by 2.
-  // Otherwise, initialize with a default of [0, 0].
-  let resultPair;
-  if (limitValue === 1) {
-    resultPair = [1, 0];
-  }
-  else {
-    resultPair = [0, 0];
+  // Initialize a variable to store the number with the maximum divisions by 2.
+  // The first element holds the number itself, the second holds its division count.
+  let bestResult;
+
+  // Special handling for the case where the input limit is 1.
+  if (limitVal === 1) {
+    bestResult = [1, 0]; // If N is 1, the number is 1, and it has 0 divisions by 2.
+  } else {
+    bestResult = [0, 0]; // For other cases, initialize with a default placeholder.
   }
 
-  // Iterate from 1 up to the specified limit.
-  for (let currentNum = 1; currentNum <= limitValue; currentNum++) {
-    // Variable to hold the count of even divisions for the current number.
-    let evenDivisions = 0;
-    // Calculate how many times the current number can be divided by 2.
-    evenDivisions = calculateEvenDivisions(currentNum, evenDivisions);
+  // Iterate through numbers from 1 up to the specified limit.
+  for (let idx = 1; idx <= limitVal; idx++) {
+    // Initialize a counter for the current number's divisions by 2.
+    let currentDivisions = 0;
 
-    // If the current number's division count is greater than the stored maximum,
-    // update the result pair.
-    if (resultPair[1] < evenDivisions) {
-      resultPair = [currentNum, evenDivisions];
+    // Calculate the number of times the current index can be divided by 2.
+    currentDivisions = calculateDivisions(idx, currentDivisions);
+
+    // Compare the current number's division count with the best recorded so far.
+    if (bestResult[1] < currentDivisions) {
+      // If the current number has more divisions, update the best result.
+      bestResult = [idx, currentDivisions];
     }
   }
 
-  /*
-   * Recursively determines how many times a positive integer can be divided by 2.
-   * @param {number} currentVal - The number to check.
-   * @param {number} accumulatedDivs - The current count of divisions.
-   * @returns {number} The total count of divisions by 2.
-   */
-  function calculateEvenDivisions(currentVal, accumulatedDivs) {
+  // This nested function recursively counts how many times a number can be divided by 2.
+  // 'num' is the number currently being checked.
+  // 'tempCount' accumulates the count of divisions.
+  function calculateDivisions(num, tempCount) {
     // Check if the number is even.
-    if (currentVal % 2 === 0) {
-      // Increment the counter and recurse with half the number.
-      accumulatedDivs++;
-      return calculateEvenDivisions(currentVal / 2, accumulatedDivs);
-    }
-    else {
-      // If odd, no more even divisions are possible; return the accumulated count.
-      return accumulatedDivs;
+    if (num % 2 === 0) {
+      tempCount++; // Increment the division counter.
+      // Recursively call the function with the number halved.
+      return calculateDivisions(num / 2, tempCount);
+    } else {
+      // If the number is odd, it cannot be divided by 2 further, so return the current count.
+      return tempCount;
     }
   }
 
-  // Output the number from the best pair.
-  console.log(resultPair[0]);
+  // Output the number that had the maximum count of divisions by 2.
+  console.log(bestResult[0]);
 }
 
-// Invoke the main processing function with data read from standard input.
-ExecuteTask(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input (e.g., a file or pipe) and pass it to the main function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

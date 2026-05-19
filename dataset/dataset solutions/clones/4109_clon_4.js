@@ -1,47 +1,39 @@
-"use strict";
+const processInput = (inputData) => {
+    const lines = inputData.trim().split("\n");
+    const [firstLine] = lines;
+    const [numItems, initialHealth] = firstLine.split(" ").map(Number);
 
-const processInputData = (rawTextContent) => {
-    const parsedLines = rawTextContent.trim().split(/\s*\n\s*/);
-    const initialParameters = parsedLines[0].split(/\s+/);
-    
-    const bladeCount = Number(initialParameters[0]);
-    const monsterHealth = Number(initialParameters[1]);
-
-    const weaponArsenal = parsedLines.slice(1, bladeCount + 1).map(line => {
-        const weaponAttributes = line.split(/\s+/);
-        return {
-            strike: Number(weaponAttributes[0]),
-            toss: Number(weaponAttributes[1])
-        };
+    const itemStats = lines.slice(1, numItems + 1).map(itemLine => {
+        const [offenseValue, damageValue] = itemLine.split(" ").map(Number);
+        return { offense: offenseValue, damage: damageValue };
     });
 
-    let overallTossDamage = 0;
-    let maximumStrikeDamage = 0;
+    let topOffenseItem = { offense: 0, damage: 0 };
+    let cumulativeThrowDamage = 0;
 
-    overallTossDamage = weaponArsenal.reduce((currentSum, currentWeapon) => currentSum + currentWeapon.toss, 0);
-    maximumStrikeDamage = Math.max(...weaponArsenal.map(weapon => weapon.strike));
-
-    let finalActionCount;
-
-    if (overallTossDamage >= monsterHealth) {
-        finalActionCount = bladeCount;
-    } else {
-        const healthAfterAllTosses = monsterHealth - overallTossDamage;
-        
-        const necessaryStrikes = (healthAfterAllTosses > 0) ? 
-                                 (Math.floor((healthAfterAllTosses - 1) / maximumStrikeDamage) + 1) : 0;
-        
-        if (bladeCount === 1) {
-            finalActionCount = necessaryStrikes + 1;
-        } else {
-            finalActionCount = necessaryStrikes + (bladeCount - 1);
+    itemStats.forEach(currentStat => {
+        cumulativeThrowDamage += currentStat.damage;
+        if (currentStat.offense > topOffenseItem.offense) {
+            topOffenseItem = currentStat;
         }
+    });
+
+    if (cumulativeThrowDamage >= initialHealth) {
+        console.log(numItems);
+        return;
     }
-    
-    console.log(finalActionCount);
+
+    const remainingHealthAfterAllThrows = initialHealth - cumulativeThrowDamage;
+
+    const necessarySwings = Math.ceil(remainingHealthAfterAllThrows / topOffenseItem.offense);
+
+    console.log(necessarySwings);
+
+    const finalTally = (numItems === 1)
+        ? necessarySwings + 1
+        : necessarySwings + (numItems - 1);
+
+    console.log(finalTally);
 };
 
-(function() {
-    const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    processInputData(inputContent);
-})();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,39 +1,54 @@
-var diskOps = require('fs'), // Acquire file system utilities
-    contentSize = diskOps.fstatSync(process.stdin.fd).size,    // Determine byte size of standard input
-    readBuf = new Buffer(contentSize),                         // Allocate memory for input
-    numBytesGot = diskOps.readSync(process.stdin.fd, readBuf, 0, contentSize, 0), // Read bytes from stdin
-    dataLines = readBuf.toString('utf8', 0, numBytesGot).split('\n'); // Process raw data into an array of strings
+const fileSystemModule = require('fs'); // Import the Node.js file system module
 
-performCalculations(); // Initiate the primary processing sequence
+// Determine the total size of the standard input stream in bytes
+let dataSize = fileSystemModule.fstatSync(process.stdin.fd).size;
 
-function performCalculations()
-{
-  // Loop through each received line, excluding the potential trailing empty line.
-  for
-  (
-    var lineIdx = 0,
-        limitVal = dataLines.length - 1;
-    lineIdx < limitVal;
-    lineIdx++
-  )
-  {
-    var tokenSet = dataLines[lineIdx].split(','); // Separate coordinate values by comma
-    var positiveTally = 0; // Counter for positive outcomes
-    var negativeTally = 0; // Counter for negative outcomes
+// Allocate a new Buffer object of the determined size to hold the input data
+let inputBuffer = new Buffer(dataSize);
 
-    // Compute the slopes (gradients) of four distinct line segments.
-    var gradientA = (tokenSet[1] - tokenSet[3]) / (tokenSet[0] - tokenSet[2]); // Slope from first point to second
-    var gradientB = (tokenSet[3] - tokenSet[5]) / (tokenSet[2] - tokenSet[4]); // Slope from second point to third
-    var gradientC = (tokenSet[5] - tokenSet[7]) / (tokenSet[4] - tokenSet[6]); // Slope from third point to fourth
-    var gradientD = (tokenSet[7] - tokenSet[1]) / (tokenSet[6] - tokenSet[0]); // Slope from fourth point back to first
-    
-    // Evaluate each gradient's sign and update the respective counter.
-    gradientA >= 0 ? positiveTally++ : negativeTally++;
-    gradientB >= 0 ? positiveTally++ : negativeTally++;
-    gradientC >= 0 ? positiveTally++ : negativeTally++;
-    gradientD >= 0 ? positiveTally++ : negativeTally++;
+// Read data synchronously from standard input into the buffer
+// Parameters: file descriptor, buffer, offset, length, position
+let readBytesCount = fileSystemModule.readSync(process.stdin.fd, inputBuffer, 0, dataSize, 0);
 
-    // Print "YES" if the count of positive gradients is odd, otherwise "NO".
-    console.log( positiveTally % 2 ? 'YES' : 'NO' );
+// Convert the buffer content to a UTF-8 string, then split it into an array of lines
+// The last element of the array might be an empty string if the input ends with a newline
+let linesOfInput = inputBuffer.toString('utf8', 0, readBytesCount).split('\n');
+
+// Call the main function to begin processing the input
+processCoordinates();
+
+/**
+ * Main function to process each line of coordinate data.
+ * It calculates slopes between consecutive points and determines an output based on slope parity.
+ */
+function processCoordinates() {
+  // Iterate through each line of input, excluding the potential empty last line
+  for (let idx = 0, lineCount = linesOfInput.length - 1; idx < lineCount; idx++) {
+    // Split the current line by comma to get individual coordinate components as strings
+    const coordsStr = linesOfInput[idx].split(',');
+
+    let positiveSlopes = 0; // Counter for slopes that are non-negative (>= 0)
+    let negativeSlopes = 0; // Counter for slopes that are negative (< 0)
+
+    // Calculate the slope between point A (coordsStr[0], coordsStr[1]) and point B (coordsStr[2], coordsStr[3])
+    const slopeAB = (coordsStr[1] - coordsStr[3]) / (coordsStr[0] - coordsStr[2]);
+    // Calculate the slope between point B (coordsStr[2], coordsStr[3]) and point C (coordsStr[4], coordsStr[5])
+    const slopeBC = (coordsStr[3] - coordsStr[5]) / (coordsStr[2] - coordsStr[4]);
+    // Calculate the slope between point C (coordsStr[4], coordsStr[5]) and point D (coordsStr[6], coordsStr[7])
+    const slopeCD = (coordsStr[5] - coordsStr[7]) / (coordsStr[4] - coordsStr[6]);
+    // Calculate the slope between point D (coordsStr[6], coordsStr[7]) and point A (coordsStr[0], coordsStr[1])
+    const slopeDA = (coordsStr[7] - coordsStr[1]) / (coordsStr[6] - coordsStr[0]);
+
+    // Increment appropriate counter based on the sign of slope AB
+    slopeAB >= 0 ? positiveSlopes++ : negativeSlopes++;
+    // Increment appropriate counter based on the sign of slope BC
+    slopeBC >= 0 ? positiveSlopes++ : negativeSlopes++;
+    // Increment appropriate counter based on the sign of slope CD
+    slopeCD >= 0 ? positiveSlopes++ : negativeSlopes++;
+    // Increment appropriate counter based on the sign of slope DA
+    slopeDA >= 0 ? positiveSlopes++ : negativeSlopes++;
+
+    // Output 'YES' if the count of non-negative slopes is odd, otherwise 'NO'
+    console.log(positiveSlopes % 2 ? 'YES' : 'NO');
   }
 }

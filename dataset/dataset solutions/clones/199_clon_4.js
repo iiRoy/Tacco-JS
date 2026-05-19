@@ -1,21 +1,22 @@
-const sourceText = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const entriesCollection = sourceText.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const typeDesignations = entriesCollection.map(segment => {
-    const parts = segment.split(',');
-    return parts[1];
-});
+const bloodTypeTallies = fileContent.trim().split('\n').reduce((tallyMap, currentEntry) => {
+    if (!currentEntry) {
+        return tallyMap;
+    }
+    const entryComponents = currentEntry.split(',');
+    if (entryComponents.length < 2) {
+        return tallyMap;
+    }
+    const bloodGroup = entryComponents[1];
 
-const countOccurrences = (dataArray, targetValue) => {
-    return dataArray.filter(item => item === targetValue).length;
-};
+    if (Object.prototype.hasOwnProperty.call(tallyMap, bloodGroup)) {
+        tallyMap[bloodGroup]++;
+    }
+    return tallyMap;
+}, { A: 0, B: 0, AB: 0, O: 0 });
 
-const alphaCount = countOccurrences(typeDesignations, 'A');
-const betaCount = countOccurrences(typeDesignations, 'B');
-const combinedCount = countOccurrences(typeDesignations, 'AB');
-const zeroCount = countOccurrences(typeDesignations, 'O');
-
-console.log(alphaCount);
-console.log(betaCount);
-console.log(combinedCount);
-console.log(zeroCount);
+console.log(bloodTypeTallies.A);
+console.log(bloodTypeTallies.B);
+console.log(bloodTypeTallies.AB);
+console.log(bloodTypeTallies.O);

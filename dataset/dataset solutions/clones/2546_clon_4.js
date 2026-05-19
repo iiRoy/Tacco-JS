@@ -1,27 +1,25 @@
-const computeResult = (rawInputContent) => {
-    const lineSegments = rawInputContent.split('\n');
-    const numericParameters = lineSegments[0].split(' ').map(Number);
-    const initialSequence = lineSegments[1].split(' ').map(Number);
+function processInputData(inputPayload) {
+    const inputLines = inputPayload.split("\n");
 
-    const fullLength = numericParameters[0];
-    const subsegmentLength = numericParameters[1];
+    const [elementCount, windowLength] = inputLines[0].split(" ").map(Number);
 
-    const elementOrderComparator = (firstVal, secondVal) => firstVal - secondVal;
+    const sourceArray = inputLines[1].split(" ").map(Number);
 
-    const recordedConfigurations = {};
+    const distinctConfigurations = new Set();
 
-    Array.from({ length: fullLength - subsegmentLength + 1 }, (_, windowPosition) => {
-        const precedingElements = initialSequence.slice(0, windowPosition);
-        const currentWindow = initialSequence.slice(windowPosition, windowPosition + subsegmentLength);
-        const sortedWindow = [...currentWindow].sort(elementOrderComparator);
-        const succeedingElements = initialSequence.slice(windowPosition + subsegmentLength);
+    Array.from({ length: elementCount - windowLength + 1 }, (_, currentPosition) => {
+        const segment = sourceArray.slice(currentPosition, currentPosition + windowLength);
 
-        const constructedLayout = [...precedingElements, ...sortedWindow, ...succeedingElements];
-        const layoutIdentifier = JSON.stringify(constructedLayout);
-        recordedConfigurations[layoutIdentifier] = true;
+        segment.sort((aValue, bValue) => aValue - bValue);
+
+        const leadingElements = sourceArray.slice(0, currentPosition);
+        const trailingElements = sourceArray.slice(currentPosition + windowLength);
+        const reconstructedArray = [...leadingElements, ...segment, ...trailingElements];
+
+        distinctConfigurations.add(reconstructedArray.toString());
     });
 
-    return Object.keys(recordedConfigurations).length;
-};
+    console.log(distinctConfigurations.size);
+}
 
-console.log(computeResult(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

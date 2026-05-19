@@ -1,38 +1,41 @@
-const countCharsInPhrase = (phraseUnit) =>
-  [...phraseUnit]
-    .filter(glyph => glyph >= 'a' && glyph <= 'z')
-    .reduce((tallyMap, currentGlyph) =>
-      tallyMap.set(currentGlyph, (tallyMap.get(currentGlyph) || 0) + 1),
-      new Map()
-    );
+function obtainCharCounts(textInput) {
+    const baseCode = 'a'.charCodeAt(0);
+    return Array.from(textInput).reduce((accumulator, char) => {
+        const charOffset = char.charCodeAt(0) - baseCode;
+        if (charOffset >= 0 && charOffset < 26) {
+            accumulator[charOffset]++;
+        }
+        return accumulator;
+    }, new Array(26).fill(0));
+}
 
-const findCommonCounts = (primaryCounts, secondaryCounts) =>
-  new Map(
-    [...primaryCounts.keys()]
-      .filter(characterKey => secondaryCounts.has(characterKey))
-      .map(characterKey => [characterKey, Math.min(primaryCounts.get(characterKey), secondaryCounts.get(characterKey))])
-  );
+function intersectCounts(countsA, countsB) {
+    return countsA.map((value, index) => Math.min(value, countsB[index]));
+}
 
-const processInputData = (incomingData) => {
-  const dataLines = incomingData.split('\n').filter(Boolean);
-  const numberOfEntries = parseInt(dataLines[0], 10);
-  const textEntries = dataLines.slice(1, numberOfEntries + 1);
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
+    const numStrings = parseInt(lines[0], 10);
+    const stringCollection = lines.slice(1, numStrings + 1);
 
-  const initialCharacterAggregate = countCharsInPhrase(textEntries[0]);
+    if (stringCollection.length === 0) {
+        console.log("");
+        return;
+    }
 
-  const finalCharacterAggregate = textEntries.slice(1).reduce(
-    (currentAggregate, currentEntry) =>
-      findCommonCounts(currentAggregate, countCharsInPhrase(currentEntry)),
-    initialCharacterAggregate
-  );
+    const finalCounts = stringCollection.slice(1).reduce((currentMinCounts, currentString) => {
+        const currentStrCounts = obtainCharCounts(currentString);
+        return intersectCounts(currentMinCounts, currentStrCounts);
+    }, obtainCharCounts(stringCollection[0]));
 
-  const charSequence = Array.from({ length: 26 }, (_, charIndex) => String.fromCharCode(97 + charIndex));
+    const resultString = Array.from({ length: 26 }, (_, charIndex) => {
+        const charCode = charIndex + 'a'.charCodeAt(0);
+        const character = String.fromCharCode(charCode);
+        const count = finalCounts[charIndex];
+        return character.repeat(count);
+    }).join('');
 
-  const resultingText = charSequence.map(individualChar =>
-    individualChar.repeat(finalCharacterAggregate.get(individualChar) || 0)
-  ).join('');
+    console.log(resultString);
+}
 
-  return resultingText;
-};
-
-console.log(processInputData(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

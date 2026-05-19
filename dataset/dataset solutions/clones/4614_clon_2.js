@@ -1,60 +1,49 @@
-// This function processes a given string input to compute a specific cumulative value.
-function computeTotalInterval(rawInputData)
-{
-  // The input data is expected to be multi-line.
-  // We first split the entire input string into an array of individual lines.
-  var allInputLines = rawInputData.split('\n');
+function ProcessInput(inputString) {
+  // Extract the first line of the input string.
+  const firstLineData = inputString.split("\n")[0];
 
-  // The first line contains configuration parameters, separated by spaces.
-  var firstLineParts = allInputLines[0].split(' ');
+  // Split the first line to get the number of items and the maximum duration.
+  const firstLineValues = firstLineData.split(" ");
 
-  // The first part of the first line represents the total count of events.
-  // We convert this string representation to an integer.
-  var eventQuantity = parseInt(firstLineParts[0], 10);
+  // Convert the first value to a numerical representation for the count of items.
+  let numItems = firstLineValues[0] - 0;
 
-  // The second part of the first line represents the maximum permitted time difference.
-  // We convert this string representation to a number.
-  var maxAllowedGap = Number(firstLineParts[1]);
+  // Convert the second value to a numerical representation for the maximum allowed duration.
+  let maxDuration = firstLineValues[1] - 0;
 
-  // The second line of the input contains a series of time points, also space-separated.
-  // We parse each string element into a numerical timestamp.
-  var timeSequence = allInputLines[1].split(' ').map(function(val) {
-    return Number(val);
-  });
+  // Extract the second line of the input string, which contains the timestamps.
+  const secondLineData = inputString.split("\n")[1];
 
-  // Initialize a variable that will accumulate the calculated time.
-  let cumulativeSum = 0;
+  // Split the second line by spaces and convert each part to a number, storing them in an array.
+  const itemTimestamps = secondLineData.split(" ").map(Number);
 
-  // Iterate through the sequence of time points, starting from the second element.
-  // The loop continues as long as the current index is less than the total event quantity.
-  for (let currentIdx = 1; currentIdx < eventQuantity; currentIdx++)
-  {
-    // Calculate the time difference between the current event and the immediately preceding one.
-    let timeDifference = timeSequence[currentIdx] - timeSequence[currentIdx - 1];
+  // Initialize a variable to accumulate the total effective time.
+  let accumulatedTime = 0;
 
-    // Evaluate if this calculated time difference is less than our predefined maximum allowed gap.
-    if (timeDifference < maxAllowedGap)
-    {
-      // If the actual difference is smaller, add this specific difference to our running total.
-      cumulativeSum += timeDifference;
+  // Iterate through the item timestamps, starting from the second item.
+  // This loop calculates the time contribution of each item based on its predecessor.
+  for (let currentIdx = 1; currentIdx < numItems; currentIdx++) {
+    // Calculate the time difference between the current item's timestamp and the previous item's timestamp.
+    const timeElapsed = itemTimestamps[currentIdx] - itemTimestamps[currentIdx - 1];
+
+    // Check if the calculated time difference is less than the predefined maximum duration.
+    if (timeElapsed < maxDuration) {
+      // If the difference is smaller, add the actual elapsed time to the total.
+      accumulatedTime += timeElapsed;
     }
-    else
-    {
-      // If the actual difference is greater than or equal to the maximum allowed gap,
-      // we instead add the maximum allowed gap to our running total.
-      cumulativeSum += maxAllowedGap;
+    else {
+      // If the difference is equal to or greater than the maximum duration,
+      // add only the maximum duration to the total, as the effect is capped.
+      accumulatedTime += maxDuration;
     }
   }
 
-  // After the loop completes, print the final cumulative sum,
-  // augmented by the maximum allowed gap, to the standard output.
-  console.log(cumulativeSum + maxAllowedGap);
+  // The final output is the accumulated time plus the maximum duration for the last item's effect.
+  console.log(accumulatedTime + maxDuration);
 
-  // This function does not return any explicit value,
-  // as its primary purpose is to perform a computation and output the result.
+  // The function completes its execution.
   return;
 }
 
-// Invoke the main processing function.
-// It reads the entire content of standard input synchronously as a UTF-8 string.
-computeTotalInterval(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,32 +1,31 @@
-function processInputValues(rawTextData) {
-  // This function takes a string, parses two numbers from it,
-  // calculates their sum, difference, and product, then
-  // prints the maximum of these three results.
+function processInput(rawData) {
+    // Split the incoming string by spaces to get an array of string representations of numbers.
+    let numArray = rawData.split(' ');
 
-  let numericSegments = rawTextData.split(' '); // Divide the input string by spaces.
+    // Convert the first string element to an integer, using base 10.
+    numArray[0] = parseInt(numArray[0], 10);
+    // Convert the second string element to an integer, using base 10.
+    numArray[1] = parseInt(numArray[1], 10);
 
-  // Convert the first segment to a base-10 integer.
-  numericSegments[0] = parseInt(numericSegments[0], 10);
+    // Compute the sum of the two parsed numbers.
+    let sumResult = numArray[0] + numArray[1];
+    // Compute the difference between the two parsed numbers.
+    let diffResult = numArray[0] - numArray[1];
+    // Compute the product of the two parsed numbers.
+    let prodResult = numArray[0] * numArray[1];
 
-  // Convert the second segment to a base-10 integer.
-  numericSegments[1] = parseInt(numericSegments[1], 10);
+    // Find the largest value among the sum, difference, and product.
+    let finalMax = Math.max(sumResult, diffResult, prodResult);
 
-  let combinedSum = numericSegments[0] + numericSegments[1]; // Compute the addition result.
+    // Check if the maximum value is negative zero, and if so, convert it to positive zero.
+    // This ensures consistent output behavior for -0.
+    if (finalMax === -0) {
+        finalMax = 0;
+    }
 
-  let combinedDifference = numericSegments[0] - numericSegments[1]; // Determine the subtraction result.
-
-  let combinedProduct = numericSegments[0] * numericSegments[1]; // Calculate the multiplication result.
-
-  let greatestValue = Math.max(combinedSum, combinedDifference, combinedProduct); // Find the largest among the three.
-
-  // Check for the negative zero edge case and normalize to positive zero.
-  if (greatestValue === -0) {
-    greatestValue = 0;
-  }
-
-  console.log(greatestValue); // Display the final maximum value.
+    // Print the determined maximum value to the standard output.
+    console.log(finalMax);
 }
 
-// Obtain input by synchronously reading the standard input stream
-// and then pass the acquired text data to the main processing routine.
-processInputValues(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

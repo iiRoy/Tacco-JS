@@ -1,50 +1,51 @@
-/* This function serves as the primary entry point for data processing. */
-function ProcessInput ( rawData ) {
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines.
+  const inputLines = rawData.split("\n");
 
-  // Divide the incoming raw data string into an array of text rows based on newline characters.
-  var textRows = rawData . split ( '\n' );
+  // Parse the first line to get the total count of elements.
+  let elementCount = Number(inputLines[0]);
 
-  // Convert the first element of the textRows array to a number, representing the total item count.
-  var itemCount = Number( textRows[0] );
+  // Split the second line by spaces to get string representations of values.
+  const stringValues = inputLines[1].split(" ");
 
-  /* Split the second text row into individual string elements, using space as a delimiter. */
-  var stringElements = textRows[1] . split ( ' ' );
+  // Initialize an array to hold the numeric versions of the values.
+  let numericValues = [];
 
-  // Initialize an empty array that will store numbers.
-  var numericValues = [ ];
-
-  // Iterate through the string elements, converting each to a number and adding it to the numericValues array.
-  // The loop runs up to 'itemCount - 1' as per the original logic, implying the last element might be a newline or not needed.
-  for (var idxA = 0; idxA < itemCount - 1; idxA ++ ) {
-    numericValues . push ( Number ( stringElements[idxA] ) );
+  // Iterate through the string values, converting them to numbers.
+  // Note: The loop runs up to elementCount - 1, potentially skipping the last element.
+  for (let idx = 0; idx < elementCount - 1; idx++) {
+    numericValues.push(Number(stringValues[idx]));
   }
 
-  // Sort the array of numeric values in ascending order using a custom comparison function.
-  numericValues . sort ( function( val1, val2 ) {
-    if ( val1 < val2 ) return -1; // If val1 is smaller, it comes first.
-    if ( val1 > val2 ) return 1;  // If val1 is larger, it comes after.
-    return 0; // If they are equal, their order doesn't change.
-  } );
-
-  // Initialize a pointer to keep track of the current position in the sorted numeric array.
-  var currentPointer = 0;
-
-  // Declare a variable to store the count of occurrences for each value.
-  var occurrenceCount;
-
-  // Loop through a sequence of numbers from 1 up to the total itemCount.
-  for ( var currentValue = 1; currentValue <= itemCount; currentValue ++ ) {
-    occurrenceCount = 0; // Reset the occurrence counter for each new currentValue.
-
-    // While the element at the currentPointer in numericValues matches the currentValue
-    // and the currentPointer is within the bounds of the array, increment the count.
-    while ( numericValues[currentPointer] == currentValue && currentPointer < itemCount ) {
-      currentPointer ++ ; // Advance the pointer to the next element.
-      occurrenceCount ++ ; // Increment the count of the current value.
+  // Sort the numeric values in ascending order.
+  numericValues.sort(function(valA, valB) {
+    if (valA < valB) {
+      return -1; // valA comes before valB
     }
-    console . log ( occurrenceCount ); // Output the final count for the currentValue.
+    if (valA > valB) {
+      return 1; // valA comes after valB
+    }
+    return 0; // valA and valB are equal
+  });
+
+  // Initialize a pointer for the sorted array.
+  let currentPosition = 0;
+  let occurrenceCount; // Declare a variable to store the count for each target value.
+
+  // Loop from 1 up to the total element count (inclusive).
+  for (let targetValue = 1; targetValue <= elementCount; targetValue++) {
+    occurrenceCount = 0; // Reset the count for the current target value.
+
+    // While the current element in the sorted array matches the target value
+    // and we haven't gone past the end of the array, increment count and advance pointer.
+    while (numericValues[currentPosition] === targetValue && currentPosition < elementCount) {
+      currentPosition++; // Move to the next element.
+      occurrenceCount++; // Increment the count for the current target.
+    }
+    // Output the total occurrences of the current target value.
+    console.log(occurrenceCount);
   }
 }
 
-// Invoke the main processing function, reading input from standard input.
-ProcessInput ( require("fs") . readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

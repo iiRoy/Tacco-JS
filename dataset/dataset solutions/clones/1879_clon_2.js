@@ -1,92 +1,132 @@
-function TokenReader(sourceText) {
-  var instanceRef = this;
-  instanceRef.currentTokenIndex = 0; /* Initializes the pointer to the current token */
-  instanceRef.originalData = sourceText; /* Stores the complete raw input string */
+function DataParser(sourceText) {
+	// Reference to the current instance of the parser
+	const instance = this;
 
-  instanceRef.tokenArray = (function(rawData) {
-    var processedTokens = [];
-    // Replace sequences of newlines, spaces, or tabs with a single space to standardize input
-    var cleanedData = rawData.replace(/[\n\s\t]+/g, " ");
-    var splitParts = cleanedData.split(" "); // Divides the cleaned string into an array of segments
-    for (var idx = 0, arrayLength = splitParts.length; idx < arrayLength; idx++) {
-      processedTokens.push(splitParts[idx]); // Adds each segment to the collection
-    }
-    return processedTokens;
-  }(sourceText));
+	// Initialize the index for the current token
+	instance.currentIndex = 0;
 
-  instanceRef.acquireNext = function() {
-    var retrievedToken = instanceRef.tokenArray[instanceRef.currentTokenIndex];
-    instanceRef.currentTokenIndex = instanceRef.currentTokenIndex + 1; /* Advances the internal index */
-    // Returns the current token if it exists, otherwise returns null
-    return (retrievedToken !== null) ? retrievedToken : null;
-  };
+	// Store the original input string
+	instance.originalContent = sourceText;
 
-  instanceRef.acquireInteger = function() {
-    var retrievedToken = instanceRef.tokenArray[instanceRef.currentTokenIndex];
-    instanceRef.currentTokenIndex += 1; /* Increments the token position counter */
-    // Converts the retrieved token string into an integer value
-    return (retrievedToken !== null) ? parseInt(retrievedToken, 10) : null;
-  };
+	// Process the input string to tokenize it
+	instance.tokenizedParts = (function(inputString) {
+		// Array to hold the resulting tokens
+		let parsedTokens = [];
 
-  instanceRef.acquireDecimal = function() {
-    var retrievedToken = instanceRef.tokenArray[instanceRef.currentTokenIndex];
-    instanceRef.currentTokenIndex++; /* Moves to the subsequent token */
-    // Parses the token string into a floating-point number
-    return (retrievedToken !== null) ? parseFloat(retrievedToken) : null;
-  };
+		// Replace multiple newlines, spaces, and tabs with a single space
+		const cleanedString = inputString.replace(/[\n \t]+/g, " ");
 
-  instanceRef.acquireBigInt = function() {
-    var retrievedToken = instanceRef.tokenArray[instanceRef.currentTokenIndex];
-    instanceRef.currentTokenIndex++; /* Advances the token reference */
-    // Attempts to convert the token into a BigInt type
-    return (retrievedToken !== null) ? BigInt(retrievedToken) : null;
-  };
+		// Split the cleaned string by spaces to get individual tokens
+		const splitSegments = cleanedString.split(" ");
+
+		// Iterate through the split segments and add them to the result array
+		for (let idx = 0, lengthVal = splitSegments.length; idx < lengthVal; idx++) {
+			parsedTokens.push(splitSegments[idx]);
+		}
+		return parsedTokens;
+	}(sourceText)); // Immediately invoke with the source text
+
+	// Method to retrieve the next token as a string
+	instance.getNextToken = function() {
+		const currentValue = instance.tokenizedParts[instance.currentIndex];
+		instance.currentIndex++; // Advance the token index
+		// Return the token if it exists, otherwise null
+		return (currentValue !== undefined) ? currentValue : null;
+	};
+
+	// Method to retrieve the next token as an integer
+	instance.getNextInteger = function() {
+		const currentValue = instance.tokenizedParts[instance.currentIndex];
+		instance.currentIndex++; // Advance the token index
+		// Parse and return the integer, or null if no token
+		return (currentValue !== undefined) ? parseInt(currentValue, 10) : null;
+	};
+
+	// Method to retrieve the next token as a floating-point number (BigDecimal equivalent)
+	instance.getNextFloat = function() {
+		const currentValue = instance.tokenizedParts[instance.currentIndex];
+		instance.currentIndex++; // Advance the token index
+		// Parse and return the float, or null if no token
+		return (currentValue !== undefined) ? parseFloat(currentValue) : null;
+	};
+
+	// Method to retrieve the next token as a byte array (conceptual, as JS doesn't have direct bytes)
+	instance.getNextByteArray = function() {
+		const currentValue = instance.tokenizedParts[instance.currentIndex];
+		instance.currentIndex++; // Advance the token index
+		// Return a new Int8Array from the token, or null
+		return (currentValue !== undefined) ? new Int8Array(currentValue) : null;
+	};
 }
 
-function ExecuteWorkflow(readerInstance) {
+// Main function to process the input data
+function ProcessInput(dataReader) {
 
-  var totalElements = readerInstance.acquireInteger(); // Obtains the count of elements
-  var stepsCount = readerInstance.acquireInteger(); // Reads the total number of steps to simulate
+	// Read the number of elements (N) and the target iteration count (K)
+	const numElements = dataReader.getNextInteger();
+	let targetIteration = dataReader.getNextInteger();
 
-  var mappingTable = {}; // A dictionary to store the element transitions
+	// Initialize a mapping table (object acting as a hash map)
+	const mappingTable = {};
 
-  // Populates the transition table based on input
-  for (var idx = 0; idx < totalElements; idx++) {
-    mappingTable[idx + 1] = readerInstance.acquireInteger();
-  }
+	// Populate the mapping table based on N elements
+	for (let loopCounter = 0; loopCounter < numElements; loopCounter++) {
+		mappingTable[loopCounter + 1] = dataReader.getNextInteger();
+	}
 
-  var currentPosition = 1; // Sets the initial starting position
-  var visitedSteps = {}; // A map to track previously visited positions and their step indices
+	// Initialize the current position, starting from 1
+	let currentPosition = 1;
+	// Keep track of visited positions and the iteration they were first seen
+	const visitedPositions = {};
 
-  // Loop to traverse the mapping and detect any cycles
-  for (var idx = 0; idx < totalElements; idx++) {
-    currentPosition = mappingTable[currentPosition]; // Follows the mapping to the next position
-    // Checks if the current position has been encountered before
-    if (visitedSteps[currentPosition] !== undefined) {
-      break; // Exits the loop if a cycle is detected
-    }
-    visitedSteps[currentPosition] = idx; // Records the step index at which this position was first visited
-  }
+	// Simulate the process to detect cycles
+	let loopCounter;
+	for (loopCounter = 0; loopCounter < numElements; loopCounter++) {
+		currentPosition = mappingTable[currentPosition]; // Move to the next position
+		// If the current position has been visited before, a cycle is detected
+		if (visitedPositions[currentPosition] !== undefined) {
+			break; // Exit the loop
+		}
+		visitedPositions[currentPosition] = loopCounter; // Record the first visit iteration
+	}
 
-  // This block executes if a cycle was identified during the traversal
-  if (idx < totalElements) {
-    // Calculates the length of the detected cycle
-    var cycleLength = idx - visitedSteps[currentPosition];
-    // Determines the number of steps taken before the cycle began
-    var preCycleLength = visitedSteps[currentPosition] - 1;
+	// If a cycle was detected before completing N iterations
+	if (loopCounter < numElements) {
+		// Calculate the length of the detected cycle
+		const cycleLength = loopCounter - visitedPositions[currentPosition];
+		// Calculate the number of steps before entering the cycle
+		const preCycleLength = visitedPositions[currentPosition];
 
-    // Adjusts the total steps count to efficiently handle the cyclic part
-    stepsCount = ((stepsCount - preCycleLength) % cycleLength) + preCycleLength;
-  }
+		// Adjust K to account for the cycle
+		// First, subtract the steps before the cycle
+		// Then, take the modulo of the cycle length to find the equivalent position within the cycle
+		// Finally, add back the steps before the cycle to get the effective K
+		targetIteration = ((targetIteration - preCycleLength) % cycleLength) + preCycleLength;
+	}
 
-  var currentPosition = 1; // Resets the position to the start for the final calculation
-  // Performs the final sequence of steps using the potentially adjusted steps count
-  for (var idx = 0; idx < stepsCount; idx++) {
-    currentPosition = mappingTable[currentPosition];
-  }
+	// Reset the current position to 1 for the final calculation
+	currentPosition = 1;
+	// Perform the final K iterations
+	for (let loopCounter = 0; loopCounter < targetIteration; loopCounter++) {
+		currentPosition = mappingTable[currentPosition]; // Move to the next position
+	}
 
-  console.log(currentPosition); // Prints the final position after all steps
+	// Output the final position
+	console.log(currentPosition);
 }
 
-// Initiates the main execution flow by creating a TokenReader with input from standard input
-ExecuteWorkflow(new TokenReader(require("fs").readFileSync("/proc/data_stream", "utf-8")));
+// Execute the main processing function with a new DataParser instance
+// The DataParser reads input from standard input using Node.js 'fs' module
+ProcessInput(new DataParser(require("fs").readFileSync("/dev/stdin", "utf8")));
+
+// Example usage for testing (commented out in production)
+// ProcessInput(new DataParser("10 1 2 5 3 4 6 7 3 2 4 1 2 2 3 3 4 4 5 3 6 6 7 1 8 8 9 9 10"));
+
+// Other potential data reading methods (commented out)
+// const stringValue = dataReader.getNextToken(); // Get as String
+// const integerValue = dataReader.getNextInteger(); // Get as int
+// const floatValue = dataReader.getNextFloat(); // Get as BigDecimal
+// const byteArrayValue = dataReader.getNextByteArray(); // Get as byte array
+// A dummy loop for artificial delay (commented out)
+// for (let delayCounter = 0; delayCounter < 1000000000; delayCounter++) { const dummyVar = "dummy"; }
+// console.log(outputNumbers); return;

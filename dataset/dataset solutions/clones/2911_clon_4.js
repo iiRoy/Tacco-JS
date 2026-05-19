@@ -1,82 +1,85 @@
-class DataStreamReader {
-    constructor(sourceText) {
-        this.dataElements = sourceText.split(/ |\n/).filter(s => s.length > 0);
-        this.nextIndex = 0;
-    }
+"use strict";
+var input = require("fs").readFileSync("/dev/stdin", "utf8");
+var cin = input.split(/ |\n/),
+    cid = 0;
 
-    fetchScalar() {
-        return Number(this.dataElements[this.nextIndex++]);
-    }
+const retrieveNextNumber = () => +cin[cid++];
 
-    fetchCollection(count) {
-        const collection = [];
-        for (let i = 0; i < count; ++i) {
-            collection.push(Number(this.dataElements[this.nextIndex++]));
+const retrieveNextString = () => cin[cid++];
+
+const retrieveNextBigInt = () => BigInt(cin[cid++]);
+
+const retrieveNextArray = (count, asStrings) =>
+    asStrings ? cin.slice(cid, (cid += count)) : cin.slice(cid, (cid += count)).map((val) => +val);
+
+const retrieveNextMatrix = (height, width, asStrings) => {
+    const resultMatrix = [];
+    let currentRow = 0;
+    if (asStrings) {
+        for (; currentRow < height; currentRow++) {
+            resultMatrix.push(cin.slice(cid, (cid += width)));
         }
-        return collection;
+    } else {
+        for (; currentRow < height; currentRow++) {
+            resultMatrix.push(cin.slice(cid, (cid += width)).map((val) => +val));
+        }
     }
-}
-
-const createDynamicArray = (size, initializer = null) => {
-    return Array.from({ length: size }, () => initializer);
+    return resultMatrix;
 };
 
-const processSystem = (dataSource) => {
-    const switchCount = dataSource.fetchScalar();
-    const bulbCount = dataSource.fetchScalar();
+const createMultiDimArray = (...args) => {
+    const initialValue = args[0];
+    const dimensions = args.slice(1);
 
-    const bulbConfigurations = createDynamicArray(bulbCount);
+    const recursiveBuilder = (dims) => {
+        if (dims.length === 0) {
+            return initialValue;
+        }
+        const currentDimensionSize = dims[0];
+        const remainingDimensions = dims.slice(1);
+        return Array.from({ length: currentDimensionSize }, () => recursiveBuilder(remainingDimensions));
+    };
+    return recursiveBuilder(dimensions);
+};
 
-    for (let i = 0; i < bulbCount; ++i) {
-        const connectedSwitchCount = dataSource.fetchScalar();
-        const connectedSwitchIndices = dataSource.fetchCollection(connectedSwitchCount).map(idx => idx - 1);
-        bulbConfigurations[i] = {
-            connections: connectedSwitchIndices,
-            expectedParity: 0
-        };
+console.log(processSolution().toString());
+
+function processSolution() {
+    const switchCount = retrieveNextNumber();
+    const bulbCount = retrieveNextNumber();
+
+    const switchConnectionsPerBulb = createMultiDimArray(0, bulbCount);
+    const bulbSwitchIndices = createMultiDimArray(0, bulbCount);
+
+    for (let i = 0; i < bulbCount; i++) {
+        switchConnectionsPerBulb[i] = retrieveNextNumber();
+        bulbSwitchIndices[i] = retrieveNextArray(switchConnectionsPerBulb[i]).map((val) => val - 1);
     }
+    const requiredParities = retrieveNextArray(bulbCount);
 
-    const requiredParities = dataSource.fetchCollection(bulbCount);
+    let totalValidConfigurations = 0;
 
-    for (let i = 0; i < bulbCount; ++i) {
-        bulbConfigurations[i].expectedParity = requiredParities[i];
-    }
+    const exploreSwitchStates = (currentSwitchIndex, currentSwitchStates) => {
+        if (currentSwitchIndex === switchCount) {
+            const allBulbsSatisfied = requiredParities.every((requiredParity, bulbIdx) => {
+                const connectedSwitchIndices = bulbSwitchIndices[bulbIdx];
+                const activeConnectedSwitchCount = connectedSwitchIndices.filter(
+                    (sIdx) => currentSwitchStates[sIdx] === 1
+                ).length;
+                return (activeConnectedSwitchCount % 2) === requiredParity;
+            });
 
-    let successfulArrangements = 0;
-
-    const exploreStates = (currentSwitchPosition, currentSwitchStatesRegistry) => {
-        if (currentSwitchPosition === switchCount) {
-            let allConditionsMet = true;
-            for (const bulb of bulbConfigurations) {
-                let activeConnectionSum = 0;
-                for (const connectedIdx of bulb.connections) {
-                    activeConnectionSum += currentSwitchStatesRegistry[connectedIdx];
-                }
-                if (activeConnectionSum % 2 !== bulb.expectedParity) {
-                    allConditionsMet = false;
-                    break;
-                }
-            }
-            if (allConditionsMet) {
-                successfulArrangements++;
+            if (allBulbsSatisfied) {
+                totalValidConfigurations++;
             }
             return;
         }
 
-        currentSwitchStatesRegistry[currentSwitchPosition] = 0;
-        exploreStates(currentSwitchPosition + 1, currentSwitchStatesRegistry);
-
-        currentSwitchStatesRegistry[currentSwitchPosition] = 1;
-        exploreStates(currentSwitchPosition + 1, currentSwitchStatesRegistry);
+        exploreSwitchStates(currentSwitchIndex + 1, [...currentSwitchStates, 0]);
+        exploreSwitchStates(currentSwitchIndex + 1, [...currentSwitchStates, 1]);
     };
 
-    const initialStates = createDynamicArray(switchCount, 0);
-    exploreStates(0, initialStates);
+    exploreSwitchStates(0, []);
 
-    return successfulArrangements;
-};
-
-const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const interpreter = new DataStreamReader(rawInput);
-const finalResult = processSystem(interpreter);
-console.log(finalResult.toString());
+    return totalValidConfigurations;
+}

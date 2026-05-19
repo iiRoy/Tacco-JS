@@ -1,17 +1,16 @@
-const operationExecutor = (dataStream) => {
-    const dataSegments = dataStream.match(/(\d+)\s(\d+)/);
-    const primaryComponent = parseInt(dataSegments[1], 10);
-    const secondaryComponent = parseInt(dataSegments[2], 10);
+'use strict';
 
-    const primaryConstraintMet = +(primaryComponent <= 8);
-    const secondaryConstraintMet = +(secondaryComponent <= 8);
+const processInputData = (rawData) => {
+  const numericParts = rawData.match(/(\d+)\s+(\d+)/);
+  
+  const firstNumericValue = Number(numericParts[1]);
+  const secondNumericValue = Number(numericParts[2]);
 
-    const overallConstraintStatus = primaryConstraintMet * secondaryConstraintMet;
+  const valuesCollection = [firstNumericValue, secondNumericValue];
 
-    const outcomeLabels = [":(", "Yay!"];
-    const resultDisplay = outcomeLabels[overallConstraintStatus];
+  const allValuesWithinRange = valuesCollection.every(currentValue => currentValue <= 8);
 
-    console.log(resultDisplay);
+  console.log(allValuesWithinRange ? 'Yay!' : ':(');
 };
 
-operationExecutor(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

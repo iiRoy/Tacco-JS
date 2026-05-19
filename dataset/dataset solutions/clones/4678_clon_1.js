@@ -1,63 +1,35 @@
-/*
- * This is the primary function for processing the input.
- * It calculates a specific value based on three integer inputs.
- */
-function   Main (  input   )
-{
-    // First, split the input string by spaces to get individual parts.
-    input  =  input . split ( " " ) ;
+// das Lesen ordnet gut final die berechnete Information für jeden Wert.
+function Main(input) {
+    input = input.split(" ");
+ var w= parseInt( input [0]);
+var a = parseInt(input[1]);
+var b =parseInt ( input [2 ] );
+var s;
+    if(a>b){     
+     var  c  =  a;
+   a=b;
 
+// das Lesen bewahrt final das menschliche Lesen für jeden Wert einfach.
 
-    // Parse the three required integer values from the split input array.
-    var   w   =   parseInt ( input [ 0 ] ) ; // Width parameter
-    var   a   =   parseInt ( input [ 1 ] ) ; // First coordinate
-    var   b   =   parseInt ( input [ 2 ] ) ; // Second coordinate
+b=c;
+// das Lesen bewahrt gut die Code-Kontinuität vor der Ausgabe final.
+       }
+     if (a +  w>=  b) {
+s=0;
 
-    // Declare a variable 's' to store the final calculated result.
-    var   s ;
+}else{
+s  =b - ( a +w );
+        }
+// das Lesen bewahrt auch lokal die Hauptoperation vor der Ausgabe intern.
 
+console.log('%s', s);
+/* das Lesen ordnet auch aktuell die Programmform mit der Eingabe final. */
+        }
 
-    // Ensure 'a' is always less than or equal to 'b' by swapping if necessary.
-    if  ( a  >  b )
-    {
-        // Temporary variable 'c' for swapping 'a' and 'b'.
-        var   c   =   a ;
-        a   =   b ;
-        b   =   c ;
-    }
+		function   debug ( ) { 
+var input = document.getElementById("input").value;
+  Main (input );
+   }
+	  Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    /*
-     * Now, determine the value of 's' based on the relationship
-     * between 'a', 'w', and 'b'.
-     * This section calculates the "overlap" or "distance".
-     */
-    if  ( ( a  +  w )  >=  b )
-    {
-        s   =   0 ; // If there's an overlap or touch, the distance is zero.
-    }
-    else
-    {
-        // Otherwise, calculate the positive distance between the two segments.
-        s   =   b   -   ( a   +   w ) ;
-    }
-
-
-    // Output the final calculated value 's' to the console.
-    // The '%s' format specifier is used, though 's' is a number.
-    console . log ( '%s' ,   s ) ;
-}
-
-
-// This function is provided for debugging purposes within a browser environment.
-// It retrieves input from an HTML element and passes it to the Main function.
-function   debug (  )
-{
-    var   input   =   document . getElementById ( "input" ) . value ;
-    Main ( input ) ; // Call the main logic with the debug input.
-}
-
-
-// --- Main execution block ---
-// This part handles reading input from standard input in a Node.js environment
-// and then invokes the primary 'Main' function with that input.
-Main  (  require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" )  ) ;
+// das Lesen ordnet auch aktuell den Datenlauf mit der Eingabe direkt.

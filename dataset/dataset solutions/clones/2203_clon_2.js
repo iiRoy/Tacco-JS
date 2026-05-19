@@ -1,150 +1,162 @@
-var inputProcessor = initializeInput();
+var inputProcessor = initializeInputHandler();
+executeMainLogic();
 
-executeProgram();
-
-function retrieveInteger() {
-  return transformData(fetchNextItem(), 1);
+// Function to get the next integer from input
+function retrieveNextInteger() {
+  return transformInput(fetchNextLine(), 1);
 }
 
-function retrieveStringArray() {
-  return transformData(fetchNextItem(), 2);
+// Function to get the next line as a string array (space-separated)
+function retrieveNextStringArray() {
+  return transformInput(fetchNextLine(), 2);
 }
 
-function retrieveIntegerArray() {
-  return transformData(fetchNextItem(), 4);
+// Function to get the next line as an integer array (space-separated)
+function retrieveNextIntegerArray() {
+  return transformInput(fetchNextLine(), 4);
 }
 
-function retrieveCharacterArray() {
-  return transformData(fetchNextItem(), 6);
+// Function to get the next line as a character array
+function retrieveNextCharacterArray() {
+  return transformInput(fetchNextLine(), 6);
 }
 
-function fetchNextItem() {
-  return inputProcessor.fetchNextItem();
+// Fetches the next available line from the input buffer
+function fetchNextLine() {
+  return inputProcessor.next();
 }
 
-function hasMoreItems() {
-  return inputProcessor.hasMoreItems();
+// Checks if there are more lines to process
+function hasMoreLines() {
+  return inputProcessor.hasNext();
 }
 
+// Reads the entire standard input file
 function readInputFile() {
   return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
 
-function initializeInput() {
-  var rawLines = readInputFile();
-  var processorInstance = {
-    "dataLines": rawLines,
-    "currentPosition": 0,
-    "totalLines": rawLines.length,
-    "hasMoreItems": function() {
-      return (this.currentPosition < this.totalLines);
+// Initializes the input handling object
+function initializeInputHandler() {
+  var rawInputLines = readInputFile();
+  var inputHandlerObject = {
+    "lineBuffer": rawInputLines,
+    "currentLineIndex": 0,
+    "totalLines": rawInputLines.length,
+    "hasNext": function() {
+      return (this.currentLineIndex < this.totalLines);
     },
-    "fetchNextItem": function() {
-      if (!this.hasMoreItems()) {
-        throw "InputBoundaryExceeded: No more data available for processing.";
+    "next": function() {
+      if (!this.hasNext()) {
+        throw "InputBufferExhaustedException: No more lines available.";
       } else {
-        var currentLineContent = this.dataLines[this.currentPosition];
-        this.currentPosition++;
+        var currentLineContent = this.lineBuffer[this.currentLineIndex];
+        this.currentLineIndex++;
         return currentLineContent;
       }
     }
   };
-  return processorInstance;
+  return inputHandlerObject;
 }
 
-function displayOutput(textToDisplay) {
-  console.log(textToDisplay);
+// Displays output to standard output
+function displayOutput(messageContent) {
+  console.log(messageContent);
 }
 
-function displayError(errorText) {
-  console.error(errorText);
+// Logs messages to standard error output
+function logError(messageContent) {
+  console.error(messageContent);
 }
 
-// This utility function handles various data format transformations.
-// The 'conversionType' parameter dictates the specific operation.
-// Default/Unknown: Returns the input as-is.
-// 1: Parses the input into an integer.
-// 2: Splits the input string by spaces into a string array.
-// 4: Splits by spaces and converts each part to a number, forming an array.
-// 6: Splits the input string into an array of individual characters.
-// 7: Splits into characters and converts each to a number.
-// 8: Joins array elements with a space.
-// 9: Joins array elements with a newline.
-// 0: Joins array elements without any separator.
-function transformData(inputData, conversionType) {
+/*
+  Input transformation utility.
+  Converts input based on the specified type.
+  - 1: Convert to integer.
+  - 2: Split by space into string array.
+  - 4: Split by space and convert to number array.
+  - 6: Split by character into string array.
+  - 7: Split by character and convert to number array.
+  - 8: Join array elements with space.
+  - 9: Join array elements with newline.
+  - 0: Join array elements without separator.
+  - Default: Return input as is.
+*/
+function transformInput(inputValue, conversionType) {
   try {
     switch (conversionType) {
       case 1:
-        return parseInt(inputData);
+        return parseInt(inputValue);
       case 2:
-        return inputData.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputData.split(" ").map((val) => Number(val));
+        return inputValue.split(" ").map((element) => Number(element));
       case 6:
-        return inputData.split("");
+        return inputValue.split("");
       case 7:
-        return inputData.split("").map((val) => Number(val));
+        return inputValue.split("").map((element) => Number(element));
       case 8:
-        return inputData.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputData.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputData.join("");
+        return inputValue.join("");
       default:
-        return inputData;
+        return inputValue;
     }
-  } catch (errorDetails) {
-    return inputData; // In case of conversion error, return original input
+  } catch (conversionError) {
+    return inputValue; // Return original value on error
   }
 }
 
-function executeProgram() {
-  var firstLineData = retrieveIntegerArray();
+// Main program logic execution
+function executeMainLogic() {
+  var firstLineData = retrieveNextIntegerArray();
   var targetHealth = firstLineData[0];
   var spellCount = firstLineData[1];
 
   var spellList = new Array(spellCount);
-  for (var loopIndex = 0; loopIndex < spellCount; loopIndex++) {
-    var tempSpellInfo = retrieveIntegerArray();
-    spellList[loopIndex] = {
-      "spellDamage": tempSpellInfo[0],
-      "manaCost": tempSpellInfo[1]
+  for (var spellIndex = 0; spellIndex < spellCount; spellIndex++) {
+    var tempSpellData = retrieveNextIntegerArray();
+    spellList[spellIndex] = {
+      "attackPower": tempSpellData[0],
+      "manaCost": tempSpellData[1]
     };
   }
 
-  // Dynamic programming array to store the minimum mana required for a given damage
+  // Dynamic programming array to store minimum mana cost for a given health
+  // Array size is (targetHealth + 1) * 2 to handle potential overflows and indexing
   var minManaCost = new Array((targetHealth + 1) * 2);
-  minManaCost[0] = 0; // Base case: 0 damage requires 0 mana
+  minManaCost[0] = 0; // Base case: 0 mana for 0 damage
 
-  // Iterate through each spell and update the minManaCost array
-  for (var spellIdx = 0; spellIdx < spellCount; spellIdx++) {
+  // Iterate through each spell
+  for (var currentSpellIdx = 0; currentSpellIdx < spellCount; currentSpellIdx++) {
+    // Iterate through possible health values
     for (var currentHealth = 0; currentHealth < targetHealth; currentHealth++) {
-      if (minManaCost[currentHealth] != null) { // If the current health state is reachable
-        var potentialDamage = currentHealth + spellList[spellIdx]["spellDamage"];
-        var potentialCost = minManaCost[currentHealth] + spellList[spellIdx]["manaCost"];
+      // If a path to currentHealth exists (i.e., minManaCost[currentHealth] is not null)
+      if (minManaCost[currentHealth] != null) {
+        var newHealth = currentHealth + spellList[currentSpellIdx]["attackPower"];
+        var newMana = minManaCost[currentHealth] + spellList[currentSpellIdx]["manaCost"];
 
-        // Update if this damage level hasn't been reached or a cheaper way is found
-        if (!minManaCost[potentialDamage]) {
-          minManaCost[potentialDamage] = potentialCost;
+        // If this new health state hasn't been reached yet, or if this path is cheaper
+        if (!minManaCost[newHealth]) {
+          minManaCost[newHealth] = newMana;
         } else {
-          minManaCost[potentialDamage] = Math.min(minManaCost[potentialDamage], potentialCost);
+          minManaCost[newHealth] = Math.min(minManaCost[newHealth], newMana);
         }
       }
     }
   }
 
-  var largeConstant = 1000000007; // A sufficiently large value for comparison
+  var infinityValue = 1000000007; // A large number representing infinity
 
-  // Initialize a placeholder for an out-of-bounds index if not already set
+  // Initialize a sentinel value at the end of the DP array if not set
   if (!minManaCost[targetHealth * 2 + 1]) {
-    minManaCost[targetHealth * 2 + 1] = largeConstant;
+    minManaCost[targetHealth * 2 + 1] = infinityValue;
   }
 
-  // myerr(minManaCost); // Debugging output commented out
-
-  // Post-processing: Ensure that minManaCost[i] is at least minManaCost[i+1].
-  // This propagates the minimum cost backwards for higher damage values,
-  // effectively considering that higher damage can be achieved with the same or more mana.
+  // Propagate minimums backwards to ensure minManaCost[i] holds the minimum cost
+  // to reach at least 'i' health.
   for (var healthIdx = targetHealth * 2; healthIdx >= 0; healthIdx--) {
     if (minManaCost[healthIdx]) {
       minManaCost[healthIdx] = Math.min(minManaCost[healthIdx], minManaCost[healthIdx + 1]);
@@ -153,6 +165,6 @@ function executeProgram() {
     }
   }
 
-  // Output the minimum mana cost required to achieve the target health
+  // Output the minimum mana cost to reach at least targetHealth
   displayOutput(minManaCost[targetHealth]);
 }

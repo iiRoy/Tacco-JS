@@ -1,7 +1,7 @@
-Array.from({ length: 9 }, (_, factorOne) => factorOne + 1)
-  .forEach(firstNum => {
-    Array.from({ length: 9 }, (_, factorTwo) => factorTwo + 1)
-      .forEach(secondNum => {
-        console.log(`${firstNum}x${secondNum}=${firstNum * secondNum}`);
-      });
+const rangeGenerator = (limit) => Array.from({ length: limit }, (_, index) => index + 1);
+
+rangeGenerator(9).forEach((firstFactor) => {
+  rangeGenerator(9).forEach((secondFactor) => {
+    Console.log(firstFactor + "x" + secondFactor + "=" + (firstFactor * secondFactor));
   });
+});

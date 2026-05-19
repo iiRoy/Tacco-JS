@@ -1,40 +1,48 @@
-const obtainNumericalData = (rawData) => rawData.split("\n").map(Number);
+const processInputAndCalculate = (rawData) => {
+    const numericValues = rawData.split('\n').map(parseFloat);
 
-const determineOptions = (itemIndex, currentAccumulation, limitsArray, targetValue) => {
-    const denominationValues = [500, 100, 50];
-    const totalItemTypes = denominationValues.length;
+    const maxUnitsFor500 = numericValues[0];
+    const maxUnitsFor100 = numericValues[1];
+    const maxUnitsFor50 = numericValues[2];
+    const targetTotalValue = numericValues[3];
 
-    if (itemIndex === totalItemTypes) {
-        return currentAccumulation === targetValue ? 1 : 0;
-    }
+    const possibleCountsFor500 = Array.from({
+        length: Math.min(maxUnitsFor500, Math.floor(targetTotalValue / 500)) + 1
+    }, (_, index) => index);
 
-    let validCombinationCount = 0;
-    const currentItemValue = denominationValues[itemIndex];
-    const maxAllowedCount = limitsArray[itemIndex];
+    const totalValidCombinations = possibleCountsFor500.reduce((accumulatorFor500, currentCount500) => {
+        const remainingValueAfter500s = targetTotalValue - (currentCount500 * 500);
 
-    for (let countOfCurrentItem = 0;
-         countOfCurrentItem <= maxAllowedCount && currentAccumulation + (countOfCurrentItem * currentItemValue) <= targetValue;
-         countOfCurrentItem++) {
+        if (remainingValueAfter500s < 0) {
+            return accumulatorFor500;
+        }
 
-        validCombinationCount += determineOptions(
-            itemIndex + 1,
-            currentAccumulation + (countOfCurrentItem * currentItemValue),
-            limitsArray,
-            targetValue
-        );
-    }
-    return validCombinationCount;
+        const possibleCountsFor100 = Array.from({
+            length: Math.min(maxUnitsFor100, Math.floor(remainingValueAfter500s / 100)) + 1
+        }, (_, index) => index);
+
+        return accumulatorFor500 + possibleCountsFor100.reduce((accumulatorFor100, currentCount100) => {
+            const remainingValueAfter100s = remainingValueAfter500s - (currentCount100 * 100);
+
+            if (remainingValueAfter100s < 0) {
+                return accumulatorFor100;
+            }
+
+            const isPerfectlyDivisibleBy50 = (remainingValueAfter100s % 50 === 0);
+            const requiredCountFor50 = remainingValueAfter100s / 50;
+            const isWithinLimitFor50 = (requiredCountFor50 <= maxUnitsFor50);
+
+            return accumulatorFor100 + (isPerfectlyDivisibleBy50 && isWithinLimitFor50 ? 1 : 0);
+        }, 0);
+    }, 0);
+
+    return totalValidCombinations;
 };
 
-const calculatePossibilities = (inputString) => {
-    const numericalComponents = obtainNumericalData(inputString);
-    const [limitA, limitB, limitC, desiredTotal] = numericalComponents;
-
-    const itemLimits = [limitA, limitB, limitC];
-
-    const resultCount = determineOptions(0, 0, itemLimits, desiredTotal);
-
-    process.stdout.write(resultCount.toString() + "\n");
+const entryPoint = (inputPath) => {
+    const fileContent = require('fs').readFileSync(inputPath, 'utf8');
+    const finalResult = processInputAndCalculate(fileContent);
+    console.log(finalResult);
 };
 
-calculatePossibilities(require('node:fs').readFileSync(0, 'utf8'));
+entryPoint('/dev/stdin');

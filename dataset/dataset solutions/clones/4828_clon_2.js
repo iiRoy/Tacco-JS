@@ -1,79 +1,66 @@
-"use strict"; /* This directive enforces strict parsing and error handling in the script. */
+"use strict";
 
-/*
- *  Function: AnalyzeInput
- *  Purpose: This is the primary entry point for processing a given string.
- *  It attempts to determine if the string can be constructed by reversing
- *  and concatenating a predefined set of words.
- *  Parameter: originalText - The string input to be analyzed.
+/**
+ * Orchestrates the primary logic to determine if an input string can be
+ * constructed by reversing and concatenating a specific set of words.
+ * @param {string} initialString The string provided for analysis.
  */
-function AnalyzeInput ( originalText ) {
-  // Define a collection of specific terms that the input string will be matched against.
-  const targetWords = [ "dream", "dreamer", "erase", "eraser" ];
+function ProcessInput(initialString) {
+  // A collection of predefined words that will be used for matching.
+  const wordList = ["dream", "dreamer", "erase", "eraser"];
 
-  // Iterate over each term within the 'targetWords' array.
-  // The goal is to reverse each word in place within the array.
-  for ( let wordPos in targetWords ) {
-    targetWords[ wordPos ] = flipContent( targetWords[ wordPos ] );
+  // Iterate through the word collection and reverse each word in place.
+  for (let idx in wordList) {
+    wordList[idx] = flipString(wordList[idx]);
   }
 
-  // Reverse the main input string itself. This prepares it for comparison
-  // with the already-reversed target words.
-  originalText = flipContent( originalText );
+  // Reverse the entire input string once at the beginning of the process.
+  initialString = flipString(initialString);
 
-  // Initiate a continuous loop for iterative processing of the 'originalText'.
-  // This loop will continue indefinitely until an explicit 'break' statement is encountered.
-  while ( true ) {
-    let noMatchCounter = 0; // Initialize a counter to track consecutive non-matches.
+  // Begin an iterative process to consume parts of the reversed input string.
+  while (true) {
+    let matchCount = 0; // Tracks how many words from the list have been checked in the current iteration.
 
-    // Loop through each of the reversed 'targetWords'.
-    // In each iteration, we attempt to match a prefix of 'originalText' with a 'currentTargetWord'.
-    for ( let currentTargetWord of targetWords ) {
-      // Extract a portion from the beginning of 'originalText'.
-      // The length of this portion is determined by the length of the 'currentTargetWord'.
-      var segmentToCheck = originalText.slice( 0, currentTargetWord.length );
+    // Loop through each reversed word in our predefined collection.
+    for (let currentWord of wordList) {
+      // Extract a segment from the start of the current input string,
+      // matching the length of the current word from our list.
+      var extractedSegment = initialString.slice(0, currentWord.length);
 
-      // Compare the extracted segment with the current reversed target word.
-      if ( segmentToCheck === currentTargetWord ) {
-        // If a match is found, remove the matched segment from the 'originalText'.
-        // This effectively "consumes" the matched portion.
-        originalText = originalText.substr( currentTargetWord.length );
-        break; // Exit the inner loop, as a successful match has been processed.
+      // Check if the extracted segment perfectly matches the current reversed word.
+      if (extractedSegment === currentWord) {
+        // If a match is found, remove the matched portion from the input string.
+        initialString = initialString.substr(currentWord.length);
+        break; // Exit this inner loop as a successful match was made.
       }
-      noMatchCounter++; // Increment the counter if the current word did not match.
+      matchCount++; // Increment the counter if no match was found with the current word.
     }
 
-    // Check if the 'noMatchCounter' has exceeded a threshold.
-    // If it has, it implies that no target word could be matched with the current 'originalText' prefix.
-    if ( noMatchCounter > 3 ) {
+    // If all words in the `wordList` have been checked (matchCount > 3 for 4 words)
+    // and no match was found, it means the input string cannot be further decomposed.
+    if (matchCount > 3) {
       break; // Terminate the main processing loop.
     }
   }
 
-  // After the main processing loop concludes, evaluate the state of 'originalText'.
-  // If 'originalText' is empty, it means the entire string was successfully decomposed.
-  if ( originalText === "" ) {
-    console.log( "YES" ); // Output "YES" to indicate successful decomposition.
+  // After the loop concludes, check if the entire input string has been consumed.
+  if (initialString === "") {
+    console.log("YES"); // If empty, the string can be formed.
   } else {
-    // If 'originalText' is not empty, it means some parts could not be matched.
-    console.log( "NO" ); // Output "NO" to indicate unsuccessful decomposition.
+    console.log("NO"); // Otherwise, it cannot.
   }
-} // End of the AnalyzeInput function definition.
-
-/*
- *  Function: flipContent
- *  Purpose: A utility function designed to reverse the characters of any given string.
- *  Parameter: sourceString - The string whose characters are to be reversed.
- *  Returns: The new string with its characters in reverse order.
- */
-function flipContent ( sourceString ) {
-  // The string is first split into an array of individual characters.
-  // This array is then reversed.
-  // Finally, the reversed array of characters is joined back into a single string.
-  return sourceString.split( "" ).reverse().join( "" );
 }
 
-// The script execution begins by calling the 'AnalyzeInput' function.
-// The input for 'AnalyzeInput' is obtained by reading the entire content
-// of the standard input file ('/dev/stdin') as a UTF-8 encoded string.
-AnalyzeInput( require( "fs" ).readFileSync( "/dev/stdin", "utf-8" ) );
+/**
+ * Utility function to reverse the characters of a given string.
+ * @param {string} originalText The string to be reversed.
+ * @returns {string} The string with its characters in reverse order.
+ */
+function flipString(originalText) {
+  // Convert the string to an array of characters, reverse the array, then join back into a string.
+  return originalText.split("").reverse().join("");
+}
+
+// Read the input from standard input (e.g., a file or piped data)
+// and initiate the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

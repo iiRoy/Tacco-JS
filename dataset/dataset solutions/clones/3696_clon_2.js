@@ -1,29 +1,29 @@
-'use strict' // Activate strict mode for enhanced error checking.
+'use strict';
 
-/**
- * Processes the incoming data to perform a specific numerical calculation.
- * @param {string} dataSource - The raw string input obtained from the system.
+/*
+ * This module processes raw text input to calculate a specific value.
+ * It demonstrates basic string manipulation and arithmetic operations.
  */
-const performComputation = dataSource => {
-  // First, split the entire data source by newline characters to get individual lines.
-  // Then, for each line, split it by spaces to get an array of string segments.
-  const lineSegments = dataSource
-    .split('\n')
-    .map(currentLine => currentLine.split(' '))
+const processInput = (rawData) => {
+  // Split the entire input string by newline characters,
+  // then further split each resulting line by spaces.
+  // This creates a 2D array of string segments.
+  const parsedLines = rawData.split('\n').map((lineSegment) => {
+    return lineSegment.split(' ');
+  });
 
-  // Extract the very first numerical value from the processed segments.
-  // It's assumed to be at the start of the first line.
-  // Parse it as an integer using a hexadecimal radix representation for 10.
-  const primaryValue = parseInt(lineSegments[0][0], 0xA)
+  // Extract the first element from the first line segment,
+  // and convert it to an integer with base 10.
+  const numberValue = parseInt(parsedLines[0][0], 10);
 
-  // Execute the core calculation:
-  // Multiply the primary value by (the primary value's remainder when divided by two, plus one).
-  // The number '2' is represented in binary (0b10), and '1' in hexadecimal (0x1) to vary literal types.
-  // This logic yields 'primaryValue' if 'primaryValue' is even, and 'primaryValue * 2' if 'primaryValue' is odd.
-  console.log(primaryValue * (primaryValue % 0b10 + 0x1))
-}
+  // Calculate the final result: numberValue multiplied by (numberValue modulo 2 plus 1).
+  // This effectively multiplies by 1 if numberValue is even, and by 2 if numberValue is odd.
+  const finalResult = numberValue * (numberValue % 2 + 1);
 
-// The script begins execution by reading input from standard input.
-// The 'fs' module is used to read the file, and 'utf8' encoding is specified.
-// The read content is then passed to the main computation function.
-performComputation(require('fs').readFileSync('/dev/stdin', 'utf8'))
+  // Output the computed result to the console.
+  console.log(finalResult);
+};
+
+// Read the entire content of standard input synchronously,
+// using UTF-8 encoding, and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

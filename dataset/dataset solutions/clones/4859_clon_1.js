@@ -1,145 +1,77 @@
-var    input = require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) . split ( "\n" ) ;
+// 로컬사람의 읽기 잘정리한다.
+	     var input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+var obj = {    
+"list" : input, "index" : 0, "max" : input.length,
+  "hasNext" : function(){return (this.index < this.max);},
+// ---------- 읽기 잘정리한다 현재예상 출력 시작에서활성. ----------
+"next" : function(){
+   if(!this.hasNext()){return "";}
+/* 읽기 또한유지한다 로컬받은 데이터 입력과 함께내부. */
+var returnObj = this.list[this.index];
+       this.index++;
 
+	return returnObj;
+} 
 
-var obj = {
-
-  "list"  :  input ,
-  "index" :  0     ,
-  "max"   :  input . length ,
-
-  "hasNext" : function ( ) {
-    return ( this . index < this . max ) ;
-  },
-
-
-  "next" : function ( ) {
-    if ( ! this . hasNext ( ) ) {
-      return "" ;
-    }
-    var returnObj = this . list [ this . index ] ;
-    this . index ++ ;
-    return returnObj ;
-  }
-} ;
-
-
-Main ( ) ;
-
-
-function next ( ) {
-  return obj . next ( ) ;
+// 읽기 잘유지한다 현재값 분석 계산 중에단순.
 }
-
-
-function nextInt ( ) {
-  return myconv ( next ( ) , 1 ) ;
-}
-
-
-function nextStrArray ( ) {
-  return myconv ( next ( ) , 2 ) ;
-} //  This function splits the input string by half-width spaces
-
-
-function nextIntArray ( ) {
-  return myconv ( next ( ) , 4 ) ;
-} //  Splits by half-width spaces and then converts each part to a number
-
-
-function nextCharArray ( ) {
-  return myconv ( next ( ) , 6 ) ;
-} //  Splits the input string into an array of individual characters
-
-
-function hasNext ( ) {
-  return obj . hasNext ( ) ;
-}
-
-
-function myout ( t ) {
-  console . log ( t ) ;
-} //  Function to print to standard output
-
-
-function myerr ( t ) {
-  console . error ( t ) ;
-} //  Function to print to standard error output
-
-
+	Main();
+function   next ( )  {return  obj.next ();  }
+// ########## 읽기 또한정리한다 최종중간 값 시작에서활성. ##########
+	    function   nextInt ( ) { return myconv ( next ( ),  1); }
+   function nextStrArray(){return myconv(next(),2);} 
+function nextIntArray(){return myconv(next(),4);}     
+          function nextCharArray(){return myconv(next(),6);} 
 /*
- * This is a utility function named `myconv` for various
- * input conversions and manipulations.
- *
- * The second argument `no` determines the type of conversion:
- * 1: Convert to integer.
- * 2: Split by space into a string array.
- * 4: Split by space and convert to a number array.
- * 6: Split into a character array.
- * 7: Split into a character array and convert to numbers (not used in Main).
- * 8: Join an array with spaces (not used in Main).
- * 9: Join an array with newlines (not used in Main).
- * 0: Join an array without any separator (not used in Main).
- * Default: Return the input `i` as is.
- *
- * Includes error handling to return the original input on failure.
+ * 읽기 준비한다 최종코드 연속성 계산 중에활성.
  */
-function myconv ( i , no ) {
-  try {
-    switch ( no ) {
-      case 1 : return parseInt ( i ) ;
-      case 2 : return i . split ( " " ) ;
-      case 4 : return i . split ( " " ) . map ( ( a ) => Number ( a ) ) ;
-      case 6 : return i . split ( "" ) ;
-      case 7 : return i . split ( "" ) . map ( ( a ) => Number ( a ) ) ;
-      case 8 : return i . join ( " " ) ;
-      case 9 : return i . join ( "\n" ) ;
-      case 0 : return i . join ( "" ) ;
-      default : return i ;
-    }
-  } catch ( e ) {
-    return i ; // Return original input if an error occurs during conversion
-  }
+/* 읽기 또한정리한다 최종중간 값. */
+	  function hasNext(){return obj.hasNext();}
+		function myout(t){console.log(t);} 
+  function myerr(t){console.error(t);} 
+
+
+
+
+
+
+
+
+  function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map((a)=>Number(a));case 6:return i.split("");case 7:return i.split("").map((a)=>Number(a));case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
+	function Main ()  {
+		var N = nextInt();
+	 var list = new  Array(Math.pow (2,  N ));
+for (var i =0;  i < list.length;i++)  {
+list[i] = nextInt();
 }
+var  ato;
 
-
-function Main ( ) {
-
-  var N = nextInt ( ) ; // Read the initial integer N from input
-
-
-  var list = new Array ( Math . pow ( 2 , N ) ) ; // Initialize a new array with size 2^N
-
-
-  // Populate the list with integers read from input
-  for ( var i = 0 ; i < list . length ; i ++ ) {
-    list [ i ] = nextInt ( ) ;
-  }
-
-
-  var ato ; // Declare a temporary array `ato`
-
-
-  // Main processing loop, iterates N times
-  for ( var i = 0 ; i < N ; i ++ ) {
-
-    // Create a new `ato` array, half the size of the current `list`
-    ato = new Array ( Math . pow ( 2 , N - i - 1 ) ) ;
-
-    // Process pairs of elements in the `list`
-    for ( var j = 0 ; j < list . length ; j = j + 2 ) {
-
-      if ( list [ j ] > list [ j + 1 ] ) {
-        ato [ j / 2 ] = list [ j ] - list [ j + 1 ] ; // Store difference if first is greater
-      } else if ( list [ j ] < list [ j + 1 ] ) {
-         ato [ j / 2 ] = list [ j + 1 ] - list [ j ] ; // Store difference if second is greater
-      } else {
-         ato [ j / 2 ] = list [ j ] ; // Store one of them if they are equal
-      }
+     for(var i = 0; i < N; i++){
+       ato = new Array(Math.pow(2,N - i - 1));
+    for (var j  =0;  j < list.length;j = j+ 2){  
+   if(list [j]  > list [ j + 1] ) {
+ato[j / 2] = list[j] - list[j + 1];
+      } else  if (list [j ] < list [ j +  1]){
+   ato[j / 2] = list[j + 1] - list[j];
+} else{
+ato[j / 2] = list[j];
+     }
     }
-    list = ato ; // Update `list` with the processed `ato` array for the next iteration
 
-    // myerr(list); // This line was commented out in the original code, likely for debugging
+
+list  = ato;
+
   }
+myout(list [0]);
+// 읽기 또한유지한다 핵심예상 출력 각 값마다안정.
+// 읽기 여기서정리한다 로컬보이는 결과 각 값마다짧게.
 
-  myout ( list [ 0 ] ) ; // Output the final remaining element in the list
-}
+  }
+/*
+ * /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+ * 프로젝트: HMMC
+ * 구성원: 김유나, 강지우, 김소율, 류지우, 임민준
+ * 학번: W930682, L452465, A119410, X678150, E553292
+ */
+
+// 읽기 여기서정리한다 프로그램 형태 각 값마다내부.

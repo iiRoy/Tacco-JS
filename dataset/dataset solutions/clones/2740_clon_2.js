@@ -1,42 +1,62 @@
-// This function handles the entire input data provided as a single string.
-function ProcessInputData(rawInputText) {
-    // Determine the total number of elements from the first line of the input.
-    var itemCount = parseInt(rawInputText.split("\n")[0]);
-    // Extract the space-separated numeric strings from the second line of the input.
-    var numericStrings = rawInputText.split("\n")[1].split(" ");
+// This function serves as the primary entry point for processing input data.
+function ProcessInput(rawData) {
+  // The raw input string is first split into individual lines.
+  var inputLines = rawData.split("\n");
 
-    // Initialize an array to store the computed binary state for each position.
-    var computedState = new Array(itemCount);
-    // Prepare an array to collect indices that satisfy a specific condition.
-    var relevantIndices = [];
+  // The first line contains the integer representing the total count of items.
+  var totalItemsCount = parseInt(inputLines[0]);
 
-    // Iterate backwards through the elements, starting from the total count down to one.
-    for (var currentPosition = itemCount; currentPosition > 0; currentPosition--) {
-        // Reset the temporary sum for each outer loop iteration.
-        var cumulativeSum = 0;
-        // Inner loop: calculate a sum based on multiples of the current position.
-        for (var iterationFactor = 2; currentPosition * iterationFactor < itemCount; iterationFactor++) {
-            cumulativeSum += computedState[currentPosition * iterationFactor];
-        }
+  // The second line contains space-separated string representations of initial values.
+  var initialItemValues = inputLines[1].split(" ");
 
-        // Compute the binary state for the current position (currentPosition - 1)
-        // by summing the cumulativeSum and the parsed value from numericStrings, then taking modulo 2.
-        computedState[currentPosition - 1] = (cumulativeSum + parseInt(numericStrings[currentPosition - 1])) % 2;
+  // An array is initialized to store the calculated parity for each item.
+  // Its size is determined by 'totalItemsCount'.
+  var itemParityResults = Array(totalItemsCount);
 
-        // If the computed state for this position is 1, add its original index to the collection.
-        if (computedState[currentPosition - 1] === 1) {
-            relevantIndices.push(currentPosition);
-        }
+  // An empty array is prepared to collect the 1-based indices of items
+  // that ultimately have a parity of 1.
+  var qualifyingItemIndices = [];
+
+  // This loop iterates backward, starting from 'totalItemsCount' down to 1.
+  // 'currentItemIndex' represents a 1-based index for the current item being processed.
+  for (var currentItemIndex = totalItemsCount; currentItemIndex > 0; currentItemIndex--) {
+    // A temporary variable to accumulate the sum of parities from related items.
+    var accumulatedParitySum = 0;
+
+    // This inner loop calculates the sum of parities for multiples of the 'currentItemIndex'.
+    // 'factor' starts from 2 to consider actual multiples.
+    // The condition 'currentItemIndex * factor < totalItemsCount' ensures that
+    // the calculated multiple (which is used as a 0-based array index)
+    // remains within the valid bounds of 'itemParityResults'.
+    for (var factor = 2; currentItemIndex * factor < totalItemsCount; factor++) {
+      // Add the parity result of the multiple to the accumulated sum.
+      // Note: 'currentItemIndex * factor' is used directly as a 0-based index here.
+      accumulatedParitySum += itemParityResults[currentItemIndex * factor];
     }
 
-    // Output the total count of relevant indices found.
-    console.log(relevantIndices.length);
-    // If there are any relevant indices, print them joined by a space.
-    if (relevantIndices.length) {
-        console.log(relevantIndices.join(" "));
+    // Calculate the parity for the current item.
+    // This involves summing the 'accumulatedParitySum' with the integer value
+    // of the current item's initial value (accessed using 'currentItemIndex - 1' for 0-based indexing),
+    // and then taking the result modulo 2.
+    itemParityResults[currentItemIndex - 1] = (accumulatedParitySum + parseInt(initialItemValues[currentItemIndex - 1])) % 2;
+
+    // If the calculated parity for the current item is 1,
+    // its 1-based index is added to the list of qualifying items.
+    if (itemParityResults[currentItemIndex - 1] === 1) {
+      qualifyingItemIndices.push(currentItemIndex);
     }
+  }
+
+  // Output the total number of qualifying items found.
+  console.log(qualifyingItemIndices.length);
+
+  // If there are any qualifying items, their 1-based indices are joined by spaces
+  // and then printed to the console.
+  if (qualifyingItemIndices.length) {
+    console.log(qualifyingItemIndices.join(" "));
+  }
 }
 
-// The following section handles standard input/output and should not be altered by external processes.
-// It reads the entire content from standard input and passes it to the main processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line is responsible for reading input from standard input
+// and invoking the main processing function. It should not be altered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

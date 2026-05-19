@@ -1,47 +1,66 @@
-const calculateOptimalValue = (rawText) => {
-    const allNumericValues = rawText.match(/\d+/g).map(Number);
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
 
-    const limitQuantity = allNumericValues[0];
-    const offerCount = allNumericValues[1];
+    const [targetQuantity, additionalOfferTypes] = lines[0].split(" ").map(Number);
 
-    const initialItemCosts = allNumericValues.slice(2, 2 + limitQuantity);
-    const specialDealValues = allNumericValues.slice(2 + limitQuantity);
+    const initialOffers = lines[1].split(" ").map(Number).map(singleItemPrice => [1, singleItemPrice]);
 
-    const initialGoods = initialItemCosts.map(cost => ({
-        amount: 1,
-        unitPrice: cost
-    }));
+    const supplementaryOffers = lines.slice(2, 2 + additionalOfferTypes).map(line => {
+        const [offerBatchSize, offerBatchPrice] = line.split(" ").map(Number);
+        return [offerBatchSize, offerBatchPrice];
+    });
 
-    const specialOffers = [];
-    for (let k = 0; k < offerCount; k++) {
-        const dealQuantity = specialDealValues[k * 2];
-        const dealPrice = specialDealValues[k * 2 + 1];
-        specialOffers.push({ amount: dealQuantity, unitPrice: dealPrice });
+    const availableOffers = initialOffers.concat(supplementaryOffers);
+
+    availableOffers.sort((offerA, offerB) => offerB[1] - offerA[1]);
+
+    const calculateOptimalValue = (offers, remainingTarget, currentOfferIndex, accumulatedValue) => {
+        if (remainingTarget <= 0 || currentOfferIndex >= offers.length) {
+            return accumulatedValue;
+        }
+
+        const [offerBatchSize, offerBatchPrice] = offers[currentOfferIndex];
+
+        const itemsToTake = Math.min(offerBatchSize, remainingTarget);
+
+        const newAccumulatedValue = accumulatedValue + itemsToTake * offerBatchPrice;
+        const newRemainingTarget = remainingTarget - itemsToTake;
+
+        return calculateOptimalValue(offers, newRemainingTarget, currentOfferIndex + 1, newAccumulatedValue);
+    };
+
+    const totalAcquiredValue = calculateOptimalValue(availableOffers, targetQuantity, 0, 0);
+
+    console.log(totalAcquiredValue.toString());
+    return totalAcquiredValue;
+}
+
+function testSolution(n) {
+    const inputElement = document.getElementById("input" + n);
+    if (!inputElement) {
+        console.error(`Input element "input${n}" not found.`);
+        return;
     }
+    const inputVal = inputElement.value;
+    const result = processInputData(inputVal);
 
-    const allAvailableGoods = [...initialGoods, ...specialOffers];
+    const outputElement = document.getElementById("output" + n);
+    if (!outputElement) {
+        console.error(`Output element "output${n}" not found.`);
+        return;
+    }
+    const expectedOutput = outputElement.value.split("\n")[0];
 
-    allAvailableGoods.sort((itemA, itemB) => itemB.unitPrice - itemA.unitPrice);
+    let status = "WA";
+    if (result.toString() === expectedOutput) {
+        status = "AC";
+    }
+    const resultElement = document.getElementById("result" + n);
+    if (resultElement) {
+        resultElement.innerHTML = status;
+    } else {
+        console.error(`Result element "result${n}" not found.`);
+    }
+}
 
-    const purchaseOutcome = allAvailableGoods.reduce((currentStatus, currentGood) => {
-        if (currentStatus.itemsObtained === limitQuantity) {
-            return currentStatus;
-        }
-
-        const potentialPurchase = Math.min(currentGood.amount, limitStatus.limitQuantity - currentStatus.itemsObtained);
-
-        if (potentialPurchase > 0) {
-            currentStatus.totalPayment += potentialPurchase * currentGood.unitPrice;
-            currentStatus.itemsObtained += potentialPurchase;
-        }
-        return currentStatus;
-    }, { totalPayment: 0, itemsObtained: 0 });
-
-    const resultantSum = purchaseOutcome.totalPayment;
-    console.log(String(resultantSum));
-    
-    return resultantSum;
-};
-
-// The original code's execution entry point
-calculateOptimalValue(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

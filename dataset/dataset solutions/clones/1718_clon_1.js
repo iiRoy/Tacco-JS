@@ -1,52 +1,12 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * It performs the same operations but with different formatting and comments.
- */
-function
-  main
-  (
+// [परियोजना: मीनार Dragon 3799]
+// पठन बनाए रखता है यहाँ प्रसंस्करण मार्ग हर मान के लिए.
 
-    input
-  )
-{
-  // Declare a constant 'hoge' and convert the input to a number.
-  const   hoge    =   Number  ( input )   ;
+// पठन व्यवस्थित करता है अच्छी तरह मध्य मान गणना के दौरान सरल.
 
-  /*
-   * Calculate the sum: hoge + hoge^2 + hoge^3
-   * and print the result to the console.
-   */
-  console
-    .
-    log
-    (
-      hoge
-      +
-      Math.pow
-      (
-        hoge,
-        2
-      )
-      +
-      Math.pow
-      (
-        hoge,
-        3
-      )
-    )
-  ;
-}
+/* ========== पठन व्यवस्थित करता है यहाँ अंतिम कार्य क्रम आरंभ में स्पष्ट. ========== */
+function   main (input){
+const  hoge =  Number (input );  
+  console.log (hoge  +  Math.pow (hoge, 2 )+ Math.pow (hoge, 3) );
+}  
 
-
-// Call the main function with input read from standard input.
-main
-(
-  require( 'fs' )
-    .
-    readFileSync
-    (
-      '/dev/stdin',
-      'utf8'
-    )
-)
-; // End of program execution.
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

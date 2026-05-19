@@ -1,64 +1,61 @@
-const fileSystem = require('fs');
+const processInputData = () => {
+    const rawFileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+    return rawFileContent.trim().split('\n');
+};
 
-function obtainLongestSequence(initialRow, initialCol, totalDimension, dataMatrix) {
-    const movementVectors = [
-        { rowDelta: 0, colDelta: 1 },
-        { rowDelta: 1, colDelta: -1 },
-        { rowDelta: 1, colDelta: 0 },
-        { rowDelta: 1, colDelta: 1 }
+const inputLinesBuffer = processInputData();
+let currentLinePointer = 0;
+
+const retrieveGridData = (dimensionValue) => {
+    const gridRows = [];
+    for (let k = 0; k < dimensionValue; k++) {
+        gridRows.push(inputLinesBuffer[currentLinePointer++].split('').map(Number));
+    }
+    return gridRows;
+};
+
+const computeMaxSequenceLength = (gridStructure, gridDimension, startingRow, startingCol) => {
+    const directionalOffsets = [
+        { rowChange: 0, colChange: 1 },  // East
+        { rowChange: 1, colChange: -1 }, // South-West
+        { rowChange: 1, colChange: 0 },  // South
+        { rowChange: 1, colChange: 1 }   // South-East
     ];
 
-    let highestValue = 1;
-
-    movementVectors.forEach(vector => {
-        let currentLength = 0;
-        let step = 0;
-
-        while (true) {
-            let evaluatedRow = initialRow + (vector.rowDelta * step);
-            let evaluatedCol = initialCol + (vector.colDelta * step);
-
-            if (evaluatedRow < 0 || evaluatedCol < 0 || evaluatedRow >= totalDimension || evaluatedCol >= totalDimension) {
-                break;
-            }
-            if (dataMatrix[evaluatedRow][evaluatedCol] !== 1) {
-                break;
-            }
-            currentLength++;
-            step++;
+    const countConsecutiveOnes = (r, c, rInc, cInc) => {
+        const isWithinBounds = r >= 0 && c >= 0 && r < gridDimension && c < gridDimension;
+        if (!isWithinBounds || gridStructure[r][c] !== 1) {
+            return 0;
         }
-        highestValue = Math.max(highestValue, currentLength);
-    });
+        return 1 + countConsecutiveOnes(r + rInc, c + cInc, rInc, cInc);
+    };
 
-    return highestValue;
-}
+    return directionalOffsets.reduce((maximumLength, vector) => {
+        const currentDirectionLength = countConsecutiveOnes(startingRow, startingCol, vector.rowChange, vector.colChange);
+        return Math.max(maximumLength, currentDirectionLength);
+    }, 0);
+};
 
-function processGrids(linesRemaining, accumulatedResults) {
-    if (linesRemaining.length === 0 || linesRemaining[0].trim() === '') {
-        return accumulatedResults;
+while (currentLinePointer < inputLinesBuffer.length) {
+    const currentGridDimension = Number(inputLinesBuffer[currentLinePointer++]);
+    if (currentGridDimension === 0) {
+        break;
     }
 
-    const currentDimension = parseInt(linesRemaining[0], 10);
-    if (isNaN(currentDimension) || currentDimension === 0) {
-        return accumulatedResults;
-    }
+    const currentGridMatrix = retrieveGridData(currentGridDimension);
+    let highestSequenceInMatrix = 0;
 
-    const gridLines = linesRemaining.slice(1, currentDimension + 1);
-    const matrixData = gridLines.map(line => line.split('').map(Number));
+    const allCellCoordinates = Array.from({ length: currentGridDimension }, (_, r) =>
+        Array.from({ length: currentGridDimension }, (_, c) => ({ r, c }))
+    ).flat();
 
-    let overallMaximum = 0;
+    highestSequenceInMatrix = allCellCoordinates.reduce((currentMaxOverall, { r, c }) => {
+        if (currentGridMatrix[r][c] === 1) {
+            const cellSpecificMax = computeMaxSequenceLength(currentGridMatrix, currentGridDimension, r, c);
+            return Math.max(currentMaxOverall, cellSpecificMax);
+        }
+        return currentMaxOverall;
+    }, 0);
 
-    matrixData.forEach((rowValues, rowIndex) => {
-        rowValues.forEach((cellValue, colIndex) => {
-            if (cellValue === 1) {
-                overallMaximum = Math.max(overallMaximum, obtainLongestSequence(rowIndex, colIndex, currentDimension, matrixData));
-            }
-        });
-    });
-
-    return processGrids(linesRemaining.slice(currentDimension + 1), accumulatedResults.concat(overallMaximum));
+    console.log(highestSequenceInMatrix);
 }
-
-const allInputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-const finalOutputs = processGrids(allInputLines, []);
-finalOutputs.forEach(result => console.log(result));

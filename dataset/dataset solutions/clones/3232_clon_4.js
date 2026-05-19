@@ -1,68 +1,57 @@
-function processInputAndCompute(inputContent) {
-  const rawTokens = inputContent.split(/\s+/).filter(Boolean);
-  const numElements = Number(rawTokens[0]);
-  const upperLimitValue = BigInt(rawTokens[1]);
-  const dataElements = rawTokens.slice(2, 2 + numElements).map(BigInt);
+"use strict";
 
-  const bitwiseCounts = new Array(50).fill(0);
-  for (const val of dataElements) {
-    for (let p = 0; p < 50; ++p) { // p=0 is LSB, p=49 is MSB
-      if ((val >> BigInt(p)) & 1n) {
-        bitwiseCounts[p]++;
-      }
+function processInputData(rawData) {
+  const numberPattern = /\d+/g;
+  const parsedNumbers = Array.from(rawData.matchAll(numberPattern), m => m[0]);
+
+  const elementCount = parseInt(parsedNumbers[0]);
+  const limitValueBinary = parseInt(parsedNumbers[1]).toString(2).padStart(50, '0');
+
+  const binaryValues = parsedNumbers.slice(2, 2 + elementCount).map(valStr =>
+    parseInt(valStr).toString(2).padStart(50, '0')
+  );
+
+  const bitPositionCounts = Array.from({ length: 50 }, (_, bitIdx) =>
+    binaryValues.reduce((count, currentBinary) =>
+      count + (currentBinary[bitIdx] === '1' ? 1 : 0), 0
+    )
+  );
+
+  const memoizationTable = Array.from({ length: 51 }, () =>
+    Array(2).fill(null)
+  );
+
+  function calculateMaximumXorSum(currentBitIndex, isCurrentlyTight) {
+    if (currentBitIndex === 50) {
+      return 0;
     }
+
+    if (memoizationTable[currentBitIndex][isCurrentlyTight] !== null) {
+      return memoizationTable[currentBitIndex][isCurrentlyTight];
+    }
+
+    let maximumSuffixScore = 0;
+    const upperLimitDigit = isCurrentlyTight ? parseInt(limitValueBinary[currentBitIndex]) : 1;
+
+    for (let chosenDigit = 0; chosenDigit <= upperLimitDigit; chosenDigit++) {
+      const newTightState = isCurrentlyTight && (chosenDigit === upperLimitDigit);
+      
+      const currentBitContribution = (
+        (chosenDigit === 0 ? bitPositionCounts[currentBitIndex] : elementCount - bitPositionCounts[currentBitIndex]) *
+        Math.pow(2, 49 - currentBitIndex)
+      );
+
+      const remainingBitsScore = calculateMaximumXorSum(currentBitIndex + 1, newTightState);
+      
+      maximumSuffixScore = Math.max(maximumSuffixScore, currentBitContribution + remainingBitsScore);
+    }
+
+    memoizationTable[currentBitIndex][isCurrentlyTight] = maximumSuffixScore;
+    return maximumSuffixScore;
   }
 
-  let currentMaximumScore = 0n;
-
-  // Case 1: Consider X = upperLimitValue (the number K itself)
-  let scoreForLimit = 0n;
-  for (let p = 0; p < 50; ++p) {
-    const bitOfLimit = (upperLimitValue >> BigInt(p)) & 1n;
-    if (bitOfLimit === 0n) {
-      scoreForLimit += BigInt(bitwiseCounts[p]) * (1n << BigInt(p));
-    } else {
-      scoreForLimit += BigInt(numElements - bitwiseCounts[p]) * (1n << BigInt(p));
-    }
-  }
-  currentMaximumScore = scoreForLimit;
-
-  // Case 2: Consider X < upperLimitValue (numbers strictly less than K)
-  // Iterate from the most significant bit (MSB, index 49) down to the least significant bit (LSB, index 0).
-  // For each bit position `q`, if `upperLimitValue` has a '1' at `q`,
-  // we can construct a candidate `X` where:
-  // - Its prefix (bits 49 down to q+1) matches `upperLimitValue`.
-  // - Bit `q` is set to '0' (making `X` strictly less than `upperLimitValue`).
-  // - Subsequent bits (q-1 down to 0) are chosen greedily to maximize the score.
-  for (let q = 49; q >= 0; --q) {
-    const limitBitAtQ = (upperLimitValue >> BigInt(q)) & 1n;
-
-    if (limitBitAtQ === 1n) { // If K has a '1' at this position, we can try setting X's bit here to '0'
-      let potentialCandidateScore = 0n;
-
-      // Prefix (bits 49 down to q+1) matches upperLimitValue
-      for (let r = 49; r > q; --r) {
-        const currentLimitBit = (upperLimitValue >> BigInt(r)) & 1n;
-        if (currentLimitBit === 0n) {
-          potentialCandidateScore += BigInt(bitwiseCounts[r]) * (1n << BigInt(r));
-        } else {
-          potentialCandidateScore += BigInt(numElements - bitwiseCounts[r]) * (1n << BigInt(r));
-        }
-      }
-
-      // Current bit q is 0
-      potentialCandidateScore += BigInt(bitwiseCounts[q]) * (1n << BigInt(q));
-
-      // Suffix (bits q-1 down to 0) are chosen greedily without any further constraint from K
-      for (let r = q - 1; r >= 0; --r) {
-        potentialCandidateScore += BigInt(Math.max(bitwiseCounts[r], numElements - bitwiseCounts[r])) * (1n << BigInt(r));
-      }
-
-      currentMaximumScore = BigInt(Math.max(currentMaximumScore, potentialCandidateScore));
-    }
-  }
-
-  console.log(currentMaximumScore.toString());
+  const overallMaximumScore = calculateMaximumXorSum(0, true);
+  console.log(overallMaximumScore);
 }
 
-processInputAndCompute(require("fs").readFileSync("/dev/stdin","utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

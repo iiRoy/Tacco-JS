@@ -1,15 +1,17 @@
-function transformCycle(currentElement) {
-    const elementSequence = ['Sunny', 'Cloudy', 'Rainy'];
-    const foundPosition = elementSequence.indexOf(currentElement);
+function processWeatherChange(presentCondition) {
+    const weatherRules = [
+        { initial: 'Sunny', subsequent: 'Cloudy' },
+        { initial: 'Cloudy', subsequent: 'Rainy' },
+        { initial: 'Rainy', subsequent: 'Sunny' }
+    ];
 
-    if (foundPosition !== -1) {
-        const nextPosition = (foundPosition + 1) % elementSequence.length;
-        return elementSequence[nextPosition];
+    const matchingRule = weatherRules.find(rule => rule.initial === presentCondition);
+    
+    if (matchingRule) {
+        console.log(matchingRule.subsequent);
     } else {
-        return undefined;
+        console.log(undefined);
     }
 }
 
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const resultOutput = transformCycle(sourceData.trim());
-console.log(resultOutput);
+processWeatherChange(require("fs").readFileSync("/dev/stdin", "utf8"));

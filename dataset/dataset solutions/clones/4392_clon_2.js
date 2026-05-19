@@ -1,154 +1,131 @@
-var programInputData = require( "fs" ) .readFileSync( "/dev/stdin" , "utf8" ) .trim( ) .split( "\n" ) ;
+var sourceData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-var dataStreamHandler = {
-  "sourceData" : programInputData ,
-  "currentPosition" : 0 ,
-  "totalEntries" : programInputData.length ,
+var dataStream = {
+  "contentLines" : sourceData,
+  "currentPosition" : 0,
+  "totalLines" : sourceData.length,
 
-  "retrieveNext" : function ( ) {
-    if ( ! this.canRetrieveMore( ) ) {
-      throw "StreamDepletionError: No further elements are available in the data stream." ;
+  "retrieveNext" : function() {
+    // Check if there are more elements available in the stream.
+    if (!this.hasMore()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    var currentItem = this.sourceData[ this.currentPosition ] ;
-    this.currentPosition ++ ;
-    return currentItem ;
-  } ,
+    var itemFetched = this.contentLines[this.currentPosition];
+    this.currentPosition++;
+    return itemFetched;
+  },
 
-  "canRetrieveMore" : function ( ) {
-    return ( this.currentPosition < this.totalEntries ) ;
+  "hasMore" : function() {
+    // Determine if the current position is within the bounds of total lines.
+    return (this.currentPosition < this.totalLines);
   }
-} ;
+};
 
-/*
-*   Initiates the primary application execution sequence.
-*/
-mainExecution( ) ;
+// Initiate the primary execution flow.
+executePrimaryLogic();
 
-/**
- * Retrieves the subsequent item from the globally accessible data stream handler.
- * @returns {string} The next string element from the input source.
- */
-function getNextItem ( ) {
-  return dataStreamHandler.retrieveNext( ) ;
+// Helper functions for data retrieval and conversion.
+function fetchNextLine() {
+  return dataStream.retrieveNext();
 }
 
-/**
- * Fetches the next string item and converts it into an integer value.
- * @returns {number} The next integer value parsed from the stream.
- */
-function getNextInteger ( ) {
-  return dataConverter( getNextItem( ) , 1 ) ;
+function fetchNextInteger() {
+  return dataConverter(fetchNextLine(), 1);
 }
 
-/**
- * Obtains the next string item and segments it into an array of strings using space as a delimiter.
- * @returns {string[]} An array of strings, split by space characters.
- */
-function getNextStringArray ( ) {
-  return dataConverter( getNextItem( ) , 2 ) ; // Divides the content based on space characters
+function fetchNextStringArray() {
+  return dataConverter(fetchNextLine(), 2); // Split by half-width space
 }
 
-/**
- * Acquires the next string item, splits it by spaces, and transforms each resulting part into a number.
- * @returns {number[]} An array of numbers, derived from space-separated parts of the string.
- */
-function getNextIntegerArray ( ) {
-  return dataConverter( getNextItem( ) , 4 ) ; // Separates by space and converts each segment to a numeric type
+function fetchNextIntegerArray() {
+  return dataConverter(fetchNextLine(), 4); // Split by half-width space and convert to numbers
 }
 
-/**
- * Retrieves the next string item and breaks it down into an array of individual characters.
- * @returns {string[]} An array where each element is a single character from the original string.
- */
-function getNextCharacterArray ( ) {
-  return dataConverter( getNextItem( ) , 6 ) ; // Splits the string into its constituent characters
+function fetchNextCharacterArray() {
+  return dataConverter(fetchNextLine(), 6); // Split into individual characters
 }
 
-/**
- * Determines if there are additional elements available for retrieval in the data stream.
- * @returns {boolean} True if more data can be retrieved, false if the stream is exhausted.
- */
-function hasMoreData ( ) {
-  return dataStreamHandler.canRetrieveMore( ) ;
+function checkMoreData() {
+  return dataStream.hasMore();
 }
 
-/**
- * Outputs the provided value to the standard console output stream.
- * @param {*} val The value to be displayed on the standard output.
- */
-function displayOutput ( val ) {
-  console.log( val ) ; // Direct logging to the standard output
+// Functions for output.
+function displayOutput(val) {
+  console.log(val); // Standard output
 }
 
-/**
- * Dispatches a message to the standard error console output stream.
- * @param {*} msg The message or object to be displayed as an error.
- */
-function displayError ( msg ) {
-  console.error( msg ) ; // Direct logging to the standard error output
+function displayError(msg) {
+  console.error(msg); // Standard error output
 }
 
-// This function serves as a versatile data transformation utility.
-// The 'mode' parameter specifies the desired conversion type.
-// In cases of an unknown 'mode' or an error during processing, the original input is returned.
-// Available transformation modes:
-//   1: Parses the input string into a base-10 integer.
-//   2: Splits the input string into substrings using a single space as the separator.
-//   4: Splits the input string by spaces, then maps each resulting substring to a number.
-//   6: Divides the input string into an array of individual characters.
-//   7: Splits the input string into characters, then maps each character to a number.
-//   8: Joins elements of an array into a single string, separated by a single space.
-//   9: Joins elements of an array into a single string, with each element on a new line.
-//   0: Joins elements of an array into a single string without any separator.
-function dataConverter ( inputVal , mode ) {
+// Data conversion utility.
+// Conversion types:
+// Default: Returns input as is.
+// 1: Converts to integer.
+// 2: Splits string by space.
+// 4: Splits by space and maps to numbers.
+// 6: Splits string into individual characters.
+// 7: Splits by character and maps to numbers.
+// 8: Joins array elements with a space.
+// 9: Joins array elements with a newline.
+// 0: Joins array elements without a separator.
+function dataConverter(inputValue, conversionKind) {
   try {
-    switch ( mode ) {
-      case 1 : return Number.parseInt( inputVal , 10 ) ;
-      case 2 : return inputVal.split( " " ) ;
-      case 4 : return inputVal.split( " " ).map( ( elem ) => Number( elem ) ) ;
-      case 6 : return inputVal.split( "" ) ;
-      case 7 : return inputVal.split( "" ).map( ( elem ) => Number( elem ) ) ;
-      case 8 : return inputVal.join( " " ) ;
-      case 9 : return inputVal.join( "\n" ) ;
-      case 0 : return inputVal.join( "" ) ;
-      default : return inputVal ;
+    switch (conversionKind) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(" ");
+      case 4:
+        return inputValue.split(" ").map((element) => Number(element));
+      case 6:
+        return inputValue.split("");
+      case 7:
+        return inputValue.split("").map((charItem) => Number(charItem));
+      case 8:
+        return inputValue.join(" ");
+      case 9:
+        return inputValue.join("\n");
+      case 0:
+        return inputValue.join("");
+      default:
+        return inputValue;
     }
-  } catch ( processingError ) {
-    return inputVal ;
+  } catch (err) {
+    return inputValue; // Return original value on error
   }
 }
 
-/**
- * The main execution function, encapsulating the core logic for cost calculation.
- * It processes input parameters to determine the most economical way to achieve a target quantity.
- */
-function mainExecution ( ) {
-  var initialParams = getNextIntegerArray( ) ;
+// Main logic for the problem.
+function executePrimaryLogic() {
+  var firstLineValues = fetchNextIntegerArray();
+  var quarterLiterCost = firstLineValues[0];
+  var halfLiterCost = firstLineValues[1];
+  var singleLiterCost = firstLineValues[2];
+  var doubleLiterCost = firstLineValues[3];
+  var litersNeeded = fetchNextInteger();
 
-  var quarterUnitCost = initialParams[0] ;
-  var halfUnitCost = initialParams[1] ;
-  var singleUnitCost = initialParams[2] ;
-  var doubleUnitCost = initialParams[3] ;
+  // Calculate equivalent costs for 2 liters based on smaller units.
+  var costQ_8x = quarterLiterCost * 8; // 8 * 0.25L = 2L
+  var costH_4x = halfLiterCost * 4;   // 4 * 0.5L = 2L
+  var costS_2x = singleLiterCost * 2; // 2 * 1L = 2L
 
-  var targetQuantity = getNextInteger( ) ;
+  var totalMinimumCost = 0;
 
-  var effectiveQuarterCost = quarterUnitCost * 8 ;
-  var effectiveHalfCost = halfUnitCost * 4 ;
-  var effectiveSingleCost = singleUnitCost * 2 ;
+  // Options for purchasing 2 liters.
+  var twoLiterOptions = [costQ_8x, costH_4x, costS_2x, doubleLiterCost];
+  var minCostForTwoLiters = Math.min.apply(null, twoLiterOptions);
 
-  var finalCost = 0 ;
+  // Calculate cost for even number of liters.
+  totalMinimumCost = minCostForTwoLiters * Math.floor(litersNeeded / 2);
 
-  var unitCostOptions = [ effectiveQuarterCost , effectiveHalfCost , effectiveSingleCost , doubleUnitCost ] ;
-
-  var minCostPerTwoLiters = Math.min( ...unitCostOptions ) ;
-
-  finalCost = minCostPerTwoLiters * Math.floor( targetQuantity / 2 ) ;
-
-  if ( targetQuantity % 2 === 1 ) {
-    effectiveQuarterCost = quarterUnitCost * 4 ;
-    effectiveHalfCost = halfUnitCost * 2 ;
-    finalCost += Math.min( effectiveQuarterCost , Math.min( effectiveHalfCost , singleUnitCost ) ) ;
+  // If an odd number of liters is needed, calculate the cost for the remaining 1 liter.
+  if (litersNeeded % 2 === 1) {
+    // Equivalent costs for 1 liter based on smaller units.
+    var costQ_4x = quarterLiterCost * 4; // 4 * 0.25L = 1L
+    var costH_2x = halfLiterCost * 2;   // 2 * 0.5L = 1L
+    totalMinimumCost += Math.min(costQ_4x, Math.min(costH_2x, singleLiterCost));
   }
 
-  displayOutput( finalCost ) ;
+  displayOutput(totalMinimumCost);
 }

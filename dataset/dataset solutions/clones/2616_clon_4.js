@@ -1,36 +1,26 @@
-const calculateSpecialDayCount = (inputPayload) => {
-    const numericalParts = inputPayload.match(/\d+/g).map(Number);
-    const maximumMonth = numericalParts[0];
-    const maximumDay = numericalParts[1];
+function performCalculation(inputData) {
+    const inputParts = inputData.trim().split(" ");
+    const finalMonth = parseInt(inputParts[0], 10);
+    const finalDay = parseInt(inputParts[1], 10);
 
-    const possibleDays = Array.from(
-        { length: Math.max(0, maximumDay - 21) },
-        (_, position) => position + 22
-    );
+    const obtainProductOfDigits = (numberValue) => {
+        const singleDigit = numberValue % 10;
+        const doubleDigit = Math.floor(numberValue / 10);
+        return singleDigit * doubleDigit;
+    };
 
-    const qualifyingMonths = Array.from(
-        { length: Math.max(0, maximumMonth - 3) },
-        (_, position) => position + 4
-    );
+    const possibleMonths = Array.from({ length: Math.max(0, finalMonth - 4 + 1) }, (_, idx) => 4 + idx);
 
-    let tally = 0;
+    const matchingPairsCount = possibleMonths.flatMap(currentMonthValue => {
+        const dayRangeLength = Math.max(0, finalDay - 22 + 1);
+        const daysForCurrentMonth = Array.from({ length: dayRangeLength }, (_, dayIdx) => 22 + dayIdx);
 
-    tally = qualifyingMonths.reduce((currentTotal, presentMonth) => {
-        const matchedDaysForMonth = possibleDays.filter(presentDay => {
-            const digitUnits = presentDay % 10;
-            const digitTens = Math.floor(presentDay / 10);
-            return presentMonth === (digitUnits * digitTens);
+        return daysForCurrentMonth.filter(currentDayValue => {
+            return currentMonthValue === obtainProductOfDigits(currentDayValue);
         });
-        return currentTotal + matchedDaysForMonth.length;
-    }, 0);
+    }).length;
 
-    return tally;
-};
+    console.log(matchingPairsCount);
+}
 
-const initiateProcessing = (dataSource) => {
-    const cleanedInput = dataSource.toString().trim();
-    const finalCalculationResult = calculateSpecialDayCount(cleanedInput);
-    console.log(finalCalculationResult);
-};
-
-initiateProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+performCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));

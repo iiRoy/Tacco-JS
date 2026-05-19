@@ -1,36 +1,36 @@
-function processData(rawString) {
-  const numericalSequence = Array.from(rawString, Number);
-  const sequenceLength = numericalSequence.length;
+const extractNumericValue = (strSegment) => Number(strSegment);
 
-  let finalResult = Number(rawString);
+const sumStringDigits = (str) =>
+  Array.from(str).reduce((acc, char) => acc + extractNumericValue(char), 0);
 
-  Array.from({ length: sequenceLength }, (_, indexA) => {
-    const prefixSum = numericalSequence.slice(0, indexA)
-                                       .reduce((currentSum, val) => currentSum + val, 0);
+function computeSegmentContributions(sourceText, startOffset, initialSumForSegments) {
+  const maxSubsegmentLength = sourceText.length - startOffset - 1;
 
-    finalResult += segmentProcessor(numericalSequence, indexA, prefixSum);
-  });
+  if (maxSubsegmentLength <= 0) {
+    return 0;
+  }
 
-  return finalResult;
+  const segmentTotal = Array.from({ length: maxSubsegmentLength }, (_, index) => index + 1)
+    .reduce((acc, currentSubsegmentLength) => {
+      const firstPart = extractNumericValue(sourceText.substring(startOffset, startOffset + currentSubsegmentLength));
+      const secondPart = extractNumericValue(sourceText.substring(currentSubsegmentLength + startOffset));
+      return acc + initialSumForSegments + firstPart + secondPart;
+    }, 0);
+
+  return segmentTotal;
 }
 
-function segmentProcessor(numericalSequence, splitPointA, initialAccumulatedValue) {
-  const sequenceLength = numericalSequence.length;
-  let currentSegmentTotal = 0;
+function processInputString(sourceText) {
+  let overallAccumulator = extractNumericValue(sourceText);
 
-  Array.from({ length: sequenceLength - splitPointA - 1 }, (_, loopIndex) => {
-    const splitPointB = splitPointA + (loopIndex + 1);
-
-    currentSegmentTotal += initialAccumulatedValue;
-
-    const middlePartString = numericalSequence.slice(splitPointA, splitPointB).join('');
-    currentSegmentTotal += Number(middlePartString);
-
-    const rightPartString = numericalSequence.slice(splitPointB).join('');
-    currentSegmentTotal += Number(rightPartString);
+  const contributions = Array.from({ length: sourceText.length }, (_, segmentStartOffset) => {
+    const leadingDigitsSum = sumStringDigits(sourceText.slice(0, segmentStartOffset));
+    return computeSegmentContributions(sourceText, segmentStartOffset, leadingDigitsSum);
   });
 
-  return currentSegmentTotal;
+  overallAccumulator += contributions.reduce((acc, val) => acc + val, 0);
+
+  console.log(overallAccumulator);
 }
 
-console.log(processData(require('fs').readFileSync('/dev/stdin', 'utf8')));
+processInputString(require('fs').readFileSync('/dev/stdin', 'utf8'));

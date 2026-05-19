@@ -1,57 +1,42 @@
-function processInputData() {
-    let rawContentStream = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-    let contentRowsArr = rawContentStream.split('\n');
-    let linePointer = 0;
+function calculateAverage(numericArray) {
+    let totalSum = 0;
+    for (const val of numericArray) {
+        totalSum += val;
+    }
+    return totalSum / numericArray.length;
+}
 
-    for (;;) {
-        let elementQuantity = parseInt(contentRowsArr[linePointer++], 10);
+function determineDispersion(numericArray) {
+    const avg = calculateAverage(numericArray);
+    const squaredDifferencesSum = numericArray.map(val => (val - avg) * (val - avg))
+                                              .reduce((acc, current) => acc + current, 0);
+    return squaredDifferencesSum / numericArray.length;
+}
 
-        if (elementQuantity === 0) {
+function computeSpread(numericArray) {
+    return Math.sqrt(determineDispersion(numericArray));
+}
+
+(function(rawInput) {
+    const inputLines = rawInput.split('\n');
+    let lineIndex = 0;
+    const allDataSets = [];
+
+    while (true) {
+        const currentCountStr = inputLines[lineIndex++];
+        const currentCount = Number(currentCountStr);
+
+        if (currentCount === 0) {
             break;
         }
 
-        let currentNumericString = contentRowsArr[linePointer++];
-        let numericalElements = [];
-        let currentNumberBuffer = '';
-
-        for (let idx = 0; idx < currentNumericString.length; ++idx) {
-            let charUnit = currentNumericString[idx];
-            if (charUnit === ' ') {
-                if (currentNumberBuffer !== '') {
-                    numericalElements.push(parseFloat(currentNumberBuffer));
-                    currentNumberBuffer = '';
-                }
-            } else {
-                currentNumberBuffer += charUnit;
-            }
-        }
-        if (currentNumberBuffer !== '') {
-            numericalElements.push(parseFloat(currentNumberBuffer));
-        }
-
-        console.log(computeDispersionMetric(numericalElements));
-    }
-}
-
-function computeDispersionMetric(numericSeriesCollection) {
-    let totalSummation = 0;
-    let collectionLength = numericSeriesCollection.length;
-
-    for (let j = 0; j < collectionLength; ++j) {
-        totalSummation += numericSeriesCollection[j];
+        const numbersLine = inputLines[lineIndex++];
+        const currentSet = numbersLine.split(' ').map(Number);
+        allDataSets.push(currentSet);
     }
 
-    let centralTendency = totalSummation / collectionLength;
-    let sumOfSquaredDifferences = 0;
+    allDataSets.forEach(dataSet => {
+        console.log(computeSpread(dataSet));
+    });
 
-    for (let k = 0; k < collectionLength; ++k) {
-        let differenceFromMean = numericSeriesCollection[k] - centralTendency;
-        sumOfSquaredDifferences += differenceFromMean * differenceFromMean;
-    }
-
-    let finalVariance = sumOfSquaredDifferences / collectionLength;
-
-    return Math.sqrt(finalVariance);
-}
-
-processInputData();
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,11 +1,12 @@
-function processInputData(rawDataStream) {
-  let delimiterPosition = rawDataStream.indexOf(' ');
-  let firstSegment = rawDataStream.substring(0, delimiterPosition);
-  let secondSegment = rawDataStream.substring(delimiterPosition + 1);
+function calculateProductFromInput(sourceData) {
+  const separatorPosition = sourceData.indexOf(' ');
+  const firstOperandString = sourceData.substring(0, separatorPosition);
+  const secondOperandString = sourceData.substring(separatorPosition + 1);
 
-  let resultValue = eval(firstSegment + '*' + secondSegment);
+  const firstNumericValue = Number(firstOperandString);
+  const secondNumericValue = Number(secondOperandString);
 
-  process.stdout.write(String(resultValue) + '\n');
+  console.log(firstNumericValue * secondNumericValue);
 }
 
-processInputData(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+calculateProductFromInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,28 +1,39 @@
-const   fileSystemModule  =   require('fs')   ;
+// This script reads numerical pairs from standard input,
+// sorts each pair, and prints the sorted pair.
+// It terminates when it encounters a '0 0' pair.
 
-var     sourceContent   =    fileSystemModule.readFileSync   (   '/dev/stdin'    ,   'utf-8'   )   ;
+// Read the entire input from /dev/stdin as a UTF-8 string.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var inputLines = sourceContent.split('\n'); // Divides the entire content into an array of lines.
+// Split the raw input string into an array of lines, using newline as a delimiter.
+var linesArray = rawData.split('\n');
 
-for  (  let currentLineIdx  =  0  ;  currentLineIdx  <  inputLines.length  ;  currentLineIdx++  ) // Loops through each line entry.
-{
+// Iterate through each line in the array.
+// The loop variable 'idx' is intentionally declared implicitly as a global for Type II.
+for (idx = 0; idx < linesArray.length; idx++) {
+    // Process the current line:
+    // 1. Split the line by space to get string representations of numbers.
+    // 2. Map each string to its numerical equivalent.
+    var currentNumbers = linesArray[idx].split(' ').map(Number);
 
-    let   parsedNumbers =   inputLines[currentLineIdx] // Retrieves the current line.
-                                .split(' ')           // Splits the line by spaces into an array of strings.
-                                .map(Number)  ;       // Converts each string part to a numerical value.
+    // Extract the first and second numbers from the current pair.
+    // These variables are intentionally declared implicitly as globals for Type II.
+    firstVal = currentNumbers[0];
+    secondVal = currentNumbers[1];
 
-    let   firstNum    = parsedNumbers[0]; // Extracts the initial number.
-    let   secondNum   = parsedNumbers[1]; // Extracts the subsequent number.
-
-
-    if  (  firstNum   ===   0    &&    secondNum   ===   0  ) // Checks for the termination condition.
-    {
-        break; // Halts the loop if both values are zero.
+    // Check for the termination condition: if both numbers are zero.
+    if (firstVal === 0 && secondVal === 0) {
+        // If the condition is met, exit the loop.
+        break;
     }
 
-    var   sortedNumbers   =   parsedNumbers.sort (   function   (   valA   ,   valB   )   { // Sorts the array of numbers numerically.
-                                                                                return   valA   -   valB   ;
-                                                                                }   )   ;
+    // Sort the current pair of numbers in ascending order.
+    // The 'sort' method modifies the array in place.
+    // The comparison function (valA, valB) => valA - valB ensures numerical ascending sort.
+    var sortedPair = currentNumbers.sort(function(valA, valB) {
+        return valA - valB;
+    });
 
-    console.log   (   sortedNumbers.join(' ')   )   ; // Prints the sorted numbers, separated by a space.
+    // Print the sorted pair to the console, with numbers joined by a single space.
+    console.log(sortedPair.join(' '));
 }

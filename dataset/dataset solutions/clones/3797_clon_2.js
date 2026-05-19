@@ -1,54 +1,55 @@
-function executeLogic(sourceData) {
-  // Break the raw input into separate textual lines.
-  let contentLines = sourceData.split('\n');
+// This function processes the given input string to find specific patterns.
+function processInput(rawData) {
+    // Split the raw input into an array of lines.
+    let linesArray = rawData.split('\n');
 
-  // Obtain the total number of items from the initial line of input.
-  let elementCount = parseInt(contentLines[0], 10);
+    // Parse the first line to get the number of elements.
+    const numElements = parseInt(linesArray[0], 10);
 
-  // Parse the subsequent line to get space-separated string values.
-  let numericalStrings = contentLines[1].split(' ');
+    // Split the second line into an array of string numbers.
+    let dataValues = linesArray[1].split(' ');
 
-  // Convert each string value in the array to its integer representation.
-  for (let primaryIdx = 0; primaryIdx < elementCount; primaryIdx++) {
-    numericalStrings[primaryIdx] = parseInt(numericalStrings[primaryIdx], 10);
-  }
-
-  // Initialize a variable to keep track of the total matches found.
-  let matchTally = 0;
-
-  // The following line was for debugging and is now removed.
-  // console.log(numericalStrings);
-
-  // Begin the outer iteration, processing each item in the collection.
-  for (let primaryIdx = 0; primaryIdx < elementCount; primaryIdx++) {
-    // Set up accumulators for bitwise XOR and arithmetic sum, starting with the current element.
-    let currentXorSum = numericalStrings[primaryIdx];
-    let currentArithmeticSum = numericalStrings[primaryIdx];
-
-    // Every individual element is considered a valid match initially.
-    matchTally += 1;
-
-    // Start the inner iteration from the element immediately following the current outer element.
-    for (let secondaryIdx = primaryIdx + 1; secondaryIdx < elementCount; secondaryIdx++) {
-      // Update the bitwise XOR sum with the next element.
-      currentXorSum = currentXorSum ^ numericalStrings[secondaryIdx];
-      // Update the arithmetic sum by adding the next element.
-      currentArithmeticSum = currentArithmeticSum + numericalStrings[secondaryIdx];
-
-      // Previous debugging output for sums is omitted here.
-      // console.log(`XOR result: ${currentXorSum}`);
-      // console.log(`Sum result: ${currentArithmeticSum}`);
-
-      // Check if the accumulated XOR sum is strictly equal to the accumulated arithmetic sum.
-      if (currentXorSum === currentArithmeticSum) {
-        // If they are equal, increment the total match counter.
-        matchTally += 1;
-      }
+    // Convert all string numbers in the dataValues array to integers.
+    for (let outerIndex = 0; outerIndex < numElements; outerIndex++) {
+        dataValues[outerIndex] = parseInt(dataValues[outerIndex], 10);
     }
-  }
-  // Display the final tally of matched conditions.
-  console.log(matchTally);
+
+    // Initialize a counter for valid pairs.
+    let validPairsCount = 0;
+
+    // Optional: For debugging purposes, uncomment the line below.
+    // console.log(dataValues);
+
+    // Iterate through the array to find sub-arrays that satisfy the condition.
+    for (let outerIndex = 0; outerIndex < numElements; outerIndex++) {
+        // Initialize XOR sum and arithmetic sum for the current sub-array starting at outerIndex.
+        let xorSum = dataValues[outerIndex];
+        let arithmeticSum = dataValues[outerIndex];
+
+        // Each single element itself forms a valid "pair" (or sequence of length 1).
+        validPairsCount += 1;
+
+        // Iterate through subsequent elements to extend the sub-array.
+        for (let innerIndex = outerIndex + 1; innerIndex < numElements; innerIndex++) {
+            // Update XOR sum with the next element.
+            xorSum = xorSum ^ dataValues[innerIndex];
+            // Update arithmetic sum with the next element.
+            arithmeticSum = arithmeticSum + dataValues[innerIndex];
+
+            // Debugging lines, kept commented as in original.
+            // console.log(xorSum);
+            // console.log(arithmeticSum);
+
+            // Check if the XOR sum equals the arithmetic sum for the current sub-array.
+            if (xorSum === arithmeticSum) {
+                validPairsCount += 1; // Increment count if condition is met.
+            }
+        }
+    }
+
+    // Output the final count of valid sequences.
+    console.log(validPairsCount);
 }
 
-// Execute the primary logic function, fetching input from standard I/O.
-executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,117 +1,173 @@
 "use strict";
-// Module for file system operations
-var acquireModule = require;
+// This script processes input from standard input to calculate path distances in a graph.
 
-// Read raw data from standard input
-var dataStream = acquireModule("fs").readFileSync("/dev/stdin", "utf8");
+// Acquire all input data from the standard input stream.
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Split input data into tokens and initialize a token pointer
-var tokenBuffer = dataStream.split(/ |\n/),
-  tokenIndex = 0;
+// Split the input into tokens using spaces or newlines as delimiters.
+// Initialize a pointer for token consumption.
+let tokenStream = sourceData.split(/ |\n/);
+let tokenIndex = 0;
 
-// Global modulus value for calculations
-var modulusValue = 1000000007;
-
-// Function to retrieve the next token from the buffer
-function getNextToken(isRaw) {
-  return isRaw ? tokenBuffer[tokenIndex++] : +tokenBuffer[tokenIndex++];
+/**
+ * Retrieves the next token from the input stream.
+ * @param {boolean} isString - If true, returns the token as a string; otherwise, converts to a number.
+ * @returns {string|number} The next token.
+ */
+function retrieveNext(isString) {
+  return isString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
-// Function to retrieve multiple tokens from the buffer
-function getMultipleTokens(count, isString) {
-  return isString ? tokenBuffer.slice(tokenIndex, tokenIndex += count) : tokenBuffer.slice(tokenIndex, tokenIndex += count).map(val => +val);
+/**
+ * Retrieves a specified number of tokens from the input stream.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} isString - If true, returns tokens as strings; otherwise, converts to numbers.
+ * @returns {Array<string|number>} An array of tokens.
+ */
+function retrieveMultiple(count, isString) {
+  const currentTokens = tokenStream.slice(tokenIndex, tokenIndex + count);
+  tokenIndex += count;
+  return isString ? currentTokens : currentTokens.map(val => +val);
 }
 
-// Function to retrieve tokens arranged as a matrix
-function getMatrixTokens(height, width, isText) {
-  let resultArray = [],
-    rowIdx = 0;
-  if (isText)
-    for (; rowIdx < height; rowIdx++)
-      resultArray.push(tokenBuffer.slice(tokenIndex, tokenIndex += width));
-  else
-    for (; rowIdx < height; rowIdx++)
-      resultArray.push(tokenBuffer.slice(tokenIndex, tokenIndex += width).map(val => +val));
+/**
+ * Retrieves a matrix of tokens from the input stream.
+ * @param {number} height - The number of rows in the matrix.
+ * @param {number} width - The number of columns in the matrix.
+ * @param {boolean} isString - If true, returns matrix elements as strings; otherwise, converts to numbers.
+ * @returns {Array<Array<string|number>>} The matrix.
+ */
+function retrieveMatrix(height, width, isString) {
+  const resultArray = [];
+  let rowIterator = 0;
+  if (isString) {
+    for (; rowIterator < height; rowIterator++) {
+      resultArray.push(tokenStream.slice(tokenIndex, tokenIndex + width));
+      tokenIndex += width;
+    }
+  } else {
+    for (; rowIterator < height; rowIterator++) {
+      resultArray.push(tokenStream.slice(tokenIndex, tokenIndex + width).map(val => +val));
+      tokenIndex += width;
+    }
+  }
   return resultArray;
 }
 
-// Function to create a multi-dimensional array dynamically
+/**
+ * Creates a multi-dimensional array initialized with a specific value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array.
+ * @returns {Array} The multi-dimensional array.
+ */
 function createMultiDimArray(initialValue) {
-  var argsList = arguments,
-    argCount = argsList.length,
-    arrayCreationString = "Array(argsList[" + --argCount + "]).fill().map(element=>{return " + initialValue + ";})";
-  while (--argCount)
-    arrayCreationString = "Array(argsList[" + argCount + "]).fill().map(element=>" + arrayCreationString + ")";
-  return eval(arrayCreationString);
+  const dimensions = arguments;
+  let dimLength = dimensions.length;
+  let expressionString = "Array(dimensions[" + --dimLength + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--dimLength) {
+    expressionString = "Array(dimensions[" + dimLength + "]).fill().map(x=>" + expressionString + ")";
+  }
+  return eval(expressionString);
 }
 
-// Function for modular multiplication (unused in this specific problem but part of template)
-function performProduct() {
-  var factors = arguments,
-    currentProduct = factors[0],
-    factorIndex = factors.length;
-  while (--factorIndex)
-    currentProduct = ((currentProduct >> 16) * factors[factorIndex] % modulusValue * 65536 + (currentProduct & 65535) * factors[factorIndex]) % modulusValue;
-  return currentProduct;
+/**
+ * Performs multiplication of multiple numbers, handling potential large intermediate results
+ * using bitwise operations and a modulo. (Note: 'moduloConstant' is not defined in this scope).
+ * @param {...number} numbers - The numbers to multiply.
+ * @returns {number} The product modulo 'moduloConstant'.
+ */
+function multiplyLargeNumbers() {
+  const numbers = arguments;
+  let productValue = numbers[0];
+  let loopCounter = numbers.length;
+  while (--loopCounter) {
+    // This calculation assumes 'moduloConstant' is defined globally or passed.
+    // As it's not, this function would throw a ReferenceError if called.
+    productValue = ((productValue >> 16) * numbers[loopCounter] % moduloConstant * 65536 + (productValue & 65535) * numbers[loopCounter]) % moduloConstant;
+  }
+  return productValue;
 }
 
-// Execute the main program logic
-var finalResult = executeProgram();
+// Execute the main program logic and capture its output.
+const programOutput = executeProgram();
 
-// Print the output if available
-if (finalResult !== undefined)
-  console.log(finalResult);
+// If the program produced output, print it to the console.
+if (programOutput !== undefined) {
+  console.log(programOutput);
+}
 
-// Main program function
+/**
+ * Main function to solve the problem.
+ * Calculates all-pairs shortest paths in a modified graph and counts distances.
+ * @returns {string} The counts of each distance, joined by newlines.
+ */
 function executeProgram() {
-  var totalNodes = getNextToken(); // Number of nodes
-  var nodeX = getNextToken(); // Special node X
-  var nodeY = getNextToken(); // Special node Y
+  // Read graph parameters: number of nodes, and two special nodes X and Y.
+  const nodeCount = retrieveNext();
+  const startNode = retrieveNext();
+  const endNode = retrieveNext();
 
-  // Initialize an array to store counts of distances
-  var distanceCounts = createMultiDimArray(0, totalNodes - 1);
+  // Initialize an array to store counts of each distance.
+  // The maximum possible distance is nodeCount - 1.
+  const distanceCounts = createMultiDimArray(0, nodeCount - 1);
 
-  // Initialize adjacency matrix for path distances with a large value (infinity)
-  var adjacencyDistances = createMultiDimArray(Number.MAX_SAFE_INTEGER, totalNodes + 2, totalNodes + 2);
+  // Initialize an adjacency matrix for shortest paths.
+  // Use a large number (1e9) for unreachable paths.
+  // The matrix size is (nodeCount+2) x (nodeCount+2) to handle 1-based indexing and boundary conditions.
+  const adjacencyMatrix = createMultiDimArray(1_000_000_000, nodeCount + 2, nodeCount + 2);
 
-  // Set up initial direct connections
-  for (var currNode = 1; currNode <= totalNodes; currNode++) {
-    adjacencyDistances[currNode][currNode] = 0; // Distance to self is zero
-    adjacencyDistances[currNode][currNode + 1] = 1; // Adjacent nodes have distance 1
-    adjacencyDistances[currNode][currNode - 1] = 1; // Adjacent nodes have distance 1
-    // Special direct connection between nodeX and nodeY
-    if (currNode === nodeX)
-      adjacencyDistances[currNode][nodeY] = adjacencyDistances[nodeY][currNode] = 1;
+  // Populate initial direct connections in the adjacency matrix.
+  // Self-loops have distance 0. Adjacent nodes have distance 1.
+  // Special connection between startNode and endNode has distance 1.
+  for (let outerLoopIdx = 1; outerLoopIdx <= nodeCount; outerLoopIdx++) {
+    adjacencyMatrix[outerLoopIdx][outerLoopIdx] = 0; // Distance to self is zero
+    adjacencyMatrix[outerLoopIdx][outerLoopIdx + 1] = 1; // Direct neighbor
+    adjacencyMatrix[outerLoopIdx][outerLoopIdx - 1] = 1; // Direct neighbor
+
+    // Add the special edge between startNode and endNode
+    if (outerLoopIdx === startNode) {
+      adjacencyMatrix[outerLoopIdx][endNode] = 1;
+      adjacencyMatrix[endNode][outerLoopIdx] = 1;
+    }
   }
 
-  // First pass of distance calculations (Floyd-Warshall like)
-  for (var currNode = 1; currNode <= totalNodes; currNode++) {
-    for (var otherNode = currNode + 1; otherNode <= totalNodes; otherNode++) {
-      adjacencyDistances[currNode][otherNode] = Math.min(
-        adjacencyDistances[currNode][otherNode - 1], // Path via otherNode-1
-        adjacencyDistances[currNode][otherNode + 1], // Path via otherNode+1
-        adjacencyDistances[currNode - 1][otherNode], // Path via currNode-1
-        adjacencyDistances[currNode + 1][otherNode], // Path via currNode+1
-        adjacencyDistances[currNode][otherNode] - 1 // Direct path cost reduction
+  // First pass of Floyd-Warshall-like algorithm (or similar DP approach).
+  // This calculates shortest paths considering direct neighbors and the special edge.
+  // It iterates from top-left to bottom-right of the upper triangle of the matrix.
+  for (let outerLoopIdx = 1; outerLoopIdx <= nodeCount; outerLoopIdx++) {
+    for (let innerLoopIdx = outerLoopIdx + 1; innerLoopIdx <= nodeCount; innerLoopIdx++) {
+      // Update path from outerLoopIdx to innerLoopIdx using various intermediate steps.
+      // This effectively propagates shortest path information.
+      adjacencyMatrix[outerLoopIdx][innerLoopIdx] = Math.min(
+        adjacencyMatrix[outerLoopIdx][innerLoopIdx - 1], // Path via (innerLoopIdx - 1)
+        adjacencyMatrix[outerLoopIdx][innerLoopIdx + 1], // Path via (innerLoopIdx + 1)
+        adjacencyMatrix[outerLoopIdx - 1][innerLoopIdx], // Path via (outerLoopIdx - 1)
+        adjacencyMatrix[outerLoopIdx + 1][innerLoopIdx], // Path via (outerLoopIdx + 1)
+        adjacencyMatrix[outerLoopIdx][innerLoopIdx] - 1 // Direct path (if it was already 1, this makes it 0, then +1 makes it 1)
       ) + 1;
     }
   }
 
-  // Second pass for final distance calculations and counting
-  for (var currNode = totalNodes - 1; currNode > 0; currNode--) {
-    for (var otherNode = totalNodes; otherNode > currNode; otherNode--) {
-      adjacencyDistances[currNode][otherNode] = Math.min(
-        adjacencyDistances[currNode][otherNode - 1],
-        adjacencyDistances[currNode][otherNode + 1],
-        adjacencyDistances[currNode - 1][otherNode],
-        adjacencyDistances[currNode + 1][otherNode],
-        adjacencyDistances[currNode][otherNode] - 1
+  // Second pass: Refine shortest paths and count distances.
+  // This iterates from bottom-right to top-left of the upper triangle.
+  for (let outerLoopIdx = nodeCount - 1; outerLoopIdx > 0; outerLoopIdx--) {
+    for (let innerLoopIdx = nodeCount; innerLoopIdx > outerLoopIdx; innerLoopIdx--) {
+      // Re-calculate shortest path, ensuring all possible intermediate nodes are considered.
+      // This step is crucial for the Floyd-Warshall-like behavior.
+      adjacencyMatrix[outerLoopIdx][innerLoopIdx] = Math.min(
+        adjacencyMatrix[outerLoopIdx][innerLoopIdx - 1],
+        adjacencyMatrix[outerLoopIdx][innerLoopIdx + 1],
+        adjacencyMatrix[outerLoopIdx - 1][innerLoopIdx],
+        adjacencyMatrix[outerLoopIdx + 1][innerLoopIdx],
+        adjacencyMatrix[outerLoopIdx][innerLoopIdx] - 1
       ) + 1;
-      // Increment the count for the calculated distance
-      distanceCounts[adjacencyDistances[currNode][otherNode] - 1]++;
+
+      // Increment the count for the calculated distance.
+      // Distances are 1-indexed, so subtract 1 for array access.
+      distanceCounts[adjacencyMatrix[outerLoopIdx][innerLoopIdx] - 1]++;
     }
   }
 
-  // Return the distance counts as a newline-separated string
+  // Format the distance counts into a newline-separated string for output.
   return distanceCounts.join("\n");
 }

@@ -1,84 +1,82 @@
-const convertToNumber = (inputStr) => parseInt(inputStr, 10);
+const parseInteger = (inputString) => parseInt(inputString, 10);
 
-const convertArrayToNumbers = (strArray) => strArray.map((element) => convertToNumber(element));
+const parseIntegerArray = (stringArray) => stringArray.map((element) => parseInteger(element));
 
-const getAbsoluteValue = (numericVal) => (numericVal > 0 ? numericVal : -numericVal);
+const calculateAbsoluteValue = (numericValue) => (numericValue > 0 ? numericValue : -numericValue);
 
-function findSmallestValue() {
-    const allArguments = arguments;
-    let currentMinimum = allArguments[0];
-
-    for (let index = 1; index < allArguments.length; index++) {
-        if (allArguments[index] < currentMinimum) {
-            currentMinimum = allArguments[index];
-        }
+function findMinimum() {
+  const argumentList = arguments;
+  let minimumValue = argumentList[0];
+  for (let index = 1; index < argumentList.length; index++) {
+    if (argumentList[index] < minimumValue) {
+      minimumValue = argumentList[index];
     }
-    return currentMinimum;
+  }
+  return minimumValue;
 }
 
-function findLargestValue() {
-    const allArguments = arguments;
-    let currentMaximum = allArguments[0];
-
-    for (let index = 1; index < allArguments.length; index++) {
-        if (allArguments[index] > currentMaximum) {
-            currentMaximum = allArguments[index];
-        }
+function findMaximum() {
+  const argumentList = arguments;
+  let maximumValue = argumentList[0];
+  for (let index = 1; index < argumentList.length; index++) {
+    if (argumentList[index] > maximumValue) {
+      maximumValue = argumentList[index];
     }
-    return currentMaximum;
+  }
+  return maximumValue;
 }
 
-ExecuteSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function ExecuteSolution(problemInput) {
-    let lineData = problemInput.split('\n');
+function ProcessInput(rawInputString) {
+  const inputLines = rawInputString.split('\n');
 
-    let difficultyAndTarget = lineData[0].split(' ');
-    let numberOfChallenges = convertToNumber(difficultyAndTarget[0]);
-    let requiredTargetScore = convertToNumber(difficultyAndTarget[1]) / 100;
+  const dimensionsGoals = inputLines[0].split(' ');
+  const numProblems = parseInteger(dimensionsGoals[0]);
+  const targetScore = parseInteger(dimensionsGoals[1]) / 100;
 
-    let challengeDetails = [];
-    let temporaryVariable;
-    let totalAttempts = 0;
-    let currentAchievedScore = 0;
+  const problemCategories = [];
+  let temporaryVariable;
+  let totalProblemsSolved = 0;
+  let currentScore = 0;
 
-    for (let challengeIdx = 0; challengeIdx < numberOfChallenges; challengeIdx++) {
-        challengeDetails[challengeIdx] = convertArrayToNumbers(lineData[challengeIdx + 1].split(' '));
-        challengeDetails[challengeIdx][1] /= 100;
-        challengeDetails[challengeIdx][2] = (challengeIdx + 1) + challengeDetails[challengeIdx][1] / challengeDetails[challengeIdx][0];
-        challengeDetails[challengeIdx][3] = (challengeIdx + 1);
+  for (let problemIndex = 0; problemIndex < numProblems; problemIndex++) {
+    problemCategories[problemIndex] = parseIntegerArray(inputLines[problemIndex + 1].split(' '));
+    problemCategories[problemIndex][1] /= 100;
+    problemCategories[problemIndex][2] = (problemIndex + 1) + (problemCategories[problemIndex][1] / problemCategories[problemIndex][0]);
+    problemCategories[problemIndex][3] = problemIndex + 1;
+  }
+
+  problemCategories.sort(function(categoryA, categoryB) {
+    return categoryB[2] - categoryA[2];
+  });
+
+  let bestOptionCount, currentOptionCount, unusedVarZ, unusedVarW;
+
+  while (true) {
+    bestOptionCount = -1;
+
+    for (let categoryIdx = 0; categoryIdx < problemCategories.length; categoryIdx++) {
+      if (currentScore + problemCategories[categoryIdx][0] * problemCategories[categoryIdx][3] >= targetScore) {
+        currentOptionCount = Math.ceil((targetScore - currentScore) / problemCategories[categoryIdx][3]);
+        if (bestOptionCount === -1 || bestOptionCount > currentOptionCount) {
+          bestOptionCount = currentOptionCount;
+        }
+      } else if (currentScore + problemCategories[categoryIdx][0] * problemCategories[categoryIdx][3] + problemCategories[categoryIdx][1] >= targetScore) {
+        currentOptionCount = problemCategories[categoryIdx][0];
+        if (bestOptionCount === -1 || bestOptionCount > currentOptionCount) {
+          bestOptionCount = currentOptionCount;
+        }
+      }
     }
 
-    challengeDetails.sort(function(itemA, itemB) {
-        return itemB[2] - itemA[2];
-    });
-
-    let optimalProblemCount, potentialProblemCount, dummyVar1, dummyVar2;
-
-    while (true) {
-        optimalProblemCount = -1;
-
-        for (let currentProblemIdx = 0; currentProblemIdx < challengeDetails.length; currentProblemIdx++) {
-            if (currentAchievedScore + challengeDetails[currentProblemIdx][0] * challengeDetails[currentProblemIdx][3] >= requiredTargetScore) {
-                potentialProblemCount = Math.ceil((requiredTargetScore - currentAchievedScore) / challengeDetails[currentProblemIdx][3]);
-                if (optimalProblemCount === -1 || optimalProblemCount > potentialProblemCount) {
-                    optimalProblemCount = potentialProblemCount;
-                }
-            } else if (currentAchievedScore + challengeDetails[currentProblemIdx][0] * challengeDetails[currentProblemIdx][3] + challengeDetails[currentProblemIdx][1] >= requiredTargetScore) {
-                potentialProblemCount = challengeDetails[currentProblemIdx][0];
-                if (optimalProblemCount === -1 || optimalProblemCount > potentialProblemCount) {
-                    optimalProblemCount = potentialProblemCount;
-                }
-            }
-        }
-
-        if (optimalProblemCount !== -1) {
-            console.log(totalAttempts + optimalProblemCount);
-            return 0;
-        }
-
-        totalAttempts += challengeDetails[0][0];
-        currentAchievedScore += challengeDetails[0][0] * challengeDetails[0][3] + challengeDetails[0][1];
-        challengeDetails.shift();
+    if (bestOptionCount !== -1) {
+      console.log(totalProblemsSolved + bestOptionCount);
+      return 0;
     }
+
+    totalProblemsSolved += problemCategories[0][0];
+    currentScore += problemCategories[0][0] * problemCategories[0][3] + problemCategories[0][1];
+    problemCategories.shift();
+  }
 }

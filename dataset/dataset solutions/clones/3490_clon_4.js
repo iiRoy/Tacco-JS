@@ -1,31 +1,20 @@
-'use strict'
+'use strict';
 
-const processData = (rawDataInput) => {
-    const linesOfText = rawDataInput.trim().split('\n');
+const processInputData = (sourceText) => {
+    const lineSegments = sourceText.split('\n');
 
-    const [itemCount, durationThreshold] = linesOfText[0].split(' ').map(Number);
+    const [entryCount, timeThreshold] = lineSegments[0].split(' ').map(Number);
 
-    const relevantEntries = linesOfText.slice(1, itemCount + 1);
+    const initialMinimum = 1001;
 
-    const qualifyingOptions = relevantEntries
-        .map(entryString => {
-            const parts = entryString.split(' ').map(Number);
-            return { costValue: parts[0], timeTaken: parts[1] };
-        })
-        .filter(option => option.timeTaken < durationThreshold);
+    const computedMinimum = lineSegments
+        .slice(1, entryCount + 1)
+        .reduce((currentMin, dataRow) => {
+            const [costValue, durationValue] = dataRow.split(' ').map(Number);
+            return (durationValue < timeThreshold && costValue < currentMin) ? costValue : currentMin;
+        }, initialMinimum);
 
-    if (qualifyingOptions.length === 0) {
-        return 'TLE';
-    } else {
-        const minimumCostFound = qualifyingOptions.reduce((currentMin, currentOption) => {
-            return Math.min(currentMin, currentOption.costValue);
-        }, Infinity);
-        return minimumCostFound;
-    }
+    console.log(computedMinimum === initialMinimum ? 'TLE' : computedMinimum);
 };
 
-const fileContent = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8', flag: 'r' });
-
-const finalOutcome = processData(fileContent);
-
-console.log(finalOutcome);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf-8'));

@@ -1,19 +1,13 @@
-function ProcessValues(sourceText) {
-    const inputLines = sourceText.split('\n');
-    const numberStrings = inputLines[1].split(' ');
-    
-    const numericEntities = numberStrings.map(entry => BigInt(entry));
+function processInput(data) {
+    const lines = data.split("\n");
+    const numArr = lines[1].split(" ").map(val => BigInt(val));
 
-    const aggregateSum = numericEntities.reduce((accu, currentElement) => accu + currentElement, BigInt(0));
-    const sumOfSquares = numericEntities.reduce((accu, currentElement) => accu + (currentElement * currentElement), BigInt(0));
+    const totalSum = numArr.reduce((accumulator, currentVal) => accumulator + currentVal, BigInt(0));
+    const sumSquares = numArr.reduce((accumulator, currentVal) => accumulator + (currentVal * currentVal), BigInt(0));
 
-    const derivedNumerator = (aggregateSum * aggregateSum) - sumOfSquares;
-    const finalComputation = derivedNumerator / BigInt(2);
+    const finalResult = ((totalSum * totalSum) - sumSquares) / BigInt(2);
 
-    const MODULAR_CONSTANT = BigInt(1000000007);
-    const displayedValue = finalComputation % MODULAR_CONSTANT;
-
-    console.log(Number(displayedValue));
+    console.log(Number(finalResult % BigInt(1000000007)));
 }
 
-ProcessValues(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,24 +1,23 @@
-/**
- *  Performs a structural validation on the provided textual content.
- *  This routine checks for a specific symmetric pattern across two distinct lines.
- *  @param {string} rawTextContent - The complete input string that needs processing.
- */
-const validateStructure = rawTextContent =>
-{
-  const lineFragments = rawTextContent
-    .trim()
-    .split(String.fromCharCode(10));
+const processInputData = (sourceText) => {
+  // Clean up the raw input and split it into an array of lines
+  const lineArray = sourceText.trim().split('\n');
 
-  for (  let lineIndex = 0;   lineIndex < 3;   lineIndex++  )
-  {
-    if ( lineFragments[0].charAt(lineIndex)   !==   lineFragments[1].charAt(2 - lineIndex) )
-    {
-      console.log('INVALID_CONFIGURATION');
+  // Iterate through the first three characters to perform a comparison
+  for (let currentIdx = 0; currentIdx < 3; currentIdx++) {
+    // Compare the character at currentIdx in the first line
+    // with the character at (2 - currentIdx) in the second line.
+    // This effectively checks if the first line is the reverse of the second line
+    // for the first three characters.
+    if (lineArray[0].charAt(currentIdx) !== lineArray[1].charAt(3 - 1 - currentIdx)) {
+      // If a mismatch is found, print 'NO' and terminate execution
+      console.log('NO');
       return;
     }
   }
-  console.log('CONFIGURATION_OK');
+
+  // If the loop completes without any mismatches, it means the condition is met
+  console.log('YES');
 };
 
-// Retrieve content from the standard input stream and then initiate processing.
-validateStructure (  require ( "fs" ) . readFileSync ( "/dev/input" ,  "utf-8" )  ) ;
+// Read input from standard input and pass it to the processing function
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

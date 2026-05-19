@@ -1,35 +1,29 @@
-const processData = (rawData) => {
-    const dataLines = rawData.replace(/\s*$/, '').split('\n');
-    const entryCount = +dataLines[0];
-    const itemCollection = [];
+"use strict";
 
-    for (let currentLineIndex = 1; currentLineIndex <= entryCount; ++currentLineIndex) {
-        const parts = dataLines[currentLineIndex].split(' ');
-        itemCollection.push({
-            firstComponent: +parts[0],
-            secondComponent: +parts[1]
-        });
-    }
-
-    let finalResult;
-    if ((entryCount & 1) === 1) {
-        const centralPosition = (entryCount - 1) / 2;
-        const selectedItem = itemCollection[centralPosition];
-        finalResult = selectedItem.secondComponent - selectedItem.firstComponent + 1;
+function deriveMidpointAggregate(sourceArray, totalCount) {
+    if (totalCount % 2 !== 0) {
+        const centralIndex = Math.floor(totalCount / 2);
+        return sourceArray[centralIndex];
     } else {
-        const lowerMidPosition = (entryCount / 2) - 1;
-        const upperMidPosition = entryCount / 2;
-
-        const lowerItem = itemCollection[lowerMidPosition];
-        const upperItem = itemCollection[upperMidPosition];
-
-        finalResult = (upperItem.secondComponent + lowerItem.secondComponent) - (upperItem.firstComponent + lowerItem.firstComponent) + 1;
+        const lowerMidIndex = totalCount / 2 - 1;
+        const upperMidIndex = totalCount / 2;
+        return sourceArray[lowerMidIndex] + sourceArray[upperMidIndex];
     }
+}
 
-    return finalResult;
-};
+function processInputAndCalculate(inputContent) {
+    const dataLines = inputContent.trim().split("\n");
+    const elementCount = Number(dataLines.shift());
 
-const acquiredText = require('node:fs').readFileSync('/dev/stdin', 'utf-8');
-const computedValue = processData(acquiredText);
+    const firstColumnValues = dataLines.map(entry => Number(entry.split(" ")[0]));
+    const secondColumnValues = dataLines.map(entry => Number(entry.split(" ")[1]));
 
-console.log(computedValue);
+    const aggregateB = deriveMidpointAggregate(secondColumnValues, elementCount);
+    const aggregateA = deriveMidpointAggregate(firstColumnValues, elementCount);
+
+    const finalOutcome = aggregateB - aggregateA + 1;
+
+    console.log(finalOutcome);
+}
+
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

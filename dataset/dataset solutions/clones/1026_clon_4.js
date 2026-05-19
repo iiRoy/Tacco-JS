@@ -1,36 +1,29 @@
-const retrieveContent = require('fs').readFileSync;
+const fileSystem = require('fs');
 
-const processInstructions = (rawData) => {
-    const instructionLines = rawData.trim().split('\n');
-    const operationalInstructions = instructionLines.slice(1);
+const processInputData = (rawData) => {
+    const commandLines = rawData.trim().split('\n');
+    commandLines.shift();
 
-    const operationRegistry = {
-        'insert': (currentSequence, val) => [val, ...currentSequence],
-        'delete': (currentSequence) => [...currentSequence], // Original 'delete' was commented out, effectively doing nothing
-        'deleteFirst': (currentSequence) => currentSequence.slice(1),
-        'deleteLast': (currentSequence) => currentSequence.slice(0, -1)
-    };
+    const commandDispatch = Object.freeze({
+        "insert": (currentElements, val) => [val, ...currentElements],
+        "delete": (currentElements, val) => [...currentElements],
+        "deleteFirst": (currentElements) => currentElements.slice(1),
+        "deleteLast": (currentElements) => currentElements.slice(0, -1)
+    });
 
-    const finalSequenceState = operationalInstructions.reduce((seq, currentLine) => {
-        const parts = currentLine.split(' ');
-        const commandAction = parts[0];
-        const commandValue = parseInt(parts[1], 10);
+    const finalElements = commandLines.reduce((accumulator, currentInstruction) => {
+        const [operationName, operandString] = currentInstruction.split(" ");
+        const operandValue = parseInt(operandString, 10);
 
-        const handler = operationRegistry[commandAction];
-
-        if (handler) {
-            if (commandAction === 'insert') {
-                return handler(seq, commandValue);
-            }
-            return handler(seq);
+        const operationFunction = commandDispatch[operationName];
+        if (operationFunction) {
+            return operationFunction(accumulator, operandValue);
         }
-        return seq;
+        return accumulator;
     }, []);
 
-    return finalSequenceState.join(' ');
+    return finalElements.join(" ");
 };
 
-const entireInput = retrieveContent('/dev/stdin', 'utf8');
-const outputResult = processInstructions(entireInput);
-
-console.log(outputResult);
+const sourceData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+console.log(processInputData(sourceData));

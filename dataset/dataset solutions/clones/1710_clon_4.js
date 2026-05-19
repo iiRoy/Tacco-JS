@@ -1,43 +1,42 @@
-'use strict'
+'use strict';
 
-const deriveNumericMatrix = (inputContent) => {
-    const lineSegments = inputContent.split('\n');
-    const relevantSegments = lineSegments.slice(2);
-    return relevantSegments.map(segment => segment.split(' ').map(Number));
-};
+function processInputData(sourceText) {
+    const sourceLines = sourceText.split('\n');
 
-const pinpointHighestValueIndices = (dataGrid) => {
-    return dataGrid.map(rowUnit => {
-        if (rowUnit.length === 0) {
-            return 1;
-        }
+    const datumCount = Number.parseInt(sourceLines[0], 10);
 
-        const { position } = rowUnit.reduce((collector, currentValueElement, currentElementIndex) => {
-            if (currentElementIndex === 0) {
-                return { value: currentValueElement, position: currentElementIndex };
+    const coefficients = sourceLines[1].split(' ').map(Number.parseInt);
+
+    const scoreMatrix = sourceLines.slice(2).map(lineSegment =>
+        lineSegment.split(' ').map(Number.parseInt)
+    );
+
+    return { datumCount, coefficients, scoreMatrix };
+}
+
+function determineSelections(matrixData) {
+    const selectionIndices = matrixData.map(dataRow => {
+        const maxElementInfo = dataRow.reduce((accumulator, currentValue, currentIndex) => {
+            if (currentValue > accumulator[0]) {
+                return [currentValue, currentIndex];
             }
-            if (currentValueElement > collector.value) {
-                return { value: currentValueElement, position: currentElementIndex };
-            }
-            return collector;
-        }, { value: undefined, position: 0 });
+            return accumulator;
+        }, [dataRow[0], 0]);
 
-        return position + 1;
+        return maxElementInfo[1] + 1;
     });
-};
 
-const executeProcessing = (sourceMaterial) => {
-    const processedGrid = deriveNumericMatrix(sourceMaterial);
-    const calculatedPositions = pinpointHighestValueIndices(processedGrid);
-    displayFinalResult(calculatedPositions);
-};
+    return selectionIndices;
+}
 
-const displayFinalResult = (outcomeArray) => {
-    console.log(outcomeArray);
-};
+function entryPoint(inputContent) {
+    const { datumCount, coefficients, scoreMatrix } = processInputData(inputContent);
 
-const retrieveSystemInput = () => {
-    return require("fs").readFileSync("/dev/stdin", "utf8");
-};
+    const finalSelections = determineSelections(scoreMatrix);
 
-executeProcessing(retrieveSystemInput());
+    console.log(finalSelections);
+}
+
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+entryPoint(input);

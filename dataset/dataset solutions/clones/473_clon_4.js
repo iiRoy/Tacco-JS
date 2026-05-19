@@ -1,154 +1,100 @@
-const process = require('process');
-const rd = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+var fs = require('fs');
+var inputBuffer = fs.readFileSync(process.stdin.fd);
+var inputLines = inputBuffer.toString('utf8').split('\n');
 
-let collectedLines = [];
-
-rd.on('line', (line) => {
-    collectedLines.push(line);
-});
-
-rd.on('close', () => {
-    processAllScenarios(collectedLines);
-});
-
-function processAllScenarios(allInputSegments) {
-    let scenarioReadPointer = 0;
-    while (scenarioReadPointer < allInputSegments.length) {
-        const areaDimensions = allInputSegments[scenarioReadPointer].split(' ').map(Number);
-        const mapWidth = areaDimensions[0];
-        const mapHeight = areaDimensions[1];
-        scenarioReadPointer++;
-
-        if (mapWidth === 0 && mapHeight === 0) {
-            break; 
-        }
-
-        const mapLayout = [];
-        for (let r = 0; r < mapHeight; r++) {
-            mapLayout.push(allInputSegments[scenarioReadPointer + r]);
-        }
-        scenarioReadPointer += mapHeight;
-
-        const outcome = findBestTraversalRoute(mapWidth, mapHeight, mapLayout);
-        process.stdout.write(outcome + '\n');
+function* createLineStream(lines) {
+    let currentIdx = 0;
+    while (currentIdx < lines.length) {
+        yield lines[currentIdx++];
     }
 }
 
-function analyzeMapEntities(w, h, fieldRows) {
-    let startingPoint = null;
-    let endingPoint = null;
-    const entityLocations = new Map(); // Map: '1' -> [{x,y}, {x,y}, ...]
+function manhattanDistance(point1, point2) {
+    return Math.abs(point1.x - point2.x) + Math.abs(point1.y - point2.y);
+}
 
-    for (let j = 0; j < h; j++) {
-        const layoutRow = fieldRows[j];
-        for (let i = 0; i < w; i++) {
-            const cellContent = layoutRow[i];
-            const currentCoordinates = { x: i, y: j };
-            if (cellContent === 'S') {
-                startingPoint = currentCoordinates;
-            } else if (cellContent === 'G') {
-                endingPoint = currentCoordinates;
-            } else if (cellContent >= '1' && cellContent <= '5') {
-                if (!entityLocations.has(cellContent)) {
-                    entityLocations.set(cellContent, []);
-                }
-                entityLocations.get(cellContent).push(currentCoordinates);
+function processField(fieldWidth, fieldHeight, fieldContent) {
+    let entryPoint = null;
+    let exitPoint = null;
+    const elementPositions = Array.from({ length: 5 }, () => []);
+
+    fieldContent.forEach((rowText, yCoordinate) => {
+        Array.from(rowText).forEach((symbol, xCoordinate) => {
+            const currentCoordinate = { x: xCoordinate, y: yCoordinate };
+            switch (symbol) {
+                case 'S':
+                    entryPoint = currentCoordinate;
+                    break;
+                case 'G':
+                    exitPoint = currentCoordinate;
+                    break;
+                case '.':
+                    break;
+                default:
+                    const typeIdentifier = Number(symbol) - 1;
+                    elementPositions[typeIdentifier].push(currentCoordinate);
+                    break;
             }
-        }
-    }
-    return { startingPoint, endingPoint, entityLocations };
-}
-
-function computeSpatialSeparation(coordA, coordB) {
-    return Math.abs(coordA.x - coordB.x) + Math.abs(coordA.y - coordB.y);
-}
-
-const INFINITE_REACH = 1e9; // A large number to represent unreachable paths
-
-function findBestTraversalRoute(mapW, mapH, mapRows) {
-    const { startingPoint, endingPoint, entityLocations } = analyzeMapEntities(mapW, mapH, mapRows);
-
-    let minTotalPassage = INFINITE_REACH;
-    let optimalInitialEntity = -1;
-
-    const entityCategories = ['1', '2', '3', '4', '5'];
-
-    for (let initialCategoryIndex = 0; initialCategoryIndex < entityCategories.length; initialCategoryIndex++) {
-        const cumulativeDistances = new Map(); // Map<string (category), Array<number (min_dist_to_instance)>>
-
-        // Initialize distances for all entity instances to infinity
-        entityCategories.forEach(category => {
-            const entityInstances = entityLocations.get(category) || [];
-            cumulativeDistances.set(category, Array(entityInstances.length).fill(INFINITE_REACH));
         });
+    });
 
-        // First stage: Calculate distances from S to the first chosen entity category
-        const firstCategory = entityCategories[initialCategoryIndex];
-        const firstCategoryInstances = entityLocations.get(firstCategory) || [];
-        const distancesToFirstCategory = cumulativeDistances.get(firstCategory);
+    const unreachableDistance = Infinity;
 
-        firstCategoryInstances.forEach((entity, entityIndex) => {
-            distancesToFirstCategory[entityIndex] = computeSpatialSeparation(startingPoint, entity);
-        });
+    const pathEvaluation = Array.from({ length: 5 }, (_, initialElementType) => initialElementType)
+        .reduce((shortestPathRecord, initialElementType) => {
+            const pathSegmentTypes = Array.from({ length: 4 }, (_, i) => (initialElementType + i) % 5);
 
-        // Intermediate stages: Propagate distances through the sequence of entity categories
-        // S -> Cat_1 -> Cat_2 -> Cat_3 -> Cat_4 -> Cat_5 -> G
-        for (let traversalStage = 0; traversalStage < entityCategories.length - 1; traversalStage++) { // 4 transitions (Cat_1->Cat_2, ..., Cat_4->Cat_5)
-            const currentSegmentSourceIndex = (initialCategoryIndex + traversalStage) % entityCategories.length;
-            const nextSegmentTargetIndex = (initialCategoryIndex + traversalStage + 1) % entityCategories.length;
+            let currentSegmentDistances = elementPositions[pathSegmentTypes[0]].map(element =>
+                manhattanDistance(entryPoint, element)
+            );
 
-            const currentSegmentSourceCategory = entityCategories[currentSegmentSourceIndex];
-            const nextSegmentTargetCategory = entityCategories[nextSegmentTargetIndex];
-
-            const sourceCategoryEntities = entityLocations.get(currentSegmentSourceCategory) || [];
-            const targetCategoryEntities = entityLocations.get(nextSegmentTargetCategory) || [];
-
-            const distancesFromSourceCategory = cumulativeDistances.get(currentSegmentSourceCategory);
-            const distancesToTargetCategory = cumulativeDistances.get(nextSegmentTargetCategory);
-
-            sourceCategoryEntities.forEach((currentSourceEntity, currentSourceEntityIndex) => {
-                const distanceToSourceEntity = distancesFromSourceCategory[currentSourceEntityIndex];
-                if (distanceToSourceEntity === INFINITE_REACH) return; // Unreachable source entity
-
-                targetCategoryEntities.forEach((currentTargetEntity, currentTargetEntityIndex) => {
-                    const segmentTravelDistance = computeSpatialSeparation(currentSourceEntity, currentTargetEntity);
-                    distancesToTargetCategory[currentTargetEntityIndex] = Math.min(
-                        distancesToTargetCategory[currentTargetEntityIndex], 
-                        distanceToSourceEntity + segmentTravelDistance
-                    );
+            const distancesToFinalSegment = pathSegmentTypes.slice(0, 3).reduce((previousSegmentDistances, currentSegmentType, segmentIndex) => {
+                const nextSegmentType = pathSegmentTypes[segmentIndex + 1];
+                const newSegmentDistances = elementPositions[nextSegmentType].map(nextElement => {
+                    return elementPositions[currentSegmentType].reduce((minimumDistance, previousElement, previousElementIndex) => {
+                        const distanceToPrevious = previousSegmentDistances[previousElementIndex];
+                        if (distanceToPrevious === unreachableDistance) return minimumDistance;
+                        return Math.min(minimumDistance, distanceToPrevious + manhattanDistance(previousElement, nextElement));
+                    }, unreachableDistance);
                 });
-            });
-        }
+                return newSegmentDistances;
+            }, currentSegmentDistances);
 
-        // Final stage: Calculate distances from the last entity category to G
-        const finalCategoryIndex = (initialCategoryIndex + entityCategories.length - 1) % entityCategories.length;
-        const finalCategory = entityCategories[finalCategoryIndex];
-        const finalCategoryEntities = entityLocations.get(finalCategory) || [];
-        const distancesToFinalCategory = cumulativeDistances.get(finalCategory);
+            const minimumDistanceToExit = distancesToFinalSegment.reduce((minimumDistance, distanceToLastElement, elementIndex) => {
+                if (distanceToLastElement === unreachableDistance) return minimumDistance;
+                const lastElement = elementPositions[pathSegmentTypes[3]][elementIndex];
+                return Math.min(minimumDistance, distanceToLastElement + manhattanDistance(lastElement, exitPoint));
+            }, unreachableDistance);
 
-        let currentScenarioMin = INFINITE_REACH;
-        finalCategoryEntities.forEach((entity, entityIndex) => {
-            const distanceToFinalEntity = distancesToFinalCategory[entityIndex];
-            if (distanceToFinalEntity === INFINITE_REACH) return; // Unreachable entity
+            if (minimumDistanceToExit < shortestPathRecord.distance) {
+                return { distance: minimumDistanceToExit, type: initialElementType };
+            }
+            return shortestPathRecord;
+        }, { distance: unreachableDistance, type: -1 });
 
-            const distanceToEndPoint = computeSpatialSeparation(entity, endingPoint);
-            currentScenarioMin = Math.min(currentScenarioMin, distanceToFinalEntity + distanceToEndPoint);
-        });
-
-        // Update overall minimum
-        if (currentScenarioMin < minTotalPassage) {
-            minTotalPassage = currentScenarioMin;
-            optimalInitialEntity = initialCategoryIndex;
-        }
-    }
-
-    if (minTotalPassage === INFINITE_REACH) {
+    if (pathEvaluation.distance === unreachableDistance) {
         return "NA";
     } else {
-        return `${parseInt(entityCategories[optimalInitialEntity])} ${minTotalPassage}`;
+        return `${pathEvaluation.type + 1} ${pathEvaluation.distance}`;
     }
 }
+
+function executeMain() {
+    const lineIterator = createLineStream(inputLines);
+
+    for (const currentLine of lineIterator) {
+        const [widthString, heightString] = currentLine.split(' ');
+        const currentWidth = Number(widthString);
+        const currentHeight = Number(heightString);
+
+        if (currentWidth === 0 && currentHeight === 0) {
+            break;
+        }
+
+        const fieldRows = Array.from({ length: currentHeight }, () => lineIterator.next().value);
+        const outcome = processField(currentWidth, currentHeight, fieldRows);
+        console.log(outcome);
+    }
+}
+
+executeMain();

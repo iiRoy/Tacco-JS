@@ -1,69 +1,72 @@
-// This function processes a set of input lines to determine a specific count.
-function analyzeNumericData ( rawInputLines ) {
-  // Extract a numeric value from the first line of input.
-  // This particular value is not utilized in the subsequent logic.
-  let firstLineNumericValue = rawInputLines [0] . split ( " " ) [0] - 0 ;
+function processInputData(rawData) {
+  // Parse the total number of elements from the first line of input.
+  // The value itself is not used in the subsequent logic, but its parsing is preserved.
+  const totalElements = parseInt(rawData[0].split(' ')[0], 10);
 
-  // Parse the second line of input into an array of numbers.
-  const parsedNumericArray = rawInputLines [1] . split ( " " ) . map ( currentVal => currentVal - 0 ) ;
+  // Convert the second line of input into an array of numerical values.
+  const numericSequence = rawData[1].split(' ').map(valString => Number(valString));
 
-  // Initialize objects to store frequency counts for elements at even and odd positions.
-  const firstGroupFrequencies = { } ; // Frequencies for elements at even indices
-  const secondGroupFrequencies = { } ; // Frequencies for elements at odd indices
+  // Initialize two objects to store frequency counts:
+  // one for numbers at even indices, and one for numbers at odd indices.
+  const evenIndexedCounts = {};
+  const oddIndexedCounts = {};
 
-  // Iterate through the parsed numeric array to populate the frequency maps.
-  parsedNumericArray . forEach ( ( currentNumber , currentIndex ) => {
-    // Check if the current element's index is even or odd.
-    if ( ( currentIndex % 2 ) === 0 ) {
-      // If even, increment its count in the first group's frequency map.
-      firstGroupFrequencies [ currentNumber ] = ( firstGroupFrequencies [ currentNumber ] || 0 ) + 1 ;
-    }
-    else {
-      // If odd, increment its count in the second group's frequency map.
-      secondGroupFrequencies [ currentNumber ] = ( secondGroupFrequencies [ currentNumber ] || 0 ) + 1 ;
-    }
-  } ) ;
-
-  // Obtain sorted keys (numbers) from the frequency maps, ordered by their frequency in descending order.
-  const firstGroupRankedKeys = Object . keys ( firstGroupFrequencies ) . sort ( ( keyOne , keyTwo ) => firstGroupFrequencies [ keyTwo ] - firstGroupFrequencies [ keyOne ] ) ;
-  const secondGroupRankedKeys = Object . keys ( secondGroupFrequencies ) . sort ( ( keyOne , keyTwo ) => secondGroupFrequencies [ keyTwo ] - secondGroupFrequencies [ keyOne ] ) ;
-
-  // Initialize a variable to accumulate the final result.
-  let totalElementsToChange = 0 ;
-
-  // Declare variables to store indices of elements to skip from the sorted frequency lists.
-  let firstGroupSkipIndex, secondGroupSkipIndex = 0 ;
-
-  // Determine which top frequency elements to consider for exclusion based on their values.
-  if ( firstGroupRankedKeys [ 0 ] == secondGroupRankedKeys [ 0 ] ) {
-    // If the most frequent element in both groups is the same value.
-    if ( firstGroupRankedKeys [ 1 ] > secondGroupRankedKeys [ 1 ] ) {
-      // If the second most frequent value in the first group is numerically greater
-      // than the second most frequent value in the second group (original logic preserved).
-      firstGroupSkipIndex = 0 ;
-      secondGroupSkipIndex = 1 ;
+  // Iterate through the numeric sequence to populate the count objects.
+  numericSequence.forEach((currentValue, currentIndex) => {
+    if (currentIndex % 2 === 0) {
+      // If the index is even, increment the count for this number in 'evenIndexedCounts'.
+      evenIndexedCounts[currentValue] = (evenIndexedCounts[currentValue] || 0) + 1;
     } else {
-      // Otherwise, if the second most frequent value in the first group is not greater.
-      firstGroupSkipIndex = 1 ;
-      secondGroupSkipIndex = 0 ;
+      // If the index is odd, increment the count for this number in 'oddIndexedCounts'.
+      oddIndexedCounts[currentValue] = (oddIndexedCounts[currentValue] || 0) + 1;
+    }
+  });
+
+  // Get the keys (numbers) from the count objects and sort them
+  // in descending order based on their frequencies.
+  const sortedEvenKeys = Object.keys(evenIndexedCounts).sort((keyOne, keyTwo) => evenIndexedCounts[keyTwo] - evenIndexedCounts[keyOne]);
+  const sortedOddKeys = Object.keys(oddIndexedCounts).sort((keyOne, keyTwo) => oddIndexedCounts[keyTwo] - oddIndexedCounts[keyOne]);
+
+  let finalSum = 0; // This variable will accumulate the total count of elements to be changed.
+
+  // Variables to store the index of the element to exclude from each sorted list.
+  // 'evenExcludeIndex' is initially undefined, 'oddExcludeIndex' is initialized to zero.
+  let evenExcludeIndex;
+  let oddExcludeIndex = 0;
+
+  // Determine the exclusion strategy based on the most frequent elements.
+  if (sortedEvenKeys[0] === sortedOddKeys[0]) {
+    // If the most frequent element in both sets is the same,
+    // we must change one of them. We choose to keep the one
+    // whose second most frequent element is less common.
+    if (evenIndexedCounts[sortedEvenKeys[1]] > oddIndexedCounts[sortedOddKeys[1]]) {
+      evenExcludeIndex = 0; // Exclude the most frequent from 'even' set.
+      oddExcludeIndex = 1;  // Exclude the second most frequent from 'odd' set.
+    } else {
+      evenExcludeIndex = 1; // Exclude the second most frequent from 'even' set.
+      oddExcludeIndex = 0;  // Exclude the most frequent from 'odd' set.
     }
   } else {
-    // If the most frequent elements in both groups are different values.
-    firstGroupSkipIndex = 0 ;
-    secondGroupSkipIndex = 0 ;
+    // If the most frequent elements are different,
+    // we simply exclude the most frequent from both sets.
+    evenExcludeIndex = 0;
+    oddExcludeIndex = 0;
   }
 
-  // Calculate the sum of frequencies for elements that are NOT at the determined skip index
-  // in the first group's ranked keys.
-  firstGroupRankedKeys . filter ( ( currentNumber , index ) => index !== firstGroupSkipIndex ) . forEach ( currentNumber => totalElementsToChange += firstGroupFrequencies [ currentNumber ] ) ;
+  // Sum the counts of all elements in 'evenIndexedCounts' except the one at 'evenExcludeIndex'.
+  sortedEvenKeys.filter((_value, indexPosition) => indexPosition !== evenExcludeIndex).forEach(keyVal => {
+    finalSum += evenIndexedCounts[keyVal];
+  });
 
-  // Calculate the sum of frequencies for elements that are NOT at the determined skip index
-  // in the second group's ranked keys.
-  secondGroupRankedKeys . filter ( ( currentNumber , index ) => index !== secondGroupSkipIndex ) . forEach ( currentNumber => totalElementsToChange += secondGroupFrequencies [ currentNumber ] ) ;
+  // Sum the counts of all elements in 'oddIndexedCounts' except the one at 'oddExcludeIndex'.
+  sortedOddKeys.filter((_value, indexPosition) => indexPosition !== oddExcludeIndex).forEach(keyVal => {
+    finalSum += oddIndexedCounts[keyVal];
+  });
 
-  // Output the final calculated count to the console.
-  console . log ( totalElementsToChange ) ;
+  // Print the final calculated sum to the console.
+  console.log(finalSum);
 }
 
-// Invoke the main processing function with input read from standard input.
-analyzeNumericData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) . trim ( ) . split ( "\n" ) ) ;
+// Read input from standard input, decode it as UTF-8, trim whitespace,
+// split by newlines, and pass the resulting array to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n'));

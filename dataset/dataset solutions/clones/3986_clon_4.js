@@ -1,23 +1,27 @@
-function checkSymmetry(numeral) {
-    if (numeral < 0) return false;
-    let original = numeral;
-    let reversed = 0;
-    while (numeral > 0) {
-        reversed = reversed * 10 + (numeral % 10);
-        numeral = Math.floor(numeral / 10);
-    }
-    return original === reversed;
-}
+const processInputAndSolve = () => {
+    const [startVal, endVal] = require("fs").readFileSync("/dev/stdin", "utf8").split("\n")[0].split(" ").map(Number);
 
-function processNumberRange(inputDataLines) {
-    const [start, end] = inputDataLines[0].split(" ").map(Number);
+    const isNumPalindrome = (numIdentifier) => {
+        const stringRepresentation = String(numIdentifier);
+        const stringLength = stringRepresentation.length;
+        let leftPointer = 0;
+        let rightPointer = stringLength - 1;
 
-    const tally = Array.from({ length: end - start + 1 }, (_, index) => start + index)
-                       .filter(checkSymmetry)
-                       .length;
+        while (leftPointer < rightPointer) {
+            if (stringRepresentation[leftPointer] !== stringRepresentation[rightPointer]) {
+                return false;
+            }
+            leftPointer++;
+            rightPointer--;
+        }
+        return true;
+    };
 
-    console.info(tally);
-}
+    const palindromeCount = Array.from({ length: endVal - startVal + 1 }, (_, indexOffset) => startVal + indexOffset)
+                                 .filter(isNumPalindrome)
+                                 .length;
 
-const sourceMaterial = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
-processNumberRange(sourceMaterial);
+    console.log(palindromeCount);
+};
+
+processInputAndSolve();

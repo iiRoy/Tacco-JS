@@ -1,75 +1,65 @@
-// This script processes numerical data from standard input to find a specific count.
-var receivedStrings = []; // Container for all input lines read from the stream.
-var computedValue = 0;   // Variable to hold the final calculated result.
+var inputLines = [];
+var unusedVariable = 0; // This variable is declared but not utilized in the program's logic.
 
-// Acquire the 'readline' module for handling input/output streams.
-var inputProcessor = require('readline');
+// Import the 'readline' module to handle input/output operations.
+var readline = require('readline');
 
-// Establish an interface to read lines from standard input and write to standard output.
-var ioHandler = inputProcessor.createInterface({
-    input: process.stdin,  // Use standard input as the source.
-    output: process.stdout // Use standard output for any potential output (though not directly used by rl here).
+// Create an interface for reading input line by line from the standard input.
+var interfaceHandler = readline.createInterface({
+    input: process.stdin, // Standard input stream.
+    output: process.stdout, // Standard output stream (not used for direct output in this case, but required by createInterface).
 });
 
-// Attach an event listener for each line received.
-ioHandler.on('line', function (incomingText) {
-    // Store the incoming line of text in our array.
-    receivedStrings.push(incomingText);
+// Event listener for each line of input received.
+interfaceHandler.on('line', function (currentLine) {
+    inputLines.push(currentLine); // Store the received line in our array.
 });
 
-// Attach an event listener for when the input stream closes.
-ioHandler.on('close', function () {
-    // Parse the first line to get the array size (numElements) and the modulo value (moduloVal).
-    var numElements = retrieveSegmentValue(receivedStrings[0], 0);
-    var moduloVal   = retrieveSegmentValue(receivedStrings[0], 1);
+// Event listener for when the input stream closes (e.g., EOF is reached).
+interfaceHandler.on('close', function () {
+    // Parse the first two numbers from the initial input line.
+    var firstParam = parseNumberAtIndex(inputLines[0], 0); // N
+    var secondParam = parseNumberAtIndex(inputLines[0], 1); // M
 
-    // Process the second line: split by space and convert each part to a number.
-    var dataSequence = receivedStrings[1].split(" ").map(elementStr => Number(elementStr));
+    // Process the second line of input: split by space and convert to numbers.
+    var numberArray = inputLines[1].split(" ").map(strVal => Number(strVal));
 
-    // Initialize an array to store cumulative sums modulo moduloVal.
-    var partialTotals = [];
-    partialTotals[0] = 0; // The first prefix sum is always 0 for an empty prefix.
+    // Initialize an array to store prefix sums modulo M.
+    var prefixSumsMod = [];
+    prefixSumsMod[0] = 0; // The sum before any elements is 0.
 
-    // Calculate prefix sums modulo moduloVal.
-    for (var loopIndex = 0; loopIndex < numElements; loopIndex++) {
-        partialTotals[loopIndex + 1] = (partialTotals[loopIndex] + dataSequence[loopIndex]) % moduloVal;
+    // Calculate prefix sums modulo M.
+    for (var idx = 0; idx < firstParam; idx++) {
+        prefixSumsMod[idx + 1] = (prefixSumsMod[idx] + numberArray[idx]) % secondParam;
     }
 
-    var overallTally = 0;       // Initialize the final result counter.
-    var occurrenceMap = {};     // Object to store frequencies of each remainder.
+    // Initialize the final count and a frequency map for remainders.
+    var finalCount = 0;
+    var remainderCounts = {}; // Object to store counts of each remainder.
 
-    // Iterate through the array of partial totals to count pairs.
-    for (
-        var idx = 0;
-        idx < partialTotals.length;
-        idx++
-    ) {
-        // If the current remainder hasn't been seen before, initialize its count to zero.
-        if (occurrenceMap[partialTotals[idx]] === undefined) {
-            occurrenceMap[partialTotals[idx]] = 0;
+    // Iterate through the prefix sums to find pairs.
+    for (var idx = 0; idx < prefixSumsMod.length; idx++) {
+        // If the current remainder hasn't been seen before, initialize its count to 0.
+        if (remainderCounts[prefixSumsMod[idx]] === undefined) {
+            remainderCounts[prefixSumsMod[idx]] = 0;
         }
 
-        // Add the number of previous occurrences of this remainder to the overall tally.
-        overallTally += occurrenceMap[partialTotals[idx]];
-
+        // Add the count of previous occurrences of this remainder to the total.
+        finalCount += remainderCounts[prefixSumsMod[idx]];
         // Increment the count for the current remainder.
-        occurrenceMap[partialTotals[idx]]++;
+        remainderCounts[prefixSumsMod[idx]]++;
     }
 
-    // Output the final calculated tally.
-    console.log(overallTally);
+    // Output the final calculated count.
+    console.log(finalCount);
 });
 
 /**
- * Helper function to parse a specific numeric segment from a space-separated string.
- * @param {string} sourceString - The input string to parse.
- * @param {number} segmentPosition - The zero-based index of the numeric segment to extract.
- * @returns {number} The parsed numeric value.
+ * Parses a number from a space-separated string at a specific index.
+ * @param {string} inputString - The string containing space-separated numbers.
+ * @param {number} indexToExtract - The zero-based index of the number to extract.
+ * @returns {number} The parsed number.
  */
-function retrieveSegmentValue(sourceString, segmentPosition) {
-    return (
-        Number(
-            sourceString.split(" ")[segmentPosition]
-        )
-    );
+function parseNumberAtIndex(inputString, indexToExtract) {
+    return (Number(inputString.split(" ")[indexToExtract]));
 }

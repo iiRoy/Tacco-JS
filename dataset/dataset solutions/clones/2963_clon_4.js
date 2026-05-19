@@ -1,40 +1,68 @@
-const fileSystem = require('fs');
+var inputBuffer = [];
+var inputReader = require('readline');
 
-function processGraphData() {
-    const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-    const inputLines = rawInput.trim().split('\n');
+var ioInterface = inputReader.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-    const graphSize = Number(inputLines[0]);
-    const adjacencyStructure = Array(graphSize).fill(null).map(() => []);
+ioInterface.on('line', function (lineContent) {
+    inputBuffer.push(lineContent);
+});
 
-    for (let i = 1; i < inputLines.length; ++i) {
-        const edgeDetails = inputLines[i].split(' ').map(Number);
-        const firstVertex = edgeDetails[0] - 1; 
-        const secondVertex = edgeDetails[1] - 1; 
-        const connectionWeight = edgeDetails[2];
+ioInterface.on('close', function () {
+    var totalNodes = Number(inputBuffer[0]);
+    var rawEdgeInfo = inputBuffer.slice(1).map(entry => entry.split(" ").map(Number));
 
-        adjacencyStructure[firstVertex].push([secondVertex, connectionWeight]);
-        adjacencyStructure[secondVertex].push([firstVertex, connectionWeight]);
-    }
+    var graphConnections = Array(totalNodes).fill(null).map(() => []);
 
-    const vertexHues = Array(graphSize).fill(null); 
+    rawEdgeInfo.forEach(edgeTriplet => {
+        var sourceNode = edgeTriplet[0] - 1;
+        var targetNode = edgeTriplet[1] - 1;
+        var edgeWeight = edgeTriplet[2];
 
-    function exploreGraph(currentVertex, currentHue) {
-        vertexHues[currentVertex] = currentHue;
+        graphConnections[sourceNode].push({ neighbor: targetNode, weight: edgeWeight });
+        graphConnections[targetNode].push({ neighbor: sourceNode, weight: edgeWeight });
+    });
 
-        for (const [linkedVertex, pathWeight] of adjacencyStructure[currentVertex]) {
-            if (vertexHues[linkedVertex] === null) {
-                const nextHue = (currentHue + pathWeight) % 2;
-                exploreGraph(linkedVertex, nextHue);
+    function determineNodeColors(nodeCount, connections) {
+        var colorsAssigned = Array(nodeCount).fill(null);
+        var initialVertex = 0;
+
+        colorsAssigned[initialVertex] = "0";
+        var traversalQueue = [{ index: initialVertex, color: "0" }];
+        let queueHead = 0;
+
+        while (queueHead < traversalQueue.length) {
+            var currentVertexInfo = traversalQueue[queueHead++];
+            var currentVertexIndex = currentVertexInfo.index;
+            var currentVertexColor = currentVertexInfo.color;
+
+            for (const connectionDetail of connections[currentVertexIndex]) {
+                var adjacentVertexIndex = connectionDetail.neighbor;
+                var connectionWeight = connectionDetail.weight;
+
+                if (colorsAssigned[adjacentVertexIndex] !== null) {
+                    continue;
+                }
+
+                var nextVertexColor;
+                if (connectionWeight % 2 === 0) {
+                    nextVertexColor = currentVertexColor;
+                } else {
+                    nextVertexColor = (currentVertexColor === "0" ? "1" : "0");
+                }
+
+                colorsAssigned[adjacentVertexIndex] = nextVertexColor;
+                traversalQueue.push({ index: adjacentVertexIndex, color: nextVertexColor });
             }
         }
+        return colorsAssigned;
     }
 
-    exploreGraph(0, 0); 
+    var finalColors = determineNodeColors(totalNodes, graphConnections);
 
-    for (let i = 0; i < graphSize; ++i) {
-        console.log(String(vertexHues[i]));
-    }
-}
-
-processGraphData();
+    finalColors.forEach(nodeColor => {
+        console.log(nodeColor);
+    });
+});

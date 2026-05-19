@@ -1,23 +1,20 @@
-// The entire incoming stream of characters is provided to this routine.
-function ProcessInput( rawData )
-{
+// This function processes the provided raw text input.
+function Main(rawData) {
+    // The input string is broken into an array of lines.
+    rawData = rawData.split("\n");
 
-	// The provided text is split into an array of individual rows.
-	let processedLines = rawData.split( "\n" ) ;
+    // The initial line is further divided by spaces.
+    let firstLineParts = rawData[0].split(" ");
 
+    // Extracting the first numerical component.
+    let numeratorVal = firstLineParts[0];
 
-	// The initial row is further segmented by spaces.
-	let firstLineParts = processedLines[0].split( " " ) ;
+    // Extracting the second numerical component.
+    let denominatorVal = firstLineParts[1];
 
-	// The first numerical component from the initial row is assigned.
-	let numeratorValue = firstLineParts[0] ;
-	// The second numerical component from the initial row is assigned.
-	let denominatorValue = firstLineParts[1] ;
-
-
-	// The division result is printed to the console output.
-	console.log( numeratorValue / denominatorValue ) ;
+    // Displaying the result of the division.
+    console.log(numeratorVal / denominatorVal);
 }
 
-// Do not alter any code below this comment, as it handles standard input/output operations and invokes the primary handler.
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// The following section handles standard input/output and invokes the primary processing function.
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

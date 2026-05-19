@@ -1,44 +1,51 @@
-const calculateUnionLength = (inputContent) => {
-    const dataLines = inputContent.split('\n');
-    const parameters = dataLines[0].split(' ').map(parseFloat);
-    const coordinates = dataLines[1].split(' ').map(parseFloat);
+function Main(programInput) {
+  const lines = programInput.split("\n");
+  const [_, intervalDuration] = lines[0].split(" ").map(Number);
+  const startTimestamps = lines[1].split(" ").map(Number);
 
-    const intervalSpan = parameters[1];
+  const initialProcessingState = {
+    totalCoveredLength: 0,
+    activeSegmentStart: -1,
+    activeSegmentEnd: -1,
+  };
 
-    if (coordinates.length === 0) {
-        process.stdout.write('0\n');
-        return;
+  const segmentProcessor = (currentState, currentTimestamp) => {
+    const { totalCoveredLength, activeSegmentStart, activeSegmentEnd } = currentState;
+
+    let nextTotalCoveredLength = totalCoveredLength;
+    let nextActiveSegmentStart = activeSegmentStart;
+
+    // Determine if the current timestamp initiates a new, non-overlapping segment
+    const isGapPresent = activeSegmentEnd < currentTimestamp;
+
+    if (isGapPresent) {
+      // If there's a gap, finalize the previous active segment's length
+      nextTotalCoveredLength += activeSegmentEnd - activeSegmentStart;
+      // Start a new segment from the current timestamp
+      nextActiveSegmentStart = currentTimestamp;
     }
+    // The end of the active segment is always updated based on the current timestamp
+    // and the fixed duration, regardless of overlap or new segment.
+    const nextActiveSegmentEnd = currentTimestamp + intervalDuration;
 
-    const boundaryEvents = [];
-    for (const point of coordinates) {
-        boundaryEvents.push({ location: point, kind: 1 });
-        boundaryEvents.push({ location: point + intervalSpan, kind: -1 });
-    }
+    return {
+      totalCoveredLength: nextTotalCoveredLength,
+      activeSegmentStart: nextActiveSegmentStart,
+      activeSegmentEnd: nextActiveSegmentEnd,
+    };
+  };
 
-    boundaryEvents.sort((alpha, beta) => {
-        if (alpha.location !== beta.location) {
-            return alpha.location - beta.location;
-        }
-        return beta.kind - alpha.kind;
-    });
+  const finalProcessingState = startTimestamps.reduce(
+    segmentProcessor,
+    initialProcessingState
+  );
 
-    let totalExtent = 0;
-    let currentCoverageLevel = 0;
-    let previousEventLocation = boundaryEvents[0].location;
+  // After processing all timestamps, add the length of the last active segment
+  const finalResult =
+    finalProcessingState.totalCoveredLength +
+    (finalProcessingState.activeSegmentEnd - finalProcessingState.activeSegmentStart);
 
-    for (const currentEvent of boundaryEvents) {
-        if (currentCoverageLevel > 0) {
-            totalExtent += currentEvent.location - previousEventLocation;
-        }
+  console.log(finalResult);
+}
 
-        currentCoverageLevel += currentEvent.kind;
-        previousEventLocation = currentEvent.location;
-    }
-
-    process.stdout.write(totalExtent.toString() + '\n');
-};
-
-const retrieveInputData = () => require("node:fs").readFileSync("/dev/stdin", "utf8").trim();
-
-calculateUnionLength(retrieveInputData());
+Main(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,46 +1,26 @@
-const processExternalData = (incomingText) => {
-    const lines = incomingText.split('\n');
-    const totalEntries = parseInt(lines[0], 10);
-    const spatialCoordinates = [];
+const processInputData = (rawData) => {
+  const lineSegments = rawData.split("\n");
+  const totalPointsCount = Number(lineSegments[0]);
 
-    for (let index = 1; index <= totalEntries; ++index) {
-        if (lines[index]) {
-            const parts = lines[index].split(' ').map(Number);
-            spatialCoordinates.push({ horizontal: parts[0], vertical: parts[1] });
-        }
-    }
-    return spatialCoordinates;
-};
+  const pointCoordinates = lineSegments.slice(1, totalPointsCount + 1).map(segment => {
+    const [xValue, yValue] = segment.split(" ").map(Number);
+    return { x: xValue, y: yValue };
+  });
 
-const determineOverallSpread = (dataPoints) => {
-    if (!dataPoints || dataPoints.length < 2) {
-        return 0;
-    }
-
-    let minSumComponent = Infinity;
-    let maxSumComponent = -Infinity;
-    let minDifferenceComponent = Infinity;
-    let maxDifferenceComponent = -Infinity;
-
-    dataPoints.forEach(currentDatum => {
-        const sumValue = currentDatum.horizontal + currentDatum.vertical;
-        const differenceValue = currentDatum.horizontal - currentDatum.vertical;
-
-        minSumComponent = Math.min(minSumComponent, sumValue);
-        maxSumComponent = Math.max(maxSumComponent, sumValue);
-        minDifferenceComponent = Math.min(minDifferenceComponent, differenceValue);
-        maxDifferenceComponent = Math.max(maxDifferenceComponent, differenceValue);
+  const greatestManhattanSeparation = pointCoordinates.reduce((currentMaximum, primaryPoint, primaryIndex) => {
+    const separationsFromPrimary = pointCoordinates.slice(primaryIndex + 1).map(secondaryPoint => {
+      return Math.abs(primaryPoint.x - secondaryPoint.x) + Math.abs(primaryPoint.y - secondaryPoint.y);
     });
 
-    const sumExtent = maxSumComponent - minSumComponent;
-    const differenceExtent = maxDifferenceComponent - minDifferenceComponent;
+    if (separationsFromPrimary.length > 0) {
+      const maxFromCurrent = Math.max(...separationsFromPrimary);
+      return Math.max(currentMaximum, maxFromCurrent);
+    }
 
-    return Math.max(sumExtent, differenceExtent);
+    return currentMaximum;
+  }, 0);
+
+  console.log(greatestManhattanSeparation);
 };
 
-(function () {
-    const rawContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const parsedLocations = processExternalData(rawContent);
-    const finalMeasure = determineOverallSpread(parsedLocations);
-    process.stdout.write(finalMeasure.toString() + '\n');
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

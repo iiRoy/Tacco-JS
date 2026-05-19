@@ -1,120 +1,73 @@
-// This module is designed to perform a specific numerical transformation and aggregation
-// on input data, ultimately calculating a final product under a modulo constraint.
-function  processInput(  receivedData  )
-{
+function processInput(rawData) {
+  // Declare a constant for the number of elements, parsed from the first line of input.
+  const countElements = parseInt(rawData[0], 10);
 
-  // The first line of input provides a numerical value, typically representing a count
-  // or initial parameter for the subsequent processing.
-  const   initialCountVal = parseInt(receivedData[0], 10);
+  // Initialize an object to track the frequency of each number.
+  let frequencyTracker = {};
+  // Initialize a variable to keep track of the maximum number encountered in the input.
+  let maxValue = 0;
 
-  // A hash map (object) to store the frequency of individual numbers encountered
-  // in the input. Keys are the numbers, values are their occurrences.
-  let    numberFrequencies = {};
+  // Process the second line of input.
+  // It's split by spaces, and each resulting string item is processed.
+  rawData[1].split(" ").forEach(itemString => {
+    // Convert the string item to a numerical value.
+    const currentNumber = Number(itemString);
+    // Increment the count for the current number in the frequency tracker.
+    // If the number hasn't been seen before, initialize its count to 1.
+    frequencyTracker[currentNumber] = (frequencyTracker[currentNumber] || 0) + 1;
+    // Update the maximum value if the current number is larger.
+    maxValue = Math.max(maxValue, currentNumber);
+  });
 
+  // Initialize the variable that will store the final calculated result.
+  let finalResult = 1;
 
-  // This constant defines the modulo value used for all intermediate and final calculations.
-  // It's a large prime number, common in competitive programming to prevent overflow.
-  const  MODULUS_VALUE = 998244353;
+  // This object is declared and initialized but not used in the subsequent calculation.
+  // It is preserved as per Type II cloning rules.
+  const intermediateProducts = {};
+  intermediateProducts[-1] = 1; // Assigning a value to an unused property.
 
-
-  // Variable to keep track of the largest number found in the input sequence.
-  let    greatestObservedNumber = 0;
-
-
-  // The second line of input contains a space-separated string of numbers.
-  // This block parses these numbers, updates their frequencies, and identifies the maximum.
-  receivedData[1]
-    .split(" ")
-    .forEach( (itemStr) => {
-        let   currentNumericValue = parseInt(itemStr, 10);
-
-        // Increment the frequency count for the current number. If it's the first time
-        // encountering this number, initialize its count to 1.
-        numberFrequencies[currentNumericValue] = (numberFrequencies[currentNumericValue] || 0) + 1;
-
-        // Update the maximum observed number if the current value is greater.
-        greatestObservedNumber = Math.max(greatestObservedNumber, currentNumericValue);
-    } );
-
-
-  // Initialize the accumulator for the final product calculation.
-  // Starting with 1 ensures correct multiplication.
-  let    accumulatedProduct = 1;
-
-
-  // An auxiliary object, declared and initialized with a single entry,
-  // but it does not appear to be utilized in the subsequent calculation logic.
-  const  supplementalStorage = {};
-  supplementalStorage[-1] = 1; // Assigning an arbitrary value to an unused key.
-
-
-  // This loop iterates from 1 up to the `greatestObservedNumber`.
-  // In each iteration, it performs a specific multiplicative operation.
-  for (  let currentIterationIndex = 1; currentIterationIndex <= greatestObservedNumber; currentIterationIndex++  )
-  {
-    // Retrieve the frequency of the number immediately preceding the current index.
-    // Default to 0 if the number was not encountered (i.e., its frequency is undefined).
-    const    previousElementFrequency = numberFrequencies[currentIterationIndex - 1] || 0;
-
-    // Retrieve the frequency of the number at the current index.
-    // Default to 0 if the number was not encountered.
-    const    currentElementFrequency = numberFrequencies[currentIterationIndex] || 0;
-
-    // The core calculation: multiply the accumulated product by
-    // (the frequency of the previous number raised to the power of the current number's frequency).
-    // The result is then taken modulo MODULUS_VALUE to keep it within bounds.
-    accumulatedProduct = (accumulatedProduct * Math.pow(previousElementFrequency, currentElementFrequency)) % MODULUS_VALUE;
+  // Loop from 1 up to the maximum value found in the input.
+  for (let loopIndex = 1; loopIndex <= maxValue; loopIndex++) {
+    // Multiply the current result by the power of frequencies.
+    // The base is the frequency of (loopIndex - 1), and the exponent is the frequency of loopIndex.
+    // If a number is not present in the input, its frequency in `frequencyTracker` will be `undefined`.
+    // `Math.pow(undefined, X)` or `Math.pow(X, undefined)` results in `NaN`.
+    // This behavior is preserved from the original code.
+    finalResult *= Math.pow(frequencyTracker[loopIndex - 1], frequencyTracker[loopIndex]);
+    // Apply the modulo operation to keep the result within the specified range.
+    finalResult %= 998244353;
   }
 
-
-  // Display the final computed product to the standard output.
-  console.log(accumulatedProduct);
+  // Output the final computed result to the console.
+  console.log(finalResult);
 }
 
-
-// --- SUPPORTING UTILITY FUNCTIONS ---
-
-// A memoization cache to store results of factorial computations.
-// This prevents redundant calculations for the same input number.
-let    factorialMemo = {};
-
+// A cache object to store pre-calculated factorial values for memoization.
+let factorialCache = {};
 
 /**
- * Calculates the factorial of a given positive integer using recursion and memoization.
+ * Recursively calculates the factorial of a given positive integer.
+ * It uses memoization to store and retrieve previously computed factorials,
+ * improving performance for repeated calls with the same number.
  *
- * @param {number} valueToFactorize - The integer for which the factorial is to be computed.
- * @returns {number} The factorial of 'valueToFactorize'.
+ * @param {number} num The integer for which to calculate the factorial.
+ * @returns {number} The factorial of the input number.
  */
-function  calculateFactorialValue(  valueToFactorize  )
-{
-  // Base case for the factorial function: factorial of 1 is 1.
-  if  (  valueToFactorize === 1  )
-    {
-      return 1;
-    }
-
-  // Check if the factorial for 'valueToFactorize' has already been computed and stored in the cache.
-  if  (  factorialMemo[valueToFactorize]  )
-    {
-      return factorialMemo[valueToFactorize];
-    }
-
-  // If not in cache, compute it recursively and store the result before returning.
-  // This ensures that future calls with the same 'valueToFactorize' will use the cached result.
-  const  computedResult = valueToFactorize * calculateFactorialValue(valueToFactorize - 1);
-  factorialMemo[valueToFactorize] = computedResult;
-  return computedResult;
+function calculateFactorial(num) {
+  // Base case: The factorial of 1 is 1.
+  if (num === 1) {
+    return 1;
+  }
+  // Check if the factorial for 'num' is already stored in the cache.
+  if (factorialCache[num]) {
+    return factorialCache[num];
+  }
+  // If not in cache, calculate it recursively and store it before returning.
+  return factorialCache[num] = num * calculateFactorial(num - 1);
 }
 
-
-// --- APPLICATION ENTRY POINT ---
-// This block reads input from standard input, typically a file redirected to /dev/stdin,
-// processes it, and then invokes the main `processInput` function with the parsed data.
-processInput(
-  require('fs')
-    .readFileSync(
-      '/dev/stdin',
-      'utf8'
-    )
-    .split("\n")
-);
+// Read the entire input from standard input, decode it as UTF-8,
+// split it into an array of strings by newline characters,
+// and then pass this array to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').split("\n"));

@@ -1,28 +1,32 @@
 'use strict';
-const processData = (sourceTxt) => {
-  const numericInputs = sourceTxt.trim().split(' ').map(Number);
-  const upperLimit = numericInputs[0];
-  const divisorVal = numericInputs[1];
 
-  const acquireCount = (topVal, divBy, targetMod) => {
-    if (targetMod === 0) {
-      return (topVal / divBy) | 0;
-    } else {
-      return ((topVal + targetMod) / divBy) | 0;
+const countSatisfyingNumbers = (upperLimit, predicateFunction) => {
+  let currentCount = 0;
+  for (let currentNumber = 1; currentNumber <= upperLimit; currentNumber++) {
+    if (predicateFunction(currentNumber)) {
+      currentCount++;
     }
-  };
-
-  const congruencesToConsider = [0];
-  if (divisorVal % 2 === 0) {
-    congruencesToConsider.push(divisorVal / 2);
   }
-
-  const finalSummation = congruencesToConsider.reduce((currentTotal, currentRemainder) => {
-    const countForRemainder = acquireCount(upperLimit, divisorVal, currentRemainder);
-    return currentTotal + (countForRemainder * countForRemainder * countForRemainder);
-  }, 0);
-
-  console.log(finalSummation);
+  return currentCount;
 };
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const executeCalculation = (dataPayload) => {
+  const parsedValues = dataPayload.trim().split(' ').map(Number);
+  const maximumValue = parsedValues[0];
+  const modulusValue = parsedValues[1];
+
+  let accumulatedResult = 0;
+
+  const zeroRemainderCount = countSatisfyingNumbers(maximumValue, (num) => num % modulusValue === 0);
+  accumulatedResult += zeroRemainderCount * zeroRemainderCount * zeroRemainderCount;
+
+  if (modulusValue % 2 === 0) {
+    const halfModulus = modulusValue / 2;
+    const halfRemainderCount = countSatisfyingNumbers(maximumValue, (num) => num % modulusValue === halfModulus);
+    accumulatedResult += halfRemainderCount * halfRemainderCount * halfRemainderCount;
+  }
+
+  console.log(accumulatedResult);
+};
+
+executeCalculation(require('fs').readFileSync('/dev/stdin', 'utf8'));

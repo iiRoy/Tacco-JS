@@ -1,24 +1,28 @@
-const evaluateAvailability = (sourceText) => {
-    const textualSegments = sourceText.split('\n');
+function processSurveyData(rawData) {
+  const lineSegments = rawData.split('\n');
 
-    const initialParameters = textualSegments[0].split(' ').map(Number);
-    const maximumValue = initialParameters[0];
-    const collectionCount = initialParameters[1];
+  const [totalParticipants, giftCategories] = lineSegments[0].split(' ').map(Number);
 
-    const designatedElements = new Set();
+  const giftedParticipantRegistry = new Set();
 
-    let segmentIndex = 1;
-    for (let iter = 0; iter < collectionCount; iter++) {
-        const currentElementStrings = textualSegments[segmentIndex].split(' ');
-        currentElementStrings.forEach(strVal => designatedElements.add(Number(strVal)));
-        segmentIndex += 2;
+  Array.from({ length: giftCategories }).forEach((_, categoryIndex) => {
+    const currentLineIndex = 1 + categoryIndex * 2;
+    if (currentLineIndex < lineSegments.length) {
+      lineSegments[currentLineIndex]
+        .split(' ')
+        .map(Number)
+        .forEach(participantId => giftedParticipantRegistry.add(participantId));
     }
+  });
 
-    const absentCount = Array.from({ length: maximumValue }, (_, i) => i + 1)
-        .filter(num => !designatedElements.has(num))
-        .length;
+  let nonGiftedCount = 0;
+  for (let participantIdentifier = 1; participantIdentifier <= totalParticipants; ++participantIdentifier) {
+    if (!giftedParticipantRegistry.has(participantIdentifier)) {
+      nonGiftedCount++;
+    }
+  }
 
-    console.log(absentCount);
-};
+  console.log(nonGiftedCount);
+}
 
-evaluateAvailability(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSurveyData(require("fs").readFileSync("/dev/stdin", "utf8"));

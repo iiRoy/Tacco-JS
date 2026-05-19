@@ -1,196 +1,107 @@
-const InputDataParser = (function() {
-
-    const safeNumberConversion = (inputVal) => {
-        if (typeof inputVal === 'string' && inputVal.trim() === '') {
-            return NaN;
-        }
-        return Number(inputVal);
-    };
-
-    function StreamReader(entireInputContent) {
-        if (typeof entireInputContent !== 'string' || entireInputContent.trim().length === 0) {
-            this.bufferedLines = [];
-        } else {
-            this.bufferedLines = entireInputContent.trim().split("\n");
-        }
-        this.currentLinePointer = 0;
-        this.currentTokenBuffer = [];
+class InputParser {
+    constructor(rawInputString) {
+        this._inputLines = rawInputString.trim().split("\n");
+        this._currentLineIndex = 0;
+        this._currentLineTokens = [];
     }
 
-    StreamReader.prototype = {
-        hasMoreLines: function() {
-            return this.currentLinePointer < this.bufferedLines.length;
-        },
-
-        retrieveNextToken: function(shouldReturnRaw) {
-            if (!this.hasMoreLines()) {
+    readNextToken(asString) {
+        if (this._currentLineTokens.length === 0) {
+            if (this._currentLineIndex >= this._inputLines.length) {
                 return undefined;
             }
-
-            if (this.currentTokenBuffer.length === 0) {
-                const lineString = this.bufferedLines[this.currentLinePointer];
-                this.currentTokenBuffer = lineString.split(" ").reverse();
-            }
-
-            if (this.currentTokenBuffer.length === 0) {
-                this.currentLinePointer++;
-                return this.retrieveNextToken(shouldReturnRaw);
-            }
-
-            const tokenValue = this.currentTokenBuffer.pop();
-
-            if (this.currentTokenBuffer.length === 0) {
-                this.currentLinePointer++;
-            }
-
-            return shouldReturnRaw ? tokenValue : safeNumberConversion(tokenValue);
-        },
-
-        fetchLineAsTokenArray: function(shouldReturnRawArray) {
-            if (!this.hasMoreLines()) {
-                return undefined;
-            }
-
-            const currentLine = this.bufferedLines[this.currentLinePointer++];
-            this.currentTokenBuffer = [];
-
-            const tokens = currentLine.split(" ");
-            return shouldReturnRawArray ? tokens : tokens.map(safeNumberConversion);
-        },
-
-        acquireMatrixData: function(numLinesToRead, shouldReturnRawMatrix) {
-            if (!Number.isInteger(numLinesToRead) || numLinesToRead <= 0) {
-                console.error("Error: Invalid number of lines specified for matrix acquisition.");
-                return undefined;
-            }
-
-            if (this.currentLinePointer + numLinesToRead > this.bufferedLines.length) {
-                return undefined;
-            }
-
-            const linesForMatrix = this.bufferedLines.slice(
-                this.currentLinePointer,
-                this.currentLinePointer + numLinesToRead
-            );
-            this.currentLinePointer += numLinesToRead;
-            this.currentTokenBuffer = [];
-
-            return shouldReturnRawMatrix ?
-                linesForMatrix.map(line => line.split(" ")) :
-                linesForMatrix.map(line => line.split(" ").map(safeNumberConversion));
-        },
-
-        retrieveRawLines: function(numLinesToRead, shouldReturnNumericArray) {
-            if (!Number.isInteger(numLinesToRead) || numLinesToRead <= 0) {
-                console.error("Error: Invalid number of lines specified for raw line retrieval.");
-                return undefined;
-            }
-
-            if (this.currentLinePointer + numLinesToRead > this.bufferedLines.length) {
-                return undefined;
-            }
-
-            const rawLineSegments = this.bufferedLines.slice(
-                this.currentLinePointer,
-                this.currentLinePointer + numLinesToRead
-            );
-            this.currentLinePointer += numLinesToRead;
-            this.currentTokenBuffer = [];
-
-            return shouldReturnNumericArray ? rawLineSegments.map(safeNumberConversion) : rawLineSegments;
+            this._currentLineTokens = this._inputLines[this._currentLineIndex].split(" ").reverse();
         }
-    };
 
-    return function createNewInputReader(inputStringContent) {
-        return new StreamReader(inputStringContent);
-    };
-})();
+        const token = this._currentLineTokens.pop();
+        if (this._currentLineTokens.length === 0) {
+            this._currentLineIndex++;
+        }
+        return asString ? token : +token;
+    }
 
-function createInitializedGrid(initialValue, ...dimensions) {
+    readLineTokens(asString) {
+        if (this._currentLineIndex >= this._inputLines.length) {
+            return undefined;
+        }
+        const line = this._inputLines[this._currentLineIndex++];
+        const tokens = line.split(" ");
+        return asString ? tokens : tokens.map(val => +val);
+    }
+
+    readMatrix(numRows, asString) {
+        const matrixRows = this._inputLines.slice(this._currentLineIndex, this._currentLineIndex + numRows);
+        this._currentLineIndex += numRows;
+        const parsedMatrix = matrixRows.map(rowStr => rowStr.split(" "));
+        return asString ? parsedMatrix : parsedMatrix.map(row => row.map(val => +val));
+    }
+
+    readLinesAsNumbers(numLines, asString) {
+        const lines = this._inputLines.slice(this._currentLineIndex, this._currentLineIndex + numLines);
+        this._currentLineIndex += numLines;
+        return asString ? lines : lines.map(val => +val);
+    }
+}
+
+const createInputParser = (inputString) => new InputParser(inputString);
+
+const inputReader = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function createMultiDimArray(initialValue, ...dimensions) {
+    function buildArrayRecursively(dims, currentDimIndex) {
+        if (currentDimIndex === dims.length - 1) {
+            return Array(dims[currentDimIndex]).fill(initialValue);
+        }
+        return Array(dims[currentDimIndex]).fill(null).map(() => buildArrayRecursively(dims, currentDimIndex + 1));
+    }
     if (dimensions.length === 0) {
         return initialValue;
     }
-    if (dimensions.some(dim => !Number.isInteger(dim) || dim < 0)) {
-        throw new Error("All dimensions for grid initialization must be non-negative integers.");
-    }
-
-    const buildNestedArray = (currentDimensionIndex) => {
-        if (currentDimensionIndex === dimensions.length - 1) {
-            return Array(dimensions[currentDimensionIndex]).fill(initialValue);
-        } else {
-            return Array(dimensions[currentDimensionIndex]).fill(null).map(() =>
-                buildNestedArray(currentDimensionIndex + 1)
-            );
-        }
-    };
-
-    return buildNestedArray(0);
+    return buildArrayRecursively(dimensions, 0);
 }
 
-const MODULUS_PRIME = 1000000007;
+const moduloConstant = 1e9 + 7;
 
-const applyModulo = (value) => {
-    return (value % MODULUS_PRIME + MODULUS_PRIME) % MODULUS_PRIME;
-};
+console.log(main());
 
-console.log(executeMainAlgorithm());
+function main() {
+    const lenS = inputReader.readNextToken();
+    const lenT = inputReader.readNextToken();
+    const arrayS = inputReader.readLineTokens();
+    const arrayT = inputReader.readLineTokens();
 
-function executeMainAlgorithm() {
-    let fileSystemAccess;
-    try {
-        fileSystemAccess = require("fs");
-    } catch (error) {
-        console.error("Runtime Error: The 'fs' module is required but could not be loaded. Ensure this script runs in a Node.js environment.");
-        process.exit(1);
-    }
+    const applyModulo = (value) => {
+        return (value % moduloConstant + moduloConstant) % moduloConstant;
+    };
 
-    const standardInputContent = fileSystemAccess.readFileSync("/dev/stdin", "utf8");
-    const inputDataSource = InputDataParser(standardInputContent);
+    const dynamicProgrammingTable = createMultiDimArray(0, lenS + 1, lenT + 1);
 
-    const sequenceALength = inputDataSource.retrieveNextToken();
-    const sequenceBLength = inputDataSource.retrieveNextToken();
+    let totalSubsequences = 1;
 
-    if (sequenceALength === undefined || sequenceBLength === undefined ||
-        !Number.isInteger(sequenceALength) || !Number.isInteger(sequenceBLength) ||
-        sequenceALength < 0 || sequenceBLength < 0) {
-        console.error("Input Error: Invalid or missing sequence length parameters. Expected non-negative integers.");
-        return 0;
-    }
+    for (let idxS = 0; idxS < lenS; idxS++) {
+        for (let idxT = 0; idxT < lenT; idxT++) {
+            const currentSIndex = idxS;
+            const currentTIndex = idxT;
+            const nextSIndex = idxS + 1;
+            const nextTIndex = idxT + 1;
 
-    const sequenceA = inputDataSource.fetchLineAsTokenArray();
-    const sequenceB = inputDataSource.fetchLineAsTokenArray();
+            let currentDpValue;
 
-    if (!Array.isArray(sequenceA) || sequenceA.length !== sequenceALength ||
-        !Array.isArray(sequenceB) || sequenceB.length !== sequenceBLength) {
-        console.error("Input Error: Sequence data does not match declared lengths or is malformed.");
-        return 0;
-    }
+            if (arrayS[currentSIndex] === arrayT[currentTIndex]) {
+                const subsequencesFromPreviousMatch = dynamicProgrammingTable[currentSIndex][currentTIndex];
+                totalSubsequences = applyModulo(totalSubsequences + subsequencesFromPreviousMatch + 1);
 
-    const dpTable = createInitializedGrid(0, sequenceALength + 1, sequenceBLength + 1);
-
-    let totalUniqueCommonSubsequences = 1;
-
-    for (let idxA = 0; idxA < sequenceALength; ++idxA) {
-        for (let idxB = 0; idxB < sequenceBLength; ++idxB) {
-            const dpRowIndex = idxA + 1;
-            const dpColIndex = idxB + 1;
-
-            if (sequenceA[idxA] === sequenceB[idxB]) {
-                const newSubsequencesFromMatch = dpTable[idxA][idxB];
-                totalUniqueCommonSubsequences = applyModulo(totalUniqueCommonSubsequences + newSubsequencesFromMatch + 1);
-
-                const valueFromAbove = dpTable[idxA][dpColIndex];
-                const valueFromLeft = dpTable[dpRowIndex][idxB];
-                dpTable[dpRowIndex][dpColIndex] = applyModulo(valueFromLeft + valueFromAbove + 1);
+                const valFromLeft = dynamicProgrammingTable[nextSIndex][currentTIndex];
+                const valFromAbove = dynamicProgrammingTable[currentSIndex][nextTIndex];
+                currentDpValue = applyModulo(valFromLeft + valFromAbove + 1);
             } else {
-                const valueFromAbove = dpTable[idxA][dpColIndex];
-                const valueFromLeft = dpTable[dpRowIndex][idxB];
-                const valueFromDiagonal = dpTable[idxA][idxB];
-
-                dpTable[dpRowIndex][dpColIndex] = applyModulo(valueFromLeft + valueFromAbove - valueFromDiagonal);
+                const valFromLeft = dynamicProgrammingTable[nextSIndex][currentTIndex];
+                const valFromAbove = dynamicProgrammingTable[currentSIndex][nextTIndex];
+                const valFromDiagonal = dynamicProgrammingTable[currentSIndex][currentTIndex];
+                currentDpValue = applyModulo(valFromLeft + valFromAbove - valFromDiagonal);
             }
+            dynamicProgrammingTable[nextSIndex][nextTIndex] = currentDpValue;
         }
     }
-
-    return totalUniqueCommonSubsequences;
+    return totalSubsequences;
 }

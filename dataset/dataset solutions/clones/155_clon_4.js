@@ -1,39 +1,27 @@
-const systemInterface = require('node:fs');
+const fs = require('fs');
+const entireInputContent = fs.readFileSync('/dev/stdin', 'utf8');
 
-const verifyConsecutiveQuad = (collectionOfValues, startingPosition, totalElements) => {
-    if (startingPosition + 3 >= totalElements) {
-        return false;
+const processedLines = entireInputContent.trim().split('\n');
+
+function analyzeCardHands() {
+  processedLines.forEach(currentLine => {
+    const numericValues = currentLine.trim().split(',').map(Number);
+
+    const valueFrequencies = new Map();
+    numericValues.forEach(val => {
+      valueFrequencies.set(val, (valueFrequencies.get(val) || 0) + 1);
+    });
+
+    let evaluationOutcome = "null";
+
+    const hasFourOfAKind = Array.from(valueFrequencies.values()).some(count => count >= 4);
+
+    if (hasFourOfAKind) {
+      evaluationOutcome = "four card";
     }
-    const valA = collectionOfValues[startingPosition];
-    const valB = collectionOfValues[startingPosition + 1];
-    const valC = collectionOfValues[startingPosition + 2];
-    const valD = collectionOfValues[startingPosition + 3];
-    return valA === valB && valB === valC && valC === valD;
-};
 
-const processInputData = (rawData) => {
-    return rawData
-        .trim()
-        .split('\n')
-        .filter(Boolean)
-        .map((singleLine) => {
-            const numericSequence = singleLine
-                .trim()
-                .split(',')
-                .map(Number);
+    console.log(evaluationOutcome);
+  });
+}
 
-            const orderedSequence = [...numericSequence].sort((firstValue, secondValue) => secondValue - firstValue);
-
-            const isSpecialArrangement = [0, 1].some(offset =>
-                verifyConsecutiveQuad(orderedSequence, offset, orderedSequence.length)
-            );
-
-            return isSpecialArrangement ? 'four card' : 'null';
-        });
-};
-
-const rawTerminalInput = systemInterface.readFileSync('/dev/stdin', 'utf8');
-
-const computedOutcomes = processInputData(rawTerminalInput);
-
-computedOutcomes.forEach(outcome => console.log(outcome));
+analyzeCardHands();

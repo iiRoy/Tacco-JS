@@ -1,20 +1,19 @@
-const performEvaluation = (incomingText) => {
-    const numericalInterpretation = parseInt(incomingText, 10);
-
-    const determineOutput = (valInput) => {
-        return (valInput < 3)
-            ? 2
-            : (valInput % 6 === 0)
-                ? (valInput * 2)
-                : null;
-    };
-
-    const evaluatedResult = determineOutput(numericalInterpretation);
-
-    if (evaluatedResult !== null) {
-        process.stdout.write(evaluatedResult.toString() + '\n');
-    }
+const determineOutputValue = (inputNumber) => {
+  return (inputNumber <= 2)
+    ? 2
+    : (inputNumber % 2 === 0)
+      ? (2 * inputNumber)
+      : null;
 };
 
-const acquiredData = require("node:fs").readFileSync("/dev/stdin", "utf8");
-performEvaluation(acquiredData);
+function processInputData(inputString) {
+  const parsedNumber = Number(inputString);
+
+  const finalResult = determineOutputValue(parsedNumber);
+
+  if (finalResult !== null) {
+    console.log(finalResult);
+  }
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,12 +1,5 @@
-let   inputDataBuffer =   getModule  (  'fs'  )
-  .  syncFileRead  (
-    // This is the standard input file path on Unix-like systems.
-    '/dev/std_input' ,
-    'UTF-8'
-  )
-;
+let inputData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire data from standard input
 
-// The following statement calculates the bitwise XOR of 2 and 3,
-// which results in 1, and then prints this result to the standard output.
-screenOutput  .  displayValue  (  2  ^  3  )
-;
+// Display the outcome of a bitwise XOR operation.
+// In JavaScript, the '^' symbol denotes the bitwise XOR operator.
+console.log(2 ^ 3);

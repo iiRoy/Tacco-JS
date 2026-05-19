@@ -1,25 +1,50 @@
-const fls = require('node:fs');
+const outputWriter = console.log;
 
-const bufferSize = 1024;
-const inputBuffer = Buffer.alloc(bufferSize);
-const bytesRead = fls.readSync(0, inputBuffer, 0, bufferSize, 0);
+const rawInputBuffer = require("fs").readFileSync("/dev/stdin", "UTF-8");
+const processedInputString = rawInputBuffer.toString().trim();
 
-const inStreamContent = inputBuffer.toString('utf8', 0, bytesRead).trim();
+let firstNumericComponent;
+let secondNumericComponent;
+let currentSegment = '';
+let componentCount = 0;
 
-let separatorIndex = -1;
-for (let pos = 0; pos < inStreamContent.length; ++pos) {
-    if (inStreamContent[pos] === ' ') {
-        separatorIndex = pos;
+for (let charIndex = 0; charIndex < processedInputString.length; charIndex++) {
+    const currentChar = processedInputString[charIndex];
+
+    if (currentChar === ' ') {
+        if (currentSegment !== '') {
+            if (componentCount === 0) {
+                firstNumericComponent = currentSegment;
+            } else if (componentCount === 1) {
+                secondNumericComponent = currentSegment;
+            }
+            componentCount++;
+            currentSegment = '';
+        }
+        while (charIndex + 1 < processedInputString.length && processedInputString[charIndex + 1] === ' ') {
+            charIndex++;
+        }
+    } else {
+        currentSegment += currentChar;
+    }
+
+    if (componentCount === 2) {
         break;
     }
 }
 
-let firstValue = Number.parseInt(inStreamContent.substring(0, separatorIndex), 10);
-let secondValue = Number.parseInt(inStreamContent.substring(separatorIndex + 1), 10);
+if (currentSegment !== '') {
+    if (componentCount === 0) {
+        firstNumericComponent = currentSegment;
+    } else if (componentCount === 1) {
+        secondNumericComponent = currentSegment;
+    }
+    componentCount++;
+}
 
-let calculatedDifference = firstValue - secondValue;
-let conditionMultiplier = +(secondValue !== 1);
+const valA = Number(firstNumericComponent);
+const valB = Number(secondNumericComponent);
 
-let finalOutcome = calculatedDifference * conditionMultiplier;
+const computedOutcome = (valB === 1) ? 0 : (valA - valB);
 
-process.stdout.write(finalOutcome.toString() + '\n');
+outputWriter(computedOutcome);

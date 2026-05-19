@@ -1,22 +1,15 @@
-/* This module handles numerical data processing. */
-const processInputData =    (  sourceText   ) =>
-{
-    // First, parse the raw text data into an array of numbers.
-    // Each string element is converted to its numerical representation.
-    const    numericValues = sourceText.split(' ')     .map( currentStr => Number( currentStr )    );
+const processInput = (rawData) => {
+  // This function processes the raw input string.
+  const numericValues = rawData.split(' ').map((item) => Number(item));
 
-    /*
-     * Determine an intermediate value based on the first two parsed numbers.
-     * If the first number is greater than the second, the value is zero.
-     * Otherwise, it's the ratio of the second to the first number.
-     */
-    const calculatedResult = numericValues[0] > numericValues[1] ? 0 : numericValues[1] / numericValues[0];
+  // Determine the initial calculated ratio based on the first two numbers.
+  const calculatedRatio = numericValues[0] > numericValues[1] ? 0 : numericValues[1] / numericValues[0];
 
-    // Finally, output the computed value to the standard console.
-    // The output is either the third number if the calculated result is greater or equal,
-    // or the integer part of the calculated result otherwise.
-    console.log( calculatedResult >= numericValues[2] ? numericValues[2] : parseInt( calculatedResult ) );
+  // Output the final result to the console.
+  // If the calculated ratio is greater than or equal to the third number, print the third number.
+  // Otherwise, print the integer part of the calculated ratio.
+  console.log(calculatedRatio >= numericValues[2] ? numericValues[2] : parseInt(calculatedRatio));
 };
 
-// Initiate the data processing by reading from standard input.
-processInputData( require('fs') . readFileSync(  '/dev/stdin'  ,   'utf8'  ) );
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

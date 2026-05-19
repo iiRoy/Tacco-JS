@@ -1,45 +1,66 @@
-const acquiredDataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = inputData.trim().split("\n");
 
-const processSequence = (sourceText) => {
-    const textSegments = sourceText.trim().split('\n');
+function processLine(numN, numM) {
+    if (numN === 0) {
+        return 0;
+    }
 
-    const numericPairs = textSegments
-        .map(segment => segment.split(' ').map(val => parseInt(val, 10)))
-        .filter(([firstNumber, secondNumber]) => firstNumber !== 0 || secondNumber !== 0);
+    class SlotNode {
+        constructor(value) {
+            this.value = value;
+            this.next = null;
+            this.prev = null;
+            this.isOccupied = false;
+        }
+    }
 
-    const generateCircularIterator = function* (startPoint, totalLength, currentStates) {
-        let currentPosition = startPoint;
-        while (true) {
-            currentPosition = (currentPosition + 1) % totalLength;
-            if (!currentStates[currentPosition]) { // Yield only empty spots
-                yield currentPosition;
+    const allNodes = Array(numN);
+    let headNode = null;
+
+    for (let i = 0; i < numN; i++) {
+        const newNode = new SlotNode(i);
+        allNodes[i] = newNode;
+        if (!headNode) {
+            headNode = newNode;
+            newNode.next = newNode;
+            newNode.prev = newNode;
+        } else {
+            const tailNode = headNode.prev;
+            tailNode.next = newNode;
+            newNode.prev = tailNode;
+            newNode.next = headNode;
+            headNode.prev = newNode;
+        }
+    }
+
+    let currentOccupiedPointer = allNodes[0];
+    let finalOccupiedValue = 0;
+
+    for (let k = 0; k < numN; k++) {
+        let availableSlotsCounted = 0;
+        let searchIterator = currentOccupiedPointer;
+
+        while (availableSlotsCounted < numM) {
+            searchIterator = searchIterator.next;
+            if (!searchIterator.isOccupied) {
+                availableSlotsCounted++;
             }
         }
-    };
 
-    numericPairs.forEach(([fieldCount, interval]) => {
-        const fieldOccupation = new Array(fieldCount).fill(false); // Initially all empty
-        let priorSelection = 0; // Represents the last chosen index
+        searchIterator.isOccupied = true;
+        finalOccupiedValue = searchIterator.value;
+        currentOccupiedPointer = searchIterator;
+    }
 
-        const finalSpotChosen = Array.from({ length: fieldCount }).reduce((lastIndexChosen, _, iterationCount) => {
-            const emptySpotIterator = generateCircularIterator(lastIndexChosen, fieldCount, fieldOccupation);
-            let skipsPerformed = 0;
-            let currentDesignatedSpot = -1;
+    return finalOccupiedValue || 1;
+}
 
-            for (const vacantLocation of emptySpotIterator) {
-                skipsPerformed++;
-                if (skipsPerformed === interval) {
-                    currentDesignatedSpot = vacantLocation;
-                    break;
-                }
-            }
-            fieldOccupation[currentDesignatedSpot] = true; // Mark this spot as taken
-            return currentDesignatedSpot;
-        }, 0); // Initial last index is 0
-
-        const adjustedOutcome = finalSpotChosen === 0 ? 1 : finalSpotChosen;
-        process.stdout.write(adjustedOutcome + '\n');
-    });
-};
-
-processSequence(acquiredDataSource);
+for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const currentLine = lines[lineIndex];
+    if (currentLine === "0 0") {
+        break;
+    }
+    const [numN, numM] = currentLine.split(" ").map(Number);
+    console.log(processLine(numN, numM));
+}

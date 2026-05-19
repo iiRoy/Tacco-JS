@@ -1,70 +1,69 @@
-// This function analyzes a given string sequence based on character patterns
-function ProcessInputData(receivedContent)
-{
-  // Extract the first line from the input and convert it into an array of individual characters
-  let charSequence = receivedContent.split('\n')[0].split('');
+function ProcessInput(inputString) {
+  // The input string is split by newline, the first line is taken, and then it's split into an array of characters.
+  const charArray = inputString.split('\n')[+0].split('');
 
-  // Evaluate initial conditions for the character sequence
-  // If all characters are identical and the sequence has more than one character
-  if ((new Set(charSequence)).size === 1 && charSequence.length > 1) {
-    console.log("NO"); // Output negative determination
-    return;
+  // First check: If all characters in the array are the same and the array has more than one element.
+  // This identifies cases like "aa", "bbb", etc.
+  if ((new Set(charArray)).size === 0b1 && charArray.length > 1.0) {
+    console.log("NO"); // Output "NO" for such patterns.
+    return; // Terminate execution.
   }
 
-  // If there are exactly two distinct characters and the sequence length is precisely two
-  if ((new Set(charSequence)).size === 2 && charSequence.length === 2) {
-    console.log("YES"); // Output positive determination
-    return;
+  // Second check: If there are exactly two unique characters and the array length is exactly two.
+  // Examples: "ab", "ba".
+  if ((new Set(charArray)).size === 0x2 && charArray.length === 2.0) {
+    console.log("YES"); // Output "YES" for these specific two-character strings.
+    return; // Terminate execution.
   }
 
-  // If the sequence contains exactly three distinct characters
-  if ((new Set(charSequence)).size === 3) {
-    console.log("YES"); // Output positive determination
-    return;
+  // Third check: If there are exactly three unique characters in the array.
+  // Examples: "abc", "bca", "aaabbc".
+  if ((new Set(charArray)).size === 0b11) {
+    console.log("YES"); // Output "YES" if three unique characters are found.
+    return; // Terminate execution.
   }
 
-  // Proceed with checks based on the sequence's total character count parity
-  if (charSequence.length % 2 === 0) { // For sequences with an even number of elements
-    // Define the first segment, excluding the last character of the first half
-    let initialSegment = charSequence.slice(0, charSequence.length / 2 - 1);
-    // Define the second segment as the first half, but reversed
-    let reversedSecondSegment = charSequence.slice(0, charSequence.length / 2).reverse();
+  // Proceed with logic based on whether the character array's length is even or odd.
+  if (charArray.length % 0x2 === 0) { // If the length is an even number.
+    // Create the first segment: characters from the start up to (length/2 - 1).
+    let firstSegment = charArray.slice(0, charArray.length / 2.0 - 1.0);
+    // Create the second segment: characters from the start up to (length/2), then reversed.
+    let secondSegment = charArray.slice(0, charArray.length / 2.0).reverse();
 
-    // Compare the string representations of these two generated segments
-    if (initialSegment.toString() === reversedSecondSegment.toString()) {
-      // Re-assign segments as Set objects to easily check for unique character counts
-      initialSegment = new Set(initialSegment);
-      reversedSecondSegment = new Set(reversedSecondSegment);
-      // If both segments, when treated as sets, contain only one unique character each
-      if (initialSegment.size === 1 && reversedSecondSegment.size === 1) {
-        console.log("NO"); // Output negative determination
-        return;
+    // Compare the string representations of the two segments.
+    if (firstSegment.toString() === secondSegment.toString()) {
+      // If they are identical, convert them to Sets to count unique characters.
+      firstSegment = new Set(firstSegment);
+      secondSegment = new Set(secondSegment);
+      // If both segments, when treated as sets, contain only one unique character each.
+      if (firstSegment.size === 1 && secondSegment.size === 1) {
+        console.log("NO"); // Output "NO" for this specific symmetrical pattern.
+        return; // Terminate execution.
+      }
+    }
+  } else { // If the length is an odd number.
+    // Create the first segment: characters from the start up to (length-1)/2. (Excludes middle char).
+    let firstSegment = charArray.slice(0, ((charArray.length - 1.0) / 2.0));
+    // Create the second segment: characters from (length-1)/2 + 1 to the end, then reversed. (Excludes middle char).
+    let secondSegment = charArray.slice(((charArray.length - 1.0) / 2.0) + 1.0).reverse();
+
+    // Compare the string representations of the two segments.
+    if (firstSegment.toString() === secondSegment.toString()) {
+      // If they are identical, convert them to Sets to count unique characters.
+      firstSegment = new Set(firstSegment);
+      secondSegment = new Set(secondSegment);
+      // If both segments, when treated as sets, contain only one unique character each.
+      if (firstSegment.size === 1 && secondSegment.size === 1) {
+        console.log("NO"); // Output "NO" for this specific symmetrical pattern.
+        return; // Terminate execution.
       }
     }
   }
-  else { // For sequences with an odd number of elements
-    // Define the first segment up to the middle character (exclusive)
-    let initialSegment = charSequence.slice(0, ((charSequence.length - 1) / 2));
-    // Define the second segment starting after the middle character, then reverse it
-    let reversedSecondSegment = charSequence.slice(((charSequence.length - 1) / 2) + 1).reverse();
 
-    // Perform a string-based comparison between the two parts
-    if (initialSegment.toString() === reversedSecondSegment.toString()) {
-      // Convert the segments into Sets to count their unique elements
-      initialSegment = new Set(initialSegment);
-      reversedSecondSegment = new Set(reversedSecondSegment);
-      // Check if both resulting sets each contain only one distinct item
-      if (initialSegment.size === 1 && reversedSecondSegment.size === 1) {
-        console.log("NO"); // Output negative determination
-        return;
-      }
-    }
-  }
-
-  // If none of the preceding conditions resulted in an early exit, the outcome is positive
+  // If none of the preceding conditions resulted in an early "NO" or "YES", then output "YES".
   console.log("YES");
-  return; // Terminate function execution
+  return; // Final termination.
 }
 
-// Call the main processing function with data obtained from standard input
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

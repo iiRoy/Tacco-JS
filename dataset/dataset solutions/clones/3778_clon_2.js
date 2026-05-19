@@ -1,39 +1,41 @@
-"use strict"; // Enforce strict parsing and error handling for robust code execution
+"use strict"; // Enforce strict parsing and error handling for better code quality.
 
-// This is the core function designed to process an incoming textual argument.
-const primaryProcessor = (rawInputData) => {
-  // First, determine the total number of characters within the provided raw input.
-  const charCount = rawInputData.toString().length;
+const processInput = (inputValue) => {
+  // Determine the number of characters in the string representation of the input.
+  const numCharacters = inputValue.toString().length;
 
-  // Convert the cleaned input string into an integer for numerical operations.
-  let parsedNumericValue = parseInt(rawInputData.trim());
+  // Parse the trimmed input string into an integer.
+  let remainingValue = parseInt(inputValue.trim());
 
-  // Initialize a dynamic scaling factor, crucial for extracting individual digits.
-  let scalingFactor = Math.pow(10, charCount - 1);
-  // Prepare an array to sequentially store each extracted numerical component.
-  let individualDigits = [];
+  // Initialize a divisor based on the number of characters to extract digits.
+  let currentDivisor = Math.pow(10, numCharacters - 1);
 
-  // Iterate through each character position to decompose the number into its constituent digits.
-  for (let iterationIndex = 0; iterationIndex < charCount; iterationIndex++) {
-    // Extract the most significant digit and append it to our collection.
-    individualDigits.push(Math.floor(parsedNumericValue / scalingFactor));
-    // Update the remaining numeric value by removing the digit just processed.
-    parsedNumericValue = parsedNumericValue % scalingFactor;
-    // Adjust the scaling factor downwards for the extraction of the next digit.
-    scalingFactor /= 10;
+  // This array will store the individual digits.
+  let digitArray = [];
+
+  // Loop through each character position to extract digits.
+  for (let idx = 0; idx < numCharacters; idx++) {
+    // Calculate the most significant digit and add it to the array.
+    digitArray.push(Math.floor(remainingValue / currentDivisor));
+
+    // Update the remaining value by taking the modulo with the current divisor.
+    remainingValue = remainingValue % currentDivisor;
+
+    // Reduce the divisor by a factor of 10 for the next digit.
+    currentDivisor /= 10;
   }
 
-  // Compute the total sum of all the individual digits that were extracted.
-  let computedSum = individualDigits.reduce((runningTotal, currentDigit) => runningTotal + currentDigit);
+  // Sum all the digits in the array using the reduce method.
+  let finalSum = digitArray.reduce((accumulator, currentDigit) => accumulator + currentDigit);
 
-  // Apply a specific conditional re-evaluation if the initial sum is a single unit.
-  if (computedSum === 1) {
-    computedSum = 10;
+  // Special condition: if the sum is 1, change it to 10.
+  if (finalSum === 1) {
+    finalSum = 10;
   }
 
-  // Display the final, processed numerical result to the standard output.
-  console.log(computedSum);
+  // Output the final calculated sum to the console.
+  console.log(finalSum);
 };
 
-// Initiate the processing by reading the content from standard input and passing it to our main function.
-primaryProcessor(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

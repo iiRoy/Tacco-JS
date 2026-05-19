@@ -1,141 +1,167 @@
 'use strict'
 
-const LARGE_VALUE = Infinity;
+// Constants
+const MAX_SAFE_INT_DIV_TEN = 900719925474099;
+const DATA_STRUCTURE_SENTINEL = 2e9;
 
-function extractNumericSequence(textLine) {
-    return textLine.match(/-?\d+/g).map(Number);
+// Parses a space-separated string of numbers into an array of integers
+function parseNumbers(line) {
+    return line.split(' ').map(Number);
 }
 
-function findBoundary(orderedCollection, initial_idx, final_idx, target_val) {
-    if (initial_idx >= final_idx) {
-        return initial_idx;
+// Finds the first index in a sorted array 'arr' (between 'low' and 'high' exclusive)
+// such that arr[index] >= target. Returns 'high' if all elements are less than 'target'.
+function findFirstGreaterOrEqual(arr, low, high, target) {
+    let currentLow = low;
+    let currentHigh = high; // exclusive upper bound
+
+    while (currentLow < currentHigh) {
+        const midPoint = Math.floor(currentLow + (currentHigh - currentLow) / 2);
+        if (arr[midPoint] < target) {
+            currentLow = midPoint + 1;
+        } else {
+            currentHigh = midPoint;
+        }
     }
-    const mid_point = Math.floor((initial_idx + final_idx) / 2);
-    if (orderedCollection[mid_point] < target_val) {
-        return findBoundary(orderedCollection, mid_point + 1, final_idx, target_val);
-    } else {
-        return findBoundary(orderedCollection, initial_idx, mid_point, target_val);
-    }
+    return currentLow;
 }
 
-class SegmentNode {
-    constructor(begin, end) { // Represents the range [begin, end)
-        this.begin_index = begin;
-        this.end_index = end;
-        this.set_val = LARGE_VALUE; // Value assigned to this node's range, if fully covered
-        this.left_child_node = null;
-        this.right_child_node = null;
-    }
+// Sqrt Decomposition for Range Minimum Set / Point Query Minimum
+function SqrtDecomposition(totalElements) {
+    this.totalElements = totalElements;
+    this.blockSize = Math.floor(Math.sqrt(totalElements));
+    if (this.blockSize === 0) this.blockSize = 1; // Ensure block size is at least 1 for small inputs
+    this.numBlocks = Math.ceil(totalElements / this.blockSize);
+
+    // `elementValues` stores the actual values, initialized to DATA_STRUCTURE_SENTINEL
+    this.elementValues = Array(totalElements).fill(DATA_STRUCTURE_SENTINEL);
+    // `blockMinValues` stores the minimum value in each block, considering lazy updates
+    this.blockMinValues = Array(this.numBlocks).fill(DATA_STRUCTURE_SENTINEL);
+    // `blockLazySetValues` stores a value if the entire block has been set to it.
+    // This acts as a lazy tag for range minimum set operations.
+    this.blockLazySetValues = Array(this.numBlocks).fill(DATA_STRUCTURE_SENTINEL);
 }
 
-class IntervalAssignmentTracker {
-    constructor(item_count) {
-        this.top_node = new SegmentNode(0, item_count);
-    }
-
-    // Set a value for a given index range [range_start_idx, range_end_idx)
-    setRangeValue(range_start_idx, range_end_idx, specific_value) {
-        this._recursiveSet(this.top_node, range_start_idx, range_end_idx, specific_value);
-    }
-
-    _recursiveSet(current_node, query_start, query_end, value_to_set) {
-        // No overlap between current node's range and query range
-        if (current_node.begin_index >= query_end || current_node.end_index <= query_start) {
-            return;
+SqrtDecomposition.prototype = {
+    // Helper to recompute the minimum value for a specific block
+    _recomputeBlockMinimum: function(blockIndex) {
+        let currentBlockMin = DATA_STRUCTURE_SENTINEL;
+        const blockStart = blockIndex * this.blockSize;
+        const blockEnd = Math.min(this.totalElements, (blockIndex + 1) * this.blockSize);
+        for (let i = blockStart; i < blockEnd; i++) {
+            currentBlockMin = Math.min(currentBlockMin, this.elementValues[i]);
         }
+        this.blockMinValues[blockIndex] = currentBlockMin;
+    },
 
-        // Current node's range is fully contained within the update range
-        if (current_node.begin_index >= query_start && current_node.end_index <= query_end) {
-            current_node.set_val = value_to_set; // Assign the value to this node
-            return;
+    // Helper to apply any pending lazy set value to the elements within a block
+    _propagateLazySet: function(blockIndex) {
+        if (this.blockLazySetValues[blockIndex] !== DATA_STRUCTURE_SENTINEL) {
+            const lazyValue = this.blockLazySetValues[blockIndex];
+            const blockStart = blockIndex * this.blockSize;
+            const blockEnd = Math.min(this.totalElements, (blockIndex + 1) * this.blockSize);
+            for (let i = blockStart; i < blockEnd; i++) {
+                // Apply the lazy value as a minimum update to each element
+                this.elementValues[i] = Math.min(this.elementValues[i], lazyValue);
+            }
+            this.blockLazySetValues[blockIndex] = DATA_STRUCTURE_SENTINEL; // Clear lazy tag
+            this._recomputeBlockMinimum(blockIndex); // Recalculate block min after materializing
         }
+    },
 
-        // Partial overlap, create children if needed and recurse
-        if (current_node.left_child_node === null) {
-            const mid = Math.floor((current_node.begin_index + current_node.end_index) / 2);
-            current_node.left_child_node = new SegmentNode(current_node.begin_index, mid);
-            current_node.right_child_node = new SegmentNode(mid, current_node.end_index);
-        }
+    // Applies a minimum 'value' to the range [startIdx, endIdx)
+    applyRangeMin: function(startIdx, endIdx, value) {
+        if (startIdx >= endIdx) return;
 
-        this._recursiveSet(current_node.left_child_node, query_start, query_end, value_to_set);
-        this._recursiveSet(current_node.right_child_node, query_start, query_end, value_to_set);
-    }
+        const startBlock = Math.floor(startIdx / this.blockSize);
+        const endBlock = Math.floor((endIdx - 1) / this.blockSize);
 
-    // Get the minimum value associated with a specific index
-    queryPointValue(point_idx) {
-        let minimum_found = LARGE_VALUE;
-        let current_tree_node = this.top_node;
+        // Case 1: Update is entirely within a single block
+        if (startBlock === endBlock) {
+            this._propagateLazySet(startBlock); // Ensure elements are up-to-date
+            for (let i = startIdx; i < endIdx; i++) {
+                this.elementValues[i] = Math.min(this.elementValues[i], value);
+            }
+            this._recomputeBlockMinimum(startBlock);
+        } else {
+            // Case 2: Update spans across multiple blocks
 
-        while (current_tree_node !== null) {
-            // The value set at any ancestor node is a candidate for the minimum
-            minimum_found = Math.min(minimum_found, current_tree_node.set_val);
+            // Update partial start block
+            this._propagateLazySet(startBlock);
+            for (let i = startIdx; i < (startBlock + 1) * this.blockSize; i++) {
+                this.elementValues[i] = Math.min(this.elementValues[i], value);
+            }
+            this._recomputeBlockMinimum(startBlock);
 
-            // If it's a leaf node or the point is outside this node's range, we've gone as deep as possible
-            if (current_tree_node.begin_index + 1 === current_tree_node.end_index || point_idx < current_tree_node.begin_index || point_idx >= current_tree_node.end_index) {
-                break;
+            // Update full blocks in between
+            for (let bIdx = startBlock + 1; bIdx < endBlock; bIdx++) {
+                // Apply lazy update to block's lazy tag and block's minimum
+                this.blockLazySetValues[bIdx] = Math.min(this.blockLazySetValues[bIdx], value);
+                this.blockMinValues[bIdx] = Math.min(this.blockMinValues[bIdx], value);
             }
 
-            // Decide which child node to traverse
-            const mid = Math.floor((current_tree_node.begin_index + current_tree_node.end_index) / 2);
-            if (point_idx < mid) {
-                current_tree_node = current_tree_node.left_child_node;
-            } else {
-                current_tree_node = current_tree_node.right_child_node;
+            // Update partial end block
+            this._propagateLazySet(endBlock);
+            for (let i = endBlock * this.blockSize; i < endIdx; i++) {
+                this.elementValues[i] = Math.min(this.elementValues[i], value);
             }
+            this._recomputeBlockMinimum(endBlock);
         }
-        return minimum_found === LARGE_VALUE ? -1 : minimum_found;
+    },
+
+    // Queries the minimum value affecting a specific 'index'
+    queryPointMin: function(index) {
+        const blockIndex = Math.floor(index / this.blockSize);
+        let result = this.elementValues[index];
+
+        // If the block has a pending lazy set value, it's a candidate for the minimum
+        if (this.blockLazySetValues[blockIndex] !== DATA_STRUCTURE_SENTINEL) {
+            result = Math.min(result, this.blockLazySetValues[blockIndex]);
+        }
+        
+        return result === DATA_STRUCTURE_SENTINEL ? -1 : result;
     }
-}
+};
 
-function ProcessInput(rawContent) {
-    const contentLines = rawContent.trim().split('\n');
-    let lineCursor = 0;
+function processInput(inputContent) {
+    let inputLines = inputContent.trim().split('\n');
+    let parsedHeader = parseNumbers(inputLines[0]);
+    let numItems = parsedHeader.shift();
+    let numQueries = parsedHeader.shift();
 
-    const initialParams = extractNumericSequence(contentLines[lineCursor++]);
-    const num_items = initialParams[0];
-    const num_queries = initialParams[1];
-
-    const item_data_list = [];
-    for (let current_item_idx = 0; current_item_idx < num_items; current_item_idx++) {
-        item_data_list.push(extractNumericSequence(contentLines[lineCursor++]));
+    let itemDetails = new Array(numItems);
+    for (let i = 1; i <= numItems; i++) {
+        itemDetails[i - 1] = parseNumbers(inputLines[i]);
     }
 
-    const query_point_list = [];
-    for (let current_query_idx = 0; current_query_idx < num_queries; current_query_idx++) {
-        query_point_list.push(Number(contentLines[lineCursor++]));
+    let queryValues = new Array(numQueries);
+    for (let i = 1; i <= numQueries; i++) {
+        queryValues[i - 1] = parseInt(inputLines[numItems + i]);
     }
 
-    // Sort item_data_list by its third element (value) in descending order
-    item_data_list.sort((itemA, itemB) => itemB[2] - itemA[2]);
+    let sqrtDecomp = new SqrtDecomposition(numQueries);
+    itemDetails.sort((a, b) => b[2] - a[2]); // Sort by third element descending
 
-    const result_tracker = new IntervalAssignmentTracker(num_queries);
-
-    for (const current_item of item_data_list) {
-        const [start_val, end_val, item_value] = current_item;
-
-        // Optimization: skip if the 'effective end' point (end - value - 1) is less than the first query point.
-        if (end_val - item_value - 1 < query_point_list[0]) {
+    for (var i = 0; i < numItems; i++) {
+        // Original condition: s[i][1]-s[i][2]-1 < d[0]
+        if (itemDetails[i][1] - itemDetails[i][2] - 1 < queryValues[0]) {
             continue;
         }
-
-        const effective_start_threshold = start_val - item_value;
-        const effective_end_threshold = end_val - item_value;
-
-        // Find the range of indices in query_point_list that satisfy the condition
-        const range_begin_index = findBoundary(query_point_list, 0, num_queries, effective_start_threshold);
-        const range_end_index = findBoundary(query_point_list, range_begin_index, num_queries, effective_end_threshold);
-
-        if (range_begin_index < range_end_index) {
-            result_tracker.setRangeValue(range_begin_index, range_end_index, item_value);
+        // Original: var l = lower_bound(d,0,q,s[i][0]-s[i][2]);
+        let rangeStartIdx = findFirstGreaterOrEqual(queryValues, 0, numQueries, itemDetails[i][0] - itemDetails[i][2]);
+        // Original: var r = lower_bound(d,l,q,s[i][1]-s[i][2]);
+        let rangeEndIdx = findFirstGreaterOrEqual(queryValues, rangeStartIdx, numQueries, itemDetails[i][1] - itemDetails[i][2]);
+        
+        if (rangeStartIdx < rangeEndIdx) {
+            sqrtDecomp.applyRangeMin(rangeStartIdx, rangeEndIdx, itemDetails[i][2]);
         }
     }
 
-    const final_results = new Array(num_queries);
-    for (let idx = 0; idx < num_queries; idx++) {
-        final_results[idx] = result_tracker.queryPointValue(idx);
+    let finalResults = Array(numQueries);
+    for (var i = 0; i < numQueries; i++) {
+        finalResults[i] = sqrtDecomp.queryPointMin(i);
     }
-
-    console.log(final_results.join("\n"));
+    console.log(finalResults.join("\n"));
 }
 
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,109 +1,109 @@
-const createDataHandler = (sourceContent) => {
-    const contentLines = sourceContent.trim().split('\n');
-    let lineCursor = 0;
+class InputReader {
+    #lineSource;
+    #lineCursor;
 
-    const obtainSingleValue = (asStringFlag) => {
-        let currentSegments = contentLines[lineCursor];
-        if (typeof currentSegments === 'string') {
-            currentSegments = currentSegments.split(' ').reverse();
-            contentLines[lineCursor] = currentSegments;
-        }
-
-        const extractedValue = currentSegments.pop();
-        if (currentSegments.length === 0) {
-            lineCursor++;
-        }
-        return asStringFlag ? extractedValue : Number(extractedValue);
-    };
-
-    const retrieveLineElements = (asStringsFlag) => {
-        const lineContent = contentLines[lineCursor];
-        lineCursor++;
-        const elements = lineContent.split(' ');
-        return asStringsFlag ? elements : elements.map(Number);
-    };
-
-    const captureGroupedElements = (numLines, asStringsFlag) => {
-        const collectedGroup = [];
-        for (let i = 0; i < numLines; i++) {
-            const lineContent = contentLines[lineCursor + i];
-            collectedGroup.push(asStringsFlag ? lineContent.split(' ') : lineContent.split(' ').map(Number));
-        }
-        lineCursor += numLines;
-        return collectedGroup;
-    };
-
-    const fetchRawLineSegment = (numLines, asStringsFlag) => {
-        const segmentData = contentLines.slice(lineCursor, lineCursor + numLines);
-        lineCursor += numLines;
-        return asStringsFlag ? segmentData : segmentData.map(Number);
-    };
-
-    return {
-        obtainSingleValue,
-        retrieveLineElements,
-        captureGroupedElements,
-        fetchRawLineSegment
-    };
-};
-
-const constructMultiDimensional = (valueGenerator, ...dimensions) => {
-    const recursiveBuilder = (depth, currentDims) => {
-        if (depth === currentDims.length) {
-            return typeof valueGenerator === 'function' ? valueGenerator() : valueGenerator;
-        }
-        const currentDimensionSize = currentDims[depth];
-        return Array.from({ length: currentDimensionSize }, () => recursiveBuilder(depth + 1, currentDims));
-    };
-    return recursiveBuilder(0, dimensions);
-};
-
-const performCalculation = () => {
-    const dataAcquisition = createDataHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-    const countOfSegments = dataAcquisition.obtainSingleValue();
-    const stringSegments = dataAcquisition.fetchRawLineSegment(countOfSegments, true);
-
-    const initialAccumulator = {
-        accumulatedAB: 0,
-        endingOnlyA: 0,
-        startBEndB: 0,
-        startBEndA: 0
-    };
-
-    const finalClassification = stringSegments.reduce((currentStats, currentText) => {
-        const segmentABCount = Array.from(currentText).slice(0, -1).filter((char, idx) => char === 'A' && currentText[idx + 1] === 'B').length;
-        currentStats.accumulatedAB += segmentABCount;
-
-        const firstSymbol = currentText[0];
-        const lastSymbol = currentText[currentText.length - 1];
-
-        if (firstSymbol === 'B') {
-            if (lastSymbol === 'A') {
-                currentStats.startBEndA++;
-            } else {
-                currentStats.startBEndB++;
-            }
-        } else if (lastSymbol === 'A') {
-            currentStats.endingOnlyA++;
-        }
-        return currentStats;
-    }, initialAccumulator);
-
-    const minimumEnds = Math.min(finalClassification.endingOnlyA, finalClassification.startBEndB);
-    const maximumEnds = Math.max(finalClassification.endingOnlyA, finalClassification.startBEndB);
-
-    if (maximumEnds > 0) {
-        if (finalClassification.startBEndA > 0) {
-            finalClassification.accumulatedAB += minimumEnds + finalClassification.startBEndA;
-        } else {
-            finalClassification.accumulatedAB += minimumEnds;
-        }
-    } else {
-        finalClassification.accumulatedAB += finalClassification.startBEndA - 1;
+    constructor(rawContent) {
+        this.#lineSource = rawContent.trim().split('\n');
+        this.#lineCursor = 0;
     }
 
-    return finalClassification.accumulatedAB;
-};
+    // Replaces g.prototype.a
+    acquireToken(asString) {
+        let currentSegment = this.#lineSource[this.#lineCursor];
+        let extractedValue;
 
-console.log(performCalculation());
+        if (typeof currentSegment === "string") {
+            this.#lineSource[this.#lineCursor] = currentSegment.split(' ').reverse();
+            currentSegment = this.#lineSource[this.#lineCursor];
+        }
+
+        extractedValue = currentSegment.pop();
+
+        if (currentSegment.length === 0) {
+            this.#lineCursor++;
+        }
+
+        return asString ? extractedValue : Number(extractedValue);
+    }
+
+    // Replaces g.prototype.l
+    obtainLine(asString) {
+        const lineContent = this.#lineSource[this.#lineCursor++];
+        const parts = String(lineContent).split(' ');
+        return asString ? parts : parts.map(val => Number(val));
+    }
+
+    // Replaces g.prototype.m
+    gatherMatrix(count, asString) {
+        const collectedRows = [];
+        for (let i = 0; i < count; i++) {
+            const lineContent = this.#lineSource[this.#lineCursor++];
+            const parts = String(lineContent).split(' ');
+            collectedRows.push(asString ? parts : parts.map(val => Number(val)));
+        }
+        return collectedRows;
+    }
+
+    // Replaces g.prototype.r
+    collectRaw(count, asString) {
+        const collectedLines = this.#lineSource.slice(this.#lineCursor, this.#lineCursor + count);
+        this.#lineCursor += count;
+        return asString ? collectedLines : collectedLines.map(val => Number(val));
+    }
+}
+
+const createInputParser = (function() {
+    function parserFactory(sourceText) {
+        return new InputReader(sourceText);
+    }
+    return parserFactory;
+})();
+
+const dataReader = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function processInput() {
+    const entryCount = dataReader.acquireToken();
+    const stringCollection = dataReader.collectRaw(entryCount, true);
+
+    let totalScore = 0;
+    let endsWithA = 0;
+    let startsWithB = 0;
+    let startsBEndsA = 0;
+
+    stringCollection.forEach(currentString => {
+        totalScore += Array.from(currentString)
+            .slice(1)
+            .filter((char, charIndex) => currentString[charIndex] === 'A' && char === 'B')
+            .length;
+
+        const firstCharacter = currentString[0];
+        const lastCharacter = currentString[currentString.length - 1];
+
+        if (firstCharacter === 'B') {
+            if (lastCharacter === 'A') {
+                startsBEndsA++;
+            } else {
+                startsWithB++;
+            }
+        } else if (lastCharacter === 'A') {
+            endsWithA++;
+        }
+    });
+
+    const minimumCount = Math.min(endsWithA, startsWithB);
+    const maximumCount = Math.max(endsWithA, startsWithB);
+
+    if (maximumCount > 0) {
+        if (startsBEndsA > 0) {
+            totalScore += minimumCount + startsBEndsA;
+        } else {
+            totalScore += minimumCount;
+        }
+    } else {
+        totalScore += startsBEndsA - 1;
+    }
+
+    return totalScore;
+}
+
+console.log(processInput());

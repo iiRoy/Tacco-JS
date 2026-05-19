@@ -1,40 +1,43 @@
-function executeProcessing(incomingText)
-{
-    // Break down the received content into distinct lines.
-    const dataLines = incomingText.split('\n');
+function processInput(rawData) {
+  // This function takes raw input string and processes it to find the count of "good" elements.
+  // A "good" element is defined as one that is strictly smaller than all preceding elements.
 
-    // Extract the initial numerical value from the first line, representing the total number of items to process.
-    const [totalItems] = dataLines[0].split(' ').map(Number);
+  // First, split the entire input string into an array of lines.
+  const lineData = rawData.split('\n');
 
-    // Convert the second line into an array of numbers, which is the primary sequence for analysis.
-    const numericSequence = dataLines[1].split(' ').map(Number);
+  // The first line contains a single integer, which represents the total number of elements (N).
+  // We extract this number by splitting the first line by space and converting to a Number.
+  const [numElements] = lineData[0].split(' ').map(Number);
 
-    // Initialize a variable to keep track of the smallest value encountered so far, starting with the first element.
-    let lowestObserved = numericSequence[0];
+  // The second line contains N space-separated integers, which are the actual data points (P).
+  // These are also parsed into an array of numbers.
+  const dataArray = lineData[1].split(' ').map(Number);
 
-    // Initialize a counter to record how many times a new minimum value has been identified.
-    let updateOccurrences = 1;
+  // Initialize a variable to keep track of the smallest element encountered so far.
+  // Start with the first element of the data array.
+  let currentMinimum = dataArray[0];
 
-    // Traverse through the numeric sequence, commencing from the second element (index 1).
-    for ( let currentIdx = 1; currentIdx < totalItems; currentIdx++ )
-    {
-        // Evaluate if the current element under consideration is less than the currently held lowest observed value.
-        if  ( lowestObserved  >  numericSequence[currentIdx] )
-        {
-            // If true, update the lowest observed value to the current element's value.
-            lowestObserved = numericSequence[currentIdx];
-            // Increment the counter, signifying a successful update to the minimum.
-            updateOccurrences++;
-        }
+  // Initialize a counter for the number of "good" elements.
+  // The first element is always considered "good" by definition, so start count at 1.
+  let goodCount = 1;
+
+  // Iterate through the data array starting from the second element (index 1).
+  // The loop continues as long as the current index is less than the total number of elements.
+  for (let idx = 1; idx < numElements; idx++) {
+    // Check if the current element in the iteration is strictly less than the current minimum.
+    if (currentMinimum > dataArray[idx]) {
+      // If the current element is indeed a new minimum, update 'currentMinimum'.
+      currentMinimum = dataArray[idx];
+      // Increment the 'goodCount' because we found a new element that is smaller than all previous ones.
+      goodCount++;
     }
+  }
 
-    // Display the final tally of minimum value updates to the standard output.
-    console.log(updateOccurrences);
+  // After iterating through all elements, print the final count of "good" elements to the console.
+  console.log(goodCount);
 }
 
-// Initiate the primary data handling routine by reading input from the standard input stream.
-executeProcessing(
-    require('fs')
-        .readFileSync('/dev/stdin', 'utf8')
-        .trim()
-);
+// This part handles reading input from standard input.
+// It reads the entire file content, decodes it as UTF-8, and removes any leading/trailing whitespace.
+// The processed input string is then passed to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

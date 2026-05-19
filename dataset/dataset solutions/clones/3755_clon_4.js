@@ -1,30 +1,23 @@
-function processInputData(dataString) {
-  const lineSegments = dataString.split('\n');
-  const valueTokens = lineSegments[1].split(' ');
+function processInput(rawData) {
+    const dataSegments = rawData.split("\n");
+    const itemCount = Number.parseInt(dataSegments[0], 10);
+    const numericValues = dataSegments[1].split(" ").map(valStr => Number.parseInt(valStr, 10));
 
-  const obtainInteger = (segment) => Number.parseInt(segment, 10);
+    const countBinaryFactors = (value) => {
+        let currentFactorCount = 0;
+        let workingValue = value;
+        while ((workingValue & 1) === 0 && workingValue !== 0) {
+            workingValue >>= 1;
+            currentFactorCount++;
+        }
+        return currentFactorCount;
+    };
 
-  const countDivisionsRecursive = (val, currentCount = 0) => {
-    if ((val & 1) !== 0) {
-      return currentCount;
-    } else {
-      return countDivisionsRecursive(val >> 1, currentCount + 1);
-    }
-  };
+    const totalDivisions = numericValues.reduce((accumulatedCount, currentNum) => {
+        return accumulatedCount + countBinaryFactors(currentNum);
+    }, 0);
 
-  const totalDivisions = valueTokens.reduce((currentSum, token) => {
-    const numericalValue = obtainInteger(token);
-
-    if (Number.isNaN(numericalValue)) {
-      return currentSum;
-    }
-
-    const iterations = countDivisionsRecursive(numericalValue);
-
-    return currentSum + iterations;
-  }, 0);
-
-  console.log(totalDivisions);
+    console.log(totalDivisions);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin","utf-8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf-8"));

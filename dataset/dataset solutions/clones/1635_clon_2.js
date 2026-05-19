@@ -1,44 +1,62 @@
-// Initial analysis completed; problem statement understood.
+// This function processes input data to find an optimal value.
 
-function  computeSolution ( rawData = "" )  {
-    const textLines = rawData.split ( '\n' ) ;
-    const targetValue = Number ( textLines[0].split ( ' ' )[1] ) ;
-    const dataArray = textLines[1].split ( ' ' ) . map ( ( val ) => Number ( val ) ) ;
+function processInput(rawData = "") {
+    const inputLines = rawData.split("\n");
 
-    let lowerBound = 1 ;
-    let upperBound = dataArray.reduce ( ( accumulator , currentElement ) => { return Math.max ( accumulator , currentElement ) ; } ) ;
-    let currentMidpoint = Math.floor ( ( upperBound + lowerBound ) * 0.5 ) ;
-    let finalResult = upperBound ;
+    // Parse the maximum allowed cuts from the first line.
+    const maxCuts = 0 | inputLines[0].split(" ")[1];
 
-    while ( lowerBound <= upperBound ) {
-        let currentCount = 0 ;
-        dataArray.forEach ( ( elementValue ) => {
-            let divisions = Math.floor ( elementValue / currentMidpoint ) ;
-            if ( elementValue === divisions * currentMidpoint ) {
-                divisions-- ;
+    // Convert string segments from the second line to integers.
+    const segmentLengths = inputLines[1].split(" ").map((currentLength) => 0 | currentLength);
+
+    let lowerBound = 1; // Initialize the lower bound for the binary search.
+    // The upper bound is the maximum segment length found in the input.
+    let upperBound = segmentLengths.reduce((accumulator, currentValue) => { return Math.max(accumulator, currentValue); });
+
+    // Calculate the initial midpoint for the search range.
+    let currentMid = 0 | (upperBound + lowerBound) * 0.5;
+    let finalResult = upperBound; // Initialize the result with the upper bound.
+
+    // Begin the binary search loop.
+    while (lowerBound <= upperBound) {
+        let totalCuts = 0; // Reset the cut counter for each iteration.
+
+        // Iterate through each segment length to calculate required cuts.
+        segmentLengths.forEach((currentLength) => {
+            // Determine how many times the currentMid value fits into the segment length.
+            let numDivisions = 0 | currentLength / currentMid;
+
+            // If the segment divides perfectly, one less cut is actually needed.
+            if (currentLength === numDivisions * currentMid) {
+                numDivisions--;
             }
-            currentCount += divisions ;
-        } ) ;
+            totalCuts += numDivisions; // Accumulate the total number of cuts.
+        });
 
-        if ( currentCount <= targetValue ) {
-            finalResult = currentMidpoint ;
-            upperBound = currentMidpoint - 1 ;
+        // Check if the total cuts are within the allowed maximum.
+        if (totalCuts <= maxCuts) {
+            finalResult = currentMid; // This currentMid is a potential valid answer.
+            upperBound = currentMid - 1; // Try to find a smaller (better) mid value.
         } else {
-            lowerBound = currentMidpoint + 1 ;
+            lowerBound = currentMid + 1; // The currentMid is too small; need a larger one.
         }
-        currentMidpoint = Math.floor ( ( upperBound + lowerBound ) * 0.5 ) ;
+        // Recalculate the midpoint for the next iteration.
+        currentMid = 0 | (upperBound + lowerBound) * 0.5;
     }
-    return finalResult ;
+    return finalResult; // Return the optimal value found.
 }
 
 
-// Export and execution block for the main function
-exports.computeSolution = computeSolution ;
+// Export the main processing function and define the program entry point.
+exports.processInput = processInput;
 
-function ExecuteProgram ( programInput ) {
-    console.log ( computeSolution ( programInput.trim ( ) ) ) ;
+function executeProgram(programInput) {
+    // Execute the primary logic and print the result to the console.
+    console.log(processInput(programInput.trim()));
 }
 
-if ( process.argv[2] !== 'unit-test' ) {
-    ExecuteProgram ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Check if the script is being run directly (not in test mode).
+if (process.argv[2] !== "test") {
+    // Read input from standard input and run the program.
+    executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
 }

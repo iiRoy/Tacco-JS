@@ -1,50 +1,88 @@
-class SourceAdapter {
-  constructor(dataSupply) {
-    this.segments = dataSupply;
-    this.currentSpot = 0;
-  }
-  retrieveDatum() {
-    if (this.currentSpot < this.segments.length) {
-      return this.segments[this.currentSpot++];
+const inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+
+let inputSourceData;
+let lineBuffer = [];
+
+inputReader.on('line', (currentLine) => { lineBuffer.push(currentLine); });
+inputReader.on('close', () => {
+  inputSourceData = createInputReader(lineBuffer);
+  console.error('\n↑入力 ↓出力');
+  executeSolution();
+});
+
+function deepCopy(originalObject) {
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
+}
+
+function readInteger() { return transformInput(fetchNextLine(), 1); }
+function readStringArray() { return transformInput(fetchNextLine(), 2); }
+function readIntegerArray() { return transformInput(fetchNextLine(), 4); }
+function readCharacterArray() { return transformInput(fetchNextLine(), 6); }
+
+function fetchNextLine() { return inputSourceData.retrieveNext(); }
+function hasMoreLines() { return inputSourceData.canAdvance(); }
+
+function createInputReader(lines) {
+  let currentLineIndex = 0;
+  const dataLines = lines;
+  const totalLines = lines.length;
+
+  return {
+    canAdvance: () => (currentLineIndex < totalLines),
+    retrieveNext: () => {
+      if (currentLineIndex < totalLines) {
+        return dataLines[currentLineIndex++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+      }
     }
-    throw new Error("Data Exhausted!");
+  };
+}
+
+function printLine(content) { console.log(content); }
+
+function logDebug(data) { console.error('debug:' + require('util').inspect(data, false, null)); }
+
+const inputTransformers = new Map([
+  [1, (val) => parseInt(val)],
+  [2, (val) => val.split(' ')],
+  [4, (val) => val.split(' ').map(Number)],
+  [6, (val) => val.split('')],
+  [7, (val) => val.split('').map(Number)],
+  [8, (val) => val.join(' ')],
+  [9, (val) => val.join('\n')],
+  [0, (val) => val.join('')]
+]);
+
+function transformInput(inputValue, transformationType) {
+  try {
+    const transformer = inputTransformers.get(transformationType);
+    if (transformer) {
+      return transformer(inputValue);
+    }
+    return inputValue;
+  } catch (e) {
+    return inputValue;
   }
 }
 
-let incomingBuffer = [];
-const consoleHandler = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+function executeSolution() {
+  const countValue = readInteger();
 
-consoleHandler.on('line', (dataUnit) => incomingBuffer.push(dataUnit));
-consoleHandler.on('close', () => {
-  const primaryProcessor = new SourceAdapter(incomingBuffer);
-  console.error('\n↑Supplied ↓Produced');
-  executeCoreLogic(primaryProcessor);
-});
+  Array.from({ length: countValue - 1 }, (_, valA) => valA)
+    .flatMap(valA =>
+      Array.from({ length: countValue - (valA + 1) }, (_, offset) => valA + 1 + offset)
+        .map(valB => ({ valA, valB }))
+    )
+    .forEach(({ valA, valB }) => {
+      const xorResult = valA ^ valB;
 
-function acquireNumber(adapterInstance) {
-  return parseInt(adapterInstance.retrieveDatum());
-}
+      const differingBitPositions = Array.from({ length: 10 }, (_, bitIndex) => bitIndex)
+        .filter(bitIndex => (xorResult >> bitIndex) & 1)
+        .map(bitIndex => bitIndex + 1);
 
-function executeCoreLogic(processor) {
-  const upperBoundary = acquireNumber(processor);
-
-  const numericRange = Array.from({ length: upperBoundary }, (_, idx) => idx);
-
-  numericRange.slice(0, upperBoundary - 1).forEach(firstOperand => {
-    numericRange.slice(firstOperand + 1, upperBoundary).forEach(secondOperand => {
-      const bitwiseDifference = firstOperand ^ secondOperand;
-      const positionsOfMismatch = [];
-
-      Array.from({ length: 10 }, (_, bitPosition) => bitPosition)
-        .filter(bitPosition => ((bitwiseDifference >>> bitPosition) & 1) === 1)
-        .forEach(bitPosition => {
-          positionsOfMismatch.push(bitPosition + 1);
-        });
-      
-      console.log(positionsOfMismatch.join(' '));
+      printLine(transformInput(differingBitPositions, 8));
     });
-  });
 }

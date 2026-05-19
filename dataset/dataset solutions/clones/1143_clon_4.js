@@ -1,42 +1,32 @@
-function computeLongestIncreasingSubsequenceLength() {
-    const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const lines = inputData.trim().split('\n');
-    const numericValues = lines.map(Number);
+const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const parsedNumbers = inputContent.trim().split("\n").map(Number);
 
-    const actualSequence = numericValues.slice(1);
+const sequenceLengthIndicator = parsedNumbers.shift();
+const numericSequence = parsedNumbers;
 
-    const tailElements = [];
+const smallestTailValues = [];
 
-    const findCeilingIndex = (arr, targetValue) => {
-        let lowBound = 0;
-        let highBound = arr.length - 1;
-        let potentialIndex = arr.length;
-
-        while (lowBound <= highBound) {
-            const midPoint = Math.floor((lowBound + highBound) / 2);
-            if (arr[midPoint] >= targetValue) {
-                potentialIndex = midPoint;
-                highBound = midPoint - 1;
-            } else {
-                lowBound = midPoint + 1;
-            }
-        }
-        return potentialIndex;
-    };
-
-    actualSequence.forEach(currentNumber => {
-        const targetPosition = findCeilingIndex(tailElements, currentNumber);
-
-        if (targetPosition === tailElements.length) {
-            tailElements.push(currentNumber);
+function findInsertionPoint(collection, targetValue) {
+    let lowerBound = 0;
+    let upperBound = collection.length;
+    while (lowerBound < upperBound) {
+        const midPoint = Math.floor((lowerBound + upperBound) / 2);
+        if (collection[midPoint] < targetValue) {
+            lowerBound = midPoint + 1;
         } else {
-            tailElements[targetPosition] = currentNumber;
+            upperBound = midPoint;
         }
-    });
-
-    const finalLength = tailElements.length;
-
-    console.log(finalLength);
+    }
+    return lowerBound;
 }
 
-computeLongestIncreasingSubsequenceLength();
+for (const currentElement of numericSequence) {
+    if (smallestTailValues.length === 0 || currentElement > smallestTailValues[smallestTailValues.length - 1]) {
+        smallestTailValues.push(currentElement);
+    } else {
+        const insertionIndex = findInsertionPoint(smallestTailValues, currentElement);
+        smallestTailValues[insertionIndex] = currentElement;
+    }
+}
+
+console.log(smallestTailValues.length);

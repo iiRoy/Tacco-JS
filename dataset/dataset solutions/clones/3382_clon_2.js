@@ -1,80 +1,69 @@
-/*
- * This module processes incoming textual information
- * to perform a specific numerical computation.
- */
-function ProcessInput(sourceText) {
-  // Split the entire input block into individual lines.
-  const textLines = sourceText.split("\n");
+function ProcessInput(rawData) {
+  // Split the raw input string by newline characters
+  rawData = rawData.split("\n");
 
-  // Extract the first numerical parameter from the first line.
-  const groupSize = parseInt(textLines[0].split(" ")[0], 10);
-  // Extract the second numerical parameter from the first line.
-  let originalValue = parseInt(textLines[0].split(" ")[1], 10);
+  // Parse the first line to extract the two integer values
+  var divisorCount = parseInt(rawData[0].split(" ")[0]);
+  var targetNumber = parseInt(rawData[0].split(" ")[1]);
 
-  // Initialize an array to store prime factor data.
-  const primeFactorData = [];
-  // Calculate an upper bound for factor testing.
-  const upperBound = Math.ceil(originalValue / 2);
+  // Initialize an array to store prime factors and their counts
+  // This variable is intentionally declared without 'var' to match the original's global scope behavior.
+  factorList = new Array();
 
-  // Initialize indices and counters for factor tracking.
-  let currentFactorPos = -1;
-  let occurrenceCounter = 0;
+  // Calculate an upper bound for prime factor search
+  var halfTarget = Math.ceil(targetNumber / 2);
 
-  // Iterate to find prime factors of the original value.
-  for (let testDivisor = 2; testDivisor < upperBound;) {
-    // Check if the current test divisor evenly divides the value.
-    if (originalValue % testDivisor === 0) {
-      // If this is the first occurrence of a new factor, increment its position.
-      if (occurrenceCounter === 0) {
-        currentFactorPos++;
+  // Initialize variables for tracking factor index and current factor count
+  var factorIndex = -1;
+  var currentFactorCount = 0;
+
+  // Loop to find prime factors of targetNumber
+  // 'potentialFactor' is intentionally declared without 'var' to match the original's global scope behavior.
+  for (potentialFactor = 2; potentialFactor < halfTarget; potentialFactor) {
+    // Check if the current potentialFactor divides targetNumber
+    if (targetNumber % potentialFactor === 0) {
+      // If this is the first time we've encountered this prime factor
+      if (currentFactorCount === 0) {
+        factorIndex++; // Move to the next slot in factorList
       }
-      // Increment the count for the current factor.
-      occurrenceCounter++;
-      // Store the factor and its count in the data array.
-      primeFactorData[currentFactorPos] = [testDivisor, occurrenceCounter];
-      // Reduce the original value by dividing it by the found factor.
-      originalValue = originalValue / testDivisor;
+      currentFactorCount++; // Increment the count for the current prime factor
+      factorList[factorIndex] = [potentialFactor, currentFactorCount]; // Store the factor and its count
+      targetNumber = targetNumber / potentialFactor; // Reduce targetNumber by the factor
     } else {
-      // If not a factor, move to the next potential divisor.
-      testDivisor++;
-      // Reset the occurrence counter as it's a new potential factor.
-      occurrenceCounter = 0;
+      // If not divisible, move to the next potentialFactor and reset count
+      potentialFactor++;
+      currentFactorCount = 0;
     }
-    // If the original value has been completely factored down to 1, exit the loop.
-    if (originalValue === 1) {
+
+    // If targetNumber has been completely factored, exit the loop
+    if (targetNumber === 1) {
       break;
     }
   }
 
-  // Initialize the final computed product.
-  let computedProduct = 1;
+  // Initialize the variable to store the final computed result
+  var finalResult = 1;
 
-  // Iterate through the collected prime factor data.
-  for (let idx = 0; idx < primeFactorData.length; idx++) {
-    // Retrieve the factor and its count.
-    const factorBase = primeFactorData[idx][0];
-    const factorExponent = primeFactorData[idx][1];
-
-    // Calculate the power based on group size and factor exponent,
-    // ensuring the minimum value is 1, then multiply to the product.
-    computedProduct *= Math.max(
-      Math.pow(factorBase, Math.floor(factorExponent / groupSize)),
-      1
-    );
+  // Iterate through the list of prime factors
+  // 'listIterator' is intentionally declared without 'var' to match the original's global scope behavior.
+  for (listIterator = 0; listIterator < factorList.length; listIterator++) {
+    // Calculate the contribution of each prime factor to the final result
+    // This involves raising the factor to the power of (its count divided by divisorCount, floored),
+    // then taking the maximum of that value and 1, and multiplying into the final result.
+    finalResult *= Math.max(Math.pow(factorList[listIterator][0], Math.floor(factorList[listIterator][1] / divisorCount)), 1);
   }
 
-  // Display the final calculated result.
-  console.log("%s", computedProduct);
+  // Output the final calculated result to the console
+  console.log('%s', finalResult);
 }
 
-/*
- * Utility function for local testing within a browser environment.
- * Executes the main processing logic with data from a UI element.
- */
-function runLocalTest() {
-  const testInputContent = document.querySelector("#input").value;
-  ProcessInput(testInputContent);
+// This function is provided for debugging purposes in a browser environment.
+function performDebug() {
+  // Retrieve input from a DOM element with id "input"
+  var domInput = document.getElementById("input").value;
+  // Call the main processing function with the retrieved input
+  ProcessInput(domInput);
 }
 
-// Execute the primary data processing function using standard input.
-ProcessInput(require("node:fs").readFileSync("/dev/stdin", { encoding: "utf8" }));
+// Execute the main processing function with input read from standard input
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

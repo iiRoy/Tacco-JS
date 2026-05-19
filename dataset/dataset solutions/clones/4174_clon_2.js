@@ -1,34 +1,32 @@
 "use strict";
 
-// This function orchestrates the processing of incoming data.
-const processInputData = inputString => {
+// This function processes the provided input string to calculate a specific sum.
+const processInput = (rawInput) => {
+    // Clean up the input string and split it into lines.
+    rawInput = rawInput.trim().split("\n");
 
-    // Normalize input: remove leading/trailing whitespace, then split into lines.
-    inputString = inputString.trim().split("\n");
+    // Parse the first line to extract two integer values.
+    const elementCount = parseInt(rawInput[0].split(" ")[0]); // Represents N from original
+    const removalThreshold = parseInt(rawInput[0].split(" ")[1]); // Represents K from original
 
-    // Extract initial numerical parameters from the first line of the input.
-    const firstValue = parseInt(inputString[0].split(" ")[0]); // Represents the first numerical parameter.
-    const secondValue = parseInt(inputString[0].split(" ")[1]); // Represents the second numerical parameter.
+    // Parse the second line, splitting by space and converting each part to an integer.
+    const numericValues = rawInput[1].split(" ").map(currentValue => parseInt(currentValue));
 
-    // Parse the second line of the input into an array of integers.
-    const numericArray = inputString[1].split(" ").map(currentNum => parseInt(currentNum));
+    // Initialize an array to count frequencies, assuming values up to 200,000.
+    const valueFrequencies = [...Array(200000)].fill(0);
 
-    // Initialize a large array to store frequency counts for numbers, filled with zeros.
-    // The size 200,000 is based on the maximum expected value.
-    const frequencyCounts = Array(200000).fill(0);
-
-    // Iterate through the numeric array and increment the count for each number in the frequency array.
-    for (let elementIndex in numericArray) {
-        frequencyCounts[numericArray[elementIndex]]++; // Increment count for the corresponding number.
+    // Iterate through the numeric values and increment their counts in the frequency array.
+    for (let valueIndex in numericValues) {
+        valueFrequencies[numericValues[valueIndex]]++;
     }
 
-    // Sort the frequency counts in descending order (highest counts first).
-    frequencyCounts.sort((countA, countB) => countB - countA);
+    // Sort the frequency counts in descending order.
+    valueFrequencies.sort((freqA, freqB) => freqB - freqA);
 
-    // Calculate the sum of elements from a specific slice of the sorted counts.
-    // This effectively sums the counts of elements that are NOT among the 'secondValue' largest counts.
-    console.log(frequencyCounts.slice(secondValue, frequencyCounts.length + 1).reduce((accumulatorSum, currentCount) => accumulatorSum + currentCount));
+    // Slice the sorted frequencies from the 'removalThreshold' index onwards,
+    // then sum the remaining frequencies.
+    console.log(valueFrequencies.slice(removalThreshold, valueFrequencies.length + 1).reduce((totalSum, currentFreq) => totalSum + currentFreq));
 };
 
-// Initiate the data processing by reading from standard input using the 'fs' module.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

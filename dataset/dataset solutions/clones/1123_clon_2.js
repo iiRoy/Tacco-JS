@@ -1,93 +1,92 @@
 /*
-  This script computes the area of a polygon given its vertices.
-  It uses the Shoelace formula, specifically by triangulating the polygon
-  relative to the first vertex and summing signed areas of triangles.
-*/
+ * Polygon Area Calculation Module
+ * (Source: http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=0079)
+ *
+ * Status: Implemented and tested.
+ *
+ * Notes: This program computes the area of a polygon given its vertices.
+ * It uses a triangulation method based on cross products relative to a fixed origin vertex.
+ */
+var output = console.log;
 
-var displayOutput = console.log;
+if (typeof process !== 'undefined') {
+    var rawData = '';
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
 
-if (typeof process !== "undefined") {
-  let receivedStreamData = "";
-  process.stdin.resume();
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', function (dataPortion) {
-    receivedStreamData += dataPortion;
-  });
+    process.stdin.on('data', function(chunk) {
+        rawData += chunk;
+    });
 
-  process.stdin.on('end', function () {
-    let inputLines = receivedStreamData.split("\n");
-    processPolygonData(inputLines);
-  });
+    process.stdin.on('end', function() {
+        var inputLines = rawData.split('\n');
+        processCoordinates(inputLines);
+    });
 }
 
+function processCoordinates(coordinateStrings) {
+    // Transform input strings into arrays of numbers, filtering out empty elements.
+    coordinateStrings = coordinateStrings.map(function(currentLine) {
+        return currentLine.split(' ').filter(function(elementString) {
+            return elementString !== '';
+        }).map(function(elementString) {
+            var numericValue = Number(elementString);
+            // Handle non-numeric values, typically newline characters at the end of input.
+            if (numericValue.toString() === 'NaN') {
+                return elementString.replace(/(\r)|(\n)/g, '');
+            }
+            return numericValue;
+        });
+    });
 
-function processPolygonData(rawInputLines) {
-  // Convert each line into an array of numbers or strings, filtering empty elements.
-  const processedInputRows = rawInputLines.map(function (singleRow) {
-    return singleRow.split(" ")
-      .filter(function (item) {
-        return item !== "";
-      })
-      .map(function (elementStr) {
-        const numericValue = Number(elementStr);
-        // If conversion results in NaN, keep the original string after trimming newlines.
-        if (numericValue.toString() === "NaN") {
-          return elementStr.replace(/(\r)|(\n)/g, "");
-        }
-        return numericValue;
-      });
-  });
+    // The first line often contains the count of vertices, which is not needed for the calculation itself.
+    coordinateStrings.shift();
 
-  // Remove the first row, which typically contains the number of vertices.
-  processedInputRows.shift();
+    var vertexList = coordinateStrings;
+    // The original code had a commented-out reverse, indicating it might have been considered or was for a different problem variant.
+    // vertexList.reverse();
 
-  // The remaining rows represent the polygon's vertices.
-  const vertexCoordinates = processedInputRows;
+    var originVertex = vertexList[0];
+    var startSegmentVertex, endSegmentVertex;
+    var accumulatedAreaSum = 0;
+    var vertexCount = vertexList.length;
 
-  // For Shoelace formula, order might matter. This line is commented out.
-  // vertexCoordinates.reverse();
+    // Iterate through the vertices to form triangles with the originVertex.
+    // The loop runs from the second vertex to the second-to-last vertex.
+    for (var loopIndex = 1; loopIndex < vertexCount - 1; loopIndex++) {
+        // loopIndex will be 1, 2, 3, ..., vertexCount - 2
+        startSegmentVertex = vertexList[loopIndex];
+        endSegmentVertex = vertexList[loopIndex + 1];
+        accumulatedAreaSum += calculateCrossProduct(originVertex, startSegmentVertex, endSegmentVertex);
+    }
 
+    // The total area is half of the accumulated sum of cross products.
+    var finalAreaString = '' + (accumulatedAreaSum / 2);
+    var decimalPointIndex = finalAreaString.indexOf('.');
 
-  const originVertex = vertexCoordinates[0];
-  let currentVertex, nextVertex;
-  let totalSignedArea = 0;
-  const vertexCount = vertexCoordinates.length;
+    if (decimalPointIndex === -1) {
+        // If the number is an integer, append ".0" for consistent formatting.
+        finalAreaString += '.0';
+    } else {
+        // If there's a decimal part, ensure only one decimal place is shown.
+        // This truncates rather than rounds, matching the original behavior.
+        finalAreaString = finalAreaString.slice(0, decimalPointIndex + 2);
+    }
 
-  // Iterate through vertices to form triangles with the origin vertex.
-  // The loop runs from the second vertex to the second-to-last vertex.
-  for (let idx = 1; idx < vertexCount - 1; idx++) {
-    currentVertex = vertexCoordinates[idx];
-    nextVertex = vertexCoordinates[idx + 1];
-    // Accumulate the signed area of the triangle formed by originVertex, currentVertex, and nextVertex.
-    totalSignedArea += computeTriangleOrientation(originVertex, currentVertex, nextVertex);
-  }
-
-  // The total signed area needs to be divided by two to get the final polygon area.
-  let finalAreaString = "" + (totalSignedArea / 2);
-  let decimalPointIndex = finalAreaString.indexOf(".");
-
-  if (decimalPointIndex === -1) {
-    // If no decimal point, append ".0" for consistent formatting.
-    finalAreaString += ".0";
-  } else {
-    // If there is a decimal, truncate to one decimal place.
-    // This effectively rounds towards zero for the second decimal place.
-    finalAreaString = finalAreaString.slice(0, decimalPointIndex + 2);
-  }
-  displayOutput(finalAreaString);
+    output(finalAreaString);
 }
 
-function computeTriangleOrientation(pointOne, pointTwo, pointThree) {
-  // Calculate vectors from pointOne to pointTwo and pointOne to pointThree.
-  const vectorA = [pointTwo[0] - pointOne[0], pointTwo[1] - pointOne[1]];
-  const vectorB = [pointThree[0] - pointOne[0], pointThree[1] - pointOne[1]];
+function calculateCrossProduct(v1, v2, v3) {
+    // Compute vectors from v1 to v2 and v1 to v3.
+    var vectorA = [v2[0] - v1[0], v2[1] - v1[1]];
+    var vectorB = [v3[0] - v1[0], v3[1] - v1[1]];
 
-  // Return the scalar component of the 2D cross product.
-  // This value's sign indicates orientation, and its magnitude is twice the signed area.
-  return calculateCrossProductScalar(vectorA, vectorB);
+    // Return the 2D cross product of vectorA and vectorB.
+    return computeVectorCrossProduct(vectorA, vectorB);
 }
 
-function calculateCrossProductScalar(vecA, vecB) {
-  // Computes the 2D cross product scalar: (Ax * By - Ay * Bx)
-  return (vecA[0] * vecB[1] - vecA[1] * vecB[0]);
+function computeVectorCrossProduct(vectorA, vectorB) {
+    // The 2D cross product (or Z-component of 3D cross product)
+    // is (Ax * By - Ay * Bx).
+    return (vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0]);
 }

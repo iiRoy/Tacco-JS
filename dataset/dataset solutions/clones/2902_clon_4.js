@@ -1,29 +1,17 @@
-const acquireNumericElements = (textualData, delimiterRegex) => {
-  const segments = textualData.trim().split(delimiterRegex);
-  if (segments.length !== 2) {
-    throw new Error("Input string malformed; expected two numeric components.");
-  }
-  return segments.map(Number);
+const calculateFinalValue = (valA, valP) => {
+  const sumOfOperands = valA + valP;
+  const halfSum = sumOfOperands / 2;
+  const intermediateResult = halfSum + valA;
+  return Math.floor(intermediateResult);
 };
 
-const calculateCompositeValue = (initialOperand, secondaryOperand) => {
-  const transformFirst = (val) => val * 3;
-  const combineOperands = (val1, val2) => val1 + val2;
-  const halveResult = (val) => val / 2;
-  const extractIntegerPart = (val) => Math.trunc(val);
+function handleInputAndOutput(sourceText) {
+  const parts = sourceText.split(" ");
+  const primaryValue = parseInt(parts[0], 10);
+  const secondaryValue = parseInt(parts[1], 10);
 
-  const intermediateResult = combineOperands(transformFirst(initialOperand), secondaryOperand);
-  return extractIntegerPart(halveResult(intermediateResult));
-};
+  const finalScore = calculateFinalValue(primaryValue, secondaryValue);
+  console.log(finalScore);
+}
 
-const orchestrateExecution = (sourceIdentifier) => {
-  const rawInputContent = require("node:fs").readFileSync(sourceIdentifier, "utf8");
-
-  const [firstComponent, secondComponent] = acquireNumericElements(rawInputContent, /\s+/);
-
-  const computedOutcome = calculateCompositeValue(firstComponent, secondComponent);
-
-  console.info(computedOutcome);
-};
-
-orchestrateExecution("/dev/stdin");
+handleInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));

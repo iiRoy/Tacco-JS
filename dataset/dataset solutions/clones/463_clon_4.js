@@ -1,53 +1,42 @@
-const standardInput = process.stdin;
-const standardOutput = process.stdout;
+const fileSystem = require('fs');
 
-let accumulatedText = '';
+const rawInputContent = fileSystem.readFileSync(0, 'utf8');
+const sourceLines = rawInputContent.split('\n');
 
-standardInput.setEncoding('utf8');
+const octalDigitMapping = [0, 1, 2, 3, 5, 7, 8, 9];
 
-const digitTransformer = new Map([
-  ['0', 0],
-  ['1', 1],
-  ['2', 2],
-  ['3', 3],
-  ['4', 5],
-  ['5', 7],
-  ['6', 8],
-  ['7', 9]
-]);
-
-function recursiveOctalProcessor(valueToConvert, substitutionTable) {
-  if (valueToConvert === 0) {
-    return String(substitutionTable.get('0'));
-  }
-
-  const resultSegments = [];
-  function processRemainder(currentDividend) {
-    if (currentDividend === 0) {
-      return;
+function transformNumberByOctalDigits(numericValue, digitMap) {
+    if (numericValue === 0) {
+        return String(digitMap[0]);
     }
-    const remainderDigit = currentDividend % 8;
-    processRemainder(Math.floor(currentDividend / 8));
-    const transformedDigit = substitutionTable.get(String(remainderDigit));
-    resultSegments.push(String(transformedDigit));
-  }
-  processRemainder(valueToConvert);
-  return resultSegments.join('');
+
+    let isNegative = false;
+    if (numericValue < 0) {
+        isNegative = true;
+        numericValue = Math.abs(numericValue);
+    }
+
+    const mappedDigits = [];
+    let currentNum = numericValue;
+
+    while (currentNum > 0) {
+        const octalDigit = currentNum % 8;
+        mappedDigits.unshift(String(digitMap[octalDigit]));
+        currentNum = Math.floor(currentNum / 8);
+    }
+
+    if (isNegative) {
+        mappedDigits.unshift("undefined");
+    }
+
+    return mappedDigits.join('');
 }
 
-standardInput.on('data', (chunk) => {
-  accumulatedText += chunk;
-});
+for (const currentLine of sourceLines) {
+    const parsedValue = Number.parseInt(currentLine, 10);
 
-standardInput.on('end', () => {
-  const numericLines = accumulatedText.trim().split('\n');
-
-  for (const lineEntry of numericLines) {
-    const currentNumericalValue = Number.parseInt(lineEntry, 10);
-
-    if (!Number.isNaN(currentNumericalValue) && currentNumericalValue !== 0) {
-      const transformedDigits = recursiveOctalProcessor(currentNumericalValue, digitTransformer);
-      standardOutput.write(transformedDigits + '\n');
+    if (Number.isFinite(parsedValue) && parsedValue !== 0) {
+        const transformedOutput = transformNumberByOctalDigits(parsedValue, octalDigitMapping);
+        console.log(transformedOutput);
     }
-  }
-});
+}

@@ -1,112 +1,53 @@
-var primeSequenceCache = [-1, 2, 3, 5, 7, 11, 13];
+var primeCache = [-1, 2, 3, 5, 7, 11, 13];
 
-function isNumberPrime(testCandidate) {
-    if (testCandidate <= 1) {
-        return false;
-    }
-    if (testCandidate === 2 || testCandidate === 3) {
-        return true;
-    }
-    if (testCandidate % 2 === 0) {
-        return false;
-    }
-    if (testCandidate % 3 === 0) {
-        return false;
+function getNthPrime(primeIndex) {
+    if (primeIndex < primeCache.length && primeCache[primeIndex] !== undefined) {
+        return primeCache[primeIndex];
     }
 
-    const maxDivisorCheck = Math.floor(Math.sqrt(testCandidate));
-    let kFactor = 1;
+    var lastCachedPrime = primeCache[primeCache.length - 1];
+    var currentCandidate = lastCachedPrime + 2;
+    
+    while (true) {
+        if (checkPrimality(currentCandidate)) {
+            primeCache.push(currentCandidate);
+            if (primeCache.length - 1 === primeIndex) {
+                return currentCandidate;
+            }
+        }
+        currentCandidate += 2;
+    }
+}
 
-    while ((6 * kFactor - 1) <= maxDivisorCheck) {
-        const divisorA = (6 * kFactor - 1);
-        const divisorB = (6 * kFactor + 1);
+function checkPrimality(candidateNum) {
+    if (candidateNum % 3 === 0) return false;
 
-        if (testCandidate % divisorA === 0 || testCandidate % divisorB === 0) {
+    var sqrtLimit = Math.round(Math.sqrt(candidateNum));
+    var k = 1;
+    while (k * 6 - 1 <= sqrtLimit) {
+        var factorA = k * 6 - 1;
+        var factorB = k * 6 + 1;
+        if (candidateNum % factorA === 0 || candidateNum % factorB === 0) {
             return false;
         }
-        kFactor++;
+        k++;
     }
-
     return true;
 }
 
-function computePrimeByIndex(ordinalPosition) {
-    if (!Number.isInteger(ordinalPosition) || ordinalPosition <= 0) {
-        throw new Error("Ordinal position must be a positive integer.");
-    }
-
-    const cachedValue = primeSequenceCache[ordinalPosition];
-    if (cachedValue !== undefined && cachedValue !== -1) {
-        return cachedValue;
-    }
-
-    let currentCacheSize = primeSequenceCache.length;
-    let lastKnownPrimeIndex = currentCacheSize - 1;
-    let lastKnownPrimeNumber = primeSequenceCache[lastKnownPrimeIndex];
-
-    let candidateForPrimality = lastKnownPrimeNumber + 2;
-
-    while (true) {
-        if (candidateForPrimality > Number.MAX_SAFE_INTEGER) {
-            throw new Error("Candidate prime exceeded safe integer limit.");
-        }
-
-        if (isNumberPrime(candidateForPrimality)) {
-            lastKnownPrimeIndex++;
-            primeSequenceCache[lastKnownPrimeIndex] = candidateForPrimality;
-
-            if (lastKnownPrimeIndex === ordinalPosition) {
-                return candidateForPrimality;
-            }
-        }
-        candidateForPrimality += 2;
-    }
-}
-
-const fileSystem = require('fs');
-const standardInputPath = '/dev/stdin';
-
-let rawInputData;
-try {
-    rawInputData = fileSystem.readFileSync(standardInputPath, 'utf8');
-} catch (readError) {
-    console.error("Failed to read input from /dev/stdin:", readError.message);
-    process.exit(1);
-}
-
-const inputLinesArray = rawInputData
-    .split('\n')
-    .map(currentLineString => currentLineString.trim())
-    .filter(trimmedLine => trimmedLine.length > 0);
-
-for (let lineIndex = 0; lineIndex < inputLinesArray.length; lineIndex++) {
-    const currentLineString = inputLinesArray[lineIndex];
-    const queryValue = parseInt(currentLineString, 10);
-
-    if (isNaN(queryValue)) {
-        console.warn(`Skipping invalid input line: "${currentLineString}" as it's not a number.`);
-        continue;
-    }
-    if (queryValue < 0) {
-        console.warn(`Skipping input line: "${currentLineString}" as negative numbers are not valid prime positions.`);
-        continue;
-    }
-
-    if (queryValue === 0) {
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var inputLines = rawData.split('\n');
+ 
+var currentLine;
+while ((currentLine = inputLines.shift()) !== undefined) {
+    var inputNumber = +currentLine;
+    if (inputNumber === 0) {
         break;
     }
 
-    let cumulativeSumOfPrimes = 0;
-    const loopUpperBound = queryValue;
-
-    for (let currentOrdinal = loopUpperBound; currentOrdinal >= 1; currentOrdinal--) {
-        try {
-            cumulativeSumOfPrimes += computePrimeByIndex(currentOrdinal);
-        } catch (primeError) {
-            console.error(`Error computing prime for ordinal ${currentOrdinal} for input ${queryValue}: ${primeError.message}. Adding 0 to sum.`);
-            cumulativeSumOfPrimes += 0;
-        }
+    var sumOfPrimes = 0;
+    for (var primeCounter = 1; primeCounter <= inputNumber; primeCounter++) {
+        sumOfPrimes += getNthPrime(primeCounter);
     }
-
-    console.log(cumulativeSumOfPrimes);
+    console.log(sumOfPrimes);
 }

@@ -1,66 +1,58 @@
 "use strict";
 
-// Main execution block to handle the input and orchestrate the battle logic
-const processInput = rawData => {
+// Main processing function for the input data
+const processInput = (inputString) => {
+  // Clean up the input string and split it into lines
+  let cleanedInput = inputString.trim().split("\n");
 
-  // Clean and parse the initial input string into an array of lines
-  rawData = rawData.trim().split("\n");
+  // Parse the initial parameters from the first line
+  const numItems = parseInt(cleanedInput[0].split(" ")[0]);
+  let healthPoints = parseInt(cleanedInput[0].split(" ")[1]);
 
-  // Extract the total number of monsters from the first line
-  const entityCount = parseInt(rawData[0].split(" ")[0]);
+  // Extract and parse the attack data from subsequent lines
+  let attackDetails = cleanedInput
+    .slice(1, numItems + 1)
+    .map((line) => line.split(" ").map((val) => parseInt(val)));
 
-  // Retrieve the initial health points of the target from the first line
-  let healthPoints = parseInt(rawData[0].split(" ")[1]);
+  // Sort the attack details in descending order based on the first value (attack power)
+  attackDetails.sort((firstItem, secondItem) => secondItem[0] - firstItem[0]);
 
-  // Parse the monster abilities (attack and throw damage) from subsequent lines
-  // Each line contains two integers: [attack_value, throw_value]
-  let monsterAbilities = rawData.slice(1, entityCount + 1).map(currentEntry =>
-    currentEntry.split(" ").map(stringValue =>
-      parseInt(stringValue)
-    )
-  );
+  // Determine the maximum base attack power from the strongest item
+  const maxBaseAttack = attackDetails[0][0];
 
-  // Sort the monster abilities primarily by their attack values in descending order
-  // This helps in identifying the strongest attack for melee calculations
-  monsterAbilities.sort((firstAbility, secondAbility) => secondAbility[0] - firstAbility[0]);
+  // Re-sort the attack details by the second value (throw damage) in descending order,
+  // then filter to keep only items with throw damage greater than the max base attack.
+  // This creates a list of effective "throwable" items.
+  let throwableAttacks = attackDetails
+    .sort((itemA, itemB) => itemB[1] - itemA[1])
+    .filter((item) => item[1] > maxBaseAttack);
 
-  // Determine the maximum possible melee attack value available
-  const maxMeleeDamage = monsterAbilities[0][0];
+  // Initialize counters for damage and thrown attacks
+  let cumulativeDamage = 0; // This variable is declared but not used in the original logic, so it remains unused.
+  let thrownWeaponCount = 0;
 
-  // Re-sort the monster abilities, this time by their throw values in descending order.
-  // Then, filter out any throw attacks that are weaker than the maximum melee attack.
-  // Only strong throw attacks are considered for the initial phase.
-  monsterAbilities = monsterAbilities.sort((firstAbility, secondAbility) => secondAbility[1] - firstAbility[1])
-                                   .filter(currentAbility => currentAbility[1] > maxMeleeDamage);
+  // Iterate through the filtered throwable attacks
+  for (let idx in throwableAttacks) {
+    // Reduce health points by the throw damage of the current item
+    healthPoints -= throwableAttacks[idx][1];
+    // Increment the count of thrown weapons
+    thrownWeaponCount++;
 
-  // Initialize counters for damage dealt and the number of ranged attacks used
-  let totalDamageDealt = 0; // This variable is declared but not explicitly used for calculation, consistent with original
-  let rangedAttackCount = 0;
-
-  // Iterate through the sorted and filtered throw attacks
-  // Attempt to defeat the target using only these powerful ranged attacks first
-  for (let abilityIndex in monsterAbilities) {
-    // Apply the throw damage to the target's health
-    healthPoints -= monsterAbilities[abilityIndex][1];
-    // Increment the count of ranged attacks performed
-    rangedAttackCount++;
-
-    // Check if the target's health has dropped to zero or below
+    // If health points drop to or below zero, we've defeated the target
     if (healthPoints <= 0) {
-      // If defeated, log the total number of ranged attacks and exit
-      console.log(rangedAttackCount);
-      return;
+      // Output the total number of thrown attacks needed
+      console.log(thrownWeaponCount);
+      return; // Exit the function early
     }
   }
 
-  // If the target is still alive after all powerful ranged attacks,
-  // calculate how many direct melee strikes are needed using the strongest melee attack.
-  // Math.ceil ensures that even fractional health requires a full strike.
-  const finalMeleeStrikes = Math.ceil(healthPoints / maxMeleeDamage);
+  // If the target is still alive after all effective throws, calculate remaining attacks
+  // using the strongest base attack. Use Math.ceil to ensure any remaining health requires a full attack.
+  const finalMeleeStrikes = Math.ceil(healthPoints / maxBaseAttack);
 
-  // Log the total number of attacks: sum of ranged attacks and final melee strikes.
-  console.log(rangedAttackCount + finalMeleeStrikes);
+  // Output the total attacks: thrown weapons plus the final melee strikes
+  console.log(thrownWeaponCount + finalMeleeStrikes);
 };
 
-// Invoke the main processing function with data read from standard input
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

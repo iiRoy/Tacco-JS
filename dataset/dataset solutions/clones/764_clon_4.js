@@ -1,55 +1,63 @@
-const sourceReader = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const allInputLines = sourceReader.trim().split('\n');
+const fs = require('fs');
 
-function* electionCaseGenerator(lineRegistry) {
-    let currentLineIndex = 0;
-    while (currentLineIndex < lineRegistry.length) {
-        const caseIdentifier = lineRegistry[currentLineIndex++];
-        if (caseIdentifier === '0') {
-            return;
+const rawInputContent = fs.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split("\n");
+
+const electionRounds = [];
+let currentLineIndex = 0;
+while (currentLineIndex < inputLines.length) {
+    const voteCountLine = inputLines[currentLineIndex++];
+    const numberOfVotes = parseInt(voteCountLine, 10);
+
+    if (numberOfVotes === 0) {
+        break;
+    }
+
+    const votesString = inputLines[currentLineIndex++];
+    const individualVotes = votesString.split(" ");
+    electionRounds.push(individualVotes);
+}
+
+const electionOutcomes = electionRounds.map(currentRoundVotes => {
+    const roundState = currentRoundVotes.reduce((accumulator, currentCandidateVote, votePosition) => {
+        if (accumulator.hasWinner) {
+            return accumulator;
         }
-        if (currentLineIndex < lineRegistry.length) {
-            const voteSequence = lineRegistry[currentLineIndex++];
-            yield voteSequence.split(' ');
-        } else {
-            // Should not happen if '0' is always the final line
-            return;
+
+        accumulator.candidateTallies.set(
+            currentCandidateVote,
+            (accumulator.candidateTallies.get(currentCandidateVote) || 0) + 1
+        );
+
+        let highestScore = 0;
+        let secondHighestScore = 0;
+        let currentFrontRunner = null;
+
+        for (const [candidateName, score] of accumulator.candidateTallies.entries()) {
+            if (score > highestScore) {
+                secondHighestScore = highestScore;
+                highestScore = score;
+                currentFrontRunner = candidateName;
+            } else if (score > secondHighestScore) {
+                secondHighestScore = score;
+            }
         }
-    }
-}
 
-function resolveElectionOutcome(pendingVotes, currentVoteCounts, ballotsProcessedSoFar) {
-    if (pendingVotes.length === 0) {
-        return "TIE";
-    }
+        const remainingBallotsToProcess = currentRoundVotes.length - (votePosition + 1);
 
-    const currentBallot = pendingVotes[0];
-    const updatedVoteCounts = new Map(currentVoteCounts);
-    updatedVoteCounts.set(currentBallot, (updatedVoteCounts.get(currentBallot) || 0) + 1);
+        if (highestScore > secondHighestScore + remainingBallotsToProcess) {
+            accumulator.hasWinner = true;
+            accumulator.resultString = `${currentFrontRunner} ${votePosition + 1}`;
+        }
 
-    const totalBallotsCast = ballotsProcessedSoFar + 1;
-    const votesRemaining = pendingVotes.length - 1;
+        return accumulator;
+    }, {
+        candidateTallies: new Map(),
+        hasWinner: false,
+        resultString: "TIE"
+    });
 
-    const rankedCandidates = Array.from(updatedVoteCounts.entries())
-                                   .sort((c1, c2) => c2[1] - c1[1]);
+    return roundState.resultString;
+});
 
-    const topContender = rankedCandidates[0];
-    const secondContender = rankedCandidates[1] || [null, 0]; // Handles single candidate scenario
-
-    if (topContender && topContender[1] > secondContender[1] + votesRemaining) {
-        return `${topContender[0]} ${totalBallotsCast}`;
-    }
-
-    return resolveElectionOutcome(
-        pendingVotes.slice(1),
-        updatedVoteCounts,
-        totalBallotsCast
-    );
-}
-
-const collectedResults = [];
-for (const currentElectionVotes of electionCaseGenerator(allInputLines)) {
-    collectedResults.push(resolveElectionOutcome(currentElectionVotes, new Map(), 0));
-}
-
-console.log(collectedResults.join('\n').trim());
+console.log(electionOutcomes.join("\n"));

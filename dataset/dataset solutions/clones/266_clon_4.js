@@ -1,26 +1,23 @@
-const fileSystemOperations = require("fs");
-const sourceContent = fileSystemOperations.readFileSync("/dev/stdin", "utf8");
-const numericalSegments = sourceContent.split(/\s/).filter(Boolean).map(Number);
+const fileSystem = require("fs");
 
-function processNumericSequence(dataset, currentPoint) {
-    if (currentPoint + 1 >= dataset.length) {
-        return;
+function* generateNumericPairs(sourceTokens) {
+    let currentPosition = 0;
+    while (true) {
+        const firstComponent = Number(sourceTokens[currentPosition]);
+        const secondComponent = Number(sourceTokens[currentPosition + 1]);
+        if (firstComponent * secondComponent === 0) {
+            return;
+        }
+        yield [firstComponent, secondComponent];
+        currentPosition += 2;
     }
-
-    const firstQuantity = dataset[currentPoint];
-    const secondQuantity = dataset[currentPoint + 1];
-
-    if (firstQuantity === 0 || secondQuantity === 0) {
-        return;
-    }
-
-    const squareOfFirst = Math.pow(firstQuantity, 2);
-    const intermediateValue = firstQuantity * Math.hypot(2 * secondQuantity, firstQuantity);
-    const finalProduct = intermediateValue + squareOfFirst;
-
-    console.log(finalProduct);
-
-    processNumericSequence(dataset, currentPoint + 2);
 }
 
-processNumericSequence(numericalSegments, 0);
+const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+const inputStringSegments = rawInputContent.split(/\s/);
+
+for (const [valX, valY] of generateNumericPairs(inputStringSegments)) {
+    const squareOfX = valX * valX;
+    const computedResult = valX * Math.sqrt(4 * valY * valY + squareOfX) + squareOfX;
+    console.log(computedResult);
+}

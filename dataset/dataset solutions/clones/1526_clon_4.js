@@ -1,24 +1,15 @@
-function calculateMaximumProduct(sourceTxt) {
-    const rawValues = sourceTxt.match(/-?\d+(\.\d+)?/g).map(Number);
+function calculateMaxCrossProduct(numericString) {
+    const parsedValues = numericString.split(" ").map(parseFloat);
+    const [valA, valB, valC, valD] = parsedValues;
 
-    const firstPairBounds = [
-        Math.min(rawValues[0], rawValues[1]),
-        Math.max(rawValues[0], rawValues[1])
+    const productSet = [
+        valA * valC,
+        valA * valD,
+        valB * valC,
+        valB * valD
     ];
 
-    const secondPairBounds = [
-        Math.min(rawValues[2], rawValues[3]),
-        Math.max(rawValues[2], rawValues[3])
-    ];
-
-    const allOutcomes = firstPairBounds.flatMap(factorA =>
-        secondPairBounds.map(factorB => factorA * factorB)
-    );
-
-    const finalAnswer = Math.max(...allOutcomes);
-
-    return finalAnswer;
+    return Math.max(...productSet);
 }
 
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(calculateMaximumProduct(fileContent));
+console.log(calculateMaxCrossProduct(require("fs").readFileSync("/dev/stdin", "utf8")));

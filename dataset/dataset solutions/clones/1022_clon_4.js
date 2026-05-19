@@ -1,63 +1,46 @@
-let dataReceptionBuffer = '';
+function executeScheduler() {
+    const incomingLines = incomingStream.split('\n');
+
+    const [numProcessesStr, quantumStr] = incomingLines[0].split(' ');
+    const quantumDuration = Number(quantumStr);
+    const processCount = Number(numProcessesStr);
+
+    const initialTasks = incomingLines.slice(1, processCount + 1).map(line => {
+        const [id, timeStr] = line.split(' ');
+        return { identifier: id, remainingTime: Number(timeStr) };
+    });
+
+    const processTasksRecursively = (currentTaskList, accumulatedDuration) => {
+        if (currentTaskList.length === 0) {
+            return;
+        }
+
+        const [activeTask, ...restOfTasks] = currentTaskList;
+
+        if (activeTask.remainingTime > quantumDuration) {
+            const updatedTask = {
+                identifier: activeTask.identifier,
+                remainingTime: activeTask.remainingTime - quantumDuration
+            };
+            const nextTaskList = [...restOfTasks, updatedTask];
+            processTasksRecursively(nextTaskList, accumulatedDuration + quantumDuration);
+        } else {
+            const finalDuration = accumulatedDuration + activeTask.remainingTime;
+            console.log(activeTask.identifier + ' ' + finalDuration);
+            processTasksRecursively(restOfTasks, finalDuration);
+        }
+    };
+
+    processTasksRecursively(initialTasks, 0);
+}
+
+let incomingStream = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (dataChunk) => {
-    dataReceptionBuffer += dataChunk;
+process.stdin.on('data', function (chunk) {
+    incomingStream += chunk;
 });
-
-process.stdin.on('end', () => {
-    const rawDataSegments = dataReceptionBuffer.split('\n').filter(Boolean);
-    const configurationValues = rawDataSegments[0].split(' ').map(Number);
-    const jobCount = configurationValues[0];
-    const timeSliceDuration = configurationValues[1];
-
-    const initialWorkloadUnits = rawDataSegments.slice(1, jobCount + 1).map(segment => {
-        const components = segment.split(' ');
-        return {
-            designator: components[0],
-            remainingComputation: Number(components[1])
-        };
-    });
-
-    performSchedulingSimulation(initialWorkloadUnits, timeSliceDuration);
+process.stdin.on('end', function () {
+    executeScheduler();
 });
-
-function performSchedulingSimulation(startingWorkUnits, quantumInterval) {
-    const completionRecords = [];
-
-    // This recursive function orchestrates the task execution cycles.
-    // currentSetOfWorkUnits: The queue of tasks awaiting or continuing processing.
-    // accumulatedTime: The total time elapsed up to the current cycle.
-    function advanceCycle(currentSetOfWorkUnits, accumulatedTime) {
-        if (currentSetOfWorkUnits.length === 0) {
-            return; // All tasks have been completed.
-        }
-
-        const currentWorkUnit = currentSetOfWorkUnits[0]; // Take the first unit for processing.
-        const subsequentWorkUnits = currentSetOfWorkUnits.slice(1); // The rest of the units.
-
-        const timeExpendedInCycle = Math.min(currentWorkUnit.remainingComputation, quantumInterval);
-        const newAccumulatedTime = accumulatedTime + timeExpendedInCycle;
-
-        if (currentWorkUnit.remainingComputation > quantumInterval) {
-            // Task requires more time; update its remaining duration and place it at the end of the queue.
-            const updatedWorkUnit = {
-                designator: currentWorkUnit.designator,
-                remainingComputation: currentWorkUnit.remainingComputation - quantumInterval
-            };
-            const nextCycleWorkUnits = [...subsequentWorkUnits, updatedWorkUnit];
-            advanceCycle(nextCycleWorkUnits, newAccumulatedTime);
-        } else {
-            // Task completed within or by this quantum; record its completion and proceed without re-queuing.
-            completionRecords.push(`${currentWorkUnit.designator} ${newAccumulatedTime}`);
-            const nextCycleWorkUnits = subsequentWorkUnits;
-            advanceCycle(nextCycleWorkUnits, newAccumulatedTime);
-        }
-    }
-
-    advanceCycle(startingWorkUnits, 0); // Initiate the scheduling process from time zero.
-
-    // Once all recursive calls are resolved (all tasks completed), output the results.
-    completionRecords.forEach(reportEntry => console.log(reportEntry));
-}

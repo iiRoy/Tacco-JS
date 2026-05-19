@@ -1,55 +1,44 @@
-const obtainFeed = () => require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const calculateProbes = (dataPoints, desiredValue, lowerBound, upperBound, currentTally) => {
-    currentTally++;
-
-    if (lowerBound >= upperBound) {
-        return currentTally;
+function findComparisonCount(dataArray, targetValue) {
+  function searchRecursive(low, high, currentCount) {
+    currentCount++;
+    if (low === high) {
+      return currentCount;
     }
-
-    let centerPoint = Math.floor((lowerBound + upperBound) / 2);
-
-    if (dataPoints[centerPoint] === desiredValue) {
-        return currentTally;
+    const midPoint = Math.floor((low + high) / 2);
+    if (dataArray[midPoint] === targetValue) {
+      return currentCount;
     }
-
-    if (desiredValue < dataPoints[centerPoint]) {
-        return calculateProbes(dataPoints, desiredValue, lowerBound, centerPoint, currentTally);
+    if (targetValue < dataArray[midPoint]) {
+      return searchRecursive(low, midPoint, currentCount);
     } else {
-        return calculateProbes(dataPoints, desiredValue, centerPoint + 1, upperBound, currentTally);
+      return searchRecursive(midPoint + 1, high, currentCount);
     }
-};
+  }
+  return searchRecursive(0, dataArray.length, 0);
+}
 
-const determineSearchCount = (collection, item) => {
-    if (!collection || collection.length === 0) {
-        return 1;
+function* inputBlockIterator(lines) {
+  let lineIndex = 0;
+  while (true) {
+    const currentN = Number(lines[lineIndex++]);
+    if (currentN === 0) {
+      break;
     }
-    return calculateProbes(collection, item, 0, collection.length, 0);
-};
-
-const processSegmentsRecursively = (sourceLines, positionIndex) => {
-    if (positionIndex >= sourceLines.length) {
-        return;
+    const currentArray = [];
+    for (let k = 0; k < currentN; k++) {
+      currentArray.push(Number(lines[lineIndex++]));
     }
+    const currentSearchKey = Number(lines[lineIndex++]);
+    yield {
+      arr: currentArray,
+      key: currentSearchKey
+    };
+  }
+}
 
-    let segmentSize = parseInt(sourceLines[positionIndex], 10);
-    positionIndex++;
+const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputContent.trim().split('\n');
 
-    if (segmentSize === 0) {
-        return;
-    }
-
-    let currentSegment = sourceLines.slice(positionIndex, positionIndex + segmentSize).map(Number);
-    positionIndex += segmentSize;
-
-    let targetObjective = parseInt(sourceLines[positionIndex], 10);
-    positionIndex++;
-
-    console.log(determineSearchCount(currentSegment, targetObjective));
-
-    processSegmentsRecursively(sourceLines, positionIndex);
-};
-
-const rawInputContent = obtainFeed();
-const cleanedInputLines = rawInputContent.trim().split('\n');
-processSegmentsRecursively(cleanedInputLines, 0);
+for (const block of inputBlockIterator(inputLines)) {
+  console.log(findComparisonCount(block.arr, block.key));
+}

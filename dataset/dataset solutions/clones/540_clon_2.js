@@ -1,70 +1,61 @@
-let rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process raw input data from stdin
-const lineArray = rawData.trim().split("\n");
+// Process the raw input string into an array of lines.
+var lineSegments = rawData.trim().split("\n");
 
-// The first line contains the total number of elements, converted to a number
-let totalElements = Number(lineArray.shift());
+// Extract the first number, representing the total count of elements.
+var totalCount = lineSegments.shift() - 0;
 
-// The second line contains the initial sequence of numbers, parsed from string
-const originalSequence = lineArray.shift().split(/\s+/).map(val => parseInt(val, 10));
+// Parse the second line into an array of numbers, which is our initial sequence.
+var initialSequence = lineSegments.shift().split(" ").map(Number);
 
-// Create a sorted version of the original sequence for comparison
-const sortedSequence = originalSequence.slice().sort((firstItem, secondItem) => firstItem - secondItem);
+// Create a sorted version of the initial sequence for comparison purposes.
+var sortedSequence = initialSequence.slice().sort((valA, valB) => valA - valB);
 
-// The next line indicates the number of query operations to perform
-let queryCount = Number(lineArray.shift());
+// Extract the number of query operations from the next line.
+var queryCount = lineSegments.shift() - 0;
 
-// Parse the remaining lines as swap operations, adjusting indices to be 0-based
-const swapIndices = lineArray.map(itemLine =>
-  itemLine.split(' ').map(parseInt).map(val => val - 1)
-);
+// Parse the remaining lines into an array of swap operations, adjusting indices to be 0-based.
+var swapOperations = lineSegments.map(itemStr => itemStr.split(" ").map(Number).map(idxVal => idxVal - 1));
 
-// Prepend a dummy operation at the start for loop indexing convenience
-swapIndices.unshift([0, 0]);
+// Prepend a dummy operation at the beginning of the swap operations array.
+swapOperations.unshift([0, 0]);
 
-// Initialize two objects to store differences between original and sorted sequences
-let diffMapInitial = {}; // Stores elements from originalSequence that are out of place
-let diffMapTarget = {};  // Stores elements from sortedSequence at those same positions
+// Initialize two objects to store elements that are out of place in the initial sequence
+// and their corresponding sorted values.
+var currentMap = {};
+var targetMap = {};
 
-// Populate the difference maps by comparing original and sorted sequences
-for (let idx = 0; idx < originalSequence.length; idx++) {
-  // If an element in the original sequence doesn't match the sorted one at the same index
-  if (originalSequence[idx] !== sortedSequence[idx]) {
-    diffMapInitial[idx] = originalSequence[idx]; // Store the original value
-    diffMapTarget[idx] = sortedSequence[idx];    // Store the target value
-  }
+// Populate the maps by comparing the initial and sorted sequences.
+for (var idx = 0; idx < initialSequence.length; idx++) {
+   if (initialSequence[idx] !== sortedSequence[idx]) {
+      currentMap[idx] = initialSequence[idx];
+      targetMap[idx] = sortedSequence[idx];
+   }
 }
 
-// Convert the target difference map's values into a comma-separated string for easy comparison
-const targetMapString = Object.values(diffMapTarget).join(' , ');
+// Create a comma-separated string of the target map's values for efficient comparison.
+var targetMapValuesStr = Object.values(targetMap).join(",");
 
-// A boolean flag to indicate if a match is found
-let isMatchFound = false;
+// A boolean flag to track if a matching state is found.
+var foundMatch = false;
 
-// Iterate through the swap operations, including the dummy one
-for (let iterationIndex = 0; iterationIndex <= queryCount; iterationIndex++) {
+// Iterate through each swap operation, applying it and checking if the current state matches the target.
+for (var opIndex = 0; opIndex <= queryCount; opIndex++) {
+   // Perform the swap operation on the current map.
+   [currentMap[swapOperations[opIndex][0]], currentMap[swapOperations[opIndex][1]]] =
+      [currentMap[swapOperations[opIndex][1]], currentMap[swapOperations[opIndex][0]]];
 
-  // Perform the swap operation on the 'diffMapInitial' object
-  // Destructuring assignment is used for concise swapping
-  [
-    diffMapInitial[swapIndices[iterationIndex][0]],
-    diffMapInitial[swapIndices[iterationIndex][1]]
-  ] = [
-    diffMapInitial[swapIndices[iterationIndex][1]],
-    diffMapInitial[swapIndices[iterationIndex][0]]
-  ];
-
-  // After each swap, check if the current state of diffMapInitial matches the target state
-  if (Object.values(diffMapInitial).join(' , ') === targetMapString) {
-    isMatchFound = true; // Set flag to true if a match is found
-    break;               // Exit the loop as we found the first matching iteration
-  }
+   // Check if the current map's values, when joined, match the target string.
+   if (Object.values(currentMap).join(",") === targetMapValuesStr) {
+      foundMatch = true;
+      break; // Exit the loop as soon as a match is found.
+   }
 }
 
-// Output the result based on whether a match was found
-if (isMatchFound) {
-  console.log(iterationIndex); // Print the iteration index where the match was found
+// Output the index of the operation that resulted in a match, or -1 if no match was found.
+if (foundMatch) {
+   console.log(opIndex);
 } else {
-  console.log(-1);             // Print -1 if no match was found after all operations
+   console.log(-1);
 }

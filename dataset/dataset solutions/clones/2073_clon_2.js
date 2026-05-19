@@ -1,91 +1,101 @@
-"use strict"; // Enforce strict parsing and error handling
+"use strict"; // Enforce strict mode for cleaner code execution
 
-// Module import and initial data setup
-var dataSource = require("fs").readFileSync("/dev/stdin", "utf8"); // Read entire standard input synchronously
-var tokenStream = dataSource.split(/ |\n/), // Divide the input into tokens by spaces or newlines
-  currentTokenPosition = 0; // Initialize an index to track the current token being processed
+// Read the entire standard input synchronously as a string
+let fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+
+// Split the input string by spaces or newlines to create a stream of tokens
+// Initialize a pointer for the current token
+let tokenStream = fileContent.split(/ |\n/);
+let tokenIndex = 0;
 
 /**
- * Retrieves the next token from the global token stream.
- * @param {boolean} asStringFlag - If true, returns the token as a string; otherwise, attempts to convert it to a number.
+ * Reads the next token from the global token stream.
+ * If 'asString' is true, returns the token as a string.
+ * Otherwise, attempts to convert the token to a number.
+ * @param {boolean} asString - If true, return as string; otherwise, as number.
  * @returns {string|number} The next token.
  */
-function acquireNextToken(asStringFlag) {
-  // Move to the next token after retrieval
-  return asStringFlag ? tokenStream[currentTokenPosition++] : +tokenStream[currentTokenPosition++];
+function readNextToken(asString) {
+  return asString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
 /**
- * Retrieves a sequence of tokens from the global token stream.
- * @param {number} countToFetch - The number of tokens to retrieve.
- * @param {boolean} returnStrings - If true, returns tokens as strings; otherwise, converts them to numbers.
- * @returns {Array<string|number>} An array containing the requested tokens.
+ * Reads a specified number of tokens from the stream.
+ * @param {number} count - The number of tokens to read.
+ * @param {boolean} asStrings - If true, return tokens as strings; otherwise, as numbers.
+ * @returns {Array<string|number>} An array of tokens.
  */
-function acquireTokenSequence(countToFetch, returnStrings) {
-  // Slice the array and advance the token position
-  return returnStrings ?
-    tokenStream.slice(currentTokenPosition, (currentTokenPosition += countToFetch)) :
-    tokenStream.slice(currentTokenPosition, (currentTokenPosition += countToFetch)).map(val => +val);
+function readMultipleTokens(count, asStrings) {
+  // Slice the array and advance the index
+  if (asStrings) {
+    return tokenStream.slice(tokenIndex, (tokenIndex += count));
+  } else {
+    return tokenStream.slice(tokenIndex, (tokenIndex += count)).map((item) => +item);
+  }
 }
 
 /**
- * Retrieves a matrix (2D array) of tokens from the global token stream.
- * @param {number} matrixRows - The number of rows in the matrix.
- * @param {number} matrixCols - The number of columns in each row.
- * @param {boolean} stringElements - If true, elements are kept as strings; otherwise, converted to numbers.
- * @returns {Array<Array<string|number>>} The parsed matrix.
+ * Reads a matrix of tokens from the stream.
+ * @param {number} height - The number of rows.
+ * @param {number} width - The number of columns per row.
+ * @param {boolean} asStrings - If true, return tokens as strings; otherwise, as numbers.
+ * @returns {Array<Array<string|number>>} A 2D array (matrix) of tokens.
  */
-function acquireMatrixTokens(matrixRows, matrixCols, stringElements) {
-  var resultGrid = [], // Initialize an empty array to store the matrix rows
-    rowIndex = 0; // Initialize row counter
-
-  if (stringElements) {
-    // If elements should remain strings
-    for (; rowIndex < matrixRows; rowIndex++) {
-      resultGrid.push(tokenStream.slice(currentTokenPosition, (currentTokenPosition += matrixCols)));
+function readMatrixTokens(height, width, asStrings) {
+  let resultMatrix = [];
+  let rowCounter = 0; // Use a different loop variable name
+  if (asStrings) {
+    for (; rowCounter < height; rowCounter++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, (tokenIndex += width)));
     }
   } else {
-    // If elements should be converted to numbers
-    for (; rowIndex < matrixRows; rowIndex++) {
-      resultGrid.push(tokenStream.slice(currentTokenPosition, (currentTokenPosition += matrixCols)).map(val => +val));
+    for (; rowCounter < height; rowCounter++) {
+      resultMatrix.push(tokenStream.slice(tokenIndex, (tokenIndex += width)).map((item) => +item));
     }
   }
-  return resultGrid; // Return the constructed matrix
+  return resultMatrix;
 }
 
 /**
- * Dynamically constructs a multi-dimensional array based on provided dimensions.
- * Uses `eval` for dynamic array creation, which should be used with caution.
- * @param {*} defaultValue - The initial value for the innermost elements.
- * @returns {Array} A multi-dimensional array initialized with the default value.
+ * Creates a multi-dimensional array initialized with a given value.
+ * The dimensions are passed as arguments after the initial value.
+ * Example: createMultiDimArray(0, 2, 3) creates [[0,0,0],[0,0,0]]
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The sizes of each dimension.
+ * @returns {Array} The multi-dimensional array.
  */
-function constructNDArray(defaultValue) {
-  var dimensionSizes = arguments, // Get all arguments as an array of dimensions
-    currentDimIndex = dimensionSizes.length, // Start from the last dimension
-    arrayCreationCode = "Array(dimensionSizes[" + --currentDimIndex + "]).fill().map(element => { return " + defaultValue + "; })"; // Build innermost array creation string
+function createMultiDimArray(initialValue) {
+  let dimensionArgs = arguments;
+  let currentDimIndex = dimensionArgs.length; // Start from the last dimension
+  let arrayCreationString = "Array(dimensionArgs[" + --currentDimIndex + "]).fill().map(_=>{return " + initialValue + ";})";
 
-  // Loop backwards through dimensions to nest the array creation
-  while (--currentDimIndex >= 0) {
-    arrayCreationCode = "Array(dimensionSizes[" + currentDimIndex + "]).fill().map(element => " + arrayCreationCode + ")";
+  // Build the string for nested array creation
+  while (--currentDimIndex) {
+    arrayCreationString = "Array(dimensionArgs[" + currentDimIndex + "]).fill().map(_=>" + arrayCreationString + ")";
   }
-  return eval(arrayCreationCode); // Execute the dynamically generated code to create the array
+  // Evaluate the constructed string to create the array
+  return eval(arrayCreationString);
 }
 
-// Execute the primary logic and handle output
-var computedOutcome = executeCoreLogic(); // Call the main processing function
-// If the core logic returns a value, print it to the console
-if (computedOutcome !== undefined) console.log(computedOutcome);
+// Execute the main logic of the program
+let programResult = executeLogic();
+
+// If the main logic returned a value, print it to console
+if (programResult !== undefined) {
+  console.log(programResult);
+}
 
 /**
- * The primary function containing the core business logic.
- * Reads three numbers and performs a mathematical comparison.
+ * The primary function containing the problem's core logic.
+ * Reads three numbers and checks a specific mathematical condition.
  * @returns {string} "Yes" if the condition is met, "No" otherwise.
  */
-function executeCoreLogic() {
-  var firstOperand = acquireNextToken(), // Get the first number from input
-    secondOperand = acquireNextToken(), // Get the second number from input
-    thirdOperand = acquireNextToken(); // Get the third number from input
+function executeLogic() {
+  // Read three numerical inputs
+  let valA = readNextToken();
+  let valB = readNextToken();
+  let valC = readNextToken();
 
-  // Compare the sum of square roots of the first two numbers with the square root of the third
-  return Math.sqrt(firstOperand) + Math.sqrt(secondOperand) < Math.sqrt(thirdOperand) ? "Yes" : "No";
+  // Check if the sum of square roots of valA and valB is less than the square root of valC
+  return Math.sqrt(valA) + Math.sqrt(valB) < Math.sqrt(valC) ? "Yes" : "No";
 }

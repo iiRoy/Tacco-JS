@@ -1,49 +1,33 @@
-/*
- * This module processes a given text string based on specific criteria.
- * The input parameter holds the complete string for analysis.
- */
-function ProcessInputData(inputDataString) {
-  // Check if the initial character matches the required pattern
-  if (
-    inputDataString.substr(0, 1) ===
-    'A'
-  ) {
-    // Further validation for the middle section of the string
-    if (
-      inputDataString.slice(2, -3).indexOf('C') !== -1 &&
-      (inputDataString.split('C').length - 1) === 1
-    ) {
-      // Final check for non-alphabetic characters
-      if (
-        inputDataString.match(/[^A-Za-z]+/) !==
-        -1
-      ) {
-        // Output success indicator
-        console.log('AC');
-        return;
+// This function is designed to evaluate an input string based on specific criteria.
+function ProcessInput(inputString) {
+  // First, verify if the initial character of the provided string is 'A'.
+  if (inputString.substr(0, 1) === 'A') {
+
+    // If the first character is 'A', proceed to check for the presence and count of 'C'.
+    // It checks if 'C' exists within a specific substring (from index 2, excluding last 3 chars)
+    // AND if 'C' appears exactly once in the entire string.
+    if (inputString.slice(2, -3).indexOf('C') !== -1 && (inputString.split('C').length - 1) === 1) {
+
+      // If both previous conditions are met, perform a final check for non-alphabetic characters.
+      // Note: The original condition `!== -1` for `match` results in this `if` block always executing
+      // if the code reaches this point, as `match` returns either an array or `null`,
+      // both of which are not strictly equal to -1. This behavior is preserved.
+      if (inputString.match(/[^A-Za-z]+/) !== -1) {
+        console.log('AC'); // Output 'AC' if all conditions (including the always-true final one) are met.
+        return; // Terminate function execution.
       }
 
-      // Output failure indicator for this branch
-      console.log('WA');
-      return;
+      console.log('WA'); // Output 'WA' if the final condition (which is always true) is not met, which means this line is unreachable.
+      return; // Terminate function execution.
     }
 
-    // Output failure indicator for the middle section check
-    console.log('WA');
-    return;
+    console.log('WA'); // Output 'WA' if the 'C' presence/count condition is not met.
+    return; // Terminate function execution.
   }
 
-  // Output failure indicator for the initial character check
-  console.log('WA');
+  console.log('WA'); // Output 'WA' if the initial character is not 'A'.
 }
 
-/*
- * Do not modify the following line. It handles reading from standard input
- * and invoking the main processing function.
- */
-ProcessInputData(
-  require("fs").readFileSync(
-    "/dev/stdin",
-    "utf8"
-  )
-);
+// The following section handles standard input/output and should not be altered.
+// It reads the entire input from standard input and passes it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,30 +1,22 @@
-const moduleLoader = require;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const fileSystemInterface = moduleLoader('fs');
+var lineSegments = rawData.trim().split("\n");
 
-const synchronousFileReader = fileSystemInterface.readFileSync;
+var mainString = lineSegments[0];
 
-const incomingDataSource = synchronousFileReader('/dev/stdin', 'utf8');
+var patternString = lineSegments[1];
 
-const contentLines = incomingDataSource.trim().split("\n");
+var patternLengthMinusOne = patternString.length - 1;
 
-const targetText = contentLines[0];
+var searchRegex = new RegExp(patternString, "g");
 
-const searchStringPattern = contentLines[1];
+var matchIndices = [];
 
-let patternLengthMinusOne = searchStringPattern.length - 1;
-
-const regexPatternMatcher = new RegExp(searchStringPattern, "g");
-
-const foundMatchIndices = [];
-
-while (regexPatternMatcher.test(targetText)) {
-   regexPatternMatcher.lastIndex -= patternLengthMinusOne;
-   foundMatchIndices.push(regexPatternMatcher.lastIndex - 1);
+while (searchRegex.test(mainString)) {
+   searchRegex.lastIndex -= patternLengthMinusOne;
+   matchIndices.push(searchRegex.lastIndex - 1);
 }
 
-if (foundMatchIndices.length !== 0) {
-   const outputUtility = console;
-   const printMessage = outputUtility.log;
-   printMessage(foundMatchIndices.join("\n"));
+if (matchIndices.length !== 0) {
+   console.log(matchIndices.join("\n"));
 }

@@ -1,79 +1,75 @@
-// The raw data from the input source is provided.
-function ProcessInput(rawData)
-{
-    var originalSequence;
-    var dataLines = rawData.split('\n');
-    originalSequence = dataLines[0];
-    var lowestOpCount = -1;
+// The entire input data is received in the 'inputData' parameter
+function ProcessInput(inputData) {
+    let initialString; // Declare a variable to hold the first line of input
+    const inputLines = inputData.split("\n"); // Split the input into an array of lines
+    initialString = inputLines[0]; // Assign the first line to initialString
 
-    for ( var charCodeVal = 'a'.charCodeAt(0); charCodeVal <= 'z'.charCodeAt(0); charCodeVal++ )
-    {
-        // If the target string already consists of a single repeated character, no operations are needed.
-        if ( new RegExp('^([a-z])\\1*$').test(originalSequence) )
-        {
-            lowestOpCount = 0;
-            break;
+    let minimumOperations = -1; // Initialize the minimum operation count to -1
+
+    // Iterate through all lowercase English alphabet characters from 'a' to 'z'
+    for (let charCodeIterator = 'a'.charCodeAt(0); charCodeIterator <= 'z'.charCodeAt(0); charCodeIterator++) {
+        // Check if the initial string already consists of a single repeated character
+        if (/^([a-z])\1*$/.test(initialString)) {
+            minimumOperations = 0; // If so, no operations are needed
+            break; // Exit the loop as the minimum is found
         }
 
-        var currentWorkingString = originalSequence;
-        var nextGeneratedString = '';
-        var currentComparisonChar = String.fromCharCode(charCodeVal);
-        var iterationCounter = 0;
+        let currentWorkingString = initialString; // Start with the original string for this character's attempt
+        let nextIterationString = ''; // Initialize an empty string for the next transformation
+        const targetCharacter = String.fromCharCode(charCodeIterator); // Get the character for the current iteration (e.g., 'a', 'b', ...)
+        let currentOperationCount = 0; // Counter for operations in the current character's attempt
 
-        while (true)
-        {
-            // This loop processes the string, character by character, to build the next version.
-            // For each character at index 'stringIndex' in the current string:
-            // - If it matches 'currentComparisonChar', add 'currentComparisonChar' to the next string.
-            // - Else if the character at 'stringIndex + 1' matches 'currentComparisonChar', add 'currentComparisonChar'.
-            // - Otherwise, add the character at 'stringIndex' to the next string.
-            for (var stringIndex = 0; stringIndex < currentWorkingString.length - 1; stringIndex++)
-            {
-                if (currentComparisonChar === currentWorkingString.charAt(stringIndex))
-                {
-                    nextGeneratedString += currentComparisonChar;
-                }
-                else if (currentComparisonChar === currentWorkingString.charAt(stringIndex + 1))
-                {
-                    nextGeneratedString += currentComparisonChar;
-                }
-                else
-                {
-                    nextGeneratedString += currentWorkingString.charAt(stringIndex);
+        // Loop until the string becomes a single repeated character
+        while (true) {
+            // This loop processes the string to create the next iteration's string
+            // It looks at characters at index 'stringIndex' and 'stringIndex + 1'
+            // If either matches 'targetCharacter', 'targetCharacter' is added to 'nextIterationString'
+            // Otherwise, the character at 'stringIndex' is added
+            for (let stringIndex = 0; stringIndex < currentWorkingString.length - 1; stringIndex++) {
+                if (targetCharacter === currentWorkingString.charAt(stringIndex)) {
+                    nextIterationString += targetCharacter;
+                } else if (targetCharacter === currentWorkingString.charAt(stringIndex + 1)) {
+                    nextIterationString += targetCharacter;
+                } else {
+                    nextIterationString += currentWorkingString.charAt(stringIndex);
                 }
             }
 
-            iterationCounter++;
+            currentOperationCount++; // Increment the operation count for this transformation
 
-            console.log(nextGeneratedString);
-            // Check if the newly formed string consists solely of one repeated character.
-            if ( new RegExp('^([a-z])\\1*$').test(nextGeneratedString) )
-            {
-                break;
+            // Output the transformed string for debugging or intermediate results
+            console.log(nextIterationString);
+
+            // Check if the transformed string now consists of a single repeated character
+            if (/^([a-z])\1*$/.test(nextIterationString)) {
+                break; // If so, this character's attempt is complete
             }
-            currentWorkingString = nextGeneratedString;
-            nextGeneratedString = '';
 
+            currentWorkingString = nextIterationString; // The transformed string becomes the input for the next iteration
+            nextIterationString = ''; // Reset the next iteration string
         }
 
-        if (lowestOpCount === -1 || lowestOpCount > iterationCounter)
-        {
-            lowestOpCount = iterationCounter;
+        // Update the overall minimum operations if the current attempt was better
+        if (minimumOperations === -1 || minimumOperations > currentOperationCount) {
+            minimumOperations = currentOperationCount;
         }
-
     }
-    console.log(lowestOpCount);
 
+    // Output the final minimum number of operations found across all character attempts
+    console.log(minimumOperations);
 }
 
-var charTransformer = function(sourceChar, targetChar)
-{
-    // This function is not utilized in the current logic.
-}
-
-var modifyAtIndex = function(originalString, positionIndex, insertValue)
-{
-    return originalString.substring(0, positionIndex) + insertValue + originalString.substring(positionIndex + 1);
+// This function is declared but not used in the provided logic.
+const convertString = function(sourceStr, charToMatch) {
+    // This function is empty and has no functional impact.
 };
-// The following line should not be altered as it manages standard input/output and calls the main processing function.
+
+// This function is declared but not used in the provided logic.
+// It's intended to replace a character at a specific index.
+const replaceCharAtIndex = function(originalText, indexPosition, replacementValue) {
+    return originalText.substring(0, indexPosition) + replacementValue + originalText.substring(indexPosition + 1);
+};
+
+// The following line reads from standard input and calls the main processing function.
+// Do not modify this part as it handles standard I/O.
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

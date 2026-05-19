@@ -1,24 +1,14 @@
-'use strict';
+'use strict'
 
-function processInputData(sourceContent) {
-  const lineFragment = sourceContent.split('\n')[0];
-  const numberStrings = lineFragment.match(/(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/).slice(1);
+function processInput(rawData) {
+  const [valA, valB, valC, valD] = rawData.split('\n')[0].split(' ').map(Number);
 
-  const [firstOperand, secondOperand, thirdOperand, fourthOperand] = numberStrings.map(str => parseInt(str, 10));
+  const sumOne = valA + valB;
+  const sumTwo = valC + valD;
 
-  const sumOfFirstPair = firstOperand + secondOperand;
-  const sumOfSecondPair = thirdOperand + fourthOperand;
+  const outcome = (sumOne > sumTwo) ? 'Left' : ((sumOne < sumTwo) ? 'Right' : 'Balanced');
 
-  const verdictRegistry = new Map([
-    [1, 'Left'],
-    [-1, 'Right'],
-    [0, 'Balanced']
-  ]);
-
-  const comparisonResultSign = Math.sign(sumOfFirstPair - sumOfSecondPair);
-  const finalJudgment = verdictRegistry.get(comparisonResultSign);
-
-  console.log(finalJudgment);
+  console.log(outcome);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

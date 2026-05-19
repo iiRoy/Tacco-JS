@@ -1,25 +1,22 @@
-function ProcessData(rawInput) {
-  const lineSet = rawInput.split(/\r?\n/);
-  const quantity = Number(lineSet[0].trim());
-  const initialValues = lineSet[1].trim().split(" ").map(Number);
+(function() {
+    const dataStream = require("fs").readFileSync("/dev/stdin", "utf8");
 
-  const orderedValues = initialValues.reduce((accumulator, currentValue) => {
-    let insertionPosition = 0;
-    while (insertionPosition < accumulator.length && currentValue >= accumulator[insertionPosition]) {
-      insertionPosition++;
-    }
-    accumulator.splice(insertionPosition, 0, currentValue);
-    return accumulator;
-  }, []);
+    const inputLines = dataStream.trim().split("\n");
+    const totalCount = Number(inputLines[0]);
+    const initialNumericSet = inputLines[1].split(" ").map(Number);
 
-  const firstMedian = orderedValues[quantity / 2 - 1];
-  const secondMedian = orderedValues[quantity / 2];
+    const sortedNumericSet = [...initialNumericSet].sort((valOne, valTwo) => valOne - valTwo);
 
-  const outcomeCollection = initialValues.map(element => {
-    return element <= firstMedian ? secondMedian : firstMedian;
-  });
+    const lowerMedianIdx = totalCount / 2 - 1;
+    const upperMedianIdx = totalCount / 2;
 
-  console.log(outcomeCollection.join("\n"));
-}
+    const firstPivot = sortedNumericSet[lowerMedianIdx];
+    const secondPivot = sortedNumericSet[upperMedianIdx];
 
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    const processedResults = initialNumericSet.map(currentElement => {
+        // Divergent expression for the conditional logic
+        return [secondPivot, firstPivot][+(currentElement > firstPivot)];
+    });
+
+    console.log(processedResults.join("\n"));
+})();

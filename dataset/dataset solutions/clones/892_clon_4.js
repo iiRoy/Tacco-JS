@@ -1,187 +1,139 @@
-const printer = console.log;
-let rawInputAccumulator = "";
-
+var outputLogger = console.log;
 if (typeof process !== "undefined") {
+    var accumulatedInput = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (fragment) => {
-        rawInputAccumulator += fragment;
+    process.stdin.on('data', function(chunk) {
+        accumulatedInput += chunk;
     });
-    process.stdin.on('end', () => {
-        const inputRecords = rawInputAccumulator.split("\n");
-        startProcessing(inputRecords);
+    process.stdin.on('end', function() {
+        var inputLines = accumulatedInput.split("\n");
+        entryPoint(inputLines);
     });
 }
 
-const MODULUS_VAL = 1000000007;
-const BIG_INT_MODULUS = BigInt(MODULUS_VAL);
-
-function bigModMultiply(firstNum, secondNum) {
-    let result = (BigInt(firstNum) * BigInt(secondNum)) % BIG_INT_MODULUS;
-    return Number(result < 0n ? result + BIG_INT_MODULUS : result);
-}
-
-function funcSquareMod(val) {
-    return bigModMultiply(val, val);
-}
-
-function funcRightShift(val, shiftAmount) {
-    return val >> shiftAmount;
-}
-
-function stripMarks(initialText) {
-    return initialText.replace(/[\sS]/g, '');
-}
-
-function isNumeric(val) {
-    return !isNaN(Number(val));
-}
-
-function lexicalScan(cleanedText) {
-    if (!cleanedText) return [];
-    const tokenRegex = /(\d+)|[<>]/g;
-    const elements = [];
-    let match;
-    while ((match = tokenRegex.exec(cleanedText)) !== null) {
-        if (match[1] !== undefined) {
-            elements.push(Number(match[1]));
-        } else {
-            elements.push(match[0]);
+function entryPoint(inputLines) {
+    for (const currentLine of inputLines) {
+        if (currentLine !== "#") {
+            evaluateInputLine(currentLine);
         }
     }
-    return elements;
 }
 
-function parseTokens(elementList) {
-    const processedTokens = [];
-    for (let idx = 0; idx < elementList.length; idx++) {
-        const currentElement = elementList[idx];
-        if (isNumeric(currentElement)) {
-            processedTokens.push({ type: 'NUMBER', value: currentElement });
-        } else if (currentElement === '<') {
-            processedTokens.push({ type: 'OPERATOR', value: 'S_OPEN' });
-        } else if (currentElement === '>') {
-            if (idx + 1 < elementList.length && elementList[idx + 1] === '>') {
-                processedTokens.push({ type: 'OPERATOR', value: 'R_SHIFT' });
-                idx++;
-            } else {
-                processedTokens.push({ type: 'OPERATOR', value: 'S_CLOSE' });
-            }
+function modularProduct(factorA, factorB) {
+    const modulusVal = 1000000007;
+    let resultAccumulator = 0;
+    factorA %= modulusVal;
+
+    while (factorB > 0) {
+        if (factorB % 2 === 1) {
+            resultAccumulator = (resultAccumulator + factorA) % modulusVal;
         }
+        factorA = (factorA * 2) % modulusVal;
+        factorB = Math.floor(factorB / 2);
     }
-    return processedTokens;
+    return resultAccumulator;
 }
 
-const operatorPrecedence = {
-    'S_OPEN': 0,
-    'R_SHIFT': 2,
-    'S_FUNC_APPLY': 3,
-};
-
-function evaluateExpression(structuredTokens) {
-    const rpnOutputQueue = [];
-    const operatorPile = [];
-
-    for (const currentToken of structuredTokens) {
-        if (currentToken.type === 'NUMBER') {
-            rpnOutputQueue.push(currentToken.value);
-        } else if (currentToken.type === 'OPERATOR') {
-            switch (currentToken.value) {
-                case 'S_OPEN':
-                    operatorPile.push(currentToken.value);
-                    break;
-                case 'S_CLOSE':
-                    while (operatorPile.length > 0 && operatorPile[operatorPile.length - 1] !== 'S_OPEN') {
-                        rpnOutputQueue.push(operatorPile.pop());
-                    }
-                    if (operatorPile.length === 0) {
-                        throw new Error("Mismatched S< > parentheses.");
-                    }
-                    operatorPile.pop();
-                    rpnOutputQueue.push('S_FUNC_APPLY');
-                    break;
-                case 'R_SHIFT':
-                    while (
-                        operatorPile.length > 0 &&
-                        operatorPile[operatorPile.length - 1] !== 'S_OPEN' &&
-                        operatorPrecedence[operatorPile[operatorPile.length - 1]] >= operatorPrecedence[currentToken.value]
-                    ) {
-                        rpnOutputQueue.push(operatorPile.pop());
-                    }
-                    operatorPile.push(currentToken.value);
-                    break;
-                default:
-                    throw new Error(`Unknown operator: ${currentToken.value}`);
-            }
-        }
-    }
-
-    while (operatorPile.length > 0) {
-        const op = operatorPile.pop();
-        if (op === 'S_OPEN') {
-            throw new Error("Mismatched S< > parentheses.");
-        }
-        rpnOutputQueue.push(op);
-    }
-
-    const operandPile = [];
-    for (const item of rpnOutputQueue) {
-        if (typeof item === 'number') {
-            operandPile.push(item);
-        } else if (item === 'S_FUNC_APPLY') {
-            if (operandPile.length < 1) throw new Error("RPN error: not enough operands for S function.");
-            const val = operandPile.pop();
-            operandPile.push(funcSquareMod(val));
-        } else if (item === 'R_SHIFT') {
-            if (operandPile.length < 2) throw new Error("RPN error: not enough operands for right shift.");
-            const right = operandPile.pop();
-            const left = operandPile.pop();
-            operandPile.push(funcRightShift(left, right));
-        } else {
-            throw new Error(`RPN evaluation error: unknown item ${item}`);
-        }
-    }
-
-    if (operandPile.length !== 1) {
-        throw new Error("RPN evaluation error: stack not clean.");
-    }
-
-    return operandPile.pop();
+function squareModulo(val) {
+    return modularProduct(val, val);
 }
 
-function handleSingleRecord(aLine) {
-    if (aLine === "#") {
-        return;
-    }
-
-    try {
-        const stripped = stripMarks(aLine);
-        if (stripped === "") {
-            printer('');
-            return;
-        }
-
-        const elements = lexicalScan(stripped);
-        if (elements.length === 0) {
-            printer('');
-            return;
-        }
-
-        const classified = parseTokens(elements);
-        if (classified.length === 0) {
-             printer('');
-             return;
-        }
-
-        const finalResult = evaluateExpression(classified);
-        printer(finalResult);
-    } catch (err) {
-        printer('');
-    }
+function shiftRightFloor(baseVal, shiftAmount) {
+    return baseVal >> shiftAmount;
 }
 
-function startProcessing(allLines) {
-    allLines.forEach((currentLine) => {
-        handleSingleRecord(currentLine);
+function cleanseString(rawString) {
+    return rawString.split('').filter(char => char !== ' ' && char !== 'S').join('');
+}
+
+function isNumericString(candidateStr) {
+    return !Number.isNaN(Number(candidateStr));
+}
+
+function segmentInput(cleanedString) {
+    if (!cleanedString) {
+        return [];
+    }
+    const tokenRegex = /\d+|>>|[<>]/g;
+    const matches = Array.from(cleanedString.matchAll(tokenRegex));
+    
+    return matches.map(match => {
+        const token = match[0];
+        return isNumericString(token) ? Number(token) : token;
     });
+}
+
+function tokenizeExpression(segmentedParts) {
+    if (!segmentedParts) {
+        return [];
+    }
+    return segmentedParts.map(part => {
+        if (typeof part === 'number') {
+            return part;
+        }
+        switch (part) {
+            case '<':
+                return 'openS';
+            case '>':
+                return 'closeS';
+            case '>>':
+                return 'shiftOp';
+            default:
+                return part; // Should not happen with current regex
+        }
+    });
+}
+
+function evaluateTokenSequence(expressionTokens) {
+    if (!expressionTokens || expressionTokens.length === 0) {
+        return [];
+    }
+
+    let currentWorkingTokens = [...expressionTokens];
+
+    // First pass: Evaluate 'openS' X 'closeS' (S<x>) due to higher precedence
+    let closeSIndex;
+    while ((closeSIndex = currentWorkingTokens.indexOf('closeS')) !== -1) {
+        // Expected pattern: [..., 'openS', X, 'closeS', ...]
+        // X is at closeSIndex - 1
+        // 'openS' is at closeSIndex - 2
+        const operandValue = currentWorkingTokens[closeSIndex - 1];
+        const resultOfS = squareModulo(operandValue);
+        // Replace ['openS', X, 'closeS'] with [resultOfS]
+        currentWorkingTokens.splice(closeSIndex - 2, 3, resultOfS);
+    }
+
+    // Second pass: Evaluate X 'shiftOp' Y (x>>y)
+    let shiftOpIndex;
+    while ((shiftOpIndex = currentWorkingTokens.indexOf('shiftOp')) !== -1) {
+        // Expected pattern: [..., X, 'shiftOp', Y, ...]
+        // X is at shiftOpIndex - 1
+        // Y is at shiftOpIndex + 1
+        const leftOperand = currentWorkingTokens[shiftOpIndex - 1];
+        const rightOperand = currentWorkingTokens[shiftOpIndex + 1];
+        const resultOfShift = shiftRightFloor(leftOperand, rightOperand);
+        // Replace [X, 'shiftOp', Y] with [resultOfShift]
+        currentWorkingTokens.splice(shiftOpIndex - 1, 3, resultOfShift);
+    }
+
+    return currentWorkingTokens[0]; // The final result should be a single number
+}
+
+function evaluateInputLine(inputStr) {
+    let processedResult;
+
+    const cleaned = cleanseString(inputStr);
+    if (!cleaned) { outputLogger(''); return; }
+
+    const segmented = segmentInput(cleaned);
+    if (!segmented || segmented.length === 0) { outputLogger(''); return; }
+
+    const tokenized = tokenizeExpression(segmented);
+    if (!tokenized || tokenized.length === 0) { outputLogger(''); return; }
+
+    processedResult = evaluateTokenSequence(tokenized);
+    if (processedResult === undefined || processedResult === null) { outputLogger(''); return; }
+    
+    outputLogger(processedResult);
 }

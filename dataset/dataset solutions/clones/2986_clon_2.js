@@ -1,91 +1,111 @@
-var fileContent = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-var lineProcessor = {
-  "lines" : fileContent,
-  "currentPosition" : 0,
-  "totalCount" : fileContent.length,
-  "hasMoreLines" : function() {
-    return (this.currentPosition < this.totalCount);
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+var dataStream = {
+  sourceData: rawData,
+  currentPosition: 0,
+  maximumElements: rawData.length,
+  hasMoreItems: function() {
+    return (this.currentPosition < this.maximumElements);
   },
-  "getNextLine" : function() {
-    if (!this.hasMoreLines()) {
-      throw new Error("EndOfStreamError: No more lines to process.");
+  retrieveNext: function() {
+    if (!this.hasMoreItems()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    var currentLine = this.lines[this.currentPosition];
+    var itemToReturn = this.sourceData[this.currentPosition];
     this.currentPosition++;
-    return currentLine;
+    return itemToReturn;
   }
 };
-primaryExecution();
-function fetchLine() { return lineProcessor.getNextLine(); }
-function retrieveInteger() { return processInputData(fetchLine(), 1); }
-function retrieveStringArray() { return processInputData(fetchLine(), 2); } // Splits string by space character
-function retrieveNumericArray() { return processInputData(fetchLine(), 4); } // Splits by space, converts elements to numbers
-function retrieveCharacterArray() { return processInputData(fetchLine(), 6); } // Splits string into individual characters
-function checkMoreLines() { return lineProcessor.hasMoreLines(); }
-function outputToConsole(message) { console.log(message); } // Writes message to standard output
-function outputToError(errorMessage) { console.error(errorMessage); } // Writes message to standard error stream
-/*
-  Function for processing various input types.
-  Option codes:
-  - Default: Returns input as is (for unknown/invalid options).
-  - 1: Converts input to an integer.
-  - 2: Splits input string by a single space character.
-  - 4: Splits by space, then maps each part to a numeric value.
-  - 6: Splits input string into an array of individual characters.
-  - 7: Splits by character, then maps each to a numeric value.
-  - 8: Joins array elements with a space.
-  - 9: Joins array elements with a newline.
-  - 0: Joins array elements without any separator.
-*/
-function processInputData(inputItem, processOption) {
+
+ExecuteProgram();
+
+function fetchNext() {
+  return dataStream.retrieveNext();
+}
+
+function fetchInteger() {
+  return transformInput(fetchNext(), 1);
+}
+
+function fetchStringArray() { // Splits by half-width space
+  return transformInput(fetchNext(), 2);
+}
+
+function fetchIntegerArray() { // Splits by half-width space and converts to numbers
+  return transformInput(fetchNext(), 4);
+}
+
+function fetchCharacterArray() { // Splits into individual characters
+  return transformInput(fetchNext(), 6);
+}
+
+function checkMoreItems() {
+  return dataStream.hasMoreItems();
+}
+
+function printOutput(content) { // Outputs to standard console
+  console.log(content);
+}
+
+function printError(message) { // Outputs to standard error console
+  console.error(message);
+}
+
+function transformInput(inputValue, conversionType) {
   try {
-    switch (processOption) {
+    switch (conversionType) {
       case 1:
-        return parseInt(inputItem);
+        return parseInt(inputValue, 10);
       case 2:
-        return inputItem.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputItem.split(" ").map((val) => Number(val));
+        return inputValue.split(" ").map((element) => Number(element));
       case 6:
-        return inputItem.split("");
+        return inputValue.split("");
       case 7:
-        return inputItem.split("").map((val) => Number(val));
+        return inputValue.split("").map((element) => Number(element));
       case 8:
-        return inputItem.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputItem.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputItem.join("");
+        return inputValue.join("");
       default:
-        return inputItem;
+        return inputValue;
     }
-  } catch (err) {
-    return inputItem;
+  } catch (error) {
+    return inputValue;
   }
 }
-function primaryExecution() {
-  var targetValue = retrieveInteger();
-  //outputToError(findFactors(targetValue));
-  var factorCollection = findFactors(targetValue).sort(function(first, second) {
-    return second - first;
+
+function ExecuteProgram() {
+  var inputNumber = fetchInteger();
+
+  // printError(calculateDivisors(inputNumber));
+  var divisorCollection = calculateDivisors(inputNumber).sort(function(valA, valB) {
+    return valB - valA;
   });
-  var totalSum = 0;
-  for (var idx = 0; idx < Math.floor(factorCollection.length / 2); idx++) {
-    totalSum += factorCollection[idx] - 1;
-    //outputToError(totalSum);
+
+  var finalResult = 0;
+  for (var loopCounter = 0; loopCounter < Math.floor(divisorCollection.length / 2); loopCounter++) {
+    finalResult += divisorCollection[loopCounter] - 1;
+    // printError(finalResult);
   }
-  outputToConsole(totalSum);
+  printOutput(finalResult);
 }
-function findFactors(numberToFactor) {
-  var factorArray = [];
-  for (var currentDivisor = 1; currentDivisor * currentDivisor <= numberToFactor; currentDivisor++) {
-    if (numberToFactor % currentDivisor == 0) {
-      factorArray.push(currentDivisor);
-      if (currentDivisor * currentDivisor != numberToFactor) {
-        factorArray.push(numberToFactor / currentDivisor);
+
+function calculateDivisors(targetValue) {
+  var divisorList = [];
+  for (var divisorCandidate = 1; divisorCandidate * divisorCandidate <= targetValue; divisorCandidate++) {
+    if (targetValue % divisorCandidate === 0) {
+      divisorList.push(divisorCandidate);
+      if (divisorCandidate * divisorCandidate !== targetValue) {
+        divisorList.push(targetValue / divisorCandidate);
       }
     }
   }
-  factorArray.sort(function(valA, valB) { return valA - valB; });
-  return factorArray;
+  divisorList.sort(function(valA, valB) {
+    return valA - valB;
+  });
+  return divisorList;
 }

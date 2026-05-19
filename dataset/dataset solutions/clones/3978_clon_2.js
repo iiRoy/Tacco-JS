@@ -1,84 +1,63 @@
-/*
- * This module processes coordinate data from standard input.
- * It aims to find optimal pairings between two sets of points.
- */
-console.log((inputStr => {
-    // Parse the input string into a structured array of numbers.
-    // The first line contains a single integer representing the number of data points.
-    // Subsequent lines contain coordinate pairs.
-    const allParsedData = inputStr
-        .trim() // Remove any leading or trailing whitespace from the input.
-        .split('\n') // Split the string into an array of lines.
-        .map(lineStr => // For each line...
-            lineStr.split(' ') // Split the line by spaces into string components.
-                .map(valStr => parseInt(valStr, 10)) // Convert each string component to an integer.
-        );
+console.log((inputString => {
+  // Process the raw input string: trim, split by lines, then split each line by spaces,
+  // and convert all resulting string values to integers using the bitwise OR operator.
+  // The first element of the first line is 'numItems', and the rest are 'tempData'.
+  const [[numItems], ...tempData] = inputString.trim().split('\n').map(rowStr => rowStr.split(' ').map(valStr => valStr | 0));
 
+  // Initialize two arrays to hold the red and blue coordinate pairs.
+  // Each coordinate pair is represented as an array, e.g., [x, y].
+  const redPoints = [];
+  const bluePoints = [];
 
-    // Extract the total number of items from the first line.
-    // The rest of the lines are stored for further processing.
-    const [[numItems], ...parsedLines] = allParsedData;
+  // Populate the 'redPoints' and 'bluePoints' arrays.
+  // The first 'numItems' entries in 'tempData' are for red points,
+  // and the subsequent 'numItems' entries are for blue points.
+  for (let pointIndex = 0x0; pointIndex < numItems; pointIndex++) {
+    redPoints.push(tempData[pointIndex]);
+    bluePoints.push(tempData[numItems + pointIndex]);
+  }
 
+  // Sort both arrays in descending order based on their X-coordinate.
+  // This sorting strategy is crucial for the matching algorithm's efficiency and correctness.
+  redPoints.sort(([coordA_x], [coordB_x]) => coordB_x - coordA_x);
+  bluePoints.sort(([coordA_x], [coordB_x]) => coordB_x - coordA_x);
 
-    // Initialize two arrays to store distinct sets of coordinates.
-    const scarletSpots = []; // Stores the "red" points.
-    const azureAreas = [];   // Stores the "blue" points.
+  let matchCount = 0x0; // Initialize a counter for the number of successful matches.
 
-    // Populate the coordinate arrays based on the 'numItems' value.
-    // The first 'numItems' lines in 'parsedLines' go to 'scarletSpots',
-    // and the next 'numItems' lines go to 'azureAreas'.
-    for ( let pointIndex = 0; pointIndex < numItems; pointIndex++ )
-    {
-        scarletSpots.push(parsedLines[pointIndex]);
-        azureAreas.push(parsedLines[numItems + pointIndex]);
+  // Iterate through each blue point to find a suitable red point match.
+  for (let currentBlueIndex = 0x0; currentBlueIndex < numItems; currentBlueIndex++) {
+    const [blueX, blueY] = bluePoints[currentBlueIndex]; // Extract coordinates of the current blue point.
+
+    // 'bestMatch' stores the index of the matched red point and the Y-coordinate of the blue point.
+    // It's initialized to [-1, -1] to indicate no match found yet.
+    let bestMatch = [-1, -1];
+
+    // Iterate through the 'redPoints' array to find a match for the current blue point.
+    for (let currentRedIndex = 0x0; currentRedIndex < redPoints.length; currentRedIndex++) {
+      let [redX, redY] = redPoints[currentRedIndex]; // Extract coordinates of the current red point.
+
+      // Condition 1: The red point's X-coordinate must be strictly less than the blue point's X-coordinate.
+      if (blueX < redX) {
+        continue; // If this condition is not met, this red point is not a candidate.
+      }
+
+      // Condition 2: The red point's Y-coordinate must be strictly less than the blue point's Y-coordinate.
+      // Additionally, the current blue point's Y-coordinate must be greater than the Y-value
+      // stored in 'bestMatch[1]'. This ensures 'bestMatch' is updated only for the first valid red point
+      // encountered in the sorted 'redPoints' array.
+      if (blueY > redY && blueY > bestMatch[1]) {
+        bestMatch = [currentRedIndex, blueY]; // Update 'bestMatch' with the red point's index and the blue point's Y.
+      }
     }
 
-    // Sort both sets of points.
-    // The sorting criterion is descending order based on the first coordinate (x-value).
-    scarletSpots.sort(([firstCoordA], [firstCoordB]) => firstCoordB - firstCoordA);
-    azureAreas.sort(([firstCoordA], [firstCoordB]) => firstCoordB - firstCoordA);
-
-    // Initialize a counter for successful pairings.
-    let matchCounter = 0;
-
-    // Iterate through each blue point to find a suitable red point match.
-    for ( let idxBlue = 0; idxBlue < numItems; idxBlue++ )
-    {
-        const [currentBlueX, currentBlueY] = azureAreas[idxBlue]; // Get coordinates of the current blue point.
-
-        // 'bestMatchInfo' will store the index of the most suitable red point
-        // and a specific y-coordinate value for comparison.
-        // Initialized to an invalid state.
-        let bestMatchInfo = [-1, -1];
-
-        // Iterate through the available red points to find a potential match.
-        for ( let idxRed = 0; idxRed < scarletSpots.length; idxRed++ )
-        {
-            let [potentialRedX, potentialRedY] = scarletSpots[idxRed]; // Get coordinates of the current red point.
-
-            // Condition 1: The x-coordinate of the blue point must be greater than
-            // the x-coordinate of the red point for a match to be possible.
-            if ( currentBlueX < potentialRedX ) continue;
-
-            // Condition 2: The y-coordinate of the blue point must be greater than
-            // the y-coordinate of the red point.
-            // Additionally, we are looking for the red point that maximizes the blue point's y-coordinate
-            // among valid matches. (This is the exact logic preserved from the original code).
-            if ( currentBlueY > potentialRedY && currentBlueY > bestMatchInfo[1] )
-            {
-                bestMatchInfo = [idxRed, currentBlueY]; // Update best match with index and blue's Y.
-            }
-        }
-
-        // If a suitable red point was found (indicated by a non-negative y-value in bestMatchInfo).
-        if ( bestMatchInfo[1] >= 0 )
-        {
-            // Remove the matched red point from the available pool to prevent re-matching.
-            scarletSpots.splice(bestMatchInfo[0], 1);
-            matchCounter++; // Increment the total count of successful pairings.
-        }
+    // If 'bestMatch[1]' is non-negative, it means a valid red point was found for the current blue point.
+    if (bestMatch[1] >= 0) {
+      // Remove the matched red point from the array to prevent it from being matched again.
+      redPoints.splice(bestMatch[0], 1);
+      matchCount++; // Increment the total count of successful matches.
     }
+  }
 
-    // Return the final count of pairings as a string.
-    return `${matchCounter}`;
-})(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Read input from the standard input stream.
+  // Return the final count of matches as a string.
+  return `${matchCount}`;
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

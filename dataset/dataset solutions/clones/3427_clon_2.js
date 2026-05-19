@@ -1,24 +1,8 @@
-const fileSystem = require("fs");
-
-let inputDataString = fileSystem.readFileSync("/dev/stdin", "utf8");
-
-const minimumDifference = Math.min.apply(
+let inputString = require("fs").readFileSync("/dev/stdin", "utf8");
+Math.min.apply(
   null,
-  [...Array(inputDataString.length - 2)].map(
-    (
-      _unusedElement,
-      currentPosIndex
-    ) => {
-      const subStringSegment = inputDataString.slice(
-        currentPosIndex,
-        currentPosIndex + 3
-      );
-
-      const numericSegmentValue = subStringSegment | 0;
-
-      const fixedComparisonValue = 753;
-
-      return Math.abs(numericSegmentValue - fixedComparisonValue);
-    }
-  )
+  [...Array(inputString.length - 2)]
+    .map((_placeholder, currentIdx) =>
+      Math.abs((inputString.slice(currentIdx, currentIdx + 3) | 0) - 753)
+    )
 );

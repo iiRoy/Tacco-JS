@@ -1,119 +1,104 @@
-function computeItemValue(productCatalog, currentProduct, valueCache, activePath) {
-  if (valueCache.has(currentProduct)) {
-    return valueCache.get(currentProduct);
-  }
+function determineOptimalCost(itemIdentifier, itemRegistry, pathTracker, costCache) {
+  try {
+    if (costCache.has(itemIdentifier)) {
+      return costCache.get(itemIdentifier);
+    }
 
-  if (activePath.has(currentProduct)) {
-    return Infinity;
-  }
+    const itemData = itemRegistry.get(itemIdentifier);
+    // If itemData is undefined, accessing .price or .recipe will throw,
+    // replicating original behavior for non-existent items.
+    let currentPrice = itemData.price;
+    const itemRecipe = itemData.recipe;
 
-  // Original code would throw if currentProduct is not in productCatalog at this stage (e.g., initial call)
-  // For component items, returning Infinity correctly models an invalid path.
-  // For the top-level query product, if it's missing, original throws TypeError.
-  // My code will also throw TypeError at `productCatalog.get(currentProduct).basePrice` if currentProduct is missing.
-  // This matches the original's error behavior for a missing top-level item.
-
-  activePath.add(currentProduct);
-
-  let directCost = productCatalog.get(currentProduct).basePrice;
-  let assemblyComponents = productCatalog.get(currentProduct).components;
-
-  let finalCost = directCost;
-
-  // The original `if(recipe = items[item].recipe)` treats an empty array `[]` as truthy.
-  // If `assemblyComponents` is `[]`, it should still enter this block.
-  if (assemblyComponents) {
-    let recipeCostTotal = 0;
-    let recipeValid = true;
-
-    // This loop naturally handles `assemblyComponents.length === 0` by not iterating.
-    // In that case, `recipeCostTotal` remains 0, matching original's `sum = 0`.
-    for (const componentName of assemblyComponents) {
-      const componentValue = computeItemValue(productCatalog, componentName, valueCache, activePath);
-
-      if (componentValue === Infinity) {
-        recipeValid = false;
-        break;
+    if (itemRecipe) {
+      if (pathTracker.has(itemIdentifier)) {
+        // Cycle detected for this item in the current path.
+        // The recipe for this item cannot be used, so return its direct price.
+        return currentPrice;
       }
-      recipeCostTotal += componentValue;
-    }
 
-    if (recipeValid) {
-      finalCost = Math.min(directCost, recipeCostTotal);
-    }
-  }
+      pathTracker.add(itemIdentifier); // Mark as visited in current path
 
-  activePath.delete(currentProduct);
-  valueCache.set(currentProduct, finalCost);
+      let recipeSum = 0;
+      let recipePathValid = true;
 
-  return finalCost;
-}
+      for (const component of itemRecipe) {
+        if (pathTracker.has(component) || !itemRegistry.has(component)) {
+          // Component causes a cycle or doesn't exist.
+          // The entire recipe path for itemIdentifier is invalid.
+          recipePathValid = false;
+          break;
+        }
+        recipeSum += determineOptimalCost(component, itemRegistry, pathTracker, costCache);
+      }
 
-let rawDataBuffer = '';
+      pathTracker.delete(itemIdentifier); // Remove from current path
 
-function executeManufacturingQueries() {
-  const allLines = rawDataBuffer.split('\n');
-  let currentLinePosition = 0;
-  const outputResults = [];
-
-  while (currentLinePosition < allLines.length) {
-    const productCountText = allLines[currentLinePosition++];
-    const numberOfBaseProducts = parseInt(productCountText, 10);
-
-    if (isNaN(numberOfBaseProducts) || numberOfBaseProducts === 0) {
-      break;
-    }
-
-    const currentCatalog = new Map();
-
-    for (let p = 0; p < numberOfBaseProducts; p++) {
-      const parts = allLines[currentLinePosition++].split(' ');
-      const productName = parts[0];
-      const productPrice = parseInt(parts[1], 10);
-      currentCatalog.set(productName, { basePrice: productPrice });
-    }
-
-    const recipeCountText = allLines[currentLinePosition++];
-    const numberOfRecipes = parseInt(recipeCountText, 10);
-
-    for (let r = 0; r < numberOfRecipes; r++) {
-      const parts = allLines[currentLinePosition++].split(' ');
-      const mainProduct = parts[0];
-      // Original code uses line.slice(2), replicating this behavior.
-      // This means the first component (parts[1]) is ignored if present.
-      const componentList = parts.slice(2);
-
-      if (currentCatalog.has(mainProduct)) {
-        currentCatalog.get(mainProduct).components = componentList;
-      } else {
-        // If a recipe is defined for an item not yet priced, add a placeholder.
-        // Original code implies pricing always comes before recipes.
-        // If this case *could* happen, original would throw at items[line[0]].recipe = ...
-        // My code would throw here too.
-        // For robustness, could add: currentCatalog.set(mainProduct, { basePrice: Infinity, components: componentList });
-        // But adhering to original behavior means expecting `mainProduct` to exist.
+      if (recipePathValid) {
+        currentPrice = Math.min(currentPrice, recipeSum);
       }
     }
 
-    const finalQueryProduct = allLines[currentLinePosition++];
-    
-    const costMemo = new Map();
-    const cycleDetector = new Set();
+    costCache.set(itemIdentifier, currentPrice);
+    return currentPrice;
 
-    const resultValue = computeItemValue(currentCatalog, finalQueryProduct, costMemo, cycleDetector);
-    outputResults.push(resultValue);
-  }
-  
-  for (const res of outputResults) {
-      console.log(res);
+  } catch (e) {
+    // Replicate original error handling
+    throw [e, itemRegistry, itemIdentifier];
   }
 }
+
+function processInputData() {
+  const inputLines = input.split('\n');
+  let currentLineIndex = 0;
+  const outputBuffer = [];
+
+  while (currentLineIndex < inputLines.length) {
+    const lineContent = inputLines[currentLineIndex];
+    if (lineContent === undefined || lineContent.trim() === '') {
+      break; // End of input or empty line
+    }
+
+    const numPriceDefinitions = parseInt(lineContent, 10);
+    currentLineIndex++;
+
+    if (numPriceDefinitions === 0) {
+      break; // As per original logic, N=0 means end of all test cases.
+    }
+
+    const itemRegistry = new Map();
+    const costCache = new Map(); // Cache per test case
+
+    for (let i = 0; i < numPriceDefinitions; i++) {
+      const parts = inputLines[currentLineIndex++].split(' ');
+      itemRegistry.set(parts[0], { price: parseInt(parts[1], 10) });
+    }
+
+    const numRecipeDefinitions = parseInt(inputLines[currentLineIndex++], 10);
+    for (let i = 0; i < numRecipeDefinitions; i++) {
+      const parts = inputLines[currentLineIndex++].split(' ');
+      const itemName = parts[0];
+      // Original would throw if item doesn't exist before adding recipe.
+      // Replicate this by letting .get() return undefined and then accessing .recipe.
+      itemRegistry.get(itemName).recipe = parts.slice(2);
+    }
+
+    const queryItem = inputLines[currentLineIndex++];
+    const pathTracker = new Set(); // Path tracker per query
+    outputBuffer.push(determineOptimalCost(queryItem, itemRegistry, pathTracker, costCache));
+  }
+
+  outputBuffer.forEach(result => console.log(result));
+}
+
+var
+input = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', function(chunk) {
-  rawDataBuffer += chunk;
+  input += chunk;
 });
 process.stdin.on('end', function() {
-  executeManufacturingQueries();
+  processInputData();
 });

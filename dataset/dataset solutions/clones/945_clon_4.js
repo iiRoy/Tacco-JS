@@ -1,51 +1,47 @@
-(function graphProcessor() {
-    const dataOrigin = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const dataFragments = dataOrigin.trim().split('\n');
+(function executeGraphTraversal() {
+  const inputSegments = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const nodeCount = Number(inputSegments.shift());
 
-    const totalElements = Number(dataFragments[0]);
-    const connectionNetwork = new Map();
+  const graphConnections = Array.from({ length: nodeCount }, () => []);
+  const pathLengths = Array(nodeCount).fill(-1);
 
-    dataFragments.slice(1).forEach((segment, elementIndex) => {
-        const elementDetails = segment.split(' ').map(Number);
-        const connectedElements = elementDetails.slice(2); 
+  inputSegments.forEach((lineContent, index) => {
+    lineContent.split(' ').slice(2).forEach(element => graphConnections[index].push(Number(element) - 1));
+  });
 
-        const currentSourceElement = elementIndex; 
-        const targetElements = new Set(connectedElements.map(targetId => targetId - 1));
-        connectionNetwork.set(currentSourceElement, targetElements);
-    });
+  const computedDistances = determineShortestPaths(graphConnections, 0);
 
-    const reachDepths = determineReachability(connectionNetwork, 0);
+  for (let i = 0; i < nodeCount; i++) {
+    pathLengths[i] = computedDistances.has(i) ? computedDistances.get(i) : -1;
+  }
 
-    for (let elementIdentifier = 0; elementIdentifier < totalElements; elementIdentifier++) {
-        const reportedDepth = reachDepths.has(elementIdentifier) ? reachDepths.get(elementIdentifier) : -1;
-        console.log(elementIdentifier + 1, reportedDepth);
-    }
+  for (let i = 0; i < nodeCount; i++) {
+    console.log(i + 1, pathLengths[i]);
+  }
 })();
 
-function determineReachability(topologyMap, initialVertex) {
-    const depthRecords = new Map();
-    const discoveredVertices = new Set();
-    let currentLevelFrontier = new Set([initialVertex]);
-    let levelCounter = 0;
+function determineShortestPaths(graphStructure, startIdentifier) {
+  const distanceRegistry = new Map();
+  distanceRegistry.set(startIdentifier, 0);
 
-    depthRecords.set(initialVertex, levelCounter);
-    discoveredVertices.add(initialVertex);
-
-    while (currentLevelFrontier.size > 0) {
-        levelCounter++;
-        const nextLevelFrontier = new Set();
-
-        for (const activeVertex of currentLevelFrontier) {
-            const adjacentVertices = topologyMap.get(activeVertex) || new Set();
-            for (const neighborVertex of adjacentVertices) {
-                if (!discoveredVertices.has(neighborVertex)) {
-                    discoveredVertices.add(neighborVertex);
-                    depthRecords.set(neighborVertex, levelCounter);
-                    nextLevelFrontier.add(neighborVertex);
-                }
-            }
-        }
-        currentLevelFrontier = nextLevelFrontier;
+  function processLevel(currentNodesInLevel) {
+    if (currentNodesInLevel.length === 0) {
+      return;
     }
-    return depthRecords;
+
+    const nextNodesForLevel = [];
+    for (const currentVertex of currentNodesInLevel) {
+      const currentVertexDistance = distanceRegistry.get(currentVertex);
+      for (const adjacentVertex of graphStructure[currentVertex]) {
+        if (!distanceRegistry.has(adjacentVertex)) {
+          distanceRegistry.set(adjacentVertex, currentVertexDistance + 1);
+          nextNodesForLevel.push(adjacentVertex);
+        }
+      }
+    }
+    processLevel(nextNodesForLevel);
+  }
+
+  processLevel([startIdentifier]);
+  return distanceRegistry;
 }

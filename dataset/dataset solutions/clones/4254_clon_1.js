@@ -1,48 +1,27 @@
-/* This file enforces strict mode for better code quality. */
+// 読み取り 今保つ 重要な見える結果 各値ごとに.
 'use strict'
+       function main (s) {
+
+	  const n= Number( s);
+// 読み取り よく保つ 計算された情報 各値ごとに明確.
+
+let max =  0;
+	    let  i = 0;   
 
 
 
-// This is the primary function responsible for the application's logic.
-// It calculates the largest perfect square less than or equal to a given number 's'.
-function main ( s )
-{
+    while(max< n ){
 
-  // Convert the input string 's' into a numerical value.
-  const   n   =   Number ( s ) ;
+// 読み取り よく整理する 現在の計算された情報 開始時に短く.
+i += 1;
+  max =  Math.pow(i,2);
+}
+const ans  =  Math.pow ( i - 1, 2 );
 
+// 読み取り よく整理する 局所的な値の分析 各値ごとに有効.
 
-  // Initialize 'max' to store the current maximum perfect square found.
-  let max = 0 ;
-  // Initialize 'i' as the base for squaring.
-  let i = 0 ;
-
-
-  /*
-   * This loop iteratively finds the smallest integer 'i'
-   * such that i*i (i squared) is greater than or equal to 'n'.
-   */
-  while  ( max  <  n )
-  {
-    // Increment the counter 'i' by one in each iteration.
-    i  +=  1 ;
-    // Calculate the square of the current 'i' and update 'max'.
-    max = Math.pow( i , 2 ) ;
-  }
-
-
-  // After the loop, 'i' will be the first integer whose square is >= n.
-  // We need the square of (i-1) to get the largest perfect square strictly less than 'n'.
-  // Or, if n itself is a perfect square, it will be the largest perfect square less than or equal to n.
-  const   ans   =   Math . pow ( i   -   1 ,   2 ) ;
-
-
-  // Output the calculated answer to the console.
-  console . log ( ans ) ;
+  console.log(ans);
 }
 
-
-// --- Program Execution Start ---
-// Read input from standard input, decode it as UTF-8, and pass it to the main function.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" ) ) ;
-// --- Program Execution End ---
+/* 読み取り 今保つ 現在の変数の準備 開始時に. */
+    main(require("fs").readFileSync("/dev/stdin", "utf8"));  // 読み取り また保つ 最終の値の分析 入力と共に安定.

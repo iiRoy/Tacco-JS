@@ -1,31 +1,32 @@
-"use strict"; /* This directive enforces stricter parsing and error handling. */
+"use strict"; // Enforce strict parsing and error handling
 
-/*
- * Primary function to process an input string and compare
- * the character codes of its first two space-separated elements.
+/**
+ * This function processes an input string, compares the ASCII/Unicode values
+ * of its first two space-separated characters, and prints a comparison result.
+ * @param {string} incomingText - The raw input string to be processed.
  */
-function evaluateValues( sourceText ) {
-  // Convert the input string into an array of numerical character codes.
-  // Each space-separated segment is taken, and its first character's ASCII/Unicode value is used.
-  const processedNumbers = sourceText
-    .split( " " )
-    .map( singleChar => singleChar.charCodeAt( 0 ) ); // Ensure charCodeAt(0) for clarity, though it's default.
+function processInputData(incomingText) {
+  // Split the input string by spaces and convert each part to its character code.
+  // The 'map' function iterates over each segment, 'charItem' represents each segment.
+  const processedCodes = incomingText.split(" ").map((charItem) => charItem.charCodeAt(0));
 
-  // Extract the first character code for comparison.
-  const alphaCode = processedNumbers[ 0 ];
+  // Extract the character code of the first segment.
+  const firstCharacterCode = processedCodes[0];
+  // Extract the character code of the second segment.
+  const secondCharacterCode = processedCodes[1];
 
-  // Extract the second character code for comparison.
-  const betaCode = processedNumbers[ 1 ];
-
-  // Perform a comparison of the extracted numerical values.
-  if ( alphaCode === betaCode ) { // Strict equality check.
-    console.log( "=" ); // Output indicating equality.
-  } else if ( alphaCode > betaCode ) { // Check if the first value is greater.
-    console.log( ">" ); // Output indicating the first is greater.
-  } else { // Otherwise, the first value must be less than the second.
-    console.log( "<" ); // Output indicating the first is lesser.
+  // Perform a comparison between the two character codes.
+  if (firstCharacterCode === secondCharacterCode) {
+    // If they are identical, print an equality symbol.
+    console.log("=");
+  } else if (firstCharacterCode > secondCharacterCode) {
+    // If the first is greater, print a 'greater than' symbol.
+    console.log(">");
+  } else {
+    // Otherwise (if the first is less), print a 'less than' symbol.
+    console.log("<");
   }
 }
 
-// Invoke the main processing function with data read from standard input.
-evaluateValues( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read the entire content from standard input synchronously and pass it to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

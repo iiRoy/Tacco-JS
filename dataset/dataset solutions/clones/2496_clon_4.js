@@ -1,29 +1,19 @@
 'use strict'
 
-const processInputAndCompute = (sourceOfData) => {
-    const rawContent = require('fs').readFileSync(sourceOfData, 'utf8');
+const processInputData = (sourceContent) => {
+  const structuredData = sourceContent.split('\n').map(lineSegment => lineSegment.split(' '));
+  const seriesLength = parseInt(structuredData[0][0], 10); // This variable is parsed but not directly used in the functional approach, as the string length implicitly defines iteration.
+  const characterSeries = structuredData[1][0];
 
-    const contentLines = rawContent.trim().split('\n');
-    
-    // The first line provides a numerical length, which is not directly used in the final calculation
-    // but is parsed as per the original's structure.
-    const sequenceDimension = Number(contentLines[0].trim()); 
-    
-    // The second line contains the primary character series.
-    const characterSeries = contentLines[1].trim();
+  const finalTally = characterSeries.split('').reduce((accumulatorState, currentSymbol) => {
+    if (accumulatorState.lastObservedSymbol !== currentSymbol) {
+      accumulatorState.distinctBlockCount++;
+    }
+    accumulatorState.lastObservedSymbol = currentSymbol;
+    return accumulatorState;
+  }, { distinctBlockCount: 0, lastObservedSymbol: null });
 
-    // Instead of an iterative scan with state variables,
-    // this approach uses a regular expression to identify and segment
-    // consecutive identical characters into distinct blocks.
-    // The pattern /(.)\1*/g captures any character and then matches zero or more
-    // subsequent occurrences of that *same* captured character, globally.
-    const characterBlocks = characterSeries.match(/(.)\1*/g);
-
-    // The total number of such distinct blocks is the length of the resulting array.
-    // Handles cases where characterSeries might be empty (match returns null).
-    const blockCount = characterBlocks ? characterBlocks.length : 0;
-
-    console.log(blockCount);
+  console.log(finalTally.distinctBlockCount);
 };
 
-processInputAndCompute('/dev/stdin');
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,35 +1,34 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-const receivedSegments = [];
-const dataChannel = require('node:readline').createInterface({
+let capturedLines = [];
+const inputProcessor = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-const computeBinaryPower = (val) => {
-  if (val === 0) return 0;
-  if (val % 2 !== 0) return 0;
-  return Math.log2(val & -val);
-};
-
-dataChannel.on('line', (inputDatum) => {
-  receivedSegments.push(inputDatum);
+inputProcessor.on('line', (currentInputLine) => {
+  capturedLines.push(currentInputLine);
 });
 
-dataChannel.on('close', () => {
-  const limitValue = Number(receivedSegments[0]);
+inputProcessor.on('close', () => {
+  const upperLimit = Number(capturedLines[0]);
 
-  const resultTuple = Array.from({ length: limitValue }, (_, idx) => idx + 1)
-    .reduce((accumulator, currentNumber) => {
-      const currentPower = computeBinaryPower(currentNumber);
+  const calculateBinaryExponent = (valueOperand) => {
+    return Math.log2(valueOperand & -valueOperand);
+  };
 
-      if (currentPower > accumulator[0]) {
-        return [currentPower, currentNumber];
-      } else {
-        return accumulator;
-      }
-    }, [-1, -1]);
+  let bestCandidate = 1;
+  let maximumExponent = calculateBinaryExponent(1);
 
-  console.log(resultTuple[1]);
+  for (let currentIterationValue = 2; currentIterationValue <= upperLimit; currentIterationValue++) {
+    const currentExponentResult = calculateBinaryExponent(currentIterationValue);
+
+    if (currentExponentResult > maximumExponent) {
+      maximumExponent = currentExponentResult;
+      bestCandidate = currentIterationValue;
+    }
+  }
+
+  console.log(bestCandidate);
 });

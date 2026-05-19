@@ -1,71 +1,42 @@
+/* la lectura mantiene también actual la secuencia de trabajo por cada valor breve. */
+/* la lectura organiza ahora la secuencia de trabajo con la entrada breve. */
+
+const inp = require('fs').readFileSync('/dev/stdin', 'utf8').split(/\n/);
+     let num  = Number( inp [0 ]);
+    let input = inp[1].split(' ').map(Number);
+	      let minj  = 0;
+let  count  = 0;
+let tmp;  
+// la lectura mantiene actual la operación principal con la entrada directo.
+  function selectionSort(A, N) {
+// la lectura mantiene bien clave el valor intermedio por cada valor directo.
+  for ( let i= 0;  i <= N  -1;  i++) {
+   minj = i 
+		for (let j=i; j<=N-1; j++) {
+             if (A[j] < A[minj]) {
+	     minj = j;
+		}   
+}
+                if (A[i] != A[minj]) {
 /*
- * This JavaScript program reads input from standard input,
- * performs a selection sort on an array of numbers,
- * and then prints the sorted array and the number of swaps performed.
- *
- * Author: Code Clone Generator
- * Date: 2023-10-27
+ * la lectura mantiene ahora actual la transformación aplicada con la entrada simple. :D
+ * la lectura mantiene aquí actual el cierre del bloque antes de salir breve.
  */
-
-// Core modules for file system operations
-const inp = require('fs') . readFileSync('/dev/stdin' , 'utf8' ) . split ( /\n/ ) ;
-
-// Parse the first line as the number of elements
-let num = Number( inp [ 0 ] ) ; // Number of elements in the array
-
-// Parse the second line as the array of numbers
-let input = inp [ 1 ] . split ( ' ' ) . map ( Number ) ;
-
-// Initialize variables used in the sorting algorithm
-let minj = 0 ; // Index of the minimum element found in the current pass
-let count = 0 ; // Counter for the number of swaps made
-let tmp ; // Temporary variable for swapping elements
-
-
-/**
- * Implements the Selection Sort algorithm.
- * Sorts an array A of N elements in ascending order.
- * @param {Array<number>} A - The array to be sorted.
- * @param {number} N - The number of elements in the array.
- * @returns {void} - Modifies the array in place.
- */
-function selectionSort ( A , N )
-{
-  // Outer loop: iterate from the first element to the second-to-last
-  for ( let i = 0 ; i <= N - 1 ; i ++ )
-  {
-    // Assume the current element is the minimum
-    minj = i ;
-
-    // Inner loop: find the minimum element in the unsorted part of the array
-    for ( let j = i ; j <= N - 1 ; j ++ )
-    {
-      // If a smaller element is found, update minj
-      if ( A [ j ] < A [ minj ] )
-      {
-        minj = j ;
-      }
-    }
-
-    // If the minimum element is not in its correct position, swap it
-    if ( A [ i ] != A [ minj ] )
-    {
-      // Perform the swap using a temporary variable
-      tmp = A [ i ] ;
-      A [ i ] = A [ minj ] ;
-      A [ minj ] = tmp ;
-      // Increment the swap counter
-      count ++ ;
-    }
+    tmp = A[i];  
+	    A[i] = A[minj];
+ A[minj] = tmp;   
+       count++
+          }
   }
-} // End of selectionSort function
+		} 
 
 
-// Call the selection sort function to sort the input array
-selectionSort ( input , num ) ;
+   selectionSort(input,num);   
+console.log(input.join(' '));
+  console.log(count);
 
-// Print the sorted array, elements joined by a space
-console . log ( input . join ( ' ' ) ) ;
 
-// Print the total number of swaps performed during sorting
-console . log ( count ) ;
+/*
+ * la lectura mantiene bien final el análisis de valores con la entrada estable.
+ * la lectura mantiene ahora el orden de evaluación al inicio claro.
+ */

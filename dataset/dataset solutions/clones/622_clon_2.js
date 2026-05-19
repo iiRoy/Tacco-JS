@@ -1,49 +1,53 @@
-var  dataStream=require('fs') . readFileSync ( '/dev/stdin' ,  'utf8' ) ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
+// Process the raw input data
+var lineSegments = (rawData.trim()).split("\n");
 
-var  processedLines = ( dataStream . trim ( ) ) . split ( "\n" ) ;
+// Extract the initial count from the first line
+var initialCount = lineSegments.shift();
 
-var  entryCount = processedLines . shift ( ) ;
+// Initialize a data structure to store aggregated values
+var dataMap = {};
 
-var  valueMap = { } ;
+// Iterate through the remaining lines to populate the data map
+for (var idx = 0; idx < initialCount; idx++) {
+    // Split each line into its components
+    var currentPair = lineSegments[idx].split(" ");
+    var keyPart = currentPair[0];
 
-for  ( var  loopIndex  =  0 ;
-    loopIndex  <  entryCount ;
-    loopIndex++ )
-{
-    var  currentSegments  =  processedLines [ loopIndex ] . split ( " " ) ;
+    // If the key doesn't exist in the map, initialize its value
+    if (!dataMap.hasOwnProperty(keyPart)) {
+        dataMap[keyPart] = 0;
+    }
 
-    var  keyIdentifier  =  currentSegments [ 0 ] ;
-
-    if  ( ! valueMap . hasOwnProperty ( keyIdentifier ) )
-
-        valueMap [ keyIdentifier ]  =  0 ;
-
-    valueMap [ keyIdentifier ]  +=  Number ( currentSegments [ 1 ] ) ;
+    // Add the numeric part to the corresponding key's value
+    dataMap[keyPart] += currentPair[1] - 0;
 }
 
-
-var  sortedKeys  =  [ ] ;
-
-for  ( var  mapKey  in  valueMap )
-    sortedKeys . push ( mapKey ) ;
-
-
-function  lengthComparison  (  firstElement ,  secondElement  )
-{
-    if  ( firstElement . length  >  secondElement . length )
-        return  1 ;
-
-    if  ( firstElement . length  <  secondElement . length )
-        return  -1 ;
-
-    return  0 ;
+// Collect all unique keys from the data map
+var sortedKeys = [];
+for (var mapEntry in dataMap) {
+    sortedKeys.push(mapEntry);
 }
 
-sortedKeys . sort ( ) ;
-sortedKeys . sort ( lengthComparison ) ;
+// Define a custom comparison function for string length
+function compareLengths(firstStr, secondStr) {
+    if (firstStr.length > secondStr.length) {
+        return 1;
+    }
+    if (firstStr.length < secondStr.length) {
+        return -1;
+    }
+    return 0;
+}
 
-for  ( var  outputIterator  =  0 ;
-      outputIterator  <  sortedKeys . length ;
-      outputIterator++ )
-    console . log ( sortedKeys [ outputIterator ]  +  " "  +  valueMap [ sortedKeys [ outputIterator ] ] ) ;
+// Sort the keys alphabetically first
+sortedKeys.sort();
+
+// Then sort them by string length using the custom comparator
+sortedKeys.sort(compareLengths);
+
+// Output the sorted keys and their aggregated values
+for (var j = 0; j < sortedKeys.length; j++) {
+    console.log(sortedKeys[j] + " " + dataMap[sortedKeys[j]]);
+}

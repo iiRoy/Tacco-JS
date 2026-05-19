@@ -1,61 +1,37 @@
-/*
- * This module defines a primary function to process incoming data
- * and calculate a specific outcome based on numerical comparisons.
- * It demonstrates conditional logic and basic arithmetic operations.
- */
-function ProcessInput(rawData) { // The main entry point for data processing.
+// This function serves as the primary entry point for processing input data.
+function ProcessData(rawData) {
+    // The incoming raw string is first divided into individual components based on spaces.
+    let dataParts = rawData.split(" ");
 
-    // First, we'll parse the raw input string into an array of strings.
-    let parsedData = rawData.split(" ");
+    // We then extract three distinct values from the parsed components.
+    // JavaScript will automatically handle type coercion from string to number during arithmetic operations.
+    let firstVal = dataParts[0];
+    let secondVal = dataParts[1];
+    let thirdVal = dataParts[2];
 
-    // Extract individual numeric components from the parsed data.
-    // Ensure these are treated as numbers for arithmetic operations.
-    const firstVal = Number(parsedData[0]); // The initial value from the first segment.
-    const secondVal = Number(parsedData[1]); // The second component for comparison.
-    const thirdVal = Number(parsedData[2]); // The third component, often a target.
-
-    // Initialize a variable to store the computed final result.
+    // A variable is initialized to hold the final computed outcome.
     let finalOutcome = 0;
 
-    /*
-     * We evaluate a condition based on the parity of the difference
-     * between the third and second values.
-     */
-    if (
-        (thirdVal - secondVal) % 2 === 0 // Check if the difference is an even number.
-    ) {
-        // If the difference is even, the outcome is half of this difference.
+    // A conditional check is performed on the relationship between the third and second values.
+    // If the remainder of their difference divided by two is zero, indicating an even difference...
+    if ((thirdVal - secondVal) % 2 === 0) {
+        // ...the outcome is determined by halving this even difference.
         finalOutcome = (thirdVal - secondVal) / 2;
     } else {
-        // If the difference is odd, a different calculation path is taken.
+        // Otherwise, if the difference is odd, an alternative calculation path is taken.
+        // Calculate the difference between the first and second values.
+        let diffOne = firstVal - secondVal;
+        // Compute an adjusted version of the third value.
+        let adjustedThird = thirdVal - 1;
 
-        // Calculate a preliminary difference between the first and second values.
-        let differenceOne = firstVal - secondVal;
-
-        // Calculate a decremented version of the third value.
-        let decrementVal = thirdVal - 1;
-
-        // The final outcome in this case is the minimum of these two intermediate values.
-        finalOutcome = Math.min(differenceOne, decrementVal);
+        // The final outcome in this scenario is the smaller of the two newly calculated values.
+        finalOutcome = Math.min(diffOne, adjustedThird);
     }
 
-    // Output the computed final result to the standard console.
+    // The computed result is then displayed to the standard output.
     console.log(finalOutcome);
+}
 
-} // End of the ProcessInput function definition.
-
-
-/*
- * This section handles the execution of the main processing function.
- * It reads data from standard input asynchronously and passes it to the function.
- * This ensures the script can receive external data.
- */
-ProcessInput(
-    require("fs")
-        .readFileSync(
-            "/dev/stdin", // Path to standard input file.
-            "utf8"       // Encoding for reading the file content.
-        )
-);
-
-// End of script execution.
+// The program initiates by reading content from standard input,
+// decoding it as UTF-8, and passing it to the main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

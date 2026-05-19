@@ -1,29 +1,38 @@
-const checkArrangementValidity = (elements) => {
-  const arrayLength = elements.length;
+const processInput = (rawData) => {
+  const inputLines = rawData.trim().split('\n');
 
-  return Array.from({
-    length: arrayLength
-  }, (_, indexPosition) => indexPosition).every((currentPosition) => {
-    const precedingPosition = (currentPosition - 1 + arrayLength) % arrayLength;
-    const succeedingPosition = (currentPosition + 1) % arrayLength;
+  const elementCount = Number(inputLines[0]);
+  const dataValues = inputLines[1].split(' ').map(Number);
 
-    return elements[currentPosition] === (elements[precedingPosition] ^ elements[succeedingPosition]);
-  });
-};
+  const verifyXorRelation = (arr, idxA, idxB, idxC) => {
+    const valA = arr[idxA];
+    const valB = arr[idxB];
+    const valC = arr[idxC];
+    return (valA ^ valC) === valB;
+  };
 
-const processInputData = (unprocessedText) => {
-  const numericalTokens = unprocessedText.match(/\d+/g);
+  const mainSequenceSatisfied = Array.from(
+    { length: Math.max(0, elementCount - 2) },
+    (_, k) => k + 1
+  ).every(currentIdx =>
+    verifyXorRelation(dataValues, currentIdx - 1, currentIdx, currentIdx + 1)
+  );
 
-  if (!numericalTokens || numericalTokens.length < 1) {
-    return 'No';
+  let finalOutcome = mainSequenceSatisfied;
+
+  if (finalOutcome) {
+    const firstWrapCondition = verifyXorRelation(dataValues, elementCount - 2, elementCount - 1, 0);
+    finalOutcome = finalOutcome && firstWrapCondition;
   }
 
-  const seriesElements = numericalTokens.slice(1).map(Number);
+  if (finalOutcome) {
+    const secondWrapCondition = verifyXorRelation(dataValues, 1, 0, elementCount - 1);
+    finalOutcome = finalOutcome && secondWrapCondition;
+  }
 
-  const validationResult = checkArrangementValidity(seriesElements);
+  const outputMessage = finalOutcome ? 'Yes' : 'No';
 
-  return validationResult ? 'Yes' : 'No';
+  console.log('%s', outputMessage);
 };
 
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processInputData(rawInputContent));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

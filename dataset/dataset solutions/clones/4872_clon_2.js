@@ -1,27 +1,23 @@
-// Function to process a string of numerical values and evaluate a specific mathematical condition.
-function processInputValues( inputStringData )
-{
-    // Divide the received string into an array of string components using space as a delimiter.
-    let numericComponents = inputStringData.split(" ");
+function processInputData(inputValues) {
+    // Split the incoming string by spaces to separate individual number strings.
+    inputValues = inputValues.split(" ");
 
-    // Iterate through the first three components of the array.
-    // Convert each component from a string representation to an integer.
-    for ( let idx = 0; idx < 3; idx++ )
-    {
-        numericComponents[idx] = parseInt(numericComponents[idx], 10); // Explicitly specify radix for parsing.
+    // Iterate through the first three elements and convert them to integers.
+    for (let currentIdx = 0; currentIdx < 3; currentIdx++) {
+        inputValues[currentIdx] = parseInt(inputValues[currentIdx], 10);
     }
 
-    // Determine the largest numerical value among the three processed components.
-    const maximumValue = Math.max(numericComponents[0], numericComponents[1], numericComponents[2]);
+    // Determine the largest value among the three parsed numbers.
+    let maxValue = Math.max(inputValues[0], inputValues[1], inputValues[2]);
 
-    // Compute the aggregate sum of all three numerical components.
-    const totalSum = numericComponents[0] + numericComponents[1] + numericComponents[2];
+    // Calculate the sum of all three numbers.
+    let totalValue = inputValues[0] + inputValues[1] + inputValues[2];
 
-    // Evaluate if twice the maximum value is strictly equal to the total sum.
-    // Output "Yes" if the condition holds true, otherwise output "No".
-    console.log((maximumValue * 2 === totalSum) ? "Yes" : "No");
+    // Check if twice the maximum value is equal to the total sum.
+    // This condition holds true if the two smaller numbers sum up to the largest number.
+    console.log((maxValue * 2 === totalValue) ? "Yes" : "No");
 }
 
-// Acquire input data by reading the content of standard input synchronously,
-// interpreted as a UTF-8 encoded string, and then invoke the processing function.
-processInputValues( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read the entire content from standard input, decode it as UTF-8,
+// and then pass it to our data processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

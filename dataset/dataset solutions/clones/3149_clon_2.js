@@ -1,23 +1,28 @@
-const executeProgram = inputStream => {
-  const processedLines = inputStream . trim() . split( '\n' ) ;
+const processInput = rawData => {
+    // This function processes the raw input string.
+    // It first cleans up the input by trimming whitespace and splitting it into lines.
+    const parsedLines = rawData.trim().split('\n');
 
-  // This section processes the initial input data.
-  // The primary numeric value to examine.
-  const firstValue = processedLines[0] . split( " " )[0];
+    // From the first line of input, it extracts the first space-separated token.
+    // This token is expected to be a number, which will be used for a conditional check.
+    const firstVal = parsedLines[0].split(" ")[0];
+    let resultFlag; // Declare a variable to hold the final computed flag.
 
-  // A flag or indicator variable for the outcome.
-  let resultIndicator ;
+    // A conditional statement checks the value of 'firstVal'.
+    // If 'firstVal' is numerically equal to 0, 'resultFlag' is set to 1.
+    if (firstVal == 0) {
+        resultFlag = 1;
+    }
+    // Otherwise (if 'firstVal' is not 0), 'resultFlag' is set to 0.
+    else {
+        resultFlag = 0;
+    }
 
-  if ( firstValue == 0 ) {
-    resultIndicator = 1 ;
-  }
-  else {
-    resultIndicator = 0 ;
-  }
+    // The final computed 'resultFlag' is then printed to the console.
+    console.log(resultFlag);
+};
 
-  // Display the final computed indicator to the console.
-  console . log ( resultIndicator ) ;
-} ;
-
-// Obtain data from the standard input stream for processing.
-executeProgram( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The program's execution starts here.
+// It reads the entire content of the standard input file ("/dev/stdin") as a UTF-8 string.
+// This raw string data is then passed to the 'processInput' function for handling.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

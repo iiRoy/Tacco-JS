@@ -1,33 +1,40 @@
-function processGame(rawGameData) {
-    const gameString = rawGameData.split('\n')[0];
+function processGameInput(rawInputData) {
+    const processedLines = rawInputData.split('\n');
+    let initialSequence = processedLines[0].split('');
 
-    function alternatePlayers(currentParticipant) {
-        return currentParticipant === 'PlayerOne' ? 'PlayerTwo' : 'PlayerOne';
-    }
+    function executeNextStep(currentSequenceState) {
+        const moveStartIdx = currentSequenceState.findIndex((_, idx, arr) =>
+            idx < arr.length - 2 && arr[idx] !== arr[idx + 2]
+        );
 
-    function identifyRemovalSpot(sequenceOfElements) {
-        for (let position = 0; position <= sequenceOfElements.length - 3; position++) {
-            if (sequenceOfElements[position] !== sequenceOfElements[position + 2]) {
-                return position + 1;
-            }
+        if (moveStartIdx === -1) {
+            return null;
         }
-        return -1;
+
+        const charToRemoveIdx = moveStartIdx + 1;
+
+        const updatedSequence = currentSequenceState.slice(0, charToRemoveIdx)
+                                                    .concat(currentSequenceState.slice(charToRemoveIdx + 1));
+
+        console.log(updatedSequence);
+
+        return updatedSequence;
     }
 
-    function resolveGame(currentElementSet, playerInFocus) {
-        const targetRemovalIndex = identifyRemovalSpot(currentElementSet);
+    function determineGameResult(currentSequence, currentTurnPlayer) {
+        const nextSequence = executeNextStep(currentSequence);
 
-        if (targetRemovalIndex === -1) {
-            return alternatePlayers(playerInFocus);
+        if (nextSequence === null) {
+            return currentTurnPlayer === 'First' ? 'Second' : 'First';
         } else {
-            const modifiedElementSet = currentElementSet.substring(0, targetRemovalIndex) + currentElementSet.substring(targetRemovalIndex + 1);
-            const nextPlayer = alternatePlayers(playerInFocus);
-            return resolveGame(modifiedElementSet, nextPlayer);
+            const nextPlayer = currentTurnPlayer === 'First' ? 'Second' : 'First';
+            return determineGameResult(nextSequence, nextPlayer);
         }
     }
 
-    const finalVerdict = resolveGame(gameString, 'PlayerOne');
+    const gameWinner = determineGameResult(initialSequence, 'First');
 
-    console.log(finalVerdict);
+    console.log(gameWinner);
 }
-processGame(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processGameInput(require("fs").readFileSync("/dev/stdin", "utf8"));

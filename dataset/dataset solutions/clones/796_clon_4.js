@@ -1,63 +1,54 @@
-const acquireSource = require('node:fs').readFileSync;
-const rawContent = acquireSource('/dev/stdin', 'utf8');
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = input.split('\n');
 
-function* lineExtractor(textBlock) {
-    const segments = textBlock.split('\n');
-    let pointer = 0;
-    while (pointer < segments.length) {
-        yield segments[pointer++];
-    }
-}
+let currentLineContent;
+while ((currentLineContent = lines.shift()) !== undefined) {
+    const intervalCount = parseInt(currentLineContent);
+    if (intervalCount === 0) break;
 
-const inputIterator = lineExtractor(rawContent);
-
-const extractDurationInMinutes = (momentString) => {
-    const [hStr, mStr] = momentString.split(':');
-    return (parseInt(hStr, 10) * 60) + parseInt(mStr, 10);
-};
-
-const processBatch = (iterator) => {
-    const firstEntry = iterator.next().value;
-    if (firstEntry === undefined) return;
-
-    const quantity = parseInt(firstEntry, 10);
-    if (quantity === 0) return;
-
-    let scheduleEntries = [];
-    for (let current = 0; current < quantity; current++) {
-        const spanText = iterator.next().value;
-        const [beginTime, finishTime] = spanText.split(' ').map(extractDurationInMinutes);
-        scheduleEntries.push([beginTime, finishTime]);
+    const initialIntervals = [];
+    for (let i = 0; i < intervalCount; i++) {
+        const timeEntry = lines.shift();
+        const [startMomentStr, endMomentStr] = timeEntry.split(' ');
+        const startTimestamp = +(new Date('2000-01-01 ' + startMomentStr));
+        const endTimestamp = +(new Date('2000-01-01 ' + endMomentStr));
+        initialIntervals.push([startTimestamp, endTimestamp]);
     }
 
-    const determineMaximumLinkage = (segmentsCollection, currentMaximum) => {
-        if (segmentsCollection.length === 0) {
-            return currentMaximum;
+    const intervalRegistry = new Map(initialIntervals.map((intervalData, index) => [index, intervalData]));
+    const processedKeys = new Set();
+    let maximumTrainConcurrency = 1;
+
+    for (const [primaryKey, primaryInterval] of intervalRegistry.entries()) {
+        if (processedKeys.has(primaryKey)) {
+            continue;
         }
 
-        const headSegment = segmentsCollection[0];
-        let currentSegmentLinkage = 1;
-        const indicesToRemove = new Set();
+        let currentTrainPotential = 1;
+        const keysToMarkProcessed = new Set();
 
-        for (let segmentIndex = 1; segmentIndex < segmentsCollection.length; segmentIndex++) {
-            const tailSegment = segmentsCollection[segmentIndex];
-            if (tailSegment[0] > headSegment[0] && tailSegment[0] < headSegment[1]) {
-                currentSegmentLinkage++;
-                indicesToRemove.add(segmentIndex);
+        for (const [secondaryKey, secondaryInterval] of intervalRegistry.entries()) {
+            if (secondaryKey <= primaryKey) { // Only consider intervals appearing after the primary one
+                continue;
+            }
+            if (processedKeys.has(secondaryKey)) { // Skip if already marked as processed by a prior primary interval
+                continue;
+            }
+
+            // Check if secondaryInterval starts strictly within primaryInterval
+            // Original condition: !(primaryInterval[1] <= secondaryInterval[0] || secondaryInterval[0] <= primaryInterval[0])
+            // Simplified: primaryInterval[1] > secondaryInterval[0] && secondaryInterval[0] > primaryInterval[0]
+            // Which is: primaryInterval[0] < secondaryInterval[0] < primaryInterval[1]
+            if (primaryInterval[0] < secondaryInterval[0] && secondaryInterval[0] < primaryInterval[1]) {
+                currentTrainPotential++;
+                keysToMarkProcessed.add(secondaryKey);
             }
         }
 
-        const updatedMaximum = Math.max(currentMaximum, currentSegmentLinkage);
+        maximumTrainConcurrency = Math.max(maximumTrainConcurrency, currentTrainPotential);
 
-        const nextSegmentsCollection = segmentsCollection.filter((_, entryPosition) => entryPosition !== 0 && !indicesToRemove.has(entryPosition));
-
-        return determineMaximumLinkage(nextSegmentsCollection, updatedMaximum);
-    };
-
-    const outcome = determineMaximumLinkage(scheduleEntries, 1);
-    process.stdout.write(outcome.toString() + '\n');
-
-    processBatch(iterator);
-};
-
-processBatch(inputIterator);
+        // Mark intervals that were "consumed" by this primary interval for future iterations
+        keysToMarkProcessed.forEach(key => processedKeys.add(key));
+    }
+    console.log(maximumTrainConcurrency);
+}

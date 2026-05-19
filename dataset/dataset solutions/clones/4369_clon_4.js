@@ -1,17 +1,19 @@
-const processData = (rawData) => {
-    const dataLines = rawData.split('\r\n');
-    const effectiveElements = dataLines.slice(1);
+'use strict';
 
-    const frequencyHolder = effectiveElements.reduce((accumulatorMap, currentItem) => {
-        accumulatorMap.set(currentItem, (accumulatorMap.get(currentItem) || 0) + 1);
-        return accumulatorMap;
-    }, new Map());
+function processInputData(rawText) {
+  const lines = rawText.split('\r\n');
+  const numericStrings = lines.slice(1);
 
-    const resultValue = Array.from(frequencyHolder.values()).reduce((currentSum, individualCount) => {
-        return currentSum + (individualCount % 2);
-    }, 0);
+  const frequencyMap = numericStrings.reduce((accumulator, currentNumberString) => {
+    accumulator.set(currentNumberString, (accumulator.get(currentNumberString) || 0) + 1);
+    return accumulator;
+  }, new Map());
 
-    console.log(resultValue);
-};
+  const finalCount = Array.from(frequencyMap.values()).reduce((totalOdd, currentFrequency) => {
+    return totalOdd + (currentFrequency % 2 === 1 ? 1 : 0);
+  }, 0);
 
-processData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+  console.log(finalCount);
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

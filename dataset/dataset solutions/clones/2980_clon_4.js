@@ -1,60 +1,42 @@
-function processor(dataString) {
-    const tokens = dataString.split(' ').map(Number);
-    const valA = tokens[0];
-    const valB = tokens[1];
-    const valC = tokens[2];
-    const targetValue = tokens[3];
+function processInput(inputTxt) {
+    const parsedValues = inputTxt.split(' ').map(Number);
+    const [valA, valB, valC, targetSum] = parsedValues;
 
-    const coinDenominations = [valA, valB, valC];
+    let resultCount = 0;
 
-    // Initialize a memoization table to store computed results for subproblems.
-    // memo[remainingGoal][coinIndex] will store the number of ways.
-    // -1 indicates that the subproblem has not been computed yet.
-    const memoizationTable = Array(targetValue + 1).fill(null).map(() => Array(coinDenominations.length + 1).fill(-1));
-
-    function enumerateSums(currentGoal, currentCoinIndex, denoms, memo) {
-        // Base case 1: If the current goal is 0, we've found one valid combination.
-        if (currentGoal === 0) {
-            return 1;
-        }
-        // Base case 2: If the current goal is negative (exceeded target)
-        // or if we've run out of denominations to use, there are no valid combinations.
-        if (currentGoal < 0 || currentCoinIndex === denoms.length) {
-            return 0;
+    function findCombinations(currentLevel, currentAccumulated) {
+        if (currentAccumulated === targetSum) {
+            resultCount++;
+            return;
         }
 
-        // Check if this subproblem has already been computed.
-        // If so, return the stored result to avoid redundant calculations.
-        if (memo[currentGoal][currentCoinIndex] !== -1) {
-            return memo[currentGoal][currentCoinIndex];
+        if (currentAccumulated > targetSum || currentLevel === 3) {
+            return;
         }
 
-        let accumulatedCount = 0;
-        const currentDenomValue = denoms[currentCoinIndex];
+        let currentVal;
+        if (currentLevel === 0) {
+            currentVal = valA;
+        } else if (currentLevel === 1) {
+            currentVal = valB;
+        } else {
+            currentVal = valC;
+        }
 
-        // Iterate through all possible multiples of the current denomination.
-        // For each multiple, recursively find combinations for the remaining goal
-        // using the next set of denominations.
-        for (let multiplier = 0; ; multiplier++) {
-            const remainder = currentGoal - (multiplier * currentDenomValue);
-            if (remainder < 0) {
-                // If the remainder is negative, this multiplier is too large;
-                // further increments would also be too large.
+        for (let itemQuantity = 0; ; itemQuantity++) {
+            const nextAccumulated = currentAccumulated + itemQuantity * currentVal;
+
+            if (nextAccumulated > targetSum) {
                 break;
             }
-            // Add the number of ways found by considering the next denomination
-            // with the reduced target value.
-            accumulatedCount += enumerateSums(remainder, currentCoinIndex + 1, denoms, memo);
-        }
 
-        // Store the computed result in the memoization table before returning.
-        memo[currentGoal][currentCoinIndex] = accumulatedCount;
-        return accumulatedCount;
+            findCombinations(currentLevel + 1, nextAccumulated);
+        }
     }
 
-    const totalSolutions = enumerateSums(targetValue, 0, coinDenominations, memoizationTable);
+    findCombinations(0, 0);
 
-    console.log(totalSolutions);
+    console.log(resultCount);
 }
 
-processor(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,28 +1,25 @@
-function processData(rawData) {
-    const numericValues = rawData.trim().split(" ").map(Number);
-    const alpha = numericValues[0];
-    const beta = numericValues[1];
-    const gamma = numericValues[2];
+function processInput(dataString) {
+    const numericValues = dataString.trim().split(" ").map(Number);
+    const paramA = numericValues[0];
+    const paramB = numericValues[1];
+    const paramC = numericValues[2];
 
-    const initialA = alpha - beta;
-    const initialC = gamma - 1;
-    const keyDifference = gamma - beta;
+    const difference = paramC - paramB;
 
-    const subtractionFactor = Math.max(0, Math.floor(keyDifference / 2) - (1 - (keyDifference & 1)));
+    const adjustment = (difference % 2 === 0)
+        ? Math.max(0, difference / 2 - 1)
+        : Math.max(0, (difference - 1) / 2);
 
-    const adjustedA = initialA - subtractionFactor;
-    const adjustedC = initialC - subtractionFactor;
+    const primaryValue = paramA - paramB - adjustment;
+    const secondaryValue = paramC - 1 - adjustment;
 
-    let intermediateResult = Math.min(adjustedA, adjustedC);
+    const intermediateOutcome = Math.min(primaryValue, secondaryValue);
 
-    const evenCheck = 1 - (keyDifference & 1);
-    const oddCheck = keyDifference & 1;
+    const finalOutcome = (difference % 2 === 0)
+        ? Math.min(difference / 2, intermediateOutcome)
+        : intermediateOutcome;
 
-    const conditionalValue = (keyDifference / 2) * evenCheck + intermediateResult * oddCheck;
-
-    intermediateResult = Math.min(intermediateResult, conditionalValue);
-
-    console.log(intermediateResult);
+    console.log(finalOutcome);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

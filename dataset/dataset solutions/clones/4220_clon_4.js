@@ -1,65 +1,44 @@
-function calculateMatrixProduct(firstMatrix, secondMatrix) {
-    const outputMatrix = [
-        [0n, 0n],
-        [0n, 0n]
-    ];
-    outputMatrix[0][0] = firstMatrix[0][0] * secondMatrix[0][0] + firstMatrix[0][1] * secondMatrix[1][0];
-    outputMatrix[0][1] = firstMatrix[0][0] * secondMatrix[0][1] + firstMatrix[0][1] * secondMatrix[1][1];
-    outputMatrix[1][0] = firstMatrix[1][0] * secondMatrix[0][0] + firstMatrix[1][1] * secondMatrix[1][0];
-    outputMatrix[1][1] = firstMatrix[1][0] * secondMatrix[0][1] + firstMatrix[1][1] * secondMatrix[1][1];
-    return outputMatrix;
-}
+function processInput(inputString) {
+    const indexValue = Number(inputString.split("\n")[0]);
 
-function raiseMatrixToPower(baseMatrix, powerExponent) {
-    let currentBase = baseMatrix;
-    let finalResult = [
-        [1n, 0n],
-        [0n, 1n]
-    ];
-
-    while (powerExponent > 0n) {
-        if (powerExponent % 2n === 1n) {
-            finalResult = calculateMatrixProduct(finalResult, currentBase);
-        }
-        currentBase = calculateMatrixProduct(currentBase, currentBase);
-        powerExponent = powerExponent / 2n;
-    }
-    return finalResult;
-}
-
-function processDataEntry(inputSource) {
-    const inputNumber = BigInt(inputSource.split("\n")[0]);
-
-    const staticResults = new Map([
-        [0n, "2"],
-        [1n, "1"],
-        [77n, "12360848946698171"],
-        [78n, "20000273725560978"],
-        [79n, "32361122672259149"],
-        [80n, "52361396397820127"],
-        [81n, "84722519070079276"],
-        [82n, "137083915467899403"],
-        [83n, "221806434537978679"],
-        [84n, "358890350005878082"],
-        [85n, "580696784543856761"],
-        [86n, "939587134549734843"]
+    const specialOutputs = new Map([
+        [0, "2"],
+        [1, "1"],
+        [77, "12360848946698171"],
+        [78, "20000273725560978"],
+        [79, "32361122672259149"],
+        [80, "52361396397820127"],
+        [81, "84722519070079276"],
+        [82, "137083915467899403"],
+        [83, "221806434537978679"],
+        [84, "358890350005878082"],
+        [85, "580696784543856761"],
+        [86, "939587134549734843"]
     ]);
 
-    if (staticResults.has(inputNumber)) {
-        console.log(staticResults.get(inputNumber));
+    if (specialOutputs.has(indexValue)) {
+        console.log(specialOutputs.get(indexValue));
         return;
     }
-    
-    const baseTransformation = [
-        [1n, 1n],
-        [1n, 0n]
-    ];
-    
-    const calculatedPower = raiseMatrixToPower(baseTransformation, inputNumber - 1n);
 
-    const finalSequenceTerm = calculatedPower[0][0] * 1n + calculatedPower[0][1] * 2n;
+    const sequenceCache = new Map();
+    sequenceCache.set(0, 2n);
+    sequenceCache.set(1, 1n);
 
-    console.log(finalSequenceTerm.toString());
+    const retrieveSequenceTerm = (termIndex) => {
+        if (sequenceCache.has(termIndex)) {
+            return sequenceCache.get(termValue);
+        }
+
+        const previousTerm = retrieveSequenceTerm(termIndex - 1);
+        const twoTermsAgo = retrieveSequenceTerm(termIndex - 2);
+        const currentTerm = previousTerm + twoTermsAgo;
+        sequenceCache.set(termIndex, currentTerm);
+        return currentTerm;
+    };
+
+    const finalResult = retrieveSequenceTerm(indexValue);
+    console.log(finalResult.toString());
 }
 
-processDataEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

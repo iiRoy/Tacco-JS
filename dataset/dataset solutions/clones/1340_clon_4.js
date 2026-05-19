@@ -1,32 +1,24 @@
-const obtainNumericalSource = () => {
-    return parseInt(require('node:fs').readFileSync('/dev/stdin', 'utf8').trim(), 10);
-};
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const initialValue = parseInt(sourceData);
 
-const decomposeNumberRecursively = (remainingValue, currentDivisorCandidate, collectedFactors) => {
-    if (remainingValue === 1) {
-        return collectedFactors;
+function obtainPrimeFactors(valueToFactor, currentDivisor = 2, factorCollector = []) {
+    if (valueToFactor === 1) {
+        return factorCollector;
     }
 
-    // Optimization: if currentDivisorCandidate squared is greater than remainingValue,
-    // then remainingValue must be a prime itself (if it's greater than 1).
-    if (currentDivisorCandidate * currentDivisorCandidate > remainingValue) {
-        if (remainingValue > 1) {
-            collectedFactors.push(remainingValue);
-        }
-        return collectedFactors;
+    if (currentDivisor * currentDivisor > valueToFactor && valueToFactor > 1) {
+        factorCollector.push(valueToFactor);
+        return factorCollector;
     }
 
-    if (remainingValue % currentDivisorCandidate === 0) {
-        collectedFactors.push(currentDivisorCandidate);
-        return decomposeNumberRecursively(remainingValue / currentDivisorCandidate, currentDivisorCandidate, collectedFactors);
+    if (valueToFactor % currentDivisor === 0) {
+        factorCollector.push(currentDivisor);
+        return obtainPrimeFactors(valueToFactor / currentDivisor, currentDivisor, factorCollector);
     } else {
-        return decomposeNumberRecursively(remainingValue, currentDivisorCandidate + 1, collectedFactors);
+        return obtainPrimeFactors(valueToFactor, currentDivisor + 1, factorCollector);
     }
-};
+}
 
-const numericalInput = obtainNumericalSource();
-const preservedOriginalInput = numericalInput;
+const collectedFactors = obtainPrimeFactors(initialValue);
 
-const factorizedResult = decomposeNumberRecursively(numericalInput, 2, []);
-
-console.log(preservedOriginalInput + ': ' + factorizedResult.join(' '));
+console.log(initialValue + ': ' + collectedFactors.join(' '));

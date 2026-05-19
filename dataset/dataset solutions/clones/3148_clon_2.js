@@ -1,118 +1,74 @@
-let dataStream = require("node:fs").readFileSync("/dev/stdin", "utf8").trim().split("\n") ;
+var dataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-let dataIterator = {
-  "sourceList" : dataStream ,
-  "currentPosition" : 0 ,
-  "maximumElements" : dataStream.length ,
-
-  "retrieveNext" : function() {
-    // Check if there are more items to process in the list.
-    if ( ! this.checkAvailability() ) {
-      throw "IteratorExhausted: No further elements are present.";
-    }
-    const extractedItem = this.sourceList[this.currentPosition];
+var inputHandler = {
+  "lineBuffer" : dataLines,
+  "currentPosition" : 0,
+  "totalLines" : dataLines.length,
+  "fetchNext" : function(){
+    if(!this.hasMore()){throw "NoSuchElementException:次に要素は無いよ";}
+    var retrievedLine = this.lineBuffer[this.currentPosition];
     this.currentPosition++;
-    return extractedItem;
+    return retrievedLine;
   },
-
-  "checkAvailability" : function() {
-    return ( this.currentPosition < this.maximumElements );
-  }
+  "hasMore" : function(){return (this.currentPosition < this.totalLines);}
 };
 
-// Start the main execution flow of the application
-ProcessMainLogic() ;
+ExecuteProgram();
 
-/**
- * Retrieves the subsequent item from the global data iterator.
- * @returns {string} The next string element from the input stream.
- */
-function retrieveNext() {
-  return dataIterator.retrieveNext();
-}
+function getNextLine(){return inputHandler.fetchNext();}
+function checkMoreLines(){return inputHandler.hasMore();}
+function printOutput(outputValue){console.log(outputValue);} // Standard output function
+function printError(errorMessage){console.error(errorMessage);} // Standard error function
 
-/**
- * Verifies if the global data iterator has additional elements to provide.
- * @returns {boolean} True if more elements exist, false otherwise.
- */
-function checkAvailability() {
-  return dataIterator.checkAvailability();
-}
-
-/**
- * Prints the provided content to the standard output stream.
- * @param {*} outputContent - The data to be displayed.
- */
-function displayResult( outputContent ) {
-  console.log( outputContent );
-}
-
-/**
- * Reports an error message to the standard error stream.
- * @param {*} errorMessage - The error data to be logged.
- */
-function reportError( errorMessage ) {
-  console.error( errorMessage );
-}
-
-/*
- * This utility function handles various data transformation scenarios based on a numeric code.
- * It takes an input value and a numeric code specifying the desired conversion type.
- *
- * [conversionType] specifies how to handle the element:
- *  - Default/Error: Returns the input value unchanged.
- *  - 1: Converts input string to an integer.
- *  - 2: Splits input string by a single space character.
- *  - 4: Splits input string by space and converts all resulting parts to numbers.
- *  - 6: Splits input string into individual characters.
- *  - 7: Splits input string into individual characters and converts all parts to numbers.
- *  - 8: Joins array elements with a single space.
- *  - 9: Joins array elements with a newline character.
- *  - 0: Joins array elements without any separator (concatenates).
- */
-function transformInput( inputData , conversionType ) {
-  try {
-    switch ( conversionType ) {
-      case 1 : return Number.parseInt( inputData ) ;
-      case 2 : return inputData.split(" ") ;
-      case 4 : return inputData.split(" ").map( ( val ) => Number(val) ) ;
-      case 6 : return inputData.split("") ;
-      case 7 : return inputData.split("").map( ( val ) => Number(val) ) ;
-      case 8 : return inputData.join(" ") ;
-      case 9 : return inputData.join("\n") ;
-      case 0 : return inputData.join("") ;
-      default: return inputData ;
+// Utility for input conversion based on 'conversionType'.
+// 1: Parse as integer.
+// 2: Split by space.
+// 4: Split by space, then map to numbers.
+// 6: Split by character.
+// 7: Split by character, then map to numbers.
+// 8: Join array with space.
+// 9: Join array with newline.
+// 0: Join array without separator.
+// Default: Return input as is.
+function convertInput(inputValue, conversionType){
+  try{
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map((item) => Number(item));
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map((item) => Number(item));
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch ( processingError ) {
-    return inputData ; // In case of conversion error, return original input unmodified.
+  } catch(exceptionDetails){
+    return inputValue;
   }
 }
 
-/**
- * The primary function orchestrating the program's core logic.
- * Reads two numbers from input and performs calculations based on their parity.
- */
-function ProcessMainLogic() {
-  const parsedValues = transformInput( retrieveNext() , 4 ) ;
-  const firstOperand = parsedValues[0] ;
-  const secondOperand = parsedValues[1] ;
+function ExecuteProgram(){
+  var parsedNumbers = convertInput(getNextLine(), 4);
+  var firstNum = parsedNumbers[0];
+  var secondNum = parsedNumbers[1];
 
-  if ( firstOperand === secondOperand ) {
-    displayResult( firstOperand ) ;
-    return ;
+  if(firstNum === secondNum){
+     printOutput(firstNum);
+    return;
   }
 
-  if ( firstOperand % 2 === 1 && secondOperand % 2 === 0 ) {
-    const calculationFactor = ( secondOperand - firstOperand - 1 ) / 2 ;
-    displayResult( firstOperand ^ secondOperand ^ ( calculationFactor % 2 ) ) ;
-  } else if ( firstOperand % 2 === 1 && secondOperand % 2 === 1 ) {
-    const calculationFactor = ( secondOperand - firstOperand ) / 2 ;
-    displayResult( firstOperand ^ ( calculationFactor % 2 ) ) ;
-  } else if ( firstOperand % 2 === 0 && secondOperand % 2 === 0 ) {
-    const calculationFactor = ( secondOperand - firstOperand ) / 2 ;
-    displayResult( secondOperand ^ ( calculationFactor % 2 ) ) ;
-  } else { // This branch covers (A % 2 == 0 && B % 2 == 1)
-    const calculationFactor = ( secondOperand - firstOperand + 1 ) / 2 ;
-    displayResult( calculationFactor % 2 ) ;
+  if(firstNum % 2 === 1 && secondNum % 2 === 0){
+     var midpointOffset = (secondNum - firstNum - 1) / 2;
+    printOutput(firstNum ^ secondNum ^ (midpointOffset % 2));
+  } else if(firstNum % 2 === 1 && secondNum % 2 === 1){
+     var midpointOffset = (secondNum - firstNum) / 2;
+    printOutput(firstNum ^ (midpointOffset % 2));
+  } else if(firstNum % 2 === 0 && secondNum % 2 === 0){
+    var midpointOffset = (secondNum - firstNum) / 2;
+    printOutput(secondNum ^ (midpointOffset % 2));
+  } else {
+    var midpointOffset = (secondNum - firstNum + 1) / 2;
+    printOutput(midpointOffset % 2);
   }
 }

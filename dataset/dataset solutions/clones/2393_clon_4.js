@@ -1,103 +1,80 @@
-class InputProcessor {
-    constructor(inputLines) {
-        this.sourceData = inputLines;
-        this.currentLineIndex = 0;
-    }
-
-    hasMoreLines() {
-        return this.currentLineIndex < this.sourceData.length;
-    }
-
-    retrieveNextLine() {
-        if (!this.hasMoreLines()) {
-            throw new Error("No further input lines available.");
-        }
-        return this.sourceData[this.currentLineIndex++];
-    }
-
-    obtainNextInteger() {
-        return parseInt(this.retrieveNextLine(), 10);
-    }
-
-    obtainNextIntegerList() {
-        return this.retrieveNextLine().split(" ").map(Number);
-    }
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var parsedInput;
+var rawInputLines = [];
+inputReader.on('line', function(line){rawInputLines.push(line);});
+inputReader.on('close', function(){
+  parsedInput = initializeInputParser(rawInputLines);
+  console.error("\n");
+  var startTime = new Date();
+  solveGraphColoring();
+  var endTime = new Date() - startTime;
+  
+  logDebug("time : " + (endTime) + "ms");
+  logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function deepCopyObject(obj){return JSON.parse(JSON.stringify(obj));}
+function readInteger(){return dataTransformer(getNextToken(),1);}
+function readStringArray(){return dataTransformer(getNextToken(),2);}
+function readIntegerArray(){return dataTransformer(getNextToken(),4);}
+function readCharacterArray(){return dataTransformer(getNextToken(),6);}
+function getNextToken(){return parsedInput.retrieveNext();}
+function hasMoreTokensAvailable(){return parsedInput.checkNext();}
+function initializeInputParser(inputData){  
+  var inputProcessor = {
+    inputSource : inputData, currentIndex : 0, maxIndex : inputData.length,
+    checkNext : function(){return (this.currentIndex < this.maxIndex);},
+    retrieveNext : function(){if(!this.checkNext()){throw "ArrayIndexOutOfBoundsException これ以上ないよ";}else{var currentInput = this.inputSource[this.currentIndex];this.currentIndex++;return currentInput;}}
+  };
+  return inputProcessor;
 }
+function printOutput(content){console.log(content);}
+function logDebug(content){console.error("debug:" + require("util").inspect(content,false,null));}
+function dataTransformer(value, conversionType){try{switch(conversionType){case 1:return parseInt(value);case 2:return value.split(" ");case 4:return value.split(" ").map(Number);case 6:return value.split("");case 7:return value.split("").map(Number);case 8:return value.join(" ");case 9:return value.join("\n");case 0:return value.join("");default:return value;}}catch(e){return value;}}
 
-let globalInputManager;
-
-const emitSolution = (content) => console.log(content);
-const captureDiagnostic = (info) => console.error("DIAGNOSTIC_OUTPUT: " + require("util").inspect(info, false, null));
-
-const standardInputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-const collectedInputLines = [];
-standardInputReader.on('line', (lineText) => { collectedInputLines.push(lineText); });
-standardInputReader.on('close', () => {
-    globalInputManager = new InputProcessor(collectedInputLines);
-    const startExecutionTime = new Date();
-    runAlgorithm();
-    const endExecutionTime = new Date() - startExecutionTime;
-    
-    captureDiagnostic("elapsed_time : " + (endExecutionTime) + "ms");
-    captureDiagnostic("memory_footprint : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
-});
-
-function runAlgorithm() {
-    const totalNodes = globalInputManager.obtainNextInteger();
-
-    const graphConnections = new Map();
-    for (let nodeIdx = 0; nodeIdx < totalNodes; ++nodeIdx) {
-        graphConnections.set(nodeIdx, new Map());
-    }
-
-    const finalEdgeHues = new Map();
-
-    for (let edgeIdx = 0; edgeIdx < totalNodes - 1; ++edgeIdx) {
-        const nodePair = globalInputManager.obtainNextIntegerList();
-        const nodeA = nodePair[0] - 1;
-        const nodeB = nodePair[1] - 1;
-
-        graphConnections.get(nodeA).set(nodeB, { edge_identifier: edgeIdx, assigned_hue: null });
-        graphConnections.get(nodeB).set(nodeA, { edge_identifier: edgeIdx, assigned_hue: null });
-    }
-
-    let highestHueAchieved = 0;
-
-    const processingQueue = [[0, 0]];
-
-    while (processingQueue.length > 0) {
-        const currentContext = processingQueue.shift();
-        const activeNode = currentContext[0];
-        const forbiddenHue = currentContext[1];
-
-        let candidateHue = 1;
-
-        for (const [neighborNode, edgeDetails] of graphConnections.get(activeNode).entries()) {
-            if (edgeDetails.assigned_hue === null) {
-                if (candidateHue === forbiddenHue) {
-                    candidateHue++;
-                }
-                
-                edgeDetails.assigned_hue = candidateHue;
-                graphConnections.get(neighborNode).get(activeNode).assigned_hue = candidateHue;
-
-                finalEdgeHues.set(edgeDetails.edge_identifier, candidateHue);
-                
-                processingQueue.push([neighborNode, candidateHue]);
-                highestHueAchieved = Math.max(highestHueAchieved, candidateHue);
-                candidateHue++;
-            }
-        }
-    }
-
-    emitSolution(highestHueAchieved);
-
-    const sortedHuesForOutput = new Array(totalNodes - 1);
-    for (let idx = 0; idx < totalNodes - 1; ++idx) {
-        sortedHuesForOutput[idx] = finalEdgeHues.get(idx);
-    }
-    emitSolution(sortedHuesForOutput.join("\n"));
+function solveGraphColoring(){
+	var nodeCount = readInteger();
+	var adjacencyList = Array.from({ length: nodeCount }, () => []);
+	var edgeColors = new Array(nodeCount - 1).fill(0);
+	
+	for(var i = 0; i < nodeCount - 1; i++){
+		var edgeEndpoints = readIntegerArray();
+		var nodeA = edgeEndpoints[0] - 1;
+		var nodeB = edgeEndpoints[1] - 1;
+		
+		adjacencyList[nodeA].push({ neighbor: nodeB, edgeIdentifier: i });
+		adjacencyList[nodeB].push({ neighbor: nodeA, edgeIdentifier: i });
+	}
+	
+	var bfsQueue = [{ currentVertex: 0, incomingEdgeColor: 0 }];
+	var queuePointer = 0;
+	var maximumColor = 0;
+	
+	while(queuePointer < bfsQueue.length){
+		var currentQueueItem = bfsQueue[queuePointer++];
+		var currentVertex = currentQueueItem.currentVertex;
+		var colorFromParent = currentQueueItem.incomingEdgeColor;
+		
+		var nextAvailableColor = 1;
+		
+		for(const incidentEdge of adjacencyList[currentVertex]){
+			var connectedVertex = incidentEdge.neighbor;
+			var edgeIndex = incidentEdge.edgeIdentifier;
+			
+			if(edgeColors[edgeIndex] === 0){
+				if(nextAvailableColor === colorFromParent){
+					nextAvailableColor++;
+				}
+				edgeColors[edgeIndex] = nextAvailableColor;
+				bfsQueue.push({ currentVertex: connectedVertex, incomingEdgeColor: nextAvailableColor });
+				maximumColor = Math.max(maximumColor, nextAvailableColor);
+				nextAvailableColor++;
+			}
+		}
+	}
+	
+	printOutput(maximumColor);
+	printOutput(dataTransformer(edgeColors, 9));
 }

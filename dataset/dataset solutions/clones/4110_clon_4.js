@@ -1,77 +1,54 @@
 "use strict";
 
-let finalOutcomeTally = 0;
+const processCombat = (inputData) => {
+    inputData = inputData.trim().split("\n");
 
-const analyzeInputData = (inputSource) => {
-    const allLines = inputSource.trim().split('\n');
-    const [headerLine] = allLines;
-    const [elementCount, initialEnergyLevel] = headerLine.split(' ').map(Number);
+    const [entityCountStr, initialHealthStr] = inputData[0].split(" ");
+    const entityCount = parseInt(entityCountStr);
+    let currentHealth = parseInt(initialHealthStr);
 
-    const capabilityDescriptors = allLines.slice(1, elementCount + 1).map(entryText => {
-        const [mainEffect, auxiliaryEffect] = entryText.split(' ').map(Number);
-        return { main: mainEffect, auxiliary: auxiliaryEffect };
+    const attackThrowPairs = inputData.slice(1, entityCount + 1).map(line => {
+        const [attackVal, throwVal] = line.split(" ").map(Number);
+        return { attack: attackVal, throw: throwVal };
     });
 
-    return { totalElements: elementCount, startingEnergy: initialEnergyLevel, capabilities: capabilityDescriptors };
-};
+    const maxAttackPower = attackThrowPairs.reduce((max, pair) => Math.max(max, pair.attack), 0);
 
-const identifyPeakMainEffect = (descriptorCollection) => {
-    return descriptorCollection.capabilities.reduce((maxVal, desc) => Math.max(maxVal, desc.main), 0);
-};
-
-const calculateAuxiliaryDamageCredit = (descriptorCollection, peakMainEffectValue) => {
-    return descriptorCollection.capabilities.reduce((currentSum, desc) => {
-        return desc.auxiliary > peakMainEffectValue ? currentSum + desc.auxiliary : currentSum;
+    const initialThrowDamage = attackThrowPairs.reduce((sum, pair) => {
+        return sum + (pair.throw > maxAttackPower ? pair.throw : 0);
     }, 0);
-};
 
-const computeInitialMainActions = (currentEnergy, auxiliaryCreditValue, peakMainEffectValue) => {
-    let requiredActions = 0;
-    if (currentEnergy > auxiliaryCreditValue) {
-        requiredActions = Math.ceil((currentEnergy - auxiliaryCreditValue) / peakMainEffectValue);
-    }
-    return Math.max(0, requiredActions);
-};
+    let actionCount = 0;
 
-const executeFirstCombatPhase = (structuredData) => {
-    const peakMain = identifyPeakMainEffect(structuredData);
-    const auxiliaryCredit = calculateAuxiliaryDamageCredit(structuredData, peakMain);
-    let initialActionCount = computeInitialMainActions(structuredData.startingEnergy, auxiliaryCredit, peakMain);
-    let remainingEnergy = structuredData.startingEnergy - (initialActionCount * peakMain);
+    let healthAfterInitialThrows = currentHealth - initialThrowDamage;
 
-    return {
-        remainingEnergyLevel: remainingEnergy,
-        cumulativeActions: initialActionCount,
-        allAuxiliaryPowers: structuredData.capabilities.map(desc => desc.auxiliary)
-    };
-};
+    const directAttackRounds = Math.ceil(healthAfterInitialThrows / maxAttackPower);
+    const effectiveDirectAttacks = Math.max(0, directAttackRounds);
 
-const completeCombatEngagement = (phaseOneResult) => {
-    let totalActions = phaseOneResult.cumulativeActions;
-    let finalEnergy = phaseOneResult.remainingEnergyLevel;
+    actionCount += effectiveDirectAttacks;
+    currentHealth -= effectiveDirectAttacks * maxAttackPower;
 
-    if (finalEnergy <= 0) {
-        return totalActions;
+    if (currentHealth <= 0) {
+        return actionCount;
     }
 
-    const orderedAuxiliaryPowers = phaseOneResult.allAuxiliaryPowers.sort((valA, valB) => valB - valA);
+    const sortedThrowPowers = attackThrowPairs
+        .map(pair => pair.throw)
+        .sort((a, b) => b - a);
 
-    const applyRemainingPowersRecursively = (currentIndex, currentEnergyState, currentActionCount) => {
-        if (currentEnergyState <= 0 || currentIndex >= orderedAuxiliaryPowers.length) {
-            return currentActionCount;
+    for (const throwPower of sortedThrowPowers) {
+        currentHealth -= throwPower;
+        actionCount++;
+        if (currentHealth <= 0) {
+            break;
         }
-        const powerToApply = orderedAuxiliaryPowers[currentIndex];
-        return applyRemainingPowersRecursively(currentIndex + 1, currentEnergyState - powerToApply, currentActionCount + 1);
-    };
+    }
 
-    return applyRemainingPowersRecursively(0, finalEnergy, totalActions);
+    return actionCount;
 };
 
-const orchestrateFullProcess = (rawInputPayload) => {
-    const structuredInformation = analyzeInputData(rawInputPayload);
-    const phaseOneOutcome = executeFirstCombatPhase(structuredInformation);
-    finalOutcomeTally = completeCombatEngagement(phaseOneOutcome);
+const main = arg => {
+    console.log(processCombat(arg));
 };
 
-orchestrateFullProcess(require('fs').readFileSync('/dev/stdin', 'utf8'));
-console.log(finalOutcomeTally);
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

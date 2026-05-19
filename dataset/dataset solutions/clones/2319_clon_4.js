@@ -1,18 +1,11 @@
-function processNumericalSelection(sourceInformation) {
-    const charOne = sourceInformation.charCodeAt(0);
-    const charTwo = sourceInformation.charCodeAt(2);
-
-    const valueOne = charOne - 48;
-    const valueTwo = charTwo - 48;
-
-    const totalSumOfUniverse = 1 + 2 + 3;
-    const result = totalSumOfUniverse - valueOne - valueTwo;
-
-    process.stdout.write(String(result));
+function processInputData(rawData) {
+    const processedLines = rawData.trim().split("\n");
+    const firstVal = Number(processedLines[0]);
+    const secondVal = Number(processedLines[1]);
+    const availableNumbers = new Set([1, 2, 3]);
+    availableNumbers.delete(firstVal);
+    availableNumbers.delete(secondVal);
+    const resultantNumber = Array.from(availableNumbers)[0];
+    console.log(resultantNumber);
 }
-
-const obtainModule = global.require;
-const fileSystemAccess = obtainModule("node:fs");
-const acquiredContent = fileSystemAccess.readFileSync(0, "utf8");
-
-processNumericalSelection(acquiredContent);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

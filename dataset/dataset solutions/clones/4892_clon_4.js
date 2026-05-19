@@ -1,29 +1,17 @@
-(function(dataSource) {
-  const parseInputData = (rawText) => {
-    const contentLines = rawText.trim().split('\n');
-    const numericalValue = Number.parseInt(contentLines[0], 10);
-    const primaryString = contentLines[1];
-    const secondaryString = contentLines[2];
-    return { size: numericalValue, firstSequence: primaryString, secondSequence: secondaryString };
-  };
+const inputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const [firstLineVal, stringSVal, stringTVal] = inputContent.trim().split('\n');
+const integerNVal = parseInt(firstLineVal, 10);
 
-  const { size: overallLength, firstSequence: stringOne, secondSequence: stringTwo } = parseInputData(dataSource);
+const resultOffset = Array.from({ length: integerNVal }, (_, currentIdx) => currentIdx).findIndex(
+  (overlapStart) => {
+    const sSuffix = stringSVal.substring(overlapStart);
+    const tPrefix = stringTVal.substring(0, integerNVal - overlapStart);
+    return sSuffix === tPrefix;
+  }
+);
 
-  const determineOverlapPosition = (totalLen, mainStr, subStr) => {
-    const possibleStartIndices = Array.from({ length: totalLen }, (_, index) => index);
-
-    const foundIndex = possibleStartIndices.findIndex(currentPoint => {
-      const sectionFromMain = mainStr.slice(currentPoint);
-      const sectionFromSub = subStr.slice(0, totalLen - currentPoint);
-      return sectionFromMain.startsWith(sectionFromSub);
-    });
-
-    if (foundIndex !== -1) {
-      return foundIndex + totalLen;
-    } else {
-      return totalLen + totalLen;
-    }
-  };
-
-  console.log(determineOverlapPosition(overallLength, stringOne, stringTwo));
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+if (resultOffset !== -1) {
+  console.log(resultOffset + integerNVal);
+} else {
+  console.log(integerNVal + integerNVal);
+}

@@ -1,105 +1,263 @@
-module.exports=function(moduleDefinitions){
-  var moduleCache={};
-  function loadModule(identifier){
-    if(moduleCache[identifier])return moduleCache[identifier].exports;
-    var entryObject=moduleCache[identifier]={
-      modId:identifier,
-      isLoaded:false,
-      exports:{}
+module.exports = function (moduleDefinitions) {
+  // This object serves as a cache for loaded modules.
+  var moduleCache = {};
+
+  // The main function responsible for loading modules.
+  // It takes a module's unique identifier (ID) as input.
+  function moduleLoader(moduleId) {
+    // If the module is already in our cache, return its exported values immediately.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
+    }
+
+    // If the module is not cached, create a new entry for it.
+    // 'identifier' stores the module's ID, 'isLoaded' tracks its loading status,
+    // and 'exports' will hold the values the module makes public.
+    var currentModuleEntry = moduleCache[moduleId] = {
+      identifier: moduleId,
+      isLoaded: false,
+      exports: {}
     };
-    moduleDefinitions[identifier].call(entryObject.exports,entryObject,entryObject.exports,loadModule);
-    entryObject.isLoaded=true;
-    return entryObject.exports;
+
+    // Execute the module's definition function.
+    // This function is provided with the module entry, its exports object,
+    // and a reference to the moduleLoader itself (acting as a local 'require').
+    moduleDefinitions[moduleId].call(
+      currentModuleEntry.exports,
+      currentModuleEntry,
+      currentModuleEntry.exports,
+      moduleLoader
+    );
+
+    // Mark the module as fully loaded after its definition function has run.
+    currentModuleEntry.isLoaded = true;
+
+    // Return the exports of the newly loaded module.
+    return currentModuleEntry.exports;
   }
-  loadModule.definitions=moduleDefinitions;
-  loadModule.cache=moduleCache;
-  loadModule.defineProperty=function(targetObject,propName,getterFunction){
-    if(!loadModule.hasObjectProperty(targetObject,propName))
-      Object.defineProperty(targetObject,propName,{enumerable:true,get:getterFunction});
+
+  // Attach the array of all module definitions to the loader for internal access.
+  moduleLoader.modules = moduleDefinitions;
+
+  // Attach the module cache to the loader.
+  moduleLoader.cache = moduleCache;
+
+  // A utility function to define a property on an object.
+  // It ensures the property is enumerable and uses a getter function.
+  moduleLoader.defineProperty = function (targetObject, propertyName, getterFunction) {
+    // Only define the property if it doesn't already exist on the target object.
+    if (!moduleLoader.hasOwnPropertyCheck(targetObject, propertyName)) {
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true, // Make the property visible during enumeration.
+        get: getterFunction // Use the provided function to get the property's value.
+      });
+    }
   };
-  loadModule.tagAsEsModule=function(targetExports){
-    if(typeof Symbol!=="undefined"&&Symbol.toStringTag)
-      Object.defineProperty(targetExports,Symbol.toStringTag,{value:"Module"});
-    Object.defineProperty(targetExports,"__esModule",{value:true});
+
+  // A utility function to mark an object as an ECMAScript module.
+  moduleLoader.registerEsModule = function (targetObject) {
+    // If Symbol.toStringTag is available, set it to "Module" for better debugging.
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(targetObject, Symbol.toStringTag, {
+        value: "Module"
+      });
+    }
+    // Set the __esModule property to true, indicating it's an ES module.
+    Object.defineProperty(targetObject, "__esModule", {
+      value: true
+    });
   };
-  loadModule.resolveInterop=function(inputValue,interopMode){
-    if(1&interopMode)inputValue=loadModule(inputValue);
-    if(8&interopMode)return inputValue;
-    if(4&interopMode&&typeof inputValue==="object"&&inputValue&&inputValue.__esModule)return inputValue;
-    var exportNamespace=Object.create(null);
-    loadModule.tagAsEsModule(exportNamespace);
-    Object.defineProperty(exportNamespace,"default",{enumerable:true,value:inputValue});
-    if(2&interopMode&&typeof inputValue!=="string")
-      for(var keyName in inputValue)
-        loadModule.defineProperty(exportNamespace,keyName,function(accessorKey){return inputValue[accessorKey]}.bind(null,keyName));
-    return exportNamespace;
+
+  // A utility function to create a namespace object for a module,
+  // handling different export scenarios (default, named, etc.).
+  moduleLoader.createNamespaceObject = function (moduleValue, flags) {
+    // If the first flag (1) is set, resolve the module ID to its actual value first.
+    if (1 & flags) {
+      moduleValue = moduleLoader(moduleValue);
+    }
+    // If the eighth flag (8) is set, return the module value directly.
+    if (8 & flags) {
+      return moduleValue;
+    }
+    // If the fourth flag (4) is set and the module value is an object marked as an ES module,
+    // return it directly as it's already a namespace object.
+    if (4 & flags && typeof moduleValue === "object" && moduleValue && moduleValue.__esModule) {
+      return moduleValue;
+    }
+
+    // Create a new plain object to serve as the namespace.
+    var namespaceObject = Object.create(null);
+    // Register this new object as an ES module.
+    moduleLoader.registerEsModule(namespaceObject);
+    // Define the 'default' export property, making it enumerable.
+    Object.defineProperty(namespaceObject, "default", {
+      enumerable: true,
+      value: moduleValue
+    });
+
+    // If the second flag (2) is set and the module value is not a string,
+    // iterate over its properties and define them as named exports on the namespace object.
+    if (2 & flags && typeof moduleValue !== "string") {
+      for (var propKey in moduleValue) {
+        moduleLoader.defineProperty(namespaceObject, propKey, (function (key) {
+          return moduleValue[key];
+        }).bind(null, propKey));
+      }
+    }
+    return namespaceObject;
   };
-  loadModule.getExportAccessor=function(sourceModule){
-    var currentExports=sourceModule&&sourceModule.__esModule?function(){return sourceModule.default}:function(){return sourceModule};
-    loadModule.defineProperty(currentExports,"a",currentExports);
-    return currentExports;
+
+  // A utility function to get a getter for a module's default export.
+  moduleLoader.getDefaultExport = function (moduleObject) {
+    // If the module object is an ES module, the default export is moduleObject.default.
+    // Otherwise, the module object itself is considered the default export.
+    var defaultExportGetter = moduleObject && moduleObject.__esModule ?
+      function () {
+        return moduleObject.default;
+      } :
+      function () {
+        return moduleObject;
+      };
+    // For compatibility (e.g., with webpack's interop), also define 'a' as the default getter.
+    moduleLoader.defineProperty(defaultExportGetter, "a", defaultExportGetter);
+    return defaultExportGetter;
   };
-  loadModule.hasObjectProperty=function(checkObject,checkProperty){
-    return Object.prototype.hasOwnProperty.call(checkObject,checkProperty);
+
+  // A utility function to check if an object has a specific property directly (not inherited).
+  moduleLoader.hasOwnPropertyCheck = function (targetObject, propertyName) {
+    return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
   };
-  loadModule.basePath="";
-  return loadModule(loadModule.startupId=0);
-}([
-  function(currentModule,moduleExports,getModule){
-    getModule(1)(getModule(2).readTextFileSync("/dev/stdin","utf8").split("\n"));
-  },
-  function(moduleRef,exportObj){
-    function splitIntoParts(sourceArr,partCount){
-      return (function(inputArray){
-        if(Array.isArray(inputArray))return inputArray;
-      })(sourceArr) || (function(iteratable,limitCount){
-        var extractedParts=[],
-            iterationDone=true,
-            iterationFailed=false,
-            iterationError=undefined;
-        try{
-          for(var currentItem,arrayIterator=iteratable[Symbol.iterator]();
-              !(iterationDone=(currentItem=arrayIterator.next()).done) && (extractedParts.push(currentItem.value),!limitCount || extractedParts.length!==limitCount);
-              iterationDone=true
-             ){}
-        }catch(caughtError){
-          iterationFailed=true;
-          iterationError=caughtError;
-        }finally{
-          try{
-            iterationDone || (null==arrayIterator.return || arrayIterator.return());
-          }finally{
-            if(iterationFailed)throw iterationError;
+
+  // The public path for loading assets (empty in this configuration).
+  moduleLoader.publicPath = "";
+
+  // Set the ID of the module that should be executed upon startup (module 0 in this case),
+  // and then immediately load and execute it to start the application.
+  return moduleLoader(moduleLoader.startupModuleId = 0);
+
+}(
+  // This array contains all the module definitions. Each function in this array
+  // represents a distinct module within the bundled application.
+  [
+    /* Module 0: The application's entry point */
+    function (currentModule, moduleExports, localRequire) {
+      // This module reads input from standard input, splits it by newlines,
+      // and then passes the resulting array of lines to Module 1 for processing.
+      localRequire(1)(
+        localRequire(2) // Load the 'fs' (file system) module.
+        .readFileSync("/dev/stdin", "UTF-8") // Read content from standard input as UTF-8.
+        .split("\n") // Split the input string into an array of lines.
+      );
+    },
+
+    /* Module 1: Contains the core logic for processing the input data */
+    function (currentModule, moduleExports) {
+      // A helper function designed to safely destructure an array or iterable.
+      // It handles cases where the input might not be an array or might be an iterator.
+      function destructureArray(inputArray, limitCount) {
+        // If the input is already an array, return it directly.
+        if (Array.isArray(inputArray)) {
+          return inputArray;
+        }
+
+        // For non-array iterables, manually iterate and collect elements.
+        var tempArr = [];
+        var isDone = true;
+        var hasError = false;
+        var errorValue = undefined;
+
+        try {
+          // Iterate through the input using its Symbol.iterator.
+          for (
+            var arrayIterator = inputArray[Symbol.iterator](); !(isDone = (arrayIterator.next()).done) &&
+            (tempArr.push(arrayIterator.value), !limitCount || tempArr.length !== limitCount); isDone = true
+          ) {}
+        } catch (err) {
+          // Catch any errors that occur during iteration.
+          hasError = true;
+          errorValue = err;
+        } finally {
+          try {
+            // Ensure the iterator's 'return' method is called if it exists and iteration wasn't complete.
+            if (!isDone && arrayIterator.return != null) {
+              arrayIterator.return();
+            }
+          } finally {
+            // Re-throw any caught error after cleanup.
+            if (hasError) {
+              throw errorValue;
+            }
           }
         }
-        return extractedParts;
-      })(sourceArr,partCount) || (function(){
-        throw new TypeError("Invalid attempt to destructure non-iterable instance");
-      })();
-    }
-    moduleRef.exports=function(inputDataLines){
-      var initialParameters=splitIntoParts(inputDataLines[0].split(" ").map(function(stringNumber){
-        return Number(stringNumber);
-      }),2),
-      arrayLength=initialParameters[0],
-      moduloValue=initialParameters[1],
-      numberSequence=inputDataLines[1].split(" ").map(function(stringNumber){
-        return Number(stringNumber);
-      });
-      numberSequence.sort(function(valueA,valueB){return valueA-valueB});
-      for(var foundModuloCondition=false,
-              foundGreaterThan=false,
-              loopIndex=0;
-              loopIndex<arrayLength;
-              loopIndex++){
-        if(0!=loopIndex&&numberSequence[loopIndex]%numberSequence[0]==moduloValue%numberSequence[0]&&(foundModuloCondition=true),
-           numberSequence[loopIndex]>moduloValue&&(foundGreaterThan=true),
-           numberSequence[loopIndex]==moduloValue)return void console.info("POSSIBLE");
+        return tempArr;
       }
-      foundModuloCondition&&foundGreaterThan?console.info("POSSIBLE"):console.warn("IMPOSSIBLE");
-    };
-  },
-  function(moduleObject,exportObject){
-    moduleObject.exports=require("node:fs");
-  }
-]);
+
+      // The main logic function, which is exported by this module.
+      // It takes an array of input lines (strings) as its argument.
+      currentModule.exports = function (inputLines) {
+        // Process the first line of input:
+        // Split it by space, convert parts to numbers, and destructure into two variables.
+        var parsedNumbers = destructureArray(
+            inputLines[0].split(" ").map(function (val) {
+              return Number(val);
+            }),
+            2 // Expect exactly two numbers.
+          ),
+          firstNum = parsedNumbers[0], // This typically represents 'N' (e.g., count of elements).
+          secondNum = parsedNumbers[1], // This typically represents 'K' (e.g., a target value).
+          // Process the second line of input:
+          // Split it by space and convert all parts into an array of numbers.
+          dataValues = inputLines[1].split(" ").map(function (val) {
+            return Number(val);
+          });
+
+        // Sort the array of data values in ascending numerical order.
+        dataValues.sort(function (valA, valB) {
+          return valA - valB;
+        });
+
+        // Initialize two boolean flags to track specific conditions.
+        var conditionOneMet = false; // Flag for the first condition.
+        var conditionTwoMet = false; // Flag for the second condition.
+
+        // Iterate through the sorted data values.
+        for (var loopIndex = 0; loopIndex < firstNum; loopIndex++) {
+          // Check the first condition:
+          // If it's not the very first element (loopIndex > 0) AND
+          // the current data value modulo the first data value is equal to
+          // 'secondNum' modulo the first data value.
+          if (loopIndex !== 0 && dataValues[loopIndex] % dataValues[0] === secondNum % dataValues[0]) {
+            conditionOneMet = true;
+          }
+
+          // Check the second condition:
+          // If the current data value is strictly greater than 'secondNum'.
+          if (dataValues[loopIndex] > secondNum) {
+            conditionTwoMet = true;
+          }
+
+          // If any data value is exactly equal to 'secondNum',
+          // then the result is "POSSIBLE" immediately, and we can exit.
+          if (dataValues[loopIndex] === secondNum) {
+            return void console.log("POSSIBLE");
+          }
+        }
+
+        // After checking all elements, if both conditions (conditionOneMet AND conditionTwoMet)
+        // were met at some point, then the result is "POSSIBLE".
+        if (conditionOneMet && conditionTwoMet) {
+          console.log("POSSIBLE");
+        } else {
+          // Otherwise, the result is "IMPOSSIBLE".
+          console.log("IMPOSSIBLE");
+        }
+      };
+    },
+
+    /* Module 2: Provides access to Node.js's built-in 'fs' (File System) module */
+    function (currentModule, moduleExports) {
+      // This module simply exports the standard Node.js 'fs' module.
+      currentModule.exports = require("fs");
+    }
+  ]
+);

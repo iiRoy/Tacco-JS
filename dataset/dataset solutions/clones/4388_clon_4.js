@@ -1,42 +1,54 @@
-const obtainData = () => require("fs").readFileSync(0, "utf8").trim();
+function acquireInput(){return require("fs").readFileSync("/dev/stdin", "utf8").trim();}
+function displayResult(content){console.log(content);}
 
-const displayResult = (val) => console.log(val);
+const conversionHandlers = [
+    (val) => val, // 0: no operation
+    (val) => parseInt(val), // 1: convert to integer
+    (val) => val.split(" "), // 2: split by space
+    (val) => val.split("\n"), // 3: split by newline
+    (val) => val.split(" ").map(Number), // 4: split by space, convert to numbers
+    (val) => val.split("\n").map(Number), // 5: split by newline, convert to numbers
+    (val) => val.split(""), // 6: split into characters
+    (val) => val.split("").map(Number) // 7: split into characters, convert to numbers
+];
 
-const extractNumericalValue = (txt) => parseInt(txt, 10);
+function dataTransformer(inputData, transformKey){
+    return conversionHandlers[transformKey](inputData);
+}
 
-const splitAndConvertNumbers = (txt, divider) => txt.split(divider).map(Number);
+function calculatePatternCount(indicators, length, currentIdx, currentAccumulator) {
+    if (length < 2 || currentIdx >= length) {
+        return currentAccumulator;
+    }
 
-const splitByDivider = (txt, divider) => txt.split(divider);
+    let nextAccumulator = currentAccumulator;
+    const previousValue = indicators[currentIdx - 1];
+    const currentValue = indicators[currentIdx];
 
-const calculateCount = (sourceText) => {
-  const segments = splitByDivider(sourceText, '\n');
-  const sizeValue = extractNumericalValue(segments[0]);
-  const numericalArray = splitAndConvertNumbers(segments[1], ' ');
+    if (currentIdx === 1) {
+        if (currentValue === 1 || previousValue === 1) {
+            nextAccumulator++;
+        }
+    } else {
+        if (previousValue === 0 && currentValue === 1) {
+            nextAccumulator++;
+        }
+    }
+    return calculatePatternCount(indicators, length, currentIdx + 1, nextAccumulator);
+}
 
-  const markerArray = numericalArray.map((value, index) => (value === index + 1 ? 1 : 0));
+function processSequence(rawContent) {
+    const lines = dataTransformer(rawContent, 3);
+    const sequenceLength = dataTransformer(lines[0], 1);
+    const valueSequence = dataTransformer(lines[1], 4);
 
-  let finalTally = 0;
-  if (sizeValue > 0) {
-    const initialContribution = markerArray[0] === 1 ? 1 : 0;
+    const binaryIndicators = Array.from({ length: sequenceLength }, (_, idx) => {
+        return (valueSequence[idx] === idx + 1) ? 1 : 0;
+    });
 
-    const subsequentContributions = markerArray.slice(1).reduce((currentAccumulator, currentElementMarker, slicedIndex) => {
-      const precedingElementMarker = markerArray[slicedIndex]; // This corresponds to markerArray[i-1] in original loop
-      if (precedingElementMarker === 0 && currentElementMarker === 1) {
-        return currentAccumulator + 1;
-      }
-      return currentAccumulator;
-    }, initialContribution);
+    const finalCount = calculatePatternCount(binaryIndicators, sequenceLength, 1, 0);
+    
+    displayResult(finalCount);
+}
 
-    finalTally = subsequentContributions;
-  }
-
-  return finalTally;
-};
-
-const executeProgram = () => {
-  const rawInputContent = obtainData();
-  const computedOutcome = calculateCount(rawInputContent);
-  displayResult(computedOutcome);
-};
-
-executeProgram();
+processSequence(acquireInput());

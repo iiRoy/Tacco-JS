@@ -1,80 +1,71 @@
-/* This function orchestrates the main logic of the application.
- * @param {Text} sourceText The complete input received as a single string.
- */
-function ProcessInputData(sourceText) {
-    // Split the input content by newlines to separate individual lines.
-    const [
-        firstLineValue, // The first line, which might represent a count or dimension.
-        numericDataLine // The second line, containing the sequence of numbers.
-    ] = sourceText.split('\n');
+function ProcessInput(initialData) {
+	// Split the input string into lines
+	const [ countStr, numListStr ] = initialData.split("\n");
+	
+	// Convert the second line to an array of BigInts
+	const bigIntArr = convertStrToNumArr(numListStr).map(item => BigInt(item));
+	
+	// Define the modulo constant as a BigInt
+	const MODULO_VAL = BigInt(10 ** 9 + 7);
 
-    // Convert the numeric data line into an array of BigInts for precise arithmetic.
-    const inputNumbers = extractInts(numericDataLine).map(item => BigInt(item));
-
-    // Define a constant BigInt modulus for final calculation.
-    const MODULUS_VALUE = BigInt(1_000_000_007);
-
-    // Initialize an accumulator for the total product sum.
-    let totalProductSum = 0n;
-
-    // Iterate through the array with an outer loop.
-    for (let outerIndex = 0; outerIndex < inputNumbers.length; outerIndex++) {
-        const currentElement = inputNumbers[outerIndex]; // Get the element for the outer loop.
-        // Iterate with an inner loop, starting from the element after the outer loop's current index.
-        for (let innerIndex = outerIndex + 1; innerIndex < inputNumbers.length; innerIndex++) {
-            const nextElement = inputNumbers[innerIndex]; // Get the element for the inner loop.
-            // Add the product of the two elements to the running total.
-            totalProductSum += currentElement * nextElement;
-        }
-    }
-
-    // Apply the modulus operation to the final sum.
-    totalProductSum %= MODULUS_VALUE;
-
-    // Output the computed sum as a string to standard console.
-    console.log(totalProductSum.toString());
+	// Initialize the running total
+	let totalSum = 0n;
+	
+	// Iterate through the array with nested loops to calculate pairwise products
+	for (let idx1 = 0; idx1 < bigIntArr.length; idx1++) {
+		const val1 = bigIntArr[idx1]; // Get the first number
+		
+		for (let idx2 = idx1 + 1; idx2 < bigIntArr.length; idx2++) {
+			const val2 = bigIntArr[idx2]; // Get the second number
+			
+			totalSum += val1 * val2; // Add the product to the total
+		}
+	}
+	
+	// Apply the modulo operation to the final sum
+	totalSum %= MODULO_VAL;
+	
+	// Output the result as a string
+	console.log(totalSum.toString());
 }
 
-// This section handles file I/O and invokes the primary processing routine.
-// DO NOT MODIFY THE CODE BELOW THIS LINE.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// This line should not be modified (reads from standard input and calls the main processing function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
+// --- Utility functions section ---
 
-// --- Supplementary Utility Functions ---
-
-/* Converts a text string into an array of integers.
- * @param {Text} sourceStr The string to parse into numbers.
- * @param {CharSeq} [tokenSeparator=' '] The character(s) used to split the string.
- * @returns {Number[]} An array of parsed integer values.
+/**
+ * Converts a string into an array of numbers.
+ * @param {String} inputStr The string to convert.
+ * @param {String} separatorChar The character used to split the string (default is space).
  */
-function extractInts(sourceStr, tokenSeparator = ' ') {
-    return sourceStr.split(tokenSeparator).map(segment => parseInt(segment, 10));
+function convertStrToNumArr(inputStr, separatorChar = ' ') {
+	return inputStr.split(separatorChar).map(sVal => parseInt(sVal, 10));
 }
 
-/* Transforms a given string into a collection of BigInts.
- * @param {Text} inputString A string containing numbers that need to be treated as BigInts.
- * @param {CharSeq} [splitChar=' '] The delimiter used for splitting the input string.
- * @returns {BigInt[]} An array of BigInt values.
+/**
+ * Transforms a string into an array of BigInts.
+ * @param {String} inputStr The string to process.
+ * @param {String} separatorChar The delimiter for splitting the string (default is space).
  */
-function parseBigIntArray(inputString, splitChar = ' ') {
-    return inputString.split(splitChar).map(elementStr => BigInt(elementStr));
+function parseToBigIntArr(inputStr, separatorChar = ' ') {
+	return inputStr.split(separatorChar).map(sVal => BigInt(sVal));
 }
 
-/* Generates a two-dimensional array (matrix) from an array of strings.
- * Each string in the input array represents a row, which is then split into columns.
- * @param {Text[]} textRows An array where each element is a string representing a row.
- * @param {CharSeq} [rowDelimiter=' '] The character(s) used to split each row string into columns.
- * @returns {String[][]} A 2D array (matrix) of strings.
+/**
+ * Creates a 2D array from an array of strings.
+ * @param {Array<String>} strArray An array where each element is a string representing a row.
+ * @param {String} separatorChar The character used to split each row string.
  */
-function buildGrid(textRows, rowDelimiter = ' ') {
-    const gridData = textRows.map(rowContent => rowContent.split(rowDelimiter));
-    return gridData;
+function create2DArray(strArray, separatorChar = ' ') {
+	const resultMatrix = strArray.map(rowStr => rowStr.split(separatorChar));
+	return resultMatrix;
 }
 
-/* Computes the aggregate sum of values in a numeric collection.
- * @param {Number[]} valueCollection An array of numbers to sum up.
- * @returns {Number} The total sum of all numbers in the array.
+/**
+ * Computes the sum of all numbers in an array.
+ * @param {Array<Number>} numericArr An array of numbers.
  */
-function calculateTotal(valueCollection) {
-    return valueCollection.reduce((accumulator, currentValue) => accumulator + currentValue);
+function calculateArraySum(numericArr) {
+	return numericArr.reduce((accumulator, currentVal) => accumulator + currentVal);
 }

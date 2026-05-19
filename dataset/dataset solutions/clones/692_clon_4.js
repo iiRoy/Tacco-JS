@@ -1,55 +1,25 @@
-const fileSystemInterface = require('fs');
-const rawDataString = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawDataString.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const determineSmallestPositiveDifference = (topValue) => {
-    const targetCubeValue = topValue * topValue * topValue;
-    let largestSumOfCubesLessThanTarget = 0;
+const createDescendingSequence = (startPoint, endPoint) =>
+  Array.from({ length: startPoint - endPoint + 1 }, (_, index) => startPoint - index);
 
-    const availableCubes = [];
-    for (let currentInteger = 1; currentInteger < topValue; currentInteger++) {
-        availableCubes.push(currentInteger * currentInteger * currentInteger);
-    }
+const numericInputs = fileContent
+  .trim()
+  .split('\n')
+  .map(Number)
+  .filter(val => val !== 0);
 
-    for (let indexForA = availableCubes.length - 1; indexForA >= 0; indexForA--) {
-        const cubeA = availableCubes[indexForA];
+numericInputs.forEach(currentValue => {
+  const cubeOfCurrent = currentValue * currentValue * currentValue;
 
-        for (let indexForB = indexForA; indexForB >= 0; indexForB--) {
-            const cubeB = availableCubes[indexForB];
-            const currentCubesSum = cubeA + cubeB;
+  const potentialDifferences = createDescendingSequence(currentValue - 1, 1)
+    .flatMap(firstFactor =>
+      createDescendingSequence(firstFactor, 1)
+        .map(secondFactor =>
+          cubeOfCurrent - (firstFactor * firstFactor * firstFactor) - (secondFactor * secondFactor * secondFactor)
+        )
+    )
+    .filter(diffValue => diffValue > 0);
 
-            if (currentCubesSum < targetCubeValue) {
-                if (currentCubesSum > largestSumOfCubesLessThanTarget) {
-                    largestSumOfCubesLessThanTarget = currentCubesSum;
-                }
-            }
-        }
-    }
-
-    if (largestSumOfCubesLessThanTarget === 0) {
-        return Number.POSITIVE_INFINITY;
-    }
-
-    return targetCubeValue - largestSumOfCubesLessThanTarget;
-};
-
-const processRemainingEntries = (remainingInputSegments, collectedResults) => {
-    if (remainingInputSegments.length === 0) {
-        return;
-    }
-
-    const currentNumericEntry = Number(remainingInputSegments[0]);
-    if (currentNumericEntry === 0) {
-        return;
-    }
-
-    const computedResult = determineSmallestPositiveDifference(currentNumericEntry);
-    collectedResults.push(computedResult);
-
-    processRemainingEntries(remainingInputSegments.slice(1), collectedResults);
-};
-
-const finalResultCollection = [];
-processRemainingEntries(processedLines, finalResultCollection);
-
-finalResultCollection.forEach(outcome => console.log(outcome));
+  console.log(Math.min(...potentialDifferences));
+});

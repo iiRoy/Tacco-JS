@@ -1,160 +1,169 @@
 "use strict";
-// Resume standard input stream processing
-process.stdin.resume();
 
-// Set the encoding for incoming data to UTF-8
+// Initialize standard input stream processing
+process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-// Declare a variable to accumulate all incoming data
-let incomingTextBuffer = '';
+// Buffer to accumulate all incoming data from stdin
+let receivedData = '';
 
-// Attach a 'data' event listener to process.stdin
-// This function appends each received data segment to the buffer
-process.stdin.on('data',
-  function (dataSegment) {
-    incomingTextBuffer += dataSegment;
-  });
+// Event handler for 'data' chunks received from stdin
+process.stdin.on('data', function (chunk) {
+    receivedData += chunk; // Append the current data chunk to the buffer
+});
 
-// Function to parse a string line into an array of numbers
-// It removes leading/trailing whitespace and splits by spaces.
-const parseIntegerSequence = function (inputLineString) {
-  // Trim whitespace and split the line into string parts
-  let numArray = inputLineString.replace(/(^\s+)|(\s+$)/g, "").split(" ");
-
-  // Convert each string part to a number
-  for (let itemIndex = 0; itemIndex < numArray.length; ++itemIndex) {
-    numArray[itemIndex] = +numArray[itemIndex];
-  }
-  return numArray;
+/**
+ * Parses a string line containing space-separated numeric values into an array of numbers.
+ * Leading and trailing whitespace are trimmed before splitting.
+ * @param {string} currentLine - The input string to parse.
+ * @returns {number[]} An array where each element is a number.
+ */
+const parseNumbers = function (currentLine) {
+    // Remove any leading or trailing whitespace, then split the string by spaces
+    let numArray = currentLine.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    // Iterate through the array and convert each string element to a number
+    for (let idx = 0; idx < numArray.length; ++idx) {
+        numArray[idx] = +numArray[idx]; // Using unary plus for type conversion
+    }
+    return numArray;
 };
 
-// Function to parse a string line into an array of strings
-// It removes leading/trailing whitespace and splits by spaces.
-// This version keeps elements as strings.
-const parseStringSequence = function (textRow) {
-  // Trim whitespace and split the row into string parts
-  let strArray = textRow.replace(/(^\s+)|(\s+$)/g, "").split(" ");
-
-  // No type conversion needed, elements remain strings
-  for (let charIndex = 0; charIndex < strArray.length; ++charIndex) {
-    // This line is effectively a no-op but maintains structure
-    strArray[charIndex] = strArray[charIndex];
-  }
-  return strArray;
+/**
+ * Parses a string line containing space-separated string values into an array of strings.
+ * Leading and trailing whitespace are trimmed before splitting.
+ * Note: This function is defined but not utilized in the main logic flow.
+ * @param {string} currentLine - The input string to parse.
+ * @returns {string[]} An array where each element is a string.
+ */
+const parseStrings = function (currentLine) {
+    // Remove any leading or trailing whitespace, then split the string by spaces
+    let strArray = currentLine.replace(/(^\s+)|(\s+$)/g, "").split(" ");
+    // No explicit type conversion needed as elements are already strings
+    for (let k = 0; k < strArray.length; ++k) {
+        strArray[k] = strArray[k]; // Redundant assignment, but maintains original structure
+    }
+    return strArray;
 };
 
-// Attach an 'end' event listener to process.stdin
-// This function executes once all input data has been received
-process.stdin.on('end', () => {
-  // Split the entire accumulated buffer into individual lines
-  const allInputLines = incomingTextBuffer.split('\n');
+// Event handler for the 'end' of the stdin stream
+process.stdin.on('end', function () {
+    // Split the entire accumulated input data into an array of lines
+    const inputLines = receivedData.split('\n');
 
-  // Parse the first line to get graph dimensions (nodeTotal and edgeTotal)
-  const graphDimensions = parseIntegerSequence(allInputLines[0]);
-  const nodeTotal = graphDimensions[0]; // Number of nodes (vertices)
-  const edgeTotal = graphDimensions[1]; // Number of edges (connections)
+    // Parse the first line to extract the total number of nodes (N) and edges (M)
+    const dimensions = parseNumbers(inputLines[0]);
+    const nodeCount = dimensions[0]; // N
+    const edgeCount = dimensions[1]; // M (not used further, but preserved)
 
-  // Process subsequent lines to get the list of connections (edges)
-  // `splice(1)` removes the first line (dimensions) and `map` processes each remaining line.
-  let connectionRecords = allInputLines.splice(1).map(currentInputRow => parseIntegerSequence(currentInputRow));
+    // Process the remaining lines to get the initial list of edges
+    // Each line is parsed into an array representing an edge [u, v]
+    let initialEdges = inputLines.splice(1).map(currentLine => parseNumbers(currentLine));
 
-  // Initialize an adjacency list representation for the graph
-  // `nodeTotal + 1` to handle 1-based indexing if necessary, or simply for array size.
-  let adjacencyMatrix = new Array(nodeTotal + 1);
-  for (let nodeIdx = 0; nodeIdx < nodeTotal + 1; ++nodeIdx) {
-    adjacencyMatrix[nodeIdx] = []; // Each node has an empty list of neighbors
-  }
+    // Initialize an array of adjacency lists to represent the graph
+    // adjacencyLists[i] will store all nodes directly connected to node i
+    let adjacencyLists = new Array(nodeCount + 1);
+    for (let nodeIdx = 0; nodeIdx < nodeCount + 1; ++nodeIdx) {
+        adjacencyLists[nodeIdx] = []; // Each node's list starts empty
+    }
 
-  // Populate the adjacency list based on the connection records
-  for (let currentConnection of connectionRecords) {
-    // Adjust node indices to be 0-based
-    currentConnection[0]--;
-    currentConnection[1]--;
+    // Populate the adjacency lists based on the provided initial edges
+    // Node indices are converted from 1-based (input) to 0-based (internal processing)
+    for (let currentEdge of initialEdges) {
+        currentEdge[0]--; // Decrement the first node's index
+        currentEdge[1]--; // Decrement the second node's index
+        adjacencyLists[currentEdge[0]].push(currentEdge[1]); // Add connection for the first node
+        adjacencyLists[currentEdge[1]].push(currentEdge[0]); // Add connection for the second node (undirected graph)
+    }
 
-    // Add connections to both nodes' lists (undirected graph)
-    adjacencyMatrix[currentConnection[0]].push(currentConnection[1]);
-    adjacencyMatrix[currentConnection[1]].push(currentConnection[0]);
-  }
+    // Array to store all detected cycles in the graph
+    let foundCycles = [];
 
-  // Initialize a list to store all detected cycles
-  let detectedCycles = [];
+    // Iterate through each node to find cycles originating from it
+    for (let startNode = 0; startNode < nodeCount; ++startNode) {
+        // Initialize paths starting from 'startNode' to its immediate neighbors
+        // Each path is represented as an array of nodes, e.g., [neighborNode]
+        let currentPaths = [].concat(adjacencyLists[startNode].map(neighborNode => [neighborNode]));
+        
+        // A set to keep track of nodes visited during the current BFS-like traversal
+        let visitedNodes = new Set();
 
-  // Iterate through each node to find cycles starting from it
-  for (let startVertex = 0; startVertex < nodeTotal; ++startVertex) {
-    // Initialize paths to explore, starting with each neighbor of the startVertex
-    // Each path is an array: [neighbor]
-    let pathsToExplore = [].concat(adjacencyMatrix[startVertex].map(neighborVertex => [neighborVertex]));
+        // Perform a breadth-first search (BFS) to discover paths and cycles
+        while (currentPaths.length > 0) {
+            let extendedPaths = []; // Paths to be explored in the next iteration
+            visitedNodes.add(startNode); // Mark the starting node as visited for this specific search
 
-    // Keep track of visited nodes within the current exploration scope to prevent infinite loops
-    let visitedNodesSet = new Set();
+            // Process each path segment from the current iteration
+            for (let pathSegment of currentPaths) {
+                const pathEnd = pathSegment[pathSegment.length - 1]; // The last node in the current path
+                let secondToLast = -1; // Placeholder for the second-to-last node
 
-    // Perform a Breadth-First Search (BFS)-like traversal to find paths
-    while (pathsToExplore.length > 0) {
-      let nextIterationPaths = []; // Paths found in the next level of traversal
-      visitedNodesSet.add(startVertex); // Mark the starting vertex as visited for this traversal
+                // Determine the second-to-last node if the path has at least two nodes
+                if (pathSegment.length >= 2) { 
+                    secondToLast = pathSegment[pathSegment.length - 2];
+                }
 
-      // Process each active path segment
-      for (let activePathSegment of pathsToExplore) {
-        const pathEndNode = activePathSegment[activePathSegment.length - 1]; // The last node in the current path
-        let previousNodeInPath = -1; // The second to last node in the path
+                // Identify potential next nodes from 'pathEnd'
+                // Filter criteria:
+                // 1. The candidate node must not already be in the current path.
+                // 2. The candidate node must not be the 'pathEnd' itself.
+                // 3. The candidate node must not have been visited in this traversal,
+                //    UNLESS it is the 'startNode' (which signifies a cycle completion).
+                const potentialNextNodes = adjacencyLists[pathEnd].filter(candidateNode =>
+                    pathSegment.indexOf(candidateNode) < 0 && // Ensure no immediate self-loop or revisiting within path
+                    candidateNode !== pathEnd && // Avoid trivial self-loops
+                    (!visitedNodes.has(candidateNode) || candidateNode === startNode) // Check visited status
+                );
 
-        // If the path has at least two nodes, identify the previous node
-        if (activePathSegment.length >= 2) {
-          previousNodeInPath = activePathSegment[activePathSegment.length - 2];
+                // Extend the current paths with these potential next nodes
+                potentialNextNodes.forEach(nextNodeInPath => {
+                    visitedNodes.add(nextNodeInPath); // Mark the new node as visited
+                    let tempPath = [].concat(pathSegment); // Create a new path by copying the current segment
+                    tempPath.push(nextNodeInPath); // Append the new node
+
+                    // If the new node is not the starting node, continue exploring this path
+                    if (nextNodeInPath !== startNode) {
+                        extendedPaths.push(tempPath);
+                    } else {
+                        // If the new node is the starting node, a cycle has been found
+                        foundCycles.push(tempPath);   
+                    }
+                });
+            }
+            currentPaths = extendedPaths; // Update current paths for the next iteration
         }
-
-        // Find potential next nodes from the pathEndNode's neighbors
-        // Conditions:
-        // 1. Not already in the current path (to avoid immediate backtracking)
-        // 2. Not the pathEndNode itself (self-loop)
-        // 3. Not visited, or if visited, it must be the startVertex (closing a cycle)
-        const potentialNextSegments = adjacencyMatrix[pathEndNode].filter(candidateNeighbor =>
-          activePathSegment.indexOf(candidateNeighbor) < 0 &&
-          candidateNeighbor !== pathEndNode &&
-          (!visitedNodesSet.has(candidateNeighbor) || candidateNeighbor === startVertex)
-        );
-
-        // For each valid next node, extend the current path
-        potentialNextSegments.forEach(nextNodeCandidate => {
-          visitedNodesSet.add(nextNodeCandidate); // Mark the candidate as visited
-          let extendedPath = [].concat(activePathSegment); // Create a new path by copying the current one
-          extendedPath.push(nextNodeCandidate); // Add the new node to the extended path
-
-          // If the extended path leads back to the startVertex, it's a cycle
-          if (nextNodeCandidate !== startVertex) {
-            nextIterationPaths.push(extendedPath); // Continue exploring this path
-          } else {
-            detectedCycles.push(extendedPath); // Add the cycle to the list
-          }
-        });
-      }
-      pathsToExplore = nextIterationPaths; // Move to the next level of paths
     }
-  }
+    
+    // Filter the found cycles to include only those with a length greater than 2.
+    // A cycle path [A, B, C, A] has length 4. A path [A, B, A] has length 3.
+    // This ensures cycles involve at least 3 distinct nodes (e.g., A-B-C-A).
+    foundCycles = foundCycles.filter(cyclePath => cyclePath.length > 2);
 
-  // Filter out cycles that are too short (e.g., A-B-A, which is not a proper cycle for this context)
-  detectedCycles = detectedCycles.filter(cyclePathEntry => cyclePathEntry.length > 2);
+    // Iterate through each detected cycle to remove its constituent edges from the initial list
+    for (let currentCycle of foundCycles) {
+        // NOTE: The original code contains a subtle bug in the loop increment: `++l` instead of `++i`.
+        // This means `currentCycle` (the array itself) will be incremented.
+        // In JavaScript, `++array` attempts to convert the array to a number, resulting in `NaN`.
+        // Consequently, `currentCycle.length` becomes `undefined`, causing the loop to terminate
+        // after the first iteration (when `pathIndex` is 0).
+        // This exact behavior, including the bug, is preserved as per Type II cloning rules.
+        for (let pathIndex = 0; pathIndex < currentCycle.length; ++currentCycle) { // Preserving original behavior
+            // Determine the current node and the next node in the cycle segment.
+            // NOTE: The original code uses `i+1%l.length`. Due to operator precedence, this evaluates to `i + (1 % l.length)`.
+            // If `l.length` is greater than 1, `1 % l.length` is `1`. So, it effectively becomes `i + 1`.
+            // For the last element of the cycle, this will attempt to access `currentCycle[currentCycle.length]`, which is `undefined`.
+            // This specific behavior is preserved to maintain strict equivalence.
+            const nodeA = currentCycle[pathIndex];
+            const nodeB = currentCycle[pathIndex + 1 % currentCycle.length]; // Preserving original behavior
 
-  // Remove edges that are part of any detected cycle
-  for (let currentCyclePath of detectedCycles) {
-    // Iterate through the nodes in the cycle
-    for (let pathSegmentIndex = 0; pathSegmentIndex < currentCyclePath.length; ++pathSegmentIndex) { // Corrected from `++l` to `++pathSegmentIndex`
-      // Filter out edges that form part of the current cycle path
-      connectionRecords = connectionRecords.filter(remainingEdge => {
-        // Get the current node and the next node in the cycle (wrapping around for the last segment)
-        const nodeA = currentCyclePath[pathSegmentIndex];
-        const nodeB = currentCyclePath[(pathSegmentIndex + 1) % currentCyclePath.length];
-
-        // Check if the current edge matches the segment (either direction)
-        const isForwardMatch = (remainingEdge[1] === nodeA && remainingEdge[0] === nodeB);
-        const isBackwardMatch = (remainingEdge[0] === nodeA && remainingEdge[1] === nodeB);
-
-        // Keep the edge if it's NOT part of the cycle segment
-        return !(isForwardMatch || isBackwardMatch);
-      });
+            // Filter out edges from `initialEdges` that match the current cycle segment (nodeA, nodeB)
+            // This checks for the edge in both directions (nodeA -> nodeB and nodeB -> nodeA)
+            initialEdges = initialEdges.filter(remainingEdge =>
+                !(remainingEdge[1] === nodeB && remainingEdge[0] === nodeA) && // Check if edge is [nodeA, nodeB]
+                !(remainingEdge[0] === nodeB && remainingEdge[1] === nodeA)    // Check if edge is [nodeB, nodeA]
+            );
+        }
     }
-  }
 
-  // Output the count of remaining edges after removing those involved in cycles
-  console.log(connectionRecords.length);
+    // Output the final count of edges remaining after removing all cycle edges
+    console.log(initialEdges.length);
 });

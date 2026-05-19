@@ -1,116 +1,65 @@
-const queryCellPattern = (baseShade, unitSize, xCoordinate, yCoordinate) => {
-    const rowUnit = Math.floor(xCoordinate / unitSize);
-    const colUnit = Math.floor(yCoordinate / unitSize);
+const flipColor = (originalColor) => originalColor === "B" ? "W" : "B";
 
-    const matchesPattern = (
-        (rowUnit === 0 && colUnit === 0) ||
-        (rowUnit === 1 && colUnit === 1) ||
-        (rowUnit === 2 && colUnit === 0)
-    );
+const retrievePatternColor = (baseColor, unitSize, coordI, coordJ) => {
+  const iModuloTwoUnit = coordI % (2 * unitSize);
+  const jModuloTwoUnit = coordJ % (2 * unitSize);
 
-    return matchesPattern ? baseShade : (baseShade === "B" ? "W" : "B");
+  const rowSegment = Math.floor(iModuloTwoUnit / unitSize);
+  const colSegment = Math.floor(jModuloTwoUnit / unitSize);
+
+  const patternGrid = [
+    [baseColor, flipColor(baseColor)],
+    [baseColor, baseColor]
+  ];
+
+  return patternGrid[rowSegment][colSegment];
 };
 
-const analyzePointAlignments = (dataLines) => {
-    const configInfo = dataLines[0].split(" ").map(Number);
-    const pointCount = configInfo[0];
-    const unitDimension = configInfo[1];
+const normalizeInputPoint = (initialX, initialY, initialColor, unitSize) => {
+  const xBlockIndex = Math.floor(initialX / unitSize);
+  const yBlockIndex = Math.floor(initialY / unitSize);
 
-    const normalizedCoordinates = [];
+  const blockParityMismatch = (xBlockIndex % 2) !== (yBlockIndex % 2);
+  const effectiveColor = blockParityMismatch ? flipColor(initialColor) : initialColor;
 
-    for (let currentPointIdx = 1; currentPointIdx <= pointCount; currentPointIdx++) {
-        const currentPointData = dataLines[currentPointIdx].split(" ");
-        const initialX = Number(currentPointData[0]);
-        const initialY = Number(currentPointData[1]);
-        const initialShade = currentPointData[2];
+  let finalX = initialX % unitSize;
+  const finalY = initialY % unitSize;
 
-        const xBlockIndex = Math.floor(initialX / unitDimension);
-        const yBlockIndex = Math.floor(initialY / unitDimension);
+  if (effectiveColor === "W") {
+    finalX += unitSize;
+  }
 
-        const xRelative = initialX % unitDimension;
-        const yRelative = initialY % unitDimension;
-
-        const isXParityOdd = (xBlockIndex % 2 !== 0);
-        const isYParityOdd = (yBlockIndex % 2 !== 0);
-        const shouldInvertColor = (isXParityOdd !== isYParityOdd);
-
-        let intermediateShade = initialShade;
-        if (shouldInvertColor) {
-            intermediateShade = (initialShade === "B" ? "W" : "B");
-        }
-
-        let adjustedX = xRelative;
-        const adjustedY = yRelative;
-
-        if (intermediateShade === "W") {
-            adjustedX += unitDimension;
-        }
-        
-        normalizedCoordinates.push({ x: adjustedX, y: adjustedY });
-    }
-
-    const maxOffsetCoord = 2 * unitDimension;
-    const differenceGrid = Array.from({ length: maxOffsetCoord + 2 }, () => 
-        Array.from({ length: maxOffsetCoord + 2 }, () => 0)
-    );
-
-    const targetPatternCells = [
-        { r: 0, c: 0 },
-        { r: 1, c: 1 },
-        { r: 2, c: 0 }
-    ];
-
-    for (const point of normalizedCoordinates) {
-        const pX = point.x;
-        const pY = point.y;
-
-        for (const targetCell of targetPatternCells) {
-            const targetR = targetCell.r;
-            const targetC = targetCell.c;
-
-            let offsetXR_start = targetR * unitDimension - pX;
-            let offsetXR_end = (targetR + 1) * unitDimension - 1 - pX;
-
-            let offsetYR_start = targetC * unitDimension - pY;
-            let offsetYR_end = (targetC + 1) * unitDimension - 1 - pY;
-
-            const actualOffsetXR_start = Math.max(0, offsetXR_start);
-            const actualOffsetXR_end = Math.min(maxOffsetCoord - 1, offsetXR_end);
-
-            const actualOffsetYR_start = Math.max(0, offsetYR_start);
-            const actualOffsetYR_end = Math.min(maxOffsetCoord - 1, offsetYR_end);
-
-            if (actualOffsetXR_start <= actualOffsetXR_end && actualOffsetYR_start <= actualOffsetYR_end) {
-                differenceGrid[actualOffsetXR_start][actualOffsetYR_start]++;
-                differenceGrid[actualOffsetXR_start][actualOffsetYR_end + 1]--;
-                differenceGrid[actualOffsetXR_end + 1][actualOffsetYR_start]--;
-                differenceGrid[actualOffsetXR_end + 1][actualOffsetYR_end + 1]++;
-            }
-        }
-    }
-
-    let peakAlignmentCount = 0;
-    const currentCounts = Array.from({ length: maxOffsetCoord }, () => Array(maxOffsetCoord).fill(0));
-
-    for (let r = 0; r < maxOffsetCoord; r++) {
-        for (let c = 0; c < maxOffsetCoord; c++) {
-            let val = differenceGrid[r][c];
-            if (r > 0) val += currentCounts[r - 1][c];
-            if (c > 0) val += currentCounts[r][c - 1];
-            if (r > 0 && c > 0) val -= currentCounts[r - 1][c - 1];
-            
-            currentCounts[r][c] = val;
-            if (val > peakAlignmentCount) {
-                peakAlignmentCount = val;
-            }
-            if (peakAlignmentCount === pointCount) {
-                console.log(peakAlignmentCount);
-                return;
-            }
-        }
-    }
-
-    console.log(peakAlignmentCount);
+  return [finalX, finalY];
 };
 
-analyzePointAlignments(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+const processInputData = (rawInput) => {
+  const lines = rawInput.split("\n");
+  const [totalPointsStr, currentUnitSizeStr] = lines[0].split(" ");
+  const totalPoints = parseInt(totalPointsStr, 10);
+  const currentUnitSize = parseInt(currentUnitSizeStr, 10);
+
+  const processedPoints = lines.slice(1, totalPoints + 1).map(line => {
+    const [xStr, yStr, cChar] = line.split(" ");
+    return normalizeInputPoint(parseInt(xStr, 10), parseInt(yStr, 10), cChar, currentUnitSize);
+  });
+
+  const offsetCoordinates = Array.from({ length: 2 * currentUnitSize }, (_, ox) =>
+    Array.from({ length: 2 * currentUnitSize }, (_, oy) => [ox, oy])
+  ).flat();
+
+  const maximumMatches = offsetCoordinates.reduce((currentMax, [offsetX, offsetY]) => {
+    if (currentMax === totalPoints) {
+      return currentMax;
+    }
+
+    const matchedCountForOffset = processedPoints.filter(([pointX, pointY]) =>
+      retrievePatternColor("B", currentUnitSize, offsetX + pointX, offsetY + pointY) === "B"
+    ).length;
+
+    return Math.max(currentMax, matchedCountForOffset);
+  }, 0);
+
+  console.log(maximumMatches.toString());
+};
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

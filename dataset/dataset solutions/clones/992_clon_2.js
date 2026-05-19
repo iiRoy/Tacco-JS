@@ -1,56 +1,65 @@
-(function (  dataString ) {
-    // This self-executing function processes input data to find the HCF.
-    
-    const numericValues = dataString .split(' ') .map( Number ) ;
+(function(rawData) {
+    // This function processes input data to find the greatest common divisor.
 
-    let firstNum  =  numericValues .shift() ; // Extract the initial number.
-    let secondNum = numericValues .shift() ; // Extract the subsequent number.
+    // Split the raw input string by spaces and convert each part into a numerical value.
+    var numStrings = rawData.split(' ').map(Number);
 
-    console.log( findHighestCommonFactor ( firstNum , secondNum ) ) ;
-} ) ( require ( 'fs' ) .readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+    // Extract the first number from the processed array.
+    var firstNumber = numStrings.shift();
+    // Extract the second number from the processed array.
+    var secondNumber = numStrings.shift();
 
+    // Compute the highest common factor for the two extracted numbers and display the result.
+    console.log(calculateHighestCommonFactor(firstNumber, secondNumber));
+
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read the entire content of standard input as a UTF-8 string.
 
 /**
  * Determines the highest common factor (HCF) between two integer values.
- * @param {number} valA - The first integer.
- * @param {number} valB - The second integer.
- * @returns {number} The greatest common factor.
- */
-function findHighestCommonFactor ( valA , valB ) {
-    // Retrieve all common factors and then select the largest one.
-    return Math .max .apply ( null , listCommonFactors ( valA , valB ) ) ;
-}
-
-
-/**
- * Compiles a list of all common factors for two given integers.
- * The internal logic includes a simplified Euclidean algorithm step.
+ *
  * @param {number} valA - The initial integer value.
  * @param {number} valB - The second integer value.
- * @returns {Array<number>} An array containing all common factors.
+ * @returns {number} The greatest common divisor of valA and valB.
  */
-function listCommonFactors ( valA , valB ) {
-    // Perform a modulo operation to reduce one of the numbers,
-    // mimicking a step in the Euclidean algorithm if one is larger.
-    if ( valA > valB ) {
-        valA = valA % valB ;
-    }
-    else if ( valA < valB ) {
-        let temporaryHolder = valB ;
-        valB = valA ;
-        valA = temporaryHolder % valA ;
-    }
+function calculateHighestCommonFactor(valA, valB) {
+    // Retrieve all common factors and then return the largest one using Math.max.apply.
+    return Math.max.apply(null, retrieveAllCommonFactors(valA, valB));
+}
 
-    // Initialize an empty array to store identified common factors.
-    const factorList = [ ] ;
+/**
+ * Gathers all common factors (divisors) for a pair of integers.
+ * The internal logic might modify the input parameters `valA` and `valB` for calculation purposes.
+ *
+ * @param {number} valA - The first integer for which to find common factors.
+ * @param {number} valB - The second integer for which to find common factors.
+ * @returns {Array<number>} An array containing all integers that are common factors of both valA and valB.
+ */
+function retrieveAllCommonFactors(valA, valB) {
+    // Adjust valA and valB to ensure efficient iteration.
+    // If valA is greater than valB, reduce valA using the modulo operator.
+    if (valA > valB) {
+        valA = valA % valB;
+    }
+    // If valA is less than valB, swap them and then reduce the new valA.
+    else if (valA < valB) {
+        var temporaryValue = valB; // Store valB temporarily.
+        valB = valA;                // Assign valA to valB.
+        valA = temporaryValue % valA; // Assign the remainder of temporaryValue divided by valA to valA.
+    }
+    // If valA and valB are equal, no operation is performed in this block.
 
-    // Iterate from 1 up to the (potentially modified) first number.
-    for ( let counter = 1 ; counter <= valA ; counter ++ ) {
-        // Check if the current counter divides both numbers without remainder.
-        if ( valA % counter === 0 && valB % counter === 0 ) {
-            factorList .push( counter ) ; // Add the common factor to the list.
+    // Initialize an empty array to store the identified common factors.
+    var factorCollection = [];
+
+    // Iterate from 1 up to the (potentially modified) valA.
+    for (var loopIndex = 1; loopIndex <= valA; loopIndex++) {
+        // Check if the current loopIndex divides both valA and valB without any remainder.
+        if ((valA % loopIndex === 0) && (valB % loopIndex === 0)) {
+            // If it's a common factor, add it to our collection.
+            factorCollection.push(loopIndex);
         }
     }
 
-    return factorList ; // Deliver the collected common factors.
+    // Return the array containing all common factors found.
+    return factorCollection;
 }

@@ -1,91 +1,68 @@
-const convertStringToNumber = (textualInput) => Number(textualInput);
+function solveProblem(inputLines) {
+  const [gridHeight, gridWidth, stepCount] = inputLines[0].split(' ').map(Number);
+  const initialGrid = inputLines.slice(1).map(row => [...row]);
 
-const analyzeGridState = (dataInput) => {
-  const dataLines = dataInput.split('\n').map(line => line.trim());
-
-  const [areaHeight, areaWidth, propagationCount] = dataLines[0].split(' ').map(convertStringToNumber);
-
-  const originalCellContent = new Map();
-  let initialSpreaderLocation = null;
-
-  dataLines.slice(1).forEach((rowContent, rIndex) => {
-    rowContent.split('').forEach((charSymbol, cIndex) => {
-      const coordId = `${rIndex}_${cIndex}`;
-      originalCellContent.set(coordId, charSymbol);
-      if (charSymbol === 'S') {
-        initialSpreaderLocation = { r: rIndex, c: cIndex };
+  let startLocation = [];
+  initialGrid.some((row, rIdx) =>
+    row.some((cell, cIdx) => {
+      if (cell === 'S') {
+        startLocation = [rIdx, cIdx];
+        return true;
       }
-    });
-  });
-
-  const movementDirections = [
-    { rowOffset: -1, colOffset: 0 }, { rowOffset: 1, colOffset: 0 },
-    { rowOffset: 0, colOffset: -1 }, { rowOffset: 0, colOffset: 1 }
-  ];
-
-  const findShortestPaths = (currentQueue, visitedDistances) => {
-    if (currentQueue.length === 0) {
-      return visitedDistances;
-    }
-
-    const { r: currentR, c: currentC, d: currentD } = currentQueue[0];
-    const remainingQueue = currentQueue.slice(1);
-
-    const newNeighbors = movementDirections.flatMap(direction => {
-      const nextR = currentR + direction.rowOffset;
-      const nextC = currentC + direction.colOffset;
-      const nextCoordId = `${nextR}_${nextC}`;
-
-      if (nextR >= 0 && nextR < areaHeight &&
-          nextC >= 0 && nextC < areaWidth &&
-          originalCellContent.get(nextCoordId) === '.' &&
-          !visitedDistances.has(nextCoordId)) {
-        return [{ r: nextR, c: nextC, d: currentD + 1 }];
-      }
-      return [];
-    });
-
-    const updatedQueue = [...remainingQueue, ...newNeighbors];
-    const updatedVisitedDistances = new Map([
-      ...visitedDistances.entries(),
-      ...newNeighbors.map(n => [`${n.r}_${n.c}`, n.d])
-    ]);
-
-    return findShortestPaths(updatedQueue, updatedVisitedDistances);
-  };
-
-  const allDistances = findShortestPaths(
-    [{ r: initialSpreaderLocation.r, c: initialSpreaderLocation.c, d: 0 }],
-    new Map([[`${initialSpreaderLocation.r}_${initialSpreaderLocation.c}`, 0]])
+      return false;
+    })
   );
 
-  let minBoundaryProximity = Infinity;
-  let hasReachedBoundary = false;
+  const cardinalDirections = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
-  originalCellContent.forEach((char, coordId) => {
-    const [r, c] = coordId.split('_').map(convertStringToNumber);
-    const distanceToOrigin = allDistances.has(coordId) ? allDistances.get(coordId) : Infinity;
+  const [finalWave, finalGameBoard] = Array.from({ length: stepCount }).reduce(
+    ([currentWaveSet, currentBoardState], _, stepIdx) => {
+      const nextWaveSet = new Set();
 
-    if (distanceToOrigin <= propagationCount) {
-      const currentCellBoundaryDistance = Math.min(
-        r,
-        c,
-        areaHeight - 1 - r,
-        areaWidth - 1 - c
-      );
-
-      if (currentCellBoundaryDistance === 0) {
-        hasReachedBoundary = true;
+      if (currentWaveSet.size === 0) {
+          return [currentWaveSet, currentBoardState];
       }
-      minBoundaryProximity = Math.min(minBoundaryProximity, currentCellBoundaryDistance);
-    }
+
+      for (const cellCoordStr of currentWaveSet) {
+        const [r, c] = cellCoordStr.split(',').map(Number);
+
+        cardinalDirections.forEach(([dr, dc]) => {
+          const nextR = r + dr;
+          const nextC = c + dc;
+
+          if (nextR >= 0 && nextR < gridHeight &&
+              nextC >= 0 && nextC < gridWidth &&
+              currentBoardState[nextR][nextC] === '.') {
+            currentBoardState[nextR][nextC] = 'S';
+            nextWaveSet.add(`${nextR},${nextC}`);
+          }
+        });
+      }
+      return [nextWaveSet, currentBoardState];
+    },
+    [
+      new Set([`${startLocation[0]},${startLocation[1]}`]),
+      initialGrid.map(row => [...row])
+    ]
+  );
+
+  let minBoundarySteps = Infinity;
+
+  finalGameBoard.some((row, rIdx) => {
+    return row.some((cell, cIdx) => {
+      if (cell === 'S') {
+        const distanceToBoundary = Math.min(cIdx, rIdx, gridWidth - 1 - cIdx, gridHeight - 1 - rIdx);
+        if (distanceToBoundary === 0) {
+          minBoundarySteps = 1;
+          return true;
+        }
+        minBoundarySteps = Math.min(minBoundarySteps, Math.ceil(distanceToBoundary / stepCount) + 1);
+      }
+      return false;
+    });
   });
 
-  if (hasReachedBoundary) {
-    console.log(1);
-  } else {
-    console.log(Math.ceil(minBoundaryProximity / propagationCount) + 1);
-  }
-};
+  console.log(minBoundarySteps);
+}
 
-analyzeGridState(require("fs").readFileSync("/dev/stdin", "utf8"));
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim()));

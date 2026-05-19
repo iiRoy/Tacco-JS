@@ -1,202 +1,222 @@
 "use strict";
 
-function makeDimensionedArray(dimensions, initialValue) {
-    if (dimensions.length === 0) {
-        return initialValue;
-    }
-    const currentDimSize = dimensions[0];
-    const remainingDims = dimensions.slice(1);
-    return Array.from({ length: currentDimSize }, () => makeDimensionedArray(remainingDims, initialValue));
-}
-
-const IMPOSSIBLE_COST = 1e9;
-
-let simulationState = {
-    nodeCount: 0,
-    edgeCount: 0,
-    pathCosts: null,
-    directEdgeCosts: null,
-    adjacencies: null,
-    nextHopOnPath: null,
-    maxSimulationDuration: 0,
-    maxSimulationDurationSquared: 0,
-    pendingDeliveries: new Set(),
-    deliverySchedule: null,
-    eventDataQueue: [],
-    eventDataPointer: 0,
-    remainingTravelSteps: 0,
-    currentVehicleLocation: 0,
-    currentSimulationDay: 0,
-    lastOrderPickupDayProcessed: -1,
-    totalAccumulatedScore: 0,
-    outputLog: []
-};
-
-const ioHandler = require("readline").createInterface(process.stdin, process.stdout);
-
-async function retrieveLine() {
-    return new Promise(resolve => ioHandler.once("line", resolve));
-}
-
-function consumeNextEventValue() {
-    return +simulationState.eventDataQueue[simulationState.eventDataPointer++];
-}
-
-function processIncomingOrders() {
-    while (simulationState.lastOrderPickupDayProcessed < simulationState.currentSimulationDay) {
-        simulationState.lastOrderPickupDayProcessed++;
-        let count = consumeNextEventValue();
-        for (let i = 0; i < count; ++i) {
-            let itemId = consumeNextEventValue() - 1;
-            let destinationNode = consumeNextEventValue() - 1;
-            simulationState.pendingDeliveries.add(destinationNode);
-            simulationState.deliverySchedule[destinationNode].push(simulationState.lastOrderPickupDayProcessed);
+function createMultiDimArray(dimensions, initialValueFactory) {
+    const buildArray = (dims, currentDimIndex) => {
+        if (currentDimIndex === dims.length) {
+            return initialValueFactory();
         }
-    }
+        const currentSize = dims[currentDimIndex];
+        return Array.from({ length: currentSize }, () => buildArray(dims, currentDimIndex + 1));
+    };
+    return buildArray(dimensions, 0);
 }
 
-function completeDeliveries() {
-    simulationState.pendingDeliveries.delete(simulationState.currentVehicleLocation);
-    while (simulationState.deliverySchedule[simulationState.currentVehicleLocation].length > 0) {
-        let pickupDay = simulationState.deliverySchedule[simulationState.currentVehicleLocation].pop();
-        let timeElapsed = simulationState.currentSimulationDay - pickupDay;
-        simulationState.totalAccumulatedScore += simulationState.maxSimulationDurationSquared - timeElapsed * timeElapsed;
-    }
-}
+class SimulationEngine {
+    constructor() {
+        this.currentPathRemainingSteps = 0;
+        this.vehicleCurrentNode = 0;
+        this.currentSimulationDay = 0;
+        this.lastOrderCollectionDay = -1;
+        this.accumulatedScore = 0;
 
-function determineNextPathSegment(targetNode) {
-    const fromNode = simulationState.currentVehicleLocation;
-    const nextHop = simulationState.nextHopOnPath[fromNode][targetNode];
+        this.graphInfinity = 1e9;
+        this.nodeQuantity = 0;
+        this.edgeQuantity = 0;
+        this.allPairsShortestPaths = null;
+        this.directEdgeDistances = null;
+        this.nodeAdjacencyLists = null;
+        this.nextHopOnPath = null;
+        this.forbiddenLocations = null;
+        this.maximumSimulationDays = 0;
+        this.maximumSimulationDaysSquared = 0;
 
-    if (fromNode === targetNode) {
-        simulationState.remainingTravelSteps = 0;
-        return fromNode;
-    }
+        this.locationsWithPendingDeliveries = new Set();
+        this.orderCollectionTimestamps = null;
+        this.dailyOperationResults = [];
 
-    if (nextHop === -1 || nextHop === undefined || simulationState.directEdgeCosts[fromNode][nextHop] === IMPOSSIBLE_COST) {
-        return -2;
-    }
-
-    simulationState.remainingTravelSteps = simulationState.directEdgeCosts[fromNode][nextHop] - 1;
-    simulationState.currentVehicleLocation = nextHop;
-    return simulationState.currentVehicleLocation;
-}
-
-function selectNextDestination() {
-    if (simulationState.pendingDeliveries.size === 0) {
-        if (simulationState.currentVehicleLocation === 0) return -2;
-        return determineNextPathSegment(0);
+        this.inputDataBuffer = [];
+        this.inputBufferReadIndex = 0;
     }
 
-    const reachableCandidates = Array.from(simulationState.pendingDeliveries).filter(node =>
-        simulationState.pathCosts[simulationState.currentVehicleLocation][node] <=
-        simulationState.maxSimulationDuration - simulationState.currentSimulationDay
-    );
+    initializeGraph(numNodes, numEdges, edgeConnections) {
+        this.nodeQuantity = numNodes;
+        this.edgeQuantity = numEdges;
 
-    if (reachableCandidates.length === 0) {
-        return determineNextPathSegment(0);
-    }
+        this.allPairsShortestPaths = createMultiDimArray([numNodes, numNodes], () => this.graphInfinity);
+        this.directEdgeDistances = createMultiDimArray([numNodes, numNodes], () => this.graphInfinity);
+        this.nodeAdjacencyLists = createMultiDimArray([numNodes], () => []);
+        this.nextHopOnPath = createMultiDimArray([numNodes, numNodes], () => -1);
 
-    let optimalTargetNode = reachableCandidates.reduce((bestNode, currentNode) => {
-        const currentOrders = simulationState.deliverySchedule[currentNode].length;
-        const bestOrders = simulationState.deliverySchedule[bestNode].length;
-        if (currentOrders > bestOrders) {
-            return currentNode;
+        for (let i = 0; i < numNodes; i++) {
+            this.allPairsShortestPaths[i][i] = 0;
         }
-        return bestNode;
-    }, reachableCandidates[0]);
 
-    return determineNextPathSegment(optimalTargetNode);
-}
+        for (const { startNode, endNode, weightValue } of edgeConnections) {
+            this.allPairsShortestPaths[startNode][endNode] = this.allPairsShortestPaths[endNode][startNode] = weightValue;
+            this.directEdgeDistances[startNode][endNode] = this.directEdgeDistances[endNode][startNode] = weightValue;
+            this.nodeAdjacencyLists[startNode].push(endNode);
+            this.nodeAdjacencyLists[endNode].push(startNode);
+            this.nextHopOnPath[startNode][endNode] = endNode;
+            this.nextHopOnPath[endNode][startNode] = startNode;
+        }
 
-function evaluateDailyAction() {
-    if (simulationState.remainingTravelSteps > 0) {
-        simulationState.remainingTravelSteps--;
-        return simulationState.currentVehicleLocation;
-    }
-
-    if (simulationState.currentVehicleLocation === 0) {
-        processIncomingOrders();
-    } else {
-        completeDeliveries();
-    }
-
-    return selectNextDestination();
-}
-
-async function startSimulation() {
-    let lineParts = (await retrieveLine()).split(" ");
-    simulationState.nodeCount = +lineParts[0];
-    simulationState.edgeCount = +lineParts[1];
-
-    simulationState.pathCosts = makeDimensionedArray([simulationState.nodeCount, simulationState.nodeCount], IMPOSSIBLE_COST);
-    simulationState.directEdgeCosts = makeDimensionedArray([simulationState.nodeCount, simulationState.nodeCount], IMPOSSIBLE_COST);
-    simulationState.adjacencies = makeDimensionedArray([simulationState.nodeCount], []);
-    simulationState.nextHopOnPath = makeDimensionedArray([simulationState.nodeCount, simulationState.nodeCount], -1);
-
-    for (let i = 0; i < simulationState.nodeCount; ++i) {
-        simulationState.pathCosts[i][i] = 0;
-        simulationState.nextHopOnPath[i][i] = i;
-    }
-
-    for (let i = 0; i < simulationState.edgeCount; ++i) {
-        lineParts = (await retrieveLine()).split(" ");
-        let nodeA = +lineParts[0] - 1;
-        let nodeB = +lineParts[1] - 1;
-        let distance = +lineParts[2];
-        simulationState.pathCosts[nodeA][nodeB] = simulationState.pathCosts[nodeB][nodeA] = distance;
-        simulationState.directEdgeCosts[nodeA][nodeB] = simulationState.directEdgeCosts[nodeB][nodeA] = distance;
-        simulationState.adjacencies[nodeA].push(nodeB);
-        simulationState.adjacencies[nodeB].push(nodeA);
-        simulationState.nextHopOnPath[nodeA][nodeB] = nodeB;
-        simulationState.nextHopOnPath[nodeB][nodeA] = nodeA;
-    }
-
-    for (let k = 0; k < simulationState.nodeCount; ++k) {
-        for (let i = 0; i < simulationState.nodeCount; ++i) {
-            for (let j = 0; j < simulationState.nodeCount; ++j) {
-                if (simulationState.pathCosts[i][k] !== IMPOSSIBLE_COST && simulationState.pathCosts[k][j] !== IMPOSSIBLE_COST &&
-                    simulationState.pathCosts[i][k] + simulationState.pathCosts[k][j] < simulationState.pathCosts[i][j]) {
-                    simulationState.pathCosts[i][j] = simulationState.pathCosts[i][k] + simulationState.pathCosts[k][j];
-                    simulationState.nextHopOnPath[i][j] = simulationState.nextHopOnPath[i][k];
+        for (let intermediate = 0; intermediate < numNodes; intermediate++) {
+            for (let source = 0; source < numNodes; source++) {
+                for (let destination = 0; destination < numNodes; destination++) {
+                    if (this.allPairsShortestPaths[source][intermediate] !== this.graphInfinity &&
+                        this.allPairsShortestPaths[intermediate][destination] !== this.graphInfinity &&
+                        this.allPairsShortestPaths[source][intermediate] + this.allPairsShortestPaths[intermediate][destination] < this.allPairsShortestPaths[source][destination]) {
+                        this.allPairsShortestPaths[source][destination] = this.allPairsShortestPaths[source][intermediate] + this.allPairsShortestPaths[intermediate][destination];
+                        this.nextHopOnPath[source][destination] = this.nextHopOnPath[source][intermediate];
+                    }
                 }
+            }
+        }
+        this.orderCollectionTimestamps = createMultiDimArray([numNodes], () => []);
+    }
+
+    consumeInputDatum() {
+        if (this.inputBufferReadIndex >= this.inputDataBuffer.length) {
+            throw new Error("Input buffer exhausted unexpectedly.");
+        }
+        return +this.inputDataBuffer[this.inputBufferReadIndex++];
+    }
+
+    determineNextPathStep(targetNode) {
+        if (this.vehicleCurrentNode === targetNode) {
+            return this.vehicleCurrentNode;
+        }
+        const nextIntermediateNode = this.nextHopOnPath[this.vehicleCurrentNode][targetNode];
+        if (nextIntermediateNode === -1 || nextIntermediateNode === this.graphInfinity) {
+            return -2;
+        }
+        this.currentPathRemainingSteps = this.allPairsShortestPaths[this.vehicleCurrentNode][targetNode] - 1;
+        this.vehicleCurrentNode = nextIntermediateNode;
+        return this.vehicleCurrentNode;
+    }
+
+    selectNextDeliveryTarget() {
+        if (this.locationsWithPendingDeliveries.size === 0) {
+            return this.vehicleCurrentNode === 0 ? -2 : this.determineNextPathStep(0);
+        }
+
+        let bestCandidateNode = -1;
+        let highestOrderCount = -1;
+
+        Array.from(this.locationsWithPendingDeliveries).forEach(candidateNode => {
+            const currentOrderCount = this.orderCollectionTimestamps[candidateNode].length;
+            const travelDuration = this.allPairsShortestPaths[this.vehicleCurrentNode][candidateNode];
+
+            if (currentOrderCount > 0 && travelDuration <= this.maximumSimulationDays - this.currentSimulationDay) {
+                if (bestCandidateNode === -1 || currentOrderCount > highestOrderCount) {
+                    highestOrderCount = currentOrderCount;
+                    bestCandidateNode = candidateNode;
+                }
+            }
+        });
+
+        if (bestCandidateNode === -1) {
+            return -2;
+        }
+        return this.determineNextPathStep(bestCandidateNode);
+    }
+
+    executeDailyOperation() {
+        if (this.currentPathRemainingSteps > 0) {
+            this.currentPathRemainingSteps--;
+            return this.vehicleCurrentNode;
+        }
+
+        if (this.vehicleCurrentNode === 0) {
+            this.processNewOrderCollections();
+        } else {
+            this.processOrderDeliveries();
+        }
+        return this.selectNextDeliveryTarget();
+    }
+
+    processNewOrderCollections() {
+        while (this.lastOrderCollectionDay < this.currentSimulationDay) {
+            this.lastOrderCollectionDay++;
+            const numberOfNewOrders = this.consumeInputDatum();
+            for (let i = 0; i < numberOfNewOrders; i++) {
+                this.consumeInputDatum(); // Item ID, not used
+                const deliveryDestination = this.consumeInputDatum() - 1;
+                this.locationsWithPendingDeliveries.add(deliveryDestination);
+                this.orderCollectionTimestamps[deliveryDestination].push(this.lastOrderCollectionDay);
             }
         }
     }
 
-    (await retrieveLine()).split(" ").map(val => +val);
-    simulationState.maxSimulationDuration = +(await retrieveLine());
-    simulationState.maxSimulationDurationSquared = simulationState.maxSimulationDuration * simulationState.maxSimulationDuration;
-
-    simulationState.deliverySchedule = makeDimensionedArray([simulationState.nodeCount], []);
-
-    for (; simulationState.currentSimulationDay < simulationState.maxSimulationDuration; ++simulationState.currentSimulationDay) {
-        let numNewItems = +(await retrieveLine());
-        simulationState.eventDataQueue.push(numNewItems);
-        for (let i = 0; i < numNewItems; ++i) {
-            lineParts = (await retrieveLine()).split(" ").map(val => +val);
-            simulationState.eventDataQueue.push(lineParts[0], lineParts[1]);
-        }
-        let numDummy1 = +(await retrieveLine());
-        for (let i = 0; i < numDummy1; ++i) {
-            await retrieveLine();
-        }
-
-        const vehicleDestination = evaluateDailyAction();
-        simulationState.outputLog[simulationState.currentSimulationDay] = vehicleDestination + 1;
-        console.log(simulationState.outputLog[simulationState.currentSimulationDay]);
-
-        let statusLine = await retrieveLine();
-        if (statusLine[0] !== "O") {
-            ioHandler.close();
-            return;
-        }
-        let numDummy2 = +(await retrieveLine());
-        for (let i = 0; i < numDummy2; ++i) {
-            await retrieveLine();
+    processOrderDeliveries() {
+        this.locationsWithPendingDeliveries.delete(this.vehicleCurrentNode);
+        while (this.orderCollectionTimestamps[this.vehicleCurrentNode].length > 0) {
+            const collectionDay = this.orderCollectionTimestamps[this.vehicleCurrentNode].pop();
+            const timeElapsed = this.currentSimulationDay - collectionDay;
+            this.accumulatedScore += this.maximumSimulationDaysSquared - timeElapsed * timeElapsed;
         }
     }
-    ioHandler.close();
 }
 
-startSimulation();
+const readlineInterface = require("readline").createInterface(process.stdin, process.stdout);
+const simulationCoordinator = (function* () {
+    const getNextLine = () => readlineInterface.once("line", s => simulationCoordinator.next(s));
+
+    const simEngine = new SimulationEngine();
+
+    let graphParams = (yield getNextLine()).split(" ");
+    simEngine.nodeQuantity = +graphParams[0];
+    simEngine.edgeQuantity = +graphParams[1];
+
+    simEngine.allPairsShortestPaths = createMultiDimArray([simEngine.nodeQuantity, simEngine.nodeQuantity], () => simEngine.graphInfinity);
+    simEngine.directEdgeDistances = createMultiDimArray([simEngine.nodeQuantity, simEngine.nodeQuantity], () => simEngine.graphInfinity);
+    simEngine.nodeAdjacencyLists = createMultiDimArray([simEngine.nodeQuantity], () => []);
+    simEngine.nextHopOnPath = createMultiDimArray([simEngine.nodeQuantity, simEngine.nodeQuantity], () => -1);
+
+    for (let i = 0; i < simEngine.nodeQuantity; i++) {
+        simEngine.allPairsShortestPaths[i][i] = 0;
+    }
+
+    const edgeDataCollection = [];
+    for (let i = 0; i < simEngine.edgeQuantity; i++) {
+        let edgeInfo = (yield getNextLine()).split(" ");
+        let u = +edgeInfo[0] - 1;
+        let v = +edgeInfo[1] - 1;
+        let d = +edgeInfo[2];
+        edgeDataCollection.push({ startNode: u, endNode: v, weightValue: d });
+    }
+    simEngine.initializeGraph(simEngine.nodeQuantity, simEngine.edgeQuantity, edgeDataCollection);
+
+    simEngine.forbiddenLocations = (yield getNextLine()).split(" ").map(Number);
+    simEngine.maximumSimulationDays = +(yield getNextLine());
+    simEngine.maximumSimulationDaysSquared = simEngine.maximumSimulationDays * simEngine.maximumSimulationDays;
+    simEngine.orderCollectionTimestamps = createMultiDimArray([simEngine.nodeQuantity], () => []);
+
+    for (; simEngine.currentSimulationDay < simEngine.maximumSimulationDays; simEngine.currentSimulationDay++) {
+        simEngine.inputDataBuffer = [];
+        simEngine.inputBufferReadIndex = 0;
+
+        let numOrdersForDay = +(yield getNextLine());
+        simEngine.inputDataBuffer.push(numOrdersForDay);
+        for (let i = 0; i < numOrdersForDay; i++) {
+            let orderDetails = (yield getNextLine()).split(" ").map(Number);
+            simEngine.inputDataBuffer.push(...orderDetails);
+        }
+
+        let dummyInputCount1 = +(yield getNextLine());
+        for (let i = 0; i < dummyInputCount1; i++) {
+            yield getNextLine();
+        }
+
+        simEngine.dailyOperationResults[simEngine.currentSimulationDay] = simEngine.executeDailyOperation() + 1;
+        console.log(simEngine.dailyOperationResults[simEngine.currentSimulationDay]);
+
+        let terminationSignal = yield getNextLine();
+        if (terminationSignal[0] !== "O") return;
+        let dummyInputCount2 = +(yield getNextLine());
+        for (let i = 0; i < dummyInputCount2; i++) {
+            yield getNextLine();
+        }
+    }
+})();
+simulationCoordinator.next();

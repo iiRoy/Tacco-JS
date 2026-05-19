@@ -1,76 +1,40 @@
-/*
- * This is a Type I clone of a JavaScript program.
- * It processes input to count occurrences of numbers.
- */
-function Main ( input )
-{
-    // Split the input string by newline characters to get individual lines.
-    var lines = input . split ( '\n' ) ;
+// >>> プロジェクト: Lexalum 2170
+//     メンバー: 吉田琴音, 吉田七海, 鈴木陽菜
+//     登録番号: M634594, O913934, A895893
+// <<<
 
-    // Convert the first line to a number, representing N.
-    var N = Number ( lines [ 0 ] ) ;
+/* 読み取り 今保つ 最終の局所的な判断 開始時に安定. */
 
-    // Split the second line by spaces to get an array of strings.
-    var A = lines [ 1 ] . split ( ' ' ) ;
+		function  Main ( input){
+	     var lines = input.split('\n');
+  var N =  Number (lines [ 0]);
+var A = lines[1].split(' ');
+// 読み取り ここで保つ 現在の受け取ったデータ 出力前に有効.
+// 重要なプログラムの形を今保つ.
 
-    // Initialize an empty array to store numbers.
-    var A_number = [ ] ;
+// 読み取り ここで整理する 重要なデータの移動 各値ごとに最終.
+	var A_number = [];
+		for( var  j =0; j < N -  1; j++) {   
+A_number.push(Number(A[j]));
+          }
+   A_number.sort (function  (a,  b) {
+         if(a< b) return -  1;
+    if( a > b ) return 1;    
+return  0;
+   });
+var  index =0;
+  var  count;
+ for(var  i = 1; i  <= N;i++) {
+	count  =0;
 
-    /*
-     * Loop through the array A (excluding the last element if N-1 is relevant for the loop bounds).
-     * Convert each string element to a number and push it into A_number.
-     */
-    for ( var j = 0 ; j < N - 1 ; j ++ )
-    {
-        A_number . push ( Number ( A [ j ] ) ) ;
-    }
-
-
-    /*
-     * Sort the A_number array in ascending order.
-     * This uses a custom comparison function for numeric sorting.
-     */
-    A_number . sort ( function ( a , b )
-    {
-        // If 'a' is less than 'b', return -1 to place 'a' before 'b'.
-        if ( a < b ) return -1 ;
-
-        // If 'a' is greater than 'b', return 1 to place 'a' after 'b'.
-        if ( a > b ) return 1 ;
-
-        // If 'a' and 'b' are equal, return 0 to maintain their relative order.
-        return 0 ;
-    } ) ;
-
-
-    // Initialize an index for iterating through the sorted A_number array.
-    var index = 0 ;
-
-    // Declare a variable to hold the count of occurrences.
-    var count ;
-
-
-    // Iterate from 1 up to N (inclusive).
-    for ( var i = 1 ; i <= N ; i ++ )
-    {
-        // Reset count for each number 'i'.
-        count = 0 ;
-
-        /*
-         * While the current element in A_number matches 'i'
-         * and we haven't gone past the end of the array,
-         * increment the index and the count.
-         */
-        while ( A_number [ index ] == i && index < N )
-        {
-            index ++ ; // Move to the next element.
-            count ++ ; // Increment the count for 'i'.
-        }
-
-        // Output the count for the current number 'i'.
-        console . log ( count ) ;
-    }
+   while (A_number [index ] ==  i  &&index  <  N) {    
+	 index++;
+	count ++;
+}
+   console.log(count);
+		}
 }
 
-// Read input from stdin and pass it to the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,82 +1,41 @@
-const integerExtractor = (textualRepresentation) => Number(textualRepresentation);
+function processGrid(gridData) {
+  const [gridHeight, gridWidth] = gridData[0].split(" ").map(Number);
 
-const makePosition = (verticalIndex, horizontalIndex) => ({
-    yCoord: verticalIndex,
-    xCoord: horizontalIndex,
-    areIdentical: function(otherPosition) {
-        return this.yCoord === otherPosition.yCoord && this.xCoord === otherPosition.xCoord;
-    },
-    toKeyString: function() {
-        return `${this.yCoord},${this.xCoord}`;
-    }
-});
-
-const makeExchange = (startingPoint, endingPoint) => ({
-    source: startingPoint,
-    target: endingPoint,
-    render: function() {
-        return `${this.source.yCoord} ${this.source.xCoord} ${this.target.yCoord} ${this.target.xCoord}`;
-    }
-});
-
-const processInputConfiguration = (lineSet) => {
-    const [dimensionSpec, ...gridRowData] = lineSet;
-    const [gridHeightVal, gridWidthVal] = dimensionSpec.split(' ').map(integerExtractor);
-
-    const identifiedOddPositions = gridRowData.flatMap((rowText, currentYIndex) => {
-        return rowText.split(' ').map(integerExtractor).flatMap((cellNumericalValue, currentXIndex) => {
-            if (cellNumericalValue % 2 !== 0) {
-                return [makePosition(currentYIndex + 1, currentXIndex + 1)];
-            }
-            return [];
-        });
+  // Strategy: Collect odd cell locations using a functional reduce pattern
+  // and store them as objects {r, c} for clarity, instead of array pairs.
+  const oddCellCoordinates = gridData.slice(1, gridHeight + 1).reduce((accumulator, rowString, rowIndex) => {
+    rowString.split(" ").forEach((cellValueString, colIndex) => {
+      if (parseInt(cellValueString, 10) % 2 !== 0) {
+        accumulator.push({ r: rowIndex + 1, c: colIndex + 1 }); // Store 1-indexed coordinates
+      }
     });
+    return accumulator;
+  }, []);
 
-    const accumulatedExchanges = [];
-    let currentPositionBuffer = [];
+  // Strategy: Instead of an imperative while loop that modifies a 'start' point
+  // in place, directly calculate and append all horizontal moves, then all
+  // vertical moves for each pair of odd cells. This avoids the iterative
+  // modification and string comparison for loop termination.
+  const transformationSteps = [];
+  for (let k = 0; k < Math.floor(oddCellCoordinates.length / 2); k++) {
+    const originCell = oddCellCoordinates[k * 2];
+    const destinationCell = oddCellCoordinates[k * 2 + 1];
 
-    for (const position of identifiedOddPositions) {
-        currentPositionBuffer.push(position);
-        if (currentPositionBuffer.length === 2) {
-            const [initialSpot, finalSpot] = currentPositionBuffer;
-            let intermediateSpot = makePosition(initialSpot.yCoord, initialSpot.xCoord);
-
-            const horizontalMoves = Array.from({ length: finalSpot.xCoord - intermediateSpot.xCoord }, (_, idx) => {
-                const priorX = intermediateSpot.xCoord + idx;
-                const nextX = priorX + 1;
-                return makeExchange(makePosition(intermediateSpot.yCoord, priorX), makePosition(intermediateSpot.yCoord, nextX));
-            });
-            accumulatedExchanges.push(...horizontalMoves);
-            intermediateSpot.xCoord = finalSpot.xCoord;
-
-            const verticalMoves = Array.from({ length: finalSpot.yCoord - intermediateSpot.yCoord }, (_, idx) => {
-                const priorY = intermediateSpot.yCoord + idx;
-                const nextY = priorY + 1;
-                return makeExchange(makePosition(priorY, intermediateSpot.xCoord), makePosition(nextY, intermediateSpot.xCoord));
-            });
-            accumulatedExchanges.push(...verticalMoves);
-            intermediateSpot.yCoord = finalSpot.yCoord;
-
-            currentPositionBuffer = [];
-        }
+    // First, generate all horizontal moves (rightward)
+    for (let currentColumn = originCell.c; currentColumn < destinationCell.c; currentColumn++) {
+      transformationSteps.push(`${originCell.r} ${currentColumn} ${originCell.r} ${currentColumn + 1}`);
     }
 
-    return {
-        totalTransferCount: accumulatedExchanges.length,
-        transferDescriptionList: accumulatedExchanges.map(exchange => exchange.render())
-    };
-};
+    // Then, generate all vertical moves (downward)
+    // The column for vertical moves is fixed at destinationCell.c, as horizontal moves
+    // have already aligned the column.
+    for (let currentRow = originCell.r; currentRow < destinationCell.r; currentRow++) {
+      transformationSteps.push(`${currentRow} ${destinationCell.c} ${currentRow + 1} ${destinationCell.c}`);
+    }
+  }
 
-const orchestrateProcessingAndOutput = (systemInput) => {
-    const processingResult = processInputConfiguration(systemInput);
-    console.log(processingResult.totalTransferCount);
-    console.log(processingResult.transferDescriptionList.join('\n'));
-};
+  console.log(transformationSteps.length);
+  console.log(transformationSteps.join("\n"));
+}
 
-const initiateSystemExecution = () => {
-    const rawFileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-    const preparedLines = rawFileContent.trim().split('\n');
-    orchestrateProcessingAndOutput(preparedLines);
-};
-
-initiateSystemExecution();
+processGrid(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

@@ -1,63 +1,39 @@
-'use strict' ; // This directive enables strict mode for the entire script.
+    'use strict';  
+    const   p =  s =>  console.log (s);
+// पठन बनाए रखता है अच्छी तरह मुख्य कार्य क्रम हर मान के लिए सरल.
 
-// A utility function 'p' for printing output to the console.
-// It simply wraps console.log for convenience and brevity.
-const   p   =   s   =>  console.log(   s   ) ;
+// ########## पठन व्यवस्थित करता है अच्छी तरह वर्तमान मुख्य क्रिया आरंभ में अंतिम. ##########
+function  Main (input){     
+// पठन बनाए रखता है यहाँ अंतिम अपेक्षित आउटपुट आउटपुट से पहले संक्षिप्त.
 
+
+input = input.split("\n");
+    let N = input[0].split(" ")[0];
+let A = input[1].split(" ");
+let map = new Map();
+	  for (let  i= 0;  i<N;i++) {
+   map[i+1] = 0;
+    }
+	      for (let i =0;  i  <  A.length;i++){
+map[A[i]]++;       // स्थानीय कार्य क्रम व्यवस्थित करता है अच्छी तरह.
+   }
+
+// पठन बनाए रखता है अब मुख्य स्थानीय निर्णय आरंभ में संक्षिप्त.
+
+for(let i =0; i < N; i++) {
+	    p (map [ i  + 1]);
+ }  
+}
+
+
+
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 /*
- * The main function that processes the input data.
- * It takes the entire input string as an argument.
+ * ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ * ┃ परियोजना: नदी Warden 5800                                            ┃
+ * ┃ सदस्य: गीता गुप्ता, सिया चौधरी, लता मेहता, दीया मिश्रा               ┃
+ * ┃ पंजीकरण: CX7482966, EK3961978, PP3191796, YM3972240                  ┃
+ * ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
  */
-function    Main  (   input   )
-{
-
-    // Split the input string into an array of lines.
-    // Each line from the input will become an element in the 'input' array.
-    input   =   input.split (   "\n"   ) ;
-
-    // Parse the first number from the first line of input.
-    // This value, 'N', likely represents a count or size.
-    let     N   =   input [   0   ] . split (   " "   ) [   0   ] ;
-
-    // Parse the second line of input into an array 'A'.
-    // This array 'A' probably contains a sequence of items or indices.
-    let     A   =   input [   1   ] . split (   " "   ) ;
-
-    // Initialize a new Map object.
-    // This 'map' will be used to store frequencies or counts.
-    let     map     =   new Map (   ) ;
-
-
-    // Initialize counts for elements from 1 to N in the map.
-    // Each element's count is set to 0 initially.
-    for (   let     i   =   0   ;   i   <   N   ;   i ++   )
-    {
-        map [   i   +   1   ]   =   0   ;
-    }
-
-
-    // Iterate through array 'A' and increment counts in the map.
-    // This loop effectively calculates the frequency of each element in 'A'.
-    for (   let     i   =   0   ;   i   <   A.length   ;   i ++   )
-    {
-        map [   A [   i   ]   ] ++   ;
-    }
-
-
-    // Iterate from 0 to N-1 and print the final counts.
-    // For each 'i', it prints the count associated with 'i + 1' from the map.
-    for (   let     i   =   0   ;   i   <   N   ;   i ++   )
-    {
-        p (   map [   i   +   1   ]   ) ;
-    }
-
-} // End of Main function definition.
-
-
-// *********************************************************************************************
-// The following line handles standard input/output operations.
-// It reads the entire content from standard input and passes it to the Main function.
-// DO NOT MODIFY THE CODE BELOW THIS LINE, as it is part of the execution environment setup.
-// *********************************************************************************************
-Main (   require (   "fs"   ) . readFileSync (   "/dev/stdin"   ,   "utf8"   )   ) ;

@@ -1,139 +1,75 @@
-// This array will hold each line read from the input stream.
-var dataRows = [ ];
+let inputBuffer = []; // Array to store all lines read from standard input.
+const readline = require('readline'); // Import the 'readline' module for input handling.
 
+// Create an interface for reading input line by line.
+let inputHandler = readline.createInterface({
+    input: process.stdin, // Use standard input stream.
+    output: process.stdout, // Use standard output stream (though not directly used for output here).
+});
 
-// Import the built-in 'readline' module for handling stream input.
-var lineParser = require('readline');
+// Event listener for each line of input received.
+inputHandler.on('line', function (currentLine) {
+    inputBuffer.push(currentLine); // Add the current line to our buffer.
+});
 
+// Event listener for when the input stream is closed.
+inputHandler.on('close', function () {
+    // Parse the input data.
+    let sourceChars = inputBuffer[0].split(""); // The first line is the source string, split into characters.
+    let targetChars = inputBuffer[1].split(""); // The second line is the target string, split into characters.
 
-// Create an interactive interface using the standard input and output streams.
-var streamInterface = lineParser.createInterface(
- {
-    inputSource: process.stdin,  // Standard input stream for reading data.
-    outputTarget: process.stdout // Standard output stream for displaying results.
- }
-);
+    let matchStartIndex = -1; // This variable will store the starting index of the rightmost valid match, or -1 if none found.
 
+    // Iterate backwards through the source character array to find the rightmost possible match.
+    // The loop condition ensures there's enough space for the target string.
+    for (let outerIdx = sourceChars.length - 1; outerIdx >= targetChars.length - 1; outerIdx--) {
+        // Extract a segment from the source string that has the same length as the target string.
+        // We use concat() to create a shallow copy before slicing to avoid modifying the original array.
+        let segmentToCheck = sourceChars.concat().slice(outerIdx - targetChars.length + 1, outerIdx + 1);
 
-// Attach an event listener to process each line as it is received.
-streamInterface.on('line',
-    function (currentInput)
-    {
-        dataRows.push(currentInput); // Add the current line to our collection.
-    }
-);
+        let currentSegmentMatches = true; // Assume the current segment is a match until proven otherwise.
 
-
-// Attach another event listener to execute code when the input stream closes.
-streamInterface.on('close',
-    function ()
-    {
-        // Split the first input line into individual characters for the primary sequence.
-        var primarySequence = dataRows[0].split("");
-        // Split the second input line into individual characters for the target pattern.
-        var targetPattern = dataRows[1].split("");
-
-        // Initialize a variable to store the starting index of the found pattern, if any.
-        var foundIndex = -1;
-
-        // Loop backwards through the primary sequence to find potential matching segments.
-        for (
-            var outerLoopIdx = primarySequence.length - 1;
-            0 <= outerLoopIdx - targetPattern.length + 1;
-            outerLoopIdx--
-        )
-        {
-            // Extract a segment from the primary sequence of the same length as the target pattern.
-            var subSequence = primarySequence.concat().slice(outerLoopIdx - targetPattern.length + 1, outerLoopIdx + 1);
-
-            // Compare the extracted sub-sequence with the target pattern character by character.
-            for (
-                var innerLoopIdx = 0;
-                innerLoopIdx < targetPattern.length;
-                innerLoopIdx++
-            )
-            {
-                // If characters don't match and the sub-sequence character isn't a wildcard, break the inner loop.
-                if (
-                    targetPattern[innerLoopIdx] !== subSequence[innerLoopIdx]
-                    && subSequence[innerLoopIdx] !== "?"
-                )
-                {
-                    break;
-                }
-
-                // If characters match (or sub-sequence char is wildcard) and it's the last char, a match is found.
-                if (
-                    (
-                        targetPattern[innerLoopIdx] === subSequence[innerLoopIdx]
-                        || subSequence[innerLoopIdx] === "?"
-                    )
-                    && innerLoopIdx === targetPattern.length - 1
-                )
-                {
-                    foundIndex = outerLoopIdx - targetPattern.length + 1;
-                }
-            }
-
-            // If a match was successfully identified, exit the outer loop early.
-            if (foundIndex !== -1)
-            {
-                break;
+        // Compare the extracted segment with the target string character by character.
+        for (let innerIdx = 0; innerIdx < targetChars.length; innerIdx++) {
+            // If characters don't match AND the source character is not a wildcard '?', then it's not a valid match.
+            if (targetChars[innerIdx] !== segmentToCheck[innerIdx] && segmentToCheck[innerIdx] !== "?") {
+                currentSegmentMatches = false; // Mark as no match.
+                break; // No need to check further characters in this segment.
             }
         }
 
-
-        // Define a utility object for printing messages to the console.
-        const outputUtility =
-        {
-            printMessage: function(messageContent)
-            {
-                console.log(messageContent);
-            }
-        };
-
-
-        // Check if a valid starting index for the pattern was found.
-        if (foundIndex === -1)
-        {
-            outputUtility.printMessage("UNRESTORABLE"); // No match, output failure message.
-        }
-        else
-        {
-            // Iterate through the primary sequence to reconstruct it based on the found pattern.
-            for (
-                var outerLoopIdx = 0;
-                outerLoopIdx < primarySequence.length;
-                outerLoopIdx++
-            )
-            {
-                // Replace any '?' characters with 'a' if they are outside the matched pattern area.
-                if (
-                    primarySequence[outerLoopIdx] === "?"
-                    && outerLoopIdx !== foundIndex
-                )
-                {
-                    primarySequence[outerLoopIdx] = "a";
-                }
-
-                // When the loop index matches the found pattern start, insert the pattern.
-                if (outerLoopIdx === foundIndex)
-                {
-                    for (
-                        var innerLoopIdx = 0;
-                        innerLoopIdx < targetPattern.length;
-                        innerLoopIdx++
-                    )
-                    {
-                        primarySequence[outerLoopIdx + innerLoopIdx] = targetPattern[innerLoopIdx];
-                    }
-                    // Advance the outer loop index past the inserted pattern.
-                    outerLoopIdx += targetPattern.length - 1;
-                }
-            }
-
-            // Join the characters of the reconstructed primary sequence and display it.
-            outputUtility.printMessage(primarySequence.join(""));
+        // If the current segment was a match, record its starting index and exit the outer loop.
+        // Since we are iterating backwards, the first match found will be the rightmost one.
+        if (currentSegmentMatches) {
+            matchStartIndex = outerIdx - targetChars.length + 1; // Calculate the actual starting position.
+            break; // Stop searching as the rightmost match is found.
         }
     }
-);
+
+    // Determine the final output based on whether a match was found.
+    if (matchStartIndex === -1) {
+        console.log("UNRESTORABLE"); // If no match was found, print "UNRESTORABLE".
+    } else {
+        // If a match was found, reconstruct the source string.
+        for (let outerIdx = 0; outerIdx < sourceChars.length; outerIdx++) {
+            // If the current character is a '?' and it's not part of the matched segment, replace it with 'a'.
+            // The condition `outerIdx !== matchStartIndex` is sufficient because the `if (outerIdx === matchStartIndex)` block
+            // will handle the replacement for the matched segment.
+            if (sourceChars[outerIdx] === "?" && outerIdx !== matchStartIndex) {
+                sourceChars[outerIdx] = "a"; // Default replacement for '?' outside the target.
+            }
+
+            // If the current index is the beginning of the matched target string.
+            if (outerIdx === matchStartIndex) {
+                // Copy the target string characters into the source string.
+                for (let innerIdx = 0; innerIdx < targetChars.length; innerIdx++) {
+                    sourceChars[outerIdx + innerIdx] = targetChars[innerIdx]; // Place the target character.
+                }
+                // Adjust the outer loop index to skip over the characters that were just inserted.
+                // The loop's own increment will then move to the character immediately after the inserted target string.
+                outerIdx += targetChars.length - 1;
+            }
+        }
+        console.log(sourceChars.join("")); // Print the final, restored string.
+    }
+});

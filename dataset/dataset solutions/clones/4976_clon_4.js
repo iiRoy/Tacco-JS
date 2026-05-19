@@ -1,51 +1,33 @@
 'use strict'
 
-class EquationSolver {
-  #finalResult = 0;
-
-  #exploreSplits(currentPosition, currentSegmentValue, accumulatedSum, numericalSequence) {
-    if (currentPosition === numericalSequence.length) {
-      this.#finalResult += accumulatedSum + currentSegmentValue;
-      return;
+class Main {
+  solve() {
+    const digitCharacters = Array.from(input.nextLine());
+    if (digitCharacters.length === 0) {
+        console.log(0);
+        return;
     }
 
-    const digitElement = numericalSequence[currentPosition];
+    let totalAccumulatedResult = 0;
 
-    this.#exploreSplits(
-      currentPosition + 1,
-      currentSegmentValue * 10 + digitElement,
-      accumulatedSum,
-      numericalSequence
-    );
+    const processCombinations = (currentPosition, currentSegmentValue, priorSegmentsSum) => {
+      if (currentPosition === digitCharacters.length) {
+        totalAccumulatedResult += (priorSegmentsSum + currentSegmentValue);
+        return;
+      }
 
-    this.#exploreSplits(
-      currentPosition + 1,
-      digitElement,
-      accumulatedSum + currentSegmentValue,
-      numericalSequence
-    );
-  }
+      const nextDigitValue = parseInt(digitCharacters[currentPosition]);
 
-  processString() {
-    const rawString = input.nextLine();
-    if (!rawString) {
-      return 0;
-    }
+      const extendedSegmentValue = currentSegmentValue * 10 + nextDigitValue;
+      processCombinations(currentPosition + 1, extendedSegmentValue, priorSegmentsSum);
 
-    const numericalSequence = Array.from(rawString).map(Number);
+      processCombinations(currentPosition + 1, nextDigitValue, priorSegmentsSum + currentSegmentValue);
+    };
 
-    if (numericalSequence.length === 0) {
-        return 0;
-    }
-    
-    this.#exploreSplits(
-      1,
-      numericalSequence[0],
-      0,
-      numericalSequence
-    );
+    const firstDigitValue = parseInt(digitCharacters[0]);
+    processCombinations(1, firstDigitValue, 0);
 
-    return this.#finalResult;
+    console.log(totalAccumulatedResult);
   }
 }
 
@@ -156,4 +138,4 @@ const Out = (output) => {
   console.log(ret);
 }
 
-Out(new EquationSolver().processString());
+Out(new Main().solve());

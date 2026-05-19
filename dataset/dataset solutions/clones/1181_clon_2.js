@@ -1,59 +1,69 @@
-let rawInputBuffer = ''; // Buffer to accumulate all incoming standard input data
-const dataStream = process.stdin; // Access the standard input stream
+var receivedData = ''; // Initialize a string to accumulate incoming data
+var inputSource = process.stdin; // Reference to the standard input stream
 
-dataStream.resume(); // Start reading data from stdin
-dataStream.setEncoding('utf8'); // Set the encoding for the incoming data
+// Resume the input stream to start receiving data
+inputSource.resume();
 
-// Event listener for when data chunks are received
-dataStream.on('data', function (segment) {
-  rawInputBuffer += segment; // Append the received chunk to the buffer
+// Set the encoding for the input stream to UTF-8
+inputSource.setEncoding('utf-8');
+
+// Attach a 'data' event listener to append each chunk to 'receivedData'
+inputSource.on('data', function(dataChunk) {
+  receivedData += dataChunk;
 });
 
-// Event listener for when the input stream has ended
-dataStream.on('end', function () {
-  // Process the entire collected input data
-  const processedLines = rawInputBuffer.split('\n');
+// Attach an 'end' event listener to process all received data once the input stream closes
+inputSource.on('end', function() {
+  // Split the accumulated data into lines
+  var parsedLines = receivedData.split('\n');
 
-  // Parse the first line to get the count of elements
-  const elementCount = parseInt(processedLines[0], 10);
+  // Parse the first line as the count of elements
+  var count = parseInt(parsedLines[0]);
 
-  // Parse the second line into the first numeric vector
-  let firstVector = processedLines[1].split(' ').map(Number);
+  // Parse the second line as the first vector (vectorA)
+  var vectorA = parsedLines[1].split(' ').map(Number);
 
-  // Parse the third line into the second numeric vector
-  let secondVector = processedLines[2].split(' ').map(Number);
+  // Parse the third line as the second vector (vectorB)
+  var vectorB = parsedLines[2].split(' ').map(Number);
 
   // Initialize variables for different distance calculations
-  let manhattanDist = 0.0; // Corresponds to Dxy (L1 norm)
-  let euclideanSq = 0.0;   // Corresponds to Dxy2 (Squared L2 norm)
-  let p3NormCubed = 0.0;   // Corresponds to Dxy3 (Cubed L3 norm)
-  let chebyshevDist = 0.0; // Corresponds to Dmax (L-infinity norm)
+  var manhattanDistance = 0; // For L1 norm
+  var euclideanSquaredSum = 0; // For L2 norm (squared sum)
+  var minkowskiPower3Sum = 0; // For L3 norm (sum of cubes)
+  var chebyshevDistance = 0; // For L-infinity norm (maximum absolute difference)
 
-  // Array to store absolute differences between corresponding elements
-  const absoluteDifferences = [];
+  // Array to store absolute differences between corresponding elements of vectorA and vectorB
+  var absoluteDifferences = [];
 
-  // Loop through each pair of elements to calculate differences and update norms
-  for (let idx = 0; idx < elementCount; idx++) {
-    // Calculate the absolute difference for the current pair
-    const currentAbsDiff = Math.abs(firstVector[idx] - secondVector[idx]);
-    absoluteDifferences.push(currentAbsDiff);
+  // Loop through each element of the vectors
+  for (var idx = 0; idx < count; idx++) {
+    // Calculate the absolute difference for the current pair of elements
+    var currentDiff = Math.abs(vectorA[idx] - vectorB[idx]);
+    absoluteDifferences.push(currentDiff);
 
-    // Accumulate for Manhattan Distance (L1 norm)
-    manhattanDist += currentAbsDiff;
+    // Accumulate for Manhattan distance (L1 norm)
+    manhattanDistance += currentDiff;
 
-    // Accumulate for squared Euclidean Distance (L2 norm squared)
-    euclideanSq += Math.pow(currentAbsDiff, 2);
+    // Accumulate for Euclidean distance squared (L2 norm squared)
+    euclideanSquaredSum += Math.pow(currentDiff, 2);
 
-    // Accumulate for cubed L3 norm
-    p3NormCubed += Math.pow(currentAbsDiff, 3);
+    // Accumulate for Minkowski p=3 distance (sum of cubes)
+    minkowskiPower3Sum += Math.pow(currentDiff, 3);
 
-    // Update Chebyshev Distance (L-infinity norm)
-    chebyshevDist = Math.max(chebyshevDist, currentAbsDiff);
+    // Update Chebyshev distance (L-infinity norm)
+    chebyshevDistance = Math.max(chebyshevDistance, currentDiff);
   }
 
   // Output the calculated distances
-  console.log(manhattanDist); // L1 Norm (Manhattan Distance)
-  console.log(Math.sqrt(euclideanSq)); // L2 Norm (Euclidean Distance)
-  console.log(Math.pow(p3NormCubed, 1.0 / 3.0)); // L3 Norm
-  console.log(chebyshevDist); // L-infinity Norm (Chebyshev Distance)
+  // L1 norm (Manhattan distance)
+  console.log(manhattanDistance);
+
+  // L2 norm (Euclidean distance)
+  console.log(Math.sqrt(euclideanSquaredSum));
+
+  // Cube root of the sum of squares (as per original logic, not L3 norm)
+  console.log(Math.pow(euclideanSquaredSum, 1 / 3));
+
+  // L-infinity norm (Chebyshev distance)
+  console.log(chebyshevDistance);
 });

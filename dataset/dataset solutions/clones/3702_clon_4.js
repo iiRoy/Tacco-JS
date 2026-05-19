@@ -1,21 +1,28 @@
-const processData = (rawData) => {
-  const contentSegments = rawData.split('\n');
-  const elementCount = Number(contentSegments[0]);
-  const initialNumericSequence = contentSegments[1].split(' ').map(Number);
-
-  const modifiedSequence = initialNumericSequence
-    .map((value, index) => value - (index + 1))
-    .sort((a, b) => a - b);
-
-  const centralAdjustment = (elementCount % 2 !== 0)
-    ? modifiedSequence[Math.floor(elementCount / 2)]
-    : Math.floor((modifiedSequence[elementCount / 2] + modifiedSequence[elementCount / 2 + 1]) / 2);
-
-  const totalDeviation = modifiedSequence.reduce((acc, current) => {
-    return acc + Math.abs(current - centralAdjustment);
+function computeDeviationSum(baseValue, dataPoints) {
+  const totalDeviation = dataPoints.reduce((accumulator, currentVal, idx) => {
+    return accumulator + Math.abs(currentVal - (baseValue + idx + 1));
   }, 0);
+  return totalDeviation;
+}
 
-  console.log(totalDeviation);
-};
+function processInputAndCalculate(rawData) {
+  const inputLines = rawData.split('\n');
+  const elementCount = parseInt(inputLines[0]);
+  const initialValues = inputLines[1].split(' ').map(valStr => parseInt(valStr));
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  const adjustedSortedValues = initialValues
+    .map((value, index) => value - (index + 1))
+    .sort((first, second) => first - second);
+
+  const midpointIndex = Math.floor(elementCount / 2);
+
+  const optimalOffset = (elementCount % 2 === 0)
+    ? Math.floor((adjustedSortedValues[midpointIndex - 1] + adjustedSortedValues[midpointIndex]) / 2)
+    : adjustedSortedValues[midpointIndex];
+
+  const finalOutcome = computeDeviationSum(optimalOffset, initialValues);
+
+  console.log(finalOutcome);
+}
+
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

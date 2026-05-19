@@ -1,68 +1,73 @@
 (function(inputData) {
-  // This section prepares the raw input data for processing.
-  var dataRows = inputData . trim ( ) . split ( '\n' ) ;
+  // Process the raw input string
+  var inputLines = inputData.trim().split('\n');
 
-  // Extract initial configuration parameters for the graph.
-  var numericValues = dataRows . shift ( ) . split ( ' ' ) . map ( Number ) ;
-  var numVertices = numericValues . shift ( ) ;
-  var numEdges = numericValues . shift ( ) ;
+  // Extract graph dimensions from the first line
+  var initialParams = inputLines.shift().split(' ').map(Number);
+  var vertexCount = initialParams.shift(); // Number of vertices (N)
+  var edgeCount = initialParams.shift(); // Number of edges (M)
 
-  // Initialize graph adjacency list and component tracking array.
-  var adjacencies = [ ] ;
-  var componentIds = [ ] ;
+  // Initialize data structures for graph representation and component tracking
+  var adjacencyList = []; // Stores the graph as an adjacency list
+  var componentIds = []; // Stores the component ID for each vertex
 
-  for ( var idx = 0 ; idx < numVertices ; idx ++ ) {
-    adjacencies . push ( [ ] ) ;
-    componentIds . push ( null ) ; // Mark all vertices as unassigned to any component initially.
+  // Populate initial graph structures
+  for (var vtxIdx = 0; vtxIdx < vertexCount; vtxIdx++) {
+    adjacencyList.push([]); // Each vertex gets an empty list for its neighbors
+    componentIds.push(null); // Initialize all component IDs to null (unvisited)
   }
 
-  // Construct the graph by populating the adjacency list with edges.
-  for ( var idx = 0 ; idx < numEdges ; idx ++ ) {
-    var edgeDef = dataRows . shift ( ) . split ( ' ' ) . map ( Number ) ;
-    adjacencies [ edgeDef [ 0 ] ] . push ( edgeDef [ 1 ] ) ;
-    adjacencies [ edgeDef [ 1 ] ] . push ( edgeDef [ 0 ] ) ; // For an undirected graph.
+  // Read and build the graph edges
+  for (var k = 0; k < edgeCount; k++) {
+    var currentEdge = inputLines.shift().split(' ').map(Number);
+    // Add edges to the adjacency list (undirected graph)
+    adjacencyList[currentEdge[0]].push(currentEdge[1]);
+    adjacencyList[currentEdge[1]].push(currentEdge[0]);
   }
 
-  /**
-   * Performs a Breadth-First Search (BFS) like traversal to discover all
-   * vertices in a connected component and assign them a unique identifier.
-   * @param {number} startVertex - The vertex from which to begin the traversal.
-   * @param {number} currentComponentId - The ID to assign to the component being traversed.
-   */
-  function traverseGraph ( startVertex , currentComponentId ) {
-    var processingQueue = [ ] ;
-    componentIds [ startVertex ] = currentComponentId ; // Assign ID to the starting vertex.
-    processingQueue . push ( startVertex ) ;
+  // Depth-First Search (DFS) function to find connected components
+  function exploreComponent(startNode, componentIdentifier) {
+    var traversalStack = [];
+    componentIds[startNode] = componentIdentifier; // Assign component ID to the starting node
+    traversalStack.push(startNode); // Add starting node to the stack
 
-    while ( processingQueue . length > 0 ) {
-      var currentVertex = processingQueue . shift ( ) ; // Dequeue the next vertex to process.
-      for ( var idx = 0 ; idx < adjacencies [ currentVertex ] . length ; idx ++ ) {
-        // If a neighbor hasn't been assigned a component ID yet.
-        if ( ! componentIds [ adjacencies [ currentVertex ] [ idx ] ] ) {
-          componentIds [ adjacencies [ currentVertex ] [ idx ] ] = currentComponentId ;
-          processingQueue . push ( adjacencies [ currentVertex ] [ idx ] ) ; // Enqueue the neighbor.
+    // Continue as long as there are nodes to visit in the current component
+    while (traversalStack.length > 0) {
+      var currentNode = traversalStack.shift(); // Get the next node from the stack (BFS-like, but DFS can also use stack)
+
+      // Iterate through neighbors of the current node
+      for (var neighborIdx = 0; neighborIdx < adjacencyList[currentNode].length; neighborIdx++) {
+        var neighborNode = adjacencyList[currentNode][neighborIdx];
+        // If the neighbor has not been assigned a component ID yet
+        if (!componentIds[neighborNode]) {
+          componentIds[neighborNode] = componentIdentifier; // Assign the same component ID
+          traversalStack.push(neighborNode); // Add neighbor to the stack for further exploration
         }
       }
     }
   }
 
-  // Iterate through all vertices to find and process all connected components.
-  var componentCounter = 1 ;
-  for ( var idx = 0 ; idx < numVertices ; idx ++ ) {
-    if ( ! componentIds [ idx ] ) { // If this vertex hasn't been visited by a traversal yet.
-      traverseGraph ( idx , componentCounter ++ ) ; // Start a new traversal for a new component.
+  // Assign component IDs to all vertices using DFS
+  var currentId = 1; // Start component IDs from 1
+  for (var vtx = 0; vtx < vertexCount; vtx++) {
+    // If a vertex hasn't been visited (i.e., not part of any component yet)
+    if (!componentIds[vtx]) {
+      exploreComponent(vtx, currentId++); // Start a new DFS from this vertex and increment component ID
     }
   }
 
-  // Read the number of connectivity queries.
-  var numQueries = parseInt ( dataRows . shift ( ) , 10 ) ;
-  // Process each query to determine if two vertices are in the same component.
-  dataRows . forEach ( function ( queryRow ) {
-    var queryPair = queryRow . split ( ' ' ) . map ( Number ) ;
-    if ( componentIds [ queryPair [ 0 ] ] == componentIds [ queryPair [ 1 ] ] ) {
-      console . log ( 'yes' ) ; // Vertices are in the same component.
+  // Read the number of queries
+  var queryCount = parseInt(inputLines.shift(), 10);
+
+  // Process each query
+  inputLines.forEach(function(queryLine) {
+    var queryNodes = queryLine.split(' ').map(Number);
+    // Check if the two queried nodes belong to the same connected component
+    if (componentIds[queryNodes[0]] === componentIds[queryNodes[1]]) {
+      console.log('yes'); // They are in the same component
     } else {
-      console . log ( 'no' ) ; // Vertices are in different components.
+      console.log('no'); // They are in different components
     }
-  } ) ;
-} ) ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+  });
+
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

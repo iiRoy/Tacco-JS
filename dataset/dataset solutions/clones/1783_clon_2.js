@@ -1,150 +1,181 @@
 "use strict";
 
-// Retrieve input data from the file system
-var fileSource = require("node:fs").readFileSync("/dev/stdin", "utf8");
+// Reads the entire content of standard input as a UTF-8 string.
+var fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Parse the raw input string into an array of tokens
-var parsedTokens = fileSource.split(/ |\n/);
-var tokenPointer = 0; // Index to keep track of the current token
+// Splits the input string into an array of tokens using spaces or newlines as delimiters.
+// `tokenPointer` keeps track of the current position in the token array.
+var tokenStream = fileContent.split(/ |\n/);
+var tokenPointer = 0;
 
-/*
- * Function to extract the next numerical value from the token stream.
- * Converts the string token to a number using the unary plus operator.
+/**
+ * Retrieves the next token from the `tokenStream` and converts it to a number.
+ * @returns {number} The numeric value of the next token.
  */
-function obtainNumber() {
-    return +parsedTokens[tokenPointer++];
-}
-
-// Function to get the next string token directly.
-function obtainString() {
-    return parsedTokens[tokenPointer++];
+function readNextInteger() {
+  return +tokenStream[tokenPointer++];
 }
 
 /**
- * Retrieves the subsequent token and casts it to a BigInt.
- * This is useful for handling integer values beyond the standard Number type's safe range.
+ * Retrieves the next token from the `tokenStream` as a string.
+ * @returns {string} The string value of the next token.
  */
-function obtainLargeInt() {
-    return BigInt(parsedTokens[tokenPointer++]);
+function readNextString() {
+  return tokenStream[tokenPointer++];
 }
 
-/*
- * Fetches a specified 'count' of tokens from the input.
- * If 'isStringArray' is true, the tokens are returned as strings;
- * otherwise, they are mapped to numbers.
+/**
+ * Retrieves the next token from the `tokenStream` and converts it to a BigInt.
+ * @returns {BigInt} The BigInt value of the next token.
  */
-function obtainMultipleValues(count, isStringArray) {
-    if (isStringArray) {
-        return parsedTokens.slice(tokenPointer, (tokenPointer += count));
-    } else {
-        return parsedTokens.slice(tokenPointer, (tokenPointer += count)).map(item => +item);
-    }
+function readNextBigInt() {
+  return BigInt(tokenStream[tokenPointer++]);
 }
 
-// Reads a 2D matrix of dimensions 'rows' x 'columns' from the token stream.
-// 'isStrMatrix' dictates if elements are kept as strings or converted to numbers.
-function obtainMatrix(rows, columns, isStrMatrix) {
-    let resultGrid = [];
-    let currentRow = 0;
-    while (currentRow < rows) {
-        if (isStrMatrix) {
-            resultGrid.push(parsedTokens.slice(tokenPointer, (tokenPointer += columns)));
-        } else {
-            resultGrid.push(parsedTokens.slice(tokenPointer, (tokenPointer += columns)).map(val => +val));
-        }
-        currentRow++;
-    }
-    return resultGrid;
-}
-
-// Utility to create a multi-dimensional array dynamically.
-// The dimensions are passed as subsequent arguments after the 'initialValue'.
-function buildMultiArray(initialValue) {
-    var functionArguments = arguments,
-        argumentCount = functionArguments.length,
-        arrayCreationCode = "Array(functionArguments[" + --argumentCount + "]).fill().map(element => { return " + initialValue + "; })";
-    while (--argumentCount) {
-        arrayCreationCode = "Array(functionArguments[" + argumentCount + "]).fill().map(element => " + arrayCreationCode + ")";
-    }
-    return eval(arrayCreationCode);
-}
-
-
-// --- Main Program Execution ---
-var executionResult = performCalculation(); // Execute the core logic.
-if (executionResult !== undefined) {
-    console.log(String(executionResult)); // Output the result if not null or undefined.
-}
-
-
-// The central function containing the problem-solving algorithm (BFS for shortest path).
-function performCalculation() {
-  const maximumValue = 1_000_000_000; // Represents an unreachable distance (infinity).
-  const deltaCoordsX = [0, 1, 0, -1]; // Array for changes in X-coordinate (right, down, left, up).
-  const deltaCoordsY = [-1, 0, 1, 0]; // Array for changes in Y-coordinate (up, right, down, left).
-  const totalDirections = 4; // Total number of cardinal directions for movement.
-
-  // Read grid dimensions (height, width) and maximum movement length 'k'.
-  var [gridRows, gridCols, maxMoveLength] = obtainMultipleValues(3);
-  // Read starting (sy, sx) and ending (gy, gx) coordinates.
-  var [startYPos, startXPos, endYPos, endXPos] = obtainMultipleValues(4);
-
-  // Construct the map layout with an extra border of obstacles around it.
-  var mapLayout = Array(gridRows + 2);
-  mapLayout[0] = buildMultiArray("'#'", gridCols + 2).join(""); // Top boundary row.
-  for (let rowIterator = 0; rowIterator < gridRows; rowIterator++) {
-    mapLayout[rowIterator + 1] = "#" + obtainString() + "#"; // Map rows with left/right boundaries.
+/**
+ * Reads a specified number of tokens from the `tokenStream` and returns them as an array.
+ * Optionally converts tokens to numbers.
+ * @param {number} count - The number of tokens to read.
+ * @param {boolean} [asStrings=false] - If true, tokens are returned as strings; otherwise, as numbers.
+ * @returns {Array<number|string>} An array containing the read tokens.
+ */
+function readArrayOfNumbers(count, asStrings) {
+  if (asStrings) {
+    return tokenStream.slice(tokenPointer, tokenPointer += count);
+  } else {
+    return tokenStream.slice(tokenPointer, tokenPointer += count).map(item => +item);
   }
-  mapLayout[gridRows + 1] = buildMultiArray("'#'", gridCols + 2).join(""); // Bottom boundary row.
+}
 
-  // Initialize a 2D array to store minimum distances, all set to maximumValue initially.
-  var distanceRecord = buildMultiArray(maximumValue, gridRows + 2, gridCols + 2);
-  distanceRecord[startYPos][startXPos] = 0; // The distance to the starting point is zero.
+/**
+ * Reads a 2D matrix of tokens from the `tokenStream`.
+ * @param {number} rows - The number of rows in the matrix.
+ * @param {number} cols - The number of columns in each row.
+ * @param {boolean} [asStrings=false] - If true, matrix elements are strings; otherwise, numbers.
+ * @returns {Array<Array<number|string>>} The 2D matrix.
+ */
+function readMatrix(rows, cols, asStrings) {
+  var matrixData = [];
+  var rowIndex = 0;
+  if (asStrings) {
+    for (; rowIndex < rows; rowIndex++) {
+      matrixData.push(tokenStream.slice(tokenPointer, tokenPointer += cols));
+    }
+  } else {
+    for (; rowIndex < rows; rowIndex++) {
+      matrixData.push(tokenStream.slice(tokenPointer, tokenPointer += cols).map(element => +element));
+    }
+  }
+  return matrixData;
+}
 
-  // Initialize the BFS queue with the starting coordinates and the current path distance.
-  var currentLevelQueue = [startYPos, startXPos];
-  var currentPathDistance = 0;
+/**
+ * Dynamically creates a multi-dimensional array initialized with a given value.
+ * The dimensions are provided as subsequent arguments after the initial value.
+ * @param {*} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension of the array.
+ * @returns {Array} The newly created multi-dimensional array.
+ */
+function createNDArray(initialValue) {
+  var dimensions = arguments;
+  var dimCount = dimensions.length;
+  // Constructs a string representation of array creation logic, starting from the innermost dimension.
+  var arrayGenString = "Array(dimensions[" + --dimCount + "]).fill().map(_ => { return " + initialValue + "; })";
+  // Wraps the string with outer array creation logic for remaining dimensions.
+  while (--dimCount) {
+    arrayGenString = "Array(dimensions[" + dimCount + "]).fill().map(_ => " + arrayGenString + ")";
+  }
+  // Executes the constructed string as JavaScript code to create the array.
+  return eval(arrayGenString);
+}
 
-  // Begin the Breadth-First Search process.
-  while (currentLevelQueue.length > 0) {
-    var nextLevelQueue = []; // This queue will hold nodes for the next distance level.
+// Calls the main program logic function.
+var finalResult = executeProgram();
 
-    // Process all nodes currently in the 'currentLevelQueue'.
-    while (currentLevelQueue.length > 0) {
-      var currentXCoord = currentLevelQueue.pop(); // Get X-coordinate from the queue.
-      var currentYCoord = currentLevelQueue.pop(); // Get Y-coordinate from the queue.
+// If the program returns a value, it is converted to a string and printed to the console.
+if (finalResult !== undefined) {
+  console.log(String(finalResult));
+}
 
-      // Iterate through all possible movement directions.
-      for (var directionIndex = 0; directionIndex < totalDirections; directionIndex++) {
-        var nextXCoord = currentXCoord; // Temporary X for exploring steps.
-        var nextYCoord = currentYCoord; // Temporary Y for exploring steps.
+/**
+ * Contains the core algorithm for solving the problem, which is a BFS on a grid.
+ * @returns {number} The minimum number of steps required to reach the target, or -1 if unreachable.
+ */
+function executeProgram() {
+  // A large constant representing an unreachable distance.
+  const maxDistanceValue = 1e9;
+  // Arrays defining movement in X and Y directions (Up, Right, Down, Left).
+  const deltaX = [0, 1, 0, -1];
+  const deltaY = [-1, 0, 1, 0];
+  const directionCount = 4; // Number of possible directions.
 
-        // For each direction, move up to 'maxMoveLength' steps.
-        for (var stepCounter = 0; stepCounter < maxMoveLength; stepCounter++) {
-          nextXCoord += deltaCoordsX[directionIndex]; // Update X-coordinate.
-          nextYCoord += deltaCoordsY[directionIndex]; // Update Y-coordinate.
+  // Reads grid dimensions (height, width) and maximum movement steps per turn.
+  var [gridHeight, gridWidth, maxSteps] = readArrayOfNumbers(3);
+  // Reads starting and target coordinates (row, column).
+  var [startRow, startCol, targetRow, targetCol] = readArrayOfNumbers(4);
 
-          // If the next cell is an obstacle ('#'), cannot move further in this direction.
-          if (mapLayout[nextYCoord][nextXCoord] === "#") {
+  // Initializes the grid map with padding to simplify boundary checks.
+  var mapLayout = Array(gridHeight + 2);
+  // Creates the top border row filled with '@' characters.
+  mapLayout[0] = createNDArray("'@'", gridWidth + 2).join("");
+  // Fills the inner rows, adding '@' borders to the left and right.
+  for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    mapLayout[rowIdx + 1] = "@" + readNextString() + "@";
+  }
+  // Creates the bottom border row.
+  mapLayout[gridHeight + 1] = createNDArray("'@'", gridWidth + 2).join("");
+
+  // Initializes a 2D array to store the minimum distance to each cell, filled with `maxDistanceValue`.
+  var distanceMap = createNDArray(maxDistanceValue, gridHeight + 2, gridWidth + 2);
+  // The distance to the starting cell is 0.
+  distanceMap[startRow][startCol] = 0;
+
+  // `currentLevelQueue` stores coordinates [row, col] for cells to visit at the current distance level.
+  var currentLevelQueue = [startRow, startCol];
+  // `currentLevelDist` tracks the current distance from the start.
+  var currentLevelDist = 0;
+
+  // Main BFS loop: continues as long as there are cells to process.
+  while (currentLevelQueue.length) {
+    var nextLevelQueue = []; // Stores cells to visit in the next distance level.
+
+    // Processes all cells at the current distance level.
+    while (currentLevelQueue.length) {
+      var currentCol = currentLevelQueue.pop(); // Retrieves column (LIFO order from push).
+      var currentRow = currentLevelQueue.pop(); // Retrieves row.
+
+      // Iterates through all four possible directions.
+      for (var dirIdx = 0; dirIdx < directionCount; dirIdx++) {
+        var nextCol = currentCol;
+        var nextRow = currentRow;
+
+        // Attempts to move up to `maxSteps` in the current direction.
+        for (var stepIdx = 0; stepIdx < maxSteps; stepIdx++) {
+          nextCol += deltaX[dirIdx];
+          nextRow += deltaY[dirIdx];
+
+          // If an obstacle ('@') is encountered, movement in this direction stops.
+          if (mapLayout[nextRow][nextCol] === "@") {
             break;
           }
-          // If a path of equal or shorter length to this cell was already found,
-          // then this path is not an improvement for future steps, so break.
-          if (distanceRecord[nextYCoord][nextXCoord] <= currentPathDistance) {
+          // If a path to this cell with an equal or shorter distance has already been found,
+          // further movement in this direction from the current cell is not beneficial.
+          if (distanceMap[nextRow][nextCol] <= currentLevelDist) {
             break;
           }
-          // If a new, shorter path to 'nextYCoord, nextXCoord' is found (currentPathDistance + 1).
-          if (distanceRecord[nextYCoord][nextXCoord] > currentPathDistance + 1) {
-            nextLevelQueue.push(nextYCoord, nextXCoord); // Add this cell to the next layer's queue.
-            distanceRecord[nextYCoord][nextXCoord] = currentPathDistance + 1; // Update its shortest distance.
+          // If a longer path to this cell was previously recorded, update it and add to `nextLevelQueue`.
+          if (distanceMap[nextRow][nextCol] > currentLevelDist + 1) {
+            nextLevelQueue.push(nextRow, nextCol);
+            distanceMap[nextRow][nextCol] = currentLevelDist + 1;
           }
         }
       }
     }
-    currentLevelQueue = nextLevelQueue; // Advance to the next layer of nodes.
-    currentPathDistance++; // Increment the path distance level.
+    // Moves to the next level: `currentLevelQueue` becomes `nextLevelQueue`, and distance increments.
+    currentLevelQueue = nextLevelQueue;
+    currentLevelDist++;
   }
 
-  // After BFS, return the shortest distance to the goal, or -1 if it's unreachable.
-  return distanceRecord[endYPos][endXPos] === maximumValue ? -1 : distanceRecord[endYPos][endXPos];
+  // Returns the minimum distance to the target cell. If it's still `maxDistanceValue`, the target is unreachable (-1).
+  return distanceMap[targetRow][targetCol] === maxDistanceValue ? -1 : distanceMap[targetRow][targetCol];
 }

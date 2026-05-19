@@ -1,109 +1,80 @@
-const fsModule = require('node:fs');
-const internalBufferSize = 1024;
-const dataBuffer = Buffer.alloc(internalBufferSize);
-let actualBytesRead = 0;
-let fileHandle = 0;
-
-try {
-    fileHandle = fsModule.openSync('/dev/stdin', 'r');
-} catch (error) {
-    // If /dev/stdin is not available (e.g., Windows), fall back to FD 0
-    fileHandle = 0;
-}
-
-let completeInputString = '';
-let currentReadSize;
-while ((currentReadSize = fsModule.readSync(fileHandle, dataBuffer, 0, internalBufferSize, null)) !== 0) {
-    completeInputString += dataBuffer.toString('utf8', 0, currentReadSize);
-    if (currentReadSize < internalBufferSize) break;
-}
-if (fileHandle !== 0) {
-    fsModule.closeSync(fileHandle);
-}
-
-const inputLines = completeInputString.split(/\r?\n/);
-const targetLine = inputLines[1];
-
-const structuredElements = [];
-const tokenPattern = /\S+/g;
-let tokenMatch;
-while ((tokenMatch = tokenPattern.exec(targetLine)) !== null) {
-    const originalTokenString = tokenMatch[0];
-    const numericalValue = parseInt(originalTokenString[1], 10);
-    structuredElements.push([numericalValue, originalTokenString]);
-}
-
-const processSequenceA = (sourceCollection) => {
-    const workingCollection = [...sourceCollection];
-    const collectionLength = workingCollection.length;
-
-    for (let passIndex = 0; passIndex < collectionLength - 1; passIndex++) {
-        for (let comparisonIndex = 0; comparisonIndex < collectionLength - 1 - passIndex; comparisonIndex++) {
-            const currentEntry = workingCollection[comparisonIndex];
-            const nextEntry = workingCollection[comparisonIndex + 1];
-
-            if (currentEntry[0] > nextEntry[0]) {
-                workingCollection[comparisonIndex] = nextEntry;
-                workingCollection[comparisonIndex + 1] = currentEntry;
-            }
-        }
-    }
-    return workingCollection;
+const sourceConfig = {
+    sourcePath: '/dev/stdin',
+    lineSeparator: '\n'
 };
 
-const processSequenceB = (sourceCollection) => {
-    const workingCollection = [...sourceCollection];
-    const collectionLength = workingCollection.length;
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync(sourceConfig.sourcePath, 'utf-8');
+const inputSegments = rawInputContent.split(sourceConfig.lineSeparator);
 
-    for (let currentPosition = 0; currentPosition < collectionLength - 1; currentPosition++) {
-        let minimalElementPosition = currentPosition;
-
-        for (let scanPosition = currentPosition + 1; scanPosition < collectionLength; scanPosition++) {
-            if (workingCollection[scanPosition][0] < workingCollection[minimalElementPosition][0]) {
-                minimalElementPosition = scanPosition;
-            }
-        }
-
-        if (minimalElementPosition !== currentPosition) {
-            const elementToMove = workingCollection[minimalElementPosition];
-            workingCollection.splice(minimalElementPosition, 1);
-            workingCollection.splice(currentPosition, 0, elementToMove);
-        }
-    }
-    return workingCollection;
+const parseInputEntries = (entryLine) => {
+    return entryLine.split(' ').map(itemString => ({
+        numericVal: Number.parseInt(itemString[1], 10),
+        originalStr: itemString
+    }));
 };
 
-const compareCollections = (firstList, secondList) => {
-    if (firstList.length !== secondList.length) {
+const initialDataSet = parseInputEntries(inputSegments[1]);
+
+const performInsertionSort = (collection) => {
+    const mutableCollection = [...collection];
+    for (let currentIdx = 1; currentIdx < mutableCollection.length; currentIdx++) {
+        let elementToInsert = mutableCollection[currentIdx];
+        let comparisonIdx = currentIdx - 1;
+
+        while (comparisonIdx >= 0 && mutableCollection[comparisonIdx].numericVal > elementToInsert.numericVal) {
+            mutableCollection[comparisonIdx + 1] = mutableCollection[comparisonIdx];
+            comparisonIdx--;
+        }
+        mutableCollection[comparisonIdx + 1] = elementToInsert;
+    }
+    return mutableCollection;
+};
+
+const performQuickSort = (collection) => {
+    const recursiveSort = (arr, lowBound, highBound) => {
+        if (lowBound < highBound) {
+            const pivotPosition = partitionArray(arr, lowBound, highBound);
+            recursiveSort(arr, lowBound, pivotPosition - 1);
+            recursiveSort(arr, pivotPosition + 1, highBound);
+        }
+    };
+
+    const partitionArray = (arr, lowBound, highBound) => {
+        const pivotElement = arr[highBound];
+        let swapIndex = lowBound - 1;
+
+        for (let currentIdx = lowBound; currentIdx < highBound; currentIdx++) {
+            if (arr[currentIdx].numericVal <= pivotElement.numericVal) {
+                swapIndex++;
+                [arr[swapIndex], arr[currentIdx]] = [arr[currentIdx], arr[swapIndex]];
+            }
+        }
+        [arr[swapIndex + 1], arr[highBound]] = [arr[highBound], arr[swapIndex + 1]];
+        return swapIndex + 1;
+    };
+
+    const dataCopy = [...collection];
+    recursiveSort(dataCopy, 0, dataCopy.length - 1);
+    return dataCopy;
+};
+
+const checkOrderEquivalence = (firstArr, secondArr) => {
+    if (firstArr.length !== secondArr.length) {
         return false;
     }
-    let matchResult = true;
-    let idx = 0;
-    while (idx < firstList.length) {
-        if (firstList[idx][1] !== secondList[idx][1]) {
-            matchResult = false;
-            break;
+    for (let index = 0; index < firstArr.length; index++) {
+        if (firstArr[index].originalStr !== secondArr[index].originalStr) {
+            return false;
         }
-        idx++;
     }
-    return matchResult;
+    return true;
 };
 
-const processedA = processSequenceA(structuredElements);
-const processedB = processSequenceB(structuredElements);
+const stableSortedResult = performInsertionSort(initialDataSet);
+const unstableSortedResult = performQuickSort(initialDataSet);
 
-const outputStringsA = [];
-for (const item of processedA) {
-    outputStringsA.push(item[1]);
-}
-process.stdout.write(outputStringsA.join(' ') + '\n');
-process.stdout.write('Stable\n');
-
-const outputStringsB = [];
-for (const item of processedB) {
-    outputStringsB.push(item[1]);
-}
-process.stdout.write(outputStringsB.join(' ') + '\n');
-
-const outcomeMessage = compareCollections(processedA, processedB) ? 'Stable' : 'Not stable';
-process.stdout.write(outcomeMessage + '\n');
+console.log(stableSortedResult.map(item => item.originalStr).join(' '));
+console.log('Stable');
+console.log(unstableSortedResult.map(item => item.originalStr).join(' '));
+console.log(checkOrderEquivalence(stableSortedResult, unstableSortedResult) ? 'Stable' : 'Not stable');

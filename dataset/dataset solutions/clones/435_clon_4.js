@@ -1,111 +1,109 @@
-let dataSource = '';
-
-function parseLineOfNumbers(lineText) {
-  return lineText.split(' ').map(Number);
-}
-
-function getValueFromNestedMap(outerMap, key1, key2, defaultValue = Number.MAX_SAFE_INTEGER) {
-  const innerMap = outerMap.get(key1);
-  return innerMap && innerMap.has(key2) ? innerMap.get(key2) : defaultValue;
-}
-
-function setValueInNestedMap(outerMap, key1, key2, value) {
-  if (!outerMap.has(key1)) {
-    outerMap.set(key1, new Map());
-  }
-  outerMap.get(key1).set(key2, value);
-}
-
-function commenceProcessing(inputLines) {
-  let lineIndex = 0;
-
-  const readNextLine = () => inputLines[lineIndex++];
-
-  const handleTestCase = () => {
-    const dimensions = parseLineOfNumbers(readNextLine());
-    const numberOfEdges = dimensions[0];
-    const totalNodes = dimensions[1];
-
-    if (numberOfEdges === 0 && totalNodes === 0) {
-      return;
+class PathNetwork {
+    constructor(nodeCount) {
+        this.pathData = new Map(); // Map<fromNode, Map<toNode, { cost, time }>>
+        this.nodeCount = nodeCount;
+        this.infinityValue = 1e9;
+        this.initializeNetwork();
     }
 
-    const pathCostsCollection = new Map();
-    const pathTimesCollection = new Map();
-
-    for (let nodeIdx = 1; nodeIdx <= totalNodes; ++nodeIdx) {
-      setValueInNestedMap(pathCostsCollection, nodeIdx, nodeIdx, 0);
-      setValueInNestedMap(pathTimesCollection, nodeIdx, nodeIdx, 0);
+    initializeNetwork() {
+        for (let currentOrigin = 1; currentOrigin <= this.nodeCount; currentOrigin++) {
+            this.pathData.set(currentOrigin, new Map());
+            for (let currentDestination = 1; currentDestination <= this.nodeCount; currentDestination++) {
+                if (currentOrigin === currentDestination) {
+                    this.pathData.get(currentOrigin).set(currentDestination, { cost: 0, time: 0 });
+                } else {
+                    this.pathData.get(currentOrigin).set(currentDestination, { cost: this.infinityValue, time: this.infinityValue });
+                }
+            }
+        }
     }
 
-    for (let edgeCounter = 0; edgeCounter < numberOfEdges; ++edgeCounter) {
-      const edgeDetails = parseLineOfNumbers(readNextLine());
-      const originNode = edgeDetails[0];
-      const targetNode = edgeDetails[1];
-      const edgeCost = edgeDetails[2];
-      const edgeTime = edgeDetails[3];
-
-      const currentMinCost = getValueFromNestedMap(pathCostsCollection, originNode, targetNode);
-      setValueInNestedMap(pathCostsCollection, originNode, targetNode, Math.min(currentMinCost, edgeCost));
-      setValueInNestedMap(pathCostsCollection, targetNode, originNode, Math.min(currentMinCost, edgeCost));
-
-      const currentMinTime = getValueFromNestedMap(pathTimesCollection, originNode, targetNode);
-      setValueInNestedMap(pathTimesCollection, originNode, targetNode, Math.min(currentMinTime, edgeTime));
-      setValueInNestedMap(pathTimesCollection, targetNode, originNode, Math.min(currentMinTime, edgeTime));
-    }
-
-    const allKnownNodes = Array.from({ length: totalNodes }, (_, idx) => idx + 1);
-
-    allKnownNodes.forEach(intermediatePoint => {
-      allKnownNodes.forEach(startingPoint => {
-        allKnownNodes.forEach(endingPoint => {
-          const currentPathCost = getValueFromNestedMap(pathCostsCollection, startingPoint, endingPoint);
-          const segment1Cost = getValueFromNestedMap(pathCostsCollection, startingPoint, intermediatePoint);
-          const segment2Cost = getValueFromNestedMap(pathCostsCollection, intermediatePoint, endingPoint);
-          const potentialNewCost = (segment1Cost === Number.MAX_SAFE_INTEGER || segment2Cost === Number.MAX_SAFE_INTEGER)
-                                   ? Number.MAX_SAFE_INTEGER
-                                   : segment1Cost + segment2Cost;
-          setValueInNestedMap(pathCostsCollection, startingPoint, endingPoint, Math.min(currentPathCost, potentialNewCost));
-
-          const currentPathTime = getValueFromNestedMap(pathTimesCollection, startingPoint, endingPoint);
-          const segment1Time = getValueFromNestedMap(pathTimesCollection, startingPoint, intermediatePoint);
-          const segment2Time = getValueFromNestedMap(pathTimesCollection, intermediatePoint, endingPoint);
-          const potentialNewTime = (segment1Time === Number.MAX_SAFE_INTEGER || segment2Time === Number.MAX_SAFE_INTEGER)
-                                   ? Number.MAX_SAFE_INTEGER
-                                   : segment1Time + segment2Time;
-          setValueInNestedMap(pathTimesCollection, startingPoint, endingPoint, Math.min(currentPathTime, potentialNewTime));
+    setDirectConnection(originNode, targetNode, connectionCost, connectionTime) {
+        const currentPath = this.retrievePath(originNode, targetNode);
+        this.pathData.get(originNode).set(targetNode, {
+            cost: Math.min(currentPath.cost, connectionCost),
+            time: Math.min(currentPath.time, connectionTime)
         });
-      });
-    });
-
-    const numberOfQueries = Number(readNextLine());
-    for (let queryCounter = 0; queryCounter < numberOfQueries; ++queryCounter) {
-      const queryDetails = parseLineOfNumbers(readNextLine());
-      const querySource = queryDetails[0];
-      const queryDestination = queryDetails[1];
-      const queryType = queryDetails[2];
-
-      const resultValue = queryType === 0
-        ? getValueFromNestedMap(pathCostsCollection, querySource, queryDestination)
-        : getValueFromNestedMap(pathTimesCollection, querySource, queryDestination);
-
-      console.log(resultValue);
     }
 
-    handleTestCase();
-  };
+    retrievePath(originNode, targetNode) {
+        const originMap = this.pathData.get(originNode);
+        if (!originMap) return { cost: this.infinityValue, time: this.infinityValue };
+        const pathDetails = originMap.get(targetNode);
+        if (!pathDetails) return { cost: this.infinityValue, time: this.infinityValue };
+        return pathDetails;
+    }
 
-  handleTestCase();
+    updatePathThroughIntermediate(originNode, targetNode, intermediateNode) {
+        const pathFromOriginToIntermediate = this.retrievePath(originNode, intermediateNode);
+        const pathFromIntermediateToTarget = this.retrievePath(intermediateNode, targetNode);
+        const currentPathFromOriginToTarget = this.retrievePath(originNode, targetNode);
+
+        const candidateCost = pathFromOriginToIntermediate.cost + pathFromIntermediateToTarget.cost;
+        const candidateTime = pathFromOriginToIntermediate.time + pathFromIntermediateToTarget.time;
+
+        const newOptimalCost = Math.min(currentPathFromOriginToTarget.cost, candidateCost);
+        const newOptimalTime = Math.min(currentPathFromOriginToTarget.time, candidateTime);
+
+        if (newOptimalCost !== currentPathFromOriginToTarget.cost || newOptimalTime !== currentPathFromOriginToTarget.time) {
+            this.pathData.get(originNode).set(targetNode, { cost: newOptimalCost, time: newOptimalTime });
+        }
+    }
 }
+
+function* createLineIterator(rawInputText) {
+    const lines = rawInputText.split('\n');
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+        const lineContent = lines[currentLineIndex++].trim();
+        if (lineContent === '') continue;
+        yield lineContent.split(' ').map(Number);
+    }
+}
+
+function solveGraphProblems(fullInputString) {
+    const lineReader = createLineIterator(fullInputString);
+    const metricTypeMap = new Map([[0, 'cost'], [1, 'time']]);
+
+    while (true) {
+        const [edgeQuantity, vertexQuantity] = lineReader.next().value;
+        if (edgeQuantity === 0 && vertexQuantity === 0) break;
+
+        const networkGraph = new PathNetwork(vertexQuantity);
+
+        for (let edgeIndex = 0; edgeIndex < edgeQuantity; edgeIndex++) {
+            const [nodeOne, nodeTwo, edgeWeight, edgeDuration] = lineReader.next().value;
+            networkGraph.setDirectConnection(nodeOne, nodeTwo, edgeWeight, edgeDuration);
+            networkGraph.setDirectConnection(nodeTwo, nodeOne, edgeWeight, edgeDuration); // Undirected
+        }
+
+        for (let pivotNode = 1; pivotNode <= vertexQuantity; pivotNode++) {
+            for (let sourceNode = 1; sourceNode <= vertexQuantity; sourceNode++) {
+                for (let destinationNode = 1; destinationNode <= vertexQuantity; destinationNode++) {
+                    networkGraph.updatePathThroughIntermediate(sourceNode, destinationNode, pivotNode);
+                }
+            }
+        }
+
+        const queryQuantity = lineReader.next().value[0];
+        for (let queryIndex = 0; queryIndex < queryQuantity; queryIndex++) {
+            const [queryStartVertex, queryEndVertex, queryMetricIdentifier] = lineReader.next().value;
+            const finalPath = networkGraph.retrievePath(queryStartVertex, queryEndVertex);
+            console.log(finalPath[metricTypeMap.get(queryMetricIdentifier)]);
+        }
+    }
+}
+
+let accumulatedInput = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', function(chunk) {
-  dataSource += chunk;
+  accumulatedInput += chunk;
 });
 process.stdin.on('end', function() {
-  const processedInputLines = dataSource.split('\n').filter(line => line.trim() !== '');
   const startTime = Date.now();
-  commenceProcessing(processedInputLines);
-  console.log('execution_duration: ' + (Date.now() - startTime));
+  solveGraphProblems(accumulatedInput);
+  console.log('time: ' + (Date.now() - startTime));
 });

@@ -1,47 +1,50 @@
 function ProcessInput(rawData) {
-  // Split the entire input string into an array of individual lines.
-  const linesArray = rawData.split("\n");
+  // Split the raw input string into an array of lines for easier processing.
+  rawData = rawData.split("\n");
 
-  /*
-   * Extract the first numeric value from the first line.
-   * This value represents the total number of elements.
-   */
-  const totalElements = Number.parseInt(linesArray[0].split(" ")[0], 10);
+  // Parse the first number from the first line, representing the count of elements.
+  const numElements = parseInt(rawData[0].split(" ")[0], 10);
+  // Parse the second number from the first line, representing the target value.
+  const targetValue = parseInt(rawData[0].split(" ")[1], 10);
 
-  // Retrieve the second numeric value from the initial line.
-  const targetValue = Number.parseInt(linesArray[0].split(" ")[1], 10);
+  // Process the second line to convert space-separated strings into an array of integers.
+  const numericData = rawData[1].split(" ").map((itemStr) => parseInt(itemStr, 10));
 
-  // Parse the second line into an array of integers.
-  const numericDataArray = linesArray[1].split(" ").map((itemString) => Number.parseInt(itemString, 10));
+  // Declare a variable for a total sum, though it's not used in the current logic.
+  var totalSum;
+  // Initialize a counter variable to track specific conditions.
+  var resultCounter = 0;
 
-  var totalSum; // Variable declared but not used in this specific implementation path.
-
-  var occurrenceCount = 0; // Initialize a counter for specific conditions.
-
-  // First iteration: check for direct matches.
-  for (var outerIndex = 0; outerIndex < totalElements; outerIndex++) {
-    if (targetValue === numericDataArray[outerIndex]) {
-      occurrenceCount++; // Increment if the target value is found.
+  // First loop: Iterate through each element of the numeric data array.
+  for (var idx1 = 0; idx1 < numElements; ++idx1) {
+    // Check if the current element matches the predefined target value.
+    if (targetValue === numericData[idx1]) {
+      // If a match is found, increment the result counter.
+      resultCounter++;
     }
   }
 
-  var averageValue; // Another variable declared but not utilized.
+  // Declare a variable for an average value, which is also not used in the current logic.
+  var averageVal;
 
-  // Nested loops for complex conditional checking.
-  for (var firstLoopVar = 0; firstLoopVar < totalElements; firstLoopVar++) {
-    for (var secondLoopVar = 0; secondLoopVar < totalElements; secondLoopVar++) {
-      for (var thirdLoopVar = 0; thirdLoopVar < totalElements; thirdLoopVar++) {
-        // This comment indicates a placeholder or a previously considered calculation.
-        // original_calculation[firstLoopVar][secondLoopVar + 1][thirdLoopVar] = (numericDataArray[thirdLoopVar] + numericDataArray[secondLoopVar]) * (firstLoopVar + 1);
-        if ((firstLoopVar + 2) * targetValue === (numericDataArray[thirdLoopVar] + numericDataArray[secondLoopVar]) * (firstLoopVar + 1)) {
-          occurrenceCount++; // Increment counter based on a complex arithmetic condition.
+  // Nested loops: Iterate through the numeric data array using three different indices.
+  for (var idx1 = 0; idx1 < numElements; idx1++) {
+    for (var idx2 = 0; idx2 < numElements; idx2++) {
+      for (var idx3 = 0; idx3 < numElements; idx3++) {
+        // This is a commented-out line from the original, indicating a potential calculation.
+        // sum[idx1][idx2 + 1][idx3] = (numericData[idx3] + numericData[idx2]) * (idx1 + 1);
+
+        // Check a complex arithmetic condition involving the indices, target value, and array elements.
+        if ((idx1 + 2) * targetValue === (numericData[idx3] + numericData[idx2]) * (idx1 + 1)) {
+          // If this specific condition is met, increment the result counter.
+          resultCounter++;
         }
       }
     }
   }
-  // Output the final tally.
-  console.log(occurrenceCount);
+  // Output the final calculated count to the console.
+  console.log(resultCounter);
 }
 
-// Read input from standard input and pass it to the main processing function.
-ProcessInput(global.require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input (e.g., a file or piped data) and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

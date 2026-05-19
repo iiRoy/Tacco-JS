@@ -1,22 +1,27 @@
-const ioHandler = require('readline').createInterface({
+var inputInterface = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-ioHandler.on('line', (inputString) => {
-  processData(inputString);
+inputInterface.on('line', function(currentLine) {
+  calculateResult(currentLine);
 });
 
-function processData(inputString) {
-  const numericalValues = inputString.split(' ').map(val => Number(val));
-  const primaryValue = numericalValues[0];
-  const secondaryValue = numericalValues[1];
+function calculateResult(dataString) {
+  const parsedValues = dataString.split(' ');
+  const mVal = parseInt(parsedValues[0]);
+  const dVal = parseInt(parsedValues[1]);
 
-  if (primaryValue <= 0 || primaryValue > 12 || secondaryValue <= 0 || secondaryValue > 31) {
-    console.log(0);
-    return;
+  let computedValue;
+
+  const mValid = mVal >= 1 && mVal <= 12;
+  const dValid = dVal >= 1 && dVal <= 31;
+
+  if (!mValid || !dValid) {
+    computedValue = 0;
+  } else {
+    computedValue = Math.min(mVal, dVal);
   }
 
-  const finalCalculation = Math.min(primaryValue, secondaryValue);
-  console.log(finalCalculation);
+  console.log(computedValue);
 }

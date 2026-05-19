@@ -1,75 +1,71 @@
-function ProcessGraphQueries( inputContent ) {
-  // Split the entire input string into an array of individual lines.
-  inputContent = inputContent.split("\n");
+function ProcessInput(inputString) {
+  // Split the entire input string into an array of lines
+  inputString = inputString.split(String.fromCharCode(10));
 
-  // Parse the first line to extract graph dimensions: vertex count, edge count, and query count.
-  let graphParameters = inputContent[0].split(" ").map(entry => Number(entry));
-  let connectionCount = graphParameters[1];
-  let requestCount = graphParameters[2];
-  let vertexCount = graphParameters[0];
+  // Parse the first line to get N, M, and Q values
+  // N: number of nodes, M: number of edges, Q: number of queries
+  let dimensions = inputString[0].split(" ").map(val => +val);
+  let numEdges = dimensions[1];
+  let numQueries = dimensions[2];
+  let numNodes = dimensions[0];
 
-  // Initialize an adjacency list for the graph. It's an array of arrays.
-  // Each inner array will store the vertices connected to the index vertex.
-  let adjacencyLists = Array(vertexCount + 1).fill(0).map( _ => [] );
+  // Initialize an adjacency list for the graph
+  // 'adjList' will store outgoing edges for each node
+  let adjList = Array(numNodes + 1).fill(0).map(() => []);
 
-  // Populate the adjacency list by processing each connection (edge).
-  // Connections start from the second line (index 1) of the input.
-  for (let loopIndex = 0; loopIndex < connectionCount; loopIndex++) {
-    let connectionDetails = inputContent[loopIndex + 1].split(" ").map(component => Number(component));
-    adjacencyLists[connectionDetails[0]].push(connectionDetails[1]);
+  // Populate the adjacency list with edges
+  // Loop 'numEdges' times to read edge data from subsequent lines
+  for (let idx = 0; idx < numEdges; idx++) {
+    let edgeData = inputString[idx + 1].split(" ").map(val => +val);
+    // Add the destination node to the source node's list
+    adjList[edgeData[0]].push(edgeData[1]);
   }
 
-  // Sort each adjacency list to facilitate binary search later.
-  for (let loopIndex = 1; loopIndex <= vertexCount; loopIndex++) {
-    adjacencyLists[loopIndex].sort((firstElement, secondElement) => firstElement - secondElement);
+  // Sort each adjacency list to enable efficient searching (e.g., findUpperBound)
+  for (let idx = 1; idx <= numNodes; idx++) {
+    adjList[idx].sort((valA, valB) => valA - valB);
   }
 
-  // Initialize an array to store the results of each query.
-  let queryOutcomes = [];
+  // Array to store the results of each query
+  let results = [];
 
-  // Process each query. Queries start after the connection lines.
-  for (let loopIndex = 0; loopIndex < requestCount; loopIndex++) {
-    let queryBounds = inputContent[loopIndex + connectionCount + 1].split(" ").map(value => Number(value));
-    let currentSum = 0;
+  // Process each query
+  for (let idx = 0; idx < numQueries; idx++) {
+    // Parse the query range (start and end nodes for the query)
+    let queryRange = inputString[idx + numEdges + 1].split(" ").map(val => +val);
+    let currentCount = 0; // Initialize counter for the current query
 
-    // Iterate through the range of vertices specified by the current query.
-    for (let currentVertex = queryBounds[0]; currentVertex <= queryBounds[1]; currentVertex++) {
-      // For each vertex, find how many of its neighbors are within the query's upper bound.
-      currentSum += findInsertionPoint(
-        adjacencyLists[currentVertex],
-        0,
-        adjacencyLists[currentVertex].length,
-        queryBounds[1]
-      );
+    // Iterate through the nodes within the query range [queryRange[0], queryRange[1]]
+    for (let nodeIdx = queryRange[0]; nodeIdx <= queryRange[1]; nodeIdx++) {
+      // For each node, find how many of its outgoing edges
+      // point to a node within the query range (i.e., <= queryRange[1])
+      currentCount += findUpperBound(adjList[nodeIdx], 0, adjList[nodeIdx].length, queryRange[1]);
     }
-    // Store the calculated sum for the current query.
-    queryOutcomes[loopIndex] = currentSum;
+    // Store the total count for the current query
+    results[idx] = currentCount;
   }
 
-  // Output all query results, each on a new line.
-  console.log(queryOutcomes.join("\n"));
+  // Output all query results, each on a new line
+  console.log(results.join(String.fromCharCode(10)));
 }
 
-
-// Implements an upper_bound-like binary search.
-// It returns the count of elements less than or equal to 'searchValue' in 'sortedArray'.
-// This is equivalent to returning the index where 'searchValue' would be inserted
-// to maintain sorted order, assuming elements equal to 'searchValue' should come before it.
-function findInsertionPoint( sortedArray, lowBoundary, highBoundary, searchValue ) {
-  for (
-    let midPoint;
-    1 < highBoundary - lowBoundary;
-  ) {
-    midPoint = 0 | (lowBoundary + highBoundary) / 2;
-    if (sortedArray[midPoint] <= searchValue) {
-      lowBoundary = midPoint;
+// Helper function to find the upper bound of a target value in a sorted array
+// Returns the count of elements less than or equal to the target value
+function findUpperBound(dataArray, startIndex, endIndex, targetValue) {
+  let midIndex;
+  // Binary search loop: continues as long as there are at least two elements to check
+  while (1.0 < endIndex - startIndex) {
+    midIndex = 0 | ((startIndex + endIndex) / 2.0); // Calculate middle index, using bitwise OR 0 for floor
+    if (dataArray[midIndex] <= targetValue) {
+      startIndex = midIndex; // If element at mid is <= target, search in the upper half (including mid)
     } else {
-      highBoundary = midPoint;
+      endIndex = midIndex; // Otherwise, search in the lower half (excluding mid)
     }
   }
-  return sortedArray[lowBoundary] <= searchValue ? highBoundary : lowBoundary;
+  // After the loop, startIndex and endIndex are adjacent or the same.
+  // Check if the element at startIndex is <= targetValue to determine the final count.
+  return dataArray[startIndex] <= targetValue ? endIndex : startIndex;
 }
 
-
-// Read input from stdin and pass it to the main processing function.
-ProcessGraphQueries( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

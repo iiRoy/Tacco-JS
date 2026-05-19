@@ -1,23 +1,26 @@
-function AnalyzeCoordinates(rawData) {
-  const parsedLines = rawData.split('\n');
+function processInputData(rawData) {
+  const inputLines = rawData.split('\n');
 
-  const boundaryInformation = parsedLines[0].split(' ');
-  const maximumSquaredDistance = parseFloat(boundaryInformation[1]) * parseFloat(boundaryInformation[1]);
+  const [_, distanceLimitString] = inputLines[0].split(' ');
+  const squaredDistanceThreshold = Number(distanceLimitString) ** 2;
 
-  const coordinateSets = parsedLines.slice(1);
+  const pointsData = inputLines.slice(1);
 
-  const eligibleCount = coordinateSets.filter(lineEntry => {
-    if (lineEntry.trim() === '') {
+  const qualifyingPointCount = pointsData.filter(currentLine => {
+    if (!currentLine.trim()) {
       return false;
     }
-    const values = lineEntry.split(' ');
-    const xCoordinate = parseFloat(values[0]);
-    const yCoordinate = parseFloat(values[1]);
 
-    return (xCoordinate * xCoordinate + yCoordinate * yCoordinate) <= maximumSquaredDistance;
+    const [xCoordinateString, yCoordinateString] = currentLine.split(' ');
+    const xValue = Number(xCoordinateString);
+    const yValue = Number(yCoordinateString);
+
+    const currentDistanceSquared = (xValue ** 2) + (yValue ** 2);
+
+    return currentDistanceSquared <= squaredDistanceThreshold;
   }).length;
 
-  console.log(eligibleCount);
+  console.log(qualifyingPointCount);
 }
 
-AnalyzeCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,10 +1,12 @@
-const sourceOfText = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const transformCharacter = (charUnit) => {
-    const isAnUppercaseAlphabet = /[A-Z]/.test(charUnit);
-    return isAnUppercaseAlphabet ? charUnit.toLowerCase() : charUnit.toUpperCase();
-};
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const processedContent = sourceOfText.split('').map(transformCharacter).join('');
+const transformedSegments = Array.from(rawInputData).map(charUnit => {
+  const isUppercaseAlpha = /[A-Z]/.test(charUnit);
+  return isUppercaseAlpha ? charUnit.toLowerCase() : charUnit.toUpperCase();
+});
 
-console.log(processedContent.trim());
+const finalProcessedString = transformedSegments.join('').trim();
+
+console.log(finalProcessedString);

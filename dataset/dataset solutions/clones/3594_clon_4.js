@@ -1,30 +1,24 @@
-const retrieveCentralValue = (collection) => {
-    if (!collection || collection.length === 0) return undefined;
-    const sortedCollection = [...collection].sort((alpha, beta) => {
-        const stringAlpha = String(alpha);
-        const stringBeta = String(beta);
-        return stringAlpha.localeCompare(stringBeta);
-    });
-    const midPointIndex = (sortedCollection.length / 2) >>> 0;
-    return sortedCollection[midPointIndex];
-};
+function computeCentralValue(sequence) {
+  const sortedElements = [...sequence].sort((valA, valB) => valA.localeCompare(valB));
+  const midPointIndex = Math.floor(sortedElements.length / 2);
+  return sortedElements[midPointIndex];
+}
 
-const processInputData = (rawInputContent) => {
-    const contentLines = rawInputContent.split("\n");
-    const elementCount = parseInt(contentLines[0], 10);
-    const sourceElements = contentLines[1].split(" ");
+function ProcessInput(rawData) {
+  const inputLines = rawData.split('\n');
+  const elementCount = Number.parseInt(inputLines[0]);
+  const sourceElements = inputLines[1].split(' ');
 
-    const relevantElements = sourceElements.slice(0, elementCount);
+  const allSubsequences = Array.from({ length: elementCount }, (_, startPosition) =>
+    Array.from({ length: elementCount - startPosition }, (_, lengthOffset) => {
+      const endPosition = startPosition + 1 + lengthOffset;
+      return sourceElements.slice(startPosition, endPosition);
+    })
+  ).flat();
 
-    const generatedCentralValues = Array.from({ length: relevantElements.length }, (_, startIdx) => {
-        return Array.from({ length: relevantElements.length - startIdx }, (_, lengthIdx) => {
-            const endIdx = startIdx + lengthIdx + 1;
-            const segment = relevantElements.slice(startIdx, endIdx);
-            return retrieveCentralValue(segment);
-        });
-    }).flat();
+  const derivedCentralValues = allSubsequences.map(computeCentralValue);
 
-    console.log(retrieveCentralValue(generatedCentralValues));
-};
+  console.log(computeCentralValue(derivedCentralValues));
+}
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

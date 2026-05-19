@@ -1,34 +1,26 @@
-import java.util.Scanner;
+const inputReader = require('readline');
 
-public  class  NumericComparisonUtility  {
+const interfaceHandler = inputReader.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-  public static void  evaluateNumbers ( String [ ]  cliArguments )
-  {
-    // Establish an input reader to obtain data from the standard system input
-    Scanner  sourceReader  =  new  java.util.Scanner ( System.in ) ;
+async function executeComparison() {
+    let inputOne = await new Promise(resolver => interfaceHandler.question('', resolver));
+    let numOne = parseInt(inputOne, 10);
 
-    // Retrieve the initial numerical value from the user input
-    long  firstOperand  =  sourceReader.nextLong ( ) ;
+    let inputTwo = await new Promise(resolver => interfaceHandler.question('', resolver));
+    let numTwo = parseInt(inputTwo, 10);
 
-    // Obtain the subsequent numerical value from the user input
-    long  secondOperand  =  sourceReader.nextLong ( ) ;
-
-    // Perform a comparative analysis of the two received values
-    if ( firstOperand  <  secondOperand )
-    {
-      // Display a message indicating the first value is strictly smaller
-      System.out.println ( "The first value is less than the second." ) ;
+    if (numOne < numTwo) {
+        console.log("a < b");
+    } else if (numOne > numTwo) {
+        console.log("a > b");
+    } else {
+        console.log("a = b");
     }
-    else  if ( firstOperand  >  secondOperand )
-    {
-      // Display a message indicating the first value is strictly larger
-      System.out.println ( "The first value is greater than the second." ) ;
-    }
-    else
-    {
-      // Display a message indicating both values are identical
-      System.out.println ( "The first value is equal to the second." ) ;
-    }
-  }
 
+    interfaceHandler.close();
 }
+
+executeComparison();

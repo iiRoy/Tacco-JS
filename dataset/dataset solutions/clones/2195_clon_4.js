@@ -1,20 +1,24 @@
-const documentStream = require("fs").readFileSync("/dev/stdin", "utf8");
-const documentLines = documentStream.trim().split('\n');
+function processInput(rawData) {
+    const dataLines = rawData.split("\n");
 
-const dimensions = documentLines[0].split(' ').map(Number);
-const numericalValues = documentLines[1].split(' ').map(Number);
+    const parameterTokens = dataLines[0].split(" ");
+    const entityCount = Number(parameterTokens[0]);
+    const removalCount = Number(parameterTokens[1]);
 
-const itemCount = dimensions[0];
-const removalCount = dimensions[1];
+    if (entityCount <= removalCount) {
+        console.log('0');
+    } else {
+        const itemValues = dataLines[1].split(" ").map(Number);
 
-if (itemCount <= removalCount) {
-    console.log(0);
-} else {
-    const sortedValues = numericalValues.slice().sort((valueA, valueB) => valueA - valueB);
-    
-    const remainingElementsCount = itemCount - removalCount + 1;
+        itemValues.sort((firstElement, secondElement) => firstElement - secondElement);
 
-    const aggregateSum = sortedValues.slice(0, remainingElementsCount).reduce((runningTotal, currentElement) => runningTotal + currentElement, 0);
-    
-    console.log(aggregateSum);
+        const elementsToSumCount = entityCount - (removalCount - 1);
+
+        const finalSum = itemValues.slice(0, elementsToSumCount)
+                                   .reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+        console.log(finalSum);
+    }
 }
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

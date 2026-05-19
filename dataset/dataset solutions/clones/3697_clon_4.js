@@ -1,22 +1,28 @@
-// A utility to determine the span of numerical values
-function determineValueSpan(collectionOfNumbers) {
-  const maximalElement = Math.max(...collectionOfNumbers)
-  const minimalElement = Math.min(...collectionOfNumbers)
-  return maximalElement - minimalElement
+function f(valueCollection) {
+  if (valueCollection.length === 0) {
+    return NaN;
+  }
+
+  const extremeValues = valueCollection.reduce(
+    (accumulator, currentElement) => ({
+      minimum: Math.min(accumulator.minimum, currentElement),
+      maximum: Math.max(accumulator.maximum, currentElement),
+    }),
+    { minimum: Infinity, maximum: -Infinity }
+  );
+
+  return extremeValues.maximum - extremeValues.minimum;
 }
 
 module.exports = {
-  determineValueSpan,
+  f,
+};
+
+function ProcessInput(rawInput) {
+  const inputSegments = rawInput.split("\n");
+  const numericData = inputSegments[1].split(" ").map((str) => parseInt(str, 10));
+
+  console.log(f(numericData));
 }
 
-function InitiateProcessing(sourceData) {
-  const contentLines = sourceData.split("\n")
-  // const count = parseInt(contentLines[0], 10)
-  const numericalArray = contentLines[1].split(" ").map((numericString) => parseInt(numericString, 10))
-
-  console.log(determineValueSpan(numericalArray))
-}
-
-if (typeof require !== 'undefined' && require.main === module) {
-  InitiateProcessing(require("fs").readFileSync("/dev/stdin", "utf8"))
-}
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

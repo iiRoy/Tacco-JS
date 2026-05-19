@@ -1,77 +1,68 @@
-// This function processes a multi-line string into an array of individual components.
-function extractElements ( sourceString ) {
-  // Initialize an array to hold all extracted items.
-  let collectedEntries = [ ] ;
+function processData(rawData) {
+  // Initialize an array to store all parsed elements
+  const parsedElements = [];
 
-  // Split the input string by newline characters to get individual lines.
-  sourceString . split ( '\n' ) . forEach ( ( textLine ) => {
-    // For each line, split it by space characters to get tokens.
-    const segmentTokens = textLine . split ( ' ' ) ;
-    // Add each token to the main collection of entries.
-    segmentTokens . forEach ( ( itemComponent ) => {
-      collectedEntries . push ( itemComponent ) ;
-    } ) ;
-  } ) ;
+  // Split the raw input by newlines to get individual lines
+  rawData.split('\n').forEach(lineStr => {
+    // Split each line by spaces to get individual values
+    const elementList = lineStr.split(' ');
+    // Iterate over the values in the current line and add them to the main array
+    elementList.forEach(elementVal => parsedElements.push(elementVal));
+  });
 
-  // Return the complete collection of processed elements.
-  return collectedEntries ;
+  // Return the collected elements
+  return parsedElements;
 }
 
-
-// This function is responsible for obtaining the raw input data.
-function obtainSourceData ( ) {
-  // A placeholder for an empty string, used when actual input isn't available.
-  const placeholderText = `` ;
-  // Read input from stdin or use the placeholder, then process it.
-  return extractElements( placeholderText || require ( 'fs' ) . readFileSync ( '/dev/stdin', 'utf8' ) ) ;
+function retrieveData() {
+  // A placeholder string, primarily for local testing or if no input is provided
+  const placeholder = ``;
+  // Read input from /dev/stdin if available, otherwise use the placeholder
+  // Then, process the obtained input string
+  return processData(placeholder || require('fs').readFileSync('/dev/stdin', 'utf8'));
 }
 
-
-// Computes the factorial of a given non-negative integer.
-function calculateProduct ( upperBound ) {
-  // Initialize the product to 1, as 0! is 1 and it's the multiplicative identity.
-  let runningProduct = 1 ;
-  // Iterate from 1 up to the specified upper bound.
-  for ( let loopVar = 1 ; loopVar <= upperBound ; loopVar ++ ) {
-    // Multiply the running product by the current loop variable.
-    runningProduct *= loopVar ;
+// Function to compute the factorial of a given number
+function calculateFactorial(inputNumber) {
+  let resultProduct = 1; // Initialize product to 1
+  // Loop from 1 up to the input number, multiplying each integer
+  for (let counter = 1; counter <= inputNumber; counter++) {
+    resultProduct *= counter;
   }
-  // Return the final factorial value.
-  return runningProduct ;
+  return resultProduct; // Return the computed factorial
 }
 
-
-// Determines the number of combinations (nCr) for given total elements and chosen elements.
-function computeCombinatorial ( totalElements , chosenElements ) {
-  // Applies the combination formula: n! / (r! * (n-r)!).
-  return calculateProduct ( totalElements ) / ( calculateProduct ( chosenElements ) * calculateProduct ( totalElements - chosenElements ) ) ;
+// Function to calculate combinations (nCr)
+function computeCombination(totalItems, selectedItems) {
+  // Formula: nCr = n! / (r! * (n-r)!)
+  return calculateFactorial(totalItems) / (calculateFactorial(selectedItems) * calculateFactorial(totalItems - selectedItems));
 }
 
+// Self-invoking anonymous function to encapsulate the main program logic
+;(function executeProgram() {
+  // Get and parse the program's input
+  const programInput = retrieveData();
 
-// Immediately Invoked Function Expression (IIFE) to run the main application logic.
-; ( function runApplication ( ) {
-  // Retrieve and parse the initial input data.
-  const sourceDataArray = obtainSourceData ( ) ;
-  // Extract numerical values from the input array.
-  const datasetSize = +sourceDataArray [ 0 ] ;
-  const forbiddenIndex1 = +sourceDataArray [ 1 ] ;
-  const forbiddenIndex2 = +sourceDataArray [ 2 ] ;
+  // Extract numerical values from the parsed input
+  const totalCount = +programInput[0]; // N
+  const excludedA = +programInput[1];  // A
+  const excludedB = +programInput[2];  // B
 
-  // Initialize a variable to accumulate the sum of combinations.
-  let grandTotal = 0 ;
-  // Loop through possible combination choices from 1 up to the dataset size.
-  for ( let currentValue = 1 ; currentValue <= datasetSize ; currentValue ++ ) {
-    // Skip combination calculations if the current value is one of the forbidden indices.
-    if ( currentValue === forbiddenIndex1 || currentValue === forbiddenIndex2 ) {
-      continue ; // Move to the next iteration.
+  let totalSum = 0; // Initialize a variable to accumulate the sum of combinations
+
+  // Iterate from 1 to N (totalCount)
+  for (let currentSelection = 1; currentSelection <= totalCount; currentSelection++) {
+    // Skip calculation if the current selection count is equal to excludedA or excludedB
+    if (currentSelection === excludedA || currentSelection === excludedB) {
+      continue; // Move to the next iteration
     }
 
-    // Add the calculated combination for the current value to the grand total.
-    grandTotal += computeCombinatorial ( datasetSize , currentValue ) ;
+    // Add the combination (totalCount C currentSelection) to the total sum
+    totalSum += computeCombination(totalCount, currentSelection);
   }
 
-  // Define a large prime number for modulo operation, as specified.
-  const divisorValue = Math . pow ( 10 , 9 ) + 7 ;
-  // Output the final result after applying the modulo operation.
-  console . log ( grandTotal % divisorValue ) ;
-} ) ( ) ;
+  // Define a large prime constant for modulo operation
+  const moduloConstant = Math.pow(10, 9) + 7;
+  // Output the final sum modulo the constant
+  console.log(totalSum % moduloConstant);
+})();

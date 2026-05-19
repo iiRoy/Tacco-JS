@@ -1,34 +1,30 @@
-'use strict'
+'use strict';
 
-const processor = (rawInput) => {
-    const numericChars = rawInput.trim().split('')
-    let totalSummation = 0
+const processInput = (sourceText) => {
+    const digitChars = sourceText.trim().split('');
+    let totalSum = 0;
 
-    const generateCombinations = (indexPosition, currentPartitions) => {
-        if (indexPosition === numericChars.length) {
-            totalSummation += currentPartitions.reduce((currentAccumulation, element) => currentAccumulation + element, 0)
-            return
-        }
-
-        // Option A: Append the current digit to the last number in the currentPartitions
-        if (currentPartitions.length > 0) {
-            const lastSegment = currentPartitions[currentPartitions.length - 1]
-            const nextDigit = parseInt(numericChars[indexPosition], 10)
-            const extendedSegment = lastSegment * 10 + nextDigit
-            const updatedPartitions = [...currentPartitions.slice(0, -1), extendedSegment]
-            generateCombinations(indexPosition + 1, updatedPartitions)
-        }
-
-        // Option B: Start a new number with the current digit
-        const newSegment = parseInt(numericChars[indexPosition], 10)
-        generateCombinations(indexPosition + 1, [...currentPartitions, newSegment])
+    if (digitChars.length === 0) {
+        console.log(0);
+        return;
     }
 
-    // Initial call: Begin the process by considering the first digit as the first number
-    // and then recursively building combinations from the second digit onwards.
-    generateCombinations(1, [parseInt(numericChars[0], 10)])
+    const exploreCombinations = (currentIdx, accumulatedValue, currentSegmentString) => {
+        if (currentIdx === digitChars.length) {
+            totalSum += accumulatedValue + parseInt(currentSegmentString, 10);
+            return;
+        }
 
-    console.log(totalSummation)
-}
+        const nextDigitChar = digitChars[currentIdx];
 
-processor(require('fs').readFileSync('/dev/stdin', 'utf8'))
+        exploreCombinations(currentIdx + 1, accumulatedValue, currentSegmentString + nextDigitChar);
+
+        exploreCombinations(currentIdx + 1, accumulatedValue + parseInt(currentSegmentString, 10), nextDigitChar);
+    };
+
+    exploreCombinations(1, 0, digitChars[0]);
+
+    console.log(totalSum);
+};
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

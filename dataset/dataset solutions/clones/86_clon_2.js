@@ -1,51 +1,50 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8'); // Retrieve content from the standard input path.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Break down the entire input string into an array of individual lines.
-let lineCollection = (dataSource.trim()).split("\n");
+// Process the raw input data
+var lineSegments = (rawData.trim()).split("\n");
 
-/*
- * Remove the very first element from the collection of lines.
- * This is often done to skip header information or a line count.
- */
-lineCollection.shift();
+// Remove the first line, which might be a count or header
+lineSegments.shift();
 
-// Iterate through each remaining entry in the processed line collection.
-lineCollection.forEach(function(currentEntry) {
-  // Convert the current line string into an array of numbers.
-  let numericValues = currentEntry.split(" ").map(Number);
+// Iterate over each line representing a set of coordinates
+lineSegments.forEach(function(currentLine) {
 
-  // Apply a uniform scaling factor to each numerical component.
-  numericValues = numericValues.map(function(numComponent) {
-    return numComponent * 100000;
+  // Split the line into individual coordinate components and convert to numbers
+  var coordinateValues = currentLine.split(" ").map(Number);
+
+  // Scale up the coordinate values by a factor
+  coordinateValues = coordinateValues.map(function(val) {
+    return val * 100000;
   });
 
-  // Extract the coordinates for the first line segment (Point A to Point B).
-  const p1X = numericValues[0];
-  const p1Y = numericValues[1];
-  const p2X = numericValues[2];
-  const p2Y = numericValues[3];
+  // Extract individual coordinate components for two line segments
+  var point1X = coordinateValues[0];
+  var point1Y = coordinateValues[1];
+  var point2X = coordinateValues[2];
+  var point2Y = coordinateValues[3];
+  var point3X = coordinateValues[4];
+  var point3Y = coordinateValues[5];
+  var point4X = coordinateValues[6];
+  var point4Y = coordinateValues[7];
 
-  // Extract the coordinates for the second line segment (Point C to Point D).
-  const p3X = numericValues[4];
-  const p3Y = numericValues[5];
-  const p4X = numericValues[6];
-  const p4Y = numericValues[7];
+  // Initialize the result string
+  var resultString = "NO";
 
-  // Initialize the parallelism outcome string.
-  let outcomeString = "NO";
+  // Check if both line segments are not vertical (to avoid division by zero)
+  if (point2X - point1X !== 0 && point4X - point3X !== 0) {
 
-  // Check if both line segments are non-vertical to compute their slopes.
-  if ((p2X - p1X !== 0) && (p4X - p3X !== 0)) {
-    // Calculate the gradient (slope) of the first line segment.
-    const gradientA = (p2Y - p1Y) / (p2X - p1X);
-    // Calculate the gradient (slope) of the second line segment.
-    const gradientB = (p4Y - p3Y) / (p4X - p3X);
+    // Calculate the slope of the first line segment
+    var slope1 = (point2Y - point1Y) / (point2X - point1X);
 
-    // If the gradients are identical, the segments are considered parallel.
-    if (gradientA === gradientB) {
-      outcomeString = "YES";
+    // Calculate the slope of the second line segment
+    var slope2 = (point4Y - point3Y) / (point4X - point3X);
+
+    // If the slopes are equal, the lines are parallel
+    if (slope1 === slope2) {
+      resultString = "YES";
     }
   }
-  // Display the determined outcome for the current set of line segments.
-  console.log(outcomeString);
+
+  // Output the determination
+  console.log(resultString);
 });

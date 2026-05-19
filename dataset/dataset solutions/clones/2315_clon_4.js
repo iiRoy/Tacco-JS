@@ -1,92 +1,68 @@
-function processScores(rawData) {
-  const parameters = rawData[0].split(' ').map(Number);
-  const totalItems = parameters[0]; 
-  const maxIndividualBoost = parameters[1]; 
-  const overallBoostAllowance = parameters[2]; 
-  const desiredRank = parameters[3]; 
+function processContestData(rawData) {
+  const contestParameters = rawData[0].split(' ').map(Number);
+  const totalProblemCount = contestParameters[0];
+  const pointsPerVote = contestParameters[1];
+  const problemsToVoteFor = contestParameters[2];
+  const targetRankThreshold = contestParameters[3];
 
-  const initialValues = rawData[1].split(' ').map(Number).sort((val1, val2) => val1 - val2);
+  const problemScores = rawData[1].split(' ').map(Number).sort((a, b) => a - b);
 
-  // Helper function to check if an item at a given index can achieve the desired rank.
-  // This function is the core of the alternative strategy.
-  const checkRankPossibility = (candidatePosition, valuesArray, countOverall, maxPerItem, totalAvailableVotes, targetPosition) => {
-    // The maximum score the candidate item can achieve
-    const candidatePotentialScore = valuesArray[candidatePosition] + maxPerItem;
+  // This helper function determines if a problem at a given index
+  // in the sorted `problemScores` array can achieve a rank within `targetRankThreshold`.
+  const checkEligibility = (candidateProblemIndex) => {
+    const maxAchievableScore = problemScores[candidateProblemIndex] + pointsPerVote;
 
-    // One vote is implicitly for the candidate itself.
-    // The remaining votes can be used for other items.
-    const remainingVoteBudget = totalAvailableVotes - 1;
-
-    // Count how many other items are already inherently superior or can easily become superior
-    // without requiring specific vote allocation from 'remainingVoteBudget'.
-    let naturallySuperiorCount = 0;
-    for (let currentItemIdx = 0; currentItemIdx < countOverall; currentItemIdx++) {
-      if (currentItemIdx === candidatePosition) continue; // Skip the candidate item itself
-
-      // If an item's initial score is already greater than or equal to the candidate's potential score,
-      // it is considered naturally superior.
-      if (valuesArray[currentItemIdx] >= candidatePotentialScore) {
-        naturallySuperiorCount++;
-      }
-    }
-
-    // If there are already 'targetPosition' or more items that are naturally superior,
-    // the candidate cannot achieve the desired rank.
-    if (naturallySuperiorCount >= targetPosition) {
+    // First condition: The problem at the (totalProblemCount - targetRankThreshold)-th position
+    // (which is the lowest score among the top `targetRankThreshold` problems before any votes)
+    // must not be strictly greater than `maxAchievableScore`.
+    // If it is, then even with max votes, the candidate problem cannot make it into the top `targetRankThreshold`.
+    if (problemScores[totalProblemCount - targetRankThreshold] > maxAchievableScore) {
       return false;
     }
 
-    // Calculate the votes required to "cap" other items.
-    // These are items that are initially weaker than 'candidatePotentialScore'
-    // but could potentially exceed it if they received 'maxPerItem' votes.
-    // We assume an optimal strategy where votes are spent to bring these items
-    // exactly up to 'candidatePotentialScore', preventing them from becoming strictly better.
-    let votesToNeutralizeOthers = 0;
-    for (let currentItemIdx = 0; currentItemIdx < countOverall; currentItemIdx++) {
-      if (currentItemIdx === candidatePosition) continue; // Skip the candidate item
+    // Second condition: Check if there are enough votes to ensure the candidate problem
+    // is among the top `targetRankThreshold` problems.
+    // We assume the candidate problem and `targetRankThreshold - 1` other problems (the highest scoring ones)
+    // will receive votes. This consumes `targetRankThreshold` votes.
+    // The remaining `problemsToVoteFor - targetRankThreshold` votes can be used to boost
+    // problems that are currently below the `targetRankThreshold`-th position.
 
-      // Only consider items that are not naturally superior
-      if (valuesArray[currentItemIdx] < candidatePotentialScore) {
-        // If an item, with its 'maxPerItem' boost, could reach or exceed
-        // 'candidatePotentialScore', then we calculate the votes needed
-        // to bring it exactly to 'candidatePotentialScore'.
-        if (valuesArray[currentItemIdx] + maxPerItem >= candidatePotentialScore) {
-          votesToNeutralizeOthers += (candidatePotentialScore - valuesArray[currentItemIdx]);
-        }
-      }
+    let cumulativeScoreDeficit = 0;
+    // Iterate through problems that are *below* the initial `targetRankThreshold`-th position (from the top).
+    // These are problems from index 0 up to `totalProblemCount - targetRankThreshold - 1`.
+    for (let k = 0; k < totalProblemCount - targetRankThreshold; k++) {
+      // For each such problem, calculate how many points it would need to reach `maxAchievableScore`.
+      // We sum these deficits.
+      cumulativeScoreDeficit += (maxAchievableScore - problemScores[k]);
     }
 
-    // If the votes required to neutralize these other items exceed the available vote budget,
-    // then the candidate cannot achieve the desired rank.
-    if (votesToNeutralizeOthers > remainingVoteBudget) {
-      return false;
-    }
-
-    // If all checks pass, it's possible for the candidate to achieve the desired rank.
-    return true;
+    // The total points that can be covered by the remaining votes
+    // (each vote adds `pointsPerVote` points) must be greater than or equal to `cumulativeScoreDeficit`.
+    // If `problemsToVoteFor < targetRankThreshold`, the right side will be negative or zero,
+    // correctly indicating insufficient votes for the top `targetRankThreshold` problems.
+    return cumulativeScoreDeficit <= (problemsToVoteFor - targetRankThreshold) * pointsPerVote;
   };
 
-  let lowerBound = 0;
-  let upperBound = totalItems - 1;
-  let successfulIndex = totalItems - 1; // Default to the largest score (always possible)
+  let searchLowerBound = 0;
+  let searchUpperBound = totalProblemCount - 1;
+  let qualifyingProblemStartIdx = totalProblemCount - 1; // Initialize to the last problem (smallest possible answer)
 
-  // Binary search to find the smallest index 'i' in 'initialValues'
-  // for which 'checkRankPossibility(i)' returns true.
-  while (lowerBound <= upperBound) {
-    const middleIndex = Math.floor((lowerBound + upperBound) / 2);
-    if (checkRankPossibility(middleIndex, initialValues, totalItems, maxIndividualBoost, overallBoostAllowance, desiredRank)) {
-      successfulIndex = middleIndex; // This index is feasible; try for an even smaller index
-      upperBound = middleIndex - 1;
+  // Perform a binary search to find the smallest index `i`
+  // such that `problemScores[i]` can be in the top `targetRankThreshold`.
+  while (searchLowerBound <= searchUpperBound) {
+    const searchMidPoint = Math.floor((searchLowerBound + searchUpperBound) / 2);
+    if (checkEligibility(searchMidPoint)) {
+      qualifyingProblemStartIdx = searchMidPoint; // This problem can qualify, try for an even smaller index
+      searchUpperBound = searchMidPoint - 1;
     } else {
-      lowerBound = middleIndex + 1; // This index is not feasible; need a larger index
+      searchLowerBound = searchMidPoint + 1; // This problem cannot qualify, need to check larger indices
     }
   }
 
-  // The final answer is the count of items from 'successfulIndex' to the end of the array.
-  const finalResultCount = totalItems - successfulIndex;
+  // The number of problems that can qualify is `totalProblemCount - qualifyingProblemStartIdx`.
+  const finalEligibleCount = totalProblemCount - qualifyingProblemStartIdx;
 
-  console.log(finalResultCount);
+  console.log(finalEligibleCount);
 }
 
-// Standard input reading and execution
-processScores(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));
+processContestData(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

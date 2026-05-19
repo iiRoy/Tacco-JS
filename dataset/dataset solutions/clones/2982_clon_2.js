@@ -1,54 +1,55 @@
-'use strict'; // Enforce strict mode for cleaner code execution
+'use strict';
 
-/**
- * Executes a comprehensive analysis on provided string data to count specific patterns.
- * @param {string} sourceContent - The raw textual input to be processed.
- */
-function ProcessInputData(sourceContent) {
-  // Trim whitespace from the input and split it into an array of individual string tokens.
-  // Using a regular expression to split by one or more whitespace characters.
-  const stringTokens = sourceContent.trim().split(/\s+/);
+// This function processes a given input string to compute a specific result.
+// It simulates reading data from a standard input source.
+function ProcessInput(rawData) {
+  // First, we clean up the raw input:
+  // - Remove leading/trailing whitespace using .trim().
+  // - Split the string into an array of substrings based on any sequence of whitespace characters.
+  let processedStrings = rawData.trim().split(/\s+/);
 
-  // The first token is expected to be a number, which we extract and convert.
-  // This value might represent the total number of items or a similar initial metric.
-  let initialItemCount = Number(stringTokens.shift());
+  // The initial numeric value (N) is extracted from the beginning of the array.
+  // The `- 0` operation is a concise way to convert the string to a number.
+  const countOfElements = processedStrings.shift() - 0; // Original variable N
 
-  // Calculate the number of tokens that end with the character 'A'.
-  const suffixA_Tally = stringTokens.reduce((currentTotal, currentSegment) => {
-    // Check if the last character of the current segment is 'A'.
-    return currentTotal + (currentSegment[currentSegment.length - 1] === 'A' ? 1 : 0);
-  }, 0); // Initialize the accumulator to zero.
-
-  // Determine the count of tokens that begin with the character 'B'.
-  const prefixB_Tally = stringTokens.reduce((currentTotal, currentSegment) => {
-    // Check if the first character of the current segment is 'B'.
-    return currentTotal + (currentSegment[0] === 'B' ? 1 : 0);
+  // Calculate the total number of strings in the array that conclude with the character 'A'.
+  const endsWithA = processedStrings.reduce((accumulator, currentString) => {
+    // Check the last character of the current string.
+    return accumulator + (currentString[currentString.length - 1] === 'A' ? 1 : 0);
   }, 0);
 
-  // Compute the count of tokens that both start with 'B' AND end with 'A'.
-  const b_and_a_Segments = stringTokens.reduce((currentTotal, currentSegment) => {
-    // Apply a combined condition for the first and last characters.
-    return currentTotal + ((currentSegment[0] === 'B' && currentSegment[currentSegment.length - 1] === 'A') ? 1 : 0);
+  // Calculate the total number of strings in the array that commence with the character 'B'.
+  const startsWithB = processedStrings.reduce((accumulator, currentString) => {
+    // Check the first character of the current string.
+    return accumulator + (currentString[0] === 'B' ? 1 : 0);
   }, 0);
 
-  // Count the total occurrences of the "AB" substring within all tokens.
-  const embeddedAB_Instances = stringTokens.reduce((currentTotal, currentSegment) => {
-    // Splitting by "AB" and subtracting one from the length gives the count of "AB" occurrences.
-    return currentTotal + currentSegment.split('AB').length - 1;
+  // Calculate the total number of strings that both begin with 'B' and terminate with 'A'.
+  const bothEnds = processedStrings.reduce((accumulator, currentString) => {
+    // Evaluate both conditions for the current string.
+    return accumulator + ((currentString[0] === 'B' && currentString[currentString.length - 1] === 'A') ? 1 : 0);
   }, 0);
 
-  // Calculate the minimum number of potential connections between 'B'-starting and 'A'-ending segments.
-  let connectorPotential = Math.min(suffixA_Tally, prefixB_Tally);
+  // Count the total occurrences of the substring "AB" across all processed strings.
+  const abOccurrences = processedStrings.reduce((accumulator, currentString) => {
+    // Splitting by "AB" and subtracting 1 from the length of the resulting array
+    // effectively counts the number of "AB" instances.
+    return accumulator + currentString.split('AB').length - 1;
+  }, 0);
 
-  // Adjust the connector potential if a specific edge case is met:
-  // where all 'A'-ending segments are also 'B'-starting, and vice-versa.
-  if (b_and_a_Segments === suffixA_Tally && suffixA_Tally === prefixB_Tally) {
-    connectorPotential--; // Decrement the potential by one.
+  // Determine the smaller value between the count of strings ending with 'A' and starting with 'B'.
+  let minVal = Math.min(endsWithA, startsWithB);
+
+  // Apply a specific adjustment: if all three counts (bothEnds, endsWithA, startsWithB) are identical,
+  // then decrement the calculated minimum value.
+  if (bothEnds === endsWithA && endsWithA === startsWithB) {
+    minVal--;
   }
 
-  // Output the final computed result, which is a sum of embedded 'AB' instances and the adjusted connector potential.
-  console.log(embeddedAB_Instances + connectorPotential);
+  // Finally, print the sum of the "AB" occurrences and the adjusted minimum value to the console.
+  console.log(abOccurrences + minVal);
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the main processing function by reading input from standard input.
+// This uses Node.js's file system module to read the content of /dev/stdin synchronously as UTF-8.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

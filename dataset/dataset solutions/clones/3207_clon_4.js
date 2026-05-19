@@ -1,52 +1,69 @@
-const interfaceModule = require('node:readline');
-const collectedInput = [];
+let inputLines = [];
 
-const interactionHandler = interfaceModule.createInterface({
-    input: process.stdin,
-    output: process.stdout
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-function transformValue(currentStep, totalSteps, paramA, paramB, currentVal) {
-    if (currentStep > totalSteps) {
-        return currentVal;
-    }
+inputProcessor.on('line', (receivedLine) => {
+  inputLines.push(receivedLine);
+});
 
-    const needsSimpleIncrement = (
-        Math.abs(paramA - paramB) === 1 ||
-        paramA > paramB ||
-        currentVal < paramA ||
-        currentStep === totalSteps
+inputProcessor.on('close', () => {
+  const numericalParameters = inputLines[0].split(" ").map(Number);
+  const totalSimulationSteps = numericalParameters[0];
+  const conversionUnitA = numericalParameters[1];
+  const conversionUnitB = numericalParameters[2];
+
+  const initialResourceAmount = 1;
+
+  const finalResourceAmount = determineFinalResource(
+    1,
+    totalSimulationSteps,
+    initialResourceAmount,
+    conversionUnitA,
+    conversionUnitB
+  );
+
+  console.log(finalResourceAmount);
+});
+
+function determineFinalResource(
+  currentStepIndex,
+  maximumSteps,
+  currentResourceQuantity,
+  unitA,
+  unitB
+) {
+  if (currentStepIndex > maximumSteps) {
+    return currentResourceQuantity;
+  }
+
+  const conditionForSimpleIncrement =
+    Math.abs(unitA - unitB) === 1 ||
+    unitA > unitB ||
+    currentResourceQuantity < unitA ||
+    currentStepIndex === maximumSteps;
+
+  if (conditionForSimpleIncrement) {
+    const nextResourceQuantity = currentResourceQuantity + 1;
+    return determineFinalResource(
+      currentStepIndex + 1,
+      maximumSteps,
+      nextResourceQuantity,
+      unitA,
+      unitB
     );
-
-    let nextVal;
-    let nextStep;
-
-    if (needsSimpleIncrement) {
-        nextVal = currentVal + 1;
-        nextStep = currentStep + 1;
-    } else {
-        const quotient = Math.floor(currentVal / paramA);
-        const remainder = currentVal % paramA;
-        nextVal = quotient * paramB + remainder;
-        nextStep = currentStep + 2;
-    }
-
-    return transformValue(nextStep, totalSteps, paramA, paramB, nextVal);
+  } else {
+    const nextResourceQuantity =
+      Math.floor(currentResourceQuantity / unitA) * unitB +
+      (currentResourceQuantity % unitA);
+    return determineFinalResource(
+      currentStepIndex + 2,
+      maximumSteps,
+      nextResourceQuantity,
+      unitA,
+      unitB
+    );
+  }
 }
-
-interactionHandler.on('line', (dataSegment) => {
-    collectedInput.push(dataSegment);
-});
-
-interactionHandler.on('close', () => {
-    const parameters = collectedInput[0].split(" ").map(Number);
-    const maximumCycles = parameters[0];
-    const firstFactor = parameters[1];
-    const secondFactor = parameters[2];
-
-    const initialQuantity = 1;
-    const startingCycle = 1;
-
-    const finalQuantity = transformValue(startingCycle, maximumCycles, firstFactor, secondFactor, initialQuantity);
-    console.log(finalQuantity);
-});

@@ -1,20 +1,17 @@
-const grabContent = require('node:fs').readFileSync(require('node:process').stdin.fd, 'utf8');
-const allLines = grabContent.trim().split('\n');
-const dimension = parseInt(allLines[0], 10);
-const adjacencyData = allLines.slice(1);
+const rawContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const graphRepresent = Array.from({ length: dimension }, () => Array.from({ length: dimension }, () => 0));
+const lineSegments = rawContent.trim().split("\n");
 
-const populatedGraph = adjacencyData.reduce((currentMatrix, lineDescription) => {
-    const numericParts = lineDescription.split(' ').map(Number);
-    const originNode = numericParts[0];
-    const connectedTargets = numericParts.slice(2);
+const dimension = Number(lineSegments.shift());
 
-    connectedTargets.forEach(destNode => {
-        currentMatrix[originNode - 1][destNode - 1] = 1;
+const adjacencyMatrix = Array.from({ length: dimension }, () => Array(dimension).fill(0));
+
+lineSegments.forEach(currentLine => {
+    const [sourceNodeIdentifier, , ...targetNodeIdentifiers] = currentLine.split(" ").map(Number);
+
+    targetNodeIdentifiers.forEach(targetNodeIdentifier => {
+        adjacencyMatrix[sourceNodeIdentifier - 1][targetNodeIdentifier - 1] = 1;
     });
-    return currentMatrix;
-}, graphRepresent);
+});
 
-const outputString = populatedGraph.map(rowVector => rowVector.join(' ')).join('\n');
-console.log(outputString);
+console.log(adjacencyMatrix.map(row => row.join(" ")).join("\n"));

@@ -1,74 +1,45 @@
-if ( ! String . prototype . substituteCharacters ) {
-    String . prototype . substituteCharacters = function ( pattern , replacement ) {
-        return this . replace ( pattern , replacement ) ;
-    } ;
-}
+const inputModule = require('readline');
 
+const inputHandler = inputModule.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-if ( ! RegExp . prototype . checkPattern ) {
-    RegExp . prototype . checkPattern = function ( targetString ) {
-        return this . test ( targetString ) ;
-    } ;
-}
+inputHandler.on('line', (receivedText) => {
+    if (receivedText === ".") {
+        inputHandler.close();
+        return;
+    }
 
+    let processedContent = receivedText;
 
-const processIncomingText = async ( ) => {
-    const lineReadingEngine = require ( 'readline' ) ;
+    processedContent = processedContent.replace(/[a-zA-Z\/d \.]/g, "");
 
-    const inputOutputFacility = lineReadingEngine . createInterface ( {
-        input: process . stdin ,
-        output: process . stdout ,
-        terminal: false
-    } ) ;
+    while (true) {
+        let changeTally = 0;
 
-    for await ( const currentInputLine of inputOutputFacility )
-    {
-        let workingDataSegment = currentInputLine ;
-
-        if ( workingDataSegment === "." )
-        {
-            break ;
+        if (processedContent.match(/.*\[\].*/)) {
+            processedContent = processedContent.replace(/.*\[\].*/, "");
+            changeTally++;
         }
 
-        workingDataSegment = workingDataSegment . substituteCharacters ( /[a-zA-Z\/d \.]/g , "" ) ;
-
-        let temporaryStorage = workingDataSegment ;
-        while ( true )
-        {
-            let alterationCounter = 0 ;
-
-            if ( /\\[\\]/ . checkPattern ( temporaryStorage ) )
-            {
-                temporaryStorage = "" ;
-                alterationCounter ++ ;
-            }
-
-            if ( /\(\)/ . checkPattern ( temporaryStorage ) )
-            {
-                temporaryStorage = "" ;
-                alterationCounter ++ ;
-            }
-
-            if ( alterationCounter === 0 )
-            {
-                break ;
-            }
+        if (processedContent.match(/.*\(\).*/)) {
+            processedContent = processedContent.replace(/.*\(\).*/, "");
+            changeTally++;
         }
-        workingDataSegment = temporaryStorage ;
 
-        if ( workingDataSegment . length > 0 )
-        {
-            sendOutputMessage ( "no" ) ;
-        }
-        else
-        {
-            sendOutputMessage ( "yes" ) ;
+        if (changeTally === 0) {
+            break;
         }
     }
-} ;
 
-const sendOutputMessage = ( finalStatement ) => {
-    console . log ( finalStatement ) ;
-} ;
+    if (processedContent.length > 0) {
+        console.log("no");
+    } else {
+        console.log("yes");
+    }
+});
 
-processIncomingText ( ) ;
+inputHandler.on('close', () => {
+    process.exit(0);
+});

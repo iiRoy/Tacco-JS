@@ -1,20 +1,23 @@
-'use strict'
+'use strict';
 
-function processText(sourceData) {
-  const encounteredElements = new Set();
-  let originalLength = 0;
+function processInput(incomingData) {
+  const characterCollection = new Set();
+  let totalLength = 0;
 
-  for (let charIndex = 0; charIndex < sourceData.length; charIndex++) {
-    const currentElement = sourceData[charIndex];
-    encounteredElements.add(currentElement);
-    originalLength++;
+  // Iterate through the input string to populate the Set and count total characters.
+  // This replaces the split() and then filter() or split() and then length property access.
+  for (let charIndex = 0; charIndex < incomingData.length; charIndex++) {
+    const currentCharacter = incomingData[charIndex];
+    characterCollection.add(currentCharacter);
+    totalLength++;
   }
 
-  if (encounteredElements.size === originalLength) {
-    console.log('yes');
-  } else {
-    console.log('no');
-  }
+  // Determine if the count of unique characters equals the total character count.
+  // This is a direct comparison of Set size with the string's length.
+  const areAllUnique = characterCollection.size === totalLength;
+
+  // Output the result using a conditional expression.
+  console.log(areAllUnique ? 'yes' : 'no');
 }
 
-processText(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

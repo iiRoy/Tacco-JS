@@ -1,21 +1,16 @@
 'use strict';
 
-function processInputString(incomingText) {
-  const characterTransformer = new Map([
-    ['1', '9']
-  ]);
+function processInput(dataStream) {
+  const symbolMap = {
+    '1': '9',
+    '9': '1'
+  };
 
-  const individualChars = incomingText.split('');
-
-  const outputChars = individualChars.map(singleChar => {
-    return characterTransformer.has(singleChar) ? characterTransformer.get(singleChar) : '1';
+  const resultingSymbols = dataStream.split('').map(function(currentElement) {
+    return symbolMap[currentElement] || '1';
   });
 
-  const finalOutput = outputChars.join('');
-  console.log(finalOutput);
+  console.log(resultingSymbols.join(''));
 }
 
-const fileOperations = require('fs');
-const sourceDataContent = fileOperations.readFileSync('/dev/stdin', 'utf8');
-
-processInputString(sourceDataContent);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

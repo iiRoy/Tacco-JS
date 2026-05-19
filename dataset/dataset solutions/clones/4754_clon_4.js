@@ -1,16 +1,12 @@
-function evaluateExpression(rawInput) {
-    const [firstTerm, secondTerm, thirdTerm, fourthTerm] = rawInput.split(' ').map(Number);
+function computeMaximumProduct (inputLine) {
+    const numericParts = inputLine.split(' ').slice(0, 4).map(Number);
 
-    const productA = firstTerm * secondTerm;
-    const productB = thirdTerm * fourthTerm;
+    const [valA, valB, valC, valD] = numericParts;
 
-    const allProducts = [productA, productB];
+    const productOne = valA * valB;
+    const productTwo = valC * valD;
 
-    const ultimateOutcome = allProducts.reduce((currentMax, element) => {
-        return Math.max(currentMax, element);
-    });
-
-    console.log(ultimateOutcome);
+    console.log(Math.max(productOne, productTwo));
 }
 
-evaluateExpression(process.stdin.readFileSync(0, 'utf8'));
+computeMaximumProduct(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,77 +1,84 @@
-const collectedInputLines = [];
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const inputLineReader = require('readline').createInterface({
+var inputLines = [];
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-inputLineReader.on('line', (singleLine) => {
-  collectedInputLines.push(singleLine);
+inputReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-inputLineReader.on('close', () => {
-  const numberOfElements = parseInt(collectedInputLines[0], 10);
-
-  let rankOfPermutationA = 0;
-  let rankOfPermutationB = 0;
-
-  const firstTargetPermutation = collectedInputLines[1].split(' ').map(sVal => +sVal);
-  const secondTargetPermutation = collectedInputLines[2].split(' ').map(s => Number(s));
-
-  const doArraysMatch = (arr1, arr2) => {
-    if (arr1.length !== arr2.length) {
-      return false;
-    }
-    for (let currentIdx = 0; currentIdx < arr1.length; currentIdx++) {
-      if (arr1[currentIdx] !== arr2[currentIdx]) {
-        return false;
-      }
-    }
-    return true;
+inputReader.on('close', () => {
+  const elementCount = Number(inputLines[0]);
+  
+  const parseNumberArray = (lineString) => {
+    return lineString.split(' ').map(valStr => Number(valStr));
   };
 
-  function calculateAllPermutations(availableItems, desiredLength) {
-    const generatedPermutations = [];
-    const totalAvailable = availableItems.length;
+  const targetPermP = parseNumberArray(inputLines[1]);
+  const targetPermQ = parseNumberArray(inputLines[2]);
+ 
+  let positionP = 0;
+  let positionQ = 0;
+  
+  function generatePermutations(sourceElements, elementsToPick){
+    let resultPerms = [];
+    const totalSourceElements = sourceElements.length;
 
-    if (totalAvailable < desiredLength) {
-      return [];
+    if(elementsToPick < 0 || totalSourceElements < elementsToPick) {
+        return [];
+    }
+    
+    if(elementsToPick === 0) {
+        return [[]];
     }
 
-    if (desiredLength === 1) {
-      return availableItems.map(item => [item]);
-    }
+    if(elementsToPick === 1){
+      for(let idx = 0; idx < totalSourceElements; idx ++){
+        resultPerms.push([sourceElements[idx]]);
+      }
+    } else {
+      for(let idx = 0; idx < totalSourceElements; idx ++){
+        let remainingElements = [...sourceElements];
+        const currentElement = remainingElements.splice(idx, 1)[0];
 
-    for (let currentPos = 0; currentPos < totalAvailable; currentPos++) {
-      const selectedItem = availableItems[currentPos];
-      const remainingItemsForSubPerm = availableItems.filter((_, index) => index !== currentPos);
-
-      const subPermutations = calculateAllPermutations(remainingItemsForSubPerm, desiredLength - 1);
-
-      for (const subPerm of subPermutations) {
-        generatedPermutations.push([selectedItem, ...subPerm]);
+        let subPerms = generatePermutations(remainingElements, elementsToPick - 1);
+        
+        for(let subIdx = 0; subIdx < subPerms.length; subIdx ++){
+          resultPerms.push([currentElement].concat(subPerms[subIdx]));
+        }
       }
     }
-    return generatedPermutations;
+    return resultPerms;
   }
 
-  const baseSequence = Array.from({ length: numberOfElements }, (_, idx) => idx + 1);
+  const sequentialArray = Array.from({ length: elementCount }, (_, k) => k + 1);
 
-  const allPossibleOrderings = calculateAllPermutations(baseSequence, numberOfElements);
+  const allGeneratedPermutations = generatePermutations(sequentialArray, elementCount);
 
-  let currentOrdinalPosition = 0;
+  let currentPermIndex = 0;
+  
+  const stringifyArray = (arr) => JSON.stringify(arr);
 
-  for (const currentOrdering of allPossibleOrderings) {
-    currentOrdinalPosition++;
+  const stringifiedTargetP = stringifyArray(targetPermP);
+  const stringifiedTargetQ = stringifyArray(targetPermQ);
 
-    if (doArraysMatch(currentOrdering, firstTargetPermutation)) {
-      rankOfPermutationA = currentOrdinalPosition;
+  for (let permIdx = 0; permIdx < allGeneratedPermutations.length; permIdx++) {
+    currentPermIndex++;
+    const currentPermutation = allGeneratedPermutations[permIdx];
+
+    const stringifiedCurrentPerm = stringifyArray(currentPermutation);
+
+    if (stringifiedCurrentPerm === stringifiedTargetP) {
+      positionP = currentPermIndex;
     }
-
-    if (doArraysMatch(currentOrdering, secondTargetPermutation)) {
-      rankOfPermutationB = currentOrdinalPosition;
+    if (stringifiedCurrentPerm === stringifiedTargetQ) {
+      positionQ = currentPermIndex;
     }
   }
-
-  console.log(Math.abs(rankOfPermutationA - rankOfPermutationB));
+  
+  console.log(Math.abs(positionP - positionQ));
 });

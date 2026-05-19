@@ -1,42 +1,57 @@
-function executeAnalysis(inputPayload) {
-    const lines = inputPayload.split("\n");
-    const dimensions = lines[0].split(" ").map(Number);
-    const nodeTotal = dimensions[0];
-    const edgeTotal = dimensions[1];
+let vertexCount = 0;
+let edgeCount = 0;
+let edgeData = [];
+let pathRecords = [];
+let memoizedRoutes = [];
 
-    const connectionManifest = new Map();
-    for (let currentLine = 1; currentLine <= edgeTotal; currentLine++) {
-        const edgeDetails = lines[currentLine].split(" ").map(Number);
-        const source = edgeDetails[0];
-        const destination = edgeDetails[1];
-        const cost = edgeDetails[2];
-        connectionManifest.set(`${source}-${destination}`, cost);
-    }
+const directEdgeMap = new Map();
 
-    const findDirectWeight = (initial, final) => {
-        return connectionManifest.get(`${initial}-${final}`) || 0;
-    };
+const retrieveDirectWeight = (source, target) => {
+  return directEdgeMap.get(`${source},${target}`) || 0;
+};
 
-    const computeSegmentTotal = (initial, final) => {
-        let cumulativeSum = 0;
-        for (let current = initial; current < final; current++) {
-            cumulativeSum += findDirectWeight(current, final);
-        }
-        return cumulativeSum;
-    };
+const calculateCumulativeWeight = (startNode, endNode) => {
+  if (startNode === endNode) {
+    return 0;
+  }
+  let accumulatedWeight = 0;
+  for (let current = startNode; current < endNode; current++) {
+    accumulatedWeight += retrieveDirectWeight(current, endNode);
+  }
+  return accumulatedWeight;
+};
 
-    for (let originNode = 1; originNode <= nodeTotal; originNode++) {
-        for (let terminalNode = 1; terminalNode <= nodeTotal; terminalNode++) {
-            if (originNode < terminalNode) {
-                const aggregateValue = computeSegmentTotal(originNode, terminalNode);
-                const directConnectionCost = findDirectWeight(originNode, terminalNode);
+const processGraphData = (inputContent) => {
+  const lines = inputContent.split("\n");
 
-                console.log("src=", originNode, "dest=", terminalNode, "of shortest value is");
-                console.log("calculated value=", aggregateValue);
-                console.log("parameter=", directConnectionCost);
-            }
-        }
-    }
-}
+  const [parsedN, parsedM] = lines[0].split(" ").map(Number);
+  vertexCount = parsedN;
+  edgeCount = parsedM;
 
-executeAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));
+  edgeData = lines.slice(1, edgeCount + 1).map((line) => line.split(" ").map(Number));
+
+  edgeData.forEach(([from, to, weight]) => {
+    directEdgeMap.set(`${from},${to}`, weight);
+  });
+
+  const initialPathEntries = Array.from({ length: vertexCount }, (_, i) => i + 1)
+    .flatMap((nodeA) =>
+      Array.from({ length: vertexCount }, (_, j) => j + 1)
+        .filter((nodeB) => nodeA !== nodeB && nodeA < nodeB)
+        .map((nodeB) => [nodeA, nodeB, 0])
+    );
+  
+  pathRecords = initialPathEntries;
+  memoizedRoutes = pathRecords;
+
+  initialPathEntries.forEach(([currentI, currentJ, _]) => {
+    const computedValue = calculateCumulativeWeight(currentI, currentJ);
+    const directValue = retrieveDirectWeight(currentI, currentJ);
+
+    console.log("i=", currentI, "j=", currentJ, "の最短値は");
+    console.log("計算値=", computedValue);
+    console.log("パラメータ=", directValue);
+  });
+};
+
+processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));

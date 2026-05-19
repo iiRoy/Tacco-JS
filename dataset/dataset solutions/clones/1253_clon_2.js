@@ -1,83 +1,99 @@
-// External type definitions for Node.js environment
-// Utility library interface definitions
-function processInputData(dataStream)
-{
-  // Extract the total number of items from the incoming stream
-  var count = +dataStream.shift();
+// This file contains the primary logic for processing numerical data from standard input.
 
-  // Initialize an empty array to hold numeric entries
-  var numbersArray = [];
+/**
+ * Processes an array of string-represented numbers, calculates min, max, and sum,
+ * then outputs these results to standard output.
+ * @param {string[]} dataChunks - An array of strings, where the first element is the count
+ *                                of numbers, followed by the numbers themselves.
+ */
+function processInput(dataChunks) {
+    // The first element indicates how many numbers to expect.
+    let countElements = +dataChunks.shift();
 
-  // Populate the array by shifting elements from the input stream
-  for (var idx = 0; idx < count; ++idx) {
-    numbersArray.push(+dataStream.shift());
-  }
+    // Initialize an array to hold the parsed numeric values.
+    const numericArray = [];
 
-  // Create a list to store the calculated statistical outcomes
-  var resultsList = [];
+    // Loop to extract and convert the specified number of elements.
+    for (let idx = 0; idx < countElements; ++idx) {
+        numericArray.push(+dataChunks.shift());
+    }
 
-  // Compute the lowest value and append it to the results
-  resultsList.push(utilKit.findMinimum(numbersArray));
+    // Create a list to store the calculated statistics.
+    const resultsList = [];
 
-  // Compute the highest value and append it to the results
-  resultsList.push(utilKit.findMaximum(numbersArray));
+    // Determine the smallest value in the collection.
+    resultsList.push(utilityFunctions.findMinimum(numericArray));
 
-  // Compute the total sum of all numbers and append it
-  resultsList.push(utilKit.calculateTotal(numbersArray));
+    // Determine the largest value in the collection.
+    resultsList.push(utilityFunctions.findMaximum(numericArray));
 
-  // Write the space-separated results to standard output
-  process.stdout.write(resultsList.join(' '));
+    // Compute the total sum of all numbers.
+    resultsList.push(utilityFunctions.calculateSum(numericArray));
+
+    // Write the computed statistics to standard output, separated by spaces.
+    process.stdout.write(resultsList.join(' '));
 }
 
-// Node.js ambient type declarations
-// Core application logic module
-process.stdin.resume(); // Keep the standard input stream active
+// Activate the standard input stream to begin receiving data.
+process.stdin.resume();
 
-process.stdin.setEncoding('utf8'); // Configure input encoding to UTF-8
+// Configure the input stream to interpret incoming bytes as UTF-8 characters.
+process.stdin.setEncoding('utf8');
 
-// Attach an event handler for data received on standard input
-process.stdin.on('data', function (inputBlock)
-{
-  // Split the received data block by whitespace and pass to the main handler
-  processInputData(inputBlock.split(/\s+/));
+// Set up an event listener to handle incoming data segments.
+process.stdin.on('data', function (inputSegment) {
+    // Split the received data segment by any whitespace and pass it to the processing function.
+    processInput(inputSegment.split(/\s+/));
 });
 
-
-// A namespace for common data manipulation utilities
-var utilKit;
-(function (utilKit)
-{
-  // Determines the smallest number in a given array
-  function findMinimum(numericArray) {
-    return Math.min.apply(Math, numericArray); // Uses Math.min for efficiency
-  }
-  utilKit.findMinimum = findMinimum;
-
-  // Determines the largest number in a given array
-  function findMaximum(numericArray) {
-    return Math.max.apply(Math, numericArray); // Uses Math.max for efficiency
-  }
-  utilKit.findMaximum = findMaximum;
-
-  // Aggregates array elements into a single value using a provided operation
-  function aggregateElements(sourceArray, operation, initialValue)
-  {
-    var accumulator = initialValue; // Starting point for the aggregation
-    // Iterate over each element to apply the reduction operation
-    for (var currentIdx = 0; currentIdx < sourceArray.length; ++currentIdx) {
-      accumulator = operation(accumulator, sourceArray[currentIdx]);
+// This section defines a collection of general-purpose utility functions.
+let utilityFunctions;
+(function (utilityFunctions) {
+    /**
+     * Obtains the smallest number from a given array.
+     * @param {number[]} dataCollection - The array of numbers to search.
+     * @returns {number} The minimum value found.
+     */
+    function findMinimum(dataCollection) {
+        return Math.min.apply(Math, dataCollection);
     }
-    return accumulator; // The final aggregated result
-  }
-  utilKit.aggregateElements = aggregateElements;
+    utilityFunctions.findMinimum = findMinimum;
 
-  // Calculates the sum of all numbers within an array
-  function calculateTotal(numericArray) {
-    // Leverages the generic aggregation function for summation
-    return aggregateElements(numericArray, function (accumulator, currentVal) {
-      return accumulator + currentVal;
-    }, 0); // Initializes the sum to zero
-  }
-  utilKit.calculateTotal = calculateTotal;
+    /**
+     * Obtains the largest number from a given array.
+     * @param {number[]} dataCollection - The array of numbers to search.
+     * @returns {number} The maximum value found.
+     */
+    function findMaximum(dataCollection) {
+        return Math.max.apply(Math, dataCollection);
+    }
+    utilityFunctions.findMaximum = findMaximum;
 
-})(utilKit || (utilKit = {}));
+    /**
+     * Reduces an array to a single value by applying a function against an accumulator and each element.
+     * @param {any[]} dataCollection - The array to iterate over.
+     * @param {Function} operation - The function to execute on each element.
+     * @param {any} initialValue - The initial value of the accumulator.
+     * @returns {any} The accumulated single value.
+     */
+    function aggregateValues(dataCollection, operation, initialValue) {
+        let accumulator = initialValue;
+        for (let index = 0; index < dataCollection.length; ++index) {
+            accumulator = operation(accumulator, dataCollection[index]);
+        }
+        return accumulator;
+    }
+    utilityFunctions.aggregateValues = aggregateValues;
+
+    /**
+     * Computes the sum of all numeric elements within an array.
+     * @param {number[]} dataCollection - The array of numbers to sum.
+     * @returns {number} The total sum of the numbers.
+     */
+    function calculateSum(dataCollection) {
+        return aggregateValues(dataCollection, function (accumulator, currentElement) {
+            return accumulator + currentElement;
+        }, 0);
+    }
+    utilityFunctions.calculateSum = calculateSum;
+})(utilityFunctions || (utilityFunctions = {}));

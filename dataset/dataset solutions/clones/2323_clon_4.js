@@ -1,5 +1,13 @@
-function interleave(countLimit, firstSource, secondSource) {
-  return Array.from({ length: countLimit }, (_, position) => {
-    return firstSource[position] + secondSource[position];
-  }).join('');
+function interleaveSequences(count, sourceA, sourceB) {
+  if (count === 0) {
+    return [""];
+  }
+
+  const resultString = Array.from({ length: count }, (unused, index) => index)
+    .reduce((accumulator, currentIndex) => {
+      const currentPairSum = sourceA[currentIndex] + sourceB[currentIndex];
+      return accumulator + currentPairSum;
+    }, "");
+
+  return resultString;
 }

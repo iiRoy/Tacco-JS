@@ -1,77 +1,58 @@
 'use strict';
 
-function ProcessInputData(inputString) {
-  // Input parsing:
-  // Breaks down the input string into lines, filtering out any empty lines.
-  const lineSeries = inputString.split(/\r?\n/).filter(currentLine => currentLine.length > 0);
-  // Extracts numeric parameters from the first line (H and N).
-  const numericParameters = lineSeries[0].match(/\d+/g).map(Number);
+const ProcessInputData = (rawInputContent) => {
+    const contentLines = rawInputContent.trim().split('\n');
 
-  // Renamed variables for divergence:
-  const ultimateTarget = numericParameters[0]; // Corresponds to original 'H' (target health)
-  const abilityCount = numericParameters[1];   // Corresponds to original 'N' (number of attack options)
+    const [targetDamageThreshold, availableSpellCount] = contentLines[0].split(' ').map(Number);
 
-  // Parses subsequent lines into an array of ability objects.
-  // Each object has 'power' (damage) and 'cost' (mana expenditure).
-  const availableAbilities = lineSeries.slice(1).map(abilityLine => {
-    const [strengthValue, manaExpense] = abilityLine.match(/\d+/g).map(Number);
-    return { power: strengthValue, cost: manaExpense };
-  });
+    const spellDefinitions = contentLines.slice(1).map(line => line.split(' ').map(Number));
 
-  // Memoization structure for the recursive Dynamic Programming approach.
-  // A Map is used to store the minimum cost to achieve a specific power level.
-  const costRecord = new Map();
+    return { targetDamageThreshold, availableSpellCount, spellDefinitions };
+};
 
-  // Base case: Achieving 0 power requires 0 cost.
-  costRecord.set(0, 0);
+const DetermineMinimumManaCost = (targetDamageThreshold, availableSpellCount, spellDefinitions) => {
+    // Initialize an array to store the minimum mana cost for each possible damage value.
+    // minManaForDamage[d] will hold the minimum mana to achieve exactly 'd' damage.
+    // Initialize with 0. For d > 0, 0 signifies an unreachable state.
+    // For d = 0, 0 signifies 0 mana cost.
+    const minManaForDamage = Array(targetDamageThreshold + 1).fill(0);
 
-  // Recursive function to calculate the minimum mana expenditure needed
-  // to reach a given 'currentPowerTarget' (damage level).
-  function calculateOptimalMana(currentPowerTarget) {
-    // Type IV clone requirement: "exactly the same results".
-    // The original code uses a fixed-size array initialized with 0s.
-    // Accessing dp[j - A[i].value] where (j - A[i].value) is negative would implicitly yield 0.
-    // This replicates that specific behavior (often considered a bug in standard DP).
-    if (currentPowerTarget < 0) {
-      return 0;
+    // Iterate through each possible damage value from 1 up to the target threshold.
+    // This is a common dynamic programming pattern for unbounded knapsack problems,
+    // where the outer loop iterates through the "capacity" (damage) and the inner loop
+    // iterates through the "items" (spells).
+    for (let currentDamageTarget = 1; currentDamageTarget <= targetDamageThreshold; ++currentDamageTarget) {
+        // For each damage target, consider all available spells to see if they can contribute.
+        for (let spellIndex = 0; spellIndex < availableSpellCount; ++spellIndex) {
+            const [spellDamageValue, spellManaCost] = spellDefinitions[spellIndex];
+
+            const previousDamageRequired = currentDamageTarget - spellDamageValue;
+
+            // Check if using this spell is possible for the current damage target:
+            // 1. The spell's damage must not exceed the current damage target.
+            // 2. The state 'previousDamageRequired' must have been reachable.
+            //    A state 'd' is reachable if minManaForDamage[d] is not 0 (meaning it has a positive cost)
+            //    OR if 'd' is 0 (meaning 0 damage, which costs 0 mana).
+            if (previousDamageRequired >= 0 && (minManaForDamage[previousDamageRequired] !== 0 || previousDamageRequired === 0)) {
+                const potentialTotalMana = minManaForDamage[previousDamageRequired] + spellManaCost;
+
+                // Update the minimum mana cost for 'currentDamageTarget':
+                // If minManaForDamage[currentDamageTarget] is currently 0 (unreachable),
+                // set it to the first found potential cost.
+                // Otherwise, take the minimum between the current stored cost and the new potential cost.
+                if (minManaForDamage[currentDamageTarget] === 0) {
+                    minManaForDamage[currentDamageTarget] = potentialTotalMana;
+                } else {
+                    minManaForDamage[currentDamageTarget] = Math.min(minManaForDamage[currentDamageTarget], potentialTotalMana);
+                }
+            }
+        }
     }
 
-    // If the result for the current power target has already been computed
-    // and stored in the memoization cache, return it directly.
-    if (costRecord.has(currentPowerTarget)) {
-      return costRecord.get(currentPowerTarget);
-    }
+    return minManaForDamage[targetDamageThreshold];
+};
 
-    // Initialize the minimum cost for the current target to a very large number.
-    // This represents an 'unreachable' state before any paths are explored.
-    let minimumCurrentCost = Number.MAX_SAFE_INTEGER;
-
-    // Iterate through all available abilities to find the path that yields
-    // the minimum cost to reach 'currentPowerTarget'.
-    for (const currentAbility of availableAbilities) {
-      // Recursively call the function to find the cost for the remaining
-      // power needed after using the 'currentAbility'.
-      const previousPowerCost = calculateOptimalMana(currentPowerTarget - currentAbility.power);
-
-      // Only consider this path if the 'previousPowerCost' is not 'unreachable' (Infinity).
-      // If 'previousPowerCost' is 0 (due to base case or negative index bug replication),
-      // it is treated as a valid cost for calculation, mirroring the original.
-      if (previousPowerCost !== Number.MAX_SAFE_INTEGER) {
-        minimumCurrentCost = Math.min(minimumCurrentCost, previousPowerCost + currentAbility.cost);
-      }
-    }
-
-    // Store the computed minimum cost in the cache for future lookups.
-    costRecord.set(currentPowerTarget, minimumCurrentCost);
-    return minimumCurrentCost;
-  }
-
-  // Initiate the DP calculation for the ultimate target power level.
-  const finalResult = calculateOptimalMana(ultimateTarget);
-
-  // Output the final minimum mana cost.
-  console.log(finalResult);
-}
-
-// Standard input reading for competitive programming environments.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+const standardInput = require("fs").readFileSync("/dev/stdin", "utf8");
+const { targetDamageThreshold, availableSpellCount, spellDefinitions } = ProcessInputData(standardInput);
+const finalResult = DetermineMinimumManaCost(targetDamageThreshold, availableSpellCount, spellDefinitions);
+console.log(finalResult);

@@ -1,18 +1,18 @@
-function evaluateDataStream(sourceContent) {
-    const contentUnits = sourceContent.trim().split('\n');
-    const targetValues = contentUnits[1].split(' ').map(Number);
+function ProcessInput(sourceData) {
+  const dataSegments = sourceData.split("\n");
 
-    const flaggedIssue = targetValues.some(item => {
-        if (item % 2 === 0) {
-            if (item % 3 !== 0 && item % 5 !== 0) {
-                return true;
-            }
-        }
-        return false;
-    });
+  const numericCount = Number(dataSegments[0].trim());
+  const valueSequence = dataSegments[1].split(" ").map(Number);
 
-    const outcomeMessage = flaggedIssue ? 'DENIED' : 'APPROVED';
-    console.log(outcomeMessage);
+  const allChecksPass = valueSequence.every((currentValue) => {
+    const isOdd = currentValue % 2 !== 0;
+    const isEvenAndDivisibleByThreeOrFive =
+      currentValue % 2 === 0 && (currentValue % 3 === 0 || currentValue % 5 === 0);
+
+    return isOdd || isEvenAndDivisibleByThreeOrFive;
+  });
+
+  console.log(allChecksPass ? "APPROVED" : "DENIED");
 }
 
-evaluateDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

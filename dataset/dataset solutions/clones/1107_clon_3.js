@@ -1,15 +1,12 @@
-class TreeNode {
-  constructor(dataValue, ancestorNode = null, leftSubChild = null, rightSubChild = null) {
-    this.nodeValue = dataValue;
-    this.parentNode = ancestorNode;
-    this.leftChild = leftSubChild;
-    this.rightChild = rightSubChild;
-    this.nodeLevel = 0;
-    this.uniqueId = Math.random().toString(36).substring(2, 9);
+class BstNode {
+  constructor(nodeValue, parentNode = null, leftChild = null, rightChild = null) {
+    this.nodeValue = nodeValue;
+    this.parentNode = parentNode;
+    this.leftChild = leftChild;
+    this.rightChild = rightChild;
   }
 
   countChildren() {
-    if (!this) return 0;
     let childCount = 0;
     if (this.leftChild !== null) {
       childCount++;
@@ -20,249 +17,191 @@ class TreeNode {
     return childCount;
   }
 
-  isAnOnlyLeftChild() {
-    if (this.parentNode === null) {
-      return undefined;
+  isNodeLeftChild() {
+    const currentParent = this.parentNode;
+    if (currentParent === null) {
+      return null;
     }
-    return this.parentNode.leftChild === this;
+    return currentParent.leftChild === this;
   }
 
   determineChildPosition() {
-    if (this.parentNode === null) {
+    const isThisLeft = this.isNodeLeftChild();
+    if (isThisLeft === null) {
       return null;
     }
-    const isLeft = this.isAnOnlyLeftChild();
-    return isLeft === true ? 'left' : 'right';
+    return isThisLeft ? 'leftChild' : 'rightChild';
   }
 
-  findInOrderSuccessor() {
-    if (!this) return null;
-
-    let searchNode = this;
-
-    if (searchNode.rightChild !== null) {
-      searchNode = searchNode.rightChild;
-      while (searchNode.leftChild !== null) {
-        searchNode = searchNode.leftChild;
+  findInorderSuccessor() {
+    let successorCandidate;
+    if (this.rightChild !== null) {
+      successorCandidate = this.rightChild;
+      while (successorCandidate.leftChild !== null) {
+        successorCandidate = successorCandidate.leftChild;
       }
-      return searchNode;
+    } else {
+      successorCandidate = this.parentNode;
+      // Original code had a bug here: `!n.isLeftChild` instead of `!n.isLeftChild()`.
+      // `!function` evaluates to `false`, so the loop never runs.
+      // This behavior is preserved.
+      while (!successorCandidate.isNodeLeftChild && successorCandidate.parentNode !== null) {
+        successorCandidate = successorCandidate.parentNode;
+      }
     }
-
-    let current = searchNode;
-    let ancestor = current.parentNode;
-    while (ancestor !== null && !current.isAnOnlyLeftChild()) {
-      current = ancestor;
-      ancestor = ancestor.parentNode;
-    }
-    return ancestor;
+    return successorCandidate;
   }
 }
 
-class BinarySearchTree {
+class TreeManager {
   constructor() {
     this.treeRoot = null;
-    this.nodeCount = 0;
   }
 
-  static getNodeClass() {
-    return TreeNode;
-  }
+  static get BstNode() { return BstNode; }
 
-  addValue(incomingValue) {
-    const newNodeInstance = new BinarySearchTree.getNodeClass(incomingValue);
+  addValue(nodeValue) {
+    const newTreeNode = new TreeManager.BstNode(nodeValue);
     if (this.treeRoot === null) {
-      this.treeRoot = newNodeInstance;
-      this.nodeCount++;
+      this.treeRoot = newTreeNode;
       return;
     }
 
-    let traversalNode = this.treeRoot;
-    let parentTracker = null;
+    let currentTraversalNode = this.treeRoot;
+    let parentCandidate = null;
+    let isMovingLeft = false;
 
-    while (traversalNode !== null) {
-      parentTracker = traversalNode;
-      const isSmaller = incomingValue < traversalNode.nodeValue;
-      traversalNode = isSmaller ? traversalNode.leftChild : traversalNode.rightChild;
+    while (currentTraversalNode !== null) {
+      parentCandidate = currentTraversalNode;
+      if (nodeValue < currentTraversalNode.nodeValue) {
+        currentTraversalNode = currentTraversalNode.leftChild;
+        isMovingLeft = true;
+      } else {
+        currentTraversalNode = currentTraversalNode.rightChild;
+        isMovingLeft = false;
+      }
     }
 
-    newNodeInstance.parentNode = parentTracker;
-    if (incomingValue < parentTracker.nodeValue) {
-      parentTracker.leftChild = newNodeInstance;
-    } else {
-      parentTracker.rightChild = newNodeInstance;
+    newTreeNode.parentNode = parentCandidate;
+    if (parentCandidate !== null) {
+      if (isMovingLeft) {
+        parentCandidate.leftChild = newTreeNode;
+      } else {
+        parentCandidate.rightChild = newTreeNode;
+      }
     }
-    this.nodeCount++;
   }
 
-  locateValue(valueToFind, startNode = this.treeRoot) {
-    if (startNode === null) {
-      return null;
-    }
-
+  searchForValue(targetValue, startNode = this.treeRoot) {
     let currentNode = startNode;
-    let nodesVisited = 0;
-
     while (currentNode !== null) {
-      nodesVisited++;
-      if (currentNode.nodeValue === valueToFind) {
+      if (currentNode.nodeValue === targetValue) {
         return currentNode;
-      } else if (valueToFind < currentNode.nodeValue) {
+      }
+      if (targetValue < currentNode.nodeValue) {
         currentNode = currentNode.leftChild;
       } else {
         currentNode = currentNode.rightChild;
       }
     }
-
     return null;
   }
 
-  _removeSpecificNode(targetNode) {
-    if (!targetNode) {
-      console.warn("Attempted to remove a null or undefined node.");
-      return;
-    }
+  removeValue(targetValue) {
+    const nodeToRemove = this.searchForValue(targetValue);
+    // Original code would throw TypeError if nodeToRemove is null (e.g., if targetValue is an object).
+    // This behavior is preserved by not adding a null check here.
 
-    const parentOfTarget = targetNode.parentNode;
-    const isTargetRoot = (targetNode === this.treeRoot);
-    const childPosition = targetNode.determineChildPosition();
+    const parentOfNodeToRemove = nodeToRemove.parentNode;
+    const childPosition = nodeToRemove.determineChildPosition();
 
-    if (targetNode.countChildren() === 0) {
-      if (isTargetRoot) {
+    const childrenCount = nodeToRemove.countChildren();
+
+    if (childrenCount === 0) {
+      if (parentOfNodeToRemove === null) {
         this.treeRoot = null;
       } else {
-        parentOfTarget[childPosition === 'left' ? 'leftChild' : 'rightChild'] = null;
+        parentOfNodeToRemove[childPosition] = null;
       }
-    }
-    else if (targetNode.countChildren() === 1) {
-      const childNode = targetNode.leftChild || targetNode.rightChild;
-      if (isTargetRoot) {
+    } else if (childrenCount === 1) {
+      const childNode = nodeToRemove.leftChild !== null ? nodeToRemove.leftChild : nodeToRemove.rightChild;
+      if (parentOfNodeToRemove === null) {
         this.treeRoot = childNode;
         childNode.parentNode = null;
       } else {
-        parentOfTarget[childPosition === 'left' ? 'leftChild' : 'rightChild'] = childNode;
-        childNode.parentNode = parentOfTarget;
+        parentOfNodeToRemove[childPosition] = childNode;
+        childNode.parentNode = parentOfNodeToRemove;
       }
+    } else { // childrenCount === 2
+      const successorNode = nodeToRemove.findInorderSuccessor();
+      nodeToRemove.nodeValue = successorNode.nodeValue;
+      // Original code had a bug here: `this.delete(s)` where `s` is a node object.
+      // `removeValue` expects a number. This call will trigger the same TypeError
+      // or unexpected behavior as in the original, which is preserved.
+      this.removeValue(successorNode);
     }
-    else {
-      const successorNode = targetNode.findInOrderSuccessor();
-      if (!successorNode) {
-          console.error("Error: Two-child node without a successor found.");
-          return;
-      }
-
-      targetNode.nodeValue = successorNode.nodeValue;
-      this._removeSpecificNode(successorNode);
-      return;
-    }
-    this.nodeCount--;
   }
 
-  removeValue(valueToRemove) {
-    const nodeFound = this.locateValue(valueToRemove);
-    if (nodeFound === null) {
-      return false;
-    }
-    this._removeSpecificNode(nodeFound);
-    return true;
-  }
-
-  traverseInOrder(separator = ' ') {
-    if (this.treeRoot === null) {
-      return "[Empty Tree]";
-    }
-    let resultValues = [];
-    const stack = [];
-    let current = this.treeRoot;
-
-    while (current !== null || stack.length > 0) {
-      while (current !== null) {
-        stack.push(current);
-        current = current.leftChild;
-      }
-      current = stack.pop();
-      resultValues.push(current.nodeValue);
-      current = current.rightChild;
-    }
-    return resultValues.join(separator).trim();
-  }
-
-  traversePreOrder(separator = ' ') {
-    if (this.treeRoot === null) {
-      return "[Empty Tree]";
-    }
-    let outputString = [];
-    const recursiveTraversal = (nodeToProcess) => {
-      if (nodeToProcess === null) {
+  displayInOrderTraversal() {
+    let traversalOutputBuffer = [];
+    const recursiveVisitor = (currentNode) => {
+      if (currentNode === null) {
         return;
       }
-      outputString.push(nodeToProcess.nodeValue);
-      recursiveTraversal(nodeToProcess.leftChild);
-      recursiveTraversal(nodeToProcess.rightChild);
+      recursiveVisitor(currentNode.leftChild);
+      traversalOutputBuffer.push(currentNode.nodeValue);
+      recursiveVisitor(currentNode.rightChild);
     };
-    recursiveTraversal(this.treeRoot);
-    return outputString.join(separator).trim();
+    recursiveVisitor(this.treeRoot);
+    console.log(traversalOutputBuffer.map(val => ` ${val}`).join(''));
   }
 
-  displayTreeContents() {
-    console.log("In-order traversal:  " + this.traverseInOrder());
-    console.log("Pre-order traversal: " + this.traversePreOrder());
+  displayPreOrderTraversal() {
+    let traversalOutputBuffer = [];
+    const recursiveVisitor = (currentNode) => {
+      if (currentNode === null) {
+        return;
+      }
+      traversalOutputBuffer.push(currentNode.nodeValue);
+      recursiveVisitor(currentNode.leftChild);
+      recursiveVisitor(currentNode.rightChild);
+    };
+    recursiveVisitor(this.treeRoot);
+    console.log(traversalOutputBuffer.map(val => ` ${val}`).join(''));
   }
 
-  getSize() {
-      return this.nodeCount;
+  outputAllTraversals() {
+    this.displayInOrderTraversal();
+    this.displayPreOrderTraversal();
   }
 }
 
-(function executeTreeOperations() {
-  const fileSystemModule = require('fs');
+(function processTreeCommands() {
+  const fileSystem = require('fs');
+  const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+  const inputCommandLines = rawInput.trim().split('\n');
 
-  const inputCommands = fileSystemModule.readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const totalCommands = Number(inputCommandLines.shift());
 
-  const numOperations = Number(inputCommands.shift());
+  const treeInstance = new TreeManager();
 
-  const binarySearchStructure = new BinarySearchTree();
-  let operationCounter = 0;
+  for (let i = 0; i < inputCommandLines.length; i++) {
+    const currentCommand = inputCommandLines[i];
+    const commandTypeChar = currentCommand[0];
+    const commandParts = currentCommand.split(' ');
 
-  inputCommands.forEach(function(currentCommand) {
-    operationCounter++;
-    if (!currentCommand || currentCommand.trim() === '') {
-        console.warn(`Skipping empty command at line ${operationCounter}.`);
-        return;
+    if (commandTypeChar === 'i') {
+      const valueToInsert = Number(commandParts[1]);
+      treeInstance.addValue(valueToInsert);
+    } else if (commandTypeChar === 'f') {
+      const valueToFind = Number(commandParts[1]);
+      const foundNode = treeInstance.searchForValue(valueToFind);
+      console.log(foundNode !== null ? 'yes' : 'no');
+    } else if (commandTypeChar === 'd') {
+      const valueToDelete = Number(commandParts[1]);
+      treeInstance.removeValue(valueToDelete);
+    } else {
+      treeInstance.outputAllTraversals();
     }
-
-    const commandParts = currentCommand.split(/\s+/);
-    const commandType = commandParts[0].charAt(0);
-    const commandValue = commandParts.length > 1 ? Number(commandParts[1]) : null;
-
-    switch (commandType) {
-      case 'i':
-        if (commandValue !== null) {
-          binarySearchStructure.addValue(commandValue);
-        } else {
-            console.error(`Invalid insert command: ${currentCommand}`);
-        }
-        break;
-      case 'f':
-        if (commandValue !== null) {
-          const found = binarySearchStructure.locateValue(commandValue);
-          console.log(found !== null ? 'yes' : 'no');
-        } else {
-            console.error(`Invalid find command: ${currentCommand}`);
-        }
-        break;
-      case 'd':
-        if (commandValue !== null) {
-          const deleted = binarySearchStructure.removeValue(commandValue);
-        } else {
-            console.error(`Invalid delete command: ${currentCommand}`);
-        }
-        break;
-      case 'p':
-        binarySearchStructure.displayTreeContents();
-        break;
-      default:
-        console.warn(`Unknown command or missing command type: ${currentCommand}. Defaulting to print.`);
-        binarySearchStructure.displayTreeContents();
-    }
-  });
+  }
 })();

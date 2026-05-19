@@ -1,40 +1,12 @@
 'use strict';
 
-process.stdin.setEncoding('utf8');
+const ioHandler = require('fs');
 
-let acquiredData = '';
+const computeMinimumSum = () => {
+    const dataStream = ioHandler.readFileSync('/dev/stdin', 'utf8');
+    const parsedNumbers = dataStream.split(/\s/).map(Number);
 
-process.stdin.on('data', (fragment) => {
-  acquiredData += fragment;
-});
+    return Math.min(parsedNumbers[0], parsedNumbers[1]) + Math.min(parsedNumbers[2], parsedNumbers[3]);
+};
 
-process.stdin.on('end', () => {
-  const extractedNumbers = [];
-  let currentAccumulator = '';
-
-  for (let idx = 0; idx < acquiredData.length; idx++) {
-    const character = acquiredData[idx];
-    if (character >= '0' && character <= '9') {
-      currentAccumulator += character;
-    } else if (currentAccumulator.length > 0) {
-      extractedNumbers.push(parseInt(currentAccumulator, 10));
-      currentAccumulator = '';
-    }
-  }
-
-  if (currentAccumulator.length > 0) {
-    extractedNumbers.push(parseInt(currentAccumulator, 10));
-  }
-
-  const firstValue = extractedNumbers[0];
-  const secondValue = extractedNumbers[1];
-  const thirdValue = extractedNumbers[2];
-  const fourthValue = extractedNumbers[3];
-
-  const optionOneCost = Math.min(firstValue, secondValue);
-  const optionTwoCost = Math.min(thirdValue, fourthValue);
-
-  const totalExpense = optionOneCost + optionTwoCost;
-
-  process.stdout.write(String(totalExpense) + '\n');
-});
+console.log(computeMinimumSum());

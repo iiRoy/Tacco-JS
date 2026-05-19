@@ -1,50 +1,76 @@
-function processPermutation(inputSequence, sequenceLength) {
-    let accumulatedCost = 0;
-    const visitedPositions = new Set();
-    const orderedSequence = [...inputSequence].sort((a, b) => a - b);
-    const destinationIndexMap = new Map();
-    
-    for (let currentPosition = 0; currentPosition < sequenceLength; currentPosition++) {
-        destinationIndexMap.set(orderedSequence[currentPosition], currentPosition);
-    }
+function calculateMinimumSortCost(inputArray, arrayLength) {
+    const globalMinimum = Math.min(...inputArray);
+    const valueRankMap = new Map(); // Maps a value to its sorted index (rank)
+    const visitedPositions = new Set(); // Tracks indices already part of a processed cycle
+    let totalAccumulatedCost = 0;
 
-    const overallMinimumElement = Math.min(...inputSequence);
+    // Step 1: Create an array of objects with value and original index, then sort it.
+    // This helps determine the "rank" or sorted position for each value.
+    const indexedValues = inputArray.map((val, idx) => ({ val, originalIdx: idx }));
+    indexedValues.sort((a, b) => a.val - b.val);
 
-    for (let currentStart = 0; currentStart < sequenceLength; currentStart++) {
-        if (visitedPositions.has(currentStart)) {
-            continue;
+    // Step 2: Populate the valueRankMap.
+    // This map is crucial for traversing the permutation cycles.
+    // It maps a value to the index it would occupy if the array were sorted.
+    // If duplicate values exist, the original code maps the value to the *last* index
+    // where that value appears in the sorted array. This is replicated by iterating
+    // through the sorted `indexedValues` and setting the map, as later occurrences
+    // will overwrite earlier ones for duplicate keys.
+    indexedValues.forEach((item, rank) => {
+        valueRankMap.set(item.val, rank);
+    });
+
+    // Step 3: Iterate through each position to find and process cycles.
+    for (let currentStartingIndex = 0; currentStartingIndex < arrayLength; currentStartingIndex++) {
+        if (visitedPositions.has(currentStartingIndex)) {
+            continue; // Skip if this position has already been part of a processed cycle
         }
 
-        let cyclePointer = currentStart;
-        let cycleElementSum = 0;
-        let cycleMinimumValue = Infinity;
-        let cycleSize = 0;
+        // Use an immediately invoked function expression (IIFE) to encapsulate cycle collection logic.
+        // This replaces the imperative 'while(1)' loop and direct variable accumulation.
+        const cycleStats = (function collectCycleData(startIdx) {
+            const elementsInCycle = [];
+            let currentTraversalIndex = startIdx;
 
-        do {
-            visitedPositions.add(cyclePointer);
-            cycleSize++;
-            const elementValue = inputSequence[cyclePointer];
-            cycleMinimumValue = Math.min(cycleMinimumValue, elementValue);
-            cycleElementSum += elementValue;
-            cyclePointer = destinationIndexMap.get(elementValue);
-        } while (!visitedPositions.has(cyclePointer));
+            // Traverse the cycle, marking visited positions and collecting elements.
+            while (!visitedPositions.has(currentTraversalIndex)) {
+                visitedPositions.add(currentTraversalIndex);
+                const elementValue = inputArray[currentTraversalIndex];
+                elementsInCycle.push(elementValue);
+                // Move to the next position in the permutation:
+                // current_index -> value_at_current_index -> sorted_index_of_that_value
+                currentTraversalIndex = valueRankMap.get(elementValue);
+            }
 
-        const optionA_Cost = cycleElementSum + (cycleSize - 2) * cycleMinimumValue;
-        const optionB_Cost = cycleMinimumValue + cycleElementSum + (cycleSize + 1) * overallMinimumElement;
-        
-        accumulatedCost += Math.min(optionA_Cost, optionB_Cost);
+            // Calculate cycle statistics using functional methods (reduce, Math.min).
+            const cycleSum = elementsInCycle.reduce((sum, val) => sum + val, 0);
+            const cycleMinimum = Math.min(...elementsInCycle);
+            const cycleCount = elementsInCycle.length;
+
+            return { cycleSum, cycleMinimum, cycleCount };
+        })(currentStartingIndex); // Invoke the IIFE with the current starting index
+
+        // Destructure the returned cycle statistics.
+        const { cycleSum, cycleMinimum, cycleCount } = cycleStats;
+
+        // Apply the cost calculation formula.
+        // This formula is specific to the problem (e.g., minimum swaps to sort with specific costs).
+        const costStrategyOne = cycleSum + (cycleCount - 2) * cycleMinimum;
+        const costStrategyTwo = cycleMinimum + cycleSum + (cycleCount + 1) * globalMinimum;
+
+        totalAccumulatedCost += Math.min(costStrategyOne, costStrategyTwo);
     }
 
-    return accumulatedCost;
+    return totalAccumulatedCost;
 }
 
-function executeMain(rawInputContent) {
-    const dataLines = rawInputContent.split('\n');
-    const dataCount = parseInt(dataLines.shift(), 10);
-    const sequenceData = dataLines.shift().split(' ').map(val => parseInt(val, 10));
+function executeProgram(inputContent) {
+    const inputLines = inputContent.split('\n');
+    const arrayLength = Number.parseInt(inputLines.shift(), 10);
+    const sequenceData = inputLines.shift().split(' ').map(Number.parseInt);
 
-    const finalResult = processPermutation(sequenceData, dataCount);
-    console.log(finalResult);
+    const finalResult = calculateMinimumSortCost(sequenceData, arrayLength);
+    process.stdout.write(String(finalResult) + '\n'); // Use process.stdout.write for output
 }
 
-executeMain(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

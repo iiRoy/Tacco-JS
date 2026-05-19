@@ -1,97 +1,58 @@
-const extractNumericValue = (rawContent) => {
-    return Number.parseInt(rawContent.split('\n')[0]);
-};
+function Main(programInput) {
+    programInput = programInput.split("\n");
+    const inputNumber = parseInt(programInput[0]);
 
-const generatePrimesUpTo = (upperBound) => {
-    const isPrime = new Array(upperBound + 1).fill(true);
-    isPrime[0] = false;
-    isPrime[1] = false;
-    for (let p = 2; p * p <= upperBound; p++) {
-        if (isPrime[p]) {
-            for (let multiple = p * p; multiple <= upperBound; multiple += p) {
-                isPrime[multiple] = false;
+    const primeExponents = new Array(101).fill(0);
+    const isPrimeFlag = new Array(101).fill(true);
+    isPrimeFlag[0] = isPrimeFlag[1] = false;
+
+    for (let primeCandidate = 2; primeCandidate * primeCandidate <= 100; primeCandidate++) {
+        if (isPrimeFlag[primeCandidate]) {
+            for (let multiple = primeCandidate * primeCandidate; multiple <= 100; multiple += primeCandidate) {
+                isPrimeFlag[multiple] = false;
             }
         }
     }
-    const primeList = [];
-    for (let p = 2; p <= upperBound; p++) {
-        if (isPrime[p]) {
-            primeList.push(p);
-        }
-    }
-    return primeList;
-};
 
-const computeFactorialPrimePowers = (numberLimit, primes) => {
-    const primePowerMap = new Map();
-    for (const currentPrime of primes) {
-        if (currentPrime > numberLimit) {
-            continue; // Only consider primes less than or equal to N
-        }
-        let totalCount = 0;
-        let powerOfPrime = currentPrime;
-        while (powerOfPrime <= numberLimit) {
-            totalCount += Math.floor(numberLimit / powerOfPrime);
-            if (powerOfPrime > numberLimit / currentPrime) { // Avoid overflow before multiplication
-                break;
+    for (let primeVal = 2; primeVal <= 100; primeVal++) {
+        if (isPrimeFlag[primeVal]) {
+            let currentPrimePower = primeVal;
+            let exponentSum = 0;
+            while (currentPrimePower <= inputNumber) {
+                exponentSum += Math.floor(inputNumber / currentPrimePower);
+                if (currentPrimePower > inputNumber / primeVal) {
+                    break;
+                }
+                currentPrimePower *= primeVal;
             }
-            powerOfPrime *= currentPrime;
-        }
-        if (totalCount > 0) {
-            primePowerMap.set(currentPrime, totalCount);
+            primeExponents[primeVal] = exponentSum;
         }
     }
-    return primePowerMap;
-};
 
-const categorizeExponents = (exponentMapping) => {
-    let countForCategoryTwoThree = 0;
-    let countForCategoryFourOrMore = 0;
-
-    for (const exponentValue of exponentMapping.values()) {
-        if (exponentValue === 2 || exponentValue === 3) {
-            countForCategoryTwoThree++;
-        } else if (exponentValue >= 4) {
-            countForCategoryFourOrMore++;
+    const exponentCategories = primeExponents.slice(2).reduce((accumulator, currentExp) => {
+        if (currentExp === 2 || currentExp === 3) {
+            accumulator.lowFrequencyPrimes++;
         }
-    }
-    return { countForCategoryTwoThree, countForCategoryFourOrMore };
-};
+        if (currentExp >= 4) {
+            accumulator.highFrequencyPrimes++;
+        }
+        return accumulator;
+    }, { lowFrequencyPrimes: 0, highFrequencyPrimes: 0 });
 
-const calculateCombinations = (n, k) => {
-    if (k < 0 || k > n) {
-        return 0;
-    }
-    if (k === 0 || k === n) {
-        return 1;
-    }
-    if (k > n / 2) {
-        k = n - k;
-    }
-    let result = 1;
-    for (let i = 1; i <= k; i++) {
-        result = result * (n - i + 1) / i;
-    }
-    return result;
-};
+    const lowFrequencyCount = exponentCategories.lowFrequencyPrimes;
+    const highFrequencyCount = exponentCategories.highFrequencyPrimes;
 
-const deriveFinalQuantity = (valTwoThree, valFourPlus) => {
-    return valTwoThree * calculateCombinations(valFourPlus, 2) + calculateCombinations(valFourPlus, 3);
-};
+    const termOne = lowFrequencyCount * highFrequencyCount * (highFrequencyCount - 1) / 2;
+    const termTwo = highFrequencyCount * (highFrequencyCount - 1) * (highFrequencyCount - 2) / 2;
 
-const processInputAndCompute = (externalData) => {
-    const numericLimit = extractNumericValue(externalData);
+    const finalAnswer = termOne + termTwo;
 
-    // Primes are needed up to 100 because the original X array is indexed up to 100.
-    const allPrimes = generatePrimesUpTo(100); 
+    console.log('%s', finalAnswer);
+}
 
-    const factorialPrimeExponents = computeFactorialPrimePowers(numericLimit, allPrimes);
+function debug() {
+    var input = document.getElementById("input").value;
+    Main(input);
+}
 
-    const { countForCategoryTwoThree, countForCategoryFourOrMore } = categorizeExponents(factorialPrimeExponents);
-
-    const finalAnswer = deriveFinalQuantity(countForCategoryTwoThree, countForCategoryFourOrMore);
-
-    console.log(String(finalAnswer));
-};
-
-processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,25 +1,26 @@
-// This function processes incoming textual information.
-function ProcessInputData(sourceText) {
-  // The raw data is initially divided into separate lines.
-  sourceText = sourceText.split('\n');
+function ProcessInput(rawData) {
+    // Split the incoming data by newline characters to get an array of lines.
+    let linesArray = rawData.split('\n');
 
-  // The very first line is then further broken down into individual components, using space as the primary delimiter.
-  let firstLineTokens = sourceText[0].split(' ');
+    // Extract the first line and further split it by spaces to get individual tokens.
+    const firstLineTokens = linesArray[0].split(' ');
 
-  // A variable is declared to store the identified index, initialized as an empty string.
-  let targetPosition = '';
+    // Initialize a variable to hold the index where the value '0' is found.
+    let zeroIndex = ''; // Using an empty string as an initial placeholder.
 
-  // A loop iterates through the initial five elements of the tokenized first line.
-  for (let currentIdx = 0; currentIdx < 5; currentIdx++) {
-    // If any element within this range is found to be '0', its corresponding index is recorded.
-    if (firstLineTokens[currentIdx] == 0) {
-      targetPosition = currentIdx;
+    // Iterate through the first five elements of the token array.
+    for (let idx = 0; idx < 5; idx++) {
+        // Check if the current token is numerically equal to zero.
+        if (firstLineTokens[idx] == 0) {
+            // If '0' is found, store its current index.
+            // This will store the last occurrence if '0' appears multiple times within the first five.
+            zeroIndex = idx;
+        }
     }
-  }
 
-  // The recorded index is converted to an integer, incremented by one, and subsequently displayed to the console.
-  console.log(parseInt(targetPosition) + 1);
+    // Convert the stored index to an integer, add one (to make it 1-based), and print the result.
+    console.log(parseInt(zeroIndex) + 1);
 }
 
-// The main processing function is invoked with data acquired by reading the content of the standard input file.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

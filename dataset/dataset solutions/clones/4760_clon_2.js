@@ -1,44 +1,37 @@
-// This script serves to analyze a specific character sequence, determining the maximum accumulated value.
-function  processInput( rawData )
-{
-    // The initial raw string data is first converted into an array of individual characters.
-    let  charArray  =  rawData.split( '' ) ;
+'use strict';
 
-    // The very first character of the input is designated as the indicator for the sequence's effective processing length.
-    // Note: This assumes the initial character is a numeric digit represented as a string.
-    const  sequenceLength  =  charArray[0] ;
+// This module defines a function to process a sequence of characters.
+function processInput(rawData) {
+  // Convert the incoming string into an array of individual characters for easier access.
+  let charArray = rawData.split('');
 
-    // An accumulator variable, starting at zero, to track the current calculated value.
-    let  currentValue  =  0 ;
+  // The first character of the input string is used to determine the number of iterations.
+  // JavaScript's type coercion will convert this character to a number for the loop condition.
+  const loopBoundChar = charArray[0];
 
-    // A collection to store each intermediate state of the 'currentValue' during processing.
-    let  valueTrace  =  new Array() ;
+  // Initialize a numerical accumulator.
+  let currentSum = 0x0; // Using hexadecimal literal for zero, functionally identical to 0.
 
-    // We iterate through the relevant portion of the character array.
-    // The loop runs for a number of times determined by 'sequenceLength'.
-    // The characters being evaluated are from the second position onwards (index 1 in charArray).
-    for  ( let  idx = 0 ;  idx < sequenceLength ;  idx++ )
-    {
-        // Examine the character at the position `idx + 1` within the character array.
-        // This ensures processing starts from the character immediately following the 'sequenceLength' indicator.
-        if  ( charArray[ idx + 1 ]  ===  'I' )
-        {
-            // If an 'I' character is encountered, the current value is incremented.
-            currentValue++ ;
-        }
-        else
-        {
-            // For any other character (e.g., 'D'), the current value is decremented.
-            currentValue-- ;
-        }
+  // Create an array to keep a record of the accumulator's value at each step.
+  let sumHistory = new Array(); // Using Array constructor, functionally identical to [].
 
-        // Each updated 'currentValue' is added to our historical trace.
-        valueTrace.push( currentValue ) ;
+  // Iterate through the character array, starting from the second element,
+  // for a number of times specified by the first character.
+  for (let idx = 0; idx < loopBoundChar; idx++) {
+    // Examine the character at the current index plus one.
+    // If it's 'I', increment the sum; otherwise, decrement it.
+    if (charArray[idx + 0b1] === 'I') { // Using binary literal for one, functionally identical to 1.
+      currentSum++;
+    } else {
+      currentSum--;
     }
+    // Add the current state of the accumulator to our history list.
+    sumHistory.push(currentSum);
+  }
 
-    // Finally, the highest recorded value from the entire trace is printed to the console.
-    console.log( Math.max( ...valueTrace ) ) ;
+  // Output the highest value recorded in the sum history.
+  console.log(Math.max(...sumHistory));
 }
 
-// The processing function is invoked with data acquired from the standard input stream.
-processInput( require( "fs" ) . readFileSync( "/dev/stdin" ,  "utf8" ) ) ;
+// Execute the processing function with data read from standard input.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

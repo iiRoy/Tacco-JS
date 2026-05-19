@@ -1,27 +1,16 @@
 'use strict'
 
-const fileSystemUtility = require('fs');
-
-const processSegment = (sourceString) => {
-    let lineDelimiter = sourceString.indexOf('\n');
-    let targetSection = (lineDelimiter === -1) ? sourceString : sourceString.substring(0, lineDelimiter);
-
-    let characterCollection = Array.from(targetSection);
-    let alteredCollection = characterCollection.map(individualCharacter => {
-        if (individualCharacter === ',') {
-            return ' ';
+const processDataStream = incomingText => {
+    const initialSegment = incomingText.split('\n')[0];
+    let transformedSegment = '';
+    for (let charIndex = 0; charIndex < initialSegment.length; charIndex++) {
+        if (initialSegment[charIndex] === ',') {
+            transformedSegment += ' ';
+        } else {
+            transformedSegment += initialSegment[charIndex];
         }
-        return individualCharacter;
-    });
-
-    return alteredCollection.join('');
+    }
+    console.log(transformedSegment);
 };
 
-const initiateOperation = () => {
-    const inputLocation = '/dev/stdin';
-    const rawData = fileSystemUtility.readFileSync(inputLocation, 'utf8');
-    const processedResult = processSegment(rawData);
-    console.log(processedResult);
-};
-
-initiateOperation();
+processDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));

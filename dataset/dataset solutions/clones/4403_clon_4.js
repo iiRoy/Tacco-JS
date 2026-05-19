@@ -1,30 +1,29 @@
-const obtainResourceData = (filePath, encoding) => require("fs").readFileSync(filePath, encoding);
+function main(inputTxt) {
+    const inputLines = inputTxt.split('\n');
+    const numberStrings = inputLines[1].split(' ');
+    const numericItems = numberStrings.map(Number);
 
-const performAnalysis = (sourceData) => {
-    const extractedNumerics = sourceData.match(/-?\d+/g).slice(1);
-    const convertedValues = extractedNumerics.map(Number);
+    const itemCounts = new Map();
+    for (const itemValue of numericItems) {
+        itemCounts.set(itemValue, (itemCounts.get(itemValue) || 0) + 1);
+    }
 
-    const occurrenceRegister = convertedValues.reduce((acc, currentNum) => {
-        acc[currentNum] = (acc[currentNum] || 0) + 1;
-        return acc;
-    }, {});
-
-    const matchingElements = [];
-    const sortedKeys = Object.keys(occurrenceRegister).map(Number).sort((valA, valB) => valB - valA);
-
-    for (const currentKey of sortedKeys) {
-        let currentCount = occurrenceRegister[currentKey];
-        while (currentCount >= 2 && matchingElements.length < 2) {
-            matchingElements.push(currentKey);
-            currentCount -= 2;
-        }
-        if (matchingElements.length === 2) {
-            break;
+    const potentialRectangleSides = [];
+    for (const [valueKey, occurrenceCount] of itemCounts.entries()) {
+        const availablePairs = Math.floor(occurrenceCount / 2);
+        for (let pairIndex = 0; pairIndex < availablePairs; pairIndex++) {
+            potentialRectangleSides.push(valueKey);
         }
     }
 
-    const finalProduct = (matchingElements[0] || 0) * (matchingElements[1] || 0);
-    console.log(finalProduct);
-};
+    potentialRectangleSides.sort((first, second) => second - first);
 
-performAnalysis(obtainResourceData("/dev/stdin", "utf8"));
+    let finalProduct = 0;
+    if (potentialRectangleSides.length >= 2) {
+        finalProduct = potentialRectangleSides[0] * potentialRectangleSides[1];
+    }
+
+    console.log(finalProduct);
+}
+
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

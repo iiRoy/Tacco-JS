@@ -1,49 +1,36 @@
-"use strict" ;
+"use strict";
 
-/*
- * This module processes raw text input to find a specific character.
- * It's designed to identify the first character in a primary sequence
- * that is not the digit '1', up to a specified iteration limit.
+/**
+ * This function processes input data to find a specific character based on certain conditions.
+ * It reads two lines from the input: a target string and a numerical limit.
+ * @param {string} rawData The complete input string received from standard input.
  */
-function ExecuteLogic (  initialData  )
-{
-    // Split the entire input string into an array of lines
-    const   inputSegments   = initialData.split( "\n" ) ;
+function ProcessInput(rawData) {
+    // Split the entire input string into an array of individual lines.
+    let dataRows = rawData.split("\n");
 
-    // Extract the primary character sequence from the first line
-    const primarySequence   =   inputSegments.shift().trim() ;
+    // Extract the first line, remove leading/trailing whitespace, and store it as the target string.
+    let targetString = dataRows.shift().trim();
 
-    // Extract the numeric iteration limit from the second line, converting it to an integer
-    const iterationCount    =   parseInt(inputSegments.shift().trim(), 10) ;
+    // Extract the second line, remove whitespace, and store it as the limit index.
+    let limitIndex = dataRows.shift().trim();
 
-    /*
-     * Iterate through the primary sequence up to the specified limit
-     * or the sequence's length, whichever is smaller.
-     * The goal is to find the first character that isn't '1'.
-     */
-    for
-    (
-        let loopIndex = 0;
-        loopIndex < iterationCount && loopIndex < primarySequence.length;
-        loopIndex++
-    )
-    {
-        // Check if the current character is not the digit '1' (as a string)
-        if (  primarySequence.charAt(loopIndex) !== '1'  )
-        {
-            // If it's not '1', print this character and terminate execution
-            console.log(  primarySequence.charAt(loopIndex)  ) ;
-            return ;
+    // Iterate through the target string. The loop continues as long as the current index
+    // is less than the specified limit and also less than the length of the target string.
+    for (let idx = 0; idx < limitIndex && idx < targetString.length; idx++) {
+        // Check if the character at the current position is not the digit '1'.
+        if (targetString.charAt(idx) !== '1') {
+            // If a character other than '1' is found, print it to the console.
+            console.log(targetString.charAt(idx));
+            // Immediately exit the function after printing the first non-'1' character.
+            return;
         }
     }
 
-    // If the loop completes without finding a non-'1' character,
-    // print the character at the iterationCount index of the primary sequence.
-    console.log(  primarySequence.charAt(iterationCount)  ) ;
+    // If the loop completes without finding any character other than '1' (meaning all
+    // characters up to 'limitIndex - 1' were '1'), then print the character at the 'limitIndex'.
+    console.log(targetString.charAt(limitIndex));
 }
 
-// Read input from standard input and pass it to the main processing function
-ExecuteLogic
-(
-    require( "fs" ).readFileSync( "/dev/stdin", "utf8" )
-) ;
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

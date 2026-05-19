@@ -1,59 +1,29 @@
-currentProcess.standardInput.continueInput();
-currentProcess.standardInput.configureEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-let inputRecords = [];
-
-const outputResult = console.log;
-
-function processStringArrayToNumbers(sourceStr, separatorChar, valueConverter) {
-    return sourceStr.split(separatorChar).map(valueConverter);
-}
-
-function traverseCollection(collectionData, callbackFn) {
-    collectionData.forEach(callbackFn);
-}
-
-function appendItemToCollection(targetCollection, newItem) {
-    targetCollection.push(newItem);
-}
-
-const customLineReader = {
-    buildInputHandler: function(optionsConfig) {
-        const actualInterface = require('readline').createInterface({
-            input: optionsConfig.sourceStream,
-            output: optionsConfig.destinationStream
-        });
-
-        return {
-            attachEventHandler: function(eventIdentifier, eventCallback) {
-                actualInterface.on(eventIdentifier, eventCallback);
-            }
-        };
-    }
-};
-
-const lineInputHandler = customLineReader.buildInputHandler({
-    sourceStream: currentProcess.standardInput,
-    destinationStream: currentProcess.standardOutput
+let inputRows = [];
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-lineInputHandler.attachEventHandler('line', (currentLineContent) => {
-    appendItemToCollection(inputRecords, currentLineContent);
+inputProcessor.on('line', (currentInputLine) => {
+  inputRows.push(currentInputLine);
 });
 
-lineInputHandler.attachEventHandler('close', () => {
-    const [totalNodes, totalEdges] = processStringArrayToNumbers(inputRecords[0], " ", (valStr) => valStr - 0);
-    const degreesOfNodes = [];
+inputProcessor.on('close', () => {
+    const [totalNodes, totalEdges] = inputRows[0].split(" ").map(strVal => Number(strVal));
+    const nodeDegrees = [];
 
-    traverseCollection(inputRecords, (currentEntry, entryIndex) => {
-        if (entryIndex > 0) {
-            const [nodeOne, nodeTwo] = processStringArrayToNumbers(currentEntry, " ", (valStr) => Number(valStr));
-            degreesOfNodes[nodeOne] = (degreesOfNodes[nodeOne] || 0) + 1;
-            degreesOfNodes[nodeTwo] = (degreesOfNodes[nodeTwo] || 0) + 1;
+    inputRows.forEach((lineData, lineIndex) => {
+        if(lineIndex > 0){
+            const [nodeA, nodeB] = lineData.split(" ").map(numStr => Number(numStr));
+            nodeDegrees[nodeA] = (nodeDegrees[nodeA] || 0) + 1;
+            nodeDegrees[nodeB] = (nodeDegrees[nodeB] || 0) + 1;
         }
     });
 
-    for (let currentId = 1; currentId <= totalNodes; currentId++) {
-        outputResult(degreesOfNodes[currentId] || 0);
+    for(let nodeIdentifier = 1; nodeIdentifier <= totalNodes; nodeIdentifier++){
+        console.log(nodeDegrees[nodeIdentifier] || 0);
     }
 });

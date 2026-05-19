@@ -1,30 +1,22 @@
-function performCheck(rawData) {
-  const allInputLines = rawData.split('\n');
+"use strict";
 
-  // Process the first line to extract its initial non-whitespace token
-  const firstLineContent = allInputLines[0] || ''; // Handle potential empty first line
-  const firstTokenExtraction = firstLineContent.match(/^\S*/);
-  const firstParsedString = firstTokenExtraction ? firstTokenExtraction[0] : '';
-  const firstNumericValue = Number(firstParsedString);
+function processInputData(rawData) {
+  const extractedNumericValues = rawData.split('\n').slice(0, 2).reduce((accumulator, currentLineSegment) => {
+    accumulator.push(Number(currentLineSegment.split(' ')[0]));
+    return accumulator;
+  }, []);
 
-  // Process the second line to extract its initial non-whitespace token
-  const secondLineContent = allInputLines[1] || ''; // Handle potential missing or empty second line
-  const secondTokenExtraction = secondLineContent.match(/^\S*/);
-  const secondParsedString = secondTokenExtraction ? secondTokenExtraction[0] : '';
-  const secondNumericValue = Number(secondParsedString);
+  const firstValue = extractedNumericValues[0];
+  const secondValue = extractedNumericValues[1];
 
-  // Calculate the difference between the two numerical data points
-  // This operation is crucial for handling NaN values consistently with strict inequality.
-  // For example, (NaN - NaN) results in NaN, and (NaN !== 0) evaluates to true,
-  // matching the behavior of (NaN !== NaN).
-  const numericalDiscrepancy = firstNumericValue - secondNumericValue;
+  // Core logic: !(firstValue === secondValue)
+  // Equivalent to: firstValue !== secondValue
+  // Using a different expression: Boolean(firstValue - secondValue)
+  // If firstValue and secondValue are equal, their difference is 0, Boolean(0) is false.
+  // If firstValue and secondValue are not equal, their difference is a non-zero number, Boolean(non-zero) is true.
+  const finalComparisonOutcome = Boolean(firstValue - secondValue);
 
-  // The result is true if there is any numerical discrepancy (i.e., they are not equal)
-  const finalOutcome = numericalDiscrepancy !== 0;
-
-  console.log(finalOutcome);
+  console.log(finalComparisonOutcome);
 }
 
-const nodeFileSystemModule = require("node:fs");
-const rawTextFromInput = nodeFileSystemModule.readFileSync("/dev/stdin", "utf8");
-performCheck(rawTextFromInput);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

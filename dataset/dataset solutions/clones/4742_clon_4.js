@@ -1,42 +1,18 @@
-"use strict";
-const acquireNumber = (sourceText) => {
-    let cleanLine = "";
-    let lineIndex = 0;
-    while (lineIndex < sourceText.length) {
-        let character = sourceText[lineIndex];
-        if (character === '\n' || character === '\r') {
-            break;
-        }
-        cleanLine += character;
-        lineIndex++;
+const computeValueRecursively = (remainingQuantity, currentTally = 0) => {
+    if (remainingQuantity <= 0) {
+        return currentTally;
     }
-    let firstNumericalSegment = "";
-    let segmentIndex = 0;
-    while (segmentIndex < cleanLine.length) {
-        let character = cleanLine[segmentIndex];
-        if (character === ' ') {
-            break;
-        }
-        firstNumericalSegment += character;
-        segmentIndex++;
+    if (remainingQuantity >= 11) {
+        return computeValueRecursively(remainingQuantity - 11, currentTally + 2);
     }
-    return Number(firstNumericalSegment);
+    return computeValueRecursively(remainingQuantity - 6, currentTally + 1);
 };
-const calculateEquivalent = (inputQuantity) => {
-    if (inputQuantity <= 0) {
-        return 0;
-    }
-    if (inputQuantity >= 1 && inputQuantity <= 6) {
-        return 1;
-    }
-    if (inputQuantity >= 7 && inputQuantity <= 10) {
-        return 2;
-    }
-    return 2 + calculateEquivalent(inputQuantity - 11);
+
+const handleInputData = (inputPayload) => {
+    const contentLines = inputPayload.trim().split("\n");
+    const numericInput = parseInt(contentLines[0].split(" ")[0]);
+    
+    console.log(computeValueRecursively(numericInput));
 };
-const processInputAndOutput = (inputPayload) => {
-    const numericInput = acquireNumber(inputPayload);
-    const finalResult = calculateEquivalent(numericInput);
-    console.log(finalResult);
-};
-processInputAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+handleInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

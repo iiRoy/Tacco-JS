@@ -1,54 +1,44 @@
-const fetchContent = (pathToSource) => {
-    return require('fs').readFileSync(pathToSource, 'utf8');
-};
+var inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var numericInputs = (inputData.trim()).split("\n").map(Number);
 
-const createArrangement = (sizeParam) => {
-    if (sizeParam === 0) {
-        return null;
+for (let inputIndex = 0; inputIndex < numericInputs.length; inputIndex++) {
+    let currentDimension = numericInputs[inputIndex];
+    let valueLimit = currentDimension * currentDimension + 1;
+
+    if (currentDimension === 0) {
+        break;
     }
 
-    const totalElements = sizeParam * sizeParam;
-    const diagram = Array(totalElements).fill(null);
+    let magicGrid = Array.from({ length: currentDimension }, () => Array(currentDimension).fill(-1));
 
-    let sequenceValue = 1;
-    let verticalPosition = Math.floor(sizeParam / 2) + 1;
-    let horizontalPosition = Math.floor(sizeParam / 2);
+    let currentVal = 1;
+    let rawY = Math.floor(currentDimension / 2) + 1;
+    let rawX = Math.floor(currentDimension / 2);
 
-    while (sequenceValue <= totalElements) {
-        verticalPosition = (verticalPosition % sizeParam + sizeParam) % sizeParam;
-        horizontalPosition = (horizontalPosition % sizeParam + sizeParam) % sizeParam;
+    while (currentVal < valueLimit) {
+        let wrappedY = rawY;
+        let wrappedX = rawX;
 
-        const linearIndex = verticalPosition * sizeParam + horizontalPosition;
+        // Apply toroidal wrapping for grid access
+        if (wrappedX < 0) wrappedX = currentDimension - 1;
+        if (wrappedY < 0) wrappedY = currentDimension - 1;
+        if (wrappedX >= currentDimension) wrappedX = 0;
+        if (wrappedY >= currentDimension) wrappedY = 0;
 
-        if (diagram[linearIndex] !== null) {
-            verticalPosition++;
-            horizontalPosition--;
+        if (magicGrid[wrappedY][wrappedX] !== -1) {
+            // If the current candidate position is occupied,
+            // the next candidate position for the *same* currentVal is (rawY + 1, rawX - 1).
+            rawY = rawY + 1;
+            rawX = rawX - 1;
         } else {
-            diagram[linearIndex] = sequenceValue;
-            sequenceValue++;
-            verticalPosition++;
-            horizontalPosition++;
+            // If empty, place the number.
+            magicGrid[wrappedY][wrappedX] = ("   " + currentVal).slice(-4);
+            currentVal++;
+            // The next candidate position for the *new* currentVal is (rawY + 1, rawX + 1).
+            rawY = rawY + 1;
+            rawX = rawX + 1;
         }
     }
 
-    const displayLines = [];
-    for (let rowIterator = 0; rowIterator < sizeParam; rowIterator++) {
-        let lineContent = '';
-        for (let colIterator = 0; colIterator < sizeParam; colIterator++) {
-            const elementValue = diagram[rowIterator * sizeParam + colIterator];
-            lineContent += String(elementValue).padStart(4, ' ');
-        }
-        displayLines.push(lineContent);
-    }
-    return displayLines.join('\n');
-};
-
-const sourceText = fetchContent('/dev/stdin');
-const magnitudeList = sourceText.trim().split('\n').map(Number);
-
-magnitudeList.forEach(currentMagnitude => {
-    const finalDesign = createArrangement(currentMagnitude);
-    if (finalDesign !== null) {
-        console.log(finalDesign);
-    }
-});
+    console.log(magicGrid.map(row => row.join("")).join("\n"));
+}

@@ -1,46 +1,40 @@
-const processCoordinates = function(rawInputText) {
-  const allNumberStrings = rawInputText.match(/-?\d+/g);
-  const allNumericValues = new Array(allNumberStrings.length);
-  for (let i = 0; i < allNumberStrings.length; ++i) {
-    allNumericValues[i] = Number(allNumberStrings[i]);
-  }
+((rawInputData) => {
+  const inputLines = rawInputData.split('\n');
 
-  const pointCount = allNumericValues[0];
-  const spaceDimension = allNumericValues[1];
+  const firstLineParts = inputLines[0].trim().split(/\s+/);
+  const pointCount = +firstLineParts[0];
+  const dimensionCount = +firstLineParts[1];
 
   const allPoints = [];
-  let currentNumericIndex = 2;
-  for (let i = 0; i < pointCount; ++i) {
-    const tempPoint = new Array(spaceDimension);
-    for (let j = 0; j < spaceDimension; ++j) {
-      tempPoint[j] = allNumericValues[currentNumericIndex + j];
-    }
-    allPoints.push(tempPoint);
-    currentNumericIndex += spaceDimension;
+  for (let pointIndex = 1; pointIndex <= pointCount; pointIndex++) {
+    const currentLineContent = inputLines[pointIndex];
+    const parsedCoordinates = currentLineContent.trim().split(/\s+/).map(Number);
+    allPoints.push(parsedCoordinates);
   }
 
-  const calcEuclideanSpan = function(vecOne, vecTwo, dim) {
-    let sumSquaredDiff = 0;
-    for (let k = 0; k < dim; ++k) {
-      let diff = vecOne[k] - vecTwo[k];
-      sumSquaredDiff += diff * diff;
-    }
-    return Math.sqrt(sumSquaredDiff);
-  };
-
   let integerDistancePairs = 0;
-  for (let idxP1 = 0; idxP1 < pointCount; ++idxP1) {
-    for (let idxP2 = idxP1 + 1; idxP2 < pointCount; ++idxP2) {
-      const currentPoint = allPoints[idxP1];
-      const otherPoint = allPoints[idxP2];
-      const measuredSpan = calcEuclideanSpan(currentPoint, otherPoint, spaceDimension);
-      if (Number.isInteger(measuredSpan)) {
+
+  for (let outerIndex = 0; outerIndex < pointCount; outerIndex++) {
+    const currentPoint = allPoints[outerIndex];
+    for (let innerIndex = outerIndex + 1; innerIndex < pointCount; innerIndex++) {
+      const comparedPoint = allPoints[innerIndex];
+      const calculatedDistance = calculateEuclideanDistance(currentPoint, comparedPoint, dimensionCount);
+      if (Number.isInteger(calculatedDistance)) {
         integerDistancePairs++;
       }
     }
   }
 
   console.log(integerDistancePairs);
-};
 
-processCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));
+})(
+  require("fs").readFileSync("/dev/stdin", "utf8")
+);
+
+function calculateEuclideanDistance(pointOne, pointTwo, dimCount) {
+  const sumOfSquaredDifferences = pointOne.reduce((accumulator, valA, index) => {
+    const difference = valA - pointTwo[index];
+    return accumulator + (difference * difference);
+  }, 0);
+  return Math.sqrt(sumOfSquaredDifferences);
+}

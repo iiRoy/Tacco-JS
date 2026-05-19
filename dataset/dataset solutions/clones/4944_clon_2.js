@@ -1,34 +1,48 @@
-// This script handles input from standard input, processing characters 'S' and 'T'.
-// If 'S' is encountered, it's added to a collection.
-// If 'T' is encountered, and the last item in the collection was 'S', both are removed (they cancel out).
-// Otherwise, 'T' is added to the collection.
-// Finally, the size of the remaining collection is printed.
+// This script processes input from standard input to count remaining characters after a specific reduction rule.
+// It simulates a stack-like operation for 'S' and 'T' characters.
 
-// System.input.resume();
-// System.input.setEncoding('unicode');
-// System.input.on('data', (dataBuffer) => {
-    processInputData ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
-// } ) ;
+// The following lines are commented out in the original, so they remain commented here.
+// process.stdin.resume();
+// process.stdin.setEncoding('utf8');
+// process.stdin.on('data', function(inputSegment) {
+    // The primary function is invoked with data read directly from /dev/stdin.
+    processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// });
 
+/**
+ * Processes a given string of characters according to a specific rule.
+ * 'S' characters are pushed onto a stack.
+ * 'T' characters pop an 'S' if available, otherwise they are pushed.
+ * The final length of the stack is printed.
+ * @param {string} inputData The entire input string to be processed.
+ */
+function processInput(inputData) {
+    // Initialize an empty array to act as our character stack.
+    let resultStack = [];
 
-function processInputData ( incomingText ) { // Main processing routine for the given text
-    var resultCollection = [ ] ; // An array to maintain the processed tokens
-    var inputCharacters = incomingText . split ( '' ) ; // Break the incoming text into individual characters for iteration
+    // Convert the input string into an array of individual characters.
+    const charSequence = inputData.split("");
 
-    for ( var charIndex in inputCharacters ) { // Traverse through each character supplied in the input string
-        switch ( inputCharacters [ charIndex ] ) { // Evaluate the current character
-        case 'S' : // Case for 'S' token
-            resultCollection . push ( 'S' ) ; // Simply add 'S' to the collection
-            break ; // Terminate this switch case
+    // Iterate through each character in the sequence using its index.
+    for (const idx in charSequence) {
+        // Determine action based on the current character.
+        switch (charSequence[idx]) {
+            case 'S': // If the character is 'S'
+                resultStack.push('S'); // Add 'S' to our stack.
+                break;
 
-        case 'T' : // Case for 'T' token
-            if ( resultCollection . length > 0 && resultCollection [ resultCollection . length - 1 ] === 'S' ) { // Check if the collection is not empty AND the last element is an 'S'
-                resultCollection . pop ( ) ; // Remove the last 'S', as it's cancelled by 'T'
-            } else { // No 'S' to cancel, or collection is empty
-                resultCollection . push ( 'T' ) ; // Add 'T' to the collection
-            }
-            break ; // Terminate this switch case
+            case 'T': // If the character is 'T'
+                // Check if the stack is not empty and the last element is 'S'.
+                if (resultStack.length > 0 && resultStack[resultStack.length - 1] === 'S') {
+                    resultStack.pop(); // Remove the 'S' (matching pair).
+                } else {
+                    resultStack.push('T'); // Otherwise, add 'T' to the stack.
+                }
+                break;
+            // No default case needed as only 'S' and 'T' are relevant for the algorithm.
         }
     }
-    console . log ( resultCollection . length ) ; // Output the final count of elements remaining in the collection
-} // End of the primary input processing function
+
+    // Output the final count of remaining items in the stack.
+    console.log(resultStack.length);
+}

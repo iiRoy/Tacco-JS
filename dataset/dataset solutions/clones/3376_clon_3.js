@@ -1,123 +1,68 @@
 "use strict";
 
-/**
- * Parses a string containing space-separated numeric values into an array of integers.
- * This utility function ensures robust conversion from text to numbers.
- * @param {string} singleLineText - The input string expected to contain numbers.
- * @returns {number[]} An array of integers parsed from the input string.
- */
-function extractNumbersFromText(singleLineText) {
-  // Split the input string by one or more whitespace characters to get individual numeric tokens.
-  const stringTokens = singleLineText.split(/\s+/);
+function _destructureArray(arr, i) { return _checkArrayType(arr) || _extractLimitedIterable(arr, i) || _throwNonIterableError(); }
 
-  // Map each string token to its integer representation.
-  // A radix of 10 is explicitly used for parseInt for consistency.
-  const parsedNumbers = stringTokens.map(function(numericString) {
-    const num = parseInt(numericString, 10);
-    // As a Type III addition, we could add more sophisticated error handling here,
-    // e.g., throwing an error if `isNaN(num)` is true, or filtering out invalid entries.
-    // For this problem, we assume valid integer inputs as per original intent.
-    return num;
-  });
+function _throwNonIterableError() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
 
-  return parsedNumbers;
-}
+function _extractLimitedIterable(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
-/**
- * Core logic to determine the largest integer base 'X'
- * such that 'X' raised to the power of 'N' (X^N) perfectly divides 'P'.
- * This function encapsulates the main computation flow.
- * @param {string} rawDataString - The complete raw input string, typically from stdin.
- * @returns {number} The largest integer X satisfying the condition, or 0 if input is invalid.
- */
-function processInputData(rawDataString) {
-  // Split the raw input into an array of lines.
-  const inputLines = rawDataString.split('\n');
+function _checkArrayType(arr) { if (Array.isArray(arr)) return arr; }
 
-  // Extract the numerical parameters N and P from the first line.
-  // Using modern array destructuring syntax (Type III update).
-  const [exponentVal, targetProduct] = extractNumbersFromText(inputLines[0]);
+// Helper function to manage the special case where the exponent is 1.
+const handleNIsOneCase = (currentExponent, currentValue) => {
+  if (currentExponent === 1) {
+    console.log(currentValue);
+    return true; // Indicates the special case was handled.
+  }
+  return false; // Indicates normal processing should continue.
+};
 
-  // --- Extensive Input Validation and Early Exit Conditions (Type III Additions) ---
-  // Validate that both extracted values are indeed numbers.
-  if (isNaN(exponentVal) || isNaN(targetProduct)) {
-    console.error("Error: Detected non-numeric input for exponent or target product. Please provide valid integers.");
-    return 0; // Indicate failure or invalid state.
+// Helper function to determine if a dividend is perfectly divisible by a base raised to a given power.
+const isDivisibleByPower = (dividend, base, power) => {
+  const calculatedPowerValue = Math.pow(base, power);
+  return dividend % calculatedPowerValue === 0;
+};
+
+function processInput(rawData) {
+  const inputLines = rawData.split('\n');
+
+  const parsedNumbers = parseNumbersFromString(inputLines[0]);
+  const destructuredNums = _destructureArray(parsedNumbers, 2);
+  const exponentVal = destructuredNums[0];
+  const baseVal = destructuredNums[1];
+
+  // Apply the guard clause for the N=1 special condition.
+  if (handleNIsOneCase(exponentVal, baseVal)) {
+    return;
   }
 
-  // Ensure the exponent is a positive integer, as per typical problem constraints.
-  // X^0 = 1, X^-ve is not generally sought in this context.
-  if (exponentVal < 1) {
-    console.error("Error: The exponent (N) must be a positive integer (N >= 1).");
-    return 0;
-  }
+  // Calculate the upper bound for our search loop.
+  const rootPowerFraction = 1 / exponentVal;
+  const calculatedUpperBound = Math.pow(baseVal, rootPowerFraction);
 
-  // Ensure the target product is a positive integer.
-  // X^N cannot meaningfully divide a non-positive P in this context.
-  if (targetProduct < 1) {
-    console.error("Error: The target product (P) must be a positive integer (P >= 1).");
-    return 0;
-  }
-  // --- End of Type III Validation Additions ---
+  let resultFactor = 1; // Initialize the factor that satisfies the condition.
 
-
-  // Special handling for the case where the exponent is 1 (N=1).
-  // If N=1, we are looking for X such that X^1 (which is just X) divides P.
-  // The largest such X is P itself.
-  if (exponentVal === 1) {
-    return targetProduct;
-  }
-
-  // Initialize the result variable.
-  // The value 1 is always a valid base (1^N divides any P).
-  let ultimateBase = 1;
-
-  // Calculate an approximate upper limit for the loop.
-  // We are searching for `currentCandidate` such that `currentCandidate^exponentVal <= targetProduct`.
-  // This implies `currentCandidate <= targetProduct^(1/exponentVal)`.
-  // Using the `**` operator for exponentiation (Type III syntax update).
-  const approximateUpperLimit = Math.floor(targetProduct ** (1 / exponentVal));
-
-  // Iterate through potential base values starting from 2.
-  // We start from 2 because `ultimateBase` is already initialized to 1.
-  for (let currentCandidate = 2; currentCandidate <= approximateUpperLimit; ++currentCandidate) {
-    // Calculate the power of the current candidate.
-    // Introducing `currentPower` as an intermediate variable (Type III addition).
-    const currentPower = Math.pow(currentCandidate, exponentVal);
-
-    // Guard against potential floating-point inaccuracies or exceeding P.
-    // If the calculated power already exceeds the target, further candidates will too.
-    if (currentPower > targetProduct) {
-        break; // Exit the loop early (Type III addition).
-    }
-
-    // Check if the target product is perfectly divisible by the current power.
-    if (targetProduct % currentPower === 0) {
-      // If it is, this `currentCandidate` is a valid base.
-      // Since we iterate in increasing order, the last `currentCandidate`
-      // that satisfies the condition will be the largest.
-      ultimateBase = currentCandidate;
+  // Iterate through potential factors starting from 2 up to the calculated upper bound.
+  for (let currentCandidateFactor = 2; currentCandidateFactor <= calculatedUpperBound; currentCandidateFactor++) {
+    // Use the helper function to check for divisibility.
+    if (isDivisibleByPower(baseVal, currentCandidateFactor, exponentVal)) {
+      resultFactor = currentCandidateFactor; // Update the result if a larger factor is found.
     }
   }
 
-  // Return the largest base found.
-  return ultimateBase;
+  console.log(resultFactor);
 }
 
-// --- Main execution block for Node.js environment (Type III Modifications) ---
-// The original `require` and `readFileSync` calls are now explicitly
-// assigned to variables for improved readability and modularity.
-const fileSystemModule = require('fs');
-const standardInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+function greatestCommonDivisor(numA, numB) {
+  if (numA < numB) return greatestCommonDivisor(numB, numA);
+  if (numB === 0) return numA;
+  const remainderVal = numA % numB;
+  return greatestCommonDivisor(numB, remainderVal);
+}
 
-// Execute the main processing function with the standard input data.
-const finalComputedValue = processInputData(standardInputContent);
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Output the final result to the console.
-console.log(finalComputedValue);
-
-// The original `_slicedToArray`, `_nonIterableRest`, `_iterableToArrayLimit`,
-// `_arrayWithHoles` Babel helper functions are removed as they are no longer
-// necessary with direct array destructuring (Type III deletion).
-// The `gcd` function from the original code is also removed as it was unused
-// in the `main` logic (Type III deletion).
+function parseNumbersFromString(inputLineStr) {
+  // Split the string by whitespace and convert each part to an integer with radix 10.
+  return inputLineStr.split(/\s+/).map(numStr => parseInt(numStr, 10));
+}

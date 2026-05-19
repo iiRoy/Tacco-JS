@@ -1,83 +1,47 @@
-/* This module provides utilities for sequence comparison. */
-
-// A recursive utility to compare two sequences lexicographically.
-// It assumes both sequences are comparable element by element (e.g., strings or arrays of comparable items).
-function compareLexicographically(
-    firstItem, /* The initial sequence for comparison. */
-    secondItem /* The other sequence to compare against. */
-) {
-    // Check if the first element of the first sequence is greater than the second.
-    if (firstItem[0] > secondItem[0]) {
-
-        return 'GREATER'; // If so, the first sequence is lexicographically greater.
-
+// This function performs a character-by-character comparison between two input sequences.
+// It determines which sequence is lexicographically greater, lesser, or if they are equal.
+function compareSegments(segmentA, segmentB) {
+    // Check if the initial character of the first segment is greater than the initial character of the second.
+    if (segmentA[0] > segmentB[0]) {
+        return 'GREATER'; // If so, the first segment is considered greater.
     }
-    // Else, check if the first element of the first sequence is less than the second.
-    else if (firstItem[0] < secondItem[0]) {
-
-        return 'LESS';    // If so, the first sequence is lexicographically lesser.
-
+    // Otherwise, check if the initial character of the first segment is less than the initial character of the second.
+    else if (segmentA[0] < segmentB[0]) {
+        return 'LESS'; // If so, the first segment is considered lesser.
     }
-    // If the first elements are equal, we need to check further.
-    // If the first sequence has only one element left (and they were equal up to this point),
-    // then both sequences must be effectively equal in length and content up to this point.
-    else if (firstItem.length === 1) {
-
-        return 'EQUAL';   // They are considered equal.
-
+    // If the initial characters are identical, check if we have reached the end of a segment.
+    // A length of 1 implies only the current character was left for comparison.
+    else if (segmentA.length === 1) {
+        return 'EQUAL'; // If segments are equal up to this point and no more characters remain, they are equal.
     }
-    // If first elements are equal and there's more to compare,
-    // recursively call the function with the rest of the sequences.
+    // If initial characters are identical and more characters exist, recurse with the remaining parts of the segments.
     else {
-        // Use substring for string manipulation, effectively stripping the first character.
-        return compareLexicographically(
-            firstItem.substring(1),
-            secondItem.substring(1)
-        );
+        // Recursively call the comparison function, advancing to the next characters in both segments.
+        return compareSegments(segmentA.slice(1), segmentB.slice(1));
     }
 }
 
-/*
- * This is the primary function to handle the input data.
- * It reads content, processes it, and outputs a comparison result.
- */
-function processInputFileContent(
-    rawText /* The entire input content as a single string. */
-) {
-    // Split the input string into an array of lines based on newline characters.
-    let linesArray = rawText.split('\n');
+// The main entry point function that processes the raw input data.
+function processInputData(rawInputString) {
+    // Divide the incoming string into an array of individual lines, using the newline character as a delimiter.
+    let inputLines = rawInputString.split('\n');
 
-    // Compare the lengths of the first two lines.
-    // If the first line is longer, it's considered 'GREATER'.
-    if (linesArray[0].length > linesArray[1].length) {
-
-        console.log('GREATER');
-
+    // First, evaluate the lengths of the initial two lines from the input.
+    if (inputLines[0].length > inputLines[1].length) {
+        console.log('GREATER'); // Output 'GREATER' if the first line is longer.
     }
-    // Else if the first line is shorter, it's considered 'LESS'.
-    else if (linesArray[0].length < linesArray[1].length) {
-
-        console.log('LESS');
-
+    // If the first line is not longer, check if it is shorter than the second line.
+    else if (inputLines[0].length < inputLines[1].length) {
+        console.log('LESS'); // Output 'LESS' if the first line is shorter.
     }
-    // If the lengths are identical, perform a detailed lexicographical comparison
-    // using the recursive helper function.
+    // If the lengths of both lines are found to be identical, proceed with a detailed character-by-character comparison.
     else {
-        // Pass complete copies of the first two lines for comparison.
-        console.log(
-            compareLexicographically(
-                linesArray[0].substring(0), // Start from index 0 to get the full string.
-                linesArray[1].substring(0)  // Start from index 0 to get the full string.
-            )
-        );
+        // Invoke the recursive comparison function with full copies of the two lines.
+        // The .slice(0) operation creates a shallow copy of the string, which is functionally equivalent to the original string itself.
+        console.log(compareSegments(inputLines[0].slice(0), inputLines[1].slice(0)));
     }
 }
 
-// Execute the main processing function with content read from standard input.
-// This uses Node.js 'fs' module to synchronously read the file.
-processInputFileContent(
-    require('fs').readFileSync(
-        '/dev/stdin', // Path to standard input on Unix-like systems.
-        'utf8'        // Encoding for the input file content.
-    )
-);
+// Execute the primary processing function by reading content from standard input.
+// The 'fs' module is used to read the file synchronously, and 'utf8' specifies the encoding.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

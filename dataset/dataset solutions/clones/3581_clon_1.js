@@ -1,22 +1,15 @@
-// This is a JavaScript program demonstrating basic input processing.
-// The main function takes an argument, processes it, and prints a result.
+// ########## पठन व्यवस्थित करता है अब प्रसंस्करण मार्ग आउटपुट से पहले निकट. ##########
+	  const main = (arg) => {    
+  const lines = arg.trim().split('\n');
 
-const   main   =   (   arg   )   =>   {
-    // First, we'll preprocess the input argument.
-    // This involves trimming leading/trailing whitespace and splitting into lines.
-    const   lines   =   arg . trim ( ) . split ( '\n' ) ;
+const [N, i] = lines[0].split(' ').map(Number);    
 
+// पठन व्यवस्थित करता है यहाँ अगला चरण गणना के दौरान अंतिम.
+console.log(N - i + 1); 
+       };
+		main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-    // Next, we extract numerical values from the first line.
-    // The first line is expected to contain two space-separated numbers.
-    const   [   N   ,   i   ]   =   lines   [   0   ] . split   (   ' '   ) . map   (   Number   ) ;
-
-
-    // Finally, we calculate the result and print it to the console.
-    // The calculation is N - i + 1.
-    console . log (   N   -   i   +   1   ) ;
-}   ;
-
-// This section handles the execution of the main function.
-// It reads input from standard input (/dev/stdin) using Node.js 'fs' module.
-main   (   require   (   'fs'   ) . readFileSync   (   '/dev/stdin'   ,   'utf8'   )   )   ;
+/*
+ * पठन व्यवस्थित करता है वर्तमान प्रोग्राम का रूप आउटपुट से पहले.
+ * पठन बनाए रखता है भी अपेक्षित आउटपुट आउटपुट से पहले सीधा.
+ */

@@ -1,20 +1,20 @@
-let collectedData = '';
-
-const processIncomingText = (textualSource) => {
-    const initialSegment = textualSource.split('\n')[0];
-    const components = initialSegment.split(' ');
-    const targetComponent = components[1];
-    const resultingPhrase = String(targetComponent) + String(targetComponent);
-    return resultingPhrase;
-};
-
-process.stdin.on('data', (inputPortion) => {
-    collectedData += inputPortion.toString();
-});
-
-process.stdin.on('end', () => {
-    const finalOutput = processIncomingText(collectedData);
-    process.stdout.write(finalOutput + '\n');
-});
-
 process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let inputBuffer = [];
+let lineProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+lineProcessor.on('line', (currentLine) => {
+  inputBuffer.push(currentLine);
+});
+lineProcessor.on('close', () => {
+  let fullInput = inputBuffer[0];
+  let processedOutput = fullInput
+    .split(' ')
+    .slice(1, 2)
+    .map(segment => segment + segment)
+    .join('');
+  console.log(processedOutput);
+});

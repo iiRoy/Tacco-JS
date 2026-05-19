@@ -1,71 +1,51 @@
-const streamProcessor = (callbackFunction) => {
-    let collectedData = '';
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-    process.stdin.on('data', (incomingSegment) => {
-        collectedData += incomingSegment;
+let inputBuffer = '';
+let lineIndex = 0;
+
+process.stdin.on('data', incomingData => {
+    inputBuffer += incomingData;
+});
+
+process.stdin.on('end', () => {
+    inputBuffer = inputBuffer.trim().split('\n').map(lineContent => {
+        return lineContent.trim();
     });
+    
+    executeMainLogic();    
+});
 
-    process.stdin.on('end', () => {
-        callbackFunction(collectedData);
-    });
-};
+function obtainNextLine() {
+    return inputBuffer[lineIndex++];
+}
 
-const analyzeSequenceForMoves = (sequenceString, currentLeftPointer, currentRightPointer, currentMoveTally) => {
-    if (currentLeftPointer >= currentRightPointer) {
-        return currentMoveTally;
+function executeMainLogic() {
+  const dataLength = Number(obtainNextLine());
+  const charSequence = obtainNextLine();
+
+  let leftPointer = 0;
+  let rightPointer = dataLength - 1;
+  let swapCount = 0;
+
+  const R_CHARACTER = 'R';
+  const W_CHARACTER = 'W';
+
+  while (leftPointer < rightPointer) {
+    while (leftPointer < rightPointer && charSequence[leftPointer] === R_CHARACTER) {
+      leftPointer++;
     }
 
-    const rightwardSymbol = 'R';
-    const leftwardSymbol = 'W';
-
-    const locateLeftmostMismatch = (scanPosition) => {
-        if (scanPosition >= currentRightPointer) {
-            return -1;
-        }
-        if (sequenceString[scanPosition] === leftwardSymbol) {
-            return scanPosition;
-        }
-        return locateLeftmostMismatch(scanPosition + 1);
-    };
-
-    const locateRightmostMismatch = (scanPosition, minimumLimit) => {
-        if (scanPosition <= minimumLimit) {
-            return -1;
-        }
-        if (sequenceString[scanPosition] === rightwardSymbol) {
-            return scanPosition;
-        }
-        return locateRightmostMismatch(scanPosition - 1, minimumLimit);
-    };
-
-    const firstLeftMismatchIndex = locateLeftmostMismatch(currentLeftPointer);
-
-    if (firstLeftMismatchIndex === -1) {
-        return currentMoveTally;
+    while (leftPointer < rightPointer && charSequence[rightPointer] === W_CHARACTER) {
+      rightPointer--;
     }
 
-    const firstRightMismatchIndex = locateRightmostMismatch(currentRightPointer, firstLeftMismatchIndex);
-
-    if (firstRightMismatchIndex === -1) {
-        return currentMoveTally;
+    if (leftPointer < rightPointer) {
+      swapCount++;
+      leftPointer++;
+      rightPointer--;
     }
+  }
 
-    return analyzeSequenceForMoves(
-        sequenceString,
-        firstLeftMismatchIndex + 1,
-        firstRightMismatchIndex - 1,
-        currentMoveTally + 1
-    );
-};
-
-const orchestrateProcessing = (fullInputContent) => {
-    const lines = fullInputContent.trim().split('\n').map(line => line.trim());
-    const charData = lines[1];
-
-    const finalCount = analyzeSequenceForMoves(charData, 0, charData.length - 1, 0);
-    console.log(finalCount);
-};
-
-streamProcessor(orchestrateProcessing);
+  console.log(swapCount);
+}

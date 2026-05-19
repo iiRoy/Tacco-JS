@@ -1,317 +1,264 @@
-var _helpers;
-var sourceData;
-var DisplayResult;
+'use strict';
 
-// A general-purpose helper collection for common data manipulations.
-class UtilityBelt {
-  // Aggregates all numeric elements in a collection by summing them up.
-  aggregateNumbers(dataCollection) {
+class SolutionProcessor {
+  executeLogic() {
+    const configurationParameters = dataInput.getNextIntegerArray();
+    // The original code declared 'x' but then used 's' which was undefined.
+    // To preserve the exact observable behavior (a TypeError from attempting to access 'length' of undefined),
+    // the unused 'x' variable is removed as dead code. The 's' variable remains undefined.
+    // const inputDataSequence = dataInput.getNextIntegerArray(); // Original 'x' removed.
+
+    const priceMultiplier = configurationParameters[1];
+    const maxPriceCap = configurationParameters[2];
+
+    // The 's' variable here is undefined, replicating the original code's bug.
+    // This will cause a TypeError when utilityHelper.computeDifferences(s) is called.
+    const differences = utilityHelper.computeDifferences(s);
+
     let totalSum = 0;
-    // Input validation: ensure it's an array and not empty.
-    if (!Array.isArray(dataCollection) || dataCollection.length === 0) {
-      console.warn("Warning: Attempted to sum an empty or non-array collection. Returning 0.");
-      return 0;
-    }
-    // Iterate through the collection to sum numeric values.
-    for (let currentValue of dataCollection) {
-      if (typeof currentValue === 'number' && !isNaN(currentValue)) {
-        totalSum += currentValue;
-      } else {
-        console.warn(`Warning: Non-numeric element encountered: '${currentValue}'. Skipping this element.`);
-      }
+    // Rewriting the chained map and sum operations into an explicit loop.
+    for (const element of differences) {
+      const calculatedProduct = element * priceMultiplier;
+      totalSum += Math.min(calculatedProduct, maxPriceCap);
     }
     return totalSum;
   }
-
-  // Identifies the smallest element within a collection based on an optional comparator function.
-  findMinimum(values, comparator) {
-    if (!Array.isArray(values) || values.length === 0) {
-      return undefined; // Return undefined for empty or invalid input.
-    }
-    // Establish a default numerical comparison function if none is provided.
-    const comparisonFunction = comparator || ((valA, valB) => valA - valB);
-
-    let currentMin = values[0];
-    // Iterate from the second element to find the minimum.
-    for (let i = 1; i < values.length; i++) {
-      if (comparisonFunction(values[i], currentMin) < 0) {
-        currentMin = values[i];
-      }
-    }
-    return currentMin;
-  }
-
-  // Identifies the largest element within a collection based on an optional comparator function.
-  findMaximum(values, comparator) {
-    if (!Array.isArray(values) || values.length === 0) {
-      return undefined; // Return undefined for empty or invalid input.
-    }
-    // Establish a default numerical comparison function if none is provided.
-    const comparisonFunction = comparator || ((valA, valB) => valA - valB);
-
-    let currentMax = values[0];
-    // Iterate from the second element to find the maximum.
-    for (let i = 1; i < values.length; i++) {
-      if (comparisonFunction(values[i], currentMax) > 0) {
-        currentMax = values[i];
-      }
-    }
-    return currentMax;
-  }
-
-  // Sorts an array's elements using a provided comparison function.
-  orderElements(items, sortFn) {
-    if (!Array.isArray(items)) {
-      console.error("Error: Input for orderElements must be an array.");
-      return []; // Return an empty array for invalid input.
-    }
-    // Create a shallow copy to prevent modifying the original array directly.
-    const copiedItems = [...items]; 
-    const effectiveSortFunction = sortFn || ((valA, valB) => valA - valB);
-    return copiedItems.sort(effectiveSortFunction);
-  }
-
-  // Generates a numerical sequence of values.
-  generateSequence(begin, end, stepVal) {
-    let actualStart = begin || 0;
-    let actualStop = end;
-    let stepAmount = stepVal;
-
-    // Adjust parameters if only a single 'stop' argument is provided.
-    if (actualStop == null) {
-      actualStop = actualStart;
-      actualStart = 0;
-    }
-
-    // Determine the step direction if not explicitly given.
-    if (stepAmount == null) {
-      stepAmount = actualStop < actualStart ? -1 : 1;
-    } else if (stepAmount === 0) {
-      console.error("Error: Step value cannot be zero in generateSequence.");
-      return []; // Return an empty array for invalid step.
-    }
-
-    // Calculate the length of the sequence, ensuring it's non-negative.
-    let sequenceLength = Math.floor((actualStop - actualStart) / stepAmount);
-    if (sequenceLength < 0) {
-        sequenceLength = 0;
-    }
-
-    const numericSequence = [];
-    // Populate the sequence array.
-    for (let currentIdx = 0; currentIdx < sequenceLength; currentIdx++) {
-      numericSequence.push(actualStart + (currentIdx * stepAmount));
-    }
-    return numericSequence;
-  }
-
-  // Computes the differences between consecutive elements in a numerical series.
-  calculateDifferences(inputSeries) {
-    if (!Array.isArray(inputSeries) || inputSeries.length < 2) {
-      console.warn("Warning: Input series for calculateDifferences must have at least two elements. Returning empty array.");
-      return []; // Cannot calculate differences for short arrays.
-    }
-    // Use array slicing and mapping for a concise transformation.
-    return inputSeries.slice(1).map((currentVal, index) => {
-      return currentVal - inputSeries[index];
-    });
-  }
-
-  // Note: Several original Underscore methods (e.g., first, initial, tail, last, sumArray, binarySearch)
-  // have been intentionally removed as Type III changes because they are not utilized by the main application logic.
 }
 
-// Instantiate the utility collection for global access.
-_helpers = new UtilityBelt();
+class UtilityToolkit {
+  calculateTotal(elements) {
+    // Preserves original behavior: throws TypeError for empty array without initial value.
+    return elements.reduce((accumulator, currentValue) => accumulator + currentValue);
+  }
 
-// Manages all operations related to reading and parsing input data.
-class DataSource {
+  determineMinimum(elements, comparisonFunc) {
+    const actualComparisonFunc = comparisonFunc === null ? (a, b) => a - b : comparisonFunc;
+    // Preserves original behavior: throws TypeError for empty array without initial value.
+    return elements.reduce((minVal, currentVal) => actualComparisonFunc(minVal, currentVal) < 0 ? minVal : currentVal);
+  }
+
+  determineMaximum(elements, comparisonFunc) {
+    const actualComparisonFunc = comparisonFunc === null ? (a, b) => a - b : comparisonFunc;
+    // Preserves original behavior: throws TypeError for empty array without initial value.
+    return elements.reduce((maxVal, currentVal) => actualComparisonFunc(maxVal, currentVal) > 0 ? maxVal : currentVal);
+  }
+
+  sortElements(elements, comparisonFunc) {
+    const actualComparisonFunc = comparisonFunc === null ? (a, b) => a - b : comparisonFunc;
+    // The original `sort` modifies the array in place and returns it. This behavior is preserved.
+    return elements.sort(actualComparisonFunc);
+  }
+
+  generateNumericRange(startValue, stopValue, stepSize) {
+    let currentStart = startValue;
+    let currentStop = stopValue;
+    let currentStep = stepSize;
+
+    if (currentStop === null) {
+      currentStop = currentStart || 0;
+      currentStart = 0;
+    }
+    if (!currentStep) {
+      currentStep = currentStop < currentStart ? -1 : 1;
+    }
+
+    const rangeLength = Math.max(Math.ceil((currentStop - currentStart) / currentStep), 0);
+    // Rewriting the range generation using Array.from for a more declarative style.
+    return Array.from({ length: rangeLength }, (_, index) => currentStart + (index * currentStep));
+  }
+
+  retrieveFirstElements(collection, count) {
+    if (collection === null || collection.length < 1) {
+      return count === null ? void 0 : [];
+    }
+    if (count === null) {
+      return collection[0];
+    }
+    return this.retrieveInitialElements(collection, collection.length - count);
+  }
+
+  retrieveInitialElements(collection, count) {
+    const numToExclude = count === null ? 1 : count;
+    // Explicitly using Array.prototype.slice.call to match original's robustness for array-like objects.
+    return Array.prototype.slice.call(collection, 0, Math.max(0, collection.length - numToExclude));
+  }
+
+  retrieveTailElements(collection, count) {
+    const startIndex = count === null ? 1 : count;
+    // Explicitly using Array.prototype.slice.call.
+    return Array.prototype.slice.call(collection, startIndex);
+  }
+
+  retrieveLastElements(collection, count) {
+    if (count === null) {
+      return collection[collection.length - 1];
+    }
+    return this.retrieveTailElements(collection, Math.max(0, collection.length - count));
+  }
+
+  computeCumulativeSums(elements) {
+    const cumulativeResults = [0]; // Initialize with 0 as per original's reduce initial value.
+    // Rewriting the cumulative sum logic with a more explicit reduce.
+    elements.reduce((accumulator, currentValue) => {
+      const nextSum = accumulator + currentValue;
+      cumulativeResults.push(nextSum);
+      return nextSum;
+    }, 0); // Initial value for the accumulator.
+    return this.retrieveTailElements(cumulativeResults); // Use tail to remove the initial 0.
+  }
+
+  computeDifferences(elements) {
+    const differenceArray = [];
+    // The original code would throw a TypeError if 'elements' is null or undefined
+    // because it attempts to access 'elements.length'. This behavior is preserved.
+    for (let i = 1; i < elements.length; ++i) {
+      const currentVal = elements[i];
+      const previousVal = elements[i - 1];
+      differenceArray.push(currentVal - previousVal);
+    }
+    return differenceArray;
+  }
+
+  performOrderedSearch(sortedArray, searchKey, accessorKey) {
+    // Extracting the accessor logic into a local helper function for clarity.
+    const getItemValue = (item) => {
+      if (accessorKey === null) {
+        return item;
+      }
+      return (typeof item === 'object') ? item[accessorKey] : item;
+    };
+
+    const targetValue = getItemValue(searchKey);
+    let lowIndex = 0;
+    let highIndex = sortedArray.length;
+
+    while (lowIndex < highIndex) {
+      let midIndex = Math.floor((lowIndex + highIndex) / 2);
+      if (getItemValue(sortedArray[midIndex]) < targetValue) {
+        lowIndex = midIndex + 1;
+      } else {
+        highIndex = midIndex;
+      }
+    }
+    return lowIndex;
+  }
+}
+const utilityHelper = new UtilityToolkit();
+
+class InputProcessor {
   constructor() {
-    this.readIndex = 0;
-    this.rawLines = [];
-    this.loadAllData();
+    this.currentReadPosition = 0;
+    this.loadedData = [];
+    this.loadAllSourceData();
   }
 
-  // Loads all input data from the standard input stream.
-  loadAllData() {
-    try {
-      this.rawLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
-      // Remove any trailing empty line that might result from stdin.
-      if (this.rawLines.length > 0 && this.rawLines[this.rawLines.length - 1] === '') {
-        this.rawLines.pop();
+  loadAllSourceData() {
+    // Using a temporary constant for the file path.
+    const inputFilePath = "/dev/stdin";
+    this.loadedData = (require("fs").readFileSync(inputFilePath, "utf8")).split('\n');
+    return this.loadedData;
+  }
+
+  getNextLine(lineCount) {
+    if (lineCount) {
+      // Added a guard for non-positive lineCount.
+      if (lineCount <= 0) {
+        return [];
       }
-    } catch (error) {
-      console.error("Critical Error: Failed to load input data from /dev/stdin. Details:", error.message);
-      this.rawLines = []; // Ensure rawLines is an array even on error.
+      const linesToExtract = this.loadedData.slice(this.currentReadPosition, this.currentReadPosition + lineCount);
+      this.currentReadPosition += lineCount;
+      return linesToExtract;
     }
+    // Preserve original behavior: return undefined if no more lines.
+    if (this.currentReadPosition >= this.loadedData.length) {
+        return undefined;
+    }
+    return this.loadedData[this.currentReadPosition++];
   }
 
-  // Retrieves one or multiple lines of text from the input buffer.
-  fetchLines(count) {
-    // If a specific count of lines is requested.
-    if (count != null && count > 0) {
-      if (this.readIndex + count > this.rawLines.length) {
-        console.warn(`Warning: Requested ${count} lines, but only ${this.rawLines.length - this.readIndex} are available.`);
-        count = this.rawLines.length - this.readIndex; // Adjust count to available lines.
-      }
-      const retrievedBlock = this.rawLines.slice(this.readIndex, this.readIndex + count);
-      this.readIndex += count;
-      return retrievedBlock;
+  // Introducing a private helper to reduce repetition in parsing number arrays.
+  _parseLineToNumbers(lineContent, parserFunction) {
+    if (lineContent === undefined) { // Handle cases where getNextLine returns undefined.
+        return [];
     }
-    // Default behavior: retrieve a single line.
-    if (this.readIndex >= this.rawLines.length) {
-      console.warn("Warning: Attempted to read past the end of available input data.");
-      return undefined;
-    }
-    return this.rawLines[this.readIndex++];
+    return lineContent.split(' ').map(parserFunction);
   }
 
-  // Parses the next available line as an integer.
   getNextInteger() {
-    const lineContent = this.fetchLines();
-    if (lineContent === undefined) return NaN; // Indicate failure if no line is available.
-    const parsedValue = parseInt(lineContent, 10); // Use radix 10 for explicit base.
-    if (isNaN(parsedValue)) {
-      console.warn(`Warning: Could not parse "${lineContent}" as an integer. Returning NaN.`);
-    }
-    return parsedValue;
+    const lineContent = this.getNextLine();
+    return parseInt(lineContent);
   }
 
-  // Parses the next line into an array of strings, split by spaces.
   getNextStringArray() {
-    const line = this.fetchLines();
-    return line ? line.split(' ') : []; // Return empty array if no line was fetched.
+    const lineContent = this.getNextLine();
+    if (lineContent === undefined) { // Handle undefined line.
+        return [];
+    }
+    return lineContent.split(' ');
   }
 
-  // Parses the next line into an array of integers.
-  retrieveIntegerArray() {
-    const stringParts = this.getNextStringArray();
-    return stringParts.map((str) => {
-      const num = parseInt(str, 10);
-      return isNaN(num) ? 0 : num; // Default to 0 if parsing fails.
-    });
+  getNextIntegerArray() {
+    return this._parseLineToNumbers(this.getNextLine(), (element) => parseInt(element));
   }
 
-  // Parses the next line into an array of floating-point numbers.
-  retrieveFloatArray() {
-    const stringParts = this.getNextStringArray();
-    return stringParts.map((str) => {
-      const num = parseFloat(str);
-      return isNaN(num) ? 0.0 : num; // Default to 0.0 if parsing fails.
-    });
+  getNextFloatArray() {
+    return this._parseLineToNumbers(this.getNextLine(), (element) => parseFloat(element));
   }
 
-  // Fetches multiple lines and parses each into an integer.
-  fetchIntegerLines(num) {
-    const lines = this.fetchLines(num);
-    if (!Array.isArray(lines)) return [];
-    return lines.map((line) => parseInt(line, 10));
+  getIntegerLines(count) {
+    const lines = this.getNextLine(count);
+    if (!Array.isArray(lines)) { // Handle case where getNextLine(count) might return undefined for count=1 and no more lines.
+        return [];
+    }
+    return lines.map((line) => parseInt(line));
   }
 
-  // Fetches multiple lines and parses each into a float.
-  fetchFloatLines(num) {
-    const lines = this.fetchLines(num);
-    if (!Array.isArray(lines)) return [];
+  getFloatLines(count) {
+    const lines = this.getNextLine(count);
+    if (!Array.isArray(lines)) {
+        return [];
+    }
     return lines.map((line) => parseFloat(line));
   }
 
-  // Fetches multiple lines and splits each into a string array, forming a 2D string matrix.
-  fetchStringMatrix(numRows) {
-    const lines = this.fetchLines(numRows);
-    if (!Array.isArray(lines)) return [];
-    return lines.map((rowText) => rowText.split(' '));
+  getStringMatrix(count) {
+    const lines = this.getNextLine(count);
+    if (!Array.isArray(lines)) {
+        return [];
+    }
+    return lines.map((line) => line.split(' '));
   }
 
-  // Fetches multiple lines and parses each into an integer array, forming a 2D integer matrix.
-  fetchIntegerMatrix(numRows) {
-    const lines = this.fetchLines(numRows);
-    if (!Array.isArray(lines)) return [];
-    return lines.map((rowText) => rowText.split(' ').map((e) => parseInt(e, 10)));
+  getIntegerMatrix(count) {
+    const lines = this.getNextLine(count);
+    if (!Array.isArray(lines)) {
+        return [];
+    }
+    return lines.map((line) => this._parseLineToNumbers(line, (element) => parseInt(element)));
   }
 
-  // Fetches multiple lines and parses each into a float array, forming a 2D float matrix.
-  fetchFloatMatrix(numRows) {
-    const lines = this.fetchLines(numRows);
-    if (!Array.isArray(lines)) return [];
-    return lines.map((rowText) => rowText.split(' ').map((e) => parseFloat(e)));
+  getFloatMatrix(count) {
+    const lines = this.getNextLine(count);
+    if (!Array.isArray(lines)) {
+        return [];
+    }
+    return lines.map((line) => this._parseLineToNumbers(line, (element) => parseFloat(element)));
   }
 }
+const dataInput = new InputProcessor();
 
-// Instantiate the data source for input operations.
-sourceData = new DataSource();
-
-// Main application logic container.
-class Processor {
-  // Executes the primary computation task.
-  computeOutcome() {
-    // Retrieve initial configuration values (e.g., N, A, B).
-    const configurationValues = sourceData.retrieveIntegerArray();
-    // Retrieve the main data series (e.g., X values).
-    const inputDataSeries = sourceData.retrieveIntegerArray();
-
-    // Extensive validation for required input data.
-    if (!Array.isArray(configurationValues) || configurationValues.length < 3) {
-      console.error("Error: Configuration values array is missing or has fewer than 3 elements.");
-      return 0; // Default error value.
-    }
-    if (!Array.isArray(inputDataSeries) || inputDataSeries.length < 2) {
-      console.error("Error: Input data series is missing or has fewer than 2 elements for difference calculation.");
-      return 0; // Default error value.
-    }
-
-    // Extract specific parameters from the configuration array for clarity.
-    const multiplierParam = configurationValues[1]; // Corresponds to 'A' in original problem context.
-    const ceilingValue = configurationValues[2];    // Corresponds to 'B' in original problem context.
-
-    // Calculate the differences between adjacent elements in the input series.
-    const sequentialDifferences = _helpers.calculateDifferences(inputDataSeries);
-
-    // Process each difference: multiply it by 'A', then cap the result at 'B'.
-    const processedValues = [];
-    for (const differential of sequentialDifferences) {
-      const multipliedValue = differential * multiplierParam;
-      // Apply the ceiling value using a ternary operator.
-      const cappedValue = (multipliedValue < ceilingValue) ? multipliedValue : ceilingValue;
-      processedValues.push(cappedValue);
-    }
-
-    // Finally, sum all the processed values to get the outcome.
-    return _helpers.aggregateNumbers(processedValues);
-  }
-}
-
-// Function to handle the display of the final computed result.
-DisplayResult = function(finalOutcome) {
-  let outputString;
-
-  // Handle cases where the outcome is null or undefined explicitly.
-  if (finalOutcome === null || finalOutcome === undefined) {
-    outputString = "No result was computed.";
-    console.log(outputString);
+const OutputFormatter = (outputValue) => {
+  let formattedResult;
+  if (outputValue === null) {
     return;
   }
 
-  // Use a switch statement to format the output based on its type.
-  switch (typeof finalOutcome) {
-    case 'boolean':
-      outputString = finalOutcome ? 'Yes' : 'No';
-      break;
-    case 'number':
-    case 'string':
-      outputString = String(finalOutcome); // Ensure it's a string for consistent output.
-      break;
-    default:
-      // Attempt to serialize complex objects or arrays for display.
-      try {
-        outputString = JSON.stringify(finalOutcome, null, 2); // Pretty print JSON.
-      } catch (e) {
-        outputString = `[Unserializable Result Type: ${typeof finalOutcome}]`;
-      }
-      break;
-  }
-  // Log the final output with a descriptive prefix.
-  console.log("Final Computed Outcome: " + outputString);
+  // Rewriting the conditional assignment using a ternary chain.
+  formattedResult = (outputValue === true) ? 'Yes' :
+                    (outputValue === false) ? 'No' :
+                    outputValue;
+
+  console.log(formattedResult);
 };
 
-// Initiate the main processing flow and display its result.
-DisplayResult(new Processor().computeOutcome());
+OutputFormatter(new SolutionProcessor().executeLogic());

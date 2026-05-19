@@ -1,64 +1,59 @@
-const processInput = (rawText) => {
-    const lines = rawText.trim().split('\n');
-    const [pointCountVal, gridParam] = lines[0].split(' ').map(Number);
+const calculateGridParity = (coordinateValue, cellSize) => {
+    return Math.floor(coordinateValue / cellSize) % 2;
+};
 
-    const pointRegistry = lines.slice(1).map(line => {
-        const [px, py, pColorChar] = line.split(' ');
+const derivePointColor = (referenceX, referenceY, baseGridColor, gridSize, targetX, targetY) => {
+    const xOffsetParity = calculateGridParity(targetX - referenceX, gridSize);
+    const yOffsetParity = calculateGridParity(targetY - referenceY, gridSize);
+    return baseGridColor ^ (xOffsetParity ^ yOffsetParity);
+};
+
+const processInputData = (inputContent) => {
+    const lines = inputContent.split("\n");
+
+    const [pointCountStr, kSizeStr] = lines[0].split(" ");
+    const totalPoints = Number(pointCountStr);
+    const gridDimension = Number(kSizeStr);
+
+    const allPoints = lines.slice(1, totalPoints + 1).map(line => {
+        const [coordX, coordY, colorChar] = line.split(" ");
         return {
-            xCoord: Number(px),
-            yCoord: Number(py),
-            colorVal: pColorChar === 'W'
+            x: Number(coordX),
+            y: Number(coordY),
+            color: colorChar === "B" ? 0 : 1
         };
     });
 
-    return { pointCount: pointCountVal, gridSize: gridParam, points: pointRegistry };
-};
+    const initialReferenceColor = allPoints[0].color;
 
-const determineFieldColor = (tx, ty, relX, relY, basePatternColor, gDim) => {
-    const xBlockDiffParity = (Math.floor((tx - relX) / gDim) % 2) !== 0;
-    const yBlockDiffParity = (Math.floor((ty - relY) / gDim) % 2) !== 0;
-    return basePatternColor ^ xBlockDiffParity ^ yBlockDiffParity;
-};
+    let maximumMatches = 0;
 
-const generateResult = (inputData) => {
-    const { pointCount, gridSize, points } = processInput(inputData);
+    allPoints.forEach(currentAnchorPoint => {
+        Array.from({ length: gridDimension }, (_, xShiftIndex) => {
+            Array.from({ length: gridDimension }, (_, yShiftIndex) => {
+                const currentReferenceX = currentAnchorPoint.x - xShiftIndex;
+                const currentReferenceY = currentAnchorPoint.y - yShiftIndex;
 
-    if (pointCount === 0) {
-        return 0;
-    }
+                const currentAlignmentMatches = allPoints.reduce((accumulator, targetPoint) => {
+                    const expectedColor = derivePointColor(
+                        currentReferenceX,
+                        currentReferenceY,
+                        initialReferenceColor,
+                        gridDimension,
+                        targetPoint.x,
+                        targetPoint.y
+                    );
+                    return accumulator + (expectedColor === targetPoint.color ? 1 : 0);
+                }, 0);
 
-    const initialReferenceColor = points[0].colorVal;
-
-    let maxScore = 0;
-
-    for (let relativeX = 0; relativeX < gridSize; relativeX++) {
-        for (let relativeY = 0; relativeY < gridSize; relativeY++) {
-            let currentScore = 0;
-            for (const observedPoint of points) {
-                const predictedColor = determineFieldColor(
-                    observedPoint.xCoord,
-                    observedPoint.yCoord,
-                    relativeX,
-                    relativeY,
-                    initialReferenceColor,
-                    gridSize
-                );
-
-                if (predictedColor === observedPoint.colorVal) {
-                    currentScore++;
+                if (currentAlignmentMatches > maximumMatches) {
+                    maximumMatches = currentAlignmentMatches;
                 }
-            }
-            if (currentScore > maxScore) {
-                maxScore = currentScore;
-            }
-        }
-    }
+            });
+        });
+    });
 
-    return maxScore;
+    console.log(maximumMatches);
 };
 
-const runApplication = (rawInput) => {
-    console.log(generateResult(rawInput));
-};
-
-runApplication(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

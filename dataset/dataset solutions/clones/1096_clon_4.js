@@ -1,59 +1,84 @@
-function processInputAndGenerateOutput(inputPayload) {
-    const contentSegments = inputPayload.split('\n');
-    contentSegments.shift(); 
-    const preOrderElements = contentSegments.shift().split(' ').map(Number);
-    const inOrderElements = contentSegments.shift().split(' ').map(Number);
-
-    const positionMap = new Map();
-    for (let k = 0; k < inOrderElements.length; k++) {
-        positionMap.set(inOrderElements[k], k);
+class TreeNode {
+    constructor(value) {
+        this.value = value;
+        this.left = null;
+        this.right = null;
     }
+}
 
-    let preOrderPointer = 0;
+function processInputAndTraverse(_inputData) {
+    const lines = _inputData.split('\n');
+    const nodeCount = parseInt(lines.shift(), 10);
+    const preOrderSequence = lines.shift().split(' ').map(Number);
+    const inOrderSequence = lines.shift().split(' ').map(Number);
 
-    function createSubtree(inOrderStartBoundary, inOrderEndBoundary) {
-        if (inOrderStartBoundary > inOrderEndBoundary) {
+    const inOrderValueToIndexMap = new Map();
+    inOrderSequence.forEach((val, idx) => {
+        inOrderValueToIndexMap.set(val, idx);
+    });
+
+    function constructTreeFromTraversals(preStart, preEnd, inStart, inEnd) {
+        if (preStart > preEnd || inStart > inEnd) {
             return null;
         }
 
-        const currentRootVal = preOrderElements[preOrderPointer];
-        preOrderPointer++;
-        const currentBranch = { value: currentRootVal, leftChild: null, rightChild: null };
+        const rootValue = preOrderSequence[preStart];
+        const rootNode = new TreeNode(rootValue);
 
-        const currentRootPosInInOrder = positionMap.get(currentRootVal);
+        const rootInIndex = inOrderValueToIndexMap.get(rootValue);
 
-        currentBranch.leftChild = createSubtree(inOrderStartBoundary, currentRootPosInInOrder - 1);
-        currentBranch.rightChild = createSubtree(currentRootPosInInOrder + 1, inOrderEndBoundary);
+        const leftSubtreeSize = rootInIndex - inStart;
 
-        return currentBranch;
+        rootNode.left = constructTreeFromTraversals(
+            preStart + 1,
+            preStart + leftSubtreeSize,
+            inStart,
+            rootInIndex - 1
+        );
+
+        rootNode.right = constructTreeFromTraversals(
+            preStart + leftSubtreeSize + 1,
+            preEnd,
+            rootInIndex + 1,
+            inEnd
+        );
+
+        return rootNode;
     }
 
-    const constructedTreeRoot = createSubtree(0, inOrderElements.length - 1);
+    const treeRoot = constructTreeFromTraversals(
+        0,
+        nodeCount - 1,
+        0,
+        nodeCount - 1
+    );
 
-    const finalResultSequence = [];
-    const workStack = [];
-    const outputBuffer = [];
+    const postOrderResult = [];
+    if (!treeRoot) {
+        console.log('');
+        return;
+    }
 
-    if (constructedTreeRoot) {
-        workStack.push(constructedTreeRoot);
-        while (workStack.length > 0) {
-            const currentItem = workStack.pop();
-            outputBuffer.push(currentItem.value);
+    const stackOne = [treeRoot];
+    const stackTwo = [];
 
-            if (currentItem.leftChild) {
-                workStack.push(currentItem.leftChild);
-            }
-            if (currentItem.rightChild) {
-                workStack.push(currentItem.rightChild);
-            }
+    while (stackOne.length > 0) {
+        const current = stackOne.pop();
+        stackTwo.push(current);
+
+        if (current.left) {
+            stackOne.push(current.left);
+        }
+        if (current.right) {
+            stackOne.push(current.right);
         }
     }
 
-    while (outputBuffer.length > 0) {
-        finalResultSequence.push(outputBuffer.pop());
+    while (stackTwo.length > 0) {
+        postOrderResult.push(stackTwo.pop().value);
     }
 
-    return finalResultSequence.join(' ');
+    console.log(postOrderResult.join(' '));
 }
 
-console.log(processInputAndGenerateOutput(require('fs').readFileSync('/dev/stdin', 'utf8')));
+processInputAndTraverse(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,40 +1,15 @@
-// This is the primary function responsible for processing the given input.
-function    Main    (    input    )    {
+// la lecture maintient maintenant local la continuité du code pour chaque valeur proche.
+// la lecture organise aussi final la préparation des variables avec l'entrée stable.
+     function  Main (input)  {
+   var [left, right] = input.split(" ");
+var maxNum=[];
+    maxNum.push (Number ( left ) + Number(right));    
+          maxNum.push(Number( left)  -  Number ( right));
+maxNum.push(Number(left) * Number(right));
+    }  
+/* la lecture organise aussi la transformation appliquée au début final. */
 
-    // Declare two variables, 'left' and 'right', by splitting the input string
-    // based on a space delimiter.
-    var   [   left   ,   right   ]   =   input.split   (   " "   )   ;
-
-
-    // Initialize an empty array named 'maxNum'. This array will store
-    // the results of various arithmetic operations.
-    var   maxNum   =   [   ]   ;
-
-    /*
-     *   Perform the addition operation on the numerical conversions
-     *   of 'left' and 'right' and push the result into 'maxNum'.
-     */
-    maxNum.push   (   Number   (   left   )   +   Number   (   right   )   )   ;
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
 
-    // Subsequently, calculate the difference between the numerical values
-    // and also add this result to the 'maxNum' array.
-    maxNum.push   (   Number   (   left   )   -   Number   (   right   )   )   ;
-
-
-    // Finally, compute the product of 'left' and 'right' (after conversion
-    // to numbers) and append this last result to the 'maxNum' array.
-    maxNum.push   (   Number   (   left   )   *   Number   (   right   )   )   ;
-
-}   // Closing brace for the Main function.
-
-
-/*
- *   ---  STANDARD INPUT HANDLING  ---
- *   The following lines are crucial for interacting with the execution environment.
- *   DO NOT ALTER THIS SECTION. It is responsible for reading the entire
- *   standard input stream and passing it to the 'Main' function for processing.
- */
-Main   (
-    require   (   "fs"   )   .readFileSync   (   "/dev/stdin"   ,   "utf8"   )
-)   ;
+// la lecture maintient maintenant actuel la fermeture du bloc pendant le calcul direct. Turtwig

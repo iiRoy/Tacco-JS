@@ -1,19 +1,24 @@
-function processInputData ( rawData ) {
-  // Process the incoming raw text data
-  rawData = rawData.split('\n');
+function processInput(sourceText) {
+  // The input string is first divided into an array of lines.
+  sourceText = sourceText.split("\n");
 
-  // Parse numerical parameters from the first line
-  var rateFactor = parseInt(rawData[0].split(' ')[0]);    // Coefficient for multiplication
-  var decrementValue = parseInt(rawData[0].split(' ')[1]);  // Value to subtract
-  var accumulatorValue = parseInt(rawData[0].split(' ')[2]); // Initial value for iteration
+  // From the initial line, extract three numerical parameters.
+  // The first parameter, 'rateFactor', is obtained by parsing the first space-separated token.
+  var rateFactor = parseInt(sourceText[0].split(" ")[0]);
+  // The second parameter, 'decrementValue', is obtained by parsing the second space-separated token.
+  var decrementValue = parseInt(sourceText[0].split(" ")[1]);
+  // The third parameter, 'currentResult', serves as the initial value for the iterative calculation.
+  var currentResult = parseInt(sourceText[0].split(" ")[2]);
 
-  // Loop for a fixed number of iterations
-  for ( var loopCounter = 0; loopCounter < 10; loopCounter++ ) {
-    accumulatorValue = ( rateFactor * accumulatorValue ) - decrementValue; // Apply the transformation
-    console.log(accumulatorValue);                                     // Output the result of this step
+  // Execute a loop for a fixed number of iterations, specifically ten times.
+  for (var loopCounter = 0; loopCounter < 10; loopCounter++) {
+    // Update 'currentResult' using the formula: (rateFactor * currentResult) - decrementValue.
+    currentResult = rateFactor * currentResult - decrementValue;
+    // Display the newly computed 'currentResult' to the standard output.
+    console.log(currentResult);
   }
-
 }
 
-// Read input from standard input and pass it to the processing function
-processInputData( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Read the entire content of the standard input file as a UTF-8 string,
+// then pass this string to the 'processInput' function for execution.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

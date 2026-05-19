@@ -1,36 +1,20 @@
-"use strict";
+function processInputData(rawDataContent) {
+  const allNumericStrings = rawDataContent.split(/\s+/).filter(Boolean);
 
-function processExternalData() {
-  function acquireNumericalTokens(sourceText) {
-    const digitSequences = sourceText.match(/\d+/g);
-    if (!digitSequences) return [];
-    return digitSequences.map(strValue => Number(strValue));
+  const elementCount = Number(allNumericStrings[0]);
+
+  const actualNumbers = allNumericStrings.slice(1, elementCount + 1).map(Number);
+
+  const lowestValue = Math.min(...actualNumbers);
+  const highestValue = Math.max(...actualNumbers);
+
+  const valueSpan = highestValue - lowestValue;
+
+  if (valueSpan % 2 === 0) {
+    console.log('first');
+  } else {
+    console.log('second');
   }
-
-  function determineParityOutcome(inputDataSeries) {
-    const allExtractedValues = acquireNumericalTokens(inputDataSeries);
-
-    const quantityOfElements = allExtractedValues[0];
-    const relevantDataPoints = allExtractedValues.slice(1, quantityOfElements + 1);
-
-    if (relevantDataPoints.length === 0) {
-      // Should not happen based on typical problem constraints (N >= 1)
-      return 'second';
-    }
-
-    const resultExtrema = relevantDataPoints.reduce((accumulator, currentElement) => ({
-      minimum: Math.min(accumulator.minimum, currentElement),
-      maximum: Math.max(accumulator.maximum, currentElement)
-    }), { minimum: relevantDataPoints[0], maximum: relevantDataPoints[0] });
-
-    const spanValue = resultExtrema.maximum - resultExtrema.minimum;
-
-    return (spanValue % 2 === 0) ? 'first' : 'second';
-  }
-
-  const rawInputBundle = require('fs').readFileSync('/dev/stdin', 'utf8');
-  const finalVerdict = determineParityOutcome(rawInputBundle);
-  console.log(finalVerdict);
 }
 
-processExternalData();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,58 +1,37 @@
-let rawData = require('node:fs').readFileSync('/dev/stdin', 'utf-8'); // Obtain raw input data from standard input
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var lineArray = (rawData.trim()).split("\n"); // Split the raw input data into an array of lines
 
-// Process the raw input: trim whitespace and split into individual lines
-const lineSegments = (rawData.trim()).split('\n');
+var dataMap = {}; // Initialize an empty object to store processed key-value pairs
 
-// Initialize a data structure to store grouped information, mapping primary keys to their associated secondary values
-let groupedDataMap = {};
+// First pass: Populate the dataMap
+for (var idx = 0; idx < lineArray.length; idx++) { // Iterate through each line in the input array
+    var parts = lineArray[idx].split(" "); // Split the current line by space to get key and value
+    var keyPart = parts[0]; // The first part is the key
+    var valPart = parts[1]; // The second part is the value
 
-// Iterate through each line segment to populate the grouped data map
-for ( let lineIndex = 0; lineIndex < lineSegments.length; lineIndex ++ ) {
-   // Split the current line into two parts based on space delimiter
-   const currentPair = lineSegments[lineIndex].split(' ');
-
-   // Extract the first part as the primary key
-   const primaryKey = currentPair[0];
-
-   // Extract the second part as the secondary value
-   const secondaryValue = currentPair[1];
-
-   // Check if the primary key already exists in the grouped data map
-   if (primaryKey in groupedDataMap) {
-      // If it exists, append the new secondary value, separated by a space
-      groupedDataMap[primaryKey] += (' ' + secondaryValue);
-   }
-   // If the primary key does not exist
-   else {
-      // Initialize it with the current secondary value
-      groupedDataMap[primaryKey] = secondaryValue;
-   }
+    if (keyPart in dataMap) { // Check if the key already exists in our map
+        dataMap[keyPart] += (" " + valPart); // If it exists, append the new value (prefixed with a space)
+    } else {
+        dataMap[keyPart] = valPart; // If it's a new key, assign the value directly
+    }
 }
 
-// Prepare an array to hold all the unique primary keys from the map
-let mapKeys = [];
+var sortedKeys = []; // Array to hold all unique keys from the dataMap
 
-// Iterate over each key-value entry in the grouped data map
-for ( const currentKey in groupedDataMap ) {
-   // Add the current primary key to our list of keys
-   mapKeys.push(currentKey);
+// Second pass: Process values for each key and collect keys
+for (var currentKey in dataMap) { // Iterate over the keys present in the dataMap
+    sortedKeys.push(currentKey); // Add the current key to our list of keys
 
-   // For each key, process its associated string of secondary values:
-   groupedDataMap[currentKey] = groupedDataMap[currentKey]
-      .split(' ') // Split the string of values into an array of string values
-      .map( ( valString ) => parseInt( valString, 10 ) ) // Convert each string value to an integer (base 10)
-      .sort( ( valA, valB ) => valA - valB ) // Sort these numerical values in ascending order
-      .join(' '); // Rejoin the sorted numbers back into a single space-separated string
+    // Split the accumulated values string by space, convert to numbers, sort them, and join back to a string
+    dataMap[currentKey] = dataMap[currentKey].split(" ").map(Number).sort(function(numA, numB) {
+        return numA - numB; // Numeric ascending sort
+    }).join(" "); // Re-join the sorted numbers into a space-separated string
 }
 
-// Sort the collected primary keys alphabetically
-mapKeys.sort();
+sortedKeys.sort(); // Sort the collected keys alphabetically
 
-// Iterate through the sorted primary keys to print the final output
-for ( let keyIterator = 0; keyIterator < mapKeys.length; keyIterator++ ) {
-   // Retrieve the current key
-   const currentKeyToDisplay = mapKeys[keyIterator];
-
-   // Print the current key, followed by a newline, and then its processed (sorted) secondary values
-   console.log(`${currentKeyToDisplay}\n${groupedDataMap[currentKeyToDisplay]}`);
+// Final pass: Print the results
+for (var idx = 0; idx < sortedKeys.length; idx++) { // Iterate through the alphabetically sorted keys
+    // Output the key, followed by a newline, then its corresponding sorted values
+    console.log(sortedKeys[idx] + "\n" + dataMap[sortedKeys[idx]]);
 }

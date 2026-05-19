@@ -1,84 +1,80 @@
-const fileSystemModule = require('fs');
-const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8').trim();
-let inputChunks = rawInputData.split("\n").filter(line => line.length > 0);
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const dataLines = fileContent.split("\n");
 
-const NO_SOLUTION_INDICATOR = -1;
-const INITIAL_MIN_SWAP_SUM = Infinity;
-
-while (inputChunks.length > 1) {
-    const sizesLine = inputChunks.shift();
-    if (!sizesLine) {
-        break;
+const computeSum = (numberArray) => {
+    let accumulator = 0;
+    for (const currentValue of numberArray) {
+        accumulator += currentValue;
     }
-    const [firstCollectionSize, secondCollectionSize] = sizesLine.trim().split(" ").map(Number);
+    return accumulator;
+};
 
-    const populateCollection = (count) => {
-        const collection = [];
-        for (let k = 0; k < count; k++) {
-            const currentLine = inputChunks.shift();
-            if (currentLine === undefined) {
-                return [];
-            }
-            const parsedValue = Number(currentLine.trim());
-            if (isNaN(parsedValue)) {
-                continue;
-            }
-            collection.push(parsedValue);
-        }
-        return collection;
-    };
+const extractNumbers = (numCount, sourceLines) => {
+    const extractedList = [];
+    for (let k = 0; k < numCount; k++) {
+        const lineData = sourceLines.shift();
+        extractedList.push(parseInt(lineData.trim()));
+    }
+    return extractedList;
+};
 
-    const firstCollectionItems = populateCollection(firstCollectionSize);
-    const secondCollectionItems = populateCollection(secondCollectionSize);
+while (dataLines.length > 1) {
+    const currentLineParts = dataLines.shift().trim().split(" ");
+    const countA = Number(currentLineParts[0]);
+    const countB = Number(currentLineParts[1]);
 
-    const sumFirstCollection = firstCollectionItems.reduce((acc, val) => acc + val, 0);
-    const sumSecondCollection = secondCollectionItems.reduce((acc, val) => acc + val, 0);
+    const listA = extractNumbers(countA, dataLines);
+    const listB = extractNumbers(countB, dataLines);
 
-    if (sumFirstCollection === sumSecondCollection) {
-        const secondCollectionSet = new Set(secondCollectionItems);
-        const sortedFirstCollection = [...firstCollectionItems].sort((a, b) => a - b);
+    const setB = new Set(listB);
+
+    const sumA = computeSum(listA);
+    const sumB = computeSum(listB);
+
+    if (sumA === sumB) {
+        listA.sort((valX, valY) => valX - valY);
+
+        let commonValue = -1;
+        const foundInBoth = listA.find(itemA => setB.has(itemA));
         
-        let commonValueFound = NO_SOLUTION_INDICATOR;
-
-        for (const element of sortedFirstCollection) {
-            if (secondCollectionSet.has(element)) {
-                commonValueFound = element;
-                break;
-            }
+        if (foundInBoth !== undefined) {
+            commonValue = foundInBoth;
         }
 
-        if (commonValueFound === NO_SOLUTION_INDICATOR) {
-            console.log(NO_SOLUTION_INDICATOR);
+        if (commonValue === -1) {
+            console.log(-1);
         } else {
-            console.log(`${commonValueFound} ${commonValueFound}`);
+            console.log(commonValue + ' ' + commonValue);
         }
-    }
-    else if ((sumFirstCollection + sumSecondCollection) % 2 !== 0) {
-        console.log(NO_SOLUTION_INDICATOR);
-    }
-    else {
-        const targetSumPerCollection = (sumFirstCollection + sumSecondCollection) / 2;
-
-        let bestSwapCandidate1 = NO_SOLUTION_INDICATOR;
-        let bestSwapCandidate2 = NO_SOLUTION_INDICATOR;
-        let minSwapSum = INITIAL_MIN_SWAP_SUM;
-
-        const secondCollectionSetForLookup = new Set(secondCollectionItems);
-
-        for (const itemFromFirst of firstCollectionItems) {
-            const requiredItemFromSecond = targetSumPerCollection - sumFirstCollection + itemFromFirst;
-
-            if (secondCollectionSetForLookup.has(requiredItemFromSecond) && (itemFromFirst + requiredItemFromSecond) < minSwapSum) {
-                minSwapSum = itemFromFirst + requiredItemFromSecond;
-                bestSwapCandidate1 = itemFromFirst;
-                bestSwapCandidate2 = requiredItemFromSecond;
-            }
-        }
-
-        if (bestSwapCandidate1 !== NO_SOLUTION_INDICATOR) {
-            console.log(`${bestSwapCandidate1} ${bestSwapCandidate2}`);
+    } else {
+        const totalSum = sumA + sumB;
+        if (totalSum % 2 !== 0) {
+            console.log(-1);
         } else {
-            console.log(NO_SOLUTION_INDICATOR);
+            const targetHalfSum = totalSum / 2;
+            let bestValA = null;
+            let bestValB = null;
+            let currentMinPairSum = 201;
+
+            for (let index = 0; index < countA; index++) {
+                const candidateValA = listA[index];
+                const requiredValB = targetHalfSum - sumA + candidateValA;
+
+                if (setB.has(requiredValB)) {
+                    const potentialPairSum = candidateValA + requiredValB;
+                    if (currentMinPairSum > potentialPairSum) {
+                        currentMinPairSum = potentialPairSum;
+                        bestValA = candidateValA;
+                        bestValB = requiredValB;
+                    }
+                }
+            }
+
+            if (currentMinPairSum < 201) {
+                console.log(bestValA + ' ' + bestValB);
+            } else {
+                console.log(-1);
+            }
         }
     }
 }

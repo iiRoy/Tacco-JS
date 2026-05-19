@@ -1,50 +1,43 @@
-function ProcessData(rawDataInput) {
-    // This function handles the entire processing of the provided raw input data.
-    // It parses various numerical sequences and calculates a final score based on specific conditions.
-    const linesOfData = rawDataInput.split("\n")
-    ;
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  let processedLines = rawData.split("\n");
 
-    // The initial element of the input typically represents the total count of items.
-    // It's crucial to convert this string representation into a numerical type for proper iteration.
-    let itemCount = Number(linesOfData[0]);
+  // The first line contains the length of the sequence,
+  // but it's split into characters. In JS, an array in a numeric context
+  // will be coerced, e.g., Number(["3"]) becomes 3.
+  let sequenceLengthChars = processedLines[0].split("");
 
-    // The second line contains a primary sequence of indices. Each string needs to be converted to a number.
-    const sequenceIndices = linesOfData[1]
-        .split(" ")
-        .map((numericalString) => Number(numericalString))
-    ;
+  // The second line contains space-separated numbers for the first sequence.
+  let firstSequence = processedLines[1].split(" ").map((val) => Number(val));
 
-    // The third line provides a set of base values. These are also parsed into an array of numbers.
-    const valueSetB = linesOfData[2].split(" ").map((strVal) => Number(strVal));
+  // The third line contains space-separated numbers for the second sequence.
+  let secondSequence = processedLines[2].split(" ").map((val) => Number(val));
 
-    // The fourth line contains a set of bonus values, parsed similarly into an array of numbers.
-    const bonusSetC = linesOfData[3].split(" ").map((bonusStr) => Number(bonusStr));
+  // The fourth line contains space-separated numbers for the third sequence.
+  let thirdSequence = processedLines[3].split(" ").map((val) => Number(val));
 
-    // Initialize a variable to accumulate the final result.
-    let totalScore = 0;
+  // Initialize a variable to accumulate the total score.
+  let totalScore = 0;
 
-    // Iterate through the primary sequence of indices.
-    // The loop runs from the first element up to, but not including, the 'itemCount'.
-    for (let idx = 0; idx < itemCount; idx++) {
-        // Add the corresponding base value from 'valueSetB'.
-        // Note: The input indices are typically 1-based, requiring a '-1' adjustment for 0-based array access.
-        totalScore += valueSetB[sequenceIndices[idx] - 1];
+  // Iterate through the first sequence based on the derived length.
+  // Note: sequenceLengthChars (e.g., ["3"]) will be coerced to 3 in the loop condition.
+  for (let idx = 0; idx < sequenceLengthChars; idx++) {
+    // Add the corresponding value from the second sequence.
+    // The index is (current_a_value - 1) because sequences are 1-indexed in problem statements.
+    totalScore += secondSequence[firstSequence[idx] - 1];
 
-        // Check for a specific condition involving consecutive indices.
-        // This condition applies only from the second element onwards (idx > 0) to prevent accessing 'sequenceIndices[-1]'.
-        if (idx > 0 && sequenceIndices[idx] === sequenceIndices[idx - 1] + 1) {
-            // If the condition is met, add a bonus value from 'bonusSetC'.
-            // The bonus is determined by the *previous* index in the sequence.
-            totalScore += bonusSetC[sequenceIndices[idx - 1] - 1];
-        }
+    // Check for a specific condition: if the current element in 'firstSequence'
+    // is exactly one greater than the previous element.
+    if (firstSequence[idx] === firstSequence[idx - 1] + 1) {
+      // If the condition is met, add a bonus from the third sequence.
+      // The index for the bonus is (previous_a_value - 1).
+      totalScore += thirdSequence[firstSequence[idx - 1] - 1];
     }
+  }
 
-    // Output the final computed score to the standard console.
-    console.log(totalScore);
+  // Output the final calculated total score to the console.
+  console.log(totalScore);
 }
 
-// This is the entry point for executing the script.
-// It reads all content from standard input (typically '/dev/stdin' in competitive programming contexts)
-// as a UTF-8 encoded string and passes it to the main processing function.
-const fileContentLoader = require("fs");
-ProcessData(fileContentLoader.readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,70 +1,61 @@
-const symbolMap = {
-  '1': ['.', ' ,' , '!' , '?', ' '],
-  '2': ['a', 'b', 'c'],
-  '3': ['d', 'e', 'f'],
-  '4': ['g', 'h', 'i'],
-  '5': ['j', 'k', 'l'],
-  '6': ['m', 'n', 'o'],
-  '7': ['p', 'q', 'r', 's'],
-  '8': ['t', 'u', 'v'],
-  '9': ['w', 'x', 'y', 'z']
-};
+let allInputData = '';
 
-const decodeSequence = (inputString) => {
-  const initialAccumulator = { currentSentence: '', lastCharPressed: null, pressTally: 0 };
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-  const finalState = inputString.split('').reduce((acc, currentCharacter) => {
+process.stdin.on('data', (chunk) => {
+    allInputData += chunk;
+});
+
+process.stdin.on('end', () => {
+    const processedLines = allInputData.split('\n');
+    executeProgram(processedLines);
+});
+
+const keyCharRegistry = new Map([
+    [1, ['.', ' ,' , '!' , '?', ' ']],
+    [2, ['a', 'b', 'c']],
+    [3, ['d', 'e', 'f']],
+    [4, ['g', 'h', 'i']],
+    [5, ['j', 'k', 'l']],
+    [6, ['m', 'n', 'o']],
+    [7, ['p', 'q', 'r', 's']],
+    [8, ['t', 'u', 'v']],
+    [9, ['w', 'x', 'y', 'z']]
+]);
+
+const decodeSequenceReducer = (accumulator, currentCharacter) => {
+    const { currentKey, pressCount, decodedSegments } = accumulator;
+
     if (currentCharacter === '0') {
-      if (acc.pressTally > 0) {
-        const correspondingChars = symbolMap[acc.lastCharPressed];
-        if (correspondingChars) {
-          acc.currentSentence += correspondingChars[(acc.pressTally - 1) % correspondingChars.length];
+        if (pressCount > 0) {
+            const characterSet = keyCharRegistry.get(Number(currentKey));
+            if (characterSet) {
+                decodedSegments.push(characterSet[(pressCount - 1) % characterSet.length]);
+            }
         }
-      }
-      acc.lastCharPressed = null;
-      acc.pressTally = 0;
+        return { currentKey: null, pressCount: 0, decodedSegments };
     } else {
-      acc.lastCharPressed = currentCharacter;
-      acc.pressTally++;
+        if (currentCharacter === currentKey) {
+            return { currentKey, pressCount: pressCount + 1, decodedSegments };
+        } else {
+            return { currentKey: currentCharacter, pressCount: 1, decodedSegments };
+        }
     }
-    return acc;
-  }, initialAccumulator);
-
-  return finalState.currentSentence;
 };
 
-const retrieveInputLines = async () => {
-  return new Promise((resolve) => {
-    const gatheredLines = [];
-    const streamProcessor = require('readline').createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      terminal: false
+function processKeypadString(inputSequence) {
+    const finalState = Array.from(inputSequence).reduce(decodeSequenceReducer, {
+        currentKey: null,
+        pressCount: 0,
+        decodedSegments: []
     });
+    return finalState.decodedSegments.join('');
+}
 
-    streamProcessor.on('line', (individualLine) => {
-      gatheredLines.push(individualLine);
-    });
-
-    streamProcessor.on('close', () => {
-      resolve(gatheredLines);
-    });
-  });
-};
-
-const provideOutput = (message) => {
-  process.stdout.write(message + '\n');
-};
-
-const executeMainLogic = async () => {
-  const receivedLines = await retrieveInputLines();
-  const testCaseCount = parseInt(receivedLines[0], 10);
-
-  for (let caseIndex = 0; caseIndex < testCaseCount; ++caseIndex) {
-    const currentTestInput = receivedLines[caseIndex + 1];
-    const decodedText = decodeSequence(currentTestInput);
-    provideOutput(decodedText);
-  }
-};
-
-executeMainLogic();
+function executeProgram(dataLines) {
+    const numberOfCases = Number(dataLines[0]);
+    dataLines.slice(1, numberOfCases + 1)
+             .map(processKeypadString)
+             .forEach(console.log);
+}

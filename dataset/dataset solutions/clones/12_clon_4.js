@@ -1,27 +1,16 @@
-const obtainCharacterMeasure = (valueInput) => {
-    const textForm = String(valueInput);
-    let measureCounter = 0;
-    let characterPointer = 0;
-    while (textForm[characterPointer] !== undefined) {
-        measureCounter++;
-        characterPointer++;
-    }
-    return measureCounter;
-};
+function Main(input) {
+    const processSingleLine = (currentLineContent) => {
+        const lineSegments = currentLineContent.split(" ");
 
-const evaluateLineContent = (singleLine) => {
-    const parts = singleLine.split(" ");
-    const valueOne = Number(parts[0]);
-    const valueTwo = Number(parts[1]);
-    const combinedTotal = valueOne + valueTwo;
-    return obtainCharacterMeasure(combinedTotal);
-};
+        const firstOperand = Number(lineSegments[0]);
+        const secondOperand = Number(lineSegments[1]);
 
-const orchestrateExecution = (sourceMaterial) => {
-    const contentRows = sourceMaterial.split("\n");
-    const processedResults = contentRows.map(evaluateLineContent);
-    return processedResults.join("\n");
-};
+        const totalValue = firstOperand + secondOperand;
 
-const rawFileContents = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(orchestrateExecution(rawFileContents));
+        console.log(String(totalValue).length);
+    };
+
+    input.split("\n").forEach(processSingleLine);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

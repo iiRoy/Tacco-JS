@@ -1,37 +1,19 @@
-const inputHandle = require('readline').createInterface({
-    input: globalThis.process.stdin,
-    output: globalThis.process.stdout,
-    terminal: false
-});
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-inputHandle.on('line', (currentTextRow) => {
-    const numericDimensions = currentTextRow.split(/\s+/).map(Number.parseInt);
-    const primaryExtent = numericDimensions[0];
-    const secondaryExtent = numericDimensions[1];
+process.stdin.on('data', (inputSegment) => {
+    const [rowDimension, colDimension] = String(inputSegment).trim().split(' ').map(Number);
 
-    if (primaryExtent === 0 && secondaryExtent === 0) {
-        globalThis.process.exit(0);
+    if (rowDimension === 0 && colDimension === 0) {
+        process.exit(0);
     }
 
-    const rowComposer = (iterationIndex) => {
-        if (iterationIndex >= primaryExtent) {
-            return;
-        }
+    const hashPattern = Array.from({ length: colDimension }, () => '#').join('\n');
 
-        const columnComposer = (jIndex) => {
-            if (jIndex >= secondaryExtent) {
-                return;
-            }
-            globalThis.process.stdout.write('#\n');
-            columnComposer(jIndex + 1);
-        };
+    Array.from({ length: rowDimension }).forEach(() => {
+        console.log(hashPattern);
+        console.log('\n');
+    });
 
-        columnComposer(0);
-        globalThis.process.stdout.write('\n\n');
-
-        rowComposer(iterationIndex + 1);
-    };
-
-    rowComposer(0);
-    globalThis.process.stdout.write('\n\n');
+    console.log('\n');
 });

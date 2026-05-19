@@ -1,50 +1,28 @@
-class InputManager {
-    constructor() {
-        this.dataSegments = require("node:fs").readFileSync("/dev/stdin", "utf8").trim().split(/\s+/);
-        this.currentPosition = 0;
-    }
-
-    retrieveNextNumber() {
-        if (this.currentPosition >= this.dataSegments.length) {
-            throw new Error("Input exhausted.");
-        }
-        const val = Number(this.dataSegments[this.currentPosition]);
-        this.currentPosition++;
-        return val;
-    }
+function* createTokenStream() {
+    const rawData = require("fs").readFileSync("/dev/stdin", "utf-8").trim();
+    const tokens = rawData.split(/\n|\s/);
+    yield* tokens;
 }
 
-(function executeProcessing() {
-    const dataStream = new InputManager();
+let globalTokenStreamInstance = null;
 
-    const itemsToRead = dataStream.retrieveNextNumber();
+const retrieveValues = (quantity) => {
+    if (!globalTokenStreamInstance) {
+        globalTokenStreamInstance = createTokenStream();
+    }
+    return Array.from({ length: quantity }, () => globalTokenStreamInstance.next().value);
+};
 
-    const buildNumericCollection = (count, collector = []) => {
-        if (count === 0) {
-            return collector;
-        }
-        collector.push(dataStream.retrieveNextNumber());
-        return buildNumericCollection(count - 1, collector);
-    };
-    const inputNumbers = buildNumericCollection(itemsToRead);
+(() => {
+    const [ elementCountStr ] = retrieveValues(1);
+    const elementCount = parseInt(elementCountStr);
 
-    const determineAggregateXor = (elements, idx = 0, currentTotal = 0) => {
-        if (idx === elements.length) {
-            return currentTotal;
-        }
-        return determineAggregateXor(elements, idx + 1, currentTotal ^ elements[idx]);
-    };
-    const overallXorResult = determineAggregateXor(inputNumbers);
+    const dataSequenceStrs = retrieveValues(elementCount);
+    const dataSequence = dataSequenceStrs.map(strVal => parseInt(strVal));
 
-    const resultantSequence = [];
-    const deriveOutputSequence = (originalElements, index = 0) => {
-        if (index === originalElements.length) {
-            return;
-        }
-        resultantSequence.push(overallXorResult ^ originalElements[index]);
-        deriveOutputSequence(originalElements, index + 1);
-    };
-    deriveOutputSequence(inputNumbers);
+    const cumulativeXor = dataSequence.reduce((accumulator, item) => accumulator ^ item, 0);
 
-    console.log(resultantSequence.join(' '));
+    const resultantArray = dataSequence.map(val => cumulativeXor ^ val);
+
+    console.log(resultantArray.join(' '));
 })();

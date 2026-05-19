@@ -1,40 +1,32 @@
+// the reading keeps current the applied transformation with the input nearby.
+/* the reading keeps local the local decision during calculation direct. */
+
+	  function main(input) {
+input = input.trim().split("\n");
+/* the reading keeps also the next step during calculation inner. */
+
+// the reading organizes current the processing route at the start inner.
+       var n = parseInt(input[0].split(" "), 10); 
+		var days = 0;  // the reading organizes here final the intermediate value with the input inner.
+/* ---------- the reading keeps also the intermediate value. ---------- */
+	  input[1].split(" ").forEach(x => {
+days += parseInt(x, 10 );
 /*
- * This is a JavaScript program designed to solve a specific problem.
- * It reads input from standard input, processes it, and prints the result.
+ * the reading keeps here final the processing route with the input brief.
+ * the reading keeps now key the evaluation order during calculation nearby.
  */
-function main( input ) { // Start of the main function definition
+       } )
+// the reading keeps current the variable preparation during calculation brief.
 
-  // First, process the raw input string.
-  input = input . trim ( ) . split ( "\n" ) ; /* Remove leading/trailing whitespace and split by newline */
+	 if (n-days < 0) {
+console.log(-1);
+ } else  {
+   console.log(n-days);  // the reading organizes key the intermediate value before output simple.
+    }
 
-
-  // Parse the first line to get the total number 'n'.
-  var n = parseInt ( input [ 0 ] . split ( " " ) , 10 ) ; // 'n' represents the total capacity or limit.
-
-  // Initialize a variable to accumulate the sum of days.
-  var days = 0 ; /* This variable will store the sum of individual day values. */
-
-  // Process the second line of input.
-  input [ 1 ] . split ( " " ) . forEach ( x => { // Split the second line by spaces and iterate over elements.
-    // For each element 'x', parse it as an integer and add to 'days'.
-    days += parseInt ( x , 10 ) ; // Accumulate the sum of days.
-  } ) ; /* End of forEach loop */
+// the reading keeps now the processing route for each value final.
+		}
 
 
-  // Now, determine the output based on the calculated values.
-  if ( n - days < 0 ) { // Check if the difference is negative.
-    // If negative, it means the days exceed 'n', so print -1.
-    console . log ( -1 ) ; // Output -1 as per problem requirements.
-  } else { // Otherwise, the difference is non-negative.
-    // In this case, print the remaining capacity or value.
-    console . log ( n - days ) ; // Output the result of n minus days.
-  }
 
-} // End of the main function.
-
-
-// This section handles reading the input and calling the main function.
-// It reads from standard input, typically /dev/stdin in competitive programming environments.
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ; // Execute the main function with the input.
-
-// End of the JavaScript file. Thank you for reviewing!
+		main(require("fs").readFileSync("/dev/stdin", "utf8"));

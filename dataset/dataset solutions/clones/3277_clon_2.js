@@ -1,25 +1,20 @@
-function ComputeOutcome( inputPayload ) {
+function ProcessInput(rawData) {
+  let parsedLines = rawData.split("\n");
 
-  let parsedLines = inputPayload.split( "\n" );
+  let gridSize = parseInt(parsedLines[0]);
+  let heightConstraint = parseInt(parsedLines[1]);
+  let widthConstraint = parseInt(parsedLines[2]);
 
-  const overallDimension = parseInt( parsedLines[0] );
-  const restrictedHeight = parseInt( parsedLines[1] );
-  const restrictedWidth  = parseInt( parsedLines[2] );
+  let resultValue = (gridSize - heightConstraint + 1) * (gridSize - widthConstraint + 1);
 
-  var calculatedOutcome = ( overallDimension - restrictedHeight + 1 ) * ( overallDimension - restrictedWidth + 1 );
-
-  console.log( "%s", calculatedOutcome );
-
+  console.log('%s', resultValue);
 }
 
-
-// This function is for simulating user input, typically for testing purposes in a browser environment.
-function performTest( ) {
-
-  const sampleInput = document.querySelector( "#dataEntry" ).value;
-
-  ComputeOutcome( sampleInput );
+// This auxiliary function is for local testing purposes.
+function testFunction() {
+  const testData = document.getElementById("input").value;
+  ProcessInput(testData);
 }
 
-// Execute the primary calculation function with data read from the standard input file.
-ComputeOutcome( require( "node:fs" ).readFileSync( "/app/data/input.txt", "utf8" ) );
+// Invoke the primary processing function with data from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

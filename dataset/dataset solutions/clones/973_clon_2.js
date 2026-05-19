@@ -1,47 +1,31 @@
-// Application settings for data retrieval and parsing.
-const appSettings = {
-  sourceFile: '/dev/stdin',    // Specifies the location of the input file.
-  lineBreakChar: '\n'          // Defines the character sequence used for newlines.
-};
+const appSettings = { input: '/dev/stdin', newline: '\n' }; // Configuration for input source and line endings
 
-// Import the Node.js file system utility module.
-const fileSystemUtil = require('fs');
+// Read the entire file content synchronously and split it into an array of lines.
+// We are interested in only the first two lines for this operation.
+let rawInputSegments = require('fs').readFileSync(appSettings.input, 'ascii')
+  .split(appSettings.newline, 2);
 
-// Read the entire content of the specified file in 'ascii' encoding.
-// Then, split the content into an array of strings using the defined newline character,
-// limiting the split operation to a maximum of two parts.
-let inputDataLines = fileSystemUtil.readFileSync(appSettings.sourceFile, 'ascii')
-  .split(appSettings.lineBreakChar, 2);
+// Assign the first line as the main text and the second as the pattern to search for.
+let primaryText = rawInputSegments[0];
+let searchTarget = rawInputSegments[1];
 
-// Assign the first part of the input to represent the main text (haystack).
-const primaryText = inputDataLines[0];
-// Assign the second part of the input to represent the pattern to search for (needle).
-const searchPattern = inputDataLines[1];
+// Release the memory occupied by the raw input array as it's no longer needed.
+rawInputSegments = null;
 
-// Explicitly set the input data array to null to free up memory,
-// as its contents have already been extracted.
-inputDataLines = null;
+// Initialize the starting position for the search and an array to store the indices of found occurrences.
+let currentSearchPosition = 0;
+let foundOccurrences = [];
 
-// Initialize a variable to track the current position during the search.
-let currentScanPosition = 0;
-// Create an array to store the starting indices of all found pattern occurrences.
-const matchIndices = [];
-
-// Begin a loop to locate all instances of the search pattern within the primary text.
-// The loop continues as long as the 'indexOf' method successfully finds the pattern.
-while (
-  (currentScanPosition = primaryText.indexOf(searchPattern, currentScanPosition)) !== -1
-) {
-  // If the pattern is found, add its starting index to the collection.
-  matchIndices.push(currentScanPosition);
-  // Increment the scan position by one to ensure that subsequent searches
-  // start immediately after the current match, allowing overlapping matches if applicable,
-  // or simply moving past the start of the current match.
-  currentScanPosition++;
+// Loop through the primary text to find all occurrences of the search pattern.
+// The search continues as long as the pattern is found.
+while ((currentSearchPosition = primaryText.indexOf(searchTarget, currentSearchPosition)) !== -1) {
+  // Store the starting index of each found occurrence.
+  foundOccurrences.push(currentSearchPosition);
+  // Advance the search position by one to find potentially overlapping occurrences.
+  currentSearchPosition++;
 }
 
-// After the search is complete, check if any matches were found.
-if (matchIndices.length !== 0) {
-  // If matches exist, print each found index on a new line to the console.
-  console.log(matchIndices.join('\n'));
+// If any occurrences were found, print their indices, each on a new line.
+if (foundOccurrences.length > 0) {
+  console.log(foundOccurrences.join('\n'));
 }

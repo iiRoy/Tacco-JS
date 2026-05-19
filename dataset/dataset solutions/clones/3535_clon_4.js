@@ -1,104 +1,87 @@
-const MATH_CONFIG = {
-    PRIME_MODULUS: 1000000007n,
-    MAX_CAPACITY: 100000 + 1000
+const PRIME_MODULUS = 10**9 + 7;
+const MAX_LIMIT = 10**5 + 1000;
+
+let factorialValues = new Array(MAX_LIMIT + 1).fill(0);
+let inverseFactorialValues = new Array(MAX_LIMIT + 1).fill(0);
+
+const decomposeIntoPrimes = (initialValue) => {
+    const primeExponents = new Map();
+    let remainingValue = initialValue;
+    for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= remainingValue; divisorCandidate++) {
+        if (remainingValue % divisorCandidate === 0) {
+            let currentExponent = 0;
+            while (remainingValue % divisorCandidate === 0) {
+                remainingValue /= divisorCandidate;
+                currentExponent++;
+            }
+            primeExponents.set(divisorCandidate, currentExponent);
+        }
+    }
+    if (remainingValue > 1) {
+        primeExponents.set(remainingValue, (primeExponents.get(remainingValue) || 0) + 1);
+    }
+    return primeExponents;
 };
 
-let productSeries = [];
-let inverseProductSeries = [];
+const modularExponentiation = (baseVal, powerVal) => {
+    const bigMod = BigInt(PRIME_MODULUS);
+    const bigBase = BigInt(baseVal);
 
-const calculatePower = (baseValue, exponentValue) => {
-    const mod = MATH_CONFIG.PRIME_MODULUS;
-    let base = BigInt(baseValue);
-    let exponent = BigInt(exponentValue);
-
-    const recurseExponent = (currentBase, currentExponent) => {
-        if (currentExponent === 0n) return 1n;
-        if (currentExponent === 1n) return currentBase % mod;
+    const recursivePower = (b, p) => {
+        if (p === 0) return BigInt(1);
+        if (p === 1) return b % bigMod;
         
-        let halfResult = recurseExponent(currentBase, currentExponent / 2n);
-        let squaredResult = (halfResult * halfResult) % mod;
-        if (currentExponent % 2n === 1n) {
-            squaredResult = (squaredResult * currentBase) % mod;
+        let halfPower = recursivePower(b, Math.floor(p / 2));
+        let squaredHalf = (halfPower * halfPower) % bigMod;
+        
+        if (p % 2 === 1) {
+            return (squaredHalf * b) % bigMod;
+        } else {
+            return squaredHalf;
         }
-        return squaredResult;
     };
-    return Number(recurseExponent(base, exponent));
+    return Number(recursivePower(bigBase, powerVal));
+};
+
+const calculateCombinations = (totalItems, chosenItems) => {
+    if (totalItems === 0 && chosenItems === 0) return 1;
+    if (totalItems < chosenItems || totalItems < 0) return 1;
+
+    const bigMod = BigInt(PRIME_MODULUS);
+    const intermediateProduct = (BigInt(inverseFactorialValues[totalItems - chosenItems]) * BigInt(inverseFactorialValues[chosenItems])) % bigMod;
+    return Number((intermediateProduct * BigInt(factorialValues[totalItems])) % bigMod);
 };
 
 const prepareCombinatorics = () => {
-    const limit = MATH_CONFIG.MAX_CAPACITY;
-    const mod = MATH_CONFIG.PRIME_MODULUS;
-
-    productSeries[0] = 1n;
-    for (let k = 1; k < limit; ++k) {
-        productSeries[k] = (productSeries[k - 1] * BigInt(k)) % mod;
+    factorialValues[0] = 1;
+    for (let idx = 0; idx < MAX_LIMIT; idx++) {
+        factorialValues[idx + 1] = (BigInt(factorialValues[idx]) * BigInt(idx + 1)) % BigInt(PRIME_MODULUS);
     }
 
-    inverseProductSeries[limit - 1] = BigInt(calculatePower(productSeries[limit - 1], Number(mod - 2n)));
-    
-    for (let k = limit - 2; k >= 0; --k) {
-        inverseProductSeries[k] = (inverseProductSeries[k + 1] * BigInt(k + 1)) % mod;
+    inverseFactorialValues[MAX_LIMIT] = modularExponentiation(factorialValues[MAX_LIMIT], PRIME_MODULUS - 2);
+    for (let idx = MAX_LIMIT - 1; idx >= 0; idx--) {
+        inverseFactorialValues[idx] = (BigInt(inverseFactorialValues[idx + 1]) * BigInt(idx + 1)) % BigInt(PRIME_MODULUS);
     }
 };
 
-const decomposeNumber = (numericalValue) => {
-    const componentMap = new Map();
-
-    const findComponents = (currentValue, currentDivisor) => {
-        if (currentValue === 1) return;
-
-        if (currentDivisor * currentDivisor > currentValue) {
-            componentMap.set(currentValue, (componentMap.get(currentValue) || 0) + 1);
-            return;
-        }
-
-        if (currentValue % currentDivisor === 0) {
-            componentMap.set(currentDivisor, (componentMap.get(currentDivisor) || 0) + 1);
-            findComponents(currentValue / currentDivisor, currentDivisor);
-        } else {
-            findComponents(currentValue, currentDivisor === 2 ? 3 : currentDivisor + 2);
-        }
-    };
-
-    findComponents(numericalValue, 2);
-    return Array.from(componentMap, ([factorBase, factorExponent]) => ({ factorBase, factorExponent }));
-};
-
-const calculateCombinations = (upperBound, lowerBound) => {
-    if (upperBound < 0 || lowerBound < 0) return 1;
-    if (upperBound < lowerBound) return 1;
-    if (lowerBound === 0 || upperBound === lowerBound) return 1;
-    if (lowerBound > upperBound / 2) lowerBound = upperBound - lowerBound;
-
-    const mod = MATH_CONFIG.PRIME_MODULUS;
-    let termA = productSeries[upperBound];
-    let termB = inverseProductSeries[lowerBound];
-    let termC = inverseProductSeries[upperBound - lowerBound];
-    
-    return Number((termA * termB % mod * termC) % mod);
-};
-
-const processInput = (inputData) => {
-    let [valueN, valueM] = inputData.split(" ").map(Number);
+const processInputAndCompute = (inputString) => {
+    const [inputN, inputM] = inputString.split(" ").map(Number);
+    const primeDecomposition = decomposeIntoPrimes(inputM);
+    let finalResult = 1;
 
     prepareCombinatorics();
 
-    let primeComponents = decomposeNumber(valueM);
-
-    let finalAccumulation = primeComponents.reduce((currentTotal, componentItem) => {
-        let exponentVal = componentItem.factorExponent;
-        let combinationUpper = exponentVal + valueN - 1;
-        let combinationLower = exponentVal;
-
-        if (combinationUpper < 2 * combinationLower) {
-            combinationLower = combinationUpper - combinationLower;
+    for (const [primeFactor, exponentCount] of primeDecomposition.entries()) {
+        let upperBound = exponentCount + inputN - 1;
+        let lowerBound = exponentCount;
+        
+        if (upperBound < 2 * lowerBound) {
+            lowerBound = upperBound - lowerBound;
         }
         
-        let combinationResult = calculateCombinations(combinationUpper, combinationLower);
-        return (currentTotal * combinationResult) % Number(MATH_CONFIG.PRIME_MODULUS);
-    }, 1);
-
-    console.log(finalAccumulation);
+        finalResult = (BigInt(finalResult) * BigInt(calculateCombinations(upperBound, lowerBound))) % BigInt(PRIME_MODULUS);
+    }
+    console.log(Number(finalResult));
 };
 
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

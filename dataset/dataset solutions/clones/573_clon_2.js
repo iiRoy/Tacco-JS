@@ -1,54 +1,70 @@
-var   fileContent   =require ( 'fs' )
-  .  readFileSync  (
-  '/dev/stdin' ,
-  'utf8' ) ;
-var lineCollection=fileContent.trim().split( "\n");
-var currentLineOffset = -1;
-while(  true  ) {
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input data from standard input
+var lineData = rawData.trim().split("\n"); // Process raw input: remove leading/trailing whitespace and split into an array of lines
+var currentLineIdx = -1; // Initialize an index to keep track of the current line being processed
 
-  var elementCount = lineCollection[++currentLineOffset] - 0;
+// Main loop to handle multiple test cases
+while (true) {
+   // Read the number of stones for the current test case.
+   // The `- 0` converts the string to a number.
+   var numStones = lineData[++currentLineIdx] - 0;
 
-  if (elementCount == 0)
-    break;
+   // If the number of stones is 0, it signifies the end of input.
+   if (numStones === 0) {
+      break; // Exit the loop
+   }
 
-  var incomingElements = [];
-  while (elementCount--)
-    incomingElements.push(lineCollection[++currentLineOffset] - 0);
+   var stoneValues = []; // Array to store the stone values for the current case
+   // Populate the stoneValues array by reading 'numStones' lines
+   while (numStones--) {
+      stoneValues.push(lineData[++currentLineIdx] - 0); // Convert each line to a number and add to array
+   }
 
-  var resultingSequence = [];
-  var processingToggle = false;
+   var processedValues = []; // Array to store the results of the stone processing logic
+   var isFirstOfPair = false; // A boolean flag to alternate logic for pairs of stones
 
-  incomingElements.forEach(  function ( currentVal, originalPosition ) {
-    processingToggle = !processingToggle;
-    if (processingToggle) {
-      resultingSequence.push( currentVal );
-    } else {
-      if (
-        resultingSequence[resultingSequence.length - 1] == currentVal
-      ) {
-        resultingSequence.push(currentVal);
-      } else {
-        resultingSequence.push(currentVal);
-        originalPosition--; // This variable is repurposed for backtracking in resultingSequence
-        while (true) {
-          if (
-            originalPosition < 0 ||
-            resultingSequence[originalPosition] == currentVal
-          )
-            break;
-          else {
-            resultingSequence[originalPosition] = currentVal;
-            originalPosition--;
-          }
-        }
+   // Iterate over each stone value to apply the processing logic
+   stoneValues.forEach(function(currentVal, valIndex) {
+      isFirstOfPair = !isFirstOfPair; // Toggle the flag for each stone
+
+      // If it's the first stone of a conceptual pair
+      if (isFirstOfPair) {
+         processedValues.push(currentVal); // Simply add it to the processed array
       }
-    }
-  });
+      // If it's the second stone of a conceptual pair
+      else {
+         // Check if the current stone value matches the last value in the processed array
+         if (processedValues[processedValues.length - 1] === currentVal) {
+            processedValues.push(currentVal); // If they match, add the current stone
+         }
+         // If the current stone value does not match the last value in the processed array
+         else {
+            processedValues.push(currentVal); // Add the current stone to the array
+            valIndex--; // Decrement the index to start propagating changes backward from the previous element
 
-  var zeroCounter = 0;
-  resultingSequence.forEach(function (elementValue) {
-    if (elementValue == 0)
-      zeroCounter++;
-  });
-  console.log( zeroCounter );
+            // Loop backward through the processed values to update them
+            while (true) {
+               // Stop if we've reached the beginning of the array or found a value that matches the current stone
+               if (valIndex < 0 || processedValues[valIndex] === currentVal) {
+                  break;
+               }
+               // If the value doesn't match, update it to the current stone's value
+               else {
+                  processedValues[valIndex] = currentVal;
+                  valIndex--; // Move to the next previous element
+               }
+            }
+         }
+      }
+   });
+
+   var zeroCount = 0; // Initialize a counter for zero values
+
+   // Iterate through the final processed values to count how many are zero
+   processedValues.forEach(function(currentVal) {
+      if (currentVal === 0) {
+         zeroCount++; // Increment the counter if the value is zero
+      }
+   });
+
+   console.log(zeroCount); // Output the total count of zeros for the current test case
 }

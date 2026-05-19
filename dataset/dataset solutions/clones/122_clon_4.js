@@ -1,59 +1,63 @@
 const fileSystem = require('fs');
+const stdinContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const lineData = stdinContent.trim().split('\n');
 
-const MAX_NUMBER_OF_PARTS = 10;
-const MAX_ACCUMULATED_VALUE = 45;
-const MAX_EXCLUSIVE_UPPER_BOUND = 11;
+const MAX_DIGITS_COUNT = 10;
+const MAX_SUM_POSSIBLE = 45;
+const MAX_SINGLE_DIGIT_VALUE = 9;
 
-const countWaysMatrix = Array(MAX_NUMBER_OF_PARTS).fill(null).map(() =>
-  Array(MAX_ACCUMULATED_VALUE + 1).fill(null).map(() =>
-    Array(MAX_EXCLUSIVE_UPPER_BOUND).fill(0)
+const combinationDP = Array(MAX_DIGITS_COUNT + 1).fill(null).map(() =>
+  Array(MAX_SUM_POSSIBLE + 1).fill(null).map(() =>
+    Array(MAX_SINGLE_DIGIT_VALUE + 2).fill(0)
   )
 );
 
-for (let b = 0; b < MAX_EXCLUSIVE_UPPER_BOUND; b++) {
-  countWaysMatrix[0][0][b] = 1;
+for (let digitIdxOffset = 0; digitIdxOffset <= MAX_SINGLE_DIGIT_VALUE + 1; digitIdxOffset++) {
+  combinationDP[0][0][digitIdxOffset] = 1;
 }
 
-for (let partsCount = 1; partsCount < MAX_NUMBER_OF_PARTS; partsCount++) {
-  for (let currentSumTarget = 0; currentSumTarget <= MAX_ACCUMULATED_VALUE; currentSumTarget++) {
-    for (let currentUpperBound = 1; currentUpperBound < MAX_EXCLUSIVE_UPPER_BOUND; currentUpperBound++) {
-      countWaysMatrix[partsCount][currentSumTarget][currentUpperBound] = countWaysMatrix[partsCount][currentSumTarget][currentUpperBound - 1];
+for (let numElements = 1; numElements <= MAX_DIGITS_COUNT; numElements++) {
+  for (let currentSumValue = 0; currentSumValue <= MAX_SUM_POSSIBLE; currentSumValue++) {
+    for (let maxDigitConsidered = 0; maxDigitConsidered <= MAX_SINGLE_DIGIT_VALUE; maxDigitConsidered++) {
+      const digitIdxOffset = maxDigitConsidered + 1;
 
-      const digitToInclude = currentUpperBound - 1;
-      if (currentSumTarget >= digitToInclude) {
-        countWaysMatrix[partsCount][currentSumTarget][currentUpperBound] += countWaysMatrix[partsCount - 1][currentSumTarget - digitToInclude][currentUpperBound - 1];
+      combinationDP[numElements][currentSumValue][digitIdxOffset] = combinationDP[numElements][currentSumValue][digitIdxOffset - 1];
+
+      if (currentSumValue >= maxDigitConsidered) {
+        combinationDP[numElements][currentSumValue][digitIdxOffset] += combinationDP[numElements - 1][currentSumValue - maxDigitConsidered][digitIdxOffset - 1];
       }
     }
   }
 }
 
-function processInputLines() {
-  const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-  const instructionEntries = rawInputData.trim().split('\n');
+function getCombinationCount(k, s, d) {
+  if (k < 0 || k > MAX_DIGITS_COUNT || s < 0 || s > MAX_SUM_POSSIBLE || d < -1 || d > MAX_SINGLE_DIGIT_VALUE) {
+    return 0;
+  }
+  return combinationDP[k][s][d + 1];
+}
 
-  for (const currentEntry of instructionEntries) {
-    if (currentEntry === '0 0') {
+function processInputCases() {
+  for (let caseIndex = 0, totalCases = lineData.length; caseIndex < totalCases; caseIndex++) {
+    if (lineData[caseIndex] === '0 0') {
       break;
     }
 
-    const numericParts = currentEntry.split(' ');
-    const requiredDigitCount = parseInt(numericParts[0], 10);
-    const desiredTotalSum = parseInt(numericParts[1], 10);
+    const parsedLine = lineData[caseIndex].split(' ');
+    const digitCount = parseInt(parsedLine[0], 10);
+    const targetValue = parseInt(parsedLine[1], 10);
 
-    let totalCalculatedCombinations = 0;
+    let totalCombinations = 0;
 
-    for (let largestDigit = 9; largestDigit >= requiredDigitCount; largestDigit--) {
-      const remainingSumNeeded = desiredTotalSum - largestDigit;
-      const remainingDigitsToFind = requiredDigitCount - 1;
+    for (let currentMaxDigit = MAX_SINGLE_DIGIT_VALUE; currentMaxDigit >= digitCount; currentMaxDigit--) {
+      const remainingElements = digitCount - 1;
+      const remainingSumNeeded = targetValue - currentMaxDigit;
+      const maxDigitForRemaining = currentMaxDigit - 1;
 
-      if (remainingDigitsToFind >= 0 && remainingSumNeeded >= 0 &&
-          remainingDigitsToFind < MAX_NUMBER_OF_PARTS && remainingSumNeeded <= MAX_ACCUMULATED_VALUE &&
-          largestDigit < MAX_EXCLUSIVE_UPPER_BOUND) {
-        totalCalculatedCombinations += countWaysMatrix[remainingDigitsToFind][remainingSumNeeded][largestDigit];
-      }
+      totalCombinations += getCombinationCount(remainingElements, remainingSumNeeded, maxDigitForRemaining);
     }
-    console.log(totalCalculatedCombinations);
+    console.log(totalCombinations);
   }
 }
 
-processInputLines();
+processInputCases();

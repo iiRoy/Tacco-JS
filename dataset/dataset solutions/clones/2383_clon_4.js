@@ -1,44 +1,36 @@
-const processSequenceData = (rawTextContent) => {
-    const dataLines = rawTextContent.trim().split('\n');
-    const [magnitudesLine, initialValuesLine, offsetsLine] = dataLines;
+const processInput = (rawText) => {
+    const lines = rawText.split('\n');
 
-    const parseNumericArray = (str) => str.split(' ').map(Number);
+    const [timeFactors, factorA, factorB] = lines.map(line =>
+        line.split(' ').map(Number)
+    );
 
-    const magnitudes = parseNumericArray(magnitudesLine);
-    const initialValues = parseNumericArray(initialValuesLine);
-    const offsets = parseNumericArray(offsetsLine);
+    const [t0, t1] = timeFactors;
+    const [a0, a1] = factorA;
+    const [b0, b1] = factorB;
 
-    const calcDeltaA = magnitudes[0] * (initialValues[0] - offsets[0]);
-    const calcDeltaB = magnitudes[1] * (initialValues[1] - offsets[1]);
+    const cumulativeEffects = [
+        t0 * (a0 - b0),
+        t1 * (a1 - b1)
+    ];
 
-    if (calcDeltaA + calcDeltaB === 0) {
-        return 'infinity';
+    if (cumulativeEffects[0] + cumulativeEffects[1] === 0) {
+        console.log('infinity');
+        return;
     }
 
-    const calculateAccumulationSteps = (
-        currentAggregate,
-        previousAggregate,
-        currentIteration,
-        changeFactors
-    ) => {
-        if (currentIteration > 0 && currentAggregate * previousAggregate > 0) {
-            return currentIteration - 1;
+    const determineConvergenceStep = (currentTotal, previousTotal, stepCounter) => {
+        if (currentTotal * previousTotal > 0) {
+            return stepCounter - 1;
         }
 
-        const nextIteration = currentIteration + 1;
-        const nextPreviousAggregate = currentAggregate;
-        const factorToAdd = changeFactors[nextIteration % 2];
-        const nextCurrentAggregate = currentAggregate + factorToAdd;
+        const nextEffectComponent = cumulativeEffects[stepCounter % 2];
+        const nextCurrentTotal = currentTotal + nextEffectComponent;
 
-        return calculateAccumulationSteps(
-            nextCurrentAggregate,
-            nextPreviousAggregate,
-            nextIteration,
-            changeFactors
-        );
+        return determineConvergenceStep(nextCurrentTotal, currentTotal, stepCounter + 1);
     };
 
-    return calculateAccumulationSteps(calcDeltaA, 0, 0, [calcDeltaA, calcDeltaB]);
+    console.log(determineConvergenceStep(0, 1, 0));
 };
 
-console.log(processSequenceData(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

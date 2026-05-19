@@ -1,26 +1,25 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const dataRows = sourceData.trim().split('\n');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let inputEntry;
-while ( ( inputEntry = dataRows.shift() ) ) {
-	if ( inputEntry === '0' ) {
+var dataRows = rawData.trim().split('\n');
+
+var currentLine;
+while (currentLine = dataRows.shift()) {
+	if (currentLine == '0')
 		break;
-	}
 
-	let factorCountTwo = 0;
-	let factorCountFive = 0;
-	const limitValue = Number(inputEntry);
-
-	for ( let currentNum = 1; currentNum <= limitValue; currentNum++ ) {
-		let workingNum = currentNum;
-		while ( workingNum % 2 === 0 ) {
-			workingNum /= 2;
-			factorCountTwo++;
+	var countOfTwos = 0;
+	var countOfFives = 0;
+	var numberInput = +currentLine;
+	for (var iterator = 1; iterator <= numberInput; iterator++) {
+		var tempValue = iterator;
+		while (tempValue % 2 == 0) {
+			tempValue /= 2;
+			countOfTwos++;
 		}
-		while ( workingNum % 5 === 0 ) {
-			workingNum /= 5;
-			factorCountFive++;
+		while (tempValue % 5 == 0) {
+			tempValue /= 5;
+			countOfFives++;
 		}
 	}
-	console.log( Math.min( factorCountTwo, factorCountFive ) );
+	console.log(Math.min(countOfTwos, countOfFives));
 }

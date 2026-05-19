@@ -1,36 +1,25 @@
-/*
- * This module processes incoming text data to check specific character patterns.
- * It's designed to read from standard input.
- */
-function ProcessInputData( rawTextContent )
-{
-  // First, split the entire input string into an array of individual lines.
-  const lineFragments = rawTextContent.split( "\n" ) ;
+function ProcessInput(rawData) {
+  // Split the incoming raw data by newline characters to get an array of lines.
+  let lineData = rawData.split("\n");
 
-  // Extract the very first line and then break it down into an array of characters.
-  let charSequence = lineFragments[0].split( "" ) ;
+  // Extract the first line and then split it into an array of individual characters.
+  const charSequence = lineData[0].split("");
 
-  // Begin the primary pattern validation check.
-  // We're comparing the character at index 2 with the character at index 3.
-  if ( charSequence[2] == charSequence[3] )
-  {
-    // If the first condition is met, proceed to the secondary check.
-    // This checks if the character at index 4 matches the character at index 5.
-    if ( charSequence[4] == charSequence[5] )
-    {
-      // Both conditions are true, indicating a successful pattern match.
-      console.log( "Yes" ) ;
-    }
-    else
-    {
-      // The first condition was true, but the second one was false.
-      console.log( "No" ) ;
+  // Evaluate the first condition: check if the character at index 2 matches the character at index 3.
+  if (charSequence[2] === charSequence[3]) {
+    // If the first condition is true, proceed to evaluate the second condition.
+    // Check if the character at index 4 matches the character at index 5.
+    if (charSequence[4] === charSequence[5]) {
+      // If both conditions are met, output "Yes" to the console.
+      console.log("Yes");
+    } else {
+      // If the first condition is met but the second is not, output "No" to the console.
+      console.log("No");
     }
   }
-  // Note: If the initial condition (charSequence[2] == charSequence[3]) is false,
-  // no output will be produced, adhering to the original logic structure.
+  // If the initial condition (charSequence[2] === charSequence[3]) is false,
+  // no output is produced, mirroring the original logic.
 }
 
-// Execute the main processing function by reading content from standard input.
-// We use Node.js's 'fs' module to synchronously read the file.
-ProcessInputData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

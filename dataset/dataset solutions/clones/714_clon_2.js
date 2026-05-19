@@ -1,121 +1,106 @@
 #!/usr/bin/node
 
-// Encapsulates the entire application logic within an Immediately Invoked Function Expression (IIFE)
-( function ( ) {
+// This script processes grid data from standard input to count connected regions.
+// It uses a recursive flood-fill algorithm to identify and clear regions.
 
-  // A 2D array (matrix) used to store the current map or grid data for processing.
-  // Each element will be a number (0 or 1) representing cell state.
-  let gridMatrix = [ ] ;
+(function() {
+  // Declare variables to hold the current grid and accumulated input lines.
+  var gridData = []; // Stores the current grid (matrix) for processing.
+  var inputLines = []; // Accumulates lines read from standard input.
 
-  // An array to buffer all incoming processed lines from standard input.
-  // Each entry here will be an array of numbers representing a row in the grid.
-  let lineDataStore = [ ] ;
-
-  // Obtain a reference to the standard input stream object for reading data.
-  const inputSource = process.openStdin( ) ;
-
-  // Configure the input stream to interpret incoming bytes as UTF-8 encoded characters.
-  inputSource.setEncoding( 'utf8' ) ;
+  // Obtain a readable stream for standard input.
+  var standardInput = process.openStdin();
+  // Set the encoding for the input stream to UTF-8.
+  standardInput.setEncoding('utf8');
 
   /**
-   * Recursively explores and processes connected regions within the `gridMatrix`.
-   * It effectively performs a flood-fill operation, marking visited cells.
-   *
-   * @param { number } columnPos - The column index (x-coordinate) of the current cell.
-   * @param { number } rowPos    - The row index (y-coordinate) of the current cell.
+   * Recursively explores and clears connected cells in the grid.
+   * This function implements a 8-directional flood-fill algorithm.
+   * @param {number} colIdx - The column index of the current cell.
+   * @param {number} rowIdx - The row index of the current cell.
    */
-  const processComponent = function ( columnPos , rowPos ) {
-    // Check if the current coordinates are within the grid boundaries
-    // AND if the cell at these coordinates is considered "active" (truthy, e.g., 1).
-    if (   0 <= columnPos && columnPos < gridMatrix[ 0 ].length
-        && 0 <= rowPos    && rowPos    < gridMatrix.length
-        && gridMatrix[ rowPos ][ columnPos ]
-    ) {
-      // If the cell is active and within bounds, mark it as visited by setting its value to 0.
-      gridMatrix[ rowPos ][ columnPos ] = 0 ;
+  var traverseCells = function(colIdx, rowIdx) {
+    // Check if the current cell is within bounds and contains a '1' (truthy value).
+    if (colIdx >= 0 && colIdx < gridData[0].length &&
+        rowIdx >= 0 && rowIdx < gridData.length &&
+        gridData[rowIdx][colIdx]) {
 
-      // Recursively invoke this function for all eight adjacent cells (cardinal and diagonal directions).
-      // This ensures all connected active cells are visited and marked.
+      // If valid and '1', mark it as visited by setting to '0'.
+      gridData[rowIdx][colIdx] = 0;
 
-      // Explore directly adjacent cells (up, down, left, right):
-      processComponent( columnPos - 1 , rowPos     ) ;
-      processComponent( columnPos + 1 , rowPos     ) ;
-      processComponent( columnPos     , rowPos - 1 ) ;
-      processComponent( columnPos     , rowPos + 1 ) ;
-
-      // Explore diagonally adjacent cells:
-      processComponent( columnPos - 1 , rowPos - 1 ) ;
-      processComponent( columnPos + 1 , rowPos - 1 ) ;
-      processComponent( columnPos - 1 , rowPos + 1 ) ;
-      processComponent( columnPos + 1 , rowPos + 1 ) ;
+      // Recursively call for all 8 neighboring cells.
+      traverseCells(colIdx - 1, rowIdx);     // Left
+      traverseCells(colIdx + 1, rowIdx);     // Right
+      traverseCells(colIdx, rowIdx - 1);     // Up
+      traverseCells(colIdx, rowIdx + 1);     // Down
+      traverseCells(colIdx - 1, rowIdx - 1); // Top-left
+      traverseCells(colIdx + 1, rowIdx - 1); // Top-right
+      traverseCells(colIdx - 1, rowIdx + 1); // Bottom-left
+      traverseCells(colIdx + 1, rowIdx + 1); // Bottom-right
     }
-  } ;
+  };
 
-  // A temporary string buffer to store partial lines that might come in fragmented data chunks.
-  let pendingInput = "" ;
+  // Buffer for incomplete lines received from stdin.
+  var partialInputBuffer = "";
 
-  // Attach an event listener to the standard input stream to handle incoming data.
-  inputSource.on( 'data' , function ( dataChunk ) {
-    // Concatenate any previously pending input fragment with the new data chunk.
-    // Then, split the combined string by newline characters to get individual lines.
-    const processedParts = ( pendingInput + dataChunk ).split( "\n" ) ;
+  // Event listener for incoming data chunks from standard input.
+  standardInput.on('data', function(incomingData) {
+    // Concatenate the new data with any previously buffered fragment.
+    // Then split the combined string by newline characters.
+    var lineSegments = (partialInputBuffer + incomingData).split("\n");
+    // The last element might be an incomplete line; store it back in the buffer.
+    partialInputBuffer = lineSegments.pop();
 
-    // The last element of `processedParts` might be an incomplete line.
-    // Remove it from the array and store it back into `pendingInput` for the next chunk.
-    pendingInput = processedParts.pop( ) ;
-
-    // Iterate through each complete line obtained from the split operation.
-    for ( let outerIdx = 0 ; outerIdx < processedParts.length ; outerIdx++ ) {
-      // If a line is empty (e.g., due to multiple consecutive newlines), skip it.
-      if ( processedParts[ outerIdx ] === '' ) continue ;
-
-      // Convert the string line into an array of numbers (e.g., "101" becomes [1, 0, 1]).
-      // Each character is parsed as an integer.
-      lineDataStore.push( processedParts[ outerIdx ].split( '' ).map( val => parseInt( val , 10 ) ) ) ;
+    // Iterate through the complete lines received.
+    for (var lineCounter = 0; lineCounter < lineSegments.length; lineCounter++) {
+      // Skip empty lines.
+      if (lineSegments[lineCounter] === '') {
+        continue;
+      }
+      // Add non-empty lines to our queue of input lines.
+      inputLines.push(lineSegments[lineCounter]);
     }
-  } ) ;
+  });
 
-  // Attach an event listener to the standard input stream to handle its 'end' event.
-  inputSource.on( 'end' , function ( terminationSignal ) {
-    // Declare local variables for loop iteration and counting connected components.
-    let outerIdx , innerIdx , componentCounter ;
+  // Event listener for the 'end' of the standard input stream.
+  standardInput.on('end', function(endEventArg) {
+    // Declare loop counters and a variable for region count.
+    var colIterator, rowIterator, regionCount;
 
-    // Start an infinite loop to process multiple grid configurations, breaking when no more input.
-    for ( ; ; ) {
-      // Reset the component counter for each new grid analysis.
-      componentCounter = 0 ;
+    // Main processing loop. Continues until no more grid data is available.
+    for (;;) {
+      regionCount = 0; // Reset region count for each new grid.
 
-      // Extract the 'segment size' (height) from the second element of the first line in `lineDataStore`.
-      // The first line itself is consumed and removed from `lineDataStore`.
-      const segmentSize = ( lineDataStore.shift( ) )[ 1 ] ;
+      // Attempt to extract the height of the next grid from the input lines.
+      // The height is expected to be the second character of the first line of a grid block.
+      var matrixHeight = (inputLines.shift())[1];
 
-      // If `segmentSize` evaluates to falsy (e.g., undefined if `lineDataStore` is empty, or 0),
-      // it signifies the end of valid input segments, so terminate the loop.
-      if ( !segmentSize ) break ;
+      // If no height is found (e.g., inputLines is empty or first line is malformed),
+      // it signifies the end of all grid inputs.
+      if (!matrixHeight) {
+        break;
+      }
 
-      // Populate `gridMatrix` with the next `segmentSize` lines from `lineDataStore`.
-      // These lines represent the current grid to be processed.
-      gridMatrix = lineDataStore.slice( 0 , segmentSize ) ;
+      // Extract the lines corresponding to the current grid based on its height.
+      gridData = inputLines.slice(0, matrixHeight);
 
-      // Iterate through each column of the grid.
-      for ( outerIdx = 0 ; outerIdx < gridMatrix[ 0 ].length ; outerIdx++ ) {
-        // Iterate through each row of the grid.
-        for ( innerIdx = 0 ; innerIdx < gridMatrix.length ; innerIdx++ ) {
-          // If the cell at the current (innerIdx, outerIdx) position is 'active' (truthy, e.g., 1),
-          // increment the component counter and initiate the recursive `processComponent` function.
-          if ( gridMatrix[ innerIdx ][ outerIdx ] ) {
-            componentCounter++ ;
-            processComponent( outerIdx , innerIdx ) ; // Begin flood-fill from this active cell.
+      // Iterate through each cell of the current grid.
+      // Outer loop for columns, inner loop for rows.
+      for (colIterator = 0; colIterator < gridData[0].length; colIterator++) {
+        for (rowIterator = 0; rowIterator < gridData.length; rowIterator++) {
+          // If a cell contains a '1' (truthy), it's the start of a new, uncounted region.
+          if (gridData[rowIterator][colIterator]) {
+            regionCount++; // Increment the region counter.
+            // Start the flood-fill from this cell to clear the entire region.
+            traverseCells(colIterator, rowIterator);
           }
         }
       }
-      // Output the total number of distinct connected components found for the current grid.
-      console.log( componentCounter ) ;
+      // Output the total number of regions found for the current grid.
+      console.log(regionCount);
 
-      // Remove the `segmentSize` lines that have just been processed from `lineDataStore`,
-      // preparing it for the next potential grid configuration.
-      lineDataStore = lineDataStore.slice( segmentSize ) ;
+      // Remove the processed grid lines from the input queue.
+      inputLines = inputLines.slice(matrixHeight);
     }
-  } ) ;
-
-} ).call( this ) ; // Execute the IIFE, binding 'this' to the global context.
+  });
+}).call(this); // Execute the anonymous function immediately.

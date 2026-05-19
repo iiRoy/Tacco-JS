@@ -1,43 +1,33 @@
-const fileSystemAccess = require('fs');
+let collectedChunks = [];
 
-function QuantitativeElement(initialVal) {
-    this.storedValue = initialVal;
+process.stdin.on('data', (chunkSegment) => {
+  collectedChunks.push(chunkSegment);
+});
+
+process.stdin.on('end', () => {
+  const completeInputBuffer = Buffer.concat(collectedChunks);
+  const fullTextContent = completeInputBuffer.toString('utf8');
+  const contentLines = fullTextContent.split('\n').filter(Boolean);
+  processInputData(contentLines);
+});
+
+function calculateProductValue(operandA, operandB) {
+  return operandA * operandB;
 }
 
-QuantitativeElement.prototype.computeProduct = function(otherElement) {
-    return new QuantitativeElement(this.storedValue * otherElement.storedValue);
-};
-
-QuantitativeElement.prototype.computeSum = function(otherElement) {
-    return new QuantitativeElement(this.storedValue + otherElement.storedValue);
-};
-
-QuantitativeElement.prototype.scaleByFactor = function(factor) {
-    return new QuantitativeElement(this.storedValue * factor);
-};
-
-QuantitativeElement.prototype.toFormattedString = function() {
-    return String(this.storedValue);
-};
-
-function performComputationalTask() {
-    const inputContent = fileSystemAccess.readFileSync('/dev/stdin', 'utf8');
-    
-    const numericFragments = inputContent.match(/\d+/g);
-
-    if (!numericFragments || numericFragments.length < 2) {
-        return; 
-    }
-
-    const primaryOperand = new QuantitativeElement(parseInt(numericFragments[0], 10));
-    const secondaryOperand = new QuantitativeElement(parseInt(numericFragments[1], 10));
-
-    const productResult = primaryOperand.computeProduct(secondaryOperand);
-    const summedResult = primaryOperand.computeSum(secondaryOperand);
-    const doubledSumResult = summedResult.scaleByFactor(2);
-
-    const finalOutputText = productResult.toFormattedString() + ' ' + doubledSumResult.toFormattedString() + '\n';
-    process.stdout.write(finalOutputText);
+function calculateRectanglePerimeter(sideX, sideY) {
+  return (sideX + sideY) * 2;
 }
 
-performComputationalTask();
+function processInputData(allInputLines) {
+  const targetLine = allInputLines[0];
+  const numericalComponents = targetLine.match(/-?\d+(\.\d+)?/g).map(Number);
+
+  const firstComponent = numericalComponents[0];
+  const secondComponent = numericalComponents[1];
+
+  const productResult = calculateProductValue(firstComponent, secondComponent);
+  const perimeterResult = calculateRectanglePerimeter(firstComponent, secondComponent);
+
+  console.log(`${productResult} ${perimeterResult}`);
+}

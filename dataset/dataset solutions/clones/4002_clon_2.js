@@ -1,31 +1,24 @@
-// This JavaScript module is designed to process an input string and perform a specific numerical calculation.
-'use strict';
+'use strict'; // Enforce strict parsing and error handling for better code quality.
 
 /**
- * Performs a calculation on the provided textual data.
- * It expects a numeric value as the first element of the first line.
- *
- * @param {string} sourceText - The entire input string to be processed.
+ * Processes the raw input data to perform a specific calculation.
+ * @param {string} rawData - The complete input string received from the source.
  */
-const calculateValue = ( sourceText ) => {
+const processInput = (rawData) => {
+  // Split the input string by newline characters, then further split each line by spaces.
+  // This creates a 2D array where each inner array represents words on a line.
+  const parsedLines = rawData.split('\n').map((lineSegment) => lineSegment.split(' '));
 
-    // First, divide the input string into individual lines,
-    // then further split each line by spaces to create a 2D array of strings.
-    const processedLines = sourceText
-        .split( '\n' )
-        .map( ( currentLine ) => {
-            return currentLine.split( ' ' );
-        } );
+  // Extract the first element from the first line, convert it to an integer.
+  // The radix 10 is explicitly provided for safety.
+  const initialValue = parseInt(parsedLines[0][0], 10);
 
-    // Extract the primary numerical datum from the first element of the first parsed line.
-    const primaryNumber = parseInt( processedLines[0][0], 10 );
-
-    // Compute the final output by dividing the primary number by three and
-    // then taking the floor (integer part) of the result.
-    console.log( Math.floor( primaryNumber / 3 ) );
-
+  // Calculate the floor of the initial value divided by 3 and print the result to the console.
+  // This effectively performs integer division.
+  console.log(Math.floor(initialValue / 3));
 };
 
-// Initiate the calculation by reading the content from standard input.
-// The input is read as UTF-8 encoded text.
-calculateValue( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+// Read the input from standard input asynchronously using Node.js 'fs' module.
+// The input is expected to be UTF-8 encoded.
+// Once the file is read, the content is passed to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

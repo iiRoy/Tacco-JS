@@ -1,37 +1,40 @@
 "use strict";
-const retrieveData = require('node:fs').readFileSync;
-const inputSource = retrieveData(0, 'utf8');
-const lexicalUnits = inputSource.match(/\S+/g);
 
-let currentTokenIndex = 0;
-const acquireNumericValue = () => {
-    if (currentTokenIndex >= lexicalUnits.length) {
-        throw new Error("Insufficient input units.");
+const fileSystem = require("fs");
+
+function* numericTokenStream(sourceText) {
+    const rawTokens = sourceText.match(/\S+/g);
+    if (rawTokens) {
+        for (const tokenString of rawTokens) {
+            yield Number(tokenString);
+        }
     }
-    const parsedValue = Number(lexicalUnits[currentTokenIndex]);
-    currentTokenIndex++;
-    return parsedValue;
-};
+}
 
-const calculateCombinationsOfTwo = (count) => {
-    if (count < 2) {
+let currentTokenIterator;
+
+const retrieveNextNumericOperand = () => currentTokenIterator.next().value;
+
+const derivePairCombinations = (itemCount) => {
+    if (itemCount < 2) {
         return 0;
     }
-    let runningTotal = 0;
-    for (let iterator = 1; iterator < count; iterator++) {
-        runningTotal += iterator;
+    let cumulativeSum = 0;
+    for (let counter = 1; counter < itemCount; counter++) {
+        cumulativeSum += counter;
     }
-    return runningTotal;
+    return cumulativeSum;
 };
 
-const orchestrateExecution = () => {
-    const valueA = acquireNumericValue();
-    const valueB = acquireNumericValue();
+function orchestrateCalculation() {
+    const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+    currentTokenIterator = numericTokenStream(rawInputContent);
 
-    const sumA = calculateCombinationsOfTwo(valueA);
-    const sumB = calculateCombinationsOfTwo(valueB);
+    const firstQuantity = retrieveNextNumericOperand();
+    const secondQuantity = retrieveNextNumericOperand();
 
-    return sumA + sumB;
-};
+    return derivePairCombinations(firstQuantity) + derivePairCombinations(secondQuantity);
+}
 
-console.log(orchestrateExecution());
+const computedOutcome = orchestrateCalculation();
+console.log(computedOutcome);

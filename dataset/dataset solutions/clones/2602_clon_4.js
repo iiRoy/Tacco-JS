@@ -1,31 +1,40 @@
-const obtainSource = (inputLocation) => {
-    const rawContent = require("node:fs").readFileSync(inputLocation, "utf8").trim();
-    const contentSegments = rawContent.split("\n");
-    let currentOffset = 0;
+"use strict"
+const establishInputProcessor = () => {
+    const sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+    let currentPosition = 0;
+    const totalLines = sourceLines.length;
 
-    return () => {
-        if (currentOffset >= contentSegments.length) {
-            throw new Error("Depleted input stream.");
+    const retrieveNextLine = () => {
+        if (currentPosition >= totalLines) {
+            throw "ArrayIndexOutOfBoundsException";
         }
-        return contentSegments[currentOffset++];
+        return sourceLines[currentPosition++];
+    };
+
+    const checkLineAvailability = () => {
+        return currentPosition < totalLines;
+    };
+
+    return {
+        pullLine: retrieveNextLine,
+        checkAvailability: checkLineAvailability
     };
 };
 
-const performCalculation = (fetcher) => {
-    const parsedValue = parseInt(fetcher(), 10);
+const inputHandler = establishInputProcessor();
 
-    if (parsedValue <= 1) {
-        return 0;
-    }
-    const finalTerm = parsedValue - 1;
-    const resultantSum = (finalTerm * (finalTerm + 1)) / 2;
-    return resultantSum;
+const fetchLine = () => inputHandler.pullLine();
+const fetchInteger = () => parseInt(inputHandler.pullLine());
+const fetchStringSequence = () => inputHandler.pullLine().split(" ");
+const fetchIntegerSequence = () => inputHandler.pullLine().split(" ").map(Number);
+const fetchCharacterSequence = () => inputHandler.pullLine().split("");
+const hasMoreContent = () => inputHandler.checkAvailability();
+const emitResult = (...items) => console.log(...items);
+
+const ProcessApplication = () => {
+    const inputNumber = fetchInteger();
+    const finalSum = (inputNumber - 1) * inputNumber / 2;
+    emitResult(finalSum);
 };
 
-const executeProgram = () => {
-    const lineFetcher = obtainSource("/dev/stdin");
-    const computedResult = performCalculation(lineFetcher);
-    process.stdout.write(String(computedResult) + "\n");
-};
-
-executeProgram();
+ProcessApplication();

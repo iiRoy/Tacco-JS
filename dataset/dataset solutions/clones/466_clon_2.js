@@ -1,113 +1,140 @@
-function spinArray(originalBlock) {
-  var
-    sideLen = originalBlock.length,
-    idx1, idx2,
-    outputBlock = [];
-
-  for (idx1 = 0; idx1 < sideLen; idx1++) {
-    outputBlock[idx1] = [];
+function rotateMatrix(inputMatrix) {
+  // Determine the dimension of the square matrix.
+  let matrixDimension = inputMatrix.length;
+  let rowIterator, colIterator;
+  // Initialize a new matrix to store the rotated result.
+  const rotatedResult = [];
+  
+  // Allocate inner arrays for the rotated matrix.
+  for (rowIterator = 0; rowIterator < matrixDimension; rowIterator++) {
+    rotatedResult[rowIterator] = [];
   }
-
-  for (idx1 = 0; idx1 < sideLen; idx1++) {
-    for (idx2 = 0; idx2 < sideLen; idx2++) {
-      outputBlock[idx1][sideLen - idx2 - 1] = originalBlock[idx2][idx1];
+  
+  // Perform the 90-degree clockwise rotation.
+  // The element at (j, i) in the original matrix moves to (i, m - j - 1) in the rotated matrix.
+  for (rowIterator = 0; rowIterator < matrixDimension; rowIterator++) {
+    for (colIterator = 0; colIterator < matrixDimension; colIterator++) {
+      rotatedResult[rowIterator][matrixDimension - colIterator - 1] = inputMatrix[colIterator][rowIterator];
     }
   }
-
-  return outputBlock;
+  
+  return rotatedResult;
 }
 
-function orchestrate() {
-  var
-    largeMatrix, templateBlock, patternSet,
-    isAnyMatch, blockMatches,
-    canvasR, canvasC, foundCol, foundRow, minCol, minRow,
-    variantNum, tempR, tempC,
-    primaryDim, segmentDim, dataRow;
-
+function executeSearch() {
+  let
+  mainImage, patternPiece, allRotations,
+  searchInitiated, currentMatchStatus,
+  outerRow, outerCol, currentXCoord, currentYCoord, bestXCoord, bestYCoord, rotationIndex, innerRow, innerCol, imageRows, patternRows, inputLineData;
+  
+  // Loop indefinitely until a termination condition is met.
   for (;;) {
-    // Process the incoming data line.
-    dataRow = streamBuffer.shift().split(/\s+/).map(parseFloat);
-    primaryDim = dataRow[0];
-    segmentDim = dataRow[1];
-
-    if (primaryDim === 0 && segmentDim === 0) {
+    // Process input data for the current test case.
+    inputLineData = rawDataBuffer.shift().split(/\s+/).map(parseFloat);
+    imageRows = inputLineData[0];
+    patternRows = inputLineData[1];
+    
+    // Check for termination condition (N=0, M=0).
+    if (imageRows === 0 && patternRows === 0) {
       break;
     }
-
-    largeMatrix = [];
-    for (canvasR = 0; canvasR < primaryDim; canvasR++) {
-      largeMatrix.push(streamBuffer.shift().split(/ +/).map(parseFloat));
+    
+    // Read the main image matrix.
+    mainImage = [];
+    for (outerRow = 0; outerRow < imageRows; outerRow++) {
+      mainImage.push(rawDataBuffer.shift().split(/ +/).map(parseFloat));
     }
-
-    templateBlock = [];
-    for (canvasR = 0; canvasR < segmentDim; canvasR++) {
-      templateBlock.push(streamBuffer.shift().split(/ +/).map(parseFloat));
+    
+    // Read the initial pattern piece matrix.
+    patternPiece = [];
+    for (outerRow = 0; outerRow < patternRows; outerRow++) {
+      patternPiece.push(rawDataBuffer.shift().split(/ +/).map(parseFloat));
     }
-
-    patternSet = [];
-    for (canvasR = 0; canvasR < 4; canvasR++) {
-      patternSet.push(templateBlock);
-      templateBlock = spinArray(templateBlock);
+    
+    // Generate all four 90-degree rotations of the pattern piece.
+    allRotations = [];
+    for (outerRow = 0; outerRow < 4; outerRow++) {
+      allRotations.push(patternPiece);
+      patternPiece = rotateMatrix(patternPiece); // Apply rotation for the next iteration.
     }
-
-    // Begin the exhaustive search for matching patterns.
-    isAnyMatch = true;
-    minCol = minRow = 99999999;
-
-    mainSearchLoop:
-    for (canvasR = 0; canvasR < primaryDim - segmentDim; canvasR++) {
-      for (canvasC = 0; canvasC < primaryDim - segmentDim; canvasC++) {
-        for (variantNum = 0; variantNum < 4; variantNum++) {
-          blockMatches = true;
-          foundCol = foundRow = 0;
-
-          patternCheckLoop:
-          for (tempR = 0; tempR < segmentDim; tempR++) {
-            for (tempC = 0; tempC < segmentDim; tempC++) {
-              if (patternSet[variantNum][tempR][tempC] === -1) {
+    
+    // Initialize search parameters for finding the best match.
+    searchInitiated = true; // This variable is not strictly used for control flow, but kept for structural similarity.
+    bestXCoord = 99999999; // Initialize with a large value to find minimum X.
+    bestYCoord = 99999999; // Initialize with a large value to find minimum Y.
+    
+    // Begin the exhaustive search for the pattern within the image.
+    searchLoop: // Label for breaking out of outer loops if needed (though not used here).
+    for (outerRow = 0; outerRow <= imageRows - patternRows; outerRow++) {
+      for (outerCol = 0; outerCol <= imageRows - patternRows; outerCol++) {
+        for (rotationIndex = 0; rotationIndex < 4; rotationIndex++) {
+          currentMatchStatus = true; // Assume a match until a mismatch is found.
+          currentXCoord = 0; // Reset current match coordinates.
+          currentYCoord = 0;
+          
+          // Check if the current rotated pattern matches the sub-image.
+          checkLoop: // Label for breaking out of inner loops.
+          for (innerRow = 0; innerRow < patternRows; innerRow++) {
+            for (innerCol = 0; innerCol < patternRows; innerCol++) {
+              // Skip comparison if the pattern element is a wildcard (-1).
+              if (allRotations[rotationIndex][innerRow][innerCol] === -1) {
                 continue;
               }
-              if (patternSet[variantNum][tempR][tempC] !== largeMatrix[canvasR + tempR][canvasC + tempC]) {
-                blockMatches = false;
-                break patternCheckLoop;
+              // If a non-wildcard pattern element does not match the image element.
+              if (allRotations[rotationIndex][innerRow][innerCol] !== mainImage[outerRow + innerRow][outerCol + innerCol]) {
+                currentMatchStatus = false; // Mismatch found.
+                break checkLoop; // Exit inner loops for this pattern orientation.
               }
-              if (foundCol === 0 && foundRow === 0) {
-                foundCol = canvasC + tempC + 1;
-                foundRow = canvasR + tempR + 1;
+              // If this is the first matching non-wildcard element, record its coordinates.
+              if (currentXCoord === 0 && currentYCoord === 0) {
+                currentXCoord = outerCol + innerCol + 1; // 1-based indexing for output.
+                currentYCoord = outerRow + innerRow + 1; // 1-based indexing for output.
               }
             }
           }
-
-          if (blockMatches) {
-            if (foundCol < minCol) {
-              minCol = foundCol;
-              minRow = foundRow;
+          
+          // If a full match was found for the current pattern orientation.
+          if (currentMatchStatus) {
+            // Update the best match coordinates if the current match is better.
+            if (currentXCoord < bestXCoord) {
+              bestXCoord = currentXCoord;
+              bestYCoord = currentYCoord;
             }
-            if (foundCol === minCol && foundRow < minRow) {
-              minRow = foundRow;
+            // If X coordinates are equal, choose the one with the smaller Y coordinate.
+            if (currentXCoord === bestXCoord && currentYCoord < bestYCoord) {
+              bestYCoord = currentYCoord;
             }
           }
         }
       }
     }
-    if (minCol !== 99999999 && minRow !== 99999999) {
-      console.log(minCol + ' ' + minRow);
+    
+    // Output the result based on whether a match was found.
+    if (bestXCoord !== 99999999 && bestYCoord !== 99999999) {
+      console.log(bestXCoord + ' ' + bestYCoord);
     } else {
-      console.log('NA');
+      console.log('NA'); // No match found.
     }
   }
 }
 
-var
-  streamBuffer = '';
+let
+rawDataBuffer = ''; // Renamed 'input' to 'rawDataBuffer'
 
+// Start reading from standard input.
 process.stdin.resume();
+// Set the encoding for input data.
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(incomingChunk) {
-  streamBuffer += incomingChunk;
+
+// Event listener for incoming data chunks.
+process.stdin.on('data', function(dataChunk) {
+  rawDataBuffer += dataChunk; // Append the received chunk to the buffer.
 });
+
+// Event listener for the end of input stream.
 process.stdin.on('end', function() {
-  streamBuffer = streamBuffer.split('\n');
-  orchestrate();
+  // Split the accumulated raw data into an array of lines.
+  rawDataBuffer = rawDataBuffer.split('\n');
+  // Invoke the main processing function.
+  executeSearch(); // Call the renamed main function.
 });

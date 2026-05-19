@@ -1,31 +1,43 @@
-const processSequenceData = (incomingText) => {
-    const linesOfText = incomingText.split('\n');
-    const numericElements = linesOfText[1].split(' ').map(Number);
+function processInput(rawInput) {
+    const lineSegments = rawInput.split('\n');
+    const [firstLineData, secondLineData] = lineSegments;
 
-    const computationResult = numericElements.reduce((state, currentElement) => {
-        const updatedLowest = Math.min(state.lowestSeenYet, currentElement);
-        const potentialMargin = currentElement - updatedLowest;
+    const elementCount = Number(firstLineData.split(' ')[0]);
+    const numericSequence = secondLineData.split(' ').map(Number);
 
-        let newGreatestMargin = state.greatestMarginFound;
-        let newCountForMargin = state.countOfGreatestMargin;
+    if (elementCount === 0) {
+        console.log(0);
+        return;
+    }
 
-        if (potentialMargin > newGreatestMargin) {
-            newGreatestMargin = potentialMargin;
-            newCountForMargin = 1;
-        } else if (potentialMargin === newGreatestMargin) {
-            newCountForMargin++;
+    const initialCalculationState = {
+        currentMinimumValue: numericSequence[0],
+        maximumObservedDifference: 0,
+        maximumDifferenceCount: 1,
+    };
+
+    const finalCalculationResult = numericSequence.slice(1).reduce((accumulator, currentElement) => {
+        const potentialNewDifference = currentElement - accumulator.currentMinimumValue;
+        let nextMaximumObservedDifference = accumulator.maximumObservedDifference;
+        let nextMaximumDifferenceCount = accumulator.maximumDifferenceCount;
+
+        if (potentialNewDifference > nextMaximumObservedDifference) {
+            nextMaximumObservedDifference = potentialNewDifference;
+            nextMaximumDifferenceCount = 1;
+        } else if (potentialNewDifference === nextMaximumObservedDifference) {
+            nextMaximumDifferenceCount++;
         }
 
+        const updatedMinimumValue = Math.min(accumulator.currentMinimumValue, currentElement);
+
         return {
-            lowestSeenYet: updatedLowest,
-            greatestMarginFound: newGreatestMargin,
-            countOfGreatestMargin: newCountForMargin
+            currentMinimumValue: updatedMinimumValue,
+            maximumObservedDifference: nextMaximumObservedDifference,
+            maximumDifferenceCount: nextMaximumDifferenceCount,
         };
-    }, { lowestSeenYet: Infinity, greatestMarginFound: 0, countOfGreatestMargin: 0 });
+    }, initialCalculationState);
 
-    return computationResult.countOfGreatestMargin;
-};
+    console.log(finalCalculationResult.maximumDifferenceCount);
+}
 
-const rawSystemInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-const finalOutputValue = processSequenceData(rawSystemInput);
-console.log(String(finalOutputValue));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

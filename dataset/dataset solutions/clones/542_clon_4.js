@@ -1,29 +1,23 @@
-const fileSystem = require('node:fs');
-const sourceLocation = '/dev/stdin';
+const fileSystemModule = require('fs');
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-let dataPacket = fileSystem.readFileSync(sourceLocation, 'utf8');
+const processedParts = rawInputContent.trim().split(' ');
 
-const numberExtractor = /\s*(\d+)\s+(\d+)\s*/;
-const extractedValues = dataPacket.match(numberExtractor);
+const numericalOperands = processedParts.reduce((accumulator, currentSegment, index) => {
+    if (index === 0) {
+        accumulator.divisorCandidate = Number(currentSegment);
+    } else if (index === 1) {
+        accumulator.dividendCandidate = Number(currentSegment);
+    }
+    return accumulator;
+}, { divisorCandidate: 0, dividendCandidate: 0 });
 
-let firstOperand;
-let secondOperand;
+let currentDivisor = numericalOperands.divisorCandidate;
+let currentDividend = numericalOperands.dividendCandidate;
 
-if (extractedValues && extractedValues.length >= 3) {
-    firstOperand = Number.parseInt(extractedValues[1], 10);
-    secondOperand = Number.parseInt(extractedValues[2], 10);
-} else {
-    firstOperand = 1;
-    secondOperand = 0;
+let finalResult = 0;
+while (finalResult * currentDivisor < currentDividend) {
+    finalResult++;
 }
 
-let calculatedRatio = secondOperand / firstOperand;
-let finalComputation;
-
-if (calculatedRatio % 1 === 0) {
-    finalComputation = calculatedRatio;
-} else {
-    finalComputation = Math.floor(calculatedRatio) + 1;
-}
-
-process.stdout.write(String(finalComputation) + '\n');
+console.log(finalResult);

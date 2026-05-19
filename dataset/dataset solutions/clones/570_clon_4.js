@@ -1,15 +1,25 @@
-const systemIO = require('node:fs');
-const acquiredData = systemIO.readFileSync('/dev/stdin', 'utf8');
-const processedData = acquiredData.trim();
+const fileSystemModule = require('fs');
 
-const patternOne = /JOI/g;
-const patternTwo = /IOI/g;
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const processedText = rawInputContent.trim();
 
-const matchesOne = processedData.match(patternOne);
-const matchesTwo = processedData.match(patternTwo);
+const maximumValidStartIndex = processedText.length - 4;
 
-const tallyOne = matchesOne ? matchesOne.length : 0;
-const tallyTwo = matchesTwo ? matchesTwo.length : 0;
+const iterationIndices = Array.from({
+    length: Math.max(0, maximumValidStartIndex + 1)
+}, (_, index) => index);
 
-console.log(tallyOne);
-console.log(tallyTwo);
+const occurrenceTally = iterationIndices.reduce((accumulator, currentPosition) => {
+    const segmentToCheck = processedText.substring(currentPosition, currentPosition + 3);
+
+    if (segmentToCheck === "JOI") {
+        accumulator.joiCount++;
+    }
+    if (segmentToCheck === "IOI") {
+        accumulator.ioiCount++;
+    }
+    return accumulator;
+}, { joiCount: 0, ioiCount: 0 });
+
+console.log(occurrenceTally.joiCount);
+console.log(occurrenceTally.ioiCount);

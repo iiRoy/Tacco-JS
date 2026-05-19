@@ -1,76 +1,82 @@
-/*
- * This section initializes the 'firstSequence' array.
- * It calculates values based on a simple recurrence relation.
- * The sequence grows quadratically.
- */
-var firstSequence = [1];
-for (var genIdx = 1; genIdx < 100000; genIdx++) {
-    firstSequence[genIdx] = firstSequence[genIdx - 1] + genIdx + 1;
+// This script calculates minimum counts of specific number sequences
+// to sum up to a target value, using dynamic programming.
+
+// First sequence: triangular numbers (shifted)
+// `firstSequence[k]` stores the (k+1)-th triangular number.
+let firstSequence = [1];
+// Populate the first sequence up to a certain limit.
+for (let currentIdx = 1; currentIdx < 100_000; currentIdx++) {
+  firstSequence[currentIdx] = firstSequence[currentIdx - 1] + currentIdx + 1;
 }
 
-// Prepare another sequence, 'secondSequence', derived from 'firstSequence'.
-// This loop continues until a specific threshold is exceeded.
-var secondSequence = [1];
-var procIdx = 1;
-while (true) { // Loop indefinitely until a break condition is met.
-    secondSequence[procIdx] = secondSequence[procIdx - 1] + firstSequence[procIdx];
-    if (secondSequence[procIdx] > 100000) {
-        break; // Exit loop if the current value exceeds the limit.
-    }
-    procIdx++; // Increment the processing index for the next iteration.
-}
-
-// Declare and initialize two dynamic programming arrays.
-// These will store minimum costs for different scenarios.
-var costMatrixA = [];
-var costMatrixB = [];
-
-// Fill both DP arrays with a large initial value (representing infinity).
-// This ensures that any valid path found will be smaller.
-for (var initIdx = 0; initIdx < 100000; initIdx++) {
-    costMatrixA[initIdx] = Infinity;
-}
-for (var initIdx = 0; initIdx < 100000; initIdx++) {
-    costMatrixB[initIdx] = Infinity;
-}
-
-// Set the base cases for the dynamic programming problem.
-// A value of 0 at index 0 typically means no cost to achieve 0.
-costMatrixA[0] = 0;
-costMatrixB[0] = 0;
-
-/*
- * This nested loop performs the core dynamic programming calculations.
- * It iterates through possible target values and available 'secondSequence' elements
- * to find minimum costs for two different conditions.
- */
-for (var currVal = 0; currVal < 100000; currVal++) {
-    for (var itemIdx = 0; itemIdx < secondSequence.length; itemIdx++) {
-        // Condition for costMatrixA: general case.
-        if (currVal - secondSequence[itemIdx] >= 0) {
-            costMatrixA[currVal] = Math.min(costMatrixA[currVal - secondSequence[itemIdx]] + 1, costMatrixA[currVal]);
-        }
-        // Condition for costMatrixB: only considers odd 'secondSequence' elements.
-        if (secondSequence[itemIdx] % 2 === 1 && currVal - secondSequence[itemIdx] >= 0) {
-            costMatrixB[currVal] = Math.min(costMatrixB[currVal - secondSequence[itemIdx]] + 1, costMatrixB[currVal]);
-        }
-    }
-}
-
-// --- Input and Output Handling Section ---
-
-// Use Node.js 'fs' module to read synchronous input from standard in.
-var incomingText = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-// Process the raw input: trim whitespace, split by newlines, and convert each part to a number.
-var numericQueries = incomingText.trim().split("\n").map(Number);
-
-// Process queries one by one until a termination value (0) is encountered.
+// Second sequence: tetrahedral numbers (shifted)
+// `secondSequence[k]` stores the (k+1)-th tetrahedral number.
+let secondSequence = [1];
+let sequenceIndex = 1;
+// Generate elements of the second sequence until a threshold is exceeded.
 while (true) {
-    var targetValue = numericQueries.shift(); // Get the next query value.
-    if (targetValue === 0) {
-        break; // Terminate if the query is 0.
+  secondSequence[sequenceIndex] = secondSequence[sequenceIndex - 1] + firstSequence[sequenceIndex];
+  // Break if the current element surpasses the maximum target value.
+  if (secondSequence[sequenceIndex] > 100_000) {
+    break;
+  }
+  sequenceIndex++;
+}
+
+// Dynamic programming arrays for minimum counts.
+// `minCountAll[k]` stores the minimum number of elements from `secondSequence`
+// that sum up to `k`.
+let minCountAll = [];
+// `minCountOdd[k]` stores the minimum number of *odd* elements from `secondSequence`
+// that sum up to `k`.
+let minCountOdd = [];
+
+// Initialize DP arrays with a large value (infinity) to represent unreachability.
+const MAX_TARGET_VALUE = 100_000;
+for (let k = 0; k < MAX_TARGET_VALUE; k++) {
+  minCountAll[k] = Number.POSITIVE_INFINITY;
+  minCountOdd[k] = Number.POSITIVE_INFINITY;
+}
+
+// Base cases: 0 can be formed with 0 elements.
+minCountAll[0] = 0;
+minCountOdd[0] = 0;
+
+// Fill the DP tables.
+// Iterate through all possible target values from 0 up to MAX_TARGET_VALUE - 1.
+for (let currentTarget = 0; currentTarget < MAX_TARGET_VALUE; currentTarget++) {
+  // For each target, consider using each number from the `secondSequence`.
+  for (let elementIndex = 0; elementIndex < secondSequence.length; elementIndex++) {
+    const currentElement = secondSequence[elementIndex];
+
+    // Check if the current element can be subtracted from the target without going negative.
+    if (currentTarget - currentElement >= 0) {
+      // Update `minCountAll`: take the minimum of the current value
+      // and (count for `currentTarget - currentElement` + 1).
+      minCountAll[currentTarget] = Math.min(minCountAll[currentTarget - currentElement] + 1, minCountAll[currentTarget]);
     }
-    // Output the calculated costs from both DP matrices for the target value.
-    console.log(costMatrixA[targetValue] + " " + costMatrixB[targetValue]);
+
+    // For `minCountOdd`, additionally check if the current element is odd.
+    if (currentElement % 2 === 1 && currentTarget - currentElement >= 0) {
+      // Update `minCountOdd`: similar logic, but only for odd elements.
+      minCountOdd[currentTarget] = Math.min(minCountOdd[currentTarget - currentElement] + 1, minCountOdd[currentTarget]);
+    }
+  }
+}
+
+// Read input from standard input.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process input: trim whitespace, split by newlines, convert to numbers.
+const inputNumbers = rawData.trim().split("\n").map(Number);
+
+// Process each target number from the input.
+while (true) {
+  // Get the next target number from the array.
+  const targetNum = inputNumbers.shift();
+  // If the target number is 0, it's the termination signal.
+  if (targetNum === 0) {
+    break;
+  }
+  // Output the results for the current target number.
+  console.log(minCountAll[targetNum] + " " + minCountOdd[targetNum]);
 }

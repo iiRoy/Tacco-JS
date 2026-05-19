@@ -1,133 +1,88 @@
 'use strict';
 
-/**
- * Parses a string to an integer, providing a default value if parsing fails.
- * @param {string} strValue - The string to parse.
- * @param {number} defaultValue - The value to return if parsing results in NaN.
- * @returns {number} The parsed integer or the default value.
- */
-const parseInteger = (strValue, defaultValue = 0) => {
-    const parsed = parseInt(strValue, 10);
-    return isNaN(parsed) ? defaultValue : parsed;
+// Helper function to parse a single line of point data from the input
+const parsePointLine = (lineString) => {
+  const lineSegments = lineString.split(' ');
+  // Using radix 10 for parseInt for explicit base conversion
+  const xCoordinate = parseInt(lineSegments[0], 10);
+  const yCoordinate = parseInt(lineSegments[1], 10);
+  const heightValue = parseInt(lineSegments[2], 10);
+  return { x: xCoordinate, y: yCoordinate, h: heightValue };
 };
 
-/**
- * Calculates the Manhattan distance between two points (x1, y1) and (x2, y2).
- * @param {number} x1 - X-coordinate of the first point.
- * @param {number} y1 - Y-coordinate of the first point.
- * @param {number} x2 - X-coordinate of the second point.
- * @param {number} y2 - Y-coordinate of the second point.
- * @returns {number} The Manhattan distance.
- */
-const calculateManhattanDistance = (x1, y1, x2, y2) => {
-    return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+// Helper function to compute the expected height at a specific point (pointX, pointY)
+// given a potential pyramid center (centerX, centerY) and its base height (centerBaseHeight)
+const computeHeightAtPoint = (centerX, centerY, centerBaseHeight, pointX, pointY) => {
+  const distanceX = Math.abs(centerX - pointX);
+  const distanceY = Math.abs(centerY - pointY);
+  return centerBaseHeight + distanceX + distanceY;
 };
 
-/**
- * Determines if a single observation point's data is consistent with a
- * hypothetical pyramid defined by its apex coordinates and total height.
- * Handles cases where the observed height is zero (point on the pyramid's base).
- *
- * @param {number} currentApexX - The X-coordinate of the hypothetical pyramid's apex.
- * @param {number} currentApexY - The Y-coordinate of the hypothetical pyramid's apex.
- * @param {number} proposedPyramidHeight - The total height of the hypothetical pyramid.
- * @param {number} observedPointX - The X-coordinate of the observation point.
- * @param {number} observedPointY - The Y-coordinate of the observation point.
- * @param {number} observedPointH - The height observed at the observation point.
- * @returns {boolean} True if the observation is consistent, false otherwise.
- */
-const checkObservationConsistency = (currentApexX, currentApexY, proposedPyramidHeight, observedPointX, observedPointY, observedPointH) => {
-    const distanceToObsPoint = calculateManhattanDistance(currentApexX, currentApexY, observedPointX, observedPointY);
+const solveProblem = (rawInputLines) => {
+  // The first line of input contains the number of observation points
+  const numberOfPoints = parseInt(rawInputLines[0], 10);
 
-    if (observedPointH === 0) {
-        // If observed height is 0, the point must be exactly on the base edge of the pyramid.
-        // This implies the pyramid's total height must be equal to the Manhattan distance from its apex.
-        return proposedPyramidHeight === distanceToObsPoint;
-    } else {
-        // If observed height is greater than 0, the pyramid's total height
-        // must be the sum of the observed height and the Manhattan distance.
-        // Also, the proposed pyramid height must be at least the observed height.
-        // (This second condition is implicitly covered by the first equality check if all values are non-negative)
-        return proposedPyramidHeight === observedPointH + distanceToObsPoint;
-    }
-};
+  // Initialize arrays to store the x, y coordinates and observed heights for each point
+  const observationXCoords = new Array(numberOfPoints);
+  const observationYCoords = new Array(numberOfPoints);
+  const observationHeights = new Array(numberOfPoints);
 
-/**
- * The main function to locate the pyramid's apex coordinates and its total height.
- * It iterates through all possible apex coordinates within a 101x101 grid (0-100)
- * and checks for consistency with all provided observation points.
- *
- * @param {string[]} problemDataLines - An array of strings, where the first string
- *                                      is the number of observation points, and
- *                                      subsequent strings are "x y h" for each point.
- */
-const locatePyramidApex = problemDataLines => {
-    const totalObservationCount = parseInteger(problemDataLines[0]);
+  // Populate the observation arrays by parsing each subsequent line of input
+  for (let pointIdx = 0; pointIdx < numberOfPoints; pointIdx++) {
+    const pointData = parsePointLine(rawInputLines[pointIdx + 1]);
+    observationXCoords[pointIdx] = pointData.x;
+    observationYCoords[pointIdx] = pointData.y;
+    observationHeights[pointIdx] = pointData.h;
+  }
 
-    // Pre-allocate arrays for observation data.
-    // Using Array.from for explicit size and initial undefined elements.
-    const observationXCoords = Array.from({ length: totalObservationCount });
-    const observationYCoords = Array.from({ length: totalObservationCount });
-    const observationHeights = Array.from({ length: totalObservationCount });
+  // Iterate through all possible X coordinates for the pyramid's center (0 to 100)
+  for (let candidateCenterX = 0; candidateCenterX <= 100; candidateCenterX++) {
+    // Iterate through all possible Y coordinates for the pyramid's center (0 to 100)
+    for (let candidateCenterY = 0; candidateCenterY <= 100; candidateCenterY++) {
 
-    // Constants for parsing data within each line
-    const X_COORD_INDEX = 0;
-    const Y_COORD_INDEX = 1;
-    const H_COORD_INDEX = 2;
+      // Determine the potential base height of the pyramid at (candidateCenterX, candidateCenterY)
+      // using the first observation point as a reference.
+      const firstPointX = observationXCoords[0];
+      const firstPointY = observationYCoords[0];
+      const firstPointH = observationHeights[0];
+      const potentialPyramidBaseHeight = firstPointH + Math.abs(candidateCenterX - firstPointX) + Math.abs(candidateCenterY - firstPointY);
 
-    // Parse the input data for each observation point.
-    for (let dataLineIdx = 0; dataLineIdx < totalObservationCount; ++dataLineIdx) {
-        const currentLineTokens = problemDataLines[dataLineIdx + 1].split(' ');
-        observationXCoords[dataLineIdx] = parseInteger(currentLineTokens[X_COORD_INDEX]);
-        observationYCoords[dataLineIdx] = parseInteger(currentLineTokens[Y_COORD_INDEX]);
-        observationHeights[dataLineIdx] = parseInteger(currentLineTokens[H_COORD_INDEX]);
-    }
+      // Flag to track if the current candidate center and its base height are consistent with all points
+      let isConsistentWithAllPoints = true;
 
-    // Define the search boundaries for the pyramid's apex.
-    const MIN_GRID_COORD = 0;
-    const MAX_GRID_COORD = 100;
+      // Check consistency against all observation points
+      for (let checkIdx = 0; checkIdx < numberOfPoints; checkIdx++) {
+        const currentPointX = observationXCoords[checkIdx];
+        const currentPointY = observationYCoords[checkIdx];
+        const actualObservedHeight = observationHeights[checkIdx];
 
-    // Iterate through all possible X-coordinates for the pyramid's apex.
-    for (let candidateApexX = MIN_GRID_COORD; candidateApexX <= MAX_GRID_COORD; ++candidateApexX) {
-        // Iterate through all possible Y-coordinates for the pyramid's apex.
-        for (let candidateApexY = MIN_GRID_COORD; candidateApexY <= MAX_GRID_COORD; ++candidateApexY) {
+        // Calculate the height expected at the current observation point
+        // if the pyramid center is (candidateCenterX, candidateCenterY) with potentialPyramidBaseHeight
+        const calculatedHeight = computeHeightAtPoint(
+          candidateCenterX,
+          candidateCenterY,
+          potentialPyramidBaseHeight,
+          currentPointX,
+          currentPointY
+        );
 
-            // Determine a hypothetical total height for the pyramid based on the first observation point.
-            // This height will then be validated against all other points.
-            const initialObsX = observationXCoords[0];
-            const initialObsY = observationYCoords[0];
-            const initialObsH = observationHeights[0];
-            const initialManhattanDistance = calculateManhattanDistance(candidateApexX, candidateApexY, initialObsX, initialObsY);
-            const hypothesizedPyramidHeight = initialObsH + initialManhattanDistance;
-
-            // Flag to track if the current (candidateApexX, candidateApexY) and
-            // hypothesizedPyramidHeight are consistent with all observations.
-            let allObservationsAreConsistent = true;
-
-            // Loop through all observation points (starting from the second one, as the first was used to hypothesize height).
-            for (let checkObsIdx = 0; checkObsIdx < totalObservationCount; ++checkObsIdx) {
-                const currentObsX = observationXCoords[checkObsIdx];
-                const currentObsY = observationYCoords[checkObsIdx];
-                const currentObsH = observationHeights[checkObsIdx];
-
-                // If the hypothesized height leads to a negative observed height for a point with H > 0,
-                // or if it's otherwise inconsistent, this candidate is invalid.
-                if (!checkObservationConsistency(candidateApexX, candidateApexY, hypothesizedPyramidHeight, currentObsX, currentObsY, currentObsH)) {
-                    allObservationsAreConsistent = false;
-                    break; // No need to check further observations for this candidate apex.
-                }
-            }
-
-            // If all observations were consistent with this candidate apex and height, we found our solution.
-            if (allObservationsAreConsistent) {
-                // Output the found apex coordinates and the pyramid's total height.
-                console.log(`${candidateApexX} ${candidateApexY} ${hypothesizedPyramidHeight}`);
-                return; // Exit the function as the problem asks for a single solution.
-            }
+        // If the calculated height does not match the actual observed height,
+        // this candidate center is invalid.
+        if (calculatedHeight !== actualObservedHeight) {
+          isConsistentWithAllPoints = false;
+          break; // No need to check further points for this candidate center
         }
+      }
+
+      // If the candidate center and its base height are consistent with all points,
+      // we have found the solution.
+      if (isConsistentWithAllPoints) {
+        console.log(candidateCenterX, candidateCenterY, potentialPyramidBaseHeight);
+        return; // Exit the function immediately after finding the solution
+      }
     }
+  }
 };
 
-// Entry point for the Node.js environment.
-// Reads input from standard input, splits it by newline, and passes it to the main logic.
-locatePyramidApex(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));
+// Read the input from standard input, split it by newlines, and pass to the solver function
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

@@ -1,24 +1,12 @@
-(function() {
-    let capturedInputData = '';
+const fileSystemInterface = require('fs');
 
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (incomingSegment) => {
-        capturedInputData += incomingSegment;
-    });
+const allInputLines = fileSystemInterface.readFileSync('/dev/stdin', 'utf-8').split('\n');
+const primaryLine = allInputLines[0];
 
-    process.stdin.on('end', () => {
-        const principalSequence = capturedInputData.split('\n')[0];
+const duplicateCharacterDetector = /(.)\1/;
 
-        const adjacencyCheck = (textualElement) => {
-            if (!textualElement) {
-                return false;
-            }
-            const duplicateDetector = /(.)\1/;
-            return duplicateDetector.test(textualElement);
-        };
-
-        const finalResult = adjacencyCheck(principalSequence) ? "Bad" : "Good";
-
-        process.stdout.write(finalResult + '\n');
-    });
-})();
+if (duplicateCharacterDetector.test(primaryLine)) {
+  console.log('Bad');
+} else {
+  console.log('Good');
+}

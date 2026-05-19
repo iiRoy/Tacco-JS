@@ -1,17 +1,24 @@
-// This function receives the entire input string.
-function ProcessInputData( rawData ) {
+// This function serves as the primary entry point for processing the given input data.
+function ProcessInput(rawData) {
 
-  let parsedValues = rawData.split( ' ' );
-  const firstNum = Number( parsedValues[0] );
-  const secondNum = Number( parsedValues[1] );
+  // The raw input string is split into an array of strings using space as a delimiter.
+  let parsedData = rawData.split(' ');
 
-  if ( ( firstNum * secondNum ) % 2 === 1 ) {
-    console.log( 'Odd' );
-  }
-  else {
-    console.log( 'Even' );
+  // The first element of the parsed array is converted to an integer and stored.
+  let firstNum = parseInt(parsedData[0]);
+  // The second element of the parsed array is converted to an integer and stored.
+  let secondNum = parseInt(parsedData[1]);
+
+  // We check the parity of the product of the two numbers.
+  // If the product modulo 2 is equal to 1, it means the product is an odd number.
+  if (firstNum * secondNum % 2 === 1) {
+    console.log('%s', 'Odd'); // Output 'Odd' if the product is odd.
+  } else {
+    console.log('%s', 'Even'); // Otherwise, the product is even, and 'Even' is output.
   }
 
 }
-//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
-ProcessInputData( require("fs").readFileSync("/dev/stdin", "utf8") );
+
+// The following line is responsible for reading input from standard input and invoking the main processing function.
+// It should not be altered as it handles the environment-specific input mechanism.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

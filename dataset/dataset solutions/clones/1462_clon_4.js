@@ -1,16 +1,18 @@
-(function(sourceData) {
-    const sectionComponents = sourceData.split(/\r?\n/);
+(function(sourceText) {
+    const lineSegments = sourceText.split('\n');
 
-    const mainCollectionExtent = parseInt(sectionComponents[0], 10);
+    const firstNumericValue = Number(lineSegments[0]);
+    const secondArrayContent = lineSegments[1].split(' ', firstNumericValue).map(Number);
 
-    const lookupCandidates = sectionComponents[3].split(' ').map(elementString => parseInt(elementString, 10));
+    const thirdNumericValue = Number(lineSegments[2]);
+    const fourthArrayContent = lineSegments[3].split(' ', thirdNumericValue).map(Number);
 
-    const checkBounds = (valToVerify, upperBoundary) => 
-        valToVerify >= 0 && valToVerify < upperBoundary;
-
-    const matchedCount = lookupCandidates.filter(itemToExamine =>
-        checkBounds(itemToExamine, mainCollectionExtent)
-    ).length;
+    const matchedCount = fourthArrayContent.reduce((accumulator, currentElement) => {
+        if (Number.isInteger(currentElement) && currentElement >= 0 && currentElement < secondArrayContent.length) {
+            return accumulator + 1;
+        }
+        return accumulator;
+    }, 0);
 
     console.log(matchedCount);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

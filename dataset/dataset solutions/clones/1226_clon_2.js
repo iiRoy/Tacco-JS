@@ -1,26 +1,22 @@
-let rawInputData = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) ;
-// The script's purpose is to verify if a circle fits inside a rectangle.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let processedNumbers = rawInputData . split ( ' ' ) . map (   strVal   =>   parseFloat ( strVal )   ) ;
+const parsedValues = rawData.split(' ').map( (strNum) => parseInt(strNum, 10) );
 
-var containerWidth = processedNumbers[0] ;
-var containerHeight = processedNumbers[1] ;
+let boundaryWidth = parsedValues[0];
+let boundaryHeight = parsedValues[1];
+let centerX = parsedValues[2];
+let centerY = parsedValues[3];
+let radiusVal = parsedValues[4];
 
-var circleCenterX = processedNumbers[2] ;
-var circleCenterY = processedNumbers[3] ;
-var circleRadius = processedNumbers[4] ; // This represents the radius of the circular entity.
+let leftEdge = centerX - radiusVal;
+let rightEdge = centerX + radiusVal;
+let topEdge = centerY - radiusVal;
+let bottomEdge = centerY + radiusVal;
 
-// Determine the bounding box coordinates for the circle.
-let leftEdge = circleCenterX - circleRadius ;
-let rightEdge = circleCenterX + circleRadius ;
-let lowerBoundY = circleCenterY - circleRadius ;
-let upperBoundY = circleCenterY + circleRadius ;
+const isWithinBounds = (0 <= leftEdge) && (rightEdge <= boundaryWidth) && (0 <= topEdge) && (bottomEdge <= boundaryHeight);
 
-const isWithinBounds = ( 0.0 <= leftEdge ) && ( rightEdge <= containerWidth ) && ( 0.0 <= lowerBoundY ) && ( upperBoundY <= containerHeight ) ;
-
-if ( isWithinBounds ) {
-        console.log ( 'Yes' ) ; // Output 'Yes' if the circle is fully contained.
-}
-else {
-        console.log ( 'No' ) ; // Output 'No' otherwise.
+if (isWithinBounds) {
+  console.log('Yes');
+} else {
+  console.log('No');
 }

@@ -1,108 +1,100 @@
-"use strict";
-const acquireData = require("fs").readFileSync("/dev/stdin", "utf8");
-const tokenPile = acquireData.split(/ |\n/);
-let tokenPointer = 0;
+var inputData = require("fs").readFileSync("/dev/stdin", "utf8").split(/ |\n/).filter(Boolean);
+var inputPointer = 0;
 
-function grabNumber() {
-    return +tokenPile[tokenPointer++];
+function getNextToken(isString) {
+  return isString ? inputData[inputPointer++] : Number(inputData[inputPointer++]);
 }
 
-function grabSymbol() {
-    return tokenPile[tokenPointer++];
+class CountSegmentTree {
+  constructor(size) {
+    this.baseLength = size;
+    this.tree = new Array(4 * size).fill(0);
+  }
+
+  modifyValue(index, value) {
+    this._recursiveUpdate(index, value, 0, 0, this.baseLength - 1);
+  }
+
+  _recursiveUpdate(targetIndex, value, treeIndex, rangeStart, rangeEnd) {
+    if (rangeStart === rangeEnd) {
+      this.tree[treeIndex] += value;
+      return;
+    }
+
+    const mid = Math.floor((rangeStart + rangeEnd) / 2);
+    if (targetIndex <= mid) {
+      this._recursiveUpdate(targetIndex, value, 2 * treeIndex + 1, rangeStart, mid);
+    } else {
+      this._recursiveUpdate(targetIndex, value, 2 * treeIndex + 2, mid + 1, rangeEnd);
+    }
+    this.tree[treeIndex] = this.tree[2 * treeIndex + 1] + this.tree[2 * treeIndex + 2];
+  }
+
+  retrieveSum(queryStart, queryEnd) {
+    return this._recursiveQuery(queryStart, queryEnd, 0, 0, this.baseLength - 1);
+  }
+
+  _recursiveQuery(queryStart, queryEnd, treeIndex, rangeStart, rangeEnd) {
+    if (queryStart <= rangeStart && rangeEnd <= queryEnd) {
+      return this.tree[treeIndex];
+    }
+    if (rangeEnd < queryStart || queryEnd < rangeStart) {
+      return 0;
+    }
+
+    const mid = Math.floor((rangeStart + rangeEnd) / 2);
+    const leftSum = this._recursiveQuery(queryStart, queryEnd, 2 * treeIndex + 1, rangeStart, mid);
+    const rightSum = this._recursiveQuery(queryStart, queryEnd, 2 * treeIndex + 2, mid + 1, rangeEnd);
+    return leftSum + rightSum;
+  }
 }
 
-function createSegmentTree(sizeOfData) {
-    const treeStorage = new Array(4 * sizeOfData).fill(0);
-    const maximumIndex = sizeOfData;
+function processProblem() {
+  const stringLength = getNextToken();
+  const initialStringContent = getNextToken(true);
+  const queryCount = getNextToken();
 
-    function adjustNodeValue(currentNodeIndex, currentSegmentStart, currentSegmentEnd, targetPosition, changeAmount) {
-        if (currentSegmentStart === currentSegmentEnd) {
-            treeStorage[currentNodeIndex] += changeAmount;
-            return;
+  const originalCharCodes = Array.from(initialStringContent, char => char.charCodeAt(0) - 97);
+
+  const charPresenceTrackers = Array(26).fill().map(() => new CountSegmentTree(stringLength));
+
+  for (let i = 0; i < stringLength; i++) {
+    charPresenceTrackers[originalCharCodes[i]].modifyValue(i, 1);
+  }
+
+  const outputLines = [];
+
+  for (let qIdx = 0; qIdx < queryCount; qIdx++) {
+    const currentQueryType = getNextToken();
+
+    if (currentQueryType === 1) {
+      const updatePosition = getNextToken() - 1;
+      const newCharacter = getNextToken(true);
+      const newCharCode = newCharacter.charCodeAt(0) - 97;
+
+      const oldCharCode = originalCharCodes[updatePosition];
+
+      charPresenceTrackers[oldCharCode].modifyValue(updatePosition, -1);
+      charPresenceTrackers[newCharCode].modifyValue(updatePosition, 1);
+    } else {
+      const rangeStart = getNextToken() - 1;
+      const rangeEnd = getNextToken() - 1;
+
+      let distinctCharacterCount = 0;
+      for (let charCode = 0; charCode < 26; charCode++) {
+        const characterOccurrences = charPresenceTrackers[charCode].retrieveSum(rangeStart, rangeEnd);
+        if (characterOccurrences > 0) {
+          distinctCharacterCount++;
         }
-
-        const midPoint = Math.floor((currentSegmentStart + currentSegmentEnd) / 2);
-
-        if (targetPosition <= midPoint) {
-            adjustNodeValue(2 * currentNodeIndex, currentSegmentStart, midPoint, targetPosition, changeAmount);
-        } else {
-            adjustNodeValue(2 * currentNodeIndex + 1, midPoint + 1, currentSegmentEnd, targetPosition, changeAmount);
-        }
-
-        treeStorage[currentNodeIndex] = treeStorage[2 * currentNodeIndex] + treeStorage[2 * currentNodeIndex + 1];
+      }
+      outputLines.push(distinctCharacterCount);
     }
+  }
 
-    function retrieveRangeSum(currentNodeIndex, currentSegmentStart, currentSegmentEnd, queryStart, queryEnd) {
-        if (queryStart > currentSegmentEnd || queryEnd < currentSegmentStart) {
-            return 0;
-        }
-        if (queryStart <= currentSegmentStart && queryEnd >= currentSegmentEnd) {
-            return treeStorage[currentNodeIndex];
-        }
-        const midPoint = Math.floor((currentSegmentStart + currentSegmentEnd) / 2);
-        const leftChildSum = retrieveRangeSum(2 * currentNodeIndex, currentSegmentStart, midPoint, queryStart, queryEnd);
-        const rightChildSum = retrieveRangeSum(2 * currentNodeIndex + 1, midPoint + 1, currentSegmentEnd, queryStart, queryEnd);
-        return leftChildSum + rightChildSum;
-    }
-
-    return {
-        updatePosition: function(position, valueChange) {
-            adjustNodeValue(1, 1, maximumIndex, position, valueChange);
-        },
-        queryRange: function(rangeStart, rangeEnd) {
-            return retrieveRangeSum(1, 1, maximumIndex, rangeStart, rangeEnd);
-        }
-    };
+  return outputLines.join("\n");
 }
 
-function executeProgram() {
-    const stringLength = grabNumber();
-    const initialStringContent = grabSymbol();
-    const queryCount = grabNumber();
-
-    const currentCharacterStates = initialStringContent.split('');
-
-    const charSegmentTrees = Array(26).fill(null).map(() => createSegmentTree(stringLength));
-
-    for (let charIndex = 0; charIndex < stringLength; charIndex++) {
-        const charCodeOffset = currentCharacterStates[charIndex].charCodeAt(0) - 97;
-        charSegmentTrees[charCodeOffset].updatePosition(charIndex + 1, 1);
-    }
-
-    const collectedResults = [];
-
-    for (let queryIdx = 0; queryIdx < queryCount; queryIdx++) {
-        const queryType = grabNumber();
-
-        if (queryType === 1) {
-            const modificationPosition = grabNumber();
-            const newCharacter = grabSymbol();
-
-            const oldCharacter = currentCharacterStates[modificationPosition - 1];
-
-            charSegmentTrees[oldCharacter.charCodeAt(0) - 97].updatePosition(modificationPosition, -1);
-            charSegmentTrees[newCharacter.charCodeAt(0) - 97].updatePosition(modificationPosition, 1);
-
-            currentCharacterStates[modificationPosition - 1] = newCharacter;
-
-        } else {
-            const rangeStart = grabNumber();
-            const rangeEnd = grabNumber();
-
-            let distinctCharacterTally = 0;
-            for (let charCodeOffset = 0; charCodeOffset < 26; charCodeOffset++) {
-                const countInRange = charSegmentTrees[charCodeOffset].queryRange(rangeStart, rangeEnd);
-                if (countInRange > 0) {
-                    distinctCharacterTally++;
-                }
-            }
-            collectedResults.push(distinctCharacterTally);
-        }
-    }
-    return collectedResults.join("\n");
-}
-
-const programOutput = executeProgram();
-if (programOutput !== undefined) {
-    console.log(programOutput);
+var finalOutput = processProblem();
+if (finalOutput !== undefined) {
+  console.log(finalOutput);
 }

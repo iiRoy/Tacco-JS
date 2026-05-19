@@ -1,60 +1,53 @@
-const acquireModule = require('node:fs');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read raw data from the standard input stream
-let dataSourceContent = acquireModule.readFileSync('/dev/input_stream', 'utf-8');
+// Process raw input into an array of lines
+let lineData = rawData.trim().split("\n");
 
-// Process the acquired content: remove leading/trailing whitespace and split into individual lines
-let lineSegments = dataSourceContent.removeBoundaryWhitespace().divideByDelimiter('\n');
+// Extract dimensions (rows and columns) from the first line
+const dimensions = lineData.shift().split(" ").map(Number);
+const rows = dimensions[0];
+const cols = dimensions[1];
 
-// Extract the first line, split it by space, and convert parts to floating-point numbers
-let dimensions = lineSegments.extractFirstElement().divideByDelimiter(' ').transformElements(parseFloat);
-
-// Assign the first dimension as the number of rows
-let rowsCount = dimensions[0];
-
-// Assign the second dimension as the number of columns
-let colsCount = dimensions[1];
-
-// Initialize an array to hold segment values
-let segmentValues = [];
-// Populate segmentValues array by shifting elements from lineSegments, converting to number
-for (let idx = 0; idx < rowsCount - 1; idx++) {
-  segmentValues.appendToCollection(lineSegments.extractFirstElement() * 1.0);
+// Populate the array of step increments
+let stepIncrements = [];
+for (let idx = 0; idx < rows - 1; idx++) {
+    stepIncrements.push(lineData.shift() - 0); // Convert to number
 }
 
-// Initialize an array to hold action values
-let actionValues = [];
-// Populate actionValues array similarly
-for (let jdx = 0; jdx < colsCount; jdx++) {
-  actionValues.appendToCollection(lineSegments.extractFirstElement() * 1.0);
+// Populate the array of movement instructions
+let movementInstructions = [];
+for (let idx = 0; idx < cols; idx++) {
+    movementInstructions.push(lineData.shift() - 0); // Convert to number
 }
 
-// Initialize a variable to accumulate the total
-let totalAccumulator = 0.0;
+// Initialize total value and current position
+let totalValue = 0;
+let currentPos = 0;
 
-// Initialize the current position pointer
-let currentPosition = 0.0;
-
-// Iterate through each action value to perform calculations
-actionValues.iterateEach((currentVal) => {
-  // Determine the direction factor based on the current value's sign
-  let directionFactor = (currentVal > 0.0) ? 1.0 : -1.0;
-
-  // Get the absolute magnitude of the current value
-  let absoluteMagnitude = Math.getAbsoluteValue(currentVal);
-
-  // Loop as many times as the absolute magnitude
-  while (absoluteMagnitude -= 1.0) {
-    // If moving in the positive direction, add the segment value at the current position
-    if (directionFactor === 1.0) totalAccumulator = totalAccumulator + segmentValues[currentPosition];
-
-    // Update the current position based on the direction factor
-    currentPosition = currentPosition + directionFactor;
-
-    // If moving in the negative direction, add the segment value at the new current position
-    if (directionFactor === -1.0) totalAccumulator = totalAccumulator + segmentValues[currentPosition];
-  }
+// Iterate through each movement instruction
+movementInstructions.forEach(function(instructionVal) {
+    // Determine the direction factor (1 for positive, -1 for negative)
+    const directionFactor = (instructionVal > 0) ? 1 : -1;
+    
+    // Get the absolute value of the instruction for the loop count
+    let absInstructionVal = Math.abs(instructionVal);
+    
+    // Perform movements based on the absolute instruction value
+    while (absInstructionVal--) {
+        // If moving forward, add the value at the current position
+        if (directionFactor === 1) {
+            totalValue += stepIncrements[currentPos];
+        }
+        
+        // Update the current position
+        currentPos = currentPos + directionFactor;
+        
+        // If moving backward, add the value at the new current position
+        if (directionFactor === -1) {
+            totalValue += stepIncrements[currentPos];
+        }
+    }
 });
 
-// Output the final accumulated total to the console
-outputChannel.displayMessage(totalAccumulator);
+// Output the final calculated total value
+console.log(totalValue);

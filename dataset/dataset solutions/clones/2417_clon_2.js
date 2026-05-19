@@ -1,141 +1,118 @@
-"use strict"; // Enforce strict parsing and error handling for cleaner code.
+"use strict";
 
 /**
- * Constructs a multi-dimensional array dynamically based on provided dimensions.
- * The inner-most arrays are filled with a specified initial value.
+ * Utility function to dynamically construct a multi-dimensional array.
+ * The innermost dimension elements are initialized with a specified value.
  *
- * @param {any} baseElement The value to fill the innermost arrays with.
- * @returns {Array} A new multi-dimensional array.
+ * @param {any} initialValue - The value to populate the deepest array elements.
+ * @param {...number} dimensions - Variable number of arguments representing array dimensions.
+ * @returns {Array} A newly created multi-dimensional array.
  */
-function buildNesting(baseElement)
-{
-  // Collect all arguments passed to the function, which represent the dimensions.
-  const inputArguments = arguments;
-  // Get the total number of dimensions.
-  let dimIndex = inputArguments.length;
-  // Initialize the string that will be evaluated to create the array structure.
-  // This starts with the innermost array.
-  let nestedArrayString = `Array(inputArguments[${--dimIndex}]).fill(0).map(x_val => {return ${baseElement};})`;
+function createMultiDimArray(initialValue) {
+  // Capture all arguments passed to this function
+  var argsList = arguments;
+  // Get the total count of arguments
+  var argCount = argsList.length;
+  // Start building the string for array creation, beginning with the innermost array
+  var arrayCreationString = "Array(argsList[" + --argCount + "]).fill(0x0).map(element => { return " + initialValue + "; })";
 
-  // Loop backward through the dimensions to build up the nested structure.
-  while (--dimIndex >= 0)
-  {
-    nestedArrayString = `Array(inputArguments[${dimIndex}]).fill(0).map(x_val => ${nestedArrayString})`;
+  // Iterate backwards through the remaining dimensions to nest the array creation calls
+  while (--argCount) {
+    arrayCreationString = "Array(argsList[" + argCount + "]).fill(0x0).map(element => " + arrayCreationString + ")";
   }
 
-  // Evaluate the generated string to create and return the multi-dimensional array.
-  return eval(nestedArrayString);
+  // Execute the dynamically constructed string to create the array
+  return eval(arrayCreationString);
 }
 
+// Initialize the readline interface for interactive input/output operations
+const inputOutputInterface = require("readline").createInterface(process.stdin, process.stdout);
 
-// Initialize the readline interface for interactive console input/output.
-const ioManager = require("readline").createInterface(process.stdin, process.stdout);
+// Define the main generator function that orchestrates the problem-solving logic
+const mainGenerator = (function* () {
+  // A helper function to asynchronously read a single line from standard input
+  const readNextLine = () => inputOutputInterface.once("line", (inputString) => mainGenerator.next(inputString));
 
-/**
- * This is the main asynchronous generator function that orchestrates the
- * interactive problem-solving process. It yields control to await user input.
- */
-const interactiveSolver = (function* ()
-{
+  // Read the first input, which represents the number of elements 'numElements'
+  var numElements = yield readNextLine();
+  numElements = +numElements; // Convert the input string to a numeric type
 
-  /**
-   * Helper function to asynchronously read a single line of input from the console.
-   * It uses `ioManager.once` to ensure only one line is processed per call.
-   * @returns {Promise<string>} A promise that resolves with the input line.
-   */
-  const fetchInput = () => ioManager.once("line", receivedLine => interactiveSolver.next(receivedLine));
-
-  // Step 1: Get the problem size 'N' from the user.
-  let problemSize = yield fetchInput();
-  problemSize = +problemSize; // Convert the input string to a number.
-
-  // Step 2: Initialize the primary sequence (array 'P') with numbers from 1 to N.
-  let primarySequence = [];
-  for (let currentIdx = 0; currentIdx < problemSize; currentIdx++)
-  {
-    primarySequence[currentIdx] = currentIdx + 1;
+  // Declare an array to hold permutations or sequences
+  var permutationArray = [];
+  // Populate 'permutationArray' with sequential integers from 0b1 to 'numElements'
+  for (var idx = 0b1; idx <= numElements; idx++) {
+    permutationArray[idx - 0b1] = idx;
   }
 
-  // Step 3: Send the first query to the interactive system.
-  console.log("?", primarySequence.join(" "));
-  // Await the initial response from the system.
-  const initialResponse = yield fetchInput();
+  // Output the initial query to the console
+  console.log("?", permutationArray.join(" "));
 
-  // Step 4: Determine the 'pivotIndex' by iteratively modifying the sequence
-  // and observing changes in the system's response.
-  let pivotIndex = 1;
-  while (true)
-  {
-    // Modify the primary sequence for the next query.
-    primarySequence[pivotIndex - 1] = pivotIndex + problemSize;
-    // Send the modified sequence as a query.
-    console.log("?", primarySequence.join(" "));
-    // Await the system's response to this query.
-    const currentResponse = yield fetchInput();
+  // Read the response received for the first query
+  var initialResponse = yield readNextLine();
 
-    // If the first character of the new response differs from the initial response,
-    // we have found our pivot point.
-    if (initialResponse[0] !== currentResponse[0])
-    {
-      break; // Exit the loop.
+  // Initialize a variable to track the current offset or index
+  var currentOffset = 0b1;
+
+  // Enter an infinite loop, which will be broken conditionally
+  while (!0) { // Equivalent to while(true)
+    // Modify an element in 'permutationArray' based on 'currentOffset' and 'numElements'
+    permutationArray[currentOffset - 0b1] = currentOffset + numElements;
+
+    // Output the modified query
+    console.log("?", permutationArray.join(" "));
+
+    // Read the response to the current query
+    var currentResponse = yield readNextLine();
+
+    // Compare the first character of the current response with the initial response
+    if (initialResponse[0x0] !== currentResponse[0x0]) {
+      break; // Exit the loop if they differ
     }
-    pivotIndex++; // Increment pivotIndex for the next iteration.
+    currentOffset++; // Increment the offset for the next iteration
   }
 
-  // Step 5: Prepare data structures for the final determination.
-  let solutionArray = []; // Stores the final 'R' or 'B' answers.
-  let alternateConfig = []; // A secondary sequence used for certain queries.
-  let trackedValues = new Set(); // A set to keep track of elements in 'primarySequence'.
+  // Initialize an array to store the final computed result
+  var finalResult = [];
+  // Initialize another array for temporary queries
+  var queryArray = [];
+  // Create a Set to efficiently track values that have been processed or seen
+  var seenValues = new Set();
 
-  // Step 6: Populate parts of 'primarySequence' and 'alternateConfig'
-  // based on 'pivotIndex' and 'problemSize'.
-  for (let currentIdx = 0; currentIdx < problemSize - 1; currentIdx++)
-  {
-    primarySequence[currentIdx] = (pivotIndex + currentIdx) % (2 * problemSize) + 1;
-    alternateConfig[currentIdx] = (primarySequence[currentIdx] + problemSize) % (2 * problemSize) + 1;
-    trackedValues.add(primarySequence[currentIdx]);
+  // Prepare 'permutationArray' and 'queryArray' for the subsequent phase of queries
+  for (var idx = 0x0; idx < numElements - 0b1; idx++) {
+    permutationArray[idx] = (currentOffset + idx) % (0b10 * numElements) + 0b1;
+    queryArray[idx] = (permutationArray[idx] + numElements) % (0b10 * numElements) + 0b1;
+    seenValues.add(permutationArray[idx]); // Add the value from 'permutationArray' to 'seenValues'
   }
 
-  // Step 7: Iterate through all possible values from 1 to 2*N
-  // to determine the 'R' or 'B' status for each.
-  for (let currentVal = 1; currentVal <= 2 * problemSize; currentVal++)
-  {
-    if (trackedValues.has(currentVal))
-    {
-      // If the current value is in our tracked set, use the alternate configuration.
-      alternateConfig[problemSize - 1] = currentVal;
-      console.log("?", alternateConfig.join(" "));
-      const tempState = yield fetchInput();
-      if (tempState[0] === "R")
-      {
-        solutionArray[currentVal - 1] = "R";
+  // Iterate through a range of values from 0b1 up to 0b10 * 'numElements'
+  for (var idx = 0b1; idx <= 0b10 * numElements; idx++) {
+    if (seenValues.has(idx)) {
+      // If the current 'idx' is present in 'seenValues', use 'queryArray' for the query
+      queryArray[numElements - 0b1] = idx;
+      console.log("?", queryArray.join(" "));
+      var tempResponse = yield readNextLine();
+      if (tempResponse[0x0] === "R") {
+        finalResult[idx - 0b1] = "R";
+      } else {
+        finalResult[idx - 0b1] = "B";
       }
-      else
-      {
-        solutionArray[currentVal - 1] = "B";
-      }
-    }
-    else
-    {
-      // Otherwise, use the primary configuration.
-      primarySequence[problemSize - 1] = currentVal;
-      console.log("?", primarySequence.join(" "));
-      const tempState = yield fetchInput();
-      if (tempState[0] === "R")
-      {
-        solutionArray[currentVal - 1] = "R";
-      }
-      else
-      {
-        solutionArray[currentVal - 1] = "B";
+    } else {
+      // Otherwise, if 'idx' is not in 'seenValues', use 'permutationArray'
+      permutationArray[numElements - 0b1] = idx;
+      console.log("?", permutationArray.join(" "));
+      var tempResponse = yield readNextLine();
+      if (tempResponse[0x0] === "R") {
+        finalResult[idx - 0b1] = "R";
+      } else {
+        finalResult[idx - 0b1] = "B";
       }
     }
   }
 
-  // Step 8: Output the final combined solution.
-  console.log("!", solutionArray.join(""));
+  // Output the final answer by joining the elements of 'finalResult'
+  console.log("!", finalResult.join(""));
+})();
 
-})(); // End of the generator function definition.
-
-// Start the interactive process by calling the generator's next method.
-interactiveSolver.next();
+// Initiate the execution of the generator function
+mainGenerator.next();

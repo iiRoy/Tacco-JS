@@ -1,32 +1,23 @@
-const processRawData = (sourceData) => {
-    const textSegments = sourceData.split('\n');
-    const segmentA = textSegments[0];
-    const segmentB = textSegments[1];
+function* characterSequence(firstString, secondString) {
+    const totalElements = firstString.length + secondString.length;
+    let currentPosition = 0;
 
-    let cursorA = 0;
-    let cursorB = 0;
-
-    const totalOutputElements = segmentA.length + segmentB.length;
-
-    // Create an array of numbers representing the sequence of sources to pick from (0 for A, 1 for B).
-    const sourceSelectionOrder = Array.from({ length: totalOutputElements }, (_, elementIndex) => elementIndex % 2);
-
-    // Use a functional approach (reduce) to build the output array.
-    const collectedOutput = sourceSelectionOrder.reduce((accumulator, currentSelector) => {
-        let characterToInclude;
-        if (currentSelector === 0) { // Pick from segmentA
-            characterToInclude = segmentA[cursorA];
-            cursorA++;
-        } else { // Pick from segmentB
-            characterToInclude = segmentB[cursorB];
-            cursorB++;
+    while (currentPosition < totalElements) {
+        if (currentPosition % 2 === 0) {
+            yield firstString[currentPosition / 2];
+        } else {
+            yield secondString[currentPosition / 2];
         }
-        accumulator.push(characterToInclude);
-        return accumulator;
-    }, []);
+        currentPosition++;
+    }
+}
 
-    // Join all collected characters with newlines. `undefined` elements will be converted to "undefined" strings.
-    return collectedOutput.join('\n');
-};
+function ProcessInput(rawData) {
+    const [lineOne, lineTwo] = rawData.split("\n");
 
-console.log(processRawData(require("fs").readFileSync("/dev/stdin", "utf8")));
+    for (const item of characterSequence(lineOne, lineTwo)) {
+        console.log(item);
+    }
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

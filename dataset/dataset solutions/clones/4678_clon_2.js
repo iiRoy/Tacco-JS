@@ -1,41 +1,41 @@
-// This module handles input processing and geometric calculation.
-function ProcessInput (  incomingText ) {
+// This function processes the incoming data to calculate a specific distance.
+function ProcessInput(rawData) {
+  // Split the raw string into an array of strings based on space delimiter.
+  let parsedData = rawData.split(" ");
 
-  incomingText = incomingText.split(   " "   ) ;
+  // Parse integer values from the array elements.
+  const widthVal = parseInt(parsedData[0], 10);
+  let coordA = parseInt(parsedData[1], 10);
+  let coordB = parseInt(parsedData[2], 10);
 
-  var     widthMeasure = parseInt(incomingText[0]);
-  var   firstPoint = parseInt( incomingText[1] );
-  var   secondPoint = parseInt( incomingText[2] );
+  let resultDist; // Declare the variable to hold the final calculated distance.
 
-  var    calculatedGap ;
-
-  if (firstPoint > secondPoint) {
-    var    temporaryValue = firstPoint;
-    firstPoint  =  secondPoint;
-    secondPoint = temporaryValue;
+  // Ensure coordA is always less than or equal to coordB for consistent calculation.
+  if (coordA > coordB) {
+    let tempCoord = coordA; // Temporary variable for swapping.
+    coordA = coordB;
+    coordB = tempCoord;
   }
 
-  // Check for overlap or adjacency
-  if (firstPoint + widthMeasure >= secondPoint) {
-    calculatedGap = 0;
-  }
-  else {
-    calculatedGap = secondPoint - (firstPoint + widthMeasure);
+  // Determine the distance based on the relative positions of the intervals.
+  if (coordA + widthVal >= coordB) {
+    // If the first interval overlaps or touches the second, the distance is zero.
+    resultDist = 0;
+  } else {
+    // Otherwise, calculate the gap between the end of the first interval and the start of the second.
+    resultDist = coordB - (coordA + widthVal);
   }
 
-  console.log(   '%s',   calculatedGap   ) ;
+  // Output the calculated distance to the console.
+  console.log('%s', resultDist);
 }
 
-
-/*
- * This helper function facilitates debugging by fetching
- * data from a webpage element and feeding it to the main logic.
- */
-function TestExecution () {
-  var userProvidedString = document.getElementById( "input" ).value;
-  ProcessInput( userProvidedString ) ;
+// Helper function for local testing, typically triggered by a UI element.
+function testExecution() {
+  // Retrieve input from a DOM element for debugging purposes.
+  const inputElementValue = document.getElementById("input").value;
+  ProcessInput(inputElementValue); // Call the main processing function.
 }
 
-// Determine the source of data to execute the primary function.
-const   standardInputPath = "/dev/stdin";
-ProcessInput( require("fs").readFileSync( standardInputPath, "utf8" ) );
+// Execute the primary function with data read from standard input in a production environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

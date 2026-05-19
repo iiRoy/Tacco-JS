@@ -1,83 +1,61 @@
-const rdl = require('readline');
-
-const maxDigitCount = 10;
-const maximumValue = 45;
-const minimumAllowedDigit = 10;
-
-let calculationStorage;
-
-function establishStorage() {
-    calculationStorage = Array(maxDigitCount + 1).fill(null).map(() =>
-        Array(maximumValue + 1).fill(null).map(() =>
-            Array(minimumAllowedDigit + 1).fill(-1)
-        )
-    );
-}
-
-function determineCombinations(digitsToSelect, currentSumGoal, lowestDigit) {
-    if (digitsToSelect === 0) {
-        return currentSumGoal === 0 ? 1 : 0;
-    }
-    if (currentSumGoal < 0) {
-        return 0;
-    }
-    if (lowestDigit > 9) {
-        return 0;
-    }
-
-    const minPossibleSum = (digitsToSelect * lowestDigit) + (digitsToSelect * (digitsToSelect - 1) / 2);
-    const maxPossibleSum = (digitsToSelect * 9) - (digitsToSelect * (digitsToSelect - 1) / 2);
-
-    if (currentSumGoal < minPossibleSum || currentSumGoal > maxPossibleSum) {
-        return 0;
-    }
-
-    if (calculationStorage[digitsToSelect][currentSumGoal][lowestDigit] !== -1) {
-        return calculationStorage[digitsToSelect][currentSumGoal][lowestDigit];
-    }
-
-    let totalPossibleWays = 0;
-    for (let chosenDigit = lowestDigit; chosenDigit <= 9; chosenDigit++) {
-        if (currentSumGoal >= chosenDigit) {
-            totalPossibleWays += determineCombinations(digitsToSelect - 1, currentSumGoal - chosenDigit, chosenDigit + 1);
-        }
-    }
-
-    calculationStorage[digitsToSelect][currentSumGoal][lowestDigit] = totalPossibleWays;
-    return totalPossibleWays;
-}
-
-function computeResult(quantity, value) {
-    establishStorage();
-    return determineCombinations(quantity, value, 0);
-}
-
-const inputProcessor = rdl.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+var rawData = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(dataSegment) {
+    rawData += dataSegment;
+});
+process.stdin.on('end', function() {
+    processInputData(rawData);
 });
 
-let collectedData = [];
+function processInputData(fullInput) {
+    var lineEntries = fullInput.trim().split('\n');
 
-inputProcessor.on('line', (lineContent) => {
-    collectedData.push(lineContent);
-});
+    for (var idx = 0; idx < lineEntries.length; idx++) {
+        var numericPair = lineEntries[idx].split(' ').map(Number);
+        var countDigits = numericPair[0];
+        var targetSum = numericPair[1];
 
-inputProcessor.on('close', () => {
-    handleCollectedData(collectedData);
-});
-
-function handleCollectedData(allInputLines) {
-    for (const dataRow of allInputLines) {
-        const valuePairs = dataRow.trim().split(' ').map(Number);
-        const countValue = valuePairs[0];
-        const sumValue = valuePairs[1];
-
-        if (countValue === 0 && sumValue === 0) {
+        if (!countDigits && !targetSum) {
             return;
         }
-
-        console.log(computeResult(countValue, sumValue));
+        console.log(calculateCombinations(countDigits, targetSum));
     }
+}
+
+function calculateCombinations(countDigits, targetSum) {
+    const maxPossibleSum = 45; // Maximum sum for 10 distinct digits (0-9)
+    const maxDigits = 10;     // Maximum number of distinct digits (0-9)
+
+    // dpTable[k][s] stores the number of ways to choose k distinct digits
+    // that sum up to s.
+    // Initialize all entries with zero.
+    const dpTable = Array(maxDigits + 1).fill(0).map(() =>
+        Array(maxPossibleSum + 1).fill(0)
+    );
+
+    // Base case: There is 1 way to choose 0 digits that sum to 0 (the empty set).
+    dpTable[0][0] = 1;
+
+    // Iterate through each possible digit from 0 to 9.
+    for (let currentDigit = 0; currentDigit <= 9; currentDigit++) {
+        // Iterate k (number of digits chosen) downwards.
+        // This ensures that each digit (currentDigit) is used at most once
+        // for a given (k, s) state calculation.
+        for (let k = countDigits; k >= 1; k--) {
+            // Iterate s (current sum) downwards.
+            // We only need to consider sums that are at least currentDigit
+            // to be able to include currentDigit in the sum.
+            for (let currentS = targetSum; currentS >= currentDigit; currentS--) {
+                // If we include currentDigit in the combination:
+                // We need to find (k-1) digits that sum to (currentS - currentDigit).
+                // Add the number of ways from this previous state to the current state.
+                dpTable[k][currentS] += dpTable[k - 1][currentS - currentDigit];
+            }
+        }
+    }
+
+    // The final result is the number of ways to choose 'countDigits' digits
+    // that sum up to 'targetSum'.
+    return dpTable[countDigits][targetSum];
 }

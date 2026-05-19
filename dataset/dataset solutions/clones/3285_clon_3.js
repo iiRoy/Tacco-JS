@@ -1,200 +1,119 @@
-const InputProcessor = (function () {
-  /**
-   * Manages the input stream by buffering lines and providing methods to extract tokens.
-   * @param {string} rawInputContent - The entire input string, typically read from stdin.
-   */
-  function InputLineBuffer(rawInputContent) {
-    // Stores all lines of input, trimmed and split by newline.
-    this.bufferedLines = rawInputContent.trim().split("\n");
-    // Pointer to the current line being processed.
-    this.lineIndexPointer = 0;
-  }
-
-  /**
-   * Extracts the next single token from the current input line.
-   * If the current line is exhausted, it automatically advances to the next.
-   * Tokens are assumed to be space-separated within a line.
-   * @param {boolean} [returnAsString=false] - If true, the token is returned as a string; otherwise, it's converted to a number.
-   * @returns {string|number} The extracted token.
-   * @throws {Error} If attempting to read beyond the end of the input.
-   */
-  InputLineBuffer.prototype.retrieveNextToken = function (returnAsString = false) {
-    if (this.lineIndexPointer >= this.bufferedLines.length) {
-      throw new Error("Attempted to read beyond the end of the input buffer.");
+var InputParser = (function () {
+    function createParser(sourceString) {
+        return new ParserInstance(sourceString);
     }
 
-    let activeLineData = this.bufferedLines[this.lineIndexPointer];
-    // If the current line is still a raw string, split it into tokens and reverse it.
-    // Reversing allows efficient `pop()` operations from the "logical front" of the line.
-    if (typeof activeLineData === "string") {
-      this.bufferedLines[this.lineIndexPointer] = activeLineData.split(" ").reverse();
+    class ParserInstance {
+        constructor(sourceString) {
+            this._sourceLines = sourceString.trim().split("\n");
+            this._currentLineIndex = 0;
+        }
+
+        readAtom(asString) {
+            let currentLineTokens = this._sourceLines[this._currentLineIndex];
+            if (typeof currentLineTokens === "string") {
+                currentLineTokens = currentLineTokens.split(" ").reverse();
+                this._sourceLines[this._currentLineIndex] = currentLineTokens;
+            }
+
+            const extractedToken = currentLineTokens.pop();
+
+            if (currentLineTokens.length === 0) {
+                this._currentLineIndex++;
+            }
+
+            return asString ? extractedToken : +extractedToken;
+        }
+
+        readLine(asString) {
+            const lineContent = this._sourceLines[this._currentLineIndex++];
+            const tokens = lineContent.split(" ");
+            return asString ? tokens : tokens.map(val => +val);
+        }
+
+        readMatrix(numRows, asString) {
+            const matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex + numRows);
+            this._currentLineIndex += numRows;
+            const parsedMatrix = matrixRows.map(rowStr => rowStr.split(" "));
+            return asString ? parsedMatrix : parsedMatrix.map(row => row.map(val => +val));
+        }
+
+        readRows(numRows, asString) {
+            const rows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex + numRows);
+            this._currentLineIndex += numRows;
+            return asString ? rows : rows.map(val => +val);
+        }
     }
 
-    const tokensOnCurrentLine = this.bufferedLines[this.lineIndexPointer];
-    const poppedToken = tokensOnCurrentLine.pop();
-
-    // If the current line's token array is now empty, advance the line pointer.
-    if (tokensOnCurrentLine.length === 0) {
-      this.lineIndexPointer++;
-    }
-
-    // Return the token, optionally converting it to a number.
-    return returnAsString ? poppedToken : Number(poppedToken);
-  };
-
-  /**
-   * Reads an entire line from the input buffer as an array of tokens.
-   * Advances the line pointer after reading.
-   * @param {boolean} [returnAsString=false] - If true, tokens are returned as strings; otherwise, they are converted to numbers.
-   * @returns {Array<string|number>} An array containing all tokens from the read line.
-   * @throws {Error} If attempting to read beyond the end of the input.
-   */
-  InputLineBuffer.prototype.readFullLineTokens = function (returnAsString = false) {
-    if (this.lineIndexPointer >= this.bufferedLines.length) {
-      throw new Error("End of input reached when trying to read a complete line.");
-    }
-
-    // Extract the line, split by space, and advance the pointer.
-    const lineSegments = this.bufferedLines[this.lineIndexPointer++].split(" ");
-    return returnAsString ? lineSegments : lineSegments.map(segment => Number(segment));
-  };
-
-  /**
-   * Reads a specified number of consecutive lines directly as an array.
-   * Each line is treated as a single element in the resulting array.
-   * @param {number} numberOfLines - The count of lines to read.
-   * @param {boolean} [returnAsString=false] - If true, lines are returned as strings; otherwise, they are converted to numbers.
-   * @returns {Array<string|number>} An array where each element corresponds to a read line.
-   * @throws {Error} If attempting to read more lines than available.
-   */
-  InputLineBuffer.prototype.readMultipleLinesAsArray = function (numberOfLines, returnAsString = false) {
-    if (this.lineIndexPointer + numberOfLines > this.bufferedLines.length) {
-      throw new Error(`Insufficient lines available. Requested ${numberOfLines}, but only ${this.bufferedLines.length - this.lineIndexPointer} remain.`);
-    }
-
-    const extractedLines = this.bufferedLines.slice(this.lineIndexPointer, this.lineIndexPointer + numberOfLines);
-    this.lineIndexPointer += numberOfLines; // Advance the pointer by the number of lines read.
-    return returnAsString ? extractedLines : extractedLines.map(line => Number(line));
-  };
-
-  // The factory function that creates and returns an instance of InputLineBuffer.
-  return function createInputReaderInstance(inputStringContent) {
-    return new InputLineBuffer(inputStringContent);
-  };
+    return createParser;
 })();
 
-// Create an input reader instance by reading from standard input.
-const standardInputReader = InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+var inputData = InputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * Solves the main problem: counts pairs of '.' and other characters
- * within connected components of a grid.
- * A component is formed by adjacent cells (up, down, left, right)
- * that have DIFFERENT characters.
- * @returns {number} The total sum of (dot_count * other_char_count) for all components.
- */
-function solveGridConnectivityProblem() {
-  // Read grid dimensions: height and width
-  const gridHeight = standardInputReader.retrieveNextToken();
-  const gridWidth = standardInputReader.retrieveNextToken();
+console.log(processGrid());
 
-  // Read the grid content. Each element is a string representing a row.
-  const charGridData = standardInputReader.readMultipleLinesAsArray(gridHeight, true);
+function processGrid() {
+    const height = inputData.readAtom();
+    const width = inputData.readAtom();
 
-  // Initialize a 2D array to map each cell to its component ID.
-  // 0 means unvisited/unassigned. Component IDs will be 1-based.
-  const componentIdGrid = Array.from({ length: gridHeight }, () => Array(gridWidth).fill(0));
+    const gridMap = inputData.readRows(height, true);
 
-  // Counter for the unique component IDs found.
-  let currentComponentIdentifier = 0;
+    const visitedComponents = Array.from({ length: height }, () => Array(width).fill(0));
 
-  // Iterate through every cell in the grid.
-  for (let r = 0; r < gridHeight; r++) {
-    for (let c = 0; c < gridWidth; c++) {
-      // If the cell has already been assigned to a component, skip it.
-      if (componentIdGrid[r][c] !== 0) {
-        continue;
-      }
+    let componentCount = 0;
 
-      // Found an unvisited cell, so it's the start of a new component.
-      currentComponentIdentifier++;
-      componentIdGrid[r][c] = currentComponentIdentifier;
+    function exploreComponent(startRow, startCol, currentComponentId) {
+        const queue = [[startRow, startCol]];
+        visitedComponents[startRow][startCol] = currentComponentId;
 
-      // Use a stack for Depth-First Search (DFS) traversal to find all cells in this component.
-      const dfsTraversalStack = [[r, c]];
-      const startingCellChar = charGridData[r][c];
+        const deltaRows = [-1, 1, 0, 0];
+        const deltaCols = [0, 0, -1, 1];
 
-      // Process cells in the current component until the stack is empty.
-      while (dfsTraversalStack.length > 0) {
-        const [currentRow, currentCol] = dfsTraversalStack.pop();
+        let queueHead = 0;
+        while (queueHead < queue.length) {
+            const [currentRow, currentCol] = queue[queueHead++];
+            
+            for (let k = 0; k < 4; k++) {
+                const nextRow = currentRow + deltaRows[k];
+                const nextCol = currentCol + deltaCols[k];
 
-        // Define relative offsets for checking neighbors (up, down, left, right).
-        const neighborRelativeOffsets = [
-          [-1, 0], // Up
-          [1, 0],  // Down
-          [0, -1], // Left
-          [0, 1]   // Right
-        ];
-
-        // Check each of the four potential neighbors.
-        for (const [deltaY, deltaX] of neighborRelativeOffsets) {
-          const neighborRow = currentRow + deltaY;
-          const neighborCol = currentCol + deltaX;
-
-          // Check if the neighbor coordinates are within grid boundaries.
-          const isWithinBounds = neighborRow >= 0 && neighborRow < gridHeight &&
-                                 neighborCol >= 0 && neighborCol < gridWidth;
-
-          if (isWithinBounds) {
-            // Check if the neighbor has not been visited yet (componentIdGrid is 0).
-            const isNeighborUnvisited = componentIdGrid[neighborRow][neighborCol] === 0;
-            // Check if the neighbor's character is different from the current cell's character.
-            const neighborChar = charGridData[neighborRow][neighborCol];
-            const hasDifferentCharacter = startingCellChar !== neighborChar;
-
-            // If all conditions are met, assign the neighbor to the current component and add to stack.
-            if (isNeighborUnvisited && hasDifferentCharacter) {
-              componentIdGrid[neighborRow][neighborCol] = currentComponentIdentifier;
-              dfsTraversalStack.push([neighborRow, neighborCol]);
+                if (nextRow >= 0 && nextRow < height && nextCol >= 0 && nextCol < width) {
+                    if (visitedComponents[nextRow][nextCol] === 0 && gridMap[currentRow][currentCol] !== gridMap[nextRow][nextCol]) {
+                        visitedComponents[nextRow][nextCol] = currentComponentId;
+                        queue.push([nextRow, nextCol]);
+                    }
+                }
             }
-          }
         }
-      }
     }
-  }
 
-  // Initialize an array to store counts of '.' and other characters for each component.
-  // `componentCharBreakdown[componentId][0]` will store '.' count.
-  // `componentCharBreakdown[componentId][1]` will store other char count.
-  // Array size is `currentComponentIdentifier + 1` because component IDs are 1-based.
-  const componentCharBreakdown = Array.from({ length: currentComponentIdentifier + 1 }, () => [0, 0]);
-
-  // Iterate through the grid again to populate the character counts for each component.
-  for (let row = 0; row < gridHeight; row++) {
-    for (let col = 0; col < gridWidth; col++) {
-      const assignedCompId = componentIdGrid[row][col];
-      const charInCurrentCell = charGridData[row][col];
-
-      // Increment the appropriate counter based on the character type.
-      if (charInCurrentCell === '.') {
-        componentCharBreakdown[assignedCompId][0]++; // Count for '.'
-      } else {
-        componentCharBreakdown[assignedCompId][1]++; // Count for other characters
-      }
+    for (let rowIdx = 0; rowIdx < height; rowIdx++) {
+        for (let colIdx = 0; colIdx < width; colIdx++) {
+            if (visitedComponents[rowIdx][colIdx] === 0) {
+                componentCount++;
+                exploreComponent(rowIdx, colIdx, componentCount);
+            }
+        }
     }
-  }
 
-  // Calculate the final answer by summing the product of character counts for each component.
-  let overallValidPairsCount = 0;
-  // Iterate from 1 because component IDs are 1-based (index 0 in `componentCharBreakdown` is unused).
-  for (let id = 1; id <= currentComponentIdentifier; id++) {
-    const dotCountInComponent = componentCharBreakdown[id][0];
-    const otherCharCountInComponent = componentCharBreakdown[id][1];
-    overallValidPairsCount += dotCountInComponent * otherCharCountInComponent;
-  }
+    const componentStats = Array.from({ length: componentCount + 1 }, () => [0, 0]);
 
-  return overallValidPairsCount;
+    let totalPairs = 0;
+
+    for (let row = 0; row < height; row++) {
+        for (let col = 0; col < width; col++) {
+            const currentComponentId = visitedComponents[row][col];
+            if (gridMap[row][col] === ".") {
+                componentStats[currentComponentId][0]++;
+            } else {
+                componentStats[currentComponentId][1]++;
+            }
+        }
+    }
+
+    for (let compId = 1; compId <= componentCount; compId++) {
+        totalPairs += componentStats[compId][0] * componentStats[compId][1];
+    }
+
+    return totalPairs;
 }
-
-// Execute the problem-solving function and print the final result to console.
-console.log(solveGridConnectivityProblem());

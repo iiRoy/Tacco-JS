@@ -1,46 +1,26 @@
-/*
- * This JavaScript module processes input data.
- * It reads lines, extracts pairs of values, sorts them, and prints the result.
- * The execution terminates upon encountering a specific pair of values.
- */
-(function (dataSource) {
-  // The raw input string is separated into an array of individual text lines.
-  // Each line corresponds to a potential data record.
-  let lineSegments = dataSource.split('\n');
+(function(incomingData) {
+    // This variable will hold an array of strings, where each string is a line from the input.
+    var linesArray = incomingData.split('\n');
 
-  // We iterate through the collection of line segments.
-  // The loop condition `idx < lineSegments.length` combined with `lineSegments.shift()`
-  // ensures every original segment is processed exactly once, as `lineSegments.length`
-  // decreases with each `shift()` operation.
-  for (let idx = 0; idx < lineSegments.length; idx++) {
-    // Retrieve the first line segment from the array and parse it.
-    // This segment is expected to contain two space-separated values.
-    let numberPair = lineSegments.shift().split(' ');
+    // We iterate through the array of lines. The loop condition uses the current length of the array,
+    // which changes as elements are removed with 'shift()'.
+    for (var idx = 0; idx < linesArray.length; idx++) {
+        // Retrieve the first line from the array and parse it into an array of coordinate strings.
+        // The 'shift()' method removes the first element from 'linesArray' and returns it.
+        var coordinates = linesArray.shift().split(' ');
 
-    // Evaluate a specific termination condition.
-    // If both elements of the pair are strictly equal to the number 0,
-    // the program's execution flow is halted immediately.
-    // Note: Due to strict equality (===), string "0" is not equal to number 0.
-    if (numberPair[0] === 0 && numberPair[1] === 0) {
-      // Exit the anonymous function.
-      return;
+        // Check for the specific termination condition: if both coordinates are '0'.
+        if (coordinates[0] === 0 && coordinates[1] === 0) {
+            // If the termination condition is met, exit the anonymous function.
+            return;
+        }
+
+        // Sort the coordinate strings numerically in ascending order.
+        // The comparison function 'valA - valB' ensures a numeric sort.
+        // Then, join the sorted numbers back into a single string, separated by a space,
+        // and print this result to the standard output.
+        console.log(coordinates.sort(function(valA, valB) {
+            return valA - valB;
+        }).join(' '));
     }
-
-    // Process the extracted number pair:
-    // 1. Sort the elements numerically in ascending order.
-    //    The comparison function explicitly converts values to integers for correct sorting.
-    // 2. Join the sorted elements back into a single string, separated by a space.
-    // 3. Print the resulting string to the console (standard output).
-    console.log(
-      numberPair.sort(function (val1, val2) {
-        // Custom comparator for numeric sorting.
-        // Explicitly parse values as integers to ensure correct numerical comparison.
-        return parseInt(val1, 10) - parseInt(val2, 10);
-      }).join(' ')
-    );
-  }
-})(
-  // The initial data source is obtained by reading the entire content
-  // of the standard input stream ('/dev/stdin') as a UTF-8 encoded string.
-  require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

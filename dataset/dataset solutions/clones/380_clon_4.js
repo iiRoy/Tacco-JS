@@ -1,39 +1,41 @@
 const fileSystem = require('fs');
 
-const determineCategory = (angleValue) => {
-    const categoryRules = [
-        { check: (val) => val >= 0 && val < 30, outcome: "alert" },
-        { check: (val) => val >= 90 && val <= 180, outcome: "safe" }
-    ];
-
-    for (const rule of categoryRules) {
-        if (rule.check(angleValue)) {
-            return rule.outcome;
-        }
-    }
-    return "warning";
-};
-
-const processTimeEntry = (timeString) => {
-    const timeComponents = timeString.split(":");
-    const currentHour = Number(timeComponents[0]);
-    const currentMinute = Number(timeComponents[1]);
-
-    const hourHandPositionOnClock = (currentHour % 12) * 5 + currentMinute / 12;
-    const minuteHandPositionOnClock = currentMinute;
-
-    const absoluteMinuteDifference = Math.abs(hourHandPositionOnClock - minuteHandPositionOnClock);
-    const resultingAngle = absoluteMinuteDifference * 6;
-
-    return determineCategory(resultingAngle);
-};
-
-const dataContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const timeEntries = dataContent.trim().split('\n');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const timeEntries = rawData.trimEnd().split('\n');
 
 const entryCount = Number(timeEntries.shift());
 
-timeEntries
-    .slice(0, entryCount)
-    .map(processTimeEntry)
-    .forEach(result => console.log(result));
+const angleClassifications = [
+    { check: (val) => val >= 0 && val < 30, outcome: "alert" },
+    { check: (val) => val >= 90 && val <= 180, outcome: "safe" }
+];
+
+const getStatusByAngle = (angleValue) =>
+    angleClassifications.reduce((currentStatus, classification) => {
+        if (classification.check(angleValue)) {
+            return classification.outcome;
+        }
+        return currentStatus;
+    }, "warning");
+
+const calculateClockHandDifference = (hourVal, minuteVal) => {
+    const hourDialPosition = (hourVal % 12) * 5 + minuteVal / 12;
+    const minuteDialPosition = minuteVal;
+
+    const rawDialDifference = hourDialPosition - minuteDialPosition;
+    const absoluteDialDifference = Math.abs(rawDialDifference);
+
+    const finalAngleDifference = absoluteDialDifference * 6;
+    return finalAngleDifference;
+};
+
+timeEntries.slice(0, entryCount).forEach((timeString) => {
+    const timeParts = timeString.split(':');
+    const hourVal = Number(timeParts[0]);
+    const minuteVal = Number(timeParts[1]);
+
+    const angleDifference = calculateClockHandDifference(hourVal, minuteVal);
+    const statusMessage = getStatusByAngle(angleDifference);
+
+    console.log(statusMessage);
+});

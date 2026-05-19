@@ -1,40 +1,43 @@
-// This function receives the complete input data as a string.
-function PrimaryProcess(dataStream)
-{
+function ProcessInput(rawData) {
+  // This function calculates the greatest common divisor for three numbers.
+  const computeGreatestCommonDivisor = (firstNum, secondNum, thirdNum) => {
+    let currentGCD = 0; // Initialize the variable to store the GCD
 
-  const findCommonDivisor = ( val1, val2, val3 ) => {
-    // This helper determines the greatest common divisor for three provided integer values.
-    let currentMaxDivisor = 0;
-
-    for( let divisorCandidate = 1; divisorCandidate <= 200; divisorCandidate++ )
-    {
-      if ( val1 % divisorCandidate === 0 && val2 % divisorCandidate === 0 && val3 % divisorCandidate === 0 ) {
-        currentMaxDivisor = divisorCandidate;
+    // Iterate from 1 up to a reasonable maximum (200 in this case)
+    // to find the largest common divisor.
+    for (let potentialDivisor = 1; potentialDivisor <= 200; potentialDivisor++) {
+      // Check if the current potentialDivisor divides all three numbers evenly.
+      if (firstNum % potentialDivisor === 0 && secondNum % potentialDivisor === 0 && thirdNum % potentialDivisor === 0) {
+        currentGCD = potentialDivisor; // Update currentGCD if it's a common divisor
       }
     }
 
-    return currentMaxDivisor;
+    return currentGCD; // Return the largest common divisor found
   };
 
-  // The first line of input becomes parsedLines[0], the second parsedLines[1], and so forth.
-  const parsedLines = dataStream.split('\n');
+  // Split the raw input string into an array of lines.
+  const inputLines = rawData.split("\n");
 
-  const upperBound = Number(parsedLines[0]);
+  // Convert the first line of input to a number, which represents the upper limit.
+  const limitValue = Number(inputLines[0]);
 
-  let totalAccumulation = 0; // Initialize a variable to store the running sum of GCDs.
-  for ( let idxX = 1; idxX <= upperBound; idxX++ )
-  {
-    for ( let idxY = 1; idxY <= upperBound; idxY++ )
-    {
-      for ( let idxZ = 1; idxZ <= upperBound; idxZ++ )
-      {
-        totalAccumulation += findCommonDivisor(idxX, idxY, idxZ);
+  let cumulativeSum = 0; // Initialize a variable to accumulate the sums of GCDs.
+
+  // Start a triple-nested loop, iterating from 1 up to limitValue for each variable.
+  for (let outerLoopVar = 1; outerLoopVar <= limitValue; outerLoopVar++) {
+    for (let middleLoopVar = 1; middleLoopVar <= limitValue; middleLoopVar++) {
+      for (let innerLoopVar = 1; innerLoopVar <= limitValue; innerLoopVar++) {
+        // Calculate the GCD for the current combination of three numbers
+        // and add it to the cumulative sum.
+        cumulativeSum += computeGreatestCommonDivisor(outerLoopVar, middleLoopVar, innerLoopVar);
       }
     }
   }
 
-  console.log(totalAccumulation);
-
+  // Output the final calculated cumulative sum to the console.
+  console.log(cumulativeSum);
 }
-// Do not modify the following line (it reads from standard input and calls PrimaryProcess).
-PrimaryProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// The following line handles reading input from standard input and invoking the main processing function.
+// It should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

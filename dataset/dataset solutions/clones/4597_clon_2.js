@@ -1,40 +1,33 @@
-'use strict'; // Enforce strict JavaScript rules for optimal performance.
+'use strict'; // Enforce strict mode for robust code execution
 
 /**
- *  This function processes a given string input to verify a specific character sequence pattern.
- *  It expects the input to contain at least one line with three space-separated segments.
+ * Processes the provided raw input data to determine a specific string pattern.
+ * This function reads three space-separated strings from the first line of the input.
  *
- *  @param {string} rawData The complete input string received, typically from standard input.
+ * @param {string} rawData - The complete raw input string, typically from standard input.
  */
-let  processStringSequence  =  function ( rawData )  {
+function ProcessInput(rawData) {
+    // Split the input string by newline characters, take the first line,
+    // then split that line by spaces to get an array of string parts.
+    const partsArray = rawData.split("\n")[0].split(" ");
 
-    //  First, we extract the relevant string segments from the input.
-    //  The input is split by newline, taking only the first line, then that line is split by spaces.
-    let  segmentCollection  =  rawData.split('\n')[0].split(' ');
+    // Assign the extracted string parts to descriptive variables.
+    const firstString = partsArray[0];
+    const secondString = partsArray[1];
+    const thirdString = partsArray[2];
 
-    //  Assign each extracted segment to a distinct, descriptive variable.
-    let  firstPart   =   segmentCollection[0];
-    let  secondPart  =   segmentCollection[1];
-    let  thirdPart   =   segmentCollection[2];
-
-    //  Now, we evaluate the core conditions for the sequence.
-    //  Condition 1: The very last character of the first segment must match the initial character of the second segment.
-    //  Condition 2: The very last character of the second segment must match the initial character of the third segment.
-    if  (  (firstPart.slice(-1)  ==  secondPart.slice(0, 1))  &&
-           (secondPart.slice(-1) == thirdPart.slice(0, 1))    )
-    {
-        //  If both conditions hold true, output the positive confirmation.
-        console.log('YES');
+    // Evaluate a condition:
+    // 1. Does the last character of the first string match the first character of the second string?
+    // 2. AND does the last character of the second string match the first character of the third string?
+    if (firstString.slice(-1) === secondString.slice(0, 1) && secondString.slice(-1) === thirdString.slice(0, 1)) {
+        // If both conditions are true, print "YES" to the console.
+        console.log("YES");
+    } else {
+        // Otherwise (if at least one condition is false), print "NO" to the console.
+        console.log("NO");
     }
-    else
-    {
-        //  Otherwise, if any condition fails, output the negative response.
-        console.log('NO');
-    }
+}
 
-}; //  End of the string sequence processing function.
-
-//  The program execution begins here:
-//  Read the entire content from standard input using the 'fs' module,
-//  decode it as UTF-8, and then pass it to our main processing function.
-processStringSequence( require('fs').readFileSync('/dev/stdin', 'utf-8') );
+// Read the entire content of standard input synchronously and pass it to the processing function.
+// The 'utf8' encoding ensures the input is treated as a standard text string.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

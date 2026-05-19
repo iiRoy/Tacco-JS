@@ -1,31 +1,39 @@
-const primaryExecution = (inputData) => {
-    const parsedLines = inputData.trim().split("\n");
-    const digitSequence = parsedLines[1].split("").map(char => parseInt(char, 10));
+"use strict";
 
-    const uniqueCodesIdentified = new Set();
-
-    for (let firstVal = 0; firstVal <= 9; ++firstVal) {
-        for (let secondVal = 0; secondVal <= 9; ++secondVal) {
-            for (let thirdVal = 0; thirdVal <= 9; ++thirdVal) {
-                const currentTriplet = [firstVal, secondVal, thirdVal];
-
-                const finalPosition = currentTriplet.reduce((currentScanIndex, targetDigit) => {
-                    if (currentScanIndex === -1) {
-                        return -1;
-                    }
-                    const searchStartIndex = currentScanIndex + 1;
-                    const foundDigitIndex = digitSequence.indexOf(targetDigit, searchStartIndex);
-                    return foundDigitIndex;
-                }, -1);
-
-                if (finalPosition !== -1) {
-                    uniqueCodesIdentified.add(firstVal * 100 + secondVal * 10 + thirdVal);
-                }
-            }
-        }
+function* produceNumericTriplets() {
+  for (let firstVal = 0; firstVal <= 9; firstVal++) {
+    for (let secondVal = 0; secondVal <= 9; secondVal++) {
+      for (let thirdVal = 0; thirdVal <= 9; thirdVal++) {
+        yield [firstVal, secondVal, thirdVal];
+      }
     }
+  }
+}
 
-    console.log(uniqueCodesIdentified.size);
+const processInputSequence = inputData => {
+  inputData = inputData.trim().split("\n");
+  const sequenceLength = parseInt(inputData[0]); 
+  const digitSequence = inputData[1].split("").map(val => parseInt(val));
+
+  let matchedCodeCount = 0;
+
+  for (const [codeDigitA, codeDigitB, codeDigitC] of produceNumericTriplets()) {
+    let firstDigitPosition = digitSequence.indexOf(codeDigitA);
+
+    if (firstDigitPosition !== -1) {
+      let secondDigitPosition = digitSequence.indexOf(codeDigitB, firstDigitPosition + 1);
+
+      if (secondDigitPosition !== -1) {
+        let thirdDigitPosition = digitSequence.indexOf(codeDigitC, secondDigitPosition + 1);
+
+        if (thirdDigitPosition !== -1) {
+          matchedCodeCount++;
+        }
+      }
+    }
+  }
+
+  console.log(matchedCodeCount);
 };
 
-primaryExecution(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));

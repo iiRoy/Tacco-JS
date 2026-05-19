@@ -1,29 +1,19 @@
-function processStringQueries(rawDataBundle) {
-    const lineElements = rawDataBundle.split('\n');
-    const baseSequence = lineElements[1];
-    const commandSet = lineElements.slice(2);
+'use strict';
 
-    const recurseCountSubstrings = (textSegment, targetSubstring) => {
-        if (textSegment.length < targetSubstring.length) {
-            return 0;
-        }
-        const foundIndex = textSegment.indexOf(targetSubstring);
-        if (foundIndex === -1) {
-            return 0;
-        }
-        return 1 + recurseCountSubstrings(textSegment.substring(foundIndex + targetSubstring.length), targetSubstring);
-    };
+function processInputAndQueries(rawData) {
+    const lineSegments = rawData.split('\n');
+    const primaryString = lineSegments[1];
+    const queryInstructions = lineSegments.slice(2);
 
-    commandSet.forEach(currentCommand => {
-        const coordinateStrings = currentCommand.split(' ');
-        const initialPosition = Number(coordinateStrings[0]);
-        const finalPosition = Number(coordinateStrings[1]);
+    queryInstructions.forEach(currentInstruction => {
+        const boundaryValues = currentInstruction.split(' ').map(Number);
+        const startIndex = boundaryValues[0] - 1;
+        const endIndex = boundaryValues[1];
+        const targetSegment = primaryString.slice(startIndex, endIndex);
 
-        const extractedSegment = baseSequence.substring(initialPosition - 1, finalPosition);
-        const occurrenceTotal = recurseCountSubstrings(extractedSegment, 'AC');
-        console.log(occurrenceTotal);
+        const countOfAC = (targetSegment.match(/AC/g) || []).length;
+        console.log(countOfAC);
     });
 }
 
-const dataPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-processStringQueries(dataPayload);
+processInputAndQueries(require("fs").readFileSync("/dev/stdin", "utf8"));

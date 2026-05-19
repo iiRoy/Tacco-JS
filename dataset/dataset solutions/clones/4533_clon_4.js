@@ -1,95 +1,69 @@
-function ProcessSequence(rawInputData) {
-    const inputLines = rawInputData.split("\n");
-    const sequenceLength = Number(inputLines[0]);
-    const characterStream = Array.from(inputLines[1]);
+function Main(input) {
+    const lines = input.split("\n");
+    const charCount = parseInt(lines[0]);
+    const charSequence = lines[1].split("");
 
-    const deriveGroupedLengths = (stream, totalNominalLength) => {
-        const structuralGroups = stream.reduce((accumulator, currentMark, currentPosition) => {
-            if (currentPosition === 0) {
-                accumulator.push({ form: currentMark, extent: 1 });
-            } else {
-                const previousGroup = accumulator[accumulator.length - 1];
-                if (currentMark === previousGroup.form) {
-                    previousGroup.extent++;
-                } else {
-                    accumulator.push({ form: currentMark, extent: 1 });
-                }
-            }
-            return accumulator;
-        }, []);
+    const segmentList = [];
 
-        const dimensionalVector = Array(totalNominalLength + 1).fill(0);
-        let vectorStartOffset = 0;
-        if (structuralGroups.length > 0 && structuralGroups[0].form === ')') {
-            vectorStartOffset = 1;
+    // Initialize segmentList, handling the case where the sequence starts with ')'
+    // This ensures an alternating pattern where '(' segments are conceptually at even indices
+    // and ')' segments at odd indices, mirroring the original 'temp' array's structure.
+    if (charSequence[0] === ')') {
+        segmentList.push({ kind: '(', amount: 0 });
+    }
+
+    // Group consecutive identical characters into segments
+    charSequence.forEach(currentSymbol => {
+        const lastEntry = segmentList[segmentList.length - 1];
+        if (!lastEntry || lastEntry.kind !== currentSymbol) {
+            segmentList.push({ kind: currentSymbol, amount: 1 });
+        } else {
+            lastEntry.amount++;
         }
+    });
 
-        structuralGroups.forEach((group, groupIndex) => {
-            dimensionalVector[vectorStartOffset + groupIndex] = group.extent;
-        });
-        return dimensionalVector;
-    };
+    // Calculate the overall balance of parentheses
+    // Positive value means more '(', negative means more ')'
+    const overallBalance = segmentList.reduce((accumulator, entry) => {
+        return accumulator + (entry.kind === '(' ? entry.amount : -entry.amount);
+    }, 0);
 
-    let blockQuantities = deriveGroupedLengths(characterStream, sequenceLength);
-
-    const calculateNetBalance = (quantities, limit) => {
-        let totalNet = 0;
-        for (let x = 0; x < limit; x += 2) {
-            totalNet += (quantities[x] - quantities[x + 1]);
+    // Adjust segments based on the overall balance
+    if (overallBalance < 0) {
+        // If there's an excess of ')' characters, add equivalent '(' to the first segment.
+        // The first segment is always '(', even if its initial amount was 0.
+        segmentList[0].amount += Math.abs(overallBalance);
+    } else if (overallBalance > 0) {
+        // If there's an excess of '(' characters, add equivalent ')' to the end.
+        const finalEntry = segmentList[segmentList.length - 1];
+        if (finalEntry.kind === ')') {
+            finalEntry.amount += overallBalance;
+        } else { // The last segment is '(', so append a new ')' segment.
+            segmentList.push({ kind: ')', amount: overallBalance });
         }
-        return totalNet;
-    };
+    } else { // overallBalance === 0
+        // Special case: balance is zero, but the initial ')' segment is longer than the initial '(' segment.
+        // This corresponds to `temp[0] - temp[1] < 0` in the original code.
+        if (segmentList[0].kind === '(' && segmentList.length > 1 && segmentList[0].amount < segmentList[1].amount) {
+            const initialClosingParenthesisSurplus = segmentList[1].amount - segmentList[0].amount;
+            segmentList[0].amount = segmentList[1].amount; // Make the first '(' segment match the first ')' segment.
 
-    let cumulativeBalance = calculateNetBalance(blockQuantities, sequenceLength);
-    const initialSegmentDifference = blockQuantities[0] - blockQuantities[1];
-
-    const findLastSignificantIndex = (arr) => {
-        for (let y = arr.length - 1; y >= 0; y--) {
-            if (arr[y] > 0) return y;
-        }
-        return -1;
-    };
-
-    const applyBalancingLogic = (currentQuantities, balanceValue, firstPairDiff, totalSize) => {
-        const alteredQuantities = [...currentQuantities]; 
-        const lastPresentIndex = findLastSignificantIndex(alteredQuantities);
-
-        if (balanceValue < 0) {
-            alteredQuantities[0] -= balanceValue; 
-        } else if (balanceValue > 0) {
-            if (lastPresentIndex % 2 === 0) { 
-                alteredQuantities[lastPresentIndex + 1] += balanceValue;
-            } else { 
-                alteredQuantities[lastPresentIndex] += balanceValue;
-            }
-        } else if (firstPairDiff < 0) { 
-            const requiredAdjustment = alteredQuantities[1] - alteredQuantities[0];
-            alteredQuantities[0] = alteredQuantities[1];
-
-            if (lastPresentIndex % 2 === 0) { 
-                alteredQuantities[lastPresentIndex + 1] = alteredQuantities[lastPresentIndex];
-            } else { 
-                alteredQuantities[lastPresentIndex] += requiredAdjustment;
+            const finalEntry = segmentList[segmentList.length - 1];
+            if (finalEntry.kind === ')') {
+                // If the last segment is ')', add the initial surplus to it.
+                finalEntry.amount += initialClosingParenthesisSurplus;
+            } else { // The last segment is '('.
+                // As per original logic, if the last non-zero segment was '(',
+                // a matching ')' segment is appended, but the initial surplus is not added here.
+                segmentList.push({ kind: ')', amount: finalEntry.amount });
             }
         }
-        return alteredQuantities;
-    };
+    }
 
-    blockQuantities = applyBalancingLogic(blockQuantities, cumulativeBalance, initialSegmentDifference, sequenceLength);
+    // Construct the final string by repeating characters based on segment amounts
+    const finalOutput = segmentList.map(entry => entry.kind.repeat(entry.amount)).join('');
 
-    const constructFinalRepresentation = (processedQuantities, totalSize) => {
-        let assembledParts = [];
-        for (let z = 0; z < totalSize; z++) {
-            if (processedQuantities[z] > 0) {
-                const symbol = (z % 2 === 0) ? '(' : ')';
-                assembledParts.push(symbol.repeat(processedQuantities[z]));
-            }
-        }
-        return assembledParts.join('');
-    };
-
-    const finalOutputString = constructFinalRepresentation(blockQuantities, sequenceLength);
-    console.log(finalOutputString);
+    console.log(finalOutput);
 }
 
-ProcessSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

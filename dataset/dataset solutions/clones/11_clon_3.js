@@ -1,91 +1,33 @@
-let aggregatedInputBuffer = '';
-const inputSource = process.stdin;
+let accumulatedInput = '';
 
-inputSource.resume();
-inputSource.setEncoding('utf8');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const handleDataArrival = (dataSegment) => {
-    if (typeof dataSegment !== 'string' || dataSegment.length === 0) {
-        return;
-    }
-    aggregatedInputBuffer += dataSegment;
-};
-
-const finalizeAndProcess = () => {
-    if (aggregatedInputBuffer.trim().length === 0) {
-        console.error('No input received to process.');
-        return;
-    }
-    executeCoreLogic(aggregatedInputBuffer);
-    aggregatedInputBuffer = '';
-};
-
-inputSource.on('data', handleDataArrival);
-inputSource.on('end', finalizeAndProcess);
-
-inputSource.on('error', (err) => {
-    console.error('Input stream error:', err.message);
-    process.exit(1);
+process.stdin.on('data', function(receivedChunk) {
+    accumulatedInput += receivedChunk;
 });
 
-function executeCoreLogic(rawPayload) {
-    if (typeof rawPayload !== 'string' || rawPayload.trim().length === 0) {
-        console.error('Invalid or empty payload provided for processing.');
-        return;
-    }
+process.stdin.on('end', function() {
+    handleProcessedData(accumulatedInput);
+});
 
-    const inputLines = rawPayload.split('\n').filter(line => line.trim().length > 0);
+function parseLineToNumbers(lineContent) {
+    const stringNumbers = lineContent.split(' ');
+    const parsedNumbers = stringNumbers.map(function(numericString) {
+        return parseInt(numericString);
+    });
+    return parsedNumbers;
+}
 
-    const parseNumericValue = (strValue) => {
-        const parsed = parseInt(strValue, 10);
-        if (isNaN(parsed)) {
-            console.warn(`Could not parse "${strValue}" as an integer. Returning 0.`);
-            return 0;
-        }
-        return parsed;
-    };
+function handleProcessedData(fullInputString) {
+    const rawLineSegments = fullInputString.split('\n');
 
-    const numericalDataSets = [];
-    let processedLineCount = 0;
+    const numericPairs = rawLineSegments.map(currentLine => {
+        return parseLineToNumbers(currentLine);
+    });
 
-    for (const currentLine of inputLines) {
-        const trimmedLine = currentLine.trim();
-        if (trimmedLine.length === 0) {
-            continue;
-        }
-
-        const stringNumbers = trimmedLine.split(' ');
-        const currentDataSet = [];
-
-        for (const numString of stringNumbers) {
-            const potentialNumber = parseNumericValue(numString);
-            currentDataSet.push(potentialNumber);
-        }
-
-        if (currentDataSet.length < 2) {
-            console.warn(`Line "${currentLine}" does not contain enough numbers. Skipping.`);
-            continue;
-        }
-
-        numericalDataSets.push(currentDataSet);
-        processedLineCount++;
-    }
-
-    let operationIndex = 0;
-    for (const dataEntry of numericalDataSets) {
-        const firstComponent = dataEntry[0];
-        const secondComponent = dataEntry[1];
-
-        const calculatedSum = firstComponent + secondComponent;
-
-        const outputMessage = `Result for operation ${operationIndex + 1}: ${firstComponent} + ${secondComponent} = ${calculatedSum}`;
-        console.log(outputMessage);
-        operationIndex++;
-    }
-
-    if (processedLineCount > 0) {
-        console.info(`\nSuccessfully processed ${processedLineCount} valid data sets.`);
-    } else {
-        console.info('No valid data sets were processed.');
+    for (const numberTuple of numericPairs) {
+        const [firstValue, secondValue] = numberTuple;
+        console.log(firstValue + secondValue);
     }
 }

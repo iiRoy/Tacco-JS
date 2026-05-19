@@ -1,43 +1,65 @@
-const rawInputContent = require("node:fs").readFileSync("/dev/stdin", "utf8");
-const numericalTokens = rawInputContent.trim().split(/\s+/).map(Number);
+function solveProblem(rawInput) {
+    const [firstParam, secondParam, thirdParam] = rawInput.trim().split('\n')[0].split(' ').map(Number);
 
-const firstParameter = numericalTokens[0];
-const secondParameter = numericalTokens[1];
-const targetValue = numericalTokens[2];
+    const dimensionA = firstParam;
+    const dimensionB = secondParam;
+    const targetValue = thirdParam;
 
-const isEvenlyDivisible = (val, divA, divB) =>
-    (val % divA === 0 || val % divB === 0);
+    const calculateExpressionOne = (iterI, iterJ, nVal, mVal) => {
+        return iterI * mVal + iterJ * (nVal - 2 * iterI);
+    };
 
-const isBelowBothThresholds = (val, thresholdA, thresholdB) =>
-    (val < thresholdA && val < thresholdB);
+    const calculateExpressionTwo = (iterI, iterJ, nVal, mVal) => {
+        return iterI * nVal + iterJ * (mVal - 2 * iterI);
+    };
 
-const findEquationMatch = (searchTarget, outerBound, innerBound) =>
-    Array.from({ length: outerBound }, (_, primaryIndex) => primaryIndex + 1)
-         .some(primaryTerm =>
-             Array.from({ length: innerBound }, (_, secondaryIndex) => secondaryIndex + 1)
-                  .some(secondaryTerm =>
-                      searchTarget === (primaryTerm * outerBound + secondaryTerm * (innerBound - 2 * primaryTerm))
-                  )
-         );
-
-const evaluateConditions = (paramA, paramB, target) => {
-    if (isEvenlyDivisible(target, paramA, paramB)) {
-        return 'Yes';
+    if (targetValue % dimensionA === 0 || targetValue % dimensionB === 0) {
+        console.log('Yes');
+        return;
     }
 
-    if (isBelowBothThresholds(target, paramB, paramA)) {
-        return 'No';
+    if (targetValue < dimensionB && targetValue < dimensionA) {
+        console.log('No');
+        return;
     }
 
-    if (findEquationMatch(target, paramB, paramA)) {
-        return 'Yes';
+    const checkCombinations = (limitI, limitJ, currentTarget, nRef, mRef, expressionCalculator) => {
+        return Array.from({ length: limitI }, (_, iIndex) => iIndex + 1).some(iCounter => {
+            return Array.from({ length: limitJ }, (_, jIndex) => jIndex + 1).some(jCounter => {
+                return expressionCalculator(iCounter, jCounter, nRef, mRef) === currentTarget;
+            });
+        });
+    };
+
+    const foundInFirstSet = checkCombinations(
+        dimensionB,
+        dimensionA,
+        targetValue,
+        dimensionA,
+        dimensionB,
+        calculateExpressionOne
+    );
+
+    if (foundInFirstSet) {
+        console.log('Yes');
+        return;
     }
 
-    if (findEquationMatch(target, paramA, paramB)) {
-        return 'Yes';
+    const foundInSecondSet = checkCombinations(
+        dimensionA,
+        dimensionB,
+        targetValue,
+        dimensionA,
+        dimensionB,
+        calculateExpressionTwo
+    );
+
+    if (foundInSecondSet) {
+        console.log('Yes');
+        return;
     }
 
-    return 'No';
-};
+    console.log('No');
+}
 
-console.log(evaluateConditions(firstParameter, secondParameter, targetValue));
+solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

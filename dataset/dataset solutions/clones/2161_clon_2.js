@@ -1,128 +1,112 @@
-const sourceData = require("fs") .readFileSync("/dev/stdin", "utf8") .trim() .split("\n");
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const dataIterator = {
-    // Stores the array of lines read from input.
-    "contents" : sourceData,
+// This object manages the input stream, providing methods to access elements sequentially.
+var dataProcessor = {
+  "contentArray" : rawData, // The array holding all input lines.
+  "currentIdx" : 0,         // Current position in the input array.
+  "totalCount" : rawData.length, // Total number of input lines.
 
-    "position" : 0, // Current position within the array.
-    "limit" : sourceData.length, // Total number of lines.
-
-    /**
-     * Retrieves the next item from the input sequence and advances the position.
-     * @returns {string} The next available line.
-     * @throws {string} If no more elements are available.
-     */
-    "retrieveNext" : function() {
-        if (!this.hasMore()) {
-            throw "ElementRetrievalFailure: No further elements exist.";
-        }
-        let currentElement = this.contents[this.position];
-        this.position++;
-        return currentElement;
-    },
-
-    /**
-     * Checks if there are more elements left to process in the sequence.
-     * @returns {boolean} True if more elements are available, false otherwise.
-     */
-    "hasMore" : function() {
-        return (this.position < this.limit);
+  // Retrieves the next element from the input stream.
+  "getNextItem" : function() {
+    if (!this.checkAvailability()) {
+      throw "NoSuchElementException:次に要素は無いよ"; // Error if no more elements.
     }
+    var retrievedItem = this.contentArray[this.currentIdx];
+    this.currentIdx++; // Advance the pointer.
+    return retrievedItem;
+  },
+
+  // Checks if there are more elements available in the stream.
+  "checkAvailability" : function() {
+    return (this.currentIdx < this.totalCount);
+  }
 };
 
-ExecuteCoreFunction();
+// Start the main execution flow.
+PerformCalculation();
 
-/**
- * Global helper function to fetch the next line from the input iterator.
- * @returns {string} The next line.
- */
-function fetchNextItem() {
-    return dataIterator.retrieveNext();
+// Helper function to get the next item from the data processor.
+function obtainNextItem() {
+  return dataProcessor.getNextItem();
 }
 
-/**
- * Global helper function to check if more lines are available in the input.
- * @returns {boolean} True if more lines, false otherwise.
- */
-function queryAvailability() {
-    return dataIterator.hasMore();
+// Helper function to check if more items are available.
+function isItemAvailable() {
+  return dataProcessor.checkAvailability();
 }
 
-/**
- * Outputs a given message to the standard console.
- * @param {any} message - The content to be displayed.
- */
-function displayResult(message) {
-    console.log(message);
+// Function for standard output.
+function printResult(dataToPrint) {
+  console.log(dataToPrint);
 }
 
-/**
- * Reports an error message to the standard error console.
- * @param {any} issueDetails - The error details to be reported.
- */
-function reportError(issueDetails) {
-    console.error(issueDetails);
+// Function for standard error output.
+function logError(errorMsg) {
+  console.error(errorMsg);
 }
 
-// This utility function manages data transformations based on a mode code.
-// For unrecognized or problematic modes, input is returned unaltered.
-// Mode 1: String to integer conversion.
-// Mode 2: String to array of strings, delimited by single space.
-// Mode 4: String to array of numbers, delimited by single space.
-// Mode 6: String to array of single characters.
-// Mode 7: String to array of numbers, from single characters.
-// Mode 8: Array of strings to single string, joined by space.
-// Mode 9: Array of strings to single string, joined by newline.
-// Mode 0: Array of strings to single string, joined without separator.
-function transformValue(itemToProcess, operationType) {
-    try {
-        switch (operationType) {
-            case 1:
-                return parseInt(itemToProcess);
-            case 2:
-                return itemToProcess.split(" ");
-            case 4:
-                return itemToProcess.split(" ").map((valStr) => Number(valStr));
-            case 6:
-                return itemToProcess.split("");
-            case 7:
-                return itemToProcess.split("").map((valStr) => Number(valStr));
-            case 8:
-                return itemToProcess.join(" ");
-            case 9:
-                return itemToProcess.join("\n");
-            case 0:
-                return itemToProcess.join("");
-            default:
-                return itemToProcess;
-        }
-    } catch (exception) {
-        return itemToProcess;
+// Utility function to convert input strings based on a specified operation code.
+// operationCode:
+//   1: Convert to integer.
+//   2: Split by space.
+//   4: Split by space and convert to number array.
+//   6: Split by character.
+//   7: Split by character and convert to number array.
+//   8: Join array with space.
+//   9: Join array with newline.
+//   0: Join array without separator.
+//   Default: Return input as is.
+function processInputData(inputString, operationCode) {
+  try {
+    switch (operationCode) {
+      case 1:
+        return parseInt(inputString);
+      case 2:
+        return inputString.split(" ");
+      case 4:
+        return inputString.split(" ").map((element) => Number(element));
+      case 6:
+        return inputString.split("");
+      case 7:
+        return inputString.split("").map((element) => Number(element));
+      case 8:
+        return inputString.join(" ");
+      case 9:
+        return inputString.join("\n");
+      case 0:
+        return inputString.join("");
+      default:
+        return inputString;
     }
+  } catch (errorDetails) {
+    return inputString; // In case of conversion error, return original input.
+  }
 }
 
-/**
- * The primary function containing the core business logic.
- * It processes a sequence of numbers and calculates a specific sum.
- */
-function ExecuteCoreFunction() {
-    let numericSequence = transformValue(fetchNextItem(), 7); // Get input line, convert to array of numbers from chars
-    const sequenceLength = numericSequence.length;
-    let calculatedResult = 0;
+// Main function where the core logic resides.
+function PerformCalculation() {
+  // Read the first line of input, split by character, and convert to numbers.
+  var numberSequence = processInputData(obtainNextItem(), 7);
+  var sequenceLength = numberSequence.length;
+  var calculatedValue = 0; // Initialize the accumulator for the final result.
 
-    for (let idx = sequenceLength - 1; idx >= 0; idx--) {
-        if (numericSequence[idx] >= 6) {
-            calculatedResult += 10 - numericSequence[idx];
-            numericSequence[idx] = 0;
-            if (idx !== 0) {
-                numericSequence[idx - 1]++;
-            } else {
-                calculatedResult++;
-            }
-        } else {
-            calculatedResult += numericSequence[idx];
-        }
+  // Iterate through the number sequence from right to left.
+  for (var position = sequenceLength - 1; position >= 0; position--) {
+    if (numberSequence[position] >= 6) {
+      // If the digit is 6 or more, calculate the "carry" effect.
+      calculatedValue += 10 - numberSequence[position];
+      numberSequence[position] = 0; // Reset current digit to 0.
+      if (position !== 0) {
+        // If not the first digit, increment the previous digit.
+        numberSequence[position - 1]++;
+      } else {
+        // If it's the first digit and it "carries over", increment the total output.
+        calculatedValue++;
+      }
+    } else {
+      // If the digit is less than 6, just add its value.
+      calculatedValue += numberSequence[position];
     }
-
-    displayResult(calculatedResult);
+  }
+  printResult(calculatedValue); // Display the final calculated value.
 }

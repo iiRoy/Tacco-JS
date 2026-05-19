@@ -1,160 +1,148 @@
-var dataBuffer = ''; // Buffer for accumulating incoming data chunks
-
-process.stdin.resume(); // Activates the standard input stream to begin receiving data
-
-process.stdin.setEncoding('utf8'); // Sets the character encoding for the input stream
-
-process.stdin.on('data', function(dataBlock) {
-    dataBuffer += dataBlock; // Appends each received data block to the main buffer
+var rawData = '';
+process.stdin.resume(); // Continue processing standard input
+process.stdin.setEncoding('utf8'); // Set character encoding for input stream
+process.stdin.on('data', function(chunkOfData) {
+    // Append incoming data chunks to the rawData buffer
+    rawData += chunkOfData;
 });
-
 process.stdin.on('end', function() {
-    // When the input stream ends, all data has been received.
-    // Call the primary processing function with the complete data.
-    processAllCases(dataBuffer);
+    // Once all input is received, process it
+    processInputData(rawData);
 });
 
-// Primary function to handle the entire set of test cases
-function processAllCases(dataBuffer) {
-    // Splits the buffered input into individual lines,
-    // after trimming any leading/trailing whitespace from the whole buffer.
-    var inputLines = dataBuffer.trim().split('\n');
+/**
+ * Main function to process the entire input string.
+ * @param {string} dataString - The complete input data as a single string.
+ */
+function processInputData(dataString){
+    // Split the input string into an array of lines and remove leading/trailing whitespace
+    var inputLines = dataString.trim().split('\n');
 
-    var caseIndex = 0; // Index to keep track of the current line being processed
+    var lineIndex = 0; // Pointer to the current line being processed
+    // Loop indefinitely until a termination condition is met
+    while(true) {
+        var areaLayout = []; // Initialize an empty array to represent the grid/map
+        // Read the width and height for the current grid
+        var dimensions = parseNumbersFromString(inputLines[lineIndex++]);
+        // Check if the current dimensions signify the end of input
+        if(checkTerminationCondition(dimensions)) {
+            break; // Exit the loop if termination condition is met
+        }
+        // Initialize the grid with the given dimensions
+        initializeGrid(dimensions, areaLayout);
 
-    // Loop through test cases until a termination condition is met
-    while (true) {
-        var gridMatrix = []; // Initialize an empty 2D array to represent the grid for the current case
+        // Read starting and goal coordinates
+        var initialPosition = parseNumbersFromString(inputLines[lineIndex++]);
+        var finalDestination = parseNumbersFromString(inputLines[lineIndex++]);
 
-        // Read the dimensions (width and height) for the current grid from the input lines
-        var dimensions = parseNumericLine(inputLines[caseIndex++]);
-
-        // Check if the current dimensions indicate the end of input (e.g., 0 0)
-        if (isEndOfInputMarker(dimensions)) {
-            break; // Exit the loop if the end marker is found
+        // Read the number of blocks/obstacles
+        var numBlocks = parseInt(inputLines[lineIndex++]);
+        // Loop to place each block on the grid
+        for(var k = 0; k < numBlocks; k += 1){
+            var obstacleDetails = parseNumbersFromString(inputLines[lineIndex++]);
+            placeObstacle(areaLayout, obstacleDetails);
         }
 
-        // Set up the grid matrix with initial values based on the read dimensions
-        initializeGridMatrix(dimensions, gridMatrix);
-
-        // Read the starting X and Y coordinates for pathfinding
-        var startCoordinates = parseNumericLine(inputLines[caseIndex++]);
-
-        // Read the target X and Y coordinates for pathfinding
-        var targetCoordinates = parseNumericLine(inputLines[caseIndex++]);
-
-        // Read the number of obstacles that need to be placed on the grid
-        var numObstacles = parseInt(inputLines[caseIndex++], 10); // Parse as integer with base 10
-
-        // Iterate and place each obstacle described in the input
-        for (var obstacleCounter = 0; obstacleCounter < numObstacles; obstacleCounter += 1) {
-            // Parse the details of the current obstacle
-            var currentObstacle = parseNumericLine(inputLines[caseIndex++]);
-
-            // Apply the obstacle's properties to the grid matrix
-            placeObstacleOnGrid(gridMatrix, currentObstacle);
-        }
-
-        // Execute the pathfinding algorithm to determine if the target is reachable
-        // Adjust coordinates to be 0-indexed for array access (original input might be 1-indexed)
-        var pathFound = checkPathExistence(
-            gridMatrix,
-            startCoordinates[0] - 1,
-            startCoordinates[1] - 1,
-            targetCoordinates[0] - 1,
-            targetCoordinates[1] - 1
-        );
-
-        // Output the result ("OK" if reachable, "NO" otherwise)
-        console.log(pathFound ? "OK" : "NO");
+        // Determine if the goal is reachable from the start position
+        // Adjust coordinates to be 0-indexed
+        var canReach = canTraverse(areaLayout, initialPosition[0]-1, initialPosition[1]-1, finalDestination[0]-1, finalDestination[1]-1);
+        // Output the result
+        console.log(canReach ? "OK" : "NO");
     }
 }
 
-// Function to create and initialize the 2D grid matrix
-function initializeGridMatrix(dimensions, gridMatrix) {
-    // Loop for each row, from 0 up to (but not including) the width
-    for (var rowIterator = 0; rowIterator < dimensions[0]; rowIterator += 1) {
-        var rowContent = []; // Temporary array to hold values for the current row
-
-        // Loop for each column within the current row, from 0 up to (but not including) the height
-        for (var columnIterator = 0; columnIterator < dimensions[1]; columnIterator += 1) {
-            rowContent.push(0); // Initialize each cell with a default value, e.g., 0 for empty
+/**
+ * Initializes a 2D grid (map) with zeros based on provided width and height.
+ * @param {number[]} gridDims - An array containing [width, height].
+ * @param {number[][]} layoutMatrix - The 2D array to be initialized as the grid.
+ */
+function initializeGrid(gridDims, layoutMatrix){
+    // Iterate through rows (x-coordinate)
+    for(var r = 0; r < gridDims[0]; r += 1){
+        var rowBuffer = []; // Temporary array for the current row
+        // Iterate through columns (y-coordinate)
+        for(var c = 0; c < gridDims[1]; c += 1){
+            rowBuffer.push(0); // Fill with default value (0)
         }
-        gridMatrix.push(rowContent); // Add the fully populated row to the grid matrix
+        layoutMatrix.push(rowBuffer); // Add the completed row to the grid
     }
 }
 
-// Function responsible for placing a defined obstacle onto the grid
-function placeObstacleOnGrid(gridMatrix, currentObstacle) {
-    // Determine the orientation of the block; true if horizontal, false if vertical
-    var isBlockHorizontal = !currentObstacle[1];
+/**
+ * Places a block (obstacle) onto the grid.
+ * @param {number[][]} targetGrid - The 2D grid where the block will be placed.
+ * @param {number[]} obstacleInfo - An array containing block details: [block_id, orientation, x_coord, y_coord].
+ */
+function placeObstacle(targetGrid, obstacleInfo){
+    // Determine if the block is horizontal (orientation 0) or vertical (orientation 1)
+    var isHorizontallyOriented = !obstacleInfo[1];
+    // Set block dimensions based on orientation
+    var blockWidth = isHorizontallyOriented ? 4 : 2;
+    var blockHeight = isHorizontallyOriented ? 2 : 4;
+    // Adjust block's top-left coordinates to be 0-indexed
+    var startXCoord = obstacleInfo[2]-1;
+    var startYCoord = obstacleInfo[3]-1;
 
-    // Set the block's width and height based on its orientation
-    // Example: (4x2) for horizontal, (2x4) for vertical
-    var blockWidth = isBlockHorizontal ? 4 : 2;
-    var blockHeight = isBlockHorizontal ? 2 : 4;
-
-    // Extract and adjust the top-left coordinates of the obstacle to be 0-indexed
-    var obstacleXCoord = currentObstacle[2] - 1;
-    var obstacleYCoord = currentObstacle[3] - 1;
-
-    // Iterate over the rectangular area that the obstacle occupies
-    for (var gridXIndex = obstacleXCoord; gridXIndex < obstacleXCoord + blockWidth; gridXIndex += 1) {
-        for (var gridYIndex = obstacleYCoord; gridYIndex < obstacleYCoord + blockHeight; gridYIndex += 1) {
-            // Mark the cells covered by the obstacle with its unique identifier
-            gridMatrix[gridXIndex][gridYIndex] = currentObstacle[0];
+    // Iterate over the area covered by the block
+    for(var matrixX = startXCoord; matrixX < startXCoord + blockWidth; matrixX += 1){
+        for(var matrixY = startYCoord; matrixY < startYCoord + blockHeight; matrixY += 1){
+            // Assign the block's ID to the corresponding cells in the grid
+            targetGrid[matrixX][matrixY] = obstacleInfo[0];
         }
     }
 }
 
-// Recursive function to determine if a path exists from current coordinates to target coordinates
-function checkPathExistence(gridMatrix, currentXPos, currentYPos, targetXPos, targetYPos) {
-    // Base case: If the current position is the target, a path has been found
-    if (currentXPos === targetXPos && currentYPos === targetYPos) {
+/**
+ * Recursively checks if a path exists from a starting point to a goal point on the grid.
+ * Uses a depth-first search approach.
+ * @param {number[][]} currentGrid - The 2D grid representing the area.
+ * @param {number} currX - Current X-coordinate.
+ * @param {number} currY - Current Y-coordinate.
+ * @param {number} destX - Goal X-coordinate.
+ * @param {number} destY - Goal Y-coordinate.
+ * @returns {boolean} - True if the goal is reachable, false otherwise.
+ */
+function canTraverse(currentGrid, currX, currY, destX, destY){
+    // Base case: If current position is the goal, a path is found
+    if(currX === destX && currY === destY){
         return true;
     }
+    // Get the value (color/region identifier) of the current cell
+    var cellValue = currentGrid[currX][currY];
+    // Mark the current cell as visited by changing its value to -2
+    currentGrid[currX][currY] = -2;
 
-    // Store the region ID (value) of the current cell before marking it as visited
-    var regionID = gridMatrix[currentXPos][currentYPos];
-
-    // Mark the current cell as visited (e.g., using -2) to prevent revisiting and infinite loops
-    gridMatrix[currentXPos][currentYPos] = -2;
-
-    var pathExists = false; // Flag to track if any valid path is found from this position
-
-    // Iterate through possible changes in the row index (dx: -1 or +1)
-    [-1, 1].forEach(function(deltaRow) {
-        // Iterate through possible changes in the column index (dy: -1 or +1)
-        [-1, 1].forEach(function(deltaCol) {
-            // Calculate the coordinates of the neighboring cell
-            var neighborX = currentXPos + deltaRow,
-                neighborY = currentYPos + deltaCol;
-
-            // Check if the neighbor cell is within grid bounds (gridMatrix[neighborX] exists)
-            // and if it has the same region ID as the starting cell of this search
-            if (
-                gridMatrix[neighborX] && // Check if the row index is valid
-                gridMatrix[neighborX][neighborY] !== undefined && // Check if the column index is valid within that row
-                gridMatrix[neighborX][neighborY] === regionID // Check if the neighbor has the same region ID
-            ) {
-                // Recursively call the function for the neighbor cell.
-                // If the recursive call finds a path, update pathExists.
-                pathExists = pathExists || checkPathExistence(gridMatrix, neighborX, neighborY, targetXPos, targetYPos);
+    var foundPath = false; // Flag to track if a path is found
+    // Explore adjacent cells (diagonally)
+    [-1, 1].forEach(function(deltaX){ // Iterate over possible changes in X-coordinate
+        [-1, 1].forEach(function(deltaY){ // Iterate over possible changes in Y-coordinate
+            var nextX = currX + deltaX; // Calculate next X-coordinate
+            var nextY = currY + deltaY; // Calculate next Y-coordinate
+            // Check if the next cell is within bounds and has the same 'color' (value)
+            // The `currentGrid[nextX]` check prevents errors for out-of-bounds `nextX`
+            if(currentGrid[nextX] && currentGrid[nextX][nextY] === cellValue){
+                // Recursively call canTraverse for the next cell
+                foundPath = foundPath || canTraverse(currentGrid, nextX, nextY, destX, destY);
             }
         });
     });
-    // Return the final pathExists status
-    return pathExists;
+    return foundPath; // Return whether a path was found
 }
 
-// Utility function to convert a string of space-separated numbers into an array of numbers
-function parseNumericLine(lineText) {
-    // Splits the string by spaces and then converts each resulting string part to a Number
-    return lineText.split(' ').map(Number);
+/**
+ * Splits a string by space and converts the parts to numbers.
+ * @param {string} inputString - The string to be parsed.
+ * @returns {number[]} - An array of numbers.
+ */
+function parseNumbersFromString(inputString){
+    return inputString.split(' ').map(Number);
 }
 
-// Utility function to check if a coordinate pair signifies the end of input
-function isEndOfInputMarker(coordinatePair) {
-    // Returns true if both the first and second elements of the array are 0
-    return coordinatePair[0] === 0 && coordinatePair[1] === 0;
+/**
+ * Checks if an array represents the termination condition (0, 0).
+ * @param {number[]} inputArray - The array to check.
+ * @returns {boolean} - True if the first two elements are both 0, false otherwise.
+ */
+function checkTerminationCondition(inputArray){
+    return inputArray[0] === 0 && inputArray[1] === 0;
 }

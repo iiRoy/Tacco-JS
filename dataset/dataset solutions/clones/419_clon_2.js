@@ -1,90 +1,95 @@
-function evaluateTarget(targetValue) {
-   // A boolean indicator for the possibility of achieving the target
-   var isFeasible = true;
-   // Counter for the number of segments formed
-   var segmentCounter = 0;
-   // Accumulator for the current segment's sum
-   var currentSegmentSum = 0;
+// This function checks if the 'dataElements' array can be processed
+// such that the sum of elements in any sequence (segment) does not exceed 'targetVal',
+// and the count of such sequences (segments) does not reach 'maxSegments' prematurely.
+// It returns true if this condition is met throughout the array, false otherwise.
+function findOptimalValue(targetVal) {
+  let isPossible = true; // Flag to track feasibility
+  let segmentCount = 0; // Counter for segments formed
+  let currentSum = 0; // Accumulator for the current segment's sum
 
-   // Iterate through each element in the global value list
-   for (var itemIndex = 0; itemIndex < dataCollection.length; itemIndex++) {
-      // If any individual element is greater than the target, it's not feasible
-      if (targetValue < dataCollection[itemIndex]) {
-         isFeasible = false;
-         break; // Exit loop early
-      }
-      // If adding the current element completes a segment exactly equal to the target
-      else if (currentSegmentSum + dataCollection[itemIndex] === targetValue) {
-         currentSegmentSum = 0; // Reset sum for the next segment
-         segmentCounter++; // Increment segment count
-      }
-      // If adding the current element would exceed the target for the current segment
-      else if (currentSegmentSum + dataCollection[itemIndex] > targetValue) {
-         currentSegmentSum = dataCollection[itemIndex]; // Start a new segment with the current element
-         segmentCounter++; // Increment segment count
-      }
-      // If adding the current element is still within the target for the current segment
-      else if (currentSegmentSum + dataCollection[itemIndex] < targetValue) {
-         currentSegmentSum += dataCollection[itemIndex]; // Continue accumulating
-      }
+  // Iterate through each element in the global data array
+  for (let idx = 0; idx < dataElements.length; idx++) {
+    // If an individual element is greater than the target, it's impossible
+    if (targetVal < dataElements[idx]) {
+      isPossible = false;
+      break; // Exit early as this targetVal is not feasible
+    } else if (currentSum + dataElements[idx] === targetVal) {
+      // If adding the current element exactly matches the target,
+      // reset sum and increment segment count.
+      currentSum = 0;
+      segmentCount++;
+    } else if (currentSum + dataElements[idx] > targetVal) {
+      // If adding the current element exceeds the target,
+      // start a new segment with the current element and increment segment count.
+      currentSum = dataElements[idx];
+      segmentCount++;
+    } else if (currentSum + dataElements[idx] < targetVal) {
+      // If adding the current element is still within the target,
+      // continue accumulating.
+      currentSum += dataElements[idx];
+    }
 
-      // If the number of segments exceeds the maximum allowed, it's not feasible
-      if (segmentCounter === maximumSegments) {
-         isFeasible = false;
-         break; // Exit loop early
-      }
-   }
-   return isFeasible; // Return the feasibility status
+    // If the segment count reaches the maximum allowed,
+    // this targetVal is not feasible under the current rules.
+    if (segmentCount === maxSegments) {
+      isPossible = false;
+      break; // Exit early
+    }
+  }
+  return isPossible;
 }
-// Read all content from standard input
-var fileContentBuffer = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the input into an array of lines
-var lineArray = fileContentBuffer.trim().split("\n");
+// Read input from standard input synchronously
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input into lines and trim any leading/trailing whitespace
+let lineArray = fileContent.trim().split("\n");
 
-// Main loop for processing multiple test cases
+// Main processing loop for multiple test cases
 while (true) {
-   // Extract the configuration line (dimensions)
-   var configString = lineArray.shift();
+  // Get the first line, which contains M and N for the current test case
+  let dimensionsStr = lineArray.shift();
 
-   // Check for the termination condition "0 0"
-   if (configString === "0 0") break;
+  // Check for termination condition "0 0"
+  if (dimensionsStr === "0 0") {
+    break;
+  }
 
-   // Parse the configuration values into numbers
-   configString = configString.split(" ").map(Number);
-   var maximumSegments = configString[0]; // The maximum allowed number of segments
-   var elementCount = configString[1]; // The total number of data elements
+  // Parse M and N from the string
+  dimensionsStr = dimensionsStr.split(" ").map(Number);
+  var maxSegments = dimensionsStr[0]; // M: maximum number of segments allowed (global for findOptimalValue)
+  var numElements = dimensionsStr[1]; // N: number of elements in the data array
 
-   var dataCollection = []; // Array to hold the numerical data elements
+  // Initialize the array for the current test case (global for findOptimalValue)
+  var dataElements = [];
+  // Populate the dataElements array with N elements, converting them to integers
+  while (numElements--) {
+    dataElements.push(parseInt(lineArray.shift(), 10));
+  }
 
-   // Populate the data collection from subsequent input lines
-   while (elementCount--) {
-      dataCollection.push(lineArray.shift() - 0); // Convert string to number
-   }
+  // Binary search for the minimum possible maximum segment sum
+  let lowerBound = 0;
+  let upperBound = 1500000; // A sufficiently large upper bound for the sum, based on problem constraints
 
-   // Initialize bounds for binary search
-   var searchLowerBound = 0; // Minimum possible target value
-   var searchUpperBound = 1500000; // Maximum possible target value (problem-specific upper limit)
+  // Perform binary search to find the optimal value
+  while (true) {
+    let midPoint = Math.floor((lowerBound + upperBound) / 2);
 
-   // Perform binary search to find the optimal target value
-   while (true) {
-      var currentMidpoint = Math.floor((searchLowerBound + searchUpperBound) / 2); // Calculate the midpoint
-
-      // Evaluate if the current midpoint target is achievable
-      if (evaluateTarget(currentMidpoint)) {
-         searchUpperBound = currentMidpoint - 1; // Try a smaller target
-         // If bounds cross, the smallest feasible target is found
-         if (searchLowerBound > searchUpperBound) {
-            console.log(searchUpperBound + 1); // Output the result
-            break; // Exit binary search
-         }
-      } else {
-         searchLowerBound = currentMidpoint + 1; // Try a larger target
-         // If bounds cross, the smallest feasible target is found
-         if (searchLowerBound > searchUpperBound) {
-            console.log(searchUpperBound + 1); // Output the result
-            break; // Exit binary search
-         }
+    // If the current midPoint value is a feasible maximum segment sum
+    if (findOptimalValue(midPoint)) {
+      upperBound = midPoint - 1; // Try a smaller maximum sum
+      // If lowerBound crosses upperBound, we found the smallest feasible sum
+      if (lowerBound > upperBound) {
+        console.log(upperBound + 1); // The answer is upperBound + 1
+        break; // Exit binary search
       }
-   }
+    } else {
+      // If midPoint is not feasible, we need a larger maximum sum
+      lowerBound = midPoint + 1;
+      // If lowerBound crosses upperBound, we found the smallest feasible sum
+      if (lowerBound > upperBound) {
+        console.log(upperBound + 1); // The answer is upperBound + 1
+        break; // Exit binary search
+      }
+    }
+  }
 }

@@ -1,58 +1,40 @@
-const sourceDataBuffer = require('node:fs').readFileSync(0);
-const sourceTextContent = sourceDataBuffer.toString('utf8');
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-const endSequence = '\n0 0';
-let processingBoundary = sourceTextContent.indexOf(endSequence);
-let relevantInput = sourceTextContent;
-
-if (processingBoundary !== -1) {
-    relevantInput = sourceTextContent.substring(0, processingBoundary);
-}
-
-const lineFragments = relevantInput.split('\n');
-const dimensionRecords = [];
-
-for (let currentLineIndex = 0; currentLineIndex < lineFragments.length; currentLineIndex++) {
-    const currentLineValue = lineFragments[currentLineIndex].trim();
-    if (currentLineValue.length === 0) {
-        continue;
+const dimensionsList = inputLines.reduce((accumulator, currentLine) => {
+    const parts = currentLine.split(' ').map(Number);
+    if (parts.length === 2 && (parts[0] !== 0 || parts[1] !== 0)) {
+        accumulator.push(parts);
     }
+    return accumulator;
+}, []);
 
-    const valueComponents = currentLineValue.split(' ');
-    const hDimension = Number(valueComponents[0]);
-    const wDimension = Number(valueComponents[1]);
+const finalRenderedOutput = dimensionsList.reduce((outputAccumulator, currentDimensions, index, array) => {
+    const [heightValue, widthValue] = currentDimensions;
+    let currentPatternRows = [];
 
-    if (hDimension > 0 && wDimension > 0) {
-        dimensionRecords.push({ heightParam: hDimension, widthParam: wDimension });
-    }
-}
-
-const generatedStructures = [];
-
-for (let recordIndex = 0; recordIndex < dimensionRecords.length; recordIndex++) {
-    const currentRecord = dimensionRecords[recordIndex];
-    const structureHeight = currentRecord.heightParam;
-    const structureWidth = currentRecord.widthParam;
-
-    const currentStructureLines = [];
-    for (let r = 0; r < structureHeight; r++) {
-        let rowContent = '';
-        for (let c = 0; c < structureWidth; c++) {
-            const isBorderRow = (r === 0 || r === structureHeight - 1);
-            const isBorderColumn = (c === 0 || c === structureWidth - 1);
-
-            if (isBorderRow || isBorderColumn) {
-                rowContent += '#';
+    for (let rowIndex = 0; rowIndex < heightValue; rowIndex++) {
+        let currentRowCharacters = [];
+        for (let colIndex = 0; colIndex < widthValue; colIndex++) {
+            if (rowIndex === 0 || rowIndex === heightValue - 1) {
+                currentRowCharacters.push('#');
             } else {
-                rowContent += '.';
+                if (colIndex === 0 || colIndex === widthValue - 1) {
+                    currentRowCharacters.push('#');
+                } else {
+                    currentRowCharacters.push('.');
+                }
             }
         }
-        currentStructureLines.push(rowContent);
+        currentPatternRows.push(currentRowCharacters.join(''));
     }
-    generatedStructures.push(currentStructureLines.join('\n'));
-}
 
-let finalOutputString = generatedStructures.join('\n\n');
-finalOutputString += '\n';
+    const patternString = currentPatternRows.join('\n');
 
-process.stdout.write(finalOutputString);
+    if (index < array.length - 1) {
+        return outputAccumulator + patternString + '\n\n';
+    } else {
+        return outputAccumulator + patternString;
+    }
+}, '');
+
+console.log(finalRenderedOutput + '\n');

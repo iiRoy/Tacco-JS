@@ -1,8 +1,14 @@
-async function obtainAndPresent() {
-  for await (const contentSegment of global.process.stdin) {
-    const outputString = contentSegment.toString('utf8');
-    global.process.stdout.write(outputString + '\n');
+const { Transform: StreamTransform } = require('stream');
+
+class LineEmitter extends StreamTransform {
+  _transform(inputData, dataEncoding, completionCallback) {
+    this.push(inputData);
+    this.push('\n');
+    completionCallback();
   }
 }
 
-obtainAndPresent();
+process.stdin.setEncoding('utf8');
+process.stdin
+  .pipe(new LineEmitter())
+  .pipe(process.stdout);

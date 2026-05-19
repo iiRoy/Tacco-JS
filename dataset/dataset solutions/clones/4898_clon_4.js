@@ -1,39 +1,27 @@
-const qR = require('readline');
+const rli = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-function performAssessment() {
-    const iT = qR.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+rli.on('line', (inputLine) => {
+    const charArray = [...inputLine];
 
-    iT.question('', (inputSequence) => {
-        const charArray = Array.from(inputSequence);
-
-        let lastCPosition = -1;
-        charArray.forEach((char, idx) => {
-            if (char === 'C') {
-                lastCPosition = idx;
-            }
-        });
-
-        let finalDecision = "No";
-
-        if (lastCPosition === -1) {
-            const containsAnyF = charArray.some(char => char === 'F');
-            if (!containsAnyF) {
-                finalDecision = "Yes";
-            }
-        } else {
-            const segmentAfterLastC = charArray.slice(lastCPosition);
-            const hasFAfterC = segmentAfterLastC.some(char => char === 'F');
-            if (hasFAfterC) {
-                finalDecision = "Yes";
-            }
+    const { lastC, firstF } = charArray.reduce((acc, char, idx) => {
+        if (char === 'C') {
+            acc.lastC = idx;
         }
-        
-        process.stdout.write(finalDecision + '\n');
-        iT.close();
-    });
-}
+        if (char === 'F' && acc.firstF === -1) {
+            acc.firstF = idx;
+        }
+        return acc;
+    }, { lastC: -1, firstF: -1 });
 
-performAssessment();
+    let result;
+    if (lastC === -1) {
+        result = firstF === -1 ? "Yes" : "No";
+    } else {
+        result = firstF !== -1 && firstF >= lastC ? "Yes" : "No";
+    }
+    console.log(result);
+    rli.close();
+});

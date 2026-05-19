@@ -1,174 +1,99 @@
-"use strict"; // Enable strict mode for cleaner code execution
+"use strict";
+const fileSystem = require("fs");
+const rawData = fileSystem.readFileSync("/dev/stdin", "utf8");
+let tokenArray = rawData.split(/ |\n/);
+let tokenIndex = 0;
 
-// --- Input Processing Utilities ---
+function readNum() {
+    return +tokenArray[tokenIndex++];
+}
 
-// Import the Node.js file system module for input operations
-const fileSystemModule = require('node:fs');
+function readStr() {
+    return tokenArray[tokenIndex++];
+}
 
-// Read the raw input data from standard input.
-// Using '/dev/fd/0' as an alternative to '/dev/stdin' for reading from file descriptor 0.
-const rawInputBuffer = fileSystemModule.readFileSync("/dev/fd/0");
+function readBigInt() {
+    return BigInt(tokenArray[tokenIndex++]);
+}
 
-// Convert the raw buffer data into a string using UTF-8 encoding.
-const inputStringContent = rawInputBuffer.toString('utf8');
-
-// Split the input string into an array of tokens.
-// Uses a regular expression to split by one or more whitespace characters,
-// and then filters out any resulting empty strings to ensure valid tokens.
-const tokenStream = inputStringContent.split(/\s+/).filter(Boolean);
-
-// Initialize a pointer to keep track of the current position in the token stream.
-let currentTokenPointer = 0;
-
-/**
- * Retrieves the next token from the stream and converts it into a numeric value.
- * Throws an error if the end of the input stream is reached unexpectedly.
- * @returns {number} The next available token, parsed as a number.
- */
-function getNextNumericToken() {
-    // Validate if there are remaining tokens to prevent out-of-bounds access.
-    if (currentTokenPointer >= tokenStream.length) {
-        throw new Error("Input stream exhausted! Attempted to read past available tokens.");
+function readNums(count, asStrings) {
+    if (asStrings) {
+        return tokenArray.slice(tokenIndex, tokenIndex += count);
+    } else {
+        return tokenArray.slice(tokenIndex, tokenIndex += count).map(val => +val);
     }
-    // Convert the token to a number and advance the pointer.
-    return Number(tokenStream[currentTokenPointer++]);
 }
 
-/**
- * Reads a specified number of tokens from the stream and returns them as a numeric array.
- * Includes a warning for attempts to read beyond the available tokens.
- * @param {number} count - The number of numeric tokens to retrieve.
- * @returns {number[]} An array containing 'count' numeric tokens.
- */
-function fetchNumericBlock(count) {
-    // Check if the requested number of tokens exceeds what's left in the stream.
-    if (currentTokenPointer + count > tokenStream.length) {
-        console.warn(`Warning: Requested ${count} tokens, but only ${tokenStream.length - currentTokenPointer} remain.`);
-        // Adjust 'count' to read only available tokens or return an empty array if none.
-        count = Math.max(0, tokenStream.length - currentTokenPointer);
+function readMatrix(height, width, asStrings) {
+    const resultMatrix = [];
+    let rowCounter = 0;
+    if (asStrings) {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += width));
+        }
+    } else {
+        for (; rowCounter < height; rowCounter++) {
+            resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += width).map(val => +val));
+        }
     }
-    // Extract the slice of tokens, convert each to a number, and advance the pointer.
-    const numericBlock = tokenStream.slice(currentTokenPointer, currentTokenPointer + count).map(Number);
-    currentTokenPointer += count;
-    return numericBlock;
+    return resultMatrix;
 }
 
-/**
- * Constructs a 2D array (matrix) of numeric data by reading from the input stream.
- * @param {number} numberOfRows - The desired number of rows for the matrix.
- * @param {number} numberOfColumns - The desired number of columns for each row.
- * @returns {number[][]} A two-dimensional array representing the numeric matrix.
- */
-function constructNumericMatrix(numberOfRows, numberOfColumns) {
-    const dataMatrix = [];
-    // Iterate to populate each row of the matrix.
-    for (let rowIndex = 0; rowIndex < numberOfRows; rowIndex++) {
-        // For each row, fetch a block of 'numberOfColumns' numeric tokens.
-        dataMatrix.push(fetchNumericBlock(numberOfColumns));
+// Type III change: Replaced eval-based xArray with a recursive function for multi-dimensional array creation.
+function createMultiDimArray(initialValue, ...dimensions) {
+    const generateDimension = (currentDimIndex) => {
+        if (currentDimIndex === dimensions.length - 1) {
+            return Array(dimensions[currentDimIndex]).fill(initialValue);
+        } else {
+            return Array(dimensions[currentDimIndex]).fill(null).map(() => generateDimension(currentDimIndex + 1));
+        }
+    };
+    if (dimensions.length === 0) {
+        return initialValue;
     }
-    return dataMatrix;
+    return generateDimension(0);
 }
 
-/**
- * Recursively creates a multi-dimensional array initialized with a given value.
- * This function provides a safe alternative to `eval()` for array creation.
- * @param {*} initialValue - The value to fill array elements with.
- * @param {...number} dimensions - A sequence of numbers defining the size of each dimension.
- * @returns {Array} The newly created multi-dimensional array.
- * @throws {Error} If any dimension size is negative.
- */
-function initializeMultiDimensionalArray(initialValue, ...dimensions) {
-  // Base case: if no dimensions are left, return the initial value itself.
-  if (dimensions.length === 0) {
-    return initialValue;
-  }
-
-  const currentDimensionSize = dimensions[0];
-  // Basic validation: ensure dimension sizes are non-negative.
-  if (currentDimensionSize < 0) {
-      throw new Error(`Invalid array dimension: ${currentDimensionSize}. Dimensions must be zero or positive.`);
-  }
-
-  // Recursively call for the remaining dimensions.
-  const remainingDimensions = dimensions.slice(1);
-  const newArray = new Array(currentDimensionSize);
-
-  for (let index = 0; index < currentDimensionSize; index++) {
-    newArray[index] = initializeMultiDimensionalArray(initialValue, ...remainingDimensions);
-  }
-  return newArray;
-}
-
-// --- Main Program Execution Flow ---
-
-// Execute the primary algorithm logic and store its computed output.
-const computationalOutput = executeMainAlgorithm();
-
-// If the algorithm produces a meaningful result, print it to standard output.
-if (computationalOutput !== undefined && computationalOutput !== null) {
-    // Use process.stdout.write for direct console output, appending a newline.
-    process.stdout.write(computationalOutput + '\n');
-}
-
-/**
- * Encapsulates the core business logic and computational steps of the program.
- * @returns {string} The final processed data, formatted as a newline-separated string.
- */
-function executeMainAlgorithm() {
-  // Read the total number of primary elements (often denoted as 'N' in problems).
-  const totalPrimaryElements = getNextNumericToken();
-
-  // Guard clause: Ensure the number of elements is positive, as per typical problem constraints.
-  if (totalPrimaryElements <= 0) {
-      return "Error: The total number of elements must be a positive integer.";
-  }
-
-  // Initialize an array to store the calculated results.
-  // It's a 1D array of 'totalPrimaryElements' size, filled with zeros initially.
-  const resultantValues = initializeMultiDimensionalArray(0, totalPrimaryElements);
-
-  // Read the configuration matrix. This matrix typically contains parameters
-  // for the iterative calculations. It has (N-1) rows and 3 columns.
-  const configurationParametersMatrix = constructNumericMatrix(totalPrimaryElements - 1, 3);
-
-  // --- Core Iterative Calculation Loop ---
-  // The outer loop processes each set of parameters from the configuration matrix.
-  for (let outerIterationIndex = 0; outerIterationIndex < totalPrimaryElements - 1; outerIterationIndex++) {
-    // Extract the specific parameters for the current iteration from the matrix row.
-    // Using descriptive constant names enhances readability.
-    const minimumBoundary = configurationParametersMatrix[outerIterationIndex][1]; // Corresponds to c[i][1]
-    const divisionStep = configurationParametersMatrix[outerIterationIndex][2];    // Corresponds to c[i][2]
-    const finalIncrement = configurationParametersMatrix[outerIterationIndex][0];  // Corresponds to c[i][0]
-
-    // The inner loop updates a growing subset of 'resultantValues'.
-    // The number of elements processed in this loop increases with each outer iteration.
-    for (let innerIterationIndex = 0; innerIterationIndex <= outerIterationIndex; innerIterationIndex++) {
-      let currentElementValue = resultantValues[innerIterationIndex];
-
-      // Step 1: Apply a minimum threshold.
-      // If the current value is below the 'minimumBoundary', it is adjusted up to it.
-      if (currentElementValue < minimumBoundary) {
-        currentElementValue = minimumBoundary;
-      }
-
-      // Step 2: Adjust the value to be the next multiple of 'divisionStep'.
-      // This logic is equivalent to Math.ceil(currentElementValue / divisionStep) * divisionStep.
-      const remainderAfterDivision = currentElementValue % divisionStep;
-      if (remainderAfterDivision !== 0) {
-        // If there's a remainder, add the difference to reach the next exact multiple.
-        currentElementValue += (divisionStep - remainderAfterDivision);
-      }
-
-      // Step 3: Apply a final additive offset.
-      // Add the 'finalIncrement' to the adjusted value.
-      currentElementValue += finalIncrement;
-
-      // Update the 'resultantValues' array with the newly calculated value.
-      resultantValues[innerIterationIndex] = currentElementValue;
+// Type III change: Extracted core calculation logic into a dedicated helper function.
+function calculateNextDepartureAndArrival(currentTimeAtStation, minDepartureTimeFromStation, intervalDuration, travelDurationToNextStation) {
+    let effectiveDepartureTime = currentTimeAtStation;
+    // If current time is before the earliest allowed departure, wait until earliest departure.
+    if (effectiveDepartureTime < minDepartureTimeFromStation) {
+        effectiveDepartureTime = minDepartureTimeFromStation;
     }
-  }
+    // Calculate the next departure time that is a multiple of the intervalDuration.
+    // This ensures departure happens at a valid interval point.
+    let departureFromCurrentStation = Math.ceil(effectiveDepartureTime / intervalDuration) * intervalDuration;
+    // Add travel duration to get arrival time at the next station.
+    return departureFromCurrentStation + travelDurationToNextStation;
+}
 
-  // Format the final array of calculated values into a single string,
-  // with each element separated by a newline character, for output.
-  return resultantValues.join("\n");
+function executeProgram() {
+    const numStations = readNum();
+    const arrivalTimes = createMultiDimArray(0, numStations);
+    const connectionData = readMatrix(numStations - 1, 3);
+
+    // Loop through each connection to update arrival times for relevant stations.
+    for (let currentConnectionIdx = 0; currentConnectionIdx < numStations - 1; currentConnectionIdx++) {
+        // Introduce temporary constants for clarity and readability.
+        const travelDuration = connectionData[currentConnectionIdx][0];
+        const earliestDeparture = connectionData[currentConnectionIdx][1];
+        const departureInterval = connectionData[currentConnectionIdx][2];
+
+        // Update arrival times for all stations up to the current connection.
+        for (let currentStationIdx = 0; currentStationIdx <= currentConnectionIdx; currentStationIdx++) {
+            arrivalTimes[currentStationIdx] = calculateNextDepartureAndArrival(
+                arrivalTimes[currentStationIdx],
+                earliestDeparture,
+                departureInterval,
+                travelDuration
+            );
+        }
+    }
+    return arrivalTimes.join("\n");
+}
+
+const programOutput = executeProgram();
+if (programOutput !== undefined) {
+    console.log(programOutput);
 }

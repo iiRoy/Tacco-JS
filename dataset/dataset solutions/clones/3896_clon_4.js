@@ -1,23 +1,15 @@
-const processData = (rawData) => {
-    const lines = rawData.split('\n');
-    const [configLine, dataLine] = lines;
+function processInput(rawInput) {
+    const [firstLine, secondLine] = rawInput.split('\n');
+    const [nVal, mVal, xVal] = firstLine.split(' ').map(Number);
+    const dataValues = secondLine.split(' ').map(Number);
 
-    const parameters = configLine.split(' ').map(Number);
-    const totalCount = parameters[1];
-    const limitBoundary = parameters[2];
-
-    const dataSeries = dataLine.split(' ').map(Number);
-
-    const firstRelevantIndex = dataSeries.findIndex(
-        (entry) => entry > limitBoundary
+    const targetIndex = dataValues.slice(0, mVal).findIndex(
+        (currentValue) => currentValue > xVal
     );
 
-    if (firstRelevantIndex !== -1) {
-        const distanceA = firstRelevantIndex;
-        const distanceB = totalCount - firstRelevantIndex;
-        console.log(Math.min(distanceA, distanceB));
+    if (targetIndex !== -1) {
+        console.log(Math.min(targetIndex, mVal - targetIndex));
     }
-};
+}
 
-const acquiredInput = require("fs").readFileSync("/dev/stdin", "utf8");
-processData(acquiredInput);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

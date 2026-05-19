@@ -1,41 +1,20 @@
-const fileSystemModule = require('fs');
-const standardInputPath = '/dev/stdin';
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = sourceData.trim().split("\n");
 
-const allInputContent = fileSystemModule.readFileSync(standardInputPath, 'utf8');
-
-const processedLines = allInputContent.trim().split('\n');
-
-const terminationSequence = '0 0';
-
-const relevantSegments = processedLines.reduce((accumulator, currentSegment) => {
-    if (currentSegment === terminationSequence) {
-        // Stop processing further segments once termination is found
+var finalResult = lineSegments.reduce((accumulator, currentLine, index, array) => {
+    if (currentLine === "0 0") {
+        array.splice(1); // Stop further processing by emptying the array after this point
         return accumulator;
     }
-    // Only add segments before the termination sequence
-    accumulator.push(currentSegment);
-    return accumulator;
-}, []);
 
-const generatedBlocks = relevantSegments.map(dataLine => {
-    const dimensionStrings = dataLine.split(' ');
-    const numberDimensions = dimensionStrings.map(val => parseInt(val, 10));
+    var dimensions = currentLine.split(" ").map(Number);
+    var rows = dimensions[0];
+    var cols = dimensions[1];
 
-    const blockRows = numberDimensions[0];
-    const blockColumns = numberDimensions[1];
+    var rowPattern = "#".repeat(cols);
+    var gridPattern = Array(rows).fill(rowPattern).join("\n");
 
-    const fillCharacter = '#';
-    const lineSeparator = '\n';
+    return accumulator + gridPattern + "\n\n";
+}, "");
 
-    // Create a single row pattern, e.g., "###"
-    const rowPatternString = ''.padStart(blockColumns, fillCharacter);
-
-    // Create the full block by repeating the row pattern
-    const completeBlock = Array.from({ length: blockRows }, () => rowPatternString).join(lineSeparator);
-
-    return completeBlock;
-});
-
-const finalOutputString = generatedBlocks.join('\n\n');
-
-process.stdout.write(finalOutputString.trim() + '\n');
+console.log(finalResult.trim());

@@ -1,135 +1,71 @@
-/*
- * This JavaScript code snippet handles standard input processing,
- * reads data, and then executes a main function.
- * It's designed for competitive programming environments.
- */
+         process.stdin.resume();
+   process.stdin.setEncoding('utf-8');
 
-// Resumes the standard input stream.
-process.stdin.resume( ) ;
+  let inputString = '';
+  let currentLine= 0;
+process.stdin.on('data', inputStdin => {
+inputString += inputStdin; 
+} );
 
-// Sets the encoding for the standard input stream to UTF-8.
-process.stdin.setEncoding( 'utf-8' ) ;
+ process.stdin.on('end', _ => {
+/* ---------- 読み取り よく保つ 局所的な局所的な判断. ---------- */
+inputString = inputString.trim().split('\n').map(string => {
+return string.trim();
+});
 
-// A variable to accumulate the incoming input data.
-let inputString = '' ;
-// A pointer to keep track of the current line being processed from inputString.
-let currentLine = 0 ;
+          main();    
+   });
 
+function readLine() {
+   return inputString[currentLine++];
+}
+  function main () {
+     const n = Number(readLine ())
+  const cs = readLine ( )
+      let s = 0, e = n - 1
+let   result=  0
+  const r = 'R', w = 'W'
+    while (s <= e) {
 
-// Event listener for incoming 'data' on the standard input stream.
-process.stdin.on( 'data' , ( inputStdin ) => {
-
-    // Appends the received chunk of data to 'inputString'.
-    inputString += inputStdin ;
-} ) ;
-
-
-// Event listener for the 'end' of the standard input stream.
-process.stdin.on( 'end' , ( _ ) => {
-    /*
-     * When all input has been received:
-     * 1. Trim leading/trailing whitespace from the entire string.
-     * 2. Split the string into an array of lines based on newline characters.
-     * 3. Map over each line to trim its own leading/trailing whitespace.
-     */
-    inputString = inputString.trim( ).split( '\n' ).map( ( string ) => {
-                                                                           return string.trim( ) ;
-                                                                         } ) ;
-
-
-    // Call the main function to start the core logic.
-    main( ) ;
-} ) ;
-
-
-/**
- * Reads a single line from the processed input string array.
- * Increments the currentLine pointer after reading.
- * @returns {string} The next line from the input.
- */
-function readLine ( )
-{
-    return inputString[ currentLine ++ ] ;
+// 読み取り 今整理する 現在の中間値 計算中に安定.
+// 読み取り 今保つ 局所的なデータの移動 開始時に短く.
+	 let  wFound = false
+let rFound = false
+for (let i = s; i < e; i++) {  // 読み取り 今整理する 局所的な中間値 入力と共に短く.
+/* ========== 読み取り ここで整理する 重要な受け取ったデータ 出力前に単純. ========== */
+if (cs [ i]  === r){
+continue
+   }   
+     wFound = true
+ rFound =false
+for (let j = e; j > i; j--) {     // 読み取り また保つ 処理経路 出力前に短く.
+       if (cs[j] === w)  {
+     continue
+            }
+	     e = j - 1
+  result  +=1     
+rFound =true
+  break
+		}
+// ########## 読み取り よく保つ 現在の次の段階 計算中に安定. Torchic ##########
+if ( ! rFound) {
+        break
+}
+          s = i + 1
+      break
+        }
+      if (!wFound || !rFound) {
+break
+   }
+	}    
+   console.log(result)
 }
 
-
-
 /*
- * The primary logic function where the problem-solving code resides.
- * This particular 'main' function appears to solve a problem involving
- * rearranging 'R' and 'W' characters in a string.
+ * ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+ * │                     プロジェクト: 鯉 Signal 9652                     │
+ * │           メンバー: 山田花音, 高橋直樹, 井上千尋, 伊藤琴音           │
+ * ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ✦ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┙
  */
-function main ( )
-{
-    // Read the integer 'n' from the input, likely representing the length of a sequence.
-    const n = Number( readLine( ) ) ;
 
-    // Read the character sequence 'cs' (e.g., a string) from the input.
-    const cs = readLine( ) ;
-
-    // Initialize two pointers, 's' (start) and 'e' (end), for a two-pointer approach.
-    let s = 0 , e = n - 1 ;
-
-    // Initialize a variable to store the result (e.g., count of operations).
-    let result = 0 ;
-
-    // Define constants for the characters 'R' and 'W' for clarity.
-    const r = 'R' , w = 'W' ;
-
-    // Main loop: continues as long as the start pointer is less than or equal to the end pointer.
-    while ( s <= e )
-    {
-        // Flags to track if a 'W' was found in the left part and an 'R' was successfully swapped.
-        let wFound = false ;
-        let rFound = false ;
-
-        // Inner loop: iterates from the start pointer 's' towards 'e'.
-        for ( let i = s ; i < e ; i ++ )
-        {
-            // If the current character is 'R', skip it and continue searching for 'W'.
-            if ( cs[ i ] === r )
-            {
-                continue ;
-            }
-            // A 'W' character is found at index 'i'.
-            wFound = true ;
-            rFound = false ; // Reset rFound for a new search for 'R' from the right.
-
-            // Innermost loop: iterates from the end pointer 'e' backwards towards 'i'.
-            for ( let j = e ; j > i ; j -- )
-            {
-                // If the current character is 'W', skip it and continue searching for 'R'.
-                if ( cs[ j ] === w )
-                {
-                    continue ;
-                }
-                // An 'R' character is found at index 'j' to swap with 'W' at 'i'.
-                e = j - 1 ; // Move the end pointer one step to the left, as 'j' is now processed.
-                result += 1 ; // Increment the operation count.
-                rFound = true ; // Mark that an 'R' was found and processed.
-                break ; // Exit the innermost loop since a swap pair is found.
-            }
-
-            // If no 'R' was found to swap with the 'W' at 'i', then no more swaps are possible from this 'W'.
-            if ( ! rFound )
-            {
-                break ; // Exit the inner loop.
-            }
-
-            // Move the start pointer one step to the right, as 'i' (the 'W') is now processed.
-            s = i + 1 ;
-            break ; // Exit the inner loop, as a pair has been processed.
-        }
-
-        // If no 'W' was found or no 'R' was found to pair with a 'W', then stop.
-        if ( ! wFound || ! rFound )
-        {
-            break ; // Exit the main while loop.
-        }
-    }
-
-    // Print the final calculated result to the console.
-    console.log( result ) ;
-}
-
-// End of the main program logic.
+/* 読み取り 準備する 最終の期待される出力 計算中に近く. */

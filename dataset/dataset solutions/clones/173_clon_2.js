@@ -1,71 +1,95 @@
-var ioModule = require('fs') // Utilize the file system module for I/O operations
-  , inputSize = ioModule.fstatSync(process.stdin.fd).size // Determine the size of the incoming data stream
-  , rawBytesBuffer = new Buffer(inputSize) // Allocate a memory buffer for the raw input
-  , actualBytesRead = ioModule.readSync(process.stdin.fd, rawBytesBuffer, 0, inputSize, 0) // Read bytes from standard input into the buffer
-  , inputLines = rawBytesBuffer.toString('utf8', 0, actualBytesRead).trim().split('\n'); // Convert buffer to UTF-8 string, trim, and split into an array of lines
+var fileSystemModule = require('fs');
 
-processInputData(); // Initiate the primary data processing routine
+// Determine the size of the standard input stream
+var dataSize = fileSystemModule.fstatSync(process.stdin.fd).size;
+
+// Allocate a buffer to hold the input data
+var inputBuffer = new Buffer(dataSize);
+
+// Read data from standard input into the buffer
+var actualBytesRead = fileSystemModule.readSync(process.stdin.fd, inputBuffer, 0, dataSize, 0);
+
+// Convert the buffer content to a UTF-8 string, trim whitespace, and split into lines
+var inputLines = inputBuffer.toString('utf8', 0, actualBytesRead).trim().split('\n');
+
+// Begin processing the input
+processInputData();
 
 function processInputData() {
-  for (let lineIndex = 0, totalLines = inputLines.length; lineIndex < totalLines; ++lineIndex) { // Iterate through each provided line of input
-    var currentLineDigits = inputLines[lineIndex].split(''); // Deconstruct the current line into individual digit characters
+  // Iterate through each line provided in the input
+  for (var lineIndex = 0, totalLines = inputLines.length; lineIndex < totalLines; lineIndex++) {
+    // Split the current line into individual characters (digits)
+    var currentLineChars = inputLines[lineIndex].split('');
 
-    var digitOccurrences = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Initialize an array to count frequencies of digits (0-10)
-    for (let charPosition = 0, digitCount = currentLineDigits.length; charPosition < digitCount; charPosition++) {
-      digitOccurrences[currentLineDigits[charPosition]]++; // Populate the frequency array based on input digits
+    // Initialize an array to count occurrences of each digit (0-9)
+    // Index 0 is unused, indices 1-9 store counts for digits 1-9
+    var digitOccurrences = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    // Populate the digitOccurrences array based on the current line's characters
+    for (var charIndex = 0, charCount = currentLineChars.length; charIndex < charCount; charIndex++) {
+      digitOccurrences[currentLineChars[charIndex]]++; // Increment count for the respective digit
     }
 
-    var possibleCompletions = []; // Array to store the digits that can complete the set
-  CANDIDATE_LOOP: for (let candidateDigit = 1; candidateDigit <= 9; candidateDigit++) { // Explore each digit from 1 to 9 as a potential completion
+    // This array will store the digits that can be "picked" to form a valid set
+    var validPicks = [];
 
-      // Skip this candidate if it already has 4 occurrences or if no sequence involving it is possible
-      if (
-        digitOccurrences[candidateDigit] == 4 ||
-        (!digitOccurrences[candidateDigit - 1] && !digitOccurrences[candidateDigit] && !digitOccurrences[candidateDigit + 1])
-      ) {
-        continue;
+    // Outer loop: Iterate through possible "first pick" digits (1 to 9)
+    MAIN_PICK_LOOP: for (var firstPickDigit = 1; firstPickDigit <= 9; firstPickDigit++) {
+      // Skip if the digit appears 4 times (cannot pick 1 more and then 2 of another)
+      // Or if there are no adjacent digits (cannot form a sequence of 3)
+      if (digitOccurrences[firstPickDigit] === 4 || (!digitOccurrences[firstPickDigit - 1] && !digitOccurrences[firstPickDigit] && !digitOccurrences[firstPickDigit + 1])) {
+        continue; // Move to the next firstPickDigit
       }
 
-      for (let pairDigit = 1; pairDigit <= 9; pairDigit++) { // Iterate through digits to form a pair
-
-        if (digitOccurrences[pairDigit] == 0) {
-          continue; // If no tiles of this digit exist, skip
+      // Inner loop: Iterate through possible "second pick" digits (1 to 9)
+      for (var secondPickDigit = 1; secondPickDigit <= 9; secondPickDigit++) {
+        // If the second pick digit is not present, it cannot be picked twice
+        if (digitOccurrences[secondPickDigit] === 0) {
+          continue; // Move to the next secondPickDigit
         }
 
-        let workingOccurrences = digitOccurrences.slice(0); // Create a mutable copy of the digit frequencies
-        workingOccurrences[candidateDigit]++; // Add the "missing" candidate tile
-        workingOccurrences[pairDigit] -= 2; // Remove two tiles for the required pair
+        // Create a temporary copy of the digit counts for modification
+        var tempOccurrences = digitOccurrences.slice(0);
 
-        for (let checkIndex = 1; checkIndex <= 9; checkIndex++) { // Attempt to form sequences and triplets
-          // Check for and remove a sequence (e.g., 1-2-3)
-          if (workingOccurrences[checkIndex - 1] >= 1 && workingOccurrences[checkIndex] >= 1 && workingOccurrences[checkIndex + 1] >= 1) {
-            workingOccurrences[checkIndex - 1]--;
-            workingOccurrences[checkIndex]--;
-            workingOccurrences[checkIndex + 1]--;
+        // Simulate picking the first digit once and the second digit twice
+        tempOccurrences[firstPickDigit]++;
+        tempOccurrences[secondPickDigit] -= 2;
+
+        // Innermost loop: Attempt to reduce counts by forming sets of 3 (sequences or triplets)
+        for (var checkDigit = 1; checkDigit <= 9; checkDigit++) {
+          // Check for a sequence of three consecutive digits (e.g., 1-2-3)
+          if (tempOccurrences[checkDigit - 1] >= 1 && tempOccurrences[checkDigit] >= 1 && tempOccurrences[checkDigit + 1] >= 1) {
+            tempOccurrences[checkDigit - 1]--;
+            tempOccurrences[checkDigit]--;
+            tempOccurrences[checkDigit + 1]--;
           }
-          // Check for and remove a second sequence if available
-          if (workingOccurrences[checkIndex - 1] >= 1 && workingOccurrences[checkIndex] >= 1 && workingOccurrences[checkIndex + 1] >= 1) {
-            workingOccurrences[checkIndex - 1]--;
-            workingOccurrences[checkIndex]--;
-            workingOccurrences[checkIndex + 1]--;
+          // Check for another sequence of three consecutive digits (e.g., another 1-2-3)
+          if (tempOccurrences[checkDigit - 1] >= 1 && tempOccurrences[checkDigit] >= 1 && tempOccurrences[checkDigit + 1] >= 1) {
+            tempOccurrences[checkDigit - 1]--;
+            tempOccurrences[checkDigit]--;
+            tempOccurrences[checkDigit + 1]--;
           }
-          // Check for and remove a triplet (e.g., 3x 7)
-          if (workingOccurrences[checkIndex] >= 3) {
-            workingOccurrences[checkIndex] -= 3;
+          // Check for a triplet of the same digit (e.g., 3-3-3)
+          if (tempOccurrences[checkDigit] >= 3) {
+            tempOccurrences[checkDigit] -= 3;
           }
         }
-        let remainingTiles = 0; // Variable to sum up any unplaced tiles
-        for (let checkIndex = 1; checkIndex <= 9; checkIndex++) {
-          remainingTiles += workingOccurrences[checkIndex]; // Accumulate the count of leftover tiles
+
+        // Calculate the sum of remaining digit counts
+        var remainingCount = 0;
+        for (var checkDigit = 1; checkDigit <= 9; checkDigit++) {
+          remainingCount += tempOccurrences[checkDigit];
         }
 
-        if (!remainingTiles) { // If all tiles have been successfully grouped into sequences and triplets (sum is zero)
-          possibleCompletions.push(candidateDigit); // This candidate digit is a valid completion
-          continue CANDIDATE_LOOP; // Move to the next candidate digit to check
+        // If all counts are zero after reductions, a valid set was formed
+        if (!remainingCount) {
+          validPicks.push(firstPickDigit); // Add the first pick digit to the results
+          continue MAIN_PICK_LOOP; // Move to the next firstPickDigit, as we found a solution for this one
         }
       }
     }
 
-    console.log(possibleCompletions.length ? possibleCompletions.join(' ') : '0'); // Output the valid completions, or '0' if none
+    // Output the results: either the space-separated valid picks or '0' if none were found
+    console.log(validPicks.length ? validPicks.join(' ') : '0');
   }
 }

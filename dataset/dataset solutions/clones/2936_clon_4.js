@@ -1,24 +1,26 @@
-function solveChallenge(rawData) {
-    const contentLines = rawData.split('\n');
+function Main(sourceText) {
+  const lineSegments = sourceText.split("\n");
 
-    const generalParameters = contentLines[0].split(' ').map(Number);
-    const numberOfRanges = generalParameters[1];
+  const [_, rangeCountStr] = lineSegments[0].split(" ");
+  const totalRanges = Number(rangeCountStr);
 
-    const parsedRanges = contentLines.slice(1, 1 + numberOfRanges).map(singleLine => {
-        const numericBounds = singleLine.split(' ').map(Number);
-        return { lowerBound: numericBounds[0], upperBound: numericBounds[1] };
-    });
+  const parsedRanges = lineSegments.slice(1, totalRanges + 1).map(rangeLine => {
+    const [lowerBoundStr, upperBoundStr] = rangeLine.split(" ");
+    return {
+      lower: Number(lowerBoundStr),
+      upper: Number(upperBoundStr)
+    };
+  });
 
-    const allLowerBounds = parsedRanges.map(rangeObject => rangeObject.lowerBound);
-    const allUpperBounds = parsedRanges.map(rangeObject => rangeObject.upperBound);
+  const aggregatedBounds = parsedRanges.reduce((currentExtremes, singleRange) => {
+    return {
+      highestLower: Math.max(currentExtremes.highestLower, singleRange.lower),
+      lowestUpper: Math.min(currentExtremes.lowestUpper, singleRange.upper)
+    };
+  }, { highestLower: -Infinity, lowestUpper: Infinity });
 
-    const maximumLower = Math.max(...allLowerBounds);
-    const minimumUpper = Math.min(...allUpperBounds);
-
-    const intersectionLength = Math.max(0, minimumUpper - maximumLower + 1);
-
-    console.log(intersectionLength);
+  const resultQuantity = aggregatedBounds.lowestUpper - aggregatedBounds.highestLower + 1;
+  console.log(resultQuantity);
 }
 
-// solveChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
-solveChallenge(require("fs").readFileSync("./inputdata.txt", "utf8"));
+Main(require("fs").readFileSync("./inputdata.txt", "utf8"));

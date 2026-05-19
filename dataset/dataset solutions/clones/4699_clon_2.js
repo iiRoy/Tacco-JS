@@ -1,53 +1,55 @@
-process
-  .stdin.resume();
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-process.stdin
-    .setEncoding(
-      'utf8'
-    );
+/**
+ * Orchestrates the processing of standard input data.
+ * This function serves as the primary entry point for the application logic.
+ * @param {string} fullInputString - The complete string content read from standard input.
+ */
+function ProcessInputData(fullInputString) {
+  // Divide the entire input string into an array of individual lines.
+  // Each element in 'inputLines' corresponds to a line from the input.
+  let inputLines = fullInputString.split("\n");
 
-// This module's primary function is to interpret the entire input stream.
-function InterpretData(incomingStream) {
+  // Extract the first line and further split it by spaces to get individual tokens.
+  let firstLineTokens = inputLines[0].split(" ");
 
-  // Break down the received string into an array of lines.
-  var parsedLines = incomingStream.split(
-    "\n"
-  );
-  var primaryLineParts = parsedLines[0]
-                                    .split(" ");
-  // var secondaryLineParts = parsedLines[1].split(" "); // Additional data parsing might go here.
+  // The original code contained commented-out declarations for subsequent lines.
+  // These are retained as comments to preserve the structural intent.
+  // let subsequentLine1 = inputLines[1].split(" ");
+  // let subsequentLine2 = inputLines[2].split(" ");
+  // let subsequentLine3 = inputLines[3].split(" ");
 
-  var quantityOne = Number(
-    primaryLineParts[0]
-  ); // The first numerical parameter.
-  var quantityTwo = Number(
-    primaryLineParts[1]
-  );  // The second numerical parameter.
-  // var auxiliaryQuantity = Number(primaryLineParts[2]);
+  // Convert the first two tokens of the first line into numerical values.
+  // 'firstNum' corresponds to the 'S' value in the original problem context.
+  let firstNum = Number(firstLineTokens[0]);
+  // 'secondNum' corresponds to the 'c' value in the original problem context.
+  let secondNum = Number(firstLineTokens[1]);
+  // Additional commented-out variable declarations from the original.
+  // let anotherValueA = Number(firstLineTokens[1]);
+  // let anotherValueB = Number(firstLineTokens[2]);
+  
+  // Declare and initialize a variable, 'operationResult', which is not ultimately used
+  // in the final output calculation, mirroring the original 'count' variable's behavior.
+  let operationResult = 0;
+  
+  // A commented-out debug statement from the original code.
+  // console.log(firstNum + " " + secondNum);
 
-  var interimResult = 0; // A placeholder variable, currently unused but maintained.
+  // Evaluate a condition involving 'firstNum' and 'secondNum'.
+  // If 'firstNum' is greater than half of 'secondNum', print a specific calculated value.
+  if (firstNum > secondNum / 2) {
+    console.log(Math.floor(secondNum / 2));
+  }
+  
+  // Modify 'secondNum' based on a calculation involving 'firstNum'.
+  secondNum = secondNum - firstNum * 2;
+  
+  // Output the final computed value, which is a sum of 'firstNum' and a quarter of the modified 'secondNum'.
+  console.log(firstNum + Math.floor(secondNum / 4));
+}
 
-  // console.log("Values parsed: " + quantityOne + " & " + quantityTwo);
-
-  // Apply a conditional rule based on the initial quantities.
-  if (
-    quantityOne > quantityTwo / 2
-  )
-    console.log(
-      Math.floor(
-        quantityTwo / 2
-      )
-    );
-
-  quantityTwo = quantityTwo - quantityOne * 2; // Recalculate the second quantity.
-
-  console.log(quantityOne + Math.floor(quantityTwo / 4)); // Display the final computed outcome.
-
-} // End of the data interpretation routine.
-
-// The following instruction is critical for the program's execution and should not be modified.
-InterpretData(
-  require("fs").readFileSync(
-    "/dev/stdin", "utf8"
-  )
-);
+// This section is responsible for reading input from the standard input stream
+// and passing it to the main processing function. It should remain unchanged
+// to ensure proper interaction with the execution environment.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

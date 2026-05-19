@@ -1,100 +1,75 @@
-const obtainNextInput = () => next();
-const displayResult = (val) => myout(val);
+var read = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var obj;
+var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error("\n");
+  var start = Date.now();
+  processSequence();
+  var end = Date.now() - start;
+  myerr("time : " + (end) + "ms");
+  myerr("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+});
+function makeClone(obj){return JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  var returnObj = {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(!this.hasNext()){throw "ArrayIndexOutOfBoundsException これ以上ないよ";}else{var returnInput = this.list[this.index];this.index++;return returnInput;}}
+  };
+  return returnObj;
+}
+function myout(s){console.log(s);}
+function myerr(s){console.error("debug:" + require("util").inspect(s,false,null));}
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map(Number);case 6:return i.split("");case 7:return i.split("").map(Number);case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
 
-function findSequencePosition() {
-    const sourceString = obtainNextInput();
-    const targetSequence = obtainNextInput();
+function processSequence(){
+    const sourceString = next();
+    const targetString = next();
+    const sourceLength = sourceString.length;
 
-    const charLocations = new Map();
-    Array.from(sourceString).forEach((character, position) => {
-        if (!charLocations.has(character)) {
-            charLocations.set(character, []);
+    const characterOccurrences = new Map();
+    for (let i = 0; i < sourceLength; i++) {
+        const char = sourceString[i];
+        if (!characterOccurrences.has(char)) {
+            characterOccurrences.set(char, []);
         }
-        charLocations.get(character).push(position);
-    });
-
-    // This helper function finds the index within `indicesCollection`
-    // of the first element that is greater than or equal to `lowerBound`.
-    // If no such element exists, it returns `indicesCollection.length`.
-    function locateNextAvailable(indicesCollection, lowerBound) {
-        let startPoint = 0;
-        let endPoint = indicesCollection.length; // Exclusive upper bound
-        while (startPoint < endPoint) {
-            const midPoint = Math.floor((startPoint + endPoint) / 2);
-            if (indicesCollection[midPoint] >= lowerBound) {
-                endPoint = midPoint;
-            } else {
-                startPoint = midPoint + 1;
-            }
-        }
-        return startPoint;
+        characterOccurrences.get(char).push(i);
     }
 
-    const initialProcessingState = {
-        accumulatedLength: 0,        // Represents the total length accumulated from "wrapping around" the source string
-        lastLocatedIndex: -1,        // Represents the 0-indexed position of the previously found character in the source string
-        sequenceFeasible: true       // Flag to track if all characters of targetSequence are found
-    };
-
-    const finalProcessingState = Array.from(targetSequence).reduce((currentState, currentCharacter) => {
-        if (!currentState.sequenceFeasible) {
-            return currentState; // Propagate the failure state
+    for (const char of targetString) {
+        if (!characterOccurrences.has(char)) {
+            myout(-1);
+            return;
         }
+    }
 
-        if (!charLocations.has(currentCharacter)) {
-            return { ...currentState, sequenceFeasible: false }; // Character not present in sourceString
-        }
+    const finalAbsolutePosition = [...targetString].reduce((currentAbsolutePosition, targetChar) => {
+        const charIndices = characterOccurrences.get(targetChar);
 
-        const currentCharacterPositions = charLocations.get(currentCharacter);
-        
-        // Find the first occurrence of `currentCharacter` that is strictly after `lastLocatedIndex`
-        let foundPositionInList = locateNextAvailable(currentCharacterPositions, currentState.lastLocatedIndex + 1);
-        
-        let newAccumulatedLength = currentState.accumulatedLength;
-        let newLastLocatedIndex;
+        const searchStartRelative = (currentAbsolutePosition === -1) ? 0 : (currentAbsolutePosition + 1) % sourceLength;
 
-        if (foundPositionInList === currentCharacterPositions.length) {
-            // All occurrences are before or at the `lastLocatedIndex`, so we need to "wrap around"
-            newAccumulatedLength += sourceString.length;
-            newLastLocatedIndex = currentCharacterPositions[0]; // Take the very first occurrence after wrapping
+        let foundIndexInList = charIndices.findIndex(pos => pos >= searchStartRelative);
+
+        let nextAbsolutePosition;
+
+        if (foundIndexInList !== -1) {
+            const currentCycleCount = (currentAbsolutePosition === -1) ? 0 : Math.floor((currentAbsolutePosition + 1) / sourceLength);
+            nextAbsolutePosition = currentCycleCount * sourceLength + charIndices[foundIndexInList];
         } else {
-            // Found an occurrence strictly after the `lastLocatedIndex` within the current string
-            newLastLocatedIndex = currentCharacterPositions[foundPositionInList];
+            const nextCycleCount = (currentAbsolutePosition === -1) ? 0 : Math.floor((currentAbsolutePosition + 1) / sourceLength) + 1;
+            nextAbsolutePosition = nextCycleCount * sourceLength + charIndices[0];
         }
 
-        return {
-            accumulatedLength: newAccumulatedLength,
-            lastLocatedIndex: newLastLocatedIndex,
-            sequenceFeasible: true
-        };
-    }, initialProcessingState);
+        return nextAbsolutePosition;
+    }, -1);
 
-    if (!finalProcessingState.sequenceFeasible) {
-        displayResult(-1);
-    } else {
-        // The result is 1-indexed, so add 1 to the 0-indexed position
-        displayResult(finalProcessingState.accumulatedLength + finalProcessingState.lastLocatedIndex + 1);
-    }
+    myout(finalAbsolutePosition + 1);
 }
-
-// Ensure the main entry point is named as required by the boilerplate
-function Main() {
-    findSequencePosition();
-}
-
-// The following are stubs for the boilerplate functions,
-// as the problem implies they are provided externally and should not be modified/cloned.
-// They are included here only to make the generated code runnable in isolation for testing.
-/*
-var _inputLines = [];
-var _lineIndex = 0;
-function next() {
-    if (_lineIndex < _inputLines.length) {
-        return _inputLines[_lineIndex++];
-    }
-    throw new Error("No more input lines.");
-}
-function myout(val) {
-    console.log(val);
-}
-*/

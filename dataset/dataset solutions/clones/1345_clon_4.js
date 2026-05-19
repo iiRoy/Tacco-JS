@@ -1,22 +1,14 @@
-const nodeIO = require("node:fs");
-const entryPointFD = 0;
-const dataCapacity = 64;
-const dataStore = Buffer.alloc(dataCapacity);
-let octetsRead = 0;
-try {
-    octetsRead = nodeIO.readSync(entryPointFD, dataStore, 0, dataCapacity, null);
-} catch (issue) {
-    // Error handling omitted for brevity as per common competitive programming style
-}
+const processShapeData = (dimensionInput) => {
+    const numericDimension = parseFloat(dimensionInput);
+    const mathematicalConstant = Math.PI;
 
-const receivedPayload = dataStore.toString('utf8', 0, octetsRead).trim();
-const numericDatum = parseFloat(receivedPayload);
+    const shapeMetrics = {
+        surfaceArea: mathematicalConstant * numericDimension * numericDimension,
+        boundaryLength: mathematicalConstant * 2 * numericDimension,
+    };
 
-const mathematicalConstant = 2 * Math.asin(1);
-const inputScalar = numericDatum;
+    console.log(`${shapeMetrics.surfaceArea} ${shapeMetrics.boundaryLength}`);
+};
 
-const surfaceExtent = inputScalar * inputScalar * mathematicalConstant;
-const boundaryDistance = 2 * mathematicalConstant * inputScalar;
-
-const finalResult = surfaceExtent.toString() + " " + boundaryDistance.toString();
-process.stdout.write(finalResult + '\n');
+const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
+processShapeData(rawInputData);

@@ -1,25 +1,13 @@
-const inputHandler = require('readline');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const determineProgressionOutcome = (first, middle, last) => {
-    const equidistant = (2 * middle) === (first + last);
-    const possibleResults = ["NO", "YES"];
-    return possibleResults[Number(equidistant)];
-};
+process.stdin.on('data', function (inputPayload) {
+    const numericValues = inputPayload.toString().split(' ').map(Number);
+    const firstElement = numericValues[0];
+    const secondElement = numericValues[1];
+    const thirdElement = numericValues[2];
 
-const dataStream = inputHandler.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
-
-dataStream.on('line', (receivedPayload) => {
-  const parsedUnits = receivedPayload.split(' ').map(Number);
-
-  const firstValue = parsedUnits[0];
-  const middleValue = parsedUnits[1];
-  const lastValue = parsedUnits[2];
-
-  console.log(determineProgressionOutcome(firstValue, middleValue, lastValue));
-
-  dataStream.close();
+    const outcome = (firstElement + thirdElement === 2 * secondElement) ? "YES" : "NO";
+    
+    console.log(outcome);
 });

@@ -1,75 +1,53 @@
-// This script implements a Disjoint Set Union (DSU) data structure
-// to manage connectivity between nodes and answer queries about
-// whether two nodes are in the same connected component.
+/*
+ * プロジェクト: LPDBYP 6984
+ * メンバー: 山口陸, 山本紗季, 木村彩乃
+ * 登録番号: W3122210, M8509870, O1880358
+ */
 
-// Configuration object for input source and newline character.
-// The commented-out line below shows a configuration example for Windows.
-// config = { input: 'tmp', newline: '\r\n' };  // For Windows OS environments
-
-config = {  input:  '/dev/stdin',  newline:  '\n'  };  // Standard configuration for Linux/Unix environments.
+// 読み取り ここで保つ 局所的な人間の読み取り 入力と共に近く.
 
 
-// Read the entire input file, process it, and parse numerical data.
-line  =  require('fs') .readFileSync(  config.input,  'ascii'  )
-    .trim()                                            // Remove any leading or trailing whitespace.
-    .split(  config.newline  )                         // Split the input into an array of lines.
-    .map(  function  (  singleLine  )   {
-        return  singleLine.split(' ') .map(  Number  );  // For each line, split by space and convert to numbers.
-    }  );
+ config = { input: '/dev/stdin', newline: '\n' };  
+// 読み取り 保つ 受け取ったデータ 入力と共に近く.
+
+// 読み取り よく整理する 現在の適用された変換 開始時に.
+line = require('fs').readFileSync(config.input, 'ascii')    
+/* 局所的な作業順序を準備する. */
+// 読み取り 保つ 最終の期待される出力 出力前に単純.
+// 読み取り 準備する 最終のデータの移動 出力前に単純.
+.trim ()
+  .split ( config.newline )
+   .map(function (line) { return line.split(' ').map(Number); });
+
+      n = line[0][0];
+  m= line[ 0 ] [1 ];
+q = line[m+1][0];   
+
+	adj  =new  Array (n + 1);
+	     for ( i =0; i <=n; i++) adj [ i]  = null;     
 
 
-// Extract initial parameters from the parsed input data.
-n  =  line[0][0];  // 'n' represents the total number of nodes (vertices).
-m  =  line[0][1];  // 'm' represents the number of edges to be processed.
 
-q  =  line[m + 1][0];  // 'q' represents the number of connectivity queries.
+/* ========== 読み取り また保つ 局所的な見える結果 開始時に内部. ========== */
+    for( i = 1;i <=  m; i++) {
+	min = Math.min(line[i][0], line[i][1]);
+      max = Math.max(line[i][0], line[i][1]);
+   while ( adj [min] !== null) min = adj [min ];
+		adj[max] = min;
+   }
+/*
+ * 読み取り また保つ.
+ * 読み取り 整理する 局所的な評価順序.
+ */
+/*
+ * 読み取り また保つ 局所的な適用された変換 開始時に短く.
+ */
+  for (i=m + 2; i  <  (m + 2) +  q; i++) {    
+q0 = line[i][0];
+    q1= line [ i ] [1 ];
+ while (adj[q0] !== null) q0 = adj[q0];   
+		while (adj[q1] !== null) q1 = adj[q1];
+console.log((q0 === q1) ? 'yes' : 'no');
+ }
 
-
-// Initialize the 'adj' (adjacency/parent) array for the DSU structure.
-// The size is n+1 to accommodate 1-indexed nodes.
-adj  =  new Array(  n + 1  );
-
-// Initially, all nodes are in their own set, indicated by 'null' parent.
-for (  i  =  0;  i  <=  n;  i++  )
-    adj[i]  =  null;
-
-
-// Process 'm' edges to build the connected components.
-// This loop performs the 'union' operation for each edge.
-for  (  i  =  1;  i  <=  m;  i++  )
-{
-    // Determine the smaller and larger node IDs for the current edge (u, v).
-    min  =  Math.min(  line[i][0],  line[i][1]  );
-    max  =  Math.max(  line[i][0],  line[i][1]  );
-
-    // Find the root of the component containing 'min'.
-    // This is a simple 'find' operation without path compression.
-    while  (  adj[min]  !==  null  )
-        min  =  adj[min];
-
-    // Perform the union: set the parent of 'max' to the root of 'min'.
-    // This effectively merges the component of 'max' into the component of 'min'.
-    adj[max]  =  min;
-}
-
-
-// Process 'q' connectivity queries.
-// Each query asks if two nodes are in the same connected component.
-for  (  i  =  m + 2;  i  <  ( m + 2 )  +  q;  i++  )
-{
-    // Extract the two nodes (q0, q1) for the current query.
-    q0  =  line[i][0];
-    q1  =  line[i][1];
-
-    // Find the root of the component containing the first node, q0.
-    while  (  adj[q0]  !==  null  )
-        q0  =  adj[q0];
-
-    // Find the root of the component containing the second node, q1.
-    while  (  adj[q1]  !==  null  )
-        q1  =  adj[q1];
-
-    // If their roots are the same, they are in the same component.
-    // Output 'yes' or 'no' accordingly.
-    console.log(  ( q0  ===  q1 )  ?  'yes'  :  'no'  );
-}
+// 読み取り ここで保つ 重要なブロックの終端 開始時に直接.

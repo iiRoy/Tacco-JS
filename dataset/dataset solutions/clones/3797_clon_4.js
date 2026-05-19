@@ -1,29 +1,23 @@
-function performAnalysis(rawData) {
-    const lineParts = rawData.split('\n');
-    const seriesSize = Number(lineParts[0]);
-    const numericalSeries = lineParts[1].split(' ').slice(0, seriesSize).map(Number);
+function processData(rawData) {
+    const inputLines = rawData.trim().split('\n');
+    const seriesLength = Number(inputLines[0]);
+    const numberSequence = inputLines[1].split(' ').map(Number);
 
-    const obtainSections = (sourceData) => {
-        return sourceData.flatMap((_, idx) =>
-            sourceData.slice(idx).map((_, subIdx) =>
-                sourceData.slice(idx, idx + subIdx + 1)
-            )
-        );
-    };
+    const totalSatisfyingSubarrays = Array.from({ length: seriesLength }, (_, initialIndex) => {
+        let currentXorAggregate = 0;
+        let currentArithmeticAggregate = 0;
+        return Array.from({ length: seriesLength - initialIndex }, (_, segmentOffset) => {
+            const finalIndex = initialIndex + segmentOffset;
+            const elementValue = numberSequence[finalIndex];
 
-    const calculateXOR = (segment) => {
-        return segment.reduce((accumulator, currentValue) => accumulator ^ currentValue, 0);
-    };
+            currentXorAggregate ^= elementValue;
+            currentArithmeticAggregate += elementValue;
 
-    const calculateSum = (segment) => {
-        return segment.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-    };
+            return currentXorAggregate === currentArithmeticAggregate ? 1 : 0;
+        });
+    }).flat().reduce((accumulator, value) => accumulator + value, 0);
 
-    const matchingConfigurations = obtainSections(numericalSeries).filter(currentSection =>
-        calculateXOR(currentSection) === calculateSum(currentSection)
-    ).length;
-
-    console.log(matchingConfigurations);
+    console.log(totalSatisfyingSubarrays);
 }
 
-performAnalysis(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

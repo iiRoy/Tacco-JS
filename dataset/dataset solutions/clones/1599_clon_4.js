@@ -1,42 +1,33 @@
-function assessConfiguration(dimensionA, dimensionB, dimensionC) {
-    const uniqueCheck = new Set([dimensionA, dimensionB, dimensionC]).size === 3;
-    if (!uniqueCheck) {
-        return false;
-    }
-    const sortedDimensions = [dimensionA, dimensionB, dimensionC].sort((p, q) => p - q);
-    return sortedDimensions[0] + sortedDimensions[1] > sortedDimensions[2];
-}
+const processInput = (rawData) => {
+    const lines = rawData.split("\n");
+    const elementCount = parseInt(lines[0], 10);
+    const sideLengths = lines[1].split(" ").map(Number);
 
-function analyzeDimensions(inputPayload) {
-    const segmentCount = +inputPayload.match(/^\d+/)[0];
-    const dimensionList = inputPayload.split('\n')[1].match(/\d+/g).map(Number);
+    const areValuesDistinct = (valA, valB, valC) => new Set([valA, valB, valC]).size === 3;
 
-    let validConfigurations = 0;
+    const canFormTriangle = (valA, valB, valC) => {
+        const sortedSides = [valA, valB, valC].sort((u, v) => u - v);
+        return sortedSides[0] + sortedSides[1] > sortedSides[2];
+    };
 
-    function selectIndices(startPosition, chosenIndices) {
-        if (chosenIndices.length === 3) {
-            const val1 = dimensionList[chosenIndices[0]];
-            const val2 = dimensionList[chosenIndices[1]];
-            const val3 = dimensionList[chosenIndices[2]];
+    const resultCount = Array.from({ length: elementCount }).flatMap((_, firstIndex) =>
+        Array.from({ length: elementCount }).flatMap((__, secondIndex) =>
+            Array.from({ length: elementCount }).flatMap((___, thirdIndex) => {
+                if (firstIndex < secondIndex && secondIndex < thirdIndex) {
+                    const s1 = sideLengths[firstIndex];
+                    const s2 = sideLengths[secondIndex];
+                    const s3 = sideLengths[thirdIndex];
 
-            if (assessConfiguration(val1, val2, val3)) {
-                validConfigurations++;
-            }
-            return;
-        }
+                    if (areValuesDistinct(s1, s2, s3) && canFormTriangle(s1, s2, s3)) {
+                        return [1];
+                    }
+                }
+                return [];
+            })
+        )
+    ).length;
 
-        if (startPosition >= segmentCount) {
-            return;
-        }
+    console.log(resultCount);
+};
 
-        selectIndices(startPosition + 1, [...chosenIndices, startPosition]);
-
-        selectIndices(startPosition + 1, chosenIndices);
-    }
-
-    selectIndices(0, []);
-
-    console.log(validConfigurations);
-}
-
-analyzeDimensions(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

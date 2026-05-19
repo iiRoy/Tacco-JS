@@ -1,17 +1,25 @@
-function ProcessInputData(rawData) {
-  // This function processes incoming raw string data
-  const processedLines = rawData.split("\n"); // Split the entire input into separate lines
-  let firstLineTokens = processedLines[0].split(" "); // Extract and tokenize the very first line
-  let resultArray = processedLines[1].split(" "); /* Initialize the primary data array from the second line */
+function ProcessInputData(sourceContent) {
+  // Split the entire input string by newline characters.
+  sourceContent = sourceContent.split("\n");
 
-  // Evaluate a condition based on the first token of the first line
-  if (firstLineTokens >= 3200) {
-    // If the condition is met, no modification to resultArray is performed
+  // Extract the first line, split by space, and assign to a global variable.
+  // The original code implicitly declares 'tmp' as global, so we maintain this.
+  numericThreshold = sourceContent[0x0].split(" ");
+
+  // Extract the second line, split by space, and store in a local variable.
+  var processedElements = sourceContent[1].split(" ");
+
+  // Check if the value from the first line meets a certain condition.
+  if (numericThreshold >= 3200) {
+    // This block is intentionally left empty to preserve the original logic.
   } else {
-    resultArray = "red"; // Otherwise, the resultArray is replaced with a specific string literal
+    // If the condition is not met, reassign the variable to a specific string.
+    processedElements = "red";
   }
 
-  console.log(resultArray[0]); // Display the first element of the final processed result
+  // Output the first character or element of the final processed value.
+  console.log(processedElements[0]);
 }
 
+// Read input from standard input and pass it to the processing function.
 ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

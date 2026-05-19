@@ -1,52 +1,48 @@
-// This routine processes the entire provided raw input string.
-function ProcessInputData(rawData)
-  {
-    // Break down the raw input string into an array of individual lines.
-    const dataLines = rawData.split("\n") ;
+// This function processes the incoming data stream.
+function ProcessInput(rawData) {
+    // Split the raw input into individual lines for further processing.
+    let processedLines = rawData.split("\n");
 
-    // Parse the first line to extract the numerical length of the sequences.
-    const sequenceLength = Number.parseInt(dataLines[0], 10) ;
+    // Parse the first line to determine the number of elements to compare.
+    const lineCount = parseInt(processedLines[0], 10);
 
-    // Divide the subsequent lines into character arrays for individual sequence access.
-    const sequenceOne = dataLines[1].split("") ;
-    const sequenceTwo = dataLines[2].split("") ;
-    const sequenceThree = dataLines[3].split("") ;
+    // Convert the subsequent lines into character arrays for element-wise comparison.
+    const firstArray = processedLines[1].split("");
+    const secondArray = processedLines[2].split("");
+    const thirdArray = processedLines[3].split("");
 
-    // Initialize counters to track dissimilarities between pairs of sequences.
-    let diffsOneTwo = 0 ;
-    let diffsOneThree = 0 ;
-    let diffsTwoThree = 0 ;
+    // Initialize counters to track differences between pairs of arrays.
+    let diffOneTwo = 0; // Differences between firstArray and secondArray
+    let diffOneThree = 0; // Differences between firstArray and thirdArray
+    let diffTwoThree = 0; // Differences between secondArray and thirdArray
 
-    // Iterate through each character position across all sequences.
-    for ( let currentIdx = 0; currentIdx < sequenceLength; currentIdx++ )
-    {
-      // Determine if the characters at the current index differ between sequence One and sequence Two.
-      if ( sequenceOne[currentIdx] !== sequenceTwo[currentIdx] )
-      {
-        diffsOneTwo++ ;
-      }
-
-      // Determine if the characters at the current index differ between sequence One and sequence Three.
-      if ( sequenceOne[currentIdx] !== sequenceThree[currentIdx] )
-      {
-        diffsOneThree++ ;
-      }
-
-      // Determine if the characters at the current index differ between sequence Two and sequence Three.
-      if ( sequenceTwo[currentIdx] !== sequenceThree[currentIdx] )
-      {
-        diffsTwoThree++ ;
-      }
+    // Loop through each character position up to the determined lineCount.
+    for (let idx = 0; idx < lineCount; idx++) {
+        // Increment diffOneTwo if characters at the current index in firstArray and secondArray are not identical.
+        if (firstArray[idx] !== secondArray[idx]) {
+            diffOneTwo++;
+        }
+        // Increment diffOneThree if characters at the current index in firstArray and thirdArray are not identical.
+        if (firstArray[idx] !== thirdArray[idx]) {
+            diffOneThree++;
+        }
+        // Increment diffTwoThree if characters at the current index in secondArray and thirdArray are not identical.
+        if (secondArray[idx] !== thirdArray[idx]) {
+            diffTwoThree++;
+        }
     }
 
-    // Compute the aggregate differences associated with each primary sequence.
-    const totalForFirst = diffsOneTwo + diffsOneThree ;
-    const totalForSecond = diffsOneTwo + diffsTwoThree ;
-    const totalForThird = diffsOneThree + diffsTwoThree ;
+    // Calculate the total "cost" or differences associated with each array.
+    // This represents the sum of differences when compared to the other two arrays.
+    const totalDiffOne = diffOneTwo + diffOneThree;
+    const totalDiffTwo = diffOneTwo + diffTwoThree;
+    const totalDiffThree = diffOneThree + diffTwoThree;
 
-    // Print out the smallest calculated total difference.
-    console.log('%d', Math.min(totalForFirst, totalForSecond, totalForThird)) ;
-  }
+    // Output the smallest of the three calculated total difference values.
+    console.log('%d', Math.min(totalDiffOne, totalDiffTwo, totalDiffThree));
+}
 
-// This section handles standard input/output operations and must remain unaltered for execution.
-ProcessInputData( require("node:fs").readFileSync("/dev/stdin", "utf8") ) ;
+// The following line is responsible for reading input from standard input
+// and passing it to the main processing function. It should remain unchanged
+// to ensure proper execution in the target environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

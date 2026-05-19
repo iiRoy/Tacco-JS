@@ -1,92 +1,49 @@
-// Resume standard input stream to listen for data.
 process.stdin.resume();
-// Configure the encoding for incoming data from standard input.
 process.stdin.setEncoding('utf8');
 
-// A dynamic array to accumulate all lines received from standard input.
-let receivedDataLines = [];
+// Helper function to sort numbers in descending order
+function descendingSortComparator(valueA, valueB) {
+  return valueB - valueA;
+}
 
-// Initialize a specialized interface for handling input line by line.
-const consoleInputHandler = require('readline').createInterface({
+let inputLines = [];
+const inputReader = require('readline').createInterface({
   input: process.stdin,
-  output: process.stdout // Required for the interface, even if not used for output.
+  output: process.stdout
 });
 
-// Attach an event listener to capture each complete line of input.
-consoleInputHandler.on('line', (currentSegment) => {
-  // Store the current line in our collection.
-  receivedDataLines.push(currentSegment);
+inputReader.on('line', (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-// Attach an event listener for when the input stream concludes.
-consoleInputHandler.on('close', () => {
-  // --- Input Validation and Parsing ---
+inputReader.on('close', () => {
+  const elementCount = Number(inputLines[0]);
+  let numericArray = inputLines[1].split(' ').map(Number);
+  
+  // Sort the array using the custom comparator for descending order
+  numericArray.sort(descendingSortComparator);
 
-  // Verify that at least two lines of input were received.
-  if (receivedDataLines.length < 2) {
-    console.error("Error: Insufficient input provided. Expected at least two lines.");
-    return; // Terminate execution if input is incomplete.
-  }
+  // Initialize scores for both players using an array
+  // Index 0 for Player Two (Bob), Index 1 for Player One (Alice)
+  const playerScores = [0, 0]; 
+  const PLAYER_TWO_INDEX = 0; // Represents Bob
+  const PLAYER_ONE_INDEX = 1; // Represents Alice
 
-  // Attempt to parse the first line as the total count of items.
-  // Use parseInt with radix 10 for explicit base.
-  const declaredItemCount = parseInt(receivedDataLines[0], 10);
-
-  // Validate the parsed item count: must be a number and positive.
-  if (isNaN(declaredItemCount) || declaredItemCount <= 0) {
-    console.error("Error: Invalid or non-positive item count detected in the first line.");
-    return;
-  }
-
-  // Process the second line, splitting it into individual string values.
-  // Use a regex to handle multiple spaces and then filter out any empty strings.
-  const stringifiedValues = receivedDataLines[1].split(/\s+/).filter(Boolean);
-
-  // Convert the string values into an array of numbers.
-  // Filter out any results that are not valid numbers (NaN).
-  let numericalCollection = stringifiedValues.map(sVal => parseInt(sVal, 10)).filter(num => !isNaN(num));
-
-  // Determine the actual number of items to process,
-  // taking the minimum of the declared count and the successfully parsed numbers.
-  const effectiveProcessingCount = Math.min(declaredItemCount, numericalCollection.length);
-
-  // If no valid numbers are available after parsing and filtering, output 0 difference.
-  if (effectiveProcessingCount === 0) {
-    console.log(0);
-    return;
-  }
-
-  // --- Core Logic: Sorting and Distribution ---
-
-  // Sort the collection of numbers in descending order.
-  // This ensures that the largest available numbers are always at the beginning.
-  numericalCollection.sort((valueA, valueB) => valueB - valueA);
-
-  // Initialize scores for the two players.
-  let playerOneCumulativeScore = 0;
-  let playerTwoCumulativeScore = 0;
-  // A flag to manage whose turn it is to pick a number.
-  let isFirstPlayerTurn = true;
-
-  // Iterate through the sorted numerical collection up to the effective count.
-  for (let currentIteration = 0; currentIteration < effectiveProcessingCount; ++currentIteration) {
-    const itemToAssign = numericalCollection[currentIteration];
-
-    // Assign the current item to the appropriate player based on whose turn it is.
-    if (isFirstPlayerTurn) {
-      playerOneCumulativeScore += itemToAssign;
-    } else {
-      playerTwoCumulativeScore += itemToAssign;
+  // Iterate through the sorted array and distribute values alternately
+  for (let iterationIndex = 0; iterationIndex < elementCount; iterationIndex++) {
+    const currentCardValue = numericArray[iterationIndex];
+    
+    // Player Two (Bob) takes cards at even indices (0, 2, 4, ...)
+    if (iterationIndex % 2 === 0) { 
+      playerScores[PLAYER_TWO_INDEX] += currentCardValue;
+    } 
+    // Player One (Alice) takes cards at odd indices (1, 3, 5, ...)
+    else { 
+      playerScores[PLAYER_ONE_INDEX] += currentCardValue;
     }
-
-    // Toggle the turn for the next iteration.
-    isFirstPlayerTurn = !isFirstPlayerTurn;
   }
 
-  // --- Output Result ---
-
-  // Calculate the final difference between the two players' scores.
-  const calculatedScoreDifferential = playerOneCumulativeScore - playerTwoCumulativeScore;
-  // Display the result to the console.
-  console.log(calculatedScoreDifferential);
+  // Calculate the final score difference (Alice's score - Bob's score)
+  const finalScoreDifference = playerScores[PLAYER_ONE_INDEX] - playerScores[PLAYER_TWO_INDEX];
+  console.log(finalScoreDifference);
 });

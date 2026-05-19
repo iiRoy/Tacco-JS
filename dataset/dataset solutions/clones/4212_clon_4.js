@@ -1,39 +1,43 @@
-function processInputData(sourceDatum) {
-    const cleansedDatum = sourceDatum.trim();
-    const finalSequence = "AKIHABARA";
-    const criticalPositions = new Set([0, 4, 6, 8]);
+function main(inputString) {
+    const targetPhrase = "AKIHABARA";
+    const aPositions = new Set([0, 4, 6, 8]);
 
-    let sourceCharacters = Array.from(cleansedDatum);
-    let sourcePointer = 0;
+    const processedInput = inputString.trim();
+    let inputPointer = 0;
+    let validationStatus = true;
 
-    for (let currentTargetIndex = 0; currentTargetIndex < finalSequence.length; currentTargetIndex++) {
-        const expectedCharacter = finalSequence[currentTargetIndex];
-        const isMandatoryA = expectedCharacter === 'A' && criticalPositions.has(currentTargetIndex);
+    for (let phrasePointer = 0; phrasePointer < targetPhrase.length; phrasePointer++) {
+        const currentPhraseChar = targetPhrase[phrasePointer];
+        const isAPosition = aPositions.has(phrasePointer);
 
-        if (isMandatoryA) {
-            // If the target position is a mandatory 'A' and the source's current character is also 'A',
-            // we consume the 'A' from the source. Otherwise, the 'A' is considered "inserted" and
-            // we do not advance the source pointer.
-            if (sourcePointer < sourceCharacters.length && sourceCharacters[sourcePointer] === 'A') {
-                sourcePointer++;
+        if (inputPointer < processedInput.length) {
+            const currentInputChar = processedInput[inputPointer];
+
+            if (isAPosition) {
+                if (currentInputChar === 'A') {
+                    inputPointer++;
+                }
+            } else {
+                if (currentInputChar === currentPhraseChar) {
+                    inputPointer++;
+                } else {
+                    validationStatus = false;
+                    break;
+                }
             }
         } else {
-            // For any other character (non-mandatory 'A' or non-'A' character),
-            // it must strictly match the current character in the source, and be consumed.
-            if (sourcePointer >= sourceCharacters.length || sourceCharacters[sourcePointer] !== expectedCharacter) {
-                return "NO"; // Source exhausted prematurely or character mismatch
+            if (!isAPosition) {
+                validationStatus = false;
+                break;
             }
-            sourcePointer++; // Consume character from source
         }
     }
 
-    // After processing all characters in the final sequence,
-    // the source string must also be completely consumed.
-    if (sourcePointer < sourceCharacters.length) {
-        return "NO"; // Extra characters in the source string
+    if (inputPointer !== processedInput.length) {
+        validationStatus = false;
     }
 
-    return "YES";
+    console.log(validationStatus ? "YES" : "NO");
 }
 
-console.log(processInputData(require('fs').readFileSync('/dev/stdin', 'utf8')));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

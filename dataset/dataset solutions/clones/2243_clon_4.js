@@ -1,44 +1,59 @@
 "use strict";
-const acquireNumbers = (textualInput) => {
-    const numericFragments = textualInput.trim().split(/\s+/).map(Number);
-    let currentPosition = 0;
-    return {
-        pull: () => numericFragments[currentPosition++]
-    };
-};
 
-const makeNestedList = (initialFill, ...dimensions) => {
-    if (dimensions.length === 0) {
-        return initialFill;
+class InputReader {
+    constructor(sourceText) {
+        this.sourceLines = sourceText.trim().split("\n");
+        this.currentLinePointer = 0;
     }
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
 
-    return Array.from({ length: currentDimensionSize }, () =>
-        makeNestedList(initialFill, ...remainingDimensions)
-    );
-};
+    extractToken(convertToNumber = false) {
+        if (this.currentLinePointer >= this.sourceLines.length) {
+            throw new Error("End of input reached.");
+        }
 
-const computeOutput = (inputSource) => {
-    const totalElements = inputSource.pull();
-    const initialCount = inputSource.pull();
-    const targetValue = inputSource.pull();
+        if (typeof this.sourceLines[this.currentLinePointer] === "string") {
+            this.sourceLines[this.currentLinePointer] = this.sourceLines[this.currentLinePointer].split(" ").reverse();
+        }
 
-    const finalSequence = Array.from({ length: totalElements }, (_, elementIndex) => {
-        if (elementIndex < initialCount) {
-            return targetValue;
+        const extracted = this.sourceLines[this.currentLinePointer].pop();
+
+        if (this.sourceLines[this.currentLinePointer].length === 0) {
+            this.currentLinePointer++;
+        }
+
+        return convertToNumber ? +extracted : extracted;
+    }
+}
+
+const acquireInput = (function() {
+    function factory(text) {
+        const readerInstance = new InputReader(text);
+        return {
+            getValue: (asNum) => readerInstance.extractToken(asNum)
+        };
+    }
+    return factory;
+})();
+
+const inputData = acquireInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function processSequence() {
+    const totalLength = inputData.getValue(true);
+    const initialFillCount = inputData.getValue(true);
+    const primaryFillValue = inputData.getValue(true);
+
+    const resultantSequence = Array.from({ length: totalLength }, (_, index) => {
+        if (index < initialFillCount) {
+            return primaryFillValue;
         } else {
-            return (targetValue <= totalElements) ? (targetValue + 1) : 1;
+            return (primaryFillValue <= totalLength) ? (primaryFillValue + 1) : 1;
         }
     });
 
-    return finalSequence.join(" ");
-};
+    return resultantSequence.join(" ");
+}
 
-const inputContents = require("fs").readFileSync("/dev/stdin", "utf8");
-const numberStream = acquireNumbers(inputContents);
-
-const finalResult = computeOutput(numberStream);
-if (finalResult !== undefined) {
-    console.log(finalResult);
+const finalOutput = processSequence();
+if (finalOutput !== undefined) {
+    console.log(finalOutput);
 }

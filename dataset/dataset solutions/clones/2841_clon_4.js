@@ -1,47 +1,42 @@
-function processInputData(rawData) {
-    const contentSegments = rawData.split('\n').filter(segment => segment.trim().length > 0);
-    const totalPoints = parseInt(contentSegments[0], 10);
+function processInput(rawData) {
+    const dataLines = rawData.split("\n").filter(Boolean);
+    const totalPointsCount = +dataLines[0];
 
-    if (totalPoints <= 2) {
+    if (totalPointsCount <= 2) {
         console.log(1);
         return;
     }
 
-    const coordinateEntities = [];
-    for (let currentLineIndex = 1; currentLineIndex < contentSegments.length; currentLineIndex++) {
-        const valuePairs = contentSegments[currentLineIndex].split(' ').map(val => parseInt(val, 10));
-        coordinateEntities.push({ horiz: valuePairs[0], vert: valuePairs[1] });
-    }
+    const coordinateSet = dataLines.slice(1).map(line => line.split(' ').map(Number));
 
-    const directionFrequency = new Map();
-
-    for (let i = 0; i < coordinateEntities.length; i++) {
-        const sourceEntity = coordinateEntities[i];
-        for (let j = 0; j < coordinateEntities.length; j++) {
-            const targetEntity = coordinateEntities[j];
-
-            if (sourceEntity === targetEntity) {
-                continue;
+    // A generator function to produce string representations of all displacement vectors
+    function* createDisplacementVectorKeys(pointsCollection) {
+        for (let sourceIndex = 0; sourceIndex < pointsCollection.length; sourceIndex++) {
+            for (let destinationIndex = 0; destinationIndex < pointsCollection.length; destinationIndex++) {
+                if (sourceIndex === destinationIndex) continue; // Skip vector from a point to itself
+                
+                const sourcePoint = pointsCollection[sourceIndex];
+                const destinationPoint = pointsCollection[destinationIndex];
+                
+                const xDifference = destinationPoint[0] - sourcePoint[0];
+                const yDifference = destinationPoint[1] - sourcePoint[1];
+                
+                yield `${xDifference}:${yDifference}`; // Using a colon as a separator for the key
             }
-
-            const hDelta = targetEntity.horiz - sourceEntity.horiz;
-            const vDelta = targetEntity.vert - sourceEntity.vert;
-            
-            const directionKey = `${hDelta}_${vDelta}`;
-
-            directionFrequency.set(directionKey, (directionFrequency.get(directionKey) || 0) + 1);
         }
     }
 
-    let maxFrequencyEncountered = 1; 
-
-    for (const currentCount of directionFrequency.values()) {
-        if (currentCount > maxFrequencyEncountered) {
-            maxFrequencyEncountered = currentCount;
-        }
+    const vectorFrequencyMap = new Map();
+    for (const vectorIdentifier of createDisplacementVectorKeys(coordinateSet)) {
+        vectorFrequencyMap.set(vectorIdentifier, (vectorFrequencyMap.get(vectorIdentifier) || 0) + 1);
     }
-    
-    console.log(totalPoints - maxFrequencyEncountered);
+
+    let maxObservedFrequency = 1; // Initialize to 1 to match original's reduce initial value behavior
+    if (vectorFrequencyMap.size > 0) {
+        maxObservedFrequency = Math.max(1, ...vectorFrequencyMap.values());
+    }
+
+    console.log(totalPointsCount - maxObservedFrequency);
 }
 
-processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,33 +1,20 @@
-const streamContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const parsedNumericalData = streamContent.split(/\s+/).filter(Boolean).map(Number);
+const fileSystem = require("fs");
+const inputData = fileSystem.readFileSync("/dev/stdin", "utf8");
 
-let currentPosition = 0;
-const extractNextNumeric = () => parsedNumericalData[currentPosition++];
-const gatherSpecificQuantities = (count) => {
-    const collected = [];
-    for (let k = 0; k < count; k++) {
-        collected.push(extractNextNumeric());
-    }
-    return collected;
-};
+const numericValues = inputData.match(/\d+/g).map(Number);
 
-const [firstSideLength, secondSideLength, clockDialHours, clockDialMinutes] = gatherSpecificQuantities(4);
+const [lenA, lenB, currentHour, currentMinute] = numericValues;
 
-const minuteHandPosition = clockDialMinutes * 6.0;
-const hourHandPosition = ((clockDialHours % 12) + (clockDialMinutes / 60.0)) * 30.0;
+const minuteHandAngleRad = currentMinute * (2 * Math.PI / 60);
 
-let angularSeparation = Math.abs(minuteHandPosition - hourHandPosition);
-const normalizedSeparation = Math.min(angularSeparation, 360.0 - angularSeparation);
+const hourHandAngleRad = ((currentHour % 12) + currentMinute / 60) * (2 * Math.PI / 12);
 
-const piValue = Math.acos(-1);
-const radianMeasure = normalizedSeparation * (piValue / 180.0);
+let rawAngularDifference = Math.abs(minuteHandAngleRad - hourHandAngleRad);
 
-const xCoordinateOfThirdVertex = secondSideLength * Math.cos(radianMeasure);
-const yCoordinateOfThirdVertex = secondSideLength * Math.sin(radianMeasure);
+const effectiveAngleRad = Math.min(rawAngularDifference, 2 * Math.PI - rawAngularDifference);
 
-const deltaXComponent = firstSideLength - xCoordinateOfThirdVertex;
-const deltaYComponent = 0 - yCoordinateOfThirdVertex;
+const squaredDistance = lenA**2 + lenB**2 - 2 * lenA * lenB * Math.cos(effectiveAngleRad);
 
-const finalDistance = Math.sqrt(deltaXComponent * deltaXComponent + deltaYComponent * deltaYComponent);
+const finalDistance = Math.sqrt(squaredDistance);
 
 console.log(finalDistance);

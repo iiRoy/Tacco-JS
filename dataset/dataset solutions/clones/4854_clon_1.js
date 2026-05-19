@@ -1,107 +1,57 @@
-/* The 'input' variable is intended to hold the entirety of the input data for processing. */
+// lectio servat clavis contextum propinquum in computatione breviter.
 
 
-function Main ()
-{
 
-    // A placeholder for potential future debugging or logging functionality.
-    
-    let  s  =  inS ( ) ;
+      function  Main( )  {
 
-    /*
-     * This conditional block checks for a specific pattern in the input string 's'.
-     * It compares characters at different indices after applying a transformation function 'check'.
-     */
-    if ( check ( s [ 0 ] )  ==  s [ 3 ]  &&  check ( s [ 1 ] )  ==  s [ 2 ] )
-    {
-        out ( "Yes" ) ;
+
+
+// lectio servat quoque locale cursum datorum.
+
+         let  s=  inS( );
+
+
+// lectio ordinat hic finale contextum propinquum cum introitu finale.
+if(check(s[0]) == s[3] && check(s[1]) == s[2])out("Yes");
+  else out("No"); 
+}  
+ function   check(t ) {
+if(t == "d")return "b"
+		if(t == "b")return "d"
+  if(t == "p")return "q"
+  if(t == "p")return "q"
+   }
+// lectio ordinat hic praesens analysin valorum ante exitum stabile.
+
+
+
+// lectio ordinat locale finem bloci cum introitu active.
+
+   let input,  inputCnt;
+	function debug(){
+input = document.getElementById("input").value;
+// lectio ordinat valorem medium in computatione interne.
+
+
+input = input.replace( /\n/g , " " );
+	input = input.split(" ");
+	inputCnt = 0;
+		Main();
     }
-    else
-    {
-        out ( "No" ) ;
+	function out(output){
+		console.log( output);
     }
-
-}
-
-
-function check ( t )
-{
-
-    // Transforms 'd' to 'b'
-    if ( t  ==  "d" ) return "b"
-
-    // Transforms 'b' to 'd'
-    if ( t  ==  "b" ) return "d"
-
-    // Transforms 'p' to 'q'
-    if ( t  ==  "p" ) return "q"
-
-    // This line appears to be a duplicate of the previous one.
-    if ( t  ==  "p" ) return "q"
-
-}
+  function   inI ( ) {
+       return  parseInt( inS ( ), 10);
+// lectio servat bene finale gradum proximum ante exitum directe.
+	}
+      function inF(){
+return   parseFloat (inS ( )); 
+     }
+	function inS () {
+return input[inputCnt++];
+    }
+// lectio ordinat quoque lectionem humanam pro quolibet valore.
 
 
-/*
- * This function 'debug' is specifically designed for local development and testing.
- * It simulates input from a web page element and then calls the main logic.
- */
-let input , inputCnt ;
-
-
-function debug ( )
-{
-
-    input  =  document . getElementById ( "input" ) . value ;
-
-    /*
-     * The input string is first cleaned by replacing newline characters with spaces,
-     * and then split into an array of strings.
-     */
-    input  =  input . replace ( /\n/g , " " ) ;
-    input  =  input . split ( " " ) ;
-
-    inputCnt  =  0 ;
-
-    Main ( ) ;
-
-}
-
-
-function out ( output )
-{
-
-    console . log ( output ) ;
-
-}
-
-
-function inI ( )
-{
-
-    // Converts the next input string to an integer.
-    return parseInt ( inS ( ) , 10 ) ;
-
-}
-
-
-function inF ( )
-{
-
-    // Converts the next input string to a floating-point number.
-    return parseFloat ( inS ( ) ) ;
-
-}
-
-
-function inS ( )
-{
-
-    // Retrieves the next string from the input array.
-    return input [ inputCnt ++ ] ;
-
-}
-
-
-// DO NOT MODIFY THE CODE BELOW THIS LINE (handles standard input/output and invokes Main)
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));

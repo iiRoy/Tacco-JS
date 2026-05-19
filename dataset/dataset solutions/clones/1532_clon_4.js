@@ -1,31 +1,47 @@
-const fileSystem = require('fs');
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
 
-const ultimateModulo = 1000000007;
+let inputBuffer = '';
+let linePointer = 0;
 
-function calculateModularExponentiation(baseValue, exponentValue, modulusValue) {
-    if (exponentValue === 0) {
-        return 1;
-    }
-    let halfPower = calculateModularExponentiation(baseValue, Math.floor(exponentValue / 2), modulusValue);
-    let result = (halfPower * halfPower) % modulusValue;
-    if (exponentValue % 2 === 1) {
-        result = (result * baseValue) % modulusValue;
-    }
-    return result;
+process.stdin.on('data', incomingData => {
+    inputBuffer += incomingData;
+});
+
+process.stdin.on('end', () => {
+    inputBuffer = inputBuffer.split(/\n/);
+    processInputAndCompute();
+});
+
+function obtainLine() {
+    return inputBuffer[linePointer++];
 }
 
-function deriveComputedValue(iterationCount) {
-    let factorA = calculateModularExponentiation(10, iterationCount, ultimateModulo);
-    let factorB = (2 * calculateModularExponentiation(9, iterationCount, ultimateModulo)) % ultimateModulo;
-    let factorC = calculateModularExponentiation(8, iterationCount, ultimateModulo);
-    
-    let intermediateSum = factorA - factorB + factorC;
-    
-    return (intermediateSum % ultimateModulo + ultimateModulo) % ultimateModulo;
+function powerModulo(baseVal, exponentVal, modulusVal) {
+    let resultVal = 1;
+    baseVal %= modulusVal;
+    while (exponentVal > 0) {
+        if (exponentVal % 2 === 1) {
+            resultVal = (resultVal * baseVal) % modulusVal;
+        }
+        baseVal = (baseVal * baseVal) % modulusVal;
+        exponentVal = Math.floor(exponentVal / 2);
+    }
+    return resultVal;
 }
 
-const entireInputBuffer = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const processedLines = entireInputBuffer.trim().split('\n');
-const countForCalculation = parseInt(processedLines[0], 10);
+function processInputAndCompute() {
+    const primeDivisor = 1000000007; // Equivalent to Math.pow(10, 9) + 7
+    const inputNumber = Number(obtainLine());
 
-console.log(deriveComputedValue(countForCalculation));
+    const tenPower = powerModulo(10, inputNumber, primeDivisor);
+    const ninePower = powerModulo(9, inputNumber, primeDivisor);
+    const eightPower = powerModulo(8, inputNumber, primeDivisor);
+
+    let intermediateResult = tenPower - ninePower + eightPower;
+
+    // Ensure the final result is positive before applying modulo
+    const finalSum = (intermediateResult % primeDivisor + primeDivisor) % primeDivisor;
+
+    console.log(finalSum);
+}

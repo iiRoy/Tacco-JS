@@ -1,53 +1,39 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineFragments = dataSource.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedLines = fileContent.trim().split("\n");
 
-const initialParams = lineFragments.shift().split(' ').map(Number);
-const numItemCategories = initialParams[0];
-const maxCapacity = initialParams[1];
+const configValues = processedLines.shift().split(" ").map(Number);
+const distinctItemTypes = configValues[0];
+const capacityLimit = configValues[1];
 
-const merchandiseList = [];
-let itemCounter = 0;
-
-for (let categoryIndex = 0; categoryIndex < numItemCategories; categoryIndex++) {
-    const categoryData = lineFragments.shift().split(' ').map(Number);
-    const baseWorth = categoryData[0];
-    const baseWeight = categoryData[1];
-
-    let currentMultiplier = 1;
-    while (baseWeight * currentMultiplier <= maxCapacity) {
-        merchandiseList.push({ worth: baseWorth * currentMultiplier, weight: baseWeight * currentMultiplier });
-        itemCounter++;
-        currentMultiplier++;
+const itemSpecifications = processedLines.slice(0, distinctItemTypes);
+const generatedItems = [null];
+itemSpecifications.forEach(specLine => {
+    const [baseValue, baseWeight] = specLine.split(" ").map(Number);
+    let currentFactor = 1;
+    while (baseWeight * currentFactor <= capacityLimit) {
+        generatedItems.push({
+            val: baseValue * currentFactor,
+            wt: baseWeight * currentFactor
+        });
+        currentFactor++;
     }
+});
+const totalGeneratedItems = generatedItems.length - 1;
+
+function calculateOptimalValue() {
+    const maxValues = Array(capacityLimit + 1).fill(0);
+
+    for (let itemIndex = 1; itemIndex <= totalGeneratedItems; itemIndex++) {
+        const currentItem = generatedItems[itemIndex];
+        for (let currentCapacity = capacityLimit; currentCapacity >= currentItem.wt; currentCapacity--) {
+            maxValues[currentCapacity] = Math.max(
+                maxValues[currentCapacity],
+                currentItem.val + maxValues[currentCapacity - currentItem.wt]
+            );
+        }
+    }
+    return maxValues[capacityLimit];
 }
 
-const lookupTable = new Map();
-
-function obtainGreatestValue(currentItemIndex, currentAvailableCapacity) {
-    const cacheKey = `${currentItemIndex}-${currentAvailableCapacity}`;
-    if (lookupTable.has(cacheKey)) {
-        return lookupTable.get(cacheKey);
-    }
-
-    if (currentItemIndex >= itemCounter || currentAvailableCapacity <= 0) {
-        return 0;
-    }
-
-    const currentMerchandise = merchandiseList[currentItemIndex];
-    
-    // Option 1: Exclude the current item
-    const valueExcluding = obtainGreatestValue(currentItemIndex + 1, currentAvailableCapacity);
-
-    // Option 2: Include the current item (if possible)
-    let valueIncluding = 0;
-    if (currentMerchandise.weight <= currentAvailableCapacity) {
-        valueIncluding = currentMerchandise.worth + obtainGreatestValue(currentItemIndex + 1, currentAvailableCapacity - currentMerchandise.weight);
-    }
-
-    const bestValue = Math.max(valueExcluding, valueIncluding);
-    lookupTable.set(cacheKey, bestValue);
-    return bestValue;
-}
-
-const finalResult = obtainGreatestValue(0, maxCapacity);
-console.log(finalResult);
+const finalMaxResult = calculateOptimalValue();
+console.log(finalMaxResult);

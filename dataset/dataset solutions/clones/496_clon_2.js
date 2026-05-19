@@ -1,97 +1,91 @@
-// This script processes input data from standard input to calculate an expected value.
-var dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// The raw input is split into an array of lines after trimming leading/trailing whitespace.
-var lineFragments = dataSource.trim().split("\n");
+// Process the raw input data into an array of lines.
+let lineData = rawData.trim().split('\n');
 
-// Main processing loop, continues until a specific termination condition is met.
+// Main loop to process multiple test cases until a termination condition is met.
 while (true) {
-    // Extract configuration parameters (width, height, event count) for the current round.
-    var dimensions = lineFragments.shift().split(" ").map(Number);
+   // Extract the initial dimensions and event count for the current test case.
+   const coords = lineData.shift().split(' ').map(Number);
 
-    // Check for the termination condition: all parameters are zero.
-    if (dimensions.join(" ") === "0 0 0") {
-        break; // Exit the main loop.
-    }
+   // Check for the termination condition (0 0 0).
+   if (coords.join(' ') === '0 0 0') {
+      break;
+   }
 
-    // Assign extracted dimension values to descriptive variables.
-    var widthDimension = dimensions[0];
-    var heightDimension = dimensions[1];
-    var specialEventCount = dimensions[2];
+   // Assign extracted values to more descriptive variables.
+   const dimX = coords[0]; // Represents 'x' in the original code
+   const dimY = coords[1]; // Represents 'y' in the original code
+   const numEvents = coords[2]; // Represents 'z' in the original code
 
-    // Read the array of possible step values for movement.
-    var stepValues = lineFragments.shift().split(" ").map(Number);
+   // Get the array of movement values.
+   const moveValues = lineData.shift().split(' ').map(Number);
 
-    // Initialize a map to store special event details.
-    // The key is an index, and the value is an array [effectKind, effectMagnitude].
-    var eventRegistry = [];
+   // Initialize an array to store event details, indexed by position.
+   const eventMap = []; // Represents 'nea' in the original code
 
-    // Populate the special event registry based on the 'specialEventCount'.
-    for (var outerLoopCounter = 0; outerLoopCounter < specialEventCount; outerLoopCounter++) {
-        var effectDetails = lineFragments.shift().split(" ").map(Number);
-        eventRegistry[effectDetails[0]] = [effectDetails[1], effectDetails[2]];
-    }
+   // Populate the event map based on the number of events.
+   for (let idxA = 0; idxA < numEvents; idxA++) {
+      const eventDetails = lineData.shift().split(' ').map(Number);
+      // Store event type and amount at the specified position.
+      eventMap[eventDetails[0]] = [eventDetails[1], eventDetails[2]];
+   }
 
-    // Initialize a 2D array (grid) to store probabilities for dynamic programming.
-    // Dimensions are (heightDimension + 1) x 5001.
-    var probabilityGrid = [];
-    for (var outerLoopCounter = 0; outerLoopCounter <= heightDimension; outerLoopCounter++) {
-        probabilityGrid[outerLoopCounter] = [];
-        for (var innerLoopCounter = 0; innerLoopCounter <= 5000; innerLoopCounter++) {
-            probabilityGrid[outerLoopCounter][innerLoopCounter] = 0; // Initialize all probabilities to zero.
-        }
-    }
+   // Initialize a 2D array for dynamic programming, representing probabilities.
+   const probabilityMatrix = []; // Represents 'dp' in the original code
 
-    // Set the initial state: 100% probability of being at height 0 with score 0.
-    probabilityGrid[0][0] = 1;
+   // Fill the probability matrix with zeros.
+   for (let idxA = 0; idxA <= dimY; idxA++) {
+      probabilityMatrix[idxA] = [];
+      for (let idxB = 0; idxB <= 5000; idxB++) {
+         probabilityMatrix[idxA][idxB] = 0;
+      }
+   }
 
-    // Core dynamic programming loop to calculate probabilities for all states.
-    // outerLoopCounter iterates through heights up to heightDimension (exclusive).
-    for (var outerLoopCounter = 0; outerLoopCounter < heightDimension; outerLoopCounter++) {
-        // innerLoopCounter iterates through possible moves/actions based on 'widthDimension'.
-        for (var innerLoopCounter = 0; innerLoopCounter < widthDimension; innerLoopCounter++) {
-            // Calculate the next potential height after a step.
-            var nextHeight = outerLoopCounter + stepValues[innerLoopCounter];
-            // Ensure the next height does not exceed the maximum height.
-            if (nextHeight > heightDimension) {
-                nextHeight = heightDimension;
+   // Set the initial state: 100% probability of being at position 0 with 0 cost.
+   probabilityMatrix[0][0] = 1;
+
+   // Iterate through each possible position up to dimY.
+   for (let idxA = 0; idxA < dimY; idxA++) {
+      // Iterate through each possible move value.
+      for (let idxB = 0; idxB < dimX; idxB++) {
+         // Calculate the next position after a move.
+         let nextPos = idxA + moveValues[idxB];
+
+         // Ensure the next position does not exceed dimY.
+         if (nextPos > dimY) {
+            nextPos = dimY;
+         }
+
+         // Iterate through each possible accumulated cost.
+         for (let idxC = 0; idxC <= 5000; idxC++) {
+            // Check if there's an event at the next position.
+            if (eventMap[nextPos] !== undefined) {
+               const eventType = eventMap[nextPos][0];
+               const eventAmount = eventMap[nextPos][1];
+
+               // Apply event effects based on type.
+               if (eventType === 1) { // Move forward
+                  probabilityMatrix[nextPos + eventAmount][idxC] += probabilityMatrix[idxA][idxC] / dimX;
+               } else if (eventType === 2) { // Increase cost
+                  probabilityMatrix[nextPos][idxC + eventAmount] += probabilityMatrix[idxA][idxC] / dimX;
+               } else if (eventType === 3) { // Decrease cost
+                  probabilityMatrix[nextPos][idxC - eventAmount] += probabilityMatrix[idxA][idxC] / dimX;
+               }
+            } else {
+               // If no event, simply update probability for the next position and current cost.
+               probabilityMatrix[nextPos][idxC] += probabilityMatrix[idxA][idxC] / dimX;
             }
+         }
+      }
+   }
 
-            // scoreAccumulator iterates through all possible score values.
-            for (var scoreAccumulator = 0; scoreAccumulator <= 5000; scoreAccumulator++) {
-                // Check if there's a special event at the 'nextHeight'.
-                if (eventRegistry[nextHeight] !== undefined) {
-                    var effectKind = eventRegistry[nextHeight][0];    // Type of effect (1: height change, 2: score add, 3: score subtract).
-                    var effectMagnitude = eventRegistry[nextHeight][1]; // Magnitude of the effect.
+   // Calculate the total expected value (sum of cost * probability) at dimY.
+   let totalExpectedValue = 0;
+   for (let idxA = 0; idxA <= 5000; idxA++) {
+      totalExpectedValue += idxA * probabilityMatrix[dimY][idxA];
+   }
 
-                    // Apply the effect based on its type.
-                    if (effectKind === 1) {
-                        // Effect 1: Change height.
-                        // Add probability from current state to new height with same score.
-                        probabilityGrid[nextHeight + effectMagnitude][scoreAccumulator] += probabilityGrid[outerLoopCounter][scoreAccumulator] / widthDimension;
-                    } else if (effectKind === 2) {
-                        // Effect 2: Add to score.
-                        // Add probability from current state to same height with increased score.
-                        probabilityGrid[nextHeight][scoreAccumulator + effectMagnitude] += probabilityGrid[outerLoopCounter][scoreAccumulator] / widthDimension;
-                    } else if (effectKind === 3) {
-                        // Effect 3: Subtract from score.
-                        // Add probability from current state to same height with decreased score.
-                        probabilityGrid[nextHeight][scoreAccumulator - effectMagnitude] += probabilityGrid[outerLoopCounter][scoreAccumulator] / widthDimension;
-                    }
-                } else {
-                    // No special event: simply move to the next height with the same score.
-                    probabilityGrid[nextHeight][scoreAccumulator] += probabilityGrid[outerLoopCounter][scoreAccumulator] / widthDimension;
-                }
-            }
-        }
-    }
-
-    // Calculate the total expected score by summing (score * probability) for all final states.
-    var totalExpectedResult = 0;
-    for (var scoreAccumulator = 0; scoreAccumulator <= 5000; scoreAccumulator++) {
-        totalExpectedResult += scoreAccumulator * probabilityGrid[heightDimension][scoreAccumulator];
-    }
-
-    // Output the final expected score, truncated to an integer.
-    console.log(Math.floor(totalExpectedResult));
+   // Output the floor of the calculated expected value.
+   console.log(Math.floor(totalExpectedValue));
 }

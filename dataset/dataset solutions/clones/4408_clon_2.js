@@ -1,42 +1,32 @@
-function calculateAreaFromSegments(segmentCount, segmentLengths) {
-  // Organize the array elements in a decreasing sequence
-  segmentLengths.sort( function  (  firstLength, secondLength )  {
-    if ( firstLength > secondLength ) {
+function computeAreaOfRectangle(countOfItems, inputSegments) {
+  // Arrange elements in descending order
+  inputSegments.sort(function(firstVal, secondVal) {
+    if (firstVal > secondVal) {
       return -1;
     }
-    if ( firstLength < secondLength ) {
+    if (firstVal < secondVal) {
       return 1;
     }
     return 0;
-  } );
+  });
 
-  // Identify two distinct side lengths by finding pairs of identical measurements.
-  // The loop terminates once both required dimensions are determined.
-  let foundDimensionA = 0;
-  let foundDimensionB = 0;
-
-  for ( let currentIdx = 0; currentIdx < segmentLengths.length - 1; currentIdx++ ) {
-    // If both bounding dimensions have been successfully established, exit the search
-    if (foundDimensionA !== 0 && foundDimensionB !== 0) {
-      break;
+  // Find two pairs of equal length segments to form the sides of a rectangle
+  let lengthOne = 0,
+    lengthTwo = 0;
+  for (let idx = 0; idx < inputSegments.length - 1; idx++) {
+    if (lengthOne !== 0 && lengthTwo !== 0) {
+      break; // Both sides found, exit loop
     }
 
-    // Examine if the current segment's length is identical to the subsequent one
-    if ( segmentLengths[currentIdx] === segmentLengths[currentIdx + 1] ) {
-      // Assign this repeated length to the first available dimension slot
-      if ( foundDimensionA === 0 ) {
-        foundDimensionA = segmentLengths[currentIdx];
+    if (inputSegments[idx] === inputSegments[idx + 1]) {
+      if (lengthOne === 0) {
+        lengthOne = inputSegments[idx];
+      } else {
+        lengthTwo = inputSegments[idx];
       }
-      else {
-        foundDimensionB = segmentLengths[currentIdx];
-      }
-      // Advance the index past the paired segment, as it has already been processed
-      currentIdx++;
+      idx++; // Skip the next element as it's already paired
     }
   }
 
-  // Compute and return the product of the two identified dimensions.
-  // Should any dimension not be found (remaining at its initial value of 0),
-  // the resulting area calculation will correctly yield 0.
-  return foundDimensionA * foundDimensionB;
+  return lengthOne * lengthTwo; // If any side is not found, its value remains 0, resulting in an area of 0
 }

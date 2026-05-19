@@ -1,49 +1,103 @@
-const inputResource = '/dev/stdin';
-const recordDelimiter = '\n';
+const config = { input: '/dev/stdin', newline: '\n' };
 
-async function orchestrateSearchProcess() {
-  const fileSystem = require('fs').promises;
+const workers = 1;
 
-  try {
-    const entireContentBuffer = await fileSystem.readFile(inputResource, { encoding: 'ascii' });
-    const entireContent = entireContentBuffer.toString();
+const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const fileSystem = require('fs');
 
-    const contentParts = entireContent.split(recordDelimiter, 2);
-    if (contentParts.length < 2) {
-      console.error("Expected two lines (text and pattern) separated by a newline.");
-      process.exit(1);
-    }
-    const targetString = contentParts[0];
-    const queryFragment = contentParts[1];
-
-    const searchStartOffset = 0;
-    const searchEndLimit = targetString.length;
-
-    const foundOffsets = findSubstringsRecursively(targetString, queryFragment, searchStartOffset, searchEndLimit, []);
-
-    if (foundOffsets.length > 0) {
-      console.log(foundOffsets.join('\n'));
-    }
-  } catch (error) {
-    console.error("An error occurred during the search operation:", error.message);
-    process.exit(1);
-  }
+if (isMainThread) {
+    initiateMainExecution();
+} else {
+    performWorkerTask();
 }
 
-function findSubstringsRecursively(bigString, smallString, currentScanPoint, terminationPoint, collectedIndices) {
-  if (currentScanPoint >= terminationPoint) {
-    return collectedIndices;
-  }
+function initiateMainExecution() {
+    let fullInputContent;
+    let textSegmentLength;
+    let segmentBoundaries;
+    let threadPool;
+    let collectedResults;
+    let completedThreadsCount;
 
-  const nextMatchIndex = bigString.indexOf(smallString, currentScanPoint);
+    fullInputContent = fileSystem.readFileSync(config.input, 'ascii');
 
-  if (nextMatchIndex === -1 || nextMatchIndex >= terminationPoint) {
-    return collectedIndices;
-  }
+    const [mainText, searchPattern] = fullInputContent.split(config.newline, 2);
+    textSegmentLength = mainText.length;
 
-  collectedIndices.push(nextMatchIndex);
+    segmentBoundaries = [0];
+    for (let i = 1; i < workers; i++) {
+        segmentBoundaries.push(Math.floor(textSegmentLength * i / workers));
+    }
+    segmentBoundaries.push(textSegmentLength);
 
-  return findSubstringsRecursively(bigString, smallString, nextMatchIndex + 1, terminationPoint, collectedIndices);
+    threadPool = [];
+    collectedResults = new Array(workers).fill('');
+    completedThreadsCount = 0;
+
+    for (let i = 0; i < workers; i++) {
+        const segmentStart = segmentBoundaries[i];
+        const segmentEnd = segmentBoundaries[i + 1];
+
+        const currentThread = new Worker(__filename, {
+            workerData: {
+                mainText: mainText,
+                searchPattern: searchPattern,
+                segmentStart: segmentStart,
+                segmentEnd: segmentEnd,
+                threadIdentifier: i
+            }
+        });
+
+        threadPool.push(currentThread);
+
+        currentThread.on('message', (messagePayload) => {
+            collectedResults[messagePayload.threadIdentifier] = messagePayload.result;
+        });
+
+        currentThread.on('error', (err) => {
+            console.error(`Thread ${i} encountered an error:`, err);
+        });
+
+        currentThread.on('exit', (exitCode) => {
+            if (exitCode !== 0) {
+                console.error(`Thread ${i} terminated with code ${exitCode}`);
+            }
+            completedThreadsCount++;
+            if (completedThreadsCount === workers) {
+                for (const segmentResult of collectedResults) {
+                    if (segmentResult.length > 0) {
+                        console.log(segmentResult);
+                    }
+                }
+            }
+        });
+    }
 }
 
-orchestrateSearchProcess();
+function performWorkerTask() {
+    const { mainText, searchPattern, segmentStart, segmentEnd, threadIdentifier } = workerData;
+
+    const discoveredIndices = [];
+    recursivelyFindPattern(mainText, searchPattern, segmentStart, segmentEnd, discoveredIndices);
+
+    parentPort.postMessage({
+        threadIdentifier: threadIdentifier,
+        result: discoveredIndices.join('\n')
+    });
+}
+
+function recursivelyFindPattern(sourceText, targetPattern, currentOffset, limitOffset, foundIndicesAccumulator) {
+    if (currentOffset >= limitOffset) {
+        return;
+    }
+
+    const matchPosition = sourceText.indexOf(targetPattern, currentOffset);
+
+    if (matchPosition === -1 || matchPosition >= limitOffset) {
+        return;
+    }
+
+    foundIndicesAccumulator.push(matchPosition);
+
+    recursivelyFindPattern(sourceText, targetPattern, matchPosition + 1, limitOffset, foundIndicesAccumulator);
+}

@@ -1,55 +1,75 @@
-const ultimateModulus = 1000000007;
-const invFactorial2 = 500000004;
-const invFactorial6 = 166666668;
-
-const modProduct = (val1, val2) => {
-    return (BigInt(val1) * BigInt(val2)) % BigInt(ultimateModulus);
+const getModInverse = (val, modulus) => {
+  let m0 = modulus;
+  let y = 0, x = 1;
+  if (modulus === 1) return 0;
+  while (val > 1) {
+    let q = Math.floor(val / m0);
+    let t = m0;
+    m0 = val % m0, val = t;
+    t = y;
+    y = x - q * y;
+    x = t;
+  }
+  if (x < 0) x += modulus;
+  return x;
 };
 
-const modAdd = (val1, val2) => {
-    return (BigInt(val1) + BigInt(val2)) % BigInt(ultimateModulus);
+const addMod = (a, b, m) => (a + b) % m;
+const subMod = (a, b, m) => (a - b % m + m) % m;
+const mulMod = (a, b, m) => (1.0 * a * b) % m; // Use 1.0 * a to prevent potential overflow before modulo for large numbers
+
+const calculateSumUpTo = (limit, modulus, invTwo) => {
+  if (limit < 0) return 0;
+  let term1 = limit % modulus;
+  let term2 = (limit + 1) % modulus;
+  let product = mulMod(term1, term2, modulus);
+  return mulMod(product, invTwo, modulus);
 };
 
-const modSubtract = (val1, val2) => {
-    return (BigInt(val1) - BigInt(val2) + BigInt(ultimateModulus)) % BigInt(ultimateModulus);
+const calculateSumSquaresUpTo = (limit, modulus, invSix) => {
+  if (limit < 0) return 0;
+  let term1 = limit % modulus;
+  let term2 = (limit + 1) % modulus;
+  let term3 = (2 * limit + 1) % modulus;
+  let product = mulMod(term1, term2, modulus);
+  product = mulMod(product, term3, modulus);
+  return mulMod(product, invSix, modulus);
 };
 
-const sumUpToValue = (x) => {
-    if (x <= 0) return 0;
-    const term1 = BigInt(x);
-    const term2 = BigInt(x + 1);
-    return modProduct(modProduct(term1, term2), invFactorial2);
+const processInputAndCompute = (inputString) => {
+  const modulus = 10**9 + 7;
+  const [numN, numK] = inputString.trim().split(' ').map(Number);
+
+  const invTwo = getModInverse(2, modulus);
+  const invSix = getModInverse(6, modulus);
+
+  const upperLimitForSummation = numN + 1;
+  const lowerLimitMinusOneForSummation = numK - 1;
+
+  const sumOfConstantTerms = subMod(upperLimitForSummation, lowerLimitMinusOneForSummation, modulus);
+
+  const sumOfLinearTerms = subMod(
+    calculateSumUpTo(upperLimitForSummation, modulus, invTwo),
+    calculateSumUpTo(lowerLimitMinusOneForSummation, modulus, invTwo),
+    modulus
+  );
+
+  const sumOfQuadraticTerms = subMod(
+    calculateSumSquaresUpTo(upperLimitForSummation, modulus, invSix),
+    calculateSumSquaresUpTo(lowerLimitMinusOneForSummation, modulus, invSix),
+    modulus
+  );
+
+  let componentOne = subMod(0, sumOfQuadraticTerms, modulus);
+  let componentTwo = mulMod(addMod(numN, 1, modulus), sumOfLinearTerms, modulus);
+  let componentThree = sumOfConstantTerms;
+
+  let finalResult = addMod(componentOne, componentTwo, modulus);
+  finalResult = addMod(finalResult, componentThree, modulus);
+
+  console.log(finalResult);
 };
-
-const sumSquaresUpToValue = (x) => {
-    if (x <= 0) return 0;
-    const term1 = BigInt(x);
-    const term2 = BigInt(x + 1);
-    const term3 = BigInt(2 * x + 1);
-    return modProduct(modProduct(modProduct(term1, term2), term3), invFactorial6);
-};
-
-const processInputData = (incomingText) => {
-    const numericals = incomingText.trim().split(' ').map(Number);
-    const topNumber = numericals[0];
-    const bottomNumber = numericals[1];
-
-    const iterationMaximum = topNumber + 1;
-    const iterationMinimum = bottomNumber;
-
-    const sumOfSequentialNumbers = modSubtract(sumUpToValue(iterationMaximum), sumUpToValue(iterationMinimum - 1));
-    const sumOfSquaredNumbers = modSubtract(sumSquaresUpToValue(iterationMaximum), sumSquaresUpToValue(iterationMinimum - 1));
-    const totalCount = iterationMaximum - iterationMinimum + 1;
-
-    let finalCalculation = modProduct(BigInt(topNumber + 1), sumOfSequentialNumbers);
-    finalCalculation = modSubtract(finalCalculation, sumOfSquaredNumbers);
-    finalCalculation = modAdd(finalCalculation, BigInt(totalCount));
-
-    console.log(Number(finalCalculation));
-};
-
-function test() { /* No specific tests defined for this clone's test branch. */ }
 
 process.env.MYTEST
-  ? (process.env.MYTEST === 'test' ? test() : processInputData(require('fs').readFileSync('dev/stdin', 'utf8')))
-  : processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+  ? (process.env.MYTEST === 'test' ? test() : processInputAndCompute(require('fs').readFileSync('dev/stdin', 'utf8')))
+  : processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));

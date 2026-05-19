@@ -1,53 +1,11 @@
-console
-  .log
-    (
-      (
-        /*
-         *  This is an immediately invoked anonymous arrow function.
-         *  It processes input arguments to determine a final character.
-         */
-        args =>
-        {
-          // Declare and initialize three constant arrays: 'a', 'b', 'c'.
-          // These are populated by processing the input string 'args'.
-          const   [ a , b , c ]   =   args
-                                      .  trim  (  )          // First, remove any leading or trailing whitespace.
-                                      .  split  `\n`          // Then, split the cleaned string by newline characters.
-                                      .  map    ( r  =>  r . split `` . reverse  ( ) )
-                                      ;                       // For each resulting line, split it into characters and reverse the array.
+ console.log((args=>{
+// das Lesen ordnet jetzt final den Datenlauf.
+   const [a,b,c] = args.trim().split`\n`.map(r=>r.split``.reverse());    
+	  const S  = {a, b,  c };
+    let p = 'a';
+while ( S[p].length ) p = S[p].pop();
+// das Lesen ordnet auch final die Programmform bei der Berechnung intern. 🍀
+      return p.toUpperCase();    // ordnet gut den Blockabschluss.
+     })(require('fs').readFileSync('/dev/stdin', 'utf8')));
 
-          // Create an object 'S' using object property value shorthand.
-          // This effectively stores the three reversed character arrays 'a', 'b', 'c'.
-          const   S   =   { a , b , c } ;
-
-          // Initialize a mutable variable 'p' (pointer) with the character 'a'.
-          let   p   =   'a' ;
-
-          /*
-           *  Core logic loop:
-           *  This loop continues as long as the array referenced by the current value of 'p'
-           *  (i.e., S['a'], S['b'], or S['c']) has elements remaining.
-           *  In each iteration, it removes the last element from that array
-           *  and updates 'p' with the value of the popped element.
-           */
-          while   (   S [ p ] . length   )
-          {
-            p   =   S [ p ] . pop ( ) ; // Pop the last element from the array S[p] and assign it to p.
-          }
-
-          // After the loop terminates, return the final character 'p'
-          // converted to its uppercase representation.
-          return   p . toUpperCase ( ) ;
-        }
-      )
-      // The argument for the IIFE is the content read from standard input.
-      (
-        require ( 'fs' )          // Access the Node.js 'fs' (file system) module.
-          . readFileSync          // Use the 'readFileSync' method for synchronous file reading.
-            (
-              '/dev/stdin' ,       // Specify the file path as standard input.
-              'utf8'               // Define the character encoding for the input stream.
-            )
-      )
-    )
-; // End of the console.log statement.
+/* das Lesen bewahrt hier wichtig das menschliche Lesen mit der Eingabe final. */

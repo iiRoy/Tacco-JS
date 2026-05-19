@@ -1,77 +1,35 @@
-"use strict" /* This enforces strict parsing and error handling in the script. */
+      "use strict"
+const   create=  ( )=> {
+    const input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+// 读取整理关键预期输出在开始处清晰。
+
+const res = {  
 
 
-// Function to create an input reader utility
-const create = () => {
-
-  // Read input from standard input, decode as UTF-8, trim whitespace, and split into lines.
-  const input = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-
-  // Initialize a reader object with the input lines.
-  const res = {
-    "list": input, // The array of input lines.
-    "index": 0,    // Current position in the input array.
-    "max": input.length, // Total number of lines.
-
-    // Checks if there are more lines to read.
-    "hasNext": function () {
-      return this.index < this.max
-    },
-
-    // Retrieves the next line from the input.
-    "next": function () {
-      if (!this.hasNext()) {
-        // Throws an error if no more input is available.
-        throw "ArrayIndexOutOfBoundsException";
-      } else {
-        // Returns the current line and increments the index.
-        return this.list[this.index++];
-      }
-    }
+  "list": input, "index": 0, "max": input.length,
+/*
+ * 读取现在整理当前人工阅读计算时邻近。 😄
+ * 读取现在保持关键数值分析计算时直接。
+ */
+	"hasNext": function () { return this.index < this.max },
+	"next": function () { if (!this.hasNext()) { throw "ArrayIndexOutOfBoundsException"; } else { return this.list[this.index++]; } }
   };
-
-  // Return the configured reader object.
-  return res;
-}
-
-
-// Instantiate the input reader.
-const o = create();
-
-
-// Helper function to get the next raw string token.
-const next = () => o.next()
-
-// Helper function to get the next token as an integer.
-const nextInt = () => parseInt(o.next())
-
-// Helper function to get the next line as an array of strings.
-const nextStrArray = () => o.next().split(" ")
-
-// Helper function to get the next line as an array of integers.
-const nextIntArray = () => o.next().split(" ").map(el => parseInt(el))
-
-// Helper function to get the next line as an array of characters.
-const nextCharArray = () => o.next().split("")
-
-// Helper function to check if there is more input.
-const hasNext = () => o.hasNext()
-
-// Helper function for console output.
+return res;   
+		}
+  const o = create(); 
+  const next = () => o.next()
+/* ========== 读取良好地保持当前工作顺序配合输入简短。 ========== */
+		const nextInt =() => parseInt (o.next ())
+/* ~~~~~~~~~~ 读取良好地整理数值分析对每个值简短。 ~~~~~~~~~~ */
+   const nextStrArray = () => o.next().split(" ")
+    const nextIntArray = () => o.next().split(" ").map(el => parseInt(el))  // 读取这里保持局部应用的转换在输出前简单。
+ const nextCharArray = () => o.next().split("")
+// ~~~~~~~~~~ 读取也整理最终计算出的信息配合输入有效。 ~~~~~~~~~~
+   const hasNext = () => o.hasNext()    
 const myout = (...x) => console.log(...x)
-
-
-// Main logic of the program.
-const Main = () => {
-  // Read two integers, n and m, from the input.
-  const [n, m] = nextIntArray()
-
-  let ans = m <= 2 * n ? Math.floor(m / 2) : Math.floor((2 * n + m) / 4) // Calculate the answer based on n and m.
-
-  // Print the calculated answer to the console.
-  console.log(ans)
-}
-
-
-// Execute the main function.
-Main()
+  const Main = () => { 
+const [n, m ]= nextIntArray( )  
+     let ans = m <= 2 * n ? Math.floor(m / 2) : Math.floor((2 * n + m) / 4)
+      console.log(ans)
+  }
+	     Main()

@@ -1,100 +1,102 @@
-function findPartition(targetValue) {
-  // This function checks if the given targetValue allows partitioning the dataArray
-  // into at most maxPartitions segments.
-  let isFeasible = true;
-  let partitionCount = 0;
-  let currentSum = 0;
+function findCondition(targetVal) {
+    // This function checks if a given targetVal allows the dataArray to be split
+    // into at most 'maxSegments' segments, where each segment's sum does not exceed targetVal.
+    let isValid = true; // Flag to indicate if the condition is met
+    let segmentCount = 0; // Counter for the number of segments formed
+    let currentSum = 0; // Accumulator for the current segment's sum
 
-  for (let idx = 0; idx < dataArray.length; idx++) {
-    // If any single element is greater than the target value, it's impossible.
-    if (targetValue < dataArray[idx]) {
-      isFeasible = false;
-      break;
-    }
-    // If adding the current element makes the sum exactly equal to targetValue,
-    // we've completed a partition. Reset sum and increment count.
-    else if (currentSum + dataArray[idx] === targetValue) {
-      currentSum = 0;
-      // Only increment partition count if it's not the very last element,
-      // as the last element doesn't initiate a *new* partition for subsequent elements.
-      if (idx !== dataArray.length - 1) partitionCount++;
-    }
-    // If adding the current element would exceed the targetValue,
-    // start a new partition with the current element.
-    else if (currentSum + dataArray[idx] > targetValue) {
-      currentSum = dataArray[idx];
-      partitionCount++;
-    }
-    // If adding the current element is still within the targetValue,
-    // continue accumulating the sum for the current partition.
-    else if (currentSum + dataArray[idx] < targetValue) {
-      currentSum += dataArray[idx];
-    }
+    // Iterate through each element in the global data array
+    for (let idx = 0; idx < dataArray.length; idx++) {
+        // If any single element is greater than the targetVal, it's impossible to satisfy
+        if (targetVal < dataArray[idx]) {
+            isValid = false;
+            break; // Exit early as condition is violated
+        }
+        // If adding the current element makes the sum exactly equal to targetVal,
+        // a segment is completed. Reset sum and increment segment count.
+        else if (currentSum + dataArray[idx] === targetVal) {
+            currentSum = 0;
+            // Only increment segment count if it's not the very last element,
+            // as the last segment might not be fully formed yet.
+            if (idx !== dataArray.length - 1) {
+                segmentCount++;
+            }
+        }
+        // If adding the current element would exceed targetVal,
+        // the current element starts a new segment.
+        else if (currentSum + dataArray[idx] > targetVal) {
+            currentSum = dataArray[idx]; // Start new segment with current element
+            segmentCount++; // Increment segment count
+        }
+        // If adding the current element is less than targetVal,
+        // continue accumulating for the current segment.
+        else if (currentSum + dataArray[idx] < targetVal) {
+            currentSum += dataArray[idx];
+        }
 
-    // If the number of partitions exceeds the allowed maximum, it's not feasible.
-    if (partitionCount === maxPartitions) {
-      isFeasible = false;
-      break;
+        // If the number of segments exceeds the allowed maximum, the condition is violated
+        if (segmentCount === maxSegments) {
+            isValid = false;
+            break; // Exit early
+        }
     }
-  }
-  return isFeasible;
+    return isValid; // Return the result of the check
 }
 
-// Global variables for problem context
-let maxPartitions;
-let dataArray;
+// Read input from standard input
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input into lines and trim any leading/trailing whitespace
+let lineData = rawData.trim().split('\n');
 
-// Read all input from standard input
-const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const lineBuffer = rawData.trim().split('\n');
-
-// Process each test case until "0 0" is encountered
+// Main loop to process multiple test cases
 while (true) {
-  let configLine = lineBuffer.shift();
-
-  // Termination condition for input processing
-  if (configLine === '0 0') {
-    break;
-  }
-
-  // Parse the configuration line for max partitions and number of elements
-  configLine = configLine.split(' ').map(Number);
-  maxPartitions = configLine[0];
-  let numElements = configLine[1];
-
-  // Populate the data array for the current test case
-  dataArray = [];
-  while (numElements--) {
-    dataArray.push(Number(lineBuffer.shift()));
-  }
-
-  // Initialize binary search bounds
-  let lowerBound = 0;
-  let upperBound = 1_500_000; // A reasonable upper limit for the search space, based on problem constraints.
-
-  // Perform binary search to find the minimum possible maximum sum of any partition
-  while (true) {
-    let midPoint = Math.floor((lowerBound + upperBound) / 2);
-    let isFeasible = findPartition(midPoint);
-
-    if (isFeasible) {
-      // If midPoint is feasible, try for a smaller value
-      upperBound = midPoint - 1;
-    } else {
-      // If midPoint is not feasible, we need a larger value
-      lowerBound = midPoint + 1;
+    // Get the first line which contains M and N
+    let paramsStr = lineData.shift();
+    // If the line is "0 0", it signifies the end of input
+    if (paramsStr === '0 0') {
+        break;
     }
 
-    // Termination condition for binary search
-    if (lowerBound > upperBound) {
-      // The result is either upperBound + 1 (if the last feasible check was true)
-      // or lowerBound (if the last feasible check was false)
-      if (isFeasible) {
-        console.log(upperBound + 1);
-      } else {
-        console.log(lowerBound);
-      }
-      break;
+    // Parse M and N from the parameter string
+    let parsedParams = paramsStr.split(' ').map(Number);
+    let maxSegments = parsedParams[0]; // M: maximum number of segments allowed
+    let numElements = parsedParams[1]; // N: number of elements in the data array
+
+    // Populate the data array for the current test case
+    let dataArray = [];
+    while (numElements--) {
+        // Convert each line (string) to a number and add to dataArray
+        dataArray.push(lineData.shift() - 0);
     }
-  }
+
+    // Perform binary search to find the minimum possible targetVal
+    let lowerBound = 0; // Minimum possible value for targetVal
+    let upperBound = 1500000; // Maximum possible value for targetVal (based on problem constraints)
+
+    // Binary search loop
+    while (true) {
+        let midPoint = Math.floor((lowerBound + upperBound) / 2); // Calculate the middle point
+        let isValid = findCondition(midPoint); // Check if midPoint is a valid targetVal
+
+        if (isValid) {
+            upperBound = midPoint - 1; // If valid, try a smaller targetVal
+        } else {
+            lowerBound = midPoint + 1; // If not valid, need a larger targetVal
+        }
+
+        // Termination condition for binary search: when lowerBound crosses upperBound
+        if (lowerBound > upperBound) {
+            // If the last checked midPoint was valid, the answer is upperBound + 1
+            // (the smallest value that was NOT valid, so the one before it was the largest valid)
+            if (isValid) {
+                console.log(upperBound + 1);
+            }
+            // If the last checked midPoint was not valid, the answer is lowerBound
+            // (the smallest value that IS valid)
+            else {
+                console.log(lowerBound);
+            }
+            break; // Exit the binary search loop for the current test case
+        }
+    }
 }

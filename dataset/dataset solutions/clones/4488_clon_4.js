@@ -1,35 +1,35 @@
-const processStream = (incomingData) => {
-    const sections = incomingData.split('\n');
+const parseInputData = (rawText) => {
+    const lines = rawText.split('\n');
+    const config = lines[0].split(' ').map(Number);
+    const sequence = lines[1].split(' ').map(val => Number(val) % 2);
+    return { config, sequence };
+};
 
-    const configurationValues = sections[0].split(' ').map(item => parseInt(item, 10));
-
-    const operationSeries = sections[1].split(' ').map(lexeme => BigInt(parseInt(lexeme, 10) % 2));
-
-    const seriesMagnitude = BigInt(operationSeries.length);
-    const targetIndex = configurationValues[1];
-
-    const firstOddPosition = operationSeries.findIndex(val => val === 1n);
-
-    let finalCalculatedValue;
-
-    if (firstOddPosition !== -1) {
-        finalCalculatedValue = BigInt(2) ** (seriesMagnitude - 1n);
-    } else {
-        if (targetIndex === 0) {
-            finalCalculatedValue = BigInt(2) ** seriesMagnitude;
-        } else {
-            finalCalculatedValue = BigInt(0);
-        }
+const stateTransformers = {
+    0: (firstValue, secondValue) => [firstValue * 2n, secondValue * 2n],
+    1: (firstValue, secondValue) => { 
+        const sum = firstValue + secondValue; 
+        return [sum, sum]; 
     }
-
-    return finalCalculatedValue.toString();
 };
 
-const fileSystemModule = require("node:fs");
-const executeProgram = () => {
-    const standardInput = fileSystemModule.readFileSync("/dev/stdin", "utf8").trim();
-    const resultString = processStream(standardInput);
-    console.log(resultString);
+const evolveState = (currentCountsPair, processingBit) => {
+    const [valA, valB] = currentCountsPair;
+    return stateTransformers[processingBit](valA, valB);
 };
 
-executeProgram();
+function executeComputation(rawData) {
+    const { config: configurationValues, sequence: inputBits } = parseInputData(rawData);
+
+    const initialCounts = [1n, 0n]; 
+
+    const finalCounts = inputBits.reduce((accumulatorCounts, currentBit) => {
+        const nextCounts = evolveState(accumulatorCounts, currentBit);
+        console.log(nextCounts);
+        return nextCounts;
+    }, initialCounts);
+
+    console.log(finalCounts[configurationValues[1]].toString());
+}
+
+executeComputation(require("fs").readFileSync("/dev/stdin", "utf8").trim());

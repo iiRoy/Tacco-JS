@@ -1,20 +1,19 @@
-const fileSysModule = require( "fs" ) ;
+const fileSystemModule = require("fs"); // Import the Node.js file system module for file operations
 
-const inputLine = fileSysModule.readFileSync( "/dev/stdin" ) ; // Read the entire input as a string from stdin
+let inputLineContent = fileSystemModule.readFileSync("/dev/stdin"); // Read the entire content from standard input
 
-const upperBound = Number( inputLine ) ; // Convert the string input to a numerical upper limit
+const upperBound = Number(inputLineContent); // Convert the read input string into a numerical upper bound
 
-let cumulativeResult = 0 ; // Initialize the variable that will hold our final aggregated value
+let finalSum = 0; // Initialize a variable to accumulate the total sum
 
-// Loop through each positive integer starting from one up to and including the upper bound
-for ( let iterator = 1 ; iterator <= upperBound ; iterator++ )
-{
-    // Determine the integer part of the division of the upper bound by the current iterator
-    const quotientFloor = Math.floor( upperBound / iterator ) ;
+// Loop through each possible divisor from 1 up to the specified upper bound
+for (let currentDivisor = 1; currentDivisor <= upperBound; currentDivisor++) {
+  // Calculate the integer quotient when the upper bound is divided by the current divisor
+  const quotientValue = Math.floor(upperBound / currentDivisor);
 
-    // Accumulate the sum based on an arithmetic progression formula
-    // The term added is iterator * (sum of integers from 1 to quotientFloor)
-    cumulativeResult += ( iterator * quotientFloor * ( quotientFloor + 1 ) ) / 2 ;
+  // Add the term (currentDivisor * quotientValue * (quotientValue + 1)) / 2 to the running total
+  // This formula is equivalent to currentDivisor * (1 + 2 + ... + quotientValue)
+  finalSum += (currentDivisor * quotientValue * (quotientValue + 1)) / 2;
 }
 
-console.log( cumulativeResult ) ; // Display the final computed sum to the standard output
+console.log(finalSum); // Print the final calculated sum to the console

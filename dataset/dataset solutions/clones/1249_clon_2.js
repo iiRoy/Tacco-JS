@@ -1,58 +1,46 @@
-// Begin script execution.
-// This section handles file system interactions.
-var fileSystemUtility = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Acquire the entire raw content from the standard input stream.
-// The content is assumed to be encoded in UTF-8 format.
-var incomingData = fileSystemUtility.readFileSync('/dev/stdin', 'utf8');
+// Split the entire input content into an array of individual lines.
+var lineSegments = rawData.split("\n");
 
-// Parse the acquired data, splitting it into individual lines.
-// Each line is treated as a separate processing unit.
-var dataLines = incomingData.split("\n");
+// Initialize an empty string to accumulate the results of operations.
+var resultBuffer = "";
 
-// Initialize a mutable buffer to accumulate all processed results.
-var resultAccumulator = "";
+// Iterate through each line segment received from the input.
+for (var idx = 0; idx < lineSegments.length; idx++) {
+    // Split the current line into its constituent parts: two operands and an operator.
+    var parts = lineSegments[idx].split(" ");
 
-// Iterate through each parsed line using an index-based loop.
-for (  var currentLineIndex = 0  ;  currentLineIndex < dataLines.length  ;  currentLineIndex++  )  {
-    // Deconstruct the current line into its operational components.
-    // Components are separated by a single space character.
-    var currentOperationParts = dataLines[currentLineIndex].split(" ");
+    // Convert the first part to a number, representing the first operand.
+    var operandOne = parts[0] - 0;
+    // Extract the operator symbol from the second part.
+    var operationSymbol = parts[1];
+    // Convert the third part to a number, representing the second operand.
+    var operandTwo = parts[2] - 0;
 
-    // Convert the first component to a numerical value; this serves as the first operand.
-    var primaryValue = Number(currentOperationParts[0]);
-
-    // Extract the second component, which represents the mathematical operator.
-    var operationSymbol = currentOperationParts[1];
-
-    // Convert the third component to a numerical value; this serves as the second operand.
-    var secondaryValue = Number(currentOperationParts[2]);
-
-    // Check for a termination condition: if the operator is a question mark.
-    if  (  operationSymbol  ===  "?"  )  {
-        break; // Terminate the processing loop immediately.
+    // If the operation symbol is a question mark, it signifies the end of input, so break the loop.
+    if (operationSymbol === "?") {
+        break;
     }
 
-    // Process based on the identified operation symbol.
-    // Each operator is handled by an independent conditional block.
-    if  (  operationSymbol  ===  "+"  )  {
-        resultAccumulator += primaryValue + secondaryValue;
+    // Perform the operation based on the symbol and append the result to the buffer.
+    if (operationSymbol === "+") {
+        resultBuffer += operandOne + operandTwo;
     }
-    if  (  operationSymbol  ===  "-"  )  {
-        resultAccumulator += primaryValue - secondaryValue;
+    if (operationSymbol === "-") {
+        resultBuffer += operandOne - operandTwo;
     }
-    if  (  operationSymbol  ===  "*"  )  {
-        resultAccumulator += primaryValue * secondaryValue;
+    if (operationSymbol === "*") {
+        resultBuffer += operandOne * operandTwo;
     }
-    if  (  operationSymbol  ===  "/"  )  {
-        // For division, ensure the result is an integer by taking the floor.
-        resultAccumulator += Math.floor(primaryValue / secondaryValue);
+    if (operationSymbol === "/") {
+        // For division, use Math.floor to ensure integer division as per problem requirements.
+        resultBuffer += Math.floor(operandOne / operandTwo);
     }
 
-    // Append a newline character to the accumulator after each operation's result.
-    resultAccumulator += "\n";
+    // Append a newline character after each operation's result.
+    resultBuffer += "\n";
 }
 
-// Output the final accumulated results to the console.
-// Any extraneous leading or trailing whitespace is removed prior to display.
-console.log(resultAccumulator.trim());
+// Print the final accumulated results, removing any trailing whitespace (like the last newline).
+console.log(resultBuffer.trim());

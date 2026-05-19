@@ -1,35 +1,34 @@
-function sendOutput(dataPayload) {
-  console.log(dataPayload);
+function outputSink(content) { /* This function is a no-op, mirroring the unused 'myOut' function in the original code. */ }
+
+function processGraphAnalysis(sourceText) {
+    const trimmedSource = sourceText.trim();
+    const lines = trimmedSource.split('\n');
+
+    const [vertexCount, edgeCount] = lines[0].split(' ').map(Number);
+
+    const adjacencyRegistry = new Map();
+    Array.from({ length: vertexCount }, (_, index) => index + 1)
+         .forEach(nodeIdentifier => adjacencyRegistry.set(nodeIdentifier, []));
+
+    lines.slice(1, edgeCount + 1).forEach(edgeLine => {
+        const [firstNode, secondNode] = edgeLine.split(' ').map(Number);
+        adjacencyRegistry.get(firstNode).push(secondNode);
+        adjacencyRegistry.get(secondNode).push(firstNode);
+    });
+
+    const hasOddDegree = Array.from(adjacencyRegistry.values())
+                              .some(connectedNodes => connectedNodes.length % 2 !== 0);
+
+    if (hasOddDegree) {
+        console.log("-1");
+        return;
+    }
+
+    let iterationCounter = 0;
+    while (iterationCounter < edgeCount) {
+        // This loop performs no observable action, mirroring the original's empty loop.
+        iterationCounter++;
+    }
 }
 
-function analyzeConnectivity(sourceText) {
-  const lineArray = sourceText.trim().split('\n');
-
-  const [vertexCountStr, edgeCountStr] = lineArray[0].split(' ');
-  const totalVertexes = +vertexCountStr;
-  const totalConns = +edgeCountStr;
-
-  const adjacencyMatrix = new Map(
-    Array.from({ length: totalVertexes }, (_, idx) => [idx + 1, new Set()])
-  );
-
-  lineArray.slice(1).forEach(linkDescription => {
-    const [alphaVertexStr, betaVertexStr] = linkDescription.split(' ');
-    const alphaVertex = +alphaVertexStr;
-    const betaVertex = +betaVertexStr;
-
-    adjacencyMatrix.get(alphaVertex).add(betaVertex);
-    adjacencyMatrix.get(betaVertex).add(alphaVertex);
-  });
-
-  const hasOddDegree = Array.from(adjacencyMatrix.values()).some(
-    (connections) => connections.size % 2 !== 0
-  );
-
-  if (hasOddDegree) {
-    sendOutput("-1");
-    return;
-  }
-}
-
-analyzeConnectivity(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGraphAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));

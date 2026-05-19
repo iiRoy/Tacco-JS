@@ -1,34 +1,22 @@
-var collectedInputs = [];
-var ioFacade = require('readline');
-
-var inputHandler = ioFacade.createInterface({
+var inputBuffer = [];
+var ioInterface = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-inputHandler.on('line', function (inputLine) {
-    collectedInputs.push(inputLine);
+ioInterface.on('line', function (currentLine) {
+    inputBuffer.push(currentLine);
 });
 
-inputHandler.on('close', function () {
-    var initialParameters = collectedInputs[0].split(" ");
-    var totalItems = parseFloat(initialParameters[0]);
-    var groupSpan = parseFloat(initialParameters[1]);
-    collectedInputs.splice(0, 1);
+ioInterface.on('close', function () {
+    const [countTotal, windowSize] = inputBuffer[0].split(' ').map(Number);
+    const heightValues = inputBuffer.slice(1).map(Number);
 
-    var heightMeasurements = collectedInputs.map(itemValue => parseFloat(itemValue));
+    heightValues.sort((valA, valB) => valA - valB);
 
-    heightMeasurements.sort((firstElement, secondElement) => firstElement - secondElement);
+    const finalResult = Array.from({ length: heightValues.length - windowSize + 1 }, (_, idx) => {
+        return heightValues[idx + windowSize - 1] - heightValues[idx];
+    }).reduce((minVal, currentVal) => Math.min(minVal, currentVal), Infinity);
 
-    var minimumRange = Number.POSITIVE_INFINITY;
-
-    const possibleStartingIndices = Array.from({ length: heightMeasurements.length - groupSpan + 1 }, (_, index) => index);
-
-    minimumRange = possibleStartingIndices.reduce((currentMinDifference, currentWindowStart) => {
-        const currentWindowEnd = currentWindowStart + groupSpan - 1;
-        const differenceForCurrentWindow = heightMeasurements[currentWindowEnd] - heightMeasurements[currentWindowStart];
-        return Math.min(currentMinDifference, differenceForCurrentWindow);
-    }, Number.POSITIVE_INFINITY);
-
-    console.log(minimumRange);
+    console.log(finalResult);
 });

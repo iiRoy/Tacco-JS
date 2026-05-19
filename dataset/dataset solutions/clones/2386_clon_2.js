@@ -1,22 +1,25 @@
-const   rawData   =   require (  "fs"  ) .  readFileSync (  "/dev/stdin"  ,  "utf8"  ) ;
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Read input from standard input
 
-const   targetDayAbbr   =   rawData  ; /*  The input string representing a day abbreviation.  */
-
-//  An ordered compilation of the abbreviations for the seven days of the week.
-const   dayNameList   =  [
-    'SUN'  ,
-    'MON'  ,
-    'TUE'  ,
-    'WED'  ,
-    'THU'  ,
-    'FRI'  ,
-    'SAT'
-] ;
+// This variable will hold the input string, which represents a day of the week.
+var dayString = rawData;
 
 /*
- *  This expression determines the 1-based position of the target day
- *  after the list of days has been inverted.
+ * Define an array containing the names of the days of the week.
+ * The order is important for the subsequent logic.
  */
-const   calculatedPosition   =   dayNameList  .  reverse (  ) .  indexOf (  targetDayAbbr  )   +   1  ;
+var dayNames = [
+    'SUN', // Sunday
+    'MON', // Monday
+    'TUE', // Tuesday
+    'WED', // Wednesday
+    'THU', // Thursday
+    'FRI', // Friday
+    'SAT', // Saturday
+];
 
-console . log (  calculatedPosition  ) ; //  Print the final computed numeric value.
+// Calculate the result based on the input day string.
+// The array is reversed, then the index of the input day is found, and 1 is added.
+var outputValue = dayNames.reverse().indexOf(dayString) + 1;
+
+// Print the final calculated value to the console.
+console.log(outputValue);

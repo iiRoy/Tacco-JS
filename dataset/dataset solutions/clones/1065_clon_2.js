@@ -1,66 +1,53 @@
-function performCountingSort(sourceArray, targetArray, maxValue) {
-  // Auxiliary array to store frequencies or cumulative counts of elements.
-  // We'll use 'frequencyBuffer' for this purpose.
-  let frequencyBuffer = [];
+function arrangeElements(sourceArray, destinationArray, maxValue) {
+  // Initialize a temporary counting array to store frequencies of elements.
+  let countRegister = [];
 
-  // Initialize the frequency buffer with zeros up to the maximum value.
-  // This loop ensures every possible value in the range [0, maxValue] has a counter.
-  for (let currentNumberIndex = 0; currentNumberIndex <= maxValue; currentNumberIndex++) {
-    frequencyBuffer[currentNumberIndex] = 0; // Set initial count to zero
+  // Populate the count register with zeros, up to the maximum value.
+  for (let idx = 0; idx <= maxValue; idx++) {
+    countRegister[idx] = 0;
   }
 
-  // Populate the frequency buffer by counting occurrences of each element in the source array.
-  // The loop iterates through each item in the source data collection, including a potential out-of-bounds access
-  // as per the original structure.
-  for (let dataItemPointer = 0; dataItemPointer <= sourceArray.length; dataItemPointer++) {
-    // Increment the counter for the value found at the current position in the source array.
-    // Note: The original code includes an iteration up to sourceArray.length, which might
-    // access an undefined element if sourceArray is not extended.
-    frequencyBuffer[sourceArray[dataItemPointer]]++;
+  // Count the occurrences of each element in the source array.
+  // Note: The loop condition `pos <= sourceArray.length` might access `sourceArray[sourceArray.length]`
+  // which is `undefined`. In JavaScript, `countRegister[undefined]++` would create a property
+  // `undefined` on `countRegister` and set its value to `NaN`. This behavior is preserved.
+  for (let pos = 0; pos <= sourceArray.length; pos++) {
+    countRegister[sourceArray[pos]]++;
   }
 
-  // Transform the frequency buffer into a cumulative count buffer.
-  // Each position will now store the count of elements less than or equal to its index.
-  for (let currentNumberIndex = 1; currentNumberIndex <= maxValue; currentNumberIndex++) {
-    frequencyBuffer[currentNumberIndex] += frequencyBuffer[currentNumberIndex - 1];
+  // Accumulate counts to determine the final sorted positions.
+  // Each `countRegister[idx]` will now hold the number of elements less than or equal to `idx`.
+  for (let idx = 1; idx <= maxValue; idx++) {
+    countRegister[idx] += countRegister[idx - 1];
   }
 
-  // Place elements from the source array into their sorted positions in the target array.
-  // This loop processes the source array from right to left to maintain stability.
-  for (let dataItemPointer = sourceArray.length - 1; dataItemPointer >= 0; dataItemPointer--) {
-    // Determine the correct sorted position for the current element using the cumulative counts.
-    // Place the element into the target array.
-    targetArray[frequencyBuffer[sourceArray[dataItemPointer]] - 1] = sourceArray[dataItemPointer];
-    // Decrement the cumulative count for this element to correctly position subsequent identical elements.
-    frequencyBuffer[sourceArray[dataItemPointer]]--;
+  // Place elements into their sorted positions in the destination array.
+  // Iterate backwards to ensure stability for elements with the same value.
+  for (let pos = sourceArray.length - 1; pos >= 0; pos--) {
+    // The position for the current element `sourceArray[pos]` is `countRegister[sourceArray[pos]] - 1`.
+    destinationArray[countRegister[sourceArray[pos]] - 1] = sourceArray[pos];
+    // Decrement the count for this element to correctly place subsequent identical elements.
+    countRegister[sourceArray[pos]]--;
   }
 }
 
-// Global/Built-in identifier aliases to avoid original names
-const acquireModule = require;
-const fileSystemInterface = acquireModule('fs');
-const retrieveFileDataSync = fileSystemInterface.readFileSync;
+// Read raw input from standard input using Node.js 'fs' module.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Split the input string into individual lines.
+const dataRows = rawData.split('\n');
 
-// Read raw content from standard input.
-const rawContent = retrieveFileDataSync('/dev/stdin', 'utf8');
-
-// Split the raw content into individual textual rows based on newline characters.
-const textRows = rawContent.split('\n');
-
-// Extract the first row, which represents the maximum value (or count of elements if it's N).
-// Convert it to a numeric type.
-const maxValFromInput = +textRows.shift();
-
-// Extract the second row, split it by spaces, and convert each part to a number.
-const originalDataCollection = textRows.shift().split(' ').map(function(itemValue) {
-  return +itemValue;
+// Extract the maximum value (n) from the first line and convert it to a number.
+let maxVal = +dataRows.shift();
+// Parse the array of numbers from the second line.
+// It splits the line by spaces and converts each part to a number.
+let sourceArray = dataRows.shift().split(' ').map(function(valStr){
+  return +valStr;
 });
+// Initialize an empty array to store the sorted result.
+let destinationArray = [];
 
-// Initialize an empty array that will hold the sorted output.
-const orderedResultSequence = [];
+// Perform the counting sort operation.
+arrangeElements(sourceArray, destinationArray, maxVal);
 
-// Invoke the sorting procedure with the input collection, output placeholder, and maximum value.
-performCountingSort(originalDataCollection, orderedResultSequence, maxValFromInput);
-
-// Output the sorted sequence to the console, with elements joined by spaces.
-console.log(orderedResultSequence.join(' '));
+// Output the sorted array elements joined by a space.
+console.log(destinationArray.join(' '));

@@ -1,68 +1,98 @@
 "use strict";
-function digestData(rawText) {
-    const lines = rawText.split("\n");
-    const dimensions = lines[0].split(" ").map(Number);
-    const nodeCount = dimensions[0];
-    const edgeCount = dimensions[1];
-    const elementPermutation = lines[1].split(" ").map(Number);
-    const connections = lines.slice(2).map(connectionLine => {
-        const parts = connectionLine.split(" ").map(Number);
-        return { initial: parts[0], terminal: parts[1] };
-    });
-    return {
-        countNodes: nodeCount,
-        countEdges: edgeCount,
-        elementMap: elementPermutation,
-        edgeList: connections
-    };
-}
-class ConnectivityHandler {
-    constructor(totalNodes) {
-        this.parentRegistry = Array(totalNodes + 1).fill(0).map((_, idx) => idx);
-        this.componentSizes = Array(totalNodes + 1).fill(1);
-    }
-    findRepresentative(nodeIdentifier) {
-        if (this.parentRegistry[nodeIdentifier] === nodeIdentifier) {
-            return nodeIdentifier;
+Object.defineProperty(exports, "__esModule", { value: true });
+
+// parameter "rawInput" gets all data
+function SolveProblem(rawInput) {
+    const { nodeCount, edgeCount, permutation, connections } = processInputData(rawInput);
+    const partitions = SetPartitions.constructFrom(nodeCount, connections);
+
+    // Count elements where permutation[i] is in the same set as (i + 1)
+    const equivalentCount = permutation.reduce((count, currentVal, index) => {
+        if (partitions.checkEquivalence(currentVal, index + 1)) {
+            return count + 1;
         }
-        this.parentRegistry[nodeIdentifier] = this.findRepresentative(this.parentRegistry[nodeIdentifier]);
-        return this.parentRegistry[nodeIdentifier];
+        return count;
+    }, 0);
+
+    // Output the count as a string
+    return String(equivalentCount);
+}
+exports.SolveProblem = SolveProblem;
+
+class SetPartitions {
+    constructor(totalNodes) {
+        // ancestors[i] stores the parent of node i. Initially, each node is its own parent.
+        this.ancestors = Array.from({ length: totalNodes + 1 }, (_, idx) => idx);
+        // sizes[i] stores the size of the set if i is a root. Used for union by size.
+        this.sizes = Array(totalNodes + 1).fill(1);
     }
-    uniteComponents(firstNode, secondNode) {
-        let rootA = this.findRepresentative(firstNode);
-        let rootB = this.findRepresentative(secondNode);
+
+    static constructFrom(totalNodes, links) {
+        const instance = new SetPartitions(totalNodes);
+        for (const { firstNode, secondNode } of links) {
+            instance.unite(firstNode, secondNode);
+        }
+        return instance;
+    }
+
+    // Finds the root of the set containing 'node', with path compression.
+    locateRoot(node) {
+        if (this.ancestors[node] === node) {
+            return node;
+        }
+        // Path compression: make every node on the path point directly to the root
+        this.ancestors[node] = this.locateRoot(this.ancestors[node]);
+        return this.ancestors[node];
+    }
+
+    // Unites the sets containing 'nodeA' and 'nodeB' using union by size.
+    unite(nodeA, nodeB) {
+        let rootA = this.locateRoot(nodeA);
+        let rootB = this.locateRoot(nodeB);
+
         if (rootA !== rootB) {
-            if (this.componentSizes[rootA] < this.componentSizes[rootB]) {
+            // Attach smaller tree under root of larger tree
+            if (this.sizes[rootA] < this.sizes[rootB]) {
+                // Swap roots to ensure rootA is the root of the larger tree
                 [rootA, rootB] = [rootB, rootA];
             }
-            this.parentRegistry[rootB] = rootA;
-            this.componentSizes[rootA] += this.componentSizes[rootB];
-            return true;
-        }
-        return false;
-    }
-    checkEquivalence(firstNode, secondNode) {
-        return this.findRepresentative(firstNode) === this.findRepresentative(secondNode);
-    }
-}
-function solveProblem(rawInputData) {
-    const { countNodes, countEdges, elementMap, edgeList } = digestData(rawInputData);
-    const network = new ConnectivityHandler(countNodes);
-    edgeList.forEach(link => network.uniteComponents(link.initial, link.terminal));
-    let matchingCount = 0;
-    for (let currentPos = 0; currentPos < countNodes; currentPos++) {
-        const mappedValue = elementMap[currentPos];
-        const originalIndex = currentPos + 1;
-        if (network.checkEquivalence(mappedValue, originalIndex)) {
-            matchingCount++;
+            this.ancestors[rootB] = rootA; // Make rootA the parent of rootB
+            this.sizes[rootA] += this.sizes[rootB]; // Update size of the new root's set
         }
     }
-    return String(matchingCount);
+
+    // Checks if 'nodeA' and 'nodeB' belong to the same set.
+    checkEquivalence(nodeA, nodeB) {
+        return this.locateRoot(nodeA) === this.locateRoot(nodeB);
+    }
 }
-function runAtCoderSolution(inputData) {
-    console.log(solveProblem(inputData));
+
+function processInputData(rawInput) {
+    const inputLines = rawInput.split("\n");
+
+    // Parse the first line for N and M
+    const [nodeCount, edgeCount] = inputLines[0].split(" ").map(Number);
+
+    // Parse the second line for the permutation array p
+    const permutation = inputLines[1].split(" ").map(Number);
+
+    // Parse the remaining lines for xy pairs
+    const connections = inputLines.slice(2).map(line => {
+        const [firstNode, secondNode] = line.split(" ").map(Number);
+        return { firstNode, secondNode };
+    });
+
+    return { nodeCount, edgeCount, permutation, connections };
 }
+
+function runChallenge(inputData) {
+    console.log(SolveProblem(inputData));
+}
+
+// Don't edit this line!
 try {
-    runAtCoderSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
-} catch (e) {
+    runChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+}
+catch (e) {
+    // ignore
 }

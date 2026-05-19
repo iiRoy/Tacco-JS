@@ -1,178 +1,257 @@
-var ioUtil = require('fs')
-   , fileSize = ioUtil.fstatSync(process.stdin.fd).size
-   , dataBuf = Buffer.alloc(fileSize)
-   , octetsRead = ioUtil.readSync(process.stdin.fd, dataBuf, 0, fileSize, 0)
-   , lineData = dataBuf.toString('utf8', 0, octetsRead).split('\n');
+// Utilize Node.js file system module for standard input operations
+var fileSystemModule = require('fs');
 
-executeProcessing(); // Start the main routine.
+// Determine the size of the standard input stream
+var fileSize = fileSystemModule.fstatSync(process.stdin.fd).size;
 
-function executeProcessing() {
-    var lineIndex = 0; // Current index for reading input lines
+// Allocate a buffer to hold the input data
+var dataBuffer = new Buffer(fileSize);
 
-    while (true) {
-        let gridDimInfo = lineData[lineIndex].split(' ');
-        let gridWidth = parseInt(gridDimInfo[0], 10); // Parse width to integer
-        let gridHeight = parseInt(gridDimInfo[1], 10); // Parse height to integer
+// Read data from standard input into the buffer
+var readBytesCount = fileSystemModule.readSync(process.stdin.fd, dataBuffer, 0, fileSize, 0);
 
-        // Exit condition: if both dimensions are zero
-        if (!gridWidth && !gridHeight) {
-            break;
-        }
+// Convert the buffer content to a UTF-8 string and split it into an array of lines
+var inputLines = dataBuffer.toString('utf8', 0, readBytesCount).split('\n');
 
-        // Variables for map parsing
-        var sourcePoint;
-        var targetPoint;
-        var creatureInstances = [[], [], [], [], []]; // Stores positions of creatures by type
-        var charVal;
-        var currentLineContent;
-        var creatureTypeCache;
-        var rowCoord;
-        var colCoord;
+// Invoke the primary function to process the game data
+processGameData();
 
-        for (rowCoord = gridHeight; rowCoord--;) { // Loop through rows, decrementing from height
-            lineIndex++; // Move to the next line of input
-            currentLineContent = lineData[lineIndex];
-            for (colCoord = gridWidth; colCoord--;) { // Loop through columns, decrementing from width
-                charVal = currentLineContent[colCoord];
+/**
+ * Main function to handle the game logic, processing multiple scenarios from input.
+ */
+function processGameData() {
+  let currentLineIndex = 0; // Index to track the current line being read from `inputLines`
 
-                if (charVal === '.') {
-                    // Empty space, no action needed
-                } else if (charVal >= '1' && charVal <= '5') {
-                    // Found a creature of type 1-5
-                    creatureTypeCache = creatureInstances[parseInt(charVal, 10) - 1];
-                    creatureTypeCache.push(encodeCoordinates(colCoord, rowCoord));
-                } else if (charVal === 'S') {
-                    // Found the starting point
-                    sourcePoint = encodeCoordinates(colCoord, rowCoord);
-                } else { // Must be 'G'
-                    // Found the goal point
-                    targetPoint = encodeCoordinates(colCoord, rowCoord);
-                }
-            }
-        }
+  // Loop continuously to process multiple game fields until a specific termination condition is met
+  while (true) {
+    // Extract field dimensions from the current input line
+    let levelDimensions = inputLines[currentLineIndex].split(' ');
+    let gridWidth = Number(levelDimensions[0]);  // Convert string to numeric width
+    let gridHeight = Number(levelDimensions[1]); // Convert string to numeric height
 
-        // Variables for pathfinding algorithm (dynamic programming)
-        const MAX_DIST_VAL = 1073741824; // A large number representing infinity (1 << 30)
-        var optimalCreatureType = -1;
-        var pathLengthCandidate;
-        var shortestPathFound = MAX_DIST_VAL;
-        var distanceMatrix; // distanceMatrix[creatureType][instanceIndex]
-        var idx1; // Generic loop index
-        var idx2; // Another generic loop index
-        var stepIdx; // Index for path segments (S->C1, C1->C2, ..., C4->G)
-        var currentLength;
-        var currentDistRow; // Reference to a row in distanceMatrix
-        var currentDistEntry; // Reference to an entry in currentDistRow
-        var nextDistRow; // Reference to the next row in distanceMatrix
-        var currentCreatureRow; // Reference to a row in creatureInstances
-        var currentCreatureEntry; // Reference to an entry in currentCreatureRow
-        var nextCreatureRow; // Reference to the next row in creatureInstances
-        var currentCreatureType;
-        var currentCreatureCount;
-        var nextCreatureType;
-        var nextCreatureCount;
-
-        // Iterate through each possible starting creature type for the path S -> C1 -> C2 -> C3 -> C4 -> G
-        for (var initialCreatureSelection = 0; initialCreatureSelection < 5; initialCreatureSelection++) {
-            distanceMatrix = [[], [], [], [], []]; // Reset distance matrix for each new starting type
-
-            for (idx1 = 5; idx1--;) { // Initialize all distances within the matrix to MAX_DIST_VAL
-                currentLength = creatureInstances[idx1].length;
-                distanceMatrix[idx1].length = currentLength;
-                let distRowRef = distanceMatrix[idx1];
-                while (currentLength--) {
-                    distRowRef[currentLength] = MAX_DIST_VAL;
-                }
-            }
-
-            currentCreatureType = (initialCreatureSelection + 1) % 5; // Determine the first creature type in the sequence
-            currentCreatureCount = creatureInstances[currentCreatureType].length;
-            currentDistRow = distanceMatrix[currentCreatureType];
-            currentCreatureRow = creatureInstances[currentCreatureType];
-
-            for (idx1 = 0; idx1 < currentCreatureCount; idx1++) {
-                // Calculate initial distances from the source 'S' to all instances of the first creature type
-                currentDistRow[idx1] = calculateManhattanDistance(sourcePoint, currentCreatureRow[idx1]);
-            }
-
-            // Loop for the three intermediate steps: C_x -> C_(x+1)
-            for (stepIdx = 0; stepIdx < 3; stepIdx++) {
-                nextCreatureType = (currentCreatureType + 1) % 5;
-                nextDistRow = distanceMatrix[nextCreatureType];
-                nextCreatureRow = creatureInstances[nextCreatureType];
-                nextCreatureCount = nextCreatureRow.length;
-
-                for (idx1 = 0; idx1 < currentCreatureCount; idx1++) {
-                    currentDistEntry = currentDistRow[idx1];
-                    currentCreatureEntry = currentCreatureRow[idx1];
-
-                    // Prune paths that are already longer than the shortest found global path
-                    if (currentDistEntry >= shortestPathFound) {
-                        continue;
-                    }
-
-                    for (idx2 = 0; idx2 < nextCreatureCount; idx2++) {
-                        let nextCreatureEntry = nextCreatureRow[idx2];
-                        let nextDistEntry = nextDistRow[idx2];
-                        let calculatedNewDist = currentDistEntry + calculateManhattanDistance(currentCreatureEntry, nextCreatureEntry);
-                        
-                        nextDistRow[idx2] = findMinimum(nextDistEntry, calculatedNewDist); // Update minimum distance to next creature instance
-
-                        if (stepIdx === 2) { // This is the final creature-to-creature transition (C4)
-                            pathLengthCandidate = nextDistRow[idx2] + calculateManhattanDistance(nextCreatureEntry, targetPoint);
-
-                            if (pathLengthCandidate < shortestPathFound) {
-                                shortestPathFound = pathLengthCandidate;
-                                optimalCreatureType = initialCreatureSelection;
-                            }
-                        }
-                    }
-                }
-
-                // Prepare for the next iteration of the step loop
-                currentCreatureType = nextCreatureType;
-                currentDistRow = nextDistRow;
-                currentCreatureRow = nextCreatureRow;
-                currentCreatureCount = nextCreatureCount;
-            }
-        }
-
-        if (shortestPathFound === MAX_DIST_VAL) {
-            console.log("NA"); // No path could be found
-        } else {
-            console.log((optimalCreatureType + 1) + " " + shortestPathFound); // Output the best creature type index and the shortest distance
-        }
-                   
-        lineIndex++; // Advance the input line pointer past the current grid's data
+    // Check for the termination signal: both width and height are zero
+    if (!gridWidth && !gridHeight) {
+      break; // Exit the processing loop
     }
-     
+
+    // Declare variables for storing game state and intermediate calculations
+    let startPoint; // Encoded coordinates of the starting position 'S'
+    let endPoint;   // Encoded coordinates of the goal position 'G'
+
+    // An array of arrays to store the encoded locations of creatures by their type (0-4)
+    // creatureLocations[type_id][instance_index] = encoded_position
+    let creatureLocations = [[], [], [], [], []];
+
+    let charValue; // Character read from the grid cell
+    let lineContent; // The string content of the current grid row
+    let currentCreatureTypeLocations; // Temporary reference to an inner array of `creatureLocations`
+    let rowIdx; // Loop variable for iterating through grid rows
+    let colIdx; // Loop variable for iterating through grid columns
+
+    // Iterate through the grid rows in reverse order (from `gridHeight - 1` down to 0)
+    for (rowIdx = gridHeight; rowIdx--;) {
+      currentLineIndex++; // Advance to the next line in the input, which is a grid row
+      lineContent = inputLines[currentLineIndex]; // Get the content of the current grid row
+
+      // Iterate through the grid columns in reverse order (from `gridWidth - 1` down to 0)
+      for (colIdx = gridWidth; colIdx--;) {
+        charValue = lineContent[colIdx]; // Get the character at the current (colIdx, rowIdx) position
+
+        // Process the character to identify its type and store its location
+        if (charValue === '.') {
+          // Empty space, no specific action required
+        } else if (charValue >= '1' && charValue <= '5') {
+          // A creature of type '1' through '5' is found
+          currentCreatureTypeLocations = creatureLocations[Number(charValue) - 1]; // Get the array for this creature type
+          currentCreatureTypeLocations[currentCreatureTypeLocations.length] = encodeCoordinates(colIdx, rowIdx); // Add its encoded position
+        } else if (charValue === 'S') {
+          // The starting point 'S' is found
+          startPoint = encodeCoordinates(colIdx, rowIdx);
+        } else { // Assuming 'G' for any other character
+          // The goal point 'G' is found
+          endPoint = encodeCoordinates(colIdx, rowIdx);
+        }
+      }
+    }
+
+    // Variables for the dynamic programming pathfinding algorithm
+    const infinityValue = 1 << 30; // A large integer representing an unreachable distance
+    let optimalCreatureType = -1; // Stores the index of the best starting creature type (0-4)
+    let pathDistance; // Temporary variable to hold the distance of a calculated path
+    let minimumTotalDistance = infinityValue; // Stores the shortest path distance found across all trials
+
+    // Dynamic programming table: distanceMatrix[creature_type][creature_instance_index]
+    // Stores the minimum distance to reach a specific creature instance
+    let distanceMatrix;
+
+    let outerLoopIndex; // Generic loop counter
+    let innerLoopIndex; // Another generic loop counter
+    let evolutionStep; // Counter for the "evolution" steps (S -> Type1 -> Type2 -> Type3 -> Type4 -> G)
+    let arrayLength; // Helper variable for array lengths in loops
+
+    let currentTypeDistances; // Cache for `distanceMatrix[currentCreatureType]`
+    let currentCreatureDistance; // Cache for `distanceMatrix[currentCreatureType][outerLoopIndex]`
+    let nextTypeDistances; // Cache for `distanceMatrix[nextCreatureType]`
+
+    let currentTypeCreatures; // Cache for `creatureLocations[currentCreatureType]`
+    let currentCreaturePosition; // Cache for `creatureLocations[currentCreatureType][outerLoopIndex]`
+    let nextTypeCreatures; // Cache for `creatureLocations[nextCreatureType]`
+
+    let currentCreatureType; // Index of the creature type currently being processed
+    let currentTypeCount; // Number of creatures of the `currentCreatureType`
+    let nextCreatureType; // Index of the next creature type in the sequence
+    let nextTypeCount; // Number of creatures of the `nextCreatureType`
+
+    // Iterate through each possible creature type (0 to 4) to be the first in the sequence (after 'S')
+    for (let initialCreatureSelection = 0; initialCreatureSelection < 5; initialCreatureSelection++) {
+      // Initialize the distance matrix for the current `initialCreatureSelection` trial
+      distanceMatrix = [[], [], [], [], []];
+
+      // Fill the `distanceMatrix` with `infinityValue` for all creature instances
+      for (outerLoopIndex = 5; outerLoopIndex--;) { // Loop through creature types (0-4)
+        arrayLength = creatureLocations[outerLoopIndex].length;
+        distanceMatrix[outerLoopIndex].length = arrayLength; // Set array length
+        let tempDistanceCache = distanceMatrix[outerLoopIndex]; // Cache the inner array
+        while (arrayLength--) { // Loop through instances of the current type
+          tempDistanceCache[arrayLength] = infinityValue;
+        }
+      }
+
+      // Determine the actual first creature type in the sequence (e.g., if initial selection is 0, first type is 1)
+      currentCreatureType = (initialCreatureSelection + 1) % 5;
+      currentTypeCount = creatureLocations[currentCreatureType].length;
+      currentTypeDistances = distanceMatrix[currentCreatureType];
+      currentTypeCreatures = creatureLocations[currentCreatureType];
+
+      // Calculate initial distances from the start point 'S' to all creatures of the first type
+      for (outerLoopIndex = 0; outerLoopIndex < currentTypeCount; outerLoopIndex++) {
+        currentTypeDistances[outerLoopIndex] = calculateManhattanDistance(startPoint, currentTypeCreatures[outerLoopIndex]);
+      }
+
+      // Perform the "evolution" steps: S -> Type1 -> Type2 -> Type3 -> Type4 -> G
+      // There are 3 intermediate transitions (Type1->Type2, Type2->Type3, Type3->Type4)
+      for (evolutionStep = 0; evolutionStep < 3; evolutionStep++) {
+        // Determine the next creature type in the sequence
+        nextCreatureType = (currentCreatureType + 1) % 5;
+        nextTypeDistances = distanceMatrix[nextCreatureType];
+        nextTypeCreatures = creatureLocations[nextCreatureType];
+        nextTypeCount = nextTypeCreatures.length;
+
+        // Iterate through all creatures of the `currentCreatureType`
+        for (outerLoopIndex = 0; outerLoopIndex < currentTypeCount; outerLoopIndex++) {
+          currentCreatureDistance = currentTypeDistances[outerLoopIndex];
+          currentCreaturePosition = currentTypeCreatures[outerLoopIndex];
+
+          // Pruning: If the current path to this creature is already longer than the best path found so far,
+          // there's no need to extend it further.
+          if (currentCreatureDistance >= minimumTotalDistance) {
+            continue;
+          }
+
+          // Iterate through all creatures of the `nextCreatureType`
+          for (innerLoopIndex = 0; innerLoopIndex < nextTypeCount; innerLoopIndex++) {
+            let nextCreaturePosition = nextTypeCreatures[innerLoopIndex];
+            let nextCreatureDistance = nextTypeDistances[innerLoopIndex];
+
+            // Calculate the distance from the current creature to the next creature,
+            // and update the `distanceMatrix` if a shorter path is found.
+            nextCreatureDistance = findMinimum(nextCreatureDistance, currentCreatureDistance + calculateManhattanDistance(currentCreaturePosition, nextCreaturePosition));
+            nextTypeDistances[innerLoopIndex] = nextCreatureDistance; // Store the updated minimum distance
+
+            // If this is the final evolution step (Type4 -> G)
+            if (evolutionStep === 2) {
+              // Calculate the total path distance from 'S' to 'G' via this sequence
+              pathDistance = nextCreatureDistance + calculateManhattanDistance(nextCreaturePosition, endPoint);
+
+              // If this total path is shorter than the `minimumTotalDistance` found so far, update it
+              if (pathDistance < minimumTotalDistance) {
+                minimumTotalDistance = pathDistance;
+                optimalCreatureType = initialCreatureSelection;
+              }
+            }
+          }
+        }
+
+        // Prepare for the next evolution step: `nextCreatureType` becomes the `currentCreatureType`
+        currentCreatureType = nextCreatureType;
+        currentTypeDistances = nextTypeDistances;
+        currentTypeCreatures = nextTypeCreatures;
+        currentTypeCount = nextTypeCount;
+      }
+    }
+
+    // Output the result for the current game scenario
+    if (minimumTotalDistance === infinityValue) {
+      console.log("NA"); // No valid path was found
+    } else {
+      // Output the 1-based index of the optimal creature type and the minimum total distance
+      console.log((optimalCreatureType + 1) + " " + minimumTotalDistance);
+    }
+
+    currentLineIndex++; // Move to the next line in input, preparing for the next game field
+  }
 }
-                   
-/* Computes the Manhattan (L1) distance between two encoded points */
-function calculateManhattanDistance(pointOne, pointTwo){
-    // X coordinate is stored in higher bits (right-shifted by 11)
-    // Y coordinate is stored in lower 10 bits (ANDed with 2047, which is 0b1111111111)
-    return absoluteValue((pointOne >> 11) - (pointTwo >> 11)) + absoluteValue((pointOne & 2047) - (pointTwo & 2047));
+
+/**
+ * Calculates the Manhattan distance between two encoded coordinate points.
+ * @param {number} originPoint - The encoded starting point (x, y).
+ * @param {number} destinationPoint - The encoded ending point (x, y).
+ * @returns {number} The Manhattan distance.
+ */
+function calculateManhattanDistance(originPoint, destinationPoint) {
+  // Extract x-coordinate by right-shifting 11 bits (x is in higher bits)
+  let x1 = originPoint >> 0xB; // 11
+  // Extract y-coordinate by bitwise AND with 0x7FF (2047, lower 11 bits)
+  let y1 = originPoint & 0x7FF;
+
+  let x2 = destinationPoint >> 0xB;
+  let y2 = destinationPoint & 0x7FF;
+
+  // Manhattan distance = |x1 - x2| + |y1 - y2|
+  return getAbsoluteValue(x1 - x2) + getAbsoluteValue(y1 - y2);
 }
-                   
-/* Returns the minimum of two integer values using bitwise operations for performance */
-function findMinimum(valA, valB){
-    // This bitwise trick can be faster than a conditional (e.g., Math.min)
-    return valB + ((valA - valB) & ((valA - valB) >> 31));
+
+/**
+ * Finds the minimum of two numbers using bitwise operations.
+ * This method is often used for performance optimization in competitive programming.
+ * @param {number} valA - The first number.
+ * @param {number} valB - The second number.
+ * @returns {number} The smaller of the two numbers.
+ */
+function findMinimum(valA, valB) {
+  // This bitwise trick works by leveraging the sign bit of (valA - valB)
+  // If (valA - valB) is negative, (valA - valB) >> 0x1F will be -1 (all 1s).
+  // If (valA - valB) is positive or zero, (valA - valB) >> 0x1F will be 0.
+  // (valA - valB) & ((valA - valB) >> 0x1F) will be (valA - valB) if negative, or 0 if positive/zero.
+  // So, valB + (negative_diff) = valA, or valB + 0 = valB.
+  return valB + ((valA - valB) & ((valA - valB) >> 0x1F)); // 31
 }
-                   
-/* Encodes 2D coordinates (x, y) into a single integer for compact storage */
-function encodeCoordinates(xCoord, yCoord){
-    // X coordinate is shifted left by 11 bits; Y coordinate takes the lower 11 bits.
-    // This assumes Y coordinates are within 0-2047 and X coordinates fit in remaining bits.
-    return (xCoord << 11) + yCoord;
+
+/**
+ * Encodes 2D coordinates (x, y) into a single integer for efficient storage and manipulation.
+ * Assumes x and y coordinates fit within 1024 (2^10) for y and 2^21 for x.
+ * @param {number} colIdx - The x-coordinate (column index).
+ * @param {number} rowIdx - The y-coordinate (row index).
+ * @returns {number} The encoded integer representing the coordinates.
+ */
+function encodeCoordinates(colIdx, rowIdx) {
+  // Shifts the x-coordinate left by 11 bits to occupy higher bits,
+  // then adds the y-coordinate to fill the lower 11 bits.
+  return (colIdx << 0xB) + rowIdx; // 11
 }
-                  
-/* Calculates the absolute value of an integer using bitwise operations */
-function absoluteValue(numVal){
-    // Bitwise trick for absolute value: (x ^ (x >> 31)) - (x >> 31)
-    // For positive x, x >> 31 is 0, so (x ^ 0) - 0 = x
-    // For negative x, x >> 31 is -1 (all ones), so (x ^ -1) - (-1) = ~x + 1 = |x|
-    var mask = numVal >> 31;
-    return (numVal ^ mask) - mask;
+
+/**
+ * Calculates the absolute value of an integer using bitwise operations.
+ * This is a common optimization technique.
+ * @param {number} valA - The integer for which to find the absolute value.
+ * @returns {number} The absolute value of `valA`.
+ */
+function getAbsoluteValue(valA) {
+  // If valA is negative, signBit will be -1 (all 1s).
+  // If valA is positive or zero, signBit will be 0.
+  let signBit = valA >> 0x1F; // 31
+
+  // If valA is negative: (valA ^ -1) - (-1) = (~valA) + 1 = -valA (two's complement negation)
+  // If valA is positive: (valA ^ 0) - 0 = valA
+  return (valA ^ signBit) - signBit;
 }

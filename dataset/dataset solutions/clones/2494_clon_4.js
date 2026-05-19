@@ -1,25 +1,23 @@
 'use strict';
-function processInputData(dataSource) {
-  const lineSegments = dataSource.split('\n');
-  const quantityIndicator = Number(lineSegments[0]);
-  const fullItemCollection = lineSegments[1].split(' ');
 
-  const relevantItemCollection = fullItemCollection.slice(0, quantityIndicator);
+function processInput(rawData) {
+  const parsedLines = rawData.split('\n');
+  const iterationLimit = parseInt(parsedLines[0], 10);
+  const elementSequence = parsedLines[1].split(' ');
 
-  const compactedSequence = relevantItemCollection.reduce((accumulatorArray, currentItem) => {
-    if (accumulatorArray.length === 0 || accumulatorArray[accumulatorArray.length - 1] !== currentItem) {
-      accumulatorArray.push(currentItem);
+  const processedSegment = elementSequence.slice(0, iterationLimit);
+
+  const finalBlockCount = processedSegment.reduce((state, currentItem) => {
+    if (currentItem !== state.previousBlockIdentifier) {
+      return {
+        blockCount: state.blockCount + 1,
+        previousBlockIdentifier: currentItem,
+      };
     }
-    return accumulatorArray;
-  }, []);
+    return state;
+  }, { blockCount: 0, previousBlockIdentifier: undefined });
 
-  const distinctRunCount = compactedSequence.length;
-  console.log(distinctRunCount);
+  console.log(finalBlockCount.blockCount);
 }
 
-function executeProgram() {
-  const rawSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-  processInputData(rawSource);
-}
-
-executeProgram();
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

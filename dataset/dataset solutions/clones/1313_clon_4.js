@@ -1,21 +1,22 @@
-const sourceData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const charSequence = Array.from(sourceData)
-  .filter(c => /[a-z]/i.test(c))
-  .map(c => c.toLowerCase());
+const charFrequencies = Array(26).fill(0);
 
-const letterCounts = charSequence.reduce((accumulator, character) => {
-  accumulator.set(character, (accumulator.get(character) || 0) + 1);
-  return accumulator;
-}, new Map());
+sourceText.split('').forEach(char => {
+    const lowerChar = char.toLowerCase();
+    const charCode = lowerChar.charCodeAt(0);
+    const alphabetIndex = charCode - 97;
 
-const alphabet = Array.from({ length: 26 }, (_, index) => String.fromCharCode(97 + index));
-
-const formattedLines = alphabet.map(singleLetter => {
-  const currentCount = letterCounts.get(singleLetter) || 0;
-  return `${singleLetter} : ${currentCount}`;
+    if (alphabetIndex >= 0 && alphabetIndex < 26) {
+        charFrequencies[alphabetIndex]++;
+    }
 });
 
-const finalResult = formattedLines.join('\n');
+const outputLines = charFrequencies.map((countValue, idx) => {
+    const letterIdentifier = String.fromCharCode(97 + idx);
+    return `${letterIdentifier} : ${countValue}`;
+});
 
-console.log(finalResult);
+const resultString = outputLines.join('\n');
+
+console.log(resultString.trim());

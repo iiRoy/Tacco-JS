@@ -1,117 +1,64 @@
-// This section defines auxiliary functions and objects used throughout the program.
-// These serve as renamed equivalents for standard JavaScript functionalities.
+/**
+ * Processes the raw input data to perform a series of calculations.
+ * This function simulates a specific algorithm based on input values.
+ *
+ * @param {string} rawInputData - The raw string input, typically from stdin.
+ */
+function ProcessData(rawInputData) {
+  // Clean up the input: remove leading/trailing whitespace and split into lines.
+  let processedLines = rawInputData.trim().split("\n");
 
-// Function to convert a string to an integer, replacing the global 'parseInt'.
-function convertToInt(strValue, base)
-{
-    return parseInt(strValue, base);
+  // Parse the first line to get the number of entries for the loop.
+  // The original code uses input[0] for N, but then iterates over input[i]
+  // which implies input[0] is also part of the data to be processed in the loop.
+  // This is a common competitive programming pattern where N is the first line,
+  // and subsequent N lines are the actual data.
+  // However, the original code iterates `i < N` and then accesses `input[i]`.
+  // If N is the count of data lines *after* the N itself, then `input[0]` should be N,
+  // and the loop should start from `i = 1` and access `input[i]`.
+  // But the original code uses `input[i]` directly, implying `input[0]` is also processed.
+  // This is a potential logical bug in the original code's problem interpretation,
+  // but we must preserve its exact behavior.
+  const numIterations = parseInt(processedLines[0], 10);
+
+  // Initialize two accumulator variables.
+  let currentAValue = 1;
+  let currentTValue = 1;
+
+  // Loop through the specified number of entries.
+  for (let loopIndex = 0; loopIndex < numIterations; loopIndex++) {
+    // Attempt to process each line.
+    // WARNING: The original code has a bug here. `processedLines[loopIndex]` is a string.
+    // `forEach` is an Array method, not a String method. This will cause a TypeError.
+    // Even if it were an array, `forEach` returns `undefined`, and the `parseInt`
+    // call inside does not store its result, making `parsedLineResult` always `undefined`.
+    const parsedLineResult = processedLines[loopIndex].forEach((element) => {
+      parseInt(element, 10);
+    });
+
+    // WARNING: Due to the bug above, `parsedLineResult` will be `undefined`.
+    // Accessing `parsedLineResult[0]` and `parsedLineResult[1]` will cause a TypeError.
+    const tempTInput = parsedLineResult[0];
+    const tempAInput = parsedLineResult[1];
+
+    // Calculate a factor based on current and temporary values.
+    // WARNING: The original code calls a global function `max` which is not defined
+    // in standard JavaScript. This will cause a ReferenceError.
+    // The intent was likely `Math.max`.
+    const calculationFactor = max(
+      Math.ceil(currentTValue / tempTInput),
+      Math.ceil(currentAValue / tempAInput)
+    );
+
+    // Update the accumulator variables.
+    currentTValue = tempTInput * calculationFactor;
+    currentAValue = tempAInput * calculationFactor;
+  }
+
+  // Output the sum of the final accumulator values.
+  // WARNING: This line will likely not be reached due to the errors above.
+  console.log(currentAValue + currentTValue);
 }
 
-
-// Extending String prototype for custom string manipulation methods.
-// This replaces the standard 'trim' method.
-String.prototype.cleanLeadingTrailingSpaces = function()
-{
-    return this.trim();
-};
-
-// This replaces the standard 'split' method for dividing strings.
-String.prototype.splitLines = function(delimiter)
-{
-    return this.split(delimiter);
-};
-
-
-// An object containing mathematical operations, replacing the global 'Math' object for specific functions.
-const MathOperations = {
-
-    // A function to round a number up to the nearest integer, replacing 'Math.ceil'.
-    roundUp: (numberVal) => Math.ceil(numberVal)
-};
-
-
-// A global function to determine the maximum of two numerical values, replacing 'Math.max' (or an undeclared 'max' function).
-function determineMax(valueOne, valueTwo)
-{
-    return (valueOne > valueTwo)
-      ? valueOne
-      : valueTwo;
-}
-
-
-// A global function to output results, replacing 'console.log'.
-function displayFinalResult(finalSum)
-{
-    console.log(finalSum);
-}
-
-
-// An object to manage external module dependencies, replacing the global 'require' function.
-const externalDependencies = {
-
-    // The file system module, replacing 'fs'.
-    fileSystemModule: require("fs")
-};
-
-// Renaming the 'readFileSync' method of the file system module.
-externalDependencies.fileSystemModule.readContent = externalDependencies.fileSystemModule.readFileSync;
-
-
-// The primary function to compute and process ratio data.
-// It takes a raw input string as its argument.
-function ComputeRatios(dataInput)
-{
-    // First, the raw input string is cleaned of whitespace and then split into an array of individual lines.
-    dataInput = dataInput.cleanLeadingTrailingSpaces().splitLines("\n");
-
-    // The first line of the processed input is parsed to determine the total number of processing iterations.
-    var totalIterations = convertToInt(dataInput[0], 10);
-
-    // Initial values are set for two critical ratio components.
-    var currentFirstValue = 1;
-    var currentSecondValue = 1;
-
-
-    // A loop is initiated to process each subsequent line of data, based on the 'totalIterations' count.
-    for (var iterationIndex = 0; iterationIndex < totalIterations; ++iterationIndex)
-    {
-        // This line attempts to invoke a method named 'processEachElement' on a string element from 'dataInput'.
-        // Since strings in JavaScript do not possess such a method, this will result in a TypeError at runtime.
-        // This behavior is a direct and intentional clone of a likely runtime error present in the original code's structure.
-        var lineComponents = dataInput[iterationIndex].processEachElement((componentStr) => {
-            // The intention here might have been to parse individual components of a line,
-            // but this callback will not be executed due to the TypeError mentioned above.
-            convertToInt(componentStr, 10);
-        });
-
-        // The following two lines attempt to access elements of 'lineComponents'.
-        // However, because the previous line would have caused a TypeError, 'lineComponents'
-        // will not be successfully assigned a value (or the program would have terminated).
-        // If execution somehow continues (e.g., through error handling not present here),
-        // accessing properties of an undefined or error-causing variable would lead to further errors.
-        var requiredSecond = lineComponents[0];
-        var requiredFirst = lineComponents[1];
-
-
-        // A scaling factor is computed based on the current and required ratio components.
-        // This involves rounding up the results of divisions and then finding the maximum of these two values.
-        var scalingFactor = determineMax(
-            MathOperations.roundUp(currentSecondValue / requiredSecond),
-            MathOperations.roundUp(currentFirstValue / requiredFirst)
-        );
-
-
-        // The current ratio components are updated by multiplying them with their respective required values and the calculated scaling factor.
-        currentSecondValue = requiredSecond * scalingFactor;
-        currentFirstValue = requiredFirst * scalingFactor;
-    }
-
-    // Finally, the sum of the updated first and second ratio components is displayed as the program's output.
-    displayFinalResult(currentFirstValue + currentSecondValue);
-}
-
-
-// The main program execution starts here.
-// The 'ComputeRatios' function is invoked with data obtained from reading a file.
-// The file is specified as '/sys/standard_input' and is read using 'utf-8' encoding.
-ComputeRatios(externalDependencies.fileSystemModule.readContent("/sys/standard_input", "utf-8"));
+// Read input from standard input and pass it to the main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

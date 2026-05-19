@@ -1,41 +1,38 @@
-const processSource = (initialDataset) => {
-    const extractNumericEntries = (lineSegment) =>
-        lineSegment.match(/\d+/g).map(Number);
+const parseNum = (s) => Number.parseInt(s, 10);
+const parseNumArray = (arrStr) => arrStr.split(' ').map(parseNum);
 
-    const [configurationLine, dataLine] = initialDataset.split('\n');
-    const [numElements, requiredCount] = extractNumericEntries(configurationLine);
-    const baseElements = extractNumericEntries(dataLine);
+((rawInputContent) => {
+    const inputLines = rawInputContent.split('\n');
+    const [elementCount, requiredCount] = parseNumArray(inputLines[0]);
+    const initialNumericSequence = parseNumArray(inputLines[1]);
 
-    const cumulativeTotals = baseElements.reduce((accumulator, currentValue) => {
-        accumulator.push((accumulator.length > 0 ? accumulator[accumulator.length - 1] : 0) + currentValue);
+    const cumulativeValueArray = initialNumericSequence.reduce((accumulator, currentElement, index) => {
+        accumulator.push((index === 0 ? 0 : accumulator[index - 1]) + currentElement);
         return accumulator;
-    }, [0]);
+    }, []);
+    cumulativeValueArray.unshift(0);
 
-    const segmentSums = Array.from({ length: numElements }, (_, currentIdxZeroBased) => {
-        const currentIdx = currentIdxZeroBased + 1;
-        return Array.from({ length: numElements - currentIdxZeroBased }, (_, lenIdx) => {
-            const endIdx = currentIdx + lenIdx;
-            return cumulativeTotals[endIdx] - cumulativeTotals[currentIdx - 1];
-        });
-    }).flat();
-
-    const highestRelevantBit = 29;
-
-    let finalOutcome = 0;
-    let activeNumerals = [...segmentSums];
-
-    for (let checkBitPosition = highestRelevantBit; checkBitPosition >= 0; checkBitPosition--) {
-        const currentBitPower = 1 << checkBitPosition;
-
-        const subsetWithBitSet = activeNumerals.filter(numeral => (numeral & currentBitPower) !== 0);
-
-        if (subsetWithBitSet.length >= requiredCount) {
-            finalOutcome |= currentBitPower;
-            activeNumerals = subsetWithBitSet;
+    const allPossibleSubarraySums = [];
+    for (let startIndex = 0; startIndex < elementCount; ++startIndex) {
+        for (let endIndex = startIndex; endIndex < elementCount; ++endIndex) {
+            allPossibleSubarraySums.push(cumulativeValueArray[endIndex + 1] - cumulativeValueArray[startIndex]);
         }
     }
 
-    console.log(finalOutcome);
-};
+    let currentCandidateSet = allPossibleSubarraySums;
+    let finalBitwiseResult = 0;
 
-processSource(require("fs").readFileSync("/dev/stdin", "utf8"));
+    for (let bitPosition = 29; bitPosition >= 0; --bitPosition) {
+        const currentBitIdentifier = 1 << bitPosition;
+        
+        const nextFilteredCandidates = currentCandidateSet.filter(valueItem => (valueItem & currentBitIdentifier) !== 0);
+
+        if (nextFilteredCandidates.length >= requiredCount) {
+            finalBitwiseResult |= currentBitIdentifier;
+            currentCandidateSet = nextFilteredCandidates;
+        }
+    }
+
+    console.log(finalBitwiseResult);
+
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

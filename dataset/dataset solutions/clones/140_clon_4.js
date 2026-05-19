@@ -1,39 +1,33 @@
-const source = require("fs");
+require("fs").readFileSync("/dev/stdin",'utf8').trim().split(/\s/).map(function(currentLineSegment){
+    const numericValues = currentLineSegment.split(',').map(Number);
 
-source.readFileSync("/dev/stdin", 'utf8')
-  .trim()
-  .split(/\s/)
-  .forEach(dataSegment => {
-    const parsedValues = dataSegment.split(',').map(Number);
+    const eleventhElement = numericValues[11];
+    const tenthElement = numericValues[10];
 
-    const segmentSums = parsedValues.slice(0, 11).reduceRight((accumulator, currentElement) => {
-        const previousAccumulation = accumulator.length > 0 ? accumulator[0] : 0;
-        const newAccumulatedSum = previousAccumulation - currentElement;
-        accumulator.unshift(newAccumulatedSum);
-        return accumulator;
-    }, []);
+    const { cumulativePrefixNegations } = numericValues.slice(0, 11).reduceRight((accumulatorObject, currentValue, currentIndex) => {
+        accumulatorObject.runningTotal += currentValue;
+        accumulatorObject.cumulativePrefixNegations[currentIndex] = -accumulatorObject.runningTotal;
+        return accumulatorObject;
+    }, { runningTotal: 0, cumulativePrefixNegations: Array(11) });
 
-    const overallNegativeSum = segmentSums[0];
+    const finalAccumulatedValue = cumulativePrefixNegations[0];
+    const denominatorExpression = tenthElement - eleventhElement;
+    
+    const scalingFactor = eleventhElement / denominatorExpression;
+    const comparisonTarget = finalAccumulatedValue * scalingFactor;
 
-    const itemAtTenthPosition = parsedValues[10];
-    const itemAtEleventhPosition = parsedValues[11];
+    const searchablePrefixes = cumulativePrefixNegations.slice(0, 10);
+    const reversedSearchablePrefixes = searchablePrefixes.slice().reverse();
 
-    const divisorTerm = itemAtTenthPosition - itemAtEleventhPosition;
-    const multiplicationFactor = itemAtEleventhPosition / divisorTerm;
-    const finalThreshold = overallNegativeSum * multiplicationFactor;
+    const firstMatchFromRightIndex = reversedSearchablePrefixes.findIndex(elementValue => elementValue < -comparisonTarget);
 
-    function findHighestMatchingIndex(sequenceOfValues, targetThreshold, currentPoint) {
-        if (currentPoint < 0) {
-            return 0;
-        }
-
-        if (sequenceOfValues[currentPoint] >= targetThreshold) {
-            return currentPoint;
-        }
-
-        return findHighestMatchingIndex(sequenceOfValues, targetThreshold, currentPoint - 1);
+    let finalOutputIndex;
+    if (firstMatchFromRightIndex === -1) {
+        finalOutputIndex = 0;
+    } else {
+        const originalArrayPosition = 9 - firstMatchFromRightIndex;
+        finalOutputIndex = originalArrayPosition + 1;
     }
 
-    const computedPosition = findHighestMatchingIndex(segmentSums, finalThreshold, 10);
-    console.log(computedPosition);
-  });
+    console.log(finalOutputIndex);
+});

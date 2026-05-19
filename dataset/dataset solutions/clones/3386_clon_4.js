@@ -1,19 +1,21 @@
-const processData = (sourceContent) => {
-    const numericCollection = sourceContent.split('\n').slice(1).map(Number);
+const calculateMetrics = (numericSequence) => numericSequence.reduce((accumulator, currentVal) => ({
+    totalSum: accumulator.totalSum + currentVal,
+    sumExcludingOnes: accumulator.sumExcludingOnes + (currentVal !== 1 ? currentVal : 0)
+}), { totalSum: 0, sumExcludingOnes: 0 });
 
-    const fullSummation = numericCollection.reduce((currentTotal, element) => currentTotal + element, 0);
-    const elementCount = numericCollection.length;
-    const nonUnitTotal = numericCollection.reduce((currentTotal, element) => currentTotal + (element !== 1 ? element : 0), 0);
+const processInputAndDetermineOutcome = (rawInputString) => {
+    const numericElements = rawInputString.split("\n").map(Number);
+    numericElements.shift();
 
-    const conditionOne = (fullSummation === elementCount);
-    const conditionTwo = (nonUnitTotal % 2 === 1);
-    const conditionThree = (fullSummation % 2 === 1);
+    const { totalSum, sumExcludingOnes } = calculateMetrics(numericElements);
+    const elementCount = numericElements.length;
 
-    const resultantLabel = (conditionOne || conditionTwo) ? "first" : (conditionThree ? "first" : "second");
+    const allElementsAreUnits = (totalSum === elementCount);
+    const sumOfNonUnitValuesIsOdd = (sumExcludingOnes % 2 !== 0);
 
-    process.stdout.write(resultantLabel + '\n');
+    const finalParitySource = (allElementsAreUnits || sumOfNonUnitValuesIsOdd) ? 1 : totalSum;
+
+    return (finalParitySource % 2 !== 0) ? "first" : "second";
 };
 
-const acquireSource = () => require("node:fs").readFileSync("/dev/stdin", "utf8").trim();
-
-processData(acquireSource());
+console.log(processInputAndDetermineOutcome(require("fs").readFileSync("/dev/stdin", "utf8").trim()));

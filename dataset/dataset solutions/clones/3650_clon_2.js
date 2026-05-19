@@ -1,88 +1,86 @@
-// This function determines the minimum absolute difference based on permutations.
-function ProcessValues(rawLine)
-{
-    // Convert the input string into an array of numeric elements.
-    rawLine = rawLine . split(" ") . map(entry => +entry);
+/**
+ * This module computes the minimum total absolute difference between three numbers
+ * based on all possible permutations of their indices.
+ * It's designed to work with a space-separated string of three integers.
+ */
+function CalculateMinDistance(dataString) {
+  // Parse the input string into an array of numbers.
+  // The `~~` operator is a concise way to convert to integer (bitwise NOT twice).
+  let numericValues = dataString.split(" ").map(currentVal => ~~currentVal);
 
-    // Define all possible orderings for three elements (0, 1, 2).
-    const elementOrderings = ["012", "021", "102", "120", "201", "210"];
+  // Define all 6 permutations of indices (0, 1, 2) as strings.
+  const indexPermutations = ["012", "021", "102", "120", "201", "210"];
 
-    // Compute the minimum sum of absolute differences across all permutations.
-    return Math . min(...elementOrderings . map(
-        function(currentOrder)
-        {
-            // Break down the permutation string into an array of numeric indices.
-            currentOrder = currentOrder . split("") . map(charDigit => +charDigit);
+  // Map each permutation string to its corresponding total absolute difference.
+  const differences = indexPermutations.map(function(permutationStr) {
+    // Convert the permutation string (e.g., "012") into an array of numbers (e.g., [0, 1, 2]).
+    let currentPermutation = permutationStr.split("").map(digitChar => ~~digitChar);
 
-            // Calculate the sum of absolute differences for the current permutation:
-            // |value_at_index_0 - value_at_index_1| + |value_at_index_1 - value_at_index_2|
-            return Math . abs(rawLine[currentOrder[0]] - rawLine[currentOrder[1]]) +
-                   Math . abs(rawLine[currentOrder[1]] - rawLine[currentOrder[2]]);
-        }
-    ));
+    // Calculate the sum of absolute differences for the current permutation:
+    // |value[p0] - value[p1]| + |value[p1] - value[p2]|
+    return Math.abs(numericValues[currentPermutation[0]] - numericValues[currentPermutation[1]]) +
+           Math.abs(numericValues[currentPermutation[1]] - numericValues[currentPermutation[2]]);
+  });
+
+  // Return the smallest difference found among all permutations.
+  return Math.min(...differences);
 }
 
-// The subsequent code handles environment-specific execution and display.
-// If you are only interested in the core algorithm, you can disregard the following section.
+/*
+ * This section handles environment-specific execution.
+ * It detects if it's running in a Node.js environment or a browser.
+ * In Node.js, it reads from stdin and prints to console.
+ * In a browser, it displays the input and output in textareas.
+ */
+((rawInput, processedResult, resultType) => {
+  if (typeof require !== "undefined") { // Check for Node.js environment
+    const fileSystem = require("fs");
+    const standardInput = fileSystem.readFileSync("/dev/stdin", "utf8");
+    console.log(CalculateMinDistance(standardInput));
+  } else { // Assume browser environment
+    // Process the raw input string for browser display.
+    rawInput = rawInput.split("\n").slice(1, -1).join("\n");
 
-((initialContent, computationResult, resultKind) =>
-{
-    // Check if running in a Node.js-like environment.
-    if (typeof require !== "undefined")
-    {
-        const fileSys = require("fs");
-        const filePath = "/dev/stdin";
-        const inputData = fileSys . readFileSync(filePath, "utf8");
-        console . log(ProcessValues(inputData));
+    // Execute the main logic and capture any errors.
+    processedResult = (() => {
+      try {
+        return CalculateMinDistance(rawInput);
+      } catch (errorObject) {
+        return errorObject.stack || errorObject.message;
+      }
+    })();
+
+    // Determine the type of the result.
+    resultType = typeof processedResult;
+
+    // If the result is not a string, convert it to JSON for display.
+    if (resultType !== "string") {
+      processedResult = JSON.stringify(processedResult);
     }
-    else
-    {
-        // Assume browser environment for display purposes.
-        // The initial content string is processed to remove leading/trailing newlines.
-        initialContent = initialContent . split("\n") . slice(1, -1) . join("\n");
 
-        // Attempt to execute the primary function with the prepared content.
-        computationResult = (function()
-        {
-            try
-            {
-                return ProcessValues(initialContent);
+    // Use jQuery to create and append elements to the body for display.
+    // This part is for a specific browser-based testing setup.
+    $("<form>")
+      .append(
+        [
+          [10, rawInput],
+          0,
+          [1, resultType],
+          0,
+          [10, processedResult]
+        ].map(elementConfig =>
+          $(
+            elementConfig ? "<textarea>" : "<br>",
+            elementConfig && {
+              rows: elementConfig[0],
+              cols: 40,
+              text: elementConfig[1]
             }
-            catch (issueDetails)
-            {
-                // In case of an error, return the stack trace or error message.
-                return issueDetails . stack || issueDetails . message;
-            }
-        })();
-
-        // Determine the type of the computation result.
-        resultKind = typeof computationResult;
-
-        // If the result is not a string, convert it to a JSON string for display.
-        if (resultKind !== "string")
-        {
-            computationResult = JSON . stringify(computationResult);
-        }
-
-        // Use jQuery to create and append a form with text areas for input and output.
-        // Assuming jQuery is available as 'jq'.
-        const jq = $;
-        jq("<form>")
-            .append([
-                [10, initialContent], // Input text area: 10 rows, content is initialContent
-                0,                    // Line break
-                [1, resultKind],      // Type text area: 1 row, content is resultKind
-                0,                    // Line break
-                [10, computationResult] // Output text area: 10 rows, content is computationResult
-            ] . map(displayItem =>
-                jq(displayItem ? "<textarea>" : "<br>", displayItem && {
-                    rows: displayItem[0],
-                    cols: 40,
-                    text: displayItem[1]
-                })
-            ))
-            .appendTo("body");
-    }
+          )
+        )
+      )
+      .appendTo("body");
+  }
 })(`
 1 6 3
 `);

@@ -1,116 +1,72 @@
-"use strict" ;
+"use strict";
 
-// Helper function to safely decompose an array-like structure into a fixed number of elements.
-function _decomposeArray ( collection , limitVal )
-{
-  return _testForArray ( collection ) || _iterateArrayWithBound ( collection , limitVal ) || _uniterableRemainder ( ) ;
+function _slicedToArray(arr, i) {
+  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
 }
 
-// Throws an error if an attempt is made to destructure a non-iterable instance.
-function _uniterableRemainder ( )
-{
-  throw new TypeError ( "Invalid attempt to destructure non-iterable instance" ) ;
+function _nonIterableRest() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
 }
 
-// Iterates over an array-like object up to a specified limit.
-function _iterateArrayWithBound ( collection , limitVal )
-{
-  var tempList = [ ] ;
-  var notDone = true ;
-  var encounteredError = false ;
-  var errorObject = undefined ;
-
-  try
-  {
-    for (
-      var iteratorObj = collection [ Symbol . iterator ] ( ) , iteratorResult ;
-      ! ( notDone = ( iteratorResult = iteratorObj . next ( ) ) . done ) ;
-      notDone = true
-    )
-    {
-      tempList . push ( iteratorResult . value ) ;
-
-      if ( limitVal && tempList . length === limitVal )
-      {
-        break ;
-      }
+function _iterableToArrayLimit(arr, i) {
+  var _arr = [];
+  var _n = true;
+  var _d = false;
+  var _e = undefined;
+  try {
+    for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      _arr.push(_s.value);
+      if (i && _arr.length === i) break;
+    }
+  } catch (err) {
+    _d = true;
+    _e = err;
+  } finally {
+    try {
+      if (!_n && _i["return"] != null) _i["return"]();
+    } finally {
+      if (_d) throw _e;
     }
   }
-  catch ( caughtErr )
-  {
-    encounteredError = true ;
-    errorObject = caughtErr ;
-  }
-  finally
-  {
-    try
-    {
-      if ( ! notDone && iteratorObj [ "return" ] != null )
-      {
-        iteratorObj [ "return" ] ( ) ;
-      }
-    }
-    finally
-    {
-      if ( encounteredError )
-      {
-        throw errorObject ;
-      }
-    }
-  }
-
-  return tempList ;
+  return _arr;
 }
 
-// Checks if the given argument is an array.
-function _testForArray ( collection )
-{
-  if ( Array . isArray ( collection ) )
-  {
-    return collection ;
-  }
+function _arrayWithHoles(arr) {
+  if (Array.isArray(arr)) return arr;
 }
 
-// Main program execution wrapped in an immediately invoked function expression (IIFE).
-! function _procData ( )
-{
-  // Utility function to parse a string or array of strings into an array of integers.
-  function parseNumbers ( textRow )
-  {
-    return ( Array . isArray ( textRow ) ? textRow : textRow . split ( /\s+/ ) ) . map ( function ( numStr )
-    {
-      return parseInt ( numStr ) ;
-    } ) ;
+!function () {
+  // This function takes a line of text (or an array of strings) and converts its parts into integers.
+  function parseNumbersFromString(inputLine) {
+    // If the input is already an array, use it directly; otherwise, split the string by one or more spaces.
+    const parts = Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/);
+    // Map each string part to its integer representation.
+    return parts.map(function (numStr) {
+      return parseInt(numStr, 10); // Explicitly specify base 10 for parsing.
+    });
   }
 
-  // Another IIFE to handle the main logic with input processing.
-  ! function _calcResult ( rawData )
-  {
-    // Split the raw input data into individual lines.
-    var textLines = rawData . split ( "\n" ) ;
+  // Main logic encapsulated in an immediately invoked function expression.
+  !function (rawData) {
+    // Split the entire raw input into an array of lines.
+    const dataRows = rawData.split("\n");
 
-    // Parse the first line to extract two numerical values.
-    var parsedValues = parseNumbers ( textLines [ 0 ] ) ,
-        // Decompose the parsed array into two distinct variables.
-        decomposedPair = _decomposeArray ( parsedValues , 2 ) ,
-        firstValue = decomposedPair [ 0 ] ,
-        secondValue = decomposedPair [ 1 ] ;
+    // Parse the first line to get two numerical values.
+    const parsedValues = parseNumbersFromString(dataRows[0]);
+    const destructuredValues = _slicedToArray(parsedValues, 2);
+    const firstVal = destructuredValues[0];
+    const secondVal = destructuredValues[1];
 
-    // Apply conditional logic based on the first value.
-    if ( firstValue <= 5 )
-    {
-      // If the first value is small, output zero.
-      console . log ( 0 ) ;
+    // Apply conditional logic based on the value of 'firstVal'.
+    if (firstVal <= 5) {
+      // If 'firstVal' is 5 or less, output 0.
+      console.log(0);
+    } else if (firstVal <= 16) {
+      // If 'firstVal' is between 6 and 16 (inclusive), output half of 'secondVal'.
+      console.log(secondVal / 2);
+    } else {
+      // If 'firstVal' is greater than 16, output 'secondVal'.
+      console.log(secondVal);
     }
-    else if ( firstValue <= 16 )
-    {
-      // If the first value is medium, output half of the second value.
-      console . log ( secondValue / 2 ) ;
-    }
-    else
-    {
-      // Otherwise, output the second value directly.
-      console . log ( secondValue ) ;
-    }
-  } ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ; // Read input from standard input.
-} ( ) ;
+  }(require("fs").readFileSync("/dev/stdin", "utf8")); // Read input from standard input using Node.js 'fs' module.
+}();

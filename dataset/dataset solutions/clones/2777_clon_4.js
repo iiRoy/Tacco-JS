@@ -1,19 +1,21 @@
-function processInput(dataString) {
-    if (dataString.length !== 4) {
-        console.log('No');
-        return;
-    }
+function processInputData(rawData) {
+    const charSequence = rawData.split("");
 
-    const sortedElements = [...dataString].sort().join('');
+    const frequencyMap = charSequence.reduce((accumulator, currentSymbol) => {
+        accumulator.set(currentSymbol, (accumulator.get(currentSymbol) || 0) + 1);
+        return accumulator;
+    }, new Map());
 
-    if (sortedElements[0] === sortedElements[1] &&
-        sortedElements[2] === sortedElements[3] &&
-        sortedElements[0] !== sortedElements[2]) {
+    const distinctSymbolCount = frequencyMap.size;
+    const allFrequenciesAreTwo = Array.from(frequencyMap.values()).every(
+        (symbolFrequency) => symbolFrequency === 2
+    );
+
+    if (distinctSymbolCount === 2 && allFrequenciesAreTwo) {
         console.log('Yes');
     } else {
         console.log('No');
     }
 }
 
-const receivedPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-processInput(receivedPayload);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

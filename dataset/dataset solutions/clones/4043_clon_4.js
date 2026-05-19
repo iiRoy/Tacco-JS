@@ -1,23 +1,27 @@
-const performCalculation = (sourceText) => {
-    const dataChunks = sourceText.trim().split(/\s*\n\s*/).slice(1);
-    const originalValues = dataChunks[0].split(/\s+/).filter(Boolean).map(Number);
-    const desiredValues = dataChunks[1].split(/\s+/).filter(Boolean).map(Number);
+function processData(rawInput) {
+    const inputLines = rawInput.split('\n');
 
-    const tally = originalValues.reduce((accumulator, currentElement, index) => {
-        const targetElement = desiredValues[index];
-        const difference = targetElement - currentElement;
+    const lineCount = Number(inputLines[0]); // Original 'n', unused in logic
+    const primaryValues = inputLines[1].split(' ').map(Number); // Original 'a'
+    const secondaryValues = inputLines[2].split(' ').map(Number); // Original 'b'
 
-        if (difference > 0) {
-            accumulator.necessarySingleIncrements += difference & 1;
-            accumulator.availableDoubleIncrements += difference >> 1;
-        } else {
-            accumulator.availableDoubleIncrements += -difference;
-        }
-        return accumulator;
-    }, { necessarySingleIncrements: 0, availableDoubleIncrements: 0 });
+    let totalPrimary = 0;
+    for (const val of primaryValues) {
+        totalPrimary += val;
+    }
 
-    return tally.necessarySingleIncrements <= tally.availableDoubleIncrements ? "Affirmative" : "Negative";
-};
+    let totalSecondary = 0;
+    for (const val of secondaryValues) {
+        totalSecondary += val;
+    }
 
-const inputPayload = require("node:fs").readFileSync("/dev/stdin", "utf8").trim();
-console.log(performCalculation(inputPayload));
+    const requiredModifications = primaryValues.reduce((accumulatedValue, currentPrimary, idx) => {
+        const currentSecondary = secondaryValues[idx];
+        const delta = currentSecondary - currentPrimary;
+        return accumulatedValue + Math.ceil(Math.max(delta, 0) / 2);
+    }, 0);
+
+    console.log(requiredModifications <= totalSecondary - totalPrimary ? "Yes" : "No");
+}
+
+processData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,27 +1,17 @@
-function characterProcessor(incomingData) {
-  const subjectChar = String(incomingData).trim().charAt(0);
+function processInput(rawText) {
+  const singleChar = rawText.trim();
+  let outputValue;
+  const isValidSingleLowerAlpha = (singleChar.length === 1 && singleChar >= 'a' && singleChar <= 'z');
 
-  let currentAlphaPosition;
-  const charValue = subjectChar.charCodeAt(0);
-
-  if (charValue >= 97 && charValue <= 122) { // Check if character is 'a' through 'z'
-    currentAlphaPosition = charValue - 97;
+  if (!isValidSingleLowerAlpha) {
+    outputValue = 'a';
+  } else if (singleChar === 'z') {
+    outputValue = undefined;
   } else {
-    currentAlphaPosition = -1; // Mimic `indexOf` returning -1 for not found
+    outputValue = String.fromCharCode(singleChar.charCodeAt(0) + 1);
   }
 
-  const subsequentPosition = currentAlphaPosition + 1;
-
-  let finalSymbol;
-  if (subsequentPosition === 0) { // This corresponds to `alphabet[0]` for original `indexOf` returning -1
-    finalSymbol = String.fromCharCode(97); // 'a'
-  } else if (subsequentPosition >= 1 && subsequentPosition <= 25) { // Valid positions for 'b' through 'z'
-    finalSymbol = String.fromCharCode(97 + subsequentPosition);
-  } else { // Position is 26 (for 'z') or any other out-of-bounds index
-    finalSymbol = undefined; // Mimic `alphabet[26]` behavior
-  }
-
-  console.log(finalSymbol);
+  console.log(outputValue);
 }
 
-characterProcessor(require('node:fs').readFileSync(0, 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

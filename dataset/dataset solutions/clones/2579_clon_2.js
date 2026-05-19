@@ -1,45 +1,42 @@
-// This function processes incoming text data to calculate a specific sum.
-function ProcessInputData(receivedText) {
-    "use strict"; // Enforce stricter parsing and error handling for cleaner code.
+function ProcessInput(rawData) {
+  "use strict"; // Enforce strict mode for cleaner code.
 
-    // Split the entire input string into individual lines based on newline characters.
-    const parsedLines = receivedText.split("\n");
+  // Split the raw input string into an array of lines.
+  const linesArray = rawData.split("\n");
 
-    // Extract the first numeric value, representing an initial count or identifier.
-    const initialCount = parseInt(parsedLines.shift(), 10);
+  // The first line contains 'n', which is parsed as an integer.
+  const countN = parseInt(linesArray.shift(), 10); // Parse the first line as an integer.
 
-    // Process the next line: split by spaces, then convert each segment to an integer.
-    const numericalArray = parsedLines.shift().split(" ").map(elementValue => parseInt(elementValue, 10));
+  // The second line contains space-separated numbers for 'bn'.
+  // These are split, then each element is parsed as an integer.
+  const bValues = linesArray.shift().split(" ").map(elementStr => parseInt(elementStr, 10));
 
-    // Initialize a new list with the first element from the processed numerical array.
-    let constructedList = [numericalArray[0]];
+  // Initialize 'aSequence' with the first element of 'bValues'.
+  let aSequence = [bValues[0]];
 
-    // Iterate through each number in the main numerical array.
-    numericalArray.forEach(currentNumber => {
-        // Retrieve and remove the last item from the constructed list.
-        const previousItem = constructedList.pop();
+  // Iterate through each value in 'bValues' to build 'aSequence'.
+  bValues.forEach(currentB => {
+    // Retrieve the last element added to 'aSequence'.
+    const previousA = aSequence.pop();
 
-        // Compare the retrieved item with the current number from the iteration.
-        if (previousItem > currentNumber) {
-            // If the previous item is larger, add the current number twice.
-            constructedList.push(currentNumber);
-            constructedList.push(currentNumber);
-        } else {
-            // Otherwise, re-add the previous item, then add the current number.
-            constructedList.push(previousItem);
-            constructedList.push(currentNumber);
-        }
-    });
+    // Compare the last 'a' element with the current 'b' element.
+    if (previousA > currentB) {
+      // If 'previousA' is greater, add 'currentB' twice.
+      aSequence.push(currentB);
+      aSequence.push(currentB);
+    } else {
+      // Otherwise, add 'previousA' back, then 'currentB'.
+      aSequence.push(previousA);
+      aSequence.push(currentB);
+    }
+  });
 
-    // Calculate the total sum of all elements currently in the constructed list.
-    let cumulativeSum = constructedList.reduce((aggregate, currentVal) => aggregate + currentVal, 0);
+  // Calculate the sum of all elements in the final 'aSequence'.
+  let totalSum = aSequence.reduce((accumulator, currentValue) => accumulator + currentValue, 0); // Sum all elements.
 
-    // Display the final calculated sum to the console.
-    console.log(cumulativeSum);
+  // Output the calculated total sum to the console.
+  console.log(totalSum);
 }
 
-/*
- * The following lines are for standard input/output handling.
- * Please do not modify this section to ensure proper execution.
- */
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line handles standard input/output and should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,36 +1,20 @@
-/*
- * This module defines a primary routine for data manipulation.
- * It reads a string of space-separated numbers, parses them,
- * and performs a specific calculation.
- */
-function  processInputData  (  inputString  )  {
+function processInput (inputString) {
+    // Split the incoming string by spaces to get individual components
+    let numericValues = inputString.split(" ");
 
-  // The initial input is a string, which needs to be broken down.
-  // We'll use a local variable to hold these string components.
-  let  numericComponents  =  inputString . split (  " "  ) ;
+    // Iterate through the first four elements and convert them to integers
+    for (let idx = 0; idx < 4; idx++) {
+        numericValues[idx] = parseInt(numericValues[idx], 10); // Explicitly use base 10
+    }
 
-  /*
-   * A loop is initiated to iterate over the first four elements
-   * of the array. Each element, which is currently a string,
-   * will be converted into its integer representation.
-   */
-  for  (  let  iteratorIndex  =  0  ;  iteratorIndex  <  4  ;  iteratorIndex ++  )  {
-    numericComponents [  iteratorIndex  ]  =  Number . parseInt (  numericComponents [  iteratorIndex  ]  ,  10  ) ; // Explicit radix for safety
-  }
+    // Calculate the product of the first two numbers
+    let firstProduct = numericValues[0] * numericValues[1];
+    // Calculate the product of the next two numbers
+    let secondProduct = numericValues[2] * numericValues[3];
 
-  // After parsing, we compute two products and then find the maximum of these.
-  // The result is then output to the standard console.
-  console . log (
-    (  numericComponents [  0  ]  *  numericComponents [  1  ]  >  numericComponents [  2  ]  *  numericComponents [  3  ]  )
-      ?  (  numericComponents [  0  ]  *  numericComponents [  1  ]  )
-      :  (  numericComponents [  2  ]  *  numericComponents [  3  ]  )
-  ) ;
+    // Determine which product is greater and print it to the console
+    console.log((firstProduct > secondProduct) ? firstProduct : secondProduct);
 }
 
-
-// The routine is invoked here.
-// Data is sourced from standard input using the 'fs' module
-// and then passed to the main processing function.
-processInputData (
-  require (  'fs'  ) . readFileSync (  '/dev/stdin'  ,  'utf8'  )
-) ;
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

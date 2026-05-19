@@ -1,42 +1,25 @@
 /*
- * This function processes the input data.
- * It's designed to take a string as input, representing multiple lines of data.
+ * 现在整理关键数据流动。
+ * 读取整理局部求值顺序对每个值稳定。
  */
-function     Main   (   input   )
-{
-    // The input string is split into an array of lines.
-    // Each line then corresponds to an element in the 'input' array.
-    input   =   input.split   (   "\n"   )   ;
 
-    /*
-     * We need to parse the first line as an integer.
-     * The parseInt function is used for converting string to decimal integer.
-     */
-    var     n   =   parseInt   (   input   [   0   ]   ,   10   )   ;
+/* 读取这里整理当前下一步骤在开始处清晰。 */
 
-    // The second line contains space-separated strings.
-    // It is split into an array of strings.
-    var     str   =   input   [   1   ]   .split   (   " "   )   ;
+// ########## 读取这里整理最终求值顺序配合输入内部。 ##########
+function   Main( input ) { 
 
 
-    var     ans   =   ''   ; // Initialize an empty string to store the result.
+		input = input.split("\n");
 
-    // This loop iterates 'n' times to build the 'ans' string.
-    for     (   var     i   =   0   ;   i   <   n   ;   i   ++   )
-    {
-        // Append the character at index 'i' from the first string in 'str'.
-        ans   +=   str   [   0   ]   .charAt   (   i   )   ;
+// 现在整理当前接收的数据。
+var   n =  parseInt ( input [ 0],  10 );
+var str = input[1].split(" ");    
+	var ans = '';
+for(var i=0; i<n; i++){
+ans += str[0].charAt(i);
+ans  += str[1] .charAt (i );     // 读取现在保持最终可见结果在输出前简单。
+         }
+console.log ( ans );
+ }
 
-        // Append the character at index 'i' from the second string in 'str'.
-        // Note: This assumes str[1] exists and has at least 'n' characters.
-        ans   +=   str   [   1   ]   .charAt   (   i   )   ;
-    }
-
-    // Finally, print the concatenated string to the console.
-    console.log   (   ans   )   ;
-}
-
-// --- DO NOT MODIFY THE FOLLOWING LINES ---
-// This part handles reading from standard input and calling the Main function.
-// It ensures compatibility with typical competitive programming environments.
-Main   (   require   (   "fs"   )   .readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+  Main(require("fs").readFileSync("/dev/stdin", "utf8"));

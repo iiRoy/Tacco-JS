@@ -1,57 +1,72 @@
-const processRawData = (incomingData) => {
-    const dataLines = incomingData.split('\n');
+function Main(rawInputData) {
+  let initialGolemTypes = [];
 
-    const [sizeOfRealm, numOperations] = dataLines[0].split(' ').map(Number);
+  let processedInputSegments = rawInputData.split('\n').map((lineSegment, segmentIndex) => {
+    if (segmentIndex === 0) {
+      return lineSegment.split(' ').map(Number);
+    } else if (segmentIndex === 1) {
+      return lineSegment.split('').map(charElement => {
+        initialGolemTypes.push(charElement);
+        return charElement;
+      });
+    } else {
+      return lineSegment.split(' ');
+    }
+  });
 
-    const initialSquareIdentifiers = [];
-    const realmInhabitantsInitialState = dataLines[1].split('').map(charIdentifier => {
-        initialSquareIdentifiers.push(charIdentifier);
-        return { kind: charIdentifier, quantity: 1 };
+  let [boardConfig, , ...operationInstructions] = processedInputSegments;
+  let [gridDimension, operationCount] = boardConfig;
+
+  let positionalStacks = new Map();
+  for (let i = 0; i < gridDimension; i++) {
+    positionalStacks.set(i, {
+      golemCount: 1,
+      presentTypes: new Set([initialGolemTypes[i]])
     });
+  }
 
-    const operationSequence = dataLines.slice(2, 2 + numOperations).map(opLine => {
-        const [targetKind, movementDirection] = opLine.split(' ');
-        return { targetKind, movementDirection };
-    });
+  let remainingGolemUnits = gridDimension;
 
-    return {
-        realmSize: sizeOfRealm,
-        operationCount: numOperations,
-        originalSquareIdentifiers: initialSquareIdentifiers,
-        initialRealmState: realmInhabitantsInitialState,
-        operationSequence: operationSequence
-    };
-};
+  let finalSimulationState = operationInstructions.reduce((accumulator, currentOperation) => {
+    let [targetGolemIdentifier, movementDirectionIndicator] = currentOperation;
+    let { currentBoardMap, currentActiveGolems } = accumulator;
 
-const CommenceOperation = (incomingData) => {
-    const { realmSize, operationCount, originalSquareIdentifiers, initialRealmState, operationSequence } = processRawData(incomingData);
+    let displacementValue = (movementDirectionIndicator === 'L' ? -1 : 1);
 
-    let realmInhabitantsState = initialRealmState.map(golemState => ({ ...golemState }));
-    let currentPopulationCount = realmSize;
+    for (let cellIterator = 0; cellIterator < gridDimension; cellIterator++) {
+      let cellStackData = currentBoardMap.get(cellIterator);
 
-    for (let opIdx = 0; opIdx < operationCount; ++opIdx) {
-        const { targetKind, movementDirection } = operationSequence[opIdx];
+      if (!cellStackData || cellStackData.golemCount === 0 || !cellStackData.presentTypes.has(targetGolemIdentifier)) {
+        continue;
+      }
 
-        for (let spatialIndex = 0; spatialIndex < realmSize; ++spatialIndex) {
-            if (realmInhabitantsState[spatialIndex].kind === targetKind && realmInhabitantsState[spatialIndex].quantity > 0) {
-                const movedQuantity = realmInhabitantsState[spatialIndex].quantity;
+      let stackSizeToMove = cellStackData.golemCount;
 
-                realmInhabitantsState[spatialIndex].quantity = 0;
+      cellStackData.presentTypes.delete(targetGolemIdentifier);
 
-                const displacement = (movementDirection === 'L' ? -1 : 1);
-                const destinationIndex = spatialIndex + displacement;
+      cellStackData.golemCount = 0;
 
-                if (destinationIndex < 0 || destinationIndex >= realmSize) {
-                    currentPopulationCount -= movedQuantity;
-                } else {
-                    realmInhabitantsState[destinationIndex].kind = originalSquareIdentifiers[destinationIndex];
-                    realmInhabitantsState[destinationIndex].quantity += movedQuantity;
-                }
-            }
+      let nextCellLocation = cellIterator + displacementValue;
+
+      if (nextCellLocation < 0 || nextCellLocation >= gridDimension) {
+        currentActiveGolems -= stackSizeToMove;
+      } else {
+        let destinationStackData = currentBoardMap.get(nextCellLocation);
+        if (!destinationStackData) {
+          destinationStackData = { golemCount: 0, presentTypes: new Set() };
+          currentBoardMap.set(nextCellLocation, destinationStackData);
         }
+
+        destinationStackData.presentTypes.add(initialGolemTypes[nextCellLocation]);
+
+        destinationStackData.golemCount += stackSizeToMove;
+      }
     }
 
-    console.log(currentPopulationCount);
-};
+    return { currentBoardMap, currentActiveGolems };
+  }, { currentBoardMap: positionalStacks, currentActiveGolems: remainingGolemUnits });
 
-CommenceOperation(require("fs").readFileSync("/dev/stdin", "utf8"));
+  console.log(finalSimulationState.currentActiveGolems);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

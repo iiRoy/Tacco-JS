@@ -1,45 +1,28 @@
-const retrieveSystemModule = require;
-const readContentFromFile = retrieveSystemModule('node:fs').readFileSync;
-const rawDataString = readContentFromFile('/dev/stdin', 'utf8');
-const characterArray = rawDataString.split('');
-const detectionKeywords = ['the', 'this', 'that'];
-const alphaSpan = 26;
-const lowerACharCode = 'a'.charCodeAt(0);
+var fileSystem = require('fs');
+var sourceText = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const shiftTransformations = Array.from({ length: alphaSpan }, (_, currentShiftAmount) => {
-    const charShiftMap = new Map();
-    for (let charOffset = 0; charOffset < alphaSpan; charOffset++) {
-        const originalChar = String.fromCharCode(lowerACharCode + charOffset);
-        const shiftedChar = String.fromCharCode((charOffset + currentShiftAmount) % alphaSpan + lowerACharCode);
-        charShiftMap.set(originalChar, shiftedChar);
-    }
-    return charShiftMap;
-});
+const searchTerms = ['the', 'this', 'that'];
+const lowerAlpha = 'abcdefghijklmnopqrstuvwxyz';
 
-const applySingleCharShift = (inputChar, currentShiftMap) => {
-    return currentShiftMap.has(inputChar) ? currentShiftMap.get(inputChar) : inputChar;
-};
+const finalDecryption = Array.from({ length: 26 }, (_, shiftAmount) => shiftAmount)
+    .find(currentShift => {
+        let processedCharacters = [];
 
-const verifyKeywordsPresent = (processedText, keywordsList) => {
-    return keywordsList.some(keyword => processedText.includes(keyword));
-};
+        for (let charIndex = 0; charIndex < sourceText.length; charIndex++) {
+            const currentChar = sourceText[charIndex];
+            const alphaIndex = lowerAlpha.indexOf(currentChar);
 
-const decipherRecursively = (currentIterationShift, sourceChars, searchTerms) => {
-    if (currentIterationShift >= alphaSpan) {
-        return null;
-    }
+            if (alphaIndex !== -1) {
+                const newAlphaIndex = (alphaIndex + currentShift) % 26;
+                processedCharacters.push(lowerAlpha[newAlphaIndex]);
+            } else {
+                processedCharacters.push(currentChar);
+            }
+        }
 
-    const activeShiftMap = shiftTransformations[currentIterationShift];
-    const transformedString = sourceChars.map(individualCharacter =>
-        applySingleCharShift(individualCharacter, activeShiftMap)
-    ).join('');
+        const candidateOutput = processedCharacters.join('');
 
-    if (verifyKeywordsPresent(transformedString, searchTerms)) {
-        return transformedString;
-    } else {
-        return decipherRecursively(currentIterationShift + 1, sourceChars, searchTerms);
-    }
-};
+        return searchTerms.some(term => candidateOutput.includes(term));
+    });
 
-const finalDecipheredString = decipherRecursively(0, characterArray, detectionKeywords);
-process.stdout.write(finalDecipheredString + '\n');
+console.log(finalDecryption);

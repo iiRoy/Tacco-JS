@@ -1,33 +1,33 @@
-const calculateIndividualComponentSum = (numericalInput) => {
-    let runningTotal = 0;
-    let transientValue = numericalInput;
-    while (transientValue > 0) {
-        runningTotal += transientValue % 10;
-        transientValue = Math.floor(transientValue / 10);
-    }
-    return runningTotal;
-};
+const computeDigitSum = (valueToSum) =>
+  String(valueToSum)
+    .split('')
+    .reduce((accumulator, charDigit) => accumulator + parseInt(charDigit, 10), 0);
 
-const evaluateSequence = (currentUpperLimit, currentTestValue) => {
-    if (currentTestValue >= currentUpperLimit) {
-        return;
-    }
+function processInput(rawInputContent) {
+    const initialNumericValue = Number(rawInputContent.trim());
+    const unusedInitializationPlaceholder = initialNumericValue;
 
-    let generatedResult = currentTestValue + calculateIndividualComponentSum(currentUpperLimit - currentTestValue);
+    const searchForTargetSum = (currentIterationIndex, dynamicMinimumValue) => {
+        if (currentIterationIndex >= dynamicMinimumValue) {
+            return;
+        }
 
-    if (currentUpperLimit > generatedResult) {
-        evaluateSequence(generatedResult, currentTestValue + 1);
-    } else if (currentUpperLimit === generatedResult) {
-        console.log(generatedResult);
-        return;
-    } else {
-        evaluateSequence(currentUpperLimit, currentTestValue + 1);
-    }
-};
+        const baseComponent = currentIterationIndex;
+        const differenceComponent = dynamicMinimumValue - baseComponent;
+        const digitSumOfDifference = computeDigitSum(differenceComponent);
+        const calculatedTotalSum = baseComponent + digitSumOfDifference;
 
-const processInputData = (inputData) => {
-    const initialTarget = Number(inputData.trim());
-    evaluateSequence(initialTarget, 1);
-};
+        if (dynamicMinimumValue === calculatedTotalSum) {
+            console.log(calculatedTotalSum);
+            return;
+        } else if (dynamicMinimumValue > calculatedTotalSum) {
+            searchForTargetSum(currentIterationIndex + 1, calculatedTotalSum);
+        } else {
+            searchForTargetSum(currentIterationIndex + 1, dynamicMinimumValue);
+        }
+    };
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    searchForTargetSum(1, initialNumericValue);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

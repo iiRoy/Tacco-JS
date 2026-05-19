@@ -1,133 +1,104 @@
-//  This module handles the evaluation of mathematical expressions provided via standard input.
-//  It supports basic arithmetic operations within parentheses.
+/* This file processes mathematical expressions from standard input. */
+(function() {
+  // A dynamic array to store input lines.
+  let dataStore = [];
+  // Obtain a readable stream for standard input.
+  const inputSource = process.openStdin();
+  // Ensure input data is treated as UTF-8 text.
+  inputSource.setEncoding('utf8');
 
-( function () {
+  // Function to recursively evaluate a mathematical expression string.
+  const evaluateExpression = function(currentExpression) {
+    let openParenIndex, parenBalance, closeParenIndex, matchResult;
 
-  let dataLines = [ ] ; //  Container for all input lines received.
-
-  const inputStream = process.openStdin ( ) ; //  Acquires the standard input stream.
-  inputStream.setEncoding ( 'utf8' ) ; //  Ensures input is read as UTF-8 text.
-
-
-  /**
-   *  Recursively evaluates a mathematical expression string.
-   *  Handles parentheses, then multiplication/division, then addition/subtraction.
-   *
-   *  @param {string} currentExpression - The mathematical string to evaluate.
-   *  @returns {string} The result of the evaluation as a string.
-   */
-  const evaluateMathString = ( currentExpression ) => {
-    let openParenPosition, parenDepth, closeParenPosition, regexMatch;
-
-    //  First pass: Handle nested parentheses recursively.
-    openParenPosition = currentExpression.indexOf('(');
-    while (openParenPosition !== -1) {
-      parenDepth = 1;
-      closeParenPosition = openParenPosition + 1;
-
-      //  Iterate to find the matching closing parenthesis.
-      while (parenDepth > 0) {
-        if (currentExpression[closeParenPosition] === '(') {
-          parenDepth++;
+    // Handle nested parentheses first.
+    openParenIndex = currentExpression.indexOf(String.fromCharCode(40)); // '('
+    while (openParenIndex !== -1) {
+      parenBalance = 1;
+      closeParenIndex = openParenIndex + 1;
+      // Find the matching closing parenthesis.
+      while (parenBalance > 0) {
+        if (currentExpression[closeParenIndex] === String.fromCharCode(40)) { // '('
+          parenBalance++;
         }
-        if (currentExpression[closeParenPosition] === ')') {
-          parenDepth--;
+        if (currentExpression[closeParenIndex] === String.fromCharCode(41)) { // ')'
+          parenBalance--;
         }
-        closeParenPosition++;
+        closeParenIndex++;
       }
-
-      //  Recursively evaluate the content within the parentheses and substitute the result.
-      currentExpression = currentExpression.substring(0, openParenPosition) +
-                          evaluateMathString(currentExpression.substring(openParenPosition + 1, closeParenPosition - 1)) +
-                          currentExpression.substring(closeParenPosition);
-      openParenPosition = currentExpression.indexOf('('); //  Search for the next opening parenthesis.
+      // Recursively evaluate the sub-expression and substitute it back.
+      currentExpression = currentExpression.substring(0, openParenIndex) +
+                          evaluateExpression(currentExpression.substring(openParenIndex + 1, closeParenIndex - 1)) +
+                          currentExpression.substring(closeParenIndex);
+      // Look for the next opening parenthesis.
+      openParenIndex = currentExpression.indexOf(String.fromCharCode(40)); // '('
     }
 
-    //  Second pass: Process multiplication and division operations.
-    //  The regular expression captures an optional prefix, the first number, the operator (* or /),
-    //  the second number, and an optional suffix.
-    while ((regexMatch = /^(.*?)(-?\d+)([*/])(-?\d+)(.*)$/.exec(currentExpression)) !== null) {
-      const operand1 = parseInt(regexMatch[2], 10);
-      const operand2 = parseInt(regexMatch[4], 10);
-      let calculationResult;
-
-      if (regexMatch[3] === '*') {
-        calculationResult = operand1 * operand2;
-      } else {
-        //  Perform integer division by using bitwise OR with 0 for truncation.
-        calculationResult = (operand1 / operand2) | 0;
+    // Process multiplication and division operations.
+    // Regex: (anything)(number)(* or /)(number)(anything)
+    while ((matchResult = /^(.*?)(-?\d+)([*/])(-?\d+)(.*)$/.exec(currentExpression)) != null) {
+      if (matchResult[3] === String.fromCharCode(42)) { // '*'
+        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) * parseInt(matchResult[4], 10)) + matchResult[5];
+      } else { // '/'
+        // Integer division using bitwise OR 0.
+        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) / parseInt(matchResult[4], 10) | 0) + matchResult[5];
       }
-      //  Replace the matched arithmetic operation with its computed result.
-      currentExpression = regexMatch[1] + calculationResult + regexMatch[5];
     }
 
-    //  Third pass: Process addition and subtraction operations.
-    //  The regular expression identifies an optional prefix, the first number, the operator (+ or 'Z' for subtraction),
-    //  the second number, and an optional suffix.
-    while ((regexMatch = /^(.*?)(-?\d+)([+Z])(-?\d+)(.*)$/.exec(currentExpression)) !== null) {
-      const operand1 = parseInt(regexMatch[2], 10);
-      const operand2 = parseInt(regexMatch[4], 10);
-      let calculationResult;
-
-      if (regexMatch[3] === '+') {
-        calculationResult = operand1 + operand2;
-      } else { //  'Z' is a placeholder for '-' after initial string modification.
-        calculationResult = operand1 - operand2;
+    // Process addition and subtraction operations.
+    // Note: 'Z' is a placeholder for '-' after initial processing.
+    // Regex: (anything)(number)(+ or Z)(number)(anything)
+    while ((matchResult = /^(.*?)(-?\d+)([+Z])(-?\d+)(.*)$/.exec(currentExpression)) != null) {
+      if (matchResult[3] === String.fromCharCode(43)) { // '+'
+        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) + parseInt(matchResult[4], 10)) + matchResult[5];
+      } else { // 'Z' (originally '-')
+        currentExpression = matchResult[1] + (parseInt(matchResult[2], 10) - parseInt(matchResult[4], 10)) + matchResult[5];
       }
-      //  Substitute the matched operation with its calculated value.
-      currentExpression = regexMatch[1] + calculationResult + regexMatch[5];
     }
-
-    return currentExpression; //  Returns the final evaluated string, which should be a numerical value.
+    return currentExpression;
   };
 
-
-  //  Event handler for receiving data chunks from standard input.
-  inputStream.on( 'data', ( incomingBuffer ) => {
-    let singleLine, parsedInputLines;
-
-    //  This immediately invoked function expression (IIFE) processes the incoming buffer,
-    //  splitting it into an array of individual lines. This structure mirrors CoffeeScript's array comprehension.
-    parsedInputLines = (function () {
-      const sourceData = incomingBuffer.split('\n');
-      const transformedResults = [];
-      for (let idx = 0, totalLength = sourceData.length; idx < totalLength; idx++) {
-        singleLine = sourceData[idx];
-        transformedResults.push(singleLine);
+  // Event listener for incoming data chunks from standard input.
+  inputSource.on('data', function(receivedData) {
+    let lineSegment, processedLines;
+    // Split the received data by newline characters.
+    processedLines = (function() {
+      let idx, totalLen, sourceLines, collectedSegments;
+      sourceLines = receivedData.split("\n");
+      collectedSegments = [];
+      for (idx = 0, totalLen = sourceLines.length; idx < totalLen; idx++) {
+        lineSegment = sourceLines[idx];
+        collectedSegments.push(lineSegment);
       }
-      return transformedResults;
+      return collectedSegments;
     })();
 
-    //  Checks if the received input block is the initial set of expressions (more than 2 lines
-    //  or the second line is not a number, implying the first line is the count).
-    //  Otherwise, it appends the first line of the block to the existing data.
-    if (parsedInputLines.length > 2 || !isNaN(parsedInputLines[1])) {
-      dataLines = parsedInputLines;
+    // Determine how to store the processed lines.
+    // If there are more than 2 lines or the second line is a number,
+    // replace the entire data store. Otherwise, append the first line.
+    if (processedLines.length > 2 || !Number.isNaN(parseInt(processedLines[1], 10))) {
+      return dataStore = processedLines;
     } else {
-      dataLines.push(parsedInputLines[0]);
+      return dataStore.push(processedLines[0]);
     }
   });
 
+  // Event listener for the end of standard input stream.
+  inputSource.on('end', function(endEventArg) {
+    let loopCounter, numExpressions, rawExpression;
+    let outputResults = []; // Mimicking CoffeeScript's _results array.
 
-  //  Event handler triggered when the standard input stream ends.
-  inputStream.on( 'end', ( endSignal ) => {
-    let loopIndex, numberOfEntries, currentInputString;
-    const evaluationOutputs = []; //  An array to capture the results of console.log calls.
+    // Parse the number of expressions from the first line of stored data.
+    numExpressions = parseInt(dataStore[0], 10);
 
-    //  The very first line of input is parsed as the total number of expressions to evaluate.
-    numberOfEntries = parseInt(dataLines[0], 10);
-
-    //  Iterate through each expression, starting from the second line of the input data.
-    for (loopIndex = 1; loopIndex <= numberOfEntries; loopIndex = loopIndex + 1) {
-      //  Extract the part of the string before the '=' sign and replace all '-' characters with 'Z'.
-      //  'Z' acts as a temporary placeholder for subtraction to distinguish it from negative numbers
-      //  during regex matching for operators.
-      currentInputString = dataLines[loopIndex].substring(0, dataLines[loopIndex].indexOf('='))
-                                                .replace(/-/g, 'Z');
-      //  Evaluate the pre-processed string and output the final numerical result to the console.
-      evaluationOutputs.push(console.log(evaluateMathString(currentInputString)));
+    // Iterate through the stored expressions, starting from the second line.
+    for (loopCounter = 1; loopCounter <= numExpressions; loopCounter++) {
+      // Extract the expression part before '=' and replace all '-' with 'Z'.
+      rawExpression = dataStore[loopCounter].substring(0, dataStore[loopCounter].indexOf(String.fromCharCode(61))).replace(/-/g, String.fromCharCode(90)); // '=' and 'Z'
+      // Evaluate the expression and log the result to console.
+      outputResults.push(console.log(evaluateExpression(rawExpression)));
     }
-    return evaluationOutputs; //  Returns an array of `undefined` values (results of `console.log`).
+    return outputResults; // Return the array of undefineds from console.log calls.
   });
 
-} ).call( this ) ; //  Invokes the anonymous function immediately, ensuring 'this' refers to the global object.
+}).call(this); // Invoke the immediately-invoked function expression.

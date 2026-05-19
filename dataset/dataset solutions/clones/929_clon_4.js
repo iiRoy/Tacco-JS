@@ -1,60 +1,43 @@
-function* numericSequence(startValue, exclusiveEndValue) {
-  let current = startValue;
-  while (current < exclusiveEndValue) {
-    yield current;
-    current++;
-  }
-}
-
 (function processMatrixChain() {
-  const fileSystem = require('fs');
-  const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-  const inputDataLines = rawInput.trim().split('\n');
+  const rawInputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-  const matrixCountRaw = inputDataLines.splice(0, 1)[0];
-  const matrixCount = Number(matrixCountRaw);
+  const matrixQuantity = Number(rawInputLines.shift());
 
-  const dimensionArray = [];
-  for (let i = 0; i < matrixCount; i++) {
-    const parts = inputDataLines[i].split(' ');
-    dimensionArray.push(Number(parts[0]));
-    if (i === matrixCount - 1) {
-      dimensionArray.push(Number(parts[1]));
-    }
-  }
+  const matrixDimensions = [];
+  const parsedMatrixSpecs = rawInputLines.map(line => line.split(' ').map(Number));
 
-  const minOpCache = Array.from({
-    length: matrixCount + 1
-  }, () => Array(matrixCount + 1).fill(null));
+  matrixDimensions.push(parsedMatrixSpecs[0][0]);
+  parsedMatrixSpecs.forEach(spec => matrixDimensions.push(spec[1]));
 
-  function computeOptimalCost(startIdx, endIdx) {
-    if (minOpCache[startIdx][endIdx] !== null) {
-      return minOpCache[startIdx][endIdx];
-    }
+  const costMemo = Array.from({ length: matrixQuantity + 1 }, () => Array(matrixQuantity + 1).fill(null));
 
-    if (startIdx === endIdx) {
+  function computeMinCost(startMatrixIndex, endMatrixIndex) {
+    if (startMatrixIndex === endMatrixIndex) {
       return 0;
     }
 
-    let minimumCurrentCost = Infinity;
-
-    for (let splitPoint of numericSequence(startIdx, endIdx)) {
-      const costLeft = computeOptimalCost(startIdx, splitPoint);
-      const costRight = computeOptimalCost(splitPoint + 1, endIdx);
-      const multiplicationCost = dimensionArray[startIdx - 1] * dimensionArray[splitPoint] * dimensionArray[endIdx];
-
-      const totalCurrentCost = costLeft + costRight + multiplicationCost;
-
-      if (totalCurrentCost < minimumCurrentCost) {
-        minimumCurrentCost = totalCurrentCost;
-      }
+    if (costMemo[startMatrixIndex][endMatrixIndex] !== null) {
+      return costMemo[startMatrixIndex][endMatrixIndex];
     }
 
-    minOpCache[startIdx][endIdx] = minimumCurrentCost;
-    return minimumCurrentCost;
+    let currentMinCost = Infinity;
+
+    for (let splitPoint = startMatrixIndex; splitPoint < endMatrixIndex; splitPoint++) {
+      const costOfCurrentSplit =
+        computeMinCost(startMatrixIndex, splitPoint) +
+        computeMinCost(splitPoint + 1, endMatrixIndex) +
+        matrixDimensions[startMatrixIndex - 1] *
+        matrixDimensions[splitPoint] *
+        matrixDimensions[endMatrixIndex];
+
+      currentMinCost = Math.min(currentMinCost, costOfCurrentSplit);
+    }
+
+    costMemo[startMatrixIndex][endMatrixIndex] = currentMinCost;
+    return currentMinCost;
   }
 
-  const finalMinimumOperations = computeOptimalCost(1, matrixCount);
+  const finalResult = computeMinCost(1, matrixQuantity);
 
-  console.log(finalMinimumOperations);
+  console.log(finalResult);
 })();

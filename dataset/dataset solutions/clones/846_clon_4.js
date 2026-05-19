@@ -1,47 +1,29 @@
 const fileSystem = require('fs');
 
-function processTextualData(sourceLocation) {
-    const rawSource = fileSystem.readFileSync(sourceLocation, 'utf8');
-    const cleanSource = rawSource.trim();
-
-    const patternUnits = cleanSource.match(/(egg|chicken)/g) || [];
-
-    const symbolicRepresentation = patternUnits.map(unit => unit === 'egg' ? 0 : 1);
-
-    const expandedSymbolicSequence = [];
-    for (let i = 0; i < symbolicRepresentation.length; i++) {
-        if (i > 0 && symbolicRepresentation[i] === symbolicRepresentation[i - 1]) {
-            expandedSymbolicSequence.push(-1); // A unique marker for separation
-        }
-        expandedSymbolicSequence.push(symbolicRepresentation[i]);
-    }
-
-    const segmentedCollections = expandedSymbolicSequence.reduce((acc, item) => {
-        if (item === -1) {
-            acc.push([]);
-        } else {
-            if (acc.length === 0 || acc[acc.length - 1].length === 0) {
-                acc.push([item]);
-            } else {
-                acc[acc.length - 1].push(item);
-            }
-        }
-        return acc;
-    }, []).filter(collection => collection.length > 0);
-
-    let predominantCollection = [];
-    if (segmentedCollections.length > 0) {
-        predominantCollection = segmentedCollections.reduce((longestCandidate, currentCandidate) => {
-            return currentCandidate.length > longestCandidate.length ? currentCandidate : longestCandidate;
-        }, []);
-    }
-
-    if (predominantCollection.length === 0) {
-        console.log("chicken");
+function recursivePatternInsert(currentText, searchRegex, insertValue) {
+    const transformedText = currentText.replace(searchRegex, insertValue);
+    if (transformedText === currentText) {
+        return currentText;
     } else {
-        const finalDiscriminator = predominantCollection[predominantCollection.length - 1];
-        console.log(finalDiscriminator === 0 ? 'egg' : 'chicken');
+        return recursivePatternInsert(transformedText, searchRegex, insertValue);
     }
 }
 
-processTextualData('/dev/stdin');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+
+let processedSequence = rawData.trim();
+processedSequence = processedSequence.replace(/egg/g, "E");
+processedSequence = processedSequence.replace(/chicken/g, "C");
+
+processedSequence = recursivePatternInsert(processedSequence, /EE/, "EAE");
+processedSequence = recursivePatternInsert(processedSequence, /CC/, "CAC");
+
+const segmentList = processedSequence.split("A");
+
+const longestFragment = segmentList.reduce((accumulator, currentSegment) => {
+    return (currentSegment.length > accumulator.length) ? currentSegment : accumulator;
+}, "");
+
+const finalResult = (longestFragment.slice(-1) === "E") ? "egg" : "chicken";
+
+console.log(finalResult);

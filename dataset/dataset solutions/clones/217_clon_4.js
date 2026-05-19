@@ -1,28 +1,27 @@
-const sourceModule = require('node:fs');
-const acquiredContent = sourceModule.readFileSync('/dev/stdin', 'utf8').trim();
-const rawSegments = acquiredContent.split('\n');
+const fileSystem = require('fs');
 
-function calculateFractionalDigitSum(topValue, bottomValue, countDigits) {
-    let currentRemainder = topValue % bottomValue;
-    let accumulatedSum = 0;
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8').trim();
+const dataRecords = rawInputContent.split('\n');
 
-    for (let i = 0; i < countDigits; i++) {
-        currentRemainder *= 10;
-        const digit = Math.floor(currentRemainder / bottomValue);
-        accumulatedSum += digit;
-        currentRemainder %= bottomValue;
+const processedResults = dataRecords.map(currentRecord => {
+    const numericalComponents = currentRecord.split(' ').map(Number);
+    const [dividendValue, divisorValue, decimalPlaces] = numericalComponents;
+
+    const calculatedValue = dividendValue / divisorValue;
+    const scalingFactor = 10 ** decimalPlaces;
+    const scaledAndRounded = Math.round(calculatedValue * scalingFactor);
+    
+    const relevantDigitsAsNumber = scaledAndRounded % scalingFactor;
+
+    const fractionalString = String(relevantDigitsAsNumber).padStart(decimalPlaces, '0');
+
+    let totalDigitSum = 0;
+    for (const digitChar of fractionalString) {
+        totalDigitSum += Number(digitChar);
     }
-    return accumulatedSum;
-}
+    return totalDigitSum;
+});
 
-for (const currentSegment of rawSegments) {
-    if (!currentSegment) continue;
-
-    const stringParts = currentSegment.split(' ');
-    const firstOperand = Number(stringParts[0]);
-    const secondOperand = Number(stringParts[1]);
-    const digitPrecision = Number(stringParts[2]);
-
-    const finalResult = calculateFractionalDigitSum(firstOperand, secondOperand, digitPrecision);
-    console.log(finalResult);
-}
+processedResults.forEach(outputValue => {
+    console.log(outputValue);
+});

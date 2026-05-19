@@ -1,72 +1,71 @@
-"use strict" // Ensures strict mode for cleaner code execution
+"use strict";
 
 /**
- * Main processing function for the provided input.
- * @param {string} rawTextContent - The raw string input from the source.
+ * Processes the provided input string to calculate a specific count.
+ * This function implements a unique number filtering and iterative calculation logic.
+ * @param {string} inputString - The raw input data from stdin.
  */
-function processInputData( rawTextContent ) {
-    // Split the input into lines after trimming leading/trailing whitespace.
-    var inputStringLines = rawTextContent
-        .trim()
-        .split( "\n" ) ;
+function processInput(inputString) {
+    // Split the input into individual lines and remove any leading/trailing whitespace.
+    const inputLines = inputString.trim().split("\n");
 
-    // Parse the second number from the first line as the upper limit.
-    var upperLimitValue = inputStringLines[0].split( " " ).map( Number )[1] ;
+    // Parse the second number from the first line as the maximum value.
+    const maxValue = Number(inputLines[0].split(" ")[1]);
 
-    // Process the second line: split by space, convert to numbers, and sort in descending order.
-    var unsortedNumericList = inputStringLines[1]
-        .split( " " )
-        .map( Number )
-        .sort( ( valA, valB ) => valB - valA ) ;
+    // Parse numbers from the second line, sort them in descending order,
+    // and store them temporarily.
+    const initialNumbers = inputLines[1].split(" ").map(Number).sort((valA, valB) => valB - valA);
 
-    // Filter out duplicate numbers, keeping only unique values.
-    var uniqueDescendingNumbers = unsortedNumericList.filter( function ( currentElement, currentIndex, arrayReference ) {
-        return arrayReference.indexOf( currentElement ) === currentIndex ;
-    } ) ;
+    // Filter out duplicate numbers, keeping only the first occurrence,
+    // and store the unique, sorted numbers.
+    const uniqueSortedNumbers = initialNumbers.filter(function (currentNum, idx, originalArray) {
+        return originalArray.indexOf(currentNum) === idx;
+    });
 
-    // Extract the first (largest) unique number to use as the primary divisor.
-    var primaryDivisor = uniqueDescendingNumbers.shift() ;
+    // Extract the first unique number to use as the base for calculations.
+    const firstElement = uniqueSortedNumbers.shift();
 
-    // This variable is declared but remains unused throughout the logic.
-    var operationLog = [ ] ;
+    // This variable is declared but not used in the current logic.
+    // It's kept to preserve the original structure.
+    const unusedList = [];
 
-    // Initialize a counter for valid calculation results.
-    var finalResultCount = 0 ;
+    // Initialize a counter for the successful conditions.
+    let resultCount = 0;
 
-    // Loop through potential multipliers starting from 1 indefinitely.
-    for ( var currentMultiplier = 1 ; ; currentMultiplier++ ) {
-        // Calculate a product based on the primary divisor and current multiplier.
-        var calculatedProduct = primaryDivisor * ( currentMultiplier + 0.5 ) ;
+    // Begin an infinite loop, incrementing a multiplier.
+    for (let multiplier = 1; ; multiplier++) {
+        // Calculate a potential product based on the base and multiplier.
+        const currentProduct = firstElement * (multiplier + 0.5);
 
-        // If the calculated product exceeds the upper limit, terminate the loop.
-        if ( calculatedProduct > upperLimitValue ) {
-            break ;
+        // If the potential product exceeds the maximum allowed value, exit the loop.
+        if (currentProduct > maxValue) {
+            break;
         }
 
-        // Flag to track if any anomaly is encountered during inner calculations.
-        var encounteredAnomaly = false ;
+        // Flag to track if any error condition is met in the inner loop.
+        let encounteredIssue = false;
 
-        // Iterate through the remaining unique numbers.
-        for ( var indexIterator = 0 ; indexIterator < uniqueDescendingNumbers.length ; indexIterator++ ) {
-            // Compute an intermediate value.
-            var intermediateCalculation = calculatedProduct / uniqueDescendingNumbers[ indexIterator ] - 0.5 ;
+        // Iterate through the remaining unique sorted numbers.
+        for (let indexVal = 0; indexVal < uniqueSortedNumbers.length; indexVal++) {
+            // Calculate a potential integer value.
+            const potentialInteger = currentProduct / uniqueSortedNumbers[indexVal] - 0.5;
 
-            // Check if the intermediate calculation is not a whole number.
-            if ( ! Number.isInteger( intermediateCalculation ) ) {
-                encounteredAnomaly = true ; // Mark as anomalous
-                break ; // Exit inner loop immediately
+            // Check if the calculated value is not an integer.
+            if (!Number.isInteger(potentialInteger)) {
+                encounteredIssue = true; // Set the error flag.
+                break; // Exit the inner loop early.
             }
         }
 
-        // If no anomalies were found for the current multiplier, increment the result count.
-        if ( ! encounteredAnomaly ) {
-            finalResultCount++ ;
+        // If no error was encountered in the inner loop, increment the result counter.
+        if (!encounteredIssue) {
+            resultCount++;
         }
     }
 
-    // Display the final count of valid results.
-    console.log( finalResultCount ) ;
+    // Output the final calculated count to the console.
+    console.log(resultCount);
 }
 
-// Invoke the main processing function with content read from standard input.
-processInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) ;
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,48 +1,35 @@
-function orchestrateCardGames(inputFeedUnits) {
-    const inputSegments = inputFeedUnits.trim().split('\n');
-    let feedPointer = 0;
-    const aggregatedResults = [];
+let inputData = '';
+process.stdin.on('data', chunk => {
+    inputData += chunk;
+});
 
-    const processNextScenario = () => {
-        if (feedPointer >= inputSegments.length) {
-            return;
+process.stdin.on('end', () => {
+    const tokens = inputData.trim().split(/\s+/);
+    let tokenPointer = 0;
+
+    const retrieveNextInteger = () => parseInt(tokens[tokenPointer++], 10);
+
+    while (true) {
+        const deckSize = retrieveNextInteger();
+        const operationCount = retrieveNextInteger();
+
+        if (operationCount === 0 && deckSize === 0) {
+            break;
         }
 
-        const [scenarioCardCount] = inputSegments[feedPointer++].split(' ').map(Number);
-        const [scenarioOperationCount] = inputSegments[feedPointer++].split(' ').map(Number);
+        let currentDeck = Array.from({ length: deckSize }, (_, index) => deckSize - index);
 
-        if (scenarioCardCount === 0 && scenarioOperationCount === 0) {
-            return;
+        for (let opIndex = 0; opIndex < operationCount; opIndex++) {
+            const cutPoint = retrieveNextInteger() - 1;
+            const moveLength = retrieveNextInteger();
+
+            const segmentA = currentDeck.slice(0, cutPoint);
+            const segmentB = currentDeck.slice(cutPoint, cutPoint + moveLength);
+            const segmentC = currentDeck.slice(cutPoint + moveLength);
+
+            currentDeck = [...segmentB, ...segmentA, ...segmentC];
         }
 
-        const initialLayout = Array.from({ length: scenarioCardCount }, (_, cardIndex) => scenarioCardCount - cardIndex);
-
-        const scenarioTransforms = Array.from({ length: scenarioOperationCount }, () => {
-            const [operationStart, operationLength] = inputSegments[feedPointer++].split(' ').map(Number);
-            return {
-                designation: operationStart,
-                span: operationLength
-            };
-        });
-
-        const applyTransformation = (currentLayout, { designation, span }) => {
-            const effectivePosition = designation - 1;
-
-            const prefixSegment = currentLayout.slice(0, effectivePosition);
-            const coreBlock = currentLayout.slice(effectivePosition, effectivePosition + span);
-            const suffixSegment = currentLayout.slice(effectivePosition + span);
-
-            return [...coreBlock, ...prefixSegment, ...suffixSegment];
-        };
-
-        const resultantLayout = scenarioTransforms.reduce(applyTransformation, initialLayout);
-
-        aggregatedResults.push(resultantLayout[0]);
-
-        processNextScenario();
-    };
-
-    processNextScenario();
-
-    return aggregatedResults.join('\n');
-}
+        process.stdout.write(currentDeck[0] + '\n');
+    }
+});

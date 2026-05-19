@@ -1,94 +1,87 @@
-// This function orchestrates the graph cycle detection process.
-function ExecuteGraphTraversal(sourceText)
-{
-  // Split the entire input into individual lines.
-  sourceText = sourceText.split("\n");
+// This function processes the raw input data to find the shortest cycle in a directed graph.
+function ProcessInput(rawData) {
+  // Divide the entire input string into individual lines.
+  let dataLines = rawData.split('\n');
 
-  // Remove the last line if it's empty, a common occurrence with standard input.
-  if (sourceText[sourceText.length - 1] === '')
-  {
-    sourceText.pop();
+  // Check if the last line is empty and remove it if so.
+  // This handles cases where the input ends with a newline character.
+  if (dataLines[dataLines.length - 0b1] === '') {
+    dataLines.pop();
   }
 
-  // Extract the total number of nodes and edges from the first line.
-  // The '-0' converts the string parts to numbers.
-  const nodeCount = sourceText[0].split(' ')[0] - 0;
-  const connectionTotal = sourceText[0].split(' ')[1] - 0;
+  // Extract the number of nodes (vertices) and edges from the first line of input.
+  // The second value (edge count) is parsed but not used in the algorithm.
+  const nodeCount = dataLines[0].split(' ')[0] - 0x0;
+  const edgeCount = dataLines[0].split(' ')[0b1] - 0;
 
-  // Initialize an adjacency list to store graph connections.
-  // It's an array of arrays, representing outgoing edges from each node.
+  // Initialize an adjacency list to represent the directed graph.
+  // The list is 1-indexed for nodes, so it needs 'nodeCount + 1' entries.
   let adjacencyList = [];
-  for (let loopVar = 0; loopVar <= nodeCount; loopVar++)
-  {
+  for (let k = 0; k <= nodeCount; k++) {
     adjacencyList.push([]);
   }
 
-  // Populate the adjacency list with the provided edge information.
-  // Each subsequent line in the input describes an edge.
-  for (let loopVar = 1; loopVar < sourceText.length; loopVar++)
-  {
-    const parts = sourceText[loopVar].split(' ');
-    const originNode = parts[0] - 0;
-    const terminalNode = parts[1] - 0;
-    adjacencyList[originNode].push(terminalNode);
+  // Populate the adjacency list with the graph's edges.
+  // Each subsequent line in the input describes a directed edge.
+  for (let k = 0b1; k < dataLines.length; k++) {
+    const edgeComponents = dataLines[k].split(' ');
+    const sourceNode = edgeComponents[0] - 0;
+    const destinationNode = edgeComponents[0b1] - 0x0;
+    adjacencyList[sourceNode].push(destinationNode);
   }
 
-  // Initialize a queue to store paths being explored.
-  // Each element in this queue is an array representing a path.
-  let pathQueue = [];
-  for (let loopVar = 1; loopVar <= nodeCount; loopVar++)
-  {
-    pathQueue.push([loopVar]); // Start each path from a single node.
+  // Initialize a collection of paths. Initially, each path consists of a single node.
+  // These represent all possible starting points for exploring cycles.
+  let currentPaths = [];
+  for (let k = 0b1; k <= nodeCount; k++) {
+    currentPaths.push([k]);
   }
 
-  // Variables to hold temporary path candidates and the final cycle string.
-  let candidateRoutes;
-  let cycleDescription = '';
+  // Declare variables for storing paths in the next iteration and the cycle output.
+  let nextPaths;
+  let cycleOutput = "";
 
-  // Begin the breadth-first-search like traversal to find a cycle.
-  while (pathQueue.length > 0)
-  {
-    cycleDescription = ''; // Reset cycle string for each iteration.
-    candidateRoutes = []; // Reset temporary storage for next level paths.
+  // Begin the main loop for path exploration. This continues as long as there are paths to extend.
+  while (currentPaths.length > 0) {
+    cycleOutput = ""; // Reset cycle output for the current iteration.
+    nextPaths = [];   // Prepare an empty array for paths generated in this step.
 
-    // For each path currently in the queue:
-    pathQueue.forEach(currentPath =>
-    {
-      const lastNodeInPath = currentPath[currentPath.length - 1];
-
-      // Explore all possible next nodes from the last node of the current path.
-      adjacencyList[lastNodeInPath].forEach(destinationNode =>
-      {
-        candidateRoutes.push(currentPath.concat([destinationNode])); // Extend the path.
+    // Iterate through each path currently being explored.
+    currentPaths.forEach(currentPath => {
+      const lastNodeInPath = currentPath[currentPath.length - 0b1]; // Get the last node of the path.
+      // For each neighbor of the last node, create a new, longer path.
+      adjacencyList[lastNodeInPath].forEach(nextNode => {
+        nextPaths.push(currentPath.concat([nextNode]));
       });
     });
 
-    // Update the path queue with the newly generated paths.
-    pathQueue = candidateRoutes.slice(); // Deep copy for next iteration.
+    // Update the set of paths to be explored in the next iteration.
+    currentPaths = nextPaths.slice();
 
-    // Check if any of the new paths form a cycle.
-    pathQueue.forEach(currentPath =>
-    {
-      // A cycle is found if the last node in the path is the same as the first node.
-      if (currentPath[currentPath.length - 1] === currentPath[0])
-      {
-        let actualCycle = currentPath.slice(); // Create a copy.
-        actualCycle.shift(); // Remove the duplicate starting node.
-        cycleDescription = actualCycle.length + "\n" + actualCycle.join("\n"); // Format the output.
+    // After extending paths, check if any of the newly formed paths constitute a cycle.
+    currentPaths.forEach(currentPath => {
+      // A cycle is detected if the path's last node is identical to its first node.
+      if (currentPath[currentPath.length - 0b1] === currentPath[0]) {
+        // If a cycle is found, format the output string.
+        // The output includes the cycle length and the nodes forming the cycle, each on a new line.
+        let pathWithoutStartNode = currentPath.slice();
+        pathWithoutStartNode.shift(); // Remove the duplicate starting node for correct length and display.
+        cycleOutput = pathWithoutStartNode.length + '\n' + pathWithoutStartNode.join('\n');
       }
     });
 
-    // If a cycle was found in this iteration, print it and exit.
-    if (cycleDescription !== '')
-    {
-      console.log(cycleDescription);
-      return;
+    // If a cycle was identified in this iteration, print it and terminate the program.
+    if (cycleOutput !== '') {
+      console.log(cycleOutput);
+      return; // Exit the function.
     }
   }
 
   // If the loop completes without finding any cycle, output -1.
-  console.log(-1);
+  console.log(-0b1);
 }
 
-// The following line is for standard input/output handling and should not be modified by the user.
-ExecuteGraphTraversal(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// This section handles reading from standard input and invoking the main processing function.
+// It is critical for the program's execution environment and should remain unchanged.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,207 +1,198 @@
 "use strict";
-const fileSystemInterface = require("fs");
+const fileSystem = require("fs");
 
-class DataStreamProcessor {
-    constructor(sourcePath) {
-        this.rawContent = fileSystemInterface.readFileSync(sourcePath, "utf8");
-        this.parsedElements = this.rawContent.split(/\s+/).filter(Boolean);
-        this.elementIndex = 0;
+// Helper for multi-dimensional array creation without eval
+function buildMultiArray(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
+    }
+    const currentDimensionSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
+    return Array.from({ length: currentDimensionSize }, () =>
+        buildMultiArray(initialValue, ...remainingDimensions)
+    );
+}
+
+// Input processing class to replace global `cin` and `cx`
+class StreamParser {
+    constructor(rawData) {
+        this.dataTokens = rawData.split(/ |\n/);
+        this.tokenPointer = 0;
     }
 
-    retrieveNumericElement() {
-        if (this.elementIndex >= this.parsedElements.length) {
-            throw new Error("End of input stream reached.");
-        }
-        return Number(this.parsedElements[this.elementIndex++]);
+    readNextInteger() {
+        return +this.dataTokens[this.tokenPointer++];
+    }
+
+    readNextString() {
+        return this.dataTokens[this.tokenPointer++];
     }
 }
 
-function constructMultiDimensionalArray(initialValue, ...dimensions) {
-    const createDimension = (dims) => {
-        if (dims.length === 0) {
-            return initialValue;
+// Main simulation class to encapsulate state and logic
+class DeliverySimulation {
+    constructor(inputParser) {
+        this.parser = inputParser;
+
+        // Renamed global state variables
+        this.pathSegmentLength = 0; // leng
+        this.currentVehicleNode = 0; // nextV
+        this.currentSimulationDay = 0; // day
+        this.lastOrderProcessingDay = -1; // takeday
+        this.cumulativeScore = 0; // score
+
+        this.INFINITY = 1e9;
+        this.numVertices = this.parser.readNextInteger(); // V
+        this.numEdges = this.parser.readNextInteger(); // E
+
+        // Renamed data structures
+        this.shortestPathMatrix = buildMultiArray(this.INFINITY, this.numVertices, this.numVertices); // dist
+        this.directEdgeMatrix = buildMultiArray(this.INFINITY, this.numVertices, this.numVertices); // directDist
+        this.nodeAdjacencyLists = buildMultiArray([], this.numVertices); // e
+
+        this.maxSimulationDays = this.parser.readNextInteger(); // tmax
+        this.maxSimulationDaysSquared = this.maxSimulationDays * this.maxSimulationDays; // tmax2
+        this.dailyOutcomeRecords = []; // ans
+
+        this.activeDeliveryItems = new Set(); // has
+        this.itemOrderTimestamps = buildMultiArray([], this.numVertices); // orderTime
+
+        this.initializeGraphData();
+        this.computeAllPairsShortestPaths();
+    }
+
+    // Equivalent to original `getE()`
+    initializeGraphData() {
+        for (let i = 0; i < this.numVertices; i++) {
+            this.shortestPathMatrix[i][i] = 0;
         }
-        const currentDimensionSize = dims[0];
-        const remainingDimensions = dims.slice(1);
-        return Array.from({ length: currentDimensionSize }, () => createDimension(remainingDimensions));
-    };
-    return createDimension(dimensions);
-}
+        for (let i = 0; i < this.numEdges; i++) {
+            const nodeA = this.parser.readNextInteger() - 1;
+            const nodeB = this.parser.readNextInteger() - 1;
+            const distance = this.parser.readNextInteger();
 
-class JourneyPlanner {
-    constructor(streamReaderInstance) {
-        this.dataAcquirer = streamReaderInstance;
-
-        this._infiniteValue = 1e9;
-        this._totalVertices = this.dataAcquirer.retrieveNumericElement();
-        this._totalEdges = this.dataAcquirer.retrieveNumericElement();
-
-        this._interNodeDistances = constructMultiDimensionalArray(this._infiniteValue, this._totalVertices, this._totalVertices);
-        this._segmentWeights = constructMultiDimensionalArray(this._infiniteValue, this._totalVertices, this._totalVertices);
-        this._neighborConnections = constructMultiDimensionalArray([], this._totalVertices);
-
-        this._loadNetworkTopology();
-
-        this._maximumSimulationDuration = this.dataAcquirer.retrieveNumericElement();
-        this._durationSquared = this._maximumSimulationDuration * this._maximumSimulationDuration;
-        this._dailyActionLog = Array(this._maximumSimulationDuration);
-
-        this._activeDeliveryTargets = new Set();
-        this._deliveryRequestTimestamps = constructMultiDimensionalArray([], this._totalVertices);
-
-        this._remainingSegmentLength = 0;
-        this._currentVertexIdentifier = 0;
-        this._elapsedTimeUnit = 0;
-        this._lastOrderBatchTime = -1;
-        this._cumulativeEfficiencyScore = 0;
+            this.shortestPathMatrix[nodeA][nodeB] = this.shortestPathMatrix[nodeB][nodeA] = distance;
+            this.directEdgeMatrix[nodeA][nodeB] = this.directEdgeMatrix[nodeB][nodeA] = distance;
+            this.nodeAdjacencyLists[nodeA].push(nodeB);
+            this.nodeAdjacencyLists[nodeB].push(nodeA);
+        }
     }
 
-    _loadNetworkTopology() {
-        Array.from({ length: this._totalVertices }).forEach((_, nodeIdx) => {
-            this._interNodeDistances[nodeIdx][nodeIdx] = 0;
-        });
-
-        Array.from({ length: this._totalEdges }).forEach(() => {
-            const nodeA = this.dataAcquirer.retrieveNumericElement() - 1;
-            const nodeB = this.dataAcquirer.retrieveNumericElement() - 1;
-            const weight = this.dataAcquirer.retrieveNumericElement();
-
-            this._interNodeDistances[nodeA][nodeB] = this._interNodeDistances[nodeB][nodeA] = weight;
-            this._segmentWeights[nodeA][nodeB] = this._segmentWeights[nodeB][nodeA] = weight;
-            this._neighborConnections[nodeA].push(nodeB);
-            this._neighborConnections[nodeB].push(nodeA);
-        });
-    }
-
-    _calculateAllNodeDistances() {
-        Array.from({ length: this._totalVertices }).forEach((_, intermediate) => {
-            Array.from({ length: this._totalVertices }).forEach((__, source) => {
-                Array.from({ length: this._totalVertices }).forEach((___, destination) => {
-                    const pathViaIntermediate = this._interNodeDistances[source][intermediate] + this._interNodeDistances[intermediate][destination];
-                    if (pathViaIntermediate < this._interNodeDistances[source][destination]) {
-                        this._interNodeDistances[source][destination] = pathViaIntermediate;
+    // Encapsulated Floyd-Warshall algorithm
+    computeAllPairsShortestPaths() {
+        for (let intermediateNode = 0; intermediateNode < this.numVertices; intermediateNode++) {
+            for (let startNode = 0; startNode < this.numVertices; startNode++) {
+                for (let endNode = 0; endNode < this.numVertices; endNode++) {
+                    const pathViaIntermediate = this.shortestPathMatrix[startNode][intermediateNode] + this.shortestPathMatrix[intermediateNode][endNode];
+                    if (pathViaIntermediate < this.shortestPathMatrix[startNode][endNode]) {
+                        this.shortestPathMatrix[startNode][endNode] = pathViaIntermediate;
                     }
-                });
-            });
-        });
-    }
-
-    _registerIncomingOrders() {
-        while (this._lastOrderBatchTime < this._elapsedTimeUnit) {
-            this._lastOrderBatchTime++;
-            const newOrderCount = this.dataAcquirer.retrieveNumericElement();
-            Array.from({ length: newOrderCount }).forEach(() => {
-                const itemIdentifier = this.dataAcquirer.retrieveNumericElement() - 1; // Not used, but consumed
-                const deliveryTarget = this.dataAcquirer.retrieveNumericElement() - 1;
-                this._activeDeliveryTargets.add(deliveryTarget);
-                this._deliveryRequestTimestamps[deliveryTarget].push(this._lastOrderBatchTime);
-            });
+                }
+            }
         }
     }
 
-    _fulfillCurrentDelivery() {
-        this._activeDeliveryTargets.delete(this._currentVertexIdentifier);
-        while (this._deliveryRequestTimestamps[this._currentVertexIdentifier].length > 0) {
-            const orderPlacementTime = this._deliveryRequestTimestamps[this._currentVertexIdentifier].pop();
-            const deliveryDuration = this._elapsedTimeUnit - orderPlacementTime;
-            this._cumulativeEfficiencyScore += this._durationSquared - deliveryDuration * deliveryDuration;
+    // Equivalent to original `main()`
+    runSimulation() {
+        for (let dayCounter = 0; dayCounter < this.maxSimulationDays; dayCounter++) {
+            this.currentSimulationDay = dayCounter;
+            const currentDayResult = this.processDailyOperations() + 1; // solve() equivalent
+
+            if (this.pathSegmentLength < 0) {
+                console.log(this.currentSimulationDay, this.pathSegmentLength, this.currentVehicleNode);
+                return; // Early exit as per original behavior
+            }
+            this.dailyOutcomeRecords.push(currentDayResult);
+        }
+        return this.dailyOutcomeRecords.join("\n");
+    }
+
+    // Equivalent to original `solve()` with dispatch map for node actions
+    processDailyOperations() {
+        if (this.pathSegmentLength > 0) {
+            this.pathSegmentLength--;
+            return this.currentVehicleNode;
+        }
+
+        const nodeActionHandlers = {
+            0: () => this.handleOriginNodeArrival(), // take() equivalent
+            'default': () => this.handleDeliveryNodeArrival() // give() equivalent
+        };
+        (nodeActionHandlers[this.currentVehicleNode] || nodeActionHandlers['default'])();
+
+        return this.determineNextRoute(); // deliver() equivalent
+    }
+
+    // Equivalent to original `take()`
+    handleOriginNodeArrival() {
+        while (this.lastOrderProcessingDay < this.currentSimulationDay) {
+            this.lastOrderProcessingDay++;
+            const numberOfNewOrders = this.parser.readNextInteger();
+            for (let i = 0; i < numberOfNewOrders; i++) {
+                const itemId = this.parser.readNextInteger() - 1; // Original code reads 'id' but uses 'd' for delivery node. Assuming 'd' is the delivery node.
+                const deliveryNode = this.parser.readNextInteger() - 1;
+                this.activeDeliveryItems.add(deliveryNode);
+                this.itemOrderTimestamps[deliveryNode].push(this.lastOrderProcessingDay);
+            }
         }
     }
 
-    _identifyOptimalNextStep(targetNode) {
-        const shortestPathLength = this._interNodeDistances[this._currentVertexIdentifier][targetNode];
+    // Equivalent to original `give()`
+    handleDeliveryNodeArrival() {
+        this.activeDeliveryItems.delete(this.currentVehicleNode);
+        const deliveredTimestamps = this.itemOrderTimestamps[this.currentVehicleNode];
+        while (deliveredTimestamps.length > 0) {
+            const orderTimestamp = deliveredTimestamps.pop();
+            const timeElapsed = this.currentSimulationDay - orderTimestamp;
+            this.cumulativeScore += this.maxSimulationDaysSquared - timeElapsed * timeElapsed;
+        }
+    }
 
-        const nextHop = this._neighborConnections[this._currentVertexIdentifier].find(neighbor =>
-            shortestPathLength === (this._segmentWeights[this._currentVertexIdentifier][neighbor] + this._interNodeDistances[neighbor][targetNode])
+    // Equivalent to original `deliver()` using Array.from().reduce for selection
+    determineNextRoute() {
+        if (this.activeDeliveryItems.size === 0) {
+            return (this.currentVehicleNode === 0) ? -2 : this.findNextHop(0);
+        }
+
+        let bestTargetNode = -1;
+        let maxOrdersAtTarget = 0;
+
+        Array.from(this.activeDeliveryItems).reduce((_accumulator, targetNode) => {
+            if (this.shortestPathMatrix[this.currentVehicleNode][targetNode] <= this.maxSimulationDays - this.currentSimulationDay) {
+                const ordersCount = this.itemOrderTimestamps[targetNode].length;
+                if (ordersCount > maxOrdersAtTarget) {
+                    maxOrdersAtTarget = ordersCount;
+                    bestTargetNode = targetNode;
+                }
+            }
+            return _accumulator; // Accumulator is not functionally used here, but structure is different
+        }, null);
+
+        if (bestTargetNode === -1) {
+            return -2;
+        }
+        return this.findNextHop(bestTargetNode);
+    }
+
+    // Equivalent to original `minPath()` using Array.find()
+    findNextHop(destinationNode) {
+        const nextHopNode = this.nodeAdjacencyLists[this.currentVehicleNode].find(neighbor =>
+            this.shortestPathMatrix[this.currentVehicleNode][destinationNode] ===
+            this.directEdgeMatrix[this.currentVehicleNode][neighbor] + this.shortestPathMatrix[neighbor][destinationNode]
         );
 
-        if (nextHop !== undefined) {
-            this._remainingSegmentLength = this._segmentWeights[this._currentVertexIdentifier][nextHop] - 1;
-            this._currentVertexIdentifier = nextHop;
-            return this._currentVertexIdentifier;
+        if (nextHopNode !== undefined) {
+            this.pathSegmentLength = this.directEdgeMatrix[this.currentVehicleNode][nextHopNode] - 1;
+            this.currentVehicleNode = nextHopNode;
+            return this.currentVehicleNode;
         }
         return -2;
     }
-
-    _strategizeNextDelivery() {
-        if (this._activeDeliveryTargets.size === 0) {
-            if (this._currentVertexIdentifier === 0) {
-                return -2;
-            }
-            return this._identifyOptimalNextStep(0);
-        }
-
-        const potentialDestinations = Array.from(this._activeDeliveryTargets);
-        const reachableGoals = potentialDestinations.filter(
-            (targetNode) => this._interNodeDistances[this._currentVertexIdentifier][targetNode] <= (this._maximumSimulationDuration - this._elapsedTimeUnit)
-        );
-
-        if (reachableGoals.length === 0) {
-            return -2;
-        }
-
-        const bestGoalNode = reachableGoals.reduce((bestCandidate, currentCandidate) => {
-            const currentOrderVolume = this._deliveryRequestTimestamps[currentCandidate].length;
-            const bestOrderVolume = bestCandidate ? this._deliveryRequestTimestamps[bestCandidate].length : -1;
-
-            if (currentOrderVolume > bestOrderVolume) {
-                return currentCandidate;
-            }
-            return bestCandidate;
-        }, null);
-
-        if (bestGoalNode === null) {
-            return -2;
-        }
-
-        return this._identifyOptimalNextStep(bestGoalNode);
-    }
-
-    _processDailyActivities() {
-        if (this._remainingSegmentLength > 0) {
-            this._remainingSegmentLength--;
-            return this._currentVertexIdentifier;
-        }
-
-        const actionDispatch = {
-            0: () => this._registerIncomingOrders(),
-            default: () => this._fulfillCurrentDelivery()
-        };
-        (actionDispatch[this._currentVertexIdentifier] || actionDispatch.default)();
-
-        return this._strategizeNextDelivery();
-    }
-
-    initiateLogisticsOperation() {
-        this._calculateAllNodeDistances();
-
-        const simulateRecursiveCycle = (currentCycleDay) => {
-            if (currentCycleDay >= this._maximumSimulationDuration) {
-                return true;
-            }
-
-            const dailyOutcome = this._processDailyActivities();
-            this._dailyActionLog[currentCycleDay] = dailyOutcome + 1;
-
-            if (this._remainingSegmentLength < 0) {
-                return false;
-            }
-
-            this._elapsedTimeUnit++;
-            return simulateRecursiveCycle(this._elapsedTimeUnit);
-        };
-
-        const simulationFinished = simulateRecursiveCycle(this._elapsedTimeUnit);
-
-        if (!simulationFinished) {
-            return this._dailyActionLog.slice(0, this._elapsedTimeUnit).join("\n");
-        }
-
-        return this._dailyActionLog.join("\n");
-    }
 }
 
-const streamReader = new DataStreamProcessor("/dev/stdin");
-const planner = new JourneyPlanner(streamReader);
-const finalOutput = planner.initiateLogisticsOperation();
-console.log(finalOutput);
+// Main execution block
+const rawInputData = fileSystem.readFileSync("/dev/stdin", "utf8");
+const inputProcessor = new StreamParser(rawInputData);
+const simulationInstance = new DeliverySimulation(inputProcessor);
+
+console.log(simulationInstance.runSimulation());

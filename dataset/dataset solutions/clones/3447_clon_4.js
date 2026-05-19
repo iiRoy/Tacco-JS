@@ -1,31 +1,21 @@
-function segmentString(inputSequence) {
-    const collectedParts = [];
-    let currentPiece = '';
-    for (let currentPos = 0; currentPos < inputSequence.length; ++currentPos) {
-        if (inputSequence[currentPos] === ' ') {
-            collectedParts.push(currentPiece);
-            currentPiece = '';
-        } else {
-            currentPiece += inputSequence[currentPos];
-        }
+function computeNumericExpression(sourceContent) {
+    const initialLine = sourceContent.split('\n')[0];
+    const numericExtractor = /^\s*(-?\d+(\.\d+)?)\s+(-?\d+(\.\d+)?)\s*$/;
+    const extractedParts = initialLine.match(numericExtractor);
+
+    if (!extractedParts) {
+        return NaN;
     }
-    collectedParts.push(currentPiece);
-    return collectedParts;
+
+    const firstTerm = parseFloat(extractedParts[1]);
+    const secondTerm = parseFloat(extractedParts[3]);
+
+    return firstTerm + secondTerm / 2;
 }
 
-const entireStream = require('fs').readFileSync('/dev/stdin', 'utf8');
+function executeCalculationAndDisplay(inputString) {
+    const finalResult = computeNumericExpression(inputString);
+    console.log(finalResult);
+}
 
-const lineSeparatorPosition = entireStream.indexOf('\n');
-const relevantLine = (lineSeparatorPosition === -1) ? entireStream : entireStream.substring(0, lineSeparatorPosition);
-
-const extractedComponents = segmentString(relevantLine);
-
-const initialDatum = extractedComponents[0];
-const secondDatum = extractedComponents[1];
-
-const valueOne = +initialDatum;
-const valueTwo = +secondDatum;
-
-const finalResult = valueOne + (valueTwo / 2);
-
-console.log(finalResult);
+executeCalculationAndDisplay(require('fs').readFileSync('/dev/stdin', 'utf8'));

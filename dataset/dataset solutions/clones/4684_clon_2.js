@@ -1,27 +1,28 @@
-function CalculateSequenceSum(initialValue) {  // Primary routine for sequential sum calculation.
-  const targetThreshold = Number.parseInt(initialValue, 10); // Convert input string to an integer.
+function ProcessInput(initialValue) {
+  // Convert the provided string input into an integer for numerical operations.
+  initialValue = parseInt(initialValue, 10);
 
-  let runningTotal = 0; // Cumulative sum variable, initialized to zero.
-  let lastElementIndex = 0; // Stores the index of the last number added in the sequence.
+  let currentSum = 0; // This variable accumulates the sum of loop counters.
+  let lastIndex = 0;  // This variable stores the value of the loop counter 'loopCounter' in each iteration.
 
-  for (let currentIteration = 0; runningTotal < targetThreshold; currentIteration++) {  // Iterate while total is below threshold.
-    runningTotal = runningTotal + currentIteration;  // Add current iteration number to the total.
-    lastElementIndex = currentIteration;             // Update the last recorded index.
+  // Begin a loop that continues as long as the 'currentSum' is less than the 'initialValue'.
+  for (let loopCounter = 0; currentSum < initialValue; loopCounter++) {
+    currentSum = currentSum + loopCounter; // Add the current 'loopCounter' to the running total.
+    lastIndex = loopCounter;             // Update 'lastIndex' with the current 'loopCounter' value.
   }
 
-  console.log('%d', lastElementIndex); // Display the final index value.
+  // Print the final value stored in 'lastIndex' to the console.
+  console.log('%s', lastIndex);
 }
 
-
-function LaunchTestSequence() {  // Dedicated function for developer-mode testing.
-  const inputElementReference = document.getElementById("userEntryField"); // Get reference to the HTML input element by its ID.
-  const capturedTextData = inputElementReference.value; // Extract the textual content from the input field.
-
-  CalculateSequenceSum(capturedTextData); // Pass the acquired data to the core calculation function.
+// This function is provided for debugging purposes, typically in a browser environment.
+function performDebug() {
+  // Retrieve the string value from an HTML input element with the ID "input".
+  const debugInputString = document.getElementById("input").value;
+  // Invoke the main processing function with the retrieved debug input.
+  ProcessInput(debugInputString);
 }
 
-
-const fileSystemUtility = require("node:fs"); // Load the Node.js native file system module for I/O operations.
-const standardInputContent = fileSystemUtility.readFileSync("/system/stdin", "utf-8"); // Read all data from the standard input stream, interpreting it as UTF-8 text.
-
-CalculateSequenceSum(standardInputContent); // Execute the calculation using the data obtained from standard input.
+// Execute the primary logic by reading input from standard input.
+// The 'require("fs").readFileSync' method reads the content of the specified file synchronously.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

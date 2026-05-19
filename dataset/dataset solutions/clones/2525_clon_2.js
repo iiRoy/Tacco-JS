@@ -1,25 +1,24 @@
 'use strict';
-// This module handles numerical array processing
-const processElements = (  inputLines  ) => {
-  // Parse the iteration count and the array of numbers from the input
-  const      cycleCount    =   parseInt(inputLines[0], 10),
-         numericArray = inputLines[1].split(' ').map(  stringValue  => parseInt(stringValue, 10));
 
-  // A placeholder for previous debugging output, now removed.
+const processInputData = (incomingLines) => {
+  // Parse the first line for the total count of elements.
+  const totalCount = parseInt(incomingLines[0], 10);
 
-  // Loop through the array to find and "remove" the smallest element repeatedly
-  for (  let iterationTracker = 0; iterationTracker < cycleCount; iterationTracker++  ) {
+  // Parse the second line, splitting by space and converting each part to an integer.
+  const numericValues = incomingLines[1].split(' ').map(strValue => parseInt(strValue, 10));
 
-    // Find the zero-based index of the current smallest number in the array
-    let currentSmallestIdx = numericArray.indexOf(Math.min.apply(null, numericArray));
+  // Iterate 'totalCount' times to find and "remove" the smallest element in each step.
+  for (let iterationIndex = 0; iterationIndex < totalCount; iterationIndex++) {
+    // Determine the index of the current minimum value within the array.
+    let foundMinimumIndex = numericValues.indexOf(Math.min.apply(null, numericValues));
 
-    // Display the one-based position of the smallest number
-    console.log(currentSmallestIdx + 1);
+    // Output the 1-based index of the smallest element found.
+    console.log(foundMinimumIndex + 1);
 
-    // Replace the smallest number with a large sentinel value to prevent re-selection
-    numericArray[currentSmallestIdx] = 999999;
+    // Replace the smallest element with a large number to prevent it from being selected again.
+    numericValues[foundMinimumIndex] = 100000;
   }
 };
 
-// Execute the processing function by reading data from standard input
-processElements(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));
+// Read input from standard input, split by newlines, and pass to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

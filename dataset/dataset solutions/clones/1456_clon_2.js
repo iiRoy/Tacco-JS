@@ -1,139 +1,125 @@
-/* This self-executing anonymous function encapsulates the entire application logic. */
-(function() {
-  // Variable to accumulate all incoming raw data from standard input.
-  var incomingData = '';
+(function () {
+  // This variable will store all the raw input received from standard input.
+  var rawData = '';
 
   /**
-   * Main function to orchestrate the data processing and sorting.
-   * This function is invoked once all input data has been received.
+   * The main function orchestrates the program's execution.
+   * It handles input parsing, sorting, and output generation.
    */
-  function startOperation() {
-    /* Declare local variables for iteration, array bounds, input parsing,
-       and the final output string. */
-    var elementIndex,
-      totalCount, // Represents the count of numbers to process
-      rawNumbersText, // The string containing space-separated numbers
-      numberTokens, // Array of number strings after splitting
-      numericArray = [], // Array to hold parsed integer values
-      formattedOutput = ''; // String to build the final sorted result
+  function executeProgram () {
+    // Declare various local variables needed for processing.
+    var idx, dataLength, numericInputLine, stringNumbers, numericArray = [], finalOutput = '';
 
-    // The first line of input specifies the total count of numbers.
-    totalCount = Number(incomingData[0]);
+    // The first line of input typically contains the count of numbers.
+    dataLength = +rawData[0];
+    // The second line holds the actual numbers as a space-separated string.
+    numericInputLine = rawData[1];
+    // Split the string of numbers into an array of string representations.
+    stringNumbers = numericInputLine.split(' ');
 
-    // The second line of input contains the space-separated numbers.
-    rawNumbersText = incomingData[1];
-
-    // Split the raw number string into an array of string tokens.
-    numberTokens = rawNumbersText.split(' ');
-
-    // Iterate through the tokens and convert them to integers, then store in the numeric array.
-    for (elementIndex = 0; elementIndex < totalCount; elementIndex += 1) {
-      numericArray.push(Number(numberTokens[elementIndex]));
+    // Iterate through the string numbers, converting each to an integer
+    // and adding it to the numericArray.
+    for (idx = 0; idx < dataLength; idx += 1) {
+      numericArray.push(parseInt(stringNumbers[idx], 10));
     }
 
-    // Perform the quick sort operation on the collected numbers.
-    divideAndConquerSort(numericArray, 0, totalCount - 1);
+    // Invoke the quicksort algorithm to sort the array in place.
+    // The sort is applied to the entire range from the first to the last element.
+    performFastSort(numericArray, 0, dataLength - 1);
 
-    // After sorting, construct the output string with numbers separated by spaces.
-    for (elementIndex = 0; elementIndex < totalCount; elementIndex += 1) {
-      // Append a space after each number except the last one.
-      if (elementIndex !== totalCount - 1) {
-        formattedOutput += numericArray[elementIndex] + ' ';
+    // After sorting, construct the output string by joining the sorted numbers.
+    // A space separates numbers, but no trailing space is added after the last number.
+    for (idx = 0; idx < dataLength; idx += 1) {
+      if (idx !== dataLength - 1) { // If it's not the very last element
+        finalOutput += numericArray[idx] + ' '; // Append number followed by a space
       } else {
-        // For the last number, just append the number itself.
-        formattedOutput += numericArray[elementIndex];
+        finalOutput += numericArray[idx]; // Append the last number without a trailing space
       }
     }
-    // Print the final sorted output to the console.
-    console.log(formattedOutput);
+    // Display the final sorted sequence to the console.
+    console.log(finalOutput);
   }
 
   /**
-   * Implements the Quicksort algorithm to sort an array of numbers in place.
-   * @param {Array<number>} elementList - The array of numbers to be sorted.
-   * @param {number} lowerBound - The starting index for the current partition.
-   * @param {number} upperBound - The ending index for the current partition.
+   * Implements the QuickSort algorithm using a Hoare partition scheme.
+   * This function sorts a specified segment of an array recursively.
+   * @param {Array<number>} targetArray The array whose segment needs to be sorted.
+   * @param {number} startIndex The starting index of the segment.
+   * @param {number} endIndex The ending index of the segment.
    */
-  function divideAndConquerSort(elementList, lowerBound, upperBound) {
-    var rightPointer, // Pointer moving from the right
-      leftPointer, // Pointer moving from the left
-      comparisonValue, // The pivot element used for partitioning
-      temporaryStorage; // Temporary variable for swapping elements
+  function performFastSort (targetArray, startIndex, endIndex) {
+    var rightPointer, leftPointer, pivotValue, temporaryHolder;
 
-    // Only proceed if the partition has at least two elements.
-    if (lowerBound < upperBound) {
-      leftPointer = lowerBound;
-      rightPointer = upperBound;
-      // Select the median of three elements as the pivot to improve performance.
-      comparisonValue = selectPivotCandidate(
-        elementList[leftPointer],
-        elementList[rightPointer],
-        elementList[Math.floor((leftPointer + rightPointer) / 2)]
-      );
+    // The sorting process only occurs if the segment contains more than one element.
+    if (startIndex < endIndex) {
+      leftPointer = startIndex;
+      rightPointer = endIndex;
+      // Select a pivot element using the median-of-three strategy for better performance.
+      pivotValue = findMidValue(targetArray[leftPointer], targetArray[rightPointer], targetArray[Math.floor((leftPointer + rightPointer) / 2)]);
 
-      // Partitioning loop.
+      // The partitioning loop: elements are rearranged around the pivot.
       do {
-        // Move left pointer until an element greater than or equal to the pivot is found.
-        while (elementList[leftPointer] < comparisonValue) {
-          leftPointer++;
+        // Increment the left pointer until an element greater than or equal to the pivot is found.
+        while (targetArray[leftPointer] < pivotValue) {
+          leftPointer += 1;
         }
 
-        // Move right pointer until an element less than or equal to the pivot is found.
-        while (elementList[rightPointer] > comparisonValue) {
-          rightPointer--;
+        // Decrement the right pointer until an element less than or equal to the pivot is found.
+        while (targetArray[rightPointer] > pivotValue) {
+          rightPointer -= 1;
         }
 
-        // If pointers cross or meet, the partition is complete for this iteration.
+        // If the pointers have met or crossed, the partitioning for this segment is complete.
         if (leftPointer >= rightPointer) {
           break;
         } else {
-          // Swap elements if they are in the wrong partition relative to the pivot.
-          temporaryStorage = elementList[leftPointer];
-          elementList[leftPointer] = elementList[rightPointer];
-          elementList[rightPointer] = temporaryStorage;
+          // Swap the elements at the current left and right pointer positions.
+          temporaryHolder = targetArray[leftPointer];
+          targetArray[leftPointer] = targetArray[rightPointer];
+          targetArray[rightPointer] = temporaryHolder;
 
-          // Move pointers inward after a swap.
-          leftPointer++;
-          rightPointer--;
+          // Move both pointers inward after a successful swap.
+          leftPointer += 1;
+          rightPointer -= 1;
         }
-      } while (leftPointer <= rightPointer);
+      } while (leftPointer <= rightPointer); // Continue as long as the pointers haven't fully crossed
 
-      // Recursively sort the left sub-array.
-      divideAndConquerSort(elementList, lowerBound, leftPointer - 1);
-      // Recursively sort the right sub-array.
-      divideAndConquerSort(elementList, rightPointer + 1, upperBound);
+      // Recursively apply quicksort to the sub-arrays on either side of the pivot.
+      // Sort the left partition.
+      performFastSort(targetArray, startIndex, leftPointer - 1);
+      // Sort the right partition.
+      performFastSort(targetArray, rightPointer + 1, endIndex);
     }
   }
 
   /**
-   * Determines the median value among three given numbers.
-   * This helps in selecting a better pivot for Quicksort.
-   * @param {number} valA - The first number.
-   * @param {number} valB - The second number.
-   * @param {number} valC - The third number.
+   * A utility function to determine the median value among three given numbers.
+   * This is used to select a robust pivot in the QuickSort algorithm.
+   * @param {number} valA The first numerical value.
+   * @param {number} valB The second numerical value.
+   * @param {number} valC The third numerical value.
    * @returns {number} The median of the three input values.
    */
-  function selectPivotCandidate(valA, valB, valC) {
-    // Logic to find the median of three values.
-    // This expression is a compact way to perform comparisons.
-    return (valA <= valB) ?
-      ((valB <= valC) ? valB : ((valA < valC) ? valC : valA)) :
-      ((valA <= valC) ? valA : ((valB < valC) ? valC : valB));
+  function findMidValue (valA, valB, valC) {
+    // This complex ternary expression efficiently finds the median.
+    return (valA <= valB) ? ((valB <= valC) ? valB : ((valA < valC) ? valC : valA)) : ((valA <= valC) ? valA : ((valB < valC) ? valC: valB));
   }
-
-  // Set up standard input processing.
-  process.stdin.resume(); // Ensure the standard input stream is active.
-  process.stdin.setEncoding('utf8'); // Set encoding for incoming data.
-
-  // Event listener for incoming data chunks.
-  process.stdin.on('data', function(chunkOfData) {
-    incomingData += chunkOfData; // Append each chunk to the raw data string.
+  
+  // Configure Node.js standard input stream.
+  process.stdin.resume(); // Ensures the process stays active to receive input.
+  process.stdin.setEncoding('utf8'); // Specifies the character encoding for input data.
+  
+  // Attach an event listener to accumulate data chunks from stdin.
+  process.stdin.on('data', function (chunkOfData) {
+    rawData += chunkOfData; // Append each received chunk to the rawData string.
   });
 
-  // Event listener for the end of the input stream.
-  process.stdin.on('end', function() {
-    incomingData = incomingData.split('\n'); // Split the accumulated data by newlines.
-    startOperation(); // Once all input is received, begin the main processing.
+  // Attach an event listener for when the standard input stream ends.
+  process.stdin.on('end', function () {
+    // Once all input is received, split it into an array of lines.
+    rawData = rawData.split('\n');
+    // Initiate the main program logic.
+    executeProgram();
   });
 
-}());
+}()); // The IIFE concludes here.

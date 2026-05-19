@@ -1,47 +1,79 @@
-const obtainDataSource = (sourcePath) => {
-    const content = require("node:fs").readFileSync(sourcePath, "utf8");
-    return content.trim().split("\n");
-};
+"use strict"
+class DataStreamProcessor {
+    #sourceLines;
+    #currentPosition;
 
-const processInputFlow = (inputLines) => {
-    let currentPosition = 0;
-    const retrieveNextSegment = () => {
-        if (currentPosition >= inputLines.length) {
-            throw new Error("Data stream depleted");
+    constructor() {
+        const rawContent = require("fs").readFileSync("/dev/stdin", "utf8");
+        this.#sourceLines = rawContent.trim().split("\n");
+        this.#currentPosition = 0;
+    }
+
+    hasMoreEntries() {
+        return this.#currentPosition < this.#sourceLines.length;
+    }
+
+    retrieveNextEntry() {
+        if (!this.hasMoreEntries()) {
+            throw "ArrayIndexOutOfBoundsException";
         }
-        return inputLines[currentPosition++];
-    };
+        return this.#sourceLines[this.#currentPosition++];
+    }
 
-    const extractInteger = () => parseInt(retrieveNextSegment());
-    const extractNumberPair = () => retrieveNextSegment().split(" ").map(Number);
+    retrieveNumericEntry() {
+        return Number(this.retrieveNextEntry());
+    }
 
-    const initialQuantity = extractInteger();
-    const valueTuples = Array.from({ length: initialQuantity }, extractNumberPair);
+    retrieveTokenArray() {
+        return this.retrieveNextEntry().split(" ");
+    }
 
-    // The original code performs a calculation but ultimately prints '0'
-    // because it sums an array initialized with zeros that is never updated.
-    // To ensure "exactly the same results" as the original,
-    // this clone must also output '0', while still demonstrating
-    // a divergent approach and syntax for the underlying (albeit discarded) logic.
+    retrieveNumericArray() {
+        return this.retrieveTokenArray().map(Number);
+    }
 
-    const calculateAccumulation = (currentAccumulator, [valX, valY]) => {
-        const combinedElement = valX + currentAccumulator;
-        const remainder = combinedElement % valY;
-        const necessaryAdjustment = (valY - remainder) % valY; // Correctly handles remainder 0
-        return currentAccumulator + necessaryAdjustment;
-    };
+    retrieveCharSequence() {
+        return Array.from(this.retrieveNextEntry());
+    }
+}
 
-    // This computes the value that the original code *would* have printed
-    // if its `p` array and `ans` calculation were correctly linked to `cnt`.
-    const theoreticalOutcome = valueTuples.reduceRight(calculateAccumulation, 0);
+const inputHandler = new DataStreamProcessor();
 
-    // However, to match the original's actual output (which is always 0),
-    // we apply a functional transformation that guarantees a zero result,
-    // while still referencing the (discarded) theoretical computation.
-    const ultimateResult = ((value) => value - value)(theoreticalOutcome);
+const getNextEntry = () => inputHandler.retrieveNextEntry();
+const getNextNumeric = () => inputHandler.retrieveNumericEntry();
+const getNextTokenArray = () => inputHandler.retrieveTokenArray();
+const getNextNumericArray = () => inputHandler.retrieveNumericArray();
+const getNextCharSequence = () => inputHandler.retrieveCharSequence();
+const checkMoreEntries = () => inputHandler.hasMoreEntries();
 
-    console.log(ultimateResult);
+const displayOutput = (...items) => console.log(...items);
+
+const processApplication = () => {
+    const initialValue = getNextNumeric();
+    const zeroBuffer = Array.from({ length: initialValue }, () => 0);
+
+    const firstCollection = [];
+    const secondCollection = [];
+
+    while (checkMoreEntries()) {
+        const currentPairData = getNextNumericArray();
+        firstCollection.push(currentPairData[0]);
+        secondCollection.push(currentPairData[1]);
+    }
+
+    const finalAdjustment = Array.from({ length: initialValue }, (_, i) => i)
+        .reduceRight((currentAdjustment, idx) => {
+            let intermediateSum = firstCollection[idx] + currentAdjustment;
+            
+            currentAdjustment += (secondCollection[idx] - (intermediateSum % secondCollection[idx])) % secondCollection[idx];
+
+            intermediateSum += zeroBuffer[idx]; 
+
+            return currentAdjustment;
+        }, 0);
+
+    const computedResult = zeroBuffer.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+    displayOutput(computedResult);
 };
 
-// Initiate the processing using standard input
-processInputFlow(obtainDataSource("/dev/stdin"));
+processApplication();

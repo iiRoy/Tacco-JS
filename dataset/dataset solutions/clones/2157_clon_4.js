@@ -1,124 +1,253 @@
 "use strict";
+const U32_MAX_VAL = 0xFFFFFFFF;
+const U32_BASE_VAL = 0x100000000;
 
-let sourceDataBuffer = "";
-process.stdin.on('data', (inputChunk) => { sourceDataBuffer += inputChunk; });
-process.stdin.on('end', () => {
-    const parsedNumericTokens = sourceDataBuffer.split(/\s+/).filter(Boolean).map(Number);
-    const finalOutcome = coreCalculationEngine(parsedNumericTokens);
-    if (finalOutcome !== undefined) {
-        console.log(finalOutcome);
+class LargeNumber {
+    constructor(lowPart, highPart, isNegativeFlag = false) {
+        this.lowPart = lowPart >>> 0;
+        this.highPart = highPart >>> 0;
+        this.isNegativeFlag = isNegativeFlag;
     }
-});
 
-function coreCalculationEngine(rawData) {
-    let tokenCursorPosition = 0;
-    const retrieveNextBigInt = () => BigInt(rawData[tokenCursorPosition++]);
+    static fromStandardNumber(val) {
+        if (val === 0) return LargeNumber.zeroValue;
+        const isNeg = val < 0;
+        const absVal = Math.abs(val);
+        const low = absVal % U32_BASE_VAL;
+        const high = Math.floor(absVal / U32_BASE_VAL);
+        return new LargeNumber(low, high, isNeg);
+    }
 
-    const elementQuantity = retrieveNextBigInt();
-    const desiredOrdinalRank = retrieveNextBigInt();
+    static fromProductOfNumbers(valA, valB) {
+        if (valA === 0 || valB === 0) return LargeNumber.zeroValue;
+        const productBigInt = BigInt(valA) * BigInt(valB);
+        const isNeg = productBigInt < 0n;
+        const absProductBigInt = isNeg ? -productBigInt : productBigInt;
+        const low = Number(absProductBigInt & 0xFFFFFFFFn);
+        const high = Number(absProductBigInt >> 32n);
+        return new LargeNumber(low, high, isNeg);
+    }
 
-    const positiveValueCollection = [];
-    const negativeValueCollection = [];
-    let zeroElementQuantity = 0n;
+    static get zeroValue() { return new LargeNumber(0, 0, false); }
+    static get unitValue() { return new LargeNumber(1, 0, false); }
+    static get maxPositiveValue() { return new LargeNumber(U32_MAX_VAL, U32_MAX_VAL, false); }
+    static get minNegativeValue() { return new LargeNumber(U32_MAX_VAL, U32_MAX_VAL, true); }
 
-    for (let idx = 0; idx < elementQuantity; ++idx) {
-        const currentVal = retrieveNextBigInt();
-        if (currentVal === 0n) {
-            zeroElementQuantity++;
-        } else if (currentVal < 0n) {
-            negativeValueCollection.push(currentVal);
+    static _absoluteAdd(numA, numB) {
+        let newLow = numA.lowPart + numB.lowPart;
+        let carry = 0;
+        if (newLow >= U32_BASE_VAL) {
+            newLow -= U32_BASE_VAL;
+            carry = 1;
+        }
+        let newHigh = numA.highPart + numB.highPart + carry;
+        return new LargeNumber(newLow, newHigh, false);
+    }
+
+    static _absoluteSubtract(numA, numB) {
+        let newLow = numA.lowPart - numB.lowPart;
+        let borrow = 0;
+        if (newLow < 0) {
+            newLow += U32_BASE_VAL;
+            borrow = 1;
+        }
+        let newHigh = numA.highPart - numB.highPart - borrow;
+        return new LargeNumber(newLow, newHigh, false);
+    }
+
+    static sum(numA, numB) {
+        if (numA.isNegativeFlag === numB.isNegativeFlag) {
+            const result = LargeNumber._absoluteAdd(numA, numB);
+            result.isNegativeFlag = numA.isNegativeFlag;
+            return result;
         } else {
-            positiveValueCollection.push(currentVal);
+            const cmpAbs = LargeNumber._compareAbsolute(numA, numB);
+            if (cmpAbs === 0) return LargeNumber.zeroValue;
+            const result = (cmpAbs > 0) ? LargeNumber._absoluteSubtract(numA, numB) : LargeNumber._absoluteSubtract(numB, numA);
+            result.isNegativeFlag = (cmpAbs > 0) ? numA.isNegativeFlag : numB.isNegativeFlag;
+            return result;
         }
     }
 
-    negativeValueCollection.sort((a, b) => Number(a - b));
-    positiveValueCollection.sort((a, b) => Number(a - b));
+    static difference(numA, numB) {
+        const bNegated = new LargeNumber(numB.lowPart, numB.highPart, !numB.isNegativeFlag);
+        return LargeNumber.sum(numA, bNegated);
+    }
 
-    const negativePositiveProductTotal = BigInt(negativeValueCollection.length) * BigInt(positiveValueCollection.length);
-    const zeroProductTotal = (elementQuantity - zeroElementQuantity) * zeroElementQuantity + (zeroElementQuantity * (zeroElementQuantity - 1n)) / 2n;
+    static halve(numA) {
+        if (LargeNumber.compare(numA, LargeNumber.zeroValue) === 0) return LargeNumber.zeroValue;
+        let newLow = (numA.lowPart >>> 1) | ((numA.highPart & 1) << 31);
+        let newHigh = numA.highPart >>> 1;
+        return new LargeNumber(newLow, newHigh, numA.isNegativeFlag);
+    }
 
-    if (desiredOrdinalRank <= negativePositiveProductTotal) {
-        return findKthSmallestNegativeProduct(negativeValueCollection, positiveValueCollection, desiredOrdinalRank).toString();
-    } else if (desiredOrdinalRank <= negativePositiveProductTotal + zeroProductTotal) {
+    static _compareAbsolute(numA, numB) {
+        if (numA.highPart > numB.highPart) return 1;
+        if (numA.highPart < numB.highPart) return -1;
+        if (numA.lowPart > numB.lowPart) return 1;
+        if (numA.lowPart < numB.lowPart) return -1;
+        return 0;
+    }
+
+    static compare(numA, numB) {
+        if (numA.isNegativeFlag && !numB.isNegativeFlag) return -1;
+        if (!numA.isNegativeFlag && numB.isNegativeFlag) return 1;
+        if (numA.isNegativeFlag && numB.isNegativeFlag) {
+            return -LargeNumber._compareAbsolute(numA, numB);
+        } else {
+            return LargeNumber._compareAbsolute(numA, numB);
+        }
+    }
+
+    toDecimalString() {
+        if (LargeNumber.compare(this, LargeNumber.zeroValue) === 0) return "0";
+
+        let currentAbs = new LargeNumber(this.lowPart, this.highPart, false);
+        let digitStack = [];
+
+        while (LargeNumber.compare(currentAbs, LargeNumber.zeroValue) > 0) {
+            let highVal = currentAbs.highPart;
+            let lowVal = currentAbs.lowPart;
+
+            let remainder = 0;
+            let newHigh = Math.floor(highVal / 10);
+            remainder = highVal % 10;
+
+            let tempLow = remainder * U32_BASE_VAL + lowVal;
+            let newLow = Math.floor(tempLow / 10);
+            remainder = tempLow % 10;
+
+            digitStack.push(remainder);
+            currentAbs = new LargeNumber(newLow, newHigh, false);
+        }
+
+        const resultStr = digitStack.reverse().join('');
+        return this.isNegativeFlag ? "-" + resultStr : resultStr;
+    }
+}
+
+class InputProcessor {
+    constructor(rawInput) {
+        this.tokens = rawInput.split(/ |\n/);
+        this.tokenIndex = 0;
+    }
+
+    getNextNumber() {
+        return +this.tokens[this.tokenIndex++];
+    }
+}
+
+var inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+var inputProcessor = new InputProcessor(inputData);
+
+var totalZeroCount = 0;
+var negativeNumberList = [];
+var positiveNumberList = [];
+
+var finalResult = solveProductProblem();
+if (finalResult !== undefined) console.log(finalResult);
+
+function solveProductProblem() {
+    const totalElements = inputProcessor.getNextNumber();
+    const targetRank = inputProcessor.getNextNumber();
+
+    for (let i = 0; i < totalElements; i++) {
+        const currentElement = inputProcessor.getNextNumber();
+        if (currentElement === 0) {
+            totalZeroCount++;
+        } else if (currentElement < 0) {
+            negativeNumberList.push(currentElement);
+        } else {
+            positiveNumberList.push(currentElement);
+        }
+    }
+
+    negativeNumberList.sort((a, b) => a - b);
+    positiveNumberList.sort((a, b) => a - b);
+
+    const negCount = negativeNumberList.length;
+    const posCount = positiveNumberList.length;
+
+    const countOfNegativeProducts = negCount * posCount;
+
+    if (targetRank <= countOfNegativeProducts) {
+        return determineNegativeKthProduct(targetRank);
+    }
+
+    const countOfZeroProducts = (2 * totalElements - totalZeroCount - 1) * totalZeroCount / 2;
+    let currentCumulativeRank = countOfNegativeProducts + countOfZeroProducts;
+
+    if (targetRank <= currentCumulativeRank) {
         return "0";
-    } else {
-        return findKthSmallestPositiveProduct(negativeValueCollection, positiveValueCollection, desiredOrdinalRank - (negativePositiveProductTotal + zeroProductTotal)).toString();
     }
+
+    return determinePositiveKthProduct(targetRank - currentCumulativeRank);
 }
 
-function findKthSmallestNegativeProduct(negativesArray, positivesArray, requestedRank) {
-    let rangeMinimum = -1000000000n * 1000000000n - 1n; // Max possible negative product + a bit more
-    let rangeMaximum = 0n; // Products are negative or can be 0 (but 0 is handled separately for ranking)
+function determineNegativeKthProduct(rankToFind) {
+    let lowerBoundVal = LargeNumber.minNegativeValue;
+    let upperBoundVal = LargeNumber.zeroValue;
 
-    while (rangeMinimum < rangeMaximum) {
-        const currentMidpoint = rangeMinimum + (rangeMaximum - rangeMinimum) / 2n;
-        let accumulatedCount = 0n;
-        
-        let negativeCollectionScanIndex = 0;
-        for (const iteratedPositiveValue of positivesArray) {
-            // For a negative number `currentNegativeValue` and positive `iteratedPositiveValue`,
-            // we want `currentNegativeValue * iteratedPositiveValue <= currentMidpoint`.
-            // Since `currentNegativeValue` values are sorted ascending (e.g., -10, -5, -2),
-            // and `iteratedPositiveValue` is positive, as `currentNegativeValue` increases,
-            // the product `currentNegativeValue * iteratedPositiveValue` also increases (becomes less negative).
-            // We need to count `currentNegativeValue`s from `negativesArray` that satisfy the condition.
-            while (negativeCollectionScanIndex < negativesArray.length && (negativesArray[negativeCollectionScanIndex] * iteratedPositiveValue) <= currentMidpoint) {
-                negativeCollectionScanIndex++;
+    while (LargeNumber.compare(LargeNumber.difference(upperBoundVal, lowerBoundVal), LargeNumber.unitValue) === 1) {
+        let midPoint = LargeNumber.halve(LargeNumber.sum(lowerBoundVal, upperBoundVal));
+        let currentProductCount = 0;
+        let negListPointer = 0;
+
+        for (let i = 0; i < positiveNumberList.length; i++) {
+            const currentPos = positiveNumberList[i];
+            while (negListPointer < negativeNumberList.length &&
+                   LargeNumber.compare(LargeNumber.fromProductOfNumbers(negativeNumberList[negListPointer], currentPos), midPoint) <= 0) {
+                negListPointer++;
             }
-            accumulatedCount += BigInt(negativeCollectionScanIndex);
+            currentProductCount += negListPointer;
         }
 
-        if (accumulatedCount >= requestedRank) {
-            rangeMaximum = currentMidpoint;
+        if (rankToFind <= currentProductCount) {
+            upperBoundVal = midPoint;
         } else {
-            rangeMinimum = currentMidpoint + 1n;
+            lowerBoundVal = midPoint;
         }
     }
-    return rangeMaximum;
+    return upperBoundVal.toDecimalString();
 }
 
-function findKthSmallestPositiveProduct(negativesArray, positivesArray, requestedRank) {
-    let rangeMinimum = 1n; // Smallest possible positive product
-    let rangeMaximum = 1000000000n * 1000000000n + 1n; // Max possible positive product + a bit more
+function determinePositiveKthProduct(rankToFind) {
+    negativeNumberList.reverse();
 
-    while (rangeMinimum < rangeMaximum) {
-        const currentMidpoint = rangeMinimum + (rangeMaximum - rangeMinimum) / 2n;
-        let accumulatedCount = 0n;
+    let lowerBoundVal = LargeNumber.zeroValue;
+    let upperBoundVal = LargeNumber.maxPositiveValue;
 
-        // Count products from positive numbers (positivesArray[i] * positivesArray[j])
-        let rightPositivesIndex = positivesArray.length - 1;
-        for (let leftPositivesIndex = 0; leftPositivesIndex < positivesArray.length; leftPositivesIndex++) {
-            while (rightPositivesIndex > leftPositivesIndex && (positivesArray[leftPositivesIndex] * positivesArray[rightPositivesIndex]) > currentMidpoint) {
-                rightPositivesIndex--;
+    while (LargeNumber.compare(LargeNumber.difference(upperBoundVal, lowerBoundVal), LargeNumber.unitValue) === 1) {
+        let midPoint = LargeNumber.halve(LargeNumber.sum(lowerBoundVal, upperBoundVal));
+        let currentProductCount = 0;
+
+        let posRightIdx = positiveNumberList.length - 1;
+        for (let i = 0; i < positiveNumberList.length; i++) {
+            const currentPosA = positiveNumberList[i];
+            while (posRightIdx > i &&
+                   LargeNumber.compare(LargeNumber.fromProductOfNumbers(currentPosA, positiveNumberList[posRightIdx]), midPoint) > 0) {
+                posRightIdx--;
             }
-            if (rightPositivesIndex <= leftPositivesIndex) {
-                break;
-            }
-            accumulatedCount += BigInt(rightPositivesIndex - leftPositivesIndex);
+            if (posRightIdx <= i) break;
+            currentProductCount += (posRightIdx - i);
         }
 
-        // Count products from negative numbers (negativesArray[i] * negativesArray[j])
-        // `negativesArray` is sorted ascending (e.g., [-10, -5, -2]).
-        // We want to count pairs `(negativesArray[i] * negativesArray[j]) <= currentMidpoint` where `i < j`.
-        // `negativesArray[leftNegativesIndex]` is more negative than `negativesArray[rightNegativesIndex]`.
-        // Their product is positive.
-        let rightNegativesIndex = negativesArray.length - 1;
-        for (let leftNegativesIndex = 0; leftNegativesIndex < negativesArray.length; leftNegativesIndex++) {
-            while (rightNegativesIndex > leftNegativesIndex && (negativesArray[leftNegativesIndex] * negativesArray[rightNegativesIndex]) > currentMidpoint) {
-                rightNegativesIndex--;
+        let negRightIdx = negativeNumberList.length - 1;
+        for (let i = 0; i < negativeNumberList.length; i++) {
+            const currentNegA = negativeNumberList[i];
+            while (negRightIdx > i &&
+                   LargeNumber.compare(LargeNumber.fromProductOfNumbers(currentNegA, negativeNumberList[negRightIdx]), midPoint) > 0) {
+                negRightIdx--;
             }
-            if (rightNegativesIndex <= leftNegativesIndex) {
-                break;
-            }
-            accumulatedCount += BigInt(rightNegativesIndex - leftNegativesIndex);
+            if (negRightIdx <= i) break;
+            currentProductCount += (negRightIdx - i);
         }
 
-        if (accumulatedCount >= requestedRank) {
-            rangeMaximum = currentMidpoint;
+        if (rankToFind <= currentProductCount) {
+            upperBoundVal = midPoint;
         } else {
-            rangeMinimum = currentMidpoint + 1n;
+            lowerBoundVal = midPoint;
         }
     }
-    return rangeMaximum;
+    return upperBoundVal.toDecimalString();
 }

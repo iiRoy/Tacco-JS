@@ -1,60 +1,65 @@
-const fileSystem = require('fs');
-const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const inputRows = rawInputData.trim().split('\n');
-const collectionSize = parseInt(inputRows[0], 10);
-const numericalCollection = inputRows.slice(1, collectionSize + 1).map(Number);
+let opCount = 0;
 
-function deriveDecrements(datasetLimit) {
-  const decrementList = [];
-  const recursiveGenerator = (currentStep) => {
-    if (currentStep >= datasetLimit) {
-      return;
-    }
-    recursiveGenerator(currentStep * 3 + 1);
-    decrementList.push(currentStep);
-  };
-  recursiveGenerator(1);
-  return decrementList;
+function generateGapSequence(limitValue, currentTerm = 1, accumulatedGaps = []) {
+  const nextTerm = currentTerm * 3 + 1;
+  if (nextTerm >= limitValue) {
+    return [currentTerm, ...accumulatedGaps];
+  }
+  return generateGapSequence(limitValue, nextTerm, [currentTerm, ...accumulatedGaps]);
 }
 
-function applyGapSort(dataContainer, gapValue, comparisonTally) {
-  for (let currentPosition = gapValue; currentPosition < dataContainer.length; currentPosition++) {
-    const itemToPlace = dataContainer[currentPosition];
+function processSegment(dataCollection, gapInterval) {
+  for (let currentElementIndex = gapInterval; currentElementIndex < dataCollection.length; currentElementIndex++) {
+    const valueToPosition = dataCollection[currentElementIndex];
+    let comparisonIndex = currentElementIndex - gapInterval;
+    let targetInsertionPoint = -gapInterval;
 
-    const shiftElementsRecursively = (checkIndex) => {
-      if (checkIndex < 0 || dataContainer[checkIndex] <= itemToPlace) {
-        return checkIndex;
-      }
-      dataContainer[checkIndex + gapValue] = dataContainer[checkIndex];
-      comparisonTally.value++;
-      return shiftElementsRecursively(checkIndex - gapValue);
-    };
+    while (comparisonIndex >= 0 && dataCollection[comparisonIndex] > valueToPosition) {
+      comparisonIndex -= gapInterval;
+    }
+    targetInsertionPoint = comparisonIndex;
 
-    const finalInsertionPoint = shiftElementsRecursively(currentPosition - gapValue);
-    dataContainer[finalInsertionPoint + gapValue] = itemToPlace;
+    for (let shiftSourceIndex = currentElementIndex - gapInterval; shiftSourceIndex > targetInsertionPoint; shiftSourceIndex -= gapInterval) {
+      dataCollection[shiftSourceIndex + gapInterval] = dataCollection[shiftSourceIndex];
+      opCount++;
+    }
+    dataCollection[targetInsertionPoint + gapInterval] = valueToPosition;
   }
 }
 
-function orchestrateSorting(dataArray) {
-  const comparisonTracker = { value: 0 };
-  const incrementSequence = deriveDecrements(dataArray.length);
+function performShellSort(targetArray) {
+  opCount = 0;
+  const gapSeries = generateGapSequence(targetArray.length);
 
-  incrementSequence.forEach(stepIncrement => {
-    applyGapSort(dataArray, stepIncrement, comparisonTracker);
+  gapSeries.forEach(currentGap => {
+    processSegment(targetArray, currentGap);
   });
 
-  return {
-    sortedGaps: incrementSequence,
-    totalShiftOperations: comparisonTracker.value,
-  };
+  return gapSeries;
 }
 
-const sortingResult = orchestrateSorting(numericalCollection);
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
 
-let finalOutput = "";
-finalOutput += sortingResult.sortedGaps.length + '\n';
-finalOutput += sortingResult.sortedGaps.join(" ") + '\n';
-finalOutput += sortingResult.totalShiftOperations + '\n';
-finalOutput += numericalCollection.map(String).join('\n');
+const inputReader = require("readline").createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-process.stdout.write(finalOutput);
+const receivedLines = [];
+
+inputReader.on("line", (inputLine) => {
+  receivedLines.push(inputLine);
+});
+
+inputReader.on("close", () => {
+  const arraySize = Number(receivedLines[0]);
+  const inputNumbers = receivedLines.slice(1, arraySize + 1).map(Number);
+
+  const resultingGaps = performShellSort(inputNumbers);
+
+  console.log(resultingGaps.length);
+  console.log(resultingGaps.join(" "));
+  console.log(opCount);
+  inputNumbers.forEach((elementValue) => console.log(elementValue));
+});

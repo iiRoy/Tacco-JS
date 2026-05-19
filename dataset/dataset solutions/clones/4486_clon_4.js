@@ -1,35 +1,48 @@
-const processInput = (textualData) => {
-    const segments = textualData.trim().split(/\s*\n\s*/);
-    
-    const [_, constraintValue] = segments[0].split(/\s+/).map(Number);
+const processInput = (rawContent) => {
+    const [firstLine, secondLine] = rawContent.trim().split("\n");
 
-    const numericSequence = segments[1].split(/\s+/).map(Number);
+    const [countLimit, remainderType] = firstLine.split(" ").map(Number);
+    const valueList = secondLine.split(" ").map(Number);
 
-    const { evenParityItems, oddParityItems } = numericSequence.reduce(
-        (accumulator, currentItem) => {
-            if (currentItem % 2 === 0) {
-                accumulator.evenParityItems.push(currentItem);
-            } else {
-                accumulator.oddParityItems.push(currentItem);
-            }
-            return accumulator;
+    const { evenQuantity, oddQuantity } = valueList.reduce(
+        (acc, currentVal) => {
+            currentVal % 2 === 0 ? acc.evenQuantity++ : acc.oddQuantity++;
+            return acc;
         },
-        { evenParityItems: [], oddParityItems: [] }
+        { evenQuantity: 0, oddQuantity: 0 }
     );
 
-    const quantityEven = evenParityItems.length;
-    const quantityOdd = oddParityItems.length;
+    const evenSubsets = Math.pow(2, evenQuantity);
 
-    const evenItemContribution = 1 << quantityEven;
+    let oddSubsets = 0;
 
-    let oddItemContribution;
-    if (quantityOdd === 0) {
-        oddItemContribution = (constraintValue === 0) ? 1 : 0;
+    const combinations = (n, k) => {
+        if (k < 0 || k > n) return 0;
+        if (k === 0 || k === n) return 1;
+        if (k > n / 2) k = n - k;
+
+        let result = 1;
+        for (let i = 1; i <= k; i++) {
+            result = result * (n - i + 1) / i;
+        }
+        return result;
+    };
+
+    if (remainderType === 0) {
+        oddSubsets = Array.from({ length: oddQuantity + 1 }, (_, idx) => idx)
+                      .filter(idx => idx % 2 === 0)
+                      .reduce((sum, idx) => sum + combinations(oddQuantity, idx), 0);
     } else {
-        oddItemContribution = 1 << (quantityOdd - 1);
+        oddSubsets = Array.from({ length: oddQuantity + 1 }, (_, idx) => idx)
+                      .filter(idx => idx % 2 !== 0)
+                      .reduce((sum, idx) => {
+                          const currentCombi = combinations(oddQuantity, idx);
+                          console.log(currentCombi);
+                          return sum + currentCombi;
+                      }, 0);
     }
-    
-    return evenItemContribution * oddItemContribution;
+
+    console.log(evenSubsets * oddSubsets);
 };
 
-console.log(processInput(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

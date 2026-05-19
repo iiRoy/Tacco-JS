@@ -1,48 +1,42 @@
-function generateBinaryStates(depth) {
-    if (depth === 0) {
-        return [[]];
-    }
-    const priorStates = generateBinaryStates(depth - 1);
-    const currentStates = [];
-    for (const state of priorStates) {
-        currentStates.push([...state, false]);
-        currentStates.push([...state, true]);
-    }
-    return currentStates;
-}
+function processInputData(rawData) {
+  const allLines = rawData.split('\n').filter(Boolean);
 
-function computeLampOutput(lampConnections, currentDeviceStates) {
-    const activeConnectionCount = lampConnections.filter(deviceIndex => {
-        return currentDeviceStates[deviceIndex];
-    }).length;
-    return activeConnectionCount % 2;
-}
+  const systemParameters = allLines[0].split(' ').map(Number);
+  const totalSwitches = systemParameters[0];
+  const totalLamps = systemParameters[1];
 
-function evaluateSystem(sourceText) {
-    const allInputRows = sourceText.trim().split('\n');
+  const targetParities = allLines[allLines.length - 1].split(' ').map(Number);
 
-    const [firstRow, ...restOfRows] = allInputRows;
+  const lampConfigurations = allLines.slice(1, allLines.length - 1).map(line => line.split(' ').map(Number));
 
-    const [totalDevices, totalLamps] = firstRow.split(' ').map(Number);
+  const calculateLampParity = (configArray, currentSwitchState) => {
+    const connectedSwitchIndices = configArray.slice(1);
     
-    const desiredParities = restOfRows.pop().split(' ').map(Number);
+    const activeConnections = connectedSwitchIndices.filter(switchIndex => {
+      return (currentSwitchState >> switchIndex) & 1;
+    }).length;
 
-    const lampWiringInfo = restOfRows.map(rowContent => {
-        const parts = rowContent.split(' ').map(Number);
-        const connectedSwitchCount = parts[0];
-        return parts.slice(1, connectedSwitchCount);
+    return activeConnections % 2;
+  };
+
+  let successfulCombinations = 0;
+
+  Array.from({ length: 1 << totalSwitches }, (_, switchStateIndex) => switchStateIndex)
+    .forEach(currentSwitchState => {
+      const computedParities = lampConfigurations.map(config =>
+        calculateLampParity(config, currentSwitchState)
+      );
+
+      const areParitiesIdentical = computedParities.every((parityValue, index) =>
+        parityValue === targetParities[index]
+      );
+
+      if (areParitiesIdentical) {
+        successfulCombinations++;
+      }
     });
 
-    const allDeviceStateCombinations = generateBinaryStates(totalDevices);
-
-    const successfulCombinations = allDeviceStateCombinations.filter(currentDeviceConfiguration => {
-        const computedLampResults = lampWiringInfo.map(lampConnections => {
-            return computeLampOutput(lampConnections, currentDeviceConfiguration);
-        });
-        return JSON.stringify(computedLampResults) === JSON.stringify(desiredParities);
-    });
-
-    console.log(successfulCombinations.length);
+  console.log(successfulCombinations);
 }
 
-evaluateSystem(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

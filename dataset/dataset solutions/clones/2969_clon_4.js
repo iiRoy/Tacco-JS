@@ -1,95 +1,111 @@
-class InputProcessorContext {
-    constructor(sourceString) {
-        this.allLines = sourceString.trim().split('\n');
-        this.currentLineIndex = 0;
-        this.currentLineTokens = [];
-        this.tokenPosition = 0;
-    }
+const createInputReader = (sourceText) => {
+    const lineStates = sourceText.trim().split('\n').map(l => ({ original: l, words: null }));
+    let currentLineIndex = 0;
 
-    pullNextValue(asString) {
-        if (this.tokenPosition >= this.currentLineTokens.length) {
-            if (this.currentLineIndex >= this.allLines.length) {
-                return undefined;
-            }
-            this.currentLineTokens = this.allLines[this.currentLineIndex].split(' ');
-            this.currentLineIndex++;
-            this.tokenPosition = 0;
+    const retrieveValue = (asString) => {
+        if (currentLineIndex >= lineStates.length) {
+            throw new Error("Input exhausted for single value.");
         }
-        const value = this.currentLineTokens[this.tokenPosition];
-        this.tokenPosition++;
-        return asString ? value : Number(value);
-    }
 
-    pullFullLine(asString) {
-        if (this.currentLineIndex >= this.allLines.length) {
-            return undefined;
+        const currentLineState = lineStates[currentLineIndex];
+        if (!currentLineState.words) {
+            currentLineState.words = currentLineState.original.split(' ').reverse();
         }
-        const line = this.allLines[this.currentLineIndex];
-        this.currentLineIndex++;
-        this.currentLineTokens = [];
-        this.tokenPosition = 0;
-        const tokens = line.split(' ');
-        return asString ? tokens : tokens.map(Number);
-    }
 
-    pullValueMatrix(rowsToRead, asString) {
-        const matrix = [];
-        for (let i = 0; i < rowsToRead; i++) {
-            matrix.push(this.pullFullLine(asString));
+        if (currentLineState.words.length === 0) {
+            currentLineIndex++;
+            return retrieveValue(asString);
         }
-        return matrix;
-    }
 
-    pullValueVector(elementsToRead, asString) {
-        const vector = [];
-        for (let i = 0; i < elementsToRead; i++) {
-            const lineTokens = this.pullFullLine(asString);
-            vector.push(asString ? lineTokens[0] : Number(lineTokens[0]));
+        const val = currentLineState.words.pop();
+        if (currentLineState.words.length === 0) {
+            currentLineIndex++;
         }
-        return vector;
-    }
-}
+        return asString ? val : Number(val);
+    };
 
-const InputProcessor = (source) => new InputProcessorContext(source);
+    const fetchLine = (asStrings) => {
+        if (currentLineIndex >= lineStates.length) {
+            throw new Error("Input exhausted for line.");
+        }
+        const currentLineState = lineStates[currentLineIndex++];
+        const tokens = currentLineState.original.split(' ');
+        return asStrings ? tokens : tokens.map(Number);
+    };
 
-function makeMultiDimensionalArray(dimensions, initializerValue) {
-    if (dimensions.length === 0) {
-        return typeof initializerValue === 'function' ? initializerValue() : initializerValue;
-    }
+    const fetchLines = (count, asStrings) => {
+        if (currentLineIndex + count > lineStates.length) {
+            throw new Error("Input exhausted for multiple lines.");
+        }
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            const currentLineState = lineStates[currentLineIndex++];
+            const tokens = currentLineState.original.split(' ');
+            result.push(asStrings ? tokens : tokens.map(Number));
+        }
+        return result;
+    };
 
-    const currentDimSize = dimensions[0];
-    const remainingDims = dimensions.slice(1);
+    const fetchRawLines = (count, asStrings) => {
+        if (currentLineIndex + count > lineStates.length) {
+            throw new Error("Input exhausted for raw lines.");
+        }
+        const result = [];
+        for (let i = 0; i < count; i++) {
+            const currentLineState = lineStates[currentLineIndex++];
+            const rawLine = currentLineState.original;
+            result.push(asStrings ? rawLine : Number(rawLine));
+        }
+        return result;
+    };
 
-    return Array.from({ length: currentDimSize }, () =>
-        makeMultiDimensionalArray(remainingDims, initializerValue)
-    );
-}
+    return {
+        retrieveValue,
+        fetchLine,
+        fetchLines,
+        fetchRawLines
+    };
+};
 
-const dataPipe = InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+const inputSource = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function calculateZeroKSequence(dimension) {
-    const totalElements = 1 << (dimension + 1);
-    return Array.from({ length: totalElements }, (_, idx) => Math.floor(idx / 2)).join(" ");
-}
+const constructMultiDimensionalArray = (initialValue, ...dimensions) => {
+    const buildDimension = (currentDimIndex) => {
+        if (currentDimIndex === dimensions.length) {
+            return initialValue;
+        }
+        const currentSize = dimensions[currentDimIndex];
+        return Array.from({ length: currentSize }, () => buildDimension(currentDimIndex + 1));
+    };
+    return buildDimension(0);
+};
 
-function computeSolution() {
-    const paramM = dataPipe.pullNextValue();
-    const paramK = dataPipe.pullNextValue();
+const produceZeroSequence = (dimensionValue) => {
+    const sequenceLength = 1 << (dimensionValue + 1);
+    return Array.from({ length: sequenceLength }, (_, index) => Math.floor(index / 2)).join(" ");
+};
 
-    if (paramK >= (1 << paramM)) return -1;
-    if (paramK !== 0 && paramM === 1) return -1;
-    if (paramK === 0) return calculateZeroKSequence(paramM);
+const processSequence = () => {
+    const dimensionCount = inputSource.retrieveValue();
+    const skipValue = inputSource.retrieveValue();
 
-    const twoPowerM = 1 << paramM;
+    if (skipValue >= (1 << dimensionCount)) return -1;
+    if (skipValue && dimensionCount === 1) return -1;
+    if (skipValue === 0) return produceZeroSequence(dimensionCount);
 
-    const firstSegment = Array.from({ length: twoPowerM }, (_, idx) => idx)
-                               .filter(val => val !== paramK);
-    
-    const secondSegment = [...firstSegment].reverse();
+    const totalElements = 1 << dimensionCount;
 
-    const finalSequence = [...firstSegment, paramK, ...secondSegment, paramK];
+    const firstSegment = Array.from({ length: totalElements - 1 }, (_, index) => {
+        return index < skipValue ? index : index + 1;
+    });
 
-    return finalSequence.join(" ");
-}
+    const secondSegment = Array.from({ length: totalElements - 1 }, (_, index) => {
+        let current = totalElements - 1 - index;
+        if (current === skipValue) current--;
+        return current;
+    });
 
-console.log(computeSolution());
+    return firstSegment.concat(skipValue, secondSegment, skipValue).join(" ");
+};
+
+console.log(processSequence());

@@ -1,41 +1,27 @@
-'use strict'; /* This directive enforces stricter parsing and error handling in the script */
+'use strict'; // Enforce strict parsing and error handling.
 
-// Main routine to process incoming information
-function primaryTask(
-    sourceContent
-) {
-    /*
-     * The following sequence of operations transforms the raw string input:
-     * 1. The 'trim' method removes any leading or trailing whitespace characters.
-     * 2. The 'split' method then breaks the string into an array of substrings, using a single space as the delimiter.
-     * 3. Finally, the 'map' method iterates over each substring, converting it into a numerical data type.
-     * The processed array of numbers is assigned to the 'dataElements' variable.
-     */
-    let dataElements = sourceContent
-        .trim()
-          .split(' ')
-            .map(
-                (item) => Number(item)
-            );
+/**
+ * Processes the given raw text data to determine a specific outcome.
+ * @param {string} rawData The input string containing space-separated numbers.
+ */
+function processInput(rawData) {
+  // First, clean up the input string by removing leading/trailing whitespace.
+  // Then, split it into an array of string representations of numbers.
+  // Finally, convert each string element into its numeric equivalent.
+  const numericValues = rawData
+    .trim() // Remove any extraneous whitespace from the ends.
+    .split(' ') // Break the string into an array using space as a delimiter.
+    .map(item => Number(item)); // Transform each string part into a number.
 
-    // A conditional expression evaluates the relationship between the first two numerical elements.
-    // If the value at index 0 is less than the value at index 1, 'computedMetric' is set to 0.
-    // Otherwise, 'computedMetric' is assigned the value of 10.
-    const computedMetric = dataElements[0x0] < dataElements[1] ? 0x0 : 0xA;
+  // Determine the result based on a comparison of the first two numeric values.
+  // If the first value is less than the second, the result is 0; otherwise, it's 10.
+  const resultValue = numericValues[0] < numericValues[1] ? 0 : 10;
 
-    // The final calculated metric is then outputted to the standard console.
-    console.log(
-        computedMetric
-    );
+  // Output the calculated result to the standard console.
+  console.log(resultValue);
 }
 
-// Invocation of the primary processing function.
-// It reads content from the standard input stream ('/dev/stdin') as a UTF-8 encoded string
-// and passes it as an argument to the 'primaryTask' function.
-primaryTask(
-    require('fs')
-        .readFileSync(
-            '/dev/stdin',
-            'utf8'
-        )
-);
+// Read the entire content of the standard input file synchronously.
+// The input is expected to be UTF-8 encoded text.
+// Then, pass this content to our primary processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

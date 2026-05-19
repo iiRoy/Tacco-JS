@@ -1,75 +1,89 @@
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lines = rawData.trim().split('\n');
+let inputAccumulator = '';
 
-const [numNodes, numEdges] = lines.shift().split(' ').map(Number);
-const connections = lines.map(line => line.split(' ').map(Number));
+process.stdin.on('data', (chunk) => {
+    inputAccumulator += chunk.toString();
+});
 
-function constructNetwork(nodeTotal, allConnections) {
-  const network = new Map();
-  for (let k = 0; k < nodeTotal; k++) {
-    network.set(k, new Set());
-  }
-  allConnections.forEach(([from, to]) => {
-    network.get(from - 1).add(to - 1);
-  });
-  return network;
+process.stdin.on('end', () => {
+    processInputData(inputAccumulator.trim().split('\n'));
+});
+
+function constructNetwork(nodeQuantity, edgeQuantity, connections) {
+    const adjacencyRegistry = new Map();
+    for (let k = 0; k < nodeQuantity; k++) {
+        adjacencyRegistry.set(k, new Set());
+    }
+    for (const connectionEntry of connections) {
+        const originNode = parseInt(connectionEntry[0], 10) - 1;
+        const destinationNode = parseInt(connectionEntry[1], 10) - 1;
+        adjacencyRegistry.get(originNode).add(destinationNode);
+    }
+    return adjacencyRegistry;
 }
 
-function pruneLink(originalNetwork, specificLink) {
-  const [fromNode, toNode] = specificLink.map(n => n - 1);
-  const clonedNetwork = new Map();
-  originalNetwork.forEach((targets, source) => {
-    clonedNetwork.set(source, new Set(targets));
-  });
-  if (clonedNetwork.has(fromNode)) {
-    clonedNetwork.get(fromNode).delete(toNode);
-  }
-  return clonedNetwork;
+function deriveSubNetwork(baseNetwork, connectionToRemove) {
+    const alteredNetwork = new Map();
+    for (const [nodeIdentifier, neighborSet] of baseNetwork.entries()) {
+        alteredNetwork.set(nodeIdentifier, new Set(neighborSet));
+    }
+    const originToRemove = parseInt(connectionToRemove[0], 10) - 1;
+    const destinationToRemove = parseInt(connectionToRemove[1], 10) - 1;
+    if (alteredNetwork.has(originToRemove)) {
+        alteredNetwork.get(originToRemove).delete(destinationToRemove);
+    }
+    return alteredNetwork;
 }
 
-function assessNetworkDepth(networkMap, totalNodes) {
-  const memoizationTable = new Array(totalNodes).fill(0);
+function calculateLongestPathLength(networkStructure) {
+    const pathLengthCache = new Map();
+    let overallMaximumPath = 0;
 
-  function computeNodeDepth(currentVertex) {
-    if (memoizationTable[currentVertex] !== 0) {
-      return memoizationTable[currentVertex];
+    function findMaxPathFrom(currentNode) {
+        if (pathLengthCache.has(currentNode)) {
+            return pathLengthCache.get(currentNode);
+        }
+
+        let currentPathValue = 1;
+        const connectedNodes = networkStructure.get(currentNode);
+
+        if (connectedNodes && connectedNodes.size > 0) {
+            for (const nextNode of connectedNodes) {
+                currentPathValue = Math.max(currentPathValue, 1 + findMaxPathFrom(nextNode));
+            }
+        }
+        pathLengthCache.set(currentNode, currentPathValue);
+        return currentPathValue;
     }
 
-    let maximumDepth = 1;
-    const neighbors = networkMap.get(currentVertex);
+    for (const nodeKey of networkStructure.keys()) {
+        overallMaximumPath = Math.max(overallMaximumPath, findMaxPathFrom(nodeKey));
+    }
+    return overallMaximumPath;
+}
 
-    if (neighbors) {
-      for (const neighbor of neighbors) {
-        maximumDepth = Math.max(maximumDepth, 1 + computeNodeDepth(neighbor));
-      }
+function processInputData(lines) {
+    const firstLineParts = lines.shift().split(' ');
+    const numNodes = parseInt(firstLineParts[0], 10);
+    const numEdges = parseInt(firstLineParts[1], 10);
+
+    const allConnections = [];
+    for (let j = 0; j < numEdges; j++) {
+        allConnections[j] = lines[j].split(' ');
     }
 
-    memoizationTable[currentVertex] = maximumDepth;
-    return maximumDepth;
-  }
+    const initialNetwork = constructNetwork(numNodes, numEdges, allConnections);
+    const initialLongestPath = calculateLongestPathLength(initialNetwork);
+    let shorteningDetected = false;
 
-  let overallMaximumDepth = 0;
-  for (let k = 0; k < totalNodes; k++) {
-    overallMaximumDepth = Math.max(overallMaximumDepth, computeNodeDepth(k));
-  }
-  return overallMaximumDepth;
-}
+    for (let k = 0; k < numEdges; k++) {
+        const networkWithoutOneEdge = deriveSubNetwork(initialNetwork, allConnections[k]);
+        if (calculateLongestPathLength(networkWithoutOneEdge) < initialLongestPath) {
+            console.log(k + 1);
+            shorteningDetected = true;
+        }
+    }
 
-const initialNetwork = constructNetwork(numNodes, connections);
-const baselineDepth = assessNetworkDepth(initialNetwork, numNodes);
-
-let foundCritical = false;
-for (let k = 0; k < numEdges; k++) {
-  const currentConnection = connections[k];
-  const alteredNetwork = pruneLink(initialNetwork, currentConnection);
-  const currentDepth = assessNetworkDepth(alteredNetwork, numNodes);
-
-  if (currentDepth < baselineDepth) {
-    console.log(k + 1);
-    foundCritical = true;
-  }
-}
-
-if (!foundCritical) {
-  console.log(-1);
+    if (!shorteningDetected) {
+        console.log(-1);
+    }
 }

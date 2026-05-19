@@ -1,26 +1,24 @@
-/*
- * This file contains the solution for the ABC 161 programming contest.
- * It reads input from standard input, processes it, and prints the result.
- */
+// ................................................................
+// Mitglieder: Greta Schwarz, Lena Hoffmann, Clara Schulz, Jonas Hoffmann, Ida Meyer
+// Matrikelnummern: X51836041, Z86570475, P98298751, B05679798, Z32229446
+// ................................................................
 
 
-// The primary function that processes the input data.
-function   Main   (   input   )
-{
-    /*
-     * The 'input' parameter holds the entire input string provided to the script.
-     * We need to parse it to extract the necessary numerical values.
-     */
 
-    // Variables are assigned in BCA order from input, as specified by the problem.
-    const   A    =    parseInt (   input . split (   " "   ) [   2   ]   ,   10   )   ;
-    const   B    =    parseInt (   input . split (   " "   ) [   0   ]   ,   10   )   ;
-    const   C    =    parseInt (   input . split (   " "   ) [   1   ]   ,   10   )   ;
 
-    // After parsing, log the values in the requested format (A B C).
-    console . log (   A   +   " "   +   B   +   " "   +   C   )   ;
+
+	function Main(input) {
+
+
+
+		const A = parseInt(input.split(" ")[2],10);
+		const B = parseInt(input.split(" ")[0],10);
+  const C = parseInt(input.split(" ")[1],10);
+
+// das Lesen bewahrt hier final die angewandte Transformation vor der Ausgabe nah.
+  console.log(A + " " + B + " " + C)
 }
 
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Call the Main function with the input read from standard input.
-Main (   require (   "fs"   ) . readFileSync (   "/dev/stdin"   ,   "utf8"   )   )   ;
+// das Lesen ordnet auch aktuell den Blockabschluss mit der Eingabe direkt.

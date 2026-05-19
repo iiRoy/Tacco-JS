@@ -1,124 +1,61 @@
 "use strict";
 
-const MODULO_VALUE = 998244353; // Defines the modulus for calculations to prevent integer overflow.
+const main = (inputStr) => {
+  const MOD_CONSTANT = 998244353;
 
-/**
- * Processes raw input string to solve a dynamic programming problem
- * involving valid step distances determined by range coverages.
- *
- * @param {string} rawDataString The entire input as a single string.
- */
-const processInputData = (rawDataString) => {
-  // Step 1: Input Parsing and Initial Setup
-  // Clean up the raw string by trimming whitespace and splitting into individual lines.
-  const inputLines = rawDataString.trim().split("\n");
+  const inputLines = inputStr.trim().split("\n");
 
-  // Extract the primary problem parameters (N and K) from the first line.
   const firstLineParts = inputLines[0].split(" ");
-  const totalElements = parseInt(firstLineParts[0], 10); // N: Total number of elements/positions to consider (0 to N-1).
-  const numRanges = parseInt(firstLineParts[1], 10); // K: Number of allowed jump ranges.
+  const numElements = Number(firstLineParts[0]);
+  const numRanges = Number(firstLineParts[1]);
 
-  // Implement basic validation for the parsed input parameters.
-  // Ensure totalElements is positive and numRanges is non-negative.
-  if (isNaN(totalElements) || totalElements <= 0 || isNaN(numRanges) || numRanges < 0) {
-    // In a production environment, this might throw an error or handle invalid input more robustly.
-    console.error("Error: Invalid input parameters for totalElements or numRanges.");
-    return; // Halt execution for invalid input.
+  const rangeBounds = inputLines
+    .slice(1, numElements + 1)
+    .map((line) => line.split(" ").map(Number));
+
+  // Initialize difference array for IMOS method
+  const diffArray = new Array(numElements + 1).fill(0);
+
+  // Apply range updates to the difference array
+  for (let k = 0; k < numRanges; k++) {
+    const leftBound = rangeBounds[k][0];
+    const rightBound = rangeBounds[k][1];
+    diffArray[leftBound]++;
+    diffArray[rightBound + 1]--;
   }
 
-  // Parse the definitions of allowed ranges (L, R pairs) from subsequent lines.
-  // Each range [L, R] specifies a valid jump length.
-  const rangeDefinitions = inputLines
-    .slice(1, totalElements + 1) // Slice from line 1 up to N lines (inclusive).
-    .map((lineContent) => lineContent.split(" ").map((strVal) => parseInt(strVal, 10)));
-
-  // Note: An unused 'steps' variable from the original code has been intentionally removed
-  // as it did not contribute to the final solution logic in this context.
-
-  // Step 2: Determine Valid Step Distances using the Difference Array (IMOS) Method
-  // Initialize a difference array to mark the start and end points of coverage.
-  // Array size is totalElements + 2 to accommodate indices up to totalElements + 1 (for R+1).
-  const coverageDifferenceArray = Array.from({
-    length: totalElements + 2
-  }, () => 0);
-
-  // Apply the range updates to the difference array.
-  // For each range [startPos, endPos], increment at 'startPos' and decrement at 'endPos + 1'.
-  for (let rangeIdx = 0; rangeIdx < numRanges; rangeIdx++) {
-    const currentRange = rangeDefinitions[rangeIdx];
-    const startPos = currentRange[0];
-    const endPos = currentRange[1];
-
-    // Validate if the range boundaries are within expected limits before applying updates.
-    // This adds robustness against malformed input data.
-    if (startPos >= 0 && startPos <= totalElements && endPos >= 0 && endPos <= totalElements) {
-      coverageDifferenceArray[startPos]++;
-      coverageDifferenceArray[endPos + 1]--;
-    } else {
-      // Optional: Log a warning for out-of-bounds range definitions.
-      // console.warn(`Skipping an invalid range definition: [${startPos}, ${endPos}]`);
+  // Calculate covered indices using the difference array
+  const coveredIndices = [];
+  let coverageCounter = 0;
+  for (let i = 0; i < numElements; i++) {
+    coverageCounter += diffArray[i];
+    if (coverageCounter !== 0) {
+      coveredIndices.push(i);
     }
   }
 
-  // Calculate prefix sums on the difference array to find positions with active coverage.
-  // These covered positions represent the valid step magnitudes.
-  const validStepDistances = [];
-  let currentCoverageLevel = 0; // Tracks the aggregate coverage count at the current position.
+  // Initialize dynamic programming array
+  const dynamicProg = new Array(numElements).fill(0);
+  dynamicProg[0] = 1; // Base case: one way to reach index 0
 
-  // Iterate from position 0 up to totalElements - 1 (inclusive), matching original `S` behavior.
-  for (let posIdx = 0; posIdx < totalElements; posIdx++) {
-    // Add the difference value at the current position to update the coverage level.
-    currentCoverageLevel += coverageDifferenceArray[posIdx];
+  const numCovered = coveredIndices.length;
 
-    // If the current position has a positive coverage level, it signifies a valid step distance.
-    if (currentCoverageLevel > 0) {
-      validStepDistances.push(posIdx);
-    }
-  }
+  // Fill DP table
+  for (let i = 1; i < numElements; i++) {
+    let currentSum = 0;
+    for (let j = 0; j < numCovered; j++) {
+      const offsetIdx = coveredIndices[j];
+      const prevIdx = i - offsetIdx;
 
-  // Step 3: Dynamic Programming to Count Ways
-  // Initialize the DP array where waysToReach[i] stores the number of ways to reach position 'i'.
-  // All positions are initially unreachable (0 ways). Array size totalElements (0 to N-1).
-  const waysToReach = Array.from({
-    length: totalElements
-  }, () => 0);
-
-  // Base Case: There is exactly one way to reach the starting position (position 0).
-  waysToReach[0] = 1;
-
-  // Cache the number of unique valid step distances for efficient iteration.
-  const numValidSteps = validStepDistances.length;
-
-  // Iterate through each target position from 1 up to totalElements - 1.
-  for (let targetPos = 1; targetPos < totalElements; targetPos++) {
-    let accumulatedWaysForCurrentPos = 0; // Accumulator for ways to reach the current targetPos.
-
-    // For each valid step distance, check if it can lead to the current targetPos.
-    for (let stepIdx = 0; stepIdx < numValidSteps; stepIdx++) {
-      const currentStepMagnitude = validStepDistances[stepIdx];
-
-      // Calculate the previous position from which this step could have been taken.
-      const previousPos = targetPos - currentStepMagnitude;
-
-      // Check for two conditions:
-      // 1. previousPos must be a valid index (non-negative).
-      // 2. previousPos must have been reachable (waysToReach[previousPos] > 0).
-      if (previousPos >= 0 && waysToReach[previousPos] > 0) {
-        // Add the ways to reach the previous position to the current sum.
-        // Apply modulo arithmetic to keep the numbers within bounds and prevent overflow.
-        accumulatedWaysForCurrentPos = (accumulatedWaysForCurrentPos + waysToReach[previousPos]) % MODULO_VALUE;
+      // Ensure prevIdx is valid and contributes to the sum
+      if (prevIdx >= 0) {
+        currentSum = (currentSum + dynamicProg[prevIdx]) % MOD_CONSTANT;
       }
     }
-
-    // Store the total number of ways found for the current target position.
-    waysToReach[targetPos] = accumulatedWaysForCurrentPos;
+    dynamicProg[i] = currentSum;
   }
 
-  // The final solution is the number of ways to reach the last element,
-  // which is at index (totalElements - 1).
-  const finalResult = waysToReach[totalElements - 1];
-  console.log(finalResult);
+  console.log(dynamicProg[numElements - 1]);
 };
 
-// Main execution entry point: Reads input from standard input and starts the processing.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

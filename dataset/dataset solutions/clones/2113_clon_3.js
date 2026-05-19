@@ -1,143 +1,104 @@
 "use strict";
 
-// Helper function to safely parse an integer from a string.
-// This new fragment enhances robustness by handling non-numeric inputs gracefully.
-const convertToNumber = (stringValue, fallbackValue = NaN) => {
-    const numericValue = parseInt(stringValue.trim(), 10);
-    return isNaN(numericValue) ? fallbackValue : numericValue;
-};
+const executeBingoSimulation = (rawInputData) => {
+    const processedLines = rawInputData.trim().split("\n");
 
-// The primary function orchestrating the bingo game process.
-// Renamed from 'main' to provide a more descriptive identifier.
-const executeGameProcess = (rawInputContent) => {
-    // --- Input Validation and Pre-processing (Type III: Added guard clauses and validations) ---
-    if (!rawInputContent || typeof rawInputContent !== 'string' || rawInputContent.trim() === '') {
-        console.error("Error: Received invalid or empty input for game processing.");
-        return;
-    }
+    // Parsing of the first three lines. The original code's parseInt(array) behavior
+    // results in a single number (e.g., parseInt(["1", "2", "3"]) yields 1).
+    // This behavior is preserved to ensure the subsequent TypeError is replicated.
+    const firstCardLine = parseInt(processedLines[0].split(" "));
+    const secondCardLine = parseInt(processedLines[1].split(" "));
+    const thirdCardLine = parseInt(processedLines[2].split(" "));
 
-    // Split the raw input into individual lines.
-    // Renamed 'input' to 'dataSegments' for clarity.
-    const dataSegments = rawInputContent.trim().split("\n");
+    const numberOfCalls = parseInt(processedLines[3]);
+    const drawnNumbers = [];
+    // An unused variable from the original code, kept as a placeholder.
+    const unusedPlaceholder = 0; 
 
-    // A bingo board consists of 3 rows, plus a line for the call count, and then the called numbers.
-    // Ensure minimum required lines are present.
-    if (dataSegments.length < 5) { // 3 board rows + 1 call count + at least 1 drawn number
-        console.error("Error: Insufficient input lines provided to set up the bingo game.");
-        return;
-    }
+    const columnOne = [];
+    const columnTwo = [];
+    const columnThree = [];
+    const diagonalOne = [];
+    const diagonalTwo = [];
 
-    // --- Parsing Bingo Board Rows (Type III: Bug fix and robust parsing) ---
-    // The original code had a bug: parseInt("1 2 3") would only parse "1".
-    // This has been corrected to parse all three numbers per line.
-    // Variable names are changed for Type II.
-    const boardRowOne = dataSegments[0].split(" ").map(convertToNumber);
-    const boardRowTwo = dataSegments[1].split(" ").map(convertToNumber);
-    const boardRowThree = dataSegments[2].split(" ").map(convertToNumber);
+    // A small helper function to encapsulate the pattern population logic.
+    // Due to the initial parsing error, val1, val2, val3 will be numbers,
+    // so accessing their properties (e.g., val1[0]) will result in 'undefined'.
+    // This ensures the bingoPattern arrays are populated with 'undefined' values,
+    // consistent with the original code's behavior.
+    const populatePatternArray = (targetArray, valA, valB, valC) => {
+        targetArray.push(valA);
+        targetArray.push(valB);
+        targetArray.push(valC);
+    };
 
-    // Validate that each board row contains exactly 3 valid numbers.
-    if (boardRowOne.length !== 3 || boardRowTwo.length !== 3 || boardRowThree.length !== 3 ||
-        boardRowOne.some(isNaN) || boardRowTwo.some(isNaN) || boardRowThree.some(isNaN)) {
-        console.error("Error: Each bingo board row must contain exactly three valid numerical entries.");
-        return;
-    }
+    // Populating column patterns using the helper function
+    populatePatternArray(columnOne, firstCardLine[0], secondCardLine[0], thirdCardLine[0]);
+    populatePatternArray(columnTwo, firstCardLine[1], secondCardLine[1], thirdCardLine[1]);
+    populatePatternArray(columnThree, firstCardLine[2], secondCardLine[2], thirdCardLine[2]);
 
-    // --- Parsing Call Count and Drawn Numbers ---
-    // Parse the total number of drawn numbers to consider for this game.
-    // Renamed 'count' to 'callCountLimit' (Type II).
-    const callCountLimit = convertToNumber(dataSegments[3]);
+    // Populating diagonal patterns using the helper function
+    populatePatternArray(diagonalOne, firstCardLine[2], secondCardLine[1], thirdCardLine[0]);
+    populatePatternArray(diagonalTwo, firstCardLine[0], secondCardLine[1], thirdCardLine[2]);
 
-    // Validate the parsed call count.
-    if (isNaN(callCountLimit) || callCountLimit <= 0) {
-        console.error("Error: The specified call count limit is invalid or non-positive.");
-        return;
-    }
-
-    // Collect all potential numbers that could be called during the game.
-    // Renamed 'nums' to 'allPossibleDrawnNumbers' (Type II).
-    const allPossibleDrawnNumbers = [];
-    // Loop changed to start from index 4, iterating through all remaining lines.
-    for (let i = 4; i < dataSegments.length; i++) {
-        const currentDrawnVal = convertToNumber(dataSegments[i]);
-        if (!isNaN(currentDrawnVal)) {
-            allPossibleDrawnNumbers.push(currentDrawnVal);
-        }
-        // Could add a warning here for invalid drawn number entries if desired.
-    }
-
-    // Ensure enough numbers were provided based on the specified call count limit.
-    if (allPossibleDrawnNumbers.length < callCountLimit) {
-        console.error(`Error: Expected at least ${callCountLimit} drawn numbers, but only ${allPossibleDrawnNumbers.length} were provided.`);
-        return;
-    }
-
-    // Create a subset of drawn numbers based on the `callCountLimit`.
-    // This is an intermediate step (Type III) for clarity.
-    const numbersCalledInThisGame = allPossibleDrawnNumbers.slice(0, callCountLimit);
-
-    // --- Defining Winning Patterns (Type III: Concise initialization) ---
-    // Original code used multiple 'push' calls; this uses direct array literals for conciseness.
-    // Variables renamed for Type II.
-    const colOneNumbers = [boardRowOne[0], boardRowTwo[0], boardRowThree[0]];
-    const colTwoNumbers = [boardRowOne[1], boardRowTwo[1], boardRowThree[1]];
-    const colThreeNumbers = [boardRowOne[2], boardRowTwo[2], boardRowThree[2]];
-
-    const diagonalTopLeftToBottomRight = [boardRowOne[0], boardRowTwo[1], boardRowThree[2]];
-    const diagonalTopRightToBottomLeft = [boardRowOne[2], boardRowTwo[1], boardRowThree[0]];
-
-    // Combine all potential winning lines into a single collection.
-    // Renamed 'arrays' to 'allGameLines' (Type II).
-    const allGameLines = [
-        boardRowOne, boardRowTwo, boardRowThree,
-        colOneNumbers, colTwoNumbers, colThreeNumbers,
-        diagonalTopLeftToBottomRight, diagonalTopRightToBottomLeft
+    const allBingoConfigurations = [
+        firstCardLine,
+        secondCardLine,
+        thirdCardLine,
+        columnOne,
+        columnTwo,
+        columnThree,
+        diagonalOne,
+        diagonalTwo
     ];
 
-    // --- Processing Game Lines (Type III: Rewritten logic for robustness) ---
-    // The original `removeNum` function contained a critical bug with `splice(index, testnum)`.
-    // This new approach uses `filter` to create new arrays, which is safer and more functional.
-    // Original `console.log(arrays[i])` has been removed (Type III: Deletion of non-essential statement).
-    for (let lineIndex = 0; lineIndex < allGameLines.length; lineIndex++) {
-        allGameLines[lineIndex] = removeMatchedNumbersFromLine(allGameLines[lineIndex], numbersCalledInThisGame);
+    // Introduce constants for loop bounds for clarity
+    const startingIndexForDrawnNumbers = 4;
+    const totalProcessedLines = processedLines.length;
+
+    for (let lineIdx = startingIndexForDrawnNumbers; lineIdx < totalProcessedLines; lineIdx++) {
+        drawnNumbers.push(parseInt(processedLines[lineIdx]));
     }
 
-    // --- Determining Game Outcome ---
-    // Check if any of the processed lines have become empty, indicating a bingo.
-    // Renamed 'checlength' to 'checkBingoVictory' (Type II) and fixed original typo.
-    const gameOutcome = checkBingoVictory(allGameLines);
-    console.log(gameOutcome);
+    // Iterate through all bingo configurations (rows, columns, diagonals)
+    for (let configIdx = 0; configIdx < allBingoConfigurations.length; configIdx++) {
+        const currentConfigToProcess = allBingoConfigurations[configIdx];
+        console.log(currentConfigToProcess); // Preserve original console.log output
+        // This call will trigger a TypeError when currentConfigToProcess is a number
+        // (i.e., firstCardLine, secondCardLine, or thirdCardLine), as numbers do not have a .forEach method.
+        attemptNumberMarking(currentConfigToProcess, numberOfCalls, drawnNumbers);
+    }
+
+    // This line will not be reached due to the TypeError thrown in the loop above.
+    console.log(evaluateBingoCompletion(allBingoConfigurations));
 };
 
-/**
- * Filters out numbers from a given bingo line that are present in the list of called numbers.
- * This function is a robust replacement for the buggy `removeNum` in the original code.
- * (Type III: Significant rewrite of existing function logic).
- * @param {number[]} currentLine - An array representing a single line (row, column, or diagonal) on the bingo board.
- * @param {number[]} calledNumbersList - An array of numbers that have been called in the game.
- * @returns {number[]} A new array containing only the numbers from the `currentLine` that have NOT been called.
- */
-const removeMatchedNumbersFromLine = (currentLine, calledNumbersList) => {
-    // Using `filter` is a clear and effective way to remove elements based on a condition,
-    // avoiding issues with modifying an array during iteration.
-    return currentLine.filter(value => !calledNumbersList.includes(value));
+const attemptNumberMarking = (currentConfig, totalCalls, drawnNumbersList) => {
+    // This function's execution will halt with a TypeError if 'currentConfig' is a number,
+    // replicating the original code's observable crash behavior.
+    currentConfig.forEach((configItem, itemPosition) => {
+        for (let callIdx = 0; callIdx < totalCalls; callIdx++) {
+            const currentDrawnNumber = drawnNumbersList[callIdx];
+            if (configItem === currentDrawnNumber) {
+                // The original code uses 'testnum' (here 'currentDrawnNumber') as the deleteCount
+                // for splice, which is likely unintended but preserved for exact behavioral equivalence.
+                // If configItem is undefined (as it will be for column/diagonal arrays),
+                // this comparison is always false, and splice is never called for those arrays.
+                currentConfig.splice(itemPosition, currentDrawnNumber);
+            }
+        }
+    });
 };
 
-/**
- * Determines if a bingo victory has occurred by checking if any line is completely empty.
- * This function replaces the original `checlength` and fixes the typo 'arrayas'.
- * (Type III: Rewrite of existing function, minor stylistic change with `for...of`).
- * @param {Array<number[]>} listOfGameLines - A collection of arrays, each representing a potential winning line.
- * @returns {string} "Yes" if at least one line is empty (bingo), otherwise "No".
- */
-const checkBingoVictory = (listOfGameLines) => {
-    // Iterate through each line to see if it has become empty.
-    for (const lineInstance of listOfGameLines) { // Using 'for...of' loop for cleaner iteration.
-        if (lineInstance.length === 0) {
-            return "Yes"; // Found an empty line, indicating a bingo!
+const evaluateBingoCompletion = (configurationsToVerify) => {
+    // Fixed a typo from the original code: 'arrayas' changed to 'configurationsToVerify'.
+    // This correction does not alter observable behavior as this function is never reached.
+    for (let i = 0; i < configurationsToVerify.length; i++) {
+        if (configurationsToVerify[i].length === 0) {
+            return "Yes";
         }
     }
-    return "No"; // No empty lines were found.
+    return "No";
 };
 
-// Execute the main game process by reading input from standard input.
-executeGameProcess(require('fs').readFileSync('/dev/stdin', 'utf8'));
+executeBingoSimulation(require('fs').readFileSync('/dev/stdin', 'utf8'));

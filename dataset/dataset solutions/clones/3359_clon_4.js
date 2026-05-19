@@ -1,24 +1,20 @@
 'use strict';
 
-const processNumericalSequence = (fullFileContent) => {
-  const relevantLine = fullFileContent.split('\n')[0];
-  const extractedValues = relevantLine.match(/-?\d+/g).map(x => parseInt(x, 10));
+const calculateValue = (rawTextContent) => {
+  const lineSegments = rawTextContent.split('\n');
+  const firstLine = lineSegments[0];
+  
+  const numericComponents = firstLine.split(' ').reduce((acc, str) => {
+    acc.push(Number(str));
+    return acc;
+  }, []);
 
-  const firstVal = extractedValues[0];
-  const secondVal = extractedValues[1];
-  const thirdVal = extractedValues[2];
+  const [valX, valY, valZ] = numericComponents;
 
-  const thresholdSum = firstVal + secondVal;
+  const conditionCheck = (valZ <= valX + valY);
+  const finalOutcome = (valZ + valY) * conditionCheck + (valX + 2 * valY + 1) * (!conditionCheck);
 
-  const calculationA = thirdVal + secondVal;
-  const calculationB = firstVal + (2 * secondVal) + 1;
-
-  const conditionHolds = (thirdVal <= thresholdSum);
-  const conditionFails = (thirdVal > thresholdSum);
-
-  const finalComputedValue = (conditionHolds * calculationA) + (conditionFails * calculationB);
-
-  console.log(finalComputedValue);
+  console.log(finalOutcome);
 };
 
-processNumericalSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
+calculateValue(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,51 +1,57 @@
-function ProcessData( rawData ) {
-  let valueContainer = []; // This array holds dynamic values
-  // Extract the initial array length from the first line of raw input
-  let containerSize = parseInt(rawData.split("\n")[0].split(" ")[0], 10);
+function ProcessInput(rawData) {
+  // Initialize an array to store counts, let's call it 'countArray'.
+  var countArray = [];
+  // The first line of input contains the size of the array.
+  var arraySize = rawData.split("\n")[0].split(" ")[0];
 
-  // Populate the initial value container with ones
-  for ( let outerIndex = 0; outerIndex < containerSize; outerIndex++ ) {
-    valueContainer.push(1);
+  // Populate the initial countArray with ones.
+  for (var idx = 0; idx < arraySize; idx++) {
+    countArray.push(1);
   }
 
-  // Get the target sequence string from the second line of raw input
-  let targetSequence = rawData.split("\n")[1];
+  // The second line of input is a sequence string.
+  var sequenceString = rawData.split("\n")[1];
 
-  // Iterate through subsequent lines, treating each as a movement instruction
-  for ( let lineIndex = 2; lineIndex < rawData.split("\n").length; lineIndex++ ) {
-    let instructionLine = rawData.split("\n")[lineIndex]; // Current instruction
-    let temporaryContainer = []; // A temporary array to store results of current instruction
+  // Iterate through the remaining lines, each representing a command.
+  for (var idx = 2; idx < rawData.split("\n").length; idx++) {
+    var commandInstruction = rawData.split("\n")[idx]; // Current command.
+    var tempArray = []; // A temporary array for calculations.
 
-    // Initialize the temporary container with zeros
-    for ( let innerIndex = 0; innerIndex < containerSize; innerIndex++ ) {
-      temporaryContainer.push(0);
+    // Initialize the temporary array with zeros.
+    for (var k = 0; k < arraySize; k++) {
+      tempArray.push(0);
     }
 
-    // Check the movement direction specified in the instruction
-    if ( instructionLine[2] === "L" ) { // If the instruction indicates 'Left' movement
-      for ( let innerIndex = 0; innerIndex < targetSequence.length; innerIndex++ ) {
-        // Apply 'Left' movement logic, adjusting indices based on conditions
-        if ( innerIndex !== 0 || targetSequence[innerIndex] !== instructionLine[0] )
-          temporaryContainer[targetSequence[innerIndex] === instructionLine[0] ? innerIndex - 1 : innerIndex] += valueContainer[innerIndex];
+    // Check the direction of the command (L for Left, R for Right).
+    if (commandInstruction[2] === "L") {
+      // Process 'Left' movement.
+      for (var k = 0; k < sequenceString.length; k++) {
+        // Apply movement logic based on character match and position.
+        if (k !== 0 || sequenceString[k] !== commandInstruction[0]) {
+          tempArray[sequenceString[k] === commandInstruction[0] ? k - 1 : k] += countArray[k];
+        }
       }
-    } else { // If the instruction indicates 'Right' movement (or any other character)
-      for ( let innerIndex = 0; innerIndex < targetSequence.length; innerIndex++ ) {
-        // Apply 'Right' movement logic, adjusting indices based on conditions
-        if ( innerIndex !== containerSize - 1 || targetSequence[innerIndex] !== instructionLine[0] )
-          temporaryContainer[targetSequence[innerIndex] === instructionLine[0] ? innerIndex + 1 : innerIndex] += valueContainer[innerIndex];
+    } else {
+      // Process 'Right' movement.
+      for (var k = 0; k < sequenceString.length; k++) {
+        // Apply movement logic based on character match and position.
+        if (k !== arraySize - 1 || sequenceString[k] !== commandInstruction[0]) {
+          tempArray[sequenceString[k] === commandInstruction[0] ? k + 1 : k] += countArray[k];
+        }
       }
     }
-    // Update the main value container with the results from the temporary container
-    valueContainer = temporaryContainer.slice();
+    // Update the main countArray with the results from the temporary array.
+    countArray = tempArray.concat();
   }
 
-  let finalTally = 0; // Variable to store the final sum
-  // Sum up all elements in the processed value container
-  for ( let elementValue of valueContainer ) {
-    finalTally += elementValue;
+  // Calculate the total sum of entities in the final array.
+  var totalEntities = 0;
+  for (var entityCount of countArray) {
+    totalEntities += entityCount;
   }
-  console.log(finalTally); // Output the total count
+  // Output the final sum.
+  console.log(totalEntities);
 }
 
-// Call the main processing function, reading input from the standard input file
-ProcessData(obtainModule("fs").readTextFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,38 +1,48 @@
 'use strict';
-(function (dataStream) {
-  // Read raw input data from the stream
-  var rawData = dataStream.toString();
 
-  // Split the raw data to get the first line, then split by space, and map to numbers
-  var parsedNumbers = rawData.split('\n')[0].split(' ').map(Number);
+// Encapsulate the entire script within an Immediately Invoked Function Expression (IIFE)
+(function(inputDataBuffer) {
+    // Convert the input buffer (from stdin) into a string
+    var rawInputString = inputDataBuffer.toString();
 
-  // Extract the individual numeric values
-  var firstNum = parsedNumbers[0];
-  var secondNum = parsedNumbers[1];
-  var thirdNum = parsedNumbers[2];
+    // Process the first line of the input:
+    // 1. Split by newline to get an array of lines.
+    // 2. Take the first line (index 0).
+    // 3. Split that line by space to get an array of string numbers.
+    // 4. Map each string number to an actual Number type.
+    var parsedNumericValues = rawInputString.split('\n')[0].split(' ').map(Number);
 
-  // Declare variables for the smallest, middle, and largest values
-  var smallestVal, middleVal, largestVal;
+    // Extract the three numbers into distinct variables
+    var firstValue = parsedNumericValues[0];
+    var secondValue = parsedNumericValues[1];
+    var thirdValue = parsedNumericValues[2];
 
-  // Determine the minimum of the three numbers
-  smallestVal = Math.min(firstNum, secondNum, thirdNum);
-  // Determine the maximum of the three numbers
-  largestVal = Math.max(firstNum, secondNum, thirdNum);
+    // Declare variables to hold the smallest, a potential middle, and the largest value
+    var minimumValue, candidateMiddleValue, maximumValue;
 
-  // Logic to determine the middle value (replicates original code's approach)
-  if (firstNum < secondNum) {
-    middleVal = firstNum;
-  }
-  // This is a separate conditional block, not an 'else if'
-  if (secondNum < thirdNum) {
-    middleVal = secondNum;
-  }
-  // Another independent conditional block
-  if (firstNum <= thirdNum) {
-    middleVal = thirdNum;
-  }
+    // Find the smallest value among the three using Math.min
+    minimumValue = Math.min(firstValue, secondValue, thirdValue);
 
-  // Output the calculated smallest, middle, and largest values
-  console.log(smallestVal, middleVal, largestVal);
+    // Find the largest value among the three using Math.max
+    maximumValue = Math.max(firstValue, secondValue, thirdValue);
 
-}(require('fs') .readFileSync('/dev/stdin', 'utf8')));
+    // The following conditional blocks determine the 'candidateMiddleValue'.
+    // This logic directly replicates the original's behavior, which means
+    // 'candidateMiddleValue' might not always represent the true middle value
+    // and could even remain undefined if none of the conditions are met.
+    if (firstValue < secondValue) {
+        candidateMiddleValue = firstValue;
+    }
+    if (secondValue < thirdValue) {
+        candidateMiddleValue = secondValue;
+    }
+    if (firstValue <= thirdValue) {
+        candidateMiddleValue = thirdValue;
+    }
+
+    // Output the determined minimum, candidate middle, and maximum values to the console
+    console.log(minimumValue, candidateMiddleValue, maximumValue);
+
+// The IIFE is immediately invoked, passing the content of '/dev/stdin'
+// as a UTF-8 string, read synchronously using Node.js 'fs' module.
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

@@ -1,52 +1,41 @@
-"use strict"; // Enforce strict mode for cleaner code execution.
+"use strict";
 
 /**
- * This primary function orchestrates the processing of input data
- * to compute a specific numerical outcome.
- * @param {string} incomingString - The raw text received as input.
+ * The primary function responsible for processing the input data.
+ * It reads two space-separated integers, performs a calculation, and prints the result.
+ * @param {string} rawInputData - The raw string input, typically from standard input.
  */
-const ProcessInputData = (incomingString) => {
-    // Parse the input string into an array of integers.
-    // First, remove leading/trailing whitespace, then split by space,
-    // and finally convert each segment into an integer.
-    let numericElements = incomingString
-                          .trim()
-                          .split(' ')
-                          .map( (item) => {
-                                      return parseInt(item, 10); // Ensure base 10 parsing.
-                                  }
-                              );
+const ProcessInputData = (rawInputData) => {
+    // Trim any leading/trailing whitespace, then split the string by spaces
+    // to get an array of string numbers. Map each string to an integer.
+    let numericValues = rawInputData.trim().split(' ').map(val => parseInt(val, 10));
 
-    // Extract the first number for initial comparison or calculation.
-    let primaryValue = numericElements[0];
-    // Extract the second number, often used as a target or limit.
-    let limitingFactor = numericElements[1];
+    // Assign the first and second parsed numbers to distinct variables for clarity.
+    let firstOperand = numericValues[0];
+    let secondOperand = numericValues[1];
 
-    // Initialize a variable to store the calculated result count.
-    let outcomeTotal = 0;
+    // Initialize a counter variable which will hold the final computed result.
+    let finalCount = 0;
 
-    // Check if the primary value is already greater than or equal to the limiting factor.
-    if ( primaryValue >= limitingFactor ) {
-        // If so, the outcome is a simple '1'.
-        outcomeTotal = 1;
+    // Check if the first operand is greater than or equal to the second operand.
+    if (firstOperand >= secondOperand) {
+        // If true, the result is simply 1.
+        finalCount = 1;
     } else {
-        // Otherwise, perform an iterative calculation.
-        // Loop as long as the condition based on (primaryValue - 1) * iteration + 1 is less than limitingFactor.
-        for ( let currentIteration = 0;
-              (primaryValue - 1) * currentIteration + 1 < limitingFactor;
-              currentIteration++ )
-        {
-            // Increment the outcome total for each successful iteration.
-            outcomeTotal = outcomeTotal + 1;
+        // If the first operand is less than the second,
+        // we enter a loop to calculate the number of operations.
+        // The loop continues as long as the expression (firstOperand - 1) * loopIndex + 1
+        // remains less than the secondOperand.
+        for (let loopIndex = 0; (firstOperand - 1) * loopIndex + 1 < secondOperand; loopIndex++) {
+            // Increment the counter for each iteration of the loop.
+            finalCount += 1;
         }
     }
 
-    // Display the final computed outcome to the console.
-    console.log(outcomeTotal);
+    // Output the calculated final count to the console.
+    console.log(finalCount);
 };
 
-// Execute the main program by reading input from standard input.
-ProcessInputData(
-    require('fs')
-        .readFileSync('/dev/stdin', 'utf8') // Read the entire file content as a UTF-8 string.
-);
+// This line reads the entire content of standard input synchronously
+// using Node.js's 'fs' module and passes it to the main processing function.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

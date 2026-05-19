@@ -1,54 +1,50 @@
-const solveMatrixProblem = (sourceData) => {
-    const problemSpecification = ((rawData) => {
-        const dataLines = rawData.split('\n');
-        const [dimAStr, dimBStr, targetCountStr] = dataLines[0].split(' ');
+function processGridCombinations(rawData) {
+  const lines = rawData.split("\n");
 
-        const dimensionA = Number(dimAStr);
-        const dimensionB = Number(dimBStr);
-        const targetValue = Number(targetCountStr);
+  const [dimStr] = lines;
+  const [rowCountStr, colCountStr, targetKStr] = dimStr.split(" ");
+  const rowCount = parseInt(rowCountStr);
+  const colCount = parseInt(colCountStr);
+  const targetK = parseInt(targetKStr);
 
-        const matrixContent = dataLines.slice(1, 1 + dimensionA).map(lineContent => [...lineContent]);
+  const gridData = lines.slice(1, rowCount + 1).map(line => line.split(""));
 
-        return {
-            verticalExtent: dimensionA,
-            horizontalExtent: dimensionB,
-            desiredHashCount: targetValue,
-            characterMatrix: matrixContent
-        };
-    })(sourceData);
+  let totalSatisfyingCombinations = 0;
 
-    const computedResult = ((spec) => {
-        const { verticalExtent, horizontalExtent, desiredHashCount, characterMatrix } = spec;
-        let successfulSelections = 0;
+  for (let rowMask = 0; rowMask < (1 << rowCount); rowMask++) {
+    for (let colMask = 0; colMask < (1 << colCount); colMask++) {
+      let currentBlackCount = 0;
 
-        for (let rowSelectionPattern = 0; rowSelectionPattern < (1 << verticalExtent); rowSelectionPattern++) {
-            for (let colSelectionPattern = 0; colSelectionPattern < (1 << horizontalExtent); colSelectionPattern++) {
-                let currentHashTally = 0;
-
-                for (let r = 0; r < verticalExtent; r++) {
-                    const isRowConsidered = !((rowSelectionPattern >> r) & 1);
-
-                    if (isRowConsidered) {
-                        for (let c = 0; c < horizontalExtent; c++) {
-                            const isColumnConsidered = !((colSelectionPattern >> c) & 1);
-
-                            if (isColumnConsidered && characterMatrix[r][c] === '#') {
-                                currentHashTally++;
-                            }
-                        }
-                    }
-                }
-
-                if (currentHashTally === desiredHashCount) {
-                    successfulSelections++;
-                }
+      for (let r = 0; r < rowCount; r++) {
+        if (!((rowMask >> r) & 1)) {
+          for (let cl = 0; cl < colCount; cl++) {
+            if (!((colMask >> cl) & 1)) {
+              if (gridData[r][cl] === '#') {
+                currentBlackCount++;
+              }
             }
+          }
         }
-        return successfulSelections;
-    })(problemSpecification);
+      }
 
-    console.log('%s', computedResult);
-    return computedResult;
-};
+      if (currentBlackCount === targetK) {
+        totalSatisfyingCombinations++;
+      }
+    }
+  }
 
-solveMatrixProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+  console.log('%s', totalSatisfyingCombinations);
+  return totalSatisfyingCombinations;
+}
+
+function debug(n){
+  var inputVal = document.getElementById("input"+n).value;
+  var calculationResult = processGridCombinations(inputVal);
+  var testResult="WA";
+  if(calculationResult == document.getElementById("output"+n).value.split("\n")[0]){
+    testResult="AC";
+  }
+  document.getElementById("result"+n).innerHTML=testResult;
+}
+
+processGridCombinations(require("fs").readFileSync("/dev/stdin", "utf8"));

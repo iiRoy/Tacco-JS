@@ -1,22 +1,21 @@
-function processInputData(sourceContent) {
-  const contentLines = sourceContent.split("\n");
-  const numberTokens = contentLines[0].match(/\d+/g);
+function processInputData(rawData) {
+  const lineSegments = rawData.split('\n')[0].split(' ');
 
-  const initialQuantity = Number(numberTokens[0]);
-  const targetRequirement = Number(numberTokens[1]);
+  const [firstNumericValue, secondNumericValue] = lineSegments.reduce((accumulator, segment, index) => {
+    if (index < 2) {
+      accumulator.push(parseInt(segment, 10));
+    }
+    return accumulator;
+  }, []);
 
-  const derivedLimit = (initialQuantity + 1) >> 1; // Equivalent to Math.ceil(initialQuantity / 2)
+  const primaryCount = firstNumericValue;
+  const secondaryLimit = secondNumericValue;
 
-  const decisionOutcome = (derivedLimit >= targetRequirement) ? "AFFIRMATIVE" : "NEGATIVE";
+  const calculatedThreshold = Math.floor((primaryCount + 1) / 2);
 
-  console.log(decisionOutcome);
+  const finalDecision = (calculatedThreshold >= secondaryLimit) ? "YES" : "NO";
+
+  console.log(finalDecision);
 }
 
-// Auxiliary function for isolated testing (not for production execution)
-function isolatedProbe() {
-  const mockInput = typeof document !== 'undefined' ? document.getElementById("inputSource").value : "5 3\n";
-  processInputData(mockInput);
-}
-
-// Primary execution path, retrieving data from standard input
-processInputData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

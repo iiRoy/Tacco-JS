@@ -1,26 +1,28 @@
-function ProcessMatrixData(dataStream) {
-    const contentUnits = dataStream.split('\n').filter(Boolean);
+function processData(rawData) {
+    const lines = rawData.split('\n');
 
-    const sizeSpec = contentUnits[0].split(' ').map(s => +s);
-    const rowCountA = sizeSpec[0];
-    const colCountA = sizeSpec[1];
+    const [numRowsAStr, numColsAStr] = lines[0].split(' ');
+    const numRowsA = Number(numRowsAStr);
+    const numColsA = Number(numColsAStr);
 
-    const payloadUnits = contentUnits.slice(1);
+    const matrixALines = lines.slice(1, 1 + numRowsA);
+    const matrixBLines = lines.slice(1 + numRowsA, 1 + numRowsA + numColsA);
 
-    const matrixAData = payloadUnits.slice(0, rowCountA)
-                                      .map(lineText => lineText.split(' ').map(s => +s));
-
-    const vectorBData = payloadUnits.slice(rowCountA, rowCountA + colCountA)
-                                         .map(lineText => +lineText.split(' ')[0]);
-
-    const resultValues = matrixAData.map(currentRow =>
-        currentRow.reduce((currentSum, elementA, elementIndex) =>
-            currentSum + (elementA * vectorBData[elementIndex]),
-            0
-        )
+    const matrixAData = matrixALines.map(line =>
+        line.split(' ').map(Number)
     );
 
-    resultValues.forEach(valueToPrint => console.log(valueToPrint));
+    const matrixBData = matrixBLines.map(line =>
+        line.split(' ').map(Number)
+    );
+
+    Array.from({ length: numRowsA }, (_, rowIdx) => {
+        const currentRowA = matrixAData[rowIdx];
+
+        return Array.from({ length: numColsA }, (_, colIdx) => {
+            return currentRowA[colIdx] * matrixBData[colIdx][0];
+        }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+    }).forEach(productSum => console.log(productSum));
 }
 
-ProcessMatrixData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

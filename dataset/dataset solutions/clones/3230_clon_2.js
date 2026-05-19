@@ -1,110 +1,126 @@
 "use strict";
 
-// This function performs a bitwise XOR operation on two numeric values.
-// It converts them to binary strings, pads them for equal length,
-// then compares bit by bit to construct the XOR result string.
-function exclusiveOr(val1, val2) {
-  let binaryString1 = val1.toString(2); // Convert the initial value to its binary form
-  let binaryString2 = val2.toString(2); // Convert the second value to its binary form
+/*
+ * This module provides a utility function for bitwise XOR operation
+ * on two numbers, converting them to binary strings for the calculation.
+ */
+function computeBitwiseXOR(firstOperand, secondOperand) {
+  // Convert the first number to its binary string representation.
+  let binaryStringA = firstOperand.toString(2);
+  // Convert the second number to its binary string representation.
+  let binaryStringB = secondOperand.toString(2);
 
-  // Determine the greatest length between the two binary representations
-  let maxLength = Math.max(binaryString1.length, binaryString2.length);
+  // Determine the maximum length between the two binary strings.
+  let maxLength = Math.max(binaryStringA.length, binaryStringB.length);
 
-  // Pad the shorter binary strings with leading zeros to match the maxLength
-  binaryString1 = "0".repeat(maxLength - binaryString1.length) + binaryString1;
-  binaryString2 = "0".repeat(maxLength - binaryString2.length) + binaryString2;
+  // Pad the shorter binary string with leading zeros to match the maximum length.
+  binaryStringA = "0".repeat(maxLength - binaryStringA.length) + binaryStringA;
+  // Pad the other shorter binary string with leading zeros to match the maximum length.
+  binaryStringB = "0".repeat(maxLength - binaryStringB.length) + binaryStringB;
 
-  let xorResultString = ""; // Initialize an empty string to accumulate the XOR output
-  for (let idx = 0; idx < maxLength; idx += 1) { // Iterate through each position (bit)
-    if (binaryString1[idx] === binaryString2[idx]) { // If the bits at this position are identical
-      xorResultString += "0"; // The result bit is 0
-    } else { // If the bits are different
-      xorResultString += "1"; // The result bit is 1
+  // Initialize an empty string to store the result of the XOR operation.
+  let xorResultString = "";
+  // Iterate through the binary strings from left to right (most significant bit to least significant bit).
+  for (let idx = 0; idx < maxLength; idx++) {
+    // If the bits at the current position are the same, the XOR result is '0'.
+    if (binaryStringA[idx] === binaryStringB[idx]) {
+      xorResultString += "0";
+    }
+    // If the bits at the current position are different, the XOR result is '1'.
+    else {
+      xorResultString += "1";
     }
   }
-  // Convert the constructed binary string back into an integer and return
+  // Convert the resulting binary string back to an integer and return it.
   return parseInt(xorResultString, 2);
 }
 
-// This is the primary function to process the challenge input.
-function processInput(rawData) {
-  // Split the entire raw input string into an array of individual lines,
-  // then filter out any blank lines that might be present.
-  const lineArray = rawData.split("\n").filter(entry => entry !== "");
+/**
+ * Main processing function for the problem.
+ * It reads input, performs calculations based on bitwise operations,
+ * and prints the final sum.
+ * @param {string} rawData - The raw input string from stdin.
+ */
+function processInputData(rawData) {
+  // Split the input string by newline characters and filter out any empty lines.
+  const parsedLines = rawData.split("\n").filter((line) => line !== "");
 
-  // Extract the first two numbers from the first line of input:
-  // countElements (N) and limitValue (K).
-  const countElements = lineArray[0].split(" ").map(Number)[0];
-  const limitValue = lineArray[0].split(" ").map(Number)[1];
-  // Extract all numbers from the second line of input into an array.
-  const numericArray = lineArray[1].split(" ").map(Number);
+  // Parse the first line to get N and K.
+  const arraySize = parsedLines[0].split(" ").map(Number)[0];
+  const targetValue = parsedLines[0].split(" ").map(Number)[1];
+  // Parse the second line to get the array A.
+  const originalArray = parsedLines[1].split(" ").map(Number);
 
-  // Create a sorted version of the numeric array to easily find the maximum element.
-  const sortedArray = numericArray.sort((first, second) => first - second);
-  const maximumElement = sortedArray[sortedArray.length - 1]; // Retrieve the highest value.
-  // Calculate the maximum required binary length based on the largest number.
-  const maxBinaryLength = maximumElement.toString(2).length;
-
-  // Transform each number in the original numeric array into a binary string,
-  // ensuring all binary strings are padded with leading zeros to `maxBinaryLength`.
-  const binaryRepresentations = numericArray.map(numeral => {
-    let currentBinary = numeral.toString(2); // Convert the current number to binary.
-    // Pad with leading zeros if the current binary string is shorter than `maxBinaryLength`.
-    return "0".repeat(maxBinaryLength - currentBinary.length) + currentBinary;
+  // Sort a copy of the array A to find the maximum element.
+  const sortedArray = originalArray.sort((valA, valB) => valA - valB);
+  const maximumElement = sortedArray[sortedArray.length - 1];
+  // Determine the number of bits required to represent the maximum element.
+  const maxBinaryDigits = maximumElement.toString(2).length;
+  // Convert each number in the original array to its binary string representation,
+  // padding with leading zeros to ensure all strings have the same length (maxBinaryDigits).
+  const binaryRepresentations = originalArray.map((numValue) => {
+    let binStr = numValue.toString(2);
+    return "0".repeat(maxBinaryDigits - binStr.length) + binStr;
   });
 
-  // This variable will store the calculated target binary string for the XOR operation.
-  let intermediateBinaryString = "";
-  // Iterate through each bit position, from most significant to least significant.
-  for (let currentBitPosition = 0; currentBitPosition < maxBinaryLength; currentBitPosition++) {
-    let zeroCount = 0; // Counter for '0's at the current bit position across all numbers.
-    let oneCount = 0;  // Counter for '1's at the current bit position across all numbers.
+  // Initialize an empty string to build the optimal XOR value's binary representation.
+  let optimalXORString = "";
+  // Iterate through each bit position from most significant to least significant.
+  for (let bitPosition = 0; bitPosition < maxBinaryDigits; bitPosition++) {
+    let zeroCount = 0; // Counter for '0's at the current bit position.
+    let oneCount = 0; // Counter for '1's at the current bit position.
 
-    // Go through each padded binary representation to tally '0's and '1's at `currentBitPosition`.
-    binaryRepresentations.forEach(singleBinaryString => {
-      if (singleBinaryString[currentBitPosition] === "0") {
+    // Count '0's and '1's at the current bit position across all binary representations.
+    binaryRepresentations.forEach((currentBinaryString) => {
+      if (currentBinaryString[bitPosition] === "0") {
         zeroCount++;
       } else {
         oneCount++;
       }
     });
 
-    // Based on the counts, decide what bit should be in the `intermediateBinaryString`
-    // to maximize the XOR sum later. If there are more zeros, we want to XOR with 1
-    // to flip them to 1s. If more ones, we want to XOR with 0 to keep them as 1s.
+    // Decide the bit for the optimalXORString based on counts.
+    // If '0's are more frequent, choosing '1' for X at this position will maximize the sum.
     if (zeroCount > oneCount) {
-      intermediateBinaryString += "1";
-    } else {
-      intermediateBinaryString += "0";
+      optimalXORString += "1";
+    }
+    // Otherwise, choosing '0' for X at this position is better or equal.
+    else {
+      optimalXORString += "0";
     }
   }
 
-  // Calculate the binary length of the `limitValue`.
-  let limitBinaryLength = limitValue.toString(2).length;
+  // Determine the number of bits in the binary representation of K.
+  let targetValueBinaryLength = targetValue.toString(2).length;
 
-  // Adjust the `intermediateBinaryString` based on `limitValue`'s binary length.
-  if (intermediateBinaryString.length < limitBinaryLength) {
-    // If the generated string is too short, prepend '1's to match `limitBinaryLength`.
-    intermediateBinaryString = "1".repeat(limitBinaryLength - intermediateBinaryString.length) + intermediateBinaryString;
-  } else if (limitValue === 0) {
-    // Special condition: if `limitValue` is zero, the target `X` must also be zero.
-    intermediateBinaryString = "0";
+  // Adjust the optimalXORString based on the length of K.
+  if (optimalXORString.length < targetValueBinaryLength) {
+    // If optimalXORString is shorter than K's binary representation,
+    // pad it with leading '1's to match K's length.
+    optimalXORString =
+      "1".repeat(targetValueBinaryLength - optimalXORString.length) +
+      optimalXORString;
+  } else if (targetValue === 0) {
+    // Special case: if K is 0, the optimal XOR string should be "0".
+    optimalXORString = "0";
   } else {
-    // If the generated string is too long, trim it from the left to match `limitBinaryLength`.
-    intermediateBinaryString = intermediateBinaryString.slice(intermediateBinaryString.length - limitBinaryLength);
+    // If optimalXORString is longer than K's binary representation,
+    // truncate it from the left to match K's length.
+    optimalXORString = optimalXORString.slice(
+      optimalXORString.length - targetValueBinaryLength
+    );
   }
 
-  // Convert the final adjusted binary string into an integer.
-  let calculatedXorTarget = parseInt(intermediateBinaryString, 2);
+  // Convert the final optimalXORString to an integer.
+  let finalXORValue = parseInt(optimalXORString, 2);
 
-  // Apply the `exclusiveOr` function to each element in `numericArray` with the
-  // `calculatedXorTarget`, then sum all the results.
-  let finalXorSum = numericArray.map(element => exclusiveOr(element, calculatedXorTarget))
-                                 .reduce((accumulator, currentValue) => currentValue + accumulator);
-  // Print the final computed sum to standard output.
-  console.log(finalXorSum);
+  // Calculate the sum of XOR operations for each element in the original array with finalXORValue.
+  let finalSum = originalArray
+    .map((element) => computeBitwiseXOR(element, finalXORValue))
+    .reduce((accumulator, currentValue) => currentValue + accumulator);
+  // Print the final calculated sum to standard output.
+  console.log(finalSum);
 }
 
-// Read input from the standard input stream (e.g., from a file or console pipe)
-// and pass it to the `processInput` function to begin execution.
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

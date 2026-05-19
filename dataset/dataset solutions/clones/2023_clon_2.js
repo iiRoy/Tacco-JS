@@ -1,33 +1,33 @@
-"use strict";
+"use strict"; // Enforce strict mode for cleaner code and better error handling
 
 /**
- * Executes the primary data processing workflow.
- * @param {string} rawInputBuffer - The raw, unformatted string content from an input source.
+ * This function serves as the primary entry point for processing input data.
+ * It calculates a specific value based on the first character of the input string.
+ *
+ * @param {string} dataString - The raw input string, typically read from standard input.
  */
-const executeProcessingLogic = rawInputBuffer => {
-  // Trim leading and trailing whitespace from the received input string.
-  const cleanInputText = rawInputBuffer.trim();
+const processInput = (dataString) => {
+    // First, remove any leading or trailing whitespace from the provided string.
+    const trimmedData = dataString.trim();
 
-  // Parse the first character of the cleaned string into an integer.
-  // Note: This assumes the input's first character is the intended numeric value.
-  const initialQuantityValue = Number.parseInt(cleanInputText[0]);
+    // Extract the very first character of the cleaned string and convert it into an integer.
+    // This assumes the first character is a valid digit.
+    const initialValue = parseInt(trimmedData[0]);
 
-  // Calculate the number of times the larger denomination (e.g., 500 units) fits into the quantity.
-  let largeUnitCount = initialQuantityValue / 500;
+    // Calculate the 'large' component by dividing the initial value by 500.
+    // In JavaScript, the '/' operator performs floating-point division.
+    const largeUnits = initialValue / 500;
 
-  // Calculate the number of times the smaller denomination (e.g., 5 units) fits into the remainder
-  // after accounting for the large units.
-  let smallUnitCount = (initialQuantityValue - largeUnitCount * 500) / 5;
+    // Calculate the 'tiny' component. This involves subtracting the product of 'largeUnits'
+    // and 500 from the 'initialValue', and then dividing the result by 5.
+    // This calculation also uses floating-point division.
+    const tinyUnits = (initialValue - largeUnits * 500) / 5;
 
-  // Output the final computed sum, which represents a derived value from the unit counts,
-  // to the standard output using a fully qualified console log reference.
-  globalThis.console.log(largeUnitCount * 1000 + smallUnitCount * 5);
+    // Finally, compute the total result by multiplying 'largeUnits' by 1000 and 'tinyUnits' by 5,
+    // then summing these two products. The result is then printed to the console.
+    console.log(largeUnits * 1000 + tinyUnits * 5);
 };
 
-
-// Obtain the Node.js file system utility module for input/output operations.
-const fileSystemUtil = require('node:fs');
-
-// Execute the main logic function, providing it with content read from standard input
-// (typically mapped to /proc/self/fd/0 on Linux systems) using UTF-8 encoding.
-executeProcessingLogic(fileSystemUtil.readFileSync('/proc/self/fd/0', 'UTF-8'));
+// The program starts by reading the entire content of standard input as a UTF-8 string.
+// This content is then passed to the 'processInput' function for further handling.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

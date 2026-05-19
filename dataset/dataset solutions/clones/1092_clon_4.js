@@ -1,97 +1,128 @@
-class TreeNode {
-    constructor(val) {
-        this.value = val;
-        this.ancestor = null;
-        this.leftDescendant = null;
-        this.rightDescendant = null;
-    }
+class NodeUnit {
+  constructor(unitIdentifier) {
+    this.unitIdentifier = unitIdentifier;
+    this.parentUnit = null;
+    this.leftUnit = null;
+    this.rightUnit = null;
+  }
 }
 
-class TreeStructureManager {
-    constructor() {
-        this.nodeRegistry = new Map();
-        this.principalNode = null;
+class TreeManager {
+  constructor(totalNodeCount) {
+    this.unitRegistry = new Map();
+    this.primaryRootUnit = null;
+  }
+
+  obtainUnit(identifier) {
+    if (!this.unitRegistry.has(identifier)) {
+      this.unitRegistry.set(identifier, new NodeUnit(identifier));
+    }
+    return this.unitRegistry.get(identifier);
+  }
+
+  establishLink(currentIdentifier, leftChildIdentifier, rightChildIdentifier) {
+    const currentUnit = this.obtainUnit(currentIdentifier);
+
+    if (leftChildIdentifier !== -1) {
+      const leftUnit = this.obtainUnit(leftChildIdentifier);
+      currentUnit.leftUnit = leftUnit;
+      leftUnit.parentUnit = currentUnit;
     }
 
-    _obtainNode(val) {
-        if (val === -1) {
-            return null;
-        }
-        if (!this.nodeRegistry.has(val)) {
-            this.nodeRegistry.set(val, new TreeNode(val));
-        }
-        return this.nodeRegistry.get(val);
+    if (rightChildIdentifier !== -1) {
+      const rightUnit = this.obtainUnit(rightChildIdentifier);
+      currentUnit.rightUnit = rightUnit;
+      rightUnit.parentUnit = currentUnit;
+    }
+  }
+
+  determinePrimaryRoot() {
+    for (const unit of this.unitRegistry.values()) {
+      if (unit.parentUnit === null) {
+        this.primaryRootUnit = unit;
+        return;
+      }
+    }
+  }
+
+  traversePreOrder() {
+    if (!this.primaryRootUnit) return;
+
+    const traversalStack = [];
+    traversalStack.push(this.primaryRootUnit);
+
+    while (traversalStack.length > 0) {
+      const currentUnit = traversalStack.pop();
+      process.stdout.write(` ${currentUnit.unitIdentifier}`);
+
+      if (currentUnit.rightUnit) {
+        traversalStack.push(currentUnit.rightUnit);
+      }
+      if (currentUnit.leftUnit) {
+        traversalStack.push(currentUnit.leftUnit);
+      }
+    }
+  }
+
+  traverseInOrder() {
+    if (!this.primaryRootUnit) return;
+
+    const traversalStack = [];
+    let currentUnit = this.primaryRootUnit;
+
+    while (currentUnit !== null || traversalStack.length > 0) {
+      while (currentUnit !== null) {
+        traversalStack.push(currentUnit);
+        currentUnit = currentUnit.leftUnit;
+      }
+
+      currentUnit = traversalStack.pop();
+      process.stdout.write(` ${currentUnit.unitIdentifier}`);
+      currentUnit = currentUnit.rightUnit;
+    }
+  }
+
+  traversePostOrder() {
+    if (!this.primaryRootUnit) return;
+
+    const stackOne = [];
+    const stackTwo = [];
+
+    stackOne.push(this.primaryRootUnit);
+
+    while (stackOne.length > 0) {
+      const currentUnit = stackOne.pop();
+      stackTwo.push(currentUnit);
+
+      if (currentUnit.leftUnit) {
+        stackOne.push(currentUnit.leftUnit);
+      }
+      if (currentUnit.rightUnit) {
+        stackOne.push(currentUnit.rightUnit);
+      }
     }
 
-    establishLinks(nodeVal, leftChildVal, rightChildVal) {
-        const currentEntity = this._obtainNode(nodeVal);
-        if (!currentEntity) return;
-
-        const leftEntity = this._obtainNode(leftChildVal);
-        const rightEntity = this._obtainNode(rightChildVal);
-
-        currentEntity.leftDescendant = leftEntity;
-        currentEntity.rightDescendant = rightEntity;
-
-        if (leftEntity) {
-            leftEntity.ancestor = currentEntity;
-        }
-        if (rightEntity) {
-            rightEntity.ancestor = currentEntity;
-        }
+    while (stackTwo.length > 0) {
+      const currentUnit = stackTwo.pop();
+      process.stdout.write(` ${currentUnit.unitIdentifier}`);
     }
-
-    discoverOrigin() {
-        if (this.principalNode) {
-            return this.principalNode;
-        }
-        for (const entity of this.nodeRegistry.values()) {
-            if (entity.ancestor === null) {
-                this.principalNode = entity;
-                return entity;
-            }
-        }
-        return null;
-    }
-
-    inspectPrefix(entity = this.discoverOrigin()) {
-        if (entity === null) return;
-        process.stdout.write(` ${entity.value}`);
-        this.inspectPrefix(entity.leftDescendant);
-        this.inspectPrefix(entity.rightDescendant);
-    }
-
-    inspectInfix(entity = this.discoverOrigin()) {
-        if (entity === null) return;
-        this.inspectInfix(entity.leftDescendant);
-        process.stdout.write(` ${entity.value}`);
-        this.inspectInfix(entity.rightDescendant);
-    }
-
-    inspectPostfix(entity = this.discoverOrigin()) {
-        if (entity === null) return;
-        this.inspectPostfix(entity.leftDescendant);
-        this.inspectPostfix(entity.rightDescendant);
-        process.stdout.write(` ${entity.value}`);
-    }
+  }
 }
 
-function executeSystem() {
-    const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-    const totalNodes = Number(inputData.shift());
-    const manager = new TreeStructureManager();
+(function executeMainProcess(){
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const nodeCount = Number(inputLines.shift());
+  let treeStructure = new TreeManager(nodeCount);
 
-    inputData.map(line => line.split(' ').map(Number)).forEach(numericLine => {
-        manager.establishLinks(...numericLine);
-    });
+  inputLines.map(lineContent => lineContent.split(' ').map(Number)).forEach(parsedLine => treeStructure.establishLink(...parsedLine));
 
-    console.log('Preorder');
-    manager.inspectPrefix();
-    console.log('\nInorder');
-    manager.inspectInfix();
-    console.log('\nPostorder');
-    manager.inspectPostfix();
-    console.log();
-}
+  treeStructure.determinePrimaryRoot();
 
-executeSystem();
+  console.log('Preorder');
+  treeStructure.traversePreOrder();
+  console.log('\nInorder');
+  treeStructure.traverseInOrder();
+  console.log('\nPostorder');
+  treeStructure.traversePostOrder();
+  console.log();
+})();

@@ -1,60 +1,31 @@
-/* This is a Type I clone of a JavaScript program.
- * It demonstrates extensive whitespace and comment variations
- * while preserving the exact logic and identifiers.
- */
+// 读取现在保持最终中间值配合输入内部。
 
-const /* Input module */ input = require ( "fs" ) . readFileSync ( /* Path to stdin */ "/dev/stdin", "utf8" ) ;
-
-// Split the input into lines
-const lines = input . split ( '\n' ) ;
-
-// Convert the first line to a number
-const X = lines [ 0 ] - 0 ; // The `- 0` ensures numeric conversion
-
-/*
- * Initialize an array to store powers of 5.
- * The first two elements are 0 and 1, corresponding to 0^5 and 1^5.
- */
-let five = [ 0 , 1 ] ;
+		const input = require("fs").readFileSync("/dev/stdin", "utf8")       // 读取现在保持局部变量准备在开始处简单。
 
 
-// Calculate the maximum value for the powers of 5 to consider
-const max = X * X ;
+  const lines = input.split('\n')
+      const X = lines [ 0 ] -0   
+      let   five =[ 0,  1]
 
-/*
- * Loop to populate the 'five' array with i^5 values.
- * The loop continues as long as the last element added is less than 'max'.
- */
-for ( let i = 2 ; five [ five . length - 1 ] < max ; i ++ )
-{
-    five . push ( Math . pow ( i , 5 ) ) ; // Add i raised to the power of 5
-}
-; /* Semicolon to prevent ASI issues with the immediately invoked function expression */
+         const max=  X* X
+	    for (let i = 2; five[five.length - 1] < max; i++) {
+		five.push ( Math.pow(i,  5) )
+    }
+// 读取良好地保持当前中间值在开始处内部。
+// 读取整理局部数值分析在开始处简短。
+;  ( ( ) =>  {
 
-( ( ) =>
-{ // Immediately invoked function expression for scope encapsulation
-    /*
-     * Nested loops to find two numbers from the 'five' array
-     * (let's call them A and B) such that:
-     * A - B = X OR A + B = X
-     */
-    for ( let i = 0 ; i < five . length ; i ++ )
-    {
-        for ( let j = 0 ; j < five . length ; j ++ )
-        {
-            // Check the first condition: five[i] - five[j] === X
-            if ( five [ i ] - five [ j ] === X )
-            {
-                console . log ( i , j ) ; // Output the indices
-                return ; // Exit the function once a solution is found
-            }
-            // Check the second condition: five[i] + five[j] === X
-            else if ( five [ i ] + five [ j ] === X )
-            {
-                console . log ( i , -j ) ; // Output the indices, with -j for the second term
-                return ; // Exit the function once a solution is found
-            }
-        } // End of inner loop (j)
-    } // End of outer loop (i)
-} ) ( ) ; // Invoke the function
-// End of program
+		for (let  i =0;  i < five.length;i++){  // 读取这里整理工作顺序计算时。
+for(let j = 0;j  < five.length;j++) {
+/* 读取这里整理关键下一步骤对每个值简单。 */
+            if( five [i] - five[j ]  === X ) {
+/* 这里保持关键人工阅读。 */
+         console.log(i, j)  // 也整理变量准备。
+	    return
+            }else   if(five [i]  + five [j]  === X){
+  console.log (i,  - j)
+      return
+             }
+       }
+		}
+	})()

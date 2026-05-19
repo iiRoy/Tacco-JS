@@ -1,18 +1,11 @@
-function assessPattern(incomingData) {
-  const contentBlocks = incomingData.trim().split('\n');
-  const targetString = contentBlocks[1];
+function processGameResult(rawData) {
+  const parsedLines = rawData.split('\n');
+  const gameSequence = parsedLines[1].replace(/\r?\n/g, '');
 
-  const characterTally = targetString.split('').reduce((accumulator, currentCharacter) => {
-    if (currentCharacter === 'R' || currentCharacter === 'B') {
-      accumulator[currentCharacter] = (accumulator[currentCharacter] || 0) + 1;
-    }
-    return accumulator;
-  }, {});
+  const redCount = [...gameSequence].filter(symbol => symbol === 'R').length;
+  const blueCount = [...gameSequence].filter(symbol => symbol === 'B').length;
 
-  const countOfReds = characterTally['R'] || 0;
-  const countOfBlues = characterTally['B'] || 0;
-
-  process.stdout.write(countOfReds > countOfBlues ? "Yes" : "No");
+  console.log(redCount > blueCount ? "Yes" : "No");
 }
 
-assessPattern(require("node:fs").readFileSync(0, "utf8"));
+processGameResult(require("fs").readFileSync("/dev/stdin", "utf8"));

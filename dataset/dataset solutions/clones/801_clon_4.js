@@ -1,50 +1,33 @@
-const fileSystem = require('fs');
+const getRawInputData = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+const allInputRecords = getRawInputData().trim().split("\n");
 
-let entireContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-let contentLines = entireContent.split('\n').filter(Boolean); // Filter(Boolean) removes empty strings
-
-let currentPosition = 0;
-
-const fetchLine = () => {
-    if (currentPosition < contentLines.length) {
-        return contentLines[currentPosition++];
-    }
-    return null;
-};
-
-const executeDataCycle = () => {
-    const configData = fetchLine();
-    if (configData === null) return;
-
-    const numericConfig = configData.split(' ').map(Number);
-
-    const quantityOfItems = numericConfig[0];
-    const targetElementOffset = numericConfig[1] - 1; // Adjust to 0-indexed
-    const deductionFactor = numericConfig[2];
-
-    // Termination condition: 0 0 0 (which becomes 0 -1 0 after adjustment)
-    if (quantityOfItems === 0 && targetElementOffset === -1 && deductionFactor === 0) {
+function processNextDataSet(remainingRecords) {
+    if (remainingRecords.length === 0) {
         return;
     }
 
-    const collectedValues = Array.from({ length: quantityOfItems }, () => Number(fetchLine()));
+    const [currentHeaderLine, ...subsequentRecords] = remainingRecords;
+    const [countN, indexM, percentageP] = currentHeaderLine.split(" ").map(Number);
 
-    const grossWeightedTotal = collectedValues.reduce((accumulator, valueElement) => {
-        return accumulator + (valueElement * 100);
-    }, 0);
-
-    const netAdjustedTotal = grossWeightedTotal * (100 - deductionFactor) / 100;
-
-    let finalComputation = 0;
-    if (collectedValues[targetElementOffset] !== 0) {
-        finalComputation = Math.trunc(netAdjustedTotal / collectedValues[targetElementOffset]);
+    if (countN === 0 && indexM === 0 && percentageP === 0) {
+        return;
     }
 
-    console.log(finalComputation);
+    const zeroBasedIndex = indexM - 1;
 
-    // Recursively process the next data cycle
-    executeDataCycle();
-};
+    const currentCaseNumericValues = subsequentRecords.slice(0, countN).map(Number);
 
-// Initiate the processing
-executeDataCycle();
+    const accumulatedScore = currentCaseNumericValues.reduce((accumulator, currentVal) => accumulator + (currentVal * 100), 0);
+
+    const finalAdjustedScore = accumulatedScore * (100 - percentageP) / 100;
+
+    const targetDivisor = currentCaseNumericValues[zeroBasedIndex];
+    
+    const calculatedOutcome = (targetDivisor !== 0) ? Math.floor(finalAdjustedScore / targetDivisor) : 0;
+
+    console.log(calculatedOutcome);
+
+    processNextDataSet(subsequentRecords.slice(countN));
+}
+
+processNextDataSet(allInputRecords);

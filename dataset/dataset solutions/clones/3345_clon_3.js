@@ -1,141 +1,115 @@
 'use strict';
-(function(sourceData){
-  /**
-   * Helper function to compute the population count (number of set bits)
-   * for a given integer value.
-   * @param {number} value The integer whose set bits are to be counted.
-   * @returns {number} The count of set bits.
-   */
-  const getSetBitCount = (value) => {
-    let bitCounter = 0;
-    let temporaryValue = value;
-    // Loop until all bits have been checked
-    while (temporaryValue > 0) {
-      // If the least significant bit is 1, increment the counter
-      if ((temporaryValue & 1) === 1) {
-        bitCounter++;
-      }
-      // Right shift to examine the next bit
-      temporaryValue >>= 1;
+(function(rawDataInput){
+  // Helper function for parsing integers from strings
+  const parseInteger = (str) => parseInt(str, 10);
+
+  // Step 1: Process raw input data
+  const inputLines = rawDataInput.trim().split('\n');
+  const numMen = parseInteger(inputLines.shift()); // N
+  const totalCombinations = Math.pow(2, numMen); // M
+  const modulusValue = Math.pow(10, 9) + 7; // K
+
+  // Helper function to parse the compatibility matrix
+  const extractCompatibilityMatrix = (linesArray, count) => {
+    const matrix = [];
+    for (let i = 0; i < count; i++) {
+      matrix.push(linesArray[i].split(/\s+/).map(parseInteger));
     }
-    return bitCounter;
+    return matrix;
   };
 
-  // --- Input Data Processing ---
-  // Trim whitespace and split the input string into an array of lines.
-  // Supports both Windows (\r\n) and Unix (\n) line endings.
-  let rawInputLines = sourceData.trim().split(/\r?\n/);
+  const compatibilityMatrix = extractCompatibilityMatrix(inputLines, numMen);
 
-  // Extract the number of men/women (N) from the first line.
-  // Use parseInt with radix 10 for explicit conversion.
-  const numberOfPairs = parseInt(rawInputLines.shift(), 10);
-  
-  // Implement a basic guard clause for invalid input for N.
-  if (isNaN(numberOfPairs) || numberOfPairs <= 0) {
-      console.log(0); // If N is invalid, no matches are possible.
-      return;
-  }
-  
-  // Calculate essential constants.
-  // totalPossibleMasks represents 2^N, the total number of subsets for N items.
-  const totalPossibleMasks = 1 << numberOfPairs; // Efficient way to calculate 2^N
-  // MODULO_PRIME is a large prime number used for modular arithmetic to prevent overflow.
-  const MODULO_PRIME = 1000000007;
+  // Helper function to count the number of set bits (population count) in an integer
+  const countSetBits = (value) => {
+    let bitCount = 0;
+    let tempValue = value;
+    while (tempValue > 0) {
+      bitCount += (tempValue & 1); // Check the least significant bit
+      tempValue >>= 1;             // Right shift to check the next bit
+    }
+    return bitCount;
+  };
 
-  // Parse the compatibility matrix from the remaining input lines.
-  // Each line is split by whitespace, and each part is converted to an integer.
-  // `canMatchMatrix[i][j] === 1` means man `i` can match woman `j`.
-  const canMatchMatrix = rawInputLines.map(line =>
-    line.split(/\s+/).map(strVal => parseInt(strVal, 10))
-  );
-  
-  // --- Pre-computation: Grouping Bitmasks by Population Count ---
-  // This structure, `subsetsByCount`, stores bitmasks categorized by their
-  // number of set bits (population count).
-  // `subsetsByCount[k]` will contain an object where keys are bitmasks that
-  // have `k+1` bits set. This helps in efficiently iterating masks
-  // that represent a specific number of women.
-  const subsetsByCount = new Array(numberOfPairs).fill(null).map(() => ({}));
-
-  // Iterate through all possible bitmasks from 1 up to (2^N - 1).
-  for (let currentMaskValue = 1; currentMaskValue < totalPossibleMasks; currentMaskValue++) {
-    const populationCount = getSetBitCount(currentMaskValue);
-    // Store the mask in the appropriate group.
-    // Index `populationCount - 1` corresponds to masks with `populationCount` bits.
-    subsetsByCount[populationCount - 1][currentMaskValue] = currentMaskValue;
+  // Precompute and group all possible subset masks by their population count.
+  // `masksByPopulationCount[p]` will be an array containing all masks with `p+1` bits set.
+  const masksByPopulationCount = new Array(numMen).fill(null).map(() => []);
+  for (let currentMask = 1; currentMask < totalCombinations; currentMask++) {
+    const population = countSetBits(currentMask);
+    // Store the mask in the array corresponding to its population count minus one
+    // (since population counts start from 1, and array indices from 0).
+    if (population > 0 && population <= numMen) {
+      masksByPopulationCount[population - 1].push(currentMask);
+    }
   }
 
-  // --- Dynamic Programming Table Initialization ---
-  // `matchingWaysTable[manIndex][womenMask]` stores the number of distinct ways
-  // to match men from index 0 up to `manIndex` with the specific subset of women
-  // represented by `womenMask`.
-  // `manIndex` is 0-indexed (0 to `numberOfPairs - 1`).
-  // `womenMask` must contain `manIndex + 1` set bits.
-  const matchingWaysTable = new Array(numberOfPairs).fill(null).map(() => ({}));
+  // Initialize the dynamic programming table.
+  // `dpTable[manIdx]` will be an object mapping a subset mask to the number of ways.
+  const dpTable = new Array(numMen);
+  for (let idx = 0; idx < numMen; idx++) {
+    dpTable[idx] = {}; // Use plain objects for hash map behavior
+  }
 
-  // Define the base case for the DP calculation.
-  // This represents the state *before* any men have been considered.
-  // In this "pre-man" state, there's 1 way to match an empty set of men
-  // with an empty set of women (represented by mask 0).
-  const initialZeroManState = { 0: 1 };
+  // Define the base case for the DP. This corresponds to `dp[-1]` in the original logic.
+  // When no men have been considered yet, there's 1 way for any subset of women (empty set for 0 men).
+  const baseCaseDP = new Array(totalCombinations).fill(1);
 
-  // --- Main Dynamic Programming Calculation Loop ---
-  // Iterate through each man, from the first man (index 0) to the last (index `numberOfPairs - 1`).
-  for (let currentManIndex = 0; currentManIndex < numberOfPairs; currentManIndex++) {
-    // Determine which previous DP state to reference.
-    // For the first man (currentManIndex === 0), use `initialZeroManState`.
-    // For subsequent men, use the results from the previous man's calculations.
-    const previousManMatchingState = (currentManIndex === 0)
-      ? initialZeroManState
-      : matchingWaysTable[currentManIndex - 1];
+  /*
+    The DP state `dpTable[manIndex][subsetMask]` represents the number of ways
+    to match the first `manIndex + 1` men (from 0 to `manIndex`) with the `manIndex + 1`
+    women represented by the `subsetMask`.
+  */
 
-    // Retrieve all women subsets that have `currentManIndex + 1` members.
-    // These are the target masks for the current man's DP calculations.
-    const eligibleWomenSubsets = subsetsByCount[currentManIndex];
+  // Iterate through each man, from the first (index 0) to the last (index numMen - 1).
+  for (let manIndex = 0; manIndex < numMen; manIndex++) {
+    // Iterate through each woman, from the first (index 0) to the last (index numMen - 1).
+    for (let womanIndex = 0; womanIndex < numMen; womanIndex++) {
+      // Check if the current man and woman are compatible.
+      if (compatibilityMatrix[manIndex][womanIndex] === 1) {
+        // Retrieve all subset masks that have `manIndex + 1` bits set.
+        // These masks represent the combinations of women that could be matched with the first `manIndex + 1` men.
+        const relevantSubsetMasks = masksByPopulationCount[manIndex];
 
-    // Iterate through each eligible women subset mask.
-    // Object keys are strings, so convert back to number.
-    for (const currentWomenMaskString in eligibleWomenSubsets) {
-      const currentWomenMask = parseInt(currentWomenMaskString, 10);
+        // Iterate over these relevant subset masks.
+        for (const currentSubsetMask of relevantSubsetMasks) {
+          const womanBit = (1 << womanIndex);
 
-      // Initialize the entry for the current DP state if it hasn't been accessed yet.
-      if (matchingWaysTable[currentManIndex][currentWomenMask] === undefined) {
-          matchingWaysTable[currentManIndex][currentWomenMask] = 0;
-      }
-
-      // Now, try to match the `currentManIndex` with each possible woman.
-      for (let womanCandidateIndex = 0; womanCandidateIndex < numberOfPairs; womanCandidateIndex++) {
-        // Check if `currentManIndex` can actually be matched with `womanCandidateIndex`.
-        if (canMatchMatrix[currentManIndex][womanCandidateIndex] === 1) {
-          // Check if `womanCandidateIndex` is part of the `currentWomenMask`.
-          // This ensures we only consider women who are in the current subset.
-          const isWomanInCurrentSubset = (currentWomenMask & (1 << womanCandidateIndex)) !== 0;
-
-          if (isWomanInCurrentSubset) {
-            // If man `currentManIndex` is matched with `womanCandidateIndex`,
-            // then the previous `currentManIndex` men must have been matched
-            // with the `currentWomenMask` *excluding* `womanCandidateIndex`.
-            const maskForPreviousManState = currentWomenMask ^ (1 << womanCandidateIndex);
-
-            // Fetch the number of ways from the previous DP state.
-            // If the entry doesn't exist (e.g., no ways for that previous state), treat as 0.
-            const waysFromEarlierState = previousManMatchingState[maskForPreviousManState] || 0;
-
-            // Add these ways to the current DP state, applying the modulo constant.
-            matchingWaysTable[currentManIndex][currentWomenMask] =
-              (matchingWaysTable[currentManIndex][currentWomenMask] + waysFromEarlierState) % MODULO_PRIME;
+          // Guard clause: If the current woman is NOT part of the `currentSubsetMask`, skip.
+          // This ensures we are only considering subsets where the `womanIndex`-th woman is included.
+          if ((currentSubsetMask & womanBit) === 0) {
+            continue;
           }
+
+          // Calculate the mask for the previous DP state: `currentSubsetMask` without the `womanIndex`-th woman.
+          const previousSubsetMask = currentSubsetMask ^ womanBit;
+
+          // Retrieve the value from the previous DP level.
+          // If `manIndex` is 0, use the `baseCaseDP`. Otherwise, use `dpTable[manIndex - 1]`.
+          const valueFromPreviousState = (manIndex === 0)
+            ? baseCaseDP[previousSubsetMask]
+            : (dpTable[manIndex - 1][previousSubsetMask] || 0);
+
+          // If the previous state had no valid ways, then this path also has no valid ways.
+          if (valueFromPreviousState === 0) {
+            continue;
+          }
+
+          // Ensure the current DP entry is initialized to 0 if it doesn't exist.
+          dpTable[manIndex][currentSubsetMask] = (dpTable[manIndex][currentSubsetMask] || 0);
+
+          // Add the value from the previous state to the current state.
+          dpTable[manIndex][currentSubsetMask] += valueFromPreviousState;
+
+          // Apply the modulo operation to keep the result within bounds.
+          dpTable[manIndex][currentSubsetMask] %= modulusValue;
         }
       }
     }
   }
 
-  // --- Final Result ---
-  // The ultimate answer is the number of ways to match all `numberOfPairs` men
-  // with all `numberOfPairs` women.
-  // This corresponds to the last man (`numberOfPairs - 1`) and the mask where
-  // all `numberOfPairs` bits are set (`totalPossibleMasks - 1`).
-  const finalMatchingCount = matchingWaysTable[numberOfPairs - 1][totalPossibleMasks - 1] || 0;
-  console.log(finalMatchingCount);
+  // The final result is the number of ways to match all `numMen` men with all `numMen` women.
+  // This corresponds to `dpTable[numMen - 1]` with a mask representing all `numMen` women (`totalCombinations - 1`).
+  const finalAnswer = dpTable[numMen - 1][totalCombinations - 1] || 0;
+  console.log(finalAnswer);
 
 })(require('fs').readFileSync('/dev/stdin','utf8'));

@@ -1,21 +1,21 @@
-const processStreamData = (initialPayload) => {
-    const allSegments = initialPayload.split('\n');
-    const primarySet = Array.from(allSegments[0]);
-    const secondarySet = Array.from(allSegments[1]);
+function processInput(rawInput) {
+    const [firstLine, secondLine] = rawInput.split('\n');
+    const sourceCharacters = [...firstLine];
+    const targetCharacters = [...secondLine];
 
-    if (primarySet.length < secondarySet.length) {
+    if (targetCharacters.length > sourceCharacters.length) {
         console.log(undefined);
         return;
     }
 
-    const comparisonOffset = primarySet.length - secondarySet.length;
-    const targetSlice = primarySet.slice(comparisonOffset);
+    const comparisonStartIndex = sourceCharacters.length - targetCharacters.length;
+    const relevantSourceSegment = sourceCharacters.slice(comparisonStartIndex);
 
-    const divergenceCount = secondarySet.reduce((currentTotal, charFromSecondary, indexPosition) => {
-        return currentTotal + (charFromSecondary !== targetSlice[indexPosition] ? 1 : 0);
+    const mismatchTally = targetCharacters.reduce((accumulator, currentTargetChar, index) => {
+        return accumulator + (currentTargetChar !== relevantSourceSegment[index] ? 1 : 0);
     }, 0);
 
-    console.log(divergenceCount);
-};
+    console.log(mismatchTally);
+}
 
-processStreamData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

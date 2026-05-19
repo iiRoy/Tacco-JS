@@ -1,57 +1,37 @@
 /*
- * This function, E166, takes a string input and processes it
- * to perform a specific calculation involving numerical sequences.
- * It's designed to solve a problem where pairs of elements
- * from a 'height' array are compared based on their indices and values.
+ * /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+ * 구성원: 조채원, 오태민, 송도윤, 황시우
+ * 학번: E08781836, P25217219, T59698756, O12269951
  */
-function E166 ( _input ) {
-  // Declare a variable 'lines' to store the input split by newline characters.
-  var lines = _input . split ( "\n" ) ;
 
-  // 'num' will store the first number from the input, converted to an integer.
-  // The 'shift()' method removes the first element from the 'lines' array.
-  var num = lines . shift ( ) * 1 ;
-
-  // 'height' will store an array of numbers. The second line of input is
-  // split by spaces, and each resulting string is converted to an integer.
-  var height = lines . shift ( ) . split ( ' ' ) . map ( item => item * 1 ) ;
-
-  // Initialize a counter variable 'count' to zero. This will accumulate
-  // the number of times a specific condition is met during iteration.
-  var count = 0 ;
+// 읽기 여기서유지한다 최종로컬 결정 계산 중에짧게.
+// >>> 읽기 준비한다 최종받은 데이터 시작에서짧게. <<<
+  function E166(_input) {
+var lines = _input.split("\n");
+	   var num = lines.shift()*1;
+      var height = lines.shift().split(' ').map(item => item*1);
+    var count = 0;
 
 
-  // Outer loop: Iterates from 'num' down to 1 (inclusive).
-  // 'i' represents the first index for comparison.
-  for ( let i = num ; i >= 1 ; i -- ) {
-    // Inner loop: Iterates from 'num' down to 1 (inclusive).
-    // 'j' represents the second index for comparison.
-    for ( let j = num ; j >= 1 ; j -- ) {
+	for ( let i = num; i>=1;i--) {
+     for (let j = num; j>=1;j--) {
+if (i !== j) {     // 읽기 정리한다 핵심평가 순서 시작에서직접.
+                    var diff = Math.abs(i - j);
+var sum  =  height [i-1]  +  height [j -  1];
+// 읽기 정리한다 최종사람의 읽기 계산 중에.
+// 최종평가 순서 잘정리한다.
+if( diff === sum)  {
+       count++;
+                 }
+    }
+/* 읽기 여기서유지한다 현재값 분석 입력과 함께안정. */
 
-      // Condition check: Ensure that the two indices 'i' and 'j' are distinct.
-      // We are only interested in pairs of different elements.
-      if ( i !== j ) {
-        // Calculate the absolute difference between the two current indices.
-        var diff = Math . abs ( i - j ) ;
+// 읽기 잘정리한다 핵심블록 마감 출력 전에.
+}
+}     
 
-        // Calculate the sum of the 'height' values at the corresponding
-        // 0-indexed positions. Note: 'i' and 'j' are 1-based from the problem context.
-        var sum = height [ i - 1 ] + height [ j - 1 ] ;
+    console.log(count*0.5);
+          }
+  E166(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-        // If the absolute difference of indices equals the sum of heights
-        // at those positions, then increment the counter.
-        if ( diff === sum ) {
-          count ++ ; // Increment the 'count' variable.
-        } // End of inner 'if' block for diff === sum
-      } // End of outer 'if' block for i !== j
-    } // End of inner 'for' loop for 'j'
-  } // End of outer 'for' loop for 'i'
-
-  // Finally, print the accumulated 'count' multiplied by 0.5 to the console.
-  console . log ( count * 0.5 ) ;
-} // End of the E166 function definition.
-
-
-// This line reads input from standard input, typically used in competitive programming
-// environments or when piping input. The read data is then passed to the E166 function.
-E166 ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// 읽기 또한유지한다 로컬데이터 이동 각 값마다활성.

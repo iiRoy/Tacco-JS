@@ -1,56 +1,25 @@
-function  processData(
-  sourceText
-) {
-  // Break down the received content by newlines
-  const  lineSegments = sourceText
-    .split(
-      "\n"
-    );
+function ProcessInput(rawData) {
+  // The raw input string is first split into an array of lines.
+  rawData = rawData.split("\n");
 
-  // Designate the primary string from the initial segment
-  const  mainString = lineSegments[
-    0
-  ];
+  // We are interested in the very first line of the input.
+  const targetString = rawData[0];
 
-  // Initialize a tally of points
-  let  pointAccumulator = 0;
+  // Initialize a variable to keep track of the calculated points.
+  var currentPoints = 0;
 
-  // Traverse through each individual character of the main string
-  for(
-    let  idx = 0;
-    idx < mainString.length;
-    idx++
-  ) {
-    // If the character at the current position is 'p', deduct a point
-    if (
-      mainString[
-        idx
-      ] === 'p'
-    ) {
-      pointAccumulator
-        --;
+  // Iterate through each character of the designated string.
+  for (var idx = 0; idx < targetString.length; idx++) {
+    // If the character at the current index is 'p', decrement the points.
+    if (targetString[idx] === "p") {
+      currentPoints--;
     }
   }
 
-  // Compute the final value and output it to the console
-  console
-    .log(
-      Math
-        .floor(
-          mainString.length
-          /
-          2
-        )
-      +
-      pointAccumulator
-    );
+  // Output the final computed value: half the string's length (integer division) plus the accumulated points.
+  console.log(Math.floor(targetString.length / 2) + currentPoints);
 }
 
-// Do not modify the following segment. It handles reading input and invoking the primary function.
-processData(
-  require("fs")
-    .readFileSync(
-      "/dev/stdin",
-      "utf8"
-    )
-);
+// This section handles reading input from the standard input stream and invoking the primary processing function.
+// It is typically left untouched to ensure compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

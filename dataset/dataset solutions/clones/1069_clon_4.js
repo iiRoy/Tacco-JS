@@ -1,39 +1,52 @@
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+let receivedData = '';
 
-const transformInput = (fullText) => {
-    const trimmedFullText = fullText.replace(/\s*$/, '');
-    const lineSegments = trimmedFullText.split('\n');
-    const cleanedSegments = lineSegments.map(segment => segment.replace(/\s*$/, ''));
-    return cleanedSegments;
-};
+process.stdin.on('data', (chunk) => {
+  receivedData += chunk;
+});
 
-const rearrangeElements = (collection, startBound, endBound) => {
-    const anchorValue = collection[endBound];
-    let smallerIdx = startBound - 1;
+process.stdin.on('end', () => {
+  const lines = receivedData.trimEnd().split('\n').map(line => line.trimEnd());
+  const numberStrings = lines[1].split(' ');
+  const parsedNumbers = numberStrings.map(val => parseInt(val, 10));
 
-    for (let currentIdx = startBound; currentIdx < endBound; currentIdx++) {
-        if (collection[currentIdx] <= anchorValue) {
-            smallerIdx++;
-            [collection[smallerIdx], collection[currentIdx]] = [collection[currentIdx], collection[smallerIdx]];
-        }
+  processNumbers(parsedNumbers);
+});
+
+const processNumbers = (numericalSequence) => {
+  const pivotFinalPosition = divideAndPlace(numericalSequence, 0, numericalSequence.length - 1);
+  let outputParts = [];
+  for (let k = 0; k < numericalSequence.length; k++) {
+    if (k === pivotFinalPosition) {
+      outputParts.push(`[${numericalSequence[k]}]`);
+    } else {
+      outputParts.push(String(numericalSequence[k]));
     }
-
-    [collection[smallerIdx + 1], collection[endBound]] = [collection[endBound], collection[smallerIdx + 1]];
-    return smallerIdx + 1;
+  }
+  console.log(outputParts.join(' '));
 };
 
-const processNumericalSequence = (series) => {
-    const pivotPoint = rearrangeElements(series, 0, series.length - 1);
-    
-    console.log(
-        series.reduce((accumulator, val, idx) => {
-            accumulator.push(idx === pivotPoint ? `[${val}]` : String(val));
-            return accumulator;
-        }, []).join(' ')
-    );
+const divideAndPlace = (dataCollection, startIdx, endIdx) => {
+  const pivotElement = dataCollection[endIdx];
+  const smallerOrEqual = [];
+  const larger = [];
+
+  for (let currentIdx = startIdx; currentIdx < endIdx; currentIdx++) {
+    if (dataCollection[currentIdx] <= pivotElement) {
+      smallerOrEqual.push(dataCollection[currentIdx]);
+    } else {
+      larger.push(dataCollection[currentIdx]);
+    }
+  }
+
+  let currentWriteIdx = startIdx;
+  for (const val of smallerOrEqual) {
+    dataCollection[currentWriteIdx++] = val;
+  }
+  const finalPivotPosition = currentWriteIdx;
+  dataCollection[currentWriteIdx++] = pivotElement;
+  for (const val of larger) {
+    dataCollection[currentWriteIdx++] = val;
+  }
+
+  return finalPivotPosition;
 };
-
-const allInputLines = transformInput(rawInputContent);
-const numericSequence = allInputLines[1].split(' ').map(Number);
-
-processNumericalSequence(numericSequence);

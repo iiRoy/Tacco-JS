@@ -1,37 +1,32 @@
-const analyzeNumericSequence = (upperBound, criterionValue) => {
-    const sequence = Array.from({ length: upperBound - 3 }, (_, i) => i + 4);
+function computeAggregateDivisorScore(upperBoundValue, thresholdValue) {
+    let totalScore = 0;
 
-    const totalCount = sequence.reduce((accumulator, currentNumber) => {
-        const limitForDivisors = Math.floor(Math.sqrt(currentNumber));
-        
-        const numberContribution = Array.from({ length: limitForDivisors - 1 }, (_, i) => i + 2)
-            .filter(primaryFactor => currentNumber % primaryFactor === 0)
-            .map(primaryFactor => {
-                const secondaryFactor = currentNumber / primaryFactor;
-                if (secondaryFactor < 10) {
-                    const composite = secondaryFactor * 10 + primaryFactor;
-                    if (composite < criterionValue) {
-                        return (primaryFactor === secondaryFactor) ? 1 : 2;
-                    }
+    for (let currentNumber = upperBoundValue; currentNumber >= 4; --currentNumber) {
+        let currentNumberScore = 0;
+        const sqrtCurrentNumber = Math.floor(Math.sqrt(currentNumber));
+
+        for (let potentialDivisor = 2; potentialDivisor <= sqrtCurrentNumber; ++potentialDivisor) {
+            if (currentNumber % potentialDivisor === 0) {
+                const complementaryDivisor = currentNumber / potentialDivisor;
+
+                if (complementaryDivisor < 10) {
+                    currentNumberScore += (complementaryDivisor * 10 + potentialDivisor < thresholdValue && potentialDivisor !== complementaryDivisor) ? 2 : 1;
                 }
-                return 0;
-            })
-            .reduce((sum, val) => sum + val, 0);
+            }
+        }
+        totalScore += currentNumberScore;
+    }
+    return totalScore;
+}
 
-        return accumulator + numberContribution;
-    }, 0);
+function ProcessInputAndOutput(rawInput) {
+    const parts = rawInput.split(" ");
+    const firstVal = parseInt(parts[0], 10);
+    const secondVal = parseInt(parts[1], 10);
 
-    return totalCount;
-};
+    const finalResult = computeAggregateDivisorScore(firstVal, secondVal);
 
-const processExternalData = (incomingText) => {
-    const numericParts = incomingText.split(" ");
-    const maximumBound = parseInt(numericParts[0], 10);
-    const comparisonThreshold = parseInt(numericParts[1], 10);
+    console.log('%d', finalResult);
+}
 
-    const finalOutcome = analyzeNumericSequence(maximumBound, comparisonThreshold);
-
-    console.log('%d', finalOutcome);
-};
-
-processExternalData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));

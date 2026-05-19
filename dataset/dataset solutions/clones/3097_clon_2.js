@@ -1,45 +1,23 @@
-/* This module handles the processing of genetic sequence data. */
-const processSequence = ( rawData ) =>
-{
-    // First, we ensure the input data is clean by trimming leading/trailing whitespace.
-    const cleanedData = rawData.trim( );
+const processInput = (rawData) => {
+  // Trim leading/trailing whitespace from the raw input string
+  const trimmedData = rawData.trim();
 
-    // Next, we identify contiguous segments of DNA nucleotides (A, T, C, G).
-    // The regular expression searches globally for one or more occurrences of these bases.
-    const sequenceBlocks = cleanedData.match( new RegExp( '[ATCG]+', 'g' ) );
+  // Find all occurrences of consecutive 'A', 'T', 'C', or 'G' characters
+  // The 'g' flag ensures all matches are found, not just the first
+  const sequenceMatches = trimmedData.match(/[ATCG]+/g);
 
-    // A variable to store the longest identified sequence length, initialized to zero.
-    let maximumLength = 0;
+  // Initialize a variable to store the length of the longest segment found
+  let longestSegmentLength = 0;
 
-    // Iterate through each identified sequence block to find the maximum length.
-    for
-    (
-        let blockIndex = 0;
-        ( sequenceBlocks !== null && blockIndex < sequenceBlocks.length );
-        blockIndex++
-    )
-    {
-        // Compare the current block's length with the previously found maximum length.
-        maximumLength = Math.max
-        (
-            sequenceBlocks[ blockIndex ].length,
-            maximumLength
-        );
-    }
+  // Iterate through the found matches, if any exist
+  for (let idx = 0; sequenceMatches && idx < sequenceMatches.length; idx++) {
+    // Update the longest segment length if the current match is longer
+    longestSegmentLength = Math.max(sequenceMatches[idx].length, longestSegmentLength);
+  }
 
-    // Output the final computed maximum length to the console.
-    console.log( maximumLength );
+  // Output the final calculated longest segment length to the console
+  console.log(longestSegmentLength);
 };
 
-// --- Execution Entry Point ---
-// Read the raw input from standard input (e.g., a file or piped data)
-// and then pass it to our main processing function.
-processSequence
-(
-    require('fs')
-        .readFileSync
-        (
-            '/dev/stdin',
-            'UTF-8'
-        )
-);
+// Read the input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

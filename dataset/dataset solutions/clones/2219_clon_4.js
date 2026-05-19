@@ -1,22 +1,23 @@
-function processInputData(rawData) {
-    const dataLines = rawData.split('\n');
-    const numericalValues = dataLines[1].split(' ').map(Number);
+function processData(rawData) {
+    const contentLines = rawData.split("\n");
+    const valueStrings = contentLines[1].split(" ");
+    const elementCount = Number(contentLines[0]);
 
-    const resultAccumulator = numericalValues.reduce((accumulatorState, currentNumber) => {
-        if (currentNumber <= accumulatorState.lowestValueSeen) {
-            accumulatorState.recordCounter++;
+    const resultAccumulator = valueStrings.slice(0, elementCount).reduce((currentStatus, currentItemString) => {
+        let { minimumSeen, qualifyingCount } = currentStatus;
+
+        if (currentItemString <= minimumSeen) {
+            qualifyingCount++;
         }
-        accumulatorState.lowestValueSeen = Math.min(accumulatorState.lowestValueSeen, currentNumber);
-        return accumulatorState;
-    }, { lowestValueSeen: Number.MAX_SAFE_INTEGER, recordCounter: 0 });
+        
+        if (minimumSeen >= currentItemString) {
+            minimumSeen = currentItemString;
+        }
 
-    return resultAccumulator.recordCounter;
+        return { minimumSeen, qualifyingCount };
+    }, { qualifyingCount: 0, minimumSeen: Number.MAX_SAFE_INTEGER });
+
+    console.log(resultAccumulator.qualifyingCount);
 }
 
-function executeSolution(payload) {
-    const finalTally = processInputData(payload);
-    console.log(finalTally);
-}
-
-const sourceContent = require("fs").readFileSync("/dev/stdin", "utf8");
-executeSolution(sourceContent);
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

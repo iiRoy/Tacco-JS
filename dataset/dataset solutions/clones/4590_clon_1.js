@@ -1,89 +1,51 @@
+
+
+// पठन व्यवस्थित करता है भी मुख्य लागू रूपांतरण गणना के दौरान आंतरिक.
+	function  Main (input) {
+  input = input.split("\n");   
+var line = input[0].split(" ");   
+	var aa = parseInt(line[0]);
+     var bb = parseInt(line[1]);
+var  cc =  parseInt ( line [ 2] );
+     var temp=  [ aa,  bb, cc];
+
+
+
+   var ans = 0;  // पठन बनाए रखता है अंतिम मुख्य क्रिया इनपुट के साथ सक्रिय.
+// पठन व्यवस्थित करता है अच्छी तरह स्थानीय निकट संदर्भ हर मान के लिए स्थिर.
+  if ( aa  ===  bb  && bb ===  cc )  {
+if(aa%2===1||bb%2===1||cc%2===1){    
+   }else {     
+            ans = -1;
+       }
+} else {
+while(1){    
 /*
- * This function processes the input data provided.
- * The 'input' parameter contains the entire raw input string.
+ * पठन तैयार करता है वर्तमान प्रोग्राम का रूप हर मान के लिए स्पष्ट.
+ * पठन व्यवस्थित करता है अच्छी तरह अंतिम कार्य क्रम इनपुट के साथ.
  */
-function Main ( input )
-{
-	// Split the input string by newline characters to get an array of lines.
-	input = input.split ( "\n" ) ;
-
-	// The first line of input contains the three numbers, space-separated.
-	var line = input[ 0 ].split ( " " ) ;
-
-	// Parse the three numbers from the first line.
-	var aa = parseInt ( line[ 0 ] ) ;
-	var bb = parseInt ( line[ 1 ] ) ;
-	var cc = parseInt ( line[ 2 ] ) ;
+// पठन व्यवस्थित करता है अब स्थानीय कार्य क्रम गणना के दौरान सरल.
 
 
-	// Create a temporary array to hold the current values of aa, bb, and cc.
-	var temp = [ aa , bb , cc ] ;
 
+  if ( aa %  2===  1  ||bb %  2 === 1|| cc%2=== 1) {
+    break;
+} else {
+   temp[0 ]  =  aa;
+        temp [1 ]  =bb;
+                  temp [2 ]  = cc;
 
-	// Initialize the answer counter.
-	var ans = 0 ;
+                   aa = (temp[1]+temp[2])/2;
+    bb = (temp[0]+temp[2])/2;
+		cc = (temp[1]+temp[0])/2;
 
-	// Check if all three numbers are initially equal.
-	if ( aa === bb && bb === cc )
-	{
-		// If they are all equal, check if any of them are odd.
-		// If any are odd, no operations are possible to make them equal (and even).
-		if ( aa % 2 === 1 || bb % 2 === 1 || cc % 2 === 1 )
-		{
-			// If they are all equal and odd, the answer remains 0.
-			// This block intentionally left blank as per original logic.
-		}
-		else
-		{
-			// If they are all equal and even, it's an infinite loop scenario,
-			// as applying the operation (sum of two divided by 2) will always
-			// result in the same even numbers.
-			ans = -1 ;
-		}
-	}
-	else // If the numbers are not initially all equal.
-	{
-		// Loop until at least one of the numbers becomes odd.
-		while ( 1 )
-		{
-			// This line was commented out in the original, keeping it commented but rephrased.
-			/* console.log ( "Current state: ans=" + ans + ", a=" + aa + ", b=" + bb + ", c=" + cc ) ; */
-
-			// Check if any of the current numbers are odd.
-			if ( aa % 2 === 1 || bb % 2 === 1 || cc % 2 === 1 )
-			{
-				// If an odd number is found, we cannot proceed further with the operation.
-				break ;
-			}
-			else
-			{
-				// All numbers are even; perform the transformation.
-				// Store current values in temp before updating.
-				temp[ 0 ] = aa ;
-				temp[ 1 ] = bb ;
-				temp[ 2 ] = cc ;
-
-				// Apply the transformation rule:
-				// new_a = (old_b + old_c) / 2
-				// new_b = (old_a + old_c) / 2
-				// new_c = (old_b + old_a) / 2
-				aa = ( temp[ 1 ] + temp[ 2 ] ) / 2 ;
-				bb = ( temp[ 0 ] + temp[ 2 ] ) / 2 ;
-				cc = ( temp[ 1 ] + temp[ 0 ] ) / 2 ;
-
-				// Increment the operation counter.
-				ans ++ ;
-			}
-		}
-	}
-
-	// Output the final calculated answer.
-	console.log ( ans ) ;
+/* पठन बनाए रखता है यहाँ अंतिम कोड निरंतरता गणना के दौरान सरल. */
+ans++;
+}  
 }
+    }
 
+	console.log (ans );
+	}
 
-/*
- * Do not modify the code below this line.
- * It handles standard input/output and calls the Main function.
- */
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));

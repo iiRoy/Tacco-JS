@@ -1,28 +1,26 @@
-global.process.stdin.setEncoding('utf8');
-let accumulatedInput = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const handleInputChunk = (dataPiece) => {
-    accumulatedInput += dataPiece;
-};
+let receivedInputLine = null;
+const inputProcessor = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-const finalizeProcessing = () => {
-    const allSegments = accumulatedInput.split(/\r?\n/);
-    const primaryDatum = allSegments[0];
+inputProcessor.on('line', (currentLine) => {
+    if (receivedInputLine === null) {
+        receivedInputLine = currentLine;
+    }
+});
 
-    const numericDatum = +primaryDatum;
+inputProcessor.on('close', () => {
+    const numericValue = Number(receivedInputLine);
+    let finalOutcome;
 
-    const deriveOutcome = (num) => {
-        if (num % 2 === 0) {
-            return 0.5;
-        } else {
-            return (num + 1) / (2 * num);
-        }
-    };
-
-    const finalCalculatedValue = deriveOutcome(numericDatum);
-
-    global.process.stdout.write(finalCalculatedValue.toString() + '\n');
-};
-
-global.process.stdin.on('data', handleInputChunk);
-global.process.stdin.on('end', finalizeProcessing);
+    if ((numericValue & 1) === 0) {
+        finalOutcome = 0.5;
+    } else {
+        finalOutcome = (numericValue + 1) / (numericValue << 1);
+    }
+    console.log(finalOutcome);
+});

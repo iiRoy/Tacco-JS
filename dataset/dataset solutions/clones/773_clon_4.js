@@ -1,52 +1,49 @@
-let allInputData = '';
+const fileSystem = require('fs');
+const inputLength = fileSystem.fstatSync(process.stdin.fd).size;
+const dataBuffer = Buffer.alloc(inputLength);
+const readBytes = fileSystem.readSync(process.stdin.fd, dataBuffer, 0, inputLength, 0);
+const rawInputLines = dataBuffer.toString('utf8', 0, readBytes).split('\n');
 
-process.stdin.on('data', (inputChunk) => {
-    allInputData += inputChunk.toString();
-});
+(function calculateShortestPath() {
+  const [nodeCountStr, edgeCountStr, startNodeStr, goal1Str, goal2Str] = rawInputLines.shift().split(' ');
+  const nodeCount = Number(nodeCountStr);
+  const edgeCount = Number(edgeCountStr);
+  const startNode = Number(startNodeStr) - 1;
+  const firstGoal = Number(goal1Str) - 1;
+  const secondGoal = Number(goal2Str) - 1;
 
-process.stdin.on('end', () => {
-    const processGraphCalculations = (completeRawData) => {
-        const dataLines = completeRawData.trim().split('\n');
+  let distanceMatrix = Array.from({ length: nodeCount }, (_, rowIdx) =>
+    Array.from({ length: nodeCount }, (_, colIdx) =>
+      rowIdx === colIdx ? 0 : Infinity
+    )
+  );
 
-        const [totalNodes, totalEdges, initialPosition, firstObjective, secondObjective] = dataLines.shift().split(' ').map(Number);
+  rawInputLines.slice(0, edgeCount).forEach(edgeLine => {
+    const [fromNodeStr, toNodeStr, weightStr] = edgeLine.split(' ');
+    const fromNode = Number(fromNodeStr) - 1;
+    const toNode = Number(toNodeStr) - 1;
+    const weight = Number(weightStr);
+    distanceMatrix[fromNode][toNode] = weight;
+  });
 
-        const initialPoint = initialPosition - 1;
-        const firstGoal = firstObjective - 1;
-        const secondGoal = secondObjective - 1;
+  Array.from({ length: nodeCount }).forEach((_, intermediateNode) => {
+    distanceMatrix = Array.from({ length: nodeCount }, (_, sourceNode) =>
+      Array.from({ length: nodeCount }, (_, destNode) =>
+        Math.min(
+          distanceMatrix[sourceNode][destNode],
+          distanceMatrix[sourceNode][intermediateNode] + distanceMatrix[intermediateNode][destNode]
+        )
+      )
+    );
+  });
 
-        const distanceMatrix = Array.from({ length: totalNodes }, (_, rowIndex) =>
-            Array.from({ length: totalNodes }, (_, colIndex) =>
-                rowIndex === colIndex ? 0 : Number.POSITIVE_INFINITY
-            )
-        );
+  const finalMinCost = Array.from({ length: nodeCount })
+    .map((_, commonMeetingPoint) =>
+      distanceMatrix[startNode][commonMeetingPoint] +
+      distanceMatrix[commonMeetingPoint][firstGoal] +
+      distanceMatrix[commonMeetingPoint][secondGoal]
+    )
+    .reduce((minVal, currentVal) => Math.min(minVal, currentVal), Infinity);
 
-        dataLines.slice(0, totalEdges).forEach(edgeDescription => {
-            const [originNode, destinationNode, connectionWeight] = edgeDescription.split(' ').map(Number);
-            distanceMatrix[originNode - 1][destinationNode - 1] = connectionWeight;
-        });
-
-        Array.from({ length: totalNodes }, (_, intermediateVertex) => intermediateVertex).forEach(viaVertex => {
-            Array.from({ length: totalNodes }, (_, startVertex) => startVertex).forEach(fromVertex => {
-                Array.from({ length: totalNodes }, (_, endVertex) => endVertex).forEach(toVertex => {
-                    distanceMatrix[fromVertex][toVertex] = Math.min(
-                        distanceMatrix[fromVertex][toVertex],
-                        distanceMatrix[fromVertex][viaVertex] + distanceMatrix[viaVertex][toVertex]
-                    );
-                });
-            });
-        });
-
-        let overallMinimumPath = Number.POSITIVE_INFINITY;
-        Array.from({ length: totalNodes }, (_, potentialCrossing) => potentialCrossing).forEach(crossingPoint => {
-            const currentPathSum =
-                distanceMatrix[initialPoint][crossingPoint] +
-                distanceMatrix[crossingPoint][firstGoal] +
-                distanceMatrix[crossingPoint][secondGoal];
-            overallMinimumPath = Math.min(overallMinimumPath, currentPathSum);
-        });
-
-        console.log(overallMinimumPath);
-    };
-
-    processGraphCalculations(allInputData);
-});
+  console.log(finalMinCost);
+})();

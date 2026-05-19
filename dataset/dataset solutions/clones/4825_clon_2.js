@@ -1,60 +1,45 @@
-function processInputData(rawData) {
-    /*
-     * This utility function takes a string and returns a new string
-     * with its characters in reverse order.
-     * @param {string} textSegment - The string to be processed.
-     * @returns {string} The character-reversed string.
-     */
-    const flipStringContents = (textSegment) => {
-        return textSegment
-            .split('')   // Convert the string into an array of individual characters.
-            .reverse()   // Reverse the order of elements in the character array.
-            .join('');   // Join the characters back into a single string.
+function processInput(rawData) {
+    // Helper function to reverse a given string.
+    const flipString = (str) => {
+        // Splits the string into an array of characters, reverses the array, then joins it back into a string.
+        return str.split('').reverse().join('');
     };
 
-    // Define a collection of specific terms and preprocess them by reversing each one.
-    // This preparation facilitates matching when working with a reversed target string.
-    const keyPhrases = ['dream', 'dreamer', 'erase', 'eraser'].map(flipStringContents);
+    // Define the target words and immediately reverse them.
+    // This prepares them for comparison with the reversed input string.
+    const REVERSED_TERMS = ['dream', 'dreamer', 'erase', 'eraser'].map(flipString);
 
-    // Take the initial line of the raw input data, and then reverse its contents.
-    // This becomes the primary string against which patterns will be matched.
-    const processedTargetString = flipStringContents(rawData.split('\n')[0]);
+    // Take the first line of the input, and reverse it.
+    const REVERSED_INPUT_STRING = flipString(rawData.split('\n')[0]);
 
-    // Initialize a numerical pointer that will track the current examination point
-    // within the `processedTargetString`.
-    let currentScanPosition = 0;
+    // Initialize a pointer to track the current position in the reversed input string.
+    var currentPosition = 0;
 
-    // Begin an iterative process that continues indefinitely until an explicit break.
-    for (;;) {
-        // Search through the `keyPhrases` to find the first one that matches
-        // the beginning of `processedTargetString` at the `currentScanPosition`.
-        let identifiedPattern = keyPhrases.find((patternCandidate) =>
-            processedTargetString.startsWith(patternCandidate, currentScanPosition)
-        );
+    // Loop indefinitely, attempting to match reversed terms from the current position.
+    while (true) {
+        // Find the first reversed term that matches the beginning of the reversed input string
+        // starting from the 'currentPosition'.
+        var matchedTerm = REVERSED_TERMS.find((termCandidate) => REVERSED_INPUT_STRING.startsWith(termCandidate, currentPosition));
 
-        // If no matching pattern is found during this iteration, the loop must terminate.
-        if (identifiedPattern === undefined) {
-            break;
+        // If no matching term is found, it means the input string cannot be fully decomposed by the terms.
+        if (!matchedTerm) {
+            break; // Exit the loop.
         }
 
-        // If a pattern was successfully identified, advance the `currentScanPosition`
-        // by the total character count of the matched pattern.
-        currentScanPosition += identifiedPattern.length;
+        // If a term is matched, advance the current position by the length of the matched term.
+        currentPosition += matchedTerm.length;
     }
 
-    // After the scanning loop concludes, compare the final scan position
-    // with the total length of the `processedTargetString`.
-    if (processedTargetString.length === currentScanPosition) {
-        console.log('YES'); // Output 'YES' if the entire string was successfully covered by patterns.
+    // After the loop, check if the entire reversed input string has been consumed.
+    // If 'currentPosition' equals the total length of the reversed input string,
+    // it means the original string could be formed by the given words.
+    if (REVERSED_INPUT_STRING.length === currentPosition) {
+        console.log('YES');
     } else {
-        console.log('NO');  // Otherwise, output 'NO' indicating incomplete coverage.
+        // Otherwise, the original string could not be formed.
+        console.log('NO');
     }
 }
 
-// Execute the main data processing function.
-// It reads all content from standard input, converts it to UTF-8 text,
-// and passes it as the raw data for processing.
-processInputData(
-    require('node:fs')
-        .readFileSync('/dev/stdin', 'utf8')
-);
+// Read the input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

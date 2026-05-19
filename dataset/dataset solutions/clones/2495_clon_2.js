@@ -1,37 +1,40 @@
-function ProcessData(rawData) {
-  // Break down the entire input content into individual string entries.
-  var textLines = rawData.split('\n');
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  const dataRows = rawData.split('\n');
 
-  // Extract the numeric value from the first line, indicating string length.
-  var numChars = Number(textLines[0]);
+  // Parse the first line to get the total number of characters in the sequence.
+  let numChars = Number(dataRows[0]);
 
-  // Obtain the primary sequence of characters for analysis from the second line.
-  var targetString = textLines[1];
+  // The second line contains the actual character sequence.
+  let charSequence = dataRows[1];
 
-  // Initialize a counter to track changes in consecutive characters.
-  var distinctSegments = 0;
+  // Initialize a counter for the number of times a character changes.
+  let distinctSegments = 0;
 
-  // Store the character examined in the previous iteration.
-  var previousChar = '';
+  // This variable will store the character from the previous iteration.
+  let previousChar = "";
 
-  // Loop through the character sequence for the specified length.
-  for (var charIndex = 0; charIndex < numChars; charIndex++) {
-    // Retrieve the character at the current position.
-    var currentChar = targetString.charAt(charIndex);
+  // Iterate through the character sequence from the beginning to the end.
+  for (let idx = 0; idx < numChars; idx++) {
+    // Get the character at the current index.
+    const currentChar = charSequence.charAt(idx);
 
-    // If the current character differs from the preceding one,
-    // it signals a new block of identical characters.
+    // Check if the current character is different from the one encountered previously.
     if (previousChar !== currentChar) {
-      distinctSegments++; // Increment the counter for such blocks.
+      // If they are different, it means a new segment of characters has started.
+      distinctSegments++;
     }
 
-    // Set the current character as the previous one for the subsequent iteration.
+    // Update the 'previousChar' to the 'currentChar' for the next iteration.
     previousChar = currentChar;
   }
 
-  // Output the final count, often incremented by one for problem-specific reasons.
+  // The problem asks for the total number of segments.
+  // The 'distinctSegments' variable counts the number of *transitions* between different characters.
+  // The total number of segments is always one more than the number of transitions.
   console.log(distinctSegments + 1);
 }
 
-// Invoke the main processing routine with data acquired from the standard input stream.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input using Node.js 'fs' module
+// and then call the main processing function with the obtained data.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

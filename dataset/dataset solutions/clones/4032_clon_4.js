@@ -1,43 +1,20 @@
-const { readFileSync: acquireData } = require('node:fs');
+const fileSystem = require('fs');
 
-const parseGrid = (inputString) => {
-    return inputString.trim().split('\n').map(line => line.split(' ').map(Number));
-};
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const gridDataMatrix = rawInputContent.trim().split('\n').map(lineSegment =>
+    lineSegment.split(' ').map(Number)
+);
 
-const verifyAdditiveProperty = (matrixStructure) => {
-    const referencePoint = matrixStructure[0][0];
-    const checkCoordinates = [[1, 1], [1, 2], [2, 1], [2, 2]];
+const minimumsByRow = gridDataMatrix.map(currentRow => Math.min(...currentRow));
 
-    return checkCoordinates.every(([r, c]) => {
-        return matrixStructure[r][c] - matrixStructure[r][0] - matrixStructure[0][c] + referencePoint === 0;
-    });
-};
+const minimumsByColumn = Array.from({ length: gridDataMatrix[0].length }, (_, columnIndex) =>
+    Math.min(...gridDataMatrix.map(rowItem => rowItem[columnIndex]))
+);
 
-const extractComponentVectors = (matrixStructure) => {
-    const initialElement = matrixStructure[0][0];
-    const rowComponents = matrixStructure.map((line, index) => line[0] - initialElement);
-    const columnComponents = matrixStructure[0];
-    return { rowComponents, columnComponents };
-};
+const isStructureConsistent = gridDataMatrix.every((currentRow, rowIndex) =>
+    currentRow.every((cellValue, colIndex) =>
+        cellValue === (minimumsByRow[rowIndex] + minimumsByColumn[colIndex])
+    )
+);
 
-const obtainSmallestValue = (dataArray) => {
-    return dataArray.reduce((currentMin, currentVal) => Math.min(currentMin, currentVal), Infinity);
-};
-
-const processMatrix = () => {
-    const contentPayload = acquireData('/dev/stdin', 'utf8');
-    const inputGrid = parseGrid(contentPayload);
-
-    if (!verifyAdditiveProperty(inputGrid)) {
-        return 'No';
-    }
-
-    const { rowComponents, columnComponents } = extractComponentVectors(inputGrid);
-
-    const minimumRowComponent = obtainSmallestValue(rowComponents);
-    const minimumColumnComponent = obtainSmallestValue(columnComponents);
-
-    return (minimumRowComponent + minimumColumnComponent === 0) ? 'Yes' : 'No';
-};
-
-console.log(processMatrix());
+console.log(isStructureConsistent ? 'Yes' : 'No');

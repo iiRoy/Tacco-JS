@@ -1,57 +1,36 @@
 'use strict';
+(function(inputSource){
+  const processedInput = inputSource.trim().split(/\s+/).map(val => Number(val));
+  processedInput.shift(); // Discard the first number (N), as it's not explicitly needed for this DP strategy
+  const targetValue = processedInput.shift(); // K
+  const moveOptions = processedInput; // A
 
-const ingestRawMaterial = (sourceStream) => {
-    const tokenizedSegments = sourceStream.split(/\s+/).filter(Boolean);
-    const parsedQuantities = [];
-    for (let segmentIdx = 0; segmentIdx < tokenizedSegments.length; segmentIdx++) {
-        parsedQuantities.push(Number(tokenizedSegments[segmentIdx]));
-    }
-    return parsedQuantities;
-};
+  // gameStates[x] will be true if the first player can win when x stones remain, false otherwise.
+  const gameStates = new Array(targetValue + 1);
+  gameStates[0] = false; // Base case: 0 stones is a losing state for the current player
 
-const determineOutcome = (pileState, allowedDecrements, memoizedResults) => {
-    if (pileState < 0) {
-        return false; 
-    }
-    if (pileState === 0) {
-        // Base condition: no items left, current player has no moves, thus loses
-        return false;
-    }
-    if (memoizedResults[pileState] !== undefined) {
-        // Return previously computed result from cache
-        return memoizedResults[pileState];
-    }
-
-    let canSecureVictory = false;
-    for (let decrementIdx = 0; decrementIdx < allowedDecrements.length; decrementIdx++) {
-        const currentDecrement = allowedDecrements[decrementIdx];
-        if (pileState - currentDecrement >= 0) {
-            // If moving to 'pileState - currentDecrement' causes the *next* player to lose,
-            // then the current player wins by making this move.
-            if (!determineOutcome(pileState - currentDecrement, allowedDecrements, memoizedResults)) {
-                canSecureVictory = true;
-                break; // Found a winning move, no need to explore other options
-            }
+  // Iterate from 1 up to targetValue to determine the winning/losing status for each number of stones.
+  for (let currentStones = 1; currentStones <= targetValue; currentStones++) {
+    let canCurrentPlayerWin = false;
+    // Check all possible moves from the current number of stones.
+    for (let option of moveOptions) {
+      // Ensure the move is valid (does not result in negative stones).
+      if (currentStones - option >= 0) {
+        // If making this move leads to a state where the opponent loses (i.e., gameStates[currentStones - option] is false),
+        // then the current player can win from 'currentStones'.
+        if (!gameStates[currentStones - option]) {
+          canCurrentPlayerWin = true;
+          break; // Found a winning move, no need to check further options for this 'currentStones' value.
         }
+      }
     }
+    gameStates[currentStones] = canCurrentPlayerWin;
+  }
 
-    memoizedResults[pileState] = canSecureVictory;
-    return canSecureVictory;
-};
-
-const processedData = ingestRawMaterial(require('fs').readFileSync('/dev/stdin', 'utf8'));
-const maxMoveOptions = processedData[0]; // N from original, not directly used in this implementation's logic
-const initialPileSize = processedData[1]; // K from original
-const validMoveDecrements = processedData.slice(2); // A from original
-
-// Initialize a cache for game states up to initialPileSize
-// `undefined` signifies that a state has not yet been computed.
-const computedGameStates = new Array(initialPileSize + 1).fill(undefined);
-
-const primaryPlayerVictorious = determineOutcome(initialPileSize, validMoveDecrements, computedGameStates);
-
-if (primaryPlayerVictorious) {
-    console.log('Player One');
-} else {
-    console.log('Player Two');
-}
+  // The result for the initial K stones is stored in gameStates[targetValue].
+  if (gameStates[targetValue]) {
+    console.log('First');
+  } else {
+    console.log('Second');
+  }
+})(require('fs').readFileSync('/dev/stdin','utf8'));

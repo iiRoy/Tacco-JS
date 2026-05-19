@@ -1,222 +1,378 @@
 "use strict";
 
-function _convertToArray(sourceArray) { return _extractArrayElements(sourceArray) || _transformIterable(sourceArray) || _invalidSpread(); }
+// Helper function to convert an iterable to an array, handling non-array iterables.
+function _toConsumableArray(arr) {
+  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+}
 
-function _invalidSpread() { throw new TypeError("Cannot spread non-iterable instance"); }
+// Throws an error if an attempt is made to spread a non-iterable instance.
+function _nonIterableSpread() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance");
+}
 
-function _extractArrayElements(sourceArray) { if (Array.isArray(sourceArray)) { for (var itemIndex = 0, newArray = new Array(sourceArray.length); itemIndex < sourceArray.length; itemIndex++) { newArray[itemIndex] = sourceArray[itemIndex]; } return newArray; } }
+// Creates a shallow copy of an array.
+function _arrayWithoutHoles(arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) {
+      arr2[i] = arr[i];
+    }
+    return arr2;
+  }
+}
 
-function _verifyClassInstance(objInstance, classConstructor) { if (!(objInstance instanceof classConstructor)) { throw new TypeError("Cannot invoke class without 'new'"); } }
+// Ensures a class is called with 'new'.
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
 
-function _establishProperties(targetObject, propertyList) { for (var propIdx = 0; propIdx < propertyList.length; propIdx++) { var propDescriptor = propertyList[propIdx]; propDescriptor.enumerable = propDescriptor.enumerable || false; propDescriptor.configurable = true; if ("value" in propDescriptor) propDescriptor.writable = true; Object.defineProperty(targetObject, propDescriptor.key, propDescriptor); } }
+// Defines properties on a target object.
+function _defineProperties(target, props) {
+  for (var i = 0; i < props.length; i++) {
+    var descriptor = props[i];
+    descriptor.enumerable = descriptor.enumerable || false;
+    descriptor.configurable = true;
+    if ("value" in descriptor) descriptor.writable = true;
+    Object.defineProperty(target, descriptor.key, descriptor);
+  }
+}
 
-function _constructClass(classConstructor, prototypeProperties, staticProperties) { if (prototypeProperties) _establishProperties(classConstructor.prototype, prototypeProperties); if (staticProperties) _establishProperties(classConstructor, staticProperties); return classConstructor; }
+// Creates a class with prototype and static properties.
+function _createClass(Constructor, protoProps, staticProps) {
+  if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+  if (staticProps) _defineProperties(Constructor, staticProps);
+  return Constructor;
+}
 
-function _obtainArray(sourceArray) { return _retrieveArray(sourceArray) || _transformIterable(sourceArray) || _invalidRest(); }
+// Converts an iterable to an array, handling non-array iterables.
+function _toArray(arr) {
+  return _arrayWithHoles(arr) || _iterableToArray(arr) || _nonIterableRest();
+}
 
-function _transformIterable(iterObject) { if (Symbol.iterator in Object(iterObject) || Object.prototype.toString.call(iterObject) === "[object Arguments]") return Array.from(iterObject); }
+// Converts an iterable to an array.
+function _iterableToArray(iter) {
+  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+}
 
-function _segmentArray(sourceArray, limit) { return _retrieveArray(sourceArray) || _limitIterableToArray(sourceArray, limit) || _invalidRest(); }
+// Slices an array into a fixed number of elements.
+function _slicedToArray(arr, i) {
+  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+}
 
-function _invalidRest() { throw new TypeError("Failed to destructure non-iterable value"); }
+// Throws an error if an attempt is made to destructure a non-iterable instance.
+function _nonIterableRest() {
+  throw new TypeError("Invalid attempt to destructure non-iterable instance");
+}
 
-function _limitIterableToArray(sourceArray, limit) { var tempArray = []; var isNormal = true; var hasError = false; var errorDetails = undefined; try { for (var iter = sourceArray[Symbol.iterator](), currentItem; !(isNormal = (currentItem = iter.next()).done); isNormal = true) { tempArray.push(currentItem.value); if (limit && tempArray.length === limit) break; } } catch (err) { hasError = true; errorDetails = err; } finally { try { if (!isNormal && iter["return"] != null) { iter["return"](); } } finally { if (hasError) throw errorDetails; } } return tempArray; }
+// Converts an iterable to an array with a limit on the number of elements.
+function _iterableToArrayLimit(arr, i) {
+  var _arr = [];
+  var _n = true;
+  var _d = false;
+  var _e = undefined;
+  try {
+    for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+      _arr.push(_s.value);
+      if (i && _arr.length === i) break;
+    }
+  } catch (err) {
+    _d = true;
+    _e = err;
+  } finally {
+    try {
+      if (!_n && _i["return"] != null) {
+        _i["return"]();
+      }
+    } finally {
+      if (_d) throw _e;
+    }
+  }
+  return _arr;
+}
 
-function _retrieveArray(sourceArray) { if (Array.isArray(sourceArray)) return sourceArray; }
+// Returns an array if the input is an array.
+function _arrayWithHoles(arr) {
+  if (Array.isArray(arr)) return arr;
+}
 
-function _executeProgram() {
-  // Main application logic starts here
+// The primary execution function for the program.
+function mainProcess() {
+  // --- Start of main logic ---
   (function (dataInput) {
-    var textLines = dataInput.split("\n");
+    // Split the input string into an array of lines.
+    var inputLines = dataInput.split("\n");
 
-    var _parsedValues = parseNumericLine(textLines[0]),
-        _segmentedValues = _segmentArray(_parsedValues, 4),
-        count = _segmentedValues[0],
-        targetA = _segmentedValues[1],
-        targetB = _segmentedValues[2],
-        targetC = _segmentedValues[3];
+    // Parse the first line to get N, A, B, C.
+    var parsedNumbers = parseNumbersFromString(inputLines[0]);
+    var destructuredNumbers = _slicedToArray(parsedNumbers, 4);
+    var numItems = destructuredNumbers[0]; // N
+    var targetA = destructuredNumbers[1]; // A
+    var targetB = destructuredNumbers[2]; // B
+    var targetC = destructuredNumbers[3]; // C
 
-    var lengthsList = parseNumericLine(textLines.slice(1).slice(0, count));
-    var minimumCost = Number.MAX_VALUE;
-    var _iterationComplete = true;
-    var _encounteredError = false;
-    var _iterationErrorDetails = undefined;
+    // Parse the subsequent lines to get the lengths of the bamboo items.
+    var itemLengths = parseNumbersFromString(inputLines.slice(1).slice(0, numItems));
+
+    // Initialize the minimum cost to a very large number.
+    var minimumCost = Infinity;
+
+    // Variables for iterator state (Babel generated).
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
 
     try {
-      for (var _iterator = numericSequence(0, Math.pow(4, count))[Symbol.iterator](), _step; !(_iterationComplete = (_step = _iterator.next()).done); _iterationComplete = true) {
-        var combinationPattern = _step.value;
-        var listA = [],
-            listB = [],
-            listC = [];
-        var elementIndex = 0;
+      // Iterate through all possible combinations of assigning bamboo items to groups A, B, C, or discarding them.
+      // There are 4 choices for each of N items (A, B, C, or discard), so 4^N combinations.
+      for (var _iterator = generateSequence(0, Math.pow(4, numItems))[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var combinationIndex = _step.value; // Represents the current combination as an integer.
 
-        while (combinationPattern > 0) {
-          var currentBit = combinationPattern % 4;
-          [[], listA, listB, listC][currentBit].push(lengthsList[elementIndex]);
-          combinationPattern >>= 2;
-          elementIndex++;
+        // Initialize arrays for items assigned to each group.
+        var groupA = [],
+          groupB = [],
+          groupC = [];
+        var itemCounter = 0; // Tracks which bamboo item is being processed.
+        var tempCombinationIndex = combinationIndex; // Use a temporary variable for bit manipulation.
+
+        // Decode the combination index to assign items to groups.
+        while (itemCounter < numItems) {
+          var assignedGroupType = tempCombinationIndex % 4; // 0: discard, 1: groupA, 2: groupB, 3: groupC
+          // Add the current bamboo item's length to the corresponding group.
+          [[], groupA, groupB, groupC][assignedGroupType].push(itemLengths[itemCounter]);
+          tempCombinationIndex >>= 2; // Move to the next pair of bits for the next item.
+          itemCounter++;
         }
 
-        if (listA.length === 0 || listB.length === 0 || listC.length === 0) {
+        // If any group is empty, this combination is invalid, so skip it.
+        if (groupA.length === 0 || groupB.length === 0 || groupC.length === 0) {
           continue;
         }
 
-        var currentSum = calculatePenalty(listA, targetA) + calculatePenalty(listB, targetB) + calculatePenalty(listC, targetC);
+        // Calculate the total cost for the current combination.
+        var currentCombinationCost = calculateMagicPoints(groupA, targetA) +
+          calculateMagicPoints(groupB, targetB) +
+          calculateMagicPoints(groupC, targetC);
 
-        if (minimumCost > currentSum) {
-          minimumCost = currentSum;
+        // Update the minimum cost if the current combination is cheaper.
+        if (minimumCost > currentCombinationCost) {
+          minimumCost = currentCombinationCost;
         }
       }
     } catch (err) {
-      _encounteredError = true;
-      _iterationErrorDetails = err;
+      _didIteratorError = true;
+      _iteratorError = err;
     } finally {
       try {
-        if (!_iterationComplete && _iterator.return != null) {
+        if (!_iteratorNormalCompletion && _iterator.return != null) {
           _iterator.return();
         }
       } finally {
-        if (_encounteredError) {
-          throw _iterationErrorDetails;
+        if (_didIteratorError) {
+          throw _iteratorError;
         }
       }
     }
 
+    // Output the final minimum cost.
     console.log(minimumCost);
 
-    function calculatePenalty(segmentList, targetLength) {
-      var adjustmentCost = (segmentList.length - 1) * 10;
-      var combinedLength = segmentList.reduce(function (accumulator, currentValue) {
-        return accumulator + currentValue;
+    /**
+     * Calculates the "magic points" cost for a given group of bamboo items.
+     * @param {number[]} lengthsArray - An array of bamboo item lengths.
+     * @param {number} desiredLength - The target length for the combined bamboo.
+     * @returns {number} The calculated magic points cost.
+     */
+    function calculateMagicPoints(lengthsArray, desiredLength) {
+      // Cost for combining items (10 MP per merge operation).
+      var baseCost = (lengthsArray.length - 1) * 10;
+      // Sum of all bamboo lengths in the group.
+      var totalLength = lengthsArray.reduce(function (accumulator, current) {
+        return accumulator + current;
       }, 0);
-      return adjustmentCost + Math.abs(combinedLength - targetLength);
+      // Add the cost for length adjustment (absolute difference from target).
+      return baseCost + Math.abs(totalLength - desiredLength);
     }
-  })(require("fs").readFileSync("/dev/stdin", "utf8"));
+  })(require("fs").readFileSync("/dev/stdin", "utf8")); // Read input from stdin.
 
-  // Parses a string or array of strings into an array of integers.
-  function parseNumericLine(inputLine) {
-    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numStr) {
-      return parseInt(numStr);
+  /**
+   * Parses a string or array of strings into an array of integers.
+   * @param {string|string[]} inputLine - The string or array of strings to parse.
+   * @returns {number[]} An array of parsed integers.
+   */
+  function parseNumbersFromString(inputLine) {
+    return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numericString) {
+      return parseInt(numericString);
     });
   }
 
-  // Generator function for numerical sequences.
-  function* numericSequence(beginVal, endVal) {
-    for (var currentVal = beginVal; currentVal < endVal; currentVal++) {
-      yield currentVal;
+  /**
+   * Generates a sequence of integers within a specified range.
+   * @generator
+   * @param {number} startIndex - The starting integer (inclusive).
+   * @param {number} endIndex - The ending integer (exclusive).
+   * @yields {number} Each integer in the sequence.
+   */
+  function* generateSequence(startIndex, endIndex) {
+    for (var currentNumber = startIndex; currentNumber < endIndex; currentNumber++) {
+      yield currentNumber;
     }
   }
-  // Placeholder for a descending sequence generator, if needed.
 
+  // The following functions and class are not used in the main problem logic
+  // but are part of the original file. They are cloned as Type II.
 
-  // Implementation for handling large integers.
+  /**
+   * Iterates over integers in [end, start) in descending order.
+   * (This function is present in the original but commented out/unused).
+   */
+  // function* generateReverseSequence(end, start) {
+  //   for (var i = end - 1; i >= start; i--) {
+  //     yield i;
+  //   }
+  // }
+
+  /**
+   * Implementation of an arbitrary-precision unsigned integer.
+   * This class handles numbers larger than JavaScript's standard Number type can safely represent.
+   */
   var BigIntHandler =
-  /*#__PURE__*/
-  function () {
-    function BigIntHandler(initialValue) {
-      _verifyClassInstance(this, BigIntHandler);
+    /*#__PURE__*/
+    function () {
+      /**
+       * Constructs a new BigIntHandler instance.
+       * @param {number} initialValue - The initial numeric value.
+       */
+      function BigIntHandler(initialValue) {
+        _classCallCheck(this, BigIntHandler);
 
-      // Array to hold segments of the large number.
-      this.digitChunks = [0, 0, 0];
-      var indexPos = 0;
+        // Internal array to store segments of the large number.
+        // Enough for 64-bit numbers (3 segments for 10^7 border).
+        this.data = [0, 0, 0];
+        var segmentIndex = 0;
 
-      while (initialValue !== 0) {
-        this.digitChunks[indexPos] = initialValue % BigIntHandler.chunkBoundary;
-        initialValue = Math.floor(initialValue / BigIntHandler.chunkBoundary);
-        indexPos++;
-      }
-    }
-
-    _constructClass(BigIntHandler, [{
-      key: "performAddition",
-      value: function performAddition(operandRight) {
-        var addResult = new BigIntHandler(0);
-        var maxLength = Math.max(this.digitChunks.length, operandRight.digitChunks.length);
-        var overflow = 0;
-        var indexPos = 0;
-
-        for (; indexPos < maxLength; indexPos++) {
-          var chunkSum = (this.digitChunks[indexPos] || 0) + (operandRight.digitChunks[indexPos] || 0) + overflow;
-          addResult.digitChunks[indexPos] = chunkSum % BigIntHandler.chunkBoundary;
-          overflow = Math.floor(chunkSum / BigIntHandler.chunkBoundary);
+        // Convert the initial value into segments based on the defined border.
+        while (initialValue !== 0) {
+          this.data[segmentIndex] = initialValue % BigIntHandler.segmentBoundary;
+          initialValue = Math.floor(initialValue / BigIntHandler.segmentBoundary);
+          segmentIndex++;
         }
-
-        if (overflow > 0) {
-          addResult.digitChunks[indexPos] = overflow;
-        }
-
-        return addResult;
       }
-    }, {
-      key: "performMultiplication",
-      value: function performMultiplication(operandRight) {
-        var mulResult = new BigIntHandler(0);
 
-        for (var leftIndex = 0; leftIndex < this.digitChunks.length; leftIndex++) {
-          for (var rightIndex = 0; rightIndex < operandRight.digitChunks.length; rightIndex++) {
-            var productChunk = this.digitChunks[leftIndex] * operandRight.digitChunks[rightIndex];
-            var targetIndex = leftIndex + rightIndex;
-            var chunkValue = productChunk;
+      _createClass(BigIntHandler, [{
+        key: "add",
+        value: function add(otherOperand) {
+          var operationResult = new BigIntHandler(0);
+          var maxSegmentCount = Math.max(this.data.length, otherOperand.data.length);
+          var carryOver = 0;
+          var segmentIndex = 0;
 
-            while (chunkValue > 0) {
-              var currentSum = (mulResult.digitChunks[targetIndex] || 0) + chunkValue;
-              mulResult.digitChunks[targetIndex] = currentSum % BigIntHandler.chunkBoundary;
-              chunkValue = Math.floor(currentSum / BigIntHandler.chunkBoundary);
-              targetIndex++;
-            }
+          // Perform addition segment by segment, handling carry-overs.
+          for (; segmentIndex < maxSegmentCount; segmentIndex++) {
+            var segmentSum = (this.data[segmentIndex] || 0) + (otherOperand.data[segmentIndex] || 0) + carryOver;
+            operationResult.data[segmentIndex] = segmentSum % BigIntHandler.segmentBoundary;
+            carryOver = Math.floor(segmentSum / BigIntHandler.segmentBoundary);
           }
+
+          // If there's a final carry-over, add it as a new segment.
+          if (carryOver > 0) {
+            operationResult.data[segmentIndex] = carryOver;
+          }
+
+          return operationResult;
         }
+      }, {
+        key: "mul",
+        value: function mul(otherOperand) {
+          var operationResult = new BigIntHandler(0);
 
-        return mulResult;
-      }
-    }, {
-      key: "toDecimalString",
-      value: function toDecimalString() {
-        var reversedChunks = this.digitChunks.concat().reverse();
+          // Perform multiplication using a standard long multiplication algorithm.
+          for (var leftSegmentIndex = 0; leftSegmentIndex < this.data.length; leftSegmentIndex++) {
+            for (var rightSegmentIndex = 0; rightSegmentIndex < otherOperand.data.length; rightSegmentIndex++) {
+              var segmentProduct = this.data[leftSegmentIndex] * otherOperand.data[rightSegmentIndex];
+              var targetSegmentIndex = leftSegmentIndex + rightSegmentIndex;
+              var remainingProduct = segmentProduct;
 
-        var firstNonZeroIndex = function (inputArray, predicateFn) {
-          for (var i = 0; i < inputArray.length; i++) {
-            if (predicateFn(inputArray[i], i)) {
-              return i;
+              // Distribute the product into the result's segments, handling carries.
+              while (remainingProduct > 0) {
+                var segmentSum = (operationResult.data[targetSegmentIndex] || 0) + remainingProduct;
+                operationResult.data[targetSegmentIndex] = segmentSum % BigIntHandler.segmentBoundary;
+                remainingProduct = Math.floor(segmentSum / BigIntHandler.segmentBoundary);
+                targetSegmentIndex++;
+              }
             }
           }
 
-          return null;
-        }(reversedChunks, function (chunkValue) {
-          return chunkValue !== 0;
-        });
-
-        if (firstNonZeroIndex == null) {
-          return "0";
+          return operationResult;
         }
+      }, {
+        key: "toString",
+        value: function toString() {
+          // Create a copy and reverse it for easier processing (most significant segment first).
+          var reversedSegments = this.data.concat().reverse();
 
-        return reversedChunks.slice(firstNonZeroIndex).map(function (chunkValue, mapIndex) {
-          if (mapIndex === 0) {
-            return String(chunkValue);
-          } else {
-            return padLeftWithChar(String(chunkValue), BigIntHandler.chunkDigits, "0");
+          // Find the index of the first non-zero segment to avoid leading zeros.
+          var firstSignificantSegmentIndex = function (segmentArray, checkFunction) {
+            for (var i = 0; i < segmentArray.length; i++) {
+              if (checkFunction(segmentArray[i], i)) {
+                return i;
+              }
+            }
+            return null;
+          } // Not a full polyfill, just a simple findIndex.
+          (reversedSegments, function (segmentValue) {
+            return segmentValue !== 0;
+          });
+
+          // If all segments are zero, the number is "0".
+          if (firstSignificantSegmentIndex == null) {
+            return "0";
           }
-        }).join("");
 
-        function padLeftWithChar(sourceString, desiredLength, paddingChar) {
-          var paddingCount = desiredLength - sourceString.length;
-          var paddedResult = "";
+          // Convert segments to strings, padding with zeros where necessary.
+          return reversedSegments.slice(firstSignificantSegmentIndex).map(function (segmentValue, segmentPosition) {
+            if (segmentPosition === 0) {
+              return String(segmentValue); // First segment doesn't need padding.
+            } else {
+              // Subsequent segments need to be padded to the full segmentDigits length.
+              return padStringWithChar(String(segmentValue), BigIntHandler.segmentDigits, "0");
+            }
+          }).join("");
 
-          for (var i = 0; i < paddingCount; i++) {
-            paddedResult += paddingChar;
+          /**
+           * Pads the start of a string with a specified character until it reaches a target length.
+           * @param {string} inputString - The string to pad.
+           * @param {number} targetLength - The desired total length of the string.
+           * @param {string} paddingCharacter - The character to use for padding.
+           * @returns {string} The padded string.
+           */
+          function padStringWithChar(inputString, targetLength, paddingCharacter) {
+            var charsToPad = targetLength - inputString.length;
+            var finalPaddedString = "";
+
+            for (var i = 0; i < charsToPad; i++) {
+              finalPaddedString += paddingCharacter;
+            }
+
+            return finalPaddedString + inputString;
           }
-
-          return paddedResult + sourceString;
         }
-      }
-    }]);
+      }]);
 
-    return BigIntHandler;
-  }();
-  // Number of digits per element in the array.
-  BigIntHandler.chunkDigits = 7;
-  BigIntHandler.chunkBoundary = Math.pow(10, BigIntHandler.chunkDigits);
-  // Unused function: for recursive generator.
+      return BigIntHandler;
+    }();
+
+  /** Number of digits per segment in the internal data array. */
+  BigIntHandler.segmentDigits = 7;
+  /** The boundary value for each segment (e.g., 10^7). */
+  BigIntHandler.segmentBoundary = Math.pow(10, BigIntHandler.segmentDigits);
+
+  /**
+   * Runs a recursive function expressed as a generator function.
+   * (This comment is present in the original but the functionality is not implemented/used).
+   */
+  // --- End of main logic ---
 }
 
-_executeProgram();
+// Execute the main process.
+mainProcess();

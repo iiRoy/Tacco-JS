@@ -1,22 +1,20 @@
 'use strict';
-const displayOutcome = (phrase) => console.log(phrase);
 
-function processData(rawDataLines) {
-  const firstSegmentInfo = rawDataLines[0].split(" ");
-  const divisorVal = Number(firstSegmentInfo[0]);
+const logOutput = (outputMessage) => console.log(outputMessage);
 
-  const secondSegmentInfo = rawDataLines[1].split(" ");
-  const lowerBoundary = Number(secondSegmentInfo[0]);
-  const upperBoundary = Number(secondSegmentInfo[1]);
+function processInputData(inputLines) {
+  const divisorNum = parseInt(inputLines[0].split(" ")[0], 10);
 
-  const floorQuotient = Math.floor((lowerBoundary - 1) / divisorVal);
-  const firstMatchingMultiple = (floorQuotient + 1) * divisorVal;
+  const [lowerBoundVal, upperBoundVal] = inputLines[1].split(" ").map(Number);
 
-  if (firstMatchingMultiple <= upperBoundary) {
-    displayOutcome('OK');
-  } else {
-    displayOutcome('NO');
-  }
+  const rangeElements = Array.from(
+    { length: upperBoundVal - lowerBoundVal + 1 },
+    (_, index) => lowerBoundVal + index
+  );
+
+  const isAnyDivisible = rangeElements.some(element => element % divisorNum === 0);
+
+  logOutput(isAnyDivisible ? 'OK' : 'NO');
 }
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

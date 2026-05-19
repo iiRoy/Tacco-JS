@@ -1,14 +1,10 @@
-const transformWord = (textualUnit) => {
-  const endPosition = textualUnit.length - 1;
-  const terminalSymbol = textualUnit.substring(endPosition, endPosition + 1);
-
-  const suffixChoices = {
-    's': 'es',
-    'default_suffix': 's'
+function transformString(sourceText) {
+  const finalChar = sourceText.slice(-1);
+  const suffixMap = {
+    's': 'es'
   };
+  const selectedSuffix = suffixMap[finalChar] !== undefined ? suffixMap[finalChar] : 's';
+  console.log(sourceText + selectedSuffix);
+}
 
-  const selectedAppendage = suffixChoices[terminalSymbol] || suffixChoices['default_suffix'];
-  console.log(textualUnit + selectedAppendage);
-};
-
-transformWord(require("fs").readFileSync("/dev/stdin", "utf8"));
+transformString(require("fs").readFileSync("/dev/stdin", "utf8"));

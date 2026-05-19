@@ -1,15 +1,17 @@
-const obtainValue = (textualData) => {
-    return Number(textualData.split('\n')[0].split(' ')[0]);
+const processSourceData = (sourceContent) => {
+    const firstLine = sourceContent.split('\n')[0];
+    const firstSegment = firstLine.split(' ')[0];
+    return Number(firstSegment);
 };
 
-const calculateResult = (initialValue) => {
-    return (initialValue + (initialValue % 2)) / 2;
+const deriveOutcome = (initialValue) => {
+    return Math.ceil(initialValue / 2);
 };
 
-const processInputAndDisplay = (sourceContent) => {
-    const rawNumber = obtainValue(sourceContent);
-    const calculatedOutput = calculateResult(rawNumber);
-    console.log(calculatedOutput);
+const applicationEntry = (rawInputPayload) => {
+    const parsedNumericValue = processSourceData(rawInputPayload);
+    const computedResult = deriveOutcome(parsedNumericValue);
+    console.log(computedResult);
 };
 
-processInputAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));
+applicationEntry(require("fs").readFileSync("/dev/stdin", "utf8"));

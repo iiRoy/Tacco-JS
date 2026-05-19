@@ -1,64 +1,36 @@
-'use strict'; // Enforce strict parsing and error handling for the script
+'use strict';
 
-// A utility function to safely convert any textual input into a numerical representation.
-function convertTextToNumericValue(stringContent) {
-  return Number(stringContent);
-}
-
-// A dedicated function to compute the power of a base number raised to an exponent.
-function calculateExponentialValue(baseNumber, exponentNumber) {
-  return Math.pow(baseNumber, exponentNumber);
-}
-
-// A simple routine to display a given value to the standard output console.
-function renderOutputToConsole(valueForDisplay) {
-  console.log(valueForDisplay);
-}
-
-/*
- * This is the primary function responsible for processing the incoming data.
- * It determines the largest square number that is strictly less than a given target.
+/**
+ * This function processes a numerical input to find a specific square value.
+ * It determines the largest perfect square that is strictly less than the provided number.
+ * @param {string} inputString The string representation of the number to be processed.
  */
-function processIncomingData(inputDataString) {
+function processInput(inputString) {
+  // Convert the incoming string data into a numerical target for calculations.
+  const targetValue = Number(inputString);
 
-  // First, parse the input string to get our numerical target.
-  const desiredTargetValue = convertTextToNumericValue(inputDataString);
+  // Initialize a variable to hold the current square being evaluated, starting from zero.
+  let currentSquare = 0;
+  // Initialize a counter variable, which will be the base for squaring operations.
+  let counter = 0;
 
-  // Initialize a variable to keep track of the current square value found.
-  let currentSquareResult = 0;
-
-  // Initialize an iteration counter, starting from zero.
-  let iterationCounter = 0;
-
-  // The main loop: continues as long as the current square is below the target.
-  while (currentSquareResult < desiredTargetValue) {
-    // Increment the counter for the next evaluation.
-    iterationCounter = iterationCounter + 1;
-
+  // Begin a loop that continues as long as the current square is less than the target value.
+  // The goal is to find the smallest 'counter' whose square is greater than or equal to 'targetValue'.
+  while (currentSquare < targetValue) {
+    // Increment the counter for the next iteration.
+    counter += 1;
     // Calculate the square of the incremented counter.
-    currentSquareResult = calculateExponentialValue(iterationCounter, 2);
+    currentSquare = Math.pow(counter, 2);
   }
 
-  // Once the loop exits, 'iterationCounter' will be one step too high.
-  // We need the square of the value *before* it exceeded the target.
-  const finalComputedSquare = calculateExponentialValue(iterationCounter - 1, 2);
+  // After the loop, 'counter' is the smallest integer such that counter^2 >= targetValue.
+  // To find the largest perfect square *less than* targetValue, we need to use (counter - 1).
+  const resultSquare = Math.pow(counter - 1, 2);
 
-  // Output the final result to the user.
-  renderOutputToConsole(finalComputedSquare);
+  // Output the final calculated square value to the standard console.
+  console.log(resultSquare);
 }
 
-// Alias for the module loading mechanism to adhere to renaming.
-const obtainSystemModule = require;
-
-// Retrieve the file system utility module using the alias.
-const fileSystemHandler = obtainSystemModule("fs");
-
-// Define the standard input file path.
-const standardInputFileLocation = "/dev/stdin";
-
-// Specify the character encoding for reading the input file.
-const fileContentEncoding = "utf8";
-
-// Execute the core processing function by feeding it content
-// read synchronously from the standard input stream.
-processIncomingData(fileSystemHandler.readFileSync(standardInputFileLocation, fileContentEncoding));
+// Read the entire content from standard input, assuming it's UTF-8 encoded,
+// and then pass this content as a string to our processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

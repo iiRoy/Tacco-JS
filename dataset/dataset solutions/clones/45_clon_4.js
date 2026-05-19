@@ -1,21 +1,32 @@
-const acquiredData = require('node:fs').readFileSync(0, 'utf8');
-const dataSegments = acquiredData.trim().split('\n');
+var sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
+var textSegments = sourceText.split('\n');
 
-const broadness = Number(dataSegments[0]);
-const swapCount = Number(dataSegments[1]);
+var trackCount = +textSegments.shift();
+var operationCount = +textSegments.shift();
 
-const exchangeInstructions = dataSegments.slice(2).map(segment => {
-    const parts = segment.split(',');
-    return [Number(parts[0]), Number(parts[1])];
+var exchangeInstructions = textSegments
+    .filter(Boolean)
+    .map(segment => segment.split(',').map(Number));
+
+var currentLocationMap = Array.from({ length: trackCount + 1 }, (_, idx) => idx);
+
+exchangeInstructions.forEach(pairValues => {
+    var valA = pairValues[0];
+    var valB = pairValues[1];
+
+    var posA = currentLocationMap[valA];
+    var posB = currentLocationMap[valB];
+
+    currentLocationMap[valA] = posB;
+    currentLocationMap[valB] = posA;
 });
 
-const terminalPositions = Array.from({ length: broadness + 1 }, (_, idx) => idx);
+var outputSequence = Array(trackCount + 1);
 
-for (const operation of exchangeInstructions) {
-    const [leftMarker, rightMarker] = operation;
-    const temporaryValue = terminalPositions[leftMarker];
-    terminalPositions[leftMarker] = terminalPositions[rightMarker];
-    terminalPositions[rightMarker] = temporaryValue;
+for (var initialPosition = 1; initialPosition <= trackCount; initialPosition++) {
+    var finalPosition = currentLocationMap[initialPosition];
+    outputSequence[finalPosition] = initialPosition;
 }
 
-console.log(terminalPositions.slice(1).join('\n'));
+outputSequence.shift();
+console.log(outputSequence.join('\n'));

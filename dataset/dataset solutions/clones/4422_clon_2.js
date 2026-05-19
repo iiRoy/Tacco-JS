@@ -1,58 +1,53 @@
-function calculateGCD (firstNum, secondNum) {
-  // This function computes the greatest common divisor (GCD) of two integers
-  // using the classic Euclidean algorithm.
-  if (firstNum % secondNum === 0) {
-    // If the first number is perfectly divisible by the second,
+function calculateGCD(firstNum, secondNum) {
+    // The Euclidean algorithm for finding the greatest common divisor.
+    // If the second number divides the first number without a remainder,
     // then the second number is the GCD.
-    return secondNum;
-  } else {
-    // Otherwise, recursively call the function with the second number
-    // and the remainder of the division.
-    return calculateGCD(secondNum, firstNum % secondNum);
-  }
+    if (firstNum % secondNum == 0) {
+        return secondNum;
+    } else {
+        // Otherwise, recursively call the function with the second number
+        // and the remainder of the first number divided by the second.
+        return calculateGCD(secondNum, firstNum % secondNum);
+    }
 }
 
-function calculateLCM (valueOne, valueTwo) {
-  // This function determines the least common multiple (LCM) of two numbers.
-  // It leverages the relationship between LCM and GCD:
-  // LCM(a, b) = |a * b| / GCD(a, b)
-  const greatestCommonDivisorValue = calculateGCD(valueOne, valueTwo);
-
-  return (valueOne * valueTwo) / greatestCommonDivisorValue;
+// This function computes the least common multiple (LCM) of two numbers.
+function determineLCM(valA, valB) {
+    // The LCM of two numbers can be found using their GCD:
+    // LCM(a, b) = (a * b) / GCD(a, b)
+    var commonDivisor = calculateGCD(valA, valB);
+    return (valA * valB) / commonDivisor;
 }
 
-function executeProgramLogic (rawInputString) {
-  // The primary execution block of the application.
-  // It processes the incoming text data to calculate the LCM of a series of numbers.
+// The main entry point for processing the input data.
+function processInputData(rawDataString) {
+    // Split the incoming string by newline characters to get an array of string representations of numbers.
+    var numericValues = rawDataString.split('\n');
 
-  let parsedNumbers = rawInputString.split('\n'); // Split the input string by newline characters.
-
-  // Iterate through the array to convert each string element into a numeric type.
-  for (let loopIndex = 0; loopIndex < parsedNumbers.length; loopIndex++) {
-    parsedNumbers[loopIndex] = Number(parsedNumbers[loopIndex]);
-  }
-
-  // Check the number of parsed numeric entries.
-  if (parsedNumbers.length === 2) {
-    // If only two numbers were provided (likely just one actual number and an empty line),
-    // output the second element (assuming it's the valid data point).
-    console.log(parsedNumbers[1]);
-  } else {
-    // If there are more than two numbers, proceed with LCM calculation.
-    // Initialize the accumulated LCM with the LCM of the first two relevant numbers.
-    let accumulatedLCM = calculateLCM(parsedNumbers[1], parsedNumbers[2]);
-
-    // Loop through the remaining numbers, starting from the third one.
-    for (let loopIndex = 3; loopIndex < parsedNumbers.length; loopIndex++) {
-      // Continuously update the accumulated LCM with the LCM of the current accumulated value
-      // and the next number in the sequence.
-      accumulatedLCM = calculateLCM(accumulatedLCM, parsedNumbers[loopIndex]);
+    // Convert each string element in the array to its numerical equivalent.
+    for (var idx = 0; idx < numericValues.length; idx++) {
+        numericValues[idx] = Number(numericValues[idx]);
     }
 
-    // Display the final computed least common multiple.
-    console.log(accumulatedLCM);
-  }
+    // Check the count of numerical values to determine the processing logic.
+    if (numericValues.length == 2) {
+        // If there are exactly two numbers, output the second number directly.
+        // This implies the first number might be a count or irrelevant for this specific case.
+        console.log(numericValues[1]);
+    } else {
+        // If there are more than two numbers, calculate the LCM of all numbers
+        // starting from the second element in the array.
+        var finalResult = determineLCM(numericValues[1], numericValues[2]);
+
+        // Iterate through the rest of the numbers, cumulatively calculating the LCM.
+        for (var idx = 3; idx < numericValues.length; idx++) {
+            finalResult = determineLCM(finalResult, numericValues[idx]);
+        }
+        // Print the final computed least common multiple.
+        console.log(finalResult);
+    }
 }
 
-// Execute the main program logic by reading input from standard input.
-executeProgramLogic(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the primary processing function by reading input from standard input.
+// The 'fs' module is used to access the file system, and '/dev/stdin' represents standard input.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

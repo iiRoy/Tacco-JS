@@ -1,66 +1,54 @@
-// This module defines a function for processing textual input.
-function ProcessData(rawData) {
-  // The provided raw data string is first trimmed of extraneous whitespace,
-  // then split into an array of individual lines using the newline character.
-  const processedLines = rawData.trim().split("\n");
+function ProcessInputData(rawData) {
+  // Process the raw input string into an array of individual lines.
+  let lineSegments = rawData.trim().split('\n');
 
-  // An object is initialized to keep track of the frequency of each unique item encountered.
-  const itemFrequencies = {};
+  // Initialize an object to store the frequency of each string.
+  const occurrenceMap = {};
+  // Keep track of the maximum frequency encountered.
+  let highestFrequency = 0b1; // Using binary literal for 1
 
-  // A variable to store the greatest frequency found among all items.
-  let currentMaxFrequency = 1;
+  // The first line indicates the number of subsequent items to process.
+  const itemCount = Number.parseInt(lineSegments[0], 10);
 
-  // The very first line of the input data specifies the count of subsequent entries to be processed.
-  const totalEntriesToScan = Number(processedLines[0]);
-
-  // Loop through each relevant data entry, starting from the second line of the input.
-  for (let recordIndex = 1; recordIndex <= totalEntriesToScan; recordIndex++) {
-    const activeDataItem = processedLines[recordIndex];
-
-    // Evaluate if this specific data item has already been cataloged.
-    if (itemFrequencies[activeDataItem]) {
-      // If it has, increment its existing frequency count.
-      itemFrequencies[activeDataItem]++;
-
-      // Compare the newly updated frequency with the overall maximum frequency recorded.
-      if (itemFrequencies[activeDataItem] > currentMaxFrequency) {
-        // If it's higher, update the overall maximum.
-        currentMaxFrequency = itemFrequencies[activeDataItem];
+  // Iterate through the relevant input lines, starting from the second line.
+  for (let idx = 0x1; idx < itemCount + 0x1; idx++) {
+    const currentItem = lineSegments[idx];
+    // Check if the current item is already in our frequency map.
+    if (occurrenceMap[currentItem]) {
+      // If it exists, increment its count.
+      occurrenceMap[currentItem]++;
+      // Update the highest frequency if the current item's count is greater.
+      if (occurrenceMap[currentItem] > highestFrequency) {
+        highestFrequency = occurrenceMap[currentItem];
       }
     } else {
-      // If the item is encountered for the first time, set its frequency to one.
-      itemFrequencies[activeDataItem] = 1;
+      // If it's a new item, initialize its count to one.
+      occurrenceMap[currentItem] = 0x1;
     }
   }
 
-  // An array to accumulate all data items that share the highest frequency.
-  const highestOccurringItems = [];
+  // Prepare an array to hold all items that have the highest frequency.
+  const resultList = [];
+  // Get all unique items (keys) from our frequency map.
+  const uniqueItems = Object.keys(occurrenceMap);
 
-  // Extract all distinct keys (data items) from the frequency map.
-  const distinctKeys = Object.keys(itemFrequencies);
-
-  // Iterate over these distinct keys to identify which ones match the maximum frequency.
-  // Note: The loop condition includes `distinctKeys.length`, which will result in an `undefined` key access
-  // on the last iteration. This behavior is preserved from the original code.
-  for (let keyIdx = 0; keyIdx <= distinctKeys.length; keyIdx++) {
-    // Check if the frequency of the current key equals the determined maximum frequency.
-    // The `[[keyIdx]]` syntax is preserved from the original for exact structural replication.
-    if (Number(itemFrequencies[distinctKeys[[keyIdx]]]) === currentMaxFrequency) {
-      // If a match is found, add the data item to our collection of highest occurring items.
-      highestOccurringItems.push(distinctKeys[keyIdx]);
+  // Loop through the unique items to find those with the highest frequency.
+  // Note: The original code has a loop condition `i <= keys.length` which accesses `keys[keys.length]`
+  // resulting in `undefined`. `parseInt(poll[undefined])` yields `NaN`, which doesn't match `max`.
+  // This behavior is preserved.
+  for (let idx = 0; idx <= uniqueItems.length; idx++) {
+    // Convert the count to a number explicitly, as in the original.
+    if (Number(occurrenceMap[uniqueItems[[idx]]]) === highestFrequency) {
+      resultList.push(uniqueItems[idx]);
     }
   }
 
-  // Sort the collected items alphabetically, then print each one to the console.
-  highestOccurringItems.sort().forEach( function (elementToOutput) {
-    console.log(elementToOutput);
+  // Sort the resulting list alphabetically and print each item.
+  resultList.sort().forEach(function(item) {
+    console.log(item);
   });
-
-  // The following lines were previously commented out and are not part of the active program logic.
-  // console.log(finalOutput);
 }
 
-// The following code block handles reading from standard input or a file
-// and invoking the primary processing function. This part should not be altered.
-// ProcessData(require("node:fs").readFileSync("/dev/stdin", "utf8"));
-ProcessData(require('node:fs').readFileSync('./input.txt', 'utf8'));
+// This section handles reading input from a file and invoking the main processing function.
+// It should not be modified as per the problem statement.
+ProcessInputData(require('fs').readFileSync('./input.txt', 'utf-8'));

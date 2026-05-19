@@ -1,88 +1,74 @@
-const UNREACHABLE_COUNT = 1000000000;
+function* generateSequenceTerms(limitValue) {
+    yield 0;
 
-function produceNumberSequence(upperBound, isOddFiltered) {
-    const sequence = [];
-    sequence.push(0);
+    let currentTerm = 1;
+    let termStep = 1;
+    let stepIncrement = 1;
 
-    let current_val = 1;
-    let next_increment_base = 1;
-    let increment_step = 1;
-
-    while (current_val <= upperBound) {
-        if (!isOddFiltered || (current_val % 2 !== 0)) {
-            sequence.push(current_val);
-        }
-        increment_step++;
-        next_increment_base += increment_step;
-        current_val += next_increment_base;
+    while (currentTerm <= limitValue) {
+        yield currentTerm;
+        stepIncrement++;
+        termStep += stepIncrement;
+        currentTerm += termStep;
     }
-    return sequence;
 }
 
-function calculateMinimumRepresentations(targetSum, availableNumbers) {
-    const iterationTotal = availableNumbers.length - 1;
+function calculateMinCoinsAll(targetValue) {
+    const availableDenominations = Array.from(generateSequenceTerms(targetValue));
 
-    const representationTables = Array.from({ length: 5 }, () => new Map());
+    const minimumCounts = new Array(targetValue + 1).fill(Infinity);
+    minimumCounts[0] = 0;
 
-    representationTables[0].set(0, 0);
-    for (let k = 1; k <= targetSum; k++) {
-        representationTables[0].set(k, UNREACHABLE_COUNT);
-    }
-
-    for (let step = 1; step <= iterationTotal; step++) {
-        const currentTableKey = step % 5;
-        const previousTableKey = (currentTableKey - 1 + 5) % 5;
-
-        const selectedValue = availableNumbers[currentTableKey];
-
-        const currentTable = representationTables[currentTableKey];
-        const previousTable = representationTables[previousTableKey];
-
-        currentTable.set(0, 0);
-
-        for (let val = 1; val <= targetSum; val++) {
-            let withoutCurrent = previousTable.get(val) || UNREACHABLE_COUNT;
-            let withCurrent = UNREACHABLE_COUNT;
-
-            if (val >= selectedValue) {
-                let countForRemaining = currentTable.get(val - selectedValue);
-                if (countForRemaining === undefined) countForRemaining = UNREACHABLE_COUNT;
-
-                if (countForRemaining !== UNREACHABLE_COUNT) {
-                    withCurrent = countForRemaining + 1;
-                }
-            }
-            currentTable.set(val, Math.min(withoutCurrent, withCurrent));
+    for (const denomination of availableDenominations) {
+        if (denomination === 0) {
+            continue;
+        }
+        for (let currentSum = denomination; currentSum <= targetValue; currentSum++) {
+            minimumCounts[currentSum] = Math.min(
+                minimumCounts[currentSum],
+                minimumCounts[currentSum - denomination] + 1
+            );
         }
     }
 
-    const finalTableKey = iterationTotal % 5;
-    return representationTables[finalTableKey].get(targetSum);
+    return minimumCounts[targetValue];
 }
 
-function processA(targetN) {
-    const allTetrahedrals = produceNumberSequence(targetN, false);
-    return calculateMinimumRepresentations(targetN, allTetrahedrals);
+function calculateMinCoinsOdd(targetValue) {
+    const availableOddDenominations = Array.from(generateSequenceTerms(targetValue)).filter(
+        (val) => val === 0 || val % 2 !== 0
+    );
+
+    const minimumCounts = new Array(targetValue + 1).fill(Infinity);
+    minimumCounts[0] = 0;
+
+    for (const denomination of availableOddDenominations) {
+        if (denomination === 0) {
+            continue;
+        }
+        for (let currentSum = denomination; currentSum <= targetValue; currentSum++) {
+            minimumCounts[currentSum] = Math.min(
+                minimumCounts[currentSum],
+                minimumCounts[currentSum - denomination] + 1
+            );
+        }
+    }
+
+    return minimumCounts[targetValue];
 }
 
-function processB(targetN) {
-    const oddTetrahedrals = produceNumberSequence(targetN, true);
-    return calculateMinimumRepresentations(targetN, oddTetrahedrals);
-}
+function processInputAndOutput(inputData) {
+    const linesOfInput = inputData.split("\n");
+    let currentLineIndex = 0;
 
-function entryPoint(inputData) {
-    const lines = inputData.split("\n");
-    let lineIndex = 0;
     while (true) {
-        const valueN = parseInt(lines[lineIndex], 10);
-        if (valueN === 0) break;
-        
-        const resultA = processA(valueN);
-        const resultB = processB(valueN);
-        console.log(resultA, resultB);
-        
-        lineIndex++;
+        const parsedNumber = parseInt(linesOfInput[currentLineIndex], 10);
+        if (parsedNumber === 0) {
+            break;
+        }
+        console.log(calculateMinCoinsAll(parsedNumber), calculateMinCoinsOdd(parsedNumber));
+        currentLineIndex++;
     }
 }
 
-entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));

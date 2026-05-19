@@ -1,55 +1,65 @@
-// This function processes the incoming data stream to compute a sequence of values.
-function CalculateSeries(receivedText)
-{
-    // Split the entire input block into individual lines based on newline characters.
-    let processedLines = receivedText.split("\n") ;
+function ProcessInput(rawData) {
+  // Split the raw input string by newline characters to get an array of lines.
+  let processedLines = rawData.split("\n");
 
+  // Parse the first line to extract numerical parameters.
+  // The first line is expected to contain three space-separated integers.
+  let firstLineParts = processedLines[0].split(" ");
 
-    // Parse the growth factor from the first line's first element.
-    let multiplierVal = parseInt(processedLines[0].split(" ")[0], 10);
-    // Extract the constant subtraction amount from the first line.
-    let subtractionConst = parseInt(processedLines[0].split(" ")[1], 10) ;
-    // Determine the initial starting point for the calculation.
-    let startPoint = parseInt(processedLines[0].split(" ")[2], 10)  ;
+  // 'factorR' is the first integer from the first line.
+  const factorR = parseInt(firstLineParts[0], 10);
+  // 'offsetD' is the second integer from the first line.
+  const offsetD = parseInt(firstLineParts[1], 10);
+  // 'initialX' is the third integer from the first line.
+  const initialX = parseInt(firstLineParts[2], 10);
 
-    // Initialize an array to store the computed sequence, pre-allocating space for 10 elements.
-    let computedValues = new Array(10) ;
+  // Initialize an array to store the sequence of results.
+  // The problem implies a sequence of 10 elements.
+  const resultSequence = new Array(10);
 
-    // Calculate the very first element of the sequence.
-    computedValues[0] = startPoint * multiplierVal - subtractionConst;
+  // Calculate the first element of the sequence.
+  // The formula is x * r - D.
+  resultSequence[0] = initialX * factorR - offsetD;
 
-    // Loop to compute the remaining 9 elements of the sequence.
-    for (let loopCounter = 1; loopCounter < 10; loopCounter++) {
-        // Each subsequent element depends on the previous one.
-        computedValues[loopCounter] = computedValues[loopCounter - 1] * multiplierVal - subtractionConst;
-    }
-    // Join all computed values into a single string, separated by newlines for output.
-    let finalOutputString = computedValues.join("\n");
+  // Iterate to calculate the remaining elements of the sequence.
+  // Each subsequent element depends on the previous one.
+  for (let idx = 1; idx < 10; idx++) {
+    // Apply the recurrence relation: current_x = previous_x * r - D.
+    resultSequence[idx] = resultSequence[idx - 1] * factorR - offsetD;
+  }
 
-    // Output the final result to the console.
-    console.log('%s', finalOutputString);
-    // Return the generated sequence string.
-    return finalOutputString ;
+  // Join the calculated sequence elements into a single string,
+  // with each element separated by a newline character.
+  const finalOutput = resultSequence.join("\n");
+
+  // Print the final output string to the console.
+  // Using '%s' for string formatting, though not strictly necessary for a single string.
+  console.log('%s', finalOutput);
+
+  // Return the generated output string.
+  return finalOutput;
 }
 
-// A utility function for testing the main calculation logic in a web environment.
-function TestProgram(caseIndex) {
-    // Retrieve the test input data from a specific HTML element.
-    let sampleInput = document.getElementById("input" + caseIndex).value;
-    // Execute the main calculation function with the retrieved input.
-    let programOutput = CalculateSeries(sampleInput);
+// This 'testFunction' is likely for a web-based testing environment,
+// not directly used in the Node.js execution path below.
+function testFunction(testCaseNum) {
+  // Retrieve input data from a DOM element based on the test case number.
+  const testInputData = document.getElementById("input" + testCaseNum).value;
+  // Call the main processing function with the retrieved input.
+  const computedResult = ProcessInput(testInputData);
 
-    // Initialize the test verification status to 'Wrong Answer'.
-    let verificationStatus = "WA";
-    // Compare the calculated output with the expected output from another HTML element.
-    if (programOutput == document.getElementById("output" + caseIndex).value.split("\n")[0])
-    {
-        // If they match, set the status to 'Accepted'.
-        verificationStatus = "AC";
-    }
-    // Update the corresponding result display element in the HTML.
-    document.getElementById("result" + caseIndex).innerHTML = verificationStatus;
+  // Initialize the outcome as "Wrong Answer".
+  let testOutcome = "WA";
+  // Compare the computed result with the expected output from another DOM element.
+  // Only the first line of the expected output is considered for comparison.
+  if (computedResult === document.getElementById("output" + testCaseNum).value.split("\n")[0]) {
+    // If they match, set the outcome to "Accepted".
+    testOutcome = "AC";
+  }
+  // Update the inner HTML of a result display element with the test outcome.
+  document.getElementById("result" + testCaseNum).innerHTML = testOutcome;
 }
 
-// Execute the main calculation function using input from standard input when running in a Node.js-like environment.
-CalculateSeries(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function using input read from standard input.
+// This part is specific to a Node.js environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,42 +1,24 @@
-const processInputData = (incomingText) => {
-    const textLines = incomingText.split('\n');
-    const numericCount = Number(textLines[0]);
-    const numberStrings = textLines[1].split(' ');
-    const observationPoints = numberStrings.map(Number);
-    return { numericCount, observationPoints };
-};
+function processInputData(rawData) {
+  const inputLines = rawData.split("\n");
+  const numElements = parseInt(inputLines[0], 10);
 
-const calculateInitialValue = (pointMeasurements) => {
-    return pointMeasurements.reduce((currentTotal, currentMeasure, currentIdx) => {
-        return currentTotal + (currentIdx % 2 === 0 ? currentMeasure : -currentMeasure);
-    }, 0);
-};
+  const valleyElements = inputLines[1].split(" ").map(Number);
 
-const generateResultSequence = (pointMeasurements) => {
-    const firstCalculatedValue = calculateInitialValue(pointMeasurements);
+  const initialPeakValue = valleyElements.reduce((accumulator, currentValue, index) => {
+    return accumulator + (index % 2 === 0 ? currentValue : -currentValue);
+  }, 0);
 
-    const finalResultArray = pointMeasurements.reduce((collectedValues, _, currentIdx) => {
-        if (currentIdx === 0) {
-            return collectedValues;
-        }
-        const previousCalculatedValue = collectedValues[collectedValues.length - 1];
-        const correspondingObservation = pointMeasurements[currentIdx - 1];
-        const nextCalculatedValue = (correspondingObservation * 2) - previousCalculatedValue;
-        collectedValues.push(nextCalculatedValue);
-        return collectedValues;
-    }, [firstCalculatedValue]);
+  let priorPeakValue = initialPeakValue;
+  const mountainPeaks = valleyElements.map((_, index) => {
+    if (index === 0) {
+      return initialPeakValue;
+    }
+    const currentPeak = (2 * valleyElements[index - 1]) - priorPeakValue;
+    priorPeakValue = currentPeak;
+    return currentPeak;
+  });
 
-    return finalResultArray;
-};
+  console.log(`${mountainPeaks.join(' ')}\n`);
+}
 
-const formatOutputString = (outputNumbers) => {
-    return outputNumbers.map(String).join(' ') + '\n';
-};
-
-const executeProcessing = (sourceData) => {
-    const { numericCount, observationPoints } = processInputData(sourceData);
-    const computedValues = generateResultSequence(observationPoints);
-    return formatOutputString(computedValues);
-};
-
-console.log(executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

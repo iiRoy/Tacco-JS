@@ -1,28 +1,34 @@
-let inputBuffer = [ ] ;
-let maxDifference = 0 ;
+let inputData = []; // Array to store incoming lines of text.
+let maxDifference = 0; // Variable to hold the largest absolute difference found.
 
-let ioHandler = readline . createInterface ( {
-    input: process . stdin ,
-    output: process . stdout ,
-} ) ;
+// Initialize the readline interface for standard input and output.
+const inputReader = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-ioHandler . on ( 'line' , function ( currentLineText )
-{
-    inputBuffer . push ( currentLineText ) ;
-} ) ;
+// Event handler for each line received from standard input.
+inputReader.on('line', function (currentLine) {
+    inputData.push(currentLine); // Add the current line to our collection.
+});
 
-ioHandler . on ( 'close' , function ( )
-{
-    let elementCount = Number ( inputBuffer [ 0 ] ) ;
+// Event handler for when the input stream closes.
+inputReader.on('close', function () {
+    // Parse the first line to get the count of numbers.
+    let arraySize = Number(inputData[0]);
 
-    let numberArray = inputBuffer [ 1 ] . split ( " " ) . map ( singleValueString => Number ( singleValueString ) ) ;
+    // Parse the second line, split by spaces, and convert each part to a number.
+    const numericArray = inputData[1].split(" ").map(strValue => Number(strValue));
 
-    for ( let outerIndex = 0 ; outerIndex < elementCount ; outerIndex ++ )
-    {
-        for ( let innerIndex = 0 ; innerIndex < elementCount ; innerIndex ++ )
-        {
-            maxDifference = Math . max ( maxDifference , Math . abs ( numberArray [ outerIndex ] - numberArray [ innerIndex ] ) ) ;
+    // Iterate through the array with the first index.
+    for (let idxOne = 0; idxOne < arraySize; idxOne++) {
+        // Iterate through the array with the second index.
+        for (let idxTwo = 0; idxTwo < arraySize; idxTwo++) {
+            // Calculate the absolute difference between elements and update the maximum.
+            maxDifference = Math.max(maxDifference, Math.abs(numericArray[idxOne] - numericArray[idxTwo]));
         }
     }
-    console . log ( maxDifference ) ;
-} ) ;
+
+    // Output the final calculated maximum difference.
+    console.log(maxDifference);
+});

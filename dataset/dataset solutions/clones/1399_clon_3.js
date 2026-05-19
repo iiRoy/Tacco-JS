@@ -1,67 +1,22 @@
-const retrieveModule = require;
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var expressionLines = sourceData.split('\n');
 
-const outputResult = console.log;
-
-const roundDownToNearestInteger = (numericValue) => {
-    if (typeof numericValue !== 'number' || isNaN(numericValue)) {
-        return NaN;
-    }
-    return Math.floor(numericValue);
-};
-
-const evaluateStringAsCode = (codeString) => {
-    if (typeof codeString !== 'string' || codeString.trim() === '') {
-        console.warn("Attempted to evaluate an invalid or empty code string.");
-        return NaN;
-    }
-    try {
-        return eval(codeString);
-    } catch (e) {
-        console.error(`Failed to evaluate expression "${codeString}": ${e.message}`);
-        return NaN;
-    }
-};
-
-const fileSystemInterface = retrieveModule('fs');
-
-const rawInputContent = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
-
-const expressionQueue = rawInputContent.split('\n');
-
-let totalOperationsProcessed = 0;
+const TERMINATION_MARKER = '?';
 
 while (true) {
-    const currentExpressionString = expressionQueue.shift();
+    var currentLineContent = expressionLines.shift();
 
-    if (currentExpressionString === undefined) {
-        console.error("Critical Error: Input stream ended without a proper termination signal.");
+    var lineSegments = currentLineContent.split(' ');
+    var secondSegment = lineSegments[1];
+
+    var isExitConditionMet = (secondSegment === TERMINATION_MARKER);
+
+    if (isExitConditionMet) {
         break;
     }
 
-    const partsOfExpression = currentExpressionString.split(' ');
+    var rawCalculationResult = eval(currentLineContent);
+    var finalOutputValue = Math.floor(rawCalculationResult);
 
-    const terminationIndicator = partsOfExpression[1];
-
-    if (terminationIndicator === '?') {
-        break;
-    }
-
-    let computedNumericResult;
-    try {
-        computedNumericResult = evaluateStringAsCode(currentExpressionString);
-    } catch (evaluationError) {
-        console.error(`Evaluation failed for "${currentExpressionString}": ${evaluationError.message}`);
-        continue;
-    }
-
-    if (typeof computedNumericResult !== 'number' || isNaN(computedNumericResult)) {
-        console.warn(`Skipping output for "${currentExpressionString}" as it did not yield a valid number.`);
-        continue;
-    }
-
-    const finalIntegerResult = roundDownToNearestInteger(computedNumericResult);
-
-    outputResult(finalIntegerResult);
-
-    totalOperationsProcessed++;
+    console.log(finalOutputValue);
 }

@@ -1,44 +1,21 @@
-'use strict'; // Activate strict parsing and execution rules.
+'use strict'; // Enforce strict parsing and error handling
 
 /**
- * This core function is designed to take a single numerical parameter
- * and execute a specific conditional arithmetic operation.
- * It determines an outcome based on the divisibility of the number by six.
- *
- * @param {number} givenNumber - The numerical value to be processed.
+ * Processes a numerical value to determine a specific output based on divisibility by six.
+ * @param {number} val The numeric value to be processed.
  */
-function processNumericalInput(givenNumber) {
-    // Determine if the supplied numerical input is a multiple of six.
-    if (  ( givenNumber % 6 )  ===  0  )
-    {
-        // If it is perfectly divisible, the quotient is the result.
-        console.log(   givenNumber   /   6   );
-    }
-    else
-    {
-        // Otherwise, calculate the floor of the division and increment by one.
-        // This effectively rounds up the result for non-multiples.
-        console.log(
-            Math.floor(   givenNumber   /   6   )   +   1
-        );
-    }
+function processInput(val) {
+  // Check if the provided value is perfectly divisible by six.
+  if (val % 6 === 0) {
+    // If it is, log the result of the division.
+    console.log(val / 6);
+  } else {
+    // Otherwise, calculate the integer part of the division and add one, then log it.
+    // This effectively rounds up the division result to the next whole number.
+    console.log(parseInt(val / 6) + 1);
+  }
 }
 
-// Obtain a reference to the Node.js file system module.
-const fileSystemHandler   =   require(   "fs"   );
-
-// Create a variable to hold the specific file reading function.
-const fileContentReader   =   fileSystemHandler.readFileSync;
-
-// Specify the path for standard input, typically where the program receives data.
-const sourceFilePath   =   "/dev/stdin";
-
-// Read the raw byte content from the specified file path,
-// interpreting it as a UTF-8 encoded string.
-let   rawTextData   =   fileContentReader(   sourceFilePath,   "utf8"   );
-
-// Convert the acquired textual data into a numerical format
-// and then invoke the main processing routine with this number.
-processNumericalInput(
-    Number(   rawTextData   )
-);
+// Read the input from standard input, convert it to a string, and then pass it to the processing function.
+// The input is expected to be a number.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

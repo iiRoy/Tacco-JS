@@ -1,103 +1,108 @@
-function determineTileType(tileColor, unitSize, firstCoordParam, secondCoordParam) {
-  // Check if the coordinates fall within the first specific block
-  if (0 <= firstCoordParam && firstCoordParam < unitSize && 0 <= secondCoordParam && secondCoordParam < unitSize) {
-    return tileColor;
+function calculateGridColor(char_val, size_param, row_idx, col_idx) {
+  // This function determines the color based on grid coordinates and a base character.
+  // It checks if the given coordinates fall into specific regions defined by 'size_param'.
+  if (0 <= row_idx && row_idx < size_param && 0 <= col_idx && col_idx < size_param) {
+    // Region 1: Top-left square of size_param x size_param
+    return char_val;
+  } else if (size_param <= row_idx && row_idx < 2 * size_param && size_param <= col_idx && col_idx < 2 * size_param) {
+    // Region 2: Middle-right square of size_param x size_param
+    return char_val;
+  } else if (2 * size_param <= row_idx && row_idx < 3 * size_param && 0 <= col_idx && col_idx < size_param) {
+    // Region 3: Bottom-left square of size_param x size_param
+    return char_val;
   }
-  // Check if the coordinates fall within the second specific block
-  else if (unitSize <= firstCoordParam && firstCoordParam < 2 * unitSize && unitSize <= secondCoordParam && secondCoordParam < 2 * unitSize) {
-    return tileColor;
-  }
-  // Check if the coordinates fall within the third specific block
-  else if (2 * unitSize <= firstCoordParam && firstCoordParam < 3 * unitSize && 0 <= secondCoordParam && secondCoordParam < unitSize) {
-    return tileColor;
-  }
-  // If no specific region matches, return the inverted tile color
-  return tileColor === "DARK" ? "LIGHT" : "DARK";
+  // If coordinates are outside these specific regions, the color is inverted.
+  return char_val === "B" ? "W" : "B";
 }
 
-function ProcessInputData(inputLines) {
-  // Parse the initial configuration from the first line of input
-  const configTokens = inputLines[0].split(" ");
-  const totalEntries = parseInt(configTokens[0], 10);
-  const gridDimension = parseInt(configTokens[1], 10);
+function ProcessInputData(input_data) {
+  // The first line of input contains two space-separated integers: N and k.
+  var first_line_parts = input_data[0].split(" ");
+  var num_points = parseInt(first_line_parts[0], 10); // N: number of data points
+  var grid_size = parseInt(first_line_parts[1], 10); // k: grid dimension parameter
 
-  // Array to store the transformed coordinate and color records
-  const transformedRecords = [];
+  // An array to store the normalized and adjusted coordinates and colors.
+  var processed_coords = [];
 
-  // Iterate through each subsequent line of input data
-  for (let entryIndex = 1; entryIndex <= totalEntries; ++entryIndex) {
-    const currentRecordParts = inputLines[entryIndex].split(" ");
-    const originalX = parseInt(currentRecordParts[0], 10);
-    const originalY = parseInt(currentRecordParts[1], 10);
-    const originalChar = currentRecordParts[2];
+  // Iterate through each data point from the input.
+  for (var point_idx = 1; point_idx <= num_points; point_idx++) {
+    var current_point_str = input_data[point_idx].split(" ");
+    var original_x = parseInt(current_point_str[0], 10); // Original X coordinate
+    var original_y = parseInt(current_point_str[1], 10); // Original Y coordinate
+    var original_char = current_point_str[2]; // Original color character ('B' or 'W')
 
-    // Calculate the coordinates modulo the grid dimension
-    let remainderX = originalX % gridDimension;
-    let remainderY = originalY % gridDimension;
+    // Normalize coordinates to be within the primary grid cell (0 to k-1).
+    var adjusted_x = original_x % grid_size;
+    var adjusted_y = original_y % grid_size;
 
-    // Determine a pattern based on the parity of integer divisions
-    const xDivResult = Math.floor(originalX / gridDimension);
-    const yDivResult = Math.floor(originalY / gridDimension);
-    const paritySum = (xDivResult % 2) + (yDivResult % 2);
-    const shouldFlipColor = (paritySum % 2) === 1; // True if sum of parities is odd
+    // Determine if the color needs to be inverted based on the larger grid pattern.
+    // This pattern is derived from the integer divisions of x and y by grid_size.
+    var color_pattern = (
+      ((original_x - adjusted_x) / grid_size) % 2 +
+      ((original_y - adjusted_y) / grid_size) % 2
+    ) % 2 === 1 ? "R" : "N"; // "R" for reversed, "N" for normal
 
-    let adjustedChar = originalChar;
+    var adjusted_char = original_char;
 
-    // Flip the color if the `shouldFlipColor` pattern is active
-    if (shouldFlipColor) {
-      adjustedChar = (adjustedChar === "DARK") ? "LIGHT" : "DARK";
+    // Apply the color inversion if the pattern indicates it.
+    if (color_pattern === "R") {
+      adjusted_char = adjusted_char === "B" ? "W" : "B";
     }
 
-    // Standardize 'LIGHT' colors to 'DARK' by adjusting coordinates
-    if (adjustedChar === "LIGHT") {
-      adjustedChar = "DARK";
-      // Shift the remainderX coordinate to effectively move it to an equivalent 'DARK' block
-      remainderX += gridDimension;
+    // If the adjusted character is 'W', convert it to 'B' and shift its x-coordinate.
+    // This effectively maps all 'W' points to an equivalent 'B' point in an adjacent grid.
+    if (adjusted_char === "W") {
+      adjusted_char = "B";
+      adjusted_x += grid_size;
     }
 
-    // Store the processed data point: adjusted coordinates and standardized color
-    transformedRecords[entryIndex - 1] = [remainderX, remainderY, adjustedChar];
+    // Store the final adjusted coordinates and character.
+    processed_coords[point_idx - 1] = [];
+    processed_coords[point_idx - 1][0] = adjusted_x;
+    processed_coords[point_idx - 1][1] = adjusted_y;
+    processed_coords[point_idx - 1][2] = adjusted_char;
   }
 
-  let highestMatchCount = 0; // Initialize the maximum number of matches found
+  var maximum_matches_found = 0; // Variable to track the highest number of matches.
 
-  // Iterate through a 2*gridDimension x 2*gridDimension search space for optimal offsets
-  for (let yShiftOffset = 0; yShiftOffset < 2 * gridDimension; ++yShiftOffset) {
-    for (let xShiftOffset = 0; xShiftOffset < 2 * gridDimension; ++xShiftOffset) {
+  // Iterate through all possible 2k x 2k offsets for the grid.
+  // This simulates shifting the entire grid pattern.
+  for (var offset_row = 0; offset_row < 2 * grid_size; offset_row++) {
+    for (var offset_col = 0; offset_col < 2 * grid_size; offset_col++) {
 
-      let currentDarkMatches = 0; // Counter for matches with "DARK" type in current offset
+      var black_matches_count = 0; // Counter for points that match the 'B' pattern.
 
-      // For each possible offset combination, check all transformed records
-      for (let recordCursor = 0; recordCursor < totalEntries; ++recordCursor) {
-        const recordX = transformedRecords[recordCursor][0];
-        const recordY = transformedRecords[recordCursor][1];
-        const recordColor = transformedRecords[recordCursor][2];
+      // For each offset, check how many processed points match the grid's color.
+      for (var data_entry_idx = 0; data_entry_idx < num_points; data_entry_idx++) {
+        var current_x_coord = processed_coords[data_entry_idx][0];
+        var current_y_coord = processed_coords[data_entry_idx][1];
 
-        // Compare the record's color with the color determined by the tile classification function
-        if (recordColor === determineTileType("DARK", gridDimension, yShiftOffset + recordX, xShiftOffset + recordY)) {
-          currentDarkMatches++;
+        // Compare the stored character with the character determined by the grid function
+        // using the current offset and point coordinates.
+        if (processed_coords[data_entry_idx][2] === calculateGridColor("B", grid_size, offset_row + current_x_coord, offset_col + current_y_coord)) {
+          black_matches_count++;
         }
       }
 
-      // Update the overall highest match count if the current one is greater
-      if (highestMatchCount < currentDarkMatches) {
-        highestMatchCount = currentDarkMatches;
+      // Update the maximum matches found if the current count is higher.
+      if (maximum_matches_found < black_matches_count) {
+        maximum_matches_found = black_matches_count;
       }
-      
-      // Optimization: If all entries match, we have found the maximum possible, so break early
-      if (highestMatchCount === totalEntries) {
+
+      // Optimization: If all points match, we can stop early.
+      if (maximum_matches_found === num_points) {
         break;
       }
     }
-    // Optimization: If all entries match, break from the outer loop as well
-    if (highestMatchCount === totalEntries) {
+    // Optimization: If all points match, we can stop early.
+    if (maximum_matches_found === num_points) {
       break;
     }
   }
 
-  // Print the final result to the console
-  console.log(highestMatchCount);
+  // Output the final result, which is the maximum number of matching points found.
+  console.log('%s', maximum_matches_found);
 }
 
-// Read input from standard input, process it, and then execute the main logic
+// Read input from standard input, decode as UTF-8, split by newlines, and pass to the main function.
 ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

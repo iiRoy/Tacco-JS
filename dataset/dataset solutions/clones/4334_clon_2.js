@@ -1,96 +1,99 @@
-var dataSource = require("fs") .readFileSync("/dev/stdin", "utf8") .trim() .split("\n") ;
-var iterator = {
-  "elements" : dataSource,
-  "position" : 0,
-  "limit" : dataSource.length,
-  "fetchNext" : function() {
-    if ( ! this.hasMore() ) {
-      throw "NoMoreElementsError: No further items available";
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+var dataStream = {
+  sourceData: rawData,
+  currentPosition: 0,
+  totalElements: rawData.length,
+
+  retrieveNext: function() {
+    if (!this.hasMore()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    var currentElement = this.elements[this.position];
-    this.position++;
-    return currentElement;
-  } ,
-  "hasMore" : function() {
-    return (this.position < this.limit);
+    var elementToReturn = this.sourceData[this.currentPosition];
+    this.currentPosition++;
+    return elementToReturn;
+  },
+
+  hasMore: function() {
+    return (this.currentPosition < this.totalElements);
   }
 };
 
-ExecuteLogic();
+executePrimaryLogic();
 
-function retrieveNext() {
-  return iterator.fetchNext();
+function fetchNextItem() {
+  return dataStream.retrieveNext();
 }
 
-function checkMore() {
-  return iterator.hasMore();
+function checkAvailability() {
+  return dataStream.hasMore();
 }
 
 function displayOutput(messageContent) {
   console.log(messageContent);
-} // Logs the given content to standard output.
+}
 
-function displayError(errorMessage) {
-  console.error(errorMessage);
-} // Writes the specified error message to standard error stream.
+function reportError(messageContent) {
+  console.error(messageContent);
+}
 
-// Handling of [transformType] elements. Typically numerical processing.
-// For unknown or erroneous types: returns the input argument unchanged.
-// 1: Converts to an integer.
-// 2: Splits by half-width space.
-// 4: Splits by half-width space and converts to an array of numbers.
-// 6: Splits into individual characters.
-// 7: Splits into individual characters and converts to an array of numbers.
-// 8: Joins elements with a half-width space.
-// 9: Joins elements with a newline character.
-// 0: Joins elements without any separator.
-function dataTransform(valueToProcess, transformType) {
+// This function handles various input transformations.
+// conversionType:
+//   1: Parse as integer.
+//   2: Split by space.
+//   4: Split by space and map to numbers.
+//   6: Split by character.
+//   7: Split by character and map to numbers.
+//   8: Join array with space.
+//   9: Join array with newline.
+//   0: Join array without separator.
+//   Default: Return input as is.
+function transformInput(inputVal, conversionType) {
   try {
-    switch (transformType) {
+    switch (conversionType) {
       case 1:
-        return parseInt(valueToProcess);
+        return parseInt(inputVal);
       case 2:
-        return valueToProcess.split(" ");
+        return inputVal.split(" ");
       case 4:
-        return valueToProcess.split(" ").map((itemString) => Number(itemString));
+        return inputVal.split(" ").map((item) => Number(item));
       case 6:
-        return valueToProcess.split("");
+        return inputVal.split("");
       case 7:
-        return valueToProcess.split("").map((itemString) => Number(itemString));
+        return inputVal.split("").map((item) => Number(item));
       case 8:
-        return valueToProcess.join(" ");
+        return inputVal.join(" ");
       case 9:
-        return valueToProcess.join("\n");
+        return inputVal.join("\n");
       case 0:
-        return valueToProcess.join("");
+        return inputVal.join("");
       default:
-        return valueToProcess;
+        return inputVal;
     }
-  } catch (errorObject) {
-    return valueToProcess;
+  } catch (errorDetails) {
+    return inputVal;
   }
 }
 
-function ExecuteLogic() {
-  var initialData = dataTransform(retrieveNext(), 4);
-  var dimensionA = initialData[0];
-  var dimensionB = initialData[1];
-  var targetValue = initialData[2];
+function executePrimaryLogic() {
+  var parsedNumbers = transformInput(fetchNextItem(), 4);
+  var firstDimension = parsedNumbers[0];
+  var secondDimension = parsedNumbers[1];
+  var targetValue = parsedNumbers[2];
 
-  if ( (targetValue % dimensionB == 0) || (targetValue % dimensionA == 0) ) {
+  if (targetValue % secondDimension === 0 || targetValue % firstDimension === 0) {
     displayOutput("Yes");
     return;
   }
 
-  for (var rowCounter = 1; rowCounter <= dimensionA; rowCounter++) {
-    for (var colCounter = 1; colCounter <= dimensionB; colCounter++) {
-      var calculatedSum = (dimensionB * rowCounter) + (dimensionA * colCounter) - 2 * (rowCounter * colCounter);
-      if (calculatedSum == targetValue) {
+  for (var rowIterator = 1; rowIterator <= firstDimension; rowIterator++) {
+    for (var colIterator = 1; colIterator <= secondDimension; colIterator++) {
+      var calculatedSum = (secondDimension * rowIterator) + (firstDimension * colIterator) - 2 * (rowIterator * colIterator);
+      if (calculatedSum === targetValue) {
         displayOutput("Yes");
         return;
       }
     }
   }
-
   displayOutput("No");
 }

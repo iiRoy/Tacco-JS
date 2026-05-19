@@ -1,93 +1,90 @@
-function processNetwork(dataLines) {
-    const parseNumbers = (line) => line.split(" ").map(s => Number(s));
-
-    const [numNodes, numFriendships, numBlocks] = parseNumbers(dataLines[0]);
-
-    // Functional Disjoint Set Union (DSU) implementation
-    const createDisjointSets = (nodeCount) => {
-        const parentOf = Array.from({ length: nodeCount }, (_, i) => i);
-        const groupSizes = Array.from({ length: nodeCount }, () => 1);
-
-        // Recursive find with path compression
-        const locateRepresentative = (element) => {
-            if (parentOf[element] === element) {
-                return element;
-            }
-            parentOf[element] = locateRepresentative(parentOf[element]);
-            return parentOf[element];
-        };
-
-        // Union by size
-        const mergeSets = (elementA, elementB) => {
-            let rootA = locateRepresentative(elementA);
-            let rootB = locateRepresentative(elementB);
-
-            if (rootA !== rootB) {
-                // Attach smaller tree under root of larger tree
-                if (groupSizes[rootA] < groupSizes[rootB]) {
-                    [rootA, rootB] = [rootB, rootA]; // Swap to ensure rootA is larger or equal
-                }
-                parentOf[rootB] = rootA;
-                groupSizes[rootA] += groupSizes[rootB];
-                return true; // Sets were combined
-            }
-            return false; // Already in the same set
-        };
-
-        return { locateRepresentative, mergeSets, groupSizes };
-    };
-
-    // Create a map to track excluded connections for each node
-    const establishExclusionMap = (nodeCount) => {
-        const exclusions = new Map();
+class DisjointSet {
+    constructor(nodeCount) {
+        this.parentMap = new Map();
+        this.componentSize = new Map();
         for (let i = 0; i < nodeCount; i++) {
-            const nodeExclusions = new Set();
-            nodeExclusions.add(i); // A node cannot be friends with itself
-            exclusions.set(i, nodeExclusions);
+            this.parentMap.set(i, i);
+            this.componentSize.set(i, 1);
         }
-        return exclusions;
-    };
-
-    const recordExclusion = (registry, item1, item2) => {
-        registry.get(item1).add(item2);
-        registry.get(item2).add(item1);
-    };
-
-    const { locateRepresentative, mergeSets, groupSizes } = createDisjointSets(numNodes);
-    const exclusionRegistry = establishExclusionMap(numNodes);
-
-    let currentLineIndex = 1;
-
-    // Process friendship connections
-    for (let i = 0; i < numFriendships; i++) {
-        const [personA, personB] = parseNumbers(dataLines[currentLineIndex++]).map(val => val - 1);
-        mergeSets(personA, personB);
-        recordExclusion(exclusionRegistry, personA, personB);
     }
 
-    // Process block connections
-    for (let i = 0; i < numBlocks; i++) {
-        const [personA, personB] = parseNumbers(dataLines[currentLineIndex++]).map(val => val - 1);
-        recordExclusion(exclusionRegistry, personA, personB);
+    findSet(element) {
+        if (this.parentMap.get(element) === element) {
+            return element;
+        }
+        const root = this.findSet(this.parentMap.get(element));
+        this.parentMap.set(element, root);
+        return root;
     }
 
-    const suggestedFriendCounts = new Array(numNodes);
+    uniteSets(elementA, elementB) {
+        let rootA = this.findSet(elementA);
+        let rootB = this.findSet(elementB);
 
-    // Calculate potential friends for each node
-    for (let i = 0; i < numNodes; i++) {
-        const currentPersonRoot = locateRepresentative(i);
-        const totalInCurrentGroup = groupSizes[currentPersonRoot];
-        let actualExclusionsInSameGroup = 0;
-
-        for (const excludedPeer of exclusionRegistry.get(i)) {
-            if (locateRepresentative(excludedPeer) === currentPersonRoot) {
-                actualExclusionsInSameGroup++;
+        if (rootA !== rootB) {
+            if (this.componentSize.get(rootA) < this.componentSize.get(rootB)) {
+                [rootA, rootB] = [rootB, rootA];
             }
+            this.parentMap.set(rootB, rootA);
+            this.componentSize.set(rootA, this.componentSize.get(rootA) + this.componentSize.get(rootB));
+            this.componentSize.delete(rootB);
+            return true;
         }
-        suggestedFriendCounts[i] = totalInCurrentGroup - actualExclusionsInSameGroup;
+        return false;
     }
-
-    console.log(suggestedFriendCounts.join(" "));
 }
 
-processNetwork(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));
+function CalculateFriendSuggestions(rawData) {
+    const dataLines = rawData.trim().split("\n");
+    const [totalNodes, directFriendships, blockedRelations] = dataLines[0].split(" ").map(Number);
+
+    const dsu = new DisjointSet(totalNodes);
+    const exclusionRegistry = new Map();
+
+    const registerExclusion = (personA, personB) => {
+        if (!exclusionRegistry.has(personA)) exclusionRegistry.set(personA, new Set());
+        exclusionRegistry.get(personA).add(personB);
+    };
+
+    for (let i = 0; i < directFriendships; i++) {
+        const [p1, p2] = dataLines[i + 1].split(" ").map(s => Number(s) - 1);
+        dsu.uniteSets(p1, p2);
+        registerExclusion(p1, p2);
+        registerExclusion(p2, p1);
+    }
+
+    for (let i = 0; i < blockedRelations; i++) {
+        const [p1, p2] = dataLines[i + directFriendships + 1].split(" ").map(s => Number(s) - 1);
+        registerExclusion(p1, p2);
+        registerExclusion(p2, p1);
+    }
+
+    const componentMemberSets = new Map();
+    for (let i = 0; i < totalNodes; i++) {
+        const rootIdentifier = dsu.findSet(i);
+        if (!componentMemberSets.has(rootIdentifier)) {
+            componentMemberSets.set(rootIdentifier, new Set());
+        }
+        componentMemberSets.get(rootIdentifier).add(i);
+    }
+
+    const suggestionCounts = new Array(totalNodes);
+
+    for (let i = 0; i < totalNodes; i++) {
+        const currentRoot = dsu.findSet(i);
+        const membersOfComponent = componentMemberSets.get(currentRoot);
+        const currentPersonExclusions = exclusionRegistry.get(i) || new Set();
+
+        let count = 0;
+        for (const memberId of membersOfComponent) {
+            if (memberId !== i && !currentPersonExclusions.has(memberId)) {
+                count++;
+            }
+        }
+        suggestionCounts[i] = count;
+    }
+
+    console.log(suggestionCounts.join(" "));
+}
+
+CalculateFriendSuggestions(require("fs").readFileSync("/dev/stdin", "utf8"));

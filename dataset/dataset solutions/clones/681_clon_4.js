@@ -1,134 +1,54 @@
-let collectiveBuffer = '';
-
-const removeLeadingTrailingWhitespace = (textualSource) => {
-    let start = 0;
-    while (start < textualSource.length && (textualSource[start] === ' ' || textualSource[start] === '\n' || textualSource[start] === '\r' || textualSource[start] === '\t')) {
-        start++;
+function* lineStream(sourceContent) {
+    const contentLines = sourceContent.trim().split('\n');
+    let currentLineIndex = 0;
+    while (currentLineIndex < contentLines.length) {
+        yield contentLines[currentLineIndex++];
     }
-    let end = textualSource.length - 1;
-    while (end >= 0 && (textualSource[end] === ' ' || textualSource[end] === '\n' || textualSource[end] === '\r' || textualSource[end] === '\t')) {
-        end--;
-    }
-    if (start > end) {
-        return '';
-    }
-    return textualSource.substring(start, end + 1);
-};
-
-const divideIntoLines = (fullText) => {
-    const segments = [];
-    let lastBoundary = 0;
-    for (let charIndex = 0; charIndex < fullText.length; ++charIndex) {
-        if (fullText[charIndex] === '\n') {
-            segments[segments.length] = fullText.substring(lastBoundary, charIndex);
-            lastBoundary = charIndex + 1;
-        }
-    }
-    segments[segments.length] = fullText.substring(lastBoundary);
-    return segments;
-};
-
-const segmentBySpace = (textString) => {
-    const parts = [];
-    let currentPart = '';
-    for (let charIdx = 0; charIdx < textString.length; ++charIdx) {
-        if (textString[charIdx] === ' ') {
-            if (currentPart.length > 0) {
-                parts[parts.length] = currentPart;
-            }
-            currentPart = '';
-        } else {
-            currentPart += textString[charIdx];
-        }
-    }
-    if (currentPart.length > 0) {
-        parts[parts.length] = currentPart;
-    }
-    return parts;
-};
-
-const appendElementToArray = (targetArray, itemToAdd) => {
-    targetArray[targetArray.length] = itemToAdd;
-};
-
-const arrangeNumericAscending = (collection) => {
-    const dataSize = collection.length;
-    for (let outer = 0; outer < dataSize - 1; outer++) {
-        for (let inner = 0; inner < dataSize - 1 - outer; inner++) {
-            if (collection[inner] > collection[inner + 1]) {
-                const temporary = collection[inner];
-                collection[inner] = collection[inner + 1];
-                collection[inner + 1] = temporary;
-            }
-        }
-    }
-};
-
-const displayOutput = (valueToPresent) => {
-    process.stdout.write(String(valueToPresent) + '\n');
-};
-
-function assessPairsExceedingSum(numericalData, limitValue) {
-    arrangeNumericAscending(numericalData);
-
-    let finalPairTotal = 0;
-    let headPointer = 0;
-    let tailPointer = numericalData.length - 1;
-
-    while (headPointer < tailPointer) {
-        if (numericalData[headPointer] + numericalData[tailPointer] > limitValue) {
-            finalPairTotal += (tailPointer - headPointer);
-            tailPointer--;
-        } else {
-            headPointer++;
-        }
-    }
-    return finalPairTotal;
 }
 
-function initiateProcessing(completeSourceText) {
-    const processedLines = removeLeadingTrailingWhitespace(completeSourceText);
-    const dividedSections = divideIntoLines(processedLines);
-    let lineCursor = 0;
-    const computedResultsContainer = [];
+function locateFirstExceedingIndex(orderedList, searchBegin, comparisonValue) {
+    let lowerBound = searchBegin;
+    let upperBound = orderedList.length - 1;
+    let foundPosition = -1;
 
-    const processNextQuery = () => {
-        if (lineCursor >= dividedSections.length) {
-            return;
+    while (lowerBound <= upperBound) {
+        const middlePoint = Math.floor((lowerBound + upperBound) / 2);
+        if (orderedList[middlePoint] > comparisonValue) {
+            foundPosition = middlePoint;
+            upperBound = middlePoint - 1;
+        } else {
+            lowerBound = middlePoint + 1;
         }
-
-        const currentLineComponents = segmentBySpace(dividedSections[lineCursor]);
-        lineCursor++;
-
-        const quantityOfElements = Number(currentLineComponents[0]);
-        const sumBoundary = Number(currentLineComponents[1]);
-
-        if (quantityOfElements === 0 && sumBoundary === 0) {
-            for (let resultIdx = 0; resultIdx < computedResultsContainer.length; resultIdx++) {
-                displayOutput(computedResultsContainer[resultIdx]);
-            }
-            return;
-        }
-
-        const valueItems = [];
-        for (let itemCounter = 0; itemCounter < quantityOfElements; itemCounter++) {
-            appendElementToArray(valueItems, Number(dividedSections[lineCursor]));
-            lineCursor++;
-        }
-
-        const calculatedPairCount = assessPairsExceedingSum(valueItems, sumBoundary);
-        appendElementToArray(computedResultsContainer, calculatedPairCount);
-
-        processNextQuery();
-    };
-
-    processNextQuery();
+    }
+    return foundPosition;
 }
 
-process.stdin.on('data', (dataUnit) => {
-    collectiveBuffer += String(dataUnit);
-});
+const sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineConsumer = lineStream(sourceText);
 
-process.stdin.on('end', () => {
-    initiateProcessing(collectiveBuffer);
-});
+let currentSegment;
+while ((currentSegment = lineConsumer.next().value) !== undefined) {
+    const [elementCount, sumThreshold] = currentSegment.split(' ').map(Number);
+
+    if (elementCount === 0 && sumThreshold === 0) {
+        break;
+    }
+
+    const numericSequence = Array.from({ length: elementCount }, () =>
+        Number(lineConsumer.next().value)
+    );
+
+    numericSequence.sort((valA, valB) => valA - valB);
+
+    const pairTally = numericSequence.slice(0, elementCount - 1).reduce((currentTally, firstTerm, firstTermIndex) => {
+        const minimumSecondTerm = sumThreshold - firstTerm;
+        const validSecondTermStart = locateFirstExceedingIndex(numericSequence, firstTermIndex + 1, minimumSecondTerm);
+
+        if (validSecondTermStart !== -1) {
+            return currentTally + (elementCount - validSecondTermStart);
+        }
+        return currentTally;
+    }, 0);
+
+    console.log(pairTally);
+}

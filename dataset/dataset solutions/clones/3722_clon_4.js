@@ -1,16 +1,15 @@
 "use strict";
 
-function processInput(rawData) {
-    const initialValue = Number(rawData.split('\n')[0]);
+function evaluateNumericProperty(sourceData) {
+    const primaryLine = sourceData.split('\n')[0];
+    const baseValue = Number(primaryLine);
 
-    const totalOfDigits = String(initialValue)
+    const digitTotal = String(baseValue)
         .split('')
-        .map(character => parseInt(character, 10))
-        .reduce((accumulator, currentDigit) => accumulator + currentDigit, 0);
+        .map(digitChar => parseInt(digitChar, 10))
+        .reduce((runningSum, currentElement) => runningSum + currentElement, 0);
 
-    const outcome = (initialValue % totalOfDigits === 0) ? 'Yes' : 'No';
-
-    console.log(outcome);
+    console.log(baseValue % digitTotal === 0 ? 'Yes' : 'No');
 }
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+evaluateNumericProperty(require('fs').readFileSync('/dev/stdin', 'utf8'));

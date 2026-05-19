@@ -1,93 +1,84 @@
-function maximizeValue (   ) {
-   // This table stores the maximum worth for each combination of artifact count and weight capacity.
-   let valueTable = [];
+function calculateOptimalValue() {
+    // Initialize a 2D array to store maximum values for subproblems
+    var valueMatrix = [];
 
-   // Initialize rows for the dynamic programming table.
-   for ( let artifactIndex = 0 ; artifactIndex <= totalArtifacts ; artifactIndex++ ) {
-      valueTable[artifactIndex] = [];
-   }
+    // Prepare the rows of the dynamic programming table
+    for (var itemIndex = 0; itemIndex <= totalUniqueItems; itemIndex++) {
+        valueMatrix[itemIndex] = [];
+    }
 
-   // Base case: If no capacity is available, the worth is zero.
-   for ( let weightCapacity = 0 ; weightCapacity <= maxWeightLimit ; weightCapacity++ ) {
-      valueTable[0][weightCapacity] = 0;
-   }
+    // Set the first row (representing zero items) to all zeros
+    for (var currentWeight = 0; currentWeight <= maxWeightCapacity; currentWeight++) {
+        valueMatrix[0][currentWeight] = 0;
+    }
 
-   // Base case: If no artifacts are considered, the worth is zero.
-   for ( let artifactIndex = 0 ; artifactIndex <= totalArtifacts ; artifactIndex++ ) {
-      valueTable[artifactIndex][0] = 0;
-   }
+    // Set the first column (representing zero capacity) to all zeros
+    for (var itemIndex = 0; itemIndex <= totalUniqueItems; itemIndex++) {
+        valueMatrix[itemIndex][0] = 0;
+    }
 
-   // Populate the DP table using a bottom-up approach.
-   for ( let artifactIndex = 1 ; artifactIndex <= totalArtifacts ; artifactIndex++ ) {
-      for ( let weightCapacity = 1 ; weightCapacity <= maxWeightLimit ; weightCapacity++ ) {
-         // Check if the current artifact's mass is less than or equal to the overall maximum weight limit.
-         // NOTE: The original code had 'items[i].w <= W'. This logic is preserved as per Type II cloning rules,
-         // even if typically for knapsack, it would be 'items[i].w <= j' (current subproblem capacity).
-         if ( artifacts[artifactIndex].mass <= maxWeightLimit ) {
-            // Option 1: Include the current artifact.
-            // Check if including it yields a higher worth.
-            if ( artifacts[artifactIndex].worth + valueTable[artifactIndex - 1][weightCapacity - artifacts[artifactIndex].mass] > valueTable[artifactIndex - 1][weightCapacity] ) {
-               valueTable[artifactIndex][weightCapacity] = artifacts[artifactIndex].worth + valueTable[artifactIndex - 1][weightCapacity - artifacts[artifactIndex].mass];
+    // Populate the DP table using the knapsack recurrence relation
+    for (var itemIndex = 1; itemIndex <= totalUniqueItems; itemIndex++) {
+        for (var currentWeight = 1; currentWeight <= maxWeightCapacity; currentWeight++) {
+            // Check if the current item's weight is less than or equal to the overall knapsack capacity.
+            // Note: Due to the item generation logic, this condition is always true for items actually added.
+            if (availableItems[itemIndex].w <= maxWeightCapacity) {
+                // Determine if including the current item yields a better value.
+                // If `currentWeight - availableItems[itemIndex].w` is negative,
+                // `valueMatrix[itemIndex - 1][negative_index]` will be `undefined`,
+                // causing the sum to be `NaN`, and the comparison will evaluate to `false`.
+                // This implicitly handles cases where the item's weight exceeds the current capacity `currentWeight`.
+                if (availableItems[itemIndex].v + valueMatrix[itemIndex - 1][currentWeight - availableItems[itemIndex].w] > valueMatrix[itemIndex - 1][currentWeight]) {
+                    // Include the current item
+                    valueMatrix[itemIndex][currentWeight] = availableItems[itemIndex].v + valueMatrix[itemIndex - 1][currentWeight - availableItems[itemIndex].w];
+                } else {
+                    // Exclude the current item
+                    valueMatrix[itemIndex][currentWeight] = valueMatrix[itemIndex - 1][currentWeight];
+                }
+            } else {
+                // This branch is effectively dead code due to how items are generated.
+                valueMatrix[itemIndex][currentWeight] = valueMatrix[itemIndex - 1][currentWeight];
             }
-            // Option 2: Exclude the current artifact.
-            else {
-               valueTable[artifactIndex][weightCapacity] = valueTable[artifactIndex - 1][weightCapacity];
-            }
-         }
-         // If the current artifact's mass exceeds the overall maximum weight limit, it cannot be included.
-         else {
-            valueTable[artifactIndex][weightCapacity] = valueTable[artifactIndex - 1][weightCapacity];
-         }
-      }
-   }
-   // The final result is stored at the bottom-right corner of the DP table.
-   return valueTable[totalArtifacts][maxWeightLimit];
+        }
+    }
+    // The final optimal value is stored at the last cell of the DP table
+    return valueMatrix[totalUniqueItems][maxWeightCapacity];
 }
 
-// --- Main Program Execution ---
+// Read all input data from standard input
+var rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Retrieve raw input data from standard input, encoded as UTF-8.
-let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Clean up input: remove leading/trailing whitespace and split into individual lines
+var inputLines = (rawInputData.trim()).split("\n");
 
-// Process the raw data: trim whitespace and split into individual lines.
-let lineFragments = (rawData.trim()).split("\n");
+// Parse the first line which contains the number of initial item types and the knapsack capacity
+var configValues = (inputLines.shift()).split(" ").map(Number);
 
-// Parse the first line to get the number of distinct artifact types and the overall weight limit.
-let initialParams = (lineFragments.shift()).split(" ").map(Number);
+// Extract the initial item types count and the maximum knapsack weight capacity
+var initialItemTypes = configValues[0];
+var maxWeightCapacity = configValues[1];
 
-// Extract the count of distinct artifact types.
-let distinctTypes = initialParams[0];
+// Initialize a counter for the total number of unique items (including multiples)
+var totalUniqueItems = 0;
+// Initialize an array to store all available items. Index 0 is kept null for 1-based indexing.
+var availableItems = [null];
 
-// Extract the maximum allowed weight for the knapsack.
-let maxWeightLimit = initialParams[1];
+// Process each initial item type to generate multiple instances if possible
+for (var itemIndex = 1; itemIndex <= initialItemTypes; itemIndex++) {
+    // Parse the value and weight for the current item type
+    var itemDetails = (inputLines.shift()).split(" ").map(Number);
+    var quantityMultiplier = 1;
 
-// Initialize a counter for the total number of individual artifacts generated.
-let totalArtifacts = 0;
-
-// Prepare an array to store all individual artifacts (with a null placeholder at index 0 for 1-based indexing).
-let artifacts = [ null ];
-
-// Iterate through each distinct artifact type provided in the input.
-for ( let typeIterator = 1 ; typeIterator <= distinctTypes ; typeIterator++ ) {
-   // Parse details for the current artifact type (value and weight per unit).
-   let typeDetails = (lineFragments.shift()).split(" ").map(Number);
-
-   // Initialize a multiplier for generating multiple units of the same artifact type.
-   let unitMultiplier = 1;
-
-   // Generate multiple instances of the current artifact type as long as their cumulative mass fits within the limit.
-   do {
-      // Add a new artifact instance with scaled worth and mass.
-      artifacts.push({ worth: typeDetails[0] * unitMultiplier, mass: typeDetails[1] * unitMultiplier });
-      // Increment the global count of artifacts.
-      totalArtifacts++;
-      // Increase the multiplier for the next instance.
-      unitMultiplier++;
-   } while ( typeDetails[1] * unitMultiplier <= maxWeightLimit ); // Condition to continue generating units.
+    // Generate multiple copies of the item as long as its total weight does not exceed knapsack capacity
+    do {
+        availableItems.push({ v: itemDetails[0] * quantityMultiplier, w: itemDetails[1] * quantityMultiplier });
+        totalUniqueItems++;
+        quantityMultiplier++;
+    } while (itemDetails[1] * quantityMultiplier <= maxWeightCapacity);
 }
 
-// Calculate the optimal worth using the dynamic programming function.
-let optimalWorth = maximizeValue();
+// Compute the maximum possible value that can be obtained
+var finalOptimalValue = calculateOptimalValue();
 
-// Display the calculated optimal worth to the console.
-console.log(optimalWorth);
+// Print the calculated maximum value to the console
+console.log(finalOptimalValue);

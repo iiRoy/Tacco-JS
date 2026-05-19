@@ -1,72 +1,63 @@
-const obtainInputData = () => {
-    const rawDataContent = process.stdin.readFileSync(0, 'utf8').trim().split('\n');
-    const totalElementCount = Number(rawDataContent.shift());
-    const startingElements = rawDataContent.slice(0, totalElementCount).map(Number);
-    return { totalElementCount, startingElements };
-};
+let minimumLength = Infinity;
 
-const contractIdenticalDigits = (sequenceRepresentation) => {
-    let currentSequenceState = sequenceRepresentation;
-    let modificationFlag = true;
+function reduceStringSequences(inputSequence) {
+    let currentSequence = inputSequence;
+    let previousSequence;
 
-    while (modificationFlag) {
-        modificationFlag = false;
-        let nextSequenceState = '';
-        let scanPosition = 0;
+    const filterPass = (seq) => {
+        const outputChars = [];
+        let cursor = 0;
 
-        while (scanPosition < currentSequenceState.length) {
-            let currentCharacter = currentSequenceState[scanPosition];
-            let consecutiveCharCount = 0;
-            
-            while (scanPosition < currentSequenceState.length && currentSequenceState[scanPosition] === currentCharacter) {
-                consecutiveCharCount++;
-                scanPosition++;
+        while (cursor < seq.length) {
+            const char = seq[cursor];
+            let count = 0;
+            let lookahead = cursor;
+
+            while (lookahead < seq.length && seq[lookahead] === char) {
+                count++;
+                lookahead++;
             }
 
-            if ((currentCharacter === '1' || currentCharacter === '2' || currentCharacter === '3') && consecutiveCharCount >= 4) {
-                modificationFlag = true;
-            } else {
-                nextSequenceState += currentCharacter.repeat(consecutiveCharCount);
+            if (count < 4 || !['1', '2', '3'].includes(char)) {
+                for (let k = 0; k < count; k++) {
+                    outputChars.push(char);
+                }
             }
+            cursor = lookahead;
         }
-        currentSequenceState = nextSequenceState;
-    }
-    return currentSequenceState;
-};
+        return outputChars.join('');
+    };
 
-let overallShortestLength = Number.POSITIVE_INFINITY;
+    do {
+        previousSequence = currentSequence;
+        currentSequence = filterPass(previousSequence);
+    } while (currentSequence.length !== previousSequence.length);
 
-const adjustShortestLength = (processedStringResult) => {
-    overallShortestLength = Math.min(overallShortestLength, processedStringResult.length);
-};
+    return currentSequence.length;
+}
 
-const createVariations = (baseElementSet, currentModificationIndex) => {
-    const generatedVariations = [];
+const processInputAndCalculate = (rawData) => {
+    const lines = rawData.trim().split('\n');
+    const elementCount = parseInt(lines.shift(), 10);
+    const initialElements = lines.map(Number);
 
-    if (currentModificationIndex < baseElementSet.length - 1) {
-        const firstVariant = Array.from(baseElementSet);
-        firstVariant[currentModificationIndex] = baseElementSet[currentModificationIndex + 1];
-        generatedVariations.push(firstVariant);
-    }
+    Array.from({ length: elementCount }, (_, index) => index).forEach(idx => {
+        const variantA = initialElements.slice();
+        if (idx < elementCount - 1) {
+            variantA[idx] = variantA[idx + 1];
+        }
+        minimumLength = Math.min(minimumLength, reduceStringSequences(variantA.join('')));
 
-    if (currentModificationIndex > 0) {
-        const secondVariant = Array.from(baseElementSet);
-        secondVariant[currentModificationIndex] = baseElementSet[currentModificationIndex - 1];
-        generatedVariations.push(secondVariant);
-    }
-    return generatedVariations;
-};
-
-const { totalElementCount, startingElements } = obtainInputData();
-
-Array.from({ length: totalElementCount }).forEach((_, currentIterationIndex) => {
-    const variationsForCurrentPosition = createVariations(startingElements, currentIterationIndex);
-
-    variationsForCurrentPosition.forEach(elementCollection => {
-        const concatenatedElements = elementCollection.join('');
-        const finalReducedResult = contractIdenticalDigits(concatenatedElements);
-        adjustShortestLength(finalReducedResult);
+        const variantB = initialElements.slice();
+        if (idx > 0) {
+            variantB[idx] = variantB[idx - 1];
+        }
+        minimumLength = Math.min(minimumLength, reduceStringSequences(variantB.join('')));
     });
-});
 
-console.log(overallShortestLength);
+    console.log(minimumLength);
+};
+
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+processInputAndCalculate(rawInput);

@@ -1,44 +1,37 @@
-let _streamBuffer = '';
-process.stdin.on('data', (segment) => {
-    _streamBuffer += segment.toString();
-});
+import * as fs from 'fs';
+import bigInt from 'big-integer';
 
-process.stdin.on('end', () => {
-    const _dataLines = _streamBuffer.trim().split('\n');
+const processInputData = (sourceContent) => {
+  const contentLines = sourceContent.split('\n');
+  const numberOfStrings = Number(contentLines[0]);
 
-    const _quantityOfElements = parseInt(_dataLines[0], 10);
+  // Utilize a Map object for counting string occurrences,
+  // diverging from the original's plain object usage.
+  // Employ a functional 'reduce' pattern to populate the frequency map.
+  const stringFrequencies = contentLines.slice(1, numberOfStrings + 1).reduce((accumulatorMap, currentEntry) => {
+    accumulatorMap.set(currentEntry, (accumulatorMap.get(currentEntry) || 0) + 1);
+    return accumulatorMap;
+  }, new Map());
 
-    const _elementCounts = new Map();
-    let _peakCount = 0;
+  // Determine the highest frequency encountered among all strings.
+  // Use Math.max with the spread operator for a more declarative approach.
+  let highestFrequencyValue = 0;
+  if (stringFrequencies.size > 0) {
+    highestFrequencyValue = Math.max(...stringFrequencies.values());
+  }
 
-    for (let _index = 1; _index <= _quantityOfElements; _index++) {
-        const _currentElement = _dataLines[_index];
-        let _currentStats = _elementCounts.get(_currentElement);
+  // Filter for strings that match the highest frequency and then sort them lexicographically.
+  // This sequence of Array.from, filter, map, and sort represents a substantially
+  // different implementation strategy compared to the original's imperative loops
+  // and direct array manipulation.
+  const topRankedStrings = Array.from(stringFrequencies.entries())
+    .filter(([, frequency]) => frequency === highestFrequencyValue)
+    .map(([text]) => text)
+    .sort(); // Default sort for strings is lexicographical (alphabetical)
 
-        if (_currentStats) {
-            _currentStats.occurrences++;
-        } else {
-            _currentStats = {
-                occurrences: 1,
-                initialPosition: _index // Preserves original input order for tie-breaking
-            };
-            _elementCounts.set(_currentElement, _currentStats);
-        }
-        
-        if (_currentStats.occurrences > _peakCount) {
-            _peakCount = _currentStats.occurrences;
-        }
-    }
+  // Output each of the top-ranked strings.
+  topRankedStrings.forEach(outputItem => console.log(outputItem));
+};
 
-    const _allEntries = Array.from(_elementCounts.entries());
-
-    const _frequentEntries = _allEntries.filter(([_key, _value]) => _value.occurrences === _peakCount);
-
-    _frequentEntries.sort((_entryA, _entryB) => {
-        return _entryA[1].initialPosition - _entryB[1].initialPosition;
-    });
-
-    _frequentEntries.forEach(([_key, _value]) => {
-        console.log(_key);
-    });
-});
+// Read input from the standard input and pass it to the processing function.
+processInputData(fs.readFileSync('/dev/stdin', 'utf8'));

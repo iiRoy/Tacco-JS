@@ -1,53 +1,42 @@
-const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processInputData = (rawText) => {
+    const dataSegments = rawText.trim().split('\n');
+    const outputLines = [];
 
-const processAllInput = (inputPayload) => {
-    const inputSections = inputPayload.trim().split('\n').filter(Boolean);
+    let segmentIndex = 0;
+    while (segmentIndex < dataSegments.length) {
+        const currentDataLine = dataSegments[segmentIndex++];
+        const [itemQuantity, sumUpperLimit] = currentDataLine.split(' ').map(Number);
 
-    const recursiveSegmentProcessor = (currentLineBuffer, collectedOutcomes = []) => {
-        if (currentLineBuffer.length < 1) {
-            return collectedOutcomes;
+        if (itemQuantity === 0 && sumUpperLimit === 0) {
+            break;
         }
 
-        const segmentHeader = currentLineBuffer[0];
-        const [elementQuantity, thresholdValue] = segmentHeader.split(' ').map(Number);
+        const priceDataLine = dataSegments[segmentIndex++];
+        const priceValues = priceDataLine.split(' ').map(Number);
 
-        if (elementQuantity === 0 && thresholdValue === 0) {
-            return collectedOutcomes;
-        }
+        const collectedSums = Array.from({ length: sumUpperLimit + 1 }, (_, firstIdx) => firstIdx)
+            .flatMap(firstIdx =>
+                Array.from({ length: itemQuantity + 1 }, (_, secondIdx) => secondIdx)
+                    .map(secondIdx => {
+                        const valA = priceValues[firstIdx];
+                        const valB = priceValues[secondIdx];
+                        if (typeof valA === 'number' && typeof valB === 'number') {
+                            return valA + valB;
+                        }
+                        return NaN;
+                    })
+            )
+            .filter(currentSum => typeof currentSum === 'number' && !isNaN(currentSum) && currentSum <= sumUpperLimit);
 
-        const dataSequenceHeader = currentLineBuffer[1];
-        const numericSequence = dataSequenceHeader.split(' ').map(Number);
+        const lastValidSumFound = collectedSums[collectedSums.length - 1];
 
-        const currentDataSetOutcome = deriveFinalOutcome(numericSequence, thresholdValue, elementQuantity);
-
-        return recursiveSegmentProcessor(currentLineBuffer.slice(2), [...collectedOutcomes, currentDataSetOutcome]);
-    };
-
-    const deriveFinalOutcome = (numericSequence, thresholdValue, elementQuantity) => {
-        const firstIndexSpan = Array.from({ length: thresholdValue + 1 }, (_, k) => k);
-        const secondIndexSpan = Array.from({ length: elementQuantity + 1 }, (_, k) => k);
-
-        const candidateAggregateValues = firstIndexSpan.flatMap(indexAlpha =>
-            secondIndexSpan.map(indexBeta => {
-                const valFromAlpha = numericSequence[indexAlpha];
-                const valFromBeta = numericSequence[indexBeta];
-                if (typeof valFromAlpha === 'number' && typeof valFromBeta === 'number') {
-                    return valFromAlpha + valFromBeta;
-                }
-                return NaN;
-            })
-        ).filter(sumValue => !isNaN(sumValue) && sumValue <= thresholdValue);
-
-        if (candidateAggregateValues.length > 1) {
-            const selectedAggregate = candidateAggregateValues[candidateAggregateValues.length - 1];
-            return String(selectedAggregate);
-        } else {
-            return 'NONE';
-        }
-    };
-
-    const completionLog = recursiveSegmentProcessor(inputSections);
-    completionLog.forEach(resultEntry => console.log(resultEntry));
+        const finalOutputValue = collectedSums.length > 1 && lastValidSumFound <= sumUpperLimit
+            ? lastValidSumFound
+            : 'NONE';
+        outputLines.push(finalOutputValue);
+    }
+    return outputLines.join('\n');
 };
 
-processAllInput(fileContent);
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+console.log(processInputData(fileContent));

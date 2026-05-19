@@ -1,83 +1,47 @@
-const produceOrderedSubsets = (totalElements, subsetLength) => {
-  if (totalElements < 0 || subsetLength < 0 || subsetLength > totalElements) {
-    return [];
+function ProcessGameData(rawData) {
+  let lines = rawData.split("\n");
+  const lastLineIndex = lines.length - 1;
+  if (lastLineIndex >= 0 && lines[lastLineIndex] === '') {
+    lines.pop();
   }
 
-  let partialResults = [[]];
-  let nextIterationCache;
+  const firstLineParts = lines[0].split(' ');
+  const gameLength = parseInt(firstLineParts[0], 10);
+  const blockInterval = parseInt(firstLineParts[1], 10);
 
-  for (let currentSubsetElementIndex = 0; currentSubsetElementIndex < subsetLength; currentSubsetElementIndex++) {
-    nextIterationCache = [];
+  const secondLineParts = lines[1].split(' ');
+  const rockScore = parseInt(secondLineParts[0], 10);
+  const scissorsScore = parseInt(secondLineParts[1], 10);
+  const paperScore = parseInt(secondLineParts[2], 10);
 
-    partialResults.forEach(existingCombination => {
-      for (let potentialElement = 1; potentialElement <= totalElements; potentialElement++) {
-        if (!existingCombination.includes(potentialElement)) {
-          nextIterationCache.push([...existingCombination, potentialElement]);
-        }
-      }
-    });
-    partialResults = Array.from(nextIterationCache);
-  }
-  return partialResults;
-};
+  const movesSequence = lines[2];
 
-const evaluateGameOutcome = (rawGameData) => {
-  if (!rawGameData || typeof rawGameData !== 'string' || rawGameData.trim() === '') {
-    console.error("Error: Invalid or empty game data provided.");
-    return 0;
-  }
+  var totalScore = 0;
+  var moveBlocked = Array(gameLength).fill(false);
 
-  let processedDataLines = rawGameData.split("\n");
-
-  while (processedDataLines.length > 0 && processedDataLines[processedDataLines.length - 1].trim() === '') {
-    processedDataLines.pop();
-  }
-
-  if (processedDataLines.length < 3) {
-    console.error("Error: Insufficient game configuration lines in input.");
-    return 0;
-  }
-
-  const firstLineParts = processedDataLines[0].split(' ');
-  const totalRounds = parseInt(firstLineParts[0], 10);
-  const skipDistance = parseInt(firstLineParts[1], 10);
-
-  const secondLineParts = processedDataLines[1].split(' ');
-  const pointsForRockWin = parseInt(secondLineParts[0], 10);
-  const pointsForScissorsWin = parseInt(secondLineParts[1], 10);
-  const pointsForPaperWin = parseInt(secondLineParts[2], 10);
-
-  const opponentActionSequence = processedDataLines[2];
-
-  let currentTotalScore = 0;
-
-  const roundSkippedFlags = new Array(totalRounds).fill(false);
-
-  const winningMoveScores = {
-    'r': pointsForPaperWin,
-    's': pointsForRockWin,
-    'p': pointsForScissorsWin
+  const scoreMap = {
+    'r': paperScore,
+    's': rockScore,
+    'p': scissorsScore
   };
 
-  for (let roundIndex = 0; roundIndex < opponentActionSequence.length; roundIndex++) {
-    const currentOpponentMove = opponentActionSequence[roundIndex];
+  const sequenceLength = movesSequence.length;
 
-    const previousRelevantRoundIndex = roundIndex - skipDistance;
-    const isSkipConditionMet = (
-      roundIndex >= skipDistance &&
-      currentOpponentMove === opponentActionSequence[previousRelevantRoundIndex] &&
-      !roundSkippedFlags[previousRelevantRoundIndex]
-    );
+  for (var currentIndex = 0; currentIndex < sequenceLength; currentIndex++) {
+    const previousIndex = currentIndex - blockInterval;
+    const isBlockablePosition = currentIndex >= blockInterval;
+    const isSameMoveAsPrevious = isBlockablePosition && movesSequence[currentIndex] === movesSequence[previousIndex];
+    const wasPreviousMoveBlocked = isBlockablePosition && moveBlocked[previousIndex];
 
-    if (isSkipConditionMet) {
-      roundSkippedFlags[roundIndex] = true;
+    if (isBlockablePosition && isSameMoveAsPrevious && !wasPreviousMoveBlocked) {
+      moveBlocked[currentIndex] = true;
       continue;
     }
 
-    currentTotalScore += winningMoveScores[currentOpponentMove] || 0;
+    totalScore += scoreMap[movesSequence[currentIndex]];
   }
 
-  console.log(currentTotalScore);
-};
+  console.log(totalScore);
+}
 
-evaluateGameOutcome(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessGameData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,64 +1,49 @@
-const processInputData = (rawTextContent) => {
-    const splitLines = rawTextContent.trim().split('\n');
-    const [configRow, timingsRow] = splitLines;
+function Main(input) {
+    const inputLines = input.split("\n");
+    const [rawEventCount, rawIntervalLength] = inputLines[0].split(" ");
+    const totalEventCount = parseInt(rawEventCount);
+    const fixedIntervalDuration = parseInt(rawIntervalLength);
 
-    const [quantity, spanValue] = configRow.split(' ').map(Number);
-    const activityBeginnings = timingsRow.split(' ').map(Number);
+    const eventTimeStrings = inputLines[1].split(" ");
+    // Conditionally map to numbers to handle cases where totalEventCount is 0
+    // and inputLines[1] might be an empty string or just spaces,
+    // which would otherwise result in `[0]` or `[0, 0]` after `map(Number)`.
+    const eventTimestamps = totalEventCount > 0 ? eventTimeStrings.map(Number) : [];
 
-    return {
-        eventQuantity: quantity,
-        intervalSpan: spanValue,
-        activityStarts: activityBeginnings
+    // The initial state for the reduction process.
+    // This reflects the original code's implicit first interval starting at 0.
+    const initialAccumulationState = {
+        totalCoveredTime: 0,
+        activeSegmentBegin: 0,
+        activeSegmentEnd: fixedIntervalDuration
     };
-};
 
-const consolidateTimePeriods = (periodCollection) => {
-    if (periodCollection.length === 0) {
-        return [];
-    }
+    // Process each event timestamp using a functional reduction approach.
+    const finalAccumulationState = eventTimestamps.reduce((currentAccumulation, currentEventTimestamp) => {
+        const currentEventSegmentEnd = currentEventTimestamp + fixedIntervalDuration;
 
-    const orderedPeriods = [...periodCollection].sort((a, b) => a.startMoment - b.startMoment);
-
-    const resultingPeriods = [];
-    let currentAggregatedPeriod = { ...orderedPeriods[0] }; // Clone to avoid modifying original
-
-    for (let idx = 1; idx < orderedPeriods.length; idx++) {
-        const nextPeriod = orderedPeriods[idx];
-
-        if (nextPeriod.startMoment <= currentAggregatedPeriod.endMoment) {
-            // Overlap or touch, extend the current aggregated period
-            currentAggregatedPeriod.endMoment = Math.max(currentAggregatedPeriod.endMoment, nextPeriod.endMoment);
+        if (currentEventTimestamp <= currentAccumulation.activeSegmentEnd) {
+            // If the current event timestamp falls within or is contiguous with the active segment,
+            // extend the active segment's end to cover the new event's duration.
+            return {
+                ...currentAccumulation,
+                activeSegmentEnd: Math.max(currentAccumulation.activeSegmentEnd, currentEventSegmentEnd)
+            };
         } else {
-            // No overlap, finalize current aggregated period and begin a new one
-            resultingPeriods.push(currentAggregatedPeriod);
-            currentAggregatedPeriod = { ...nextPeriod }; // Clone
+            // If there's a gap (current event timestamp is after the active segment ends),
+            // finalize the current active segment's duration and start a new one.
+            return {
+                totalCoveredTime: currentAccumulation.totalCoveredTime + (currentAccumulation.activeSegmentEnd - currentAccumulation.activeSegmentBegin),
+                activeSegmentBegin: currentEventTimestamp,
+                activeSegmentEnd: currentEventSegmentEnd
+            };
         }
-    }
-    resultingPeriods.push(currentAggregatedPeriod); // Add the very last aggregated period
+    }, initialAccumulationState);
 
-    return resultingPeriods;
-};
+    // After iterating through all event timestamps, add the duration of the last active segment.
+    const finalOverallDuration = finalAccumulationState.totalCoveredTime + (finalAccumulationState.activeSegmentEnd - finalAccumulationState.activeSegmentBegin);
 
-function determineTotalActiveTime(rawTextContent) {
-    const { intervalSpan, activityStarts } = processInputData(rawTextContent);
-
-    // Construct all individual intervals, including the initial baseline period
-    const allIndividualPeriods = activityStarts.map(entryPoint => ({
-        startMoment: entryPoint,
-        endMoment: entryPoint + intervalSpan
-    }));
-    
-    // The original logic effectively includes a base interval [0, duration]
-    const fullPeriodSet = [{ startMoment: 0, endMoment: intervalSpan }, ...allIndividualPeriods];
-
-    const mergedPeriodSet = consolidateTimePeriods(fullPeriodSet);
-
-    // Sum the durations of all consolidated periods
-    const cumulativeActiveTime = mergedPeriodSet.reduce((acc, currentPeriod) => 
-        acc + (currentPeriod.endMoment - currentPeriod.startMoment), 0
-    );
-
-    console.log(cumulativeActiveTime);
+    console.log(finalOverallDuration);
 }
 
-determineTotalActiveTime(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

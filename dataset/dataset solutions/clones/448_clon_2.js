@@ -1,96 +1,76 @@
-let fileContents = require("fs").readFileSync("/dev/stdin", "utf8"); // Read input data from standard input path
-let processedLines = fileContents.trim().split("\n"); // Trim whitespace and split into individual lines
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Process the raw input data into an array of lines
+var lineSegments = rawData.trim().split("\n");
 
-// Main processing loop: continues until a specific termination condition is met
+// Main loop to process multiple test cases
 while (true) {
-  // Parse dimensions (width and height) from the next line of input
-  const dimensionsPair = processedLines.shift().split(" ").map(Number);
-  const gridWidth = dimensionsPair[0]; // Extract the width value
-  const gridHeight = dimensionsPair[1]; // Extract the height value
+    // Extract width and height for the current grid
+    var dimensions = lineSegments.shift().split(" ").map(Number);
+    var widthVal = dimensions[0];
+    var heightVal = dimensions[1];
 
-  // Check for termination condition: both dimensions are zero
-  if (gridWidth === 0 && gridHeight === 0) {
-    break; // Exit the loop
-  }
-
-  // Initialize a 2D array to store the problem's grid data
-  const spatialGrid = [];
-  for (let rowIterator = 0; rowIterator < gridHeight; rowIterator++) {
-    // Populate the grid by parsing subsequent input lines
-    spatialGrid.push(processedLines.shift().split(" ").map(Number));
-  }
-
-  // Initialize a 2D array for dynamic programming memoization, filled with zeros
-  const memoizationTable = [];
-  for (let rowIterator = 0; rowIterator < gridHeight; rowIterator++) {
-    memoizationTable[rowIterator] = [];
-    for (let columnIterator = 0; columnIterator < gridWidth; columnIterator++) {
-      memoizationTable[rowIterator][columnIterator] = 0;
+    // If both dimensions are zero, it's the end of input
+    if (widthVal === 0 && heightVal === 0) {
+        break;
     }
-  }
 
-  // Populate the dynamic programming table based on the spatial grid
-  for (let rowIterator = 0; rowIterator < gridHeight; rowIterator++) {
-    for (let columnIterator = 0; columnIterator < gridWidth; columnIterator++) {
-      // Special handling for the first row (rowIterator === 0)
-      if (rowIterator === 0 && spatialGrid[rowIterator][columnIterator] === 0) {
-        memoizationTable[rowIterator][columnIterator] = 1;
-      }
-      // For subsequent rows (rowIterator >= 1)
-      else if (rowIterator >= 1) {
-        // Calculate contributions from relevant cells in previous rows
-        // Contribution from top-left diagonal cell
-        const fromUpperLeft =
-          columnIterator === 0 || spatialGrid[rowIterator - 1][columnIterator - 1] === 2
-            ? 0
-            : memoizationTable[rowIterator - 1][columnIterator - 1];
-        // Contribution from directly above cell
-        const fromStraightUp =
-          spatialGrid[rowIterator - 1][columnIterator] === 2
-            ? 0
-            : memoizationTable[rowIterator - 1][columnIterator];
-        // Contribution from top-right diagonal cell
-        const fromUpperRight =
-          columnIterator === gridWidth - 1 || spatialGrid[rowIterator - 1][columnIterator + 1] === 2
-            ? 0
-            : memoizationTable[rowIterator - 1][columnIterator + 1];
-        // Contribution from two rows above (straight up)
-        const fromTwoRowsUp =
-          rowIterator >= 2 && spatialGrid[rowIterator - 2][columnIterator] === 2
-            ? memoizationTable[rowIterator - 2][columnIterator]
-            : 0;
+    // Initialize the grid layout (mapLayout)
+    var gridData = [];
+    for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        gridData.push(lineSegments.shift().split(" ").map(Number));
+    }
 
-        // Apply rules based on the current cell's value in the spatial grid
-        if (spatialGrid[rowIterator][columnIterator] === 0) {
-          memoizationTable[rowIterator][columnIterator] +=
-            fromUpperLeft + fromStraightUp + fromUpperRight + fromTwoRowsUp;
-        } else if (spatialGrid[rowIterator][columnIterator] === 1) {
-          memoizationTable[rowIterator][columnIterator] = 0; // Reset to zero if value is 1
-        } else if (spatialGrid[rowIterator][columnIterator] === 2) {
-          memoizationTable[rowIterator][columnIterator] += fromStraightUp + fromTwoRowsUp;
+    // Initialize the dynamic programming table (pathCounts)
+    var pathCounts = [];
+    for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        pathCounts[rowIdx] = [];
+        for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+            pathCounts[rowIdx][colIdx] = 0;
         }
-      }
     }
-  }
 
-  // Calculate the final accumulated total based on specific conditions in the last two rows
-  let finalAccumulatedResult = 0;
-  for (let rowIterator = gridHeight - 2; rowIterator < gridHeight; rowIterator++) {
-    for (let columnIterator = 0; columnIterator < gridWidth; columnIterator++) {
-      // Condition for the second-to-last row
-      if (rowIterator === gridHeight - 2 && spatialGrid[rowIterator][columnIterator] === 2) {
-        finalAccumulatedResult += memoizationTable[rowIterator][columnIterator];
-      }
-      // Condition for the very last row
-      if (
-        rowIterator === gridHeight - 1 &&
-        (spatialGrid[rowIterator][columnIterator] === 0 || spatialGrid[rowIterator][columnIterator] === 2)
-      ) {
-        finalAccumulatedResult += memoizationTable[rowIterator][columnIterator];
-      }
+    // Fill the dynamic programming table
+    for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+        for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+            // Base case: first row, if the cell is traversable (0)
+            if (rowIdx === 0 && gridData[rowIdx][colIdx] === 0) {
+                pathCounts[rowIdx][colIdx] = 1;
+            }
+            // For subsequent rows
+            else if (rowIdx >= 1) {
+                // Calculate paths from previous row cells, considering obstacles (2)
+                var diagLeftUp = (colIdx === 0 || gridData[rowIdx - 1][colIdx - 1] === 2) ? 0 : pathCounts[rowIdx - 1][colIdx - 1];
+                var straightUp = (gridData[rowIdx - 1][colIdx] === 2) ? 0 : pathCounts[rowIdx - 1][colIdx];
+                var diagRightUp = (colIdx === widthVal - 1 || gridData[rowIdx - 1][colIdx + 1] === 2) ? 0 : pathCounts[rowIdx - 1][colIdx + 1];
+                // Special case for two steps up, if the cell two rows above is an obstacle (2)
+                var twoStepsUp = (rowIdx >= 2 && gridData[rowIdx - 2][colIdx] === 2) ? pathCounts[rowIdx - 2][colIdx] : 0;
+
+                // Update path counts based on current cell type
+                if (gridData[rowIdx][colIdx] === 0) { // Traversable cell
+                    pathCounts[rowIdx][colIdx] += diagLeftUp + straightUp + diagRightUp + twoStepsUp;
+                } else if (gridData[rowIdx][colIdx] === 1) { // Blocked cell
+                    pathCounts[rowIdx][colIdx] = 0;
+                } else if (gridData[rowIdx][colIdx] === 2) { // Special cell (only straight up and two steps up paths)
+                    pathCounts[rowIdx][colIdx] += straightUp + twoStepsUp;
+                }
+            }
+        }
     }
-  }
 
-  // Output the calculated final result for the current test case
-  console.log(finalAccumulatedResult);
+    // Calculate the total number of paths ending in the last two rows
+    var totalPaths = 0;
+    for (var rowIdx = heightVal - 2; rowIdx < heightVal; rowIdx++) {
+        for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+            // If in the second to last row and the cell is special (2)
+            if (rowIdx === heightVal - 2 && gridData[rowIdx][colIdx] === 2) {
+                totalPaths += pathCounts[rowIdx][colIdx];
+            }
+            // If in the last row and the cell is traversable (0) or special (2)
+            if (rowIdx === heightVal - 1 && (gridData[rowIdx][colIdx] === 0 || gridData[rowIdx][colIdx] === 2)) {
+                totalPaths += pathCounts[rowIdx][colIdx];
+            }
+        }
+    }
+    // Output the final path count for the current test case
+    console.log(totalPaths);
 }

@@ -1,31 +1,52 @@
-// This utility handles incoming system data to perform specific array manipulations.
-nodeProcess.stdInStream.registerEvent("data", function (inputFragment) {
-  // Convert the received data chunk to a string, remove leading/trailing whitespace, and divide into distinct lines.
-  let parsedLines = inputFragment.toString().trim().split('\n');
+process.stdin.on(
+  "data",
+  function (inputBuffer) {
+    // Convert the incoming data buffer to a string, remove leading/trailing whitespace,
+    // and then split it into an array of individual lines.
+    // The first line is parsed as a number to determine the initial array size.
+    var lineSegments = (inputBuffer + "")
+        .trim()
+        .split("\n"),
+      initialCount = +lineSegments[0], // Numeric value from the first line.
+      dataArray = []; // An empty array to hold our data.
 
-  // Determine the primary count from the first line of input.
-  let initialCount = parseInt(parsedLines[0], 10);
+    // Initialize the dataArray such that dataArray[i] contains the value 'i'.
+    // This loop populates the array from 'initialCount' down to 0.
+    // The assignment `dataArray[initialCount] = initialCount--` is evaluated,
+    // and its result (the value of `initialCount` *before* decrement) determines
+    // if the loop continues. When `initialCount` becomes 0, `dataArray[0] = 0` is assigned,
+    // and then `initialCount` becomes -1. The value `0` is falsy, so the loop terminates.
+    while (
+      (dataArray[initialCount] = initialCount--)
+    );
 
-  // Establish a mapping array.
-  // This loop initializes 'valueMapping' such that valueMapping[k] equals k for k from 1 down to initialCount.
-  let valueMapping = [];
-  while (valueMapping[initialCount] = initialCount--);
+    // Iterate through the input lines starting from the third line (index 2).
+    // These lines contain pairs of indices for swap operations.
+    // The `some` method is used here as a simple iterator; its return value is ignored.
+    lineSegments.slice(2).some(function (currentLine, ignoredIndex) {
+      // Split the current line by a comma to get the two string-based indices.
+      currentLine = currentLine.split(",");
 
-  // Iterate through the instruction lines (starting from the third line) to execute swap operations.
-  // The 'some' method is employed here for iteration, ensuring structural similarity.
-  parsedLines.slice(2).some(function (currentLineEntry, temporaryIndexHolder) {
-    // Break down the current instruction line into its constituent parts based on the comma delimiter.
-    currentLineEntry = currentLineEntry.split(',');
-    // Parse the first number from the split entry and store its corresponding value from 'valueMapping' into 'temporaryIndexHolder'.
-    temporaryIndexHolder = valueMapping[parseInt(currentLineEntry[0], 10)];
-    // Perform the element swap within the 'valueMapping' array.
-    valueMapping[parseInt(currentLineEntry[0], 10)] = valueMapping[parseInt(currentLineEntry[1], 10)];
-    valueMapping[parseInt(currentLineEntry[1], 10)] = temporaryIndexHolder;
-  });
+      // Store the value at the first specified index in a temporary variable.
+      var tempValue = dataArray[+currentLine[0]];
 
-  // Display the final state of the 'valueMapping' array, excluding the element at index 0.
-  // 'some' is again used for iterating and printing.
-  valueMapping.slice(1).some(function (outputValue) {
-    console.info(outputValue);
-  });
-}).beginListening();
+      // Perform the first part of the swap: move the value from the second index to the first.
+      dataArray[+currentLine[0]] = dataArray[+currentLine[1]];
+
+      // Complete the swap: move the temporary value to the second index.
+      dataArray[+currentLine[1]] = tempValue;
+
+      // Return false to ensure that the `some` method continues iterating through all lines.
+      return false;
+    });
+
+    // Output the contents of the dataArray, starting from index 1.
+    // The `slice(1)` creates a new array containing elements from index 1 onwards.
+    // Again, `some` is used for iteration, and its return value is not utilized.
+    dataArray.slice(1).some(function (elementToPrint) {
+      console.log(elementToPrint); // Print each array element to standard output.
+      // Return false to ensure all elements in the sliced array are processed.
+      return false;
+    });
+  }
+).resume(); // Ensure the standard input stream remains active to receive all data.

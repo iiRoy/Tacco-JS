@@ -1,25 +1,26 @@
-/*
- *  This script manages standard input and output operations.
- *  It reads data lines and processes the initial entry.
- */
-( function  ( )   {
-  'use strict'   ; // Ensure strict parsing and execution rules.
+(function () {
+  // This immediately invoked function expression (IIFE) encapsulates the code
+  // to prevent global scope pollution.
+  'use strict'; // Enforces stricter parsing and error handling rules.
 
-  const   receivedContentArray = new Array ( ) ; // Collection for incoming text lines.
+  // A dynamic array to accumulate all input lines received from the standard input stream.
+  let receivedLines = [];
 
-  // Configure an interface for reading from standard input.
-  require ( 'readline' ) . createInterface ( {
-    sourceStream :   process . stdin  , // Defines the input data stream.
-    targetStream : process . stdout // Specifies the output data stream.
-  } )
-  . on ( 'line' ,  ( currentInputLine )  =>   {
-    // Append each received line to our content array.
-    receivedContentArray . push ( currentInputLine ) ;
-  } ) ;
+  // Initialize the readline interface to process input from the console.
+  require('readline').createInterface({
+    input: process.stdin, // Specifies standard input as the source.
+    output: process.stdout // Specifies standard output (though not used for direct output by readline here).
+  }).on('line', function (singleInputLine) {
+    // Event listener for each line of input received.
+    // Each incoming line is added to our collection.
+    receivedLines.push(singleInputLine);
+  });
 
-  // Set up an event listener for when the standard input stream closes.
-  process . stdin . on ( 'end' ,   ( )  =>   {
-    // Output a transformed version of the very first line of content.
-    console . log ( receivedContentArray [ 0 ] . substring ( 0 , 4 ) + ' ' + receivedContentArray [ 0 ] . substring ( 4 ) ) ;
-  } )   ;
-} ) ( ) ;
+  // Set up an event listener for when the standard input stream concludes.
+  process.stdin.on('end', function () {
+    // Once all input has been received, process the first line.
+    // It extracts the first four characters, appends a space, and then appends the rest of the line.
+    // The result is then printed to the console.
+    console.log(receivedLines[0].substring(0, 4) + ' ' + receivedLines[0].substring(4));
+  });
+})();

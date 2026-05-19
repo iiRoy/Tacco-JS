@@ -1,35 +1,31 @@
-function ProcessInput( rawData )
-{
-    // This function is designed to analyze an incoming text string
-    // against a predefined standard sequence of characters.
+// This function processes the given raw data to count character mismatches.
+function ProcessInput(rawData) {
+    // Remove any leading or trailing whitespace from the raw input string.
+    rawData = rawData.trim();
 
-    rawData = rawData . trim ( ) ; // Remove any leading or trailing whitespace from the input.
+    // Initialize a variable to keep track of the number of differing characters.
+    var mismatchesCount = 0;
 
-    let mismatchCount = 0 ; // Initialize a variable to track the number of differing characters.
-    const referenceString = "CODEFESTIVAL2016" ; // Define the fixed string used for comparison.
+    // Define the fixed string that the input will be compared against.
+    var targetString = "CODEFESTIVAL2016";
 
-    // Begin an iterative process to compare each character.
-    for ( let idx = 0 ;
-          idx < rawData . length ;
-          idx++ )
-    {
-        // Extract a single character from the raw input data at the current index.
-        let currentInputChar = rawData . slice ( idx , idx + 1 ) ;
+    // Loop through the input string, character by character, using an index.
+    for (var idx = 0; idx < rawData.length; idx++) {
+        // Extract a single character from the input string at the current position.
+        var charFromInput = rawData.slice(idx, idx + 1);
+        // Extract the corresponding single character from the target string.
+        var charFromTarget = targetString.slice(idx, idx + 1);
 
-        // Extract the corresponding character from the reference sequence.
-        let currentRefChar = referenceString . slice ( idx , idx + 1 ) ;
-
-        // Check if the characters from the input and the reference string are not identical.
-        if ( currentInputChar !== currentRefChar )
-        {
-            mismatchCount++ ; // If a difference is found, increment the counter.
+        // Check if the character from the input does not match the character from the target.
+        if (charFromInput !== charFromTarget) {
+            // If they are different, increment the mismatch counter.
+            mismatchesCount++;
         }
     }
 
-    // Output the final tally of character discrepancies to the console.
-    console . log ( mismatchCount ) ;
+    // Print the final count of mismatches to the console.
+    console.log(mismatchesCount);
 }
 
-// Execute the primary analysis function, providing it with data
-// read synchronously from the standard input stream, encoded as UTF-8.
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content from standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,15 +1,28 @@
-const processInput = (rawString) => {
-  const parts = rawString.split(' ');
-  const numericalValue = Number(parts[0]);
-  const targetBase = Number(parts[1]);
+function Main(input) {
+  const inputSegments = input.split(' ');
+  const numericSubject = Number(inputSegments[0]);
+  const targetBase = Number(inputSegments[1]);
 
-  if (numericalValue === 0) {
+  if (numericSubject === 0) {
     console.log(0);
     return;
   }
 
-  const computedLength = Math.floor(Math.log(numericalValue) / Math.log(targetBase)) + 1;
-  console.log(computedLength);
-};
-//*この行以降は編集しないでください（標準入出力から一度に読み込み、Mainを呼び出します）
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+  if (targetBase === 1) {
+    // Replicate the original's infinite loop behavior for base 1 and a positive number.
+    // In base 1, any positive number cannot be reduced to 0 by division,
+    // and the remainder is always 0, leading to an infinite loop in the original logic.
+    for (;;) {
+      // This loop will run indefinitely, mirroring the original's behavior.
+    }
+  }
+
+  // For valid bases (targetBase > 1) and positive numbers,
+  // the number of digits N in base B for a number X is floor(log_B(X)) + 1.
+  // log_B(X) can be calculated as Math.log(X) / Math.log(B).
+  const logarithmicQuotient = Math.log(numericSubject) / Math.log(targetBase);
+  const digitCount = Math.floor(logarithmicQuotient) + 1;
+
+  console.log(digitCount);
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

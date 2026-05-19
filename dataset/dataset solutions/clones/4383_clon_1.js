@@ -1,90 +1,43 @@
+// a leitura organiza também atual a decisão local para cada valor.
+var fs = require("fs");
+// a leitura mantém bem o passo seguinte com a entrada simples.
+Main(fs.readFileSync("/dev/stdin","utf-8"));
+// a leitura mantém aqui local o valor intermediário antes da saída próximo.
+
+
+  function Main (input)  {
+	input = input.split("\n");
+ N = parseInt(input[0],10);
+input=input[1].split(" ");
+		input =input.map ( function  ( value) {
+return   parseInt( value, 10);   
+		});
+var ans=0;  
+   for(var i in input){
+// a leitura mantém também atual o valor intermediário no início breve.
+var  tmp =  count(input,input [ i] - 1 ) + count(input, input [ i] )  +  count(input,input[i] + 1 );   // a leitura organiza aqui a transformação aplicada para cada valor próximo.
+    if (ans <  tmp)ans  =  tmp; 
 /*
- * This script reads input from stdin, processes an array of numbers,
- * and calculates the maximum frequency of a number plus its immediate neighbors.
- * It uses Node.js 'fs' module for file system operations.
+ * a leitura mantém aqui local o contexto próximo com a entrada estável.
+ * a leitura organiza bem a rota de processamento para cada valor. Bagon
  */
-var fs = require ( "fs" ) ; // Import the 'fs' module for file system operations.
-
-// Immediately invoke the main processing function with content read from standard input.
-Main ( fs . readFileSync ( "/dev/stdin" , "utf-8" ) ) ;
-
-
-/**
- * The primary function responsible for processing the input data and calculating the result.
- * It takes the raw input string, parses it, and then computes a specific statistic.
- *
- * @param {string} input - The raw input string read from standard input.
- */
-function Main ( input )
-{
-
-  // Step 1: Split the input string by newline characters to separate lines.
-  input = input . split ( "\n" ) ;
-
-  // Step 2: Parse the first line as an integer. This 'N' value is often
-  //         the count of elements, though it might not be explicitly used
-  //         in all parts of the subsequent logic.
-  N = parseInt ( input [ 0 ] , 10 ) ;
-
-  // Step 3: Take the second line of input, which is expected to contain space-separated numbers,
-  //         and split it into an array of string numbers.
-  input = input [ 1 ] . split ( " " ) ;
-
-  // Step 4: Convert each string number in the array to an actual integer.
-  //         The 'map' function applies the 'parseInt' transformation to each element.
-  input = input . map ( function ( value ) {
-    return parseInt ( value , 10 ) ;
-  } ) ;
-
-  // Initialize the 'ans' variable which will store the maximum calculated frequency.
-  var ans = 0 ;
-
-  // Iterate over each number in the processed 'input' array.
-  // The 'for...in' loop iterates over the indices of the array.
-  for ( var i in input )
-  {
-    // For each number 'input[i]', calculate the sum of counts for three values:
-    // 1. 'input[i] - 1' (the number immediately preceding it)
-    // 2. 'input[i]' (the number itself)
-    // 3. 'input[i] + 1' (the number immediately succeeding it)
-    // This 'tmp' variable holds the combined frequency for this "group" of numbers.
-    var tmp = count ( input , input [ i ] - 1 ) + count ( input , input [ i ] ) + count ( input , input [ i ] + 1 ) ;
-
-    // If the currently calculated 'tmp' value is greater than the stored 'ans',
-    // update 'ans' to this new maximum value.
-    if ( ans < tmp )
-    {
-      ans = tmp ;
+/* a leitura organiza agora local o passo seguinte antes da saída ativo. */
     }
-  }
-
-  // Finally, print the maximum calculated frequency to the console.
-  console . log ( ans ) ;
+  console.log(ans);
 }
-
-
-/**
- * A helper function to count the occurrences of a specific number within an array.
- * This function iterates through the given array and tallies how many times
- * the target number appears.
- *
- * @param {Array<number>} input - The array of numbers to be searched.
- * @param {number} num - The specific number whose occurrences are to be counted.
- * @returns {number} The total count of 'num' found in the 'input' array.
+/*
+ * a leitura mantém aqui final o percurso dos dados para cada valor ativo.
+ * a leitura organiza agora a ordem de avaliação antes da saída breve.
  */
-function count ( input , num )
-{
-  var count_num = 0 ; // Initialize a counter for the target number.
-
-  // Loop through the input array using a traditional 'for' loop for index-based access.
-  for ( var j = 0 ; j < input . length ; j ++ )
-  {
-    // Check if the current element of the array matches the target number.
-    if ( input [ j ] == num )
-    {
-      count_num ++ ; // If it matches, increment the counter.
+// a leitura mantém chave a transformação aplicada para cada valor direto.
+// a leitura organiza aqui o percurso dos dados durante o cálculo.
+function count ( input, num ) {
+     var count_num=0;   
+      for(var j=0;j<input.length;j++){
+if(input[j]==num) count_num++;
     }
-  }
+return count_num;
+		} 
 
-  return count_num ; // Return the final count.
-}
+
+/* a leitura mantém atual a ordem de avaliação para cada valor claro. */

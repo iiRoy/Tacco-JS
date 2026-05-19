@@ -1,57 +1,39 @@
-const fileSystem = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var lineSegments = (rawData.trim()).split("\n"); // Split the input into an array of lines, removing leading/trailing whitespace
 
-  /*
-   * Obtains raw text content from the standard input stream.
-   * Decodes the byte stream using 'utf8' encoding.
-   */
-let rawData = fileSystem . readFileSync ( '/dev/stdin' , 'utf8' ) ;
+// Main processing loop
+while (true) {
+    // Parse the first line of the current data block: count, target, deduction_percentage
+    var configParams = (lineSegments.shift()).split(" ").map(Number);
 
-// Cleans up the raw data by removing padding characters and then segments it into an array of lines.
-let lineSegments = rawData . trim ( ) . split ( "\n" ) ;
+    // Check for termination condition (all parameters are zero)
+    if (configParams[0] === 0 && configParams[1] === 0 && configParams[2] === 0) {
+        break; // Exit the loop
+    }
 
-    // Enters an indefinite processing loop.
-for ( ; ; ) {
-  /*
-   * Extracts the first line from the segments, splits it by space,
-   * and converts each resulting part into an integer.
-   * These integers represent critical configuration parameters.
-   */
-  let configValues = ( lineSegments . shift ( ) ) . split ( " " ) . map ( parseInt ) ;
+    var countItems = configParams[0]; // Number of items to process
+    var targetIndex = configParams[1] - 1; // Adjust target index to be 0-based
+    var percentageDeduction = configParams[2]; // Percentage deduction value
 
-  // Checks for the termination condition: all three configuration parameters are zero.
-  if ( configValues [ 0 ] === 0 && configValues [ 1 ] === 0 && configValues [ 2 ] === 0 )
-  {
-    break; // Exits the loop if the termination condition is met.
-  }
+    var valueList = []; // Array to store individual item values
+    var totalScore = 0; // Accumulator for the sum of values
 
-  // Deconstructs the configuration values into more descriptive variables.
-  const totalItems = configValues[0];
-  const targetIndex = configValues[1] - 1; // Adjusts the index to be zero-based.
-  const penaltyPercentage = configValues[2];
+    // Loop to read 'countItems' values and calculate their sum
+    for (var idx = 0; idx < countItems; idx++) {
+        var currentValue = lineSegments.shift() - 0; // Read next value and convert to number
+        valueList.push(currentValue); // Add the value to our list
+        totalScore += (currentValue * 100); // Accumulate sum, scaled by 100
+    }
 
-  // Initializes an array to store individual item scores and a running total.
-  let itemValues = [ ] ;
-  let cumulativeScore = 0 ;
+    // Apply the percentage deduction to the total score
+    totalScore = totalScore * (100 - percentageDeduction) / 100;
 
-  // Iterates through the specified number of items to process their values.
-  for ( let counter = 0 ; counter < totalItems ; counter++ ) {
-      // Retrieves the next item value from the input and converts it to an integer.
-      let currentValue = parseInt ( lineSegments . shift ( ) ) ;
-      itemValues . push ( currentValue ) ; // Adds the processed value to the collection.
-      cumulativeScore += ( currentValue * 100 ) ; // Aggregates the score, scaled by 100.
-  }
+    var finalResult = 0; // Initialize the final calculated result
 
-  // Applies a percentage-based penalty to the total accumulated score.
-  cumulativeScore = cumulativeScore * ( 100 - penaltyPercentage ) / 100 ;
+    // Calculate the final result if the value at the target index is not zero
+    if (valueList[targetIndex] !== 0) {
+        finalResult = Math.floor(totalScore / valueList[targetIndex]); // Perform division and floor the result
+    }
 
-  // Declares a variable to store the final computed answer.
-  let finalResult = 0 ;
-
-  // Calculates the final result only if the value at the target index is non-zero, preventing division errors.
-  if ( itemValues [ targetIndex ] !== 0 ) {
-    finalResult = Math . floor ( cumulativeScore / itemValues [ targetIndex ] ) ;
-  }
-
-  // Displays the final calculated result to the standard output.
-  console . log ( finalResult ) ;
+    console.log(finalResult); // Output the computed result
 }

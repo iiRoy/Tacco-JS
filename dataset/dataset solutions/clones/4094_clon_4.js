@@ -1,56 +1,53 @@
-const performCalculation = () => {
-    const gatherRawValues = () => {
-        const fileSystem = require('fs');
-        const content = fileSystem.readFileSync('/dev/stdin', 'utf8');
-        return content.trim().split(/\s+/g).map(Number);
-    };
+module.exports = function executeSolution() {
+    const fileSystem = require("fs");
+    const standardInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
 
-    const numericalSequence = gatherRawValues();
-    const sequenceLength = numericalSequence[0];
-    const actualNumbers = numericalSequence.slice(1, sequenceLength + 1);
-
-    const evaluateRangeConstraints = (collection) => {
-        const initialConstraint = {
-            validResult: true,
-            minBound: 2,
-            maxBound: 2
-        };
-
-        const finalConstraint = collection.reduceRight((currentStatus, valueElement) => {
-            if (!currentStatus.validResult) {
-                return currentStatus;
-            }
-
-            const upperLimitForNextStep = currentStatus.maxBound;
-            const currentElementValue = valueElement;
-
-            let effectiveMultiple = Math.floor(upperLimitForNextStep / currentElementValue) * currentElementValue;
-            if (effectiveMultiple <= upperLimitForNextStep) {
-                effectiveMultiple += currentElementValue;
-            }
-
-            const calculatedUpper = effectiveMultiple - 1;
-            const calculatedLower = effectiveMultiple - currentElementValue;
-
-            if (calculatedUpper < currentElementValue || calculatedLower > calculatedUpper) {
-                return { validResult: false, minBound: -1, maxBound: -1 };
-            }
-
-            return {
-                validResult: true,
-                minBound: calculatedLower,
-                maxBound: calculatedUpper
-            };
-        }, initialConstraint);
-
-        if (!finalConstraint.validResult) {
-            console.log(-1);
-        } else {
-            console.log(`${finalConstraint.minBound} ${finalConstraint.maxBound}`);
+    function* tokenStreamGenerator(textInput) {
+        const tokens = textInput.trim().split(/\s+/g);
+        for (const currentToken of tokens) {
+            yield currentToken;
         }
+    }
+
+    const inputTokenIterator = tokenStreamGenerator(standardInputContent);
+
+    const obtainNextInteger = () => {
+        const { value: tokenValue, done: isDone } = inputTokenIterator.next();
+        if (isDone) {
+            return NaN;
+        }
+        return parseInt(tokenValue, 10);
     };
 
-    evaluateRangeConstraints(actualNumbers);
+    const sequenceLength = obtainNextInteger();
+    const numericSequence = Array.from({ length: sequenceLength }, obtainNextInteger);
+
+    const finalResultBounds = numericSequence.reduceRight((accumulatorState, currentSequenceValue) => {
+        if (accumulatorState === null) {
+            return null;
+        }
+
+        const { currentMin: previousMinBound, currentMax: previousMaxBound } = accumulatorState;
+
+        let nextMultipleOfCurrent = Math.ceil((previousMaxBound + 1) / currentSequenceValue) * currentSequenceValue;
+
+        const calculatedMaxBound = nextMultipleOfCurrent - 1;
+        const calculatedMinBound = nextMultipleOfCurrent - currentSequenceValue;
+
+        if (calculatedMaxBound < currentSequenceValue || calculatedMinBound > calculatedMaxBound) {
+            return null;
+        }
+
+        return { currentMin: calculatedMinBound, currentMax: calculatedMaxBound };
+    }, { currentMin: 2, currentMax: 2 });
+
+    if (finalResultBounds === null) {
+        console.log(-1);
+    } else {
+        console.log(`${finalResultBounds.currentMin} ${finalResultBounds.currentMax}`);
+    }
 };
 
-performCalculation();
+if (require.main === module) {
+    module.exports();
+}

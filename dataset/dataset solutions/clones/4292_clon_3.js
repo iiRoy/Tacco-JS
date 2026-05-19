@@ -1,70 +1,51 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-// Buffer to accumulate all incoming standard input data.
-let dataBuffer = '';
-
-// Event listener for incoming data chunks.
-process.stdin.on('data', function(incomingSegment) {
-    dataBuffer += incomingSegment;
+var inputBuffer = '';
+process.stdin.on('data', function(dataChunk) {
+    inputBuffer += dataChunk;
 });
 
-// Event listener for the end of standard input stream.
 process.stdin.on('end', function() {
-    // Process the accumulated data, splitting it by newlines.
-    // Handles both Windows (\r\n) and Unix (\n) line endings.
-    executePalindromeSolver(dataBuffer.split(/\r?\n/));
+    processInputData(inputBuffer.split(/\r?\n/));
 });
 
-/**
- * Solves the palindrome problem by counting minimum 'x' removals.
- * @param {string[]} lineSegments - An array of input lines, where the first element is the target string.
- * @returns {void} Outputs the result to the console.
- */
-function executePalindromeSolver(lineSegments) {
-    // Extract the primary string for analysis.
-    const targetString = lineSegments[0];
+function processInputData(lines) {
+    const targetString = lines[0];
+    let leftIndex = 0;
+    let rightIndex = targetString.length - 1;
+    let requiredXInsertions = 0;
+    const X_CHARACTER = 'x';
+    let isPalindromePossible = true;
 
-    // Handle edge case: an empty string is already a palindrome with 0 removals.
-    if (!targetString || targetString.length === 0) {
-        console.log(0);
-        return;
-    }
+    while (leftIndex < rightIndex) {
+        const charAtLeft = targetString.charAt(leftIndex);
+        const charAtRight = targetString.charAt(rightIndex);
 
-    // Initialize pointers for two-way traversal.
-    let leftPointer = 0;
-    let rightPointer = targetString.length - 1;
-    // Counter for 'x' characters removed.
-    let xRemovalCount = 0;
-
-    // Iterate while the pointers haven't crossed.
-    while (leftPointer < rightPointer) {
-        const charAtLeft = targetString[leftPointer];
-        const charAtRight = targetString[rightPointer];
-
-        // Case 1: Characters match. Move both pointers inward.
         if (charAtLeft === charAtRight) {
-            leftPointer++;
-            rightPointer--;
-        }
-        // Case 2: Characters don't match. Check for 'x' to remove.
-        else {
-            if (charAtLeft === 'x') {
-                // Remove 'x' from the left, increment count.
-                leftPointer++;
-                xRemovalCount++;
-            } else if (charAtRight === 'x') {
-                // Remove 'x' from the right, increment count.
-                rightPointer--;
-                xRemovalCount++;
+            leftIndex++;
+            rightIndex--;
+        } else {
+            // Characters do not match, check for 'x'
+            if (charAtLeft === X_CHARACTER) {
+                leftIndex++;
+                requiredXInsertions++;
+            } else if (charAtRight === X_CHARACTER) {
+                rightIndex--;
+                requiredXInsertions++;
             } else {
-                // If characters don't match and neither is 'x', it's impossible.
-                xRemovalCount = -1;
-                break; // Exit the loop as solution is impossible.
+                // Irreconcilable mismatch, cannot form a palindrome
+                isPalindromePossible = false;
+                break;
             }
         }
     }
 
-    // Display the final count of 'x' removals or -1 if impossible.
-    console.log(xRemovalCount);
+    if (!isPalindromePossible) {
+        requiredXInsertions = -1;
+    }
+
+    console.log(requiredXInsertions);
+
+    return 0;
 }

@@ -1,46 +1,21 @@
-const dataProcessor = require("stream");
-const inputHandler = new dataProcessor.Writable();
-let storedInput = "";
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8").split(/\s|,/);
 
-inputHandler._write = (chunkSegment, encodingType, completionCallback) => {
-    storedInput += chunkSegment.toString();
-    completionCallback();
-};
+const numericSequence = sourceData.map(Number);
 
-inputHandler.on("finish", () => {
-    const extractedNumbers = storedInput.match(/-?\d+/g);
-    let numericSequence;
+let currentS = 0;
+let currentT = 0;
 
-    if (extractedNumbers === null) {
-        numericSequence = [];
-    } else {
-        numericSequence = extractedNumbers.map(Number);
-    }
+const initialLengthMinusOne = numericSequence.length - 1;
+let currentIdx = initialLengthMinusOne;
 
-    let cumulativeProduct = 0;
-    let cumulativeSum = 0;
-    const originalValueCount = numericSequence.length - 1;
+while (currentIdx--) {
+  const valueB = +numericSequence[currentIdx--];
+  currentS += valueB;
+  currentT += valueB * numericSequence[currentIdx];
+}
 
-    let processingArray = [...numericSequence];
+const finalDivisor = initialLengthMinusOne * 2;
 
-    while (processingArray.length >= 2) {
-        const rightmostValue = processingArray.pop();
-        const adjacentLeftValue = processingArray.pop();
+const roundedCalculation = ~~(currentS / finalDivisor + 0.5);
 
-        cumulativeSum += rightmostValue;
-        cumulativeProduct += rightmostValue * adjacentLeftValue;
-    }
-
-    const scalingFactor = originalValueCount * 2;
-    let finalRoundedValue;
-
-    if (scalingFactor === 0) {
-        finalRoundedValue = 0;
-    } else {
-        finalRoundedValue = Math.round(cumulativeSum / scalingFactor);
-    }
-
-    process.stdout.write(cumulativeProduct + '\n' + finalRoundedValue);
-});
-
-process.stdin.pipe(inputHandler);
+console.log(currentT + '\n' + roundedCalculation);

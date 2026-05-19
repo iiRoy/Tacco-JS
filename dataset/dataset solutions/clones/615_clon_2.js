@@ -1,30 +1,38 @@
-let sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw text content from standard input
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from standard input stream
 
-const processedLines = (sourceContent.trim())
-    .split("\n"); // Normalize the input string and break it into an array of lines
+// Process the raw input: trim whitespace and split into an array of lines
+const dataLines = (rawData.trim()).split("\n");
 
-let initialNumericValue = parseInt(processedLines.shift(), 10); // Extract and convert the first line, which is typically a count, to an integer
+// Extract the first line, convert it to a number, and store it.
+// Note: This variable 'firstVal' is not used later in the algorithm, but its extraction is part of the original structure.
+let firstVal = dataLines.shift() - 0;
 
-processedLines.sort(function(elementOne, elementTwo) {
-    return elementOne - elementTwo;
-}); // Sort the remaining lines numerically in ascending order
+// Sort the remaining data lines numerically in ascending order.
+dataLines.sort(function(valX, valY) {
+    return valX - valY;
+});
 
-let computedCombinations = []; // Prepare an array to store all generated number combinations
+// Initialize an array to store the computed sums of pairs.
+const resultsCollection = [];
 
-for (let currentOuterIndex = 0;
-     currentOuterIndex < 5;
-     currentOuterIndex++) { // Iterate through the first five sorted elements
-    for (let currentInnerIndex = currentOuterIndex + 1;
-         currentInnerIndex < 5;
-         currentInnerIndex++) { // Iterate through subsequent elements to form unique pairs
-        // Concatenate the string representations of the two numbers and then convert to an integer
-        computedCombinations.push(parseInt(processedLines[currentOuterIndex] + processedLines[currentInnerIndex], 10));
-        computedCombinations.push(parseInt(processedLines[currentInnerIndex] + processedLines[currentOuterIndex], 10));
+// Iterate through the first five elements of the sorted data lines.
+for (let idxA = 0; idxA < 5; idxA++) {
+    // For each element, iterate through subsequent elements (to form unique pairs).
+    for (let idxB = idxA + 1; idxB < 5; idxB++) {
+        // Calculate the sum of the current pair (dataLines[idxA] + dataLines[idxB]) and convert to number.
+        // Add this sum to the results collection.
+        resultsCollection.push((dataLines[idxA] + dataLines[idxB]) - 0);
+        // Calculate the sum of the current pair in reverse order (dataLines[idxB] + dataLines[idxA]) and convert to number.
+        // Add this sum to the results collection. This effectively adds duplicate sums for this specific problem,
+        // but maintains the original algorithm's behavior.
+        resultsCollection.push((dataLines[idxB] + dataLines[idxA]) - 0);
     }
 }
 
-computedCombinations.sort(function(valueA, valueB) {
-    return valueA - valueB;
-}); // Sort the final list of combined numbers numerically
+// Sort the collection of all computed sums numerically in ascending order.
+resultsCollection.sort(function(valX, valY) {
+    return valX - valY;
+});
 
-console.log(computedCombinations[2]); // Output the third smallest number from the sorted combinations
+// Output the element at index 2 (the third smallest sum) from the sorted results collection.
+console.log(resultsCollection[2]);

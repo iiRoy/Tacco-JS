@@ -1,12 +1,15 @@
-'use strict'
+'use strict';
 
-const evaluateCondition = (rawData) => {
-  const [firstValue, secondValue] = rawData.trim().split(/\s+/).map(Number);
+const evaluateCondition = (sourceContent) => {
+  const [valA, valB] = sourceContent
+    .trim()
+    .split('\n')[0]
+    .split(' ')
+    .map(Number);
 
-  const decisionBoolean = Math.max(firstValue + 1, 2 * secondValue) === (firstValue + 1);
+  const resultString = (valA >= (valB * 2) - 1) ? 'YES' : 'NO';
 
-  const outcomeLookup = ['NO', 'YES'];
-  console.log(outcomeLookup[+decisionBoolean]);
+  console.log(resultString);
 };
 
-evaluateCondition(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+evaluateCondition(require('fs').readFileSync('/dev/stdin', 'utf8'));

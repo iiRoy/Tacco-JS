@@ -1,42 +1,26 @@
-const calculateOverlapCount = (rawTextualInput) => {
-    const textualSegments = rawTextualInput.trim().split('\n');
+function Main(programInput) {
+  const inputLines = programInput.split('\n');
 
-    // Discard the first line containing metadata (N and M values).
-    // The number of actual ranges is inferred from the remaining lines.
-    const rangeSpecifications = textualSegments.slice(1).map(lineContent => {
-        // Parse the two values on each line as strings, to replicate the original's string comparison behavior.
-        const [leftBoundaryString, rightBoundaryString] = lineContent.split(' ');
-        return { lowerString: leftBoundaryString, upperString: rightBoundaryString };
-    });
+  const [totalCount, segmentCount] = inputLines[0].split(' ').map(Number);
 
-    // Assume at least one range is provided, as per typical problem constraints.
-    // Initialize the aggregate string values with the first range's values,
-    // mimicking the original code's variable initialization.
-    let currentMaxLowerString = rangeSpecifications[0].lowerString;
-    let currentMinUpperString = rangeSpecifications[0].upperString;
+  const segmentRanges = inputLines.slice(1, segmentCount + 1).map(lineContent => {
+    const [leftBoundary, rightBoundary] = lineContent.split(' ').map(Number);
+    return { start: leftBoundary, end: rightBoundary };
+  });
 
-    // Determine the "maximum" lower bound using string comparison.
-    // This replicates a potential behavior quirk (string vs. numeric comparison) from the original.
-    currentMaxLowerString = rangeSpecifications.reduce((accumulatedMax, currentSpec) => {
-        return accumulatedMax > currentSpec.lowerString ? accumulatedMax : currentSpec.lowerString;
-    }, currentMaxLowerString); // Start reduction with the first element's lower string.
+  const aggregateExtremes = segmentRanges.reduce((accumulator, currentSegment) => {
+    return {
+      maxStart: Math.max(accumulator.maxStart, currentSegment.start),
+      minEnd: Math.min(accumulator.minEnd, currentSegment.end)
+    };
+  }, { maxStart: segmentRanges[0].start, minEnd: segmentRanges[0].end });
 
-    // Determine the "minimum" upper bound using string comparison.
-    // This also replicates the original's behavior.
-    currentMinUpperString = rangeSpecifications.reduce((accumulatedMin, currentSpec) => {
-        return accumulatedMin < currentSpec.upperString ? accumulatedMin : currentSpec.upperString;
-    }, currentMinUpperString); // Start reduction with the first element's upper string.
+  const overallMaxStart = aggregateExtremes.maxStart;
+  const overallMinEnd = aggregateExtremes.minEnd;
 
-    // Convert the final string-compared values to numbers for arithmetic.
-    const finalNumericMaxLower = Number(currentMaxLowerString);
-    const finalNumericMinUpper = Number(currentMinUpperString);
+  const intersectionLength = Math.max(0, overallMinEnd - overallMaxStart + 1);
 
-    // Calculate the potential count of integers within the overlapping range.
-    const potentialSpanValue = finalNumericMinUpper - finalNumericMaxLower + 1;
+  console.log(intersectionLength);
+}
 
-    // Ensure the result is not negative; if no overlap or negative span, the count is zero.
-    return Math.max(0, potentialSpanValue);
-};
-
-const externalSource = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(calculateOverlapCount(externalSource));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

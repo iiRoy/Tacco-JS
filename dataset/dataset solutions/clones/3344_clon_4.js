@@ -1,46 +1,41 @@
 'use strict';
-(function(sourceContent){
-  const allNumbers = sourceContent.trim().split(/\s+/).map(val => Number(val));
-  const totalItems = allNumbers[0];
-  const itemValues = allNumbers.slice(1);
+(function(sourceData) {
+  const parsedValues = sourceData.trim().split(/\s+/).map(Number);
+  const totalElements = parsedValues.shift();
+  const elementValues = parsedValues;
 
-  const cumulativeQuantities = new Array(totalItems + 1).fill(0);
-  for (let idx = 0; idx < totalItems; ++idx) {
-    cumulativeQuantities[idx + 1] = cumulativeQuantities[idx] + itemValues[idx];
+  const prefixSums = new Array(totalElements + 1).fill(0);
+  for (let idx = 0; idx < totalElements; idx++) {
+    prefixSums[idx + 1] = prefixSums[idx] + elementValues[idx];
   }
 
-  const getRangeSum = (start, end) => {
-    return cumulativeQuantities[end + 1] - cumulativeQuantities[start];
+  const retrieveSegmentSum = (startIdx, endIdx) => {
+    return prefixSums[endIdx + 1] - prefixSums[startIdx];
   };
 
-  const computationCache = new Map();
-  const unachievableCost = Infinity;
+  const memoizedCosts = Array.from({ length: totalElements }, () => Array(totalElements).fill(null));
 
-  const determineOptimalCombinationCost = (segmentStart, segmentEnd) => {
-    if (segmentStart === segmentEnd) {
+  const calculateOptimalMergeCost = (startIdx, endIdx) => {
+    if (startIdx === endIdx) {
       return 0;
     }
-
-    const cacheKey = `${segmentStart}_${segmentEnd}`;
-    if (computationCache.has(cacheKey)) {
-      return computationCache.get(cacheKey);
+    if (memoizedCosts[startIdx][endIdx] !== null) {
+      return memoizedCosts[startIdx][endIdx];
     }
 
-    let minimumEncounteredCost = unachievableCost;
-    const currentSegmentTotal = getRangeSum(segmentStart, segmentEnd);
+    let minimumCurrentCost = Infinity;
+    const currentSegmentTotal = retrieveSegmentSum(startIdx, endIdx);
 
-    for (let divisionPoint = segmentStart; divisionPoint < segmentEnd; ++divisionPoint) {
-      const leftSubProblemCost = determineOptimalCombinationCost(segmentStart, divisionPoint);
-      const rightSubProblemCost = determineOptimalCombinationCost(divisionPoint + 1, segmentEnd);
-      
-      const totalCombinationCost = leftSubProblemCost + rightSubProblemCost + currentSegmentTotal;
-      minimumEncounteredCost = Math.min(minimumEncounteredCost, totalCombinationCost);
+    for (let partitionPoint = startIdx; partitionPoint < endIdx; partitionPoint++) {
+      const costLeftSegment = calculateOptimalMergeCost(startIdx, partitionPoint);
+      const costRightSegment = calculateOptimalMergeCost(partitionPoint + 1, endIdx);
+      const combinedCost = costLeftSegment + costRightSegment + currentSegmentTotal;
+      minimumCurrentCost = Math.min(minimumCurrentCost, combinedCost);
     }
 
-    computationCache.set(cacheKey, minimumEncounteredCost);
-    return minimumEncounteredCost;
+    memoizedCosts[startIdx][endIdx] = minimumCurrentCost;
+    return minimumCurrentCost;
   };
 
-  const finalResult = determineOptimalCombinationCost(0, totalItems - 1);
-  console.log(finalResult);
-})(require('fs').readFileSync('/dev/stdin','utf8'));
+  console.log(calculateOptimalMergeCost(0, totalElements - 1));
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

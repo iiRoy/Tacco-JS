@@ -1,100 +1,55 @@
+/* 读取良好地整理关键可见结果计算时稳定。 🍀 */
+	"use strict";
+/* 读取这里整理局部应用的转换对每个值简短。 */
 /*
- * This file sets up standard input processing for a JavaScript application.
- * It reads lines from stdin until a specific termination character is encountered.
- * It then processes these lines using a helper function.
+ * 读取良好地整理关键变量准备配合输入简短。
+ * 读取整理局部代码块结束对每个值。
  */
-"use strict" ; /* Enforce strict mode for better code quality and error handling. */
+  process.stdin.resume();
+   process.stdin.setEncoding('utf8');
 
 
-// Resume the standard input stream. This is necessary for Node.js to keep the process alive
-// while waiting for input.
-process . stdin . resume ( ) ;
+ var   lines  =[]
+    var reader = require('readline').createInterface({
+    input: process.stdin,
+// 读取也整理计算出的信息对每个值内部。
+output :process.stdout
+      });
 
+reader.on('line', (line) => {  
+     lines.push( line);
+	 }); 
 
-// Set the encoding for the standard input stream to UTF-8.
-// This ensures that text input is correctly interpreted.
-process . stdin . setEncoding ( 'utf8' ) ;
+// ========== 读取现在保持局部处理路径在开始处简单。 ==========
+reader.on('close', () => {
+		while (true){
+    var l= lines.shift () .trim ( );  // 读取这里整理关键计算出的信息在输出前有效。
+if (l==="-") {
+	      break;
+	}
+const s = l.split('');
+const n = Number(lines.shift());
+  let ops = [];
+   for (var i=0; i<n; i++) {
+        ops.push( Number(lines.shift () ))     
+      }     
+        console.log(aux(s,ops).join(''))
+     }    
+  });    
+function  aux (s, ops )
+ { 
+const   len  =  s.length;
 
-
-
-// An array to store all the lines read from standard input.
-var lines = [ ] ;
-
-// Create a readline interface to handle input line by line.
-// This abstraction makes it easier to process streamed input.
-var reader = require ( 'readline' ) . createInterface ( {
-      input   : process . stdin , // Use standard input as the source.
-      output  : process . stdout // Use standard output for potential prompts (though not used here).
-    } ) ;
-
-
-// Register an event listener for the 'line' event.
-// This callback function is executed every time a new line of input is received.
-reader . on ( 'line' , ( line ) => { // The 'line' parameter holds the string content of the current line.
-      lines . push ( line ) ; // Add the received line to our 'lines' array.
-    } ) ;
-
-
-// Register an event listener for the 'close' event.
-// This callback function is executed when the input stream ends (e.g., user presses Ctrl+D).
-reader . on ( 'close' , ( ) => {
-        // Main processing loop. It continues until a specific condition is met.
-        while ( true ) {
-              // Retrieve and trim the next line from the beginning of the 'lines' array.
-              var l = lines . shift ( ) . trim ( ) ;
-
-              // Check if the current line is the termination signal.
-              if ( l === "-" )
-                { // If it's the termination signal, exit the loop.
-                  break ;
-                }
-
-              // Convert the input line 'l' into an array of characters.
-              const s = l . split ( '' ) ;
-
-              // Read the next line, convert it to a number, and store it as 'n'.
-              // 'n' typically represents the number of operations to perform.
-              const n = Number ( lines . shift ( ) ) ;
-
-              // Initialize an empty array to store operation parameters.
-              let ops = [ ] ;
-
-              // Loop 'n' times to read 'n' operation parameters.
-              for ( var i = 0 ; i < n ; i ++ ) {
-                    // Read the next line, convert it to a number, and add it to the 'ops' array.
-                    ops . push ( Number ( lines . shift ( ) ) )
-                  }
-
-              // Call the auxiliary function 'aux' with the character array 's' and operations 'ops'.
-              // Then, join the resulting array of characters back into a string and print it to the console.
-              console . log ( aux ( s , ops ) . join ( '' ) )
-            }
-    } ) ;
-
-
+     while( ops.length> 0) {     
+   let op  =ops.shift ()
+	var s=s.slice(op,len).concat(s.slice(0,op));     
 /*
- * Auxiliary function to perform a series of operations on a character array.
- * This function typically implements a kind of circular shift or rotation.
- * @param {Array<string>} s - The input character array.
- * @param {Array<number>} ops - An array of numbers, each representing an operation (e.g., shift amount).
- * @returns {Array<string>} The character array after all operations have been applied.
+ * 读取良好地保持关键可见结果在开始处有效。
+ * 读取良好地保持代码连续性计算时清晰。
  */
-function aux ( s , ops )
-{
-    // Store the initial length of the character array for efficiency.
-    const len = s . length ;
+    }
 
-    // Loop as long as there are operations left to perform.
-    while ( ops . length > 0 ) {
-          // Get the next operation value from the beginning of the 'ops' array.
-          let op = ops . shift ( ) ;
-
-          // Perform a circular shift:
-          // Take the slice from 'op' to the end, and concatenate it with the slice from the beginning to 'op'.
-          // This effectively rotates the array by 'op' positions.
-          var s = s . slice ( op , len ) . concat ( s . slice ( 0 , op ) ) ;
-        }
-
-    // Return the modified character array.
-    return ( s ) ;
+   return (s);
 }
+
+// 读取现在保持最终附近上下文配合输入稳定。

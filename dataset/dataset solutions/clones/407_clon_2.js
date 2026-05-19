@@ -1,19 +1,24 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8') ;
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+var lineData = (rawData.trim()).split("\n"); // Split input into lines, removing leading/trailing whitespace
 
-const processedLines = ( sourceData.trim() ).split("\n") ;
+// Initialize a dynamic programming array for a modified Fibonacci-like sequence
+var fibonacciLikeSequence = [1, 2, 4];
 
-let recursiveSums = [ 1 , 2 , 4 ] ;
-
-for ( let idx = 3 ; idx <= 31 ; idx++ ) {
-    recursiveSums[idx] = recursiveSums[idx-1] + recursiveSums[idx-2] + recursiveSums[idx-3] ;
+// Populate the sequence up to index 31
+for (var idx = 3; idx <= 31; idx++) {
+    fibonacciLikeSequence[idx] = fibonacciLikeSequence[idx - 1] + fibonacciLikeSequence[idx - 2] + fibonacciLikeSequence[idx - 3];
 }
 
-while ( true ) {
-    let targetNumber = processedLines.shift() - 0 ;
+// Process input lines until a zero is encountered
+while (true) {
+    // Get the next number from the input array and convert it to a numeric type
+    var currentValue = +lineData.shift();
 
-    if ( targetNumber === 0 ) {
-        break ;
+    // If the current value is 0, terminate the loop
+    if (currentValue === 0) {
+        break;
     }
 
-    console.log( Math.ceil( recursiveSums[targetNumber - 1] / 3650 ) ) ;
+    // Calculate and print the ceiling of (sequence_value / 3650)
+    console.log(Math.ceil(fibonacciLikeSequence[currentValue - 1] / 3650));
 }

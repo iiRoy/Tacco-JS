@@ -1,28 +1,40 @@
-function processInput ( rawData ) {
-  const   lines = rawData .split('\n');
+function processInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  const lines = rawData.split('\n');
 
-  const firstLineValues = lines[0].split(' ')
-                           .map(  valStr => parseInt(valStr, 10)  );
+  // Process the first line to extract initial parameters.
+  // It splits the line by spaces and converts each part to an integer.
+  const firstLineData = lines[0].split(' ').map(itemStr => parseInt(itemStr, 10));
 
-  const countMax    = firstLineValues[0] + 1;
-  const targetSum   = firstLineValues[1];
+  // Determine the upper bound for the loop, based on the first parameter plus one.
+  const numElements = firstLineData[0] + 1;
 
-  const numberSequence = lines[1].split(' ').map( numString => parseInt(numString, 10) );
+  // Extract the target sum value from the second parameter of the first line.
+  const targetSum = firstLineData[1];
 
+  // Process the second line to get the list of numbers.
+  // It splits the line by spaces and converts each part to an integer.
+  const dataList = lines[1].split(' ').map(itemStr => parseInt(itemStr, 10));
 
-  for ( let idx = 1;  idx <= countMax;  idx++ ) {
-    let currentAccumulation = numberSequence.slice(0, idx).reduce( (accumulator, currentValue) => accumulator + currentValue );
+  // Iterate from 1 up to and including 'numElements'.
+  for (let idx = 1; idx <= numElements; idx++) {
+    // Calculate the sum of elements from the beginning of 'dataList' up to the current 'idx'.
+    // The slice method creates a new array, and reduce sums its elements.
+    const currentSum = dataList.slice(0, idx).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
-    if ( currentAccumulation >= targetSum ) {
-      console.log( idx );
+    // Check if the accumulated sum has reached or exceeded the target sum.
+    if (currentSum >= targetSum) {
+      // If the condition is met, print the current index and terminate the function.
+      console.log(idx);
       return;
     }
   }
 
-  console.log( countMax - 1 );
+  // If the loop completes without finding a sum that meets the condition,
+  // print 'numElements - 1' as per the problem's logic.
+  console.log(numElements - 1);
 }
 
-processInput(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,23 +1,16 @@
-"use strict"; // Enforce strict JavaScript parsing rules
+"use strict"; // Enforce strict mode for better code quality
 
-// Primary function designed to process an incoming block of text data.
-const executeLogic = ( inputData ) => {
+// This function processes the given input string to count occurrences of '1'.
+const processInput = inputString => {
+    // Trim leading/trailing whitespace and split the input into lines.
+    let processedLines = inputString.trim().split("\n");
+    
+    // Take the first line and split it into an array of individual characters.
+    const charArray = processedLines[0].split("");
+    
+    // Filter the character array to keep only '1's and then print the count of such characters.
+    console.log(charArray.filter(digitChar => digitChar === "1").length);
+};
 
-    // Begin by sanitizing the raw text: remove any leading/trailing whitespace,
-    // then break the string into an array of individual lines based on newline characters.
-    let inputLines = inputData . trim() . split ( "\n" ) ;
-
-    // From the very first line of the now-processed input,
-    // construct an array where each element is a single character.
-    const characterSequence = inputLines [ 0 ] . split ( "" ) ;
-
-    // Proceed to filter this character array. We're specifically looking for
-    // instances where a character is numerically equivalent to the string "1".
-    // Finally, the total count of these matching characters is displayed.
-    console . log ( characterSequence . filter ( currentDigit => currentDigit === "1" ) . length ) ;
-} ; // Concluding the main processing function
-
-// Obtain the raw content from the standard input stream (typically '/dev/stdin' on Unix-like systems)
-// using the 'fs' (file system) module, ensuring it's read as UTF-8 encoded text.
-// This content is then passed directly to our 'executeLogic' function for processing.
-executeLogic ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

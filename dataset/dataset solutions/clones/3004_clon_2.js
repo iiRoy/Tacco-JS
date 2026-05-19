@@ -1,48 +1,31 @@
-/*
- *  The entire raw data is provided as an argument to this function.
- */
-function ProcessInput( rawData )
-{
-  // Split the raw string into an array of lines.
-  var parsedLines = rawData.split( '\n' );
+// This function processes the raw input string
+function ProcessInput(rawData) {
+    // Split the entire input by newline characters
+    let parsedData = rawData.split("\n");
 
-  // Take the first line and split it by spaces to get individual tokens.
-  let firstLineTokens = parsedLines[ 0 ] .split( ' ' );
+    // Take the first line and split it by spaces
+    parsedData = parsedData[0].split(" ");
 
-  // Parse the first token as the time interval.
-  const intervalDuration = Number( firstLineTokens[ 0 ] );
+    // Convert the string parts to numbers for calculations
+    const intervalValue = Number(parsedData[0]); // Represents 'A' from original
+    const biscuitCount = Number(parsedData[1]);  // Represents 'B' from original
+    const maxTime = Number(parsedData[2]);       // Represents 'T' from original
 
-  // Parse the second token as the amount to add per interval.
-  const rewardAmount = Number( firstLineTokens[ 1 ] );
+    let currentCycle = 1; // Tracks the current multiple of 'A'
+    let totalBiscuits = 0; // Accumulates the total number of biscuits
 
-  // Parse the third token as the overall time constraint.
-  const totalTimeLimit = Number( firstLineTokens[ 2 ] );
-
-  // Initialize a counter for the current interval cycle.
-  let currentCycle = 1;
-
-  // Initialize the total accumulated value.
-  var totalAccumulation = 0;
-
-  // Loop through time points, including a small buffer beyond the limit.
-  for ( let currentTimePoint = 0; currentTimePoint <= ( totalTimeLimit + 0.5 ); currentTimePoint++ )
-  {
-    // Check if the current time point aligns with a multiple of the interval duration.
-    if ( currentTimePoint === ( currentCycle * intervalDuration ) )
-    {
-      // If aligned, add the reward amount to the total.
-      totalAccumulation += rewardAmount;
-
-      // Increment the cycle counter for the next interval.
-      currentCycle++;
+    // Iterate through time points, including a small buffer for floating point precision
+    for (let currentTimePoint = 0; currentTimePoint <= (maxTime + 0.5); currentTimePoint++) {
+        // Check if the current time point is a multiple of the interval value
+        if (currentTimePoint === currentCycle * intervalValue) {
+            totalBiscuits += biscuitCount; // Add biscuits for this interval
+            currentCycle++;                // Move to the next interval cycle
+        }
     }
-  }
 
-  // Display the final calculated total.
-  console.log( totalAccumulation );
+    // Output the final calculated total of biscuits
+    console.log(totalBiscuits);
 }
 
-/*
- *  Do not modify the code below this line. It handles reading input and invoking the main processing function.
- */
-ProcessInput( require( "fs" ) .readFileSync( "/dev/stdin", "utf8" ) );
+// Do not modify the following line; it handles reading input and calling the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

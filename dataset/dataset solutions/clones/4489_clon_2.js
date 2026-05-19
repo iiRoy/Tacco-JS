@@ -1,27 +1,19 @@
-// This module defines a primary handler for processing textual data.
-function ProcessInput( inputStringData ) {
+function ProcessInput(rawData) {
+  // This function takes raw string input, parses it, and performs a specific calculation.
+  // It expects the input to be a string of space-separated numbers.
+  const numericValues = rawData.split(' ').map(item => Number(item));
 
-  // The incoming string is segmented by spaces, and each segment
-  // is subsequently converted into an integer value for numerical operations.
-  const numericCollection = inputStringData . split ( ' ' ) . map (
-    ( elementString ) => parseInt ( elementString , 10 )
-  ) ;
+  // Extracting the individual numerical components from the processed array.
+  const firstVal = numericValues[0]; // The first number in the sequence.
+  const secondVal = numericValues[1]; // The second number.
+  const thirdVal = numericValues[2]; // The third number.
 
-  // Retrieve the initial three numerical components from the collection.
-  const componentOne = numericCollection [ 0 ] ;
-  const componentTwo = numericCollection [ 1 ] ;
-  const componentThree = numericCollection [ 2 ] ;
-
-  // Compute the total sum of the first three components,
-  // then subtract the maximum value found within the entire numeric collection.
-  // The final calculated outcome is then displayed to the console.
-  console . log (
-    componentOne + componentTwo + componentThree - Math . max ( ...numericCollection )
-  ) ;
-
+  // Calculate the sum of the three extracted values, then subtract the largest value from the original set.
+  // The final computed result is then printed to the console.
+  console.log(firstVal + secondVal + thirdVal - Math.max(...numericValues));
 }
 
-// Obtain the complete content from the standard input stream,
-// ensuring it is interpreted as UTF-8 encoded text.
-// Subsequently, invoke the main processing routine with this acquired text content.
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// The program initiates by reading data from the standard input stream.
+// It uses Node.js's file system module to synchronously read the content of /dev/stdin,
+// interpreting it as UTF-8 encoded text. This content is then passed to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

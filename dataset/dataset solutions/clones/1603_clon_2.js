@@ -1,64 +1,50 @@
-// This function analyzes a sequence of numbers based on specific criteria.
-function ProcessInputData(rawString) {
-  // Split the incoming text by spaces to get individual string components.
-  let numericValues = rawString.split(" ");
-  // An array to potentially store outcomes, though not used in this specific logic path.
-  let processedResults = [];
+function processInputData(rawDataString) {
+    // Split the incoming string by spaces to get an array of string representations of numbers.
+    let parsedNumericData = rawDataString.split(" ");
 
-  // Iterate through each string component and convert it to a numerical type.
-  for (let currentIndex in numericValues) {
-    // Explicitly convert string to a number.
-    numericValues[currentIndex] = Number(numericValues[currentIndex]);
-  }
+    // Initialize a temporary array; this variable is not used in subsequent calculations.
+    let temporaryStorage = [];
 
-  // Check the primary condition involving the first three numerical elements.
-  if (numericValues[0] > numericValues[1] * numericValues[2]) {
-    // If the condition is met, calculate and display the difference.
-    console.log(numericValues[0] - numericValues[1] * numericValues[2]);
-  } else {
-    // If the primary condition is not met, proceed to secondary checks.
-    // Evaluate a modulo condition based on rounded division and another element.
-    if (
-      Math.round(numericValues[0] / numericValues[2]) % 2 ==
-      numericValues[1] % 2
-    ) {
-      // If the secondary condition holds, compute an absolute difference.
-      console.log(
-        Math.abs(
-          numericValues[0] -
-            numericValues[1] * Math.round(numericValues[0] / numericValues[2])
-        )
-      );
-    } else {
-      // If the secondary condition does not hold, perform a tertiary check.
-      if (
-        numericValues[0] -
-          numericValues[1] * Math.round(numericValues[0] / numericValues[2]) <
-        0
-      ) {
-        // If the tertiary condition is true, calculate an absolute value with an incremented divisor.
-        console.log(
-          Math.abs(
-            numericValues[0] -
-              numericValues[2] *
-                (Math.round(numericValues[0] / numericValues[2]) + 1)
-          )
-        );
-      } else {
-        // Otherwise, calculate an absolute value with a decremented divisor.
-        console.log(
-          Math.abs(
-            numericValues[0] -
-              numericValues[2] *
-                (Math.round(numericValues[0] / numericValues[2]) - 1)
-          )
-        );
-      }
+    // Iterate through the array elements to convert each string to a numerical value.
+    for (let currentIndex in parsedNumericData) {
+        parsedNumericData[currentIndex] = Number(parsedNumericData[currentIndex]);
     }
-  }
+
+    // Evaluate the primary condition: if the first number is greater than the product of the second and third.
+    if (parsedNumericData[0] > parsedNumericData[1] * parsedNumericData[2]) {
+        // If the condition is met, output the difference.
+        console.log(parsedNumericData[0] - parsedNumericData[1] * parsedNumericData[2]);
+    } else {
+        // If the primary condition is not met, proceed to a nested check.
+        // Calculate the rounded division of the first by the third number, then check its parity against the second number's parity.
+        if (Math.round(parsedNumericData[0] / parsedNumericData[2]) % 2 == parsedNumericData[1] % 2) {
+            // If parities match, calculate and output the absolute difference involving the rounded value.
+            console.log(
+                Math.abs(parsedNumericData[0] - parsedNumericData[1] * Math.round(parsedNumericData[0] / parsedNumericData[2]))
+            );
+        } else {
+            // If parities do not match, evaluate another condition based on a calculated difference.
+            // Check if the difference between the first number and the product of the second and rounded division is negative.
+            if (parsedNumericData[0] - parsedNumericData[1] * Math.round(parsedNumericData[0] / parsedNumericData[2]) < 0) {
+                // If the difference is negative, adjust the multiplier upwards by one and output the absolute result.
+                console.log(
+                    Math.abs(
+                        parsedNumericData[0] -
+                            parsedNumericData[2] * (Math.round(parsedNumericData[0] / parsedNumericData[2]) + 1)
+                    )
+                );
+            } else {
+                // If the difference is not negative, adjust the multiplier downwards by one and output the absolute result.
+                console.log(
+                    Math.abs(
+                        parsedNumericData[0] -
+                            parsedNumericData[2] * (Math.round(parsedNumericData[0] / parsedNumericData[2]) - 1)
+                    )
+                );
+            }
+        }
+    }
 }
 
-// Example invocation with a predefined string of values.
-ProcessInputData(`10 4 3`);
-// To utilize standard input, uncomment the following line (requires 'fs' module).
-//ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Invoke the processing function with a sample string of numbers.
+processInputData('10 4 3');

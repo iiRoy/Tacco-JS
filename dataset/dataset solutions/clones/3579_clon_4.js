@@ -1,66 +1,65 @@
-const fileSystemInterface = require("fs");
-const rawInputContent = fileSystemInterface.readFileSync("/dev/stdin", "utf8");
-const processedNumericData = rawInputContent.split("\n").map(entry => +entry);
-
-const failMessage = "No";
-const passMessage = "Yes";
-
-function validateStructure(dataSource) {
-    const limitVal = dataSource[0];
-    const markingsMap = new Set(); 
-
-    function traverseInterval(currentPoint, initialMarker, terminalMarker) {
-        if (currentPoint >= terminalMarker) {
-            return currentPoint;
+var p=require("fs").readFileSync("/dev/stdin","utf8");
+p = p.split("\n").map(a=>+a);
+console.log(checkSequence());
+function checkSequence() {
+  const dataLength = p[0];
+  const processedMarkers = new Set();
+  const executionStack = [];
+  executionStack.push({ type: 'outer_loop_start', currentOuterIndex: 1 });
+  while (executionStack.length > 0) {
+    const currentTask = executionStack.pop();
+    if (currentTask.type === 'outer_loop_start') {
+      let currentOuterIndex = currentTask.currentOuterIndex;
+      if (currentOuterIndex > dataLength) {
+        continue;
+      }
+      const currentVal = p[currentOuterIndex];
+      if (((currentVal ^ currentOuterIndex) & 1) !== 0) {
+        return "No";
+      }
+      let segmentEnd = currentVal;
+      let segmentStart = currentOuterIndex;
+      if (currentOuterIndex < segmentEnd) {
+        executionStack.push({ type: 'outer_loop_start', currentOuterIndex: segmentEnd + 1 });
+        executionStack.push({
+          type: 'inner_loop_iteration',
+          v_val: segmentStart,
+          u_val: segmentEnd,
+          inner_cursor: currentOuterIndex
+        });
+      } else {
+        executionStack.push({ type: 'outer_loop_start', currentOuterIndex: currentOuterIndex + 1 });
+      }
+    } else if (currentTask.type === 'inner_loop_iteration') {
+      let { v_val, u_val, inner_cursor } = currentTask;
+      if (inner_cursor < u_val) {
+        inner_cursor++;
+        if (inner_cursor > dataLength || p[inner_cursor] !== inner_cursor) {
+          return "No";
         }
-
-        currentPoint++;
-        if (dataSource[currentPoint] !== currentPoint) {
-            return 0; 
+        inner_cursor++;
+        if (inner_cursor > dataLength || ((p[inner_cursor] ^ inner_cursor) & 1) !== 0) {
+          return "No";
         }
-
-        currentPoint++;
-        if (((dataSource[currentPoint] ^ currentPoint) & 1) !== 0) {
-            return 0; 
-        }
-
-        const currentDatum = dataSource[currentPoint];
-
-        if (terminalMarker < currentDatum) {
-            markingsMap.add(terminalMarker);
-            terminalMarker = currentDatum;
-        } else if (initialMarker === currentDatum) {
-            do {
-                initialMarker += 2;
-            } while (markingsMap.has(initialMarker));
+        const nextVal = p[inner_cursor];
+        if (u_val < nextVal) {
+          u_val = nextVal;
+          processedMarkers.add(u_val);
+        } else if (v_val === nextVal) {
+          do {
+            v_val += 2;
+          } while (processedMarkers.has(v_val));
         } else {
-            return 0; 
+          return "No";
         }
-
-        return traverseInterval(currentPoint, initialMarker, terminalMarker);
+        executionStack.push({
+          type: 'inner_loop_iteration',
+          v_val: v_val,
+          u_val: u_val,
+          inner_cursor: inner_cursor
+        });
+      }
     }
-
-    let currentPoint = 1;
-    while (currentPoint <= limitVal) {
-        if (((dataSource[currentPoint] ^ currentPoint) & 1) !== 0) {
-            return failMessage;
-        }
-
-        const initialMarker = currentPoint;
-        let terminalMarker = dataSource[currentPoint];
-
-        let postTraversalPoint = traverseInterval(currentPoint, initialMarker, terminalMarker);
-
-        if (postTraversalPoint === 0) {
-            return failMessage;
-        }
-        
-        currentPoint = postTraversalPoint;
-        currentPoint++; 
-    }
-
-    return passMessage;
+  }
+  return "Yes";
 }
-
-const finalEvaluation = validateStructure(processedNumericData);
-console.log(finalEvaluation);

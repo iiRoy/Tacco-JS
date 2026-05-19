@@ -1,30 +1,31 @@
-function measureMagnitude(numericalValue) {
-    if (numericalValue === 0) return 1;
-    return Math.floor(Math.log10(numericalValue)) + 1;
-}
+function processInput(rawText) {
+    const components = rawText.split(" ");
+    const limit = Number(components[0]);
+    const startVal = Number(components[1]);
+    const increment = Number(components[2]);
+    const modulus = Number(components[3]);
 
-function calculateModularExponentiation(baseFigure, exponentPower, modulusDivider) {
-    let outcome = 1;
-    baseFigure %= modulusDivider;
-    while (exponentPower > 0) {
-        if (exponentPower % 2 === 1) outcome = (outcome * baseFigure) % modulusDivider;
-        baseFigure = (baseFigure * baseFigure) % modulusDivider;
-        exponentPower = Math.floor(exponentPower / 2);
+    if (limit === 0) {
+        console.log(NaN);
+        return;
     }
-    return outcome;
+
+    let currentAccumulator = 0;
+
+    Array.from({ length: limit }, (_, idx) => startVal + (increment * idx))
+        .forEach(segmentValue => {
+            const segmentString = String(segmentValue);
+            const digitCount = segmentString.length;
+
+            let powerOfTenMod = 1;
+            for (let k = 0; k < digitCount; k++) {
+                powerOfTenMod = (powerOfTenMod * 10) % modulus;
+            }
+
+            currentAccumulator = (currentAccumulator * powerOfTenMod + segmentValue) % modulus;
+        });
+
+    console.log(currentAccumulator);
 }
 
-function processArithmeticProgression(dataInput) {
-    const [seriesLength, initialElement, commonDifference, modulusValue] = dataInput.split(' ').map(Number);
-
-    const resultantRemainder = Array.from({ length: seriesLength }, (_, indexPosition) => initialElement + (commonDifference * indexPosition))
-        .reduce((currentAccumulation, termValue) => {
-            const digitsInCurrentTerm = measureMagnitude(termValue);
-            const tenRaisedToDigitsMod = calculateModularExponentiation(10, digitsInCurrentTerm, modulusValue);
-            return (currentAccumulation * tenRaisedToDigitsMod + (termValue % modulusValue)) % modulusValue;
-        }, 0);
-
-    console.log(resultantRemainder);
-}
-
-processArithmeticProgression(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

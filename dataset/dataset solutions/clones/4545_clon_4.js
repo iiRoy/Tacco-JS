@@ -1,42 +1,39 @@
-function processDataSeries(inputBundle) {
-    const dataRows = inputBundle.trim().split('\n');
-    const quantityIndicator = Number(dataRows[0].split(' ')[0]);
-    const numericElements = dataRows.slice(1, quantityIndicator + 1).map(Number);
+function Main(inputContent) {
+    const dataLines = inputContent.split("\n");
+    const initialLineParts = dataLines[0].split(" ");
+    const totalNumbersToProcess = Number(initialLineParts[0]);
 
-    const cumulativeSummation = numericElements.reduce((acc, val) => acc + val, 0);
+    const processingResult = dataLines.slice(1, totalNumbersToProcess + 1).reduce((accumulator, currentEntryString) => {
+        const currentNumericValue = Number(currentEntryString);
 
-    let lowestNonTenDivisible = 1000;
-    const nonTenDivisibleCollection = numericElements.filter(val => val % 10 !== 0);
-    if (nonTenDivisibleCollection.length > 0) {
-        lowestNonTenDivisible = Math.min(...nonTenDivisibleCollection);
-    }
+        accumulator.sumOfAllValues += currentNumericValue;
 
-    const checkAllSecondaryCharsAreZero = (entries) => {
-        if (entries.length === 0) return true;
-        return entries.every(item => {
-            const textVersion = String(item);
-            return textVersion.length > 1 && textVersion.charAt(1) === '0';
-        });
-    };
+        if (currentNumericValue % 10 !== 0 && currentNumericValue < accumulator.smallestNonTenMultiple) {
+            accumulator.smallestNonTenMultiple = currentNumericValue;
+        }
 
-    const allSecondaryCharsAreZero = checkAllSecondaryCharsAreZero(numericElements);
+        if (currentEntryString.length >= 2 && currentEntryString[1] === '0') {
+            accumulator.countOfSecondDigitZero++;
+        }
 
-    let finalOutput;
-    if (cumulativeSummation % 10 !== 0) {
-        finalOutput = cumulativeSummation;
+        return accumulator;
+    }, {
+        sumOfAllValues: 0,
+        smallestNonTenMultiple: 1000,
+        countOfSecondDigitZero: 0
+    });
+
+    const { sumOfAllValues, smallestNonTenMultiple, countOfSecondDigitZero } = processingResult;
+
+    if (sumOfAllValues % 10 !== 0) {
+        console.log(sumOfAllValues);
     } else {
-        if (lowestNonTenDivisible === 1000) {
-            if (allSecondaryCharsAreZero) {
-                finalOutput = 0;
-            } else {
-                finalOutput = cumulativeSummation - 1000;
-            }
+        if (countOfSecondDigitZero === totalNumbersToProcess) {
+            console.log(0);
         } else {
-            finalOutput = cumulativeSummation - lowestNonTenDivisible;
+            console.log(sumOfAllValues - smallestNonTenMultiple);
         }
     }
-
-    console.log(finalOutput);
 }
 
-processDataSeries(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

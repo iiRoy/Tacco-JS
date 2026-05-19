@@ -1,121 +1,99 @@
-// This script provides a Type II clone of a JavaScript program.
-// All user-defined identifier names, comments, and whitespace have been
-// modified while preserving the original structural logic and functionality.
+// This script processes pairs of strings from standard input.
 
-var printToConsole = console.log; // Alias for console output function
+var outputFunc = console.log; // Alias for console logging.
 
-// Condition to detect if the script is running in a Node.js environment
-if (typeof process !== 'undefined') {
+// Check if running in a Node.js-like environment to handle input.
+if (typeof process !== "undefined") {
+    let rawInputData = ""; // Accumulates all incoming data.
+    process.stdin.resume(); // Ensure stdin stays open.
+    process.stdin.setEncoding('utf8'); // Set character encoding for input.
 
-  var accumulatedInput = ''; // Variable to buffer all incoming data from stdin
+    // Event listener for incoming data chunks.
+    process.stdin.on('data', function (chunk) {
+        rawInputData += chunk; // Append chunk to the raw input.
+    });
 
-  // Configure standard input stream
-  process.stdin.resume();              // Ensure the stdin stream is active
-  process.stdin.setEncoding('utf8');   // Set the character encoding for input
-
-  // Attach an event listener for 'data' events on stdin
-  process.stdin.on('data', function (incomingChunk) {
-    accumulatedInput += incomingChunk; // Append each data chunk to the buffer
-  });
-
-  // Attach an event listener for the 'end' event on stdin
-  process.stdin.on('end', function () {
-    var textLines = accumulatedInput.split('\n'); // Split the entire buffered input into an array of lines
-    executePrimaryLogic(textLines);               // Call the main processing function with the collected lines
-  });
+    // Event listener for the end of input stream.
+    process.stdin.on('end', function () {
+        // Split the accumulated input into an array of lines.
+        let inputLines = rawInputData.split("\n");
+        processInputData(inputLines); // Call the main processing function.
+    });
 }
 
-// --- Core application logic functions ---
+// Main function to orchestrate the processing of input lines.
+function processInputData(inputLines) {
+    inputLines.shift(); // Discard the first line (often a count, not used here).
 
-/**
- * Serves as the primary entry point for processing a collection of text lines.
- * It iterates through the lines, extracting and cleaning data pairs for further analysis.
- *
- * @param {Array<string>} textLines - An array of strings, where each string represents a line of input.
- */
-function executePrimaryLogic(textLines) {
+    // Loop through the input lines, processing them in pairs.
+    while (inputLines.length > 0) {
+        try {
+            // Extract the next two lines as a dataset pair.
+            let currentPair = inputLines.slice(0, 2);
 
-  textLines.shift(); // Remove the initial line, which often contains metadata (e.g., number of test cases)
+            // Process each string in the pair:
+            // 1. Split into individual characters.
+            // 2. Filter to keep only lowercase English letters (a-z).
+            // 3. Join the filtered characters back into a string.
+            currentPair = currentPair.map(function (singleLine) {
+                return singleLine.split("").filter(function (charElement) {
+                    let charCodeValue = charElement.charCodeAt(0);
+                    return charCodeValue >= 97 && charCodeValue <= 122; // ASCII 'a' to 'z'
+                }).join("");
+            });
 
-  // Loop through the remaining lines, processing them in pairs
-  while (textLines.length > 0) {
-    try {
-      var inputPair = textLines.slice(0, 2); // Extract the next two lines to form a data pair
+            // Pass the cleaned string pair to the core analysis function.
+            analyzeStringPair(currentPair);
 
-      // Cleanse each string within the data pair
-      // This involves removing all characters that are not lowercase English letters.
-      inputPair = inputPair.map(function (currentString) {
-        return currentString.split('').filter(function (charValue) {
-          var asciiCode = charValue.charCodeAt(0); // Get the ASCII/Unicode value of the character
-          return asciiCode >= 97 && asciiCode <= 122; // Filter for 'a' (97) through 'z' (122)
-        }).join(''); // Reassemble the filtered characters into a new string
-      });
-
-      calculateSimilarityMatrix(inputPair); // Perform the main calculation on the cleaned data pair
-
-      textLines = textLines.slice(2); // Remove the processed two lines from the array
-    } catch (errorObject) {
-      printToConsole(errorObject); // Catch and log any exceptions that occur during processing a block
+            // Remove the two processed lines from the input array.
+            inputLines = inputLines.slice(2);
+        } catch (errObject) {
+            // Log any errors encountered during processing a pair.
+            outputFunc(errObject);
+        }
     }
-  }
 }
 
-/**
- * Computes a specific similarity or distance matrix between two input strings using dynamic programming.
- * The final value of the matrix's bottom-right cell is printed to the console.
- *
- * @param {Array<string>} inputDataPair - An array containing exactly two strings to be compared.
- */
-function calculateSimilarityMatrix(inputDataPair) {
+// Function to analyze a pair of strings using dynamic programming.
+function analyzeStringPair(currentPair) {
+    let dpMatrix = []; // Initialize a 2D array for dynamic programming.
+    let firstString = currentPair[0]; // The first string for comparison.
+    let secondString = currentPair[1]; // The second string for comparison.
 
-  var similarityGrid = [];    // Initialize the 2D array (matrix) for storing intermediate results
-  var firstSequence = inputDataPair[0]; // The first string for comparison
-  var secondSequence = inputDataPair[1]; // The second string for comparison
+    // Iterate through each character of the first string.
+    for (let rowIdx = 0; rowIdx < firstString.length; rowIdx++) {
+        dpMatrix[rowIdx] = []; // Initialize the current row of the matrix.
 
-  // Iterate over the rows of the grid, corresponding to characters of the first string
-  for (var rowIterator = 0; rowIterator < firstSequence.length; rowIterator++) {
-    similarityGrid[rowIterator] = []; // Initialize the current row as an empty array
+        // Iterate through each character of the second string.
+        for (let colIdx = 0; colIdx < secondString.length; colIdx++) {
+            // If characters at current indices match, set initial value to 1, else 0.
+            if (firstString.charAt(rowIdx) === secondString.charAt(colIdx)) {
+                dpMatrix[rowIdx][colIdx] = 1;
+            } else {
+                dpMatrix[rowIdx][colIdx] = 0;
+            }
 
-    // Iterate over the columns of the grid, corresponding to characters of the second string
-    for (var colIterator = 0; colIterator < secondSequence.length; colIterator++) {
-
-      // Determine the initial value for the current cell based on character equality
-      if (firstSequence.charAt(rowIterator) === secondSequence.charAt(colIterator)) {
-        similarityGrid[rowIterator][colIterator] = 1; // Characters match
-      } else {
-        similarityGrid[rowIterator][colIterator] = 0; // Characters do not match
-      }
-
-      // Apply dynamic programming rules to update the cell value based on its neighbors
-      if (rowIterator === 0 && colIterator === 0) {
-        // For the very first cell (top-left), no previous values exist to combine
-        similarityGrid[rowIterator][colIterator] += 0; // Effectively no change
-      } else if (rowIterator === 0) {
-        // For cells in the first row (excluding the first), consider the value from the left
-        similarityGrid[rowIterator][colIterator] = Math.max(
-          similarityGrid[rowIterator][colIterator - 1],
-          similarityGrid[rowIterator][colIterator]
-        );
-      } else if (colIterator === 0) {
-        // For cells in the first column (excluding the first), consider the value from above
-        similarityGrid[rowIterator][colIterator] = Math.max(
-          similarityGrid[rowIterator - 1][colIterator],
-          similarityGrid[rowIterator][colIterator]
-        );
-      } else {
-        // For all other cells (general case), apply a more complex combination rule
-        // This involves taking the maximum of the top and left neighbors, adding the current match/mismatch value,
-        // and then taking the minimum of that result and (min(row, col) + 1).
-        similarityGrid[rowIterator][colIterator] = Math.min(
-          Math.max(
-            similarityGrid[rowIterator - 1][colIterator],
-            similarityGrid[rowIterator][colIterator - 1]
-          ) + similarityGrid[rowIterator][colIterator],
-          Math.min(rowIterator, colIterator) + 1
-        );
-      }
+            // Apply dynamic programming rules based on position in the matrix.
+            if (rowIdx === 0 && colIdx === 0) {
+                // For the very first cell, no change.
+                dpMatrix[rowIdx][colIdx] += 0;
+            } else if (rowIdx === 0) {
+                // For the first row (after the first cell), take max from left.
+                dpMatrix[rowIdx][colIdx] = Math.max(dpMatrix[rowIdx][colIdx - 1], dpMatrix[rowIdx][colIdx]);
+            } else if (colIdx === 0) {
+                // For the first column (after the first cell), take max from top.
+                dpMatrix[rowIdx][colIdx] = Math.max(dpMatrix[rowIdx - 1][colIdx], dpMatrix[rowIdx][colIdx]);
+            } else {
+                // For all other cells, apply a more complex rule.
+                // It involves the maximum of top and left cells, plus the current match value,
+                // capped by the minimum of current indices plus one.
+                dpMatrix[rowIdx][colIdx] = Math.min(
+                    Math.max(dpMatrix[rowIdx - 1][colIdx], dpMatrix[rowIdx][colIdx - 1]) + dpMatrix[rowIdx][colIdx],
+                    Math.min(rowIdx, colIdx) + 1
+                );
+            }
+        }
     }
-  }
-  // After filling the entire grid, print the value from the last computed cell (bottom-right)
-  printToConsole(similarityGrid[rowIterator - 1][colIterator - 1]);
+    // Output the final computed value from the bottom-right cell of the matrix.
+    outputFunc(dpMatrix[rowIdx - 1][colIdx - 1]);
 }

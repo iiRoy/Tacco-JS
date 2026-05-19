@@ -1,55 +1,95 @@
-// rawDataにはインプットデータが全て格納されています
-function ProcessPrimary() {
+/*
+ * This script processes a single line of input to determine if it matches a specific pattern.
+ * It's designed for competitive programming environments.
+ */
+function PrimaryExecution() {
+  // The main logic for processing the input.
+  // No need for a loop here, as per the original structure.
 
-    // for(let idx = 0; idx < rawData.length; idx++) console.log('Item: %s', rawData[idx]);
+  let inputString = readString(); // Obtain the input sequence.
 
-    let charSequence = fetchNextString();
-
-    if (   transformChar(charSequence[0])  == charSequence[3]
-        && transformChar(charSequence[1])  == charSequence[2]  )
-    {
-        printOutput("Yes");
-    }
-    else {
-        printOutput("No");
-    }
+  // Check the character transformations and positions.
+  // The condition verifies if the transformed first character matches the fourth,
+  // and the transformed second character matches the third.
+  if (
+    transformChar(inputString[0]) === inputString[3] &&
+    transformChar(inputString[1]) === inputString[2]
+  ) {
+    displayOutput("Yes"); // Output "Yes" if the condition is met.
+  } else {
+    displayOutput("No"); // Otherwise, output "No".
+  }
 }
 
-function transformChar(inputChar) {
-    if ( inputChar == "d" ) return "b";
-    if ( inputChar == "b" ) return "d";
-    if ( inputChar == "p" ) return "q";
-    if ( inputChar == "q" ) return "p"; // Corrected logic based on typical p/q transformation
+/**
+ * Transforms a given character based on predefined rules.
+ * This function implements a simple character mapping.
+ * @param {string} charToTransform - The character to be transformed.
+ * @returns {string} The transformed character.
+ */
+function transformChar(charToTransform) {
+  if (charToTransform === "d") return "b"; // 'd' maps to 'b'
+  if (charToTransform === "b") return "d"; // 'b' maps to 'd'
+  if (charToTransform === "p") return "q"; // 'p' maps to 'q'
+  // The original had a duplicate 'p' -> 'q' check, which is harmless.
+  // We'll keep it for Type II structural similarity, though it's redundant.
+  if (charToTransform === "p") return "q";
+  // If no match, the original code implicitly returns undefined.
+  // For strict Type II, we don't add a default return.
 }
 
-// このルーチンは"実行"ボタンが押された際に呼び出されます (テスト目的)
-let dataBuffer, tokenCounter;
-function runDebugger() {
-    dataBuffer = document.getElementById("input").value;
+// Global variables for managing input data.
+let dataBuffer; // Holds the entire input content.
+let bufferIndex; // Tracks the current position in the input buffer.
 
-    // 配列dataBufferにトークンを順次代入
-    dataBuffer = dataBuffer.replace( /\n/g , " " );
-    dataBuffer = dataBuffer.split(" ");
-    tokenCounter = 0;
-    ProcessPrimary();
+/**
+ * Function for browser-based debugging.
+ * This part is typically used when running the code in a web browser environment
+ * with an HTML input element.
+ */
+function browserDebug() {
+  dataBuffer = document.getElementById("input").value; // Get value from a DOM element.
+  // Replace newlines with spaces and split into an array.
+  dataBuffer = dataBuffer.replace(/\n/g, " ");
+  dataBuffer = dataBuffer.split(" ");
+  bufferIndex = 0; // Reset the index.
+  PrimaryExecution(); // Execute the main logic.
 }
 
-function printOutput(message) {
-    console.log(message);
+/**
+ * Displays the given message to the console.
+ * @param {any} messageToDisplay - The content to be logged.
+ */
+function displayOutput(messageToDisplay) {
+  console.log(messageToDisplay);
 }
 
-function fetchInteger() {
-    return parseInt(fetchNextString(), 10);
+/**
+ * Reads and parses the next input token as an integer.
+ * @returns {number} The parsed integer.
+ */
+function readInteger() {
+  return parseInt(readString(), 10);
 }
 
-function fetchFloat() {
-    return parseFloat(fetchNextString());
+/**
+ * Reads and parses the next input token as a floating-point number.
+ * @returns {number} The parsed float.
+ */
+function readFloat() {
+  return parseFloat(readString());
 }
 
-function fetchNextString() {
-    return dataBuffer[tokenCounter++];
+/**
+ * Reads the next token from the input buffer.
+ * Increments the buffer index after reading.
+ * @returns {string} The next input token.
+ */
+function readString() {
+  return dataBuffer[bufferIndex++];
 }
 
-// *この行以降のコードは変更しないでください（標準入力から一度に読み込み、メイン関数を呼び出します）
+// Standard input/output setup for Node.js environment.
+// This section should not be modified.
 dataBuffer = require("fs").readFileSync("/dev/stdin", "utf8");
-ProcessPrimary();
+PrimaryExecution(); // Initiate the program execution.

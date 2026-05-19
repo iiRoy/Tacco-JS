@@ -1,56 +1,71 @@
-const fileSystem = require("fs");
-const sourceDataContent = fileSystem.readFileSync("/dev/stdin", "utf8").trim();
-const lineSegments = sourceDataContent.split("\n");
-let currentSegmentIndex = 0;
+var sourceData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const obtainNextSegment = () => {
-    if (currentSegmentIndex >= lineSegments.length) {
-        return "";
-    }
-    const currentItem = lineSegments[currentSegmentIndex];
-    currentSegmentIndex++;
-    return currentItem;
+function* createLineFeeder(lines) {
+  for (let currentLine of lines) {
+    yield currentLine;
+  }
+}
+const lineFeed = createLineFeeder(sourceData);
+let currentLineItem = lineFeed.next();
+
+function fetchNextLine() {
+  const valueToReturn = currentLineItem.value;
+  currentLineItem = lineFeed.next();
+  return valueToReturn;
+}
+
+function moreLinesAvailable() {
+  return !currentLineItem.done;
+}
+
+const conversionStrategies = {
+  1: (val) => parseInt(val, 10),
+  2: (val) => val.split(" "),
+  4: (val) => val.split(" ").map(Number),
+  6: (val) => val.split(""),
+  7: (val) => val.split("").map(Number),
+  8: (val) => val.join(" "),
+  9: (val) => val.join("\n"),
+  0: (val) => val.join(""),
 };
 
-const hasFurtherSegments = () => {
-    return currentSegmentIndex < lineSegments.length;
-};
+function dataTransformer(inputVal, operationCode) {
+  try {
+    const strategy = conversionStrategies[operationCode];
+    return strategy ? strategy(inputVal) : inputVal;
+  } catch (e) {
+    return inputVal;
+  }
+}
 
-const conversionHandlers = {
-    1: (val) => Number(val),
-    2: (val) => val.split(" "),
-    4: (val) => val.split(" ").map(Number),
-    6: (val) => val.split(""),
-    7: (val) => val.split("").map(Number),
-    8: (arr) => arr.join(" "),
-    9: (arr) => arr.join("\n"),
-    0: (arr) => arr.join(""),
-    default: (val) => val
-};
+function retrieveInteger() {
+  return dataTransformer(fetchNextLine(), 1);
+}
 
-const performTransformation = (incomingValue, transformKey) => {
-    try {
-        const handler = conversionHandlers[transformKey] || conversionHandlers.default;
-        return handler(incomingValue);
-    } catch (e) {
-        return incomingValue;
-    }
-};
+function retrieveStringArray() {
+  return dataTransformer(fetchNextLine(), 2);
+}
 
-const acquireLineContent = () => obtainNextSegment();
-const acquireNumericalValue = () => performTransformation(acquireLineContent(), 1);
-const acquireWordList = () => performTransformation(acquireLineContent(), 2);
-const acquireNumericList = () => performTransformation(acquireLineContent(), 4);
-const acquireCharacterList = () => performTransformation(acquireLineContent(), 6);
-const hasMoreSourceLines = () => hasFurtherSegments();
+function retrieveIntegerArray() {
+  return dataTransformer(fetchNextLine(), 4);
+}
 
-const printToStandardOutput = (data) => console.log(data);
-const printToStandardError = (data) => console.error(data);
+function retrieveCharacterArray() {
+  return dataTransformer(fetchNextLine(), 6);
+}
 
-const runPrimaryProcess = () => {
-    const generatedItems = Array.from({ length: 10000 }, () => "-1");
-    const combinedResultString = performTransformation(generatedItems, 9);
-    printToStandardOutput(combinedResultString);
-};
+function displayOutput(content) {
+  console.log(content);
+}
 
-runPrimaryProcess();
+function reportError(content) {
+  console.error(content);
+}
+
+function executeProgram() {
+  const constructedArray = Array.from({ length: 10000 }, () => "-1");
+  const finalOutput = dataTransformer(constructedArray, 9);
+  displayOutput(finalOutput);
+}
+
+executeProgram();

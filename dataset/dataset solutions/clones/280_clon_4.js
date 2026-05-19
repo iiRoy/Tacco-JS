@@ -1,29 +1,29 @@
-const sourceMaterial = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const rawText = sourceMaterial.trim();
+const fileSystem = require('fs');
+const sourceText = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-let processedSegments = [];
-let currentSegment = "";
-const textLength = rawText.length;
+const separatorChars = new Set([' ', '.', ',']);
+const trimmedSource = sourceText.trim();
 
-const boundaryCharacters = new Set([' ', '\t', '\n', '\r', '.', ',']);
+const wordProcessor = Array.from(trimmedSource).reduce((accumulator, currentSymbol, charPosition, charIterator) => {
+    const isSeparator = separatorChars.has(currentSymbol);
+    const isFinalChar = charPosition === charIterator.length - 1;
 
-for (let currentPosition = 0; currentPosition < textLength; currentPosition++) {
-    const charAtPosition = rawText[currentPosition];
-
-    if (boundaryCharacters.has(charAtPosition)) {
-        if (currentSegment.length >= 3 && currentSegment.length <= 6) {
-            processedSegments.push(currentSegment);
+    if (isSeparator) {
+        if (accumulator.currentFragment.length >= 3 && accumulator.currentFragment.length <= 6) {
+            accumulator.resultCollection.push(accumulator.currentFragment);
         }
-        currentSegment = "";
+        accumulator.currentFragment = '';
     } else {
-        currentSegment += charAtPosition;
+        accumulator.currentFragment += currentSymbol;
     }
-}
 
-if (currentSegment.length >= 3 && currentSegment.length <= 6) {
-    processedSegments.push(currentSegment);
-}
+    if (isFinalChar && !isSeparator && accumulator.currentFragment.length > 0) {
+        if (accumulator.currentFragment.length >= 3 && accumulator.currentFragment.length <= 6) {
+            accumulator.resultCollection.push(accumulator.currentFragment);
+        }
+    }
 
-const finalOutput = processedSegments.join(" ");
+    return accumulator;
+}, { currentFragment: '', resultCollection: [] });
 
-console.log(finalOutput);
+console.log(wordProcessor.resultCollection.join(" "));

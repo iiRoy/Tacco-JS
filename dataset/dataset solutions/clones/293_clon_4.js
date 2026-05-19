@@ -1,63 +1,60 @@
-const documentSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineFragments = documentSource.trim().split("\n");
+const fs = require('fs');
 
-const dataMatrix = [];
-const cumulativeMaximums = [];
+const rawInputData = fs.readFileSync('/dev/stdin', 'utf8');
+const lineSegments = rawInputData.trim().split("\n");
 
-lineFragments.forEach(function(segment) {
-    const rowEntries = segment.split(",").map(Number);
-    dataMatrix.push(rowEntries);
-    cumulativeMaximums.push(new Array(rowEntries.length).fill(Number.MIN_SAFE_INTEGER));
+let diamondValues = [];
+let pathAccumulator = [];
+
+lineSegments.forEach(function(lineText) {
+    const rowNumbers = lineText.split(",").map(Number);
+    const zeroRow = rowNumbers.map(function() { return 0; });
+    diamondValues.push(rowNumbers);
+    pathAccumulator.push(zeroRow);
 });
 
-if (dataMatrix.length > 0) {
-    cumulativeMaximums[0][0] = dataMatrix[0][0];
-}
+pathAccumulator[0][0] = diamondValues[0][0];
 
-for (let currentRowIndex = 0; currentRowIndex < dataMatrix.length - 1; currentRowIndex++) {
-    for (let currentColumnIndex = 0; currentColumnIndex < dataMatrix[currentRowIndex].length; currentColumnIndex++) {
-        if (cumulativeMaximums[currentRowIndex][currentColumnIndex] !== Number.MIN_SAFE_INTEGER) {
-            const currentPathAggregate = cumulativeMaximums[currentRowIndex][currentColumnIndex];
+const totalRows = diamondValues.length;
+const midRowThreshold = Math.floor((totalRows - 1) / 2);
 
-            const isUpperSection = (dataMatrix.length - 1) / 2 > currentRowIndex;
+for (let rowIdx = 0; rowIdx < totalRows - 1; rowIdx++) {
+    for (let colIdx = 0; colIdx < diamondValues[rowIdx].length; colIdx++) {
+        if (pathAccumulator[rowIdx][colIdx] === 0 && (rowIdx !== 0 || colIdx !== 0)) {
+            continue;
+        }
 
-            if (isUpperSection) {
-                const nextValue1 = dataMatrix[currentRowIndex + 1][currentColumnIndex];
-                cumulativeMaximums[currentRowIndex + 1][currentColumnIndex] = Math.max(
-                    cumulativeMaximums[currentRowIndex + 1][currentColumnIndex],
-                    currentPathAggregate + nextValue1
+        if (rowIdx < midRowThreshold) {
+            pathAccumulator[rowIdx + 1][colIdx] = Math.max(
+                pathAccumulator[rowIdx + 1][colIdx],
+                pathAccumulator[rowIdx][colIdx] + diamondValues[rowIdx + 1][colIdx]
+            );
+
+            pathAccumulator[rowIdx + 1][colIdx + 1] = Math.max(
+                pathAccumulator[rowIdx + 1][colIdx + 1],
+                pathAccumulator[rowIdx][colIdx] + diamondValues[rowIdx + 1][colIdx + 1]
+            );
+        } else {
+            if (colIdx - 1 >= 0) {
+                pathAccumulator[rowIdx + 1][colIdx - 1] = Math.max(
+                    pathAccumulator[rowIdx + 1][colIdx - 1],
+                    pathAccumulator[rowIdx][colIdx] + diamondValues[rowIdx + 1][colIdx - 1]
                 );
+            }
 
-                const nextValue2 = dataMatrix[currentRowIndex + 1][currentColumnIndex + 1];
-                cumulativeMaximums[currentRowIndex + 1][currentColumnIndex + 1] = Math.max(
-                    cumulativeMaximums[currentRowIndex + 1][currentColumnIndex + 1],
-                    currentPathAggregate + nextValue2
+            if (colIdx < diamondValues[rowIdx].length - 1) {
+                pathAccumulator[rowIdx + 1][colIdx] = Math.max(
+                    pathAccumulator[rowIdx + 1][colIdx],
+                    pathAccumulator[rowIdx][colIdx] + diamondValues[rowIdx + 1][colIdx]
                 );
-            } else {
-                if (currentColumnIndex - 1 >= 0) {
-                    const nextValue1 = dataMatrix[currentRowIndex + 1][currentColumnIndex - 1];
-                    cumulativeMaximums[currentRowIndex + 1][currentColumnIndex - 1] = Math.max(
-                        cumulativeMaximums[currentRowIndex + 1][currentColumnIndex - 1],
-                        currentPathAggregate + nextValue1
-                    );
-                }
-
-                if (currentColumnIndex < dataMatrix[currentRowIndex + 1].length) {
-                    const nextValue2 = dataMatrix[currentRowIndex + 1][currentColumnIndex];
-                    cumulativeMaximums[currentRowIndex + 1][currentColumnIndex] = Math.max(
-                        cumulativeMaximums[currentRowIndex + 1][currentColumnIndex],
-                        currentPathAggregate + nextValue2
-                    );
-                }
             }
         }
     }
 }
 
-let ultimatePathSum = 0;
-if (dataMatrix.length > 0) {
-    const finalRowSums = cumulativeMaximums[cumulativeMaximums.length - 1];
-    ultimatePathSum = Math.max(...finalRowSums);
+let overallMaximum = 0;
+for (const finalSum of pathAccumulator[totalRows - 1]) {
+    overallMaximum = Math.max(overallMaximum, finalSum);
 }
 
-console.log(ultimatePathSum);
+console.log(overallMaximum);

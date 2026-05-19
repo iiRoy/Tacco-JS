@@ -1,181 +1,221 @@
-"use strict"; /* This directive enforces stricter parsing and error handling in the code. */
-// Module to handle file system operations for input acquisition.
-const dataStream = require("fs").readFileSync("/dev/stdin", "utf8");
-// Array to hold parsed tokens from input, and an index for sequential access.
-let tokenArray = dataStream.split(/ |\n/), tokenIndex = 0;
+"use strict";
 
-/* Helper function to retrieve the next numerical token. */
-function readNum() {
-  return Number(tokenArray[tokenIndex++]);
+// Core module for file system operations.
+const fileSystem = require("fs");
+
+// Read the entire standard input as a UTF-8 string.
+const fileContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+
+// Split the input content by spaces or newlines to create an array of tokens.
+const tokenArray = fileContent.split(/ |\n/);
+
+// Initialize an index to keep track of the current token being processed.
+let tokenIndex = 0;
+
+/**
+ * Retrieves the next token from the input array and converts it to a number.
+ * @returns {number} The next number from the input.
+ */
+function getNextNumber() {
+  return +tokenArray[tokenIndex++];
 }
 
-/* Helper function to retrieve the next string token. */
-function readStr() {
+/**
+ * Retrieves the next token from the input array as a string.
+ * @returns {string} The next string from the input.
+ */
+function getNextString() {
   return tokenArray[tokenIndex++];
 }
 
-/* Helper function to retrieve the next BigInt token. */
-function readBig() {
+/**
+ * Retrieves the next token from the input array and converts it to a BigInt.
+ * @returns {BigInt} The next BigInt from the input.
+ */
+function getNextBigInt() {
   return BigInt(tokenArray[tokenIndex++]);
 }
 
-/* Function to read a specified number of tokens into an array.
- * @param {number} elementCount - The number of tokens to read.
- * @param {boolean} asStrings - If true, return as strings; otherwise, convert to numbers. */
-function getVec(elementCount, asStrings) {
+/**
+ * Retrieves a slice of numbers or strings from the input array.
+ * @param {number} count - The number of elements to retrieve.
+ * @param {boolean} asStrings - If true, return elements as strings; otherwise, convert to numbers.
+ * @returns {Array<number|string>} An array containing the requested elements.
+ */
+function getNumbersSlice(count, asStrings) {
   if (asStrings) {
-    return tokenArray.slice(tokenIndex, tokenIndex += elementCount);
+    return tokenArray.slice(tokenIndex, (tokenIndex += count));
   } else {
-    return tokenArray.slice(tokenIndex, tokenIndex += elementCount).map(val => Number(val));
+    return tokenArray.slice(tokenIndex, (tokenIndex += count)).map((val) => +val);
   }
 }
 
-/* Function to read a 2D matrix of tokens.
- * @param {number} rowCount - Number of rows.
- * @param {number} colCount - Number of columns.
- * @param {boolean} asStrings - If true, return as strings; otherwise, convert to numbers. */
-function getMat(rowCount, colCount, asStrings) {
-  const resultMatrix = [];
-  let currentMatrixRow = 0;
+/**
+ * Retrieves a 2D matrix of numbers or strings from the input array.
+ * @param {number} rows - The number of rows in the matrix.
+ * @param {number} cols - The number of columns in the matrix.
+ * @param {boolean} asStrings - If true, return elements as strings; otherwise, convert to numbers.
+ * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
+ */
+function getMatrix(rows, cols, asStrings) {
+  const matrixResult = [];
+  let rowIndex = 0;
   if (asStrings) {
-    for (; currentMatrixRow < rowCount; currentMatrixRow++) {
-      resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += colCount));
+    for (; rowIndex < rows; rowIndex++) {
+      matrixResult.push(tokenArray.slice(tokenIndex, (tokenIndex += cols)));
     }
   } else {
-    for (; currentMatrixRow < rowCount; currentMatrixRow++) {
-      resultMatrix.push(tokenArray.slice(tokenIndex, tokenIndex += colCount).map(val => Number(val)));
+    for (; rowIndex < rows; rowIndex++) {
+      matrixResult.push(tokenArray.slice(tokenIndex, (tokenIndex += cols)).map((val) => +val));
     }
   }
-  return resultMatrix;
+  return matrixResult;
 }
 
-/* Function to create a multi-dimensional array initialized with a value. */
-function createNestedArr(initialValue) {
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * This function uses `eval` and is generally for specific use cases.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @returns {Array} A multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
   const args = arguments;
-  let currentDimension = args.length - 1;
-  let arrayCreationString = `Array(args[${currentDimension}]).fill().map(element => {return ${initialValue};})`;
-  while (--currentDimension >= 0) {
-    arrayCreationString = `Array(args[${currentDimension}]).fill().map(element => ${arrayCreationString})`;
+  let argLength = args.length;
+  let evalString = "Array(args[" + --argLength + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--argLength) {
+    evalString = "Array(args[" + argLength + "]).fill().map(x=>" + evalString + ")";
   }
-  return eval(arrayCreationString);
+  return eval(evalString);
 }
 
+/**
+ * Calculates the shortest distance from a starting point to all reachable cells in a grid using BFS.
+ * @param {Array<Array<string>>} inputGrid - The grid represented as a 2D array of characters.
+ * @param {number} startXCoord - The starting X-coordinate.
+ * @param {number} startYCoord - The starting Y-coordinate.
+ * @returns {Array<Array<number>>} A 2D array where each cell contains the minimum distance from the start, or infinityVal if unreachable.
+ */
+function calculateGridDistances(inputGrid, startXCoord, startYCoord) {
+  const pathChar = ".",
+    obstacleChar = "#",
+    infinityVal = 1_000_000_000; // A large number representing infinity
 
-/* Computes shortest path distances from a starting point in a grid using BFS.
- * @param {Array<Array<string>>} levelMap - The 2D grid representing the environment.
- * @param {number} startXPos - X-coordinate of the starting point.
- * @param {number} startYPos - Y-coordinate of the starting point.
- * @returns {Array<Array<number>>} A grid with distances from the start point. */
-function findShortestPaths(levelMap, startXPos, startYPos) {
-  // Define grid element types and an unreachable distance constant.
-  const emptyCell = ".", obstacleCell = "#", infinityValue = 1_000_000_000;
+  const gridHeight = inputGrid.length;
+  const gridWidth = inputGrid[0].length;
 
-  // Retrieve dimensions of the map.
-  const mapHeight = levelMap.length;
-  const mapWidth = levelMap[0].length;
+  // Initialize a 2D array to store distances, filled with infinityVal.
+  const distanceMap = Array(gridHeight)
+    .fill()
+    .map(() => Array(gridWidth).fill(infinityVal));
 
-  // Initialize a distance grid with infinity values.
-  const distanceGrid = Array(mapHeight).fill().map(() => Array(mapWidth).fill(infinityValue));
+  // Define directional changes for X and Y coordinates (up, right, down, left).
+  const deltaX = [0, 1, 0, -1];
+  const deltaY = [-1, 0, 1, 0];
+  const directionCount = 4; // Number of possible directions.
 
-  // Define movement vectors for 4 directions (up, right, down, left).
-  const deltaXCoords = [0, 1, 0, -1], deltaYCoords = [-1, 0, 1, 0], directionCount = 4;
-
-  // Initialize BFS queue and the current distance level.
-  let currentLevelQueue = [startXPos, startYPos], currentDistance = 1;
+  // Initialize the BFS queue with the starting coordinates.
+  let currentQueue = [startXCoord, startYCoord];
+  let currentDistance = 1; // Distance for the next layer of cells.
 
   // Set the distance for the starting cell to 0.
-  distanceGrid[startYPos][startXPos] = 0;
+  distanceMap[startYCoord][startXCoord] = 0;
 
-  // Main BFS loop: continues as long as there are cells to process.
-  while (currentLevelQueue.length > 0) {
-    let nextLevelQueue = []; // Queue for the next level of neighbors.
+  // Perform BFS traversal.
+  while (currentQueue.length > 0) {
+    let nextQueue = []; // Queue for the next level of BFS.
 
-    // Process all cells in the current level's queue.
-    while (currentLevelQueue.length > 0) {
-      const currentY = currentLevelQueue.pop(); // Get Y-coordinate.
-      const currentX = currentLevelQueue.pop(); // Get X-coordinate.
+    // Process all cells in the current level.
+    while (currentQueue.length > 0) {
+      const currentY = currentQueue.pop(); // Y-coordinate of the current cell.
+      const currentX = currentQueue.pop(); // X-coordinate of the current cell.
 
-      // Explore all four possible directions from the current cell.
-      for (let directionIdx = 0; directionIdx < directionCount; directionIdx++) {
-        const neighborX = currentX + deltaXCoords[directionIdx]; // Calculate neighbor's X.
-        const neighborY = currentY + deltaYCoords[directionIdx]; // Calculate neighbor's Y.
+      // Explore all four possible directions.
+      for (let dirIdx = 0; dirIdx < directionCount; dirIdx++) {
+        const nextX = currentX + deltaX[dirIdx];
+        const nextY = currentY + deltaY[dirIdx];
 
-        // Check if the neighbor is within grid boundaries.
-        if (neighborX < 0 || neighborX === mapWidth || neighborY < 0 || neighborY === mapHeight) {
-          continue; // Skip if out of bounds.
+        // Check if the next cell is within grid boundaries.
+        if (nextX < 0 || nextX === gridWidth || nextY < 0 || nextY === gridHeight) {
+          continue; // Out of bounds, skip.
         }
 
-        // Check if the neighbor is an obstacle or already visited with a shorter path.
-        if (levelMap[neighborY][neighborX] === obstacleCell || distanceGrid[neighborY][neighborX] !== infinityValue) {
-          continue; // Skip if obstacle or already processed.
+        // Check if the next cell is an obstacle or already visited with a shorter path.
+        if (inputGrid[nextY][nextX] === obstacleChar || distanceMap[nextY][nextX] !== infinityVal) {
+          continue; // Wall or already processed, skip.
         }
 
-        // Mark the distance for the neighbor and add it to the next level's queue.
-        distanceGrid[neighborY][neighborX] = currentDistance;
-        nextLevelQueue.push(neighborX, neighborY);
+        // Update the distance for the next cell and add it to the next queue.
+        distanceMap[nextY][nextX] = currentDistance;
+        nextQueue.push(nextX, nextY);
       }
     }
-    // Increment distance for the next level and update the current queue.
-    currentDistance++;
-    currentLevelQueue = nextLevelQueue;
+    currentDistance++; // Increment distance for the next level.
+    currentQueue = nextQueue; // Move to the next level's queue.
   }
-  return distanceGrid; // Return the grid of calculated distances.
+  return distanceMap; // Return the completed distance map.
 }
 
-// Execute the primary logic and store its return value.
-const programResult = executeProblem();
+// Execute the main logic of the program.
+const programOutput = executeMainLogic();
 
-// If the program produced an output, print it to the console.
-if (programResult !== undefined) {
-  console.log(programResult);
+// If the main logic returns a value, print it to the console.
+if (programOutput !== undefined) {
+  console.log(programOutput);
 }
 
-/* Main function encapsulating the problem's core logic. */
-function executeProblem() {
-  // Read grid dimensions and the maximum allowed steps.
-  const problemHeight = readNum(), problemWidth = readNum(), maxSteps = readNum();
-  // Read the input map, treating '1' as a flag for string input in getVec.
-  const inputMap = getVec(problemHeight, 1);
+/**
+ * Main function to solve the problem.
+ * Reads grid dimensions, finds a starting point, calculates distances,
+ * and determines the minimum boundary moves.
+ * @returns {number} The minimum number of moves to reach a boundary.
+ */
+function executeMainLogic() {
+  const heightVal = getNextNumber();
+  const widthVal = getNextNumber();
+  const maxSteps = getNextNumber(); // Maximum steps allowed per move.
 
-  let startCellX, startCellY; // Coordinates for the 'S' (start) cell.
+  // Read the grid data, treating each row as a string.
+  const gridData = getNumbersSlice(heightVal, true);
 
-  // Iterate through the input map to locate the starting position 'S'.
-  for (let rowIdx = 0; rowIdx < problemHeight; rowIdx++) {
-    const sIndex = inputMap[rowIdx].indexOf("S"); // Find 'S' in the current row.
-    if (sIndex >= 0) { // If 'S' is found.
-      startCellX = sIndex;
-      startCellY = rowIdx;
-      break; // Exit loop once 'S' is located.
+  let startGridX, startGridY; // Coordinates of the starting point 'S'.
+
+  // Find the starting position 'S' in the grid.
+  for (let rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    const foundCol = gridData[rowIdx].indexOf("S");
+    if (foundCol >= 0) {
+      startGridX = foundCol;
+      startGridY = rowIdx;
+      break; // Found 'S', exit loop.
     }
   }
 
-  // Calculate shortest distances from the starting cell to all other cells.
-  const allDistances = findShortestPaths(inputMap, startCellX, startCellY);
+  // Calculate all-pairs shortest paths from the starting point.
+  const calculatedDistances = calculateGridDistances(gridData, startGridX, startGridY);
 
-  let minimumJumps = 1_000_000_000; // Initialize minimum jumps with a large value.
+  let minimumMoves = 1000000000; // Initialize with a very large number.
 
-  // Iterate through each cell in the grid to find the minimum required jumps to an edge.
-  for (let rowCoord = 0; rowCoord < problemHeight; rowCoord++) {
-    for (let colCoord = 0; colCoord < problemWidth; colCoord++) {
-      // Consider only cells reachable within 'maxSteps'.
-      if (allDistances[rowCoord][colCoord] > maxSteps) {
-        continue; // Skip if the cell is too far or unreachable.
+  // Iterate through each cell in the grid to find the minimum boundary moves.
+  for (let currY = 0; currY < heightVal; currY++) {
+    for (let currX = 0; currX < widthVal; currX++) {
+      // If the cell is unreachable or too far from the start, skip it.
+      if (calculatedDistances[currY][currX] > maxSteps) {
+        continue;
       }
 
-      // Calculate jumps needed to reach each of the four boundaries.
-      const jumpsTop = Math.ceil(rowCoord / maxSteps);
-      const jumpsLeft = Math.ceil(colCoord / maxSteps);
-      const jumpsBottom = Math.ceil((problemHeight - rowCoord - 1) / maxSteps);
-      const jumpsRight = Math.ceil((problemWidth - colCoord - 1) / maxSteps);
+      // Calculate moves needed to reach each boundary from the current cell.
+      const distToTop = Math.ceil(currY / maxSteps);
+      const distToLeft = Math.ceil(currX / maxSteps);
+      const distToBottom = Math.ceil((heightVal - currY - 1) / maxSteps);
+      const distToRight = Math.ceil((widthVal - currX - 1) / maxSteps);
 
-      // The total jumps from this cell is the minimum of these boundary jumps, plus one for the current segment.
-      const currentCellJumps = Math.min(jumpsTop, jumpsLeft, jumpsBottom, jumpsRight) + 1;
+      // The number of moves to reach any boundary from this cell is the minimum of these + 1 (for the current step).
+      const currentMinBoundaryMoves = Math.min(distToTop, distToLeft, distToBottom, distToRight) + 1;
 
-      // Update the overall minimum jumps if a smaller value is found.
-      if (currentCellJumps < minimumJumps) {
-        minimumJumps = currentCellJumps;
+      // Update the overall minimum moves if a smaller value is found.
+      if (currentMinBoundaryMoves < minimumMoves) {
+        minimumMoves = currentMinBoundaryMoves;
       }
     }
   }
-  return minimumJumps; // Return the final calculated minimum jumps.
+  return minimumMoves; // Return the final minimum number of moves.
 }

@@ -1,71 +1,48 @@
-/**
- * A utility constant for splitting input strings.
- * Represents common whitespace characters for robust parsing.
- */
-const WHITESPACE_DELIMITER_PATTERN = /\s+/;
+'use strict';
 
-/**
- * Executes the primary logic for processing an input stream,
- * performing a derived value computation, and then displaying the outcome.
- *
- * @param {string} rawInputBuffer - The raw string content obtained from an external data source.
- */
-function performValueComputation(rawInputBuffer) {
-  // Defensive check: ensure the input buffer is not empty or consists only of whitespace.
-  // This serves as an early exit guard clause, preventing further processing on invalid input.
-  if (!rawInputBuffer || rawInputBuffer.trim().length === 0) {
-    console.error("Input buffer is detected as empty or blank. Aborting computation.");
-    return; // Exit the function if input is invalid.
-  }
+// Helper function to process the raw input string into a structure suitable for calculation.
+// This function encapsulates the initial input transformation step.
+function processInputStringForCalculation(rawInputContent) {
+    // The original code uses `input.split()`. When called without arguments,
+    // `split()` typically results in an array containing the original string as its single element
+    // if the string does not contain whitespace, e.g., "5" -> ['5'].
+    // This behavior is crucial for the subsequent implicit type coercion.
+    const inputSegments = rawInputContent.split();
 
-  // Step 1: Normalize and segment the raw input string into an array of components.
-  // The input string is first trimmed to remove leading/trailing whitespace,
-  // then split by one or more whitespace characters using a predefined pattern.
-  const parsedInputComponents = rawInputBuffer.trim().split(WHITESPACE_DELIMITER_PATTERN);
-
-  // An intermediate variable that *could* be used to extract the first numeric value.
-  // This fragment is added to demonstrate potential processing steps,
-  // even though the subsequent calculation deliberately uses the full array.
-  const extractedPrimaryCandidate = parsedInputComponents.length > 0 ? parsedInputComponents[0] : null;
-
-  // Step 2: Assign the entire array of processed input components to our primary operand variable.
-  // This assignment deliberately retains the array type for 'processedNumericOperand',
-  // mirroring the behavior of the original code which led to a specific outcome.
-  let processedNumericOperand = parsedInputComponents;
-
-  // Step 3: Perform a square-like calculation on the primary operand.
-  // When an array is used in a multiplication context in JavaScript,
-  // it often results in 'NaN' (Not-a-Number), which preserves the original code's behavior.
-  let resultantScalarValue = processedNumericOperand * processedNumericOperand;
-
-  // Step 4: Construct and display the final computed outcome.
-  // A template literal is used for flexible string formatting,
-  // and an intermediate variable holds the message before logging.
-  const formattedOutputMessage = `The final computed result is: ${resultantScalarValue}`;
-  console.log(formattedOutputMessage);
+    // Return the array of segments. The original code then assigned this array to `r`.
+    // We maintain this array structure to preserve the exact implicit coercion behavior
+    // when it's used in a numeric context (multiplication).
+    return inputSegments;
 }
 
-/**
- * A dedicated helper function to handle the retrieval of input data from standard I/O.
- * This encapsulates file system operations and includes basic error handling for robustness.
- *
- * @returns {string} The content read from '/dev/stdin', or an empty string if an error occurs.
- */
-const retrieveStandardInput = () => {
-  const fileSystemModule = require("fs"); // Dynamically requiring the file system module.
-  const standardInputFilePath = "/dev/stdin"; // Define the standard input path as a constant.
+// Core function to perform the calculation and display the result.
+// It receives the processed input (an array) and performs the squaring operation.
+function performCalculationAndOutput(inputArrayForNumericCoercion) {
+    // In the original code, `let r = input;` where `input` was the array from `split()`.
+    // Then `r * r` was performed. We replicate this by assigning the array to a variable
+    // and then multiplying it by itself.
+    let numericContextValue = inputArrayForNumericCoercion;
 
-  try {
-    // Attempt to synchronously read the file content using UTF-8 encoding.
-    return fileSystemModule.readFileSync(standardInputFilePath, "utf8");
-  } catch (operationError) {
-    // Log any errors encountered during file reading and return an empty string
-    // to allow the main processing function to handle the empty input scenario.
-    console.error(`An error occurred while reading from ${standardInputFilePath}:`, operationError.message);
-    return "";
-  }
-};
+    // JavaScript's implicit type coercion will convert an array with a single numeric string
+    // element (e.g., `['5']`) to its numeric value (e.g., `5`) when used in a numeric context.
+    // Thus, `['5'] * ['5']` becomes `5 * 5`.
+    // This exact behavior, including handling of non-numeric strings (resulting in NaN)
+    // or empty strings (resulting in 0), is preserved.
+    let finalComputedResult = numericContextValue * numericContextValue;
 
-// Initiate the entire application workflow by fetching input from standard I/O
-// and passing it to the main processing function.
-performValueComputation(retrieveStandardInput());
+    // Output the result to the console, matching the original's side effect.
+    console.log(finalComputedResult);
+}
+
+// Define a constant for the standard input file path, making the source explicit.
+const standardInputFilePath = "/dev/stdin";
+
+// Read the content from the standard input file.
+// This uses the 'fs' module and reads synchronously, matching the original's approach.
+const fileContentFromStdin = require("fs").readFileSync(standardInputFilePath, "utf8");
+
+// Step 1: Process the raw input string to obtain the array representation.
+const processedInputArray = processInputStringForCalculation(fileContentFromStdin);
+
+// Step 2: Perform the calculation and output the result using the processed array.
+performCalculationAndOutput(processedInputArray);

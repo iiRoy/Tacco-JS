@@ -1,54 +1,46 @@
-(function performSortTask() {
-  const fileSystemModule = require('node:fs');
-  const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-  const inputDataSegments = rawInputContent.trim().split('\n');
+(function main() {
+  const lines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const n = Number(lines.shift());
+  const arr = lines.shift().split(' ').map(Number);
+  const k = 10000;
 
-  const totalElementsCount = parseInt(inputDataSegments.shift(), 10);
-  const originalNumericSequence = inputDataSegments.shift().split(' ').map(val => parseInt(val, 10));
+  const valueCounts = arr.reduce((accumulatorMap, currentNumber) => {
+    accumulatorMap.set(currentNumber, (accumulatorMap.get(currentNumber) || 0) + 1);
+    return accumulatorMap;
+  }, new Map());
 
-  function combineSortedHalves(leftCollection, rightCollection) {
-    let combinedOutput = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
+  const cumulativeTotals = Array.from({
+    length: k
+  }, (_, index) => index).reduce((acc, currentVal) => {
+    const priorTotal = acc.length > 0 ? acc[acc.length - 1] : 0;
+    const currentValCount = valueCounts.get(currentVal) || 0;
+    acc.push(priorTotal + currentValCount);
+    return acc;
+  }, []);
 
-    while (leftIndex < leftCollection.length && rightIndex < rightCollection.length) {
-      if (leftCollection[leftIndex] < rightCollection[rightIndex]) {
-        combinedOutput.push(leftCollection[leftIndex]);
-        leftIndex++;
-      } else {
-        combinedOutput.push(rightCollection[rightIndex]);
-        rightIndex++;
-      }
+  const sourceElementsWithUndefined = [...arr, undefined];
+
+  const finalArrangementState = sourceElementsWithUndefined.reduceRight((state, elementToPlace) => {
+    const {
+      sortedResult,
+      mutableCumulativeTotals
+    } = state;
+
+    if (elementToPlace !== undefined) {
+      const placementIndex = mutableCumulativeTotals[elementToPlace] - 1;
+      sortedResult[placementIndex] = elementToPlace;
+      mutableCumulativeTotals[elementToPlace]--;
+    } else {
+      sortedResult[NaN] = undefined;
     }
+    return {
+      sortedResult,
+      mutableCumulativeTotals
+    };
+  }, {
+    sortedResult: [],
+    mutableCumulativeTotals: [...cumulativeTotals]
+  });
 
-    while (leftIndex < leftCollection.length) {
-      combinedOutput.push(leftCollection[leftIndex]);
-      leftIndex++;
-    }
-    while (rightIndex < rightCollection.length) {
-      combinedOutput.push(rightCollection[rightIndex]);
-      rightIndex++;
-    }
-
-    return combinedOutput;
-  }
-
-  function divideAndConquerSort(sequenceToOrder) {
-    if (sequenceToOrder.length <= 1) {
-      return sequenceToOrder;
-    }
-
-    const midpoint = Math.floor(sequenceToOrder.length / 2);
-    const leftSubsequence = sequenceToOrder.slice(0, midpoint);
-    const rightSubsequence = sequenceToOrder.slice(midpoint);
-
-    const sortedLeft = divideAndConquerSort(leftSubsequence);
-    const sortedRight = divideAndConquerSort(rightSubsequence);
-
-    return combineSortedHalves(sortedLeft, sortedRight);
-  }
-
-  const resultantSortedCollection = divideAndConquerSort(originalNumericSequence);
-
-  process.stdout.write(resultantSortedCollection.join(' '));
+  process.stdout.write(finalArrangementState.sortedResult.join(' '));
 })();

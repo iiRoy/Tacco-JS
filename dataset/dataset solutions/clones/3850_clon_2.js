@@ -1,58 +1,34 @@
-'use strict'; /* This directive enforces stricter parsing and error handling in the JavaScript code,
-                      helping to prevent common mistakes and ensuring better code quality. */
+'use strict';
 
-/**
- * Orchestrates the primary data processing flow for the application.
- * It reads input, performs a series of numerical transformations, and then outputs the final result.
- * @param {string} rawData - The complete raw text input received, typically from a file or standard input.
- */
+// This function processes the main input data.
 function processInput(rawData) {
+  const lineSegments = rawData.split('\n'); // Split the raw input into lines.
+  const numberString = lineSegments[0]; // The first line contains space-separated numbers.
+  const iterationsCount = parseInt(lineSegments[1], 10); // The second line is the number of iterations.
 
-  // Split the entire input string into an array, where each element corresponds to a new line.
-  const lines = rawData.split('\n');
+  // Parse the numbers string into an array of integers.
+  let currentValues = numberString.split(' ').map(strNum => parseInt(strNum, 10));
 
-  /*
-   * The first line of the input contains a sequence of numbers separated by spaces.
-   * The second line specifies the total number of amplification cycles to perform.
-   */
-  const numberString = lines[0];
-  const iterations = parseInt(lines[1], 10); // Safely parse the iteration count as a base-10 integer.
-
-  // Convert the space-separated number string into an array of actual integer values.
-  let numericValues = numberString.split(' ').map(strNum => parseInt(strNum, 10));
-
-  // Execute the element amplification procedure for the predetermined number of iterations.
-  for (let counter = 0; counter < iterations; counter++) {
-    numericValues = amplifyLargest(numericValues); // Update the array with the result of each amplification.
+  // Perform the amplification operation 'iterationsCount' times.
+  for (let loopCounter = 0; loopCounter < iterationsCount; loopCounter++) {
+    currentValues = amplifyMaximum(currentValues); // Replace the array with the modified one.
   }
 
-  // Display the sum of all elements in the final, processed array to the standard output.
-  console.log(
-    numericValues.reduce(
-      (accumulator, item) => accumulator + item
-    )
-  );
+  // Calculate the sum of all elements in the final array and print it.
+  console.log(currentValues.reduce((accumulator, elementValue) => accumulator + elementValue));
 }
 
-/**
- * Identifies the largest number within an array and doubles its value.
- * This operation is performed on a copy of the array to maintain immutability of the original.
- * @param {Array<number>} currentNumbers - An array containing numerical data.
- * @returns {Array<number>} A brand new array where the single largest element has been multiplied by two.
- */
-function amplifyLargest(currentNumbers) {
+// This helper function finds the maximum value in an array, doubles it, and returns a new array.
+function amplifyMaximum(inputArray) {
+  const modifiedArray = [...inputArray]; // Create a shallow copy to avoid modifying the original array directly.
+  const greatestValue = Math.max(...inputArray); // Find the largest number in the array.
+  const maxIndexPosition = modifiedArray.indexOf(greatestValue); // Get the index of the first occurrence of the maximum.
 
-  const modifiedList = [...currentNumbers]; // Create a shallow copy to prevent side effects on the original array.
-  const greatestElement = Math.max(...currentNumbers); // Determine the highest numerical value present in the array.
-  const position = modifiedList.indexOf(greatestElement); // Find the zero-based index of the identified greatest element.
+  // Double the value at the found index.
+  modifiedArray[maxIndexPosition] = greatestValue * 2;
 
-  modifiedList[position] = greatestElement * 2; // Replace the greatest element with its doubled value.
-
-  return modifiedList; // Return the newly modified array.
+  return modifiedArray; // Return the array with the doubled maximum.
 }
 
-// Initial execution point: Read content from the standard input stream and pass it to the main processing function.
-processInput(
-  require('fs')
-    .readFileSync('/dev/stdin', 'utf8') // Read the entire file synchronously, decoded as UTF-8.
-);
+// Execute the primary function with data read from standard input.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,63 +1,48 @@
-const renderOutput = (value) => console.log(String(value));
+function myout(text) {
+    console.log(text);
+}
 
-const calculateArrangement = (rawText) => {
-    const processedLines = rawText.trim().split('\n');
-    const totalElements = Number(processedLines[0]);
+function Main(inputContent) {
+    const processedLines = inputContent.trim().split('\n');
+    const dataLength = Number(processedLines[0]);
     const numberSequence = processedLines[1].split(' ').map(Number);
 
-    const freqMap = numberSequence.reduce((acc, currentVal) => {
-        acc.set(currentVal, (acc.get(currentVal) || 0) + 1);
-        return acc;
+    const valueCounts = numberSequence.reduce((accumulator, currentNumber) => {
+        const existingCount = accumulator.get(currentNumber) || 0;
+        if (existingCount < 2) {
+            accumulator.set(currentNumber, existingCount + 1);
+        }
+        return accumulator;
     }, new Map());
 
-    const uniqueElements = Array.from(freqMap.keys());
+    const uniqueSortedNumbers = Array.from(new Set(numberSequence)).sort((a, b) => a - b);
 
-    let isValidStructure = true;
-    let finalPower = 0;
+    let calculationResult = 1;
+    const isLengthOdd = (dataLength % 2 === 1);
 
-    if (totalElements % 2 === 1) {
-        if (freqMap.get(0) !== 1) {
-            isValidStructure = false;
+    const validationPassed = uniqueSortedNumbers.every(currentUniqueNumber => {
+        const currentNumberFrequency = valueCounts.get(currentUniqueNumber) || 0;
+
+        if (isLengthOdd && currentUniqueNumber === 0) {
+            return currentNumberFrequency === 1;
         } else {
-            const nonZeroElements = uniqueElements.filter(val => val !== 0);
-            if (nonZeroElements.length !== (totalElements - 1) / 2) {
-                isValidStructure = false;
-            } else {
-                const allOthersTwice = nonZeroElements.every(val => freqMap.get(val) === 2);
-                if (!allOthersTwice) {
-                    isValidStructure = false;
-                } else {
-                    finalPower = (totalElements - 1) / 2;
-                }
-            }
+            return currentNumberFrequency === 2;
         }
-    } else {
-        if (freqMap.has(0)) {
-            isValidStructure = false;
-        } else {
-            if (uniqueElements.length !== totalElements / 2) {
-                isValidStructure = false;
-            } else {
-                const allTwice = uniqueElements.every(val => freqMap.get(val) === 2);
-                if (!allTwice) {
-                    isValidStructure = false;
-                } else {
-                    finalPower = totalElements / 2;
-                }
-            }
-        }
+    });
+
+    if (!validationPassed) {
+        myout("0");
+        return;
     }
 
-    if (!isValidStructure) {
-        return "0";
-    } else {
-        return 1 << finalPower;
+    let exponentSourceArray = uniqueSortedNumbers;
+
+    if (isLengthOdd) {
+        exponentSourceArray = uniqueSortedNumbers.slice(1);
     }
-};
 
-const entryPoint = (dataPayload) => {
-    const outcome = calculateArrangement(dataPayload);
-    renderOutput(outcome);
-};
+    calculationResult *= Math.pow(2, exponentSourceArray);
+    myout(calculationResult);
+}
 
-entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

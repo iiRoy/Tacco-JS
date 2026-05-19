@@ -1,46 +1,46 @@
-const fileSystemModule = require('fs');
+const CLOUD_MARKER = "c";
+const EMPTY_SPACE_MARKER = ".";
+const NO_CLOUD_FOUND_VALUE = -1;
+const INITIAL_CLOUD_DISTANCE = 0;
+const NEXT_CLOUD_DISTANCE_START = 1;
 
-const rawInputDataStream = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+function calculateCloudDistances(lineContent) {
+    const characters = lineContent.split("");
+    const distances = [];
+    let currentCloudProximity = NO_CLOUD_FOUND_VALUE;
 
-let gridLinesRaw = rawInputDataStream.trim().split("\n");
+    for (let charIdx = 0; charIdx < characters.length; charIdx++) {
+        const char = characters[charIdx];
 
-const dimensionsHeaderString = gridLinesRaw.shift();
-
-const computedDistancesGrid = [];
-
-function calculateCloudProximityForRow(singleGridRow) {
-    const rowCharactersArray = singleGridRow.split("");
-    const rowDistancesOutput = [];
-    let cloudProximityCounter = -1;
-
-    for (let charIndexPosition = 0; charIndexPosition < rowCharactersArray.length; charIndexPosition++) {
-        const currentGridCharacter = rowCharactersArray[charIndexPosition];
-
-        if (currentGridCharacter === "c") {
-            rowDistancesOutput.push(0);
-            cloudProximityCounter = 1;
-        } else if (currentGridCharacter === ".") {
-            if (cloudProximityCounter === -1) {
-                rowDistancesOutput.push(-1);
+        if (char === CLOUD_MARKER) {
+            distances.push(INITIAL_CLOUD_DISTANCE);
+            currentCloudProximity = NEXT_CLOUD_DISTANCE_START;
+        } else if (char === EMPTY_SPACE_MARKER) {
+            if (currentCloudProximity === NO_CLOUD_FOUND_VALUE) {
+                distances.push(NO_CLOUD_FOUND_VALUE);
             } else {
-                rowDistancesOutput.push(cloudProximityCounter);
-                cloudProximityCounter++;
+                distances.push(currentCloudProximity);
+                currentCloudProximity++;
             }
         }
     }
-    return rowDistancesOutput;
+    return distances;
 }
 
-for (const [currentRowIndex, currentGridRowData] of gridLinesRaw.entries()) {
-    if (!currentGridRowData || currentGridRowData.trim().length === 0) {
-        continue;
-    }
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var processedLines = rawData.trim().split("\n");
 
-    const individualRowDistances = calculateCloudProximityForRow(currentGridRowData);
-    computedDistancesGrid.push(individualRowDistances);
-}
+var gridDimensionsString = processedLines.shift();
 
-const formattedRowsForOutput = computedDistancesGrid.map(rowArray => rowArray.join(' '));
-const finalDisplayString = formattedRowsForOutput.join('\n');
+var finalResultMatrix = [];
 
-console.log(finalDisplayString);
+processedLines.forEach(function(singleLineContent) {
+    const lineDistances = calculateCloudDistances(singleLineContent);
+    finalResultMatrix.push(lineDistances);
+});
+
+const formattedOutputLines = finalResultMatrix.map(function(row) {
+    return row.join(" ");
+});
+
+console.log(formattedOutputLines.join("\n"));

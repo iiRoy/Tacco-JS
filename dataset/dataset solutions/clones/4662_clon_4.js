@@ -1,59 +1,33 @@
-'use strict'
+'use strict';
 
-class Coordinate {
-    constructor(valX, valY) {
-        this.xVal = valX;
-        this.yVal = valY;
-    }
+const processInput = (rawData) => {
+    const inputLines = rawData.trim().split('\n');
+    const [countA, countB] = inputLines[0].split(' ').map(Number);
 
-    #getAbsolute(val) {
-        return val < 0 ? -val : val;
-    }
+    const extractCoordinates = (lineContent) => {
+        return lineContent.split(' ').map(Number);
+    };
 
-    measureSeparation(otherCoord) {
-        return this.#getAbsolute(this.xVal - otherCoord.xVal) + this.#getAbsolute(this.yVal - otherCoord.yVal);
-    }
-}
+    const coordinateSetA = inputLines.slice(1, countA + 1).map(extractCoordinates);
+    const coordinateSetB = inputLines.slice(countA + 1, countB + countA + 1).map(extractCoordinates);
 
-const processInput = (entireInput) => {
-    const lines = entireInput.trim().split('\n');
+    const finalIndices = coordinateSetA.map((currentCoordA) => {
+        const nearestPointDetails = coordinateSetB.reduce(
+            (accumulator, currentCoordB, currentIdxB) => {
+                const manhattanDistance =
+                    Math.abs(currentCoordA[0] - currentCoordB[0]) + Math.abs(currentCoordA[1] - currentCoordB[1]);
 
-    const firstLineValues = lines[0].split(' ').map(Number);
-    const sourceCount = firstLineValues[0];
-
-    const { sources, destinations } = lines.slice(1).reduce((accumulator, line, idx) => {
-        const coordinatePair = line.split(' ').map(Number);
-        const newCoord = new Coordinate(coordinatePair[0], coordinatePair[1]);
-
-        if (idx < sourceCount) {
-            accumulator.sources.push(newCoord);
-        } else {
-            accumulator.destinations.push(newCoord);
-        }
-        return accumulator;
-    }, { sources: [], destinations: [] });
-
-    return { sources, destinations };
-};
-
-
-const executeTask = (rawInputData) => {
-    const { sources: originPoints, destinations: destinationCoordinates } = processInput(rawInputData);
-
-    const resultIndices = originPoints.map((currentOrigin) => {
-        const { minIdx: targetIndex } = destinationCoordinates.reduce((accumulator, currentDestination, destIdx) => {
-            const currentSeparation = currentOrigin.measureSeparation(currentDestination);
-
-            if (currentSeparation < accumulator.minVal) {
-                return { minVal: currentSeparation, minIdx: destIdx };
-            }
-            return accumulator;
-        }, { minVal: Infinity, minIdx: -1 });
-
-        return targetIndex + 1;
+                if (manhattanDistance < accumulator.distanceValue) {
+                    return { distanceValue: manhattanDistance, bestMatchIndex: currentIdxB };
+                }
+                return accumulator;
+            },
+            { distanceValue: Infinity, bestMatchIndex: -1 }
+        );
+        return nearestPointDetails.bestMatchIndex;
     });
 
-    console.log(resultIndices.join('\n'));
+    console.log(finalIndices.map((idx) => idx + 1).join('\n'));
 };
 
-executeTask(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

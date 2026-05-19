@@ -1,66 +1,57 @@
 "use strict";
-const fileSystemHandler = require("fs");
+const fileSystem = require("fs");
 
-const optimalCounterplays = new Map([
-  ['r', 'P'],
-  ['s', 'R'],
-  ['p', 'S']
-]);
-
-const rawInputContent = fileSystemHandler.readFileSync("/dev/stdin", { encoding: "utf8" });
-const inputRecordings = rawInputContent.split('\n');
-
-const [gameLengthIndicator, segmentDividerString] = inputRecordings[0].split(' ');
-const gameLengthValue = Number(gameLengthIndicator);
-const segmentDividerValue = Number(segmentDividerString);
-
-const [rockScoreString, scissorsScoreString, paperScoreString] = inputRecordings[1].split(' ');
-const rockPointsValue = Number(rockScoreString);
-const scissorsPointsValue = Number(scissorsScoreString);
-const paperPointsValue = Number(paperScoreString);
-
-const opponentActionSequence = inputRecordings[2];
-
-const moveValueLookup = new Map([
-  ['R', rockPointsValue],
-  ['S', scissorsPointsValue],
-  ['P', paperPointsValue]
-]);
-
-const computeSegmentOutcome = (startingPosition, intervalStep) => {
-  const selectedOpponentActions = Array.from({
-    length: Math.ceil((opponentActionSequence.length - startingPosition) / intervalStep)
-  }, (_, index) => opponentActionSequence[startingPosition + index * intervalStep]);
-
-  const finalAccumulatedState = selectedOpponentActions.reduce((currentAccumulator, currentOpponentAction) => {
-    const currentBestResponse = optimalCounterplays.get(currentOpponentAction);
-
-    if (currentBestResponse !== currentAccumulator.previousEffectiveResponse) {
-      if (currentAccumulator.previousEffectiveResponse !== null) {
-        currentAccumulator.segmentOverallScore += moveValueLookup.get(currentAccumulator.previousEffectiveResponse) * Math.floor((currentAccumulator.consecutiveResponseCount + 1) / 2);
-      }
-      currentAccumulator.consecutiveResponseCount = 0;
-    }
-
-    currentAccumulator.previousEffectiveResponse = currentBestResponse;
-    currentAccumulator.consecutiveResponseCount++;
-
-    return currentAccumulator;
-  }, {
-    segmentOverallScore: 0,
-    previousEffectiveResponse: null,
-    consecutiveResponseCount: 0
-  });
-
-  if (finalAccumulatedState.previousEffectiveResponse !== null) {
-    finalAccumulatedState.segmentOverallScore += moveValueLookup.get(finalAccumulatedState.previousEffectiveResponse) * Math.floor((finalAccumulatedState.consecutiveResponseCount + 1) / 2);
-  }
-
-  return finalAccumulatedState.segmentOverallScore;
+const opponentToWin = {
+  r: "P",
+  s: "R",
+  p: "S"
 };
 
-const grandTotalScore = Array.from({ length: segmentDividerValue }).reduce((cumulativeScore, _, segmentIndex) => {
-  return cumulativeScore + computeSegmentOutcome(segmentIndex, segmentDividerValue);
-}, 0);
+const inputLines = fileSystem.readFileSync("/dev/stdin", { encoding: "utf8" }).split("\n");
+const paramsLine = inputLines[0].split(" ");
+const scoresLine = inputLines[1].split(" ");
 
-console.log(grandTotalScore);
+const totalRounds = parseInt(paramsLine[0]);
+const numStrides = parseInt(paramsLine[1]);
+
+const rockScore = parseInt(scoresLine[0]);
+const scissorsScore = parseInt(scoresLine[1]);
+const paperScore = parseInt(scoresLine[2]);
+
+const gameSequence = inputLines[2];
+
+const moveScores = { R: rockScore, S: scissorsScore, P: paperScore };
+
+const cumulativeScore = Array.from({ length: numStrides }, (_, k) =>
+  calculateSubsequenceScore(k, numStrides, gameSequence, moveScores, opponentToWin)
+).reduce((sum, current) => sum + current, 0);
+
+console.log(cumulativeScore);
+
+function calculateSubsequenceScore(startIdx, stepSize, fullSequence, scoresMap, winMap) {
+  const sequenceOfWinningMoves = Array.from(
+    { length: Math.ceil((fullSequence.length - startIdx) / stepSize) },
+    (_, i) => winMap[fullSequence[startIdx + i * stepSize]]
+  );
+
+  const [finalSubScore, lastMove, currentStreak] = sequenceOfWinningMoves.reduce(
+    (accumulator, currentMove) => {
+      let [currentTotal, prevMove, streakCount] = accumulator;
+
+      if (prevMove === null || currentMove !== prevMove) {
+        if (prevMove !== null) {
+          currentTotal += scoresMap[prevMove] * Math.floor((streakCount + 1) / 2);
+        }
+        return [currentTotal, currentMove, 1];
+      } else {
+        return [currentTotal, prevMove, streakCount + 1];
+      }
+    },
+    [0, null, 0]
+  );
+
+  if (lastMove !== null) {
+    return finalSubScore + scoresMap[lastMove] * Math.floor((currentStreak + 1) / 2);
+  }
+  return finalSubScore;
+}

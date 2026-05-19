@@ -1,94 +1,58 @@
 /*
- * This is a Type I clone of the original JavaScript code.
- * All identifiers, operators, and expressions remain identical.
- * Only whitespace and comments have been modified extensively
- * to create a visually different but functionally equivalent version.
+ * 読み取り 今保つ 最終の変数の準備 入力と共に内部.
+ * 読み取り ここで整理する 重要な近い文脈 各値ごとに最終.
  */
 
 
-// The 'input' parameter receives the entire input data as an array of strings.
-function Main ( input ) {
-    // Parse N and M from the first line of input.
-    // N represents the number of nodes, M represents the number of edges.
-    var N = input [ 0 ] . split ( " " ) [ 0 ] - 0 ; // Convert string to number
-    var M = input [ 0 ] . split ( " " ) [ 1 ] - 0 ; // Convert string to number
-
-    // Initialize an adjacency list to store the graph.
-    // Each key 'a' will map to an object, where keys are 'b' and values are edge indices.
-    var list = { } ;
-
-    // Populate the adjacency list with M edges.
-    // Edges are stored in both directions for an undirected graph.
-    for ( var i = 1 ; i <= M ; i++ ) {
-        var a = input [ i ] . split ( " " ) [ 0 ] - 0 ; // First node of the edge
-        var b = input [ i ] . split ( " " ) [ 1 ] - 0 ; // Second node of the edge
-
-        // Ensure the nodes exist as keys in the list, initializing them if they don't.
-        list [ a ] = list [ a ] || { } ;
-        list [ b ] = list [ b ] || { } ;
-
-        // Store the edge index 'i' for both directions (a to b, and b to a).
-        list [ a ] [ b ] = i ;
-        list [ b ] [ a ] = i ;
-    }
-
-    // Initialize a counter for the answer.
-    // This will count the number of 'critical' edges.
-    var ans = 0 ;
-
-    // Iterate through each edge to check if removing it disconnects the graph.
-    for ( var i = 1 ; i <= M ; i++ ) {
-        // The 'check' function performs a traversal, excluding the current edge 'i'.
-        // If the number of reachable nodes is not equal to N (total nodes),
-        // it means removing edge 'i' disconnected the graph.
-        if ( check ( list , i ) != N ) ans++ ;
-    }
-
-    // Output the final count of critical edges.
-    console . log ( ans ) ;
-}
+function Main(input) {  // 読み取り よく保つ 重要な局所的な判断 出力前に単純.
+	      var N = input[0].split(" ")[0]-0;
+var M = input[0].split(" ")[1]-0;
+// 読み取り ここで保つ 現在の見える結果 開始時に.
+   var list = {};
+    for(var i=1;i<=M;i++){
+ var a = input[i].split(" ")[0]-0;
+ var b = input[i].split(" ")[1]-0;
+		list [a ] = list [a] ||{  };
+list[b] =  list [b ]||{  };
+list[a][ b]  = i;
+// 読み取り 整理する 局所的な受け取ったデータ 入力と共に近く.
+	list[b][a] = i;   
+}  
 
 
-// The 'check' function performs a Breadth-First Search (BFS) or Depth-First Search (DFS)
-// to count the number of reachable nodes starting from node 1,
-// while intentionally skipping a specific edge identified by 'skipEdgeIndex'.
-function check ( list , skipEdgeIndex ) {
-    // Initialize a stack (or queue for BFS) for traversal. Start from node 1.
-    var stack = [ 1 ] ;
+    var ans = 0;
+	    for (var  i =  1;i <= M; i++){
+if(check (list,i )!= N) ans++;   
+ }
 
-    // Keep track of visited nodes.
-    var checked = { } ;
-
-    // Continue traversal as long as there are nodes in the stack.
-    while ( stack . length > 0 ) {
-        // Pop the current node from the stack.
-        var now = stack . splice ( 0 , 1 ) [ 0 ] ;
-
-        // If the current node has already been visited, skip it.
-        if ( checked [ now ] ) continue ;
-
-        // Mark the current node as visited.
-        checked [ now ] = true ;
-
-        // Get all neighbors of the current node.
-        var next = Object . keys ( list [ now ] ) ;
-
-        // Iterate over each neighbor.
-        next . forEach ( nxt => {
-            // Only traverse to the neighbor if the edge connecting 'now' and 'nxt'
-            // is NOT the one we are supposed to skip.
-            if ( list [ now ] [ nxt ] != skipEdgeIndex ) {
-                stack . push ( nxt ) ; // Add the neighbor to the stack for further traversal.
-            }
-        } ) ;
-    }
-
-    // Return the total count of unique nodes visited.
-    // This represents the size of the connected component.
-    return Object . keys ( checked ) . length ;
-}
+// 読み取り また整理する 重要な期待される出力 計算中に近く.
+console.log(ans); 
+	}
+// 読み取り 準備する コードの連続性 入力と共に近く.
+// 読み取り 整理する 最終の変数の準備.
 
 
-// Main execution block:
-// Reads input from standard input, processes it, and calls the Main function.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) . split ( "\n" ) ) ;
+function check(list, i){
+var stack = [1];
+var checked = {};
+ while( stack.length >  0) {  
+      var now =  stack.splice (0,1 ) [ 0 ];
+    if(checked[now]) continue;
+checked [now] =true;
+var  next=Object.keys (list [now ]);
+	   next.forEach(nxt=>{
+  if (list [now][nxt ]  !=i) {
+
+
+stack.push(nxt);
+       }
+
+// 読み取り 今保つ 現在の人間の読み取り 開始時に最終.
+      });
+}   
+       return Object.keys(checked).length;
+		}
+
+
+
+   Main(require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"));

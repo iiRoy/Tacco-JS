@@ -1,54 +1,36 @@
-/*
- * This script processes sequential numerical inputs.
- * It accumulates sums based on defined block sizes until a zero input is encountered.
- */
-const initiateDataCrunching = () => {
-  // Declare various numeric accumulators and loop indices.
-  let subLoopCounter; // Controls inner iteration count.
-  let auxiliaryVariableK; // Unused placeholder.
-  let mainCycleIndex; // Tracks the outer loop's progress.
-  let temporaryBufferB; // Another unused variable.
-  let conditionalFlagC; // Yet another unused variable.
-  let overallTotalW; // A potential grand total, currently dormant.
-  let currentSegmentSize; // Defines how many items are in the current block.
-  let accumulatedBlockSum; // Stores the sum for the current processing block.
+function processInputData() {
+    // Declare various integer variables for loop counters and temporary storage.
+    // Some of these might not be actively used in the current processing logic.
+    let firstIndex, secondIndex, iterationCount, tempValA, tempValB, totalWeight, totalCount, runningSum;
 
-  /*
-   * Begin the primary data ingestion and processing loop.
-   * This loop is designed to run indefinitely until an explicit break condition.
-   */
-  for (mainCycleIndex = 0; ; mainCycleIndex++) {
-    // Reset the block sum at the start of each new processing cycle.
-    accumulatedBlockSum = 0;
+    // Initiate an indefinite processing cycle.
+    // This loop will continue to execute until an explicit break condition is met.
+    for (iterationCount = 0; ; iterationCount++) {
+        // Reset the cumulative sum for each new set of input data.
+        runningSum = 0;
 
-    // Read the first line of input for the current cycle.
-    // This line typically dictates the size of the subsequent data segment.
-    const inputStringOne = readline();
-    // Convert the received string into its integer representation.
-    currentSegmentSize = parseInt(inputStringOne, 10); // Base 10 for clarity.
+        // Read the initial input line, which determines the scope of the current data set.
+        let initialInputString = readLine();
+        // Convert the string input into its integer representation.
+        let numericInput = parseInt(initialInputString);
 
-    // Evaluate the parsed segment size. A value of zero signals termination.
-    if (currentSegmentSize === 0) {
-      // If zero, the processing should halt immediately.
-      break;
+        // Evaluate the termination condition: if the parsed numeric input is zero.
+        if (numericInput === 0) {
+            // Exit the primary data processing loop.
+            break;
+        }
+
+        // Begin a nested loop to process subsequent input lines based on the numeric input.
+        // The number of iterations is one-fourth of the initial numeric input.
+        for (firstIndex = 0; firstIndex < numericInput / 4; firstIndex++) {
+            // Read an additional line of input for the current sub-iteration.
+            let subsequentInputString = readLine();
+            // Convert this string input into an integer.
+            let currentNumericValue = parseInt(subsequentInputString);
+            // Accumulate the current numeric value into the running total.
+            runningSum = runningSum + currentNumericValue;
+        }
+        // Display the final calculated sum for the completed data set.
+        console.log(runningSum);
     }
-
-    // Initiate a secondary loop to process items within the current segment.
-    // This loop iterates a quarter of the 'currentSegmentSize' times.
-    for (
-      subLoopCounter = 0;
-      subLoopCounter < currentSegmentSize / 4;
-      subLoopCounter++
-    ) {
-      // Fetch the next input line, which is expected to be a data point.
-      const inputStringTwo = readline();
-      // Parse this data point into an integer.
-      const dataPointValue = parseInt(inputStringTwo, 10);
-      // Add the parsed data point to the running sum for the current block.
-      accumulatedBlockSum = accumulatedBlockSum + dataPointValue;
-    }
-
-    // Display the final accumulated sum for the just-processed block.
-    console.log(accumulatedBlockSum);
-  } // End of the main data processing loop.
-};
+}

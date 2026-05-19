@@ -1,71 +1,88 @@
-let incomingData = ''; // This variable will store all the raw input received from stdin
+// This script processes a sequence of numbers provided via standard input.
+// It reads the input, parses the second line as an array of numbers,
+// then applies a partitioning algorithm to this array,
+// and finally prints the modified array with the pivot element highlighted.
 
-// Attaching an event listener for 'data' chunks from standard input
-process.stdin.on('data', (linePart) => {
-    // Appending each incoming data segment to our accumulating buffer
-    incomingData += linePart;
+let inputBuffer = ''; // Accumulates incoming data from standard input.
+
+// Event listener for 'data' chunks from stdin.
+process.stdin.on('data', (incomingDataChunk) => {
+    inputBuffer += incomingDataChunk; // Append the chunk to the buffer.
 });
 
-// Attaching an event listener for the 'end' of standard input
+// Event listener for 'end' of stdin, indicating all input has been received.
 process.stdin.on('end', function() {
-    // Pre-process the accumulated input:
-    // 1. Remove any trailing whitespace from the entire buffer.
-    // 2. Split the buffer into an array of lines based on newline characters.
-    // 3. For each line, remove any trailing whitespace.
-    incomingData = incomingData.replace(/\s*$/, '')
+    // Clean up the accumulated input:
+    // 1. Remove trailing whitespace from the entire buffer.
+    // 2. Split the buffer into an array of lines.
+    // 3. For each line, remove trailing whitespace.
+    inputBuffer = inputBuffer.replace(/\s*$/, '')
         .split('\n')
-        .map((currentLine) => currentLine.replace(/\s*$/, ''));
+        .map(lineSegment => lineSegment.replace(/\s*$/, ''));
 
-    // Invoke the primary routine with the second line of processed input.
-    // This line is expected to be a space-separated string of numbers,
-    // which are converted into an array of actual numbers.
-    executeSortingLogic(incomingData[1].split(' ').map((stringValue) => Number(stringValue)));
+    // Extract the second line (index 1), split it by spaces,
+    // and convert each segment to a number before passing to the processing function.
+    processArray(inputBuffer[1].split(' ').map(segment => Number(segment)));
 });
 
-// This function serves as the main entry point for processing the numeric data.
-const executeSortingLogic = (numberCollection) => {
-    // Perform a single pass of a partitioning algorithm on the entire array.
-    // This will reorder elements around a chosen pivot and return its final index.
-    const finalPivotIdx = arrangeElements(numberCollection, 0, numberCollection.length - 1);
+/**
+ * Processes an array of numeric values by applying a partitioning scheme
+ * and then printing the result with the pivot element highlighted.
+ * @param {number[]} numericValues - The array of numbers to process.
+ */
+const processArray = (numericValues) => {
+    // Perform the partitioning operation on the array.
+    // The 'divideAndConquer' function returns the final index of the pivot element.
+    const pivotIndex = divideAndConquer(numericValues, 0, numericValues.length - 1);
 
-    // Output the modified array to the console.
-    // The element at the final pivot index is highlighted with square brackets.
+    // Output the array, highlighting the element at the pivotIndex.
     console.log(
-        numberCollection
-            .map((element, elementIndex) => elementIndex === finalPivotIdx ? `[${element}]` : String(element))
-            .join(' ')
+        numericValues
+            .map((currentValue, idx) => {
+                // If the current element's index matches the pivot index,
+                // enclose it in square brackets; otherwise, convert it to a string.
+                return idx === pivotIndex ? `[${currentValue}]` : String(currentValue);
+            })
+            .join(' ') // Join the processed elements with a space.
     );
 };
 
-// Implements the Lomuto partition scheme, a key component of the QuickSort algorithm.
-const arrangeElements = (targetList, leftEdge, rightEdge) => {
-    // Select the last element of the current subarray as the pivot value.
-    const chosenPivot = targetList[rightEdge];
-    // Initialize an index ('boundaryIdx') to track the boundary between
-    // elements smaller than or equal to the pivot, and larger elements.
-    let boundaryIdx = leftEdge - 1;
+/**
+ * Implements the Lomuto partition scheme for an array.
+ * It rearranges elements such that all elements less than or equal to the pivot
+ * come before the pivot, and all elements greater than the pivot come after it.
+ * The pivot is chosen as the last element of the subarray.
+ * @param {number[]} dataCollection - The array to be partitioned.
+ * @param {number} startIndex - The starting index of the subarray to partition.
+ * @param {number} endIndex - The ending index of the subarray to partition.
+ * @returns {number} The final index of the pivot element after partitioning.
+ */
+const divideAndConquer = (dataCollection, startIndex, endIndex) => {
+    // Select the last element as the pivot.
+    const pivotElement = dataCollection[endIndex];
+    let smallerElementIndex = startIndex - 1; // Index of the smaller element.
 
-    // Iterate through the subarray from the 'leftEdge' up to (but not including) the 'rightEdge'.
-    for (let scanPos = leftEdge; scanPos < rightEdge; scanPos++) {
-        // If the current element being scanned is less than or equal to the pivot,
-        if (targetList[scanPos] <= chosenPivot) {
-            // Increment the 'boundaryIdx' and swap the elements.
-            // This moves the smaller element to the left side of the boundary.
-            boundaryIdx = boundaryIdx + 1;
-            const swapItem1 = targetList[scanPos];
-            const swapItem2 = targetList[boundaryIdx];
-            targetList[boundaryIdx] = swapItem1;
-            targetList[scanPos] = swapItem2;
+    // Iterate through the subarray from startIndex to endIndex - 1.
+    for (let currentScanIndex = startIndex; currentScanIndex < endIndex; currentScanIndex++) {
+        // If the current element is less than or equal to the pivot,
+        // increment smallerElementIndex and swap the elements.
+        if (dataCollection[currentScanIndex] <= pivotElement) {
+            smallerElementIndex = smallerElementIndex + 1;
+            // Perform a swap: dataCollection[smallerElementIndex] and dataCollection[currentScanIndex]
+            const leftSwapCandidate = dataCollection[currentScanIndex];
+            const rightSwapCandidate = dataCollection[smallerElementIndex];
+            dataCollection[smallerElementIndex] = leftSwapCandidate;
+            dataCollection[currentScanIndex] = rightSwapCandidate;
         }
     }
 
-    // After the loop, place the pivot element in its correct sorted position.
-    // It should be placed immediately after all elements smaller than itself.
-    const swapItem2 = targetList[rightEdge]; // The pivot itself
-    const swapItem1 = targetList[boundaryIdx + 1]; // The element that will be swapped with the pivot
-    targetList[boundaryIdx + 1] = swapItem2;
-    targetList[rightEdge] = swapItem1;
+    // Place the pivot element in its correct sorted position.
+    // Swap dataCollection[smallerElementIndex + 1] and dataCollection[endIndex] (the original pivot).
+    const rightSwapCandidate = dataCollection[endIndex];
+    const leftSwapCandidate = dataCollection[smallerElementIndex + 1];
+    dataCollection[smallerElementIndex + 1] = rightSwapCandidate;
+    dataCollection[endIndex] = leftSwapCandidate;
 
     // Return the final index of the pivot element.
-    return boundaryIdx + 1;
+    return smallerElementIndex + 1;
 };

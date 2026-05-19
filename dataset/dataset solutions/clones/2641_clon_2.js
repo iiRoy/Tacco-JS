@@ -1,203 +1,176 @@
-var inputInterface = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+// This section contains utility functions for input/output and debugging.
+// It's generally not part of the core algorithm logic.
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+var dataProcessor;
+var inputLines = [];
+inputReader.on('line', function(currentLine){inputLines.push(currentLine);});
+inputReader.on('close', function(){
+  dataProcessor = initializeInput(inputLines);
+  console.error("\n"); // Print a newline to stderr for formatting
+  var startTime = Date.now();
+  executeMainLogic();
+  var endTime = Date.now() - startTime;
+  printDebug("time : " + (endTime) + "ms");
+  printDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-var dataHandler;
-var capturedLines = [];
-
-inputInterface.registerEvent('line', function (currentInputLine) {
-    capturedLines.push(currentInputLine);
-});
-
-inputInterface.registerEvent('close', function () {
-    dataHandler = initializeInputHandler(capturedLines);
-    logToErrorStream("\n");
-
-    var opStartTime = Date.now();
-    executeMainProgram();
-    var durationMs = Date.now() - opStartTime;
-
-    outputDebugInfo("elapsedTime : " + (durationMs) + "milliseconds");
-    outputDebugInfo("heapMemory : " + Math.round(process.memoryUsage().heapTotal / kilobyteDivisor) + "kilobytes");
-});
-
-function createDeepCopy(originalObject) {
-    return JSON.parse(JSON.stringify(originalObject));
+// Creates a deep copy of an object using JSON serialization.
+function createDeepCopy(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-// Constants defining various data conversion types.
-const TYPE_INTEGER = 1;
-const TYPE_STRING_ARRAY = 2;
-const TYPE_NUMBER_ARRAY = 4;
-const TYPE_CHAR_ARRAY = 6;
-const TYPE_CHAR_ARRAY_NUMERIC = 7;
-const TYPE_JOIN_SPACE = 8;
-const TYPE_JOIN_NEWLINE = 9;
-const TYPE_JOIN_NONE = 0;
-const kilobyteDivisor = 1024; // The factor to convert bytes into kilobytes.
-
-function getNextInteger() {
-    return transformValue(retrieveNextItem(), TYPE_INTEGER);
+// Helper functions to fetch and convert input data.
+function getNextInteger(){
+  return convertInput(fetchNextLine(), 1);
+}
+function getNextStringArray(){
+  return convertInput(fetchNextLine(), 2);
+}
+function getNextIntegerArray(){
+  return convertInput(fetchNextLine(), 4);
+}
+function getNextCharacterArray(){
+  return convertInput(fetchNextLine(), 6);
+}
+function fetchNextLine(){
+  return dataProcessor.fetchNextLine();
+}
+function hasMoreLines(){
+  return dataProcessor.hasMoreLines();
 }
 
-function getNextStringArray() {
-    return transformValue(retrieveNextItem(), TYPE_STRING_ARRAY);
-}
-
-function getNextIntegerArray() {
-    return transformValue(retrieveNextItem(), TYPE_NUMBER_ARRAY);
-}
-
-function getNextCharacterArray() {
-    return transformValue(retrieveNextItem(), TYPE_CHAR_ARRAY);
-}
-
-function retrieveNextItem() {
-    return dataHandler.retrieveNextItem();
-}
-
-function hasMoreData() {
-    return dataHandler.hasMoreData();
-}
-
-function initializeInputHandler(rawInputLines) {
-    var parsedDataSource = {
-        sourceCollection: rawInputLines,
-        currentPosition: 0,
-        maxCount: rawInputLines.length,
-
-        hasMoreData: function () {
-            return (this.currentPosition < this.maxCount);
-        },
-
-        retrieveNextItem: function () {
-            if (!this.hasMoreData()) {
-                throw "SequenceOutOfBoundsException: No more elements available for retrieval.";
-            } else {
-                var returnedSegment = this.sourceCollection[this.currentPosition];
-                this.currentPosition++;
-                return returnedSegment;
-            }
-        }
-    };
-    return parsedDataSource;
-}
-
-function displayOutput(contentToDisplay) {
-    console.log(contentToDisplay);
-}
-
-function outputDebugInfo(messageContent) {
-    // Utilize the 'util' module for detailed object inspection.
-    var utilityModule = require("util");
-    logToErrorStream("dbgMessage:" + utilityModule.inspect(messageContent, false, null));
-}
-
-function logToErrorStream(message) {
-    console.error(message);
-}
-
-// This function processes an input value based on a specified conversion type.
-// [conversionType] governs the transformation.
-// Default behavior (or on error): The original input value is returned.
-// TYPE_INTEGER: Converts the input string to an integer.
-// TYPE_STRING_ARRAY: Splits the input string using space as a delimiter.
-// TYPE_NUMBER_ARRAY: Splits the string by spaces and then converts each part to a number.
-// TYPE_CHAR_ARRAY: Divides the string into an array of individual characters.
-// TYPE_CHAR_ARRAY_NUMERIC: Splits by characters and converts each to a number.
-// TYPE_JOIN_SPACE: Combines array elements into a string, separated by spaces.
-// TYPE_JOIN_NEWLINE: Joins array elements with newline characters.
-// TYPE_JOIN_NONE: Concatenates array elements without any separator.
-function transformValue(inputValue, conversionType) {
-    try {
-        switch (conversionType) {
-            case TYPE_INTEGER:
-                return parseInt(inputValue);
-            case TYPE_STRING_ARRAY:
-                return inputValue.split(" ");
-            case TYPE_NUMBER_ARRAY:
-                return inputValue.split(" ").map(Number);
-            case TYPE_CHAR_ARRAY:
-                return inputValue.split("");
-            case TYPE_CHAR_ARRAY_NUMERIC:
-                return inputValue.split("").map(Number);
-            case TYPE_JOIN_SPACE:
-                return inputValue.join(" ");
-            case TYPE_JOIN_NEWLINE:
-                return inputValue.join("\n");
-            case TYPE_JOIN_NONE:
-                return inputValue.join("");
-            default:
-                return inputValue;
-        }
-    } catch (processingError) {
-        return inputValue;
+// Initializes the input processing object.
+function initializeInput(rawInput){  
+  var processorInstance = {
+    lineCollection : rawInput,
+    currentLineIndex : 0,
+    totalLines : rawInput.length,
+    hasMoreLines : function(){
+      return (this.currentLineIndex < this.totalLines);
+    },
+    fetchNextLine : function(){
+      if(!this.hasMoreLines()){
+        throw "ArrayIndexOutOfBoundsException これ以上ないよ";
+      } else {
+        var currentInputLine = this.lineCollection[this.currentLineIndex];
+        this.currentLineIndex++;
+        return currentInputLine;
+      }
     }
+  };
+  return processorInstance;
 }
 
-
-// End of boilerplate and helper functions.
-function executeMainProgram() {
-    var firstSequence = retrieveNextItem();
-    var secondSequence = retrieveNextItem();
-    var charOccurrences = {};
-    var finalCalculatedResult = 0;
-
-    for (var idx = 0; idx < firstSequence.length; idx++) {
-        if (charOccurrences[firstSequence[idx]] === undefined) {
-            charOccurrences[firstSequence[idx]] = [];
-        }
-        charOccurrences[firstSequence[idx]].push(idx);
-    }
-
-    var lastMatchedPosition = -1;
-    var fullCycleCount = 0;
-
-    for (var idx = 0; idx < secondSequence.length; idx++) {
-        if (charOccurrences[secondSequence[idx]] === undefined) {
-            displayOutput(-1);
-            return;
-        }
-
-        if (idx === 0) {
-            finalCalculatedResult = charOccurrences[secondSequence[idx]][0] + 1;
-            lastMatchedPosition = charOccurrences[secondSequence[idx]][0];
-        } else {
-            var foundIdx = findValueIndex(charOccurrences[secondSequence[idx]], lastMatchedPosition);
-
-            if (foundIdx === charOccurrences[secondSequence[idx]].length || charOccurrences[secondSequence[idx]][foundIdx] === lastMatchedPosition) {
-                fullCycleCount++;
-                foundIdx = 0;
-            }
-
-            finalCalculatedResult = (fullCycleCount * firstSequence.length) + charOccurrences[secondSequence[idx]][foundIdx] + 1;
-            lastMatchedPosition = charOccurrences[secondSequence[idx]][foundIdx];
-        }
-    }
-
-    displayOutput(finalCalculatedResult);
+// Prints output to standard output.
+function printOutput(message){
+  console.log(message);
 }
 
-function findValueIndex(orderedArray, targetElement) {
-    // This routine performs a binary search on a sorted array to locate the lower bound.
-    // The 'orderedArray' is expected to be sorted in ascending order.
-    // 'highBoundary' will represent the smallest index where the element is greater than or equal to 'targetElement'.
-    // 'lowBoundary' will be the largest index where the element is strictly less than 'targetElement'.
-    var lowBoundary = -1;
-    var highBoundary = orderedArray.length;
-    var middleIndex;
+// Prints debug messages to standard error.
+function printDebug(debugMessage){
+  console.error("debug:" + require("util").inspect(debugMessage,false,null));
+}
 
-    while (Math.abs(highBoundary - lowBoundary) > 1) {
-        middleIndex = Math.floor((highBoundary + lowBoundary) / 2);
-        if (orderedArray[middleIndex] >= targetElement) {
-            highBoundary = middleIndex;
-        } else {
-            lowBoundary = middleIndex;
-        }
+// Input conversion utility.
+// conversionType:
+// 1: Convert to integer
+// 2: Split by space into string array
+// 4: Split by space into integer array
+// 6: Split by character into string array
+// 7: Split by character into integer array
+// 8: Join array elements with space
+// 9: Join array elements with newline
+// 0: Join array elements without separator
+// Default: Return input as is
+function convertInput(inputValue, conversionType){
+  try {
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-    return highBoundary;
-    // The following line is commented out, as it was in the original source,
-    // indicating an alternative return value if a different search strategy were used.
-    // return orderedArray[lowBoundary];
+  } catch(error) {
+    return inputValue;
+  }
+}
+
+// End of utility functions.
+//---------------------------------------------------------------------------
+
+function executeMainLogic(){
+	var sourceString = fetchNextLine();
+	var targetString = fetchNextLine();
+	var charIndexMap = {};
+	var resultPosition = 0;
+
+	// Populate the map with character indices from the source string.
+	for(var charIterator = 0; charIterator < sourceString.length; charIterator++){
+		if(charIndexMap[sourceString[charIterator]] == null){
+			charIndexMap[sourceString[charIterator]] = [];
+		}
+		charIndexMap[sourceString[charIterator]].push(charIterator);
+	}
+
+	var previousMatchIndex = -1;
+	var cycleCount = 0;
+
+	// Iterate through the target string to find character positions.
+	for(var charIterator = 0; charIterator < targetString.length; charIterator++){
+		// If a character from the target string is not found in the source string, output -1.
+		if(charIndexMap[targetString[charIterator]] == null){
+			printOutput(-1);
+			return;
+		}
+
+		if(charIterator == 0){
+			// For the first character, the position is simply the first occurrence's index + 1.
+			resultPosition = charIndexMap[targetString[charIterator]][0] + 1;
+			previousMatchIndex = charIndexMap[targetString[charIterator]][0];
+		} else {
+			// Find the next suitable index using binary search.
+			var foundIndex = performBinarySearch(charIndexMap[targetString[charIterator]], previousMatchIndex);
+
+			// If no suitable index is found in the current cycle or the found index is the same as previous,
+			// increment cycle count and reset index to the beginning of the list.
+			if(foundIndex == charIndexMap[targetString[charIterator]].length || charIndexMap[targetString[charIterator]][foundIndex] == previousMatchIndex){
+				cycleCount++;
+				foundIndex = 0;
+			}
+			// Calculate the total position considering cycles and the current character's index.
+			resultPosition = (cycleCount * sourceString.length) + charIndexMap[targetString[charIterator]][foundIndex] + 1;
+			previousMatchIndex = charIndexMap[targetString[charIterator]][foundIndex];
+		}
+	}
+	printOutput(resultPosition);
+}
+
+// Performs a binary search on a sorted array to find the smallest element
+// that is greater than or equal to the search value.
+function performBinarySearch(sortedArray, searchValue){
+  // The 'sortedArray' is assumed to be sorted in ascending order.
+  // 'positiveBound' will store the smallest index of an element >= 'searchValue'.
+  // 'negativeBound' will store the largest index of an element < 'searchValue'.
+  var negativeBound = -1;
+  var positiveBound = sortedArray.length;
+  var midPoint;
+
+  // Continue searching while there's a gap between the bounds.
+  while(Math.abs(positiveBound - negativeBound) > 1){
+    midPoint = Math.floor((positiveBound + negativeBound) / 2);
+    if(sortedArray[midPoint] >= searchValue){
+       positiveBound = midPoint; // This element is a potential candidate or better.
+    } else {
+       negativeBound = midPoint; // This element is too small, discard it and everything to its left.
+    }
+  }
+  return positiveBound; // Return the index of the first element >= searchValue.
 }

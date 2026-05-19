@@ -1,238 +1,282 @@
-module . exports = function ( moduleDefinitions ) {
-  // Cache for already loaded modules
-  var loadedModulesCache = {};
-  /*
-   * Core module loading function.
-   * Behaves similarly to a 'require' call.
-   */
-  function loadModule ( moduleId ) {
-    // If module is already in cache, return its exports
-    if ( loadedModulesCache[ moduleId ] ) {
-      return loadedModulesCache[ moduleId ].exports;
+module.exports = function (moduleDefinitions) {
+  // This object serves as a cache for modules that have already been loaded.
+  var moduleCache = {};
+
+  // The core function responsible for loading and executing modules.
+  function localRequire(moduleId) {
+    // If the module is already in the cache, return its exported value immediately.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
-    // Create a new module object and add it to the cache
-    var currentModuleObject = loadedModulesCache[ moduleId ] = {
-      identifier: moduleId, /* Module ID */
-      isLoaded: false,      /* Loading status */
-      exports: {}           /* Exports object */
+
+    // If not cached, create a new module entry.
+    // 'identifier' stores the module's unique ID.
+    // 'isLoaded' tracks if the module's code has been executed.
+    // 'exports' is the object that will hold the module's public interface.
+    var currentModule = moduleCache[moduleId] = {
+      identifier: moduleId,
+      isLoaded: false,
+      exports: {}
     };
-    // Execute the module function, populating its exports
-    moduleDefinitions[ moduleId ].call(
-      currentModuleObject.exports,
-      currentModuleObject,
-      currentModuleObject.exports,
-      loadModule
+
+    // Execute the module's function, passing in the module object, its exports,
+    // and the 'localRequire' function itself for internal dependencies.
+    moduleDefinitions[moduleId].call(
+      currentModule.exports,
+      currentModule,
+      currentModule.exports,
+      localRequire
     );
-    // Mark the module as loaded
-    currentModuleObject.isLoaded = true;
-    // Return the module's exports
-    return currentModuleObject.exports;
+
+    // Mark the module as loaded after its function has completed execution.
+    currentModule.isLoaded = true;
+
+    // Return the module's exports.
+    return currentModule.exports;
   }
-  // Store all module definitions on the loader function
-  loadModule.allDefinitions = moduleDefinitions;
-  // Store the module cache on the loader function
-  loadModule.cachedObjects = loadedModulesCache;
-  /**
-   * Helper to define a property on an object if it doesn't exist.
-   */
-  loadModule.defineExport = function ( targetObject, propertyKey, getterFunction ) {
-    if ( !loadModule.hasOwnProp( targetObject, propertyKey ) ) {
-      Object.defineProperty( targetObject, propertyKey, {
-        enumerable: true,
-        get: getterFunction
-      } );
+
+  // Attach the original module definitions and the cache to the 'localRequire' function
+  // for potential introspection or further use by the bundling system.
+  localRequire.modules = moduleDefinitions;
+  localRequire.cache = moduleCache;
+
+  // Helper function to define a getter property on an object.
+  // This is often used for lazy loading or creating computed properties.
+  localRequire.defineGetter = function (targetObject, propertyName, getterFunction) {
+    // Only define the property if it doesn't already exist on the target object.
+    if (!localRequire.hasOwn(targetObject, propertyName)) {
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true, // Make the property enumerable (visible in for...in loops).
+        get: getterFunction // The function to call when the property is accessed.
+      });
     }
   };
-  /*
-   * Helper to mark an object as an ES module.
-   */
-  loadModule.markAsESM = function ( targetObject ) {
-    if ( typeof Symbol !== "undefined" && Symbol.toStringTag ) {
-      Object.defineProperty( targetObject, Symbol.toStringTag, { value: "Module" } );
+
+  // Helper function to mark an exports object as an ES module.
+  // This adds '__esModule: true' and potentially 'Symbol.toStringTag: "Module"'.
+  localRequire.markAsEsModule = function (exportsObject) {
+    // Set Symbol.toStringTag for better debugging and type identification.
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(exportsObject, Symbol.toStringTag, { value: "Module" });
     }
-    Object.defineProperty( targetObject, "__esModule", { value: true } );
+    // Standard flag to indicate an ES module.
+    Object.defineProperty(exportsObject, "__esModule", { value: true });
   };
-  /*
-   * Helper to get module exports, handling various module formats.
-   */
-  loadModule.getExport = function ( sourceModule, flags ) {
-    // If flag 1 is set, resolve the module first
-    if ( 1 & flags ) {
-      sourceModule = loadModule( sourceModule );
+
+  // Helper function to create a namespace object for a module, handling various import modes.
+  localRequire.createNamespace = function (moduleRef, modeFlags) {
+    // Mode 1: If the module reference is an ID, resolve it using localRequire.
+    if (1 & modeFlags) {
+      moduleRef = localRequire(moduleRef);
     }
-    // If flag 8 is set, return as is (raw module)
-    if ( 8 & flags ) {
-      return sourceModule;
+    // Mode 8: If direct return is indicated, return the module reference as is.
+    if (8 & modeFlags) {
+      return moduleRef;
     }
-    // If flag 4 is set and it's an object and an ES module, return it
-    if ( 4 & flags && typeof sourceModule === "object" && sourceModule && sourceModule.__esModule ) {
-      return sourceModule;
+    // Mode 4: If it's an ES module object, return it directly.
+    if (4 & modeFlags && typeof moduleRef === "object" && moduleRef && moduleRef.__esModule) {
+      return moduleRef;
     }
-    // Otherwise, create a new namespace object
-    var newNamespaceObject = Object.create( null );
-    loadModule.markAsESM( newNamespaceObject );
-    // Set the default export
-    Object.defineProperty( newNamespaceObject, "default", { enumerable: true, value: sourceModule } );
-    // If flag 2 is set and not a string, copy all properties
-    if ( 2 & flags && typeof sourceModule !== "string" ) {
-      for ( var prop in sourceModule ) {
-        loadModule.defineExport( newNamespaceObject, prop, ( function ( p ) {
-          return sourceModule[ p ];
-        } ).bind( null, prop ) );
+
+    // Create a new plain object to serve as the namespace.
+    var namespaceObject = Object.create(null);
+    // Mark it as an ES module.
+    localRequire.markAsEsModule(namespaceObject);
+    // Define a 'default' export pointing to the module reference.
+    Object.defineProperty(namespaceObject, "default", { enumerable: true, value: moduleRef });
+
+    // Mode 2: If not a string and indicated, copy all properties from the module reference
+    // to the namespace object as getters.
+    if (2 & modeFlags && typeof moduleRef !== "string") {
+      for (var propName in moduleRef) {
+        localRequire.defineGetter(namespaceObject, propName, (function (prop) {
+          return moduleRef[prop];
+        }).bind(null, propName));
       }
     }
-    return newNamespaceObject;
+    return namespaceObject;
   };
-  /*
-   * Helper to get a namespace object for a module's default export.
-   */
-  loadModule.getNamespaceObject = function ( sourceModule ) {
-    var defaultExportGetter = sourceModule && sourceModule.__esModule
-      ? function () {
-        return sourceModule.default;
-      }
-      : function () {
-        return sourceModule;
-      };
-    loadModule.defineExport( defaultExportGetter, "a", defaultExportGetter );
+
+  // Helper function to create a getter for a module's default export.
+  localRequire.getDefaultExport = function (moduleExports) {
+    // If the module is an ES module, the default export is `moduleExports.default`.
+    // Otherwise, the entire `moduleExports` object is considered the default.
+    var defaultExportGetter = moduleExports && moduleExports.__esModule ?
+      function () { return moduleExports.default; } :
+      function () { return moduleExports; };
+    // Define an 'a' property that also points to the default export getter.
+    localRequire.defineGetter(defaultExportGetter, "a", defaultExportGetter);
     return defaultExportGetter;
   };
-  /*
-   * Utility to check if an object has its own property.
-   */
-  loadModule.hasOwnProp = function ( targetObject, propertyKey ) {
-    return Object.prototype.hasOwnProperty.call( targetObject, propertyKey );
+
+  // Helper function to check if an object has a specific property directly (not inherited).
+  localRequire.hasOwn = function (objToCheck, propToFind) {
+    return Object.prototype.hasOwnProperty.call(objToCheck, propToFind);
   };
-  // Public path for assets (empty in this case)
-  loadModule.publicPath = "";
-  // Start the application by loading the startup module (module 0)
-  return loadModule( ( loadModule.startupModuleId = 0 ) );
-}( [
-  /* Module 0: Main entry point for the application logic */
-  function ( currentModule, moduleExports, fetchModule ) {
-    // Load module 1, then execute it with the input from module 2
-    fetchModule( 1 )(
-      fetchModule( 2 )
-        .readFileSync( "/dev/stdin", "UTF-8" )
-        .split( "\n" )
-    );
+
+  // Public path for assets (empty in this configuration).
+  localRequire.publicPath = "";
+
+  // Set the entry module ID and immediately load and execute it.
+  // The result of the entry module is the final export of the entire bundle.
+  return localRequire(localRequire.entryModuleId = 0);
+}([
+  // Module 0: The main entry point of the application.
+  function (moduleObj, moduleExports, localRequire) {
+    // Read the entire content of /dev/stdin, decode as UTF-8,
+    // split it into an array of lines, and pass this array to Module 1.
+    localRequire(1)(localRequire(2).readFileSync("/dev/stdin", "UTF-8").split("\n"));
   },
-  /* Module 1: Contains the graph processing and query logic */
-  function ( thisModule, thisExports, getRequiredModule ) {
+
+  // Module 1: Contains the primary logic for graph processing and query handling.
+  function (moduleObj, moduleExports, localRequire) {
     "use strict";
-    // Helper function for safe array destructuring
-    function extractElements ( sourceArray, expectedLength ) {
-      if ( Array.isArray( sourceArray ) ) {
-        return sourceArray;
+
+    // A utility function to safely extract a specified number of elements from an iterable.
+    // It mimics array destructuring behavior, providing fallbacks for non-array iterables.
+    function extractElements(inputIterable, elementCount) {
+      // If the input is already an array, return it directly.
+      if (Array.isArray(inputIterable)) {
+        return inputIterable;
       }
-      var collectedItems = [];
-      var isDone = true;
-      var hasError = false;
-      var caughtError = void 0;
-      try {
-        for (
-          var itemIterator = sourceArray[ Symbol.iterator ]();
-          !( isDone = ( itemIterator.next() ).done ) &&
-          ( collectedItems.push( itemIterator.value ), !expectedLength || collectedItems.length !== expectedLength );
-          isDone = true
-        ) {
-          /* Loop continues */
-        }
-      } catch ( err ) {
-        hasError = true;
-        caughtError = err;
-      } finally {
+
+      // Attempt to iterate over the input and collect elements.
+      return (function (iterable, count) {
+        var extractedItems = [];
+        var isDone = true;
+        var hasError = false;
+        var errorValue = undefined;
+
         try {
-          if ( !isDone && itemIterator[ "return" ] != null ) {
-            itemIterator[ "return" ]();
-          }
+          // Loop through the iterable, pushing items to 'extractedItems'
+          // until the iterator is done or 'count' elements are collected.
+          for (
+            var valueIterator = iterable[Symbol.iterator]();
+            !(isDone = (iteratorItem = valueIterator.next()).done) &&
+            (extractedItems.push(iteratorItem.value), !count || extractedItems.length !== count);
+            isDone = true
+          ) { }
+        } catch (err) {
+          // Catch any errors during iteration.
+          hasError = true;
+          errorValue = err;
         } finally {
-          if ( hasError ) {
-            throw caughtError;
+          try {
+            // If the iterator was not fully consumed, call its 'return' method if available.
+            if (!isDone && valueIterator.return != null) {
+              valueIterator.return();
+            }
+          } finally {
+            // Re-throw any caught errors.
+            if (hasError) {
+              throw errorValue;
+            }
           }
         }
-      }
-      return collectedItems;
+        return extractedItems;
+      })(inputIterable, elementCount) ||
+        // If the above extraction fails (e.g., input is not iterable), throw a TypeError.
+        (function () {
+          throw new TypeError("Invalid attempt to destructure non-iterable instance");
+        })();
     }
-    thisModule.exports = function ( inputLineArray ) {
-      // Parse the number of nodes from the first line
-      var nodeCount = Number( inputLineArray[ 0 ] );
-      // Initialize an adjacency list for the graph
-      var nodeConnections = new Array( nodeCount );
-      for ( var currentIdx = 0; currentIdx < nodeCount; currentIdx++ ) {
-        nodeConnections[ currentIdx ] = [];
+
+    // The main function exported by this module, which processes the input lines.
+    moduleExports.exports = function (inputLines) {
+      // The first line of input contains the total number of nodes (N).
+      var nodeCount = Number(inputLines[0]);
+
+      // Initialize an adjacency list to represent the graph.
+      // Each element in the array will be a list of neighbors for a given node.
+      var graphAdjacencyList = new Array(nodeCount);
+      for (var idx = 0; idx < nodeCount; idx++) {
+        graphAdjacencyList[idx] = [];
       }
-      // Parse the query information (total queries and starting node)
-      var initialQueryData = extractElements(
-        inputLineArray[ nodeCount ].split( " " ).map( function ( stringVal ) {
-          return Number( stringVal );
-        } ),
+
+      // The line at index 'nodeCount' contains the start node (S) and target node (T).
+      var pathNodes = extractElements(
+        inputLines[nodeCount].split(" ").map(function (strNum) {
+          return Number(strNum);
+        }),
         2
       );
-      var totalQueries = initialQueryData[ 0 ];
-      var startNodeIndex = initialQueryData[ 1 ];
-      // Build the graph from the subsequent lines (edges)
-      for ( var edgeLineIndex = 0; edgeLineIndex < nodeCount - 1; edgeLineIndex++ ) {
-        var edgeDetails = extractElements(
-          inputLineArray[ edgeLineIndex + 1 ].split( " " ).map( function ( stringVal ) {
-            return Number( stringVal );
-          } ),
+      var startNodeS = pathNodes[0]; // The starting node for queries.
+      var targetNodeT = pathNodes[1]; // The special target node.
+
+      // Process the next 'nodeCount - 1' lines, which define the edges of the graph.
+      for (var edgeIdx = 0; edgeIdx < nodeCount - 1; edgeIdx++) {
+        var edgeData = extractElements(
+          inputLines[edgeIdx + 1].split(" ").map(function (strNum) {
+            return Number(strNum);
+          }),
           3
         );
-        var firstNodeId = edgeDetails[ 0 ];
-        var secondNodeId = edgeDetails[ 1 ];
-        var edgeWeight = edgeDetails[ 2 ];
-        // Add edges to the adjacency list, excluding connections to the start node itself
-        if ( secondNodeId !== startNodeIndex ) {
-          nodeConnections[ firstNodeId - 1 ].push( {
-            vertex: secondNodeId - 1,
-            cost: edgeWeight
-          } );
+        var firstNode = edgeData[0];
+        var secondNode = edgeData[1];
+        var edgeCost = edgeData[2];
+
+        // Add an edge from 'firstNode' to 'secondNode' if 'secondNode' is not the target node.
+        // Node IDs are 1-based in input, convert to 0-based for array indexing.
+        if (secondNode !== targetNodeT) {
+          graphAdjacencyList[firstNode - 1].push({ vertexId: secondNode - 1, weight: edgeCost });
         }
-        if ( firstNodeId !== startNodeIndex ) {
-          nodeConnections[ secondNodeId - 1 ].push( {
-            vertex: firstNodeId - 1,
-            cost: edgeWeight
-          } );
+        // Add an edge from 'secondNode' to 'firstNode' if 'firstNode' is not the target node.
+        if (firstNode !== targetNodeT) {
+          graphAdjacencyList[secondNode - 1].push({ vertexId: firstNode - 1, weight: edgeCost });
         }
       }
-      // Initialize an array to store shortest path costs from the start node
-      var shortestPathCosts = new Array( nodeCount ).fill( -1 );
-      // Initialize a queue for a Breadth-First Search (BFS) or similar traversal
-      var processingQueue = [ { vertex: startNodeIndex - 1, currentPathCost: 0 } ];
-      // Perform the traversal to find shortest paths
-      while ( processingQueue.length > 0 ) {
-        var currentNodeData = processingQueue.pop(); // Get next node to process
-        var neighborCount = nodeConnections[ currentNodeData.vertex ].length;
-        for ( var neighborIterator = 0; neighborIterator < neighborCount; neighborIterator++ ) {
-          var neighborConnection = nodeConnections[ currentNodeData.vertex ][ neighborIterator ];
-          // If this neighbor hasn't been visited yet (cost is -1)
-          if ( shortestPathCosts[ neighborConnection.vertex ] === -1 ) {
-            var newCalculatedCost = currentNodeData.currentPathCost + neighborConnection.cost;
-            shortestPathCosts[ neighborConnection.vertex ] = newCalculatedCost;
-            processingQueue.push( { vertex: neighborConnection.vertex, currentPathCost: newCalculatedCost } );
+
+      // Initialize an array to store the calculated distances from the 'targetNodeT'
+      // to all other nodes. -1 indicates an unvisited node.
+      var distancesFromTarget = new Array(nodeCount).fill(-1);
+      // Initialize a processing queue (acting as a stack due to 'pop') for traversal.
+      // Start with the target node itself, with a distance of 0.
+      var processingQueue = [{ vertexId: targetNodeT - 1, currentSum: 0 }];
+
+      // Perform a traversal (DFS-like due to 'pop') starting from the target node.
+      while (processingQueue.length > 0) {
+        var currentItem = processingQueue.pop(); // Get the current node and its accumulated distance.
+        var neighborCount = graphAdjacencyList[currentItem.vertexId].length;
+
+        // Iterate through all neighbors of the current node.
+        for (var neighborIdx = 0; neighborIdx < neighborCount; neighborIdx++) {
+          var neighborInfo = graphAdjacencyList[currentItem.vertexId][neighborIdx];
+
+          // If this neighbor has not been visited yet (its distance is -1).
+          if (distancesFromTarget[neighborInfo.vertexId] === -1) {
+            // Calculate the distance to this neighbor.
+            var calculatedDistance = currentItem.currentSum + neighborInfo.weight;
+            // Update the distance in the 'distancesFromTarget' array.
+            distancesFromTarget[neighborInfo.vertexId] = calculatedDistance;
+            // Add the neighbor to the processing queue.
+            processingQueue.push({ vertexId: neighborInfo.vertexId, currentSum: calculatedDistance });
           }
         }
       }
-      // Process each query
-      for ( var queryIteration = 0; queryIteration < totalQueries; queryIteration++ ) {
-        var queryNodePair = extractElements(
-          inputLineArray[ queryIteration + nodeCount + 1 ].split( " " ).map( function ( stringVal ) {
-            return Number( stringVal );
-          } ),
+
+      // Process the remaining 'startNodeS' lines as queries.
+      for (var queryIdx = 0; queryIdx < startNodeS; queryIdx++) {
+        // Each query line contains two node IDs.
+        var queryNodes = extractElements(
+          inputLines[queryIdx + nodeCount + 1].split(" ").map(function (strNum) {
+            return Number(strNum);
+          }),
           2
         );
-        var queryNodeA = queryNodePair[ 0 ];
-        var queryNodeB = queryNodePair[ 1 ];
-        // Calculate the combined path cost for the query nodes
-        var combinedPathCost = shortestPathCosts[ queryNodeA - 1 ] + shortestPathCosts[ queryNodeB - 1 ];
-        // Output the result
-        console.log( combinedPathCost );
+        var queryStartNode = queryNodes[0];
+        var queryEndNode = queryNodes[1];
+
+        // Calculate the total path cost by summing the distances from 'targetNodeT'
+        // to 'queryStartNode' and 'queryEndNode'.
+        var totalPathCost = distancesFromTarget[queryStartNode - 1] + distancesFromTarget[queryEndNode - 1];
+        // Print the calculated total path cost to standard output.
+        console.log(totalPathCost);
       }
     };
   },
-  /* Module 2: Provides the Node.js 'fs' module */
-  function ( moduleReference, exportReference ) {
-    moduleReference.exports = require( "node:fs" );
+
+  // Module 2: Provides access to Node.js's built-in 'fs' (file system) module.
+  function (moduleObj, moduleExports) {
+    moduleObj.exports = localRequire("fs");
   }
-] );
+]);

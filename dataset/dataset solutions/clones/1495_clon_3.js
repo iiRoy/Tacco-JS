@@ -1,99 +1,76 @@
-function processPointRelationships(rawDataInput) {
-  // Parse raw input by splitting into lines, trimming whitespace, and then
-  // splitting each line by space. Convert all resulting string parts to numbers.
-  // This handles potential empty lines and ensures numeric data.
-  const parsedDataLines = rawDataInput.trim().split("\n").map(line => line.split(" ").map(Number));
+function ProcessInput(rawData) {
+  // Step 1: Parse the raw input string into a 2D array of strings.
+  // Each line becomes an array of space-separated values.
+  const processedData = rawData.split("\n").map(lineString => lineString.split(" "));
 
-  // Validate the initial input structure. The first line should contain 'N'.
-  if (!parsedDataLines || parsedDataLines.length === 0 || isNaN(parsedDataLines[0][0])) {
-    // If the first line is missing or doesn't start with a valid number, log an error and exit.
-    console.error("Input processing error: Expected a numeric value for N on the first line.");
-    return;
-  }
+  // Step 2: Extract the total count of points from the first element of the first line.
+  // Convert it to a number as it will be used for loop bounds.
+  const totalPointCount = Number(processedData[0][0]);
 
-  // Extract the total number of data points from the first element of the first line.
-  const numberOfEntities = parsedDataLines[0][0];
+  // Step 3: Define a constant for the repetitive separator message.
+  const SEPARATOR_OUTPUT_STRING = "xxxxxxx";
 
-  // Prepare an array to store structured coordinate objects.
-  // We skip the first line as it contains 'N', and process subsequent lines.
-  const entityCoordinates = [];
-  for (let k = 1; k <= numberOfEntities; k++) { // Loop from 1 up to N (inclusive, matching input structure)
-    const currentLineData = parsedDataLines[k];
-    if (currentLineData && currentLineData.length >= 2 && !isNaN(currentLineData[0]) && !isNaN(currentLineData[1])) {
-      // Store coordinates as objects for better readability and access.
-      entityCoordinates.push({ xCoord: currentLineData[0], yCoord: currentLineData[1] });
-    } else {
-      // Log a warning for any malformed or missing coordinate data lines.
-      console.warn(`Skipping invalid or incomplete coordinate data for entity at input line ${k + 1}.`);
-    }
-  }
+  // Step 4: Introduce a small helper function to encapsulate the core comparison logic.
+  // This improves readability and modularity by abstracting the conditional check.
+  const checkQuadrantRelation = (coord1X, coord1Y, coord2X, coord2Y) => {
+    // Explicitly convert string coordinates to numbers for accurate comparison.
+    const numCoord1X = Number(coord1X);
+    const numCoord1Y = Number(coord1Y);
+    const numCoord2X = Number(coord2X);
+    const numCoord2Y = Number(coord2Y);
 
-  // Define a utility function to determine if two points exhibit mutual dominance.
-  // Mutual dominance means one point is strictly smaller than the other in both X and Y dimensions.
-  const arePointsMutuallyDominant = (pointAlpha, pointBeta) => {
-    const isAlphaSmallerThanBeta = (pointAlpha.xCoord < pointBeta.xCoord && pointAlpha.yCoord < pointBeta.yCoord);
-    const isBetaSmallerThanAlpha = (pointBeta.xCoord < pointAlpha.xCoord && pointBeta.yCoord < pointAlpha.yCoord);
-    return isAlphaSmallerThanBeta || isBetaSmallerThanAlpha;
+    // The condition checks if one point is strictly "above and to the right"
+    // or "below and to the left" of the other.
+    return (numCoord1X < numCoord2X && numCoord1Y < numCoord2Y) ||
+           (numCoord2X < numCoord1X && numCoord2Y < numCoord1Y);
   };
 
-  // This function calculates how many other points are mutually dominant with a given base point.
-  // It takes the 0-indexed position and the coordinates of the base point.
-  const calculateDominanceConnectionCount = (baseEntityIndex, currentX, currentY) => {
-    // The count is initialized to 1. This implies the base entity itself is counted
-    // as part of the group or chain, even though it's explicitly skipped in the comparison loop.
-    // This behavior aligns with the original code's explicit comment and initialization.
-    let connectedEntitiesCount = 1;
+  // Step 5: Refactor the inner loop logic into a dedicated function.
+  // This function calculates how many other points satisfy the quadrant relation
+  // with a given 'current' point.
+  const calculateRelatedPointsCount = (currentPointIndex, currentPointX, currentPointY) => {
+    // Initialize the count. The current point itself is included in the count,
+    // as per the original logic ("現在地含むなので1から開始").
+    let relatedPointsCounter = 1;
 
-    // Iterate through all entities to compare with the base entity.
-    // Using 0-indexed loop for direct array access to `entityCoordinates`.
-    for (let comparisonIndex = 0; comparisonIndex < numberOfEntities; comparisonIndex++) {
-      // If the comparison entity is the same as the base entity, skip to avoid self-comparison.
-      if (baseEntityIndex === comparisonIndex) {
+    // Iterate through all points, starting from index 1 (skipping the 'n' value).
+    for (let otherPointIndex = 1; otherPointIndex <= totalPointCount; otherPointIndex++) {
+      // Skip comparison if the 'other' point is the same as the 'current' point.
+      if (currentPointIndex === otherPointIndex) {
         continue;
       }
 
-      // Retrieve the coordinates of the entity being compared.
-      const otherEntity = entityCoordinates[comparisonIndex];
+      // Retrieve coordinates of the 'other' point from the processed data.
+      const otherPointX = processedData[otherPointIndex][0];
+      const otherPointY = processedData[otherPointIndex][1];
 
-      // Add a safety check in case an entity was skipped during initial parsing.
-      if (!otherEntity) {
-        console.warn(`Skipping comparison for missing entity at index ${comparisonIndex}.`);
-        continue;
-      }
-
-      // Use the dedicated helper function to check the dominance condition.
-      const basePointForComparison = { xCoord: currentX, yCoord: currentY };
-      if (arePointsMutuallyDominant(basePointForComparison, otherEntity)) {
-        connectedEntitiesCount++; // Increment the count if the condition is met.
+      // Use the helper function to check the quadrant relation.
+      if (checkQuadrantRelation(currentPointX, currentPointY, otherPointX, otherPointY)) {
+        // If the condition is met, log the coordinates of the 'other' point.
+        console.log(otherPointX, otherPointY);
+        relatedPointsCounter++; // Increment the count of related points.
       }
     }
-    return connectedEntitiesCount; // Return the final tally.
+    return relatedPointsCounter; // Return the total count.
   };
 
-  // Main loop to process each entity and determine its dominance connections.
-  // Iterates from 0 to numberOfEntities - 1, using 0-indexed array access.
-  for (let entityPos = 0; entityPos < numberOfEntities; entityPos++) {
-    const currentEntity = entityCoordinates[entityPos];
+  // Step 6: Implement the main loop that iterates through each point.
+  // This loop processes each point as the 'current' point.
+  for (let mainIterationIndex = 1; mainIterationIndex <= totalPointCount; mainIterationIndex++) {
+    // Output the predefined separator string before processing each point.
+    console.log(SEPARATOR_OUTPUT_STRING);
 
-    // Ensure the current entity's data is valid before processing.
-    if (!currentEntity) {
-      console.warn(`Skipping calculations for entity at position ${entityPos + 1} due to missing data.`);
-      continue;
-    }
+    // Extract the coordinates of the current point for this iteration.
+    const currentIterationX = processedData[mainIterationIndex][0];
+    const currentIterationY = processedData[mainIterationIndex][1];
 
-    // Call the helper function to get the dominance count for the current entity.
-    const resultForThisEntity = calculateDominanceConnectionCount(
-      entityPos,
-      currentEntity.xCoord,
-      currentEntity.yCoord
-    );
+    // Call the refactored function to get the count of related points for the current point.
+    const finalRelatedCount = calculateRelatedPointsCount(mainIterationIndex, currentIterationX, currentIterationY);
 
-    // Output the result for the current entity, using 1-based indexing for user-friendliness.
-    console.log(`Calculated connections for entity #${entityPos + 1}: ${resultForThisEntity}`);
+    // Log the final count returned by the function.
+    console.log(finalRelatedCount);
   }
 }
 
-// This section handles the program's entry point, reading input from stdin.
-// It uses Node.js 'fs' module to synchronously read the entire file content.
-// The read content is then passed to the main processing function.
-processPointRelationships(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Standard boilerplate for reading input from /dev/stdin in Node.js environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

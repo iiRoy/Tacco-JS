@@ -1,118 +1,175 @@
-// This segment sets up input processing and provides various utility functions.
-var lineReaderService = require('readline').createInterface({
-  inputStream: runtimeEnv.standardIn,
-  standardOut: runtimeEnv.standardOut
-});
-var programData;
-var receivedInputLines = [];
-lineReaderService.on('line', function(incomingText) {
-  receivedInputLines.push(incomingText);
-});
-lineReaderService.on('close', function() {
-  programData = initializeDataStructure(receivedInputLines);
-  outputChannel.displayIssue("\n"); // Output a blank line for visual separation
-  var executionStartTime = systemClock.now();
-  MainProgramLogic();
-  var totalElapsedTime = systemClock.now() - executionStartTime;
-  debugOutput("duration : " + (totalElapsedTime) + "milliseconds");
-  debugOutput("allocatedMemory : " + numericalOps.round(runtimeEnv.memoryUsage().heapTotal / 1024) + "kilobytes");
+/*
+ * This file contains a Type II clone of an original JavaScript program.
+ * The structure, control flow, and behavior are preserved.
+ * Identifier names, whitespace, and comments have been altered.
+ */
+
+// --- Start of boilerplate code for input handling (not part of core logic) ---
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-function createDeepCopy(originalObject) {
-  return objectSerializer.parse(objectSerializer.stringify(originalObject));
+var dataProcessor;
+var inputLines = [];
+
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
+});
+
+inputReader.on('close', function(){
+  dataProcessor = initializeInputHandler(inputLines);
+  console.error("\n"); // Add a newline for cleaner debug output
+  var startTime = Date.now();
+  executePrimaryLogic();
+  var elapsedTime = Date.now() - startTime;
+  logDebugMessage("execution_time : " + (elapsedTime) + "ms");
+  logDebugMessage("memory_usage : " + Math.round(process.memoryUsage().heapTotal / 0x400) + "KB");
+});
+
+/**
+ * Creates a deep copy of an object using JSON serialization.
+ * @param {object} originalObject - The object to clone.
+ * @returns {object} A deep copy of the original object.
+ */
+function createDeepCopy(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
 
-function retrieveNextInteger() {
-  return dataTransformation(fetchNextEntry(), 1);
+/**
+ * Retrieves the next token from the input and parses it as an integer.
+ * @returns {number} The parsed integer.
+ */
+function retrieveInteger(){
+  return transformInput(fetchNextToken(), 1);
 }
 
-function retrieveNextStringArray() {
-  return dataTransformation(fetchNextEntry(), 2);
+/**
+ * Retrieves the next token from the input and splits it into a string array.
+ * @returns {string[]} An array of strings.
+ */
+function retrieveStringArray(){
+  return transformInput(fetchNextToken(), 2);
 }
 
-function retrieveNextIntegerArray() {
-  return dataTransformation(fetchNextEntry(), 4);
+/**
+ * Retrieves the next token from the input, splits it, and parses elements as integers.
+ * @returns {number[]} An array of integers.
+ */
+function retrieveIntegerArray(){
+  return transformInput(fetchNextToken(), 4);
 }
 
-function retrieveNextCharacterArray() {
-  return dataTransformation(fetchNextEntry(), 6);
+/**
+ * Retrieves the next token from the input and splits it into a character array.
+ * @returns {string[]} An array of characters.
+ */
+function retrieveCharacterArray(){
+  return transformInput(fetchNextToken(), 6);
 }
 
-function fetchNextEntry() {
-  return programData.fetchNextEntry();
+/**
+ * Fetches the next available token from the input handler.
+ * @returns {string} The next input token.
+ */
+function fetchNextToken(){
+  return dataProcessor.getNextItem();
 }
 
-function checkHasMoreEntries() {
-  return programData.checkHasMoreEntries();
+/**
+ * Checks if there are more tokens available in the input.
+ * @returns {boolean} True if more tokens exist, false otherwise.
+ */
+function hasMoreTokens(){
+  return dataProcessor.checkAvailability();
 }
 
-function initializeDataStructure(inputList) {
+/**
+ * Initializes an input handler object from an array of lines.
+ * This object provides methods to check for and retrieve input tokens.
+ * @param {string[]} sourceInputLines - An array of input strings.
+ * @returns {object} An object with input handling capabilities.
+ */
+function initializeInputHandler(sourceInputLines){
   return {
-    sourceCollection: inputList,
-    currentPosition: 0,
-    maximumItems: inputList.length,
-    checkHasMoreEntries: function() {
-      return (this.currentPosition < this.maximumItems);
+    sourceLines : sourceInputLines,
+    currentPosition : 0,
+    totalLines : sourceInputLines.length,
+
+    /**
+     * Checks if there are more lines to process.
+     * @returns {boolean} True if more lines are available, false otherwise.
+     */
+    checkAvailability : function(){
+      return (this.currentPosition < this.totalLines);
     },
-    fetchNextEntry: function() {
-      if (this.checkHasMoreEntries()) {
-        return this.sourceCollection[this.currentPosition++];
+
+    /**
+     * Retrieves the next line from the input.
+     * Throws an error if no more input is available.
+     * @returns {string} The next line.
+     * @throws {string} If the end of input is reached.
+     */
+    getNextItem : function(){
+      if(this.checkAvailability()){
+        return this.sourceLines[this.currentPosition++];
       } else {
-        throw "InputSequenceExhausted // No further data elements available";
+        throw "ArrayIndexOutOfBoundsException ‚There is no more input";
       }
     }
   };
 }
 
-function outputResult(messageContent) {
-  outputChannel.log(messageContent);
+/**
+ * Outputs a string to the standard console.
+ * @param {string} message - The string to output.
+ */
+function outputResult(message){
+  console.log(message);
 }
 
-function debugOutput(debugMessage) {
-  outputChannel.error("trace:" + require("util").inspect(debugMessage, false, null));
+/**
+ * Logs a debug message to the standard error console.
+ * Uses util.inspect for detailed object logging.
+ * @param {*} debugContent - The content to log.
+ */
+function logDebugMessage(debugContent){
+  console.error("debug_info:" + require("util").inspect(debugContent, !0, void 0));
 }
 
-// The 'conversionType' parameter dictates the data transformation:
-// default or unspecified : returns the input as is.
-// 1: parses the input into an integer.
-// 2: splits the string by space.
-// 4: splits by space and maps to numbers.
-// 6: splits by single character.
-// 7: splits by single character and maps to numbers.
-// 8: joins array elements with a space.
-// 9: joins array elements with a newline.
-// 0: joins array elements without any separator.
-function dataTransformation(inputValue, conversionType) {
+/**
+ * Transforms an input value based on a specified conversion type.
+ * @param {*} inputValue - The input value to transform.
+ * @param {number} conversionType - The type of conversion to apply.
+ * @returns {*} The transformed value.
+ */
+function transformInput(inputValue, conversionType){
   try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(inputValue);
-      case 2:
-        return inputValue.split(" ");
-      case 4:
-        return inputValue.split(" ").map(Number);
-      case 6:
-        return inputValue.split("");
-      case 7:
-        return inputValue.split("").map(Number);
-      case 8:
-        return inputValue.join(" ");
-      case 9:
-        return inputValue.join("\n");
-      case 0:
-        return inputValue.join("");
-      default:
-        return inputValue;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (processingException) {
-    return inputValue;
+  } catch(error) {
+    return inputValue; // Return original value on error
   }
 }
 
-// This represents the primary control flow of the application.
-function MainProgramLogic() {
-  outputResult("firstValue");
-  outputResult("secondValue");
-  outputResult("thirdValue");
-  outputResult("fourthValue");
+// --- End of boilerplate code for input handling ---
+
+/**
+ * The primary logic function of the program.
+ * This function orchestrates the main operations.
+ */
+function executePrimaryLogic(){
+  outputResult("aaa");
+  outputResult("aab");
+  outputResult("abb");
+  outputResult("abc");
 }

@@ -1,110 +1,118 @@
-function performRecursiveProcessing(currentLineIndex) {
-  const dimensionData = entryLines[currentLineIndex].split(' ').map(Number);
-  const widthVal = dimensionData[0];
-  const heightVal = dimensionData[1];
-
-  if (!widthVal && !heightVal) {
-    return;
-  }
-
-  let currentCursor = currentLineIndex + 1;
-
-  const gameGrid = constructMatrix(widthVal, heightVal);
-
-  const initialSpot = entryLines[currentCursor++].split(' ').map(Number);
-  const finalSpot = entryLines[currentCursor++].split(' ').map(Number);
-  const numObstacles = Number(entryLines[currentCursor++]);
-
-  Array.from({ length: numObstacles }).forEach(() => {
-    const obstacleSpecs = entryLines[currentCursor++].split(' ').map(Number);
-    placeObstacle(gameGrid, obstacleSpecs[0], obstacleSpecs[1], obstacleSpecs[2], obstacleSpecs[3]);
-  });
-
-  const outcome = verifyReachability(gameGrid, initialSpot, finalSpot) ? 'OK' : 'NG';
-  console.log(outcome);
-
-  performRecursiveProcessing(currentCursor);
-}
-
-function constructMatrix(dimX, dimY) {
-  return Array.from({ length: dimX }, () => Array.from({ length: dimY }, () => 0));
-}
-
-function placeObstacle(gridRef, tint, orientation, startX, startY) {
-  const formDimensions = [[4, 2], [2, 4]][orientation];
-  Array.from({ length: formDimensions[0] }).forEach((_, rowOffset) => {
-    Array.from({ length: formDimensions[1] }).forEach((_, colOffset) => {
-      gridRef[startX - 1 + rowOffset][startY - 1 + colOffset] = tint;
-    });
-  });
-}
-
-function verifyReachability(gridRef, initialPosition, finalPosition) {
-  const originX = initialPosition[0] - 1;
-  const originY = initialPosition[1] - 1;
-  const targetX = finalPosition[0] - 1;
-  const targetY = finalPosition[1] - 1;
-
-  const startingMaterial = gridRef[originX]?.[originY];
-
-  if (startingMaterial === undefined || startingMaterial === 0) {
-    return false;
-  }
-
-  const visitedLocations = new Set();
-  const directionalShifts = [
-    { deltaR: -1, deltaC: -1 }, { deltaR: 0, deltaC: -1 }, { deltaR: 1, deltaC: -1 },
-    { deltaR: -1, deltaC: 0 },                             { deltaR: 1, deltaC: 0 },
-    { deltaR: -1, deltaC: 1 }, { deltaR: 0, deltaC: 1 }, { deltaR: 1, deltaC: 1 }
-  ];
-
-  const traverseGrid = (currentR, currentC) => {
-    if (currentR < 0 || currentR >= gridRef.length ||
-        currentC < 0 || currentC >= gridRef[0].length) {
-      return false;
-    }
-
-    if (gridRef[currentR][currentC] !== startingMaterial) {
-      return false;
-    }
-
-    const coordinateKey = `${currentR},${currentC}`;
-    if (visitedLocations.has(coordinateKey)) {
-      return false;
-    }
-
-    if (currentR === targetX && currentC === targetY) {
-      return true;
-    }
-
-    visitedLocations.add(coordinateKey);
-
-    for (const shift of directionalShifts) {
-      const nextR = currentR + shift.deltaR;
-      const nextC = currentC + shift.deltaC;
-      if (traverseGrid(nextR, nextC)) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  return traverseGrid(originX, originY);
-}
-
-var entryLines = '';
-
-function commenceProcessing() {
-  entryLines = entryLines.split('\n');
-  performRecursiveProcessing(0);
-}
+var inputDataBuffer = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(dataChunk) {
-  entryLines += dataChunk;
+process.stdin.on('data', function(chunk) {
+  inputDataBuffer += chunk;
 });
 process.stdin.on('end', function() {
-  commenceProcessing();
+  const lines = inputDataBuffer.split('\n');
+  processInputLines(lines);
 });
+
+function processInputLines(allInputLines) {
+  let linePointer = 0;
+
+  while (true) {
+    const dimensions = allInputLines[linePointer++].split(' ').map(Number);
+    const boardWidth = dimensions[0];
+    const boardHeight = dimensions[1];
+
+    if (boardWidth === 0 && boardHeight === 0) {
+      break;
+    }
+
+    const gameGrid = createGrid(boardWidth, boardHeight);
+
+    const initialPosition = allInputLines[linePointer++].split(' ').map(Number);
+    const finalDestination = allInputLines[linePointer++].split(' ').map(Number);
+
+    const blockDefinitionCount = Number(allInputLines[linePointer++]);
+    for (let k = 0; k < blockDefinitionCount; k++) {
+      const blockDetails = allInputLines[linePointer++].split(' ').map(Number);
+      applyBlockToGrid(gameGrid, blockDetails[0], blockDetails[1], blockDetails[2], blockDetails[3]);
+    }
+
+    const pathFound = findPath(gameGrid, initialPosition, finalDestination);
+    console.log(pathFound ? 'OK' : 'NG');
+  }
+}
+
+function createGrid(gridCols, gridRows) {
+  return Array.from({ length: gridCols }, () => Array.from({ length: gridRows }, () => 0));
+}
+
+function applyBlockToGrid(targetGrid, blockColor, blockOrientation, colStart, rowStart) {
+  const blockDimensions = blockOrientation === 0 ? { width: 4, height: 2 } : { width: 2, height: 4 };
+
+  const actualColStart = colStart - 1;
+  const actualRowStart = rowStart - 1;
+
+  const cellsToFill = Array.from({ length: blockDimensions.height }, (_, rOffset) =>
+    Array.from({ length: blockDimensions.width }, (_, cOffset) => ({
+      column: actualColStart + cOffset,
+      row: actualRowStart + rOffset
+    }))
+  ).flat();
+
+  cellsToFill.forEach(cell => {
+    targetGrid[cell.column][cell.row] = blockColor;
+  });
+}
+
+function findPath(currentGrid, startCoordinates, endCoordinates) {
+  const startColIdx = startCoordinates[0] - 1;
+  const startRowIdx = startCoordinates[1] - 1;
+  const endColIdx = endCoordinates[0] - 1;
+  const endRowIdx = endCoordinates[1] - 1;
+
+  const initialCellIdentifier = currentGrid[startColIdx][startRowIdx];
+
+  if (initialCellIdentifier === 0) {
+    return false;
+  }
+
+  const visitedNodes = new Set();
+  const traversalQueue = [];
+
+  const startNodeKey = `${startColIdx},${startRowIdx}`;
+  traversalQueue.push([startColIdx, startRowIdx]);
+  visitedNodes.add(startNodeKey);
+
+  const movementDirections = [
+    { deltaC: -1, deltaR: -1 }, { deltaC: 0, deltaR: -1 }, { deltaC: 1, deltaR: -1 },
+    { deltaC: -1, deltaR: 0 },                           { deltaC: 1, deltaR: 0 },
+    { deltaC: -1, deltaR: 1 },  { deltaC: 0, deltaR: 1 },  { deltaC: 1, deltaR: 1 }
+  ];
+
+  while (traversalQueue.length > 0) {
+    const [currentC, currentR] = traversalQueue.shift();
+
+    if (currentC === endColIdx && currentR === endRowIdx) {
+      return true;
+    }
+
+    for (const direction of movementDirections) {
+      const nextC = currentC + direction.deltaC;
+      const nextR = currentR + direction.deltaR;
+      const nextNodeKey = `${nextC},${nextR}`;
+
+      if (nextC < 0 || nextC >= currentGrid.length || nextR < 0 || nextR >= currentGrid[0].length) {
+        continue;
+      }
+
+      if (visitedNodes.has(nextNodeKey)) {
+        continue;
+      }
+
+      if (currentGrid[nextC][nextR] !== initialCellIdentifier) {
+        continue;
+      }
+
+      visitedNodes.add(nextNodeKey);
+      traversalQueue.push([nextC, nextR]);
+    }
+  }
+
+  return false;
+}

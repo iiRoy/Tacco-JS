@@ -1,64 +1,63 @@
-function ProcessInputData ( rawData ) {
-  // This function processes the incoming raw data string.
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines
+  let lineData = rawData.split("\n");
 
-  let processedLines = rawData . split ( "\n" ) ;
+  // Parse the first line to get N and K values
+  let firstLineParts = lineData[0].split(" ");
+  // Parse the second line to get the array elements
+  let arrayElements = lineData[1].split(" ");
 
-  const firstLineTokens = processedLines [ 0 ] . split ( " " ) ;
+  // Assign N and K from the parsed parts
+  let totalElements = firstLineParts[0]; // N
+  let segmentSize = firstLineParts[1];   // K
 
-  const secondLineNumbers = processedLines [ 1 ] . split ( " " ) ;
+  // Initialize variables for calculation
+  let resultCount = 0;
+  let onePosition = 0;
+  let arrayLength = arrayElements.length;
 
-  let countItems = firstLineTokens [ 0 ] ; // Total number of items (not directly used in calculation)
+  // Initialize segment lengths and an adjustment factor
+  let leftSegment = 1;
+  let rightSegment = 1;
+  let adjustmentFactor = 0;
 
-  let segmentSize = firstLineTokens [ 1 ] ; // The size of each segment for operations
-
-  let finalResult = 0 ; // Stores the calculated final outcome
-
-  let firstOnePosition = 0 ; // Tracks the position of the first '1' found
-
-  const arrayLength = secondLineNumbers . length ; // The total length of the number array
-
-  let leftCount = 1 ; // Number of elements to the left of the '1' (initially placeholder, later updated)
-
-  let rightCount = 1 ; // Number of elements to the right of the '1' (initially placeholder, later updated)
-
-  let adjustmentValue = 0 ; // A value used to adjust the final result
-
-  // Iterate through the array to locate the initial '1'
-  for ( let currentIdx = 0 ; currentIdx < arrayLength ; currentIdx ++ ) {
-    if ( secondLineNumbers [ currentIdx ] === "1" ) { // Check for string '1'
-      firstOnePosition = currentIdx ; // Store the position
-      break ; // Exit loop once found
+  // Find the position of the first occurrence of "1" in the array
+  for (let loopIndex = 0; loopIndex < arrayLength; loopIndex++) {
+    if (arrayElements[loopIndex] === "1") {
+      onePosition = loopIndex;
+      break; // Exit loop once "1" is found
     }
   }
 
-  leftCount = firstOnePosition ; // Number of elements before the '1'
+  // Calculate the lengths of the segments to the left and right of "1"
+  leftSegment = onePosition;
+  rightSegment = arrayLength - 1 - onePosition;
 
-  rightCount = arrayLength - 1 - firstOnePosition ; // Number of elements after the '1'
-
-  // Check if the total span is within the segment size
-  if ( ( leftCount + rightCount ) <= parseInt ( segmentSize ) ) {
-    adjustmentValue = -1 ; // Set adjustment if span is small
+  // Check if the total span of elements is less than or equal to K
+  if (leftSegment + rightSegment <= segmentSize) {
+    adjustmentFactor = -1; // Set adjustment if condition met
   }
 
-  // Process elements to the left until none remain
-  while ( leftCount > 0 ) {
-    finalResult = finalResult + 1 ; // Increment the operation count
-    leftCount = leftCount - ( parseInt ( segmentSize ) - 1 ) ; // Reduce count by segment size minus one
+  // Calculate operations needed for the left segment
+  while (leftSegment > 0) {
+    resultCount = resultCount + 1;
+    leftSegment = leftSegment - (segmentSize - 1);
   }
 
-  // Process elements to the right until none remain
-  while ( rightCount > 0 ) {
-    finalResult = finalResult + 1 ; // Increment the operation count
-    rightCount = rightCount - ( parseInt ( segmentSize ) - 1 ) ; // Reduce count by segment size minus one
+  // Calculate operations needed for the right segment
+  while (rightSegment > 0) {
+    resultCount = resultCount + 1;
+    rightSegment = rightSegment - (segmentSize - 1);
   }
 
-  // Apply final adjustment if the result is not zero
-  if ( finalResult !== 0 ) {
-    finalResult = finalResult + adjustmentValue ; // Add the calculated adjustment
+  // Apply the adjustment factor if resultCount is not zero
+  if (resultCount !== 0) {
+    resultCount = resultCount + adjustmentFactor;
   }
 
-  console . log ( finalResult ) ; // Output the final computed value
+  // Output the final calculated result
+  console.log(resultCount);
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

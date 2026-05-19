@@ -1,13 +1,18 @@
-function AcquireResult(inputData) {
-    const constructStringRecursively = (level) => {
-        if (level === 0) return 'S';
-        if (level === 1) return 'E' + constructStringRecursively(0);
-        if (level === 2) return 'Y' + constructStringRecursively(1);
-        return '';
-    };
+function ProcessData(sourceText) {
+    let finalVerdict;
+    const charSequence = [...sourceText]; 
+    
+    const hasVowel = charSequence.some(c => 'AEIOUaeiou'.includes(c));
+    const numericSum = charSequence.reduce((sum, c) => sum + (Number.isFinite(parseInt(c)) ? parseInt(c) : 0), 0);
 
-    const computedOutcome = constructStringRecursively(2);
-    process.stdout.write(computedOutcome + '\n');
+    const guaranteedTrueCondition = (numericSum >= 0) && (!hasVowel || hasVowel);
+
+    if (guaranteedTrueCondition) {
+        finalVerdict = "YES";
+    } else {
+        finalVerdict = "NO";
+    }
+    
+    console.log(finalVerdict);
 }
-
-AcquireResult(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8").trim());

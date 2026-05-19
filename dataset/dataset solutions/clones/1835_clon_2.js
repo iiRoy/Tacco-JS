@@ -1,62 +1,95 @@
-"use strict"; // Enforce strict mode for modern JavaScript practices.
-let dataStream = require("node:fs").readFileSync("/dev/stdin", "utf8"); // Acquire content from the standard input file path.
-const processedInput = dataStream.trim().split(/ |\n/); // Clean and segment the raw input string by spaces or newlines.
-let currentIdx = 0; // Initialize a pointer for navigating the input sequence.
+"use strict";
+var inputDataStream = require("fs").readFileSync("/dev/stdin", "utf8");
+var parsedInputData = inputDataStream.trim().split(/ |\n/),
+  currentIndex = 0; // This variable is not used in the provided logic, but kept for consistency with the parsing pattern.
 
-function initiateProcessing() {
-  // This function orchestrates the primary execution logic.
-  const totalLevels = +processedInput[currentIdx++]; // Extract and parse the initial numeric value, advancing the pointer.
-  const levelData = processedInput.map(val => +val); // Convert the remaining input elements into an array of numbers.
+function processTreeData() {
+  // Read the number of levels from the input.
+  let numLevels = +parsedInputData.shift();
 
-  let levelQuantities = new Array(totalLevels + 1); // Declare an array to store the number of nodes at each hierarchical level.
-  let cumulativeCount = 1; // Initialize a running total for all valid nodes.
+  // Convert remaining input values to numbers for level requirements.
+  let levelValues = parsedInputData.map((valStr) => +valStr);
 
-  levelQuantities[0] = 1; // By definition, the initial level (root) starts with one node.
+  // Initialize an array to store the number of nodes at each level.
+  // The size is numLevels + 1 because level 0 is the root.
+  let currentLevelNodes = Array(numLevels + 1);
 
-  // Iterate through each level from the root downwards to calculate node counts.
-  for (let currentLevel = 0; currentLevel < totalLevels; currentLevel++) {
-    levelQuantities[currentLevel + 1] = (levelQuantities[currentLevel] - levelData[currentLevel]) * 2; // Compute the node count for the subsequent level.
+  // Initialize the total count of nodes.
+  let totalNodesCount = 0b1; // Start with 1 node (the root).
 
-    if (levelQuantities[currentLevel + 1] > 0) {
-      cumulativeCount += levelQuantities[currentLevel + 1]; // If the count is positive, add it to the overall total.
+  // Set the root node count.
+  currentLevelNodes[0x0] = 0b1;
+
+  // First pass: Calculate nodes from root down to leaves.
+  // This loop determines the minimum required nodes at each level.
+  for (let depthIndex = 0; depthIndex < numLevels; depthIndex++) {
+    // Calculate nodes for the next level based on current level and required branches.
+    currentLevelNodes[depthIndex + 0b1] =
+      (currentLevelNodes[depthIndex] - levelValues[depthIndex]) * 0b10;
+
+    // Check if the calculated number of nodes is valid (non-negative).
+    if (currentLevelNodes[depthIndex + 0b1] > 0x0) {
+      // If valid, add these nodes to the total count.
+      totalNodesCount += currentLevelNodes[depthIndex + 0b1];
     } else {
-      console.log(-1); // A non-positive node count indicates an invalid configuration; output an error.
-      return; // Terminate execution immediately.
+      // If invalid (negative nodes), it's impossible to form the tree.
+      console.log(-0b1);
+      return; // Exit the function.
     }
   }
 
-  // After initial calculation, assess the final level's node state.
-  if (levelQuantities[totalLevels] < levelData[totalLevels]) {
-    console.log(-1); // If the final level has fewer nodes than required, it's an invalid state.
-  } else if (levelQuantities[totalLevels] === levelData[totalLevels]) {
-    console.log(cumulativeCount); // If the final level matches the requirement perfectly, output the calculated total.
+  // After the first pass, check the final level's node count against its requirement.
+  if (currentLevelNodes[numLevels] < levelValues[numLevels]) {
+    // If the last level has fewer nodes than required, it's impossible.
+    console.log(-0b1);
+  } else if (currentLevelNodes[numLevels] === levelValues[numLevels]) {
+    // If the last level has exactly the required nodes, the current total is correct.
+    console.log(totalNodesCount);
   } else {
-    // If the final level has an excess of nodes, a backward adjustment process is needed.
-    let surplusNodes = new Array(totalLevels + 1); // An auxiliary array to track any surplus nodes at each level.
-    let maximumAllowed = new Array(totalLevels + 1); // An array to store the maximum permissible nodes for each level.
+    // If the last level has more nodes than required, we need to prune branches.
+    // This requires a second pass, from leaves up to the root.
 
-    maximumAllowed[totalLevels] = levelData[totalLevels]; // The maximum allowed nodes for the last level is its exact data requirement.
+    // Array to store excess nodes at each level (if any).
+    let excessNodesAtLevel = Array(numLevels + 0b1);
 
-    // Traverse the levels in reverse order to perform adjustments.
-    for (let reverseLevel = totalLevels; reverseLevel > 0; reverseLevel--) {
-      // Determine if the current level's node count exceeds the maximum allowed.
-      if (maximumAllowed[reverseLevel] >= levelQuantities[reverseLevel]) {
-        // If current nodes are within limits, propagate the sum of current nodes and previous level's data requirement upwards.
-        maximumAllowed[reverseLevel - 1] = levelQuantities[reverseLevel] + levelData[reverseLevel - 1];
+    // Array to store the maximum allowed nodes at each level, propagating upwards.
+    let maxAllowedNodes = Array(numLevels + 0b1);
+
+    // Initialize the maximum allowed nodes at the very last level.
+    maxAllowedNodes[numLevels] = levelValues[numLevels];
+
+    // Second pass: Propagate maximum allowed nodes from leaves up to the root.
+    for (let depthIndex = numLevels; depthIndex > 0; depthIndex--) {
+      // If the current level's calculated nodes are within the allowed maximum.
+      if (maxAllowedNodes[depthIndex] >= currentLevelNodes[depthIndex]) {
+        // The maximum allowed nodes for the parent level is the parent's current nodes plus its required branches.
+        maxAllowedNodes[depthIndex - 0b1] =
+          currentLevelNodes[depthIndex] + levelValues[depthIndex - 0b1];
       } else {
-        // If there's an excess, calculate it and subtract from the cumulative total.
-        surplusNodes[reverseLevel] = levelQuantities[reverseLevel] - maximumAllowed[reverseLevel]; // Calculate the specific excess for this level.
-        cumulativeCount -= surplusNodes[reverseLevel]; // Reduce the grand total by the detected surplus.
-        maximumAllowed[reverseLevel - 1] = maximumAllowed[reverseLevel] + levelData[reverseLevel - 1]; // Propagate the adjusted maximum allowed count.
+        // If the current level has more nodes than allowed, calculate the excess.
+        excessNodesAtLevel[depthIndex] =
+          currentLevelNodes[depthIndex] - maxAllowedNodes[depthIndex];
+
+        // Subtract the excess nodes from the total count.
+        totalNodesCount = totalNodesCount - excessNodesAtLevel[depthIndex];
+
+        // The maximum allowed nodes for the parent level is based on the *pruned* current level.
+        maxAllowedNodes[depthIndex - 0b1] =
+          maxAllowedNodes[depthIndex] + levelValues[depthIndex - 0b1];
       }
     }
 
-    // A final check and adjustment for the very first level (root).
-    if (maximumAllowed[0] < levelQuantities[0]) {
-      cumulativeCount -= (levelQuantities[0] - maximumAllowed[0]); // If the root has excess, adjust the total.
+    // Final check at the root level (level 0).
+    if (maxAllowedNodes[0x0] < currentLevelNodes[0x0]) {
+      // If the root itself has more nodes than allowed (which should be 1), adjust the total.
+      totalNodesCount =
+        totalNodesCount - currentLevelNodes[0x0] + maxAllowedNodes[0x0];
     }
-    console.log(cumulativeCount); // Output the final, adjusted cumulative count of nodes.
+
+    // Output the final adjusted total node count.
+    console.log(totalNodesCount);
   }
 }
 
-initiateProcessing(); // Commence the program's execution.
+// Execute the main processing function.
+processTreeData();

@@ -1,39 +1,25 @@
-const dependencyVault = {
-  fileAccess: (sourcePath) => {
-    const nodeFileSystem = require('fs');
-    return nodeFileSystem.readFileSync(sourcePath, 'utf8');
-  }
-};
+const fileSystem = require('fs');
 
-const nucleotideSequenceProcessor = (rawContent) => {
-  const primaryToken = rawContent.trim().split(/\s+/g)[0];
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-  // This condition replicates the original's loop boundary bug:
-  // The outer loop `i < r - 1` means it won't run if r is 0 or 1.
-  // Thus, inputs like "A" or "X" or "" result in 0.
-  if (!primaryToken || primaryToken.length <= 1) {
-    return 0;
-  }
+const inputTokens = rawInputContent.trim().split(/\s+/g);
+const dnaString = inputTokens[0] || '';
 
-  // Strategy: Replace all non-nucleotide characters with a delimiter,
-  // then split the string by this delimiter to get potential DNA segments.
-  // Finally, find the maximum length among these segments.
-  const segmentCollection = primaryToken.replace(/[^ACGT]/g, '_').split('_');
+const validBases = new Set(['A', 'C', 'G', 'T']);
 
-  let longestStretch = 0;
-  for (const seg of segmentCollection) {
-    if (seg.length > longestStretch) {
-      longestStretch = seg.length;
-    }
-  }
+const analysisResult = Array.from(dnaString).reduce(
+    (accumulator, currentBase) => {
+        if (validBases.has(currentBase)) {
+            accumulator.currentRunLength++;
+        } else {
+            accumulator.currentRunLength = 0;
+        }
+        accumulator.maximumRunLength = Math.max(accumulator.maximumRunLength, accumulator.currentRunLength);
+        return accumulator;
+    },
+    { currentRunLength: 0, maximumRunLength: 0 }
+);
 
-  return longestStretch;
-};
+console.log(analysisResult.maximumRunLength);
 
-const entryPoint = () => {
-  const dataStream = dependencyVault.fileAccess("/dev/stdin");
-  const computedResult = nucleotideSequenceProcessor(dataStream);
-  console.log(computedResult);
-};
-
-entryPoint();
+module.exports = undefined;

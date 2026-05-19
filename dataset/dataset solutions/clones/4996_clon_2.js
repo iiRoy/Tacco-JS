@@ -1,35 +1,31 @@
-'use strict';
-// This script reads characters from standard input and performs a parity check.
+'use strict'; // Enforce strict parsing and error handling
 
-// Utilize the Node.js file system module to read all input.
-const charSequence = require("fs").readFileSync("/dev/stdin", "utf8").split("");
+// Read all characters from standard input, treating each as a separate element.
+const inputChars = require("fs").readFileSync("/dev/stdin", "utf8").split("");
 
-// A variable to hold the final decision, initially assuming "Yes".
-let parityOutcome = "Yes";
+// Initialize a variable to store the ultimate decision.
+let finalVerdict = "Yes";
 
-// Iterate through each individual character in the obtained sequence.
-for (
-    let     mainIndex = 0;
-    mainIndex < charSequence.length;
-    mainIndex++
-) {
-    let     frequencyCount = 0; // Initialize a counter for the current character's occurrences.
+// Iterate through each character in the input array using a traditional loop.
+for (let idx = 0; idx < inputChars.length; idx++) {
+  // Initialize a counter for the current character's occurrences.
+  let occurrenceTally = 0;
 
-    // For each character at `mainIndex`, re-iterate through the entire sequence
-    // to determine its total occurrences.
-    charSequence.forEach( (examinedElement) => {
-        if (charSequence[mainIndex] == examinedElement) {
-            frequencyCount++; // Increment the counter if a match is found.
-        }
-    });
-
-    // If the total count of the current character is an odd number,
-    // it violates the parity condition.
-    if (frequencyCount % 2 !== 0) {
-        parityOutcome = "No"; // Set the outcome to "No".
-        break; // No need to check further; exit the loop immediately.
+  // For each character in the input, check its frequency.
+  inputChars.forEach(currentChar => {
+    // If the character at the current index matches the iterated character, increment the tally.
+    if (inputChars[idx] == currentChar) {
+      occurrenceTally++;
     }
+  });
+
+  // If the total count of the current character is not an even number,
+  // then the condition is not met.
+  if (occurrenceTally % 2 !== 0) {
+    finalVerdict = "No"; // Set the verdict to "No".
+    break; // Exit the loop early as the condition is already violated.
+  }
 }
 
-// Display the final result of the parity check.
-console.log(parityOutcome);
+// Output the determined verdict to the console.
+console.log(finalVerdict);

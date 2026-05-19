@@ -1,31 +1,34 @@
-const stdInContents = require('fs').readFileSync(global.process.stdin.fd, 'utf8');
-const allLines = stdInContents.trim().split('\n');
+const fileSystem = require('fs');
 
-const numOps = parseInt(allLines.shift(), 10);
+const maximumValueLimit = 100001;
 
-const rangeSpecs = allLines.map(line => line.split(' ').map(Number));
+let rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let processedInputLines = rawInputContent.trim().split('\n');
 
-const upperLimit = 100001;
-const changeTracker = new Array(upperLimit + 2).fill(0);
+let numberOfRanges = Number(processedInputLines.shift());
 
-rangeSpecs.forEach(pair => {
-    const startValue = pair[0];
-    const endValue = pair[1];
-    changeTracker[startValue]++;
-    if (endValue + 1 <= upperLimit + 1) {
-        changeTracker[endValue + 1]--;
-    }
-});
+let rangeImpactDifferentials = new Array(maximumValueLimit + 2).fill(0);
 
-let currentAggregate = 0;
-let topCandidate = 1;
+for (let currentRangeIndex = 0; currentRangeIndex < numberOfRanges; currentRangeIndex++) {
+    let [startPoint, endPoint] = processedInputLines.shift().split(' ').map(Number);
+    rangeImpactDifferentials[startPoint]++;
+    rangeImpactDifferentials[endPoint + 1]--;
+}
 
-for (let currentNumber = 2; currentNumber <= upperLimit; currentNumber++) {
-    currentAggregate += changeTracker[currentNumber];
-    const totalOccurrence = currentAggregate + 1;
-    if (totalOccurrence >= currentNumber) {
-        topCandidate = currentNumber;
+let cumulativeFrequencyCounts = new Array(maximumValueLimit + 1).fill(0);
+let currentRunningSum = 0;
+
+for (let numberIdentifier = 2; numberIdentifier <= maximumValueLimit; numberIdentifier++) {
+    currentRunningSum += rangeImpactDifferentials[numberIdentifier];
+    cumulativeFrequencyCounts[numberIdentifier] = 1 + currentRunningSum;
+}
+
+let highestMatchingNumber = 1;
+
+for (let numberIdentifier = 2; numberIdentifier <= maximumValueLimit; numberIdentifier++) {
+    if (cumulativeFrequencyCounts[numberIdentifier] >= numberIdentifier) {
+        highestMatchingNumber = numberIdentifier;
     }
 }
 
-global.console.log(topCandidate - 1);
+console.log(highestMatchingNumber - 1);

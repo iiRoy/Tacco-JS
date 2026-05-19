@@ -1,40 +1,35 @@
-const processNumericalSeries = (incomingData) => {
-    const modulusConstant = 10000000007;
+function processInputData(inputString) {
+  const primeDivisor = 10000000007;
+  const initialPlaceholder = 0; // Corresponds to 'hoge' in original, unused.
+  const inputLinesArray = inputString.split("\n");
 
-    const textSegments = incomingData.split('\n');
-    const quantityIndicator = Number(textSegments[0]);
-    const numericalValues = textSegments[1].split(' ').map(str => parseInt(str, 10));
+  const elementCount = Number(inputLinesArray[0]);
+  const numberSequence = inputLinesArray[1]
+    .split(" ")
+    .map(val => parseInt(val, 10));
 
-    console.log(numericalValues);
+  console.log(numberSequence);
 
-    const valuesToAccumulate = numericalValues.slice(1);
+  let accumulatedSum = 0;
+  let productSeries = 1;
 
-    let runningAccumulator = 0;
-    const progressiveSums = valuesToAccumulate.map(val => {
-        runningAccumulator += val;
-        return runningAccumulator;
-    });
+  // Replaces the imperative 'for' loop with a functional iteration using 'forEach'.
+  // An array of indices is generated to control the iteration and maintain
+  // the exact sequence of intermediate console outputs.
+  Array.from({ length: elementCount - 1 }, (_, k) => k + 1).forEach(currentIdx => {
+    accumulatedSum += numberSequence[currentIdx];
+    console.log(accumulatedSum); // Preserves the intermediate sum logging behavior
+    productSeries *= currentIdx;
+  });
 
-    progressiveSums.forEach(sumEntry => console.log(sumEntry));
+  // Introduces a helper function for a part of the final calculation
+  // to diverge the expression design.
+  const computeRatioComponent = (totalValue, divisorCount) => totalValue / divisorCount;
 
-    const finalAccumulatedSum = progressiveSums.length > 0 ? progressiveSums[progressiveSums.length - 1] : 0;
+  const finalCalculationResult = computeRatioComponent(accumulatedSum, elementCount - 1) * productSeries;
 
-    const rangeForProduct = Array.from({ length: quantityIndicator - 1 }, (_, idx) => idx + 1);
-    const cumulativeProduct = rangeForProduct.reduce((product, num) => product * num, 1);
+  console.log(finalCalculationResult);
+  console.log(finalCalculationResult % primeDivisor);
+}
 
-    let derivedCalculation;
-    if (quantityIndicator === 1) {
-        derivedCalculation = NaN;
-    } else {
-        derivedCalculation = (finalAccumulatedSum / (quantityIndicator - 1)) * cumulativeProduct;
-    }
-
-    console.log(derivedCalculation);
-    console.log(derivedCalculation % modulusConstant);
-};
-
-const fileSystem = require('fs');
-const filePath = '/dev/stdin';
-const rawInputContent = fileSystem.readFileSync(filePath, 'utf8');
-
-processNumericalSeries(rawInputContent);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

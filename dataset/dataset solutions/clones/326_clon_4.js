@@ -1,48 +1,71 @@
-const sourceSystem = require('fs');
-const acquiredText = sourceSystem.readFileSync('/dev/stdin', 'utf8');
-const processedLines = acquiredText.trim().split("\n");
+const fileSystemModule = require('fs');
+const rawTextContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const allInputLines = rawTextContent.trim().split('\n');
 
-function* blockProcessor(allInputElements) {
-    let currentBlockSizeIndicator = null;
-    let accumulatedDataSets = [];
-    let elementPointer = 0;
+const formatValueForDisplay = (num) => ("     " + num).slice(-5);
 
-    const padAndAlign = (numericVal) => ("     " + numericVal).slice(-5);
+function* dataBlockProcessor(lines) {
+    let currentBlockSize = 0;
+    let currentBlockRecords = [];
+    let linePointer = 0;
 
-    while (elementPointer < allInputElements.length) {
-        const currentElementLine = allInputElements[elementPointer];
-        const numericSegments = currentElementLine.split(" ").map(Number);
+    const initialConfigurationLine = lines[linePointer++];
+    currentBlockSize = Number(initialConfigurationLine.split(" ")[0]);
+
+    while (linePointer < lines.length) {
+        const currentLine = lines[linePointer];
+        const numericSegments = currentLine.split(" ").map(Number);
 
         if (numericSegments.length === 1) {
-            const blockHeaderOrStopper = numericSegments[0];
+            const controlIdentifier = numericSegments[0];
 
-            if (currentBlockSizeIndicator === null) {
-                currentBlockSizeIndicator = blockHeaderOrStopper;
-            } else {
-                let segmentTotals = Array(currentBlockSizeIndicator + 1).fill(0);
-                for (const dataRow of accumulatedDataSets) {
-                    for (let segmentIndex = 0; segmentIndex < dataRow.length; segmentIndex++) {
-                        segmentTotals[segmentIndex] += dataRow[segmentIndex];
-                    }
-                    yield dataRow.map(padAndAlign).join("");
-                }
-                yield segmentTotals.map(padAndAlign).join("");
+            yield {
+                blockDimension: currentBlockSize,
+                collectedEntries: currentBlockRecords,
+                isFinalBlock: (controlIdentifier === 0)
+            };
 
-                if (blockHeaderOrStopper === 0) {
-                    return;
-                } else {
-                    currentBlockSizeIndicator = blockHeaderOrStopper;
-                    accumulatedDataSets = [];
-                }
+            if (controlIdentifier === 0) {
+                return;
             }
+
+            currentBlockSize = controlIdentifier;
+            currentBlockRecords = [];
+
         } else {
-            const rowTotal = numericSegments.reduce((sumAccumulator, currentNum) => sumAccumulator + currentNum, 0);
-            accumulatedDataSets.push([...numericSegments, rowTotal]);
+            const entrySum = numericSegments.reduce((accumulator, value) => accumulator + value, 0);
+            currentBlockRecords.push([...numericSegments, entrySum]);
         }
-        elementPointer++;
+        linePointer++;
+    }
+
+    if (currentBlockRecords.length > 0) {
+        yield {
+            blockDimension: currentBlockSize,
+            collectedEntries: currentBlockRecords,
+            isFinalBlock: false
+        };
     }
 }
 
-for (const finalOutputLine of blockProcessor(processedLines)) {
-    console.log(finalOutputLine);
+for (const processedBlock of dataBlockProcessor(allInputLines)) {
+    if (processedBlock.collectedEntries.length > 0) {
+        const blockColumnTotals = Array(processedBlock.blockDimension + 1).fill(0);
+
+        processedBlock.collectedEntries.forEach(entry => {
+            entry.forEach((val, index) => {
+                blockColumnTotals[index] += val;
+            });
+        });
+
+        processedBlock.collectedEntries.forEach(entry => {
+            console.log(entry.map(formatValueForDisplay).join(""));
+        });
+
+        console.log(blockColumnTotals.map(formatValueForDisplay).join(""));
+    }
+
+    if (processedBlock.isFinalBlock) {
+        break;
+    }
 }

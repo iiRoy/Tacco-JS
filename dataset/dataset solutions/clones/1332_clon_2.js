@@ -1,38 +1,40 @@
-// This file defines operational parameters for data handling.
-const appOptions = { sourceFile: '/dev/stdin', rowDelimiter: '\n' }; // Standard Unix/Linux input setup
+const settings = {
+    inputSource: '/dev/stdin', // Path to standard input for Linux systems
+    lineSeparator: '\n'        // Newline character for splitting input
+};
 
-// Acquire raw text from the specified source, clean it, and divide it into individual rows.
-let rawInputEntries = require('fs')
-  .readFileSync(appOptions.sourceFile, 'utf8') // Using UTF-8 encoding
-  .trim()
-  .split(appOptions.rowDelimiter);
+// Read input from the specified source, decode as ASCII, remove leading/trailing whitespace,
+// then split into an array of strings based on the line separator.
+let inputLines = require('fs').readFileSync(settings.inputSource, 'ascii')
+    .trim()
+    .split(settings.lineSeparator);
 
-// Discard the initial entry, assuming it's a header or count.
-rawInputEntries.shift();
+// Remove the first element from the array, as it's often a count or header not needed for processing.
+inputLines.shift();
 
-// Process each remaining entry to accumulate scores based on a comparison logic.
-let calculatedScores = rawInputEntries.reduce(function (scoreHolder, matchPair) {
-  // Split the current entry into two comparable parts.
-  const entryValues = matchPair.split(' ');
+// Process each remaining line to calculate scores for two players.
+// The 'reduce' method iterates through the match results, accumulating scores.
+let finalScores = inputLines.reduce(function (accumulatedScores, currentMatch) {
+    // Split the current match string into an array of individual scores (as strings).
+    const matchScores = currentMatch.split(' ');
 
-  // Apply scoring rules:
-  // If the first value is greater, add 3 points to the first score.
-  if (entryValues[0] > entryValues[1]) {
-    scoreHolder[0] += 3;
-  }
-  // Else if values are not equal, add 3 points to the second score.
-  else if (entryValues[0] !== entryValues[1]) {
-    scoreHolder[1] += 3;
-  }
-  // Otherwise (values are equal), add 1 point to both scores.
-  else {
-    scoreHolder[0]++;
-    scoreHolder[1]++;
-  }
+    // Compare the scores from the current match.
+    if (matchScores[0] > matchScores[1]) {
+        // If the first player's score is higher, add 3 points to their total.
+        accumulatedScores[0] += 3;
+    } else if (matchScores[0] !== matchScores[1]) {
+        // If scores are different but the first player's isn't higher (meaning second player's is higher),
+        // add 3 points to the second player's total.
+        accumulatedScores[1] += 3;
+    } else {
+        // If the scores are equal (a draw), add 1 point to each player's total.
+        accumulatedScores[0]++;
+        accumulatedScores[1]++;
+    }
 
-  // Return the updated score accumulator for the next iteration.
-  return scoreHolder;
-}, [0, 0]); // Initialize scores for two participants/teams
+    // Return the updated accumulated scores for the next iteration.
+    return accumulatedScores;
+}, [0, 0]); // Initialize accumulated scores for two players to zero.
 
-// Output the final accumulated scores, joined by a space.
-console.log(calculatedScores.join(' '));
+// Output the final scores, joined by a space, to the console.
+console.log(finalScores.join(' '));

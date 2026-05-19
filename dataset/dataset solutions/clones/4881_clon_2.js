@@ -1,54 +1,47 @@
-// This function processes a block of raw text data to find a specific pattern.
-function ProcessInputData(streamContent) {
-  // Split the entire input string into individual lines based on newline characters.
-  streamContent = streamContent.split('\n');
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters
+  rawData = rawData.split("\n");
 
-  // The first line contains parameters for the subsequent data.
-  // We extract the first part of the first line, which indicates the number of elements.
-  const firstLineTokens = streamContent[0].split(' ');
-  let elementCount = parseInt(firstLineTokens[0], 10); // Convert string to integer, specify radix.
+  // Extract the first line and split it by spaces to get initial parameters
+  let tempParts = rawData[0].split(" ");
+  // Parse the first part as an integer to get the count of items
+  const itemCount = parseInt(tempParts[0]);
 
-  // The second line holds the actual numeric sequence as strings.
-  const secondLineValues = streamContent[1].split(' ');
+  // Extract the second line and split it by spaces to get the data values
+  let dataParts = rawData[1].split(" ");
+  // Initialize an array to store the parsed integer values
+  const valuesArray = new Array(itemCount);
 
-  // Initialize an array to store the parsed numbers.
-  let dataCollection = new Array(elementCount);
+  // Initialize variables for tracking maximum difference, result count, and minimum value
+  let maximumDifference = 0;
+  let resultCount = 0;
+  let minimumValue = 0;
 
-  // Variables to track the maximum observed difference and its frequency.
-  let peakDifference = 0;   // Stores the largest difference found so far.
-  let resultCount = 0;      // Counts how many times 'peakDifference' has been achieved.
-  let runningMinimum = 0;   // Keeps track of the minimum value encountered up to the current point.
+  // Iterate through the data values
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Parse the current data part as an integer and store it in the array
+    valuesArray[idx] = parseInt(dataParts[idx]);
 
-  // Iterate through the collected numeric data.
-  for (let currentIdx = 0; currentIdx < elementCount; currentIdx++) {
-    // Parse the current string value into an integer and store it.
-    dataCollection[currentIdx] = parseInt(secondLineValues[currentIdx], 10);
-
-    // Update the running minimum if the current element is smaller,
-    // or if it's the very first element (to properly initialize 'runningMinimum').
-    if (runningMinimum > dataCollection[currentIdx] || currentIdx === 0) {
-      runningMinimum = dataCollection[currentIdx];
+    // Update the minimum value if the current element is smaller or if it's the first element
+    if (minimumValue > valuesArray[idx] || idx === 0) {
+      minimumValue = valuesArray[idx];
     }
 
-    // Calculate the difference between the current element and the running minimum.
-    const currentCalculatedDifference = dataCollection[currentIdx] - runningMinimum;
-
-    // Compare this difference with the 'peakDifference'.
-    if (peakDifference === currentCalculatedDifference) {
-      // If the current difference matches the peak, increment its occurrence count.
+    // Check if the current difference (current value - minimum value) equals the maximum difference found so far
+    if (maximumDifference === valuesArray[idx] - minimumValue) {
+      // If equal, increment the count of occurrences for this maximum difference
       resultCount++;
-    } else if (peakDifference < currentCalculatedDifference) {
-      // If the current difference is greater than the peak,
-      // reset the count to 1 and update the peak difference.
+    } else if (maximumDifference < valuesArray[idx] - minimumValue) {
+      // If the current difference is greater than the maximum difference,
+      // reset the count to 1 and update the maximum difference
       resultCount = 1;
-      peakDifference = currentCalculatedDifference;
+      maximumDifference = valuesArray[idx] - minimumValue;
     }
   }
 
-  // Output the final count of occurrences of the maximum difference.
-  console.log(String(resultCount));
+  // Output the final result count to the console
+  console.log('%s', resultCount);
 }
 
-// Entry point: Read data from standard input and pass it to the processing function.
-// Ensure 'fs' module is available for file system operations.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,67 +1,60 @@
-const inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const fileSystem = require('fs');
 
-const requests = [];
+const rawInputData = fileSystem.readFileSync(process.stdin.fd, 'utf8');
 
-inputReader.on('line', (currentLine) => {
-    const numericValue = parseInt(currentLine, 10);
-    if (!isNaN(numericValue) && numericValue >= 0) {
-        requests.push(numericValue);
-    } else {
-        inputReader.close();
-    }
-});
+const numericQueries = rawInputData
+  .split('\n')
+  .map(line => Number(line.trim()))
+  .filter(val => !isNaN(val) && val > 0);
 
-inputReader.on('close', () => {
-    processRequests(requests);
-});
+initiateCalculation();
 
-function processRequests(queryNumbers) {
-    const sumTally = computePrimeSumCounts();
+function initiateCalculation() {
+  const primeSumCounts = computePrimePairSums();
 
-    queryNumbers.forEach(num => {
-        console.log(sumTally[num]);
-    });
+  for (const queryValue of numericQueries) {
+    console.log(primeSumCounts[queryValue]);
+  }
 }
 
-function computePrimeSumCounts() {
-    const maximumValue = 50000;
-    const isComposite = new Uint8Array(maximumValue + 1);
+function computePrimePairSums() {
+  const UPPER_BOUND = 50000;
+  const sieveArray = new Uint8Array(UPPER_BOUND + 1);
+  const collectedPrimes = [];
 
-    isComposite[0] = 1;
-    isComposite[1] = 1;
+  sieveArray[0] = 1;
+  sieveArray[1] = 1;
 
-    for (let currentNum = 2; currentNum * currentNum <= maximumValue; ++currentNum) {
-        if (isComposite[currentNum] === 0) {
-            for (let multiple = currentNum * currentNum; multiple <= maximumValue; multiple += currentNum) {
-                isComposite[multiple] = 1;
-            }
-        }
+  for (let currentNum = 2; currentNum * currentNum <= UPPER_BOUND; currentNum++) {
+    if (sieveArray[currentNum] === 0) {
+      for (let multiple = currentNum * currentNum; multiple <= UPPER_BOUND; multiple += currentNum) {
+        sieveArray[multiple] = 1;
+      }
     }
+  }
 
-    const foundPrimes = [];
-    for (let num = 2; num <= maximumValue; ++num) {
-        if (isComposite[num] === 0) {
-            foundPrimes.push(num);
-        }
+  for (let num = 2; num <= UPPER_BOUND; num++) {
+    if (sieveArray[num] === 0) {
+      collectedPrimes.push(num);
     }
+  }
 
-    const pairSums = new Uint16Array(maximumValue + 1);
+  const sumTally = new Uint16Array(UPPER_BOUND + 1);
 
-    for (let idx1 = 0; idx1 < foundPrimes.length; ++idx1) {
-        const prime1 = foundPrimes[idx1];
-        for (let idx2 = idx1; idx2 < foundPrimes.length; ++idx2) {
-            const prime2 = foundPrimes[idx2];
-            const currentSum = prime1 + prime2;
+  for (let idx1 = 0; idx1 < collectedPrimes.length; idx1++) {
+    const prime1 = collectedPrimes[idx1];
 
-            if (currentSum > maximumValue) {
-                break;
-            }
-            pairSums[currentSum]++;
-        }
+    for (let idx2 = 0; idx2 <= idx1; idx2++) {
+      const prime2 = collectedPrimes[idx2];
+      const currentSum = prime1 + prime2;
+
+      if (currentSum <= UPPER_BOUND) {
+        sumTally[currentSum]++;
+      } else {
+        break;
+      }
     }
+  }
 
-    return pairSums;
+  return sumTally;
 }

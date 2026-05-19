@@ -1,40 +1,38 @@
-const acquireContent = (textSource) => textSource.trim();
-const segmentIntoLines = (fullText) => fullText.split('\n');
+function myOut(text){console.log(text);}
 
-function analyzeConnectivityPattern(sourceMaterial) {
-    const processedSegments = segmentIntoLines(acquireContent(sourceMaterial));
+function Main(sourceData) {
+    const lines = sourceData.trim().split('\n');
 
-    const [vertexCount, connectionCount] = processedSegments[0].split(' ').map(Number);
+    const [nodeInfo, ...edgeDataLines] = lines;
+    const [vertexCountStr, linkCountStr] = nodeInfo.split(' ');
+    const vertexCount = Number(vertexCountStr);
+    const linkCount = Number(linkCountStr);
 
-    if (connectionCount % 2 !== 0) {
-        return "-1";
+    if (linkCount % 2 !== 0) {
+        console.log("-1");
+        return;
     }
 
-    const degreeRecord = new Map();
-    for (let currentVertexIdentifier = 1; currentVertexIdentifier <= vertexCount; currentVertexIdentifier++) {
-        degreeRecord.set(currentVertexIdentifier, 0);
-    }
+    const graphStructure = Object.fromEntries(
+        Array.from({ length: vertexCount }, (_, index) => [String(index + 1), []])
+    );
 
-    const connectionDescriptors = processedSegments.slice(1, connectionCount + 1);
-
-    connectionDescriptors.forEach(descriptorString => {
-        const [firstEndpoint, secondEndpoint] = descriptorString.split(' ').map(Number);
-        
-        degreeRecord.set(firstEndpoint, degreeRecord.get(firstEndpoint) + 1);
-        degreeRecord.set(secondEndpoint, degreeRecord.get(secondEndpoint) + 1);
+    edgeDataLines.forEach(connectionString => {
+        const [firstNode, secondNode] = connectionString.split(' ').map(Number);
+        graphStructure[firstNode].push(secondNode);
+        graphStructure[secondNode].push(firstNode);
     });
 
-    const hasAnyOddValency = Array.from(degreeRecord.values()).some(valencyValue => valencyValue % 2 !== 0);
+    const allDegreesAreEven = Object.values(graphStructure).every(connectedNodes => {
+        return connectedNodes.length % 2 === 0;
+    });
 
-    if (hasAnyOddValency) {
-        return "-1";
+    if (!allDegreesAreEven) {
+        console.log("-1");
+        return;
     }
 
-    return "";
+    Array.from({ length: linkCount }, () => {}).forEach(() => {});
 }
 
-const sourceInputPayload = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalOutcome = analyzeConnectivityPattern(sourceInputPayload);
-if (finalOutcome !== "") {
-    console.log(finalOutcome);
-}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

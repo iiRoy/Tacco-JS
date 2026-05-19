@@ -1,59 +1,40 @@
-const truncateToInteger = (numericValue) => Math.floor(numericValue);
-
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputDataStr){
+  const inputLines = inputDataStr.split('\n');
+  const iterationUpperLimit = 1000;
 
-const MAX_ITERATION_BOUNDARY = 1000;
-const PERCENTAGE_BASE_DIVISOR = 100;
-const INITIAL_ACCUMULATOR_VALUE = 0;
-const MIN_REQUIRED_COMPONENTS = 3;
-const EMPTY_STRING_LENGTH = 0;
+  for(let lineIndex = 0; lineIndex < inputLines.length; lineIndex++){
+    const currentLineSegments = inputLines[lineIndex].split(' ');
 
-process.stdin.on('data', function(incomingPayload) {
-    const allInputLines = incomingPayload.split(/\r?\n/);
+    let valueA = parseInt(currentLineSegments[0], 10);
+    let valueB = parseInt(currentLineSegments[1], 10);
+    let valueC = parseInt(currentLineSegments[2], 10);
 
-    let currentLineIdentifier = INITIAL_ACCUMULATOR_VALUE;
+    // This condition checks if any of the parsed values are non-zero.
+    // parseInt returns NaN for non-numeric strings. NaN behaves as 0 in bitwise OR.
+    // This preserves the original behavior of `if(row[0] | row[1] | row[2])`.
+    if(valueA | valueB | valueC){
+      let maximumCalculatedValue = 0;
+      const multiplierFactor1 = (valueA / 100) + 1;
+      const multiplierFactor2 = (valueB / 100) + 1;
 
-    for (const singleInputLine of allInputLines) {
-        currentLineIdentifier++;
+      for(let outerLoopVar = 1; outerLoopVar < iterationUpperLimit; outerLoopVar++){
+        for(let innerLoopVar = 1; innerLoopVar < iterationUpperLimit; innerLoopVar++){
 
-        if (singleInputLine.trim().length === EMPTY_STRING_LENGTH) {
-            continue;
+          const term1_part1 = (outerLoopVar * multiplierFactor1) | 0;
+          const term1_part2 = (innerLoopVar * multiplierFactor1) | 0;
+          const sumForComparison = term1_part1 + term1_part2;
+
+          if(sumForComparison === valueC){
+            const term2_part1 = (outerLoopVar * multiplierFactor2) | 0;
+            const term2_part2 = (innerLoopVar * multiplierFactor2) | 0;
+            const sumForMax = term2_part1 + term2_part2;
+            maximumCalculatedValue = Math.max(maximumCalculatedValue, sumForMax);
+          }
         }
-
-        const lineComponentsAsStrings = singleInputLine.trim().split(' ');
-
-        if (lineComponentsAsStrings.length < MIN_REQUIRED_COMPONENTS) {
-            continue;
-        }
-
-        const operandAValue = Number(lineComponentsAsStrings[0]) || INITIAL_ACCUMULATOR_VALUE;
-        const operandBValue = Number(lineComponentsAsStrings[1]) || INITIAL_ACCUMULATOR_VALUE;
-        const desiredSumTarget = Number(lineComponentsAsStrings[2]) || INITIAL_ACCUMULATOR_VALUE;
-
-        if (!(operandAValue || operandBValue || desiredSumTarget)) {
-            continue;
-        }
-
-        const calculatedRateFactorOne = (operandAValue / PERCENTAGE_BASE_DIVISOR) + 1;
-        const calculatedRateFactorTwo = (operandBValue / PERCENTAGE_BASE_DIVISOR) + 1;
-
-        let accumulatedMaximumResult = INITIAL_ACCUMULATOR_VALUE;
-
-        for (let primaryLoopIndex = 1; primaryLoopIndex < MAX_ITERATION_BOUNDARY; ++primaryLoopIndex) {
-            for (let secondaryLoopIndex = 1; secondaryLoopIndex < MAX_ITERATION_BOUNDARY; ++secondaryLoopIndex) {
-
-                const currentSumForFactorOne = truncateToInteger(primaryLoopIndex * calculatedRateFactorOne) +
-                                             truncateToInteger(secondaryLoopIndex * calculatedRateFactorOne);
-
-                if (currentSumForFactorOne === desiredSumTarget) {
-                    const currentSumForFactorTwo = truncateToInteger(primaryLoopIndex * calculatedRateFactorTwo) +
-                                                 truncateToInteger(secondaryLoopIndex * calculatedRateFactorTwo);
-
-                    accumulatedMaximumResult = Math.max(accumulatedMaximumResult, currentSumForFactorTwo);
-                }
-            }
-        }
-        console.log(accumulatedMaximumResult);
+      }
+      console.log(maximumCalculatedValue);
     }
+  }
 });

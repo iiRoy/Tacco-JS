@@ -1,125 +1,50 @@
-// Helper function to robustly parse a string containing space-separated numbers.
-// It handles potential extra spaces and ensures parsing to floating-point numbers.
-const parseNumericLine = (lineContent) => {
-    // Trim leading/trailing whitespace, split by spaces, filter out any empty strings
-    // that might result from multiple spaces, and then map to floating-point numbers.
-    return lineContent.trim().split(' ').filter(Boolean).map(val => parseFloat(val));
-};
+var inputBuffer = '';
+var inputSource = process.stdin;
+inputSource.resume();
+inputSource.setEncoding('utf-8');
 
-// --- Input Stream Handling ---
-// A buffer to accumulate all incoming data from the standard input stream.
-let receivedInputBuffer = '';
-
-// Obtain a reference to the standard input stream.
-const standardInputReader = process.stdin;
-
-// Set the encoding for the input stream to UTF-8 to correctly handle characters.
-standardInputReader.setEncoding('utf-8');
-
-// Explicitly resume the standard input stream. In some environments, stdin might
-// be paused by default, and this ensures it starts emitting data events.
-standardInputReader.resume();
-
-// Attach an event listener for 'data' events. This event fires whenever a
-// chunk of data is available from the input stream.
-standardInputReader.on('data', (dataFragment) => {
-    // Append the current data fragment to our buffer.
-    receivedInputBuffer += dataFragment;
+inputSource.on('data', function(receivedChunk) {
+  inputBuffer += receivedChunk;
 });
 
-// Attach an event listener for the 'end' event. This event fires when
-// the input stream has finished sending all its data (e.g., EOF reached).
-standardInputReader.on('end', () => {
-    // --- Data Processing and Validation ---
-    // Split the accumulated buffer into individual lines, filtering out any empty lines
-    // that might result from extra newlines or the final newline character.
-    const processedLines = receivedInputBuffer.split('\n').filter(line => line.trim() !== '');
+inputSource.on('end', function() {
+  const LINE_DELIMITER = '\n';
+  const VALUE_DELIMITER = ' ';
+  const SQRT_EXPONENT = 0.5; // Represents 1/2 for square root
+  const CUBE_ROOT_EXPONENT = 1 / 3; // Represents 1/3 for cube root
 
-    // Basic validation: ensure we have at least three lines of input.
-    // The first line is for vector length, the next two for the vectors themselves.
-    if (processedLines.length < 3) {
-        console.error("ERROR: Insufficient input lines provided. Expected at least 3 lines for vector size and two vectors.");
-        process.exit(1); // Terminate the process with an error code.
-    }
+  var processedLines = inputBuffer.split(LINE_DELIMITER);
+  var itemCount = Number.parseInt(processedLines[0]);
+  var coordsX = processedLines[1].split(VALUE_DELIMITER).map(val => Number(val));
+  var coordsY = processedLines[2].split(VALUE_DELIMITER).map(val => Number(val));
 
-    // Parse the first line to determine the expected length of the vectors.
-    const potentialVectorLength = parseInt(processedLines[0].trim(), 10);
+  var l1NormSum = 0;
+  var l2NormSquaredSum = 0;
+  var l3NormPowerSum = 0;
+  var lInfinityNorm = 0;
+  var absoluteDifferences = [];
 
-    // Validate the parsed vector length: must be a positive integer.
-    if (isNaN(potentialVectorLength) || !Number.isInteger(potentialVectorLength) || potentialVectorLength <= 0) {
-        console.error("ERROR: Invalid or non-positive vector length specified on the first line. Must be a positive integer.");
-        process.exit(1);
-    }
-    const vectorLength = potentialVectorLength; // Use a clear, descriptive constant name.
+  for (var currentIndex = 0; currentIndex < itemCount; currentIndex++) {
+    const currentX = coordsX[currentIndex];
+    const currentY = coordsY[currentIndex];
+    const difference = currentX - currentY;
+    const currentAbsDiff = Math.abs(difference);
+    
+    absoluteDifferences.push(currentAbsDiff);
 
-    // Parse the second and third lines into arrays of numbers using our helper function.
-    const vectorA = parseNumericLine(processedLines[1]);
-    const vectorB = parseNumericLine(processedLines[2]);
+    l1NormSum += currentAbsDiff;
+    
+    const squaredAbsDiff = currentAbsDiff * currentAbsDiff;
+    l2NormSquaredSum += squaredAbsDiff;
+    
+    const cubedAbsDiff = squaredAbsDiff * currentAbsDiff;
+    l3NormPowerSum += cubedAbsDiff;
+    
+    lInfinityNorm = Math.max(lInfinityNorm, currentAbsDiff);
+  }
 
-    // Validate that the parsed vectors have the expected length.
-    if (vectorA.length !== vectorLength || vectorB.length !== vectorLength) {
-        console.error(`ERROR: Mismatch in vector lengths. Expected ${vectorLength} elements, but Vector A has ${vectorA.length} and Vector B has ${vectorB.length}.`);
-        process.exit(1);
-    }
-
-    // --- Distance Metric Calculations ---
-    // Initialize variables to accumulate sums for various Minkowski distances.
-    let p1NormSum = 0.0;            // Accumulator for L1 (Manhattan) distance.
-    let p2SquaredSum = 0.0;         // Accumulator for squared differences for L2 (Euclidean) distance.
-    let p3CubedSum = 0.0;           // Accumulator for cubed differences for L3 Minkowski distance.
-    let infinityNormMax = 0.0;      // Keeps track of the maximum absolute difference for Chebyshev (L-infinity) distance.
-
-    // An array to store the absolute differences between corresponding vector elements.
-    // This intermediate step can be useful for debugging or further processing.
-    const diffsAbsValue = [];
-
-    // Loop through the vector elements to perform calculations.
-    for (let currentIndex = 0; currentIndex < vectorLength; currentIndex++) {
-        // Calculate the absolute difference between the current elements of vectorA and vectorB.
-        const currentDifferenceAbs = Math.abs(vectorA[currentIndex] - vectorB[currentIndex]);
-
-        // Store this absolute difference in our intermediate array.
-        diffsAbsValue.push(currentDifferenceAbs);
-
-        // Update the sum for the L1 norm.
-        p1NormSum += currentDifferenceAbs;
-
-        // Update the sum of squared differences for the L2 norm.
-        p2SquaredSum += Math.pow(currentDifferenceAbs, 2);
-
-        // Update the sum of cubed differences for the L3 Minkowski norm.
-        p3CubedSum += Math.pow(currentDifferenceAbs, 3);
-
-        // Update the maximum absolute difference encountered so far for the L-infinity norm.
-        infinityNormMax = Math.max(infinityNormMax, currentDifferenceAbs);
-    }
-
-    // --- Output Results ---
-    // Print a header for the results.
-    console.log(`\n--- Calculated Vector Distance Metrics ---`);
-
-    // Output the Manhattan Distance (L1 Norm).
-    console.log(`> Manhattan Distance (L1 Norm): ${p1NormSum.toFixed(6)}`);
-
-    // Output the Euclidean Distance (L2 Norm), which is the square root of p2SquaredSum.
-    console.log(`> Euclidean Distance (L2 Norm): ${Math.sqrt(p2SquaredSum).toFixed(6)}`);
-
-    // Output the L3 Minkowski Distance, which is the cube root of p3CubedSum.
-    // Note: The original code might have had a typo here, using Dxy2 (squared sums)
-    // for the L3 calculation. This version correctly uses Dxy3 (cubed sums).
-    console.log(`> L3 Minkowski Distance: ${Math.cbrt(p3CubedSum).toFixed(6)}`);
-
-    // Output the Chebyshev Distance (L-infinity Norm).
-    console.log(`> Chebyshev Distance (L-infinity Norm): ${infinityNormMax.toFixed(6)}`);
-
-    // Print a footer for the results.
-    console.log(`------------------------------------------\n`);
-});
-
-// --- Optional Error Handling for Input Stream ---
-// Attach an event listener for 'error' events on the input stream.
-// This handles potential issues like file descriptor errors or other stream problems.
-standardInputReader.on('error', (err) => {
-    console.error(`CRITICAL ERROR: An unexpected error occurred with the input stream: ${err.message}`);
-    process.exit(1); // Terminate the process due to a critical input error.
+  console.log(l1NormSum);
+  console.log(Math.pow(l2NormSquaredSum, SQRT_EXPONENT));
+  console.log(Math.pow(l2NormSquaredSum, CUBE_ROOT_EXPONENT));
+  console.log(lInfinityNorm);
 });

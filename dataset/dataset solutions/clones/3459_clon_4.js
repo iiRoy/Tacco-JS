@@ -1,92 +1,67 @@
-const PRIME_MODULUS = 1000000007;
+"use strict";
 
-function obtainInputExtractor(rawInputString) {
-    const allTokens = rawInputString.trim().split(/\s+/).map(Number);
-    let currentTokenIndex = 0;
+const primeModulus = 1000000007;
 
-    return {
-        fetchNext: function() {
-            if (currentTokenIndex < allTokens.length) {
-                return allTokens[currentTokenIndex++];
-            }
-            return undefined;
-        }
-    };
-}
-
-function generateNumericProgression(limit) {
-    const progression = new Array(limit + 1);
-    if (limit >= 0) progression[0] = 1;
-    if (limit >= 1) progression[1] = 1;
-
-    for (let idx = 2; idx <= limit; idx++) {
-        progression[idx] = progression[idx - 1] + progression[idx - 2];
+const createFibonacciSequence = (limit) => {
+    if (limit <= 0) return [];
+    if (limit === 1) return [1];
+    const fibs = [1, 1];
+    for (let i = 2; i < limit; i++) {
+        fibs[i] = fibs[i - 1] + fibs[i - 2];
     }
-    return progression;
-}
+    return fibs;
+};
 
-function computeGridPaths(rowsCount, columnsCount, finalColumnIndex, fibonacciValues) {
-    const memoizationStore = Array.from({ length: rowsCount }, () => Array(columnsCount).fill(null));
+const getTransitionCoefficient = (leftCount, rightCount, fibonacciNumbers) => {
+    const leftValue = (leftCount >= 0 && leftCount < fibonacciNumbers.length) ? fibonacciNumbers[leftCount] : 0;
+    const rightValue = (rightCount >= 0 && rightCount < fibonacciNumbers.length) ? fibonacciNumbers[rightCount] : 0;
+    return (leftValue * rightValue) % primeModulus;
+};
 
-    function determineCellVal(currentRow, currentColumn) {
-        if (currentColumn < 0 || currentColumn >= columnsCount) {
-            return 0;
-        }
+const calculateGridPaths = (gridHeight, gridWidth, targetColumnIndex) => {
+    const fibonacciSeries = createFibonacciSequence(gridWidth);
 
-        if (currentRow === 0) {
-            if (currentColumn === 0) {
-                return fibonacciValues[columnsCount - 1];
-            } else if (currentColumn === 1 && columnsCount >= 2) {
-                return fibonacciValues[columnsCount - 2];
-            } else {
-                return 0;
-            }
-        }
-
-        if (memoizationStore[currentRow][currentColumn] !== null) {
-            return memoizationStore[currentRow][currentColumn];
-        }
-
-        let totalWays = 0;
-
-        // Path from (currentRow - 1, currentColumn) to (currentRow, currentColumn)
-        totalWays = (totalWays +
-            determineCellVal(currentRow - 1, currentColumn) *
-            (fibonacciValues[columnsCount - currentColumn - 1] * fibonacciValues[currentColumn])) % PRIME_MODULUS;
-
-        // Path from (currentRow - 1, currentColumn - 1) to (currentRow, currentColumn)
-        if (currentColumn - 1 >= 0) {
-            totalWays = (totalWays +
-                determineCellVal(currentRow - 1, currentColumn - 1) *
-                (fibonacciValues[columnsCount - currentColumn - 1] * fibonacciValues[currentColumn - 1])) % PRIME_MODULUS;
-        }
-
-        // Path from (currentRow - 1, currentColumn + 1) to (currentRow, currentColumn)
-        if (currentColumn + 1 < columnsCount) {
-            totalWays = (totalWays +
-                determineCellVal(currentRow - 1, currentColumn + 1) *
-                (fibonacciValues[columnsCount - (currentColumn + 1) - 1] * fibonacciValues[currentColumn])) % PRIME_MODULUS;
-        }
-
-        memoizationStore[currentRow][currentColumn] = totalWays;
-        return totalWays;
+    let currentPathRow = Array(gridWidth).fill(0);
+    currentPathRow[0] = fibonacciSeries[gridWidth - 1];
+    if (gridWidth > 1) {
+        currentPathRow[1] = fibonacciSeries[gridWidth - 2];
     }
 
-    return determineCellVal(rowsCount - 1, finalColumnIndex - 1);
-}
+    const finalPathRow = Array.from({ length: gridHeight - 1 }).reduce((previousPathRow, _, levelIndex) => {
+        const nextPathRow = Array(gridWidth).fill(0);
+        for (let currentColumn = 0; currentColumn < gridWidth; currentColumn++) {
+            let accumulatedPaths = 0;
 
-function processCalculation(inputContent) {
-    const numericalExtractor = obtainInputExtractor(inputContent);
+            const stayFactor = getTransitionCoefficient(gridWidth - currentColumn - 1, currentColumn, fibonacciSeries);
+            accumulatedPaths = (accumulatedPaths + previousPathRow[currentColumn] * stayFactor) % primeModulus;
 
-    const heightDimension = numericalExtractor.fetchNext();
-    const widthDimension = numericalExtractor.fetchNext();
-    const desiredColumn = numericalExtractor.fetchNext();
+            if (currentColumn - 1 >= 0) {
+                const leftMoveFactor = getTransitionCoefficient(gridWidth - currentColumn - 1, currentColumn - 1, fibonacciSeries);
+                accumulatedPaths = (accumulatedPaths + previousPathRow[currentColumn - 1] * leftMoveFactor) % primeModulus;
+            }
 
-    const fibonacciSeries = generateNumericProgression(widthDimension - 1);
+            if (currentColumn + 1 < gridWidth) {
+                const rightMoveFactor = getTransitionCoefficient(gridWidth - currentColumn - 2, currentColumn, fibonacciSeries);
+                accumulatedPaths = (accumulatedPaths + previousPathRow[currentColumn + 1] * rightMoveFactor) % primeModulus;
+            }
+            nextPathRow[currentColumn] = accumulatedPaths;
+        }
+        return nextPathRow;
+    }, currentPathRow);
 
-    const finalResult = computeGridPaths(heightDimension, widthDimension, desiredColumn, fibonacciSeries);
+    return finalPathRow[targetColumnIndex - 1];
+};
 
+const parseInputData = (rawInputString) => {
+    const inputLines = rawInputString.trim().split("\n");
+    const [hValue, wValue, kValue] = inputLines[0].split(" ").map(Number);
+    return { hValue, wValue, kValue };
+};
+
+const executeSolution = (inputContent) => {
+    const { hValue, wValue, kValue } = parseInputData(inputContent);
+    const finalResult = calculateGridPaths(hValue, wValue, kValue);
     console.log(finalResult);
-}
+};
 
-processCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

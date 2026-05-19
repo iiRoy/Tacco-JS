@@ -1,123 +1,104 @@
-// This function processes all incoming data.
-function Execute( rawInputData ) {
+function ProcessInput(rawData) {
+  // Define a large prime number for modulo operations
+  const moduloVal = 1000000007;
 
-  const moduloVal = 1000000007; // A large prime number for modulo operations.
-  let parsedValues = convertToIntMatrix( processRawInput( rawInputData ) );
+  // Parse the raw input string into a structured array of integers
+  const parsedData = convertToIntArrays(parseInputString(rawData));
 
-  // Generate all possible combinations based on the first two input numbers.
-  let combinations = generateCombinations( parsedValues[0][0], parsedValues[0][1] );
+  // Generate all possible combinations based on the first line of input
+  const combinations = generateCombinations(parsedData[0][0], parsedData[0][1]);
 
-  let totalResult = 0; // Accumulator for the final sum.
+  // Initialize a variable to accumulate the sum of results
+  let totalResult = 0;
 
-  // Iterate through each generated combination.
-  for ( let combinationIndex = 0; combinationIndex < combinations.length; combinationIndex++ ) {
-    // Calculate the difference for the current combination and add to the total, applying modulo.
-    totalResult += calculateRangeDifference( parsedValues[1], combinations[combinationIndex] ) % moduloVal;
+  // Iterate through each generated combination
+  for (let idx = 0; idx < combinations.length; idx++) {
+    // Calculate the range difference for the current combination and add to total
+    totalResult += calculateRangeDiff(parsedData[1], combinations[idx]) % moduloVal;
   }
 
-  // Output the final computed sum to standard output, ensuring it's within the modulo range.
-  console.log( totalResult % moduloVal );
+  // Output the final sum modulo the defined value
+  console.log(totalResult % moduloVal);
 }
 
+function calculateRangeDiff(valueArray, indexCombination) {
+  // Initialize minimum and maximum values with the first element of the combination
+  let minimumValue = valueArray[indexCombination[0] - 1];
+  let maximumValue = valueArray[indexCombination[0] - 1];
 
-// Computes the difference between the maximum and minimum values in an array at specified indices.
-function calculateRangeDifference( inputArray, currentCombination ) {
-  // Initialize minimum and maximum values with the first element indicated by the combination.
-  let minValue = inputArray[ currentCombination[0] - 1 ];
-  let maxValue = inputArray[ currentCombination[0] - 1 ];
-
-  // Iterate through the rest of the combination elements.
-  for ( let elementIndex = 1; elementIndex < currentCombination.length; elementIndex++ ) {
-    // Update minimum and maximum based on the array elements at the specified indices.
-    minValue = Math.min( minValue, inputArray[ currentCombination[elementIndex] - 1 ] );
-    maxValue = Math.max( maxValue, inputArray[ currentCombination[elementIndex] - 1 ] );
+  // Iterate through the rest of the combination to find true min and max
+  for (let k = 1; k < indexCombination.length; k++) {
+    minimumValue = Math.min(minimumValue, valueArray[indexCombination[k] - 1]);
+    maximumValue = Math.max(maximumValue, valueArray[indexCombination[k] - 1]);
   }
 
-  // Return the difference between the maximum and minimum found.
-  return ( maxValue - minValue );
+  // Return the difference between the maximum and minimum values
+  return maximumValue - minimumValue;
 }
 
+function parseInputString(rawText) {
+  // Split the input string by newline characters
+  rawText = rawText.split("\n");
+  const linesSplit = [];
 
-// Transforms raw multi-line string input into a matrix of string arrays.
-function processRawInput( initialData ) {
-  // Split the input string by newline characters to get individual lines.
-  initialData = initialData.split( "\n" );
-
-  let tempMatrix = []; // Array to store processed lines.
-
-  // Loop through each line of the input.
-  for ( let lineIndex = 0; lineIndex < initialData.length; lineIndex++ ) {
-    // Split each line by spaces to get an array of strings.
-    tempMatrix[ lineIndex ] = initialData[ lineIndex ].split( " " );
+  // Iterate through each line and split it by spaces
+  for (let lineIndex = 0; lineIndex < rawText.length; lineIndex++) {
+    linesSplit[lineIndex] = rawText[lineIndex].split(" ");
   }
-
-  return tempMatrix; // Return the matrix of string arrays.
+  return linesSplit;
 }
 
+function convertToIntArrays(stringArrays) {
+  const integerArrays = [];
 
-// Converts a matrix of string arrays into a matrix of integer arrays.
-function convertToIntMatrix( stringMatrix ) {
-
-  let integerMatrix = []; // The resulting matrix of integers.
-
-  // Iterate over rows.
-  for ( let rowIndex = 0; rowIndex < stringMatrix.length; rowIndex++ ) {
-    integerMatrix[ rowIndex ] = []; // Initialize current row as an empty array.
-
-    // Iterate over columns in the current row.
-    for ( let colIndex = 0; colIndex < stringMatrix[rowIndex].length; colIndex++ ) {
-      // Parse each string element to an integer and store it.
-      integerMatrix[ rowIndex ][ colIndex ] = parseInt( stringMatrix[ rowIndex ][ colIndex ] );
+  // Iterate through the outer array (lines)
+  for (let outerIdx = 0; outerIdx < stringArrays.length; outerIdx++) {
+    integerArrays[outerIdx] = [];
+    // Iterate through the inner array (elements in a line)
+    for (let innerIdx = 0; innerIdx < stringArrays[outerIdx].length; innerIdx++) {
+      integerArrays[outerIdx][innerIdx] = parseInt(stringArrays[outerIdx][innerIdx]);
     }
   }
-
-  return integerMatrix; // Return the matrix with all elements converted to integers.
+  return integerArrays;
 }
 
+function generateCombinations(upperBound, combinationSize) {
+  const allCombinations = [];
+  const currentCombination = [];
 
-// Generates all k-combinations from a set of n elements.
-function generateCombinations( totalElements, selectionSize ) {
-  let finalCombinations = []; // Stores all generated combinations.
-  let currentSequence = []; // Holds the combination currently being built.
-
-  // Initialize the first combination: [1, 2, ..., selectionSize]
-  for ( let initCounter = 1; initCounter <= selectionSize; initCounter++ ) {
-    currentSequence[ currentSequence.length ] = initCounter;
+  // Initialize the first combination (1, 2, ..., combinationSize)
+  for (let startVal = 1; startVal <= combinationSize; startVal++) {
+    currentCombination[currentCombination.length] = startVal;
   }
 
-  // Loop indefinitely until no more combinations can be generated.
-  for ( ; ; ) {
-    // Add a copy of the current sequence to the list of final combinations.
-    finalCombinations[ finalCombinations.length ] = currentSequence.concat();
+  // Loop to generate all subsequent combinations
+  for (;;) {
+    allCombinations[allCombinations.length] = currentCombination.concat(); // Add a copy of the current combination
 
-    let changePoint = currentSequence.length - 1; // Index to find the rightmost element that can be incremented.
+    let resetPoint = currentCombination.length - 1;
 
-    // Find the largest index 'reverseIter' such that currentSequence[reverseIter] is not at its maximum possible value.
-    for ( let reverseIter = currentSequence.length - 1; reverseIter >= 0; reverseIter-- ) {
-      // Check if the current element is at its maximum for its position (n - (k - 1 - reverseIter)).
-      if ( currentSequence[ reverseIter ] !== totalElements - ( currentSequence.length - reverseIter - 1 ) ) {
-        break; // Found an element that can be incremented.
+    // Find the rightmost element that can be incremented
+    for (let checkIdx = currentCombination.length - 1; checkIdx >= 0; checkIdx--) {
+      if (currentCombination[checkIdx] !== upperBound - (currentCombination.length - checkIdx - 1)) {
+        break;
       } else {
-        changePoint = reverseIter - 1; // Move left if element is at max.
+        resetPoint = checkIdx - 1;
       }
     }
 
-    // If a 'changePoint' is found (meaning not all elements are at their maximum), generate the next combination.
-    if ( changePoint >= 0 ) {
-      let baseValue = currentSequence[ changePoint ]; // Value at the change point.
-
-      // Increment the element at 'changePoint' and subsequent elements.
-      for ( let fillCounter = 0; fillCounter < currentSequence.length - changePoint; fillCounter++ ) {
-        currentSequence[ changePoint + fillCounter ] = baseValue + fillCounter + 1;
+    // If a reset point is found, generate the next combination
+    if (resetPoint >= 0) {
+      const baseValue = currentCombination[resetPoint];
+      for (let offsetIdx = 0; offsetIdx < currentCombination.length - resetPoint; offsetIdx++) {
+        currentCombination[resetPoint + offsetIdx] = baseValue + offsetIdx + 1;
       }
     } else {
-      break; // All combinations have been generated.
+      // No more combinations can be generated
+      break;
     }
   }
-
-  return finalCombinations; // Return the complete list of k-combinations.
+  return allCombinations;
 }
 
-
-// Do not modify the code below this line (standard I/O setup).
-Execute( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Standard input/output handling
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

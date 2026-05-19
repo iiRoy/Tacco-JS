@@ -1,42 +1,27 @@
-let accumulatedPayload = '';
-process.stdin.setEncoding('utf8');
+const fileSystem = require('fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInputContent.trim().split('\n').filter(Boolean);
 
-process.stdin.on('data', (dataFragment) => {
-    accumulatedPayload += dataFragment;
-});
+const classificationBounds = [
+    { upper: 48, label: 'light fly' },
+    { upper: 51, label: 'fly' },
+    { upper: 54, label: 'bantam' },
+    { upper: 57, label: 'feather' },
+    { upper: 60, label: 'light' },
+    { upper: 64, label: 'light welter' },
+    { upper: 69, label: 'welter' },
+    { upper: 75, label: 'light middle' },
+    { upper: 81, label: 'middle' },
+    { upper: 91, label: 'light heavy' }
+];
 
-process.stdin.on('end', () => {
-    const processedUnits = accumulatedPayload.trim().split('\n');
+const obtainWeightClass = (massValue) => {
+    const foundClass = classificationBounds.find(boundary => massValue <= boundary.upper);
+    return foundClass ? foundClass.label : 'heavy';
+};
 
-    const classificationAtlas = [
-        [48, 'light fly'],
-        [51, 'fly'],
-        [54, 'bantam'],
-        [57, 'feather'],
-        [60, 'light'],
-        [64, 'light welter'],
-        [69, 'welter'],
-        [75, 'light middle'],
-        [81, 'middle'],
-        [91, 'light heavy']
-    ];
-
-    const determineClass = (metric) => {
-        const numericalMetric = parseFloat(metric);
-
-        const matchingRecord = classificationAtlas.find(([threshold, _]) => numericalMetric <= threshold);
-
-        if (matchingRecord) {
-            return matchingRecord[1];
-        } else {
-            return 'heavy';
-        }
-    };
-
-    processedUnits.forEach((individualUnit) => {
-        if (individualUnit.length > 0) {
-            const ultimateLabel = determineClass(individualUnit);
-            process.stdout.write(ultimateLabel + '\n');
-        }
-    });
+processedLines.forEach(individualLine => {
+    const numericWeight = +individualLine;
+    const assignedClass = obtainWeightClass(numericWeight);
+    console.log(assignedClass);
 });

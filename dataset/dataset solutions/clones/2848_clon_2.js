@@ -1,44 +1,82 @@
-// This function processes the entire provided input string.
-function ProcessData ( rawInput ) {
-  let linesArray = rawInput . split ( "\n" ) ;
-  let dataCount = parseInt ( linesArray [ 0 ] ) ;
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  rawData = rawData.split("\n");
 
-  let sortedValues = linesArray [ 1 ] . split ( " " ) . map ( itemStr => parseInt ( itemStr ) ) . sort ( ( valA , valB ) => valA > valB ? -1 : ( valA === valB ? 0 : 1 ) ) ;
-  let calculatedSum = 0 ;
+  // Parse the first line to get the number of elements
+  const countElements = parseInt(rawData[0], 10);
 
-  for ( let idx = 0 ; idx < dataCount ; idx ++ ) {
-    if ( idx % 2 === 0 ) {
-      calculatedSum = calculatedSum + sortedValues [ Math . floor ( idx / 2 ) ] ;
+  // Process the second line: split by space, convert to numbers, and sort in descending order
+  const sortedValues = rawData[1]
+    .split(" ")
+    .map((currentVal) => parseInt(currentVal, 10))
+    .sort((valA, valB) => (valA > valB ? -1 : valA === valB ? 0 : 1));
+
+  // Initialize a variable to accumulate the sum
+  let totalSum = 0;
+
+  // First loop: calculate the initial total sum based on alternating operations
+  for (let idx = 0; idx < countElements; idx++) {
+    if (idx % 2 === 0) {
+      // Add an element from the beginning of the sorted array
+      totalSum += sortedValues[Math.floor(idx / 2)];
     } else {
-      calculatedSum = calculatedSum - sortedValues [ dataCount - Math . floor ( idx / 2 + 1 ) ] ;
+      // Subtract an element from the end of the sorted array
+      totalSum -= sortedValues[countElements - Math.floor(idx / 2 + 1)];
     }
   }
 
-  console . log ( calculatedSum ) ;
+  // Output the calculated total sum
+  console.log(totalSum);
 
-  if ( dataCount % 2 === 0 ) {
-    let currentVal = sortedValues [ dataCount - 1 ] ;
-    for ( let idx = 0 ; idx < dataCount - 1 ; idx ++ ) {
-      if ( idx % 2 === 0 ) {
-        console . log ( sortedValues [ Math . floor ( idx / 2 ) ] + " " + currentVal ) ;
-        currentVal = sortedValues [ Math . floor ( idx / 2 ) ] - currentVal ;
+  // Conditional logic based on whether countElements is even or odd
+  if (countElements % 2 === 0) {
+    // If countElements is even, start with the smallest value
+    let currentResult = sortedValues[countElements - 1];
+
+    // Loop for N-1 iterations
+    for (let idx = 0; idx < countElements - 1; idx++) {
+      if (idx % 2 === 0) {
+        // Print the current element and the current result
+        console.log(sortedValues[Math.floor(idx / 2)] + " " + currentResult);
+        // Update currentResult by subtracting it from the current element
+        currentResult = sortedValues[Math.floor(idx / 2)] - currentResult;
       } else {
-        console . log ( sortedValues [ dataCount - Math . floor ( idx / 2 + 1 ) ] + " " + currentVal ) ;
-        currentVal = sortedValues [ dataCount - Math . floor ( idx / 2 + 1 ) ] - currentVal ;
+        // Print the current element (from the end) and the current result
+        console.log(
+          sortedValues[countElements - Math.floor(idx / 2 + 1)] +
+            " " +
+            currentResult
+        );
+        // Update currentResult by subtracting it from the current element (from the end)
+        currentResult =
+          sortedValues[countElements - Math.floor(idx / 2 + 1)] - currentResult;
       }
     }
   } else {
-    let currentVal = sortedValues [ 0 ] ;
-    for ( let idx = 1 ; idx < dataCount ; idx ++ ) {
-      if ( idx % 2 === 0 ) {
-        console . log ( sortedValues [ Math . floor ( idx / 2 ) ] + " " + currentVal ) ;
-        currentVal = sortedValues [ Math . floor ( idx / 2 ) ] - currentVal ;
+    // If countElements is odd, start with the largest value
+    let currentResult = sortedValues[0];
+
+    // Loop for N-1 iterations, starting from idx = 1
+    for (let idx = 1; idx < countElements; idx++) {
+      if (idx % 2 === 0) {
+        // Print the current element and the current result
+        console.log(sortedValues[Math.floor(idx / 2)] + " " + currentResult);
+        // Update currentResult by subtracting it from the current element
+        currentResult = sortedValues[Math.floor(idx / 2)] - currentResult;
       } else {
-        console . log ( sortedValues [ dataCount - Math . floor ( idx / 2 + 1 ) ] + " " + currentVal ) ;
-        currentVal = sortedValues [ dataCount - Math . floor ( idx / 2 + 1 ) ] - currentVal ;
+        // Print the current element (from the end) and the current result
+        console.log(
+          sortedValues[countElements - Math.floor(idx / 2 + 1)] +
+            " " +
+            currentResult
+        );
+        // Update currentResult by subtracting it from the current element (from the end)
+        currentResult =
+          sortedValues[countElements - Math.floor(idx / 2 + 1)] - currentResult;
       }
     }
   }
 }
-// Do not modify the following line; it handles standard input/output.
-ProcessData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+// This line should not be modified (reads from standard input and calls the main function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

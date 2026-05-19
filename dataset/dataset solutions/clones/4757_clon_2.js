@@ -1,37 +1,34 @@
-'use strict'
+'use strict';
 
-// Core function to process the provided data stream.
-function executeLogic(sourceData) {
-  // Convert the input string into a sequence of individual characters.
-  let charSequence = sourceData.split('');
+// This function processes the given string data to calculate a maximum value.
+function processInput(rawData) {
+  // Convert the raw input string into an array of characters.
+  let charArray = rawData.split('');
 
-  // Determine the numerical extent of processing from the first character.
-  // Explicitly convert this character to an integer.
-  const processLimit = parseInt(charSequence[0]);
+  // The first character of the input determines the effective length for processing.
+  const dataSize = charArray[0];
 
-  // Initialize a running total or current balance.
-  let currentBalance = 0;
+  // Initialize a counter for the current value, starting at zero.
+  let currentValue = 0;
 
-  // Store a historical record of all balance states.
-  let balanceHistory = [0];
+  // Maintain a record of all computed values, starting with the initial zero.
+  let valueHistory = [0];
 
-  // Iterate through the specified range to update the balance.
-  for (let cycleIndex = 0; cycleIndex < processLimit; cycleIndex++) {
-    // Check the character at an offset position relative to the current index.
-    if (charSequence[cycleIndex + 2] === 'I') {
-      // If an 'I' is encountered, increase the balance.
-      currentBalance++;
+  // Iterate through the relevant part of the character array.
+  for (let idx = 0; idx < dataSize; idx++) {
+    // Check the character at an offset of 2 from the current index.
+    if (charArray[idx + 2] === 'I') { // Use strict equality for comparison.
+      currentValue++; // Increment the counter.
     } else {
-      // For any other character, decrease the balance.
-      currentBalance--;
+      currentValue--; // Decrement the counter.
     }
-    // Append the updated balance to the historical record.
-    balanceHistory.push(currentBalance);
+    // Store the updated current value in the history list.
+    valueHistory.push(currentValue);
   }
 
-  // Output the highest balance achieved during the entire process.
-  console.log(Math.max(...balanceHistory));
+  // Output the maximum value found in the entire history.
+  console.log(Math.max(...valueHistory));
 }
 
-// Read the raw content from the standard input and pass it to the processing function.
-executeLogic(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the main processing function with data read from standard input.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,84 +1,89 @@
-let receivedRawInput = '';
+var input = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (segment) => {
-    receivedRawInput += segment;
+process.stdin.on('data', function (chunk) {
+  input += chunk;
 });
-process.stdin.on('end', () => {
-    initiateScenarioProcessing(receivedRawInput.split('\n'));
+process.stdin.on('end', function () {
+  initiateGameSimulation(input.split('\n'));
 });
 
-const vectorMap = {
-    'N': { horizontalShift: 0, verticalShift: 1 },
-    'S': { horizontalShift: 0, verticalShift: -1 },
-    'E': { horizontalShift: 1, verticalShift: 0 },
-    'W': { horizontalShift: -1, verticalShift: 0 }
-};
+function initiateGameSimulation(inputLines) {
+  const startingRobotX = 10;
+  const startingRobotY = 10;
 
-function initiateScenarioProcessing(allInputLines) {
-    let currentLineIndex = 0;
+  let currentInputLinePointer = 0;
 
-    const processNextDataBatch = () => {
-        const gemCountDescriptor = allInputLines[currentLineIndex];
-        if (!gemCountDescriptor || parseInt(gemCountDescriptor, 10) === 0) {
-            return; 
-        }
+  // Recursive function to process each game round
+  const processNextScenario = () => {
+    const gemCountString = inputLines[currentInputLinePointer++];
+    const numberOfGems = parseInt(gemCountString, 10);
 
-        const currentGemQuantity = parseInt(gemCountDescriptor, 10);
-        currentLineIndex++;
+    if (numberOfGems === 0) {
+      return; // Termination condition for the recursive processing
+    }
 
-        const gemCoordinatesCollection = new Set(); 
-        for (let i = 0; i < currentGemQuantity; i++) {
-            const coords = allInputLines[currentLineIndex].split(' ').map(Number);
-            gemCoordinatesCollection.add(`${coords[0]},${coords[1]}`);
-            currentLineIndex++;
-        }
+    // Using a Set to store unique gem coordinates as strings "x,y"
+    const existingGemCoordinates = new Set();
 
-        const moveCountDescriptor = allInputLines[currentLineIndex];
-        const currentMoveQuantity = parseInt(moveCountDescriptor, 10);
-        currentLineIndex++;
+    for (let gemIndex = 0; gemIndex < numberOfGems; gemIndex++) {
+      const gemPositionLine = inputLines[currentInputLinePointer++];
+      const gemComponents = gemPositionLine.split(' ');
+      console.log(gemComponents); // Preserve original debug output
+      existingGemCoordinates.add(`${parseInt(gemComponents[0], 10)},${parseInt(gemComponents[1], 10)}`);
+    }
 
-        const movementCommandList = [];
-        for (let i = 0; i < currentMoveQuantity; i++) {
-            const commandParts = allInputLines[currentLineIndex].split(' ');
-            movementCommandList.push({ directionIndicator: commandParts[0], travelDistance: parseInt(commandParts[1], 10) });
-            currentLineIndex++;
-        }
+    const moveCountString = inputLines[currentInputLinePointer++];
+    const numberOfMoves = parseInt(moveCountString, 10);
+    const movementInstructions = [];
 
-        const result = evaluateAllGemPickup(gemCoordinatesCollection, movementCommandList);
-        console.log(result ? 'Yes' : 'No');
+    for (let moveIndex = 0; moveIndex < numberOfMoves; moveIndex++) {
+      const moveDescriptionLine = inputLines[currentInputLinePointer++];
+      const [directionChar, lengthString] = moveDescriptionLine.split(' ');
+      movementInstructions.push({ directionKey: directionChar, stepCount: parseInt(lengthString, 10) });
+    }
 
-        processNextDataBatch(); 
-    };
+    // Evaluate if all gems are collected
+    const allCollected = assessCollectionStatus(
+      new Set(existingGemCoordinates), // Pass a copy to avoid modifying the original set if needed elsewhere
+      movementInstructions,
+      startingRobotX,
+      startingRobotY
+    );
 
-    processNextDataBatch(); 
+    console.log(allCollected ? 'Yes' : 'No');
+
+    processNextScenario(); // Recurse for the next game scenario
+  };
+
+  processNextScenario(); // Start the first scenario
 }
 
-function evaluateAllGemPickup(initialGemSet, sequenceOfCommands) {
-    const startingState = {
-        robotXCoordinate: 10,
-        robotYCoordinate: 10,
-        remainingGemCoordinates: new Set(initialGemSet)
-    };
+function assessCollectionStatus(remainingGemSet, movementPath, initialX, initialY) {
+  let currentPositionX = initialX;
+  let currentPositionY = initialY;
 
-    const finalResultingState = sequenceOfCommands.reduce((currentStateAccumulator, currentCommand) => {
-        let { robotXCoordinate, robotYCoordinate, remainingGemCoordinates } = currentStateAccumulator;
-        const { directionIndicator, travelDistance } = currentCommand;
-        const { horizontalShift, verticalShift } = vectorMap[directionIndicator];
+  // Lookup table for directional vectors
+  const directionalVectors = {
+    'N': { deltaX: 0, deltaY: 1 },
+    'S': { deltaX: 0, deltaY: -1 },
+    'E': { deltaX: 1, deltaY: 0 },
+    'W': { deltaX: -1, deltaY: 0 }
+  };
 
-        for (let stepIterator = 0; stepIterator < travelDistance; stepIterator++) {
-            robotXCoordinate += horizontalShift;
-            robotYCoordinate += verticalShift;
-            const currentCoordinateString = `${robotXCoordinate},${robotYCoordinate}`;
-            
-            if (remainingGemCoordinates.has(currentCoordinateString)) {
-                const updatedGemSet = new Set(remainingGemCoordinates);
-                updatedGemSet.delete(currentCoordinateString);
-                remainingGemCoordinates = updatedGemSet;
-            }
-        }
-        return { robotXCoordinate, robotYCoordinate, remainingGemCoordinates };
-    }, startingState);
+  // Iterate through each segment of the movement path
+  movementPath.forEach(segment => {
+    const { directionKey, stepCount } = segment;
+    const { deltaX, deltaY } = directionalVectors[directionKey];
 
-    return finalResultingState.remainingGemCoordinates.size === 0;
+    // Move step by step, collecting gems
+    for (let s = 0; s < stepCount; s++) {
+      currentPositionX += deltaX;
+      currentPositionY += deltaY;
+      remainingGemSet.delete(`${currentPositionX},${currentPositionY}`);
+    }
+  });
+
+  // If the set of remaining gems is empty, all were collected
+  return remainingGemSet.size === 0;
 }

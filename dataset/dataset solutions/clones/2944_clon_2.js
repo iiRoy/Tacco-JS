@@ -1,101 +1,82 @@
 'use strict';
-( function ( processData ) {
 
-  // Retrieve and process the raw string input.
-  // Trim whitespace, split by any whitespace, and convert each part to a number.
-  let parsedNumbersArray = processData
-    .trim()
-    .split( /\s+/ )
-    .map( ( numericEntry ) => +numericEntry );
+(function (rawData) {
+  // Process the raw input string: trim, split by whitespace, and convert to numbers.
+  let processedData = rawData.trim().split(/\s+/).map(numStr => numStr - 0);
 
-  // Extract and assign the primary dimensions and the desired count from the processed input.
-  const firstDimensionValue = Math.min( parsedNumbersArray[0], parsedNumbersArray[1] );
-  const secondDimensionValue = Math.max( parsedNumbersArray[0], parsedNumbersArray[1] );
-  const targetCount = parsedNumbersArray[2];
+  const valA = Math.min(processedData[0], processedData[1]);
+  const valB = Math.max(processedData[0], processedData[1]);
+  const valC = processedData[2];
 
-  // Establish a large prime number for all modular arithmetic computations.
-  const largePrimeModulus = ( Math.pow( 10, 9 ) + 7 );
+  // Define the large prime modulus for calculations.
+  const modulus = Math.pow(10, 9) + 7;
 
-  let computedSumTotal = 0; // Initialize the variable that will accumulate the final result.
+  let finalResult = 0;
 
-  // Execute the first computational loop: from 1 up to (firstDimensionValue - 1).
-  for ( let currentIteration = 1; currentIteration <= firstDimensionValue - 1; currentIteration++ ) {
-    // Calculate four distinct components based on the current iteration and dimensions.
-    let componentFactorA = ( 1.0 / 6.0 ) * ( currentIteration + 1 ) * ( currentIteration + 2 ) * ( currentIteration * 3 );
-    let componentFactorB = ( ( firstDimensionValue - currentIteration - 1 ) + ( secondDimensionValue - currentIteration - 1 ) ) * ( 0.5 ) * ( currentIteration + 1 ) * ( currentIteration + 2 );
-    let componentFactorC = ( firstDimensionValue - currentIteration - 1 ) * ( secondDimensionValue - currentIteration - 1 ) * ( currentIteration + 1 );
-    let componentFactorD = ( firstDimensionValue - currentIteration ) + ( secondDimensionValue - currentIteration );
+  // First iteration block: for iterVar from 1 up to valA - 1
+  for (let iterVar = 1; iterVar <= valA - 1; iterVar++) {
+    let termOne = (1 / 6) * (iterVar + 1) * (iterVar + 2) * (iterVar * 3);
+    let termTwo = ((valA - iterVar - 1) + (valB - iterVar - 1)) * (1 / 2) * (iterVar + 1) * (iterVar + 2);
+    let termThree = (valA - iterVar - 1) * (valB - iterVar - 1) * (iterVar + 1);
+    let termFour = (valA - iterVar) + (valB - iterVar);
 
-    // Update the running total with the result derived from these components.
-    computedSumTotal += currentIteration * ( ( componentFactorA + componentFactorB + componentFactorC ) * 2 - componentFactorD );
-    computedSumTotal %= largePrimeModulus; // Apply the modulo operation to prevent overflow.
+    finalResult += iterVar * ((termOne + termTwo + termThree) * 2 - termFour);
+    finalResult %= modulus;
   }
 
-  // Proceed with the second computational loop: from firstDimensionValue up to (secondDimensionValue - 1).
-  for ( let iterIndex = firstDimensionValue; iterIndex <= secondDimensionValue - 1; iterIndex++ ) {
-    // Determine a new set of components for this specific range.
-    let termValueAlpha = ( 1.0 / 6.0 ) * ( firstDimensionValue ) * ( firstDimensionValue + 1 ) * ( firstDimensionValue + 2 );
-    let termValueBeta  = ( secondDimensionValue - iterIndex - 1 ) * ( 0.5 ) * ( firstDimensionValue ) * ( firstDimensionValue + 1 );
-    let termValueGamma = 0; // This specific term is set to zero for this section.
-    let termValueDelta = ( secondDimensionValue - iterIndex );
+  // Second iteration block: for iterVar from valA up to valB - 1
+  for (let iterVar = valA; iterVar <= valB - 1; iterVar++) {
+    let termOne = (1 / 6) * (valA) * (valA + 1) * (valA + 2);
+    let termTwo = (valB - iterVar - 1) * (1 / 2) * (valA) * (valA + 1);
+    let termThree = 0; // This term is zero in this range
+    let termFour = (valB - iterVar);
 
-    // Integrate these new term values into the main accumulator.
-    computedSumTotal += iterIndex * ( ( termValueAlpha + termValueBeta + termValueGamma ) * 2 - termValueDelta );
-    computedSumTotal %= largePrimeModulus; // Ensure the result remains within the modular range.
+    finalResult += iterVar * ((termOne + termTwo + termThree) * 2 - termFour);
+    finalResult %= modulus;
   }
 
-  // Execute the third and final computational loop: from secondDimensionValue up to (firstDimensionValue + secondDimensionValue - 2).
-  for ( let loopIteration = secondDimensionValue; loopIteration <= firstDimensionValue + secondDimensionValue - 2; loopIteration++ ) {
-    let auxiliaryDimension = firstDimensionValue + secondDimensionValue - 1 - loopIteration;
-    // Calculate the last set of components.
-    let calculationComponentA = ( 1.0 / 6.0 ) * ( auxiliaryDimension ) * ( auxiliaryDimension + 1 ) * ( auxiliaryDimension + 2 );
-    let calculationComponentB = 0; // This component is explicitly zero.
-    let calculationComponentC = 0; // This component is also explicitly zero.
-    let calculationComponentD = 0; // And similarly, this is zero.
+  // Third iteration block: for iterVar from valB up to valA + valB - 2
+  for (let iterVar = valB; iterVar <= valA + valB - 2; iterVar++) {
+    let tempVal = valA + valB - 1 - iterVar;
+    let termOne = (1 / 6) * (tempVal) * (tempVal + 1) * (tempVal + 2);
+    let termTwo = 0; // These terms are zero in this range
+    let termThree = 0;
+    let termFour = 0;
 
-    // Add the outcome of these calculations to the overall sum.
-    computedSumTotal += loopIteration * ( ( calculationComponentA + calculationComponentB + calculationComponentC ) * 2 - calculationComponentD );
-    computedSumTotal %= largePrimeModulus; // Apply the modulo to maintain integrity.
+    finalResult += iterVar * ((termOne + termTwo + termThree) * 2 - termFour);
+    finalResult %= modulus;
   }
 
-  // Final step: Multiply the accumulated sum by a combinatorial factor, specifically (N*M-2) choose (K-2).
-  // This is performed using modular multiplication for the numerator and modular inverse for the denominator.
-  for ( let factorLoopCounter = 0; factorLoopCounter < targetCount - 2; factorLoopCounter++ ) {
+  // Multiply finalResult by (valA * valB - 2) C (valC - 2)
+  for (let loopIdx = 0; loopIdx < valC - 2; loopIdx++) {
+    finalResult *= (valA * valB - 2 - loopIdx);
+    finalResult %= modulus;
 
-    // Multiply by the next term in the numerator of the combination formula.
-    computedSumTotal *= ( firstDimensionValue * secondDimensionValue - 2 - factorLoopCounter );
-    computedSumTotal %= largePrimeModulus;
+    // Modular inverse calculation using Extended Euclidean Algorithm
+    // This effectively performs division in modular arithmetic.
+    let remainderSeq = [modulus, loopIdx + 1];
+    let quotientSeq = [];
 
-    // --- Modular Inverse Calculation using the Extended Euclidean Algorithm ---
-    // This block finds the modular multiplicative inverse for dividing by (factorLoopCounter + 1).
-    let remainderSequenceTracker = [ largePrimeModulus, factorLoopCounter + 1 ]; // Start with the modulus and the current divisor.
-    let quotientSequenceTracker = [];
+    while (remainderSeq[remainderSeq.length - 1] !== 1) {
+      let dividend = remainderSeq[remainderSeq.length - 2];
+      let divisor = remainderSeq[remainderSeq.length - 1];
+      let currentRemainder = dividend % divisor;
+      let currentQuotient = Math.floor(dividend / divisor); // Integer division
 
-    // Perform the standard Euclidean algorithm to find GCD and collect quotients.
-    while ( remainderSequenceTracker[ remainderSequenceTracker.length - 1 ] !== 1 ) {
-      let currentDividend = remainderSequenceTracker[ remainderSequenceTracker.length - 2 ];
-      let currentDivisor  = remainderSequenceTracker[ remainderSequenceTracker.length - 1 ];
-      let currentRemainder = currentDividend % currentDivisor;
-      let currentQuotient  = Math.floor( currentDividend / currentDivisor ); // Use floor for integer division
-      remainderSequenceTracker.push( currentRemainder );
-      quotientSequenceTracker.push( currentQuotient );
+      remainderSeq.push(currentRemainder);
+      quotientSeq.push(currentQuotient);
     }
 
-    // Back-substitute the collected quotients to find the Bezout coefficients.
-    let bezoutCoefficientsArray = [ -( quotientSequenceTracker.pop() ), 1 ]; // Initialize with coefficients for the last two remainders.
-    while ( quotientSequenceTracker.length > 0 ) {
-      bezoutCoefficientsArray.push( bezoutCoefficientsArray[ bezoutCoefficientsArray.length - 2 ] - bezoutCoefficientsArray[ bezoutCoefficientsArray.length - 1 ] * quotientSequenceTracker.pop() );
+    let coefficientSeq = [-quotientSeq.pop(), 1]; // Initialize coefficients for the last two remainders
+
+    while (quotientSeq.length > 0) {
+      coefficientSeq.push(coefficientSeq[coefficientSeq.length - 2] - coefficientSeq[coefficientSeq.length - 1] * quotientSeq.pop());
     }
 
-    // Apply the modular inverse (which is the second-to-last Bezout coefficient) to the running total.
-    computedSumTotal = ( bezoutCoefficientsArray[ bezoutCoefficientsArray.length - 2 ] * computedSumTotal ) % largePrimeModulus;
-    // Ensure the result is non-negative, as JavaScript's % operator can return negative values.
-    if ( computedSumTotal < 0 ) {
-      computedSumTotal += largePrimeModulus;
-    }
+    // Apply the modular inverse to finalResult
+    finalResult = (coefficientSeq[coefficientSeq.length - 2] * finalResult) % modulus;
   }
 
-  // Output the final calculated and modulated result to the console.
-  console.log( computedSumTotal );
+  console.log(finalResult);
 
-} )( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

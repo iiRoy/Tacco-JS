@@ -1,16 +1,28 @@
-/* This module handles string processing tasks. */
-function processStringData(  sourceText ) { // Primary routine for text analysis.
-  let occurrenceCounter = 0x0; // Initialize a counter for found patterns.
-  // Loop continues as long as the target sequence is present.
-  while ( sourceText . indexOf ( "XYZ" ) >= 0.0 )
-  {
-    const positionMarker = sourceText . indexOf ( "XYZ" ) ; // Locate the first instance of the pattern.
-    let modifiedString = sourceText . replace ( "XYZ" , "YXZ" ) ; // Replace the found pattern with a new one.
-    occurrenceCounter ++ ; // Increment the tally.
-    sourceText = modifiedString . slice ( positionMarker ) ; // Adjust the source text to continue searching from the found position.
+function processInput (sourceString) {
+  // Initialize a counter to track the number of times the target pattern is found.
+  let occurrenceCounter = 0;
+
+  // Continue looping as long as the substring 'ABC' is present in the current source string.
+  while (sourceString.indexOf('ABC') !== -1) {
+    // Determine the starting index of the first occurrence of 'ABC'.
+    const matchPosition = sourceString.indexOf('ABC');
+
+    // Create a temporary string by replacing the first 'ABC' with 'BCA'.
+    let modifiedString = sourceString.replace('ABC', 'BCA');
+
+    // Increment the counter for each detected and processed occurrence.
+    occurrenceCounter++;
+
+    // Update the main source string to be the segment of the modified string
+    // starting from where the 'ABC' was originally found. This effectively
+    // processes the string from the point of the last match onwards.
+    sourceString = modifiedString.slice(matchPosition);
   }
-  console . log ( occurrenceCounter ) ; // Display the final count of occurrences.
+
+  // Output the final tally of occurrences to the console.
+  console.log(occurrenceCounter);
 }
 
-// Invoke the main processing function with data from standard input.
-processStringData ( require ( 'fs' ) . readFileSync ( "/dev/stdin" , "utf-8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string
+// and then pass it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

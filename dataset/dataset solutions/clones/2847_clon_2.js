@@ -1,75 +1,64 @@
-/* This script processes numerical input to perform a specific sequence of subtractions.
- * It aims to reduce a collection of numbers into a final single value
- * while logging the intermediate operations. */
-console.log(( (inputData) => { // Primary execution block accepting raw input.
+console.log((inputData => {
+  // Parse the input string: first line contains N, second line contains array elements.
+  // All values are converted to integers.
+  const [[countElements], dataArray] = inputData
+    .trim()
+    .split('\n')
+    .map(rowString => rowString.split(' ').map(valueString => parseInt(valueString, 10)));
 
-    // Parse the incoming text data: first line for count, subsequent lines for values.
-    // The input is trimmed, split by newlines, and each line is further segmented by spaces.
-    // All string values are converted into integers.
-    const [ [itemCount], valueArray ] = inputData
-        .trim() // Erase leading/trailing whitespace.
-        .split('\n') // Divide into individual lines.
-        .map( (lineOfText) => lineOfText.split(' ').map( (stringValue) => Number(stringValue) ) );
+  // Sort the main array in descending order.
+  dataArray.sort((firstValue, secondValue) => secondValue - firstValue);
 
-    // Arrange the numerical collection in descending order.
-    // This sorting step is crucial for the subsequent logic.
-    valueArray.sort( (elemA, elemB) => elemB - elemA );
+  // Use a binary search-like approach to find the approximate split point
+  // between non-negative and negative numbers.
+  let leftIdx = 0;
+  let rightIdx = countElements - 1;
 
-    // Initialize pointers for a segmenting process.
-    // This part effectively performs a modified binary search to find a split point.
-    let lowIndex = 0;
-    let highIndex = itemCount - 1; // 'highIndex' now refers to 'r' from original code.
-
-    // Continue narrowing down the range until the pointers are adjacent.
-    while ( highIndex - lowIndex > 1 ) {
-        // Calculate the midpoint using integer division to ensure it's a valid index.
-        const middleIndex = lowIndex + ( (highIndex - lowIndex) / 2 ) | 0;
-
-        // Decision logic based on the value at the midpoint.
-        // If the element is negative, adjust the 'highIndex'; otherwise, adjust 'lowIndex'.
-        if ( valueArray[middleIndex] < 0 ) {
-            highIndex = middleIndex; // Move high pointer.
-        } else {
-            lowIndex = middleIndex;  // Move low pointer.
-        }
+  while (rightIdx - leftIdx > 1) {
+    const midIdx = leftIdx + Math.floor((rightIdx - leftIdx) / 2); // Calculate middle index
+    if (dataArray[midIdx] < 0) {
+      rightIdx = midIdx; // If middle element is negative, search in the left half (including mid)
+    } else {
+      leftIdx = midIdx; // If middle element is non-negative, search in the right half (including mid)
     }
+  }
 
-    // Prepare a list to record all performed operations.
-    const operationSteps = [];
+  // Initialize a list to store the sequence of operations.
+  const operationsList = [];
 
-    // Initialize two key values from the sorted array.
-    // 'principalValue' takes the largest number, 'auxiliaryValue' takes the smallest.
-    let principalValue = valueArray[0];
-    let auxiliaryValue = valueArray[valueArray.length - 1];
+  // Initialize the two accumulators with the largest and smallest elements from the sorted array.
+  let currentSum = dataArray[0]; // The largest element (A[0])
+  let currentDiff = dataArray[dataArray.length - 1]; // The smallest element (A[N-1])
 
-    // Create two sub-segments from the main array.
-    // 'firstSegment' contains elements from index 1 up to 'highIndex' (exclusive).
-    // 'secondSegment' contains elements from 'highIndex' up to the second-to-last element.
-    const firstSegment = valueArray.slice(1, highIndex);
-    const secondSegment = valueArray.slice(highIndex, valueArray.length - 1);
+  // Create two sub-arrays:
+  // positivePart: elements from index 1 up to (but not including) rightIdx.
+  //               These are typically positive or zero, excluding the largest.
+  // negativePart: elements from rightIdx up to (but not including) the last element.
+  //               These are typically negative, excluding the smallest.
+  const positivePart = dataArray.slice(1, rightIdx);
+  const negativePart = dataArray.slice(rightIdx, dataArray.length - 1);
 
-    // Process the first segment: iteratively subtract elements from 'auxiliaryValue'.
-    // Elements are processed from right to left (LIFO due to pop).
-    while ( firstSegment.length ) {
-        const currentFirstItem = firstSegment.pop(); // Retrieve the next element.
-        operationSteps.push(`${auxiliaryValue} ${currentFirstItem}`); // Log the operation.
-        auxiliaryValue -= currentFirstItem; // Update 'auxiliaryValue'.
-    }
+  // Process elements from the 'positivePart' array.
+  // Subtract each element from 'currentDiff'.
+  while (positivePart.length > 0) {
+    const elementToSubtract = positivePart.pop(); // Get the last element
+    operationsList.push(`${currentDiff} ${elementToSubtract}`); // Record the operation
+    currentDiff -= elementToSubtract; // Update currentDiff
+  }
 
-    // Perform a crucial intermediate operation: subtract 'auxiliaryValue' from 'principalValue'.
-    operationSteps.push(`${principalValue} ${auxiliaryValue}`); // Log this specific step.
-    principalValue -= auxiliaryValue; // Update 'principalValue'.
+  // Perform the operation involving the largest element and the accumulated 'currentDiff'.
+  operationsList.push(`${currentSum} ${currentDiff}`);
+  currentSum -= currentDiff; // Update currentSum
 
-    // Process the second segment: iteratively subtract elements from 'principalValue'.
-    // Elements are again processed from right to left.
-    while ( secondSegment.length ) {
-        const currentSecondItem = secondSegment.pop(); // Get the next element.
-        operationSteps.push(`${principalValue} ${currentSecondItem}`); // Log the operation.
-        principalValue -= currentSecondItem; // Update 'principalValue'.
-    }
+  // Process elements from the 'negativePart' array.
+  // Subtract each element from 'currentSum'.
+  while (negativePart.length > 0) {
+    const elementToSubtract = negativePart.pop(); // Get the last element
+    operationsList.push(`${currentSum} ${elementToSubtract}`); // Record the operation
+    currentSum -= elementToSubtract; // Update currentSum
+  }
 
-    // Construct the final output string: the final 'principalValue' followed by all recorded operations.
-    return `${principalValue}\n` + operationSteps.join('\n');
+  // Return the final accumulated value followed by the list of operations, each on a new line.
+  return `${currentSum}\n` + operationsList.join('\n');
 
-// The input data is read synchronously from standard input using Node.js 'fs' module.
-} )( require('fs').readFileSync('/dev/stdin', 'utf8') ) );
+})(require('node:fs').readFileSync('/dev/stdin', 'utf8')));

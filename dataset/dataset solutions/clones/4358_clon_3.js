@@ -1,153 +1,93 @@
-const processConcentrationProblem = (problemInputString) => {
-    // Helper function for sorting numbers in ascending order.
-    // This ensures consistent ordering of generated mass combinations.
-    const sortNumbersAscending = (valA, valB) => valA - valB;
+function ProcessInput(rawData) {
+    const numericSorter = (valA, valB) => valA - valB;
 
-    // A utility to safely convert string to integer, defaulting to 0 if invalid.
-    const safeParseInt = (str) => {
-        const num = parseInt(str, 10);
-        return isNaN(num) ? 0 : num;
-    };
+    const parsedLines = rawData.trim().split("\n").map(lineStr => lineStr.split(" "));
+    const firstLineParams = parsedLines[0].map(Number);
 
-    // Pre-process the raw input string: trim whitespace, split into lines,
-    // then split each line by space. The first line contains the critical parameters.
-    const parsedInputLines = problemInputString
-        .trim()
-        .split('\n')
-        .map(line => line.split(' '));
+    const [
+        waterUnitA_raw,
+        waterUnitB_raw,
+        sugarUnitC_raw,
+        sugarUnitD_raw,
+        maxSugarRatio_raw,
+        maxTotalWeight_raw
+    ] = firstLineParams;
 
-    // Extract and parse initial configuration values from the first line.
-    // A and B are given in grams but handled as 100-gram units internally.
-    const primaryParameters = parsedInputLines[0].map(safeParseInt);
+    const waterUnitA = waterUnitA_raw * 100;
+    const waterUnitB = waterUnitB_raw * 100;
+    const sugarUnitC = sugarUnitC_raw;
+    const sugarUnitD = sugarUnitD_raw;
+    const maxSugarRatio = maxSugarRatio_raw;
+    const maxTotalWeight = maxTotalWeight_raw;
 
-    const solventComponent1UnitWeight = primaryParameters[0] * 100; // A in 100g units
-    const solventComponent2UnitWeight = primaryParameters[1] * 100; // B in 100g units
-    const soluteComponent1UnitWeight = primaryParameters[2];     // C in grams
-    const soluteComponent2UnitWeight = primaryParameters[3];     // D in grams
-    const maxSolubilityPercentage = primaryParameters[4];        // E as percentage
-    const totalSolutionCapacity = primaryParameters[5];          // F in grams
-
-    // Basic validation: Ensure total capacity is positive.
-    if (totalSolutionCapacity <= 0) {
-        console.log("0 0"); // No solution possible if capacity is zero or negative
-        return;
-    }
-
-    // Helper function to generate unique combinations of masses from two components.
-    // It takes a maximum allowed total mass and the unit weights of two components.
-    const generateUniqueMassCombinations = (maximumTotal, unit1, unit2) => {
-        const generatedMasses = new Set(); // Use a Set for automatic uniqueness
-        let currentUnit1Mass;
-
-        // Iterate through possible multiples of the first component
+    // Helper function to generate unique, sorted amounts based on two units and an exclusive upper limit
+    const generateUniqueSortedAmounts = (unit1, unit2, limitExclusive) => {
+        const amountsSet = new Set();
         for (let i = 0; ; i++) {
-            currentUnit1Mass = unit1 * i;
-            if (currentUnit1Mass > maximumTotal) {
-                break; // Exceeds total capacity
+            const currentAmount1 = unit1 * i;
+            if (currentAmount1 >= limitExclusive) { // Break if currentAmount1 reaches or exceeds the limit
+                break;
             }
-            // Iterate through possible multiples of the second component
+
             for (let j = 0; ; j++) {
-                const currentTotalMass = currentUnit1Mass + unit2 * j;
-                if (currentTotalMass > maximumTotal) {
-                    break; // Exceeds total capacity
+                const currentAmount2 = unit2 * j;
+                const totalAmount = currentAmount1 + currentAmount2;
+                if (totalAmount >= limitExclusive) { // Break if totalAmount reaches or exceeds the limit
+                    break;
                 }
-                if (currentTotalMass > 0) { // Only consider positive masses
-                    generatedMasses.add(currentTotalMass);
-                }
+                amountsSet.add(totalAmount);
             }
         }
-        // Convert Set to Array, sort, and return.
-        return Array.from(generatedMasses).sort(sortNumbersAscending);
+        return Array.from(amountsSet).sort(numericSorter);
     };
 
-    // Generate all possible solvent amounts (A*i + B*j) within the total capacity F.
-    const possibleSolventAmounts = generateUniqueMassCombinations(
-        totalSolutionCapacity,
-        solventComponent1UnitWeight,
-        solventComponent2UnitWeight
-    );
+    // Generate possible water amounts (ABList equivalent)
+    const possibleWaterAmounts = generateUniqueSortedAmounts(waterUnitA, waterUnitB, maxTotalWeight);
 
-    // Calculate the absolute maximum amount of solute that can be dissolved in a solution
-    // with total mass F, given solubility E. This is derived from:
-    // Solute / (Solvent + Solute) <= E / (100 + E)
-    // Solute / F <= E / (100 + E)
-    // Solute <= F * E / (100 + E)
-    const maxSolutePossible = Math.floor(
-        (totalSolutionCapacity * maxSolubilityPercentage) / (100 + maxSolubilityPercentage)
-    );
+    // Calculate maximum sugar weight (x equivalent)
+    const maxSugarWeight = Math.floor(maxTotalWeight * maxSugarRatio / (100 + maxSugarRatio));
 
-    // Generate all possible solute amounts (C*i + D*j) up to the maximum possible solute.
-    const possibleSoluteAmounts = generateUniqueMassCombinations(
-        maxSolutePossible,
-        soluteComponent1UnitWeight,
-        soluteComponent2UnitWeight
-    );
+    // Generate possible sugar amounts (CDList equivalent)
+    const possibleSugarAmounts = generateUniqueSortedAmounts(sugarUnitC, sugarUnitD, maxSugarWeight);
 
-    // Create a boolean lookup array for efficient checking of valid solute amounts.
-    // This acts as a "bitmap" where `true` at an index means that amount of solute is possible.
-    const isValidSoluteAmount = new Array(maxSolutePossible + 1).fill(false);
-    for (const soluteMass of possibleSoluteAmounts) {
-        if (soluteMass <= maxSolutePossible) { // Ensure within bounds
-            isValidSoluteAmount[soluteMass] = true;
-        }
+    // Create a bitmap for quick lookup of available sugar amounts (CDbitmap equivalent)
+    const sugarAvailabilityMap = new Array(maxSugarWeight + 1).fill(0);
+    for (const sugarVal of possibleSugarAmounts) {
+        sugarAvailabilityMap[sugarVal] = 1;
     }
 
-    // Initialize variables to track the best solution found so far.
-    let highestConcentrationRatio = 0; // Represents Solute / Solvent
-    let bestSolutionMasses = [0, 0]; // [Total Mass, Solute Mass]
+    let currentMaxDensity = 0;
+    let bestSolution = [0, 0]; // [totalWeight, sugarWeight]
 
-    // Iterate through each possible solvent amount.
-    for (const currentSolventMass of possibleSolventAmounts) {
-        // Calculate the upper bound for the solute mass for the current solvent.
-        // It's the minimum of:
-        // 1. The maximum solute that can be dissolved in `currentSolventMass` according to solubility `E`.
-        //    (currentSolute / currentSolventMass) <= E / 100  => currentSolute <= currentSolventMass * E / 100
-        // 2. The remaining capacity in the total solution after `currentSolventMass` is used.
-        const currentSoluteUpperBound = Math.min(
-            Math.floor((currentSolventMass * maxSolubilityPercentage) / 100),
-            totalSolutionCapacity - currentSolventMass,
-            maxSolutePossible // Also bounded by the absolute max solute possible
-        );
+    // Iterate through possible water amounts to find the optimal solution
+    for (const waterAmount of possibleWaterAmounts) {
+        // Calculate the lower bound for sugar amount based on current max density
+        const lowerSugarBound = Math.round(waterAmount * currentMaxDensity);
 
-        // If the current solvent mass already exceeds total capacity, skip it.
-        if (currentSolventMass >= totalSolutionCapacity) {
-            continue;
-        }
+        // Calculate the upper bound for sugar amount, considering ratio and total weight limits
+        const maxSugarAllowedByRatio = Math.floor(waterAmount * maxSugarRatio / 100);
+        const maxSugarAllowedByTotalWeight = maxTotalWeight - waterAmount;
+        const upperSugarBound = Math.min(maxSugarAllowedByRatio, maxSugarAllowedByTotalWeight);
 
-        // Determine a lower bound for the solute search to optimize.
-        // If we already found a solution, we only need to search for solute amounts
-        // that could potentially yield a *better* or equal concentration.
-        // `solute / solvent >= highestConcentrationRatio` => `solute >= solvent * highestConcentrationRatio`
-        const currentSoluteLowerBound = Math.ceil(currentSolventMass * highestConcentrationRatio);
-
-        // Iterate through possible solute amounts, from the optimized lower bound up to the upper bound.
-        for (let currentSoluteMass = currentSoluteLowerBound; currentSoluteMass <= currentSoluteUpperBound; currentSoluteMass++) {
-            // Check if this `currentSoluteMass` is a valid combination from C and D.
-            if (isValidSoluteAmount[currentSoluteMass]) {
-                // Ensure the solvent mass is not zero to avoid division by zero.
-                if (currentSolventMass === 0) {
-                    continue; // This case should ideally not happen if A, B > 0
+        // Iterate through possible sugar amounts within the calculated bounds
+        for (let sugarAmount = lowerSugarBound; sugarAmount <= upperSugarBound; sugarAmount++) {
+            // Check if this sugar amount is valid and available in the map
+            if (sugarAvailabilityMap[sugarAmount] === 1) {
+                const currentDensity = sugarAmount / waterAmount;
+                if (currentDensity >= currentMaxDensity) {
+                    bestSolution[0] = waterAmount + sugarAmount;
+                    bestSolution[1] = sugarAmount;
+                    currentMaxDensity = currentDensity;
                 }
-
-                const currentConcentration = currentSoluteMass / currentSolventMass;
-
-                // If the current concentration is higher than or equal to the best found so far,
-                // update the best solution. We use `>=` to prefer solutions with higher total mass
-                // if concentrations are equal (as per typical competitive programming problem requirements).
-                if (currentConcentration >= highestConcentrationRatio) {
-                    highestConcentrationRatio = currentConcentration;
-                    bestSolutionMasses[0] = currentSolventMass + currentSoluteMass; // Total mass
-                    bestSolutionMasses[1] = currentSoluteMass;                   // Solute mass
-                }
+                // Mark this sugar amount as used to prevent re-evaluation with lower densities
+                sugarAvailabilityMap[sugarAmount] = 0;
             }
         }
     }
 
-    // Output the final result: total mass and solute mass of the optimal solution.
-    // Rounding is applied as a safety measure for potential floating-point inaccuracies,
-    // though the masses themselves should be integers.
-    console.log(`${Math.round(bestSolutionMasses[0])} ${Math.round(bestSolutionMasses[1])}`);
-};
+    // Output the final result, rounded as per original behavior
+    console.log("%d %d", Math.round(bestSolution[0]), Math.round(bestSolution[1]));
+}
 
-// Entry point for the program: read input from stdin and pass to the main processing function.
-processConcentrationProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

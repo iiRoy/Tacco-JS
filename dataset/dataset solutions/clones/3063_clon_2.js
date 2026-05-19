@@ -1,38 +1,38 @@
-"use strict" ;
+"use strict";
 
-const executeProcessing = ( sourceData ) => {
-  // This function handles the primary logic for analyzing device measurements.
+const processInput = (inputData) => {
+  // Split the incoming string by newline characters
+  inputData = inputData.split("\n");
 
-  let parsedLines = sourceData.split( "\n" ) ; // Divide the raw input into separate string components.
+  // Extract the maximum allowed distance from the end of the array
+  const maxDistance = parseInt(inputData.pop());
 
-  // The final numeric constraint is extracted from the last element of the parsed input.
-  const rangeConstraint = parseInt( parsedLines.pop() ) ;
+  // Convert remaining string elements to integers, representing sensor readings
+  const sensorReadings = inputData.map((item) => parseInt(item));
 
-  // Convert the remaining string elements into an array of integer coordinates.
-  const deviceCoordinates = parsedLines.map( coordinateText => parseInt( coordinateText ) ) ;
-
-  // Determine the outcome based on a specific difference check between device positions.
-  // We compare the difference between the fifth and first coordinates against our constraint.
-  console.log( deviceCoordinates[ 4 ] - deviceCoordinates[ 0 ] > rangeConstraint ? ":(" : "Yay!" ) ;
+  // Check if the difference between the 5th and 1st sensor reading exceeds the max allowed distance
+  // Output a sad face if it does, otherwise a happy message.
+  console.log(
+    sensorReadings[4] - sensorReadings[0] > maxDistance ? ":(" : "Yay!"
+  );
 
   /*
-   * This multi-line comment section contains a more exhaustive,
-   * pairwise comparison logic. It's currently commented out
-   * because the problem's scope is limited to a specific range check.
-   * This might be useful for future enhancements or different problem variations.
+   * The commented-out section below represents an alternative, more general
+   * approach to checking all pairs of sensor readings.
+   * However, the active logic only checks a specific pair (index 4 and 0).
    *
-   * for ( let firstIndex = 0 ; firstIndex < deviceCoordinates.length ; firstIndex++ ) {
-   *   for ( let secondIndex = firstIndex + 1 ; secondIndex < deviceCoordinates.length ; secondIndex++ ) {
-   *     if ( deviceCoordinates[ secondIndex ] - deviceCoordinates[ firstIndex ] > rangeConstraint ) {
-   *       console.log( ":(" ) ;
-   *       return ;
+   * for (let firstIdx = 0; firstIdx < sensorReadings.length; firstIdx++) {
+   *   for (let secondIdx = firstIdx + 1; secondIdx < sensorReadings.length; secondIdx++) {
+   *     if (sensorReadings[secondIdx] - sensorReadings[firstIdx] > maxDistance) {
+   *       console.log(":(");
+   *       return;
    *     }
    *   }
    * }
-   * console.log( "Yay!" ) ;
+   *
+   * console.log("Yay!");
    */
+};
 
-} ; // End of the main processing function definition.
-
-// Begin execution by fetching data from the standard input stream.
-executeProcessing( require( 'fs' ) . readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

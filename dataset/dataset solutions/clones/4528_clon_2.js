@@ -1,18 +1,20 @@
-'use strict'
+'use strict';
 
-function  processData (  incomingText  ) {
+function processInput(rawData) {
 
-    incomingText  =  incomingText.split (  /\n/  )  ;
-    const  totalItems  =  ~~incomingText[0]  ;
+    rawData = rawData.split(/\n/);
+    const countOfItems = ~~rawData[0];
 
-    // Split by spaces, convert to numbers, remove duplicates, then sort numerically
-    let  distinctPoints  =  incomingText[1] . split ( ' ' ) . map (  itemValue  =>  ~~itemValue  ) . filter ( (  currentVal ,  currentIndex ,  sourceArray  )  =>  {
-        return  sourceArray . indexOf (  currentVal  )  ===  currentIndex  ;
-    } ) . sort (  (  elementA ,  elementB  )  =>  elementA  -  elementB  )  ;
+    // This section processes the second line of input:
+    // It splits the string by spaces, converts each part to a number,
+    // removes any duplicate numeric values, and then sorts the remaining unique numbers in ascending order.
+    let uniqueLocations = rawData[1].split(' ').map(currentVal => ~~currentVal).filter((currentVal, idx, arrRef) => {
+        return arrRef.indexOf(currentVal) === idx;
+    }).sort((firstElement, secondElement) => firstElement - secondElement);
 
-    const  finalSpread  =  distinctPoints[distinctPoints.length - 1]  -  distinctPoints[0]  ;
+    const resultDifference = uniqueLocations[uniqueLocations.length - 1] - uniqueLocations[0];
 
-    console . log (  finalSpread  )  ;
+    console.log(resultDifference);
 
 }
-processData (  require('fs').readFileSync ( '/dev/stdin' ,  'utf8' )  )  ;
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

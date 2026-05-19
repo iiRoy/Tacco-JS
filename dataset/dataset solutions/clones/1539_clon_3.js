@@ -1,96 +1,67 @@
-// Function to process coordinate data, identify extreme points based on specific criteria, and calculate a final metric.
-function ProcessCoordinates(rawDataLines) {
+function processCoordinates(rawData) {
+    const lines = rawData.split("\n");
 
-  // Helper utility to parse a single coordinate point from an array of strings.
-  // It also associates the original line index for traceability.
-  const extractPointData = (coordinateStringArray, sourceLineIndex) => {
-    // Convert string parts to numbers. Using Number() is a concise alternative to parseInt(..., 10).
-    const xCoordinate = Number(coordinateStringArray[0]);
-    const yCoordinate = Number(coordinateStringArray[1]);
-    return { x: xCoordinate, y: yCoordinate, srcIdx: sourceLineIndex };
-  };
+    const parseInteger = (str) => parseInt(str, 10);
 
-  // Helper function to compute the Manhattan distance (L1 norm) between two given points.
-  const calculateManhattanDistance = (pointOne, pointTwo) => {
-    return Math.abs(pointOne.x - pointTwo.x) + Math.abs(pointOne.y - pointTwo.y);
-  };
+    const numPoints = parseInteger(lines[0]);
 
-  // Divide the complete input string into an array of individual lines.
-  const allInputLines = rawDataLines.split("\n");
+    // Initialize coordinate trackers for extreme points.
+    // NOTE: In JavaScript, 10^9 is interpreted as 10 XOR 9, which evaluates to 3.
+    // This specific behavior is preserved to maintain exact observable equivalence.
+    let topRight = { x: 1, y: 1, index: 0 };
+    let topLeft = { x: 10^9, y: 1, index: 0 };
+    let bottomRight = { x: 1, y: 10^9, index: 0 };
+    let bottomLeft = { x: 10^9, y: 10^9, index: 0 };
 
-  // Retrieve the total number of coordinate pairs expected from the first line of input.
-  const numberOfCoordinates = parseInt(allInputLines[0], 10);
+    const extractPoint = (pointString) => {
+        const parts = pointString.split(" ");
+        return {
+            x: parseInteger(parts[0]),
+            y: parseInteger(parts[1])
+        };
+    };
 
-  // --- Robustness: Input Validation and Edge Case Handling ---
-  // If the count of coordinates is zero or negative, there's no data to process.
-  if (numberOfCoordinates < 1) {
-    // Output an informational message and terminate execution for this input.
-    console.log("Input error: No coordinate pairs specified or invalid count.");
-    return;
-  }
-  // Also check if there are enough lines in the input for the specified count.
-  // The first line is the count, subsequent lines are points. So total lines should be count + 1.
-  if (allInputLines.length < numberOfCoordinates + 1) {
-    console.log("Input error: Insufficient data lines for the specified coordinate count.");
-    return;
-  }
+    for (let pointIdx = 1; pointIdx < numPoints; pointIdx++) {
+        const currentPointData = extractPoint(lines[pointIdx]);
+        const currentX = currentPointData.x;
+        const currentY = currentPointData.y;
 
-  // To correctly identify extreme points, we initialize them with the very first coordinate data point.
-  // This ensures that our initial comparison values are actual data points, not arbitrary constants.
-  const firstCoordinateParts = allInputLines[1].split(" ");
-  const initialDataPoint = extractPointData(firstCoordinateParts, 1);
+        if (currentX >= topRight.x && currentY >= topRight.y) {
+            topRight.x = currentX;
+            topRight.y = currentY;
+            topRight.index = pointIdx;
+        }
 
-  // Initialize four distinct "extreme" points. These points are updated based on specific
-  // dominance criteria (e.g., a point is "more top-right" if its x and y are both greater or equal).
-  // Each point object stores its x, y coordinates and the original index from the input.
-  let upperRightBoundary = { ...initialDataPoint }; // A point that is 'top-right' relative to others (max X, max Y)
-  let upperLeftBoundary = { ...initialDataPoint };  // A point that is 'top-left' relative to others (min X, max Y)
-  let lowerRightBoundary = { ...initialDataPoint }; // A point that is 'bottom-right' relative to others (max X, min Y)
-  let lowerLeftBoundary = { ...initialDataPoint };  // A point that is 'bottom-left' relative to others (min X, min Y)
+        if (currentX <= topLeft.x && currentY >= topLeft.y) {
+            topLeft.x = currentX;
+            topLeft.y = currentY;
+            topLeft.index = pointIdx;
+        }
 
-  // Iterate through the remaining coordinate data points.
-  // The loop starts from the second data point (index 2 in the 'allInputLines' array)
-  // and continues up to the total specified number of coordinates.
-  for (let currentDataIndex = 2; currentDataIndex <= numberOfCoordinates; currentDataIndex++) {
-    const currentLineParts = allInputLines[currentDataIndex].split(" ");
-    const currentProcessedPoint = extractPointData(currentLineParts, currentDataIndex);
+        if (currentX >= bottomRight.x && currentY <= bottomRight.y) {
+            bottomRight.x = currentX;
+            bottomRight.y = currentY;
+            bottomRight.index = pointIdx;
+        }
 
-    // Check and update the upper-right boundary point.
-    // A new point replaces the old if it's further right AND further up.
-    if (currentProcessedPoint.x >= upperRightBoundary.x && currentProcessedPoint.y >= upperRightBoundary.y) {
-      upperRightBoundary = { ...currentProcessedPoint };
+        if (currentX <= bottomLeft.x && currentY <= bottomLeft.y) {
+            bottomLeft.x = currentX;
+            bottomLeft.y = currentY;
+            bottomLeft.index = pointIdx;
+        }
     }
-    // Check and update the upper-left boundary point.
-    // A new point replaces the old if it's further left AND further up.
-    if (currentProcessedPoint.x <= upperLeftBoundary.x && currentProcessedPoint.y >= upperLeftBoundary.y) {
-      upperLeftBoundary = { ...currentProcessedPoint };
-    }
-    // Check and update the lower-right boundary point.
-    // A new point replaces the old if it's further right AND further down.
-    if (currentProcessedPoint.x >= lowerRightBoundary.x && currentProcessedPoint.y <= lowerRightBoundary.y) {
-      lowerRightBoundary = { ...currentProcessedPoint };
-    }
-    // Check and update the lower-left boundary point.
-    // A new point replaces the old if it's further left AND further down.
-    if (currentProcessedPoint.x <= lowerLeftBoundary.x && currentProcessedPoint.y <= lowerLeftBoundary.y) {
-      lowerLeftBoundary = { ...currentProcessedPoint };
-    }
-  }
 
-  // Compute the Manhattan distance between two specific pairs of extreme points.
-  // First pair: the upper-rightmost and lower-leftmost points.
-  const distanceBetweenDiagonalOne = calculateManhattanDistance(upperRightBoundary, lowerLeftBoundary);
-  // Second pair: the upper-leftmost and lower-rightmost points.
-  const distanceBetweenDiagonalTwo = calculateManhattanDistance(upperLeftBoundary, lowerRightBoundary);
+    const diagonalOneXDiff = Math.abs(topRight.x - bottomLeft.x);
+    const diagonalOneYDiff = Math.abs(topRight.y - bottomLeft.y);
+    const distanceOne = diagonalOneXDiff + diagonalOneYDiff;
 
-  // The final calculated metric is the greater of these two distances.
-  const finalComputedMetric = Math.max(distanceBetweenDiagonalOne, distanceBetweenDiagonalTwo);
+    const diagonalTwoXDiff = Math.abs(topLeft.x - bottomRight.x);
+    const diagonalTwoYDiff = Math.abs(topLeft.y - bottomRight.y);
+    const distanceTwo = diagonalTwoXDiff + diagonalTwoYDiff;
 
-  // Output the result to standard output.
-  console.log(finalComputedMetric);
+    const maxOverallDistance = Math.max(distanceOne, distanceTwo);
+
+    console.log('%d', maxOverallDistance);
 }
 
-// Standard competitive programming boilerplate:
-// Reads all available data from standard input, converts it to a UTF-8 string,
-// and then passes it to our primary processing function.
-ProcessCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));
+processCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));

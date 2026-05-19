@@ -1,31 +1,40 @@
-/* This script processes a list of numbers to find a specific increasing sequence. */
+/*
+ * This script processes numerical input to determine a specific sequence property.
+ * It reads data from standard input, parses it, and performs a calculation.
+ */
 
 "use strict";
 
-const solutionSolver = (rawDataLines) => {
-  // The first line of input specifies the total count of items.
-  let totalItems = Number.parseInt(rawDataLines[0]);
+const analyzeSequence = (inputLines) => {
+  // Parse the first line as the total count of elements.
+  let totalCount = Number.parseInt(inputLines[0]);
 
-  // The second line contains space-separated numeric values, converted to an array.
-  let numericValues = Array.from(rawDataLines[1].split(" "), stringPart => Number.parseInt(stringPart));
+  // Parse the second line, splitting by space and converting each part to a number.
+  let numberArray = Array.from(inputLines[1].split(" "), (strNum) =>
+    Number.parseInt(strNum)
+  );
 
-  let currentExpected = 1; // This variable tracks the next number we anticipate in the sequence (1, 2, 3...).
+  // Initialize a counter for the expected sequence number.
+  let expectedSequenceNum = 1;
 
-  // Iterate over each individual value in the processed numeric array.
-  for (let singleValue of numericValues) {
-    // If the current number matches our expectation, we increment the expectation.
-    if (singleValue === currentExpected) {
-      currentExpected += 1;
+  // Iterate through each number in the parsed array.
+  for (let currentNumber of numberArray) {
+    // If the current number matches the expected sequence number, increment the expectation.
+    if (currentNumber === expectedSequenceNum) {
+      expectedSequenceNum += 1;
     }
   }
 
-  // Calculate the final result. If 'currentExpected' is still 1, it means no sequence was found, so return -1.
-  // Otherwise, the result is the total number of items minus the count of sequence elements found.
-  return currentExpected === 1 ? -1 : totalItems - currentExpected + 1;
+  // Determine the result based on the final expected sequence number.
+  // If it's still 1, no sequence was found, return -1.
+  // Otherwise, calculate the difference from the total count.
+  return expectedSequenceNum === 1 ? -1 : totalCount - expectedSequenceNum + 1;
 };
 
-// Main execution block: reads input from standard input, processes it, and prints the outcome.
-console.log(solutionSolver(require("fs").readFileSync("/dev/stdin", "utf-8")
-  .trim()
-  .split("\n")
-));
+// Read input from standard input, decode as UTF-8, trim whitespace, and split into lines.
+// Then, pass the processed lines to the analysis function and print the result to console.
+console.log(
+  analyzeSequence(
+    require("fs").readFileSync("/dev/stdin", "utf-8").trim().split("\n")
+  )
+);

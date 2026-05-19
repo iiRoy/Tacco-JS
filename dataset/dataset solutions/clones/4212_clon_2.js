@@ -1,54 +1,26 @@
-/*
- * This module processes a given text input
- * to check for a specific pattern.
- */
-function analyzeInput(  inputText   ) /* Main processing function */ {
+function processInput(inputString) {
+    // Initialize a mutable string variable by trimming the input.
+    let resultString = inputString.trim();
 
-    // Remove leading/trailing whitespace from the input string
-    let modifiedSequence = inputText.trim (  ) ;
+    // Define an array of specific numeric indices for character insertion.
+    const insertionPoints = [0, 4, 6, 8];
 
-    // Define the positions where a specific character might be inserted
-    const insertionPositions = [
-        0.0,    // First potential insertion point
-        4.0,    // Second potential insertion point
-        6.0,    // Third potential insertion point
-        8.0     // Fourth potential insertion point
-    ];
+    // Iterate through each element in the array of insertion points.
+    for (let idx = 0; idx < insertionPoints.length; idx++) {
+        // Retrieve the current index from the array for processing.
+        const currentPoint = insertionPoints[idx];
 
-    // Iterate through each designated insertion point
-    for (
-        let currentIdx = 0; // Initialize loop counter
-        currentIdx < insertionPositions.length; // Loop condition based on array size
-        currentIdx++ // Increment counter
-    ) {
-        let charTargetPos = insertionPositions[currentIdx]; // Get the current target position
-
-        // Check if the character at the target position in the sequence is NOT 'A'
-        if (  modifiedSequence[charTargetPos] !== 'A'   )
-        {
-            // If it's not 'A', insert 'A' at that position
-            modifiedSequence = modifiedSequence.slice(
-                0, // Start from the beginning
-                charTargetPos // Up to the target position
-            ) + "A" + modifiedSequence.slice(
-                charTargetPos, // From the target position
-                modifiedSequence.length // To the end of the string
-            );
+        // Check if the character at the current index in the result string is not 'A'.
+        // If it's not 'A', then insert 'A' at that precise location.
+        if (resultString[currentPoint] !== 'A') {
+            resultString = resultString.slice(0, currentPoint) + "A" + resultString.slice(currentPoint, resultString.length);
         }
     }
 
-    // Output "YES" if the final sequence matches "AKIHABARA", otherwise "NO"
-    console.log(
-        modifiedSequence === "AKIHABARA"
-            ? "YES"
-            : "NO"
-    );
+    // After all potential modifications, evaluate if the final string matches "AKIHABARA".
+    // Output "YES" if there is an exact match, otherwise output "NO".
+    console.log(resultString === "AKIHABARA" ? "YES" : "NO");
 }
 
-// Execute the primary function with data read from standard input
-analyzeInput(
-    require('fs').readFileSync(
-        '/dev/stdin', // Path to standard input
-        'utf8'        // Encoding for reading the file
-    )
-);
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

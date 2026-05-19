@@ -1,49 +1,45 @@
-const rl = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const fileSystem = require('fs');
 
-const numericalInputs = [];
-rl.on('line', (dataLine) => {
-    const parsedValue = parseInt(dataLine, 10);
-    if (parsedValue === 0) {
-        rl.close();
-    } else {
-        numericalInputs.push(parsedValue);
+const parseAndFilterInput = (rawInputContent) => {
+    const numericEntries = rawInputContent.trim().split('\n').filter(Boolean).map(Number);
+    const zeroMarkerIndex = numericEntries.indexOf(0);
+    return zeroMarkerIndex === -1 ? numericEntries : numericEntries.slice(0, zeroMarkerIndex);
+};
+
+const determineQuadraticResidues = (modulusValue) => {
+    const uniqueResidues = new Set();
+    for (let currentFactor = 1; currentFactor < modulusValue; currentFactor++) {
+        uniqueResidues.add((currentFactor * currentFactor) % modulusValue);
     }
-});
+    return Array.from(uniqueResidues).sort((a, b) => a - b);
+};
 
-rl.on('close', () => {
-    processAllConfigurations(numericalInputs);
-});
+const tabulateCircularDistances = (modulus, residueCollection) => {
+    const maximumDistance = Math.floor((modulus - 1) / 2);
+    const distanceAccumulator = Array.from({ length: maximumDistance + 1 }, () => 0);
 
-async function processAllConfigurations(dataPoints) {
-    for (const currentModulus of dataPoints) {
-        const uniqueQuadraticResidues = new Set();
-        Array.from({ length: currentModulus - 1 }, (_, index) => index + 1)
-             .forEach(candidate => uniqueQuadraticResidues.add((candidate * candidate) % currentModulus));
-        
-        const orderedResidues = Array.from(uniqueQuadraticResidues).sort((a, b) => a - b);
+    const residueCombinations = residueCollection.flatMap((elementA, indexA) =>
+        residueCollection.slice(indexA + 1).map(elementB => [elementA, elementB])
+    );
 
-        const maximumRelevantDistanceIndex = Math.floor((currentModulus - 1) / 2);
-        
-        const distanceAccumulator = new Map(Array.from({ length: maximumRelevantDistanceIndex + 1 }, (_, i) => [i, 0]));
+    residueCombinations.forEach(([firstElement, secondElement]) => {
+        const absoluteDifference = Math.abs(firstElement - secondElement);
+        const effectiveCircularDistance = Math.min(absoluteDifference, modulus - absoluteDifference);
+        distanceAccumulator[effectiveCircularDistance] += 2;
+    });
 
-        orderedResidues.reduce((accumulatorOuter, valueA, indexA) => {
-            orderedResidues.slice(indexA + 1).reduce((accumulatorInner, valueB) => {
-                const absoluteDifference = Math.abs(valueA - valueB);
-                const effectiveDistance = Math.min(absoluteDifference, currentModulus - absoluteDifference);
+    return distanceAccumulator;
+};
 
-                if (effectiveDistance > 0 && effectiveDistance <= maximumRelevantDistanceIndex) {
-                    distanceAccumulator.set(effectiveDistance, (distanceAccumulator.get(effectiveDistance) || 0) + 2);
-                }
-                return null;
-            }, null);
-            return null;
-        }, null);
+const executeProcessing = () => {
+    const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+    const numbersForCalculation = parseAndFilterInput(rawData);
 
-        Array.from({ length: maximumRelevantDistanceIndex }, (_, i) => i + 1)
-             .map(idx => distanceAccumulator.get(idx) || 0)
-             .forEach(tally => console.log(tally));
-    }
-}
+    numbersForCalculation.forEach(currentModulus => {
+        const quadraticResidueList = determineQuadraticResidues(currentModulus);
+        const computedDistances = tabulateCircularDistances(currentModulus, quadraticResidueList);
+        computedDistances.slice(1).forEach(distanceCount => console.log(distanceCount));
+    });
+};
+
+executeProcessing();

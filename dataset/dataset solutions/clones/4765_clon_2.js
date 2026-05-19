@@ -1,57 +1,63 @@
-function calculateProduct(dataString) {
-  /*
-   * This routine computes the product of (prime factor count + 1)
-   * for all prime factors of numbers up to a given upper bound.
-   * The result is taken modulo a large prime number.
-   */
-  const upperBound = Number.parseInt(dataString, 10);
+function calculateProductOfDivisors(dataString) {
+    // Parse the input string to obtain the maximum number for factorization.
+    let upperBound = parseInt(dataString);
 
-  let primeFactorsCount = {}; // Stores the aggregated counts of each unique prime factor
+    // Initialize an object to store the total counts of each prime factor found.
+    // The keys will be prime numbers, and values will be their cumulative exponents.
+    const primeFactorCounts = {};
 
-  // Iterate through each number from 2 up to the specified upper bound
-  for (let currentNumber = 2; currentNumber <= upperBound; currentNumber++) {
-    let temporaryValue = currentNumber; // A mutable copy of the current number for factorization
+    // Iterate through each integer from 2 up to the specified upper bound.
+    for (let currentNumber = 2; currentNumber <= upperBound; currentNumber++) {
+        let tempNumber = currentNumber; // A temporary variable to perform factorization without altering 'currentNumber'.
 
-    // Find prime factors by trial division
-    for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= temporaryValue; divisorCandidate++) {
-      if (temporaryValue % divisorCandidate === 0) {
-        let factorOccurrence = 0; // Counts how many times this specific divisor appears
-
-        // Keep dividing by the current divisor until it's no longer a factor
-        while (temporaryValue % divisorCandidate === 0) {
-          factorOccurrence++;
-          temporaryValue /= divisorCandidate;
+        // Find prime factors of 'tempNumber' by checking potential divisors up to its square root.
+        for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= tempNumber; divisorCandidate++) {
+            // If 'divisorCandidate' divides 'tempNumber' evenly, it's a prime factor.
+            if (tempNumber % divisorCandidate === 0) {
+                let factorOccurrence = 0; // Counter for how many times this prime factor appears.
+                // Continuously divide 'tempNumber' by 'divisorCandidate' until it's no longer divisible.
+                while (tempNumber % divisorCandidate === 0) {
+                    factorOccurrence++;
+                    tempNumber /= divisorCandidate;
+                }
+                // Add the count of this prime factor to our global map.
+                if (primeFactorCounts[divisorCandidate]) {
+                    primeFactorCounts[divisorCandidate] += factorOccurrence;
+                } else {
+                    primeFactorCounts[divisorCandidate] = factorOccurrence;
+                }
+            }
         }
 
-        // Update the overall count for this prime factor
-        if (primeFactorsCount[divisorCandidate]) {
-          primeFactorsCount[divisorCandidate] = primeFactorsCount[divisorCandidate] + factorOccurrence;
-        } else {
-          primeFactorsCount[divisorCandidate] = factorOccurrence;
+        // If 'tempNumber' is still greater than 1 after the loop, it means
+        // the remaining 'tempNumber' itself is a prime factor (it was not fully divided by smaller primes).
+        if (tempNumber !== 1) {
+            if (primeFactorCounts[tempNumber]) {
+                primeFactorCounts[tempNumber]++;
+            } else {
+                primeFactorCounts[tempNumber] = 1;
+            }
         }
-      }
     }
 
-    // If temporaryValue is still greater than 1, it means the remaining value is a prime factor itself
-    if (temporaryValue !== 1) {
-      if (primeFactorsCount[temporaryValue]) {
-        primeFactorsCount[temporaryValue]++;
-      } else {
-        primeFactorsCount[temporaryValue] = 1;
-      }
+    // Initialize the variable that will hold the final computed result.
+    let finalResult = 1;
+    // Define the modulo constant to keep the result within a manageable range.
+    const moduloValue = 1000000007;
+
+    // Iterate over the collected prime factors and their total counts.
+    // The formula for the number of divisors is the product of (exponent + 1) for each unique prime factor.
+    for (const primeFactor in primeFactorCounts) {
+        // Ensure we are only processing properties directly on the object, not from its prototype chain.
+        if (Object.prototype.hasOwnProperty.call(primeFactorCounts, primeFactor)) {
+            finalResult = (finalResult * (primeFactorCounts[primeFactor] + 1)) % moduloValue;
+        }
     }
-  }
 
-  let finalResult = 1;
-  const moduloValue = 1_000_000_007; // A large prime number for modular arithmetic
-
-  // Compute the product of (count + 1) for each unique prime factor, modulo moduloValue
-  for (const factorKey in primeFactorsCount) {
-    finalResult = (finalResult * (primeFactorsCount[factorKey] + 1)) % moduloValue;
-  }
-
-  console.log(finalResult);
+    // Output the final calculated result to the console.
+    console.log(finalResult);
 }
 
-// Read input from standard input and pass it to the main processing function
-calculateProduct(require("node:fs").readFileSync("/dev/stdin", "utf8").trim());
+// Read the input from standard input using Node.js 'fs' module
+// and then invoke the main calculation function with the obtained data.
+calculateProductOfDivisors(require("fs").readFileSync("/dev/stdin", "utf8"));

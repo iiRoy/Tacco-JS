@@ -1,22 +1,20 @@
-// This module defines a key function to analyze character input for specific patterns.
-function AnalyzeTextContent(incomingDataStream) {
-    // Initial preparation: Remove any leading or trailing whitespace from the provided data.
-    const processedTextSnippet = incomingDataStream.trim();
+function ProcessInput(rawData) {
+  // Remove leading/trailing whitespace from the raw input string.
+  rawData = rawData.trim();
 
-    // Core logic: Attempt to find if any of the specified lowercase vowel characters exist within the cleaned text.
-    // The pattern `[aiueo]` is used to strictly match these exact characters in a case-sensitive manner,
-    // reflecting the original implementation's behavior.
-    let characterMatchResult = processedTextSnippet.match("[aiueo]");
+  // Attempt to find any lowercase vowel within the processed string.
+  var matchResult = rawData.match("[aiueo]");
 
-    // Based on the outcome of the pattern matching, an appropriate message is displayed.
-    if (characterMatchResult) {
-        // If the `match` operation returned a non-null (truthy) value, indicating a successful find.
-        console.log("containsVowel");
-    } else {
-        // If the `match` operation returned null (falsy), meaning no such character was found.
-        console.log("noVowelFound");
-    }
+  // Check if a vowel was successfully found.
+  if (matchResult) {
+    // If a match exists, print "vowel" to the console.
+    console.log("vowel");
+  } else {
+    // Otherwise, if no vowel was found, print "consonant".
+    console.log("consonant");
+  }
 }
 
-// Application execution point: Read content from a designated system input path and pass it for processing.
-AnalyzeTextContent(require("node:fs").readFileSync("/dev/system_input", "utf-8"));
+// Read the entire content from standard input, decode it as UTF-8,
+// and then pass it to our primary processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

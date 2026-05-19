@@ -1,21 +1,19 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-function executeComputation(wholeInputText) {
-  const dataRows = wholeInputText.split('\n');
-  const firstRowComponents = dataRows[0].split(' ');
-  const secondRowComponents = dataRows[1].split(' ');
+function processInputAndCompute(rawInputText) {
+  const inputSegments = rawInputText.split("\n");
+  const firstLineElements = inputSegments[0].split(" ");
+  const secondLineElements = inputSegments[1].split(" ");
 
-  const loopIterations = Number(firstRowComponents[0]);
-  const thresholdParameter = Number(secondRowComponents[0]);
+  const totalSteps = Number(firstLineElements[0]);
+  const incrementValue = Number(secondLineElements[0]);
 
-  const initialQuantity = 1;
+  const computedResult = Array.from({ length: totalSteps }).reduce((currentAccumulator, _, stepIndex) => {
+    return (currentAccumulator < incrementValue) ? (currentAccumulator * 2) : (currentAccumulator + incrementValue);
+  }, 1);
 
-  const finalQuantity = Array.from({ length: loopIterations }).reduce((currentValue, _, idx) => {
-    return (currentValue < thresholdParameter) ? (currentValue * 2) : (currentValue + thresholdParameter);
-  }, initialQuantity);
-
-  console.log(finalQuantity);
+  console.log(computedResult);
 }
 
-executeComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

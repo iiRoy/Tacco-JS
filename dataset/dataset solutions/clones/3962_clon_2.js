@@ -1,63 +1,65 @@
-// Function to process and analyze the provided input
-function analyzeInputData( rawTextContent ) {
+function processInput(rawData) {
+  // Split the entire input string into an array of lines
+  const lines = rawData.split('\n');
 
-  // Divide the input string into an array of individual lines
-  const lineSegments = rawTextContent.split( '\n' ) ;
+  // Parse the number of blue items from the first line
+  const numBlueItems = parseInt(lines[0], 10);
 
-  // Extract the first numerical parameter from the input
-  const initialCount = parseInt( lineSegments[ 0 ], 10 );
+  // Parse the number of red items from the line after the blue items
+  const numRedItems = parseInt(lines[numBlueItems + 1], 10);
 
-  // Extract the second numerical parameter, offset by the first count
-  const additionalCount = parseInt( lineSegments[ initialCount + 1 ], 10 );
+  // Initialize an object to store counts for each item
+  let itemCounts = {};
 
-  // Initialize an object to store counts of various items
-  let itemTally = { };
-
-  // Create an array for elements contributing positively
-  let positiveCategory = [ ];
-
-  // Create an array for elements contributing negatively
-  let negativeCategory = [ ];
+  // Arrays to hold the names of blue and red items
+  let blueItems = [];
+  let redItems = [];
 
   // Variable to store the maximum calculated score
-  let highestScore;
+  let maxScore;
   
-  // Populate the positiveCategory array with items from the input
-  for ( let counter = 1; counter <= initialCount; counter++ ) {
-    positiveCategory.push( lineSegments[ counter ] );
+  // Populate the blueItems array
+  for (let idx = 1; idx <= numBlueItems; idx++) {
+    blueItems.push(lines[idx]);
   }
   
-  // Populate the negativeCategory array with items from the input
-  for ( let counter = ( initialCount + 2 ); counter <= ( initialCount + additionalCount + 1 ); counter++ ) {
-    negativeCategory.push( lineSegments[ counter ] );
+  // Populate the redItems array
+  // The red items start after N blue items and the M declaration line
+  for (let idx = (numBlueItems + 2); idx <= (numBlueItems + numRedItems + 1); idx++) {
+  	redItems.push(lines[idx]);
   }
   
-  // Process items in the positiveCategory, incrementing their counts in itemTally
-  for ( let counter = 0; counter < positiveCategory.length; counter++ ) {
-    let currentElement = positiveCategory[ counter ];
-    itemTally[ currentElement ] = itemTally[ currentElement ] ? itemTally[ currentElement ] + 1 : 1;
+  // Process blue items: increment their count in itemCounts
+  for (let counter = 0; counter < blueItems.length; counter++) {
+    let itemName = blueItems[counter];
+    // If item exists, increment; otherwise, set to 1
+    itemCounts[itemName] = itemCounts[itemName] ? itemCounts[itemName] + 1 : 1;
   }
   
-  // Process items in the negativeCategory, decrementing their counts in itemTally
-  for ( let counter = 0; counter < negativeCategory.length; counter++ ) {
-  	let currentElement = negativeCategory[ counter ];
-    itemTally[ currentElement ] = itemTally[ currentElement ] ? itemTally[ currentElement ] - 1 : -1;
+  // Process red items: decrement their count in itemCounts
+  for (let counter = 0; counter < redItems.length; counter++) {
+  	let itemName = redItems[counter];
+    // If item exists, decrement; otherwise, set to -1
+    itemCounts[itemName] = itemCounts[itemName] ? itemCounts[itemName] - 1 : -1;
   }
   
-  // Determine the highest score found within the itemTally
-  for ( let currentElement in itemTally ) {
-    if ( !highestScore || itemTally[ currentElement ] > highestScore ) { 
-      highestScore = itemTally[ currentElement ];
+  // Find the maximum score among all items
+  for (let currentKey in itemCounts) {
+    // If maxScore is not yet set, or current item's count is greater
+    if (maxScore === undefined || itemCounts[currentKey] > maxScore) { 
+      maxScore = itemCounts[currentKey];
     }
   }
   
-  // Output the final result based on the highestScore
-  if ( highestScore < 0 ) {
-    console.log( 0 ); // If the highest score is negative, output 0
+  // Output the result
+  // If the maximum score is negative, output 0 as per problem rules
+  if (maxScore < 0) {
+    console.log(0);
   } else {
-    console.log( highestScore ); // Otherwise, output the highest score
+    // Otherwise, output the calculated maximum score
+    console.log(maxScore);
   }
 }
 
-// Execute the main processing function by reading content from standard input
-analyzeInputData( loadModule('fileSystemHandler').readContentFromFile('/dev/stdin', 'textEncoding') );
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

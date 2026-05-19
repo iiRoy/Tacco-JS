@@ -1,53 +1,37 @@
-function  executeProcessing ( )
-{
+function processInput() {
   let
-    globalIndex ,
-    loopCounter ,
-    mapEntryCount ,
-    queryCount ;
+    idx,
+    counter,
+    numEntries,
+    numStrings,
+    translationMap,
+    entryLine,
+    outputParts;
 
-  let
-    translationDictionary ,
-    currentInputLineParts ,
-    outputFragments ;
-
-  for ( globalIndex = 0 ; mapEntryCount = parseInt ( processedLines [ globalIndex ++ ] , 10 ) ; )
-  {
-    translationDictionary = { } ;
-
-    for ( loopCounter = 0 ; loopCounter < mapEntryCount ; loopCounter ++ )
-    {
-      currentInputLineParts = processedLines [ globalIndex ++ ] . split ( ' ' ) ;
-      translationDictionary [ currentInputLineParts [ 0 ] ] = currentInputLineParts [ 1 ] ;
+  for (idx = 0; (numEntries = parseInt(input[idx++], 10)); ) {
+    translationMap = {};
+    for (counter = 0; counter < numEntries; counter++) {
+      entryLine = input[idx++].split(' ');
+      translationMap[entryLine[0]] = entryLine[1];
     }
-
-    queryCount = parseInt ( processedLines [ globalIndex ++ ] , 10 ) ;
-
-    outputFragments = [ ] ;
-
-    for ( loopCounter = 0 ; loopCounter < queryCount ; loopCounter ++ , globalIndex ++ )
-    {
-      outputFragments . push ( translationDictionary [ processedLines [ globalIndex ] ] || processedLines [ globalIndex ] ) ;
+    numStrings = parseInt(input[idx++], 10);
+    outputParts = [];
+    for (counter = 0; counter < numStrings; counter++, idx++) {
+      outputParts.push(translationMap[input[idx]] || input[idx]);
     }
-
-    console . log ( outputFragments . join ( '' ) ) ;
+    console.log(outputParts.join(''));
   }
 }
 
 let
-  rawTextBuffer = '' ;
+  input = '';
 
-let
-  processedLines ;
-
-process . stdin . resume ( ) ;
-process . stdin . setEncoding ( 'utf8' ) ;
-process . stdin . on ( 'data' , function ( dataSegment )
-{
-  rawTextBuffer += dataSegment ;
-} ) ;
-process . stdin . on ( 'end' , function ( )
-{
-  processedLines = rawTextBuffer . split ( / \r\n | \r | \n /g ) ;
-  executeProcessing ( ) ;
-} ) ;
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(dataChunk) {
+  input += dataChunk;
+});
+process.stdin.on('end', function() {
+  input = input.split(/\r\n|\r|\n/g);
+  processInput();
+});

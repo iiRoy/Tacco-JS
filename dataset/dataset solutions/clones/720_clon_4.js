@@ -1,66 +1,56 @@
-function createNumericSeries(upperBound) {
-    const terms = [0];
-    let k = 1;
-    let termValue;
+function* createTetrahedralSeries(upperBound) {
+    let currentA = 1;
+    let currentB = 1;
+    let currentC = 1;
+    while (currentA <= upperBound) {
+        yield currentA;
+        currentC++;
+        currentB += currentC;
+        currentA += currentB;
+    }
+}
+
+function* filterOddNumbers(sourceGenerator) {
+    for (const num of sourceGenerator) {
+        if (num % 2 !== 0) {
+            yield num;
+        }
+    }
+}
+
+function computeMinCombinations(targetLimit, valueGenerator) {
+    const minCounts = new Array(targetLimit + 1).fill(1000000000);
+    minCounts[0] = 0;
+
+    for (const value of valueGenerator) {
+        for (let currentSum = value; currentSum <= targetLimit; currentSum++) {
+            minCounts[currentSum] = Math.min(minCounts[currentSum], minCounts[currentSum - value] + 1);
+        }
+    }
+    return minCounts;
+}
+
+function processInputData(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const maxVal = 1000000;
+
+    const allTetrahedralNumbers = createTetrahedralSeries(maxVal);
+    const dpTableAll = computeMinCombinations(maxVal, allTetrahedralNumbers);
+
+    const oddTetrahedralNumbers = filterOddNumbers(createTetrahedralSeries(maxVal));
+    const dpTableOdd = computeMinCombinations(maxVal, oddTetrahedralNumbers);
+
+    let lineIndex = 0;
     while (true) {
-        termValue = (k * (k + 1) * (k + 2)) / 6;
-        if (termValue > upperBound) {
+        const currentN = parseInt(inputLines[lineIndex], 10);
+        if (currentN === 0) {
             break;
         }
-        terms.push(termValue);
-        k++;
-    }
-    return terms;
-}
-
-function createOddNumericSeries(upperBound) {
-    const allNumericTerms = createNumericSeries(upperBound);
-    const oddTermsCollection = [0];
-    for (let index = 1; index < allNumericTerms.length; index++) {
-        if (allNumericTerms[index] % 2 !== 0) {
-            oddTermsCollection.push(allNumericTerms[index]);
-        }
-    }
-    return oddTermsCollection;
-}
-
-function determineMinimumParts(capValue, availableDenominations) {
-    const minimumCount = new Array(capValue + 1).fill(Number.POSITIVE_INFINITY);
-    minimumCount[0] = 0;
-
-    for (let denomIndex = 1; denomIndex < availableDenominations.length; denomIndex++) {
-        const currentDenomination = availableDenominations[denomIndex];
-        for (let currentSum = currentDenomination; currentSum <= capValue; currentSum++) {
-            if (minimumCount[currentSum - currentDenomination] !== Number.POSITIVE_INFINITY) {
-                minimumCount[currentSum] = Math.min(minimumCount[currentSum], minimumCount[currentSum - currentDenomination] + 1);
-            }
-        }
-    }
-    return minimumCount;
-}
-
-function processInputSource(sourceText) {
-    const lines = sourceText.split("\n");
-    const upperCalculationLimit = 1000000;
-
-    const sequenceA_Values = createNumericSeries(upperCalculationLimit);
-    const sequenceB_Values = createOddNumericSeries(upperCalculationLimit);
-
-    const resultsA_Table = determineMinimumParts(upperCalculationLimit, sequenceA_Values);
-    const resultsB_Table = determineMinimumParts(upperCalculationLimit, sequenceB_Values);
-
-    let currentLinePointer = 0;
-    while (true) {
-        const queryTarget = parseInt(lines[currentLinePointer], 10);
-        if (queryTarget === 0) {
-            break;
-        }
-        const resultForA = resultsA_Table[queryTarget];
-        const resultForB = resultsB_Table[queryTarget];
-
-        console.log(resultForA, resultForB);
-        currentLinePointer++;
+        const resultAll = dpTableAll[currentN];
+        const resultOdd = dpTableOdd[currentN];
+        console.log(resultAll, resultOdd);
+        lineIndex++;
     }
 }
 
-processInputSource(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

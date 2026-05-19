@@ -1,39 +1,33 @@
-const retrieveDataSegments = (filePath) => {
-    const fileContent = require('node:fs').readFileSync(filePath, 'utf8');
-    const cleansedTokens = fileContent.trim().split(/\s+/);
-    return {
-        primaryOperand: Number(cleansedTokens[0]),
-        secondaryOperand: Number(cleansedTokens[1])
-    };
-};
+"use strict";
 
-const calculateStepsThroughRecurrence = (currentCount, stepIncrement, boundaryPoint) => {
-    if (stepIncrement * currentCount + 1 >= boundaryPoint) {
-        return currentCount;
-    }
-    return calculateStepsThroughRecurrence(currentCount + 1, stepIncrement, boundaryPoint);
-};
+const calculateAndDisplay = (inputString) => {
+    const numericComponents = inputString.trim().split(' ').map(Number);
+    const firstOperand = numericComponents[0];
+    const secondOperand = numericComponents[1];
 
-const deriveFinalIndicator = (processedElements) => {
-    const valueAlpha = processedElements.primaryOperand;
-    const valueBeta = processedElements.secondaryOperand;
+    let finalOutcome;
 
-    if (valueAlpha >= valueBeta) {
-        return 1;
+    if (firstOperand >= secondOperand) {
+        finalOutcome = 1;
+    } else if (firstOperand === 1) {
+        // This branch replicates the original's infinite loop behavior
+        while (true) { /* Intentionally infinite loop */ }
     } else {
-        if (valueAlpha === 1) {
-            // Mimics original's infinite loop for this specific condition
-            for (;;) {}
-        } else {
-            return calculateStepsThroughRecurrence(0, valueAlpha - 1, valueBeta);
-        }
+        // Replaces the original for-loop with a mathematical expression
+        // This calculates Math.ceil((secondOperand - 1) / (firstOperand - 1))
+        // using integer arithmetic for positive dividend and divisor.
+        const dividendPart = secondOperand - 1;
+        const divisorPart = firstOperand - 1;
+        finalOutcome = Math.floor((dividendPart + divisorPart - 1) / divisorPart);
     }
+
+    console.log(finalOutcome);
 };
 
-const initiateProcess = (inputSource) => {
-    const structuredInputs = retrieveDataSegments(inputSource);
-    const finalResultant = deriveFinalIndicator(structuredInputs);
-    console.log(finalResultant);
+const initiateProcessing = () => {
+    const fileSystemAccess = require('fs');
+    const rawInputContent = fileSystemAccess.readFileSync('/dev/stdin', 'utf8');
+    calculateAndDisplay(rawInputContent);
 };
 
-initiateProcess('/dev/stdin');
+initiateProcessing();

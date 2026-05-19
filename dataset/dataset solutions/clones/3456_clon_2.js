@@ -1,61 +1,82 @@
-outputLog = console.log;
+printOutput = console.log;
 
-const inputDataSource = require("node:fs").readFileSync(
-  "/dev/stdin",
-  "UTF-8"
-);
-let dataRows = inputDataSource.split("\n");
+// Read input from standard input
+var rawInputContent = require("fs").readFileSync("/dev/stdin", "UTF-8");
 
-const totalItems = Number(dataRows[0].split(" ")[0]);
-const queryCount = Number(dataRows[0].split(" ")[1]);
+// Split input into individual lines
+var inputDataLines = rawInputContent.split("\n");
 
-dataRows = dataRows.slice(1); // Using slice instead of splice for clarity and slight difference
+// Parse N and M from the first line
+var totalCityCount = Number(inputDataLines[0].split(" ")[0]);
+var totalPrefectureCount = Number(inputDataLines[0].split(" ")[1]); // This M value is not used for its intended purpose later
 
-let municipalityRecords = dataRows.map((rowData, initialPos) => {
-  const regionIdentifier = Number(rowData.split(" ")[0]);
-  const establishmentYear = Number(rowData.split(" ")[1]);
+// Remove the first line (N M) from the input data
+var cityDescriptionLines = inputDataLines.splice(1);
 
+// Declare global variables for P and Y, which will be implicitly created in the map callback
+// These will hold the values from the last processed city in the first map.
+globalPrefectureNumber = 0;
+globalEstablishmentYear = 0;
+
+// Process city data lines into an array of objects
+var initialCityObjects = cityDescriptionLines.map((currentInputLine, originalEntryIdx) => {
+  // Assign to global P and Y (bug in original code: these become global)
+  globalPrefectureNumber = Number(currentInputLine.split(" ")[0]);
+  globalEstablishmentYear = Number(currentInputLine.split(" ")[1]);
+
+  // Return an object representing the city
   return {
-    originalPosition: initialPos,
-    regionCode: regionIdentifier,
-    foundingYear: establishmentYear,
+    cityIndex: originalEntryIdx, // Original index for final sorting
+    prefecture: globalPrefectureNumber, // Numeric prefecture ID
+    year: globalEstablishmentYear // Establishment year
   };
 });
 
-municipalityRecords.sort((recordOne, recordTwo) => {
-  return recordOne.foundingYear - recordTwo.foundingYear;
+// Sort cities by their establishment year
+initialCityObjects.sort((cityRecordA, cityRecordB) => {
+  return cityRecordA.year - cityRecordB.year;
 });
 
-const regionOccurrences = [];
+// Initialize an array to count cities per prefecture
+var prefectureCityCounters = [];
 
-municipalityRecords = municipalityRecords.map((currentMunicipality) => {
-  if (regionOccurrences[currentMunicipality.regionCode] === undefined) {
-    regionOccurrences[currentMunicipality.regionCode] = 1;
-  } else {
-    regionOccurrences[currentMunicipality.regionCode] += 1;
-  }
+// Declare global variables for P and id, which will be implicitly created in the map callback
+// These will hold the values from the last processed city in the second map.
+globalFormattedPrefectureCode = "";
+globalFormattedCityId = "";
 
-  let formattedRegion = "000000" + currentMunicipality.regionCode.toString();
-  formattedRegion = formattedRegion.slice(-6); // Using slice for difference
+// Assign unique IDs to cities and format prefecture/city IDs
+var processedCityObjects = initialCityObjects.map(currentCityObject => {
+  // Increment or initialize the counter for the current prefecture
+  prefectureCityCounters[currentCityObject.prefecture] === undefined
+    ? (prefectureCityCounters[currentCityObject.prefecture] = 1)
+    : (prefectureCityCounters[currentCityObject.prefecture] += 1);
 
-  let formattedIdentifier = "000000" + regionOccurrences[currentMunicipality.regionCode].toString();
-  formattedIdentifier = formattedIdentifier.slice(-6);
+  // Format prefecture ID to 6 digits with leading zeros
+  globalFormattedPrefectureCode = "000000" + currentCityObject.prefecture.toString();
+  globalFormattedPrefectureCode = globalFormattedPrefectureCode.substr(globalFormattedPrefectureCode.length - 6, 6);
 
+  // Format city ID within its prefecture to 6 digits with leading zeros
+  globalFormattedCityId = "000000" + prefectureCityCounters[currentCityObject.prefecture].toString();
+  globalFormattedCityId = globalFormattedCityId.substr(globalFormattedCityId.length - 6, 6);
+
+  // Return the modified city object with formatted IDs
+  // Note: The 'year' property here incorrectly uses the globalEstablishmentYear,
+  // which holds the year of the last city from the initial input processing.
   return {
-    originalPosition: currentMunicipality.originalPosition,
-    finalPrefectureCode: formattedRegion,
-    creationYear: currentMunicipality.foundingYear, // Renamed property
-    uniqueIdentifier: formattedIdentifier,
+    cityIndex: currentCityObject.cityIndex,
+    prefecture: globalFormattedPrefectureCode, // Formatted prefecture string
+    year: globalEstablishmentYear, // Bug: This is the year of the last city from the input
+    id: globalFormattedCityId // Formatted city ID string
   };
 });
 
-municipalityRecords.sort((itemA, itemB) => {
-  return itemA.originalPosition - itemB.originalPosition;
+// Sort cities back to their original input order
+processedCityObjects.sort((itemOne, itemTwo) => {
+  return itemOne.cityIndex - itemTwo.cityIndex;
 });
 
-municipalityRecords.forEach((finalEntry) =>
-  outputLog(
-    finalEntry.finalPrefectureCode.toString() +
-    finalEntry.uniqueIdentifier.toString()
-  )
+// Print the formatted prefecture ID and city ID for each city
+processedCityObjects.forEach(cityToPrint =>
+  printOutput(cityToPrint.prefecture.toString() + cityToPrint.id.toString())
 );

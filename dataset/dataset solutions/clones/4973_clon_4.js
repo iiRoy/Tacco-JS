@@ -1,39 +1,30 @@
-function calculateCompositeFactor(...inputNumbers) {
-    const numCount = inputNumbers.length;
+function computePatternSum(numArr) {
+  const elementCount = numArr.length;
 
-    if (numCount === 1) {
-        return inputNumbers[0];
-    }
+  if (elementCount === 1) {
+    return numArr[0];
+  }
 
-    const numMinusOne = numCount - 1;
-    const squaredVal = numMinusOne * numMinusOne;
-    const baseMultiplier = (squaredVal % 2 === 0) ? (squaredVal >> 1) : ((squaredVal >> 1) + 1);
+  const firstTerm = Math.ceil(((elementCount - 1) * (elementCount - 1)) / 2);
 
-    const { finalSum } = inputNumbers.reduce((accumulator, currentDigit) => {
-        const nextSum = accumulator.currentSum + accumulator.currentWeight * currentDigit;
-        const nextWeight = accumulator.currentWeight * 5 + 1;
-        return { currentSum: nextSum, currentWeight: nextWeight };
-    }, { currentSum: 0, currentWeight: 2 });
+  const weightedSum = numArr.reduce((accumulator, currentVal, currentIndex) => {
+    const currentMultiplier = (9 * Math.pow(5, currentIndex) - 1) / 4;
+    return accumulator + currentMultiplier * currentVal;
+  }, 0);
 
-    return baseMultiplier * finalSum;
+  return firstTerm * weightedSum;
 }
 
-function flipSequence(originalString) {
-    const len = originalString.length;
-    if (len <= 1) {
-        return originalString;
-    }
-    return flipSequence(originalString.slice(1)) + originalString[0];
+function flipString(inputStr) {
+  return inputStr.split('').reverse().join('');
 }
 
 process.stdin.resume();
 process.stdin.setEncoding("UTF-8");
-process.stdin.on("data", function(incomingBlock) {
-    const reversedBlock = flipSequence(incomingBlock);
-    
-    const numericSequence = Array.from(reversedBlock, charRepresentation => Number(charRepresentation));
-
-    const computationResult = calculateCompositeFactor(...numericSequence);
-
-    process.stdout.write(String(computationResult));
+process.stdin.on("data", (inputChunk) => {
+  const processedDigits = flipString(inputChunk)
+                          .split('')
+                          .map(charVal => parseInt(charVal, 10));
+  const finalResult = computePatternSum(...processedDigits);
+  process.stdout.write(finalResult.toString());
 });

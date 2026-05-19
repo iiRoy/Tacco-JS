@@ -1,44 +1,24 @@
-const processInput = (rawTextContent) => {
-    const numericalSegment = parseInt(rawTextContent.split(' ')[0], 10);
-    return numericalSegment;
-};
+function processInputAndCompute(dataString) {
+    const argumentParts = dataString.split(' ');
+    const upperLimit = Number(argumentParts[0]);
 
-const determineMagnitude = (quantity) => {
-    if (quantity === 0) return 1;
-    return Math.floor(Math.log10(quantity)) + 1;
-};
+    let totalOddDigitCount = 0;
+    let currentMagnitude = 1;
+    let digitGroupLength = 1;
 
-const powerOfTen = (expVal) => Math.pow(10, expVal);
-
-const recursivelyEvaluate = (currentSpan, maximumSpans, targetLimit) => {
-    if (currentSpan > maximumSpans) {
-        return 0;
-    }
-
-    if (currentSpan === maximumSpans) {
-        if (currentSpan % 2 === 1) {
-            return targetLimit - powerOfTen(currentSpan - 1) + 1;
+    while (currentMagnitude * 10 <= upperLimit) {
+        if (digitGroupLength % 2 !== 0) {
+            totalOddDigitCount += 9 * currentMagnitude;
         }
-        return 0;
+        currentMagnitude *= 10;
+        digitGroupLength++;
     }
 
-    let partialContribution = 0;
-    if (currentSpan % 2 === 1) {
-        partialContribution = 9 * powerOfTen(currentSpan - 1);
+    if (digitGroupLength % 2 !== 0) {
+        totalOddDigitCount += (upperLimit - currentMagnitude + 1);
     }
-    return partialContribution + recursivelyEvaluate(currentSpan + 1, maximumSpans, targetLimit);
-};
 
-const calculateTotalOddDigitInstances = (upperBoundary) => {
-    if (upperBoundary <= 0) return 0;
-    const boundaryLength = determineMagnitude(upperBoundary);
-    return recursivelyEvaluate(1, boundaryLength, upperBoundary);
-};
+    console.log(totalOddDigitCount);
+}
 
-const programEntry = (sourceData) => {
-    const acquiredValue = processInput(sourceData);
-    const ultimateResult = calculateTotalOddDigitInstances(acquiredValue);
-    console.log(ultimateResult);
-};
-
-programEntry(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputAndCompute(require('fs').readFileSync('/dev/stdin', 'utf8'));

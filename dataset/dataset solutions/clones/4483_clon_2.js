@@ -1,125 +1,132 @@
-// Top-level function to handle graph processing from input.
-function GraphProcessor(rawInputData) {
-  // Split the entire input string into an array of individual line strings.
-  let inputLines = rawInputData.split("\n");
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines based on newline characters.
+  let dataLines = rawData.split('\n');
 
-  // Parse the first line to determine the total number of nodes in the graph.
-  const totalNodes = parseInt(inputLines[0]);
+  // Parse the total number of nodes from the first line of input.
+  const nodeCount = parseInt(dataLines[0], 10);
 
-  // Initialize an array to store shortest distances from the first node (index 0).
-  // All distances are initially set to a large value (totalNodes) representing infinity.
-  let firstDistances = new Array(totalNodes).fill(totalNodes);
-  firstDistances[0] = 0; // The distance from the starting node to itself is zero.
+  // Initialize an array to store shortest path distances from the initial node (node 0).
+  // All distances are set to 'nodeCount', serving as an "infinity" value.
+  let distancesFromStart = new Array(nodeCount).fill(nodeCount);
+  // The distance from the starting node (node 0) to itself is zero.
+  distancesFromStart[0] = 0;
 
-  // Initialize an array to store shortest distances from the last node (index totalNodes - 1).
-  // Similar initialization strategy as for firstDistances.
-  let secondDistances = new Array(totalNodes).fill(totalNodes);
-  secondDistances[totalNodes - 1] = 0; // The distance from the end node to itself is zero.
+  // Initialize an array to store shortest path distances from the final node (node nodeCount - 1).
+  // All distances are also set to 'nodeCount'.
+  let distancesFromEnd = new Array(nodeCount).fill(nodeCount);
+  // The distance from the ending node (node nodeCount - 1) to itself is zero.
+  distancesFromEnd[nodeCount - 1] = 0;
 
-  // Create an adjacency list representation for the graph.
-  // Each element in `nodeConnections` will hold an array of connected node indices.
-  // Note: `fill([])` makes all entries point to the same array initially.
-  // This is later corrected by conditional assignment in the loop below.
-  const nodeConnections = new Array(totalNodes).fill([]);
+  // Create an adjacency list to represent the graph structure.
+  // Using `fill([])` initially makes all elements reference the same empty array.
+  // However, the subsequent loop logic reassigns these references to new arrays as needed.
+  let adjacencyList = new Array(nodeCount).fill([]);
 
-  // Iterate through the input lines (starting from the second line) to build the graph edges.
-  // Each line defines an edge between two nodes.
-  for (let loopCounter = 0; loopCounter < totalNodes - 1; loopCounter++) {
-    const edgeDefinition = inputLines[loopCounter + 1].split(" ");
-    const nodeA = parseInt(edgeDefinition[0]) - 1; // Convert to 0-indexed node identifier
-    const nodeB = parseInt(edgeDefinition[1]) - 1; // Convert to 0-indexed node identifier
+  // Iterate through the input lines to construct the graph's edges.
+  // Each line (after the first) describes an edge between two nodes.
+  for (let edgeIndex = 0; edgeIndex < nodeCount - 1; edgeIndex++) {
+    // Parse the two node identifiers for the current edge.
+    const edgeIdentifiers = dataLines[edgeIndex + 1].split(' ');
+    const firstNode = parseInt(edgeIdentifiers[0], 10) - 1; // Convert to 0-based index
+    const secondNode = parseInt(edgeIdentifiers[1], 10) - 1; // Convert to 0-based index
 
-    // Add nodeB to the adjacency list of nodeA.
-    // If nodeA's list is currently the shared empty array, reassign it. Otherwise, push.
-    if (nodeConnections[nodeA].length === 0) {
-      nodeConnections[nodeA] = [nodeB];
+    // Add the second node to the adjacency list of the first node.
+    // If the list for 'firstNode' is still the initial shared empty array, reassign it.
+    if (adjacencyList[firstNode].length === 0) {
+      adjacencyList[firstNode] = [secondNode];
     } else {
-      nodeConnections[nodeA].push(nodeB);
+      // Otherwise, push the second node to the existing list.
+      adjacencyList[firstNode].push(secondNode);
     }
 
-    // Add nodeA to the adjacency list of nodeB (since the graph is undirected).
-    // Similar logic as for nodeA.
-    if (nodeConnections[nodeB].length === 0) {
-      nodeConnections[nodeB] = [nodeA];
+    // Add the first node to the adjacency list of the second node (for an undirected graph).
+    // Similar logic: reassign if it's the initial shared empty array, otherwise push.
+    if (adjacencyList[secondNode].length === 0) {
+      adjacencyList[secondNode] = [firstNode];
     } else {
-      nodeConnections[nodeB].push(nodeA);
+      adjacencyList[secondNode].push(firstNode);
     }
   }
 
-  // This helper function computes the shortest distances from a specified starting node
-  // to all other nodes in the graph using a Dijkstra-like algorithm.
-  function calculateNodeDistances(startingNodeIndex, currentDistanceArray) {
-    // Initialize a queue containing all nodes, representing unvisited vertices.
-    let nodeQueue = new Array(totalNodes);
-    for (let queueInitIndex = 0; queueInitIndex < totalNodes; queueInitIndex++) {
-      nodeQueue[queueInitIndex] = queueInitIndex;
+  // This helper function computes shortest path distances from a specified starting node
+  // to all other nodes in the graph. It uses a Dijkstra-like algorithm.
+  function calculateDistances(initialNode, distanceArray) {
+    // Initialize a list of all nodes that have not yet been visited.
+    let unvisitedNodes = new Array(nodeCount);
+    for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+      unvisitedNodes[nodeIdx] = nodeIdx;
     }
 
-    // Continue processing as long as there are nodes remaining in the queue.
-    while (nodeQueue.length !== 0) {
-      // Examine all neighbors of the current processing node.
-      for (let neighborIndex = 0; neighborIndex < nodeConnections[startingNodeIndex].length; neighborIndex++) {
-        const connectedNode = nodeConnections[startingNodeIndex][neighborIndex];
-        // If a shorter path to a neighbor is found through the current node, update its distance.
-        if (currentDistanceArray[connectedNode] > currentDistanceArray[startingNodeIndex]) {
-          currentDistanceArray[connectedNode] = currentDistanceArray[startingNodeIndex] + 1;
+    // Set the current node for processing to the initial node.
+    let currentNode = initialNode;
+
+    // Continue the process as long as there are nodes remaining to be visited.
+    while (unvisitedNodes.length !== 0) {
+      // Examine all neighbors of the current node.
+      for (let neighborIndex = 0; neighborIndex < adjacencyList[currentNode].length; neighborIndex++) {
+        const neighborNode = adjacencyList[currentNode][neighborIndex];
+        // If a shorter path to the neighbor is found through the current node, update its distance.
+        if (distanceArray[neighborNode] > distanceArray[currentNode]) {
+          distanceArray[neighborNode] = distanceArray[currentNode] + 1;
         }
       }
 
-      // Remove the current node from the queue as it has been processed.
-      nodeQueue.splice(nodeQueue.indexOf(startingNodeIndex), 1);
+      // Remove the current node from the set of unvisited nodes.
+      // The current node is guaranteed to be in 'unvisitedNodes' at this point.
+      unvisitedNodes.splice(unvisitedNodes.indexOf(currentNode), 1);
 
       // Find the next node to process: the unvisited node with the smallest known distance.
-      let minFoundDistance = totalNodes; // Initialize with a value larger than any possible distance
-      let nextProcessingNode = -1; // Placeholder for the next node to select
+      let minDistance = nodeCount + 1; // Initialize with a value greater than any possible distance
+      let nextNodeToVisit = -1; // Placeholder for the next node with minimum distance
 
-      for (let scanQueueIndex = 0; scanQueueIndex < nodeQueue.length; scanQueueIndex++) {
-        const candidateNode = nodeQueue[scanQueueIndex];
-        if (currentDistanceArray[candidateNode] < minFoundDistance) {
-          nextProcessingNode = candidateNode;
-          minFoundDistance = currentDistanceArray[candidateNode];
+      for (let queueIndex = 0; queueIndex < unvisitedNodes.length; queueIndex++) {
+        const candidateNode = unvisitedNodes[queueIndex];
+        if (distanceArray[candidateNode] < minDistance) {
+          nextNodeToVisit = candidateNode;
+          minDistance = distanceArray[candidateNode];
         }
       }
-      // Update the `startingNodeIndex` to the newly selected node for the next iteration.
-      startingNodeIndex = nextProcessingNode;
+      // Update the current node to the one found with the minimum distance for the next iteration.
+      // If 'unvisitedNodes' became empty, 'nextNodeToVisit' remains -1, but the 'while' loop
+      // condition will correctly terminate the function in the next iteration.
+      currentNode = nextNodeToVisit;
     }
-    return currentDistanceArray; // Return the array of computed distances.
+    // Return the array containing the calculated shortest distances.
+    return distanceArray;
   }
 
-  // Execute the distance calculation from the first node (index 0).
-  firstDistances = calculateNodeDistances(0, firstDistances);
+  // Calculate shortest distances from node 0 (Fennec's starting position).
+  distancesFromStart = calculateDistances(0, distancesFromStart);
+  // Calculate shortest distances from node nodeCount - 1 (Snuke's starting position).
+  distancesFromEnd = calculateDistances(nodeCount - 1, distancesFromEnd);
 
-  // Execute the distance calculation from the last node (index totalNodes - 1).
-  secondDistances = calculateNodeDistances(totalNodes - 1, secondDistances);
-
-  // Calculate the score for the "Fennec" player by counting nodes
-  // that are closer to the first node than to the last node.
-  let fennecScore = 0;
-  for (let nodeIterator = 0; nodeIterator < totalNodes; nodeIterator++) {
-    // Exclude the actual start and end nodes from the score calculation.
-    if (nodeIterator !== 0 && nodeIterator !== totalNodes - 1) {
-      if (firstDistances[nodeIterator] <= secondDistances[nodeIterator]) {
-        fennecScore++;
+  // Count the number of nodes that are closer to Fennec's start (node 0)
+  // than to Snuke's start (node nodeCount - 1).
+  // Exclude the actual start and end nodes from this count.
+  let fennecNodesCount = 0;
+  for (let nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++) {
+    // Only consider intermediate nodes, not the start (0) or end (nodeCount - 1) nodes.
+    if (nodeIndex !== 0 && nodeIndex !== nodeCount - 1) {
+      // If the distance from Fennec's start is less than or equal to Snuke's start,
+      // Fennec "controls" this node.
+      if (distancesFromStart[nodeIndex] <= distancesFromEnd[nodeIndex]) {
+        fennecNodesCount++;
       }
     }
   }
 
-  // Determine the overall winner based on the calculated scores.
-  let winnerName = "Fennec"; // Assume Fennec wins by default.
-  // The total number of intermediate nodes is totalNodes - 2.
-  // If Fennec's score is less than or equal to Snuke's score, Snuke wins.
-  if (fennecScore <= (totalNodes - 2) - fennecScore) {
+  // Determine the winner based on the count of controlled nodes.
+  // Fennec controls 'fennecNodesCount' nodes.
+  // Snuke controls the remaining 'nodeCount - 2 - fennecNodesCount' nodes.
+  let winnerName = "Fennec";
+  if (fennecNodesCount <= (nodeCount - 2 - fennecNodesCount)) {
     winnerName = "Snuke";
   }
 
-  // Output the name of the winning player to the console.
+  // Output the name of the determined winner to the console.
   console.log('%s', winnerName);
 }
 
-// Read input from the standard input stream and pass it to the graph processing function.
-// Note: `require`, `fs`, `readFileSync`, `parseInt`, `Array`, `console.log`
-// and their methods (`split`, `fill`, `length`, `push`, `indexOf`, `splice`)
-// are built-in JavaScript features or standard Node.js modules.
-// Renaming them would break functionality or require defining wrappers,
-// which would alter the number of statements/logic, violating Type II rules.
-GraphProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

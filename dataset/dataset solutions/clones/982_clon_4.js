@@ -1,26 +1,57 @@
-const processingOptions = {
-    resourcePath: '/dev/stdin',
-    lineSeparator: '\n'
-};
+const inputSettings = { sourcePath: '/dev/stdin', lineSeparator: '\n' };
 
-const fileSystemModule = require('fs');
-const rawDataBuffer = fileSystemModule.readFileSync(processingOptions.resourcePath);
-const contentSegments = rawDataBuffer.toString().split(processingOptions.lineSeparator);
+const rawInputContent = require('fs').readFileSync(inputSettings.sourcePath, 'ascii');
+const inputLines = rawInputContent.split(inputSettings.lineSeparator);
 
-const primaryTextContainer = contentSegments[0];
-const queryCountValue = Number(contentSegments[1]);
-const patternList = contentSegments.slice(2, 2 + queryCountValue);
+const [mainTextString, patternCountStr, ...patternArray] = inputLines;
+const numPatterns = Number(patternCountStr);
+const patternsToSearch = patternArray.slice(0, numPatterns);
 
-function sanitizeForRegex(rawInputText) {
-    return rawInputText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function findPatternOccurrences(mainText, searchPattern, baseVal, primeMod) {
+  const textLen = mainText.length;
+  const patternLen = searchPattern.length;
+
+  if (patternLen === 0) return 1;
+  if (patternLen > textLen) return 0;
+
+  const charCodeAtPosition = (str, idx) => str.charCodeAt(idx);
+
+  const computeSegmentHash = (segment) => {
+    return Array.from(segment).reduce((accumulator, character) => {
+      return (baseVal * accumulator + character.charCodeAt(0)) % primeMod;
+    }, 0);
+  };
+
+  const targetPatternHash = computeSegmentHash(searchPattern);
+  const highestPowerOfBase = Math.pow(baseVal, patternLen - 1) % primeMod;
+
+  let currentWindowHash = computeSegmentHash(mainText.substring(0, patternLen));
+
+  const shiftIndices = Array.from({ length: textLen - patternLen + 1 }, (_, index) => index);
+
+  const matchFound = shiftIndices.some(currentShift => {
+    if (targetPatternHash === currentWindowHash) {
+      if (searchPattern === mainText.substring(currentShift, currentShift + patternLen)) {
+        return true;
+      }
+    }
+
+    if (currentShift < textLen - patternLen) {
+      const charExitingWindow = charCodeAtPosition(mainText, currentShift);
+      const charEnteringWindow = charCodeAtPosition(mainText, currentShift + patternLen);
+
+      let nextHashValue = (baseVal * (currentWindowHash - charExitingWindow * highestPowerOfBase) + charEnteringWindow) % primeMod;
+      currentWindowHash = (nextHashValue + primeMod) % primeMod;
+    }
+    return false;
+  });
+
+  return matchFound ? 1 : 0;
 }
 
-function checkPresenceIndicator(mainContent, targetFragment) {
-    const safePatternString = sanitizeForRegex(targetFragment);
-    const searchExpression = new RegExp(safePatternString);
-    return searchExpression.test(mainContent) ? 1 : 0;
-}
+const hashingBase = 256;
+const largePrimeModulo = Math.pow(2, 31) - 1;
 
-patternList.forEach(currentPattern => {
-    console.log(checkPresenceIndicator(primaryTextContainer, currentPattern));
+patternsToSearch.forEach(currentPattern => {
+  console.log(findPatternOccurrences(mainTextString, currentPattern, hashingBase, largePrimeModulo));
 });

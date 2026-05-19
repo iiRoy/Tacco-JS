@@ -1,26 +1,25 @@
-let receivedFragments = '';
-
-process.stdin.on('data', (piece) => {
-    receivedFragments += piece.toString();
+const inputProcessor = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-process.stdin.on('end', () => {
-    const initialSegment = receivedFragments.trim().split('\n')[0];
+let capturedInputLine = '';
 
-    const numberPattern = /\s+(\d+)\s+(\d+)/;
-    const matchResult = initialSegment.match(numberPattern);
+inputProcessor.on('line', (currentInput) => {
+    capturedInputLine = currentInput;
+});
 
-    let firstOperand = 0;
-    let secondOperand = 0;
+inputProcessor.on('close', () => {
+    const tokenSequence = capturedInputLine.match(/\S+/g);
 
-    if (matchResult && matchResult.length >= 3) {
-        firstOperand = Number(matchResult[1]);
-        secondOperand = Number(matchResult[2]);
-    }
+    const firstValue = Number(tokenSequence[1]);
+    const secondValue = Number(tokenSequence[2]);
 
-    const deviationCount = secondOperand - firstOperand - 1;
+    const calculatedDifference = secondValue - firstValue - 1;
 
-    const outcomeMessage = ((deviationCount & 1) === 1) ? 'Alice\n' : 'Borys\n';
+    const parityIndicator = (calculatedDifference & 1); // 1 for odd, 0 for even
 
-    process.stdout.write(outcomeMessage);
+    const resultMapping = ['Borys', 'Alice']; // Index 0 for even, Index 1 for odd
+
+    console.log(resultMapping[parityIndicator]);
 });

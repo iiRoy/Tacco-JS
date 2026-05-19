@@ -1,10 +1,13 @@
-const conditionEvaluator = (isTrue) => +isTrue;
+function processInputData(sourceContent) {
+  const lineSegments = sourceContent.split(/\r\n|\r|\n/);
 
-function processDataString(rawInput) {
-  const patternMatcher = /(?:.*\n)(?:.*? )(-?\d+(?:\.\d+)?)/;
-  const matchedParts = rawInput.match(patternMatcher);
+  const relevantLine = lineSegments.reduce((currentResult, currentSegment, segmentIndex) => {
+    return segmentIndex === 1 ? currentSegment : currentResult;
+  }, '');
 
-  const checkResult = matchedParts ? (Number(matchedParts[1]) === 1) : false;
+  const numericTokens = relevantLine.match(/\d+/g);
 
-  console.log(conditionEvaluator(checkResult));
+  const targetNumericValue = Number(numericTokens[1]);
+
+  console.log(targetNumericValue === 1 ? 1 : 0);
 }

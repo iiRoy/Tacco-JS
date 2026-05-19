@@ -1,21 +1,29 @@
-const sourceMaterial = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fileSystemModule = require('fs');
 
-const numericalTokens = Array.from(sourceMaterial.matchAll(/-?\d+/g), m => Number(m[0]));
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-const [ _firstDatum, targetQuantity, ...coreSequence ] = numericalTokens;
+const allInputTokens = rawInputContent.trim().split(/\s+/g);
 
-const relevantPortion = coreSequence.slice(0, targetQuantity);
+const elementCount = parseInt(allInputTokens[1], 10);
 
-const summaryMetrics = relevantPortion.reduce((accumulator, currentElement) => ({
-    sumValue: accumulator.sumValue + currentElement,
-    peakValue: Math.max(accumulator.peakValue, currentElement)
-}), { sumValue: 0, peakValue: -Infinity });
+const numericElements = allInputTokens.slice(2, 2 + elementCount).map(Number);
 
-const totalSummation = summaryMetrics.sumValue;
-const maximumAttained = summaryMetrics.peakValue;
+let currentMaximum = -Infinity;
+let aggregateSum = 0;
 
-const sumExcludingMaximum = totalSummation - maximumAttained;
+if (numericElements.length > 0) {
+    const { maxVal, totalSum } = numericElements.reduce((accumulator, currentElement) => {
+        accumulator.maxVal = Math.max(accumulator.maxVal, currentElement);
+        accumulator.totalSum += currentElement;
+        return accumulator;
+    }, { maxVal: -Infinity, totalSum: 0 });
 
-const finalResult = maximumAttained - 1 - sumExcludingMaximum;
+    currentMaximum = maxVal;
+    aggregateSum = totalSum;
+}
 
-console.log(Math.max(0, finalResult));
+const sumOfNonMaximums = aggregateSum - currentMaximum;
+
+const finalCalculation = currentMaximum - 1 - sumOfNonMaximums;
+
+console.log(Math.max(0, finalCalculation));

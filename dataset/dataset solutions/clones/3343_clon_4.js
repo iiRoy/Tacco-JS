@@ -1,126 +1,103 @@
-const createDataParser = (sourceText) => {
-    let sourceLines = sourceText.trim().split('\n');
-    let currentLinePointer = 0;
-    let currentLineTokens = [];
+class InputProcessor {
+    constructor(rawContent) {
+        this.lines = rawContent.trim().split('\n');
+        this.currentLinePointer = 0;
+    }
 
-    const populateTokensForSingle = () => {
-        if (currentLineTokens.length === 0 && currentLinePointer < sourceLines.length) {
-            currentLineTokens = sourceLines[currentLinePointer].split(' ').reverse();
+    retrieveToken(asString = false) {
+        if (typeof this.lines[this.currentLinePointer] === "string") {
+            this.lines[this.currentLinePointer] = this.lines[this.currentLinePointer].split(" ").reverse();
         }
-    };
-
-    const retrieveSingle = (asString) => {
-        populateTokensForSingle();
-        if (currentLineTokens.length === 0) {
-            currentLinePointer++;
-            return undefined;
+        const tokenValue = this.lines[this.currentLinePointer].pop();
+        if (!this.lines[this.currentLinePointer].length) {
+            this.currentLinePointer++;
         }
-        const extracted = currentLineTokens.shift();
-        if (currentLineTokens.length === 0) {
-            currentLinePointer++;
-        }
-        return asString ? extracted : (extracted === '' ? 0 : Number(extracted));
-    };
+        return asString ? tokenValue : Number(tokenValue);
+    }
 
-    const retrieveLine = (asStrings) => {
-        currentLineTokens = [];
-        if (currentLinePointer >= sourceLines.length) {
-            return [];
-        }
-        const line = sourceLines[currentLinePointer++];
-        const tokens = line.split(' ');
-        return asStrings ? tokens : tokens.map(str => str === '' ? 0 : Number(str));
-    };
+    retrieveLine(asStrings = false) {
+        const lineContent = this.lines[this.currentLinePointer++].split(" ");
+        return asStrings ? lineContent : lineContent.map(Number);
+    }
 
-    const retrieveMultipleLines = (lineCount, asStrings) => {
-        currentLineTokens = [];
-        const extractedLines = sourceLines.slice(currentLinePointer, currentLinePointer + lineCount);
-        currentLinePointer += lineCount;
-        return asStrings ? extractedLines : extractedLines.map(str => str === '' ? 0 : Number(str));
-    };
+    retrieveMatrix(numRows, asStrings = false) {
+        const matrixData = this.lines.slice(this.currentLinePointer, this.currentLinePointer + numRows).map(line => line.split(" "));
+        this.currentLinePointer += numRows;
+        return asStrings ? matrixData : matrixData.map(row => row.map(Number));
+    }
 
-    const retrieveMatrix = (rowCount, asStrings) => {
-        currentLineTokens = [];
-        const extractedRows = sourceLines.slice(currentLinePointer, currentLinePointer + rowCount);
-        currentLinePointer += rowCount;
-        return extractedRows.map(row => {
-            const tokens = row.split(' ');
-            return asStrings ? tokens : tokens.map(str => str === '' ? 0 : Number(str));
-        });
-    };
-
-    return {
-        pullSingleValue: retrieveSingle,
-        pullFullLine: retrieveLine,
-        pullLineBlock: retrieveMultipleLines,
-        pullTable: retrieveMatrix,
-    };
-};
-
-const makeMultiArray = (initialValue, ...dimensions) => {
-    const create = (dims) => {
-        if (dims.length === 0) {
-            return initialValue;
-        }
-        const currentDim = dims[0];
-        const remainingDims = dims.slice(1);
-        const arr = new Array(currentDim);
-        for (let idx = 0; idx < currentDim; idx++) {
-            arr[idx] = create(remainingDims);
-        }
-        return arr;
-    };
-    return create(dimensions);
-};
-
-const dataExtractor = createDataParser(require("fs").readFileSync("/dev/stdin","utf8"));
-
-console.log(entryPoint());
-
-function entryPoint() {
-  const quantity = dataExtractor.pullSingleValue();
-  const valuesCollection = dataExtractor.pullFullLine();
-  return calculateMinimumCost(quantity, valuesCollection);
+    retrieveRows(numRows, asStrings = false) {
+        const rowData = this.lines.slice(this.currentLinePointer, this.currentLinePointer + numRows);
+        this.currentLinePointer += numRows;
+        return asStrings ? rowData : rowData.map(Number);
+    }
 }
 
-function calculateMinimumCost(count, valuesCollection) {
-    const prefixSums = new Array(count + 1).fill(0);
-    for (let current = 0; current < count; current++) {
-        prefixSums[current + 1] = prefixSums[current] + valuesCollection[current];
-    }
-
-    const getRangeSum = (start, end) => {
-        if (start > end) return 0;
-        return prefixSums[end + 1] - prefixSums[start];
+const createInputReader = (inputContent) => {
+    const processorInstance = new InputProcessor(inputContent);
+    return {
+        a: (asString) => processorInstance.retrieveToken(asString),
+        l: (asStrings) => processorInstance.retrieveLine(asStrings),
+        m: (numRows, asStrings) => processorInstance.retrieveMatrix(numRows, asStrings),
+        r: (numRows, asStrings) => processorInstance.retrieveRows(numRows, asStrings),
     };
+};
 
-    const optimalCosts = makeMultiArray(Infinity, count, count);
-
-    for (let idx = 0; idx < count; idx++) {
-        optimalCosts[idx][idx] = 0;
-    }
-
-    const findOptimal = (startIndex, endIndex) => {
-        if (startIndex >= endIndex) {
-            return 0;
+const constructMultiArray = (initialFillValue, ...dimensions) => {
+    const buildRecursive = (dims, currentDimensionIndex) => {
+        if (currentDimensionIndex === dims.length - 1) {
+            return Array(dims[currentDimensionIndex]).fill(initialFillValue);
+        } else {
+            return Array(dims[currentDimensionIndex]).fill(0).map(() => buildRecursive(dims, currentDimensionIndex + 1));
         }
-        if (optimalCosts[startIndex][endIndex] !== Infinity) {
-            return optimalCosts[startIndex][endIndex];
-        }
-
-        let minimumCurrentCost = Infinity;
-        const currentSegmentSum = getRangeSum(startIndex, endIndex);
-
-        for (let splitPoint = startIndex; splitPoint < endIndex; splitPoint++) {
-            const leftSubproblemCost = findOptimal(startIndex, splitPoint);
-            const rightSubproblemCost = findOptimal(splitPoint + 1, endIndex);
-            const totalSplitCost = leftSubproblemCost + rightSubproblemCost + currentSegmentSum;
-            minimumCurrentCost = Math.min(minimumCurrentCost, totalSplitCost);
-        }
-
-        optimalCosts[startIndex][endIndex] = minimumCurrentCost;
-        return minimumCurrentCost;
     };
+    return buildRecursive(dimensions, 0);
+};
 
-    return findOptimal(0, count - 1);
+const inputHandler = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+console.log(executeProblemSolution());
+
+function executeProblemSolution() {
+    const elementCount = inputHandler.a();
+    const initialValues = inputHandler.l();
+    return calculateMinimumCost(elementCount, initialValues);
+}
+
+function calculateMinimumCost(numElements, valuesArray) {
+    const prefixSums = [0];
+    valuesArray.forEach(val => prefixSums.push(prefixSums[prefixSums.length - 1] + val));
+
+    const segmentCostMatrix = Array.from({ length: numElements }, (_, i) =>
+        Array.from({ length: numElements - i }, (_, j) => {
+            return prefixSums[j + i + 1] - prefixSums[j];
+        })
+    );
+
+    const dpTable = Array.from({ length: numElements }, (_, i) =>
+        Array.from({ length: numElements - i }, (_, j) => (i === 0 ? 0 : Infinity))
+    );
+
+    Array.from({ length: numElements - 1 }).forEach((_, i_index) => {
+        const currentSegmentLengthMinusOne = i_index + 1;
+        Array.from({ length: numElements - currentSegmentLengthMinusOne }).forEach((_, j_start) => {
+            Array.from({ length: currentSegmentLengthMinusOne }).forEach((_, k_index) => {
+                const splitPointLength = k_index + 1;
+
+                const firstPartLengthMinusOne = currentSegmentLengthMinusOne - splitPointLength;
+                const secondPartLengthMinusOne = splitPointLength - 1;
+                const secondPartStartIndex = j_start + currentSegmentLengthMinusOne - splitPointLength + 1;
+
+                const candidateTotalCost =
+                    dpTable[firstPartLengthMinusOne][j_start] +
+                    dpTable[secondPartLengthMinusOne][secondPartStartIndex] +
+                    segmentCostMatrix[currentSegmentLengthMinusOne][j_start];
+
+                if (candidateTotalCost < dpTable[currentSegmentLengthMinusOne][j_start]) {
+                    dpTable[currentSegmentLengthMinusOne][j_start] = candidateTotalCost;
+                }
+            });
+        });
+    });
+
+    return dpTable[numElements - 1][0];
 }

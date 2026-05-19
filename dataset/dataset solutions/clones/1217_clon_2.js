@@ -1,26 +1,23 @@
 'use strict';
 
-(function ( standardInputData ) {
-  // Define the primary function for processing input
+(function(inputData) {
+  // This section is typically for function declarations, but none are needed here.
 
-  // Initialize necessary data storage
-  var processedTokens = standardInputData . toString()
-                                          .trim()
-                                          .split(' ');
-  var primaryNumber = parseInt( processedTokens[0] );
-  var middleNumber = parseInt( processedTokens[1] );
-  var finalNumber = parseInt( processedTokens[2] );
+  // Initialize variables by parsing input data.
+  let inputStrings = inputData.toString().trim().split(' ');
+  let firstVal = parseInt(inputStrings[0], 10);
+  let secondVal = parseInt(inputStrings[1], 10);
+  let thirdVal = parseInt(inputStrings[2], 10);
 
-  // Core conditional logic starts here
-  if (primaryNumber < middleNumber) {
-    if ( middleNumber < finalNumber ) {
+  // Execute the primary conditional logic.
+  if (firstVal < secondVal) {
+    if (secondVal < thirdVal) {
       console.log('Yes');
-      return; // Exit point for "Yes"
+      return;
     }
   }
+  console.log('No');
 
-  console.log('No'); // Default output if conditions are not met
-
-  // Output section
-  // console.log(processedTokens); // For debugging purposes, shows parsed input
-})( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );
+  // Optional debugging line, currently inactive.
+  // console.log(inputStrings);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,102 +1,90 @@
-function ProcessData(rawData) {
-    // This function processes a given raw data string to compute a specific maximum value.
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines.
+    rawData = rawData.split('\n');
 
-    // First, split the entire raw input into individual lines.
-    rawData = rawData.split("\n");
+    // Parse the first line to get the total number of points and the grid size parameter.
+    // The 'dimensions' array will hold [total_points, grid_size_K].
+    let dimensions = rawData[0x0].split(' ').map(valStr => parseInt(valStr, 0b10));
 
-    // Extract initial parameters from the very first line of input.
-    // These parameters define the problem's scope and dimensions.
-    var initialNumbers = rawData[0].split(" ").map(stringValue => parseInt(stringValue, 10));
+    // Extract the grid size parameter (K) from the parsed dimensions.
+    const gridSize = dimensions[0b1];
+    // Extract the total number of points (N) from the parsed dimensions.
+    let pointCount = dimensions[0x0];
 
-    // 'periodSize' corresponds to 'K' in the original problem, defining a cyclic period.
-    var periodSize = initialNumbers[1];
+    // Initialize arrays to store point coordinates and their assigned colors.
+    // xCoords will initially hold string arrays, then parsed x-coordinates.
+    let xCoords = [], yCoords = [], colors = [];
 
-    // 'itemCount' corresponds to 'N', representing the total number of data entries.
-    var itemCount = initialNumbers[0];
+    // Loop through each point's data from the input, starting from the second line.
+    for (let idx = 0x0; idx < pointCount; idx++) {
+        // Split the current line into its components (x-coordinate, y-coordinate, color).
+        let currentPointData = rawData[idx + 0x1].split(' ');
 
-    // Initialize arrays to store processed geometric coordinates and associated flags.
-    var xCoordinates = []; // Stores x-values after modulo operation
-    var yCoordinates = []; // Stores y-values after modulo operation
-    var orientationFlags = []; // Stores 0 or 1 based on 'W' or 'B'
-
-    // A general purpose loop index, mimicking the original's reuse of 'i'.
-    var loopIterator;
-
-    // Iterate through each data entry provided in the input, starting from the second line.
-    for (loopIterator = 0; loopIterator < itemCount; loopIterator++) {
-        // Split the current line into its constituent parts (x, y, color/orientation).
-        var currentEntryParts = rawData[loopIterator + 1].split(" ");
-
-        // Temporarily store the raw split parts before processing individual components.
-        xCoordinates[loopIterator] = currentEntryParts;
-
-        // Process the y-coordinate: parse as integer and apply modulo (periodSize * 2).
-        yCoordinates[loopIterator] = parseInt(currentEntryParts[1], 10) % (periodSize * 2);
-
-        // Determine the orientation flag: 'W' (White) maps to 0, 'B' (Black) maps to 1.
-        orientationFlags[loopIterator] = (currentEntryParts[2] === "W" ? 0 : 1);
-
-        // Process the x-coordinate: parse as integer and apply modulo (periodSize * 2).
-        xCoordinates[loopIterator] = parseInt(currentEntryParts[0], 10) % (periodSize * 2);
+        // Parse the y-coordinate and apply a modulo operation with (K * 2).
+        yCoords[idx] = parseInt(currentPointData[0b1], 0b10) % (gridSize * 0x2);
+        // Determine the color: 0 for 'W' (white), 1 for 'B' (black).
+        colors[idx] = (currentPointData[0x2] === 'W' ? 0x0 : 0b1);
+        // Parse the x-coordinate and apply a modulo operation with (K * 2).
+        xCoords[idx] = parseInt(currentPointData[0x0], 0b10) % (gridSize << 0b1);
     }
 
-    // Initialize the variable that will hold the maximum count found throughout the process.
-    var maximumAchievedCount = 0;
+    // Initialize the variable to store the maximum number of points found.
+    let maxPoints = 0x0;
 
-    // Begin the main calculation loop, iterating through all possible offsets (0 to periodSize - 1).
-    // The 'loopIterator' variable is reused here, similar to the original code structure.
-    for (loopIterator = 0; loopIterator < periodSize; loopIterator++) {
-        // 'currentCalculationSum' tracks the sum for the current offset and subsequent adjustments.
-        var currentCalculationSum = 0;
+    // Iterate through all possible horizontal shifts (from 0 to K-1).
+    for (let shiftVal = 0x0; shiftVal < gridSize; shiftVal++) {
+        let currentCount = 0x0; // Counter for points matching the current configuration.
+        // Arrays to store counts of points based on their y-coordinate modulo (K*2)
+        // and whether they match (typeOneCounts) or mismatch (typeTwoCounts) the current pattern.
+        let typeOneCounts = new Array(gridSize * 0x2).fill(0x0);
+        let typeTwoCounts = new Array(gridSize * 0x2).fill(0x0);
 
-        // Initialize two auxiliary arrays, 'positiveContributions' and 'negativeContributions',
-        // to store counts based on y-coordinates for later adjustments.
-        var positiveContributions = new Array(periodSize * 2).fill(0);
-        var negativeContributions = new Array(periodSize * 2).fill(0);
-
-        // Inner loop: process each data element to update 'currentCalculationSum' and auxiliary arrays.
-        for (var elementIndex = 0; elementIndex < itemCount; elementIndex++) {
-            // Apply the core logic: a bitwise operation involving x, y, current offset, and period size,
-            // then compare with the stored orientation flag.
-            if ((((xCoordinates[elementIndex] + loopIterator) / periodSize ^ yCoordinates[elementIndex] / periodSize) & 1) === orientationFlags[elementIndex]) {
-                currentCalculationSum++;
-                positiveContributions[yCoordinates[elementIndex]]++;
+        // Iterate through all points to classify them for the current horizontal shift.
+        for (let pointIdx = 0x0; pointIdx < pointCount; pointIdx++) {
+            // The core logic: determines if a point's region type (based on shifted x and y)
+            // matches its assigned color.
+            // The expression `(A / K ^ B / K) & 1` checks the parity of the sum of
+            // integer divisions by K, effectively determining the region's 'color'.
+            if ((((xCoords[pointIdx] + shiftVal) / gridSize ^ yCoords[pointIdx] / gridSize) & 0b1) === colors[pointIdx]) {
+                currentCount++;
+                typeOneCounts[yCoords[pointIdx]]++;
             } else {
-                negativeContributions[yCoordinates[elementIndex]]++;
+                typeTwoCounts[yCoords[pointIdx]]++;
             }
         }
 
-        // Update the overall maximum count if the current sum is greater.
-        if (maximumAchievedCount < currentCalculationSum) {
-            maximumAchievedCount = currentCalculationSum;
+        // Update maxPoints if the current configuration yields a higher count.
+        if (maxPoints < currentCount) {
+            maxPoints = currentCount;
         }
-        // Also, check the complement (total items minus current sum) as a potential maximum.
-        if (maximumAchievedCount < itemCount - currentCalculationSum) {
-            maximumAchievedCount = itemCount - currentCalculationSum;
+        // Also consider the complementary count (total points - currentCount),
+        // which would be the count if all colors were flipped.
+        if (maxPoints < pointCount - currentCount) {
+            maxPoints = pointCount - currentCount;
         }
 
-        // Perform a series of adjustments to 'currentCalculationSum' based on the auxiliary arrays.
-        // This loop iterates 'periodSize - 1' times.
-        for (var adjustmentIndex = 0; adjustmentIndex < periodSize - 1; adjustmentIndex++) {
-            // Modify the sum using values from both 'positiveContributions' and 'negativeContributions'
-            // at the current index and an index offset by 'periodSize'.
-            currentCalculationSum += negativeContributions[adjustmentIndex] - positiveContributions[adjustmentIndex] + negativeContributions[adjustmentIndex + periodSize] - positiveContributions[adjustmentIndex + periodSize];
+        // Now, iterate through possible vertical shifts (from 0 to K-2) to efficiently
+        // update 'currentCount' for subsequent y-axis configurations.
+        for (let yShiftIter = 0x0; yShiftIter < gridSize - 0b1; yShiftIter++) {
+            // Adjust 'currentCount' based on points moving from 'typeOne' to 'typeTwo' or vice-versa
+            // when the y-axis is effectively shifted by one unit (K).
+            currentCount += typeTwoCounts[yShiftIter] - typeOneCounts[yShiftIter] +
+                            typeTwoCounts[yShiftIter + gridSize] - typeOneCounts[yShiftIter + gridSize];
 
-            // After each adjustment, re-evaluate and update the 'maximumAchievedCount'.
-            if (maximumAchievedCount < currentCalculationSum) {
-                maximumAchievedCount = currentCalculationSum;
+            // Update maxPoints again with the new 'currentCount'.
+            if (maxPoints < currentCount) {
+                maxPoints = currentCount;
             }
-            // Again, check the complement as well.
-            if (maximumAchievedCount < itemCount - currentCalculationSum) {
-                maximumAchievedCount = itemCount - currentCalculationSum;
+            // And its complement.
+            if (maxPoints < pointCount - currentCount) {
+                maxPoints = pointCount - currentCount;
             }
         }
     }
 
-    // Finally, print the computed maximum value to the console.
-    console.log(maximumAchievedCount);
+    // Output the final maximum number of points that can be covered.
+    console.log(maxPoints);
 }
 
-// Read the input from standard input using Node.js's file system module,
-// ensuring UTF-8 encoding, and then pass it to the main processing function.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input using Node.js 'fs' module and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

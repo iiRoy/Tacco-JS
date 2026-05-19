@@ -1,53 +1,64 @@
-const _input_stream = process.stdin;
-_input_stream.setEncoding('utf8');
-let _total_data = '';
-_input_stream.on('data', (chunk) => {
-    _total_data += chunk;
-});
-_input_stream.on('end', () => {
-    const _tokens = _total_data.split(/ |\n/).filter(Boolean);
-    const _upper_bound = parseInt(_tokens[0], 10);
-    const _numeric_entries = _tokens.slice(1, _upper_bound + 1);
+const processInput = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataTokens = processInput.split(/ |\n/).filter(Boolean);
+const totalElements = parseInt(dataTokens[0], 10);
+const numberRepresentations = dataTokens.slice(1, totalElements + 1);
 
-    function _analyze_string_representation(current_string) {
-        const _decimal_point_index = current_string.indexOf('.');
-        const _is_whole = (_decimal_point_index === -1);
-        const _numerical_value = parseFloat(current_string);
-        let _fractional_magnitude = 0;
-        let _decimal_precision = 0;
-        if (!_is_whole) {
-            const _parts = current_string.split('.');
-            _fractional_magnitude = parseInt(_parts[1], 10);
-            _decimal_precision = _parts[1].length;
-        }
-        return {
-            _is_integer_form: _is_whole,
-            _actual_value: _numerical_value,
-            _decimal_part_as_int: _fractional_magnitude,
-            _num_decimal_places: _decimal_precision
-        };
+const analyzeNumberString = (numTxt) => {
+    const parts = numTxt.split('.');
+    if (parts.length === 1) {
+        return { integerValue: parseInt(numTxt, 10), decimalPower: 0 };
+    } else {
+        const combinedDigits = parseInt(parts[0] + parts[1], 10);
+        const decimalExponent = parts[1].length;
+        return { integerValue: combinedDigits, decimalPower: decimalExponent };
     }
-    const _processed_data = _numeric_entries.map(_analyze_string_representation);
-    const _final_count = _processed_data.reduce((_current_tally, _item_one, _index_one) => {
-        for (let _index_two = _index_one + 1; _index_two < _upper_bound; _index_two++) {
-            const _item_two = _processed_data[_index_two];
-            if (_item_one._is_integer_form && _item_two._is_integer_form) {
-                _current_tally += 1;
-            } else if (!_item_one._is_integer_form && _item_two._is_integer_form) {
-                const _product_of_fraction_and_int = _item_one._decimal_part_as_int * _item_two._actual_value;
-                const _divisor_for_check = Math.pow(10, _item_one._num_decimal_places);
-                if (_product_of_fraction_and_int % _divisor_for_check === 0) {
-                    _current_tally += 1;
+};
+
+const countPrimeDivisors = (value, prime) => {
+    if (value === 0) return 0;
+    let divisorCount = 0;
+    let currentVal = value;
+    while (currentVal > 0 && currentVal % prime === 0) {
+        divisorCount++;
+        currentVal /= prime;
+    }
+    return divisorCount;
+};
+
+const resultAccumulator = Array.from({ length: totalElements }, (_, outerIndex) => outerIndex + 1)
+    .reduce((currentResult, secondOperandIndex) => {
+        Array.from({ length: secondOperandIndex - 1 }, (_, innerIndex) => innerIndex + 1)
+            .forEach((firstOperandIndex) => {
+                const stringA = numberRepresentations[firstOperandIndex - 1];
+                const stringB = numberRepresentations[secondOperandIndex - 1];
+
+                const hasPointA = stringA.includes('.');
+                const hasPointB = stringB.includes('.');
+
+                if (hasPointA && hasPointB) {
+                    return;
                 }
-            } else if (_item_one._is_integer_form && !_item_two._is_integer_form) {
-                const _product_of_fraction_and_int = _item_two._decimal_part_as_int * _item_one._actual_value;
-                const _divisor_for_check = Math.pow(10, _item_two._num_decimal_places);
-                if (_product_of_fraction_and_int % _divisor_for_check === 0) {
-                    _current_tally += 1;
+
+                const infoA = analyzeNumberString(stringA);
+                const infoB = analyzeNumberString(stringB);
+
+                const productNumerator = infoA.integerValue * infoB.integerValue;
+                const combinedDecimalPower = infoA.decimalPower + infoB.decimalPower;
+
+                if (combinedDecimalPower === 0) {
+                    currentResult.validPairs++;
+                } else if (productNumerator === 0) {
+                    currentResult.validPairs++;
+                } else {
+                    const factorsOfTwo = countPrimeDivisors(productNumerator, 2);
+                    const factorsOfFive = countPrimeDivisors(productNumerator, 5);
+
+                    if (factorsOfTwo >= combinedDecimalPower && factorsOfFive >= combinedDecimalPower) {
+                        currentResult.validPairs++;
+                    }
                 }
-            }
-        }
-        return _current_tally;
-    }, 0);
-    console.log(_final_count);
-});
+            });
+        return currentResult;
+    }, { validPairs: 0 });
+
+console.log(resultAccumulator.validPairs);

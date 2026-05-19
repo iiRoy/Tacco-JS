@@ -1,332 +1,354 @@
-'use strict';
-
-// This module implements an efficient heap-based priority queue in JavaScript.
+// This file implements a fast heap-based priority queue in JavaScript.
 // (c) the original authors
 // Licensed under the Apache License, Version 2.0.
 //
-// Optimized for performance in contemporary JavaScript environments.
+// A highly optimized heap-based priority queue for modern JavaScript environments.
 //
 // Example Usage:
-//      Installation (for Node.js):
-//      $ npm install efficient-pqueue
-//      JavaScript code:
-//      // var EfficientPriorityQueue = require("efficient-pqueue");// in Node.js
-//      var myQueue = new EfficientPriorityQueue();
-//      myQueue.insertElement(10);
-//      myQueue.insertElement(0);
-//      myQueue.insertElement(50);
-//      myQueue.insertElement(40);
-//      myQueue.insertElement(30);
-//      myQueue.examineTop(); // Returns 0, queue remains unchanged
-//      myQueue.elementCount; // Returns 5, queue remains unchanged
-//      while(!myQueue.isQueueEmpty()) {
-//        console.log(myQueue.extractMin());
-//      } // Will output 0 10 30 40 50 in order
-//      myQueue.compactMemory(); // (Optional) Reduces memory footprint
+//
+//         // In Node.js: const QuickHeap = require("fastpriorityqueue");
+//         let myHeap = new QuickHeap();
+//         myHeap.add(10);
+//         myHeap.add(0);
+//         myHeap.add(50);
+//         myHeap.add(40);
+//         myHeap.add(30);
+//         myHeap.peek(); // Returns 0, heap remains unchanged
+//         myHeap.itemCount; // Returns 5, heap remains unchanged
+//         while (!myHeap.isEmpty()) {
+//           console.log(myHeap.poll());
+//         } // Will output: 0, 10, 30, 40, 50
+//         myHeap.trimMemory(); // (Optional) Recovers unused memory
+//
+'use strict';
 
-var standardComparer = function(itemA, itemB) {
-  return itemA < itemB;
+// Default comparison function: returns true if 'a' is less than 'b'.
+const stdCompareFunc = function(a, b) {
+  return a < b;
 };
 
-// The provided comparison function should accept two arguments (a, b)
-// and return *true* if 'a' should precede 'b' in the queue.
-function EfficientPriorityQueue(comparisonFn) {
-  if (!(this instanceof EfficientPriorityQueue)) {
-    return new EfficientPriorityQueue(comparisonFn);
+// The provided comparison function should take two arguments (a, b) and return *true* if 'a' has higher priority than 'b'.
+function QuickHeap(compFn) {
+  // Ensure 'new' keyword is used, or create a new instance.
+  if (!(this instanceof QuickHeap)) {
+    return new QuickHeap(compFn);
   }
-  this.dataStore = [];
-  this.elementCount = 0;
-  this.valueComparer = comparisonFn || standardComparer;
+  this.heapData = []; // The underlying array storing heap elements.
+  this.itemCount = +0; // Current number of elements in the heap.
+  this.compMethod = compFn || stdCompareFunc; // The comparison function for ordering elements.
 }
 
-// Duplicates the priority queue, returning a new instance.
-// Queue items are copied by shallow reference.
-// Operates in `O(n)` time complexity.
-EfficientPriorityQueue.prototype.duplicate = function() {
-  var clonedQueue = new EfficientPriorityQueue(this.valueComparer);
-  clonedQueue.elementCount = this.elementCount;
-  for (var idx = 0; idx < this.elementCount; idx++) {
-    clonedQueue.dataStore.push(this.dataStore[idx]);
+// Creates a shallow copy of the priority queue.
+// Operates in O(n) time complexity.
+QuickHeap.prototype.clone = function() {
+  const clonedHeap = new QuickHeap(this.compMethod);
+  clonedHeap.itemCount = this.itemCount;
+  // Copy elements one by one.
+  for (let idx = +0; idx < this.itemCount; idx++) {
+    clonedHeap.heapData.push(this.heapData[idx]);
   }
-  return clonedQueue;
+  return clonedHeap;
 };
 
-// Inserts a new element into the queue.
-// Has `O(log n)` time complexity.
-EfficientPriorityQueue.prototype.insertElement = function(newValue) {
-  var currIdx = this.elementCount;
-  this.dataStore[this.elementCount] = newValue;
-  this.elementCount += 1;
-  var parentIdx;
-  var parentVal;
-  while (currIdx > 0) {
-    parentIdx = (currIdx - 1) >> 1;
-    parentVal = this.dataStore[parentIdx];
-    if (!this.valueComparer(newValue, parentVal)) {
+// Inserts a new element into the heap.
+// Time complexity: O(log n).
+QuickHeap.prototype.add = function(newValue) {
+  let currIdx = this.itemCount;
+  this.heapData[this.itemCount] = newValue;
+  this.itemCount += 0x1;
+  let parentIdx;
+  let parentVal;
+
+  // Percolate up: move the new value up the heap until its correct position is found.
+  while (currIdx > +0) {
+    parentIdx = (currIdx - 0x1) >>> 0x1; // Integer division by 2.
+    parentVal = this.heapData[parentIdx];
+    // If the new value is not "smaller" (higher priority) than its parent, stop.
+    if (!this.compMethod(newValue, parentVal)) {
       break;
     }
-    this.dataStore[currIdx] = parentVal;
-    currIdx = parentIdx;
+    this.heapData[currIdx] = parentVal; // Move parent down.
+    currIdx = parentIdx; // Move up to parent's position.
   }
-  this.dataStore[currIdx] = newValue;
+  this.heapData[currIdx] = newValue; // Place the new value.
 };
 
-// Replaces the queue's content with an array and re-establishes heap property.
-EfficientPriorityQueue.prototype.buildHeap = function(inputArray) {
-  this.dataStore = inputArray;
-  this.elementCount = inputArray.length;
-  var loopCounter;
-  for (loopCounter = this.elementCount >> 1; loopCounter >= 0; loopCounter--) {
-    this._siftDown(loopCounter);
+// Replaces the heap's content with a given array and re-establishes heap property.
+QuickHeap.prototype.heapify = function(inputArray) {
+  this.heapData = inputArray;
+  this.itemCount = inputArray.length;
+  let loopIdx;
+  // Start from the last non-leaf node and percolate down.
+  for (loopIdx = this.itemCount >>> 0x1; loopIdx >= +0; loopIdx--) {
+    this._siftDown(loopIdx);
   }
 };
 
-// Helper function for internal use: moves an element up the heap.
-EfficientPriorityQueue.prototype._siftUp = function(currPos, forceUpdate) {
-  var currentValue = this.dataStore[currPos];
-  var parentPosition;
-  var parentValue;
-  while (currPos > 0) {
-    parentPosition = (currPos - 1) >> 1;
-    parentValue = this.dataStore[parentPosition];
-    // If 'forceUpdate' is true, bypasses the comparison.
-    if (!forceUpdate && !this.valueComparer(currentValue, parentValue)) {
+// Internal helper: moves an element up the heap.
+QuickHeap.prototype._siftUp = function(currIdx, forceUp) {
+  const currentVal = this.heapData[currIdx];
+  let parIdx;
+  let parVal;
+
+  while (currIdx > +0) {
+    parIdx = (currIdx - 0x1) >>> 0x1;
+    parVal = this.heapData[parIdx];
+    // If 'forceUp' is not active and current value is not higher priority than parent, stop.
+    if (!forceUp && !this.compMethod(currentVal, parVal)) {
       break;
     }
-    this.dataStore[currPos] = parentValue;
-    currPos = parentPosition;
+    this.heapData[currIdx] = parVal;
+    currIdx = parIdx;
   }
-  this.dataStore[currPos] = currentValue;
+  this.heapData[currIdx] = currentVal;
 };
 
-// Helper function for internal use: moves an element down the heap.
-EfficientPriorityQueue.prototype._siftDown = function(currPos) {
-  var totalSize = this.elementCount;
-  var halfSize = this.elementCount >>> 1;
-  var currentElement = this.dataStore[currPos];
-  var leftChild;
-  var rightChild;
-  var bestChildVal;
-  while (currPos < halfSize) {
-    leftChild = (currPos << 1) + 1;
-    rightChild = leftChild + 1;
-    bestChildVal = this.dataStore[leftChild];
-    if (rightChild < totalSize) {
-      if (this.valueComparer(this.dataStore[rightChild], bestChildVal)) {
-        leftChild = rightChild;
-        bestChildVal = this.dataStore[rightChild];
+// Internal helper: moves an element down the heap.
+QuickHeap.prototype._siftDown = function(currIdx) {
+  const currentSize = this.itemCount;
+  const halfSize = this.itemCount >>> 0x1; // Nodes beyond this index are leaves.
+  const elementVal = this.heapData[currIdx];
+  let leftChildIdx;
+  let rightChildIdx;
+  let bestChildVal;
+
+  while (currIdx < halfSize) {
+    leftChildIdx = (currIdx << 0x1) + 0x1;
+    rightChildIdx = leftChildIdx + 0x1;
+    bestChildVal = this.heapData[leftChildIdx]; // Assume left child is the best.
+
+    // If right child exists and has higher priority than left child.
+    if (rightChildIdx < currentSize) {
+      if (this.compMethod(this.heapData[rightChildIdx], bestChildVal)) {
+        leftChildIdx = rightChildIdx; // Update to right child.
+        bestChildVal = this.heapData[rightChildIdx];
       }
     }
-    if (!this.valueComparer(bestChildVal, currentElement)) {
+
+    // If the current element has higher priority than the best child, stop.
+    if (!this.compMethod(bestChildVal, elementVal)) {
       break;
     }
-    this.dataStore[currPos] = bestChildVal;
-    currPos = leftChild;
+    this.heapData[currIdx] = bestChildVal; // Move child up.
+    currIdx = leftChildIdx; // Move down to child's position.
   }
-  this.dataStore[currPos] = currentElement;
+  this.heapData[currIdx] = elementVal; // Place the element.
 };
 
-// Internal method: removes the element at a specific index, maintaining heap integrity.
-// Returns the removed element, or `undefined` if the index is out of bounds.
-EfficientPriorityQueue.prototype._removeItemAtIndex = function(targetIndex) {
-  if (targetIndex > this.elementCount - 1 || targetIndex < 0) {
-    return undefined;
+// Internal: removes an item at a specific index, maintaining heap property.
+// Returns the removed item, or `undefined` if the index is out of bounds.
+QuickHeap.prototype._removeItemAt = function(targetIndex) {
+  if (targetIndex >= this.itemCount || targetIndex < +0) {
+    return void 0; // Using void 0 for undefined.
   }
 
-  // A more robust implementation would involve _siftUp then poll.
-  this._siftUp(targetIndex, true);
-  return this.extractMin();
+  // A common strategy for removal:
+  // 1. Move the item to be removed to the root (or near root) using _siftUp with force.
+  // 2. Then, remove the root (which is now the target item) using poll.
+  this._siftUp(targetIndex, !false); // !false is true.
+  return this.poll();
 };
 
-// Removes an element from the queue that matches the provided value.
-// Equality is determined by the queue's comparison function (if a < b and b < a are both false).
+// Removes the first item matching the provided value from the queue.
+// Equality is determined by the comparator (a < b is false AND b < a is false).
 // Returns `true` if an item was removed, `false` otherwise.
-EfficientPriorityQueue.prototype.removeValue = function(valueToRemove) {
-  for (var idx = 0; idx < this.elementCount; idx++) {
-    if (!this.valueComparer(this.dataStore[idx], valueToRemove) && !this.valueComparer(valueToRemove, this.dataStore[idx])) {
-      // If the comparator indicates they are equivalent, remove the item.
-      this._removeItemAtIndex(idx);
-      return true;
+QuickHeap.prototype.remove = function(valueToRemove) {
+  for (let scanIdx = +0; scanIdx < this.itemCount; scanIdx++) {
+    // Check if items are "equal" according to the comparator.
+    if (!this.compMethod(this.heapData[scanIdx], valueToRemove) && !this.compMethod(valueToRemove, this.heapData[scanIdx])) {
+      this._removeItemAt(scanIdx);
+      return !false; // Return true.
     }
   }
-  return false;
+  return !true; // Return false.
 };
 
-// Internal method: removes and returns elements for which the provided callback returns true.
-EfficientPriorityQueue.prototype._processBatchRemoval = function(filterFunction, removalLimit) {
-  // Initialize the return array with a maximum capacity.
-  var removedItemsArray = new Array(removalLimit ? removalLimit : this.elementCount);
-  var removedCount = 0;
+// Internal: removes and returns items for which the filterFunction returns true.
+QuickHeap.prototype._processBatchRemoval = function(filterFunction, maxRemovals) {
+  // Initialize return array with a maximum possible size.
+  const resultArray = new Array(maxRemovals ? maxRemovals : this.itemCount);
+  let removedCount = +0;
 
-  if (typeof filterFunction === 'function' && this.elementCount) {
-    var currentScanIdx = 0;
-    while (currentScanIdx < this.elementCount && removedCount < removedItemsArray.length) {
-      if (filterFunction(this.dataStore[currentScanIdx])) {
-        removedItemsArray[removedCount] = this._removeItemAtIndex(currentScanIdx);
+  if (typeof filterFunction === 'function' && this.itemCount > +0) {
+    let scanIdx = +0;
+    while (scanIdx < this.itemCount && removedCount < resultArray.length) {
+      if (filterFunction(this.heapData[scanIdx])) {
+        resultArray[removedCount] = this._removeItemAt(scanIdx);
         removedCount++;
-        // After removal, re-evaluate from a higher point in the heap.
-        currentScanIdx = currentScanIdx >> 1;
+        // After removal, the heap structure changes.
+        // It's often simpler to re-evaluate from a higher point or restart scan,
+        // but here we move up a level in the heap to potentially re-check.
+        scanIdx = scanIdx >>> 0x1; // Move up to parent index.
       } else {
-        currentScanIdx++;
+        scanIdx++;
       }
     }
   }
-  removedItemsArray.length = removedCount;
-  return removedItemsArray;
+  resultArray.length = removedCount; // Trim array to actual removed count.
+  return resultArray;
 };
 
-// Executes a callback for each item and removes the first item for which it returns true.
+// Executes the callback for each item and removes the first item for which it returns true.
 // Returns the removed item, or `undefined` if none was removed.
-EfficientPriorityQueue.prototype.removeSingle = function(matchChecker) {
-  var resultArray = this._processBatchRemoval(matchChecker, 1);
-  return resultArray.length > 0 ? resultArray[0] : undefined;
+QuickHeap.prototype.removeOne = function(filterFunction) {
+  const removedItems = this._processBatchRemoval(filterFunction, 0x1); // Limit to 1 removal.
+  return removedItems.length > +0 ? removedItems[+0] : void 0;
 };
 
-// Executes a callback for each item and removes all items for which it returns true.
-// An optional `maxRemovals` limit can be specified.
-// Returns an array containing the items that were removed.
-EfficientPriorityQueue.prototype.removeMultiple = function(matchChecker, maxRemovals) {
-  return this._processBatchRemoval(matchChecker, maxRemovals);
+// Executes the callback for each item and removes all items for which it returns true,
+// up to a specified `maxRemovals` limit.
+// Returns an array containing the removed items.
+QuickHeap.prototype.removeMany = function(filterFunction, maxRemovals) {
+  return this._processBatchRemoval(filterFunction, maxRemovals);
 };
 
-// Inspects the smallest element in the queue without removing it.
-// Executes in constant time.
-//
-// Calling this on an empty queue yields `undefined`.
-// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/undefined
-//
-EfficientPriorityQueue.prototype.examineTop = function() {
-  if (this.elementCount === 0) {
-    return undefined;
+// Retrieves the highest priority element without removing it.
+// Runs in constant time.
+// Returns `undefined` if the heap is empty.
+QuickHeap.prototype.peek = function() {
+  if (this.itemCount === +0) {
+    return void 0;
   }
-  return this.dataStore[0];
+  return this.heapData[+0];
 };
 
-// Removes and returns the smallest element from the queue.
+// Removes and returns the highest priority element from the heap.
 // Runs in logarithmic time.
+// Returns `undefined` if the heap is empty.
 //
-// If the queue is empty, this function returns `undefined`.
-// https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/undefined
-//
-// For queues that are long-running or store large objects,
-// consider calling `compactMemory()` periodically to free up unused memory.
-EfficientPriorityQueue.prototype.extractMin = function() {
-  if (this.elementCount === 0) {
-    return undefined;
+// For long-running applications with large heaps, consider calling `trimMemory()`
+// periodically to reclaim memory.
+QuickHeap.prototype.poll = function() {
+  if (this.itemCount === +0) {
+    return void 0;
   }
-  var resultValue = this.dataStore[0];
-  if (this.elementCount > 1) {
-    this.dataStore[0] = this.dataStore[--this.elementCount];
-    this._siftDown(0);
+  const resultItem = this.heapData[+0];
+  if (this.itemCount > 0x1) {
+    this.heapData[+0] = this.heapData[--this.itemCount]; // Move last element to root.
+    this._siftDown(+0); // Restore heap property.
   } else {
-    this.elementCount -= 1;
+    this.itemCount -= 0x1; // Heap becomes empty.
   }
-  return resultValue;
+  return resultItem;
 };
 
 // Adds a new value to the heap while simultaneously removing and returning
-// one of the smallest elements (similar to `extractMin`).
-// The size of the queue remains unchanged.
-EfficientPriorityQueue.prototype.replaceRoot = function(replacementValue) {
-  if (this.elementCount === 0) {
-    return undefined;
+// the highest priority element. The heap's size remains unchanged.
+QuickHeap.prototype.replaceTop = function(replacementVal) {
+  if (this.itemCount === +0) {
+    return void 0;
   }
-  var oldTopValue = this.dataStore[0];
-  this.dataStore[0] = replacementValue;
-  this._siftDown(0);
-  return oldTopValue;
+  const resultItem = this.heapData[+0];
+  this.heapData[+0] = replacementVal;
+  this._siftDown(+0);
+  return resultItem;
 };
 
-// Reclaims unused memory space (useful for queues with many poll operations).
-EfficientPriorityQueue.prototype.compactMemory = function() {
-  this.dataStore = this.dataStore.slice(0, this.elementCount);
+// Recovers unused memory by resizing the internal array.
+// Useful for long-running priority queues that have seen many removals.
+QuickHeap.prototype.trimMemory = function() {
+  this.heapData = this.heapData.slice(+0, this.itemCount);
 };
 
-// Checks if the heap contains any elements.
-EfficientPriorityQueue.prototype.isQueueEmpty = function() {
-  return this.elementCount === 0;
+// Checks if the heap is empty.
+QuickHeap.prototype.isEmpty = function() {
+  return this.itemCount === +0;
 };
 
-// Iterates over elements in sorted order, invoking a callback with (item, index).
-EfficientPriorityQueue.prototype.processEach = function(itemProcessor) {
-  if (this.isQueueEmpty() || typeof itemProcessor !== 'function') {
+// Iterates over the items in priority order, invoking a callback for each.
+// The callback receives (item, index) as arguments.
+QuickHeap.prototype.forEach = function(iterCallback) {
+  if (this.isEmpty() || typeof iterCallback !== 'function') {
     return;
   }
-  var iterationIndex = 0;
-  var tempQueue = this.duplicate();
-  while (!tempQueue.isQueueEmpty()) {
-    itemProcessor(tempQueue.extractMin(), iterationIndex++);
+  let itemIndex = +0;
+  const tempHeap = this.clone(); // Clone to preserve original heap.
+  while (!tempHeap.isEmpty()) {
+    iterCallback(tempHeap.poll(), itemIndex++);
   }
 };
 
-// Retrieves the `numElements` smallest elements from the queue.
-// Runs in `O(k log k)` time.
-// This offers better computational efficiency than repeatedly calling `extractMin`,
-// especially for large datasets.
-EfficientPriorityQueue.prototype.getKSmallest = function(numElements) {
-  if (this.elementCount === 0) {
+// Returns the `numSmallest` highest priority elements from the queue.
+// Time complexity: O(k log k).
+// This method is more efficient than repeatedly calling `poll()` for large `k`.
+QuickHeap.prototype.getKSmallest = function(numSmallest) {
+  if (this.itemCount === +0) {
     return [];
   }
-  var compFunction = this.valueComparer;
-  var internalArray = this.dataStore;
-  var auxiliaryQueue = new EfficientPriorityQueue(function(idxA, idxB) {
-   return compFunction(internalArray[idxA], internalArray[idxB]);
+  const origComparator = this.compMethod;
+  const internalArray = this.heapData;
+
+  // Create a temporary heap to store indices, ordered by the value at that index in the original array.
+  const indexHeap = new QuickHeap(function(a, b) {
+    return origComparator(internalArray[a], internalArray[b]);
   });
-  numElements = Math.min(this.elementCount, numElements);
-  var resultList = new Array(numElements);
-  var resultIdx = 0;
-  auxiliaryQueue.insertElement(0);
-  while (resultIdx < numElements) {
-    var smallestIdx = auxiliaryQueue.extractMin();
-    resultList[resultIdx++] = this.dataStore[smallestIdx];
-    var leftNode = (smallestIdx << 1) + 1;
-    var rightNode = leftNode + 1;
-    if (leftNode < this.elementCount) {
-      auxiliaryQueue.insertElement(leftNode);
+
+  numSmallest = Math.min(this.itemCount, numSmallest);
+  const smallestElements = new Array(numSmallest);
+  let counter = +0;
+
+  indexHeap.add(+0); // Start with the root index.
+
+  while (counter < numSmallest) {
+    const smallestIdx = indexHeap.poll();
+    smallestElements[counter++] = this.heapData[smallestIdx];
+
+    const leftIdx = (smallestIdx << 0x1) + 0x1;
+    const rightIdx = leftIdx + 0x1;
+
+    if (leftIdx < this.itemCount) {
+      indexHeap.add(leftIdx);
     }
-    if (rightNode < this.elementCount) {
-      auxiliaryQueue.insertElement(rightNode);
+    if (rightIdx < this.itemCount) {
+      indexHeap.add(rightIdx);
     }
   }
-  return resultList;
+  return smallestElements;
 };
 
-function findLargestIndex(inputArray) {
-  let maxValue = -1;
-  let maxIndex = -1;
-  for (let loopIdx = 0; loopIdx < inputArray.length; loopIdx++) {
-    if (maxValue < inputArray[loopIdx]) {
-      maxIndex = loopIdx;
-      maxValue = inputArray[loopIdx];
+
+// Finds the index of the maximum value in an array.
+function findLargestIndex(inputArr) {
+  let currentMax = -0x1;
+  let maxIdx = -0x1;
+  for (let i = +0; i < inputArr.length; i++) {
+    if (currentMax < inputArr[i]) {
+      maxIdx = i;
+      currentMax = inputArr[i];
     }
   }
-  return maxIndex;
+  return maxIdx;
 }
 
+// Main processing function for the problem.
 function processInputData(rawData) {
-  const dataLines = rawData.split('\n');
-  const [countN] = dataLines[0].split(' ').map(Number);
-  const inputNumbers = dataLines[1].split(' ').map(Number);
+  const parsedLines = rawData.split('\n');
+  const [totalElements] = parsedLines[+0].split(' ').map(Number);
+  const initialArray = parsedLines[0x1].split(' ').map(Number);
 
-  const orderedNumbers = inputNumbers.sort().reverse();
-  // console.log(orderedNumbers);
+  const descendingArray = initialArray.sort((a, b) => b - a); // Sort in descending order.
+  // console.log(descendingArray); // Debug output, preserved as behavior-critical.
 
-  let currentNumber = orderedNumbers.shift();
-  let workingQueue = new EfficientPriorityQueue(function (valA, valB) {
+  let currentNum = descendingArray.shift(); // Get the largest element.
+  // The comparator `valA > valB` means `valA` has higher priority if it's numerically larger.
+  // This effectively creates a max-heap, where `poll()` returns the largest element.
+  let workingHeap = new QuickHeap(function (valA, valB) {
     return valA > valB;
   });
-  workingQueue.insertElement(currentNumber);
-  let totalSum = currentNumber;
-  for (let loopIndex = 1; loopIndex < countN; loopIndex++) {
-    const nextNumber = orderedNumbers.shift();
-    const extractedValue = workingQueue.extractMin();
-    console.log('next number:', nextNumber, 'extracted value:', extractedValue);
-    totalSum += extractedValue;
-    workingQueue.insertElement(nextNumber);
-    workingQueue.insertElement(nextNumber);
-    console.log(workingQueue);
+  workingHeap.add(currentNum);
+  let totalSum = currentNum;
+
+  for (let loopCounter = 0x1; loopCounter < totalElements; loopCounter++) {
+    const nextNum = descendingArray.shift();
+    const extractedVal = workingHeap.poll(); // Get the largest element from the heap.
+    console.log('number:', nextNum, 'v:', extractedVal); // Behavior-critical output.
+    totalSum += extractedVal;
+    workingHeap.add(nextNum);
+    workingHeap.add(nextNum); // Add the next number twice.
+    console.log(workingHeap); // Behavior-critical output.
   }
-  console.log(totalSum);
+  console.log(totalSum); // Final behavior-critical output.
 }
 
+// Read input from stdin and process it.
 processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

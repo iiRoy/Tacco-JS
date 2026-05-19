@@ -1,46 +1,16 @@
-const processRawData = (fullDataString) => {
-  let valA = 0;
-  let valB = 0;
-  let currentNumStr = "";
-  let parsingFirstNum = true;
+function entryPoint(rawData) {
+  const processedLine = rawData.split("\n")[0];
+  const [firstDimension, secondDimension] = processedLine.split(' ').map(Number);
 
-  for (let idx = 0; idx < fullDataString.length; idx++) {
-    const charUnit = fullDataString[idx];
-    if (charUnit === '\n') {
-      if (currentNumStr.length > 0) {
-        valB = Number(currentNumStr);
-      }
-      break;
+  const determineGridCount = (dimOne, dimTwo) => {
+    if (dimOne === 1 || dimTwo === 1) {
+      return 1;
     }
-    if (charUnit === ' ') {
-      if (currentNumStr.length > 0) {
-        valA = Number(currentNumStr);
-        currentNumStr = "";
-        parsingFirstNum = false;
-      }
-    } else if (charUnit >= '0' && charUnit <= '9') {
-      currentNumStr += charUnit;
-    }
-  }
-
-  if (parsingFirstNum && currentNumStr.length > 0) {
-    valA = Number(currentNumStr);
-  } else if (!parsingFirstNum && currentNumStr.length > 0) {
-    valB = Number(currentNumStr);
-  }
-
-  const calculateBaseResult = (dimOne, dimTwo) => {
-    const productOfDims = dimOne * dimTwo;
-    return (productOfDims + 1) >> 1;
+    return ((dimOne * dimTwo) + 1) >> 1;
   };
 
-  const determineFinalOutcome = (dimOne, dimTwo) => {
-    return (dimOne === 1 || dimTwo === 1) ? 1 : calculateBaseResult(dimOne, dimTwo);
-  };
+  const finalCount = determineGridCount(firstDimension, secondDimension);
+  console.log(finalCount);
+}
 
-  const finalComputedValue = determineFinalOutcome(valA, valB);
-
-  console.log(finalComputedValue);
-};
-
-processRawData(require("fs").readFileSync("/dev/stdin", "utf8"));
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

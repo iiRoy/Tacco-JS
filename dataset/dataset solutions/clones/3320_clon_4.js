@@ -1,23 +1,17 @@
-const processInputData = (rawData) => {
-    const dataSegments = rawData.split('\n');
+'use strict';
 
-    const [gridRows, gridCols] = dataSegments
-        .shift()
-        .split(' ')
-        .map(Number);
+function main(inputTxt) {
+    const dataLines = inputTxt.split('\n');
+    const [dimH, dimW] = dataLines[0].split(' ').map(Number);
 
-    const terrainMap = dataSegments
-        .slice(0, gridRows)
-        .map(segment => Array.from(segment));
+    const terrainMap = dataLines.slice(1, dimH + 1).map(rowStr => rowStr.split(''));
 
-    const moduloValue = 1000000007;
+    const pathModulus = 1000000007;
 
-    const pathAccumulator = Array.from({ length: gridRows }, () =>
-        Array.from({ length: gridCols }, () => -1)
-    );
+    const memoizationTable = Array.from({ length: dimH }, () => Array(dimW).fill(null));
 
-    const calculatePathsFromOrigin = (currentR, currentC) => {
-        if (currentR < 0 || currentC < 0) {
+    function calculatePathCount(currentR, currentC) {
+        if (currentR < 0 || currentC < 0 || currentR >= dimH || currentC >= dimW || terrainMap[currentR][currentC] === '#') {
             return 0;
         }
 
@@ -25,27 +19,21 @@ const processInputData = (rawData) => {
             return 1;
         }
 
-        if (pathAccumulator[currentR][currentC] !== -1) {
-            return pathAccumulator[currentR][currentC];
+        if (memoizationTable[currentR][currentC] !== null) {
+            return memoizationTable[currentR][currentC];
         }
 
-        let waysToReach = 0;
+        const pathsFromAbove = calculatePathCount(currentR - 1, currentC);
+        const pathsFromLeft = calculatePathCount(currentR, currentC - 1);
 
-        if (currentR > 0 && terrainMap[currentR - 1][currentC] !== '#') {
-            waysToReach = (waysToReach + calculatePathsFromOrigin(currentR - 1, currentC)) % moduloValue;
-        }
+        const totalPaths = (pathsFromAbove + pathsFromLeft) % pathModulus;
 
-        if (currentC > 0 && terrainMap[currentR][currentC - 1] !== '#') {
-            waysToReach = (waysToReach + calculatePathsFromOrigin(currentR, currentC - 1)) % moduloValue;
-        }
+        memoizationTable[currentR][currentC] = totalPaths;
+        return totalPaths;
+    }
 
-        pathAccumulator[currentR][currentC] = waysToReach;
-        return waysToReach;
-    };
+    const finalResult = calculatePathCount(dimH - 1, dimW - 1);
+    console.log(finalResult);
+}
 
-    const finalOutcome = calculatePathsFromOrigin(gridRows - 1, gridCols - 1);
-
-    console.log(finalOutcome);
-};
-
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

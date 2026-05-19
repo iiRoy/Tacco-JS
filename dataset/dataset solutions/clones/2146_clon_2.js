@@ -1,42 +1,26 @@
-// This JavaScript module is designed to analyze a given string input.
-function EvaluateStringSegments ( rawInputText ) {
-  // It first tokenizes the input string by splitting it at each space character.
-  // Using String.fromCharCode(32) for the space character for variety in literal representation.
-  var textFragments = rawInputText . split (   String.fromCharCode(32)   ) ;
+function processInput (inputString) {
+  // Split the incoming string by spaces to get individual components.
+  var stringParts = inputString.split(' ');
 
-  /*
-   * The core logic evaluates three specific conditions.
-   * Each condition checks if exactly two of the first three text fragments are identical,
-   * implying one fragment is unique while the other two are a match.
-   */
-
-  // Condition A: The first fragment matches the second, but is different from the third.
-  if ( textFragments[ 0 ] === textFragments[ 1 ] && textFragments[ 0 ] !== textFragments[ 2 ] )
-  {
-    console . log ( 'Affirmative' ) ; // Output for a positive match.
+  // Evaluate conditions to determine if exactly two of the three parts are identical.
+  // First scenario: The first two parts are the same, but different from the third.
+  if (stringParts[0] === stringParts[1] && stringParts[0] !== stringParts[2]) {
+    console.log('Yes'); // Output 'Yes' if this condition is met.
   }
-  // Condition B: The first fragment matches the third, but is different from the second.
-  else if ( textFragments[ 0 ] === textFragments[ 2 ] && textFragments[ 0 ] !== textFragments[ 1 ] )
-  {
-    console . log ( 'Affirmative' ) ; // Output for a positive match.
+  // Second scenario: The first and third parts are the same, but different from the second.
+  else if (stringParts[0] === stringParts[2] && stringParts[0] !== stringParts[1]) {
+    console.log('Yes'); // Output 'Yes' if this condition is met.
   }
-  // Condition C: The third fragment matches the second, but is different from the first.
-  else if ( textFragments[ 2 ] === textFragments[ 1 ] && textFragments[ 0 ] !== textFragments[ 2 ] )
-  {
-    console . log ( 'Affirmative' ) ; // Output for a positive match.
+  // Third scenario: The second and third parts are the same, but different from the first.
+  else if (stringParts[2] === stringParts[1] && stringParts[0] !== stringParts[2]) {
+    console.log('Yes'); // Output 'Yes' if this condition is met.
   }
-  // Default scenario: If none of the above conditions are met, no such pattern was found.
-  else
-  {
-    console . log ( 'Negative' ) ; // Output for no match.
+  // If none of the above conditions are true, it means either all are different or all are the same.
+  else {
+    console.log('No'); // Output 'No' in all other cases.
   }
 }
 
-// Execute the analysis function, providing input read synchronously from standard input.
-EvaluateStringSegments(
-  require("fs")
-  .readFileSync(
-    "/dev/stdin",
-    "utf8"
-  )
-);
+// Read the entire content from standard input, assuming UTF-8 encoding,
+// and then pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

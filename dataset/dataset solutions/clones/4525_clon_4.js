@@ -1,39 +1,24 @@
 'use strict';
 
-const sourceDataGetter = () => {
-    const fileSysUtil = global.require('fs');
-    const rawFileData = fileSysUtil.readFileSync('/dev/stdin');
-    return rawFileData.toString('utf8');
-};
+const processInput = (sourceData) => {
+    const dataLines = sourceData.split('\n');
+    const targetLineContent = dataLines[1];
+    const numberStrings = targetLineContent.split(' ');
 
-const calculationExecutor = (completeText) => {
-    const lineSeparator = '\n';
-    const stringOperation = String.prototype;
-    const allLines = stringOperation.split.call(completeText, lineSeparator);
-    const dataLine = allLines[1];
+    let minimumEncountered = Infinity;
+    let maximumEncountered = -Infinity;
 
-    const spaceDelimiter = ' ';
-    const numberStringList = stringOperation.split.call(dataLine, spaceDelimiter);
-
-    const integerConverter = (val) => Math.trunc(parseFloat(val));
-
-    const numericalValues = numberStringList.map(integerConverter);
-
-    if (numericalValues.length === 0) {
-        process.stdout.write(String(NaN) + '\n');
-        return;
+    for (let i = 0; i < numberStrings.length; i++) {
+        const currentNumericValue = Number(numberStrings[i]);
+        if (currentNumericValue < minimumEncountered) {
+            minimumEncountered = currentNumericValue;
+        }
+        if (currentNumericValue > maximumEncountered) {
+            maximumEncountered = currentNumericValue;
+        }
     }
 
-    const firstParsedVal = numericalValues[0];
-    const rangeResult = numericalValues.slice(1).reduce((accumulator, currentVal) => {
-        return {
-            minVal: Math.min(accumulator.minVal, currentVal),
-            maxVal: Math.max(accumulator.maxVal, currentVal)
-        };
-    }, { minVal: firstParsedVal, maxVal: firstParsedVal });
-
-    const finalOutput = rangeResult.maxVal - rangeResult.minVal;
-    process.stdout.write(String(finalOutput) + '\n');
+    console.log(maximumEncountered - minimumEncountered);
 };
 
-calculationExecutor(sourceDataGetter());
+processInput(require('node:fs').readFileSync('/dev/stdin', 'utf-8'));

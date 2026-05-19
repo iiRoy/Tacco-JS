@@ -1,45 +1,30 @@
-const GenerateGridVisual = (heightDimension, widthDimension) => {
-    const obtainCharacter = (rowIndex, colIndex) => {
-        const isRowPositionEven = rowIndex % 2 === 0;
-        const isColumnPositionEven = colIndex % 2 === 0;
+function Main(input) {
+  const sourceLines = input.trim().split("\n");
 
-        if (isRowPositionEven) {
-            return isColumnPositionEven ? '#' : '.';
-        } else {
-            return isColumnPositionEven ? '.' : '#';
-        }
-    };
+  sourceLines.some((currentLine) => {
+    const [dimensionA, dimensionB] = currentLine.split(" ").map(Number);
 
-    const formSingleRow = (currentHeightIdx, totalWidth) => {
-        return Array.from({ length: totalWidth }, (_, currentWidthIdx) =>
-            obtainCharacter(currentHeightIdx, currentWidthIdx)
-        ).join('');
-    };
+    if (dimensionA === 0 && dimensionB === 0) {
+      return true;
+    }
 
-    return Array.from({ length: heightDimension }, (_, currentHeightIdx) =>
-        formSingleRow(currentHeightIdx, widthDimension)
-    ).join('\n');
-};
+    const firstRowContent = Array.from({ length: dimensionB }, (_, colIndex) =>
+      colIndex % 2 === 0 ? "#" : "."
+    ).join("");
 
-const ProcessInputData = (rawTextContent) => {
-    const inputLines = rawTextContent.trim().split('\n');
+    const secondRowContent = firstRowContent
+      .split("")
+      .map((charSymbol) => (charSymbol === "#" ? "." : "#"))
+      .join("");
 
-    const dimensionTuples = inputLines.map(lineItem => {
-        const partsOfLine = lineItem.split(' ');
-        return [parseInt(partsOfLine[0], 10), parseInt(partsOfLine[1], 10)];
-    });
+    Array.from({ length: dimensionA }, (_, rowIndex) =>
+      rowIndex % 2 === 0 ? firstRowContent : secondRowContent
+    ).forEach(console.log);
 
-    const terminationPoint = dimensionTuples.findIndex(tuple => tuple[0] === 0 && tuple[1] === 0);
+    console.log();
 
-    const relevantTuples = terminationPoint === -1 ? dimensionTuples : dimensionTuples.slice(0, terminationPoint);
+    return false;
+  });
+}
 
-    const fullOutputBlocks = relevantTuples.map(tuple => {
-        const gridHeight = tuple[0];
-        const gridWidth = tuple[1];
-        return GenerateGridVisual(gridHeight, gridWidth);
-    });
-
-    console.log(fullOutputBlocks.map(block => block + '\n').join(''));
-};
-
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

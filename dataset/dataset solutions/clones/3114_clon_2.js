@@ -1,77 +1,78 @@
-// This function orchestrates the primary logic for processing an input stream.
-function ProcessInputData(sourceData) {
-    // Split the entire input string by newline characters into an array of lines.
-    let dataLines = sourceData.split("\n");
+// This module processes incoming data and generates a specific sequence of pairs.
 
-    // Extract the first line, convert it to an integer, representing the total count of items.
-    const totalItemCount = parseInt(dataLines[0], 10);
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines.
+  let processedLines = rawData.split("\n");
 
-    // Initialize an array to store various components of the final generated output.
-    let outputSegments = [];
+  // Parse the first line to get the primary numerical value.
+  let countVal = Number.parseInt(processedLines[0]);
 
-    // Check if the total item count is an even number.
-    if (totalItemCount % 2 === 0) {
-        // For even counts, calculate and append a specific numerical value.
-        outputSegments.push((totalItemCount - 2) * totalItemCount / 2);
+  // Initialize an array to store intermediate results before final assembly.
+  let resultParts = [];
 
-        // Iterate through items to form pairs, starting from the first item.
-        for (let currentOuterIndex = 1; currentOuterIndex < totalItemCount + 1; currentOuterIndex++) {
-            // Nested loop to select a second item, ensuring it's distinct and after the first.
-            for (let currentInnerIndex = currentOuterIndex + 1; currentInnerIndex < totalItemCount + 1; currentInnerIndex++) {
-                // Apply a specific filtering condition for even item counts.
-                if (currentInnerIndex !== totalItemCount + 1 - currentOuterIndex) {
-                    // Concatenate the indices and add the resulting string to the output segments.
-                    outputSegments.push(currentOuterIndex + " " + currentInnerIndex);
-                }
-            }
+  // Check if the primary value is an even number.
+  if (countVal % 2 === 0) {
+    // If even, calculate the initial count based on a specific formula.
+    resultParts.push((countVal - 2) * countVal / 2);
+
+    // Iterate through possible first elements for pairs.
+    for (let idxA = 1; idxA < countVal + 1; idxA++) {
+      // Iterate through possible second elements for pairs, ensuring idxB > idxA.
+      for (let idxB = idxA + 1; idxB < countVal + 1; idxB++) {
+        // Exclude pairs where the second element is a specific reflection of the first.
+        if (idxB !== countVal + 1 - idxA) {
+          // Add the valid pair as a string to the results array.
+          resultParts.push(idxA + " " + idxB);
         }
-    } else { // This block executes if the total item count is an odd number.
-        // For odd counts, compute and append a different specific numerical value.
-        outputSegments.push((totalItemCount - 3) * (totalItemCount - 1) / 2 + (totalItemCount - 1));
-
-        // Iterate through items to form pairs, similar to the even case.
-        for (let currentOuterIndex = 1; currentOuterIndex < totalItemCount + 1; currentOuterIndex++) {
-            // Nested loop for selecting the second item.
-            for (let currentInnerIndex = currentOuterIndex + 1; currentInnerIndex < totalItemCount + 1; currentInnerIndex++) {
-                // Apply a distinct filtering condition for odd item counts.
-                if (currentInnerIndex !== totalItemCount - currentOuterIndex) {
-                    // Add the valid pair string to the output segments.
-                    outputSegments.push(currentOuterIndex + " " + currentInnerIndex);
-                }
-            }
-        }
+      }
     }
+  } else {
+    // If odd, calculate the initial count using a different formula.
+    resultParts.push((countVal - 3) * (countVal - 1) / 2 + (countVal - 1));
 
-    // Join all collected output segments into a single string, using newline characters.
-    const finalResultString = outputSegments.join("\n");
+    // Iterate through possible first elements for pairs.
+    for (let idxA = 1; idxA < countVal + 1; idxA++) {
+      // Iterate through possible second elements for pairs, ensuring idxB > idxA.
+      for (let idxB = idxA + 1; idxB < countVal + 1; idxB++) {
+        // Exclude pairs where the second element is a specific reflection of the first.
+        if (idxB !== countVal - idxA) {
+          // Add the valid pair as a string to the results array.
+          resultParts.push(idxA + " " + idxB);
+        }
+      }
+    }
+  }
 
-    // Output the completed result string to the standard console.
-    console.log('%s', finalResultString);
+  // Join all collected parts into a single string, separated by newlines.
+  let finalOutput = resultParts.join("\n");
 
-    // Return the final string result.
-    return finalResultString;
+  // Output the final string to the console.
+  console.log('%s', finalOutput);
+
+  // Return the generated output string.
+  return finalOutput;
 }
 
-// A utility function for performing test validations within a web-based debugging environment.
-function ExecuteTestValidation(testCaseIdentifier) {
-    // Retrieve the input value from a specific HTML element using its ID.
-    let testInputValue = document.getElementById("input" + testCaseIdentifier).value;
+// This function is for local testing purposes, simulating a web environment.
+function testFunction(testNum) {
+  // Retrieve input data from a simulated DOM element.
+  let testInput = document.getElementById("input" + testNum).value;
 
-    // Invoke the main processing function with the obtained test input.
-    let computedSolution = ProcessInputData(testInputValue);
+  // Process the input using the main logic.
+  let processedResult = ProcessInput(testInput);
 
-    // Initialize the status of the test validation.
-    let currentValidationStatus = "FAILURE";
+  // Initialize the test outcome as "Wrong Answer".
+  let testOutcome = "WA";
 
-    // Compare the computed solution with the expected output from another HTML element.
-    if (computedSolution === document.getElementById("output" + testCaseIdentifier).value.split("\n")[0]) {
-        // If the solutions match, update the status to indicate success.
-        currentValidationStatus = "SUCCESS";
-    }
+  // Compare the generated result with the expected output from a simulated DOM element.
+  if (processedResult === document.getElementById("output" + testNum).value.split("\n")[0]) {
+    // If they match, set the outcome to "Accepted".
+    testOutcome = "AC";
+  }
 
-    // Update the inner HTML content of the result display element with the validation status.
-    document.getElementById("result" + testCaseIdentifier).innerHTML = currentValidationStatus;
+  // Display the test outcome in a simulated DOM element.
+  document.getElementById("result" + testNum).innerHTML = testOutcome;
 }
 
-// Execute the primary processing function by reading input from the standard input stream (e.g., in a Node.js environment).
-ProcessInputData(require("nodeFileSystem").readTextFile("/dev/stdin", "utf8"));
+// Execute the main processing function with data read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

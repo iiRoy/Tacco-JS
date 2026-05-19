@@ -1,40 +1,35 @@
-'use strict'; // Enable strict mode for better error handling and cleaner code
+'use strict';
 
-// Define constants for parsing the input string
-const TOKEN_BREAKER = " "; // Separator character for input values
-
-const ALPHA_POS = 0; // Index for the first numerical component
-const BETA_POS = 1;  // Index for the second numerical component
-const GAMMA_POS = 2; // Index for the third numerical component
-const KEY_POS = 3;   // Index for the key factor determining the sign
+// Define constants for parsing input data
+const SEP_CHAR = " "; // Character used to separate values in the input string
+const FIRST_POS = 0; // Array index for the initial value 'a'
+const SECOND_POS = 1; // Array index for the initial value 'b'
+const THIRD_POS = 2; // Array index for the initial value 'c' (not used in final computation)
+const MOD_CHECK_POS = 3; // Array index for the value 'K' used in the modulus check
 
 /**
- * Processes a given string of numerical data, performs a calculation,
- * and prints the result to the console.
- * @param {string} dataString - The input string containing space-separated numbers.
+ * Processes a raw input string to perform a specific calculation.
+ * @param {string} rawData - The input string containing space-separated numbers.
  */
-const handleInputData = dataString => {
-    // Split the input string into individual string components
-    const componentStrings = dataString.split(TOKEN_BREAKER);
+const handleInputData = (rawData) => {
+    // Split the input string into an array of string values
+    const parsedValues = rawData.split(SEP_CHAR);
 
-    // Convert the string components to integer numbers
-    let firstNum = parseInt(componentStrings[ALPHA_POS], 10);
-    let secondNum = parseInt(componentStrings[BETA_POS], 10);
-    let thirdNum = parseInt(componentStrings[GAMMA_POS], 10); // This value is parsed but not used in the final calculation
-    let computedDifference = firstNum - secondNum; // Calculate the initial difference
+    // Parse the required values from the array into integers
+    let valA = parseInt(parsedValues[FIRST_POS], 10); // First operand
+    let valB = parseInt(parsedValues[SECOND_POS], 10); // Second operand
+    let valC = parseInt(parsedValues[THIRD_POS], 10); // Third operand (not used in the final calculation)
 
-    // Get the key value that determines the final sign
-    const parityCheckVal = parseInt(componentStrings[KEY_POS], 10);
+    // Calculate the initial difference
+    let resultDiff = valA - valB;
 
-    // Output the result based on the parity of the key value
-    console.log(
-        (parityCheckVal % 2 === 0)
-            ? computedDifference
-            : -computedDifference
-    );
+    // Get the modulus check value
+    const modulusVal = parseInt(parsedValues[MOD_CHECK_POS], 10);
+
+    // Determine the final output based on whether modulusVal is even or odd
+    // If modulusVal is even, output resultDiff; otherwise, output the negative of resultDiff
+    console.log(modulusVal % 2 === 0 ? resultDiff : -resultDiff);
 };
 
-
-handleInputData(
-    require("fs").readFileSync("/dev/stdin", "utf8") // Read input from standard input
-);
+// Read input from standard input and pass it to the processing function
+handleInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

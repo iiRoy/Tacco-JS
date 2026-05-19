@@ -1,16 +1,19 @@
-const transformStringByDelim = (srcStr, delimChar) => {
-  return [...srcStr].reduce((acc, char) => {
-    if (char === delimChar) {
-      acc.elements.push(acc.current);
-      acc.current = "";
-    } else {
-      acc.current += char;
-    }
-    return acc;
-  }, { elements: [], current: "" });
-};
+function processInputData(rawData) {
+    let parsedTokens = [];
+    let currentTokenBuffer = '';
+    const tokenSeparator = ' ';
 
-const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const finalStructure = transformStringByDelim(inputSource, " ");
-finalStructure.elements.push(finalStructure.current);
-console.log(finalStructure.elements);
+    for (let charIndex = 0; charIndex < rawData.length; charIndex++) {
+        if (rawData[charIndex] === tokenSeparator) {
+            parsedTokens.push(currentTokenBuffer);
+            currentTokenBuffer = '';
+        } else {
+            currentTokenBuffer += rawData[charIndex];
+        }
+    }
+    parsedTokens.push(currentTokenBuffer);
+
+    console.log(parsedTokens);
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

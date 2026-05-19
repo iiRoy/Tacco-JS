@@ -1,195 +1,139 @@
-const systemInputModule = require('readline');
-const debugUtils = require('util');
-
-let inputLineBuffer = [];
-let processedInputStream;
-
-const inputInterface = systemInputModule.createInterface({
+var read = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-
-inputInterface.on('line', (currentLine) => {
-  inputLineBuffer.push(currentLine);
+var inputProcessor;
+var inputBuffer = [];
+read.on('line', function(inputLine){
+  inputBuffer.push(inputLine);
 });
-
-inputInterface.on('close', () => {
-  processedInputStream = initializeInputProcessor(inputLineBuffer);
-  executePrimaryRoutine();
+read.on('close', function(){
+  inputProcessor = new InputHandler(inputBuffer);
+  console.error("\n");
+  var startTime = new Date();
+  executeMainLogic();
+  var endTime = new Date() - startTime;
+  
+  logError("time : " + (endTime) + "ms");
+  logError("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
+function createDeepClone(sourceObj){return JSON.parse(JSON.stringify(sourceObj));}
+function getNextInt(){return dataConverter(inputProcessor.next(),1);} function getNextStrArray(){return dataConverter(inputProcessor.next(),2);}
+function getNextIntArray(){return dataConverter(inputProcessor.next(),4);} function getNextCharArray(){return dataConverter(inputProcessor.next(),6);}
+function getNextLine(){return inputProcessor.next();} function hasMoreInput(){return inputProcessor.hasNext();}
 
-/**
- * Creates a deep copy of an object using JSON serialization.
- * @param {object} sourceObject The object to clone.
- * @returns {object} A new, independent copy of the object.
- */
-function createDeepCopy(sourceObject) {
-  return JSON.parse(JSON.stringify(sourceObject));
-}
+class InputHandler {
+  constructor(lines) {
+    this.lineList = lines;
+    this.currentIndex = 0;
+    this.maxLines = lines.length;
+  }
 
-function getNextInteger() { return convertData(fetchNextInput(), 'int'); }
-function getNextStringArray() { return convertData(fetchNextInput(), 'strArr'); }
-function getNextIntegerArray() { return convertData(fetchNextInput(), 'intArr'); }
-function getNextCharacterArray() { return convertData(fetchNextInput(), 'charArr'); }
+  hasNext() {
+    return (this.currentIndex < this.maxLines);
+  }
 
-function fetchNextInput() { return processedInputStream.retrieveNext(); }
-function hasMoreInput() { return processedInputStream.hasMore(); }
-
-/**
- * Sets up an object to manage input line processing, using a closure for state.
- * @param {string[]} rawInputLines An array of raw input strings.
- * @returns {object} An object with methods to navigate the input.
- */
-function initializeInputProcessor(rawInputLines) {
-  let currentLineIndex = 0;
-  const totalLines = rawInputLines.length;
-
-  return {
-    hasMore: function() {
-      return currentLineIndex < totalLines;
-    },
-    retrieveNext: function() {
-      if (!this.hasMore()) {
-        throw new Error("InputExhaustedException: No more data available in the input stream.");
-      }
-      const currentInput = rawInputLines[currentLineIndex];
-      currentLineIndex++;
-      return currentInput;
+  next() {
+    if (!this.hasNext()) {
+      throw "ArrayIndexOutOfBoundsException これ以上ないよ";
     }
-  };
-}
-
-/**
- * Outputs a message to the standard output.
- * @param {*} content The content to display.
- */
-function displayOutput(content) {
-  console.log(content);
-}
-
-/**
- * Outputs a debug message to the standard error stream.
- * @param {*} debugMessage The message or object to debug.
- */
-function logDebugInfo(debugMessage) {
-  console.error("DEBUG_INFO:", debugUtils.inspect(debugMessage));
-}
-
-/**
- * Handles various data type conversions based on a specified conversion type.
- * @param {*} inputData The data to convert.
- * @param {string} conversionType A string indicating the desired conversion.
- * @returns {*} The converted data or the original data if conversion fails/is unknown.
- */
-function convertData(inputData, conversionType) {
-  try {
-    switch (conversionType) {
-      case 'int':
-        return parseInt(inputData, 10);
-      case 'strArr':
-        return inputData.split(" ");
-      case 'intArr':
-        return inputData.split(" ").map(Number);
-      case 'charArr':
-        return inputData.split("");
-      case 'charIntArr':
-        return inputData.split("").map(Number);
-      case 'joinSpace':
-        return inputData.join(" ");
-      case 'joinNewline':
-        return inputData.join("\n");
-      case 'joinNone':
-        return inputData.join("");
-      default:
-        logDebugInfo(`Warning: Unknown conversion type '${conversionType}'. Returning original data.`);
-        return inputData;
-    }
-  } catch (conversionError) {
-    logDebugInfo(`Error during data conversion for type '${conversionType}': ${conversionError.message}`);
-    return inputData;
+    const currentInputLine = this.lineList[this.currentIndex];
+    this.currentIndex++;
+    return currentInputLine;
   }
 }
 
-function executePrimaryRoutine() {
-  const nodeCount = getNextInteger();
-  
-  if (nodeCount < 1) {
-    logDebugInfo("Invalid node count. Must be at least 1.");
-    return;
+function printOutput(message){console.log(message);}
+function logError(debugMessage){console.error("debug:" + require("util").inspect(debugMessage,false,null));}
+
+function dataConverter(inputValue, conversionType){
+  try{
+    switch(conversionType){
+      case 1:return parseInt(inputValue);
+      case 2:return inputValue.split(" ");
+      case 4:return inputValue.split(" ").map(Number);
+      case 6:return inputValue.split("");
+      case 7:return inputValue.split("").map(Number);
+      case 8:return inputValue.join(" ");
+      case 9:return inputValue.join("\n");
+      case 0:return inputValue.join("");
+      default:return inputValue;
+    }
+  }catch(e){
+    return inputValue;
   }
+}
 
-  const adjacencyList = Array.from({ length: nodeCount }, () => []);
-  const edgePropertiesMap = new Map();
+function executeMainLogic(){
+  const nodeCount = getNextInt();
   
-  let maxDegreeEncountered = 0;
+  const graphNodes = Array.from({ length: nodeCount }, () => ({
+    adjacentNodes: []
+  }));
 
-  const expectedEdgeCount = nodeCount - 1;
-  for (let edgeIndex = 0; edgeIndex < expectedEdgeCount; ++edgeIndex) {
-    const edgeEndpoints = getNextIntegerArray();
+  const edgeDataMap = {};
+  let maxColorUsed = 0;
+
+  const numEdges = nodeCount - 1;
+  for(let i = 0; i < numEdges; i++){
+    const [nodeU, nodeV] = getNextIntArray();
+    const uIndex = nodeU - 1;
+    const vIndex = nodeV - 1;
+
+    graphNodes[uIndex].adjacentNodes.push(vIndex);
+    graphNodes[vIndex].adjacentNodes.push(uIndex);
     
-    if (edgeEndpoints.length !== 2) {
-      logDebugInfo(`Invalid edge format at index ${edgeIndex}. Expected 2 endpoints.`);
-      continue; 
-    }
-
-    const firstNode = edgeEndpoints[0] - 1;
-    const secondNode = edgeEndpoints[1] - 1;
-
-    if (firstNode < 0 || firstNode >= nodeCount || secondNode < 0 || secondNode >= nodeCount) {
-        logDebugInfo(`Invalid node index in edge at index ${edgeIndex}: (${firstNode+1}, ${secondNode+1}). Skipping.`);
-        continue;
-    }
-
-    adjacencyList[firstNode].push(secondNode);
-    adjacencyList[secondNode].push(firstNode);
-    
-    const edgeKey = getNormalizedEdgeKey(firstNode, secondNode);
-    edgePropertiesMap.set(edgeKey, {
-      originalIndex: edgeIndex,
-      assignedColor: null
-    });
+    const edgeKey = getEdgeIdentifier(uIndex, vIndex);
+    edgeDataMap[edgeKey] = {
+      originalEdgeIndex: i,
+      assignedEdgeColor: null
+    };
   }
   
-  function getNormalizedEdgeKey(nodeA, nodeB) {
-      return nodeA < nodeB ? `${nodeA}:${nodeB}` : `${nodeB}:${nodeA}`;
+  function getEdgeIdentifier(n1, n2) {
+    return `${Math.min(n1, n2)}:${Math.max(n1, n2)}`;
   }
 
   const traversalQueue = [[0, 0]];
-  
-  while (traversalQueue.length > 0) {
-    const [currentNode, incomingEdgeColor] = traversalQueue.shift();
+  while(traversalQueue.length > 0){
+    const [currentNode, parentEdgeColor] = traversalQueue.shift();
+    const neighbors = graphNodes[currentNode].adjacentNodes;
+    
+    let currentAvailableColor = 1;
+    
+    for(let i = 0; i < neighbors.length; i++){
+      const neighborNode = neighbors[i];
+      
+      const minNodeId = Math.min(currentNode, neighborNode);
+      const maxNodeId = Math.max(currentNode, neighborNode);
+      
+      const edgeKey = getEdgeIdentifier(minNodeId, maxNodeId);
+      const edgeInfo = edgeDataMap[edgeKey];
 
-    const neighbors = adjacencyList[currentNode];
-    let nextAvailableColor = 1;
-
-    for (let neighborIndex = 0; neighborIndex < neighbors.length; ++neighborIndex) {
-      const adjacentNode = neighbors[neighborIndex];
-
-      const currentEdgeKey = getNormalizedEdgeKey(currentNode, adjacentNode);
-      const edgeInfo = edgePropertiesMap.get(currentEdgeKey);
-
-      if (edgeInfo && edgeInfo.assignedColor === null) {
-        if (nextAvailableColor === incomingEdgeColor) {
-          nextAvailableColor++;
+      if(edgeInfo.assignedEdgeColor === null){
+        if(currentAvailableColor === parentEdgeColor){
+          currentAvailableColor++;
         }
         
-        edgeInfo.assignedColor = nextAvailableColor;
-        traversalQueue.push([adjacentNode, nextAvailableColor]);
+        edgeInfo.assignedEdgeColor = currentAvailableColor;
+        traversalQueue.push([neighborNode, currentAvailableColor]);
         
-        maxDegreeEncountered = Math.max(maxDegreeEncountered, nextAvailableColor);
-        
-        nextAvailableColor++;
+        maxColorUsed = Math.max(maxColorUsed, currentAvailableColor);
+        currentAvailableColor++;
       }
     }
   }
   
-  displayOutput(maxDegreeEncountered);
-
-  const finalEdgeColors = Array(expectedEdgeCount).fill(null);
+  printOutput(maxColorUsed);
   
-  for (const edgeEntry of edgePropertiesMap.values()) {
-    finalEdgeColors[edgeEntry.originalIndex] = edgeEntry.assignedColor;
+  const outputColors = new Array(numEdges);
+  const orderedEdges = Object.values(edgeDataMap);
+
+  orderedEdges.sort((a, b) => a.originalEdgeIndex - b.originalEdgeIndex);
+  
+  for(let i = 0; i < numEdges; i++){
+    outputColors[i] = orderedEdges[i].assignedEdgeColor;
   }
   
-  displayOutput(convertData(finalEdgeColors, 'joinNewline'));
+  printOutput(dataConverter(outputColors, 9));
 }

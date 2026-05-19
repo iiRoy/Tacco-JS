@@ -1,46 +1,24 @@
-(function executeComputation() {
+(function processInput() {
+  const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+  const desiredTerm = Number(sourceData) + 1;
 
-  const acquireNumericInput = () => {
-    return +require('node:fs').readFileSync('/dev/stdin', 'utf8').trim() + 1;
-  };
+  let previousValue = 0;
+  let currentValue = 1;
 
-  function multiplyTwoByTwoMatrices(leftOperand, rightOperand) {
-    const productMatrix = [[0, 0], [0, 0]];
-    productMatrix[0][0] = leftOperand[0][0] * rightOperand[0][0] + leftOperand[0][1] * rightOperand[1][0];
-    productMatrix[0][1] = leftOperand[0][0] * rightOperand[0][1] + leftOperand[0][1] * rightOperand[1][1];
-    productMatrix[1][0] = leftOperand[1][0] * rightOperand[0][0] + leftOperand[1][1] * rightOperand[1][0];
-    productMatrix[1][1] = leftOperand[1][0] * rightOperand[0][1] + leftOperand[1][1] * rightOperand[1][1];
-    return productMatrix;
-  }
-
-  function elevateMatrixToPower(baseMatrix, powerValue) {
-    let resultAccumulator = [[1, 0], [0, 1]];
-    let currentBase = baseMatrix;
-
-    while (powerValue > 0) {
-      if (powerValue % 2 === 1) {
-        resultAccumulator = multiplyTwoByTwoMatrices(resultAccumulator, currentBase);
-      }
-      currentBase = multiplyTwoByTwoMatrices(currentBase, currentBase);
-      powerValue = powerValue >>> 1;
-    }
-    return resultAccumulator;
-  }
-
-  const desiredSequenceIndex = acquireNumericInput();
-
-  if (desiredSequenceIndex === 0) {
-    process.stdout.write('0\n');
+  if (desiredTerm === 0) {
+    console.log(previousValue);
     return;
   }
-  if (desiredSequenceIndex === 1) {
-    process.stdout.write('1\n');
+  if (desiredTerm === 1) {
+    console.log(currentValue);
     return;
   }
 
-  const fibonacciGeneratorMatrix = [[1, 1], [1, 0]];
-  const resultantMatrix = elevateMatrixToPower(fibonacciGeneratorMatrix, desiredSequenceIndex - 1);
+  for (let iterationCount = 2; iterationCount <= desiredTerm; iterationCount++) {
+    const nextValue = previousValue + currentValue;
+    previousValue = currentValue;
+    currentValue = nextValue;
+  }
 
-  process.stdout.write(String(resultantMatrix[0][0]) + '\n');
-
+  console.log(currentValue);
 })();

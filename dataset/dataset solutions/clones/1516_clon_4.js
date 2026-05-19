@@ -1,62 +1,100 @@
-const obtainPairList = () => nextIntArray();
-const renderResult = (val) => myout(val);
+const inputBuffer = [];
+let inputIndex = 0;
 
-function performCalculation() {
-  const initialParams = obtainPairList();
-  const upperLimit = initialParams[0];
-  const constraintCount = initialParams[1];
-  const moduloDivisor = 998244353;
+const processInput = new Promise(resolve => {
+  require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+  }).on('line', line => inputBuffer.push(line)).on('close', resolve);
+});
 
-  const stateMemo = new Array(upperLimit).fill(null);
-  const cumulativeMemo = new Array(upperLimit).fill(null);
+const parseValue = (token, typeIdentifier) => {
+  const conversionMap = new Map([
+    [1, val => Number.parseInt(val, 10)],
+    [2, val => val.split(' ')],
+    [4, val => val.split(' ').map(Number)],
+    [6, val => val.split('')],
+    [7, val => val.split('').map(Number)],
+    [8, arr => arr.join(' ')],
+    [9, arr => arr.join('\n')],
+    [0, arr => arr.join('')]
+  ]);
 
-  const rangeSpecifications = [];
-  for (let cIdx = 0; cIdx < constraintCount; cIdx++) {
-    const tempRange = obtainPairList();
-    rangeSpecifications.push({
-      lowerBound: tempRange[0],
-      upperBound: tempRange[1]
-    });
-  }
-
-  const retrieveStateValue = (currentIdx) => {
-    if (currentIdx < 0) return 0;
-    if (currentIdx === 0) return 1;
-    if (stateMemo[currentIdx] !== null) return stateMemo[currentIdx];
-
-    let accumulatedValue = 0;
-    for (const currentSpec of rangeSpecifications) {
-      const effectiveStart = currentIdx - currentSpec.lowerBound;
-      const effectiveEnd = currentIdx - currentSpec.upperBound;
-
-      if (effectiveStart < 0) {
-        continue;
-      }
-
-      let segmentContribution = 0;
-      if (currentSpec.lowerBound === currentSpec.upperBound) {
-        segmentContribution = retrieveStateValue(effectiveStart);
-      } else {
-        const sumAtStart = retrieveCumulativeSum(effectiveStart);
-        const sumBeforeEnd = retrieveCumulativeSum(effectiveEnd - 1);
-        segmentContribution = (sumAtStart - sumBeforeEnd + moduloDivisor) % moduloDivisor;
-      }
-      accumulatedValue = (accumulatedValue + segmentContribution) % moduloDivisor;
+  const converter = conversionMap.get(typeIdentifier);
+  if (converter) {
+    try {
+      return converter(token);
+    } catch (e) {
+      return token;
     }
-    stateMemo[currentIdx] = accumulatedValue;
-    return accumulatedValue;
+  }
+  return token;
+};
+
+const retrieveNextToken = () => {
+  if (inputIndex < inputBuffer.length) {
+    return inputBuffer[inputIndex++];
+  }
+  throw new Error('No more input available.');
+};
+
+const getNextInteger = () => parseValue(retrieveNextToken(), 1);
+const getNextIntegerArray = () => parseValue(retrieveNextToken(), 4);
+
+const displayOutput = (content) => console.log(content);
+const displayDebug = (content) => console.error('debug:' + require('util').inspect(content, false, null));
+
+const calculatePathCombinations = () => {
+  const initialParams = getNextIntegerArray();
+  const sequenceLength = initialParams[0];
+  const rangeCount = initialParams[1];
+  const moduloConstant = 998244353;
+
+  const pathCounts = Array.from({ length: sequenceLength }, () => 0);
+  const cumulativePathSums = Array.from({ length: sequenceLength }, () => 0);
+
+  pathCounts[0] = 1;
+  cumulativePathSums[0] = 1;
+
+  const jumpRanges = Array.from({ length: rangeCount }, () => getNextIntegerArray());
+
+  const determineRangeContribution = (currentPosition, lowerBound, upperBound, dpArr, sumArr, modVal) => {
+    const effectiveLower = currentPosition - lowerBound;
+    if (effectiveLower < 0) {
+      return 0;
+    }
+
+    const termFromLower = sumArr[effectiveLower];
+    const effectiveUpperMinusOne = currentPosition - upperBound - 1;
+
+    const termFromUpper = (effectiveUpperMinusOne < 0) ? 0 : sumArr[effectiveUpperMinusOne];
+
+    return (termFromLower - termFromUpper + modVal) % modVal;
   };
 
-  const retrieveCumulativeSum = (currentIdx) => {
-    if (currentIdx < 0) return 0;
-    if (currentIdx === 0) return 1;
-    if (cumulativeMemo[currentIdx] !== null) return cumulativeMemo[currentIdx];
+  Array.from({ length: sequenceLength - 1 }, (_, idx) => idx + 1).forEach(currentPosition => {
+    let currentPositionTotal = 0;
 
-    const currentCumulative = (retrieveStateValue(currentIdx) + retrieveCumulativeSum(currentIdx - 1)) % moduloDivisor;
-    cumulativeMemo[currentIdx] = currentCumulative;
-    return currentCumulative;
-  };
+    jumpRanges.forEach(([lowerBound, upperBound]) => {
+      const contribution = determineRangeContribution(
+        currentPosition,
+        lowerBound,
+        upperBound,
+        pathCounts,
+        cumulativePathSums,
+        moduloConstant
+      );
+      currentPositionTotal = (currentPositionTotal + contribution) % moduloConstant;
+    });
 
-  retrieveStateValue(upperLimit - 1);
-  renderResult(stateMemo[upperLimit - 1]);
-}
+    pathCounts[currentPosition] = currentPositionTotal;
+    cumulativePathSums[currentPosition] = (currentPositionTotal + cumulativePathSums[currentPosition - 1]) % moduloConstant;
+  });
+
+  displayOutput(pathCounts[sequenceLength - 1]);
+};
+
+processInput.then(() => {
+  console.error('\n↑入力 ↓出力');
+  calculatePathCombinations();
+});

@@ -1,49 +1,13 @@
-class CalculationEngine {
-  #alphaValue;
-  #betaValue;
-  #computedResult;
+'use strict';
+((sourceText) => {
+    const processedLines = sourceText.trim().split('\n');
+    const dataSegments = processedLines[0].split(' ');
 
-  constructor(inputSignal) {
-    this.#extractComponents(inputSignal);
-    this.#performTransformation();
-  }
+    const primaryMetric = parseInt(dataSegments[0], 10);
+    const secondaryMetric = parseInt(dataSegments[1], 10);
 
-  #extractComponents(dataStream) {
-    let tempNumBuffer = '';
-    let firstFound = false;
-    let dataPointer = 0;
+    const cumulativeScore = (primaryMetric * 3) + secondaryMetric;
+    const finalOutcome = cumulativeScore >> 1;
 
-    while (dataPointer < dataStream.length) {
-      const symbol = dataStream[dataPointer];
-      if (symbol >= '0' && symbol <= '9') {
-        tempNumBuffer += symbol;
-      } else if (tempNumBuffer !== '') {
-        if (!firstFound) {
-          this.#alphaValue = parseInt(tempNumBuffer, 10);
-          firstFound = true;
-        } else {
-          this.#betaValue = parseInt(tempNumBuffer, 10);
-          break;
-        }
-        tempNumBuffer = '';
-      }
-      dataPointer++;
-    }
-  }
-
-  #performTransformation() {
-    this.#computedResult = ((this.#alphaValue * 3) + this.#betaValue) >> 1;
-  }
-
-  getFinalOutput() {
-    return this.#computedResult;
-  }
-}
-
-(() => {
-  const resourceReader = require("fs").readFileSync("/dev/stdin", "utf8");
-  const rawContent = resourceReader.toString();
-
-  const processorInstance = new CalculationEngine(rawContent);
-  console.log(processorInstance.getFinalOutput());
-})();
+    console.log(finalOutcome);
+})(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,22 +1,26 @@
-var rawSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const fileSystemModule = require("fs");
 
-var targetPatternLiteral = "Hoshino";
-var replacementText = "Hoshina";
+const targetPhraseIdentifier = "Hoshino";
+const replacementPhraseIdentifier = "Hoshina";
 
-var allSegments = rawSource.trim().split("\n");
-var lineCountValue = parseInt(allSegments[0], 10);
+const rawInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
 
-var contentSegments = allSegments.slice(1, lineCountValue + 1);
+const allInputLines = rawInputContent.trim().split("\n");
 
-contentSegments.forEach(function(currentSegment) {
-    var phraseElements = currentSegment.split(" ");
-    
-    var transformedElements = phraseElements.map(function(individualElement) {
-        if (individualElement === targetPatternLiteral) {
-            return replacementText;
-        }
-        return individualElement;
-    });
-    
-    console.log(transformedElements.join(" "));
-});
+const numberOfDataLines = Number(allInputLines[0]);
+
+const dataSegments = allInputLines.slice(1, numberOfDataLines + 1);
+
+dataSegments
+  .map(currentSegment => {
+    const wordUnits = currentSegment.split(" ");
+
+    const transformedUnits = wordUnits.map(unit =>
+      unit === targetPhraseIdentifier ? replacementPhraseIdentifier : unit
+    );
+
+    return transformedUnits.join(" ");
+  })
+  .forEach(finalOutputString => {
+    console.log(finalOutputString);
+  });

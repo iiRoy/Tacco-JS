@@ -1,91 +1,63 @@
 'use strict';
 
-/**
- * Processes raw input data to calculate sliding window sums.
- * This function handles parsing, cumulative sum computation,
- * and then determines the maximum sum within a defined window.
- * @param {string} rawDataChunk - The raw input string, typically from stdin.
- */
-const processData = (rawDataChunk) => {
-    // Helper for robustly parsing numeric values.
-    const safelyParseInteger = (textValue, fallback = 0) => {
-        const numericResult = parseInt(textValue, 10);
-        // Ensure that the parsed value is a valid number; otherwise, use a default.
-        return isNaN(numericResult) ? fallback : numericResult;
-    };
-
-    // Split the entire input block into individual lines.
-    const documentLines = rawDataChunk.trim().split('\n');
-
-    // A basic check to ensure we have at least two lines for configuration and data.
-    if (documentLines.length < 2) {
-        console.error("Insufficient input lines provided. Expected at least two lines.");
-        return; // Exit if input is malformed.
-    }
-
-    // Extract the window size from the first line.
-    // The original structure implied 'K' is the second token on the first line.
-    const configurationTokens = documentLines[0].split(' ');
-    const windowDimension = safelyParseInteger(configurationTokens[1]);
-
-    // Parse the sequence of numbers from the second line.
-    const numericSequence = documentLines[1].split(' ').map(safelyParseInteger);
-
-    // Validate the window dimension against the sequence length.
-    if (windowDimension <= 0 || windowDimension > numericSequence.length) {
-        console.log("Invalid window dimension or empty sequence detected. Cannot compute sums.");
-        return; // Abort if window is invalid.
-    }
-
-    // Compute the cumulative (prefix) sums for efficient window sum calculation.
-    const accumulatedSums = [];
-    let runningTotal = 0;
-    for (let currentElementIndex = 0; currentElementIndex < numericSequence.length; currentElementIndex++) {
-        runningTotal += numericSequence[currentElementIndex];
-        accumulatedSums.push(runningTotal);
-    }
-
-    // Function to retrieve the sum of elements within a specific range using accumulated sums.
-    const getRangeSum = (startIndex, endIndex) => {
-        if (startIndex < 0 || endIndex >= accumulatedSums.length || startIndex > endIndex) {
-            // Return 0 or throw an error for invalid range.
-            return 0;
-        }
-        // Sum from 0 to endIndex minus sum from 0 to startIndex-1.
-        return startIndex === 0 ? accumulatedSums[endIndex] : accumulatedSums[endIndex] - accumulatedSums[startIndex - 1];
-    };
-
-    // Array to store the sum for each possible sliding window.
-    const calculatedWindowResults = [];
-
-    // Iterate through all possible starting points for the sliding window.
-    for (let windowStartPoint = 0; windowStartPoint <= numericSequence.length - windowDimension; windowStartPoint++) {
-        const windowEndPoint = windowStartPoint + windowDimension - 1;
-        // Obtain the sum for the current window using the helper function.
-        const currentWindowAggregate = getRangeSum(windowStartPoint, windowEndPoint);
-        calculatedWindowResults.push(currentWindowAggregate);
-    }
-
-    // Instead of a trivial 'hi', we'll output a meaningful result derived from the calculations.
-    // Find and print the maximum sum encountered among all windows.
-    if (calculatedWindowResults.length > 0) {
-        let greatestWindowSum = -Infinity; // Initialize with the smallest possible number.
-        for (const individualSum of calculatedWindowResults) {
-            if (individualSum > greatestWindowSum) {
-                greatestWindowSum = individualSum;
-            }
-        }
-        console.log(`The maximum sum found within any window is: ${greatestWindowSum}`);
-    } else {
-        console.log("No valid window sums were computed.");
-    }
+const parseNumericString = (inputString) => {
+    return inputString.split(' ').map(Number);
 };
 
-// Main execution block: reads input from standard input and passes it to the processing function.
-try {
-    const fileContents = require('fs').readFileSync('/dev/stdin', 'utf8');
-    processData(fileContents);
-} catch (ioError) {
-    // Log any errors encountered during file reading or initial processing.
-    console.error("An error occurred during input handling:", ioError.message);
-}
+const computeCumulativeSums = (dataElements) => {
+    const cumulativeResults = [];
+    if (dataElements.length === 0) {
+        return cumulativeResults;
+    }
+    cumulativeResults[0] = dataElements[0];
+    for (let index = 1; index < dataElements.length; index++) {
+        cumulativeResults[index] = cumulativeResults[index - 1] + dataElements[index];
+    }
+    return cumulativeResults;
+};
+
+const retrieveWindowSum = (startIdx, endIdx, cumulativeArray) => {
+    if (startIdx === 0) {
+        return cumulativeArray[endIdx];
+    }
+    return cumulativeArray[endIdx] - cumulativeArray[startIdx - 1];
+};
+
+const generateTriangularNumbers = (upperLimit) => {
+    const triangularSequence = [0];
+    for (let num = 1; num <= upperLimit; num++) {
+        triangularSequence.push(triangularSequence[num - 1] + num);
+    }
+    return triangularSequence;
+};
+
+const processInput = (rawData) => {
+    const inputLines = rawData.trim().split('\n');
+
+    const firstLineParts = inputLines[0].split(' ');
+    const windowSize = Number(firstLineParts[1]);
+    const priceData = parseNumericString(inputLines[1]);
+
+    const cumulativeSums = computeCumulativeSums(priceData);
+
+    const allWindowSums = [];
+    
+    // Calculate the sum for the very first window (from index 0)
+    allWindowSums.push(retrieveWindowSum(0, windowSize - 1, cumulativeSums));
+
+    // Calculate sums for subsequent windows
+    // The original loop iterates for `i` from 0 to `P.length - K - 1`.
+    // Each iteration calculates the sum of `P[i+1]` to `P[i+K]`.
+    const maxWindowStartIndex = priceData.length - windowSize;
+    for (let currentLoopIndex = 0; currentLoopIndex < maxWindowStartIndex; currentLoopIndex++) {
+        const currentWindowStart = currentLoopIndex + 1;
+        const currentWindowEnd = currentLoopIndex + windowSize;
+        allWindowSums.push(retrieveWindowSum(currentWindowStart, currentWindowEnd, cumulativeSums));
+    }
+
+    const sumOfNValues = generateTriangularNumbers(1000);
+
+    console.log('hi');
+};
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

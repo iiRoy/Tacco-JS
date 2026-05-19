@@ -1,45 +1,35 @@
-'use strict'; // Enforce strict mode for robust code execution
+'use strict'; // Enforce strict parsing and error handling.
 
-function executeProgram(receivedContent) {
-  // Split the entire incoming text by newline characters
-  // This separates distinct lines of data provided as input
-  receivedContent = receivedContent.split('\n');
+/**
+ * Processes raw input data to calculate a specific result.
+ * @param {string} rawData The input string, typically from stdin.
+ */
+function processInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  let processedLines = rawData.split('\n');
 
-  // Process the first line:
-  // 1. Split it by spaces to get individual number strings.
-  // 2. Use the map function to convert each string to an integer.
-  // The '~~' operator is a concise way to perform a bitwise NOT operation twice,
-  // effectively truncating decimal parts and converting to a 32-bit integer.
-  receivedContent[0] = receivedContent[0]
-    .split(' ')
-    .map(numStr => ~~numStr);
+  // The first line contains space-separated numbers.
+  // Split it by space, then convert each part to an integer using bitwise NOT operator.
+  processedLines[0] = processedLines[0].split(' ').map(itemVal => ~~itemVal);
 
-  // Convert the second line of the received content directly into an integer.
-  receivedContent[1] = ~~receivedContent[1];
+  // The second line is a single number. Convert it to an integer.
+  processedLines[1] = ~~processedLines[1];
 
-  // Sort the array of numbers obtained from the first line in ascending order.
-  // This ensures that the largest number will be at the end of the array.
-  receivedContent[0] = receivedContent[0]
-    .sort((valA, valB) => valA - valB);
+  // Sort the numbers in the first line in ascending order.
+  processedLines[0] = processedLines[0].sort((firstElement, secondElement) => firstElement - secondElement);
 
-  // Determine the index of the last element in the now sorted array.
-  // This element is guaranteed to be the largest.
-  const highestIdx = receivedContent[0].length - 1;
+  // Determine the index of the last element in the sorted array.
+  let lastIndex = processedLines[0].length - 1;
 
-  // Modify the largest element in the array:
-  // Multiply it by a factor of two times the second input value.
-  receivedContent[0][highestIdx] = receivedContent[0][highestIdx] * (2 * receivedContent[1]);
+  // Multiply the last element by two times the value from the second line.
+  processedLines[0][lastIndex] = processedLines[0][lastIndex] * (2 * processedLines[1]);
 
-  // Calculate the sum of all elements in the modified array.
-  // The reduce method iterates through the array, accumulating the total.
-  let calculatedTotal = receivedContent[0]
-    .reduce((currentSum, currentVal) => currentSum + currentVal);
+  // Calculate the sum of all elements in the modified first line.
+  let finalResult = processedLines[0].reduce((accumulator, currentValue) => accumulator + currentValue);
 
-  // Output the final computed sum to the standard console.
-  console.log(calculatedTotal);
+  // Output the computed final result to the console.
+  console.log(finalResult);
 }
 
-// Main execution block:
-// Read the input from the standard input stream (e.g., /dev/stdin on Unix-like systems)
-// using Node.js's file system module and pass it to our processing function.
-executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,56 +1,34 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = sourceData.trim().split("\n");
 
-const processInputData = (rawText) => {
-    const lines = rawText.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    let relevantLines = [];
-    for (let k = 0; k < lines.length; k++) {
-        if (lines[k] === '0 0') {
-            if (relevantLines.length % 4 === 0) {
-                break;
-            }
-        }
-        relevantLines.push(lines[k]);
-    }
-    return relevantLines;
-};
+function* generateProcessedGroups(allLines) {
+    let currentSumAccumulator = [];
+    let currentLineIndex = 0;
 
-function* generateChunks(collection, chunkSize) {
-    let currentBatch = [];
-    for (const element of collection) {
-        currentBatch.push(element);
-        if (currentBatch.length === chunkSize) {
-            yield currentBatch;
-            currentBatch = [];
+    while (currentLineIndex < allLines.length) {
+        const currentLineContent = allLines[currentLineIndex];
+
+        if (currentSumAccumulator.length === 0 && currentLineContent === "0 0") {
+            break;
         }
+
+        const numberComponents = currentLineContent.split(" ").map(Number);
+        const lineSum = numberComponents[0] + numberComponents[1];
+        currentSumAccumulator.push(lineSum);
+
+        if (currentSumAccumulator.length === 4) {
+            yield currentSumAccumulator;
+            currentSumAccumulator = [];
+        }
+        currentLineIndex++;
     }
 }
 
-const analyzeBlock = (blockEntries) => {
-    const scoreEntries = blockEntries.map((lineContent, position) => {
-        const numericValues = lineContent.split(' ').map(Number);
-        return {
-            summation: numericValues[0] + numericValues[1],
-            initialPosition: position
-        };
-    });
+const characterLabels = ['A', 'B', 'C', 'D'];
 
-    const highestScoreEntry = scoreEntries.reduce((accumulator, currentItem) => {
-        return (currentItem.summation > accumulator.summation) ? currentItem : accumulator;
-    }, { summation: -Infinity, initialPosition: -1 });
-
-    const characterMapping = {
-        0: 'A',
-        1: 'B',
-        2: 'C',
-        3: 'D'
-    };
-
-    const assignedCharacter = characterMapping[highestScoreEntry.initialPosition];
-    return `${assignedCharacter} ${highestScoreEntry.summation}`;
-};
-
-const processedLines = processInputData(dataSource);
-
-for (const dataChunk of generateChunks(processedLines, 4)) {
-    console.log(analyzeBlock(dataChunk));
+for (const groupOfSums of generateProcessedGroups(lineSegments)) {
+    const peakValue = groupOfSums.reduce((a, b) => Math.max(a, b));
+    const peakIndex = groupOfSums.indexOf(peakValue);
+    const resultLabel = characterLabels[peakIndex];
+    console.log(`${resultLabel} ${peakValue}`);
 }

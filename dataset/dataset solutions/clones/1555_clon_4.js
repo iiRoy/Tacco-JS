@@ -1,29 +1,26 @@
-const initialInputString = `4
+var input = `4
 141421356 17320508 22360679 244949`;
 
-const parsedTokens = initialInputString.match(/\d+/g).map(val => Number(val));
-const elementCount = parsedTokens[0];
-const numericSequence = parsedTokens.slice(1);
+const modVal = 1000000007;
 
-const modulusValue = 1000000007n;
+function modProduct(valA, valB) {
+    return Number((BigInt(valA) * BigInt(valB)) % BigInt(modVal));
+}
 
-const multiplyAndModulo = (valOne, valTwo) => {
-    const bigValOne = BigInt(valOne);
-    const bigValTwo = BigInt(valTwo);
-    return (bigValOne * bigValTwo) % modulusValue;
+const inputSegments = input.split('\n');
+const elementCount = Number(inputSegments[0]);
+const dataElements = inputSegments[1].split(' ').map(Number);
+
+const initialAccumulator = {
+    currentPrefixSum: (elementCount > 0 ? dataElements[0] : 0) % modVal,
+    finalResult: 0
 };
 
-const finalComputation = numericSequence.reduce((accumulatorPair, currentElementValue, currentIndexPosition) => {
-    let [runningTotalOfPrevious, overallAccumulatedSum] = accumulatorPair;
+const calculationResult = dataElements.slice(1).reduce((acc, currentElement) => {
+    const term = modProduct(acc.currentPrefixSum, currentElement);
+    acc.finalResult = (acc.finalResult + term) % modVal;
+    acc.currentPrefixSum = (acc.currentPrefixSum + currentElement) % modVal;
+    return acc;
+}, initialAccumulator);
 
-    if (currentIndexPosition === 0) {
-        runningTotalOfPrevious = (runningTotalOfPrevious + BigInt(currentElementValue)) % modulusValue;
-    } else {
-        const currentProductTerm = multiplyAndModulo(runningTotalOfPrevious, currentElementValue);
-        overallAccumulatedSum = (overallAccumulatedSum + currentProductTerm) % modulusValue;
-        runningTotalOfPrevious = (runningTotalOfPrevious + BigInt(currentElementValue)) % modulusValue;
-    }
-    return [runningTotalOfPrevious, overallAccumulatedSum];
-}, [0n, 0n]);
-
-console.log(Number(finalComputation[1]));
+console.log(calculationResult.finalResult);

@@ -1,54 +1,37 @@
-const dataStream = process.stdin.readFileSync(0, 'utf8');
+const inputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputLines = inputContent.split('\n');
+const totalCount = Number(inputLines[0]);
+const numberSequence = inputLines[1].split(' ').map(Number);
 
-const parsedSegments = dataStream.split('\n');
-const totalItems = Number(parsedSegments[0].trim());
-const numericalValues = parsedSegments[1].trim().split(' ').map(Number);
+const evenIndexedNumbers = numberSequence.filter((_, idx) => idx % 2 === 0);
+const oddIndexedNumbers = numberSequence.filter((_, idx) => idx % 2 !== 0);
 
-const patternAnalyzer = (sequence, idxPredicate) => {
-    const valueCounts = new Map();
-    sequence.forEach((val, idx) => {
-        if (idxPredicate(idx)) {
-            valueCounts.set(val, (valueCounts.get(val) || 0) + 1);
-        }
-    });
+const countFrequencies = (arr) => arr.reduce((acc, val) => acc.set(val, (acc.get(val) || 0) + 1), new Map());
 
-    let sortedCounts = Array.from(valueCounts.entries())
-        .map(([val, cnt]) => ({ value: val, count: cnt }))
-        .sort((a, b) => b.count - a.count);
+const evenFrequencies = countFrequencies(evenIndexedNumbers);
+const oddFrequencies = countFrequencies(oddIndexedNumbers);
 
-    if (sortedCounts.length === 0) {
-        sortedCounts.push({ value: -1, count: 0 });
+const prepareRankedList = (freqMap) => {
+    const list = Array.from(freqMap.entries()).sort((a, b) => b[1] - a[1]);
+    while (list.length < 2) {
+        list.push([null, 0]);
     }
-    if (sortedCounts.length === 1) {
-        sortedCounts.push({ value: -2, count: 0 });
-    }
-    return sortedCounts;
+    return list;
 };
 
-const evenFrequencies = patternAnalyzer(numericalValues, (idx) => idx % 2 === 0);
-const oddFrequencies = patternAnalyzer(numericalValues, (idx) => idx % 2 !== 0);
+const rankedEven = prepareRankedList(evenFrequencies);
+const rankedOdd = prepareRankedList(oddFrequencies);
 
-const firstEven = evenFrequencies[0];
-const secondEven = evenFrequencies[1];
-const firstOdd = oddFrequencies[0];
-const secondOdd = oddFrequencies[1];
+const [topEvenValue, topEvenFrequency] = rankedEven[0];
+const [secondEvenValue, secondEvenFrequency] = rankedEven[1];
+const [topOddValue, topOddFrequency] = rankedOdd[0];
+const [secondOddValue, secondOddFrequency] = rankedOdd[1];
 
-const allPossibleCandidatePairs = [
-    [firstEven, firstOdd],
-    [firstEven, secondOdd],
-    [secondEven, firstOdd],
-    [secondEven, secondOdd]
-];
+const maxSameCount = (topEvenValue !== topOddValue)
+    ? (topEvenFrequency + topOddFrequency)
+    : Math.max(
+        topEvenFrequency + secondOddFrequency,
+        secondEvenFrequency + topOddFrequency
+    );
 
-const validPairSums = allPossibleCandidatePairs.reduce((accumulator, [evenCandidate, oddCandidate]) => {
-    if (evenCandidate.value !== oddCandidate.value) {
-        accumulator.push(evenCandidate.count + oddCandidate.count);
-    }
-    return accumulator;
-}, []);
-
-const optimalMatchSum = validPairSums.length > 0 ? Math.max(...validPairSums) : 0;
-
-const resultantTransformation = totalItems - optimalMatchSum;
-
-console.log(resultantTransformation);
+console.log(totalCount - maxSameCount);

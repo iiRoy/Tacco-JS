@@ -1,62 +1,60 @@
-'use func mode'; // Enforce a stricter operational environment for script execution
+'use strict';
 
-function ExecuteTask(dataStream) { // Primary entry point for processing the provided input stream
-  // Extract the total count of numerical elements from the first line of the input
-  const totalItems = Number(dataStream.split('\n')[0].split(' ')[0]);
+/**
+ * Processes the raw input data to calculate the greatest common divisor (GCD)
+ * of absolute differences between numbers in a list and a target value.
+ * @param {string} rawData - The input string containing N, X, and the list of numbers.
+ */
+function ProcessInput(rawData) {
+  // Split the input string into lines and then parse the first line for N and X.
+  const inputLines = rawData.split('\n');
+  const firstLineParts = inputLines[0].split(' ');
 
-  // Obtain the specific reference value 'X' from the first line of the input data
-  const referencePoint = Number(dataStream.split('\n')[0].split(' ')[1]);
+  // Extract the count of elements and the target value.
+  const countElements = Number(firstLineParts[0]);
+  const targetValue = Number(firstLineParts[1]);
 
-  // Process the second line:
-  // 1. Split by newline to get the second line.
-  // 2. Split by space to get individual string representations of numbers.
-  // 3. Map each string to its absolute difference from the 'referencePoint'.
-  let distanceCollection = dataStream
-    .split('\n')[1]
-    .split(' ')
-    .map(itemVal => Math.abs(Number(itemVal) - referencePoint));
+  // Parse the second line to create an array of absolute differences.
+  // Each number in the list is converted to its absolute difference from the target value.
+  let diffsArray = inputLines[1].split(' ').map(numStr => Math.abs(Number(numStr) - targetValue));
 
-  // Sort the collection of calculated distances in ascending numerical order.
-  distanceCollection.sort((firstVal, secondVal) => (firstVal > secondVal ? 1 : -1));
+  // Sort the array of differences in ascending order.
+  // This is not strictly necessary for GCD calculation but matches the original structure.
+  diffsArray.sort((a, b) => (a > b ? 1 : -1));
 
   /**
-   * Recursive function to compute the Greatest Common Divisor (GCD) of two non-negative integers.
-   * This implementation utilizes the efficient Euclidean algorithm.
-   *
-   * @param {number} valA - The first positive integer for GCD calculation.
-   * @param {number} valB - The second positive integer for GCD calculation.
-   * @returns {number} The greatest common divisor of valA and valB.
+   * Calculates the greatest common divisor (GCD) of two non-negative integers
+   * using the Euclidean algorithm.
+   * @param {number} valA - The first integer.
+   * @param {number} valB - The second integer.
+   * @returns {number} The GCD of valA and valB.
    */
-  const computeCommonFactor = (valA, valB) => {
-    if (valB === 0) { // Base termination condition for the recursion
+  const calculateGCD = (valA, valB) => {
+    if (valB === 0) {
       return valA;
     } else {
-      return computeCommonFactor(valB, valA % valB); // Recursive call with remainder
+      return calculateGCD(valB, valA % valB);
     }
   };
 
-  // Conditional logic to handle cases based on the size of the distanceCollection.
-  if (distanceCollection.length === 1) {
-    console.log(distanceCollection[0]); // If there's only one distance, that's the result.
+  // Determine the final GCD based on the number of elements in the differences array.
+  if (diffsArray.length === 1) {
+    // If there's only one difference, that difference is the GCD.
+    console.log(diffsArray[0]);
   } else {
-    // Initialize the cumulative greatest common divisor using the first two elements.
-    let resultantGCD = computeCommonFactor(distanceCollection[0], distanceCollection[1]);
+    // If there are multiple differences, calculate the GCD iteratively.
+    // Start with the GCD of the first two elements.
+    let finalGCDResult = calculateGCD(diffsArray[0], diffsArray[1]);
 
-    // Iterate through the remaining elements in the collection, starting from the third one.
-    // Continuously update the resultantGCD by finding the GCD with each subsequent element.
-    for (let currentIdx = 2; currentIdx < totalItems; currentIdx++) {
-      resultantGCD = computeCommonFactor(resultantGCD, distanceCollection[currentIdx]);
+    // Iterate through the rest of the array, updating the GCD.
+    for (let idx = 2; idx < countElements; idx++) {
+      finalGCDResult = calculateGCD(finalGCDResult, diffsArray[idx]);
     }
-
-    console.log(resultantGCD); // Output the final computed greatest common divisor.
+    // Output the final calculated GCD.
+    console.log(finalGCDResult);
   }
 }
 
-// Initiate the primary processing function.
-// It reads the entire content from standard input, decodes it as UTF-8,
-// removes any leading/trailing whitespace, and passes it to ExecuteTask.
-ExecuteTask(
-  require("node:fs")
-    .readFileSync("/dev/stdin", { encoding: "utf8" })
-    .trim()
-);
+// Read input from standard input, decode it as UTF-8, trim whitespace,
+// and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

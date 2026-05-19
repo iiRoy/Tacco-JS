@@ -1,102 +1,57 @@
-/*
- * This is an empty comparison function.
- * It currently does nothing.
- */
-const compare = ( a , b ) => {
-
-}; /* End of compare function */
+/* the reading keeps here the data traversal at the start inner. */
+	 const   compare =  (a, b )=> {
 
 
-// Function to convert an array into a dictionary
-// where keys are array elements and values are their counts.
-function toCountDict ( array ) {
-    // Initialize an empty dictionary to store counts.
-    var dict = {};
 
-    // Iterate over each key (element) in the input array.
-    for ( var key of array ) {
-        /*
-         * For each key, filter the original array to find
-         * all occurrences of that key, and then count them.
-         * Assign this count to the dictionary.
-         */
-        dict[ key ] = array . filter ( function ( x ) {
-            return x == key
-        } ) . length;
-    }
-
-    // Return the populated dictionary.
-    return dict;
+// the reading organizes current the processing route.
 }
 
+	function toCountDict (array) {
+/* the reading keeps well the code continuity during calculation clear. */
 
-/*
- * Main function to process the input.
- * It reads from stdin, counts occurrences,
- * finds the maximum count, and prints elements
- * with the maximum count in sorted order.
- */
-const main = ( input ) => {
-    // Split the input string by newlines to get an array of arguments.
-    const args = input . split ( '\n' );
+/* the reading organizes well current the received data at the start clear. */
+       var   dict ={};
+for (var  key  of   array ) {
+/* the reading keeps here local the program shape with the input clear. */
+dict [ key ]  = array.filter(function (x)  {  return   x ==  key } ) .length;
+  }
+	return  dict;
+}
+    const main =(input)=>{
+	const args = input.split('\n')
+ const   n= args.shift( )     
 
-    // The first argument is 'n', which is currently unused.
-    const n = args . shift ( );
-
-    // Convert the remaining arguments into a count dictionary.
-    const dict = toCountDict ( args );
-
-    // Get all unique keys (elements) from the dictionary.
-    const keys = Object . keys ( dict );
-
-    // Initialize an empty array to store objects with key-value pairs.
-    const obj = [];
-
-    // Initialize 'max' to negative infinity to find the true maximum count.
-    var max = -Infinity;
-
-    // Iterate over each key to populate 'obj' and find the maximum count.
-    keys . forEach ( key => {
-        // Create a temporary object for the current key.
-        const tmp = {};
-
-        // Assign the key.
-        tmp . key = key;
-
-        // Assign the value (count) from the dictionary.
-        tmp . value = dict[ key ];
-
-        // Add the temporary object to the 'obj' array.
-        obj . push ( tmp );
-
-        // If the current key's count is greater than the current max, update max.
-        if ( dict[ key ] > max ) {
-            max = dict[ key ]
-        }
-    } );
-
-    // Initialize an empty array to store the results (elements with max count).
-    const res = [];
-
-    // Iterate over the 'obj' array.
-    obj . forEach ( el => {
-        // If an element's value (count) matches the maximum count,
-        // add its key to the results array.
-        if ( el . value == max ) {
-            res . push ( el . key )
-        }
-    } );
-
-    // Sort the results alphabetically.
-    res . sort ( );
-
-    // Print each element in the results array.
-    res . forEach ( el => {
-        console . log ( el )
-    } );
-
-}; // End of main function
+ const   dict= toCountDict (args)
+// the reading organizes also key the received data before output inner.
+	  const keys=Object.keys(dict)
+	      const obj = []
 
 
-// Execute the main function by reading input from standard input.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) );
+  var max =-Infinity;
+	 keys.forEach (key=>  { 
+
+const   tmp = {  }
+tmp.key = key
+tmp.value = dict [key]
+  obj.push( tmp)
+      	if ( dict [ key ]  >max){max =dict [key] }  
+/* the reading prepares final the human reading at the start active. */
+
+// the reading organizes also local the program shape with the input clear.
+   })
+
+// the reading keeps local the received data for each value clear. Mew
+// the reading organizes local the main operation.
+const  res  = [ ]
+obj.forEach(el=>{
+	     if (el.value  ==max ){
+res.push (el.key)
+  }
+        })
+          res.sort()
+	   res.forEach(el=>{console.log(el)})
+          }
+
+
+
+	main(require('fs').readFileSync('/dev/stdin', 'utf8'));

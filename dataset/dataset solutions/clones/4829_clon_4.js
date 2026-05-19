@@ -1,98 +1,157 @@
-class DisjointSetStructure {
-    constructor(elementCount) {
-        this.parentMapping = new Map();
-        this.rankValues = new Map();
-        for (let idx = 0; idx < elementCount; idx++) {
-            this.parentMapping.set(idx, idx);
-            this.rankValues.set(idx, 0);
-        }
+const readline = require('readline');
+const util = require('util');
+
+let inputLines = [];
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+rl.on('line', (line) => {
+  inputLines.push(line);
+});
+
+rl.on('close', () => {
+  console.error('\n↑入力 ↓出力');
+  processMainLogic(inputLines);
+});
+
+class InputParser {
+  constructor(lines) {
+    this.dataLines = lines;
+    this.currentPosition = 0;
+  }
+
+  hasMoreLines() {
+    return this.currentPosition < this.dataLines.length;
+  }
+
+  retrieveNextLine() {
+    if (!this.hasMoreLines()) {
+      throw new Error('No more input available.');
     }
+    return this.dataLines[this.currentPosition++];
+  }
 
-    findSet(elementIdentifier) {
-        let currentElement = elementIdentifier;
-        let pathElements = [];
-        while (this.parentMapping.get(currentElement) !== currentElement) {
-            pathElements.push(currentElement);
-            currentElement = this.parentMapping.get(currentElement);
-        }
-        for (const pathNode of pathElements) {
-            this.parentMapping.set(pathNode, currentElement);
-        }
-        return currentElement;
-    }
+  getInteger() {
+    return parseInt(this.retrieveNextLine(), 10);
+  }
 
-    uniteSets(elementOne, elementTwo) {
-        let representativeOne = this.findSet(elementOne);
-        let representativeTwo = this.findSet(elementTwo);
+  getIntegerArray() {
+    return this.retrieveNextLine().split(' ').map(Number);
+  }
 
-        if (representativeOne !== representativeTwo) {
-            let rankOne = this.rankValues.get(representativeOne);
-            let rankTwo = this.rankValues.get(representativeTwo);
+  getStringArray() {
+    return this.retrieveNextLine().split(' ');
+  }
 
-            if (rankOne < rankTwo) {
-                this.parentMapping.set(representativeOne, representativeTwo);
-            } else if (rankTwo < rankOne) {
-                this.parentMapping.set(representativeTwo, representativeOne);
-            } else {
-                this.parentMapping.set(representativeTwo, representativeOne);
-                this.rankValues.set(representativeOne, rankOne + 1);
-            }
-            return true;
-        }
-        return false;
-    }
+  getCharacterArray() {
+    return this.retrieveNextLine().split('');
+  }
 }
 
-function ProcessNetworkData(inputLines) {
-    const parseLineToNumbers = (lineContent) => lineContent.split(' ').map(Number);
-    const normalizeNodes = (nodeNumbers) => nodeNumbers.map(n => n - 1).sort((a, b) => a - b);
-
-    const initialConfig = parseLineToNumbers(inputLines[0]);
-    const totalNodes = initialConfig[0];
-    const groupCountA = initialConfig[1];
-    const groupCountB = initialConfig[2];
-
-    const dssInstanceA = new DisjointSetStructure(totalNodes);
-    const dssInstanceB = new DisjointSetStructure(totalNodes);
-
-    inputLines.slice(1, 1 + groupCountA).forEach(line => {
-        const [nodeX, nodeY] = normalizeNodes(parseLineToNumbers(line));
-        dssInstanceA.uniteSets(nodeX, nodeY);
-    });
-
-    inputLines.slice(1 + groupCountA, 1 + groupCountA + groupCountB).forEach(line => {
-        const [nodeX, nodeY] = normalizeNodes(parseLineToNumbers(line));
-        dssInstanceB.uniteSets(nodeX, nodeY);
-    });
-
-    const jointComponentTallies = new Map();
-
-    for (let i = 0; i < totalNodes; i++) {
-        const repA = dssInstanceA.findSet(i);
-        const repB = dssInstanceB.findSet(i);
-        const compositeKey = `${repA}_${repB}`;
-        jointComponentTallies.set(compositeKey, (jointComponentTallies.get(compositeKey) || 0) + 1);
-    }
-
-    const finalOutputArray = Array.from({ length: totalNodes }, (_, nodeIndex) => {
-        const repA = dssInstanceA.findSet(nodeIndex);
-        const repB = dssInstanceB.findSet(nodeIndex);
-        const compositeKey = `${repA}_${repB}`;
-        return jointComponentTallies.get(compositeKey);
-    });
-
-    console.log(finalOutputArray.join(' '));
+function printResult(content) {
+  console.log(content);
 }
 
-// The following setup allows this code to run with the provided input mechanism.
-// This part mirrors the original "Don't have to see" section, adapted to call ProcessNetworkData.
-// It is not part of the Type IV clone *of the algorithm itself*, but necessary for execution.
-var readInput = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
-});
-var receivedLines = [];
-readInput.on('line', function(lineContent){receivedLines.push(lineContent);});
-readInput.on('close', function(){
-  // console.error('\n↑入力 ↓出力'); // Original debug output, omitted for strict output
-  ProcessNetworkData(receivedLines);
-});
+function printDebug(content) {
+  console.error('debug:' + util.inspect(content, false, null));
+}
+
+function joinArrayWithSpaces(arr) {
+  return arr.join(' ');
+}
+
+class DisjointSetUnion {
+  constructor(size) {
+    this.parent = Array.from({
+      length: size
+    }, (_, i) => i);
+    this.rank = Array(size).fill(0);
+  }
+
+  findRepresentative(element) {
+    let currentElement = element;
+    while (this.parent[currentElement] !== currentElement) {
+      currentElement = this.parent[currentElement];
+    }
+    const root = currentElement;
+
+    currentElement = element;
+    while (this.parent[currentElement] !== root) {
+      const nextElement = this.parent[currentElement];
+      this.parent[currentElement] = root;
+      currentElement = nextElement;
+    }
+    return root;
+  }
+
+  uniteElements(element1, element2) {
+    let root1 = this.findRepresentative(element1);
+    let root2 = this.findRepresentative(element2);
+
+    if (root1 !== root2) {
+      if (this.rank[root1] < this.rank[root2]) {
+        this.parent[root1] = root2;
+      } else if (this.rank[root1] > this.rank[root2]) {
+        this.parent[root2] = root1;
+      } else {
+        this.parent[root2] = root1;
+        this.rank[root1]++;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  areConnected(element1, element2) {
+    return this.findRepresentative(element1) === this.findRepresentative(element2);
+  }
+}
+
+function processMainLogic(inputData) {
+  const parser = new InputParser(inputData);
+
+  const initialParams = parser.getIntegerArray();
+  const totalNodes = initialParams[0];
+  const roadConnections = initialParams[1];
+  const railConnections = initialParams[2];
+
+  const roadDSU = new DisjointSetUnion(totalNodes);
+  const railDSU = new DisjointSetUnion(totalNodes);
+
+  Array.from({
+    length: roadConnections
+  }).forEach(() => {
+    const [nodeA, nodeB] = parser.getIntegerArray().map(val => val - 1).sort((a, b) => a - b);
+    roadDSU.uniteElements(nodeA, nodeB);
+  });
+
+  Array.from({
+    length: railConnections
+  }).forEach(() => {
+    const [nodeA, nodeB] = parser.getIntegerArray().map(val => val - 1).sort((a, b) => a - b);
+    railDSU.uniteElements(nodeA, nodeB);
+  });
+
+  const combinedRootCounts = new Map();
+  Array.from({
+    length: totalNodes
+  }).forEach((_, idx) => {
+    const roadRoot = roadDSU.findRepresentative(idx);
+    const railRoot = railDSU.findRepresentative(idx);
+    const compositeKey = `${roadRoot}_${railRoot}`;
+    combinedRootCounts.set(compositeKey, (combinedRootCounts.get(compositeKey) || 0) + 1);
+  });
+
+  const finalCounts = Array.from({
+    length: totalNodes
+  }, (_, idx) => {
+    const roadRoot = roadDSU.findRepresentative(idx);
+    const railRoot = railDSU.findRepresentative(idx);
+    const compositeKey = `${roadRoot}_${railRoot}`;
+    return combinedRootCounts.get(compositeKey);
+  });
+
+  printResult(joinArrayWithSpaces(finalCounts));
+}

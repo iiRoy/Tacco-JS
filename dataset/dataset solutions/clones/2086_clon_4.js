@@ -1,37 +1,67 @@
-const retrieveInputContent = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+const sourceData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const parseNumericSequence = (textualData) => textualData.split(" ").map(Number);
-const outputFinalValue = (outcome) => console.log(outcome);
+let dataPointer = 0;
 
-const processApplicationLogic = (allInputLines) => {
-  let linePointer = 0;
-
-  const getNextDataLine = () => {
-    if (linePointer >= allInputLines.length) {
-      throw new Error("Data stream exhausted: no further input lines are available.");
-    }
-    return allInputLines[linePointer++];
-  };
-
-  const initialParameters = parseNumericSequence(getNextDataLine());
-  // const itemTypeACount = initialParameters[0]; // These variables are not utilized in the original calculation logic.
-  // const itemTypeBCount = initialParameters[1];
-  const numberOfPromotions = initialParameters[2];
-
-  const categoryAPrices = parseNumericSequence(getNextDataLine());
-  const categoryBPrices = parseNumericSequence(getNextDataLine());
-
-  const initialMinimumCost = Math.min(...categoryAPrices) + Math.min(...categoryBPrices);
-
-  const promotionDetails = Array.from({ length: numberOfPromotions }, getNextDataLine);
-
-  const ultimateLowestCost = promotionDetails.reduce((currentMinPrice, currentPromotionLine) => {
-    const [itemA_identifier, itemB_identifier, discountValue] = parseNumericSequence(currentPromotionLine);
-    const calculatedPromotionPrice = categoryAPrices[itemA_identifier - 1] + categoryBPrices[itemB_identifier - 1] - discountValue;
-    return Math.min(currentMinPrice, calculatedPromotionPrice);
-  }, initialMinimumCost);
-
-  outputFinalValue(ultimateLowestCost);
+const fetchNextDataLine = () => {
+  if (dataPointer >= sourceData.length) {
+    throw new Error("NoMoreInputException: 次に要素は無いよ");
+  }
+  return sourceData[dataPointer++];
 };
 
-processApplicationLogic(retrieveInputContent);
+const inputTransformationMap = {
+  1: (val) => parseInt(val, 10),
+  2: (val) => val.split(" "),
+  4: (val) => val.split(" ").map(Number),
+  6: (val) => val.split(""),
+  7: (val) => val.split("").map(Number),
+  // Cases 8, 9, 0 from original `myconv` are for joining arrays, not parsing strings,
+  // and are not used by the main logic for input processing.
+  // Default behavior matches original `myconv` for unhandled types.
+  default: (val) => val,
+};
+
+const applyInputConversion = (lineContent, conversionType) => {
+  const converter = inputTransformationMap[conversionType] || inputTransformationMap.default;
+  return converter(lineContent);
+};
+
+const retrieveLine = () => fetchNextDataLine();
+const retrieveInteger = () => applyInputConversion(retrieveLine(), 1);
+const retrieveStringArray = () => applyInputConversion(retrieveLine(), 2);
+const retrieveIntegerArray = () => applyInputConversion(retrieveLine(), 4);
+const retrieveCharacterArray = () => applyInputConversion(retrieveLine(), 6);
+
+const emitOutput = (value) => console.log(value);
+const emitError = (value) => console.error(value);
+
+const performCoreCalculation = () => {
+  const initialConfiguration = retrieveIntegerArray();
+  const applianceACount = initialConfiguration[0];
+  const applianceBCount = initialConfiguration[1];
+  const discountOfferQuantity = initialConfiguration[2];
+
+  const applianceAPriceList = retrieveIntegerArray();
+  const applianceBPriceList = retrieveIntegerArray();
+
+  // Determine the minimum individual prices using reduce for a different approach
+  const minimumPriceA = applianceAPriceList.reduce((currentMin, price) => Math.min(currentMin, price), Infinity);
+  const minimumPriceB = applianceBPriceList.reduce((currentMin, price) => Math.min(currentMin, price), Infinity);
+
+  let overallLowestPrice = minimumPriceA + minimumPriceB;
+
+  // Process discount offers using a functional iteration pattern
+  overallLowestPrice = Array.from({ length: discountOfferQuantity }).reduce((accumulatedMinPrice, _, offerIndex) => {
+    const currentOfferDetails = retrieveIntegerArray();
+    const itemA_selectionIndex = currentOfferDetails[0] - 1;
+    const itemB_selectionIndex = currentOfferDetails[1] - 1;
+    const discountValue = currentOfferDetails[2];
+
+    const priceWithCurrentOffer = applianceAPriceList[itemA_selectionIndex] + applianceBPriceList[itemB_selectionIndex] - discountValue;
+    return Math.min(accumulatedMinPrice, priceWithCurrentOffer);
+  }, overallLowestPrice); // Start reduction with the base lowest price
+
+  emitOutput(overallLowestPrice);
+};
+
+performCoreCalculation();

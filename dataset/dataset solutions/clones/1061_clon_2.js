@@ -1,124 +1,102 @@
-const SYSTEM_SETTINGS = { dataSourcePath: '/dev/stdin', lineDelimiterChar: '\n' }; // Configuration for standard input processing
+const cfg = { input: '/dev/stdin', newline: '\n' }; // Configuration for input stream
 
-// Define byte constants for character comparison
-const LINE_FEED_BYTE = 0x0a;  // ASCII Line Feed character byte value (decimal 10)
-const ASCII_ZERO_BYTE = 0x30; // ASCII '0' character byte value (decimal 48)
-const ASCII_NINE_BYTE = 0x39; // ASCII '9' character byte value (decimal 57)
+const dataFlow = require('fs').createReadStream(cfg.input);
 
-// Acquire a file stream from the Node.js 'fs' module
-const sourceReader = require('node:fs').createReadStream(SYSTEM_SETTINGS.dataSourcePath);
+let currentValue = 0; // Accumulates digits to form a number
+let wasDigit = false; // Flag to indicate if the previous character was a digit
+const inputNumbers = []; // Stores parsed numbers from the input
 
-let aggregatedNumber = 0;
-let lastCharWasNumeric = false;
-const mainNumericCollection = []; // Stores parsed numbers from input
+dataFlow.on('readable', function() {
+  let bufferChunk; // Buffer holding a chunk of data
+  let idx; // Loop index
 
-// Process incoming data chunks as they become available
-sourceReader.on('readable', () => {
-    let inputBuffer;
-    let currentBytePosition;
+  bufferChunk = dataFlow.read();
+  if (bufferChunk === null) {
+    return; // No data available, exit
+  }
 
-    inputBuffer = sourceReader.read(); // Read available data from the stream
-    if (inputBuffer === null) {
-        return; // No data available, exit early
+  // Search for the last newline character to avoid splitting numbers across chunks
+  for (idx = Math.min(20, bufferChunk.length - 1); idx > 0 && bufferChunk[idx - 1] !== 0x0a; idx--) {
+    /* intentionally empty loop body */
+  }
+
+  // Process the buffer chunk character by character
+  for (; idx < bufferChunk.length; idx++) {
+    if (bufferChunk[idx] >= 0x30 && bufferChunk[idx] <= 0x39) { // Check if character is a digit (0-9)
+      currentValue = 10 * currentValue + (bufferChunk[idx] - 0x30); // Build the number
+      wasDigit = true; // Mark that a digit was encountered
+    } else {
+      if (wasDigit) { // If a number was being formed
+        inputNumbers.push(currentValue); // Add the completed number to the list
+      }
+      currentValue = 0; // Reset current number
+      wasDigit = false; // Reset digit flag
     }
-
-    // Locate the last complete line within the buffer (if any)
-    for (currentBytePosition = Math.min(20, inputBuffer.length - 1);
-         currentBytePosition > 0 && inputBuffer[currentBytePosition - 1] !== LINE_FEED_BYTE;
-         currentBytePosition--) {
-        // Decrement position until a line feed or buffer start is found
-    }
-
-    // Iterate through the buffer to parse numbers
-    for (; currentBytePosition < inputBuffer.length; currentBytePosition++) {
-        const currentByte = inputBuffer[currentBytePosition];
-
-        if (currentByte >= ASCII_ZERO_BYTE && currentByte <= ASCII_NINE_BYTE) {
-            // It's a digit: accumulate the number
-            aggregatedNumber = (10 * aggregatedNumber) + (currentByte - ASCII_ZERO_BYTE);
-            lastCharWasNumeric = true;
-        } else {
-            // Not a digit: if a number was being accumulated, store it
-            if (lastCharWasNumeric) {
-                mainNumericCollection.push(aggregatedNumber);
-            }
-            aggregatedNumber = 0; // Reset for the next number
-            lastCharWasNumeric = false;
-        }
-    }
+  }
 });
 
-// Handle the end of the input stream
-sourceReader.on('end', () => {
-    let temporaryList;
+dataFlow.on('end', function() {
+  let initialCopy; // A copy of the input numbers for the merge sort
 
-    // If the last characters formed a number, add it to the collection
-    if (lastCharWasNumeric) {
-        mainNumericCollection.push(aggregatedNumber);
-    }
+  if (wasDigit) { // If a number was pending at the end of the stream
+    inputNumbers.push(currentValue); // Add the last number
+  }
 
-    // Create a shallow copy of the main collection for the merge sort auxiliary array
-    temporaryList = [].concat(mainNumericCollection);
+  initialCopy = [].concat(inputNumbers); // Create a shallow copy of the array
 
-    // Perform merge sort with inversion counting and output the result
-    console.log(calculateInversionsMergeSort(mainNumericCollection, temporaryList, 0, mainNumericCollection.length));
+  // Call the merge sort function and print the total inversion count
+  console.log(mergeAndCountInversions(inputNumbers, initialCopy, 0, inputNumbers.length));
 });
 
-/**
- * Performs a merge sort algorithm while counting inversions in an array.
- * This function recursively sorts the 'targetArray' and uses 'auxiliaryArray' for merging.
- *
- * @param {number[]} targetArray - The array to be sorted and for which inversions are counted.
- * @param {number[]} auxiliaryArray - A temporary array used during the merge process.
- * @param {number} startIdx - The starting index of the current sub-array.
- * @param {number} endIdx - The ending index (exclusive) of the current sub-array.
- * @returns {number} The total count of inversions in the sub-array.
- */
-function calculateInversionsMergeSort(targetArray, auxiliaryArray, startIdx, endIdx) {
-    let totalInversionCount, swapValue, midPoint, leftPointer, rightPointer, mergePosition;
+function mergeAndCountInversions(workingArray, tempArray, startIndex, endIndex) {
+  let inversionCount; // Counts inversions
+  let temporaryVar; // Used for swapping elements
+  let middleIndex; // Midpoint for splitting arrays
+  let firstHalfIdx; // Index for the first half of the array
+  let secondHalfIdx; // Index for the second half of the array
+  let mergeIdx; // Index for merging back into the working array
 
-    // Base case: sub-array of 0 or 1 element is already sorted, 0 inversions
-    if ((endIdx - startIdx) <= 1) {
-        return 0;
+  // Base cases for recursion
+  if (endIndex - startIndex <= 1) {
+    return 0; // Array with 0 or 1 element is already sorted, no inversions
+  }
+
+  if (endIndex - startIndex === 2) { // Array with two elements
+    if (workingArray[startIndex] > workingArray[startIndex + 1]) {
+      temporaryVar = workingArray[startIndex + 1];
+      workingArray[startIndex + 1] = workingArray[startIndex];
+      workingArray[startIndex] = temporaryVar;
+      return 1; // One inversion found and fixed
     }
+    return 0; // No inversion
+  }
 
-    // Base case: sub-array of 2 elements
-    if ((endIdx - startIdx) === 2) {
-        if (targetArray[startIdx] > targetArray[startIdx + 1]) {
-            // Swap elements if out of order and count 1 inversion
-            swapValue = targetArray[startIdx + 1];
-            targetArray[startIdx + 1] = targetArray[startIdx];
-            targetArray[startIdx] = swapValue;
-            return 1;
-        }
-        return 0; // Already sorted
+  // Recursive step
+  inversionCount = 0;
+  middleIndex = Math.floor((startIndex + endIndex) / 2); // Calculate midpoint
+
+  // Recursively sort the first half and count inversions
+  inversionCount += mergeAndCountInversions(tempArray, workingArray, startIndex, middleIndex);
+  // Recursively sort the second half and count inversions
+  inversionCount += mergeAndCountInversions(tempArray, workingArray, middleIndex, endIndex);
+
+  // Merge step
+  firstHalfIdx = startIndex; // Pointer for the first sorted half (in tempArray)
+  secondHalfIdx = middleIndex; // Pointer for the second sorted half (in tempArray)
+
+  // Merge the two sorted halves back into workingArray
+  for (mergeIdx = startIndex; mergeIdx < endIndex; mergeIdx++) {
+    if (firstHalfIdx === middleIndex) { // First half exhausted
+      workingArray[mergeIdx] = tempArray[secondHalfIdx++];
+    } else if (secondHalfIdx === endIndex) { // Second half exhausted
+      workingArray[mergeIdx] = tempArray[firstHalfIdx++];
+    } else if (tempArray[firstHalfIdx] < tempArray[secondHalfIdx]) { // Element from first half is smaller
+      workingArray[mergeIdx] = tempArray[firstHalfIdx++];
+    } else { // Element from second half is smaller (or equal) - this is an inversion
+      workingArray[mergeIdx] = tempArray[secondHalfIdx++];
+      // Count inversions: all remaining elements in the first half are greater than the current element from the second half
+      inversionCount += middleIndex - firstHalfIdx;
     }
-
-    totalInversionCount = 0;
-    midPoint = Math.floor((startIdx + endIdx) / 2); // Find the middle point
-
-    // Recursively sort and count inversions in the left and right halves
-    totalInversionCount += calculateInversionsMergeSort(auxiliaryArray, targetArray, startIdx, midPoint);
-    totalInversionCount += calculateInversionsMergeSort(auxiliaryArray, targetArray, midPoint, endIdx);
-
-    // Merge the two sorted halves and count inversions during merge
-    leftPointer = startIdx;
-    rightPointer = midPoint;
-    for (mergePosition = startIdx; mergePosition < endIdx; mergePosition++) {
-        if (leftPointer === midPoint) {
-            // Left half exhausted, take from right half
-            targetArray[mergePosition] = auxiliaryArray[rightPointer++];
-        } else if (rightPointer === endIdx) {
-            // Right half exhausted, take from left half
-            targetArray[mergePosition] = auxiliaryArray[leftPointer++];
-        } else if (auxiliaryArray[leftPointer] < auxiliaryArray[rightPointer]) {
-            // Element from left half is smaller, no inversion
-            targetArray[mergePosition] = auxiliaryArray[leftPointer++];
-        } else {
-            // Element from right half is smaller, an inversion is found
-            targetArray[mergePosition] = auxiliaryArray[rightPointer++];
-            totalInversionCount += (midPoint - leftPointer); // Count inversions
-        }
-    }
-    return totalInversionCount;
+  }
+  return inversionCount; // Return the total count of inversions for this segment
 }

@@ -1,24 +1,33 @@
-const fileUtil = require("node:fs");
-((sourceMaterial) => {
-  const dataLines = sourceMaterial.split("\u000A");
-  const rawNumbers = dataLines[1].split(" ");
-  const numericSequence = rawNumbers.map((entry) => Number.parseInt(entry, 10));
-  const valueHistogram = {};
-  for (const item of numericSequence) {
-    valueHistogram[item] = (valueHistogram[item] || 0) + 1;
-  }
-  let maximumAccumulation = 0;
-  const uniqueKeys = Object.keys(valueHistogram).map(Number);
-  for (const centralValue of uniqueKeys) {
-    const leftNeighbor = centralValue - 1;
-    const rightNeighbor = centralValue + 1;
-    const countLeft = valueHistogram[leftNeighbor] || 0;
-    const countCentral = valueHistogram[centralValue] || 0;
-    const countRight = valueHistogram[rightNeighbor] || 0;
-    const currentWindowSum = countLeft + countCentral + countRight;
-    if (currentWindowSum > maximumAccumulation) {
-      maximumAccumulation = currentWindowSum;
+const fsys = require("fs");
+
+const processInput = (inputContent) => {
+    const lines = inputContent.split("\n");
+    const elementCount = Number.parseInt(lines[0], 10);
+    const numericSequence = lines[1].split(" ").map(Number.parseInt);
+
+    const valueFrequencies = numericSequence.reduce((accumulator, currentNumber) => {
+        accumulator[currentNumber] = (accumulator[currentNumber] || 0) + 1;
+        return accumulator;
+    }, {});
+
+    const retrieveFrequency = (map, key) => map[key] || 0;
+
+    const candidateValues = new Set();
+    for (const keyString in valueFrequencies) {
+        const num = Number.parseInt(keyString, 10);
+        candidateValues.add(num - 1);
+        candidateValues.add(num);
+        candidateValues.add(num + 1);
     }
-  }
-  process.stdout.write(`${maximumAccumulation}\n`);
-})(fileUtil.readFileSync(process.stdin.fd, "utf-8"));
+
+    const maximumTripletSum = Array.from(candidateValues).reduce((currentMaximum, centralValue) => {
+        const sumForCurrentCenter = retrieveFrequency(valueFrequencies, centralValue - 1) +
+                                     retrieveFrequency(valueFrequencies, centralValue) +
+                                     retrieveFrequency(valueFrequencies, centralValue + 1);
+        return Math.max(currentMaximum, sumForCurrentCenter);
+    }, 0);
+
+    console.log(maximumTripletSum);
+};
+
+processInput(fsys.readFileSync("/dev/stdin", "utf-8"));

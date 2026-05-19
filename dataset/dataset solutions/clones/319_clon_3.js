@@ -1,107 +1,128 @@
-const fileSystem = require('fs');
+const fs = require('fs');
 
-let allInputLines = fileSystem.readFileSync('/dev/stdin', 'utf8').split('\n');
-let currentLinePointer = 0;
+// Helper function to prepare big numbers for multiplication
+// Ensures the first number (longerNumDigits) is always the one with more digits.
+function prepareBigNumbersForMultiplication(numStrA, numStrB) {
+    let digitsA = numStrA.split('').map(Number);
+    let digitsB = numStrB.split('').map(Number);
 
-const parsePositiveIntegerSafe = (inputString) => {
-    const numericValue = Number(inputString);
-    if (!Number.isInteger(numericValue) || numericValue < 0) {
-        return 0;
-    }
-    return numericValue;
-};
-
-const multiplyStringNumbers = (numStrA, numStrB) => {
-    let longerNum = numStrA;
-    let shorterNum = numStrB;
-
-    if (numStrA.length < numStrB.length) {
-        [longerNum, shorterNum] = [shorterNum, longerNum];
+    // Swap if digitsA is shorter than digitsB to maintain convention
+    if (digitsA.length < digitsB.length) {
+        [digitsA, digitsB] = [digitsB, digitsA]; // Array destructuring for swapping
     }
 
-    const lenLonger = longerNum.length;
-    const lenShorter = shorterNum.length;
+    return {
+        longerNumDigits: digitsA,
+        shorterNumDigits: digitsB,
+        longerLength: digitsA.length,
+        shorterLength: digitsB.length
+    };
+}
 
-    const productDigitsBuffer = new Array(lenLonger + lenShorter).fill(0);
+// Helper function to perform big number multiplication using array of digits
+function executeBigNumberMultiplication(longerNumDigits, shorterNumDigits, longerLength, shorterLength) {
+    // The maximum possible length of the product is the sum of the lengths of the two numbers.
+    // For example, 9 * 9 = 81 (1+1=2 digits), 99 * 99 = 9801 (2+2=4 digits).
+    const maxProductLength = longerLength + shorterLength;
+    // Initialize an array to store the product digits, filled with zeros.
+    // The array size is maxProductLength, where index 0 is the most significant possible digit.
+    const productResultDigits = new Array(maxProductLength).fill(0);
 
-    for (let i = lenLonger - 1; i >= 0; i--) {
-        let currentMultiplicationCarry = 0;
-        const digitFromLonger = Number(longerNum[i]);
+    // Iterate through the digits of the longer number from right to left (least significant to most significant)
+    for (let i = longerLength - 1; i >= 0; --i) {
+        let currentCarry = 0;
+        const digitFromLongerNum = longerNumDigits[i];
 
-        for (let j = lenShorter - 1; j >= 0; j--) {
-            const digitFromShorter = Number(shorterNum[j]);
-
-            let intermediateResult = digitFromLonger * digitFromShorter +
-                                     productDigitsBuffer[i + j + 1] +
-                                     currentMultiplicationCarry;
-
-            productDigitsBuffer[i + j + 1] = intermediateResult % 10;
-            currentMultiplicationCarry = Math.floor(intermediateResult / 10);
+        // Iterate through the digits of the shorter number from right to left
+        for (let j = shorterLength - 1; j >= 0; --j) {
+            const digitFromShorterNum = shorterNumDigits[j];
+            
+            // Calculate the product of the current two digits,
+            // add any existing digit at this position in productResultDigits,
+            // and add the carry from the previous calculation.
+            const intermediateSum = digitFromLongerNum * digitFromShorterNum + productResultDigits[i + j + 1] + currentCarry;
+            
+            // Store the unit digit of the intermediate sum in the product array.
+            productResultDigits[i + j + 1] = intermediateSum % 10;
+            // Calculate the new carry for the next position.
+            currentCarry = Math.floor(intermediateSum / 10);
         }
-        productDigitsBuffer[i] += currentMultiplicationCarry;
+        // After processing all digits of the shorter number, add any remaining carry
+        // to the next significant position in the product array.
+        productResultDigits[i] += currentCarry;
     }
+    return productResultDigits;
+}
 
+// Helper function to check if a number (represented as an array of digits)
+// has at least 7 significant digits (i.e., not counting leading zeros).
+function checkSevenDigitCondition(digitsArray) {
     let firstSignificantDigitIndex = 0;
-    while (firstSignificantDigitIndex < productDigitsBuffer.length - 1 &&
-           productDigitsBuffer[firstSignificantDigitIndex] === 0) {
+    // Find the index of the first non-zero digit.
+    // We iterate up to `digitsArray.length - 1` to correctly handle cases
+    // where the number is a single digit (e.g., [0,0,5] -> index 2).
+    while (firstSignificantDigitIndex < digitsArray.length - 1 && digitsArray[firstSignificantDigitIndex] === 0) {
         firstSignificantDigitIndex++;
     }
+    // The number of significant digits is the total length minus the index of the first significant digit.
+    const numberOfSignificantDigits = digitsArray.length - firstSignificantDigitIndex;
+    return numberOfSignificantDigits >= 7;
+}
 
-    return productDigitsBuffer.slice(firstSignificantDigitIndex).join('');
-};
+const rawInputData = fs.readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInputData.trim().split('\n');
 
-while (currentLinePointer < allInputLines.length) {
-    const currentRawLine = allInputLines[currentLinePointer].trim();
-    currentLinePointer++;
+let currentInputLineIndex = 0;
 
-    if (currentRawLine === '') {
-        continue;
-    }
-
-    let currentBatchSize = parsePositiveIntegerSafe(currentRawLine);
-    if (currentBatchSize === 0) {
-        break;
-    }
-
-    const eligibleEntryIdentifiers = new Set();
-    const MINIMUM_PRODUCT_DIGITS = 7;
-
-    for (let entryIteration = 0; entryIteration < currentBatchSize; entryIteration++) {
-        if (currentLinePointer >= allInputLines.length) {
-            console.error("Warning: Input ended unexpectedly before processing all batch entries.");
-            break;
-        }
-
-        const entryDetails = allInputLines[currentLinePointer].trim().split(' ');
-        currentLinePointer++;
-
-        if (entryDetails.length < 3) {
-            console.warn(`Skipping malformed entry: "${entryDetails.join(' ')}" - Expected 3 parts.`);
-            continue;
-        }
-
-        const primaryIdentifier = entryDetails[0];
-        const firstNumericString = entryDetails[1];
-        const secondNumericString = entryDetails[2];
-
-        if (!/^\d+$/.test(firstNumericString) || !/^\d+$/.test(secondNumericString)) {
-             console.warn(`Skipping entry due to non-numeric parts: "${firstNumericString}", "${secondNumericString}"`);
-             continue;
-        }
-
-        const productResultString = multiplyStringNumbers(firstNumericString, secondNumericString);
-
-        if (productResultString.length >= MINIMUM_PRODUCT_DIGITS) {
-            eligibleEntryIdentifiers.add(primaryIdentifier);
-        }
-    }
-
-    if (eligibleEntryIdentifiers.size === 0) {
-        console.log("NA");
+// Main processing loop for multiple test cases
+while (currentInputLineIndex < inputLines.length) {
+    // Parse the number of datasets for the current test case, then advance the line pointer.
+    const numberOfDatasets = parseInt(inputLines[currentInputLineIndex++], 10);
+    
+    if (numberOfDatasets === 0) {
+        break; // Terminate if the input indicates no more datasets (N=0)
     } else {
-        const sortedUniqueIdentifiers = Array.from(eligibleEntryIdentifiers).sort();
-        for (const identifier of sortedUniqueIdentifiers) {
-            console.log(identifier);
+        // Use a Set to automatically handle uniqueness of qualified identifiers.
+        const qualifiedIdentifiersSet = new Set();
+
+        // Loop through each dataset within the current test case
+        for (let datasetIteration = 0; datasetIteration < numberOfDatasets; ++datasetIteration) {
+            // Split the current line into its components (identifier, num1, num2), then advance the line pointer.
+            const currentDatasetComponents = inputLines[currentInputLineIndex++].split(' ');
+            const identifierString = currentDatasetComponents[0];
+            const numberStringA = currentDatasetComponents[1];
+            const numberStringB = currentDatasetComponents[2];
+
+            // Prepare the numbers for multiplication, ensuring the longer one is first.
+            const { longerNumDigits, shorterNumDigits, longerLength, shorterLength } = 
+                prepareBigNumbersForMultiplication(numberStringA, numberStringB);
+
+            // Guard clause: If the combined maximum possible length of the product is less than 7,
+            // it's impossible for the product to have 7 or more digits. Skip multiplication.
+            if (longerLength + shorterLength < 7) {
+                continue; 
+            }
+
+            // Perform the big number multiplication.
+            const productDigitsArray = executeBigNumberMultiplication(
+                longerNumDigits, shorterNumDigits, longerLength, shorterLength
+            );
+            
+            // Check if the resulting product has at least 7 significant digits.
+            if (checkSevenDigitCondition(productDigitsArray)) {
+                qualifiedIdentifiersSet.add(identifierString); // Add the identifier to the set if it qualifies.
+            }
+        }
+        
+        // Output the results for the current test case.
+        if (qualifiedIdentifiersSet.size === 0) {
+            console.log("NA"); // No identifiers qualified
+        } else {
+            // Iterate through the Set and print each unique qualified identifier.
+            // Sets preserve insertion order in modern JavaScript, matching original behavior.
+            qualifiedIdentifiersSet.forEach(id => {
+                console.log(id);
+            });
         }
     }
 }

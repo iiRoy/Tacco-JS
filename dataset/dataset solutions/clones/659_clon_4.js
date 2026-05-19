@@ -1,110 +1,96 @@
-let dataBuffer = '';
+let allInputs = '';
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', fragment => {
-    dataBuffer += fragment;
+process.stdin.on('data', function(dataChunk) {
+    allInputs += dataChunk;
 });
-process.stdin.on('end', () => {
-    const lineSegments = dataBuffer.split('\n').filter(Boolean);
+process.stdin.on('end', function() {
+    const inputLines = allInputs.split('\n');
 
-    // Tree representation: null for an empty subtree, [leftSubtree, rightSubtree] for a branch node.
-    // This replaces the imperative Node class with a functional array-based structure.
+    // Tree representation: [leftChild, rightChild]
+    // null represents an empty branch.
 
-    // Builds a branch structure from its string representation.
-    // This function mimics the original createTree's behavior using recursion
-    // and shared state (charIndex) to traverse the input string.
-    const buildBranch = (branchText) => {
-        if (branchText === '') {
-            return null; // Empty string results in a null branch, matching original.
+    const parseTreeString = (inputString) => {
+        if (inputString.length === 0) {
+            return null;
         }
 
-        const characters = branchText.split('');
-        let charIndex = 0; // Shared index for recursive calls
+        let nodeStack = []; // Stores references to parent arrays
+        let currentBranch = null; // The root of the tree being built
+        let isLeftChild = true; // Flag to determine if we're assigning to left or right
 
-        // Recursive helper function to populate the currentParent's children
-        const recursivePopulate = (currentParent) => {
-            let isLeftChild = true; // State to track whether to assign to left or right
-            while (charIndex < characters.length) {
-                const char = characters[charIndex];
-                charIndex++; // Consume the character
-
-                if (char === '(') {
-                    const childBranch = [null, null]; // A new branch node
+        for (const char of inputString) {
+            if (char === '(') {
+                const newNode = [null, null]; // Create a new node (array)
+                if (currentBranch === null) {
+                    currentBranch = newNode; // This is the very first node
+                } else {
+                    // Assign the new node to the current parent's left or right child
+                    const parentNode = nodeStack[nodeStack.length - 1];
                     if (isLeftChild) {
-                        currentParent[0] = childBranch; // Assign to left child
+                        parentNode[0] = newNode;
                     } else {
-                        currentParent[1] = childBranch; // Assign to right child
+                        parentNode[1] = newNode;
                     }
-                    recursivePopulate(childBranch); // Descend: recurse with the new child as the parent
-                    // When recursivePopulate returns, it means we've finished parsing the child's subtree
-                    // and 'ascended' back to the currentParent's context.
-                } else if (char === ',') {
-                    isLeftChild = false; // Switch to parsing the right child
-                } else if (char === ')') {
-                    return; // Ascend: return to the parent's recursive call
                 }
+                nodeStack.push(newNode); // Push the new node onto the stack as the current parent
+                isLeftChild = true; // A new node always starts with its left child
+            } else if (char === ',') {
+                isLeftChild = false; // Switch to processing the right child
+            } else if (char === ')') {
+                nodeStack.pop(); // Go up to the parent node
             }
-        };
-
-        // The original `createTree` creates an implicit `root` and returns `root.left`.
-        // We simulate this by creating an `implicitRoot` array and populating its children.
-        const implicitRoot = [null, null];
-        recursivePopulate(implicitRoot);
-        return implicitRoot[0]; // Return the left child of the implicit root.
+        }
+        return currentBranch;
     };
 
-    // Renders the internal branch structure to the required string format.
-    const renderBranch = (currentBranch) => {
-        if (currentBranch === null) {
-            return ''; // Null branch renders as an empty string.
+    const uniteTrees = (treeA, treeB) => {
+        if (treeA === null) {
+            return treeB;
         }
-        const [left, right] = currentBranch;
-        return `(${renderBranch(left)},${renderBranch(right)})`;
+        if (treeB === null) {
+            return treeA;
+        }
+
+        const leftResult = uniteTrees(treeA[0], treeB[0]);
+        const rightResult = uniteTrees(treeA[1], treeB[1]);
+
+        return [leftResult, rightResult];
     };
 
-    // Combines two branches (union operation) recursively.
-    const combineBranches = (firstBranch, secondBranch) => {
-        if (firstBranch === null) {
-            return secondBranch; // If first is empty, union is second.
-        }
-        if (secondBranch === null) {
-            return firstBranch; // If second is empty, union is first.
+    const intersectTrees = (treeA, treeB) => {
+        if (treeA === null || treeB === null) {
+            return null;
         }
 
-        // Recursively combine children.
-        const combinedLeft = combineBranches(firstBranch[0], secondBranch[0]);
-        const combinedRight = combineBranches(firstBranch[1], secondBranch[1]);
+        const leftResult = intersectTrees(treeA[0], treeB[0]);
+        const rightResult = intersectTrees(treeA[1], treeB[1]);
 
-        return [combinedLeft, combinedRight]; // Create a new branch node.
+        // The original implementation always creates a node if both inputs are non-null,
+        // even if both children are null. So we return a new array here.
+        return [leftResult, rightResult];
     };
 
-    // Finds common elements in two branches (intersection operation) recursively.
-    const findCommonBranches = (firstBranch, secondBranch) => {
-        if (firstBranch === null || secondBranch === null) {
-            return null; // If either is empty, intersection is empty.
+    const renderTree = (currentTree) => {
+        if (currentTree === null) {
+            return '';
         }
-
-        // Recursively find common children.
-        const commonLeft = findCommonBranches(firstBranch[0], secondBranch[0]);
-        const commonRight = findCommonBranches(firstBranch[1], secondBranch[1]);
-
-        // If we reach this point, both firstBranch and secondBranch are non-null.
-        // This implies a node exists at this position in the intersection,
-        // even if its children are null (e.g., intersection of (,) and (,) is (,)).
-        return [commonLeft, commonRight];
+        const leftPart = renderTree(currentTree[0]);
+        const rightPart = renderTree(currentTree[1]);
+        return `(${leftPart},${rightPart})`;
     };
 
-    lineSegments.forEach(line => {
-        const [opType, firstBranchStr, secondBranchStr] = line.split(' ');
-        const branchA = buildBranch(firstBranchStr);
-        const branchB = buildBranch(secondBranchStr);
+    for (const currentInput of inputLines) {
+        const [operationType, treeStringOne, treeStringTwo] = currentInput.split(' ');
+        const treeOne = parseTreeString(treeStringOne);
+        const treeTwo = parseTreeString(treeStringTwo);
 
-        let finalOutcome;
-        if (opType === "u") {
-            finalOutcome = combineBranches(branchA, branchB);
-        } else if (opType === "i") {
-            finalOutcome = findCommonBranches(branchA, branchB);
+        let resultTree;
+        if (operationType === "u") {
+            resultTree = uniteTrees(treeOne, treeTwo);
+        } else if (operationType === "i") {
+            resultTree = intersectTrees(treeOne, treeTwo);
         }
-        console.log(renderBranch(finalOutcome));
-    });
+        console.log(renderTree(resultTree));
+    }
 });

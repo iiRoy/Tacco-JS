@@ -1,69 +1,63 @@
 "use strict";
 
-const solveBookPuzzle = textInput => {
-    const dataLines = textInput.trim().split("\n");
-    const headerInfo = dataLines[0].split(' ').map(Number);
-    const primaryShelf = dataLines[1].split(' ').map(Number);
-    const secondaryShelf = dataLines[2].split(' ').map(Number);
+const processInput = (rawData) => {
+    const parsedLines = rawData.trim().split("\n");
 
-    const maxTimeAllowed = headerInfo[2];
+    const configParams = parsedLines[0].split(' ').map(Number);
+    const deskAPeriods = parsedLines[1].split(' ').map(Number);
+    const deskBPeriods = parsedLines[2].split(' ').map(Number);
 
-    let totalTimeSpent = 0;
-    let booksAcquired = 0;
-    let primaryIndex = 0;
-    let secondaryIndex = 0;
+    const timeAllowance = configParams[2];
+
+    let elapsedDuration = 0;
+    let completedWorks = 0;
+    let deskAIndex = 0;
+    let deskBIndex = 0;
 
     while (true) {
-        let bookTimeA = (primaryIndex < primaryShelf.length) ? primaryShelf[primaryIndex] : Infinity;
-        let bookTimeB = (secondaryIndex < secondaryShelf.length) ? secondaryShelf[secondaryIndex] : Infinity;
+        let nextBookDuration;
+        let selectedFromDeskA = false;
+        let selectedFromDeskB = false;
 
-        let nextBookValue;
-        let sourceShelfIdentifier;
+        const hasMoreBooksA = (deskAIndex < deskAPeriods.length);
+        const hasMoreBooksB = (deskBIndex < deskBPeriods.length);
 
-        if (bookTimeA <= bookTimeB) {
-            nextBookValue = bookTimeA;
-            sourceShelfIdentifier = 'A';
+        if (hasMoreBooksA && hasMoreBooksB) {
+            if (deskAPeriods[deskAIndex] < deskBPeriods[deskBIndex]) {
+                nextBookDuration = deskAPeriods[deskAIndex];
+                selectedFromDeskA = true;
+            } else {
+                nextBookDuration = deskBPeriods[deskBIndex];
+                selectedFromDeskB = true;
+            }
+        } else if (hasMoreBooksA) {
+            nextBookDuration = deskAPeriods[deskAIndex];
+            selectedFromDeskA = true;
+        } else if (hasMoreBooksB) {
+            nextBookDuration = deskBPeriods[deskBIndex];
+            selectedFromDeskB = true;
         } else {
-            nextBookValue = bookTimeB;
-            sourceShelfIdentifier = 'B';
-        }
-
-        if (nextBookValue === Infinity) {
-            // This condition corresponds to the original's 'arr1.length === 0 && arr2.length === 0'
-            // where total time is less than the limit.
-            // The original code outputs 'books - 1' in this scenario, which is a bug.
-            // We replicate this exact behavior.
-            console.log(booksAcquired - 1); 
+            console.log(completedWorks - 1);
             return;
         }
 
-        if (totalTimeSpent + nextBookValue > maxTimeAllowed) {
-            // This condition corresponds to the original's 'sumT > limit' check,
-            // where 'sumT' and 'books' already include the book that pushed it over.
-            // Original outputs 'books - 1'.
-            // In our iterative logic, 'booksAcquired' is the count *before* adding the exceeding book.
-            // So, 'booksAcquired' correctly matches original's 'books - 1'.
-            console.log(booksAcquired);
-            return;
-        }
-        
-        if (totalTimeSpent + nextBookValue === maxTimeAllowed) {
-            // This condition corresponds to the original's 'sumT == limit' check.
-            // Original outputs 'books'.
-            // In our iterative logic, 'booksAcquired' is the count *before* adding this book.
-            // So, 'booksAcquired + 1' correctly matches original's 'books'.
-            console.log(booksAcquired + 1);
-            return;
+        elapsedDuration += nextBookDuration;
+        completedWorks++;
+
+        if (selectedFromDeskA) {
+            deskAIndex++;
+        } else if (selectedFromDeskB) {
+            deskBIndex++;
         }
 
-        totalTimeSpent += nextBookValue;
-        booksAcquired++;
-
-        if (sourceShelfIdentifier === 'A') {
-            primaryIndex++;
-        } else {
-            secondaryIndex++;
+        if (elapsedDuration > timeAllowance) {
+            console.log(completedWorks - 1);
+            return;
+        } else if (elapsedDuration === timeAllowance) {
+            console.log(completedWorks);
+            return;
         }
     }
 };
-solveBookPuzzle(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

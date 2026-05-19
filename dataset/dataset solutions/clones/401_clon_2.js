@@ -1,114 +1,113 @@
-// This object stores the calculated travel charges for various routes.
-// Keys are formatted as "X_travel_Y" indicating a journey from station X to station Y.
-var journeyCosts = {};
+let travelCosts = {}; // This object stores various travel costs or durations between different points.
 
-  journeyCosts["1_travel_2"] = 300;
-  journeyCosts["1_travel_3"] = 500;
-  journeyCosts["1_travel_4"] = 600;
-  journeyCosts["1_travel_5"] = 700;
-  journeyCosts["1_travel_6"] = 1350;
-  journeyCosts["1_travel_7"] = 1650;
+// Initialize travel costs for various routes.
+travelCosts["1to2"] = 300;
+travelCosts["1to3"] = 500;
+travelCosts["1to4"] = 600;
+travelCosts["1to5"] = 700;
+travelCosts["1to6"] = 1350;
+travelCosts["1to7"] = 1650;
 
-  journeyCosts["2_travel_1"] = 6;
-  journeyCosts["2_travel_3"] = 350;
-  journeyCosts["2_travel_4"] = 450;
-  journeyCosts["2_travel_5"] = 600;
-  journeyCosts["2_travel_6"] = 1150;
-  journeyCosts["2_travel_7"] = 1500;
+travelCosts["2to1"] = 6;
+travelCosts["2to3"] = 350;
+travelCosts["2to4"] = 450;
+travelCosts["2to5"] = 600;
+travelCosts["2to6"] = 1150;
+travelCosts["2to7"] = 1500;
 
-  journeyCosts["3_travel_1"] = 13;
-  journeyCosts["3_travel_2"] = 7;
-  journeyCosts["3_travel_4"] = 250;
-  journeyCosts["3_travel_5"] = 400;
-  journeyCosts["3_travel_6"] = 1000;
-  journeyCosts["3_travel_7"] = 1350;
+travelCosts["3to1"] = 13;
+travelCosts["3to2"] = 7;
+travelCosts["3to4"] = 250;
+travelCosts["3to5"] = 400;
+travelCosts["3to6"] = 1000;
+travelCosts["3to7"] = 1350;
 
-  journeyCosts["4_travel_1"] = 18;
-  journeyCosts["4_travel_2"] = 12;
-  journeyCosts["4_travel_3"] = 5;
-  journeyCosts["4_travel_5"] = 250;
-  journeyCosts["4_travel_6"] = 850;
-  journeyCosts["4_travel_7"] = 1300;
+travelCosts["4to1"] = 18;
+travelCosts["4to2"] = 12;
+travelCosts["4to3"] = 5;
+travelCosts["4to5"] = 250;
+travelCosts["4to6"] = 850;
+travelCosts["4to7"] = 1300;
 
-  journeyCosts["5_travel_1"] = 23;
-  journeyCosts["5_travel_2"] = 17;
-  journeyCosts["5_travel_3"] = 10;
-  journeyCosts["5_travel_4"] = 5;
-  journeyCosts["5_travel_6"] = 600;
-  journeyCosts["5_travel_7"] = 1150;
+travelCosts["5to1"] = 23;
+travelCosts["5to2"] = 17;
+travelCosts["5to3"] = 10;
+travelCosts["5to4"] = 5;
+travelCosts["5to6"] = 600;
+travelCosts["5to7"] = 1150;
 
-  journeyCosts["6_travel_1"] = 43;
-  journeyCosts["6_travel_2"] = 37;
-  journeyCosts["6_travel_3"] = 30;
-  journeyCosts["6_travel_4"] = 25;
-  journeyCosts["6_travel_5"] = 20;
-  journeyCosts["6_travel_7"] = 500;
+travelCosts["6to1"] = 43;
+travelCosts["6to2"] = 37;
+travelCosts["6to3"] = 30;
+travelCosts["6to4"] = 25;
+travelCosts["6to5"] = 20;
+travelCosts["6to7"] = 500;
 
-  journeyCosts["7_travel_1"] = 58;
-  journeyCosts["7_travel_2"] = 52;
-  journeyCosts["7_travel_3"] = 45;
-  journeyCosts["7_travel_4"] = 40;
-  journeyCosts["7_travel_5"] = 35;
-  journeyCosts["7_travel_6"] = 15;
+travelCosts["7to1"] = 58;
+travelCosts["7to2"] = 52;
+travelCosts["7to3"] = 45;
+travelCosts["7to4"] = 40;
+travelCosts["7to5"] = 35;
+travelCosts["7to6"] = 15;
 
-// Acquire the file system module for input operations.
-var fileSystemModule = require('fs');
+// Read all input data from standard input using Node.js 'fs' module.
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read all data from standard input, remove any final newline, and segment into an array of lines.
-var rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-var processedLines = rawInputData.replace(/\n$/,"").split("\n");
+// Pre-process the input: remove any trailing newline character and then split the string into an array of lines.
+let inputLines = (rawInputData.replace(/\n$/, "")).split("\n");
 
-// Loop through each scenario provided in the input data.
+// Begin the main processing loop. This loop continues indefinitely until an explicit break condition is met.
 while (true) {
-   // Extract the identifier for the starting location and convert it to a number.
-   var departurePoint = Number(processedLines.shift());
+    // Extract the starting point identifier from the input lines and convert it to a numeric type.
+    let currentStartPoint = inputLines.shift() - 0;
 
-   // A departure point of 0 indicates the end of the input stream.
-   if (departurePoint === 0) {
-      break;
-   }
+    // Check for the termination condition: if the starting point is 0, exit the loop.
+    if (currentStartPoint === 0) {
+        break;
+    }
 
-   // Get the time components (hour and minute) for the start time, converting them to numbers.
-   var firstTimeComponents = (processedLines.shift()).split(" ").map(val => Number(val));
+    // Retrieve the next line, split it by space, and convert parts to numbers to get start hour and minute.
+    const startHourMinute = (inputLines.shift()).split(" ").map(Number);
 
-   // Extract the identifier for the destination and convert it to a number.
-   var arrivalPoint = Number(processedLines.shift());
+    // Extract the destination point identifier and convert it to a numeric type.
+    let currentEndPoint = inputLines.shift() - 0;
 
-   // Get the time components (hour and minute) for the end time, converting them to numbers.
-   var secondTimeComponents = (processedLines.shift()).split(" ").map(value => Number(value));
+    // Retrieve the next line, split it by space, and convert parts to numbers to get end hour and minute.
+    const endHourMinute = (inputLines.shift()).split(" ").map(Number);
 
-   // Compute the total minutes from midnight for the journey's start time.
-   var startTotalMinutes = (parseInt(firstTimeComponents[0], 10) * 60) + parseInt(firstTimeComponents[1], 10);
+    // Calculate the total number of minutes from midnight for the start time.
+    const totalMinutesStart = (parseInt(startHourMinute[0], 10) * 60) + parseInt(startHourMinute[1], 10);
 
-   // Compute the total minutes from midnight for the journey's end time.
-   var endTotalMinutes = (parseInt(secondTimeComponents[0], 10) * 60) + parseInt(secondTimeComponents[1], 10);
+    // Calculate the total number of minutes from midnight for the end time.
+    const totalMinutesEnd = (parseInt(endHourMinute[0], 10) * 60) + parseInt(endHourMinute[1], 10);
 
-   // Initialize a counter for conditions met for a potential discount.
-   var discountConditionMet = 0;
+    // Initialize a counter to track specific conditions that might affect the fare.
+    let specialConditionCounter = 0;
 
-   // Evaluate the first condition: specific time windows for departure and arrival.
-   if ( (startTotalMinutes <= 1050 && endTotalMinutes < 1170) || (startTotalMinutes > 1050 && endTotalMinutes <= 1170) ) {
-      discountConditionMet++;
-   }
+    // Evaluate the first condition based on start and end times.
+    // This checks if the journey falls within certain time windows (e.g., peak/off-peak).
+    if ((totalMinutesStart <= 1050 && totalMinutesEnd < 1170) || (totalMinutesStart > 1050 && totalMinutesEnd <= 1170)) {
+        specialConditionCounter++;
+    }
 
-   // Evaluate the second condition: a specific route cost threshold for the reverse journey.
-   // This refers to the cost from the arrival point back to the departure point.
-   if (journeyCosts[arrivalPoint + "_travel_" + departurePoint] <= 40) {
-      discountConditionMet++;
-   }
+    // Evaluate the second condition based on the cost of the reverse route.
+    // If the cost from end to start is 40 or less, increment the counter.
+    if (travelCosts[currentEndPoint + "to" + currentStartPoint] <= 40) {
+        specialConditionCounter++;
+    }
 
-   // Fetch the initial fare for the journey from the departure to arrival point.
-   var finalFareAmount = journeyCosts[departurePoint + "_travel_" + arrivalPoint];
+    // Retrieve the base fare for the journey from the 'travelCosts' map.
+    let finalFare = travelCosts[currentStartPoint + "to" + currentEndPoint];
 
-   // Apply discount logic if both conditions are satisfied.
-   if (discountConditionMet === 2) {
-      // Halve the fare and round it down.
-      finalFareAmount = Math.floor(finalFareAmount / 2);
-      // Increment the fare until it is a multiple of 50.
-      while (finalFareAmount % 50 !== 0) {
-         finalFareAmount++;
-      }
-   }
-   // Display the calculated final fare.
-   console.log(finalFareAmount);
+    // If both special conditions are met (counter is 2), apply a discount and adjust the fare.
+    if (specialConditionCounter === 2) {
+        finalFare = Math.floor(finalFare / 2); // Halve the fare.
+        // Adjust the fare upwards until it is a multiple of 50.
+        while (finalFare % 50 !== 0) {
+            finalFare++;
+        }
+    }
+
+    // Output the final calculated fare to the console.
+    console.log(finalFare);
 }

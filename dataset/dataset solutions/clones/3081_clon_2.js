@@ -1,35 +1,34 @@
-function processColorString ( sourceText )
-{
-  let redCounter = 0;
-  let blueCounter = 0;
+function analyzeColors(rawData) {
+  // Initialize counters for different color types.
+  let redCount = 0, blueCount = 0;
 
-  // This array stores the parsed lines from the raw input string.
-  const dataLines = sourceText.split('\n');
+  // Split the raw input string into an array of lines.
+  const linesOfInput = rawData.split('\n');
 
-  // The first line contains the total number of items, which is parsed here.
-  // 'itemCount' is implicitly global to match the original code's behavior.
-  itemCount = parseInt( dataLines[0] . replace ( /\r?\n/g , '' ) );
+  // Parse the first line to determine the number of elements (though not directly used in the logic).
+  numElements = parseInt(linesOfInput[0].replace(/\r?\n/g, ''));
 
-  // The second line contains the sequence of characters ('R' or 'B').
-  // 'characterStream' is implicitly global to match the original code's behavior.
-  characterStream = dataLines[1] . replace ( /\r?\n/g , '' ) . split ( '' );
+  // Extract the second line, remove any newline characters, and split it into individual characters.
+  charSequence = linesOfInput[1].replace(/\r?\n/g, '').split('');
 
-  // Iterate over each character in the sequence to tally the counts.
-  characterStream . forEach ( ( colorChar ) => {
-    if ( colorChar === 'R' ) {
-      redCounter ++ ;
+  // Iterate over each character in the sequence.
+  charSequence.forEach((currentColor) => {
+    // Check if the current character represents 'R'.
+    if (currentColor === 'R') {
+      redCount++; // Increment the counter for 'R'.
     } else {
-      blueCounter ++ ;
+      // Otherwise, assume it represents 'B' and increment its counter.
+      blueCount++;
     }
-  } );
+  });
 
-  // Output the result based on which color count is higher.
-  if ( redCounter > blueCounter ) {
-    console . log ( "Affirmative" ) ;
+  // Compare the final counts of 'R' and 'B'.
+  if (redCount > blueCount) {
+    console.log("Yes"); // Output "Yes" if 'R' count is greater.
   } else {
-    console . log ( "Negative" ) ;
+    console.log("No"); // Output "No" otherwise.
   }
 }
 
-// Main execution block: reads input from stdin and invokes the processing function.
-processColorString ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// Read input from standard input and pass it to the analysis function.
+analyzeColors(require("fs").readFileSync("/dev/stdin", "utf8"));

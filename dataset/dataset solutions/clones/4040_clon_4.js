@@ -1,36 +1,19 @@
-const operationalState = false;
-
-const showOutcome = function (content) {
-    console.log(content);
+const acquireProcessedNumbers = (isDevelopmentMode) => {
+    const sourceContent = isDevelopmentMode
+        ? '431 321'
+        : (() => {
+            const fileSystemModule = require('fs');
+            return fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+        })();
+    return sourceContent.split('\n').map(strVal => parseInt(strVal, 10));
 };
 
-const obtainSimulationData = function () {
-    return '431 321';
-};
+const isDevelopment = false;
+const processedValues = acquireProcessedNumbers(isDevelopment);
 
-const obtainLiveData = function (messageForUser) {
-    if (messageForUser) {
-        showOutcome(messageForUser);
-    }
-    const processExecutor = require('node:child_process');
-    return processExecutor.execSync('cat /dev/stdin', { encoding: 'utf8' });
-};
+const dividendValue = processedValues[0];
+const divisorValue = processedValues[1];
 
-const acquireSource = operationalState ? obtainSimulationData : obtainLiveData;
+const resultToDisplay = Number.isInteger(dividendValue / divisorValue) ? -1 : dividendValue;
 
-const rawDataString = acquireSource();
-
-const stringNumbers = rawDataString.match(/\d+/g);
-
-const numericalSequence = Array.from(stringNumbers, value => Number(value));
-
-const firstElement = numericalSequence[0];
-const secondElement = numericalSequence[1];
-
-const remainderValue = firstElement - Math.floor(firstElement / secondElement) * secondElement;
-
-const isZeroRemainder = !Boolean(remainderValue);
-
-const finalResult = (Number(isZeroRemainder) * -1) + ((1 - Number(isZeroRemainder)) * firstElement);
-
-showOutcome(finalResult);
+console.log(resultToDisplay);

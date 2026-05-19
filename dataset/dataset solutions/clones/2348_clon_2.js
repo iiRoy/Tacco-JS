@@ -1,33 +1,28 @@
-// This module analyzes a given text sequence for character symmetry.
-function ProcessString( inputStr )
-{
-  // Initialize a counter to track characters that do not match symmetrically.
-  let mismatchCount =   0   ;
+function ProcessInput(inputString) {
+  // Initialize a variable to keep track of character mismatches.
+  let mismatchedCount = 0;
 
-  // Determine the central dividing point of the input string.
-  // We use Math.ceil to ensure that for odd-length strings, the middle character is included in the first half conceptually.
-  const midPoint =   Math.ceil ( inputStr.length / 2 ) ;
-  
-  // Iterate through the second half of the string, starting from the calculated midpoint.
-  for ( let idx = midPoint ; idx < inputStr.length ; idx++ )
-  {
-    // Compare the character at the current index (from the second half)
-    // with its symmetrically opposite character from the first half of the string.
-    // The mirrored position is calculated as (total length - current index - 1).
-    if ( inputStr[ inputStr.length - idx - 1 ] !== inputStr[ idx ] )
-    {
-      // If the characters at these symmetrical positions do not match,
-      // increment the counter for mismatches.
-      mismatchCount ++ ;
+  // Determine the starting point for comparison, which is the ceiling of half the string's length.
+  // This effectively marks the beginning of the second half of the string.
+  const midpointIndex = Math.ceil(inputString.length / 2);
+
+  // Iterate through the string from the calculated midpoint up to, but not including, the end.
+  // This loop focuses on the latter half of the string.
+  for (let idx = midpointIndex; idx < inputString.length; idx++) {
+    // Compare the character at the current index 'idx' with its corresponding character
+    // from the first half of the string. The mirrored index is calculated to find
+    // the character that would be at the same position if the string were reversed.
+    if (inputString[inputString.length - idx - 1] !== inputString[idx]) {
+      // If the characters do not match, increment the mismatch counter.
+      mismatchedCount++;
     }
   }
 
-  // Output the final tally of symmetrical character mismatches to the console.
-  console.log( mismatchCount ) ;
+  // Display the final count of differing characters to the standard output.
+  console.log(mismatchedCount);
 }
 
-// This section handles reading the input data.
-// It reads the entire content from standard input ("/dev/stdin"),
-// decodes it using UTF-8 encoding, and then removes any leading or trailing whitespace.
-// Finally, it invokes the primary string processing function with the cleaned input.
-ProcessString ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) ) ;
+// Read the entire content from standard input, assuming UTF-8 encoding.
+// Then, remove any leading or trailing whitespace from the input string.
+// Finally, pass this processed string to our main function for analysis.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,72 +1,87 @@
 "use strict";
 
-const processInputData = inputStr => {
-    inputStr = inputStr.trim().split("\n");
+// Primary function to process the given input data
+const processInput = (inputDataString) => {
+  // Normalize and split the input string into individual lines
+  let processedLines = inputDataString.trim().split("\n");
 
-    const vertexCount = parseInt(inputStr[0].split(" ")[0]);
-    const operationCount = parseInt(inputStr[0].split(" ")[1]);
+  // Extract the number of graph vertices and queries from the first line
+  const [vertexCountStr, queryCountStr] = processedLines[0].split(" ");
+  const vertexCount = parseInt(vertexCountStr);
+  const queryCount = parseInt(queryCountStr);
 
-    const edgeData = inputStr.slice(1, vertexCount).map(line => line.split(" "));
-    const updateInstructions = inputStr.slice(vertexCount, vertexCount + 1 + operationCount).map(line => line.split(" "));
+  // Parse the edge definitions (connections between vertices)
+  const edgeDefinitions = processedLines.slice(1, vertexCount).map((line) => line.split(" "));
+  // Parse the score query definitions (which vertex gets how many points)
+  const scoreQueries = processedLines.slice(vertexCount, vertexCount + 1 + queryCount).map((line) => line.split(" "));
 
-    const graphVertices = [];
+  // Initialize an array to hold all the graph's vertex objects
+  const graphVertices = [];
 
-    // Initialize all graph vertices
-    for (let idx = 1; idx <= vertexCount; idx++) {
-        graphVertices.push(new GraphVertex(idx));
-    }
+  // Create and populate the graphVertices array with new GraphVertex instances
+  for (let vertexIndex = 1; vertexIndex <= vertexCount; vertexIndex++) {
+    graphVertices.push(new GraphVertex(vertexIndex));
+  }
 
-    // Establish parent-child relationships within the graph structure
-    for ( let idx = 0; idx < vertexCount - 1; idx++ ) {
-        graphVertices[edgeData[idx][0] - 1].connectSubNode(graphVertices[edgeData[idx][1] - 1]);
-    }
+  // Establish the hierarchical parent-child relationships among vertices
+  for (let edgeIdx = 0; edgeIdx < vertexCount - 1; edgeIdx++) {
+    const parentVertexId = parseInt(edgeDefinitions[edgeIdx][0]) - 1;
+    const childVertexId = parseInt(edgeDefinitions[edgeIdx][1]) - 1;
+    graphVertices[parentVertexId].addChildVertex(graphVertices[childVertexId]);
+  }
 
-    // Apply initial score increments directly to the specified vertices
-    for ( let idx = 0; idx < operationCount; idx++ ) {
-        graphVertices[updateInstructions[idx][0] - 1].incrementScore(updateInstructions[idx][1]);
-    }
+  // Apply initial scores to specific vertices based on the provided queries
+  for (let queryIdx = 0; queryIdx < queryCount; queryIdx++) {
+    const targetVertexId = parseInt(scoreQueries[queryIdx][0]) - 1;
+    const scoreValue = scoreQueries[queryIdx][1];
+    graphVertices[targetVertexId].addScore(scoreValue);
+  }
 
-    // Distribute accumulated scores downwards to all direct descendants
-    for ( let idx = 0; idx < vertexCount; idx++ ) {
-        graphVertices[idx].propagateScoresToDescendants();
-    }
+  // Propagate scores from each parent vertex down to its immediate children
+  for (let vertexIdx = 0; vertexIdx < vertexCount; vertexIdx++) {
+    graphVertices[vertexIdx].propagateScoresToChildren();
+  }
 
-    let finalScores = [];
+  // Collect the final accumulated scores for all vertices
+  const finalScores = [];
+  for (let vertexIdx = 0; vertexIdx < vertexCount; vertexIdx++) {
+    finalScores.push(graphVertices[vertexIdx].currentScore);
+  }
 
-    // Collect the final score for each vertex
-    for ( let idx = 0; idx < vertexCount; idx++ ) {
-        finalScores.push(graphVertices[idx].scoreAccumulator);
-    }
-
-    console.log(finalScores.join(" "));
+  // Output the final scores as a space-separated string
+  console.log(finalScores.join(" "));
 };
 
+// Definition for a GraphVertex class, representing a node in the graph
 class GraphVertex {
-    // Constructor for a new graph vertex instance
-    constructor(vertexIdentifier) {
-        this.identifier = vertexIdentifier;
-        this.ancestorNode = null;
-        this.descendantNodes = [];
-        this.scoreAccumulator = 0;
-    }
+  // Constructor to set up a new vertex instance
+  constructor(vertexIdentifier) {
+    this.vertexIdentifier = vertexIdentifier; // A unique identifier for this vertex
+    this.parentVertex = null; // Reference to this vertex's parent in the hierarchy
+    this.childVertices = []; // An array to store references to this vertex's children
+    this.currentScore = 0; // The accumulated score for this vertex
+  }
 
-    // Attaches a new child node to this vertex
-    connectSubNode(subNodeToConnect) {
-        this.descendantNodes.push(subNodeToConnect);
-        subNodeToConnect.ancestorNode = this;
-    }
+  // Method to add another vertex as a child of this vertex
+  addChildVertex(childVertexInstance) {
+    this.childVertices.push(childVertexInstance);
+    childVertexInstance.parentVertex = this; // Set this vertex as the child's parent
+  }
 
-    // Adds a specified value to this vertex's score
-    incrementScore(scoreIncrementValue) {
-        this.scoreAccumulator += parseInt(scoreIncrementValue);
-    }
+  // Method to increment this vertex's score by a given amount
+  addScore(scoreAmountToAdd) {
+    this.currentScore += parseInt(scoreAmountToAdd);
+  }
 
-    // Propagates this vertex's current score to its immediate children
-    propagateScoresToDescendants() {
-        for (let currentDescendant of this.descendantNodes) {
-            currentDescendant.incrementScore(this.scoreAccumulator);
-        }
+  // Method to distribute this vertex's current score to its direct children
+  propagateScoresToChildren() {
+    // Iterate through each child vertex
+    for (let currentChild of this.childVertices) {
+      // Add this vertex's score to the child's score
+      currentChild.addScore(this.currentScore);
     }
+  }
 }
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and initiate the processing
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

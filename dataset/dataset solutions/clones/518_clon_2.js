@@ -1,148 +1,148 @@
-// Import the file system module for synchronous operations
-var fileSys = require('fs')
-    , dataSize = fileSys.fstatSync(executionEnv.standardInput.fileDescriptor).size
-    , byteBlock = new Buffer(dataSize)
-    , octetsCount = fileSys.readSync(executionEnv.standardInput.fileDescriptor, byteBlock, 0, dataSize, 0)
-    , lineData = byteBlock.toString('utf8', 0, octetsCount).split('\n');
+var fileSystemModule = require('fs'); // Import the Node.js file system module
+var fileSizeInBytes = fileSystemModule.fstatSync(process.stdin.fd).size; // Get the size of the standard input stream
+var inputBuffer = new Buffer(fileSizeInBytes); // Create a buffer to hold the input data
+var actualBytesRead = fileSystemModule.readSync(process.stdin.fd, inputBuffer, 0, fileSizeInBytes, 0); // Read data from stdin into the buffer
+var inputLinesArray = inputBuffer.toString('utf8', 0, actualBytesRead).split('\n'); // Convert buffer to string, then split into an array of lines
 
-// Declare main problem parameters
-var upperBoundValue, vertexCount;
-var loopIndex;
+var maxStepSize, numLocations; // Declare variables for maximum step size and number of locations
+var loopIndexA; // General purpose loop index
 
 /**
- * Creates a 2D array (matrix) initialized with a specific value.
- * @param {number} rowCount - The number of rows for the new array.
- * @param {number} colCount - The number of columns for the new array.
- * @param {*} initialValue - The value to assign to each cell.
- * @returns {Array<Array<*>>} The newly created and initialized 2D array.
+ * Creates and initializes a 2D array (matrix).
+ * @param {number} rows - The number of rows.
+ * @param {number} cols - The number of columns.
+ * @param {*} initialValue - The value to initialize each element with.
+ * @returns {Array<Array<*>>} A new 2D array.
  */
-function create2DArray(rowCount, colCount, initialValue) {
-  var collection = []
-    , rowIdx, colIdx; // Iterators for array dimensions
-  for (rowIdx = 0; rowIdx < rowCount; rowIdx++) {
-    collection[rowIdx] = []; // Initialize each row
-    for (colIdx = 0; colIdx < colCount; colIdx++) {
-      collection[rowIdx][colIdx] = initialValue; // Set the initial value
+function initialize2DArray(rows, cols, initialValue) {
+  var twoDArray = []; // Array to store rows
+  var loopIndexA, loopIndexB; // Local loop indices
+
+  // Iterate through rows
+  for (loopIndexA = 0; loopIndexA < rows; loopIndexA++) {
+    twoDArray[loopIndexA] = []; // Initialize current row as an empty array
+    // Iterate through columns for the current row
+    for (loopIndexB = 0; loopIndexB < cols; loopIndexB++) {
+      twoDArray[loopIndexA][loopIndexB] = initialValue; // Set initial value for each cell
     }
   }
-  return collection;
+  return twoDArray; // Return the created 2D array
 }
 
 /**
- * Computes shortest paths from a source node to all other nodes
- * in a graph using Dijkstra's algorithm.
- * @param {Array<Array<number>>} graphMatrix - The adjacency matrix representing the graph.
+ * Implements Dijkstra's algorithm to find shortest paths from a source node.
+ * @param {Array<Array<number>>} adjacencyMatrix - The graph represented as an adjacency matrix.
  * @param {number} sourceNode - The starting node for path calculation.
- * @returns {Array<number>} An array containing the shortest distances from the source node to all others.
+ * @returns {Array<number>} An array of shortest distances from the source node to all other nodes.
  */
-function shortestPathFinder(graphMatrix, sourceNode) {
-  var distances = [], // Array to store computed shortest distances
-      visitedNodes = [], // Boolean array to track visited nodes
-      idx, // Generic loop counter
-      numNodes = graphMatrix.length, // Total number of nodes in the graph
-      currentNode, // The node currently being processed
-      neighborNode; // A node adjacent to the current node
+function calculateShortestPaths(adjacencyMatrix, sourceNode) {
+  var distanceArray = []; // Stores shortest distances from source
+  var visitedFlags = []; // Tracks visited nodes
+  var loopIndexA, // General loop index
+      graphSize = adjacencyMatrix.length, // Number of nodes in the graph
+      currentVertex, neighborVertex; // Variables for current and neighbor nodes
 
-  // Initialize distances and visited status
-  for (neighborNode = 0; neighborNode < numNodes; neighborNode++) {
-    distances[neighborNode] = Infinity; // All distances initially set to infinity
-    visitedNodes[neighborNode] = false; // No nodes have been visited yet
+  // Initialize distances and visited flags for all nodes
+  for (neighborVertex = 0; neighborVertex < graphSize; neighborVertex++) {
+    distanceArray[neighborVertex] = Infinity; // Set initial distance to infinity
+    visitedFlags[neighborVertex] = false; // Mark all nodes as unvisited
   }
-  distances[sourceNode] = 0; // Distance from source to itself is zero
 
-  // Main loop for Dijkstra's algorithm execution
+  distanceArray[sourceNode] = 0; // Distance from source to itself is zero
+
+  // Main loop for Dijkstra's algorithm
   while (true) {
-    currentNode = -1; // Reset current node selection
+    currentVertex = -1; // Initialize current vertex to an invalid value
 
     // Find the unvisited node with the smallest distance
-    for (neighborNode = 0; neighborNode < numNodes; neighborNode++) {
-      if (!visitedNodes[neighborNode] && (currentNode === -1 || distances[currentNode] > distances[neighborNode])) {
-        currentNode = neighborNode; // Update selected node
+    for (neighborVertex = 0; neighborVertex < graphSize; neighborVertex++) {
+      if (!visitedFlags[neighborVertex] && (currentVertex === -1 || distanceArray[currentVertex] > distanceArray[neighborVertex])) {
+        currentVertex = neighborVertex; // Update current vertex if a smaller distance is found
       }
     }
 
-    // If no unvisited node can be reached, terminate the search
-    if (currentNode === -1) {
+    // If no unvisited node is found, break the loop
+    if (currentVertex === -1) {
       break;
     }
 
-    visitedNodes[currentNode] = true; // Mark the selected node as visited
+    visitedFlags[currentVertex] = true; // Mark the current vertex as visited
 
-    // Update distances to all neighbors of the current node
-    for (neighborNode = 0; neighborNode < numNodes; neighborNode++) {
-      // Perform relaxation: if a shorter path is found, update the distance
-      distances[neighborNode] = distances[neighborNode] < distances[currentNode] + graphMatrix[currentNode][neighborNode]
-                               ? distances[neighborNode]
-                               : distances[currentNode] + graphMatrix[currentNode][neighborNode];
+    // Update distances to neighbors of the current vertex
+    for (neighborVertex = 0; neighborVertex < graphSize; neighborVertex++) {
+      // Relax the edge: if a shorter path to neighborVertex is found through currentVertex
+      distanceArray[neighborVertex] = Math.min(distanceArray[neighborVertex], distanceArray[currentVertex] + adjacencyMatrix[currentVertex][neighborVertex]);
     }
   }
-  return distances; // Return the final shortest distances array
+  return distanceArray; // Return the array of shortest distances
 }
 
 /**
- * Determines if a specific set of conditions can be met, often related to pathfinding or reachability.
- * @param {number} upperBoundValue - The maximum step size allowed.
- * @param {number} vertexCount - The total number of primary vertices in the system.
- * @param {Array<number>} jumpOffsets - An array defining offsets at various points.
- * @returns {boolean} True if the conditions are satisfied, false otherwise.
+ * Determines if a path exists under given constraints and if all intermediate points are reachable.
+ * @param {number} maxStepSize - The maximum step size allowed.
+ * @param {number} numLocations - The total number of locations.
+ * @param {Array<number>} displacementValues - Array of displacement values for each location.
+ * @returns {boolean} True if the path is feasible, false otherwise.
  */
-function determineFeasibility(upperBoundValue, vertexCount, jumpOffsets) {
-    // Construct the graph's adjacency matrix, filling with an initial 'infinity' value
-    var graphMatrix = create2DArray(vertexCount + 2, vertexCount + 2, Infinity);
-    var rowIterator, colIterator; // Iterators for graph construction
-    var targetPosition; // The calculated destination after a move
+function determineFeasibility(maxStepSize, numLocations, displacementValues) {
+    // Create an adjacency matrix for the graph, including start (0) and end (n+1) nodes
+    var adjacencyMatrix = initialize2DArray(numLocations + 2, numLocations + 2, Infinity);
+    var loopIndexA, loopIndexB; // Loop indices
+    var calculatedPosition; // Variable to store the calculated target position
 
-    // Populate the graph based on movement rules and offsets
-    for (rowIterator = 0; rowIterator <= vertexCount; rowIterator++) {
-        for (colIterator = upperBoundValue; colIterator--; ) { // Iterate backwards from the max step size
-            // Calculate the potential next position, applying offsets if within bounds
-            targetPosition = rowIterator + colIterator + (rowIterator + colIterator < vertexCount + 1 ? jumpOffsets[rowIterator + colIterator] : 0);
-            // Clamp the target position to valid graph indices [0, vertexCount + 1]
-            targetPosition = Math.min(Math.max(targetPosition, 0), vertexCount + 1);
-
-            // If the calculated position is different from the current, add an edge with weight 1
-            if(targetPosition !== rowIterator) {
-                graphMatrix[rowIterator][targetPosition] = 1;
+    // Populate the adjacency matrix based on step sizes and displacement values
+    for (loopIndexA = 0; loopIndexA <= numLocations; loopIndexA++) {
+        // Iterate backwards from maxStepSize to 1
+        for (loopIndexB = maxStepSize; loopIndexB--; ) {
+            // Calculate the potential target position
+            calculatedPosition = loopIndexA + loopIndexB + (loopIndexA + loopIndexB < numLocations + 1 ? displacementValues[loopIndexA + loopIndexB] : 0);
+            // Ensure the position stays within valid bounds [0, numLocations + 1]
+            calculatedPosition = Math.min(Math.max(calculatedPosition, 0), numLocations + 1);
+            
+            // If the calculated position is different from the current position, add an edge
+            if(calculatedPosition !== loopIndexA) {
+                adjacencyMatrix[loopIndexA][calculatedPosition] = 1; // Edge weight is 1
             }
-        }
+        }       
     }
 
-    // Find shortest paths from the initial node (node 0)
-    var accessibleNodes = shortestPathFinder(graphMatrix, 0);
-
-    // Check if the final node (vertexCount + 1) is reachable from the start
-    if (accessibleNodes[vertexCount + 1] === Infinity) {
-        return false; // If not reachable, the overall condition is not met
+    // Calculate shortest paths from the starting node (0) to all other nodes
+    var initialReachability = calculateShortestPaths(adjacencyMatrix, 0);
+    
+    // If the end node (n+1) is not reachable from the start node, the path is not feasible
+    if (initialReachability[numLocations + 1] === Infinity) {
+        return false;
     }
 
-    var currentDistances; // Temporary variable for distances from intermediate nodes
-    // Iterate through intermediate nodes to ensure they can also reach the end node
-    for (rowIterator = 1; rowIterator <= vertexCount; rowIterator++) {
-        if(accessibleNodes[rowIterator] < Infinity) { // Only if the current node is reachable from the start
-            // Calculate shortest paths starting from this intermediate node
-            currentDistances = shortestPathFinder(graphMatrix, rowIterator);
-            // If the final node is not reachable from this intermediate node, return false
-            if(currentDistances[vertexCount + 1] === Infinity) {
+    var pathDistancesFromNode; // Variable to store distances from an intermediate node
+
+    // Check reachability from each intermediate node (1 to n) to the end node
+    for (loopIndexA = 1; loopIndexA <= numLocations; loopIndexA++) {
+        // Only proceed if the current intermediate node is reachable from the start
+        if(initialReachability[loopIndexA] < Infinity) {
+            pathDistancesFromNode = calculateShortestPaths(adjacencyMatrix, loopIndexA); // Calculate paths from this node
+            // If the end node is not reachable from this intermediate node, the path is not feasible
+            if(pathDistancesFromNode[numLocations + 1] === Infinity) {
                 return false;
             }
         }
     }
-    return true; // All conditions passed, the system is feasible
+    return true; // If all checks pass, the path is feasible
 }
 
-// Main execution loop: process input lines until a zero value for upperBoundValue is encountered
-while ((upperBoundValue = lineData.shift() - 0) !== 0) {
-    var jumpOffsets = []; // Array to hold the specific jump offset values
-    vertexCount = lineData.shift() - 0; // Read the number of vertices for this test case
+// Main loop to process input lines
+while ((maxStepSize = inputLinesArray.shift() - 0) !== 0) { // Read maxStepSize, convert to number; loop until maxStepSize is 0
+    var displacementValues = []; // Array to store displacement values for the current test case
+    numLocations = inputLinesArray.shift() - 0; // Read numLocations, convert to number
+    
+    displacementValues[0] = 0; // Displacement at start node is 0
+    displacementValues[numLocations + 1] = 0; // Displacement at end node is 0
 
-    jumpOffsets[0] = 0; // Set initial offset for the starting point
-    jumpOffsets[vertexCount + 1] = 0; // Set initial offset for the virtual end point
-
-    // Read the specific jump offsets for each vertex
-    for (loopIndex = 1; loopIndex <= vertexCount; loopIndex++) {
-        jumpOffsets[loopIndex] = lineData.shift() - 0;
+    // Read displacement values for intermediate locations (1 to n)
+    for (loopIndexA = 1; loopIndexA <= numLocations; loopIndexA++) {
+        displacementValues[loopIndexA] = inputLinesArray.shift() - 0; // Convert to number
     }
-
-    // Call the feasibility determination function and output the result
-    outputChannel.log(determineFeasibility(upperBoundValue, vertexCount, jumpOffsets) ? 'OK' : 'NG');
+    
+    // Call the solve function and print 'OK' or 'NG' based on the result
+    console.log(determineFeasibility(maxStepSize, numLocations, displacementValues) ? 'OK' : 'NG');
 }

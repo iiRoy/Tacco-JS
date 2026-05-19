@@ -1,80 +1,60 @@
-const processInput = (dataStream) => {
-  const lineProcessor = (singleLine) => {
-    const numericValues = singleLine.split(',').map(Number);
+(function(rawInput) {
+  const processHandLine = (lineContent) => {
+    const currentHandValues = lineContent.split(',').map(Number);
 
-    const occurrenceMap = numericValues.reduce((acc, currentVal) => {
-      acc.set(currentVal, (acc.get(currentVal) || 0) + 1);
-      return acc;
-    }, new Map());
+    const valueOccurrences = currentHandValues.reduce((accumulator, cardVal) => {
+      accumulator[cardVal] = (accumulator[cardVal] || 0) + 1;
+      return accumulator;
+    }, {});
 
-    const groupingsByFrequency = Array.from(occurrenceMap.entries()).reduce((acc, [numberKey, countVal]) => {
-      if (!acc.has(countVal)) {
-        acc.set(countVal, []);
-      }
-      acc.get(countVal).push(numberKey);
-      return acc;
-    }, new Map());
+    const groupedByFrequency = Object.entries(valueOccurrences).reduce((accumulator, [cardVal, count]) => {
+      accumulator[count] = (accumulator[count] || []).concat(Number(cardVal));
+      return accumulator;
+    }, {});
 
-    return evaluateHand(groupingsByFrequency);
+    return evaluateHand(groupedByFrequency);
   };
 
-  const processedLines = dataStream.trim().split('\n');
-  const results = processedLines.map(lineProcessor);
-  results.forEach(res => console.log(res));
-};
+  const evaluateHand = (frequencyMap) => {
+    const handClassificationRules = [
+      (fm) => fm[4] ? 'four card' : undefined,
+      (fm) => (fm[3] && fm[2]) ? 'full house' : undefined,
+      (fm) => {
+        if (fm[1] && fm[1].length === 5) {
+          const sortedUniqueCards = fm[1].map(Number).sort((valA, valB) => valA - valB);
+          if (sortedUniqueCards[0] > 9) {
+            return 'null';
+          }
+          if (sortedUniqueCards[1] === 10) {
+            return 'straight';
+          }
+          const isConsecutiveSequence = sortedUniqueCards.every((cardValue, index, arrayRef) =>
+            index === 0 || cardValue === arrayRef[index - 1] + 1
+          );
+          if (isConsecutiveSequence) {
+            return 'straight';
+          }
+        }
+        return undefined;
+      },
+      (fm) => fm[3] ? 'three card' : undefined,
+      (fm) => (fm[2] && fm[2].length === 2) ? 'two pair' : undefined,
+      (fm) => fm[2] ? 'one pair' : undefined,
+    ];
 
-const evaluateHand = (frequencyGroups) => {
-  const checkPresence = (count) => frequencyGroups.has(count);
-  const retrieveValues = (count) => frequencyGroups.get(count) || [];
-
-  if (checkPresence(4)) {
-    return 'four card';
-  }
-
-  if (checkPresence(3) && checkPresence(2)) {
-    return 'full house';
-  }
-
-  const uniqueSingletons = retrieveValues(1);
-  if (uniqueSingletons.length === 5) {
-    const orderedUniqueNumbers = uniqueSingletons.slice().sort((a, b) => a - b);
-
-    const lowestValue = orderedUniqueNumbers[0];
-    const secondLowestValue = orderedUniqueNumbers[1];
-
-    if (lowestValue > 9) {
-      return 'null';
+    for (const classificationFn of handClassificationRules) {
+      const classificationResult = classificationFn(frequencyMap);
+      if (classificationResult !== undefined) {
+        return classificationResult;
+      }
     }
-    if (secondLowestValue === 10) {
-      return 'straight';
-    }
 
-    const areConsecutive = orderedUniqueNumbers.every((current, index, arr) => {
-      if (index === 0) return true;
-      return current === arr[index - 1] + 1;
-    });
+    return 'null';
+  };
 
-    if (areConsecutive) {
-      return 'straight';
-    }
-  }
+  const inputLines = rawInput.replace(/\n$/, '').split('\n');
+  inputLines.forEach(line => {
+    console.log(processHandLine(line));
+  });
 
-  if (checkPresence(3)) {
-    return 'three card';
-  }
-
-  const pairValues = retrieveValues(2);
-  if (pairValues.length === 2) {
-    return 'two pair';
-  }
-
-  if (checkPresence(2)) {
-    return 'one pair';
-  }
-
-  return 'null';
-};
-
-((source) => {
-  processInput(source);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

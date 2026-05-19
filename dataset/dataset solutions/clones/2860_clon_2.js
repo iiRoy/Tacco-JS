@@ -1,55 +1,36 @@
-const   fileAccessUtility   =   require   (   'fs'   )   ;   // Import the Node.js file system module.
+var fileSystemModule = require('fs'); // Import the Node.js file system module for file operations
 
-// Read the complete content from the standard input stream, interpreting it as UTF-8 text.
-// Then, divide the entire string into an array of individual lines.
-const   contentLines      =   fileAccessUtility   .   readFileSync   (   '/dev/stdin'   ,   'utf8'   )   .   split   (   '\n'   )   ;
+var inputLines = fileSystemModule.readFileSync('/dev/stdin', 'utf8').split('\n'); // Read all input from standard input, then split it into an array of lines
 
-// Extract the total quantity of data points from the first line of input.
-const   elementQuantity   =   Number   (   contentLines   [   0   ]   )   ;
+var totalCount = Number(inputLines[0]); // Convert the first line of input to a number, representing the total count
 
-// Process the second line of input:
-// 1. Split the string by spaces to get an array of string representations of numbers.
-// 2. Transform each string value into its numeric equivalent.
-//    (Note: The original map function was missing a 'return' statement, which would result in an array of 'undefined'.
-//     This corrected version ensures proper numeric conversion using the unary plus operator.)
-const   numericDataPoints   =   contentLines   [   1   ]
-                                .   split   (   ' '   )
-                                .   map   (   (   stringValue   )   =>   +stringValue   )   ;
+var weightNumbers = inputLines[1].split(' ').map(function (item) {
+    Number(item); // This function converts the item to a number but does not explicitly return it, replicating the original code's behavior.
+});
 
-// Initialize a tracker for the smallest absolute difference encountered.
-// It's set to null initially, as no differences have been calculated yet.
-let   smallestAbsoluteDelta   =   null   ;
+var minDifference = null; // Initialize a variable to store the smallest absolute difference found, starting as null
 
-// Begin an iterative process to evaluate different splitting points within the numeric data.
-// The loop starts from the second element (index 1) up to, but not including, the last element.
-for   (   let   partitionIndex   =   1   ;   partitionIndex   <   elementQuantity   ;   partitionIndex   ++   )   {
+// Iterate through all possible split points for the 'weightNumbers' array
+// The split point 'splitPoint' represents the index where the array is divided
+for (var splitPoint = 1; splitPoint < totalCount; splitPoint++) {
+    // Calculate the sum of the elements in the first part of the array (from index 0 up to 'splitPoint' - 1)
+    // Then, calculate the sum of the elements in the second part of the array (from 'splitPoint' to the end)
+    // Finally, compute the difference between these two sums
+    var currentDifference = weightNumbers.slice(0, splitPoint).reduce(function (accumulator, currentValue) {
+        return accumulator + currentValue;
+    }) - weightNumbers.slice(splitPoint).reduce(function (accumulator, currentValue) {
+        return accumulator + currentValue;
+    });
 
-    // Calculate the summation of values in the first segment of the array,
-    // from the beginning up to the current partition index.
-    const   firstSegmentSum   =   numericDataPoints
-                                    .   slice   (   0   ,   partitionIndex   )
-                                    .   reduce   (   (   runningTotal   ,   currentValue   )   =>   runningTotal   +   currentValue   ,   0   )   ;
-
-    // Calculate the summation of values in the second segment of the array,
-    // starting from the current partition index to the end.
-    const   secondSegmentSum  =   numericDataPoints
-                                    .   slice   (   partitionIndex   )
-                                    .   reduce   (   (   runningTotal   ,   currentValue   )   =>   runningTotal   +   currentValue   ,   0   )   ;
-
-    // Compute the raw difference between the two segment sums.
-    let   currentCalculatedDifference   =   firstSegmentSum   -   secondSegmentSum   ;
-
-    // Convert the calculated difference into its absolute value if it's negative.
-    if   (   currentCalculatedDifference   <   0   )   {
-            currentCalculatedDifference   =   -currentCalculatedDifference   ;
+    // If the calculated difference is negative, convert it to its positive (absolute) value
+    if (currentDifference < 0) {
+        currentDifference = -currentDifference; // Make the difference absolute
     }
 
-    // Compare the current absolute difference with the smallest one found so far.
-    // Update the smallestAbsoluteDelta if this is the first difference, or if the current one is smaller.
-    if   (   smallestAbsoluteDelta   ===   null   ||   smallestAbsoluteDelta   >   currentCalculatedDifference   )   {
-            smallestAbsoluteDelta   =   currentCalculatedDifference   ;
+    // Check if 'minDifference' is currently null (first iteration) or if the 'currentDifference' is smaller
+    if (minDifference === null || minDifference > currentDifference) {
+        minDifference = currentDifference; // Update 'minDifference' with the new smallest absolute difference
     }
 }
 
-// Output the final determined minimum absolute difference to the console.
-console   .   log   (   smallestAbsoluteDelta   )   ;
+console.log(minDifference); // Print the final minimum absolute difference found to the console

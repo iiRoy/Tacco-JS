@@ -1,102 +1,90 @@
-/* This module provides utility functions for numerical processing. */
-function parseInteger( inputString )
-{
-  // Converts the given string into an integer.
-  return parseInt( inputString );
+function parseIntegerVal(inputString) {
+  // Converts a string representation to an integer.
+  return parseInt(inputString);
 }
 
-/*
- * Computes the sum of absolute differences between adjacent elements
- * in a provided array of numbers.
- * @param {Array<number>} numberArray - The array of numbers to process.
- * @returns {number} The accumulated absolute differences.
- */
-function calculateAbsoluteDifferenceSum( numberArray ) {
-  let totalDifference = 0; // Initialize aggregator for differences.
-  for ( let idx = 0; idx < numberArray.length - 1; idx++ ) {
-    totalDifference += Math.abs( numberArray[ idx ] - numberArray[ idx + 1 ] );
+function calculateAbsoluteDifferenceSum(numberArray) {
+  let totalDifference = 0; // Accumulator for the sum of absolute differences.
+  // Iterate through the array, comparing adjacent elements.
+  for (let idx = 0; idx < numberArray.length - 1; idx++) {
+    totalDifference += Math.abs(numberArray[idx] - numberArray[idx + 1]);
   }
-  return totalDifference;
+  return totalDifference; // Returns the total calculated difference.
 }
 
-/*
- * Main function to process raw input data, sort numbers, and arrange them
- * into an optimal sequence based on a specific algorithm, then print the
- * sum of absolute differences of the final sequence.
- * @param {string} rawData - The raw input string, typically from stdin.
- */
-function ProcessInputData( rawData ) {
-  // Parse the input string into an array of integers.
-  const parsedNumbers = rawData.split( '\n' ).map( parseInteger );
+function ProcessInputData(rawData) {
+  // Split the raw input string by newlines and convert each part to an integer.
+  const parsedNumbers = rawData.split("\n").map(parseIntegerVal);
 
-  const totalCount = parsedNumbers[ 0 ]; // The first number indicates the count of subsequent numbers.
-  const initialNumbers = []; // Temporary storage for numbers to be processed.
+  // The first element of the parsed data represents the count of elements.
+  const countOfElements = parsedNumbers[0];
 
-  // Populate the initial numbers array, skipping the count itself.
-  for ( let counter = 0; counter < totalCount; counter++ ) {
-    initialNumbers.push( parsedNumbers[ counter + 1 ] );
+  // Initialize a collection to hold the numbers for processing.
+  const initialCollection = [];
+  // Populate the collection with numbers from the input, skipping the first element (count).
+  for (let loopIndex = 0; loopIndex < countOfElements; loopIndex++) {
+    initialCollection.push(parsedNumbers[loopIndex + 1]);
   }
 
-  const orderedSequence = []; // This will store the final sequence.
-  initialNumbers.sort( ( a, b ) => a - b ); // Sort the numbers in ascending order.
+  // This array will store the final arrangement of numbers.
+  const finalArrangement = [];
+  // Sort the initial collection in ascending order.
+  initialCollection.sort((a, b) => a - b);
 
-  let currentMode = 'minimum'; // Controls the selection strategy: 'minimum' or 'maximum'.
+  // Determine the strategy for placing numbers: 'min' or 'max'.
+  let currentStrategy = 'min';
 
-  // Loop until all numbers are placed into the ordered sequence.
-  while ( orderedSequence.length < totalCount ) {
-    if ( currentMode === 'minimum' ) {
-      // Handle the initial placement for the sequence.
-      if ( orderedSequence.length === 0 ) {
-        orderedSequence.push( initialNumbers.shift() ); // Take the smallest available number.
+  // Continue arranging numbers until the final array has all elements.
+  while (finalArrangement.length < countOfElements) {
+    if (currentStrategy === 'min') {
+      // If the final arrangement is empty, add the smallest available number.
+      if (finalArrangement.length === 0) {
+        finalArrangement.push(initialCollection.shift());
       } else {
-        // Compare placing the smallest remaining number at the beginning vs. end of the current sequence.
-        const firstCandidateDiff = Math.abs( orderedSequence[ 0 ] - initialNumbers[ 0 ] );
-        const lastCandidateDiff = Math.abs( orderedSequence[ orderedSequence.length - 1 ] - initialNumbers[ 0 ] );
-
-        if ( firstCandidateDiff > lastCandidateDiff ) {
-          // Placing at the beginning yields a larger difference, so place it there.
-          orderedSequence.unshift( initialNumbers.shift() );
-          // If sequence not full, add another from the smallest end.
-          if ( orderedSequence.length !== totalCount ) {
-            orderedSequence.push( initialNumbers.shift() );
+        // Compare placing the smallest available number at the beginning or end.
+        if (Math.abs(finalArrangement[0] - initialCollection[0]) > Math.abs(finalArrangement[finalArrangement.length - 1] - initialCollection[0])) {
+          // If placing at the beginning is better, do so.
+          finalArrangement.unshift(initialCollection.shift());
+          // If there are still numbers to place, add the next smallest to the end.
+          if (finalArrangement.length !== countOfElements) {
+            finalArrangement.push(initialCollection.shift());
           }
         } else {
-          // Placing at the end yields a larger difference or equal, so place it there.
-          orderedSequence.push( initialNumbers.shift() );
-          // If sequence not full, add another from the smallest end to the other side.
-          if ( orderedSequence.length !== totalCount ) {
-            orderedSequence.unshift( initialNumbers.shift() );
+          // Otherwise, place the smallest at the end.
+          finalArrangement.push(initialCollection.shift());
+          // If there are still numbers to place, add the next smallest to the beginning.
+          if (finalArrangement.length !== countOfElements) {
+            finalArrangement.unshift(initialCollection.shift());
           }
         }
       }
-      currentMode = 'maximum'; // Switch mode for the next iteration.
-    } else { // currentMode === 'maximum'
-      // Compare placing the largest remaining number at the beginning vs. end of the current sequence.
-      const firstCandidateDiff = Math.abs( orderedSequence[ 0 ] - initialNumbers[ initialNumbers.length - 1 ] );
-      const lastCandidateDiff = Math.abs( orderedSequence[ orderedSequence.length - 1 ] - initialNumbers[ initialNumbers.length - 1 ] );
-
-      if ( firstCandidateDiff > lastCandidateDiff ) {
-        // Placing at the beginning yields a larger difference, so place it there.
-        orderedSequence.unshift( initialNumbers.pop() ); // Take the largest available number.
-        // If sequence not full, add another from the largest end.
-        if ( orderedSequence.length !== totalCount ) {
-          orderedSequence.push( initialNumbers.pop() );
+      // Switch strategy to 'max' for the next iteration.
+      currentStrategy = 'max';
+    } else {
+      // Strategy is 'max': compare placing the largest available number.
+      if (Math.abs(finalArrangement[0] - initialCollection[initialCollection.length - 1]) > Math.abs(finalArrangement[finalArrangement.length - 1] - initialCollection[initialCollection.length - 1])) {
+        // If placing the largest at the beginning is better, do so.
+        finalArrangement.unshift(initialCollection.pop());
+        // If there are still numbers to place, add the next largest to the end.
+        if (finalArrangement.length !== countOfElements) {
+          finalArrangement.push(initialCollection.pop());
         }
       } else {
-        // Placing at the end yields a larger difference or equal, so place it there.
-        orderedSequence.push( initialNumbers.pop() ); // Take the largest available number.
-        // If sequence not full, add another from the largest end to the other side.
-        if ( orderedSequence.length !== totalCount ) {
-          orderedSequence.unshift( initialNumbers.pop() );
+        // Otherwise, place the largest at the end.
+        finalArrangement.push(initialCollection.pop());
+        // If there are still numbers to place, add the next largest to the beginning.
+        if (finalArrangement.length !== countOfElements) {
+          finalArrangement.unshift(initialCollection.pop());
         }
       }
-      currentMode = 'minimum'; // Switch mode for the next iteration.
+      // Switch strategy to 'min' for the next iteration.
+      currentStrategy = 'min';
     }
   }
 
-  // Log the final calculated difference for the optimally ordered sequence.
-  console.log( calculateAbsoluteDifferenceSum( orderedSequence ) );
+  // Output the sum of absolute differences for the final arrangement.
+  console.log(calculateAbsoluteDifferenceSum(finalArrangement));
 }
 
-// Execute the main processing function with data read from standard input.
-ProcessInputData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

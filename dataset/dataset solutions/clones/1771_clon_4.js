@@ -1,29 +1,12 @@
-const evaluateScenario = function(payloadString) {
-  let separatorIndex = payloadString.indexOf(' ');
-  let firstSegment = payloadString.substring(0, separatorIndex);
-  let secondSegment = payloadString.substring(separatorIndex + 1);
+function ProcessInput(rawData) {
+  const dataSegments = rawData.split(" ");
+  const countA = Number(dataSegments[0]);
+  const totalB = Number(dataSegments[1]);
 
-  let entityCount = parseInt(firstSegment, 10);
-  let limbCount = parseInt(secondSegment, 10);
+  const parityCheck = (totalB % 2) === 0;
+  const upperLimitCheck = (4 * countA) >= totalB;
 
-  let isLimbCountEven = (limbCount & 1) === 0;
+  console.log(parityCheck && upperLimitCheck ? 'Yes' : 'No');
+}
 
-  let quadrupledEntityCount = entityCount + entityCount + entityCount + entityCount;
-
-  let isQuadrupledEntityCountSufficient = quadrupledEntityCount >= limbCount;
-
-  const resultMapping = new Map([
-    [true, 'Yes'],
-    [false, 'No']
-  ]);
-
-  return resultMapping.get(isLimbCountEven && isQuadrupledEntityCountSufficient);
-};
-
-const ioHandler = require("node:fs");
-const standardStreamPath = "/dev/stdin";
-
-const rawInputData = ioHandler.readFileSync(standardStreamPath, "utf8");
-
-const outcomeMessage = evaluateScenario(rawInputData);
-console.log(outcomeMessage);
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

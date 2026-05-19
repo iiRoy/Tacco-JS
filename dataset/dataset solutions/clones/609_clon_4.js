@@ -1,48 +1,36 @@
-const inputHandler = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputChunk) {
+  const processInputData = (dataPayload) => {
+    const inputLines = dataPayload.split('\n');
+    const boardCount = Number(inputLines[0]);
+    const searchPattern = inputLines[1];
 
-let receivedSegments = [];
-let segmentIndex = 0;
-let totalPatternContainers;
-let searchString;
+    const boardCollection = inputLines.slice(2, 2 + boardCount);
 
-inputHandler.on('line', (currentSegment) => {
-  receivedSegments.push(currentSegment);
+    const determinePatternMatch = (targetPattern, currentBoard) => {
+      const patternCharacters = Array.from(targetPattern);
+      const currentBoardLength = currentBoard.length;
+      const patternLength = patternCharacters.length;
 
-  if (segmentIndex === 0) {
-    totalPatternContainers = parseInt(currentSegment, 10);
-  } else if (segmentIndex === 1) {
-    searchString = currentSegment;
-  }
+      if (patternLength === 0) {
+        return false;
+      }
 
-  if (segmentIndex === totalPatternContainers + 1) {
-    inputHandler.close();
-  }
-  segmentIndex++;
-});
-
-inputHandler.on('close', () => {
-  const allContainers = receivedSegments.slice(2);
-
-  const matchCounter = allContainers.filter(containerContent => {
-    const patternElements = [...searchString];
-    const containerSize = containerContent.length;
-    const patternSize = patternElements.length;
-
-    if (patternSize === 0) return true;
-
-    const potentialSteps = Array.from({ length: containerSize }, (_, sIdx) => sIdx + 1);
-
-    return potentialSteps.some(currentStepValue => {
-      return patternElements.every((pElement, pElementIndex) => {
-        const targetIndex = pElementIndex * currentStepValue;
-        if (targetIndex >= containerSize) return false;
-        return containerContent[targetIndex] === pElement;
+      return Array.from({ length: currentBoardLength }, (_, offsetValue) => offsetValue).some(offsetValue => {
+        return patternCharacters.every((characterToVerify, characterPosition) => {
+          const boardLookupIndex = characterPosition + offsetValue * characterPosition;
+          return boardLookupIndex < currentBoardLength && currentBoard[boardLookupIndex] === characterToVerify;
+        });
       });
-    });
-  }).length;
+    };
 
-  console.log(matchCounter);
+    const totalMatches = boardCollection.filter(boardItem =>
+      determinePatternMatch(searchPattern, boardItem)
+    ).length;
+
+    console.log(totalMatches);
+  };
+
+  processInputData(inputChunk);
 });

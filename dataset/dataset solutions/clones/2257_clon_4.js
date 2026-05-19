@@ -1,63 +1,51 @@
-function processRawData(rawData) {
-    const lines = rawData.split('\n');
-    const parameters = lines[0].split(' ').map(Number);
-    const valueSequence = lines[1].split(' ').map(Number);
+const processInputData = (rawData) => {
+    const moduloConstant = 1000000007;
 
-    const parameterA = parameters[0];
-    const parameterB = parameters[1];
+    const transformInputToNumbers = (inputString) => {
+        return inputString.split('\n').map(line => line.split(' ').map(Number));
+    };
 
-    const sortedSequence = valueSequence.sort((first, second) => second - first);
+    const parsedNumericData = transformInputToNumbers(rawData);
 
-    return { parameterA, parameterB, sortedSequence };
-}
+    const totalElements = parsedNumericData[0][0];
+    const subsetSize = parsedNumericData[0][1];
 
-function determineCombinations(totalElements, chosenElements) {
-    if (chosenElements < 0 || chosenElements > totalElements) {
-        return 0;
-    }
-    if (chosenElements === 0 || chosenElements === totalElements) {
-        return 1;
-    }
-    if (chosenElements > totalElements / 2) {
-        chosenElements = totalElements - chosenElements;
-    }
+    const sortedNumbers = parsedNumericData[1].sort((first, second) => second - first);
 
-    let currentResult = 1;
-    for (let current = 0; current < chosenElements; current++) {
-        currentResult = currentResult * (totalElements - current) / (current + 1);
-    }
-    return currentResult;
-}
+    const calculateCombinations = (totalItems, selectedItems) => {
+        console.log(totalItems + "," + selectedItems);
 
-function computeOverallDifference(inputPayload) {
-    const primeModulus = 1000000007;
+        // If selectedItems is negative or greater than totalItems,
+        // the products will naturally result in 0 or 1 as per original loop behavior.
+        // For selectedItems = 0, Array.from({length:0}) results in reduce returning initial value (1).
+        // For selectedItems < 0, Array.from({length:negative}) results in empty array, reduce returns 1.
+        // For selectedItems > totalItems, numeratorProduct will eventually multiply by 0 or negative, resulting in 0.
 
-    const { parameterA, parameterB, sortedSequence } = processRawData(inputPayload);
+        const numeratorProduct = Array.from({ length: Math.max(0, selectedItems) }, (_, idx) => totalItems - idx)
+                                      .reduce((accumulator, currentValue) => accumulator * currentValue, 1);
 
-    let largestComponentSum = 0;
-    let smallestComponentSum = 0;
+        const denominatorProduct = Array.from({ length: Math.max(0, selectedItems) }, (_, idx) => idx + 1)
+                                        .reduce((accumulator, currentValue) => accumulator * currentValue, 1);
 
-    const largestComponentIndices = Array.from({ length: sortedSequence.length - parameterB + 1 }, (_, idx) => idx);
-    largestComponentSum = largestComponentIndices.reduce((accumulator, currentIdx) => {
-        const itemValue = sortedSequence[currentIdx];
-        const combinationTerm = determineCombinations(parameterA - currentIdx - 1, parameterB - 1);
-        return accumulator + itemValue * combinationTerm;
-    }, 0);
+        console.log(numeratorProduct + "/" + denominatorProduct + "=" + (numeratorProduct / denominatorProduct));
+        return numeratorProduct / denominatorProduct;
+    };
 
-    const smallestComponentIndices = Array.from({ length: sortedSequence.length - (parameterB - 1) }, (_, idx) => idx + (parameterB - 1));
-    smallestComponentSum = smallestComponentIndices.reduce((accumulator, currentIdx) => {
-        const itemValue = sortedSequence[currentIdx];
-        const combinationTerm = determineCombinations(currentIdx, parameterB - 1);
-        return accumulator + itemValue * combinationTerm;
-    }, 0);
+    const resultContainer = { maximumSum: 0, minimumSum: 0 };
 
-    let finalCalculation = largestComponentSum - smallestComponentSum;
-    finalCalculation = (finalCalculation % primeModulus + primeModulus) % primeModulus;
+    // Calculate maximumSum using functional approach
+    resultContainer.maximumSum = Array.from({ length: sortedNumbers.length - subsetSize + 1 }, (_, currentIdx) => currentIdx)
+        .reduce((accumulator, currentIdx) => {
+            return accumulator + sortedNumbers[currentIdx] * calculateCombinations(totalElements - currentIdx - 1, subsetSize - 1);
+        }, 0);
 
-    console.log(finalCalculation);
-}
+    // Calculate minimumSum using functional approach
+    resultContainer.minimumSum = Array.from({ length: sortedNumbers.length - subsetSize + 1 }, (_, relativeIdx) => relativeIdx + (subsetSize - 1))
+        .reduce((accumulator, currentIdx) => {
+            return accumulator + sortedNumbers[currentIdx] * calculateCombinations(currentIdx, subsetSize - 1);
+        }, 0);
 
-(function initiateComputation() {
-    const rawInputData = require("fs").readFileSync("/dev/stdin", "utf8");
-    computeOverallDifference(rawInputData);
-})();
+    console.log((resultContainer.maximumSum - resultContainer.minimumSum) % moduloConstant);
+};
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

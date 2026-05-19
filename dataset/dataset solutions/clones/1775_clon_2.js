@@ -1,46 +1,51 @@
-// This function processes input data to find the closest number to a target that is not in a given exclusion list.
-function  findClosestNumber (   dataLines  ) {
-  // Parse the first line of input to get the primary number and the count of excluded numbers.
-  const   [ targetValue ,  exclusionCount  ]  =  dataLines[0] . trim () . split (  " "  ) . map (  ( strNum )  =>  parseInt ( strNum ,  10 )  ) ;
+// This function serves as the primary entry point for processing the provided input data.
+function processInputData(dataLines) {
+  // The first line of input contains two space-separated integers:
+  // 'targetValue' (x in original) - the number around which to search.
+  // 'forbiddenCount' (n in original) - the count of numbers that are not allowed.
+  const [targetValue, forbiddenCount] = dataLines[0].trim().split(" ").map(valStr => parseInt(valStr, 10));
 
-  // Check if there are any numbers to exclude.
-  if  ( exclusionCount  !==  0  )
-  {
-    // Parse the second line of input to get the list of numbers that are forbidden.
-    const   forbiddenNumbers  =  dataLines[1] . trim () . split (  " "  ) . map (  ( currentStr )  =>  parseInt ( currentStr ,  10 )  ) ;
+  // Check if there are any numbers explicitly forbidden.
+  if (forbiddenCount !== 0) {
+    // If 'forbiddenCount' is not zero, the second line of input contains
+    // a list of space-separated integers representing the forbidden numbers.
+    const excludedNumbers = dataLines[1].trim().split(" ").map(numStr => parseInt(numStr, 10));
 
-    // Initialize an offset variable to search outwards from the target value.
-    let   deviation  =  0 ;
+    // Initialize an offset counter. This counter will be used to check numbers
+    // incrementally further away from the 'targetValue' in both directions.
+    let currentOffset = 0;
 
-    // Loop indefinitely until a suitable number is found.
-    while  ( true  )
-    {
-      // Check the number below the target value by the current deviation.
-      if  (  ! forbiddenNumbers . includes ( targetValue  -  deviation )  )
-      {
-        // If this number is not forbidden, print it and exit the loop.
-        console . log ( targetValue  -  deviation ) ;
-        break ;
+    // Begin an infinite loop to search for the closest non-forbidden number.
+    // The loop will terminate once the first valid number is found.
+    while (true) {
+      // First, check the number that is 'currentOffset' less than 'targetValue'.
+      // If this number is NOT present in the 'excludedNumbers' list, it's a valid candidate.
+      if (!excludedNumbers.includes(targetValue - currentOffset)) {
+        console.log(targetValue - currentOffset); // Output this valid number.
+        break; // Exit the loop as the closest number has been found.
       }
 
-      // Check the number above the target value by the current deviation.
-      if  (  ! forbiddenNumbers . includes ( targetValue  +  deviation )  )
-      {
-        // If this number is not forbidden, print it and exit the loop.
-        console . log ( targetValue  +  deviation ) ;
-        break ;
+      // If the number (targetValue - currentOffset) was forbidden,
+      // then check the number that is 'currentOffset' greater than 'targetValue'.
+      // If this number is NOT present in the 'excludedNumbers' list, it's a valid candidate.
+      if (!excludedNumbers.includes(targetValue + currentOffset)) {
+        console.log(targetValue + currentOffset); // Output this valid number.
+        break; // Exit the loop as the closest number has been found.
       }
 
-      // Increment the deviation to check numbers further away in the next iteration.
-      deviation++;
+      // If both (targetValue - currentOffset) and (targetValue + currentOffset) were forbidden,
+      // increment the offset to check numbers further away in the next iteration.
+      currentOffset++;
     }
-  }
-  else
-  {
-    // If there are no exclusions, the target value itself is the answer.
-    console . log ( targetValue ) ;
+  } else {
+    // If 'forbiddenCount' is zero, it means there are no forbidden numbers.
+    // In this scenario, the 'targetValue' itself is the closest and only possible answer.
+    console.log(targetValue);
   }
 }
 
-// Read input from standard input, parse it, and pass it to the main processing function.
-findClosestNumber (  require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) . trim () . split ( "\n" )  ) ;
+// This section handles reading input from standard input and initiating the processing.
+// It reads the entire content of '/dev/stdin' as a UTF-8 string,
+// removes any leading/trailing whitespace, and then splits the string into an array of lines.
+// This array of lines is then passed to the 'processInputData' function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

@@ -1,41 +1,19 @@
-const queryInterface = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let problemSet = [];
+sourceData.split('\n')
+  .filter(lineSegment => lineSegment.trim() !== '' && lineSegment !== '0 0')
+  .forEach(dimensionString => {
+    const numericDimensions = dimensionString.split(' ').map(Number);
+    const gridHeight = numericDimensions[0];
+    const gridWidth = numericDimensions[1];
 
-queryInterface.on('line', (lineSegment) => {
-  if (lineSegment === '0 0') {
-    queryInterface.close();
-    return;
-  }
-  const numericalComponents = lineSegment.split(' ').map(Number);
-  problemSet.push(numericalComponents);
-});
-
-queryInterface.on('close', () => {
-  let finalDisplay = [];
-  const symbolMatrix = ['#', '.'];
-
-  problemSet.forEach( (dimensionPair) => {
-    const verticalExtent = dimensionPair[0];
-    const horizontalExtent = dimensionPair[1];
-
-    if (verticalExtent === 0 && horizontalExtent === 0) {
-      return;
-    }
-
-    const constructedGrid = Array.from({ length: verticalExtent }, (_, currentV) => {
-      return Array.from({ length: horizontalExtent }, (_, currentH) => {
-        return symbolMatrix[(currentV + currentH) % 2];
+    Array.from({ length: gridHeight }, (_, rowIdentifier) => {
+      return Array.from({ length: gridWidth }, (_, colIdentifier) => {
+        return (rowIdentifier % 2) === (colIdentifier % 2) ? '#' : '.';
       }).join('');
-    }).join('\n');
+    }).forEach(constructedLine => {
+      console.log(constructedLine);
+    });
 
-    finalDisplay.push(constructedGrid);
-    finalDisplay.push('');
+    console.log();
   });
-
-  process.stdout.write(finalDisplay.join('\n'));
-});

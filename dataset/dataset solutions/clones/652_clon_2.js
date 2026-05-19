@@ -1,38 +1,23 @@
-let sourceData = require('fs') . readFileSync('/dev/stdin' , 'utf8' );
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input
+let [initialValue, bonusValue, targetValue] = rawData.trim().split(" ").map(Number); // Parse input values
+let [dayCounter, currentTotal] = [1, initialValue]; // Initialize day count and accumulated total
 
-/*
- * This section parses the raw input string.
- * It removes leading/trailing whitespace, splits the string by spaces,
- * and converts each resulting part into a numerical value.
- */
-let [ baseIncrement, weeklyBonus, targetAmount ] = sourceData
-                                                    .trim()
-                                                    .split(" ")
-                                                    .map(Number);
+// Loop indefinitely until the target is reached
+while (true) {
+    // Check if the current total has met or exceeded the target
+    if (targetValue <= currentTotal) {
+        console.log(dayCounter); // Output the number of days
+        break; // Exit the loop
+    }
 
-// Initialize a counter for periods and the cumulative total with the initial base amount.
-let [ periodCounter, runningTotal ] = [ 1, baseIncrement ];
+    // Increment the day counter for the next iteration
+    ++dayCounter;
 
-// Begin an endless cycle of calculations until a specific condition is fulfilled.
-while( true ) {
+    // Add the base value for the current day
+    currentTotal += initialValue;
 
-  // Evaluate if the running total has achieved or surpassed the predefined target.
-  if ( targetAmount <= runningTotal ) {
-    // If the condition holds true, print the final period count and terminate the loop.
-    console.log( periodCounter );
-    break;
-  }
-
-  // Increment the period counter for the next iteration.
-  ++periodCounter;
-
-  // Add the base increment amount to the current running total.
-  runningTotal += baseIncrement;
-
-  // Check for a specific milestone: if the period counter is a multiple of seven.
-  if ( periodCounter % 7 === 0 ) {
-    // When the milestone is reached, apply the additional weekly bonus to the total.
-    runningTotal += weeklyBonus;
-  }
-
-} // End of the primary computational loop.
+    // If it's a multiple of 7, add the bonus value
+    if (dayCounter % 7 === 0) {
+        currentTotal += bonusValue;
+    }
+}

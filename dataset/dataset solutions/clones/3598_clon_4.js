@@ -1,99 +1,96 @@
-function locateMiddleElement(dataArray) {
-    dataArray.sort((val1, val2) => val1 - val2);
-    return dataArray[Math.floor(dataArray.length / 2)];
-}
+const createInputHandler = (rawInputString) => {
+    let lineSegments = rawInputString.split("\n");
+    let currentLinePointer = 0;
+    let currentLineTokenBuffer = [];
 
-function createInputProcessor(rawContent) {
-    let sourceLines = rawContent.split("\n");
-    let currentLineIndex = 0;
-    let currentLineTokens = [];
-
-    const refillTokensIfEmpty = () => {
-        if (currentLineTokens.length === 0 && currentLineIndex < sourceLines.length) {
-            currentLineTokens = sourceLines[currentLineIndex].split(" ");
-            currentLineIndex++;
+    const advanceToNextLine = () => {
+        if (currentLinePointer < lineSegments.length) {
+            currentLineTokenBuffer = lineSegments[currentLinePointer].split(" ");
+            currentLinePointer++;
+        } else {
+            currentLineTokenBuffer = [];
         }
+    };
+
+    advanceToNextLine(); // Initialize the first line's tokens
+
+    const extractSingleToken = (returnAsString) => {
+        if (currentLineTokenBuffer.length === 0) {
+            advanceToNextLine();
+            if (currentLineTokenBuffer.length === 0) {
+                return undefined;
+            }
+        }
+        const tokenValue = currentLineTokenBuffer.pop();
+        return returnAsString ? tokenValue : Number(tokenValue);
+    };
+
+    const extractFullLine = (returnAsStrings) => {
+        const lineContent = currentLineTokenBuffer;
+        advanceToNextLine();
+        return returnAsStrings ? lineContent : lineContent.map(Number);
+    };
+
+    const extractMultiLineData = (numberOfRows, returnAsStrings) => {
+        const collectedRows = [];
+        for (let rowCounter = 0; rowCounter < numberOfRows; rowCounter++) {
+            collectedRows.push(extractFullLine(returnAsStrings));
+        }
+        return collectedRows;
     };
 
     return {
-        extractNumericItem: function() {
-            refillTokensIfEmpty();
-            if (currentLineTokens.length === 0) {
-                return undefined;
-            }
-            return Number(currentLineTokens.shift());
-        },
-
-        extractNumericRow: function() {
-            if (currentLineIndex >= sourceLines.length) {
-                return [];
-            }
-            const rowContent = sourceLines[currentLineIndex];
-            currentLineIndex++;
-            currentLineTokens = [];
-            return rowContent.split(" ").map(Number);
-        },
-
-        extractNumericBlock: function(rowsCount) {
-            const block = [];
-            for (let i = 0; i < rowsCount; i++) {
-                if (currentLineIndex < sourceLines.length) {
-                    block.push(sourceLines[currentLineIndex].split(" ").map(Number));
-                    currentLineIndex++;
-                } else {
-                    break;
-                }
-            }
-            currentLineTokens = [];
-            return block;
-        }
+        getNumericAtom: () => extractSingleToken(false),
+        getStringAtom: () => extractSingleToken(true),
+        getNumericLine: () => extractFullLine(false),
+        getStringLine: () => extractFullLine(true),
+        getNumericMatrix: (rows) => extractMultiLineData(rows, false),
+        getStringMatrix: (rows) => extractMultiLineData(rows, true),
     };
-}
+};
 
-function performCalculation() {
-    const inputHandler = createInputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+const executeComputation = () => {
+    const dataAcquirer = createInputHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    const totalCount = inputHandler.extractNumericItem();
-    const initialSequence = inputHandler.extractNumericRow();
+    const elementCount = dataAcquirer.getNumericAtom();
+    const primaryDataArray = dataAcquirer.getNumericLine();
 
-    if (totalCount <= 2) {
-        return Math.max(...initialSequence);
+    const determineMidpointValue = (collection) => {
+        const sortedCollection = [...collection].sort((valA, valB) => valA - valB);
+        return sortedCollection[Math.floor(sortedCollection.length / 2)];
+    };
+
+    if (elementCount <= 2) {
+        return Math.max(...primaryDataArray);
     }
 
-    const derivedSequence = Array.from({ length: totalCount - 1 }, (_, currentIdx) =>
-        Math.max(initialSequence[currentIdx], initialSequence[currentIdx + 1])
+    const derivedDataArray = Array.from({ length: elementCount - 1 }, (_, index) =>
+        Math.max(primaryDataArray[index], primaryDataArray[index + 1])
     );
 
-    const remainder = totalCount % 4;
-
-    const strategyMap = new Map([
-        [1, () => locateMiddleElement([...initialSequence, ...derivedSequence])],
-        [2, () => locateMiddleElement([...initialSequence, ...derivedSequence])],
-        [3, () => {
-            const sortedDerivedCopy = [...derivedSequence].sort((val1, val2) => val1 - val2);
-            const midOfInitial = locateMiddleElement([...initialSequence]);
-            return locateMiddleElement([
-                midOfInitial,
-                midOfInitial,
-                sortedDerivedCopy[Math.floor((totalCount - 1) / 2)],
-                sortedDerivedCopy[Math.floor((totalCount - 2) / 2)]
-            ]);
+    const calculationDispatch = new Map([
+        [1, (p, d) => determineMidpointValue([...p, ...d])],
+        [2, (p, d) => determineMidpointValue([...p, ...d])],
+        [3, (p, d) => {
+            const sortedDerived = [...d].sort((valA, valB) => valA - valB);
+            const primaryMid = determineMidpointValue(p);
+            const derivedMid1 = sortedDerived[Math.floor((elementCount - 1) / 2)];
+            const derivedMid2 = sortedDerived[Math.floor((elementCount - 2) / 2)];
+            return determineMidpointValue([primaryMid, primaryMid, derivedMid1, derivedMid2]);
         }],
-        [0, () => {
-            const sortedInitialCopy = [...initialSequence].sort((val1, val2) => val1 - val2);
-            const midOfDerived = locateMiddleElement([...derivedSequence]);
-            return locateMiddleElement([
-                midOfDerived,
-                midOfDerived,
-                sortedInitialCopy[Math.floor(totalCount / 2)],
-                sortedInitialCopy[Math.floor((totalCount - 1) / 2)]
-            ]);
+        [0, (p, d) => {
+            const sortedPrimary = [...p].sort((valA, valB) => valA - valB);
+            const derivedMid = determineMidpointValue(d);
+            const primaryMid1 = sortedPrimary[Math.floor(elementCount / 2)];
+            const primaryMid2 = sortedPrimary[Math.floor((elementCount - 1) / 2)];
+            return determineMidpointValue([derivedMid, derivedMid, primaryMid1, primaryMid2]);
         }]
     ]);
 
-    const finalResult = strategyMap.get(remainder)();
-    
-    return finalResult;
-}
+    const strategyKey = elementCount % 4;
+    const selectedStrategy = calculationDispatch.get(strategyKey);
 
-console.log(performCalculation());
+    return selectedStrategy(primaryDataArray, derivedDataArray);
+};
+
+console.log(executeComputation());

@@ -1,41 +1,37 @@
-// This primary function processes incoming raw text data.
-function ProcessInputData(rawData) {
-    // Declare and initialize two counters: one for odd integers and another for even integers.
-    let oddCounter = 0;
-    let evenCounter = 0;
+function ProcessInput(rawData) {
+    // Initialize counters for odd and even numbers
+    let oddCount = 0;
+    let evenCount = 0;
 
-    // Divide the entire input string into an array of distinct lines, using the newline character as a separator.
-    const dataLines = rawData.split('\n');
+    // Split the raw input string into an array of lines
+    const linesArray = rawData.split('\n');
 
-    // The second line of the input contains a sequence of numbers separated by spaces.
-    // Split this line to obtain an array of number-strings.
-    const numericalStrings = dataLines[1].split(' ');
+    // The first line contains the count of numbers to process
+    // The second line contains the space-separated numbers themselves
+    const numbersAsString = linesArray[1].split(' ');
 
-    // The very first line of the input indicates the total quantity of numbers to be evaluated.
-    // Convert this string value to an actual numeric type.
-    const quantityToProcess = Number(dataLines[0]);
-
-    // Commence a loop that iterates through each numerical string up to the specified quantity.
-    for (let currentIdx = 0; currentIdx < quantityToProcess; currentIdx++) {
-        // Convert the current string representation of a number into a proper numeric value.
-        const evaluatedNumber = Number(numericalStrings[currentIdx]);
-
-        // Utilize the modulo operator to determine if the evaluated number is odd or even.
-        if (evaluatedNumber % 2 !== 0) { // If the remainder is not zero, the number is odd.
-            oddCounter++; // Increment the counter specifically for odd numbers.
+    // Loop through the numbers as specified by the count in the first line
+    // The first element of linesArray (linesArray[0]) is implicitly converted to a number
+    for (let idx = 0; idx < linesArray[0]; idx++) {
+        // Convert the current string number to an integer and check its parity
+        if (parseInt(numbersAsString[idx]) % 2 !== 0) {
+            // If the number is odd, increment the odd counter
+            oddCount++;
         } else {
-            evenCounter++; // Otherwise, the number is even, so increment the even numbers' counter.
+            // If the number is even, increment the even counter
+            evenCount++;
         }
     }
 
-    // After analyzing all numbers, make a final decision based on the parity of the even numbers' total count.
-    if (evenCounter % 2 !== 0) { // If the cumulative count of even numbers is itself odd.
-        console.log("YES"); // Output the affirmative string.
+    // After processing all numbers, check the parity of the even numbers count
+    if (evenCount % 2 !== 0) {
+        // If the count of even numbers is odd, print "YES"
+        console.log("YES");
     } else {
-        console.log("NO"); // Otherwise, output the negative string.
+        // Otherwise (if the count of even numbers is even), print "NO"
+        console.log("NO");
     }
 }
 
-// Initiate the data analysis process by fetching content from standard input.
-// This uses Node.js's file system module to synchronously read the input.
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

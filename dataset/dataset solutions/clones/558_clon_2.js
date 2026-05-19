@@ -1,45 +1,42 @@
-'use strict' ;
+'use strict';
 
-// Core Logic Block
-function decryptShiftCipher( encodedMessage )
-{
-  let decodedOutput = '' ;
+// Core decryption routine
+function decodeMessage(encodedText) {
+    let decryptedText = ''; // Stores the resulting decrypted string
 
-  // charValue stores the numeric representation of the current character
-  let charValue ;
+    // Temporary variable to hold character ASCII value
+    let charCodeBuffer;
 
-  for ( let idx = 0 ; idx < encodedMessage.length ; idx ++ )
-  {
-    charValue = encodedMessage.charCodeAt( idx ) - 3 ;
+    // Iterate through each character of the input string
+    for (let charIndex = 0; charIndex < encodedText.length; charIndex++) {
+        // Shift the character code by -3 (Caesar cipher decryption)
+        charCodeBuffer = encodedText.charCodeAt(charIndex) - 3;
 
-    if ( charValue < 65 )
-    {
-      charValue += 26 ;
+        // If the character code falls below 'A' (ASCII 65), wrap it around
+        // by adding 26 (number of letters in the alphabet)
+        if (charCodeBuffer < 65) {
+            charCodeBuffer += 26;
+        }
+        // Append the decrypted character to the result string
+        decryptedText += String.fromCharCode(charCodeBuffer);
     }
-
-    decodedOutput += String.fromCharCode( charValue ) ;
-  }
-
-  return decodedOutput ;
+    
+    return decryptedText; // Return the fully decrypted string
 }
 
-// Input/Output Operations (Direct)
+// Input processing from standard input
 /*
- This section demonstrates an alternative input method, typically for interactive console applications.
- It is commented out to use file-based input for this specific script.
+// Alternative input method using readline, commented out
+require('readline').createInterface({
+    input: process.stdin, // Read from standard input
+    output: process.stdout // Write to standard output
+}).on('line', (lineContent) => console.log(decodeMessage(lineContent.trim())));
 */
-// require('readline').createInterface({
-//   input: process.stdin,
-//   output: process.stdout
-// }).on('line', (inputData) => console.log(decryptShiftCipher(inputData.trim())));
 
-
-require('fs')
-  .readFileSync( '/dev/stdin', 'utf8' )
-  .trim()
-  .split( '\n' )
-  .forEach(
-    function ( inputLine ) {
-      console.log( decryptShiftCipher( inputLine ) ) ;
-    }
-  ) ;
+// Read entire file from /dev/stdin, process each line
+require('fs').readFileSync('/dev/stdin', 'utf8') // Read the file as UTF-8
+    .trim() // Remove leading/trailing whitespace from the whole content
+    .split('\n') // Split the content into an array of lines
+    .forEach(function (inputLine) { // Iterate over each line
+        console.log(decodeMessage(inputLine)); // Decrypt and print each line
+    });

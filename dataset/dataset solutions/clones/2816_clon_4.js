@@ -1,46 +1,38 @@
-const processGraphData = (inputSource) => {
-  const inputLines = inputSource.split('\n');
-  const parameters = inputLines[0].split(' ');
+((inputContent) => {
+  const inputParts = inputContent.split('\n')[0].split(' ');
+  const nodeCount = Number(inputParts[0]);
+  const targetK = Number(inputParts[1]);
 
-  const nodeCount = parseInt(parameters[0], 10);
-  const desiredK = parseInt(parameters[1], 10);
+  const maxPairsViaOne = (nodeCount - 2) * (nodeCount - 1) / 2;
 
-  if (nodeCount <= 2) {
-    process.stdout.write('-1\n');
-    return;
+  const outputSegments = [];
+
+  const isInvalidScenario = nodeCount <= 2 || nodeCount > maxPairsViaOne;
+
+  if (isInvalidScenario) {
+    outputSegments.push('-1');
+  } else {
+    const constructedEdges = [];
+
+    for (let primaryNodeIndex = 0; primaryNodeIndex < nodeCount - 1; primaryNodeIndex++) {
+      constructedEdges.push([1, primaryNodeIndex + 2]);
+    }
+
+    const reductionEdgeCount = maxPairsViaOne - targetK;
+
+    if (reductionEdgeCount > 0) {
+      for (let secondaryNodeIndex = 0; secondaryNodeIndex < reductionEdgeCount; secondaryNodeIndex++) {
+        constructedEdges.push([secondaryNodeIndex + 2, secondaryNodeIndex + 3]);
+      }
+    }
+
+    outputSegments.push(constructedEdges.length.toString());
+    for (const currentEdgePair of constructedEdges) {
+      outputSegments.push(`${currentEdgePair[0]} ${currentEdgePair[1]}`);
+    }
   }
 
-  const maximumPossibleK = (nodeCount - 1) * (nodeCount - 2) / 2;
-
-  if (nodeCount > maximumPossibleK) {
-    process.stdout.write('-1\n');
-    return;
-  }
-
-  if (desiredK > maximumPossibleK) {
-    process.stdout.write('-1\n');
-    return;
-  }
-
-  const connectionStrings = [];
-  let totalConnections = 0;
-
-  for (let currentVertex = 2; currentVertex <= nodeCount; ++currentVertex) {
-    connectionStrings.push(`${1} ${currentVertex}`);
-    totalConnections++;
-  }
-
-  const pairsToEliminate = maximumPossibleK - desiredK;
-
-  for (let i = 0; i < pairsToEliminate; ++i) {
-    const v1 = i + 2;
-    const v2 = i + 3;
-    connectionStrings.push(`${v1} ${v2}`);
-    totalConnections++;
-  }
-
-  const finalOutput = `${totalConnections}\n${connectionStrings.join('\n')}\n`;
-  process.stdout.write(finalOutput);
-};
-
-processGraphData(require("fs").readFileSync("/dev/stdin", "utf8"));
+  console.log(outputSegments.join('\n'));
+})(
+  require("fs").readFileSync("/dev/stdin", "utf8")
+);

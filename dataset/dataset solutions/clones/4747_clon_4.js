@@ -1,19 +1,22 @@
-function processData(rawDataInput) {
-  const separatedLines = rawDataInput.split('\n');
-  const initialCountValue = parseInt(separatedLines[0], 10);
-  const itemSequence = separatedLines[1].split(' ');
+function processInputData(rawData) {
+  const dataLines = rawData.split("\n");
+  const initialValue = parseInt(dataLines[0], 10);
+  const elementStrings = dataLines[1].split(" ");
 
-  const itemOccurrenceMap = itemSequence.reduce((accumulator, currentItem) => {
-    accumulator.set(currentItem, (accumulator.get(currentItem) || 0) + 1);
-    return accumulator;
-  }, new Map());
+  const uniqueElementTracker = new Set();
+  let totalElementCount = 0;
 
-  const distinctItemCount = itemOccurrenceMap.size;
-  const additionalItemCount = initialCountValue - distinctItemCount;
-  
-  const finalResultQuantity = distinctItemCount - (additionalItemCount % 2);
+  for (const currentElement of elementStrings) {
+    uniqueElementTracker.add(currentElement);
+    totalElementCount++;
+  }
 
-  console.log(finalResultQuantity);
+  const distinctElementCount = uniqueElementTracker.size;
+  const excessElementCount = totalElementCount - distinctElementCount;
+
+  const adjustmentFactor = excessElementCount + (excessElementCount % 2);
+
+  console.log(initialValue - adjustmentFactor);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

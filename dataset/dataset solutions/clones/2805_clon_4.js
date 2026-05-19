@@ -1,46 +1,41 @@
-function computeGcd(val1, val2) {
-  if (val2 === 0) {
-    return val1;
+function calculateGreatestCommonDivisor(paramA, paramB) {
+  let currentA = paramA;
+  let currentB = paramB;
+  while (currentB) {
+    [currentA, currentB] = [currentB, currentA % currentB];
   }
-  return computeGcd(val2, val1 % val2);
+  return currentA;
 }
 
-function computeLcm(val1, val2) {
-  if (val1 === 0 || val2 === 0) return 0;
-  const absoluteVal1 = Math.abs(val1);
-  const absoluteVal2 = Math.abs(val2);
-  return (absoluteVal1 / computeGcd(absoluteVal1, absoluteVal2)) * absoluteVal2;
+function determineLeastCommonMultiple(valueOne, valueTwo) {
+  if (valueOne === 0 || valueTwo === 0) return 0;
+  return (valueOne * valueTwo) / calculateGreatestCommonDivisor(valueOne, valueTwo);
 }
 
-function countDivisibleInRange(startValue, endValue, factorValue) {
-  if (factorValue === 0) return 0;
-  if (startValue > endValue) return 0;
+function countNumbersDivisibleBy(factor, rangeStart, rangeEnd) {
+  if (factor === 0) return 0;
+  if (rangeStart > rangeEnd) return 0;
 
-  const countUpToEnd = Math.floor(endValue / factorValue);
-  const countUpToBeforeStart = Math.floor((startValue - 1) / factorValue);
-
-  return countUpToEnd - countUpToBeforeStart;
+  return Math.floor(rangeEnd / factor) - Math.floor((rangeStart - 1) / factor);
 }
 
-function ProcessNumericalData(dataStream) {
-  const lowerBoundary = parseInt(dataStream[0], 10);
-  const upperBoundary = parseInt(dataStream[1], 10);
-  const primaryDivisor = parseInt(dataStream[2], 10);
-  const secondaryDivisor = parseInt(dataStream[3], 10);
+function processInputAndCalculate(inputData) {
+  const rangeLower = parseInt(inputData[0], 10);
+  const rangeUpper = parseInt(inputData[1], 10);
+  const divisorOne = parseInt(inputData[2], 10);
+  const divisorTwo = parseInt(inputData[3], 10);
 
-  const totalElementsInInterval = upperBoundary - lowerBoundary + 1;
+  const totalElementsInSpan = rangeUpper - rangeLower + 1;
 
-  const multiplesOfPrimary = countDivisibleInRange(lowerBoundary, upperBoundary, primaryDivisor);
-  const multiplesOfSecondary = countDivisibleInRange(lowerBoundary, upperBoundary, secondaryDivisor);
+  const countDivisibleByOne = countNumbersDivisibleBy(divisorOne, rangeLower, rangeUpper);
+  const countDivisibleByTwo = countNumbersDivisibleBy(divisorTwo, rangeLower, rangeUpper);
 
-  const commonMultipleValue = computeLcm(primaryDivisor, secondaryDivisor);
-  const multiplesOfCommon = countDivisibleInRange(lowerBoundary, upperBoundary, commonMultipleValue);
+  const commonDivisorLCM = determineLeastCommonMultiple(divisorOne, divisorTwo);
+  const countDivisibleByBoth = countNumbersDivisibleBy(commonDivisorLCM, rangeLower, rangeUpper);
 
-  const unionCount = multiplesOfPrimary + multiplesOfSecondary - multiplesOfCommon;
+  const countUnionOfDivisors = countDivisibleByOne + countDivisibleByTwo - countDivisibleByBoth;
 
-  const finalResult = totalElementsInInterval - unionCount;
-
-  console.log(finalResult);
+  console.log(totalElementsInSpan - countUnionOfDivisors);
 }
 
-ProcessNumericalData(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

@@ -1,32 +1,53 @@
-const sourceMaterial = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = sourceMaterial.trim().split('\n');
+const fileSystem = require('node:fs');
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const createCharacterSequence = (quantity, symbol) => {
-    let outputSegment = '';
-    for (let counter = 0; counter < quantity; counter++) {
-        outputSegment += symbol;
+function* lineIteratorGenerator(sourceText) {
+    const allLines = sourceText.trim().split('\n');
+    let currentLineIndex = 0;
+
+    while (true) {
+        const lineValue = allLines[currentLineIndex];
+        currentLineIndex++;
+
+        if (lineValue === '0 0') {
+            return;
+        }
+
+        if (lineValue === undefined) {
+            yield undefined; // Signal that input is exhausted without '0 0'
+            return;
+        }
+
+        yield lineValue;
     }
-    return outputSegment;
-};
+}
 
-const constructVisualGrid = (verticalExtent, horizontalExtent) => {
-    const singleRowPattern = createCharacterSequence(horizontalExtent, '#');
-    let fullGridRepresentation = '';
-    for (let rowIterator = 0; rowIterator < verticalExtent; rowIterator++) {
-        fullGridRepresentation += singleRowPattern + '\n';
-    }
-    return fullGridRepresentation;
-};
+const inputLineIterator = lineIteratorGenerator(rawInputContent);
+let iterationResult;
 
-for (const currentEntry of processedLines) {
-    if (currentEntry === "0 0") {
+while (true) {
+    iterationResult = inputLineIterator.next();
+
+    if (iterationResult.done) {
         break;
     }
 
-    const dimensionTokens = currentEntry.split(' ').map(token => parseInt(token, 10));
-    const gridHeight = dimensionTokens[0];
-    const gridWidth = dimensionTokens[1];
+    const processedLine = iterationResult.value;
 
-    const finalRender = constructVisualGrid(gridHeight, gridWidth);
-    console.log(finalRender + '\n');
+    if (processedLine === undefined) {
+        // Replicate the original's TypeError when arr.shift() returns undefined
+        // and the subsequent split() is called on it.
+        const undefinedReference = undefined;
+        undefinedReference.split(' '); // This will throw the exact TypeError
+    }
+
+    const parsedDimensions = processedLine.split(' ').map(Number);
+    const rectangleRows = parsedDimensions[0];
+    const rectangleColumns = parsedDimensions[1];
+
+    const singleHashRow = '#'.repeat(rectangleColumns);
+    const rowWithTerminator = singleHashRow + '\n';
+    const completeRectangle = rowWithTerminator.repeat(rectangleRows);
+
+    console.log(completeRectangle + '\n');
 }

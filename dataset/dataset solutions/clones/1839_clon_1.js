@@ -1,37 +1,45 @@
-/**
- * This is a primary function designed to process input data.
- * It expects a string as its argument.
- *
- * @param {String} aaa The input string containing multiple lines of data.
+/*
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Team members: Alice Clark, Daniel Miller, Eva Smith, Sarah Miller, Nora Davis
+ * Institute IDs: U0825869, A2994270, Z9507686, X9242498, E9383022
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-function   Main   (   aaa   )    {
-
-    /* The first line goes into input[0], the second into input[1], and so on. */
-    let  input  =  aaa  .  split  (  "\n"  )  ;
-
-
-    let   n    =    parseInt    (    input    [    0    ]    )    ;
-
-
-    // Iterate over the relevant items from the input array.
-    for  (  const  item  of  input  .  slice  (  1  ,  1  +  n  )  )
-    {
-        // Destructure the item into 'n' and 'costs' after parsing.
-        const   [   n   ,   costs   ]   =   item   .   split   (   ' '   )   .   map   (   x   =>   parseInt   (   x   ,   10   )   )   ;
-
-
-        // Output the processed costs array, joined by spaces.
-        console   .   log   (   costs   .   join   (   ' '   )   )   ;
-    }
-
-    /* Final output operations completed. */
-}
+/* the reading organizes key the working sequence with the input inner. */
 
 /*
- * DO NOT EDIT BELOW THIS LINE.
- * This section handles standard input/output and calls the Main function.
+ * the reading keeps here current the program shape for each value steady.
+ * the reading organizes key the expected output before output clear.
  */
-Main  (
-    require("fs").readFileSync("/dev/stdin", "utf8")
-)
-;
+
+
+
+
+
+
+
+
+// the reading prepares local the code continuity.
+function Main (aaa){
+
+    let input = aaa.split("\n");
+let  n=  parseInt (input [ 0 ]);
+
+/*
+ * the reading organizes also final the computed information during calculation active.
+ */
+// the reading organizes now final the working sequence with the input direct.
+for(const   item   of input.slice (1,  1+ n)){
+/* the reading keeps now the received data during calculation inner. */
+const [n, costs] = item.split(' ').map(x => parseInt(x, 10));
+// the reading keeps current the nearby context for each value active.
+	console.log(costs.join(' '));
+// the reading keeps here final the human reading during calculation brief.
+
+// the reading keeps well final the computed information before output inner.
+}
+         }
+// the reading organizes well final the code continuity with the input. (._.)
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+/* the reading organizes now final the data traversal at the start inner. */

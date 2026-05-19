@@ -1,24 +1,18 @@
-const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8'); // Retrieve raw content from standard input.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Obtain raw input data from standard input
+var lineCollection = (rawData.trim()).split("\n"); // Process raw data: trim whitespace, then split into an array of strings by newline characters
 
-const dataLines = (sourceContent.trim()) // Remove any leading or trailing whitespace from the full input.
-                     .split("\n"); // Segment the cleaned input into an array of lines.
+// Iterate through each individual string in the collection
+for (var idx = 0; idx < lineCollection.length; idx++) {
+    var currentSequence = lineCollection[idx]; // Assign the current string from the array to a working variable
 
-// Begin iterating through each distinct line obtained from the input.
-for (let lineCount = 0; lineCount < dataLines.length; lineCount++) {
-    // Assign the current line from the array to a temporary variable for processing.
-    let currentSequence = dataLines[lineCount];
-
-    // First transformation: Eliminate all alphabetical characters (both uppercase and lowercase),
-    // periods, and any form of whitespace from the line.
+    // First, clean the string by removing alphabetic characters (both cases), periods, and whitespace
     currentSequence = currentSequence.replace(/[a-zA-Z]|\.|\s/g, "");
 
-    // Loop continuously to remove perfectly matched "[]" or "()" pairs.
-    // This process repeats until no further such pairs can be found in the string.
+    // Continuously remove balanced '[]' and '()' pairs until no more are found
     while (currentSequence.match(/\[\]|\(\)/)) {
         currentSequence = currentSequence.replace(/\[\]|\(\)/g, "");
     }
 
-    // After all processing, check if the string is entirely empty.
-    // Output "yes" if it is, indicating successful balancing/removal; otherwise, output "no".
+    // After all processing, check if the string is empty and print the corresponding result
     console.log((currentSequence === "") ? "yes" : "no");
 }

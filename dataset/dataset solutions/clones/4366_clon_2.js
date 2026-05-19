@@ -1,48 +1,45 @@
-/*
- * This routine processes raw text data to compute a numerical outcome.
- * It expects the raw input to be a string.
- * The first line of the input is extracted and then processed character by character.
- * Subsequent lines, if any, are ignored due to the specific data parsing approach.
- */
-function ProcessNumericData( sourceContent ) {
-
-    // Divide the entire content into an array of strings, each representing a line.
-    let lineFragments = sourceContent.split('\n');
+function ProcessInput(rawData) {
+    // Split the entire raw input string by newline characters.
+    // This creates an array where each element is a line from the input.
+    let lineSegments = rawData.split('\n');
 
     // Extract the very first line from the array.
-    // The variable 'lineFragments' is then reassigned to hold this single string.
-    // This means subsequent operations will only apply to the characters of this first line.
-    lineFragments = lineFragments.shift();
+    // This operation modifies the 'lineSegments' array by removing its first element,
+    // and assigns that removed element (the first line string) to 'firstSegment'.
+    let firstSegment = lineSegments.shift();
 
-    // Convert the characters of the extracted first line into arrays of parsed integers.
-    // Each character is treated as a separate 'segment'.
-    let numericalSegments = lineFragments.map( function( charSegment ) {
+    // Process each character of the 'firstSegment' string.
+    // For every character 'charItem' in 'firstSegment':
+    // 1. It attempts to split 'charItem' by a space. Since 'charItem' is a single character,
+    //    this will result in an array containing just that character (e.g., ['1']).
+    // 2. It then maps over this single-element array, parsing the character as an integer.
+    //    If the character is not a valid number (like a space), parseInt will yield NaN.
+    // The result is an array of single-element arrays, like `[[1], [NaN], [5]]`.
+    let processedSegments = firstSegment.map(function(charItem) {
+        return charItem.split(' ').map(function(innerChar) {
+            return parseInt(innerChar, 10);
+        });
+    });
 
-        // For each character, split by space (results in ['char'] or ['', ''] for space),
-        // then attempt to parse each resulting string into an integer.
-        // This will result in arrays like [number] or [NaN, NaN].
-        return charSegment.split(' ').map( function(strVal) {
-            return parseInt(strVal, 10);
-        } );
-    } );
+    // Initialize an accumulator variable to zero.
+    let totalSum = 0;
 
-    // Initialize an accumulator for the final calculation.
-    let aggregateResult = 0;
+    // Iterate through the 'processedSegments' array.
+    // Each 'segmentPair' is expected to be a single-element array (e.g., `[1]` or `[NaN]`).
+    // The expression `segmentPair[1] - segmentPair[0] + 1` will evaluate as follows:
+    // - `segmentPair[1]` will be `undefined` because the inner arrays only have one element.
+    // - `undefined - segmentPair[0]` will result in `NaN` (e.g., `undefined - 1` is `NaN`).
+    // - Adding `1` to `NaN` still results in `NaN`.
+    // Therefore, `totalSum` will accumulate `NaN` in each iteration, ultimately becoming `NaN`.
+    processedSegments.forEach(function(segmentPair) {
+        totalSum += (segmentPair[1] - segmentPair[0] + 1);
+    });
 
-    // Iterate through the processed numerical segments.
-    // Each 'itemPair' will be an array like [number] or [NaN, NaN].
-    numericalSegments.forEach( function(itemPair) {
-        // Attempt to sum (itemPair[1] - itemPair[0] + 1).
-        // For typical character processing, itemPair[1] will often be undefined or NaN,
-        // leading to NaN in the sum.
-        aggregateResult += (itemPair[1] - itemPair[0] + 1);
-    } );
-
-    // Output the computed aggregate result.
-    console.log('Final Outcome: %d', aggregateResult);
-
+    // Output the final calculated sum to the console, formatted as a decimal integer.
+    // If 'totalSum' is `NaN`, this will print "NaN".
+    console.log('%d', totalSum);
 }
 
-// Invoke the main processing function with data read from standard input.
-// This uses Node.js 'fs' module to synchronously read the content of /dev/stdin.
-ProcessNumericData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read the entire content of standard input synchronously as a UTF-8 string.
+// Then, pass this string to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

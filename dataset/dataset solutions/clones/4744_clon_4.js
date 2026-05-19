@@ -1,19 +1,14 @@
-const analyzeSequence = (rawData) => {
-  const allLines = rawData.split('\n');
-  const dataLine = allLines[1];
-  const itemStrings = dataLine.split(' ');
+function processInputData(rawData) {
+  const lineSegments = rawData.split('\n');
+  const stringTokens = lineSegments[1].split(' ');
 
-  const distinctItems = new Set(itemStrings);
-  const distinctCount = distinctItems.size;
+  const uniqueCollection = new Set(stringTokens);
 
-  const finalResult = (distinctCount % 2 === 1) ? distinctCount : distinctCount - 1;
+  const uniqueItemCount = uniqueCollection.size;
 
-  console.log(finalResult);
-};
+  const finalOutputValue = uniqueItemCount - (uniqueItemCount % 2 === 0 ? 1 : 0);
 
-const processSystemInput = (pathToData) => {
-  const fileContent = require("fs").readFileSync(pathToData, "utf8");
-  analyzeSequence(fileContent);
-};
+  console.log(finalOutputValue);
+}
 
-processSystemInput("/dev/stdin");
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

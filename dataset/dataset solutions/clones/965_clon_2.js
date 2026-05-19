@@ -1,109 +1,116 @@
-// Global configuration for input data handling.
-programOptions = { sourcePath: '/dev/stdin', lineEnding: '\n' }; // Standard input for Linux-like environments
+// Configuration settings for input and line endings.
+// cfgSettings = { input: 'tmp', newline: '\r\n' }; // For Windows environments
+cfgSettings = { input: '/dev/stdin', newline: '\n' }; // For Linux/Unix environments
 
-// The 'assert' module is included for potential validation, though not directly invoked in this snippet.
-const validationUtility = getModule('assert');
+const assert = require('assert'); // This module is imported but not utilized in the provided logic.
 
-// Define the fixed dimension of the puzzle grid.
-const PUZZLE_DIMENSION = 16;
+const BOARD_DIMENSION = 16; // Defines the total number of cells on the puzzle board.
 
-// The target arrangement of tiles that signifies a solved puzzle.
-finalPuzzleState = '123456789ABCDEF0';
+// The desired final state of the 15-puzzle, represented as a single string.
+targetState = '123456789ABCDEF0';
 
-// Initialize the puzzle's starting configuration by reading from the input source.
-initialPuzzleState = getModule('fileSystem').readTextFile(programOptions.sourcePath, 'ascii')
-  .stripLeadingTrailingWhitespace()
-  .divideContentBy(programOptions.lineEnding)
-  .processElements(function (currentInputLine) {
-    return currentInputLine.divideContentBy(' ').processElements(function (numericToken) {
-      return parseInt(numericToken, 10).toString(16); }).concatenateStrings(''); })
-  .concatenateStrings('')
-  .convertToUppercase();
+// Read the initial puzzle configuration from the specified input source.
+initialBoard = require('fs').readFileSync(cfgSettings.input, 'ascii')
+  .trim() // Remove any leading or trailing whitespace from the raw input.
+  .split(cfgSettings.newline) // Divide the input string into an array of lines based on the newline character.
+  .map(function (inputLine) { // Process each individual line of the input.
+    return inputLine.split(' ').map(function (numberVal) { // Split the line by spaces and convert each part.
+      return Number(numberVal).toString(16); // Convert the numeric value to its hexadecimal string representation.
+    }).join(''); // Concatenate the hexadecimal strings from the current line into a single string.
+  })
+  .join('') // Combine all processed lines into one continuous string representing the entire board.
+  .toUpperCase(); // Convert the final board string to uppercase for consistent comparison.
 
-
-// Precomputed arrays representing valid tile movements for the blank space (0).
-// Each array maps a tile's current index to the index of the tile it can swap with.
-// 'undefined' indicates an invalid move from that position.
-
-upwardShiftIndices = [undefined, undefined, undefined, undefined, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-downwardShiftIndices = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, undefined, undefined, undefined, undefined];
-leftwardShiftIndices = [undefined, 0, 1, 2, undefined, 4, 5, 6, undefined, 8, 9, 10, undefined, 12, 13, 14];
-rightwardShiftIndices = [1, 2, 3, undefined, 5, 6, 7, undefined, 9, 10, 11, undefined, 13, 14, 15, undefined];
-
+// Arrays defining the possible movements for the '0' (empty) tile.
+// Each array maps the current index of '0' to the index of the tile it can swap with in that direction.
+// A 'null' value indicates that a move in that direction is not possible from that specific position.
+upMoves = [null, null, null, null, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+downMoves = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, null, null, null, null];
+leftMoves = [null, 0, 1, 2, null, 4, 5, 6, null, 8, 9, 10, null, 12, 13, 14];
+rightMoves = [1, 2, 3, null, 5, 6, 7, null, 9, 10, 11, null, 13, 14, 15, null];
 
 /**
- * Implements an iterative deepening depth-first search algorithm to solve the 15-puzzle.
- * This function recursively explores possible puzzle configurations up to a specified depth.
+ * Implements an Iterative Deepening Depth-First Search (IDDFS) to solve the 15-puzzle.
+ * This function performs a depth-limited search for a solution.
  *
- * @param {number} currentSearchDepth The maximum allowed depth for the current search iteration.
- * @param {string} currentBoardLayout The string representation of the puzzle's current state.
- * @returns {boolean} Returns `true` if the final puzzle state is found within `currentSearchDepth`, otherwise `false`.
+ * @param {number} currentDepth - The maximum depth allowed for the current search iteration.
+ * @param {string} puzzleState - The current configuration of the puzzle board as a string.
+ * @returns {boolean} - True if a solution is found within the current depth limit, false otherwise.
  */
-function solvePuzzleRecursively(currentSearchDepth, currentBoardLayout) {
-  let blankTileLocation, adjacentTileLocation, nextBoardLayout;
+function iterativeDeepeningSearch(currentDepth, puzzleState) {
+  var zeroIndex, neighborIndex, nextState; // Declare variables used within this function.
 
-  // Base case: If the current depth limit is reached, check if the puzzle is solved.
-  if (currentSearchDepth === 0) {
-    return currentBoardLayout === finalPuzzleState;
+  // Base case for the recursion: if the depth limit is reached.
+  if (currentDepth === 0) {
+    // Check if the current puzzle arrangement matches the target solution.
+    return puzzleState === targetState;
   }
 
-  // Find the current position of the blank tile ('0').
-  blankTileLocation = currentBoardLayout.indexOf('0');
+  // Locate the position of the empty tile ('0') on the board.
+  zeroIndex = puzzleState.indexOf('0');
 
-  // Attempt to move the blank tile up.
-  adjacentTileLocation = upwardShiftIndices[blankTileLocation];
-  if (adjacentTileLocation !== undefined) {
-    nextBoardLayout = currentBoardLayout.replace(currentBoardLayout[adjacentTileLocation], 'tempCharA')
-                                        .replace('0', 'tempCharB')
-                                        .replace('tempCharA', '0')
-                                        .replace('tempCharB', currentBoardLayout[adjacentTileLocation]);
-    if (solvePuzzleRecursively(currentSearchDepth - 1, nextBoardLayout)) return true;
+  // Attempt to move a tile from the 'up' direction into the empty space.
+  neighborIndex = upMoves[zeroIndex];
+  if (neighborIndex !== null) { // If a move is possible from the 'up' direction.
+    // Generate the next puzzle state by swapping the '0' with the tile at 'neighborIndex'.
+    // Temporary characters 'x' and 'y' are used to ensure correct swapping even if '0' or the swapped tile value are 'x' or 'y'.
+    nextState = puzzleState.replace(puzzleState[neighborIndex], 'x')
+                           .replace('0', 'y')
+                           .replace('x', '0')
+                           .replace('y', puzzleState[neighborIndex]);
+    // Recursively call the search function with the new state and reduced depth.
+    if (iterativeDeepeningSearch(currentDepth - 1, nextState)) {
+      return true; // A solution was found in this path.
+    }
   }
 
-  // Attempt to move the blank tile down.
-  adjacentTileLocation = downwardShiftIndices[blankTileLocation];
-  if (adjacentTileLocation !== undefined) {
-    nextBoardLayout = currentBoardLayout.replace(currentBoardLayout[adjacentTileLocation], 'tempCharA')
-                                        .replace('0', 'tempCharB')
-                                        .replace('tempCharA', '0')
-                                        .replace('tempCharB', currentBoardLayout[adjacentTileLocation]);
-    if (solvePuzzleRecursively(currentSearchDepth - 1, nextBoardLayout)) return true;
+  // Attempt to move a tile from the 'down' direction.
+  neighborIndex = downMoves[zeroIndex];
+  if (neighborIndex !== null) { // If a move is possible from the 'down' direction.
+    nextState = puzzleState.replace(puzzleState[neighborIndex], 'x')
+                           .replace('0', 'y')
+                           .replace('x', '0')
+                           .replace('y', puzzleState[neighborIndex]);
+    if (iterativeDeepeningSearch(currentDepth - 1, nextState)) {
+      return true; // A solution was found.
+    }
   }
 
-  // Attempt to move the blank tile left.
-  adjacentTileLocation = leftwardShiftIndices[blankTileLocation];
-  if (adjacentTileLocation !== undefined) {
-    nextBoardLayout = currentBoardLayout.replace(currentBoardLayout[adjacentTileLocation], 'tempCharA')
-                                        .replace('0', 'tempCharB')
-                                        .replace('tempCharA', '0')
-                                        .replace('tempCharB', currentBoardLayout[adjacentTileLocation]);
-    if (solvePuzzleRecursively(currentSearchDepth - 1, nextBoardLayout)) return true;
+  // Attempt to move a tile from the 'left' direction.
+  neighborIndex = leftMoves[zeroIndex];
+  if (neighborIndex !== null) { // If a move is possible from the 'left' direction.
+    nextState = puzzleState.replace(puzzleState[neighborIndex], 'x')
+                           .replace('0', 'y')
+                           .replace('x', '0')
+                           .replace('y', puzzleState[neighborIndex]);
+    if (iterativeDeepeningSearch(currentDepth - 1, nextState)) {
+      return true; // A solution was found.
+    }
   }
 
-  // Attempt to move the blank tile right.
-  adjacentTileLocation = rightwardShiftIndices[blankTileLocation];
-  if (adjacentTileLocation !== undefined) {
-    nextBoardLayout = currentBoardLayout.replace(currentBoardLayout[adjacentTileLocation], 'tempCharA')
-                                        .replace('0', 'tempCharB')
-                                        .replace('tempCharA', '0')
-                                        .replace('tempCharB', currentBoardLayout[adjacentTileLocation]);
-    if (solvePuzzleRecursively(currentSearchDepth - 1, nextBoardLayout)) return true;
+  // Attempt to move a tile from the 'right' direction.
+  neighborIndex = rightMoves[zeroIndex];
+  if (neighborIndex !== null) { // If a move is possible from the 'right' direction.
+    nextState = puzzleState.replace(puzzleState[neighborIndex], 'x')
+                           .replace('0', 'y')
+                           .replace('x', '0')
+                           .replace('y', puzzleState[neighborIndex]);
+    if (iterativeDeepeningSearch(currentDepth - 1, nextState)) {
+      return true; // A solution was found.
+    }
   }
 
-  // If no solution was found from this state within the current depth limit.
+  // If no solution is found from the current state within the given depth limit.
   return false;
 }
 
-
-let currentIterationCount; // Declare the loop counter variable.
-
-// Execute the iterative deepening search, incrementing the maximum depth in each iteration.
-for (currentIterationCount = 0; currentIterationCount <= 45; currentIterationCount += 1) {
-  // If the puzzle is solved at the current depth, the search can terminate.
-  if (solvePuzzleRecursively(currentIterationCount, initialPuzzleState)) {
-    break;
+// Main loop to perform iterative deepening search.
+// It gradually increases the depth limit until a solution is found.
+for (depthCounter = 0; depthCounter <= 45; depthCounter++) {
+  // Call the IDDFS function with the current depth limit and the initial board state.
+  if (iterativeDeepeningSearch(depthCounter, initialBoard)) {
+    break; // If a solution is found, exit the loop.
   }
 }
-
-// Output the minimum number of moves (depth) required to reach the solution.
-process.stdout.write(String(currentIterationCount));
+// Output the minimum number of moves (depth) required to solve the puzzle.
+console.log(depthCounter);

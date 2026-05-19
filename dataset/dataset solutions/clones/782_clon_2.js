@@ -1,65 +1,50 @@
-let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read data from standard input path
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let processedLines = rawData.trim().split("\n"); // Process raw data into an array of lines
+var lineSegments = (rawData.trim()).split("\n");
 
-let loopIndex = 0; // An index variable, currently unused but maintained for structure
-let outputCollector = ""; // Buffer to accumulate output strings
+var idx = 0;
 
-// Main processing loop, continues until a zero value is encountered
+var outputBuffer = "";
+
 while (true) {
-    // Extract the expenditure amount for the current transaction
-    let expenditureAmount = Number(processedLines.shift());
+    var currentValue = lineSegments.shift() - 0;
 
-    // If the expenditure amount is zero, terminate the loop
-    if (expenditureAmount === 0) {
+    if (currentValue === 0) {
         break;
     }
 
-    // Parse the tendered coin counts from the next line
-    let tenderedCoins = processedLines.shift().split(" ").map(val => parseInt(val, 10));
+    var denominationsCount = (lineSegments.shift()).split(" ").map(Number);
 
-    // Calculate the initial change amount before breaking it down
-    let changeDue = (10 * tenderedCoins[0] + 50 * tenderedCoins[1] + 100 * tenderedCoins[2] + 500 * tenderedCoins[3]) - expenditureAmount;
+    var remainingChange = (10 * denominationsCount[0] + 50 * denominationsCount[1] + 100 * denominationsCount[2] + 500 * denominationsCount[3]) - currentValue;
 
-    // Initialize an array to store the counts of coins to be returned as change
-    let returnedCoinCounts = [0, 0, 0, 0];
+    var calculatedChange = [0, 0, 0, 0];
 
-    // Distribute change using the largest denomination first (500)
-    while (500 <= changeDue) {
-        returnedCoinCounts[3]++;
-        changeDue -= 500;
+    while (500 <= remainingChange) {
+        calculatedChange[3]++;
+        remainingChange -= 500;
     }
-    // Distribute change using the next largest denomination (100)
-    while (100 <= changeDue) {
-        returnedCoinCounts[2]++;
-        changeDue -= 100;
+    while (100 <= remainingChange) {
+        calculatedChange[2]++;
+        remainingChange -= 100;
     }
-    // Distribute change using the next largest denomination (50)
-    while (50 <= changeDue) {
-        returnedCoinCounts[1]++;
-        changeDue -= 50;
+    while (50 <= remainingChange) {
+        calculatedChange[1]++;
+        remainingChange -= 50;
     }
-    // Distribute change using the smallest denomination (10)
-    while (10 <= changeDue) {
-        returnedCoinCounts[0]++;
-        changeDue -= 10;
+    while (10 <= remainingChange) {
+        calculatedChange[0]++;
+        remainingChange -= 10;
     }
 
-    // Define the values for each coin denomination
-    const coinDenominations = [10, 50, 100, 500];
+    var coinValues = [10, 50, 100, 500];
 
-    // Iterate through the tendered coins to find any excess coins that need to be returned
-    tenderedCoins.forEach(function (tCount, dIndex) {
-        // If the number of tendered coins for a denomination is greater than what was needed
-        if (tCount > returnedCoinCounts[dIndex]) {
-            // Append the coin denomination and the quantity to return to the output buffer
-            outputCollector += coinDenominations[dIndex] + " " + (tCount - returnedCoinCounts[dIndex]) + "\n";
+    denominationsCount.forEach(function (initialCount, denominationIndex) {
+        if (initialCount > calculatedChange[denominationIndex]) {
+            outputBuffer += coinValues[denominationIndex] + " " + (initialCount - calculatedChange[denominationIndex]) + "\n";
         }
     });
 
-    // Add an extra newline to separate transaction outputs
-    outputCollector += "\n";
+    outputBuffer += "\n";
 }
 
-// Display the accumulated output
-console.log(outputCollector);
+console.log(outputBuffer);

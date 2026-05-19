@@ -1,22 +1,15 @@
-function evaluateCondition(sourceMaterial) {
-    const contentSegments = sourceMaterial.trim().split("\n");
-    const targetCount = Number(contentSegments[0]);
+const processInput = (sourceData) => {
+  const expectedCount = Number.parseInt(sourceData[0]);
+  const elementStrings = sourceData[1].split(' ');
 
-    const elementTokens = contentSegments[1].split(' ');
+  const uniqueElementTracker = elementStrings.reduce((accumulator, currentItem) => {
+    accumulator[currentItem] = true;
+    return accumulator;
+  }, {});
 
-    const observedElements = {};
-    let uniqueElementCounter = 0;
+  const actualUniqueCount = Object.keys(uniqueElementTracker).length;
 
-    for (let currentPosition = 0; currentPosition < elementTokens.length; currentPosition++) {
-        const activeElement = elementTokens[currentPosition];
-        if (!observedElements[activeElement]) {
-            observedElements[activeElement] = true;
-            uniqueElementCounter++;
-        }
-    }
+  console.log(expectedCount === actualUniqueCount ? 'YES' : 'NO');
+};
 
-    const finalVerdict = (uniqueElementCounter === targetCount) ? 'YES' : 'NO';
-    console.log(finalVerdict);
-}
-
-evaluateCondition(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

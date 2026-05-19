@@ -1,289 +1,396 @@
 'use strict';
-const AppUtilities = {};
-((utilityNamespace) => {
-  // Function to determine if the current environment is a web browser.
-  const checkBrowserEnv = () => {
-    return typeof window !== 'undefined';
-  };
-  utilityNamespace.checkBrowserEnv = checkBrowserEnv;
+// Global namespace object for application utilities
+var APP_UTIL = {};
 
-  // Function to determine if the current environment is Node.js.
-  const checkNodeEnv = () => {
-    return !checkBrowserEnv();
-  };
-  utilityNamespace.checkNodeEnv = checkNodeEnv;
-
-  // Conditional block for browser-specific functionalities.
-  if (checkBrowserEnv()) {
-    // Escapes special HTML characters in a given string.
-    const encodeForHtml = (inputString) => {
-      return String(inputString)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+// Immediately-invoked function expression to define and encapsulate utility functions
+(function(namespaceObj) {
+    /**
+     * Determines if the current execution environment is a web browser.
+     * @returns {boolean} True if running in a browser, false otherwise.
+     */
+    var checkBrowserEnv = function() {
+        return typeof window !== 'undefined';
     };
-    utilityNamespace.encodeForHtml = encodeForHtml;
+    // Expose the browser environment check function to the global namespace
+    namespaceObj.checkBrowserEnv = checkBrowserEnv;
 
-    // Displays the source code of a specified function within a designated HTML element.
-    const displayCodeSnippet = (targetFunction) => {
-      document.getElementById('code').innerHTML = `<pre><code>${encodeForHtml(targetFunction)}</code></pre>`;
+    /**
+     * Determines if the current execution environment is Node.js.
+     * This is inferred by checking if it's NOT a browser environment.
+     * @returns {boolean} True if running in Node.js, false otherwise.
+     */
+    var checkNodeEnv = function() {
+        return !checkBrowserEnv();
     };
-    utilityNamespace.displayCodeSnippet = displayCodeSnippet;
-  }
+    // Expose the Node.js environment check function to the global namespace
+    namespaceObj.checkNodeEnv = checkNodeEnv;
 
-  // Retrieves input lines, adapting to browser or Node.js environment.
-  const retrieveInputLines = () => {
-    let receivedLines = [];
+    // Browser-specific utility functions, only defined if in a browser environment
     if (checkBrowserEnv()) {
-      const htmlContent = document.getElementById('input').innerHTML;
-      receivedLines = htmlContent.split('<br>');
-      for (let i = 0; i < receivedLines.length; i++) {
-        receivedLines[i] = receivedLines[i].trim();
-      }
-    }
-    if (checkNodeEnv()) {
-      receivedLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-    }
-    return receivedLines;
-  };
+        /**
+         * Encodes special HTML characters in a given string to their entity equivalents.
+         * This prevents issues when displaying user-generated content as HTML.
+         * @param {string} inputString The string to be HTML-encoded.
+         * @returns {string} The HTML-encoded string.
+         */
+        var encodeHtmlEntities = function(inputString) {
+            return String(inputString)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        };
+        // Expose the HTML encoding function
+        namespaceObj.encodeHtmlEntities = encodeHtmlEntities;
 
-  // Sets up a mechanism to process input line by line.
-  const configureLineProcessor = (processCallback) => {
-    if (checkBrowserEnv()) {
-      const allLines = retrieveInputLines();
-      for (let j = 0; j < allLines.length; j++) {
-        processCallback(allLines[j]);
-      }
-    }
-    if (checkNodeEnv()) {
-      const fileStream = require('fs').ReadStream('/dev/stdin');
-      const lineReaderInterface = require('readline').createInterface({
-        'input': fileStream,
-        'output': {}
-      });
-      lineReaderInterface.on('line', (currentLine) => {
-        processCallback(currentLine);
-      });
-    }
-  };
-  utilityNamespace.configureLineProcessor = configureLineProcessor;
-
-  // Displays an array of output lines in the appropriate environment.
-  const renderOutputLines = (linesToDisplay) => {
-    if (checkBrowserEnv()) {
-      document.getElementById('output').innerHTML = linesToDisplay.map(encodeForHtml).join('<br>\n');
-    }
-    if (checkNodeEnv()) {
-      for (let k = 0; k < linesToDisplay.length; k++) {
-        console.log(linesToDisplay[k]);
-      }
-    }
-  };
-  utilityNamespace.renderOutputLines = renderOutputLines;
-
-  let currentOutputBuffer = [];
-  // Displays a single line of output.
-  const renderSingleLine = (singleLineContent) => {
-    if (checkBrowserEnv()) {
-      currentOutputBuffer.push(singleLineContent);
-      document.getElementById('output').innerHTML = currentOutputBuffer.map(encodeForHtml).join('<br>\n');
-    }
-    if (checkNodeEnv()) {
-      console.log(singleLineContent);
-    }
-  };
-  utilityNamespace.renderSingleLine = renderSingleLine;
-
-  // Orchestrates the execution of the primary application logic.
-  const executeMainLogic = (applicationEntry) => {
-    if (checkBrowserEnv()) {
-      window.onload = () => {
-        displayCodeSnippet(applicationEntry);
-        applicationEntry();
-      };
-    }
-    if (checkNodeEnv()) {
-      applicationEntry();
-    }
-  };
-  utilityNamespace.executeMainLogic = executeMainLogic;
-})(AppUtilities);
-
-const primaryApplication = () => {
-  // Define grid boundaries for the game area.
-  const gridStartX = 0;
-  const gridStartY = 0;
-  const gridDimensionX = 10;
-  const gridDimensionY = 10;
-
-  // Movement vectors for the main character (like a knight in chess).
-  const knightLikeMoves = [
-    [-1, -2],
-    [0, -2],
-    [1, -2],
-    [-2, -1],
-    [2, -1],
-    [-2, 0],
-    [2, 0],
-    [-2, 1],
-    [2, 1],
-    [-1, 2],
-    [0, 2],
-    [1, 2]
-  ];
-  // Movement vectors for area-of-effect elements (3x3 square).
-  const areaEffectMoves = [
-    [-1, -1],
-    [0, -1],
-    [1, -1],
-    [-1, 0],
-    [0, 0],
-    [1, 0],
-    [-1, 1],
-    [0, 1],
-    [1, 1]
-  ];
-
-  // Enumeration for different types of input data segments.
-  const inputSegmentTypes = {};
-  inputSegmentTypes.playerStart = 0;
-  inputSegmentTypes.countOfEffects = 1;
-  inputSegmentTypes.effectPositions = 2;
-
-  let currentInputData; // Object to hold parsed input for the current test case.
-  let processedLineIndex = 0; // Counter for the number of input lines processed.
-
-  // Determines if a given coordinate is within the defined game grid.
-  const isWithinGridBounds = (coordX, coordY) => {
-    if (gridStartX <= coordX && coordX < gridDimensionX) {
-      if (gridStartY <= coordY && coordY < gridDimensionY) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  };
-
-  // Calculates all valid new positions from a starting point given a set of movement patterns.
-  const calculatePossibleMoves = (currentPosition, movementPatterns) => {
-    const resultingPositions = [];
-    for (let m = 0; m < movementPatterns.length; m++) {
-      const pattern = movementPatterns[m];
-      const newX = currentPosition[0] + pattern[0];
-      const newY = currentPosition[1] + pattern[1];
-      if (isWithinGridBounds(newX, newY)) {
-        resultingPositions.push([newX, newY]);
-      }
-    }
-    return resultingPositions;
-  };
-
-  // Gets the next possible locations for the main character.
-  const getKnightSuccessorPositions = (knightPosition) => {
-    return calculatePossibleMoves(knightPosition, knightLikeMoves);
-  };
-
-  // Gets all grid cells that are affected by a given area-of-effect element.
-  const getEffectedZones = (effectCenter) => {
-    return calculatePossibleMoves(effectCenter, areaEffectMoves);
-  };
-
-  let memoizationStore; // Cache for storing results of subproblems.
-  let pathHistory; // A stack to keep track of the character's path during recursion.
-  let recursionDepth; // Counts the number of recursive calls made.
-
-  // Determines if the character can survive all active area-of-effect zones.
-  const checkSurvivalOutcome = (playerLocation, activeEffectZones) => {
-    recursionDepth++;
-    // Construct a unique key for the memoization cache.
-    const memoKey = `${activeEffectZones.length}, ${playerLocation[0]}, ${playerLocation[1]}`;
-
-    if (memoKey in memoizationStore) {
-      return memoizationStore[memoKey];
+        /**
+         * Displays the source code of a provided function within a `<pre><code>` block
+         * in an HTML element with the ID 'code'.
+         * @param {Function} targetFunction The function whose source code will be displayed.
+         */
+        var displaySourceCode = function(targetFunction) {
+            document.getElementById('code').innerHTML = '<pre><code>' + encodeHtmlEntities(targetFunction) + '</code></pre>';
+        };
+        // Expose the code display function
+        namespaceObj.displaySourceCode = displaySourceCode;
     }
 
-    pathHistory.push(playerLocation);
-
-    // Base case: If no more effect zones, survival is assured.
-    if (activeEffectZones.length <= 0) {
-      return true;
-    }
-
-    const currentEffectCenter = activeEffectZones[0];
-    const nextPlayerPositions = getKnightSuccessorPositions(playerLocation);
-    const affectedAreas = getEffectedZones(currentEffectCenter);
-
-    // Iterate through all potential next positions for the player.
-    for (let p = 0; p < nextPlayerPositions.length; p++) {
-      const potentialPlayerPos = nextPlayerPositions[p];
-      // Check if this potential position is within the current effect zone.
-      for (let q = 0; q < affectedAreas.length; q++) {
-        const singleAffectedSpot = affectedAreas[q];
-        if (potentialPlayerPos[0] === singleAffectedSpot[0] &&
-          potentialPlayerPos[1] === singleAffectedSpot[1]) {
-          // If caught by the current effect, check survival against remaining effects.
-          const remainingEffectZones = activeEffectZones.slice(1);
-          const canContinue = checkSurvivalOutcome(potentialPlayerPos, remainingEffectZones);
-          if (canContinue) {
-            memoizationStore[memoKey] = true;
-            return true;
-          }
+    /**
+     * Retrieves input lines from the appropriate source based on the environment.
+     * In a browser, it reads from an HTML element with ID 'input'.
+     * In Node.js, it reads from standard input (/dev/stdin).
+     * @returns {string[]} An array of strings, where each string is an input line.
+     */
+    var retrieveInputLines = function() {
+        var receivedLines = [];
+        if (checkBrowserEnv()) {
+            // For browser, get content from a div and split by <br> tags
+            var domContent = document.getElementById('input').innerHTML;
+            receivedLines = domContent.split('<br>');
+            // Trim whitespace from each line
+            for (var idx = 0; idx < receivedLines.length; idx++) {
+                receivedLines[idx] = receivedLines[idx].trim();
+            }
         }
-      }
-    }
+        if (checkNodeEnv()) {
+            // For Node.js, read synchronously from stdin
+            receivedLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+        }
+        return receivedLines;
+    };
 
-    pathHistory.splice(pathHistory.length - 1, 1); // Backtrack from the path.
-    memoizationStore[memoKey] = false; // Cache the result as non-survivable.
-    return false;
-  };
+    /**
+     * Sets up a mechanism to process input lines one by one using a callback function.
+     * Handles both immediate processing for browser input and event-driven processing for Node.js streams.
+     * @param {Function} lineCallback The callback function to be invoked for each input line.
+     */
+    var setupLineProcessor = function(lineCallback) {
+        if (checkBrowserEnv()) {
+            // In browser, retrieve all lines and call the callback for each
+            var lines = retrieveInputLines();
+            for (var idx = 0; idx < lines.length; idx++) {
+                lineCallback(lines[idx]);
+            }
+        }
+        if (checkNodeEnv()) {
+            // In Node.js, use the 'readline' module to process input stream line by line
+            var fileStream = require('fs').ReadStream('/dev/stdin');
+            var lineReader = require('readline').createInterface({
+                'input': fileStream,
+                'output': {} // A dummy output stream is required but not used here
+            });
+            lineReader.on('line', function(currentLine) {
+                lineCallback(currentLine);
+            });
+        }
+    };
+    // Expose the line reader setup function
+    namespaceObj.setupLineProcessor = setupLineProcessor;
 
-  // Processes each line of input data.
-  const processInputLine = (inputLineText) => {
-    const parsedArguments = inputLineText.split(' ');
-    for (let r = 0; r < parsedArguments.length; r++) {
-      parsedArguments[r] = parseFloat(parsedArguments[r]);
-    }
+    /**
+     * Outputs an array of strings to the appropriate destination.
+     * In a browser, it updates an HTML element with ID 'output'.
+     * In Node.js, it prints each string to the console.
+     * @param {string[]} resultLines An array of strings to be output.
+     */
+    var performOutput = function(resultLines) {
+        if (checkBrowserEnv()) {
+            // For browser, HTML-encode and join lines with <br>\n
+            document.getElementById('output').innerHTML = resultLines.map(encodeHtmlEntities).join('<br>\n');
+        }
+        if (checkNodeEnv()) {
+            // For Node.js, print each line to standard output
+            for (var idx = 0; idx < resultLines.length; idx++) {
+                console.log(resultLines[idx]);
+            }
+        }
+    };
+    // Expose the output function
+    namespaceObj.performOutput = performOutput;
 
-    const segmentType = processedLineIndex % Object.keys(inputSegmentTypes).length;
+    // Internal array to accumulate output lines when in a browser environment
+    var accumulatedOutputLines = [];
 
-    if (segmentType === inputSegmentTypes.playerStart) {
-      currentInputData = {};
-      currentInputData.playerChar = {};
-      currentInputData.effectLocations = [];
-      currentInputData.playerChar.posX = parsedArguments[0];
-      currentInputData.playerChar.posY = parsedArguments[1];
-      // Special check for the termination condition.
-      if (currentInputData.playerChar.posX === 0 && currentInputData.playerChar.posY === 0) {
-        // This signifies the end of input.
-      }
-    } else if (segmentType === inputSegmentTypes.countOfEffects) {
-      currentInputData.effectCount = parsedArguments[0];
-    } else if (segmentType === inputSegmentTypes.effectPositions) {
-      for (let s = 0; s < parsedArguments.length; s += 2) {
-        currentInputData.effectLocations.push([parsedArguments[s], parsedArguments[s + 1]]);
-      }
+    /**
+     * Outputs a single string line to the appropriate destination.
+     * In a browser, it appends to an internal array and updates the DOM.
+     * In Node.js, it prints directly to the console.
+     * @param {string} singleResultLine The single string line to be output.
+     */
+    var performOutputLine = function(singleResultLine) {
+        if (checkBrowserEnv()) {
+            accumulatedOutputLines.push(singleResultLine);
+            document.getElementById('output').innerHTML = accumulatedOutputLines.map(encodeHtmlEntities).join('<br>\n');
+        }
+        if (checkNodeEnv()) {
+            console.log(singleResultLine);
+        }
+    };
+    // Expose the single line output function
+    namespaceObj.performOutputLine = performOutputLine;
 
-      recursionDepth = 0;
-      memoizationStore = {};
-      pathHistory = [];
+    /**
+     * Orchestrates the execution of the main application logic.
+     * In a browser, it waits for the window to load before executing.
+     * In Node.js, it executes immediately.
+     * @param {Function} primaryLogic The main function containing the application's core logic.
+     */
+    var executeMainLogic = function(primaryLogic) {
+        if (checkBrowserEnv()) {
+            window.onload = function() {
+                displaySourceCode(primaryLogic); // Display the main function's source
+                primaryLogic(); // Execute the main function
+            };
+        }
+        if (checkNodeEnv()) {
+            primaryLogic(); // Execute the main function directly
+        }
+    };
+    // Expose the main logic execution function
+    namespaceObj.executeMainLogic = executeMainLogic;
 
-      // Execute the survival check for the current scenario and output result.
-      if (checkSurvivalOutcome([currentInputData.playerChar.posX, currentInputData.playerChar.posY], currentInputData.effectLocations)) {
-        AppUtilities.renderSingleLine('OK');
-      } else {
-        AppUtilities.renderSingleLine('NA');
-      }
-    } else {
-      // Handle unrecognized input segment type if necessary.
-    }
-    processedLineIndex++;
-  };
+})(APP_UTIL); // Pass the global APP_UTIL object to the IIFE
 
-  AppUtilities.configureLineProcessor(processInputLine);
+// --- Start of the main application logic ---
+
+/**
+ * The primary application function that encapsulates the problem-solving algorithm.
+ * This function is responsible for reading input, performing calculations, and producing output.
+ */
+var primaryApplication = function() {
+    // Define the boundaries of the game field
+    var gridStartX = 0;
+    var gridStartY = 0;
+    var gridWidth = 10;
+    var gridHeight = 10;
+
+    // Define the relative movement vectors for Phyonkichi (similar to a knight's moves)
+    var phyonkichiMovementVectors = [
+        [-1, -2], [0, -2], [1, -2],
+        [-2, -1], [2, -1],
+        [-2, 0], [2, 0],
+        [-2, 1], [2, 1],
+        [-1, 2], [0, 2], [1, 2]
+    ];
+
+    // Define the relative coordinates that become wet around a sprinkler (a 3x3 square)
+    var sprinklerEffectVectors = [
+        [-1, -1], [0, -1], [1, -1],
+        [-1, 0], [0, 0], [1, 0],
+        [-1, 1], [0, 1], [1, 1]
+    ];
+
+    // An object acting as an enumeration for different input data types
+    var inputDataCategories = {};
+    inputDataCategories.phyonkichiLocation = 0;
+    inputDataCategories.numSprinklers = 1;
+    inputDataCategories.splinklerLocations = 2;
+
+    var currentInputData; // Object to hold parsed input for the current test case
+    var processedLineCounter = 0; // Counter to keep track of the current input line number
+
+    /**
+     * Checks if a given coordinate (x, y) falls within the defined game grid boundaries.
+     * @param {number} coordX The X-coordinate to check.
+     * @param {number} coordY The Y-coordinate to check.
+     * @returns {boolean} True if the coordinate is within bounds, false otherwise.
+     */
+    var isCoordinateWithinBounds = function(coordX, coordY) {
+        if (gridStartX <= coordX && coordX < gridWidth) {
+            if (gridStartY <= coordY && coordY < gridHeight) {
+                return true;
+            } else {
+                return false; // Y-coordinate is out of the vertical bounds
+            }
+        } else {
+            return false; // X-coordinate is out of the horizontal bounds
+        }
+    };
+
+    /**
+     * Calculates all possible new locations from a starting position by applying a set of movement patterns.
+     * Only locations that remain within the game field boundaries are included.
+     * @param {number[]} currentPosition An array `[x, y]` representing the starting point.
+     * @param {number[][]} movementPatterns An array of `[dx, dy]` vectors representing possible moves.
+     * @returns {number[][]} An array of `[x, y]` coordinates for valid new positions.
+     */
+    var calculateDisplacedPositions = function(currentPosition, movementPatterns) {
+        var newPositions = [];
+        for (var idx = 0; idx < movementPatterns.length; idx++) {
+            var singleMove = movementPatterns[idx];
+            var nextX = currentPosition[0] + singleMove[0];
+            var nextY = currentPosition[1] + singleMove[1];
+            if (isCoordinateWithinBounds(nextX, nextY)) {
+                newPositions.push([nextX, nextY]);
+            }
+        }
+        return newPositions;
+    };
+
+    /**
+     * Determines all valid next positions Phyonkichi can move to from its current location.
+     * @param {number[]} phyonkichiCurrentPos The current `[x, y]` coordinates of Phyonkichi.
+     * @returns {number[][]} An array of `[x, y]` coordinates for Phyonkichi's next possible positions.
+     */
+    var determineNextPhyonkichiPositions = function(phyonkichiCurrentPos) {
+        return calculateDisplacedPositions(phyonkichiCurrentPos, phyonkichiMovementVectors);
+    };
+
+    /**
+     * Identifies all grid cells that become wet due to a sprinkler at a given location.
+     * @param {number[]} sprinklerCurrentPos The `[x, y]` coordinates of the sprinkler.
+     * @returns {number[][]} An array of `[x, y]` coordinates for all wet locations.
+     */
+    var identifyWetAreas = function(sprinklerCurrentPos) {
+        return calculateDisplacedPositions(sprinklerCurrentPos, sprinklerEffectVectors);
+    };
+
+    var memoizationCache; // Cache object to store results of `evaluateSurvivalPossibility` for memoization
+    var recursionStack; // Stack to keep track of Phyonkichi's path during recursion (for debugging/tracing)
+    var functionCallCounter; // Counter to track the number of times `evaluateSurvivalPossibility` is called
+
+    /**
+     * Recursively evaluates if Phyonkichi can survive a sequence of sprinklers.
+     * This function uses a depth-first search approach with memoization.
+     * IMPORTANT: The original logic implies Phyonkichi "survives" if it can move to a location
+     * that *is* wet by the current sprinkler, and then from that wet location, survive the *remaining* sprinklers.
+     * This behavior is preserved as per Type II cloning rules, even if it seems counter-intuitive for "survival".
+     * @param {number[]} phyonkichiCurrentPos The current `[x, y]` coordinates of Phyonkichi.
+     * @param {number[][]} remainingSprinklerPositions An array of `[x, y]` coordinates for the sprinklers yet to be encountered.
+     * @returns {boolean} True if Phyonkichi can find a path to "survive" all sprinklers, false otherwise.
+     */
+    var evaluateSurvivalPossibility = function(phyonkichiCurrentPos, remainingSprinklerPositions) {
+        functionCallCounter++; // Increment the counter for each call
+
+        // Create a unique key for the current state (number of sprinklers left, Phyonkichi's position)
+        var memoKey = remainingSprinklerPositions.length + ',' + phyonkichiCurrentPos[0] + ',' + phyonkichiCurrentPos[1];
+        if (memoKey in memoizationCache) {
+            return memoizationCache[memoKey]; // Return cached result if already computed
+        }
+
+        recursionStack.push(phyonkichiCurrentPos); // Add current position to the recursion stack
+
+        // Base case: If there are no sprinklers left, Phyonkichi has survived
+        if (remainingSprinklerPositions.length <= 0) {
+            // console.log('Stack: ' + JSON.stringify(recursionStack)); // Debugging: print the survival path
+            recursionStack.splice(recursionStack.length - 1, 1); // Pop from stack before returning
+            memoizationCache[memoKey] = true; // Cache the result
+            return true;
+        }
+
+        var currentSprinklerPos = remainingSprinklerPositions[0]; // Get the first sprinkler in the sequence
+        var possibleNextPhyonkichiPositions = determineNextPhyonkichiPositions(phyonkichiCurrentPos); // Get all valid moves for Phyonkichi
+        var affectedWetLocations = identifyWetAreas(currentSprinklerPos); // Get all locations made wet by the current sprinkler
+
+        // Iterate through all possible next positions Phyonkichi can move to
+        for (var k = 0; k < possibleNextPhyonkichiPositions.length; k++) {
+            var nextPhyonkichiPos = possibleNextPhyonkichiPositions[k];
+
+            // Check if this next Phyonkichi position is one of the locations made wet by the current sprinkler
+            for (var m = 0; m < affectedWetLocations.length; m++) {
+                var singleWetLocation = affectedWetLocations[m];
+                if (nextPhyonkichiPos[0] === singleWetLocation[0] &&
+                    nextPhyonkichiPos[1] === singleWetLocation[1]) {
+                    // If Phyonkichi's next position IS wet by the current sprinkler,
+                    // then recursively check if it can survive the *remaining* sprinklers from this (wet) position.
+                    var remainingSprinklers = remainingSprinklerPositions.slice(1); // Remove the current sprinkler
+                    var canSurviveResult = evaluateSurvivalPossibility(nextPhyonkichiPos, remainingSprinklers);
+                    if (canSurviveResult) {
+                        recursionStack.splice(recursionStack.length - 1, 1); // Pop from stack before returning
+                        memoizationCache[memoKey] = true; // Cache the result
+                        return true; // A survival path was found
+                    }
+                }
+            }
+        }
+
+        recursionStack.splice(recursionStack.length - 1, 1); // Pop from stack if no survival path found from this state
+        memoizationCache[memoKey] = false; // Cache the result as false
+        return false; // No survival path found for the current state
+    };
+
+    /**
+     * Processes a single line of input, parsing it according to the current data type
+     * and triggering the survival evaluation when a complete test case is received.
+     * @param {string} currentLine The input line string to be processed.
+     */
+    var processInputLine = function(currentLine) {
+        var lineArguments = currentLine.split(' ');
+        // Convert all string arguments to floating-point numbers
+        for (var idx = 0; idx < lineArguments.length; idx++) {
+            lineArguments[idx] = parseFloat(lineArguments[idx]);
+        }
+
+        // Determine the type of data this line represents based on the line counter
+        var currentDataType = processedLineCounter % Object.keys(inputDataCategories).length;
+
+        if (currentDataType === inputDataCategories.phyonkichiLocation) {
+            // This line contains Phyonkichi's starting coordinates
+            currentInputData = {}; // Initialize a new object for the current test case
+            currentInputData.phyonkichi = {};
+            currentInputData.splinklerLocations = [];
+            currentInputData.phyonkichi.x = lineArguments[0];
+            currentInputData.phyonkichi.y = lineArguments[1];
+
+            // Check for the termination condition (0 0 for Phyonkichi's location)
+            if (currentInputData.phyonkichi.x === 0 && currentInputData.phyonkichi.y === 0) {
+                // console.log('end'); // Debugging: indicates end of input
+                return; // Stop further processing if the end marker is found
+            }
+        } else if (currentDataType === inputDataCategories.numSprinklers) {
+            // This line contains the number of sprinklers (though not directly used in the algorithm, it's part of the input format)
+            currentInputData.numSprinklers = lineArguments[0];
+        } else if (currentDataType === inputDataCategories.splinklerLocations) {
+            // This line contains the coordinates for all sprinklers
+            for (var idx = 0; idx < lineArguments.length; idx += 2) {
+                currentInputData.splinklerLocations.push([lineArguments[idx], lineArguments[idx + 1]]);
+            }
+
+            // console.log(JSON.stringify(currentInputData)); // Debugging: print parsed input
+
+            // Initialize variables for the survival evaluation for this test case
+            functionCallCounter = 0;
+            memoizationCache = {};
+            recursionStack = [];
+
+            // Execute the survival evaluation and output the result
+            if (evaluateSurvivalPossibility([currentInputData.phyonkichi.x, currentInputData.phyonkichi.y], currentInputData.splinklerLocations)) {
+                APP_UTIL.performOutputLine('OK'); // Phyonkichi can survive
+            } else {
+                APP_UTIL.performOutputLine('NA'); // Phyonkichi cannot survive
+            }
+            // console.log('callCount: ' + functionCallCounter); // Debugging: print total recursive calls
+        } else {
+            // This block is intentionally left empty, as per the original code's structure.
+            // It would handle any other unexpected data types if the modulo logic were different.
+        }
+        processedLineCounter++; // Increment the line counter for the next input line
+    };
+
+    // Set up the line reader to feed input lines to our processing function
+    APP_UTIL.setupLineProcessor(processInputLine);
 };
 
-AppUtilities.executeMainLogic(primaryApplication);
+// Execute the main application logic using the utility function, ensuring proper environment handling
+APP_UTIL.executeMainLogic(primaryApplication);

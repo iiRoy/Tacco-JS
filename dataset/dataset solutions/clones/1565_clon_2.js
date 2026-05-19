@@ -1,95 +1,75 @@
-/**
- * @param {string} initialDataString - The unprocessed input data stream.
- */
-function ProcessingEntry(initialDataString) {
-	const [ primaryLine, ...remainingLines ] = initialDataString.split("\n");
-	const [gridHeight, gridWidth] = parseNumericArray(primaryLine);
-	const exclusionZones = createGridFromLines(remainingLines, ' ').map(rowStr => rowStr.map(cellStr => parseInt(cellStr, 10)));
-	exclusionZones.unshift(null); // Insert a null placeholder for 1-based row indexing
+// This function processes input data to determine path costs.
+// It's designed to find the minimum number of moves to reach each row.
+function ProcessInput(inputString) {
+	const [ initialLine, ...remainingLines ] = inputString.split("\n");
+	const [heightVal, widthVal] = parseNumericArray(initialLine);
+	const gridData = create2DArray(remainingLines, ' ').map(rowItems => rowItems.map(itemStr => parseInt(itemStr, 10)));
+	gridData.unshift(null); // Add a placeholder at index 0 to align with 1-based indexing for rows
 
-	/**
-	 * minMovesPerColumn - Stores the minimum path length to reach each row for a given starting column.
-	 * @type {Array<number>}
-	 */
-	let minMovesPerColumn = new Array(gridHeight).fill(-1);
-	// let secondaryPathCosts = new Array(gridHeight).fill(gridWidth * gridHeight * 3); // Another comment example
-	for (let currentColIndex = 1; currentColIndex <= gridWidth; currentColIndex++) {
-		let currentXCoord = currentColIndex,
-			currentYCoord = 1;
-		let pathLength = 0;
-		pathfindingLoop:
-		while (true) {
-			pathLength++;
-			if (canDescend(currentXCoord, currentYCoord)) {
-				currentYCoord++;
-				// Update the minimum path length for the current row if a shorter path is found
-				if (minMovesPerColumn[currentYCoord - 2] === -1 || pathLength < minMovesPerColumn[currentYCoord - 2]) {
-					minMovesPerColumn[currentYCoord - 2] = pathLength;
+	// This array will store the minimum move count to reach each row.
+	// Initialized with -1 to indicate unreached rows.
+	let pathCosts = new Array(heightVal).fill(-1);
+
+	// Iterate through possible starting columns (from 1 to widthVal)
+	for (let colIndex = 1; colIndex <= widthVal; colIndex++) {
+		let currentX = colIndex; // Current horizontal position
+		let currentY = 1;         // Current vertical position (starts at row 1)
+		let stepCount = 0;        // Number of steps taken for the current path
+
+		// Label for breaking out of the inner path traversal loop
+		pathTraversal: while (true) {
+			stepCount++; // Increment step count for each move
+
+			// Check if movement downwards is possible from the current position
+			if (isPathClearBelow(currentX, currentY, gridData)) {
+				currentY++; // Move down to the next row
+				// If this path is shorter or the row hasn't been reached yet, update pathCosts
+				if (pathCosts[currentY - 2] === -1 || stepCount < pathCosts[currentY - 2]) {
+					pathCosts[currentY - 2] = stepCount;
 				}
-				if (currentYCoord > gridHeight) break pathfindingLoop; // Terminate if path exits bottom boundary
+				// If we've gone past the last row, this path is complete
+				if (currentY > heightVal) break pathTraversal;
 			} else {
-				currentXCoord++;
-				if (currentXCoord > gridWidth) break pathfindingLoop; // Terminate if path exits right boundary
+				currentX++; // Move right to the next column
+				// If we've gone past the last column, this path is complete
+				if (currentX > widthVal) break pathTraversal;
 			}
 		}
-		
 	}
-	console.log(minMovesPerColumn);
-	
-	/**
-	 * Checks if a downward movement is permissible from the current grid cell.
-	 * @param {number} currentX - The current horizontal position.
-	 * @param {number} currentY - The current vertical position.
-	 * @returns {boolean} True if moving down is allowed, false if a horizontal shift is necessary.
-	 */
-	function canDescend(currentX, currentY) {
-		const [forbiddenStart, forbiddenEnd] = exclusionZones[currentY];
-		return !(forbiddenStart <= currentX && currentX <= forbiddenEnd);
+	// Output the calculated minimum path costs for each row
+	console.log(pathCosts);
+
+	// Helper function to determine if a downward move is allowed
+	// based on the grid data (blocked ranges).
+	function isPathClearBelow(currentXCoord, currentYCoord, dataMatrix) {
+		const [startBlock, endBlock] = dataMatrix[currentYCoord];
+		// A downward move is allowed if the current X coordinate is NOT within the blocked range
+		return !(startBlock <= currentXCoord && currentXCoord <= endBlock);
 	}
-	// console.debug(`Descent possible for (1, 3): ${canDescend(1, 3)}, (2, 3): ${canDescend(2, 3)}`);
 }
 
-// This script processes data from standard input; do not modify this specific line.
-ProcessingEntry( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Do not modify the following line (reads from standard input and calls ProcessInput)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// --- Auxiliary Functions Below ---
+// --- Utility Functions ---
 
-/**
- * Converts a string of space-separated values into an array of integers.
- * @param {string} inputString - The string containing numeric data.
- * @param {string} [separatorChar=' '] - The character used to divide the string into segments.
- * @returns {Array<number>} An array of parsed integer values.
- */
-function parseNumericArray(inputString, separatorChar = ' ') {
-	return inputString.split(separatorChar).map(segment => parseInt(segment, 10));
+// Converts a string into an array of numbers.
+function parseNumericArray(inputStr, separatorChar = ' ') {
+	return inputStr.split(separatorChar).map(s => parseInt(s, 10));
 }
 
-/**
- * Transforms a string into an array of BigInt numbers.
- * @param {string} inputString - The string to be converted.
- * @param {string} [separatorChar=' '] - The character that separates values in the string.
- * @returns {Array<bigint>} An array containing BigInt representations.
- */
-function convertBigIntArray(inputString, separatorChar = ' ') {
-	return inputString.split(separatorChar).map(segment => BigInt(segment));
+// Converts a string into an array of BigInts.
+function convertBigIntArray(inputStr, separatorChar = ' ') {
+	return inputStr.split(separatorChar).map(s => BigInt(s));
 }
 
-/**
- * Constructs a two-dimensional array from an array of strings.
- * @param {Array<string>} inputLineArray - A collection of strings, where each string represents a row.
- * @param {string} [separatorChar=' '] - The character used to split each row string into individual elements.
- * @returns {Array<Array<string>>} The resulting grid-like structure.
- */
-function createGridFromLines(inputLineArray, separatorChar = ' ') {
-	const gridResult = inputLineArray.map(lineContent => lineContent.split(separatorChar));
-	return gridResult;
+// Creates a 2D array (matrix) from an array of strings.
+function create2DArray(stringArray, separatorChar = ' ') {
+	const resultMatrix = stringArray.map(rowString => rowString.split(separatorChar));
+	return resultMatrix;
 }
 
-/**
- * Calculates the sum of all elements within a numerical array.
- * @param {Array<number>} numberSequence - An array of numeric values to be summed.
- * @returns {number} The cumulative total of the array's elements.
- */
-function calculateTotal(numberSequence) {
-	return numberSequence.reduce((accumulator, currentValue) => accumulator + currentValue);
+// Calculates the sum of numbers in an array.
+function calculateSum(numericValues) {
+	return numericValues.reduce((accumulator, currentValue) => accumulator + currentValue);
 }

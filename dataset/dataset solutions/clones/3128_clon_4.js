@@ -1,45 +1,37 @@
-const fileSystem = require('fs');
-const readInput = () => fileSystem.readFileSync('/dev/stdin', 'utf8').split('\n');
-const prime_divisor = 1_000_000_007;
+const inputLines = [];
+const lineReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-const adjustMapEntry = (data_map, key_value) => {
-    data_map.set(key_value, (data_map.get(key_value) || 0) + 1);
-};
+lineReader.on('line', (currentLine) => {
+    inputLines.push(currentLine);
+});
 
-const calculateCombinationsOfTwo = (count_value) => {
-    if (count_value < 2) return 0;
-    return (count_value * (count_value - 1)) / 2;
-};
+lineReader.on('close', () => {
+    const moduloVal = Math.pow(10, 9) + 7;
+    const arraySize = Number(inputLines.shift());
+    const dataArray = inputLines.slice(0, arraySize).map(Number);
 
-const mainProcess = () => {
-    const raw_input_lines = readInput();
-    const element_quantity = Number(raw_input_lines.shift());
-    const value_list = raw_input_lines.slice(0, element_quantity).map(Number);
-    const segment_frequencies = new Map();
+    const elementCounts = dataArray.reduce((accumulator, currentElement, currentIndex, fullArray) => {
+        const isFinalElement = currentIndex === fullArray.length - 1;
+        const differsFromNext = currentIndex < fullArray.length - 1 && currentElement !== fullArray[currentIndex + 1];
 
-    const termination_flags = Array(element_quantity).fill(false);
-    if (element_quantity > 0) {
-        termination_flags[element_quantity - 1] = true;
-    }
-
-    for (let current_position = 0; current_position < element_quantity - 1; ++current_position) {
-        if (value_list[current_position] !== value_list[current_position + 1]) {
-            termination_flags[current_position] = true;
+        if (isFinalElement || differsFromNext) {
+            accumulator[currentElement] = (accumulator[currentElement] || 0) + 1;
         }
-    }
+        return accumulator;
+    }, {});
 
-    value_list.forEach((val_item, index_pos) => {
-        if (termination_flags[index_pos]) {
-            adjustMapEntry(segment_frequencies, val_item);
-        }
-    });
+    const calculatePairs = (value) => {
+        if (value < 2) return 0;
+        return (value * (value - 1)) / 2;
+    };
 
-    let cumulative_sum = Array.from(segment_frequencies.values()).reduce((accum, freq_val) => {
-        const pairs_for_this_value = calculateCombinationsOfTwo(freq_val);
-        return (accum + pairs_for_this_value) % prime_divisor;
+    const finalSum = Object.values(elementCounts).reduce((currentTotal, countValue) => {
+        const combinations = calculatePairs(countValue);
+        return (currentTotal + combinations) % moduloVal;
     }, 0);
 
-    process.stdout.write((cumulative_sum + 1) + '\n');
-};
-
-mainProcess();
+    console.log(finalSum + 1);
+});

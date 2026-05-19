@@ -1,12 +1,27 @@
-const sourceText = require('node:fs').readFileSync(0, 'utf8').trim();
-const textSegments = sourceText.split('\n');
+const inputSource = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const dataLines = inputSource.split('\n');
 
-const grandTotal = textSegments.reduce((accumulator, currentSegment) => {
-    const numericTokens = currentSegment.match(/\d+/g) || [];
-    const segmentSum = numericTokens.reduce((subAccumulator, numericToken) => {
-        return subAccumulator + Number(numericToken);
-    }, 0);
-    return accumulator + segmentSum;
-}, 0);
+let finalSum = 0;
 
-console.log(grandTotal);
+for (const currentTextLine of dataLines) {
+    let lineNumericTotal = 0;
+    let currentNumberString = '';
+
+    for (let charIndex = 0; charIndex < currentTextLine.length; charIndex++) {
+        const char = currentTextLine[charIndex];
+        if (char >= '0' && char <= '9') {
+            currentNumberString += char;
+        } else {
+            if (currentNumberString.length > 0) {
+                lineNumericTotal += Number(currentNumberString);
+                currentNumberString = '';
+            }
+        }
+    }
+    if (currentNumberString.length > 0) {
+        lineNumericTotal += Number(currentNumberString);
+    }
+    finalSum += lineNumericTotal;
+}
+
+console.log(finalSum);

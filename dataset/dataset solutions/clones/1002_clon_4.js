@@ -1,66 +1,28 @@
-const sourceConfiguration = {
-    resourcePath: '/dev/stdin',
-    lineSeparator: '\n'
-};
+config = { input: '/dev/stdin', newline: '\n' };
 
-const fileUtility = require('node:fs');
+const fileSystemModule = require('fs');
+let fileContentSegments = fileSystemModule.readFileSync(config.input, 'ascii')
+  .split(config.newline, 2);
+let parsedNumbers = fileContentSegments[1].split(' ').map(Number);
 
-const rawContent = fileUtility.readFileSync(sourceConfiguration.resourcePath, 'ascii');
+let operationCount = performInsertionSort(parsedNumbers);
+console.log(parsedNumbers.join(' '));
+console.log(operationCount);
 
-const contentLines = rawContent.split(sourceConfiguration.lineSeparator);
-const numericalSequence = contentLines[1].split(' ').map(Number);
+function performInsertionSort(dataArray) {
+  let totalShifts = 0;
+  const arrayLength = dataArray.length;
 
-function processAndCountInversions(dataCollection) {
+  for (let currentPosition = 1; currentPosition < arrayLength; currentPosition++) {
+    let valueToInsert = dataArray[currentPosition];
+    let comparisonPosition = currentPosition - 1;
 
-    function mergeSortAndCount(arr, startBound, endBound) {
-        if (startBound >= endBound) {
-            return 0;
-        }
-
-        const midPoint = Math.floor((startBound + endBound) / 2);
-        let currentInversions = 0;
-
-        currentInversions += mergeSortAndCount(arr, startBound, midPoint);
-        currentInversions += mergeSortAndCount(arr, midPoint + 1, endBound);
-
-        currentInversions += mergeAndCount(arr, startBound, midPoint, endBound);
-
-        return currentInversions;
+    while (comparisonPosition >= 0 && dataArray[comparisonPosition] > valueToInsert) {
+      dataArray[comparisonPosition + 1] = dataArray[comparisonPosition];
+      comparisonPosition--;
+      totalShifts++;
     }
-
-    function mergeAndCount(arr, start, mid, end) {
-        const leftSegment = arr.slice(start, mid + 1);
-        const rightSegment = arr.slice(mid + 1, end + 1);
-
-        let leftPointer = 0;
-        let rightPointer = 0;
-        let mainArrayPointer = start;
-        let inversionCount = 0;
-
-        while (leftPointer < leftSegment.length && rightPointer < rightSegment.length) {
-            if (leftSegment[leftPointer] <= rightSegment[rightPointer]) {
-                arr[mainArrayPointer++] = leftSegment[leftPointer++];
-            } else {
-                arr[mainArrayPointer++] = rightSegment[rightPointer++];
-                inversionCount += (leftSegment.length - leftPointer);
-            }
-        }
-
-        while (leftPointer < leftSegment.length) {
-            arr[mainArrayPointer++] = leftSegment[leftPointer++];
-        }
-
-        while (rightPointer < rightSegment.length) {
-            arr[mainArrayPointer++] = rightSegment[rightPointer++];
-        }
-
-        return inversionCount;
-    }
-
-    return mergeSortAndCount(dataCollection, 0, dataCollection.length - 1);
+    dataArray[comparisonPosition + 1] = valueToInsert;
+  }
+  return totalShifts;
 }
-
-const totalInversions = processAndCountInversions(numericalSequence);
-
-console.log(numericalSequence.join(' '));
-console.log(totalInversions);

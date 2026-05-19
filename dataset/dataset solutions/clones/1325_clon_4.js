@@ -1,57 +1,54 @@
-const stdioReader = require('node:fs');
+let inputBuffer = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+  inputBuffer += chunk;
+});
 
-const cyclicalShift = (inputStr, displacement) => {
-  if (inputStr.length === 0) return '';
-  const normalizedDisplacement = displacement % inputStr.length;
-  if (normalizedDisplacement === 0) return inputStr;
-  const effectiveDisplacement = normalizedDisplacement < 0
-    ? inputStr.length + normalizedDisplacement
-    : normalizedDisplacement;
+process.stdin.on('end', () => {
+  const allInputSegments = inputBuffer.trim().split('\n');
 
-  const charArray = Array.from(inputStr);
-  const shiftedPart = charArray.splice(0, effectiveDisplacement);
-  return charArray.concat(shiftedPart).join('');
+  if (allInputSegments.length === 0 || (allInputSegments.length === 1 && allInputSegments[0] === '')) {
+    console.log('');
+    return;
+  }
+
+  const firstSequence = allInputSegments[0];
+  const dataSegments = allInputSegments.slice(1);
+
+  const finalOutputs = processInputData(dataSegments, firstSequence, []);
+
+  console.log(finalOutputs.join('\n'));
+});
+
+const rotateString = (inputStr, shiftAmount) => {
+  if (inputStr.length === 0) {
+    return '';
+  }
+  const effectiveShift = shiftAmount % inputStr.length;
+  if (effectiveShift === 0) {
+    return inputStr;
+  }
+  const partToMove = inputStr.substring(0, effectiveShift);
+  const remainingPart = inputStr.substring(effectiveShift);
+  return remainingPart + partToMove;
 };
 
-function* instructionParser(inputData) {
-  const dataUnits = inputData.trim().split('\n');
-  if (dataUnits.length === 0) return;
-
-  let unitPointer = 0;
-
-  yield { kind: 'initial_sequence', payload: dataUnits[unitPointer++] };
-
-  while (unitPointer < dataUnits.length) {
-    const currentUnitValue = dataUnits[unitPointer];
-    const numericalValue = parseInt(currentUnitValue, 10);
-
-    if (!isNaN(numericalValue)) {
-      yield { kind: 'shift_operation', payload: numericalValue };
-      unitPointer++;
-    } else {
-      yield { kind: 'capture_and_reset', payload: currentUnitValue };
-      unitPointer += 2;
-    }
+const processInputData = (remainingTokens, activeString, collectedStrings) => {
+  if (remainingTokens.length === 0) {
+    return collectedStrings;
   }
-}
 
-const rawInput = stdioReader.readFileSync('/dev/stdin', 'utf8');
-const processedOutputs = [];
-let currentWorkingSequence = '';
+  const [currentToken, ...subsequentTokens] = remainingTokens;
+  const parsedNumericValue = parseInt(currentToken, 10);
 
-for (const instruction of instructionParser(rawInput)) {
-  switch (instruction.kind) {
-    case 'initial_sequence':
-      currentWorkingSequence = instruction.payload;
-      break;
-    case 'shift_operation':
-      currentWorkingSequence = cyclicalShift(currentWorkingSequence, instruction.payload);
-      break;
-    case 'capture_and_reset':
-      processedOutputs.push(currentWorkingSequence);
-      currentWorkingSequence = instruction.payload;
-      break;
+  if (!Number.isNaN(parsedNumericValue)) {
+    const transformedString = rotateString(activeString, parsedNumericValue);
+    return processInputData(subsequentTokens, transformedString, collectedStrings);
+  } else {
+    const updatedCollection = [...collectedStrings, activeString];
+    const nextActiveString = currentToken;
+    const tokensAfterBypass = subsequentTokens.slice(1);
+    return processInputData(tokensAfterBypass, nextActiveString, updatedCollection);
   }
-}
-
-console.log(processedOutputs.join('\n'));
+};

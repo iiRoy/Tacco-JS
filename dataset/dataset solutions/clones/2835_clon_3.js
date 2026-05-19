@@ -1,323 +1,178 @@
-var InputProcessorFactory = (function () {
-  /**
-   * Initializes a new input reader instance from a given string.
-   * @param {string} rawInputContent The raw string data to be parsed.
-   * @returns {LineBasedInputReader} A configured input reader object.
-   */
-  function createInputReader(rawInputContent) {
-    return new LineBasedInputReader(rawInputContent);
-  }
+const InputReaderFactory = (function () {
+    class InputReader {
+        constructor(sourceString) {
+            this._inputLines = sourceString.trim().split("\n");
+            this._currentLineIndex = 0;
+        }
 
-  /**
-   * @class LineBasedInputReader
-   * Manages sequential reading of values from a multi-line string input.
-   */
-  function LineBasedInputReader(sourceText) {
-    // Splits the input into individual lines, handling various newline characters, and trims whitespace.
-    this._sourceLines = sourceText.trim().split(/\r?\n/);
-    // Keeps track of the current line being processed.
-    this._currentLineIndex = 0;
-    // Stores tokens of the current line, processed in reverse to allow `pop()` for sequential reading.
-    this._bufferedLineTokens = [];
-  }
+        _parseLineParts(lineIndex) {
+            let lineContent = this._inputLines[lineIndex];
+            if (typeof lineContent === "string") {
+                const parts = lineContent.split(" ").reverse();
+                this._inputLines[lineIndex] = parts; // Cache the parsed array
+                return parts;
+            }
+            return lineContent; // Already an array
+        }
 
-  /**
-   * Internal helper to conditionally convert a string to a number.
-   * @param {string} strValue The string to convert.
-   * @param {boolean} preserveString If true, returns the string without conversion.
-   * @returns {string|number} The converted number or original string.
-   */
-  function tryConvertToNumber(strValue, preserveString) {
-    return preserveString ? strValue : +strValue;
-  }
+        getVal(returnAsString) {
+            const currentLineParts = this._parseLineParts(this._currentLineIndex);
+            const extractedValue = currentLineParts.pop();
+            if (currentLineParts.length === 0) { // Check if line is exhausted
+                this._currentLineIndex++;
+            }
+            return returnAsString ? extractedValue : +extractedValue;
+        }
 
-  /**
-   * Retrieves the next single value from the input stream.
-   * Values are read from left to right on each line, space-separated.
-   * @param {boolean} [returnAsRawString=false] If true, the value is returned as a string; otherwise, it's converted to a number.
-   * @returns {string|number} The extracted value.
-   * @throws {Error} If attempting to read past the end of the input.
-   */
-  LineBasedInputReader.prototype.getNextValue = function (returnAsRawString) {
-    // If the buffer for the current line is empty, load the next line.
-    if (this._bufferedLineTokens.length === 0) {
-      if (this._currentLineIndex >= this._sourceLines.length) {
-        throw new Error("End of input reached. No more values to read.");
-      }
-      const activeLine = this._sourceLines[this._currentLineIndex];
-      // Split by spaces and reverse to enable efficient `pop()` from the logical beginning of the line.
-      this._bufferedLineTokens = activeLine.split(" ").reverse();
-      this._currentLineIndex++; // Advance to the next line for subsequent reads.
+        getLine(returnAsStrings) {
+            const lineContent = this._inputLines[this._currentLineIndex++];
+            const lineParts = lineContent.split(" ");
+            return returnAsStrings ? lineParts : lineParts.map(val => +val);
+        }
+
+        getMatrix(numRows, returnAsStrings) {
+            const startIdx = this._currentLineIndex;
+            this._currentLineIndex += numRows;
+            const matrixRows = this._inputLines.slice(startIdx, this._currentLineIndex).map(row => row.split(" "));
+            return returnAsStrings ? matrixRows : matrixRows.map(row => row.map(val => +val));
+        }
+
+        getRawLines(numLines, returnAsStrings) {
+            const startIdx = this._currentLineIndex;
+            this._currentLineIndex += numLines;
+            const rawLines = this._inputLines.slice(startIdx, this._currentLineIndex);
+            return returnAsStrings ? rawLines : rawLines.map(line => +line);
+        }
     }
-
-    const valueToken = this._bufferedLineTokens.pop();
-    if (valueToken === undefined) {
-      throw new Error("No more tokens on the current line or unexpected empty token.");
-    }
-    return tryConvertToNumber(valueToken, returnAsRawString);
-  };
-
-  /**
-   * Reads an entire line and returns its space-separated values.
-   * @param {boolean} [returnAsRawStrings=false] If true, values are strings; otherwise, they are numbers.
-   * @returns {Array<string|number>} An array of values from the read line.
-   * @throws {Error} If no more lines are available.
-   */
-  LineBasedInputReader.prototype.getLineValues = function (returnAsRawStrings) {
-    if (this._currentLineIndex >= this._sourceLines.length) {
-      throw new Error("Cannot read line: end of input stream.");
-    }
-    // Clear any lingering tokens from the previous line if `getNextValue` was used.
-    this._bufferedLineTokens = [];
-    const fullLineContent = this._sourceLines[this._currentLineIndex++];
-    const valuesOnLine = fullLineContent.split(" ");
-    return returnAsRawStrings ? valuesOnLine : valuesOnLine.map((val) => +val);
-  };
-
-  /**
-   * Reads a specified number of lines as a 2D array (matrix).
-   * @param {number} countLines The number of lines to read.
-   * @param {boolean} [returnAsRawStrings=false] If true, matrix elements are strings; otherwise, numbers.
-   * @returns {Array<Array<string|number>>} The parsed matrix.
-   * @throws {Error} If not enough lines are available for the requested matrix size.
-   */
-  LineBasedInputReader.prototype.getMatrixData = function (countLines, returnAsRawStrings) {
-    if (this._currentLineIndex + countLines > this._sourceLines.length) {
-      throw new Error(`Insufficient lines to form a matrix of ${countLines} rows.`);
-    }
-    // Clear buffer before reading multiple full lines.
-    this._bufferedLineTokens = [];
-    const matrixRows = this._sourceLines.slice(
-      this._currentLineIndex,
-      (this._currentLineIndex += countLines)
-    );
-    const processedMatrix = matrixRows.map((line) => line.split(" "));
-    return returnAsRawStrings
-      ? processedMatrix
-      : processedMatrix.map((row) => row.map((val) => +val));
-  };
-
-  return createInputReader;
+    return function createReader(sourceString) {
+        return new InputReader(sourceString);
+    };
 })();
 
-/**
- * Generates a multi-dimensional array initialized with a specific value.
- * This function provides a structured way to create nested arrays without using `eval()`.
- * @param {*} initVal The value to populate the innermost elements (e.g., `[]` for empty arrays).
- * @param {...number} dimensions A sequence of integers defining the array's dimensions.
- * @returns {Array} The constructed multi-dimensional array.
- * @throws {Error} If any dimension is not a non-negative integer.
- */
-function constructNestedArray(initVal, ...dimensions) {
-  if (dimensions.length === 0) {
-    // Base case: if no dimensions left, return the initial value.
-    // Deep copy if it's an array/object to prevent shared references.
-    return Array.isArray(initVal) ? [...initVal] : initVal;
-  }
+const inputProcessor = InputReaderFactory(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  const currentDimensionSize = dimensions[0];
-  if (!Number.isInteger(currentDimensionSize) || currentDimensionSize < 0) {
-    throw new Error(`Invalid dimension size: ${currentDimensionSize}. Must be a non-negative integer.`);
-  }
-
-  const remainingDimensions = dimensions.slice(1);
-  const resultContainer = [];
-  for (let i = 0; i < currentDimensionSize; i++) {
-    resultContainer.push(constructNestedArray(initVal, ...remainingDimensions));
-  }
-  return resultContainer;
-}
-
-// Instantiate the global input reader using data from standard input.
-const inputDataStream = InputProcessorFactory(
-  require("fs").readFileSync("/dev/stdin", "utf8")
-);
-
-// This array will store the minimum and maximum values for 6 different transformed coordinate axes.
-// Each inner array `[min, max]` initially holds an empty array `[]` which will be populated on first use.
-const coordinateExtrema = constructNestedArray([], 6);
-
-// A set to accumulate unique candidate offset values that potentially minimize the area.
-const areaOffsetsCandidates = new Set([0]); // Always start with 0 as a candidate.
-
-// Execute the primary logic and print the final result.
-console.log(calculateMinimumEnclosingArea());
-
-/**
- * The main processing function: reads operations, updates coordinate bounds,
- * generates offset candidates, and finds the smallest possible area.
- * @returns {number} The calculated minimum area.
- */
-function calculateMinimumEnclosingArea() {
-  const totalOperations = inputDataStream.getNextValue();
-
-  // If there are no operations, the area is considered 0 or undefined based on problem context.
-  // Assuming 0 for an empty set of points.
-  if (totalOperations <= 0) {
-    return 0;
-  }
-
-  // Process each incoming coordinate operation.
-  for (let opCounter = 0; opCounter < totalOperations; opCounter++) {
-    const primaryX = inputDataStream.getNextValue();
-    const primaryY = inputDataStream.getNextValue();
-    const movementDirection = inputDataStream.getNextValue(true); // Read direction as string.
-
-    // Update the various coordinate extrema based on the movement direction.
-    // The indices (0-5) correspond to specific geometric interpretations in the problem.
-    switch (movementDirection) {
-      case "U": // Up movement
-        updateExtremaForIndex(0, primaryY);
-        updateExtremaForIndex(5, primaryX);
-        break;
-      case "R": // Right movement
-        updateExtremaForIndex(1, primaryX);
-        updateExtremaForIndex(4, primaryY);
-        break;
-      case "D": // Down movement
-        updateExtremaForIndex(2, primaryY);
-        updateExtremaForIndex(5, primaryX);
-        break;
-      case "L": // Left movement
-        updateExtremaForIndex(3, primaryX);
-        updateExtremaForIndex(4, primaryY);
-        break;
-      // Default case can be used for error handling or ignored if input is guaranteed valid.
-      default:
-        // console.warn(`Unrecognized movement direction: ${movementDirection}`);
-        break;
+function createMultiDimArray(initialValue, ...dimensions) {
+    if (dimensions.length === 0) {
+        return initialValue;
     }
-  }
 
-  // After processing all operations, derive initial offset candidates from the collected extrema.
-  // These specific combinations are critical to the problem's geometric solution.
-  generateAndAddOffsets(
-    coordinateExtrema[0][1],
-    coordinateExtrema[4][1],
-    coordinateExtrema[2][1]
-  );
-  generateAndAddOffsets(
-    -coordinateExtrema[2][0],
-    -coordinateExtrema[4][0],
-    -coordinateExtrema[0][0]
-  );
-  generateAndAddOffsets(
-    coordinateExtrema[1][1],
-    coordinateExtrema[5][1],
-    coordinateExtrema[3][1]
-  );
-  generateAndAddOffsets(
-    -coordinateExtrema[3][0],
-    -coordinateExtrema[5][0],
-    -coordinateExtrema[1][0]
-  );
+    const currentDimSize = dimensions[0];
+    const remainingDimensions = dimensions.slice(1);
 
-  let overallMinArea = Number.MAX_SAFE_INTEGER; // Use a large number for initialization.
+    return Array(currentDimSize).fill(0).map(() => createMultiDimArray(initialValue, ...remainingDimensions));
+}
 
-  // Iterate through each potential offset to find the smallest bounding area.
-  for (const currentOffsetValue of areaOffsetsCandidates) {
-    // Calculate the transformed bounds for both X and Y dimensions using the current offset.
-    // These formulas are specific to the problem's geometric transformations.
-    const transformedYMax = findLargestValue(
-      coordinateExtrema[0][1] + currentOffsetValue,
-      coordinateExtrema[2][1] - currentOffsetValue,
-      coordinateExtrema[4][1]
-    );
-    const transformedYMin = findSmallestValue(
-      coordinateExtrema[0][0] + currentOffsetValue,
-      coordinateExtrema[2][0] - currentOffsetValue,
-      coordinateExtrema[4][0]
-    );
-    const transformedXMax = findLargestValue(
-      coordinateExtrema[1][1] + currentOffsetValue,
-      coordinateExtrema[3][1] - currentOffsetValue,
-      coordinateExtrema[5][1]
-    );
-    const transformedXMin = findSmallestValue(
-      coordinateExtrema[1][0] + currentOffsetValue,
-      coordinateExtrema[3][0] - currentOffsetValue,
-      coordinateExtrema[5][0]
-    );
+function findMax(...valuesToCompare) {
+    return valuesToCompare.reduce((currentExtreme, val) => {
+        if (isNaN(val)) {
+            return currentExtreme;
+        }
+        return currentExtreme > val ? currentExtreme : val;
+    }, valuesToCompare[0]);
+}
 
-    // Calculate the area for the current set of transformed bounds.
-    const currentCalculatedArea =
-      (transformedYMax - transformedYMin) * (transformedXMax - transformedXMin);
+function findMin(...valuesToCompare) {
+    return valuesToCompare.reduce((currentExtreme, val) => {
+        if (isNaN(val)) {
+            return currentExtreme;
+        }
+        return currentExtreme < val ? currentExtreme : val;
+    }, valuesToCompare[0]);
+}
 
-    // Update the minimum area found so far.
-    if (currentCalculatedArea < overallMinArea) {
-      overallMinArea = currentCalculatedArea;
+const BOUND_U_MIN = 0;
+const BOUND_R_MIN = 1;
+const BOUND_D_MIN = 2;
+const BOUND_L_MIN = 3;
+const BOUND_Y_MAX = 4; // Corresponds to original move[4]
+const BOUND_X_MAX = 5; // Corresponds to original move[5]
+
+let directionBounds = createMultiDimArray([], 6);
+
+let candidateValues = new Set([0]);
+
+function addCandidateValues(upperBound, midBound, lowerBound) {
+    const valA = Math.max(0, (lowerBound - midBound) || 0, ((lowerBound - upperBound) / 2) || 0);
+    const valB = Math.max(0, (midBound - upperBound) || 0, ((lowerBound - upperBound) / 2) || 0);
+    candidateValues.add(valA);
+    candidateValues.add(valB);
+}
+
+function updateBounds(boundIndex, coordinateValue) {
+    const currentBound = directionBounds[boundIndex];
+    if (currentBound.length > 0) {
+        currentBound[0] = Math.min(currentBound[0], coordinateValue);
+        currentBound[1] = Math.max(currentBound[1], coordinateValue);
+    } else {
+        currentBound[0] = coordinateValue;
+        currentBound[1] = coordinateValue;
     }
-  }
-  return overallMinArea;
 }
 
-/**
- * Updates the minimum and maximum values for a specific coordinate extremum index.
- * If the index has not been initialized, it's set to the provided value.
- * @param {number} idx The index within `coordinateExtrema` to modify (0-5).
- * @param {number} valueToConsider The coordinate value to incorporate into the bounds.
- */
-function updateExtremaForIndex(idx, valueToConsider) {
-  // Check if the min/max pair for this index has been initialized.
-  // `constructNestedArray([], 6)` creates `[[], [], ..., []]`, so `length === 0` indicates uninitialized.
-  if (coordinateExtrema[idx].length === 0) {
-    // Initialize both min and max with the first encountered value.
-    coordinateExtrema[idx][0] = valueToConsider; // Min bound
-    coordinateExtrema[idx][1] = valueToConsider; // Max bound
-  } else {
-    // Update existing min/max bounds using Math.min and Math.max.
-    coordinateExtrema[idx][0] = Math.min(coordinateExtrema[idx][0], valueToConsider);
-    coordinateExtrema[idx][1] = Math.max(coordinateExtrema[idx][1], valueToConsider);
-  }
+function calculateMinArea() {
+    const numOperations = inputProcessor.getVal();
+
+    const directionHandlers = {
+        "U": (x, y) => { updateBounds(BOUND_U_MIN, y); updateBounds(BOUND_X_MAX, x); },
+        "R": (x, y) => { updateBounds(BOUND_R_MIN, x); updateBounds(BOUND_Y_MAX, y); },
+        "D": (x, y) => { updateBounds(BOUND_D_MIN, y); updateBounds(BOUND_X_MAX, x); },
+        "L": (x, y) => { updateBounds(BOUND_L_MIN, x); updateBounds(BOUND_Y_MAX, y); }
+    };
+
+    for (let opIndex = 0; opIndex < numOperations; opIndex++) {
+        const coordX = inputProcessor.getVal();
+        const coordY = inputProcessor.getVal();
+        const directionChar = inputProcessor.getVal(true);
+
+        const handler = directionHandlers[directionChar];
+        if (handler) {
+            handler(coordX, coordY);
+        }
+    }
+
+    const processBoundSet = (idx1, idx2, idx3, negate = false) => {
+        const val1 = directionBounds[idx1][negate ? 0 : 1];
+        const val2 = directionBounds[idx2][negate ? 0 : 1];
+        const val3 = directionBounds[idx3][negate ? 0 : 1];
+        addCandidateValues(negate ? -val1 : val1, negate ? -val2 : val2, negate ? -val3 : val3);
+    };
+
+    processBoundSet(BOUND_U_MIN, BOUND_Y_MAX, BOUND_D_MIN);
+    processBoundSet(BOUND_D_MIN, BOUND_Y_MAX, BOUND_U_MIN, true);
+    processBoundSet(BOUND_R_MIN, BOUND_X_MAX, BOUND_L_MIN);
+    processBoundSet(BOUND_L_MIN, BOUND_X_MAX, BOUND_R_MIN, true);
+
+    const INITIAL_MIN_AREA = Number.MAX_SAFE_INTEGER;
+    let minAreaResult = INITIAL_MIN_AREA;
+
+    for (const currentOffset of candidateValues) {
+        const currentUpper = findMax(
+            directionBounds[BOUND_U_MIN][1] + currentOffset,
+            directionBounds[BOUND_D_MIN][1] - currentOffset,
+            directionBounds[BOUND_Y_MAX][1]
+        );
+        const currentLower = findMin(
+            directionBounds[BOUND_U_MIN][0] + currentOffset,
+            directionBounds[BOUND_D_MIN][0] - currentOffset,
+            directionBounds[BOUND_Y_MAX][0]
+        );
+        const currentRight = findMax(
+            directionBounds[BOUND_R_MIN][1] + currentOffset,
+            directionBounds[BOUND_L_MIN][1] - currentOffset,
+            directionBounds[BOUND_X_MAX][1]
+        );
+        const currentLeft = findMin(
+            directionBounds[BOUND_R_MIN][0] + currentOffset,
+            directionBounds[BOUND_L_MIN][0] - currentOffset,
+            directionBounds[BOUND_X_MAX][0]
+        );
+
+        const currentArea = (currentUpper - currentLower) * (currentRight - currentLeft);
+        if (currentArea < minAreaResult) {
+            minAreaResult = currentArea;
+        }
+    }
+    return minAreaResult;
 }
 
-/**
- * Computes and adds new offset candidates to the `areaOffsetsCandidates` set.
- * These calculations are based on specific geometric relationships between coordinate bounds.
- * @param {number} componentA First component for offset derivation.
- * @param {number} componentB Second component for offset derivation.
- * @param {number} componentC Third component for offset derivation.
- */
-function generateAndAddOffsets(componentA, componentB, componentC) {
-  // The `|| 0` is a safeguard against potential `NaN` results from subtraction/division
-  // if `componentA`, `componentB`, `componentC` were non-numeric, ensuring a default of 0.
-  // Using Math.ceil and Math.floor to ensure integer offsets, which is common in such problems.
-  areaOffsetsCandidates.add(
-    Math.max(0, (componentC - componentB) || 0, Math.ceil((componentC - componentA) / 2) || 0)
-  );
-  areaOffsetsCandidates.add(
-    Math.max(0, (componentB - componentA) || 0, Math.floor((componentC - componentA) / 2) || 0)
-  );
-}
-
-/**
- * Determines the largest value among a dynamic list of numbers.
- * @param {...number} inputValues A spread of numeric arguments.
- * @returns {number} The maximum value, or -Infinity if no valid numbers are provided.
- */
-function findLargestValue(...inputValues) {
-  // Filter out any non-numeric or NaN values to ensure Math.max operates correctly.
-  const numericValues = inputValues.filter(
-    (val) => typeof val === "number" && !isNaN(val)
-  );
-  if (numericValues.length === 0) {
-    return -Infinity; // Default for no valid numbers, suitable for max operation.
-  }
-  return Math.max(...numericValues);
-}
-
-/**
- * Determines the smallest value among a dynamic list of numbers.
- * @param {...number} inputValues A spread of numeric arguments.
- * @returns {number} The minimum value, or Infinity if no valid numbers are provided.
- */
-function findSmallestValue(...inputValues) {
-  // Filter out any non-numeric or NaN values to ensure Math.min operates correctly.
-  const numericValues = inputValues.filter(
-    (val) => typeof val === "number" && !isNaN(val)
-  );
-  if (numericValues.length === 0) {
-    return Infinity; // Default for no valid numbers, suitable for min operation.
-  }
-  return Math.min(...numericValues);
-}
+console.log(calculateMinArea());

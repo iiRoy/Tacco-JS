@@ -1,147 +1,142 @@
-const nodeIO = require('node:readline');
-
-let systemLog = {
-    error: function (messageText) {
-        console.error(messageText);
-    },
-    output: function (messageText) {
-        console.log(messageText);
-    }
-};
-
-const lineReader = nodeIO.createInterface({
-    input:  process.stdin,
-    output: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-let processingObject;
-const receivedLines = [];
+var dataStream;
+var inputBuffer = [];
 
-lineReader.on(
-    'line',
-    function (currentEntry) {
-        receivedLines.push(currentEntry);
+inputReader.on('line', function(lineContent) {
+  inputBuffer.push(lineContent);
+});
+
+inputReader.on('close', function() {
+  dataStream = initializeStream(inputBuffer);
+  console.error('\n↑入力 ↓出力'); // Debug message, must remain unchanged
+  executeLogic();
+});
+
+// Utility function to create a deep copy of objects or Sets
+function duplicateObject(originalItem) {
+  return (originalItem instanceof Set) ? new Set(Array.from(originalItem)) : JSON.parse(JSON.stringify(originalItem));
+}
+
+// Helper functions for input parsing
+function retrieveInteger() {
+  return convertInput(fetchNextItem(), 1);
+}
+
+function retrieveStringArray() {
+  return convertInput(fetchNextItem(), 2);
+}
+
+function retrieveIntegerArray() {
+  return convertInput(fetchNextItem(), 4);
+}
+
+function retrieveCharacterArray() {
+  return convertInput(fetchNextItem(), 6);
+}
+
+function fetchNextItem() {
+  return dataStream.advanceAndGet();
+}
+
+function hasMoreItems() {
+  return dataStream.canAdvance();
+}
+
+// Initializes the input stream object
+function initializeStream(inputLines) {
+  return {
+    sourceList: inputLines,
+    currentPosition: 0,
+    maxLength: inputLines.length,
+    canAdvance: function() {
+      return (this.currentPosition < this.maxLength);
+    },
+    advanceAndGet: function() {
+      if (this.canAdvance()) {
+        return this.sourceList[this.currentPosition++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input'; // Error message, must remain unchanged
+      }
     }
-);
+  };
+}
 
-lineReader.on(
-    'close',
-    function () {
-        processingObject = setupParser(receivedLines);
-        systemLog.error('\n↑Data In ↓Data Out');
-        runPrimaryLogic();
+// Outputs a string to standard output
+function printResult(outputString) {
+  console.log(outputString);
+}
+
+// Outputs a debug message to standard error
+function logDebug(debugContent) {
+  console.error('debug:' + require('util').inspect(debugContent, false, null));
+}
+
+/*
+ * param "conversionType" is
+ * unknown or outlier : return i. 1: parseInt.
+ * 2: split space. 4: split space and parseInt.
+ * 6: split 1 character. 7: split 1 character and parseInt.
+ * 8: join space. 9: join nextline. 0: join no character.
+ */
+function convertInput(inputValue, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(' ');
+      case 4:
+        return inputValue.split(' ').map(Number);
+      case 6:
+        return inputValue.split('');
+      case 7:
+        return inputValue.split('').map(Number);
+      case 8:
+        return inputValue.join(' ');
+      case 9:
+        return inputValue.join('\n');
+      case 0:
+        return inputValue.join('');
+      default:
+        return inputValue;
     }
-);
-
-function createCopy(sourceEntity) {
-    return (sourceEntity instanceof Set)
-        ? new Set(Array.from(sourceEntity))
-        : JSON.parse(JSON.stringify(sourceEntity));
+  } catch (error) {
+    return inputValue;
+  }
 }
 
-function obtainInteger() {
-    return transformData(retrieveNext(), 1);
-}
+// Main program logic
+function executeLogic() {
+  var countVal = retrieveInteger();
+  var numSequence = retrieveIntegerArray();
 
-function obtainStringArray() {
-    return transformData(retrieveNext(), 2);
-}
+  numSequence.sort(function(valA, valB) {
+    return valA - valB;
+  });
 
-function obtainIntegerArray() {
-    return transformData(retrieveNext(), 4);
-}
+  var currentLevel = [];
+  currentLevel.push(numSequence.pop());
 
-function obtainCharacterArray() {
-    return transformData(retrieveNext(), 6);
-}
+  for (var levelIdx = 1; levelIdx <= countVal; levelIdx++) {
+    var nextLevel = [];
+    var elementsToPop = (1 << levelIdx); // Equivalent to Math.pow(2, levelIdx)
 
-function retrieveNext() {
-    return processingObject.advance();
-}
-
-function checkNext() {
-    return processingObject.canAdvance();
-}
-
-function setupParser(sourceData) {
-    return {
-        storageList: sourceData,
-        currentIndex: 0,
-        maximumCount: sourceData.length,
-
-        canAdvance: function () {
-            return (this.currentIndex < this.maximumCount);
-        },
-
-        advance: function () {
-            if (this.canAdvance()) {
-                return this.storageList[this.currentIndex++];
-            } else {
-                throw 'DataRetrievalError: Source exhausted';
-            }
-        }
-    };
-}
-
-function displayResult(outputString) {
-    systemLog.output(outputString);
-}
-
-function debugLog(debugMessage) {
-    systemLog.error('diagnostic:' + require('node:util').inspect(debugMessage, false, null));
-}
-
-function transformData(inputItem, conversionType) {
-    try {
-        switch (conversionType) {
-            case 1:
-                return Number.parseInt(inputItem);
-            case 2:
-                return inputItem.split(' ');
-            case 4:
-                return inputItem.split(' ').map(Number);
-            case 6:
-                return inputItem.split('');
-            case 7:
-                return inputItem.split('').map(Number);
-            case 8:
-                return inputItem.join(' ');
-            case 9:
-                return inputItem.join('\n');
-            case 0:
-                return inputItem.join('');
-            default:
-                return inputItem;
-        }
-    } catch (exception) {
-        return inputItem;
+    for (var elementIdx = 0; elementIdx < elementsToPop; elementIdx++) {
+      nextLevel.push(numSequence.pop());
     }
-}
 
-function runPrimaryLogic() {
-    const totalElements = obtainInteger();
-    let numberCollection = obtainIntegerArray();
-
-    numberCollection.sort(function (valA, valB) {
-        return valA - valB;
-    });
-
-    const currentSet = [];
-    currentSet.push(numberCollection.pop());
-
-    for (let levelIndex = 1; levelIndex <= totalElements; levelIndex++) {
-        const nextSet = [];
-        for (let elementIndex = 0; elementIndex < (1 << levelIndex); elementIndex++) {
-            nextSet.push(numberCollection.pop());
-        }
-
-        for (let comparisonIdx = 0; comparisonIdx < nextSet.length; comparisonIdx++) {
-            if (currentSet[comparisonIdx] <= nextSet[comparisonIdx]) {
-                displayResult("NO");
-                return;
-            }
-        }
-        currentSet = currentSet.concat(nextSet);
+    for (var elementIdx = 0; elementIdx < nextLevel.length; elementIdx++) {
+      if (currentLevel[elementIdx] <= nextLevel[elementIdx]) {
+        printResult("NO"); // Output string, must remain unchanged
+        return;
+      }
     }
-    displayResult("YES");
+    currentLevel = currentLevel.concat(nextLevel);
+  }
+
+  printResult("YES"); // Output string, must remain unchanged
 }

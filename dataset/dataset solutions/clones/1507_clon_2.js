@@ -1,37 +1,42 @@
-function AnalyzeDiceRolls ( dataStream )
-{
-    const inputLines = dataStream.split ( "\n" ) ;
+function ProcessInput(rawData) {
+    // Split the incoming data into individual lines
+    const linesArray = rawData.split("\n");
 
-    const totalIterations =  parseInt( inputLines[0], 10 ) ;
+    // Parse the first line to get the number of subsequent entries
+    const firstValue = parseInt(linesArray[0], 10);
 
-    let finalOutcome =   "No" ;
-    let sequentialPairs = 0 ;
+    // Initialize a variable to store the final result message
+    let outcomeMessage = "No";
 
-    for ( let iterationCounter = 1 ;  iterationCounter <= totalIterations ; iterationCounter++ )
-    {
-        const currentValues =   inputLines[iterationCounter].split(" ") ;
+    // Initialize a counter for consecutive matching pairs
+    let consecutiveMatches = 0;
 
-        if (  parseInt(currentValues[0], 10)  ===  parseInt(currentValues[1], 10)  )
-        {
-            sequentialPairs ++ ;
+    // Iterate through the lines starting from the second one up to 'firstValue'
+    for (let idx = 1; idx <= firstValue; idx++) {
+        // Split the current line into two parts based on space
+        const currentPair = linesArray[idx].split(" ");
 
-            if ( sequentialPairs >= 3 )
-            {
-                finalOutcome = "Yes" ;
-                break ;
+        // Check if the two parsed numbers in the pair are equal
+        if (parseInt(currentPair[0], 10) === parseInt(currentPair[1], 10)) {
+            // If they are equal, increment the consecutive matches counter
+            consecutiveMatches++;
+
+            // If three or more consecutive matches are found, set the outcome and exit the loop
+            if (consecutiveMatches >= 3) {
+                outcomeMessage = "Yes";
+                break; // Terminate the loop early
             }
-
-            continue ;
+            // Continue to the next iteration if condition met but not enough consecutive matches yet
+            continue;
         }
-
-        sequentialPairs = 0 ;
+        // If the numbers are not equal, reset the consecutive matches counter
+        consecutiveMatches = 0;
     }
 
-
-    // Display the computed final result
-    console.log ( finalOutcome ) ;
+    // Output the determined outcome message to the console
+    console.log(outcomeMessage);
 }
 
-
-// DO NOT MODIFY BELOW THIS LINE; it handles standard input/output and invokes the main processing function.
-AnalyzeDiceRolls( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// This section handles reading input from standard input and invoking the main processing function.
+// It should not be modified to ensure compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

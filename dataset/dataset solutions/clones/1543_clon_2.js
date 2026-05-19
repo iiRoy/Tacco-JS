@@ -1,126 +1,80 @@
-var dataStream = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-var inputProcessor = {
-  "sourceLines" : dataStream,
-  "currentPosition" : 0,
-  "totalLines" : dataStream.length,
-
-  "retrieveNext" : function() {
-    // Verify if more items are available
-    if(!this.hasMore()) {
-      throw new Error("NoMoreElementsException: End of input reached.");
+var inputHandler = {
+  "dataLines" : rawData,
+  "currentLineIdx" : 0,
+  "totalLines" : rawData.length,
+  "fetchNextLine" : function() {
+    if (!this.hasMoreLines()) {
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    // Extract the current line
-    var extractedElement = this.sourceLines[this.currentPosition];
-    // Advance to the next line
-    this.currentPosition++;
-    return extractedElement;
+    var retrievedItem = this.dataLines[this.currentLineIdx];
+    this.currentLineIdx++;
+    return retrievedItem;
   },
-
-  "hasMore" : function() {
-    // Check if the current position is within bounds
-    return (this.currentPosition < this.totalLines);
+  "hasMoreLines" : function() {
+    return (this.currentLineIdx < this.totalLines);
   }
 };
 
-// Start the primary execution flow
 ExecuteProgram();
 
-/**
- * Retrieves the subsequent input item from the processor.
- * @returns {string} The next line of input.
- */
-function fetchNextItem() {
-  return inputProcessor.retrieveNext();
+function retrieveNext() {
+  return inputHandler.fetchNextLine();
 }
 
-/**
- * Parses the next input item as an integer.
- * @returns {number} The parsed integer.
- */
-function fetchInteger() {
-  return dataConverter(fetchNextItem(), 1);
+function retrieveNextInt() {
+  return dataConverter(retrieveNext(), 1);
 }
 
-/**
- * Splits the next input item by spaces into an array of strings.
- * @returns {string[]} An array of strings.
- */
-function fetchStringArray() {
-  return dataConverter(fetchNextItem(), 2);
+function retrieveNextStrArr() {
+  return dataConverter(retrieveNext(), 2);
 }
 
-/**
- * Splits the next input item by spaces and converts parts to numbers.
- * @returns {number[]} An array of numbers.
- */
-function fetchIntArray() {
-  return dataConverter(fetchNextItem(), 4);
+function retrieveNextIntArr() {
+  return dataConverter(retrieveNext(), 4);
 }
 
-/**
- * Splits the next input item into individual characters.
- * @returns {string[]} An array of characters.
- */
-function fetchCharList() {
-  return dataConverter(fetchNextItem(), 6);
+function retrieveNextCharArr() {
+  return dataConverter(retrieveNext(), 6);
 }
 
-/**
- * Checks if there are more items in the input stream.
- * @returns {boolean} True if more items exist, false otherwise.
- */
-function checkRemaining() {
-  return inputProcessor.hasMore();
+function checkMoreLines() {
+  return inputHandler.hasMoreLines();
 }
 
-/**
- * Prints the given content to standard output.
- * @param {*} content - The data to be logged.
- */
-function displayOutput(content) {
+function printResult(content) {
   console.log(content);
 }
 
-/**
- * Prints the given content to standard error.
- * @param {*} content - The data to be logged as an error.
- */
-function displayError(content) {
-  console.error(content);
+function printError(errContent) {
+  console.error(errContent);
 }
 
-/**
- * Converts input based on a specified type code.
- *
- * Type Codes:
- * 1: Convert to integer.
- * 2: Split by single space.
- * 4: Split by single space and convert to numbers.
- * 6: Split into individual characters.
- * 7: Split into individual characters and convert to numbers.
- * 8: Join array elements with single space.
- * 9: Join array elements with newline.
- * 0: Join array elements without separator.
- * Default: Return input as is.
- *
- * @param {*} inputValue - The input to convert.
- * @param {number} conversionType - The type of conversion to perform.
- * @returns {*} The converted value.
- */
+// This function handles various data transformations.
+// `conversionType` specifies the desired operation:
+// 1: Convert to integer.
+// 2: Split by space.
+// 4: Split by space and convert elements to numbers.
+// 6: Split into individual characters.
+// 7: Split into individual characters and convert to numbers.
+// 8: Join array elements with spaces.
+// 9: Join array elements with newlines.
+// 0: Join array elements without any separator.
+// Default: Return input as is.
 function dataConverter(inputValue, conversionType) {
   try {
-    switch(conversionType) {
+    switch (conversionType) {
       case 1:
-        return parseInt(inputValue, 10);
+        return parseInt(inputValue);
       case 2:
         return inputValue.split(" ");
       case 4:
-        return inputValue.split(" ").map((element) => Number(element));
+        return inputValue.split(" ").map((itemVal) => Number(itemVal));
       case 6:
         return inputValue.split("");
       case 7:
-        return inputValue.split("").map((element) => Number(element));
+        return inputValue.split("").map((itemVal) => Number(itemVal));
       case 8:
         return inputValue.join(" ");
       case 9:
@@ -130,86 +84,85 @@ function dataConverter(inputValue, conversionType) {
       default:
         return inputValue;
     }
-  } catch(exceptionObject) {
-    // If conversion fails, return original input
+  } catch (e) {
     return inputValue;
   }
 }
 
 function ExecuteProgram() {
   var disjointSet = {
-    "parentArray" : null,
+    "parentOrSize" : null,
 
-    // Initialize the structure with 'setCount' elements.
-    // Each element initially forms its own set, represented by -1 (indicating root and size 1).
-    "initializeSets" : function(setCount) {
-      this.parentArray = new Array(setCount).fill(-1);
+    // Each index in `parentOrSize` stores either:
+    // - A negative value (-X), indicating it's a root, and its absolute value X is the size of the set.
+    // - A non-negative value, indicating it's a child, and the value is the index of its parent.
+    // Initially, all elements are roots of their own sets, each with size 1.
+    "initializeSets" : function(numElements) {
+      this.parentOrSize = new Array(numElements).fill(-1);
     },
 
-    // Determines if two elements belong to the same connected component.
-    "areConnected" : function(firstElement, secondElement) {
-      return this.findRoot(firstElement) === this.findRoot(secondElement);
+    // Checks if two elements belong to the same set.
+    "areConnected" : function(elementA, elementB) {
+      return this.findRepresentative(elementA) === this.findRepresentative(elementB);
     },
 
-    // Finds the representative (root) of the set containing 'elementIndex'.
-    // Performs path compression for optimization.
-    "findRoot" : function(elementIndex) {
-      if(this.parentArray[elementIndex] < 0) {
-        return elementIndex;
+    // Finds the root (representative) of the set containing the given element.
+    // Performs path compression during traversal to optimize future lookups.
+    "findRepresentative" : function(targetIndex) {
+      if (this.parentOrSize[targetIndex] < 0) {
+        return targetIndex;
       } else {
-        // Path compression: set parent directly to root
-        this.parentArray[elementIndex] = this.findRoot(this.parentArray[elementIndex]);
-        return this.parentArray[elementIndex];
+        this.parentOrSize[targetIndex] = this.findRepresentative(this.parentOrSize[targetIndex]);
+        return this.parentOrSize[targetIndex];
       }
     },
 
-    // Merges the sets containing 'firstElement' and 'secondElement'.
-    // Uses union by size heuristic.
-    "uniteSets" : function(firstElement, secondElement) {
-      var rootOfFirst = this.findRoot(firstElement);
-      var rootOfSecond = this.findRoot(secondElement);
+    // Merges the sets containing two elements.
+    // If they are already in the same set, nothing happens.
+    // The smaller set's root becomes a child of the larger set's root.
+    // The size of the combined set is updated at the new root.
+    "uniteSets" : function(elementA, elementB) {
+      var rootA = this.findRepresentative(elementA);
+      var rootB = this.findRepresentative(elementB);
 
-      // Only merge if they are in different sets
-      if(!this.areConnected(rootOfFirst, rootOfSecond)) {
-        // Attach smaller tree to root of larger tree
-        if(rootOfFirst >= rootOfSecond) { // Note: The original code used >=, which might be a typo for comparing sizes, but for Type II, we keep the logic identical.
-          this.parentArray[rootOfFirst] += this.parentArray[rootOfSecond]; // Update size
-          this.parentArray[rootOfSecond] = rootOfFirst; // Set parent
-        } else {
-          this.parentArray[rootOfSecond] += this.parentArray[rootOfFirst]; // Update size
-          this.parentArray[rootOfFirst] = rootOfSecond; // Set parent
+      if (!this.areConnected(rootA, rootB)) {
+        if (this.parentOrSize[rootA] >= this.parentOrSize[rootB]) { // rootA's set is smaller or equal in size
+          this.parentOrSize[rootA] += this.parentOrSize[rootB]; // Update size at rootA
+          this.parentOrSize[rootB] = rootA; // Make rootA the parent of rootB
+        } else { // rootB's set is smaller
+          this.parentOrSize[rootB] += this.parentOrSize[rootA]; // Update size at rootB
+          this.parentOrSize[rootA] = rootB; // Make rootB the parent of rootA
         }
       }
     },
 
-    // Returns the size of the set containing 'elementIndex'.
-    "getSetSize" : function(elementIndex) {
-      // The root stores the negative size of its set.
-      return -this.parentArray[this.findRoot(elementIndex)];
+    // Returns the size of the set containing the given element.
+    // The size is stored as a negative value at the set's root.
+    "getSetSize" : function(targetIndex) {
+      return -this.parentOrSize[this.findRepresentative(targetIndex)];
     }
   };
 
-  var initialParams = fetchIntArray();
-  var numberOfElements = initialParams[0];
-  var numberOfQueries = initialParams[1];
+  var firstLineData = retrieveNextIntArr();
+  var numNodes = firstLineData[0];
+  var numQueries = firstLineData[1];
 
-  disjointSet.initializeSets(numberOfElements);
-  var resultBuffer = [];
+  disjointSet.initializeSets(numNodes);
 
-  // Process each query
-  for(var queryIndex = 0; queryIndex < numberOfQueries; queryIndex++) {
-    var currentQuery = fetchIntArray();
-    if(currentQuery[0] === 0) { // Union operation
+  var resultMessages = [];
+
+  for (var queryCounter = 0; queryCounter < numQueries; queryCounter++) {
+    var currentQuery = retrieveNextIntArr();
+    if (currentQuery[0] === 0) {
       disjointSet.uniteSets(currentQuery[1], currentQuery[2]);
-    } else { // Check connection operation
-      if(disjointSet.areConnected(currentQuery[1], currentQuery[2])) {
-        resultBuffer.push("Yes");
+    } else {
+      if (disjointSet.areConnected(currentQuery[1], currentQuery[2])) {
+        resultMessages.push("Yes");
       } else {
-        resultBuffer.push("No");
+        resultMessages.push("No");
       }
     }
   }
 
-  // Display the final results, joined by newlines
-  displayOutput(dataConverter(resultBuffer, 9));
+  printResult(dataConverter(resultMessages, 9));
 }

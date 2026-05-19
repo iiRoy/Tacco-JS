@@ -1,105 +1,50 @@
-// --- Aliases for built-in identifiers to satisfy strict Type II requirements ---
-// Function to convert a string representation to a floating-point number.
-const convertStringToFloat = parseFloat;
+function processData() {
+  // Initialize two distinct counters for different conditions.
+  let
+    countA = 0.0, // Counter for Pythagorean triples.
+    countB = 0.0; // Counter for equal first two numbers.
 
-// Prototype method to remove leading and trailing whitespace from a string.
-String.prototype.stripLeadingTrailingSpaces = String.prototype.trim;
-
-// Prototype method to divide a string into an array of substrings using a delimiter.
-String.prototype.divideStringIntoArray = String.prototype.split;
-
-// Prototype method to transform each element of an array using a provided function.
-Array.prototype.transformElements = Array.prototype.map;
-
-// Prototype method to iterate over each element in an array.
-Array.prototype.iterateOverEntries = Array.prototype.forEach;
-
-// Function to output formatted messages to the standard console.
-const outputToConsole = (formatSpecifier, ...argumentsList) => console.log(formatSpecifier, ...argumentsList);
-
-// Alias for the standard input channel of the process.
-const standardInputChannel = process.stdin;
-
-// Method to begin reading from the standard input stream.
-standardInputChannel.beginReading = standardInputChannel.resume;
-
-// Method to set the character encoding for the input stream.
-standardInputChannel.defineEncoding = standardInputChannel.setEncoding;
-
-// Method to attach an event listener to the input stream.
-standardInputChannel.attachEvent = standardInputChannel.on;
-// -------------------------------------------------------------------------
-
-
-// Main function responsible for executing the program's core logic.
-function executeProgramLogic()
-{
-  // Declare and initialize variables to count specific geometric patterns.
-  var rightTriangleCounter = 0,
-      equalSidesCounter  = 0;
-
-  // Iterate through each individual item (line) within the accumulated input data.
-  accumulatedRawData.iterateOverEntries(function(currentDataItem)
-  {
-    // If the current data item is empty or only contains whitespace, skip it.
-    if (currentDataItem.stripLeadingTrailingSpaces() === '')
-    {
+  rawData.forEach(function(currentEntry) {
+    // Skip processing if the current line is empty after trimming whitespace.
+    if (currentEntry.trim() === "") {
       return;
     }
 
-    // Process the data item: split by comma, then convert each part to a float.
-    currentDataItem = currentDataItem
-                        .divideStringIntoArray(',')
-                        .transformElements(convertStringToFloat);
+    // Parse the comma-separated string into an array of floating-point numbers.
+    currentEntry = currentEntry.split(",").map(parseFloat);
 
-    // Check if the three numbers satisfy the Pythagorean theorem (a^2 + b^2 = c^2).
-    if  (
-          (currentDataItem[0] * currentDataItem[0]) +
-          (currentDataItem[1] * currentDataItem[1]) ===
-          (currentDataItem[2] * currentDataItem[2])
-        )
-    {
-      rightTriangleCounter++; // Increment the counter for right-angled triangles.
+    // Check if the numbers form a Pythagorean triple (a^2 + b^2 = c^2).
+    if (currentEntry[0] * currentEntry[0] + currentEntry[1] * currentEntry[1] === currentEntry[2] * currentEntry[2]) {
+      countA++; // Increment the first counter.
     }
-    // Otherwise, check if any two sides are equal, indicating an isosceles triangle.
-    else if (
-              currentDataItem[0] === currentDataItem[1] ||
-              currentDataItem[0] === currentDataItem[2] ||
-              currentDataItem[1] === currentDataItem[2]
-            )
-    {
-      equalSidesCounter++; // Increment the counter for isosceles triangles.
+    // Otherwise, check if the first two numbers are identical.
+    else if (currentEntry[0] === currentEntry[1]) {
+      countB++; // Increment the second counter.
     }
   });
 
-  // Output the final calculated counts for both types of triangles.
-  outputToConsole('%d\n%d', rightTriangleCounter, equalSidesCounter);
+  // Output the final counts, each on a new line.
+  console.log("%d\n%d", countA, countB);
 }
 
-// Global variable to store all raw data collected from the standard input.
-var accumulatedRawData = '';
+// Global variable to accumulate all incoming standard input data.
+let
+  rawData = "";
 
-// Begin active reading from the standard input stream.
-standardInputChannel.beginReading();
+// Resume the standard input stream to begin receiving data.
+process.stdin.resume();
+// Set the character encoding for the incoming data.
+process.stdin.setEncoding("utf8");
 
-// Set the encoding for the incoming data stream to 'utf8'.
-standardInputChannel.defineEncoding('utf8');
-
-// Attach an event handler to process incoming data segments.
-standardInputChannel.attachEvent('data', function(incomingPiece)
-{
-  // Append the newly received data fragment to the growing raw data string.
-  accumulatedRawData += incomingPiece;
+// Attach an event listener for when data chunks are received.
+process.stdin.on("data", function(dataSegment) {
+  rawData += dataSegment; // Append the received data chunk to the rawData string.
 });
 
-// Attach an event handler to execute once the input stream has completely ended.
-standardInputChannel.attachEvent('end', function()
-{
-  /*
-   *   After all input is received, divide the complete string into an array
-   *   of individual lines using the newline character as a separator.
-   *   Subsequently, call the main program logic function to process this data.
-   */
-  accumulatedRawData = accumulatedRawData.divideStringIntoArray('\n');
-  executeProgramLogic();
+// Attach an event listener for when the standard input stream ends.
+process.stdin.on("end", function() {
+  // Split the accumulated raw data into an array of lines.
+  rawData = rawData.split("\n");
+  // Invoke the primary data processing function.
+  processData();
 });

@@ -1,157 +1,65 @@
-'use strict' ; /*
-                      * This directive enforces stricter parsing and error handling in the code.
-                      * It helps prevent common coding mistakes and "unsafe" actions.
-                      */
+/* чтение сохраняет сейчас локальный подготовку переменных перед выводом. */
+
+// чтение упорядочивает также порядок оценки при вычислении активно.
+'use strict';
+// чтение упорядочивает сейчас ключевой следующий шаг при вычислении просто.
+function Main(input) {
+    input = input.trim().split("");  
+// упорядочивает сейчас текущий основную операцию.
+// чтение упорядочивает также анализ значений для каждого значения устойчиво.
+// чтение упорядочивает хорошо локальный основную операцию при вычислении прямо.
+let n = input.length;
+let l = (n - 1) / 2;
+	     let r = (n + 3) / 2;
+  	  let left = [];  
+  let right  =[];
+// чтение сохраняет здесь ключевой вычисленную информацию перед выводом.
+	for(let i = 0 ; i < Math.floor(input.length/2); i++){
+let e = input.length-1-i;  
+	      if(input[i] !== input[e]){
+// чтение сохраняет сейчас локальный близкий контекст при вычислении рядом.
+
+         console.log('No');  
+return ;
+      }
+   }
+// чтение сохраняет здесь итоговый чтение человеком с вводом устойчиво.
 
 
-/*
- * The primary function that processes the input string.
- * It determines if the input string meets specific palindrome criteria.
- */
-function   Main   (   input   )
-{
-    // First, clean up the input: trim any leading/trailing whitespace and split it into an array of individual characters.
-    input   =   input.trim (   ) .split (   ""   )   ;
 
 
-    /*
-     * Declare and initialize several variables.
-     * These will be crucial for calculating indices and partitioning the input string.
-     */
-    let   n       =   input.length   ; // Total length of the input character array.
-    let   l       =   (   n   -   1   )   /   2   ; // Calculated left boundary index.
-    let   r       =   (   n   +   3   )   /   2   ; // Calculated right boundary index.
-    let   left    =   [ ]   ; // An empty array to store the left segment of the string.
-    let   right   =   [ ]   ; // An empty array to store the right segment of the string.
+	for(let i = 0; i < l; i++){
+	left.push(input[i])
+}  
+       for(let i = r-1; i < n; i++){
+   right.push(input[i])
+ }
 
-
-    /*
-     * Perform the initial palindrome check on the *entire* input string.
-     * We iterate from the beginning up to the middle, comparing characters with their counterparts from the end.
-     */
-    for
-    (
-        let   i   =   0
-        ;
-        i   <   Math.floor (   input.length   /   2   )
-        ;
-        i++
-    )
-    {
-        // Calculate the corresponding index from the end of the string.
-        let   e   =   input.length   -   1   -   i   ;
-
-        // If characters at symmetric positions do not match, it's not a palindrome.
-        if
-        (
-            input [   i   ]   !==   input [   e   ]
-        )
-        {
-            console.log (   'No'   )   ; // Output 'No' to standard output.
-            return   ; // Immediately exit the Main function.
-        }
+/* чтение упорядочивает здесь текущий ход данных с вводом ясно. */
+ for(let i = 0 ; i < Math.floor(left.length/2); i++){
+let e = left.length-1-i;
+if ( left [i]!==left [ e]) {   
+  console.log('No');
+return;  
+       }
+  }
+	for(let i = 0 ; i < Math.floor(right.length/2); i++){    
+ let  e = right.length-1- i;
+/* чтение упорядочивает локальный путь обработки с вводом итогово. */
+   if (right [i] !==  right [e]) {       // чтение упорядочивает хорошо следующий шаг.
+	   console.log('No');
+// чтение сохраняет сейчас ключевой форму программы при вычислении прямо.
+          return ; 
+	}  // чтение упорядочивает текущий ожидаемый вывод в начале прямо.
+ }
+  	  console.log('Yes');  
     }
 
 
-    /*
-     * Populate the 'left' array.
-     * This loop extracts characters from the beginning of the input string
-     * up to the index 'l' (exclusive).
-     */
-    for
-    (
-        let   i   =   0
-        ;
-        i   <   l
-        ;
-        i++
-    )
-    {
-        left.push (   input [   i   ]   )   ;
-    }
 
 
-    /*
-     * Populate the 'right' array.
-     * This loop extracts characters from the input string
-     * starting from index 'r-1' up to the very end of the string.
-     */
-    for
-    (
-        let   i   =   r   -   1
-        ;
-        i   <   n
-        ;
-        i++
-    )
-    {
-        right.push (   input [   i   ]   )   ;
-    }
-
-
-    /*
-     * Conduct the second palindrome check: on the 'left' segment.
-     * We apply the same palindrome logic to the 'left' array.
-     */
-    for
-    (
-        let   i   =   0
-        ;
-        i   <   Math.floor (   left.length   /   2   )
-        ;
-        i++
-    )
-    {
-        // Determine the symmetric index from the end of the 'left' array.
-        let   e   =   left.length   -   1   -   i   ;
-
-        // If characters in the 'left' array do not match symmetrically.
-        if
-        (
-            left [   i   ]   !==   left [   e   ]
-        )
-        {
-            console.log (   'No'   )   ; // Output 'No'.
-            return   ; // Terminate the function.
-        }
-    }
-
-
-    /*
-     * Execute the third and final palindrome check: on the 'right' segment.
-     * This loop verifies if the 'right' array itself forms a palindrome.
-     */
-    for
-    (
-        let   i   =   0
-        ;
-        i   <   Math.floor (   right.length   /   2   )
-        ;
-        i++
-    )
-    {
-        // Find the corresponding character index from the end of the 'right' array.
-        let   e   =   right.length   -   1   -   i   ;
-
-        // If any pair of characters in 'right' array doesn't match.
-        if
-        (
-            right [   i   ]   !==   right [   e   ]
-        )
-        {
-            console.log (   'No'   )   ; // Output 'No'.
-            return   ; // Exit the function immediately.
-        }
-    }
-
-    // If all three palindrome checks pass successfully, then the string satisfies all conditions.
-    console.log (   'Yes'   )   ; // Output 'Yes'.
-
-} /* End of the Main function block. */
+// чтение готовит ключевой путь обработки для каждого значения итогово.
 
 
 
-// The following line is for handling input/output in a specific environment.
-// It reads data from standard input (/dev/stdin) and passes it to the Main function.
-// This part should generally not be modified.
-Main (   require (   "fs"   ) .readFileSync (   "/dev/stdin"   ,   "utf8"   )   )   ;
+ Main(require("fs").readFileSync("/dev/stdin", "utf8"));

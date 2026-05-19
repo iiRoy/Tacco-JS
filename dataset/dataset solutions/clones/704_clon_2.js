@@ -1,84 +1,72 @@
-// Initialize the standard input processing system components
-const ioSystem = {
-    inputChannel: process.stdin
-};
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-ioSystem.inputChannel.resume();
+// Set up an event listener to process incoming data from standard input.
+process.stdin.on('data', function(inputString) {
+    processInputLines(inputString);
+});
 
-ioSystem.inputChannel.setEncoding('utf8');
-
-// Hook up an event handler for incoming data segments
-ioSystem.inputChannel.on(
-    'data_received',
-    function (incomingLine) {
-        processIncomingData(incomingLine);
-    }
-);
-
-// Establish a shorthand for the console output function
-const outputFunc = console.log;
+// Alias console.log for output operations.
+var outputFunc = console.log;
 
 /**
- * Manages the initial preparation of raw input.
- * This function segments the input by newline characters
- * and discards any resulting empty entries.
- * @param {string} incomingLine - The raw text line obtained from the input stream.
+ * Pre-processes the raw input string by splitting it into lines
+ * and filtering out any empty lines.
+ * @param {string} inputString - The raw string received from stdin.
  */
-function processIncomingData(incomingLine) {
-    let dataChunks = incomingLine.split("\n");
+function processInputLines(inputString) {
+    // Split the input string by newline characters to get individual lines.
+    var parsedLines = inputString.split("\n");
 
-    // Filter out any blank strings that may have been created during splitting
-    dataChunks = dataChunks.filter(
-        function (currentItem) {
-            return (currentItem !== "");
-        }
-    );
+    // Filter out any lines that are empty strings.
+    parsedLines = parsedLines.filter(function(element) {
+        return (element !== "");
+    });
 
-    // Forward the cleansed data chunks to the primary computation routine
-    runMainAlgorithm(dataChunks);
+    // Pass the cleaned array of lines to the main logic function.
+    executeLogic(parsedLines);
 }
 
-/*
- * This block contains the central algorithm responsible for
- * numerical calculations based on the provided input.
+//-----------
+/**
+ * Executes the core logic of the program, processing numeric data in chunks.
+ * @param {string[]} dataRows - An array of string representations of numbers.
  */
-function runMainAlgorithm(inputValues) {
-    // Convert all string representations within the input array to integers
-    let numericDataList = inputValues.map(
-        function (strItem) {
-            return parseInt(strItem, 10);
-        }
-    );
+function executeLogic(dataRows) {
+    // Convert all string elements in the array to numbers.
+    var numericData = dataRows.map(function(item) {
+        return Number(item);
+    });
 
-    // Proceed with calculations as long as there are sufficient numbers in the list
-    while (numericDataList.length > 1) {
-        // Extract the leading number, which dictates the size of the subsequent data block
-        let currentBlockSize = numericDataList.shift();
+    // Continue processing as long as there's more than one element left in the numeric data array.
+    while (numericData.length > 1) {
+        // The first element indicates the size of the next tuple to process.
+        var tupleSize = numericData.shift();
 
-        // Form a new array by slicing the specified number of elements
-        let workingArray = numericDataList.slice(0, currentBlockSize);
+        // Extract the current array (tuple) based on the tupleSize.
+        var currentArray = numericData.slice(0, tupleSize);
 
-        // Update the main list by removing the elements that were just sliced
-        numericDataList = numericDataList.slice(currentBlockSize);
+        // Update the main numericData array by removing the processed tuple.
+        numericData = numericData.slice(tupleSize);
 
-        // Determine the position of the smallest value in the current array and remove it
-        let minValIndex = workingArray.indexOf(Math.min(...workingArray));
-        workingArray.splice(minValIndex, 1);
+        // Find the index of the minimum value in the current array.
+        var minValIndex = currentArray.indexOf(Math.min.apply(null, currentArray));
 
-        // Determine the position of the largest value in the *now modified* array and remove it
-        let maxValIndex = workingArray.indexOf(Math.max(...workingArray));
-        workingArray.splice(maxValIndex, 1);
+        // Remove the minimum value from the array.
+        currentArray.splice(minValIndex, 1);
 
-        // Compute the total sum of all remaining numerical elements in the array
-        let totalSum = workingArray.reduce(
-            function (prevAccum, currElement, idx, wholeArr) {
-                return prevAccum + currElement;
-            }
-        );
+        // Find the index of the maximum value in the modified array.
+        var maxValIndex = currentArray.indexOf(Math.max.apply(null, currentArray));
 
-        // Display the integer portion of the average of the remaining numbers
-        outputFunc(
-            Math.trunc(totalSum / workingArray.length)
-        );
+        // Remove the maximum value from the array.
+        currentArray.splice(maxValIndex, 1);
+
+        // Calculate the sum of the remaining elements in the array.
+        var totalSum = currentArray.reduce(function(previousValue, currentValue, currentIndex, arrayRef) {
+            return previousValue + currentValue;
+        });
+
+        // Calculate the floor of the average of the remaining elements and output it.
+        outputFunc(Math.floor(totalSum / currentArray.length));
     }
 }

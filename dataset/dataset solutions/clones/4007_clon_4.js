@@ -1,14 +1,19 @@
-function processInputContent(rawDataStream) {
-  const selectedCharacter = rawDataStream[1];
-  const processedElement = selectedCharacter.slice(' ');
+function processInputData(sourceContent) {
+  const characterAtSecondPosition = sourceContent.at(1);
 
-  const resultMapping = new Map();
-  resultMapping.set('Y', 'Four');
-  resultMapping.set(Symbol('defaultOutcome'), 'Three');
+  let finalCharacter;
+  if (characterAtSecondPosition === undefined) {
+    throw new TypeError("Cannot read properties of undefined (reading 'slice')");
+  } else {
+    finalCharacter = characterAtSecondPosition.slice(' ');
+  }
 
-  const finalOutput = resultMapping.get(processedElement) || resultMapping.get(Symbol('defaultOutcome'));
+  const outcomeMapping = new Map([
+    ['Y', 'Four']
+  ]);
 
-  console.log(finalOutput);
+  const resultString = outcomeMapping.get(finalCharacter) || 'Three';
+  console.log(resultString);
 }
 
-processInputContent(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

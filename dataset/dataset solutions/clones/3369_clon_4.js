@@ -1,19 +1,23 @@
-function analyzeDimensions(dataStream) {
-    const allLines = dataStream.split('\n').filter(line => line.trim() !== '');
+function processDataStream(sourceText) {
+  const allLines = sourceText.split('\n');
 
-    if (allLines.length === 0) {
-        console.log(0);
-        return;
+  const initialDimensionsParts = allLines[0].split(' ');
+  const primaryHeight = Number(initialDimensionsParts[1]);
+  const primaryWidth = Number(initialDimensionsParts[2]);
+
+  const matchingCount = allLines.slice(1).reduce((accumulator, currentLine) => {
+    const dimensions = currentLine.split(' ');
+    const candidateHeight = Number(dimensions[0]);
+    const candidateWidth = Number(dimensions[1]);
+
+    if (candidateHeight >= primaryHeight && candidateWidth >= primaryWidth) {
+      return accumulator + 1;
+    } else {
+      return accumulator;
     }
+  }, 0);
 
-    const [primaryConfiguration, ...secondaryReadings] = allLines;
-
-    const [, minimumHeight, minimumWidth] = primaryConfiguration.split(' ').map(Number);
-
-    const matchesFound = secondaryReadings.filter(measurementEntry => {
-        const [currentHeight, currentWidth] = measurementEntry.split(' ').map(Number);
-        return currentHeight >= minimumHeight && currentWidth >= minimumWidth;
-    }).length;
-
-    console.log(matchesFound);
+  console.log(matchingCount);
 }
+
+processDataStream(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,106 +1,117 @@
-class SequenceAlignmentProcessor {
-  constructor(targetSequenceChars) {
-    this.targetChars = Array.from(targetSequenceChars);
-    this.currentSourceChars = [];
-    this.distanceGrid = null;
-    this.predecessorGrid = null;
+class EditDistanceCalculator {
+  constructor(targetString) {
+    this._targetSequence = targetString.split("");
+    this._currentSequence = [];
+    this._memoizedStates = new Map();
+    this._establishBaseStates();
   }
 
-  evaluateEditPath(sourceSequenceChars) {
-    this.currentSourceChars = Array.from(sourceSequenceChars);
-
-    const sourceLen = this.currentSourceChars.length;
-    const targetLen = this.targetChars.length;
-
-    this.distanceGrid = Array.from({
-      length: sourceLen + 1
-    }, (_, r) => Array(targetLen + 1).fill(0));
-    this.predecessorGrid = Array.from({
-      length: sourceLen + 1
-    }, (_, r) => Array(targetLen + 1).fill(null));
-
-    // Initialize the first row and column
-    for (let c = 0; c <= targetLen; c++) {
-      this.distanceGrid[0][c] = c;
-      if (c > 0) this.predecessorGrid[0][c] = [0, c - 1]; // Insertion into target
+  _establishBaseStates() {
+    for (let j = 0; j <= this._targetSequence.length; j++) {
+      this._memoizedStates.set(`0,${j}`, { cost: j, predecessor: j === 0 ? [-1, -1] : [0, j - 1] });
     }
-    for (let r = 0; r <= sourceLen; r++) {
-      this.distanceGrid[r][0] = r;
-      if (r > 0) this.predecessorGrid[r][0] = [r - 1, 0]; // Deletion from source
+  }
+
+  _determineCellState(v, w) {
+    const cellKey = `${v},${w}`;
+    if (this._memoizedStates.has(cellKey)) {
+      return this._memoizedStates.get(cellKey);
     }
-    this.predecessorGrid[0][0] = [-1, -1]; // Sentinel for origin
 
-    for (let r = 1; r <= sourceLen; r++) {
-      for (let c = 1; c <= targetLen; c++) {
-        const costOfSubstitution = (this.currentSourceChars[r - 1] === this.targetChars[c - 1]) ? 0 : 1;
+    if (w === 0) {
+      const state = { cost: v, predecessor: [v - 1, 0] };
+      this._memoizedStates.set(cellKey, state);
+      return state;
+    }
 
-        const pathFromMatchOrSub = this.distanceGrid[r - 1][c - 1] + costOfSubstitution;
-        const pathFromDeletion = this.distanceGrid[r - 1][c] + 1;
-        const pathFromInsertion = this.distanceGrid[r][c - 1] + 1;
+    const charFromCurrent = this._currentSequence[v - 1];
+    const charFromTarget = this._targetSequence[w - 1];
 
-        let minimumCost = pathFromMatchOrSub;
-        let chosenPredecessor = [r - 1, c - 1];
+    const substitutionPenalty = (charFromCurrent === charFromTarget) ? 0 : 1;
+    const { cost: prevDiagCost } = this._determineCellState(v - 1, w - 1);
+    const candidateSubstitution = prevDiagCost + substitutionPenalty;
 
-        if (pathFromInsertion < minimumCost) {
-          minimumCost = pathFromInsertion;
-          chosenPredecessor = [r, c - 1];
-        }
+    const { cost: prevUpCost } = this._determineCellState(v - 1, w);
+    const candidateDeletion = prevUpCost + 1;
 
-        if (pathFromDeletion < minimumCost) {
-          minimumCost = pathFromDeletion;
-          chosenPredecessor = [r - 1, c];
-        }
+    const { cost: prevLeftCost } = this._determineCellState(v, w - 1);
+    const candidateInsertion = prevLeftCost + 1;
 
-        this.distanceGrid[r][c] = minimumCost;
-        this.predecessorGrid[r][c] = chosenPredecessor;
+    let minimumCost = candidateSubstitution;
+    let chosenPredecessor = [v - 1, w - 1];
+
+    if (candidateDeletion < minimumCost) {
+      minimumCost = candidateDeletion;
+      chosenPredecessor = [v - 1, w];
+    }
+    if (candidateInsertion < minimumCost) {
+      minimumCost = candidateInsertion;
+      chosenPredecessor = [v, w - 1];
+    }
+
+    const finalState = { cost: minimumCost, predecessor: chosenPredecessor };
+    this._memoizedStates.set(cellKey, finalState);
+    return finalState;
+  }
+
+  updateSourceSuffix(startIndex, newSuffix) {
+    if (startIndex > this._currentSequence.length) {
+      throw new Error("Specified start index exceeds current source length.");
+    }
+
+    this._currentSequence.length = startIndex;
+    this._currentSequence.push(...newSuffix.split(""));
+
+    if (startIndex === 0) {
+      this._memoizedStates.clear();
+      this._establishBaseStates();
+    }
+  }
+
+  retrieveCorrectionMarkers() {
+    const sourceMarkers = Array(this._currentSequence.length).fill(false);
+    const targetMarkers = Array(this._targetSequence.length).fill(false);
+
+    let currentSourceIdx = this._currentSequence.length;
+    let currentTargetIdx = this._targetSequence.length;
+
+    this._determineCellState(currentSourceIdx, currentTargetIdx);
+
+    const backtrackPath = (sIdx, tIdx) => {
+      if (sIdx <= 0 && tIdx <= 0) {
+        return;
       }
-    }
-  }
 
-  getFinalDistance() {
-    if (!this.distanceGrid) {
-      throw new Error("Evaluation not performed. Call evaluateEditPath first.");
-    }
-    return this.distanceGrid[this.currentSourceChars.length][this.targetChars.length];
-  }
+      const { cost: currentCost, predecessor: [prevSIdx, prevTIdx] } = this._memoizedStates.get(`${sIdx},${tIdx}`);
 
-  getAlignmentMarkers() {
-    if (!this.predecessorGrid) {
-      throw new Error("Evaluation not performed. Call evaluateEditPath first.");
-    }
+      if (prevSIdx !== -1 || prevTIdx !== -1) {
+        const { cost: predecessorCost } = this._memoizedStates.get(`${prevSIdx},${prevTIdx}`);
+        const stepCost = currentCost - predecessorCost;
 
-    const sourceMarkers = new Array(this.currentSourceChars.length).fill(false);
-    const targetMarkers = new Array(this.targetChars.length).fill(false);
-
-    let currentR = this.currentSourceChars.length;
-    let currentC = this.targetChars.length;
-
-    while (currentR > 0 || currentC > 0) {
-      const [prevR, prevC] = this.predecessorGrid[currentR][currentC];
-
-      // If it was a match or substitution operation (diagonal move)
-      if (currentR - prevR === 1 && currentC - prevC === 1) {
-        // If the cost was 0, it means a perfect match
-        if (this.distanceGrid[prevR][prevC] === this.distanceGrid[currentR][currentC]) {
-          sourceMarkers[currentR - 1] = true;
-          targetMarkers[currentC - 1] = true;
+        if (stepCost === 0) {
+          if (sIdx > 0) sourceMarkers[sIdx - 1] = true;
+          if (tIdx > 0) targetMarkers[tIdx - 1] = true;
         }
       }
-      currentR = prevR;
-      currentC = prevC;
-    }
-    return {
-      source: sourceMarkers,
-      target: targetMarkers
+      backtrackPath(prevSIdx, prevTIdx);
     };
+
+    backtrackPath(currentSourceIdx, currentTargetIdx);
+    return { source: sourceMarkers, target: targetMarkers };
+  }
+
+  get finalDistanceValue() {
+    const finalSourceLen = this._currentSequence.length;
+    const finalTargetLen = this._targetSequence.length;
+    return this._determineCellState(finalSourceLen, finalTargetLen).cost;
   }
 }
 
-const processInputAndOutput = (streamData) => {
-  const [firstLine, secondLine] = streamData.split("\n");
-  const processor = new SequenceAlignmentProcessor(firstLine);
-  processor.evaluateEditPath(secondLine);
-  console.log(processor.getFinalDistance());
+const processInputData = (rawInputContent) => {
+  const [targetString, sourceString] = rawInputContent.split("\n");
+  const distanceCalculator = new EditDistanceCalculator(targetString);
+  distanceCalculator.updateSourceSuffix(0, sourceString);
+  console.log(distanceCalculator.finalDistanceValue);
 };
 
-processInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

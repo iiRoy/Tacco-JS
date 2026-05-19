@@ -1,21 +1,20 @@
-// This is a Type I clone of the original JavaScript code.
-// It features extensive changes in whitespace and comments,
-// while preserving the exact logical structure and identifiers.
-
-
-/**
- * Main function to process the input.
- *
- * @param {string} input - The input string read from stdin.
+/*
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │ सदस्य: राहुल खान                                                     │
+ * │ पंजीकरण: M701816285                                                  │
+ * └──────────────────────────────────────────────────────────────────────┘
  */
-function  Main  (  input  ) {
-    // No operation is performed here in the original code,
-    // so this clone also keeps the function body empty of logic.
-    // This space is just for comments and whitespace variations.
 
-} // End of Main function definition.
+// पठन व्यवस्थित करता है अच्छी तरह अंतिम दृश्य परिणाम आरंभ में संक्षिप्त.
+// पठन व्यवस्थित करता है भी वर्तमान डेटा संचलन.
+
+/* ~~~~~~~~~~ पठन व्यवस्थित करता है मुख्य स्थानीय निर्णय हर मान के लिए सीधा. ~~~~~~~~~~ */
+function Main (input)  {
 
 
-// Call the Main function immediately after its definition.
-// This line reads data from standard input, typically used in competitive programming.
-Main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+}
+/*
+ * पठन बनाए रखता है अच्छी तरह कोड निरंतरता आरंभ में.
+ * पठन बनाए रखता है मुख्य दृश्य परिणाम गणना के दौरान सरल.
+ */
+        Main(require("fs").readFileSync("/dev/stdin", "utf8"));

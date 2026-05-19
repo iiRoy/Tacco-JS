@@ -1,90 +1,60 @@
-const findIntegerRoot = (value) => {
-    if (value < 0n) throw new Error("Argument must be non-negative.");
-    if (value === 0n) return 0n;
+function multiplyBigInts(numA, numB) {
+    return (BigInt(numA) * BigInt(numB)).toString();
+}
 
-    let lowerBound = 1n;
-    // For inputs a, b < 2^32, their product a*b < 2^64.
-    // The square root of a*b is less than 2^32.
-    // So, 2^32 is a safe and efficient upper bound for binary search.
-    let upperBound = 2n**32n;
-    if (value < upperBound) { // If the value itself is smaller, use it as a tighter bound
-        upperBound = value;
+function findCeilingSquareRoot(numString) {
+    const n = BigInt(numString);
+    if (n < 0n) {
+        throw new Error("Negative input for square root.");
+    }
+    if (n === 0n) {
+        return 0;
     }
 
-    let resultRoot = 1n; // Stores the largest integer whose square is <= value
+    let lowerBound = 1n;
+    let upperBound = n;
+    let currentRoot = 1n;
 
     while (lowerBound <= upperBound) {
         const midPoint = lowerBound + (upperBound - lowerBound) / 2n;
-        const midSquare = midPoint * midPoint;
-
-        if (midSquare === value) {
-            return midPoint;
-        } else if (midSquare < value) {
-            resultRoot = midPoint;
-            lowerBound = midPoint + 1n;
-        } else {
+        if (midPoint > n / midPoint) {
             upperBound = midPoint - 1n;
-        }
-    }
-    return resultRoot;
-};
-
-// This function replicates the specific behavior of the original sqrt64:
-// It returns ceil(sqrt(N)) if N is not a perfect square, and sqrt(N) if N is a perfect square.
-const determineAdjustedRoot = (value) => {
-    const floorRoot = findIntegerRoot(value);
-    if (floorRoot * floorRoot === value) {
-        return floorRoot;
-    } else {
-        return floorRoot + 1n;
-    }
-};
-
-const executeProcessing = (inputDataString) => {
-    const dataLines = inputDataString.split("\n");
-    const operationCount = BigInt(dataLines[0]);
-
-    // Process each query line using a functional array iteration
-    Array.from({ length: Number(operationCount) }, (_, index) => {
-        const currentLineIndex = index + 1;
-        const [firstNumeric, secondNumeric] = dataLines[currentLineIndex].split(" ").map(Number);
-
-        const minimumValue = BigInt(Math.min(firstNumeric, secondNumeric));
-        const maximumValue = BigInt(Math.max(firstNumeric, secondNumeric));
-
-        const productOfValues = minimumValue * maximumValue;
-        // The original 'c' was `sqrt64(product) - 1`.
-        const computedThreshold = determineAdjustedRoot(productOfValues) - 1n;
-
-        let calculatedOutcome = (minimumValue - 1n) * 2n;
-
-        if (minimumValue < maximumValue - 1n) {
-            calculatedOutcome++;
-        }
-
-        const differenceThresholdMin = computedThreshold - minimumValue;
-        if (differenceThresholdMin > 0n) { // Equivalent to Math.max(c - a, 0)
-            calculatedOutcome += differenceThresholdMin * 2n;
-        }
-
-        // Original condition: `Math.floor(a / c * b) === c`
-        // For BigInts, (A * B) / C is equivalent to Math.floor((A * B) / C) for positive numbers.
-        // We must handle division by zero for computedThreshold.
-        // In original JS, `Math.floor(positive / 0 * positive)` results in `Infinity`.
-        // `Infinity === 0` is `false`. So, if `computedThreshold` is `0n`, the condition is false.
-        let specialConditionMet = false;
-        if (computedThreshold === 0n) {
-            specialConditionMet = false;
         } else {
-            specialConditionMet = ((minimumValue * maximumValue) / computedThreshold === computedThreshold);
+            currentRoot = midPoint;
+            lowerBound = midPoint + 1n;
+        }
+    }
+    
+    return Number(currentRoot * currentRoot === n ? currentRoot : currentRoot + 1n);
+}
+
+function ProcessInput(inputStr) {
+    const lines = inputStr.split("\n").map(line => line.trim()).filter(Boolean);
+    const queryCount = Number(lines[0]);
+
+    lines.slice(1, queryCount + 1).forEach(currentLine => {
+        const [valX, valY] = currentLine.split(" ").map(Number);
+
+        const smallerVal = Math.min(valX, valY);
+        const largerVal = Math.max(valX, valY);
+
+        const productStr = multiplyBigInts(smallerVal, largerVal);
+        const k = findCeilingSquareRoot(productStr) - 1;
+
+        let finalAnswer = (smallerVal - 1) * 2;
+
+        if (smallerVal < largerVal - 1) {
+            finalAnswer++;
         }
 
-        if (specialConditionMet) {
-            calculatedOutcome--;
+        finalAnswer += Math.max(k - smallerVal, 0) * 2;
+
+        if (k !== 0 && Math.floor(smallerVal / k * largerVal) === k) {
+            finalAnswer--;
         }
 
-        console.log(Number(calculatedOutcome));
+        console.log(finalAnswer);
     });
-};
+}
 
-executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

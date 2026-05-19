@@ -1,146 +1,183 @@
-// This class provides methods to parse input data from a string, line by line.
-function InputProcessor (sourceText) {
-  // Internal storage for the input text, split into an array of individual lines.
-  this._textFragments = sourceText . split ( "\n" ) ;
+/**
+ * This module provides an input parsing utility and implements a solution
+ * for a connectivity problem using a Disjoint Set Union (DSU) data structure.
+ */
+
+/**
+ * Constructor function for an input processing utility.
+ * It takes a complete input string, typically read from a file or stdin,
+ * and provides methods to extract data line by line or value by value.
+ * @param {string} rawText - The entire input content as a single string.
+ */
+function InputProcessor(rawText) {
+  // Stores all input lines, split by newline characters.
+  this._inputLines = rawText.split("\n");
   // A pointer indicating the current line being processed.
-  this._lineCursor = 0 ;
-} ;
+  this._currentLineIndex = 0;
+}
 
-// Define the public methods available on instances of InputProcessor.
-InputProcessor . prototype = {
+// Define methods for the InputProcessor's prototype.
+InputProcessor.prototype = {
+  /**
+   * Extracts a single value from the current line.
+   * If the current line contains multiple space-separated values,
+   * it processes them from left to right (by reversing and popping).
+   * Advances the internal line pointer if the current line becomes empty after extraction.
+   * @param {boolean} returnAsString - If true, the value is returned as a string; otherwise, it's converted to a number.
+   * @returns {string|number} The extracted value.
+   */
+  getOne: function(returnAsString) {
+    let lineData = this._inputLines;
+    let currentPosition = this._currentLineIndex;
+    let extractedItem;
 
-  // Extracts a single value from the current line.
-  // If 'asString' is true, the value is returned as a string; otherwise, it's converted to a number.
-  extractValue : function ( asString ) {
-    var currentFragments = this._textFragments , // Reference to the array of lines
-        cursorPos = this._lineCursor ,          // Current line index
-        extractedItem ;                         // Variable to hold the extracted value
-
-    // If the current line hasn't been processed into an array of elements yet, do so.
-    // It's split by spaces and then reversed to allow efficient 'pop' operations from the start.
-    if ( typeof currentFragments [ cursorPos ] === "string" ) {
-      currentFragments [ cursorPos ] = currentFragments [ cursorPos ] . split ( " " ) . reverse ( ) ;
+    // If the current line is still a raw string, split it into tokens and reverse for easy popping.
+    if (typeof lineData[currentPosition] === "string") {
+      lineData[currentPosition] = lineData[currentPosition].split(" ").reverse();
     }
 
-    // Retrieve the next value from the current line.
-    extractedItem = currentFragments [ cursorPos ] . pop ( ) ;
+    // Retrieve the last element (which was originally the first) from the token array.
+    extractedItem = lineData[currentPosition].pop();
 
-    // If the current line is now empty after popping, advance the line cursor to the next line.
-    if ( ! currentFragments [ cursorPos ] . length ) {
-      this._lineCursor ++ ;
+    // If all tokens from the current line have been consumed, advance to the next line.
+    if (!lineData[currentPosition].length) {
+      this._currentLineIndex++;
     }
 
-    // Return the extracted item, optionally converted to a number.
-    return asString ? extractedItem : + extractedItem ;
+    // Return the item, converting to a number unless explicitly requested as a string.
+    return returnAsString ? extractedItem : +extractedItem;
   },
 
-  // Reads an entire line of values.
-  // If 'asString' is true, returns an array of strings; otherwise, an array of numbers.
-  fetchLineValues : function ( asString ) {
-    // Get the current line, increment the cursor, and split it into individual elements.
-    var lineElements = this._textFragments [ this._lineCursor ++ ] . split ( " " ) ;
-
-    // Return the array of elements, with optional numeric conversion.
-    return asString ? lineElements : lineElements . map ( elem => + elem ) ;
+  /**
+   * Reads an entire line of space-separated values.
+   * Advances the internal line pointer after reading the line.
+   * @param {boolean} returnAsStrings - If true, returns an array of strings; otherwise, an array of numbers.
+   * @returns {string[]|number[]} An array containing the values from the read line.
+   */
+  getLine: function(returnAsStrings) {
+    // Split the current line by spaces and then increment the line pointer.
+    let lineTokens = this._inputLines[this._currentLineIndex++].split(" ");
+    // Return the tokens as strings or map them to numbers.
+    return returnAsStrings ? lineTokens : lineTokens.map(val => +val);
   },
 
-  // Reads multiple lines of values.
-  // 'lineCount' specifies how many lines to read.
-  // 'asString' determines if values are returned as strings or numbers.
-  fetchMultiLineValues : function ( lineCount , asString ) {
-    var sourceFragments = this._textFragments , // Reference to all input lines
-        cursorPos = this._lineCursor ,          // Starting line index
-        resultBlock = [ ] ,                     // Array to store the results
-        idx = 0 ;                               // Loop counter
+  /**
+   * Reads a specified number of consecutive lines, parsing each into an array of values.
+   * Advances the internal line pointer by the number of lines read.
+   * @param {number} numberOfLines - The count of lines to read.
+   * @param {boolean} returnAsStrings - If true, returns a 2D array of strings; otherwise, a 2D array of numbers.
+   * @returns {string[][]|number[][]} A 2D array where each inner array represents a line's values.
+   */
+  getMany: function(numberOfLines, returnAsStrings) {
+    let sourceData = this._inputLines;
+    let startingLine = this._currentLineIndex;
+    let resultMatrix = [];
+    let lineCounter = 0;
 
-    // Populate 'resultBlock' based on the 'asString' flag.
-    if ( asString ) { // If values should remain strings
-      for ( ; idx < lineCount ; idx ++ ) {
-        resultBlock [ idx ] = sourceFragments [ cursorPos + idx ] . split ( " " ) ;
+    // Iterate and process each of the specified lines.
+    if (returnAsStrings) {
+      for (; lineCounter < numberOfLines; lineCounter++) {
+        resultMatrix[lineCounter] = sourceData[startingLine + lineCounter].split(" ");
       }
-    } else { // If values should be converted to numbers
-      for ( ; idx < lineCount ; idx ++ ) {
-        resultBlock [ idx ] = sourceFragments [ cursorPos + idx ] . split ( " " ) . map ( elem => + elem ) ;
+    } else {
+      for (; lineCounter < numberOfLines; lineCounter++) {
+        resultMatrix[lineCounter] = sourceData[startingLine + lineCounter].split(" ").map(element => +element);
       }
     }
 
-    // Advance the line cursor by the number of lines processed.
-    this._lineCursor += lineCount ;
-    return resultBlock ;
+    // Update the line pointer to reflect the lines consumed.
+    this._currentLineIndex += numberOfLines;
+    return resultMatrix;
   },
-} ;
+};
 
-// A global array used for the Disjoint Set Union (DSU) data structure.
-// Each index stores the parent of that element.
-var parentSet = [ ] ;
+// Global array used for the Disjoint Set Union (DSU) data structure.
+// `parentArray[i]` stores the parent of element `i`.
+let parentArray = [];
 
-// Finds the representative (root) of the set to which 'elementIndex' belongs.
-// This function implements path compression for optimized performance.
-function findSetRepresentative ( elementIndex ) {
-  // If the element is its own parent, it is the representative of its set.
-  if ( parentSet [ elementIndex ] === elementIndex ) return elementIndex ;
-  // Otherwise, recursively find the representative and compress the path by
-  // setting the element's parent directly to the representative.
-  return parentSet [ elementIndex ] = findSetRepresentative ( parentSet [ elementIndex ] ) ;
+/**
+ * Finds the representative (root) of the set to which `elementIndex` belongs.
+ * This function employs path compression for optimized performance.
+ * @param {number} elementIndex - The element whose set representative is to be found.
+ * @returns {number} The representative of the set containing `elementIndex`.
+ */
+function findRepresentative(elementIndex) {
+  // If an element is its own parent, it is the representative of its set.
+  if (parentArray[elementIndex] === elementIndex) {
+    return elementIndex;
+  }
+  // Otherwise, recursively find the representative and update the parent (path compression).
+  return parentArray[elementIndex] = findRepresentative(parentArray[elementIndex]);
 }
 
-// Checks if two elements, 'idxA' and 'idxB', belong to the same disjoint set.
-function areConnected ( idxA , idxB ) {
-  return findSetRepresentative ( idxA ) === findSetRepresentative ( idxB ) ;
+/**
+ * Checks if two elements, `nodeA` and `nodeB`, belong to the same disjoint set.
+ * @param {number} nodeA - The first element.
+ * @param {number} nodeB - The second element.
+ * @returns {boolean} True if both elements are in the same set, false otherwise.
+ */
+function isSameSet(nodeA, nodeB) {
+  return findRepresentative(nodeA) === findRepresentative(nodeB);
 }
 
-// Merges the sets containing 'indexOne' and 'indexTwo'.
-// It performs a union operation if they are not already in the same set.
-function mergeSets ( indexOne , indexTwo ) {
-  // Find the representatives of the sets for both elements.
-  indexOne = findSetRepresentative ( indexOne ) ;
-  indexTwo = findSetRepresentative ( indexTwo ) ;
-
-  // If they are already in the same set (have the same representative), do nothing.
-  if ( indexOne === indexTwo ) return ;
-
-  // Otherwise, merge the two sets by making one representative a child of the other.
-  parentSet [ indexOne ] = indexTwo ;
+/**
+ * Merges the sets containing `itemA` and `itemB`.
+ * If they are already in the same set, no action is taken.
+ * @param {number} itemA - The first element.
+ * @param {number} itemB - The second element.
+ */
+function unionSets(itemA, itemB) {
+  // Find the representatives of both elements.
+  itemA = findRepresentative(itemA);
+  itemB = findRepresentative(itemB);
+  // If their representatives are the same, they are already in the same set.
+  if (itemA === itemB) {
+    return;
+  }
+  // Otherwise, merge the sets by making the representative of `itemA` point to the representative of `itemB`.
+  parentArray[itemA] = itemB;
 }
 
-// Initialize the input data handler by reading the entire content of stdin.
-var dataHandler = new InputProcessor ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Initialize an instance of the InputProcessor, reading data from standard input.
+let dataHandler = new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Execute the main application logic and print its returned value to the console.
-console . log ( runApplication ( ) ) ;
+// Execute the main solution logic and print its result to the console.
+console.log(processInputAndSolve());
 
-// The primary function containing the application's core logic.
-function runApplication ( ) {
-  // Read the number of nodes (N) and the number of operations/edges (M) from the input.
-  var numNodes = dataHandler . extractValue ( ) ,
-      numEdges = dataHandler . extractValue ( ) ;
+/**
+ * The primary function that reads problem parameters, performs DSU operations,
+ * and computes the final answer based on the problem's requirements.
+ * @returns {number} The final calculated count.
+ */
+function processInputAndSolve() {
+  // Read the number of elements (N) and the number of union operations (M).
+  let numElements = dataHandler.getOne();
+  let numOperations = dataHandler.getOne();
 
-  // Read a line of numbers representing a target permutation or sequence.
-  var targetPermutation = dataHandler . fetchLineValues ( ) ;
+  // Read the permutation array (P).
+  let permutationArray = dataHandler.getLine();
 
-  // Initialize the DSU structure: each node from 0 to numNodes is initially its own parent.
-  for ( var loopVar = 0 ; loopVar <= numNodes ; loopVar ++ ) {
-    parentSet [ loopVar ] = loopVar ;
+  // Initialize the DSU structure: each element is initially in its own set.
+  // The array is 1-indexed for convenience, so it goes up to `numElements`.
+  for (let loopIndex = 0; loopIndex <= numElements; loopIndex++) {
+    parentArray[loopIndex] = loopIndex;
   }
 
-  // Process 'numEdges' union operations.
-  // Each operation specifies two nodes to be merged into the same set.
-  for ( loopVar = 0 ; loopVar < numEdges ; loopVar ++ ) {
-    // Read a pair of node indices for the current edge/connection.
-    var edgePair = dataHandler . fetchLineValues ( ) ;
-    // Perform the union operation on these two nodes.
-    mergeSets ( edgePair [ 0 ] , edgePair [ 1 ] ) ;
+  // Perform M union operations as specified by the input.
+  for (let loopIndex = 0; loopIndex < numOperations; loopIndex++) {
+    let operationPair = dataHandler.getLine(); // Read two elements to unite.
+    unionSets(operationPair[0], operationPair[1]);
   }
 
-  // Initialize a counter for the final result.
-  var finalResult = 0 ;
-  // Iterate through nodes from 1 to numNodes to check a specific condition.
-  for ( loopVar = 1 ; loopVar <= numNodes ; loopVar ++ ) {
-    // Check if the value at 'targetPermutation[loopVar - 1]' is in the same set as 'loopVar'.
-    // This typically implies checking if a node is connected to its desired position or value.
-    if ( areConnected ( targetPermutation [ loopVar - 1 ] , loopVar ) ) {
-      finalResult ++ ; // Increment the counter if the condition is met.
+  // Calculate the final answer: count how many elements `i` are in the same set
+  // as their corresponding value `P[i-1]` in the permutation array.
+  let finalCount = 0;
+  for (let loopIndex = 1; loopIndex <= numElements; loopIndex++) {
+    // Check if the element `permutationArray[loopIndex - 1]` is connected to `loopIndex`.
+    if (isSameSet(permutationArray[loopIndex - 1], loopIndex)) {
+      finalCount++;
     }
   }
-  return finalResult ; // Return the total count.
+
+  return finalCount;
 }

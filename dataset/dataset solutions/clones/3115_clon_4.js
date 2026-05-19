@@ -1,82 +1,90 @@
-const inputReader = () => require("node:fs").readFileSync(0, "utf8").trim();
-const resultPresenter = (text) => console.info(text);
-const errorNotifier = (message) => console.warn(message);
+const acquireInput = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
+const displayOutput = (content) => console.log(content);
+const reportError = (err) => console.error(err);
 
-const extractNumericValue = (rawText) => Number.parseInt(rawText);
+const inputConverters = new Map([
+    [0, (val) => val],
+    [1, (val) => parseInt(val)],
+    [2, (val) => val.split(" ")],
+    [3, (val) => val.split("\n")],
+    [4, (val) => val.split(" ").map(Number)],
+    [5, (val) => val.split("\n").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+]);
 
-const orchestrateProcessing = (rawDatum) => {
-  const numericVal = extractNumericValue(rawDatum);
-  let producedEdges = [];
+const transformInput = (value, type) => inputConverters.get(type)(value);
 
-  switch (numericVal) {
-    case 3:
-      producedEdges.push("2", "1 3", "2 3");
-      break;
-    case 4:
-      producedEdges.push("4", "1 3", "2 1", "4 2", "3 4");
-      break;
-    default:
-      if (numericVal % 2 !== 0) {
-        const middlePoint = Math.floor(numericVal / 2);
-        producedEdges.push((numericVal - 1) * 2);
+const processMain = (rawInput) => {
+    const numericValue = transformInput(rawInput, 1);
 
-        const segmentGenerator = Array.from({
-          length: middlePoint
-        }, (_, index) => {
-          const firstNum = index + 1;
-          const secondNum = numericVal - 1 - index;
-          const firstNext = firstNum + 1;
-          const secondPrev = secondNum - 1;
+    const fixedResponses = new Map([
+        [3, "2\n1 3\n2 3"],
+        [4, "4\n1 3\n2 1\n4 2\n3 4"],
+    ]);
 
-          let currentSegmentEdges = [];
+    if (fixedResponses.has(numericValue)) {
+        displayOutput(fixedResponses.get(numericValue));
+        return;
+    }
 
-          if (index === 0 || index === middlePoint - 1) {
-            currentSegmentEdges.push(`${firstNum} ${numericVal}`);
-            currentSegmentEdges.push(`${secondNum} ${numericVal}`);
-          }
+    let generatedLines = [];
 
-          if (index < middlePoint - 1) {
-            currentSegmentEdges.push(`${firstNum} ${firstNext}`);
-            currentSegmentEdges.push(`${firstNum} ${secondPrev}`);
-            currentSegmentEdges.push(`${secondNum} ${firstNext}`);
-            currentSegmentEdges.push(`${secondNum} ${secondPrev}`);
-          }
-          return currentSegmentEdges;
-        });
+    if (numericValue % 2 !== 0) {
+        generatedLines.push((numericValue - 1) * 2);
+        const halfCount = Math.floor(numericValue / 2);
 
-        producedEdges.push(...segmentGenerator.flat());
+        const intermediatePairs = Array.from({ length: halfCount }, (_, idx) => {
+            const currentVal = idx + 1;
+            const nextVal = currentVal + 1;
+            const complementVal = numericValue - 1 - idx;
+            const prevComplementVal = complementVal - 1;
 
-      } else {
-        const middlePoint = numericVal / 2;
-        producedEdges.push(numericVal * 2);
+            let iterationPairs = [];
 
-        const segmentGenerator = Array.from({
-          length: middlePoint
-        }, (_, index) => {
-          const firstNum = index + 1;
-          let firstNext = firstNum + 1;
-          const secondNum = numericVal - index;
-          let secondPrev = secondNum - 1;
+            if (idx === 0 || idx === halfCount - 1) {
+                iterationPairs.push(`${currentVal} ${numericValue}`);
+                iterationPairs.push(`${complementVal} ${numericValue}`);
+            }
 
-          if (index === middlePoint - 1) {
-            firstNext = 1;
-            secondPrev = numericVal;
-          }
+            if (idx < halfCount - 1) {
+                iterationPairs.push(`${currentVal} ${nextVal}`);
+                iterationPairs.push(`${currentVal} ${prevComplementVal}`);
+                iterationPairs.push(`${complementVal} ${nextVal}`);
+                iterationPairs.push(`${complementVal} ${prevComplementVal}`);
+            }
+            return iterationPairs;
+        }).flat();
 
-          return [
-            `${firstNum} ${firstNext}`,
-            `${firstNum} ${secondPrev}`,
-            `${secondNum} ${firstNext}`,
-            `${secondNum} ${secondPrev}`,
-          ];
-        });
+        generatedLines.push(...intermediatePairs);
 
-        producedEdges.push(...segmentGenerator.flat());
-      }
-      break;
-  }
+    } else {
+        generatedLines.push(numericValue * 2);
+        const halfCount = numericValue / 2;
 
-  return producedEdges.join("\n");
+        const intermediatePairs = Array.from({ length: halfCount }, (_, idx) => {
+            const currentVal = idx + 1;
+            let nextVal = currentVal + 1;
+            const complementVal = numericValue - idx;
+            let prevComplementVal = complementVal - 1;
+
+            if (idx === halfCount - 1) {
+                nextVal = 1;
+                prevComplementVal = numericValue;
+            }
+
+            return [
+                `${currentVal} ${nextVal}`,
+                `${currentVal} ${prevComplementVal}`,
+                `${complementVal} ${nextVal}`,
+                `${complementVal} ${prevComplementVal}`,
+            ];
+        }).flat();
+
+        generatedLines.push(...intermediatePairs);
+    }
+
+    displayOutput(generatedLines.join("\n"));
 };
 
-resultPresenter(orchestrateProcessing(inputReader()));
+processMain(acquireInput());

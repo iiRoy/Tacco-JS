@@ -1,27 +1,13 @@
-const acquiredData = (function () {
-    const fileSystemModule = require("fs");
-    const standardInputPath = "/dev/stdin";
-    const encodingScheme = "utf8";
-    return fileSystemModule.readFileSync(standardInputPath, encodingScheme);
-})();
+function evaluateCondition(inputData) {
+    const dataSegments = inputData.split('\n');
+    const itemCost = parseInt(dataSegments[0], 10);
+    const allowance = parseInt(dataSegments[1], 10);
 
-const breakPosition = acquiredData.indexOf('\n');
-const firstSegment = acquiredData.substring(0, breakPosition);
-const secondSegment = acquiredData.substring(breakPosition + 1);
+    const requiredRemainder = itemCost - Math.floor(itemCost / 500) * 500;
 
-const primaryNumericValue = Number(firstSegment);
-const secondaryNumericValue = Number(secondSegment);
+    const resultText = ["NO", "YES"][+(requiredRemainder <= allowance)];
 
-const obtainRemainder = (dividend, divisor) => {
-    if (dividend < divisor) {
-        return dividend;
-    } else {
-        return obtainRemainder(dividend - divisor, divisor);
-    }
-};
+    console.log(resultText);
+}
 
-const computedRemainder = obtainRemainder(primaryNumericValue, 500);
-const evaluationResult = (computedRemainder <= secondaryNumericValue);
-
-const outcomeStrings = ["NO", "YES"];
-process.stdout.write(outcomeStrings[Number(evaluationResult)] + '\n');
+evaluateCondition(require("fs").readFileSync("/dev/stdin", "utf8"));

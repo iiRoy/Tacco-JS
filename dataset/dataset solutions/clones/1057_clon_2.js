@@ -1,111 +1,97 @@
-/*
- * This module defines a geometric structure and a recursive algorithm
- * to construct a fractal pattern similar to a Koch curve.
- * It processes an integer input from standard stream to determine
- * the recursion depth for the fractal generation.
- */
-class Coordinate {
-
-  /*
-   * The primary constructor for a Coordinate instance.
-   * @param {number} horiz - The abscissa value of the point.
-   * @param {number} vert - The ordinate value of the point.
-   */
-  initialize(horiz, vert) {
-    this.horizontal = horiz;
-    this.vertical = vert;
+class Coord {
+  constructor(coordX, coordY) {
+    this.coordX = coordX;
+    this.coordY = coordY;
   }
 
-  /*
-   * Outputs the coordinate's horizontal and vertical components
-   * to the console, formatted to a fixed precision.
-   */
-  display() {
-    console.log(`${this.horizontal.toFixed(8)} ${this.vertical.toFixed(8)}`);
+  // Outputs the coordinates to the console, formatted to 8 decimal places.
+  outputPosition() {
+    console.log(this.coordX.toFixed(8) + ' ' + this.coordY.toFixed(8));
   }
 }
 
-/*
- * An immediately invoked function expression (IIFE) that serves
- * as the main entry point for the application.
+(function executeFractalGeneration() {
+  // Read the iteration count from standard input.
+  const iterationCount = Number(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
+
+  // Define the initial segment points for the Koch curve.
+  let startPoint = new Coord(0.0, 0.0);
+  let endPoint = new Coord(100.0, 0.0);
+
+  // Display the starting point.
+  startPoint.outputPosition();
+
+  // Initiate the recursive Koch fractal generation.
+  generateKochFractal(iterationCount, startPoint, endPoint);
+
+  // Display the ending point.
+  endPoint.outputPosition();
+})();
+
+// Global variables for coordinate differences, used in the recursive step.
+// These are intentionally undeclared to match the original's implicit global scope.
+deltaX = 0;
+deltaY = 0;
+
+/**
+ * Recursively generates segments of the Koch curve.
+ * @param {number} currentIteration - The current recursion depth.
+ * @param {Coord} segmentStart - The starting point of the current segment.
+ * @param {Coord} segmentEnd - The ending point of the current segment.
  */
-(function runApplication() {
+function generateKochFractal(currentIteration, segmentStart, segmentEnd) {
+  // Pre-calculate sine and cosine for 60 degrees (PI/3 radians).
+  const sineValue60Deg = Math.sin(60 * Math.PI / 180);
+  const cosineValue60Deg = Math.cos(60 * Math.PI / 180);
 
-  // Read the recursion depth from standard input.
-  // The input is expected to be a number.
-  const iterations = parseFloat(require('node:fs').readFileSync('/dev/stdin', 'utf8').trim());
-
-  // Establish the two initial boundary points for the fractal.
-  let initialPt = new Coordinate(0.0, 0.0);
-  let finalPt   = new Coordinate(100.0, 0.0);
-
-  // Output the very first point before starting the recursion.
-  initialPt.display();
-
-  // Begin the recursive fractal generation process.
-  fractalGenerate(iterations, initialPt, finalPt);
-
-  // Output the final point after all segments have been processed.
-  finalPt.display();
-
-})(); // End of the main application execution block
-
-
-/*
- * This function orchestrates the generation of a fractal curve
- * by recursively subdividing line segments.
- *
- * @param {number} numSteps - The current level of recursion.
- * @param {Coordinate} pointAlpha - The starting coordinate of the segment to process.
- * @param {Coordinate} pointBeta - The ending coordinate of the segment to process.
- */
-function fractalGenerate(numSteps, pointAlpha, pointBeta) {
-  // Precompute sine and cosine of 60 degrees for rotation calculations.
-  const sineAngle = Math.sin(60 * Math.PI / 180.0);
-  const cosineAngle = Math.cos(60 * Math.PI / 180.0);
-
-  /*
-   * An inner helper function to perform the actual recursive subdivision steps.
-   * It is defined as a function expression to showcase variation.
-   *
-   * @param {number} currentDepth - The remaining depth for this recursive call.
-   * @param {Coordinate} startPosition - The beginning point of the current segment.
-   * @param {Coordinate} endPosition - The ending point of the current segment.
+  /**
+   * The core recursive function for the Koch curve.
+   * @param {number} depth - The remaining recursion depth.
+   * @param {Coord} segA - The first point of the current segment.
+   * @param {Coord} segB - The second point of the current segment.
    */
-  const performRecursion = function(currentDepth, startPosition, endPosition) {
-    // Base case: If no more recursion depth, simply return.
-    if (currentDepth <= 0) {
+  function processSegment(depth, segA, segB) {
+    // Base case: if depth is zero, stop recursion.
+    if (!depth) {
       return;
     }
 
-    // Calculate the total horizontal and vertical span of the current segment.
-    let horizDistance = endPosition.horizontal - startPosition.horizontal;
-    let vertDistance  = endPosition.vertical  - startPosition.vertical;
+    // Calculate the difference in x and y coordinates for the current segment.
+    deltaX = segB.coordX - segA.coordX;
+    deltaY = segB.coordY - segA.coordY;
 
-    // Determine the two intermediate points that divide the segment into three equal parts.
-    var pointS = new Coordinate(startPosition.horizontal + horizDistance / 3.0, startPosition.vertical + vertDistance / 3.0);
-    var pointT = new Coordinate(pointS.horizontal + horizDistance / 3.0, pointS.vertical + vertDistance / 3.0);
+    // Calculate point 's' (one-third along the segment).
+    let pointS = new Coord(segA.coordX + deltaX / 3.0, segA.coordY + deltaY / 3.0);
 
-    // Calculate the third intermediate point (the apex of the equilateral triangle).
-    // This involves rotating the vector (pointT - pointS) by 60 degrees.
-    var pointU = new Coordinate(
-      (pointT.horizontal - pointS.horizontal) * cosineAngle - (pointT.vertical - pointS.vertical) * sineAngle + pointS.horizontal,
-      (pointT.horizontal - pointS.horizontal) * sineAngle + (pointT.vertical - pointS.vertical) * cosineAngle + pointS.vertical
+    // Calculate point 't' (two-thirds along the segment).
+    let pointT = new Coord(pointS.coordX + deltaX / 3.0, pointS.coordY + deltaY / 3.0);
+
+    // Calculate point 'u' (the apex of the equilateral triangle).
+    // This involves rotating the vector (t-s) by 60 degrees.
+    let pointU = new Coord(
+      (pointT.coordX - pointS.coordX) * cosineValue60Deg - (pointT.coordY - pointS.coordY) * sineValue60Deg + pointS.coordX,
+      (pointT.coordX - pointS.coordX) * sineValue60Deg + (pointT.coordY - pointS.coordY) * cosineValue60Deg + pointS.coordY
     );
 
-    // Recursively apply the fractal generation to the four new segments.
-    fractalGenerate(currentDepth - 1, startPosition, pointS);
-    pointS.display(); // Output point S.
+    // Recursively call for the first segment (A to S).
+    generateKochFractal(depth - 1, segA, pointS);
+    // Output point S.
+    pointS.outputPosition();
 
-    fractalGenerate(currentDepth - 1, pointS, pointU);
-    pointU.display(); // Output point U.
+    // Recursively call for the second segment (S to U).
+    generateKochFractal(depth - 1, pointS, pointU);
+    // Output point U.
+    pointU.outputPosition();
 
-    fractalGenerate(currentDepth - 1, pointU, pointT);
-    pointT.display(); // Output point T.
+    // Recursively call for the third segment (U to T).
+    generateKochFractal(depth - 1, pointU, pointT);
+    // Output point T.
+    pointT.outputPosition();
 
-    fractalGenerate(currentDepth - 1, pointT, endPosition);
-  };
+    // Recursively call for the fourth segment (T to B).
+    generateKochFractal(depth - 1, pointT, segB);
+  }
 
-  // Invoke the recursive worker function with the initial parameters.
-  performRecursion(numSteps, pointAlpha, pointBeta);
+  // Start the recursive process for the current segment.
+  processSegment(currentIteration, segmentStart, segmentEnd);
 }

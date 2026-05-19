@@ -1,37 +1,57 @@
-let _accumulator = '';
-process.stdin.on('data', _segment => { _accumulator += _segment.toString(); });
-process.stdin.on('end', () => { _processInput(_accumulator); });
+const inputBuffer = require("fs").readFileSync("/dev/stdin", "utf8");
+const inputTokens = inputBuffer.split(/ |\n/).filter(Boolean);
+let currentTokenIndex = 0;
 
-function _processInput(_textData) {
-    const _tokens = _textData.split(/\s+/).filter(Boolean);
-    let _tokenPosition = 0;
-    const _retrieveToken = () => _tokens[_tokenPosition++];
-    const _numericValue = () => Number(_retrieveToken());
+const retrieveNextNumber = () => {
+    return Number(inputTokens[currentTokenIndex++]);
+};
 
-    const _countItems = _numericValue();
-    const _operationSequence = [];
-    for (let _k = 0; _k < _countItems - 1; ++_k) {
-        _operationSequence.push([_numericValue(), _numericValue(), _numericValue()]);
+const retrieveNextString = () => {
+    return inputTokens[currentTokenIndex++];
+};
+
+const retrieveNextBigInt = () => {
+    return BigInt(inputTokens[currentTokenIndex++]);
+};
+
+const retrieveNextArray = (count, asStrings = false) => {
+    const segment = inputTokens.slice(currentTokenIndex, currentTokenIndex + count);
+    currentTokenIndex += count;
+    return asStrings ? segment : segment.map(Number);
+};
+
+const retrieveNextMatrix = (height, width, asStrings = false) => {
+    const matrix = [];
+    for (let row = 0; row < height; row++) {
+        matrix.push(retrieveNextArray(width, asStrings));
+    }
+    return matrix;
+};
+
+const calculateTravelTimes = () => {
+    const numberOfStations = retrieveNextNumber();
+    const finalArrivals = Array(numberOfStations).fill(0);
+    const routeSegments = retrieveNextMatrix(numberOfStations - 1, 3);
+
+    for (let startStationIndex = 0; startStationIndex < numberOfStations - 1; startStationIndex++) {
+        let currentAccumulatedTime = 0;
+
+        for (let segmentRouteIndex = startStationIndex; segmentRouteIndex < numberOfStations - 1; segmentRouteIndex++) {
+            const [segmentCost, segmentMinStartTime, segmentInterval] = routeSegments[segmentRouteIndex];
+
+            currentAccumulatedTime = Math.max(currentAccumulatedTime, segmentMinStartTime);
+
+            const actualDepartureTime = Math.ceil(currentAccumulatedTime / segmentInterval) * segmentInterval;
+
+            currentAccumulatedTime = actualDepartureTime + segmentCost;
+        }
+        finalArrivals[startStationIndex] = currentAccumulatedTime;
     }
 
-    const _finalResult = Array.from({ length: _countItems }, (_, _idx) => {
-        if (_idx === _countItems - 1) {
-            return 0;
-        }
+    return finalArrivals.join("\n");
+};
 
-        const _relevantOperations = _operationSequence.slice(_idx);
-
-        return _relevantOperations.reduce((_currentAccumulated, _params) => {
-            const [_offset, _minimum, _divisor] = _params;
-
-            const _adjustedValue = Math.max(_currentAccumulated, _minimum);
-
-            const _remainder = _adjustedValue % _divisor;
-            const _roundedUp = _adjustedValue + (_divisor - _remainder) % _divisor;
-            
-            return _offset + _roundedUp;
-        }, 0);
-    });
-
-    process.stdout.write(_finalResult.join('\n') + '\n');
+const programOutput = calculateTravelTimes();
+if (programOutput !== undefined) {
+    console.log(programOutput);
 }

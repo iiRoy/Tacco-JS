@@ -1,47 +1,34 @@
-const obtainSourceText = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const fs = require('fs');
 
-const transformRawData = (dataBlob) => dataBlob.trim().split('\n');
+const calculateDistances = (lineContent) => {
+    const characters = lineContent.split('');
 
-const discardInitialEntry = (dataLines) => dataLines.slice(1);
+    const { resultSequence } = characters.reduce((accumulator, currentCharacter) => {
+        let nextDistanceTracker = accumulator.distanceTracker;
+        let valueForOutput;
 
-const determineProximityValues = (lineSegment) => {
-    const initialStateCarrier = { proximityCounter: -1, accumulatedValues: [] };
-
-    const finalState = lineSegment.split('').reduce((carrier, symbolUnit) => {
-        let computedValue;
-        let updatedProximityCounter = carrier.proximityCounter;
-
-        if (symbolUnit === 'c') {
-            computedValue = 0;
-            updatedProximityCounter = 1;
-        } else { // symbolUnit === '.'
-            computedValue = carrier.proximityCounter;
-            if (carrier.proximityCounter !== -1) {
-                updatedProximityCounter++;
+        if (currentCharacter === 'c') {
+            valueForOutput = 0;
+            nextDistanceTracker = 1;
+        } else { // Assuming only 'c' or '.' based on problem context
+            valueForOutput = accumulator.distanceTracker;
+            if (accumulator.distanceTracker !== -1) {
+                nextDistanceTracker++;
             }
         }
 
-        return {
-            proximityCounter: updatedProximityCounter,
-            accumulatedValues: [...carrier.accumulatedValues, computedValue]
-        };
-    }, initialStateCarrier);
+        accumulator.resultSequence.push(valueForOutput);
+        accumulator.distanceTracker = nextDistanceTracker;
+        return accumulator;
+    }, { distanceTracker: -1, resultSequence: [] });
 
-    return finalState.accumulatedValues.join(' ');
+    return resultSequence.join(' ');
 };
 
-const processAndDisplayAllSegments = (segmentCollection) => {
-    segmentCollection.forEach(individualSegment => {
-        const outputString = determineProximityValues(individualSegment);
-        console.log(outputString);
-    });
-};
+const rawInput = fs.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInput.trim().split('\n');
+processedLines.shift(); // Discard the first line as per original logic
 
-const runComputation = () => {
-    const rawContent = obtainSourceText();
-    const parsedLines = transformRawData(rawContent);
-    const relevantLines = discardInitialEntry(parsedLines);
-    processAndDisplayAllSegments(relevantLines);
-};
+const finalOutputLines = processedLines.map(calculateDistances);
 
-runComputation();
+console.log(finalOutputLines.join('\n'));

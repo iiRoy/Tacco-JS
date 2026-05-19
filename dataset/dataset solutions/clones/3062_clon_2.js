@@ -1,47 +1,41 @@
-"use strict"
-;
-// This script processes a collection of numerical inputs to check a specific condition.
+"use strict"; // Enforce strict mode for cleaner code execution
 
-const processInput = ( inputString ) => {
-    // Divide the entire input text into distinct line segments.
-    let lineSegments = inputString.split("\n")
-    ;
-    
-    // Retrieve the maximum permissible value from the final segment, converting it to an integer.
-    const maximumThreshold = parseInt( lineSegments.pop() )
-    ;
+/*
+ * This function processes the raw input string to determine if
+ * a set of sensor positions meets a specific distance criterion.
+ */
+const processInput = (inputData) => {
+    // Split the input string into an array of lines.
+    inputData = inputData.split("\n");
 
-    // Convert the initial five segments into an array of integer sensor measurements.
-    const sensorMeasurements = lineSegments.slice(0,5).map( (measurementString) => parseInt(measurementString) )
-    ;
-    
-    // Traverse through each individual sensor measurement.
-    for ( let indexOne = 0; indexOne < sensorMeasurements.length; indexOne++ )
-    {
-        // For every current sensor, compare it against all subsequent sensors.
-        for ( let indexTwo = indexOne + 1; indexTwo < sensorMeasurements.length; indexTwo++ )
-        {
-            // Verify if the numerical difference between the current pair of sensors surpasses the established threshold.
-            if ( sensorMeasurements[indexTwo] - sensorMeasurements[indexOne] > maximumThreshold )
-            {
-                // If a difference exceeding the limit is identified, output a negative indicator and exit immediately.
-                console.log(":-(")
-                ;
-                return
-                ;
-            }   
+    // Extract the maximum allowed distance (k) from the end of the input.
+    // The last line is expected to be the integer 'k'.
+    const maxDistance = parseInt(inputData.pop());
+
+    // Parse the first five lines as sensor positions (integers).
+    // The original code implies only the first 5 lines are relevant for antennas.
+    const sensorPositions = inputData.slice(0, 5).map((numStr) => parseInt(numStr));
+
+    // Iterate through all unique pairs of sensor positions.
+    // Outer loop for the first sensor.
+    for (let idxA = 0; idxA < sensorPositions.length; idxA++) {
+        // Inner loop for the second sensor, starting from the next position
+        // to avoid duplicate pairs and comparing a sensor with itself.
+        for (let idxB = idxA + 1; idxB < sensorPositions.length; idxB++) {
+            // Check if the distance between any two sensors exceeds the maximum allowed distance.
+            // The problem implies sensorPositions[idxB] will always be >= sensorPositions[idxA]
+            // if the input is sorted, or we're just checking the difference.
+            if (sensorPositions[idxB] - sensorPositions[idxA] > maxDistance) {
+                // If an invalid pair is found, print an error message and exit.
+                console.log(":(");
+                return; // Terminate the function early.
+            }
         }
     }
-    
-    // If no pairs of sensors violate the threshold, output a positive confirmation.
-    console.log("Woohoo!")
-    ;
-}
 
-// Obtain the necessary module for file system operations.
-const fileSystemAccess = require('fs')
-;
+    // If all sensor pairs satisfy the distance condition, print a success message.
+    console.log("Yay!");
+};
 
-// Read the content from standard input in a blocking manner, interpret it as UTF-8, and then pass it to the primary processing function.
-processInput( fileSystemAccess.readFileSync('/dev/stdin', 'utf8') )
-;
+// Read input from standard input and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

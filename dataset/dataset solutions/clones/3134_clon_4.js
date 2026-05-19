@@ -1,25 +1,14 @@
-const fn_diff = (valA, valB) => valA - valB;
-const fn_prod = (valA, valB) => valA * valB;
+function processDimensions(rawData) {
+    const [firstLineData, secondLineData] = rawData
+        .split("\n")
+        .map(lineSegment => lineSegment.split(" ").map(Number));
 
-const processInputAndCompute = (rawContent) => {
-    const [line_one, line_two] = rawContent
-        .trim()
-        .split('\n');
+    const [primaryHeight, primaryWidth] = firstLineData;
+    const [secondaryHeight, secondaryWidth] = secondLineData;
 
-    const [majorX, majorY] = line_one
-        .split(' ')
-        .map(Number);
+    const resultantArea = (primaryHeight - secondaryHeight) * (primaryWidth - secondaryWidth);
 
-    const [minorX, minorY] = line_two
-        .split(' ')
-        .map(Number);
+    console.log(resultantArea);
+}
 
-    const result_x_dim = fn_diff(majorX, minorX);
-    const result_y_dim = fn_diff(majorY, minorY);
-
-    const final_outcome = fn_prod(result_x_dim, result_y_dim);
-
-    console.log(final_outcome);
-};
-
-processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+processDimensions(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,21 +1,13 @@
-// This module processes incoming textual information.
-function  processInputData  (  rawData  )  {
-  // Extracting the initial line from the provided raw data collection.
-  let  firstLineContent  =  rawData[0];
+// This module processes some input data.
+function processInput(dataArray) {
+  let firstElement = dataArray[0]; // Extract the initial data item.
 
-  // Evaluating a specific character-based condition within the initial content.
-  if  (  firstLineContent[0]  ===  firstLineContent[2]  )
-  {
-    // If the condition holds true, output a positive confirmation.
-    console.log("Yes");
-  }
-  else
-  {
-    // Otherwise, output a negative confirmation.
-    console.log("No");
+  if (firstElement[0] === firstElement[2]) { // Check if the first and third characters are identical.
+    console.log("Yes"); // Output confirmation.
+  } else {
+    console.log("No"); // Output denial.
   }
 }
 
-// Initiating the primary data processing flow.
-// It reads system input, decodes it, and passes it to the processing function.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Execute the primary function with data read from standard input.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

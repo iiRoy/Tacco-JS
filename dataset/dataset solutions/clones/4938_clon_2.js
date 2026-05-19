@@ -1,126 +1,125 @@
 'use strict';
 
-// This function processes grid input data and calculates the minimum spanning tree cost.
-function ProcessGridData(RAW_DATA_STRING) {
-  // Split the raw input string into individual lines.
-  const dataLines = RAW_DATA_STRING.split('\n');
+// Primary function to handle the entire input processing and calculation.
+function ProcessInput(rawData) {
+  // Divide the raw input string into individual lines.
+  let lines = rawData.split("\n");
 
-  // Extract grid dimensions from the first line.
-  const dimensionsString = dataLines[0].split(' ');
-  const gridWidth = Number.parseInt(dimensionsString[0]);
-  const gridHeight = Number.parseInt(dimensionsString[1]);
+  // Extract grid dimensions from the first line of input.
+  let dimensionsStr = lines[0].split(" ");
+  let widthVal = parseInt(dimensionsStr[0]); // Represents the width of the grid.
+  let heightVal = parseInt(dimensionsStr[1]); // Represents the height of the grid.
 
-  // Arrays to store edge weights along horizontal and vertical paths.
-  const horizontalWeights = [];
-  const verticalWeights = [];
+  // Initialize arrays to store the costs associated with horizontal and vertical edges.
+  let horizontalCosts = [];
+  let verticalCosts = [];
 
-  // Populate horizontal edge weights from input lines.
-  for ( let idx = 0; idx < gridWidth; ++idx ) {
-    horizontalWeights.push(dataLines[1 + idx]);
+  // Populate the horizontal edge costs array from the input lines.
+  for (let idx = 0; idx < widthVal; idx++) {
+    horizontalCosts.push(lines[1 + idx]);
   }
 
-  // Populate vertical edge weights from input lines.
-  for ( let idx = 0; idx < gridHeight; ++idx ) {
-    verticalWeights.push(dataLines[1 + gridWidth + idx]);
+  // Populate the vertical edge costs array from the input lines.
+  for (let idx = 0; idx < heightVal; idx++) {
+    verticalCosts.push(lines[1 + widthVal + idx]);
   }
 
-  // Initialize a 2D grid structure to represent cells and their connections.
-  // Each cell stores its component ID, horizontal edge weight, and vertical edge weight.
-  const cellConnections = [];
-  for ( let rowCoord = 0; rowCoord < gridHeight + 1; ++rowCoord ) {
-    cellConnections.push([]);
-    for ( let colCoord = 0; colCoord < gridWidth + 1; ++colCoord ) {
-      cellConnections[rowCoord][colCoord] = [];
-      // Assign a unique initial component identifier to each cell.
-      cellConnections[rowCoord][colCoord][0] = (gridWidth + 1) * rowCoord + colCoord;
-      // Store horizontal edge weight (or a large default if not available).
-      cellConnections[rowCoord][colCoord][1] = Number.parseInt(horizontalWeights[colCoord]) || 100000001;
-      // Store vertical edge weight (or a large default if not available).
-      cellConnections[rowCoord][colCoord][2] = Number.parseInt(verticalWeights[rowCoord]) || 100000001;
+  // Create a 2D array to represent each node in the grid.
+  // Each node will store its current component ID, and the costs of its potential horizontal and vertical edges.
+  let gridNodes = [];
+  for (let rowIdx = 0; rowIdx < heightVal + 1; rowIdx++) {
+    gridNodes.push([]); // Add a new row for grid nodes.
+    for (let colIdx = 0; colIdx < widthVal + 1; colIdx++) {
+      gridNodes[rowIdx][colIdx] = []; // Initialize an array for node properties.
+      // Property 0: Unique identifier for the connected component this node belongs to.
+      gridNodes[rowIdx][colIdx][0] = (widthVal + 1) * rowIdx + colIdx;
+      // Property 1: Cost of the horizontal edge extending from this node (to the right).
+      // Defaults to a very large number if parsing fails (e.g., empty string).
+      gridNodes[rowIdx][colIdx][1] = parseInt(horizontalCosts[colIdx]) || 100000001;
+      // Property 2: Cost of the vertical edge extending from this node (downwards).
+      // Defaults to a very large number if parsing fails.
+      gridNodes[rowIdx][colIdx][2] = parseInt(verticalCosts[rowIdx]) || 100000001;
     }
   }
 
-  // Recursive function to implement a variation of Kruskal's algorithm for MST.
-  // It repeatedly finds the minimum edge and merges components until all cells are connected.
-  function computeMST(totalWeightAccumulator) {
-    let currentMinEdgeWeight = 100000001; // Initialize with a very high cost (effectively infinity).
-    let connectionToMerge = [];         // Stores the component IDs of the two nodes to be merged.
-    let colIterator = 0, rowIterator = 0; // Iterators for grid traversal.
+  // Recursive function to compute the Minimum Spanning Tree (MST) cost using a Kruskal-like approach.
+  function calculateMinimumSpanningTree(totalWeight) {
+    // Initialize the minimum edge weight found in the current iteration to a very high value.
+    let currentMinEdgeWeight = 100000001; // A value larger than any expected edge cost.
+    // An array to hold the component IDs of the two nodes that will be merged by the chosen minimum edge.
+    let edgeToMerge = [];
+    let colIdx = 0, rowIdx = 0; // Loop variables for grid traversal.
 
-    // Iterate through the grid to find the smallest available edge (horizontal or vertical).
-    // This loop covers all internal horizontal and vertical edges.
-    for ( rowIterator = 0; rowIterator < gridHeight; ++rowIterator ) {
-      for ( colIterator = 0; colIterator < gridWidth; ++colIterator ) {
-        // Check horizontal edge: if it's smaller than current minimum AND connects different components.
-        if ( cellConnections[rowIterator][colIterator][1] < currentMinEdgeWeight &&
-             cellConnections[rowIterator][colIterator][0] !== cellConnections[rowIterator][colIterator + 1][0] ) {
-          currentMinEdgeWeight = cellConnections[rowIterator][colIterator][1];
-          connectionToMerge[0] = cellConnections[rowIterator][colIterator][0];
-          connectionToMerge[1] = cellConnections[rowIterator][colIterator + 1][0];
+    // Iterate through the main part of the grid to find the smallest edge
+    // that connects two distinct components.
+    for (rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      for (colIdx = 0; colIdx < widthVal; colIdx++) {
+        // Evaluate the horizontal edge (from current node to the node on its right).
+        if (gridNodes[rowIdx][colIdx][1] < currentMinEdgeWeight && gridNodes[rowIdx][colIdx][0] !== gridNodes[rowIdx][colIdx + 1][0]) {
+          currentMinEdgeWeight = gridNodes[rowIdx][colIdx][1];
+          edgeToMerge[0] = gridNodes[rowIdx][colIdx][0]; // Component ID of the first node.
+          edgeToMerge[1] = gridNodes[rowIdx][colIdx + 1][0]; // Component ID of the second node.
         }
-        // Check vertical edge: if it's smaller than current minimum AND connects different components.
-        if ( cellConnections[rowIterator][colIterator][2] < currentMinEdgeWeight &&
-             cellConnections[rowIterator][colIterator][0] !== cellConnections[rowIterator + 1][colIterator][0] ) {
-          currentMinEdgeWeight = cellConnections[rowIterator][colIterator][2];
-          connectionToMerge[0] = cellConnections[rowIterator][colIterator][0];
-          connectionToMerge[1] = cellConnections[rowIterator + 1][colIterator][0];
-        }
-      }
-    }
-
-    // Check horizontal edges in the last row (H-th row, indices H, H+1).
-    for ( colIterator = 0; colIterator < gridWidth; ++colIterator ) {
-      if ( cellConnections[gridHeight][colIterator][1] < currentMinEdgeWeight &&
-           cellConnections[gridHeight][colIterator][0] !== cellConnections[gridHeight][colIterator + 1][0] ) {
-        currentMinEdgeWeight = cellConnections[gridHeight][colIterator][1];
-        connectionToMerge[0] = cellConnections[gridHeight][colIterator][0];
-        connectionToMerge[1] = cellConnections[gridHeight][colIterator + 1][0];
-      }
-    }
-
-    // Check vertical edges in the last column (W-th column, indices W, W+1).
-    for ( rowIterator = 0; rowIterator < gridHeight; ++rowIterator ) {
-      if ( cellConnections[rowIterator][gridWidth][2] < currentMinEdgeWeight &&
-           cellConnections[rowIterator][gridWidth][0] !== cellConnections[rowIterator + 1][gridWidth][0] ) {
-        currentMinEdgeWeight = cellConnections[rowIterator][gridWidth][2];
-        connectionToMerge[0] = cellConnections[rowIterator][gridWidth][0];
-        connectionToMerge[1] = cellConnections[rowIterator + 1][gridWidth][0];
-      }
-    }
-
-    // Perform the union operation: merge the two components identified by connectionToMerge.
-    // All cells belonging to the second component ID are reassigned to the first component ID.
-    for ( rowIterator = 0; rowIterator < gridHeight + 1; ++rowIterator ) {
-      for ( colIterator = 0; colIterator < gridWidth + 1; ++colIterator ) {
-        if ( cellConnections[rowIterator][colIterator][0] === connectionToMerge[1] ) {
-          cellConnections[rowIterator][colIterator][0] = connectionToMerge[0];
+        // Evaluate the vertical edge (from current node to the node below it).
+        if (gridNodes[rowIdx][colIdx][2] < currentMinEdgeWeight && gridNodes[rowIdx][colIdx][0] !== gridNodes[rowIdx + 1][colIdx][0]) {
+          currentMinEdgeWeight = gridNodes[rowIdx][colIdx][2];
+          edgeToMerge[0] = gridNodes[rowIdx][colIdx][0]; // Component ID of the first node.
+          edgeToMerge[1] = gridNodes[rowIdx + 1][colIdx][0]; // Component ID of the second node.
         }
       }
     }
 
-    // Add the cost of the chosen edge to the running total.
-    totalWeightAccumulator += currentMinEdgeWeight;
+    // Check horizontal edges in the last row of nodes (heightVal, colIdx to heightVal, colIdx+1).
+    for (colIdx = 0; colIdx < widthVal; colIdx++) {
+      if (gridNodes[heightVal][colIdx][1] < currentMinEdgeWeight && gridNodes[heightVal][colIdx][0] !== gridNodes[heightVal][colIdx + 1][0]) {
+        currentMinEdgeWeight = gridNodes[heightVal][colIdx][1];
+        edgeToMerge[0] = gridNodes[heightVal][colIdx][0];
+        edgeToMerge[1] = gridNodes[heightVal][colIdx + 1][0];
+      }
+    }
 
-    // Check if all cells are now part of the same connected component.
-    // If not, recursively call computeMST to find the next smallest edge.
-    for ( rowIterator = 0; rowIterator < gridHeight + 1; ++rowIterator ) {
-      for ( colIterator = 0; colIterator < gridWidth + 1; ++colIterator ) {
-        // Compare current cell's component ID to the component ID of the very first cell.
-        if ( cellConnections[0][0][0] !== cellConnections[rowIterator][colIterator][0] ) {
-          return computeMST(totalWeightAccumulator); // Not fully connected, continue.
+    // Check vertical edges in the last column of nodes (rowIdx, widthVal to rowIdx+1, widthVal).
+    for (rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+      if (gridNodes[rowIdx][widthVal][2] < currentMinEdgeWeight && gridNodes[rowIdx][widthVal][0] !== gridNodes[rowIdx + 1][widthVal][0]) {
+        currentMinEdgeWeight = gridNodes[rowIdx][widthVal][2];
+        edgeToMerge[0] = gridNodes[rowIdx][widthVal][0];
+        edgeToMerge[1] = gridNodes[rowIdx + 1][widthVal][0];
+      }
+    }
+
+    // Perform the union operation: merge the two components found.
+    // All nodes that were part of `edgeToMerge[1]`'s component are now assigned to `edgeToMerge[0]`'s component.
+    for (rowIdx = 0; rowIdx < heightVal + 1; rowIdx++) {
+      for (colIdx = 0; colIdx < widthVal + 1; colIdx++) {
+        if (gridNodes[rowIdx][colIdx][0] === edgeToMerge[1]) {
+          gridNodes[rowIdx][colIdx][0] = edgeToMerge[0];
         }
       }
     }
 
-    // All cells are connected; return the accumulated total weight.
-    return totalWeightAccumulator;
+    // Add the cost of the newly included edge to the running total.
+    totalWeight += currentMinEdgeWeight;
+
+    // Verify if all nodes are now connected into a single component.
+    // This is checked by comparing every node's component ID to the component ID of the very first node (0,0).
+    for (rowIdx = 0; rowIdx < heightVal + 1; rowIdx++) {
+      for (colIdx = 0; colIdx < widthVal + 1; colIdx++) {
+        if (gridNodes[0][0][0] !== gridNodes[rowIdx][colIdx][0]) {
+          // If not all nodes are connected, recursively call the function to find the next minimum edge.
+          return calculateMinimumSpanningTree(totalWeight);
+        }
+      }
+    }
+
+    // If all nodes are part of the same component, the MST is complete, return the accumulated total cost.
+    return totalWeight;
   }
 
-  // Initiate the MST calculation with an initial total weight of zero.
-  let finalSpanningTreeWeight = computeMST(0);
-  // Output the final calculated minimum spanning tree weight.
-  console.info(finalSpanningTreeWeight);
+  // Initiate the MST calculation with an initial total cost of zero.
+  let finalCost = calculateMinimumSpanningTree(0);
+  // Output the computed minimum spanning tree cost to the console.
+  console.log(finalCost);
 }
 
-// Read input from standard input and pass it to the main processing function.
-ProcessGridData(require('node:fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read the input data from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

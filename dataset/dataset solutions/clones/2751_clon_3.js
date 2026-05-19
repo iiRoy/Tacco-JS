@@ -1,194 +1,148 @@
-const InputParser = (function () {
-    class DataStreamReader {
-        constructor(sourceInputText) {
-            this.inputLines = sourceInputText.trim().split('\n');
-            this.currentLinePointer = 0;
-            this.currentLineElementsBuffer = [];
-        }
+var InputParser = (function() {
+  function createInputParser(sourceString) {
+    return new InputParserClass(sourceString);
+  }
 
-        retrieveNextElement(returnAsString = false) {
-            if (this.currentLineElementsBuffer.length === 0) {
-                if (this.currentLinePointer >= this.inputLines.length) {
-                    throw new Error("Attempted to read past end of input.");
-                }
-                const lineData = this.inputLines[this.currentLinePointer];
-                this.currentLineElementsBuffer = lineData.split(' ').reverse();
-            }
+  function InputParserClass(sourceString) {
+    this._sourceLines = sourceString.trim().split("\n");
+    this._currentLineIndex = 0;
+  }
 
-            const elementValue = this.currentLineElementsBuffer.pop();
-
-            if (this.currentLineElementsBuffer.length === 0) {
-                this.currentLinePointer++;
-            }
-            
-            return returnAsString ? elementValue : Number(elementValue);
-        }
-
-        readEntireLine(returnAsString = false) {
-            if (this.currentLinePointer >= this.inputLines.length) {
-                throw new Error("Attempted to read past end of input when reading a full line.");
-            }
-            this.currentLineElementsBuffer = [];
-
-            const lineContent = this.inputLines[this.currentLinePointer++];
-            const parsedElements = lineContent.split(/\s+/);
-            return returnAsString ? parsedElements : parsedElements.map(item => Number(item));
-        }
-
-        readMatrixData(numRows, returnAsString = false) {
-            if (numRows <= 0) return [];
-            if (this.currentLinePointer + numRows > this.inputLines.length) {
-                throw new Error("Attempted to read more matrix rows than available in input.");
-            }
-            const matrixSlice = this.inputLines.slice(this.currentLinePointer, this.currentLinePointer + numRows);
-            this.currentLinePointer += numRows;
-
-            const resultMatrix = matrixSlice.map(line => {
-                const rowElements = line.split(/\s+/);
-                return returnAsString ? rowElements : rowElements.map(item => Number(item));
-            });
-            return resultMatrix;
-        }
-
-        readLinesAsSingleValues(numLines, returnAsString = false) {
-            if (numLines <= 0) return [];
-            if (this.currentLinePointer + numLines > this.inputLines.length) {
-                throw new Error("Attempted to read more lines than available in input.");
-            }
-            const linesSlice = this.inputLines.slice(this.currentLinePointer, this.currentLinePointer + numLines);
-            this.currentLinePointer += numLines;
-
-            return returnAsString ? linesSlice : linesSlice.map(line => Number(line));
-        }
+  InputParserClass.prototype.readNextToken = function(asString) {
+    let currentLineData = this._sourceLines[this._currentLineIndex];
+    if (typeof currentLineData === "string") {
+      this._sourceLines[this._currentLineIndex] = currentLineData.split(" ").reverse();
     }
+    let tokenValue = this._sourceLines[this._currentLineIndex].pop();
+    if (this._sourceLines[this._currentLineIndex].length === 0) {
+      this._currentLineIndex++;
+    }
+    return asString ? tokenValue : Number(tokenValue);
+  };
 
-    return function (sourceContent) {
-        return new DataStreamReader(sourceContent);
-    };
+  InputParserClass.prototype.readLineTokens = function(asString) {
+    const lineString = this._sourceLines[this._currentLineIndex++];
+    const tokensArray = lineString.split(" ");
+    return asString ? tokensArray : tokensArray.map(val => Number(val));
+  };
+
+  InputParserClass.prototype.readMatrix = function(numRows, asString) {
+    const matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows);
+    return asString ? matrixRows.map(row => row.split(" ")) : matrixRows.map(row => row.split(" ").map(val => Number(val)));
+  };
+
+  InputParserClass.prototype.readRows = function(numRows, asString) {
+    const rows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows);
+    return asString ? rows : rows.map(val => Number(val));
+  };
+
+  return createInputParser;
 })();
 
+var inputReader = InputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-function initializeMultiDimArray(defaultValueGenerator, ...dimensions) {
-    if (dimensions.length === 0) {
-        return typeof defaultValueGenerator === 'function' ? defaultValueGenerator() : defaultValueGenerator;
+function createMultiDimArray(initialValueGenerator, ...dimensions) {
+  const buildDimension = (dimIndex) => {
+    if (dimIndex === dimensions.length - 1) {
+      return Array(dimensions[dimIndex]).fill(0).map(() => initialValueGenerator());
+    } else {
+      return Array(dimensions[dimIndex]).fill(0).map(() => buildDimension(dimIndex + 1));
     }
-
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-
-    if (currentDimensionSize < 0 || !Number.isInteger(currentDimensionSize)) {
-        throw new Error(`Invalid dimension size: ${currentDimensionSize}. Must be a non-negative integer.`);
-    }
-
-    const newArray = new Array(currentDimensionSize);
-    for (let i = 0; i < currentDimensionSize; i++) {
-        newArray[i] = initializeMultiDimArray(defaultValueGenerator, ...remainingDimensions);
-    }
-    return newArray;
+  };
+  return buildDimension(0);
 }
 
-
-class DisjointSetUnion {
-    constructor(nodeCount) {
-        if (nodeCount < 0 || !Number.isInteger(nodeCount)) {
-            throw new Error(`Invalid node count: ${nodeCount}. Must be a non-negative integer.`);
-        }
-        this.parentOrSize = Array(nodeCount + 1).fill(-1);
-    }
-
-    findRoot(elementId) {
-        if (elementId < 1 || elementId >= this.parentOrSize.length) {
-            throw new Error(`Invalid element ID: ${elementId}. Must be within [1, ${this.parentOrSize.length - 1}].`);
-        }
-        if (this.parentOrSize[elementId] < 0) {
-            return elementId;
-        }
-        this.parentOrSize[elementId] = this.findRoot(this.parentOrSize[elementId]);
-        return this.parentOrSize[elementId];
-    }
-
-    areConnected(elementA, elementB) {
-        return this.findRoot(elementA) === this.findRoot(elementB);
-    }
-
-    unionSets(elementA, elementB) {
-        let rootA = this.findRoot(elementA);
-        let rootB = this.findRoot(elementB);
-
-        if (rootA === rootB) {
-            return false;
-        }
-
-        if (this.parentOrSize[rootB] < this.parentOrSize[rootA]) {
-            [rootA, rootB] = [rootB, rootA];
-        }
-        
-        this.parentOrSize[rootA] += this.parentOrSize[rootB];
-        this.parentOrSize[rootB] = rootA;
-        
-        return true;
-    }
-
-    getSetSize(elementId) {
-        return -this.parentOrSize[this.findRoot(elementId)];
-    }
+function DisjointSet(size) {
+  this._parentOrSize = Array(size + 1).fill(-1);
 }
+
+DisjointSet.prototype = {
+  findRoot: function(nodeIndex) {
+    if (this._parentOrSize[nodeIndex] < 0) {
+      return nodeIndex;
+    }
+    const rootNode = this.findRoot(this._parentOrSize[nodeIndex]);
+    this._parentOrSize[nodeIndex] = rootNode;
+    return rootNode;
+  },
+
+  areConnected: function(nodeX, nodeY) {
+    return this.findRoot(nodeX) === this.findRoot(nodeY);
+  },
+
+  unionSets: function(nodeX, nodeY) {
+    let rootX = this.findRoot(nodeX);
+    let rootY = this.findRoot(nodeY);
+
+    if (rootX === rootY) {
+      return 1;
+    }
+
+    if (this._parentOrSize[rootY] <= this._parentOrSize[rootX]) {
+      this._parentOrSize[rootY] += this._parentOrSize[rootX];
+      this._parentOrSize[rootX] = rootY;
+    } else {
+      this._parentOrSize[rootX] += this._parentOrSize[rootY];
+      this._parentOrSize[rootY] = rootX;
+    }
+    return 0;
+  },
+
+  getSetSize: function(nodeIndex) {
+    return -this._parentOrSize[this.findRoot(nodeIndex)];
+  },
+};
+
+console.log(solveProblem());
 
 function solveProblem() {
-    const dataReader = InputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+  var nodeCount = inputReader.readNextToken();
+  var edgeCount = inputReader.readNextToken();
 
-    const totalNodes = dataReader.retrieveNextElement();
-    const totalEdges = dataReader.retrieveNextElement();
+  if (edgeCount % 2 !== 0) {
+    return -1;
+  }
 
-    if (totalEdges % 2 !== 0) {
-        return -1;
+  var edgesInput = inputReader.readMatrix(edgeCount);
+  var disjointSets = new DisjointSet(nodeCount);
+  var resultEdges = [];
+
+  var adjList = createMultiDimArray(() => [], nodeCount + 1);
+  var parityFlags = createMultiDimArray(() => 0, nodeCount + 1);
+
+  for (var edgeIndex = 0; edgeIndex < edgeCount; edgeIndex++) {
+    var nodeU = edgesInput[edgeIndex][0];
+    var nodeV = edgesInput[edgeIndex][1];
+
+    if (disjointSets.unionSets(nodeU, nodeV)) {
+      adjList[nodeU].push(nodeV);
+      adjList[nodeV].push(nodeU);
+    } else {
+      resultEdges.push(nodeU + " " + nodeV);
+      parityFlags[nodeU] = 1 - parityFlags[nodeU];
     }
+  }
 
-    const graphEdges = dataReader.readMatrixData(totalEdges);
-
-    const dsuManager = new DisjointSetUnion(totalNodes);
-
-    const finalEdgeSequence = [];
-
-    const adjacencyList = initializeMultiDimArray(() => [], totalNodes + 1);
-
-    const nodeParityState = initializeMultiDimArray(0, totalNodes + 1);
-
-    for (const currentEdge of graphEdges) {
-        const [nodeU, nodeV] = currentEdge;
-
-        if (dsuManager.unionSets(nodeU, nodeV)) {
-            finalEdgeSequence.push(`${nodeU} ${nodeV}`);
-            nodeParityState[nodeU] ^= 1;
-        } else {
-            adjacencyList[nodeU].push(nodeV);
-            adjacencyList[nodeV].push(nodeU);
-        }
-    }
-
-    processGraphDFS(1, 0, adjacencyList, nodeParityState, finalEdgeSequence);
-
-    return finalEdgeSequence.join("\n");
-}
-
-function processGraphDFS(currentNode, parentNode, graphAdjList, nodeParityTracker, collectedEdges) {
-    for (const neighborNode of graphAdjList[currentNode]) {
-        if (neighborNode === parentNode) {
-            continue;
-        }
-        processGraphDFS(neighborNode, currentNode, graphAdjList, nodeParityTracker, collectedEdges);
+  function depthFirstSearch(currentNode, parentNode) {
+    for (var neighborNode of adjList[currentNode]) {
+      if (neighborNode === parentNode) {
+        continue;
+      }
+      depthFirstSearch(neighborNode, currentNode);
     }
 
     if (parentNode === 0) {
-        return;
+      return;
     }
 
-    if (nodeParityTracker[currentNode] === 1) {
-        collectedEdges.push(`${currentNode} ${parentNode}`);
-        nodeParityTracker[parentNode] ^= 1;
+    if (parityFlags[currentNode]) {
+      resultEdges.push(currentNode + " " + parentNode);
     } else {
-        collectedEdges.push(`${parentNode} ${currentNode}`);
+      resultEdges.push(parentNode + " " + currentNode);
+      parityFlags[parentNode] = 1 - parityFlags[parentNode];
     }
-}
+  }
 
-console.log(solveProblem());
+  depthFirstSearch(1, 0);
+  return resultEdges.join("\n");
+}

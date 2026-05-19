@@ -1,28 +1,19 @@
 'use strict';
-const processData = (sourceTextLines) => {
-    const desiredCount = Number(sourceTextLines[0]);
-    const numericSequenceTxt = sourceTextLines[1].split(' ');
+const processInputData = (sourceData) => {
+    const [firstEntry, secondEntry] = sourceData;
+    const totalElements = parseInt(firstEntry, 10);
+    const initialNumericSequence = secondEntry.split(' ').map(stringRepresentation => parseInt(stringRepresentation, 10));
 
-    const valueIndexPairs = numericSequenceTxt.map((elementTxt, initialPosition) => ({
-        itemValue: Number(elementTxt),
-        initialPosition: initialPosition
+    const valueIndexPairs = initialNumericSequence.map((currentValue, originalPosition) => ({
+        valueProperty: currentValue,
+        initialPosition: originalPosition
     }));
 
-    valueIndexPairs.sort((first, second) => {
-        if (first.itemValue !== second.itemValue) {
-            return first.itemValue - second.itemValue;
-        }
-        return first.initialPosition - second.initialPosition;
-    });
+    valueIndexPairs.sort((pairOne, pairTwo) => pairOne.valueProperty - pairTwo.valueProperty);
 
-    for (let loopCounter = 0; loopCounter < desiredCount; ++loopCounter) {
-        console.info(valueIndexPairs[loopCounter].initialPosition + 1);
-    }
+    valueIndexPairs.forEach(pairItem => {
+        console.log(pairItem.initialPosition + 1);
+    });
 };
 
-const filesystemModule = require('node:fs');
-const readFileContents = filesystemModule.readFileSync;
-const rawFileContent = readFileContents('/dev/stdin', 'utf8');
-const linesFromInput = rawFileContent.split('\n');
-
-processData(linesFromInput);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n'));

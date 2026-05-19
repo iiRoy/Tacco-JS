@@ -1,46 +1,40 @@
-/*
- * This JavaScript module processes a multi-line string input to determine a final character.
- * It simulates a sequence traversal based on characters found in reversed lines of the input.
- */
-console
-  .info /* Output the final result to the console */ (
-    (
-      ( inputContent ) => { // This anonymous function encapsulates the processing logic.
-        // The input content is first trimmed of whitespace, then split into individual lines.
-        // Each line is subsequently split into an array of characters, which is then reversed.
-        // These three resulting character arrays are destructured into distinct variables.
-        const [
-          stringOne,
-          stringTwo,
-          stringThree
-        ] = inputContent
-              .trim()
-              .split( '\n' )
-              .map( ( currentString ) => currentString.split( '' ) .reverse() );
+// This script processes input from standard input to determine a winner based on a card game logic.
+console.log(
+  (
+    (inputData) => { // An immediately invoked function expression to encapsulate the game's logic.
+      // The input string is expected to contain three lines, each representing a player's cards.
+      // These lines are processed to create three arrays of characters, with the cards in reverse order.
+      const [firstArr, secondArr, thirdArr] = inputData
+        .trim() // Remove any leading or trailing whitespace from the entire input.
+        .split`\n` // Split the input string into an array of strings, one for each line.
+        .map(
+          (lineContent) => lineContent.split('').reverse() // For each line, convert it to an array of characters and then reverse that array.
+        );
 
-        // An object is created to map symbolic keys to these character arrays,
-        // allowing for dynamic access based on a pointer.
-        const charSequences = {
-          stringOne,
-          stringTwo,
-          stringThree
-        };
+      // An object is created to map player identifiers ('a', 'b', 'c') to their respective card arrays.
+      const cardPiles = {
+        a: firstArr, // Player 'a's cards.
+        b: secondArr, // Player 'b's cards.
+        c: thirdArr // Player 'c's cards.
+      };
 
-        // Initialize the 'activeKey' pointer to begin traversal from the first sequence.
-        let activeKey = 'stringOne';
+      // The game starts with player 'a'. This variable will track the current player.
+      let currentPlayer = 'a';
 
-        // The core logic iterates: as long as the sequence indicated by 'activeKey'
-        // contains elements, it removes and retrieves the last element.
-        // This popped element then becomes the new 'activeKey', directing the next step.
-        while ( charSequences[ activeKey ] .length > 0 ) {
-          activeKey = charSequences[ activeKey ] .pop();
-        }
-
-        // Once a sequence is exhausted (its length is zero), the final 'activeKey'
-        // is converted to uppercase and returned as the ultimate result.
-        return activeKey .toUpperCase();
+      // The game continues as long as the current player's pile of cards is not empty.
+      while (cardPiles[currentPlayer].length > 0) {
+        // The current player takes the top card from their pile.
+        // This card's character (which is 'a', 'b', or 'c') determines the next player.
+        currentPlayer = cardPiles[currentPlayer].pop();
       }
-    ) (
-      require( 'node:fs' ) .readFileSync( '/dev/stdin', 'utf8' ) // Reads the entire content from standard input as a UTF-8 string.
-    )
-  );
+
+      // Once a player's pile is empty, the loop terminates.
+      // The 'currentPlayer' variable at this point holds the identifier of the player
+      // who just ran out of cards, meaning they are the winner.
+      // The identifier is converted to uppercase for the final output.
+      return currentPlayer.toUpperCase();
+    }
+  )(
+    require('fs').readFileSync('/dev/stdin', 'utf8') // Read the entire content of standard input synchronously as a UTF-8 string.
+  )
+);

@@ -1,44 +1,49 @@
 'use strict';
 
-const checkWordChain = (phraseSequence) => {
-    const wordList = phraseSequence.split('\n').slice(1);
+const processSequence = (dataString) => {
+    const sequenceItems = dataString.split('\n').slice(1);
 
-    const evaluationResult = wordList.reduce((accumulator, currentLexeme, index) => {
-        if (!accumulator.chainOK) {
-            return accumulator;
+    const initialAccumulator = {
+        validityStatus: true,
+        encounteredTerms: new Set(),
+        previousTerminalChar: null
+    };
+
+    const finalState = sequenceItems.reduce((acc, currentTerm) => {
+        if (!acc.validityStatus) {
+            return acc;
         }
 
-        if (accumulator.encounteredLexemes.has(currentLexeme)) {
-            accumulator.chainOK = false;
-            return accumulator;
-        }
-        accumulator.encounteredLexemes.add(currentLexeme);
+        let currentValidity = acc.validityStatus;
 
-        const lexemeInitial = currentLexeme.charAt(0);
-        const lexemeFinal = currentLexeme.charAt(currentLexeme.length - 1);
-
-        if (index > 0 && accumulator.previousTerminalChar !== lexemeInitial) {
-            accumulator.chainOK = false;
-            return accumulator;
+        if (acc.encounteredTerms.has(currentTerm)) {
+            currentValidity = false;
         }
 
-        accumulator.previousTerminalChar = lexemeFinal;
+        const termInitial = currentTerm[0];
+        const termTerminal = currentTerm.at(-1);
 
-        return accumulator;
-    }, {
-        chainOK: true,
-        previousTerminalChar: null,
-        encounteredLexemes: new Set()
-    });
+        if (acc.previousTerminalChar !== null && acc.previousTerminalChar !== termInitial) {
+            currentValidity = false;
+        }
 
-    console.log(evaluationResult.chainOK ? 'Yes' : 'No');
+        const updatedEncounteredTerms = new Set([...acc.encounteredTerms, currentTerm]);
+
+        return {
+            validityStatus: currentValidity,
+            encounteredTerms: updatedEncounteredTerms,
+            previousTerminalChar: termTerminal
+        };
+    }, initialAccumulator);
+
+    console.log(finalState.validityStatus ? 'Yes' : 'No');
 };
 
-const shouldRunTestCases = false;
+const runTests = false;
 
-if (shouldRunTestCases) {
-    checkWordChain('4\nhoge\nenglish\nhoge\nenigma');
-    checkWordChain('9\nbasic\nc\ncpp\nphp\npython\nnadesico\nocaml\nlua\nassembly');
+if (runTests) {
+    processSequence('4\nhoge\nenglish\nhoge\nenigma');
+    processSequence('9\nbasic\nc\ncpp\nphp\npython\nnadesico\nocaml\nlua\nassembly');
 } else {
-    checkWordChain(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    processSequence(require('fs').readFileSync('/dev/stdin', 'utf8'));
 }

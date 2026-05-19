@@ -1,93 +1,80 @@
-const rawSourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawSourceData.trim().split('\n');
-
-const aggregateNumbers = (numericArray) => numericArray.reduce((currentSum, value) => currentSum + value, 0);
-
-const handleExchangeScenario = (primaryDataset, secondaryDataset) => {
-    const primaryTotal = aggregateNumbers(primaryDataset);
-    const secondaryTotal = aggregateNumbers(secondaryDataset);
-
-    const secondaryLookup = new Set(secondaryDataset);
-
-    if (primaryTotal === secondaryTotal) {
-        // When sums are equal, seek the smallest common element
-        const orderedPrimary = [...primaryDataset].sort((valA, valB) => valA - valB);
-        let mutualItem = -1;
-        for (const elementP of orderedPrimary) {
-            if (secondaryLookup.has(elementP)) {
-                mutualItem = elementP;
-                break;
+const createLineStream = (sourceContent) => {
+    const contentLines = sourceContent.trim().split("\n");
+    let currentPosition = 0;
+    return {
+        next: () => {
+            if (currentPosition < contentLines.length) {
+                return { value: contentLines[currentPosition++].trim(), done: false };
             }
+            return { value: undefined, done: true };
         }
-        return mutualItem === -1 ? '-1' : `${mutualItem} ${mutualItem}`;
-    }
-
-    if ((primaryTotal + secondaryTotal) % 2 !== 0) {
-        // If combined sum is odd, no integer swap can equalize
-        return '-1';
-    }
-
-    const targetEqualSum = (primaryTotal + secondaryTotal) / 2;
-    let chosenPrimaryItem = null;
-    let chosenSecondaryItem = null;
-    let leastCombinedValue = Infinity;
-
-    primaryDataset.forEach(itemFromPrimary => {
-        // The condition for equal sums after swap:
-        // primaryTotal - itemFromPrimary + itemForSecondary = targetEqualSum
-        // itemForSecondary = targetEqualSum - primaryTotal + itemFromPrimary
-        const requiredItemForSecondary = targetEqualSum - primaryTotal + itemFromPrimary;
-
-        if (secondaryLookup.has(requiredItemForSecondary)) {
-            const currentCombined = itemFromPrimary + requiredItemForSecondary;
-            if (currentCombined < leastCombinedValue) {
-                leastCombinedValue = currentCombined;
-                chosenPrimaryItem = itemFromPrimary;
-                chosenSecondaryItem = requiredItemForSecondary;
-            }
-        }
-    });
-
-    if (chosenPrimaryItem === null) {
-        return '-1';
-    } else {
-        return `${chosenPrimaryItem} ${chosenSecondaryItem}`;
-    }
+    };
 };
 
-const processAllCases = (remainingInputSegments, collectedOutputs = []) => {
-    if (remainingInputSegments.length < 2) { // Need at least two lines for counts and data
-        return collectedOutputs.forEach(result => console.log(result));
+const analyzeDataSets = (lineStream) => {
+    const outputCollection = [];
+    let nextProblemLine = lineStream.next();
+
+    while (!nextProblemLine.done) {
+        const [firstCount, secondCount] = nextProblemLine.value.split(" ").map(Number);
+
+        const firstData = Array.from({ length: firstCount }, () => parseInt(lineStream.next().value));
+        const secondData = Array.from({ length: secondCount }, () => parseInt(lineStream.next().value));
+
+        const sumFirst = firstData.reduce((accumulator, value) => accumulator + value, 0);
+        const sumSecond = secondData.reduce((accumulator, value) => accumulator + value, 0);
+
+        let currentOutput;
+
+        if (sumFirst === sumSecond) {
+            const sortedFirstData = [...firstData].sort((a, b) => a - b);
+            const sortedSecondData = [...secondData].sort((a, b) => a - b);
+
+            let foundCommon = -1;
+            let ptrA = 0;
+            let ptrB = 0;
+
+            while (ptrA < sortedFirstData.length && ptrB < sortedSecondData.length) {
+                if (sortedFirstData[ptrA] === sortedSecondData[ptrB]) {
+                    foundCommon = sortedFirstData[ptrA];
+                    break;
+                } else if (sortedFirstData[ptrA] < sortedSecondData[ptrB]) {
+                    ptrA++;
+                } else {
+                    ptrB++;
+                }
+            }
+            currentOutput = foundCommon === -1 ? -1 : `${foundCommon} ${foundCommon}`;
+
+        } else if ((sumFirst + sumSecond) % 2 !== 0) {
+            currentOutput = -1;
+        } else {
+            const desiredHalfSum = (sumFirst + sumSecond) / 2;
+            const secondDataSet = new Set(secondData);
+
+            const initialMinState = { minPairSum: 201, itemA: undefined, itemB: undefined };
+
+            const optimalSwapResult = firstData.reduce((accumulatorState, currentValFromFirst) => {
+                const complementaryValFromSecond = desiredHalfSum - sumFirst + currentValFromFirst;
+
+                if (secondDataSet.has(complementaryValFromSecond)) {
+                    const currentCandidateSum = currentValFromFirst + complementaryValFromSecond;
+                    if (currentCandidateSum < accumulatorState.minPairSum) {
+                        return { minPairSum: currentCandidateSum, itemA: currentValFromFirst, itemB: complementaryValFromSecond };
+                    }
+                }
+                return accumulatorState;
+            }, initialMinState);
+
+            currentOutput = optimalSwapResult.minPairSum < 201 ? `${optimalSwapResult.itemA} ${optimalSwapResult.itemB}` : -1;
+        }
+        outputCollection.push(currentOutput);
+        nextProblemLine = lineStream.next();
     }
-
-    const currentHeaderLine = remainingInputSegments.shift().trim();
-    if (!currentHeaderLine) { // Skip empty lines if any
-        return processAllCases(remainingInputSegments, collectedOutputs);
-    }
-
-    const dimensionValues = currentHeaderLine.split(' ').map(s => +s);
-    const firstCollectionSize = dimensionValues[0];
-    const secondCollectionSize = dimensionValues[1];
-
-    if (firstCollectionSize === 0 && secondCollectionSize === 0) { // Common termination for some problems
-        return collectedOutputs.forEach(result => console.log(result));
-    }
-
-    const primaryElements = [];
-    while (primaryElements.length < firstCollectionSize && remainingInputSegments.length > 0) {
-        primaryElements.push(+(remainingInputSegments.shift().trim()));
-    }
-
-    const secondaryElements = [];
-    while (secondaryElements.length < secondCollectionSize && remainingInputSegments.length > 0) {
-        secondaryElements.push(+(remainingInputSegments.shift().trim()));
-    }
-
-    const caseOutcome = handleExchangeScenario(primaryElements, secondaryElements);
-    collectedOutputs.push(caseOutcome);
-
-    return processAllCases(remainingInputSegments, collectedOutputs);
+    return outputCollection;
 };
 
-// Start the processing chain
-processAllCases(processedLines);
+const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const contentStream = createLineStream(sourceContent);
+const finalOutputs = analyzeDataSets(contentStream);
+finalOutputs.forEach(console.log);

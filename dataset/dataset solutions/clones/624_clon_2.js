@@ -1,54 +1,44 @@
-let rawTextContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const lineFragments = (rawTextContent.trim()).split("\n");
+var linesCollection = (sourceData.trim()).split("\n");
 
-const numberOfEntries = lineFragments.shift();
+var entryCount = linesCollection.shift();
 
-let dataStore = {};
+var valueMap = {};
 
-// Process each input line to populate the data structure
-for (let entryIndex = 0; entryIndex < numberOfEntries; entryIndex++) {
-    const lineComponents = lineFragments[entryIndex].split(" ");
-    const currentIdentifier = lineComponents[0];
+for (var idx = 0; idx < entryCount; idx++) {
+    var currentEntryParts = linesCollection[idx].split(" ");
+    var keyIdentifier = currentEntryParts[0];
 
-    // Initialize the counter for a new identifier if not present
-    if (!dataStore.hasOwnProperty(currentIdentifier)) {
-        dataStore[currentIdentifier] = 0;
+    if (!valueMap.hasOwnProperty(keyIdentifier)) {
+        valueMap[keyIdentifier] = 0;
     }
-    // Accumulate the numeric value for the current identifier
-    dataStore[currentIdentifier] += Number(lineComponents[1]);
+
+    valueMap[keyIdentifier] += currentEntryParts[1] - 0;
 }
 
-let identifierKeys = [];
-
-// Extract all unique keys from the data store
-for (const keyName in dataStore) {
-    identifierKeys.push(keyName);
+var sortedKeys = [];
+for (var mapKey in valueMap) {
+    sortedKeys.push(mapKey);
 }
 
-// Sort the collected identifiers alphabetically
-identifierKeys.sort();
+sortedKeys.sort();
 
-let maximumKeyLength = 0;
-
-// Determine the maximum string length among all identifiers
-for (let ktr = 0; ktr < identifierKeys.length; ktr++) {
-    if (maximumKeyLength < identifierKeys[ktr].length) {
-        maximumKeyLength = identifierKeys[ktr].length;
+var maxLength = 0;
+for (var keyIdx = 0; keyIdx < sortedKeys.length; keyIdx++) {
+    if (maxLength <= sortedKeys[keyIdx].length) {
+        maxLength = sortedKeys[keyIdx].length;
     }
 }
 
-let orderedIdentifiers = [];
-
-// Organize identifiers by length, maintaining alphabetical order within each length group
-for (let currentLength = 1; currentLength <= maximumKeyLength; currentLength++) {
-    const segment = identifierKeys.filter(function(elementValue) {
-        return elementValue.length === currentLength;
+var finalOrderedList = [];
+for (var lenIter = 1; lenIter <= maxLength; lenIter++) {
+    var filteredKeys = sortedKeys.filter(function (itemValue) {
+        return itemValue.length == lenIter;
     });
-    orderedIdentifiers = orderedIdentifiers.concat(segment);
+    finalOrderedList = finalOrderedList.concat(filteredKeys);
 }
 
-// Print the final ordered identifiers along with their associated aggregated values
-for (let outputIdx = 0; outputIdx < orderedIdentifiers.length; outputIdx++) {
-    console.log(orderedIdentifiers[outputIdx] + " " + dataStore[orderedIdentifiers[outputIdx]]);
+for (var outputIdx = 0; outputIdx < finalOrderedList.length; outputIdx++) {
+    console.log(finalOrderedList[outputIdx] + " " + valueMap[finalOrderedList[outputIdx]]);
 }

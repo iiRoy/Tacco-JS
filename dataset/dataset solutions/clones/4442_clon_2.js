@@ -1,137 +1,110 @@
-/*
- * This module manages the processing of input data to generate a specific matrix pattern.
- * It reads grid dimensions, distinct item counts, and then populates a grid based on these inputs
- * following a unique serpentine or zig-zag pattern for element placement and output.
- */
-function HandleDataProcessing( rawText )
-{
-  // Divide the entire input string into an array, where each element is a line.
-  const lineSegments = rawText.split( "\n" ) ;
+// This function serves as the primary entry point for processing the provided input data.
+// It orchestrates the parsing, grid construction, and final output generation.
+function ProcessInput(rawData) {
+  // Divide the entire raw input string into individual lines based on newline characters.
+  let inputLines = rawData.split("\n");
 
-  // Extract and parse the grid dimensions (number of rows and columns) from the first line.
-  // The first numerical token on the first line represents the row dimension.
-  const rowDimension = parseInt( lineSegments[0].split( " " )[0] ) ;
-  // The second numerical token on the first line represents the column dimension.
-  const colDimension = parseInt( lineSegments[0].split( " " )[1] ) ;
+  // Extract grid dimensions (height and width) from the first line of input.
+  // The values are space-separated.
+  let dimensionStrings = inputLines[0].split(" ");
+  let gridHeight = parseInt(dimensionStrings[0], 0x0A); // Convert height string to an integer (base 10).
+  let gridWidth = parseInt(dimensionStrings[0x1], 0x0A);  // Convert width string to an integer (base 10).
 
-  // Parse the total count of distinct item types from the second line.
-  const distinctItemCount = parseInt( lineSegments[1] ) ;
+  // Retrieve the total number of distinct colors from the second line of input.
+  let colorCount = parseInt(inputLines[0x1], 0x0A);
 
-  // Obtain the string representations of the quantities for each item type from the third line.
-  const itemQuantityStrings = lineSegments[2].split( " " ) ;
+  // Parse the string containing the amounts for each color from the third line.
+  let colorAmountsStr = inputLines[0x2].split(" ");
 
-  // Initialize an array to store the integer quantities for each distinct item.
-  // It's pre-allocated and filled with default values before actual parsing.
-  const itemQuantitiesArray = new Array( distinctItemCount ).fill( 0 ) ;
+  // Initialize an array to hold the numeric quantities for each color.
+  // It's pre-filled with zeros.
+  let colorAmounts = new Array(colorCount).fill(0x0);
 
-  // Iterate through the string quantities and convert each to an integer, storing it.
-  for ( let itemIdx = 0 ; itemIdx < distinctItemCount ; itemIdx++ )
-  {
-    itemQuantitiesArray[itemIdx] = parseInt( itemQuantityStrings[itemIdx] ) ;
+  // Iterate through the string array and convert each color amount to an integer.
+  for (let idx = 0x0; idx < colorCount; idx++) {
+    colorAmounts[idx] = parseInt(colorAmountsStr[idx], 0x0A);
   }
 
-  // Initialize an empty string buffer that will accumulate the final formatted output.
-  let finalOutputContent = "" ;
+  // Initialize an empty string that will accumulate the final formatted output.
+  let outputString = "";
 
-  // Create the primary matrix structure, which will hold the patterned elements.
-  // Initially, it's an array of `rowDimension` elements, each representing a row.
-  const matrixGrid = new Array( rowDimension ).fill( 0 ) ;
-
-  // For each row in the matrix, create a new array of `colDimension` to represent its columns.
-  // This forms a 2D array (matrix).
-  for ( let currentGridRowIdx = 0 ; currentGridRowIdx < rowDimension ; currentGridRowIdx++ )
-  {
-    const currentRowData = new Array( colDimension ).fill( 0 ) ;
-    matrixGrid[currentGridRowIdx] = currentRowData ;
+  // Prepare a 2D array (grid) structure to represent the final color arrangement.
+  // Initially, it's an array of 'gridHeight' elements, each set to null.
+  let resultGrid = new Array(gridHeight).fill(null);
+  for (let rIdx = 0x0; rIdx < gridHeight; rIdx++) {
+    // For each row, create a new array of 'gridWidth' elements, pre-filled with zeros.
+    let rowBuffer = new Array(gridWidth).fill(0x0);
+    resultGrid[rIdx] = rowBuffer; // Assign the newly created row array to the grid.
   }
 
-  // Construct a flat, sequential array of elements. Each item ID (1-indexed) is repeated
-  // according to its specified quantity from `itemQuantitiesArray`.
-  const sequentialElements = new Array() ;
-  for ( let itemIdx = 0 ; itemIdx < distinctItemCount ; itemIdx++ )
-  {
-    for ( let quantityIdx = 0 ; quantityIdx < itemQuantitiesArray[itemIdx] ; quantityIdx++ )
-    {
-      sequentialElements.push( itemIdx + 1 ) ; // Item identifiers are 1-based.
+  // Construct a flattened, one-dimensional list of colors.
+  // Each color (represented by its 1-based index) is repeated according to its amount.
+  let flattenedColors = new Array();
+  for (let cIdx = 0x0; cIdx < colorCount; cIdx++) {
+    for (let repIdx = 0x0; repIdx < colorAmounts[cIdx]; repIdx++) {
+      flattenedColors.push(cIdx + 0x1); // Add the 1-based color index to the list.
     }
   }
 
-  // Fill the `matrixGrid` with elements from `sequentialElements` following a specific zig-zag pattern.
-  for ( let gridRowIterator = 0 ; gridRowIterator < rowDimension ; gridRowIterator++ )
-  {
-    // For even-indexed rows (0, 2, 4, ...), elements are filled from left to right.
-    if ( gridRowIterator % 2 !== 1 ) // This condition checks if the row index is even.
-    {
-      for ( let gridColIterator = 0 ; gridColIterator < colDimension ; gridColIterator++ )
-      {
-        matrixGrid[gridRowIterator][gridColIterator] = sequentialElements[gridRowIterator * colDimension + gridColIterator] ;
+  // Populate the 'resultGrid' with colors from 'flattenedColors',
+  // applying a "snake" pattern where rows alternate direction.
+  for (let rIdx = 0x0; rIdx < gridHeight; rIdx++) {
+    // For even-indexed rows (0, 2, 4, ...), fill from left to right.
+    if ((rIdx % 0x2) === 0x0) {
+      for (let cIdx = 0x0; cIdx < gridWidth; cIdx++) {
+        // Calculate the linear index in 'flattenedColors' for the current cell.
+        resultGrid[rIdx][cIdx] = flattenedColors[(rIdx * gridWidth) + cIdx];
       }
-    }
-    // For odd-indexed rows (1, 3, 5, ...), elements are filled from right to left.
-    // Importantly, the elements for odd rows are drawn from the sequence corresponding to the *next*
-    // logical row's starting position, then indexed backwards.
-    else
-    {
-      for ( let gridColIterator = 0 ; gridColIterator < colDimension ; gridColIterator++ )
-      {
-        // The indexing (rowIterator + 1) * colDimension - gridColIterator accesses elements from
-        // the segment of `sequentialElements` that would typically belong to the *next* row,
-        // and reads them in reverse order.
-        matrixGrid[gridRowIterator][gridColIterator] = sequentialElements[( gridRowIterator + 1 ) * colDimension - gridColIterator] ;
+    } else {
+      // For odd-indexed rows (1, 3, 5, ...), fill from right to left,
+      // using a specific indexing pattern from 'flattenedColors'.
+      // Note: This indexing might result in 'undefined' values if it goes out of bounds,
+      // which is a behavior preserved from the original code.
+      for (let cIdx = 0x0; cIdx < gridWidth; cIdx++) {
+        resultGrid[rIdx][cIdx] = flattenedColors[((rIdx + 0x1) * gridWidth) - cIdx];
       }
     }
   }
 
-  // Generate the final output string by iterating through the filled matrix,
-  // applying the same zig-zag pattern for element retrieval and formatting.
-  for ( let outputRowIterator = 0 ; outputRowIterator < rowDimension ; outputRowIterator++ )
-  {
-    // For even-indexed rows, append elements from left to right.
-    if ( outputRowIterator % 2 !== 1 ) // Checks for even row index.
-    {
-      for ( let outputColIterator = 0 ; outputColIterator < colDimension ; outputColIterator++ )
-      {
-        // Append a space after each element, unless it's the very last element in the row.
-        if ( outputColIterator % colDimension !== colDimension - 1 )
-        {
-          finalOutputContent += sequentialElements[outputRowIterator * colDimension + outputColIterator] + " " ;
-        }
-        // For the last element in a row, append a newline character to move to the next line.
-        else
-        {
-          finalOutputContent += sequentialElements[outputRowIterator * colDimension + outputColIterator] + "\n" ;
+  // Generate the final output string by iterating through the grid's logical structure.
+  // The output string directly uses 'flattenedColors' with the same indexing logic
+  // as used for filling 'resultGrid'.
+  for (let rIdx = 0x0; rIdx < gridHeight; rIdx++) {
+    // Process even-indexed rows (left-to-right).
+    if ((rIdx % 0x2) === 0x0) {
+      for (let cIdx = 0x0; cIdx < gridWidth; cIdx++) {
+        outputString += flattenedColors[(rIdx * gridWidth) + cIdx];
+        // Append a space after each element, unless it's the last element in the row.
+        if ((cIdx % gridWidth) !== (gridWidth - 0x1)) {
+          outputString += " ";
+        } else {
+          // Append a newline character at the end of each row.
+          outputString += "\n";
         }
       }
-    }
-    // For odd-indexed rows, append elements from right to left,
-    // using the same specific indexing logic as when filling the matrix.
-    else
-    {
-      for ( let outputColIterator = 0 ; outputColIterator < colDimension ; outputColIterator++ )
-      {
-        // Append a space after each element, unless it's the very last element in the row.
-        if ( outputColIterator % colDimension !== colDimension - 1 )
-        {
-          // Access elements from the "next" row's sequence in reverse.
-          finalOutputContent += sequentialElements[( outputRowIterator + 1 ) * colDimension - outputColIterator] + " " ;
-        }
-        // For the last element in a row, append a newline character.
-        else
-        {
-          // Access elements from the "next" row's sequence in reverse.
-          finalOutputContent += sequentialElements[( outputRowIterator + 1 ) * colDimension - outputColIterator] + "\n" ;
+    } else {
+      // Process odd-indexed rows (right-to-left, using the specific indexing).
+      for (let cIdx = 0x0; cIdx < gridWidth; cIdx++) {
+        outputString += flattenedColors[((rIdx + 0x1) * gridWidth) - cIdx];
+        // Append a space after each element, unless it's the last element in the row.
+        if ((cIdx % gridWidth) !== (gridWidth - 0x1)) {
+          outputString += " ";
+        } else {
+          // Append a newline character at the end of each row.
+          outputString += "\n";
         }
       }
     }
   }
 
-  // Remove the very last newline character from the `finalOutputContent` to prevent an extra blank line.
-  finalOutputContent = finalOutputContent.substring( 0 , finalOutputContent.length - 1 ) ;
+  // Remove the very last newline character from the accumulated output string
+  // to prevent an extra blank line at the end of the output.
+  outputString = outputString.substring(0x0, outputString.length - 0x1);
 
-  // Display the final formatted output string to the console.
-  console.log( '%s' , finalOutputContent ) ;
+  // Print the final formatted string to the standard output.
+  console.log('%s', outputString);
 }
 
-// Execute the main data processing function by reading input from standard input.
-// This typically involves reading a file from '/dev/stdin' on Unix-like systems.
-HandleDataProcessing( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string
+// and pass it to the ProcessInput function for execution.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,22 +1,17 @@
-function ComputeSequenceLimit(rawText) {
-  const targetSumValue = Number.parseInt(rawText);
+function Main(inputVal) {
+  const numericInput = parseInt(inputVal);
+  
+  const quadraticDiscriminant = 1 + 8 * numericInput;
+  const positiveQuadraticRoot = (-1 + Math.sqrt(quadraticDiscriminant)) / 2;
+  const finalResult = Math.ceil(positiveQuadraticRoot);
 
-  if (Number.isNaN(targetSumValue) || targetSumValue <= 0) {
-    console.log('%s', 0);
-    return;
-  }
-
-  const termUnderSquareRoot = 1 + 8 * targetSumValue;
-  const squareRootResult = Math.sqrt(termUnderSquareRoot);
-  const intermediateCalculation = (-1 + squareRootResult) / 2;
-  const finalOutcome = Math.ceil(intermediateCalculation);
-
-  console.log('%s', finalOutcome);
+  console.log('%s', finalResult);
+}
+  
+// "実行する"ボタンを押した時に実行される関数 (デバッグ用)
+function debugFunction(){
+  const domInput = document.getElementById("input").value;
+  Main(domInput);
 }
 
-function performTest() {
-  const webInput = document.getElementById("entryField").value;
-  ComputeSequenceLimit(webInput);
-}
-
-ComputeSequenceLimit(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

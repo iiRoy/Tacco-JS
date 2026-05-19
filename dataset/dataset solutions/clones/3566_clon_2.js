@@ -1,46 +1,35 @@
-/*
- * This JavaScript module is designed to process a specific set of coordinate inputs.
- * It reads a single line of space-separated numerical values, interprets them as
- * two initial points, and then calculates two new points based on a geometric transformation.
- */
-function  CoordinateProcessor ( rawInputData ) { // Defines the primary function for handling coordinate transformations.
+function ProcessCoordinates(incomingData) {
+  // Split the raw input string into an array of lines.
+  incomingData = incomingData.split("\n");
 
-  // Divides the raw incoming string data into an array of lines, typically just one line for this problem.
-  var    inputLines = rawInputData.split( "\n" ) ;
+  // Parse the initial coordinates from the first line of input.
+  // The coordinates are space-separated.
+  let coordinateParts = incomingData[0].split(" ");
+  let firstXCoord = parseInt(coordinateParts[0]);
+  let firstYCoord = parseInt(coordinateParts[1]);
+  let secondXCoord = parseInt(coordinateParts[2]);
+  let secondYCoord = parseInt(coordinateParts[3]);
 
-  // Parses the first X-coordinate from the first line of the input.
-  var  pointOneX = parseInt( inputLines[0].split( " " )[0] ) ;
+  // Initialize a variable for the final output string.
+  // This variable will be overwritten later with the calculated coordinates.
+  let resultString = 0;
 
-  // Extracts and converts the first Y-coordinate.
-  var pointOneY = parseInt( inputLines[0].split( " " )[1] ) ;
+  // Calculate the coordinates of the third point (x3, y3)
+  // based on the geometric transformation.
+  let thirdXCoord = secondXCoord - (secondYCoord - firstYCoord);
+  let thirdYCoord = secondYCoord + (secondXCoord - firstXCoord);
 
-  // Processes the second X-coordinate from the same input line.
-  var pointTwoX = parseInt( inputLines[0].split( " " )[2] ) ;
+  // Calculate the coordinates of the fourth point (x4, y4)
+  // using a similar transformation.
+  let fourthXCoord = firstXCoord - (secondYCoord - firstYCoord);
+  let fourthYCoord = firstYCoord + (secondXCoord - firstXCoord);
 
-  // Retrieves the second Y-coordinate.
-  var pointTwoY = parseInt( inputLines[0].split( " " )[3] ) ;
+  // Construct the final output string by concatenating the calculated coordinates.
+  resultString = thirdXCoord + " " + thirdYCoord + " " + fourthXCoord + " " + fourthYCoord;
 
-  // Initializes a variable to hold the final string result before it's fully constructed.
-  var calculatedResult = 0 ;
-
-  // Computes the X-coordinate for the third derived point using a rotation-like formula.
-  var pointThreeX = pointTwoX - ( pointTwoY - pointOneY ) ;
-
-  // Determines the Y-coordinate for the third point based on the same transformation.
-  var pointThreeY = pointTwoY + ( pointTwoX - pointOneX ) ;
-
-  // Calculates the X-coordinate for the fourth derived point.
-  var pointFourX = pointOneX - ( pointTwoY - pointOneY ) ;
-
-  // Ascertains the Y-coordinate for the fourth point.
-  var pointFourY = pointOneY + ( pointTwoX - pointOneX ) ;
-
-  // Concatenates all four derived coordinates into a single string, separated by spaces, for output.
-  var outputString = pointThreeX + " " + pointThreeY + " " + pointFourX + " " + pointFourY ;
-
-  // Outputs the final coordinate string to the standard console.
-  console.log( '%s', outputString ) ;
+  // Print the resulting string to the console.
+  console.log('%s', resultString);
 }
 
-// Initiates the coordinate processing by reading data from standard input asynchronously.
-CoordinateProcessor( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessCoordinates(require("fs").readFileSync("/dev/stdin", "utf8"));

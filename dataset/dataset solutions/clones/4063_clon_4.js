@@ -1,73 +1,77 @@
-function ExecuteConstraintSolver(raw_data_string) {
-    const lines = raw_data_string.split("\n");
+function processRelations(inputString) {
+    const lineSegments = inputString.split("\n");
+    const initialParameters = lineSegments[0].split(" ").map(Number);
+    const totalNodes = initialParameters[0];
+    const numberOfConstraints = initialParameters[1];
 
-    const dimension_specs = lines[0].split(" ").map(Number);
-    const point_count = dimension_specs[0];
-    const constraint_count = dimension_specs[1];
+    const graphAdjacency = new Map(); // Stores connections: Map<nodeIndex, Array<{ target: number, delta: number }>>
 
-    const constraint_triplets = [];
-    for (let current_idx = 0; current_idx < constraint_count; current_idx++) {
-        const parts = lines[current_idx + 1].split(" ").map(Number);
-        constraint_triplets.push([parts[0], parts[1], parts[2]]);
+    for (let nodeIdx = 1; nodeIdx <= totalNodes; nodeIdx++) {
+        graphAdjacency.set(nodeIdx, []); // Initialize an empty list for each node
     }
 
-    let component_parents = Array.from({ length: point_count + 1 }, (_, index_val) => index_val);
-    let component_relative_distances = Array.from({ length: point_count + 1 }, () => 0); // Stores value[i] - value[parent[i]]
+    for (let constraintIdx = 0; constraintIdx < numberOfConstraints; constraintIdx++) {
+        const constraintData = lineSegments[constraintIdx + 1].split(" ").map(Number);
+        const nodeA = constraintData[0];
+        const nodeB = constraintData[1];
+        const requiredDifference = constraintData[2]; // x[nodeB] - x[nodeA] = requiredDifference
 
-    // Recursive function to find the root of an element and its relative distance to that root
-    const find_component_info = (element_index) => {
-        if (component_parents[element_index] === element_index) {
-            return [element_index, 0]; // Element is its own root, relative distance is 0
+        // Add directed edges for both directions
+        // From nodeA to nodeB: x[nodeB] = x[nodeA] + requiredDifference
+        graphAdjacency.get(nodeA).push({ target: nodeB, delta: requiredDifference });
+        // From nodeB to nodeA: x[nodeA] = x[nodeB] - requiredDifference
+        graphAdjacency.get(nodeB).push({ target: nodeA, delta: -requiredDifference });
+    }
+
+    const nodeValues = new Map(); // Stores calculated x values: Map<nodeIndex, value>
+    const visitedComponentNodes = new Set(); // Tracks nodes that have been processed in any component
+    let finalStatus = "Yes";
+
+    // Iterate through all possible nodes to find and process connected components
+    for (let componentRoot = 1; componentRoot <= totalNodes; componentRoot++) {
+        if (visitedComponentNodes.has(componentRoot)) {
+            continue; // This node is already part of a processed component
         }
-        // Recursively find the root of the parent and its distance
-        const [ancestor_id, distance_to_ancestor] = find_component_info(component_parents[element_index]);
-        
-        // Path compression: set element's parent directly to the root
-        component_parents[element_index] = ancestor_id;
-        // Update element's relative distance to reflect the new parent (the root)
-        component_relative_distances[element_index] += distance_to_ancestor;
-        
-        return [component_parents[element_index], component_relative_distances[element_index]];
-    };
 
-    let consistency_status = "Yes";
+        // Start a Breadth-First Search (BFS) for a new connected component
+        const bfsQueue = [];
+        bfsQueue.push(componentRoot);
+        nodeValues.set(componentRoot, 0); // Arbitrarily set the first node of a component to 0
 
-    for (const triple of constraint_triplets) {
-        const source_node_id = triple[0];
-        const destination_node_id = triple[1];
-        const required_difference = triple[2]; // Represents: Pos(destination) - Pos(source) = required_difference
+        let queueHead = 0; // Manual queue pointer for efficiency
 
-        const [source_root_id, source_offset_to_root] = find_component_info(source_node_id);
-        const [destination_root_id, destination_offset_to_root] = find_component_info(destination_node_id);
+        while (queueHead < bfsQueue.length) {
+            const currentNode = bfsQueue[queueHead++];
+            visitedComponentNodes.add(currentNode);
+            const currentValue = nodeValues.get(currentNode);
 
-        if (source_root_id === destination_root_id) {
-            // Both nodes are already in the same connected component.
-            // Check if the new constraint is consistent with existing ones.
-            // Pos(destination) - Pos(source) should be equal to required_difference.
-            // (Pos(root) + destination_offset_to_root) - (Pos(root) + source_offset_to_root) == required_difference
-            // destination_offset_to_root - source_offset_to_root == required_difference
-            if (destination_offset_to_root - source_offset_to_root !== required_difference) {
-                consistency_status = "No";
-                break; // Inconsistency found, no need to process further
+            const connections = graphAdjacency.get(currentNode);
+            if (!connections) continue; // Should not happen if graph initialized correctly
+
+            for (const { target, delta } of connections) {
+                if (nodeValues.has(target)) {
+                    // Target node's value is already known, check for consistency
+                    if (nodeValues.get(target) !== currentValue + delta) {
+                        finalStatus = "No";
+                        // Immediately break out of all loops upon inconsistency
+                        queueHead = bfsQueue.length; // Empty queue to stop BFS
+                        componentRoot = totalNodes + 1; // Advance outer loop to end
+                        break; // Break from inner for-loop
+                    }
+                } else {
+                    // Target node's value is not yet known, calculate and add to queue
+                    nodeValues.set(target, currentValue + delta);
+                    bfsQueue.push(target);
+                }
             }
-        } else {
-            // Nodes are in different components, merge them.
-            // We'll make the source_root_id's parent the destination_root_id.
-            // We need to define component_relative_distances[source_root_id]
-            // which is Pos(source_root_id) - Pos(destination_root_id).
-
-            // From the constraint: Pos(destination_node_id) - Pos(source_node_id) = required_difference
-            // Substitute using offsets to roots:
-            // (Pos(destination_root_id) + destination_offset_to_root) - (Pos(source_root_id) + source_offset_to_root) = required_difference
-            // Rearrange to find Pos(source_root_id) - Pos(destination_root_id):
-            // Pos(source_root_id) - Pos(destination_root_id) = destination_offset_to_root - source_offset_to_root - required_difference
-
-            component_parents[source_root_id] = destination_root_id;
-            component_relative_distances[source_root_id] = destination_offset_to_root - source_offset_to_root - required_difference;
         }
     }
 
-    console.log(consistency_status);
+    console.log(finalStatus);
 }
 
-ExecuteConstraintSolver(require("fs").readFileSync("/dev/stdin", "utf8"));
+function Main(input) {
+    processRelations(input);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

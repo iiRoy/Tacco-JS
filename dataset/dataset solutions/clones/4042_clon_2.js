@@ -1,47 +1,40 @@
-// The entire input string is provided to this routine.
-function ProcessInputData(rawDataSegment) {
+// This function processes the entire input data.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  let lines = rawData.split('\n');
 
-    // Split the raw input into individual lines for processing
-    const parsedLines = rawDataSegment.split('\n');
+  // Parse the first line to get the count of elements.
+  const count = parseInt(lines[0], 10);
 
-    // Extract the total number of items from the first line
-    const itemCount = parseInt(parsedLines[0], 10);
+  // Split the second line into an array of strings for the first sequence.
+  let arrayA = lines[1].split(' ');
 
-    // Parse the second and third lines into string arrays
-    const collectionOne = parsedLines[1].split(' ');
-    const collectionTwo = parsedLines[2].split(' ');
+  // Split the third line into an array of strings for the second sequence.
+  let arrayB = lines[2].split(' ');
 
+  // Initialize a variable to accumulate the differences between elements.
+  let differenceSum = 0;
 
-    let cumulativeDelta = 0; // Initialize a variable to accumulate differences
-    let currentDelta = 0;    // Temporary variable for each iteration's difference
+  // Declare a variable to hold the current difference in each iteration.
+  let currentDiff = 0;
 
-    // Iterate through the specified number of items
-    for (
-        let loopIndex = 0;
-        loopIndex < itemCount;
-        loopIndex++
-    ) {
-        // Calculate the difference between corresponding elements
-        currentDelta = (
-            parseInt(collectionTwo[loopIndex], 10) -
-            parseInt(collectionOne[loopIndex], 10)
-        );
-        // Add the current difference to the cumulative total
-        cumulativeDelta += currentDelta;
-    }
+  // Loop through the arrays to calculate the sum of differences.
+  for (let idx = 0; idx < count; ++idx) {
+    // Calculate the difference between corresponding elements of arrayB and arrayA.
+    currentDiff = (parseInt(arrayB[idx], 10) - parseInt(arrayA[idx], 10));
+    // Add the current difference to the total sum.
+    differenceSum += currentDiff;
+  }
 
-    // Check if the final cumulative difference is odd or even
-    if (
-        cumulativeDelta % 2 === 1
-    ) {
-        // If odd, output "Yes"
-        console.log("%s", "Yes");
-    }
-    else {
-        // Otherwise (if even), output "No"
-        console.log("%s", "No");
-    }
-
+  // Check if the total sum of differences is an odd number.
+  if (differenceSum % 2 === 1) {
+    // If the sum is odd, print "Yes".
+    console.log("%s", "Yes");
+  } else {
+    // If the sum is even, print "No".
+    console.log("%s", "No");
+  }
 }
-// Do not modify the subsequent section; it manages reading from standard input and invoking the primary processing function.
-ProcessInputData( require("fs") . readFileSync( "/dev/stdin", "utf8") );
+
+// Do not modify the following line; it handles reading from standard input and invoking the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

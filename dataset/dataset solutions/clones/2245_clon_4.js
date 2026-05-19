@@ -1,27 +1,27 @@
-function transformUnit(originalText) {
-  const processedFragment = originalText.replace(/^\s+|\s+$/g, '');
+function processCharacterSequence(sourceText) {
+  const cleanedText = sourceText.trim();
 
-  let currentCodeValue;
-
-  if (processedFragment.length === 0) {
-    currentCodeValue = NaN;
-  } else {
-    const initialCharacter = processedFragment.charAt(0);
-    const characterRepresentation = Buffer.from(initialCharacter, 'utf16be');
-    currentCodeValue = characterRepresentation.readUInt16BE(0);
+  if (cleanedText.length === 0) {
+    console.log("");
+    return;
   }
 
-  const nextCodeValue = currentCodeValue + 1;
+  const charBuffer = Buffer.from(cleanedText.charAt(0), 'utf16le');
+  const dataView = new DataView(charBuffer.buffer);
 
-  const outputRepresentation = Buffer.alloc(2);
-  outputRepresentation.writeUInt16BE(nextCodeValue, 0);
+  const initialCodeUnit = dataView.getUint16(0, true);
 
-  const resultSymbol = outputRepresentation.toString('utf16be');
+  const incrementedCodeUnit = initialCodeUnit + 1;
 
-  process.stdout.write(resultSymbol);
+  const resultBuffer = Buffer.alloc(2);
+  const resultDataView = new DataView(resultBuffer.buffer);
+
+  resultDataView.setUint16(0, incrementedCodeUnit, true);
+
+  const finalCharacter = resultBuffer.toString('utf16le');
+
+  console.log(finalCharacter);
 }
 
-const systemIO = require("fs");
-const incomingData = systemIO.readFileSync("/dev/stdin", "utf8");
-
-transformUnit(incomingData);
+const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+processCharacterSequence(rawInputContent);

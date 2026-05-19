@@ -1,20 +1,21 @@
-let accumulatedContent = '';
-const validCodes = new Set([3, 5, 7]);
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-globalThis.process.stdin.setEncoding('utf8');
-globalThis.process.stdin.resume();
+let accumulatedInput = '';
 
-globalThis.process.stdin.on('data', (incomingBlock) => {
-  accumulatedContent += incomingBlock;
+process.stdin.on('data', (inputChunk) => {
+  accumulatedInput += inputChunk;
 });
 
-globalThis.process.stdin.on('end', () => {
-  const initialEntry = accumulatedContent.split('\n')[0];
-  const examinedNumeral = Number(initialEntry);
+process.stdin.on('end', () => {
+  const allReceivedLines = accumulatedInput.split(/\r?\n/);
+  const primaryDatum = allReceivedLines[0];
 
-  if (validCodes.has(examinedNumeral)) {
-    globalThis.console.log("YES");
+  const designatedValues = new Set(['3', '5', '7']);
+
+  if (designatedValues.has(primaryDatum)) {
+    console.log("YES");
   } else {
-    globalThis.console.log("NO");
+    console.log("NO");
   }
 });

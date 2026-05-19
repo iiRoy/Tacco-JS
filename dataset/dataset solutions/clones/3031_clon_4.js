@@ -1,17 +1,11 @@
 'use strict'
 
-const processNumericalString = (dataPacket) => {
-    const numericalComponents = dataPacket.match(/-?\d+/g);
-    const firstValue = Number(numericalComponents[0]);
-    const secondValue = Number(numericalComponents[1]);
-    const thirdValue = Number(numericalComponents[2]);
+const processInputAndDetermine = (rawData) => {
+    const [valA, valB, valC] = rawData.match(/-?\d+/g).slice(0, 3).map(Number);
 
-    const determineInclusivity = (valA, valB, valC) => {
-        return (valC - valA) * (valC - valB) < 0;
-    };
+    const isWithinBounds = valC > Math.min(valA, valB) && valC < Math.max(valA, valB);
 
-    return determineInclusivity(firstValue, secondValue, thirdValue) ? 'Yes' : 'No';
+    console.log(isWithinBounds ? 'Yes' : 'No');
 };
 
-const acquiredData = require('fs').readFileSync('/dev/stdin', 'utf8');
-console.log(processNumericalString(acquiredData));
+processInputAndDetermine(require('fs').readFileSync('/dev/stdin', 'utf8'));

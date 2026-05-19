@@ -1,150 +1,167 @@
-function TokenStream( sourceData ) {
-  var instanceRef = this; // Reference to the current object instance.
-  instanceRef.currentIndex = 0; // Tracks the position of the next token to read.
-  instanceRef.originalText = sourceData; // Stores the raw input string.
-  instanceRef.tokenArray = ( function ( textToProcess ) {
-    var tokenList = []; // Array to collect processed tokens.
-    // Normalize whitespace: replace sequences of newlines, spaces, or tabs with a single space.
-    var cleanedText = textToProcess.replace( /[\n \t]+/g, " " );
-    // Split the normalized text into individual string parts based on single spaces.
-    var splitParts = cleanedText.split( " " );
-    // Populate the token list with each part from the split operation.
-    for ( var idx = 0, count = splitParts.length; idx < count; idx++ ) {
-      tokenList.push( splitParts[idx] );
-    }
-    return tokenList; // Return the array of tokens.
-  }( sourceData ) ); // Immediately invoke this function with the initial source data.
+function InputProcessor(sourceData) {
+    // Reference to the current instance of the input processor.
+    let currentInstance = this;
 
-  instanceRef.readNextToken = function() {
-    // Fetch the string token at the current reading position.
-    var currentSegment = instanceRef.tokenArray[ instanceRef.currentIndex ];
-    instanceRef.currentIndex++; // Advance the internal index for subsequent reads.
-    // Return the segment if it exists, otherwise return null.
-    return ( currentSegment !== null ) ? currentSegment : null;
-  };
+    // Initialize the internal pointer for tokens.
+    currentInstance.tokenPosition = 0;
 
-  instanceRef.readInteger = function() {
-    // Get the next token string, intended to be an integer.
-    var currentSegment = instanceRef.tokenArray[ instanceRef.currentIndex ];
-    instanceRef.currentIndex++; // Move the pointer forward.
-    // Convert the segment to an integer (base 10) if not null, else return null.
-    return ( currentSegment !== null ) ? parseInt( currentSegment, 10 ) : null;
-  };
+    // Store the original raw input string.
+    currentInstance.initialString = sourceData;
 
-  instanceRef.readDecimal = function() {
-    // Retrieve the next token string, expected to be a floating-point number.
-    var currentSegment = instanceRef.tokenArray[ instanceRef.currentIndex ];
-    instanceRef.currentIndex++; // Increment the token counter.
-    // Parse the string to a float if valid, otherwise return null.
-    return ( currentSegment !== null ) ? parseFloat( currentSegment ) : null;
-  };
-  
-  instanceRef.readByteValue = function() {
-    // Acquire the next token string.
-    var currentSegment = instanceRef.tokenArray[ instanceRef.currentIndex ];
-    instanceRef.currentIndex++; // Update the read position.
-    // If the segment is not null, attempt to create an Int8Array from it.
-    // Note: Creating Int8Array from a string (e.g., "123") results in an array
-    // where each character's numeric value is stored (e.g., [1, 2, 3]).
-    return ( currentSegment !== null ) ? new Int8Array( currentSegment ) : null;
-  };
+    // Immediately invoked function to parse the input string into an array of tokens.
+    currentInstance.parsedTokens = (function(rawData) {
+        // An array to accumulate the individual tokens.
+        let tokenCollection = [];
+        // Normalize whitespace: replace newlines, spaces, and tabs with a single space.
+        let cleanedData = rawData.replace(/[\n \t]+/g, " ");
+        // Split the cleaned string by spaces to get individual parts.
+        let parts = cleanedData.split(" ");
+        // Iterate through the parts and add each to the token collection.
+        for (let partIndex = 0, totalParts = parts.length; partIndex < totalParts; partIndex++) {
+            tokenCollection.push(parts[partIndex]);
+        }
+        return tokenCollection;
+    }(sourceData)); // Pass the original source data to the IIFE.
+
+    // Method to retrieve the next string token from the parsed list.
+    currentInstance.retrieveNext = function() {
+        let currentToken = currentInstance.parsedTokens[currentInstance.tokenPosition];
+        currentInstance.tokenPosition++; // Advance the token pointer.
+        // Return the token if it exists, otherwise return null.
+        return (currentToken !== undefined && currentToken !== null) ? currentToken : null;
+    };
+
+    // Method to retrieve the next integer token.
+    currentInstance.retrieveNextInt = function() {
+        let currentToken = currentInstance.parsedTokens[currentInstance.tokenPosition];
+        currentInstance.tokenPosition++; // Advance the token pointer.
+        // Parse the token as an integer with base 10.
+        return (currentToken !== undefined && currentToken !== null) ? parseInt(currentToken, 10) : null;
+    };
+
+    // Method to retrieve the next floating-point number token.
+    currentInstance.retrieveNextFloat = function() {
+        let currentToken = currentInstance.parsedTokens[currentInstance.tokenPosition];
+        currentInstance.tokenPosition++; // Advance the token pointer.
+        // Parse the token as a floating-point number.
+        return (currentToken !== undefined && currentToken !== null) ? parseFloat(currentToken) : null;
+    };
+
+    // Method to retrieve the next token as an Int8Array (preserving original behavior).
+    currentInstance.retrieveNextByte = function() {
+        let currentToken = currentInstance.parsedTokens[currentInstance.tokenPosition];
+        currentInstance.tokenPosition++; // Advance the token pointer.
+        // Create a new Int8Array from the token.
+        return (currentToken !== undefined && currentToken !== null) ? new Int8Array(currentToken) : null;
+    };
 }
 
-function ExecuteProgram( dataStream ) {
+function ExecuteAlgorithm(inputReader) {
+    // Read the total number of nodes from the input.
+    const totalNodes = inputReader.retrieveNextInt();
+    // An array to store the final computed results for each node.
+    const finalResults = [];
 
-  var nodeCount = dataStream.readInteger(); // Read the total number of nodes from the input.
-  var finalResults = []; // Array to store the computed results for each node.
-  
-  // Map node IDs (1-based) to their associated integer values.
-  var nodeValuesMap = {}; 
-  for ( var loopIndex = 0; loopIndex < nodeCount; loopIndex++ ) {
-    nodeValuesMap[ loopIndex + 1 ] = dataStream.readInteger();
-  }
-  
-  // Adjacency list representation of the graph (tree).
-  var adjacencyList = {}; 
-  for ( var loopIndex = 0; loopIndex < nodeCount - 1; loopIndex++ ) {
-    var nodeA = dataStream.readInteger(); // Read the first connected node.
-    var nodeB = dataStream.readInteger(); // Read the second connected node.
-    // Establish bidirectional connections in the adjacency list.
-    if ( !adjacencyList[ nodeA ] ) adjacencyList[ nodeA ] = [ nodeB ];
-    else adjacencyList[ nodeA ].push( nodeB );
-    if ( !adjacencyList[ nodeB ] ) adjacencyList[ nodeB ] = [ nodeA ];
-    else adjacencyList[ nodeB ].push( nodeA );
-  }
-  
-  // Stores lists of values encountered on paths from the root to each node.
-  var pathValueLists = {};
-  // Recursive function for depth-first traversal of the graph.
-  var traverseGraph = function ( currentNodeId, parentId, currentPathValues ) {
-    // Create a new array for the current path to avoid modifying shared references.
-    var extendedPath = currentPathValues.slice(); 
-    // Add the value of the current node to the path.
-    extendedPath.push( nodeValuesMap[currentNodeId] );
-    // Store the finalized path for this node ID.
-    pathValueLists[currentNodeId] = extendedPath;
-    
-    // Get all neighboring nodes for the current node.
-    var neighbors = adjacencyList[currentNodeId];
-    if ( neighbors ) { // Check if the current node has any neighbors.
-      for ( var neighborIndex = 0; neighborIndex < neighbors.length; neighborIndex++ ) {
-        var neighborId = neighbors[neighborIndex];
-        // Only proceed if the neighbor is not the parent (to avoid going back up the tree).
-        if ( parentId !== neighborId ) {
-          traverseGraph( neighborId, currentNodeId, extendedPath ); // Recursively call for the neighbor.
-        }
-      }
+    // Object to store the value associated with each node ID.
+    let nodeValueMap = {};
+    // Populate the node value map by reading N integers.
+    for (let nodeIndex = 0; nodeIndex < totalNodes; nodeIndex++) {
+        nodeValueMap[nodeIndex + 1] = inputReader.retrieveNextInt();
     }
-  };
-  // Initiate the graph traversal starting from node 1, with no initial parent (-1) and an empty path.
-  traverseGraph( 1, -1, [] );
-  
-  // For each node, calculate the length of the longest increasing subsequence (LIS) within its path values.
-  for ( var nodeId = 1; nodeId <= nodeCount; nodeId++ ) {
-    
-    var currentPath = pathValueLists[nodeId]; // Retrieve the path values for the current node.
-    var increasingSubsequence = []; // This array will hold the LIS.
-    // Iterate through each value in the node's path.
-    for ( var pathValIndex = 0; pathValIndex < currentPath.length; pathValIndex++ ) {
-      var currentValue = currentPath[pathValIndex];
-      // If the LIS is empty, add the first value.
-      if ( increasingSubsequence.length === 0 ) {
-        increasingSubsequence.push( currentValue );
-      }
-      // If the current value is greater than the last element of the LIS, extend the LIS.
-      else if ( currentValue > increasingSubsequence[ increasingSubsequence.length - 1 ] ) {
-        increasingSubsequence.push( currentValue );
-      }
-      // If the current value is less than or equal to the first element of the LIS, replace the first element.
-      else if ( currentValue <= increasingSubsequence[0] ) {
-        increasingSubsequence[0] = currentValue;
-      }
-      // If the current value falls somewhere in the middle, find the appropriate element to replace.
-      else {
-        // Find the smallest element in LIS that is greater than or equal to currentValue and replace it.
-        for ( var subSeqIndex = 1; subSeqIndex < increasingSubsequence.length; subSeqIndex++ ) {
-          if ( increasingSubsequence[ subSeqIndex - 1 ] < currentValue && currentValue <= increasingSubsequence[ subSeqIndex ] ) {
-            increasingSubsequence[ subSeqIndex ] = currentValue;
-            break; // Found the spot, exit inner loop.
-          }
+
+    // Object to represent the graph's adjacency list.
+    let graphAdjacency = {};
+    // Read N-1 edges to build the graph connections.
+    for (let edgeIndex = 0; edgeIndex < totalNodes - 1; edgeIndex++) {
+        const nodeOne = inputReader.retrieveNextInt();
+        const nodeTwo = inputReader.retrieveNextInt();
+
+        // Add nodeTwo to nodeOne's adjacency list.
+        if (!graphAdjacency[nodeOne]) {
+            graphAdjacency[nodeOne] = [nodeTwo];
+        } else {
+            graphAdjacency[nodeOne].push(nodeTwo);
         }
-      }
+
+        // Add nodeOne to nodeTwo's adjacency list (for an undirected graph).
+        if (!graphAdjacency[nodeTwo]) {
+            graphAdjacency[nodeTwo] = [nodeOne];
+        } else {
+            graphAdjacency[nodeTwo].push(nodeOne);
+        }
     }
-    finalResults.push( increasingSubsequence.length ); // Store the length of the LIS for this node.
-  }
-  
-  // Print all calculated LIS lengths, each on a new line.
-  console.info( finalResults.join("\n") );
+
+    // Object to store the sequence of values encountered on the path from the root to each node.
+    let pathValueSequences = {};
+
+    // Recursive function to traverse the tree and collect path values.
+    const traverseTree = function (currentNodeIdentifier, previousNodeIdentifier, currentPathValues) {
+        // Create a shallow copy of the current path values to ensure independent paths for branches.
+        let updatedPathValues = currentPathValues.slice();
+        // Add the value of the current node to its path sequence.
+        updatedPathValues.push(nodeValueMap[currentNodeIdentifier]);
+        // Store the complete path value sequence for the current node.
+        pathValueSequences[currentNodeIdentifier] = updatedPathValues;
+
+        // Get the list of nodes connected to the current node.
+        const neighbors = graphAdjacency[currentNodeIdentifier];
+
+        // If the current node has neighbors, iterate through them.
+        if (neighbors) {
+            for (let neighborIndex = 0; neighborIndex < neighbors.length; neighborIndex++) {
+                const nextNodeIdentifier = neighbors[neighborIndex];
+                // Recursively call traverseTree for neighbors, avoiding the parent node.
+                if (previousNodeIdentifier !== nextNodeIdentifier) {
+                    traverseTree(nextNodeIdentifier, currentNodeIdentifier, updatedPathValues);
+                }
+            }
+        }
+    };
+
+    // Initiate the tree traversal starting from node 1, with no parent (-1), and an empty path.
+    traverseTree(1, -1, []);
+
+    // Process the path value sequence for each node to compute the final result.
+    for (let nodeId = 1; nodeId <= totalNodes; nodeId++) {
+        const currentPath = pathValueSequences[nodeId];
+        const processedSequence = []; // This array will store the modified sequence.
+
+        // Iterate through each value in the current node's path.
+        for (let valueIndex = 0; valueIndex < currentPath.length; valueIndex++) {
+            const currentPathValue = currentPath[valueIndex];
+
+            // If the processed sequence is empty, simply add the current value.
+            if (processedSequence.length === 0) {
+                processedSequence.push(currentPathValue);
+            }
+            // If the current value is greater than the last element in the processed sequence, append it.
+            else if (currentPathValue > processedSequence[processedSequence.length - 1]) {
+                processedSequence.push(currentPathValue);
+            }
+            // If the current value is less than or equal to the first element, replace the first element.
+            else if (currentPathValue <= processedSequence[0]) {
+                processedSequence[0] = currentPathValue;
+            }
+            // Otherwise, find the correct position to replace an element in the middle.
+            else {
+                for (let searchPosition = 1; searchPosition < processedSequence.length; searchPosition++) {
+                    // Find the first element `processedSequence[searchPosition]` such that
+                    // `processedSequence[searchPosition - 1] < currentPathValue <= processedSequence[searchPosition]`.
+                    if (processedSequence[searchPosition - 1] < currentPathValue && currentPathValue <= processedSequence[searchPosition]) {
+                        processedSequence[searchPosition] = currentPathValue;
+                        break; // Exit the inner loop once a replacement is made.
+                    }
+                }
+            }
+        }
+        // Add the length of the final processed sequence for the current node to the results.
+        finalResults.push(processedSequence.length);
+    }
+
+    // Output the final results, with each result on a new line.
+    console.log(finalResults.join("\n"));
 }
 
-// Entry point: Create a token stream from standard input and execute the main program logic.
-ExecuteProgram( new TokenStream( require("fs").readFileSync("/dev/stdin", "utf8") ) );
-// Example: ExecuteProgram( new TokenStream( "33" ) ); // A commented-out line for local testing.
-
-// These are illustrative comments, not part of the core logic:
-// var stringVal = dataStream.readNextToken(); // How to retrieve a simple string.
-// var integerVal = dataStream.readInteger(); // How to get an integer.
-// var decimalVal = dataStream.readDecimal(); // How to obtain a floating-point number.
-// var byteArr = dataStream.readByteValue(); // How to get an Int8Array from a string.
-// for ( var delayIterator = 0; delayIterator < 1000000000; delayIterator++ ) var tempVar = "delay"; // A placeholder loop to simulate work.
-// console.debug( pathValueLists ); // For debugging: print the collected path lists and then terminate.
+// Execute the main algorithm by creating an InputProcessor instance
+// that reads from standard input.
+ExecuteAlgorithm(new InputProcessor(require("fs").readFileSync("/dev/stdin", "utf8")));

@@ -1,20 +1,11 @@
-const dataProcessor = (dataPayload) => {
-    const primaryLine = dataPayload.trim().split('\n')[0];
-    const numericSegments = primaryLine.split(' ').map(Number);
+function processInputData(rawInputString) {
+    const lines = rawInputString.split('\n');
+    const numericStrings = lines[0].split(' ');
+    const [firstVal, secondVal, thirdVal, fourthVal] = numericStrings.map(Number);
 
-    const firstOperand = numericSegments[0];
-    const secondOperand = numericSegments[1];
-    const thirdOperand = numericSegments[2];
+    const finalOutcome = Math.max(0, secondVal - thirdVal - firstVal);
 
-    const initialComputation = secondOperand - thirdOperand - firstOperand;
+    console.log(finalOutcome);
+}
 
-    const finalDetermination = Math.max(0, initialComputation);
-
-    console.log(finalDetermination);
-};
-
-const acquireSourceMaterial = () => {
-    return require("fs").readFileSync("/dev/stdin", "utf8");
-};
-
-dataProcessor(acquireSourceMaterial());
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

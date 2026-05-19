@@ -1,130 +1,106 @@
 "use strict";
 
-/**
- * Processes a grid represented by a string input to determine if every '#' character
- * has at least one adjacent '#' character (horizontally or vertically).
- * Prints "Yes" if all '#' cells are connected, otherwise prints "No".
- *
- * @param {string} sourceContent - The raw string input, typically from stdin.
- *                                 Expected format:
- *                                 "H W\n"
- *                                 "row1\n"
- *                                 "row2\n"
- *                                 ...
- *                                 "rowH"
- */
-const evaluateGridConnectivity = function (sourceContent) {
-  // Validate initial input: ensure it's not null, empty, or just whitespace.
-  if (!sourceContent || sourceContent.trim().length === 0) {
-    console.log("No");
-    return;
+var processInput = function processInput(rawData) {
+  var inputLines = rawData.split('\n');
+
+  // Type III: Extracting dimension parsing into temporary variables
+  var firstLineData = inputLines[0];
+  var dimensionParts = firstLineData.split(' ');
+  var gridHeight = parseInt(dimensionParts[0], 10);
+  var gridWidth = parseInt(dimensionParts[1], 10);
+
+  var gridRows = [];
+  var isPatternValid = true; // Renamed flagOut
+
+  // Original loop: reads H-1 rows. This behavior must be preserved.
+  // If gridHeight is 0 or 1, this loop doesn't run or runs 0 times.
+  for (var rowPopulateIndex = 1; rowPopulateIndex < gridHeight; rowPopulateIndex++) {
+    gridRows.push(inputLines[rowPopulateIndex]);
   }
 
-  // Split the entire input string into an array of individual lines.
-  // Using a regex for split ensures cross-platform compatibility with different line endings.
-  const inputRecords = sourceContent.split(/\r?\n/);
+  // Type III: Introduce a temporary constant for the outer loop limit
+  var outerLoopLimit = gridHeight;
 
-  // Parse the grid dimensions (height and width) from the first line.
-  // Destructure the split string and convert to integers using parseInt with radix.
-  const [heightString, widthString] = inputRecords[0].split(' ');
-  const gridHeight = parseInt(heightString, 10);
-  const gridWidth = parseInt(widthString, 10);
+  // Main check loop
+  for (var currentGridRowIndex = 0; currentGridRowIndex < outerLoopLimit; currentGridRowIndex++) {
+    // This line will throw TypeError if currentGridRowIndex >= gridRows.length
+    // which happens when currentGridRowIndex == 0 if gridHeight == 1 (as gridRows is empty)
+    // or when currentGridRowIndex == gridHeight - 1 if gridHeight > 1 (as gridRows has gridHeight - 1 elements)
+    var currentRawRow = gridRows[currentGridRowIndex]; // Type III: temporary variable
+    var currentRowChars = currentRawRow.split('');
 
-  // Perform basic validation on the parsed dimensions.
-  // Dimensions must be valid numbers and positive.
-  if (isNaN(gridHeight) || isNaN(gridWidth) || gridHeight <= 0 || gridWidth <= 0) {
-    console.log("No"); // Invalid or non-positive dimensions indicate an issue.
-    return;
-  }
+    // Type III: Introduce a temporary constant for the inner loop limit
+    var innerLoopLimit = gridWidth;
 
-  // Construct the character matrix (grid) from the subsequent lines of input.
-  const characterMatrix = [];
-  // Iterate from the second line of input (index 1) up to the declared grid height.
-  for (let currentRowIndex = 1; currentRowIndex <= gridHeight; currentRowIndex++) {
-    // Ensure that the input actually contains enough lines for the declared height.
-    if (currentRowIndex < inputRecords.length) {
-      characterMatrix.push(inputRecords[currentRowIndex]);
-    } else {
-      // If the input is truncated, it's malformed.
-      console.log("No");
-      return;
-    }
-  }
+    for (var currentGridColIndex = 0; currentGridColIndex < innerLoopLimit; currentGridColIndex++) {
+      var hasAdjacentHash = false; // Renamed _flag, local to inner loop
+      var cellValue = currentRowChars[currentGridColIndex]; // Renamed target, still unused.
 
-  // Initialize a global flag to track the overall connectivity status.
-  // It starts as true and will be set to false if any '#' cell fails the condition.
-  let overallConnectivityStatus = true;
+      // Type III: Use helper variables for boundary checks
+      var isNotFirstColumn = currentGridColIndex !== 0;
+      var isNotLastColumn = currentGridColIndex < gridWidth - 1;
+      var isNotFirstRow = currentGridRowIndex !== 0;
+      var isNotLastRow = currentGridRowIndex < gridHeight - 1;
 
-  // Iterate through each row of the character matrix.
-  for (let r = 0; r < gridHeight; r++) {
-    const currentLineChars = characterMatrix[r].split('');
-
-    // Pre-check for row integrity: ensure the current row's length matches the declared grid width.
-    if (currentLineChars.length !== gridWidth) {
-      console.log("No"); // Malformed row (length mismatch).
-      return;
-    }
-
-    // Iterate through each character (column) in the current row.
-    for (let c = 0; c < gridWidth; c++) {
-      const cellValue = currentLineChars[c];
-
-      // We are only interested in '#' cells for connectivity checks.
-      if (cellValue === '#') {
-        let hasConnectedNeighbor = false; // Flag for the current cell's connectivity.
-
-        // Define relative coordinates for potential neighbors: [delta_row, delta_col].
-        // This covers left, right, up, and down neighbors.
-        const neighborDisplacements = [
-          [0, -1], // Left
-          [0, 1],  // Right
-          [-1, 0], // Up
-          [1, 0]   // Down
-        ];
-
-        // Check all four potential neighbors for the current '#' cell.
-        for (const [dr, dc] of neighborDisplacements) {
-          const neighborRow = r + dr;
-          const neighborCol = c + dc;
-
-          // First, verify if the neighbor coordinates are within the grid boundaries.
-          if (neighborRow >= 0 && neighborRow < gridHeight &&
-              neighborCol >= 0 && neighborCol < gridWidth) {
-            // Retrieve the character of the potential neighbor.
-            const neighborCharacter = characterMatrix[neighborRow][neighborCol];
-
-            // If a '#' neighbor is found, the current cell is connected.
-            // Set the flag and stop checking other neighbors for this cell.
-            if (neighborCharacter === '#') {
-              hasConnectedNeighbor = true;
-              break; // Exit the neighborDisplacements loop.
-            }
-          }
-        }
-
-        // If a '#' cell was found but had no '#' neighbors, the overall condition fails.
-        if (!hasConnectedNeighbor) {
-          overallConnectivityStatus = false;
-          // Since the condition has already failed, we can stop processing further cells.
-          break; // Exit the inner (column) loop.
+      // Left neighbor check
+      if (isNotFirstColumn) {
+        var leftNeighborChar = currentRowChars[currentGridColIndex - 1]; // Type III: temporary variable
+        if (leftNeighborChar === '#') {
+          hasAdjacentHash = true;
+          break; // Breaks out of the inner (currentGridColIndex) loop
         }
       }
-    }
 
-    // If the overall connectivity status has already become false,
-    // there's no need to process the remaining rows.
-    if (!overallConnectivityStatus) {
-      break; // Exit the outer (row) loop.
-    }
-  }
+      // Right neighbor check
+      if (isNotLastColumn) {
+        var rightNeighborChar = currentRowChars[currentGridColIndex + 1]; // Type III: temporary variable
+        if (rightNeighborChar === '#') {
+          hasAdjacentHash = true;
+          break; // Breaks out of the inner (currentGridColIndex) loop
+        }
+      }
 
-  // Output the final result based on the comprehensive connectivity check.
-  if (overallConnectivityStatus) {
+      // Up neighbor check
+      if (isNotFirstRow) {
+        var aboveRowData = gridRows[currentGridRowIndex - 1]; // Type III: temporary variable
+        var aboveRowChars = aboveRowData.split(''); // Re-splitting every time, as in original
+        var upNeighborChar = aboveRowChars[currentGridColIndex]; // Type III: temporary variable
+        if (upNeighborChar === '#') {
+          hasAdjacentHash = true;
+          break; // Breaks out of the inner (currentGridColIndex) loop
+        }
+      }
+
+      // Down neighbor check
+      if (isNotLastRow) {
+        var belowRowData = gridRows[currentGridRowIndex + 1]; // Type III: temporary variable
+        // This line will throw TypeError if belowRowData is undefined,
+        // which happens when currentGridRowIndex = gridHeight - 2 (for H > 1)
+        // because gridRows only contains elements up to index gridHeight - 2.
+        var belowRowChars = belowRowData.split(''); // Re-splitting every time, as in original
+        var downNeighborChar = belowRowChars[currentGridColIndex]; // Type III: temporary variable
+        if (downNeighborChar === '#') {
+          hasAdjacentHash = true;
+          break; // Breaks out of the inner (currentGridColIndex) loop
+        }
+      }
+    } // End of inner (currentGridColIndex) loop
+
+    // This is the line that causes ReferenceError: flag is not defined
+    // The variable `flag` is not declared anywhere in this scope.
+    // This error is reached only if no TypeError occurs before it.
+    // Based on analysis, this line is only reached if H=0 (where it's skipped)
+    // or if a TypeError happens earlier.
+    if (!flag) { // This will throw ReferenceError if H > 0 and no TypeError occurred earlier
+      isPatternValid = false;
+      console.log("No");
+      break; // Breaks out of the outer (currentGridRowIndex) loop
+    }
+  } // End of outer (currentGridRowIndex) loop
+
+  if (isPatternValid) {
     console.log("Yes");
-  } else {
-    console.log("No");
   }
 };
 
-// Invoke the grid analysis function, reading input from standard input.
-evaluateGridConnectivity(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

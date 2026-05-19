@@ -1,150 +1,74 @@
-let pathCache = {}; // Global cache for memoization across all paths
+'use strict';
 
-/**
- * Recursively explores paths from a given node to find the longest one.
- * Utilizes memoization to avoid recomputing paths for already visited nodes.
- * @param {number} currentVertexId The ID of the node currently being processed.
- * @param {Array<Array<number>>} adjacencyGraph A list where index `i` contains an array of nodes reachable from `i`.
- * @returns {number} The length of the longest path starting from `currentVertexId`.
- */
-function exploreLongestPath(currentVertexId, adjacencyGraph) {
-  // Check if the result for this node is already cached
-  if (pathCache[currentVertexId] !== undefined) {
-    return pathCache[currentVertexId];
+function findLongestPath(currentNode, adjacencyMap, memoizationCache) {
+  if (memoizationCache[currentNode.toString()]) {
+    return memoizationCache[currentNode.toString()];
   }
 
-  // If the current node has no outgoing edges, it's a leaf node, path length is 0.
-  const outgoingEdges = adjacencyGraph[currentVertexId];
-  if (!outgoingEdges || outgoingEdges.length === 0) {
-    pathCache[currentVertexId] = 0; // Cache the result
+  const outgoingEdges = adjacencyMap[currentNode];
+  if (outgoingEdges.length === 0) {
     return 0;
   }
 
-  let currentMaxPathLength = 0;
-
-  // Iterate over all neighbors reachable from the current node
-  for (const neighborId of outgoingEdges) {
-    // Calculate the path length through this neighbor (1 for the current edge + path from neighbor)
-    const pathThroughNeighbor = 1 + exploreLongestPath(neighborId, adjacencyGraph);
-    
-    // Update the maximum path length found so far
-    if (pathThroughNeighbor > currentMaxPathLength) {
-      currentMaxPathLength = pathThroughNeighbor;
-    }
+  let currentMaxPath = 0;
+  for (let neighborIndex = 0; neighborIndex < outgoingEdges.length; neighborIndex++) {
+    const nextNode = outgoingEdges[neighborIndex];
+    const pathFromNeighbor = 1 + findLongestPath(nextNode, adjacencyMap, memoizationCache);
+    currentMaxPath = Math.max(currentMaxPath, pathFromNeighbor);
   }
 
-  // Store and return the computed maximum path length for the current node
-  pathCache[currentVertexId] = currentMaxPathLength;
-  return currentMaxPathLength;
+  memoizationCache[currentNode.toString()] = currentMaxPath;
+  return currentMaxPath;
 }
 
-/**
- * Constructs an adjacency list representation of the graph and calculates in-degrees for each node.
- * @param {number} totalNodes The total number of nodes in the graph (1-indexed).
- * @param {Array<Array<number>>} edgeConnections An array of [from, to] edge pairs.
- * @returns {{graphStructure: Array<Array<number>>, inDegreeCounts: Array<number>}} An object containing the adjacency list and in-degree counts.
- */
-const prepareGraphData = (totalNodes, edgeConnections) => {
-  // Initialize adjacency list for 1-indexed nodes
-  const graphStructure = Array.from({ length: totalNodes + 1 }, () => []);
-  // Initialize in-degree counts for 1-indexed nodes
-  const inDegreeCounts = Array.from({ length: totalNodes + 1 }, () => 0);
+function buildGraphStructures(nodeCount, graphEdges) {
+  const adjListContainer = Array.from({ length: nodeCount + 1 }, () => []);
+  const inDegreeTracker = new Array(nodeCount + 1).fill(0);
 
-  // Process each edge to build the graph
-  for (const [sourceNode, destinationNode] of edgeConnections) {
-    if (sourceNode < 1 || sourceNode > totalNodes || destinationNode < 1 || destinationNode > totalNodes) {
-      console.warn(`Invalid edge detected: [${sourceNode}, ${destinationNode}]. Skipping.`);
-      continue; // Skip invalid edges
+  graphEdges.forEach(edge => {
+    const [sourceNode, targetNode] = edge;
+    adjListContainer[sourceNode].push(targetNode);
+    inDegreeTracker[targetNode]++;
+  });
+
+  return {
+    graphAdjacency: adjListContainer,
+    nodeInDegrees: inDegreeTracker
+  };
+}
+
+function solveGraphProblem(totalNodes, parsedEdges) {
+  const graphData = buildGraphStructures(totalNodes, parsedEdges);
+  const graphAdjacency = graphData.graphAdjacency;
+  const nodeInDegrees = graphData.nodeInDegrees;
+
+  let overallMaxPath = 0;
+
+  const isPotentialStartNode = (nodeId, inDegrees) => inDegrees[nodeId] === 0;
+
+  for (let nodeId = 1; nodeId <= nodeInDegrees.length; nodeId++) {
+    if (isPotentialStartNode(nodeId, nodeInDegrees)) {
+      const pathMemo = {};
+      overallMaxPath = Math.max(overallMaxPath, findLongestPath(nodeId, graphAdjacency, pathMemo));
     }
-    graphStructure[sourceNode].push(destinationNode);
-    inDegreeCounts[destinationNode]++;
   }
+  return overallMaxPath;
+}
 
-  return { graphStructure, inDegreeCounts };
-};
+function processInputAndSolve(inputContent) {
+  const inputLines = inputContent.split("\n");
 
-/**
- * Calculates the overall longest path in a Directed Acyclic Graph (DAG).
- * It identifies all source nodes (nodes with no incoming edges) and
- * then runs a DFS-like path exploration from each of them.
- * @param {number} numberOfVertices The total number of vertices in the graph.
- * @param {Array<Array<number>>} graphEdges An array of [startNode, endNode] pairs representing directed edges.
- * @returns {number} The length of the longest path found in the DAG.
- */
-function findGlobalLongestPath(numberOfVertices, graphEdges) {
-  // Clear the global cache for a fresh computation
-  pathCache = {}; 
+  const parseHeader = (line) => {
+    const parts = line.split(' ').map(Number);
+    return { totalNodes: parts[0], numEdges: parts[1] };
+  };
+
+  const { totalNodes } = parseHeader(inputLines[0]);
   
-  // Build the graph representation and get in-degree counts
-  const { graphStructure, inDegreeCounts } = prepareGraphData(numberOfVertices, graphEdges);
+  const parsedEdges = inputLines.slice(1).map(line => line.split(' ').map(Number));
 
-  let overallLongestPath = 0;
-
-  // Iterate through all possible nodes (assuming 1-indexed nodes)
-  for (let nodeId = 1; nodeId <= numberOfVertices; nodeId++) {
-    // Only start path exploration from source nodes (nodes with no incoming edges)
-    // or from any node that hasn't been part of a path calculation yet.
-    // If a node has an in-degree of 0, it's a potential start of a longest path.
-    if (inDegreeCounts[nodeId] === 0) {
-      const pathFromThisSource = exploreLongestPath(nodeId, graphStructure);
-      if (pathFromThisSource > overallLongestPath) {
-        overallLongestPath = pathFromThisSource;
-      }
-    }
-  }
-  return overallLongestPath;
+  const finalAnswer = solveGraphProblem(totalNodes, parsedEdges);
+  return finalAnswer;
 }
 
-/**
- * Entry point for processing input and orchestrating the graph algorithm.
- * Reads graph data from a string input, parses it, and calls the solver.
- * @param {string} rawInput The raw string input containing graph data.
- * @returns {number} The computed longest path length.
- */
-const executeGraphAnalysis = (rawInput) => {
-  const inputLines = rawInput.split(/\r?\n/).filter(line => line.trim() !== '');
-
-  if (inputLines.length === 0) {
-    console.error("No input provided.");
-    return 0;
-  }
-
-  // Parse the first line for N (number of nodes) and M (number of edges, though M is not used by solve)
-  const [numNodes, numEdges] = inputLines[0].split(' ').map(Number);
-
-  if (isNaN(numNodes) || numNodes <= 0) {
-    console.error("Invalid number of nodes in input.");
-    return 0;
-  }
-
-  // Parse the remaining lines to get the edges
-  const edgesData = inputLines.slice(1).map(line => {
-    const edge = line.split(' ').map(Number);
-    if (edge.length !== 2 || isNaN(edge[0]) || isNaN(edge[1])) {
-      console.warn(`Skipping malformed edge line: "${line}"`);
-      return null;
-    }
-    return edge;
-  }).filter(Boolean); // Remove any nulls from malformed lines
-
-  // Validate the number of edges if needed (optional guard)
-  if (edgesData.length !== numEdges) {
-    console.warn(`Expected ${numEdges} edges but found ${edgesData.length}. Proceeding with available edges.`);
-  }
-
-  // Calculate the longest path using the parsed data
-  const finalPathResult = findGlobalLongestPath(numNodes, edgesData);
-  return finalPathResult;
-};
-
-// Main execution block to read from stdin and print result
-try {
-  const fileSystem = require('fs');
-  const programInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-  const result = executeGraphAnalysis(programInput);
-  console.log(result);
-} catch (error) {
-  console.error("An error occurred during execution:", error.message);
-  // Optionally, provide a default or error code
-  process.exit(1); 
-}
+processInputAndSolve(require('fs').readFileSync('/dev/stdin', 'utf8'));

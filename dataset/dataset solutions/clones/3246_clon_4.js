@@ -1,96 +1,88 @@
-function coordinateFlow(dataLines) {
-  const initialConfiguration = dataLines[0].split(' ').map(Number);
-  const totalNodes = initialConfiguration[0];
-  const supplementalEdges = initialConfiguration[1];
-
-  const linkRegistry = new Map(); // Maps destination_id -> Array of {source_id, destination_id}
-
-  // Parse incoming connection definitions
-  for (let entryIndex = 1; entryIndex <= totalNodes - 1 + supplementalEdges; ++entryIndex) {
-    const connectionDetails = dataLines[entryIndex].split(' ').map(Number);
-    const originIdentifier = connectionDetails[0];
-    const targetIdentifier = connectionDetails[1];
-    const connectionUnit = { origin: originIdentifier, terminus: targetIdentifier };
-
-    if (!linkRegistry.has(targetIdentifier)) {
-      linkRegistry.set(targetIdentifier, []);
+function checkAncestry(startIdentifier, targetIdentifier, graphStructure, visitedNodes) {
+    if (startIdentifier === targetIdentifier) {
+        return true;
     }
-    linkRegistry.get(targetIdentifier).push(connectionUnit);
-  }
-
-  // Ensure all nodes from 1 to totalNodes have an entry in the link registry
-  for (let nodeIdentifier = 1; nodeIdentifier <= totalNodes; ++nodeIdentifier) {
-    if (!linkRegistry.has(nodeIdentifier)) {
-      linkRegistry.set(nodeIdentifier, []);
+    if (visitedNodes.has(startIdentifier)) {
+        return false;
     }
-  }
+    visitedNodes.add(startIdentifier);
 
-  const finalResults = new Array(totalNodes); // Store the computed primary source for each node
-
-  // Determine the primary source for each node
-  for (let nodeIdentifier = 1; nodeIdentifier <= totalNodes; ++nodeIdentifier) {
-    const incomingUnits = linkRegistry.get(nodeIdentifier);
-    if (incomingUnits.length > 1) {
-      const resolvedSources = sourcePrioritizer(nodeIdentifier, linkRegistry);
-      finalResults[nodeIdentifier - 1] = resolvedSources.find(id => id >= 0);
-    } else {
-      finalResults[nodeIdentifier - 1] = incomingUnits.length ? incomingUnits[0].origin : 0;
-    }
-  }
-  console.log(finalResults.join('\r\n'));
-}
-
-function sourcePrioritizer(targetNodeId, relationshipMap) {
-  const directConnections = relationshipMap.get(targetNodeId) || [];
-  const mutableSourceCandidates = directConnections.map(link => link.origin);
-  const numberOfDirectSources = directConnections.length;
-
-  const ancestorExplorationQueues = [];
-  for (let idx = 0; idx < numberOfDirectSources; ++idx) {
-    const currentDirectSource = directConnections[idx].origin;
-    const connectionsToDirectSource = relationshipMap.get(currentDirectSource) || [];
-    ancestorExplorationQueues.push([...connectionsToDirectSource]);
-  }
-
-  const pathClaimedFlags = new Array(numberOfDirectSources).fill(false);
-
-  let explorationInProgress = true;
-  while (explorationInProgress) {
-    explorationInProgress = false;
-    for (let pathIdx = 0; pathIdx < numberOfDirectSources; ++pathIdx) {
-      const currentPathQueue = ancestorExplorationQueues[pathIdx];
-      if (currentPathQueue.length === 0) continue;
-
-      explorationInProgress = true;
-
-      const currentTraversedLink = currentPathQueue.shift();
-      const currentAncestorId = currentTraversedLink.origin;
-
-      const matchingDirectSourceIndex = mutableSourceCandidates.indexOf(currentAncestorId);
-      if (matchingDirectSourceIndex !== -1) {
-        pathClaimedFlags[pathIdx] = true;
-        mutableSourceCandidates[matchingDirectSourceIndex] = -1; // Mark as claimed
-      }
-
-      if (!pathClaimedFlags[pathIdx]) {
-        const connectionsToAncestor = relationshipMap.get(currentAncestorId) || [];
-        for (const linkEntry of connectionsToAncestor) {
-          currentPathQueue.push(linkEntry);
+    const incomingConnections = graphStructure[startIdentifier] || [];
+    for (const connection of incomingConnections) {
+        if (checkAncestry(connection.source, targetIdentifier, graphStructure, visitedNodes)) {
+            return true;
         }
-      }
     }
-  }
-  return mutableSourceCandidates;
+    return false;
 }
 
-var rawInputBuffer = '';
+function processGraphData(inputLines) {
+    const firstLineParts = inputLines[0].split(' ');
+    const nodeCount = parseInt(firstLineParts[0]);
+    const extraEdges = parseInt(firstLineParts[1]);
+
+    const adjacencyMap = {};
+
+    for (let i = 0; i < nodeCount - 1 + extraEdges; i++) {
+        const currentLineParts = inputLines[i + 1].split(' ');
+        const currentEdge = {
+            source: parseInt(currentLineParts[0]),
+            destination: parseInt(currentLineParts[1])
+        };
+        if (!adjacencyMap[currentEdge.destination]) {
+            adjacencyMap[currentEdge.destination] = [];
+        }
+        adjacencyMap[currentEdge.destination].push(currentEdge);
+    }
+
+    const finalResults = new Array(nodeCount);
+
+    for (let i = 1; i <= nodeCount; i++) {
+        const currentIdentifier = i;
+        const incomingEdgesToCurrent = adjacencyMap[currentIdentifier] || [];
+        const directSources = incomingEdgesToCurrent.map(edge => edge.source);
+
+        if (directSources.length <= 1) {
+            finalResults[currentIdentifier - 1] = directSources.length ? directSources[0] : 0;
+        } else {
+            let primaryFound = false;
+            for (let j = 0; j < directSources.length; j++) {
+                const candidateSource = directSources[j];
+                let isDescendantOfAnotherSource = false;
+
+                for (let k = 0; k < directSources.length; k++) {
+                    if (j === k) continue;
+
+                    const otherSource = directSources[k];
+                    if (checkAncestry(candidateSource, otherSource, adjacencyMap, new Set())) {
+                        isDescendantOfAnotherSource = true;
+                        break;
+                    }
+                }
+
+                if (!isDescendantOfAnotherSource) {
+                    finalResults[currentIdentifier - 1] = candidateSource;
+                    primaryFound = true;
+                    break;
+                }
+            }
+
+            if (!primaryFound) {
+                finalResults[currentIdentifier - 1] = undefined;
+            }
+        }
+    }
+    console.log(finalResults.join('\n'));
+}
+
+let accumulatedInput = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(dataSegment) {
-  rawInputBuffer += dataSegment;
+process.stdin.on('data', function(dataChunk) {
+    accumulatedInput += dataChunk;
 });
 process.stdin.on('end', function() {
-  const processedInputLines = rawInputBuffer.split('\n');
-  coordinateFlow(processedInputLines);
+    const processedInput = accumulatedInput.split('\n');
+    processGraphData(processedInput);
 });

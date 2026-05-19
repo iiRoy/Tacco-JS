@@ -1,34 +1,31 @@
-/* Initialize standard input flow. */
-process.stdin.resume(); // Re-enable input stream.
-process.stdin.setEncoding( 'utf8' ); // Set character encoding for inbound data.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
+// This array will hold all the lines read from standard input.
+let inputData = [];
 
-var capturedEntries = [ ] ; // Storage for all collected lines.
+// Create a readline interface to process input line by line.
+const lineProcessor = require('readline').createInterface({
+    input: process.stdin, // Use the standard input stream.
+    output: process.stdout // Standard output (not directly used for writing by readline here).
+});
 
-var streamProcessor = require( 'readline' ) .createInterface(
-  {
-    input:  process.stdin, // Direct input from standard input.
-    output: process.stdout // Direct output to standard output (not used for this specific script's output, but required by readline).
-  }
-) ;
+// Event handler for each line received from input.
+lineProcessor.on('line', (currentLine) => {
+    // Add the current line to our collection of input data.
+    inputData.push(currentLine);
+});
 
-streamProcessor.on(
-  'line',                                   // Event triggered on each new line.
-  ( textFragment ) => {                     // Callback for a new text fragment.
-    capturedEntries . push( textFragment ); // Add the fragment to our collection.
-  }
-) ;
+// Event handler for when the input stream ends.
+lineProcessor.on('close', () => {
+    // All input has been gathered; now perform the main computation.
+    const inputNum = Number(inputData[0]); // Convert the very first line of input to a numerical value.
 
-streamProcessor.on( 'close', () => { // Event triggered when input stream ends.
-  /* Commence final computation and display. */
-  var mainQuantity = Number( capturedEntries[ 0 ] ) ; // Obtain the primary numerical value from the first entry.
+    // Calculate the result using the specified formula and print it to the console.
+    console.log((inputNum + (inputNum % 2)) / (2 * inputNum));
 
-  console.log( ( mainQuantity + ( mainQuantity % 2 ) ) / ( 2 * mainQuantity ) ) ; // Output the calculated result.
-
-  /*
-   *  Example of a previously used debugging loop, now inactive:
-   *  for ( var itemIndex = 0 ; itemIndex < capturedEntries.length ; itemIndex++ ) {
-   *    console.log( capturedEntries[ itemIndex ] ) ;
-   *  }
-   */
-} ) ;
+    // The following block was commented out in the original code and remains so.
+    // for (let idx = 0; idx < inputData.length; idx++) {
+    //     console.log(inputData[idx]);
+    // }
+});

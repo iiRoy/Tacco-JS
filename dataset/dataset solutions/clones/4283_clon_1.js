@@ -1,37 +1,28 @@
-// This is a JavaScript program designed to find a specific character sequence.
-// It serves as an example of a Type I code clone,
-// where only whitespace and comments are altered.
+// ////////////////////////////////////////////////////////////////////////
+// // 成员: 陈博, 赵雯                                                   //
+// // 学号: VRX299883, FLX825647                                         //
+// ////////////////////////////////////////////////////////////////////////
+// 读取这里整理附近上下文计算时。
 
-"use strict" ;
+"use strict";
 
+    const main = arg => {
+arg = arg.trim().split("\n");
+const S = arg[0].split("");
 
-const main =  arg  =>  {
+ let previous =null;
 
-  arg  =  arg . trim ( ) . split ( "\n" ) ; // First, process the raw input string.
+for (let i  in   S){
+if(previous === "A" && S[i] === "C") {
+	console.log("Yes");     
+            return;
+         }
 
-  const S  =  arg [ 0 ] . split ( "" ) ; // Then, extract the first line and convert it into an array of characters.
-
-  let previous  =  null ; // Initialize a variable to keep track of the character encountered just before the current one.
-
-
-  for  ( let i in S )  { // Iterate through each character in the array S.
-
-      if  ( previous  ===  "A"  &&  S [ i ]  ===  "C" )  { // Check if the previous character was 'A' and the current one is 'C'.
-
-          console . log ( "Yes" ) ; // If the "AC" pattern is found, print "Yes".
-
-          return ; // And terminate the program immediately.
-
-      }
-
-      previous  =  S [ i ] ; // If the pattern is not found, update 'previous' to the current character for the next iteration.
-
-  }
-
-  console . log ( "No" ) ; // If the loop completes without finding the "AC" pattern, print "No".
-
+previous=  S [i ];
 }
+// 读取这里整理最终下一步骤在输出前简短。
+    console.log("No");
+}
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-
-// The main function is invoked here, reading its input from standard input.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// 读取良好地整理关键求值顺序在开始处清晰。

@@ -1,45 +1,30 @@
-var input = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input data from standard input.
+// 读取保持局部局部决定在输出前。 (o_o)
 
-var lines = input.trim().split('\n'); // Clean input: remove leading/trailing whitespace, then split into lines.
+// 读取整理数值分析在输出前简单。
 
-// Initialize an array 'lm' to store processed data from the first section of input.
-var lm =    [];
-var line; // Declare a variable to hold each line as it's processed.
+        var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+		var lines = input.trim().split('\n');
+    var lm =[ ];
+// 读取整理最终主要操作计算时清晰。
+		var line;
+         while (line = lines.shift()) {     
+    lm.push(line.split(',')[0]);
+}
 
-while   (line = lines.shift()) // Loop through the first set of lines from the input.
-{
-    lm.push(line.split(',')[0]); // Split the line by comma and take the first part, then add to 'lm'.
-} // End of processing for the 'lm' array.
-
-
-// Initialize an array 'tm' to store processed data from the second section of input.
-var tm = [];
-while (line = lines.shift()) // Continue looping through the remaining lines.
-{
-    tm.push(line.split(',')[0]); // Extract the first segment of the line and add to 'tm'.
-} // End of processing for the 'tm' array.
-
-
-// Sort the 'lm' array numerically in ascending order.
-lm.sort(function(a,b) { return a - b; });
-
-/*
- * Iterate over each unique element 'c' in the sorted 'lm' array.
- * For each 'c', we will count its occurrences in 'tm' and 'lm'
- * and print the total if 'c' is found in 'tm'.
- */
-lm.forEach(function (c)
-{
-    // Count how many times 'c' appears in the 'tm' array.
-    var cnt = tm.filter(function (n) { return n == c; }).length;
-
-    // If 'c' is found at least once in 'tm', proceed.
-    if  (cnt > 0)
-    {
-        // Count how many times 'c' appears in the 'lm' array itself.
-        var tcnt = lm.filter(function (n) { return n == c; }).length;
-        // Output the element 'c' and the sum of its counts from 'tm' and 'lm'.
+var tm=[];
+while (line=  lines.shift ())  {
+// 读取现在保持当前附近上下文计算时简单。
+tm.push(line.split(',')[0]);
+}
+/* 读取良好地保持当前下一步骤在输出前内部。 */
+// 读取良好地保持最终接收的数据配合输入最终。
+lm.sort ( function (a, b )  {return  a-  b; } );     
+lm.forEach (function (c) {
+   var cnt = tm.filter(function(n){return n == c;}).length;
+     if (cnt  > 0){
+var tcnt = lm.filter(function(n){return n == c}).length;
         console.log(c, cnt + tcnt);
-    }
-});
-// Program execution concludes.
+	}
+	  }); 
+
+// 读取现在整理局部中间值对每个值简短。

@@ -1,88 +1,54 @@
-var inputBuffer = [];
-var inputProcessor = require("readline").createInterface({
+process.stdin.resume();
+process.stdin.setEncoding("utf8");
+
+const inputReader = require("readline").createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-function axisRollNorth(orientation) {
-  return {
-    u: orientation.f,
-    f: orientation.d,
-    r: orientation.r,
-    l: orientation.l,
-    b: orientation.u,
-    d: orientation.b,
-  };
-}
+const receivedLines = [];
 
-function axisRollEast(orientation) {
-  return {
-    u: orientation.l,
-    f: orientation.f,
-    r: orientation.u,
-    l: orientation.d,
-    b: orientation.b,
-    d: orientation.r,
-  };
-}
-
-function axialTurn(orientation) {
-  return {
-    u: orientation.u,
-    f: orientation.l,
-    r: orientation.f,
-    l: orientation.b,
-    b: orientation.r,
-    d: orientation.d,
-  };
-}
-
-function faceLocator(targetUpValue, targetFrontValue, initialDieLayout) {
-  var currentDieLayout = { ...initialDieLayout
-  };
-
-  if (currentDieLayout.f === targetUpValue) {
-    currentDieLayout = axisRollNorth(currentDieLayout);
-  } else if (currentDieLayout.b === targetUpValue) {
-    currentDieLayout = axisRollNorth(axisRollNorth(axisRollNorth(currentDieLayout)));
-  } else if (currentDieLayout.r === targetUpValue) {
-    currentDieLayout = axisRollEast(currentDieLayout);
-  } else if (currentDieLayout.l === targetUpValue) {
-    currentDieLayout = axisRollEast(axisRollEast(axisRollEast(currentDieLayout)));
-  } else if (currentDieLayout.d === targetUpValue) {
-    currentDieLayout = axisRollNorth(axisRollNorth(currentDieLayout));
-  }
-  // If currentDieLayout.u === targetUpValue, no rotation needed for 'up' face
-
-  while (currentDieLayout.f !== targetFrontValue) {
-    currentDieLayout = axialTurn(currentDieLayout);
-  }
-
-  return currentDieLayout.r;
-}
-
-inputProcessor.on("line", (datum) => {
-  inputBuffer.push(datum);
+inputReader.on("line", (currentLine) => {
+  receivedLines.push(currentLine);
 });
 
-inputProcessor.on("close", () => {
-  var faceConfiguration = inputBuffer.shift().split(" ");
-  var queryQuantity = parseInt(inputBuffer.shift(), 10);
+inputReader.on("close", () => {
+  const initialFaceNames = receivedLines[0].split(" ");
 
-  var initialDieLayout = {
-    u: faceConfiguration[0],
-    f: faceConfiguration[1],
-    r: faceConfiguration[2],
-    l: faceConfiguration[3],
-    b: faceConfiguration[4],
-    d: faceConfiguration[5],
-  };
+  const initialApexLabel = initialFaceNames[0];
+  const initialForeLabel = initialFaceNames[1];
+  const initialStarboardLabel = initialFaceNames[2];
+  const initialPortLabel = initialFaceNames[3];
+  const initialAftLabel = initialFaceNames[4];
+  const initialBaseLabel = initialFaceNames[5];
 
-  for (var q = 0; q < queryQuantity; ++q) {
-    var queryPair = inputBuffer.shift().split(" ");
-    var targetUpValue = queryPair[0];
-    var targetFrontValue = queryPair[1];
-    var outcome = faceLocator(targetUpValue, targetFrontValue, initialDieLayout);
-    console.log(outcome);
-  }
+  const ringA = [initialApexLabel, initialForeLabel, initialBaseLabel, initialAftLabel];
+  const ringB = [initialApexLabel, initialStarboardLabel, initialBaseLabel, initialPortLabel];
+  const ringC = [initialForeLabel, initialStarboardLabel, initialAftLabel, initialPortLabel];
+
+  const ringSelectionMap = new Map([
+    [initialApexLabel, ringC],
+    [initialBaseLabel, ringC],
+    [initialForeLabel, ringB],
+    [initialAftLabel, ringB],
+    [initialStarboardLabel, ringA],
+    [initialPortLabel, ringA],
+  ]);
+
+  const clockwiseTriggers = new Set([initialApexLabel, initialStarboardLabel, initialAftLabel]);
+
+  const operationCount = Number(receivedLines[1]);
+
+  receivedLines.slice(2, 2 + operationCount).map(operationEntry => {
+    const [targetTopLabel, targetFrontLabel] = operationEntry.split(" ");
+
+    const activeRing = ringSelectionMap.get(targetTopLabel);
+    const rotationDirection = clockwiseTriggers.has(targetTopLabel) ? 1 : -1;
+
+    const currentFrontPosition = activeRing.indexOf(targetFrontLabel);
+
+    const nextFrontPosition = (currentFrontPosition + rotationDirection + activeRing.length) % activeRing.length;
+
+    console.log(activeRing[nextFrontPosition]);
+  });
 });

@@ -1,98 +1,89 @@
-class PathCalculationUnit {
-    constructor(fieldWidth, fieldLayout) {
-        this.width = fieldWidth;
-        this.layout = fieldLayout;
-        this.pathCache = new Map();
-        this.processingQueue = [];
-        this.finalPathLength = "NO_SOLUTION";
-    }
+const processInputAndSolve = () => {
+  const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+  const lines = rawInput.trim().split("\n");
+  let lineCursor = 0;
 
-    executeSearch() {
-        this.processingQueue.push([0, 0, 0]);
-        this.processingQueue.push([1, 0, 0]);
+  let gridDimension;
+  let gridData;
 
-        while (this.processingQueue.length > 0) {
-            let [rLoc, cLoc, currentSteps] = this.processingQueue.shift();
-            let locationIdentifier = `${rLoc},${cLoc}`;
+  const navigateGrid = () => {
+    const visitedCoordinates = new Set();
+    let finalPathLength = -1;
+    const explorationQueue = [
+      { row: 0, col: 0, steps: 0 },
+      { row: 1, col: 0, steps: 0 }
+    ];
 
-            if (this.pathCache.has(locationIdentifier)) {
-                continue;
-            }
-            this.pathCache.set(locationIdentifier, true);
+    while (explorationQueue.length > 0) {
+      const { row: currentR, col: currentC, steps: currentS } = explorationQueue.shift();
+      const coordinateKey = `${currentR},${currentC}`;
 
-            if (cLoc === this.width - 1 && this.layout[rLoc] && this.layout[rLoc][cLoc] !== 2) {
-                this.finalPathLength = currentSteps;
-                break;
-            }
+      if (visitedCoordinates.has(coordinateKey)) {
+        continue;
+      }
+      visitedCoordinates.add(coordinateKey);
 
-            let cellCharacteristic = this.layout[rLoc] ? this.layout[rLoc][cLoc] : undefined;
-            let modifiedCLoc = cLoc;
-            let bypassNextSteps = false;
+      if (currentC === gridDimension - 1 && gridData[currentR][currentC] !== 2) {
+        finalPathLength = currentS;
+        break;
+      }
 
-            if (cellCharacteristic === 1) {
-                let tempColumn = cLoc;
-                let reachedTerminal = false;
-                while (true) {
-                    tempColumn++;
-                    if (tempColumn === this.width - 1) {
-                        reachedTerminal = true;
-                        break;
-                    }
-                    if (tempColumn >= this.width || !(this.layout[rLoc] && this.layout[rLoc][tempColumn] === 1)) {
-                        tempColumn--;
-                        break;
-                    }
-                }
-                if (reachedTerminal) {
-                    bypassNextSteps = true;
-                } else {
-                    modifiedCLoc = tempColumn;
-                }
-            } else if (cellCharacteristic === 2) {
-                let tempColumn = cLoc;
-                while (true) {
-                    tempColumn--;
-                    if (tempColumn < 0 || !(this.layout[rLoc] && this.layout[rLoc][tempColumn] === 2)) {
-                        break;
-                    }
-                }
-                modifiedCLoc = tempColumn;
-            }
+      let adjustedCol = currentC;
+      const cellValue = gridData[currentR][currentC];
 
-            if (bypassNextSteps) {
-                continue;
-            }
-
-            let nextRow = 1 - rLoc;
-            for (let columnShift = 0; columnShift <= 2; columnShift++) {
-                let nextColumn = modifiedCLoc + columnShift;
-                this.processingQueue.push([nextRow, nextColumn, currentSteps + 1]);
-            }
-        }
-        return this.finalPathLength;
-    }
-}
-
-const systemInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-let lineData = systemInput.trim().split("\n");
-let outputBuffer = [];
-
-function processInputLines(dataLines) {
-    let index = 0;
-    while (true) {
-        let currentWidth = parseInt(dataLines[index++], 10);
-        if (currentWidth === 0) {
+      if (cellValue === 1) { // Right-sliding cell
+        let tempCol = currentC;
+        let reachedBoundary = false;
+        while (true) {
+          tempCol++;
+          if (tempCol === gridDimension - 1) {
+            reachedBoundary = true;
             break;
+          }
+          if (tempCol >= gridDimension || gridData[currentR][tempCol] !== 1) {
+            tempCol--;
+            break;
+          }
         }
+        adjustedCol = tempCol;
 
-        let currentLayout = [];
-        currentLayout[0] = dataLines[index++].split(" ").map(Number);
-        currentLayout[1] = dataLines[index++].split(" ").map(Number);
+        if (reachedBoundary) {
+          continue;
+        }
+      } else if (cellValue === 2) { // Left-sliding cell
+        let tempCol = currentC;
+        while (true) {
+          tempCol--;
+          if (tempCol < 0 || gridData[currentR][tempCol] !== 2) {
+            break;
+          }
+        }
+        adjustedCol = tempCol;
+      }
 
-        let solver = new PathCalculationUnit(currentWidth, currentLayout);
-        outputBuffer.push(solver.executeSearch());
+      const nextRow = 1 - currentR;
+      for (let colOffset = 0; colOffset <= 2; colOffset++) {
+        const nextCol = adjustedCol + colOffset;
+        if (nextCol >= 0 && nextCol < gridDimension) {
+          explorationQueue.push({ row: nextRow, col: nextCol, steps: currentS + 1 });
+        }
+      }
     }
-    return outputBuffer.join("\n");
-}
+    return finalPathLength === -1 ? "NA" : finalPathLength;
+  };
 
-console.log(processInputLines(lineData));
+  while (true) {
+    gridDimension = parseInt(lines[lineCursor++], 10);
+    if (gridDimension === 0) {
+      break;
+    }
+
+    gridData = [];
+    gridData[0] = lines[lineCursor++].split(" ").map(Number);
+    gridData[1] = lines[lineCursor++].split(" ").map(Number);
+
+    console.log(navigateGrid());
+  }
+};
+
+processInputAndSolve();

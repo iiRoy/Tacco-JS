@@ -1,129 +1,64 @@
 "use strict";
 
-/**
- * Helper function to safely read file content.
- * @param {string} filePath - The path to the file.
- * @returns {string} The content of the file as a UTF-8 string.
- */
-function acquireFileContents(filePath) {
-  // Utilizing Node.js 'fs' module for file system operations.
-  return require("fs").readFileSync(filePath, "utf8");
+function displayOutcome(message) {
+  console.log(message);
 }
 
-/**
- * Analyzes a sequence of numbers based on several conditions
- * to determine if it meets specific structural criteria.
- * This function handles input parsing, multiple validation steps,
- * and a conditional rearrangement phase.
- *
- * @param {string} inputDataString - Raw string input containing the sequence length
- *                                   and the sequence elements, separated by newlines.
- * @returns {void} Prints "Yes" or "No" to the console.
- */
-function assessNumericalSequence(inputDataString) {
-  // Split the entire input string into individual lines for processing.
-  const dataLines = inputDataString.split("\n");
+function getAdjustedInteger(stringValue) {
+  return parseInt(stringValue, 10) - 1;
+}
 
-  // Retrieve the first line, which represents the count of elements in the sequence.
-  const sequenceLength = Number(dataLines[0]);
+function swapArrayElements(targetArray, indexA, indexB) {
+  let temporaryHolder = targetArray[indexA];
+  targetArray[indexA] = targetArray[indexB];
+  targetArray[indexB] = temporaryHolder;
+}
 
-  // --- Input Validation and Early Exit Conditions ---
-  // Ensure the sequence length is a positive integer.
-  if (isNaN(sequenceLength) || sequenceLength <= 0) {
-    console.log("No");
-    return;
-  }
+function processPermutationData(inputString) {
+  const inputLines = inputString.split("\n");
+  const elementCount = parseInt(inputLines[0], 10);
 
-  // Parse the remaining lines into an array of numbers, adjusting each element.
-  // Each element is decremented by 1 as per the original problem's internal representation.
-  const currentPermutation = dataLines.slice(1).map(valStr => Number(valStr) - 1);
+  const permutationValues = inputLines.slice(1).map(getAdjustedInteger);
 
-  // Validate that the number of parsed elements matches the declared sequence length.
-  if (currentPermutation.length !== sequenceLength) {
-    console.log("No");
-    return;
-  }
-
-  // --- First Validation: Parity Consistency Check ---
-  // This loop verifies if the parity (even/odd) of each element at index `idx`
-  // matches the parity of its own index `idx`.
-  // An alternative check: `(element + index)` must be even for parity to match.
-  let isParityConsistent = true; // Flag to track parity validation status.
-  for (let idx = 0; idx < sequenceLength; ++idx) {
-    if ((currentPermutation[idx] + idx) % 2 !== 0) { // If sum is odd, parities differ.
-      isParityConsistent = false; // Parity mismatch found.
-      break; // No need to check further.
+  for (let currentIdx = 0; currentIdx < elementCount; currentIdx++) {
+    const currentElementParity = permutationValues[currentIdx] % 2;
+    const currentIndexParity = currentIdx % 2;
+    if (currentElementParity !== currentIndexParity) {
+      displayOutcome("No");
+      return;
     }
   }
 
-  // If parity check failed, output "No" and terminate.
-  if (!isParityConsistent) {
-    console.log("No");
-    return;
-  }
+  for (let swapIdx = elementCount - 1; swapIdx > 1; swapIdx--) {
+    const valueAtCurrent = permutationValues[swapIdx];
+    const valueAtPrevious = permutationValues[swapIdx - 1];
+    const valueAtTwoPrevious = permutationValues[swapIdx - 2];
 
-  // --- Conditional Rearrangement Phase (Backward Iteration with Swaps) ---
-  // Iterate backward through the array, starting from the third-to-last element (index N-1)
-  // down to the third element (index 2).
-  // This loop identifies specific decreasing triplets and performs a swap.
-  for (let reverseIdx = sequenceLength - 1; reverseIdx >= 2; --reverseIdx) {
-    // Cache values for clearer conditional logic.
-    const elementAtCurrent = currentPermutation[reverseIdx];
-    const elementAtPrev = currentPermutation[reverseIdx - 1];
-    const elementAtTwoPrev = currentPermutation[reverseIdx - 2];
+    const isCurrentSmallerThanPrevious = valueAtCurrent < valueAtPrevious;
+    const isPreviousSmallerThanTwoPrevious = valueAtPrevious < valueAtTwoPrevious;
 
-    // Condition for swap: if the triplet is in strictly decreasing order (P[i] < P[i-1] < P[i-2]).
-    if (elementAtCurrent < elementAtPrev && elementAtPrev < elementAtTwoPrev) {
-      // Perform a swap between the current element and the element two positions back.
-      // This uses array destructuring for a concise swap operation.
-      [currentPermutation[reverseIdx], currentPermutation[reverseIdx - 2]] = [elementAtTwoPrev, elementAtCurrent];
+    if (isCurrentSmallerThanPrevious && isPreviousSmallerThanTwoPrevious) {
+      swapArrayElements(permutationValues, swapIdx, swapIdx - 2);
     }
   }
 
-  // --- Second Validation: Post-Rearrangement Order Check ---
-  // This final validation loop also iterates backward, checking for a more complex
-  // pattern of disorder that would indicate the sequence is invalid after potential swaps.
-  let isStructureValid = true; // Flag to track the order validation status.
-  for (let checkIdx = sequenceLength - 1; checkIdx >= 2; --checkIdx) {
-    // Extract elements for the current triplet being examined.
-    const currentElement = currentPermutation[checkIdx];
-    const precedingElement = currentPermutation[checkIdx - 1];
-    const twoStepsBackElement = currentPermutation[checkIdx - 2];
+  for (let validationIdx = elementCount - 1; validationIdx > 1; validationIdx--) {
+    const currentVal = permutationValues[validationIdx];
+    const prevVal = permutationValues[validationIdx - 1];
+    const twoPrevVal = permutationValues[validationIdx - 2];
 
-    // Define sub-conditions for clarity in the complex `if` statement.
-    const conditionOne = currentElement < twoStepsBackElement;
-    const conditionTwo = currentElement > precedingElement;
-    const conditionThree = precedingElement > twoStepsBackElement;
+    const conditionA = currentVal < twoPrevVal;
+    const conditionB = currentVal > prevVal;
+    const conditionC = prevVal > twoPrevVal;
 
-    // The combined condition for invalidity:
-    // (current < two_steps_back) AND ((current > preceding) OR (preceding > two_steps_back))
-    if (conditionOne && (conditionTwo || conditionThree)) {
-      isStructureValid = false; // Invalid pattern found.
-      break; // No need to check further.
+    if (conditionA && (conditionB || conditionC)) {
+      displayOutcome("No");
+      return;
     }
   }
 
-  // If the post-rearrangement order check failed, output "No".
-  if (!isStructureValid) {
-    console.log("No");
-    return;
-  }
-
-  // If all checks pass and the sequence is deemed valid, output "Yes".
-  console.log("Yes");
+  displayOutcome("Yes");
   return;
 }
 
-// --- Main Execution Block ---
-// This block ensures the sequence analysis function is called with the appropriate input.
-// It also includes basic error handling for file operations.
-try {
-  // Read the input from standard input (/dev/stdin) using the helper function.
-  const rawInputContent = acquireFileContents("/dev/stdin");
-  // Pass the raw content to the main analysis function.
-  assessNumericalSequence(rawInputContent);
-} catch (error) {
-  // In case of any error during file reading or processing, log a generic error message.
-  console.error("An unexpected issue occurred during processing:", error.message);
-  console.log("No"); // Assume failure if an error occurs.
-}
+processPermutationData(require("fs").readFileSync("/dev/stdin", "utf8"));

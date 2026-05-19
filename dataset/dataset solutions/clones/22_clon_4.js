@@ -1,46 +1,40 @@
-const dataInputSource = process.platform === 'win32' ? 'tmp' : '/dev/stdin';
-const lineSeparationMark = process.platform === 'win32' ? '\r\n' : '\n';
+const systemSettings = { sourcePath: '/dev/stdin', lineSeparator: '\n' };
 
-const obtainRawData = (sourcePath) => require('fs').readFileSync(sourcePath, 'utf8');
+(function processInputAndCompute() {
+    require('fs').readFileSync(systemSettings.sourcePath, 'ascii')
+        .toString()
+        .trim()
+        .split(systemSettings.lineSeparator)
+        .filter(Boolean)
+        .map(rawLine => {
+            const numericStrings = rawLine.match(/-?\d+/g);
+            if (!numericStrings || numericStrings.length < 2) {
+                return null;
+            }
+            return numericStrings.map(Number);
+        })
+        .filter(Boolean)
+        .forEach(numPair => {
+            const firstOperand = numPair[0];
+            const secondOperand = numPair[1];
 
-const processDataSegments = (rawDataContent, separator) => {
-    return rawDataContent
-        .replace(/^\s+|\s+$/g, '')
-        .split(separator);
-};
+            const absFirst = Math.abs(firstOperand);
+            const absSecond = Math.abs(secondOperand);
 
-function determineCommonFactor(valueX, valueY) {
-    const numericX = Number(valueX);
-    const numericY = Number(valueY);
+            const commonDivisor = findGreatestCommonDivisor(absFirst, absSecond);
+            const commonMultiple = calculateLeastCommonMultiple(absFirst, absSecond, commonDivisor);
 
-    if (numericY === 0) {
-        return numericX;
+            console.log('%d %d', commonDivisor, commonMultiple);
+        });
+})();
+
+function findGreatestCommonDivisor(valA, valB) {
+    if (valB === 0) {
+        return valA;
     }
-    return determineCommonFactor(numericY, numericX % numericY);
+    return findGreatestCommonDivisor(valB, valA % valB);
 }
 
-function calculateLeastCommonMultiple(figureP, figureQ) {
-    const numP = Number(figureP);
-    const numQ = Number(figureQ);
-
-    if (numP === 0 || numQ === 0) {
-        return 0;
-    }
-
-    const commonDivisor = determineCommonFactor(numP, numQ);
-    return (numP / commonDivisor) * numQ;
-}
-
-const fullContent = obtainRawData(dataInputSource);
-const contentLines = processDataSegments(fullContent, lineSeparationMark);
-
-for (const entryRow of contentLines) {
-    const numberTokens = entryRow.split(' ');
-    const firstOperand = numberTokens[0];
-    const secondOperand = numberTokens[1];
-
-    const resultGCD = determineCommonFactor(firstOperand, secondOperand);
-    const resultLCM = calculateLeastCommonMultiple(firstOperand, secondOperand);
-
-    console.log(`${resultGCD} ${resultLCM}`);
+function calculateLeastCommonMultiple(valA, valB, divisor) {
+    return (valA / divisor) * valB;
 }

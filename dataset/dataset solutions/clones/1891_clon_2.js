@@ -1,30 +1,17 @@
-// This function serves as the primary processor for incoming information.
-function PrimaryProcessor  ( sourceData ) {
-    // Evaluate a specific condition based on the second character of the input data.
-    if  (  sourceData[1]  ===  'B'  )   {
-        // If the condition is met, output the 'ARC' identifier.
-        reportOutput.printString(  'ARC'  )  ;
-    }
+function ProcessInput(dataString) {
+  // Check the character at index 1 of the provided string.
+  if (dataString[1] === 'B') {
+    // If it's 'B', output 'ARC' to the console.
+    console.log('ARC');
+  }
 
-    // Check for an alternative condition on the same data point.
-    if  (  sourceData[1]  ===  'R'  )   {
-        // If the alternative condition is true, output the 'ABC' identifier.
-        reportOutput.printString(  'ABC'  )  ;
-    }
+  // Perform another check on the same character.
+  if (dataString[1] === 'R') {
+    // If it's 'R', output 'ABC' to the console.
+    console.log('ABC');
+  }
 }
 
-
-// Initiate the application's execution flow.
-// The necessary input data is acquired from the standard input stream.
-PrimaryProcessor(
-    loadDependency( "diskAccess" )
-        .obtainFileContents( "/dev/stdin" , "utf8" )
-);
-
-// Note: For this code to be executable in a Node.js environment,
-// 'reportOutput', 'loadDependency', and 'diskAccess' (with its methods)
-// would need to be globally defined or shimmed to their original Node.js counterparts.
-// Example: const reportOutput = { printString: console.log };
-// Example: const loadDependency = require;
-// Example: const diskAccess = loadDependency("fs");
-// Example: diskAccess.obtainFileContents = diskAccess.readFileSync;
+// Read the entire content from standard input as a UTF-8 string
+// and then pass it to our main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

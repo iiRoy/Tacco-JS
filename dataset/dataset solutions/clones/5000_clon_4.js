@@ -1,35 +1,31 @@
-let totalMatches = 0;
-
-function processInput(rawData) {
-    const textLines = rawData.trim().split('\n');
-
-    const configParts = textLines[0].split(' ');
-    const setSize = parseInt(configParts[0], 10);
-    const targetAverage = parseInt(configParts[1], 10);
-
-    const numericValues = textLines[1].split(' ').map(s => parseInt(s, 10));
-
-    function walkSubsets(currentIndex, accumulatedValue, selectedCount, currentMaskString) {
-        if (currentIndex === setSize) {
-            if (selectedCount > 0) {
-                if (accumulatedValue / selectedCount === targetAverage) {
-                    console.log(currentMaskString);
-                    totalMatches++;
-                }
-            }
-            return;
-        }
-
-        // Branch 1: Exclude the current element
-        walkSubsets(currentIndex + 1, accumulatedValue, selectedCount, currentMaskString + '0');
-
-        // Branch 2: Include the current element
-        walkSubsets(currentIndex + 1, accumulatedValue + numericValues[currentIndex], selectedCount + 1, currentMaskString + '1');
-    }
-
-    walkSubsets(0, 0, 0, '');
-
-    console.log(totalMatches);
+function padBinaryString(valueString, targetLength) {
+  return String(valueString).padStart(targetLength, '0');
 }
 
-processInput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));
+function processInputData(rawData) {
+  const [firstLineData, secondLineData] = rawData.split('\n');
+  const [subsetSize, desiredAverage] = firstLineData.split(' ').map(Number);
+  const sourceNumbers = secondLineData.split(' ').map(Number);
+
+  let matchCount = 0;
+
+  for (let subsetMask = 1; subsetMask < (1 << subsetSize); subsetMask++) {
+    let currentSum = 0;
+    let currentCount = 0;
+
+    for (let elementIndex = 0; elementIndex < subsetSize; elementIndex++) {
+      if ((subsetMask >> elementIndex) & 1) {
+        currentSum += sourceNumbers[elementIndex];
+        currentCount++;
+      }
+    }
+
+    if (desiredAverage === currentSum / currentCount) {
+      console.log(padBinaryString(subsetMask.toString(2), subsetSize));
+      matchCount++;
+    }
+  }
+  console.log(matchCount);
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

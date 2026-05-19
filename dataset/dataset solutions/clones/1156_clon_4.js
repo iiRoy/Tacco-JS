@@ -1,57 +1,57 @@
-function runSystem(dataInput) {
-    const lineSegments = dataInput.split('\n');
-    const initialParameters = lineSegments[0].split(' ').map(Number);
-    const entityCount = initialParameters[0];
-    const queryCount = initialParameters[1];
+function Main(inputData) {
+    const lines = inputData.split("\n");
+    const [elementCount, queryCount] = lines[0].split(" ").map(Number);
 
-    const lineage = Array.from({ length: entityCount }, (_, k) => k);
-    const domainSize = Array.from({ length: entityCount }, () => 1);
+    const setManager = new DisjointSet(elementCount);
 
-    const discoverOrigin = (targetIndex) => {
-        if (lineage[targetIndex] === targetIndex) {
-            return targetIndex;
+    for (let k = 1; k <= queryCount; ++k) {
+        const queryDetails = lines[k].split(" ").map(Number);
+        const operationType = queryDetails[0];
+        const firstElement = queryDetails[1];
+        const secondElement = queryDetails[2];
+
+        if (operationType === 0) {
+            setManager.mergeSets(firstElement, secondElement);
+        } else {
+            console.log(setManager.areConnected(firstElement, secondElement));
         }
-        return discoverOrigin(lineage[targetIndex]);
+    }
+}
+
+function DisjointSet(totalElements) {
+    this.parentMap = Array.from({ length: totalElements }, (_, index) => index);
+    this.setSizes = Array(totalElements).fill(1);
+
+    this.findRepresentative = function(itemIndex) {
+        let current = itemIndex;
+        while (this.parentMap[current] !== current) {
+            this.parentMap[current] = this.parentMap[this.parentMap[current]];
+            current = this.parentMap[current];
+        }
+        return current;
     };
 
-    const mergeDomains = (firstIndex, secondIndex) => {
-        const rootOne = discoverOrigin(firstIndex);
-        const rootTwo = discoverOrigin(secondIndex);
+    this.mergeSets = function(itemA, itemB) {
+        const rootA = this.findRepresentative(itemA);
+        const rootB = this.findRepresentative(itemB);
 
-        if (rootOne === rootTwo) {
+        if (rootA === rootB) {
             return false;
         }
 
-        if (domainSize[rootOne] < domainSize[rootTwo]) {
-            lineage[rootOne] = rootTwo;
-            domainSize[rootTwo] += domainSize[rootOne];
+        if (this.setSizes[rootA] < this.setSizes[rootB]) {
+            this.parentMap[rootA] = rootB;
+            this.setSizes[rootB] += this.setSizes[rootA];
         } else {
-            lineage[rootTwo] = rootOne;
-            domainSize[rootOne] += domainSize[rootTwo];
+            this.parentMap[rootB] = rootA;
+            this.setSizes[rootA] += this.setSizes[rootB];
         }
         return true;
     };
 
-    const checkLinkage = (firstIndex, secondIndex) => {
-        return discoverOrigin(firstIndex) === discoverOrigin(secondIndex) ? 1 : 0;
+    this.areConnected = function(itemA, itemB) {
+        return this.findRepresentative(itemA) === this.findRepresentative(itemB) ? 1 : 0;
     };
-
-    const resultAccumulator = [];
-
-    for (let j = 0; j < queryCount; j++) {
-        const currentInstruction = lineSegments[j + 1].split(' ').map(Number);
-        const instructionType = currentInstruction[0];
-        const primaryOperand = currentInstruction[1];
-        const secondaryOperand = currentInstruction[2];
-
-        if (instructionType === 0) {
-            mergeDomains(primaryOperand, secondaryOperand);
-        } else {
-            resultAccumulator.push(checkLinkage(primaryOperand, secondaryOperand));
-        }
-    }
-
-    console.log(resultAccumulator.join('\n'));
 }
 
-runSystem(require("node:fs").readFileSync(0, "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

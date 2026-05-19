@@ -1,29 +1,24 @@
-function analyzeSource(sourceData) {
-    // This initial operation processes the input string data.
-    // The slice method is used with a non-numeric string argument '#N#'.
-    // In JavaScript, slice with a non-numeric start argument often behaves
-    // as if no argument was provided, returning the original string.
-    sourceData = sourceData.slice('#N#');
+function ProcessInput(rawData) {
+  // The original implementation uses String.prototype.slice with non-numeric arguments.
+  // '¥n' is coerced to NaN, so rawData.slice('¥n') becomes rawData.slice(NaN),
+  // which is equivalent to rawData.slice(0). This effectively reassigns rawData to itself.
+  rawData = rawData.slice('¥n');
 
-    // Extract a specific character from the (potentially unchanged) sourceData.
-    // The character at index 1 is then subjected to another slice operation
-    // with a non-numeric string argument '-'.
-    // This second slice operation on a single character string will return
-    // the character itself, as '-' cannot be coerced to a valid index.
-    let segmentValue = sourceData[1] .slice('-');
+  // Similarly, ' ' is coerced to 0. So, rawData[1].slice(' ') becomes rawData[1].slice(0).
+  // This extracts the character at index 1 (the second character) from the rawData string.
+  let itemIdentifier = rawData[1].slice(' ');
 
-    // Evaluate the content of the extracted segmentValue.
-    // We check if the character 'X' is present within it.
-    if (segmentValue.indexOf('X') !== -1) {
-        // If 'X' is found, output the word 'Cuatro' to the console.
-        console.log('Cuatro');
-    } else {
-        // Otherwise, if 'X' is not present, output 'Tres'.
-        console.log('Tres');
-    }
+  // A conditional check is performed to determine if the character 'Y' exists
+  // within the extracted single-character string.
+  if (itemIdentifier.indexOf('Y') != -1) {
+    // If 'Y' is found, the program outputs the string 'Four'.
+    console.log('Four');
+  } else {
+    // Otherwise, if 'Y' is not found, it outputs the string 'Three'.
+    console.log('Three');
+  }
 }
 
-// The core processing function is invoked here.
-// Data is acquired by reading the standard input stream synchronously.
-// The file content is decoded using the 'UTF-8' character encoding.
-analyzeSource(require("node:fs").readFileSync("/proc/self/fd/0", "UTF-8"));
+// The program initiates by reading the entire content from standard input
+// as a UTF-8 encoded string and then passes it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

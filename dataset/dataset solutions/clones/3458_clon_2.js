@@ -1,98 +1,71 @@
-// This JavaScript module provides a solution to calculate the number of distinct paths
-// through a specific type of grid, often referred to as an Amida lottery or ladder.
-// The calculation involves dynamic programming and adheres to specific rules for ladder configurations.
+function calculateAmidaPaths(inputString) {
+  // Parse the input string into numerical values for height, width, and target column.
+  // The input is expected to be space-separated numbers.
+  const parsedValues = inputString.split(" ").map(item => ~~item);
 
-/**
- * Computes the total number of ways to reach a specific target column at a given height
- * in an Amida-style grid, respecting certain ladder placement rules.
- *
- * @param {string} rawData - A space-separated string containing three integers:
- *                           gridHeight (H), gridWidth (W), and targetColumn (K).
- * @returns {number} The total count of valid paths to the target column, modulo a prime.
- */
-function ComputeSolution(rawData) {
-  // Parse the input string into an array of numerical values.
-  // Each string segment is converted to an integer using parseInt.
-  const parsedValues = rawData.split(" ").map(numStr => parseInt(numStr, 10));
+  // Extract problem parameters
+  const gridHeight = parsedValues[0]; // Represents H in the original problem
+  const gridWidth = parsedValues[1];  // Represents W in the original problem
+  const finalColumn = parsedValues[2]; // Represents K in the original problem
 
-  // Destructure the parsed values into meaningful variables for grid dimensions.
-  const gridHeight = parsedValues[0];      // Represents the total height (H) of the grid.
-  const gridWidth = parsedValues[1];       // Represents the total width (W) of the grid.
-  const targetColumn = parsedValues[2];    // Represents the 1-indexed target column (K).
+  // Define the modulo value for calculations to prevent integer overflow.
+  const modulusValue = 10**9 + 7;
 
-  // A large prime number used as a modulus to prevent integer overflow in calculations.
-  const primeModulus = 1_000_000_007;
-
-  // Edge case: If the grid width is 1, there's only one possible path.
-  if (gridWidth === 1) return 1;
-
-  // --- Ladder Configuration Generation ---
-  // Generate a list of all valid horizontal ladder rung configurations for each level.
-  // A configuration is valid if no two adjacent rungs exist (represented by "11").
-  const permissibleLadderConfigs = new Array(Math.pow(2, gridWidth - 1)) // Total possible configurations for W-1 gaps.
-    .fill(0)                                 // Initialize array elements (values are not important here).
-    .map((_unused, index) => index)          // Map to their integer indices (0 to 2^(W-1)-1).
-    .map(configIndex => configIndex.toString(2)) // Convert each index to its binary string representation.
-    .filter(binaryString => !/11/.test(binaryString)) // Filter out invalid configurations (containing "11").
-    // Pad with leading zeros to ensure consistent length for string manipulation.
-    .map(shortString => "0000000" + shortString)
-    // Trim the padded string to match the required length (gridWidth - 1 bits).
-    .map(paddedString => paddedString.slice(1 - gridWidth))
-    // Add a '0' at both ends of the binary string. This simplifies boundary checks
-    // when checking for '10', '01', or '00' patterns at grid edges.
-    .map(finalString => "0" + finalString + "0");
-
-  // --- Dynamic Programming Table Initialization ---
-  // `waysToReach` is a 2D array where `waysToReach[r][c]` stores the number of ways
-  // to reach cell (r, c) from the starting point.
-  let waysToReach = new Array(gridHeight + 1);
-  for (let rowIdx = 0; rowIdx <= gridHeight; rowIdx++) {
-    waysToReach[rowIdx] = new Array(gridWidth).fill(0);
+  // If the width is 1, there's only one possible path, so return 1 immediately.
+  if (gridWidth === 1) {
+    return 1;
   }
 
-  // Base case: There is exactly one way to be at the starting position (0, 0).
-  waysToReach[0][0] = 1;
+  // Generate a list of all valid Amida ladder configurations for a given width.
+  // A configuration is valid if no two adjacent vertical lines are connected by a horizontal bar.
+  // This means no "11" pattern in the binary representation of the configuration.
+  const permissibleLadderConfigs = Array(2**(gridWidth - 1)) // Total possible configurations for W-1 gaps
+    .fill(0) // Initialize with zeros
+    .map((_, index) => index) // Map to their numerical index (0 to 2^(W-1)-1)
+    .map(num => num.toString(2)) // Convert each index to its binary string representation
+    .filter(binaryPattern => !/11/.test(binaryPattern)) // Filter out patterns with "11" (adjacent bars)
+    .map(pattern => "000000" + pattern) // Prepend zeros for consistent length handling
+    .map(longPattern => longPattern.slice(1 - gridWidth)) // Trim to the correct length (W-1 bits)
+    .map(trimmedPattern => "0" + trimmedPattern + "0"); // Add '0' at both ends to simplify boundary checks
 
-  // --- Dynamic Programming Calculation ---
-  // Iterate through each level (row) of the grid, starting from the first level.
-  for (let currentLevel = 1; currentLevel <= gridHeight; currentLevel++) {
-    // For each level, apply every valid ladder configuration.
-    permissibleLadderConfigs.forEach(function(currentConfig) {
-      // For each configuration, calculate the ways to reach each column in the current level.
-      for (let currentPos = 0; currentPos < gridWidth; currentPos++) {
-        // Define a lookup object for state transitions based on rung patterns.
-        // "10": Rung on the left, means coming from the left column.
-        // "01": Rung on the right, means coming from the right column.
-        // "00": No rung, means coming from the same column.
-        const transitionMap = {
-          "10": () => waysToReach[currentLevel][currentPos] += waysToReach[currentLevel - 1][currentPos - 1],
-          "01": () => waysToReach[currentLevel][currentPos] += waysToReach[currentLevel - 1][currentPos + 1],
-          "00": () => waysToReach[currentLevel][currentPos] += waysToReach[currentLevel - 1][currentPos]
-        };
+  // Initialize the dynamic programming table.
+  // dpTable[i][j] will store the number of ways to reach column 'j' at row 'i'.
+  const dpTable = Array(gridHeight + 1);
+  for (let rowIndex = 0; rowIndex <= gridHeight; rowIndex++) {
+    dpTable[rowIndex] = Array(gridWidth).fill(0);
+  }
 
-        // Execute the appropriate transition function based on the two-bit pattern
-        // formed by the current position and its right neighbor in the configuration.
-        transitionMap[currentConfig[currentPos] + currentConfig[currentPos + 1]]();
+  // Base case: At row 0, there's 1 way to be at column 0 (starting point).
+  dpTable[0][0] = 1;
 
-        // Apply the prime modulus to the result to keep the number within limits.
-        waysToReach[currentLevel][currentPos] %= primeModulus;
+  // Iterate through each row from 1 to H (inclusive).
+  for (let currentRow = 1; currentRow <= gridHeight; currentRow++) {
+    // For each row, consider every valid Amida configuration.
+    permissibleLadderConfigs.forEach(function(currentAmidaConfig) {
+      // For each configuration, calculate the path counts for all columns in the current row.
+      for (let currentColumn = 0; currentColumn < gridWidth; currentColumn++) {
+        // Determine the movement based on the current column and the Amida configuration.
+        // "10" means a bar connects current column to the left, so we came from left (j-1).
+        // "01" means a bar connects current column to the right, so we came from right (j+1).
+        // "00" means no bar, so we came from the same column (j).
+        ({
+          "10": _ => dpTable[currentRow][currentColumn] += dpTable[currentRow - 1][currentColumn - 1],
+          "01": _ => dpTable[currentRow][currentColumn] += dpTable[currentRow - 1][currentColumn + 1],
+          "00": _ => dpTable[currentRow][currentColumn] += dpTable[currentRow - 1][currentColumn]
+        })[currentAmidaConfig[currentColumn] + currentAmidaConfig[currentColumn + 1]]();
+
+        // Apply modulo operation to keep the numbers within bounds.
+        dpTable[currentRow][currentColumn] %= modulusValue;
       }
     });
   }
 
-  // The final answer is the number of ways to reach the `targetColumn` at the `gridHeight`.
-  // Note: `targetColumn` is 1-indexed, so we use `targetColumn - 1` for 0-indexed array access.
-  return waysToReach[gridHeight][targetColumn - 1];
+  // The final answer is the number of ways to reach the target column (K-1) at the final row (H).
+  return dpTable[gridHeight][finalColumn - 1];
 }
 
-// Environment check: If running in a Node.js-like environment, read input from stdin.
-if (typeof module !== 'undefined' && module.exports) {
-  // Alias the global 'require' function to 'nodeModuleLoader' to adhere to renaming rules.
-  const nodeModuleLoader = require;
-  const fileSystemModule = nodeModuleLoader("fs"); // Load the file system module.
-  const encodingType = "utf8";                     // Define the character encoding for input.
-
-  // Read the entire content of standard input, then compute and print the solution.
-  const inputData = fileSystemModule.readFileSync("/dev/stdin", encodingType);
-  console.info(ComputeSolution(inputData));
+// This block handles input/output when the script is run in a Node.js environment.
+// It reads from standard input, processes it using the main function, and prints the result.
+if (typeof require !== 'undefined') {
+  console.log(calculateAmidaPaths(require("fs").readFileSync("/dev/stdin", "utf8")));
 }

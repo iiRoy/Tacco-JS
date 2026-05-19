@@ -1,39 +1,38 @@
-function ProcessInput(incomingContent) {
-  incomingContent = incomingContent.split("\n");
-
-  let depthLevel = parseInt(incomingContent[0].split(" ")[0]);
-  let targetPosition = parseInt(incomingContent[0].split(" ")[1]);
-
-  const pattyCounts = new Array(50);
-  const totalLengths = new Array(50);
-
+function ProcessInput(rawData) {
+  rawData = rawData.split("\n");
+  let levelCount = parseInt(rawData[0].split(" ")[0]);
+  let targetPosition = parseInt(rawData[0].split(" ")[1]);
+  
+  let pattyCounts = new Array(50);
+  let totalLayerCounts = new Array(50);
+  
   pattyCounts[0] = 1;
-  totalLengths[0] = 1;
-
-  let foundPatties = 0;
-
-  for (let currentLayer = 1; currentLayer <= 50; ++currentLayer) {
-    pattyCounts[currentLayer] = pattyCounts[currentLayer - 1] * 2 + 1;
-    totalLengths[currentLayer] = totalLengths[currentLayer - 1] * 2 + 3;
+  totalLayerCounts[0] = 1;
+  
+  let resultPatties = 0;
+  
+  for (let idx = 1; idx <= 50; idx++) {
+    pattyCounts[idx] = pattyCounts[idx - 1] * 2 + 1;
+    totalLayerCounts[idx] = totalLayerCounts[idx - 1] * 2 + 3;
   }
-
-  let currentLength = totalLengths[depthLevel];
-  let currentPatties = pattyCounts[depthLevel];
-
+  
+  let currentTotalLayers = totalLayerCounts[levelCount];
+  let currentPattyCount = pattyCounts[levelCount];
+  
   while (targetPosition > 0) {
-    if (targetPosition > (currentLength - 1) / 2) {
-      targetPosition = targetPosition - (currentLength - 1) / 2 - 1;
-      foundPatties = foundPatties + (currentPatties - 1) / 2 + 1;
-      currentLength = (currentLength - 1) / 2 - 1;
-      currentPatties = (currentPatties - 1) / 2;
+    if (targetPosition > (currentTotalLayers - 1) / 2) {
+      targetPosition = targetPosition - (currentTotalLayers - 1) / 2 - 1;
+      resultPatties = resultPatties + (currentPattyCount - 1) / 2 + 1;
+      currentTotalLayers = (currentTotalLayers - 1) / 2 - 1;
+      currentPattyCount = (currentPattyCount - 1) / 2;
     } else {
       targetPosition = targetPosition - 1;
-      currentLength = (currentLength - 1) / 2 - 1;
-      currentPatties = (currentPatties - 1) / 2;
+      currentTotalLayers = (currentTotalLayers - 1) / 2 - 1;
+      currentPattyCount = (currentPattyCount - 1) / 2;
     }
   }
-
-  console.log('%s', foundPatties);
+  
+  console.log('%s', resultPatties);
 }
-
+  
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

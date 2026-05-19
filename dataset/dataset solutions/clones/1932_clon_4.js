@@ -1,20 +1,23 @@
-const performSequenceGeneration = (inputFragments) => {
-  const [primaryValue, iterationCount] = inputFragments[0].split(' ').map(numericConversion => +numericConversion);
+const processInputAndOutput = (inputLines) => {
+  const [upperBound, iterationCount] = inputLines[0].split(' ').map(Number);
 
-  const oddStrategy = (num, idx) => [1 + idx, (num - 1) - idx];
-  const evenStrategy = (num, idx) => [num / 2 - idx, num / 2 + 1 + idx];
+  const generatePairString = (index) => {
+    return (upperBound % 2 !== 0)
+      ? `${1 + index} ${upperBound - 1 - index}`
+      : `${upperBound / 2 - index} ${upperBound / 2 + 1 + index}`;
+  };
 
-  const pairSelector = (primaryValue % 2 !== 0) ? oddStrategy : evenStrategy;
-
-  const resultantSets = Array.from({ length: iterationCount }, (_, idx) => pairSelector(primaryValue, idx));
-
-  resultantSets.forEach(currentSet => console.log(`${currentSet[0]} ${currentSet[1]}`));
+  Array.from({ length: iterationCount }, (_, currentIdx) => generatePairString(currentIdx))
+       .forEach(pairOutput => console.log(pairOutput));
 };
 
-let accumulatedInput = '';
-process.stdin.on('data', chunk => accumulatedInput += chunk);
+let receivedData = '';
+process.stdin.on('data', (chunk) => {
+  receivedData += chunk;
+});
+
 process.stdin.on('end', () => {
-  const {EOL: lineBreaker} = require('os');
-  const inputLines = accumulatedInput.split(lineBreaker);
-  performSequenceGeneration(inputLines);
+  const { EOL: lineSeparator } = require('os');
+  const parsedLines = receivedData.split(lineSeparator);
+  processInputAndOutput(parsedLines);
 });

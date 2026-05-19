@@ -1,6 +1,6 @@
-const processData = (rawContent) => {
-    const initialSegment = rawContent.split('\n')[0];
-    const [leftOperand, rightOperand] = initialSegment.split(' ').slice(0, 2).map(Number);
-    return leftOperand - 1 - rightOperand;
-};
-console.log(processData(require("fs").readFileSync("/dev/stdin", "utf8")));
+function Main(sourceText) {
+    const [firstLineContent] = sourceText.trim().split("\n");
+    const [firstNum, secondNum] = firstLineContent.split(" ").map(Number);
+    console.log(firstNum - (secondNum + 1));
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

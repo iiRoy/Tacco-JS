@@ -1,68 +1,53 @@
-class LineReader {
-    constructor(sourcePath) {
-        this.inputLines = require("node:fs").readFileSync(sourcePath, "utf8").trim().split("\n");
-        this.linePointer = 0;
+const createLineStream = function* () {
+    const rawContent = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+    const lines = rawContent.split("\n");
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+        yield lines[currentLineIndex++];
     }
+};
 
-    retrieveNextEntry() {
-        if (!this.hasMoreEntries()) {
-            throw new Error("SupplyExhausted: No more entries available.");
-        }
-        const currentLine = this.inputLines[this.linePointer];
-        this.linePointer++;
-        return currentLine;
+const inputLineGenerator = createLineStream();
+
+const fetchNumericLine = () => {
+    const lineResult = inputLineGenerator.next();
+    if (lineResult.done) {
+        throw "NoSuchElementException:次に要素は無いよ";
     }
+    return lineResult.value.split(" ").map(Number);
+};
 
-    hasMoreEntries() {
-        return this.linePointer < this.inputLines.length;
-    }
-}
+const emitResult = (outputContent) => console.log(outputContent);
 
-const convertToInteger = (strValue) => Number.parseInt(strValue, 10);
-const splitStringBySpace = (strValue) => strValue.split(" ");
-const splitStringBySpaceAndParse = (strValue) => strValue.split(" ").map(Number);
-const splitStringByCharacter = (strValue) => strValue.split("");
-const splitStringByCharacterAndParse = (strValue) => strValue.split("").map(Number);
+const calculateFinalState = (initialValues, iterationCount) => {
+    const iterationSequence = Array.from({ length: iterationCount }, (_, idx) => idx);
 
-const printResult = (messageContent) => console.log(messageContent);
-const printError = (errorMessage) => console.error(errorMessage);
+    const finalValues = iterationSequence.reduce(([currentFirst, currentSecond], currentIterationIndex) => {
+        const isEvenTurn = currentIterationIndex % 2 === 0;
 
-function performRecursiveTransformation(currentX, currentY, remainingCycles, initialCycles) {
-    if (remainingCycles === 0) {
-        return [currentX, currentY];
-    }
+        const [nextFirst, nextSecond] = isEvenTurn
+            ? (() => {
+                const modifiedFirst = currentFirst - (currentFirst % 2);
+                return [modifiedFirst / 2, currentSecond + (modifiedFirst / 2)];
+            })()
+            : (() => {
+                const modifiedSecond = currentSecond - (currentSecond % 2);
+                return [currentFirst + (modifiedSecond / 2), modifiedSecond / 2];
+            })();
 
-    const currentCycleIndex = initialCycles - remainingCycles;
+        return [nextFirst, nextSecond];
+    }, initialValues);
 
-    let nextX = currentX;
-    let nextY = currentY;
+    return finalValues;
+};
 
-    if (currentCycleIndex % 2 === 0) {
-        if (nextX % 2 === 1) {
-            nextX--;
-        }
-        nextY += nextX / 2;
-        nextX /= 2;
-    } else {
-        if (nextY % 2 === 1) {
-            nextY--;
-        }
-        nextX += nextY / 2;
-        nextY /= 2;
-    }
+const executeTransformation = () => {
+    const initialParameters = fetchNumericLine();
+    const [firstVal, secondVal, iterationCount] = initialParameters;
 
-    return performRecursiveTransformation(nextX, nextY, remainingCycles - 1, initialCycles);
-}
+    const [finalFirst, finalSecond] = calculateFinalState([firstVal, secondVal], iterationCount);
 
-function executeCoreLogic() {
-    const dataStream = new LineReader("/dev/stdin");
+    emitResult(`${finalFirst} ${finalSecond}`);
+};
 
-    const initialParametersLine = dataStream.retrieveNextEntry();
-    const [valX, valY, totalCycles] = splitStringBySpaceAndParse(initialParametersLine);
-
-    const finalValues = performRecursiveTransformation(valX, valY, totalCycles, totalCycles);
-
-    printResult(finalValues[0] + " " + finalValues[1]);
-}
-
-executeCoreLogic();
+executeTransformation();

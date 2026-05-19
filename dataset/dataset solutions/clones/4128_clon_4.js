@@ -1,53 +1,40 @@
 'use strict';
-console.log((function(rawDataContent) {
-    const maximumValueForPrimeCalc = 50000;
-    
-    // Step 1: Generate primality flags using a standard Sieve of Eratosthenes.
-    // This array indicates if an index (number) is prime.
-    // Equivalent to the original 'a' array's underlying purpose for 's', but direct.
-    const isNumberPrime = new Array(maximumValueForPrimeCalc + 1).fill(true);
-    isNumberPrime[0] = false; // Zero is not a prime number
-    isNumberPrime[1] = false; // One is not a prime number
+console.log((function(raw_input_data) {
+    const input_lines = raw_input_data.trim().split('\n');
 
-    for (let candidate = 2; candidate * candidate <= maximumValueForPrimeCalc; candidate++) {
-        if (isNumberPrime[candidate]) {
-            for (let multiple = candidate * candidate; multiple <= maximumValueForPrimeCalc; multiple += candidate) {
-                isNumberPrime[multiple] = false;
+    const query_count = parseInt(input_lines[0].split(' ')[0], 10);
+
+    const query_ranges = input_lines.slice(1).map(line => line.split(' ').map(Number));
+
+    const prime_limit = 50000;
+
+    const is_prime_map = new Array(prime_limit + 1).fill(true);
+    is_prime_map[0] = false;
+    is_prime_map[1] = false;
+
+    for (let current_num = 2; current_num * current_num <= prime_limit; current_num++) {
+        if (is_prime_map[current_num]) {
+            for (let multiple = current_num * current_num; multiple <= prime_limit; multiple += current_num) {
+                is_prime_map[multiple] = false;
             }
         }
     }
 
-    // Step 2: Compute prefix sums for prime counts.
-    // This array stores the count of primes up to its index.
-    // Equivalent to the original 's' array after its second loop.
-    const primeCountPrefixSum = new Array(maximumValueForPrimeCalc + 1).fill(0);
-    for (let numberIndex = 2; numberIndex <= maximumValueForPrimeCalc; numberIndex++) {
-        primeCountPrefixSum[numberIndex] = primeCountPrefixSum[numberIndex - 1] + (isNumberPrime[numberIndex] ? 1 : 0);
+    const cumulative_prime_counts = new Array(prime_limit + 1).fill(0);
+    for (let idx = 1; idx <= prime_limit; idx++) {
+        cumulative_prime_counts[idx] = cumulative_prime_counts[idx - 1] + (is_prime_map[idx] ? 1 : 0);
     }
-    // primeCountPrefixSum[0] and [1] correctly remain 0.
 
-    // Step 3: Parse input data.
-    const inputLines = rawDataContent.split('\n').filter(Boolean); // Filter out any empty lines
-    const numberOfQueries = parseInt(inputLines[0].trim(), 10);
-    
-    // Map remaining lines into an array of query objects for clarity.
-    const queryRequests = inputLines.slice(1, numberOfQueries + 1).map(line => {
-        const valueParts = line.split(' ').filter(Boolean).map(val => parseInt(val.trim(), 10));
-        return { initialLower: valueParts[0], initialUpper: valueParts[1] };
-    });
+    const collected_results = [];
+    for (let q_idx = 0; q_idx < query_count; q_idx++) {
+        const [left_val, right_val] = query_ranges[q_idx];
 
-    // Step 4: Process each query using a functional approach.
-    const collectedResults = queryRequests.map(currentQuery => {
-        // Replicate the original index transformation for query bounds.
-        // Math.floor is used for robustness, though input constraints likely make it integer division.
-        const derivedLowerIndex = Math.floor((currentQuery.initialLower - 1) / 2);
-        const derivedUpperIndex = Math.floor((currentQuery.initialUpper - 1) / 2) + 1;
-        
-        // Calculate the difference in cumulative prime counts for the derived range.
-        return primeCountPrefixSum[derivedUpperIndex] - primeCountPrefixSum[derivedLowerIndex];
-    });
+        const query_lower_bound_idx = Math.floor((left_val - 1) / 2);
+        const query_upper_bound_idx = Math.floor((right_val - 1) / 2) + 1;
 
-    // Step 5: Format and return the results.
-    return collectedResults.join('\n');
+        collected_results.push(cumulative_prime_counts[query_upper_bound_idx] - cumulative_prime_counts[query_lower_bound_idx]);
+    }
 
-}(require('fs').readFileSync('/dev/stdin', 'utf8')));
+    return collected_results.join('\n');
+
+})(require('fs').readFileSync('/dev/stdin', 'utf8')));

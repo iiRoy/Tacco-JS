@@ -1,22 +1,39 @@
-function processInput(dataPacket) {
-  const numericValues = dataPacket.split(/\s|\n/).filter(Boolean).map(Number);
-  const totalElements = numericValues[0];
-  let initialCapital = numericValues[1];
-  const expenseAmounts = numericValues.slice(2);
-  expenseAmounts.sort((first, second) => first - second);
-  const finalTally = expenseAmounts.reduce(
-    (accumulator, currentExpense) => {
-      if (accumulator.currentCapital >= currentExpense) {
-        accumulator.currentCapital -= currentExpense;
-        accumulator.satisfiedCount++;
+"use strict";
+
+function processCandyDistribution(rawInputData) {
+  const inputSegments = rawInputData.split("\n");
+
+  const [totalChildrenCount, initialCandyAmount] = inputSegments[0].split(" ").map(Number);
+
+  const childCandyRequirements = inputSegments[1].split(" ").map(Number).sort((valA, valB) => valA - valB);
+
+  const distributionOutcome = childCandyRequirements.reduce(
+    (currentStatus, requiredByChild) => {
+      if (currentStatus.availableCandy < requiredByChild) {
+        return currentStatus;
       }
-      return accumulator;
+
+      return {
+        availableCandy: currentStatus.availableCandy - requiredByChild,
+        childrenSatisfied: currentStatus.childrenSatisfied + 1,
+      };
     },
-    { currentCapital: initialCapital, satisfiedCount: 0 }
+    { availableCandy: initialCandyAmount, childrenSatisfied: 0 }
   );
-  if (finalTally.currentCapital > 0 && finalTally.satisfiedCount > 0) {
-    finalTally.satisfiedCount--;
+
+  let finalSatisfiedCount = distributionOutcome.childrenSatisfied;
+  const remainingCandyAmount = distributionOutcome.availableCandy;
+
+  if (remainingCandyAmount !== 0 && finalSatisfiedCount !== 0) {
+    finalSatisfiedCount--;
   }
-  console.log(finalTally.satisfiedCount);
+
+  return finalSatisfiedCount;
 }
-processInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function Main(input) {
+  const resultValue = processCandyDistribution(input);
+  console.log(resultValue);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

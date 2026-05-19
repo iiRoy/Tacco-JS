@@ -1,63 +1,93 @@
-class InputSource {
+class InputHandler {
     constructor() {
-        this.records = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-        this.currentPosition = 0;
+        const sourceText = require("fs").readFileSync("/dev/stdin", "utf8").trim();
+        this.lineBuffer = sourceText.split("\n");
+        this.currentLineIndex = 0;
+        this.totalLines = this.lineBuffer.length;
+    }
+
+    moreLinesAvailable() {
+        return this.currentLineIndex < this.totalLines;
     }
 
     retrieveNextLine() {
-        if (this.currentPosition >= this.records.length) {
-            throw new Error("End of input stream reached.");
+        if (!this.moreLinesAvailable()) {
+            return "";
         }
-        return this.records[this.currentPosition++];
+        return this.lineBuffer[this.currentLineIndex++];
     }
 }
 
-const parseData = {
-    numeric: (value) => parseInt(value, 10),
-    numericSequence: (value) => value.split(" ").map(Number),
-    stringSequence: (value) => value.split(" "),
-    characterSequence: (value) => value.split(""),
-};
+const inputSource = new InputHandler();
 
-const mainProcessingUnit = () => {
-    const inputHandler = new InputSource();
+const dataTransformers = new Map([
+    [1, (val) => parseInt(val, 10)],
+    [2, (val) => val.split(" ")],
+    [4, (val) => val.split(" ").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+    [8, (arr) => arr.join(" ")],
+    [9, (arr) => arr.join("\n")],
+    [0, (arr) => arr.join("")],
+]);
 
-    const totalItemCount = parseData.numeric(inputHandler.retrieveNextLine());
-    let workingSequence = parseData.numericSequence(inputHandler.retrieveNextLine());
+function transformData(input, typeCode) {
+    try {
+        const transformer = dataTransformers.get(typeCode);
+        return transformer ? transformer(input) : input;
+    } catch (e) {
+        return input;
+    }
+}
 
-    // Initial validation: Check if any element exceeds its 1-indexed position
-    const failsInitialConstraint = workingSequence.some((itemValue, itemIndex) => itemValue > itemIndex + 1);
+function getNextInteger() { return transformData(inputSource.retrieveNextLine(), 1); }
+function getNextStringArray() { return transformData(inputSource.retrieveNextLine(), 2); }
+function getNextIntegerArray() { return transformData(inputSource.retrieveNextLine(), 4); }
+function getNextCharacterArray() { return transformData(inputSource.retrieveNextLine(), 6); }
 
-    if (failsInitialConstraint) {
-        console.log("-1");
+function emitResult(content) { console.log(content); }
+function signalError(content) { console.error(content); }
+
+function processPermutation(currentSequence, collectedElements = []) {
+    if (currentSequence.length === 0) {
+        return collectedElements;
+    }
+
+    let removalCandidateIndex = -1;
+    let currentPrefixMatchLength = 0;
+
+    for (let k = 0; k < currentSequence.length; k++) {
+        if (currentSequence[k] === k + 1) {
+            currentPrefixMatchLength++;
+        } else {
+            removalCandidateIndex = k - 1;
+            break;
+        }
+    }
+
+    if (removalCandidateIndex === -1) {
+        removalCandidateIndex = currentSequence.length - 1;
+    }
+
+    const elementToCollect = currentSequence[removalCandidateIndex];
+    const updatedSequence = currentSequence.filter((_, idx) => idx !== removalCandidateIndex);
+    const updatedCollectedElements = [elementToCollect, ...collectedElements];
+
+    return processPermutation(updatedSequence, updatedCollectedElements);
+}
+
+function executeProcessing() {
+    const elementCount = getNextInteger();
+    const initialSequence = getNextIntegerArray();
+
+    const invalidSequenceDetected = initialSequence.some((value, index) => value > index + 1);
+    if (invalidSequenceDetected) {
+        emitResult(-1);
         return;
     }
 
-    let resultingOrder = [];
+    const finalOrder = processPermutation(initialSequence);
+    emitResult(transformData(finalOrder, 9));
+}
 
-    // Core logic: Extract elements in a specific order
-    while (workingSequence.length > 0) {
-        let matchingPrefixLength = 0;
-        // Determine the length of the longest prefix where workingSequence[k] == k + 1
-        while (matchingPrefixLength < workingSequence.length && workingSequence[matchingPrefixLength] === matchingPrefixLength + 1) {
-            matchingPrefixLength++;
-        }
-
-        // The element to be extracted is the last one in this matching prefix
-        // (matchingPrefixLength - 1) gives the 0-indexed position
-        // This element is added to the front of the resulting order
-        const extractedElement = workingSequence[matchingPrefixLength - 1];
-        resultingOrder.unshift(extractedElement);
-
-        // Create a new sequence by filtering out the extracted element
-        // This avoids in-place modification like splice, aligning with functional style
-        workingSequence = workingSequence.filter((_, idx) => idx !== matchingPrefixLength - 1);
-    }
-
-    console.log(resultingOrder.join("\n"));
-};
-
-// Execute the primary function
-(() => {
-    mainProcessingUnit();
-})();
+executeProcessing();

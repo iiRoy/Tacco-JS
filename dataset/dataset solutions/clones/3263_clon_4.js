@@ -1,125 +1,168 @@
-'use strict'
+'use strict';
 
-const obtainLines = () => require("fs").readFileSync("/dev/stdin", "utf8").split('\n');
-let currentLineIndex = 0;
-const allProgramInput = obtainLines();
+const getAllInputLines = () => require("fs").readFileSync("/dev/stdin", "utf8").split('\n');
+const parseNumbersFromString = (textLine) => textLine.split(' ').map(Number);
+const extractTableData = (linesArray, startIndex, rowCount) => 
+    linesArray.slice(startIndex, startIndex + rowCount).map(line => parseNumbersFromString(line));
 
-const retrieveLine = () => allProgramInput[currentLineIndex++];
-const retrieveNumericArray = () => retrieveLine().split(' ').map(Number);
-const retrieveNumericMatrix = (itemCount) => {
-    const resultMatrix = [];
-    for (let i = 0; i < itemCount; i++) {
-        resultMatrix.push(retrieveLine().split(' ').map(Number));
+class ValueTypeMinHeap {
+    constructor() {
+        this.heapElements = [];
     }
-    return resultMatrix;
-};
 
-const dataHandlingUtilities = {
-    calculateTotal: (arrayElements) => arrayElements.reduce((accumulator, current) => accumulator + current, 0),
-    findGreatest: (arrayElements) => arrayElements.reduce((accumulator, current) => (current > accumulator ? current : accumulator), -Infinity),
-    selectTopElements: (collection, count) => collection.slice(0, count)
-};
-
-const performSolutionLogic = () => {
-    const configurationParameters = retrieveNumericArray(); // [TotalN, InitialK]
-    const initialSelectionLimit = configurationParameters[1];
-    const entireItemList = retrieveNumericMatrix(configurationParameters[0]);
-
-    // Sort the entire item list by item value (second element) in descending order
-    entireItemList.sort((a, b) => b[1] - a[1]);
-
-    // Initial selection comprises the top 'initialSelectionLimit' items
-    const currentActiveSet = dataHandlingUtilities.selectTopElements(entireItemList, initialSelectionLimit);
-
-    const typeOccurrenceMap = new Map(); // Maps item type (kind) to its count
-    let currentSumOfValues = 0;
-    let currentUniqueTypeCount = 0;
-
-    for (const item of currentActiveSet) {
-        const itemTypeIdentifier = item[0];
-        const itemNumericValue = item[1];
-        typeOccurrenceMap.set(itemTypeIdentifier, (typeOccurrenceMap.get(itemTypeIdentifier) || 0) + 1);
-        currentSumOfValues += itemNumericValue;
+    addEntry(entryValue, entryType) {
+        const newEntry = { val: entryValue, typ: entryType };
+        this.heapElements.push(newEntry);
+        this.bubbleUp(this.heapElements.length - 1);
     }
-    currentUniqueTypeCount = typeOccurrenceMap.size;
 
-    const historicalValueSums = new Map(); // Maps unique type count to the total sum of values
-    historicalValueSums.set(currentUniqueTypeCount, currentSumOfValues);
+    extractSmallest() {
+        if (this.isEmpty()) return null;
+        if (this.heapElements.length === 1) return this.heapElements.shift();
 
-    // This list will function as a min-priority queue for items that can be removed.
-    // It stores full [kind, value] items and is kept sorted by value (index 1) in ascending order.
-    let potentialRemovalCandidates = [];
-    for (const item of currentActiveSet) {
-        // Initially, only items with duplicate types are considered for removal
-        if (typeOccurrenceMap.get(item[0]) > 1) {
-            potentialRemovalCandidates.push(item);
+        const smallest = this.heapElements[0];
+        this.heapElements[0] = this.heapElements.pop();
+        this.sinkDown(0);
+        return smallest;
+    }
+
+    peekSmallest() {
+        if (this.isEmpty()) return null;
+        return this.heapElements[0];
+    }
+
+    elementCount() {
+        return this.heapElements.length;
+    }
+
+    isEmpty() {
+        return this.heapElements.length === 0;
+    }
+
+    bubbleUp(index) {
+        const currentElement = this.heapElements[index];
+        while (index > 0) {
+            let parentIndex = Math.floor((index - 1) / 2);
+            let parentElement = this.heapElements[parentIndex];
+
+            if (currentElement.val >= parentElement.val) break;
+
+            this.heapElements[parentIndex] = currentElement;
+            this.heapElements[index] = parentElement;
+            index = parentIndex;
         }
     }
-    potentialRemovalCandidates.sort((a, b) => a[1] - b[1]); // Sort by item value ascending
 
-    let nextAvailableItemIndex = initialSelectionLimit; // Pointer for the entireItemList
+    sinkDown(index) {
+        const totalLength = this.heapElements.length;
+        const currentElement = this.heapElements[index];
 
-    while (potentialRemovalCandidates.length > 0 && nextAvailableItemIndex < entireItemList.length) {
-        // Get the item with the smallest value from the potential removal candidates
-        const itemBeingConsideredForRemoval = potentialRemovalCandidates[0]; // [kind, value]
-        const typeOfItemToRemove = itemBeingConsideredForRemoval[0];
-        const valueOfItemToRemove = itemBeingConsideredForRemoval[1];
+        while (true) {
+            let leftChildIdx = 2 * index + 1;
+            let rightChildIdx = 2 * index + 2;
+            let swapTargetIdx = null;
+            let leftChild, rightChild;
 
-        // Check if this item's type is still a duplicate within the active set
-        if (typeOccurrenceMap.get(typeOfItemToRemove) < 2) {
-            // If its type count dropped to 1, it's no longer a suitable candidate for removal
-            // to increase distinct types. Remove it from candidates and proceed.
-            potentialRemovalCandidates.shift();
+            if (leftChildIdx < totalLength) {
+                leftChild = this.heapElements[leftChildIdx];
+                if (leftChild.val < currentElement.val) {
+                    swapTargetIdx = leftChildIdx;
+                }
+            }
+
+            if (rightChildIdx < totalLength) {
+                rightChild = this.heapElements[rightChildIdx];
+                if (rightChild.val < (swapTargetIdx === null ? currentElement.val : leftChild.val)) {
+                    swapTargetIdx = rightChildIdx;
+                }
+            }
+
+            if (swapTargetIdx === null) break;
+
+            this.heapElements[index] = this.heapElements[swapTargetIdx];
+            this.heapElements[swapTargetIdx] = currentElement;
+            index = swapTargetIdx;
+        }
+    }
+}
+
+const runOptimization = () => {
+    const allInputLines = getAllInputLines();
+    let currentLineIndex = 0;
+
+    const getNextParsedLine = () => parseNumbersFromString(allInputLines[currentLineIndex++]);
+
+    const initialParameters = getNextParsedLine();
+    const totalItemCount = initialParameters[0];
+    const initialKSelection = initialParameters[1];
+
+    const allItemData = extractTableData(allInputLines, currentLineIndex, totalItemCount);
+    allItemData.sort((a, b) => b[1] - a[1]);
+
+    const initialItemsSubset = allItemData.slice(0, initialKSelection);
+    const typeOccurrenceMap = new Map();
+    let currentTotalValue = 0;
+
+    for (const itemEntry of initialItemsSubset) {
+        const itemKind = itemEntry[0];
+        const itemVal = itemEntry[1];
+        typeOccurrenceMap.set(itemKind, (typeOccurrenceMap.get(itemKind) || 0) + 1);
+        currentTotalValue += itemVal;
+    }
+
+    let currentDistinctKinds = typeOccurrenceMap.size;
+    const recordedScores = new Map();
+    recordedScores.set(currentDistinctKinds, currentTotalValue);
+
+    const duplicateValueMinHeap = new ValueTypeMinHeap();
+    for (const itemEntry of initialItemsSubset) {
+        if (typeOccurrenceMap.get(itemEntry[0]) > 1) {
+            duplicateValueMinHeap.addEntry(itemEntry[1], itemEntry[0]);
+        }
+    }
+
+    let nextAvailableItemIndex = initialKSelection;
+
+    while (duplicateValueMinHeap.elementCount() > 0 && nextAvailableItemIndex < totalItemCount) {
+        const itemToPotentiallyRemove = duplicateValueMinHeap.peekSmallest();
+
+        if (typeOccurrenceMap.get(itemToPotentiallyRemove.typ) <= 1) {
+            duplicateValueMinHeap.extractSmallest();
             continue;
         }
 
-        let replacementOptionFound = false;
-        let itemToInclude = null;
+        const removedItem = duplicateValueMinHeap.extractSmallest();
 
-        // Search for an item from the remaining catalogue that introduces a new type
-        while (nextAvailableItemIndex < entireItemList.length && !replacementOptionFound) {
-            const candidateForInclusion = entireItemList[nextAvailableItemIndex]; // [kind, value]
-            const typeOfCandidate = candidateForInclusion[0];
+        let newItemCandidate = null;
+        let searchForNewTypeIndex = nextAvailableItemIndex;
 
-            if (!typeOccurrenceMap.has(typeOfCandidate)) { // If this type is not currently in the active set
-                replacementOptionFound = true;
-                itemToInclude = candidateForInclusion;
+        while (searchForNewTypeIndex < totalItemCount) {
+            const candidateForAddition = allItemData[searchForNewTypeIndex];
+            if (!typeOccurrenceMap.has(candidateForAddition[0])) {
+                newItemCandidate = { val: candidateForAddition[1], typ: candidateForAddition[0] };
+                nextAvailableItemIndex = searchForNewTypeIndex + 1;
+                break;
             }
-            nextAvailableItemIndex++;
+            searchForNewTypeIndex++;
         }
 
-        if (!replacementOptionFound) {
-            // No more suitable items to add that introduce new types, terminate the process
+        if (newItemCandidate === null) {
             break;
         }
 
-        // Execute the exchange: remove itemBeingConsideredForRemoval, add itemToInclude
-        currentSumOfValues -= valueOfItemToRemove;
-        currentSumOfValues += itemToInclude[1];
-
-        typeOccurrenceMap.set(typeOfItemToRemove, typeOccurrenceMap.get(typeOfItemToRemove) - 1);
-        typeOccurrenceMap.set(itemToInclude[0], 1); // New type, its count starts at 1
-
-        currentUniqueTypeCount++;
-        historicalValueSums.set(currentUniqueTypeCount, currentSumOfValues);
-
-        // Update the list of potential removal candidates
-        potentialRemovalCandidates.shift(); // Remove the item that was discarded
-
-        // The newly added item also becomes a potential candidate for removal later.
-        // It's added regardless of its current type count (which is 1 for a new type).
-        potentialRemovalCandidates.push(itemToInclude); // Add the full [kind, value] item
-        potentialRemovalCandidates.sort((a, b) => a[1] - b[1]); // Re-sort to maintain min-priority order
+        currentTotalValue = currentTotalValue - removedItem.val + newItemCandidate.val;
+        typeOccurrenceMap.set(removedItem.typ, typeOccurrenceMap.get(removedItem.typ) - 1);
+        typeOccurrenceMap.set(newItemCandidate.typ, 1);
+        currentDistinctKinds++;
+        recordedScores.set(currentDistinctKinds, currentTotalValue);
     }
 
-    // Compute the final scores based on the historical sums and unique type counts
-    const possibleFinalScores = [];
-    historicalValueSums.forEach((summation, distinctCount) => {
-        possibleFinalScores.push(summation + distinctCount * distinctCount);
-    });
+    let finalMaxScore = 0;
+    for (const [kindCount, sumValue] of recordedScores.entries()) {
+        finalMaxScore = Math.max(finalMaxScore, sumValue + kindCount * kindCount);
+    }
 
-    console.log(dataHandlingUtilities.findGreatest(possibleFinalScores));
+    console.log(finalMaxScore);
 };
 
-// Begin the execution flow
-performSolutionLogic();
+runOptimization();

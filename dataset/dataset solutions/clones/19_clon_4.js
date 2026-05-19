@@ -1,30 +1,36 @@
-const dataLoader = require('fs');
-const rawContent = dataLoader.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const parseNumericalRow = (textRow) => {
-  return textRow.split(" ").map(Number);
-};
+const equationLines = rawInputData.trim().split('\n').filter(Boolean);
 
-const solveLinearSystem = (alpha1, beta1, gamma1, alpha2, beta2, gamma2) => {
-  const detMain = (alpha1 * beta2) - (alpha2 * beta1);
-  const detX_val = (gamma1 * beta2) - (gamma2 * beta1);
+equationLines.forEach(currentLine => {
+  const numericCoefficients = currentLine.split(' ').map(Number);
 
-  const finalX_val = detX_val / detMain;
-  const finalY_val = (gamma1 - alpha1 * finalX_val) / beta1;
+  const coeffA = numericCoefficients[0];
+  const coeffB = numericCoefficients[1];
+  const constC = numericCoefficients[2];
+  const coeffD = numericCoefficients[3];
+  const coeffE = numericCoefficients[4];
+  const constF = numericCoefficients[5];
 
-  return [finalX_val, finalY_val];
-};
+  // Solve the system using matrix inversion method:
+  // System:
+  // coeffA * x + coeffB * y = constC
+  // coeffD * x + coeffE * y = constF
 
-const inputRows = rawContent.trim().split('\n');
+  // Matrix form:
+  // [[coeffA, coeffB], [coeffD, coeffE]] * [[x], [y]] = [[constC], [constF]]
 
-for (const rowContent of inputRows) {
-  if (rowContent.length === 0) continue;
+  // Calculate the determinant of the coefficient matrix
+  const mainDeterminant = (coeffA * coeffE) - (coeffB * coeffD);
 
-  const numericalParameters = parseNumericalRow(rowContent);
+  let solutionX;
+  let solutionY;
 
-  const [p1, q1, r1, p2, q2, r2] = numericalParameters;
+  // The original code implicitly handles division by zero by producing Infinity/NaN.
+  // This implementation preserves that behavior.
+  solutionX = ((coeffE * constC) - (coeffB * constF)) / mainDeterminant;
+  solutionY = ((coeffA * constF) - (coeffD * constC)) / mainDeterminant;
 
-  const [solutionA, solutionB] = solveLinearSystem(p1, q1, r1, p2, q2, r2);
-
-  process.stdout.write(`${solutionA} ${solutionB}\n`);
-}
+  console.log(`${solutionX} ${solutionY}`);
+});

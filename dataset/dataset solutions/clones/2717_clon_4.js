@@ -1,50 +1,30 @@
-const acquireInput = () => {
-    return new Promise(resolve => {
-        let capturedData = '';
-        process.stdin.on('data', chunk => {
-            capturedData += chunk.toString();
-        });
-        process.stdin.on('end', () => {
-            const firstLine = capturedData.trim().split('\n')[0];
-            const numericalValue = parseInt(firstLine, 10);
-            resolve(numericalValue);
-        });
-        process.stdin.on('error', err => {
-            console.error('Input acquisition failure:', err);
-            resolve(null);
-        });
-    });
-};
+var ioInterface = require('readline').createInterface({ input: process.stdin, output: process.stdout });
+var inputLines = [];
+ioInterface.on('line', function (currentLine) { inputLines.push(currentLine); });
 
-const determineFactor = (sourceValue, currentCandidate, thresholdMagnitude) => {
-    const checkCondition = (sourceValue % currentCandidate === 0) &&
-                                     (sourceValue / currentCandidate >= thresholdMagnitude);
-
-    if (!checkCondition) {
-        return currentCandidate;
-    } else {
-        return determineFactor(sourceValue, currentCandidate + 1, thresholdMagnitude);
+function* naturalNumberSequence() {
+    let currentNum = 1;
+    while (true) {
+        yield currentNum++;
     }
-};
+}
 
-acquireInput().then(originalNumber => {
-    if (originalNumber === null) {
-        return;
+ioInterface.on('close', function () {
+    const parsedNumber = Number(inputLines[0]);
+    const billionThreshold = 1000000000;
+
+    let finalDivisorCandidate;
+    const numberIterator = naturalNumberSequence();
+
+    for (const testDivisor of numberIterator) {
+        const isPerfectlyDivisible = (parsedNumber % testDivisor === 0);
+        const isQuotientAtLeastThreshold = (parsedNumber / testDivisor >= billionThreshold);
+
+        if (!isPerfectlyDivisible || !isQuotientAtLeastThreshold) {
+            finalDivisorCandidate = testDivisor;
+            break;
+        }
     }
 
-    const constantValue = 1000000000;
-    
-    const finalDivisor = determineFactor(originalNumber, 1, constantValue);
-
-    const precedingDivisor = finalDivisor - 1;
-    let calculatedQuotient;
-
-    if (precedingDivisor === 0) {
-        calculatedQuotient = originalNumber / precedingDivisor; 
-    } else {
-        calculatedQuotient = originalNumber / precedingDivisor;
-    }
-
-    const resultingString = `0 0 ${finalDivisor} 0 0 ${calculatedQuotient}\n`;
-    process.stdout.write(resultingString);
+    console.log("0 0 " + finalDivisorCandidate + " 0 0 " + (parsedNumber / finalDivisorCandidate));
 });

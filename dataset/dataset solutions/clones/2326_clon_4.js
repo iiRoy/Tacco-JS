@@ -1,21 +1,23 @@
-function findCommonMultiple(firstNum, secondNum) {
-  let higherValue = Math.max(firstNum, secondNum);
-  let lowerValue = Math.min(firstNum, secondNum);
-  let currentTestMultiple = higherValue;
-
+function findCommonMultiple(valA, valB) {
+  let currentMax = Math.max(valA, valB);
+  let currentMin = Math.min(valA, valB);
+  let candidate = currentMax;
   while (true) {
-    if (currentTestMultiple % lowerValue === 0) {
-      return currentTestMultiple;
+    if (candidate % currentMin === 0) {
+      return candidate;
     }
-    currentTestMultiple += higherValue;
+    candidate += currentMax;
   }
 }
 
-function processData(rawInputText) {
-  const parsedNumbers = rawInputText.trim().split(' ').map(str => Number(str));
-  const finalOutcome = findCommonMultiple(parsedNumbers[0], parsedNumbers[1]);
-
-  console.log(finalOutcome);
+function processInputAndCompute(rawData) {
+  const parts = rawData.trim().split(' ');
+  const numSequence = [];
+  for (let i = 0; i < parts.length; i++) {
+    numSequence.push(Number(parts[i]));
+  }
+  const finalResult = findCommonMultiple(numSequence[0], numSequence[1]);
+  console.log(finalResult);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));

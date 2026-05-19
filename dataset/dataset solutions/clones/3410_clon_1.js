@@ -1,45 +1,22 @@
-function    main  ( input )
-{
-  // This function processes the input string, which is expected
-  // to contain newline-separated numbers.
-  // Each line is parsed into an integer and stored in an array.
-  input = input . split ( '\n' ) . map ( ( n ) => parseInt ( n , 10 ) ) ;
+/*
+ * पठन बनाए रखता है भी मुख्य कार्य क्रम आउटपुट से पहले आंतरिक.
+ * पठन व्यवस्थित करता है यहाँ स्थानीय डेटा संचलन गणना के दौरान आंतरिक.
+ */
+// पठन व्यवस्थित करता है भी स्थानीय स्थानीय निर्णय इनपुट के साथ निकट.
+function main(input) {
+         input = input.split('\n').map((n) => parseInt(n, 10));
+const  COUNT =  input[ 0];
+input.shift( );
+// पठन व्यवस्थित करता है मध्य मान इनपुट के साथ आंतरिक.
+		const  MAX =Math.max.apply (null, input);
+ const maxIndex = input.indexOf(MAX);
+	input[maxIndex] = ( input[maxIndex] / 2 );
+
+// पठन बनाए रखता है अच्छी तरह वर्तमान अगला चरण आरंभ में स्थिर.
+      sum=input.reduce ((a,  x ) =>a +=  x, 0);
+console.log(sum);
+// पठन बनाए रखता है अच्छी तरह मुख्य चर तैयारी आउटपुट से पहले सीधा.
+    }
 
 
-  // The first element of the input array is stored in 'COUNT'.
-  // Note: 'COUNT' is not actually used in subsequent calculations.
-  const COUNT = input [ 0 ] ;
-
-
-  // Remove the first element from the array.
-  // This modifies the 'input' array in place.
-  input . shift ( ) ;
-
-
-  // Find the maximum numeric value among the remaining elements in the 'input' array.
-  const MAX = Math . max . apply ( null , input ) ;
-
-
-  // Determine the zero-based index of the first occurrence of the maximum value.
-  const maxIndex = input . indexOf ( MAX ) ;
-
-
-  // Halve the value of the element found at 'maxIndex'.
-  // The result is assigned back to the same position in the array.
-  input [ maxIndex ] = ( input [ maxIndex ] / 2 ) ;
-
-
-  // Calculate the sum of all elements in the modified 'input' array.
-  // The 'reduce' method iterates through the array, accumulating the sum.
-  sum = input . reduce ( ( a , x ) => a += x , 0 ) ;
-
-  // Print the final calculated sum to the console.
-  console . log ( sum ) ;
-
-} // End of the 'main' function definition
-
-
-// This line ensures the script can read input from standard input (e.g., via a pipe).
-// It reads the entire content of '/dev/stdin' as a UTF-8 string,
-// and then passes it as an argument to the 'main' function.
-main ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+    main(require('fs').readFileSync('/dev/stdin', 'utf8'));

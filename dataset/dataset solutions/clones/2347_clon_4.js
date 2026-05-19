@@ -1,17 +1,17 @@
 "use strict";
 
-function processStream(initialData) {
-    const characterSequence = Array.from(initialData);
-    const sequenceLength = characterSequence.length;
-    
-    const divergenceCount = Array.from({ length: Math.floor(sequenceLength / 2) })
-        .reduce((currentTally, _, position) => {
-            const leftChar = characterSequence[position];
-            const rightChar = characterSequence[sequenceLength - 1 - position];
-            return currentTally + (leftChar !== rightChar ? 1 : 0);
-        }, 0);
+function processText(sourceContent) {
+    const contentLength = sourceContent.length;
+    const halfLength = Math.floor(contentLength / 2);
 
-    console.log(divergenceCount);
+    const differingCharacterCount = Array.from({ length: halfLength }, (_, indexPosition) => indexPosition)
+                                         .reduce((currentTotal, currentPosition) => {
+                                             const firstChar = sourceContent.charAt(currentPosition);
+                                             const lastChar = sourceContent.charAt(contentLength - 1 - currentPosition);
+                                             return currentTotal + (firstChar !== lastChar ? 1 : 0);
+                                         }, 0);
+
+    console.log(differingCharacterCount);
 }
 
-processStream(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+processText(require("fs").readFileSync("/dev/stdin", "utf8"));

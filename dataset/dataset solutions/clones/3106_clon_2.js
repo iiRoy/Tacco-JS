@@ -1,218 +1,347 @@
-'use strict' // Ensure strict parsing mode is enabled for cleaner code.
+'use strict';
 
-class ApplicationProcessor {
+/**
+ * Main class responsible for solving the problem.
+ * This class encapsulates the core logic for the dynamic programming solution.
+ */
+class ProblemSolver {
+  /**
+   * Executes the main problem-solving algorithm.
+   * It calculates the number of valid DNA sequences of a given length 'n'.
+   */
+  executeSolution() {
+    // Define a large prime modulus for arithmetic operations to prevent overflow.
+    const primeModulus = 1000000007;
 
-  // This method orchestrates the main computational logic of the application.
-  executeCalculation() {
-    const moduloValue = 1000000007; // A large prime number used for modular arithmetic to prevent integer overflow.
-    const sequenceLength = parseInt(dataInput.retrieveNextLine()); // Reads the desired sequence length from the input stream.
-    const validSymbols = [ 'X', 'Y', 'Z', 'W' ]; // Defines the set of allowed characters for sequence construction.
-    const forbiddenPatterns = [ // A list of 3-character patterns that are not permitted within the sequences.
-      '.XYZ', 'XY.Z', 'X.YZ', '.ZYX', '.YXZ'
-    ].map((patternStr) => new RegExp(patternStr)); // Converts string patterns into regular expression objects for matching.
+    // Read the input integer 'n' which represents the desired sequence length.
+    const sequenceSize = parseInt(dataStream.retrieveLine());
 
-    const dynamicProgrammingTable = []; // Initializes a dynamic programming table to store counts of valid sequences.
-    for (let currentLengthIndex = 0; currentLengthIndex <= sequenceLength; ++currentLengthIndex) {
-      dynamicProgrammingTable[currentLengthIndex] = {}; // Each entry in the table is an object (hash map) for efficiency.
+    // Define the set of valid DNA nucleotide bases.
+    const nucleotideBases = ['A', 'T', 'G', 'C'];
+
+    // Define an array of regular expressions for forbidden patterns.
+    // These patterns represent invalid subsequences that should not appear.
+    const invalidSequences = [
+      new RegExp('.AGC'),
+      new RegExp('AG.C'),
+      new RegExp('A.GC'),
+      new RegExp('.GAC'),
+      new RegExp('.ACG')
+    ];
+
+    // Initialize a 2D array (or map of maps) for dynamic programming.
+    // memoizationGrid[i][sequence] will store the count of valid sequences of length 'i' ending with 'sequence'.
+    const memoizationGrid = [];
+    for (let currentLength = 0; currentLength <= sequenceSize; ++currentLength) {
+      memoizationGrid[currentLength] = {}; // Use an object (map) for string keys
     }
-    dynamicProgrammingTable[0]['XXX'] = 1; // Establishes the base case: there's one way to have a sequence of length 0 ending with 'XXX' (conceptually, an empty prefix).
 
-    // Iterates through each possible sequence length, from 1 up to the target sequenceLength.
-    for (let currentLengthIndex = 1; currentLengthIndex <= sequenceLength; ++currentLengthIndex) {
-      // For each length, considers appending every possible valid symbol.
-      for (const currentSymbol of validSymbols) {
-        // Examines all previously valid 3-character endings from the shorter sequence length.
-        for (const previousTriplet in dynamicProgrammingTable[currentLengthIndex - 1]) {
-          // Checks if the combination of the previous ending and the current symbol forms any forbidden pattern.
-          if (forbiddenPatterns.some((patternToCheck) => patternToCheck.test(previousTriplet + currentSymbol))) {
-            continue; // If a forbidden pattern is found, this path is invalid, so skip to the next iteration.
-          };
+    // Base case: For length 0, an empty sequence (represented as 'TTT' for convenience) has 1 way.
+    // 'TTT' is chosen as a placeholder for the initial state, effectively representing no previous characters.
+    memoizationGrid[0]['TTT'] = 1;
 
-          // Constructs the new 3-character ending by taking the last two characters of the previous triplet and appending the current symbol.
-          const currentTriplet = previousTriplet.substring(1) + currentSymbol;
+    // Iterate from length 1 up to 'n'.
+    for (let currentLength = 1; currentLength <= sequenceSize; ++currentLength) {
+      // Iterate through each possible last character for the current sequence.
+      for (const nextChar of nucleotideBases) {
+        // Iterate through all valid previous 3-character sequences from the previous length.
+        for (const previousSequence in memoizationGrid[currentLength - 1]) {
+          // Construct a potential 4-character sequence by appending the nextChar to the previous 3-char sequence.
+          // We check the last 4 characters for forbidden patterns.
+          // The previousSequence is 'TTT' for length 0, so previousSequence + nextChar will be 'TTT' + 'A' for example.
+          // The regexes are designed to check patterns like XAGC, AGXC, AXGC, XGAC, XACG.
+          // The 'TTT' prefix ensures that for the first few characters, the regexes still work correctly
+          // by effectively padding the beginning.
+          if (invalidSequences.some((pattern) => pattern.test(previousSequence + nextChar))) {
+            continue; // Skip if the current combination forms a forbidden pattern.
+          }
 
-          // Ensures the entry for the current triplet in the DP table is initialized to 0 if it doesn't exist.
-          dynamicProgrammingTable[currentLengthIndex][currentTriplet] =
-            dynamicProgrammingTable[currentLengthIndex][currentTriplet] !== undefined ?
-              dynamicProgrammingTable[currentLengthIndex][currentTriplet] :
-              0;
+          // Form the new 3-character suffix for the current length.
+          // This takes the last two characters of the previous sequence and appends the nextChar.
+          // For example, if previousSequence is 'TTA' and nextChar is 'G', newSequence becomes 'TAG'.
+          const newSequence = previousSequence.substring(1) + nextChar;
 
-          // Adds the count from the previous valid state to the current state.
-          dynamicProgrammingTable[currentLengthIndex][currentTriplet] += dynamicProgrammingTable[currentLengthIndex - 1][previousTriplet];
-          dynamicProgrammingTable[currentLengthIndex][currentTriplet] %= moduloValue; // Applies the modulo operation to keep numbers within bounds.
+          // Initialize the count for the new sequence if it hasn't been encountered yet.
+          memoizationGrid[currentLength][newSequence] = memoizationGrid[currentLength][newSequence] || 0;
+
+          // Add the count from the previous state to the current state.
+          memoizationGrid[currentLength][newSequence] = (memoizationGrid[currentLength][newSequence] + memoizationGrid[currentLength - 1][previousSequence]) % primeModulus;
         }
       }
     }
 
-    let finalResults = []; // An array to accumulate all counts for sequences of the final desired length.
-
-    // Collects all the valid counts from the dynamic programming table for the specified sequenceLength.
-    for (let tripletKey in dynamicProgrammingTable[sequenceLength]) {
-      finalResults.push(dynamicProgrammingTable[sequenceLength][tripletKey]);
+    // After filling the DP table up to length 'n', sum all counts for sequences of length 'n'.
+    const finalCounts = [];
+    for (let sequenceKey in memoizationGrid[sequenceSize]) {
+      finalCounts.push(memoizationGrid[sequenceSize][sequenceKey]);
     }
 
-    // Sums up all collected final counts, applying the modulo at each step, and prints the grand total.
-    console.log(finalResults.reduce((accumulator, currentValue) => (accumulator + currentValue) % moduloValue));
+    // Calculate the total sum of valid sequences modulo primeModulus and print it.
+    console.log(finalCounts.reduce((total, current) => (total + current) % primeModulus));
   }
 }
 
-
-// This class provides a set of general-purpose utility methods, inspired by functional programming libraries.
-class UtilityToolkit {
-
-  // Computes the sum of all numeric elements within a given collection.
-  calculateSum(collection) { return collection.reduce((accumulator, currentValue) => accumulator + currentValue); }
-
-  // Determines the minimum element in a collection, using an optional custom comparison function.
-  findMinimum(collection, comparisonFunction) {
-    if (comparisonFunction == null) {
-      comparisonFunction = (firstVal, secondVal) => firstVal - secondVal // Default to numeric comparison if none provided.
-    }
-    return collection.reduce((accumulator, currentValue) => comparisonFunction(accumulator, currentValue) < 0 ? accumulator : currentValue);
+/**
+ * A collection of general-purpose utility functions,
+ * inspired by the Underscore.js library.
+ */
+class CollectionHelpers {
+  /**
+   * Calculates the sum of all numbers in an array.
+   * @param {Array<number>} numberArray - The array of numbers.
+   * @returns {number} The sum of the numbers.
+   */
+  calculateSum(numberArray) {
+    return numberArray.reduce((accumulator, currentValue) => accumulator + currentValue);
   }
 
-  // Determines the maximum element in a collection, using an optional custom comparison function.
-  findMaximum(collection, comparisonFunction) {
-    if (comparisonFunction == null) {
-      comparisonFunction = (firstVal, secondVal) => firstVal - secondVal // Default to numeric comparison if none provided.
+  /**
+   * Finds the minimum element in an array.
+   * An optional comparator function can be provided.
+   * @param {Array<any>} dataArray - The array to search.
+   * @param {Function} [comparatorFn] - Optional function (a, b) => a - b.
+   * @returns {any} The minimum element.
+   */
+  findMinimum(dataArray, comparatorFn) {
+    if (comparatorFn == null) {
+      comparatorFn = (valA, valB) => valA - valB;
     }
-    return collection.reduce((accumulator, currentValue) => comparisonFunction(accumulator, currentValue) > 0 ? accumulator : currentValue);
+    return dataArray.reduce((minVal, currentVal) => comparatorFn(minVal, currentVal) < 0 ? minVal : currentVal);
   }
 
-  // Generates an array of numbers within a specified range, with an optional step value.
-  generateRange(rangeStart, rangeStop, rangeStep) {
-    if (rangeStop == null) {
-      rangeStop = rangeStart || 0;
-      rangeStart = 0;
+  /**
+   * Finds the maximum element in an array.
+   * An optional comparator function can be provided.
+   * @param {Array<any>} dataArray - The array to search.
+   * @param {Function} [comparatorFn] - Optional function (a, b) => a - b.
+   * @returns {any} The maximum element.
+   */
+  findMaximum(dataArray, comparatorFn) {
+    if (comparatorFn == null) {
+      comparatorFn = (valA, valB) => valA - valB;
     }
-    if (!rangeStep) {
-      rangeStep = rangeStop < rangeStart ? -1 : 1; // Default step based on start/stop relationship.
-    }
-    const rangeSize = Math.max(0, Math.ceil((rangeStop - rangeStart) / rangeStep)); // Calculate the number of elements.
-    const generatedArray = Array(rangeSize);
+    return dataArray.reduce((maxVal, currentVal) => comparatorFn(maxVal, currentVal) > 0 ? maxVal : currentVal);
+  }
 
-    for (var indexCounter = 0; indexCounter < rangeSize; indexCounter++, rangeStart += rangeStep) {
-      generatedArray[indexCounter] = rangeStart; // Populate the array with values.
+  /**
+   * Generates an array of numbers within a specified range.
+   * @param {number} startValue - The starting number of the range.
+   * @param {number} [endValue] - The ending number of the range (exclusive).
+   * @param {number} [stepValue] - The increment or decrement step.
+   * @returns {Array<number>} An array of numbers in the specified range.
+   */
+  generateRange(startValue, endValue, stepValue) {
+    if (endValue == null) {
+      endValue = startValue || 0;
+      startValue = 0;
+    }
+    if (!stepValue) {
+      stepValue = endValue < startValue ? -1 : 1;
+    }
+    const rangeLength = Math.max(Math.ceil((endValue - startValue) / stepValue), 0);
+    const generatedArray = Array(rangeLength);
+
+    for (let currentIdx = 0; currentIdx < rangeLength; currentIdx++, startValue += stepValue) {
+      generatedArray[currentIdx] = startValue;
     }
     return generatedArray;
   }
 
-  // Retrieves the first 'count' elements from an array, or just the first element if 'count' is null.
-  getFirstElements(targetArray, count) {
-    if (targetArray == null || targetArray.length < 1) return count == null ? void 0 : [];
-    if (count == null) return targetArray[0];
-    return this.getInitialElements(targetArray, targetArray.length - count);
-  };
-
-  // Returns all elements of an array except for the last 'count' elements.
-  getInitialElements(targetArray, count) {
-    return targetArray.slice.call(targetArray, 0, Math.max(0, targetArray.length - (count == null ? 1 : count)));
+  /**
+   * Retrieves the first 'count' elements of an array.
+   * @param {Array<any>} sourceArray - The array to process.
+   * @param {number} [count] - The number of elements to retrieve from the beginning.
+   * @returns {any|Array<any>} The first element or an array of first 'count' elements.
+   */
+  getHeadElements(sourceArray, count) {
+    if (sourceArray == null || sourceArray.length < 1) {
+      return count == null ? undefined : [];
+    }
+    if (count == null) {
+      return sourceArray[0];
+    }
+    return this.getInitialElements(sourceArray, sourceArray.length - count);
   }
 
-  // Returns elements from an array starting from a given index, or after the first element if 'count' is null.
-  getTailElements(targetArray, count) {
-    return targetArray.slice.call(targetArray, count == null ? 1 : count);
+  /**
+   * Retrieves all but the last 'count' elements of an array.
+   * @param {Array<any>} sourceArray - The array to process.
+   * @param {number} [count] - The number of elements to exclude from the end.
+   * @returns {Array<any>} An array containing the initial elements.
+   */
+  getInitialElements(sourceArray, count) {
+    return sourceArray.slice.call(sourceArray, 0, Math.max(0, sourceArray.length - (count == null ? 1 : count)));
   }
 
-  // Retrieves the last 'count' elements from an array, or just the last element if 'count' is null.
-  getLastElements(targetArray, count) {
-    if (count == null) return targetArray[targetArray.length - 1];
-    return this.getTailElements(targetArray, Math.max(0, targetArray.length - count));
+  /**
+   * Retrieves all but the first 'count' elements of an array.
+   * @param {Array<any>} sourceArray - The array to process.
+   * @param {number} [count] - The number of elements to exclude from the beginning.
+   * @returns {Array<any>} An array containing the tail elements.
+   */
+  getTailElements(sourceArray, count) {
+    return sourceArray.slice.call(sourceArray, count == null ? 1 : count);
   }
 
-  // Computes an array of cumulative sums for the given collection.
-  computeCumulativeSums(collection) {
-    return this.getTailElements(collection.reduce(((accumulator, currentValue, index) => {
-      accumulator.push(currentValue + accumulator[index]);
-      return accumulator
+  /**
+   * Retrieves the last 'count' elements of an array.
+   * @param {Array<any>} sourceArray - The array to process.
+   * @param {number} [count] - The number of elements to retrieve from the end.
+   * @returns {any|Array<any>} The last element or an array of last 'count' elements.
+   */
+  getEndElements(sourceArray, count) {
+    if (count == null) {
+      return sourceArray[sourceArray.length - 1];
+    }
+    return this.getTailElements(sourceArray, Math.max(0, sourceArray.length - count));
+  }
+
+  /**
+   * Calculates the cumulative sum of elements in an array.
+   * Returns an array where each element is the sum of all preceding elements plus itself.
+   * @param {Array<number>} numberArray - The array of numbers.
+   * @returns {Array<number>} An array of cumulative sums.
+   */
+  getCumulativeSums(numberArray) {
+    return this.getTailElements(numberArray.reduce(((accumulatedSums, currentVal, index) => {
+      accumulatedSums.push(currentVal + accumulatedSums[index]);
+      return accumulatedSums;
     }), [0]));
   }
 
-  // Performs a binary search on a sorted array to find the insertion point for a target value.
-  performBinarySearch(targetArray, searchValue, propertyAccessor) {
-    const accessorFunc = (elementObject) => (typeof elementObject === 'object') ? elementObject[propertyAccessor] : elementObject;
-    const targetValue = accessorFunc(searchValue);
-    let lowerBound = 0,
-      upperBound = targetArray.length;
-    while (lowerBound < upperBound) {
-      let middleIndex = Math.floor((lowerBound + upperBound) / 2);
-      if (accessorFunc(targetArray[middleIndex]) < targetValue) {
-        lowerBound = middleIndex + 1
+  /**
+   * Performs a binary search on a sorted array.
+   * @param {Array<any>} sortedArray - The array to search within.
+   * @param {any} searchKey - The value to search for.
+   * @param {string} [propertyKey] - Optional property name if array elements are objects.
+   * @returns {number} The index where the key should be inserted to maintain sorted order.
+   */
+  performBinarySearch(sortedArray, searchKey, propertyKey) {
+    const valueExtractor = (item) => (typeof item === 'object') ? item[propertyKey] : item;
+    const targetValue = valueExtractor(searchKey);
+    let lowIndex = 0,
+      highIndex = sortedArray.length;
+    while (lowIndex < highIndex) {
+      let midIndex = Math.floor((lowIndex + highIndex) / 2);
+      if (valueExtractor(sortedArray[midIndex]) < targetValue) {
+        lowIndex = midIndex + 1;
       } else {
-        upperBound = middleIndex
-      };
+        highIndex = midIndex;
+      }
     }
-    return lowerBound; // Returns the index where the value should be inserted to maintain sort order.
-  };
+    return lowIndex;
+  }
 }
-const utils = new UtilityToolkit(); // Creates a singleton instance of the utility toolkit.
+// Create an instance of the utility functions.
+const helperTools = new CollectionHelpers();
 
-
-// This class is responsible for handling all input operations from standard input.
-class DataStreamHandler {
-  // The constructor initializes the input handler's state.
+/**
+ * Class for handling input operations, reading from stdin.
+ */
+class StreamReader {
+  /**
+   * Constructor initializes the input stream.
+   */
   constructor() {
-    this.readPosition = 0; // Keeps track of the current line index to be read from the input data.
-    this.loadAllData(); // Automatically loads all available input data when an instance is created.
+    this.readPointer = 0; // Pointer to the current line being read.
+    this.loadAllData(); // Load all input data upon instantiation.
   }
 
-  // Reads the entire content from standard input and splits it into an array of lines.
+  /**
+   * Reads all lines from standard input and stores them.
+   * @returns {Array<string>} An array of all input lines.
+   */
   loadAllData() {
-    this.rawDataLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
-    return this.rawDataLines;
+    this.inputLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
+    return this.inputLines;
   }
 
-  // Retrieves one or multiple lines of text from the loaded input data.
-  retrieveNextLine(numLines) {
+  /**
+   * Retrieves one or more lines from the input data.
+   * @param {number} [numLines] - The number of lines to retrieve.
+   * @returns {string|Array<string>} A single line or an array of lines.
+   */
+  retrieveLine(numLines) {
     if (numLines) {
-      const extractedLines = this.rawDataLines.slice(this.readPosition, this.readPosition + numLines);
-      this.readPosition += numLines;
-      return extractedLines;
+      const fetchedLines = this.inputLines.slice(this.readPointer, this.readPointer + numLines);
+      this.readPointer += numLines;
+      return fetchedLines;
     }
-    return this.rawDataLines[this.readPosition++]; // Returns a single line and advances the read position.
+    return this.inputLines[this.readPointer++];
   }
 
-  // Retrieves a single line of input and splits it into an array of strings.
-  retrieveStringArray() {
-    return this.retrieveNextLine().split(' ');
+  /**
+   * Retrieves a single line as an array of strings, split by space.
+   * @returns {Array<string>} An array of strings.
+   */
+  fetchStringArray() {
+    return this.retrieveLine().split(' ');
   }
 
-  // Retrieves a single line of input, splits it, and parses each part into an integer.
-  retrieveIntegerArray() {
-    return this.retrieveStringArray().map((elementString) => parseInt(elementString));
+  /**
+   * Retrieves a single line as an array of integers.
+   * @returns {Array<number>} An array of integers.
+   */
+  fetchIntArray() {
+    return this.fetchStringArray().map((element) => parseInt(element));
   }
 
-  // Retrieves a single line of input, splits it, and parses each part into a floating-point number.
-  retrieveFloatArray() {
-    return this.retrieveStringArray().map((elementString) => parseFloat(elementString));
+  /**
+   * Retrieves a single line as an array of floating-point numbers.
+   * @returns {Array<number>} An array of floats.
+   */
+  fetchFloatArray() {
+    return this.fetchStringArray().map((element) => parseFloat(element));
   }
 
-  // Retrieves multiple lines and parses each into an integer.
-  retrieveIntegerLines(numLines) {
-    return this.retrieveNextLine(numLines).map((elementString) => parseInt(elementString))
+  /**
+   * Retrieves multiple lines as an array of integers.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<number>} An array of integers.
+   */
+  fetchIntLines(numLines) {
+    return this.retrieveLine(numLines).map((lineElement) => parseInt(lineElement));
   }
 
-  // Retrieves multiple lines and parses each into a floating-point number.
-  retrieveFloatLines(numLines) {
-    return this.retrieveNextLine(numLines).map((elementString) => parseFloat(elementString))
+  /**
+   * Retrieves multiple lines as an array of floating-point numbers.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<number>} An array of floats.
+   */
+  fetchFloatLines(numLines) {
+    return this.retrieveLine(numLines).map((lineElement) => parseFloat(lineElement));
   }
 
-  // Retrieves multiple lines, with each line split into an array of strings, forming a 2D array.
-  retrieveStringMatrix(numLines) {
-    return this.retrieveNextLine(numLines).map((currentLine) => currentLine.split(' '));
+  /**
+   * Retrieves multiple lines as a 2D array of strings.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<Array<string>>} A 2D array of strings.
+   */
+  fetchStringMatrix(numLines) {
+    return this.retrieveLine(numLines).map((currentLine) => currentLine.split(' '));
   }
 
-  // Retrieves multiple lines, with each line split and parsed into an array of integers, forming a 2D array.
-  retrieveIntegerMatrix(numLines) {
-    return this.retrieveNextLine(numLines).map((currentLine) => currentLine.split(' ').map((elementString) => parseInt(elementString)));
+  /**
+   * Retrieves multiple lines as a 2D array of integers.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<Array<number>>} A 2D array of integers.
+   */
+  fetchIntMatrix(numLines) {
+    return this.retrieveLine(numLines).map((currentLine) => currentLine.split(' ').map((element) => parseInt(element)));
   }
 
-  // Retrieves multiple lines, with each line split and parsed into an array of floats, forming a 2D array.
-  retrieveFloatMatrix(numLines) {
-    return this.retrieveNextLine(numLines).map((currentLine) => currentLine.split(' ').map((elementString) => parseFloat(elementString)));
+  /**
+   * Retrieves multiple lines as a 2D array of floating-point numbers.
+   * @param {number} numLines - The number of lines to retrieve.
+   * @returns {Array<Array<number>>} A 2D array of floats.
+   */
+  fetchFloatMatrix(numLines) {
+    return this.retrieveLine(numLines).map((currentLine) => currentLine.split(' ').map((element) => parseFloat(element)));
   }
 }
-const dataInput = new DataStreamHandler(); // Creates a singleton instance of the input handler.
 
-// Instantiates the main application logic and triggers its primary execution method.
-(new ApplicationProcessor()).executeCalculation();
+// Create a global instance of the input reader.
+const dataStream = new StreamReader();
+
+// Instantiate the main problem solver and execute its solution method.
+(new ProblemSolver()).executeSolution();

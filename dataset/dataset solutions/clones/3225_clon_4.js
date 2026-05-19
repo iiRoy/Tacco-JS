@@ -1,36 +1,26 @@
-const determineOptimalSegmentationCost = (dataPayload) => {
-    const dataLines = dataPayload.split('\n');
+function processInput(rawData) {
+    const lines = rawData.split('\n');
+    const [firstLineData, secondLineData] = lines;
 
-    const [firstValue, secondValue] = dataLines[0].split(' ').map(Number);
-    const numericElements = dataLines[1].split(' ').map(Number);
+    const [countA, countB] = firstLineData.split(' ').map(Number);
+    let itemPositions = secondLineData.split(' ').map(Number);
 
-    numericElements.sort((left, right) => left - right);
+    itemPositions.sort((val1, val2) => val1 - val2);
 
-    const differencesCollection = numericElements.slice(1).map((currentElement, idx) => currentElement - numericElements[idx]);
+    const positionDifferences = itemPositions.slice(1).map((currentPos, index) => currentPos - itemPositions[index]);
 
-    differencesCollection.sort((gapA, gapB) => gapA - gapB);
+    const gapsToRetain = Math.max(0, countB - countA);
 
-    const segmentsToConsider = Math.max(0, secondValue - firstValue);
+    if (gapsToRetain === 0) {
+        console.log(0);
+        return;
+    }
 
-    const accumulatedResult = differencesCollection.slice(0, segmentsToConsider).reduce((total, current) => total + current, 0);
+    positionDifferences.sort((d1, d2) => d1 - d2);
 
-    return accumulatedResult;
-};
+    const totalDistance = positionDifferences.slice(0, gapsToRetain).reduce((accumulator, currentDiff) => accumulator + currentDiff, 0);
 
-const getRawContentFromSource = (sourcePath, encodingType) => {
-    const libraryLoader = require; 
-    const fileSystemOps = libraryLoader('node:fs'); 
-    
-    const fileDescriptor = fileSystemOps.openSync(sourcePath, 'r');
-    
-    const fileStats = fileSystemOps.fstatSync(fileDescriptor);
-    const contentBuffer = Buffer.alloc(fileStats.size);
-    
-    fileSystemOps.readSync(fileDescriptor, contentBuffer, 0, fileStats.size, 0);
-    
-    fileSystemOps.closeSync(fileDescriptor);
-    
-    return contentBuffer.toString(encodingType);
-};
+    console.log(totalDistance);
+}
 
-process.stdout.write(String(determineOptimalSegmentationCost(getRawContentFromSource('/dev/stdin', 'utf8'))));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

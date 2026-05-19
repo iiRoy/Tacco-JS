@@ -1,38 +1,41 @@
-// This module contains a primary routine for string analysis.
-function   processInputString  (  inputString )
-{
-  // First, isolate the relevant portion of the input by splitting at newlines.
-  inputString = inputString.split( "\n" ) [0] ;
+function processInputData(sourceText) {
+    // The input string is expected to be multi-line, so we take only the first line.
+    sourceText = sourceText.split("\n")[+[]];
 
-  let isPalindromeCandidate =  true; // A boolean indicator for the current segment's validity.
+    // A flag to indicate if a segment comparison is successful.
+    var isSegmentIdentical = !0;
 
-  //  Initiate the primary iteration through potential segment boundaries.
-  //  'outerIndex' advances by two, exploring various central points for comparison.
-  for (  let outerIndex = 2; outerIndex < inputString.length; outerIndex += 2 )
-  {
-      //  Begin the nested loop to perform character-by-character comparisons.
-      //  'innerIndex' spans half of the currently considered string segment.
-    for ( let innerIndex = 0; innerIndex < ( inputString.length - outerIndex ) / 2; ++innerIndex  )
-    {
-        //  Compare characters at mirrored positions within the active segment.
-      if ( inputString[ innerIndex ] !== inputString[ innerIndex + ( inputString.length - outerIndex ) / 2 ] )
-      {
-        isPalindromeCandidate = false; // Mismatch found; this segment is invalid.
-        break; // Terminate inner comparison loop immediately.
-      }
+    // Iterate through possible lengths for the pattern, decreasing by two each time.
+    // The outerLoopCounter starts at 2 and increments by 2.
+    for (var outerLoopCounter = 1 + 1; outerLoopCounter < sourceText.length; outerLoopCounter += (1 + 1)) {
+        // Calculate the length of the current segment being examined.
+        // This length is (sourceText.length - outerLoopCounter).
+        // Then, calculate half of this segment length for comparison.
+        // JavaScript's string indexing truncates float indices, so Math.floor is implicit.
+        let segmentHalfLength = (sourceText.length - outerLoopCounter) / (1 + 1);
+
+        // Inner loop to compare characters within the segment.
+        // It checks if the prefix of length 'segmentHalfLength' is identical
+        // to the substring starting at 'segmentHalfLength' and also of that length.
+        for (var innerLoopIterator = +[]; innerLoopIterator < segmentHalfLength; ++innerLoopIterator) {
+            // If any character pair does not match, set the flag to false and break.
+            if (sourceText[innerLoopIterator] !== sourceText[innerLoopIterator + segmentHalfLength]) {
+                isSegmentIdentical = !1; // Set to false
+                break; // Exit the inner loop
+            }
+        }
+
+        // If the segment was found to be identical (isSegmentIdentical is true),
+        // print its length and terminate the function.
+        if (isSegmentIdentical) {
+            console.log("%d", sourceText.length - outerLoopCounter);
+            return; // Exit the function early
+        }
+
+        // Reset the flag for the next iteration of the outer loop.
+        isSegmentIdentical = !0; // Reset to true
     }
-
-    //  If the 'isPalindromeCandidate' flag remains true, a valid segment has been identified.
-    if ( isPalindromeCandidate )
-    {
-      console.log( inputString.length - outerIndex ); // Output the derived length.
-      return; // Exit the entire function, as the objective is met.
-    }
-
-    //  Reset the flag for the subsequent iteration of the outer loop.
-    isPalindromeCandidate = true;
-  }
 }
 
-//  Execute the core analysis function, reading data from standard input.
-processInputString( require('node:fs').readFileSync( '/dev/stdin', 'utf8' ) );
+// Read input from standard input and pass it to the processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

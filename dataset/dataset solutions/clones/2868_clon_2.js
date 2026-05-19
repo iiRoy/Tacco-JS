@@ -1,77 +1,102 @@
-"use strict" ;
+"use strict"; // Enforce stricter parsing and error handling
 
-// This module determines the maximum area illuminated by a single light source within a given grid layout.
-function ProcessGrid(rawGridData)
-{
-    rawGridData  =  rawGridData.split('\n') ;
+/**
+ * Processes the input string to find the maximum number of squares
+ * that can be illuminated by a single lamp placement.
+ * @param {string} rawData - The raw input string containing maze dimensions and layout.
+ */
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get individual lines.
+    let gridData = rawData.split('\n');
 
-    // Parse grid dimensions from the first line.
-    let   gridDimensions  =  rawGridData.shift().split(' ').map(function (componentStr)
-    {
-        return Number.parseInt(componentStr, 10) ; // Explicit radix for robustness
-    }) ;
+    // Extract the maze dimensions from the first line.
+    // Note: The original code had a `parseInt(a)` inside `map` but didn't assign the result,
+    // making `mazeSize` an array of strings. This behavior is preserved.
+    let dimensions = gridData.shift().split(' ').map(function(element) {
+        parseInt(element); // This line has no effect on the array elements themselves.
+        return element; // Explicitly return the original string element.
+    });
 
-    // Transform each line segment into an array of characters representing grid cells.
-    rawGridData.forEach(  function  (lineSegment,  segmentIndex, allSegments) {
-        allSegments[segmentIndex]  =  allSegments[segmentIndex].split('') ;
-    }) ;
+    // Transform each line of the grid into an array of characters.
+    gridData.forEach(function(segment, idx, collection) {
+        collection[idx] = collection[idx].split('');
+    });
 
-    let peakIlluminationCount = 0 ; // Stores the highest count of lit cells found so far.
+    // Initialize a variable to store the highest count of illuminated cells found.
+    let peakIlluminatedCells = 0;
 
-    // Iterate through every cell in the grid to find potential light source positions.
-    for  (  let rowIdx = 0 ;  rowIdx < rawGridData.length ;  rowIdx++  )
-    {
-        for  (  let colIdx = 0 ;  colIdx < rawGridData[0].length ;  colIdx++  )
-        {
-            // If the current cell is an open space ('.'), it can host a light source.
-            if  (  rawGridData[rowIdx][colIdx]  ===  '.'  )
-            {
-                // Calculate the illumination range for the current potential source.
-                let currentIllumination = calculateIlluminationReach( rawGridData, [colIdx, rowIdx] ) ;
+    // Iterate through each cell of the grid.
+    for (let rowIdx = 0; rowIdx < gridData.length; rowIdx++) {
+        for (let colIdx = 0; colIdx < gridData[0].length; colIdx++) {
+            // If the current cell is an empty space ('.'), consider placing a lamp there.
+            if (gridData[rowIdx][colIdx] === '.') {
+                // Calculate the number of cells illuminated by a lamp at this position.
+                let currentIllumination = calculateIlluminatedCount(gridData, [colIdx, rowIdx]);
                 // Update the maximum if the current illumination is greater.
-                peakIlluminationCount   =  (  peakIlluminationCount  >  currentIllumination  )  ?  peakIlluminationCount  :  currentIllumination ;
+                peakIlluminatedCells = peakIlluminatedCells > currentIllumination ? peakIlluminatedCells : currentIllumination;
             }
         }
     }
 
-    let finalResult = peakIlluminationCount ; // The ultimate answer to be displayed.
-    console.log(finalResult) ; // Output the final maximum illumination value.
+    // Store the final maximum count.
+    let finalOutcome = peakIlluminatedCells;
+    // Output the result to the console.
+    console.log(finalOutcome);
 }
 
-// Computes the number of cells illuminated by a light source at a specific position.
-function calculateIlluminationReach(layoutMatrix, sourceCoords)
-{
-    // Extract X and Y coordinates of the light source.
-    let sourceX = sourceCoords[0] , sourceY = sourceCoords[1] ;
+/**
+ * Calculates the total number of squares illuminated by a lamp placed at a specific position.
+ * Illumination extends in cardinal directions (up, down, left, right) until a wall ('#') is hit
+ * or the grid boundary is reached.
+ * @param {Array<Array<string>>} layoutMatrix - The 2D array representing the maze grid.
+ * @param {Array<number>} currentPosition - An array [x, y] representing the column and row coordinates of the lamp.
+ * @returns {number} The total count of illuminated squares.
+ */
+function calculateIlluminatedCount(layoutMatrix, currentPosition) {
+    let colCoord = currentPosition[0];
+    let rowCoord = currentPosition[1];
 
-    // Start with 1 for the source cell itself.
-    let illuminatedSquares = 1 ;
+    // Start with 1 for the center square where the lamp is placed.
+    let illuminatedCount = 1;
 
-    // Check cells in the upward direction (decreasing Y).
-    for  (  let iteratorVar = sourceY - 1 ;  iteratorVar >= 0 ;  iteratorVar--  )  {
-        if  (  layoutMatrix[iteratorVar][sourceX]  ===  '.'  )  illuminatedSquares++ ;
-        else  if  (  layoutMatrix[iteratorVar][sourceX]  ===  '#'  )  break ; // Blocked by an obstacle.
+    // Check illumination upwards.
+    for (let iterator = rowCoord - 1; iterator >= 0; iterator--) {
+        if (layoutMatrix[iterator][colCoord] === '.') {
+            illuminatedCount++;
+        } else if (layoutMatrix[iterator][colCoord] === '#') {
+            break; // Stop if a wall is encountered.
+        }
     }
 
-    // Check cells in the downward direction (increasing Y).
-    for  (  let iteratorVar = sourceY + 1 ;  iteratorVar < layoutMatrix.length ;  iteratorVar++  )  {
-        if  (  layoutMatrix[iteratorVar][sourceX]  ===  '.'  )  illuminatedSquares++ ;
-        else  if  (  layoutMatrix[iteratorVar][sourceX]  ===  '#'  )  break ; // Stop at first obstacle.
+    // Check illumination downwards.
+    for (let iterator = rowCoord + 1; iterator < layoutMatrix.length; iterator++) {
+        if (layoutMatrix[iterator][colCoord] === '.') {
+            illuminatedCount++;
+        } else if (layoutMatrix[iterator][colCoord] === '#') {
+            break; // Stop if a wall is encountered.
+        }
     }
 
-    // Check cells in the leftward direction (decreasing X).
-    for  (  let iteratorVar = sourceX - 1 ;  iteratorVar >= 0 ;  iteratorVar--  )  {
-        if  (  layoutMatrix[sourceY][iteratorVar]  ===  '.'  )  illuminatedSquares++ ;
-        else  if  (  layoutMatrix[sourceY][iteratorVar]  ===  '#'  )  break ; // Obstacle encountered.
+    // Check illumination to the left.
+    for (let iterator = colCoord - 1; iterator >= 0; iterator--) {
+        if (layoutMatrix[rowCoord][iterator] === '.') {
+            illuminatedCount++;
+        } else if (layoutMatrix[rowCoord][iterator] === '#') {
+            break; // Stop if a wall is encountered.
+        }
     }
 
-    // Check cells in the rightward direction (increasing X).
-    for  (  let iteratorVar = sourceX + 1 ;  iteratorVar < layoutMatrix[0].length ;  iteratorVar++  )  {
-        if  (  layoutMatrix[sourceY][iteratorVar]  ===  '.'  )  illuminatedSquares++ ;
-        else  if  (  layoutMatrix[sourceY][iteratorVar]  ===  '#'  )  break ; // Path blocked.
+    // Check illumination to the right.
+    for (let iterator = colCoord + 1; iterator < layoutMatrix[0].length; iterator++) {
+        if (layoutMatrix[rowCoord][iterator] === '.') {
+            illuminatedCount++;
+        } else if (layoutMatrix[rowCoord][iterator] === '#') {
+            break; // Stop if a wall is encountered.
+        }
     }
 
-    return illuminatedSquares ; // Return the total count of lit cells.
+    return illuminatedCount;
 }
 
-ProcessGrid(require("fs").readFileSync("/dev/stdin", "utf8")) ;
+// Invoke the main processing function with input read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

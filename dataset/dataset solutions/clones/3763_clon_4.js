@@ -1,33 +1,29 @@
-const objectPropertyMatcher = (firstObject, secondObject) => {
-    const primaryKeySet = Reflect.ownKeys(firstObject);
-    const secondaryKeySet = Reflect.ownKeys(secondObject);
+const checkShallowEquivalence = (firstObjectReference, secondObjectReference) => {
+    const firstObjectPropertyNames = Object.getOwnPropertyNames(firstObjectReference);
+    const secondObjectPropertyNames = Object.getOwnPropertyNames(secondObjectReference);
 
-    if (primaryKeySet.length !== secondaryKeySet.length) {
+    if (firstObjectPropertyNames.length !== secondObjectPropertyNames.length) {
         return false;
     }
 
-    return primaryKeySet.every(keyIdentifier => {
-        return firstObject[keyIdentifier] === secondObject[keyIdentifier];
-    });
+    return firstObjectPropertyNames.every(currentPropertyName =>
+        Object.prototype.hasOwnProperty.call(secondObjectReference, currentPropertyName) &&
+        firstObjectReference[currentPropertyName] === secondObjectReference[currentPropertyName]
+    );
 };
 
-const numericalParser = (inputString) => {
-    return Math.trunc(Number(inputString));
+const obtainInteger = (inputStringValue) => {
+    return Number(inputStringValue);
 };
 
-const processData = (incomingDatum) => {
-    const processedNumber = numericalParser(incomingDatum);
-    const comparisonThreshold = 999;
-    let finalOutcome;
-
-    if (processedNumber <= comparisonThreshold) {
-        finalOutcome = "ABC";
-    } else {
-        finalOutcome = "ABD";
-    }
-    process.stdout.write(finalOutcome + '\n');
+const processInputAndDisplay = (receivedInput) => {
+    const convertedNumericValue = obtainInteger(receivedInput);
+    const decisionMap = new Map([
+        [true, "ABC"],
+        [false, "ABD"]
+    ]);
+    const comparisonResultKey = convertedNumericValue <= 999;
+    console.log(decisionMap.get(comparisonResultKey));
 };
 
-const fileSystemModule = require('node:fs');
-const acquiredContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-processData(acquiredContent);
+processInputAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));

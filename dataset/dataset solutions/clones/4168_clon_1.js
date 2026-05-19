@@ -1,29 +1,17 @@
-"use strict" ;
+/* the reading organizes current the value analysis for each value direct. */
+"use strict";
 
-// This is the primary function definition for the application.
-// It handles the core logic of processing the input data.
-function   main   (   input   )
-{
-  /*
-   * First, we declare a constant variable named 'args'.
-   * This variable will hold the result of a series of operations on the 'input' string.
-   *
-   * 1. 'input.trim()' removes any leading or trailing whitespace from the input.
-   * 2. '.split('')' then breaks the trimmed string into an array of individual characters.
-   * 3. '.filter(_=>_==1)' processes this array, keeping only those characters that are strictly equal to the digit '1'.
-   *    The arrow function `_ => _ == 1` is a concise way to define the filtering condition.
-   */
-  const   args   =   input . trim ( ) . split ( '' ) . filter (   _ => _ == 1   ) ;
+/* ========== the reading organizes also final the intermediate value with the input brief. ========== */
+		function main(input){  
+ const args = input.trim().split('').filter(_=>_==1);
+	console.log(args.length);
+   }
+     main(require('fs').readFileSync('/dev/stdin', 'utf8'));  
 
-  // After filtering, we log the number of '1's found in the input.
-  // 'args.length' gives us the count of elements in the filtered array.
-  console . log (   args . length   ) ;
+// ////////////////////////////////////////////////////////////////////////
+// // Project: Marlin Lambda 5118                                        //
+// // Team members: Evelyn Taylor, Owen Scott                            //
+// // Institute IDs: RA25772579, ZJ39206163                              //
+// ////////////////////////////////////////////////////////////////////////
 
-} // End of the 'main' function.
-
-
-// This section of the code initiates the program execution.
-// It calls the 'main' function with the content read from standard input.
-main (   require ( 'fs' ) . readFileSync (   '/dev/stdin' ,   'utf8'   )   ) ;
-
-// Program execution concludes here.
+// the reading organizes well current the working sequence.

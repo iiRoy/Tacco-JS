@@ -1,58 +1,34 @@
-/*
- * This program processes a sequence of numerical values from standard input.
- * Its purpose is to evaluate a specific mathematical condition
- * based on the parity and divisibility properties of these numbers,
- * ultimately outputting a boolean result as "Yes" or "No".
- */
 console.log(
-    ( function ( incomingData )
-        {
-            // First, parse the raw text input.
-            // The input is expected to have two lines:
-            // the first line contains a single integer representing the count of numbers,
-            // and the second line contains a space-separated list of integers.
-            const [
-                      [ totalElementCount ],
-                      numericalCollection
-                  ] =
-                incomingData
-                    .trim()
-                    .split( '\n' )
-                    .map( ( lineContent ) =>
-                        lineContent
-                            .split( ' ' )
-                            .map( ( numericString ) =>
-                                parseInt( numericString, 10 )
-                            )
-                    )
-            ;
+  (inputContent => {
+    // This section parses the raw input string.
+    // It first removes leading/trailing whitespace, then splits by newline.
+    // Each line is further split by space, and values are converted to integers.
+    // The first line's first element becomes 'totalNumbers', and the second line becomes 'numberSequence'.
+    const [[totalNumbers], numberSequence] = inputContent
+      .trim()
+      .split('\n')
+      .map(lineString => lineString.split(' ').map(valueString => valueString | 0));
 
-            // Initialize two counters: one for odd numbers, and one for numbers divisible by four.
-            let oddNumberCounter = 0;
-            let multiplesOfFourCount = 0;
+    let oddNumberCount = 0; // Variable to store the count of odd numbers.
+    let quadrupleCount = 0; // Variable to store the count of numbers divisible by four.
 
-            // Iterate through each number in the collection to update the counters.
-            for ( let currentIdx = 0; currentIdx < totalElementCount; currentIdx++ )
-            {
-                // Increment the odd number counter if the current element is odd.
-                // The bitwise AND operation with 1 effectively checks the least significant bit.
-                oddNumberCounter += numericalCollection[ currentIdx ] & 1;
+    // Iterate through each element in the 'numberSequence' array.
+    for (let currentIdx = 0; currentIdx < totalNumbers; currentIdx++) {
+      // Increment 'oddNumberCount' if the current number is odd.
+      // (number & 1) is 1 for odd numbers, 0 for even numbers.
+      oddNumberCount += numberSequence[currentIdx] & 1;
 
-                // Increment the multiples of four counter if the current element is divisible by four.
-                // The modulo operator returns 0 for multiples; negating 0 yields true (which is 1 in arithmetic contexts).
-                multiplesOfFourCount += !( numericalCollection[ currentIdx ] % 4 );
-            }
+      // Increment 'quadrupleCount' if the current number is a multiple of 4.
+      // (number % 4) is 0 for multiples of 4, so !(0) is true (1).
+      quadrupleCount += !(numberSequence[currentIdx] % 4);
+    }
 
-            // Calculate the final boolean condition.
-            // This condition compares the count of odd numbers (adjusted by a specific sub-condition)
-            // against the count of numbers divisible by four.
-            const finalVerdict = (
-                oddNumberCounter - ( ( oddNumberCounter + multiplesOfFourCount ) === totalElementCount )
-            ) <= multiplesOfFourCount;
-
-            // Return "Yes" if the condition is met, otherwise return "No".
-            return finalVerdict ? 'Yes' : 'No';
-        }
-    )
-    ( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) )
+    // Evaluate the final condition to determine the output.
+    // The expression (oddNumberCount + quadrupleCount === totalNumbers) checks if all numbers are either odd or multiples of 4.
+    // This boolean result is then coerced to 0 or 1 in the subtraction.
+    // The overall condition checks if the adjusted odd count is less than or equal to the count of multiples of four.
+    return (oddNumberCount - (oddNumberCount + quadrupleCount === totalNumbers) <= quadrupleCount)
+      ? 'Yes' // Output 'Yes' if the condition is met.
+      : 'No';  // Output 'No' otherwise.
+  })(require('fs').readFileSync('/dev/stdin', 'utf8')) // Reads the entire content of standard input as a UTF-8 string.
 );

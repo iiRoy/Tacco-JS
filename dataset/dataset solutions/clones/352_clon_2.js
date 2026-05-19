@@ -1,77 +1,66 @@
-function orchestrateSolution()
-{
-  // This loop processes each individual problem statement from the collected input.
-  problemStatements.forEach( function( currentProblemString )
-  {
-    // The equation string is first divided into two main parts: left and right of the '=' sign.
-    const equationParts = currentProblemString . split ( "=" ) ;
+function processEquations() {
+    // Iterate over each equation string provided in the input data.
+    rawData.forEach(function (equationString) {
+        // Split the equation string into two main parts: the left side (expression) and the right side (result).
+        let parts = equationString.split("=");
 
-    // The left-hand side (LHS) is further broken down into its constituent operands, separated by '+'.
-    const leftOperands = equationParts [ 0 ] . split ( "+" ) ;
+        // Further split the left side expression into its individual operands.
+        let leftSideOperands = parts[0].split("+");
 
-    // The right-hand side (RHS) represents the target sum for the equation.
-    const rightHandSide = equationParts [ 1 ] ;
+        // Initialize a variable to store the found digit; -1 indicates no solution yet.
+        let solutionDigit = -1;
 
-    // A variable to hold the digit that solves the equation; initialized to an invalid state.
-    let foundDigitResult = -1 ;
+        // Loop through all possible single-digit numbers (0 through 9) as candidates for 'X'.
+        for (let digitCandidate = 0; digitCandidate < 10; digitCandidate++) {
+            // Check for a specific invalid case: if the digit candidate is 0,
+            // and any of the numbers (operand A, operand B, or the result)
+            // start with 'X', then this substitution is invalid.
+            // For example, "X1" cannot become "01" as a valid number.
+            if (digitCandidate === 0 &&
+                (leftSideOperands[0][0] === "X" ||
+                 leftSideOperands[1][0] === "X" ||
+                 parts[1][0] === "X")) {
+                continue; // Skip this digit candidate and try the next one.
+            }
 
-    // Iterate through all possible single-digit values (0-9) to find a solution.
-    for ( let potentialDigit = 0 ; potentialDigit < 10 ; potentialDigit++ )
-    {
-      // Special condition: if the current digit is zero, check for leading 'X's.
-      // A leading 'X' becoming '0' is usually invalid in multi-digit numbers (e.g., '05' should be '5').
-      if ( potentialDigit === 0
-        && ( leftOperands[ 0 ] [ 0 ] === "X"
-          || leftOperands[ 1 ] [ 0 ] === "X"
-          || equationParts[ 1 ] [ 0 ] === "X" )
-      )
-      {
-        continue; // Skip this digit if it would create an invalid leading zero.
-      }
+            // Replace all occurrences of 'X' with the current digit candidate
+            // in each part of the equation and convert them to integers.
+            let operandA = parseInt(leftSideOperands[0].replace(/X/g, digitCandidate));
+            let operandB = parseInt(leftSideOperands[1].replace(/X/g, digitCandidate));
+            let resultValue = parseInt(parts[1].replace(/X/g, digitCandidate));
 
-      // Substitute 'X' with the current potential digit in the first operand string and convert to integer.
-      const firstOperandVal = parseInt( leftOperands[ 0 ] . replace( /X/g, potentialDigit ) );
+            // Check if the equation holds true with the current digit substitution.
+            if (operandA + operandB === resultValue) {
+                solutionDigit = digitCandidate; // A valid digit has been found.
+                break; // Exit the loop as we only need the first (smallest) valid digit.
+            }
+        }
 
-      // Substitute 'X' with the current potential digit in the second operand string and convert to integer.
-      const secondOperandVal = parseInt( leftOperands[ 1 ] . replace( /X/g, potentialDigit ) );
-
-      // Substitute 'X' with the current potential digit in the RHS string and convert to integer.
-      const expectedSumVal = parseInt( equationParts[ 1 ] . replace( /X/g, potentialDigit ) );
-
-      // Verify if the sum of the two processed operands matches the expected sum.
-      if ( firstOperandVal + secondOperandVal === expectedSumVal )
-      {
-        foundDigitResult = potentialDigit; // If a match is found, store the digit.
-        break; // Exit the loop as the solution has been identified.
-      }
-    }
-
-    // Output the solution digit, or "NA" if no valid digit was found to satisfy the equation.
-    console.log( ( foundDigitResult < 0 ) ? "NA" : foundDigitResult );
-  } ) ;
+        // Output the found digit or "NA" if no valid digit was found after checking all possibilities.
+        console.log((solutionDigit < 0) ? "NA" : solutionDigit);
+    });
 }
 
-// Global storage for all incoming lines of problem data.
-let problemStatements = '';
+// Declare a global variable to accumulate data received from standard input.
+let rawData = '';
 
-// Activate the standard input stream to begin receiving data.
-process.stdin.resume( );
+// Resume the standard input stream to begin listening for data.
+process.stdin.resume();
+// Set the character encoding for the incoming data to UTF-8.
+process.stdin.setEncoding('utf8');
 
-// Set the encoding for the incoming data to UTF-8.
-process.stdin.setEncoding( 'utf8' );
+// Attach an event listener to handle incoming data chunks.
+// Each time data is received, append it to the 'rawData' string.
+process.stdin.on('data', function (dataChunk) {
+    rawData += dataChunk;
+});
 
-// Register an event listener to handle chunks of data as they arrive.
-process.stdin.on( 'data', function ( dataBlock )
-{
-  problemStatements += dataBlock; // Append each received data block to the problemStatements buffer.
-} );
-
-// Register an event listener for when the end of the input stream is reached.
-process.stdin.on( 'end', function ( )
-{
-  // Process the accumulated data: remove leading/trailing whitespace and split into an array of lines.
-  problemStatements = problemStatements . trim ( ) . split ( '\n' ) ;
-
-  // Invoke the primary routine to solve the collected problems.
-  orchestrateSolution( );
-} ) ;
+// Attach an event listener for the 'end' event, which signals that all input has been received.
+process.stdin.on('end', function () {
+    // Once all data is received, clean it up:
+    // 1. Remove any leading or trailing whitespace.
+    // 2. Split the string into an array of individual lines (equations).
+    rawData = rawData.trim().split('\n');
+    // Call the main function to process the prepared array of equations.
+    processEquations();
+});

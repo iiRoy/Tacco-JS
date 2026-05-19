@@ -1,46 +1,58 @@
-function ProcessInputData(initialText) {
-    // Process the raw input text to extract numerical parameters and an array.
-    // The input is expected to be multi-line.
-    initialText = initialText . split ( "\n" ) ;
+function ProcessInput(rawData) {
+    // This function takes raw input data as a string and processes it
+    // to calculate a specific sum based on array elements and a multiplier.
 
-    // Parse the first line for the main array length and the multiplier factor.
-    const firstLineTokens = initialText[0] . split ( " " ) ;
-    const dataSize = parseInt ( firstLineTokens[0] ) ;
-    const repeatFactor = parseInt ( firstLineTokens[1] ) ;
+    // Split the entire input string into an array of individual lines.
+    const parsedLines = rawData.split("\n");
 
-    // Parse the second line into an array of integers.
-    const integerList = initialText[1] . split ( " " ) . map ( ( stringValue ) => parseInt ( stringValue ) ) ;
+    // The first line contains two space-separated integers: N and K.
+    const firstLineParts = parsedLines[0].split(" ");
+    // Parse the first integer as the length of the array.
+    const arrayLength = parseInt(firstLineParts[0], 10);
+    // Parse the second integer as the multiplier.
+    const multiplier = parseInt(firstLineParts[1], 10);
 
-    // Initialize an accumulator for the final calculation result.
-    let finalCalculationResult = 0 ;
+    // The second line contains space-separated integers that form the main numeric array.
+    // Convert these string representations into actual numbers.
+    const numericArray = parsedLines[1].split(" ").map(currentValue => parseInt(currentValue, 10));
 
-    // Define the modulus for calculations to prevent overflow.
-    const MODULUS_VALUE = 1000000000 + 7;
+    // Initialize a variable to accumulate the final calculated sum.
+    let totalSum = 0;
 
-    // Iterate through each element of the integer list.
-    for ( let arrayPosition = 0 ; arrayPosition < dataSize ; arrayPosition ++ ) {
+    // Define a constant for the modulo operation, commonly used in competitive programming.
+    const MODULO_PRIME = 1000000007; // A large prime number
 
-        // Count elements after the current position that are smaller than the current element.
-        let postCurrentSmaller = integerList . slice ( arrayPosition + 1 ) . filter ( ( elementValue ) => elementValue < integerList[arrayPosition] ) . length ;
+    // Iterate through each element of the numeric array from the beginning to the end.
+    for (let idx = 0; idx < arrayLength; idx++) {
+        // Calculate 'smallerCountSuffix':
+        // This counts how many elements *after* the current element (numericArray[idx])
+        // are strictly smaller than numericArray[idx].
+        const smallerCountSuffix = numericArray.slice(idx + 1).filter(currentValue => currentValue < numericArray[idx]).length;
 
-        // Count all elements in the entire list that are smaller than the current element.
-        let totalSmallerElements = integerList . filter ( ( elementVal ) => elementVal < integerList[arrayPosition] ) . length ;
+        // Calculate 'smallerCountTotal':
+        // This counts how many elements in the *entire* numericArray
+        // are strictly smaller than the current element (numericArray[idx]).
+        const smallerCountTotal = numericArray.filter(currentValue => currentValue < numericArray[idx]).length;
 
-        // Add the first component to the result, multiplied by the repeat factor.
-        finalCalculationResult += ( postCurrentSmaller * repeatFactor ) ;
-        finalCalculationResult %= MODULUS_VALUE ; // Apply modulus
+        // Add the first component to the total sum: (smallerCountSuffix * multiplier).
+        totalSum += (smallerCountSuffix * multiplier);
+        // Apply the modulo operation to prevent integer overflow and keep the sum within bounds.
+        totalSum %= MODULO_PRIME;
 
-        // Add the second component, which involves a sum of an arithmetic series.
-        // This corresponds to (totalSmallerElements * (repeatFactor - 1) * repeatFactor / 2).
-        finalCalculationResult += ( totalSmallerElements * ( ( repeatFactor - 1 ) * repeatFactor / 2 ) ) % MODULUS_VALUE ;
-        finalCalculationResult %= MODULUS_VALUE ; // Apply modulus again
+        // Add the second component to the total sum:
+        // (smallerCountTotal * (multiplier - 1) * multiplier / 2).
+        // The term (multiplier - 1) * multiplier / 2 represents the sum of integers from 1 to (multiplier - 1),
+        // or the number of pairs from 'multiplier' items.
+        // This calculation is done before applying modulo to the entire term.
+        totalSum += (smallerCountTotal * (multiplier - 1) * multiplier / 2) % MODULO_PRIME;
+        // Apply the modulo operation again to the total sum after adding the second component.
+        totalSum %= MODULO_PRIME;
+    }
 
-    } // End of iteration
-
-    // Output the final computed result.
-    console.log ( finalCalculationResult ) ;
-
+    // Print the final calculated total sum to the standard output.
+    console.log(totalSum);
 }
 
-// Read input from standard input and pass it to the processing function.
-ProcessInputData ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content of the standard input file synchronously,
+// using UTF-8 encoding, and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,34 +1,26 @@
-const mirrorString = (inputVal) => [...inputVal].reduceRight((acc, char) => acc + char, '');
+const processInput = function(sourceText) {
+    const reverseSequence = (textSegment) => Array.from(textSegment).reverse().join('');
+    const checkSymmetry = (segment) => segment === reverseSequence(segment);
 
-const checkReflection = (textSegment) => mirrorString(textSegment) === textSegment;
+    const initialString = String(sourceText);
+    const totalLength = initialString.length;
 
-const evaluateComplexPalindrome = (primaryText) => {
-  const totalLength = primaryText.length;
+    console.log(reverseSequence(initialString));
 
-  const firstCondition = checkReflection(primaryText);
+    const isOverallPalindrome = checkSymmetry(initialString);
 
-  const subSegmentOneEnd = Math.floor((totalLength - 1) / 2);
-  const subSegmentOne = primaryText.slice(0, subSegmentOneEnd);
-  const secondCondition = checkReflection(subSegmentOne);
+    const firstHalfLength = (totalLength - 1) / 2;
+    const firstSubsegment = initialString.substring(0, firstHalfLength);
+    const isFirstSubsegmentPalindrome = checkSymmetry(firstSubsegment);
 
-  const subSegmentTwoStart = Math.floor((totalLength + 3) / 2);
-  const subSegmentTwoEnd = totalLength - 1;
-  const subSegmentTwo = primaryText.slice(subSegmentTwoStart, subSegmentTwoEnd);
-  const thirdCondition = checkReflection(subSegmentTwo);
+    const secondSubsegmentStart = (totalLength + 3) / 2;
+    const secondSubsegmentEnd = totalLength - 1;
+    const secondSubsegment = initialString.substring(secondSubsegmentStart, secondSubsegmentEnd);
+    const isSecondSubsegmentPalindrome = checkSymmetry(secondSubsegment);
 
-  return firstCondition && secondCondition && thirdCondition;
+    const finalResult = isOverallPalindrome && isFirstSubsegmentPalindrome && isSecondSubsegmentPalindrome;
+
+    console.log(finalResult ? "Yes" : "No");
 };
 
-const inputProcessor = (incomingData) => {
-  const processedText = String(incomingData);
-
-  console.log(mirrorString(processedText));
-
-  if (evaluateComplexPalindrome(processedText)) {
-    console.log("Yes");
-  } else {
-    console.log("No");
-  }
-};
-
-inputProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

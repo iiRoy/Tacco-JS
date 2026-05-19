@@ -1,40 +1,43 @@
-function ProcessInputData(rawData) {
-  // Break down the incoming text into individual lines
-  let lineSegments = rawData.split("\n");
+function ProcessInput(rawData) {
+  // Process raw input data
+  let parsedData = rawData.split('\n');
 
-  // Extract the initial line and further split it by space characters
-  let firstLineElements = lineSegments[0].split(" ");
+  // Extract the first line and split by space
+  const tokenizedLine = parsedData[0].split(' ');
 
-  // Designate the first element as the primary sequence for validation
-  let targetSequence = firstLineElements[0];
+  // The string to be analyzed
+  var targetString = tokenizedLine[0];
 
-  // Initialize a boolean-like result indicator to "Yes"
-  let validationResult = "Yes";
+  // Initialize the outcome flag
+  let resultFlag = "Yes";
 
-  /* Iterate through each character of the primary sequence to perform checks */
-  for (let currentPosition = 0; currentPosition < targetSequence.length; currentPosition++) {
+  // console.log(`String length: ${targetString.length}`); // Debugging comment
 
-    // Determine the valid character set based on the 1-indexed position's parity
-    var allowedCharacters; // Using 'var' to maintain original statement count and scope semantics
-    if ((currentPosition + 1) % 2 === 0) {
-      // For character positions that are even (e.g., 2nd, 4th, etc.)
-      allowedCharacters = "LUD";
+  // Perform character validation
+  for (let idx = 0; idx < targetString.length; idx++) {
+    let allowedChars; // Declare variable for allowed characters
+
+    // Determine allowed characters based on position parity
+    if ((idx + 1) % 2 === 0) {
+      // Even position (1-indexed)
+      allowedChars = "LUD";
     } else {
-      // For character positions that are odd (e.g., 1st, 3rd, etc.)
-      allowedCharacters = "RUD";
+      // Odd position (1-indexed)
+      allowedChars = "RUD";
     }
 
-    // Check if the character at the current position is not permitted
-    if (allowedCharacters.indexOf(targetSequence.substring(currentPosition, 1)) === -1) {
-      // If an invalid character is encountered, update the result and terminate the loop
-      validationResult = "No";
-      break;
+    // console.log(`Position: ${idx + 1}, Char: ${targetString.substring(idx, idx + 1)}, Allowed: ${allowedChars}`); // Another debug comment
+
+    // Check if the character is among the allowed ones
+    if (allowedChars.indexOf(targetString.substring(idx, idx + 1)) === -1) {
+      resultFlag = "No"; // Set flag to 'No' if invalid character found
+      break; // Exit loop early
     }
   }
 
-  // Display the final determined outcome
-  console.log(validationResult);
+  // Output the final result
+  console.log(resultFlag);
 }
 
-// Execute the main function, reading content from standard input synchronously
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

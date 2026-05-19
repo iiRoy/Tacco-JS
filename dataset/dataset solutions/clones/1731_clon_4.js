@@ -1,19 +1,36 @@
-const processArguments = process.argv;
-const numericalCeiling = parseInt(processArguments[2], 10);
-
-console.log('start');
-
-const divisorTally = new Array(numericalCeiling + 1).fill(0);
-
-for (let currentFactor = 1; currentFactor <= numericalCeiling; currentFactor++) {
-    for (let currentMultiple = currentFactor; currentMultiple <= numericalCeiling; currentMultiple += currentFactor) {
-        divisorTally[currentMultiple]++;
-    }
+function* inputTokenGenerator() {
+    const sourceText = require("fs").readFileSync("/dev/stdin", "utf-8").trim();
+    const tokens = sourceText.split(/\n|\s/);
+    yield* tokens;
 }
 
-const finalAccumulation = Array.from({ length: numericalCeiling }, (_, idx) => idx + 1)
-    .reduce((currentTotal, currentElement) => {
-        return currentTotal + (currentElement * divisorTally[currentElement]);
-    }, 0);
+function acquireTokens(numTokens, iteratorInstance) {
+    const currentIterator = iteratorInstance || this.tokenIterator || (this.tokenIterator = inputTokenGenerator());
+    const collected = [];
+    for (let i = 0; i < numTokens; i += 1) {
+        collected.push(currentIterator.next().value);
+    }
+    return collected;
+}
 
-console.log(finalAccumulation);
+function determineDivisorCount(targetValue) {
+    if (targetValue === 0) return 0;
+    return Array.from({ length: targetValue }, (_, index) => index + 1)
+                .filter(divisorCandidate => targetValue % divisorCandidate === 0)
+                .length;
+}
+
+(() => {
+    const [ inputNString ] = acquireTokens(1);
+    const upperLimit = parseInt(inputNString);
+
+    console.log('start');
+
+    const finalSum = Array.from({ length: upperLimit }, (_, index) => index + 1)
+        .reduce((accumulator, currentK) => {
+            const currentKDivisorCount = determineDivisorCount(currentK);
+            return accumulator + (currentK * currentKDivisorCount);
+        }, 0);
+
+    console.log(finalSum);
+})();

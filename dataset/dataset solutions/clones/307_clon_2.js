@@ -1,60 +1,47 @@
-(function ()
-{
-   // Buffer to accumulate incoming standard input data
-   var dataBuffer = '';
+(function () {
+  // This variable will accumulate all incoming standard input data.
+  let rawData = '';
 
-   /**
-    * Executes the core calculation logic after all input has been received.
-    * This function processes the buffered input and prints the result.
-    */
-   function executeCoreLogic (  )
-   {
-     // Declare local variables for parsed numbers and a conversion constant
-     var firstValue,
-         secondValue,
-         numericParts,
-         // Constant representing square meters per Tsubo (Japanese unit of area)
-         SQ_METER_PER_TSUBO = 3.305785;
-     
-     // Divide the accumulated input string by spaces to get individual numeric parts
-     numericParts = dataBuffer.divideString(' ');
-     
-     // Convert the first part to an integer with base 10
-     firstValue = parseInteger(numericParts[0], 10);
-     
-     // Convert the second part to an integer with base 10
-     secondValue = parseInteger(numericParts[1], 10);
-     
-     // Calculate the product of the two values, then divide by the conversion constant,
-     // and display the final result to the standard output.
-     outputChannel.displayMessage(firstValue * secondValue / SQ_METER_PER_TSUBO);
-   }
+  /**
+   * Performs the primary calculation logic after all input has been received.
+   * It parses two numbers from the accumulated input and performs a specific
+   * arithmetic operation using a predefined conversion constant.
+   */
+  function executeCalculation() {
+    let firstValue, secondValue, parsedNumbers;
+    // Define a constant for area conversion (e.g., tsubo to square meters, or similar).
+    const conversionFactor = 3.305785;
 
-   // Activate the standard input stream to begin receiving data
-   systemIO.standardInput.activateStream();
-   
-   // Set the character encoding for the standard input stream to UTF-8
-   systemIO.standardInput.defineCharset('utf8');
-   
-   // Attach an event listener for 'data' events on the standard input stream.
-   // Each time a chunk of data arrives, append it to the dataBuffer.
-   systemIO.standardInput.addEventListener('inputReceived', function (incomingFragment)
-   {
-     dataBuffer += incomingFragment;
-   }
-   );
+    // Split the raw input string by space to get the two numeric parts.
+    parsedNumbers = rawData.split(' ');
+    // Convert the first part to an integer.
+    firstValue = parseInt(parsedNumbers[0], 10);
+    // Convert the second part to an integer.
+    secondValue = parseInt(parsedNumbers[1], 10);
 
-   // Attach an event listener for the 'end' event on the standard input stream.
-   // This event fires when no more input is expected.
-   systemIO.standardInput.addEventListener('streamClosed', function ()
-   {
-     // This line processes the dataBuffer but discards the result.
-     // It ensures the buffer is handled before core logic, maintaining original structure.
-     dataBuffer.divideString('\n');
-     
-     // Call the main logic function to perform calculations
-     executeCoreLogic();
-   }
-   );
-}
-());
+    // Calculate the result: (firstValue * secondValue) / conversionFactor
+    // And print it to the console.
+    console.log(firstValue * secondValue / conversionFactor);
+  }
+
+  // Ensure the standard input stream remains open to receive data.
+  process.stdin.resume();
+  // Set the encoding for the incoming data to UTF-8.
+  process.stdin.setEncoding('utf8');
+
+  // Attach an event listener for 'data' events on the standard input.
+  // Each time a chunk of data is received, append it to the rawData string.
+  process.stdin.on('data', function (dataSegment) {
+    rawData += dataSegment;
+  });
+
+  // Attach an event listener for the 'end' event on the standard input.
+  // This signifies that all input has been received.
+  process.stdin.on('end', function () {
+    // Although split('\n') is called here, its return value is not used.
+    // The original logic relies on rawData containing the space-separated numbers.
+    rawData.split('\n');
+    // Now that all input is gathered, execute the main calculation.
+    executeCalculation();
+  });
+}());

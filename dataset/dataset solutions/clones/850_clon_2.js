@@ -1,133 +1,206 @@
 'use strict';
-// This directive enforces stringent parsing and error handling within the script.
 
-function literalMatcher ( segmentText ) {
-  const segmentLength = segmentText.length;
-  // This inner function acts as a parser for a fixed string segment.
-  return ( inputSequence, currentPosition ) =>
-    inputSequence.substring( currentPosition, currentPosition + segmentLength ) === segmentText
-      ? [ true, segmentText, currentPosition + segmentLength ] // On successful match: [status, matched value, new index]
-      : [ false, undefined, currentPosition ];                 // On failure: [status, no value, original index]
+// This function creates a parser for a fixed string literal.
+function lexicalUnit(inputString) {
+  // Determine the length of the string literal to match.
+  const stringLength = inputString.length;
+
+  // Return a new parsing function.
+  return (sourceText, currentPosition) => {
+    // Check if the substring at the current position matches the input string.
+    if (sourceText.substr(currentPosition, stringLength) === inputString) {
+      // If it matches, return success: true, the matched string, and the new position.
+      return [true, inputString, currentPosition + stringLength];
+    } else {
+      // If it doesn't match, return failure: false, null, and the original position.
+      return [false, null, currentPosition];
+    }
+  };
 }
 
-// // This utility combines multiple parsing functions, succeeding if any one of them succeeds.
-// function anyOf ( ) {
-//   const candidateParsers = arguments;
-//   return ( sourceData, startOffset ) => {
-//     for ( let currentParser of candidateParsers ) {
-//       const parseOutcome = currentParser( sourceData, startOffset );
-//       if ( parseOutcome[0] ) {
-//         return parseOutcome; // Return the first successful parse result.
-//       }
+/*
+ * This function generates a parser that attempts to match
+ * one of several provided parsers in order.
+ */
+// function selectOption() {
+//   // Collect all parser functions passed as arguments.
+//   const parserFunctions = arguments;
+//   // Return a new parsing function.
+//   return (sourceText, currentPosition) => {
+//     // Iterate through each parser function.
+//     for (let currentParser of parserFunctions) {
+//       // Attempt to parse the target string at the current position.
+//       const parsingResult = currentParser(sourceText, currentPosition);
+//       // If the current parser successfully matched something, return its result.
+//       if (parsingResult[0]) return parsingResult;
 //     }
-//     return [ false, undefined, startOffset ]; // No parser matched, return failure.
+//     // If no parser matched, return a failure result.
+//     return [false, null, currentPosition];
 //   };
 // }
 
-// // This function applies a sequence of parsers and collects their results.
-// function sequenceOf ( ) {
-//   const sequentialParsers = arguments;
-//   return ( documentText, initialOffset ) => {
-//     const collectedResults = [ ];
-//     let nextReadOffset = initialOffset;
-//     for ( let singleParser of sequentialParsers ) {
-//       const intermediateResult = singleParser( documentText, nextReadOffset );
-//       if ( !intermediateResult[0] ) {
-//         return [ false, undefined, initialOffset ]; // If any parser fails, the sequence fails.
-//       }
-//       collectedResults.push( intermediateResult[1] ); // Store the parsed value.
-//       nextReadOffset = intermediateResult[2];        // Advance the offset for the next parser.
+/*
+ * This function creates a parser that matches a sequence of other parsers.
+ * All parsers in the sequence must succeed for the overall sequence to succeed.
+ */
+// function sequenceOf() {
+//   // Gather all parser functions for the sequence.
+//   const parserSteps = arguments;
+//   // Return the combined sequence parser.
+//   return (sourceText, initialPosition) => {
+//     // Array to store the results of each successful parser in the sequence.
+//     const collectedMatches = [];
+//     // Keep track of the position after each successful parse.
+//     let subsequentPosition = initialPosition;
+//     // Iterate through each parser in the defined sequence.
+//     for (let stepParser of parserSteps) {
+//       // Attempt to parse using the current step parser.
+//       const stepResult = stepParser(sourceText, subsequentPosition);
+//       // If any step parser fails, the entire sequence fails.
+//       if (!stepResult[0]) return [false, null, initialPosition];
+//       // If successful, add the matched value to the results.
+//       collectedMatches.push(stepResult[1]);
+//       // Update the position for the next parser in the sequence.
+//       subsequentPosition = stepResult[2];
 //     }
-//     return [ true, collectedResults, nextReadOffset ]; // All parsers succeeded, return combined results.
+//     // If all parsers succeeded, return the combined results and the final position.
+//     return [true, collectedMatches, subsequentPosition];
 //   };
 // }
 
-// // This function enables lazy initialization of parsers to handle recursive grammar definitions.
-// function deferredParser ( factoryFunction ) {
-//   let actualParserInstance; // Holds the parser once it's created.
-//   return function ( textInput, currentPoint ) {
-//     if ( !actualParserInstance ) {
-//       actualParserInstance = factoryFunction(); // Create the parser on first use.
-//     }
-//     return actualParserInstance( textInput, currentPoint ); // Delegate to the actual parser.
+/*
+ * This utility function allows for defining recursive parsers by
+ * delaying the evaluation of a parser until it's actually needed.
+ */
+// function deferredParser(parserFactory) {
+//   // Variable to store the parser once it's created.
+//   let cachedParser;
+//   // Return the lazy parser function.
+//   return function (inputString, currentOffset) {
+//     // If the parser hasn't been created yet, call the factory function.
+//     if (!cachedParser) cachedParser = parserFactory();
+//     // Execute the (now created) parser.
+//     return cachedParser(inputString, currentOffset);
 //   };
 // }
 
-// // This higher-order function transforms the successful output of another parser.
-// function transformParseResult ( baseParser, transformationFunction ) {
-//   return ( sourceContent, currentIdx ) => {
-//     const rawOutcome = baseParser( sourceContent, currentIdx );
-//     if ( rawOutcome[0] ) {
-//       // If parsing was successful, apply the transformation to the result.
-//       return [ rawOutcome[0], transformationFunction( rawOutcome[1] ), rawOutcome[2] ];
+/*
+ * This function applies a transformation function to the successful result
+ * of a parser, allowing for modification of the parsed value.
+ */
+// function transformResult(baseParser, mapperFunction) {
+//   // Return a new parser that wraps the base parser.
+//   return (sourceInput, startPosition) => {
+//     // Attempt to parse using the provided base parser.
+//     const parsingOutcome = baseParser(sourceInput, startPosition);
+//     // If the base parser succeeded, apply the mapper function to its value.
+//     if (parsingOutcome[0]) {
+//       return [parsingOutcome[0], mapperFunction(parsingOutcome[1]), parsingOutcome[2]];
 //     } else {
-//       return rawOutcome; // If parsing failed, return the original failure outcome.
+//       // If the base parser failed, return its failure result directly.
+//       return parsingOutcome;
 //     }
 //   };
 // }
 
-// // This function constructs a parser that matches any single character from a given set.
-// function characterSetMatcher ( permissibleCharacters ) {
-//   let charLookupTable = {}; // A map for efficient character existence checks.
-//   for ( let acceptedChar of permissibleCharacters ) {
-//     charLookupTable[acceptedChar] = acceptedChar; // Populate the lookup table.
+/*
+ * This function creates a parser that matches any single character
+ * present in the given set of characters.
+ */
+// function matchAnyChar(characterSet) {
+//   // Create a lookup map for efficient character checking.
+//   let validCharactersMap = {};
+//   for (let singleChar of characterSet) {
+//     validCharactersMap[singleChar] = singleChar;
 //   }
-//   return ( inputSource, scanPosition ) => {
-//     // Extract a single character from the input.
-//     const extractedChar = inputSource.substring( scanPosition, scanPosition + 1 );
-//     // Check if the extracted character is in our permissible set.
-//     return charLookupTable[extractedChar]
-//       ? [ true, extractedChar, scanPosition + 1 ] // Success: return character and advance position.
-//       : [ false, undefined, scanPosition ];          // Failure: return undefined and retain original position.
+//   // Return the character matching parser.
+//   return (inputString, currentIdx) => {
+//     // Extract the character at the current index.
+//     const currentChar = inputString.substr(currentIdx, 1);
+//     // Check if the character is in our valid set.
+//     if (validCharactersMap[currentChar]) {
+//       // If it is, return success with the character and the new position.
+//       return [true, currentChar, currentIdx + 1];
+//     } else {
+//       // Otherwise, return failure.
+//       return [false, null, currentIdx];
+//     }
 //   };
 // }
 
-// ( inputBuffer => {
-//   const formulaExpressionParser = deferredParser(() => {
-//     const andOperatorParser = transformParseResult(sequenceOf(literalMatcher('('), formulaExpressionParser, literalMatcher('*'), formulaExpressionParser, literalMatcher(')')), parsedElements => {
-//       return { operation: '*', terms: [ parsedElements[1], parsedElements[3] ] };
+/*
+ * This immediately-invoked function expression (IIFE) processes input
+ * from stdin, attempting to parse and evaluate logical formulas.
+ */
+// (inputDataStream => {
+//   // Define the main parser for logical formulas using lazy evaluation for recursion.
+//   const expressionParser = deferredParser(() => {
+//     // Parser for AND operations: (formula * formula)
+//     const conjunctionParser = transformResult(sequenceOf(lexicalUnit('('), expressionParser, lexicalUnit('*'), expressionParser, lexicalUnit(')')), parsedItems => {
+//       return { operator: '*', operands: [parsedItems[1], parsedItems[3]] };
 //     });
-//     const orOperatorParser = transformParseResult(sequenceOf(literalMatcher('('), formulaExpressionParser, literalMatcher('+'), formulaExpressionParser, literalMatcher(')')), parsedElements => {
-//       return { operation: '+', terms: [ parsedElements[1], parsedElements[3] ] };
+//     // Parser for OR operations: (formula + formula)
+//     const disjunctionParser = transformResult(sequenceOf(lexicalUnit('('), expressionParser, lexicalUnit('+'), expressionParser, lexicalUnit(')')), parsedItems => {
+//       return { operator: '+', operands: [parsedItems[1], parsedItems[3]] };
 //     });
-//     const impliesOperatorParser = transformParseResult(sequenceOf(literalMatcher('('), formulaExpressionParser, literalMatcher('->'), formulaExpressionParser, literalMatcher(')')), parsedElements => {
-//       return { operation: '->', terms: [ parsedElements[1], parsedElements[3] ] };
+//     // Parser for IMPLICATION operations: (formula -> formula)
+//     const implicationParser = transformResult(sequenceOf(lexicalUnit('('), expressionParser, lexicalUnit('->'), expressionParser, lexicalUnit(')')), parsedItems => {
+//       return { operator: '->', operands: [parsedItems[1], parsedItems[3]] };
 //     });
-//     const notOperatorParser = transformParseResult(sequenceOf(literalMatcher('-'), formulaExpressionParser), parsedElements => {
-//       return { operation: '-', terms: [ parsedElements[1] ] };
+//     // Parser for NOT operations: -formula
+//     const negationParser = transformResult(sequenceOf(lexicalUnit('-'), expressionParser), parsedItems => {
+//       return { operator: '-', operands: [parsedItems[1]] };
 //     });
-//     const atomicValueParser = transformParseResult(characterSetMatcher('abcdefghijkTF'), parsedElement => { return { valueContent: parsedElement, terms: [] }; });
-//     return anyOf(andOperatorParser, orOperatorParser, impliesOperatorParser, notOperatorParser, atomicValueParser);
-//   });
-//   const logicalStatementParser = transformParseResult(sequenceOf(formulaExpressionParser, literalMatcher('='), formulaExpressionParser), parsedElements => {
-//     return { leftPart: parsedElements[0], rightPart: parsedElements[2] };
+//     // Parser for atomic values (variables a-k, T, F)
+//     const valueParser = transformResult(matchAnyChar('abcdefghijkTF'), matchedChar => { return { value: matchedChar, operands: [] }; });
+//     // Combine all formula parsers using choice.
+//     return selectOption(conjunctionParser, disjunctionParser, implicationParser, negationParser, valueParser);
 //   });
 
-//   inputBuffer.toString().split('\n').forEach(processedLine => {
-//     if (processedLine === '#') process.exit(0); // Exit if an end-of-input marker is encountered.
-//     // The following section contains commented-out logic from the original source.
-//     // const finalParsingResult = logicalStatementParser(processedLine, 0);
-//     // let overallValidity = true;
-//     // for (let iterationCounter = 0; iterationCounter < (1 << 11); iterationCounter++) {
-//     //   overallValidity &= evaluateExpression(finalParsingResult[1].leftPart) === evaluateExpression(finalParsingResult[1].rightPart);
-//     //   function convertToBooleanValue(charIdentifier) {
-//     //     if (charIdentifier === 'T') return true;
-//     //     if (charIdentifier === 'F') return false;
-//     //     return !!(iterationCounter >> (charIdentifier.charCodeAt() - 'a'.charCodeAt()) & 1);
+//   // Parser for an entire equation: formula = formula
+//   const equalityParser = transformResult(sequenceOf(expressionParser, lexicalUnit('='), expressionParser), parsedItems => {
+//     return { leftSide: parsedItems[0], rightSide: parsedItems[2] };
+//   });
+
+//   // Process each line from the standard input.
+//   inputDataStream.toString().split('\n').forEach(currentLine => {
+//     // Exit if the line is '#'.
+//     if (currentLine == '#') process.exit(0);
+//     // The following code block is commented out in the original,
+//     // so it remains commented out here, with identifiers renamed.
+
+//     // const parsingResult = equalityParser(currentLine, 0);
+//     // let isTautology = true;
+//     // // Iterate through all possible truth assignments for 11 variables (a-k).
+//     // for (let truthAssignmentIndex = 0; truthAssignmentIndex < (1 << 11); truthAssignmentIndex++) {
+//     //   // Check if the left and right sides of the equation evaluate to the same boolean value.
+//     //   isTautology &= evaluateFormula(parsingResult[1].leftSide) === evaluateFormula(parsingResult[1].rightSide);
+
+//     //   // Helper function to convert a character (variable, 'T', 'F') to a boolean.
+//     //   function convertToBoolean(charValue) {
+//     //     if (charValue === 'T') return true;
+//     //     if (charValue === 'F') return false;
+//     //     // For variables 'a' through 'k', determine truth value from the current assignment index.
+//     //     return !!(truthAssignmentIndex >> (charValue.charCodeAt() - 'a'.charCodeAt()) & 1);
 //     //   }
-//     //   function evaluateExpression(expressionNode) {
-//     //     switch (expressionNode.terms.length) {
-//     //       case 0: return convertToBooleanValue(expressionNode.valueContent);
-//     //       case 1: return !evaluateExpression(expressionNode.terms[0]);
-//     //       case 2:
-//     //         switch (expressionNode.operation) {
-//     //           case '*': return evaluateExpression(expressionNode.terms[0]) && evaluateExpression(expressionNode.terms[1]);
-//     //           case '+': return evaluateExpression(expressionNode.terms[0]) || evaluateExpression(expressionNode.terms[1]);
-//     //           case '->': return !evaluateExpression(expressionNode.terms[0]) || evaluateExpression(expressionNode.terms[1]);
+
+//     //   // Recursive function to evaluate a formula node.
+//     //   function evaluateFormula(formulaNode) {
+//     //     switch (formulaNode.operands.length) {
+//     //       case 0: // Atomic value (variable, T, F)
+//     //         return convertToBoolean(formulaNode.value);
+//     //       case 1: // Unary operator (NOT)
+//     //         return !evaluateFormula(formulaNode.operands[0]);
+//     //       case 2: // Binary operators (AND, OR, IMPLICATION)
+//     //         switch (formulaNode.operator) {
+//     //           case '*': return evaluateFormula(formulaNode.operands[0]) && evaluateFormula(formulaNode.operands[1]);
+//     //           case '+': return evaluateFormula(formulaNode.operands[0]) || evaluateFormula(formulaNode.operands[1]);
+//     //           case '->': return !evaluateFormula(formulaNode.operands[0]) || evaluateFormula(formulaNode.operands[1]);
 //     //         }
 //     //     }
 //     //   }
 //     // }
-//     // console.log(overallValidity ? 'CONFIRMED' : 'REJECTED');
+//     // // Output 'YES' if the equation is a tautology, 'NO' otherwise.
+//     // console.log(isTautology ? 'YES' : 'NO');
 //   });
-// })(require('node:fs').readFileSync('/dev/stdin', 'utf8')); // Read input synchronously from standard input.
+// })(require('fs').readFileSync('/dev/stdin', 'utf8'));

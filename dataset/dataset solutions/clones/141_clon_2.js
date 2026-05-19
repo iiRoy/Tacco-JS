@@ -1,41 +1,51 @@
-var fileSysUtil = require('fs'),
-    dataSize = fileSysUtil.getFileMetaSynchronously(process.stdin.fileDescriptor).size,
-    byteContainer = new Buffer(dataSize),
-    actualBytesRead = fileSysUtil.retrieveDataSynchronously(process.stdin.fileDescriptor, byteContainer, 0, dataSize, 0),
-    processedLines = byteContainer.toString('utf8', 0, actualBytesRead).split('\n');
+var fileSystem = require('fs');
 
-// Initiate the primary execution sequence.
-executeProcessing();
+// Determine the size of the standard input stream.
+let dataSize = fileSystem.fstatSync(process.stdin.fd).size;
+
+// Allocate a buffer to hold the incoming data.
+let rawData = Buffer.alloc(dataSize);
+
+// Read data from standard input into the buffer.
+let octetsRead = fileSystem.readSync(process.stdin.fd, rawData, 0, dataSize, 0);
+
+// Convert the buffer content to a UTF-8 string and split it into lines.
+let linesOfData = rawData.toString('utf8', 0, octetsRead).split('\n');
+
+// Initiate the primary processing routine.
+processInput();
 
 /**
  * Main function to process each line of input data.
- * It calculates slopes between coordinate pairs and determines a parity.
+ * It calculates slopes between consecutive points and determines
+ * if the number of non-negative slopes is odd or even.
  */
-function executeProcessing() {
-  // Loop through each line of processed input, excluding the last empty line if present.
-  for (var lineIndex = 0, totalLinesToProcess = processedLines.length - 1; lineIndex < totalLinesToProcess; lineIndex++) {
-    // Split the current line of text by the comma delimiter to extract numeric components.
-    var coordinateComponents = processedLines[lineIndex].split(',');
-    // Initialize counters for slopes with non-negative and negative signs.
-    var positiveCount = 0;
-    var negativeCount = 0;
+function processInput() {
+  // Iterate through each line of data, excluding the last empty line if present.
+  for (let idx = 0, maxIdx = linesOfData.length - 1; idx < maxIdx; idx++) {
+    // Split the current line by comma to get coordinate values.
+    const coords = linesOfData[idx].split(',');
 
-    // Calculate the gradient for the first segment defined by coordinates.
-    var gradientFirst = (coordinateComponents[1] - coordinateComponents[3]) / (coordinateComponents[0] - coordinateComponents[2]);
-    // Calculate the gradient for the second segment.
-    var gradientSecond = (coordinateComponents[3] - coordinateComponents[5]) / (coordinateComponents[2] - coordinateComponents[4]);
-    // Calculate the gradient for the third segment.
-    var gradientThird = (coordinateComponents[5] - coordinateComponents[7]) / (coordinateComponents[4] - coordinateComponents[6]);
-    // Calculate the gradient for the fourth segment.
-    var gradientFourth = (coordinateComponents[7] - coordinateComponents[1]) / (coordinateComponents[6] - coordinateComponents[0]);
+    // Initialize counters for non-negative and negative slopes.
+    let positiveSlopes = 0;
+    let negativeSlopes = 0;
 
-    // Increment the positive or negative count based on the sign of each calculated gradient.
-    gradientFirst >= 0 ? positiveCount++ : negativeCount++;
-    gradientSecond >= 0 ? positiveCount++ : negativeCount++;
-    gradientThird >= 0 ? positiveCount++ : negativeCount++;
-    gradientFourth >= 0 ? positiveCount++ : negativeCount++;
+    // Calculate the slope between point A (c[0], c[1]) and B (c[2], c[3]).
+    const slopeAB = (coords[1] - coords[3]) / (coords[0] - coords[2]);
+    // Calculate the slope between point B (c[2], c[3]) and C (c[4], c[5]).
+    const slopeBC = (coords[3] - coords[5]) / (coords[2] - coords[4]);
+    // Calculate the slope between point C (c[4], c[5]) and D (c[6], c[7]).
+    const slopeCD = (coords[5] - coords[7]) / (coords[4] - coords[6]);
+    // Calculate the slope between point D (c[6], c[7]) and A (c[0], c[1]).
+    const slopeDA = (coords[7] - coords[1]) / (coords[6] - coords[0]);
 
-    // Print "YES" if the accumulated positive count is odd, otherwise print "NO".
-    console.log(positiveCount % 2 ? 'YES' : 'NO');
+    // Increment appropriate counter based on slope sign.
+    slopeAB >= 0 ? positiveSlopes++ : negativeSlopes++;
+    slopeBC >= 0 ? positiveSlopes++ : negativeSlopes++;
+    slopeCD >= 0 ? positiveSlopes++ : negativeSlopes++;
+    slopeDA >= 0 ? positiveSlopes++ : negativeSlopes++;
+
+    // Output 'YES' if the count of non-negative slopes is odd, 'NO' otherwise.
+    console.log(positiveSlopes % 2 ? 'YES' : 'NO');
   }
 }

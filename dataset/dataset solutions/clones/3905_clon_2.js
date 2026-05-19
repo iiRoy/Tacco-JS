@@ -1,64 +1,87 @@
-executionEnv.inputPipe.activate(); // Activate the standard input stream
-executionEnv.inputPipe.configureCharEncoding('utf8'); // Configure input character encoding
+process.stdin.resume();
 
-let entireInputBuffer = ''; // Buffer to accumulate all received input content
+process.stdin.setEncoding('utf8');
 
-// Attach an event listener for incoming data segments
-executionEnv.inputPipe.attachListener('dataArrival', function (dataSegment) {
-    entireInputBuffer += dataSegment; // Append the new data to the buffer
+// Buffer to accumulate all incoming standard input data.
+let entireInputBuffer = '';
+
+// Event handler for 'data' chunks received from standard input.
+process.stdin.on('data', function(chunkData) {
+    entireInputBuffer += chunkData; // Append the current data chunk to the buffer.
 });
 
-// Attach an event listener for the completion of input
-executionEnv.inputPipe.attachListener('inputCompletion', function () {
-    // Process the entirety of the collected input data
-    let inputRows = entireInputBuffer.split('\n'); // Split the full buffer into an array of lines
-
-    let elementCount = Number(inputRows[0]); // The first line contains the total count of elements
-    let dataLine = inputRows[1].split(' '); // The second line contains the space-separated values
-
-    let originalSequence = []; // Array to hold the numerically parsed values
-    // Iterate through the data line to parse and store integer values
-    for (let currentIdx = 0; currentIdx < elementCount; currentIdx++) {
-        originalSequence.push(parseInt(dataLine[currentIdx])); // Convert string to integer and add to the sequence
+// Event handler for the 'end' of the standard input stream.
+process.stdin.on('end', function() {
+    // Split the accumulated input buffer into an array of lines.
+    const inputLines = entireInputBuffer.split('\n');
+    
+    // Parse the first line to get the total count of elements.
+    let countElements = parseInt(inputLines[0]);
+    
+    // Split the second line by spaces to get an array of element strings.
+    const elementStrings = inputLines[1].split(' ');
+    
+    // Initialize an array to hold the numerical values of the elements.
+    let originalNumbers = [];
+    
+    // Iterate through the element strings and parse each into an integer, then add to the array.
+    for (let idx = 0; idx < countElements; idx++) {
+        originalNumbers.push(parseInt(elementStrings[idx]));
     }
-
-    let orderedSequence = originalSequence.slice(); // Create a shallow copy of the original sequence
-    orderedSequence.sort(); // Sort the copied sequence (default string sort, as per original)
-
-    let valueToIndicesMap = {}; // Object to map each value to a list of its original string indices
-    // Populate the map using values from the sorted sequence and their corresponding original indices
-    for (let mapIdx in originalSequence) { // Iterate over the string indices of the original sequence
-        let elementValue = orderedSequence[mapIdx]; // Get the value from the sorted sequence at the current index
-        let mapKey = elementValue.toString(); // Convert the value to a string to use as a map key
-
-        if (mapKey in valueToIndicesMap) { // Check if an entry for this value already exists
-            valueToIndicesMap[mapKey].push(mapIdx); // Add the current string index to the existing list
-        } else {
-            valueToIndicesMap[mapKey] = [mapIdx]; // Create a new list for this value with the current string index
+    
+    // Create a shallow copy of the numerical array and sort it.
+    // JavaScript's default sort method converts elements to strings and sorts lexicographically.
+    // This behavior is maintained to preserve Type II cloning rules.
+    const orderedNumbers = originalNumbers.slice();
+    orderedNumbers.sort();
+    
+    // Initialize an object to map sorted values to their original indices.
+    let valueToIndicesMap = {};
+    
+    // Populate the map: for each value in the sorted list, store its original index.
+    // The 'for...in' loop iterates over the string keys (indices) of the array.
+    for (let keyIdx in originalNumbers) {
+        let currentValue = orderedNumbers[keyIdx]; // Get the value from the sorted array at this index.
+        
+        // If the value already exists as a key in the map, push the current index to its array.
+        if (currentValue in valueToIndicesMap) {
+            valueToIndicesMap[currentValue].push(keyIdx);
+        }
+        // Otherwise, create a new array for the value with the current index.
+        else {
+            valueToIndicesMap[currentValue] = [keyIdx];
         }
     }
-
-    let finalIndexLimit = elementCount - 1; // Adjust the element count for 0-based indexing for the loop limit
-
-    // Execute the primary processing loop
-    for (let loopCounter = 0; loopCounter <= finalIndexLimit; loopCounter++) {
-        let currentElement = originalSequence[loopCounter]; // Retrieve the current element from the original sequence
-        let elementKey = currentElement.toString(); // Convert the current element to a string for map lookup
-        let retrievedPosition = valueToIndicesMap[elementKey].pop(); // Get and remove an original index associated with this element
-
-        let medianPoint = Math.floor(finalIndexLimit / 2); // Calculate the middle index of the sorted array
-
-        let lowerBoundCandidate = orderedSequence[medianPoint]; // Value at the lower median position
-        let upperBoundCandidate = orderedSequence[medianPoint + 1]; // Value at the upper median position
-
-        let finalResult = 0; // Initialize the variable to store the computed result
-
-        // Determine the final result based on whether the retrieved original position is in the first or second half
-        if (retrievedPosition <= medianPoint) {
-            finalResult = upperBoundCandidate; // If the position is in the first half, select the upper candidate
-        } else {
-            finalResult = lowerBoundCandidate; // Otherwise, select the lower candidate
+    
+    // Adjust the element count for zero-based indexing in subsequent operations.
+    let adjustedCount = countElements - 1;
+    
+    // Iterate through the original numbers to compute and output the result for each.
+    for (let idx = 0; idx <= adjustedCount; idx++) {
+        const targetValue = originalNumbers[idx]; // Get the current number from the original sequence.
+        
+        // Retrieve an original index associated with the target value from the map.
+        // The .pop() method removes and returns the last element, ensuring each index is used uniquely.
+        const retrievedIndex = valueToIndicesMap[targetValue.toString()].pop();
+        
+        // Calculate the midpoint index of the adjusted count.
+        const midpointIndex = Math.floor(adjustedCount / 2);
+        
+        // Identify the two candidate values from the sorted list that are around the midpoint.
+        const lowerMedianCandidate = orderedNumbers[midpointIndex];
+        const upperMedianCandidate = orderedNumbers[midpointIndex + 1];
+        
+        let resultOutput = 0; // Initialize the variable to store the final output.
+        
+        // Determine the output based on whether the retrieved original index is at or before the midpoint.
+        if (retrievedIndex <= midpointIndex) {
+            resultOutput = upperMedianCandidate; // If so, the result is the upper candidate.
         }
-        systemOutput.printLine(finalResult); // Display the calculated result to the standard output
+        else {
+            resultOutput = lowerMedianCandidate; // Otherwise, the result is the lower candidate.
+        }
+        
+        // Print the calculated result to the console.
+        console.log(resultOutput);
     }
 });

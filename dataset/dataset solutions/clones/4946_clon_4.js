@@ -1,28 +1,33 @@
-const fileSystem = require('fs');
+'use strict';
 
-function aggregateValues(initialSet) {
-  if (initialSet.length === 0) {
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let inputBuffer = '';
+process.stdin.on('data', function(dataChunk) {
+  inputBuffer += dataChunk;
+});
+
+process.stdin.on('end', function() {
+  const parsedNumericStrings = inputBuffer.split(/\s+/);
+  const initialNumericSequence = parsedNumericStrings.slice(1, parsedNumericStrings.length - 1).map(numericString => parseInt(numericString));
+  console.log(calculateNestedMinSum(initialNumericSequence));
+  process.exit(0);
+});
+
+function calculateNestedMinSum(currentSequence) {
+  if (currentSequence.length === 0) {
     return 0;
   }
 
-  const currentSum = initialSet.reduce((accumulator, currentElement) => accumulator + currentElement, 0);
+  const currentSequenceTotal = currentSequence.reduce((accumulator, value) => accumulator + value, 0);
 
-  let subsequentSet = [];
-  if (initialSet.length > 1) {
-    for (let currentPos = 0; currentPos < initialSet.length - 1; currentPos++) {
-      subsequentSet.push(Math.min(initialSet[currentPos], initialSet[currentPos + 1]));
-    }
+  let derivedSequence = [];
+  if (currentSequence.length > 1) {
+    derivedSequence = currentSequence.slice(0, -1).map((_, elementIndex) =>
+      Math.min(currentSequence[elementIndex], currentSequence[elementIndex + 1])
+    );
   }
 
-  return currentSum + aggregateValues(subsequentSet);
+  return currentSequenceTotal + calculateNestedMinSum(derivedSequence);
 }
-
-const rawInputString = fileSystem.readFileSync('/dev/stdin', 'utf8');
-
-const rawTokensWithEmpties = rawInputString.split(/\s+/);
-
-const relevantTokens = rawTokensWithEmpties.slice(1, rawTokensWithEmpties.length - 1);
-
-const numericSequence = relevantTokens.map(val => Number(val));
-
-process.stdout.write(aggregateValues(numericSequence).toString() + '\n');

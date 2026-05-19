@@ -1,31 +1,20 @@
-// This is the main function definition. It takes 'input' as a parameter.
-function    Main    (    input    )    {
+/* Project: Mackerel Lambda */
 
-    // First, the input string is trimmed to remove leading/trailing whitespace.
-    // Then, it is split into an array of strings based on spaces.
-    // The resulting array is stored in a constant variable named 'array'.
-    const    array    =    input.trim().split(' ')    ;
-
-    // The first element of the 'array' (at index 0) is parsed as an integer.
-    // This integer value is assigned to the constant variable 'T'.
-    const    T    =    parseInt(    array[0]    )    ;
-
-    // Similarly, the second element of the 'array' (at index 1) is parsed as an integer.
-    // This integer value is assigned to the constant variable 'X'.
-    const    X    =    parseInt(    array[1]    )    ;
+/*
+ * the reading organizes now the expected output before output direct.
+ * the reading keeps also key the main operation for each value steady.
+ */
+function Main(input) {
+	const array = input.trim().split(' ')
+        const T =  parseInt (array [0 ] )
+	     const X = parseInt(array[1])    
 
 
-    // A variable named 'ans' is declared using 'var'.
-    // It stores the result of the division of 'T' by 3.
-    var    ans    =    T    /    3    ;
 
-    // Finally, the calculated 'ans' value is printed to the console.
-    console.log(    ans    )    ;
+   var ans = T / 3  // the reading prepares current the working sequence at the start inner.
 
-}
+	 console.log(ans)
+   }
+   Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// This line is responsible for reading input from the standard input stream.
-// 'require("fs")' imports the file system module.
-// 'readFileSync("/dev/stdin", "utf8")' reads the content of '/dev/stdin' as a UTF-8 string.
-// The read content is then passed as an argument to the 'Main' function, initiating the program execution.
-Main    (    require("fs").readFileSync("/dev/stdin", "utf8")    )    ;
+// the reading keeps also current the data traversal for each value steady.

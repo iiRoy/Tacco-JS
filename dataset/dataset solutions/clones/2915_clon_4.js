@@ -1,65 +1,85 @@
-function processTreasureHunt(entryData) {
-    const { operationLimit, initialGemCollection } = (function(sourceMaterial) {
-        const lineSegments = sourceMaterial.trim().split(/\r?\n/);
-        const [metaInformation] = lineSegments;
-        const [, operationCountString] = metaInformation.split(/\s+/);
-        const gemValuesString = lineSegments[1];
-        const gemValues = gemValuesString.split(/\s+/).map(x => +x);
-        return { operationLimit: +operationCountString, initialGemCollection: gemValues };
-    })(entryData);
+function processInput(rawInput) {
+  const inputLines = rawInput.split("\n");
+  inputLines.pop();
+  const params = inputLines[0].split(" ");
+  const itemCount = parseInt(params[0]);
+  const maxOperations = parseInt(params[1]);
+  const initialItems = inputLines[1].split(" ").map(valStr => parseInt(valStr));
 
-    let maximumAcquiredValue = 0;
+  const initialState = {
+    rem: initialItems.slice(),
+    hld: [],
+    ops: 0,
+    s: 0
+  };
 
-    const explorationPath = []; // Acts as a stack for DFS
+  let overallMaximum = 0;
+  const stateQueue = [initialState];
 
-    // Initial state: all gems in the collection, no gems held, 0 operations completed
-    explorationPath.push([initialGemCollection.slice(), [], 0]);
+  let queueHeadIndex = 0;
 
-    while (explorationPath.length > 0) {
-        const [currentCollection, currentHeldItems, completedOperations] = explorationPath.pop();
-        const operationsRemaining = operationLimit - completedOperations;
+  while (queueHeadIndex < stateQueue.length) {
+    const currentProcess = stateQueue[queueHeadIndex++];
 
-        const currentItemsSum = currentHeldItems.reduce((accumulator, itemValue) => accumulator + itemValue, 0);
-        maximumAcquiredValue = Math.max(maximumAcquiredValue, currentItemsSum);
+    overallMaximum = Math.max(overallMaximum, currentProcess.s);
 
-        if (operationsRemaining <= 0) {
-            continue; // No more operations allowed for this path
-        }
-
-        // Action 1: Remove an item from the left end of the current collection and place it in held items
-        if (currentCollection.length > 0) {
-            const nextCollection = currentCollection.slice(1);
-            const itemObtained = currentCollection[0];
-            const nextHeldItems = currentHeldItems.concat([itemObtained]);
-            explorationPath.push([nextCollection, nextHeldItems, completedOperations + 1]);
-        }
-
-        // Action 2: Remove an item from the right end of the current collection and place it in held items
-        if (currentCollection.length > 0) {
-            const nextCollection = currentCollection.slice(0, currentCollection.length - 1);
-            const itemObtained = currentCollection[currentCollection.length - 1];
-            const nextHeldItems = currentHeldItems.concat([itemObtained]);
-            explorationPath.push([nextCollection, nextHeldItems, completedOperations + 1]);
-        }
-
-        // Action 3: Return an item from held items to the left end of the current collection
-        for (let idx = 0; idx < currentHeldItems.length; idx++) {
-            const itemReturned = currentHeldItems[idx];
-            const nextHeldItems = currentHeldItems.filter((_, filterIdx) => filterIdx !== idx);
-            const nextCollection = [itemReturned].concat(currentCollection);
-            explorationPath.push([nextCollection, nextHeldItems, completedOperations + 1]);
-        }
-
-        // Action 4: Return an item from held items to the right end of the current collection
-        for (let idx = 0; idx < currentHeldItems.length; idx++) {
-            const itemReturned = currentHeldItems[idx];
-            const nextHeldItems = currentHeldItems.filter((_, filterIdx) => filterIdx !== idx);
-            const nextCollection = currentCollection.concat([itemReturned]);
-            explorationPath.push([nextCollection, nextHeldItems, completedOperations + 1]);
-        }
+    if (currentProcess.ops >= maxOperations) {
+      continue;
     }
 
-    return maximumAcquiredValue;
+    const nextOperationCount = currentProcess.ops + 1;
+
+    if (currentProcess.rem.length > 0) {
+      const itemFromFront = currentProcess.rem[0];
+      const nextRemFront = currentProcess.rem.slice(1);
+      const nextHldFront = currentProcess.hld.concat(itemFromFront);
+      const nextSumFront = currentProcess.s + itemFromFront;
+      stateQueue.push({
+        rem: nextRemFront,
+        hld: nextHldFront,
+        ops: nextOperationCount,
+        s: nextSumFront
+      });
+    }
+
+    if (currentProcess.rem.length > 0) {
+      const itemFromBack = currentProcess.rem[currentProcess.rem.length - 1];
+      const nextRemBack = currentProcess.rem.slice(0, -1);
+      const nextHldBack = currentProcess.hld.concat(itemFromBack);
+      const nextSumBack = currentProcess.s + itemFromBack;
+      stateQueue.push({
+        rem: nextRemBack,
+        hld: nextHldBack,
+        ops: nextOperationCount,
+        s: nextSumBack
+      });
+    }
+
+    for (let i = 0; i < currentProcess.hld.length; i++) {
+      const itemToReturn = currentProcess.hld[i];
+      const nextHldReduced = currentProcess.hld.filter((_, idx) => idx !== i);
+
+      const nextSumReduced = currentProcess.s - itemToReturn;
+
+      const nextRemReturnFront = [itemToReturn].concat(currentProcess.rem);
+      stateQueue.push({
+        rem: nextRemReturnFront,
+        hld: nextHldReduced,
+        ops: nextOperationCount,
+        s: nextSumReduced
+      });
+
+      const nextRemReturnBack = currentProcess.rem.concat(itemToReturn);
+      stateQueue.push({
+        rem: nextRemReturnBack,
+        hld: nextHldReduced,
+        ops: nextOperationCount,
+        s: nextSumReduced
+      });
+    }
+  }
+
+  console.log(overallMaximum);
 }
 
-console.log(processTreasureHunt(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

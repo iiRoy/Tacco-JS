@@ -1,111 +1,116 @@
-// This function orchestrates the transformation of raw input into geometric shapes.
-function processShapeData(rawData) {
-  var upperLimit = 999; // Defines the maximum allowed coordinate value.
+function processTriangleData(rawData) {
+  // Define the maximum allowed side length for a triangle.
+  const limitVal = 1000;
 
-  // Break down the raw input string into individual lines.
-  var inputRows = parseInputIntoRows(rawData, "\r\n");
-  // Transform each line into a set of coordinate values.
-  var allCoordinates = inputRows.map(convertRowToCoordinates);
+  // Split the raw input string into individual rows using the newline character.
+  const dataRows = splitInputIntoRows(rawData, "\n");
+  // Process each row to extract side measurements, converting them to an array of arrays.
+  const sideMeasurements = dataRows.map(parseRowToSides);
 
-  // Iterate through each collection of coordinates.
-  for (var idx = 0; idx < allCoordinates.length; idx++) {
-    var currentCoordSet = allCoordinates[idx]; // Get the current set of coordinates.
+  // Iterate through each set of side measurements to evaluate the triangles.
+  for (let idx = 0; idx < sideMeasurements.length; idx++) {
+    const currentSides = sideMeasurements[idx];
 
-    // Perform an initial check on the very first coordinate set.
+    // Perform a specific check for the very first side of the first triangle.
     if (idx === 0) {
-      if (currentCoordSet[0] > upperLimit) {
-        break; // Exit early if the first coordinate exceeds the maximum.
+      // If the first side exceeds the defined limit, halt further processing.
+      if (currentSides[0] > limitVal) {
+        break;
       }
     }
 
-    // Instantiate a new geometric object with specified bounds and side lengths.
-    var geometryObj = new Shape({
+    // Create a new GeometricShape object with specified bounds and side lengths.
+    const triangleObj = new GeometricShape({
       bounds: {
-        lowerBound: 0, // Minimum allowed dimension.
-        upperBound: 999 // Maximum allowed dimension.
+        lowerBound: 1, // Minimum allowed side length.
+        upperBound: 1000 // Maximum allowed side length.
       },
       sides: {
-        sideA: currentCoordSet[0],
-        sideB: currentCoordSet[1],
-        sideC: currentCoordSet[2]
+        sideA: currentSides[0],
+        sideB: currentSides[1],
+        sideC: currentSides[2]
       }
     });
 
-    // Validate the newly created shape.
-    if (geometryObj.isShapeValid()) {
-      var isRightAngledShape = geometryObj.isRightAngled(); // Determine if it's a right-angled shape.
-      // Prepare the message to be displayed.
-      var outputMessage = (isRightAngledShape) ? 'TRUE' : 'FALSE';
-      console.log(outputMessage); // Output the result.
+    // Check if the constructed triangle object has valid side lengths.
+    if (triangleObj.isShapeValid()) {
+      // Determine if the valid triangle is a right-angled triangle.
+      const isOrthogonalTriangle = triangleObj.checkRightAngle();
+      // Prepare the output string based on the right-angle check.
+      const outputString = (isOrthogonalTriangle) ? 'YES' : 'NO';
+      console.log(outputString); // Print the result to the console.
     }
   }
 }
 
-// Utility function to split a string by a given character sequence.
-function parseInputIntoRows(inputString, separatorChar) {
-  return inputString.split(separatorChar);
+// Utility function to split a given text into an array of rows using a specified separator.
+function splitInputIntoRows(sourceText, separatorChar) {
+  return sourceText.split(separatorChar);
 }
 
-// Converts a single string row into an array of numerical coordinate values.
-function convertRowToCoordinates(lineString) {
-  var coordinateValues = lineString.split(' '); // Split by space to get individual numbers.
-  return coordinateValues;
+// Utility function to parse a single input row string into an array of side length strings.
+function parseRowToSides(inputRow) {
+  const sideStrings = inputRow.split(' '); // Split the row by space.
+  return sideStrings;
 }
 
 
-// Shape: A constructor for defining geometric objects, specifically triangles in this context.
-function Shape(configSettings) {
+// GeometricShape constructor function, representing a triangle.
+function GeometricShape(configOpts) {
 
-  // Initialize properties for boundary conditions and side lengths.
-  this.bounds = {};
-  this.sides = {};
+  this.bounds = {}; // Object to hold minimum and maximum side length constraints.
+  this.sides = {}; // Object to hold the three side lengths of the triangle.
 
-  // Configure the acceptable range for side lengths.
-  this.bounds.lowerBound = configSettings.bounds.lowerBound || 0; // Default min value.
-  this.bounds.upperBound = configSettings.bounds.upperBound || 999; // Default max value.
+  // Initialize the bounds for side lengths, using defaults if not provided.
+  this.bounds.lowerBound = configOpts.bounds.lowerBound || 1;
+  this.bounds.upperBound = configOpts.bounds.upperBound || 1000;
 
-  // Assign side lengths, ensuring they fall within the defined constraints.
-  this.sides.sideA = (this.coordWithinBounds(configSettings.sides.sideA)) ? configSettings.sides.sideA : null;
-  this.sides.sideB = (this.coordWithinBounds(configSettings.sides.sideB)) ? configSettings.sides.sideB : null;
-  this.sides.sideC = (this.coordWithinBounds(configSettings.sides.sideC)) ? configSettings.sides.sideC : null;
+  // Initialize the side lengths, validating each against the defined bounds.
+  this.sides.sideA = (this.isSideWithinBounds(configOpts.sides.sideA)) ? configOpts.sides.sideA : null;
+  this.sides.sideB = (this.isSideWithinBounds(configOpts.sides.sideB)) ? configOpts.sides.sideB : null;
+  this.sides.sideC = (this.isSideWithinBounds(configOpts.sides.sideC)) ? configOpts.sides.sideC : null;
 
 }
 
-// Prototype method to check if a given coordinate value is within the shape's defined boundaries.
-Shape.prototype.coordWithinBounds = function(coordValue) {
-  return (coordValue >= this.bounds.lowerBound && coordValue <= this.bounds.upperBound);
+// Prototype method to check if a given side length is within the triangle's defined bounds.
+GeometricShape.prototype.isSideWithinBounds = function(sideLength) {
+  return (sideLength >= this.bounds.lowerBound && sideLength <= this.bounds.upperBound);
 };
 
-// Prototype method to determine if the shape has valid, non-null side lengths.
-Shape.prototype.isShapeValid = function() {
+// Prototype method to check if all three side lengths of the triangle are valid (not null).
+GeometricShape.prototype.isShapeValid = function() {
   return (this.sides.sideA && this.sides.sideB && this.sides.sideC);
 };
 
-// Prototype method to check if the shape (triangle) is a right-angled one using Pythagorean theorem.
-Shape.prototype.isRightAngled = function() {
-  var resultFlag = false; // Initialize the outcome flag.
-  if (this.isShapeValid) { // Proceed only if the shape's sides are valid.
-    var sideLengths = []; // Array to hold side lengths.
-    sideLengths.push(this.sides.sideA);
-    sideLengths.push(this.sides.sideB);
-    sideLengths.push(this.sides.sideC);
+// Prototype method to determine if the triangle is a right-angled triangle.
+GeometricShape.prototype.checkRightAngle = function() {
+  let resultFlag = false; // Initialize a flag to store the result.
 
-    // Sort the side lengths in ascending order for consistent calculation.
-    sideLengths.sort(function(val1, val2) {
-      return val1 - val2
+  // Proceed only if the triangle's side lengths are valid.
+  if (this.isShapeValid()) {
+    const sideLengthsArr = []; // Create an array to hold the side lengths.
+    sideLengthsArr.push(this.sides.sideA);
+    sideLengthsArr.push(this.sides.sideB);
+    sideLengthsArr.push(this.sides.sideC);
+
+    // Sort the side lengths in ascending order to easily identify the hypotenuse.
+    sideLengthsArr.sort(function(val1, val2) {
+      return val1 - val2;
     });
 
     // Calculate the square of each side length.
-    var squaredLengths = sideLengths.map(function(coord) {
-      return Math.pow(coord, 2)
+    const squaredLengths = sideLengthsArr.map(function(sideVal) {
+      return Math.pow(sideVal, 2);
     });
-    // Apply Pythagorean theorem: a^2 + b^2 = c^2 (where c is the longest side).
+
+    // Apply the Pythagorean theorem: a^2 + b^2 = c^2 for a right triangle.
     resultFlag = (squaredLengths[2] === (squaredLengths[0] + squaredLengths[1]));
   }
 
-  return resultFlag; // Return the final determination.
+  return resultFlag; // Return true if it's a right-angled triangle, false otherwise.
 };
 
-// Read input from standard input, process it, and initiate the shape analysis.
-var rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-processShapeData(rawInputData);
+// Read the entire content from standard input, decode as UTF-8, and remove leading/trailing whitespace.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+// Begin processing the input data to generate and evaluate triangles.
+processTriangleData(fileContent);

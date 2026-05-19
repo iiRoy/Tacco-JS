@@ -1,67 +1,61 @@
-// This module defines a function for processing specific text input.
-// It aims to balance parentheses within a given string segment.
-function processInput( rawDataString )
-{
-  // Divide the complete raw data into distinct line segments.
-  let lineSegments = rawDataString.split("\n");
+function processInput(rawData) {
+    // Split the incoming raw data string into an array of individual lines.
+    linesArray = rawData.split('\n');
 
-  // The first segment often contains a numerical indicator,
-  // which will be used as the starting point for the first iteration.
-  let initialLengthIndicator = lineSegments[0];
+    // The first line of input is treated as a length indicator.
+    // Note: In the original code, this is a string that gets implicitly converted to a number during loop initialization.
+    initialStringLength = linesArray[0];
 
-  // The second segment is the primary string that requires balancing.
-  let originalStringValue = lineSegments[1];
+    // The second line of input is the primary string to be processed.
+    originalString = linesArray[1];
 
-  // Convert the primary string into a mutable array of characters for in-place manipulation.
-  let workingCharacterArray = lineSegments[1].split("");
+    // Convert the original string into a mutable array of characters for easier manipulation.
+    charList = linesArray[1].split('');
 
-  // Initialize two accumulators: one for necessary opening parentheses at the start,
-  // and another for necessary closing parentheses at the end.
-  let prefixParentheses = "";
-  let suffixParentheses = "";
+    // Initialize two empty strings to accumulate parentheses for balancing.
+    prefixParens = '';
+    suffixParens = '';
 
-  // Begin a reverse iteration to identify and remove perfectly matched parenthesis pairs.
-  // This strategy helps in cleaning up the string by eliminating inner, balanced structures first.
-  for (let outerIndexCounter = initialLengthIndicator; outerIndexCounter >= 0; outerIndexCounter -= 1)
-  {
-    // If a closing parenthesis is encountered, search backwards for its matching opening counterpart.
-    if (workingCharacterArray[outerIndexCounter] === ")")
-    {
-      for (let innerIndexCounter = outerIndexCounter - 1; innerIndexCounter >= 0; innerIndexCounter -= 1)
-      {
-        // Upon finding an opening parenthesis that matches the current closing one,
-        // remove both from the array. The order of removal is crucial to prevent index issues.
-        if (workingCharacterArray[innerIndexCounter] === "(")
-        {
-          workingCharacterArray.splice(outerIndexCounter, 1);
-          workingCharacterArray.splice(innerIndexCounter, 1);
-          break; // A pair has been removed; exit the inner loop to continue searching for more pairs.
+    // First pass: Iterate backwards through the character list to find and remove balanced parenthesis pairs.
+    // This loop effectively removes '()' pairs from the innermost ones outwards.
+    for (outerIndex = initialStringLength; outerIndex >= 0; outerIndex -= 1) {
+        // If the character at the current outer index is a closing parenthesis,
+        // we search for a matching opening parenthesis before it.
+        if (charList[outerIndex] === ')') {
+            // Start searching backwards from the character immediately preceding the current closing parenthesis.
+            for (innerIndex = outerIndex - 1; innerIndex >= 0; innerIndex -= 1) {
+                // If an opening parenthesis is found, it forms a balanced pair with the current closing one.
+                if (charList[innerIndex] === '(') {
+                    // Remove the closing parenthesis from the list.
+                    charList.splice(outerIndex, 1);
+                    // Remove the opening parenthesis from the list.
+                    charList.splice(innerIndex, 1);
+                    // Since a pair has been successfully removed, we can break the inner loop
+                    // and continue with the next iteration of the outer loop.
+                    break;
+                }
+            }
         }
-      }
     }
-  }
 
-  // After the initial cleanup, iterate through the remaining characters in the array.
-  // Any character left is an unmatched parenthesis that needs balancing.
-  for (let outerIndexCounter = 0, currentArrayLength = workingCharacterArray.length; outerIndexCounter < currentArrayLength; outerIndexCounter += 1)
-  {
-    // If a closing parenthesis remains, it means an opening one is missing at the beginning.
-    if (workingCharacterArray[outerIndexCounter] === ")")
-    {
-      prefixParentheses += "(";
+    // Second pass: After removing all balanced pairs, process the remaining characters.
+    // Any remaining ')' indicates a need for a preceding '(', and any remaining '(' needs a succeeding ')'.
+    for (outerIndex = 0, remainingCharsCount = charList.length; outerIndex < remainingCharsCount; outerIndex += 1) {
+        // If a closing parenthesis remains, it means it was unmatched.
+        // An opening parenthesis is needed at the beginning of the string to balance it.
+        if (charList[outerIndex] === ')') {
+            prefixParens += '(';
+        } else {
+            // If an opening parenthesis remains, it means it was unmatched.
+            // A closing parenthesis is needed at the end of the string to balance it.
+            suffixParens += ')';
+        }
     }
-    // If an opening parenthesis remains, it means a closing one is missing at the end.
-    else
-    {
-      suffixParentheses += ")";
-    }
-  }
 
-  // Output the final balanced string, composed of the generated prefix, the original string,
-  // and the generated suffix.
-  console.info( prefixParentheses + originalStringValue + suffixParentheses );
+    // Output the final balanced string, constructed by concatenating the generated prefix,
+    // the original input string, and the generated suffix.
+    console.log(prefixParens + originalString + suffixParens);
 }
 
-// Invoke the primary processing function with data read from standard input.
-// This setup is common in competitive programming environments.
-processInput( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,61 +1,70 @@
-const acquireSourceData = () => require("node:fs").readFileSync("/dev/stdin", "utf8");
+const inputSourceData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const prepareDataStream = (rawContent) => {
-    const lines = rawContent.trim().split('\n');
-    let currentMarker = 0;
-    const retrieveNextDatum = () => {
-        if (currentMarker >= lines.length) {
-            throw new Error("No further data available in stream.");
+const createInputProcessor = (sourceLines) => {
+    let currentLineIndex = 0;
+    const totalLineCount = sourceLines.length;
+
+    return {
+        retrieveNext: function() {
+            if (currentLineIndex >= totalLineCount) {
+                throw "NoSuchElementException:次に要素は無いよ";
+            }
+            return sourceLines[currentLineIndex++];
+        },
+        checkAvailability: function() {
+            return currentLineIndex < totalLineCount;
         }
-        return lines[currentMarker++];
     };
-    return retrieveNextDatum;
 };
 
-const parseNumericalSequence = (textSegment) => textSegment.split(" ").map(Number);
+const lineProcessor = createInputProcessor(inputSourceData);
 
-const outputResult = (content) => console.log(content);
-const outputDiagnostic = (issue) => console.error(issue);
+function getNextInput() { return lineProcessor.retrieveNext(); }
+function hasMoreInput() { return lineProcessor.checkAvailability(); }
 
-const performCalculation = () => {
-    const getNextInputLine = prepareDataStream(acquireSourceData());
-    const initialSettings = parseNumericalSequence(getNextInputLine());
+function emitResult(content) { console.log(content); }
+function reportError(content) { console.error(content); }
 
-    const parameterAlpha = initialSettings[0];
-    const parameterBeta = initialSettings[1];
-    const targetValue = initialSettings[2];
+const conversionDispatch = {
+    1: (val) => parseInt(val),
+    2: (val) => val.split(" "),
+    4: (val) => val.split(" ").map(Number),
+    6: (val) => val.split(""),
+    7: (val) => val.split("").map(Number),
+    8: (val) => val.join(" "),
+    9: (val) => val.join("\n"),
+    0: (val) => val.join("")
+};
 
-    if (targetValue % parameterBeta === 0 || targetValue % parameterAlpha === 0) {
-        outputResult("Yes");
+function applyDataConversion(valueToProcess, conversionKey) {
+    try {
+        const handler = conversionDispatch[conversionKey];
+        return handler ? handler(valueToProcess) : valueToProcess;
+    } catch (e) {
+        return valueToProcess;
+    }
+}
+
+function executeMainLogic() {
+    const initialValues = applyDataConversion(getNextInput(), 4);
+    const [dimensionN, dimensionM, targetValueK] = initialValues;
+
+    if (targetValueK % dimensionM === 0 || targetValueK % dimensionN === 0) {
+        emitResult("Yes");
         return;
     }
 
-    let outcomeDetermined = false;
+    const conditionMet = Array.from({ length: dimensionN }, (_, iIndex) => iIndex + 1)
+        .flatMap(currentI =>
+            Array.from({ length: dimensionM }, (_, jIndex) => jIndex + 1)
+                .map(currentJ => ({ iCoord: currentI, jCoord: currentJ }))
+        )
+        .some(({ iCoord, jCoord }) => {
+            const computedSum = (dimensionM * iCoord) + (dimensionN * jCoord) - 2 * (iCoord * jCoord);
+            return computedSum === targetValueK;
+        });
 
-    for (let idxAlpha = 1; idxAlpha <= parameterAlpha; idxAlpha++) {
-        const coefficientOfBeta = parameterAlpha - (2 * idxAlpha);
-        const constantTerm = targetValue - (parameterBeta * idxAlpha);
+    emitResult(conditionMet ? "Yes" : "No");
+}
 
-        if (coefficientOfBeta === 0) {
-            if (constantTerm === 0) {
-                outcomeDetermined = true;
-                break;
-            }
-        } else {
-            const candidateIdxBeta = constantTerm / coefficientOfBeta;
-
-            if (Number.isInteger(candidateIdxBeta) && candidateIdxBeta >= 1 && candidateIdxBeta <= parameterBeta) {
-                outcomeDetermined = true;
-                break;
-            }
-        }
-    }
-
-    if (outcomeDetermined) {
-        outputResult("Yes");
-    } else {
-        outputResult("No");
-    }
-};
-
-performCalculation();
+executeMainLogic();

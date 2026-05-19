@@ -1,191 +1,103 @@
-// This section handles the program's input/output operations.
-// It's designed to read lines from standard input and manage a data stream.
-const streamReader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var inputHandler;
+var inputLines = [];
+
+inputReader.on('line', function(lineContent){inputLines.push(lineContent);});
+inputReader.on('close', function(){
+  inputHandler = new InputProcessor(inputLines);
+  console.error('\n↑入力 ↓出力');
+  executeSolution();
 });
 
-let inputDataProcessor; // Manages the parsed input stream
-const rawInputBuffer = []; // Stores all lines read from stdin
+function deepCopyValue(sourceObj){return (sourceObj instanceof Set) ? new Set(Array.from(sourceObj)) : JSON.parse(JSON.stringify(sourceObj));}
 
-// Event listener for each line of input received
-streamReader.on('line', function(singleLineInput) {
-  rawInputBuffer.push(singleLineInput);
-});
-
-// Event listener for when the input stream closes
-streamReader.on('close', function() {
-  inputDataProcessor = createInputHandler(rawInputBuffer); // Initialize the input processing object
-  console.error('\n--- Input Processed, Output Below ---'); // Visual separator for debug output
-  executeMainLogic(); // Call the primary function of the application
-});
-
-// Utility function to print results to standard output
-function displayOutput(resultContent) {
-  console.log(resultContent);
-}
-
-// Utility function for debugging purposes, prints detailed object info to stderr
-function logDiagnostic(debugInfo) {
-  console.error('DEBUG INFO: ' + require('util').inspect(debugInfo, false, null));
-}
-
-// Function to create an object that manages reading through the input lines
-// It provides methods to check for more input and retrieve the next line.
-function createInputHandler(allInputLines) {
-  const inputLineCount = allInputLines.length;
-  let currentLineIndex = 0;
-
-  return {
-    sourceLines: allInputLines,
-    currentPosition: currentLineIndex,
-    totalLines: inputLineCount,
-
-    // Checks if there are more lines available in the input stream
-    hasMoreElements: function() {
-      return (this.currentPosition < this.totalLines);
-    },
-
-    // Retrieves the next line from the input stream
-    retrieveNextToken: function() {
-      if (this.hasMoreElements()) {
-        return this.sourceLines[this.currentPosition++];
-      } else {
-        // Custom error for out-of-bounds access
-        throw new Error('InputEndOfStreamError: No more input lines available.');
-      }
+class InputProcessor {
+    constructor(linesData) {
+        this.dataList = linesData;
+        this.currentIndex = 0;
+        this.maxLength = linesData.length;
     }
-  };
-}
 
-// Helper to retrieve the next available token from the input stream
-function pullNextElement() {
-  return inputDataProcessor.retrieveNextToken();
-}
-
-// Helper to check if more elements are available in the input stream
-function canReadNext() {
-  return inputDataProcessor.hasMoreElements();
-}
-
-// Helper function to parse a string token into an integer
-function getParsedInteger() {
-  return transformData(pullNextElement(), 1);
-}
-
-// Helper function to get an array of strings by splitting the next token by space
-function getStringArray() {
-  return transformData(pullNextElement(), 2);
-}
-
-// Helper function to get an array of integers by splitting the next token by space
-function getIntArray() {
-  return transformData(pullNextElement(), 4);
-}
-
-// Helper function to get an array of characters by splitting the next token
-function getCharArray() {
-  return transformData(pullNextElement(), 6);
-}
-
-// Helper for joining arrays into strings
-function joinWithSpaces(arr) { return transformData(arr, 8); }
-function joinWithNewlines(arr) { return transformData(arr, 9); }
-function joinWithoutSeparator(arr) { return transformData(arr, 0); }
-
-// Core data transformation utility based on a specified type
-// This function handles various parsing and formatting operations.
-// The `conversionType` parameter dictates the desired transformation.
-// Possible `conversionType` values:
-// 1: Parse as integer.
-// 2: Split string by spaces into an array of strings.
-// 4: Split string by spaces and map to an array of numbers.
-// 6: Split string into an array of characters.
-// 7: Split string into an array of characters and map to numbers.
-// 8: Join array elements with spaces.
-// 9: Join array elements with newlines.
-// 0: Join array elements without any separator.
-function transformData(tokenValue, conversionType) {
-  try {
-    switch (conversionType) {
-      case 1:
-        return parseInt(tokenValue, 10);
-      case 2:
-        return tokenValue.split(' ');
-      case 4:
-        // Using `map(Number)` is robust for converting string elements to numbers
-        return tokenValue.split(' ').map(Number);
-      case 6:
-        return tokenValue.split('');
-      case 7:
-        return tokenValue.split('').map(Number);
-      case 8:
-        return tokenValue.join(' ');
-      case 9:
-        return tokenValue.join('\n');
-      case 0:
-        return tokenValue.join('');
-      default:
-        // Log a warning for unknown conversion types, but return original value
-        logDiagnostic(`Warning: Unknown conversion type '${conversionType}'. Returning original value.`);
-        return tokenValue;
+    hasMoreLines() {
+        return (this.currentIndex < this.maxLength);
     }
-  } catch (operationError) {
-    // If an error occurs during conversion, log it and return the original value
-    logDiagnostic(`Error during data transformation (type ${conversionType}): ${operationError.message}`);
-    return tokenValue;
-  }
+
+    getNextLine() {
+        if (this.hasMoreLines()) {
+            return this.dataList[this.currentIndex++];
+        } else {
+            throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+        }
+    }
 }
 
-// Helper function to calculate the largest even number less than or equal to `num`
-function getLargestEven(num) {
-    // This effectively calculates `Math.floor(num / 2) * 2`
-    return num - (num % 2);
+const inputConverters = {
+    1: (val) => parseInt(val),
+    2: (val) => val.split(' '),
+    4: (val) => val.split(' ').map(Number),
+    6: (val) => val.split(''),
+    7: (val) => val.split('').map(Number),
+    8: (val) => val.join(' '),
+    9: (val) => val.join('\n'),
+    0: (val) => val.join(''),
+    default: (val) => val
+};
+
+function processInputConversion(inputValue, conversionType) {
+    try {
+        const converter = inputConverters[conversionType] || inputConverters.default;
+        return converter(inputValue);
+    } catch (error) {
+        return inputValue;
+    }
 }
 
-// The main application logic resides here.
-function executeMainLogic() {
-  // Read the first line of input, which is expected to be a space-separated list of integers
-  const rawCounts = getIntArray();
+function readInt(){return processInputConversion(getNextLine(),1);}
+function readStringArray(){return processInputConversion(getNextLine(),2);}
+function readIntArray(){return processInputConversion(getNextLine(),4);}
+function readCharArray(){return processInputConversion(getNextLine(),6);}
+function getNextLine(){return inputHandler.getNextLine();}
+function hasMoreLines(){return inputHandler.hasMoreLines();}
 
-  // Assign input values to descriptive variables, representing counts of different block types
-  const countI = rawCounts[0]; // Count of 'I' blocks
-  const countO = rawCounts[1]; // Count of 'O' blocks
-  const countT = rawCounts[2]; // Count of 'T' blocks (unused in calculation, but read)
-  const countJ = rawCounts[3]; // Count of 'J' blocks
-  const countL = rawCounts[4]; // Count of 'L' blocks
-  const countS = rawCounts[5]; // Count of 'S' blocks (unused in calculation, but read)
-  const countZ = rawCounts[6]; // Count of 'Z' blocks (unused in calculation, but read)
+function printResult(outputValue){console.log(outputValue);}
+function logDebug(debugValue){console.error('debug:' + require('util').inspect(debugValue,false,null));}
 
-  // Calculate `totalEvenPairs`: Sum of even parts of I, J, and L blocks
-  // This represents the maximum score achievable by pairing I, J, and L blocks.
-  const totalEvenPairs = getLargestEven(countI) + getLargestEven(countJ) + getLargestEven(countL);
+function getEvenComponent(value) {
+    return value - (value % 2);
+}
 
-  let adjustedTripleScore = 0; // Initialize score for the 'triple' combination strategy
+function executeSolution(){
+  const inputNumbers = readIntArray();
+  const valI = inputNumbers[0];
+  const valO = inputNumbers[1];
+  const valT = inputNumbers[2];
+  const valJ = inputNumbers[3];
+  const valL = inputNumbers[4];
+  const valS = inputNumbers[5];
+  const valZ = inputNumbers[6];
 
-  // Check if it's possible to form a 'triple' combination (I, J, L) at least once
-  const canFormInitialTriple = (countI >= 1 && countJ >= 1 && countL >= 1);
+  const evenPairsI_A = getEvenComponent(valI);
+  const evenPairsJ_A = getEvenComponent(valJ);
+  const evenPairsL_A = getEvenComponent(valL);
+  const resultOptionA = evenPairsI_A + evenPairsJ_A + evenPairsL_A;
 
-  if (canFormInitialTriple) {
-    // If a triple can be formed, calculate the score:
-    // 3 points for the initial triple, plus even pairs from remaining blocks (I-1, J-1, L-1)
-    const remainingI = countI - 1;
-    const remainingJ = countJ - 1;
-    const remainingL = countL - 1;
+  let resultOptionB = 0;
+  const canFormThreeBlock = (valI >= 1 && valJ >= 1 && valL >= 1);
 
-    adjustedTripleScore = getLargestEven(remainingI) + getLargestEven(remainingJ) + getLargestEven(remainingL) + 3;
+  if (canFormThreeBlock) {
+    const remainingI = valI - 1;
+    const remainingJ = valJ - 1;
+    const remainingL = valL - 1;
+
+    const evenPairsI_B = getEvenComponent(remainingI);
+    const evenPairsJ_B = getEvenComponent(remainingJ);
+    const evenPairsL_B = getEvenComponent(remainingL);
+
+    resultOptionB = evenPairsI_B + evenPairsJ_B + evenPairsL_B + 3;
   }
-  // If `canFormInitialTriple` is false, `adjustedTripleScore` remains 0 as initialized.
 
-  // Determine the maximum score from the two strategies:
-  // 1. Just summing even pairs (`totalEvenPairs`)
-  // 2. Forming one triple and then summing even pairs from remaining blocks (`adjustedTripleScore`)
-  const bestCombinationScore = Math.max(totalEvenPairs, adjustedTripleScore);
-
-  // The final result is the best combination score plus the count of 'O' blocks
-  // 'O' blocks always contribute directly to the score without complex pairing logic.
-  const finalCalculatedResult = bestCombinationScore + countO;
-
-  // Display the final result to the user
-  displayOutput(finalCalculatedResult);
+  const maximumPossiblePairs = Math.max(resultOptionA, resultOptionB);
+  printResult(maximumPossiblePairs + valO);
 }

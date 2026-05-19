@@ -1,52 +1,46 @@
-// This function processes a given text input to perform a specific calculation.
-function ProcessInput ( rawData ) {
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines
+    // Each line represents either a size N or a sequence of digits
+    rawData = rawData.split("\n");
 
-    // Split the entire raw text into individual lines, creating an array of strings.
-    const lineBlocks = rawData . split ( "\n" ) ;
+    // Iterate through the input array, processing two lines at a time
+    // The outer loop increments by 2 to get N and its corresponding digit sequence
+    for (let outerIndex = 0; outerIndex < rawData.length; outerIndex += 2) {
+        // Parse the first line of the pair as an integer, representing the initial size
+        const currentSize = parseInt(rawData[outerIndex]);
 
-    // Iterate through the processed line blocks, stepping by two for each problem instance.
-    // The outer loop handles each distinct test case present in the input data.
-    for ( var outerIndex = 0 ; outerIndex < lineBlocks.length ; outerIndex = outerIndex + 2 ) {
+        // Convert the second line of the pair into an array of individual characters (digits)
+        const charArray = rawData[outerIndex + 1].split("");
 
-        // Parse the first line of the current block to get the initial count value.
-        // This numerical value often dictates the size or number of iterations for subsequent operations.
-        var countVal = parseInt ( lineBlocks[outerIndex] ) ;
+        // Map the character array to an array of numbers
+        // This creates the initial sequence for the difference calculation
+        let numberSequence = charArray.map(Number);
 
-        // Retrieve the second line of the current block and split it into an array of individual characters.
-        var charArray = lineBlocks[outerIndex + 1] . split ( "" ) ;
+        // This loop performs the core difference calculation
+        // It iterates from the initial size down to 2
+        for (let innerLoopCounter = currentSize; innerLoopCounter > 1; innerLoopCounter--) {
+            // The inner loop processes elements within the current sequence
+            // It runs 'innerLoopCounter' times for each step of the outer loop
+            for (let iterationCount = 0; iterationCount < innerLoopCounter; iterationCount++) {
+                // Calculate the absolute difference between the first two elements
+                const differenceValue = Math.abs(numberSequence[0] - numberSequence[1]);
 
-        // Convert each character in the charArray into its corresponding numerical representation.
-        // This transforms the character array into an array of numbers, ready for calculations.
-        var numberSequence = charArray . map ( Number ) ;
+                // Add the calculated difference to the end of the sequence
+                numberSequence.push(differenceValue);
 
-        // The middle loop iterates downwards from the initial count value.
-        // It systematically reduces the effective size of the sequence in each major step of the algorithm.
-        for ( var middleCounter = countVal ; middleCounter > 1 ; middleCounter-- ) {
-
-            // The inner loop performs a series of specific operations on the current number sequence.
-            // It executes 'middleCounter' times for each iteration of the middle loop.
-            for ( var innerIterator = 0 ; innerIterator < middleCounter ; innerIterator++ ) {
-
-                // Calculate the absolute difference between the first two elements currently in the sequence.
-                var differenceResult = Math.abs ( numberSequence[0] - numberSequence[1] ) ;
-
-                // Append this newly calculated difference to the very end of the sequence.
-                numberSequence . push ( differenceResult ) ;
-
-                // Remove the first element from the sequence, effectively shifting all remaining elements forward.
-                numberSequence . shift ( ) ;
+                // Remove the first element from the sequence
+                numberSequence.shift();
             }
-
-            // After the completion of the inner loop, remove the last element from the sequence.
-            // This operation further modifies the sequence length or finalizes a processing step.
-            numberSequence . pop ( ) ;
+            // After the inner loop completes, remove the last element
+            // This effectively reduces the sequence length by one for the next iteration
+            numberSequence.pop();
         }
-
-        // Output the final remaining element of the sequence to the console for the current problem instance.
-        console . log ( numberSequence[0] ) ;
+        // Once all calculations are done, the sequence should contain only one element
+        // Log this final element to the console
+        console.log(numberSequence[0]);
     }
 }
 
-// Invoke the primary processing function with data read from the standard input stream.
-// This line reads the entire content of '/dev/stdin' as a UTF-8 encoded string and passes it for execution.
-ProcessInput ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input using Node.js file system module
+// Then pass the content to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,83 +1,53 @@
-/* This script processes tabular numerical data from standard input.
- * It calculates row sums and column sums, then outputs the modified table. */
+var entryData = ''; // Storage for all incoming data from standard input.
+var inputSource = process.stdin; // Reference to the standard input stream.
 
-// A buffer to collect all incoming data chunks from the input stream.
-var collectedInputContent = '';
+inputSource.resume(); // Ensure the input stream is flowing.
+inputSource.setEncoding( 'utf-8' ); // Set the character encoding for the input.
 
-// Obtain the standard input stream for reading.
-var dataSource = process.stdin;
-
-// Ensure the input stream is active and ready to deliver data.
-dataSource.beginReading();
-
-// Configure the stream to interpret incoming bytes as UTF-8 characters.
-dataSource.configureEncoding( 'utf-8' );
-
-// Attach an event handler to process each segment of data as it arrives.
-dataSource.attachEventHandler( 'data', function( inputSegment ) {
-  collectedInputContent += inputSegment; // Append the new segment to our buffer.
+// Event handler for when data chunks are received.
+inputSource.on( 'data', function( dataSegment ) {
+  entryData += dataSegment; // Append the new data chunk to the accumulated string.
 });
 
-// Set up a listener for when the entire input stream has been consumed.
-dataSource.attachEventHandler( 'end', function() {
-  // Split the complete input string into individual lines based on newline characters.
-  var incomingLines = collectedInputContent.split( "\n" );
+// Event handler for when the input stream finishes.
+inputSource.on( 'end', function() {
+  // Split the entire input string into an array of lines.
+  var parsedLines = entryData.split( "\n" );
 
-  // Parse the first line to extract matrix dimensions (rows and columns).
-  // The 'map(Number)' converts string parts to actual numbers.
-  var dimensionsData = incomingLines[0].split( " " ).map( Number );
+  // Parse the first line to extract row and column dimensions.
+  var rowColInfo = parsedLines[0].split( " " ).map( Number );
+  var numRows = rowColInfo[0]; // The number of rows (though not directly used in loop bounds).
+  var numCols = rowColInfo[1]; // The number of columns for data.
 
-  // Extract the number of rows (though not explicitly used in calculations, it's parsed).
-  var rowCountValue = dimensionsData[0];
-
-  // Extract the number of columns, which is crucial for iteration and array sizing.
-  var columnCountValue = dimensionsData[1];
-
-  // Initialize an array to store the sum for each column, plus a grand total at the end.
-  // The size is (number of columns) + 1 for the total.
-  var aggregateColumnTotals = Array( columnCountValue + 1 );
-
-  // Fill the aggregate totals array with zeros to start.
-  for( var colInitIndex = 0; colInitIndex < columnCountValue + 1; colInitIndex++ ) {
-    aggregateColumnTotals[colInitIndex] = 0;
+  // Initialize an array to hold the sum for each column, plus one for the total row sums.
+  var columnTotals = Array( numCols + 1 );
+  for( var idx = 0; idx < numCols + 1; idx++ ) {
+    columnTotals[idx] = 0; // Set initial values to zero.
   }
 
-  // An array to accumulate all the modified output lines.
-  var processedOutputLines = [];
+  var resultLines = []; // Array to store the formatted output lines.
+  var totalLines = parsedLines.length; // Total count of input lines.
 
-  // Determine the total number of input lines for loop control.
-  var totalInputLines = incomingLines.length;
+  // Iterate through each data line, starting from the second line (index 1).
+  for( var lineIndex = 1; lineIndex < totalLines; lineIndex++ ) {
+    // Convert the current line into an array of numbers.
+    var currentNumbers = parsedLines[lineIndex].split( ' ' ).map( Number );
+    var rowSum = 0; // Accumulator for the sum of numbers in the current row.
 
-  // Iterate through each data line, starting from the second line (index 1),
-  // as the first line contains dimensions.
-  for( var currentLineIdentifier = 1; currentLineIdentifier < totalInputLines; currentLineIdentifier++ ) {
-    // Parse the numbers from the current line.
-    var valuesInRow = incomingLines[currentLineIdentifier].split( ' ' ).map( Number );
-
-    // Initialize a variable to store the sum of numbers in the current row.
-    var currentRowSum = 0;
-
-    // Loop through each number in the current row (up to the column count).
-    for( var currentColumnIdentifier = 0; currentColumnIdentifier < columnCountValue; currentColumnIdentifier++ ) {
-      currentRowSum += valuesInRow[currentColumnIdentifier]; // Add to the current row's sum.
-      aggregateColumnTotals[currentColumnIdentifier] += valuesInRow[currentColumnIdentifier]; // Add to the respective column's total.
+    // Process each number in the current row.
+    for( var colIdx = 0; colIdx < numCols; colIdx++ ) {
+      rowSum += currentNumbers[colIdx]; // Add to the current row's sum.
+      columnTotals[colIdx] += currentNumbers[colIdx]; // Add to the respective column's total.
     }
 
-    // Add the sum of the current row to the grand total column sum.
-    aggregateColumnTotals[columnCountValue] += currentRowSum;
-
-    // Append the calculated row sum to the end of the current row's values.
-    valuesInRow.push( currentRowSum );
-
-    // Convert the modified row (with its sum) back into a space-separated string
-    // and add it to our collection of output lines.
-    processedOutputLines.push( valuesInRow.join( " " ) );
+    columnTotals[numCols] += rowSum; // Add the current row's sum to the grand total column.
+    currentNumbers.push( rowSum ); // Append the calculated row sum to the current row's numbers.
+    resultLines.push( currentNumbers.join( " " ) ); // Add the formatted row to the output array.
   }
 
-  // After processing all data rows, convert the final column totals array
-  // into a space-separated string and add it as the last line of output.
-  processedOutputLines.push( aggregateColumnTotals.join( " " ) );
+  // After processing all data rows, append the final column totals line.
+  resultLines.push( columnTotals.join( " " ) );
 
-  // Print all collected output lines, separated by newline characters, to standard output.
-  console.log( processedOutputLines.join( "\n" ) );
+  // Print all collected result lines, separated by newlines, to standard output.
+  console.log( resultLines.join( "\n" ) );
 });

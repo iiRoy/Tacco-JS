@@ -1,26 +1,11 @@
-function processData(rawData) {
-  const initialValue = Number.parseInt(rawData, 10);
+function processInput(rawText) {
+  const numericValue = parseInt(rawText);
 
-  if (initialValue < 2) {
-    return;
-  }
+  const rootEstimate = Math.floor(Math.sqrt(numericValue));
 
-  function findMaximalSquare(currentMultiplier, upperBoundary) {
-    const calculatedProduct = currentMultiplier * currentMultiplier;
+  const largestPerfectSquare = rootEstimate * rootEstimate;
 
-    if (calculatedProduct > upperBoundary) {
-      const priorMultiplier = currentMultiplier - 1;
-      return priorMultiplier * priorMultiplier;
-    } else {
-      return findMaximalSquare(currentMultiplier + 1, upperBoundary);
-    }
-  }
-
-  const resultantSquare = findMaximalSquare(1, initialValue);
-
-  if (resultantSquare > 1) {
-    console.info(resultantSquare);
-  }
+  console.log(largestPerfectSquare);
 }
 
-processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

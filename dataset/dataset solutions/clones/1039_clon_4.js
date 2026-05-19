@@ -1,33 +1,30 @@
-const processInput = (rawInputContent) => {
-    const processedLines = rawInputContent.split('\n').filter(Boolean);
+const probeForElement = (targetVal, sortedCollection, lowBound, highBound) => {
+  if (lowBound >= highBound) {
+    return false;
+  }
 
-    const parseLineOfNumbers = (lineIndex) => processedLines[lineIndex].split(' ').map(Number);
+  const pivotIndex = Math.floor((lowBound + highBound) / 2);
+  const currentVal = sortedCollection[pivotIndex];
 
-    const primaryDataArray = parseLineOfNumbers(1);
-    const secondaryQueryArray = parseLineOfNumbers(3);
-
-    const locateRecursively = (haystack, needle, lowerBound, upperBound) => {
-        if (lowerBound >= upperBound) {
-            return false;
-        }
-
-        const centerIndex = Math.floor((lowerBound + upperBound) / 2);
-        const centerValue = haystack[centerIndex];
-
-        if (centerValue === needle) {
-            return true;
-        } else if (needle < centerValue) {
-            return locateRecursively(haystack, needle, lowerBound, centerIndex);
-        } else {
-            return locateRecursively(haystack, needle, centerIndex + 1, upperBound);
-        }
-    };
-
-    const totalOccurrences = secondaryQueryArray.filter(queryItem =>
-        locateRecursively(primaryDataArray, queryItem, 0, primaryDataArray.length)
-    ).length;
-
-    console.log(totalOccurrences);
+  if (currentVal === targetVal) {
+    return true;
+  } else if (targetVal < currentVal) {
+    return probeForElement(targetVal, sortedCollection, lowBound, pivotIndex);
+  } else {
+    return probeForElement(targetVal, sortedCollection, pivotIndex + 1, highBound);
+  }
 };
 
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+((inputSource) => {
+  const inputLines = inputSource.trim().split('\n');
+
+  const [, searchSpaceRaw, , queryElementsRaw] = inputLines;
+  const searchSpace = searchSpaceRaw.split(" ").map(Number);
+  const queryElements = queryElementsRaw.split(" ").map(Number);
+
+  const foundCount = queryElements.reduce((accumulator, currentQuery) => {
+    return accumulator + (probeForElement(currentQuery, searchSpace, 0, searchSpace.length) ? 1 : 0);
+  }, 0);
+
+  console.log(foundCount);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

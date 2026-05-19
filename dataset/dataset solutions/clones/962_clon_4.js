@@ -1,60 +1,52 @@
-const dataHandler = require('fs');
+const config = { input: '/dev/stdin', newline: '\n' };
 
-const executionParameters = {
-  sourcePath: '/dev/stdin',
-  lineSeparator: '\n'
-};
+const inputContent = require('fs').readFileSync(config.input, 'ascii');
+const inputLines = inputContent.trim().split(config.newline);
 
-const rawTextContent = dataHandler.readFileSync(executionParameters.sourcePath, 'ascii');
-const processedTextLines = rawTextContent.trim().split(executionParameters.lineSeparator);
+const nodeCount = Number(inputLines.shift());
 
-const totalVertices = Number(processedTextLines.shift());
+const graphEdges = [];
 
-const directedConnections = [];
-
-processedTextLines.forEach(currentLine => {
-  const numericalTokens = currentLine.split(' ').map(Number);
-  const startNodeIdentifier = numericalTokens[0];
-  for (let edgePointer = 2; edgePointer < numericalTokens.length; edgePointer += 2) {
-    const endNodeIdentifier = numericalTokens[edgePointer];
-    const connectionStrength = numericalTokens[edgePointer + 1];
-    directedConnections.push({
-      start: startNodeIdentifier,
-      end: endNodeIdentifier,
-      strength: connectionStrength
-    });
+inputLines.forEach(lineData => {
+  const parts = lineData.split(' ').map(Number);
+  const sourceNodeId = parts[0];
+  for (let i = 2; i < parts.length; i += 2) {
+    const targetNodeId = parts[i];
+    const edgeWeight = parts[i + 1];
+    graphEdges.push({ from: sourceNodeId, to: targetNodeId, weight: edgeWeight });
   }
 });
 
-let shortestPathMeasures = Array.from({ length: totalVertices }, () => Infinity);
-let parentNodes = Array.from({ length: totalVertices }, () => null);
+let shortestDistances;
+let pathPredecessors;
 
-function determineReachabilityCosts(allEdges, numNodes, initialNode) {
-  shortestPathMeasures.fill(Infinity);
-  parentNodes.fill(null);
-  shortestPathMeasures[initialNode] = 0;
+function computeShortestPaths(numNodes, edges, startNode) {
+  shortestDistances = Array.from({ length: numNodes }, () => Number.POSITIVE_INFINITY);
+  pathPredecessors = Array.from({ length: numNodes }, () => null);
+  shortestDistances[startNode] = 0;
 
-  for (let passCounter = 1; passCounter < numNodes; passCounter++) {
-    allEdges.forEach(currentEdge => {
-      if (shortestPathMeasures[currentEdge.start] !== Infinity && shortestPathMeasures[currentEdge.end] > shortestPathMeasures[currentEdge.start] + currentEdge.strength) {
-        shortestPathMeasures[currentEdge.end] = shortestPathMeasures[currentEdge.start] + currentEdge.strength;
-        parentNodes[currentEdge.end] = currentEdge.start;
+  for (let iteration = 1; iteration < numNodes; iteration++) {
+    edges.forEach(edge => {
+      const { from, to, weight } = edge;
+      if (shortestDistances[from] !== Number.POSITIVE_INFINITY &&
+          shortestDistances[to] > shortestDistances[from] + weight) {
+        shortestDistances[to] = shortestDistances[from] + weight;
+        pathPredecessors[to] = from;
       }
     });
   }
 
-  // The original code contains a logical error in its negative cycle detection loop:
-  // `for (u in adj) { for (v in adj[v]) { ... } }`
-  // Due to this bug and the implicit global variable `v` in the original,
-  // the negative cycle check is effectively non-functional or misdirected,
-  // often resulting in it never returning `false` even if negative cycles exist.
-  // To ensure "equivalent functionality" as per Type IV definition,
-  // this cloned version replicates that behavior by always indicating no negative cycle.
-  return true;
+  const hasNegativeCycle = edges.some(edge => {
+    const { from, to, weight } = edge;
+    return shortestDistances[from] !== Number.POSITIVE_INFINITY &&
+           shortestDistances[to] > shortestDistances[from] + weight;
+  });
+
+  return !hasNegativeCycle;
 }
 
-const noNegativeLoopsDetected = determineReachabilityCosts(directedConnections, totalVertices, 0);
+computeShortestPaths(nodeCount, graphEdges, 0);
 
-for (let nodeIndex = 0; nodeIndex < totalVertices; nodeIndex++) {
-  console.log("%s %d", nodeIndex, shortestPathMeasures[nodeIndex]);
+for (let i = 0; i < nodeCount; i++) {
+  console.log("%s %d", i, shortestDistances[i]);
 }

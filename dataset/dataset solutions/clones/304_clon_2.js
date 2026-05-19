@@ -1,73 +1,56 @@
-/*
- * This module contains utility functions and main logic
- * for processing year ranges to find leap years.
- */
-function is_leap_year( current_year_value ) {
-  // Determine if the given year is a leap year based on Gregorian calendar rules.
-  if ( current_year_value % 4 !== 0 ) {
-    return false;
+function isLeapYear(yearVal) {
+  // A year is a leap year if it is divisible by 4,
+  // unless it is divisible by 100 but not by 400.
+  if (yearVal % 4 !== 0) {
+    return false; // Not divisible by 4, so not a leap year.
   }
-
-  if ( current_year_value % 400 === 0 ) {
-    return true;
+  if (yearVal % 400 === 0) {
+    return true; // Divisible by 400, so it is a leap year.
   }
-
-  if ( current_year_value % 100 === 0 ) {
-    return false;
+  if (yearVal % 100 === 0) {
+    return false; // Divisible by 100 but not by 400, so not a leap year.
   }
-
-  return true;
+  return true; // Divisible by 4 but not by 100, so it is a leap year.
 }
 
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineData = rawData.trim().split('\n');
 
-// Acquire necessary system modules for file operations.
-const file_system_access = require('fs');
-
-// Read all incoming data from standard input, treating it as UTF-8 text.
-let raw_input_data = file_system_access.readFileSync( '/dev/stdin', 'utf8' );
-
-// Process the raw input: trim whitespace and split into individual lines.
-const input_line_segments = raw_input_data.trim().split( "\n" );
-
-// Iterate through each line of the processed input data.
-for ( let line_index = 0; line_index < input_line_segments.length; line_index++ ) {
-  // If the current line indicates the end of input, terminate processing.
-  if ( input_line_segments[line_index] === "0 0" ) {
+// Iterate through each line of input data.
+for (let idx = 0; idx < lineData.length; idx++) {
+  // If the current line is "0 0", it signifies the end of input.
+  if (lineData[idx] === '0 0') {
     break;
   }
 
-  // Add a newline separator between outputs of different test cases, except for the first one.
-  if ( line_index !== 0 ) {
-    console.log( "" );
+  // Print an empty line as a separator between outputs for different test cases,
+  // but not before the very first output.
+  if (idx !== 0) {
+    console.log('');
   }
 
-  // Parse the start year from the current input line.
-  // The '- 0' converts the string part to a number.
-  let start_year = ( input_line_segments[line_index].split( " " ) )[0] - 0;
-  // Parse the end year from the current input line.
-  let end_year = ( input_line_segments[line_index].split( " " ) )[1] - 0;
+  // Split the current line to get the start and end years.
+  const yearRangeParts = lineData[idx].split(' ');
+  const startYear = Number(yearRangeParts[0]); // Convert the first part to a number.
+  const endYear = Number(yearRangeParts[1]);   // Convert the second part to a number.
 
-  // Initialize an empty array to store all identified leap years within the current range.
-  let leap_years_found = [];
+  const leapYearsFound = []; // Array to store all leap years found within the current range.
 
-  // Loop through the range of years from start_year to end_year (inclusive).
-  for ( let year_iterator = start_year; year_iterator <= end_year; year_iterator++ ) {
-    // Check if the current year in the iteration is a leap year.
-    if ( is_leap_year( year_iterator ) ) {
-      // If it is a leap year, add it to our collection.
-      leap_years_found.push( year_iterator );
+  // Loop through each year from the start year to the end year (inclusive).
+  for (let currentYear = startYear; currentYear <= endYear; currentYear++) {
+    // Check if the current year is a leap year using our helper function.
+    if (isLeapYear(currentYear)) {
+      leapYearsFound.push(currentYear); // Add it to our list if it is.
     }
   }
 
-  // If no leap years were found in the specified range, output "NA".
-  if ( leap_years_found.length === 0 ) {
-    console.log( "NA" );
-  }
-
-  // If leap years were found, print each one on a new line.
-  if ( leap_years_found.length !== 0 ) {
-    leap_years_found.forEach( function ( found_year ) {
-      console.log( found_year );
-    } );
+  // If no leap years were found in the given range, print "NA".
+  if (leapYearsFound.length === 0) {
+    console.log('NA');
+  } else {
+    // Otherwise, print each found leap year on a new line.
+    leapYearsFound.forEach(function(singleYear) {
+      console.log(singleYear);
+    });
   }
 }

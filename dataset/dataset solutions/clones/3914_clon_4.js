@@ -1,34 +1,19 @@
-'use strict'
+const processInput = (rawInput) => {
+    const [startVal, endVal, countVal] = rawInput.split(' ').map(Number);
 
-const processNumericalRanges = (initialData) => {
-    const numericalComponents = initialData.split(' ').map(Number)
-    const lowerBound = numericalComponents[0]
-    const upperBound = numericalComponents[1]
-    const selectionQuantity = numericalComponents[2]
+    const firstSegment = Array.from({ length: countVal }, (_, idx) => startVal + idx)
+                               .filter(num => num <= endVal);
 
-    const entireSequence = Array.from({ length: upperBound - lowerBound + 1 }, (_, index) => lowerBound + index)
+    const actualStartOfLastK = Math.max(startVal, endVal - countVal + 1);
+    const lastSegmentLength = endVal - actualStartOfLastK + 1;
 
-    const uniqueCollector = {}
+    const lastSegment = Array.from({ length: lastSegmentLength }, (_, idx) => actualStartOfLastK + idx);
 
-    for (let currentPosition = 0; currentPosition < selectionQuantity; currentPosition++) {
-        if (currentPosition < entireSequence.length) {
-            uniqueCollector[entireSequence[currentPosition]] = true
-        }
-    }
+    const combinedUnique = new Set([...firstSegment, ...lastSegment]);
 
-    for (let currentPosition = 0; currentPosition < selectionQuantity; currentPosition++) {
-        const reverseIndex = entireSequence.length - 1 - currentPosition
-        if (reverseIndex >= 0) {
-            uniqueCollector[entireSequence[reverseIndex]] = true
-        }
-    }
+    Array.from(combinedUnique)
+         .sort((a, b) => a - b)
+         .forEach(val => console.log(val));
+};
 
-    const finalOutput = Object.keys(uniqueCollector)
-                                .map(Number)
-                                .sort((valA, valB) => valA - valB)
-                                .join('\n')
-
-    console.log(finalOutput)
-}
-
-processNumericalRanges(require('fs').readFileSync('/dev/stdin', 'utf-8'))
+processInput(require('fs').readFileSync('/dev/stdin', 'utf-8'));

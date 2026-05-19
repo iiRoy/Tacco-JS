@@ -1,62 +1,58 @@
-const acquireGridData = (textualInput) => {
-    const lines = textualInput.trim().split('\n');
-    const extent = Number(lines[0]);
-    const sequence = lines[1].split(' ').map(Number);
-    return { gridExtent: extent, occupancySequence: sequence };
-};
+function processGrid(rawInput) {
+  const lines = rawInput.trim().split("\n");
+  const gridDim = Number(lines[0]);
+  const seatingOrder = lines[1].split(" ").map(Number);
 
-const obtainCoordinates = (seatIdentifier, extent) => {
-    const zeroIndexedRow = Math.floor((seatIdentifier - 1) / extent);
-    const zeroIndexedCol = (seatIdentifier - 1) % extent;
-    return [zeroIndexedRow, zeroIndexedCol];
-};
+  const positionLookup = new Map();
+  for (let rowIdx = 1; rowIdx <= gridDim; rowIdx++) {
+    for (let colIdx = 1; colIdx <= gridDim; colIdx++) {
+      const seatNumber = (rowIdx - 1) * gridDim + colIdx;
+      positionLookup.set(seatNumber, [rowIdx, colIdx]);
+    }
+  }
 
-const calculateTotalDiscomfort = (initialData) => {
-    const gridExtent = initialData.gridExtent;
-    const occupancySequence = initialData.occupancySequence;
+  const occupiedPositions = new Set();
+  let unfavorableCount = 0;
 
-    const finalState = occupancySequence.reduce((accumulator, currentSeatIdentifier) => {
-        let currentDiscomfort = accumulator.discomfort;
-        const currentOccupied = accumulator.occupied;
+  const generateSequence = (startValue, endValue, stepIncrement = 1) => {
+    const sequence = [];
+    if (stepIncrement > 0) {
+      for (let k = startValue; k <= endValue; k += stepIncrement) sequence.push(k);
+    } else {
+      for (let k = startValue; k >= endValue; k += stepIncrement) sequence.push(k);
+    }
+    return sequence;
+  };
 
-        const [currentRow, currentCol] = obtainCoordinates(currentSeatIdentifier, gridExtent);
+  seatingOrder.forEach(personIdentifier => {
+    const [originalRow, originalCol] = positionLookup.get(personIdentifier);
 
-        currentOccupied.add(`${currentRow},${currentCol}`);
+    occupiedPositions.add(`${originalRow},${originalCol}`);
 
-        if (currentRow === 0 || currentRow === gridExtent - 1 || currentCol === 0 || currentCol === gridExtent - 1) {
-            return { discomfort: currentDiscomfort, occupied: currentOccupied };
-        }
+    if (originalRow === 1 || originalCol === 1 || originalRow === gridDim || originalCol === gridDim) {
+      return;
+    }
 
-        const countFreeInDirection = (coordsGenerator) => {
-            return Array.from(coordsGenerator)
-                        .filter(([r, c]) => !currentOccupied.has(`${r},${c}`))
-                        .length;
-        };
+    const visibleLeft = generateSequence(originalRow - 1, 1, -1)
+      .filter(r => !occupiedPositions.has(`${r},${originalCol}`))
+      .length;
 
-        const leftCoords = Array.from({ length: currentRow }, (_, i) => [currentRow - 1 - i, currentCol]);
-        const freeLeft = countFreeInDirection(leftCoords);
+    const visibleRight = generateSequence(originalRow + 1, gridDim)
+      .filter(r => !occupiedPositions.has(`${r},${originalCol}`))
+      .length;
 
-        const rightCoords = Array.from({ length: gridExtent - 1 - currentRow }, (_, i) => [currentRow + 1 + i, currentCol]);
-        const freeRight = countFreeInDirection(rightCoords);
+    const visibleUp = generateSequence(originalCol - 1, 1, -1)
+      .filter(c => !occupiedPositions.has(`${originalRow},${c}`))
+      .length;
 
-        const upCoords = Array.from({ length: currentCol }, (_, i) => [currentRow, currentCol - 1 - i]);
-        const freeUp = countFreeInDirection(upCoords);
+    const visibleDown = generateSequence(originalCol + 1, gridDim)
+      .filter(c => !occupiedPositions.has(`${originalRow},${c}`))
+      .length;
 
-        const downCoords = Array.from({ length: gridExtent - 1 - currentCol }, (_, i) => [currentRow, currentCol + 1 + i]);
-        const freeDown = countFreeInDirection(downCoords);
-        
-        currentDiscomfort += Math.min(freeLeft, freeRight, freeUp, freeDown);
+    unfavorableCount += Math.min(visibleLeft, visibleRight, visibleUp, visibleDown);
+  });
 
-        return { discomfort: currentDiscomfort, occupied: currentOccupied };
-    }, { discomfort: 0, occupied: new Set() });
+  console.log(unfavorableCount);
+}
 
-    return finalState.discomfort;
-};
-
-const executeSeatingProcess = (rawInput) => {
-    const processed = acquireGridData(rawInput);
-    const finalDiscomfort = calculateTotalDiscomfort(processed);
-    console.log(finalDiscomfort);
-};
-
-executeSeatingProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGrid(require("fs").readFileSync("/dev/stdin", "utf8"));

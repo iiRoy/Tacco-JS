@@ -1,59 +1,36 @@
-const fileSystemHandler = require("fs");
+var inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+var allLines = inputData.split(/\n/);
+var totalLineCount = allLines.length;
 
-const standardInputFile = "/dev/stdin";
+function determineMatchScores(sequenceA, sequenceB) {
+    var currentHits = 0;
+    var currentBlows = 0;
+    const SEQUENCE_DIGIT_COUNT = 4;
 
-const EXPECTED_SEQUENCE_LENGTH = 4;
+    for (var digitPosition = 0; digitPosition < SEQUENCE_DIGIT_COUNT; digitPosition++) {
+        var digitFromSequenceA = sequenceA[digitPosition];
+        var digitFromSequenceB = sequenceB[digitPosition];
 
-function parseSequenceString(inputLine) {
-    if (typeof inputLine !== 'string' || inputLine.trim() === '') {
-        return [];
-    }
-    return inputLine.trim().split(/\s+/).filter(element => element.length > 0);
-}
-
-function calculateMatchResults(attemptCode, secretCode) {
-    let currentHits = 0;
-    let currentBlows = 0;
-
-    if (attemptCode.length !== EXPECTED_SEQUENCE_LENGTH || secretCode.length !== EXPECTED_SEQUENCE_LENGTH) {
-        return { hits: 0, blows: 0 };
-    }
-
-    for (let pos = 0; pos < EXPECTED_SEQUENCE_LENGTH; pos++) {
-        if (attemptCode[pos] === secretCode[pos]) {
+        if (digitFromSequenceA === digitFromSequenceB) {
             currentHits++;
         } else {
-            const valueToSearch = attemptCode[pos];
-            const occurrences = secretCode.filter(item => item === valueToSearch).length;
-            currentBlows += occurrences;
+            for (var otherPosition = 0; otherPosition < SEQUENCE_DIGIT_COUNT; otherPosition++) {
+                if (digitFromSequenceA === sequenceB[otherPosition]) {
+                    currentBlows++;
+                }
+            }
         }
     }
-
     return { hits: currentHits, blows: currentBlows };
 }
 
-const rawFileContent = fileSystemHandler.readFileSync(standardInputFile, "utf8");
+for (var processingIndex = 0; processingIndex < totalLineCount; processingIndex += 2) {
+    var firstLineContent = allLines[processingIndex];
+    var secondLineContent = allLines[processingIndex + 1];
 
-const allInputLines = rawFileContent.split('\n').filter(line => line.length > 0);
+    var firstSequenceParts = firstLineContent.trim().split(/\s/);
+    var secondSequenceParts = secondLineContent.trim().split(/\s/);
 
-const numberOfInputRecords = allInputLines.length;
-
-for (let dataPairIndex = 0; dataPairIndex < numberOfInputRecords; dataPairIndex += 2) {
-    if (dataPairIndex + 1 >= numberOfInputRecords) {
-        break;
-    }
-
-    const attemptLineString = allInputLines[dataPairIndex];
-    const secretLineString = allInputLines[dataPairIndex + 1];
-
-    const attemptElements = parseSequenceString(attemptLineString);
-    const secretElements = parseSequenceString(secretLineString);
-
-    if (attemptElements.length !== EXPECTED_SEQUENCE_LENGTH || secretElements.length !== EXPECTED_SEQUENCE_LENGTH) {
-        continue;
-    }
-
-    const comparisonResults = calculateMatchResults(attemptElements, secretElements);
-
-    console.log(`${comparisonResults.hits} ${comparisonResults.blows}`);
+    var comparisonResult = determineMatchScores(firstSequenceParts, secondSequenceParts);
+    console.log(comparisonResult.hits + ' ' + comparisonResult.blows);
 }

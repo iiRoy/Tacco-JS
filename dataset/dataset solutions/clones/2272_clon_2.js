@@ -1,58 +1,45 @@
-/*
- * This script processes a multi-line string input to perform a calculation.
- * It extracts numeric data, computes a sum and a factorial, then applies a modulo operation.
- */
+function processInput(rawData) {
+  // Define a large prime number for modulo operations
+  let moduloValue = 10000000007;
 
-// Define the primary function to handle data processing.
-function  processInputData( rawData )
-{
-  // A large prime number used as a modulus for final computation.
-  divisorConstant = 10000000007;
+  // A temporary variable, currently unused but part of the original structure
+  let tempVar = 0;
 
-  // An unused placeholder variable, initialized to zero.
-  initialCounter = 0;
+  // Split the raw input string into an array of lines
+  const linesArray = rawData.split("\n");
 
-  // Split the raw input string into an array of lines using newline as delimiter.
-  linesArray = rawData.split( "\n" );
+  // Parse the first line to get the count of elements
+  const countElements = Number(linesArray[0]);
 
-  // Parse the first line to determine the count of elements for subsequent processing.
-  elementCount = Number( linesArray[0] );
+  // Process the second line: split by space, then convert to integers
+  const numericValues = rawData
+    .split("\n")[1]
+    .split(" ")
+    .map(numStr => parseInt(numStr, 10));
 
-  // Extract the second line, split it by spaces, and convert each part to an integer.
-  numericValues = rawData
-    .split( "\n" )[1]
-    .split( " " )
-    .map(   currentItem => parseInt( currentItem, 10 ) );
+  // Output the parsed array of numbers
+  console.log(numericValues);
 
-  // Output the array of processed numeric values for debugging.
-  console.info( numericValues );
+  // Initialize variables for sum and factorial calculation
+  let totalSum = 0;
+  let productFactorial = 1;
 
-  // Initialize a variable to accumulate the sum of elements.
-  runningTotal = 0;
-
-  // Initialize a variable to accumulate the product (factorial).
-  productAccumulator = 1;
-
-  // Loop through the numeric values, starting from the second element (index 1).
-  for ( var  idx = 1; idx < elementCount; idx++ )
-  {
-    // Add the current numeric value to the running total.
-    runningTotal += numericValues[idx];
-
-    // Log the current state of the running total.
-    console.info( runningTotal );
-
-    // Multiply the product accumulator by the current loop index.
-    productAccumulator *= idx;
+  // Loop through the numeric values starting from the second element (index 1)
+  for (let idx = 1; idx < countElements; idx++) {
+    // Add the current number to the running total
+    totalSum += numericValues[idx];
+    // Log the current sum after each addition
+    console.log(totalSum);
+    // Multiply the factorial by the current loop index
+    productFactorial *= idx;
   }
 
-  // Calculate an intermediate result: (sum / (N-1)) * factorial.
-  // This value is logged without the modulo operation.
-  console.info( ( runningTotal / ( elementCount - 1 ) ) * productAccumulator );
+  // Calculate and log the intermediate result: (sum / (N - 1)) * factorial
+  console.log((totalSum / (countElements - 1)) * productFactorial);
 
-  // Calculate the final result by applying the modulo operation to the intermediate value.
-  console.info( ( ( runningTotal / ( elementCount - 1 ) ) * productAccumulator ) % divisorConstant );
+  // Calculate and log the final result, applying the modulo operation
+  console.log(((totalSum / (countElements - 1)) * productFactorial) % moduloValue);
 }
 
-// Execute the main processing function with content read from standard input.
-processInputData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input and pass it to the processing function
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

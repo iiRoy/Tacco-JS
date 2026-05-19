@@ -1,35 +1,19 @@
-const sourceReader = require("node:fs");
+function Main(inputData) {
+  const [firstValue, secondValue] = inputData.split(" ");
 
-function processSignal(dataString) {
-  let splitPoint = -1;
-  let scanIndex = 0;
+  const calculationOperations = [
+    (valA, valB) => valA + valB,
+    (valA, valB) => valA - valB,
+    (valA, valB) => valA * valB
+  ];
 
-  while (scanIndex < dataString.length) {
-    if (dataString[scanIndex] === ' ') {
-      splitPoint = scanIndex;
-      break;
-    }
-    scanIndex++;
-  }
+  const operationResults = calculationOperations.map(performOp => performOp(firstValue, secondValue));
 
-  const operandOne = dataString.substring(0, splitPoint);
-  const operandTwo = dataString.substring(splitPoint + 1);
+  const maximumResult = operationResults.reduce((currentHighest, currentItem) => {
+    return (Number(currentItem) > Number(currentHighest)) ? currentItem : currentHighest;
+  });
 
-  let resultA = operandOne + operandTwo;
-  let resultB = operandOne - operandTwo;
-  let resultC = operandOne * operandTwo;
-
-  let finalOutcome = resultA;
-
-  if (resultB > finalOutcome) {
-    finalOutcome = resultB;
-  }
-  if (resultC > finalOutcome) {
-    finalOutcome = resultC;
-  }
-
-  return finalOutcome;
+  console.log(maximumResult);
 }
 
-const rawTransmission = sourceReader.readFileSync("/dev/stdin", "utf8");
-process.stdout.write(String(processSignal(rawTransmission)));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

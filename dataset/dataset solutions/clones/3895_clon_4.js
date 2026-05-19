@@ -1,25 +1,21 @@
-const processInputData = (rawText) => {
-  const lines = rawText.trim().split('\n');
-  const [boundaryValue, , pivotPoint] = lines[0].split(' ').map(Number);
-  const costMarkers = new Set(lines[1].split(' ').map(Number));
+const processInput = (rawData) => {
+  const parsedLines = rawData.trim().split('\n');
+  const [totalSegments, stationCount, currentPosition] = parsedLines[0].split(' ').map(Number);
 
-  const leftTraversalPoints = Array.from({ length: pivotPoint - 1 }, (_, idx) => idx + 1);
-  const rightTraversalPoints = Array.from({ length: boundaryValue - pivotPoint }, (_, idx) => idx + pivotPoint);
+  const areaMap = Array(totalSegments + 1);
 
-  const calculateCost = (pointsCollection, markerSet) => {
-    return pointsCollection.reduce((accumulator, currentPoint) => {
-      return accumulator + (markerSet.has(currentPoint) ? 1 : 0);
-    }, 0);
-  };
+  const stationIndices = parsedLines[1].split(' ').map(Number);
+  const tollStations = new Set(stationIndices);
 
-  const costOnApproachFromLeft = calculateCost(leftTraversalPoints, costMarkers);
-  const costOnApproachFromRight = calculateCost(rightTraversalPoints, costMarkers);
+  const costToLeft = Array.from({ length: currentPosition - 1 }, (_, idx) => idx + 1)
+    .filter(segmentIdx => tollStations.has(segmentIdx))
+    .length;
 
-  const determineLesserValue = (valueA, valueB) => (valueA < valueB ? valueA : valueB);
+  const costToRight = Array.from({ length: totalSegments - currentPosition }, (_, idx) => currentPosition + idx)
+    .filter(segmentIdx => tollStations.has(segmentIdx))
+    .length;
 
-  globalThis.finalOutputHandler(determineLesserValue(costOnApproachFromLeft, costOnApproachFromRight));
+  console.log(Math.min(costToLeft, costToRight));
 };
 
-globalThis.finalOutputHandler = (outcome) => console.log(outcome);
-
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

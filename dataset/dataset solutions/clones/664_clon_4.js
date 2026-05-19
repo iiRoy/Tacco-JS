@@ -1,40 +1,27 @@
-const acquireSourceData = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineBuffer = sourceData.trim().split("\n");
 
-const transformRawText = (textualPayload) => textualPayload.trim().split('\n');
-
-const evaluateGridUnits = (remainingLineFragments, accumulatedResults = []) => {
-    if (remainingLineFragments.length === 0) {
-        return accumulatedResults;
+while (true) {
+    var currentConfig = lineBuffer.shift();
+    if (currentConfig === "0 0") {
+        break;
     }
 
-    const currentInstructionLine = remainingLineFragments[0];
-    const subsequentFragments = remainingLineFragments.slice(1);
+    var params = currentConfig.split(" ").map(Number);
+    var dimensionSize = params[0];
+    var operationCount = params[1];
 
-    if (currentInstructionLine === '0 0') {
-        return accumulatedResults;
+    // The original code reads 'h' lines for operations but then
+    // has the actual logic for applying these operations commented out.
+    // Therefore, we must consume these lines from the input buffer
+    // to maintain correct state for subsequent iterations, but do nothing with them.
+    for (let opIdx = 0; opIdx < operationCount; opIdx++) {
+        lineBuffer.shift();
     }
 
-    const numericalParameters = currentInstructionLine.split(' ').map(Number);
-    const primaryDimension = numericalParameters[0];
-    const auxiliaryOperations = numericalParameters[1];
-
-    // The original code initializes an N*N*N 3D array with zeros.
-    // It then proceeds with 'auxiliaryOperations' steps, but the actual
-    // modification logic for the 3D array is commented out.
-    // This means the 3D array always remains entirely filled with zeros.
-    // The final step counts the zeros, which is always N*N*N.
-    // Therefore, we directly calculate the cube of the primary dimension.
-    const computedVolume = primaryDimension * primaryDimension * primaryDimension;
-
-    // Skip the lines corresponding to the 'auxiliaryOperations'
-    // to correctly advance the input stream, matching the original's behavior.
-    const nextBatchOfFragments = subsequentFragments.slice(auxiliaryOperations);
-
-    return evaluateGridUnits(nextBatchOfFragments, [...accumulatedResults, computedVolume]);
-};
-
-const initialPayload = acquireSourceData();
-const segmentedText = transformRawText(initialPayload);
-const finalCalculations = evaluateGridUnits(segmentedText);
-
-finalCalculations.forEach(individualOutcome => console.log(individualOutcome));
+    // Since the original code's 3D array 'xyz' is initialized to all zeros
+    // and the modification logic is commented out, it always remains all zeros.
+    // The final count of zeros will therefore always be n * n * n.
+    var resultVolume = dimensionSize * dimensionSize * dimensionSize;
+    console.log(resultVolume);
+}

@@ -1,114 +1,84 @@
-let textStore = "";
-const outputHandler = console.log;
+const outputWriter = console.log;
 
-if (typeof process !== "undefined" && process.stdin) {
+if (typeof process !== "undefined") {
+    let rawInput = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', function (dataChunk) {
-        textStore += dataChunk;
+    process.stdin.on('data', (chunk) => {
+        rawInput += chunk;
     });
-    process.stdin.on('end', function () {
-        const processedLines = textStore.split("\n").filter(l => l.trim() !== '');
-        executeAnalysis(processedLines);
+    process.stdin.on('end', () => {
+        const inputLines = rawInput.split("\n");
+        processInput(inputLines);
     });
 }
 
-function executeAnalysis(inputLines) {
-    const numericData = inputLines.map(line => line.split(" ").map(Number));
+function processInput(inputLines) {
+    const filteredLines = inputLines.filter(line => line.trim() !== '');
 
-    const firstRow = numericData.shift();
-    const totalVertices = firstRow[0];
+    const parsedData = filteredLines.map(line => line.split(" ").map(Number));
 
-    const graphStructure = new Map();
-    for (let j = 0; j < totalVertices; j++) {
-        graphStructure.set(j, new Set());
-    }
+    const [vertexCount, edgeCount] = parsedData.shift();
+    const edgeDescriptions = parsedData;
 
-    numericData.forEach(pair => {
-        const nodeA = pair[0];
-        const nodeB = pair[1];
-        graphStructure.get(nodeA).add(nodeB);
-        graphStructure.get(nodeB).add(nodeA);
+    const adjacencyStructure = Array.from({ length: vertexCount }, () => []);
+
+    edgeDescriptions.forEach(([nodeA, nodeB]) => {
+        adjacencyStructure[nodeA].push(nodeB);
+        adjacencyStructure[nodeB].push(nodeA);
     });
 
-    class BridgeFinder {
-        constructor(graph, vertexCount) {
-            this.graphRepresentation = graph;
-            this.nodeCount = vertexCount;
-            this.discoveryTimes = new Map();
-            this.lowLinkValues = new Map();
-            this.visitedStatus = new Map();
-            this.currentTimestamp = 0;
-            this.detectedSeparators = [];
+    const discoveryTimes = new Array(vertexCount).fill(-1);
+    const lowestReachTimes = new Array(vertexCount).fill(-1);
+    const visitedStatus = new Array(vertexCount).fill(false);
+    let globalTime = 0;
+    const foundBridges = [];
 
-            for (let i = 0; i < this.nodeCount; i++) {
-                this.visitedStatus.set(i, false);
-                this.discoveryTimes.set(i, -1);
-                this.lowLinkValues.set(i, -1);
-            }
-        }
+    const traversalStack = [];
 
-        performDepthFirstSearch(currentNode, parentNode) {
-            this.visitedStatus.set(currentNode, true);
-            this.discoveryTimes.set(currentNode, this.currentTimestamp);
-            this.lowLinkValues.set(currentNode, this.currentTimestamp);
-            this.currentTimestamp++;
+    for (let startNode = 0; startNode < vertexCount; startNode++) {
+        if (!visitedStatus[startNode]) {
+            traversalStack.push([startNode, -1, 0]);
 
-            const adjacentNodes = this.graphRepresentation.get(currentNode);
-            if (adjacentNodes) {
-                for (const neighborNode of adjacentNodes) {
-                    if (neighborNode === parentNode) {
-                        continue;
+            while (traversalStack.length > 0) {
+                let [currentNode, parentNode, state] = traversalStack.pop();
+
+                if (state === 0) {
+                    visitedStatus[currentNode] = true;
+                    discoveryTimes[currentNode] = lowestReachTimes[currentNode] = globalTime++;
+                    traversalStack.push([currentNode, parentNode, 1]);
+
+                    for (let i = adjacencyStructure[currentNode].length - 1; i >= 0; i--) {
+                        const neighbor = adjacencyStructure[currentNode][i];
+                        if (neighbor === parentNode) {
+                            continue;
+                        }
+                        if (visitedStatus[neighbor]) {
+                            lowestReachTimes[currentNode] = Math.min(lowestReachTimes[currentNode], discoveryTimes[neighbor]);
+                        } else {
+                            traversalStack.push([neighbor, currentNode, 0]);
+                        }
                     }
-
-                    if (this.visitedStatus.get(neighborNode)) {
-                        this.lowLinkValues.set(
-                            currentNode,
-                            Math.min(
-                                this.lowLinkValues.get(currentNode),
-                                this.discoveryTimes.get(neighborNode)
-                            )
-                        );
-                    } else {
-                        this.performDepthFirstSearch(neighborNode, currentNode);
-
-                        this.lowLinkValues.set(
-                            currentNode,
-                            Math.min(
-                                this.lowLinkValues.get(currentNode),
-                                this.lowLinkValues.get(neighborNode)
-                            )
-                        );
-
-                        if (this.lowLinkValues.get(neighborNode) > this.discoveryTimes.get(currentNode)) {
-                            this.detectedSeparators.push([
-                                Math.min(currentNode, neighborNode),
-                                Math.max(currentNode, neighborNode)
-                            ]);
+                } else {
+                    if (parentNode !== -1) {
+                        lowestReachTimes[parentNode] = Math.min(lowestReachTimes[parentNode], lowestReachTimes[currentNode]);
+                        if (discoveryTimes[parentNode] < lowestReachTimes[currentNode]) {
+                            foundBridges.push([Math.min(currentNode, parentNode), Math.max(currentNode, parentNode)]);
                         }
                     }
                 }
             }
         }
-
-        findSeparatingEdges() {
-            for (let i = 0; i < this.nodeCount; i++) {
-                if (!this.visitedStatus.get(i)) {
-                    this.performDepthFirstSearch(i, -1);
-                }
-            }
-            this.detectedSeparators.sort((a, b) => {
-                if (a[0] !== b[0]) return a[0] - b[0];
-                return a[1] - b[1];
-            });
-            return this.detectedSeparators;
-        }
     }
 
-    const analyzer = new BridgeFinder(graphStructure, totalVertices);
-    const resultEdges = analyzer.findSeparatingEdges();
+    foundBridges.sort((a, b) => {
+        if (a[0] !== b[0]) {
+            return a[0] - b[0];
+        }
+        return a[1] - b[1];
+    });
 
-    resultEdges.forEach(bridgePair => {
-        outputHandler(`${bridgePair[0]} ${bridgePair[1]}`);
+    foundBridges.forEach(([u, v]) => {
+        outputWriter(`${u} ${v}`);
     });
 }

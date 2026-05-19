@@ -1,28 +1,18 @@
 'use strict';
-process.stdin.on('data', function(incomingData) {
-  const receivedPayload = incomingData.toString().trim();
-  const numericalComponents = receivedPayload.split(' ').map(val => Number(val));
+process.stdin.on('data', function(inputBuffer) {
+  const rawInputString = inputBuffer.toString().trim();
+  const numericalComponents = rawInputString.split(' ').map(Number);
 
   const startValue = numericalComponents[0];
   const endValue = numericalComponents[1];
-  const targetDivisor = numericalComponents[2];
+  const dividendValue = numericalComponents[2];
 
-  const createNumericSequence = (initVal, finalVal) => {
-    if (initVal > finalVal) {
-      return [];
-    }
-    return Array.from({ length: finalVal - initVal + 1 }, (_, idx) => initVal + idx);
-  };
+  const totalNumbersInRange = endValue - startValue + 1;
 
-  const fullRangeOfNumbers = createNumericSequence(startValue, endValue);
+  const matchingDivisors = Array.from({ length: totalNumbersInRange }, (_, index) => startValue + index)
+    .filter(currentNumber => dividendValue % currentNumber === 0);
 
-  const divisibleSubset = fullRangeOfNumbers.filter(currentNumber => {
-    return targetDivisor % currentNumber === 0;
-  });
-
-  const occurrenceTotal = divisibleSubset.length;
-
-  console.log(occurrenceTotal);
+  console.log(matchingDivisors.length);
 });
 
 process.stdin.resume();

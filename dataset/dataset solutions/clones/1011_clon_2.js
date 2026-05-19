@@ -1,66 +1,76 @@
-const fileData=require('fs').readFileSync('/dev/stdin','utf8').split('\n');
-let primaryArray=fileData[1].split(' ');
-let secondaryArray=fileData[1].split(' ');
-const totalItems=parseInt(fileData[0],10);
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-function sortWithBubbles(collectionToSort, collectionSize)
-{
-    // Iterate through the array for multiple passes
-    for (let currentPass = 0; currentPass < totalItems; currentPass++)
-    {
-        // Compare adjacent elements and swap if out of order
-        for (let comparisonIdx = totalItems - 1; comparisonIdx > currentPass; comparisonIdx--)
-        {
-            // Extract numerical value of the first digit for comparison
-            const valCurrent = parseInt(collectionToSort[comparisonIdx].match(/\d/)[0],10);
-            const valPrevious = parseInt(collectionToSort[comparisonIdx-1].match(/\d/)[0],10);
+// Initialize two distinct arrays from the second line of input for separate sorting operations.
+let firstArray = rawData[1].split(' ');
+let secondArray = rawData[1].split(' ');
 
-            if (valCurrent < valPrevious)
-            {
-                // Perform a swap operation
-                let tempSwap=collectionToSort[comparisonIdx];
-                collectionToSort[comparisonIdx]=collectionToSort[comparisonIdx-1];
-                collectionToSort[comparisonIdx-1]=tempSwap;
+// Parse the first line of input to determine the size of the arrays.
+let arraySize = Number(rawData[0]);
+
+/**
+ * Sorts an array using the Bubble Sort algorithm.
+ * This implementation compares elements based on their first numeric character.
+ *
+ * @param {Array<string>} dataCollection - The array of strings to be sorted.
+ * @param {number} collectionLength - The total number of elements in the array.
+ *                                    Note: The original code uses the global 'arraySize' instead of this parameter.
+ */
+function sortWithBubble(dataCollection, collectionLength) {
+    // Outer loop controls the number of passes.
+    for (let outerIndex = 0; outerIndex < arraySize; outerIndex++) {
+        // Inner loop performs comparisons and swaps for each pass.
+        for (let innerIndex = arraySize - 1; innerIndex > outerIndex; innerIndex--) {
+            // Compare the numeric part of adjacent string elements.
+            if (dataCollection[innerIndex].match(/\d/) < dataCollection[innerIndex - 1].match(/\d/)) {
+                // Swap elements if they are in the wrong order.
+                let temporaryValue = dataCollection[innerIndex];
+                dataCollection[innerIndex] = dataCollection[innerIndex - 1];
+                dataCollection[innerIndex - 1] = temporaryValue;
             }
         }
     }
 }
-function sortWithSelection(targetCollection, collectionLength)
-{
-    // Main loop to select an element for the current position
-    for (let outerLoopIndex=0;outerLoopIndex<=collectionLength-1;outerLoopIndex++)
-    {
-        let minElementPosition=outerLoopIndex; // Assume current element is the smallest
 
-        // Inner loop to find the actual minimum element in the unsorted portion
-        for (let innerLoopIndex=outerLoopIndex;innerLoopIndex<=collectionLength-1;innerLoopIndex++)
-        {
-            // Get the numerical value of the second character for comparison
-            const currentItemValue=Number(targetCollection[innerLoopIndex].charAt(1));
-            const minItemValue=Number(targetCollection[minElementPosition].charAt(1));
-
-            if (currentItemValue < minItemValue)
-            {
-                minElementPosition=innerLoopIndex;
+/**
+ * Sorts an array using the Selection Sort algorithm.
+ * This implementation compares elements based on the numeric value of their second character.
+ *
+ * @param {Array<string>} dataSet - The array of strings to be sorted.
+ * @param {number} dataCount - The total number of elements in the array.
+ */
+function sortWithSelection(dataSet, dataCount) {
+    // Iterate through the array to find the minimum element.
+    for (let mainIterator = 0; mainIterator <= dataCount - 1; mainIterator++) {
+        let minIndex = mainIterator; // Assume the current element is the minimum.
+        // Inner loop to find the actual minimum element in the unsorted part.
+        for (let subIterator = mainIterator; subIterator <= dataCount - 1; subIterator++) {
+            // Compare elements based on the numeric value of their second character.
+            if (dataSet[subIterator][1] - 0 < dataSet[minIndex][1] - 0) {
+                minIndex = subIterator; // Update the index of the minimum element found.
             }
         }
-        // Swap if the minimum element is not at the current position
-        if (Number(targetCollection[outerLoopIndex].charAt(1)) !== Number(targetCollection[minElementPosition].charAt(1)))
-        {
-            let swapStorage=targetCollection[outerLoopIndex];
-            targetCollection[outerLoopIndex]=targetCollection[minElementPosition];
-            targetCollection[minElementPosition]=swapStorage;
+        // Swap the found minimum element with the element at the current position,
+        // but only if they are different to maintain relative order of equal elements.
+        if (dataSet[mainIterator][1] - 0 !== dataSet[minIndex][1] - 0) {
+            // Note: 'tempHolder' is implicitly global, mirroring the original code's behavior.
+            tempHolder = dataSet[mainIterator];
+            dataSet[mainIterator] = dataSet[minIndex];
+            dataSet[minIndex] = tempHolder;
         }
     }
 }
 
-// Execute the first sorting algorithm
-sortWithBubbles(primaryArray,totalItems);
-console.log(primaryArray.join(' '));
-console.log('Stable'); // A comment indicating property of bubble sort
+// Execute Bubble Sort on the first array.
+sortWithBubble(firstArray, arraySize);
+// Output the sorted first array.
+console.log(firstArray.join(' '));
+// Indicate the general stability characteristic of Bubble Sort.
+console.log('Stable');
 
-// Execute the second sorting algorithm
-sortWithSelection(secondaryArray,totalItems);
-console.log(secondaryArray.join(' '));
-// Compare the results of both sorts to determine overall stability
-console.log((primaryArray.join(' ')===secondaryArray.join(' '))?'Stable':'Not stable');
+// Execute Selection Sort on the second array.
+sortWithSelection(secondArray, arraySize);
+// Output the sorted second array.
+console.log(secondArray.join(' '));
+
+// Compare the results of both sorting algorithms to determine if Selection Sort maintained stability for this specific input.
+console.log((firstArray.join(' ') === secondArray.join(' ')) ? 'Stable' : 'Not stable');

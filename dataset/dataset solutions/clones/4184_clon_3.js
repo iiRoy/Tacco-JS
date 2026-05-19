@@ -1,155 +1,258 @@
-/*
- * This script is designed to process textual input data, specifically to analyze item frequencies.
- * It identifies unique items, counts their occurrences, and then calculates a cumulative sum
- * of the frequencies of the least common items, based on a provided exclusion criterion.
- *
- * The file includes core logic for data processing, along with a few general-purpose utility functions
- * for input parsing, numerical aggregation, and optional verbose logging.
- */
+const isDebuggingEnabled = false;
+const maxSafeIntegerVal = Number.MAX_SAFE_INTEGER;
+const moduloConstant = 1000000007;
 
-// Global flag to enable or disable detailed informational messages during execution.
-const VERBOSE_DEBUG_OUTPUT_ACTIVE = false;
+function processInputData(rawInputString) {
+    const lines = rawInputString.split("\n");
+    const configValues = lines[0].split(" ").map(Number);
+    const inputElements = lines[1].split(" ").map(String);
 
-/**
- * Provides conditional logging functionality. Messages are only printed if
- * VERBOSE_DEBUG_OUTPUT_ACTIVE is set to true.
- * @param {string | any} diagnosticMessage - The message or data to be logged.
- */
-const emitDebugLog = (diagnosticMessage) => {
-    if (VERBOSE_DEBUG_OUTPUT_ACTIVE) {
-        console.log("[DIAG]:", diagnosticMessage);
-    }
-};
-
-/**
- * Splits a multi-line string into an array of individual lines.
- * Handles potential leading/trailing whitespace and empty input.
- * @param {string} rawTextContent - The complete string content to be parsed.
- * @returns {string[]} An array where each element is a line from the input.
- */
-const segmentIntoLines = (rawTextContent) => {
-    // Robustness check for input type and content.
-    if (typeof rawTextContent !== 'string' || rawTextContent.trim().length === 0) {
-        emitDebugLog("Input for line segmentation was empty or invalid. Returning an empty array.");
-        return [];
-    }
-    // Trim and split by newline characters.
-    return rawTextContent.trim().split("\n");
-};
-
-/**
- * Calculates the sum of all numeric values within a given array.
- * Non-numeric elements are gracefully skipped with a warning.
- * @param {Array<number | string>} collectionOfNumbers - An array containing values that can be converted to numbers.
- * @returns {number} The aggregate sum of the numeric elements.
- */
-const aggregateNumericValues = (collectionOfNumbers) => {
-    // Basic validation to ensure the input is an array.
-    if (!Array.isArray(collectionOfNumbers)) {
-        emitDebugLog("Error: Non-array argument passed to aggregateNumericValues. Returning 0.");
-        return 0;
+    const elementFrequencies = {};
+    for (const currentElement of inputElements) {
+        elementFrequencies[currentElement] = (elementFrequencies[currentElement] || 0) + 1;
     }
 
-    let totalSum = 0;
-    // Iterate over each item, convert it to a number, and add to the sum if valid.
-    for (const itemValue of collectionOfNumbers) {
-        const parsedValue = Number(itemValue); // Attempt explicit conversion.
-        if (!isNaN(parsedValue)) { // Check if the conversion resulted in a valid number.
-            totalSum += parsedValue;
-        } else {
-            emitDebugLog(`Warning: Encountered non-numeric item '${itemValue}' during aggregation. Skipping.`);
-        }
-    }
-    return totalSum;
-};
+    let frequencyCounts = Object.values(elementFrequencies);
+    frequencyCounts.sort((a, b) => a - b);
 
-/**
- * The primary function responsible for executing the data analysis workflow.
- * It reads configuration, processes item identifiers, and outputs a specific frequency sum.
- * @param {string} incomingInputPayload - The raw string input from the source (e.g., standard input).
- */
-function initiateDataAnalysis(incomingInputPayload) {
-    emitDebugLog("Initiating data analysis process...");
+    const kValue = configValues[1];
 
-    // First, break down the complete input payload into individual lines.
-    const separatedLines = segmentIntoLines(incomingInputPayload);
-
-    // Critical check: Ensure we have enough lines for configuration and item data.
-    if (separatedLines.length < 2) {
-        console.error("Fatal Error: Input payload contains insufficient lines for processing. Expected at least 2.");
-        return; // Terminate execution gracefully.
-    }
-
-    // Process the first line to extract operational parameters.
-    // Each parameter is expected to be an integer. Robust parsing is applied.
-    const operationParameters = separatedLines[0].split(" ").map(strParam => {
-        const numericParam = parseInt(strParam, 10); // Use radix for explicit base 10 conversion.
-        if (isNaN(numericParam)) {
-            emitDebugLog(`Warning: Configuration parameter '${strParam}' is not a valid number. Defaulting to 0.`);
-            return 0; // Provide a fallback for invalid numeric inputs.
-        }
-        return numericParam;
-    });
-
-    // The second parameter dictates how many most-frequent items to disregard.
-    const exclusionCriterion = operationParameters[1];
-    emitDebugLog(`Identified exclusion criterion: ${exclusionCriterion}`);
-
-    // The second line contains the list of item identifiers, treated as strings.
-    const designatedItemLabels = separatedLines[1].split(" ");
-
-    // A Map is used to efficiently track the occurrence count for each unique item label.
-    const labelFrequencyCounter = new Map();
-
-    // Iterate through all item labels to build up the frequency map.
-    for (const label of designatedItemLabels) {
-        // Increment the count for the current label, or initialize it to 1 if first encounter.
-        labelFrequencyCounter.set(label, (labelFrequencyCounter.get(label) || 0) + 1);
-    }
-    emitDebugLog("Completed populating label frequency counter.");
-    emitDebugLog(labelFrequencyCounter);
-
-    // Extract all the frequency counts into a standard array.
-    const unsortedCounts = Array.from(labelFrequencyCounter.values());
-
-    // Sort these counts in ascending order to easily identify the least frequent items.
-    unsortedCounts.sort((countA, countB) => countA - countB);
-    emitDebugLog("Frequencies sorted in ascending order.");
-    emitDebugLog(unsortedCounts);
-
-    // Calculate how many of the smallest frequencies need to be summed.
-    // This is the total number of unique items minus the exclusion criterion.
-    const countOfItemsToInclude = unsortedCounts.length - exclusionCriterion;
-
-    // Decision point: If the exclusion criterion covers all or more items than available,
-    // the resulting sum is zero.
-    if (countOfItemsToInclude <= 0) {
-        console.log(0); // Output 0 as per problem specification.
-        emitDebugLog("All unique items are excluded or there are not enough items. Outputting 0.");
+    if (frequencyCounts.length <= kValue) {
+        console.log(0);
     } else {
-        // Slice the sorted array to get only the frequencies that are part of the sum.
-        // These are the 'countOfItemsToInclude' smallest frequencies.
-        const frequenciesForAggregation = unsortedCounts.slice(0, countOfItemsToInclude);
-
-        // Compute the final sum using our dedicated aggregation helper.
-        const finalResultingSum = aggregateNumericValues(frequenciesForAggregation);
-        console.log(finalResultingSum); // Output the calculated sum.
-        emitDebugLog(`Final computed sum of selected frequencies: ${finalResultingSum}`);
+        let cumulativeSum = 0;
+        const elementsToRemoveCount = frequencyCounts.length - kValue;
+        for (let loopIndex = 0; loopIndex < elementsToRemoveCount; loopIndex++) {
+            cumulativeSum += frequencyCounts[loopIndex];
+        }
+        console.log(cumulativeSum);
     }
-    emitDebugLog("Data analysis process concluded.");
+}
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+
+function calculateLexicographicalRank(sequence) {
+    // This function relies on a global 'input' variable which is not defined
+    // in the provided snippet. Preserving original behavior for exact equivalence.
+    const initialLength = input[0];
+    const tempArr = [];
+    for (let i = 0; i < initialLength; i++) {
+        tempArr.push(i + 1);
+    }
+    let rankSum = 0;
+    for (let i = 0; i < sequence.length; i++) {
+        const currentVal = sequence[i];
+        const foundIndex = tempArr.findIndex(val => val === currentVal);
+        rankSum += computeFactorial(sequence.length - 1 - i) * foundIndex;
+        tempArr.splice(foundIndex, 1);
+    }
+    return rankSum;
 }
 
-// --- Application Entry Point ---
-// This block is responsible for reading input from the standard input stream
-// and initiating the main data analysis workflow. It also includes error handling.
-try {
-    const fileSystemHandler = require("fs"); // Dynamically require Node.js 'fs' module.
-    // Read the entire content from standard input, decode as UTF-8, and trim whitespace.
-    const stdinRawContent = fileSystemHandler.readFileSync("/dev/stdin", "utf8").trim();
-    initiateDataAnalysis(stdinRawContent); // Invoke the main processing function.
-} catch (executionError) {
-    // Catch and log any errors that occur during file reading or initial processing.
-    console.error("A critical error prevented successful execution:");
-    console.error(executionError.message);
-    // In a real application, more sophisticated error recovery or reporting might be implemented here.
+function calculateArraySum(numericArray) {
+    let total = 0;
+    const arrayLength = numericArray.length;
+    for (let idx = 0; idx < arrayLength; ++idx) {
+        total += numericArray[idx] - 0;
+    }
+    return total;
+}
+
+function logDebugMessage(message) {
+    if (isDebuggingEnabled) {
+        console.log(message);
+    }
+}
+
+function findMaxElementIndex(dataArray) {
+    let currentMaxVal = Number.MIN_SAFE_INTEGER;
+    let maxIndex = -1;
+    for (let idx = 0; idx < dataArray.length; idx++) {
+        if (currentMaxVal < dataArray[idx]) {
+            currentMaxVal = dataArray[idx];
+            maxIndex = idx;
+        }
+    }
+    return maxIndex;
+}
+
+function findMinElementIndex(dataArray) {
+    let currentMinVal = Number.MAX_SAFE_INTEGER;
+    let minIndex = -1;
+    for (let idx = 0; idx < dataArray.length; idx++) {
+        if (currentMinVal > dataArray[idx]) {
+            currentMinVal = dataArray[idx];
+            minIndex = idx;
+        }
+    }
+    return minIndex;
+}
+
+function convert1dTo2dArray(stringArray) {
+    return stringArray.map(str => str.split(""));
+}
+
+function checkIfPrime(numberToCheck) {
+    if (!Number.isInteger(numberToCheck)) {
+        return false;
+    }
+    if (numberToCheck <= 1) {
+        return false;
+    }
+    if (numberToCheck === 2) {
+        return true;
+    }
+    if (numberToCheck % 2 === 0) {
+        return false;
+    }
+    const sqrtVal = Math.floor(Math.sqrt(numberToCheck));
+    for (let divisor = 3; divisor <= sqrtVal; divisor += 2) {
+        if (numberToCheck % divisor === 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function validateIsNumber(value) {
+    const numericPattern = /^([1-9]\d*|0)$/;
+    return numericPattern.test(value);
+}
+
+function computeFactorial(inputNumber) {
+    if (inputNumber === 0) {
+        return 1;
+    }
+    return inputNumber * computeFactorial(inputNumber - 1);
+}
+
+function rotateMatrix(matrix) {
+    const originalRows = matrix.length;
+    const originalCols = matrix[0].length;
+    const lastRowIndex = originalRows - 1;
+
+    const rotatedMatrix = Array.from({ length: originalCols }, () => Array(originalRows));
+
+    for (let colIdx = 0; colIdx < originalCols; colIdx++) {
+        for (let rowIdx = 0; rowIdx < originalRows; rowIdx++) {
+            rotatedMatrix[colIdx][rowIdx] = matrix[lastRowIndex - rowIdx][colIdx];
+        }
+    }
+    return rotatedMatrix;
+}
+
+function insertPartialArray(baseArray, elementsToInsert, startIndex) {
+    for (let sourceIndex = 0; sourceIndex < elementsToInsert.length; sourceIndex++) {
+        baseArray[startIndex + sourceIndex] = elementsToInsert[sourceIndex];
+    }
+    return baseArray;
+}
+
+function reversePartialArray(targetArray, startIdx, endIdx) {
+    const subArrayToReverse = targetArray.slice(startIdx - 1, endIdx);
+    subArrayToReverse.reverse();
+    targetArray.splice(startIdx - 1, endIdx - (startIdx - 1), ...subArrayToReverse);
+    return targetArray;
+}
+
+function applyZeroPadding(numberValue, desiredLength) {
+    return (numberValue + '000000000000000000000000000000000').slice(0, desiredLength);
+}
+
+function getPrimeFactorsMapV1(numberVal) {
+    const factorsMap = {};
+
+    if (numberVal === 1) {
+        return { "1": 1 };
+    }
+
+    let currentDivisorCandidate = 2;
+
+    while (numberVal !== 1) {
+        let divisor = currentDivisorCandidate;
+        while (divisor < maxSafeIntegerVal) {
+            if (numberVal % divisor === 0) {
+                numberVal /= divisor;
+                factorsMap[divisor] = (factorsMap[divisor] || 0) + 1;
+                break;
+            }
+            divisor++;
+        }
+        currentDivisorCandidate = divisor;
+    }
+    return factorsMap;
+}
+
+function calculateGCD(valA, valB) {
+    if (valB === 0) {
+        return valA;
+    }
+    return calculateGCD(valB, valA % valB);
+}
+
+function calculateLCM(valA, valB) {
+    const gcdHelper = (n, m) => m ? gcdHelper(m, n % m) : n;
+    return (valA * valB) / gcdHelper(valA, valB);
+}
+
+function compareNumbersForSort(numA, numB) {
+    return numA - numB;
+}
+
+function binarySearchIndex(sortedArray, targetValue) {
+    let resultIndex = -1;
+    let leftBound = 0;
+    let rightBound = sortedArray.length - 1;
+
+    while (leftBound <= rightBound) {
+        const midPoint = Math.floor((leftBound + rightBound) / 2);
+
+        if (sortedArray[midPoint] === targetValue) {
+            resultIndex = midPoint;
+            break;
+        } else if (sortedArray[midPoint] < targetValue) {
+            leftBound = midPoint + 1;
+        } else {
+            rightBound = midPoint - 1;
+        }
+    }
+    return resultIndex !== -1 ? resultIndex : leftBound;
+}
+
+function splitByNewline(textInput) {
+    return textInput.split("\n");
+}
+
+function isSortedAscending(dataArray) {
+    let isSorted = true;
+    for (let idx = 1; idx < dataArray.length; idx++) {
+        if (dataArray[idx - 1] > dataArray[idx]) {
+            isSorted = false;
+            break;
+        }
+    }
+    return isSorted;
+}
+
+function getPrimeFactorsMapV2(numberToFactor) {
+    const originalNumber = numberToFactor;
+    const sqrtOfOriginalN = Math.floor(Math.sqrt(originalNumber));
+    let exponentCount = 0;
+    const factorsMap = {};
+
+    for (let divisor = 2; divisor <= sqrtOfOriginalN; divisor++) {
+        if ((numberToFactor % divisor) === 0) {
+            exponentCount = 0;
+            do {
+                exponentCount++;
+                numberToFactor /= divisor;
+            } while ((numberToFactor % divisor) === 0);
+            factorsMap[divisor] = exponentCount;
+        }
+    }
+    // This condition preserves the original (potentially buggy) behavior
+    if (numberToFactor > sqrtOfOriginalN) {
+        factorsMap[numberToFactor] = 1;
+    }
+
+    return factorsMap;
 }

@@ -1,64 +1,46 @@
-/* This function processes a character sequence to calculate a final score based on specific rules. */
-function ComputeScore ( sourceText )
-{
-  // The initial input string is first broken down into an array of individual characters.
-  sourceText = sourceText . split ( "" ) ;
+function ProcessInput(rawData) {
+    // Convert the input string into an array of individual characters.
+    let charArray = rawData.split("");
 
-  // A variable to accumulate the final score or outcome value.
-  var totalPoints = 0 ;
+    // Initialize variables for tracking game state and score.
+    let currentScore = 0; // This variable accumulates the final score.
+    let gTracker = 0;     // Keeps track of the 'g' count.
+    let pTracker = 0;     // Keeps track of the 'p' count.
 
-  // A counter representing the capacity or available slots for one type of item (e.g., 'g' items).
-  var availableSlots = 0 ;
+    // Iterate through each character in the array to apply game logic.
+    charArray.forEach(function(singleChar) {
+        // Use a switch statement to handle different character types.
+        switch (singleChar) {
+            case "g":
+                // If the 'p' tracker is less than the 'g' tracker,
+                // it means we can score a point and use a 'p'.
+                if (pTracker < gTracker) {
+                    currentScore++; // Increment the score.
+                    pTracker++;     // Increment the 'p' tracker.
+                } else {
+                    // Otherwise, we just increment the 'g' tracker.
+                    gTracker++;
+                }
+                break; // Exit the switch for 'g'.
 
-  // A counter representing the currently occupied slots or progress for another type of item (e.g., 'p' items).
-  var occupiedSlots = 0 ;
-
-  // Iterate through each character in the processed sequence to apply scoring logic.
-  sourceText . forEach ( function ( segmentType )
-  {
-    // A conditional block to handle different character types encountered.
-    switch ( segmentType )
-    {
-      case "g" : // Case for when the current character is 'g'.
-        // Check if the number of occupied slots is less than the available capacity.
-        if ( occupiedSlots < availableSlots )
-        {
-          // If there's capacity, increment the score and mark one slot as occupied.
-          totalPoints ++ ;
-          occupiedSlots ++ ;
+            case "p":
+                // If the 'p' tracker is less than the 'g' tracker,
+                // we just use a 'p' without changing the score.
+                if (pTracker < gTracker) {
+                    pTracker++; // Increment the 'p' tracker.
+                } else {
+                    // Otherwise, we increment 'g' tracker and decrement the score.
+                    gTracker++;
+                    currentScore--; // Decrement the score.
+                }
+                break; // Exit the switch for 'p'.
         }
-        else
-        {
-          // If no capacity, simply increase the available slots.
-          availableSlots ++ ;
-        }
-        break ; // Exit the switch for 'g'.
+    });
 
-      case "p" : // Case for when the current character is 'p'.
-        // Check if the number of occupied slots is less than the available capacity.
-        if ( occupiedSlots < availableSlots )
-        {
-          // If there's capacity, mark one slot as occupied without affecting the score.
-          occupiedSlots ++ ;
-        }
-        else
-        {
-          // If no capacity, increase available slots but decrement the score.
-          availableSlots ++ ;
-          totalPoints -- ;
-        }
-        break ; // Exit the switch for 'p'.
-    }
-  } ) ;
-
-  // Display the final computed score to the standard output.
-  console . log ( totalPoints ) ;
+    // Display the final calculated score to the console.
+    console.log(currentScore);
 }
 
-// Initiate the processing by reading input from standard input,
-// removing any leading/trailing whitespace, and passing it to the function.
-ComputeScore (
-  require ( "fs" )
-    . readFileSync ( "/dev/stdin" , "utf8" ) // Read the content of /dev/stdin as a UTF-8 string.
-    . trim ( ) // Remove any whitespace from the beginning and end of the input string.
-) ;
+// Read the entire content from standard input, convert it to a string,
+// remove leading/trailing whitespace, and then pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

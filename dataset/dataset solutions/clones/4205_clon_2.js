@@ -1,53 +1,48 @@
-/* This function processes an input string to determine a specific pattern. */
-function ProcessText( inputData )
-{
-  // First, parse the raw input data.
-  // We take the first line and convert it into an array of characters.
-  let charSequence = inputData . split ( "\n" ) [ 0 ] . split ( "" ) ;
+function ProcessInputString(rawInput) {
+  // Extract the first line from the input and convert it into an array of individual characters.
+  let inputChars = rawInput.split('\n')[0].split('');
 
-  // Check if the total number of characters is an even number.
-  if ( charSequence . length % 2 == 0 ) {
-    // For even-length sequences, divide into two segments.
-    // The first segment excludes the middle two characters.
-    let leftSegment = charSequence . slice ( 0 , charSequence . length / 2 - 1 ) ;
-    // The second segment takes the first half.
-    let rightSegment = charSequence . slice ( 0 , charSequence . length / 2 ) ;
+  // Determine if the length of the character array is an even number.
+  if (inputChars.length % 2 === 0) {
+    // For strings with an even number of characters, define two specific prefixes.
+    // The first prefix includes characters from the start up to (length / 2 - 1).
+    let firstPrefix = inputChars.slice(0, inputChars.length / 2 - 1);
+    // The second prefix includes characters from the start up to (length / 2).
+    let secondPrefix = inputChars.slice(0, inputChars.length / 2);
 
-    // Convert character arrays into Set objects to easily check for unique elements.
-    leftSegment = new Set ( leftSegment ) ;
-    rightSegment = new Set ( rightSegment ) ;
+    // Convert these character arrays into Set objects to easily count unique characters.
+    firstPrefix = new Set(firstPrefix);
+    secondPrefix = new Set(secondPrefix);
 
-    // If both segments contain only one unique character, it's a specific pattern.
-    if ( leftSegment . size == 1 && rightSegment . size == 1 ) {
-      // Output "NO" for this specific pattern.
-      console . log ( "NO" ) ;
-      return ; // Exit early.
+    // If both prefixes contain only one unique character each, then output "NO".
+    if (firstPrefix.size === 1 && secondPrefix.size === 1) {
+      console.log("NO");
+      return; // Terminate function execution.
     }
   }
-  // If the total number of characters is an odd number.
-  else
-  {
-    // For odd-length sequences, divide into two segments around the middle character.
-    // The left segment goes up to, but not including, the middle character.
-    let leftSegment = charSequence . slice ( 0 , ( ( charSequence . length - 1 ) / 2 ) ) ;
-    // The right segment starts after the middle character.
-    let rightSegment = charSequence . slice ( ( ( charSequence . length - 1 ) / 2 ) + 1 ) ;
+  // If the length of the character array is an odd number.
+  else {
+    // For strings with an odd number of characters, define two segments, excluding the middle character.
+    // The left segment includes characters from the start up to ((length - 1) / 2).
+    let leftSegment = inputChars.slice(0, ((inputChars.length - 1) / 2));
+    // The right segment includes characters from (((length - 1) / 2) + 1) to the end.
+    let rightSegment = inputChars.slice(((inputChars.length - 1) / 2) + 1);
 
-    // Transform character arrays into Sets for uniqueness checks.
-    leftSegment = new Set ( leftSegment ) ;
-    rightSegment = new Set ( rightSegment ) ;
+    // Convert these character arrays into Set objects to easily count unique characters.
+    leftSegment = new Set(leftSegment);
+    rightSegment = new Set(rightSegment);
 
-    // Check if both segments, when converted to sets, have only one distinct element.
-    if ( leftSegment . size == 1 && rightSegment . size == 1 ) {
-      // Print "NO" if the condition is met.
-      console . log ( "NO" ) ;
-      return ; // Terminate function execution.
+    // If both segments contain only one unique character each, then output "NO".
+    if (leftSegment.size === 1 && rightSegment.size === 1) {
+      console.log("NO");
+      return; // Terminate function execution.
     }
   }
-  // If none of the specific "NO" conditions were met, output "YES".
-  console . log ( "YES" ) ;
-  return ; // Conclude function execution.
+
+  // If none of the conditions for outputting "NO" were met, then output "YES".
+  console.log("YES");
+  return; // Explicitly return from the function.
 }
 
-// Invoke the primary processing function with data read from standard input.
-ProcessText ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInputString(require('fs').readFileSync('/dev/stdin', 'utf8'));

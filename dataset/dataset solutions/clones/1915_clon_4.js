@@ -1,19 +1,19 @@
-function financialSimulator(goalAmountStr) {
-  const initialSum = 100;
-  const desiredBalance = parseInt(goalAmountStr);
+function EntryPoint(payload) {
+  const targetThreshold = parseInt(payload);
+  const startingCapital = 100;
 
-  function computeGrowthPeriods(currentBalance, currentPeriods) {
-    if (currentBalance >= desiredBalance) {
-      return currentPeriods;
-    } else {
-      const interestEarned = Math.floor(currentBalance * 0.01);
-      const nextBalance = currentBalance + interestEarned;
-      return computeGrowthPeriods(nextBalance, currentPeriods + 1);
-    }
-  }
+  const determineGrowthPeriods = (currentCapital, periodsCount) => {
+    return currentCapital >= targetThreshold
+      ? periodsCount
+      : determineGrowthPeriods(
+          currentCapital + Math.floor(currentCapital * 0.01),
+          periodsCount + 1
+        );
+  };
 
-  const totalPeriods = computeGrowthPeriods(initialSum, 0);
+  const totalPeriods = determineGrowthPeriods(startingCapital, 0);
   console.log(JSON.stringify(totalPeriods));
 }
 
-financialSimulator(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+// Don't edit this line!
+EntryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

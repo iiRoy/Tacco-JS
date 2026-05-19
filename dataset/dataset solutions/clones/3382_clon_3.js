@@ -1,142 +1,53 @@
-// Function responsible for orchestrating the computation based on provided input data.
-function ComputeSolutionFromInput(inputStringData) {
-  // --- Input Parsing and Validation ---
-  // A robust check for input validity at the very beginning.
-  if (typeof inputStringData !== 'string' || inputStringData.trim().length === 0) {
-    throw new Error("Input data is either missing or not a valid string.");
-  }
+function processInput(rawData) {
+  const lines = rawData.split("\n");
+  const firstLineParts = lines[0].split(" ");
+  const divisorCount = parseInt(firstLineParts[0], 10);
+  let targetProduct = parseInt(firstLineParts[1], 10);
 
-  // Split the input into individual lines and extract relevant parameters.
-  const dataLines = inputStringData.trim().split("\n");
-  if (dataLines.length === 0) {
-    throw new Error("No data lines found in the input string.");
-  }
+  const factorGroups = [];
+  const halfTargetProductLimit = Math.ceil(targetProduct / 2);
 
-  const parameters = dataLines[0].split(" ").map(Number); // Convert strings to numbers directly
-  if (parameters.length < 2 || parameters.some(isNaN)) {
-    throw new Error("Failed to parse numeric parameters from the first input line.");
-  }
+  let groupIndex = -1;
+  let currentFactorCount = 0;
+  let currentDivisor = 2;
 
-  // Assign parsed values to descriptive variables.
-  const requiredDivisor = parameters[0]; // Represents the 'N' from the original problem.
-  let numberToDecompose = parameters[1]; // Represents the 'P' from the original problem, mutable.
-
-  // Additional validation for the input values.
-  if (requiredDivisor <= 0 || !Number.isInteger(requiredDivisor)) {
-    throw new Error("The required divisor must be a positive integer.");
-  }
-  if (numberToDecompose <= 0 || !Number.isInteger(numberToDecompose)) {
-    throw new Error("The number to decompose must be a positive integer.");
-  }
-
-  // --- Prime Factorization Logic ---
-  // Early exit for the trivial case where the number is 1.
-  if (numberToDecompose === 1) {
-    return 1; // Any power of 1 is 1, and 1 has no prime factors.
-  }
-
-  // This array will store objects, each representing a prime factor and its total count.
-  const discoveredPrimeFactors = []; // Equivalent to the 'A' array in the original code.
-
-  // Optimize factorization by handling the prime 2 separately.
-  // This is a common optimization and structural change.
-  if (numberToDecompose % 2 === 0) {
-    let countOfTwo = 0;
-    while (numberToDecompose % 2 === 0) {
-      countOfTwo++;
-      numberToDecompose /= 2;
-    }
-    discoveredPrimeFactors.push({ prime: 2, count: countOfTwo });
-  }
-
-  // Iterate through odd numbers as potential prime factors.
-  // The loop condition is optimized: we only need to check up to the square root of the remaining number.
-  let currentTestFactor = 3; // Equivalent to 'i' in the original code.
-  while (currentTestFactor * currentTestFactor <= numberToDecompose) {
-    if (numberToDecompose % currentTestFactor === 0) {
-      // If currentTestFactor divides numberToDecompose, count its occurrences.
-      let factorOccurrences = 0; // Equivalent to 'k' in the original code.
-      while (numberToDecompose % currentTestFactor === 0) {
-        factorOccurrences++;
-        numberToDecompose /= currentTestFactor;
+  while (currentDivisor < halfTargetProductLimit) {
+    if (targetProduct % currentDivisor === 0) {
+      if (currentFactorCount === 0) {
+        groupIndex++;
+        factorGroups.push([currentDivisor, 0]);
       }
-      discoveredPrimeFactors.push({ prime: currentTestFactor, count: factorOccurrences });
+      currentFactorCount++;
+      factorGroups[groupIndex][1] = currentFactorCount;
+      targetProduct /= currentDivisor;
+    } else {
+      currentDivisor++;
+      currentFactorCount = 0;
     }
-    currentTestFactor += 2; // Increment by 2 to skip even numbers.
-  }
 
-  // If numberToDecompose is still greater than 1 after the loop, it means the remaining value
-  // is itself a prime factor (larger than its square root).
-  if (numberToDecompose > 1) {
-    discoveredPrimeFactors.push({ prime: numberToDecompose, count: 1 });
-  }
-
-  // --- Final Product Calculation ---
-  let finalCalculatedProduct = 1; // Equivalent to 'ans' in the original code.
-
-  // Iterate over the collected prime factor groups to compute the result.
-  for (const factorGroup of discoveredPrimeFactors) {
-    const pFactor = factorGroup.prime;
-    const pCount = factorGroup.count;
-
-    // Determine how many times this prime factor contributes to the final result.
-    // This effectively calculates floor(pCount / requiredDivisor).
-    const effectivePowerForFactor = Math.floor(pCount / requiredDivisor);
-
-    // Only include the factor in the product if its effective power is positive.
-    // This replaces the Math.max(..., 1) call with an explicit condition.
-    if (effectivePowerForFactor > 0) {
-      finalCalculatedProduct *= Math.pow(pFactor, effectivePowerForFactor);
+    if (targetProduct === 1) {
+      break;
     }
   }
 
-  return finalCalculatedProduct;
+  let resultValue = 1;
+
+  const calculateFactorContribution = (factorInfo, nValue) => {
+    const base = factorInfo[0];
+    const exponentCount = factorInfo[1];
+    const requiredExponent = Math.floor(exponentCount / nValue);
+    return Math.max(Math.pow(base, requiredExponent), 1);
+  };
+
+  for (let i = 0; i < factorGroups.length; i++) {
+    resultValue *= calculateFactorContribution(factorGroups[i], divisorCount);
+  }
+
+  console.log('%s', resultValue);
 }
 
-// --- Local Debugging Function (Rewritten) ---
-// This function helps in testing the core logic in a browser environment.
-function executeLocalDebuggingScenario() {
-  const inputElement = document.getElementById("debugInputArea");
-  const outputElement = document.getElementById("debugOutputDisplay");
-
-  if (!inputElement || !outputElement) {
-    console.error("Required debug UI elements (debugInputArea, debugOutputDisplay) not found.");
-    return;
-  }
-
-  try {
-    const testInputContent = inputElement.value;
-    const computedResult = ComputeSolutionFromInput(testInputContent);
-    outputElement.textContent = `Calculated Result: ${computedResult}`;
-    outputElement.style.color = "green";
-  } catch (error) {
-    console.error("An error occurred during local debug execution:", error.message);
-    outputElement.textContent = `Error: ${error.message}`;
-    outputElement.style.color = "red";
-  }
+function debug() {
+  var input = document.getElementById("input").value;
+  processInput(input);
 }
-
-// --- Standard Entry Point for Competitive Programming (Rewritten) ---
-// This block ensures the primary function runs when the script is executed
-// in environments like online judges, reading from standard input.
-(function() {
-  // Check if running in a Node.js-like environment where 'require' and 'process' exist.
-  if (typeof require === 'function' && typeof process !== 'undefined' && process.versions && process.versions.node) {
-    try {
-      const fileSystem = require("fs");
-      const standardInputPath = "/dev/stdin";
-      const rawInputContent = fileSystem.readFileSync(standardInputPath, "utf8");
-      const finalOutcome = ComputeSolutionFromInput(rawInputContent);
-      console.log(finalOutcome.toString()); // Ensure the output is a string.
-    } catch (error) {
-      console.error("Execution failed: " + error.message);
-      // In competitive programming, an error usually means a non-zero exit code.
-      // process.exit(1); // Uncomment if explicit exit code is required for error.
-    }
-  } else {
-    // This branch would typically handle browser-based execution or other non-Node environments.
-    // For competitive programming, this part is often omitted.
-    // However, if the debug function is intended for the browser, it might be called here.
-    // For example: window.onload = executeLocalDebuggingScenario;
-  }
-})();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

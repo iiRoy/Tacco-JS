@@ -1,57 +1,65 @@
-const computeEditDistance = (rawTextData) => {
-  // Obtain individual line segments from the entire input block
-  const lineFragments = rawTextData.split('\n');
+/**
+ * Processes raw input data to calculate the Levenshtein distance between two strings.
+ * This function implements the dynamic programming approach for edit distance.
+ * @param {string} rawData The raw input string, expected to contain two lines separated by a newline.
+ */
+function ProcessInput(rawData) {
+  // Split the incoming raw data into individual line segments.
+  const lineSegments = rawData.split("\n");
 
-  // Designate the first parsed line as the primary sequence
-  const primarySequence = lineFragments[0];
-  // Designate the second parsed line as the secondary sequence
-  const secondarySequence = lineFragments[1];
+  // Extract the first string from the segments.
+  const firstString = lineSegments[0];
 
-  // Capture the character count for the primary string
-  const primarySequenceLength = primarySequence.length;
-  // Capture the character count for the secondary string
-  const secondarySequenceLength = secondarySequence.length;
+  // Extract the second string from the segments.
+  const secondString = lineSegments[1];
 
-  // Initialize a two-dimensional array to store interim distance computations
-  // This matrix will ultimately contain the Levenshtein distance
-  const calculationMatrix = [];
+  // Determine the length of the first string.
+  const lenOne = firstString.length;
 
-  // Populate the initial column of the calculation matrix
-  // This represents the cost of transforming an empty string to a prefix of the primary sequence by insertions
-  for (let currentPrimaryIndex = 0; currentPrimaryIndex <= primarySequenceLength; currentPrimaryIndex++) {
-    calculationMatrix[currentPrimaryIndex] = []; // Establish an inner array for the current row
-    calculationMatrix[currentPrimaryIndex][0] = currentPrimaryIndex; // Cost is simply the index for deletions
+  // Determine the length of the second string.
+  const lenTwo = secondString.length;
+
+  // Initialize a 2D array (matrix) to store the edit distances.
+  // This matrix will be used for dynamic programming.
+  const distanceMatrix = [];
+
+  // Populate the first column of the distance matrix.
+  // This represents the cost of transforming an empty string to a prefix of the first string.
+  for (let rowIdx = 0x0; rowIdx <= lenOne; rowIdx++) {
+    distanceMatrix[rowIdx] = []; // Initialize the current row as an empty array.
+    distanceMatrix[rowIdx][0x0] = rowIdx; // The cost is simply the length of the prefix.
   }
 
-  // Populate the initial row of the calculation matrix
-  // This represents the cost of transforming an empty string to a prefix of the secondary sequence by insertions
-  for (let currentSecondaryIndex = 0; currentSecondaryIndex <= secondarySequenceLength; currentSecondaryIndex++) {
-    calculationMatrix[0][currentSecondaryIndex] = currentSecondaryIndex; // Cost is simply the index for insertions
+  // Populate the first row of the distance matrix.
+  // This represents the cost of transforming an empty string to a prefix of the second string.
+  for (let colIdx = 0x0; colIdx <= lenTwo; colIdx++) {
+    distanceMatrix[0x0][colIdx] = colIdx; // The cost is simply the length of the prefix.
   }
 
-  // Iterate through the matrix, commencing from the second row and column (index 1)
-  // This loop calculates the minimum edit operations (insertions, deletions, substitutions)
-  // for all possible prefixes of the two sequences
-  for (let currentPrimaryIndex = 1; currentPrimaryIndex <= primarySequenceLength; currentPrimaryIndex++) {
-    for (let currentSecondaryIndex = 1; currentSecondaryIndex <= secondarySequenceLength; currentSecondaryIndex++) {
-      // Determine the expense of character replacement: zero if characters match, one otherwise
-      const characterMismatchCost = (primarySequence[currentPrimaryIndex - 1] === secondarySequence[currentSecondaryIndex - 1]) ? 0 : 1;
+  // Fill the rest of the distance matrix using dynamic programming.
+  // Iterate through each character of the first string.
+  for (let rowIdx = 0x1; rowIdx <= lenOne; rowIdx++) {
+    // Iterate through each character of the second string.
+    for (let colIdx = 0x1; colIdx <= lenTwo; colIdx++) {
+      // Calculate the cost of a substitution.
+      // If characters match, cost is 0; otherwise, cost is 1.
+      const substitutionCost = (firstString[rowIdx - 0x1] === secondString[colIdx - 0x1]) ? 0x0 : 0x1;
 
-      // Compute the minimum of three potential operations:
-      // 1. Deletion from primary: value from cell above + 1
-      // 2. Insertion into primary: value from cell to the left + 1
-      // 3. Substitution: value from diagonal cell (top-left) + characterMismatchCost
-      calculationMatrix[currentPrimaryIndex][currentSecondaryIndex] = Math.min(
-        Math.min(calculationMatrix[currentPrimaryIndex - 1][currentSecondaryIndex] + 1,
-                 calculationMatrix[currentPrimaryIndex][currentSecondaryIndex - 1] + 1),
-        calculationMatrix[currentPrimaryIndex - 1][currentSecondaryIndex - 1] + characterMismatchCost
+      // Determine the minimum edit distance for the current cell.
+      // This involves considering three possibilities:
+      // 1. Deletion: distanceMatrix[rowIdx - 1][colIdx] + 1
+      // 2. Insertion: distanceMatrix[rowIdx][colIdx - 1] + 1
+      // 3. Substitution: distanceMatrix[rowIdx - 1][colIdx - 1] + substitutionCost
+      distanceMatrix[rowIdx][colIdx] = Math.min(
+        Math.min(distanceMatrix[rowIdx - 0x1][colIdx] + 0x1, distanceMatrix[rowIdx][colIdx - 0x1] + 0x1),
+        distanceMatrix[rowIdx - 0x1][colIdx - 0x1] + substitutionCost
       );
     }
   }
 
-  // The final minimum edit distance is located at the bottom-right corner of the matrix
-  console.log(calculationMatrix[primarySequenceLength][secondarySequenceLength]);
-};
+  // The final Levenshtein distance is stored in the bottom-right cell of the matrix.
+  console.log(distanceMatrix[lenOne][lenTwo]);
+}
 
-// Initiate the distance computation by supplying content read from standard input
-computeEditDistance(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the main processing function by reading input from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

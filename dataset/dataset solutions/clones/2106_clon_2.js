@@ -1,62 +1,63 @@
-// Function to handle the primary processing of input data
-function Processor (  dataStream  ) {
-  "use strict"; // Enforce strict parsing and error handling for cleaner code.
+function ProcessInput(rawData) {
+  // Enforce strict parsing and execution rules for better code quality.
+  "use strict";
 
-  // Split the entire input string by newline characters to get individual lines.
-  const rawData = dataStream.split ( "\n" );
+  // Split the raw input string into an array of lines using the newline character.
+  const intermediateLines = rawData.split('\n');
 
-  // Extract the first line. This forms the initial sequence of elements,
-  // where the first line itself is treated as a single element in an array.
-  const elementCollection = [ rawData.shift ( ) ];
-  
-  // Retrieve the second line, parsing it as an integer with radix 10 to determine
-  // the total number of subsequent operations.
-  const operationCount = Number.parseInt ( rawData.shift ( ) , 10 );
+  // Extract the initial character sequence from the very first line of input.
+  // The .split() method without arguments on a string like "abc" results in ["abc"].
+  const charSequence = intermediateLines.shift().split();
 
-  // Process the remaining lines, mapping each into an array of strings
-  // by splitting them at space characters. These are the actual operations.
-  const operationList = rawData.map (  ( currentOpLine )  =>  currentOpLine.split ( " " )  );
-  
-  // Initialize a state variable to track the current orientation (normal or reversed).
-  // A value of 0 indicates normal, 1 indicates reversed.
-  let orientationState = 0;
+  // Parse the total number of operations from the subsequent line.
+  // This variable is declared but not explicitly used in the loop, mirroring the original logic.
+  const numOperations = parseInt(intermediateLines.shift(), 10);
 
-  // Iterate through each defined operation in the list.
-  operationList.forEach (  ( currentOperation )  =>  {
-    // Check if the current operation is a "flip" command (indicated by a single element).
-    if (  currentOperation.length  ===  1  )  {
-      // Toggle the orientation state using modulo 2 arithmetic.
-      orientationState = ( orientationState + 1 ) % 2;
-    }
-    // Otherwise, it's an "add" command (indicated by multiple elements).
-    else  {
-      // Determine the effective direction based on the current orientation state
-      // and the second parameter of the operation (which can also toggle the effect).
-      // If the sum of orientationState and the parsed second parameter (modulo 2) is even,
-      // the element should be appended to the collection.
-      if (  ( orientationState  +  Number.parseInt ( currentOperation[1] )  %  2  )  ===  0  )  {
-        elementCollection.push ( currentOperation[2] ); // Add the third element to the end.
+  // Process the remaining lines to form a structured list of operations.
+  // Each operation is represented as an array of strings.
+  const operationList = intermediateLines.map(currentLine => currentLine.split(' '));
+
+  // Initialize a flag to keep track of the current reversal state of the sequence.
+  // A value of 0x0 indicates the sequence is not logically reversed, 0x1 indicates it is.
+  let isReversedState = 0x0;
+
+  // Iterate through each individual operation in the collected list.
+  operationList.forEach(currentOp => {
+    // Check if the current operation is a simple reversal command (indicated by its length).
+    if (currentOp.length === 0x1) {
+      // Toggle the reversal state: 0 becomes 1, 1 becomes 0.
+      isReversedState = (isReversedState + 0x1) % 2;
+    } else {
+      // This branch handles insertion operations.
+      // Determine the type of insertion based on the second element of the operation array.
+      // This value, combined with the current reversal state, dictates whether to push or unshift.
+      const insertionType = parseInt(currentOp[0x1], 10);
+      const valueToInsert = currentOp[0x2];
+
+      // The condition (isReversedState + insertionType % 2) === 0x0
+      // effectively checks if the element should be added to the "end" of the logical sequence.
+      // This happens if (state=0, type=0) or (state=1, type=1).
+      if ((isReversedState + (insertionType % 2)) === 0x0) {
+        // Append the value to the end of the physical array.
+        charSequence.push(valueToInsert);
+      } else {
+        // Prepend the value to the beginning of the physical array.
+        charSequence.unshift(valueToInsert);
       }
-      // If the condition is not met, the element should be prepended to the collection.
-      else  {
-        elementCollection.unshift ( currentOperation[2] ); // Add the third element to the beginning.
-      }
     }
-  }  ); // End of operations processing loop.
-  
-  // After all operations have been executed, check the final orientation state.
-  if (  orientationState  )  {
-    // If the state is reversed, reverse the collection of elements and then join them
-    // into a single string for output to the console.
-    console.log (  elementCollection.reverse ( ).join ( "" )  );
-  }
-  else  {
-    // If the state is normal, simply join the elements into a string for output.
-    console.log (  elementCollection.join ( "" )  );
+  });
+
+  // After processing all operations, check the final reversal state.
+  if (isReversedState) {
+    // If the sequence is logically reversed, perform a physical reversal before joining.
+    console.log(charSequence.reverse().join(''));
+  } else {
+    // Otherwise, simply join the sequence elements as they are.
+    console.log(charSequence.join(''));
   }
 }
 
-// --- Standard Input/Output Handling ---
-// This section reads the entire content from standard input and passes it
-// to the main processing function. Do not modify below this line.
-Processor ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) );
+// The following line is crucial for standard input/output handling in this environment.
+// It reads the entire content from standard input and passes it to the main processing function.
+// This part should remain unchanged to ensure proper execution.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,73 +1,64 @@
-// A small utility function to evaluate the validity of a single movement segment
-const verifyStep = (
-  elapsedTime,   // The time duration for this specific segment of the journey
-  deltaX,        // The absolute change in the X-coordinate
-  deltaY         // The absolute change in the Y-coordinate
-) => {
-  // Calculate the total Manhattan distance covered during this segment
-  const totalDistance = deltaX + deltaY;
+const validateMovement = (elapsedTime, deltaXCoord, deltaYCoord) => {
+  // Calculate the total Manhattan distance for the segment
+  const totalDistance = deltaXCoord + deltaYCoord;
 
-  // If the time taken is less than the distance, it's impossible to reach
+  // If the elapsed time is less than the total distance, it's impossible
   if (elapsedTime < totalDistance) {
     return false;
   }
 
-  // Check if the parity of elapsed time matches the parity of the total distance.
-  // This is a necessary condition for movement on a grid where each step takes 1 unit of time.
+  // Check if the parity of elapsed time matches the parity of total distance
+  // This ensures that the remaining time (elapsedTime - totalDistance) is even,
+  // allowing for "wasted" moves (e.g., moving back and forth)
   return elapsedTime % 2 === totalDistance % 2;
 };
 
-// Orchestrates the entire journey, checking if all waypoints can be reached sequentially
-const explorePath = (routeData) => {
-  "use strict"; // Enforce stricter parsing and error handling
+const simulateJourney = (routeSegments) => {
+  'use strict'; // Enforce strict mode for cleaner code
 
-  // Initialize the current location and time: [time, x_coordinate, y_coordinate]
-  let currentCoord = [0, 0, 0];
+  // Initialize the current position and time: [time, x, y]
+  let currentPosition = [0, 0, 0];
 
-  // Iterate through each planned waypoint in the provided route
-  for (let waypoint of routeData) {
-    // Determine the absolute change in X and Y coordinates from the current position to the next waypoint
-    const absDiffX = Math.abs(currentCoord[1] - waypoint[1]);
-    const absDiffY = Math.abs(currentCoord[2] - waypoint[2]);
+  // Iterate through each planned destination point in the route
+  for (let destinationPoint of routeSegments) {
+    // Calculate the absolute horizontal distance to the next point
+    const horizontalDistance = Math.abs(currentPosition[1] - destinationPoint[1]);
 
-    // Calculate the time elapsed to reach this specific waypoint from the previous one
-    const timeTaken = waypoint[0] - currentCoord[0];
+    // Calculate the absolute vertical distance to the next point
+    const verticalDistance = Math.abs(currentPosition[2] - destinationPoint[2]);
 
-    // Utilize the helper function to validate the movement to the current waypoint
-    if (!verifyStep(timeTaken, absDiffX, absDiffY)) {
-      // If any segment is invalid, the entire path is impossible
-      return false;
+    // Calculate the time elapsed to reach this destination point from the current one
+    const timeElapsed = destinationPoint[0] - currentPosition[0];
+
+    // Check if the movement to the next point is valid according to the rules
+    if (!validateMovement(timeElapsed, horizontalDistance, verticalDistance)) {
+      return false; // If any segment is invalid, the entire journey is impossible
     } else {
-      // Update the current coordinates to reflect the new position.
-      // Note: The original code had a potential bug here by using `+=` for time.
-      // We replicate the original behavior for strict cloning.
-      currentCoord[0] += waypoint[0]; // Update time (original logic, likely intended as `currentCoord[0] = waypoint[0]`)
-      currentCoord[1] = waypoint[1]; // Update X-coordinate
-      currentCoord[2] = waypoint[2]; // Update Y-coordinate
+      // If valid, update the current position to the new destination point
+      currentPosition[0] = destinationPoint[0];
+      currentPosition[1] = destinationPoint[1];
+      currentPosition[2] = destinationPoint[2];
     }
   }
 
-  // If all waypoints were successfully validated, the journey is possible
+  // If all segments were valid, the journey is feasible
   return true;
 };
 
-// The primary execution function for the program
-function ExecuteProgram(rawInputText) {
-  // Parse the raw input string:
-  // 1. Split by newline to get individual lines.
-  // 2. Map each line to an array of integers (time, x, y).
-  // 3. Skip the first line, which typically contains N (number of waypoints).
-  const parsedCoordinates = rawInputText
-    .split("\n")
-    .map((inputLine) => inputLine.split(" ").map((coordinateValue) => parseInt(coordinateValue, 10)))
-    .slice(1);
+function ProcessInput(rawData) {
+  // Parse the input string into an array of number arrays (the plan)
+  // Skip the first line (often contains N, the number of segments)
+  const routeSegments = rawData.split('\n')
+                               .map(segmentLine => segmentLine.split(' ')
+                                                              .map(coordinateValue => parseInt(coordinateValue, 10)))
+                               .slice(1);
 
-  // Invoke the path exploration logic to determine feasibility
-  const overallOutcome = explorePath(parsedCoordinates);
+  // Determine if the entire journey is feasible
+  const journeyFeasible = simulateJourney(routeSegments);
 
-  // Output the result to standard output in the specified format
-  console.log(overallOutcome ? "Yes" : "No");
+  // Output 'Yes' if feasible, 'No' otherwise
+  console.log(journeyFeasible ? 'Yes' : 'No');
 }
 
-// Read the entire input from standard input and pass it to the main program function
-ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

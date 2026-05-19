@@ -1,34 +1,36 @@
-const transformData = (dataString) => {
-    const contentLines = dataString.split('\n').filter(Boolean);
+function processInputData(rawData) {
+  const dataLines = rawData.trim().split("\n");
 
-    const elementQuantity = parseInt(contentLines[0].split(' ')[0], 10);
-    const rawNumbers = contentLines[1].split(' ').map(Number).sort((x, y) => x - y);
+  const totalElements = Number.parseInt(dataLines[0].split(' ')[0], 10);
+  const sortedValues = dataLines[1].split(' ').map(Number).sort((valA, valB) => valA - valB);
 
-    const frequencyRegister = rawNumbers.reduce((accumulator, numberValue) => {
-        accumulator.set(numberValue, (accumulator.get(numberValue) || 0) + 1);
-        return accumulator;
-    }, new Map());
+  const valueFrequencies = new Map();
+  for (const currentItem of sortedValues) {
+    valueFrequencies.set(currentItem, (valueFrequencies.get(currentItem) || 0) + 1);
+  }
 
-    const sortedFrequencies = Array.from(frequencyRegister.values()).sort((x, y) => x - y);
+  const frequencyCounts = Array.from(valueFrequencies.values()).sort((countA, countB) => countA - countB);
 
-    const accumulatedSums = sortedFrequencies.reduce((sumsList, currentFrequency, indexPosition) => {
-        const previousTotal = indexPosition > 0 ? sumsList[indexPosition - 1] : 0;
-        sumsList.push(previousTotal + currentFrequency);
-        return sumsList;
-    }, []);
+  const cumulativeSums = [0];
+  let runningSum = 0;
+  for (const individualCount of frequencyCounts) {
+    runningSum += individualCount;
+    cumulativeSums.push(runningSum);
+  }
 
-    const finalResults = Array.from({ length: elementQuantity }, (_, zeroBasedIndex) => zeroBasedIndex + 1).map(currentIterationDivisor => {
-        const maximumQuotient = Math.floor(elementQuantity / currentIterationDivisor);
+  const distinctValueCount = frequencyCounts.length;
 
-        const sumLookupIndex = sortedFrequencies.length - currentIterationDivisor;
-        const currentFrequencyRangeSum = sumLookupIndex >= 0 ? accumulatedSums[sumLookupIndex] : 0;
+  for (let groupSize = 1; groupSize <= totalElements; groupSize++) {
+    const sumRangeEndIndex = distinctValueCount - groupSize + 1;
+    
+    let currentUpperLimitSum = 0;
+    if (sumRangeEndIndex > 0 && sumRangeEndIndex <= distinctValueCount) {
+        currentUpperLimitSum = cumulativeSums[sumRangeEndIndex];
+    }
 
-        const productOfSumAndDivisor = currentFrequencyRangeSum * currentIterationDivisor;
+    const finalResult = Math.min(Math.floor(totalElements / groupSize), currentUpperLimitSum * groupSize);
+    console.log(finalResult);
+  }
+}
 
-        return Math.min(maximumQuotient, productOfSumAndDivisor);
-    });
-
-    return finalResults.join('\n');
-};
-
-console.log(transformData(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

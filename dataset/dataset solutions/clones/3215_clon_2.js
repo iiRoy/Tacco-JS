@@ -1,157 +1,159 @@
-"use strict"
-let PrimaryProcessor=function(initialInput){
-  // Process raw input string: trim, split by whitespace, convert to numbers
-  initialInput =  initialInput .  trim ( ) .  split ( / \s + / ) .  map ( val => val - 0 ) ;
-  const rowCount = initialInput.shift ( ) ;
-  const colCount = initialInput.shift ( ) ;
+"use strict";
 
-  let basisSize = 0 ; // Counter for the rank of the matrix
-  let linearSystem = new BitMatrix ( rowCount , colCount , initialInput ) ; // Initialize the bit matrix
+// Main processing function for the input data
+const ProcessInput = function (rawData) {
+  // Clean and parse the input string into an array of numbers
+  let parsedData = rawData.trim().split(/\s+/).map(val => Number(val));
 
-  // Gaussian elimination-like process to find the rank
-  while( linearSystem . matrixRows . length > 0 ) {
-    let pivotRowIndex = 0; // Index of the potential pivot row
-    for(let currentVectorIdx = 0; currentVectorIdx < linearSystem.matrixRows.length; currentVectorIdx++) {
-      // Find the first row with a '1' in the first column
-      if( linearSystem . matrixRows [ currentVectorIdx ] [ 0 ] === 1 ) break ;
-      pivotRowIndex ++ ;
+  // Extract dimensions: number of rows (N) and columns (M)
+  const numRows = parsedData.shift();
+  const numCols = parsedData.shift();
+
+  let rankCount = 0; // Initialize rank counter for Gaussian elimination
+
+  // Create a new binary matrix object
+  const matrixObj = new BinaryMatrix(numRows, numCols, parsedData);
+
+  // Perform Gaussian elimination until no rows remain
+  while (matrixObj.rows.length > 0) {
+    let firstOneIdx = 0; // Index to find the first row with a leading '1'
+
+    // Search for the first row where the first element is '1'
+    for (let loopIdx = 0; loopIdx < matrixObj.rows.length; loopIdx++) {
+      if (matrixObj.rows[loopIdx][0] === 0b1) break; // Found a row starting with 1
+      firstOneIdx++;
     }
 
-    // If no pivot (all zeros in the first column)
-    if( pivotRowIndex === linearSystem . matrixRows . length ) {
+    // If no row starts with '1' in the current first column
+    if (firstOneIdx === matrixObj.rows.length) {
       // Move the first column to the end and then delete it
-      linearSystem . exchangeColumns ( 0 , linearSystem . matrixRows [ 0 ] . length - 1 ) ;
-      linearSystem . removeLastColumn ( ) ;
+      matrixObj.exchangeColumn(0, matrixObj.rows[0].length - 0b1);
+      matrixObj.removeColumn();
     } else {
-      // A pivot was found, increment the basis size
-      basisSize ++ ;
-      // Perform XOR operations to eliminate other '1's in the first column
-      while( true ) {
-        let targetRowIndex = pivotRowIndex + 1 ; // Index of row to be XORed
-        for(let scanIdx = pivotRowIndex + 1 ; scanIdx < linearSystem . matrixRows . length ; scanIdx ++) {
-          // Find the next row with a '1' in the first column
-          if( linearSystem . matrixRows [ scanIdx ] [ 0 ] === 1 ) break ;
-          targetRowIndex ++ ;
+      // A leading '1' was found, increment the rank
+      rankCount += 0b1;
+
+      // Eliminate '1's below the pivot
+      while (true) {
+        let secondOneIdx = firstOneIdx + 0b1; // Index to find subsequent rows with a leading '1'
+
+        // Search for the next row (after firstOneIdx) where the first element is '1'
+        for (let loopIdx = firstOneIdx + 0b1; loopIdx < matrixObj.rows.length; loopIdx++) {
+          if (matrixObj.rows[loopIdx][0] === 0b1) break; // Found another row starting with 1
+          secondOneIdx++;
         }
-        // If no more rows with '1's in the first column
-        if( targetRowIndex === linearSystem . matrixRows . length ) break ;
-        // XOR the target row with the pivot row to zero out its first element
-        linearSystem . matrixRows [ targetRowIndex ] = vectorBitwiseXOR ( linearSystem . matrixRows [ pivotRowIndex ] , linearSystem . matrixRows [ targetRowIndex ] ) ;
+
+        // If no more '1's are found in the current column below the pivot
+        if (secondOneIdx === matrixObj.rows.length) break;
+
+        // XOR the current pivot row with the found row to eliminate the leading '1'
+        matrixObj.rows[secondOneIdx] = bitwiseXORRows(matrixObj.rows[firstOneIdx], matrixObj.rows[secondOneIdx]);
       }
-      // Move the pivot row to the end and remove it
-      linearSystem . exchangeMatrixRows ( pivotRowIndex , linearSystem . matrixRows . length - 1 ) ;
-      linearSystem . trimMatrixRow ( ) ;
+
+      // Move the processed pivot row to the end and remove it
+      matrixObj.exchangeRow(firstOneIdx, matrixObj.rows.length - 0b1);
+      matrixObj.removeRow();
     }
   }
 
-  const finalRank = basisSize ; // The calculated rank of the matrix
-  const primeMod = 998244353 ; // A large prime modulus for calculations
+  const finalRank = rankCount; // The determined rank of the matrix
+  const modulusVal = 998_244_353; // A large prime modulus
 
-  let firstExponentiation = 1 ; // Result of 2^(M+N-1) mod K
-  let secondExponentiation = 1 ; // Result of 2^(M+N-r-1) mod K
+  let factorOne = 0b1; // First term for calculation
+  let factorTwo = 0b1; // Second term for calculation
 
-  // Calculate 2^(M+N-1) modulo primeMod
-  for ( let expIterA = 1 ; expIterA <= colCount + rowCount - 1 ; expIterA ++ ) {
-    firstExponentiation *= 2 ;
-    if ( firstExponentiation >= primeMod ) {
-      firstExponentiation -= primeMod ;
-    }
+  // Calculate 2^(M+N-1) mod K
+  for (let loopIdx = 0b1; loopIdx <= numCols + numRows - 0b1; loopIdx++) {
+    factorOne *= 0b10; // Multiply by 2
+    if (factorOne >= modulusVal) factorOne -= modulusVal; // Apply modulo
   }
 
-  // Calculate 2^(M+N-r-1) modulo primeMod
-  for ( let expIterB = 1 ; expIterB <= colCount + rowCount - finalRank - 1 ; expIterB ++ ) {
-    secondExponentiation *= 2 ;
-    // This is a replicate of a potential bug in the original code.
-    // It should likely be 'secondExponentiation -= primeMod;'
-    if ( secondExponentiation >= primeMod ) {
-      firstExponentiation -= primeMod ;
-    }
+  // Calculate 2^(M+N-r-1) mod K
+  for (let loopIdx = 0b1; loopIdx <= numCols + numRows - finalRank - 0b1; loopIdx++) {
+    factorTwo *= 0b10; // Multiply by 2
+    if (factorTwo >= modulusVal) factorTwo -= modulusVal; // Apply modulo
   }
 
-  let computedAnswer = firstExponentiation - secondExponentiation ; // Final subtraction
+  let resultValue = factorOne - factorTwo; // Calculate the difference
 
-  // Ensure the result is non-negative modulo primeMod
-  if ( computedAnswer < 0 ) {
-    computedAnswer += primeMod ;
-  }
-  console . log ( computedAnswer ) ;
+  // Ensure the result is positive after modulo operation
+  if (resultValue < 0b0) resultValue += modulusVal;
+
+  console.log(resultValue); // Output the final computed value
+};
+
+// Performs a single bit XOR operation
+function singleBitXOR(bitA, bitB) {
+  return bitA === bitB ? 0b0 : 0b1;
 }
 
-// Helper function for binary XOR
-function binaryXOR ( val1 , val2 ) {
-  return val1 === val2 ? 0 : 1 ;
+// Performs bitwise XOR on two arrays (rows)
+function bitwiseXORRows(rowOne, rowTwo) {
+  return rowOne.map((element, index) => singleBitXOR(element, rowTwo[index]));
 }
 
-// Helper function for bitwise XOR of two arrays (vectors)
-function vectorBitwiseXOR ( rowOne , rowTwo ) {
-  // Map over elements, applying binaryXOR to corresponding positions
-  return rowOne . map ( ( element , pos ) => binaryXOR ( element , rowTwo [ pos ] ) ) ;
-}
+// Constructor for a BinaryMatrix object
+function BinaryMatrix(rowCount, colCount, initialElements) {
+  const currentMatrix = this; // Reference to the current instance
+  currentMatrix.rows = []; // Initialize an array to hold matrix rows
 
-// Constructor for a bit matrix object
-function BitMatrix ( rowsCount , colsCount , dataItems ) { // dataItems are provided as a flattened array
-  const matrixInstance = this ; // Reference to the new object
-  matrixInstance . matrixRows = [ ] ; // Initialize array to hold rows
-
-  // Create empty arrays for each row
-  for ( let rIdx = 0 ; rIdx < rowsCount ; rIdx ++ ) {
-    matrixInstance . matrixRows [ rIdx ] = [ ] ;
+  // Initialize rows as empty arrays
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+    currentMatrix.rows[rowIndex] = [];
   }
 
   // Populate the matrix with initial elements
-  for ( let rIdx = 0 ; rIdx < rowsCount ; rIdx ++ ) {
-    for ( let cIdx = 0 ; cIdx < colsCount ; cIdx ++ ) {
-      matrixInstance . matrixRows [ rIdx ] [ cIdx ] = dataItems [ rIdx * colsCount + cIdx ] ;
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+    for (let colIndex = 0; colIndex < colCount; colIndex++) {
+      currentMatrix.rows[rowIndex][colIndex] = initialElements[rowIndex * colCount + colIndex];
     }
   }
 }
 
-// Generic function to swap two elements in an array
-function exchangeElements ( targetArray , posA , posB ) {
-  const valueOne = targetArray [ posA ] ;
-  const valueTwo = targetArray [ posB ] ;
-  targetArray [ posA ] = valueTwo ;
-  targetArray [ posB ] = valueOne ;
+// Helper function to swap two elements in an array
+function exchangeElements(targetArray, idx1, idx2) {
+  const tempA = targetArray[idx1];
+  const tempB = targetArray[idx2];
+  targetArray[idx1] = tempB;
+  targetArray[idx2] = tempA;
 }
 
-// Prototype method to swap two rows of the matrix
-BitMatrix . prototype . exchangeMatrixRows = function ( rowIdx1 , rowIdx2 ) {
-  const currentMatrix = this ;
-  exchangeElements ( currentMatrix . matrixRows , rowIdx1 , rowIdx2 ) ;
-}
+// Prototype method to swap two rows in the matrix
+BinaryMatrix.prototype.exchangeRow = function (idx1, idx2) {
+  const thisMatrix = this;
+  exchangeElements(thisMatrix.rows, idx1, idx2);
+};
 
 // Prototype method to remove the last row from the matrix
-BitMatrix . prototype . trimMatrixRow = function ( ) { // Removes the final row vector.
-  const currentMatrix = this ;
-  const rowCollection = currentMatrix . matrixRows ;
-  rowCollection . pop ( ) ;
-}
+BinaryMatrix.prototype.removeRow = function () {
+  const thisMatrix = this;
+  const rowCollection = thisMatrix.rows;
+  rowCollection.pop(); // Remove the last element (row)
+};
 
-// Prototype method to swap two columns of the matrix
-BitMatrix . prototype . exchangeMatrixColumns = function ( colIdx1 , colIdx2 ) {
-  const currentMatrix = this ;
+// Prototype method to swap two columns in the matrix
+BinaryMatrix.prototype.exchangeColumn = function (idx1, idx2) {
+  const thisMatrix = this;
   // Iterate through each row and swap elements at specified column indices
-  for ( let rowIterator = 0 ; rowIterator < currentMatrix . matrixRows . length ; rowIterator ++ ) {
-    exchangeElements ( currentMatrix . matrixRows [ rowIterator ] , colIdx1 , colIdx2 ) ;
+  for (let rowIndex = 0; rowIndex < thisMatrix.rows.length; rowIndex++) {
+    exchangeElements(thisMatrix.rows[rowIndex], idx1, idx2);
   }
-}
+};
 
 // Prototype method to remove the last column from the matrix
-BitMatrix . prototype . removeLastColumn = function ( ) { // Discards the rightmost column.
-  const currentMatrix = this ;
-  const rowCollection = currentMatrix . matrixRows ;
-  const numActiveRows = rowCollection . length ;
+BinaryMatrix.prototype.removeColumn = function () {
+  const thisMatrix = this;
+  const rowCollection = thisMatrix.rows;
+  const currentRowCount = rowCollection.length;
 
-  // If there's only one column left and it's being removed, clear all rows
-  if ( rowCollection [ 0 ] . length === 1 ) {
-    currentMatrix . matrixRows = [ ] ;
+  // If there's only one column left, clear all rows
+  if (rowCollection[0].length === 0b1) thisMatrix.rows = [];
+
+  // Otherwise, remove the last element (column) from each row
+  for (let rowIndex = 0; rowIndex < currentRowCount; rowIndex++) {
+    rowCollection[rowIndex].pop();
   }
+};
 
-  // Remove the last element (column) from each row
-  for ( let rowLoopIdx = 0 ; rowLoopIdx < numActiveRows ; rowLoopIdx ++ ) {
-    rowCollection [ rowLoopIdx ] . pop ( ) ;
-  }
-}
-
-
-PrimaryProcessor ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

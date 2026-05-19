@@ -1,12 +1,16 @@
-const dataAccessor = require('fs');
-
-const processInputAndDisplayResult = (dataService) => {
-  const receivedData = dataService.readFileSync('/dev/stdin', 'utf8');
-  const dataSize = receivedData.length;
-
-  const constructedString = Array(dataSize).fill('x').join('');
-
-  process.stdout.write(constructedString + '\n');
+"use strict";
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
 };
-
-processInputAndDisplayResult(dataAccessor);
+Object.defineProperty(exports, "__esModule", { value: true });
+var fs = __importStar(require("fs"));
+function main(inputData) {
+    const dataLength = inputData.length;
+    const constructedString = 'x'.repeat(dataLength);
+    console.log(constructedString);
+}
+main(fs.readFileSync('/dev/stdin', 'utf8'));

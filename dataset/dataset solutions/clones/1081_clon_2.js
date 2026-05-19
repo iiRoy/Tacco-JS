@@ -1,121 +1,156 @@
-const rawData = require('fs').readFileSync('/proc/self/fd/0', 'utf-8'); // Read input data from standard input path
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input stream
 
-const linesOfText = rawData.trim().split('\n'); // Split the raw input into an array of lines, removing leading/trailing whitespace
-const totalElements = parseInt(linesOfText.shift(), 10); // Extract the first line as the total count, converting it to an integer
-const adjacencyData = linesOfText.map((lineStr) =>
-    lineStr.split(' ').map(parseInt) // For each remaining line, split by space and convert elements to integers
-);
+const parsedLines = rawData.trim().split('\n'); // Split the input string into an array of lines
+const nodeCount = Number(parsedLines.shift()); // Extract the first line as the total number of nodes
+const adjacencyList = parsedLines.map((lineStr) => lineStr.split(' ').map(Number)); // Parse remaining lines into an adjacency list structure
 
 /**
- * Represents a single vertex in the graph structure.
- * Manages its unique identifier, direct successors, and its immediate predecessor.
+ * Represents a single node within the tree structure.
+ * Manages its unique identifier, parent reference, and a list of child nodes.
  */
-class GraphVertex {
-    // Initializes a new vertex with a given identifier
-    constructor(identifier) {
-        this.vertexId = identifier; // Unique numerical identifier for this vertex
-        this.successors = [];       // Array to store references to child vertices
-        // The 'predecessor' property is set when this vertex is added as a child to another
-    }
+class TreeNode {
+  /**
+   * Constructs a new TreeNode instance.
+   * @param {number} identifier - The unique numerical ID for this node.
+   */
+  constructor(identifier) {
+    this.identifier = identifier; // Store the node's unique ID
+    this.childNodes = []; // Initialize an empty array to hold child TreeNode objects
+    // this.parentNode is intentionally left undefined initially, set when added as a child
+  }
 
-    // Establishes a directional link: this vertex becomes the predecessor of the provided childVertex
-    attachSuccessor(childVertex) {
-        childVertex.predecessor = this; // Assign this vertex as the parent of the child
-        this.successors.push(childVertex); // Add the child to this vertex's list of successors
-    }
+  /**
+   * Adds a specified node as a child of the current node.
+   * Sets the parent reference on the child node.
+   * @param {TreeNode} childElement - The node to be added as a child.
+   */
+  addChild(childElement) {
+    childElement.parentNode = this; // Assign the current node as the parent of the childElement
+    this.childNodes.push(childElement); // Add the childElement to this node's list of children
+  }
 
-    // Checks if this vertex has a predecessor (i.e., if it's not the root)
-    hasPredecessor() {
-        return !!this.predecessor;
-    }
+  /**
+   * Checks if this node has a parent node.
+   * @returns {boolean} True if a parent node exists, false otherwise.
+   */
+  hasParentNode() {
+    return !!this.parentNode; // Returns true if parentNode is not null/undefined
+  }
 
-    // Checks if this vertex has any successors (i.e., if it's not a leaf)
-    hasSuccessors() {
-        return !!this.successors.length;
-    }
+  /**
+   * Checks if this node has any child nodes.
+   * @returns {boolean} True if there are one or more child nodes, false otherwise.
+   */
+  hasChildNodes() {
+    return !!this.childNodes.length; // Returns true if the childNodes array is not empty
+  }
 
-    // Determines the topological category of the vertex within the graph
-    determineCategory() {
-        if (!this.hasPredecessor()) {
-            return 'origin';            // This vertex is the graph's root
-        } else if (this.hasSuccessors()) {
-            return 'intermediate_point'; // This vertex has both a parent and children
-        } else {
-            return 'terminal_point';    // This vertex has a parent but no children (a leaf)
-        }
+  /**
+   * Determines the type of the node based on its parent and children status.
+   * @returns {string} 'root', 'internal node', or 'leaf'.
+   */
+  getNodeType() {
+    if (!this.hasParentNode()) {
+      return 'root'; // A node without a parent is the root
+    } else if (this.hasChildNodes()) {
+      return 'internal node'; // A node with a parent and children is an internal node
+    } else {
+      return 'leaf'; // A node with a parent but no children is a leaf
     }
+  }
 
-    // Recursively calculates and assigns the 'level' (depth) for this vertex and all its descendants
-    computeDepths(currentLevel) {
-        this.level = currentLevel; // Set the current depth for this vertex
-        // Iterate over all successors and recursively call computeDepths with an incremented level
-        this.successors.forEach((descendant) =>
-            descendant.computeDepths(currentLevel + 1)
-        );
-    }
+  /**
+   * Recursively calculates and assigns the depth for this node and all its descendants.
+   * @param {number} currentLevel - The depth level of the current node.
+   */
+  calculateDepths(currentLevel) {
+    this.nodeDepth = currentLevel; // Set the depth for the current node
+    const nextLevel = currentLevel + 1; // Increment depth for the next level of children
+    this.childNodes.forEach(childElement => childElement.calculateDepths(nextLevel)); // Recursively call for each child
+  }
 
-    // Generates a formatted string representation of the vertex's key properties
-    representAsString() {
-        const predecessorId = this.hasPredecessor() ? this.predecessor.vertexId : null; // Get predecessor ID or null if none
-        const successorIds = this.successors.map((subNode) => subNode.vertexId).join(', '); // Get IDs of successors
-        return `vertex ${this.vertexId}: predecessor = ${predecessorId}, level = ${this.level}, ${this.determineCategory()}, [${successorIds}]`;
-    }
+  /**
+   * Generates a formatted string representation of the node's properties.
+   * @returns {string} A string containing the node's ID, parent, depth, type, and children.
+   */
+  formatNodeInfo() {
+    const parentIdDisplay = this.hasParentNode() ? this.parentNode.identifier : -1; // Get parent ID or -1 if no parent
+    const childIdentifiers = this.childNodes.map(childElement => childElement.identifier).join(', '); // Join child IDs
+
+    // Construct the output string exactly as specified in the problem
+    return 'node ' + this.identifier + ': ' + [
+      'parent = ' + parentIdDisplay,
+      'depth = ' + this.nodeDepth,
+      this.getNodeType(),
+      '[' + childIdentifiers + ']',
+    ].join(', ');
+  }
 }
 
 /**
- * Encapsulates the entire graph structure, managing a collection of GraphVertex objects.
- * Provides functionality to build, process, and display the graph.
+ * Manages a collection of TreeNode objects, forming a tree data structure.
+ * Provides methods to retrieve nodes, find the root, compute depths, and display the structure.
  */
 class GraphStructure {
-    // Initializes the graph by creating an empty registry for all vertices
-    constructor() {
-        this.vertexRegistry = new Map(); // A Map to store vertices, keyed by their unique identifiers
-    }
+  /**
+   * Constructs a new GraphStructure instance.
+   */
+  constructor() {
+    this.nodeRegistry = new Map(); // A Map to store TreeNode objects, keyed by their identifier
+  }
 
-    // Retrieves a GraphVertex by its identifier, creating it if it does not yet exist in the registry
-    retrieveVertex(identifier) {
-        if (!this.vertexRegistry.has(identifier)) {
-            this.vertexRegistry.set(identifier, new GraphVertex(identifier)); // Create and register new vertex
-        }
-        return this.vertexRegistry.get(identifier); // Return the existing or newly created vertex
+  /**
+   * Retrieves a TreeNode by its identifier. If the node does not exist, it creates and stores a new one.
+   * @param {number} nodeIdentifier - The ID of the node to retrieve or create.
+   * @returns {TreeNode} The requested TreeNode object.
+   */
+  retrieveNode(nodeIdentifier) {
+    if (!this.nodeRegistry.has(nodeIdentifier)) {
+      this.nodeRegistry.set(nodeIdentifier, new TreeNode(nodeIdentifier)); // Create and store a new node if not found
     }
+    return this.nodeRegistry.get(nodeIdentifier); // Return the existing or newly created node
+  }
 
-    // Locates and returns the single origin (root) vertex of the graph
-    findOriginVertex() {
-        // Convert Map values to an array and find the vertex without a predecessor
-        return Array.from(this.vertexRegistry.values()).find(
-            (currentVertex) => !currentVertex.hasPredecessor()
-        );
-    }
+  /**
+   * Finds the root node of the tree.
+   * Assumes there is exactly one root node (a node without a parent).
+   * @returns {TreeNode} The root node of the tree.
+   */
+  findRootNode() {
+    // Convert Map values to an array and find the first node that has no parent
+    return Array.from(this.nodeRegistry.values()).find(element => !element.hasParentNode());
+  }
 
-    // Initiates the depth calculation across the entire graph, starting from the root
-    processStructure() {
-        const mainRoot = this.findOriginVertex(); // Identify the root vertex
-        mainRoot.computeDepths(0); // Begin the recursive depth calculation from level 0
-    }
+  /**
+   * Initiates the depth calculation process for all nodes in the tree, starting from the root.
+   */
+  computeAllDepths() {
+    const rootElement = this.findRootNode(); // Get the root node of the tree
+    rootElement.calculateDepths(0); // Start the recursive depth calculation from depth 0
+  }
 
-    // Iterates through all registered vertices and prints their string representations to the console
-    displayStructure() {
-        for (let vertexIndex = 0; vertexIndex < this.vertexRegistry.size; ++vertexIndex) {
-            const currentGraphVertex = this.vertexRegistry.get(vertexIndex); // Retrieve vertex by its index (assuming sequential IDs)
-            console.log(currentGraphVertex.representAsString()); // Output the vertex's formatted information
-        }
+  /**
+   * Prints the formatted information for all nodes in the tree, ordered by their identifier.
+   */
+  displayStructure() {
+    // Iterate from identifier 0 up to the total number of nodes
+    for (let idx = 0; idx < this.nodeRegistry.size; idx++) {
+      const currentElement = this.nodeRegistry.get(idx); // Retrieve the node by its identifier
+      console.log(currentElement.formatNodeInfo()); // Output the formatted information for the node
     }
+  }
 }
 
-// Instantiate the primary graph structure manager
-const graphInstance = new GraphStructure();
+const graphInstance = new GraphStructure(); // Create a new instance of our tree manager
 
-// Populate the graph by processing the parsed adjacency data
-adjacencyData.forEach(([originId, countChildren, ...childIdentifiers]) => {
-    const originVertex = graphInstance.retrieveVertex(originId); // Get or create the parent vertex
-    childIdentifiers.forEach((childIdentifier) => {
-        const childGraphVertex = graphInstance.retrieveVertex(childIdentifier); // Get or create the child vertex
-        originVertex.attachSuccessor(childGraphVertex); // Establish the parent-child relationship
-    });
+// Iterate through each entry in the adjacency list to build the tree structure
+adjacencyList.forEach(([parentNodeId, numChildren, ...childNodeIds]) => {
+  const currentParentNode = graphInstance.retrieveNode(parentNodeId); // Get or create the parent node
+  childNodeIds.forEach(childId => {
+    const currentNode = graphInstance.retrieveNode(childId); // Get or create the child node
+    currentParentNode.addChild(currentNode); // Establish the parent-child relationship
+  });
 });
 
-// Execute the graph processing to determine all vertex depths
-graphInstance.processStructure();
-// Output the detailed structure of the graph to standard output
-graphInstance.displayStructure();
+graphInstance.computeAllDepths(); // Calculate the depth for all nodes in the constructed tree
+graphInstance.displayStructure(); // Display the final tree structure information to console

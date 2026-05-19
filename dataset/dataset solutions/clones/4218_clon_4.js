@@ -1,28 +1,27 @@
 "use strict";
 
-const termCache = new Map();
-
-const calculateSequenceTerm = (position) => {
-    if (termCache.has(position)) {
-        return termCache.get(position);
-    }
-
-    let currentTerm;
-    if (position === 0) {
-        currentTerm = 2;
-    } else if (position === 1) {
-        currentTerm = 1;
-    } else {
-        currentTerm = calculateSequenceTerm(position - 1) + calculateSequenceTerm(position - 2);
-    }
-
-    termCache.set(position, currentTerm);
-    return currentTerm;
+const processInput = inputData => {
+    const targetIndex = Number(inputData.split("\n")[0]);
+    console.log(computeLucasTerm(targetIndex));
 };
 
-const processExternalInput = (rawData) => {
-    const requestedPosition = parseInt(rawData.split('\n')[0], 10);
-    console.log(calculateSequenceTerm(requestedPosition));
-};
+const computeLucasTerm = (() => {
+    const memoizationCache = new Map();
 
-processExternalInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    memoizationCache.set(0, 2);
+    memoizationCache.set(1, 1);
+
+    const calculateTerm = (idx) => {
+        if (memoizationCache.has(idx)) {
+            return memoizationCache.get(idx);
+        }
+
+        const termValue = calculateTerm(idx - 1) + calculateTerm(idx - 2);
+        memoizationCache.set(idx, termValue);
+        return termValue;
+    };
+
+    return calculateTerm;
+})();
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

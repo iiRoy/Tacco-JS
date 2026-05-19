@@ -1,91 +1,74 @@
-// Function to determine the number of iterations required to locate a value
-// within a sorted collection using a binary search approach.
-// This function counts comparison attempts, whether the target is found or not.
-function locateValueSteps(sortedCollection, targetElement) {
-    // Initialize lower and upper bounds for the search space.
-    // 'lowerIndex' is inclusive, 'upperIndex' is exclusive.
-    let lowerIndex = 0;
-    let upperIndex = sortedCollection.length;
-    // Counter for the number of comparison operations performed.
-    let operationCount = 0;
+const fileSystem = require('fs');
 
-    // Continue searching as long as the valid range exists (lower bound is less than upper bound).
-    while (lowerIndex < upperIndex) {
-        // Calculate the middle index. This method (low + (high - low) / 2)
-        // helps prevent potential integer overflow with very large indices,
-        // although less critical in JavaScript due to 64-bit floats for numbers.
-        const currentMidIndex = lowerIndex + Math.floor((upperIndex - lowerIndex) / 2);
-
-        // Increment the operation counter for each comparison attempt.
-        operationCount++;
-
-        // Retrieve the element at the calculated middle index.
-        const elementAtMid = sortedCollection[currentMidIndex];
-
-        // Check if the element at the middle is our target.
-        if (elementAtMid === targetElement) {
-            // If found, return the total number of operations.
-            return operationCount;
-        } else if (targetElement < elementAtMid) {
-            // If the target is smaller, adjust the upper bound to the current middle index.
-            // The search continues in the left half.
-            upperIndex = currentMidIndex;
-        } else {
-            // If the target is larger, adjust the lower bound to one past the current middle index.
-            // The search continues in the right half.
-            lowerIndex = currentMidIndex + 1;
-        }
-    }
-
-    // If the loop completes, it means the target element was not found in the collection.
-    // Per the problem's requirements, we still return the total operation count.
-    return operationCount;
-}
-
-// Helper function to safely extract and convert a numeric value from the processed input lines.
-// This enhances readability and centralizes type conversion and basic input validation.
-const extractNumericLine = (lineSegments) => {
-    if (lineSegments.length === 0) {
-        // In a real-world scenario, robust error handling or default values might be used.
-        throw new Error("Input data stream unexpectedly exhausted.");
-    }
-    // Using parseInt with radix 10 ensures proper conversion from string to integer.
-    return parseInt(lineSegments.shift(), 10);
+// Helper function to parse a number from the input lines array
+const parseNextNumber = (linesArray) => {
+    // Using Number() is an explicit way to convert string to number,
+    // equivalent to the original's `value - 0`.
+    return Number(linesArray.shift());
 };
 
-// Load raw input data from standard input using Node.js file system module.
-// The '/dev/stdin' path is standard for competitive programming environments.
-const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+// Helper function to determine the next search range in a binary search
+const determineNextSearchRange = (currentValue, targetValue, middleIndex, currentLowIndex, currentHighIndex) => {
+    if (targetValue < currentValue) {
+        // Target is in the left half, so the new high index becomes the middle index (exclusive)
+        return { newLow: currentLowIndex, newHigh: middleIndex };
+    } else {
+        // Target is in the right half, so the new low index becomes middleIndex + 1 (inclusive)
+        return { newLow: middleIndex + 1, newHigh: currentHighIndex };
+    }
+};
 
-// Pre-process the raw input:
-// 1. Remove leading/trailing whitespace using .trim().
-// 2. Split the content into an array of strings, one for each line.
-let processedInputLines = rawInputContent.trim().split("\n");
+function searchSortedArray(sortedArray, targetValue) {
+    let lowIndex = 0;
+    let highIndex = sortedArray.length; // highIndex is exclusive
+    let iterationCount = 0;
 
-// Main processing loop: handles multiple test cases from the input.
-// The loop continues until a specific termination condition is met.
+    // The loop structure is preserved to match the exact iteration counting behavior
+    while (true) {
+        iterationCount++; // Increment count at the very beginning of each potential iteration
+        if (lowIndex === highIndex) { // If the range is empty, break the loop
+            break;
+        }
+
+        // Calculate the middle index
+        const middleIndex = Math.floor((lowIndex + highIndex) / 2);
+        // Get the value at the middle index for comparison
+        const currentValue = sortedArray[middleIndex];
+
+        if (currentValue === targetValue) {
+            // If the target is found, return the current iteration count
+            return iterationCount;
+        }
+
+        // Use the helper function to update the search range
+        const { newLow, newHigh } = determineNextSearchRange(currentValue, targetValue, middleIndex, lowIndex, highIndex);
+        lowIndex = newLow;
+        highIndex = newHigh;
+    }
+    // If the loop finishes without finding the target, return the total iteration count
+    return iterationCount;
+}
+
+// Read the entire input file
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+// Split the input into lines and trim whitespace
+let inputLines = rawInputData.trim().split("\n");
+
+// Process input lines in a loop until a zero is encountered
 while (true) {
-    // Read the size of the current dataset (number of elements in the array).
-    const currentDatasetSize = extractNumericLine(processedInputLines);
-
-    // The problem specifies that a dataset size of 0 indicates the end of input.
-    if (currentDatasetSize === 0) {
-        break; // Exit the main processing loop.
+    const arraySize = parseNextNumber(inputLines); // Get the size of the next array
+    if (arraySize === 0) { // If size is 0, terminate the processing loop
+        break;
     }
 
-    // Initialize a new array to store the numeric elements for the current test case.
-    const numericElementsArray = [];
-
-    // Populate the 'numericElementsArray' with 'currentDatasetSize' elements.
-    // Each element is extracted and converted using the helper function.
-    for (let elementIterator = 0; elementIterator < currentDatasetSize; elementIterator++) {
-        numericElementsArray.push(extractNumericLine(processedInputLines));
+    const currentArray = []; // Initialize an array to store the numbers
+    // Populate the array with 'arraySize' numbers from the input
+    for (let currentIdx = 0; currentIdx < arraySize; currentIdx++) {
+        currentArray.push(parseNextNumber(inputLines));
     }
 
-    // Read the specific target value that needs to be searched for in the array.
-    const targetValueToFind = extractNumericLine(processedInputLines);
-
-    // Execute the `locateValueSteps` function with the prepared array and target value.
-    // The result (number of comparisons) is then printed to the console.
-    console.log(locateValueSteps(numericElementsArray, targetValueToFind));
+    // Get the target value for the binary search
+    const targetValueForSearch = parseNextNumber(inputLines);
+    // Perform the search and log the result
+    console.log(searchSortedArray(currentArray, targetValueForSearch));
 }

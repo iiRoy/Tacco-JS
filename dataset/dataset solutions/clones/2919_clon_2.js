@@ -1,400 +1,323 @@
-"use strict"; /* Strict mode enabled for the module */
-
-/**
- * Helper function to safely destructure an array-like object.
- * @param {Array|Iterable} sourceArray - The array or iterable to destructure.
- * @param {number} limit - The maximum number of elements to extract.
- * @returns {Array} The destructured array.
- */
-function _destructureArray(sourceArray, limit) {
-  return _checkArrayValidity(sourceArray) || _iterateWithLimit(sourceArray, limit) || _throwNonIterableError();
+function _extractArrayElements(inputArray, count) {
+  return _getArrayWithHoles(inputArray) || _getIterableLimited(inputArray, count) || _throwNonIterableError();
 }
 
-/**
- * Throws an error for invalid attempts to destructure non-iterable instances.
- * This is a Babel-generated helper.
- */
 function _throwNonIterableError() {
   throw new TypeError("Invalid attempt to destructure non-iterable instance");
 }
 
-/**
- * Iterates over an array-like object up to a specified limit.
- * @param {Array|Iterable} sourceArray - The array or iterable to process.
- * @param {number} limit - The maximum number of items to collect.
- * @returns {Array|null} An array of collected items, or null if not iterable.
- */
-function _iterateWithLimit(sourceArray, limit) {
-  var collectedItems = [];
-  var isNotDone = true;
-  var didErrorOccur = false;
-  var capturedError = undefined;
+function _getIterableLimited(iterableInput, limit) {
+  var _tempArray = [];
+  var _isDone = false;
+  var _hasError = false;
+  var _errorValue = undefined;
   try {
-    for (var iteratorObj = sourceArray[Symbol.iterator](), iteratorResult; !(isNotDone = (iteratorResult = iteratorObj.next()).done); isNotDone = true) {
-      collectedItems.push(iteratorResult.value);
-      if (limit && collectedItems.length === limit) break;
+    for (var _iteratorInstance = iterableInput[Symbol.iterator](), _stepResult; !(_isDone = (_stepResult = _iteratorInstance.next()).done); _isDone = true) {
+      _tempArray.push(_stepResult.value);
+      if (limit && _tempArray.length === limit) break;
     }
-  } catch (caughtException) {
-    didErrorOccur = true;
-    capturedError = caughtException;
+  } catch (err) {
+    _hasError = true;
+    _errorValue = err;
   } finally {
     try {
-      if (!isNotDone && iteratorObj["return"] != null) iteratorObj["return"]();
+      if (!_isDone && _iteratorInstance["return"] != null) {
+        _iteratorInstance["return"]();
+      }
     } finally {
-      if (didErrorOccur) throw capturedError;
+      if (_hasError) {
+        throw _errorValue;
+      }
     }
   }
-  return collectedItems;
+  return _tempArray;
 }
 
-/**
- * Checks if the given input is a valid array.
- * @param {any} sourceArray - The value to check.
- * @returns {Array|null} The array itself if valid, otherwise null.
- */
-function _checkArrayValidity(sourceArray) {
-  if (Array.isArray(sourceArray)) return sourceArray;
+function _getArrayWithHoles(inputArray) {
+  if (Array.isArray(inputArray)) return inputArray;
 }
 
-/**
- * Ensures a class constructor is called with 'new'.
- * @param {object} objectInstance - The instance being created.
- * @param {Function} ClassReference - The constructor function.
- * @throws {TypeError} If the constructor is not called with 'new'.
- */
-function _ensureInstanceType(objectInstance, ClassReference) {
-  if (!(objectInstance instanceof ClassReference)) {
+function _verifyClassCall(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
   }
 }
 
-/**
- * Defines properties on an object.
- * @param {object} targetObject - The object to define properties on.
- * @param {Array<object>} propertyDescriptors - An array of property descriptors.
- */
-function _configureProperties(targetObject, propertyDescriptors) {
-  for (var k = 0; k < propertyDescriptors.length; k++) {
-    var propDescriptor = propertyDescriptors[k];
-    propDescriptor.enumerable = propDescriptor.enumerable || false;
-    propDescriptor.configurable = true;
-    if ("value" in propDescriptor) propDescriptor.writable = true;
-    Object.defineProperty(targetObject, propDescriptor.key, propDescriptor);
+function _defineObjectProperties(targetObject, propertyDescriptors) {
+  for (var i = 0; i < propertyDescriptors.length; i++) {
+    var descriptor = propertyDescriptors[i];
+    descriptor.enumerable = descriptor.enumerable || false;
+    descriptor.configurable = true;
+    if ("value" in descriptor) descriptor.writable = true;
+    Object.defineProperty(targetObject, descriptor.key, descriptor);
   }
 }
 
-/**
- * Creates a class with prototype and static properties.
- * @param {Function} ClassReference - The constructor function.
- * @param {Array<object>} prototypeProperties - Descriptors for prototype methods/properties.
- * @param {Array<object>} staticMemberProperties - Descriptors for static methods/properties.
- * @returns {Function} The constructed class.
- */
-function _buildClass(ClassReference, prototypeProperties, staticMemberProperties) {
-  if (prototypeProperties) _configureProperties(ClassReference.prototype, prototypeProperties);
-  if (staticMemberProperties) _configureProperties(ClassReference, staticMemberProperties);
-  return ClassReference;
+function _constructClass(Constructor, prototypeProperties, staticProperties) {
+  if (prototypeProperties) _defineObjectProperties(Constructor.prototype, prototypeProperties);
+  if (staticProperties) _defineObjectProperties(Constructor, staticProperties);
+  return Constructor;
 }
 
-/* Main application module wrapped in an IIFE */
 !function (fileSystemModule) {
-  "use strict"; /* Apply strict mode within this scope as well */
+  "use strict";
 
-  /*
-   * Implementation of a Randomized Binary Search Tree (Treap).
-   * Combines properties of binary search trees and heaps.
-   */
-  var PrioritySearchTree =
-    /*#__PURE__*/
-    function () {
-      /**
-       * Initializes a new PrioritySearchTree.
-       * @param {Function} getKeyExtractor - A function to extract the sort key from an item.
-       */
-      function PrioritySearchTree(getKeyExtractor) {
-        _ensureInstanceType(this, PrioritySearchTree); /* Ensure constructor is called correctly */
+  var RandomizedBST =
+  /*#__PURE__*/
+  function () {
+    function RandomizedBST(getKeyExtractor) {
+      _verifyClassCall(this, RandomizedBST);
 
-        this.keyExtractor = getKeyExtractor || function (inputVal) {
-          return inputVal;
+      this.getKeyExtractor = getKeyExtractor || function (x) {
+        return x;
+      };
+
+      this.topNode = null;
+    }
+
+    _constructClass(RandomizedBST, [{
+      key: "addValue",
+      value: function addValue(itemValue) {
+        var nodePrio = Math.random();
+        var newNodeItem = {
+          itemVal: itemValue,
+          sortKeyVal: this.getKeyExtractor(itemValue),
+          nodePrio: nodePrio,
+          leftChild: null,
+          rightChild: null
         };
-
-        this.treeRoot = null; /* The root node of the tree */
+        this.topNode = this._recursiveAdd(this.topNode, newNodeItem);
       }
+    }, {
+      key: "removeValue",
+      value: function removeValue(itemValue) {
+        var itemKey = this.getKeyExtractor(itemValue);
+        this.topNode = this._recursiveRemove(this.topNode, itemKey);
+      }
+    }, {
+      key: "hasValue",
+      value: function hasValue(itemValue) {
+        return null != this._locateNode(itemValue);
+      }
+    }, {
+      key: "getMinimum",
+      value: function getMinimum() {
+        var currentRoot = this.topNode;
 
-      _buildClass(PrioritySearchTree, [{
-        key: "insert",
-        value: function insert(itemValue) {
-          var nodePriority = Math.random(); /* Assign a random priority */
-          var treeNode = {
-            value: itemValue,
-            key: this.keyExtractor(itemValue),
-            priority: nodePriority,
-            leftChild: null,
-            rightChild: null
-          };
-          this.treeRoot = this._recursiveInsert(this.treeRoot, treeNode);
+        for (; null != currentRoot;) {
+          if (null == currentRoot.leftChild) return currentRoot.itemVal;
+          currentRoot = currentRoot.leftChild;
         }
-      }, {
-        key: "erase",
-        value: function erase(itemValue) {
-          var sortKey = this.keyExtractor(itemValue);
-          this.treeRoot = this._recursiveErase(this.treeRoot, sortKey);
+
+        return null;
+      }
+    }, {
+      key: "_recursiveAdd",
+      value: function _recursiveAdd(currentNode, newNodeItem) {
+        if (null == currentNode) return newNodeItem;
+        if (newNodeItem.sortKeyVal === currentNode.sortKeyVal) return currentNode;else if (newNodeItem.sortKeyVal < currentNode.sortKeyVal) {
+          var insertedChild = this._recursiveAdd(currentNode.leftChild, newNodeItem);
+
+          currentNode.leftChild = insertedChild;
+          if (insertedChild.nodePrio < currentNode.nodePrio) return currentNode;else return this._rotateRightChild(currentNode);
+        } else {
+          var _insertedChild = this._recursiveAdd(currentNode.rightChild, newNodeItem);
+
+          currentNode.rightChild = _insertedChild;
+          if (_insertedChild.nodePrio < currentNode.nodePrio) return currentNode;else return this._rotateLeftChild(currentNode);
         }
-      }, {
-        key: "contains",
-        value: function contains(itemValue) {
-          return null != this._locateItem(itemValue);
+      }
+    }, {
+      key: "_rotateRightChild",
+      value: function _rotateRightChild(parentNode) {
+        var childNode = parentNode.leftChild;
+        if (null == childNode) return parentNode;
+        parentNode.leftChild = childNode.rightChild;
+        childNode.rightChild = parentNode;
+        return childNode;
+      }
+    }, {
+      key: "_rotateLeftChild",
+      value: function _rotateLeftChild(parentNode) {
+        var childNode = parentNode.rightChild;
+        if (null == childNode) return parentNode;
+        parentNode.rightChild = childNode.leftChild;
+        childNode.leftChild = parentNode;
+        return childNode;
+      }
+    }, {
+      key: "_recursiveRemove",
+      value: function _recursiveRemove(currentNode, itemKey) {
+        if (null == currentNode) return null;
+
+        if (itemKey < currentNode.sortKeyVal) {
+          currentNode.leftChild = this._recursiveRemove(currentNode.leftChild, itemKey);
+          return currentNode;
+        } else if (itemKey > currentNode.sortKeyVal) {
+          currentNode.rightChild = this._recursiveRemove(currentNode.rightChild, itemKey);
+          return currentNode;
         }
-      }, {
-        key: "findMin",
-        value: function findMin() {
-          var currentTraversalNode = this.treeRoot;
 
-          for (; null != currentTraversalNode;) {
-            if (null == currentTraversalNode.leftChild) return currentTraversalNode.value;
-            currentTraversalNode = currentTraversalNode.leftChild;
-          }
+        if (null == currentNode.leftChild && null == currentNode.rightChild) return null;
 
-          return null; /* No minimum found if tree is empty */
+        if ((currentNode.leftChild ? currentNode.leftChild.nodePrio : -1) > (currentNode.rightChild ? currentNode.rightChild.nodePrio : -1)) {
+          var promotedParent = currentNode.leftChild;
+          var promotedRightChild = promotedParent.rightChild;
+          currentNode.leftChild = promotedRightChild;
+          promotedParent.rightChild = this._recursiveRemove(currentNode, itemKey);
+          if (promotedParent.rightChild && promotedParent.rightChild.nodePrio > promotedParent.nodePrio) return this._rotateLeftChild(promotedParent);else return promotedParent;
+        } else {
+          var _promotedParent = currentNode.rightChild;
+          var promotedLeftChild = _promotedParent.leftChild;
+          currentNode.rightChild = promotedLeftChild;
+          _promotedParent.leftChild = this._recursiveRemove(currentNode, itemKey);
+          if (_promotedParent.leftChild && _promotedParent.leftChild.nodePrio > _promotedParent.nodePrio) return this._rotateRightChild(_promotedParent);else return _promotedParent;
         }
-      }, {
-        key: "_recursiveInsert",
-        value: function _recursiveInsert(currentNode, treeNode) {
-          if (null == currentNode) return treeNode; /* Found insertion point */
-          if (treeNode.key === currentNode.key) return currentNode; /* Duplicate key, return existing node */
-          else if (treeNode.key < currentNode.key) {
-            var newlyInsertedNode = this._recursiveInsert(currentNode.leftChild, treeNode);
+      }
+    }, {
+      key: "_locateNode",
+      value: function _locateNode(itemValue) {
+        var currentRoot = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.topNode;
+        if (null == currentRoot) return null;
+        if (currentRoot.itemVal === itemValue) return currentRoot;
+        if (itemValue < currentRoot.itemVal) return this._locateNode(itemValue, currentRoot.leftChild);else return this._locateNode(itemValue, currentRoot.rightChild);
+      }
+    }]);
 
-            currentNode.leftChild = newlyInsertedNode;
-            if (newlyInsertedNode.priority < currentNode.priority) return currentNode; /* Heap property maintained */
-            else return this._performRightRotation(currentNode); /* Perform rotation to maintain heap property */
-          } else {
-            var anotherInsertedNode = this._recursiveInsert(currentNode.rightChild, treeNode);
+    return RandomizedBST;
+  }();
 
-            currentNode.rightChild = anotherInsertedNode;
-            if (anotherInsertedNode.priority < currentNode.priority) return currentNode; /* Heap property maintained */
-            else return this._performLeftRotation(currentNode); /* Perform rotation to maintain heap property */
-          }
-        }
-      }, {
-        key: "_performRightRotation",
-        value: function _performRightRotation(parentNode) {
-          var childNode = parentNode.leftChild;
-          if (null == childNode) return parentNode; /* No child to rotate with */
-          parentNode.leftChild = childNode.rightChild;
-          childNode.rightChild = parentNode;
-          return childNode; /* New root of the subtree */
-        }
-      }, {
-        key: "_performLeftRotation",
-        value: function _performLeftRotation(parentNode) {
-          var childNode = parentNode.rightChild;
-          if (null == childNode) return parentNode; /* No child to rotate with */
-          parentNode.rightChild = childNode.leftChild;
-          childNode.leftChild = parentNode;
-          return childNode; /* New root of the subtree */
-        }
-      }, {
-        key: "_recursiveErase",
-        value: function _recursiveErase(currentEraseNode, sortKey) {
-          if (null == currentEraseNode) return null; /* Key not found */
-
-          if (sortKey < currentEraseNode.key) {
-            currentEraseNode.leftChild = this._recursiveErase(currentEraseNode.leftChild, sortKey);
-            return currentEraseNode;
-          } else if (sortKey > currentEraseNode.key) {
-            currentEraseNode.rightChild = this._recursiveErase(currentEraseNode.rightChild, sortKey);
-            return currentEraseNode;
-          }
-
-          /* Node to be deleted found */
-          if (null == currentEraseNode.leftChild && null == currentEraseNode.rightChild) return null; /* Leaf node */
-
-          /* Handle cases with one or two children by rotating */
-          if ((currentEraseNode.leftChild ? currentEraseNode.leftChild.priority : -1) > (currentEraseNode.rightChild ? currentEraseNode.rightChild.priority : -1)) {
-            /* Left child has higher priority, rotate right */
-            var promotedParent = currentEraseNode.leftChild;
-            var promotedRightChild = promotedParent.rightChild;
-            currentEraseNode.leftChild = promotedRightChild;
-            promotedParent.rightChild = this._recursiveErase(currentEraseNode, sortKey);
-            if (promotedParent.rightChild && promotedParent.rightChild.priority > promotedParent.priority) return this._performLeftRotation(promotedParent);
-            else return promotedParent;
-          } else {
-            /* Right child has higher priority or no children, rotate left */
-            var altPromotedParent = currentEraseNode.rightChild;
-            var promotedLeftChild = altPromotedParent.leftChild;
-            currentEraseNode.rightChild = promotedLeftChild;
-            altPromotedParent.leftChild = this._recursiveErase(currentEraseNode, sortKey);
-            if (altPromotedParent.leftChild && altPromotedParent.leftChild.priority > altPromotedParent.priority) return this._performRightRotation(altPromotedParent);
-            else return altPromotedParent;
-          }
-        }
-      }, {
-        key: "_locateItem",
-        value: function _locateItem(itemValue) {
-          var currentSearchNode = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this.treeRoot;
-          if (null == currentSearchNode) return null; /* Item not found */
-          if (currentSearchNode.value === itemValue) return currentSearchNode; /* Item found */
-          if (itemValue < currentSearchNode.value) return this._locateItem(itemValue, currentSearchNode.leftChild);
-          else return this._locateItem(itemValue, currentSearchNode.rightChild);
-        }
-      }]);
-
-      return PrioritySearchTree;
-    }();
-
-  /* Main execution block for the problem solution */
   !function () {
-    /**
-     * Parses a string or array of strings into an array of integers.
-     * @param {string|Array<string>} inputString - The string or array of strings to parse.
-     * @returns {Array<number>} An array of parsed integers.
-     */
-    function parseNumbersFromString(inputString) {
-      return (Array.isArray(inputString) ? inputString : inputString.split(/\s+/)).map(function (numStr) {
-        return parseInt(numStr);
+    function parseNumbersFromString(inputLine) {
+      return (Array.isArray(inputLine) ? inputLine : inputLine.split(/\s+/)).map(function (numStr) {
+        return parseInt(numStr, 10);
       });
     }
 
-    /**
-     * Sorts an array of objects based on specified keys and their order.
-     * @param {Array<object>} dataArray - The array of objects to sort.
-     * @param {string|Array<string|Array>} sortKeys - Single key string or array of key strings/tuples [key, order].
-     * @returns {Array<object>} The sorted array.
-     */
     function sortArrayByKeys(dataArray, sortKeys) {
-      if (!Array.isArray(sortKeys)) sortKeys = [sortKeys]; /* Ensure sortKeys is an array */
-      return dataArray.sort(function (itemA, itemB) {
-        var iterCompletionStatus = true;
-        var iterErrorFlag = false;
-        var iterErrorMessage = undefined;
+      if (!Array.isArray(sortKeys)) sortKeys = [sortKeys];
+      return dataArray.sort(function (objA, objB) {
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
 
         try {
-          for (var keyIterator = sortKeys[Symbol.iterator](), currentKeyStep; !(iterCompletionStatus = (currentKeyStep = keyIterator.next()).done); iterCompletionStatus = true) {
-            var currentSortKey = currentKeyStep.value;
+          for (var _iterator = sortKeys[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var currentKeySpec = _step.value;
 
-            if ("string" == typeof currentSortKey) {
-              var diffValue = itemA[currentSortKey] - itemB[currentSortKey];
-              if (0 !== diffValue) return diffValue;
+            if ("string" == typeof currentKeySpec) {
+              var difference = objA[currentKeySpec] - objB[currentKeySpec];
+              if (0 !== difference) return difference;
             } else {
-              var altDiffValue = itemA[currentSortKey[0]] - itemB[currentSortKey[0]];
+              var _difference = objA[currentKeySpec[0]] - objB[currentKeySpec[0]];
 
-              var signMultiplier = "desc" === currentSortKey[1] ? -1 : "asc" === currentSortKey[1] ? 1 : Number(currentSortKey[1]);
-              if (0 !== altDiffValue) return altDiffValue * signMultiplier;
+              var sortDirectionMultiplier = "desc" === currentKeySpec[1] ? -1 : "asc" === currentKeySpec[1] ? 1 : Number(currentKeySpec[1]);
+              if (0 !== _difference) return _difference * sortDirectionMultiplier;
             }
           }
-        } catch (caughtException) {
-          iterErrorFlag = true;
-          iterErrorMessage = caughtException;
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
         } finally {
           try {
-            if (!iterCompletionStatus && keyIterator.return != null) {
-              keyIterator.return();
+            if (!_iteratorNormalCompletion && _iterator.return != null) {
+              _iterator.return();
             }
           } finally {
-            if (iterErrorFlag) {
-              throw iterErrorMessage;
+            if (_didIteratorError) {
+              throw _iteratorError;
             }
           }
         }
 
-        return 0; /* Items are equal based on all keys */
+        return 0;
       });
     }
 
-    /* Main processing logic for the input data */
-    !function (rawInputData) {
-      var inputLines = rawInputData.split("\n"); /* Split input into individual lines */
+    !function (fileContent) {
+      var contentLines = fileContent.split("\n");
 
-      var parsedCounts = parseNumbersFromString(inputLines[0]),
-        destructuredCounts = _destructureArray(parsedCounts, 2),
-        totalProjects = destructuredCounts[0],
-        numQueries = destructuredCounts[1];
+      var _parsedHeader = parseNumbersFromString(contentLines[0]),
+          _extractedHeader = _extractArrayElements(_parsedHeader, 2),
+          numProjects = _extractedHeader[0],
+          numQueries = _extractedHeader[1];
 
-      /* Process construction project data */
-      var constructionProjects = inputLines.slice(1, totalProjects + 1).map(function (projectLine, projectIndex) {
-        var projectData = parseNumbersFromString(projectLine),
-          destructuredProject = _destructureArray(projectData, 3),
-          startCoord = destructuredProject[0],
-          endCoord = destructuredProject[1],
-          offsetValue = destructuredProject[2];
+      var constructionProjects = contentLines.slice(1, numProjects + 1).map(function (projectLine, projectIndex) {
+        var _parsedProject = parseNumbersFromString(projectLine),
+            _extractedProject = _extractArrayElements(_parsedProject, 3),
+            startPos = _extractedProject[0],
+            endPos = _extractedProject[1],
+            xCoord = _extractedProject[2];
 
         return {
           idx: projectIndex,
-          start: startCoord,
-          end: endCoord,
-          offset: offsetValue,
-          effectiveStart: startCoord - offsetValue - .5, /* Adjusted start time */
-          effectiveEnd: endCoord - offsetValue - .6 /* Adjusted end time */
+          startPos: startPos,
+          endPos: endPos,
+          xCoord: xCoord,
+          beginTime: startPos - xCoord - 0.5,
+          finishTime: endPos - xCoord - 0.6
         };
       });
-
-      var queryLocations = parseNumbersFromString(inputLines.slice(totalProjects + 1)).slice(0, numQueries);
-      var timelineEvents = []; /* Collect all events (add/delete project offsets) */
-      var eventIterCompletion = true;
-      var eventIterErrorFlag = false;
-      var eventIterErrorMessage = undefined;
+      var queryTimes = parseNumbersFromString(contentLines.slice(numProjects + 1)).slice(0, numQueries);
+      var timelineEvents = [];
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
 
       try {
-        for (var projectIterator = constructionProjects[Symbol.iterator](), currentProjectStep; !(eventIterCompletion = (currentProjectStep = projectIterator.next()).done); eventIterCompletion = true) {
-          var projectDetails = currentProjectStep.value,
-            eventOffset = projectDetails.offset,
-            effectiveStart = projectDetails.effectiveStart,
-            effectiveEnd = projectDetails.effectiveEnd;
+        for (var _iterator2 = constructionProjects[Symbol.iterator](), eventStep; !(_iteratorNormalCompletion2 = (eventStep = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var currentProjectDetails = eventStep.value;
+          var xOffset = currentProjectDetails.xCoord;
+          var projectStartTime = currentProjectDetails.beginTime;
+          var projectEndTime = currentProjectDetails.finishTime;
           timelineEvents.push({
-            eventType: "add",
-            eventTime: effectiveStart,
-            eventXValue: eventOffset
+            kind: "add",
+            moment: projectStartTime,
+            xVal: xOffset
           }, {
-            eventType: "delete",
-            eventTime: effectiveEnd,
-            eventXValue: eventOffset
+            kind: "delete",
+            moment: projectEndTime,
+            xVal: xOffset
           });
         }
-      } catch (caughtError) {
-        eventIterErrorFlag = true;
-        eventIterErrorMessage = caughtError;
+      } catch (err) {
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
       } finally {
         try {
-          if (!eventIterCompletion && projectIterator.return != null) {
-            projectIterator.return();
+          if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+            _iterator2.return();
           }
         } finally {
-          if (eventIterErrorFlag) {
-            throw eventIterErrorMessage;
+          if (_didIteratorError2) {
+            throw _iteratorError2;
           }
         }
       }
 
-      var queryPointer = 0; /* Index for current query location */
-      sortArrayByKeys(timelineEvents, ["eventTime"]); /* Sort events by time */
-      var activeOffsetsTree = new PrioritySearchTree(); /* Treap to manage active offsets */
+      var queryIndex = 0;
+      sortArrayByKeys(timelineEvents, ["moment"]);
+      var activeXValues = new RandomizedBST();
 
-      /* Process timeline events and queries simultaneously */
-      for (var eventIndex = 0; eventIndex < timelineEvents.length; eventIndex++) {
-        var currentEventData = timelineEvents[eventIndex],
-          eventType = currentEventData.eventType,
-          eventTime = currentEventData.eventTime,
-          eventXValue = currentEventData.eventXValue;
+      for (var eventIterator = 0; eventIterator < timelineEvents.length; eventIterator++) {
+        var currentEventData = timelineEvents[eventIterator];
+        var eventKind = currentEventData.kind;
+        var eventMoment = currentEventData.moment;
+        var eventXValue = currentEventData.xVal;
 
-        /* Process all pending queries up to the current event time */
-        for (; queryPointer < queryLocations.length && eventTime > queryLocations[queryPointer];) {
-          var minAvailableOffset = activeOffsetsTree.findMin();
-
-          console.info(null == minAvailableOffset ? -1 : minAvailableOffset); /* Output the smallest offset or -1 */
-          queryPointer++;
+        for (; queryIndex < queryTimes.length && eventMoment > queryTimes[queryIndex];) {
+          var minXValue = activeXValues.getMinimum();
+          console.log(null == minXValue ? -1 : minXValue);
+          queryIndex++;
         }
 
-        /* Apply event: add or remove offset from the treap */
-        if ("add" === eventType) activeOffsetsTree.insert(eventXValue);
-        else if ("delete" === eventType) activeOffsetsTree.erase(eventXValue);
+        if ("add" === eventKind) activeXValues.addValue(eventXValue);else if ("delete" === eventKind) activeXValues.removeValue(eventXValue);
       }
 
-      /* Process any remaining queries after all events have been processed */
-      for (; queryPointer < queryLocations.length; queryPointer++) {
-        var finalMinOffset = activeOffsetsTree.findMin();
-        console.info(null == finalMinOffset ? -1 : finalMinOffset);
+      for (; queryIndex < queryTimes.length; queryIndex++) {
+        var finalMinXValue = activeXValues.getMinimum();
+        console.log(null == finalMinXValue ? -1 : finalMinXValue);
       }
-    }(fileSystemModule.readTextFileSync("/app/input.txt", "utf-8")); /* Read input from a file */
+    }(fileSystemModule.readFileSync("/dev/stdin", "utf8"));
   }();
-}(require("fs")); /* Require the Node.js file system module */
+}(require("fs"));

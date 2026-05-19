@@ -1,34 +1,30 @@
-function retrieveInputData() {
-  // This utility function is responsible for reading content from standard input.
-  const inputBuffer = require('node:fs').readTextFileSync('/proc/self/fd/0', 'utf-8');
-
-  // The input buffer is then separated into individual lines.
-  return inputBuffer.split(/\r?\n/);
+function getInputData() {
+    // This function reads content from standard input.
+    let fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+    // It then splits the content into an array of strings, using newline characters as delimiters.
+    return fileContent.split(/\n\r?/);
 }
 
-// First, fetch all the input data from the system's standard input.
-const processedInput = retrieveInputData();
+// Obtain all lines from the input source.
+let inputLines = getInputData();
 
-// The very first line of input is designated as the target word to search for.
-const searchQueryTerm = processedInput[0];
+// The very first line of input is designated as the word we are searching for.
+const targetWord = inputLines[0];
 
-// The remaining lines of input form the body of text where the search will occur.
-const contentSegments = processedInput.slice(1);
+// All subsequent lines form the body of text where the search will be conducted.
+let textLines = inputLines.slice(1);
 
-// Output the total occurrences of the target word within the text segments.
-console.log(
-  contentSegments.reduce(function (accumulator, currentTextLine) {
-    // Each text line is broken down into an array of individual words.
-    let wordsInLine = currentTextLine.split(' ');
+// Iterate through each line of the text body and count occurrences of the target word.
+console.log(textLines.reduce(function(totalCount, currentLine) {
+    // Break down the current line into an array of individual words.
+    currentLine = currentLine.split(' ');
 
-    // Loop continues as long as the search term is found within the current line's words.
-    while (wordsInLine.includes(searchQueryTerm)) {
-      // Increment the total count for each instance found.
-      accumulator += 1;
-      // Remove the found word from the array to prevent recounting it in subsequent iterations.
-      wordsInLine.splice(wordsInLine.indexOf(searchQueryTerm), 1);
+    // Continuously search for and count the target word within the current line's words.
+    while (currentLine.indexOf(targetWord) + 1) {
+        totalCount++; // Increment the counter for each found instance.
+        // Remove the found word to ensure that multiple occurrences at the same index are not missed
+        // if the word appears consecutively (e.g., "word word").
+        currentLine.splice(currentLine.indexOf(targetWord), 1);
     }
-    // Return the updated count for the next iteration.
-    return accumulator;
-  }, 0) // The initial value for the accumulator (total count) is zero.
-);
+    return totalCount; // Pass the updated count to the next iteration of the reducer.
+}, 0)); // Initialize the overall count of the target word to zero.

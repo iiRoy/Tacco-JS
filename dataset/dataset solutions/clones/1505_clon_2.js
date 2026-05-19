@@ -1,61 +1,42 @@
-const analyzePairSequences = (rawData) => {
-    // This function processes an input string to find a specific pattern.
+const processInput = (inputData) => {
+    // The first line of the input string represents the total number of entries.
+    let numEntries = inputData.split("\n")[0];
 
-    // Split the entire input string into an array of individual line strings.
-    let inputLines = rawData.split("\n");
+    // Subsequent lines contain the actual data, so we remove the first line.
+    inputData = inputData.split("\n").splice(1);
 
-    // The first line of the input contains the count of data entries.
-    // Convert this string value to an integer for numerical operations.
-    let totalDataRecords = parseInt(inputLines[0], 10);
+    // Extract the first component (before the space) from each data line.
+    let firstValues = inputData.map(currentLine => currentLine.split(" ")[0]);
 
-    // Create a new array containing only the data records, excluding the first line.
-    let dataRecords = inputLines.slice(1);
+    // Extract the second component (after the space) from each data line.
+    let secondValues = inputData.map(currentLine => currentLine.split(" ")[1]);
 
-    // Map through the data records to extract the first component (before the space) from each line.
-    let primaryElements = dataRecords.map(singleRecord => singleRecord.split(" ")[0]);
+    // Initialize a counter to track consecutive occurrences where firstValue equals secondValue.
+    let consecutiveMatches = 0;
 
-    // Map through the data records to extract the second component (after the space) from each line.
-    let secondaryElements = dataRecords.map(singleRecord => singleRecord.split(" ")[1]);
+    // A boolean flag to indicate if we have found at least three consecutive matches.
+    let foundTripleMatch = false;
 
-    // Initialize a counter to track consecutive identical pairs.
-    let consecutiveIdenticalCount = 0;
-
-    // Initialize a boolean flag to indicate if the target pattern (three or more consecutive identical pairs) is found.
-    let patternDetected = false;
-
-    // Loop through each data record, from the first to the last.
-    for (let recordIndex = 0; recordIndex < totalDataRecords; recordIndex++) {
-        // Compare the primary and secondary elements of the current record using strict equality.
-        if (primaryElements[recordIndex] === secondaryElements[recordIndex]) {
-            // If the elements are identical, increment the consecutive identical counter.
-            consecutiveIdenticalCount++;
-
-            // Check if the consecutive count has reached or exceeded the threshold of 3.
-            if (consecutiveIdenticalCount >= 3) {
-                // If the threshold is met, set the pattern detected flag to true.
-                patternDetected = true;
+    // Iterate through each entry based on the total number of entries.
+    for (let idx = 0; idx < numEntries; idx++) {
+        // Compare the current first value with the current second value.
+        if (firstValues[idx] === secondValues[idx]) {
+            // If they are identical, increment the consecutive match counter.
+            consecutiveMatches++;
+            // Check if the counter has reached or exceeded three.
+            if (consecutiveMatches >= 3) {
+                // If so, set the flag to true, indicating a triple match was found.
+                foundTripleMatch = true;
             }
         } else {
-            // If the elements are not identical, reset the consecutive identical counter.
-            consecutiveIdenticalCount = 0;
+            // If the values do not match, reset the consecutive match counter.
+            consecutiveMatches = 0;
         }
     }
 
-    // Output the result based on whether the pattern was detected.
-    console.log(patternDetected ? "Yes" : "No");
+    // Output "Yes" if a sequence of three or more identical pairs was found, otherwise "No".
+    console.log(foundTripleMatch ? "Yes" : "No");
 };
 
-// Acquire the 'require' function to load modules.
-const moduleLoader = require;
-
-// Load the Node.js 'fs' (file system) module.
-const fileSystemModule = moduleLoader("fs");
-
-// Alias the 'readFileSync' method from the file system module for direct use.
-const readSynchronousFile = fileSystemModule.readFileSync;
-
-// Read the content from standard input synchronously, using 'utf8' character encoding.
-const fileContents = readSynchronousFile("/dev/stdin", "utf8");
-
-// Execute the main analysis function with the content read from the input.
-analyzePairSequences(fileContents);
+// Read the entire content from standard input, assuming UTF-8 encoding, and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

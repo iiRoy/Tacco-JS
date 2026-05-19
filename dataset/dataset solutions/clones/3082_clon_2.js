@@ -1,46 +1,43 @@
-/*
- * This script serves as a primary processing unit for incoming data.
- * It is designed to analyze a sequence of characters and produce a binary outcome.
- */
-function ProcessInputData( rawInputText )
-{
-  // The raw input string is first segmented into individual lines.
-  rawInputText = rawInputText.split( '\n' );
+function processInputData(rawData) {
+    // This function takes raw input text and processes it to determine a specific outcome.
 
-  // The very first segment is interpreted as the total count of items.
-  let   totalElements = rawInputText[0] ;
+    // First, split the entire raw input string into an array of lines.
+    let parsedLines = rawData.split("\n");
 
-  // The second segment provides the actual sequence of characters for examination.
-  let characterSequence = rawInputText[1] ;
+    // The first line typically contains a numerical value, representing a count or limit.
+    const countElements = parsedLines[0];
+    // The second line is usually the main string data to be analyzed.
+    const inputString = parsedLines[1];
 
+    // Initialize two counters: one for 'R' occurrences and another for 'B' occurrences.
+    let redCount = 0;
+    let blueCount = 0;
 
-  let firstCounter  = 0x0 ;   // Initialize the tally for the initial category.
-  let secondCounter = 0x0 ;   // Initialize the tally for the secondary category.
-
-  // A loop iterates through each character in the provided sequence.
-  for ( let loopIndex = 0 ;  loopIndex < totalElements ; loopIndex++ )
-  {
-    // If the current character is 'R', increment the first counter.
-    if ( characterSequence[loopIndex] == 'R' )
-    {
-      firstCounter++ ;
+    // Iterate through the characters of the input string up to the specified element count.
+    for (let idx = 0; idx < countElements; idx++) {
+        // Check if the current character is 'R'.
+        if (inputString[idx] === "R") {
+            // If it is 'R', increment the red counter.
+            redCount++;
+        }
+        // Otherwise, assume it's 'B' (or any other character that should increment the blue counter).
+        else {
+            // Increment the blue counter.
+            blueCount++;
+        }
     }
-    // Otherwise, increment the second counter (assuming 'B').
-    else
-    {
-      secondCounter++ ;
-    }
-  }
 
-  // The final outcome is determined by comparing an undeclared variable against the second counter.
-  // This structural characteristic (referencing 'valueX' which is not defined) mirrors the original code's behavior.
-  let finalVerdict = ( valueX > secondCounter ) ? 'Affirmative' : 'Negative' ;
+    // Determine the final outcome based on a comparison.
+    // NOTE: The original code contains a potential typo here, referencing an undefined variable 'a'.
+    // To strictly adhere to Type II cloning rules and preserve exact observable behavior,
+    // this reference is maintained. If 'a' is not defined, this will result in a ReferenceError.
+    const finalOutcome = (a > blueCount) ? "Yes" : "No";
 
-
-  // The computed verdict is then displayed to the standard output.
-  console.log( '%v', finalVerdict ) ;
+    // Output the calculated outcome to the standard console.
+    console.log('%s', finalOutcome);
 }
 
-// The following code block is responsible for managing standard input/output operations.
-// It should remain unaltered to ensure proper execution within the given environment.
-ProcessInputData( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) ) ;
+// The following lines are responsible for reading input from standard input
+// and invoking the main processing function. These should remain unchanged
+// to ensure compatibility with the execution environment.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

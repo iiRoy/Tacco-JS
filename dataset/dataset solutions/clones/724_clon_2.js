@@ -1,31 +1,30 @@
-/* This script processes input text to validate balanced brackets. */
-var sourceContent = require('fs'). readFileSync('/dev/stdin',  'utf8' ) ;
-// The raw input is read from standard input.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var entryLines=( sourceContent. trim() ). split ( "\n" ) ;
-/* The incoming text is first trimmed of leading/trailing whitespace,
-   then divided into an array of individual lines. */
+// The raw input string is first trimmed of leading/trailing whitespace,
+// then split into an array of strings, with each element representing a line.
+var lineCollection = (rawData.trim()).split("\n");
 
-for ( var lineNum = 0 ;  lineNum < entryLines.length ; lineNum ++ )
-{
-   // Iterate through each line extracted from the input.
-   var workingSegment = entryLines[ lineNum ] ;
+// Iterate over each entry in the collection of lines.
+for (var idx = 0; idx < lineCollection.length; idx++) {
+    // Assign the current line from the array to a temporary variable for processing.
+    var currentLine = lineCollection[idx];
 
-   if ( workingSegment == "." ) // A single dot acts as a termination signal.
-   {
-      break ; // Exit the processing loop if the termination signal is found.
-   }
+    // If the current line is a single period, it signals the termination of input.
+    if (currentLine === ".") {
+        break; // Exit the loop immediately.
+    }
 
-   // Remove all alphabetic characters, periods, and whitespace from the segment.
-   workingSegment = workingSegment.replace( /[a-zA-Z]|\.|\s/g , "" ) ;
+    // Remove all alphabetic characters (both uppercase and lowercase),
+    // literal periods, and any whitespace characters from the string.
+    currentLine = currentLine.replace(/[a-zA-Z]|\.|\s/g, "");
 
-   /* Continuously remove '[]' and '()' pairs until no more are found.
-      This effectively simplifies the bracket sequence. */
-   while ( workingSegment.match( /\[\]|\(\)/ ) )
-   {
-      workingSegment = workingSegment.replace( /\[\]|\(\)/g , "" ) ;
-   }
+    // Repeatedly remove all occurrences of empty square brackets "[]"
+    // or empty parentheses "()" from the string until no more are found.
+    while (currentLine.match(/\[\]|\(\)/)) {
+        currentLine = currentLine.replace(/\[\]|\(\)/g, "");
+    }
 
-   // After reduction, if the segment is empty, brackets were balanced; otherwise, they were not.
-   console.log( ( workingSegment == "" ) ? "yes" : "no" ) ;
+    // After all processing, if the string is empty, it means all brackets were balanced.
+    // Otherwise, they were not. Print "yes" or "no" accordingly.
+    console.log((currentLine === "") ? "yes" : "no");
 }

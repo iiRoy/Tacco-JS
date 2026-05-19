@@ -1,123 +1,111 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-const operationEntries = dataSource.split('\n');
-
-operationEntries.shift();
-
-class ItemLink {
-    constructor(content) {
-        this.content = content;
-        this.nextItem = null;
-        this.previousItem = null;
+class ElementNode {
+    constructor(val) {
+        this.val = val;
+        this.prev = null;
+        this.next = null;
     }
 }
 
-class ManagedSequence {
+class ManagedDeque {
     constructor() {
-        this.firstItem = null;
-        this.lastItem = null;
+        this.head = null;
+        this.tail = null;
         this.count = 0;
     }
 
-    addFront(payload) {
-        const newItem = new ItemLink(payload);
-        if (!this.firstItem) {
-            this.firstItem = newItem;
-            this.lastItem = newItem;
+    addFront(value) {
+        const freshNode = new ElementNode(value);
+        if (!this.head) {
+            this.head = freshNode;
+            this.tail = freshNode;
         } else {
-            newItem.nextItem = this.firstItem;
-            this.firstItem.previousItem = newItem;
-            this.firstItem = newItem;
+            freshNode.next = this.head;
+            this.head.prev = freshNode;
+            this.head = freshNode;
         }
         this.count++;
     }
 
-    removeExact(payload) {
-        if (!this.firstItem) return false;
-
-        let currentPointer = this.firstItem;
+    removeSpecific(value) {
+        let currentPointer = this.head;
         while (currentPointer) {
-            if (currentPointer.content === payload) {
-                if (currentPointer === this.firstItem) {
-                    this.firstItem = currentPointer.nextItem;
-                    if (this.firstItem) {
-                        this.firstItem.previousItem = null;
-                    } else {
-                        this.lastItem = null;
-                    }
-                } else if (currentPointer === this.lastItem) {
-                    this.lastItem = currentPointer.previousItem;
-                    this.lastItem.nextItem = null;
+            if (currentPointer.val === value) {
+                if (currentPointer.prev) {
+                    currentPointer.prev.next = currentPointer.next;
                 } else {
-                    currentPointer.previousItem.nextItem = currentPointer.nextItem;
-                    currentPointer.nextItem.previousItem = currentPointer.previousItem;
+                    this.head = currentPointer.next;
+                }
+
+                if (currentPointer.next) {
+                    currentPointer.next.prev = currentPointer.prev;
+                } else {
+                    this.tail = currentPointer.prev;
                 }
                 this.count--;
                 return true;
             }
-            currentPointer = currentPointer.nextItem;
+            currentPointer = currentPointer.next;
         }
         return false;
     }
 
-    extractFirst() {
-        if (!this.firstItem) return null;
-        const removedContent = this.firstItem.content;
-        this.firstItem = this.firstItem.nextItem;
-        if (this.firstItem) {
-            this.firstItem.previousItem = null;
+    removeHead() {
+        if (!this.head) return undefined;
+        const removedValue = this.head.val;
+        this.head = this.head.next;
+        if (this.head) {
+            this.head.prev = null;
         } else {
-            this.lastItem = null;
+            this.tail = null;
         }
         this.count--;
-        return removedContent;
+        return removedValue;
     }
 
-    extractLast() {
-        if (!this.lastItem) return null;
-        const removedContent = this.lastItem.content;
-        if (this.firstItem === this.lastItem) {
-            this.firstItem = null;
-            this.lastItem = null;
+    removeTail() {
+        if (!this.tail) return undefined;
+        const removedValue = this.tail.val;
+        this.tail = this.tail.prev;
+        if (this.tail) {
+            this.tail.next = null;
         } else {
-            this.lastItem = this.lastItem.previousItem;
-            this.lastItem.nextItem = null;
+            this.head = null;
         }
         this.count--;
-        return removedContent;
+        return removedValue;
     }
 
-    retrieveAllContents() {
-        const elements = [];
-        let currentPointer = this.firstItem;
-        while (currentPointer) {
-            elements.push(currentPointer.content);
-            currentPointer = currentPointer.nextItem;
+    retrieveAllValues() {
+        const collection = [];
+        let current = this.head;
+        while (current) {
+            collection.push(current.val);
+            current = current.next;
         }
-        return elements;
+        return collection;
     }
 }
 
-const managedCollection = new ManagedSequence();
+var fileSystem = require('fs');
+var rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+var instructionLines = rawInput.split('\n');
 
-for (const currentInstruction of operationEntries) {
-    const instructionParts = currentInstruction.split(' ');
-    const command = instructionParts[0];
-    const operand = instructionParts[1];
+instructionLines.shift();
 
-    switch (command) {
-        case 'insert':
-            managedCollection.addFront(operand);
-            break;
-        case 'delete':
-            managedCollection.removeExact(operand);
-            break;
-        case 'deleteFirst':
-            managedCollection.extractFirst();
-            break;
-        case 'deleteLast':
-            managedCollection.extractLast();
-            break;
+var activeDeque = new ManagedDeque();
+
+instructionLines.forEach(function(currentInstruction) {
+    var instructionParts = currentInstruction.split(' ');
+
+    if (instructionParts[0] === 'insert') {
+        activeDeque.addFront(instructionParts[1]);
+    } else if (instructionParts[0] === 'delete') {
+        activeDeque.removeSpecific(instructionParts[1]);
+    } else if (instructionParts[0] === 'deleteFirst') {
+        activeDeque.removeHead();
+    } else if (instructionParts[0] === 'deleteLast') {
+        activeDeque.removeTail();
     }
-}
+});
 
-console.log(managedCollection.retrieveAllContents().join(' '));
+console.log(activeDeque.retrieveAllValues().join(' '));

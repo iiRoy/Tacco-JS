@@ -1,81 +1,73 @@
-let dataValues; // This array stores the numerical values for processing.
-let intervalCache; // This 2D array serves as a memoization table for subproblem solutions.
+function ProcessInput(rawData) {
+  // Clean up the raw input string and parse it into a structured array.
+  // Each line is split by space, then the whole input is split by newline.
+  rawData = rawData.trim().split("\n").map(function(linePart) {
+    return linePart.split(" ");
+  });
 
-// The primary entry point for the application, handling input parsing and initial setup.
-function ApplicationEntry ( programInput ) {
+  // Extract the total number of elements from the first line, first item.
+  let countElements = parseInt(rawData[0][0], 10);
 
-    // First, process the raw text input.
-    // It's trimmed, then split into individual lines, and each line is further split by spaces.
-    const parsedData = programInput
-        .trim()
-        .split("\n")
-        .map( function ( lineSegment ) {
-            return lineSegment.split(" ")
-        } )
-    ; // End of input parsing chain.
+  // Parse the second line of input into an array of integers.
+  // This array 'valueArray' will be used globally by the recursive function.
+  valueArray = rawData[1].map(elementStr => parseInt(elementStr, 10));
 
-    // Extract the total count of items from the first part of the input data.
-    const totalItems = parseInt( parsedData[0][0], 10 ) ;
+  // Initialize a 2D array (memoization table) for dynamic programming.
+  // It's sized N x N, with each inner array initially empty.
+  memoTable = Array.from({
+    length: countElements
+  }, () => []);
 
-    // Convert the second line of input into an array of integers.
-    // This 'dataValues' array is intended to be accessible globally for the recursive function.
-    dataValues = parsedData[1]
-        .map( itemText => parseInt( itemText, 10 ) )
-    ;
-
-    // Initialize the memoization table with a size corresponding to the total number of items.
-    // Each inner array starts empty, ready to store computed range results.
-    intervalCache = Array.from( { length: totalItems }, () => [] ) ;
-
-    // Finally, invoke the core dynamic programming function to find the optimal result
-    // for the entire range, and display this result to the console.
-    console.log( DetermineOptimal( 0, totalItems - 1 ) ) ;
+  // Call the main recursive function with the full range and print its result.
+  console.log(CalculateOptimalValue(0, countElements - 1));
 }
 
+// Global variables for the array of values and the memoization table.
+// These are accessed by the recursive function.
+let valueArray;
+let memoTable;
 
-// This recursive function, enhanced with memoization, calculates the optimal value
-// for a specified range [startPos, finish].
-// It relies on the globally defined 'dataValues' and 'intervalCache' structures.
-function DetermineOptimal ( startPos, finish ) {
+/**
+ * Recursively calculates the optimal value for a given sub-interval [startIndex, endIndex].
+ * This function uses dynamic programming with memoization to avoid redundant calculations.
+ *
+ * @param {number} startIndex - The starting index of the current sub-interval.
+ * @param {number} endIndex - The ending index of the current sub-interval.
+ * @returns {number} The calculated optimal value for the sub-interval.
+ */
+function CalculateOptimalValue(startIndex, endIndex) {
+  // Check if the result for this sub-interval is already memoized.
+  if (memoTable[startIndex][endIndex] != null) {
+    return memoTable[startIndex][endIndex];
+  }
 
-    // Check if the solution for the current range [startPos, finish] has already been computed
-    // and stored in the memoization table. If so, return the cached value directly.
-    if ( intervalCache[startPos][finish] != null ) {
-        return intervalCache[startPos][finish] ;
-    }
+  // Base case: If the interval contains exactly two elements.
+  if (endIndex === startIndex + 1) {
+    memoTable[startIndex][endIndex] = Math.abs(valueArray[startIndex] - valueArray[endIndex]);
+    return memoTable[startIndex][endIndex];
+  }
 
-    // Base Case 1: If the range consists of exactly two elements (e.g., [x, y]).
-    // The result is the absolute difference between these two elements.
-    if ( finish === startPos + 1 ) {
-        intervalCache[startPos][finish] = Math.abs( dataValues[startPos] - dataValues[finish] ) ;
-        return intervalCache[startPos][finish] ;
-    }
+  // Base case: If the interval contains a single element.
+  if (endIndex === startIndex) {
+    memoTable[startIndex][endIndex] = valueArray[startIndex];
+    return memoTable[startIndex][endIndex];
+  }
 
-    // Base Case 2: If the range consists of a single element (e.g., [x, x]).
-    // The result is simply the value of that element.
-    if ( finish === startPos ) {
-        intervalCache[startPos][finish] = dataValues[startPos] ;
-        return intervalCache[startPos][finish] ;
-    }
+  // Recursive step: Consider two options for the current player.
+  // Option A: Player picks the element at startIndex.
+  // The opponent then plays on the remaining interval [startIndex + 1, endIndex].
+  let optionA = valueArray[startIndex] - CalculateOptimalValue(startIndex + 1, endIndex);
 
-    // Recursive Step: Explore two possible paths to derive the optimal solution for the current range.
+  // Option B: Player picks the element at endIndex.
+  // The opponent then plays on the remaining interval [startIndex, endIndex - 1].
+  let optionB = valueArray[endIndex] - CalculateOptimalValue(startIndex, endIndex - 1);
 
-    // Path 1: Consider taking the element at 'startPos' and subtracting the optimal result
-    // from the remaining sub-range (excluding 'startPos').
-    const choiceOne = dataValues[startPos] - DetermineOptimal( startPos + 1, finish ) ;
+  // The current player chooses the option that maximizes their score.
+  memoTable[startIndex][endIndex] = Math.max(optionA, optionB);
 
-    // Path 2: Consider taking the element at 'finish' and subtracting the optimal result
-    // from the remaining sub-range (excluding 'finish').
-    const choiceTwo = dataValues[finish] - DetermineOptimal( startPos, finish - 1 ) ;
-
-    // Store the maximum value obtained from the two choices in the memoization table
-    // for the current range [startPos, finish].
-    intervalCache[startPos][finish] = Math.max( choiceOne, choiceTwo ) ;
-
-    // Return the newly computed optimal value for this range.
-    return intervalCache[startPos][finish] ;
+  // Return the memoized result.
+  return memoTable[startIndex][endIndex];
 }
 
-// Initiate the application by calling the main entry function.
-// It reads input from standard input, typically used in competitive programming environments.
-ApplicationEntry( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

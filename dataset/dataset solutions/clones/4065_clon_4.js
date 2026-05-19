@@ -1,20 +1,20 @@
-const processInputAndDetermineParity = (rawText) => {
-    const numberMatches = rawText.match(/(-?\d+)\s+(-?\d+)/);
+function processInputData(rawDataString) {
+    const numericComponents = rawDataString.split(' ').map(Number);
+    const firstOperand = numericComponents[0];
+    const secondOperand = numericComponents[1];
 
-    const firstOperand = Number(numberMatches[1]);
-    const secondOperand = Number(numberMatches[2]);
-
-    const isFirstOdd = firstOperand & 1;
-    const isSecondOdd = secondOperand & 1;
+    const firstParity = firstOperand % 2;
+    const secondParity = secondOperand % 2;
 
     const outcomeMap = {
-        0: "Even",
-        1: "Odd"
+        '00': 'Even',
+        '01': 'Even',
+        '10': 'Even',
+        '11': 'Odd'
     };
 
-    return outcomeMap[isFirstOdd & isSecondOdd];
-};
+    const key = String(firstParity) + String(secondParity);
+    console.log(outcomeMap[key]);
+}
 
-const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
-const finalResult = processInputAndDetermineParity(rawData);
-console.log(finalResult);
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

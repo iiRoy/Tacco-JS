@@ -1,63 +1,64 @@
-const sourceTextLines = require('node:fs').readFileSync(process.stdin.fd, 'utf-8').split(/\r?\n/);
+let comparisonTally = 0;
 
-const { sortedValues, finalOperationCount } = (() => {
-    let mergeComparisons = 0;
+const combineSegments = (targetArray, segmentStart, segmentMiddle, segmentEnd) => {
+    const tempMerged = new Array(segmentEnd - segmentStart);
+    let leftPointer = segmentStart;
+    let rightPointer = segmentMiddle;
+    let tempIndex = 0;
 
-    const stitchArrays = (firstArr, secondArr) => {
-        const mergedResult = [];
-        let ptr1 = 0;
-        let ptr2 = 0;
-
-        while (ptr1 < firstArr.length && ptr2 < secondArr.length) {
-            mergeComparisons++;
-            if (firstArr[ptr1] <= secondArr[ptr2]) {
-                mergedResult.push(firstArr[ptr1]);
-                ptr1++;
-            } else {
-                mergedResult.push(secondArr[ptr2]);
-                ptr2++;
-            }
+    while (leftPointer < segmentMiddle && rightPointer < segmentEnd) {
+        comparisonTally++;
+        if (targetArray[leftPointer] <= targetArray[rightPointer]) {
+            tempMerged[tempIndex] = targetArray[leftPointer];
+            leftPointer++;
+        } else {
+            tempMerged[tempIndex] = targetArray[rightPointer];
+            rightPointer++;
         }
+        tempIndex++;
+    }
 
-        while (ptr1 < firstArr.length) {
-            mergeComparisons++;
-            mergedResult.push(firstArr[ptr1]);
-            ptr1++;
+    while (leftPointer < segmentMiddle) {
+        tempMerged[tempIndex] = targetArray[leftPointer];
+        leftPointer++;
+        tempIndex++;
+        comparisonTally++;
+    }
+
+    while (rightPointer < segmentEnd) {
+        tempMerged[tempIndex] = targetArray[rightPointer];
+        rightPointer++;
+        tempIndex++;
+        comparisonTally++;
+    }
+
+    for (let i = 0; i < tempMerged.length; i++) {
+        targetArray[segmentStart + i] = tempMerged[i];
+    }
+};
+
+const sortSequence = (inputArray) => {
+    const totalLength = inputArray.length;
+    let currentBlockSize = 1;
+
+    while (currentBlockSize < totalLength) {
+        let currentLeftBoundary = 0;
+        while (currentLeftBoundary < totalLength - currentBlockSize) {
+            const currentMiddleBoundary = currentLeftBoundary + currentBlockSize;
+            const currentRightBoundary = Math.min(currentLeftBoundary + 2 * currentBlockSize, totalLength);
+
+            combineSegments(inputArray, currentLeftBoundary, currentMiddleBoundary, currentRightBoundary);
+
+            currentLeftBoundary += 2 * currentBlockSize;
         }
+        currentBlockSize *= 2;
+    }
+};
 
-        while (ptr2 < secondArr.length) {
-            mergeComparisons++;
-            mergedResult.push(secondArr[ptr2]);
-            ptr2++;
-        }
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n');
+const numericValues = inputLines[1].split(' ').map(Number);
 
-        return mergedResult;
-    };
+sortSequence(numericValues);
 
-    const orchestrateSort = (currentArray) => {
-        if (currentArray.length <= 1) {
-            return currentArray;
-        }
-
-        const divisionPoint = ~~ (currentArray.length / 2);
-        const segmentOne = currentArray.slice(0, divisionPoint);
-        const segmentTwo = currentArray.slice(divisionPoint);
-
-        const sortedSegmentOne = orchestrateSort(segmentOne);
-        const sortedSegmentTwo = orchestrateSort(segmentTwo);
-
-        return stitchArrays(sortedSegmentOne, sortedSegmentTwo);
-    };
-
-    const numericalSequence = sourceTextLines[1].split(' ').map(val => parseFloat(val));
-
-    const finalSequence = orchestrateSort(numericalSequence);
-
-    return {
-        sortedValues: finalSequence,
-        finalOperationCount: mergeComparisons
-    };
-})();
-
-process.stdout.write(sortedValues.join(' ') + '\n');
-process.stdout.write(finalOperationCount + '\n');
+console.log(numericValues.join(' '));
+console.log(comparisonTally);

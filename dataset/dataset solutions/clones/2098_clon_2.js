@@ -1,24 +1,21 @@
-function CalculateFinalValue(sourceData) {
-  // Enforce strict mode for cleaner code practices
-  'use strict' ;
-  /* Process the raw input string:
-   * 1. Remove leading/trailing whitespace.
-   * 2. Split into an array by spaces.
-   * 3. Convert each part to an integer.
-   */
-  const numericComponents= sourceData . trim ( ) . split ( ' ' ) . map ( ( val ) => parseInt ( val ) ) ;
+function ProcessInput(rawData) {
+  'use strict';
+  // Parse the input string: trim whitespace, split by spaces, and convert each part to an integer.
+  const parsedNumbers = rawData.trim().split(' ').map(numStr => parseInt(numStr, 10));
 
-  // Calculate the number of full cycles
-  const totalCycles = Math . floor ( numericComponents [ 0 ] / ( numericComponents [ 1 ] + numericComponents [ 2 ] ) ) ;
+  // Calculate the integer quotient of the first number divided by the sum of the second and third.
+  const quotient = Math.floor(parsedNumbers[0] / (parsedNumbers[1] + parsedNumbers[2]));
 
-  // Determine the remaining portion after full cycles
-  const remainingPart = numericComponents [ 0 ] % ( numericComponents [ 1 ] + numericComponents [ 2 ] ) ;
+  // Determine the remainder of the division.
+  const remainder = parsedNumbers[0] % (parsedNumbers[1] + parsedNumbers[2]);
 
-  // Compute a conditional intermediate result
-  const conditionalPart = ( numericComponents [ 1 ] < remainingPart ) ? numericComponents [ 1 ] : remainingPart ;
+  // Compute an intermediate value based on a conditional check.
+  // If the second number is less than the remainder, use the second number; otherwise, use the remainder.
+  const intermediateValue = (parsedNumbers[1] < remainder) ? parsedNumbers[1] : remainder;
 
-  // Output the final calculated sum
-  console . log ( totalCycles * numericComponents [ 1 ] + conditionalPart ) ;
+  // Output the final computed result to the console.
+  console.log(quotient * parsedNumbers[1] + intermediateValue);
 }
-// Execute the primary function with data read from standard input
-CalculateFinalValue ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+
+// Read the entire content from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,29 +1,28 @@
-const processGraphData = (dataSource) => {
-  const dataFragments = dataSource.split(' ');
-  const maxNodeIdentifier = Number(dataFragments[0]);
-  const primaryWaypoint = Number(dataFragments[1]);
-  const secondaryWaypoint = Number(dataFragments[2]);
+function processInput(rawData) {
+    const parsedValues = rawData.split(' ');
+    const totalNodes = Number(parsedValues[0]);
+    const specialNodeX = Number(parsedValues[1]);
+    const specialNodeY = Number(parsedValues[2]);
 
-  const determineTraversalCost = (origin, destination) => {
-    const directJourney = destination - origin;
-    const specialRoute = Math.abs(primaryWaypoint - origin) + Math.abs(secondaryWaypoint - destination) + 1;
-    return Math.min(directJourney, specialRoute);
-  };
-
-  const costDistribution = Array(maxNodeIdentifier).fill(0);
-
-  for (let originNode = 1; originNode < maxNodeIdentifier; originNode++) {
-    for (let destinationNode = originNode + 1; destinationNode <= maxNodeIdentifier; destinationNode++) {
-      const currentTraversalCost = determineTraversalCost(originNode, destinationNode);
-      if (currentTraversalCost >= 1 && currentTraversalCost < maxNodeIdentifier) {
-        costDistribution[currentTraversalCost]++;
-      }
+    function measurePath(startNode, endNode) {
+        return Math.min(
+            endNode - startNode,
+            Math.abs(specialNodeX - startNode) + Math.abs(specialNodeY - endNode) + 1
+        );
     }
-  }
 
-  for (let currentCost = 1; currentCost < maxNodeIdentifier; currentCost++) {
-    console.log(costDistribution[currentCost]);
-  }
-};
+    const tallyOfDistances = new Array(totalNodes).fill(0);
 
-processGraphData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    for (let nodeA = 1; nodeA < totalNodes; nodeA++) {
+        for (let nodeB = nodeA + 1; nodeB <= totalNodes; nodeB++) {
+            const computedSpan = measurePath(nodeA, nodeB);
+            tallyOfDistances[computedSpan]++;
+        }
+    }
+
+    for (let spanValue = 1; spanValue < totalNodes; spanValue++) {
+        console.log(tallyOfDistances[spanValue]);
+    }
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

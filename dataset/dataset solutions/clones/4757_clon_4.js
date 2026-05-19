@@ -1,18 +1,28 @@
 'use strict';
 
-const processSequence = (dataStream) => {
-    const sourceChars = dataStream.split('');
-    const quantity = Number.parseInt(sourceChars[0], 10);
-    const actionElements = sourceChars.slice(2, 2 + quantity);
+const processInputData = (rawData) => {
+  const operationCount = Number(rawData[0]);
+  const operationSequence = rawData.slice(2, 2 + operationCount);
+  const operationCharacters = operationSequence.split('');
 
-    const resultingState = actionElements.reduce((accumulator, instruction) => {
-        const change = (instruction === 'I') ? 1 : -1;
-        const newBalance = accumulator.currentBalance + change;
-        const newPeak = Math.max(accumulator.peakBalance, newBalance);
-        return { currentBalance: newBalance, peakBalance: newPeak };
-    }, { currentBalance: 0, peakBalance: 0 });
+  const initialLevelState = { currentLevel: 0, peakLevel: 0 };
 
-    console.log(resultingState.peakBalance);
+  const levelTracker = (accumulator, char) => {
+    const nextLevel = accumulator.currentLevel + (char === 'I' ? 1 : -1);
+    return {
+      currentLevel: nextLevel,
+      peakLevel: Math.max(accumulator.peakLevel, nextLevel)
+    };
+  };
+
+  const finalLevelState = operationCharacters.reduce(levelTracker, initialLevelState);
+
+  return finalLevelState.peakLevel;
 };
 
-processSequence(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+const executeProgram = (inputSource) => {
+  const resultValue = processInputData(inputSource);
+  console.log(resultValue);
+};
+
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

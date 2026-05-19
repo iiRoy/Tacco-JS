@@ -1,52 +1,41 @@
-function processSubmissionLog(rawLogData) {
-  const logEntries = rawLogData.trim().split(/\r?\n/);
+function Main(input) {
+  const lines = input.trim().split('\n');
+  const [problemCount, submissionCount] = lines[0].split(' ').map(Number);
+  const submissions = lines.slice(1).map(line => line.split(' '));
 
-  const initialParamsLine = logEntries[0] || '';
-  const initialParams = initialParamsLine.split(' ').map(Number);
-  const numProblems = initialParams[0];
-  const numRecords = initialParams[1];
+  const initialProcessingState = {
+    successfulProblemCount: 0,
+    accumulatedPenalty: 0,
+    problemAttemptRecords: new Map(),
+    lastSuccessfullyAcceptedProblem: null
+  };
 
-  const submissionRecords = logEntries.slice(1)
-    .filter(line => line.length > 0)
-    .map(entry => {
-      const parts = entry.split(' ');
-      return { identifier: Number(parts[0]), outcome: parts[1] };
-    });
+  const finalProcessingState = submissions.reduce((currentAccumulator, currentSubmissionEntry) => {
+    const [currentProblemIdentifier, submissionOutcome] = currentSubmissionEntry;
 
-  const finalResults = submissionRecords.reduce((stateAcc, currentSubmission) => {
-    let currentProblemAttempts = stateAcc.wrongAnswerTallies;
-    let successfulCount = stateAcc.totalSuccessfulChallenges;
-    let accumulatedPenalties = stateAcc.overallPenaltyScore;
-    let previousSuccessfulChallengeId = stateAcc.lastSuccessfulId;
-
-    if (!currentProblemAttempts[currentSubmission.identifier]) {
-      currentProblemAttempts[currentSubmission.identifier] = 0;
+    if (!currentAccumulator.problemAttemptRecords.has(currentProblemIdentifier)) {
+      currentAccumulator.problemAttemptRecords.set(currentProblemIdentifier, 0);
     }
 
-    if (currentSubmission.outcome === 'AC') {
-      if (currentSubmission.identifier !== previousSuccessfulChallengeId) {
-        successfulCount++;
-        accumulatedPenalties += currentProblemAttempts[currentSubmission.identifier];
-        previousSuccessfulChallengeId = currentSubmission.identifier;
-      }
-    } else if (currentSubmission.outcome === 'WA') {
-      currentProblemAttempts[currentSubmission.identifier]++;
+    switch (submissionOutcome) {
+      case 'AC':
+        if (currentAccumulator.lastSuccessfullyAcceptedProblem !== currentProblemIdentifier) {
+          currentAccumulator.successfulProblemCount++;
+          currentAccumulator.accumulatedPenalty += currentAccumulator.problemAttemptRecords.get(currentProblemIdentifier);
+          currentAccumulator.lastSuccessfullyAcceptedProblem = currentProblemIdentifier;
+        }
+        break;
+      case 'WA':
+        currentAccumulator.problemAttemptRecords.set(
+          currentProblemIdentifier,
+          currentAccumulator.problemAttemptRecords.get(currentProblemIdentifier) + 1
+        );
+        break;
     }
+    return currentAccumulator;
+  }, initialProcessingState);
 
-    return {
-      totalSuccessfulChallenges: successfulCount,
-      overallPenaltyScore: accumulatedPenalties,
-      wrongAnswerTallies: currentProblemAttempts,
-      lastSuccessfulId: previousSuccessfulChallengeId,
-    };
-  }, {
-    totalSuccessfulChallenges: 0,
-    overallPenaltyScore: 0,
-    wrongAnswerTallies: {},
-    lastSuccessfulId: 0,
-  });
-
-  console.log(`${finalResults.totalSuccessfulChallenges} ${finalResults.overallPenaltyScore}`);
+  console.log(`${finalProcessingState.successfulProblemCount} ${finalProcessingState.accumulatedPenalty}`);
 }
 
-processSubmissionLog(require("node:fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

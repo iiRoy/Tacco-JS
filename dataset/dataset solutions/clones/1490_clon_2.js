@@ -1,48 +1,50 @@
-(async function executeOperations() {
+(async () => {
+    // Initialize a string to accumulate all standard input data.
     let rawData = '';
-
-    // Asynchronously gather all incoming data segments from standard input
-    for await (const dataSegment of process.stdin) {
-        rawData += dataSegment;
+    // Asynchronously read data chunks from standard input until EOF.
+    for await (const dataPiece of process.stdin) {
+        rawData += dataPiece;
     }
 
-    // Process the accumulated data, splitting it into individual lines
-    const textRows = rawData.split(/\n/);
+    // Split the accumulated raw data into an array of lines.
+    const inputRows = rawData.split(/\n/);
 
-    // Extract the primary configuration values: the size of the sequence and the number of commands
-    const [arraySize, operationCount] = textRows[0].split(/\s/).map(valString => +valString);
+    // Parse the first line to extract the array size and the number of operations.
+    const [arraySize, numQueries] = inputRows[0].split(/\s/).map(valStr => +valStr);
 
-    // Parse all subsequent lines to form a list of command specifications
-    const commandList = textRows.slice(1, operationCount + 1).map(currRow => currRow.split(/\s/).map(valString => +valString));
+    // Parse the subsequent lines to create a list of operations.
+    const operationList = inputRows.slice(1, numQueries + 1).map(opRow =>
+        opRow.split(/\s/).map(valStr => +valStr)
+    );
 
-    // Initialize the main numeric sequence with '1's, sized according to 'arraySize'
-    let numericSequence = new Array(arraySize).fill(1);
+    // Initialize the primary array with '1's, based on the determined size.
+    let targetArray = new Array(arraySize).fill(1);
 
-    // Define the modulo constant for all numeric operations
-    const divisorValue = 998244353;
+    // Define the modulo constant used for calculations to prevent overflow.
+    const moduloVal = 998244353;
 
-    // This helper function computes the numeric value represented by 'numericSequence'
-    // and outputs it to the console, applying the 'divisorValue' modulo.
+    // Define a function to compute and output the current number represented by the array.
     const displayResult = () => {
-        let currentNumber = 0; // Accumulator for the calculated number
-        for (let idx = 0; idx < arraySize; ++idx) { // Iterate through each element
-            currentNumber = (currentNumber * 10 + numericSequence[idx]) % divisorValue; // Build number and apply modulo
+        let currentNumber = 0; // Accumulator for the number being formed.
+        // Iterate through the target array, building the number digit by digit.
+        for (let idx = 0; idx < arraySize; idx++) {
+            currentNumber = (currentNumber * 10 + targetArray[idx]) % moduloVal;
         }
-        console.log(currentNumber); // Present the final result
+        // Print the final calculated number to the console.
+        console.log(currentNumber);
     };
 
-    // Iterate through each command in the prepared list
-    for (const currentCommand of commandList) {
-        // Deconstruct the command into its respective bounds and the digit to apply,
-        // adjusting the bounds for zero-based indexing
-        const [leftBound, rightBound, digitToSet] = [currentCommand[0] - 1, currentCommand[1] - 1, currentCommand[2]];
+    // Process each operation in the list of operations.
+    for (const currentOp of operationList) {
+        // Destructure the current operation into its components: left index, right index, and digit value.
+        const [leftBound, rightBound, digitValue] = [currentOp[0] - 1, currentOp[1] - 1, currentOp[2]];
 
-        // Apply the specified digit replacement across the defined range within the sequence
-        for (let idx = leftBound; idx <= rightBound; ++idx) {
-            numericSequence[idx] = digitToSet; // Update the sequence element
+        // Apply the digit value to the specified range within the target array.
+        for (let arrIdx = leftBound; arrIdx <= rightBound; arrIdx++) {
+            targetArray[arrIdx] = digitValue;
         }
-
-        // After each command execution, re-evaluate and display the sequence's numeric value
+        // After modifying the array, call the function to display the new result.
         displayResult();
     }
+
 })();

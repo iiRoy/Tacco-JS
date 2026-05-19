@@ -1,107 +1,60 @@
-const fileSystemUtility = require('fs');
+var fileSystemModule = require('fs');
 
-/**
- * Reads the primary input string from standard input.
- * If stdin is interactive (TTY), it will provide a default string.
- * @returns {string} The first non-empty line of the input, or an empty string.
- */
-function obtainPrimaryInputString() {
-    let rawInputContent;
-    if (process.stdin.isTTY) {
-        console.warn("Notice: Standard input is interactive. Using a default string for processing: 'Hello, World!'");
-        rawInputContent = "Hello, World!";
+var rawInputContent = fileSystemModule.readFileSync(process.stdin.fd, 'utf8');
+var linesOfInput = rawInputContent.split('\n');
+
+processInputData();
+
+function generateRepeatedString(characterToRepeat, repeatCount) {
+  let segmentBuilder = '';
+  for (let k = 0; k < repeatCount; k++) {
+    segmentBuilder += characterToRepeat;
+  }
+  return segmentBuilder;
+}
+
+function processInputData() {
+  var sourceString = linesOfInput[0];
+
+  if (!sourceString || sourceString.length === 0) {
+    console.log('');
+    return;
+  }
+
+  var outputSegments = [];
+  var currentIdx;
+  var charDifference, calculatedSquareRoot, polarityChar;
+  var previousCharacterCode = 0;
+  var comparisonThreshold = 16;
+
+  var characterCodeSequence = Array.from(sourceString, char => char.charCodeAt(0));
+  var sequenceLength = characterCodeSequence.length;
+
+  for (currentIdx = 0; currentIdx < sequenceLength; currentIdx++) {
+    let currentCharacterCode = characterCodeSequence[currentIdx];
+    charDifference = currentCharacterCode - previousCharacterCode;
+
+    if (charDifference === 0) {
+      outputSegments.push('.');
     } else {
-        try {
-            rawInputContent = fileSystemUtility.readFileSync(process.stdin.fd, 'utf8');
-        } catch (errorReading) {
-            console.error("Error reading from standard input:", errorReading.message);
-            rawInputContent = "";
-        }
-    }
+      polarityChar = charDifference > 0 ? '+' : '-';
+      charDifference = Math.abs(charDifference);
 
-    const contentLines = rawInputContent.trim().split('\n');
-    return contentLines.find(line => line.length > 0) || '';
+      if (charDifference < comparisonThreshold) {
+        outputSegments.push(generateRepeatedString(polarityChar, charDifference));
+      } else {
+        calculatedSquareRoot = Math.floor(Math.sqrt(charDifference));
+        outputSegments.push('>');
+        outputSegments.push(generateRepeatedString('+', calculatedSquareRoot));
+        outputSegments.push('[<');
+        outputSegments.push(generateRepeatedString(polarityChar, calculatedSquareRoot));
+        outputSegments.push('>-]<');
+        var remainingDifference = charDifference - calculatedSquareRoot * calculatedSquareRoot;
+        outputSegments.push(generateRepeatedString(polarityChar, remainingDifference));
+      }
+      outputSegments.push('.');
+    }
+    previousCharacterCode = currentCharacterCode;
+  }
+  console.log(outputSegments.join(''));
 }
-
-/**
- * Generates a simple sequence by repeating a given sign character a specified number of times.
- * This is typically used for differences with small absolute magnitudes.
- * @param {string} signCharacter - The character to repeat (e.g., '+' or '-').
- * @param {number} repeatCount - The number of times the character should be repeated.
- * @returns {string} The constructed sequence of repeated characters.
- */
-function constructSimpleRepeatSequence(signCharacter, repeatCount) {
-    if (repeatCount <= 0) {
-        return '';
-    }
-    return Array(repeatCount).fill(signCharacter).join('');
-}
-
-/**
- * Generates a more intricate Brainfuck-like sequence for differences with larger absolute magnitudes.
- * This method simulates multiplication using nested loops and accounts for any remainder.
- * @param {string} operationSign - The character representing the desired operation ('+' or '-').
- * @param {number} absoluteMagnitude - The absolute value of the difference to represent.
- * @returns {string} The complex generated sequence.
- */
-function constructMultiplicationSequence(operationSign, absoluteMagnitude) {
-    const generatedSegments = [];
-    const integerSquareRoot = Math.floor(Math.sqrt(absoluteMagnitude));
-
-    generatedSegments.push('>');
-    generatedSegments.push(constructSimpleRepeatSequence('+', integerSquareRoot));
-    generatedSegments.push('[<');
-    generatedSegments.push(constructSimpleRepeatSequence(operationSign, integerSquareRoot));
-    generatedSegments.push('>-]<');
-
-    const remainderValue = absoluteMagnitude - (integerSquareRoot * integerSquareRoot);
-    if (remainderValue > 0) {
-        generatedSegments.push(constructSimpleRepeatSequence(operationSign, remainderValue));
-    }
-
-    return generatedSegments.join('');
-}
-
-/**
- * The primary function that orchestrates the entire character sequence generation process.
- * It reads input, analyzes character code differences, and constructs an output sequence.
- */
-function executeSequenceGenerationProcess() {
-    const sourceInputText = obtainPrimaryInputString();
-
-    if (!sourceInputText) {
-        console.log("");
-        return;
-    }
-
-    const differenceMagnitudeThreshold = 16;
-    const unicodeCodePoints = Array.from(sourceInputText, character => character.charCodeAt(0));
-
-    const accumulatedOutputParts = [];
-    let previousCodePoint = 0;
-
-    for (let currentPosition = 0; currentPosition < unicodeCodePoints.length; currentPosition++) {
-        const currentCharacterCode = unicodeCodePoints[currentPosition];
-        const calculatedDifference = currentCharacterCode - previousCodePoint;
-
-        if (calculatedDifference === 0) {
-            accumulatedOutputParts.push('.');
-        } else {
-            const operationSymbol = calculatedDifference > 0 ? '+' : '-';
-            const absoluteDifferenceMagnitude = Math.abs(calculatedDifference);
-
-            if (absoluteDifferenceMagnitude < differenceMagnitudeThreshold) {
-                accumulatedOutputParts.push(constructSimpleRepeatSequence(operationSymbol, absoluteDifferenceMagnitude));
-            } else {
-                accumulatedOutputParts.push(constructMultiplicationSequence(operationSymbol, absoluteDifferenceMagnitude));
-            }
-        }
-
-        accumulatedOutputParts.push('.');
-        previousCodePoint = currentCharacterCode;
-    }
-
-    console.log(accumulatedOutputParts.join(''));
-}
-
-executeSequenceGenerationProcess();

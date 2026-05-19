@@ -1,53 +1,62 @@
-'use strict'
+'use strict';
 
-const processInputAndCompute = (dataString) => {
-    const rawSegments = dataString.trim().split('\n');
-    const recordCount = parseFloat(rawSegments[0]);
-    
-    const featureConfigurations = rawSegments.slice(1, 1 + recordCount).map(
-        lineSegment => {
-            return lineSegment.split(' ').reduce((accumulator, bitChar) => {
-                return (accumulator << 1) | parseFloat(bitChar);
-            }, 0);
-        }
-    );
+function countSetBits(numValue) {
+  let bitCount = 0;
+  for (let bitPosition = 0; bitPosition < 10; bitPosition++) {
+    if ((numValue >> bitPosition) & 1) {
+      bitCount++;
+    }
+  }
+  return bitCount;
+}
 
-    const profitTables = rawSegments.slice(1 + recordCount, 1 + recordCount * 2).map(
-        lineSegment => lineSegment.split(' ').map(parseFloat)
-    );
+function processInputData(rawData) {
+  const lineGenerator = (function* (textContent) {
+    for (const currentLine of textContent.split('\n')) {
+      yield currentLine;
+    }
+  })(rawData);
 
-    const countSetBits = (valueToCount) => {
-        let bitTally = 0;
-        let workingValue = valueToCount;
-        while (workingValue > 0) {
-            bitTally += workingValue & 1;
-            workingValue >>= 1;
-        }
-        return bitTally;
-    };
+  const entryQuantity = Number(lineGenerator.next().value);
 
-    const allPossibleSetups = Array.from({ length: 1023 }, (_, k) => k + 1);
+  const featureBitmasks = Array.from({ length: entryQuantity }, () => {
+    const featureLine = lineGenerator.next().value;
+    return featureLine.split(' ').reduce((accumulator, bitChar, index) => {
+      return accumulator | (Number(bitChar) << (9 - index));
+    }, 0);
+  });
 
-    const maximumYield = allPossibleSetups.reduce((currentMaxYield, chosenSetup) => {
-        
-        const currentSetupGain = featureConfigurations.reduce((totalGainForSetup, singleFeatureConfig, entityIndex) => {
-            const commonBitsMask = singleFeatureConfig & chosenSetup;
-            const overlapCount = countSetBits(commonBitsMask);
-            
-            return totalGainForSetup + profitTables[entityIndex][overlapCount];
-        }, 0);
+  const profitMatrices = Array.from({ length: entryQuantity }, () => {
+    const profitLine = lineGenerator.next().value;
+    return profitLine.split(' ').map(val => Number(val));
+  });
 
-        return Math.max(currentMaxYield, currentSetupGain);
+  let maximumProfit = -Infinity;
 
-    }, -Number.MAX_VALUE);
+  let currentCombinationMask = 1;
+  while (currentCombinationMask < 1024) {
+    let currentTotalProfit = 0;
 
-    return maximumYield;
-};
+    let entryIndex = 0;
+    while (entryIndex < entryQuantity) {
+      const storeFeatureMask = featureBitmasks[entryIndex];
+      const storeProfitRow = profitMatrices[entryIndex];
 
-const applicationEntry = () => {
-    const inputData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-    const finalOutcome = processInputAndCompute(inputData);
-    process.stdout.write(finalOutcome.toString() + '\n');
-};
+      const commonFeatureBits = storeFeatureMask & currentCombinationMask;
 
-applicationEntry();
+      const activeFeatureCount = countSetBits(commonFeatureBits);
+
+      currentTotalProfit += storeProfitRow[activeFeatureCount];
+      entryIndex++;
+    }
+
+    if (currentTotalProfit > maximumProfit) {
+      maximumProfit = currentTotalProfit;
+    }
+    currentCombinationMask++;
+  }
+
+  console.log(maximumProfit);
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

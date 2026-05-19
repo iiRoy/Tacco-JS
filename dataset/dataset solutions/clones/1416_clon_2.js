@@ -1,71 +1,46 @@
-function obtainInput() {
-  /*
-   * Utilizes the Node.js file system module to perform a blocking read
-   * operation on the standard input file descriptor. The 'utf-8' encoding
-   * ensures proper character interpretation.
-   */
-  const inputContent = require('node:fs').readFileSync('/proc/self/fd/0', 'utf-8');
-
-  // Processes the acquired string, segmenting it into an array of lines.
-  // It accommodates both Windows-style (\r\n) and Unix-style (\n) line endings.
-  return inputContent.split(/\r?\n/);
+function getInputData() {
+  // This function is responsible for reading input from standard input.
+  // It uses Node.js's 'fs' module to read the entire content of /dev/stdin.
+  let inputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+  // The content is then split into an array of lines, handling both Unix and Windows newlines.
+  return inputContent.split(/\n\r?/);
 }
 
-// This function constructs an array of sequential integers.
-function generateSequence(startValue, endValue) {
-  let numberCollection = []; // An empty list prepared for numerical elements.
-
-  // Iterates from the initial number up to, and including, the final number.
-  for (let currentNumber = startValue; currentNumber <= endValue; currentNumber++) {
-    numberCollection.push(currentNumber); // Appends the current iteration's number to the collection.
+// A utility function to generate a sequential array of numbers.
+function generateSequence(startVal, endVal) {
+  const resultArray = []; // Initialize an empty array to hold the numbers.
+  // Loop from the starting value up to and including the ending value.
+  for (let idx = startVal; idx <= endVal; idx++) {
+    resultArray.push(idx); // Add the current number to the array.
   }
-
-  return numberCollection; // Delivers the complete numerical sequence.
+  return resultArray; // Return the array containing the sequence.
 }
 
-// A global data structure representing a full deck of playing cards,
-// organized by their respective suits, each containing values from 1 to 13.
-var cardSet = {
-  Spade: generateSequence(1, 13), // All cards for the Spades suit.
-  Heart: generateSequence(1, 13), // All cards for the Hearts suit.
-  Club: generateSequence(1, 13), // All cards for the Clubs suit.
-  Diamond: generateSequence(1, 13) // All cards for the Diamonds suit.
+// Initialize a complete deck of cards, represented as an object where keys are suits
+// and values are arrays of ranks (1 through 13).
+const cardSet = {
+  S: generateSequence(1, 13), // Spades
+  H: generateSequence(1, 13), // Hearts
+  C: generateSequence(1, 13), // Clubs
+  D: generateSequence(1, 13), // Diamonds
 };
 
+// Process the input lines. The first line is typically a count and is skipped.
+// The 'every' method is used to iterate, and returning 'true' continues the iteration.
+getInputData().slice(1).every(function (inputLine) {
+  // Split each input line by space to separate the suit and the rank.
+  const lineParts = inputLine.split(' ');
+  const suitChar = lineParts[0]; // Extract the suit character (e.g., 'S').
+  const cardRank = +lineParts[1]; // Extract the rank and convert it to a number.
 
-// Processes input lines to remove specific cards from the `cardSet`
-// as indicated by the input. The first line of input is often a header
-// or count and is therefore skipped.
-obtainInput()
-  .slice(1) // Discards the initial line of input.
-  .every(function(currentInputLine) { // Iterates through each subsequent data line.
+  // Remove the specified card from the 'cardSet'.
+  // First, find the index of the cardRank within its suit's array, then remove it.
+  cardSet[suitChar].splice(cardSet[suitChar].indexOf(cardRank), 1);
+  return true; // Indicate that the iteration should continue for the next line.
+});
 
-    // Breaks down the current line into its constituent parts: suit and rank.
-    let lineParts = currentInputLine.split(' ');
-    const cardSuitChar = lineParts[0]; // Extracts the character representing the card's suit.
-    const cardRankNum = Number(lineParts[1]); // Converts the card's numerical rank to a number type.
-
-    /*
-     * Locates the index of the specified card rank within its suit's array
-     * and then removes that single element from the array.
-     */
-    cardSet[cardSuitChar].splice(cardSet[cardSuitChar].indexOf(cardRankNum), 1);
-
-    return true; // Ensures the iteration continues for all remaining lines.
-  });
-
-
-// This loop is intended for debugging or final output display,
-// but its body is currently commented out, mirroring the original's structure.
-for (let keyOfSuit in cardSet) {
-  /*
-  // Example usage: logs each remaining card for the current suit.
-  console.log(
-    cardSet[keyOfSuit]
-    .map(function(individualCardValue) {
-      return keyOfSuit + ' ' + individualCardValue;
-    })
-    .join('\n')
-  );
-  */
+// This loop iterates over the remaining suits in the 'cardSet'.
+// The original code had a commented-out section here for printing the remaining cards.
+for (const suitKey in cardSet) {
+  // console.log(cardSet[suitKey].map(function(cardValue) { return suitKey + ' ' + cardValue; }).join("\n"));
 }

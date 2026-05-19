@@ -1,73 +1,66 @@
-globalInputChannel.startReading();
-globalInputChannel.configureEncoding('utf-8'); // Set up input stream encoding
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-var totalDataBuffer = ''; // Buffer to accumulate all incoming data chunks
+var globalBuffer = '';
 
-globalInputChannel.onReceive('dataFragment', function (portion) {
-    totalDataBuffer += portion; // Append each data chunk to the buffer
+process.stdin.on('data', function(dataSegment) {
+    globalBuffer += dataSegment;
 });
 
-globalInputChannel.onCompletion('finish', function () {
-    // Once all input data is received, process it
-    ProcessInputData(totalDataBuffer.split(/[\r\n]+/));
+process.stdin.on('end', function() {
+    ProcessData(globalBuffer.split(/\r?\n/));
 });
 
-function ProcessInputData(dataLines) { // Main processing function
-    // Parse the number of entries from the first line
-    var numberOfEntries = parseInt(dataLines[0], 10);
+function ProcessData(linesOfText) {
 
-    // Initialize the feature presence matrix
-    var featureMatrix = new Array(numberOfEntries);
-    for (var rowIdx = 0; rowIdx < numberOfEntries; rowIdx++) {
-        featureMatrix[rowIdx] = new Array(10); // Each entry has 10 features
-        var currentArguments = dataLines[1 + rowIdx].split(' '); // Split feature data by space
-        for (var colIdx = 0; colIdx < 10; colIdx++) {
-            featureMatrix[rowIdx][colIdx] = parseInt(currentArguments[colIdx], 10);
+    var numEntries = parseInt(linesOfText[0], 10);
+
+    // Array to store opening hours for each shop
+    var openingHours = new Array(numEntries);
+    for (var shopIdx = 0; shopIdx < numEntries; shopIdx++) {
+        openingHours[shopIdx] = new Array(10);
+        var lineParts = linesOfText[1 + shopIdx].split(' ');
+        for (var dayIdx = 0; dayIdx < 10; dayIdx++) {
+            openingHours[shopIdx][dayIdx] = parseInt(lineParts[dayIdx], 10);
         }
     }
 
-    // Initialize the profit matrix
-    var profitMatrix = new Array(numberOfEntries);
-    for (var entryIndex = 0; entryIndex < numberOfEntries; entryIndex++) {
-        profitMatrix[entryIndex] = new Array(11); // Stores profits for 0 to 10 matching features
-        // Data for profit matrix comes after feature data
-        var currentProfitArgs = dataLines[1 + numberOfEntries + entryIndex].split(' ');
-        for (var profColIdx = 0; profColIdx < 11; profColIdx++) {
-            profitMatrix[entryIndex][profColIdx] = parseInt(currentProfitArgs[profColIdx], 10);
+    // Array to store profit values based on overlapping open days
+    var profitMatrix = new Array(numEntries);
+    for (var shopIdx = 0; shopIdx < numEntries; shopIdx++) {
+        profitMatrix[shopIdx] = new Array(10);
+        var lineParts = linesOfText[1 + numEntries + shopIdx].split(' ');
+        for (var dayIdx = 0; dayIdx < 10; dayIdx++) {
+            profitMatrix[shopIdx][dayIdx] = parseInt(lineParts[dayIdx], 10);
         }
     }
 
-    // Initialize the maximum benefit found so far to the smallest possible integer
-    var maximumBenefit = Number.MIN_SAFE_INTEGER;
+    var maxProfit = Number.MIN_SAFE_INTEGER;
 
-    // Iterate through all possible combinations of 10 features (2^10 = 1024 combinations)
-    // Each 'patternMask' represents a unique combination of features
-    for (var patternMask = 1; patternMask < 1024; patternMask++) {
-        var currentTotalBenefit = 0; // Total benefit for the current feature combination
+    // Iterate through all possible combinations of open days (1 to 2^10 - 1)
+    for (var bitmask = 1; bitmask < 1024; bitmask++) {
+        var currentTotalProfit = 0;
 
-        // Iterate through each business unit (entry)
-        for (var businessUnitIndex = 0; businessUnitIndex < numberOfEntries; businessUnitIndex++) {
-            var matchingFeatureCount = 0; // Count of matching features for the current business unit
+        // Calculate profit for each shop based on the current day combination
+        for (var shopIdx = 0; shopIdx < numEntries; shopIdx++) {
+            var openDaysCount = 0;
 
-            // Check each of the 10 features
-            for (var bitPosition = 0; bitPosition < 10; bitPosition++) {
-                // If the feature is selected in the patternMask AND the business unit has this feature
-                if ( ((patternMask >> bitPosition) & 1) === 1 && featureMatrix[businessUnitIndex][bitPosition] > 0 ) {
-                    matchingFeatureCount++; // Increment count of matching features
+            // Check how many selected days this shop is open
+            for (var dayBit = 0; dayBit < 10; dayBit++) {
+                if (((bitmask >> dayBit) & 1) === 1 && openingHours[shopIdx][dayBit] > 0) {
+                    openDaysCount++;
                 }
             }
-            // Add the profit corresponding to the number of matching features for this business unit
-            currentTotalBenefit += profitMatrix[businessUnitIndex][matchingFeatureCount];
+            currentTotalProfit += profitMatrix[shopIdx][openDaysCount];
         }
 
-        // Update the maximum benefit if the current combination yields a higher benefit
-        if (maximumBenefit < currentTotalBenefit) {
-            maximumBenefit = currentTotalBenefit;
+        // Update the maximum profit if the current combination yields a higher value
+        if (maxProfit < currentTotalProfit) {
+            maxProfit = currentTotalProfit;
         }
     }
 
-    // Output the final maximum calculated benefit
-    console.log(maximumBenefit);
+    console.log(maxProfit);
 
-    return 0; // Indicate successful execution
+    return 0;
 }

@@ -1,22 +1,23 @@
-function processInputAndCompute(dataString) {
-  const linesOfData = dataString.split('\n');
-  const heightValues = linesOfData[1].split(' ').map(Number);
+function processInputAndCalculate(sourceData) {
+  const dataLines = sourceData.split('\n');
+  // The first line (N) is not utilized in the original logic for the final count.
+  // const elementCount = Number(dataLines[0]);
+  const heightSequence = dataLines[1].split(' ').map(strValue => Number(strValue));
 
-  const analysisResult = heightValues.reduce(
-    (currentAccumulation, currentMeasurement) => {
-      if (currentMeasurement >= currentAccumulation.maxObserved) {
-        return {
-          visibleCount: currentAccumulation.visibleCount + 1,
-          maxObserved: currentMeasurement,
-        };
-      } else {
-        return currentAccumulation;
-      }
-    },
-    { visibleCount: 0, maxObserved: 0 }
-  );
+  const finalState = heightSequence.reduce((accumulator, currentElevation) => {
+    const { peakValue, ascentCount } = accumulator;
 
-  return analysisResult.visibleCount;
+    if (currentElevation >= peakValue) {
+      return {
+        peakValue: currentElevation,
+        ascentCount: ascentCount + 1
+      };
+    } else {
+      return accumulator;
+    }
+  }, { peakValue: 0, ascentCount: 0 });
+
+  console.log(finalState.ascentCount);
 }
 
-console.log(processInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8")));
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

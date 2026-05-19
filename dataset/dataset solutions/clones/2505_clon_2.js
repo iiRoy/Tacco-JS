@@ -1,48 +1,76 @@
-function ProcessInputData(dataString) {
-  dataString = dataString.split("\n");
+function ProcessInput(rawData) {
+  // Split the incoming raw data string into an array of individual lines.
+  rawData = rawData.split("\n");
 
-  if (dataString[dataString.length - 1] === String()) {
-    dataString.pop();
+  // Check if the last line is empty and remove it if so,
+  // which is common when reading input from certain environments.
+  if (rawData[rawData.length - 1] === '') {
+    rawData.pop();
   }
 
-  const targetCount = Number(dataString[0].split("\u0020")[0]);
-  const primaryValues = dataString[1].split(' ').map(element => {
-    return Number(element);
-  }).sort((item1, item2) => {
-    return item1 - item2;
+  // Extract the total count of elements from the first line of input.
+  // The `- 0` converts the string to a number.
+  const countElements = rawData[0].split(' ')[0] - 0;
+
+  // Process the second line: split into numbers, convert to numeric type,
+  // and then sort them in ascending order.
+  const sortedNumbers = rawData[1].split(' ').map(item => {
+    return item - 0; // Convert each string item to a number.
+  }).sort((valA, valB) => {
+    return valA - valB; // Sort numerically.
   });
 
-  var frequencyBins = [];
-  var temporaryCounter = +0;
-  var lastSeenValue = 0x0;
+  // Initialize variables for calculating frequency counts of consecutive numbers.
+  let frequencyCounts = []; // This array will store the counts of each unique number sequence.
+  let currentCount = 0;     // Tracks the count of the current sequence of identical numbers.
+  let lastValue = 0;        // Stores the value of the last number processed.
 
-  primaryValues.forEach(currentVal => {
-    if (currentVal !== lastSeenValue) {
-      frequencyBins.push(temporaryCounter);
-      lastSeenValue = currentVal;
-      temporaryCounter = 1;
+  // Iterate through the sorted numbers to determine the frequency of each unique number.
+  sortedNumbers.forEach(item => {
+    if (item !== lastValue) {
+      // If the current number is different from the previous one,
+      // it means a new sequence has started. Store the count of the previous sequence.
+      frequencyCounts.push(currentCount);
+      lastValue = item; // Update the reference to the last processed value.
+      currentCount = 1; // Start counting for the new sequence.
     } else {
-      temporaryCounter++;
+      // If the current number is the same as the previous, increment its count.
+      currentCount++;
     }
   });
 
-  frequencyBins.push(temporaryCounter);
-  frequencyBins.shift();
+  // After the loop, push the count of the very last sequence.
+  frequencyCounts.push(currentCount);
 
-  frequencyBins.sort((valA, valB) => {
+  // Remove the first element from `frequencyCounts`. This element is typically `0`
+  // due to the initial state of `currentCount` and `lastValue` before processing the first actual number.
+  frequencyCounts.shift();
+
+  // Sort the collected frequency counts in ascending order.
+  frequencyCounts.sort((valA, valB) => {
     return valA - valB;
   });
 
-  // This block performs the core calculation logic
-  var cumulativeSum;
-  for (let outerLoopVar = 1; outerLoopVar <= targetCount; outerLoopVar++) {
-    cumulativeSum = 0x0;
-    for (let innerLoopVar = 0; innerLoopVar < frequencyBins.length - outerLoopVar + 1; innerLoopVar++) {
-      cumulativeSum += frequencyBins[innerLoopVar];
+  // console.debug(frequencyCounts); // This line is commented out, similar to the original.
+
+  // Loop from 1 up to `countElements` (N). This outer loop represents different group sizes.
+  let currentSum; // Variable to accumulate sums of frequencies in the inner loop.
+  for (let outerIndex = 1; outerIndex <= countElements; outerIndex++) {
+    currentSum = 0; // Reset the sum for each iteration of the outer loop.
+
+    // Inner loop to calculate a partial sum of the smallest frequencies.
+    // The number of frequencies summed depends on `outerIndex`.
+    for (let innerIndex = 0; innerIndex < frequencyCounts.length - outerIndex + 1; innerIndex++) {
+      currentSum += frequencyCounts[innerIndex];
     }
-    console.log(Math.min(Math.floor(targetCount / outerLoopVar), cumulativeSum * outerLoopVar));
+
+    // Calculate and output the minimum of two values:
+    // 1. The maximum number of groups of size `outerIndex` that can be formed from `countElements`.
+    // 2. The total number of elements that can be formed by taking `outerIndex` items from each of the `currentSum` smallest frequency groups.
+    console.log(Math.min(Math.floor(countElements / outerIndex), currentSum * outerIndex));
   }
 }
 
-// This line handles standard input/output for execution.
-ProcessInputData(require("node:fs").readFileSync("/dev/stdin", "utf-8"));
+
+//*この行以降は編集しないでください（標準入出力から一度に読み込み、ProcessInputを呼び出します）
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

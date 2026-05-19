@@ -1,37 +1,37 @@
-/*
- * This module provides a utility function to compute a cumulative score
- * based on two input numbers derived from a text string.
- */
-function ScoreCalculator  (  dataString  )
-{
-  // Split the input string into an array of string components using space as a delimiter.
-  const   strComponents   =   dataString .  trim (  ) .  split (  ' '  ) ;
+function ProcessInput(rawData) {
+  // Trim leading/trailing whitespace from the input and split it by spaces
+  const tokenizedValues = rawData.trim().split(' ');
 
-  // Parse the first component into an integer, assuming base 10.
-  const   firstNum   =   parseInt (  strComponents [  0  ] ,  10  ) ;
-  // Parse the second component into an integer, also assuming base 10.
-  const   secondNum   =   parseInt (  strComponents [  1  ] ,  10  ) ;
+  // Convert the first token to an integer, using base 10
+  const firstVal = parseInt(tokenizedValues[0], 10);
+  // Convert the second token to an integer, also using base 10
+  const secondVal = parseInt(tokenizedValues[1], 10);
 
-  // Initialize a variable to store the total accumulated value.
-  let   accumulatedValue   =   0  ;
+  // Initialize a variable to store the cumulative score
+  let totalScore = 0;
 
-  // Check for a special condition where both numbers are 1.
-  if  (  firstNum   ===   1   &&   secondNum   ===   1  )
-  {
-    accumulatedValue   +=   400000  ; // Add a significant bonus.
+  // Check for a specific combination of values (both being 1)
+  if (firstVal === 1 && secondVal === 1) {
+    totalScore += 400000; // Add a significant bonus for this exact match
   }
 
-  // Apply scores based on the value of the first number.
-  if  (  firstNum   ===   1  )   accumulatedValue   +=   300000  ;
-  if  (  secondNum   ===   1  )   accumulatedValue   +=   300000  ; // Apply scores based on the value of the second number.
-  if  (  firstNum   ===   2  )   accumulatedValue   +=   200000  ;
-  if  (  secondNum   ===   2  )   accumulatedValue   +=   200000  ; // Check if the second number is 2.
-  if  (  firstNum   ===   3  )   accumulatedValue   +=   100000  ;
-  if  (  secondNum   ===   3  )   accumulatedValue   +=   100000  ; // Final check for the second number being 3.
+  // Evaluate individual conditions for the first value and add to score
+  if (firstVal === 1) totalScore += 300000;
+  // Evaluate individual conditions for the second value and add to score
+  if (secondVal === 1) totalScore += 300000;
+  // Check if the first value is 2
+  if (firstVal === 2) totalScore += 200000;
+  // Check if the second value is 2
+  if (secondVal === 2) totalScore += 200000;
+  // Check if the first value is 3
+  if (firstVal === 3) totalScore += 100000;
+  // Check if the second value is 3
+  if (secondVal === 3) totalScore += 100000;
 
-  // Output the computed total score to the console.
-  console .  log (  accumulatedValue  ) ;
+  // Print the final calculated score to the standard output
+  console.log(totalScore);
 }
 
-// Execute the score calculation logic by reading input from standard input.
-ScoreCalculator( require ( 'fs' ) . readFileSync ( '/dev/stdin', 'utf8' ) ) ;
+// Read the entire content of standard input as a UTF-8 string
+// and then pass it to our processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

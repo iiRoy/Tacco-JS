@@ -1,18 +1,28 @@
-// This function serves as the primary processing unit for incoming text data.
-function  processInputData (  sourceContent  )
-{
-  // The provided string is first tokenized into an array of strings,
-  // using a single space character as the separator.
-  sourceContent  =  sourceContent.split (  ' '  ) ;
+// This function is designed to process a string of numerical values
+// and compute the maximum of two products derived from these values.
+function computeMaxProduct(inputString) {
+    // The input string is first divided into an array of substrings
+    // using a space character as the delimiter.
+    // This effectively transforms the single string into an array of number-like strings.
+    inputString = inputString.split(' ');
 
-  // The console output will display the largest product found.
-  // This involves multiplying the first two numeric tokens,
-  // and comparing that to the product of the third and fourth numeric tokens.
-  console.log (  'Final maximum: %d' ,  Math.max (  sourceContent[0]  *  sourceContent[1] ,  sourceContent[2]  *  sourceContent[3]  )  ) ;
+    // The core logic involves calculating two products:
+    // 1. The product of the first two elements in the array (at index 0 and 1).
+    // 2. The product of the next two elements (at index 2 and 3).
+    // Math.max then determines which of these two products is greater.
+    // The result is printed to the console using '%d' for integer formatting.
+    console.log('%d', Math.max(
+        inputString[0] * inputString[1], // Calculate the product of the initial pair
+        inputString[2] * inputString[3]  // Calculate the product of the subsequent pair
+    ));
 }
 
-// The program initiates by fetching data from the standard input stream.
-// It uses Node.js 'fs' module to synchronously read the file located at '/dev/stdin'.
-// The content is then decoded using the 'utf8' character encoding.
-// Finally, this retrieved data is passed to the main processing function.
-processInputData (  require (  'fs'  ) . readFileSync (  '/dev/stdin' ,  "utf8"  )  ) ;
+// The program begins by reading data from standard input.
+// 'require('fs')' is used to access the file system module.
+// 'readFileSync' reads the entire content of '/dev/stdin' synchronously.
+// The 'UTF-8' encoding is specified for proper character interpretation.
+const fileData = require('fs').readFileSync('/dev/stdin', 'UTF-8');
+
+// Finally, the obtained file data (which is the input string) is passed
+// to our primary processing function to execute the calculation and output.
+computeMaxProduct(fileData);

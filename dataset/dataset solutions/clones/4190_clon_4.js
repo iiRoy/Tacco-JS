@@ -1,26 +1,21 @@
-function processNumericalCriterion(dataInput) {
-    const valueConsidered = Number(dataInput);
-
-    const computeIntegerDigitSum = (subjectNumber) => {
-        let accumulatingSum = 0;
-        let workingNumber = subjectNumber;
-        while (workingNumber > 0) {
-            accumulatingSum += workingNumber % 10;
-            workingNumber = Math.floor(workingNumber / 10);
-        }
-        return accumulatingSum;
-    };
-
-    const totalDigitSum = computeIntegerDigitSum(valueConsidered);
-
-    if (valueConsidered % totalDigitSum === 0) {
-        console.log('True');
-    } else {
-        console.log('False');
+function computeSumOfDigits(val) {
+    if (isNaN(val)) {
+        return NaN;
     }
+    if (val < 0) {
+        return NaN;
+    }
+    if (val === 0) {
+        return 0;
+    }
+    return (val % 10) + computeSumOfDigits(Math.floor(val / 10));
 }
 
-const systemFileModule = require('fs');
-const standardInputPathway = '/dev/stdin';
-const rawDataString = systemFileModule.readFileSync(standardInputPathway, 'utf8');
-processNumericalCriterion(rawDataString);
+function processData(inputString) {
+    const numericValue = parseInt(inputString, 10);
+    const sumOfDigits = computeSumOfDigits(numericValue);
+
+    console.log((numericValue % sumOfDigits === 0) ? 'Yes' : 'No');
+}
+
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

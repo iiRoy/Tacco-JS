@@ -1,49 +1,13 @@
-// This program checks if a given target fragment exists within a doubled sequence.
+let dataStream = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input stream
 
-var    rawTextData   =
-    require (    'fs'    )  .  readFileSync  (
-        '/dev/stdin'  ,
-        'utf8'
-    ) ;
+dataStream = dataStream.split('\n'); // Divide the input into an array of lines
 
- /*
-  * The raw text data is initially a single string.
-  * We need to split it into an array of lines based on newline characters.
-  */
- rawTextData
-    =
- rawTextData
-    .
-        split
-            (
-                '\n'
-            )
- ;
+const combinedString = dataStream[0] + dataStream[0]; // Create a doubled version of the first line
+const patternString = dataStream[1]; // Extract the second line as the search pattern
 
-// Create a doubled sequence by concatenating the first line with itself.
-var doubledSequence = rawTextData[0] + rawTextData[0];
-
-/* Define the target fragment which is the second line of the input. */
-var targetFragment = rawTextData[1];
-
-
-   // Check if the target fragment is present in the doubled sequence.
-   if (
-       doubledSequence
-           .
-           indexOf
-               (
-                   targetFragment
-               )
-                   !==
-                       -1
-   )
-   {
-       // If found, print a positive confirmation.
-       console.log('Yes');
-   }
-   else
-   {
-       // Otherwise, print a negative confirmation.
-       console.log('No');
-   }
+// Check if the pattern string is a substring of the combined string
+if (combinedString.indexOf(patternString) !== -1) {
+    console.log('Yes'); // If found, print 'Yes'
+} else {
+    console.log('No'); // Otherwise, print 'No'
+}

@@ -1,35 +1,41 @@
-// This function performs a specific numeric aggregation based on input values.
-function ProcessData(dataSource) {
-  // Extract the total number of items from the first element of the input.
-  var itemCount = parseInt(dataSource[0], 10);
-  /*
-   * Convert the rest of the input array elements into a series of integers.
-   * This forms the primary data set for the calculation.
-   */
-  var valueArray = dataSource.slice(1).map(currentVal => parseInt(currentVal));
+function ProcessInput(rawData) {
+    // First, we parse the initial value from the input array.
+    // This value typically represents the total number of elements to process.
+    var countElements = parseInt(rawData[0], 10);
 
-  // Initialize the aggregate result with the first element of the processed data.
-  var totalResult = valueArray[0];
+    // Next, we prepare the main data array by slicing the input
+    // (removing the first element which was 'countElements')
+    // and converting each remaining string element into an integer.
+    const dataArray = rawData.slice(1).map(itemStr => parseInt(itemStr, 10));
 
-  // Iterate through the processed data starting from the second element.
-  for (var idx = 1; idx < itemCount; idx++) {
-    // Check if we are at the very last element to be processed.
-    if (idx === itemCount - 1) {
-      // If it's the final element, add the preceding value directly to the total.
-      totalResult += valueArray[idx - 1];
-    } else {
-      // For all other elements, add the minimum of the current and preceding value.
-      totalResult += Math.min(valueArray[idx - 1], valueArray[idx]);
+    // Initialize a variable to accumulate the total sum.
+    // The first element of our processed data array is added directly to start.
+    var totalValue = dataArray[0];
+
+    // We then iterate through the data array, starting from the second element.
+    // The loop continues until we have processed all 'countElements'.
+    for (var idx = 1; idx < countElements; idx++) {
+        // Inside the loop, we check for a special condition:
+        // if the current index 'idx' points to the very last element.
+        if (idx === countElements - 1) {
+            // If it's the last element, we add the value of the *previous* element
+            // to our running total.
+            totalValue += dataArray[idx - 1];
+        } else {
+            // For all other elements (not the last one),
+            // we add the minimum value between the current element and the previous element
+            // to our running total.
+            totalValue += Math.min(dataArray[idx - 1], dataArray[idx]);
+        }
     }
-  }
-  // Output the final computed aggregate to the standard console.
-  console.log(totalResult);
+
+    // Finally, the computed total sum is printed to the console.
+    console.log(totalValue);
 }
 
-// Invoke the primary processing function with data read from standard input.
-ProcessData(
-  require("fs")
-  .readFileSync("/dev/stdin", "utf8")
-  .trim()
-  .split(/\n|\s/)
-);
+// This section handles reading input from the standard input stream.
+// It reads the entire content, converts it to a UTF-8 string,
+// removes leading/trailing whitespace, and then splits it into an array
+// using newline or space characters as delimiters.
+// This prepared array is then passed to our main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

@@ -1,22 +1,21 @@
-// This module defines a principal routine to process numerical data.
-function CalculateResult(  sourceData  )
-{
-  // Parse the initial numeric component from the incoming string data.
-  let firstOperand = parseInt( sourceData . split ( " " )[ 0 ] ) ;
+// This function processes the raw input string to calculate a specific value.
+function ProcessInput(rawData) {
+  // Split the incoming string by space to obtain individual numeric components.
+  const dataParts = rawData.split(" ");
 
-  // Extract the subsequent numeric component.
-  let secondOperand  =  parseInt (  sourceData . split ( " " ) [ 1 ]  ) ;
+  // Convert the first part to an integer, representing the 'a' value from the original problem.
+  let firstVal = parseInt(dataParts[0]);
 
-  // Obtain the final numeric value, often representing a duration or limit.
-  const timeValue = parseInt(sourceData.split(" ")[2]);
+  // Convert the second part to an integer, representing the 'b' value.
+  let secondVal = parseInt(dataParts[1]);
 
-  // Execute the primary computation:
-  // 1. Increment the time value by half a unit.
-  // 2. Divide this adjusted value by the first operand.
-  // 3. Truncate the result to the nearest whole number downwards.
-  // 4. Multiply the truncated value by the second operand.
-  console.log( Math.floor( ( timeValue + 0.5 ) / firstOperand ) * secondOperand ) ;
+  // Convert the third part to an integer, representing the 't' value (time limit).
+  let timeLimit = parseInt(dataParts[2]);
+
+  // Perform the calculation: (timeLimit + 0.5) / firstVal, then take the floor, and multiply by secondVal.
+  // The result is then printed to the standard output.
+  console.log(Math.floor((timeLimit + 0.5) / firstVal) * secondVal);
 }
 
-// Initiate the process by reading content from standard input and passing it to the main calculation function.
-CalculateResult( require("fs") . readFileSync( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content from standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,73 +1,48 @@
-function addDigitsRecursive(s1, s2, index1, index2, carryAmount) {
-    if (index1 < 0 && index2 < 0 && carryAmount === 0) {
-        return "";
-    }
-
-    let digitOne = (index1 >= 0) ? parseInt(s1[index1], 10) : 0;
-    let digitTwo = (index2 >= 0) ? parseInt(s2[index2], 10) : 0;
-
-    let totalCurrent = digitOne + digitTwo + carryAmount;
-    let nextCarry = Math.floor(totalCurrent / 10);
-    let currentDigitResult = totalCurrent % 10;
-
-    let previousResult = addDigitsRecursive(s1, s2, index1 - 1, index2 - 1, nextCarry);
-    return previousResult + currentDigitResult.toString();
+function computeLargeSum(firstOperand, secondOperand) {
+    const val1 = BigInt(firstOperand);
+    const val2 = BigInt(secondOperand);
+    return (val1 + val2).toString();
 }
 
-function sumLargeNumbers(operandA, operandB) {
-    let stringFormA = String(operandA);
-    let stringFormB = String(operandB);
-    return addDigitsRecursive(stringFormA, stringFormB, stringFormA.length - 1, stringFormB.length - 1, 0);
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = rawInput.trim().split("\n");
+
+inputLines.shift();
+
+const sortedNumbersA = inputLines.shift().split(" ").map(Number);
+sortedNumbersA.sort((val1, val2) => val1 - val2);
+
+inputLines.shift();
+
+const queryValuesB = inputLines.shift().split(" ").map(Number);
+const expectedResultsC = inputLines.shift().split(" ");
+
+const maxPossibleValue = 1000000;
+const cumulativeSumCache = new Map();
+
+let currentCumulativeSum = BigInt(0);
+let lastKnownSumForRange = BigInt(0);
+let aIndex = 0;
+
+for (let i = 0; i <= maxPossibleValue; i++) {
+    if (aIndex < sortedNumbersA.length && sortedNumbersA[aIndex] === i) {
+        currentCumulativeSum += BigInt(sortedNumbersA[aIndex]);
+        lastKnownSumForRange = currentCumulativeSum;
+        aIndex++;
+    }
+    cumulativeSumCache.set(i, lastKnownSumForRange.toString());
 }
 
-function compareNumericStrings(textA, textB) {
-    if (textA.length < textB.length) return -1;
-    if (textA.length > textB.length) return 1;
-    
-    for (let charPosition = 0; charPosition < textA.length; charPosition++) {
-        const charValA = parseInt(textA[charPosition], 10);
-        const charValB = parseInt(textB[charPosition], 10);
-        if (charValA < charValB) return -1;
-        if (charValA > charValB) return 1;
+queryValuesB.forEach((queryVal, index) => {
+    const actualSumString = cumulativeSumCache.get(queryVal);
+    const expectedSumString = expectedResultsC[index];
+
+    const actualBigInt = BigInt(actualSumString);
+    const expectedBigInt = BigInt(expectedSumString);
+
+    let outcome = "No";
+    if (expectedBigInt <= actualBigInt) {
+        outcome = "Yes";
     }
-    return 0;
-}
-
-let dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-let lineSegments = dataStream.trim().split("\n");
-
-lineSegments.shift();
-
-let firstSequence = lineSegments.shift().split(" ").map(Number);
-firstSequence.sort((val1, val2) => val1 - val2);
-
-lineSegments.shift();
-
-let secondSequence = lineSegments.shift().split(" ").map(Number);
-
-let targetValues = lineSegments.shift().split(" ");
-
-let memoizedSums = new Map();
-memoizedSums.set(0, "0");
-
-let runningTotal = "0";
-
-for (let currentElement of firstSequence) {
-    runningTotal = sumLargeNumbers(runningTotal, currentElement);
-    memoizedSums.set(currentElement, runningTotal);
-}
-
-secondSequence.forEach((currentQueryValue, queryIndex) => {
-    let effectiveQueryValue = currentQueryValue;
-    while (!memoizedSums.has(effectiveQueryValue)) {
-        effectiveQueryValue--;
-    }
-    let computedSum = memoizedSums.get(effectiveQueryValue);
-    let comparisonTarget = targetValues[queryIndex];
-
-    let decisionOutcome = "No";
-    if (compareNumericStrings(comparisonTarget, computedSum) <= 0) {
-        decisionOutcome = "Yes";
-    }
-    console.log(decisionOutcome);
+    console.log(outcome);
 });

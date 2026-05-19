@@ -1,31 +1,26 @@
-const fileSystemModule = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = rawData.trim().split("\n");
 
-const standardInputPath = '/dev/stdin';
-const textEncoding = 'utf8';
+// Loop through input lines until a line containing '0' is encountered
+while (lineSegments.shift() != 0) {
+    // Parse the next line into an array of numbers
+    var numericValues = lineSegments.shift().split(" ").map(Number);
 
-let rawContent = fileSystemModule.readFileSync(standardInputPath, textEncoding);
+    // Sort the array of numbers in ascending order
+    numericValues.sort((firstVal, secondVal) => firstVal - secondVal);
 
-let contentLines = rawContent
-    .trim()
-    .split("\n");
+    // Initialize a variable to store the smallest difference found
+    var smallestDifference = Infinity;
 
-const terminationSignal = 0;
-
-while (contentLines.shift() !== terminationSignal) {
-
-    let currentNumberSet = contentLines
-        .shift()
-        .split(" ")
-        .map(Number);
-
-    currentNumberSet.sort((valA, valB) => valA - valB);
-
-    let smallestGap = Number.POSITIVE_INFINITY;
-
-    currentNumberSet.reduce((previousNumericValue, currentNumericValue) => {
-        smallestGap = Math.min(smallestGap, Math.abs(previousNumericValue - currentNumericValue));
-        return currentNumericValue;
+    // Use reduce to iterate through the sorted array and find the minimum absolute difference between adjacent elements
+    numericValues.reduce((previousElement, currentElement) => {
+        // Calculate the absolute difference between the current and previous elements
+        // Update smallestDifference if the new difference is smaller
+        smallestDifference = Math.min(smallestDifference, Math.abs(previousElement - currentElement));
+        // Return the current element to be used as the 'previousElement' in the next iteration
+        return currentElement;
     });
 
-    console.log(smallestGap);
+    // Print the smallest difference found for the current set of numbers
+    console.log(smallestDifference);
 }

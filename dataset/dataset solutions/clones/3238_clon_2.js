@@ -1,42 +1,47 @@
-// The complete textual data from standard input is passed to this routine.
-// 7
-// zenkoku
-// touitsu
-// program
+function ProcessInput(rawData) {
+  // This function processes the provided raw input data.
+  // The input is expected to be a multi-line string.
 
-function AnalyzeTextSegments( receivedContent )
-{
-	// The initial line resides at the zero index, the subsequent line at index one, and so forth.
-	let contentLines = receivedContent.split( "\n" ) ;
+  // Split the raw data into individual lines.
+  const lineSegments = rawData.split("\n");
 
-    let lineCountValue = parseInt( contentLines[0], 10 ) ;
+  // Parse the first line as an integer, representing the number of iterations.
+  const numLines = parseInt(lineSegments[0], 10);
 
-    let stringOneSegments = contentLines[1].split( "" ) ;
+  // Convert the next three lines into arrays of characters.
+  const primaryChars = lineSegments[1].split("");
+  const secondaryChars = lineSegments[2].split("");
+  const tertiaryChars = lineSegments[3].split("");
 
-    let stringTwoSegments = contentLines[2].split( "" ) ;
+  // Initialize a counter for mismatches.
+  let mismatchScore = 0;
 
-    let stringThreeSegments = contentLines[3].split( "" ) ;
-
-    let mismatchScore = 0 ;
-
-    for ( let currentPos = 0; currentPos < lineCountValue; currentPos++ )
-    {
-        if ( stringOneSegments[currentPos] === stringTwoSegments[currentPos] && stringTwoSegments[currentPos] === stringThreeSegments[currentPos] )
-        {
-            continue ;
-        }
-
-        if ( stringOneSegments[currentPos] === stringTwoSegments[currentPos] || stringTwoSegments[currentPos] === stringThreeSegments[currentPos] || stringThreeSegments[currentPos] === stringOneSegments[currentPos] )
-        {
-            mismatchScore++ ;
-            continue ;
-        }
-
-        mismatchScore++ ;
-        mismatchScore++ ;
+  // Iterate through the characters up to the specified number of lines.
+  for (let idx = 0; idx < numLines; idx++) {
+    // Check if all three characters at the current index are identical.
+    if (primaryChars[idx] === secondaryChars[idx] && secondaryChars[idx] === tertiaryChars[idx]) {
+      // If they are all the same, no mismatch contribution; move to the next iteration.
+      continue;
     }
 
-	console.log( mismatchScore ) ;
+    // Check if any two of the three characters at the current index are identical.
+    if (primaryChars[idx] === secondaryChars[idx] || secondaryChars[idx] === tertiaryChars[idx] || tertiaryChars[idx] === primaryChars[idx]) {
+      // If at least two are the same, increment the mismatch score by one.
+      mismatchScore++;
+      // Move to the next iteration.
+      continue;
+    }
+
+    // If none of the above conditions are met, it means all three characters are distinct.
+    // In this case, increment the mismatch score by two.
+    mismatchScore++;
+    mismatchScore++;
+  }
+
+  // Output the final calculated mismatch score to the console.
+  console.log(mismatchScore);
 }
-// * Do not modify the following line; it handles input/output and function invocation.
-AnalyzeTextSegments( require("fs").readFileSync("/dev/stdin", "utf8") ) ;
+
+// The following line handles standard input/output and calls the main processing function.
+// It should not be modified.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,73 +1,66 @@
-let   rawData = require ( 'fs' ) . readFileSync ( '/dev/stdin' ,   'utf8' ) ; // Acquire raw input data from the standard input source
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const numberSequence = rawData . trim ( ) . split ( "\n" ) . map ( Number ) ; // Process raw data: strip whitespace, split by newline, and convert to numbers
+var numList = rawData.trim().split("\n").map(Number);
 
-while ( true ) { // Main processing loop for each set of input values
-  let   currentNum = numberSequence . shift ( ) ; // Extract the first number from the sequence
+while (true) {
+  var currentVal = numList.shift();
 
-  if ( currentNum === 0 ) { // Check if the current number indicates loop termination
-    break ; // Exit the loop if currentNum is 0
+  if (currentVal === 0) {
+    break;
   }
 
-  if ( currentNum === 1 ) { // Handle the special case where currentNum is 1
-    console . log ( "" ) ; // Output an empty line
-    continue ; // Proceed to the next iteration of the loop
+  if (currentVal === 1) {
+    console.log("");
+    continue;
   }
 
-  let   flagArray = [ ] ; // Initialize an array to store boolean flags
-  for ( let loopIndex = 0 ; loopIndex < currentNum ; loopIndex ++ ) {
-    flagArray [ loopIndex ] = false ; // Set all flags to false initially
+  var boolFlags = [];
+  for (var idx = 0; idx < currentVal; idx++) {
+    boolFlags[idx] = false;
   }
 
-  // Mark specific indices in the flagArray based on a quadratic congruence relation
-  for ( let loopIndex = 1 ; loopIndex < currentNum ; loopIndex ++ ) {
-    flagArray [ ( loopIndex * loopIndex ) % currentNum ] = true ; // Set flag to true for computed index
+  for (var idx = 1; idx < currentVal; idx++) {
+    boolFlags[(idx * idx) % currentVal] = true;
   }
 
-  const markedIndices = [ ] ; // Create an array to store the indices that were marked true
-  flagArray . forEach ( function ( itemValue , itemIndex ) {
-    if ( itemValue ) { // If the flag is true
-      markedIndices . push ( itemIndex ) ; // Add the index to markedIndices
+  var markedIndices = [];
+  boolFlags.forEach(function (flagValue, currentIndex) {
+    if (flagValue) {
+      markedIndices.push(currentIndex);
     }
-  } ) ;
+  });
 
-  let   resultArray = [ ] ; // Initialize an array to accumulate final results
-  const halfRange = ( currentNum - 1 ) / 2 ; // Calculate a half-range value for array initialization and modulo operations
+  var resultCounts = [];
+  var halfLength = (currentVal - 1) / 2;
 
-  // Initialize the resultArray with zeros up to the calculated halfRange
-  for ( let loopIndex = 0 ; loopIndex <= halfRange ; loopIndex ++ ) {
-    resultArray [ loopIndex ] = 0 ;
+  for (var idx = 0; idx <= halfLength; idx++) {
+    resultCounts[idx] = 0;
   }
 
-  // Iterate through all unique pairs of marked indices to calculate differences
-  for ( let loopIndex = 0 ; loopIndex < markedIndices . length ; loopIndex ++ ) {
-    for ( let innerIndex = loopIndex + 1 ; innerIndex < markedIndices . length ; innerIndex ++ ) {
-      let   diffValue = markedIndices [ loopIndex ] - markedIndices [ innerIndex ] ; // Calculate the first difference
+  for (var idx = 0; idx < markedIndices.length; idx++) {
+    for (var innerIdx = idx + 1; innerIdx < markedIndices.length; innerIdx++) {
+      var diffVal = markedIndices[idx] - markedIndices[innerIdx];
+      if (diffVal < 0) {
+        diffVal += currentVal;
+      }
+      if (halfLength < diffVal) {
+        diffVal -= currentVal;
+      }
+      resultCounts[diffVal]++;
 
-      if ( diffValue < 0 ) {
-        diffValue += currentNum ; // Adjust difference to be positive within the modulo range
+      diffVal = markedIndices[innerIdx] - markedIndices[idx];
+      if (diffVal < 0) {
+        diffVal += currentVal;
       }
-      if ( halfRange < diffValue ) {
-        diffValue -= currentNum ; // Adjust difference to be within the half-range
+      if (halfLength < diffVal) {
+        diffVal -= currentVal;
       }
-      resultArray [ diffValue ] ++ ; // Increment the count for this difference
-
-      diffValue = markedIndices [ innerIndex ] - markedIndices [ loopIndex ] ; // Calculate the second difference (symmetric)
-
-      if ( diffValue < 0 ) {
-        diffValue += currentNum ; // Adjust symmetric difference
-      }
-      if ( halfRange < diffValue ) {
-        diffValue -= currentNum ; // Adjust symmetric difference to be within half-range
-      }
-      resultArray [ diffValue ] ++ ; // Increment the count for the symmetric difference
+      resultCounts[diffVal]++;
     }
   }
 
-  resultArray . shift ( ) ; // Remove the first element (at index 0) from the resultArray
-
-  // Output each remaining element of the resultArray, multiplied by two
-  resultArray . forEach ( function ( countValue ) {
-    console . log ( countValue * 2 ) ;
-  } ) ;
+  resultCounts.shift();
+  resultCounts.forEach(function (countValue) {
+    console.log(countValue * 2);
+  });
 }

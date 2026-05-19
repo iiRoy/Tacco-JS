@@ -1,33 +1,21 @@
-var allInputData = '';
-process.stdin.setEncoding('utf8');
+"use strict"
 
-process.stdin.on('readable', function() {
-    var chunkOfData;
-    while ((chunkOfData = process.stdin.read()) !== null) {
-        allInputData += chunkOfData;
-    }
-});
+const acquireSourceMaterial = () => require('fs').readFileSync('/dev/stdin', 'UTF-8');
 
-process.stdin.on('end', function() {
-    var firstLineContent = allInputData.split('\n')[0];
-    var parsedNumericValue = Number.parseInt(firstLineContent, 10);
+const isolateFirstDatum = (fullContent) => {
+    const newlineBoundary = fullContent.indexOf('\n');
+    return (newlineBoundary === -1) ? fullContent : fullContent.substring(0, newlineBoundary);
+};
 
-    var calculateExponential = function(baseVal, exponentVal) {
-        if (exponentVal === 0) {
-            return 1;
-        }
-        if (exponentVal < 0) {
-            return 1 / calculateExponential(baseVal, -exponentVal);
-        }
-        if (exponentVal % 2 === 0) {
-            var halfPower = calculateExponential(baseVal, exponentVal / 2);
-            return halfPower * halfPower;
-        } else {
-            return baseVal * calculateExponential(baseVal, exponentVal - 1);
-        }
-    };
+const computeCubicMagnitude = (textualRepresentation) => {
+    const numericalValue = Number(textualRepresentation);
+    return Math.pow(numericalValue, 3);
+};
 
-    var finalResult = calculateExponential(parsedNumericValue, 3);
-
-    process.stdout.write(finalResult.toString() + '\n');
-});
+console.log(
+    computeCubicMagnitude(
+        isolateFirstDatum(
+            acquireSourceMaterial()
+        )
+    )
+);

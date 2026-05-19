@@ -1,57 +1,40 @@
-const dataProcessor = require('readline');
-const systemOutput = require('process').stdout;
-const systemInput = require('process').stdin;
-
-const valueRegistry = new Map();
-
-function obtainSequenceElement(position) {
-    if (valueRegistry.has(position)) {
-        return valueRegistry.get(position);
-    }
-
-    let calculatedValue;
-    if (position === 0) {
-        calculatedValue = 1;
-    } else if (position === 1) {
-        calculatedValue = 1;
-    } else if (position === 2) {
-        calculatedValue = 2;
+#!/usr/bin/node
+(function() {
+  const sequenceLength = 31;
+  const tribonacciValues = Array(sequenceLength).fill(0).reduce((accumulator, _, currentIndex) => {
+    if (currentIndex === 0) {
+      accumulator.push(1);
+    } else if (currentIndex === 1) {
+      accumulator.push(1);
+    } else if (currentIndex === 2) {
+      accumulator.push(2);
     } else {
-        calculatedValue = obtainSequenceElement(position - 1) +
-                          obtainSequenceElement(position - 2) +
-                          obtainSequenceElement(position - 3);
+      accumulator.push(accumulator[currentIndex - 1] + accumulator[currentIndex - 2] + accumulator[currentIndex - 3]);
     }
+    return accumulator;
+  }, []);
 
-    valueRegistry.set(position, calculatedValue);
-    return calculatedValue;
-}
+  const inputSource = process.openStdin();
+  inputSource.setEncoding('utf8');
 
-for (let currentPosition = 0; currentPosition <= 30; ++currentPosition) {
-    obtainSequenceElement(currentPosition);
-}
+  let currentInputBuffer = '';
+  const collectedIndices = [];
 
-const inputGatherer = [];
-const interactiveInterface = dataProcessor.createInterface({
-    input: systemInput,
-    output: systemOutput,
-    terminal: false
-});
-
-interactiveInterface.on('line', (lineContent) => {
-    if (lineContent.trim() !== '') {
-        const numericValue = Number.parseInt(lineContent, 10);
-        inputGatherer.push(numericValue);
+  inputSource.on('data', (incomingChunk) => {
+    currentInputBuffer += incomingChunk;
+    let newlinePosition;
+    while ((newlinePosition = currentInputBuffer.indexOf('\n')) !== -1) {
+      const processedLine = currentInputBuffer.substring(0, newlinePosition);
+      currentInputBuffer = currentInputBuffer.substring(newlinePosition + 1);
+      if (processedLine.length > 0) {
+        collectedIndices.push(processedLine ^ 0);
+      }
     }
-});
+  });
 
-interactiveInterface.on('close', () => {
-    const adjustmentValue = 3649;
-    const divisionFactor = 3650;
-
-    for (const requestedIndex of inputGatherer) {
-        const correspondingSequenceValue = valueRegistry.get(requestedIndex);
-        const intermediateResult = (correspondingSequenceValue + adjustmentValue) / divisionFactor;
-        const finalResult = Math.floor(intermediateResult);
-        systemOutput.write(finalResult.toString() + '\n');
-    }
-});
+  inputSource.on('end', () => {
+    collectedIndices.forEach(targetIndex => {
+      console.log((tribonacciValues[targetIndex] + 3649) / 3650 ^ 0);
+    });
+  });
+})();

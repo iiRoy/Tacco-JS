@@ -1,12 +1,15 @@
-const filesystemOperations = require('node:fs');
-const acquiredText = filesystemOperations.readFileSync('/dev/stdin', { encoding: 'utf8' });
-const structuredContent = acquiredText.split('\n');
+const fileSystemModule = require('fs');
+const rawInputContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const dataLines = rawInputContent.split('\n');
 
-function traverseAndDisplay(dataCollection, currentIndex) {
-    if (currentIndex < dataCollection.length) {
-        console.log('Case ' + currentIndex + ': ' + dataCollection[currentIndex]);
-        traverseAndDisplay(dataCollection, currentIndex + 1);
+function* generateFormattedOutput(sourceEntries) {
+    let currentEntryIndex = 0;
+    for (const singleEntry of sourceEntries) {
+        yield `Case ${currentEntryIndex}: ${singleEntry}`;
+        currentEntryIndex++;
     }
 }
 
-traverseAndDisplay(structuredContent, 0);
+for (const outputLine of generateFormattedOutput(dataLines)) {
+    console.log(outputLine);
+}

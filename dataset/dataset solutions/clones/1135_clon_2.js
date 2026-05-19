@@ -1,109 +1,137 @@
-// This initial segment configures logging and handles the ingestion of input data.
+var outputFunc = console.log;
 
-var outputVal = console.log; // Assigns the console's logging function to a local variable.
+// Check if running in a Node.js-like environment to handle input
+if (typeof process !== "undefined") {
+  /*
+   * Original commented-out input handling block.
+   * Preserving its structure and content as it is non-executable.
+   */
+  // var input = "";
+  // process.stdin.resume();
+  // process.stdin.setEncoding('utf8');
+  // process.stdin.on('data', function(chunk) {
+  //     input += chunk;
+  // });
+  // process.stdin.on('end', function() {
+  //     var lines = input.split("\n");
+  //     main(lines);
+  // });
 
-if (typeof execEnv !== "undefined") { // Checks if the script is running within a Node.js-like environment.
-    /*
-    // The following block demonstrates an alternative, asynchronous method for input retrieval.
-    var dataStreamBuffer = "";
-    execEnv.stdin.resume();
-    execEnv.stdin.setEncoding('utf8');
-    execEnv.stdin.on('data', function (dataChunk) {
-        dataStreamBuffer += dataChunk;
-    });
-    execEnv.stdin.on('end', function () {
-        var textRowsArray = dataStreamBuffer.split("\n");
-        performTask(textRowsArray); // Invokes the main processing routine.
-    });
-    */
-    // For synchronous operation, reads the entire content from standard input.
-    var dataStream = require('fs').readFileSync('/dev/stdin', 'utf8');
-    var textRows = dataStream.split("\n"); // Splits the raw input string into an array of lines.
-    performTask(textRows); // Initiates the primary computational sequence.
+  // Read input from standard input file path
+  var rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+  var inputRows = rawInputContent.split("\n");
+
+  // Call the primary processing function
+  processInputData(inputRows);
 }
 
-// End of the input processing and execution environment setup.
+// Main function to process the input data
+function processInputData(inputRows) {
+  // Transform each input row based on its content
+  inputRows = inputRows.map(function (currentEntry) {
+    // If a row contains multiple space-separated values, parse them as numbers
+    if (currentEntry.split(" ").length >= 2) {
+      return currentEntry.split(" ").map(function (numericPart) {
+        return Number(numericPart);
+      });
+    } else {
+      // Otherwise, parse the entire row as a single number
+      return Number(currentEntry);
+    }
+  });
 
-function performTask(textRows) {
-    // Transforms the array of raw text lines into a structured numerical format.
-    textRows = textRows.map(function (elementItem) {
-        // If a line contains multiple space-separated numerical components.
-        if (elementItem.split(" ").length >= 2) {
-            return elementItem.split(" ").map(function (numericPiece) {
-                return Number(numericPiece); // Converts each part to a number.
-            });
-        } else {
-            return Number(elementItem); // Otherwise, converts the entire line to a single number.
-        }
-    });
+  // Extract the first line which contains configuration data
+  var firstLineData = inputRows.shift();
 
+  // Get the number of items from the configuration data
+  var itemCount = firstLineData.shift();
 
-    var configParams = textRows.shift(); // Extracts the first line for configuration.
-    var numItems = configParams.shift(); // Retrieves the total count of items.
-    var maxWeight = configParams.shift(); // Obtains the maximum allowable weight capacity.
-    var itemDetails = textRows; // The remaining lines represent the actual item data.
+  // Get the maximum weight capacity from the configuration data
+  var maxWeightCapacity = firstLineData.shift();
 
-    var itemCounter = numItems; // An auxiliary counter, its direct use might be contextual or implied later.
+  // The remaining rows are the item details (value and weight)
+  var itemDetails = inputRows;
 
-    var storageMap = {}; // An empty object, potentially for future data aggregation or mapping.
+  // An unused variable from the original code, kept for structural similarity
+  var loopCounter = itemCount;
 
-    calculateValue(itemDetails, maxWeight); // Calls the core algorithm to determine the optimal value.
+  // Another unused variable from the original code, kept for structural similarity
+  var dataStructures = {};
+
+  // Call the knapsack calculation function
+  calculateMaxValue(itemDetails, maxWeightCapacity);
 }
 
-// This function implements a dynamic programming algorithm, typically for a knapsack problem variant.
-function calculateValue(itemDetails, maxWeight) {
-    var currentValues = {}; // Stores the maximum value achieved for each weight in the current iteration.
-    var previousValues = {}; // Holds the state from the prior iteration to build upon.
+// Function to calculate the maximum value that can be obtained
+// using a dynamic programming approach (0/1 Knapsack variant)
+function calculateMaxValue(availableItems, capacityLimit) {
+  // 'currentMaxValues' will store the maximum value for each weight
+  // in the current iteration of items.
+  var currentMaxValues = {};
 
-    // Iterates through each item provided in the itemDetails array.
-    for (var itemIndex = 0; itemIndex < itemDetails.length; itemIndex++) {
-        var itemValue = itemDetails[itemIndex][0]; // The value of the current item being considered.
-        var itemWeight = itemDetails[itemIndex][1]; // The weight of the current item.
+  // 'previousMaxValues' will temporarily hold the values from the previous iteration.
+  var previousMaxValues = {};
 
-        previousValues = currentValues; // Transfers the results of the current iteration to the 'previous' state.
-        currentValues = {}; // Resets the 'currentValues' map for the new iteration with the next item.
+  // Iterate through each available item
+  for (var itemIndex = 0; itemIndex < availableItems.length; itemIndex++) {
+    // Extract the value and weight of the current item
+    var itemValue = availableItems[itemIndex][0];
+    var itemWeight = availableItems[itemIndex][1];
 
-        // Processes all weight entries accumulated from the previous step.
-        for (var currentWeight in previousValues) {
-            currentWeight = Number(currentWeight); // Ensures the weight key is treated as a numerical value.
+    // Swap current and previous maps for the next iteration
+    previousMaxValues = currentMaxValues;
+    currentMaxValues = {};
 
-            // Updates 'currentValues' if the value from 'previousValues' for the current weight is higher
-            // or if 'currentValues' does not yet contain an entry for this weight.
-            if (currentValues[currentWeight] <= previousValues[currentWeight] || !currentValues[currentWeight]) {
-                currentValues[currentWeight] = previousValues[currentWeight];
-            }
+    // Iterate through all possible weights from the previous state
+    for (var currentWeightKey in previousMaxValues) {
+      // Ensure the weight key is treated as a number
+      currentWeightKey = Number(currentWeightKey);
 
-            // Checks if adding the current item's weight would exceed the overall maximum capacity.
-            if (currentWeight + itemWeight <= maxWeight) {
-                var potentialNewTotalValue = previousValues[currentWeight] + itemValue; // Calculate value if item is added.
-                var existingPreviousCombinedValue = previousValues[currentWeight + itemWeight];
-                var existingCurrentCombinedValue = currentValues[currentWeight + itemWeight];
+      // If the current weight already has a value in 'currentMaxValues'
+      // or if it's empty, update it with the value from 'previousMaxValues'
+      if (currentMaxValues[currentWeightKey] <= previousMaxValues[currentWeightKey] || !currentMaxValues[currentWeightKey]) {
+        currentMaxValues[currentWeightKey] = previousMaxValues[currentWeightKey];
+      }
 
-                // If the potential new total value is greater than existing values for the combined weight
-                // in both 'previousValues' and 'currentValues', update 'currentValues'.
-                if ((existingPreviousCombinedValue <= potentialNewTotalValue || !existingPreviousCombinedValue) &&
-                    (existingCurrentCombinedValue <= potentialNewTotalValue || !existingCurrentCombinedValue)) {
-                    currentValues[currentWeight + itemWeight] = potentialNewTotalValue;
-                }
-            } else {
-                // If adding the current item's weight exceeds the capacity,
-                // further iteration on increasing weights for this path is stopped.
-                break;
-            }
+      // Check if adding the current item's weight exceeds the capacity limit
+      if (currentWeightKey + itemWeight <= capacityLimit) {
+        // Calculate the new value if the current item is added
+        var potentialNewValue = previousMaxValues[currentWeightKey] + itemValue;
+
+        // If the new value is greater than what's currently stored for this new weight,
+        // or if there's no value stored yet, update 'currentMaxValues'.
+        // Also check against 'previousMaxValues' to ensure we're not overwriting a better value.
+        if ((previousMaxValues[currentWeightKey + itemWeight] <= potentialNewValue || !previousMaxValues[currentWeightKey + itemWeight]) &&
+          (currentMaxValues[currentWeightKey + itemWeight] <= potentialNewValue || !currentMaxValues[currentWeightKey + itemWeight])) {
+          currentMaxValues[currentWeightKey + itemWeight] = potentialNewValue;
         }
-        // Considers the current item by itself, or if its value is superior to any existing entry
-        // for its specific weight in both previous and current result sets.
-        if ((previousValues[itemWeight] <= itemValue || !previousValues[itemWeight]) &&
-            (currentValues[itemWeight] <= itemValue || !currentValues[itemWeight])) {
-            currentValues[itemWeight] = itemValue;
-        }
+      } else {
+        // If adding the current item's weight exceeds capacity,
+        // and weights are processed in increasing order,
+        // further iterations for this item won't fit either.
+        // This 'break' implies that the keys in 'previousMaxValues' are somewhat ordered,
+        // or that the problem constraints allow this optimization.
+        break;
+      }
     }
 
-    // After processing all items, searches for the maximum value attainable within the total weight limit.
-    for (var weightCounter = maxWeight; weightCounter > 0; weightCounter--) {
-        if (!!currentValues[weightCounter]) { // If a valid value exists for this specific weight.
-            outputVal(currentValues[weightCounter]); // Logs the highest value found.
-            break; // Exits the loop once the maximum value for the highest possible weight is identified.
-        }
+    // Handle the case where only the current item is taken (if it fits)
+    // If the current item's value is greater than what's currently stored for its weight,
+    // or if there's no value stored yet, update 'currentMaxValues'.
+    if ((previousMaxValues[itemWeight] <= itemValue || !previousMaxValues[itemWeight]) &&
+      (currentMaxValues[itemWeight] <= itemValue || !currentMaxValues[itemWeight])) {
+      currentMaxValues[itemWeight] = itemValue;
     }
+  }
+
+  // After processing all items, find the maximum value in 'currentMaxValues'
+  // by iterating downwards from the maximum capacity.
+  for (var weightIterator = capacityLimit; weightIterator > 0; weightIterator--) {
+    // If a value exists for the current weight, it's the maximum possible value
+    // because we are iterating downwards from the maximum capacity.
+    if (!!currentMaxValues[weightIterator]) {
+      outputFunc(currentMaxValues[weightIterator]);
+      break; // Found the maximum, no need to check further
+    }
+  }
 }

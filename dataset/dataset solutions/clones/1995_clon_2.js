@@ -1,54 +1,78 @@
-"use strict"; // Ensure strict mode for robust coding practices.
+"use strict";
 
-const processInputData = (rawInputString) => { // Primary function to handle program logic.
-  let cumulativeSum = 0; // Initialize a variable to accumulate results.
+/**
+ * The primary execution function for the program.
+ * It processes input, performs calculations, and outputs results.
+ * @param {string} inputString - The raw input string from stdin.
+ */
+const executeProgram = (inputString) => {
+    // Initialize a variable to accumulate results from nested loops.
+    var totalSum = 0;
 
-  // Parse the incoming string data into individual lines.
-  const processedLines = rawInputString.trim().split("\n");
+    // Process the raw input string: trim whitespace and split into lines.
+    const processedLines = inputString.trim().split("\n");
 
-  // Extract the first and second numeric parameters from the first line.
-  const firstNumericParam = parseInt(processedLines[0].split(" ")[0]);
-  const secondNumericParam = parseInt(processedLines[0].split(" ")[1]);
+    // Parse the first line to extract two integer values.
+    // The first number (N) determines the exponentiation loop count.
+    const firstNum = parseInt(processedLines[0].split(" ")[0]);
+    // The second number (K) is the base for exponentiation.
+    const secondNum = parseInt(processedLines[0].split(" ")[1]);
 
-  let computedPower = secondNumericParam; // Start with the base value.
-  // Calculate the power: secondNumericParam raised to the firstNumericParam.
-  for (let exponentiationIterator = 1; exponentiationIterator <= firstNumericParam; exponentiationIterator++) {
-    computedPower *= secondNumericParam;
-  }
-  // Output the calculated power.
-  console.log(computedPower);
+    // Initialize a variable for the first major calculation.
+    var resultValue = secondNum;
 
-  // Begin a triple nested loop structure.
-  for (let outerLoopVar = 1; outerLoopVar <= computedPower; outerLoopVar++) {
-    for (let middleLoopVar = 1; middleLoopVar <= computedPower; middleLoopVar++) {
-      for (let innerLoopVar = 1; innerLoopVar <= computedPower; innerLoopVar++) {
-        // Increment the cumulative sum by the GCD of the three loop variables.
-        cumulativeSum += computeGreatestCommonDivisor(outerLoopVar, middleLoopVar, innerLoopVar);
-      }
+    // Perform exponentiation: K raised to the power of (N+1).
+    // The loop runs N times, effectively multiplying by K N times,
+    // starting with K itself, so it's K^(N+1).
+    for (var loopCounter = 1; loopCounter <= firstNum; loopCounter++) {
+        resultValue *= secondNum;
     }
-  }
-  // Output the final cumulative sum divided by a large prime number.
-  console.log(cumulativeSum / 10000000007);
+
+    // Output the result of the first calculation.
+    console.log(resultValue);
+
+    // --- Start of the triple-nested loop for GCD calculations ---
+    // These loops iterate from 1 up to the calculated 'resultValue'.
+    for (var outerLoopVar = 1; outerLoopVar <= resultValue; outerLoopVar++) {
+        for (var middleLoopVar = 1; middleLoopVar <= resultValue; middleLoopVar++) {
+            for (var innerLoopVar = 1; innerLoopVar <= resultValue; innerLoopVar++) {
+                // For each combination of (i, j, k), calculate their greatest common divisor
+                // and add it to the running totalSum.
+                totalSum += calculateGCD(outerLoopVar, middleLoopVar, innerLoopVar);
+            }
+        }
+    }
+    // --- End of the triple-nested loop ---
+
+    // Output the final accumulated sum, divided by a large prime number.
+    // Note: The divisor 10000000007 is a prime number often used in competitive programming
+    // for modulo operations, though here it's used for division.
+    console.log(totalSum / 10000000007);
 };
 
 /**
  * Calculates the Greatest Common Divisor (GCD) of an arbitrary number of integers.
- * @param {...number} numbersToProcess - An array of numbers for which to calculate the GCD.
- * @returns {number} The GCD of all input numbers.
+ * It uses the Euclidean algorithm recursively.
+ * @returns {number} The GCD of all provided arguments.
  */
-function computeGreatestCommonDivisor(...numbersToProcess) {
-  // Helper function for binary GCD calculation using Euclidean algorithm.
-  const recursiveGcdHelper = (valOne, valTwo) =>
-    valTwo ? recursiveGcdHelper(valTwo, valOne % valTwo) : valOne;
+function calculateGCD() {
+    // Helper function implementing the Euclidean algorithm for two numbers.
+    // (a, b) => b ? f(b, a % b) : a
+    // If b is not zero, recursively call with (b, a % b).
+    // If b is zero, a is the GCD.
+    var findCommonDivisor = (valA, valB) => valB ? findCommonDivisor(valB, valA % valB) : valA;
 
-  let currentDivisorResult = numbersToProcess[0]; // Initialize with the first number.
+    // Initialize the current GCD with the first argument.
+    var currentDivisor = arguments[0];
 
-  // Iterate through the remaining numbers to find the cumulative GCD.
-  for (let argumentIndex = 1; argumentIndex < numbersToProcess.length; argumentIndex++) {
-    currentDivisorResult = recursiveGcdHelper(currentDivisorResult, numbersToProcess[argumentIndex]);
-  }
-  return currentDivisorResult; // Return the final GCD.
+    // Iterate through the rest of the arguments, updating the GCD.
+    for (var argIndex = 1; argIndex < arguments.length; argIndex++) {
+        currentDivisor = findCommonDivisor(currentDivisor, arguments[argIndex]);
+    }
+
+    // Return the final GCD.
+    return currentDivisor;
 }
 
-// Execute the main program function with data read from standard input.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the main program function by reading input from standard input.
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

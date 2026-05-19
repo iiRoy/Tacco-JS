@@ -1,17 +1,18 @@
-// This module handles the primary computation based on incoming text.
-function ProcessUnit ( rawContent ) {
-  // Break the raw content into an array of individual text lines.
-  const  textLines  =  rawContent.split( '\n' ) ;
+// This function processes the provided input string.
+function ProcessInput(rawData) {
+  // The input string is split by newline characters.
+  // For single-line inputs, this effectively makes rawData[0] the relevant part.
+  rawData = rawData.split('\n');
 
-  // Parse the numerical value from the first line of the input.
-  let  overallExtent  =  Number.parseInt( textLines[0] ) ;
+  // Parse the first line of input as an integer, representing the total length.
+  let totalLength = parseInt(rawData);
 
-  // Determine a segment's length by dividing the total extent by three.
-  let  pieceLength  =  overallExtent  /  3.0 ;
-  
-  // Output the cubic value of the calculated segment length.
-  console.log ( pieceLength * pieceLength * pieceLength ) ;
+  // Calculate the length of one side of the cube.
+  const sideLength = totalLength / 3;
+
+  // Output the volume of the cube (sideLength cubed).
+  console.log(sideLength * sideLength * sideLength);
 }
 
-// Below this point, no modifications should be made. This section manages system I/O.
-ProcessUnit ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Do not modify the following line; it handles reading from standard input and calling the main processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

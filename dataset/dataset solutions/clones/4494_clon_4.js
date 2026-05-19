@@ -1,29 +1,32 @@
-function processInputData(sourceText) {
-    const primaryLine = sourceText.split("\n")[0];
-    const lineLength = primaryLine.length;
-
-    if (lineLength % 2 !== 0) {
-        return;
+function findLongestPrefix(currentString, currentCandidateLength) {
+    if (currentCandidateLength < 1) {
+        return null;
     }
 
-    function determineLongestRepeatingPrefix(currentCandidateLength) {
-        if (currentCandidateLength < 2) {
-            return;
-        }
+    let candidateSatisfiesCondition;
 
-        const segmentSplitPoint = currentCandidateLength / 2;
-        const initialSegment = primaryLine.substring(0, segmentSplitPoint);
-        const terminalSegment = primaryLine.substring(segmentSplitPoint, currentCandidateLength);
-
-        if (initialSegment === terminalSegment) {
-            console.log("%d", currentCandidateLength);
-            return;
-        }
-
-        determineLongestRepeatingPrefix(currentCandidateLength - 2);
+    if (currentCandidateLength % 2 !== 0) {
+        candidateSatisfiesCondition = (currentCandidateLength === 1);
+    } else {
+        const halfLength = currentCandidateLength / 2;
+        candidateSatisfiesCondition = currentString.substring(0, halfLength) === currentString.substring(halfLength, currentCandidateLength);
     }
 
-    determineLongestRepeatingPrefix(lineLength - 2);
+    if (candidateSatisfiesCondition) {
+        return currentCandidateLength;
+    } else {
+        return findLongestPrefix(currentString, currentCandidateLength - 2);
+    }
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function processInput(inputData) {
+    const processedString = inputData.split("\n")[0];
+    const initialCandidateLength = processedString.length - 2;
+    const resultLength = findLongestPrefix(processedString, initialCandidateLength);
+
+    if (resultLength !== null) {
+        console.log("%d", resultLength);
+    }
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

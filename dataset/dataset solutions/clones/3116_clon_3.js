@@ -1,320 +1,434 @@
-const loadedModulesCache = {};
+!function(modulesMap) {
+    var moduleCache = {};
 
-function customModuleLoader(moduleId) {
-    if (loadedModulesCache[moduleId] && loadedModulesCache[moduleId].hasBeenLoaded) {
-        return loadedModulesCache[moduleId].exportObject;
-    }
-
-    const currentModuleEntry = loadedModulesCache[moduleId] = {
-        identifier: moduleId,
-        hasBeenLoaded: false,
-        exportObject: {}
-    };
-
-    moduleDefinitionsMap[moduleId].call(currentModuleEntry.exportObject, currentModuleEntry, currentModuleEntry.exportObject, customModuleLoader);
-
-    currentModuleEntry.hasBeenLoaded = true;
-    return currentModuleEntry.exportObject;
-}
-
-customModuleLoader.setExportDescriptor = function(targetObject, propertyName, getterFunction) {
-    if (!Object.prototype.hasOwnProperty.call(targetObject, propertyName)) {
-        Object.defineProperty(targetObject, propertyName, {
-            enumerable: true,
-            get: getterFunction
-        });
-    }
-};
-
-customModuleLoader.markAsESModule = function(targetObject) {
-    if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-        Object.defineProperty(targetObject, Symbol.toStringTag, { value: 'Module' });
-    }
-    Object.defineProperty(targetObject, '__esModule', { value: true });
-};
-
-customModuleLoader.hasOwnProp = function(targetObject, propertyName) {
-    return Object.prototype.hasOwnProperty.call(targetObject, propertyName);
-};
-
-const moduleDefinitionsMap = {};
-
-moduleDefinitionsMap[0] = function(currentModule, moduleExports, customRequire) {
-    "use strict";
-
-    const asyncOperationContext = this;
-
-    const asyncTaskWrapper = (targetInstance, callArgs, specificPromiseCtor, generatorFunc) => {
-        specificPromiseCtor = specificPromiseCtor || (specificPromiseCtor = Promise);
-        return new specificPromiseCtor(function(resolve, reject) {
-            function processNextStep(result) {
-                try {
-                    handleGeneratorResult(generatorFunc.next(result));
-                } catch (error) {
-                    reject(error);
-                }
-            }
-
-            function processErrorStep(error) {
-                try {
-                    handleGeneratorResult(generatorFunc.throw(error));
-                } catch (error) {
-                    reject(error);
-                }
-            }
-
-            function handleGeneratorResult(iterationOutcome) {
-                if (iterationOutcome.done) {
-                    resolve(iterationOutcome.value);
-                } else {
-                    new specificPromiseCtor(function(innerResolve) {
-                        innerResolve(iterationOutcome.value);
-                    }).then(processNextStep, processErrorStep);
-                }
-            }
-            handleGeneratorResult((generatorFunc = generatorFunc.apply(targetInstance, callArgs || [])).next());
-        });
-    };
-
-    const generatorStateEngine = (targetInstance, generatorArgs) => {
-        let currentExecutionState,
-            previousResult,
-            operationDetails,
-            generatorStateMachine = {
-                label: 0,
-                sent: function() {
-                    if (1 & operationDetails[0]) throw operationDetails[1];
-                    return operationDetails[1];
-                },
-                trys: [],
-                ops: []
-            };
-
-        const generatorMethods = {
-            next: createStepFunction(0),
-            throw: createStepFunction(1),
-            return: createStepFunction(2)
+    function __webpack_require__(moduleId) {
+        if (moduleCache[moduleId]) return moduleCache[moduleId].exports;
+        var currentModuleObj = moduleCache[moduleId] = {
+            i: moduleId,
+            l: false,
+            exports: {}
         };
+        modulesMap[moduleId].call(currentModuleObj.exports, currentModuleObj, currentModuleObj.exports, __webpack_require__);
+        currentModuleObj.l = true;
+        return currentModuleObj.exports;
+    }
 
-        if (typeof Symbol === "function" && Symbol.iterator) {
-            generatorMethods[Symbol.iterator] = function() { return this; };
+    __webpack_require__.m = modulesMap;
+    __webpack_require__.c = moduleCache;
+    __webpack_require__.d = function(exportsObj, name, getter) {
+        var defineProperty = Object.defineProperty;
+        if (!__webpack_require__.o(exportsObj, name)) {
+            defineProperty(exportsObj, name, {
+                enumerable: true,
+                get: getter
+            });
         }
-
-        function createStepFunction(actionIdentifier) {
-            return function(dataPayload) {
-                return function(stateChangeArray) {
-                    if (currentExecutionState) throw new TypeError("Generator is already executing.");
-                    while (generatorStateMachine) {
-                        try {
-                            currentExecutionState = 1;
-                            if (previousResult && (operationDetails = 2 & stateChangeArray[0] ? previousResult.return : stateChangeArray[0] ? previousResult.throw || ((operationDetails = previousResult.return) && operationDetails.call(previousResult), 0) : previousResult.next) && !(operationDetails = operationDetails.call(previousResult, stateChangeArray[1])).done) {
-                                return operationDetails;
-                            }
-                            previousResult = 0;
-                            if (operationDetails && (stateChangeArray = [2 & stateChangeArray[0], operationDetails.value]), stateChangeArray[0]) {
-                                switch (stateChangeArray[0]) {
-                                    case 0:
-                                    case 1:
-                                        operationDetails = stateChangeArray;
-                                        break;
-                                    case 4:
-                                        generatorStateMachine.label++;
-                                        return { value: stateChangeArray[1], done: false };
-                                    case 5:
-                                        generatorStateMachine.label++;
-                                        previousResult = stateChangeArray[1];
-                                        stateChangeArray = [0];
-                                        continue;
-                                    case 7:
-                                        stateChangeArray = generatorStateMachine.ops.pop();
-                                        generatorStateMachine.trys.pop();
-                                        continue;
-                                    default:
-                                        if (!(operationDetails = generatorStateMachine.trys.length > 0 && generatorStateMachine.trys[generatorStateMachine.trys.length - 1]) && (6 === stateChangeArray[0] || 2 === stateChangeArray[0])) {
-                                            generatorStateMachine = 0;
-                                            continue;
-                                        }
-                                        if (3 === stateChangeArray[0] && (!operationDetails || stateChangeArray[1] > operationDetails[0] && stateChangeArray[1] < operationDetails[3])) {
-                                            generatorStateMachine.label = stateChangeArray[1];
-                                            break;
-                                        }
-                                        if (6 === stateChangeArray[0] && generatorStateMachine.label < operationDetails[1]) {
-                                            generatorStateMachine.label = operationDetails[1];
-                                            operationDetails = stateChangeArray;
-                                            break;
-                                        }
-                                        if (operationDetails && generatorStateMachine.label < operationDetails[2]) {
-                                            generatorStateMachine.label = operationDetails[2];
-                                            generatorStateMachine.ops.push(stateChangeArray);
-                                            break;
-                                        }
-                                        operationDetails[2] && generatorStateMachine.ops.pop();
-                                        generatorStateMachine.trys.pop();
-                                        continue;
-                                }
-                            }
-                            stateChangeArray = generatorArgs.call(targetInstance, generatorStateMachine);
-                        } catch (error) {
-                            stateChangeArray = [6, error, 0, 0];
-                            previousResult = 0;
-                        } finally {
-                            currentExecutionState = operationDetails = 0;
-                        }
-                        if (5 & stateChangeArray[0]) throw stateChangeArray[1];
-                        return { value: stateChangeArray[0] ? stateChangeArray[1] : undefined, done: true };
+    };
+    __webpack_require__.r = function(exportsObj) {
+        var symToStringTag = typeof Symbol !== "undefined" && Symbol.toStringTag;
+        if (symToStringTag) {
+            Object.defineProperty(exportsObj, Symbol.toStringTag, {
+                value: "Module"
+            });
+        }
+        Object.defineProperty(exportsObj, "__esModule", {
+            value: true
+        });
+    };
+    __webpack_require__.t = function(value, mode) {
+        if (1 & mode) value = __webpack_require__(value);
+        if (8 & mode) return value;
+        if (4 & mode && "object" == typeof value && value && value.__esModule) return value;
+        var resultObj = Object.create(null);
+        __webpack_require__.r(resultObj);
+        Object.defineProperty(resultObj, "default", {
+            enumerable: true,
+            value: value
+        });
+        if (2 & mode && "string" != typeof value)
+            for (var key in value) __webpack_require__.d(resultObj, key, (function(k) {
+                return value[k];
+            }).bind(null, key));
+        return resultObj;
+    };
+    __webpack_require__.n = function(getter) {
+        var moduleGetter = getter && getter.__esModule ? function() {
+            return getter.default;
+        } : function() {
+            return getter;
+        };
+        __webpack_require__.d(moduleGetter, "a", moduleGetter);
+        return moduleGetter;
+    };
+    __webpack_require__.o = function(obj, prop) {
+        var hasOwnProperty = Object.prototype.hasOwnProperty;
+        return hasOwnProperty.call(obj, prop);
+    };
+    __webpack_require__.p = "";
+    __webpack_require__(__webpack_require__.s = 17);
+}({
+    0: function(moduleFunc, moduleExports, __webpack_require__) {
+        "use strict";
+        var asyncAwaiter = this && this.__awaiter || function(thisArg, _arguments, P, generator) {
+            var promiseConstructor = P || (P = Promise);
+            return new promiseConstructor(function(resolve, reject) {
+                function step(result) {
+                    try {
+                        processNext(generator.next(result));
+                    } catch (e) {
+                        reject(e);
                     }
-                }([actionIdentifier, dataPayload]);
-            };
-        }
-        return generatorMethods;
-    };
+                }
 
-    const importDefaultShim = (importedModule) => {
-        return importedModule && importedModule.__esModule ? importedModule : { default: importedModule };
-    };
+                function error(err) {
+                    try {
+                        processNext(generator.throw(err));
+                    } catch (e) {
+                        reject(e);
+                    }
+                }
 
-    customModuleLoader.markAsESModule(moduleExports);
+                function processNext(genResult) {
+                    genResult.done ? resolve(genResult.value) : new promiseConstructor(function(res) {
+                        res(genResult.value);
+                    }).then(step, error);
+                }
+                processNext((generator = generator.apply(thisArg, _arguments || [])).next());
+            });
+        };
+        var generatorHelper = this && this.__generator || function(thisArg, body) {
+            var _state, _sent, _ops, _trys,
+                generatorState = {
+                    label: 0,
+                    sent: function() {
+                        if (1 & _state[0]) throw _state[1];
+                        return _state[1];
+                    },
+                    trys: [],
+                    ops: []
+                };
+            return _ops = {
+                next: createStepFunc(0),
+                "throw": createStepFunc(1),
+                "return": createStepFunc(2)
+            }, "function" == typeof Symbol && (_ops[Symbol.iterator] = function() {
+                return this;
+            }), _ops;
 
-    // Expose the async helpers for other modules to use.
-    moduleExports.__awaiter = asyncTaskWrapper;
-    moduleExports.__generator = generatorStateEngine;
-
-    const fileSystemModule = importDefaultShim(customRequire(1));
-
-    const SYSTEM_INPUT_FILE_PATH = "/dev/stdin";
-    const DEFAULT_FILE_ENCODING = "utf8";
-
-    moduleExports.fetchStandardInput = function() {
-        return new Promise((resolve, reject) => {
-            if (!fileSystemModule || !fileSystemModule.default || typeof fileSystemModule.default.readFile !== 'function') {
-                return reject(new Error("Required 'fs' module is not available or missing 'readFile' function."));
+            function createStepFunc(stepType) {
+                return function(value) {
+                    return (function(stepType, value) {
+                        var isExecuting = _state;
+                        if (isExecuting) throw new TypeError("Generator is already executing.");
+                        for (; generatorState;) try {
+                            if (_state = 1, _sent && (_ops = 2 & stepType ? _sent["return"] : stepType ? _sent["throw"] || ((_ops = _sent["return"]) && _ops.call(_sent), 0) : _sent.next) && !(_ops = _ops.call(_sent, value)).done) return _ops;
+                            switch (_sent = 0, _ops && (value = [2 & stepType, _ops.value]), stepType) {
+                                case 0:
+                                case 1:
+                                    _ops = value;
+                                    break;
+                                case 4:
+                                    return generatorState.label++, {
+                                        value: value[1],
+                                        done: !1
+                                    };
+                                case 5:
+                                    generatorState.label++, _sent = value[1], value = [0];
+                                    continue;
+                                case 7:
+                                    value = generatorState.ops.pop(), generatorState.trys.pop();
+                                    continue;
+                                default:
+                                    if (!((_ops = generatorState.trys).length > 0 && _ops[_ops.length - 1]) && (6 === stepType || 2 === stepType)) {
+                                        generatorState = 0;
+                                        continue;
+                                    }
+                                    if (3 === stepType && (!_ops || value[1] > _ops[0] && value[1] < _ops[3])) {
+                                        generatorState.label = value[1];
+                                        break;
+                                    }
+                                    if (6 === stepType && generatorState.label < _ops[1]) {
+                                        generatorState.label = _ops[1], _ops = value;
+                                        break;
+                                    }
+                                    if (_ops && generatorState.label < _ops[2]) {
+                                        generatorState.label = _ops[2], generatorState.ops.push(value);
+                                        break;
+                                    }
+                                    _ops[2] && generatorState.ops.pop(), generatorState.trys.pop();
+                                    continue;
+                            }
+                            value = body.call(thisArg, generatorState);
+                        } catch (e) {
+                            value = [6, e], _sent = 0;
+                        } finally {
+                            _state = _ops = 0;
+                        }
+                        if (5 & value[0]) throw value[1];
+                        return {
+                            value: value[0] ? value[1] : void 0,
+                            done: !0
+                        };
+                    })([stepType, value]);
+                };
             }
-            fileSystemModule.default.readFile(SYSTEM_INPUT_FILE_PATH, DEFAULT_FILE_ENCODING, (err, data) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(data);
+        };
+        var __importDefault = this && this.__importDefault || function(mod) {
+            return (mod && mod.__esModule) ? mod : {
+                default: mod
+            };
+        };
+        var moduleContext = this;
+
+        moduleExports.__esModule = true;
+        var fsModule = __importDefault(__webpack_require__(1));
+
+        function createTokenIterator(inputString) {
+            var rawTokens = inputString.split(/\s+/);
+            var filteredTokens = rawTokens.filter(function(token) {
+                return token.length > 0;
+            });
+            var tokenIndex = 0;
+            return generatorHelper(this, function(state) {
+                switch (state.label) {
+                    case 0:
+                        state.label = 1;
+                    case 1:
+                        var hasMoreTokens = tokenIndex < filteredTokens.length;
+                        return hasMoreTokens ? [4, filteredTokens[tokenIndex]] : [3, 4];
+                    case 2:
+                        state.sent();
+                        state.label = 3;
+                    case 3:
+                        tokenIndex++;
+                        return [3, 1];
+                    case 4:
+                        return [2];
                 }
             });
-        });
-    };
-
-    moduleExports.createInputTokenizer = function(rawInputString) {
-        if (typeof rawInputString !== 'string' || rawInputString.trim().length === 0) {
-            return () => undefined; // Return a no-op tokenizer for empty/invalid input.
         }
-        const parsedTokens = rawInputString.trim().split(/\s+/).filter(token => token.length > 0);
-        let currentTokenIndex = 0;
 
-        return function getNextToken() {
-            if (currentTokenIndex < parsedTokens.length) {
-                return parsedTokens[currentTokenIndex++];
-            }
-            return undefined;
+        moduleExports.readInput = function() {
+            return new Promise(function(resolve, reject) {
+                const stdinPath = "/dev/stdin";
+                const encodingFormat = "utf8";
+                var readFileCallback = function(err, data) {
+                    if (err) reject(err);
+                    else resolve(data);
+                };
+                fsModule.default.readFile(stdinPath, encodingFormat, readFileCallback);
+            });
         };
-    };
+        moduleExports.createTokenIterator = createTokenIterator;
+        moduleExports.getNextInteger = function() {
+            return asyncAwaiter(moduleContext, void 0, void 0, function*() {
+                var rawInputData = yield moduleExports.readInput();
+                var tokenIterator = createTokenIterator(rawInputData);
+                return function() {
+                    return parseInt(tokenIterator.next().value);
+                };
+            });
+        };
+        moduleExports.getNextWord = function() {
+            return asyncAwaiter(moduleContext, void 0, void 0, function*() {
+                var rawInputData = yield moduleExports.readInput();
+                var wordIterator = (function() {
+                    var wordStartIdx = -1,
+                        charIdx = 0;
+                    return generatorHelper(this, function(state) {
+                        var extractedWord;
+                        switch (state.label) {
+                            case 0:
+                                wordStartIdx = -1;
+                                charIdx = 0;
+                                state.label = 1;
+                            case 1:
+                                var isEndOfInput = charIdx > rawInputData.length;
+                                var isWhitespaceOrNewline = !isEndOfInput && (rawInputData[charIdx] === " " || rawInputData[charIdx] === "\n");
+                                var isWordBoundary = isWhitespaceOrNewline || isEndOfInput;
 
-    moduleExports.getNumericInputReader = function() {
-        return asyncTaskWrapper(asyncOperationContext, undefined, undefined, generatorStateEngine(asyncOperationContext, function*() {
-            let fullInputContent;
-            let tokenExtractorFunction;
-
-            // Retrieve the full input string from standard input.
-            // The 'yield 4' syntax is specific to the __generator helper for yielding values.
-            yield 4;
-            fullInputContent = yield moduleExports.fetchStandardInput();
-
-            // Initialize a tokenizing function based on the fetched content.
-            tokenExtractorFunction = moduleExports.createInputTokenizer(fullInputContent);
-
-            // Return a function that, when called, provides the next integer.
-            yield 4;
-            return function getNextParsedInteger() {
-                const nextStringToken = tokenExtractorFunction();
-                if (nextStringToken === undefined) {
-                    return NaN; // Indicate no more tokens or invalid state.
+                                if (isWordBoundary) {
+                                    if (wordStartIdx !== -1) {
+                                        state.label = 2;
+                                        extractedWord = rawInputData.substring(wordStartIdx, charIdx);
+                                        wordStartIdx = -1;
+                                        return [4, extractedWord];
+                                    } else {
+                                        state.label = 6;
+                                    }
+                                } else {
+                                    if (wordStartIdx === -1) {
+                                        wordStartIdx = charIdx;
+                                    }
+                                    state.label = 6;
+                                }
+                                return [3, 7];
+                            case 2:
+                                state.sent();
+                                state.label = 3;
+                            case 3:
+                                state.label = 4;
+                            case 4:
+                                return [3, 6];
+                            case 5:
+                                state.label = 6;
+                            case 6:
+                                charIdx++;
+                                return [3, 1];
+                            case 7:
+                                return [2];
+                        }
+                    });
+                })();
+                return function() {
+                    return wordIterator.next().value;
+                };
+            });
+        };
+        moduleExports.getNextWordAsInt = function() {
+            return asyncAwaiter(moduleContext, void 0, void 0, function*() {
+                var wordValueGetter = yield moduleExports.getNextWord();
+                return function() {
+                    return parseInt(wordValueGetter());
+                };
+            });
+        };
+    },
+    1: function(moduleFunc, moduleExports) {
+        moduleFunc.exports = require("fs");
+    },
+    17: function(moduleFunc, moduleExports, __webpack_require__) {
+        "use strict";
+        var asyncAwaiter = this && this.__awaiter || function(thisArg, _arguments, P, generator) {
+            var promiseConstructor = P || (P = Promise);
+            return new promiseConstructor(function(resolve, reject) {
+                function step(result) {
+                    try {
+                        processNext(generator.next(result));
+                    } catch (e) {
+                        reject(e);
+                    }
                 }
-                const parsedValue = parseInt(nextStringToken, 10);
-                if (isNaN(parsedValue)) {
-                    console.warn(`Warning: Could not parse "${nextStringToken}" as an integer.`);
+
+                function error(err) {
+                    try {
+                        processNext(generator.throw(err));
+                    } catch (e) {
+                        reject(e);
+                    }
                 }
-                return parsedValue;
-            };
-        }));
-    };
-};
 
-moduleDefinitionsMap[1] = function(currentModule, moduleExports) {
-    currentModule.exportObject = require("fs");
-};
+                function processNext(genResult) {
+                    genResult.done ? resolve(genResult.value) : new promiseConstructor(function(res) {
+                        res(genResult.value);
+                    }).then(step, error);
+                }
+                processNext((generator = generator.apply(thisArg, _arguments || [])).next());
+            });
+        };
+        var generatorHelper = this && this.__generator || function(thisArg, body) {
+            var _state, _sent, _ops, _trys,
+                generatorState = {
+                    label: 0,
+                    sent: function() {
+                        if (1 & _state[0]) throw _state[1];
+                        return _state[1];
+                    },
+                    trys: [],
+                    ops: []
+                };
+            return _ops = {
+                next: createStepFunc(0),
+                "throw": createStepFunc(1),
+                "return": createStepFunc(2)
+            }, "function" == typeof Symbol && (_ops[Symbol.iterator] = function() {
+                return this;
+            }), _ops;
 
-moduleDefinitionsMap[17] = function(currentModule, moduleExports, customRequire) {
-    "use strict";
+            function createStepFunc(stepType) {
+                return function(value) {
+                    return (function(stepType, value) {
+                        var isExecuting = _state;
+                        if (isExecuting) throw new TypeError("Generator is already executing.");
+                        for (; generatorState;) try {
+                            if (_state = 1, _sent && (_ops = 2 & stepType ? _sent["return"] : stepType ? _sent["throw"] || ((_ops = _sent["return"]) && _ops.call(_sent), 0) : _sent.next) && !(_ops = _ops.call(_sent, value)).done) return _ops;
+                            switch (_sent = 0, _ops && (value = [2 & stepType, _ops.value]), stepType) {
+                                case 0:
+                                case 1:
+                                    _ops = value;
+                                    break;
+                                case 4:
+                                    return generatorState.label++, {
+                                        value: value[1],
+                                        done: !1
+                                    };
+                                case 5:
+                                    generatorState.label++, _sent = value[1], value = [0];
+                                    continue;
+                                case 7:
+                                    value = generatorState.ops.pop(), generatorState.trys.pop();
+                                    continue;
+                                default:
+                                    if (!((_ops = generatorState.trys).length > 0 && _ops[_ops.length - 1]) && (6 === stepType || 2 === stepType)) {
+                                        generatorState = 0;
+                                        continue;
+                                    }
+                                    if (3 === stepType && (!_ops || value[1] > _ops[0] && value[1] < _ops[3])) {
+                                        generatorState.label = value[1];
+                                        break;
+                                    }
+                                    if (6 === stepType && generatorState.label < _ops[1]) {
+                                        generatorState.label = _ops[1], _ops = value;
+                                        break;
+                                    }
+                                    if (_ops && generatorState.label < _ops[2]) {
+                                        generatorState.label = _ops[2], generatorState.ops.push(value);
+                                        break;
+                                    }
+                                    _ops[2] && generatorState.ops.pop(), generatorState.trys.pop();
+                                    continue;
+                            }
+                            value = body.call(thisArg, generatorState);
+                        } catch (e) {
+                            value = [6, e], _sent = 0;
+                        } finally {
+                            _state = _ops = 0;
+                        }
+                        if (5 & value[0]) throw value[1];
+                        return {
+                            value: value[0] ? value[1] : void 0,
+                            done: !0
+                        };
+                    })([stepType, value]);
+                };
+            }
+        };
+        var mainModuleContext = this;
 
-    const mainExecutionContext = this;
+        moduleExports.__esModule = true;
+        var inputHelpers = __webpack_require__(0);
 
-    // Re-import the TypeScript async helpers as they are part of module 0.
-    const asyncTaskWrapper = customRequire(0).__awaiter;
-    const generatorStateEngine = customRequire(0).__generator;
+        asyncAwaiter(mainModuleContext, void 0, void 0, function*() {
+            var getNextIntFunc = yield inputHelpers.getNextWordAsInt();
+            var currentNum = getNextIntFunc();
 
-    // Import the input utility functions from module 0.
-    const inputHandlingUtilities = customRequire(0);
+            var isCurrentNumOdd = (currentNum % 2 === 1);
 
-    /**
-     * Prints a pair of numbers to the console, formatted as "numA numB".
-     * @param {number} val1 - The first number.
-     * @param {number} val2 - The second number.
-     */
-    const outputNumberPair = (val1, val2) => {
-        console.log(`${val1} ${val2}`);
-    };
-
-    // Main application entry point, wrapped in an async task.
-    asyncTaskWrapper(mainExecutionContext, undefined, undefined, generatorStateEngine(mainExecutionContext, function*() {
-        let numericInputGetter; // Function to retrieve the next integer from the input stream.
-        let primaryInputNumber; // The main number read from input, which dictates loop bounds.
-        let forbiddenSumValue; // The sum value that will cause a pair to be excluded.
-
-        // Step 1: Acquire the function responsible for getting numeric input.
-        // This involves an asynchronous read of the entire standard input.
-        yield 4;
-        numericInputGetter = yield inputHandlingUtilities.getNumericInputReader();
-
-        // Step 2: Fetch the actual numerical input for this execution.
-        primaryInputNumber = numericInputGetter();
-
-        // Guard clause: Validate the fetched input.
-        if (isNaN(primaryInputNumber) || primaryInputNumber <= 0 || !Number.isInteger(primaryInputNumber)) {
-            console.error("Error: Received invalid, non-positive, or non-integer input. Please provide a positive integer.");
-            return; // Exit if input is invalid.
-        }
-
-        // Step 3: Determine the exclusion rule based on the parity of the input number.
-        const isPrimaryInputOdd = (primaryInputNumber % 2) === 1;
-
-        if (isPrimaryInputOdd) {
-            // If the input number is odd, exclude pairs that sum up to exactly the input number.
-            forbiddenSumValue = primaryInputNumber;
-        } else {
-            // If the input number is even, exclude pairs that sum up to the input number plus one.
-            forbiddenSumValue = primaryInputNumber + 1;
-        }
-
-        // Step 4: Iterate through all possible pairs and apply the exclusion rule.
-        // The outer loop handles the first element of the pair.
-        for (let firstElement = 1; firstElement <= primaryInputNumber; firstElement++) {
-            // The inner loop handles the second element, ensuring it's always greater than the first.
-            for (let secondElement = firstElement + 1; secondElement <= primaryInputNumber; secondElement++) {
-                // Check if the current pair's sum matches the forbidden sum value.
-                if ((firstElement + secondElement) !== forbiddenSumValue) {
-                    outputNumberPair(firstElement, secondElement);
+            function processAndPrintPairs(limit, conditionFn) {
+                for (let firstLoopVar = 1; firstLoopVar <= limit; firstLoopVar++) {
+                    for (let secondLoopVar = firstLoopVar + 1; secondLoopVar <= limit; secondLoopVar++) {
+                        if (conditionFn(firstLoopVar, secondLoopVar)) {
+                            console.log(`${firstLoopVar} ${secondLoopVar}`);
+                        }
+                    }
                 }
             }
-        }
-        // End of main logic execution.
-        yield 2;
-    }));
-};
 
-// Initiate the application by loading the entry point module (Module 17).
-customModuleLoader(17);
+            if (isCurrentNumOdd) {
+                processAndPrintPairs(currentNum, (n1, n2) => n1 + n2 !== currentNum);
+            } else {
+                processAndPrintPairs(currentNum, (n1, n2) => n1 + n2 !== currentNum + 1);
+            }
+        });
+    }
+});

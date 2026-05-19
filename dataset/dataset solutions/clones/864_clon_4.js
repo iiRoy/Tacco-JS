@@ -1,67 +1,24 @@
-const OperationVault = {
-    obtainSource: function() {
-        const fileSys = require('fs');
-        const contentBlock = fileSys.readFileSync('/dev/stdin', 'utf8');
-        return contentBlock.trim().split('\n');
-    },
+const fileSys = require('fs');
+const dataSize = fileSys.fstatSync(process.stdin.fd).size;
+const inputBuffer = new Buffer(dataSize);
+const readBytesCount = fileSys.readSync(process.stdin.fd, inputBuffer, 0, dataSize, 0);
+const lineData = inputBuffer.toString('utf8', 0, readBytesCount).split('\n');
 
-    numericalConversion: function(txt) {
-        return Number(txt);
-    },
+const upperBound = Number(lineData[0]);
+const [valA, valB] = lineData[1].split(' ').map(Number);
+const [valC, valD] = lineData[2].split(' ').map(Number);
 
-    absoluteSpan: function(valOne, valTwo) {
-        const difference = valOne - valTwo;
-        return (difference < 0) ? -difference : difference;
-    },
-
-    integerQuotient: function(dividend, divisor) {
-        return (dividend / divisor) | 0;
-    }
+const computePairwiseDistance = (firstOperand, secondOperand, currentDivisor) => {
+    const remainderDifference = Math.abs(firstOperand % currentDivisor - secondOperand % currentDivisor);
+    const quotientDifference = Math.abs(Math.floor(firstOperand / currentDivisor) - Math.floor(secondOperand / currentDivisor));
+    return remainderDifference + quotientDifference;
 };
 
-function computeOptimalValue() {
-    const dataSegments = OperationVault.obtainSource();
+const overallMinimum = Array.from({ length: upperBound }, (_, index) => index + 1)
+    .reduce((currentMinimum, currentDivisor) => {
+        const pairOneMetric = computePairwiseDistance(valA, valB, currentDivisor);
+        const pairTwoMetric = computePairwiseDistance(valC, valD, currentDivisor);
+        return Math.min(currentMinimum, pairOneMetric + pairTwoMetric);
+    }, Infinity);
 
-    const rangeLimit = OperationVault.numericalConversion(dataSegments[0]);
-
-    const firstCoordStrings = dataSegments[1].split(' ');
-    const firstX = OperationVault.numericalConversion(firstCoordStrings[0]);
-    const firstY = OperationVault.numericalConversion(firstCoordStrings[1]);
-
-    const secondCoordStrings = dataSegments[2].split(' ');
-    const secondX = OperationVault.numericalConversion(secondCoordStrings[0]);
-    const secondY = OperationVault.numericalConversion(secondCoordStrings[1]);
-
-    let bestOutcome = Infinity;
-
-    const iterativeSearch = (currentIterand, currentMinimum) => {
-        if (currentIterand > rangeLimit) {
-            return currentMinimum;
-        }
-
-        const remDiffOne = OperationVault.absoluteSpan(firstX % currentIterand, firstY % currentIterand);
-        const quoDiffOne = OperationVault.absoluteSpan(
-            OperationVault.integerQuotient(firstX, currentIterand),
-            OperationVault.integerQuotient(firstY, currentIterand)
-        );
-        const combinedOne = remDiffOne + quoDiffOne;
-
-        const remDiffTwo = OperationVault.absoluteSpan(secondX % currentIterand, secondY % currentIterand);
-        const quoDiffTwo = OperationVault.absoluteSpan(
-            OperationVault.integerQuotient(secondX, currentIterand),
-            OperationVault.integerQuotient(secondY, currentIterand)
-        );
-        const combinedTwo = remDiffTwo + quoDiffTwo;
-
-        const totalCombined = combinedOne + combinedTwo;
-        const nextMinimum = (totalCombined < currentMinimum) ? totalCombined : currentMinimum;
-
-        return iterativeSearch(currentIterand + 1, nextMinimum);
-    };
-
-    bestOutcome = iterativeSearch(1, bestOutcome);
-
-    process.stdout.write(bestOutcome.toString() + '\n');
-}
-
-computeOptimalValue();
+console.log(overallMinimum);

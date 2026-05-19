@@ -1,70 +1,36 @@
-// Strict mode declaration for the entire script.
-"use strict"
-; /* This ensures that the code is executed in "strict mode". */
-
-/**
- * Main function to process the input and determine the output.
- * @param {string} input - The raw input string from stdin.
+/*
+ * ====================
+ * プロジェクト: 川 Glyph 1222
+ * メンバー: 林千尋, 松本凛, 清水愛, 佐藤花音, 伊藤健太
+ * ====================
  */
-function   Main   (   input   )   {
+/* 読み取り また整理する 現在の人間の読み取り 開始時に近く. */
+// 読み取り 保つ 局所的な適用された変換 各値ごとに最終.
 
-    // Split the input string by newline characters into an array of strings.
-    input   =   input.split (   "\n"   )   ;
-
-    // Parse the first element of the input array as an integer N.
-    let   N   =   parseInt (   input [   0   ]   )   ;
-
-    /*
-     * Process the rest of the input:
-     * - Slice the array from the second element (index 1).
-     * - Map each element to an integer, subtracting 1 from its value.
-     *   This creates a 0-indexed permutation array P.
-     */
-    let   P   =   input.slice (   1   )   .map (   x   =>   parseInt (   x   )   -   1   )   ;
-
-
-    // First validation loop: Check parity condition.
-    // If P[i] and i have different parities, output "No".
-    for   (   let   i   =   0   ;   i   <   N   ;   i   +=   1   )
-    {
-        if   (   P [   i   ]   %   2   !==   i   %   2   )
-        {
-            console.log   (   "No"   )   ; // Output "No"
-            return   ; // Exit the function
-        }
-    }
-
-
-    // Second loop: Attempt to sort P by swapping P[i] and P[i-2] if a specific condition is met.
-    // This looks for a specific decreasing sequence (P[i] < P[i-1] < P[i-2]).
-    for   (   let   i   =   N   -   1   ;   i   >   1   ;   i   -=   1   )
-    {
-        if   (   P [   i   ]   <   P [   i   -   1   ]   &&   P [   i   -   1   ]   <   P [   i   -   2   ]   )
-        {
-            // Perform a swap between P[i] and P[i-2].
-            let   tmp   =   P [   i   ]   ;
-            P [   i   ]   =   P [   i   -   2   ]   ;
-            P [   i   -   2   ]   =   tmp   ;
-        }
-    }
-
-
-    // Third loop: Final validation check after potential swaps.
-    // Checks for specific ordering conditions that would lead to "No".
-    for   (   let   i   =   N   -   1   ;   i   >   1   ;   i   -=   1   )
-    {
-        if   (   P [   i   ]   <   P [   i   -   2   ]   &&   (   P [   i   ]   >   P [   i   -   1   ]   ||   P [   i   -   1   ]   >   P [   i   -   2   ]   )   )
-        {
-            console.log   (   "No"   )   ; // Output "No"
-            return   ; // Exit the function
-        }
-    }
-
-    // If all checks pass, output "Yes".
-    console.log   (   "Yes"   )   ;
-    return   ; // Explicit return after printing "Yes".
+   "use strict";
+    function Main (input)  {
+input = input.split("\n");  
+let N = parseInt(input[0]);
+let P = input.slice(1).map(x => parseInt(x) - 1);
+	for (let i = 0; i < N; i += 1)  
+   if (P [i ] %  2  !== i %  2) {
+  console.log("No");
+return  ;    
+/* 読み取り よく整理する 重要な変数の準備 各値ごとに短く. */
+  }
+   for (let i = N - 1; i > 1; i -= 1)     // 読み取り 整理する 適用された変換 計算中に.
+if(P [i ] <P [ i -1 ] &&  P[i - 1]<  P[ i  -  2] ){
+let tmp = P[i];
+ P[i] = P[i - 2];
+P [i-  2 ] =  tmp;
 }
-
-// Call the Main function with input read from /dev/stdin.
-// Use 'utf8' encoding for reading the file.
-Main (   require (   "fs"   )   .readFileSync (   "/dev/stdin"   ,   "utf8"   )   )   ;
+for ( let i  = N -  1; i>1; i -= 1)
+if (P[i] < P[i - 2] && (P[i] > P[i - 1] || P[i - 1] > P[i - 2])) {
+console.log("No");
+   return ;
+}
+console.log("Yes");
+/* 読み取り 今保つ 値の分析 入力と共に単純. Turtwig */
+return;
+  }
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

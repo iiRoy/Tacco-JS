@@ -1,173 +1,163 @@
 class DataStreamProcessor {
     #lineBuffer;
-    #currentLinePosition;
-    #segmentCache;
+    #currentLineTokens;
+    #linePointer;
 
-    constructor(sourceData) {
-        this.#lineBuffer = sourceData.trim().split("\n");
-        this.#currentLinePosition = 0;
-        this.#segmentCache = [];
+    constructor(inputString) {
+        this.#lineBuffer = inputString.trim().split("\n");
+        this.#linePointer = 0;
+        this.#currentLineTokens = [];
     }
 
-    pullNumericValue(asString = false) {
-        if (this.#segmentCache.length === 0) {
-            if (this.#currentLinePosition >= this.#lineBuffer.length) {
-                return undefined;
-            }
-            this.#segmentCache = this.#lineBuffer[this.#currentLinePosition].split(" ");
+    #loadNextLineTokens() {
+        if (this.#currentLineTokens.length === 0 && this.#linePointer < this.#lineBuffer.length) {
+            this.#currentLineTokens = this.#lineBuffer[this.#linePointer++].split(" ");
         }
-        const value = this.#segmentCache.pop();
-        if (this.#segmentCache.length === 0) {
-            this.#currentLinePosition++;
-        }
-        return asString ? value : Number(value);
     }
 
-    pullLineValues(asStrings = false) {
-        if (this.#currentLinePosition >= this.#lineBuffer.length) {
+    extractNextValue(asString = false) {
+        this.#loadNextLineTokens();
+        if (this.#currentLineTokens.length === 0) {
             return undefined;
         }
-        this.#segmentCache = [];
-        const parts = this.#lineBuffer[this.#currentLinePosition++].split(" ");
-        return asStrings ? parts : parts.map(Number);
+        const extractedToken = this.#currentLineTokens.shift();
+        return asString ? extractedToken : Number(extractedToken);
     }
 
-    pullMatrixValues(lineCount, asStrings = false) {
-        const collectedRows = [];
-        for (let i = 0; i < lineCount; i++) {
-            if (this.#currentLinePosition >= this.#lineBuffer.length) {
-                break;
-            }
-            this.#segmentCache = [];
-            collectedRows.push(this.#lineBuffer[this.#currentLinePosition++].split(" "));
+    extractLineValues(asStrings = false) {
+        if (this.#linePointer >= this.#lineBuffer.length) {
+            return [];
         }
-        return asStrings ? collectedRows : collectedRows.map(row => row.map(Number));
+        const currentLine = this.#lineBuffer[this.#linePointer++];
+        const tokensOnLine = currentLine.split(" ");
+        return asStrings ? tokensOnLine : tokensOnLine.map(Number);
     }
 
-    pullRawTextLines(lineCount, asStrings = false) {
+    extractMatrix(rowCount, asStrings = false) {
+        const collectedMatrix = [];
+        for (let i = 0; i < rowCount; i++) {
+            collectedMatrix.push(this.extractLineValues(asStrings));
+        }
+        return collectedMatrix;
+    }
+
+    extractRawLines(rowCount, asStrings = false) {
         const collectedLines = [];
-        for (let i = 0; i < lineCount; i++) {
-            if (this.#currentLinePosition >= this.#lineBuffer.length) {
-                break;
-            }
-            this.#segmentCache = [];
-            collectedLines.push(this.#lineBuffer[this.#currentLinePosition++]);
+        for (let i = 0; i < rowCount; i++) {
+            if (this.#linePointer >= this.#lineBuffer.length) break;
+            const lineContent = this.#lineBuffer[this.#linePointer++];
+            collectedLines.push(asStrings ? lineContent : Number(lineContent));
         }
-        return asStrings ? collectedLines : collectedLines.map(Number);
+        return collectedLines;
     }
 }
 
-const DataAcquisition = (sourceText) => new DataStreamProcessor(sourceText);
-
-function generateMultiArray(initialContent, ...dimensions) {
-    if (dimensions.length === 0) {
-        return initialContent;
-    }
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-
-    return Array.from({ length: currentDimensionSize }, () =>
-        generateMultiArray(initialContent, ...remainingDimensions)
-    );
+function generateNestedArray(initialFill, ...dimensions) {
+    const createRecursive = (dims) => {
+        if (dims.length === 0) {
+            return typeof initialFill === 'object' && initialFill !== null
+                ? JSON.parse(JSON.stringify(initialFill))
+                : initialFill;
+        }
+        const currentDimensionSize = dims[0];
+        const remainingDimensions = dims.slice(1);
+        return Array.from({ length: currentDimensionSize }, () => createRecursive(remainingDimensions));
+    };
+    return createRecursive(dimensions);
 }
 
-class ComponentOrganizer {
-    #parentOrSizeArray;
+class DisjointSet {
+    #parentOrSize;
 
-    constructor(maximumIndex) {
-        this.#parentOrSizeArray = Array(maximumIndex + 1).fill(-1);
+    constructor(elementCount) {
+        this.#parentOrSize = Array(elementCount + 1).fill(-1);
     }
 
-    locateRepresentative(elementIndex) {
-        if (this.#parentOrSizeArray[elementIndex] < 0) {
-            return elementIndex;
+    findRepresentative(idx) {
+        if (this.#parentOrSize[idx] < 0) {
+            return idx;
         }
-        return this.#parentOrSizeArray[elementIndex] = this.locateRepresentative(this.#parentOrSizeArray[elementIndex]);
+        return (this.#parentOrSize[idx] = this.findRepresentative(this.#parentOrSize[idx]));
     }
 
-    areElementsUnified(itemX, itemY) {
-        return this.locateRepresentative(itemX) === this.locateRepresentative(itemY);
+    areConnected(idx1, idx2) {
+        return this.findRepresentative(idx1) === this.findRepresentative(idx2);
     }
 
-    unifyElements(itemX, itemY) {
-        let rootX = this.locateRepresentative(itemX);
-        let rootY = this.locateRepresentative(itemY);
+    uniteSets(idx1, idx2) {
+        let rootA = this.findRepresentative(idx1);
+        let rootB = this.findRepresentative(idx2);
 
-        if (rootX === rootY) {
-            return 0;
+        if (rootA === rootB) {
+            return false;
         }
 
-        if (this.#parentOrSizeArray[rootY] <= this.#parentOrSizeArray[rootX]) {
-            this.#parentOrSizeArray[rootY] += this.#parentOrSizeArray[rootX];
-            this.#parentOrSizeArray[rootX] = rootY;
-        } else {
-            this.#parentOrSizeArray[rootX] += this.#parentOrSizeArray[rootY];
-            this.#parentOrSizeArray[rootY] = rootX;
+        if (this.#parentOrSize[rootB] < this.#parentOrSize[rootA]) {
+            [rootA, rootB] = [rootB, rootA];
         }
-        return 1;
+        this.#parentOrSize[rootA] += this.#parentOrSize[rootB];
+        this.#parentOrSize[rootB] = rootA;
+
+        return true;
     }
 
-    getComponentSize(elementIndex) {
-        return -this.#parentOrSizeArray[this.locateRepresentative(elementIndex)];
-    }
-}
-
-let directionalAssignments;
-let nodeFlipStates;
-let supplementaryConnections;
-let totalNodesInNetwork;
-
-function traverseAndAdjust(currentVertex, parentVertex) {
-    for (const adjacentVertex of supplementaryConnections[currentVertex]) {
-        if (adjacentVertex === parentVertex) {
-            continue;
-        }
-        traverseAndAdjust(adjacentVertex, currentVertex);
-    }
-
-    if (parentVertex === 0) {
-        return;
-    }
-
-    if (nodeFlipStates[currentVertex]) {
-        directionalAssignments.push(`${currentVertex} ${parentVertex}`);
-    } else {
-        directionalAssignments.push(`${parentVertex} ${currentVertex}`);
-        nodeFlipStates[parentVertex] = 1 - nodeFlipStates[parentVertex];
+    getSetSize(idx) {
+        return -this.#parentOrSize[this.findRepresentative(idx)];
     }
 }
 
-function processNetworkTopology() {
-    const dataStream = DataAcquisition(require("fs").readFileSync("/dev/stdin", "utf8"));
+const inputReader = new DataStreamProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-    totalNodesInNetwork = dataStream.pullNumericValue();
-    const totalLinkCount = dataStream.pullNumericValue();
+console.log(executeGraphAlgorithm());
 
-    if (totalLinkCount % 2 !== 0) {
+function executeGraphAlgorithm() {
+    const nodeQuantity = inputReader.extractNextValue();
+    const edgeQuantity = inputReader.extractNextValue();
+
+    if (edgeQuantity % 2 !== 0) {
         return -1;
     }
 
-    const componentHandler = new ComponentOrganizer(totalNodesInNetwork);
-    directionalAssignments = [];
-    supplementaryConnections = generateMultiArray([], totalNodesInNetwork + 1);
-    nodeFlipStates = generateMultiArray(0, totalNodesInNetwork + 1);
+    const allEdges = inputReader.extractMatrix(edgeQuantity);
+    const disjointSetStructure = new DisjointSet(nodeQuantity);
+    const finalEdgeList = [];
+    const cycleEdgeAdjacency = generateNestedArray([], nodeQuantity + 1);
+    const nodeParityTracker = generateNestedArray(0, nodeQuantity + 1);
 
-    const allNetworkLinks = dataStream.pullMatrixValues(totalLinkCount);
+    for (let k = 0; k < edgeQuantity; k++) {
+        const sourceNode = allEdges[k][0];
+        const targetNode = allEdges[k][1];
 
-    for (let k = 0; k < totalLinkCount; k++) {
-        const [endpointA, endpointB] = allNetworkLinks[k];
-        if (componentHandler.unifyElements(endpointA, endpointB)) {
-            directionalAssignments.push(`${endpointA} ${endpointB}`);
-            nodeFlipStates[endpointA] = 1 - nodeFlipStates[endpointA];
+        if (disjointSetStructure.uniteSets(sourceNode, targetNode)) {
+            finalEdgeList.push(`${sourceNode} ${targetNode}`);
+            nodeParityTracker[sourceNode] ^= 1;
         } else {
-            supplementaryConnections[endpointA].push(endpointB);
-            supplementaryConnections[endpointB].push(endpointA);
+            cycleEdgeAdjacency[sourceNode].push(targetNode);
+            cycleEdgeAdjacency[targetNode].push(sourceNode);
         }
     }
 
-    traverseAndAdjust(1, 0);
+    function balanceParityTraversal(currentNode, parentNode) {
+        cycleEdgeAdjacency[currentNode].forEach(neighbor => {
+            if (neighbor === parentNode) {
+                return;
+            }
+            balanceParityTraversal(neighbor, currentNode);
+        });
 
-    return directionalAssignments.join("\n");
+        if (parentNode === 0) {
+            return;
+        }
+
+        if (nodeParityTracker[currentNode] === 1) {
+            finalEdgeList.push(`${currentNode} ${parentNode}`);
+        } else {
+            finalEdgeList.push(`${parentNode} ${currentNode}`);
+            nodeParityTracker[parentNode] ^= 1;
+        }
+    }
+
+    balanceParityTraversal(1, 0);
+
+    return finalEdgeList.join("\n");
 }
-
-console.log(processNetworkTopology());

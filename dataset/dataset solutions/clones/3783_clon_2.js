@@ -1,68 +1,132 @@
-function ProcessData(inputStr) {
-  var numArr = inputStr.split(" ").map(val => +val);
-  var upperBound = numArr[0];
-  var coeffA = numArr[1];
-  var coeffB = numArr[2];
-  var targetValue = numArr[3];
-  var finalResult = 0;
+function ProcessInput(inputStr) {
+  // Parse the input string into an array of numbers
+  inputStr = inputStr.split(" ").map(val => +val);
 
-  for (var iterA = 0; iterA <= upperBound; iterA++) {
-    var remValue = targetValue - iterA * coeffA;
-    if (remValue < 0)
+  // Extract problem parameters
+  var numItems = inputStr[0]; // Represents 'n'
+  var costA = inputStr[1];    // Represents 'a'
+  var costB = inputStr[2];    // Represents 'b'
+  var totalBudget = inputStr[3]; // Represents 'k'
+
+  var finalResult = 0; // Initialize the answer accumulator
+
+  // Iterate through possible counts for item 'a'
+  for (var idxA = 0; idxA <= numItems; idxA++) {
+    // Calculate remaining budget after purchasing 'idxA' items of type 'a'
+    var remainingBudget = totalBudget - idxA * costA;
+
+    // If remaining budget is negative, we can't buy any more 'a' items
+    if (remainingBudget < 0) {
       break;
-    if (remValue % coeffB === 0 && remValue / coeffB <= upperBound) {
-      var term1 = nCrModulo(upperBound, iterA);
-      var term2 = nCrModulo(upperBound, remValue / coeffB);
-      finalResult = (finalResult + multiplyMod(term1, term2)) % primeModulus;
+    }
+
+    // Check if remaining budget can be perfectly spent on 'b' items
+    // and if the count of 'b' items does not exceed 'numItems'
+    if (remainingBudget % costB === 0 && remainingBudget / costB <= numItems) {
+      // Calculate combinations for 'a' items and 'b' items
+      // and multiply them, then add to the final result
+      finalResult += combinationsModulo(numItems, idxA) * combinationsModulo(numItems, remainingBudget / costB);
+      finalResult %= mod; // Apply modulo operation
     }
   }
+
+  // Output the final calculated result
   console.log(finalResult);
 }
 
-function multiplyMod() {
-  var currentProduct = arguments[0];
-  for (var loopCounter = 1; loopCounter < arguments.length; loopCounter++) {
-    currentProduct = (currentProduct >>> 16) * arguments[loopCounter] % primeModulus * 0x10000 + (currentProduct & 0xFFFF) * arguments[loopCounter];
-    currentProduct %= primeModulus;
+/**
+ * Multiplies an arbitrary number of arguments and applies modulo.
+ * This function uses a specific bitwise optimization for multiplication.
+ * @param {...number} args - Numbers to multiply.
+ * @returns {number} The product modulo 'mod'.
+ */
+function multiplyAndModulo() {
+  var currentProduct = arguments[0]; // Start with the first argument
+  for (var argIndex = 1; argIndex < arguments.length; argIndex++) {
+    // Optimized multiplication to prevent overflow before modulo
+    currentProduct = (currentProduct >>> 16) * arguments[argIndex] % mod * 0x10000 + (currentProduct & 0xFFFF) * arguments[argIndex];
+    currentProduct %= mod; // Apply modulo
   }
   return currentProduct;
 }
 
-function powerMod(baseNum, exponentNum) {
-  var accumulatedProduct = 1;
-  while (exponentNum) {
-    if (exponentNum & 1)
-      accumulatedProduct = multiplyMod(baseNum, accumulatedProduct);
-    baseNum = multiplyMod(baseNum, baseNum);
-    exponentNum >>>= 1;
+/**
+ * Calculates (baseVal ^ exponentVal) % mod using binary exponentiation.
+ * @param {number} baseVal - The base.
+ * @param {number} exponentVal - The exponent.
+ * @returns {number} (baseVal ^ exponentVal) % mod.
+ */
+function powerModulo(baseVal, exponentVal) {
+  var resultVal = 1; // Initialize result to 1
+  while (exponentVal) {
+    if (exponentVal & 1) { // If the last bit of exponentVal is 1
+      resultVal = multiplyAndModulo(baseVal, resultVal); // Multiply result by base
+    }
+    baseVal = multiplyAndModulo(baseVal, baseVal); // Square the base
+    exponentVal >>>= 1; // Right shift exponentVal by 1 (divide by 2)
   }
-  return accumulatedProduct;
+  return resultVal;
 }
 
-var primeModulus = 998244353;
+// Global constant for modulo operation
+var mod = 998244353;
+
+// Arrays to store precomputed factorials and inverse factorials
 var factorialValues = [1, 1];
-var inverseFactorials = [1, 1];
+var inverseFactorialValues = [1, 1];
 
-function computeFactorialCache(maxIdx) {
-  for (var indexIter = factorialValues.length; indexIter <= maxIdx; indexIter++) {
-    factorialValues[indexIter] = multiplyMod(factorialValues[indexIter - 1], indexIter);
+/**
+ * Computes n! modulo 'mod' and stores it in factorialValues array.
+ * @param {number} limitNum - The number up to which factorials should be computed.
+ * @returns {number} factorialValues[limitNum].
+ */
+function calculateFactorial(limitNum) {
+  for (var currentNum = factorialValues.length; currentNum <= limitNum; currentNum++) {
+    factorialValues[currentNum] = multiplyAndModulo(factorialValues[currentNum - 1], currentNum);
   }
-  return factorialValues[maxIdx];
+  return factorialValues[limitNum];
 }
 
-function computeInverseFactorialCache(targetIdx) {
-  if (!factorialValues[targetIdx])
-    computeFactorialCache(targetIdx);
-  inverseFactorials[targetIdx] = powerMod(factorialValues[targetIdx], primeModulus - 2);
-  while (!inverseFactorials[targetIdx - 1]) {
-    inverseFactorials[targetIdx - 1] = multiplyMod(inverseFactorials[targetIdx], targetIdx--);
+/**
+ * Computes the modular multiplicative inverse of n! modulo 'mod' and stores it.
+ * Uses Fermat's Little Theorem for inverse: a^(mod-2) % mod.
+ * @param {number} targetNum - The number for which to compute the inverse factorial.
+ */
+function calculateInverseFactorial(targetNum) {
+  // Ensure factorial for targetNum is computed
+  if (!factorialValues[targetNum]) {
+    calculateFactorial(targetNum);
+  }
+  // Compute inverse factorial for targetNum
+  inverseFactorialValues[targetNum] = powerModulo(factorialValues[targetNum], mod - 2);
+
+  // Compute inverse factorials for numbers less than targetNum using the relation:
+  // (n-1)!^-1 = n!^-1 * n
+  while (!inverseFactorialValues[targetNum - 1] && targetNum > 0) {
+    inverseFactorialValues[targetNum - 1] = multiplyAndModulo(inverseFactorialValues[targetNum], targetNum);
+    targetNum--;
   }
 }
 
-function nCrModulo(totalItems, selectItems) {
-  if (!inverseFactorials[totalItems])
-    computeInverseFactorialCache(totalItems);
-  return multiplyMod(factorialValues[totalItems], inverseFactorials[selectItems], inverseFactorials[totalItems - selectItems]);
+/**
+ * Computes nCr (n choose r) modulo 'mod'.
+ * nCr = n! / (r! * (n-r)!) = n! * (r!)^-1 * ((n-r)!)^-1
+ * @param {number} totalN - Total number of items.
+ * @param {number} chooseR - Number of items to choose.
+ * @returns {number} nCr % mod.
+ */
+function combinationsModulo(totalN, chooseR) {
+  // Handle invalid inputs for combinations
+  if (chooseR < 0 || chooseR > totalN) {
+    return 0;
+  }
+  // Ensure inverse factorials are precomputed up to totalN
+  if (!inverseFactorialValues[totalN]) {
+    calculateInverseFactorial(totalN);
+  }
+  // Calculate nCr using precomputed factorials and inverse factorials
+  return multiplyAndModulo(factorialValues[totalN], inverseFactorialValues[chooseR], inverseFactorialValues[totalN - chooseR]);
 }
 
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

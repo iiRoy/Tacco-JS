@@ -1,21 +1,18 @@
-function computeResult(dataSource) {
-    const allLines = dataSource.split("\n");
+function Main(input) {
+    const inputLines = input.split("\n");
 
-    const elementCount = Number(allLines[0]);
+    const elementCount = Number(inputLines[0]);
 
-    const paramStrings = allLines[1].split(" ");
-    const totalSpan = Number(paramStrings[0]);
-    const initialValue = Number(paramStrings[1]);
+    const [totalDays, initialCount] = inputLines[1].split(" ").map(Number);
 
-    const intervalList = allLines
-        .slice(2, 2 + elementCount)
-        .map(item => Number(item));
+    const activityIntervals = inputLines.slice(2, 2 + elementCount).map(Number);
 
-    const finalOutcome = intervalList.reduce((accumulator, currentInterval) => {
-        return accumulator + (1 + Math.floor((totalSpan - 1) / currentInterval));
-    }, initialValue);
+    const finalTally = activityIntervals.reduce((accumulator, currentInterval) => {
+        const additionalCount = 1 + Math.floor((totalDays - 1) / currentInterval);
+        return accumulator + additionalCount;
+    }, initialCount);
 
-    console.log(finalOutcome);
+    console.log(finalTally);
 }
 
-computeResult(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

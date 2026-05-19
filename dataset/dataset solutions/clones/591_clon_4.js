@@ -1,46 +1,23 @@
-const auxiliaryInterface = require('readline');
-const inputReader = auxiliaryInterface.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+const sourceReader = require('fs');
+const rawContent = sourceReader.readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawContent.trim().split('\n');
 
-let temporalStorage = [];
-let resultCollection = [];
-let currentBlockPosition = 0;
+let currentPosition = 0;
+while (currentPosition < processedLines.length) {
+    const initialValue = Number(processedLines[currentPosition]);
 
-inputReader.on('line', (incomingText) => {
-    if (currentBlockPosition === 0) {
-        const initialDesignator = Number(incomingText);
-        if (initialDesignator === 0) {
-            inputReader.close();
-            return;
-        }
-        temporalStorage.push(incomingText);
-        currentBlockPosition++;
-    } else {
-        temporalStorage.push(incomingText);
-        currentBlockPosition++;
-
-        if (currentBlockPosition === 10) {
-            let cumulativeTotal = 0;
-            for (let position = 1; position < 10; position++) {
-                cumulativeTotal += Number(temporalStorage[position]);
-            }
-            resultCollection.push(String(-cumulativeTotal));
-            temporalStorage = [];
-            currentBlockPosition = 0;
-        }
+    if (initialValue === 0) {
+        break;
     }
-});
 
-inputReader.on('close', () => {
-    if (currentBlockPosition > 0) {
-        let cumulativeTotal = 0;
-        for (let position = 1; position < 10; position++) {
-            cumulativeTotal += Number(temporalStorage[position]);
-        }
-        resultCollection.push(String(-cumulativeTotal));
-    }
-    process.stdout.write(resultCollection.join('\n') + '\n');
-});
+    const tenElements = Array.from({ length: 10 }, (_, idx) => {
+        const lineContent = processedLines[currentPosition + idx];
+        return lineContent !== undefined ? Number(lineContent) : NaN;
+    });
+
+    const blockSum = tenElements.reduce((accumulator, currentNumber) => accumulator + currentNumber, 0);
+
+    console.log(initialValue - blockSum);
+
+    currentPosition += 11;
+}

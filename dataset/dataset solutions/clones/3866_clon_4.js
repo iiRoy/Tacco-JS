@@ -1,44 +1,39 @@
-const processInputData = (sourceText) => {
-    const lines = sourceText.split('\n');
-    const matrixDimension = Number(lines[0]);
-    const coreStringsData = lines.slice(1, matrixDimension + 1).map(textLine => textLine + textLine);
-    return { matrixDimension, coreStringsData };
-};
+function processInputData(rawData) {
+  const dataLines = rawData.split("\n");
+  const matrixDimension = +dataLines[0];
+  const baseStrings = Array.from({ length: matrixDimension }, (_, index) => dataLines[index + 1]);
+  return { matrixDimension, baseStrings };
+}
 
-const evaluatePattern = (dimensionSize, primaryContent, rowShiftVal, colShiftVal) => {
-    const indicesSequence = Array.from({ length: dimensionSize }, (_, idx) => idx);
+function evaluateSymmetry(dimension, strings, rowOffset, colOffset) {
+  // This function checks if a cyclically shifted matrix is symmetric.
+  // The matrix element at (r, c) is strings[(r + rowOffset) % dimension][(c + colOffset) % dimension]
+  // We need to verify if M[r][c] === M[c][r] for all r < c.
+  return Array.from({ length: dimension }).every((_, rIndex) =>
+    Array.from({ length: dimension - (rIndex + 1) }).every((__, kOffset) => {
+      const cIndex = rIndex + 1 + kOffset; // cIndex iterates from rIndex + 1 to dimension - 1
 
-    return indicesSequence.every(firstIdx =>
-        indicesSequence.slice(firstIdx + 1).every(secondIdx => {
-            const firstRowPos = firstIdx + rowShiftVal;
-            const firstColPos = secondIdx + colShiftVal;
-            const secondRowPos = secondIdx + colShiftVal;
-            const secondColPos = firstIdx + rowShiftVal;
+      const charA = strings[(rIndex + rowOffset) % dimension][(cIndex + colOffset) % dimension];
+      const charB = strings[(cIndex + colOffset) % dimension][(rIndex + rowOffset) % dimension];
 
-            const characterA = primaryContent[firstRowPos % dimensionSize][firstColPos];
-            const characterB = primaryContent[secondRowPos % dimensionSize][secondColPos];
+      return charA === charB;
+    })
+  );
+}
 
-            return characterA === characterB;
-        })
-    ) ? 1 : 0;
-};
+function calculateTotalSymmetricConfigurations(dimension, strings) {
+  // This calculates the sum of results from evaluateSymmetry for all possible shifts.
+  return Array.from({ length: dimension }).reduce((totalCount, _, currentRowsOffset) => {
+    return totalCount + Array.from({ length: dimension }).reduce((innerSum, __, currentColsOffset) => {
+      return innerSum + (evaluateSymmetry(dimension, strings, currentRowsOffset, currentColsOffset) ? 1 : 0);
+    }, 0);
+  }, 0);
+}
 
-const calculateTotalScore = (dimensionSize, primaryContent) => {
-    const rowOffsets = Array.from({ length: dimensionSize }, (_, k) => k);
+function executeProgram(inputContent) {
+  const { matrixDimension, baseStrings } = processInputData(inputContent);
+  const finalResult = calculateTotalSymmetricConfigurations(matrixDimension, baseStrings);
+  console.log(finalResult);
+}
 
-    const scoresMatrix = rowOffsets.map(rOffset =>
-        Array.from({ length: dimensionSize }, (_, k) => k).map(cOffset =>
-            evaluatePattern(dimensionSize, primaryContent, rOffset, cOffset)
-        )
-    );
-
-    return scoresMatrix.flat().reduce((sum, currentScore) => sum + currentScore, 0);
-};
-
-const runComputation = (inputString) => {
-    const { matrixDimension, coreStringsData } = processInputData(inputString);
-    const finalScore = calculateTotalScore(matrixDimension, coreStringsData);
-    console.log(finalScore);
-};
-
-runComputation(require("fs").readFileSync("/dev/stdin","utf8"));
+executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

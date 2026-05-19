@@ -1,94 +1,108 @@
-// Function to compute the minimum cost based on array cycles
-function calculateMinimumCost(  dataCollection, itemCount  ) {
-  // Initialize the final accumulated cost
-  let totalCost = 0;
+/**
+ * Processes an array of numbers to calculate a specific sum based on cycles.
+ * This function identifies cycles formed by mapping elements to their sorted positions
+ * and calculates a cost for each cycle, then sums these costs.
+ *
+ * @param {number[]} inputNumbers The array of integers to be processed.
+ * @param {number} arrayLength The number of elements in the input array.
+ * @returns {number} The final calculated sum.
+ */
+function processArray(inputNumbers, arrayLength) {
+    let finalResult = 0; // Accumulator for the total calculated sum.
 
-  // Array to keep track of visited elements within cycles
-  const processedItems = [  ];
+    // Data structures for cycle detection and mapping.
+    const visitedFlags = [];     // Boolean array to mark elements visited during cycle traversal.
+    const orderedElements = [];  // A copy of the input array, which will be sorted.
+    const elementIndexMap = [];  // Maps each unique number to its index in the sorted array.
 
-  // Array to store a sorted version of the input numbers
-  const orderedValues = [];
+    // Find the overall minimum value in the input array.
+    // This is used in one of the cost calculation formulas.
+    const overallMinimum = Math.min(...inputNumbers);
 
-  // A mapping from value to its sorted index
-  const positionLookup = [];
-
-  // Determine the smallest value across the entire input collection
-  const overallSmallest = Math.min(  ...dataCollection  );
-
-  // Populate the sorted array and initialize visited flags
-  for (let idx = 0; idx < itemCount; idx++) {
-    orderedValues[idx] = dataCollection[idx];
-    processedItems[idx] = false;
-  }
-
-  // Sort the values in ascending order
-  orderedValues.sort((valA, valB) => valA - valB);
-
-  // Build the lookup table: value -> its index in the sorted array
-  for (let idx = 0; idx < itemCount; idx++) {
-    positionLookup[orderedValues[idx]] = idx;
-  }
-
-  // Iterate through each element to find and process cycles
-  for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
-    // If this element has already been part of a processed cycle, skip it
-    if (processedItems[currentIdx]) continue;
-
-    // Initialize variables for the current cycle
-    let cycleStartNode = currentIdx;
-    let cycleSum = 0;               // Sum of values in the current cycle
-    let smallestInCycle = 1000000; // Smallest value in the current cycle (initialized to a large number)
-    let nodeCount = 0;              // Number of nodes in the current cycle
-
-    // Traverse the cycle
-    while (true) {
-      processedItems[cycleStartNode] = true; // Mark the current node as visited
-      nodeCount++;                           // Increment node counter
-      let nodeValue = dataCollection[cycleStartNode]; // Get the value of the current node
-      smallestInCycle = Math.min(smallestInCycle, nodeValue); // Update cycle minimum
-      cycleSum += nodeValue;                               // Add value to cycle sum
-      cycleStartNode = positionLookup[nodeValue];          // Move to the next node in the cycle
-
-      // If the next node has been visited, the cycle is complete
-      if (processedItems[cycleStartNode]) break;
+    // Initialize `orderedElements` with `inputNumbers` and `visitedFlags` to all false.
+    for (let idx = 0; idx < arrayLength; idx++) {
+        orderedElements[idx] = inputNumbers[idx];
+        visitedFlags[idx] = false;
     }
 
-    // Calculate the cost for the current cycle using two possible formulas
-    // and add the minimum of the two to the total cost.
-    // Formula 1: (sum of cycle) + (nodes in cycle - 2) * (min in cycle)
-    // Formula 2: (min in cycle) + (sum of cycle) + (nodes in cycle + 1) * (overall minimum)
-    totalCost += Math.min(
-      cycleSum + (nodeCount - 2) * smallestInCycle,
-      smallestInCycle + cycleSum + (nodeCount + 1) * overallSmallest
-    );
-  }
+    // Sort the `orderedElements` array numerically.
+    orderedElements.sort((first, second) => first - second);
 
-  // Return the final calculated total cost
-  return totalCost;
+    // Populate the `elementIndexMap`.
+    // For each number in the sorted array, store its index.
+    // This allows quick lookup of an element's sorted position.
+    for (let idx = 0; idx < arrayLength; idx++) {
+        elementIndexMap[orderedElements[idx]] = idx;
+    }
+
+    // Iterate through the original array to find and process cycles.
+    for (let idx = 0; idx < arrayLength; idx++) {
+        // If the current element has already been visited (i.e., part of a previously processed cycle), skip it.
+        if (visitedFlags[idx]) {
+            continue;
+        }
+
+        // Start a new cycle traversal.
+        let currentPosition = idx;      // The current index in the cycle.
+        let cycleSum = 0;               // Sum of all elements in the current cycle.
+        let cycleMinimum = 1000000001;  // Minimum element found in the current cycle (initialized to a large value).
+        let cycleCount = 0;             // Number of elements in the current cycle.
+
+        // Traverse the cycle until a previously visited element is encountered.
+        while (true) {
+            visitedFlags[currentPosition] = true; // Mark the current element as visited.
+            cycleCount++;                         // Increment the count of elements in this cycle.
+
+            const currentValue = inputNumbers[currentPosition]; // Get the value at the current position.
+
+            cycleMinimum = Math.min(cycleMinimum, currentValue); // Update the minimum value for this cycle.
+            cycleSum += currentValue;                            // Add the value to the cycle's sum.
+
+            // Move to the next element in the cycle:
+            // The next position is determined by the sorted index of the current value.
+            currentPosition = elementIndexMap[currentValue];
+
+            // If the next element has already been visited, the cycle is complete.
+            if (visitedFlags[currentPosition]) {
+                break;
+            }
+        }
+
+        // Calculate the cost for the current cycle and add it to the total result.
+        // There are two ways to calculate the cost, and we choose the minimum of the two.
+        // Formula 1: (Sum of cycle elements) + (Number of elements - 2) * (Minimum element in cycle)
+        // Formula 2: (Minimum element in cycle) + (Sum of cycle elements) + (Number of elements + 1) * (Overall minimum element)
+        finalResult += Math.min(
+            cycleSum + (cycleCount - 2) * cycleMinimum,
+            cycleMinimum + cycleSum + (cycleCount + 1) * overallMinimum
+        );
+    }
+
+    return finalResult; // Return the accumulated final result.
 }
 
+/**
+ * Main function to read input, process it, and print the result.
+ *
+ * @param {string} inputDataString The raw input string from stdin.
+ */
+function executeProgram(inputDataString) {
+    // Split the input string into an array of lines.
+    const inputLines = inputDataString.split('\n');
 
-// Main execution function to handle input and output
-function runSolution( rawInputData ) {
-  // Split the raw input string into an array of lines
-  const inputLines = rawInputData.split('\n');
+    // Parse the first line to get the array length.
+    const arrayLength = parseInt(inputLines.shift(), 10);
 
-  // Parse the array length from the first line
-  const dataLength = parseInt(  inputLines.shift(), 10  );
+    // Parse the second line to get the sequence of numbers.
+    // It splits the line by spaces and converts each part to an integer.
+    const numberSequence = inputLines.shift().split(' ').map(element => parseInt(element, 10));
 
-  // Parse the sequence of numbers from the second line
-  const numberSequence = inputLines
-    .shift()
-    .split(' ')
-    .map(  strElement => parseInt(strElement, 10)  );
+    // Call the core processing function with the parsed data.
+    const calculatedAnswer = processArray(numberSequence, arrayLength);
 
-  // Call the primary calculation function
-  const calculatedResult = calculateMinimumCost(  numberSequence, dataLength  );
-
-  // Output the final result to the console
-  console.log(calculatedResult);
+    // Output the final calculated answer to the console.
+    console.log(calculatedAnswer);
 }
 
-
-// Read input from standard input and execute the main solution
-runSolution(  require('fs').readFileSync(  '/dev/stdin', 'utf8'  )  );
+// Read input from standard input and execute the program.
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

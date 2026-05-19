@@ -1,29 +1,33 @@
-function processInputData(incomingPayload) {
-    const [configLine, itemDataLine] = incomingPayload.split('\n');
+function ProcessInput(rawInput) {
+    const inputLines = rawInput.split("\n");
+    const firstLineData = inputLines[0].split(" ");
+    // const unusedValueN = parseInt(firstLineData[0]); // N is not utilized in the original logic
+    const targetDistinctCount = parseInt(firstLineData[1]);
+    const elementStrings = inputLines[1].split(" ");
 
-    const kValue = Number(configLine.match(/\d+\s+(\d+)/)[1]);
-
-    const itemSequence = itemDataLine.split(' ');
-
-    const frequencyMap = itemSequence.reduce((acc, currentItem) => {
-        acc.set(currentItem, (acc.get(currentItem) || 0) + 1);
-        return acc;
+    const frequencyRegistry = elementStrings.reduce((accumulator, currentItem) => {
+        const currentTally = accumulator.get(currentItem) || 0;
+        return accumulator.set(currentItem, currentTally + 1);
     }, new Map());
 
-    const sortedOccurrenceList = Array.from(frequencyMap.entries())
-        .map(([elementValue, occurrenceCount]) => ({ elementValue, occurrenceCount }))
-        .sort((firstItem, secondItem) => firstItem.occurrenceCount - secondItem.occurrenceCount);
+    const sortedFrequencyPairs = Array.from(frequencyRegistry.entries());
 
-    if (sortedOccurrenceList.length < kValue) {
+    sortedFrequencyPairs.sort((pairA, pairB) => pairA[1] - pairB[1]);
+
+    const uniqueElementCount = sortedFrequencyPairs.length;
+
+    if (uniqueElementCount < targetDistinctCount) {
         console.log("0");
         return;
     }
 
-    const elementsToSum = sortedOccurrenceList.slice(0, sortedOccurrenceList.length - kValue);
+    const typesToDiscard = uniqueElementCount - targetDistinctCount;
 
-    const cumulativeCount = elementsToSum.reduce((sumAccumulator, currentEntry) => sumAccumulator + currentEntry.occurrenceCount, 0);
+    const totalElementsToEliminate = sortedFrequencyPairs
+        .slice(0, typesToDiscard)
+        .reduce((sumAccumulator, currentPair) => sumAccumulator + currentPair[1], 0);
 
-    console.log(cumulativeCount);
+    console.log(totalElementsToEliminate);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

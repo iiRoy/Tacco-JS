@@ -1,54 +1,73 @@
-let inputBuffer = []; let fileHandle;
-const inputProcessor = require('readline');
+let inputData = [];
+let processor; // This variable is declared but not assigned or used.
 
-const lineReader = inputProcessor.createInterface({
-  input: process.stdin,
-  output: process.stdout,
+const lineReaderModule = require('readline');
+
+const interfaceHandler = lineReaderModule.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-lineReader.on('line', function (currentLine) {
-  inputBuffer.push(currentLine);
+interfaceHandler.on('line', function (currentLine) {
+    inputData.push(currentLine);
 });
 
-lineReader.on('close', function () {
+interfaceHandler.on('close', function () {
 
-  /* This section handles the program's main execution flow */
+    /*
+     * This block processes the input data after all lines have been read.
+     * The original comment indicated a potential Time Limit Exceeded issue,
+     * but the current implementation is recursive.
+     */
 
-  const burgerLevel = Number(inputBuffer[0].split(" ")[0]);
-  const eatPortion = Number(inputBuffer[0].split(" ")[1]);
+    const burgerLevel = Number(inputData[0].split(" ")[0]);
+    const eatAmount = Number(inputData[0].split(" ")[1]);
 
-  let finalCount = 0; // Placeholder for a potential final aggregate
+    let finalCount = 0; // This variable is declared but not utilized in the final output.
 
-  // Sequence for total burger layers (thickness)
-  // Recurrence relation: L(k+1) = 2 * L(k) + 3
-  // Solved form: L(k) = 2^(k+2) - 3
+    // Formula for the total length (number of layers) of a level 'n' burger:
+    // L_n = 2 * L_{n-1} + 3
+    // L_n + 3 = 2 * (L_{n-1} + 3)
+    // L_n + 3 = 2^n * (L_0 + 3)
+    // Given L_0 = 1 (bun-patty-bun), L_0 + 3 = 4
+    // L_n + 3 = 2^n * 4 = 2^n * 2^2 = 2^(n+2)
+    // So, L_n = 2^(n+2) - 3
 
-  // Sequence for patty count
-  // Recurrence relation: P(k+1) = 2 * P(k) + 1
-  // Solved form: P(k) = 2^(k+1) - 1
+    // Formula for the number of patties in a level 'n' burger:
+    // P_n = 2 * P_{n-1} + 1
+    // P_n + 1 = 2 * (P_{n-1} + 1)
+    // P_n + 1 = 2^n * (P_0 + 1)
+    // Given P_0 = 1, P_0 + 1 = 2
+    // P_n + 1 = 2^n * 2 = 2^(n+1)
+    // So, P_n = 2^(n+1) - 1
 
-  console.log(calculatePattyCount(burgerLevel, eatPortion));
+    console.log(calculatePatties(burgerLevel, eatAmount));
 });
 
-// This function determines the number of patties consumed from a specific burger level given a certain eaten portion.
-function calculatePattyCount(level, eatenAmount) {
-  const totalThickness = Math.pow(2, level + 1) - 3; // Total layer count for the current burger structure
-  const pattyQuantity = Math.pow(2, level) - 1; // Number of patties within the current burger structure
+// This function recursively calculates the number of patties eaten
+// when consuming 'layersToEat' layers from a 'currentLevel' burger.
+function calculatePatties(currentLevel, layersToEat) {
+    const totalLength = Math.pow(2, currentLevel + 2) - 3; // Total number of layers in the current burger.
+    const pattyCount = Math.pow(2, currentLevel + 1) - 1; // Total number of patties in the current burger.
 
-  if (level === 0) {
-    return 1; // A level 0 burger contains exactly one patty.
-  }
+    if (currentLevel === 0) {
+        return (1); // A level 0 burger consists of a single patty.
+    }
 
-  if (eatenAmount === 1) {
-    return 0; // If only the very first layer is eaten, it's always a bun, so 0 patties.
-  } else if (eatenAmount <= totalThickness + 1) {
-    return calculatePattyCount(level - 1, eatenAmount - 1); // If eaten portion is within the first half (excluding middle patty)
-  } else if (eatenAmount === totalThickness + 2) {
-    return pattyQuantity + 1; // Exactly half the burger plus the middle patty
-  } else if (eatenAmount <= (totalThickness + 1) * 2) {
-    return pattyQuantity + 1 + calculatePattyCount(level - 1, eatenAmount - totalThickness - 2); // More than half, but not the whole burger
-  } else {
-    return pattyQuantity * 2 + 1; // The entire burger is consumed
-  }
-  // Note: The 'eatenAmount - 1' or 'eatenAmount - totalThickness - 2' offsets account for the bun layers.
+    if (layersToEat === 1) {
+        return (0); // If only the very first layer is consumed, it's always a bun.
+    } else if (layersToEat <= totalLength / 2 + 1) {
+        // If the eaten portion is within the first half of the burger (including the middle bun of the lower level).
+        return (calculatePatties(currentLevel - 1, layersToEat - 1));
+    } else if (layersToEat === totalLength / 2 + 2) {
+        // If the eaten portion includes the middle patty of the current burger.
+        return (pattyCount / 2 + 1);
+    } else if (layersToEat <= totalLength + 1) {
+        // If the eaten portion extends beyond the middle patty but not the entire burger.
+        return (pattyCount / 2 + 1 + calculatePatties(currentLevel - 1, layersToEat - (totalLength / 2 + 2)));
+    } else {
+        return (pattyCount); // If the entire burger is consumed.
+    }
+
+    // The 'layersToEat - 1' adjustment in recursive calls accounts for the bottom bun layer.
 }

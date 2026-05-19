@@ -1,15 +1,19 @@
-const calculateSeparationValue = (textualData) => {
-  const numericComponents = textualData.split(' ').map(Number);
-  const spanDimension = numericComponents[0];
-  const firstCoordinate = numericComponents[1];
-  const secondCoordinate = numericComponents[2];
+function Main(rawInputString) {
+  const [widthDimension, coordA, coordB] = rawInputString.split(' ').map(Number);
 
-  const minimumBoundary = Math.min(firstCoordinate, secondCoordinate);
-  const maximumBoundary = Math.max(firstCoordinate, secondCoordinate);
+  const firstSegmentStart = Math.min(coordA, coordB);
+  const secondSegmentStart = Math.max(coordA, coordB);
 
-  const leftObjectEndpoint = minimumBoundary + spanDimension;
+  const firstSegmentEnd = firstSegmentStart + widthDimension;
 
-  const computedDistance = Math.max(0, maximumBoundary - leftObjectEndpoint);
+  const calculatedGap = Math.max(0, secondSegmentStart - firstSegmentEnd);
 
-  console.log(computedDistance);
-};
+  console.log('%s', calculatedGap);
+}
+  
+// "実行する"ボタンを押した時に実行される関数 (デバッグ用)
+function debug(){
+  var input = document.getElementById("input").value;
+  Main(input);
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

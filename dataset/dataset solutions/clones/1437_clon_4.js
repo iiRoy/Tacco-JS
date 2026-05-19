@@ -1,23 +1,21 @@
-const inputGate = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+process.stdin.on("data", function(inputBuffer) {
+    const processedInput = inputBuffer.toString().trim();
+    const numericStrings = processedInput.split(" ");
 
-inputGate.on('line', (receivedLine) => {
-    const collectedPieces = receivedLine.match(/\S+/g) || [];
+    const calculationComponents = [
+        [numericStrings[0], numericStrings[2]],
+        [numericStrings[1], numericStrings[3]]
+    ];
 
-    const firstCompositeString = collectedPieces[0] + collectedPieces[2];
-    const secondCompositeString = collectedPieces[1] + collectedPieces[3];
+    const squaredValues = calculationComponents.map(segmentPair => {
+        const combinedString = segmentPair[0] + segmentPair[1];
+        const numericalRepresentation = Number(combinedString);
+        return numericalRepresentation * numericalRepresentation;
+    });
 
-    const valueOne = Number(firstCompositeString);
-    const valueTwo = Number(secondCompositeString);
+    const totalSumOfSquares = squaredValues.reduce((accumulated, currentVal) => accumulated + currentVal, 0);
 
-    const squaredOne = valueOne * valueOne;
-    const squaredTwo = valueTwo * valueTwo;
+    const finalResult = totalSumOfSquares ** 0.5;
 
-    const totalSquaredSum = squaredOne + squaredTwo;
-
-    const finalMeasurement = totalSquaredSum ** 0.5;
-
-    console.log(finalMeasurement.toFixed(8));
-});
+    console.log(finalResult.toFixed(8));
+}).resume();

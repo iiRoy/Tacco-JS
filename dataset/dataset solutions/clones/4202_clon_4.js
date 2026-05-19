@@ -1,69 +1,83 @@
-const acquireSourceData = () => require("fs").readFileSync("/dev/stdin", "utf8").trim();
-const emitOutcome = (val) => console.log(val);
-const signalProblem = (val) => console.error(val);
+function acquireInputString() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
 
-const verifyPattern = (inputSequence) => {
-    const minimumExpectedLength = 5;
-    const maximumPermittedLength = 9;
+function presentOutcome(resultText) {
+  console.log(resultText);
+}
 
-    if (inputSequence.length < minimumExpectedLength || inputSequence.length > maximumPermittedLength) {
-        return false;
+function signalIssue(errorText) {
+  console.error(errorText);
+}
+
+function decomposeToCharacters(sourceString) {
+  return Array.from(sourceString);
+}
+
+function evaluateSequence(rawText) {
+  const symbolSequence = decomposeToCharacters(rawText);
+
+  const characterPositions = new Map();
+  const requiredSymbols = ['K', 'I', 'H', 'B', 'R'];
+
+  symbolSequence.forEach((char, idx) => {
+    if (requiredSymbols.includes(char) && !characterPositions.has(char)) {
+      characterPositions.set(char, idx);
     }
+  });
 
-    const essentialMarkers = ['K', 'I', 'H', 'B', 'R'];
-    const markerPositions = new Map();
+  const sequencePassesAllChecks = (() => {
+    const kPosition = characterPositions.get('K');
+    const iPosition = characterPositions.get('I');
+    const hPosition = characterPositions.get('H');
+    const bPosition = characterPositions.get('B');
+    const rPosition = characterPositions.get('R');
 
-    for (const marker of essentialMarkers) {
-        const currentPosition = inputSequence.indexOf(marker);
-        if (currentPosition === -1) {
-            return false;
-        }
-        markerPositions.set(marker, currentPosition);
+    if (requiredSymbols.some(sym => characterPositions.get(sym) === undefined)) {
+      return false;
     }
-
-    const kPosition = markerPositions.get('K');
-    const iPosition = markerPositions.get('I');
-    const hPosition = markerPositions.get('H');
-    const bPosition = markerPositions.get('B');
-    const rPosition = markerPositions.get('R');
 
     if (!(kPosition < iPosition && iPosition < hPosition && hPosition < bPosition && bPosition < rPosition)) {
-        return false;
+      return false;
+    }
+
+    if (symbolSequence.length > 9) {
+      return false;
     }
 
     if (iPosition - kPosition !== 1) {
-        return false;
+      return false;
     }
 
-    const confirmAdjacentMarkers = (firstMarker, secondMarker) => {
-        const firstCoord = markerPositions.get(firstMarker);
-        const secondCoord = markerPositions.get(secondMarker);
-        return (secondCoord - firstCoord) === 1;
-    };
-
-    if (!confirmAdjacentMarkers('H', 'B')) {
-        return false;
+    const gapHtoB = bPosition - hPosition;
+    if (gapHtoB > 2) {
+      return false;
+    }
+    if (gapHtoB === 2) {
+      return false;
     }
 
-    if (!confirmAdjacentMarkers('B', 'R')) {
-        return false;
+    const gapBtoR = rPosition - bPosition;
+    if (gapBtoR > 2) {
+      return false;
+    }
+    if (gapBtoR === 2) {
+      return false;
     }
 
-    if (inputSequence.startsWith('AA')) {
-        return false;
+    if (symbolSequence[0] === 'A' && symbolSequence[1] === 'A') {
+      return false;
     }
 
-    if (inputSequence.endsWith('AA')) {
-        return false;
+    const sequenceEndIndex = symbolSequence.length - 1;
+    if (symbolSequence[sequenceEndIndex] === 'A' && symbolSequence[sequenceEndIndex - 1] === 'A') {
+      return false;
     }
 
     return true;
-};
+  })();
 
-const orchestrateValidation = () => {
-    const incomingData = acquireSourceData();
-    const finalVerdict = verifyPattern(incomingData) ? "YES" : "NO";
-    emitOutcome(finalVerdict);
-};
+  presentOutcome(sequencePassesAllChecks ? "YES" : "NO");
+}
 
-orchestrateValidation();
+evaluateSequence(acquireInputString());

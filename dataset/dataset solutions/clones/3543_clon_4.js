@@ -1,56 +1,38 @@
-const parseInteger = (textualData) => Number(textualData);
-const convertStringListToNumberList = (stringList) => stringList.map(parseInteger);
-const getAbsoluteValue = (numericValue) => Math.abs(numericValue);
-const retrieveMinimum = (...values) => Math.min(...values);
-const retrieveMaximum = (...values) => Math.max(...values);
+const parseNumeric = (s) => Number(s);
+const parseNumericArray = (s) => s.split(' ').map(parseNumeric);
+const getMaximum = (...args) => Math.max(...args);
 
-const processInputAndCalculate = (sourceData) => {
-    const dataLines = sourceData.split('\n');
+function processInputData(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const [firstLineContent, secondLineContent] = inputLines;
 
-    const [elementCount, limitValue] = convertStringListToNumberList(dataLines[0].split(' '));
-    const individualElementValues = convertStringListToNumberList(dataLines[1].split(' '));
+    const [itemCount, thresholdValue] = parseNumericArray(firstLineContent);
+    const dataValues = parseNumericArray(secondLineContent);
 
-    const prefixSums = individualElementValues.reduce((accumulator, currentItem, indexPosition) => {
-        const priorSum = indexPosition > 0 ? accumulator[indexPosition - 1] : 0;
-        accumulator.push(priorSum + currentItem);
-        return accumulator;
-    }, []);
+    let runningSum = 0;
+    const prefixSums = dataValues.map(val => (runningSum += val));
 
-    const initialAccumulatedResult = (elementCount + 1) * limitValue;
+    const finalCalculationState = dataValues.reduceRight((accumulator, currentDataValue, currentIndex) => {
+        let { currentTotal, currentActiveCount } = accumulator;
 
-    const recursiveCalculation = (
-        currentPosition,
-        currentSequenceLength,
-        currentTotalSum
-    ) => {
-        if (currentPosition < 0) {
-            return currentTotalSum;
+        currentActiveCount++;
+
+        const currentPrefixSumValue = prefixSums[currentIndex];
+
+        if (currentActiveCount > 2 && thresholdValue <= currentPrefixSumValue * (currentActiveCount - 1) * 2 - currentDataValue * 2) {
+            currentActiveCount = 1;
+            currentTotal += thresholdValue;
         }
 
-        let nextSequenceLength = currentSequenceLength + 1;
-        let nextTotalSum = currentTotalSum;
+        currentTotal += currentDataValue * (getMaximum(currentActiveCount, 2) * 2 + 1);
 
-        if (nextSequenceLength > 2 && limitValue <= prefixSums[currentPosition] * (nextSequenceLength - 1) * 2 - individualElementValues[currentPosition] * 2) {
-            nextSequenceLength = 1;
-            nextTotalSum += limitValue;
-        }
+        return { currentTotal, currentActiveCount };
+    }, {
+        currentTotal: (itemCount + 1) * thresholdValue,
+        currentActiveCount: 0
+    });
 
-        nextTotalSum += individualElementValues[currentPosition] * (retrieveMaximum(nextSequenceLength, 2) * 2 + 1);
+    console.log(finalCalculationState.currentTotal);
+}
 
-        return recursiveCalculation(
-            currentPosition - 1,
-            nextSequenceLength,
-            nextTotalSum
-        );
-    };
-
-    const finalComputedResult = recursiveCalculation(
-        elementCount - 1,
-        0,
-        initialAccumulatedResult
-    );
-
-    console.log(finalComputedResult);
-};
-
-processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,136 +1,74 @@
-const applicationSettings = {
-    inputSource: '/dev/stdin',
-    lineSeparator: '\n',
-    defaultEncoding: 'utf-8',
-    outputPrecision: 8
+const appSettings = {
+    sourcePath: '/dev/stdin',
+    lineDelimiter: '\n'
 };
 
-const makeCoordinatePair = (horizontalComponent, verticalComponent) => {
-    return {
-        x_coord: horizontalComponent,
-        y_coord: verticalComponent
-    };
+const inputDataLines = require('fs').readFileSync(appSettings.sourcePath, 'utf-8').split(appSettings.lineDelimiter);
+
+const createPoint = (coordX, coordY) => {
+    return { x: coordX, y: coordY };
 };
 
-const acquireInputData = (settings) => {
-    try {
-        const fileSystem = require('fs');
-        const rawContent = fileSystem.readFileSync(settings.inputSource, settings.defaultEncoding);
-        const processedLines = rawContent.split(settings.lineSeparator);
-        
-        if (!processedLines || processedLines.length === 0) {
-            console.error("Input processing warning: No data lines were successfully read.");
-            return []; 
-        }
-        return processedLines;
-    } catch (error) {
-        console.error(`Input acquisition error from ${settings.inputSource}:`, error.message);
-        return [];
-    }
-};
-
-const ANGLE_RADIANS_60 = Math.PI / 3.0;
-const COS_60 = Math.cos(ANGLE_RADIANS_60);
-const SIN_60 = Math.sin(ANGLE_RADIANS_60);
-
-const generateFractalSegments = (startCoord, endCoord, currentDepth) => {
-    if (currentDepth <= 0) {
+const generateKochSegment = (startPoint, endPoint, currentIteration) => {
+    const zeroIterations = 0;
+    if (currentIteration === zeroIterations) {
         return [];
     }
 
-    if (!startCoord || !endCoord || typeof startCoord.x_coord === 'undefined' || typeof endCoord.x_coord === 'undefined') {
-        console.warn("Invalid coordinate objects provided to fractal segment generator.");
-        return [];
-    }
+    const angleRad = Math.PI / 3.0;
+    const cosineVal = Math.cos(angleRad);
+    const sineVal = Math.sin(angleRad);
 
-    const deltaX = endCoord.x_coord - startCoord.x_coord;
-    const deltaY = endCoord.y_coord - startCoord.y_coord;
-
-    const firstThirdPoint = makeCoordinatePair(
-        startCoord.x_coord + deltaX / 3.0,
-        startCoord.y_coord + deltaY / 3.0
+    const segmentA = createPoint(
+        (2 * startPoint.x + endPoint.x) / 3,
+        (2 * startPoint.y + endPoint.y) / 3
+    );
+    const segmentB = createPoint(
+        (startPoint.x + 2 * endPoint.x) / 3,
+        (startPoint.y + 2 * endPoint.y) / 3
     );
 
-    const secondThirdPoint = makeCoordinatePair(
-        startCoord.x_coord + 2.0 * deltaX / 3.0,
-        startCoord.y_coord + 2.0 * deltaY / 3.0
-    );
+    const deltaX = segmentB.x - segmentA.x;
+    const deltaY = segmentB.y - segmentA.y;
 
-    const segmentVecX = secondThirdPoint.x_coord - firstThirdPoint.x_coord;
-    const segmentVecY = secondThirdPoint.y_coord - firstThirdPoint.y_coord;
-
-    const rotatedX = segmentVecX * COS_60 - segmentVecY * SIN_60;
-    const rotatedY = segmentVecX * SIN_60 + segmentVecY * COS_60;
-
-    const peakPoint = makeCoordinatePair(
-        firstThirdPoint.x_coord + rotatedX,
-        firstThirdPoint.y_coord + rotatedY
+    const segmentC = createPoint(
+        deltaX * cosineVal - deltaY * sineVal + segmentA.x,
+        deltaX * sineVal + deltaY * cosineVal + segmentA.y
     );
     
-    const resultingPoints = [];
+    const segmentPoints = [];
+    const nextIteration = currentIteration - 1;
 
-    resultingPoints.push(...generateFractalSegments(startCoord, firstThirdPoint, currentDepth - 1));
-    resultingPoints.push(firstThirdPoint);
+    segmentPoints.push(...generateKochSegment(startPoint, segmentA, nextIteration));
+    segmentPoints.push(segmentA);
+    segmentPoints.push(...generateKochSegment(segmentA, segmentC, nextIteration));
+    segmentPoints.push(segmentC);
+    segmentPoints.push(...generateKochSegment(segmentC, segmentB, nextIteration));
+    segmentPoints.push(segmentB);
+    segmentPoints.push(...generateKochSegment(segmentB, endPoint, nextIteration));
 
-    resultingPoints.push(...generateFractalSegments(firstThirdPoint, peakPoint, currentDepth - 1));
-    resultingPoints.push(peakPoint);
-
-    resultingPoints.push(...generateFractalSegments(peakPoint, secondThirdPoint, currentDepth - 1));
-    resultingPoints.push(secondThirdPoint);
-
-    resultingPoints.push(...generateFractalSegments(secondThirdPoint, endCoord, currentDepth - 1));
-
-    return resultingPoints;
+    return segmentPoints;
 };
 
-const constructKochFractal = (iterations) => {
-    if (iterations < 0) {
-        console.warn("Negative iteration count encountered. Using zero iterations instead.");
-        iterations = 0;
+const computeKochCurve = (totalIterations) => {
+    const initialStartPoint = createPoint(0.0, 0.0);
+    const initialEndPoint = createPoint(100.0, 0.0);
+
+    if (totalIterations === 0) {
+        return [initialStartPoint, initialEndPoint];
     }
-
-    const baseStart = makeCoordinatePair(0.0, 0.0);
-    const baseEnd = makeCoordinatePair(100.0, 0.0);
-
-    if (iterations === 0) {
-        return [baseStart, baseEnd];
-    }
-
-    const intermediateCoords = generateFractalSegments(baseStart, baseEnd, iterations);
-
-    return [
-        baseStart,
-        ...intermediateCoords,
-        baseEnd
-    ];
-};
-
-(() => {
-    const allInputLines = acquireInputData(applicationSettings);
     
-    if (allInputLines.length === 0) {
-        return;
-    }
+    const intermediateKochPoints = generateKochSegment(initialStartPoint, initialEndPoint, totalIterations);
+    
+    return [initialStartPoint, ...intermediateKochPoints, initialEndPoint];
+};
 
-    const rawIterationCountString = allInputLines[0];
-    let effectiveIterationCount = 0;
+const requestedIterations = parseInt(inputDataLines[0]);
 
-    try {
-        const parsedNumericValue = parseInt(rawIterationCountString, 10);
-        if (isNaN(parsedNumericValue)) {
-            throw new Error("Input string cannot be converted to a number.");
-        }
-        effectiveIterationCount = parsedNumericValue;
-    } catch (parseError) {
-        console.error(`Data parsing failed for iteration count: ${parseError.message}. Defaulting to 0.`);
-        effectiveIterationCount = 0;
-    }
+const finalKochPoints = computeKochCurve(requestedIterations);
 
-    const finalKochPoints = constructKochFractal(effectiveIterationCount);
-
-    for (const currentPoint of finalKochPoints) {
-        const xFormatted = currentPoint.x_coord.toFixed(applicationSettings.outputPrecision);
-        const yFormatted = currentPoint.y_coord.toFixed(applicationSettings.outputPrecision);
-        console.log(xFormatted, yFormatted);
-    }
-})();
+finalKochPoints.forEach(currentPoint => {
+    const formattedX = currentPoint.x.toFixed(8);
+    const formattedY = currentPoint.y.toFixed(8);
+    console.log(formattedX, formattedY);
+});

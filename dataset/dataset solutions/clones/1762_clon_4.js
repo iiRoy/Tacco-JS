@@ -1,46 +1,40 @@
-const MOD_CONST = 998244353n;
+const MOD_VAL = 998244353n;
 
-const obtainResult = (startA, startB, endC, endD) => {
-    const valueStore = new Map(); // Stores Map<BigInt, Map<BigInt, BigInt>>
+const calculateGridResult = (initialR, initialC, targetR, targetC) => {
+    const rowDimension = Number(targetR - initialR) + 1;
+    const colDimension = Number(targetC - initialC) + 1;
 
-    const fetchRow = (rowKey) => {
-        if (!valueStore.has(rowKey)) {
-            valueStore.set(rowKey, new Map());
-        }
-        return valueStore.get(rowKey);
-    };
+    const dpTable = Array.from({ length: rowDimension }, () => Array(colDimension).fill(0n));
 
-    for (let currentC = startA; currentC <= endC; currentC++) {
-        for (let currentD = startB; currentD <= endD; currentD++) {
-            let calculatedVal;
-            if (currentC === startA) {
-                calculatedVal = (startA ** (currentD - startB)) % MOD_CONST;
-            } else if (currentD === startB) {
-                calculatedVal = (startB ** (currentC - startA)) % MOD_CONST;
+    for (let rIdx = 0; rIdx < rowDimension; rIdx++) {
+        for (let cIdx = 0; cIdx < colDimension; cIdx++) {
+            const currentRValue = initialR + BigInt(rIdx);
+            const currentCValue = initialC + BigInt(cIdx);
+
+            let computedValue;
+            if (currentRValue === initialR) {
+                computedValue = (initialR ** (currentCValue - initialC)) % MOD_VAL;
+            } else if (currentCValue === initialC) {
+                computedValue = (initialC ** (currentRValue - initialR)) % MOD_VAL;
             } else {
-                const prevCRow = fetchRow(currentC - 1n);
-                const currCRow = fetchRow(currentC);
-
-                const term1 = (prevCRow.get(currentD) * currentD) % MOD_CONST;
-                const term2 = (currCRow.get(currentD - 1n) * currentC) % MOD_CONST;
-                const term3 = (prevCRow.get(currentD - 1n) * (currentC - 1n) * (currentD - 1n)) % MOD_CONST;
+                const termOne = dpTable[rIdx - 1][cIdx] * currentCValue;
+                const termTwo = dpTable[rIdx][cIdx - 1] * currentRValue;
+                const termThree = dpTable[rIdx - 1][cIdx - 1] * (currentRValue - 1n) * (currentCValue - 1n);
                 
-                calculatedVal = (term1 + term2 - term3);
-                calculatedVal = (calculatedVal % MOD_CONST + MOD_CONST) % MOD_CONST;
+                let combinedSum = termOne + termTwo - termThree;
+                computedValue = ((combinedSum % MOD_VAL) + MOD_VAL) % MOD_VAL;
             }
-            fetchRow(currentC).set(currentD, calculatedVal);
+            dpTable[rIdx][cIdx] = computedValue;
         }
     }
-
-    return fetchRow(endC).get(endD);
+    return dpTable[rowDimension - 1][colDimension - 1];
 };
 
-const processInputAndOutput = (rawInput) => {
-    const lines = rawInput.split("\n");
-    const [valA, valB, valC, valD] = lines[0].split(" ").map(entry => BigInt(entry));
-    
+const processInputData = (inputContent) => {
+    const inputLines = inputContent.split("\n");
+    const [valA, valB, valC, valD] = inputLines[0].split(" ").map(numericString => BigInt(numericString));
     console.log(`${valA}:${valB}:${valC}:${valD}`);
-    console.log(Number(obtainResult(valA, valB, valC, valD)));
+    console.log(Number(calculateGridResult(valA, valB, valC, valD)));
 };
 
-processInputAndOutput(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

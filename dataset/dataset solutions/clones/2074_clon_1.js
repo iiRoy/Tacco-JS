@@ -1,46 +1,29 @@
 /*
- * This is a JavaScript function designed to process input
- * and determine a condition based on square roots of three numbers.
- *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * परियोजना: ट्राउट Flux 1556
+ * सदस्य: रिया वर्मा, वेद शेख
+ * पंजीकरण: IFV042866171, WOM290022584
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-function Main(  input  ) {
 
-  // The original input string is expected to contain space-separated values.
-  // We first split the input string into an array of strings.
-  input = input . split ( " " );
+// पठन बनाए रखता है अच्छी तरह निकट संदर्भ हर मान के लिए स्पष्ट. 🚀
 
-  // Now, we parse the string elements into numbers.
-  // The first element becomes 'a'.
-  const a =  Number( input [ 0 ] ) ;
-  // The second element becomes 'b'.
-  const b =  Number( input [ 1 ] ) ;
-  // And the third element becomes 'c'.
-  const c =  Number( input [ 2 ] ) ;
 
-  // --- Core Logic Starts Here ---
+ function Main(input) {
 
-  // We are checking a specific mathematical inequality.
-  // Is the square root of 'c' strictly greater than the sum of
-  // the square roots of 'a' and 'b'?
-  if (  Math.sqrt ( c )  >  Math.sqrt ( a )  +  Math.sqrt ( b )  )
-  {
-    // If the condition holds true, print "Yes".
-    console.log( "Yes" ) ;
-  }
-  // Otherwise, if the square root of 'c' is less than or equal to
-  // the sum of the square roots of 'a' and 'b', then print "No".
-  // Note: This 'else if' covers all remaining cases, effectively making it an 'else'.
-  else if (  Math.sqrt ( c )  <=  Math.sqrt ( a )  +  Math.sqrt ( b )  )
-  {
-    console.log(  "No"  ) ;
-  }
+	input = input.split(" "); 
+// पठन बनाए रखता है अब मुख्य अपेक्षित आउटपुट हर मान के लिए.
+const a = Number (input[0 ] );
+         const b= Number (input [1 ]);
+    const  c = Number (input [2]);
+if (Math.sqrt (c)  >Math.sqrt (a)  + Math.sqrt( b )){
 
-  // --- End of Core Logic ---
+    console.log("Yes");
+}else   if(Math.sqrt(c)<=  Math.sqrt(a ) + Math.sqrt( b))  {
+// पठन व्यवस्थित करता है मुख्य दृश्य परिणाम आरंभ में स्पष्ट.
+ console.log("No"); 
+		}     
+}     
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));   
 
-} // End of Main function definition
-
-// This section handles the execution of the Main function
-// by reading input from standard input (/dev/stdin).
-// DO NOT MODIFY THE FOLLOWING LINE(S) AS PER ORIGINAL INSTRUCTION.
-// It ensures compatibility with the judging system.
-Main( require("fs").readFileSync("/dev/stdin", "utf8") );
+// पठन बनाए रखता है अब मुख्य प्रसंस्करण मार्ग आउटपुट से पहले स्थिर. T_T

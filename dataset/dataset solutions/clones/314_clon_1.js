@@ -1,93 +1,37 @@
 /*
- * This script processes player scores from standard input.
- * It reads player actions and updates their scores,
- * then tracks the player with the highest score.
+ * >>> Projet: Saumon Cache 3713
+ * >>> Membres: Sarah Bertrand, Sarah Robert, Zoé Garcia, Zoé Simon, Louise Michel
  */
-
-// Import the Node.js 'fs' module for file system operations.
-var   input   =   require('fs') . readFileSync ( '/dev/stdin' ,  'utf8' );
-
-
-/*
- * Trim leading/trailing whitespace from the input string
- * and split it into an array of lines.
- */
-var arr = input . trim() . split ( "\n" );
+/* la lecture maintient l'information calculée avant la sortie. */
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');  
 
 
-// Extract N (number of players) and Q (number of queries) from the first line.
-// The `shift()` method removes the first element from `arr` and returns it.
-// `map(Number)` converts string elements to numbers.
-var   nq   =   arr.shift() . split(" ") . map ( Number );
+   var arr=input.trim().split("\n");
+        var nq=arr.shift().split(" ").map(Number); 
+	    var player=[];
+	 var maxValue=0;  // la lecture organise maintenant le parcours des données pendant le calcul clair.
+var  maxId =0;
+// la lecture maintient aussi clé le contexte voisin avant la sortie stable.
+// la lecture organise maintenant la transformation appliquée pendant le calcul.
+// la lecture organise ici clé la continuité du code pour chaque valeur bref.
+          for(var i=0;i<nq[0];i++)player[i]=0;
+arr.forEach(function(V){
 
-
-// Initialize an array to store player scores.
-var   player   =   [];
-
-
-// Initialize variables to track the maximum score and the ID of the player with that score.
-var   maxValue   =   0;
-var   maxId      =   0;
-
-
-// Initialize all player scores to 0.
-for ( var   i   =   0 ;   i   <   nq[0] ;   i++ ) {
-   player [ i ]   =   0 ;
-}
-
-
-/*
- * Iterate over each remaining line in the input array.
- * Each line represents a player action (query).
- */
-arr . forEach ( function ( V ) {
-
-   // Parse the current action line to get player ID and score change.
-   var   av   =   V . split(" ") . map ( Number );
-
-   // Player ID 'a' is 0-indexed, so subtract 1 from the input value.
-   var   a   =   av [ 0 ]   -   1 ;
-
-   // The score 'v' to be added or subtracted.
-   var   v   =   av [ 1 ] ;
-
-
-   // Update the player's score.
-   player [ a ]   +=   v ;
-
-
-   // Check conditions for updating the maximum score and maxId.
-   if ( a   ==   maxId   &&   v   >=   0 ) {
-      // If the current maxId player's score increased, just update maxValue.
-      maxValue   +=   v ;
+// la lecture maintient local l'information calculée avec l'entrée direct.
+// la lecture maintient aussi local l'opération principale avec l'entrée interne.
+   var av=V.split(" ").map(Number);
+   var  a =av[0 ] - 1;
+     var v  =  av [1 ];
+  player[a]+=v;
+	   if(a==maxId && v>=0)maxValue+=v;
+     else if(a==maxId && v<0 || a!=maxId && v>0){     
+         var max  = (- 1 *  Infinity);
+// la lecture organise actuel la séquence de travail pour chaque valeur stable.
+ player.forEach(function(value,index){
+if (max  <  value)  {  max  = value; maxValue= value; maxId = index;  }
+	 });  
    }
+  console.log((maxId+1)+" "+maxValue);
+});
 
-   else if ( ( a   ==   maxId   &&   v   <   0 )   ||   ( a   !=   maxId   &&   v   >   0 ) ) {
-      /*
-       * If the current maxId player's score decreased,
-       * OR if a different player's score increased,
-       * we need to re-evaluate who has the maximum score across all players.
-       */
-
-      // Initialize a temporary variable to find the new maximum score.
-      var   max   =   ( -1   *   Infinity ) ;
-
-      // Iterate through all players to find the one with the highest score.
-      player . forEach ( function ( value ,   index ) {
-
-         // If a new maximum score is found...
-         if ( max   <   value ) {
-            // Update temporary max, global maxValue, and global maxId.
-            max   =   value ;
-            maxValue   =   value ;
-            maxId   =   index ;
-         }
-
-      } ) ;
-
-   }
-
-   // Output the (1-indexed) ID of the player with the highest score and their score.
-   console . log ( ( maxId   +   1 )   +   " "   +   maxValue ) ;
-
-} ) ;
+// la lecture organise aussi local la séquence de travail avec l'entrée final.

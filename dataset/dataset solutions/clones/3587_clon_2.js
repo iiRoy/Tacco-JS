@@ -1,124 +1,126 @@
-let verticalDimension = 0; // Holds the total number of rows for the grid structure
-let horizontalDimension = 0; // Holds the total number of columns for the grid structure
+var gridHeight = 0; // Global variable to store the height of the grid
+var gridWidth = 0; // Global variable to store the width of the grid
 
 /**
- * This is the primary function that processes the entire input.
- * It parses dimensions, initializes the data grid, performs row/column marking,
- * and finally displays the filtered output.
- * @param {string} incomingText - The complete raw text input.
+ * Main function to process the input data, manipulate the grid, and display the result.
+ * @param {string} rawInputString - The raw input string from stdin.
  */
-function orchestrateProcessing(incomingText) {
-  // Extracting grid dimensions from the initial line of the input
-  const dimensionParts = incomingText.split("\n")[0].split(" ");
-  verticalDimension = dimensionParts[0]; // Assigning the height
-  horizontalDimension = dimensionParts[1]; // Assigning the width
+function processInputData(rawInputString) {
+  // Split the input string by newlines to get individual lines.
+  // The first line contains grid dimensions (H W).
+  const inputLines = rawInputString.split("\n");
 
-  // Constructing the initial 2D character array (grid)
-  let dataGrid = buildInitialStructure(
-    incomingText.split("\n").filter((currentLine, lineIndex) => {
-      // We skip the first line as it contains only dimensions
-      return lineIndex !== 0;
+  // Parse grid dimensions from the first line.
+  const dimensions = inputLines[0].split(" ");
+  gridHeight = dimensions[0];
+  gridWidth = dimensions[1];
+
+  // Initialize the character grid from the remaining input lines.
+  // Filter out the first line (dimensions) and any empty lines.
+  var characterGrid = initializeCharacterGrid(
+    inputLines.filter((currentInputLine, idx) => {
+      return idx !== 0; // Exclude the first line containing H and W
     })
   );
 
-  // First pass: Iterating through each row to identify and mark rows for exclusion
-  for (let rowIterator = 0; rowIterator < verticalDimension; rowIterator++) {
-    dataGrid = markRowForExclusion(dataGrid, rowIterator);
+  // Iterate through rows to mark them for removal if they are entirely '.' or 'n'.
+  for (var rowIndex = 0; rowIndex < gridHeight; rowIndex++) {
+    characterGrid = markGridRowForExclusion(characterGrid, rowIndex);
   }
 
-  // Rotating the grid (transposing) to treat columns as rows for the next pass
-  dataGrid = rotateGrid(dataGrid);
+  // Transpose the matrix to process columns as if they were rows.
+  characterGrid = performMatrixTransposition(characterGrid);
 
-  // Second pass: Iterating through the 'new' rows (original columns) to mark columns for exclusion
-  for (let colIterator = 0; colIterator < horizontalDimension; colIterator++) {
-    dataGrid = markRowForExclusion(dataGrid, colIterator);
+  // Iterate through "new" rows (original columns) to mark them for removal.
+  for (var colIndex = 0; colIndex < gridWidth; colIndex++) {
+    characterGrid = markGridRowForExclusion(characterGrid, colIndex);
   }
 
-  // Rotating the grid back to its original orientation and then displaying the final result
-  displayProcessedGrid(rotateGrid(dataGrid));
+  // Transpose the matrix back to its original orientation before printing.
+  displayProcessedGrid(performMatrixTransposition(characterGrid));
 }
 
 /**
- * Renders the final processed grid to the console.
- * It filters out any completely marked rows and the individual marked cells.
- * @param {Array<Array<string>>} finalGrid - The 2D array ready for display.
+ * Prints the processed grid, skipping rows that are entirely marked for removal.
+ * @param {Array<Array<string>>} outputArray - The 2D array representing the grid to print.
  */
-function displayProcessedGrid(finalGrid) {
-  finalGrid.forEach((currentRow) => {
-    // Check if the current row consists entirely of 'X' (marked) cells
-    const shouldSkipRowOutput = currentRow.reduce((accumulator, cellContent) => accumulator && cellContent === "X", true);
-
-    // Only print if the row is not entirely marked for skipping
-    if (!shouldSkipRowOutput) {
-      console.log(currentRow.filter((elementValue) => elementValue !== "X").join(""));
+function displayProcessedGrid(outputArray) {
+  outputArray.forEach(outputRow => {
+    // Check if the current row consists only of 'n' characters.
+    const isRowCompletelyEmpty = outputRow.reduce((accumulator, cellContent) => accumulator && cellContent === "n", !false); // !false is equivalent to true
+    
+    // If the row is not completely empty, print its non-'n' elements.
+    if (!isRowCompletelyEmpty) {
+      console.log(outputRow.filter(validCell => validCell !== "n").join(""));
     }
   });
 }
 
 /**
- * Examines a specified row in the matrix. If the row contains only 'E' (empty) or 'X' (already marked) cells,
- * it marks all cells in that row as 'X' (excluded). Otherwise, the row remains unchanged.
- * @param {Array<Array<string>>} inputMatrix - The 2D array being modified.
- * @param {number} targetRowIndex - The index of the row to evaluate.
- * @returns {Array<Array<string>>} The matrix with the potentially modified row.
+ * Marks a row in the grid for exclusion if it contains only '.' or 'n' characters.
+ * @param {Array<Array<string>>} currentGridState - The current state of the grid.
+ * @param {number} targetRowIndex - The index of the row to check and potentially mark.
+ * @returns {Array<Array<string>>} The grid with the specified row marked as 'n' if it was removable, otherwise the original grid.
  */
-function markRowForExclusion(inputMatrix, targetRowIndex) {
-  // Verify if the row contains only empty ('E') or already excluded ('X') cells
-  const isRowEligibleForMarking = inputMatrix[targetRowIndex].reduce(
-    (currentAccumulator, cellValue) => currentAccumulator && (cellValue === "E" || cellValue === "X"),
+function markGridRowForExclusion(currentGridState, targetRowIndex) {
+  // Determine if the target row is entirely composed of '.' or 'n'.
+  const isTargetRowFullyRemovable = currentGridState[targetRowIndex].reduce(
+    (removabilityAccumulator, cellContent) => removabilityAccumulator && (cellContent === "." || cellContent === "n"),
     true
   );
 
-  // If the row does not meet the criteria for marking, return the matrix as is
-  if (!isRowEligibleForMarking) return inputMatrix;
+  // If the row is not fully removable, return the grid as is.
+  if (!isTargetRowFullyRemovable) {
+    return currentGridState;
+  }
 
-  // If the row is eligible, create a new matrix where all cells in the target row are 'X'
-  return inputMatrix.map((rowEntry, currentEntryIndex) => {
-    return rowEntry.map((cellEntry) => {
-      // If this is the row to be marked, set all its cells to 'X'
-      return currentEntryIndex === targetRowIndex ? "X" : cellEntry;
+  // If the row is fully removable, create a new grid where cells in the target row are marked 'n'.
+  return currentGridState.map((gridRowToProcess, currentRowIndex) => {
+    return gridRowToProcess.map(cellValueInRow => {
+      return currentRowIndex === targetRowIndex ? "n" : cellValueInRow;
     });
   });
 }
 
 /**
- * Performs a matrix transposition, swapping the rows and columns of a 2D array.
- * @param {Array<Array<string>>} sourceMatrix - The 2D array to be transposed.
- * @returns {Array<Array<string>>} The newly transposed 2D array.
+ * Transposes a given 2D matrix (swaps rows and columns).
+ * @param {Array<Array<string>>} originalMatrix - The matrix to transpose.
+ * @returns {Array<Array<string>>} The transposed matrix.
  */
-function rotateGrid(sourceMatrix) {
-  const initialRowCount = sourceMatrix.length; // Original number of rows
-  const initialColCount = sourceMatrix[0].length; // Original number of columns
+function performMatrixTransposition(originalMatrix) {
+  const originalRowsCount = originalMatrix.length;
+  const originalColsCount = originalMatrix[0].length;
 
-  // Prepare a new matrix with dimensions swapped (columns become rows, rows become columns)
-  const transposedMatrix = sourceMatrix[0].map((_placeholder) => new Array(initialRowCount));
+  // Initialize a new matrix with dimensions swapped (cols x rows).
+  // The first row of the original matrix determines the number of columns for the new matrix.
+  var transposedResult = originalMatrix[0].map(element => new Array(originalRowsCount));
 
-  // Fill the transposed matrix by swapping indices
-  for (let rowIdx = 0; rowIdx < initialRowCount; rowIdx++) {
-    for (let colIdx = 0; colIdx < initialColCount; colIdx++) {
-      transposedMatrix[colIdx][rowIdx] = sourceMatrix[rowIdx][colIdx];
+  // Populate the transposed matrix.
+  for (var rowIterator = 0; rowIterator < originalRowsCount; rowIterator++) {
+    for (var colIterator = 0; colIterator < originalColsCount; colIterator++) {
+      transposedResult[colIterator][rowIterator] = originalMatrix[rowIterator][colIterator];
     }
   }
-  return transposedMatrix;
+  return transposedResult;
 }
 
 /**
- * Transforms an array of raw input strings into a 2D grid of characters.
- * It filters out any completely empty strings before processing.
- * @param {Array<string>} rawInputLines - An array of strings, each representing a line of grid data.
- * @returns {Array<Array<string>>} A 2D array where each inner array is a row of characters.
+ * Initializes a 2D character grid from an array of input line strings.
+ * Filters out empty lines and splits each valid line into an array of characters.
+ * @param {Array<string>} inputLinesArray - An array of strings, each representing a row of the grid.
+ * @returns {Array<Array<string>>} The initialized 2D character grid.
  */
-function buildInitialStructure(rawInputLines) {
-  return rawInputLines
-    .filter((singleLine) => {
-      // Only include lines that have characters after splitting
-      return singleLine.split("").length > 0;
+function initializeCharacterGrid(inputLinesArray) {
+  return inputLinesArray
+    .filter(lineString => {
+      // Ensure the line is not empty before processing.
+      return lineString.split("").length > 0;
     })
-    .map((individualLine) => {
-      // Split each individual line string into an array of its constituent characters
-      return individualLine.split("");
+    .map(lineString => {
+      // Split each valid line into an array of individual characters.
+      return lineString.split("");
     });
 }
 
-// Initiate the entire process by reading input from standard input
-orchestrateProcessing(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from stdin and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

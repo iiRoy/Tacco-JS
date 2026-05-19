@@ -1,61 +1,40 @@
-const dataStream = require('node:fs').readFileSync(0, 'utf8');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+let lineSegments = rawData.trim().split("\n");
 
-function* getTaskBlocks(rawContent) {
-    const contentLines = rawContent.trim().split('\n');
-    let lineIndex = 0;
+while (true) {
+    const dimensions = lineSegments.shift().split(" ");
 
-    const readNumericLine = () => Number(contentLines[lineIndex++]);
-    const readNumericPair = () => contentLines[lineIndex++].split(' ').map(Number);
-    const readNumericArray = (count) => {
-        const collection = [];
-        for (let k = 0; k < count; ++k) {
-            collection.push(readNumericLine());
-        }
-        return collection;
-    };
+    if (dimensions.join(" ") === "0 0") break;
 
-    while (true) {
-        const [paramA, paramB] = readNumericPair();
-        if (paramA === 0 && paramB === 0) {
-            break;
-        }
+    const elementCount = Number(dimensions[0]);
+    const modifierCount = Number(dimensions[1]);
 
-        const modifierList = readNumericArray(paramB);
-        const targetList = readNumericArray(paramA);
+    const modifierValues = Array.from({ length: modifierCount }, () => Number(lineSegments.shift()));
+    const targetLevels = Array.from({ length: elementCount }, () => Number(lineSegments.shift()));
 
-        yield {
-            elementCount: paramA,
-            modifierCount: paramB,
-            mods: modifierList,
-            targets: targetList
-        };
-    }
-}
+    let currentLevelCosts = Array.from({ length: 256 }, () => Infinity);
+    currentLevelCosts[128] = 0;
 
-for (const currentTask of getTaskBlocks(dataStream)) {
-    const initialCostDistribution = new Map().set(128, 0);
+    const finalLevelCosts = targetLevels.reduce((previousCosts, currentTargetValue) => {
+        const nextCosts = Array.from({ length: 256 }, () => Infinity);
 
-    const calculateNextCostStates = (previousCostStates, currentTargetValue) => {
-        const nextCostStates = new Map();
-        for (const [prevValueState, accumulatedCost] of previousCostStates.entries()) {
-            for (const modifierEffect of currentTask.mods) {
-                const resultantValueState = Math.max(0, Math.min(255, prevValueState + modifierEffect));
-                const currentTransitionCost = accumulatedCost + (currentTargetValue - resultantValueState) ** 2;
-
-                nextCostStates.set(
-                    resultantValueState,
-                    Math.min(nextCostStates.get(resultantValueState) ?? Infinity, currentTransitionCost)
-                );
+        previousCosts.forEach((costFromPrevious, previousLevel) => {
+            if (costFromPrevious === Infinity) {
+                return;
             }
-        }
-        return nextCostStates;
-    };
 
-    const finalCostDistribution = currentTask.targets.reduce(calculateNextCostStates, initialCostDistribution);
+            modifierValues.forEach(modifierOffset => {
+                let adjustedLevel = previousLevel + modifierOffset;
+                adjustedLevel = Math.max(0, Math.min(255, adjustedLevel));
 
-    let ultimateMinimalCost = Infinity;
-    for (const finalCost of finalCostDistribution.values()) {
-        ultimateMinimalCost = Math.min(ultimateMinimalCost, finalCost);
-    }
-    console.log(ultimateMinimalCost);
+                const currentPenalty = costFromPrevious + Math.pow(currentTargetValue - adjustedLevel, 2);
+                nextCosts[adjustedLevel] = Math.min(nextCosts[adjustedLevel], currentPenalty);
+            });
+        });
+        return nextCosts;
+    }, currentLevelCosts);
+
+    const overallMinimum = Math.min(...finalLevelCosts);
+
+    console.log(overallMinimum);
 }

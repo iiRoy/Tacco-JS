@@ -1,52 +1,47 @@
-const fs = require('fs');
-const inputContent = fs.readFileSync('/dev/stdin', 'utf8');
-const lines = inputContent.trim().split('\n');
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const dimension = parseInt(lines.shift(), 10);
-const grid = lines.map(line => line.split(' ').map(Number));
+const inputLines = rawInput.trim().split('\n');
 
-const prefixSumGrid = Array.from({ length: dimension }, () => Array(dimension).fill(0));
+const matrixDimension = Number(inputLines.shift());
 
-for (let rowIdx = 0; rowIdx < dimension; rowIdx++) {
-    for (let colIdx = 0; colIdx < dimension; colIdx++) {
-        let currentVal = grid[rowIdx][colIdx];
-        let above = (rowIdx > 0) ? prefixSumGrid[rowIdx - 1][colIdx] : 0;
-        let left = (colIdx > 0) ? prefixSumGrid[rowIdx][colIdx - 1] : 0;
-        let diag = (rowIdx > 0 && colIdx > 0) ? prefixSumGrid[rowIdx - 1][colIdx - 1] : 0;
-        prefixSumGrid[rowIdx][colIdx] = currentVal + above + left - diag;
+const dataGrid = inputLines.map(line => line.split(' ').map(Number));
+
+const columnAccumulations = Array.from({ length: matrixDimension }, (_, rowIndex) =>
+    Array.from({ length: matrixDimension }, (_, colIndex) => {
+        if (rowIndex === 0) {
+            return dataGrid[rowIndex][colIndex];
+        }
+        return dataGrid[rowIndex][colIndex] + columnAccumulations[rowIndex - 1][colIndex];
+    })
+);
+
+const calculateMaxSubarray = (linearArray) => {
+    if (linearArray.length === 0) return -Infinity;
+
+    let currentMaximum = linearArray[0];
+    let overallMaximum = linearArray[0];
+
+    for (let k = 1; k < linearArray.length; k++) {
+        currentMaximum = Math.max(linearArray[k], currentMaximum + linearArray[k]);
+        overallMaximum = Math.max(overallMaximum, currentMaximum);
+    }
+    return overallMaximum;
+};
+
+let globalMaximum = -Infinity;
+
+for (let topBoundary = 0; topBoundary < matrixDimension; topBoundary++) {
+    for (let bottomBoundary = topBoundary; bottomBoundary < matrixDimension; bottomBoundary++) {
+        const currentSliceSums = Array.from({ length: matrixDimension }, (_, colIndex) => {
+            const sumToBottom = columnAccumulations[bottomBoundary][colIndex];
+            const sumAboveTop = topBoundary > 0 ? columnAccumulations[topBoundary - 1][colIndex] : 0;
+            return sumToBottom - sumAboveTop;
+        });
+
+        const sliceMaximum = calculateMaxSubarray(currentSliceSums);
+        globalMaximum = Math.max(globalMaximum, sliceMaximum);
     }
 }
 
-let overallMaximum = -Infinity;
-
-for (let topRow = 0; topRow < dimension; topRow++) {
-    for (let bottomRow = topRow; bottomRow < dimension; bottomRow++) {
-        let currentColumnSums = Array(dimension).fill(0);
-
-        for (let col = 0; col < dimension; col++) {
-            let rectSum = prefixSumGrid[bottomRow][col];
-            if (topRow > 0) {
-                rectSum -= prefixSumGrid[topRow - 1][col];
-            }
-            currentColumnSums[col] = rectSum;
-        }
-
-        let kadaneMax = -Infinity;
-        let tempSum = 0;
-        for (let k = 0; k < dimension; k++) {
-            tempSum += currentColumnSums[k];
-            if (tempSum > kadaneMax) {
-                kadaneMax = tempSum;
-            }
-            if (tempSum < 0) {
-                tempSum = 0;
-            }
-        }
-        
-        if (kadaneMax > overallMaximum) {
-            overallMaximum = kadaneMax;
-        }
-    }
-}
-
-console.log(overallMaximum);
+console.log(globalMaximum);

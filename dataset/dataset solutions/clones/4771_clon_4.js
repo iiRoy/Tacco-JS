@@ -1,84 +1,71 @@
-const sourceData = require("node:fs").readFileSync(0, "utf8");
-const lineSegments = sourceData.split('\n');
+'use strict';
 
-let currentPosition = 0;
+class DataReader {
+  constructor() {
+    this.sourceLines = [];
+    this.loadSourceData();
+  }
 
-function parseNumericSequence() {
-    if (currentPosition >= lineSegments.length) return [];
-    const activeSegment = lineSegments[currentPosition++];
-    const stringFragments = activeSegment.split(' ');
-    const numericAccumulator = [];
+  loadSourceData() {
+    this.sourceLines = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
+  }
 
-    for (let currentFragment of stringFragments) {
-        const processedFragment = currentFragment.trim();
-        if (processedFragment.length === 0) {
-            numericAccumulator.push(NaN);
-            continue;
-        }
-
-        let calculatedValue = 0;
-        let directionIndicator = 1;
-        let scanStart = 0;
-
-        if (processedFragment[0] === '-') {
-            directionIndicator = -1;
-            scanStart = 1;
-        } else if (processedFragment[0] === '+') {
-            scanStart = 1;
-        }
-
-        let digitEncountered = false;
-        for (let charIndex = scanStart; charIndex < processedFragment.length; ++charIndex) {
-            const characterCode = processedFragment.charCodeAt(charIndex);
-            if (characterCode >= 48 && characterCode <= 57) {
-                calculatedValue = calculatedValue * 10 + (characterCode - 48);
-                digitEncountered = true;
-            } else {
-                break;
-            }
-        }
-
-        if (digitEncountered) {
-            numericAccumulator.push(calculatedValue * directionIndicator);
-        } else {
-            numericAccumulator.push(NaN);
-        }
+  retrieveLine(count) {
+    if (count) {
+      return this.sourceLines.splice(0, count);
     }
-    return numericAccumulator;
+    return this.sourceLines.shift();
+  }
+
+  parseSingleInteger() { return parseInt(this.retrieveLine()); }
+  parseStringArray() { return this.retrieveLine().split(' '); }
+  fetchIntegerArray() { return this.parseStringArray().map((val) => parseInt(val)); }
+  fetchFloatArray() { return this.parseStringArray().map((val) => parseFloat(val)); }
+  parseMultiLineIntegers(count) { return this.retrieveLine(count).map((line) => parseInt(line)); }
+  parseMultiLineFloats(count) { return this.retrieveLine(count).map((line) => parseFloat(line)); }
+  parseMultiLineStringArrays(count) { return this.retrieveLine(count).map((line) => line.split(' ')); }
+  parseMultiLineIntegerArrays(count) {
+    return this.retrieveLine(count).map((line) => line.split(' ').map((val) => parseInt(val)));
+  }
+  parseMultiLineFloatArrays(count) {
+    return this.retrieveLine(count).map((line) => line.split(' ').map((val) => parseFloat(val)));
+  }
+}
+const dataReader = new DataReader();
+
+class PrimaryProcessor {
+  processData() {
+    const configParams = dataReader.fetchIntegerArray();
+    const locationSequence = dataReader.fetchIntegerArray();
+
+    const walkCostPerUnit = configParams[1];
+    const teleportCost = configParams[2];
+
+    if (locationSequence.length <= 1) {
+      return 0;
+    }
+
+    const totalJourneyCost = locationSequence.slice(1).reduce((accumulatedCost, currentPosition, index) => {
+      const previousPosition = locationSequence[index];
+      const segmentDistance = currentPosition - previousPosition;
+
+      const segmentWalkOption = segmentDistance * walkCostPerUnit;
+      const chosenSegmentCost = (segmentWalkOption < teleportCost) ? segmentWalkOption : teleportCost;
+
+      return accumulatedCost + chosenSegmentCost;
+    }, 0);
+
+    return totalJourneyCost;
+  }
 }
 
-function orchestrateProcessing() {
-    const primaryInputSet = parseNumericSequence();
-    const secondaryInputSet = parseNumericSequence();
-
-    const multiplierValue = primaryInputSet[1];
-    const upperBoundary = primaryInputSet[2];
-
-    const performIterativeCalculation = (dataSet, factor, limit) => {
-        let runningTotal = 0;
-        if (!Array.isArray(dataSet) || dataSet.length < 2) {
-            return 0;
-        }
-
-        let previousItem = dataSet[0];
-        for (let index = 1; index < dataSet.length; ++index) {
-            const currentItem = dataSet[index];
-            const difference = currentItem - previousItem;
-            previousItem = currentItem;
-
-            const potentialProduct = difference * factor;
-            runningTotal += (potentialProduct < limit) ? potentialProduct : limit;
-        }
-        return runningTotal;
-    };
-
-    // The variable `unseenDataset` is intentionally not declared,
-    // mirroring the original code's `s` variable which is undefined.
-    // This line will cause a ReferenceError during execution.
-    const finalComputedValue = performIterativeCalculation(unseenDataset, multiplierValue, upperBoundary);
-
-    // This line is unreachable due to the ReferenceError.
-    // console.log(finalComputedValue);
+const displayResult = (outputValue) => {
+  let formattedOutput;
+  if (outputValue == null) return;
+  if (outputValue === true) { formattedOutput = 'Yes'; }
+  else if (outputValue === false) { formattedOutput = 'No'; }
+  else { formattedOutput = outputValue; }
+  console.log(formattedOutput);
 }
 
-orchestrateProcessing();
+displayResult(new PrimaryProcessor().processData());

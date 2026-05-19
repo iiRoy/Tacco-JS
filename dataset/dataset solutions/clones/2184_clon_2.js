@@ -1,46 +1,45 @@
-// This function is designed to handle the entire incoming dataset.
-function ProcessInput(rawData) {
-    // The given string of raw data is split into an array of lines.
-    rawData = rawData.split("\n");
+// This script processes numerical data from standard input.
+function ProcessData(rawData) {
+  // The raw input string is broken down into an array of lines.
+  let linesArray = rawData.split('\n');
 
-    // The maximum numerical boundary for our calculations is extracted from the first line.
-    const upperBound = parseInt(rawData[0], 10);
+  // The first line provides the upper limit for our numerical range.
+  const upperBound = parseInt(linesArray[0], 10);
+  // The second line specifies the required count of non-zero digits.
+  const targetNonZeroDigits = parseInt(linesArray[1], 10);
 
-    // The required count of non-zero digits for a match is obtained from the second line.
-    const targetNonZeroDigits = parseInt(rawData[1], 10);
+  // Initialize a variable to accumulate the final tally.
+  let finalTally = 0;
 
-    // Initialize a variable to store the final tally of matching numbers.
-    var resultCounter = 0;
+  // Iterate through numbers starting from one up to the defined upper bound.
+  for (let currentNumber = 1; currentNumber <= upperBound; currentNumber++) {
+    // Convert the current number into a string, then split it into individual digit characters.
+    let numberDigits = ('' + currentNumber).split('');
 
-    // Begin iterating through each integer, starting from one, up to and including the upper boundary.
-    for (var currentNumber = 1; currentNumber <= upperBound; currentNumber++) {
-        // Convert the current integer into a string, then split it into an array of individual character digits.
-        var numberCharacters = ("" + currentNumber).split("");
+    // A temporary counter for non-zero digits within the current number.
+    let nonZeroDigitCounter = 0;
 
-        // A temporary counter to keep track of the non-zero digits within the current number.
-        var activeDigitCounter = 0;
+    // Examine each character representing a digit in the current number.
+    for (let digitIndex = 0; digitIndex < numberDigits.length; digitIndex++) {
+      // Convert the digit character back into its numerical value.
+      let currentDigitValue = parseInt(numberDigits[digitIndex], 10);
 
-        // Step through each character (digit) within the current number's string representation.
-        for (var charIndex = 0; charIndex < numberCharacters.length; charIndex++) {
-            // Convert the character digit at the current index back into its numerical value.
-            var currentDigitValue = parseInt(numberCharacters[charIndex], 10);
-
-            // If the numerical value of this digit is not zero, increment our temporary counter.
-            if (currentDigitValue !== 0) {
-                activeDigitCounter++;
-            }
-        }
-
-        // After checking all digits, if the temporary non-zero digit count matches our target,
-        // then increment the main result counter.
-        if (activeDigitCounter === targetNonZeroDigits) {
-            resultCounter++;
-        }
+      // If the digit is not zero, increment our non-zero digit counter.
+      if (currentDigitValue !== 0) {
+        nonZeroDigitCounter++;
+      }
     }
 
-    // Display the final computed total to the console.
-    console.log(resultCounter);
+    // If the count of non-zero digits matches our target, increment the main tally.
+    if (nonZeroDigitCounter === targetNonZeroDigits) {
+      finalTally++;
+    }
+  }
+
+  // Output the computed total count to the console.
+  console.log(finalTally);
 }
 
-// Please do not alter the lines below. They manage standard input/output operations and execute the primary function.
-ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line handles reading from standard input and invoking the main processing function.
+// It should not be modified as it's part of the execution environment.
+ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));

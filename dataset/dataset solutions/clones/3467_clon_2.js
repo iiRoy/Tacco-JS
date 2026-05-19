@@ -1,39 +1,16 @@
-// This module handles basic string processing tasks.
-function processInput(  rawData  ) {
-  let textSegment = rawData.split(
-    "\n"
-  )[  0  ];  // Extracting the initial line from the provided data.
+function processInput(inputData) {
+    // This variable will hold the first line of the input.
+    let processedString = inputData.split("\n")[0];
 
-  if (
-    textSegment.length
-    ===
-    2
-  )
-  {
-    console.log(
-      textSegment
-    );
-  }
-  else if (
-    textSegment.length
-    ===
-    3
-  )
-  {
-    // Reversing the characters of a three-character segment.
-    console.log(
-      textSegment[  2  ]
-      +
-      textSegment[  1  ]
-      +
-      textSegment[  0  ]
-    );
-  }
+    // Check the character count of the obtained string.
+    if (processedString.length === 2) {
+        // If the length is exactly two, output the string as is.
+        console.log(processedString);
+    } else if (processedString.length === 3) {
+        // If the length is exactly three, reverse its characters and print.
+        console.log(processedString[2] + processedString[1] + processedString[0]);
+    }
 }
 
-processInput(
-  require('fs').readFileSync(
-    '/dev/stdin',
-    'utf8'
-  )
-);
+// Read the entire content from standard input and pass it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

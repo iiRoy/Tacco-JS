@@ -1,49 +1,44 @@
 'use strict';
-(function(inputContent) {
-    const sourceLines = inputContent.split('\n');
-    const terminationMarker = '0';
+(function(inputSource) {
+  const inputLines = inputSource.toString().split('\n');
+  const terminationMarker = '0';
 
-    let activeSegments = [];
-    for (const line of sourceLines) {
-        if (line === terminationMarker) {
-            break;
-        }
-        activeSegments.push(line);
-    }
+  const relevantDataSegments = inputLines.slice(0, inputLines.indexOf(terminationMarker));
 
-    const assessVariation = (numericalValues, metricCount) => {
-        const relevantValues = numericalValues.slice(0, metricCount);
-        let runningTotal = 0;
-        for (const val of relevantValues) {
-            runningTotal += val;
-        }
-        const centralTendency = runningTotal / metricCount;
+  const processedOutcomes = (function(dataChunks) {
+    const calculateDeviation = (sampleSizeStr, valueSequenceStr) => {
+      const sampleSize = Number(sampleSizeStr);
+      const valueSequence = valueSequenceStr.split(' ').map(Number);
 
-        let sumOfSquaredDifferences = 0;
-        for (const val of relevantValues) {
-            const individualDifference = val - centralTendency;
-            sumOfSquaredDifferences += (individualDifference * individualDifference);
-        }
+      const relevantValues = valueSequence.slice(0, sampleSize);
 
-        const variance = sumOfSquaredDifferences / metricCount;
-        return Math.sqrt(variance).toFixed(8);
+      const { totalSum, totalSquaredSum } = relevantValues.reduce(
+        (accumulator, currentVal) => ({
+          totalSum: accumulator.totalSum + currentVal,
+          totalSquaredSum: accumulator.totalSquaredSum + (currentVal * currentVal),
+        }),
+        { totalSum: 0, totalSquaredSum: 0 }
+      );
+
+      const averageValue = totalSum / sampleSize;
+      const variance = (totalSquaredSum / sampleSize) - (averageValue * averageValue);
+
+      const finalDeviation = Math.sqrt(Math.max(0, variance));
+
+      return finalDeviation.toFixed(8);
     };
 
-    const processInputSegments = (segments, processedOutputs = []) => {
-        if (segments.length < 2) {
-            return processedOutputs.join('\n');
-        }
+    const resultCollection = Array.from({ length: Math.floor(dataChunks.length / 2) }, (_, idx) => idx * 2)
+      .map(pairStartIndex => {
+        const currentCount = dataChunks[pairStartIndex];
+        const currentScores = dataChunks[pairStartIndex + 1];
+        return calculateDeviation(currentCount, currentScores);
+      });
 
-        const currentSampleSize = parseInt(segments[0], 10);
-        const currentMeasurements = segments[1].split(' ').map(Number);
+    return resultCollection.join('\n');
 
-        const calculatedDeviation = assessVariation(currentMeasurements, currentSampleSize);
-        processedOutputs.push(calculatedDeviation);
+  }(relevantDataSegments));
 
-        return processInputSegments(segments.slice(2), processedOutputs);
-    };
-
-    const finalOutput = processInputSegments(activeSegments);
-    console.log(finalOutput);
+  console.log(processedOutcomes);
 
 }(require('fs').readFileSync('/dev/stdin', 'utf8')));

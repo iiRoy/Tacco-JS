@@ -1,78 +1,92 @@
-const retrieveComplementaryShade = (firstShade, secondShade) => {
-  const availableShades = ['r', 'g', 'b'];
-  for (let s of availableShades) {
-    if (s !== firstShade && s !== secondShade) {
-      return s;
-    }
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split('\n');
+
+const COLOR_SET = new Set(['r', 'g', 'b']);
+
+class SequenceNode {
+  constructor(sequenceIdentifier, currentLevel) {
+    this.sequenceIdentifier = sequenceIdentifier;
+    this.currentLevel = currentLevel;
   }
-  return null;
-};
 
-const ascertainSuccessorPatterns = (currentPattern) => {
-  const subsequentPatterns = [];
-  const patternLength = currentPattern.length;
+  generateSuccessorIdentifiers() {
+    const successorIdentifiers = [];
+    const seqLen = this.sequenceIdentifier.length;
 
-  for (let i = 0; i < patternLength - 1; i++) {
-    const primary = currentPattern[i];
-    const secondary = currentPattern[i + 1];
+    Array.from({ length: seqLen - 1 }).forEach((_, index) => {
+      const charA = this.sequenceIdentifier[index];
+      const charB = this.sequenceIdentifier[index + 1];
 
-    if (primary === secondary) {
-      continue;
-    }
-
-    const replacementShade = retrieveComplementaryShade(primary, secondary);
-    
-    let newPattern = '';
-    for (let k = 0; k < i; k++) {
-      newPattern += currentPattern[k];
-    }
-    newPattern += replacementShade;
-    newPattern += replacementShade;
-    for (let k = i + 2; k < patternLength; k++) {
-      newPattern += currentPattern[k];
-    }
-    subsequentPatterns.push(newPattern);
-  }
-  return subsequentPatterns;
-};
-
-const chartTransformationPath = (initialPattern) => {
-  const visitedConfigurations = new Map();
-  const explorationQueue = [];
-
-  visitedConfigurations.set(initialPattern, 0);
-  explorationQueue.push(initialPattern);
-
-  let finalTransformationCount = -1;
-
-  while (explorationQueue.length > 0) {
-    const currentPattern = explorationQueue.shift();
-    const currentLevel = visitedConfigurations.get(currentPattern);
-
-    const nextPatterns = ascertainSuccessorPatterns(currentPattern);
-
-    if (nextPatterns.length === 0) {
-      finalTransformationCount = currentLevel;
-      break;
-    }
-
-    for (const nextP of nextPatterns) {
-      if (!visitedConfigurations.has(nextP)) {
-        visitedConfigurations.set(nextP, currentLevel + 1);
-        explorationQueue.push(nextP);
+      if (charA === charB) {
+        return;
       }
+
+      let replacementChar;
+      for (const c of COLOR_SET) {
+        if (c !== charA && c !== charB) {
+          replacementChar = c;
+          break;
+        }
+      }
+
+      const newSequence =
+        this.sequenceIdentifier.substring(0, index) +
+        replacementChar +
+        replacementChar +
+        this.sequenceIdentifier.substring(index + 2);
+
+      successorIdentifiers.push(newSequence);
+    });
+
+    return successorIdentifiers;
+  }
+}
+
+class StateExplorer {
+  constructor() {
+    this.exploredStates = new Map();
+  }
+
+  findShortestPath(initialSequence) {
+    let currentLevelQueue = [];
+    let nextLevelQueue = [];
+
+    const initialNode = new SequenceNode(initialSequence, 0);
+    this.exploredStates.set(initialSequence, initialNode);
+    currentLevelQueue.push(initialNode);
+
+    while (currentLevelQueue.length > 0) {
+      for (const currentNode of currentLevelQueue) {
+        const potentialSuccessors = currentNode.generateSuccessorIdentifiers();
+
+        if (potentialSuccessors.length === 0) {
+          return currentNode;
+        }
+
+        potentialSuccessors.forEach(successorId => {
+          if (!this.exploredStates.has(successorId)) {
+            const newNode = new SequenceNode(successorId, currentNode.currentLevel + 1);
+            this.exploredStates.set(successorId, newNode);
+            nextLevelQueue.push(newNode);
+          }
+        });
+      }
+
+      currentLevelQueue = nextLevelQueue;
+      nextLevelQueue = [];
     }
-  }
-  return finalTransformationCount;
-};
 
-const rawDataAcquisition = require('fs').readFileSync('/dev/stdin', 'utf8');
-const processedLineItems = rawDataAcquisition.trim().split('\n');
-
-processedLineItems.forEach(lineEntry => {
-  if (lineEntry === '0') {
-    return;
+    return null;
   }
-  const resultLevel = chartTransformationPath(lineEntry);
-  console.log(resultLevel !== -1 ? resultLevel : 'NA');
-});
+}
+
+for (const currentInputSequence of inputLines) {
+  if (currentInputSequence === '0') {
+    continue;
+  }
+
+  const solver = new StateExplorer();
+  const resultNode = solver.findShortestPath(currentInputSequence);
+
+  console.log(resultNode ? resultNode.currentLevel : 'NA');
+}

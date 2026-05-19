@@ -1,165 +1,155 @@
-"strict-mode-enabled"; // Enforce stricter parsing and error handling in the script's execution.
+"use strict";
 
-// Utilize the Node.js 'fs' module to interact with the file system.
-// Read the entire content of a specified input file synchronously, using UTF-8 encoding.
-const dataAcquisition = require("fs") . readFileSync( "/app/data_source.txt" , "UTF-8" );
+// Load the file system module and read the entire standard input as a UTF-8 string.
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Process the acquired data: split it into individual tokens based on spaces or newlines.
-// Initialize a pointer to keep track of the current position within the token collection.
-let tokenCollection = dataAcquisition.split(/ |\n/);
-let tokenPointer = 0;
+// Split the raw input string into an array of tokens using spaces or newlines as delimiters.
+// Initialize a pointer to keep track of the current token being processed.
+var tokenStream = rawData.split(/ |\n/),
+    tokenIndex = 0;
 
 /**
- * Retrieves the subsequent input token.
- * @param {boolean} isText - If true, returns the token as a string; otherwise, converts it to a numeric type.
- * @returns {string|number} The next available token from the input stream.
+ * Retrieves the next token from the global input stream.
+ * @param {boolean} isString - If true, returns the token as a string; otherwise, attempts to convert it to a number.
+ * @returns {string|number} The next token from the stream.
  */
-function retrieveNext ( isText ) {
-  return isText ? tokenCollection[tokenPointer++] : +tokenCollection[tokenPointer++];
+function readNext(isString) {
+    return isString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
 /**
- * Fetches a specified quantity of tokens from the input stream, returning them as an array.
- * @param {number} quantity - The total number of items to extract.
- * @param {boolean} asStrings - Flag indicating whether items should remain strings or be parsed as numbers.
+ * Reads a specified quantity of tokens from the input stream.
+ * @param {number} count - The number of tokens to retrieve.
+ * @param {boolean} asStrings - If true, tokens are returned as strings; otherwise, they are converted to numbers.
  * @returns {Array<string|number>} An array containing the requested tokens.
  */
-function fetchArray ( quantity, asStrings ) {
-  if ( asStrings ) {
-    // If string mode is active, directly slice the array.
-    return tokenCollection.slice( tokenPointer, tokenPointer += quantity );
-  } else {
-    // Otherwise, slice and then transform each element into a number.
-    return tokenCollection.slice( tokenPointer, tokenPointer += quantity ).map( elementValue => +elementValue );
-  }
+function readMany(count, asStrings) {
+    return asStrings ? tokenStream.slice(tokenIndex, tokenIndex += count) : tokenStream.slice(tokenIndex, tokenIndex += count).map(val => +val);
 }
 
 /**
- * Reads a two-dimensional grid of data from the input source.
- * @param {number} rows - The number of rows in the grid.
- * @param {number} cols - The number of columns per row.
- * @param {boolean} stringMode - Determines if cell values should be kept as strings or converted to numbers.
- * @returns {Array<Array<string|number>>} A matrix (array of arrays) representing the grid data.
+ * Reads a 2D matrix of tokens from the input stream.
+ * @param {number} rows - The number of rows in the matrix.
+ * @param {number} cols - The number of columns in each row.
+ * @param {boolean} asStrings - If true, matrix elements are strings; otherwise, they are numbers.
+ * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
  */
-function getMatrix ( rows, cols, stringMode ) {
-  let matrixResult = [ ];
-  let currentRow = 0;
-
-  // Populate the matrix row by row.
-  if ( stringMode ) {
-    for ( ; currentRow < rows; currentRow++ ) {
-      matrixResult.push( tokenCollection.slice( tokenPointer, tokenPointer += cols ) );
+function readMatrix(rows, cols, asStrings) {
+    var matrixData = [],
+        currentRow = 0;
+    if (asStrings) {
+        for (; currentRow < rows; currentRow++) {
+            matrixData.push(tokenStream.slice(tokenIndex, tokenIndex += cols));
+        }
+    } else {
+        for (; currentRow < rows; currentRow++) {
+            matrixData.push(tokenStream.slice(tokenIndex, tokenIndex += cols).map(val => +val));
+        }
     }
-  } else {
-    for ( ; currentRow < rows; currentRow++ ) {
-      matrixResult.push( tokenCollection.slice( tokenPointer, tokenPointer += cols ).map( elementValue => +elementValue ) );
-    }
-  }
-  return matrixResult;
+    return matrixData;
 }
 
 /**
- * Constructs an N-dimensional array dynamically based on provided dimension arguments.
- * It uses `eval` to build the array structure from an expression string.
- * @param {*} initialVal - The default value to fill each element of the array.
- * @returns {Array} A newly created multi-dimensional array.
+ * Dynamically creates a multi-dimensional array initialized with a specific value.
+ * The dimensions are passed as subsequent arguments.
+ * @param {*} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension, from outermost to innermost.
+ * @returns {Array} The newly created multi-dimensional array.
  */
-function createNDimArray ( initialVal ) {
-  let dimensionArgs = arguments; // Collect all dimension sizes.
-  let dimCount = dimensionArgs.length; // Total number of dimensions.
-
-  // Build the array creation string from the innermost dimension outwards.
-  let expressionString = `Array(dimensionArgs[${--dimCount}]).fill().map(elementPlaceholder => { return ${initialVal}; })`;
-  while ( --dimCount ) {
-    expressionString = `Array(dimensionArgs[${dimCount}]).fill().map(elementPlaceholder => ${expressionString})`;
-  }
-  return eval(expressionString); // Execute the generated array creation code.
+function createMultiDimArray(initialValue) {
+    var dimensions = arguments,
+        dimCount = dimensions.length,
+        arrayCreationCode = "Array(dimensions[" + --dimCount + "]).fill().map(x=>{return " + initialValue + ";})";
+    while (--dimCount) {
+        arrayCreationCode = "Array(dimensions[" + dimCount + "]).fill().map(x=>" + arrayCreationCode + ")";
+    }
+    return eval(arrayCreationCode);
 }
 
-// A large prime number used as the modulus for all arithmetic operations.
-const PRIME_MOD = 1_000_000_007;
+// A large prime number used as a modulus for arithmetic operations to prevent overflow.
+var primeModulus = 1000000007; // Equivalent to 1e9 + 7
 
 /**
- * Performs modular multiplication of multiple numbers, ensuring the result stays within the prime modulus.
- * This implementation uses bitwise operations to handle potential intermediate overflows for large numbers.
- * @param {...number} args - A variable list of numbers to multiply.
- * @returns {number} The product of all arguments, modulo PRIME_MOD.
+ * Performs modular multiplication of an arbitrary number of factors.
+ * All intermediate and final products are kept within the range [0, primeModulus - 1].
+ * @param {...number} factors - The numbers to be multiplied.
+ * @returns {number} The modular product of all factors.
  */
-function modularMultiply ( ) {
-  let args = arguments;
-  let product = args[0];
-  let idx = args.length;
-
-  // Iterate through all multipliers, applying modular arithmetic.
-  for ( ; --idx; ) {
-    // This formula effectively splits numbers into 16-bit chunks to prevent overflow
-    // before taking the modulo, then combines the results.
-    product = ( (product >>> 0x10) * args[idx] % PRIME_MOD * 0x10000 + (product & 0xFFFF) * args[idx] ) % PRIME_MOD;
-  }
-  return product;
+function multiplyMod() {
+    for (var factors = arguments, product = factors[0], idx = factors.length; --idx;) {
+        // This specific multiplication method is used to handle large numbers efficiently
+        // by splitting them into 16-bit parts before applying modulo.
+        product = (((product >> 16) * factors[idx]) % primeModulus * 65536 + (product & 65535) * factors[idx]) % primeModulus;
+    }
+    return product;
 }
 
 /**
- * Calculates (base^power) % PRIME_MOD using the method of exponentiation by squaring.
- * This approach significantly reduces the number of multiplications required.
- * @param {number} baseNum - The base value.
- * @param {number} powerNum - The exponent value.
- * @returns {number} The result of the modular exponentiation.
+ * Calculates (base ^ exponent) % primeModulus using the method of modular exponentiation (binary exponentiation).
+ * This is efficient for large exponents.
+ * @param {number} base - The base number.
+ * @param {number} exponent - The exponent.
+ * @returns {number} The result of (base ^ exponent) modulo primeModulus.
  */
-function calculateModularExponent ( baseNum, powerNum ) {
-  let resultAcc = 1; // Accumulator for the final result.
-
-  // Loop while the exponent is positive.
-  for ( ; powerNum; baseNum = modularMultiply( baseNum, baseNum ), powerNum >>= 1 ) {
-    // If the current bit of the exponent is 1, multiply it into the result accumulator.
-    if ( powerNum & 1 ) {
-      resultAcc = modularMultiply( baseNum, resultAcc );
+function powerMod(base, exponent) {
+    for (var result = 1; exponent; base = multiplyMod(base, base), exponent >>= 1) {
+        if (exponent & 1) { // If the current bit of the exponent is 1
+            result = multiplyMod(base, result);
+        }
     }
-  }
-  return resultAcc;
+    return result;
 }
 
-// Initiate the primary algorithm execution and capture its return value.
-const programResult = executeMainLogic();
+// Call the main program logic and store its return value.
+var finalResult = executeProgram();
 
-// If the main logic yields a non-undefined result, output it to the console.
-if ( programResult !== undefined ) console.log(programResult);
+// If the program returns a defined value, print it to the console.
+if (finalResult !== undefined) {
+    console.log(finalResult);
+}
 
 /**
- * The central function encapsulating the main computational logic of the program.
- * It computes a sum based on several mathematical operations, including modular exponentiation.
- * @returns {number} The final calculated value, modulo PRIME_MOD.
+ * The core function that implements the problem's algorithm.
+ * It calculates a specific sum based on modular arithmetic.
+ * @returns {number} The final calculated sum modulo primeModulus.
  */
-function executeMainLogic ( ) {
-  const primaryN = retrieveNext(); // First input parameter.
-  const limitK = retrieveNext();   // Second input parameter, defines an upper limit.
+function executeProgram() {
+    // Read two integer inputs: 'numVal' and 'limitVal'.
+    var numVal = readNext();
+    var limitVal = readNext();
 
-  // Initialize an array to store intermediate sum values, indexed up to limitK.
-  const sumCollection = createNDimArray( 0, limitK + 1 );
-  let totalSum = limitK; // Initialize the overall sum with limitK.
+    // Create an array 'countArray' of size (limitVal + 1) and initialize all elements to 0.
+    var countArray = createMultiDimArray(0, limitVal + 1);
 
-  sumCollection[limitK] = 1; // Set the last element of the sum collection.
+    // Initialize 'totalSum' with 'limitVal'.
+    var totalSum = limitVal;
 
-  // Iterate backwards from (limitK - 1) down to 1.
-  for ( let currentIdx = limitK - 1; currentIdx > 0; currentIdx-- ) {
-    // Calculate a modular exponent based on integer division.
-    sumCollection[currentIdx] = calculateModularExponent( Math.trunc( limitK / currentIdx ), primaryN );
+    // Set the last element of 'countArray' to 1.
+    countArray[limitVal] = 1;
 
-    // Adjust the current sum by subtracting values from its multiples within the collection.
-    for ( let multipleIdx = currentIdx + currentIdx; multipleIdx <= limitK; multipleIdx += currentIdx ) {
-      sumCollection[currentIdx] -= sumCollection[multipleIdx];
+    // Loop downwards from 'limitVal - 1' to 1.
+    for (var outerLoopVar = limitVal - 1; outerLoopVar > 0; outerLoopVar--) {
+        // Calculate the initial value for countArray[outerLoopVar] using modular exponentiation.
+        // Math.floor(limitVal / outerLoopVar) performs integer division.
+        countArray[outerLoopVar] = powerMod(Math.floor(limitVal / outerLoopVar), numVal);
+
+        // Subtract contributions from multiples of 'outerLoopVar' that are already calculated.
+        // This is a form of inclusion-exclusion.
+        for (var innerLoopVar = outerLoopVar + outerLoopVar; innerLoopVar <= limitVal; innerLoopVar += outerLoopVar) {
+            countArray[outerLoopVar] -= countArray[innerLoopVar];
+        }
+
+        // Apply modulo to countArray[outerLoopVar] and ensure it remains non-negative.
+        countArray[outerLoopVar] %= primeModulus;
+        if (countArray[outerLoopVar] < 0) {
+            countArray[outerLoopVar] += primeModulus;
+        }
+
+        // Add the product of countArray[outerLoopVar] and outerLoopVar to 'totalSum',
+        // ensuring the addition is also modular.
+        totalSum += multiplyMod(countArray[outerLoopVar], outerLoopVar);
     }
 
-    // Ensure the sum remains within the positive range of the modulo.
-    sumCollection[currentIdx] %= PRIME_MOD;
-    if ( sumCollection[currentIdx] < 0 ) {
-      sumCollection[currentIdx] += PRIME_MOD;
-    }
-
-    // Accumulate to the total sum using modular multiplication.
-    totalSum += modularMultiply( sumCollection[currentIdx], currentIdx );
-  }
-
-  // Return the final accumulated sum, ensuring it's modulo PRIME_MOD.
-  return totalSum % PRIME_MOD;
+    // Return the final 'totalSum' modulo 'primeModulus'.
+    return totalSum % primeModulus;
 }

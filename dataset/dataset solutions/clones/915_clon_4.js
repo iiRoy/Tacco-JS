@@ -1,85 +1,72 @@
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const linesCollection = sourceData.split("\n");
-let dataPointer = 0;
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const allLines = fileContent.split("\n");
 
-const vowelCheck = /[aiueo]/;
+function* lineIterator(lines) {
+    let currentLineIndex = 0;
+    while (currentLineIndex < lines.length) {
+        yield lines[currentLineIndex++];
+    }
+}
 
-const morphWord = (originalPhrase) => {
-    if (!originalPhrase) return "";
-    const transformationState = originalPhrase.split('').reduce((stateAcc, characterUnit) => {
-        let currentString = stateAcc.accumulatorString;
-        let readyForNext = stateAcc.captureNext;
+const dataStream = lineIterator(allLines);
 
-        if (readyForNext) {
-            currentString += characterUnit;
-            readyForNext = false;
+const vowelCheckPattern = /[aiueo]/;
+
+const determineSharedPrefixLength = (firstString, secondString, currentPosition = 0) => {
+    if (currentPosition >= firstString.length || currentPosition >= secondString.length) {
+        if (firstString.length === secondString.length) {
+            return -1;
         }
-
-        if (vowelCheck.test(characterUnit)) {
-            readyForNext = true;
-        }
-
-        return { accumulatorString: currentString, captureNext: readyForNext };
-    }, { accumulatorString: "", captureNext: true });
-    return transformationState.accumulatorString;
+        return Math.min(firstString.length, secondString.length);
+    }
+    if (firstString[currentPosition] !== secondString[currentPosition]) {
+        return currentPosition;
+    }
+    return determineSharedPrefixLength(firstString, secondString, currentPosition + 1);
 };
 
-const calculatePrefixOverlap = (stringA, stringB, currentDepth = 0) => {
-    if (stringA === stringB) {
-        return -1;
+while (true) {
+    const quantityOfNames = +dataStream.next().value;
+    if (quantityOfNames === 0) {
+        break;
     }
-    if (currentDepth >= stringA.length || currentDepth >= stringB.length) {
-        return currentDepth;
-    }
-    if (stringA[currentDepth] !== stringB[currentDepth]) {
-        return currentDepth;
-    }
-    return calculatePrefixOverlap(stringA, stringB, currentDepth + 1);
-};
 
-const processInputBlocks = (inputLines) => {
-    let currentPointer = 0;
-    const outputResults = [];
+    const rawNameList = Array.from({ length: quantityOfNames }, () => dataStream.next().value);
 
-    while (true) {
-        const entryCount = parseInt(inputLines[currentPointer++], 10);
-        if (entryCount === 0) {
-            break;
+    const processedAndSortedNames = rawNameList.map(originalName => {
+        const transformationResult = Array.from(originalName).reduce((accumulator, character) => {
+            let currentTransformed = accumulator.processedPart;
+            let shouldCaptureNext = accumulator.captureFlag;
+
+            if (shouldCaptureNext) {
+                currentTransformed += character;
+                shouldCaptureNext = false;
+            }
+            if (vowelCheckPattern.test(character)) {
+                shouldCaptureNext = true;
+            }
+            return { processedPart: currentTransformed, captureFlag: shouldCaptureNext };
+        }, { processedPart: "", captureFlag: true });
+        return transformationResult.processedPart;
+    }).sort();
+
+    const initialComparisonState = { maximumPrefix: 0, hasExactMatch: false };
+
+    const finalComparisonOutcome = processedAndSortedNames.slice(1).reduce((currentStatus, currentEntry, indexInSlice) => {
+        if (currentStatus.hasExactMatch) {
+            return currentStatus;
         }
+        const priorEntry = processedAndSortedNames[indexInSlice];
+        const commonality = determineSharedPrefixLength(priorEntry, currentEntry);
 
-        const rawPhrases = [];
-        for (let k = 0; k < entryCount; k++) {
-            rawPhrases.push(inputLines[currentPointer++]);
+        if (commonality === -1) {
+            return { maximumPrefix: -2, hasExactMatch: true };
         }
+        return {
+            maximumPrefix: Math.max(currentStatus.maximumPrefix, commonality),
+            hasExactMatch: false
+        };
+    }, initialComparisonState);
 
-        const modifiedPhrases = rawPhrases.map(morphWord).sort();
-
-        let maxOverlapFound = 0;
-
-        if (modifiedPhrases.length > 1) {
-            const evaluation = modifiedPhrases.slice(1).reduce((statusObject, currentPhrase, arrayIndex) => {
-                if (statusObject.hasIdentical) {
-                    return statusObject;
-                }
-                const previousPhrase = modifiedPhrases[arrayIndex];
-                const overlapLength = calculatePrefixOverlap(previousPhrase, currentPhrase);
-
-                if (overlapLength === -1) {
-                    return { maxSharedLength: -2, hasIdentical: true };
-                } else {
-                    return {
-                        maxSharedLength: Math.max(statusObject.maxSharedLength, overlapLength),
-                        hasIdentical: false
-                    };
-                }
-            }, { maxSharedLength: 0, hasIdentical: false });
-
-            maxOverlapFound = evaluation.maxSharedLength;
-        }
-        outputResults.push(maxOverlapFound + 1);
-    }
-    return outputResults;
-};
-
-const finalResults = processInputBlocks(linesCollection);
-finalResults.forEach(res => console.log(res));
+    console.log(finalComparisonOutcome.maximumPrefix + 1);
+}

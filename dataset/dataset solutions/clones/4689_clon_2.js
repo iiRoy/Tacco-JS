@@ -1,19 +1,21 @@
-/*
- * This module calculates a processed financial value based on an input quantity.
- * It demonstrates basic arithmetic operations and function calls.
- */
-function ProcessInputData(     initialQuantity   )
-{
-  // Calculate the primary component, assuming a base rate per unit.
-  let     totalBaseValue = initialQuantity * 800.0;
+function CalculateValue(incomingData) {
+  // This function computes a specific value based on the provided input.
+  // It calculates two components and then finds their difference.
 
-  // Determine a discount or adjustment based on a specific threshold.
-  // The 'Math.floor' function ensures an integer number of discount units.
-  let adjustmentForBulk = Math.floor(initialQuantity / 15.0) * 200.0;
+  // First component calculation: incoming data multiplied by a constant factor.
+  let firstComponent = incomingData * 800;
 
-  // Output the final calculated net value to the standard console.
-  console.log(totalBaseValue - adjustmentForBulk);
+  // Second component calculation:
+  // The input is divided by 15, floored, and then multiplied by another constant.
+  const divisor = 15;
+  const multiplier = 200;
+  let secondComponent = Math.floor(incomingData / divisor) * multiplier;
+
+  // Output the final result to the console.
+  console.log(firstComponent - secondComponent);
 }
 
-// Entry point: Read data from standard input and pass it to the processing function.
-ProcessInputData( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Read input from standard input and pass it to the main calculation function.
+// The input is expected to be a string, which JavaScript will implicitly convert to a number
+// when arithmetic operations are performed.
+CalculateValue(require("fs").readFileSync("/dev/stdin", "utf8"));

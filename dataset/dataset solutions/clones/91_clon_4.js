@@ -1,63 +1,35 @@
-(function(rawInputText) {
-    class DataStreamProcessor {
-        constructor(sourceContent) {
-            this.values = sourceContent.split('\n').filter(Boolean).map(Number);
-            this.indexPointer = 0;
-        }
+(function(input) {
+  const rawNumbers = input.trimEnd().split('\n');
 
-        retrieveNextItem() {
-            if (this.indexPointer < this.values.length) {
-                return this.values[this.indexPointer++];
-            }
-            return null;
-        }
-
-        processSlice(elementList) {
-            const determineOptimalSubsegment = (remainingElements, currentAccumulation, peakValueSoFar) => {
-                if (remainingElements.length === 0) {
-                    return peakValueSoFar;
-                }
-
-                const currentElement = remainingElements[0];
-                const nextAccumulation = Math.max(currentElement, currentAccumulation + currentElement);
-                const nextPeakValue = Math.max(peakValueSoFar, nextAccumulation);
-
-                return determineOptimalSubsegment(remainingElements.slice(1), nextAccumulation, nextPeakValue);
-            };
-
-            if (elementList.length === 0) {
-                return -Infinity;
-            }
-
-            const initialElement = elementList[0];
-            const subsequentElements = elementList.slice(1);
-
-            return determineOptimalSubsegment(subsequentElements, initialElement, initialElement);
-        }
-
-        handleAllSegments() {
-            const outcomes = [];
-            let segmentSize;
-            while ((segmentSize = this.retrieveNextItem()) !== 0) {
-                if (segmentSize === null) {
-                    break;
-                }
-
-                const currentSegmentElements = [];
-                for (let i = 0; i < segmentSize; i++) {
-                    const item = this.retrieveNextItem();
-                    if (item === null) {
-                        break;
-                    }
-                    currentSegmentElements.push(item);
-                }
-                outcomes.push(this.processSlice(currentSegmentElements));
-            }
-            return outcomes;
-        }
+  function* numberIterator(sourceArray) {
+    for (const item of sourceArray) {
+      yield Number(item);
     }
+  }
 
-    const streamProcessor = new DataStreamProcessor(rawInputText);
-    const finalResults = streamProcessor.handleAllSegments();
-    finalResults.forEach(res => console.log(res));
+  const numberProducer = numberIterator(rawNumbers);
+
+  function* testCaseIterator(producer) {
+    let currentCaseSize;
+    while ((currentCaseSize = producer.next().value) !== 0) {
+      const caseValues = [];
+      for (let k = 0; k < currentCaseSize; k++) {
+        caseValues.push(producer.next().value);
+      }
+      yield caseValues;
+    }
+  }
+
+  const problemSets = testCaseIterator(numberProducer);
+
+  for (const currentSet of problemSets) {
+    const finalResult = currentSet.reduce((accumulator, currentValue) => {
+      const maxEndingHere = Math.max(currentValue, accumulator.maxEndingHere + currentValue);
+      const globalMax = Math.max(accumulator.globalMax, maxEndingHere);
+      return { maxEndingHere, globalMax };
+    }, { maxEndingHere: -Infinity, globalMax: -Infinity });
+
+    console.log(finalResult.globalMax);
+  }
+
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,39 +1,52 @@
-function processInputData(rawTextSource) {
-    const allLines = rawTextSource.trim().split(/\r?\n/);
+function calculateAllPairShortestPaths(intermediateNode, sourceNode, targetNode, adjMatrix, numVertices) {
+    if (intermediateNode === numVertices) {
+        return adjMatrix;
+    }
 
-    const [headerLine, ...dataLines] = allLines;
-    const [rowCount, colCount] = headerLine.split(' ').map(Number);
+    if (sourceNode === numVertices) {
+        return calculateAllPairShortestPaths(intermediateNode + 1, 0, 0, adjMatrix, numVertices);
+    }
 
-    const fixedDigitCount = 10;
+    if (targetNode === numVertices) {
+        return calculateAllPairShortestPaths(intermediateNode, sourceNode + 1, 0, adjMatrix, numVertices);
+    }
 
-    const costTable = dataLines.slice(0, fixedDigitCount)
-                               .map(lineSegment => lineSegment.split(' ').map(Number));
+    adjMatrix[sourceNode][targetNode] = Math.min(
+        adjMatrix[sourceNode][targetNode],
+        adjMatrix[sourceNode][intermediateNode] + adjMatrix[intermediateNode][targetNode]
+    );
 
-    const appearanceTally = new Map();
-    dataLines.slice(fixedDigitCount, fixedDigitCount + rowCount)
-             .flatMap(lineSegment => lineSegment.split(' ').map(Number))
-             .filter(value => value !== -1)
-             .forEach(value => appearanceTally.set(value, (appearanceTally.get(value) || 0) + 1));
+    return calculateAllPairShortestPaths(intermediateNode, sourceNode, targetNode + 1, adjMatrix, numVertices);
+}
 
-    const digitIndices = Array.from({ length: fixedDigitCount }, (_, i) => i);
+function ProcessInput(rawData) {
+    const trimmedLines = rawData.trim().split('\n');
 
-    digitIndices.forEach(intermediatePoint => {
-        digitIndices.forEach(startPoint => {
-            digitIndices.forEach(endPoint => {
-                costTable[startPoint][endPoint] = Math.min(
-                    costTable[startPoint][endPoint],
-                    costTable[startPoint][intermediatePoint] + costTable[intermediatePoint][endPoint]
-                );
-            });
+    const [heightVal, widthVal] = trimmedLines[0].split(' ').map(Number);
+
+    const vertexCount = 10;
+
+    const initialMatrix = Array.from({ length: vertexCount }, (_, rowIdx) =>
+        trimmedLines[rowIdx + 1].split(' ').map(Number)
+    );
+
+    const digitCounts = new Array(vertexCount).fill(0);
+
+    trimmedLines.slice(vertexCount + 1, vertexCount + 1 + heightVal).forEach(lineStr => {
+        lineStr.split(' ').map(Number).forEach(digitVal => {
+            if (digitVal !== -1) {
+                digitCounts[digitVal]++;
+            }
         });
     });
 
-    let finalAggregateCost = 0;
-    appearanceTally.forEach((occurrenceCount, originalDigit) => {
-        finalAggregateCost += costTable[originalDigit][1] * occurrenceCount;
-    });
+    const finalMatrix = calculateAllPairShortestPaths(0, 0, 0, initialMatrix, vertexCount);
 
-    console.log(finalAggregateCost);
+    const totalCost = Array.from({ length: vertexCount }, (_, idx) => idx).reduce((accumulator, currentIdx) => {
+        return accumulator + finalMatrix[currentIdx][1] * digitCounts[currentIdx];
+    }, 0);
+
+    console.log(totalCost);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

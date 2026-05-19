@@ -1,65 +1,76 @@
 "use strict";
 
-// Initialize the standard input stream for data reception.
-sysProc.inputPipe.startFlow();
-// Configure the input stream to interpret data as UTF-8 characters.
-sysProc.inputPipe.setCharEncoding('utf8');
+// Resume standard input stream processing
+process.stdin.resume();
+// Set the encoding for incoming data to UTF-8
+process.stdin.setEncoding('utf8');
 
-let inputBuffer = []; // A container to store incoming lines of text.
-const lineProcessor = loadModule('lineReader').makeInterface({
-  inStream: sysProc.inputPipe,   // Assign the standard input as the reading source.
-  outStream: sysProc.outputPipe  // Assign the standard output for potential prompts (though not used here).
+// Array to store all lines read from standard input
+let inputDataRows = [];
+
+// Create an interface for reading lines from standard input
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-// When a new line of text is detected, add it to our buffer.
-lineProcessor.addEventListener('dataLine', (currentLineText) => {
-  inputBuffer.appendEntry(currentLineText);
+// Event listener for each line received from standard input
+inputProcessor.on('line', (receivedLineContent) => {
+  // Add the received line to our buffer
+  inputDataRows.push(receivedLineContent);
 });
 
-// Once the input stream concludes, process all collected data.
-lineProcessor.addEventListener('streamEnd', () => {
-    // Loop indefinitely until a specific termination signal is encountered.
-    while (Boolean(true)) {
-	    // Retrieve and clean the first available line from the buffer.
-	    let currentInput = inputBuffer.extractFirst().removeWhitespace();
+// Event listener for when the input stream closes
+inputProcessor.on('close', () => {
+    // Main processing loop
+    while (true) {
+        // Get the next line from the buffer and remove leading/trailing whitespace
+        const currentProcessedLine = inputDataRows.shift().trim();
 
-	    // Check for the termination marker.
-	    if (currentInput === "-") {
-	        break; // Exit the processing loop.
-	    }
+        // Check for termination condition
+        if (currentProcessedLine === "-") {
+            break; // Exit the loop if the termination signal is found
+        }
 
-	    // Convert the current line into an array of individual characters.
-	    const charSequence = currentInput.toCharList('');
-	    // Parse the next line from the buffer as the count of subsequent operations.
-	    const opCount = parseNum(inputBuffer.extractFirst());
-	    let operationList = []; // Initialize an array to hold the rotation steps.
-	    // Collect the specified number of rotation steps from the input buffer.
-	    for (let iterIndex = 0; iterIndex < opCount; iterIndex++) {
-	        operationList.appendEntry(parseNum(inputBuffer.extractFirst()));
-	    }
-	    // Execute the character rotation and display the result.
-	    debugLog.printMessage(performRotation(charSequence, operationList).assembleString(''));
+        // Convert the current line into an array of characters
+        const initialCharArr = currentProcessedLine.split('');
+        // Read the number of shift operations from the next line
+        const numberOfShifts = Number(inputDataRows.shift());
+
+        // Array to store the shift values
+        let shiftOperations = [];
+        // Populate the shift operations array
+        for (let operationIndex = 0; operationIndex < numberOfShifts; operationIndex++) {
+            shiftOperations.push(Number(inputDataRows.shift()));
+        }
+
+        // Execute the string rotations and print the result
+        console.log(executeStringRotations(initialCharArr, shiftOperations).join(''));
     }
 });
 
 /**
- * Performs a series of circular rotations on a character sequence.
- * @param {Array<string>} charSequence - The array of characters to be rotated.
- * @param {Array<number>} operationList - A list of rotation amounts.
- * @returns {Array<string>} The character sequence after all rotations.
+ * Performs a series of left rotations on a character array.
+ * @param {Array<string>} characterSequence - The array of characters to rotate.
+ * @param {Array<number>} rotationSteps - An array of integer values, each representing a left shift amount.
+ * @returns {Array<string>} The character array after all rotations have been applied.
  */
-function performRotation(charSequence, operationList)
-{
-    const sequenceLength = charSequence.size; // Determine the total number of characters.
-    // This line is for debugging and can be uncommented: debugLog.printMessage('Initial sequence: ', charSequence);
+function executeStringRotations(characterSequence, rotationSteps) {
+    // Determine the total length of the character sequence
+    const sequenceTotalLength = characterSequence.length;
 
-    // Process each rotation instruction in the list.
-    while (operationList.size > 0) {
-	    let rotationAmount = operationList.extractFirst(); // Get the next rotation value.
-	    // Perform a circular shift: move the first 'rotationAmount' characters to the end.
-	    charSequence = charSequence.segment(rotationAmount, sequenceLength).combineSegments(charSequence.segment(0, rotationAmount));
-	    // This line is for debugging and can be uncommented: debugLog.printMessage('Sequence after shift: ', charSequence);
+    // Iterate while there are rotation steps remaining
+    while (rotationSteps.length > 0) {
+        // Get the next rotation value from the beginning of the array
+        let currentRotationValue = rotationSteps.shift();
+
+        // Perform the left rotation:
+        // Take the part from currentRotationValue to the end,
+        // then concatenate it with the part from the beginning up to currentRotationValue.
+        characterSequence = characterSequence.slice(currentRotationValue, sequenceTotalLength)
+                                            .concat(characterSequence.slice(0, currentRotationValue));
     }
 
-    return (charSequence); // Return the final modified character sequence.
+    // Return the final rotated character sequence
+    return characterSequence;
 }

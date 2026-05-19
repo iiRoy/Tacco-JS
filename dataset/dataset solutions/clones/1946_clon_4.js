@@ -1,15 +1,10 @@
-function processInputData(rawDataString) {
-  const dataSegments = rawDataString.match(/[^\n]+/g) || [];
-  const effectiveSegments = dataSegments.slice(1);
-
-  const uniqueStorage = new Set();
-  const finalSelection = [];
-
-  for (let k = 0; k < effectiveSegments.length; k++) {
-    const currentPiece = effectiveSegments[k];
-    if (!uniqueStorage.has(currentPiece)) {
-      uniqueStorage.add(currentPiece);
-      finalSelection.push(currentPiece);
-    }
-  }
+function processInputData(sourceText) {
+  const lineSegments = sourceText.split('\n');
+  const initialQuantity = Number.parseInt(lineSegments[0], 10);
+  const contentSegments = lineSegments.slice(1);
+  
+  const uniqueContentSet = new Set(contentSegments);
+  const uniqueContent = Array.from(uniqueContentSet);
 }
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

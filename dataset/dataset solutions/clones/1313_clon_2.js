@@ -1,94 +1,53 @@
-// This script reads input from standard input, counts occurrences of
-// English alphabet characters (case-insensitive), and prints the results.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input data from standard input
+const charSequence = [...rawData]; // Convert the input string into an array of characters
+let outputBuffer = ''; // Initialize an empty string to build the final output
 
-// Acquire necessary modules for file system operations.
-const fileSysUtil = require('fs');
+// Initialize an object to store counts for each letter of the alphabet
+let letterCounts = {
+  a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, g: 0, h: 0, i: 0, j: 0, k: 0, l: 0, m: 0,
+  n: 0, o: 0, p: 0, q: 0, r: 0, s: 0, t: 0, u: 0, v: 0, w: 0, x: 0, y: 0, z: 0,
+};
 
-// Read raw data from the standard input path, using UTF-8 encoding.
-const dataSource = fileSysUtil.readFileSync('/dev/stdin', 'textEncoding');
-
-// Convert the input string into an array of individual characters.
-const charCollection = [ ...dataSource ];
-
-// Initialize a string builder to accumulate the final output.
-let outputBuffer = '';
-
-// Create an object to store the frequency of each letter.
-// All initial counts are set to zero.
-let charOccurrences = {
-  letterA: 0,
-  letterB: 0,
-  letterC: 0,
-  letterD: 0,
-  letterE: 0,
-  letterF: 0,
-  letterG: 0,
-  letterH: 0,
-  letterI: 0,
-  letterJ: 0,
-  letterK: 0,
-  letterL: 0,
-  letterM: 0,
-  letterN: 0,
-  letterO: 0,
-  letterP: 0,
-  letterQ: 0,
-  letterR: 0,
-  letterS: 0,
-  letterT: 0,
-  letterU: 0,
-  letterV: 0,
-  letterW: 0,
-  letterX: 0,
-  letterY: 0,
-  letterZ: 0,
-}; // End of character frequency map initialization
-
-// Iterate through each character in the input collection.
-for ( let idx = 0 ; idx < charCollection.length ; idx++ )
-{
-  // If the current character is not an English alphabet letter (A-Z or a-z)
-  // or a comma, skip it and proceed to the next character.
-  // The original regex `/[^A-Z,a-z]/` defines characters to skip.
-  if ( ( /[^A-Z,a-z]/ ) . test ( charCollection[idx] ) )
-  {
+// Iterate through each character in the sequence
+for (let idx = 0; idx < charSequence.length; idx++) {
+  // Skip characters that are not alphabetic (A-Z or a-z)
+  if ((/[^A-Z,a-z]/).test(charSequence[idx])) {
     continue;
   }
 
-  // Increment the counter for the corresponding letter, checking both cases.
-  if ( ( /[Aa]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterA++;
-  if ( ( /[Bb]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterB++;
-  if ( ( /[Cc]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterC++;
-  if ( ( /[Dd]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterD++;
-  if ( ( /[Ee]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterE++;
-  if ( ( /[Ff]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterF++;
-  if ( ( /[Gg]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterG++;
-  if ( ( /[Hh]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterH++;
-  if ( ( /[Ii]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterI++;
-  if ( ( /[Jj]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterJ++;
-  if ( ( /[Kk]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterK++;
-  if ( ( /[Ll]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterL++;
-  if ( ( /[Mm]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterM++;
-  if ( ( /[Nn]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterN++;
-  if ( ( /[Oo]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterO++;
-  if ( ( /[Pp]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterP++;
-  if ( ( /[Qq]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterQ++;
-  if ( ( /[Rr]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterR++;
-  if ( ( /[Ss]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterS++;
-  if ( ( /[Tt]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterT++;
-  if ( ( /[Uu]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterU++;
-  if ( ( /[Vv]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterV++;
-  if ( ( /[Ww]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterW++;
-  if ( ( /[Xx]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterX++;
-  if ( ( /[Yy]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterY++;
-  if ( ( /[Zz]/ ) . test ( charCollection[idx] ) ) charOccurrences.letterZ++;
-} // End of character counting loop
+  // Increment the counter for the corresponding letter, case-insensitively
+  if (/[Aa]/.test(charSequence[idx])) letterCounts.a++;
+  if (/[Bb]/.test(charSequence[idx])) letterCounts.b++;
+  if (/[Cc]/.test(charSequence[idx])) letterCounts.c++;
+  if (/[Dd]/.test(charSequence[idx])) letterCounts.d++;
+  if (/[Ee]/.test(charSequence[idx])) letterCounts.e++;
+  if (/[Ff]/.test(charSequence[idx])) letterCounts.f++;
+  if (/[Gg]/.test(charSequence[idx])) letterCounts.g++;
+  if (/[Hh]/.test(charSequence[idx])) letterCounts.h++;
+  if (/[Ii]/.test(charSequence[idx])) letterCounts.i++;
+  if (/[Jj]/.test(charSequence[idx])) letterCounts.j++;
+  if (/[Kk]/.test(charSequence[idx])) letterCounts.k++;
+  if (/[Ll]/.test(charSequence[idx])) letterCounts.l++;
+  if (/[Mm]/.test(charSequence[idx])) letterCounts.m++;
+  if (/[Nn]/.test(charSequence[idx])) letterCounts.n++;
+  if (/[Oo]/.test(charSequence[idx])) letterCounts.o++;
+  if (/[Pp]/.test(charSequence[idx])) letterCounts.p++;
+  if (/[Qq]/.test(charSequence[idx])) letterCounts.q++;
+  if (/[Rr]/.test(charSequence[idx])) letterCounts.r++;
+  if (/[Ss]/.test(charSequence[idx])) letterCounts.s++;
+  if (/[Tt]/.test(charSequence[idx])) letterCounts.t++;
+  if (/[Uu]/.test(charSequence[idx])) letterCounts.u++;
+  if (/[Vv]/.test(charSequence[idx])) letterCounts.v++;
+  if (/[Ww]/.test(charSequence[idx])) letterCounts.w++;
+  if (/[Xx]/.test(charSequence[idx])) letterCounts.x++;
+  if (/[Yy]/.test(charSequence[idx])) letterCounts.y++;
+  if (/[Zz]/.test(charSequence[idx])) letterCounts.z++;
+}
 
-// Iterate over the keys (letter names) in the character occurrences object.
-Object.keys ( charOccurrences ) . forEach ( currentLetter => {
-  // Append each letter and its count to the output buffer, followed by a newline.
-  outputBuffer += currentLetter + ' : ' + charOccurrences[currentLetter] + '\n';
-}); // End of result formatting
+// Format the counts into a string for output
+Object.keys(letterCounts).forEach(charKey => {
+  outputBuffer += charKey + ' : ' + letterCounts[charKey] + '\n';
+});
 
-// Print the final accumulated string to the console, removing any trailing whitespace.
-console . log ( outputBuffer . trim () );
+// Print the final formatted string to the console, removing any trailing newline
+console.log(outputBuffer.trim());

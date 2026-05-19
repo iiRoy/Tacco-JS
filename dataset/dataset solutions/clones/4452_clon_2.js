@@ -1,52 +1,71 @@
 "use strict";
 
-const processInputData =    (rawInputText)    =>   {
+// This script processes input to generate a grid-like output
+// based on specified dimensions and color counts.
+const processInput = (inputString) => {
+    // Trim leading/trailing whitespace and split the input into lines
+    let lines = inputString.trim().split("\n");
 
-        rawInputText = rawInputText .trim() .split ( "\n" );
+    // Parse grid dimensions from the first line
+    const dimensions = lines[0].split(" ");
+    const gridHeight = parseInt(dimensions[0], 10); // Height of the grid
+    const gridWidth = parseInt(dimensions[1], 10);  // Width of the grid
 
-    const matrixHeight =         parseInt (rawInputText[0].split(" ")[0]);
-    const matrixWidth  = parseInt( rawInputText[0] .split(" ")[1] );
+    // Parse the number of distinct colors from the second line
+    const totalColors = parseInt(lines[1], 10);
 
-    const numberOfDistinctColors = parseInt(rawInputText[1]);
-    const colorQuantities        = rawInputText[2].split(" ").map( numberString => parseInt(numberString) );
+    // Parse the counts for each color from the third line
+    // Each number indicates how many cells should be filled with that color.
+    const colorQuantities = lines[2].split(" ").map(strVal => parseInt(strVal, 10));
 
-    let flatPixelSequence = [];
+    // Temporary array to hold the flattened grid data (color IDs in sequence)
+    let flatGridSequence = [];
 
-    // Early exit for a 1x1 grid
-    if (matrixHeight * matrixWidth === 1) {
-        console.log(1);
-        return;
+    // Handle the edge case where the grid is a single cell
+    if (gridHeight * gridWidth === 1) {
+        console.log(1); // Output '1' as the only cell will be color 1
+        return; // Exit the function
     }
 
-    // Populate the flat pixel sequence based on color quantities
-    for (let colorIdentifier = 1; colorIdentifier <= numberOfDistinctColors; colorIdentifier++) {
-        for (let pixelCountIterator = 0; pixelCountIterator < colorQuantities[colorIdentifier - 1]; pixelCountIterator++) {
-            flatPixelSequence.push(colorIdentifier);
+    // Populate the flatGridSequence array
+    // For each color (from 1 to totalColors), add its ID to the sequence
+    // as many times as specified in colorQuantities.
+    for (let colorIdentifier = 1; colorIdentifier <= totalColors; colorIdentifier++) {
+        // The colorQuantities array is 0-indexed, so we use colorIdentifier - 1
+        for (let countIterator = 0; countIterator < colorQuantities[colorIdentifier - 1]; countIterator++) {
+            flatGridSequence.push(colorIdentifier);
         }
     }
 
-    let finalOutputLines =    [];
-    let currentLineBuffer = [];
+    // Array to store the final formatted rows for output
+    let finalOutputRows = [];
+    // Temporary array to build the current row before adding it to finalOutputRows
+    let currentRowData = [];
 
-    // Arrange the flat sequence into rows, reversing every other row
-    for (let sequenceIndex = 0; sequenceIndex < flatPixelSequence.length; sequenceIndex++) {
+    // Iterate through the flattened sequence to form rows
+    for (let sequenceIndex = 0; sequenceIndex < flatGridSequence.length; sequenceIndex++) {
+        // Add the current color ID to the currentRowData
+        currentRowData.push(flatGridSequence[sequenceIndex]);
 
-        currentLineBuffer.push(flatPixelSequence[sequenceIndex]);
-
-        // Check if the current row is complete
-        if (sequenceIndex !== 0 && (parseInt(sequenceIndex) + 1) % matrixWidth === 0) {
-
-            // Reverse the row if its 0-based index is odd (i.e., it's the second, fourth, etc. full row)
+        // Check if the current row is complete (based on gridWidth)
+        // The condition `(sequenceIndex + 1) % gridWidth === 0` means we've just added the last element of a row.
+        // `sequenceIndex !== 0` ensures we don't process an empty row at the very beginning if gridWidth is 1.
+        if ( (sequenceIndex + 1) % gridWidth === 0 ) {
+            // If the row's ending index is odd, reverse the row for a snake-like pattern
             if (sequenceIndex % 2 !== 0) {
-                currentLineBuffer.reverse();
+                currentRowData.reverse();
             }
 
-            finalOutputLines.push(currentLineBuffer.join(" "));
-            currentLineBuffer = []; // Reset buffer for the next row
+            // Join the elements of the current row with spaces and add to the final output
+            finalOutputRows.push(currentRowData.join(" "));
+            // Reset currentRowData for the next row
+            currentRowData = [];
         }
     }
 
-    console.log(finalOutputLines.join("\n"));
+    // Join all the formatted rows with newline characters and print to console
+    console.log(finalOutputRows.join("\n"));
 };
 
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the processing function
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

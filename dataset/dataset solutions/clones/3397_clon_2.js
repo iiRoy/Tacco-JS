@@ -1,118 +1,182 @@
 "use strict";
+// Read the entire standard input as a string
+var fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-var sourceData = require("fs") . readContent ( "/dev/stdin" , "utfEight" ) ;
-var tokenStream = sourceData . split ( / |\n/ ) , tokenIndex = 0 ;
+// Split the input string by spaces or newlines to create an array of tokens
+var tokenArray = fileContent.split(/ |\n/);
+// Initialize an index to keep track of the current token
+var tokenIndex = 0;
 
-function getNextNumber ( ) {
-    return + tokenStream [ tokenIndex ++ ] ;
+/**
+ * Retrieves the next token from the input array and converts it to a number.
+ * @returns {number} The next number from the input.
+ */
+function getNextNumber() {
+  return +tokenArray[tokenIndex++];
 }
 
-function getNextString ( ) {
-    return tokenStream [ tokenIndex ++ ] ;
+/**
+ * Retrieves the next token from the input array as a string.
+ * @returns {string} The next string from the input.
+ */
+function getNextString() {
+  return tokenArray[tokenIndex++];
 }
 
-function getNextBigInt ( ) {
-    return BigInt ( tokenStream [ tokenIndex ++ ] ) ;
+/**
+ * Retrieves the next token from the input array and converts it to a BigInt.
+ * @returns {BigInt} The next BigInt from the input.
+ */
+function getNextBigInt() {
+  return BigInt(tokenArray[tokenIndex++]);
 }
 
-function getArrayOfNumbers ( count , rawBoolean ) {
-    return rawBoolean
-        ? tokenStream . slice ( tokenIndex , tokenIndex += count )
-        : tokenStream . slice ( tokenIndex , tokenIndex += count ) . map (  valueItem  =>  +valueItem  ) ;
+/**
+ * Retrieves a slice of numbers or strings from the input array.
+ * @param {number} numElements - The number of elements to retrieve.
+ * @param {boolean} asStrings - If true, return elements as strings; otherwise, convert to numbers.
+ * @returns {Array<number|string>} An array containing the requested elements.
+ */
+function getNumbersSlice(numElements, asStrings) {
+  if (asStrings) {
+    return tokenArray.slice(tokenIndex, (tokenIndex += numElements));
+  } else {
+    return tokenArray.slice(tokenIndex, (tokenIndex += numElements)).map((val) => +val);
+  }
 }
 
-function getMatrixOfNumbers ( matrixHeight , matrixWidth , rawFlag ) {
-    var matrixResult = [ ] , rowIndex = 0 ;
-    if ( rawFlag ) {
-        for ( ; rowIndex < matrixHeight ; rowIndex ++ ) {
-            matrixResult . push ( tokenStream . slice ( tokenIndex , tokenIndex += matrixWidth ) ) ;
-        }
+/**
+ * Retrieves a 2D matrix of numbers or strings from the input array.
+ * @param {number} matrixHeight - The number of rows in the matrix.
+ * @param {number} matrixWidth - The number of columns in the matrix.
+ * @param {boolean} asStrings - If true, return elements as strings; otherwise, convert to numbers.
+ * @returns {Array<Array<number|string>>} A 2D array representing the matrix.
+ */
+function getMatrix(matrixHeight, matrixWidth, asStrings) {
+  var resultMatrix = [];
+  var rowCounter = 0;
+  if (asStrings) {
+    for (; rowCounter < matrixHeight; rowCounter++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += matrixWidth)));
     }
-    else {
-        for ( ; rowIndex < matrixHeight ; rowIndex ++ ) {
-            matrixResult . push ( tokenStream . slice ( tokenIndex , tokenIndex += matrixWidth ) . map (  val  =>  +val  ) ) ;
-        }
+  } else {
+    for (; rowCounter < matrixHeight; rowCounter++) {
+      resultMatrix.push(tokenArray.slice(tokenIndex, (tokenIndex += matrixWidth)).map((val) => +val));
     }
-    return matrixResult ;
+  }
+  return resultMatrix;
 }
 
-function createNestedArray ( initialFillValue ) {
-    var dimensionsList = arguments ,
-        dimensionCounter = dimensionsList . length ,
-        arrayCreationString = "Array(dimensionsList[" + --dimensionCounter + "]).fill().map(elementPlaceholder => { return " + initialFillValue + "; })" ;
-    while ( --dimensionCounter ) {
-        arrayCreationString = "Array(dimensionsList[" + dimensionCounter + "]).fill().map(elementPlaceholder => " + arrayCreationString + ")" ;
-    }
-    return eval ( arrayCreationString ) ;
+/**
+ * Creates a multi-dimensional array initialized with a given value.
+ * This function uses eval and is generally not recommended for production code due to security risks.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @returns {Array} The created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  var args = arguments,
+    argLength = args.length,
+    evalString = "Array(args[" + --argLength + "]).fill().map(x=>{return " + initialValue + ";})";
+  while (--argLength) {
+    evalString = "Array(args[" + argLength + "]).fill().map(x=>" + evalString + ")";
+  }
+  return eval(evalString);
 }
 
+// Execute the main algorithm and store its result
+var programResult = executeAlgorithm();
 
-var finalResult = performCalculation ( ) ;
-if ( finalResult !== undefined ) console . log ( String ( finalResult ) ) ;
+// If the algorithm returned a value, print it to the console
+if (programResult !== undefined) {
+  console.log(String(programResult));
+}
 
-function performCalculation ( ) {
-    var itemCount = getNextNumber ( ) ;
-    var inputValues = getArrayOfNumbers ( itemCount ) ;
-    var upperBound = itemCount , lowerBound = 0 ;
+/**
+ * The main algorithm function.
+ * This function implements a binary search approach to find a specific value.
+ * @returns {number} The result of the binary search.
+ */
+function executeAlgorithm() {
+  var countElements = getNextNumber(); // Read the number of elements
+  var dataSequence = getNumbersSlice(countElements); // Read the sequence of numbers
 
-    while ( upperBound - lowerBound > 1 ) {
-        var middleValue = ( upperBound + lowerBound ) >> 1 ,
-            successFlag = 1 ;
-        var workingStack ;
+  var upperBound = countElements; // Initialize the upper bound for binary search
+  var lowerBound = 0; // Initialize the lower bound for binary search
 
-        if ( inputValues [ 0 ] > 1 ) {
-            workingStack = [ 1 , 1 , inputValues [ 0 ] , 1 ] ;
+  // Perform binary search
+  while (upperBound - lowerBound > 1) {
+    var midValue = (upperBound + lowerBound) >> 1; // Calculate the midpoint
+    var isValid = 1; // Flag to track if the current midValue is valid
+
+    var stackStructure; // This array will store pairs of [value, count]
+
+    // Initialize stackStructure based on the first element of dataSequence
+    if (dataSequence[0] > 1) {
+      stackStructure = [1, 1, dataSequence[0], 1];
+    } else {
+      stackStructure = [1, 1];
+    }
+
+    // Iterate through the dataSequence starting from the second element
+    for (var idx = 1; idx < countElements && isValid; idx++) {
+      // Case 1: Current element is greater than the top value on the stack
+      if (stackStructure[stackStructure.length - 2] < dataSequence[idx]) {
+        // Pop elements from stack until the second-to-last element is not 1
+        while (stackStructure.length > 2 && stackStructure[stackStructure.length - 1] === 1) {
+          stackStructure.length -= 2;
         }
-        else {
-            workingStack = [ 1 , 1 ] ;
+        // Push the current element and a count of 1
+        stackStructure.push(dataSequence[idx], 1);
+      } else {
+        // Case 2: Current element is not greater than the top value on the stack
+        if (midValue === 1) {
+          isValid = 0; // If midValue is 1, this path is invalid
+          break;
         }
-
-        for ( var loopIndex = 1 ; loopIndex < itemCount && successFlag ; loopIndex ++ ) {
-            if ( workingStack [ workingStack . length - 2 ] < inputValues [ loopIndex ] ) {
-                while ( workingStack . length > 2 && workingStack [ workingStack . length - 1 ] === 1 ) {
-                    workingStack . length -= 2 ;
-                }
-                workingStack . push ( inputValues [ loopIndex ] , 1 ) ;
+        // Pop elements from stack until the top value is less than or equal to the current element
+        while (stackStructure[stackStructure.length - 2] > dataSequence[idx]) {
+          stackStructure.length -= 2;
+        }
+        // If the top value is now less than the current element, push current element with count 2
+        if (stackStructure[stackStructure.length - 2] < dataSequence[idx]) {
+          stackStructure.push(dataSequence[idx], 2);
+        } else {
+          // If the top value is equal to the current element
+          var tempVal = stackStructure[stackStructure.length - 2]; // Store the top value
+          // Iterate backwards through the stack, checking pairs
+          for (var stackIdx = stackStructure.length - 1; stackIdx > 0; stackIdx -= 2) {
+            // If the value below the current pair is less than tempVal, push current element with count 2
+            if (stackStructure[stackIdx - 1] < tempVal) {
+              stackStructure.push(dataSequence[idx], 2);
+              break;
             }
-            else {
-                if ( middleValue === 1 ) {
-                    successFlag = 0 ;
-                    break ;
-                }
-                while ( workingStack [ workingStack . length - 2 ] > inputValues [ loopIndex ] ) {
-                    workingStack . length -= 2 ;
-                }
-                if ( workingStack [ workingStack . length - 2 ] < inputValues [ loopIndex ] ) {
-                    workingStack . push ( inputValues [ loopIndex ] , 2 ) ;
-                }
-                else {
-                    var temporaryValue = workingStack [ workingStack . length - 2 ] ;
-                    var innerLoopIndex ;
-                    for ( innerLoopIndex = workingStack . length - 1 ; innerLoopIndex > 0 ; innerLoopIndex -= 2 ) {
-                        if ( workingStack [ innerLoopIndex - 1 ] < temporaryValue ) {
-                            workingStack . push ( inputValues [ loopIndex ] , 2 ) ;
-                            break ;
-                        }
-                        if ( workingStack [ innerLoopIndex ] < middleValue ) {
-                            workingStack [ innerLoopIndex ] ++ ;
-                            if ( workingStack [ innerLoopIndex - 1 ] < inputValues [ loopIndex ] ) {
-                                workingStack . push ( inputValues [ loopIndex ] , 1 ) ;
-                            }
-                            break ;
-                        }
-                        workingStack . length -= 2 ;
-                        temporaryValue -- ;
-                    }
-                    if ( innerLoopIndex < 0 ) successFlag = 0 ;
-                }
+            // If the count of the current pair is less than midValue, increment count
+            if (stackStructure[stackIdx] < midValue) {
+              stackStructure[stackIdx]++;
+              // If the value below the current pair is less than current element, push current element with count 1
+              if (stackStructure[stackIdx - 1] < dataSequence[idx]) {
+                stackStructure.push(dataSequence[idx], 1);
+              }
+              break;
             }
+            // If count is not less than midValue, pop the current pair
+            stackStructure.length -= 2;
+            tempVal--; // Decrement tempVal
+          }
+          // If the loop finished without a break (stackIdx became negative), it's an invalid state
+          if (stackIdx < 0) {
+            isValid = 0;
+          }
         }
-        if ( successFlag ) {
-            upperBound = middleValue ;
-        }
-        else {
-            lowerBound = middleValue ;
-        }
+      }
     }
-    return upperBound ;
+
+    // Update binary search bounds based on the isValid flag
+    if (isValid) {
+      upperBound = midValue;
+    } else {
+      lowerBound = midValue;
+    }
+  }
+  return upperBound; // Return the final upper bound
 }

@@ -1,73 +1,81 @@
-/*  A utility function to display messages.  */
-function   logOutput(   messageContent  )
-{
-  console.log( messageContent   );
+function logResult(messageContent) {
+  // This function outputs the final computed value to the console.
+  console.log(messageContent);
 }
 
+function ProcessInputData(rawData) {
+  // Initial processing of the raw input string.
+  let processedInput = rawData.trim();
 
-/*  The primary entry point for processing system input.  */
-function   processInputData(   receivedContent  ) {
+  // Split the input into an array of lines.
+  processedInput = processedInput.split("\n");
 
-  receivedContent = receivedContent.trim(); /* Remove leading and trailing whitespace from the raw input. */
-  //  Previous input parsing methods: receivedContent = receivedContent.trim().split(" ");
-  receivedContent = receivedContent.trim().split("\n"); /* Split the input string by newline characters into an array of lines. */
-  //  Alternative parsing with number conversion: receivedContent = receivedContent.trim().split(" ").map( ( el ) => Number( el ) );
-  //  Another number conversion example: receivedContent = receivedContent.trim().split("\n").map( ( el ) => Number( el ) );
+  // Parse the first line to get the length of the sequence.
+  const arrayLength = parseInt(processedInput[0], 10);
 
-  var   itemQuantity = parseInt( receivedContent[0] ); /* Extract the first line as the total quantity of items.  */
-  var   dataSequence = receivedContent[1].split(" ").map( ( val ) => Number( val ) ); /* Parse the second line into an array of numbers.  */
-  
-  var   elementFrequencies = {}; /* An object to store the frequency of each numeric element.  */
+  // Parse the second line to get the numeric sequence.
+  const numericSequence = processedInput[1].split(" ").map((elementValue) => Number(elementValue));
 
-  for ( var   idx = 0;   idx < itemQuantity;   idx++ ) {
-    if ( elementFrequencies[ dataSequence[idx] ]   ===   undefined ) {
-       elementFrequencies[ dataSequence[idx] ]   =   1; /* Record the first occurrence.  */
-    } else if ( elementFrequencies[ dataSequence[idx] ]   ===   1 ) {
-       elementFrequencies[ dataSequence[idx] ]++; /* Increment for a second occurrence.  */
+  // Create a map to store the occurrences of each number.
+  const occurrenceMap = {};
+
+  // Iterate through the numeric sequence to count occurrences.
+  for (let idx = 0; idx < arrayLength; idx++) {
+    const currentNumber = numericSequence[idx];
+    if (occurrenceMap[currentNumber] === undefined) {
+      // If the number is encountered for the first time, set its count to 1.
+      occurrenceMap[currentNumber] = 1;
+    } else if (occurrenceMap[currentNumber] === 1) {
+      // If the number has been seen once, increment its count to 2.
+      occurrenceMap[currentNumber]++;
+    }
+    // Numbers appearing more than twice are not explicitly handled here,
+    // as the problem logic implies they would lead to an invalid state later.
+  }
+
+  // Sort the unique numbers in the sequence.
+  numericSequence.sort((a, b) => a - b);
+
+  // Filter out duplicate numbers to get a unique sorted list.
+  const uniqueNumericSequence = numericSequence.filter(function (currentVal, currentIndex, originalArray) {
+    return originalArray.indexOf(currentVal) === currentIndex;
+  });
+
+  // Initialize the final result.
+  let finalResult = 1;
+
+  // Validate the unique numbers based on their occurrences and the array length.
+  for (let idx = 0; idx < uniqueNumericSequence.length; idx++) {
+    const currentUniqueNumber = uniqueNumericSequence[idx];
+
+    // Special handling for the number 0 when the array length is odd.
+    if (arrayLength % 2 === 1 && currentUniqueNumber === 0) {
+      // If 0 is present and the length is odd, its count must be exactly 1.
+      if (occurrenceMap[currentUniqueNumber] !== 1) {
+        logResult("0"); // Output 0 if validation fails.
+        return; // Exit the function.
+      }
+      continue; // Continue to the next unique number.
+    }
+
+    // For all other numbers, their count must be exactly 2.
+    if (occurrenceMap[currentUniqueNumber] !== 2) {
+      logResult("0"); // Output 0 if validation fails.
+      return; // Exit the function.
     }
   }
 
-  /*  Commented-out section from the original logic:
-  if ( itemQuantity === 1 ) {
-    logOutput( 1 );
-    return;
-  } else if ( itemQuantity === 2 ) {
-    logOutput( 2 );
-    return;
-  }
-  */
-  //  logOutput( elementFrequencies ); // Debugging line for the frequency map.
-
-  dataSequence.sort( ( a, b ) => a - b ); /* Sort the array of unique numbers in ascending order.  */
-  
-  dataSequence = dataSequence.filter(   function (   currentVal,   currentIndex,   sourceCollection   ) {
-            return   sourceCollection.indexOf( currentVal )   ===   currentIndex;
-        }); /* Filter out duplicate entries to retain only unique sorted values.  */
-
-  var   resultValue = 1; /* Initialize a variable to accumulate the final computed result.  */
-
-  for ( var   loopIndex = 0;   loopIndex < dataSequence.length;   loopIndex++ ) {
-    if ( itemQuantity % 2   ===   1   &&   dataSequence[loopIndex]   ===   0 ) { /* Check for zero when total items is odd.  */
-       if ( elementFrequencies[ dataSequence[loopIndex] ]   !==   1 ) {
-          logOutput( "0" ); /* If zero doesn't appear exactly once, output "0" and exit.  */
-          return;
-       }
-      continue; /* Proceed to the next element if zero condition met.  */
-    }
-    
-    if ( elementFrequencies[ dataSequence[loopIndex] ]   !==   2 ) { /* Check if other elements appear exactly twice.  */
-       logOutput( "0" ); /* If any other element doesn't appear twice, output "0" and exit.  */
-      return;
-    }
+  // If the original array length is odd, remove the first element (which must be 0 if valid).
+  if (arrayLength % 2 === 1) {
+    uniqueNumericSequence.shift();
   }
 
-  if ( itemQuantity % 2   ===   1 ) { /* If the overall count of items is odd.  */
-     dataSequence.shift(); /* Remove the first element (which should be 0) from the sequence.  */
-  }
-  
-  resultValue   *=   Math.pow( 2, dataSequence.length ); /* Multiply the result by 2 raised to the power of the remaining elements.  */
-  logOutput( resultValue ); /* Display the final calculated numeric result.  */
+  // Calculate the final result as 2 raised to the power of the remaining unique numbers' count.
+  finalResult *= Math.pow(2, uniqueNumericSequence.length);
+
+  // Output the final calculated result.
+  logResult(finalResult);
 }
 
-/*  Execute the main processing function by reading input from standard input.  */
-processInputData(   require("fs").readFileSync( "/dev/stdin", "utf8" )   );
+// Read input from standard input and pass it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

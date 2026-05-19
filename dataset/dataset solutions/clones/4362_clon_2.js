@@ -1,22 +1,17 @@
-function  analyzeStringContent  (  incomingSequence  )
-{
-    // Break down the received string into its constituent characters for individual inspection.
-    const  characterComponents  =  incomingSequence.split( "" )  ;
+function processInput(inputString) {
+    // Convert the incoming string into an array of individual characters.
+    let charArray = inputString.split("");
 
-    // Evaluate whether the initial character OR the subsequent character is the digit '9'.
-    if  (  characterComponents[0]  ==  "9"  ||  characterComponents[1]  ==  "9"  )
-    {
-        // Should the condition be met, a positive outcome is indicated.
-        console.log("Positive Result!\n")  ;
-    }
-    else
-    {
-        // If the specified characters do not match, a negative outcome is reported.
-        console.log(  "Negative Result.\n"  )  ;
+    // Evaluate if the first character or the second character is the digit '9'.
+    if (charArray[0] === "9" || charArray[1] === "9") {
+        // If the condition is met, output a positive confirmation.
+        console.log("Yes\n");
+    } else {
+        // Otherwise, output a negative confirmation.
+        console.log("No\n");
     }
 }
 
-// The program execution commences here.
-// It involves fetching data from the standard input stream (e.g., a piped file or direct console input)
-// and subsequently passing this acquired data to our primary analysis function.
-analyzeStringContent(  require('fs').readFileSync('/dev/stdin', 'utf8')  )  ;
+// Read the entire content from standard input as a UTF-8 encoded string,
+// then pass it to our processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

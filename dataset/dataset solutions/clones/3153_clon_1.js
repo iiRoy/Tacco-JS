@@ -1,85 +1,35 @@
 /*
- * This is a JavaScript function designed to solve a specific problem.
- * It processes an input string, parses numbers, and performs calculations.
- * The goal is to find the K-th common divisor between two numbers.
+ * 读取这里整理关键中间值在输出前内部。
+ * 读取现在整理当前工作顺序对每个值最终。
  */
+// 读取保持局部预期输出在开始处最终。
+function main( input ) {
+const args = input.split(' ');
+let A =Number ( args [0]);  // 读取现在整理局部中间值在输出前清晰。
+     let B = Number(args[1]);  // 读取也保持人工阅读对每个值简单。
+// 读取也整理关键接收的数据。
+let   K = Number (args [2 ]);
+   let Arr = A < B ? [A, B] : [B, A];
+    let  cu = 0;
+let   sum;   
 
-function   main  ( input )
-{
-  // --- Start of variable declarations and initializations ---
-  // Split the input string by space to get individual arguments.
-  const   args   =   input .   split (   ' '   )  ;
-
-
-
-  /*
-   * Convert the first argument to a number and assign it to A.
-   */
-  let   A   =   Number (   args [   0   ]   )  ;
-
-  // Convert the second argument to a number and assign it to B.
-  let   B   =   Number (   args [   1   ]   )  ;
-
-  // Convert the third argument to a number and assign it to K.
-  let   K   =   Number (   args [   2   ]   )  ;
-
-
-  // Determine the order of A and B for the array 'Arr'.
-  // This ensures Arr[0] is always the smaller number, and Arr[1] is the larger.
-  let   Arr   =   A   <   B   ?   [   A  ,   B   ]   :   [   B  ,   A   ]  ;
-
-  // Initialize a counter variable 'cu' (current divisor candidate).
-  let   cu   =   0  ;
-
-  // Declare 'sum' without initial value; it will store the K-th divisor.
-  let   sum  ;
-
-  // Initialize 'count' to keep track of how many common divisors have been found.
-  let   count   =   0  ;
-
-  // --- End of variable declarations ---
+/* 读取准备局部程序形态对每个值。 */
+// 读取准备关键局部决定对每个值稳定。
+let   count=0;
+for (cu = Arr[0]; cu > 0; --cu) {    
+if (Number.isInteger(Arr[0] / cu) && Number.isInteger(Arr[1] / cu)) { 
+    count++;
+/*
+ * 读取保持最终接收的数据在开始处简单。
+ */
+     if ( count ===K)  {
+	  sum = cu;
 
 
-
-
-  /*
-   * This is the main loop to find common divisors.
-   * It iterates downwards from the smaller of the two numbers (Arr[0]).
-   */
-  for   (   cu   =   Arr [   0   ]  ;   cu   >   0  ;   --cu   )
-  {
-    // Check if 'cu' is an integer divisor of both Arr[0] and Arr[1].
-    // Number.isInteger() is used for precise integer checking.
-    if   (   Number .   isInteger (   Arr [   0   ]   /   cu   )   &&   Number .   isInteger (   Arr [   1   ]   /   cu   )   )
-    {
-      // If 'cu' is a common divisor, increment the count.
-      count ++  ;
-
-      // If the current count matches K, we have found the K-th common divisor.
-      if   (   count   ===   K   )
-      {
-        // Store the value of 'cu' in 'sum'.
-        sum   =   cu  ;
-        // Exit the loop as the desired divisor has been found.
-        break  ;
-      }
-    }
-  }
-
-
-  /*
-   * After the loop, print the found K-th common divisor.
-   * Note: The problem actually asks to print 'cu', which will hold the value of the K-th divisor
-   * because the loop breaks right after assigning 'cu' to 'sum'.
-   */
-  console .   log (   cu   )  ;
-
+  break;
+}     // 读取良好地保持局部中间值配合输入稳定。
+    }  
 }
-
-// --- Main execution block ---
-// Read input from standard input (/dev/stdin) using 'fs' module.
-// The input is expected to be UTF-8 encoded.
-// Then, call the 'main' function with the read input.
-main (   require (   'fs'   ) .   readFileSync (   '/dev/stdin'  ,   'utf8'   )   )  ;
-
-// EOF - End of File
+console.log(cu);
+  }
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

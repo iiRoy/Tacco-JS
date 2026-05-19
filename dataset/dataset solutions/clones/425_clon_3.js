@@ -1,82 +1,51 @@
-const fileSystemModule = require('fs');
+const fileSystem = require('fs');
+const RAW_INPUT_SOURCE = '/dev/stdin';
 
-const STANDARD_INPUT_PATH = '/dev/stdin';
-const TEXT_ENCODING = 'utf8';
-const END_OF_INPUT_MARKER = '0 0';
-const REQUIRED_DATA_POINTS_PER_SET = 4;
-const IDENTIFIER_LABELS = ['A', 'B', 'C', 'D'];
+function parseAndSumPair(lineContent) {
+    const numberStrings = lineContent.split(" ");
+    const firstValue = Number(numberStrings[0]);
+    const secondValue = Number(numberStrings[1]);
+    return firstValue + secondValue;
+}
 
-const extractNumericalValues = (lineText) => {
-    if (typeof lineText !== 'string' || lineText.trim() === '') {
-        return [];
+function identifyHighestScoreEntry(scoreCollection) {
+    let currentHighest = -Infinity;
+    let highestIndex = -1;
+    const candidateIdentifiers = ["A", "B", "C", "D"];
+
+    for (let index = 0; index < scoreCollection.length; index++) {
+        const scoreValue = scoreCollection[index];
+        if (scoreValue > currentHighest) {
+            currentHighest = scoreValue;
+            highestIndex = index;
+        }
+    }
+    return {
+        label: candidateIdentifiers[highestIndex],
+        value: currentHighest
+    };
+}
+
+const rawInputData = fileSystem.readFileSync(RAW_INPUT_SOURCE, 'utf8');
+const processedInputLines = rawInputData.trim().split("\n");
+
+let accumulatedScores = [];
+const BLOCK_SIZE = 4;
+const TERMINATION_MARKER = "0 0";
+
+for (let lineIterator = 0; lineIterator < processedInputLines.length; lineIterator++) {
+    const currentLine = processedInputLines[lineIterator];
+
+    if (accumulatedScores.length === 0 && currentLine === TERMINATION_MARKER) {
+        break;
     }
 
-    const parts = lineText.split(' ');
-    const numbers = parts.map(val => Number(val));
-
-    if (numbers.length === 2 && !isNaN(numbers[0]) && !isNaN(numbers[1])) {
-        return numbers;
+    if (accumulatedScores.length === BLOCK_SIZE) {
+        const result = identifyHighestScoreEntry(accumulatedScores);
+        console.log(`${result.label} ${result.value}`);
+        accumulatedScores = [];
     } else {
-        return [];
+        const sumOfCurrentPair = parseAndSumPair(currentLine);
+        accumulatedScores.push(sumOfCurrentPair);
     }
-};
-
-const determineMaxScoreAndLabel = (scoreCollection, labelSequence) => {
-    if (!Array.isArray(scoreCollection) || scoreCollection.length === 0 ||
-        !Array.isArray(labelSequence) || labelSequence.length !== scoreCollection.length) {
-        return null;
-    }
-
-    let currentMaximumValue = -Infinity;
-    let indexOfTheMaximum = -1;
-
-    for (let dataPointIndex = 0; dataPointIndex < scoreCollection.length; dataPointIndex++) {
-        const currentScore = scoreCollection[dataPointIndex];
-        if (currentScore > currentMaximumValue) {
-            currentMaximumValue = currentScore;
-            indexOfTheMaximum = dataPointIndex;
-        }
-    }
-
-    const correspondingLabel = labelSequence[indexOfTheMaximum];
-
-    return { label: correspondingLabel, value: currentMaximumValue };
-};
-
-const mainProcessor = () => {
-    const rawDataBuffer = fileSystemModule.readFileSync(STANDARD_INPUT_PATH, TEXT_ENCODING);
-    const rawInputLines = rawDataBuffer.trim().split('\n');
-
-    let scoreAccumulator = [];
-
-    for (let lineIterator = 0; lineIterator < rawInputLines.length; lineIterator++) {
-        const currentDataLine = rawInputLines[lineIterator];
-
-        if (currentDataLine.trim() === '') {
-            continue;
-        }
-
-        if (scoreAccumulator.length === 0 && currentDataLine === END_OF_INPUT_MARKER) {
-            break;
-        }
-
-        if (scoreAccumulator.length === REQUIRED_DATA_POINTS_PER_SET) {
-            const processingResult = determineMaxScoreAndLabel(scoreAccumulator, IDENTIFIER_LABELS);
-
-            if (processingResult) {
-                console.log(`${processingResult.label} ${processingResult.value}`);
-            }
-
-            scoreAccumulator = [];
-        }
-
-        const pairOfNumbers = extractNumericalValues(currentDataLine);
-
-        if (pairOfNumbers.length === 2) {
-            const sumOfCurrentPair = pairOfNumbers[0] + pairOfNumbers[1];
-            scoreAccumulator.push(sumOfCurrentPair);
-        }
-    }
-};
-
-mainProcessor();
+}

@@ -1,73 +1,74 @@
-function ProcessData ( rawDataLines ) {
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  let parsedLines = rawData.split('\n');
 
-  // Split the entire input string into individual lines
-  rawDataLines = rawDataLines.split( "\n" );
+  // Parse the first line to get the number of elements.
+  const numElements = parseInt(parsedLines[0], 10);
 
-  // Parse the first line to get the total number of elements
-  var itemCount = Number.rawDataLines[ 0 ] );
+  // Parse the second line for height values.
+  const heightsArr = parsedLines[1].split(' ').map(val => parseInt(val, 10));
 
-  // Extract and convert the heights array from the second line
-  var heightArray = rawDataLines[ 1 ].split( " " ).map( ( elem ) => {
-    return Number( elem );
-  } );
+  // Parse the third line for associated values.
+  const valuesArr = parsedLines[2].split(' ').map(item => parseInt(item, 10));
 
-  // Extract and convert the values array from the third line
-  var valueArray = rawDataLines[ 2 ].split( " " ).map( ( elem ) => Number( elem ) );
-
-  // Initialize a dynamic programming array with zeros. Its size is itemCount + 1.
-  var dynamicProgram = new Array( itemCount + 1 ).fill( 0 );
+  // Initialize a dynamic programming array with zeros.
+  let dynamicProgression = new Array(numElements + 1).fill(0);
 
   // This line was commented out in the original, so it remains commented.
-  // dynamicProgram[heightArray[0]] = valueArray[0];
+  // dynamicProgression[heightsArr[0]] = valuesArr[0];
 
-  // Variable to store the ultimate calculated outcome
-  var finalOutcome = 0;
+  // Initialize the variable to store the maximum result.
+  let finalResult = 0;
 
-  // Iterate through each item from 0 up to itemCount - 1
-  for ( var outerIndex = 0 ; outerIndex < itemCount ; outerIndex++ ) {
-    // This variable was declared but unused in the original code.
-    var tempMax = 0;
+  // Iterate through each element to build up the DP table.
+  for (let idx = 0; idx < numElements; idx++) {
+    // This variable is declared but not used in the original logic.
+    let currentMax = 0;
 
-    // Calculate the current potential sum: value at current index + DP value at corresponding height
-    var currentSum = valueArray[ outerIndex ] + dynamicProgram[ heightArray[ outerIndex ] ];
+    // Calculate the temporary sum for the current height.
+    const tempSum = valuesArr[idx] + dynamicProgression[heightsArr[idx]];
 
-    // Inner loop: propagate the current sum to subsequent DP entries
-    for ( var innerIndex = heightArray[ outerIndex ] ; innerIndex < itemCount + 1 ; innerIndex++ ) {
-      // If the calculated sum is greater than the existing DP value, update it
-      if ( currentSum > dynamicProgram[ innerIndex ] ) {
-        dynamicProgram[ innerIndex ] = currentSum;
+    // Update DP values from the current height upwards.
+    for (let innerIdx = heightsArr[idx]; innerIdx < numElements + 1; innerIdx++) {
+      // If the temporary sum is greater, update the DP table.
+      if (tempSum > dynamicProgression[innerIdx]) {
+        dynamicProgression[innerIdx] = tempSum;
       } else {
-        // If not greater, we can break as further values won't be updated (assuming non-decreasing DP values)
+        // If not greater, we can stop as values are non-decreasing.
         break;
       }
     }
-    // Update the overall maximum outcome found so far
-    finalOutcome = Math.max( finalOutcome , dynamicProgram[ heightArray[ outerIndex ] ] );
+    // Update the overall maximum result.
+    finalResult = Math.max(finalResult, dynamicProgression[heightsArr[idx]]);
   }
 
-  // Output the final result to the standard console stream
-  console.log( '%s' , finalOutcome );
-  // Return the final result of the computation
-  return finalOutcome;
+  // Output the final computed result.
+  console.log('%s', finalResult);
+
+  // Return the final result.
+  return finalResult;
 }
 
-// Function designed for local testing and debugging purposes
-// It simulates fetching input from HTML elements
-function validateExecution ( testId ) {
-  // Retrieve the input data for the specific test case
-  var testCaseInput = document.getElementById( "dataInput" + testId ).value;
-  // Execute the main processing function with the test input
-  var computedResult = ProcessData( testCaseInput );
-  // Initialize the status of the test case
-  var testStatus = "WrongAnswer";
+// Helper function for debugging purposes, typically called when a "Run" button is pressed in a UI.
+function testSolution(testCaseNum) {
+  // Retrieve input data from a specific DOM element.
+  const testInputData = document.getElementById("input" + testCaseNum).value;
 
-  // Compare the computed result with the expected output from an HTML element
-  if ( computedResult === Number( document.getElementById( "expectedOutput" + testId ).value.split( "\n" )[ 0 ] ) ) {
-    testStatus = "Accepted"; // Mark as accepted if they match
+  // Execute the main processing function with the retrieved input.
+  const computedAnswer = ProcessInput(testInputData);
+
+  // Initialize the test outcome as "Wrong Answer".
+  let testOutcome = "WA";
+
+  // Compare the computed answer with the expected output from another DOM element.
+  if (computedAnswer == document.getElementById("output" + testCaseNum).value.split("\n")[0]) {
+    // If they match, set the outcome to "Accepted".
+    testOutcome = "AC";
   }
-  // Display the test status in the designated result element
-  document.getElementById( "testResult" + testId ).innerHTML = testStatus;
+
+  // Display the test outcome in a designated result element.
+  document.getElementById("result" + testCaseNum).innerHTML = testOutcome;
 }
 
-// Execute the primary function by reading input from standard input stream
-ProcessData( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) );
+// Execute the main processing function with input read from standard input.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

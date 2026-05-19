@@ -1,39 +1,43 @@
-const readerInterface = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+var input = '';
+var readable = process.stdin;
+readable.resume();
+readable.setEncoding('utf-8');
+
+readable.on('data', function(chunk) {
+  input += chunk;
 });
 
-let gatheredSegments = [];
-readerInterface.on('line', (currentSegment) => {
-    gatheredSegments.push(currentSegment);
-});
+readable.on('end', function() {
+  const allInputLines = input.split('\n');
+  const [dimensionsLine, ...dataContentLines] = allInputLines;
 
-readerInterface.on('close', () => {
-    const [rowDimension, colDimension] = gatheredSegments[0].split(' ').map(Number);
+  const [rowCount, colCount] = dimensionsLine.split(' ').map(Number);
 
-    let columnAccumulators = Array.from({ length: colDimension + 1 }, () => 0);
+  const processingResult = dataContentLines.reduce((accumulator, currentDataLine) => {
+    if (!currentDataLine.trim()) {
+      return accumulator;
+    }
 
-    let computedRows = [];
+    const currentNumericValues = currentDataLine.split(' ').map(Number);
+    const currentRowTotal = currentNumericValues.reduce((sumVal, val) => sumVal + val, 0);
 
-    gatheredSegments.slice(1).forEach((dataString) => {
-        const currentNumericalSet = dataString.split(' ').map(Number);
-        let currentTotal = 0;
-
-        const processedSet = currentNumericalSet.map((value, position) => {
-            if (position < colDimension) {
-                currentTotal += value;
-                columnAccumulators[position] += value;
-            }
-            return value;
-        });
-
-        columnAccumulators[colDimension] += currentTotal;
-        processedSet.push(currentTotal);
-
-        computedRows.push(processedSet.join(' '));
+    currentNumericValues.forEach((value, columnIndex) => {
+      accumulator.columnAggregates[columnIndex] += value;
     });
+    accumulator.columnAggregates[colCount] += currentRowTotal;
 
-    computedRows.push(columnAccumulators.join(' '));
-    console.log(computedRows.join('\n'));
+    accumulator.outputRows.push([...currentNumericValues, currentRowTotal].join(' '));
+
+    return accumulator;
+  }, {
+    outputRows: [],
+    columnAggregates: Array.from({ length: colCount + 1 }, () => 0)
+  });
+
+  const finalOutputLines = [
+    ...processingResult.outputRows,
+    processingResult.columnAggregates.join(' ')
+  ];
+
+  console.log(finalOutputLines.join('\n'));
 });

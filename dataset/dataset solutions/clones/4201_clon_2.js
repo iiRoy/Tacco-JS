@@ -1,118 +1,133 @@
-function acquireInput() {
-  return require("fs").readFileSync("/dev/stdin", "utf8") .stripWhitespace() ;
+function getInputData() {
+  // Reads input from standard input, decodes as UTF-8, and removes leading/trailing whitespace.
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
-function displayResult(outputValue) {
-  console.log(outputValue);
+function displayResult(outputContent) {
+  // Outputs the given content to standard output.
+  console.log(outputContent);
 }
 
-function signalError(errorMessage) {
+function reportError(errorMessage) {
+  // Outputs the given error message to standard error.
   console.error(errorMessage);
 }
 
-// Transformation option specifier
-// 0: No transformation
-// 1: Convert to integer
-// 2: Split by space character
-// 3: Split by newline character
-// 4: Split by space and convert to number array
-// 5: Split by newline and convert to number array
-// 6: Split into individual characters
-// 7: Split into individual characters and convert to number array
-function transformInput(inputValue, transformationType) {
-  switch (transformationType) {
+/**
+ * Transforms an input string based on a specified conversion type.
+ * @param {string} inputStr The string to be converted.
+ * @param {number} conversionType The type of conversion to apply.
+ *   0: No conversion, returns the string as is.
+ *   1: Converts to an integer.
+ *   2: Splits by single space.
+ *   3: Splits by newline character.
+ *   4: Splits by single space and converts parts to numbers.
+ *   5: Splits by newline and converts parts to numbers.
+ *   6: Splits into individual characters.
+ *   7: Splits into individual characters and converts them to numbers.
+ * @returns {any} The converted data.
+ */
+function processInputString(inputStr, conversionType) {
+  switch (conversionType) {
     case 0:
-      return inputValue;
+      return inputStr;
     case 1:
-      return Number.parseInt(inputValue, 10);
+      return parseInt(inputStr, 10);
     case 2:
-      return inputValue.split(" ");
+      return inputStr.split(" ");
     case 3:
-      return inputValue.split("\n");
+      return inputStr.split("\n");
     case 4:
-      return inputValue.split(" ").map( (item) => Number(item) );
+      return inputStr.split(" ").map((val) => Number(val));
     case 5:
-      return inputValue.split("\n").map( (item) => Number(item) );
+      return inputStr.split("\n").map((val) => Number(val));
     case 6:
-      return inputValue.split("");
+      return inputStr.split("");
     case 7:
-      return inputValue.split("").map( (item) => Number(item) );
+      return inputStr.split("").map((val) => Number(val));
     default:
-      return inputValue; // Default case, though not strictly necessary if all cases are covered.
+      return inputStr; // Default to no conversion if type is unknown
   }
 }
 
-function executePrimaryLogic(sourceData) {
-  sourceData = transformInput(sourceData, 6);
+function executeLogic(rawInputChars) {
+  // Convert the initial input string into an array of characters.
+  rawInputChars = processInputString(rawInputChars, 6);
 
+  // Store the first occurrence index of specific characters.
   const charPositions = {
-    "K": sourceData.indexOf("K"),
-    "I": sourceData.indexOf("I"),
-    "H": sourceData.indexOf("H"),
-    "B": sourceData.indexOf("B"),
-    "R": sourceData.indexOf("R")
+    "K": rawInputChars.indexOf("K"),
+    "I": rawInputChars.indexOf("I"),
+    "H": rawInputChars.indexOf("H"),
+    "B": rawInputChars.indexOf("B"),
+    "R": rawInputChars.indexOf("R")
   };
 
-  if (
-    charPositions["K"] === -1 ||
-    charPositions["I"] === -1 ||
-    charPositions["H"] === -1 ||
-    charPositions["B"] === -1 ||
-    charPositions["R"] === -1
-  ) {
+  // Check if all required characters are present in the input.
+  if (charPositions["K"] === -1 || charPositions["I"] === -1 || charPositions["H"] === -1 || charPositions["B"] === -1 || charPositions["R"] === -1) {
     displayResult("NO");
     return;
   }
 
-  if (sourceData.length > 9) {
+  // Validate the total length of the input sequence.
+  if (rawInputChars.length > 9) {
     displayResult("NO");
     return;
   }
 
+  // Check specific positional relationships between characters.
   if (charPositions["K"] !== charPositions["I"] - 1 || charPositions["H"] < charPositions["I"]) {
     displayResult("NO");
     return;
   }
 
+  // Check spacing and order for 'H' and 'B'.
   if (charPositions["H"] > charPositions["B"] || charPositions["B"] - charPositions["H"] > 2) {
     displayResult("NO");
     return;
   }
 
+  // Check spacing and order for 'B' and 'R'.
   if (charPositions["B"] > charPositions["R"] || charPositions["R"] - charPositions["B"] > 2) {
     displayResult("NO");
     return;
   }
 
+  // Count consecutive 'A' characters at the beginning of the sequence.
   let leadingACount = 0;
-  for (let index = 0; index < sourceData.length; index++) {
-    if (sourceData[index] === "A") {
+  for (let idx = 0; idx < rawInputChars.length; idx++) {
+    if (rawInputChars[idx] === "A") {
       leadingACount++;
     } else {
-      break;
+      break; // Stop counting once a non-'A' character is encountered.
     }
   }
 
+  // If there's more than one leading 'A', it's invalid.
   if (leadingACount > 1) {
     displayResult("NO");
     return;
   }
 
+  // Count consecutive 'A' characters at the end of the sequence.
   let trailingACount = 0;
-  for (let reverseIndex = sourceData.length - 1; reverseIndex >= 0; reverseIndex--) {
-    if (sourceData[reverseIndex] === "A") {
+  for (let revIdx = rawInputChars.length - 1; revIdx >= 0; revIdx--) {
+    if (rawInputChars[revIdx] === "A") {
       trailingACount++;
     } else {
-      break;
+      break; // Stop counting once a non-'A' character is encountered.
     }
   }
 
+  // If there's more than one trailing 'A', it's invalid.
   if (trailingACount > 1) {
     displayResult("NO");
     return;
   }
 
+  // If all checks pass, the sequence is valid.
   displayResult("YES");
 }
 
-executePrimaryLogic(acquireInput());
+// Execute the main logic with input obtained from standard input.
+executeLogic(getInputData());

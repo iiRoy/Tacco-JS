@@ -1,122 +1,93 @@
-const PRECISION_ERROR_THRESHOLD = 1e-10;
+var inputDataBuffer = [];
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+inputReader.on('line', function (currentInputLine) {
+  inputDataBuffer.push(currentInputLine);
+});
+process.stdin.on('end', function () {
+  processInputSets(inputDataBuffer);
+});
+var GEOMETRY_TOLERANCE = 1e-10;
 
-class CartesianPoint {
-    constructor(coordX, coordY) {
-        this.xVal = coordX;
-        this.yVal = coordY;
+function determineSegmentIntersection(segment1, segment2) {
+    const [[x1, y1], [x2, y2]] = segment1;
+    const [[x3, y3], [x4, y4]] = segment2;
+
+    const deltaX1 = x2 - x1;
+    const deltaY1 = y2 - y1;
+    const deltaX2 = x4 - x3;
+    const deltaY2 = y4 - y3;
+
+    const crossProductDenominator = (-deltaX2 * deltaY1 + deltaX1 * deltaY2);
+
+    if (Math.abs(crossProductDenominator) < GEOMETRY_TOLERANCE) {
+        return null;
     }
 
-    isCoincident(otherPoint) {
-        const deltaX = this.xVal - otherPoint.xVal;
-        const deltaY = this.yVal - otherPoint.yVal;
-        return (deltaX * deltaX + deltaY * deltaY) < PRECISION_ERROR_THRESHOLD * PRECISION_ERROR_THRESHOLD;
+    const paramT = (deltaX2 * (y1 - y3) - deltaY2 * (x1 - x3)) / crossProductDenominator;
+
+    if (paramT < GEOMETRY_TOLERANCE || paramT > (1 - GEOMETRY_TOLERANCE)) {
+        return null;
     }
+
+    const intersectX = x1 + (paramT * deltaX1);
+    const intersectY = y1 + (paramT * deltaY1);
+
+    return [intersectX, intersectY];
 }
 
-class LinearPath {
-    constructor(startCoord, endCoord) {
-        this.initial = startCoord;
-        this.final = endCoord;
+function computePlanarRegions(segmentCollection) {
+    const numberOfSegments = segmentCollection.length;
+    if (numberOfSegments === 0) {
+        return 1;
     }
+
+    const allFoundIntersections = segmentCollection.flatMap((segA, idxA) =>
+        segmentCollection.slice(idxA + 1).map(segB =>
+            determineSegmentIntersection(segA, segB)
+        )
+    ).filter(point => point !== null);
+
+    const distinctIntersectionPoints = allFoundIntersections.reduce((accumulator, currentPoint) => {
+        const isAlreadyPresent = accumulator.some(existingPoint =>
+            Math.pow(currentPoint[0] - existingPoint[0], 2) + Math.pow(currentPoint[1] - existingPoint[1], 2) < GEOMETRY_TOLERANCE
+        );
+        return isAlreadyPresent ? accumulator : [...accumulator, currentPoint];
+    }, []);
+
+    return 1 + numberOfSegments + distinctIntersectionPoints.length;
 }
 
-const GeoAlgorithms = {
-    determineCrossing(pathA, pathB) {
-        const firstStart = pathA.initial;
-        const firstEnd = pathA.final;
-        const secondStart = pathB.initial;
-        const secondEnd = pathB.final;
-
-        const dx1 = firstEnd.xVal - firstStart.xVal;
-        const dy1 = firstEnd.yVal - firstStart.yVal;
-        const dx2 = secondEnd.xVal - secondStart.xVal;
-        const dy2 = secondEnd.yVal - secondStart.yVal;
-
-        const commonDenominator = dx1 * dy2 - dy1 * dx2;
-
-        if (Math.abs(commonDenominator) < PRECISION_ERROR_THRESHOLD) {
-            // Paths are parallel or collinear
-            return null;
+function processInputSets(allInputLines) {
+    const recursiveProcessor = (remainingLines, currentResults) => {
+        if (remainingLines.length === 0) {
+            return currentResults;
         }
 
-        // Calculate parameter for the first path (s_param)
-        // s_param = ((secondEnd.yVal - secondStart.yVal) * (secondStart.xVal - firstStart.xVal) - (secondEnd.xVal - secondStart.xVal) * (secondStart.yVal - firstStart.yVal)) / commonDenominator;
-        // This is equivalent to original code's `r`
-        const s_param = (
-            (secondEnd.yVal - secondStart.yVal) * (secondStart.xVal - firstStart.xVal) -
-            (secondEnd.xVal - secondStart.xVal) * (secondStart.yVal - firstStart.yVal)
-        ) / commonDenominator;
+        const segmentCountStr = remainingLines[0];
+        const segmentCount = Number(segmentCountStr);
 
-
-        // Check if the crossing point lies on the first path
-        if (s_param < PRECISION_ERROR_THRESHOLD || (1 - s_param) < PRECISION_ERROR_THRESHOLD) {
-            return null;
+        if (segmentCount === 0) {
+            return currentResults;
         }
 
-        const crossingX = firstStart.xVal * (1 - s_param) + firstEnd.xVal * s_param;
-        const crossingY = firstStart.yVal * (1 - s_param) + firstEnd.yVal * s_param;
+        const segmentDefinitionLines = remainingLines.slice(1, 1 + segmentCount);
+        const nextRemainingLines = remainingLines.slice(1 + segmentCount);
 
-        return new CartesianPoint(crossingX, crossingY);
-    }
-};
-
-const PlanarDivisionCalculator = {
-    calculateDivisions(pathSegments) {
-        let divisionCount = 1;
-        
-        pathSegments.forEach((currentPath, currentPathIndex) => {
-            divisionCount++; 
-            const currentPathUniqueCrossings = [];
-
-            for (let previousPathIndex = 0; previousPathIndex < currentPathIndex; previousPathIndex++) {
-                const priorPath = pathSegments[previousPathIndex];
-                const intersectionResult = GeoAlgorithms.determineCrossing(currentPath, priorPath);
-
-                if (intersectionResult !== null) {
-                    const isAlreadyRecorded = currentPathUniqueCrossings.some(existingPoint =>
-                        intersectionResult.isCoincident(existingPoint)
-                    );
-                    if (!isAlreadyRecorded) {
-                        currentPathUniqueCrossings.push(intersectionResult);
-                    }
-                }
-            }
-            divisionCount += currentPathUniqueCrossings.length;
+        const parsedSegments = segmentDefinitionLines.map(lineString => {
+            const coordinateParts = lineString.split(' ');
+            return [
+                [Number(coordinateParts[0]), Number(coordinateParts[1])],
+                [Number(coordinateParts[2]), Number(coordinateParts[3])]
+            ];
         });
-        return divisionCount;
-    }
-};
 
-async function processStandardInput() {
-    let fullInputBuffer = '';
-    process.stdin.on('data', (dataChunk) => {
-        fullInputBuffer += dataChunk.toString();
-    });
+        const calculatedRegions = computePlanarRegions(parsedSegments);
+        return recursiveProcessor(nextRemainingLines, [...currentResults, calculatedRegions]);
+    };
 
-    await new Promise(resolveInput => process.stdin.on('end', resolveInput));
-
-    const inputLinesArray = fullInputBuffer.trim().split('\n');
-    let inputLinePointer = 0;
-    const computedOutcomes = [];
-
-    while (true) {
-        const numSegmentsInBlock = parseInt(inputLinesArray[inputLinePointer++], 10);
-        if (numSegmentsInBlock === 0) {
-            break;
-        }
-
-        const currentBlockPathList = [];
-        for (let k = 0; k < numSegmentsInBlock; k++) {
-            const coordinateStrings = inputLinesArray[inputLinePointer++].split(' ');
-            const numericCoords = coordinateStrings.map(Number);
-            const p1 = new CartesianPoint(numericCoords[0], numericCoords[1]);
-            const p2 = new CartesianPoint(numericCoords[2], numericCoords[3]);
-            currentBlockPathList.push(new LinearPath(p1, p2));
-        }
-        computedOutcomes.push(PlanarDivisionCalculator.calculateDivisions(currentBlockPathList));
-    }
-
-    computedOutcomes.forEach(result => console.log(result));
+    const finalOutputValues = recursiveProcessor(allInputLines, []);
+    finalOutputValues.forEach(value => console.log(value));
 }
-
-processStandardInput();

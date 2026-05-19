@@ -1,154 +1,129 @@
-const fileModule = require('fs');
-const inputData = fileModule.readFileSync('/dev/stdin', 'utf8');
-
-let currentGridWidth;
-let currentGridHeight;
-let currentGridContent;
-
-const cardinalDirections = [
-  { deltaRow: 0, deltaCol: -1 },
-  { deltaRow: -1, deltaCol: 0 },
-  { deltaRow: 1, deltaCol: 0 },
-  { deltaRow: 0, deltaCol: 1 }
-];
-
-class ExpeditionQueue {
-  constructor() {
-    this.voyageLog = [];
-    this.frontIndex = 0;
-  }
-  dispatch(item) {
-    this.voyageLog.push(item);
-  }
-  retrieve() {
-    if (this.isEmpty()) return undefined;
-    const item = this.voyageLog[this.frontIndex];
-    this.frontIndex++;
-    return item;
-  }
-  isEmpty() {
-    return this.frontIndex >= this.voyageLog.length;
-  }
-}
-
-function pathfinderRevised(initialCol, initialRow, targetSequence) {
-  const visitedFragmentLengths = new Map();
-  const journeyQueue = new ExpeditionQueue();
-
-  const startPoint = {
-    r: initialRow,
-    c: initialCol,
-    steps: 0,
-    fragment: targetSequence
-  };
-
-  journeyQueue.dispatch(startPoint);
-  visitedFragmentLengths.set(`${initialRow},${initialCol}`, targetSequence.length);
-
-  let minimumPathCost = Infinity;
-
-  while (!journeyQueue.isEmpty()) {
-    const currentPoint = journeyQueue.retrieve();
-    const { r: currentR, c: currentC, steps: currentSteps, fragment: currentFragment } = currentPoint;
-
-    if (currentFragment.length === 0) {
-      minimumPathCost = currentSteps;
-      break; 
-    }
-
-    for (const direction of cardinalDirections) {
-      const nextR = currentR + direction.deltaRow;
-      const nextC = currentC + direction.deltaCol;
-      const incrementedSteps = currentSteps + 1;
-
-      if (nextR < 0 || nextC < 0 || nextR >= currentGridHeight || nextC >= currentGridWidth) {
-        continue;
-      }
-
-      let nextFragmentToMatch = currentFragment;
-      const cellSymbol = currentGridContent[nextR][nextC];
-
-      if (nextFragmentToMatch.length > 0 && cellSymbol === nextFragmentToMatch[0]) {
-        nextFragmentToMatch = nextFragmentToMatch.substring(1);
-      }
-
-      const cellKey = `${nextR},${nextC}`;
-      const recordedMinFragmentLength = visitedFragmentLengths.get(cellKey);
-
-      if (recordedMinFragmentLength !== undefined && recordedMinFragmentLength <= nextFragmentToMatch.length) {
-        continue; 
-      }
-
-      visitedFragmentLengths.set(cellKey, nextFragmentToMatch.length);
-      journeyQueue.dispatch({ r: nextR, c: nextC, steps: incrementedSteps, fragment: nextFragmentToMatch });
-    }
-  }
-  return minimumPathCost;
-}
-
-function* lineIterator(text) {
-  const lines = text.trim().split('\n');
-  let index = 0;
-  while (index < lines.length) {
-    yield lines[index++];
-  }
-}
-
-const dataLines = lineIterator(inputData);
-
-function processAllScenarios() {
-  while (true) {
-    const dimensionsLine = dataLines.next().value;
-    const dimensions = dimensionsLine.split(' ').map(s => parseInt(s, 10));
-
-    currentGridWidth = dimensions[0];
-    currentGridHeight = dimensions[1];
-
-    if (currentGridWidth === 0 && currentGridHeight === 0) {
-      break; 
-    }
-
-    currentGridContent = [];
-    let startPosition = { col: -1, row: -1 };
-
-    for (let rIdx = 0; rIdx < currentGridHeight; rIdx++) {
-      const rowString = dataLines.next().value;
-      const rowCharacters = rowString.split('');
-      currentGridContent.push(rowCharacters);
-
-      for (let cIdx = 0; cIdx < rowCharacters.length; cIdx++) {
-        if (rowCharacters[cIdx] === 'S') {
-          startPosition.col = cIdx;
-          startPosition.row = rIdx;
-          break; 
-        }
-      }
-    }
-
-    const challengeSequences = [
-      { keyFragment: "2345G", label: 1 },
-      { keyFragment: "3451G", label: 2 },
-      { keyFragment: "4512G", label: 3 },
-      { keyFragment: "5123G", label: 4 },
-      { keyFragment: "1234G", label: 5 }
+function findPathCost(startCol, startRow, targetSeq) {
+    const movementDirections = [
+        { dr: 0, dc: -1 }, // Left
+        { dr: -1, dc: 0 }, // Up
+        { dr: 1, dc: 0 },  // Down
+        { dr: 0, dc: 1 }   // Right
     ];
 
-    const outcomeRecords = [];
+    // Use a Map for memoization, key: "row,col", value: min_remaining_sequence_length
+    const minRemainingSeqLengthAtCoord = new Map();
 
-    for (const challenge of challengeSequences) {
-      const computedSteps = pathfinderRevised(startPosition.col, startPosition.row, challenge.keyFragment);
-      outcomeRecords.push({ label: challenge.label, steps: computedSteps });
+    // Queue for BFS, storing state objects
+    const explorationQueue = [
+        { col: startCol, row: startRow, pathLength: 0, remainingSequence: targetSeq }
+    ];
+
+    // Initialize memoization map for the start point
+    minRemainingSeqLengthAtCoord.set(`${startRow},${startCol}`, targetSeq.length);
+
+    // BFS traversal
+    while (explorationQueue.length > 0) {
+        // Dequeue the current state
+        const currentState = explorationQueue.shift();
+        const { col: currentCol, row: currentRow, pathLength: currentPathLength, remainingSequence: currentSequence } = currentState;
+
+        // If the target sequence is fully matched, this is the shortest path due to BFS
+        if (currentSequence.length === 0) {
+            return currentPathLength;
+        }
+
+        // Explore neighbors
+        for (const direction of movementDirections) {
+            const nextCol = currentCol + direction.dc;
+            const nextRow = currentRow + direction.dr;
+            let nextSequence = currentSequence;
+
+            // Boundary checks using global grid dimensions
+            if (nextCol < 0 || nextRow < 0 || nextCol >= gridDimensions[0] || nextRow >= gridDimensions[1]) {
+                continue;
+            }
+
+            // Check if the grid character matches the first char of the remaining sequence
+            const cellChar = gridMap[nextRow][nextCol];
+            if (cellChar === currentSequence[0]) {
+                nextSequence = currentSequence.substring(1); // Use substring instead of slice
+            }
+
+            const newPathLength = currentPathLength + 1;
+
+            // Check memoization for the next state
+            const existingMinSeqLength = minRemainingSeqLengthAtCoord.get(`${nextRow},${nextCol}`);
+
+            // If this path is better (or new) for this coordinate in terms of remaining sequence length,
+            // update memo and enqueue. If equal or worse, skip.
+            if (existingMinSeqLength === undefined || nextSequence.length < existingMinSeqLength) {
+                minRemainingSeqLengthAtCoord.set(`${nextRow},${nextCol}`, nextSequence.length);
+                explorationQueue.push({
+                    col: nextCol,
+                    row: nextRow,
+                    pathLength: newPathLength,
+                    remainingSequence: nextSequence
+                });
+            }
+        }
     }
 
-    outcomeRecords.sort((a, b) => a.steps - b.steps);
-
-    const ultimateResult = outcomeRecords[0];
-    if (ultimateResult.steps === Infinity) {
-      console.log("NA");
-    } else {
-      console.log(`${ultimateResult.label} ${ultimateResult.steps}`);
-    }
-  }
+    // If the queue becomes empty and target sequence was not matched
+    return Infinity;
 }
 
-processAllScenarios();
+// Global variables for grid dimensions and map, as used by the original BFS
+let gridDimensions;
+let gridMap;
+
+// Read input
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = fileContent.trim().split("\n");
+
+let lineIndex = 0; // To manage reading lines from inputLines
+
+// Main processing loop using a do-while structure
+do {
+    gridDimensions = inputLines[lineIndex++].split(" ").map(Number);
+    const [width, height] = gridDimensions;
+
+    if (width === 0 && height === 0) {
+        break; // Exit condition for the main loop
+    }
+
+    gridMap = [];
+    let initialPosition = []; // Stores [col, row]
+
+    // Parse the grid and find the starting position
+    for (let r = 0; r < height; r++) {
+        const rowChars = inputLines[lineIndex++].split("");
+        const startCharIndex = rowChars.indexOf("S");
+        if (startCharIndex !== -1) {
+            initialPosition = [startCharIndex, r];
+        }
+        gridMap.push(rowChars);
+    }
+
+    // Define the target sequences and their original indices
+    const targetSequences = [
+        { seq: "2345G", originalIndex: 1 },
+        { seq: "3451G", originalIndex: 2 },
+        { seq: "4512G", originalIndex: 3 },
+        { seq: "5123G", originalIndex: 4 },
+        { seq: "1234G", originalIndex: 5 }
+    ];
+
+    // Use map to generate solution candidates by calling findPathCost for each target sequence
+    const solutionCandidates = targetSequences.map(target => {
+        const pathResult = findPathCost(initialPosition[0], initialPosition[1], target.seq);
+        return { cost: pathResult, identifier: target.originalIndex };
+    });
+
+    // Sort the candidates by cost in ascending order
+    solutionCandidates.sort((a, b) => a.cost - b.cost);
+
+    // Output the result based on the best solution
+    const bestSolution = solutionCandidates[0];
+    if (bestSolution.cost === Infinity) {
+        console.log("NA");
+    } else {
+        console.log(`${bestSolution.identifier} ${bestSolution.cost}`);
+    }
+
+} while (true); // Loop continues until an explicit break statement is encountered

@@ -1,13 +1,17 @@
-function ProcessData(rawSequence) {
-    const dataElements = rawSequence.split(/\s+/).filter(Boolean).map(Number);
-    const [totalItems, initialItemsCount, baseValue] = dataElements;
+function processInput(inputString) {
+    const [totalElements, firstSegmentCount, baseNumber] = inputString.trim().split(" ").map(Number);
 
-    const primarySegment = Array(initialItemsCount).fill(baseValue);
-    const alternateValue = (baseValue === 1) ? 2 : (baseValue - 1);
-    const secondarySegment = Array(totalItems - initialItemsCount).fill(alternateValue);
+    const sequence = Array.from({ length: totalElements }, (_, currentIdx) => {
+        if (currentIdx < firstSegmentCount) {
+            return baseNumber;
+        } else {
+            return baseNumber === 1 ? 2 : baseNumber - 1;
+        }
+    });
 
-    const finalOutput = primarySegment.concat(secondarySegment).join(' ');
+    const outputLine = sequence.join(" ") + " ";
 
-    console.log(finalOutput);
+    console.log(outputLine);
 }
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

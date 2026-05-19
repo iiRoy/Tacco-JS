@@ -1,46 +1,41 @@
-// This function determines a financial outcome based on provided input data.
-function computeFinancialOutcome(inputString)
-{
-    // Split the raw input string into an array of individual segments
-    // using whitespace or newlines as delimiters.
-    var       numericSegments       = inputString.split( /[\s\n]+/ );
+function processInput(rawData) {
+  // Divide the raw input string into an array of string segments,
+  // using any single whitespace character or newline as a delimiter.
+  var parsedValues = rawData.split(/\s|\n/);
 
-    // Initialize a variable to accumulate the computed value.
-    var finalTally = 0.0; /* Use a float for precision */
+  // Initialize a variable to accumulate the total calculated cost.
+  var totalCost = 0;
 
-    // Evaluate the first condition based on the average of the first two segments
-    // compared to the third segment.
-    if ( ( parseFloat(numericSegments[0]) + parseFloat(numericSegments[1]) ) / 2.0 > parseFloat(numericSegments[2]) )
-    {
-        // If the condition is true, calculate a portion of the tally
-        // involving the third segment, a constant factor, and the minimum of two subsequent segments.
-        finalTally += parseFloat(numericSegments[2]) * 2.0 * Math.min( parseFloat(numericSegments[3]) , parseFloat(numericSegments[4]) );
-    }
-    else
-    {
-        // Otherwise, calculate a different portion of the tally
-        // involving the sum of the first two segments and the minimum of two subsequent segments.
-        finalTally += ( parseFloat(numericSegments[0]) + parseFloat(numericSegments[1]) ) * Math.min( parseFloat(numericSegments[3]) , parseFloat(numericSegments[4]) );
-    }
+  // First conditional block: Determines a portion of the total cost.
+  // It compares the average of the first two parsed values with the third value.
+  if ( (parsedValues[0] * 1 + parsedValues[1] * 1) / 2 > parsedValues[2] * 1 ) {
+    // If the condition is true, add a cost based on the third value, doubled,
+    // and multiplied by the minimum of the fourth and fifth values.
+    totalCost += parsedValues[2] * 2 * Math.min(parsedValues[3] * 1, parsedValues[4] * 1);
+  }
+  else {
+    // Otherwise, add a cost based on the sum of the first two values,
+    // multiplied by the minimum of the fourth and fifth values.
+    totalCost += (parsedValues[0] * 1 + parsedValues[1] * 1) * Math.min(parsedValues[3] * 1, parsedValues[4] * 1);
+  }
 
-    // Evaluate a second condition comparing the fourth and fifth segments.
-    if ( parseFloat(numericSegments[3]) > parseFloat(numericSegments[4]) )
-    {
-        // If the fourth segment is greater, add a value derived from the first segment
-        // multiplied by the difference between the fourth and fifth.
-        finalTally += parseFloat(numericSegments[0]) * (parseFloat(numericSegments[3]) - parseFloat(numericSegments[4]));
-    }
-    else
-    {
-        // If the fifth segment is greater or equal, add a value derived from the second segment
-        // multiplied by the difference between the fifth and fourth.
-        finalTally += parseFloat(numericSegments[1]) * (parseFloat(numericSegments[4]) - parseFloat(numericSegments[3]));
-    }
+  // Second conditional block: Adds another portion to the total cost.
+  // It compares the fourth and fifth parsed values.
+  if (parsedValues[3] * 1 > parsedValues[4] * 1) {
+    // If the fourth value is greater, add a cost based on the first value
+    // multiplied by the difference between the fourth and fifth values.
+    totalCost += parsedValues[0] * (parsedValues[3] * 1 - parsedValues[4] * 1);
+  }
+  else {
+    // Otherwise (if the fifth value is greater or equal), add a cost based on the second value
+    // multiplied by the difference between the fifth and fourth values.
+    totalCost += parsedValues[1] * (parsedValues[4] * 1 - parsedValues[3] * 1);
+  }
 
-    // Output the final calculated tally to the console.
-    console.log(finalTally);
+  // Output the final computed total cost to the console.
+  console.log(totalCost);
 }
 
-// Execute the main calculation function with data read from standard input.
-// The input is read as a UTF-8 string.
-computeFinancialOutcome( require('fs').readFileSync('/dev/stdin', 'utf8') );
+// Execute the main processing function by reading input from standard input.
+// The input is read as a UTF-8 encoded string.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,38 +1,40 @@
-// This script reads input lines from standard input,
-// processes each line to check a geometric condition,
-// and prints 'YES' or 'NO' accordingly.
+// This script processes lines from standard input to perform a specific geometric calculation.
+// Each line is expected to contain eight space-separated numeric values representing coordinates.
 
-require("fs")
-  .readFileSync(
-    "/dev/stdin", // Path to standard input
-    "utf8"       // Encoding type for the file content
-  )
-  .trim()        // Remove leading/trailing whitespace from the entire input string
-  .split('\n')   // Split the input string into an array of individual lines
-  .map(
-    function( lineContent ) { // Iterate over each line obtained from the input
-      // Split the current line by space characters to get an array of string values.
-      // These values are expected to be numeric coordinates or similar data.
-      let parsedValues = lineContent.split(' ');
+// Obtain the Node.js file system module, which is necessary for reading input.
+const fileSystemModuleReference = require("fs");
 
-      // Perform a specific mathematical calculation using elements from the parsed values array.
-      // This formula typically represents a determinant or a cross product component,
-      // often used in computational geometry to determine collinearity of points,
-      // parallelism of vectors, or the area of a polygon defined by points.
-      // The indices correspond to specific coordinate components (e.g., x1, y1, x2, y2, etc.).
-      const calculationResult = (
-        (Number(parsedValues[2]) - Number(parsedValues[0])) * (Number(parsedValues[6]) - Number(parsedValues[4])) +
-        (Number(parsedValues[3]) - Number(parsedValues[1])) * (Number(parsedValues[7]) - Number(parsedValues[5]))
-      );
+// Read the entire content from standard input (`/dev/stdin`).
+// The content is decoded as UTF-8 text.
+// Any leading or trailing whitespace is removed using `.trim()`.
+// Finally, the content is split into an array of individual lines based on the newline character.
+const processedInputLines = fileSystemModuleReference.readFileSync("/dev/stdin", "utf8").trim().split('\n');
 
-      // Check if the absolute value of the calculation result is extremely close to zero.
-      // A small epsilon (1e-10) is used to account for floating-point inaccuracies.
-      // If the result is effectively zero, it indicates a specific condition (e.g., collinearity or parallelism),
-      // for which the output should be 'NO'. Otherwise, for a non-zero result, it's 'YES'.
-      console.log(
-        Math.abs(calculationResult) < 1e-10
-          ? 'NO' // Condition met
-          : 'YES' // Condition not met
-      );
+// Iterate over each line that was read from the input.
+// The `.map()` method is used here to process each line, though its return value (an array of `undefined`s) is not utilized.
+processedInputLines.map(function(currentLineSegment) {
+    // Split the current line string into an array of its constituent parts.
+    // A space character (' ') is used as the delimiter.
+    // These parts are initially strings but will be implicitly converted to numbers during arithmetic operations.
+    let numericalCoordinateValues = currentLineSegment.split(' ');
+
+    // Perform a specific mathematical computation using the extracted numerical values.
+    // The expression is structured as: (x_b - x_a) * (y_d - y_c) + (y_b - y_a) * (x_d - x_c)
+    // where the indices map to:
+    // numericalCoordinateValues[0] = x_a, numericalCoordinateValues[1] = y_a
+    // numericalCoordinateValues[2] = x_b, numericalCoordinateValues[3] = y_b
+    // numericalCoordinateValues[4] = x_c, numericalCoordinateValues[5] = y_c
+    // numericalCoordinateValues[6] = x_d, numericalCoordinateValues[7] = y_d
+    const calculatedGeometricValue = (numericalCoordinateValues[2] - numericalCoordinateValues[0]) * (numericalCoordinateValues[6] - numericalCoordinateValues[4]) +
+                                     (numericalCoordinateValues[3] - numericalCoordinateValues[1]) * (numericalCoordinateValues[7] - numericalCoordinateValues[5]);
+
+    // Check if the absolute value of the computed result is extremely close to zero.
+    // A small floating-point epsilon (1e-10) is used for this comparison to account for precision issues.
+    // If the absolute value is less than this threshold, it signifies a 'NO' condition.
+    // Otherwise, the condition is 'YES'.
+    if (Math.abs(calculatedGeometricValue) < 1e-10) {
+        console.log('NO'); // Output 'NO' to standard output.
+    } else {
+        console.log('YES'); // Output 'YES' to standard output.
     }
-  );
+});

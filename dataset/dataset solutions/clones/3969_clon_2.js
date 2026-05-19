@@ -1,43 +1,43 @@
-console.log(( ( inputData => { /* This function processes input to find matching coordinate pairs. */
+console.log(( ( inputStr ) => {
+  // This section parses the input string.
+  // The first line contains 'numPoints', and subsequent lines contain point coordinates.
+  const [ [ numPoints ], ...tempData ] = inputStr
+    .trim() // Remove any leading or trailing whitespace from the input.
+    .split('\n') // Split the input string into an array of lines.
+    .map( ( rowStr ) => rowStr.split(' ').map( ( valStr ) => parseInt(valStr, 10) ) ); // For each line, split by space and convert each part to an integer.
 
-  // Parse the input string: trim, split by newline, then split each line by space,
-  // converting values to integers. The first line gives the count of pairs.
-  const [ [ numPairs ], ...allPoints ] = inputData
-    .trim()
-    .split('\n')
-    .map( rowText => rowText.split(' ').map( numTxt => numTxt | 0 ) );
+  // Separate the parsed data into two distinct arrays: red points and blue points.
+  // The first 'numPoints' rows after the initial 'numPoints' value are red points.
+  const redPoints = tempData.slice(0, numPoints);
+  // The next 'numPoints' rows are blue points.
+  const bluePoints = tempData.slice(numPoints, 2 * numPoints);
 
-  // Separate the parsed points into two distinct sets: primary (red) and secondary (blue).
-  const primaryPoints = allPoints.slice( 0, numPairs );
-  const secondaryPoints = allPoints.slice( numPairs, 2 * numPairs );
+  // Sort the array of red points.
+  // The sorting criterion is based on the minimum of the x and y coordinates of each point.
+  redPoints.sort( ( pointA, pointB ) => Math.min(pointA[0], pointA[1]) - Math.min(pointB[0], pointB[1]) );
 
-  // Sort the primary set. The sorting criteria is based on the minimum of the two coordinates.
-  primaryPoints.sort( ( itemOne, itemTwo ) => Math.min( itemOne[0], itemOne[1] ) - Math.min( itemTwo[0], itemTwo[1] ) );
+  // Sort the array of blue points using the same criterion.
+  bluePoints.sort( ( pointA, pointB ) => Math.min(pointA[0], pointA[1]) - Math.min(pointB[0], pointB[1]) );
 
-  // Sort the secondary set using the same criteria.
-  secondaryPoints.sort( ( itemOne, itemTwo ) => Math.min( itemOne[0], itemOne[1] ) - Math.min( itemTwo[0], itemTwo[1] ) );
+  // Initialize a counter for successful matches and an index for optimizing the inner loop.
+  let matchCount = 0;
+  let nextBlueIdx = 0; // This variable helps to avoid re-checking blue points that have already been considered.
 
-  // Initialize a counter for successful matches and an index to optimize the inner loop.
-  let successfulMatches = 0, searchOffset = 0;
-
-  // Iterate through each point in the primary (red) set.
-  for ( let primaryIdx = 0; primaryIdx < numPairs; primaryIdx++ ) {
-
-    // For each primary point, iterate through the secondary (blue) set, starting from the optimized offset.
-    for ( let secondaryIdx = searchOffset; secondaryIdx < numPairs; secondaryIdx++ ) {
-
-      // Check if the current primary point's coordinates are both smaller than the current secondary point's coordinates.
-      // This is the core matching condition.
-      if ( primaryPoints[primaryIdx][0] < secondaryPoints[secondaryIdx][0] && primaryPoints[primaryIdx][1] < secondaryPoints[secondaryIdx][1] ) {
-
-        successfulMatches++; // Increment the counter if a match is found.
-        searchOffset = secondaryIdx + 1; // Update the offset for the next primary point to avoid re-checking.
-        break; // A primary point can only match with one secondary point in this specific problem logic.
+  // Iterate through each red point.
+  for ( let redIdx = 0; redIdx < numPoints; redIdx++ ) {
+    // For each red point, iterate through the blue points starting from 'nextBlueIdx'.
+    for ( let blueIdx = nextBlueIdx; blueIdx < numPoints; blueIdx++ ) {
+      // Check if the current red point can be matched with the current blue point.
+      // A match occurs if the red point's x-coordinate is less than the blue point's x-coordinate,
+      // AND the red point's y-coordinate is less than the blue point's y-coordinate.
+      if ( redPoints[redIdx][0] < bluePoints[blueIdx][0] && redPoints[redIdx][1] < bluePoints[blueIdx][1] ) {
+        matchCount++; // Increment the total count of matches.
+        nextBlueIdx = blueIdx + 1; // Update 'nextBlueIdx' to start the next search from the point after the current blue point.
+        break; // A match has been found for the current red point, so move to the next red point.
       }
     }
   }
 
-  // Return the final count of successful matches as a string.
-  return `${successfulMatches}`;
-
-} )( require('fs').readFileSync('/dev/stdin', 'utf8') ) ); // Read input from standard input using Node.js file system module.
+  // Return the final count of matches as a string.
+  return `${matchCount}`;
+} )( require('fs').readFileSync('/dev/stdin', 'utf8') ) ); // Read the entire content of standard input as a UTF-8 string.

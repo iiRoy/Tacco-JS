@@ -1,20 +1,30 @@
-const performComputation = (inputStringContent) => {
-    const numericalComponents = inputStringContent
-        .trim()
-        .match(/-?\d+/g)
-        .slice(0, 3)
-        .map(val => parseInt(val, 10));
+const processInputAndClassify = (sourceData) => {
+  const numericComponents = sourceData.split(" ").map(Number);
 
-    const uniqueValueCollection = new Set(numericalComponents);
-    
-    const finalOutcome = uniqueValueCollection.size;
+  const primaryValue = numericComponents[0];
+  const secondaryValue = numericComponents[1];
+  const tertiaryValue = numericComponents[2];
 
-    console.log(finalOutcome);
+  const uniqueValues = new Set([primaryValue, secondaryValue, tertiaryValue]);
+  const distinctCount = uniqueValues.size;
+
+  let classificationResult;
+  switch (distinctCount) {
+    case 1:
+      classificationResult = 1;
+      break;
+    case 2:
+      classificationResult = 2;
+      break;
+    case 3:
+      classificationResult = 3;
+      break;
+    default:
+      // This case should ideally not be reached with exactly 3 inputs
+      classificationResult = -1;
+  }
+
+  console.log(classificationResult);
 };
 
-const initiateProcess = (resourcePath) => {
-    const rawDataSource = require("fs").readFileSync(resourcePath, 'utf-8');
-    performComputation(rawDataSource);
-};
-
-initiateProcess('/dev/stdin');
+processInputAndClassify(require("fs").readFileSync('/dev/stdin', 'utf-8'));

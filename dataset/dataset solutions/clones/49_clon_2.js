@@ -1,36 +1,39 @@
-function Point2D(horiz, vert) {
-  this.horiz = horiz;
-  this.vert = vert;
+function Point2D(coordX, coordY) {
+  this.coordX = coordX;
+  this.coordY = coordY;
 }
-Point2D.prototype.diff = function(otherPoint) {
-  return new Point2D(this.horiz - otherPoint.horiz, this.vert - otherPoint.vert);
-};
-Point2D.prototype.cross = function(otherVec) {
-  return this.horiz * otherVec.vert - this.vert * otherVec.horiz;
+
+Point2D.prototype.subtract = function(otherVector) {
+  return new Point2D(this.coordX - otherVector.coordX, this.coordY - otherVector.coordY);
 };
 
-(function(sourceContent) {
-  var inputRows = sourceContent.replace(/\n$/, '').split('\n');
-  while (inputRows.length > 0) {
-    var currentCoords = inputRows.shift().split(' ').map(Number);
+Point2D.prototype.crossProduct = function(otherVector) {
+  return this.coordX * otherVector.coordY - this.coordY * otherVector.coordX;
+};
 
-    var pointA = new Point2D(currentCoords.shift(), currentCoords.shift());
-    var pointB = new Point2D(currentCoords.shift(), currentCoords.shift());
-    var pointC = new Point2D(currentCoords.shift(), currentCoords.shift());
-    var checkPoint = new Point2D(currentCoords.shift(), currentCoords.shift());
+(function(rawData) {
+  let inputLines = rawData.replace(/\n$/, '').split('\n');
 
-    var vectorAB = pointB.diff(pointA);
-    var vectorBP = checkPoint.diff(pointB);
-    var vectorBC = pointC.diff(pointB);
-    var vectorCP = checkPoint.diff(pointC);
-    var vectorCA = pointA.diff(pointC);
-    var vectorAP = checkPoint.diff(pointA);
+  while (inputLines.length > 0) {
+    let currentCoords = inputLines.shift().split(' ').map(Number);
 
-    var sign1 = vectorAB.cross(vectorBP);
-    var sign2 = vectorBC.cross(vectorCP);
-    var sign3 = vectorCA.cross(vectorAP);
+    let vertexA = new Point2D(currentCoords.shift(), currentCoords.shift());
+    let vertexB = new Point2D(currentCoords.shift(), currentCoords.shift());
+    let vertexC = new Point2D(currentCoords.shift(), currentCoords.shift());
+    let testPoint = new Point2D(currentCoords.shift(), currentCoords.shift());
 
-    if ((sign1 > 0 && sign2 > 0 && sign3 > 0) || (sign1 < 0 && sign2 < 0 && sign3 < 0)) {
+    let vecAB = vertexB.subtract(vertexA);
+    let vecBP = testPoint.subtract(vertexB);
+    let vecBC = vertexC.subtract(vertexB);
+    let vecCP = testPoint.subtract(vertexC);
+    let vecCA = vertexA.subtract(vertexC);
+    let vecAP = testPoint.subtract(vertexA);
+
+    let cp1 = vecAB.crossProduct(vecBP);
+    let cp2 = vecBC.crossProduct(vecCP);
+    let cp3 = vecCA.crossProduct(vecAP);
+    
+    if ((cp1 > 0 && cp2 > 0 && cp3 > 0) || (cp1 < 0 && cp2 < 0 && cp3 < 0)) {
       console.log('YES');
       continue;
     }

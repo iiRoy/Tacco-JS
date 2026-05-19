@@ -1,83 +1,76 @@
-function PrimaryProcessor(rawData) {
-  // Split the raw input string by newline characters
-  rawData = rawData.split("\n");
+function ProcessInput(rawData) {
+  // Split the raw input string into individual lines.
+  let lines = rawData.split("\n");
 
-  /*
-   * Parse the first line to extract the dimensions.
-   * firstSize represents the length of the first sequence.
-   */
-  var firstSize = parseInt(rawData[0].split(" ")[0]);
+  // Parse the dimensions N and M from the first line.
+  let dimensions = lines[0].split(" ");
+  let firstDimension = parseInt(dimensions[0]);
+  let secondDimension = parseInt(dimensions[1]);
 
-  // secondSize represents the length of the second sequence.
-  var secondSize = parseInt(rawData[0].split(" ")[1]);
+  // Parse sequence A (S in original) from the second line.
+  let sequenceA = lines[1].split(" ").map(item => parseInt(item));
 
-  // Convert the second line into an array of integers for the first sequence.
-  var firstSequence = rawData[1].split(" ").map(elementVal => parseInt(elementVal));
+  // Parse sequence B (T in original) from the third line.
+  let sequenceB = lines[2].split(" ").map(item => parseInt(item));
 
-  // Convert the third line into an array of integers for the second sequence.
-  var secondSequence = rawData[2].split(" ").map(itemNum => parseInt(itemNum));
+  // Define the modulo value for calculations.
+  const moduloVal = Math.pow(10, 9) + 7;
 
-  // Define a modulus constant for calculations, typically 10^9 + 7.
-  var divisorConstant = Math.pow(10, 9) + 7;
+  // Initialize a 2D array for dynamic programming.
+  // This grid will store intermediate results.
+  let dynamicProgGrid = new Array(firstDimension + 1).fill(0);
+  // Initialize a 1D array, though it's not used in the final calculation.
+  let cumulativeSums = new Array(firstDimension + 1).fill(0);
 
-  // Initialize a 2D array for dynamic programming, sized (firstSize+1) x (secondSize+1).
-  var dynamicTable = new Array(firstSize + 1).fill(0);
-
-  // This array is declared but not utilized in the provided logic; it is kept for structural consistency.
-  var cumulativeSums = new Array(firstSize + 1).fill(0);
-
-  // Initialize each row of the dynamic programming table as an array filled with zeros.
-  for (var rowIdx = 0; rowIdx < firstSize + 1; rowIdx++) {
-    var tempRow = new Array(secondSize + 1).fill(0);
-    dynamicTable[rowIdx] = tempRow;
+  // Populate the dynamic programming grid with sub-arrays.
+  for (let rowIdx = 0; rowIdx < firstDimension + 1; rowIdx++) {
+    let tempRow = new Array(secondDimension + 1).fill(0);
+    dynamicProgGrid[rowIdx] = tempRow;
   }
 
-  // Iterate through both sequences to populate the dynamic programming table.
-  for (var currentR = 0; currentR < firstSize; currentR++) {
-    for (var currentC = 0; currentC < secondSize; currentC++) {
-      // If elements at current indices match, update the DP table.
-      if (firstSequence[currentR] == secondSequence[currentC]) {
-        dynamicTable[currentR + 1][currentC + 1] = (dynamicTable[currentR][currentC + 1] + dynamicTable[currentR + 1][currentC] + 1) % divisorConstant;
-      }
-      // If elements do not match, calculate based on previous states, adjusting for modulus.
-      else {
-        dynamicTable[currentR + 1][currentC + 1] = (dynamicTable[currentR][currentC + 1] + dynamicTable[currentR + 1][currentC] + (divisorConstant - dynamicTable[currentR][currentC])) % divisorConstant;
+  // Core dynamic programming logic to compute the number of common subsequences.
+  // Iterate through each element of sequence A and sequence B.
+  for (let rowIdx = 0; rowIdx < firstDimension; rowIdx++) {
+    for (let colIdx = 0; colIdx < secondDimension; colIdx++) {
+      // If the current elements from both sequences match.
+      if (sequenceA[rowIdx] === sequenceB[colIdx]) {
+        // The count is the sum of (dp[i][j+1] + dp[i+1][j] + 1) modulo `moduloVal`.
+        // The `+1` accounts for the new common subsequence formed by the current match.
+        dynamicProgGrid[rowIdx + 1][colIdx + 1] = (dynamicProgGrid[rowIdx][colIdx + 1] + dynamicProgGrid[rowIdx + 1][colIdx] + 1) % moduloVal;
+      } else {
+        // If the current elements do not match.
+        // The count is the sum of (dp[i][j+1] + dp[i+1][j] - dp[i][j]) modulo `moduloVal`.
+        // We add `moduloVal` before taking modulo to handle potential negative results from subtraction.
+        dynamicProgGrid[rowIdx + 1][colIdx + 1] = (dynamicProgGrid[rowIdx][colIdx + 1] + dynamicProgGrid[rowIdx + 1][colIdx] + (moduloVal - dynamicProgGrid[rowIdx][colIdx])) % moduloVal;
       }
     }
   }
 
-  // The final result is derived from the last cell of the DP table, plus one.
-  var finalResult = dynamicTable[firstSize][secondSize] + 1;
+  // The final result is the value at the bottom-right of the DP grid plus one (for the empty subsequence).
+  let finalResult = dynamicProgGrid[firstDimension][secondDimension] + 1;
 
   // Output the computed answer to the console.
   console.log('%s', finalResult);
-
-  // Return the calculated final result.
+  // Return the final computed answer.
   return finalResult;
 }
 
-
-// Function for local debugging or testing purposes within a web environment.
-function validateExecution(testCaseId) {
-  // Retrieve the input value from a DOM element identified by 'input' + testCaseId.
-  var testInput = document.getElementById("input" + testCaseId).value;
-
-  // Process the input using the main algorithm.
-  var calculatedAnswer = PrimaryProcessor(testInput);
-
-  // Initialize the outcome status as "Wrong Answer".
-  var outcomeStatus = "WA";
-
-  // Compare the calculated answer with the expected output from a DOM element.
-  if (calculatedAnswer == document.getElementById("output" + testCaseId).value.split("\n")[0]) {
-    // If they match, set the outcome status to "Accepted".
-    outcomeStatus = "AC";
+// This function is for a specific testing environment, not part of the main algorithm.
+function VerifySolution(testCaseNum) {
+  // Retrieve input data from a specific HTML element.
+  let testInputData = document.getElementById("input" + testCaseNum).value;
+  // Compute the answer using the main processing function.
+  let computedAnswer = ProcessInput(testInputData);
+  // Initialize the test outcome as "Wrong Answer".
+  let testOutcome = "WA";
+  // Compare the computed answer with the expected output from another HTML element.
+  if (computedAnswer == document.getElementById("output" + testCaseNum).value.split("\n")[0]) {
+    // If they match, set the outcome to "Accepted".
+    testOutcome = "AC";
   }
-
-  // Display the outcome status in a designated result element.
-  document.getElementById("result" + testCaseId).innerHTML = outcomeStatus;
+  // Display the test outcome in a designated HTML element.
+  document.getElementById("result" + testCaseNum).innerHTML = testOutcome;
 }
 
-
-// Execute the primary processing function with input read from standard input in Node.js environment.
-PrimaryProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Main execution block: read input from standard input and process it.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

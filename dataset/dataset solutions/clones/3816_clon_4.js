@@ -1,32 +1,38 @@
-const fileSystemUtilities = require('node:fs');
+const fileSystem = require("fs");
 
-const inputDataSource = (function(textDocument) {
-    const parsedTokens = textDocument.trim().split(/\s+/g);
-    let currentPosition = 0;
+const processInputData = function(rawInputContent) {
+    const inputTokens = rawInputContent.trim().split(/\s+/g);
 
-    return {
-        acquireInteger: () => {
-            const numericalValue = parseInt(parsedTokens[currentPosition], 10);
-            currentPosition++;
-            return numericalValue;
-        },
-        acquireString: () => {
-            const textValue = parsedTokens[currentPosition];
-            currentPosition++;
-            return textValue;
+    let currentTokenIndex = 0;
+
+    const retrieveNextInteger = () => {
+        if (currentTokenIndex >= inputTokens.length) {
+            throw new Error("Input stream exhausted unexpectedly.");
         }
+        const parsedValue = parseInt(inputTokens[currentTokenIndex], 10);
+        currentTokenIndex++;
+        return parsedValue;
     };
-})(fileSystemUtilities.readFileSync('/dev/stdin', 'utf8'));
 
-const totalElements = inputDataSource.acquireInteger();
-const sequenceOfNumbers = Array.from({ length: totalElements }, () => inputDataSource.acquireInteger());
+    const totalNumbersToProcess = retrieveNextInteger();
 
-const consecutiveSequenceLengths = sequenceOfNumbers.reduce(function(lengthMap, currentNumber) {
-    const previousNumberLength = lengthMap.has(currentNumber - 1) ? lengthMap.get(currentNumber - 1) : 0;
-    lengthMap.set(currentNumber, previousNumberLength + 1);
-    return lengthMap;
-}, new Map());
+    const numericalSequence = Array.from({ length: totalNumbersToProcess }, retrieveNextInteger);
 
-const maximumConsecutiveLength = Array.from(consecutiveSequenceLengths.values()).reduce((maximum, current) => Math.max(maximum, current), 0);
+    const { maximumConsecutiveLength } = numericalSequence.reduce((accumulator, currentNumber) => {
+        const lengthEndingAtPrevious = accumulator.sequenceLengths.get(currentNumber - 1) || 0;
+        const lengthEndingAtCurrent = lengthEndingAtPrevious + 1;
 
-console.log(totalElements - maximumConsecutiveLength);
+        accumulator.sequenceLengths.set(currentNumber, lengthEndingAtCurrent);
+        accumulator.maximumConsecutiveLength = Math.max(accumulator.maximumConsecutiveLength, lengthEndingAtCurrent);
+
+        return accumulator;
+    }, { sequenceLengths: new Map(), maximumConsecutiveLength: 0 });
+
+    console.log(totalNumbersToProcess - maximumConsecutiveLength);
+};
+
+module.exports = processInputData;
+
+const standardInputPath = "/dev/stdin";
+const contentFromStdin = fileSystem.readFileSync(standardInputPath, "utf8");
+processInputData(contentFromStdin);

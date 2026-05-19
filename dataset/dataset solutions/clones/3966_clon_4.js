@@ -1,53 +1,29 @@
 "use strict";
 
-function acquireSystemInput() {
-  return require("fs").readFileSync("/dev/stdin", "utf8");
+function processInputAndCalculate(rawData) {
+  const tokenizedInput = rawData.split(/\n|\s/);
+
+  const blueCount = Number(tokenizedInput[0]);
+  const redCount = Number(tokenizedInput[blueCount + 1]);
+
+  const blueWords = tokenizedInput.slice(1, blueCount + 1);
+  const redWords = tokenizedInput.slice(blueCount + 2);
+
+  const blueOperations = blueWords.map(wordEntry => ({ term: wordEntry, adjustment: 1 }));
+  const redOperations = redWords.map(wordEntry => ({ term: wordEntry, adjustment: -1 }));
+
+  const allOperations = [...blueOperations, ...redOperations];
+
+  const wordTallyMap = allOperations.reduce((accumulatorMap, currentOperation) => {
+    const currentTally = accumulatorMap.get(currentOperation.term) || 0;
+    accumulatorMap.set(currentOperation.term, currentTally + currentOperation.adjustment);
+    return accumulatorMap;
+  }, new Map());
+
+  const allTallies = Array.from(wordTallyMap.values());
+  const peakScore = Math.max(0, ...allTallies);
+
+  return peakScore;
 }
 
-function decipherTextualData(sourceText) {
-  const allSegments = sourceText.trim().split(/\s+/);
-  
-  const initialQuantity = Number(allSegments[0]);
-
-  const primaryElements = allSegments.slice(1, initialQuantity + 1);
-  const secondaryElements = allSegments.slice(initialQuantity + 2);
-
-  return { primarySet: primaryElements, secondarySet: secondaryElements };
-}
-
-function computeAggregatedScores(structuredData) {
-  const scoreRegistry = new Map();
-
-  structuredData.primarySet.forEach(element => {
-    scoreRegistry.set(element, (scoreRegistry.get(element) || 0) + 1);
-  });
-
-  structuredData.secondarySet.forEach(element => {
-    scoreRegistry.set(element, (scoreRegistry.get(element) || 0) - 1);
-  });
-
-  return scoreRegistry;
-}
-
-function findPeakScore(scoreRegistry) {
-  if (scoreRegistry.size === 0) {
-    return 0;
-  }
-
-  const allScores = Array.from(scoreRegistry.values());
-  const calculatedMax = allScores.reduce((currentMax, value) => {
-    return value > currentMax ? value : currentMax;
-  }, -Infinity);
-
-  return Math.max(0, calculatedMax);
-}
-
-function initiateProcessing(externalInput) {
-  const parsedData = decipherTextualData(externalInput);
-  const finalScores = computeAggregatedScores(parsedData);
-  const ultimateResult = findPeakScore(finalScores);
-  
-  console.log(ultimateResult);
-}
-
-initiateProcessing(acquireSystemInput());
+console.log(processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8")));

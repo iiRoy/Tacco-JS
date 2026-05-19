@@ -1,44 +1,58 @@
 "use strict";
 
-const parseInputData = (rawData) => {
-  const textualNumbers = rawData.trim().split(/\s+/);
-  const numericalSequence = textualNumbers.slice(1).map(s => parseInt(s, 10));
-  return numericalSequence;
+const parseInputData = (rawText) => {
+  const lines = rawText.split("\n");
+  const lengthIndicator = Number(lines[0]);
+  const numberSequence = lines.slice(1, lengthIndicator + 1).map(Number);
+  return { lengthIndicator, numberSequence };
 };
 
-const obtainMinimumOfTwo = (val1, val2) => val1 < val2 ? val1 : val2;
-const obtainMinimumOfThree = (val1, val2, val3) => obtainMinimumOfTwo(val1, obtainMinimumOfTwo(val2, val3));
-const obtainMinimumOfFour = (val1, val2, val3, val4) => obtainMinimumOfTwo(val1, obtainMinimumOfThree(val2, val3, val4));
-const obtainMinimumOfFive = (val1, val2, val3, val4, val5) => obtainMinimumOfTwo(val1, obtainMinimumOfFour(val2, val3, val4, val5));
+const calculateElementCosts = (value) => ({
+  evenParityCost: value === 0 ? 2 : value % 2,
+  oddParityCost: (value + 1) % 2,
+});
 
-const processStepCosts = (previousStates, currentElement) => {
-  const presentValue = currentElement;
-  const costSchemeA = presentValue;
-  const costSchemeB = presentValue === 0 ? 2 : presentValue % 2;
-  const costSchemeC = (presentValue + 1) % 2;
+const processInputData = (rawInput) => {
+  const { lengthIndicator: seqLen, numberSequence: elements } = parseInputData(rawInput);
 
-  const nextState0 = previousStates[0] + costSchemeA;
-  const nextState1 = obtainMinimumOfTwo(previousStates[0], previousStates[1]) + costSchemeB;
-  const nextState2 = obtainMinimumOfThree(previousStates[0], previousStates[1], previousStates[2]) + costSchemeC;
-  const nextState3 = obtainMinimumOfFour(previousStates[0], previousStates[1], previousStates[2], previousStates[3]) + costSchemeB;
-  const nextState4 = obtainMinimumOfFive(previousStates[0], previousStates[1], previousStates[2], previousStates[3], previousStates[4]) + costSchemeA;
+  const initialCostMatrix = [[0, 0, 0, 0, 0]];
 
-  return [nextState0, nextState1, nextState2, nextState3, nextState4];
+  const findMinPrefix = (arr, count) => {
+    let minVal = Infinity;
+    for (let k = 0; k < count; k++) {
+      if (arr[k] < minVal) {
+        minVal = arr[k];
+      }
+    }
+    return minVal;
+  };
+
+  const buildCostMatrixReducer = (accumulatedMatrix, currentElementValue) => {
+    const previousRow = accumulatedMatrix[accumulatedMatrix.length - 1];
+    const { evenParityCost, oddParityCost } = calculateElementCosts(currentElementValue);
+
+    const newRow = Array(5);
+
+    newRow[0] = previousRow[0] + currentElementValue;
+    newRow[1] = findMinPrefix(previousRow, 2) + evenParityCost;
+    newRow[2] = findMinPrefix(previousRow, 3) + oddParityCost;
+    newRow[3] = findMinPrefix(previousRow, 4) + evenParityCost;
+    newRow[4] = findMinPrefix(previousRow, 5) + currentElementValue;
+
+    accumulatedMatrix.push(newRow);
+    return accumulatedMatrix;
+  };
+
+  const finalCostMatrix = elements.reduce(buildCostMatrixReducer, initialCostMatrix);
+
+  const resultRow = finalCostMatrix[seqLen];
+  return Math.min(...resultRow);
 };
 
-const determineOverallMinimum = (finalCosts) => finalCosts.reduce((accumulator, value) => accumulator < value ? accumulator : value, Infinity);
-
-const executeComputation = (sourceData) => {
-  const transformedData = parseInputData(sourceData);
-  const initialCostVector = [0, 0, 0, 0, 0];
-  const resultantCostVector = transformedData.reduce(processStepCosts, initialCostVector);
-  return determineOverallMinimum(resultantCostVector);
+const executeProgram = (inputSource) => {
+  const fileContent = inputSource.readFileSync("/dev/stdin", "utf8");
+  const finalResult = processInputData(fileContent);
+  console.log(finalResult);
 };
 
-const fileAccessor = require("fs");
-const standardInputLocation = "/dev/stdin";
-const characterEncoding = "utf8";
-
-const incomingContent = fileAccessor.readFileSync(standardInputLocation, characterEncoding);
-const finalOutcomeValue = executeComputation(incomingContent);
-process.stdout.write(finalOutcomeValue.toString() + "\n");
+executeProgram(require("fs"));

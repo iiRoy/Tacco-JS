@@ -1,36 +1,22 @@
-// This section handles obtaining raw data from the system's standard input.
-// It leverages Node.js's built-in file system module to access the input source.
-var fileContent = require('fs') // Access the File System module.
-                  .readFileSync('/dev/stdin', 'utf8') // Read the file synchronously from the standard input path, specifying UTF-8 encoding.
-                  .trim(); // Remove any leading or trailing whitespace characters from the acquired string.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim(); // Obtain raw input from standard input, decode as UTF-8, and remove leading/trailing whitespace.
 
-// Next, we process the raw content by breaking it into individual lines.
-// Each line is considered a distinct record for subsequent numerical extraction.
-var contentRows = fileContent.split('\n'); // Divide the entire content string into an array of strings, using newline characters as delimiters.
+var dataRows = rawData.split('\n'); // Divide the complete input string into an array of individual lines, using newline as a delimiter.
 
-// Initialize a variable that will store the cumulative sum of all numerical values encountered.
-var grandTotal = 0; // The aggregate sum is set to an initial value of zero.
+var totalValue = 0; // Initialize an accumulator variable to store the sum of all numbers.
+var currentSegment; // Declare a variable to hold each line as it's processed.
 
-// Declare a temporary variable that will hold each line (record) as it is processed in the loop.
-var currentRecord;
+// Loop through each line in the 'dataRows' array until it's empty.
+while (currentSegment = dataRows.shift()) {
+    // For the current line, split it into an array of strings, using any non-digit character as a separator.
+    var numericParts = currentSegment.split(/\D+/);
 
-// Begin iterating through each available record (line) in the collection.
-// The 'shift()' method extracts the first element from the 'contentRows' array and removes it,
-// continuing this process until the array becomes empty.
-while (currentRecord = contentRows.shift()) {
-    // For each individual record, extract all numerical parts.
-    // The regular expression /\D+/ matches one or more non-digit characters,
-    // effectively splitting the string by anything that is not a number.
-    var numberSequence = currentRecord.split(/\D+/);
-
-    // Accumulate the sum of numbers found within the current record and add it to the grand total.
-    // The 'reduce' method iterates over the 'numberSequence' array to perform this aggregation.
-    // The anonymous function converts each array element to a number using the unary plus operator (+).
-    grandTotal += numberSequence.reduce(function(previousAccumulation, currentElement) {
-        // The accumulator (previousAccumulation) is updated by adding the numeric value of the current element.
-        return previousAccumulation + (+currentElement);
-    }, 0); // The initial value for the accumulation process is explicitly set to zero.
+    // Use the 'reduce' method to sum all numeric values within the 'numericParts' array.
+    // The result of this sum is then added to 'totalValue'.
+    totalValue += numericParts.reduce(function(previousSum, currentNumberString) {
+        // Convert the current string segment to a number before adding it to the running sum.
+        return previousSum + (+currentNumberString);
+    }, 0); // The reduction starts with an initial sum of zero.
 }
 
-// Finally, display the calculated grand total to the standard output.
-console.log(grandTotal); // Output the final aggregated sum.
+// Display the final calculated total sum to the console.
+console.log(totalValue);

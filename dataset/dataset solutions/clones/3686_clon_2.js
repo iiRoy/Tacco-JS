@@ -1,31 +1,21 @@
-/*
- * This program processes a string of numbers to compute a specific numerical outcome.
- * It reads input from standard input, parses the values, and prints the result.
- */
-console.log ( ( ( inputDataString ) => {
+// This JavaScript module computes a specific numerical result
+// based on three integer inputs provided via standard input.
+console.log(
+  (
+    (inputDataString) => { // An immediately invoked function expression (IIFE) is used here.
+      // The input string is expected to contain three space-separated integers.
+      // These are parsed and assigned to distinct variables.
+      const [firstNum, secondNum, thirdNum] = inputDataString
+        .trim() // Remove leading/trailing whitespace.
+        .split(' ') // Split the string by spaces into an array of string numbers.
+        .map(currentVal => currentVal | 0); // Convert each string number to an integer using bitwise OR.
 
-        // Deconstruct the input string into three integer variables.
-        // The input is expected to be space-separated numbers.
-    const   [
-        firstDimension  ,
-        secondCount     ,
-        thirdModifier
-            ]   =   inputDataString
-                        .trim ( ) // Remove any leading or trailing whitespace.
-                        .split ( ' ' ) // Divide the string into parts using space as a delimiter.
-                        .map ( ( segmentValue ) =>
-                                   Number.parseInt ( segmentValue , 10 ) // Convert each string segment to its integer representation.
-                            ) ;
-
-    // The result is formatted as a string for output.
-    // Apply the calculation logic based on the parsed numerical inputs.
-    // The conditional factor (2 or 1) depends on the 'thirdModifier' value.
-    return  `${
-        ( ( thirdModifier  ?  2  :  1 )  *
-          ( firstDimension  -  thirdModifier )  /
-          firstDimension  /
-          firstDimension  *
-          ( secondCount  -  1 ) )
-    }` ;
-
-} ) ( require ( 'fs' ) . readFileSync ( '/dev/stdin' , 'utf8' ) ) ) ;
+      // The core calculation logic.
+      // It involves a conditional multiplier (2 or 1) based on 'thirdNum'.
+      // The final result is formatted as a string.
+      return `${(thirdNum ? 2 : 1) * (firstNum - thirdNum) / firstNum / firstNum * (secondNum - 1)}`;
+    }
+  )(
+    require('fs').readFileSync('/dev/stdin', 'utf8') // Read the entire content of standard input as a UTF-8 string.
+  )
+);

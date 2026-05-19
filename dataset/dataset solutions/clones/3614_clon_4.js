@@ -1,95 +1,101 @@
-class IndexTree {
-    constructor(dimension) {
-        this.data = new Uint32Array(dimension + 1).fill(0);
-        this.limit = dimension;
+class FenwickTree {
+    constructor(dimensionSize) {
+        this.treeData = new Array(dimensionSize + 1).fill(0);
+        this.treeDimension = dimensionSize;
     }
 
-    updateValue(idx, delta) {
-        let currentIdx = idx;
-        while (currentIdx <= this.limit) {
-            this.data[currentIdx] += delta;
+    adjust(index, valueChange) {
+        let currentIdx = index;
+        while (currentIdx <= this.treeDimension) {
+            this.treeData[currentIdx] += valueChange;
             currentIdx += currentIdx & (-currentIdx);
         }
     }
 
-    retrieveSum(idx) {
-        let cumulativeSum = 0;
-        let currentIdx = idx;
+    retrieveSum(index) {
+        let currentSum = 0;
+        let currentIdx = index;
         while (currentIdx > 0) {
-            cumulativeSum += this.data[currentIdx];
+            currentSum += this.treeData[currentIdx];
             currentIdx -= currentIdx & (-currentIdx);
         }
-        return cumulativeSum;
-    }
-
-    getRangeSum(low, high) {
-        if (low > high) return 0;
-        return this.retrieveSum(high) - this.retrieveSum(low - 1);
+        return currentSum;
     }
 }
 
-let collectedLines = [];
-let maxDimensionSize, operationCountSize, queryCountSize;
-let queryOutcomesArray;
+var capturedLines = [];
+var maxCoord, numPairs, numQueries;
 
-const ioInterface = require('readline').createInterface({
+var ioInterface = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-ioInterface.on('line', (inputLine) => {
-    collectedLines.push(inputLine);
+ioInterface.on('line', function (inputLine) {
+    capturedLines.push(inputLine);
 });
 
-ioInterface.on('close', () => {
-    processInputAndGenerateSolution();
-});
+ioInterface.on('close', function () {
+    const initialParams = capturedLines[0].split(" ").map(Number);
+    maxCoord = initialParams[0];
+    numPairs = initialParams[1];
+    numQueries = initialParams[2];
 
-function processInputAndGenerateSolution() {
-    const initialParameters = collectedLines[0].split(" ").map(Number);
-    maxDimensionSize = initialParameters[0];
-    operationCountSize = initialParameters[1];
-    queryCountSize = initialParameters[2];
-
-    const pointEvents = [];
-    const queryDecompositionEvents = [];
-    queryOutcomesArray = new Array(queryCountSize).fill(0);
-
-    for (let i = 0; i < operationCountSize; i++) {
-        const coordinatePair = collectedLines[i + 1].split(" ").map(Number);
-        pointEvents.push({ eventType: 'add_coord_point', xPosition: coordinatePair[0], yPosition: coordinatePair[1] });
+    const dataPoints = [];
+    for (let i = 0; i < numPairs; i++) {
+        const coords = capturedLines[i + 1].split(" ").map(Number);
+        dataPoints.push({ xVal: coords[0], yVal: coords[1] });
     }
 
-    for (let i = 0; i < queryCountSize; i++) {
-        const rangePair = collectedLines[i + operationCountSize + 1].split(" ").map(Number);
-        const startVal = rangePair[0];
-        const endVal = rangePair[1];
-        
-        queryDecompositionEvents.push({ eventType: 'process_range', xPosition: startVal - 1, yRangeStart: startVal, yRangeEnd: endVal, queryIdentifier: i, multiplier: -1 });
-        queryDecompositionEvents.push({ eventType: 'process_range', xPosition: endVal, yRangeStart: startVal, yRangeEnd: endVal, queryIdentifier: i, multiplier: 1 });
+    const queryRequests = [];
+    for (let i = 0; i < numQueries; i++) {
+        const range = capturedLines[i + numPairs + 1].split(" ").map(Number);
+        queryRequests.push({ rangeStart: range[0], rangeEnd: range[1], originalQueryIndex: i });
     }
 
-    const allProcessingEvents = [...pointEvents, ...queryDecompositionEvents];
-    allProcessingEvents.sort((eventA, eventB) => {
-        if (eventA.xPosition !== eventB.xPosition) {
-            return eventA.xPosition - eventB.xPosition;
+    const processingEvents = [];
+
+    for (const point of dataPoints) {
+        processingEvents.push({ eventType: 0, xCoordinate: point.xVal, yCoordinate: point.yVal });
+    }
+
+    for (const request of queryRequests) {
+        // The query is for count(l, r) where rangeStart <= l <= rangeEnd and rangeStart <= r <= rangeEnd
+        // This is equivalent to:
+        // f(rangeEnd, rangeEnd)
+        // - f(rangeStart - 1, rangeEnd)
+        // - f(rangeEnd, rangeStart - 1)
+        // + f(rangeStart - 1, rangeStart - 1)
+        // where f(X, Y) = count(l <= X, r <= Y)
+
+        processingEvents.push({ eventType: 1, xCoordinate: request.rangeEnd, yCoordinate: request.rangeEnd, coefficient: 1, queryIdentifier: request.originalQueryIndex });
+        processingEvents.push({ eventType: 1, xCoordinate: request.rangeStart - 1, yCoordinate: request.rangeEnd, coefficient: -1, queryIdentifier: request.originalQueryIndex });
+        processingEvents.push({ eventType: 1, xCoordinate: request.rangeEnd, yCoordinate: request.rangeStart - 1, coefficient: -1, queryIdentifier: request.originalQueryIndex });
+        processingEvents.push({ eventType: 1, xCoordinate: request.rangeStart - 1, yCoordinate: request.rangeStart - 1, coefficient: 1, queryIdentifier: request.originalQueryIndex });
+    }
+
+    processingEvents.sort((eventA, eventB) => {
+        if (eventA.xCoordinate !== eventB.xCoordinate) {
+            return eventA.xCoordinate - eventB.xCoordinate;
         }
-        const orderMap = { 'add_coord_point': 0, 'process_range': 1 };
-        return orderMap[eventA.eventType] - orderMap[eventB.eventType];
+        return eventA.eventType - eventB.eventType;
     });
 
-    const yAxisBit = new IndexTree(maxDimensionSize);
+    const finalResults = new Array(numQueries).fill(0);
+    const yAxisBit = new FenwickTree(maxCoord);
 
-    for (const currentEvent of allProcessingEvents) {
-        if (currentEvent.eventType === 'add_coord_point') {
-            yAxisBit.updateValue(currentEvent.yPosition, 1);
-        } else if (currentEvent.eventType === 'process_range') {
-            const currentRangeCount = yAxisBit.getRangeSum(currentEvent.yRangeStart, currentEvent.yRangeEnd);
-            queryOutcomesArray[currentEvent.queryIdentifier] += currentRangeCount * currentEvent.multiplier;
+    for (const currentEvent of processingEvents) {
+        if (currentEvent.eventType === 0) {
+            if (currentEvent.yCoordinate >= 1 && currentEvent.yCoordinate <= maxCoord) {
+                yAxisBit.adjust(currentEvent.yCoordinate, 1);
+            }
+        } else {
+            const effectiveYLookup = Math.min(currentEvent.yCoordinate, maxCoord);
+            finalResults[currentEvent.queryIdentifier] += currentEvent.coefficient * yAxisBit.retrieveSum(effectiveYLookup);
         }
     }
 
-    for (let i = 0; i < queryCountSize; i++) {
-        console.log(queryOutcomesArray[i]);
+    for (let i = 0; i < numQueries; i++) {
+        console.log(finalResults[i]);
     }
-}
+});

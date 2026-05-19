@@ -1,42 +1,48 @@
-const outputWriter = console.log;
+const printOutput = console.log;
 
 if (typeof process !== "undefined") {
-    let inputAccumulator = "";
+    let rawInputBuffer = "";
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', function(chunk) {
-        inputAccumulator += chunk;
+        rawInputBuffer += chunk;
     });
     process.stdin.on('end', function() {
-        const inputSections = inputAccumulator.split("\n");
-        processInputAndCompute(inputSections);
+        const sourceLines = rawInputBuffer.split("\n");
+        processCoordinates(sourceLines);
     });
 }
 
-function processInputAndCompute(rawTextLines) {
-    const numericalRowData = rawTextLines.map(function(lineContent) {
-        return lineContent.split(/\s+/).filter(Boolean).map(Number);
-    }).filter(row => row.length > 0);
+function processCoordinates(sourceLines) {
+    const transformedSegments = sourceLines.map(currentLine => {
+        return currentLine.split(" ").filter(segment => segment !== "").map(segment => {
+            const numericAttempt = Number(segment);
+            if (numericAttempt.toString() === "NaN") {
+                return segment.replace(/(\r)|(\n)/g, "");
+            }
+            return numericAttempt;
+        });
+    });
 
-    numericalRowData.shift();
+    transformedSegments.shift(); 
+    
+    const polygonVertices = transformedSegments;
 
-    const polygonBoundaryPoints = numericalRowData;
+    let cumulativeShoelaceSum = 0;
+    const totalVertexCount = polygonVertices.length;
 
-    let totalSignedAreaSum = 0;
-    const boundaryPointCount = polygonBoundaryPoints.length;
+    cumulativeShoelaceSum = polygonVertices.reduce((accumulator, currentPoint, currentIndex, allPoints) => {
+        const nextIndex = (currentIndex + 1) % totalVertexCount; 
+        const nextPoint = allPoints[nextIndex];
 
-    totalSignedAreaSum = polygonBoundaryPoints.reduce((accumulatedValue, currentCoordinatePair, currentIdx) => {
-        const nextIdx = (currentIdx + 1) % boundaryPointCount;
-        const nextCoordinatePair = polygonBoundaryPoints[nextIdx];
-
-        // This term is (x_i * y_{i+1}) - (x_{i+1} * y_i)
-        return accumulatedValue + (currentCoordinatePair[0] * nextCoordinatePair[1] - nextCoordinatePair[0] * currentCoordinatePair[1]);
+        return accumulator + (currentPoint[0] * nextPoint[1] - nextPoint[0] * currentPoint[1]);
     }, 0);
 
-    const calculatedGeometricSpace = totalSignedAreaSum / 2;
+    const rawCalculatedArea = cumulativeShoelaceSum / 2;
 
-    const preciseTruncation = Math.trunc(calculatedGeometricSpace * 10) / 10;
-    const formattedOutputString = preciseTruncation.toFixed(1);
+    const truncatedAreaValue = Math.trunc(rawCalculatedArea * 10) / 10;
+    
+    const finalAreaDisplay = truncatedAreaValue.toFixed(1);
 
-    outputWriter(formattedOutputString);
+    printOutput(finalAreaDisplay);
 }

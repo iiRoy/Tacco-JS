@@ -1,54 +1,51 @@
-const fileSystemInterface = require('fs');
+const fileSystem = require('fs');
+const standardInputDescriptor = process.stdin.fd;
+const inputSize = fileSystem.fstatSync(standardInputDescriptor).size;
+const inputBuffer = Buffer.alloc(inputSize);
+const bytesReadCount = fileSystem.readSync(standardInputDescriptor, inputBuffer, 0, inputSize, 0);
+const rawInputLines = inputBuffer.toString('utf8', 0, bytesReadCount).split('\n');
 
-const handleNoChange = () => '.';
+function processCharacterTransformations() {
+  const sourceText = rawInputLines[0];
+  const transformationThreshold = 160;
+  const characterCodeSequence = [...sourceText].map(c => c.charCodeAt(0));
 
-const handleMinorChange = (numRepeats, symbolToRepeat) => symbolToRepeat.repeat(numRepeats);
+  const finalResult = characterCodeSequence.reduce((accumulator, currentCode) => {
+    const { generatedOutput, previousCodeValue } = accumulator;
+    const codeDifference = currentCode - previousCodeValue;
 
-const handleMajorChange = (totalMagnitude, symbolToRepeat) => {
-    const squareRootInteger = Math.floor(Math.sqrt(totalMagnitude));
-    const remainingDifference = totalMagnitude - squareRootInteger * squareRootInteger;
-    return `>${'+'.repeat(squareRootInteger)}[<${symbolToRepeat.repeat(squareRootInteger)}>-]<${symbolToRepeat.repeat(remainingDifference)}`;
-};
+    let currentSegment = '';
+    if (codeDifference === 0) {
+      currentSegment = '.';
+    } else {
+      const operationSign = codeDifference > 0 ? '+' : '-';
+      const absoluteDifference = Math.abs(codeDifference);
 
-const processCharacterSequence = (initialText) => {
-    const thresholdConstant = 160;
+      if (absoluteDifference < transformationThreshold) {
+        currentSegment = operationSign.repeat(absoluteDifference);
+      } else {
+        const rootFloor = Math.floor(Math.sqrt(absoluteDifference));
+        const remainingDifference = absoluteDifference - rootFloor * rootFloor;
 
-    const codePoints = Array.from(initialText).map(character => character.charCodeAt(0));
+        currentSegment = [
+          '>',
+          '+'.repeat(rootFloor),
+          '[<',
+          operationSign.repeat(rootFloor),
+          '>-]<',
+          operationSign.repeat(remainingDifference)
+        ].join('');
+      }
+      currentSegment += '.';
+    }
 
-    const finalResult = codePoints.reduce(
-        (currentContext, presentValue) => {
-            let [producedSequence, priorValue] = currentContext;
-            const valueDelta = presentValue - priorValue;
-            const absDelta = Math.abs(valueDelta);
-            const opSign = valueDelta > 0 ? '+' : '-';
+    return {
+      generatedOutput: generatedOutput + currentSegment,
+      previousCodeValue: currentCode
+    };
+  }, { generatedOutput: '', previousCodeValue: 0 }).generatedOutput;
 
-            let generatedPart = '';
-            if (valueDelta === 0) {
-                generatedPart = handleNoChange();
-            } else if (absDelta < thresholdConstant) {
-                generatedPart = handleMinorChange(absDelta, opSign);
-            } else {
-                generatedPart = handleMajorChange(absDelta, opSign);
-            }
+  console.log(finalResult);
+}
 
-            return [`${producedSequence}${generatedPart}.`, presentValue];
-        },
-        ['', 0]
-    );
-
-    return finalResult[0];
-};
-
-const obtainInputAndExecute = () => {
-    const standardInputDescriptor = process.stdin.fd;
-    const dataSizeInBytes = fileSystemInterface.fstatSync(standardInputDescriptor).size;
-    const dataContainer = Buffer.alloc(dataSizeInBytes);
-    const actualBytesRead = fileSystemInterface.readSync(standardInputDescriptor, dataContainer, 0, dataSizeInBytes, 0);
-    const rawContent = dataContainer.toString('utf8', 0, actualBytesRead);
-    const inputLine = rawContent.split('\n')[0];
-
-    const outputString = processCharacterSequence(inputLine);
-    console.log(outputString);
-};
-
-obtainInputAndExecute();
+processCharacterTransformations();

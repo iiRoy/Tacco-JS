@@ -1,54 +1,53 @@
-const inputSource = globalThis.process.stdin;
-const outputSink = globalThis.process.stdout;
-
-inputSource.resume();
-inputSource.setEncoding('utf8');
-
-inputSource.on('data', function(incomingTransmission) {
-    digestAndReport(incomingTransmission.trim());
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputData) {
+    processInput(inputData.trim());
 });
 
-function digestAndReport(payload) {
-    let internalBuffer = [];
-    const patternDefinitions = [
-        { sCount: 4, tCount: 4, fullLength: 8 }, // SSSS TTTT
-        { sCount: 3, tCount: 3, fullLength: 6 }, // SSS TTT
-        { sCount: 2, tCount: 2, fullLength: 4 }, // SS TT
-        { sCount: 1, tCount: 1, fullLength: 2 }  // S T
-    ];
+function processInput(initialString) {
+    // Define the specific patterns to be removed, maintaining their original processing order.
+    const removalPatterns = ["ST", "SSTT", "SSSTTT", "SSSSTTTT"];
 
-    for (let currentSymbol of payload) {
-        internalBuffer.push(currentSymbol);
+    // This helper function executes a single pass of all specified replacements.
+    // It simulates one full iteration of the original 'while' loop's body.
+    function executeReplacementPass(currentContent) {
+        let alteredContent = currentContent;
+        let contentChangedInPass = false; // Tracks if any modification occurred in this pass
 
-        let currentBufferExtent = internalBuffer.length;
-        if (currentSymbol === 'T') {
-            for (let def of patternDefinitions) {
-                if (currentBufferExtent >= def.fullLength) {
-                    let potentialMatch = true;
-                    // Check for T's
-                    for (let i = 1; i <= def.tCount; i++) {
-                        if (internalBuffer[currentBufferExtent - i] !== 'T') {
-                            potentialMatch = false;
-                            break;
-                        }
-                    }
-                    if (!potentialMatch) continue;
-
-                    // Check for S's
-                    for (let i = 1; i <= def.sCount; i++) {
-                        if (internalBuffer[currentBufferExtent - def.tCount - i] !== 'S') {
-                            potentialMatch = false;
-                            break;
-                        }
-                    }
-
-                    if (potentialMatch) {
-                        internalBuffer.splice(currentBufferExtent - def.fullLength, def.fullLength);
-                        break; // Only remove the largest matching pattern
-                    }
-                }
+        // Iterate through each pattern and apply the replacement.
+        // String.prototype.replace without the 'g' flag only replaces the first occurrence.
+        for (const patternToErase of removalPatterns) {
+            const temporaryContent = alteredContent.replace(patternToErase, "");
+            if (temporaryContent.length < alteredContent.length) {
+                // If the string length decreased, a replacement happened.
+                alteredContent = temporaryContent;
+                contentChangedInPass = true; // Mark that a change was made
             }
         }
+        // Return the modified string and a flag indicating if any changes were made.
+        return { processedString: alteredContent, wasModified: contentChangedInPass };
     }
-    outputSink.write(internalBuffer.length + '\n');
+
+    // This recursive function repeatedly applies the replacement passes until no further changes occur.
+    // It replaces the imperative 'while' loop with a functional, recursive fixed-point iteration.
+    function recursivelyReduce(currentContent) {
+        const passResult = executeReplacementPass(currentContent);
+        if (passResult.wasModified) {
+            // If the string was modified in the last pass, recurse with the new string.
+            return recursivelyReduce(passResult.processedString);
+        } else {
+            // If no changes occurred, the string has reached its final reduced state.
+            return passResult.processedString;
+        }
+    }
+
+    // The original code performs an initial 'replace("ST", "")' before entering the main loop.
+    // This specific initial transformation must be replicated first.
+    let intermediateString = initialString.replace("ST", "");
+
+    // Now, apply the iterative reduction process using the recursive function.
+    const finalReducedString = recursivelyReduce(intermediateString);
+
+    // Output the length of the final string, as per the original behavior.
+    console.log(finalReducedString.length);
 }

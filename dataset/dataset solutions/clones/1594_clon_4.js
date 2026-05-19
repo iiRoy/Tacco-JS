@@ -1,14 +1,14 @@
-function evaluateSequence(sequenceInput) {
-    const valueRegistry = {
-        'RRS': 2,
-        'SRR': 2,
-        'RRR': 3,
-        'SSS': 0
-    };
+function ProcessInput(dataString) {
+  const valueRegistry = new Map([
+    ['RRS', 2],
+    ['SRR', 2],
+    ['RRR', 3],
+    ['SSS', 0]
+  ]);
 
-    const finalOutcome = valueRegistry[sequenceInput];
+  const computedValue = valueRegistry.has(dataString) ? valueRegistry.get(dataString) : 1;
 
-    console.log('%d', finalOutcome === undefined ? 1 : finalOutcome);
+  console.log('%d', computedValue);
 }
 
-evaluateSequence(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

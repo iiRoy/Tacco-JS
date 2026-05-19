@@ -1,24 +1,27 @@
-var rawData=require('fs').readFileSync('/dev/stdin','utf8');
-var inputLines=rawData.split('\n');
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const textLines = rawData.split('\n');
 
-var letterOccurrenceCounts=[];
-for (var lineIndex=0;lineIndex<inputLines.length;lineIndex++) {
-  var currentLineContent=inputLines.shift();
-  var charArray=currentLineContent.split('');
-  charArray.forEach(function(singleChar){
-    var lowerCaseChar=singleChar.toLowerCase();
-    if(lowerCaseChar<'a'||lowerCaseChar>'z')
-      return;
+const charCounts = [];
 
-    var alphabetPosition=lowerCaseChar.charCodeAt(0)-'a'.charCodeAt(0);
-    letterOccurrenceCounts[alphabetPosition]|=0;
-    letterOccurrenceCounts[alphabetPosition]++;
-  });
+for (let lineIndex = 0; lineIndex < textLines.length; lineIndex++) {
+    const currentLine = textLines.shift();
+    const characters = currentLine.split('');
+
+    characters.forEach(function(singleChar) {
+        const lowerChar = singleChar.toLowerCase();
+        if (lowerChar < 'a' || lowerChar > 'z') {
+            return;
+        }
+
+        const charPosition = lowerChar.charCodeAt(0) - 'a'.charCodeAt(0);
+        charCounts[charPosition] = charCounts[charPosition] || 0;
+        charCounts[charPosition]++;
+    });
 }
 
-var asciiA='a'.charCodeAt(0);
-for(var alphabetIterator=0;alphabetIterator<26;alphabetIterator++){
-  var displayChar=String.fromCharCode(asciiA+alphabetIterator);
-  var totalCount=letterOccurrenceCounts[alphabetIterator]||0;
-  console.log(displayChar+' : '+totalCount);
+const asciiOffset = 'a'.charCodeAt(0);
+for (let alphabetIndex = 0; alphabetIndex < 26; alphabetIndex++) {
+    const alphabetChar = String.fromCharCode(asciiOffset + alphabetIndex);
+    const occurrenceCount = charCounts[alphabetIndex] || 0;
+    console.log(alphabetChar + ' : ' + occurrenceCount);
 }

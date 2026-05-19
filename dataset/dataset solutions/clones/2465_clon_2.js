@@ -1,59 +1,25 @@
-function executeCalculation (  rawData  ) // This function processes input data
-{
-  // The raw input string is split into an array of string parts
-  const   numericStrings  =
-    rawData
-      .split
-        (  " "  )
-  ;
+function processData(rawData) {
+  // The incoming raw string is split into an array of parts using space as a delimiter.
+  // The original parameter variable is then updated to hold this new array.
+  rawData = rawData.split(" ");
 
-  // Convert the string parts into numerical values for calculation
-  const valA = Number(numericStrings[0]); // First numerical component
-  const valB = Number(numericStrings[1]); // Second numerical component
-
-  // Validate the range of the numerical inputs
-  // Both values must be between 1 and 10 (inclusive)
-  if
-    (
-      (
-        valA < 1
-        ||
-        valA > 10
-      )
-      ||
-      (
-        valB < 1
-        ||
-        valB > 10
-      )
-    )
-  {
-    // If validation fails, output an error code
-    return console.log(-1)
-    ;
+  // A validation check is performed on the first two elements of the array.
+  // Both elements must be numerical values between 1 and 10, inclusive.
+  if (
+    (rawData[0] < 1 || rawData[0] > 10) ||
+    (rawData[1] < 1 || rawData[1] > 10)
+  ) {
+    // If either of the conditions for valid input is not met,
+    // a specific error code (-1) is printed to the console, and the function exits.
+    return console.log(-1);
   }
 
-  // If inputs are valid, compute their product
-  // And display the final computed result
-  return console.log
-    (
-      valA
-      *
-      valB
-    )
-  ;
+  // If the input passes validation, the product of the two numerical elements
+  // is calculated and then displayed on the console. The function then exits.
+  return console.log(rawData[0] * rawData[1]);
 }
 
-// Read input from the standard input stream and pass it to the processing function
-executeCalculation
-(
-  require
-    (
-      'fs'
-    )
-    .readFileSync
-      (
-        '/dev/stdin',
-        'utf8'
-      )
-);
+// This is the entry point for the script's execution.
+// It reads the entire content of the standard input stream as a UTF-8 encoded string,
+// and then passes this string to the 'processData' function for processing.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

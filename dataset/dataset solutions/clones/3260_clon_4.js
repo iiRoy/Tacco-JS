@@ -1,22 +1,27 @@
 'use strict';
 
-const calculateProfileStrokes = (inputDataBlob) => {
-    const profileLines = inputDataBlob.split('\n');
-    const altitudeValues = profileLines[1].split(' ').map(Number);
+function calculateStrokes(heightsArray) {
+    let accumulatedStrokes = 0;
+    let priorHeight = 0;
 
-    const finalState = altitudeValues.reduce((accumulator, currentAltitude) => {
-        let newStrokeCount = accumulator.totalStrokes;
-        if (currentAltitude > accumulator.surfaceLevel) {
-            newStrokeCount += (currentAltitude - accumulator.surfaceLevel);
+    for (let currentHeight of heightsArray) {
+        if (currentHeight > priorHeight) {
+            accumulatedStrokes += (currentHeight - priorHeight);
         }
-        return { totalStrokes: newStrokeCount, surfaceLevel: currentAltitude };
-    }, { totalStrokes: 0, surfaceLevel: 0 });
+        priorHeight = currentHeight;
+    }
 
-    return finalState.totalStrokes;
-};
+    return accumulatedStrokes;
+}
 
-(() => {
-    const rawContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-    const resultingValue = calculateProfileStrokes(rawContent);
-    console.log(resultingValue);
-})();
+function processInputAndOutput(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const numberOfElements = parseInt(inputLines[0], 10);
+    const heightValues = inputLines[1].split(' ').map(str => parseInt(str, 10));
+
+    const finalResult = calculateStrokes(heightValues);
+
+    console.log(finalResult);
+}
+
+processInputAndOutput(require('fs').readFileSync('/dev/stdin', 'utf8'));

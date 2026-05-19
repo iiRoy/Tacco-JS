@@ -1,120 +1,74 @@
 "use strict";
 
-// Helper function to safely parse a string into an integer.
-// Returns a default value (0) if parsing fails or the input is invalid.
-const parseNumericValue = (strValue, defaultValue = 0) => {
-    const parsedNumber = parseInt(strValue, 10);
-    // Check if the parsed value is a valid number; otherwise, return the default.
-    return Number.isInteger(parsedNumber) ? parsedNumber : defaultValue;
-};
+const processBattle = (inputString) => {
+    // Define constants for clarity and potential reusability
+    const LINE_SEPARATOR = "\n";
+    const VALUE_SEPARATOR = " ";
+    const DECIMAL_RADIX = 10;
 
-// Main function responsible for calculating the minimum number of attacks required
-// to defeat a target with a given health, using a set of available weapons.
-const calculateMinAttacks = (rawInputData) => {
-    // Step 1: Process the raw input string
-    // Trim any leading/trailing whitespace and split the input into an array of lines.
-    const inputLines = rawInputData.trim().split('\n');
+    // 1. Initial input parsing and data extraction
+    const inputLines = inputString.trim().split(LINE_SEPARATOR);
 
-    // Guard clause: Ensure there's at least some input data to process.
-    if (inputLines.length === 0) {
-        console.error("Input processing error: No data lines were provided.");
-        return; // Exit if input is empty
+    const firstLineData = inputLines[0].split(VALUE_SEPARATOR);
+    const totalWeaponTypes = parseInt(firstLineData[0], DECIMAL_RADIX);
+    let currentHealthRemaining = parseInt(firstLineData[1], DECIMAL_RADIX);
+
+    // Helper function to parse a single weapon's attack and damage stats
+    const parseWeaponStats = (weaponStatString) => {
+        const [attackPowerStr, throwDamageStr] = weaponStatString.split(VALUE_SEPARATOR);
+        return [parseInt(attackPowerStr, DECIMAL_RADIX), parseInt(throwDamageStr, DECIMAL_RADIX)];
+    };
+
+    // Parse all weapon statistics from the input lines
+    const allWeaponStatistics = inputLines.slice(1, totalWeaponTypes + 1).map(parseWeaponStats);
+
+    // 2. Determine the maximum direct swing attack power (aMax)
+    let maximumSwingAttackPower = 0;
+    if (allWeaponStatistics.length > 0) {
+        // Create a temporary copy to sort by attack power without altering the original array order
+        const sortedByAttackPower = [...allWeaponStatistics].sort((weaponA, weaponB) => weaponB[0] - weaponA[0]);
+        maximumSwingAttackPower = sortedByAttackPower[0][0];
     }
+    // Note: If allWeaponStatistics is empty, maximumSwingAttackPower remains 0.
+    // Problem constraints typically ensure valid positive attack values.
 
-    // Step 2: Parse the initial configuration (number of weapons and target's health)
-    const firstLineSegments = inputLines[0].split(' ');
-    // The total number of unique weapon types available.
-    const totalWeaponTypes = parseNumericValue(firstLineSegments[0]);
-    // The target's initial health points that need to be depleted.
-    let currentTargetHealth = parseNumericValue(firstLineSegments[1]);
-
-    // Guard clause: Validate the parsed initial values.
-    if (totalWeaponTypes <= 0 || currentTargetHealth <= 0) {
-        console.error("Input validation error: Invalid number of weapon types or target health specified.");
-        return;
-    }
-
-    // Step 3: Parse and filter the weapon statistics
-    // Each weapon has two damage values: [swing_damage, throw_damage].
-    // We slice the array to get only the lines containing weapon data.
-    const allWeaponStats = inputLines.slice(1, totalWeaponTypes + 1).map(weaponLine => {
-        const damages = weaponLine.split(' ').map(damageStr => parseNumericValue(damageStr));
-        // Validate that each weapon line provides two valid damage values.
-        if (damages.length !== 2 || damages.some(isNaN)) {
-            console.warn(`Warning: Skipping invalid weapon line: "${weaponLine}"`);
-            return [0, 0]; // Return a placeholder for invalid entries.
-        }
-        return damages;
-    })
-    // Filter out any weapons that have zero or negative damage for both swing and throw, as they are useless.
-    .filter(weapon => weapon[0] > 0 || weapon[1] > 0);
-
-    // Guard clause: Ensure there are valid weapons to use.
-    if (allWeaponStats.length === 0) {
-        console.error("Processing error: No valid weapon statistics could be parsed.");
-        return;
-    }
-
-    // Step 4: Determine the maximum possible swing damage
-    // Create a copy of the weapon stats and sort it to find the highest swing damage.
-    const weaponsSortedBySwing = [...allWeaponStats].sort((weaponA, weaponB) => weaponB[0] - weaponA[0]);
-    const strongestSwingDamage = weaponsSortedBySwing[0][0];
-
-    // Guard clause: Ensure the strongest swing damage is positive to avoid division by zero later.
-    if (strongestSwingDamage <= 0) {
-        console.error("Logic error: No weapon found with positive swing damage. Cannot defeat target.");
-        return;
-    }
-
-    // Step 5: Identify and prioritize effective throw attacks
-    // Filter for throw attacks that deal more damage than the strongest swing attack.
-    // Sorting these by throw damage (descending) ensures we use the most impactful throws first.
-    const optimalThrowAttacks = allWeaponStats
-        .filter(weapon => weapon[1] > strongestSwingDamage)
+    // 3. Identify and prioritize throwable attacks
+    // Filter for weapons whose throw damage (b) is greater than the maximum swing attack power (aMax).
+    // Then, sort these throwable weapons by their throw damage in descending order.
+    const effectiveThrowableWeapons = allWeaponStatistics
+        .filter(weapon => weapon[1] > maximumSwingAttackPower)
         .sort((weaponA, weaponB) => weaponB[1] - weaponA[1]);
 
-    // Step 6: Execute throw attacks as long as they are beneficial
-    let totalThrowAttackCount = 0; // Initialize a counter for throw attacks.
+    // 4. Apply throwable attacks until health is depleted or all effective throws are used
+    let totalThrowsUsed = 0;
 
-    for (const currentWeapon of optimalThrowAttacks) {
-        // If the target's health is already depleted, we don't need more attacks.
-        if (currentTargetHealth <= 0) {
-            break; // Exit the loop early.
+    // Guard clause: If the target's health is already zero or less, no attacks are needed.
+    if (currentHealthRemaining <= 0) {
+        console.log(0);
+        return;
+    }
+
+    for (const currentWeapon of effectiveThrowableWeapons) {
+        const damageFromThrow = currentWeapon[1];
+        currentHealthRemaining -= damageFromThrow;
+        totalThrowsUsed++;
+
+        // If health drops to zero or below, output the count and exit
+        if (currentHealthRemaining <= 0) {
+            console.log(totalThrowsUsed);
+            return;
         }
-
-        const currentThrowDamage = currentWeapon[1];
-        currentTargetHealth = currentTargetHealth - currentThrowDamage; // Apply damage.
-        totalThrowAttackCount = totalThrowAttackCount + 1; // Increment throw count.
     }
 
-    // Step 7: Calculate remaining damage using direct swing attacks if needed
-    let finalSwingAttackCount = 0; // Initialize counter for swing attacks.
+    // 5. If health still remains, apply direct swing attacks
+    // Calculate the number of direct swings needed to finish off the remaining health.
+    // Use Math.ceil to account for partial health points requiring a full swing.
+    // Assuming maximumSwingAttackPower is always positive if currentHealthRemaining > 0.
+    const directSwingsRequired = Math.ceil(currentHealthRemaining / maximumSwingAttackPower);
 
-    // If the target still has health after all effective throws,
-    // we must finish them off using the strongest available swing attack.
-    if (currentTargetHealth > 0) {
-        // Use Math.ceil to ensure any remaining fractional health is covered by a full swing.
-        finalSwingAttackCount = Math.ceil(currentTargetHealth / strongestSwingDamage);
-    }
-
-    // Step 8: Output the total minimum attacks required
-    // This is the sum of all throw attacks and any necessary final swing attacks.
-    console.log(totalThrowAttackCount + finalSwingAttackCount);
+    // Output the total number of attacks (throws + swings)
+    console.log(totalThrowsUsed + directSwingsRequired);
 };
 
-// Self-executing anonymous function to handle input/output and error management.
-(() => {
-    try {
-        // Dynamically import the 'fs' module for file system operations.
-        const fileSystemModule = require('fs');
-        // Read the entire content of standard input synchronously, decoded as UTF-8.
-        const standardInputBuffer = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
-        // Invoke the main calculation function with the processed input.
-        calculateMinAttacks(standardInputBuffer);
-    } catch (operationError) {
-        // Log any errors that occur during file reading or processing.
-        console.error("An operational error occurred:", operationError.message);
-        // Optionally, terminate the process with an error code.
-        process.exit(1);
-    }
-})();
+// Execute the battle simulation by reading input from standard input
+processBattle(require('fs').readFileSync('/dev/stdin', 'utf8'));

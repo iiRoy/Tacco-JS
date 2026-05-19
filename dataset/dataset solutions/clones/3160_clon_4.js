@@ -1,14 +1,13 @@
-const calculateResult = (sourceTextContent) => {
-    const targetSegment = sourceTextContent.split('\n')[0];
+const calculatePairCount = (sourceData) => {
+    const dataLine = sourceData.split('\n')[0];
 
-    const digitZeroes = (targetSegment.match(/0/g) || []).length;
-    const digitOnes = (targetSegment.match(/1/g) || []).length;
-    
-    const smallerQuantity = (digitZeroes < digitOnes) ? digitZeroes : digitOnes;
-    
-    return smallerQuantity * 2;
+    const zeros = (dataLine.split('0').length - 1);
+
+    const ones = (dataLine.split('1').length - 1);
+
+    const resultValue = (zeros < ones ? zeros : ones) * 2;
+
+    console.log(resultValue);
 };
 
-const retrievedContent = require('fs').readFileSync('/dev/stdin', 'utf-8');
-const computedValue = calculateResult(retrievedContent);
-process.stdout.write(computedValue.toString() + '\n');
+calculatePairCount(require('fs').readFileSync('/dev/stdin', 'utf-8'));

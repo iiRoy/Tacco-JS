@@ -1,68 +1,74 @@
-const extractSequence = (fullInput) => {
-    let sequence = [];
-    for (let currentPos = 0; currentPos < fullInput.length; currentPos++) {
-        if (fullInput[currentPos] === '\n') {
-            break;
+const getUniqueCharacterCount = (charSequence) => {
+    const characterPresence = {};
+    let uniqueCount = 0;
+    for (let i = 0; i < charSequence.length; i++) {
+        const currentCharacter = charSequence[i];
+        if (!characterPresence[currentCharacter]) {
+            characterPresence[currentCharacter] = true;
+            uniqueCount++;
         }
-        sequence.push(fullInput[currentPos]);
     }
-    return sequence;
+    return uniqueCount;
 };
 
-const computeCardinality = (elementSeries) => {
-    let knownElements = new Map();
-    for (let item of elementSeries) {
-        knownElements.set(item, true);
-    }
-    return knownElements.size;
-};
+const evaluateOddPalindromeCondition = (charSequence) => {
+    const sequenceLength = charSequence.length;
 
-const compareSegments = (collection, startPointer, endPointer) => {
-    if (startPointer >= endPointer) {
-        return true;
-    }
-    if (collection[startPointer] !== collection[endPointer]) {
+    if (sequenceLength % 2 === 0) {
         return false;
     }
-    return compareSegments(collection, startPointer + 1, endPointer - 1);
+
+    const midPoint = Math.floor(sequenceLength / 2);
+    let leftCursor = 0;
+    let rightCursor = sequenceLength - 1;
+
+    while (leftCursor < midPoint) {
+        if (charSequence[leftCursor] !== charSequence[rightCursor]) {
+            return false;
+        }
+        leftCursor++;
+        rightCursor--;
+    }
+
+    const leftHalfUniqueTracker = {};
+    let distinctLeftHalfCount = 0;
+    for (let i = 0; i < midPoint; i++) {
+        const charInHalf = charSequence[i];
+        if (!leftHalfUniqueTracker[charInHalf]) {
+            leftHalfUniqueTracker[charInHalf] = true;
+            distinctLeftHalfCount++;
+        }
+    }
+    return distinctLeftHalfCount === 1;
 };
 
-const analyzePattern = (initialText) => {
-    const characterCollection = extractSequence(initialText);
-    const collectionSize = characterCollection.length;
-    const distinctCount = computeCardinality(characterCollection);
+function analyzeStringPattern(inputContent) {
+    const processedLine = inputContent.split('\n')[0];
+    const characterArray = processedLine.split('');
+    const currentLength = characterArray.length;
+    const distinctCharacters = getUniqueCharacterCount(characterArray);
 
-    if (distinctCount === 1 && collectionSize > 1) {
+    if (distinctCharacters === 1 && currentLength > 1) {
         return "NO";
     }
 
-    if (distinctCount === 2 && collectionSize === 2) {
+    if (distinctCharacters === 2 && currentLength === 2) {
         return "YES";
     }
 
-    if (distinctCount === 3) {
+    if (distinctCharacters === 3) {
         return "YES";
     }
 
-    if (collectionSize % 2 !== 0) {
-        const middleOffset = Math.floor(collectionSize / 2);
-        if (compareSegments(characterCollection, 0, collectionSize - 1)) {
-            let firstSubsegment = [];
-            for (let i = 0; i < middleOffset; i++) {
-                firstSubsegment.push(characterCollection[i]);
-            }
-            if (computeCardinality(firstSubsegment) === 1) {
-                return "NO";
-            }
-        }
+    if (currentLength % 2 === 0) {
+        return "YES";
+    }
+
+    if (evaluateOddPalindromeCondition(characterArray)) {
+        return "NO";
     }
 
     return "YES";
-};
+}
 
-const initiateProcess = (dataSource) => {
-    const outcomeMessage = analyzePattern(dataSource);
-    console.log(outcomeMessage);
-};
-
-initiateProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+console.log(analyzeStringPattern(require("fs").readFileSync("/dev/stdin", "utf8")));

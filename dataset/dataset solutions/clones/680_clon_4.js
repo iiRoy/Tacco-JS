@@ -1,235 +1,241 @@
-function protocolRaise(tagIdentifier, messageText) {
-    throw { tag: tagIdentifier, message: messageText };
+const fileSystem = require("fs");
+
+/**
+ * Custom error type to distinguish parsing failures from other errors,
+ * mimicking OCaml's specific error tags for `int_of_string`.
+ */
+class InputParsingError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "InputParsingError";
+    }
 }
 
-function protocolInvalidParameter(messageText) {
-    protocolRaise("ProtocolInvalidArgument", messageText);
-}
+/**
+ * Strictly parses a string into an integer, mimicking OCaml's `int_of_string` behavior.
+ * Handles sign, base prefixes (0x, 0o, 0b), and underscores as separators.
+ * Throws `InputParsingError` on invalid format or overflow (31-bit signed integer).
+ * @param {string} inputString The string to parse.
+ * @returns {number} The parsed integer.
+ */
+function parseStrictInteger(inputString) {
+    let currentIndex = 0;
+    let numberSign = 1;
+    let numberBase = 10;
 
-function protocolTextReplicate(countValue, characterString) {
-    if (countValue <= 0) return "";
-    return characterString.repeat(countValue);
-}
-
-function protocolNumericConversion(sourceString) {
-    let currentPosition = 0;
-    let signFactor = 1;
-    let baseValue = 10;
-    const stringLength = sourceString.length;
-
-    if (sourceString.charCodeAt(currentPosition) === 45 /* '-' */) {
-        signFactor = -1;
-        currentPosition++;
+    // Handle sign
+    if (inputString.charCodeAt(currentIndex) === 45 /* '-' */) {
+        numberSign = -1;
+        currentIndex++;
     }
 
-    if (sourceString.charCodeAt(currentPosition) === 48 /* '0' */) {
-        const nextChar = sourceString.charCodeAt(currentPosition + 1);
+    // Handle base prefix (0x, 0o, 0b)
+    if (inputString.charCodeAt(currentIndex) === 48 /* '0' */) {
+        const nextChar = inputString.charCodeAt(currentIndex + 1);
         switch (nextChar) {
-            case 120 /* 'x' */: case 88  /* 'X' */: baseValue = 16; currentPosition += 2; break;
-            case 111 /* 'o' */: case 79  /* 'O' */: baseValue = 8;  currentPosition += 2; break;
-            case 98  /* 'b' */: case 66  /* 'B' */: baseValue = 2;  currentPosition += 2; break;
+            case 120: // 'x'
+            case 88:  // 'X'
+                numberBase = 16;
+                currentIndex += 2;
+                break;
+            case 111: // 'o'
+            case 79:  // 'O'
+                numberBase = 8;
+                currentIndex += 2;
+                break;
+            case 98:  // 'b'
+            case 66:  // 'B'
+                numberBase = 2;
+                currentIndex += 2;
+                break;
         }
     }
 
-    let accumulatedResult = 0;
-    const maxSignedInt32 = 2147483647; // 2^31 - 1
-    const minSignedInt32 = -2147483648; // -2^31
+    let parsedValue = 0;
+    let digitEncountered = false;
 
-    let digitFound = false;
-    while (currentPosition < stringLength) {
-        const charCode = sourceString.charCodeAt(currentPosition);
+    while (currentIndex < inputString.length) {
+        let charCode = inputString.charCodeAt(currentIndex);
         if (charCode === 95 /* '_' */) {
-            currentPosition++;
+            currentIndex++;
             continue;
         }
 
         let digitValue;
-        if (charCode >= 48 && charCode <= 57) digitValue = charCode - 48;
-        else if (charCode >= 65 && charCode <= 90) digitValue = charCode - 55;
-        else if (charCode >= 97 && charCode <= 122) digitValue = charCode - 87;
-        else digitValue = -1;
-
-        if (digitValue < 0 || digitValue >= baseValue) {
-            break;
-        }
-        digitFound = true;
-
-        if (accumulatedResult > maxSignedInt32 / baseValue ||
-            (accumulatedResult === Math.floor(maxSignedInt32 / baseValue) && digitValue > maxSignedInt32 % baseValue)) {
-            protocolRaise("ProtocolException", "int_of_string");
+        if (charCode >= 48 && charCode <= 57) { // '0'-'9'
+            digitValue = charCode - 48;
+        } else if (charCode >= 65 && charCode <= 90) { // 'A'-'Z'
+            digitValue = charCode - 55;
+        } else if (charCode >= 97 && charCode <= 122) { // 'a'-'z'
+            digitValue = charCode - 87;
+        } else {
+            digitValue = -1; // Not a valid digit character
         }
 
-        accumulatedResult = accumulatedResult * baseValue + digitValue;
-        currentPosition++;
-    }
-
-    if (!digitFound) {
-        protocolRaise("ProtocolException", "int_of_string");
-    }
-
-    if (currentPosition !== stringLength) {
-        protocolRaise("ProtocolException", "int_of_string");
-    }
-
-    const finalCalculatedValue = signFactor * accumulatedResult;
-
-    if (finalCalculatedValue > maxSignedInt32 || finalCalculatedValue < minSignedInt32) {
-        protocolRaise("ProtocolException", "int_of_string");
-    }
-
-    return finalCalculatedValue;
-}
-
-function protocolListFromElements(jsArray) {
-    return jsArray.reduceRight((accumulator, currentElement) => ({ head: currentElement, tail: accumulator }), null);
-}
-
-function protocolListToJsArray(linkedList) {
-    const resultingArray = [];
-    let currentNode = linkedList;
-    while (currentNode !== null) {
-        resultingArray.push(currentNode.head);
-        currentNode = currentNode.tail;
-    }
-    return resultingArray;
-}
-
-function protocolMapList(transformFunction, linkedList) {
-    if (linkedList === null) return null;
-    return {
-        head: transformFunction(linkedList.head),
-        tail: protocolMapList(transformFunction, linkedList.tail)
-    };
-}
-
-function protocolFlattenList(listOfLinkedLists) {
-    if (listOfLinkedLists === null) return null;
-    let combinedJsArray = [];
-    let currentLinkedList = listOfLinkedLists;
-    while (currentLinkedList !== null) {
-        combinedJsArray = combinedJsArray.concat(protocolListToJsArray(currentLinkedList.head));
-        currentLinkedList = currentLinkedList.tail;
-    }
-    return protocolListFromElements(combinedJsArray);
-}
-
-function protocolExtractListPrefix(countValue, sourceLinkedList) {
-    if (countValue < 0) protocolInvalidParameter("list prefix count cannot be negative");
-    let currentNode = sourceLinkedList;
-    let extractedJsElements = [];
-    for (let i = 0; i < countValue; i++) {
-        if (currentNode === null) {
-            protocolRaise("ProtocolInvalidArgument", "split_n");
+        if (digitValue < 0 || digitValue >= numberBase) {
+            break; // Invalid digit for the current base or end of number
         }
-        extractedJsElements.push(currentNode.head);
-        currentNode = currentNode.tail;
+
+        digitEncountered = true;
+
+        // OCaml integers are 31-bit signed. Max positive: 2^30 - 1. Max negative: -2^30.
+        const MAX_OCAML_ABS_VALUE = 1073741824; // 2^30
+
+        // Check for potential overflow before multiplication and addition
+        // This threshold check mimics the original OCaml logic's overflow detection.
+        if (parsedValue > (MAX_OCAML_ABS_VALUE - digitValue) / numberBase) {
+            throw new InputParsingError("int_of_string");
+        }
+
+        parsedValue = numberBase * parsedValue + digitValue;
+        currentIndex++;
     }
-    return { prefix: protocolListFromElements(extractedJsElements), remainder: currentNode };
+
+    // If no digits were found or there are trailing characters after the number
+    if (!digitEncountered || currentIndex !== inputString.length) {
+        throw new InputParsingError("int_of_string");
+    }
+
+    // Final overflow check after applying sign
+    if (numberSign === 1 && parsedValue > (MAX_OCAML_ABS_VALUE - 1)) {
+        throw new InputParsingError("int_of_string");
+    }
+    if (numberSign === -1 && parsedValue > MAX_OCAML_ABS_VALUE) {
+        throw new InputParsingError("int_of_string");
+    }
+
+    return numberSign * parsedValue;
 }
 
-function matrixArithmetic(valueA, valueB) {
-    return Math.imul(valueA, valueB);
+/**
+ * Performs 31-bit signed integer multiplication, mimicking OCaml's `caml_mul`.
+ * This is a specific implementation from the OCaml-to-JS compiler.
+ * It handles potential precision issues with large numbers in JS floats
+ * before the final `|0` truncation to a 32-bit signed integer.
+ * @param {number} x
+ * @param {number} y
+ * @returns {number} The 32-bit signed integer result, which OCaml interprets as 31-bit.
+ */
+function performIntegerMultiplication(x, y) {
+    // The original `caml_mul` uses `>> 16` (signed right shift) for the high part.
+    // It then adds the low part and truncates to 32-bit signed integer with `|0`.
+    return ((((x >> 16) * y) << 16) + (x & 0xffff) * y) | 0;
 }
 
-function protocolMaxWindowProduct(windowSpan, dataInputArray) {
-    if (windowSpan === 0) return 1;
-    if (windowSpan > dataInputArray.length) return -1;
+/**
+ * Calculates the maximum product of 'windowSize' consecutive elements in an array.
+ * Uses `performIntegerMultiplication` to mimic OCaml's integer arithmetic.
+ * @param {number} windowSize The size of the sliding window.
+ * @param {number[]} numberSequence The array of numbers.
+ * @returns {number} The maximum product found, or -1 if the window size is larger than the sequence.
+ */
+function findMaxWindowProduct(windowSize, numberSequence) {
+    if (windowSize <= 0) {
+        throw new Error("Window size must be positive.");
+    }
+    if (numberSequence.length < windowSize) {
+        return -1; // Mimics original behavior for out-of-bounds window
+    }
 
-    let maximumProductFound = -Infinity;
+    let overallMaximumProduct = -Infinity;
 
-    for (let i = 0; i <= dataInputArray.length - windowSpan; i++) {
+    for (let i = 0; i <= numberSequence.length - windowSize; i++) {
         let currentWindowProduct = 1;
-        for (let j = 0; j < windowSpan; j++) {
-            currentWindowProduct = matrixArithmetic(currentWindowProduct, dataInputArray[i + j]);
+        for (let j = 0; j < windowSize; j++) {
+            // Use the OCaml-specific multiplication for each step
+            currentWindowProduct = performIntegerMultiplication(currentWindowProduct, numberSequence[i + j]);
         }
-        maximumProductFound = Math.max(maximumProductFound, currentWindowProduct);
+        overallMaximumProduct = Math.max(overallMaximumProduct, currentWindowProduct);
     }
-    return maximumProductFound;
+    return overallMaximumProduct;
 }
 
-function protocolGenerateRange(startNum, endNum) {
-    const generatedNumbers = [];
-    for (let i = startNum; i < endNum; i++) {
-        generatedNumbers.push(i);
-    }
-    return protocolListFromElements(generatedNumbers);
-}
+/**
+ * Main function to process input and solve the problem.
+ */
+function executeGameLogic() {
+    const rawInputContent = fileSystem.readFileSync("/dev/stdin", "utf8");
+    // Split by one or more whitespace characters and filter out empty strings
+    const inputTokens = rawInputContent.split(/\s+/).filter(token => token.length > 0);
 
-function protocolArraySwap(targetArray, indexAlpha, indexBeta) {
-    const temporaryValue = targetArray[indexAlpha];
-    targetArray[indexAlpha] = targetArray[indexBeta];
-    targetArray[indexBeta] = temporaryValue;
-}
+    let tokenPointer = 0;
 
-function executeSystemLogic() {
-    const rawSystemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-    const parsedTokens = rawSystemInput.split(/\s/);
-
-    let currentInputList = protocolListFromElements(parsedTokens);
-
-    for (;;) {
-        if (currentInputList === null) {
-            protocolRaise("ProtocolFailure", "get_input");
+    while (true) {
+        // Ensure there are enough tokens for N and M
+        if (tokenPointer + 1 >= inputTokens.length) {
+            // If the loop terminates due to 0 0, this error won't be hit.
+            // If it's malformed input, it should throw "Failure: get_input".
+            throw new Error("Failure: get_input");
         }
 
-        let currentCountValue;
-        currentCountValue = protocolNumericConversion(currentInputList.head);
-        currentInputList = currentInputList.tail;
+        let countN, windowM;
+        try {
+            countN = parseStrictInteger(inputTokens[tokenPointer]);
+            windowM = parseStrictInteger(inputTokens[tokenPointer + 1]);
+        } catch (e) {
+            if (e instanceof InputParsingError) {
+                throw new Error("Failure: get_input"); // Mimic original error for bad input format
+            }
+            throw e; // Re-throw other unexpected errors
+        }
 
-        if (currentInputList === null) {
+        // Termination condition: N=0, M=0
+        if (countN === 0 && windowM === 0) {
             break;
         }
 
-        let currentLengthValue;
-        currentLengthValue = protocolNumericConversion(currentInputList.head);
-        currentInputList = currentInputList.tail;
+        tokenPointer += 2; // Advance past N and M
 
-        if (currentCountValue === 0 && currentLengthValue === 0) {
-            break;
+        // Ensure there are enough tokens for the 'N' numbers
+        if (tokenPointer + countN > inputTokens.length) {
+            throw new Error("Failure: get_input");
         }
 
-        const dataExtractionResult = protocolExtractListPrefix(currentCountValue, currentInputList);
-        const stringDataList = dataExtractionResult.prefix;
-        currentInputList = dataExtractionResult.remainder;
+        const currentNumbers = [];
+        for (let i = 0; i < countN; i++) {
+            try {
+                currentNumbers.push(parseStrictInteger(inputTokens[tokenPointer + i]));
+            } catch (e) {
+                if (e instanceof InputParsingError) {
+                    throw new Error("Failure: get_input");
+                }
+                throw e;
+            }
+        }
+        tokenPointer += countN; // Advance past the 'N' numbers
 
-        const numberDataList = protocolListToJsArray(protocolMapList(protocolNumericConversion, stringDataList));
-        const numberDataArray = numberDataList;
+        // Calculate the maximum product for the original sequence
+        const maxProductInitial = findMaxWindowProduct(windowM, currentNumbers);
 
-        const initialMaxProduct = protocolMaxWindowProduct(currentLengthValue, numberDataArray);
+        let maxProductAfterAnySingleSwap = maxProductInitial; // Initialize with the original max
 
-        const indexRangeList = protocolGenerateRange(0, currentCountValue);
-        const allIndexPairsList = protocolFlattenList(
-            protocolMapList(
-                (firstIndex) => protocolMapList((secondIndex) => ({ idx1: firstIndex, idx2: secondIndex }), indexRangeList),
-                indexRangeList
-            )
-        );
+        // Iterate through all unique pairs of indices (i, j) to perform a single swap
+        for (let i = 0; i < countN; i++) {
+            for (let j = i + 1; j < countN; j++) { // j starts from i+1 to avoid redundant swaps and self-swaps
+                // Perform the swap
+                [currentNumbers[i], currentNumbers[j]] = [currentNumbers[j], currentNumbers[i]];
 
-        let highestProductAfterSwap = initialMaxProduct;
+                // Calculate the maximum product for the sequence after this specific swap
+                const productAfterSwap = findMaxWindowProduct(windowM, currentNumbers);
+                
+                // Update the overall maximum product found after any single swap
+                maxProductAfterAnySingleSwap = Math.max(maxProductAfterAnySingleSwap, productAfterSwap);
 
-        let currentPairNode = allIndexPairsList;
-        while (currentPairNode !== null) {
-            const { idx1, idx2 } = currentPairNode.head;
-
-            protocolArraySwap(numberDataArray, idx1, idx2);
-            const productAfterCurrentSwap = protocolMaxWindowProduct(currentLengthValue, numberDataArray);
-            highestProductAfterSwap = Math.max(highestProductAfterSwap, productAfterCurrentSwap);
-            protocolArraySwap(numberDataArray, idx1, idx2);
-
-            currentPairNode = currentPairNode.tail;
+                // Swap back to restore the original order for the next iteration
+                [currentNumbers[i], currentNumbers[j]] = [currentNumbers[j], currentNumbers[i]];
+            }
         }
 
-        if (highestProductAfterSwap < initialMaxProduct) {
+        // Determine and print the result based on the comparison
+        if (maxProductAfterAnySingleSwap < maxProductInitial) {
             console.log("NO GAME");
         } else {
-            console.log(String(highestProductAfterSwap - initialMaxProduct));
+            console.log(maxProductAfterAnySingleSwap - maxProductInitial);
         }
     }
 }
 
-try {
-    executeSystemLogic();
-} catch (errorObject) {
-    // Top-level error handling as per original compiled output.
-    // Errors like "int_of_string" or "get_input" will terminate the program.
-}
+// Execute the main game logic.
+// Any unhandled errors will propagate and terminate the program,
+// mimicking the original OCaml runtime's behavior for top-level exceptions.
+executeGameLogic();

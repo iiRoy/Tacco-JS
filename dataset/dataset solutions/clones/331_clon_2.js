@@ -1,56 +1,54 @@
-var showOutput = console.log;
+var displayResult = console.log;
 
-function makeLineReader( sourceContent )
-{
-  let contentLines = sourceContent.split( '\n' ); // Divide the large string into an array of lines.
-  return function ( )
-  {
-    return contentLines.shift( ); // This anonymous function provides the next available line.
-  };
+function processRawData(rawData) {
+    // Split the entire input string into individual lines.
+    var dataLines = rawData.split("\n");
+    // Return a function that provides the next line from the processed data.
+    return function () {
+        return dataLines.shift();
+    };
 }
 
+// This function orchestrates the main game simulation logic.
+function executeGameSimulation(gameData) {
+    // Obtain a function to retrieve the next piece of input data.
+    var getNextDataItem = processRawData(gameData);
+    // Read the first line, which indicates the number of games to simulate.
+    var numGames = getNextDataItem() - 0; // Convert to number.
 
-// Primary routine to process a series of baseball game simulations.
-function simulateBaseball( rawData )
-{
-  const getLine = makeLineReader( rawData ); // Create a function to fetch subsequent input lines.
-  let numGames = parseInt( getLine( ), 10 ); // Determine the total number of games to simulate.
+    // Iterate through each game.
+    for (var gameIndex = 0; gameIndex < numGames; gameIndex++) {
+        var outsCount = 0; // Counter for outs in the current game.
+        var baseRunners = 0; // Number of runners currently on base.
+        var totalPoints = 0; // Total points scored in the current game.
 
-  for ( let gameIdx = 0 ; gameIdx < numGames ; gameIdx++ )
-  {
-    let currentDismissals = 0; // Reset outs for the new game.
-    let runnersOnBases = 0;   // No runners at the start of an inning.
-    let gamePoints = 0;       // Score for the current game starts at zero.
+        // Continue the game until three outs are recorded.
+        while (outsCount < 3) {
+            // Read the next event outcome.
+            var eventOutcome = getNextDataItem();
 
-    while ( currentDismissals < 3 ) // An inning continues until three outs are recorded.
-    {
-      let currentAction = getLine( ); // Read the next play event.
-
-      if ( currentAction === 'SINGLE' )
-      {
-        runnersOnBases++; // A runner successfully advances.
-        if ( runnersOnBases === 4 ) // If a runner crosses home plate (4th base).
-        {
-          gamePoints++;      // A point is scored.
-          runnersOnBases--; // The runner is no longer on base.
+            if (eventOutcome === 'HIT') {
+                // A hit advances runners and potentially scores a point.
+                baseRunners++;
+                if (baseRunners === 4) {
+                    totalPoints++; // A runner scored.
+                    baseRunners--; // The scoring runner is no longer on base.
+                }
+            } else if (eventOutcome === 'HOMERUN') {
+                // A homerun clears all bases and scores points for all runners plus the batter.
+                totalPoints += baseRunners + 1;
+                baseRunners = 0; // Bases are cleared.
+            } else {
+                // Any other outcome is an out.
+                outsCount++;
+            }
         }
-      }
-      else if ( currentAction === 'LONG_BALL' ) // A home run event.
-      {
-        gamePoints += runnersOnBases + 1; // All runners plus the batter score.
-        runnersOnBases = 0;               // Bases are cleared.
-      }
-      else // Any other event implies an out.
-      {
-        currentDismissals++; // Increment the out counter.
-      }
+        // Display the total points for the completed game.
+        displayResult(totalPoints);
     }
-    showOutput( gamePoints ); // Display the final score for the completed game.
-  }
-
 }
 
-// Entry point for execution: reads input from standard input and starts the simulation.
-simulateBaseball( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
-// An alternative execution path for local file testing:
-//simulateBaseball( require("fs").readFileSync("test_input.txt", "utf8") );
+// Execute the main simulation function using input from standard input.
+executeGameSimulation(require("fs").readFileSync("/dev/stdin", "utf8"));
+// For local testing, you might use:
+// executeGameSimulation(require("fs").readFileSync("input.txt", "utf8"));

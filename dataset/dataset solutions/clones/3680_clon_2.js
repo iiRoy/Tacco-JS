@@ -1,14 +1,8 @@
-// This section initializes the first numerical variable.
-let primaryNumber
-  =
-  4;  // An integer constant.
+let firstValue = 4; // Assigning an initial integer value to a variable.
 
-// Here, we define the second numerical variable for subsequent operations.
-let secondaryNumber = 11
-; // Another integer.
+let secondValue = 11; /*
+    Assigning another integer value.
+    This variable holds the second operand.
+*/
 
-// The function call below is responsible for displaying a specific string.
-logOutput(
-  "a+b"
-)
-;
+console.log("a+b"); // Outputting the literal string "a+b" to the console.

@@ -1,82 +1,100 @@
 'use strict';
-process.stdin.resume(); // Continue processing standard input
-process.stdin.setEncoding('utf8'); // Set character encoding for input streams
 
-// Utility function to find the largest numeric value within a list
-const obtainMaximum = (valueList) => {
-  let currentIndex = valueList.length; // Initialize index from the end
-  let highestPoint = Number.NEGATIVE_INFINITY; // Start with the lowest possible number
+// Initiate the standard input stream to continue processing.
+process.stdin.resume();
+// Configure the character encoding for the standard input stream.
+process.stdin.setEncoding('utf8');
 
-  // Iterate backwards through the collection
-  while (currentIndex--) {
-    if (valueList[currentIndex] > highestPoint) {
-      highestPoint = valueList[currentIndex]; // Update if a larger value is found
+/**
+ * Identifies the largest numerical value within a provided array.
+ * @param {Array<number>} valueCollection - The array of numbers to be examined.
+ * @returns {number} The maximum value found in the array.
+ */
+const determineMaximum = (valueCollection) => {
+    let indexPosition = valueCollection.length;
+    let highestValue = -Infinity; // Initialize with the smallest possible number.
+    while (indexPosition--) { // Iterate through the array from the last element to the first.
+        if (valueCollection[indexPosition] > highestValue) {
+            highestValue = valueCollection[indexPosition]; // Update if a greater value is discovered.
+        }
     }
-  }
-  return highestPoint; // Return the identified maximum
+    return highestValue;
 };
 
-// Utility function to find the smallest numeric value within a list
-const obtainMinimum = (valueList) => {
-  let traversalIndex = valueList.length; // Initialize index for backward iteration
-  let lowestPoint = Number.POSITIVE_INFINITY; // Start with the highest possible number
-
-  // Loop through items in reverse order
-  while (traversalIndex--) {
-    if (valueList[traversalIndex] < lowestPoint) {
-      lowestPoint = valueList[traversalIndex]; // Update if a smaller value is encountered
+/**
+ * Identifies the smallest numerical value within a provided array.
+ * @param {Array<number>} numericSeries - The array of numbers to be examined.
+ * @returns {number} The minimum value found in the array.
+ */
+const determineMinimum = (numericSeries) => {
+    let loopCounter = numericSeries.length;
+    let lowestValue = Infinity; // Initialize with the largest possible number.
+    while (loopCounter--) { // Iterate through the array in reverse order.
+        if (numericSeries[loopCounter] < lowestValue) {
+            lowestValue = numericSeries[loopCounter]; // Update if a smaller value is encountered.
+        }
     }
-  }
-  return lowestPoint; // Provide the smallest value
+    return lowestValue;
 };
 
-// Main execution function for processing input
-const processInputData = (inputPayload) => {
-  // Input lines are separated by newline characters
-  inputPayload = inputPayload.split("\n");
+/**
+ * The primary function responsible for processing the input data.
+ * It calculates the minimum cost to traverse a series of points.
+ * @param {string} inputContent - The raw string data received from standard input.
+ */
+const executePrimaryLogic = (inputContent) => {
+    // Divide the input string into individual lines.
+    let lines = inputContent.split("\n");
 
-  // Parse the first number from the initial line
-  let numberOfItems = parseInt(inputPayload[0]);
+    // Extract the total number of items (N) from the first line.
+    let totalItems = parseInt(lines[0], 10);
 
-  // Extract and convert the second line into an array of numbers
-  let elevationMeasurements = inputPayload[1].split(" ").map(Number);
+    // Parse the second line to obtain an array of height values.
+    let elevationData = (lines[1].split(" ").map(Number));
 
-  // Initialize a cost array with a large default value
-  let pathCosts = new Array(numberOfItems + 20).fill(Number.MAX_VALUE);
+    // Create an array to store cumulative costs, initialized with a very large number.
+    // The size is chosen to accommodate potential accesses beyond 'totalItems'.
+    let cumulativeCosts = new Array(totalItems + 20).fill(Infinity);
 
-  // Set the initial cost for the starting point
-  pathCosts[0] = 0;
+    // The cost to reach the starting point (index 0) is always zero.
+    cumulativeCosts[0] = 0;
 
-  // Recursive function to compute minimum costs
-  const calculatePath = (currentPosition) => {
-    // Base case: if past the end of the items, stop
-    if (currentPosition > numberOfItems) {
-      return 0;
-    }
+    /**
+     * A recursive helper function to compute the minimum costs using dynamic programming.
+     * It explores paths by taking steps of 1 or 2.
+     * @param {number} currentPoint - The current index in the elevation data.
+     */
+    const computePathCosts = (currentPoint) => {
+        // Base condition: if the current point is beyond the valid range, terminate.
+        if (currentPoint >= totalItems) {
+            return;
+        }
 
-    // Calculate cost to move to the next position (currentPosition + 1)
-    pathCosts[currentPosition + 1] = Math.min(
-      pathCosts[currentPosition] + Math.abs(elevationMeasurements[currentPosition] - elevationMeasurements[currentPosition + 1]),
-      pathCosts[currentPosition + 1]
-    );
+        // Calculate the cost to move to the next point (currentPoint + 1).
+        // Update the cost if the new path is cheaper.
+        cumulativeCosts[currentPoint + 1] = Math.min(
+            cumulativeCosts[currentPoint] + Math.abs(elevationData[currentPoint] - elevationData[currentPoint + 1]),
+            cumulativeCosts[currentPoint + 1]
+        );
 
-    // Calculate cost to move two positions ahead (currentPosition + 2)
-    pathCosts[currentPosition + 2] = Math.min(
-      pathCosts[currentPosition] + Math.abs(elevationMeasurements[currentPosition] - elevationMeasurements[currentPosition + 2]),
-      pathCosts[currentPosition + 2]
-    );
+        // Calculate the cost to move two points ahead (currentPoint + 2).
+        // Update the cost if this path is more economical.
+        cumulativeCosts[currentPoint + 2] = Math.min(
+            cumulativeCosts[currentPoint] + Math.abs(elevationData[currentPoint] - elevationData[currentPoint + 2]),
+            cumulativeCosts[currentPoint + 2]
+        );
 
-    // Recursively call for subsequent positions
-    calculatePath(currentPosition + 1);
-    calculatePath(currentPosition + 2);
-  };
+        // Recursively call the function for the subsequent points.
+        computePathCosts(currentPoint + 1);
+        computePathCosts(currentPoint + 2);
+    };
 
-  // Initiate the cost calculation from the beginning
-  calculatePath(0);
+    // Begin the cost calculation process from the initial point.
+    computePathCosts(0);
 
-  // Output the final computed cost for the last item
-  console.log(pathCosts[numberOfItems - 1]);
+    // Output the final minimum cost to reach the (N-1)th element.
+    console.log(cumulativeCosts[totalItems - 1]);
 };
 
-// Do not modify anything beyond this line (handles standard input/output and calls the primary function)
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line should not be altered. It reads input from stdin and invokes the main logic.
+executePrimaryLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

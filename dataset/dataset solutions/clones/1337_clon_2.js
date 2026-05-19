@@ -1,25 +1,22 @@
-const sourceData = require('fs')
-  .readFileSync('/dev/stdin', 'utf8')
-  .trim(); // Read and prepare the initial input string.
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim(); // Read input from standard input, decode as UTF-8, and remove leading/trailing whitespace
+var currentNumber = parseInt(rawData); // Convert the processed input string into an integer value
 
-let remainingValue = parseInt(sourceData); // Convert the processed string into an integer for calculation.
+// Initialize an empty array to store the prime factors discovered
+var primeFactors = [];
 
-
-// This array will hold all the prime factors found during the decomposition process.
-const factorList = [];
-
-
-// Begin iterating through potential divisors starting from the smallest prime.
-for (let currentDivisor = 2; currentDivisor < remainingValue; currentDivisor++) {
-    // While the current number is perfectly divisible by the test divisor,
-    // it implies that the test divisor is a prime factor.
-    while (remainingValue % currentDivisor === 0) {
-        factorList.push(currentDivisor); // Add the identified prime factor to our collection.
-        remainingValue /= currentDivisor; // Reduce the number by this factor to continue finding others.
+// Iterate through potential divisors starting from the smallest prime number (2)
+for (var divisorCandidate = 2; divisorCandidate < currentNumber; divisorCandidate++) {
+    // Continuously divide the current number by the divisor candidate as long as it's perfectly divisible
+    while (currentNumber % divisorCandidate === 0) {
+        // If divisible, add the current divisor candidate to our list of prime factors
+        primeFactors.push(divisorCandidate);
+        // Update the current number by dividing it by the found factor
+        currentNumber /= divisorCandidate;
     }
 }
 
-// Output the final irreducible component of the original number, followed by a separator.
-process.stdout.write(remainingValue + ': ');
-// Then, display all the collected prime factors, joined by spaces, ending with a newline.
-process.stdout.write(factorList.join(' ') + '\n');
+// Output the final remaining value of 'currentNumber' (which will be the last prime factor if it's greater than 1)
+// followed by a colon and a space.
+process.stdout.write(currentNumber + ': ');
+// Output all collected prime factors, joined by a single space, followed by a newline character.
+process.stdout.write(primeFactors.join(' ') + "\n");

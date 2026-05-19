@@ -1,39 +1,57 @@
-// This  module  provides  functions  for processing numerical data.
-function SumTopElements (    orderedList,    listSize,   elementsToSum ) {
-    let   accumulatedValue   =  0  ;    //  A variable for tracking the cumulative sum.
-    // Commence a reverse iteration through the collection.
-    for ( let currentIdx = listSize ; currentIdx > listSize - elementsToSum ; currentIdx-- ) {
-        accumulatedValue += orderedList[ currentIdx ] ;  // Increment the total with the current item's value.
+function ComputeSum(orderedElements, totalCount, selectionSize) {
+    // Initialize an accumulator for the sum of selected elements.
+    let accumulatedValue = 0;
+
+    // Iterate backwards from 'totalCount' down to 'totalCount - selectionSize + 1'.
+    // This loop structure directly mirrors the original's iteration pattern.
+    for (let idx = totalCount; idx > totalCount - selectionSize; idx--) {
+        // Add the element at the current index to the running total.
+        accumulatedValue += orderedElements[idx];
     }
-    return  accumulatedValue  ;  // Present the final computed aggregate.
+
+    // Return the final computed sum.
+    return accumulatedValue;
 }
 
-
-// A helper function designed to dictate the sorting behavior for numerical arrays.
-function  valueComparator(  itemOne , itemTwo  )  {
-    return itemOne - itemTwo ;  // Yields a negative, zero, or positive value for comparison.
+// A utility function for comparing two numbers to facilitate ascending sort.
+function numericOrder(valA, valB) {
+    // Returns a negative value if valA < valB, zero if equal, positive if valA > valB.
+    return valA - valB;
 }
 
-
-// This routine is responsible for parsing string representations into numbers and arranging them.
-function ParseAndArrange ( stringValues ) {
-    return  stringValues.map (  function (singleEntry) {
-        return parseInt( singleEntry ,  10 )  ; // Convert a string token to its decimal integer equivalent.
-    } ) . sort (  valueComparator ) ; // Apply the custom numeric ordering.
+// This function takes an array of string representations of numbers,
+// converts them to integers, and then sorts them numerically.
+function ProcessAndOrder(inputStrings) {
+    // First, map each string item to its integer equivalent (base 10).
+    // Then, sort the resulting array of numbers using the custom numeric comparison.
+    return inputStrings.map(function(currentString) {
+        return parseInt(currentString, 10);
+    }).sort(numericOrder);
 }
 
-// The main entry point function for the entire application logic.
-function StartExecution ( incomingData ) {
-    incomingData = incomingData.split ( "\n" ) ;  // Segment the raw input content by newline characters.
-    const configLine = incomingData[ 0 ] . split ( " " ) ; // Deconstruct the first informational line.
-    const valueRow = incomingData[ 1 ] . split ( " " ) ; // Disassemble the second data-containing line.
+// The primary execution function that orchestrates input processing, calculation, and output.
+function ExecuteProgram(rawData) {
+    // Split the entire raw input string into an array of lines.
+    let processedInputLines = rawData.split("\n");
 
-    let totalItemsCount = parseInt ( configLine[ 1 ] ,  10 ) ; // Extract the total count of elements.
-    let extractCount = parseInt ( configLine[ 2 ] ,  10 ) ; // Determine the number of top elements for summation.
+    // Divide the first line into individual parts based on space delimiters.
+    let firstLineParts = processedInputLines[0].split(" ");
+    // Divide the second line into individual parts based on space delimiters.
+    let secondLineParts = processedInputLines[1].split(" ");
 
-    // Display the outcome of the calculation pipeline.
-    console.log ( SumTopElements ( ParseAndArrange ( valueRow ) , totalItemsCount , extractCount ) ) ;
+    // Parse the array length from the second element of the first line.
+    let arrayLength = parseInt(firstLineParts[1], 10);
+    // Parse the 'importantValue' (k) from the third element of the first line.
+    let importantValue = parseInt(firstLineParts[2], 10);
+
+    // Perform the following steps:
+    // 1. Process and sort the elements from the second line of input.
+    // 2. Calculate the sum of the last 'importantValue' elements from the sorted array,
+    //    using 'arrayLength' as the starting index for the backward iteration.
+    // 3. Print the final computed sum to the standard output.
+    console.log(ComputeSum(ProcessAndOrder(secondLineParts), arrayLength, importantValue));
 }
 
-// Bootstrap the program by fetching data from the standard input stream.
-StartExecution ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read the entire content of the standard input file synchronously,
+// decode it as UTF-8, and pass it to the main program execution function.
+ExecuteProgram(require("fs").readFileSync("/dev/stdin", "utf8"));

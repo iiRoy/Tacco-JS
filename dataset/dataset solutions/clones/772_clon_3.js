@@ -1,132 +1,87 @@
-const xCoordinateModifiers = {
-    'N': 0,
-    'S': 0,
-    'E': 1,
-    'W': -1
-};
+const xMovementMap = { N: 0, S: 0, E: 1, W: -1 };
+const yMovementMap = { N: 1, S: -1, E: 0, W: 0 };
 
-const yCoordinateModifiers = {
-    'N': 1,
-    'S': -1,
-    'E': 0,
-    'W': 0
-};
+function createEmptyGrid(gridDimension) {
+    const newGrid = [];
+    for (let r = 0; r < gridDimension; r++) {
+        newGrid[r] = [];
+        for (let c = 0; c < gridDimension; c++) {
+            newGrid[r][c] = false;
+        }
+    }
+    return newGrid;
+}
 
-/**
- * Executes a simulation based on provided game input,
- * involving robot movement on a grid and collecting targets.
- * @param {string} rawSimulationData - The complete input string containing all test cases.
- */
-function ExecuteSimulation(rawSimulationData) {
-    // Split the entire input data into individual lines for easier processing.
-    const simulationInputLines = rawSimulationData.split('\n');
-    let currentInputLinePointer = 0;
+function attemptPointCollection(gridReference, xCoord, yCoord, collectedCounterRef) {
+    if (gridReference[xCoord][yCoord]) {
+        gridReference[xCoord][yCoord] = false;
+        collectedCounterRef.value++;
+    }
+}
 
-    // Define constants for the game board dimensions and initial robot position.
-    const GRID_DIMENSION = 21; // The board is 21x21 (0-20).
-    const INITIAL_ROBOT_X = 10;
-    const INITIAL_ROBOT_Y = 10;
+function ProcessInput(rawData){
+    const inputLines = rawData.split("\n");
+    let linePointer = 0;
 
-    // Main loop to process multiple test cases until a termination condition is met.
-    while (true) {
-        // Read the number of target locations for the current test case.
-        // The 'Number()' constructor is used for explicit type conversion from string to integer.
-        const numberOfTargets = Number(simulationInputLines[currentInputLinePointer++]);
+    const GRID_MAX_COORD = 20;
+    const START_POSITION_X = 10;
+    const START_POSITION_Y = 10;
 
-        // If the number of targets is zero, it signifies the end of input.
-        if (numberOfTargets === 0) {
-            break; // Exit the simulation loop.
+    for (;;) {
+        const totalInitialPoints = parseInt(inputLines[linePointer++], 10);
+
+        if (totalInitialPoints === 0) {
+            break;
         }
 
-        // Initialize the game board. It's a 2D array representing the grid.
-        // Each cell initially indicates no target present (false).
-        const gameGrid = Array.from({ length: GRID_DIMENSION }, () =>
-            Array.from({ length: GRID_DIMENSION }, () => false)
-        );
+        const pointGrid = createEmptyGrid(GRID_MAX_COORD + 1);
 
-        // Populate the game board with target locations.
-        // Each target's coordinates are read from the input.
-        for (let targetIndex = 0; targetIndex < numberOfTargets; targetIndex++) {
-            const coordinateLineParts = simulationInputLines[currentInputLinePointer].split(' ');
-            const targetXCoord = Number(coordinateLineParts[0]);
-            const targetYCoord = Number(coordinateLineParts[1]);
-
-            // Basic validation for coordinates to ensure they are within grid bounds.
-            if (targetXCoord >= 0 && targetXCoord < GRID_DIMENSION &&
-                targetYCoord >= 0 && targetYCoord < GRID_DIMENSION) {
-                gameGrid[targetXCoord][targetYCoord] = true; // Mark this cell as containing a target.
-            }
-            currentInputLinePointer++; // Move to the next input line.
+        for (let pointIdx = 0; pointIdx < totalInitialPoints; pointIdx++) {
+            const currentPointLine = inputLines[linePointer];
+            const pointCoordinates = currentPointLine.split(" ");
+            const px = parseInt(pointCoordinates[0], 10);
+            const py = parseInt(pointCoordinates[1], 10);
+            pointGrid[px][py] = true;
+            linePointer++;
         }
 
-        // Read the total number of movement instructions for the current test case.
-        const totalMovementInstructions = Number(simulationInputLines[currentInputLinePointer++]);
+        const numOperations = parseInt(inputLines[linePointer++], 10);
 
-        // Arrays to store movement directions and corresponding step counts.
-        const movementInstructionDirections = [];
-        const movementInstructionSteps = [];
+        const operationTypes = [];
+        const operationDistances = [];
 
-        // Parse all movement instructions.
-        for (let instructionIndex = 0; instructionIndex < totalMovementInstructions; instructionIndex++) {
-            const instructionLineParts = simulationInputLines[currentInputLinePointer].split(' ');
-            movementInstructionDirections[instructionIndex] = instructionLineParts[0]; // e.g., 'N', 'S'
-            movementInstructionSteps[instructionIndex] = Number(instructionLineParts[1]); // e.g., 5, 10
-            currentInputLinePointer++; // Advance input line pointer.
+        for (let opIdx = 0; opIdx < numOperations; opIdx++) {
+            const currentOpLine = inputLines[linePointer];
+            const opDetails = currentOpLine.split(" ");
+            operationTypes[opIdx] = opDetails[0];
+            operationDistances[opIdx] = parseInt(opDetails[1], 10);
+            linePointer++;
         }
 
-        // Initialize robot's starting position and counter for collected items.
-        // A game state object encapsulates these related variables for better organization.
-        let gameState = {
-            robotCurrentX: INITIAL_ROBOT_X,
-            robotCurrentY: INITIAL_ROBOT_Y,
-            collectedItemsCount: 0
-        };
+        const collectedPointCounter = { value: 0 };
 
-        // Check if the initial position itself contains a target.
-        // This is a pre-movement check for the starting cell.
-        if (gameGrid[gameState.robotCurrentX][gameState.robotCurrentY]) {
-            gameGrid[gameState.robotCurrentX][gameState.robotCurrentY] = false; // "Collect" the target.
-            gameState.collectedItemsCount++; // Increment count.
-        }
+        let currentX = START_POSITION_X;
+        let currentY = START_POSITION_Y;
 
-        // Process each movement instruction sequentially.
-        for (let instructionIdx = 0; instructionIdx < totalMovementInstructions; instructionIdx++) {
-            const currentDirection = movementInstructionDirections[instructionIdx];
-            const stepsToTake = movementInstructionSteps[instructionIdx];
+        attemptPointCollection(pointGrid, currentX, currentY, collectedPointCounter);
 
-            // Validate the direction. If invalid, skip this instruction to prevent errors.
-            if (!xCoordinateModifiers.hasOwnProperty(currentDirection)) {
-                // In a real application, one might log this error or throw an exception.
-                continue;
-            }
+        for (let opStepIdx = 0; opStepIdx < numOperations; opStepIdx++) {
+            const currentOperation = operationTypes[opStepIdx];
+            const distanceToMove = operationDistances[opStepIdx];
 
-            // Move the robot step by step for the given distance.
-            for (let step = 0; step < stepsToTake; step++) {
-                // Update robot's coordinates based on the current direction.
-                gameState.robotCurrentX += xCoordinateModifiers[currentDirection];
-                gameState.robotCurrentY += yCoordinateModifiers[currentDirection];
+            for (let moveStep = 0; moveStep < distanceToMove; moveStep++) {
+                const nextX = currentX + xMovementMap[currentOperation];
+                const nextY = currentY + yMovementMap[currentOperation];
 
-                // Add a guard clause for boundary checks. If the robot moves out of bounds,
-                // it cannot collect targets. This prevents array out-of-bounds access.
-                if (gameState.robotCurrentX < 0 || gameState.robotCurrentX >= GRID_DIMENSION ||
-                    gameState.robotCurrentY < 0 || gameState.robotCurrentY >= GRID_DIMENSION) {
-                    // Robot moved out of bounds. Any targets outside the grid are unreachable.
-                    continue; // Skip target check if out of bounds.
-                }
+                currentX = nextX;
+                currentY = nextY;
 
-                // Check if the new valid position contains a target.
-                if (gameGrid[gameState.robotCurrentX][gameState.robotCurrentY]) {
-                    gameGrid[gameState.robotCurrentX][gameState.robotCurrentY] = false; // Mark as collected.
-                    gameState.collectedItemsCount++; // Increment collected count.
-                }
+                attemptPointCollection(pointGrid, currentX, currentY, collectedPointCounter);
             }
         }
 
-        // Determine if all targets were successfully collected.
-        const allTargetsRetrieved = (gameState.collectedItemsCount === numberOfTargets);
-
-        // Output the result for the current test case.
-        if (allTargetsRetrieved) {
+        const finalCollectedCount = collectedPointCounter.value;
+        if (finalCollectedCount === totalInitialPoints) {
             console.log("Yes");
         } else {
             console.log("No");
@@ -134,5 +89,4 @@ function ExecuteSimulation(rawSimulationData) {
     }
 }
 
-// Entry point: Read input from standard input and pass it to the simulation function.
-ExecuteSimulation(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require("fs").readFileSync("/dev/stdin","utf8"));

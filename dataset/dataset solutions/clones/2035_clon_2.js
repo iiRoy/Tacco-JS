@@ -1,82 +1,67 @@
-"use strict"; /* Enforce strict mode for cleaner code */
+"use strict";
 
-/**
- * Primary function to process the input dataset.
- * This routine calculates a specific sum based on sorted and filtered lists.
- * @param {string[]} dataLines - An array of strings, each representing a line of input.
- */
-function processData(dataLines) {
-  // Extract initial configuration parameters from the first line of input.
-  const initialConfig = dataLines[0]
-                          .trim()
-                          .split(" ")
-                          .map(numericString => Number.parseInt(numericString, 10));
+// This function processes the input data to calculate a specific sum based on several lists of numbers.
+function processInputData(dataLines) {
+  // The first line contains configuration parameters: limitP, limitQ, and three unused values.
+  const initialConfig = dataLines[0].trim().split(" ").map(strVal => parseInt(strVal, 10));
 
-  // Initialize three distinct lists of numerical values from subsequent input lines.
-  let primaryValues = dataLines[1]
-                        .trim()
-                        .split(" ")
-                        .map(strVal => Number.parseInt(strVal, 10));
+  // Subsequent lines contain lists of numbers that will be processed.
+  let listP = dataLines[1].trim().split(" ").map(strVal => parseInt(strVal, 10));
+  let listQ = dataLines[2].trim().split(" ").map(strVal => parseInt(strVal, 10));
+  let listR = dataLines[3].trim().split(" ").map(strVal => parseInt(strVal, 10));
 
-  let secondaryValues = dataLines[2]
-                          .trim()
-                          .split(" ")
-                          .map(strVal => Number.parseInt(strVal, 10));
+  // Extract specific limits for listP and listQ from the initial configuration.
+  const limitP = initialConfig[0];
+  const limitQ = initialConfig[1];
+  const configA = initialConfig[2]; // This variable is declared but not utilized further in the logic.
+  const configB = initialConfig[3]; // This variable is declared but not utilized further in the logic.
+  const configC = initialConfig[4]; // This variable is declared but not utilized further in the logic.
 
-  let tertiaryValues = dataLines[3]
-                         .trim()
-                         .split(" ")
-                         .map(strVal => Number.parseInt(strVal, 10));
+  // Sort listP in descending order and then truncate it to keep only the top 'limitP' elements.
+  listP.sort(function(valA, valB) {
+    return valB - valA;
+  });
+  listP = listP.slice(0, limitP);
 
-  // Destructure configuration parameters for easier access.
-  const firstLimit = initialConfig[0];
-  const secondLimit = initialConfig[1];
-  const configA = initialConfig[2]; /* Unused in current logic */
-  const configB = initialConfig[3]; /* Unused in current logic */
-  const configC = initialConfig[4]; /* Unused in current logic */
+  // Sort listQ in descending order and then truncate it to keep only the top 'limitQ' elements.
+  listQ.sort(function(valA, valB) {
+    return valB - valA;
+  });
+  listQ = listQ.slice(0, limitQ);
 
-  // Sort the primary values in descending order and truncate to 'firstLimit'.
-  primaryValues.sort( (itemOne, itemTwo) => itemTwo - itemOne );
-  primaryValues = primaryValues.slice(0, firstLimit);
+  // Sort listR in descending order and then truncate it to keep only the top 'limitP + limitQ' elements.
+  listR.sort(function(valA, valB) {
+    return valB - valA;
+  });
+  listR = listR.slice(0, limitP + limitQ);
 
-  // Sort the secondary values in descending order and truncate to 'secondLimit'.
-  secondaryValues.sort( (itemOne, itemTwo) => itemTwo - itemOne );
-  secondaryValues = secondaryValues.slice(0, secondLimit);
+  // Concatenate the processed listP and listQ, then sort the resulting combined list in descending order.
+  let combinedAndSorted = listP.concat(listQ);
+  combinedAndSorted.sort(function(valA, valB) {
+    return valB - valA;
+  });
 
-  // Sort the tertiary values in descending order and truncate to 'firstLimit + secondLimit'.
-  // Note: The slice limit here is derived from the first two limits, which might be specific to the problem context.
-  tertiaryValues.sort( (itemOne, itemTwo) => itemTwo - itemOne );
-  tertiaryValues = tertiaryValues.slice(0, firstLimit + secondLimit);
-
-  // Combine the primary and secondary lists, then sort the combined list.
-  let mergedResults = primaryValues.concat(secondaryValues);
-  mergedResults.sort( (valX, valY) => valY - valX );
-
-  // Iterate through tertiary values and conditionally update 'mergedResults'.
-  // If a tertiary value is greater than an element in 'mergedResults', replace it.
-  for (let tertiaryIdx = 0; tertiaryIdx < tertiaryValues.length; ++tertiaryIdx) {
-    for (let mergedIdx = 0; mergedIdx < mergedResults.length; ++mergedIdx) {
-      if (tertiaryValues[tertiaryIdx] > mergedResults[mergedIdx]) {
-        mergedResults[mergedIdx] = tertiaryValues[tertiaryIdx];
-        break; // Stop after the first replacement for the current tertiary value.
+  // Iterate through elements of listR. For each element, try to replace an element in combinedAndSorted.
+  // If an element from listR is greater than an element in combinedAndSorted, replace it and move to the next listR element.
+  for (let idxR = 0; idxR < listR.length; idxR++) {
+    for (let idxCombined = 0; idxCombined < combinedAndSorted.length; idxCombined++) {
+      if (listR[idxR] > combinedAndSorted[idxCombined]) {
+        combinedAndSorted[idxCombined] = listR[idxR];
+        break; // Exit inner loop and proceed with the next element from listR
       }
     }
   }
 
-  // Calculate the final sum of all elements in the modified 'mergedResults' list.
-  let finalAccumulation = 0;
-  for (let currentValIndex = 0; currentValIndex < mergedResults.length; ++currentValIndex) {
-    finalAccumulation += mergedResults[currentValIndex];
+  // Calculate the total sum of all elements in the final combinedAndSorted list.
+  let finalTotal = 0;
+  for (let idxSum = 0; idxSum < combinedAndSorted.length; idxSum++) {
+    finalTotal += combinedAndSorted[idxSum];
   }
 
-  // Output the computed total.
-  console.log(finalAccumulation);
+  // Output the computed sum to the standard console.
+  console.log(finalTotal);
 }
 
-// Entry point: Read input from standard input, process it, and execute the main logic.
-processData(
-  require('node:fs') // Use 'node:fs' for explicit Node.js module.
-    .readFileSync('/dev/stdin', 'utf8') // Read entire file as UTF-8 string.
-    .trim() // Remove leading/trailing whitespace.
-    .split("\n") // Split into an array of lines.
-);
+// Read the entire input from standard input, decode it as UTF-8, trim whitespace, and split into lines.
+// Then, pass the array of lines to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

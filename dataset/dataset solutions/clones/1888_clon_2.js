@@ -1,132 +1,137 @@
 "use strict";
 
-// This section handles reading input data from a designated source.
-var dataStream = require("fs") . readFileSync ( "/std/input", "textEncoding" ) ;
+// Acquire raw input from standard input stream
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// The input content is split into an array of tokens, and an index is initialized for sequential access.
-var parsedTokens = dataStream . split ( / |\n/ ) , tokenIndex = 0 ;
+// Split the input into tokens using spaces or newlines as delimiters
+var tokenStream = rawData.split(/ |\n/),
+    tokenIndex = 0;
 
 /**
- * Retrieves the subsequent token from the global parsedTokens array.
- * @param {boolean} isString - If true, the token is returned as a string; otherwise, it's converted to a number.
- * @returns {string|number} The next available token.
+ * Reads the next token from the global token stream.
+ * @param {boolean} isString - If true, returns the token as a string; otherwise, converts to a number.
+ * @returns {string|number} The next token.
  */
-function getNextToken ( isString )
-{
-    return isString ? parsedTokens [ tokenIndex ++ ] : + parsedTokens [ tokenIndex ++ ] ;
+function readNextToken(isString) {
+    return isString ? tokenStream[tokenIndex++] : +tokenStream[tokenIndex++];
 }
 
 /**
- * Fetches a specified quantity of tokens from the input stream.
- * @param {number} count - The total number of tokens to retrieve.
- * @param {boolean} asStrings - If true, all tokens are returned as strings; otherwise, they are numeric.
- * @returns {Array<string|number>} An array containing the requested tokens.
+ * Reads a specified number of tokens from the global token stream.
+ * @param {number} count - The number of tokens to read.
+ * @param {boolean} isString - If true, returns tokens as strings; otherwise, converts to numbers.
+ * @returns {Array<string|number>} An array of tokens.
  */
-function getMultipleTokens ( count, asStrings ) {
-    return asStrings
-        ? parsedTokens . slice ( tokenIndex, tokenIndex += count )
-        : parsedTokens . slice ( tokenIndex, tokenIndex += count ) . map ( val => + val ) ;
+function readMultipleTokens(count, isString) {
+    return isString ? tokenStream.slice(tokenIndex, tokenIndex += count) : tokenStream.slice(tokenIndex, tokenIndex += count).map(val => +val);
 }
 
 /**
- * Reads a block of tokens and structures them into a 2D array (matrix).
- * @param {number} rows - The number of rows for the matrix.
- * @param {number} cols - The number of columns per row.
- * @param {boolean} rawStrings - If true, elements are kept as strings; otherwise, they are numeric.
- * @returns {Array<Array<string|number>>} The constructed matrix.
+ * Reads tokens to form a matrix (2D array).
+ * @param {number} height - The number of rows.
+ * @param {number} width - The number of columns per row.
+ * @param {boolean} isString - If true, returns tokens as strings; otherwise, converts to numbers.
+ * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
  */
-function getMatrixTokens ( rows, cols, rawStrings )
-{
-    var resultArray = [ ], rowIndex = 0;
-    if ( rawStrings ) {
-        for ( ; rowIndex < rows ; rowIndex ++ ) {
-            resultArray . push ( parsedTokens . slice ( tokenIndex, tokenIndex += cols ) ) ;
-        }
+function readMatrixTokens(height, width, isString) {
+    var resultRows = [],
+        rowIdx = 0;
+    if (isString) {
+        for (; rowIdx < height; rowIdx++) resultRows.push(tokenStream.slice(tokenIndex, tokenIndex += width));
     } else {
-        for ( ; rowIndex < rows ; rowIndex ++ ) {
-            resultArray . push ( parsedTokens . slice ( tokenIndex, tokenIndex += cols ) . map ( val => + val ) ) ;
-        }
+        for (; rowIdx < height; rowIdx++) resultRows.push(tokenStream.slice(tokenIndex, tokenIndex += width).map(val => +val));
     }
-    return resultArray ;
+    return resultRows;
 }
 
 /**
- * Dynamically creates a multi-dimensional array based on provided dimensions and fills it with an initial value.
- * @param {*} initialValue - The value to populate the array elements with.
- * @param {...number} dimensions - A variable number of arguments specifying the size of each dimension.
- * @returns {Array} The newly created multi-dimensional array.
+ * Creates a multi-dimensional array initialized with a given value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array (e.g., createMultiDimArray(0, 2, 3) for a 2x3 array).
+ * @returns {Array} The multi-dimensional array.
  */
-function createMultiDimArray ( initialValue ) {
-    var dimensions = arguments, dimLength = dimensions . length,
-        arrayCreationString = "Array(dimensions[" + --dimLength + "]).fill().map(x=>{return " + initialValue + ";})" ;
-    while ( --dimLength ) {
-        arrayCreationString = "Array(dimensions[" + dimLength + "]).fill().map(x=>" + arrayCreationString + ")" ;
-    }
-    return eval ( arrayCreationString ) ;
+function createMultiDimArray(initialValue) {
+    var dimensions = arguments,
+        dimLength = dimensions.length,
+        arrayCreationString = "Array(dimensions[" + --dimLength + "]).fill().map(_=>{return " + initialValue + ";})";
+    while (--dimLength) arrayCreationString = "Array(dimensions[" + dimLength + "]).fill().map(_=>" + arrayCreationString + ")";
+    return eval(arrayCreationString);
 }
 
-// Executes the primary business logic of the program.
-var programResult = executeProgram ( ) ;
-// If the program's execution yields a non-undefined value, it is printed to the console.
-if ( programResult !== undefined ) console . log ( programResult ) ;
+// Execute the primary logic and capture its output
+var programResult = processInputData();
+
+// If the logic produced a result, print it to the console
+if (programResult !== undefined) console.log(programResult);
 
 /**
- * The central function orchestrating the string balance validation process.
- * It determines if a sequence of strings can be balanced according to specific rules.
- * @returns {string} Returns "Yes" if the strings can be balanced, otherwise "No".
+ * Main function to process the input data and determine the outcome.
+ * This function checks if a sequence of parentheses strings can be balanced.
+ * @returns {string} "Yes" if balanced, "No" otherwise.
  */
-function executeProgram ( ) {
-    var negativeOutcome = "No", positiveOutcome = "Yes" ;
-    // Reads the total count of string sequences to be processed.
-    var sequenceLength = getNextToken ( ) ;
-    // Initializes data structures to categorize and track balance states.
-    var prefixBalances = [ ], suffixBalances = [ ], totalBalance = 0, currentBalance = 0 ;
+function processInputData() {
+    const negativeOutcome = "No";
+    const positiveOutcome = "Yes";
 
-    // Iterates through each string sequence provided in the input.
-    for ( var sequenceIterator = 0 ; sequenceIterator < sequenceLength ; sequenceIterator ++ ) {
-        var minimumBalance = 0, finalBalance = 0 ;
-        // Retrieves the current string sequence.
-        var currentString = getNextToken ( true ) ;
-        // Processes each character of the string to calculate its balance.
-        for ( var charIterator = 0 ; charIterator < currentString . length ; charIterator ++ ) {
-            if ( currentString [ charIterator ] === "(" ) {
-                finalBalance ++ ;
+    var itemCount = readNextToken(); // Number of strings to process
+    var openFirstList = [], // Stores strings that start with ')' and end with ')'
+        closeFirstList = [], // Stores strings that start with '(' and end with ')'
+        totalBalance = 0, // Overall balance of all parentheses
+        currentBalance = 0; // Current balance during processing
+
+    // Iterate through each input string
+    for (var idx = 0; idx < itemCount; idx++) {
+        var minBalance = 0, // Minimum balance encountered within the current string
+            finalBalance = 0; // Final balance after processing the current string
+        var currentString = readNextToken(true); // Read the string
+
+        // Analyze the balance of parentheses within the current string
+        for (var charIdx = 0; charIdx < currentString.length; charIdx++) {
+            if (currentString[charIdx] === "(") {
+                finalBalance++;
             } else {
-                finalBalance -- ;
-                if ( finalBalance < minimumBalance ) minimumBalance = finalBalance ;
+                finalBalance--;
+                if (finalBalance < minBalance) minBalance = finalBalance;
             }
         }
-        totalBalance += finalBalance ;
-        // Categorizes the string based on its final and minimum balance.
-        if ( minimumBalance >= 0 ) {
-            currentBalance += finalBalance ;
-        } else if ( finalBalance <= 0 ) {
-            prefixBalances . push ( [ -minimumBalance, finalBalance ] ) ;
+
+        totalBalance += finalBalance; // Add string's final balance to overall total
+
+        // Categorize strings based on their balance characteristics
+        if (minBalance >= 0) {
+            // String can be fully balanced or only increase balance
+            currentBalance += finalBalance;
+        } else if (finalBalance <= 0) {
+            // String starts with ')' and ends with ')' (or 0)
+            openFirstList.push([-minBalance, finalBalance]);
         } else {
-            suffixBalances . push ( [ -minimumBalance, finalBalance ] ) ;
+            // String starts with ')' but ends with '('
+            closeFirstList.push([-minBalance, finalBalance]);
         }
     }
 
-    // If the aggregated total balance of all strings is not zero, it's an invalid set.
-    if ( totalBalance ) return negativeOutcome ;
+    // If the total balance of all strings is not zero, it's impossible to balance
+    if (totalBalance !== 0) return negativeOutcome;
 
-    // Sorts the suffix-dominant balance groups by their minimum required balance.
-    suffixBalances . sort ( ( elementA, elementB ) => elementA [ 0 ] - elementB [ 0 ] ) ;
-    // Processes the suffix-dominant groups, ensuring balance is maintained.
-    for ( var sequenceIterator = 0 ; sequenceIterator < suffixBalances . length ; sequenceIterator ++ ) {
-        if ( suffixBalances [ sequenceIterator ] [ 0 ] > currentBalance ) return negativeOutcome ;
-        currentBalance += suffixBalances [ sequenceIterator ] [ 1 ] ;
+    // Process strings that start with ')' and end with ')'
+    // Sort by the minimum balance required to open them (ascending)
+    closeFirstList.sort((itemA, itemB) => itemA[0] - itemB[0]);
+    for (var idx = 0; idx < closeFirstList.length; idx++) {
+        // If current balance is insufficient to cover the minimum required for this string
+        if (closeFirstList[idx][0] > currentBalance) return negativeOutcome;
+        currentBalance += closeFirstList[idx][1]; // Apply the string's final balance
     }
 
-    // Sorts the prefix-dominant balance groups in descending order of their minimum required balance.
-    prefixBalances . sort ( ( elementA, elementB ) => elementB [ 0 ] - elementA [ 0 ] ) ;
-    // Processes the prefix-dominant groups, again checking for balance validity.
-    for ( var sequenceIterator = 0 ; sequenceIterator < prefixBalances . length ; sequenceIterator ++ ) {
-        var [ minVal, endVal ] = prefixBalances [ sequenceIterator ] ;
-        if ( minVal > currentBalance ) return negativeOutcome ;
-        currentBalance += endVal ;
+    // Process strings that start with '(' and end with ')'
+    // Sort by the minimum balance required to open them (descending)
+    openFirstList.sort((itemA, itemB) => itemB[0] - itemA[0]);
+    for (var idx = 0; idx < openFirstList.length; idx++) {
+        var [minRequired, finalChange] = openFirstList[idx];
+        // If current balance is insufficient to cover the minimum required for this string
+        if (minRequired > currentBalance) return negativeOutcome;
+        currentBalance += finalChange; // Apply the string's final balance
     }
 
-    // If all checks pass, the sequence of strings is considered valid.
-    return positiveOutcome ;
+    // If all strings processed and total balance is zero, it's possible
+    return positiveOutcome;
 }

@@ -1,66 +1,29 @@
-const analyzeSequence = (incomingText) => {
-  // This routine processes textual input to determine a specific arithmetic property.
+const processInput = rawData => {
+  const MAX_SEARCH_VALUE = 10000;
 
-  const UPPER_THRESHOLD = 10000;
-  const POSITIVE_RESPONSE = 'YES';
-  const NEGATIVE_RESPONSE = 'NO';
+  const parseSpaceSeparatedIntegers = (inputString) => {
+    return inputString.split(' ').map(strNum => parseInt(strNum, 10));
+  };
 
-  const trimmedContent = incomingText.trim();
-  if (trimmedContent.length === 0) {
-    console.log(NEGATIVE_RESPONSE);
-    return;
-  }
+  const parsedLines = rawData.trim().split('\n');
+  const [valA, valB, valC] = parseSpaceSeparatedIntegers(parsedLines[0]);
 
-  const linesOfData = trimmedContent.split('\n');
-
-  // We are primarily interested in the first line for our numerical parameters.
-  if (linesOfData.length === 0) {
-    console.log(NEGATIVE_RESPONSE);
-    return;
-  }
-
-  const primaryParameters = linesOfData[0].split(' ');
-  if (primaryParameters.length < 3) {
-    // Insufficient parameters provided in the input line.
-    console.log(NEGATIVE_RESPONSE);
-    return;
-  }
-
-  // Extract and parse the three essential numerical values.
-  const incrementBase = parseInt(primaryParameters[0], 10); // The base value for our multiples
-  const testDivisor = parseInt(primaryParameters[1], 10);   // The divisor for the modulo operation
-  const desiredRem = parseInt(primaryParameters[2], 10);    // The target remainder
-
-  // Basic validation to ensure all parsed numbers are valid.
-  if (isNaN(incrementBase) || isNaN(testDivisor) || isNaN(desiredRem)) {
-    console.log(NEGATIVE_RESPONSE);
-    return;
-  }
-
-  // A boolean flag to track if the desired condition is met during iteration.
-  let outcomeDetermined = false;
-
-  // Iterate through multiples of the base value, starting from the base itself,
-  // up to a predefined upper limit.
-  for (let currentMultipleValue = incrementBase; currentMultipleValue <= UPPER_THRESHOLD; currentMultipleValue += incrementBase) {
-    // Calculate the remainder when the current multiple is divided by the test divisor.
-    const calculatedRemainder = currentMultipleValue % testDivisor;
-
-    // Check if the calculated remainder matches our target remainder.
-    if (calculatedRemainder === desiredRem) {
-      outcomeDetermined = true; // Condition met!
-      break; // Exit the loop early as we've found what we're looking for.
+  const findMatchingMultiple = (startValue, divisorValue, remainderValue, searchLimit) => {
+    for (let currentMultiple = startValue; currentMultiple <= searchLimit; currentMultiple += startValue) {
+      if (currentMultiple % divisorValue === remainderValue) {
+        return true;
+      }
     }
-  }
+    return false;
+  };
 
-  // Based on whether the condition was met during the loop, print the appropriate response.
-  if (outcomeDetermined) {
-    console.log(POSITIVE_RESPONSE);
+  const conditionMet = findMatchingMultiple(valA, valB, valC, MAX_SEARCH_VALUE);
+
+  if (conditionMet) {
+    console.log('YES');
   } else {
-    console.log(NEGATIVE_RESPONSE);
+    console.log('NO');
   }
 };
 
-// Initiate the sequence analysis by reading standard input.
-// This setup is typical for competitive programming environments.
-analyzeSequence(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

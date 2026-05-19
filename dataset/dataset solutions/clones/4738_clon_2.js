@@ -1,110 +1,105 @@
-var dataSource = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+var sourceLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-var dataHandler = {
-  "sourceData": dataSource,
-  "currentIdx": 0,
-  "totalItems": dataSource.length,
-  "retrieveElement": function() {
-    if (!this.hasElements()) {
-      throw "SequenceEndError: No further elements exist!";
+var lineIterator = {
+  "dataStore" : sourceLines,
+  "currentPosition" : 0,
+  "totalCount" : sourceLines.length,
+
+  "retrieveNext" : function() {
+    if (!this.hasMore()) {
+      throw "NoSuchElementException: No more elements available.";
     }
-    var currentElement = this.sourceData[this.currentIdx];
-    this.currentIdx++;
-    return currentElement;
+    var retrievedItem = this.dataStore[this.currentPosition];
+    this.currentPosition++;
+    return retrievedItem;
   },
-  "hasElements": function() {
-    return (this.currentIdx < this.totalItems);
+
+  "hasMore" : function() {
+    return (this.currentPosition < this.totalCount);
   }
 };
-runApplication();
 
-function fetchNextItem() {
-  return dataHandler.retrieveElement();
+ExecuteProgram();
+
+function fetchNextLine() {
+  return lineIterator.retrieveNext();
 }
 
-function readInteger() {
-  return transformValue(fetchNextItem(), 1);
+function fetchNextInteger() {
+  return dataTransformer(fetchNextLine(), 1);
 }
 
-function readStringArray() {
-  return transformValue(fetchNextItem(), 2); // Splits string by spaces
+function fetchNextStringArray() {
+  return dataTransformer(fetchNextLine(), 2);
 }
 
-function readIntArray() {
-  return transformValue(fetchNextItem(), 4); // Splits string by spaces and converts to numbers
+function fetchNextIntegerArray() {
+  return dataTransformer(fetchNextLine(), 4);
 }
 
-function readCharArray() {
-  return transformValue(fetchNextItem(), 6); // Divides string into individual characters
+function fetchNextCharacterArray() {
+  return dataTransformer(fetchNextLine(), 6);
 }
 
-function checkMoreData() {
-  return dataHandler.hasElements();
+function checkIfMoreLines() {
+  return lineIterator.hasMore();
 }
 
-function printResult(val) {
-  console.log(val); // Outputs value to standard console
+function printToConsole(content) {
+  console.log(content);
 }
 
-function logError(errMsg) {
-  console.error(errMsg); // Outputs error to standard error console
+function printToError(errorMessage) {
+  console.error(errorMessage);
 }
 
-/*
- * This function performs various data transformations based on a provided code.
- *
- * Parameters:
- *   inputVal: The data to be transformed.
- *   transformCode: An integer representing the desired transformation type.
- *
- * Transformation Codes:
- *   1: Converts input to an integer.
- *   2: Splits a string by spaces into an array of strings.
- *   4: Splits a string by spaces and maps elements to numbers.
- *   6: Splits a string into an array of individual characters.
- *   7: Splits a string into characters and maps elements to numbers.
- *   8: Joins an array of strings with spaces.
- *   9: Joins an array of strings with newline characters.
- *   0: Joins an array of strings without any separator.
- *
- * Returns:
- *   The transformed data, or the original inputVal if an error occurs or the code is unknown.
- */
-function transformValue(inputVal, transformCode) {
+// This utility function handles various data transformations.
+// Option 1: Convert to integer.
+// Option 2: Split by space into a string array.
+// Option 4: Split by space and convert to a number array.
+// Option 6: Split into a character array.
+// Option 7: Split into a character array and convert to a number array.
+// Option 8: Join array elements with a space.
+// Option 9: Join array elements with a newline.
+// Option 0: Join array elements without a separator.
+// Default: Return input as is.
+function dataTransformer(inputValue, transformOption) {
   try {
-    switch (transformCode) {
+    switch (transformOption) {
       case 1:
-        return parseInt(inputVal);
+        return parseInt(inputValue);
       case 2:
-        return inputVal.split(" ");
+        return inputValue.split(" ");
       case 4:
-        return inputVal.split(" ").map((item) => Number(item));
+        return inputValue.split(" ").map((elementValue) => Number(elementValue));
       case 6:
-        return inputVal.split("");
+        return inputValue.split("");
       case 7:
-        return inputVal.split("").map((item) => Number(item));
+        return inputValue.split("").map((elementValue) => Number(elementValue));
       case 8:
-        return inputVal.join(" ");
+        return inputValue.join(" ");
       case 9:
-        return inputVal.join("\n");
+        return inputValue.join("\n");
       case 0:
-        return inputVal.join("");
+        return inputValue.join("");
       default:
-        return inputVal;
+        return inputValue;
     }
-  } catch (caughtException) {
-    return inputVal;
+  } catch (errorDetails) {
+    return inputValue;
   }
 }
 
-function runApplication() {
-  var initialNumber = readInteger();
-  var calculatedResult = Math.floor(initialNumber / 11) * 2;
-  var remainder = initialNumber % 11;
-  if (remainder >= 7) {
+function ExecuteProgram() {
+  var inputNumber = fetchNextInteger();
+  var calculatedResult = Math.floor(inputNumber / 11) * 2;
+  var remainderValue = inputNumber % 11;
+
+  if (remainderValue >= 7) {
     calculatedResult += 2;
-  } else if (remainder > 0) {
+  } else if (remainderValue > 0) {
     calculatedResult++;
   }
-  printResult(calculatedResult);
+
+  printToConsole(calculatedResult);
 }

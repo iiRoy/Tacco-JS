@@ -1,73 +1,61 @@
-const   [ inputLines , dataString ]   =  require ( 'fs' ) . readFileSync ( '/dev/stdin', 'utf8' ) . split ( / \n / ) ;
+const [inputLines, numbersStr] = require('fs')
+  .readFileSync('/dev/stdin', 'utf8')
+  .split('\n');
 
-const [ totalElements , selectionCount ] = inputLines . split ( / \s / ) . map ( Number ) ;
+const [countElements, numToPick] = inputLines.split(' ').map(Number);
 
-const numericValues = dataString . split ( / \s / ) . map ( Number ) . sort ( ( valA, valB ) => Math . abs ( valB ) - Math . abs ( valA ) ) ; // Sort by absolute value in descending order
+const sortedValues = numbersStr
+  .split(' ')
+  .map(Number)
+  .sort((valA, valB) => Math.abs(valB) - Math.abs(valA));
 
-const moduloBase = BigInt ( 1_000_000_007 ) ; // The large prime number for modulo operations
+const moduloVal = BigInt(Math.pow(10, 9) + 7);
 
-let   finalProduct  =  1n ; // Initialize the product as a BigInt
-let   smallestPositiveChosen  =  null ; // Tracks the smallest positive BigInt selected
-let   largestNegativeChosen  =  null ; // Tracks the largest negative BigInt selected
+let finalProduct = 1n;
+let smallestPositive = null;
+let largestNegative = null;
 
-// Iterate through the first 'selectionCount' elements
-for  ( let idx = 0 ;  idx < selectionCount ;  idx++ )  {
-  const currentVal = BigInt ( numericValues [ idx ] ) ; // Convert the current number to BigInt
-  finalProduct *= currentVal ; // Multiply into the running product
-
-  if  ( currentVal < 0 )  {
-    largestNegativeChosen = currentVal ; // Update the largest negative value chosen
-  }  else  {
-    smallestPositiveChosen = currentVal ; // Update the smallest positive value chosen
+for (let loopIndex = 0; loopIndex < numToPick; loopIndex++) {
+  const currentVal = BigInt(sortedValues[loopIndex]);
+  finalProduct *= currentVal;
+  if (currentVal < 0n) {
+    largestNegative = currentVal;
+  } else {
+    smallestPositive = currentVal;
   }
 }
 
-// If the computed product is negative, attempt to make it positive by swapping
-if  ( finalProduct < 0 )  {
-  // Calculate potential product if smallest positive chosen is replaced by a new negative
-  let productOptionA = ( smallestPositiveChosen === null ) ? 0n : finalProduct / smallestPositiveChosen ;
-  // Calculate potential product if largest negative chosen is replaced by a new positive
-  let productOptionB = ( largestNegativeChosen === null ) ? 0n : finalProduct / largestNegativeChosen ;
+if (finalProduct < 0n) {
+  let productOptionA = smallestPositive === null ? 0n : finalProduct / smallestPositive;
+  let productOptionB = largestNegative === null ? 0n : finalProduct / largestNegative;
+  let optionAFound = false;
+  let optionBFound = false;
 
-  let optionAFound = false ; // Flag to check if a replacement for Option A is found
-  let optionBFound = false ; // Flag to check if a replacement for Option B is found
-
-  // Iterate through the remaining elements in the array
-  for  ( let currentIdx = selectionCount ;  currentIdx < totalElements ;  currentIdx++ )  {
-    const currentNumber = BigInt ( numericValues [ currentIdx ] ) ;
-
-    // If current number is negative and we haven't found a replacement for Option A yet
-    if  ( currentNumber < 0  &&  ! optionAFound )  {
-      productOptionA *= currentNumber ;
-      optionAFound = true ;
-    }  else  if  ( currentNumber > 0  &&  ! optionBFound )  {
-      // If current number is positive and we haven't found a replacement for Option B yet
-      productOptionB *= currentNumber ;
-      optionBFound = true ;
+  for (let loopIndex = numToPick; loopIndex < countElements; loopIndex++) {
+    const currentVal = BigInt(sortedValues[loopIndex]);
+    if (currentVal < 0n && !optionAFound) {
+      productOptionA *= currentVal;
+      optionAFound = true;
+    } else if (currentVal > 0n && !optionBFound) {
+      productOptionB *= currentVal;
+      optionBFound = true;
     }
-
-    // If both options have found their replacements, no need to continue searching
-    if  ( ( optionAFound  ||  productOptionA === 0n )  &&  ( optionBFound  ||  productOptionB === 0n ) )  {
-      break ;
+    if ((optionAFound || productOptionA === 0n) && (optionBFound || productOptionB === 0n)) {
+      break;
     }
   }
-  // Choose the maximum product between the two options (handling cases where replacements weren't found)
-  finalProduct = ( ( productOptionA * BigInt ( optionAFound ) ) > ( productOptionB * BigInt ( optionBFound ) ) ) ? ( productOptionA * BigInt ( optionAFound ) ) : ( productOptionB * BigInt ( optionBFound ) ) ;
+  finalProduct = Math.max(productOptionA * BigInt(optionAFound), productOptionB * BigInt(optionBFound));
 }
 
-// Handle the case where the final product is zero (e.g., due to all zeros or specific swaps)
-if  ( finalProduct === 0n )  {
-  finalProduct = 1n ; // Reset product to 1
-  // Multiply the 'selectionCount' elements with the smallest absolute values (from the end of the sorted array)
-  for  ( let revIdx = totalElements - 1 ;  revIdx >= totalElements - selectionCount ;  revIdx-- )  {
-    finalProduct *= BigInt ( numericValues [ revIdx ] ) ;
+if (finalProduct === 0n) {
+  finalProduct = 1n;
+  for (let loopIndex = countElements - 1; loopIndex >= countElements - numToPick; loopIndex--) {
+    finalProduct *= BigInt(sortedValues[loopIndex]);
   }
-  // Ensure the result is non-negative by adding the modulo base until it is
-  while  ( finalProduct < 0 )  {
-    finalProduct += moduloBase ;
+  while (finalProduct < 0n) {
+    finalProduct += moduloVal;
   }
-  console . log ( finalProduct . toString ( ) ) ; // Output the final product as a string
-}  else  {
-  // If the product is non-zero, output its value modulo the base
-  console . log ( ( finalProduct % moduloBase ) . toString ( ) ) ;
+  console.log(finalProduct.toString());
+} else {
+  console.log((finalProduct % moduloVal).toString());
 }

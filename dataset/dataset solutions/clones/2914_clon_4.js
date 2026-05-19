@@ -1,91 +1,78 @@
-function processTreasureGame(rawGameData) {
-    const lines = rawGameData.split("\n").filter(line => line.trim() !== "");
-    const parameterSettings = lines[0].split(" ");
-    const treasureCount = parseInt(parameterSettings[0], 10);
-    const moveLimit = parseInt(parameterSettings[1], 10);
+function processJwellOperations(rawData) {
+  const lineSegments = rawData.split("\n");
+  lineSegments.pop();
+  const configValues = lineSegments[0].split(" ");
+  const initialJwellCount = parseInt(configValues[0]);
+  const totalOperations = parseInt(configValues[1]);
+  const startingJwells = lineSegments[1].split(" ").map(str => parseInt(str));
 
-    const initialTreasurePile = lines[1].split(" ").map(str => parseInt(str, 10));
+  let peakValue = 0;
 
-    const initialConfiguration = {
-        bagContents: initialTreasurePile.slice(),
-        pouchContents: []
-    };
+  const operationHandlers = {
+    0: (currentConfig) => {
+      if (currentConfig[0].length === 0) return [];
+      const nextSource = currentConfig[0].slice();
+      const nextDestination = currentConfig[1].slice();
+      nextDestination.push(nextSource.shift());
+      return [[nextSource, nextDestination]];
+    },
+    1: (currentConfig) => {
+      if (currentConfig[0].length === 0) return [];
+      const nextSource = currentConfig[0].slice();
+      const nextDestination = currentConfig[1].slice();
+      nextDestination.push(nextSource.pop());
+      return [[nextSource, nextDestination]];
+    },
+    2: (currentConfig) => {
+      if (currentConfig[1].length === 0) return [];
+      const generatedConfigs = [];
+      for (let itemIndex = 0; itemIndex < currentConfig[1].length; itemIndex++) {
+        const nextSource = currentConfig[0].slice();
+        const nextDestination = currentConfig[1].slice();
+        nextSource.unshift(nextDestination.splice(itemIndex, 1)[0]);
+        generatedConfigs.push([nextSource, nextDestination]);
+      }
+      return generatedConfigs;
+    },
+    3: (currentConfig) => {
+      if (currentConfig[1].length === 0) return [];
+      const generatedConfigs = [];
+      for (let itemIndex = 0; itemIndex < currentConfig[1].length; itemIndex++) {
+        const nextSource = currentConfig[0].slice();
+        const nextDestination = currentConfig[1].slice();
+        nextSource.push(nextDestination.splice(itemIndex, 1)[0]);
+        generatedConfigs.push([nextSource, nextDestination]);
+      }
+      return generatedConfigs;
+    }
+  };
 
-    let highestScore = 0;
+  const processingQueue = [];
 
-    const tallyPouchGems = (pouch) => pouch.reduce((total, gem) => total + gem, 0);
+  processingQueue.push([[startingJwells.slice(), []], 0]);
 
-    const retrieveFromFront = (currentConfig) => {
-        if (currentConfig.bagContents.length === 0) return [];
-        const nextBag = currentConfig.bagContents.slice(1);
-        const nextPouch = currentConfig.pouchContents.concat(currentConfig.bagContents[0]);
-        return [{ bagContents: nextBag, pouchContents: nextPouch }];
-    };
+  while (processingQueue.length > 0) {
+    const [currentConfig, currentOperationStep] = processingQueue.shift();
 
-    const retrieveFromBack = (currentConfig) => {
-        if (currentConfig.bagContents.length === 0) return [];
-        const nextBag = currentConfig.bagContents.slice(0, -1);
-        const nextPouch = currentConfig.pouchContents.concat(currentConfig.bagContents[currentConfig.bagContents.length - 1]);
-        return [{ bagContents: nextBag, pouchContents: nextPouch }];
-    };
-
-    const depositToFront = (currentConfig) => {
-        if (currentConfig.pouchContents.length === 0) return [];
-        const resultingConfigs = [];
-        for (let idx = 0; idx < currentConfig.pouchContents.length; idx++) {
-            const gemToMove = currentConfig.pouchContents[idx];
-            const tempPouch = currentConfig.pouchContents.slice();
-            tempPouch.splice(idx, 1);
-            const nextBag = [gemToMove].concat(currentConfig.bagContents);
-            resultingConfigs.push({ bagContents: nextBag, pouchContents: tempPouch });
-        }
-        return resultingConfigs;
-    };
-
-    const depositToBack = (currentConfig) => {
-        if (currentConfig.pouchContents.length === 0) return [];
-        const resultingConfigs = [];
-        for (let idx = 0; idx < currentConfig.pouchContents.length; idx++) {
-            const gemToMove = currentConfig.pouchContents[idx];
-            const tempPouch = currentConfig.pouchContents.slice();
-            tempPouch.splice(idx, 1);
-            const nextBag = currentConfig.bagContents.concat(gemToMove);
-            resultingConfigs.push({ bagContents: nextBag, pouchContents: tempPouch });
-        }
-        return resultingConfigs;
-    };
-
-    const allPossibleActions = [
-        retrieveFromFront,
-        retrieveFromBack,
-        depositToFront,
-        depositToBack
-    ];
-
-    const explorationQueue = [[initialConfiguration, 0]];
-    let headIndex = 0;
-
-    while (headIndex < explorationQueue.length) {
-        const [currentConfig, currentMoveCount] = explorationQueue[headIndex++];
-
-        const currentPouchSum = tallyPouchGems(currentConfig.pouchContents);
-        if (currentPouchSum > highestScore) {
-            highestScore = currentPouchSum;
-        }
-
-        if (currentMoveCount >= moveLimit) {
-            continue;
-        }
-
-        for (const actionFn of allPossibleActions) {
-            const nextConfigs = actionFn(currentConfig);
-            for (const nextConfig of nextConfigs) {
-                explorationQueue.push([nextConfig, currentMoveCount + 1]);
-            }
-        }
+    if (currentOperationStep === totalOperations) {
+      continue;
     }
 
-    console.log(highestScore);
+    for (let opType = 0; opType < 4; opType++) {
+      const nextConfigurations = operationHandlers[opType](currentConfig);
+
+      for (const nextConfig of nextConfigurations) {
+        const currentSumOfDestination = nextConfig[1].reduce((accumulator, value) => accumulator + value, 0);
+        if (currentSumOfDestination > peakValue) {
+          peakValue = currentSumOfDestination;
+        }
+
+        processingQueue.push([nextConfig, currentOperationStep + 1]);
+      }
+    }
+  }
+
+  console.log(peakValue);
 }
 
-processTreasureGame(require("fs").readFileSync("/dev/stdin", "utf8"));
+processJwellOperations(require("fs").readFileSync("/dev/stdin", "utf8"));

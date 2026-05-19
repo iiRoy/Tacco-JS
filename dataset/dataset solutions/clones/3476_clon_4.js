@@ -1,148 +1,115 @@
-var lineProcessor = require('readline').createInterface({
+const inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
+let inputSource;
+const rawInputLines = [];
 
-class DataFetcher {
-    constructor(dataLines) {
-        this.allEntries = dataLines;
-        this.currentEntryIndex = 0;
-        this.totalEntries = dataLines.length;
-    }
-
-    verifyAvailability() {
-        return this.currentEntryIndex < this.totalEntries;
-    }
-
-    retrieveNext() {
-        if (!this.verifyAvailability()) {
-            throw new Error("Data Source Exhausted: No further entries available.");
-        }
-        const retrievedEntry = this.allEntries[this.currentEntryIndex];
-        this.currentEntryIndex++;
-        return retrievedEntry;
-    }
-}
-
-let globalDataStore;
-let collectedRawLines = [];
-
-lineProcessor.on('line', (dataUnit) => { collectedRawLines.push(dataUnit); });
-lineProcessor.on('close', () => {
-    globalDataStore = new DataFetcher(collectedRawLines);
-    diagnosticLog("---execution-start---");
-    const initialTimestamp = Date.now();
-    executePrimaryRoutine();
-    const finalDuration = Date.now() - initialTimestamp;
-    diagnosticLog("---execution-end---");
-    diagnosticLog(`elapsed : ${finalDuration}ms`);
+inputReader.on('line', (line) => rawInputLines.push(line));
+inputReader.on('close', () => {
+  inputSource = createInputManager(rawInputLines);
+  logDebug("-----start-----");
+  const startTime = new Date();
+  executeAlgorithm();
+  const endTime = new Date() - startTime;
+  logDebug("----- end -----");
+  logDebug("time : " + (endTime) + "ms");
 });
 
-const valueFormatter = {
-    asInteger: (str) => parseInt(str, 10),
-    asStringArray: (str) => str.split(" "),
-    asNumericArray: (str) => str.split(" ").map(Number),
-    asCharList: (str) => str.split(""),
-    asNumericCharList: (str) => str.split("").map(Number),
-    joinBySpace: (arr) => arr.join(" "),
-    joinByNewline: (arr) => arr.join("\n"),
-    joinWithoutDelimiter: (arr) => arr.join(""),
-    raw: (val) => val
-};
+function createInputManager(lines) {
+    let currentIdx = 0;
+    return {
+        pullNext: () => {
+            if (currentIdx >= lines.length) {
+                throw "ArrayIndexOutOfBoundsException これ以上ないよ";
+            }
+            return lines[currentIdx++];
+        },
+        hasMore: () => currentIdx < lines.length
+    };
+}
 
-function processEntryConversion(item, conversionScheme) {
+const typeConverters = new Map([
+    [1, (val) => parseInt(val)],
+    [2, (val) => val.split(" ")],
+    [4, (val) => val.split(" ").map(Number)],
+    [6, (val) => val.split("")],
+    [7, (val) => val.split("").map(Number)],
+    [8, (val) => val.join(" ")],
+    [9, (val) => val.join("\n")],
+    [0, (val) => val.join("")],
+]);
+
+function processConversion(inputVal, conversionType) {
     try {
-        switch (conversionScheme) {
-            case 1: return valueFormatter.asInteger(item);
-            case 2: return valueFormatter.asStringArray(item);
-            case 4: return valueFormatter.asNumericArray(item);
-            case 6: return valueFormatter.asCharList(item);
-            case 7: return valueFormatter.asNumericCharList(item);
-            case 8: return valueFormatter.joinBySpace(item);
-            case 9: return valueFormatter.joinByNewline(item);
-            case 0: return valueFormatter.joinWithoutDelimiter(item);
-            default: return valueFormatter.raw(item);
-        }
+        const converter = typeConverters.get(conversionType);
+        return converter ? converter(inputVal) : inputVal;
     } catch (e) {
-        return item;
+        return inputVal;
     }
 }
 
-function retrieveNextInteger() { return processEntryConversion(fetchNextEntry(), 1); }
-function retrieveNextStringArray() { return processEntryConversion(fetchNextEntry(), 2); }
-function retrieveNextIntegerArray() { return processEntryConversion(fetchNextEntry(), 4); }
-function retrieveNextCharacterArray() { return processEntryConversion(fetchNextEntry(), 6); }
-function fetchNextEntry() { return globalDataStore.retrieveNext(); }
-function hasMoreEntries() { return globalDataStore.verifyAvailability(); }
+function getNextInt() { return processConversion(inputSource.pullNext(), 1); }
+function getNextStrArray() { return processConversion(inputSource.pullNext(), 2); }
+function getNextIntArray() { return processConversion(inputSource.pullNext(), 4); }
+function getNextCharArray() { return processConversion(inputSource.pullNext(), 6); }
+function hasMoreInput() { return inputSource.hasMore(); }
 
-function displayOutput(content) { console.log(content); }
-function diagnosticLog(message) { console.warn(`diag: ${JSON.stringify(message)}`); }
+function outputResult(content) { console.log(content); }
+function logDebug(message) { console.error("debug:" + require("util").inspect(message, false, null)); }
 
-function executePrimaryRoutine() {
-    const collectionSize = retrieveNextInteger();
-    let numberSet = Array.from({ length: collectionSize }, () => retrieveNextInteger());
-    let cumulativeDifference = 0;
-    let sequenceFormation = [];
+function executeAlgorithm() {
+    const elementCount = getNextInt();
+    const sortedNumbers = Array.from({ length: elementCount }, () => getNextInt());
+    sortedNumbers.sort((a, b) => a - b);
 
-    numberSet.sort((valX, valY) => valX - valY);
-    
-    sequenceFormation.push(numberSet.shift());
+    let totalDifference = 0;
+    const resultSequence = [];
 
-    while (numberSet.length > 0) {
-        const sequenceFront = sequenceFormation[0];
-        const sequenceBack = sequenceFormation[sequenceFormation.length - 1];
-        const setSmallest = numberSet[0];
-        const setLargest = numberSet[numberSet.length - 1];
+    resultSequence.push(sortedNumbers.shift());
 
-        if (sequenceFront === sequenceBack && setSmallest === setLargest) {
-            sequenceFormation.push(numberSet.pop());
-        } else if (sequenceFront === sequenceBack) {
-            if (Math.abs(sequenceFront - setSmallest) >= Math.abs(sequenceFront - setLargest)) {
-                sequenceFormation.push(numberSet.shift());
+    for (let k = 0; k < elementCount - 1; k++) {
+        const seqFront = resultSequence[0];
+        const seqBack = resultSequence[resultSequence.length - 1];
+        const listFront = sortedNumbers[0];
+        const listBack = sortedNumbers[sortedNumbers.length - 1];
+
+        if (seqFront === seqBack && listFront === listBack) {
+            resultSequence.push(sortedNumbers.pop());
+        } else if (seqFront === seqBack) {
+            if (Math.abs(seqFront - listFront) >= Math.abs(seqFront - listBack)) {
+                resultSequence.push(sortedNumbers.shift());
             } else {
-                sequenceFormation.push(numberSet.pop());
+                resultSequence.push(sortedNumbers.pop());
             }
-        } else if (setSmallest === setLargest) {
-            if (Math.abs(sequenceFront - setSmallest) >= Math.abs(sequenceBack - setSmallest)) {
-                sequenceFormation.unshift(numberSet.shift());
+        } else if (listFront === listBack) {
+            if (Math.abs(seqFront - listFront) >= Math.abs(seqBack - listFront)) {
+                resultSequence.unshift(sortedNumbers.shift());
             } else {
-                sequenceFormation.push(numberSet.shift());
+                resultSequence.push(sortedNumbers.shift());
             }
         } else {
-            const decisionOptions = [
-                {
-                    diffValue: Math.abs(setSmallest - sequenceFront),
-                    actionPerformer: () => sequenceFormation.unshift(numberSet.pop())
-                },
-                {
-                    diffValue: Math.abs(setSmallest - sequenceBack),
-                    actionPerformer: () => sequenceFormation.push(numberSet.shift())
-                },
-                {
-                    diffValue: Math.abs(setLargest - sequenceFront),
-                    actionPerformer: () => sequenceFormation.unshift(numberSet.pop())
-                },
-                {
-                    diffValue: Math.abs(setLargest - sequenceBack),
-                    actionPerformer: () => sequenceFormation.push(numberSet.pop())
-                }
+            const diff_LF_SF = Math.abs(listFront - seqFront);
+            const diff_LF_SB = Math.abs(listFront - seqBack);
+            const diff_LB_SF = Math.abs(listBack - seqFront);
+            const diff_LB_SB = Math.abs(listBack - seqBack);
+
+            const potentialMoves = [
+                { diff: diff_LF_SF, action: () => resultSequence.unshift(sortedNumbers.pop()) },
+                { diff: diff_LF_SB, action: () => resultSequence.push(sortedNumbers.shift()) },
+                { diff: diff_LB_SF, action: () => resultSequence.unshift(sortedNumbers.pop()) },
+                { diff: diff_LB_SB, action: () => resultSequence.push(sortedNumbers.pop()) }
             ];
 
-            let maximumDiff = -1;
-            let selectedAction = null;
-
-            for (const option of decisionOptions) {
-                if (option.diffValue > maximumDiff) {
-                    maximumDiff = option.diffValue;
-                    selectedAction = option;
-                }
-            }
-            selectedAction.actionPerformer();
+            const maxDifferenceValue = Math.max(...potentialMoves.map(move => move.diff));
+            const chosenMove = potentialMoves.find(move => move.diff === maxDifferenceValue);
+            
+            chosenMove.action();
         }
     }
-    
-    for (let k = 1; k < collectionSize; k++) {
-        cumulativeDifference += Math.abs(sequenceFormation[k - 1] - sequenceFormation[k]);
+
+    for (let idx = 1; idx < elementCount; idx++) {
+        totalDifference += Math.abs(resultSequence[idx - 1] - resultSequence[idx]);
     }
-    displayOutput(cumulativeDifference);
+    outputResult(totalDifference);
 }

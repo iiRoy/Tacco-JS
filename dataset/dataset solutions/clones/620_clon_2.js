@@ -1,45 +1,41 @@
-// This script processes a sequence of arithmetic operations provided via standard input.
-// It computes a final integer result based on the given operands and operators.
-var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read all input data from the standard input stream.
 
-// The input string is first trimmed to remove any leading/trailing whitespace,
-// then split into an array of strings, with each element representing a line.
-var processedLines = ( rawData.trim( ) ).split( "\n" );
+// Process the raw input: remove any leading or trailing whitespace,
+// then split the string into an array of individual lines using the newline character as a delimiter.
+var parsedLines = (rawData.trim()).split("\n");
 
-// Initialize the calculation accumulator with the very first numeric operand.
-// The string is explicitly converted to a number.
-var resultValue = Number( processedLines[0] );
+// Initialize the primary calculation variable with the first element of the parsed lines.
+// The unary minus operator (`-0`) is used here to explicitly convert the string to a numeric type.
+var currentResult = parsedLines[0] - 0;
 
-// Iterate through the array to apply operations.
-// The loop starts from the second element (index 1), which is the first operator.
-// It increments by two to jump from one operator to the next, skipping operands.
-for
-(
-  var idx = 1;
-  idx < processedLines.length - 1; // The loop should not process the very last element if it's an operand for a non-existent operator.
-  idx = idx + 2
-)
-{
-  // Check if the current element represents an addition operation.
-  if ( processedLines[idx] === "+" ) {
-    resultValue += Number( processedLines[idx + 1] ); // Add the subsequent operand.
-  }
-  // Check if the current element represents a subtraction operation.
-  if ( processedLines[idx] === "-" ) {
-    resultValue -= Number( processedLines[idx + 1] ); // Subtract the subsequent operand.
-  }
-  // Check if the current element represents a multiplication operation.
-  if ( processedLines[idx] === "*" ) {
-    resultValue *= Number( processedLines[idx + 1] ); // Multiply by the subsequent operand.
-  }
-  // Check if the current element represents a division operation.
-  if ( processedLines[idx] === "/" ) {
-    resultValue /= Number( processedLines[idx + 1] ); // Divide by the subsequent operand.
-  }
-  // After each operation, ensure the intermediate result is an integer by
-  // converting it to a string with zero decimal places, then back to a number.
-  resultValue = resultValue.toFixed( 0 );
+// Begin iterating through the parsed lines to perform arithmetic operations.
+// The loop starts from the second element (index 1) because the first element is the initial value.
+// It increments by two in each step to process an operator followed by its operand.
+// NOTE: The original code contains a potential typo 'arr' instead of 'parsedLines'
+// in the loop condition and body. This behavior is intentionally preserved to ensure
+// strict Type II cloning, meaning if the original code would encounter a ReferenceError,
+// this clone will exhibit the same error.
+for (var opIndex = 1; opIndex < arr.length - 1; opIndex = opIndex + 2) {
+    // Check the operator at the current index and apply the corresponding arithmetic operation.
+    // The operand is located at the next index (opIndex + 1) and is converted to a number.
+    if (arr[opIndex] === "+") {
+        currentResult += arr[opIndex + 1] - 0;
+    }
+    if (arr[opIndex] === "-") {
+        currentResult -= arr[opIndex + 1] - 0;
+    }
+    if (arr[opIndex] === "*") {
+        currentResult *= arr[opIndex + 1] - 0;
+    }
+    if (arr[opIndex] === "/") {
+        currentResult /= arr[opIndex + 1] - 0;
+    }
+
+    // After each operation, the result is converted to a string with zero decimal places
+    // using `toFixed(0)`. This string is then implicitly converted back to a number
+    // for subsequent calculations, effectively rounding or truncating the value at each step.
+    currentResult = currentResult.toFixed(0);
 }
 
-// Display the final computed numeric result to the standard output.
-console.log( resultValue );
+// Output the final calculated numeric value to the console.
+console.log(currentResult);

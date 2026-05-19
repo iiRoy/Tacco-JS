@@ -1,28 +1,15 @@
 "use strict";
 
-const processDataRecursively = (dataBundle, currentIdx, accResult) => {
-    const sourceContent = dataBundle.source;
-    const stepInterval = dataBundle.interval;
+const processInput = (rawContent) => {
+    const inputLines = rawContent.trim().split("\n");
+    const characterSequence = inputLines[0].split("");
+    const extractionInterval = parseInt(inputLines[1], 10);
 
-    if (currentIdx >= sourceContent.length) {
-        return accResult;
-    }
+    const resultString = characterSequence.reduce((accumulator, currentCharacter, currentIndex) => {
+        return currentIndex % extractionInterval === 0 ? accumulator + currentCharacter : accumulator;
+    }, "");
 
-    const nextAccResult = accResult + sourceContent.charAt(currentIdx);
-    const nextIdx = currentIdx + stepInterval;
-
-    return processDataRecursively(dataBundle, nextIdx, nextAccResult);
+    console.log(resultString);
 };
 
-const initiateProcessing = (externalInput) => {
-    const contentParts = externalInput.trim().split("\n");
-    const dataObject = {
-        source: contentParts[0],
-        interval: parseInt(contentParts[1])
-    };
-
-    const finalOutput = processDataRecursively(dataObject, 0, "");
-    console.log(finalOutput);
-};
-
-initiateProcessing(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

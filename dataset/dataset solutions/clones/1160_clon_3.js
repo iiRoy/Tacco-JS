@@ -1,278 +1,192 @@
 'use strict';
 
-// Defines a custom minimum priority queue data structure.
-// This queue maintains its elements in a min-heap structure based on a provided comparator function.
-function MinPriorityQueue( elementComparator ) {
-  // Validate the comparator function.
-  if (typeof elementComparator !== 'function') {
-    throw new Error('A comparison function must be provided to the MinPriorityQueue constructor.');
+// Renamed PriorityQueue to MinHeap for clarity and better description.
+function MinHeap( comparatorFn )
+{
+  // Added a guard clause: validate comparator function
+  if (typeof comparatorFn !== 'function') {
+    throw new Error('MinHeap requires a valid comparator function.');
   }
-
-  // The internal array representing the min-heap.
-  this.internalStorage = [];
-  // The function used to compare two elements.
-  // It should return a negative number if a < b, positive if a > b, and 0 if a == b.
-  this.elementComparator = elementComparator;
+  this.heapArray = []; // Renamed 'list' to 'heapArray'
+  this.comparator = comparatorFn; // Renamed 'comp' to 'comparator'
 }
 
-// Helper method to swap two elements in the internal array.
-MinPriorityQueue.prototype._swapElements = function(idxA, idxB) {
-  if (idxA < 0 || idxA >= this.internalStorage.length || idxB < 0 || idxB >= this.internalStorage.length) {
-    // Optionally, throw an error or log a warning for invalid indices.
-    return;
-  }
-  const temporaryVal = this.internalStorage[idxA];
-  this.internalStorage[idxA] = this.internalStorage[idxB];
-  this.internalStorage[idxB] = temporaryVal;
-};
-
-// Helper method to get the parent index of a given child index.
-MinPriorityQueue.prototype._getParentIndex = function(childIdx) {
-  if (childIdx <= 0) return -1; // Root has no parent, or invalid index.
-  return Math.floor((childIdx - 1) / 2);
-};
-
-// Helper method to get the left child index of a given parent index.
-MinPriorityQueue.prototype._getLeftChildIndex = function(parentIdx) {
-  return (2 * parentIdx) + 1;
-};
-
-// Helper method to get the right child index of a given parent index.
-MinPriorityQueue.prototype._getRightChildIndex = function(parentIdx) {
-  return (2 * parentIdx) + 2;
-};
-
-// Inserts a new element into the priority queue and maintains the heap property.
-MinPriorityQueue.prototype.offer = function( newElement ) {
-  if (newElement === undefined || newElement === null) {
-    console.warn("Attempted to insert an undefined or null element into the priority queue.");
-    return;
-  }
-
-  this.internalStorage.push(newElement);
-  let currentElementIndex = this.internalStorage.length - 1;
-
-  // Perform heapify-up operation to restore heap property.
-  while (currentElementIndex > 0) {
-    const parentIdx = this._getParentIndex(currentElementIndex);
-    const parentElement = this.internalStorage[parentIdx];
-    const currentElement = this.internalStorage[currentElementIndex];
-
-    // If the current element is smaller than its parent, swap them.
-    if (this.elementComparator(currentElement, parentElement) < 0) {
-      this._swapElements(currentElementIndex, parentIdx);
-      currentElementIndex = parentIdx;
-    } else {
-      // Heap property is satisfied, no further swaps needed.
+// Helper function for bubbling up an element in the heap.
+// This is a structural change, extracting logic into a standalone helper.
+function _bubbleUpElement(heapInstance, elementToInsert, initialIndex) {
+  let currentIndex = initialIndex;
+  while (currentIndex > 0) {
+    const parentIndex = Math.floor((currentIndex - 1) / 2);
+    const parentElement = heapInstance.heapArray[parentIndex];
+    
+    // If parent is already smaller or equal, element is in correct position
+    if (heapInstance.comparator(parentElement, elementToInsert) <= 0) {
       break;
     }
+    
+    // Move parent down to make space
+    heapInstance.heapArray[currentIndex] = parentElement;
+    currentIndex = parentIndex;
   }
+  return currentIndex; // Return the final position where the element should be placed
+}
+
+// Renamed enq to enqueueElement
+MinHeap.prototype.enqueueElement = function( elementToInsert )
+{
+  this.heapArray.push( elementToInsert );
+  const finalPosition = _bubbleUpElement(this, elementToInsert, this.heapArray.length - 1);
+  this.heapArray[finalPosition] = elementToInsert;
 };
 
-// Removes and returns the element with the highest priority (minimum value) from the queue.
-MinPriorityQueue.prototype.poll = function() {
-  const queueSize = this.internalStorage.length;
-  if (queueSize === 0) {
-    return undefined; // Queue is empty.
-  }
-  if (queueSize === 1) {
-    return this.internalStorage.pop(); // Only one element, just remove and return it.
-  }
+// Helper function for bubbling down an element in the heap.
+// This is a structural change, extracting logic into a standalone helper.
+function _bubbleDownElement(heapInstance, elementToPlace, initialIndex) {
+  let currentIndex = initialIndex;
+  const heapLength = heapInstance.heapArray.length;
 
-  // The minimum element is at the root (index 0).
-  const minimumValue = this.internalStorage[0];
-  // Move the last element to the root position.
-  const lastElement = this.internalStorage.pop();
-  this.internalStorage[0] = lastElement;
+  while ((currentIndex * 2 + 1) < heapLength) {
+    const leftChildIdx = currentIndex * 2 + 1;
+    const rightChildIdx = currentIndex * 2 + 2;
+    let smallestChildIdx = leftChildIdx;
 
-  let currentIndex = 0;
-  const newQueueSize = this.internalStorage.length;
-
-  // Perform heapify-down operation to restore heap property.
-  while (true) {
-    const leftChildIdx = this._getLeftChildIndex(currentIndex);
-    const rightChildIdx = this._getRightChildIndex(currentIndex);
-    let smallestChildIdx = currentIndex; // Assume current node is smallest initially.
-
-    // Check if left child exists and is smaller than current smallest.
-    if (leftChildIdx < newQueueSize && this.elementComparator(this.internalStorage[leftChildIdx], this.internalStorage[smallestChildIdx]) < 0) {
-      smallestChildIdx = leftChildIdx;
-    }
-
-    // Check if right child exists and is smaller than current smallest.
-    if (rightChildIdx < newQueueSize && this.elementComparator(this.internalStorage[rightChildIdx], this.internalStorage[smallestChildIdx]) < 0) {
+    // Determine the smallest child between left and right
+    if (rightChildIdx < heapLength && heapInstance.comparator(heapInstance.heapArray[rightChildIdx], heapInstance.heapArray[leftChildIdx]) < 0) {
       smallestChildIdx = rightChildIdx;
     }
 
-    // If the current node is not the smallest among itself and its children, swap with the smallest child.
-    if (smallestChildIdx !== currentIndex) {
-      this._swapElements(currentIndex, smallestChildIdx);
-      currentIndex = smallestChildIdx; // Continue heapifying down from the new position.
-    } else {
-      // Heap property is satisfied, no further swaps needed.
+    // If the element to place is smaller than or equal to the smallest child, it's in position
+    if (heapInstance.comparator(heapInstance.heapArray[smallestChildIdx], elementToPlace) >= 0) {
       break;
     }
+
+    // Move smallest child up to make space
+    heapInstance.heapArray[currentIndex] = heapInstance.heapArray[smallestChildIdx];
+    currentIndex = smallestChildIdx;
   }
-
-  return minimumValue;
-};
-
-// Returns the element with the highest priority (minimum value) without removing it.
-MinPriorityQueue.prototype.peekMin = function() {
-  if (this.internalStorage.length === 0) {
-    return undefined;
-  }
-  return this.internalStorage[0];
-};
-
-// Returns the number of elements in the queue.
-MinPriorityQueue.prototype.getSize = function() {
-  return this.internalStorage.length;
-};
-
-// Checks if the queue is empty.
-MinPriorityQueue.prototype.isEmptyQueue = function() {
-  return this.internalStorage.length === 0;
-};
-
-// --- Graph Algorithm Specifics ---
-
-const MAX_VERTICES_LIMIT = 100000; // Maximum number of vertices supported.
-const MAX_POSSIBLE_DISTANCE = Number.POSITIVE_INFINITY / 2; // A large value representing unreachable paths.
-
-let vertexCount; // Total number of vertices in the graph.
-let edgeCount;   // Total number of edges in the graph.
-let initialVertex; // The starting vertex for the shortest path calculation.
-
-let graphAdjacencyList; // Adjacency list representation of the graph.
-let pathDistances;      // Array to store the shortest distance from the source to each vertex.
-
-// Calculates the shortest paths from a source vertex to all other vertices using Dijkstra's algorithm.
-function computeShortestPaths( originNode ) {
-  // Basic input validation for the origin node.
-  if (originNode < 0 || originNode >= vertexCount) {
-    console.error(`Invalid origin node: ${originNode}. Must be between 0 and ${vertexCount - 1}.`);
-    return;
-  }
-
-  // Initialize all distances to infinity, except for the origin node which is 0.
-  // This is crucial for the algorithm's correctness.
-  for (let i = 0; i < vertexCount; ++i) {
-    pathDistances[i] = MAX_POSSIBLE_DISTANCE;
-  }
-  pathDistances[originNode] = 0;
-
-  // The priority queue stores objects of { currentDistance, vertexId }.
-  // It orders them by currentDistance, then by vertexId for tie-breaking.
-  const minHeap = new MinPriorityQueue(function(nodeA, nodeB) {
-    // Compare based on distance first.
-    if (nodeA.currentDistance !== nodeB.currentDistance) {
-      return nodeA.currentDistance - nodeB.currentDistance;
-    }
-    // If distances are equal, compare by vertex ID to ensure a stable ordering.
-    return nodeA.vertexId - nodeB.vertexId;
-  });
-
-  // Add the starting node to the priority queue.
-  minHeap.offer({ currentDistance: 0, vertexId: originNode });
-
-  // Process nodes from the priority queue until it's empty.
-  while (!minHeap.isEmptyQueue()) {
-    const extractedVertexInfo = minHeap.poll();
-
-    const currentVertexId = extractedVertexInfo.vertexId;
-    const distanceToCurrentVertex = extractedVertexInfo.currentDistance;
-
-    // Optimization: If we've already found a shorter path to this vertex, skip.
-    // This handles redundant entries in the priority queue.
-    if (distanceToCurrentVertex > pathDistances[currentVertexId]) {
-      continue;
-    }
-
-    // Iterate over all outgoing edges from the current vertex.
-    const neighbors = graphAdjacencyList[currentVertexId];
-    if (neighbors && neighbors.length > 0) { // Ensure neighbors array exists and is not empty.
-      for (const connection of neighbors) {
-        const targetVertex = connection.targetVertex;
-        const edgeWeight = connection.edgeWeight;
-
-        const newCalculatedDistance = pathDistances[currentVertexId] + edgeWeight;
-
-        // If a shorter path to the target vertex is found, update its distance
-        // and add it to the priority queue.
-        if (newCalculatedDistance < pathDistances[targetVertex]) {
-          pathDistances[targetVertex] = newCalculatedDistance;
-          minHeap.offer({ currentDistance: newCalculatedDistance, vertexId: targetVertex });
-        }
-      }
-    }
-  }
-  // The pathDistances array now contains the shortest distances from the originNode.
+  return currentIndex; // Return the final position where the element should be placed
 }
 
-// Main execution block: reads input, builds graph, runs Dijkstra, and prints results.
-(function initializeGraphAndRunDijkstra( rawInputData ) {
-  // Guard clause for empty input.
-  if (!rawInputData || typeof rawInputData !== 'string') {
-    console.error("No input data provided or invalid format.");
-    return;
+// Renamed deq to extractMin
+MinHeap.prototype.extractMin = function() {
+  const minElement = this.getMin(); // Use renamed peek method
+  
+  // Added a guard clause for an empty heap
+  if (this.isHeapEmpty()) {
+    return undefined;
   }
 
-  const inputLines = rawInputData.trim().split('\n');
-  let isFirstConfigurationLine = true;
+  const lastElement = this.heapArray.pop(); // Use pop() for removing the last element, more idiomatic than splice
+  
+  // If the heap becomes empty after removing the min element (it was the only one)
+  if (this.isHeapEmpty()) {
+    return minElement;
+  }
 
-  // Process each line of the input.
-  for (let lineIndex = 0; lineIndex < inputLines.length; ++lineIndex) {
-    const currentLine = inputLines[lineIndex];
-    // Skip empty lines or lines with only whitespace.
-    if (currentLine.trim() === '') {
+  // Place the last element at the root and bubble it down
+  const finalPosition = _bubbleDownElement(this, lastElement, 0);
+  this.heapArray[finalPosition] = lastElement;
+
+  return minElement;
+};
+
+// Renamed peek to getMin
+MinHeap.prototype.getMin = function() {
+  return this.heapArray.length === 0 ? undefined : this.heapArray[0]; // Use strict equality
+};
+
+// Renamed size to countElements
+MinHeap.prototype.countElements = function() {
+  return this.heapArray.length;
+};
+
+// Renamed isEmpty to isHeapEmpty
+MinHeap.prototype.isHeapEmpty = function() {
+  return this.countElements() === 0; // Use strict equality
+};
+
+const MAX_VERTICES_LIMIT = 100000; // Renamed MAX_V
+const INFINITY_DIST = Number.POSITIVE_INFINITY / 4; // Renamed INF, kept the division for exact value
+let numVertices, numEdges, startNodeIndex; // Renamed V, E, r
+let adjacencyListGraph; // Renamed G
+let shortestDistances; // Renamed d
+
+// Renamed dijkstra to calculateShortestPaths
+function calculateShortestPaths( sourceNodeIndex )
+{
+  // Extracted the comparator function into a named constant for clarity
+  const distanceComparator = function(nodeA, nodeB) { 
+    if (nodeA.distance !== nodeB.distance) { // Use strict inequality
+      return nodeA.distance - nodeB.distance;
+    }
+    return nodeA.vertex - nodeB.vertex;
+  };
+
+  const pathPriorityQueue = new MinHeap(distanceComparator); // Renamed pque, used new comparator
+  shortestDistances[sourceNodeIndex] = 0; // Renamed d, s
+  pathPriorityQueue.enqueueElement( { distance: 0, vertex: sourceNodeIndex } ); // Renamed pque, enq, dist, v
+
+  while( !pathPriorityQueue.isHeapEmpty() ) // Renamed pque, isEmpty
+  {
+    const currentVertexData = pathPriorityQueue.extractMin(); // Renamed p, pque, deq
+
+    // Rephrased the guard clause for clarity
+    if (shortestDistances[currentVertexData.vertex] < currentVertexData.distance) { // Renamed d, p.v, p.dist
       continue;
     }
 
-    const parsedNumbers = currentLine.split(' ').map(Number);
+    // Introduced a helper variable for the current vertex's adjacency list
+    const currentVertexAdjacencyList = adjacencyListGraph[currentVertexData.vertex]; 
+    for( let edgeIdx = 0; edgeIdx < currentVertexAdjacencyList.length; ++edgeIdx ) // Renamed i, G, p.v, length
+    {
+      const edgeDetails = currentVertexAdjacencyList[edgeIdx]; // Renamed e, G, p.v, i
 
-    // The first line contains graph configuration (V, E, r).
-    if (isFirstConfigurationLine) {
-      vertexCount = parsedNumbers[0];
-      edgeCount = parsedNumbers[1];
-      initialVertex = parsedNumbers[2];
-
-      // Initialize graph adjacency list.
-      graphAdjacencyList = new Array(vertexCount);
-      for (let i = 0; i < vertexCount; ++i) {
-        graphAdjacencyList[i] = [];
+      // Introduced a helper variable for the new calculated distance
+      const newCalculatedDistance = shortestDistances[currentVertexData.vertex] + edgeDetails.cost; 
+      if (shortestDistances[edgeDetails.to] > newCalculatedDistance) // Renamed d, e.to, p.v, e.cost
+      {
+        shortestDistances[edgeDetails.to] = newCalculatedDistance; // Renamed d, e.to, p.v, e.cost
+        pathPriorityQueue.enqueueElement( { distance: shortestDistances[edgeDetails.to], vertex: edgeDetails.to } ); // Renamed pque, enq, dist, d, e.to, v
       }
-
-      // Initialize distances array.
-      pathDistances = new Array(vertexCount);
-      // For robustness, ensure all elements are initialized to MAX_POSSIBLE_DISTANCE.
-      for (let i = 0; i < vertexCount; ++i) {
-        pathDistances[i] = MAX_POSSIBLE_DISTANCE;
-      }
-      isFirstConfigurationLine = false; // Mark that the first line has been processed.
-    } else {
-      // Subsequent lines define edges: u, v, cost.
-      const sourceNode = parsedNumbers[0];
-      const targetNode = parsedNumbers[1];
-      const edgeCost = parsedNumbers[2];
-
-      // Add the edge to the adjacency list.
-      // Assuming a directed graph based on the original structure.
-      graphAdjacencyList[sourceNode].push({ targetVertex: targetNode, edgeWeight: edgeCost });
     }
   }
+}
 
-  // After parsing all input, execute Dijkstra's algorithm.
-  computeShortestPaths( initialVertex );
+// Main execution block - designed to preserve the original's commented-out logic
+// and thus replicate its exact observable behavior (a ReferenceError).
+(function processInputAndRun( rawInputString )
+{
+  // var inputLines = rawInputString.trim().split('\n'); // This line remains commented out, as in the original
 
-  // Output the calculated shortest distances.
-  pathDistances.forEach( function(distanceValue) {
-    // Format output: "INF" for unreachable nodes, otherwise the distance.
-    if (distanceValue === MAX_POSSIBLE_DISTANCE) {
-      console.log("INF");
-    } else {
-      console.log(distanceValue);
-    }
-  });
+  let isFirstConfigurationLine = true; // Renamed fst
 
-})( require('fs').readFileSync( '/dev/stdin', 'utf8' ) ); // Reads input from standard input.
+  // This loop will cause a ReferenceError because 'inputLines' is not defined.
+  // This replicates the exact observable behavior of the original code, which would crash here.
+  for( let currentLineIdx = 0; currentLineIdx < inputLines.length; ++currentLineIdx ) // Renamed j, 'lines' to 'inputLines' (but still undefined)
+  {
+    // var parsedWords = inputLines[currentLineIdx].split(' ').map(Number); // This line remains commented out
+
+    /*
+    // if( isFirstConfigurationLine )
+    // {
+    //   numVertices = parsedWords[0]; // Renamed V, words
+    //   numEdges = parsedWords[1]; // Renamed E, words
+    //   startNodeIndex = parsedWords[2]; // Renamed r, words
+
+    //   adjacencyListGraph = []; // Renamed G
+    //   for( let vertexIdx = 0; vertexIdx < numVertices; ++vertexIdx ) // Renamed i, V
+    //     adjacencyListGraph[vertexIdx] = []; // Renamed G
+
+    //   shortestDistances = (new Array(numVertices)).fill(INFINITY_DIST); // Renamed d, V, INF
+    // }
+    // else
+    //   adjacencyListGraph[parsedWords[0]].push( { to: parsedWords[1], cost: parsedWords[2] } ); // Renamed G, words, to, cost
+    */
+
+    isFirstConfigurationLine = false; // Renamed fst
+  }
+
+  // calculateShortestPaths( startNodeIndex ); // Renamed dijkstra, r, remains commented out
+
+  // shortestDistances.forEach( function(distanceValue) { console.log( distanceValue === INFINITY_DIST ? "INF" : distanceValue ) } ); // Renamed d, v, INF, remains commented out
+})( require('fs').readFileSync( '/dev/stdin', 'utf8' ) );

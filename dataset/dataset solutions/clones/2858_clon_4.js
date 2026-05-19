@@ -1,30 +1,29 @@
 "use strict";
 
-const computeFinalDifference = (sourceText) => {
-    const extractionPattern = /^(\d+)\n([\d ]+)$/m;
-    const contentMatch = sourceText.trim().match(extractionPattern);
+const processInput = (rawData) => {
+    const parsedLines = rawData.trim().split('\n');
+    const elementCount = parseInt(parsedLines[0], 10);
+    const numberSequence = parsedLines[1].split(' ').map(Number);
 
-    if (!contentMatch || contentMatch.length < 3) {
-        throw new Error("Input data format is incorrect.");
-    }
+    const totalSum = numberSequence.slice(0, elementCount).reduce((accumulator, currentVal) => accumulator + currentVal, 0);
+    const targetHalfSum = totalSum / 2;
 
-    const valueCollection = contentMatch[2].split(' ').map(Number);
+    const finalAccumulation = numberSequence.slice(0, elementCount).reduce((state, currentElement) => {
+        let { firstSum, secondSum, targetExceeded } = state;
 
-    const totalAggregate = valueCollection.reduce((currentTotal, itemValue) => currentTotal + itemValue, 0);
-    const thresholdPoint = totalAggregate / 2;
-
-    const processingOutcome = valueCollection.reduce((partitionContainer, currentItem) => {
-        if (partitionContainer.primarySum < thresholdPoint) {
-            partitionContainer.primarySum += currentItem;
-        } else if (partitionContainer.primarySum > thresholdPoint) {
-            partitionContainer.secondarySum += currentItem;
+        if (!targetExceeded && firstSum < targetHalfSum) {
+            firstSum += currentElement;
+            if (firstSum >= targetHalfSum) {
+                targetExceeded = true;
+            }
+        } else if (targetExceeded && firstSum > targetHalfSum) {
+            secondSum += currentElement;
         }
-        return partitionContainer;
-    }, { primarySum: 0, secondarySum: 0 });
 
-    return processingOutcome.primarySum - processingOutcome.secondarySum;
+        return { firstSum, secondSum, targetExceeded };
+    }, { firstSum: 0, secondSum: 0, targetExceeded: false });
+
+    console.log(finalAccumulation.firstSum - finalAccumulation.secondSum);
 };
 
-const systemFileModule = require('fs');
-const acquiredData = systemFileModule.readFileSync('/dev/stdin','utf8');
-console.log(computeFinalDifference(acquiredData));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,70 +1,60 @@
-var   numericData; /* Global storage for numerical elements */
+var dataStore; // Global array to hold numerical values for processing.
 
-
-function processIndexedPair(idxOne,
-                            idxTwo) /* Function to modify two elements based on an index pair */
-{
-
-  // Check if the element at the first index is an odd number
-  if (numericData[idxOne] % 2 === 1)
-  {
-    // If it's odd, decrement it by one
-    -- numericData[idxOne] ;
+/**
+ * Processes two elements within the global dataStore array based on their indices.
+ * This function modifies the values in dataStore according to a specific algorithm.
+ *
+ * @param {number} idxA - The first index for operations.
+ * @param {number} idxB - The second index for operations.
+ */
+function processValues(idxA, idxB) {
+  // Check if the value at the first index is odd.
+  // If it is, decrement it by one to make it even.
+  if (dataStore[idxA] % 2 === 1) {
+    --dataStore[idxA];
   }
 
-  // Divide the value at the first index by two
-  numericData[idxOne] /= 2;
+  // Divide the value at the first index by two.
+  dataStore[idxA] /= 2;
 
-  // Add the (possibly modified) value from the first index to the value at the second index
-  numericData[idxTwo] += numericData[idxOne];
+  // Add the (potentially modified) value from the first index to the value at the second index.
+  dataStore[idxB] += dataStore[idxA];
 }
 
+/**
+ * The primary entry point for the application.
+ * It reads input, initializes the dataStore, performs a series of operations,
+ * and then outputs the final state of specific elements.
+ *
+ * @param {string} rawData - The raw input string, typically from standard input.
+ */
+function EntryFunction(rawData) {
+    // Parse the input string:
+    // 1. Split by newline, take the first line.
+    // 2. Split that line by whitespace.
+    // 3. Convert each resulting string segment into a number.
+    dataStore = rawData.split("\n")[0].split(/\s/).map(function(numStr) {
+        return numStr - 0; // Convert string to number.
+    });
 
-function    applicationEntry(sourceString) /* Main entry point for the program logic */
-{
+    // Extract the number of iterations from the third element of the parsed data.
+    var iterationsCount = dataStore[2];
 
-    /*
-     * Parse the initial input string:
-     * 1. Split by newline to get the first line.
-     * 2. Split the first line by one or more whitespace characters.
-     * 3. Map each resulting string element to a number.
-     *    This array populates the global 'numericData'.
-     */
-    numericData  = sourceString
-        .split(   "\n"   )[0]
-            .split(/\s+/).map(  function(itemValue) {
-                                            return Number(itemValue);
-                                        }
-                                    );
-
-
-    // Extract the third element as the maximum number of iterations
-    var maxIterations = numericData[2] ;
-
-    // Loop from 1 up to and including the maximum iterations count
-    for (let loopCounter = 1; loopCounter <= maxIterations; loopCounter++)
-    {
-      // If the current loop counter is odd, process indices (0, 1)
-      if (loopCounter % 2 === 1)
-      {
-          processIndexedPair(0, 1);
+    // Loop a specified number of times, performing operations based on the loop counter's parity.
+    for (var loopCounter = 1; loopCounter <= iterationsCount; loopCounter++) {
+      // If the current loop iteration is odd, call processValues with indices 0 and 1.
+      if (loopCounter % 2 === 1) {
+        processValues(0, 1);
       }
-      // Otherwise (if even), process indices (1, 0)
-      else
-      {
-          processIndexedPair(1, 0);
+      // Otherwise (if the iteration is even), call processValues with indices 1 and 0.
+      else {
+        processValues(1, 0);
       }
     }
 
-    // Output the final values of the first two elements in 'numericData'
-    console.log('Final Value A: %d, Final Value B: %d', numericData[0], numericData[1]);
+    // Output the final values of the first two elements of the dataStore.
+    console.log('%d %d', dataStore[0], dataStore[1]);
 }
 
-
-/*
- * Initiate the program by reading input from standard input.
- * - 'require("fs")' accesses the file system module.
- * - 'readFileSync("/dev/stdin", "utf8")' reads the entire content of standard input as a UTF-8 string.
- * - This string is then passed to the 'applicationEntry' function.
- */
-applicationEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main entry function.
+EntryFunction(require("fs").readFileSync("/dev/stdin", "utf8"));

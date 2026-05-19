@@ -1,35 +1,34 @@
-function processInput(dataSource) {
-    const parsedLines = dataSource.split('\n');
-    const countOfEntries = parseInt(parsedLines[0], 10);
-    console.log(countOfEntries);
+function processInputData(inputString) {
+    const lines = inputString.split("\n");
+    const numEntries = Number(lines[0]);
+    console.log(numEntries);
 
-    const processedPairs = parsedLines.slice(1, countOfEntries + 1).map(lineText => {
-        const lineFragments = lineText.split(' ').map(Number);
-        return { firstElement: lineFragments[0], secondElement: lineFragments[1] };
+    const dataPairs = lines.slice(1, numEntries + 1).map(line => {
+        const parts = line.split(" ");
+        return [Number(parts[0]), Number(parts[1])];
     });
 
-    const intermediateState = processedPairs.reduce((accumulatorState, elementPair) => {
-        let { componentX, componentY } = accumulatorState;
-        const { firstElement, secondElement } = elementPair;
+    const determineScaleFactor = (targetValue, currentValue) => {
+        if (targetValue === 0) {
+            return 1;
+        }
+        return Math.ceil(targetValue / currentValue);
+    };
 
-        const factorOne = componentX / firstElement;
-        const factorTwo = componentY / secondElement;
+    const finalValues = dataPairs.reduce((accumulator, currentPair) => {
+        const [previousX, previousY] = accumulator;
+        const [currentX, currentY] = currentPair;
 
-        const finalMultiplier = Math.max(1, Math.ceil(Math.max(factorOne, factorTwo)));
+        const factorForX = determineScaleFactor(previousX, currentX);
+        const factorForY = determineScaleFactor(previousY, currentY);
 
-        componentX = firstElement * finalMultiplier;
-        componentY = secondElement * finalMultiplier;
-        
-        return { componentX, componentY };
-    }, { componentX: 0, componentY: 0 });
+        const effectiveFactor = Math.max(factorForX, factorForY);
 
-    const totalSum = intermediateState.componentX + intermediateState.componentY;
-    console.log(totalSum + '\n');
+        return [currentX * effectiveFactor, currentY * effectiveFactor];
+    }, [0, 0]);
+
+    const [resultX, resultY] = finalValues;
+    console.log(resultX + resultY + "\n");
 }
 
-function ioProcessor(fileSystemReader) {
-    const contentString = fileSystemReader('/dev/stdin', 'utf8');
-    processInput(contentString);
-}
-
-ioProcessor(require('fs').readFileSync);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,84 +1,68 @@
 function calculatePrimes(upperBound) {
-    // This function identifies all prime numbers up to a given limit using the Sieve of Eratosthenes algorithm.
+   // Initialize an array to store numbers and mark non-primes using Sieve of Eratosthenes
+   let sieveArray = [];
+   // Populate the array with numbers from 0 up to the specified upper limit
+   for (let idx = 0; idx <= upperBound; idx++) {
+      sieveArray[idx] = idx;
+   }
 
-    let booleanSieve = []; // Initialize an array to mark numbers as prime or non-prime.
+   // Mark 0 and 1 as not prime numbers
+   sieveArray[0] = false;
+   sieveArray[1] = false;
 
-    // Populate the sieve array. Initially, assume all numbers are potentially prime.
-    for (let idx = 0; idx <= upperBound; idx++) {
-        booleanSieve[idx] = idx;
-    }
+   // Calculate the integer part of the square root of the upper bound for optimization
+   const limitSqrt = Math.floor(Math.sqrt(upperBound));
 
-    // Numbers 0 and 1 are not considered prime, so mark them as such.
-    booleanSieve[0] = false;
-    booleanSieve[1] = false;
+   // Iterate from the first prime number (2) up to the square root limit
+   for (let idx = 2; idx <= limitSqrt; idx++) {
+      // If the current number is already marked as not prime, skip to the next number
+      if (sieveArray[idx] === false) {
+         continue;
+      }
+      // Mark all multiples of the current prime number as not prime
+      // Start marking from idx * idx, but the original code starts from idx + idx.
+      // Adhering to original logic: start from the first multiple greater than idx itself.
+      for (let multiplier = idx + idx; multiplier <= upperBound; multiplier += idx) {
+         sieveArray[multiplier] = false;
+      }
+   }
 
-    // Calculate the integer part of the square root of the upper bound.
-    // We only need to check for prime factors up to this limit.
-    const limitSquareRoot = Math.floor(Math.sqrt(upperBound));
-
-    // Begin the sieving process.
-    // Iterate from the first prime number (2) up to the calculated square root limit.
-    for (let idx = 2; idx <= limitSquareRoot; idx++) {
-        // If the current number 'idx' has already been marked as non-prime, skip it.
-        // This means it's a multiple of a smaller prime already processed.
-        if (booleanSieve[idx] === false) {
-            continue;
-        }
-
-        // If 'idx' is prime, mark all its multiples as non-prime.
-        // Start marking from idx * idx, as smaller multiples would have been marked by previous primes.
-        // (However, the original code starts from i+i, which is also correct for marking multiples)
-        for (let innerIdx = idx + idx; innerIdx <= upperBound; innerIdx += idx) {
-            booleanSieve[innerIdx] = false; // Mark the multiple as non-prime.
-        }
-    }
-
-    // After the sieving process, collect all numbers that are still marked as prime.
-    let foundPrimes = [];
-    for (let idx = 0; idx <= upperBound; idx++) {
-        if (booleanSieve[idx] !== false) {
-            foundPrimes.push(booleanSieve[idx]); // Add the prime number to the result list.
-        }
-    }
-
-    // Return the final list of prime numbers found within the specified range.
-    return foundPrimes;
+   // Collect all numbers that are still marked as prime into a new list
+   let primeNumbersList = [];
+   for (let idx = 0; idx <= upperBound; idx++) {
+      if (sieveArray[idx] !== false) {
+         primeNumbersList.push(sieveArray[idx]);
+      }
+   }
+   // Return the final list of prime numbers
+   return primeNumbersList;
 }
 
-// Execute the prime calculation function to get a list of primes up to 999,999.
-const primeNumbersList = calculatePrimes(999999);
+// Pre-calculate a list of prime numbers up to 999,999
+const precomputedPrimes = calculatePrimes(999999);
 
-// Load the Node.js built-in file system module.
-const fileSystemModule = require('fs');
+// Read the entire input from standard input as a UTF-8 string
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the entire content of standard input synchronously.
-// The input is assumed to be UTF-8 encoded.
-const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+// Process the raw input: remove leading/trailing whitespace, split by newlines, and convert each part to a number
+const inputNumbers = (rawData.trim()).split("\n").map(Number);
 
-// Process the raw input string:
-// 1. Remove any leading or trailing whitespace.
-// 2. Split the string into an array of lines, using the newline character as a delimiter.
-// 3. Convert each resulting string element in the array to a numeric type.
-const numericInputArray = rawInputData.trim().split("\n").map(Number);
+// Iterate through each number provided in the input
+for (let idx = 0; idx < inputNumbers.length; idx++) {
+   const currentNumber = inputNumbers[idx];
 
-// Iterate through each number obtained from the processed input.
-for (let entryIndex = 0; entryIndex < numericInputArray.length; entryIndex++) {
-    const currentEntryValue = numericInputArray[entryIndex];
+   // If the current input number is 0, it signifies the end of input, so break the loop
+   if (currentNumber === 0) {
+      break;
+   }
 
-    // If the current number is 0, it signals the end of the input sequence.
-    // Terminate the loop in this case.
-    if (currentEntryValue === 0) {
-        break;
-    }
+   // Initialize a variable to accumulate the sum of primes
+   let totalSum = 0;
+   // Sum the first 'currentNumber' primes from the precomputed list
+   for (let primeIndex = 0; primeIndex < currentNumber; primeIndex++) {
+      totalSum += precomputedPrimes[primeIndex];
+   }
 
-    // Initialize a variable to store the cumulative sum of prime numbers.
-    let accumulatedSum = 0;
-
-    // Sum the first 'currentEntryValue' prime numbers from the pre-calculated list.
-    for (let primeIndex = 0; primeIndex < currentEntryValue; primeIndex++) {
-        accumulatedSum += primeNumbersList[primeIndex];
-    }
-
-    // Output the calculated sum to the console.
-    console.log(accumulatedSum);
+   // Print the calculated sum to the console
+   console.log(totalSum);
 }

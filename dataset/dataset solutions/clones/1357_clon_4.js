@@ -1,30 +1,17 @@
-function executeLogic(dataInput) {
-    let textContent = dataInput;
-    let spacePos = textContent.indexOf(' ');
-    let firstStr = textContent.substring(0, spacePos);
-    let secondStr = textContent.substring(spacePos + 1);
+function processInput(rawText) {
+    const numericValues = rawText.split(" ").map(Number);
+    const firstVal = numericValues[0];
+    const secondVal = numericValues[1];
 
-    let numA = parseFloat(firstStr);
-    let numB = parseFloat(secondStr);
+    const comparisonIndex = Math.sign(firstVal - secondVal);
 
-    const checkFunctions = [
-        (n1, n2) => n1 < n2,
-        (n1, n2) => n1 === n2,
-        (n1, n2) => true 
-    ];
+    const messageMap = {
+        '-1': "a < b",
+        '0': "a == b",
+        '1': "a > b"
+    };
 
-    const outputMessages = [
-        "a < b",
-        "a == b",
-        "a > b"
-    ];
-
-    for (let currentIdx = 0; currentIdx < checkFunctions.length; currentIdx++) {
-        if (checkFunctions[currentIdx](numA, numB)) {
-            console.log(outputMessages[currentIdx]);
-            return;
-        }
-    }
+    console.log(messageMap[comparisonIndex]);
 }
 
-executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

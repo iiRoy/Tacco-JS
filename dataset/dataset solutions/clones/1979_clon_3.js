@@ -1,21 +1,21 @@
-let receivedTextualData = acquireUserInputString();
+var rawInput = readline();
 
-const TARGET_DIGIT_CHARACTER = '7';
-
-function doesNumberContainDigit(rawStringValue, desiredDigit) {
-    let convertedNumericForm = parseInt(rawStringValue, 10);
-
-    if (Number.isNaN(convertedNumericForm)) {
-        return false;
-    }
-
-    let numericValueAsString = String(convertedNumericForm);
-
-    let isDigitPresent = numericValueAsString.includes(desiredDigit);
-
-    return isDigitPresent;
+function getNumericValue(inputString) {
+    return parseInt(inputString);
 }
 
-let finalResultIndicator = doesNumberContainDigit(receivedTextualData, TARGET_DIGIT_CHARACTER);
+function convertNumberToString(num) {
+    return num.toString();
+}
 
-console.log(finalResultIndicator);
+function doesStringContainDigit(sourceStr, digitToFind) {
+    var digitChar = String(digitToFind);
+    var foundPosition = sourceStr.indexOf(digitChar);
+    return foundPosition >= 0;
+}
+
+var parsedNumber = getNumericValue(rawInput);
+var numberAsString = convertNumberToString(parsedNumber);
+var result = doesStringContainDigit(numberAsString, 7);
+
+console.log(result);

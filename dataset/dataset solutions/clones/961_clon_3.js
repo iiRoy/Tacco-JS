@@ -1,225 +1,167 @@
-class MinPriorityQueue {
-    #heapData;
-    #currentSize;
+var minHeapElements = [];
+var currentHeapSize = 0;
 
-    constructor() {
-        this.#heapData = [];
-        this.#currentSize = 0;
-        // Sentinel node for 1-based indexing, ensuring it's always "smaller"
-        this.#heapData[0] = { nodeId: -1, pathCost: -Infinity };
-    }
+minHeapElements[0] = [-1, -1]; // Sentinel value for heap root's parent
 
-    get count() {
-        return this.#currentSize;
-    }
-
-    isEmpty() {
-        return this.#currentSize === 0;
-    }
-
-    // Internal helper method for swapping elements
-    #performSwap(indexA, indexB) {
-        [this.#heapData[indexA], this.#heapData[indexB]] = [this.#heapData[indexB], this.#heapData[indexA]];
-    }
-
-    // Adds a new element to the priority queue and maintains heap property
-    insertElement(elementDetails) {
-        // Validate incoming element structure
-        if (typeof elementDetails !== 'object' || elementDetails === null || !('nodeId' in elementDetails) || !('pathCost' in elementDetails)) {
-            // A Type III addition: robust input validation
-            console.warn("Invalid element format provided to insertElement. Expected { nodeId: number, pathCost: number }.");
-            return;
+function getNumericValue(str) {
+    return parseInt(str, 10);
+}
+ 
+function enqueuePriority(elementData) {
+    minHeapElements[++currentHeapSize] = elementData;
+ 
+    let currentElementIndex = currentHeapSize;
+    let parentElementIndex;
+ 
+    while (true) {
+        parentElementIndex = Math.floor(currentElementIndex / 2);
+        // If current element is at root or its value is not less than its parent's, stop
+        if (parentElementIndex === 0 || minHeapElements[currentElementIndex][1] >= minHeapElements[parentElementIndex][1]) {
+            break;
         }
-
-        this.#currentSize++;
-        // Ensure array has capacity, though JavaScript handles resizing automatically
-        if (this.#heapData.length <= this.#currentSize) {
-            this.#heapData.push(null);
-        }
-        this.#heapData[this.#currentSize] = elementDetails;
-
-        let bubbleUpPosition = this.#currentSize;
-
-        // Bubble up the new element to its correct position
-        while (bubbleUpPosition > 1 && this.#heapData[bubbleUpPosition].pathCost < this.#heapData[bubbleUpPosition >> 1].pathCost) {
-            this.#performSwap(bubbleUpPosition, bubbleUpPosition >> 1);
-            bubbleUpPosition = bubbleUpPosition >> 1; // Integer division by 2
-        }
-    }
-
-    // Extracts the element with the minimum pathCost (root of the min-heap)
-    extractMinimum() {
-        // Type III: Explicit guard clause for an empty queue
-        if (this.isEmpty()) {
-            return null; // Return null if nothing to extract
-        }
-
-        const minimumValue = this.#heapData[1];
-        this.#heapData[1] = this.#heapData[this.#currentSize];
-        this.#heapData[this.#currentSize] = undefined; // Clear the last position after moving
-        this.#currentSize--;
-
-        let heapifyDownPosition = 1;
-
-        // Heapify down the new root element to restore heap property
-        while (true) {
-            const leftChildPosition = heapifyDownPosition * 2;
-            const rightChildPosition = heapifyDownPosition * 2 + 1;
-            let smallestChildPosition = heapifyDownPosition; // Assume current is smallest
-
-            // Check if left child exists and is smaller
-            if (leftChildPosition <= this.#currentSize && this.#heapData[leftChildPosition].pathCost < this.#heapData[smallestChildPosition].pathCost) {
-                smallestChildPosition = leftChildPosition;
-            }
-            // Check if right child exists and is smaller than the current smallest
-            if (rightChildPosition <= this.#currentSize && this.#heapData[rightChildPosition].pathCost < this.#heapData[smallestChildPosition].pathCost) {
-                smallestChildPosition = rightChildPosition;
-            }
-
-            // If the current element is the smallest, heap property is restored
-            if (smallestChildPosition === heapifyDownPosition) {
-                break;
-            }
-
-            this.#performSwap(heapifyDownPosition, smallestChildPosition);
-            heapifyDownPosition = smallestChildPosition;
-        }
-        return minimumValue;
+ 
+        // Swap current element with its parent
+        let temporarySwapBuffer = minHeapElements[currentElementIndex];
+        minHeapElements[currentElementIndex] = minHeapElements[parentElementIndex];
+        minHeapElements[parentElementIndex] = temporarySwapBuffer;
+        currentElementIndex = parentElementIndex;
     }
 }
-
-// Main function to compute shortest paths using Dijkstra's algorithm
-function calculateDijkstraShortestPaths(rawInputData) {
-    // Type III: Define a named constant for unreachable distances
-    const INFINITE_DISTANCE = Number.MAX_SAFE_INTEGER;
-
-    // Type II: Renamed variables, Type III: added trim() for robustness
-    const inputLinesArray = rawInputData.trim().split("\n");
-    const totalGraphNodes = parseInt(inputLinesArray[0], 10);
-
-    // Type III: Input validation for total nodes
-    if (isNaN(totalGraphNodes) || totalGraphNodes <= 0) {
-        console.error("Error: Invalid or non-positive number of graph nodes provided.");
-        return;
+ 
+function retrieveMinElement() {
+    if (currentHeapSize <= 0) {
+        return null; // Return null if heap is empty
     }
+ 
+    const minimumValue = minHeapElements[1];
+ 
+    // Move the last element to the root and decrease heap size
+    minHeapElements[1] = minHeapElements[currentHeapSize--];
+ 
+    let currentRootIndex = 1;
+    let leftChildIndex, rightChildIndex;
+    let smallestChildIndex;
+    let swapOccurred;
 
-    // Type II: Renamed 'graph' to 'nodeAdjacencyList'
-    const nodeAdjacencyList = new Array(totalGraphNodes);
+    while (true) {
+        swapOccurred = false;
+        leftChildIndex = currentRootIndex * 2;
+        rightChildIndex = currentRootIndex * 2 + 1;
+        smallestChildIndex = currentRootIndex; // Assume current node is smallest
 
-    // Type III: Pre-fill adjacency list with empty arrays for cleaner edge addition
-    for (let nodeIdx = 0; nodeIdx < totalGraphNodes; nodeIdx++) {
-        nodeAdjacencyList[nodeIdx] = [];
+        // Check if left child exists and is smaller
+        if (leftChildIndex <= currentHeapSize && minHeapElements[leftChildIndex][1] < minHeapElements[smallestChildIndex][1]) {
+            smallestChildIndex = leftChildIndex;
+        }
+
+        // Check if right child exists and is smaller than current smallest
+        if (rightChildIndex <= currentHeapSize && minHeapElements[rightChildIndex][1] < minHeapElements[smallestChildIndex][1]) {
+            smallestChildIndex = rightChildIndex;
+        }
+
+        // If the smallest element is not the current root, swap them
+        if (smallestChildIndex !== currentRootIndex) {
+            let tempSwap = minHeapElements[currentRootIndex];
+            minHeapElements[currentRootIndex] = minHeapElements[smallestChildIndex];
+            minHeapElements[smallestChildIndex] = tempSwap;
+            currentRootIndex = smallestChildIndex; // Move down to the swapped position
+            swapOccurred = true;
+        }
+
+        if (!swapOccurred) {
+            break; // Heap property is satisfied
+        }
     }
+    return minimumValue;
+}
+
+
+function processGraphData(rawData){
+    const lines = rawData.split("\n");
+    const nodeCount = getNumericValue(lines[0]);
+
+    const adjacencyList = new Array(nodeCount);
 
     // Parse graph input
-    for (let currentInputLine = 0; currentInputLine < totalGraphNodes; currentInputLine++) {
-        const lineSegments = inputLinesArray[currentInputLine + 1].split(" ");
-        const sourceNode = parseInt(lineSegments[0], 10);
-        const numberOfOutgoingEdges = parseInt(lineSegments[1], 10);
-
-        // Type III: Input validation for parsed node data
-        if (isNaN(sourceNode) || sourceNode < 0 || sourceNode >= totalGraphNodes) {
-            console.warn(`Skipping invalid source node ID: ${sourceNode} on line ${currentInputLine + 2}.`);
-            continue;
-        }
-        if (isNaN(numberOfOutgoingEdges) || numberOfOutgoingEdges < 0) {
-            console.warn(`Skipping connections for node ${sourceNode} due to invalid edge count: ${numberOfOutgoingEdges}.`);
-            continue;
+    for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
+        const currentLineParts = lines[nodeIdx + 1].split(" ");
+        const currentNodeId = getNumericValue(currentLineParts[0]);
+        const edgeCount = getNumericValue(currentLineParts[1]);
+        
+        adjacencyList[currentNodeId] = new Array(edgeCount);
+        for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
+            adjacencyList[currentNodeId][edgeIdx] = new Array(2); // [destination, weight]
         }
 
-        // Type III: Using objects for edge representation for enhanced readability
-        for (let edgeCounter = 0; edgeCounter < numberOfOutgoingEdges; edgeCounter++) {
-            const destinationNode = parseInt(lineSegments[edgeCounter * 2 + 2], 10);
-            const edgeConnectionWeight = parseInt(lineSegments[edgeCounter * 2 + 3], 10);
-
-            // Type III: Input validation for edge details
-            if (isNaN(destinationNode) || destinationNode < 0 || destinationNode >= totalGraphNodes || isNaN(edgeConnectionWeight) || edgeConnectionWeight < 0) {
-                console.warn(`Skipping invalid edge details for node ${sourceNode}: target=${destinationNode}, weight=${edgeConnectionWeight}.`);
-                continue;
-            }
-
-            nodeAdjacencyList[sourceNode].push({ targetNode: destinationNode, weight: edgeConnectionWeight });
+        for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
+            const destinationNode = getNumericValue(currentLineParts[edgeIdx * 2 + 2]);
+            const edgeWeight = getNumericValue(currentLineParts[edgeIdx * 2 + 3]);
+            adjacencyList[currentNodeId][edgeIdx][0] = destinationNode;
+            adjacencyList[currentNodeId][edgeIdx][1] = edgeWeight;
         }
     }
 
-    let finalizedNodeCount = 0; // Type II: Renamed 'count'
-    // Type II: Renamed 'sum' to 'shortestPathResults', Type III: filled with constant
-    const shortestPathResults = new Array(totalGraphNodes).fill(INFINITE_DISTANCE);
+    // Dijkstra's algorithm setup
+    const MAX_DISTANCE_VALUE = 1000000000; // Represents infinity
+    let processedNodeCount = 0;
+    const minDistances = new Array(nodeCount);
 
-    // Type III: Instantiate the custom MinPriorityQueue class
-    const pathDiscoveryQueue = new MinPriorityQueue();
+    // Initialize distances
+    for (let i = 0; i < nodeCount; i++) {
+        minDistances[i] = MAX_DISTANCE_VALUE;
+    }
+    minDistances[0] = 0; // Distance to starting node (node 0) is zero
 
-    // Initialize Dijkstra's: distance to source node (0) is 0
-    shortestPathResults[0] = 0;
-    pathDiscoveryQueue.insertElement({ nodeId: 0, pathCost: 0 });
+    // Add initial edges from the starting node to the priority queue
+    const initialEdgesFromStart = adjacencyList[0];
+    if (initialEdgesFromStart) {
+        for (let i = 0; i < initialEdgesFromStart.length; i++) {
+            // Create a copy to avoid modifying the original graph data
+            const edgeToInsert = [initialEdgesFromStart[i][0], initialEdgesFromStart[i][1]];
+            enqueuePriority(edgeToInsert);
+        }
+    }
+    
+    // Main Dijkstra's loop
+    while (processedNodeCount < nodeCount) {
+        const extractedEdge = retrieveMinElement();
 
-    // Type III: Use a Set to efficiently track nodes whose shortest paths have been finalized
-    const discoveredNodesSet = new Set();
+        if (extractedEdge === null) { // Heap is empty, no more reachable nodes
+            break;
+        }
 
-    // Main Dijkstra's algorithm loop
-    while (finalizedNodeCount < totalGraphNodes && !pathDiscoveryQueue.isEmpty()) {
-        const extractedNodeData = pathDiscoveryQueue.extractMinimum(); // Type II: Renamed 'aa'
+        const targetNode = extractedEdge[0];
+        const currentPathWeight = extractedEdge[1];
 
-        // Type III: Defensive check if extraction failed (e.g., queue unexpectedly empty)
-        if (extractedNodeData === null) {
+        // If a shorter path to this node has already been found, skip
+        if (minDistances[targetNode] < MAX_DISTANCE_VALUE) {
             continue;
         }
 
-        // Type III: Destructuring assignment for clarity
-        const { nodeId: currentNodeId, pathCost: currentMinPath } = extractedNodeData;
+        minDistances[targetNode] = currentPathWeight;
+        processedNodeCount++;
 
-        // Type III: If this node's shortest path has already been finalized, skip
-        if (discoveredNodesSet.has(currentNodeId)) {
-            continue;
-        }
+        // Explore neighbors of the newly processed node
+        const neighborsOfTarget = adjacencyList[targetNode];
+        if (neighborsOfTarget) {
+            for (let i = 0; i < neighborsOfTarget.length; i++) {
+                const neighborEdge = neighborsOfTarget[i];
+                const neighborNode = neighborEdge[0];
+                const originalNeighborWeight = neighborEdge[1];
 
-        // Finalize the shortest path to currentNodeId
-        shortestPathResults[currentNodeId] = currentMinPath;
-        discoveredNodesSet.add(currentNodeId);
-        finalizedNodeCount++;
-
-        // Type III: Iterate over neighbors using for...of for object-based edges
-        for (const connectedEdge of nodeAdjacencyList[currentNodeId]) {
-            const neighborNode = connectedEdge.targetNode;
-            const linkWeight = connectedEdge.weight;
-
-            // Type III: Only process neighbors whose shortest paths haven't been finalized
-            if (!discoveredNodesSet.has(neighborNode)) {
-                // Calculate the potential new path cost to the neighbor
-                const candidateNewPathCost = shortestPathResults[currentNodeId] + linkWeight;
-
-                // If this new path is shorter than any previously found path to the neighbor
-                if (candidateNewPathCost < shortestPathResults[neighborNode]) {
-                    shortestPathResults[neighborNode] = candidateNewPathCost; // Update shortest distance
-                    // Type III: Add the neighbor to the priority queue with its updated shortest path
-                    pathDiscoveryQueue.insertElement({ nodeId: neighborNode, pathCost: candidateNewPathCost });
+                // Only consider if neighbor's distance is not yet finalized
+                if (minDistances[neighborNode] === MAX_DISTANCE_VALUE) {
+                    const newEdgeEntry = [neighborNode, originalNeighborWeight + minDistances[targetNode]];
+                    enqueuePriority(newEdgeEntry);
                 }
             }
         }
     }
 
-    // Output the results
-    for (let outputNodeIndex = 0; outputNodeIndex < totalGraphNodes; outputNodeIndex++) {
-        const finalCalculatedDistance = shortestPathResults[outputNodeIndex];
-        // Type III: Output "INF" for unreachable nodes instead of a large number
-        const displayOutputValue = (finalCalculatedDistance === INFINITE_DISTANCE) ? "INF" : finalCalculatedDistance;
-        console.log(`${outputNodeIndex} ${displayOutputValue}`);
+    // Output the calculated minimum distances
+    for (let i = 0; i < nodeCount; i++) {
+        console.log(i + " " + minDistances[i]);
     }
 }
 
-// Type III: Encapsulate the file reading and main function call for better structure
-function executeSolutionFromFile() {
-    // Type III: Added a try-catch block for robust file reading and error handling
-    try {
-        const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-        calculateDijkstraShortestPaths(fileContent);
-    } catch (error) {
-        console.error("An error occurred during input file processing or shortest path computation:", error.message);
-        // Type III: Provide more specific error messages for common issues
-        if (error.code === 'ENOENT') {
-            console.error("Input file '/dev/stdin' not found. Please ensure it exists and is accessible.");
-        }
-    }
-}
-
-executeSolutionFromFile();
+processGraphData(require("fs").readFileSync("/dev/stdin","utf8"));

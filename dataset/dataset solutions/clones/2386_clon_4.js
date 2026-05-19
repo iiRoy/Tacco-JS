@@ -1,27 +1,21 @@
-var utilityService = require("fs");
+var sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-var fetchedContent = utilityService.readFileSync("/dev/stdin", "utf8");
+var dayIdentifier = sourceData;
 
-var targetSymbol = fetchedContent;
+var dayCountdownValues = {
+    'SAT': 1,
+    'FRI': 2,
+    'THU': 3,
+    'WED': 4,
+    'TUE': 5,
+    'MON': 6,
+    'SUN': 7
+};
 
-var valueRegistry = new Map([
-    ['SUN', 7],
-    ['MON', 6],
-    ['TUE', 5],
-    ['WED', 4],
-    ['THU', 3],
-    ['FRI', 2],
-    ['SAT', 1]
-]);
+var daysUntilSunday = dayCountdownValues[dayIdentifier];
 
-var outcomeIndicator = valueRegistry.get(targetSymbol);
-
-if (outcomeIndicator === undefined) {
-    outcomeIndicator = 0;
+if (daysUntilSunday === undefined) {
+    daysUntilSunday = 0;
 }
 
-function displayResult(finalResult) {
-    process.stdout.write(finalResult + '\n');
-}
-
-displayResult(outcomeIndicator);
+console.log(daysUntilSunday);

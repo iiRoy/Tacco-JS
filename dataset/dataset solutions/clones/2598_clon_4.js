@@ -1,27 +1,28 @@
 function processInput(inputString) {
-    const lines = inputString.split('\n');
-    const numericalValues = lines[1].split(' ').map(Number);
+    const lines = inputString.split("\n");
+    const elementCount = parseInt(lines[0], 10);
+    const numericValues = lines[1].split(" ").map(Number);
 
-    if (numericalValues.length < 2) {
-        console.log(0);
-        return;
-    }
+    const effectiveSlice = numericValues.slice(0, elementCount);
 
-    const resultAccumulator = numericalValues.slice(1).reduce((state, currentVal, idx) => {
-        const priorVal = numericalValues[idx];
+    const finalResult = effectiveSlice.reduceRight((accumulator, currentValue, currentIndex, sourceArray) => {
+        let [streakCounter, peakStreak] = accumulator;
+        const priorValue = sourceArray[currentIndex - 1];
 
-        if (currentVal <= priorVal) {
-            state.currentDescentLength++;
-            if (state.currentDescentLength > state.maxDescentLength) {
-                state.maxDescentLength = state.currentDescentLength;
+        console.log(currentValue, priorValue);
+
+        if (currentValue <= priorValue) {
+            streakCounter++;
+            if (streakCounter > peakStreak) {
+                peakStreak = streakCounter;
             }
         } else {
-            state.currentDescentLength = 0;
+            streakCounter = 0;
         }
-        return state;
-    }, { maxDescentLength: 0, currentDescentLength: 0 });
+        return [streakCounter, peakStreak];
+    }, [0, 0]);
 
-    console.log(resultAccumulator.maxDescentLength);
+    console.log(finalResult[1]);
 }
 
 processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

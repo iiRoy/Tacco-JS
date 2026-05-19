@@ -1,44 +1,48 @@
-const ProcessSystem = (rawInputData) => {
-    const dataSegments = rawInputData.split('\n');
-    const totalEntities = Number.parseInt(dataSegments[0], 10);
-    const desiredParities = dataSegments.slice(1, totalEntities + 1).map(Number.parseInt);
+const processInput = (inputData) => {
+    const lines = inputData.split('\n');
+    const limit = parseInt(lines[0], 10);
 
-    const systemOutcome = {
-        entityConfiguration: Array(totalEntities).fill(0),
-        activeEntityReferences: []
-    };
+    const states = new Array(limit).fill(0);
+    const activeIndices = [];
 
-    const entitySequence = Array.from({
-        length: totalEntities
-    }, (_, idx) => totalEntities - idx);
+    Array.from({ length: limit }, (_, idx) => limit - idx).forEach(
+        (currentIdxValue) => {
+            const boxPosition = currentIdxValue - 1;
+            const expectedParity = parseInt(lines[currentIdxValue], 10);
 
-    const finalStateAccumulator = entitySequence.reduce((acc, currentEntityIdentifier) => {
-        const multipleContributors = Array.from({
-            length: Math.floor(totalEntities / currentEntityIdentifier) - 1
-        }, (_, idx) => (idx + 2) * currentEntityIdentifier)
-            .reduce((sum, multipleIdentifier) => {
-                return sum + acc.entityConfiguration[multipleIdentifier - 1];
-            }, 0);
+            const multiples = Array.from(
+                { length: Math.floor(limit / currentIdxValue) - 1 },
+                (_, k) => (k + 2) * currentIdxValue
+            );
 
-        const derivedState = (desiredParities[currentEntityIdentifier - 1] + multipleContributors) % 2;
+            const currentSum = multiples.reduce(
+                (accumulator, multiple) => accumulator + states[multiple - 1],
+                0
+            );
 
-        acc.entityConfiguration[currentEntityIdentifier - 1] = derivedState;
+            const currentSumParity = currentSum % 2;
 
-        if (derivedState === 1) {
-            acc.activeEntityReferences.push(currentEntityIdentifier);
+            const stateValue = currentSumParity === expectedParity ? 0 : 1;
+            states[boxPosition] = stateValue;
+
+            if (stateValue === 1) {
+                activeIndices.push(currentIdxValue);
+            }
         }
+    );
 
-        return acc;
-    }, systemOutcome);
+    const count = activeIndices.length;
 
-    const countOfActivations = finalStateAccumulator.activeEntityReferences.length;
-    const orderedActiveReferences = finalStateAccumulator.activeEntityReferences.reverse();
-
-    if (countOfActivations > 0) {
-        console.log('%d', countOfActivations);
-        console.log(orderedActiveReferences.join(' '));
+    if (count > 0) {
+        console.log(count);
+        const outputString = activeIndices
+            .reverse()
+            .map((val) => `${val}${val}`)
+            .join(' ');
+        console.log(outputString);
     } else {
-        console.log('%d', 0);
+        console.log(0);
     }
 };
-ProcessSystem(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

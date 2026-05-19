@@ -1,52 +1,59 @@
-const processInput = (rawText) => {
-    const lineSegments = rawText.split('\n');
-    const totalStrings = Number(lineSegments[0]);
-    let charOccurrenceMaps = [];
-
-    for (let currentLineIndex = 1; currentLineIndex <= totalStrings; currentLineIndex++) {
-        const textSegment = lineSegments[currentLineIndex];
-        const charFrequencies = {};
-        for (const charUnit of textSegment) {
-            charFrequencies[charUnit] = (charFrequencies[charUnit] || 0) + 1;
-        }
-        charOccurrenceMaps.push(charFrequencies);
+const createFrequencyMap = (charSequence) => {
+    const charFrequencies = {};
+    for (const charUnit of charSequence) {
+        charFrequencies[charUnit] = (charFrequencies[charUnit] || 0) + 1;
     }
-
-    if (charOccurrenceMaps.length === 0) {
-        return '';
-    }
-
-    let sharedCharCounts = { ...charOccurrenceMaps[0] };
-
-    for (let mapIndex = 1; mapIndex < charOccurrenceMaps.length; mapIndex++) {
-        const currentSegmentMap = charOccurrenceMaps[mapIndex];
-        const updatedSharedCounts = {};
-
-        for (const charKey in sharedCharCounts) {
-            if (currentSegmentMap.hasOwnProperty(charKey)) {
-                updatedSharedCounts[charKey] = Math.min(sharedCharCounts[charKey], currentSegmentMap[charKey]);
-            }
-        }
-        sharedCharCounts = updatedSharedCounts;
-    }
-
-    let finalCharSequence = [];
-    const orderedKeys = Object.keys(sharedCharCounts).sort();
-
-    for (const charKey of orderedKeys) {
-        for (let count = 0; count < sharedCharCounts[charKey]; count++) {
-            finalCharSequence.push(charKey);
-        }
-    }
-
-    return finalCharSequence.join('');
+    return charFrequencies;
 };
 
-const acquiredData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const computedResult = processInput(acquiredData);
+const reconstructCharArray = (frequencyMap) => {
+    const resultingCharacters = [];
+    const sortedKeys = Object.keys(frequencyMap).sort();
+    for (const charKey of sortedKeys) {
+        for (let countIndex = 0; countIndex < frequencyMap[charKey]; countIndex++) {
+            resultingCharacters.push(charKey);
+        }
+    }
+    return resultingCharacters;
+};
 
-if (computedResult.length === 0) {
-    console.log();
-} else {
-    console.log(computedResult);
+function executeProgram(rawData) {
+    const lines = rawData.split('\n');
+    const stringCount = Number(lines[0]);
+    const sortedCharSequences = [];
+
+    for (let lineIndex = 1; lineIndex <= stringCount; lineIndex++) {
+        sortedCharSequences.push(lines[lineIndex].split('').sort());
+    }
+
+    let finalResultContainer;
+
+    if (stringCount === 0) {
+        finalResultContainer = undefined;
+    } else {
+        const initialSequence = sortedCharSequences.shift();
+        const initialFrequencyMap = createFrequencyMap(initialSequence);
+
+        const finalCommonFreqMap = sortedCharSequences.reduce((accumulatorFreqMap, currentCharArray) => {
+            const currentStringFreqMap = createFrequencyMap(currentCharArray);
+            const nextAccumulatorFreqMap = {};
+
+            for (const charUnit in accumulatorFreqMap) {
+                if (currentStringFreqMap.hasOwnProperty(charUnit)) {
+                    nextAccumulatorFreqMap[charUnit] = Math.min(accumulatorFreqMap[charUnit], currentStringFreqMap[charUnit]);
+                }
+            }
+            return nextAccumulatorFreqMap;
+        }, initialFrequencyMap);
+
+        finalResultContainer = reconstructCharArray(finalCommonFreqMap);
+    }
+
+    if (finalResultContainer.length === 0) {
+        console.log();
+    } else {
+        console.log(finalResultContainer.join(''));
+    }
 }
+
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,13 +1,31 @@
-((entryProcessor) => {
-    const externalSource = require("fs").readFileSync(0, "utf8").trim();
-    const processedElements = externalSource.split(" ").map(Number);
-    entryProcessor(processedElements);
-})( (acquiredParameters) => {
-    const totalCount = acquiredParameters[0];
-    const limitIndex = acquiredParameters[1];
-    const replacementValue = acquiredParameters[2];
-    const initialElements = Array(limitIndex).fill(replacementValue);
-    const subsequentElements = Array(totalCount - limitIndex).fill(1);
-    const finalSeries = [...initialElements, ...subsequentElements];
-    console.log(finalSeries.join(" "));
-});
+function retrieveInput() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
+}
+
+function displayOutput(content) {
+  console.log(content);
+}
+
+function reportError(message) {
+  console.error(message);
+}
+
+function parseSpaceSeparatedNumbers(textData) {
+  return textData.split(" ").map(Number);
+}
+
+function processSequenceGeneration(rawInput) {
+  const numericParameters = parseSpaceSeparatedNumbers(rawInput);
+
+  const totalElements = numericParameters[0];
+  const splitPoint = numericParameters[1];
+  const fillValue = numericParameters[2];
+
+  const generatedSequence = Array.from({ length: totalElements }, (_, currentIndex) =>
+    currentIndex < splitPoint ? fillValue : 1
+  );
+
+  displayOutput(generatedSequence.join(" "));
+}
+
+processSequenceGeneration(retrieveInput());

@@ -1,32 +1,30 @@
-'use strict';
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n');
 
-const dataStream = require("fs").readFileSync("/dev/stdin", "utf8").trim().split('\n');
+const [gridDimension, patternDimension] = inputData[0].split(' ').map(Number);
+const mainGridData = inputData.slice(1, 1 + gridDimension).map(lineContent => lineContent.split(''));
+const searchPatternData = inputData.slice(1 + gridDimension, 1 + gridDimension + patternDimension).map(lineContent => lineContent.split(''));
 
-const matrixDimensions = dataStream[0].split(' ').map(Number);
-const majorSize = matrixDimensions[0];
-const minorSize = matrixDimensions[1];
-
-const mainGridContent = dataStream.slice(1, 1 + majorSize).map(lineFragment => lineFragment.split(''));
-const searchPatternContent = dataStream.slice(1 + majorSize, 1 + majorSize + minorSize).map(lineFragment => lineFragment.split(''));
-
-const assessPlacement = (universeGrid, targetPattern, rowOrigin, colOrigin) => {
-    return targetPattern.every((patternRowSegment, patternRowIndex) => {
-        return patternRowSegment.every((patternCharacter, patternColIndex) => {
-            return universeGrid[rowOrigin + patternRowIndex][colOrigin + patternColIndex] === patternCharacter;
+const checkSubgridMatch = (startRow, startCol, primaryMatrix, secondaryMatrix, secondaryMatrixSize) => {
+    return Array.from({ length: secondaryMatrixSize }).every((_, rIndex) => {
+        return Array.from({ length: secondaryMatrixSize }).every((__, cIndex) => {
+            return primaryMatrix[startRow + rIndex][startCol + cIndex] === secondaryMatrix[rIndex][cIndex];
         });
     });
 };
 
-const candidateRowIndices = Array.from({ length: majorSize - minorSize + 1 }, (_, idx) => idx);
-const candidateColIndices = Array.from({ length: majorSize - minorSize + 1 }, (_, idx) => idx);
+let foundMatchIndicator = false;
 
-const occurrenceDetected = candidateRowIndices.some(startRowCandidate => {
-    return candidateColIndices.some(startColCandidate => {
-        return assessPlacement(mainGridContent, searchPatternContent, startRowCandidate, startColCandidate);
+Array.from({ length: gridDimension - patternDimension + 1 }).some((_, currentY) => {
+    return Array.from({ length: gridDimension - patternDimension + 1 }).some((__, currentX) => {
+        if (checkSubgridMatch(currentY, currentX, mainGridData, searchPatternData, patternDimension)) {
+            foundMatchIndicator = true;
+            return true;
+        }
+        return false;
     });
 });
 
-if (occurrenceDetected) {
+if (foundMatchIndicator) {
     console.log('Yes');
 } else {
     console.log('No');

@@ -1,170 +1,109 @@
-const rawInputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
-let lineSegments = rawInputSource.trim().split("\n");
-
-class MinPriorityQueue {
-    constructor() {
-        this.heapContent = [];
+const getLines = (function* () {
+    const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+    const lines = rawInput.trim().split('\n');
+    let index = 0;
+    while (index < lines.length) {
+        yield lines[index++];
     }
+})();
 
-    insertElement(item) {
-        this.heapContent.push(item);
-        this.siftUp();
-    }
-
-    extractMin() {
-        if (this.isEmpty()) {
-            return undefined;
-        }
-        const minimumValue = this.heapContent[0];
-        const lastElement = this.heapContent.pop();
-        if (!this.isEmpty()) {
-            this.heapContent[0] = lastElement;
-            this.siftDown();
-        }
-        return minimumValue;
-    }
-
-    isEmpty() {
-        return this.heapContent.length === 0;
-    }
-
-    siftUp() {
-        let currentElementIndex = this.heapContent.length - 1;
-        while (currentElementIndex > 0) {
-            const parentElementIndex = Math.floor((currentElementIndex - 1) / 2);
-            if (this.heapContent[parentElementIndex][0] > this.heapContent[currentElementIndex][0]) {
-                [this.heapContent[parentElementIndex], this.heapContent[currentElementIndex]] = [this.heapContent[currentElementIndex], this.heapContent[parentElementIndex]];
-                currentElementIndex = parentElementIndex;
-            } else {
-                break;
-            }
-        }
-    }
-
-    siftDown() {
-        let currentElementIndex = 0;
-        const totalElements = this.heapContent.length;
-        const rootElement = this.heapContent[0];
-        while (true) {
-            let leftChildPosition = 2 * currentElementIndex + 1;
-            let rightChildPosition = 2 * currentElementIndex + 2;
-            let leftChildItem, rightChildItem;
-            let swapPosition = null;
-
-            if (leftChildPosition < totalElements) {
-                leftChildItem = this.heapContent[leftChildPosition];
-                if (leftChildItem[0] < rootElement[0]) {
-                    swapPosition = leftChildPosition;
-                }
-            }
-
-            if (rightChildPosition < totalElements) {
-                rightChildItem = this.heapContent[rightChildPosition];
-                if (
-                    (swapPosition === null && rightChildItem[0] < rootElement[0]) ||
-                    (swapPosition !== null && rightChildItem[0] < leftChildItem[0])
-                ) {
-                    swapPosition = rightChildPosition;
-                }
-            }
-
-            if (swapPosition === null) break;
-            [this.heapContent[currentElementIndex], this.heapContent[swapPosition]] = [this.heapContent[swapPosition], this.heapContent[currentElementIndex]];
-            currentElementIndex = swapPosition;
-        }
-    }
+function fetchNextInputLine() {
+    return getLines.next().value;
 }
 
-function processProblemScenario(remainingInputLines) {
-    if (remainingInputLines.length === 0) {
-        return;
+while (true) {
+    const [nodeQuantity, edgeQuantity] = fetchNextInputLine().split(' ').map(Number);
+    if (nodeQuantity === 0 && edgeQuantity === 0) break;
+
+    const initialNode = 1;
+    const finalNode = nodeQuantity;
+    const stateDimension = 3; // Corresponds to states 0, 1, 2
+
+    const adjacencyList = new Map();
+    for (let i = 1; i <= nodeQuantity; i++) {
+        adjacencyList.set(i, []);
     }
 
-    const currentScenarioLine = remainingInputLines.shift();
-    const parsedDimensions = currentScenarioLine.split(" ").map(Number);
-    const totalVertices = parsedDimensions[0];
-    const totalEdges = parsedDimensions[1];
-
-    if (totalVertices === 0 && totalEdges === 0) {
-        return; // Termination condition for input processing
+    for (let i = 0; i < edgeQuantity; i++) {
+        const [origin, destination, cost] = fetchNextInputLine().split(' ').map(Number);
+        adjacencyList.get(origin).push({ neighbor: destination, edgeCost: cost });
+        adjacencyList.get(destination).push({ neighbor: origin, edgeCost: cost }); // Undirected graph
     }
 
-    const startingNode = 1;
-    const endingNode = totalVertices;
-    const maximumBombAllowance = 2;
-
-    const recordedEdgeData = [];
-    for (let edgeIndex = 0; edgeIndex < totalEdges; edgeIndex++) {
-        recordedEdgeData.push(remainingInputLines.shift().split(" ").map(Number));
+    const minimumCosts = new Map();
+    for (let i = 1; i <= nodeQuantity; i++) {
+        minimumCosts.set(i, Array(stateDimension).fill(Infinity));
     }
+    minimumCosts.get(initialNode)[0] = 0;
 
-    const networkConnections = new Map();
-    for (let nodeIdentifier = 1; nodeIdentifier <= totalVertices; nodeIdentifier++) {
-        networkConnections.set(nodeIdentifier, []);
-    }
-    recordedEdgeData.forEach(function(edgeDetail) {
-        const originNode = edgeDetail[0];
-        const destinationNode = edgeDetail[1];
-        const traversalCost = edgeDetail[2];
-        networkConnections.get(originNode).push({ target: destinationNode, cost: traversalCost });
-        networkConnections.get(destinationNode).push({ target: originNode, cost: traversalCost }); // Bidirectional
-    });
+    const traversalQueue = [initialNode];
+    const visitedTracker = new Set(); // Tracks nodes that have been dequeued and processed
 
-    // minimumPathCosts[node_id][bombs_utilized]
-    const minimumPathCosts = Array.from({ length: totalVertices + 1 }, () =>
-        Array(maximumBombAllowance + 1).fill(Infinity)
-    );
+    let queueHead = 0;
 
-    const activeExplorationQueue = new MinPriorityQueue();
+    const applyRelaxation = (sourceIdentifier, targetIdentifier, weightValue) => {
+        const sourceStateCosts = minimumCosts.get(sourceIdentifier);
+        const targetStateCosts = minimumCosts.get(targetIdentifier);
+        let updated = false;
 
-    minimumPathCosts[startingNode][0] = 0;
-    activeExplorationQueue.insertElement([0, startingNode, 0]); // [accumulated_cost, current_node, bombs_used_so_far]
-
-    while (!activeExplorationQueue.isEmpty()) {
-        const [currentAccumulatedCost, currentPosition, currentBombsUtilized] = activeExplorationQueue.extractMin();
-
-        if (currentAccumulatedCost > minimumPathCosts[currentPosition][currentBombsUtilized]) {
-            continue; // Already discovered a more efficient route to this state
-        }
-
-        const connectedRoutes = networkConnections.get(currentPosition) || [];
-
-        for (const route of connectedRoutes) {
-            const nextPosition = route.target;
-            const segmentCost = route.cost;
-
-            // Strategy 1: Traverse the segment normally (without using a bomb)
-            // This is permitted only if currentBombsUtilized is 0 or 2, mirroring original logic
-            if (currentBombsUtilized === 0 || currentBombsUtilized === 2) {
-                const newAccumulatedCostNormal = currentAccumulatedCost + segmentCost;
-                const newBombsUtilizedNormal = currentBombsUtilized;
-                if (newAccumulatedCostNormal < minimumPathCosts[nextPosition][newBombsUtilizedNormal]) {
-                    minimumPathCosts[nextPosition][newBombsUtilizedNormal] = newAccumulatedCostNormal;
-                    activeExplorationQueue.insertElement([newAccumulatedCostNormal, nextPosition, newBombsUtilizedNormal]);
-                }
+        // Transition from state 0 of sourceIdentifier
+        const sourceCostState0 = sourceStateCosts[0];
+        if (sourceCostState0 !== Infinity) {
+            // Update targetIdentifier state 0 (no reuse)
+            if (targetStateCosts[0] > sourceCostState0 + weightValue) {
+                targetStateCosts[0] = sourceCostState0 + weightValue;
+                updated = true;
             }
-
-            // Strategy 2: Use a bomb on this segment (cost is nullified)
-            // This is permitted only if currentBombsUtilized is 0 or 1, mirroring original logic
-            if (currentBombsUtilized < maximumBombAllowance) {
-                const newAccumulatedCostBomb = currentAccumulatedCost; // Cost of segment is skipped
-                const newBombsUtilizedBomb = currentBombsUtilized + 1;
-                if (newAccumulatedCostBomb < minimumPathCosts[nextPosition][newBombsUtilizedBomb]) {
-                    minimumPathCosts[nextPosition][newBombsUtilizedBomb] = newAccumulatedCostBomb;
-                    activeExplorationQueue.insertElement([newAccumulatedCostBomb, nextPosition, newBombsUtilizedBomb]);
-                }
+            // Update targetIdentifier state 1 (first traversal of a reused edge)
+            if (targetStateCosts[1] > sourceCostState0) {
+                targetStateCosts[1] = sourceCostState0;
+                updated = true;
             }
         }
+
+        // Transition from state 1 of sourceIdentifier
+        const sourceCostState1 = sourceStateCosts[1];
+        if (sourceCostState1 !== Infinity) {
+            // Update targetIdentifier state 2 (one reuse, last edge not reused)
+            if (targetStateCosts[2] > sourceCostState1) {
+                targetStateCosts[2] = sourceCostState1;
+                updated = true;
+            }
+        }
+
+        // Transition from state 2 of sourceIdentifier
+        const sourceCostState2 = sourceStateCosts[2];
+        if (sourceCostState2 !== Infinity) {
+            // Update targetIdentifier state 2
+            if (targetStateCosts[2] > sourceCostState2 + weightValue) {
+                targetStateCosts[2] = sourceCostState2 + weightValue;
+                updated = true;
+            }
+        }
+        return updated;
+    };
+
+    while (queueHead < traversalQueue.length) {
+        const currentIdentifier = traversalQueue[queueHead++];
+
+        // Replicate original's 'obj' behavior: process a node only once
+        if (visitedTracker.has(currentIdentifier)) {
+            continue;
+        }
+        visitedTracker.add(currentIdentifier);
+
+        // Iterate through neighbors and apply relaxation rules
+        for (const { neighbor: adjacentIdentifier, edgeCost: currentEdgeCost } of adjacencyList.get(currentIdentifier)) {
+            applyRelaxation(currentIdentifier, adjacentIdentifier, currentEdgeCost);
+            // Original code unconditionally pushes neighbors to the queue
+            traversalQueue.push(adjacentIdentifier);
+        }
     }
 
-    let overallShortestPath = Infinity;
-    // As per original problem's output logic, paths with exactly one bomb utilized are not considered for the final answer.
-    overallShortestPath = Math.min(overallShortestPath, minimumPathCosts[endingNode][0]);
-    overallShortestPath = Math.min(overallShortestPath, minimumPathCosts[endingNode][2]);
+    let resultPathCost = Infinity;
+    const destinationCosts = minimumCosts.get(finalNode);
+    // Original code excludes state 1 from final answer
+    resultPathCost = Math.min(destinationCosts[0], destinationCosts[2]);
 
-    console.log(overallShortestPath);
-
-    processProblemScenario(remainingInputLines); // Recursively process the subsequent scenario
+    console.log(resultPathCost);
 }
-
-processProblemScenario(lineSegments);

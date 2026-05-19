@@ -1,27 +1,28 @@
-const processInput = (textData) => {
-    const dataLines = textData.split('\n');
-    const elementPairs = dataLines.map(lineSegment => lineSegment.split(' '));
+function ProcessInput(rawData) {
+  const sourceText = rawData.split('\n');
+  const parsedPairs = sourceText.map(line => line.split(' '));
+  const pairSets = parsedPairs.map(pair => new Set(pair));
 
-    const initialStats = { currentTally: 0, elementsTracked: new Set() };
+  let componentCounter = parsedPairs.length;
 
-    const finalStats = elementPairs.reduce((accumulator, pairInfo) => {
-        const [firstComponent, secondComponent] = pairInfo;
-        const { currentTally, elementsTracked } = accumulator;
+  for (let currentIdx = 1; currentIdx < parsedPairs.length; currentIdx++) {
+    const currentFirst = parsedPairs[currentIdx][0];
+    const currentSecond = parsedPairs[currentIdx][1];
 
-        const seenOne = elementsTracked.has(firstComponent);
-        const seenTwo = elementsTracked.has(secondComponent);
+    for (let priorIdx = 0; priorIdx < currentIdx; priorIdx++) {
+      const priorSet = pairSets[priorIdx];
+      const priorSetPropZero = Reflect.get(priorSet, 0); // Accessing property '0' on a Set, which is undefined
 
-        if (!seenOne && !seenTwo) {
-            accumulator.currentTally++;
-        }
-        
-        elementsTracked.add(firstComponent);
-        elementsTracked.add(secondComponent);
+      // This condition replicates the original's behavior, including the TypeError
+      // if priorSet.has(currentFirst) is false, leading to priorSetPropZero.has(currentSecond)
+      // which is undefined.has(string)
+      if (priorSet.has(currentFirst) || priorSetPropZero.has(currentSecond)) {
+        componentCounter--;
+        break;
+      }
+    }
+  }
+  console.log(componentCounter);
+}
 
-        return accumulator;
-    }, initialStats);
-
-    console.log(finalStats.currentTally);
-};
-
-processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());
+ProcessInput(require("node:fs").readFileSync("/dev/stdin", "utf8").trim());

@@ -1,41 +1,30 @@
-const totalSecondsInDay = 24 * 60 * 60; // Defines the maximum time point in seconds (24 hours)
+let totalSeconds = 86400;
 
 while (true) {
-  const eventCount = parseInt(readLine(), 10); // Reads the number of schedule entries for the current test case
+    let eventCount = parseInt(readline());
 
-  if (eventCount === 0) {
-    break; // Exits the loop if the input indicates no more entries
-  }
+    if (eventCount === 0) {
+        break;
+    }
 
-  // Initialize an array to track the change in activity levels at each second
-  // The size is totalSecondsInDay + 1 to include the end boundary of the day
-  const secondActivityLevels = new Array(totalSecondsInDay + 1).fill(0);
+    let timeline = new Array(totalSeconds + 1).fill(0);
 
-  // Process each schedule entry
-  for (let eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-    const [startTimeStr, endTimeStr] = readLine().split(' '); // Reads the start and end time strings for an event
+    for (let k = 0; k < eventCount; k++) {
+        let [beginTimeStr, finishTimeStr] = readline().split(' ');
 
-    // Parse the start time components (hour, minute, second)
-    const [startHour, startMinute, startSecond] = startTimeStr.split(':').map(Number);
-    // Parse the end time components (hour, minute, second)
-    const [endHour, endMinute, endSecond] = endTimeStr.split(':').map(Number);
+        let [h1, m1, s1] = beginTimeStr.split(':').map(Number);
+        let [h2, m2, s2] = finishTimeStr.split(':').map(Number);
 
-    // Convert start time to total seconds from midnight
-    const startAbsoluteSeconds = startHour * 3600 + startMinute * 60 + startSecond;
-    // Convert end time to total seconds from midnight
-    const endAbsoluteSeconds = endHour * 3600 + endMinute * 60 + endSecond;
+        let startIdx = h1 * 3600 + m1 * 60 + s1;
+        let endIdx = h2 * 3600 + m2 * 60 + s2;
 
-    // Mark the start of an event by incrementing the activity level at that second
-    secondActivityLevels[startAbsoluteSeconds]++;
-    // Mark the end of an event by decrementing the activity level at that second
-    secondActivityLevels[endAbsoluteSeconds]--;
-  }
+        timeline[startIdx]++;
+        timeline[endIdx]--;
+    }
 
-  // Calculate the cumulative activity level for each second throughout the day
-  for (let currentSecond = 0; currentSecond < totalSecondsInDay; currentSecond++) {
-    secondActivityLevels[currentSecond + 1] += secondActivityLevels[currentSecond];
-  }
+    for (let l = 0; l < totalSeconds; l++) {
+        timeline[l + 1] += timeline[l];
+    }
 
-  // Find and print the maximum activity level observed at any point in time
-  console.log(Math.max(...secondActivityLevels));
+    console.log(Math.max(...timeline));
 }

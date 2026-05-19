@@ -1,143 +1,147 @@
-// Represents a six-sided object with distinct faces
-function Cube(markings) {
-  this.upper = markings[0]; // The top face's value
-  this.rear = markings[1];  // The back face's value
-  this.starboard = markings[2]; // The right face's value
-  this.port = markings[3];  // The left face's value
-  this.fore = markings[4];  // The front face's value
-  this.lower = markings[5]; // The bottom face's value
+function Cube(faceValues) {
+    // Constructor for a Cube object, initializing its six faces.
+    this.upper = faceValues[0];     // The value on the top face of the cube.
+    this.rear = faceValues[1];      // The value on the back face of the cube.
+    this.starboard = faceValues[2]; // The value on the right face of the cube.
+    this.port = faceValues[3];      // The value on the left face of the cube.
+    this.fore = faceValues[4];      // The value on the front face of the cube.
+    this.lower = faceValues[5];     // The value on the bottom face of the cube.
 }
 
-// Method to reorient the cube based on a given direction
-Cube.prototype.rotate = function(orientation) {
- switch (orientation) {
-  case 'W': // Rotate towards West
-   let tempVal1 = this.port;
-   this.port = this.upper;
-   this.upper = this.starboard;
-   this.starboard = this.lower;
-   this.lower = tempVal1;
-   break;
-  case 'N': // Rotate towards North
-   let tempVal2 = this.fore;
-   this.fore = this.upper;
-   this.upper = this.rear;
-   this.rear = this.lower;
-   this.lower = tempVal2;
-   break;
-  case 'E': // Rotate towards East
-   let tempVal3 = this.starboard;
-   this.starboard = this.upper;
-   this.upper = this.port;
-   this.port = this.lower;
-   this.lower = tempVal3;
-   break;
-  case 'S': // Rotate towards South
-   let tempVal4 = this.rear;
-   this.rear = this.upper;
-   this.upper = this.fore;
-   this.fore = this.lower;
-   this.lower = tempVal4;
-   break;
-  case 'R': // Rotate clockwise around the vertical axis
-   let tempVal5 = this.starboard;
-   this.starboard = this.fore;
-   this.fore = this.port;
-   this.port = this.rear;
-   this.rear = tempVal5;
-   break;
-  case 'L': // Rotate counter-clockwise around the vertical axis
-   let tempVal6 = this.port;
-   this.port = this.fore;
-   this.fore = this.starboard;
-   this.starboard = this.rear;
-   this.rear = tempVal6;
-   break;
- }
+Cube.prototype.rotate = function(spinDirection) {
+    // This method simulates rotating the cube based on a given direction.
+    // It updates the face values according to the rotation.
+    switch (spinDirection) {
+        case 'W': // Rotate West (around the front-back axis, bringing left to top)
+            let temporaryValueW = this.port;
+            this.port = this.upper;
+            this.upper = this.starboard;
+            this.starboard = this.lower;
+            this.lower = temporaryValueW;
+            break;
+        case 'N': // Rotate North (around the left-right axis, bringing front to top)
+            let temporaryValueN = this.fore;
+            this.fore = this.upper;
+            this.upper = this.rear;
+            this.rear = this.lower;
+            this.lower = temporaryValueN;
+            break;
+        case 'E': // Rotate East (around the front-back axis, bringing right to top)
+            let temporaryValueE = this.starboard;
+            this.starboard = this.upper;
+            this.upper = this.port;
+            this.port = this.lower;
+            this.lower = temporaryValueE;
+            break;
+        case 'S': // Rotate South (around the left-right axis, bringing back to top)
+            let temporaryValueS = this.rear;
+            this.rear = this.upper;
+            this.upper = this.fore;
+            this.fore = this.lower;
+            this.lower = temporaryValueS;
+            break;
+        case 'R': // Rotate Right (clockwise around the top-bottom axis)
+            let temporaryValueR = this.starboard;
+            this.starboard = this.fore;
+            this.fore = this.port;
+            this.port = this.rear;
+            this.rear = temporaryValueR;
+            break;
+        case 'L': // Rotate Left (counter-clockwise around the top-bottom axis)
+            let temporaryValueL = this.port;
+            this.port = this.fore;
+            this.fore = this.starboard;
+            this.starboard = this.rear;
+            this.rear = temporaryValueL;
+            break;
+    }
 };
 
-// Creates an exact copy of the current cube object
 Cube.prototype.duplicate = function() {
- return new Cube([
-  this.upper,
-  this.rear,
-  this.starboard,
-  this.port,
-  this.fore,
-  this.lower
- ]);
+    // Creates and returns a new Cube instance with the same face values as the current cube.
+    return new Cube([this.upper, this.rear, this.starboard, this.port, this.fore, this.lower]);
 };
 
-// Compares this cube's face values with another cube's face values
-Cube.prototype.areIdentical = function(anotherObject) {
- return (
-  this.upper == anotherObject.upper &&
-  this.rear == anotherObject.rear &&
-  this.starboard == anotherObject.starboard &&
-  this.port == anotherObject.port &&
-  this.fore == anotherObject.fore &&
-  this.lower == anotherObject.lower
- );
+Cube.prototype.areIdentical = function(anotherCube) {
+    // Checks if this cube has the exact same face values as another cube in its current orientation.
+    return this.upper === anotherCube.upper &&
+           this.rear === anotherCube.rear &&
+           this.starboard === anotherCube.starboard &&
+           this.port === anotherCube.port &&
+           this.fore === anotherCube.fore &&
+           this.lower === anotherCube.lower;
 };
 
-// Checks if this cube can be rotated to match another cube's markings
-Cube.prototype.matchMarkings = function(anotherObject) {
- let currentCube = this.duplicate(); // Create a working copy
- const rotations = 'NEEEN'.split(''); // Sequence of major rotations
- let idx1 = 0;
- do {
-  let idx2 = 0;
-  do {
-   if (currentCube.areIdentical(anotherObject)) {
-    return true; // Found a match
-   }
-   currentCube.rotate('R'); // Rotate around the vertical axis
-  } while (idx2++ < 3); // Perform 4 vertical rotations
-  currentCube.rotate(rotations[idx1]); // Apply the next major rotation
- } while (idx1++ < rotations.length); // Iterate through all major rotation sequences
- return false; // No matching orientation found
+Cube.prototype.matchAllOrientations = function(anotherCube) {
+    // Determines if this cube can be rotated to match the face values of another cube.
+    // It systematically tries all 24 possible orientations.
+    let currentCube = this.duplicate(); // Create a copy to manipulate without altering the original
+    const rotationSequence = 'NEEEN'.split(''); // A sequence of major rotations to cover all top faces
+    let outerIndex = 0; // Counter for iterating through the major rotation sequence
+
+    do {
+        let innerIndex = 0; // Counter for rotating 90 degrees around the current top face
+        do {
+            if (currentCube.areIdentical(anotherCube)) {
+                return true; // If a matching orientation is found, return true
+            }
+            currentCube.rotate('R'); // Rotate 90 degrees clockwise around the top-bottom axis
+        } while (innerIndex++ < 3); // Perform 4 rotations (0, 1, 2, 3) to cover all 4 side faces as front
+
+        // Apply the next major rotation from the sequence to change the top face
+        currentCube.rotate(rotationSequence[outerIndex]);
+    } while (outerIndex++ < rotationSequence.length); // Iterate through all major rotations
+
+    return false; // If no matching orientation is found after checking all possibilities
 };
 
-// Determines the value of the starboard face given specific upper and rear face values
-Cube.prototype.getStarboardByUpperAndRear = function(upperSide, rearSide) {
- let currentCube = this.duplicate(); // Make a copy to manipulate
- const rotations = 'NEEEN'.split(''); // Predefined sequence of rotations
- let idx1 = 0;
- do {
-  let idx2 = 0;
-  do {
-   if (currentCube.upper === upperSide && currentCube.rear === rearSide) {
-    return currentCube.starboard; // Found the desired orientation
-   }
-   currentCube.rotate('R'); // Rotate vertically
-  } while (idx2++ < 3); // Try all 4 vertical orientations
-  currentCube.rotate(rotations[idx1]); // Apply next primary rotation
- } while (idx1++ < rotations.length); // Iterate through all primary rotations
- return null; // No orientation found that matches the criteria
+Cube.prototype.findStarboardWithUpperAndRear = function(targetUpper, targetRear) {
+    // Finds the value on the starboard face when the cube is oriented such that
+    // its upper face matches 'targetUpper' and its rear face matches 'targetRear'.
+    let currentCube = this.duplicate(); // Work with a copy to avoid modifying the original cube
+    const rotationSequence = 'NEEEN'.split(''); // Standard rotation sequence to explore orientations
+    let outerIndex = 0; // Loop counter for major rotations
+
+    do {
+        let innerIndex = 0; // Loop counter for rotations around the top axis
+        do {
+            // Check if the current orientation matches the desired upper and rear faces
+            if (currentCube.upper === targetUpper && currentCube.rear === targetRear) {
+                return currentCube.starboard; // Return the value on the starboard face
+            }
+            currentCube.rotate('R'); // Rotate 90 degrees clockwise
+        } while (innerIndex++ < 3); // Iterate 4 times for a full 360-degree rotation
+
+        // Apply the next major rotation from the sequence
+        currentCube.rotate(rotationSequence[outerIndex]);
+    } while (outerIndex++ < rotationSequence.length); // Continue through all major rotations
+
+    return null; // If no such orientation is found
 };
 
-// Main execution block: Reads input, processes cubes, and checks for duplicates
-(function(rawData) {
- const lines = rawData.split('\n'); // Split input into individual lines
- const numCubes = Number(lines.shift()); // Get the number of cubes from the first line
- let cubeCollection = []; // Array to store all created cube objects
+(function(rawInputData) {
+    // This immediately invoked function expression (IIFE) handles the main program logic.
+    const inputLines = rawInputData.split('\n'); // Split the entire input string into an array of lines.
+    const numberOfCubes = Number(inputLines.shift()); // The first line contains the count of cubes.
 
- // Populate the collection with cube instances
- for (let idx1 = 0; idx1 < numCubes; idx1++) {
-  const faceMarks = lines.shift().split(' ').map(Number); // Parse face markings
-  const newCube = new Cube(faceMarks); // Create a new cube instance
-  cubeCollection.push(newCube); // Add to the collection
- }
+    const cubeCollection = []; // An array to store all the Cube objects created from input.
+    // Loop to read and create each Cube object.
+    for (let outerLoopCounter = 0; outerLoopCounter < numberOfCubes; outerLoopCounter++) {
+        const cubeFaceValues = inputLines.shift().split(' ').map(Number); // Parse face values for the current cube.
+        const newCube = new Cube(cubeFaceValues); // Create a new Cube instance.
+        cubeCollection.push(newCube); // Add the newly created cube to the collection.
+    }
 
- // Compare each cube with every other cube for rotational equivalence
- for (let idx1 = 0; idx1 < numCubes; idx1++) {
-  for (let idx2 = idx1 + 1; idx2 < numCubes; idx2++) {
-   if (cubeCollection[idx1].matchMarkings(cubeCollection[idx2])) {
-    console.log('No'); // If any two cubes are rotationally identical, output 'No'
-    return; // Exit early
-   }
-  }
- }
- console.log('Yes'); // If no identical cubes are found, output 'Yes'
+    // Nested loops to compare each cube with every other cube for duplication.
+    for (let firstCubeIndex = 0; firstCubeIndex < numberOfCubes; firstCubeIndex++) {
+        for (let secondCubeIndex = firstCubeIndex + 1; secondCubeIndex < numberOfCubes; secondCubeIndex++) {
+            // If two cubes are found to be identical in any orientation, then duplicates exist.
+            if (cubeCollection[firstCubeIndex].matchAllOrientations(cubeCollection[secondCubeIndex])) {
+                console.log('No'); // Output 'No' indicating duplicates were found.
+                return; // Exit the function immediately as the condition is met.
+            }
+        }
+    }
 
-})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input synchronously from stdin
+    console.log('Yes'); // If the loops complete without finding any duplicates, output 'Yes'.
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input using Node.js 'fs' module.

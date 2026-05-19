@@ -1,46 +1,70 @@
-function ProcessInputData(problemData) {
-  const dataRows = problemData.split("\n");
+let ProcessInput = function(rawData) {
+  // Divide the incoming text into individual lines for processing.
+  let lines = rawData.split('\n');
 
-  const firstLineParts = dataRows[0].split(" ");
-  const rowsCount = parseInt(firstLineParts[0], 10);
-  const colsCount = parseInt(firstLineParts[1], 10);
-  const initialOffset = parseInt(firstLineParts[2], 10);
+  // Extract the primary configuration parameters from the first line.
+  let firstLineElements = lines[0].split(' ');
+  let numRows = parseInt(firstLineElements[0], 10); // Corresponds to N
+  let numCols = parseInt(firstLineElements[1], 10); // Corresponds to M
+  let thresholdOffset = parseInt(firstLineElements[2], 10); // Corresponds to C
 
-  const weightsArray = dataRows[1].split(" ").map(itemStr => Number(itemStr));
+  // Parse the second line to obtain the array of weight coefficients.
+  let weightsArray = lines[1].split(' ').map(valueString => ~~valueString); // Corresponds to B
 
-  const dataMatrix = [];
-
-  for (let rowIndex = 0; rowIndex < rowsCount; rowIndex++) {
-    dataMatrix[rowIndex] = dataRows[rowIndex + 2].split(" ").map(elementStr => Number(elementStr));
+  // Initialize an empty array to store the two-dimensional data matrix.
+  let dataMatrix = []; // Corresponds to A
+  // Populate the data matrix by parsing subsequent lines.
+  for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+    dataMatrix[rowIndex] = lines[rowIndex + 2].split(' ').map(valueString => ~~valueString);
   }
 
-  let CodeProcessor = function() {};
+  // Define a constructor for our data processing utility.
+  let SolutionProcessor = function() {};
 
-  CodeProcessor.prototype = {
-    performEvaluation: function() {
-      let successfulEvaluations = 0;
+  // Assign the core calculation method to the prototype of the utility.
+  SolutionProcessor.prototype = {
+    calculatePositiveResults: function() {
+      let positiveCount = 0; // A counter for results exceeding zero.
 
-      for (let currentRowIndex = 0; currentRowIndex < rowsCount; currentRowIndex++) {
-        let rowTotal = 0;
+      // Iterate through each row of the input data matrix.
+      for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+        let currentSum = 0; // Accumulator for the current row's calculation.
+        currentSum = currentSum + thresholdOffset; // Start with the constant offset.
 
-        rowTotal = rowTotal + initialOffset;
-
-        for (let colIndex = 0; colIndex < colsCount; colIndex++) {
-          rowTotal = rowTotal + dataMatrix[currentRowIndex][colIndex] * weightsArray[colIndex];
+        // Perform a weighted sum for the current row using the weights array.
+        for (let colIndex = 0; colIndex < numCols; colIndex++) {
+          debugger; // Debugger statement, retained as per Type II rules.
+          currentSum = currentSum + dataMatrix[rowIndex][colIndex] * weightsArray[colIndex];
         }
 
-        if (rowTotal > 0) {
-          successfulEvaluations++;
+        // If the calculated sum for the row is positive, increment the counter.
+        if (currentSum > 0) {
+          positiveCount++;
         }
       }
-      return successfulEvaluations;
+      return positiveCount; // Return the final tally of positive outcomes.
     }
   };
 
-  const processorObject = new CodeProcessor();
+  // Create an instance of our processing utility.
+  let processorInstance = new SolutionProcessor();
+  // Execute the calculation and output the result to the console.
+  console.log(processorInstance.calculatePositiveResults());
+};
 
-  console.log(processorObject.performEvaluation());
-}
+// Read the entire content from standard input and pass it to the main processing function.
+let stdInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+ProcessInput(stdInputContent);
 
-const rawInputText = require("fs").readFileSync("/dev/stdin", "utf8");
-ProcessInputData(rawInputText);
+/*
+// Example of how to use the function with a hardcoded input string,
+// similar to the original's commented-out section.
+let sampleInputData = `5 2 -4
+-2 5
+100 41
+100 40
+-3 0
+-6 -2
+18 -13`;
+ProcessInput(sampleInputData);
+*/

@@ -1,41 +1,45 @@
-const calculateRectangleArea = (incomingContent) => {
-  const contentLines = incomingContent.split('\n');
-  const measurementStrings = contentLines[1].split(' ');
+'use strict';
 
-  const dimensionCounts = measurementStrings.reduce((acc, currentDimension) => {
-    const numericDimension = Number(currentDimension);
-    if (!isNaN(numericDimension)) { // Ensure valid numbers
-      acc[numericDimension] = (acc[numericDimension] || 0) + 1;
+function processInput(inputData) {
+    const lines = inputData.split('\n');
+    const barStrings = lines[1].split(' ');
+
+    const barCounts = barStrings.reduce((accumulator, currentBarString) => {
+        const barValue = parseInt(currentBarString, 10);
+        if (!isNaN(barValue)) {
+            accumulator[barValue] = (accumulator[barValue] || 0) + 1;
+        }
+        return accumulator;
+    }, {});
+
+    const uniqueBarLengths = Object.keys(barCounts)
+                                   .map(Number)
+                                   .sort((a, b) => b - a);
+
+    const collectedRectangleSides = [];
+
+    uniqueBarLengths.some(currentLength => {
+        const lengthCount = barCounts[currentLength];
+
+        if (lengthCount >= 4) {
+            collectedRectangleSides.push(currentLength, currentLength);
+        } else if (lengthCount >= 2) {
+            collectedRectangleSides.push(currentLength);
+        }
+        
+        return collectedRectangleSides.length >= 2;
+    });
+
+    if (collectedRectangleSides.length >= 2) {
+        return collectedRectangleSides[0] * collectedRectangleSides[1];
+    } else {
+        return 0;
     }
-    return acc;
-  }, {});
+}
 
-  const distinctDimensions = Object.keys(dimensionCounts)
-    .map(Number)
-    .sort((a, b) => b - a); // Sort descending
+function RectangleAreaCalculator(inputData) {
+    const finalResult = processInput(inputData);
+    console.log(finalResult);
+}
 
-  let collectedLengths = [];
-
-  for (const aDimension of distinctDimensions) {
-    const currentTally = dimensionCounts[aDimension];
-
-    if (currentTally >= 4) {
-      collectedLengths.push(aDimension, aDimension);
-      break;
-    } else if (currentTally >= 2) {
-      collectedLengths.push(aDimension);
-      if (collectedLengths.length === 2) {
-        break;
-      }
-    }
-  }
-
-  if (collectedLengths.length === 2) {
-    console.log(collectedLengths[0] * collectedLengths[1]);
-  } else {
-    console.log(0);
-  }
-};
-
-const systemInput = require("fs").readFileSync("/dev/stdin", "utf8");
-calculateRectangleArea(systemInput);
+RectangleAreaCalculator(require("fs").readFileSync("/dev/stdin", "utf8"));

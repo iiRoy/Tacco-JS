@@ -1,125 +1,163 @@
-var inputHandler = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
-});
-var dataStream;
-var collectedLines = [];
-
-inputHandler.on('line', function(text){
-  collectedLines.push(text);
-});
-
-inputHandler.on('close', function(){
-  dataStream = setupDataStream(collectedLines);
-  console.error('\n↑Input ↓Output');
-  calculateRequiredStrikes();
-});
-
-function setupDataStream(sourceLines){  
-  return {
-    sourceLines : sourceLines,
-    currentPointer : 0,
-    totalLines : sourceLines.length,
-    hasMoreItems : function(){return (this.currentPointer < this.totalLines);},
-    fetchNextSegment : function(){
-      if(this.hasMoreItems()){
-        return this.sourceLines[this.currentPointer++];
-      } else {
-        throw 'End of Input Stream Reached';
-      }
-    }
-  };
-}
-
-function getNextItem(){ return dataStream.fetchNextSegment(); }
-
-function getSingleNumber(){ return processData(getNextItem(), 1); }
-function getStringArray(){ return processData(getNextItem(), 2); }
-function getNumbersArray(){ return processData(getNextItem(), 4); }
-function getCharacterArray(){ return processData(getNextItem(), 6); }
-
-function printOutcome(result){ console.log(result); }
-
-function processData(value, classifier){
-  try{
-    switch(classifier){
-      case 1: return parseInt(value);
-      case 2: return value.split(' ');
-      case 4: return value.split(' ').map(Number);
-      case 6: return value.split('');
-      case 7: return value.split('').map(Number);
-      case 8: return value.join(' ');
-      case 9: return value.join('\n');
-      case 0: return value.join('');
-      default: return value;
-    }
-  }catch(e){
-    return value;
-  }
-}
-
-class FoeUnit {
-  constructor(loc, resilience) {
-    this.loc = loc;
-    this.resilience = resilience;
-  }
-
-  isDefeated() {
-    return this.resilience <= 0;
-  }
-
-  takeDamage(amount) {
-    this.resilience = Math.max(0, this.resilience - amount);
-  }
-}
-
-function applyImpactRecursively(squad, startIndex, totalFoes, damageAmount, zoneLimit) {
-  if (startIndex >= totalFoes) {
-    return;
-  }
-
-  const affectedFoe = squad[startIndex];
-
-  if (affectedFoe.loc <= zoneLimit) {
-    affectedFoe.takeDamage(damageAmount);
-    applyImpactRecursively(squad, startIndex + 1, totalFoes, damageAmount, zoneLimit);
-  }
-}
-
-function calculateRequiredStrikes(){
-  const initialParameters = getNumbersArray();
-  const enemyCount = initialParameters[0];
-  const distanceReach = initialParameters[1];
-  const damagePerHit = initialParameters[2];
-
-  const foeSquad = [];
-  for (let k = 0; k < enemyCount; k++) {
-    const foeData = getNumbersArray();
-    foeSquad.push(new FoeUnit(foeData[0], foeData[1]));
-  }
-
-  foeSquad.sort((f1, f2) => f1.loc - f2.loc);
-
-  let totalStrikes = 0;
-  let currentFoeIndex = 0;
-
-  while (currentFoeIndex < enemyCount) {
-    const currentFoe = foeSquad[currentFoeIndex];
-
-    if (currentFoe.isDefeated()) {
-      currentFoeIndex++;
-      continue;
+class MinHeap {
+    constructor() {
+        this.heap = [];
     }
 
-    const strikesToSubdue = Math.ceil(currentFoe.resilience / damagePerHit);
-    totalStrikes += strikesToSubdue;
+    push(item) {
+        this.heap.push(item);
+        this._bubbleUp(this.heap.length - 1);
+    }
 
-    const effectiveDamage = strikesToSubdue * damagePerHit;
-    const impactZoneEnd = currentFoe.loc + 2 * distanceReach;
+    pop() {
+        if (this.isEmpty()) return undefined;
+        const root = this.heap[0];
+        const last = this.heap.pop();
+        if (!this.isEmpty()) {
+            this.heap[0] = last;
+            this._sinkDown(0);
+        }
+        return root;
+    }
 
-    applyImpactRecursively(foeSquad, currentFoeIndex + 1, enemyCount, effectiveDamage, impactZoneEnd);
+    peek() {
+        return this.heap[0];
+    }
 
-    currentFoeIndex++;
-  }
+    isEmpty() {
+        return this.heap.length === 0;
+    }
 
-  printOutcome(totalStrikes);
+    _bubbleUp(index) {
+        const element = this.heap[index];
+        while (index > 0) {
+            const parentIndex = Math.floor((index - 1) / 2);
+            const parent = this.heap[parentIndex];
+            if (element[0] >= parent[0]) break;
+            this.heap[index] = parent;
+            index = parentIndex;
+        }
+        this.heap[index] = element;
+    }
+
+    _sinkDown(index) {
+        const length = this.heap.length;
+        const element = this.heap[index];
+        while (true) {
+            let leftChildIndex = 2 * index + 1;
+            let rightChildIndex = 2 * index + 2;
+            let leftChild, rightChild;
+            let swap = null;
+
+            if (leftChildIndex < length) {
+                leftChild = this.heap[leftChildIndex];
+                if (leftChild[0] < element[0]) {
+                    swap = leftChildIndex;
+                }
+            }
+
+            if (rightChildIndex < length) {
+                rightChild = this.heap[rightChildIndex];
+                if (
+                    (swap === null && rightChild[0] < element[0]) ||
+                    (swap !== null && rightChild[0] < leftChild[0])
+                ) {
+                    swap = rightChildIndex;
+                }
+            }
+
+            if (swap === null) break;
+            this.heap[index] = this.heap[swap];
+            index = swap;
+        }
+        this.heap[index] = element;
+    }
+}
+
+var inputBuffer = [];
+var dataProcessor;
+
+require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+}).on('line', function(line) {
+    inputBuffer.push(line);
+}).on('close', function() {
+    dataProcessor = createInputProcessor(inputBuffer);
+    console.error('\n↑入力 ↓出力');
+    processGame();
+});
+
+function createInputProcessor(sourceLines) {
+    let currentLineIndex = 0;
+    const totalLines = sourceLines.length;
+
+    const retrieveNextLine = () => {
+        if (currentLineIndex >= totalLines) {
+            throw new Error('No more input available');
+        }
+        return sourceLines[currentLineIndex++];
+    };
+
+    const parseLine = (lineContent, formatType) => {
+        switch (formatType) {
+            case 'int': return parseInt(lineContent, 10);
+            case 'strArray': return lineContent.split(' ');
+            case 'intArray': return lineContent.split(' ').map(Number);
+            case 'charArray': return lineContent.split('');
+            case 'charIntArray': return lineContent.split('').map(Number);
+            default: return lineContent;
+        }
+    };
+
+    return {
+        fetchNumericArray: () => parseLine(retrieveNextLine(), 'intArray'),
+        fetchInteger: () => parseLine(retrieveNextLine(), 'int'),
+        fetchStringArray: () => parseLine(retrieveNextLine(), 'strArray'),
+        fetchCharacterArray: () => parseLine(retrieveNextLine(), 'charArray'),
+        fetchCharacterIntegerArray: () => parseLine(retrieveNextLine(), 'charIntArray'),
+        peekNext: () => (currentLineIndex < totalLines) ? sourceLines[currentLineIndex] : undefined,
+        hasMore: () => currentLineIndex < totalLines
+    };
+}
+
+function outputResult(content) {
+    console.log(content);
+}
+
+function logDebug(data) {
+    console.error('debug_info:' + require('util').inspect(data, false, null));
+}
+
+function processGame() {
+    const [numMonsters, bombRange, attackPower] = dataProcessor.fetchNumericArray();
+
+    let monsterData = [];
+    for (let k = 0; k < numMonsters; k++) {
+        monsterData.push(dataProcessor.fetchNumericArray());
+    }
+
+    monsterData.sort((a, b) => a[0] - b[0]);
+
+    let totalBombsDeployed = 0;
+    let currentActiveDamage = 0;
+    const activeBombEffects = new MinHeap();
+
+    for (let k = 0; k < numMonsters; k++) {
+        const [monsterX, monsterHealth] = monsterData[k];
+
+        while (!activeBombEffects.isEmpty() && activeBombEffects.peek()[0] < monsterX) {
+            currentActiveDamage -= activeBombEffects.pop()[1];
+        }
+
+        const effectiveHealth = monsterHealth - currentActiveDamage;
+
+        if (effectiveHealth > 0) {
+            const bombsNeeded = Math.ceil(effectiveHealth / attackPower);
+            totalBombsDeployed += bombsNeeded;
+            const damageFromThisBomb = bombsNeeded * attackPower;
+            currentActiveDamage += damageFromThisBomb;
+            activeBombEffects.push([monsterX + 2 * bombRange, damageFromThisBomb]);
+        }
+    }
+    outputResult(totalBombsDeployed);
 }

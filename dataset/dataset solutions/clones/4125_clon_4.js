@@ -1,116 +1,98 @@
-const inputFacility = (rawText) => {
-    let lineRegistry = rawText.trim().split('\n');
-    let currentLinePointer = 0;
-    let currentLineTokensCache = [];
-    let currentTokenPointer = 0;
+class InputHandler {
+    constructor(rawInputString) {
+        this.lineSource = rawInputString.trim().split("\n");
+        this.currentLineIndex = 0;
+        this.currentLineTokens = [];
+    }
 
-    const ensureTokensLoaded = () => {
-        if (currentLineTokensCache.length === currentTokenPointer) {
-            if (currentLinePointer >= lineRegistry.length) {
-                return false;
+    fetchNextValue(returnAsString) {
+        if (this.currentLineTokens.length === 0) {
+            if (this.currentLineIndex >= this.lineSource.length) {
+                throw new Error("Input exhausted.");
             }
-            currentLineTokensCache = lineRegistry[currentLinePointer].split(' ');
-            currentTokenPointer = 0;
+            this.currentLineTokens = this.lineSource[this.currentLineIndex].split(" ").reverse();
         }
-        return true;
-    };
 
-    const fetchAtom = (stringDesired = false) => {
-        if (!ensureTokensLoaded()) {
-            throw new Error("End of input reached while fetching atom.");
+        const value = this.currentLineTokens.pop();
+
+        if (this.currentLineTokens.length === 0) {
+            this.currentLineIndex++;
         }
-        const rawValue = currentLineTokensCache[currentTokenPointer++];
-        if (currentTokenPointer >= currentLineTokensCache.length) {
-            currentLinePointer++;
-            currentLineTokensCache = [];
-            currentTokenPointer = 0;
+
+        return returnAsString ? value : +value;
+    }
+
+    fetchLineValues(returnAsString) {
+        this.currentLineTokens = [];
+        if (this.currentLineIndex >= this.lineSource.length) {
+            throw new Error("Input exhausted.");
         }
-        return stringDesired ? rawValue : Number(rawValue);
-    };
+        const line = this.lineSource[this.currentLineIndex++];
+        const tokens = line.split(" ");
+        return returnAsString ? tokens : tokens.map(Number);
+    }
 
-    const fetchLineContent = (stringsDesired = false) => {
-        if (currentLinePointer >= lineRegistry.length) {
-            throw new Error("End of input reached while fetching line content.");
-        }
-        const lineString = lineRegistry[currentLinePointer];
-        currentLinePointer++;
-        currentLineTokensCache = [];
-        currentTokenPointer = 0;
-
-        const tokens = lineString.split(' ');
-        return stringsDesired ? tokens : tokens.map(Number);
-    };
-
-    const fetchBlockOfLines = (count, stringsDesired = false) => {
-        const block = [];
+    fetchMatrix(count, returnAsString) {
+        const result = [];
         for (let i = 0; i < count; i++) {
-            block.push(fetchLineContent(stringsDesired));
+            result.push(this.fetchLineValues(returnAsString));
         }
-        return block;
-    };
+        return result;
+    }
 
-    const fetchSequenceOfAtoms = (count, stringsDesired = false) => {
-        const sequence = [];
+    fetchVector(count, returnAsString) {
+        const result = [];
+        this.currentLineTokens = [];
         for (let i = 0; i < count; i++) {
-            sequence.push(fetchAtom(stringsDesired));
+            if (this.currentLineIndex >= this.lineSource.length) {
+                throw new Error("Input exhausted.");
+            }
+            const line = this.lineSource[this.currentLineIndex++];
+            result.push(returnAsString ? line : +line);
         }
-        return sequence;
-    };
+        return result;
+    }
+}
 
-    return {
-        getAtom: fetchAtom,
-        getLine: fetchLineContent,
-        getBlock: fetchBlockOfLines,
-        getSequence: fetchSequenceOfAtoms
-    };
-};
+const createInputParser = (rawInput) => new InputHandler(rawInput);
 
-const dataHandler = inputFacility(require("node:fs").readFileSync(0, "utf8"));
+const inputSource = createInputParser(require("fs").readFileSync("/dev/stdin","utf8"));
 
-const processInputAndCompute = () => {
-    const numberOfQueries = dataHandler.getAtom();
+console.log(processQueries());
 
-    const UPPER_BOUND_PRIME = 100000;
-    const isCompositeTracker = new Array(UPPER_BOUND_PRIME + 1).fill(false);
-    isCompositeTracker[0] = true;
-    isCompositeTracker[1] = true;
+function processQueries(){
+    const MAX_VAL = 100000;
+    const primeFlags = new Uint8Array(MAX_VAL + 1).fill(1);
+    primeFlags[0] = 0;
+    primeFlags[1] = 0;
 
-    for (let candidate = 2; candidate * candidate <= UPPER_BOUND_PRIME; candidate++) {
-        if (!isCompositeTracker[candidate]) {
-            for (let multiple = candidate * candidate; multiple <= UPPER_BOUND_PRIME; multiple += candidate) {
-                isCompositeTracker[multiple] = true;
+    for (let currentNum = 2; currentNum * currentNum <= MAX_VAL; currentNum++) {
+        if (primeFlags[currentNum]) {
+            for (let multiple = currentNum * currentNum; multiple <= MAX_VAL; multiple += currentNum) {
+                primeFlags[multiple] = 0;
             }
         }
     }
 
-    const similarPrimeCounts = new Array(UPPER_BOUND_PRIME + 1).fill(0);
+    const cumulativeCounts = new Uint32Array(MAX_VAL + 1);
+    cumulativeCounts[0] = 0;
+    cumulativeCounts[1] = 0;
 
-    for (let currentNum = 2; currentNum <= UPPER_BOUND_PRIME; currentNum++) {
-        similarPrimeCounts[currentNum] = similarPrimeCounts[currentNum - 1];
-
-        if (!isCompositeTracker[currentNum]) {
-            const relatedValue = (currentNum + 1) / 2;
-
-            if (Number.isInteger(relatedValue) && relatedValue >= 1 && relatedValue <= UPPER_BOUND_PRIME) {
-                if (!isCompositeTracker[relatedValue]) {
-                    similarPrimeCounts[currentNum]++;
-                }
+    for (let num = 2; num <= MAX_VAL; num++) {
+        cumulativeCounts[num] = cumulativeCounts[num - 1];
+        if (primeFlags[num]) {
+            const halfPlusOne = (num + 1) / 2;
+            if (Number.isInteger(halfPlusOne) && primeFlags[halfPlusOne]) {
+                cumulativeCounts[num]++;
             }
         }
     }
 
-    const collectedResults = [];
+    const queryCount = inputSource.fetchNextValue();
+    const results = Array.from({ length: queryCount }, () => {
+        const [lowerBound, upperBound] = inputSource.fetchLineValues();
+        return cumulativeCounts[upperBound] - cumulativeCounts[lowerBound - 1];
+    });
 
-    for (let queryIndex = 0; queryIndex < numberOfQueries; queryIndex++) {
-        const queryRange = dataHandler.getLine();
-        const rangeStart = queryRange[0];
-        const rangeEnd = queryRange[1];
-
-        const countInInterval = similarPrimeCounts[rangeEnd] - similarPrimeCounts[rangeStart - 1];
-        collectedResults.push(countInInterval);
-    }
-
-    return collectedResults.join('\n');
-};
-
-process.stdout.write(processInputAndCompute());
+    return results.join("\n");
+}

@@ -1,49 +1,39 @@
-function ProcessInputData ( rawDataString )
-{
-  // Separate the raw input into individual lines for processing.
-  const inputLines = rawDataString.trimWhitespace().divideByNewline();
+function ProcessInput(rawData) {
+  // This function takes raw input string and processes it to find specific patterns.
+  const linesArray = rawData.trim().split('\n');
 
-  // Extract numerical parameters from the first line.
-  const firstLineTokens = inputLines[0].splitBySpace();
-  const elementCount = Number(firstLineTokens[0]); // Total number of elements.
-  const modulusValue = Number(firstLineTokens[1]); // The divisor for modulo operations.
+  // Extract numerical parameters from the first line of input.
+  const firstLineParts = linesArray[0].split(' ');
+  const numElements = Math.floor(parseInt(firstLineParts[0], 10)); // N: total number of elements
+  const divisorValue = Math.floor(parseInt(firstLineParts[1], 10)); // K: the divisor for modulo operations
   
-  // Parse the second line into an array of integers.
-  const numericValues = inputLines[1].splitBySpace().map(stringValue => Number(stringValue));
-  let finalCount = 0; // Initialize the counter for qualifying subarrays.
+  // Convert the second line of input into an array of integers.
+  const numberSequence = linesArray[0x1].split(' ').map(stringItem => parseInt(stringItem, 0xA));
+  let resultCount = 0; // Initialize a counter for subsequences meeting the criteria.
   
-  // Iterate through each possible starting point of a subarray.
-  for ( let outerLoopIndex = 0; outerLoopIndex < elementCount; outerLoopIndex++ )
-  {
-    let currentSubarraySum = numericValues[outerLoopIndex];
+  // Iterate through the array to find all possible contiguous subsequences.
+  for (let outerIndex = 0; outerIndex < numElements; ++outerIndex) {
+    let currentSum = numberSequence[outerIndex]; // Start sum with the current element.
     
-    // Check the single-element subarray.
-    if ( currentSubarraySum % modulusValue === 1 )
-    {
-      finalCount++;
+    // Check the condition for the single-element subsequence.
+    if (numberSequence[outerIndex] % divisorValue === 0x1) {
+      resultCount++;
     }
-
-    // Iterate through subsequent elements to form longer subarrays.
-    for ( let innerLoopCounter = 1; innerLoopCounter < elementCount - outerLoopIndex; innerLoopCounter++ )
-    {
-      currentSubarraySum += numericValues[outerLoopIndex + innerLoopCounter];
+    
+    // Extend the subsequence by adding subsequent elements.
+    for (let innerOffset = 0x1; innerOffset < numElements - outerIndex; innerOffset++) {
+      currentSum += numberSequence[outerIndex + innerOffset]; // Accumulate sum for the current subsequence.
       
-      // Evaluate the condition for the current subarray sum.
-      if ( currentSubarraySum % modulusValue === innerLoopCounter + 1 )
-      {
-        finalCount++;
+      // Check the condition for the extended subsequence.
+      if (currentSum % divisorValue === innerOffset + 0x1) {
+        resultCount++;
       }
     }
   }
   
-  // Output the total count of subarrays that meet the criteria.
-  console.log(finalCount);
-  
+  // Output the final tally of subsequences that satisfied the conditions.
+  console.log(resultCount);
 }
 
-// Define constants for file operations.
-const STDIN_PATH = '/dev/stdin';
-const UTF8_ENCODING = 'utf8';
-
-// Read input from standard input and pass it to the processing function.
-ProcessInputData(require('fs').readFileSync(STDIN_PATH, UTF8_ENCODING));
+// Read the entire content from standard input and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

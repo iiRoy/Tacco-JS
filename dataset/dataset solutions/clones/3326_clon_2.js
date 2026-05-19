@@ -1,56 +1,66 @@
-'use strict'; // Engage strict mode for better code quality and error handling
+'use strict'; // Enforce strict mode for better code quality and error handling.
 
-(function(rawDataInput) {
-  // Process the raw input string: trim whitespace, split by spaces, and convert to numbers.
-  let processedNumericData = rawDataInput.trim().split(/\s+/).map(currentStringVal => Number(currentStringVal));
+(function(rawInputData) {
+  // Pre-process the raw input string:
+  // 1. Remove leading/trailing whitespace.
+  // 2. Split the string into an array of substrings based on one or more whitespace characters.
+  // 3. Convert each substring to a number using the `x => x - 0` trick.
+  rawInputData = rawInputData.trim().split(/\s+/).map(currentValue => currentValue - 0);
 
-  // The first number in the input represents the total count of items.
-  const totalItems = processedNumericData.shift();
+  // Extract the total number of elements (N) from the beginning of the processed input array.
+  const totalElements = rawInputData.shift();
 
-  // Initialize an array to store the counts of different item categories (1, 2, 3).
-  // Index 0 is a placeholder and not used for actual item counts.
-  const itemCategoryCounts = ['placeholder', 0, 0, 0];
+  // Initialize an array to store the frequency of different item types.
+  // Index 0 is unused, as item types are typically 1, 2, or 3.
+  const itemFrequency = ['zero', 0, 0, 0];
 
-  // Iterate over the remaining numeric data to tally up occurrences of each item category.
-  processedNumericData.forEach(function(singleItemType) {
-    itemCategoryCounts[singleItemType]++; // Increment the count for the observed item type.
+  // Iterate through the remaining input values and increment the count for each item type.
+  rawInputData.forEach(function(currentValue) {
+    itemFrequency[currentValue]++;
   });
 
-  // Declare and initialize a 3D array for dynamic programming, slightly oversized for boundary conditions.
-  const probabilityTable = new Array(totalItems + 2);
-  for (let firstDimension = -1; firstDimension < totalItems + 2; firstDimension++) {
-    probabilityTable[firstDimension] = new Array(totalItems + 2 - firstDimension);
-    for (let secondDimension = -1; secondDimension < totalItems + 2 - firstDimension; secondDimension++) {
-      // Fill the innermost array with zeros to represent initial probability states.
-      probabilityTable[firstDimension][secondDimension] = new Array(totalItems + 2 - firstDimension - secondDimension).fill(0);
-      // Set a specific out-of-bounds index to zero for consistent calculations.
-      probabilityTable[firstDimension][secondDimension][-1] = 0;
+  // Declare and initialize a 3D array for dynamic programming calculations.
+  // The dimensions are slightly larger (N+2) to handle boundary conditions gracefully.
+  const dynamicProgrammingTable = new Array(totalElements + 2);
+
+  // Populate the 3D table structure and set initial values.
+  // The loops run from -1 to totalElements + 1 to cover all required indices.
+  for (let dimA = -1; dimA < totalElements + 2; dimA++) {
+    dynamicProgrammingTable[dimA] = new Array(totalElements + 2 - dimA);
+    for (let dimB = -1; dimB < totalElements + 2 - dimA; dimB++) {
+      // Initialize the innermost array with zeros.
+      dynamicProgrammingTable[dimA][dimB] = new Array(totalElements + 2 - dimA - dimB).fill(0);
+      // Set a specific boundary condition for the innermost dimension at index -1.
+      dynamicProgrammingTable[dimA][dimB][-1] = 0;
     }
   }
 
-  // Populate the dynamic programming table with calculated probabilities.
-  // The loops iterate through various combinations of item counts.
-  for (let currentSumOfItems = 1; currentSumOfItems <= totalItems; currentSumOfItems++) {
-    // Base case calculation for a single type of item (e.g., only '1's).
-    probabilityTable[currentSumOfItems][0][0] = probabilityTable[currentSumOfItems - 1][0][0] + (totalItems / currentSumOfItems);
+  // Perform the core dynamic programming computations.
+  // These nested loops calculate expected values based on a recurrence relation.
+  for (let dimA = 1; dimA <= totalElements; dimA++) {
+    // Calculate the base case for the first dimension (dimA, 0, 0).
+    dynamicProgrammingTable[dimA][0][0] = dynamicProgrammingTable[dimA - 1][0][0] + (totalElements / dimA);
 
-    for (let countOfTwos = 1; countOfTwos <= currentSumOfItems; countOfTwos++) {
-      // Calculation for states involving two types of items (e.g., '1's and '2's).
-      probabilityTable[currentSumOfItems - countOfTwos][countOfTwos][0] = totalItems / currentSumOfItems +
-        probabilityTable[currentSumOfItems - countOfTwos + 1][countOfTwos - 1][0] * (countOfTwos / currentSumOfItems) +
-        probabilityTable[currentSumOfItems - countOfTwos - 1][countOfTwos][0] * ((currentSumOfItems - countOfTwos) / currentSumOfItems);
+    for (let dimB = 1; dimB <= dimA; dimB++) {
+      // Calculate values for two dimensions (dimA - dimB, dimB, 0).
+      dynamicProgrammingTable[dimA - dimB][dimB][0] =
+        totalElements / dimA +
+        dynamicProgrammingTable[dimA - dimB + 1][dimB - 1][0] * (dimB / dimA) +
+        dynamicProgrammingTable[dimA - dimB - 1][dimB][0] * ((dimA - dimB) / dimA);
 
-      for (let countOfThrees = 1; countOfThrees <= countOfTwos; countOfThrees++) {
-        // Full calculation for states involving all three types of items ('1's, '2's, and '3's).
-        probabilityTable[currentSumOfItems - countOfTwos][countOfTwos - countOfThrees][countOfThrees] = totalItems / currentSumOfItems +
-          probabilityTable[currentSumOfItems - countOfTwos][countOfTwos - countOfThrees + 1][countOfThrees - 1] * (countOfThrees / currentSumOfItems) +
-          probabilityTable[currentSumOfItems - countOfTwos + 1][countOfTwos - 1 - countOfThrees][countOfThrees] * ((countOfTwos - countOfThrees) / currentSumOfItems) +
-          probabilityTable[currentSumOfItems - countOfTwos - 1][countOfTwos - countOfThrees][countOfThrees] * ((currentSumOfItems - countOfTwos) / currentSumOfItems);
+      for (let dimC = 1; dimC <= dimB; dimC++) {
+        // Calculate values for all three dimensions (dimA - dimB, dimB - dimC, dimC).
+        dynamicProgrammingTable[dimA - dimB][dimB - dimC][dimC] =
+          totalElements / dimA +
+          dynamicProgrammingTable[dimA - dimB][dimB - dimC + 1][dimC - 1] * (dimC / dimA) +
+          dynamicProgrammingTable[dimA - dimB + 1][dimB - 1 - dimC][dimC] * ((dimB - dimC) / dimA) +
+          dynamicProgrammingTable[dimA - dimB - 1][dimB - dimC][dimC] * ((dimA - dimB) / dimA);
       }
     }
   }
 
-  // Output the final computed probability corresponding to the initial counts of item categories.
-  console.log(probabilityTable[itemCategoryCounts[1]][itemCategoryCounts[2]][itemCategoryCounts[3]]);
+  // Output the final result from the dynamic programming table.
+  // The indices are determined by the frequencies of item types 1, 2, and 3.
+  console.log(dynamicProgrammingTable[itemFrequency[1]][itemFrequency[2]][itemFrequency[3]]);
 
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8')); // Read input from the standard input stream using Node.js filesystem module.
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Immediately invoke the function with input read from standard input.

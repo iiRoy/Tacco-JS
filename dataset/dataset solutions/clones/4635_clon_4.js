@@ -1,74 +1,247 @@
-'use strict';
+'use strict'
 
-const processAntDynamics = () => {
-    const rawData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+class Main {
+  solve() {
+    // Parse input parameters: N (number of ants), L (track length), T (time elapsed)
+    const inputParameters = input.nextIntArr();
+    const antCount = inputParameters[0];
+    const trackLength = inputParameters[1];
+    const timeElapsed = inputParameters[2];
 
-    const [countOfEntities, trackCircumference, travelDuration] = rawData[0].split(' ').map(Number);
+    // Transform raw ant data into a more usable format: [position, direction]
+    // Direction is 1 for clockwise, -1 for counter-clockwise.
+    const antConfigurations = input.nextIntRange(antCount)
+      .map(entry => [entry[0], entry[1] === 1 ? 1 : -1]);
 
-    const entityConfigurations = rawData.slice(1, 1 + countOfEntities).map(lineContent => {
-        const [initialPoint, movementIndicator] = lineContent.split(' ').map(Number);
-        // Map movementIndicator (1 or 2) to actual direction (1 or -1)
-        return [initialPoint, movementIndicator === 1 ? 1 : -1];
+    // Calculate the final position of each ant assuming they pass through each other (no collisions).
+    // The movement wraps around the track length.
+    const nonCollidingFinalPositions = antConfigurations.map(ant => {
+      const currentPosition = ant[0];
+      const currentDirection = ant[1];
+      // Use modulo L for time to handle multiple full rotations
+      const effectiveTime = timeElapsed % trackLength;
+      // Ensure the result is non-negative by adding trackLength before the final modulo
+      return (currentPosition + currentDirection * effectiveTime + trackLength) % trackLength;
     });
 
-    // Compute the final positions for each entity assuming they pass through each other
-    // The (travelDuration % trackCircumference) optimization is valid for calculating final position modulo L
-    const hypotheticalFinalPositions = entityConfigurations.map(([initialPoint, direction]) => {
-        const displacedPoint = initialPoint + direction * (travelDuration % trackCircumference);
-        // Ensure result is always positive within [0, trackCircumference-1]
-        return (displacedPoint % trackCircumference + trackCircumference) % trackCircumference;
-    });
+    // Extract properties of the first ant for collision calculation
+    const firstAntPosition = antConfigurations[0][0];
+    const firstAntDirection = antConfigurations[0][1];
 
-    const [firstEntityInitialPoint, firstEntityDirection] = entityConfigurations[0];
-    const firstEntityHypotheticalFinalPosition = hypotheticalFinalPositions[0];
-
-    // Determine the number of times the first entity effectively "crosses" other entities
-    // This is crucial for calculating the identity shift.
-    let collisionAggregate = 0;
-    for (let currentEntityIndex = 1; currentEntityIndex < countOfEntities; ++currentEntityIndex) {
-        const [otherEntityInitialPoint, otherEntityDirection] = entityConfigurations[currentEntityIndex];
-
-        // If entities move in the same direction, their relative order doesn't change due to "crossing"
-        if (otherEntityDirection === firstEntityDirection) {
-            continue;
+    // Helper function for binary search: finds the index where a target value would be inserted
+    // to maintain sorted order, or its existing index if present.
+    const findSortedInsertionIndex = (sortedArray, targetValue) => {
+      let lowIndex = 0;
+      let highIndex = sortedArray.length;
+      while (lowIndex < highIndex) {
+        const midIndex = Math.floor((lowIndex + highIndex) / 2);
+        if (sortedArray[midIndex] < targetValue) {
+          lowIndex = midIndex + 1;
+        } else {
+          highIndex = midIndex;
         }
-
-        // Calculate the initial distance between the first entity and the current other entity
-        // Direction of the first entity affects how 'distance' is perceived.
-        const initialRelativeDistance = (firstEntityDirection * (otherEntityInitialPoint - firstEntityInitialPoint) + trackCircumference) % trackCircumference;
-
-        // Calculate how many full "laps" of relative distance are covered, plus one for the current segment
-        // The effective relative speed is 2 when moving towards each other.
-        // Math.trunc is used for integer division, consistent with bitwise OR 0 in original.
-        const relativePasses = Math.trunc((2 * travelDuration - initialRelativeDistance) / trackCircumference) + 1;
-        collisionAggregate = (collisionAggregate + relativePasses) % countOfEntities;
-    }
-
-    // Calculate the total identity shift for the first entity based on its direction and collisions
-    const entityIdentityOffset = (firstEntityDirection * collisionAggregate + countOfEntities) % countOfEntities;
-
-    // Create a sorted list of all hypothetical final positions
-    const sortedHypotheticalFinalPositions = [...hypotheticalFinalPositions].sort((a, b) => a - b);
-
-    // Find the index of the first entity's hypothetical final position within the sorted list
-    const firstEntitySortedPositionIndex = sortedHypotheticalFinalPositions.indexOf(firstEntityHypotheticalFinalPosition);
-
-    // Calculate the overall rotation needed to align the sorted positions with the actual entity identities
-    // This is the difference between where the first entity's position is in the sorted list
-    // and how many entities it effectively passed.
-    const finalArrangementRotationAmount = (firstEntitySortedPositionIndex - entityIdentityOffset + countOfEntities) % countOfEntities;
-
-    // Helper function to rotate an array
-    const circularShift = (collection, shiftValue) => {
-        const effectiveShift = (shiftValue % collection.length + collection.length) % collection.length;
-        return collection.slice(effectiveShift).concat(collection.slice(0, effectiveShift));
+      }
+      return lowIndex;
     };
 
-    // Apply the calculated rotation to the sorted positions to get the final arrangement
-    const actualFinalPositions = circularShift(sortedHypotheticalFinalPositions, finalArrangementRotationAmount);
+    // Calculate the total number of effective "crossings" the first ant makes with other ants.
+    // This determines its final rank in the sorted list of positions.
+    // Using Array.prototype.reduce for a functional approach instead of a loop.
+    let netCollisionCrossings = antConfigurations.slice(1).reduce((accumulatedCrossings, currentAnt) => {
+      const otherAntPosition = currentAnt[0];
+      const otherAntDirection = currentAnt[1];
 
-    // Output the final positions, each on a new line
-    console.log(actualFinalPositions.join('\n'));
-};
+      // If ants move in the same direction, their relative order doesn't change due to collisions.
+      if (otherAntDirection === firstAntDirection) {
+        return accumulatedCrossings;
+      }
 
-processAntDynamics();
+      // Calculate the initial relative distance between the first ant and the current ant.
+      // Adjusted for circular track and the first ant's perspective.
+      const initialRelativeGap = (firstAntDirection * (otherAntPosition - firstAntPosition) + trackLength) % trackLength;
+
+      // Determine how many times the first ant "passes through" the current ant.
+      // Relative speed is 2 (one moves +1, other -1, or vice versa).
+      // The formula `1 + Math.trunc((2 * T - d) / L)` calculates the number of times
+      // the first ant effectively crosses the other ant's initial position.
+      // Math.trunc is used to match the original bitwise OR ( | 0 ) behavior for negative results.
+      const individualCrossings = 1 + Math.trunc((2 * timeElapsed - initialRelativeGap) / trackLength);
+      
+      // Accumulate crossings, ensuring the result stays within [0, antCount - 1]
+      return (accumulatedCrossings + individualCrossings) % antCount;
+    }, 0);
+
+    // Ensure netCollisionCrossings is non-negative before final rank calculation
+    netCollisionCrossings = (netCollisionCrossings + antCount) % antCount;
+
+    // Determine the final rank (index) of the first ant in the sorted list of final positions.
+    // If the first ant moves clockwise (direction 1), positive crossings mean a higher rank.
+    // If counter-clockwise (direction -1), positive crossings mean a lower rank (effectively shifting backward).
+    const finalFirstAntRank = (firstAntDirection === 1)
+      ? netCollisionCrossings
+      : (antCount - netCollisionCrossings) % antCount;
+
+    // Create a sorted copy of the non-colliding final positions.
+    const orderedFinalPositions = [...nonCollidingFinalPositions].sort((a, b) => a - b);
+
+    // Find the initial rank (index) of the first ant's non-colliding final position in the sorted list.
+    const firstAntNonCollidingPosition = nonCollidingFinalPositions[0];
+    const initialFirstAntRank = findSortedInsertionIndex(orderedFinalPositions, firstAntNonCollidingPosition);
+    
+    // Custom array rotation function: shifts elements circularly.
+    const rotateArrayCircularly = (arr, shiftAmount) => {
+      const arrayLength = arr.length;
+      // Normalize shiftAmount to be positive and within array bounds
+      const effectiveShift = (shiftAmount % arrayLength + arrayLength) % arrayLength;
+      return arr.slice(effectiveShift).concat(arr.slice(0, effectiveShift));
+    };
+
+    // Calculate the required rotation for the sorted positions.
+    // This shift aligns the sorted positions such that the ant that *would* have been at
+    // `initialFirstAntRank` (the first ant) is now at `finalFirstAntRank`.
+    const requiredRotationShift = initialFirstAntRank - finalFirstAntRank;
+
+    // Apply the rotation to get the final ordered positions of all ants.
+    const finalAntPositions = rotateArrayCircularly(orderedFinalPositions, requiredRotationShift);
+
+    return finalAntPositions.join('\n');
+  }
+}
+
+// The following classes (Mod, Underscore, Input, Out) are utility components
+// from the original file and are preserved as per Type IV cloning rules
+// (they are external dependencies to the core algorithm being cloned).
+
+class Mod {
+  constructor(mod) {
+    if (mod == null) { mod = Combinatorics.DefaultMod; }
+    this.mod = mod;
+  }
+
+  mult(a,b) {
+    let ret = 0;
+    a %= this.mod;
+    b %= this.mod;
+    while (b) {
+      if (b&1) {
+        ret += a;
+        if (ret > this.mod) { ret -= this.mod; }
+      }
+      a <<= 1;
+      if (a > this.mod) { a -= this.mod; }
+      b >>= 1;
+    }
+    return ret;
+  }
+
+  pow(a,b) {
+    let ret = 1;
+    while(b) {
+      if (b&1) { ret = this.mult(ret,a); }
+      a = this.mult(a,a);
+      b >>= 1;
+    }
+    return ret;
+  }
+}
+const MOD = new Mod(1e9+7);
+
+class Underscore {
+  sum(arr) { return arr.reduce((a,b)=>a+b); }
+  modSum(arr,mod) { if (mod == null) { mod = MOD.mod; } return arr.reduce((a,b)=>(a+b)%mod); }
+  min(arr, func) { if (func == null) {func = (a,b) => a - b} return arr.reduce((a,b) => func(a,b) < 0 ? a : b); }
+  max(arr, func) { if (func == null) {func = (a,b) => a - b} return arr.reduce((a,b) => func(a,b) > 0 ? a : b); }
+  sort(arr, func) { if (func == null) {func = (a,b) => a - b} return arr.sort(func) }
+  range(start, stop, step) {
+    if (stop == null) { stop = start || 0; start = 0; }
+    if (!step) { step = stop < start ? -1 : 1; }
+    const length = Math.max(Math.ceil((stop - start) / step), 0);
+    const range = Array(length);
+    for (var idx = 0; idx < length; idx++, start += step) { range[idx] = start; }
+    return range;
+  }
+  first (array, n) {
+    if (array == null || array.length < 1) return n == null ? void 0 : [];
+    if (n == null) return array[0];
+    return this.initial(array, array.length - n);
+  };
+  initial (array, n) { return array.slice.call(array, 0, Math.max(0, array.length - (n == null ? 1 : n))); }
+  tail(array, n) { return array.slice.call(array, n == null ? 1 : n); }
+  last (array, n) { if (n == null) return array[array.length - 1]; return this.tail(array, Math.max(0, array.length - n)); }
+  sumArray (arr) { return this.tail(arr.reduce(((a,b,i) => {a.push(b + a[i]); return a}), [0])); }
+  diffArray (arr) { const s = []; for (let i = 1; i < arr.length; ++i) { s.push(arr[i] - arr[i-1]); } return s; }
+  // key以上となる最初の要素のindexを返す
+  binarySearch (array, key, iteratee) {
+    const itr = (obj) => (typeof obj === 'object') ? obj[iteratee] : obj;
+    const value = itr(key);
+    let low = 0, high = array.length;
+    while (low < high) {
+      let mid = Math.floor((low + high) / 2);
+      if (itr(array[mid]) < value) low = mid + 1; else high = mid;
+    }
+    return low;
+  };
+  // 配列をnずらす
+  rotate(arr, n) {
+    n %= arr.length;
+    if (n < 0) { n += arr.length; }
+    return arr.slice(n).concat(arr.slice(0,n));
+  }
+}
+const _ = new Underscore();
+
+class Input {
+  constructor() {
+    this.cursor = 0;
+    this.inputAll();
+  }
+
+  inputAll() {
+    this.data = (require("fs").readFileSync("/dev/stdin", "utf8")).split('\n');
+    return this.data;
+  }
+
+  /* 1行 or 複数行文字列 */
+  nextLine(n) {
+    if (n) {
+      const ret = this.data.slice(this.cursor, this.cursor + n);
+      this.cursor += n;
+      return ret;
+    }
+    return this.data[this.cursor++];
+  }
+  /* 1整数 */
+  nextInt() { return parseInt(this.nextLine()); } 
+  /* 一行文字配列 */
+  nextStrArr() { return this.nextLine().split(' '); } 
+  /* 一行整数配列 */
+  nextIntArr() { return this.nextStrArr().map((e) => parseInt(e)); }
+  /* 一行浮動小数点配列 */
+  nextFloatArr() { return this.nextStrArr().map((e) => parseFloat(e)); }
+  /* 複数行整数配列 */
+  nextIntLine(n) { return this.nextLine(n).map((e) => parseInt(e)) }
+  /* 複数行浮動小数点配列 */
+  nextFloatLine(n) { return this.nextLine(n).map((e) => parseFloat(e)) }
+  /* 複数行文字列二次元配列 */
+  nextStrRange(n) { return this.nextLine(n).map((line) => line.split(' ')); }
+  /* 複数行整数二次元配列 */
+  nextIntRange(n) {
+    return this.nextLine(n).map((line) => line.split(' ').map((e) => parseInt(e)));
+  }
+  /* 複数行浮動小数点数二次元配列 */
+  nextFloatRange(n) {
+    return this.nextLine(n).map((line) => line.split(' ').map((e) => parseFloat(e)));
+  }
+} 
+const input = new Input();
+
+const Out = (output) => {
+  let ret;
+  if (output == null) return;
+  if (output === true) { ret = 'Yes'; }
+  else if (output === false) { ret = 'No'; }
+  else { ret = output; }
+  console.log(ret);
+}
+
+Out(new Main().solve());

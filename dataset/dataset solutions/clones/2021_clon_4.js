@@ -1,13 +1,16 @@
-const readStream = require('node:fs');
+var inputSource = require('fs').readFileSync('/dev/stdin', 'utf8');
+var numericInput = parseInt(inputSource);
 
-function determineValue(inputQuantity) {
-    const numericalMeasure = Number(inputQuantity);
-    const countOfFives = Math.trunc(numericalMeasure / 5);
-    const accumulatedFromFives = countOfFives * 5;
-    const extraForFiveHundreds = Math.trunc(numericalMeasure / 500) * 500;
-    return accumulatedFromFives + extraForFiveHundreds;
+function calculateValue(currentAmount) {
+    if (currentAmount < 5) {
+        return 0;
+    }
+
+    if (currentAmount >= 500) {
+        return 1000 + calculateValue(currentAmount - 500);
+    } else {
+        return 5 + calculateValue(currentAmount - 5);
+    }
 }
 
-const rawTextData = readStream.readFileSync(0, 'utf8');
-const finalCalculatedFigure = determineValue(rawTextData);
-console.log(finalCalculatedFigure);
+console.log(calculateValue(numericInput));

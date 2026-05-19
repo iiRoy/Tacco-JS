@@ -1,30 +1,36 @@
-function processInputData(rawData) {
-    const numericStrings = rawData.trim().split(/\s+/);
-    const firstVal = Number(numericStrings[0]);
-    const secondVal = Number(numericStrings[1]);
-    const thirdVal = Number(numericStrings[2]);
+function processInputData(inputString) {
+    const dataLines = inputString.split("\n");
+    const numericStrings = dataLines[0].split(" ");
+    const initialNumbers = numericStrings.map(Number);
 
-    function computeTransformations(paramA, paramB, paramC) {
-        if (paramA === paramB && paramB === paramC) {
-            return (paramA % 2 === 0) ? -1 : 0;
+    const [firstNum, secondNum, thirdNum] = initialNumbers;
+
+    if (firstNum === secondNum && secondNum === thirdNum) {
+        if (firstNum % 2 !== 0) {
+            return 0;
+        } else {
+            return -1;
         }
-
-        function stepRecursively(currentX, currentY, currentZ, counter) {
-            if (currentX % 2 !== 0 || currentY % 2 !== 0 || currentZ % 2 !== 0) {
-                return counter;
-            }
-
-            const nextX = (currentY + currentZ) / 2;
-            const nextY = (currentX + currentZ) / 2;
-            const nextZ = (currentX + currentY) / 2;
-
-            return stepRecursively(nextX, nextY, nextZ, counter + 1);
-        }
-
-        return stepRecursively(paramA, paramB, paramC, 0);
     }
 
-    const iterationCount = computeTransformations(firstVal, secondVal, thirdVal);
-    console.log(iterationCount);
+    function calculateSteps(currentA, currentB, currentC, currentCount) {
+        if (currentA % 2 !== 0 || currentB % 2 !== 0 || currentC % 2 !== 0) {
+            return currentCount;
+        }
+
+        const nextA = (currentB + currentC) / 2;
+        const nextB = (currentA + currentC) / 2;
+        const nextC = (currentB + currentA) / 2;
+
+        return calculateSteps(nextA, nextB, nextC, currentCount + 1);
+    }
+
+    return calculateSteps(firstNum, secondNum, thirdNum, 0);
 }
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function Main(input) {
+    const result = processInputData(input);
+    console.log(result);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

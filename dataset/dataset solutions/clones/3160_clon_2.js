@@ -1,35 +1,27 @@
-'use strict' /* Enforce strict mode for robust code execution */
+'use strict';
 
-// Define the primary handler function to process incoming data
-const processInputData = (sourceContent) => {
-    // Parse the initial line of the provided content into a sequence of characters
-    let digitCollection = sourceContent
-        .split('\n')[0] // Retrieve the first line of text
-        .split('');    // Convert the line into an array of individual characters
+// This function processes the provided raw string data.
+const processData = (rawData) => {
+    // The first line of the input is taken and split into an array of individual characters.
+    let charSequence = rawData.split('\n')[0].split('');
 
-    // Initialize distinct counters for the two possible character types
-    let zeroInstances = 0; // Tracks the total occurrences of the character '0'
-    let oneInstances = 0;  // Tracks the total occurrences of the character '1'
+    // Initialize counters for the occurrences of '0' and '1' characters.
+    let zeroOccurrences = 0;
+    let oneOccurrences = 0;
 
-    // Iterate through each character within the assembled collection
-    digitCollection.forEach(singleChar => {
-        // Increment the '0' counter if the current character matches '0'
-        if (singleChar === '0') {
-            zeroInstances++;
+    // Iterate through each character in the sequence to tally the counts.
+    charSequence.forEach(charItem => {
+        if (charItem === '0') {
+            zeroOccurrences++; // Increment the counter for '0's.
         }
-        // Increment the '1' counter if the current character matches '1'
-        if (singleChar === '1') {
-            oneInstances++;
+        if (charItem === '1') {
+            oneOccurrences++; // Increment the counter for '1's.
         }
     });
-    
-    // Compute the result by finding the lesser of the two instance counts and multiplying by two,
-    // then outputting this final value to the standard console.
-    console.log(
-        Math.min(zeroInstances, oneInstances) * 2
-    );
+
+    // The final result is twice the minimum of the two character counts.
+    console.log(Math.min(zeroOccurrences, oneOccurrences) * 2);
 };
 
-// Invoke the main data processing routine, feeding it content read from the standard input stream
-// The input is expected to be encoded in UTF-8.
-processInputData(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf-8'));

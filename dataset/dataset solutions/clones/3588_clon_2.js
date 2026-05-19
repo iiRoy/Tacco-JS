@@ -1,100 +1,97 @@
 'use strict';
-/**
- * Orchestrates the processing of a raw text grid.
- * This function takes a multi-line string, converts it to a boolean matrix,
- * performs filtering operations, transposes the data, and finally renders
- * the processed grid into a displayable string format.
- * @param {string} rawGridString The initial text representation of the grid.
+
+/*
+ * Primary entry point for processing the provided text data.
+ * @param {string} rawData The complete input string to be processed.
  */
-function processGridData(rawGridString) {
-  // First, break the incoming text into individual row strings.
-  let gridRowsString = rawGridString.split('\n');
+function processInput(rawData) {
+    // Split the input string into individual lines.
+    let lineSegments = rawData.split('\n');
+    // Remove the first line, which might be a header or metadata.
+    lineSegments.shift();
+    // Initialize an array to store the boolean representation of the grid.
+    let booleanGrid = [];
 
-  // Discard the very first row, as it's often a header or empty line.
-  gridRowsString.shift();
-
-  // Initialize a structure to hold the grid data as boolean values.
-  let booleanGridMatrix = [];
-
-  // Iterate over each string row to convert character data into booleans.
-  gridRowsString.forEach((singleRowString) => {
-    // Split the current row string into its constituent characters.
-    let rowCharacters = singleRowString.split('');
-
-    // Transform each character into a boolean: '.' becomes true, anything else becomes false.
-    let rowBooleans = rowCharacters.map((charElement) => {
-      if (charElement === '.') {
-        return true;
-      } else {
-        return false;
-      }
+    // Iterate over each line segment to convert characters into booleans.
+    lineSegments.forEach((currentLine) => {
+        // Convert the current line into an array of characters.
+        let charArray = currentLine.split('');
+        // Map each character to a boolean: '.' becomes true, anything else becomes false.
+        let boolRow = charArray.map((charVal) => {
+            if (charVal === '.') {
+                return true;
+            } else {
+                return false;
+            }
+        });
+        // Add the boolean row to our grid.
+        booleanGrid.push(boolRow);
     });
 
-    // Append the newly formed boolean row to our matrix.
-    booleanGridMatrix.push(rowBooleans);
-  });
-
-  // Apply the first filtering pass: remove rows where all elements are 'true'.
-  // We're looking for rows that contain at least one 'false'.
-  let filteredRowsInitial = booleanGridMatrix.filter((dataRow) => {
-    return !dataRow.reduce((accumulator, currentValue) => {
-      return (accumulator && currentValue);
+    // Filter the grid to find rows that are not entirely 'true' (i.e., contain at least one 'false').
+    let initialFilteredRows = booleanGrid.filter((gridRow) => {
+        // Reduce the row to a single boolean: true if all elements are true, false otherwise.
+        // Then negate the result to keep rows that are NOT all true.
+        return !gridRow.reduce((accumulator, currentValue) => {
+            return (accumulator && currentValue);
+        });
     });
-  });
 
-  // Transpose the matrix to switch rows and columns for the next processing step.
-  let transposedInitial = transposeMatrix(filteredRowsInitial);
+    // Transpose the filtered rows to process columns.
+    let transposedInitial = transposeMatrix(initialFilteredRows);
 
-  // Apply a second filtering pass on the transposed data.
-  // This effectively filters out columns where all elements are 'true' in the original context.
-  let filteredColumns = transposedInitial.filter((dataRow) => {
-    return !dataRow.reduce((accumulator, currentValue) => {
-      return (accumulator && currentValue);
+    // Filter the transposed grid (which represents columns) using the same logic.
+    let finalFilteredColumns = transposedInitial.filter((gridRow) => {
+        return !gridRow.reduce((accumulator, currentValue) => {
+            return (accumulator && currentValue);
+        });
     });
-  });
 
-  // Transpose back to the original orientation and then convert boolean values
-  // into human-readable characters ('.' for true, '#' for false).
-  let finalOutputGrid = renderGridPattern(transposeMatrix(filteredColumns));
+    // Transpose the result back and convert booleans to display characters.
+    let outputGrid = formatOutputGrid(transposeMatrix(finalFilteredColumns));
 
-  // Output the final processed grid to the console, joining rows with newlines.
-  console.log(
-    finalOutputGrid.map((outputLine) => {
-      return outputLine.join('');
-    }).join('\n')
-  );
-};
+    // Print the final grid to the console, joining elements and lines appropriately.
+    console.log(
+        outputGrid.map((outputLine) => {
+            return outputLine.join('');
+        }).join('\n')
+    );
+}
 
-// Define a utility function to transpose a 2D array (matrix).
+/*
+ * Transposes a 2D array (matrix).
+ * @param {Array<Array<any>>} inputMatrix The 2D array to be transposed.
+ * @returns {Array<Array<any>>} The transposed 2D array.
+ */
 const transposeMatrix = (inputMatrix) => {
-  // Map over the columns of the first row to create new rows.
-  // This assumes the input matrix is not empty and its first row has elements.
-  return inputMatrix[0].map((_, columnIndex) => {
-    // For each column index, collect the element from that column across all original rows.
-    return inputMatrix.map((rowData) => rowData[columnIndex]);
-  });
-};
-
-/**
- * Converts a boolean matrix into a character-based grid pattern.
- * True values are represented by a '.', and false values by a '#'.
- * @param {Array<Array<boolean>>} booleanPatternMatrix The 2D array of boolean values.
- * @returns {Array<Array<string>>} A 2D array where booleans are replaced by '.' or '#'.
- */
-const renderGridPattern = (booleanPatternMatrix) => {
-  // Initialize a new matrix to store the character representation.
-  let charPatternMatrix = booleanPatternMatrix.map((patternRow) => {
-    // Map each boolean value in the row to its corresponding character.
-    return patternRow.map((cellValue) => {
-      if (cellValue) {
-        return '.'; // Represent 'true' with a dot.
-      } else {
-        return '#'; // Represent 'false' with a hash.
-      }
+    // If the input matrix is empty, return an empty array.
+    if (inputMatrix.length === 0) return [];
+    // Map over the columns of the first row to create new rows.
+    return inputMatrix[0].map((_discarded, columnIndex) => {
+        // For each column index, create a new array by taking the element at that index from each original row.
+        return inputMatrix.map((matrixRow) => matrixRow[columnIndex]);
     });
-  });
-  return charPatternMatrix; // Return the final character matrix.
 };
 
-// Execute the primary function by reading input from standard input.
-processGridData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+/*
+ * Converts a boolean matrix into a character matrix for display.
+ * @param {Array<Array<boolean>>} processedBooleanMatrix A 2D array of booleans.
+ * @returns {Array<Array<string>>} A 2D array of strings ('.' or '#').
+ */
+const formatOutputGrid = (processedBooleanMatrix) => {
+    let formattedResult = processedBooleanMatrix.map((gridRow) => {
+        return gridRow.map((cellValue) => {
+            // If the boolean value is true, represent it as a dot.
+            if (cellValue) {
+                return '.';
+            } else {
+                // Otherwise, represent it as a hash.
+                return '#';
+            }
+        });
+    });
+    return formattedResult;
+};
+
+// Execute the main processing function with content read from standard input.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

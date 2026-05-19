@@ -1,68 +1,47 @@
-// This script processes numerical data from standard input to perform a specific validation check.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from standard input
+let lineSegments = rawData.trim().split("\n"); // Process raw data: remove whitespace, then split into an array of lines
 
-const fileSystemUtility = require('fs'); // Obtain file system module for I/O operations
-const sourcePath = '/dev/stdin';         // Define the standard input file path for reading
-const textEncoding = 'utf8';              // Specify the character encoding for input data
+while (true) { // Begin main processing loop, continues until a specific condition is met
+  let itemCount = lineSegments.shift() - 0; // Extract the first line, convert to a number (N), representing the count of items
+  if (itemCount === 0) break; // If the item count is zero, terminate the main processing loop
 
-let rawInputContent = fileSystemUtility.readFileSync(sourcePath, textEncoding); // Read the entire content from the specified source
+  let statusIndicator = "OK"; // Initialize a status flag for the current block of data
+  let dataMatrix = []; // Create an empty array to store parsed data rows
 
-let processedLineSegments = rawInputContent
-  .trim()                               // Remove leading and trailing whitespace from the raw content
-  .split("\n");                         // Split the content into an array of individual lines
+  // Loop to populate the data matrix with 'itemCount' number of rows
+  for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
+    let currentLineValues = lineSegments.shift().split(" ").map(Number); // Take the next line, split by space, and convert parts to numbers
+    dataMatrix.push(currentLineValues); // Add the array of numbers to our data matrix
+  }
 
-// Main processing loop: continues indefinitely until an explicit break condition is met
-for ( ; ; ) {
-    let itemCount = Number(processedLineSegments.shift()); // Extract the first line, convert it to a number, and use as item count
+  statusIndicator = "OK"; // Re-initialize the status indicator (this line is structurally preserved from the original)
 
-    // Terminate the processing loop if the extracted item count is zero
-    if (itemCount === 0)
-        break;
+  // Outer loop to iterate through each item in the data matrix
+  for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
+    if (statusIndicator === "NG") break; // If the status is already 'NG', no need to perform further checks for this block
 
-    let operationStatus = "SUCCESS"; // Initialize the status indicator for the current batch of items
-    let measurementRecords = [];     // Declare an array to store parsed measurement records
+    let currentWeight = dataMatrix[outerIndex][0]; // Extract the first value (weight) of the current item
+    let startRange = dataMatrix[outerIndex][1]; // Extract the second value (start range) of the current item
+    let endRange = dataMatrix[outerIndex][2]; // Extract the third value (end range) of the current item
 
-    // Loop to read and parse 'itemCount' number of records from the input lines
-    for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
-        let currentRecord = processedLineSegments
-          .shift()                                // Get the next line from the processed segments
-          .split(" ")                             // Split the line by spaces into an array of strings
-          .map(valueString => Number(valueString)); // Convert each string part to a numeric value
-        measurementRecords.push(currentRecord);   // Add the fully parsed numeric record to the collection
+    // Inner loop to compare the current item with all other items in the data matrix
+    for (let innerIndex = 0; innerIndex < itemCount; innerIndex++) {
+      if (outerIndex === innerIndex) continue; // Skip comparison if it's the same item
+
+      let otherWeight = dataMatrix[innerIndex][0]; // Extract weight of the other item
+      let otherStart = dataMatrix[innerIndex][1]; // Extract start range of the other item
+      let otherEnd = dataMatrix[innerIndex][2]; // Extract end range of the other item
+
+      // Check for a specific overlap condition between the current item's range and the other item's range
+      if (endRange <= otherStart && startRange <= otherEnd) {
+        currentWeight += otherWeight; // If condition met, add the other item's weight to the current item's accumulated weight
+      }
+
+      // Check if the accumulated weight exceeds a predefined limit
+      if (currentWeight > 150) {
+        statusIndicator = "NG"; // If the limit is exceeded, set the status indicator to 'NG'
+      }
     }
-
-    operationStatus = "SUCCESS"; // Re-initialize the status indicator before starting the validation phase
-
-    // Nested loops for applying the core validation logic to the measurement records
-    for (let outerIndex = 0; outerIndex < itemCount; outerIndex++) {
-        // If a failure has already been detected for the current batch, skip further checks
-        if (operationStatus === "FAILURE")
-            break; // Exit the outer loop for this batch
-
-        let currentWeight = measurementRecords[outerIndex][0];     // Extract the primary weight from the current record
-        let currentLowerBound = measurementRecords[outerIndex][1]; // Extract the lower bound from the current record
-        let currentUpperBound = measurementRecords[outerIndex][2]; // Extract the upper bound from the current record
-
-        for (let innerIndex = 0; innerIndex < itemCount; innerIndex++) {
-            // Skip comparison of a record with itself to avoid redundant checks
-            if (outerIndex === innerIndex)
-                continue; // Move to the next inner loop iteration
-
-            let comparedWeight = measurementRecords[innerIndex][0];     // Extract the weight of the record being compared
-            let comparedLowerBound = measurementRecords[innerIndex][1]; // Extract the lower bound of the compared record
-            let comparedUpperBound = measurementRecords[innerIndex][2]; // Extract the upper bound of the compared record
-
-            // Check for an overlap condition between the current and compared records' bounds
-            if (currentUpperBound <= comparedLowerBound && currentLowerBound <= comparedUpperBound) {
-                currentWeight += comparedWeight; // If overlap exists, accumulate the compared weight to the current weight
-            }
-
-            // After potential accumulation, check if the total current weight exceeds a predefined limit
-            if (currentWeight > 150) {
-                operationStatus = "FAILURE"; // Set the status to failure if the limit is exceeded
-                // Note: This does not break the inner loop, maintaining the original control flow.
-            }
-        }
-    }
-
-    console.log(operationStatus); // Output the final status (SUCCESS or FAILURE) for the processed batch
+  }
+  console.log(statusIndicator); // Output the final status for the current block of data
 }

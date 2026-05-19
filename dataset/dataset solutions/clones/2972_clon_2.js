@@ -1,94 +1,98 @@
-"use strict"; // Enforce strict parsing and error handling for cleaner code.
+"use strict";
 
-// Defines a utility class for processing sequential data from a string.
-function DataStreamProcessor(rawDataString, valueConverter) {
-  // Stores the input string broken into individual lines.
-  this.parsedLines = rawDataString.split("\n");
-  // Tracks the current word position within the active line.
-  this.wordPointer = 0;
-  // Tracks the index of the currently active line.
-  this.linePointer = 0;
-  // Sets the default function for converting extracted tokens, defaults to Number.
-  this.numberParser = valueConverter || Number;
+// This utility class is designed to parse input strings,
+// treating them as a sequence of lines and tokens.
+function InputParser(sourceText, defaultConverter) {
+  // The input string is split into an array of individual lines.
+  this._sourceLines = sourceText.split("\n");
+  // Tracks the current token's position within the active line.
+  this._columnIndex = 0;
+  // Tracks the current line being processed.
+  this._lineIndex = 0;
+  // The default function used to convert token strings to their desired type (e.g., Number).
+  this._valueConverter = defaultConverter || Number;
 }
 
-// Prototype method to extract a single data element from the stream.
-DataStreamProcessor.prototype.extractDatum = function(specificTransformer) {
-  // Retrieve the current line from the parsed input.
-  var activeLine = this.parsedLines[this.linePointer];
-  // Check if the line is valid (not undefined or empty).
-  if (activeLine) {
-    // Split the current line into individual words, after trimming whitespace.
-    var lineElements = activeLine.trim().split(" ");
-    // Get the data element at the current word pointer.
-    var currentDatum = lineElements[this.wordPointer];
-    // Advance the word pointer for the next extraction.
-    this.wordPointer++;
-    // If all words on the current line have been processed, reset word pointer and advance to the next line.
-    if (lineElements.length === this.wordPointer) {
-      this.wordPointer = 0;
-      this.linePointer++;
+// Method to retrieve the next available token from the input stream.
+InputParser.prototype.getNextToken = function(customConverter) {
+  // Fetch the content of the current line.
+  var currentLineContent = this._sourceLines[this._lineIndex];
+
+  // Proceed only if the current line exists.
+  if (currentLineContent) {
+    // Clean leading/trailing whitespace and split the line into an array of tokens.
+    var lineTokens = currentLineContent.trim().split(" ");
+    // Extract the token at the current column index.
+    var tokenValue = lineTokens[this._columnIndex];
+
+    // Advance the column index for the next token read.
+    this._columnIndex++;
+
+    // If all tokens on the current line have been consumed,
+    // reset the column index and move to the subsequent line.
+    if (lineTokens.length === this._columnIndex) {
+      this._columnIndex = 0;
+      this._lineIndex++;
     }
-    // Apply the provided transformer function, or the default number parser.
-    return specificTransformer ? specificTransformer(currentDatum) : this.numberParser(currentDatum);
+
+    // Convert the token value using either a provided custom converter or the instance's default converter.
+    return customConverter ? customConverter(tokenValue) : this._valueConverter(tokenValue);
   }
 };
 
-// Prototype method to parse all elements on the current line.
-DataStreamProcessor.prototype.parseLine = function(elementProcessor) {
-  // Get the string content of the current line.
-  var activeLineString = this.parsedLines[this.linePointer];
-  // If the line exists, process it.
-  if (activeLineString) {
-    // Reset the word pointer as we're processing a whole new line.
-    this.wordPointer = 0;
-    // Advance to the next line after processing the current one.
-    this.linePointer++;
-    // Split the line by spaces and map each element using the provided or default processor.
-    return activeLineString.split(" ").map(elementProcessor || this.numberParser);
+// Method to read all tokens from the current line and advance to the next line.
+InputParser.prototype.readCurrentLine = function(lineTokenMapper) {
+  // Retrieve the full content of the current line.
+  var lineData = this._sourceLines[this._lineIndex];
+
+  // Proceed only if the current line exists.
+  if (lineData) {
+    // Reset the column index as a new line is being read entirely.
+    this._columnIndex = 0;
+    // Advance to the next line.
+    this._lineIndex++;
+    // Split the line into tokens and apply a mapping function (either custom or default converter) to each.
+    return lineData.split(" ").map(lineTokenMapper || this._valueConverter);
   }
 };
 
-// Export the data stream processing utility.
-module.exports = DataStreamProcessor;
+// Make the InputParser class available for other modules.
+module.exports = InputParser;
 
-/**
- * Main execution function to process the input payload and generate output.
- * @param {string} rawInputPayload - The entire input string from the source.
- */
-function executeSolution(rawInputPayload) {
-  // Create an instance of the data processor with the raw input.
-  var inputReader = new DataStreamProcessor(rawInputPayload);
+// The primary function orchestrating the problem's solution.
+function executeSolution(inputString) {
+  // Instantiate the parser with the raw input string.
+  var parserInstance = new InputParser(inputString);
 
-  // Extract the first numeric parameter.
-  var primaryParameter = inputReader.extractDatum();
-  // Extract the second numeric control value.
-  var secondaryFlag = inputReader.extractDatum();
+  // Read the first numerical value from the input.
+  var firstInputNumber = parserInstance.getNextToken();
+  // Read the second numerical value from the input.
+  var secondInputNumber = parserInstance.getNextToken();
 
-  // Check the condition based on the secondary control value.
-  if (secondaryFlag === 0) {
-    // Initialize an array to store the generated sequence.
-    var outputCollection = [];
-    // Calculate the upper bound for the sequence generation.
-    var sequenceLimit = Math.pow(2, primaryParameter);
+  // Conditional logic based on the second input number.
+  if (secondInputNumber === 0) {
+    // Initialize an array to store the resulting sequence.
+    var outputArray = [];
+    // Calculate the upper limit for the sequence generation, which is 2 raised to the power of the first input number.
+    var upperBound = Math.pow(2, firstInputNumber);
 
-    // Populate the collection with increasing numbers.
-    for (var counterVariable = 0; counterVariable < sequenceLimit; counterVariable++) {
-      outputCollection.push(counterVariable);
+    // Populate the array with numbers from 0 up to (upperBound - 1).
+    for (var loopCounter = 0; loopCounter < upperBound; loopCounter++) {
+      outputArray.push(loopCounter);
     }
 
-    // Populate the collection with decreasing numbers, mirroring the first part.
-    for (var counterVariable = sequenceLimit - 1; counterVariable >= 0; counterVariable--) {
-      outputCollection.push(counterVariable);
+    // Append numbers to the array in reverse order, from (upperBound - 1) down to 0.
+    for (var loopCounter = upperBound - 1; loopCounter >= 0; loopCounter--) {
+      outputArray.push(loopCounter);
     }
 
-    // Output the generated sequence joined by spaces.
-    console.log(outputCollection.join(" "));
+    // Output the generated sequence, with elements joined by spaces.
+    console.log(outputArray.join(" "));
   } else {
-    // If the condition is not met, output the error indicator.
+    // If the second input number is not 0, print "-1" as per problem specification.
     console.log("-1");
   }
 }
 
-// Invoke the main solution function, reading input from standard input.
+// Execute the solution by reading input from the standard input stream.
 executeSolution(require("fs").readFileSync("/dev/stdin", "utf8"));

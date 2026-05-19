@@ -1,25 +1,23 @@
-const extractNumericSequence = (textualSource) => {
-  const allSubstances = textualSource.trim().split(/\s+/);
-  const numericalEntities = allSubstances.map(Number);
-  const quantity = numericalEntities[0];
-  return numericalEntities.slice(1, quantity + 1);
-};
+"use strict";
 
-const ascertainChampion = (initialPayload) => {
-  const sequenceComponents = extractNumericSequence(initialPayload);
+function extractIntegers(textSegment) {
+  return textSegment.split(/\s+/).map(Number);
+}
 
-  const decisiveFactor = sequenceComponents.reduce((currentParitySum, currentElement) => {
-    return currentParitySum ^ (currentElement % 2);
+function processInputData(sourceText) {
+  const allNumericTokens = extractIntegers(sourceText);
+
+  const itemCount = allNumericTokens[0];
+
+  const valueSequence = allNumericTokens.slice(1, itemCount + 1);
+
+  const oddValueCount = valueSequence.reduce((accumulator, currentNumber) => {
+    return accumulator + (currentNumber % 2 !== 0 ? 1 : 0);
   }, 0);
 
-  if (decisiveFactor === 1) {
-    console.log('first');
-  } else {
-    console.log('second');
-  }
-};
+  const firstPlayerOutcome = oddValueCount % 2 !== 0;
 
-((inputOrigin) => {
-  const rawData = require('fs').readFileSync(inputOrigin, 'utf8');
-  ascertainChampion(rawData);
-})('/dev/stdin');
+  console.log(firstPlayerOutcome ? 'first' : 'second');
+}
+
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

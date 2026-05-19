@@ -1,113 +1,102 @@
-function calculateCost ( inventory , product , visitedProducts )
-{
-  // Declare variables for the calculation process
-  let componentList, unitCost = inventory[product].unitPrice;
-  let totalCost, isValidPath = false, componentIndex;
+function calculateCost(inventory, product, visitedProducts) {
+  // Declare local variables for the function's scope
+  let componentsList,
+      unitCost = inventory[product].unitCost, // Initial cost from inventory
+      totalComponentCost,
+      isValidPath = false, // Flag to track if a valid recipe path is found
+      componentIndex;
 
-  // Initialize the list of visited products if not already set
+  // Initialize visitedProducts array if not provided (for initial call)
   visitedProducts = visitedProducts || [];
 
-  /* This line was used for debugging purposes:
-  console.log(product, visitedProducts); */
+  // Check if the current product has a recipe (i.e., it's a composite item)
+  if (componentsList = inventory[product].components) {
+    visitedProducts.push(product); // Add current product to the visited list to detect cycles
+    totalComponentCost = 0;
+    isValidPath = true; // Assume valid path until a cycle is detected
 
-  // Check if the current product has a composition (i.e., it's a recipe)
-  if ( componentList = inventory[product].composition ) {
-    // Add the current product to the list of visited items to detect cycles
-    visitedProducts.push(product);
-    totalCost = 0;
-    isValidPath = true; // Assume a valid path until a cycle is found
-
-    // Iterate through each component in the product's composition
-    for ( componentIndex = 0; componentIndex < componentList.length; componentIndex++ ) {
-      // If a component is already in the visited list, a cycle is detected
-      if ( visitedProducts.includes(componentList[componentIndex]) ) {
-        isValidPath = false; // Mark the path as invalid
-        break;             // Exit the loop
+    // Iterate through each component in the recipe
+    for (componentIndex = 0; componentIndex < componentsList.length; componentIndex++) {
+      // Check for circular dependencies
+      if (visitedProducts.indexOf(componentsList[componentIndex]) !== -1) {
+        isValidPath = false; // Cycle detected, this path is invalid
+        break; // Exit loop as this recipe path is invalid
       }
-      // Recursively calculate the cost of each component and add it to the total
-      totalCost += calculateCost(inventory, componentList[componentIndex], visitedProducts);
+      // Recursively calculate the cost of each component
+      totalComponentCost += calculateCost(inventory, componentsList[componentIndex], visitedProducts);
     }
 
-    // If no cycle was detected, update the product's unit cost
+    // If no circular dependency was found in this path, update the unitCost
     if (isValidPath) {
-      // The cost is the minimum of its direct price or the sum of its components
-      unitCost = findMinimum(unitCost, totalCost);
+      unitCost = getMin(unitCost, totalComponentCost); // Take the minimum of direct cost or recipe cost
     }
-
-    // Remove the current product from the visited list as we backtrack
-    visitedProducts.pop();
+    visitedProducts.pop(); // Remove current product from visited list as we backtrack
   }
-  
-  // Return the calculated or original unit cost
+
+  // Return the calculated minimum cost for the product
   return unitCost;
 }
 
-
-
-function findMinimum ( valueA, valueB ) {
-  // Simple ternary operator to return the smaller of two values
-  return ( valueA < valueB ) ? valueA : valueB;
+function getMin(val1, val2) {
+  // Returns the smaller of two values
+  return val1 < val2 ? val1 : val2;
 }
 
-
-
 function processInputData() {
-  // Declare variables for parsing input
-  let lineIterator, numProducts, numRecipes, currentLineParts;
-  let totalLines = rawInputData.length;
-  let productCatalog; // Object to store all products and their properties
+  let lineIterator,
+      itemEndIndex,
+      recipeEndIndex,
+      currentLineParts,
+      inputLength = rawData.length, // Total number of lines in the input
+      inventory; // Object to store product inventory details
 
-  // Loop through the input data, processing sections
-  for ( lineIterator = 0; lineIterator < totalLines; ) {
-    productCatalog = {}; // Initialize a new catalog for each test case
+  // Loop through the input data, processing each test case
+  for (lineIterator = 0; lineIterator < inputLength;) {
+    inventory = {}; // Initialize inventory for the current test case
 
-    // Read the number of direct product definitions
-    numProducts = parseInt(rawInputData[lineIterator++], 10) + lineIterator;
-    // If numProducts is 0, it indicates the end of input
-    if (numProducts === lineIterator) break;
-
-    // Process direct product definitions
-    for ( ; lineIterator < numProducts; lineIterator++ ) {
-      currentLineParts = rawInputData[lineIterator].split(' ');
-      // Store product with its direct unit price
-      productCatalog[currentLineParts[0]] = { unitPrice: parseInt(currentLineParts[1], 10) };
-    } 
-    
-    // Read the number of recipe definitions
-    numRecipes = parseInt(rawInputData[lineIterator++], 10) + lineIterator;
-
-    // Process recipe definitions
-    for ( ; lineIterator < numRecipes; lineIterator++ ) {
-      currentLineParts = rawInputData[lineIterator].split(' ');
-      // Store product's composition (list of components)
-      productCatalog[currentLineParts[0]].composition = currentLineParts.slice(2);
+    // Read the number of items and calculate the end index for item definitions
+    itemEndIndex = parseInt(rawData[lineIterator++], 10) + lineIterator;
+    if (itemEndIndex === lineIterator) { // If N is 0, break the loop (end of input)
+      break;
     }
 
-    /* console.log(productCatalog); // For inspection of the parsed catalog */
-    
-    // Calculate and print the cost of the final target product
-    console.log(calculateCost(productCatalog, rawInputData[lineIterator++]));
+    // Parse item definitions (product name and direct cost)
+    for (; lineIterator < itemEndIndex; lineIterator++) {
+      currentLineParts = rawData[lineIterator].split(' ');
+      inventory[currentLineParts[0]] = { unitCost: parseInt(currentLineParts[1], 10) };
+    }
+
+    // Read the number of recipes and calculate the end index for recipe definitions
+    recipeEndIndex = parseInt(rawData[lineIterator++], 10) + lineIterator;
+
+    // Parse recipe definitions (product name and its components)
+    for (; lineIterator < recipeEndIndex; lineIterator++) {
+      currentLineParts = rawData[lineIterator].split(' ');
+      // Assign the list of components to the product's recipe property
+      inventory[currentLineParts[0]].components = currentLineParts.slice(2);
+    }
+
+    // After processing all items and recipes for a test case, calculate and print the cost
+    // The next line in rawData contains the product for which the cost needs to be calculated
+    console.log(calculateCost(inventory, rawData[lineIterator++]));
   }
 }
 
+let rawData = ''; // Accumulator for all incoming standard input data
 
+// Set up standard input stream handling
+process.stdin.resume(); // Keep the process alive while waiting for input
+process.stdin.setEncoding('utf8'); // Specify character encoding for input
 
-// Global variable to accumulate input chunks
-let rawInputData = '';
-
-
-
-// Set up standard input processing
-process.stdin.resume(); // Start reading from standard input
-process.stdin.setEncoding('utf8'); // Set encoding to UTF-8
-
-// Event listener for data chunks received from stdin
-process.stdin.on('data', function (dataChunk) {
-  rawInputData += dataChunk; // Append incoming data to rawInputData
+// Event listener for 'data' chunks from stdin
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk; // Append each chunk of data to the rawData string
 });
 
-// Event listener for the 'end' of standard input stream
-process.stdin.on('end', function () {
-  rawInputData = rawInputData.split('\n'); // Split the accumulated data into lines
-  processInputData(); // Call the main processing function
+// Event listener for 'end' of stdin stream
+process.stdin.on('end', function() {
+  // Once all input is received, split it into lines
+  rawData = rawData.split('\n');
+  // Call the main processing function
+  processInputData();
 });

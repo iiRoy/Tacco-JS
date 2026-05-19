@@ -1,51 +1,43 @@
-"use strict"; // Enforce strict parsing and error handling for the entire script
+"use strict";
 
-// Primary execution function to process incoming data
-function ExecuteTask( sourceContent )
-{
-    /*
-     * Initialize the primary sequence by:
-     * 1. Splitting the raw content by newline characters.
-     * 2. Taking the first resulting segment.
-     * 3. Splitting that segment by any whitespace.
-     * 4. Selecting the initial token from the whitespace split.
-     * 5. Appending a unique terminator character ('Z') to the sequence.
-     */
-    let targetString = sourceContent . split( "\n" ) [ 0 ] . split( /\s/ ) [ 0 ] + 'Z';
+/**
+ * Processes the input string to find the longest consecutive run of 'A', 'C', 'T', or 'G' characters.
+ * @param {string} sourceText - The raw input string from standard input.
+ */
+function ProcessInputData(sourceText) {
+    // Extract the first line, remove leading/trailing whitespace, and append a non-matching character
+    // to ensure the final sequence segment is processed correctly.
+    let nucleotideSequence = sourceText.split("\n")[0].trim().split(/\s/)[0] + 'X';
 
-    // Declare and initialize variables for tracking the maximum length and current segment length
-    let resultValue = 0,
-        segmentLength = 0;
+    // Initialize variables for tracking the maximum length found and the current segment's length.
+    let maximumLength = 0;
+    let currentRunLength = 0;
 
-    // Iterate through each character of the constructed target string
-    for ( let charIndex = 0; charIndex < targetString . length; charIndex++ )
-    {
-        // Evaluate the character at the current index
-        switch ( targetString . charAt( charIndex ) )
-        {
-            // Cases representing valid sequence components (e.g., specific nucleotide bases)
-            case 'A':
-            case 'C':
-            case 'T':
-            case 'G':
-                // Increment the length of the ongoing valid segment
-                segmentLength += 1;
-                break; // Exit the switch statement
-            
-            // Default action for any character that is not a valid sequence component
+    // Iterate through each character of the prepared sequence string.
+    for (let charPosition = 0; charPosition < nucleotideSequence.length; charPosition++) {
+        // Evaluate the character at the current position.
+        switch (nucleotideSequence.charAt(charPosition)) {
+            case 'A': // Adenine
+            case 'C': // Cytosine
+            case 'T': // Thymine
+            case 'G': // Guanine
+                // If it's a valid nucleotide, extend the current run.
+                currentRunLength += 1;
+                break;
             default:
-                // Check if the current segment's length exceeds the previously recorded maximum
-                if ( segmentLength > resultValue )
-                {
-                    resultValue = segmentLength; // Update the maximum length
+                // If it's not a valid nucleotide, the current run is broken.
+                // Check if the completed run is longer than the previously recorded maximum.
+                if (currentRunLength > maximumLength) {
+                    maximumLength = currentRunLength;
                 }
-                segmentLength = 0; // Reset the current segment length as an invalid character was encountered
+                // Reset the current run length for the next potential sequence.
+                currentRunLength = 0;
         }
     }
 
-    // Output the final determined maximum valid segment length to the standard output stream
-    console . log( resultValue );
+    // Output the final calculated maximum length to the console.
+    console.log(maximumLength);
 }
 
-// Initiate the task by reading data from standard input and passing it to the main processing function
-ExecuteTask( require( "fs" ) . readFileSync( "/dev/stdin", "utf8" ) );
+// Read the entire content from standard input synchronously and pass it to the processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

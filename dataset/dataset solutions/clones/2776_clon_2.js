@@ -1,190 +1,172 @@
-// This section handles input acquisition and utility functions.
 var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-var dataFeed;
-var cachedEntries = [];
 
-inputReader.on('line', function(receivedDatum) {
-  cachedEntries.push(receivedDatum);
-});
-inputReader.on('close', function() {
-  dataFeed = setupSource(cachedEntries);
-  console.error('\n↑ Input Data ↓ Output Results');
-  ExecuteProgram();
+var inputProcessor;
+var inputLines = [];
+
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-function duplicateEntity(item) {
-  return (item instanceof Set) ? new Set(Array.from(item)) : JSON.parse(JSON.stringify(item));
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error('\n↑Input ↓Output'); // Critical string, must be identical
+  executeMainLogic();
+});
+
+// Utility to create a deep copy of an object or Set
+function createDeepCopy(originalObject){
+  return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-function fetchInteger() {
-  return transformValue(advanceCursor(), 1);
-}
+// Functions for fetching and converting input tokens
+function retrieveInteger(){ return convertInputData(fetchNextToken(), 1); }
+function retrieveStringArray(){ return convertInputData(fetchNextToken(), 2); }
+function retrieveIntegerArray(){ return convertInputData(fetchNextToken(), 4); }
+function retrieveCharacterArray(){ return convertInputData(fetchNextToken(), 6); }
 
-function fetchStringCollection() {
-  return transformValue(advanceCursor(), 2);
-}
+function fetchNextToken(){ return inputProcessor.getNextLine(); }
+function hasMoreTokens(){ return inputProcessor.hasMoreData(); }
 
-function fetchIntegerCollection() {
-  return transformValue(advanceCursor(), 4);
-}
-
-function fetchCharacterCollection() {
-  return transformValue(advanceCursor(), 6);
-}
-
-function advanceCursor() {
-  return dataFeed.advanceCursor();
-}
-
-function canAdvance() {
-  return dataFeed.canAdvance();
-}
-
-function setupSource(dataEntries) {
+// Sets up the input handler object
+function initializeInputHandler(dataInput){
   return {
-    sourceContent: dataEntries,
-    currentPointer: 0,
-    maxElements: dataEntries.length,
-    canAdvance: function() {
-      return (this.currentPointer < this.maxElements);
+    dataLines : dataInput,
+    currentPosition : 0,
+    totalLines : dataInput.length,
+    hasMoreData : function(){
+      return (this.currentPosition < this.totalLines);
     },
-    advanceCursor: function() {
-      if (this.canAdvance()) {
-        return this.sourceContent[this.currentPointer++];
+    getNextLine : function(){
+      if(this.hasMoreData()){
+        return this.dataLines[this.currentPosition++];
       } else {
-        throw 'InputOutOfBoundsException – No more data available for processing.';
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input'; // Critical string
       }
     }
   };
 }
 
-function displayResult(message) {
-  console.log(message);
+// Prints the final result to standard output
+function printResult(outputValue){
+  console.log(outputValue);
 }
 
-function reportError(debugMessage) {
-  console.error('debug-info: ' + require('util').inspect(debugMessage, false, null));
+// Logs debug messages to standard error
+function logDebugMessage(debugContent){
+  console.error('debug:' + require('util').inspect(debugContent, false, null)); // Critical string
 }
 
-// The 'conversionCode' parameter dictates the transformation type:
-// Default or unknown: returns the value as is.
-// 1: Parses to an integer.
-// 2: Splits by space character.
-// 4: Splits by space and converts to numbers.
-// 6: Splits into individual characters.
-// 7: Splits into characters and converts to numbers.
-// 8: Joins array elements with spaces.
-// 9: Joins array elements with newlines.
-// 0: Joins array elements without any separator.
-function transformValue(incomingValue, conversionCode) {
+// Converts input based on a specified format code
+// Format codes:
+// 1: Parse as integer
+// 2: Split by space
+// 4: Split by space and parse as integers
+// 6: Split into individual characters
+// 7: Split into individual characters and parse as integers
+// 8: Join array elements with space
+// 9: Join array elements with newline
+// 0: Join array elements without separator
+// Default: Return input as is
+function convertInputData(inputItem, formatCode){
   try {
-    switch (conversionCode) {
-      case 1:
-        return parseInt(incomingValue);
-      case 2:
-        return incomingValue.split(' ');
-      case 4:
-        return incomingValue.split(' ').map(Number);
-      case 6:
-        return incomingValue.split('');
-      case 7:
-        return incomingValue.split('').map(Number);
-      case 8:
-        return incomingValue.join(' ');
-      case 9:
-        return incomingValue.join('\n');
-      case 0:
-        return incomingValue.join('');
-      default:
-        return incomingValue;
+    switch(formatCode){
+      case 1: return parseInt(inputItem);
+      case 2: return inputItem.split(' ');
+      case 4: return inputItem.split(' ').map(Number);
+      case 6: return inputItem.split('');
+      case 7: return inputItem.split('').map(Number);
+      case 8: return inputItem.join(' ');
+      case 9: return inputItem.join('\n');
+      case 0: return inputItem.join('');
+      default: return inputItem;
     }
-  } catch (err) {
-    return incomingValue;
+  } catch(error) {
+    return inputItem;
   }
 }
 
-// End of utility and input handling section.
-function ExecuteProgram() {
-  var initialParameters = fetchIntegerCollection();
-  var nodeTotal = initialParameters[0];
-  var colorAllowance = initialParameters[1];
-  var graphNodes = new Array(nodeTotal);
+// Main program execution starts here
+function executeMainLogic(){
+  var firstInput = retrieveIntegerArray();
+  var nodeCount = firstInput[0];
+  var colorLimit = firstInput[1];
 
-  for (var idx = 0; idx < nodeTotal; idx++) {
-    graphNodes[idx] = {
-      connectedNeighbors: [],
-      nodeIdentifier: idx,
-      colorAllocation: 0,
-      hasBeenVisited: false
+  var nodeRegistry = new Array(nodeCount);
+  for(var idx = 0; idx < nodeCount; idx++){
+    nodeRegistry[idx] = {
+      connections : [],
+      nodeIdentifier : idx,
+      assignedColorCount : 0,
+      isVisited : false
     };
   }
 
-  for (var idx = 0; idx < nodeTotal - 1; idx++) {
-    var edgeData = fetchIntegerCollection();
-    graphNodes[edgeData[0] - 1].connectedNeighbors.push(edgeData[1] - 1);
-    graphNodes[edgeData[1] - 1].connectedNeighbors.push(edgeData[0] - 1);
+  for(var idx = 0; idx < nodeCount - 1; idx++){
+    var tempValues = retrieveIntegerArray();
+    nodeRegistry[tempValues[0] - 1].connections.push(tempValues[1] - 1);
+    nodeRegistry[tempValues[1] - 1].connections.push(tempValues[0] - 1);
   }
 
-  var finalCalculation = 1;
-  var modulusValue = 1000000007;
+  var finalProduct = 1;
+  var moduloValue = 1000000007;
 
-  graphNodes[0].hasBeenVisited = true;
+  nodeRegistry[0].isVisited = true;
 
-  var processingQueue = [
-    [0, colorAllowance, 0]
-  ]; // [parent_excl, current_colors, current_node]
+  // Iterative traversal using a stack (similar to BFS/DFS)
+  var processingStack = [[0, colorLimit, 0]]; // [parent_count, available_colors, current_node_index]
 
-  while (processingQueue.length > 0) {
-    var currentTask = processingQueue.pop();
-    var parentColorExclusions = currentTask[0];
-    var remainingColors = currentTask[1];
-    var activeNodeIndex = currentTask[2];
+  while(processingStack.length > 0){
+    var currentProcessingState = processingStack.pop();
+    var parentVisitedCount = currentProcessingState[0];
+    var availableColors = currentProcessingState[1];
+    var currentNodeIndex = currentProcessingState[2];
 
-    graphNodes[activeNodeIndex].colorAllocation = remainingColors;
+    nodeRegistry[currentNodeIndex].assignedColorCount = availableColors;
 
-    if (parentColorExclusions < 2) {
-      parentColorExclusions++;
+    if(parentVisitedCount < 2){
+      parentVisitedCount++;
     }
 
-    var neighborList = graphNodes[activeNodeIndex].connectedNeighbors;
-    var childrenProcessedSuccessfully = 0;
+    var connectedNodes = nodeRegistry[currentNodeIndex].connections;
+    var processedChildrenCount = 0;
 
-    for (var idx = 0; idx < neighborList.length; idx++) {
-      if (!graphNodes[neighborList[idx]].hasBeenVisited) {
-        graphNodes[neighborList[idx]].hasBeenVisited = true;
-        processingQueue.push([parentColorExclusions, colorAllowance - childrenProcessedSuccessfully - parentColorExclusions, neighborList[idx]]);
-        childrenProcessedSuccessfully++;
+    for(var idx = 0; idx < connectedNodes.length; idx++){
+      if(!nodeRegistry[connectedNodes[idx]].isVisited){
+        nodeRegistry[connectedNodes[idx]].isVisited = true;
+        processingStack.push([parentVisitedCount, colorLimit - processedChildrenCount - parentVisitedCount, connectedNodes[idx]]);
+        processedChildrenCount++;
       }
     }
   }
 
-  for (var idx = 0; idx < nodeTotal; idx++) {
-    finalCalculation *= graphNodes[idx].colorAllocation;
-    finalCalculation %= modulusValue;
-    if (finalCalculation === 0) {
+  // Calculate the final product modulo `moduloValue`
+  for(var idx = 0; idx < nodeCount; idx++){
+    finalProduct *= nodeRegistry[idx].assignedColorCount;
+    finalProduct %= moduloValue;
+    if(finalProduct === 0){
       break;
     }
   }
 
-  displayResult(finalCalculation);
+  printResult(finalProduct);
 
-
-  // This function is defined but not called in the current execution flow.
-  function recursiveColoring(parentColorExclusions, remainingColors, activeNodeIndex, initialColorBudget) {
-    graphNodes[activeNodeIndex].colorAllocation = remainingColors;
-    if (parentColorExclusions < 2) {
-      parentColorExclusions++;
+  // This recursive function is defined but not used in the Main logic.
+  // It's kept for structural equivalence.
+  function recursiveTraversal(parentPathLength, remainingColors, currentVertex, initialColorLimit){
+    nodeRegistry[currentVertex].assignedColorCount = remainingColors;
+    if(parentPathLength < 2){
+      parentPathLength++;
     }
-    var neighborList = graphNodes[activeNodeIndex].connectedNeighbors;
-    var childrenProcessedSuccessfully = 0;
-    for (var idx = 0; idx < neighborList.length; idx++) {
-      if (!graphNodes[neighborList[idx]].hasBeenVisited) {
-        graphNodes[neighborList[idx]].hasBeenVisited = true;
-        recursiveColoring(parentColorExclusions, initialColorBudget - childrenProcessedSuccessfully - parentColorExclusions, neighborList[idx], initialColorBudget);
-        childrenProcessedSuccessfully++;
+    var adjacentVertices = nodeRegistry[currentVertex].connections;
+    var successfulExpansions = 0;
+    for(var idx = 0; idx < adjacentVertices.length; idx++){
+      if(!nodeRegistry[adjacentVertices[idx]].isVisited){
+        nodeRegistry[adjacentVertices[idx]].isVisited = true;
+        recursiveTraversal(parentPathLength, initialColorLimit - successfulExpansions - parentPathLength, adjacentVertices[idx], initialColorLimit);
+        successfulExpansions++;
       }
     }
   }

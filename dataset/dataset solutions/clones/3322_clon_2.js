@@ -1,151 +1,131 @@
-/* This module encapsulates a utility for parsing input data streams. */
-var DATA_GRABBER = ( function() {
-
-  /**
-   * Factory function to create a new StreamProcessor instance.
-   * @param {string} rawInput - The raw string input to be processed.
-   * @returns {StreamProcessor} A new instance of the StreamProcessor.
-   */
-  function createProcessor( rawInput ) {
-    return new StreamProcessor( rawInput ) ;
+var INPUT_PARSER = (function () {
+  // This function serves as a factory to create an input reader instance.
+  function createInputReader(sourceText) {
+    return new InputReader(sourceText);
   }
 
-  /**
-   * Constructor for the StreamProcessor class.
-   * Manages the state of the input stream.
-   * @param {string} rawSource - The initial string data.
-   */
-  function StreamProcessor( rawSource ) {
-    // Stores the input as an array of lines, trimmed.
-    this._textSegments = rawSource.trim().split( "\n" ) ;
-    // Pointer to the current line being read.
-    this._linePointer = 0 ;
+  // The InputReader class manages parsing input text line by line.
+  function InputReader(rawInputString) {
+    // Internal buffer for lines, split by newline and trimmed.
+    this._lineBuffer = rawInputString.trim().split("\n");
+    // Current index indicating the line being processed.
+    this._currentLineIndex = 0;
   }
 
-  /**
-   * Retrieves a single item from the current line.
-   * If the line has not been split into words, it does so (reversing for `pop` to work left-to-right).
-   * Advances the line pointer if the current line is exhausted.
-   * @param {boolean} returnAsString - If true, returns the item as a string; otherwise, attempts to convert to a number.
-   * @returns {string|number} The extracted item.
-   */
-  StreamProcessor.prototype.fetchSingleItem = function( returnAsString ) {
-    var contentRef = this._textSegments,
-        pointerRef = this._linePointer,
-        extractedValue ;
+  // Method to extract a single value from the current line.
+  // It reads from the end of the line, reversing the line's words if needed.
+  InputReader.prototype.readSingleValue = function (asString) {
+    var bufferRef = this._lineBuffer;
+    var currentIdx = this._currentLineIndex;
+    var extractedValue;
 
-    // If the current line is still a single string, split it into words and reverse for easy popping.
-    if ( typeof contentRef[ pointerRef ] === "string" ) {
-      contentRef[ pointerRef ] = contentRef[ pointerRef ].split( " " ).reverse() ;
+    // If the current line hasn't been processed into an array of words yet, do so.
+    if (typeof bufferRef[currentIdx] === "string") {
+      bufferRef[currentIdx] = bufferRef[currentIdx].split(" ").reverse();
     }
 
-    // Pop the last element (which is effectively the first due to reversal).
-    extractedValue = contentRef[ pointerRef ].pop() ;
+    // Pop the last element (which is the first word after reversing).
+    extractedValue = bufferRef[currentIdx].pop();
 
     // If the current line is now empty, advance to the next line.
-    if ( ! contentRef[ pointerRef ].length ) {
-      this._linePointer ++ ;
+    if (!bufferRef[currentIdx].length) {
+      this._currentLineIndex++;
     }
 
-    // Return the value, either as a string or a number.
-    return returnAsString ? extractedValue : +extractedValue ;
-  } ;
+    // Return the value as a string or convert it to a number.
+    return asString ? extractedValue : +extractedValue;
+  };
 
-  /**
-   * Reads an entire line and splits it into an array of items.
-   * Advances the line pointer.
-   * @param {boolean} returnAsString - If true, returns items as strings; otherwise, attempts to convert to numbers.
-   * @returns {Array<string|number>} An array of items from the line.
-   */
-  StreamProcessor.prototype.fetchLineItems = function( returnAsString ) {
-    // Get the current line, split by space, and then advance the line pointer.
-    var lineSegments = this._textSegments[ this._linePointer ++ ].split( " " ) ;
-    // Return items as strings or parsed numbers.
-    return returnAsString ? lineSegments : lineSegments.map( item => +item ) ;
-  } ;
+  // Method to read all values from the current line.
+  // Advances the line index after reading.
+  InputReader.prototype.readLineValues = function (asString) {
+    // Split the current line by spaces and then increment the line index.
+    var lineData = this._lineBuffer[this._currentLineIndex++].split(" ");
+    // Return the array of values as strings or numbers.
+    return asString ? lineData : lineData.map((item) => +item);
+  };
 
-  /**
-   * Reads multiple lines and processes them into a 2D array (matrix).
-   * Advances the line pointer by the number of lines read.
-   * @param {number} numRows - The number of lines to read.
-   * @param {boolean} returnAsString - If true, returns items as strings; otherwise, attempts to convert to numbers.
-   * @returns {Array<Array<string|number>>} A matrix of items.
-   */
-  StreamProcessor.prototype.fetchMatrix = function( numRows, returnAsString ) {
-    // Slice the relevant lines, then advance the line pointer.
-    var matrixData = this._textSegments.slice( this._linePointer, this._linePointer += numRows )
-                       .map( row => row.split( " " ) ) ; // Split each row into cells.
+  // Method to read 'count' lines and parse them into a matrix (2D array).
+  // Advances the line index by 'count'.
+  InputReader.prototype.readMatrix = function (count, asString) {
+    // Slice 'count' lines from the buffer and split each into words.
+    var resultData = this._lineBuffer
+      .slice(this._currentLineIndex, (this._currentLineIndex += count))
+      .map((item) => item.split(" "));
+    // Return the matrix of values as strings or numbers.
+    return asString
+      ? resultData
+      : resultData.map((row) => row.map((item) => +item));
+  };
 
-    // Return the matrix, with cells as strings or parsed numbers.
-    return returnAsString ? matrixData : matrixData.map( row => row.map( cell => +cell ) ) ;
-  } ;
+  // Method to read 'count' lines as raw strings or convert them to numbers.
+  // Advances the line index by 'count'.
+  InputReader.prototype.readRawLines = function (count, asString) {
+    // Slice 'count' lines directly from the buffer.
+    var resultData = this._lineBuffer.slice(
+      this._currentLineIndex,
+      (this._currentLineIndex += count)
+    );
+    // Return the array of lines as strings or numbers.
+    return asString ? resultData : resultData.map((item) => +item);
+  };
 
-  /**
-   * Reads multiple lines and processes them into a flat array.
-   * Advances the line pointer by the number of lines read.
-   * @param {number} numEntries - The number of lines to read.
-   * @param {boolean} returnAsString - If true, returns items as strings; otherwise, attempts to convert to numbers.
-   * @returns {Array<string|number>} A flat array of items.
-   */
-  StreamProcessor.prototype.fetchArray = function( numEntries, returnAsString ) {
-    // Slice the relevant lines, then advance the line pointer.
-    var listData = this._textSegments.slice( this._linePointer, this._linePointer += numEntries ) ;
-    // Return the array, with entries as strings or parsed numbers.
-    return returnAsString ? listData : listData.map( entry => +entry ) ;
-  } ;
+  return createInputReader; // Expose the factory function.
+})();
 
-  return createProcessor ; // Expose the factory function.
-})() ;
+// Create an instance of the input reader, reading from standard input.
+var inputSource = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
+// Log the result of the main calculation function.
+console.log(calculateProbability());
 
-/* Initialize the input reader with data from standard input. */
-var inputReader = DATA_GRABBER( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) ) ;
-
-// Output the result of the main calculation function.
-console.log( executeCalculation() ) ;
-
-/**
- * Main function to perform the probability calculation.
- * This implements a dynamic programming approach to solve a specific problem.
- * @returns {number} The final computed probability.
- */
-function executeCalculation() {
-  // Read the total number of elements 'N' from input.
-  var totalElements = inputReader.fetchSingleItem() ;
-
-  // Read the array of probabilities 'P' from input.
-  var probValues = inputReader.fetchLineItems() ;
+// Main function to perform the probability calculation.
+function calculateProbability() {
+  // Read the total number of items.
+  var totalItems = inputSource.readSingleValue();
+  // Read the array of probabilities.
+  var probabilities = inputSource.readLineValues();
 
   // Initialize the dynamic programming array.
-  // probabilityDistribution[k] will represent the probability of having exactly k successful events.
-  var probabilityDistribution = [ 1 - probValues[0], probValues[0] ] ;
+  // dp[k] will store the probability of having exactly k successes.
+  // For the first item (index 0), we have 1-p[0] for 0 successes and p[0] for 1 success.
+  var dynamicProbabilities = [1 - probabilities[0], probabilities[0]];
 
-  // Iterate through the remaining probabilities.
-  for ( var iterIndex = 1 ; iterIndex < totalElements ; iterIndex ++ ) {
+  // Iterate through the remaining items starting from the second item.
+  for (var outerLoopIndex = 1; outerLoopIndex < totalItems; outerLoopIndex++) {
+    // When considering the current item (probabilities[outerLoopIndex]):
+    // The probability of having (outerLoopIndex + 1) successes
+    // can only come from having 'outerLoopIndex' successes before,
+    // and the current item being a success.
+    dynamicProbabilities[outerLoopIndex + 1] =
+      dynamicProbabilities[outerLoopIndex] * probabilities[outerLoopIndex];
 
-    // Update the probability for the maximum possible successes (iterIndex + 1).
-    // This is only possible if all previous iterIndex events were successful AND the current one is.
-    probabilityDistribution[ iterIndex + 1 ] = probabilityDistribution[ iterIndex ] * probValues[ iterIndex ] ;
-
-    // Iterate backwards to update probabilities for k successful events.
-    // This loop calculates probabilityDistribution[subIndex] based on probabilityDistribution[subIndex-1] and probabilityDistribution[subIndex] from the previous iteration.
-    for ( var subIndex = iterIndex ; subIndex > 0 ; subIndex -- ) {
-      probabilityDistribution[ subIndex ] = probabilityDistribution[ subIndex - 1 ] * probValues[ iterIndex ] +
-                                            probabilityDistribution[ subIndex ] * ( 1 - probValues[ iterIndex ] ) ;
+    // Update probabilities for 'j' successes (where j is from outerLoopIndex down to 1).
+    // A state of 'j' successes can be reached by:
+    // 1. Having 'j-1' successes before AND the current item being a success.
+    // 2. Having 'j' successes before AND the current item being a failure.
+    for (var innerLoopIndex = outerLoopIndex; innerLoopIndex > 0; innerLoopIndex--) {
+      dynamicProbabilities[innerLoopIndex] =
+        dynamicProbabilities[innerLoopIndex - 1] * probabilities[outerLoopIndex] +
+        dynamicProbabilities[innerLoopIndex] * (1 - probabilities[outerLoopIndex]);
     }
 
-    // Update probabilityDistribution[0] (probability of zero successful events).
-    // This is based on probabilityDistribution[0] from the previous iteration and the current probability of failure.
-    // Note: 'subIndex' here is 0 from the loop termination.
-    probabilityDistribution[ 0 ] = probabilityDistribution[ subIndex ] * ( 1 - probValues[ iterIndex ] ) ;
+    // Update probability for 0 successes.
+    // This can only happen if there were 0 successes before AND the current item is a failure.
+    // Note: innerLoopIndex will be 0 after the inner loop completes.
+    dynamicProbabilities[0] =
+      dynamicProbabilities[innerLoopIndex] * (1 - probabilities[outerLoopIndex]);
   }
 
-  // Calculate the final answer by summing probabilities for a specific range.
-  var finalOutcome = 0 ;
-  // Sum probabilities from (N+1)/2 up to N.
-  for ( iterIndex = ( totalElements + 1 ) / 2 ; iterIndex <= totalElements ; iterIndex ++ ) {
-    finalOutcome += probabilityDistribution[ iterIndex ] ;
+  // Calculate the final answer: sum of probabilities for at least (totalItems + 1) / 2 successes.
+  var finalProbabilitySum = 0;
+  for (
+    outerLoopIndex = (totalItems + 1) / 2;
+    outerLoopIndex <= totalItems;
+    outerLoopIndex++
+  ) {
+    finalProbabilitySum += dynamicProbabilities[outerLoopIndex];
   }
 
-  return finalOutcome ; // Return the aggregated result.
+  return finalProbabilitySum;
 }

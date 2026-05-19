@@ -1,32 +1,30 @@
-// This script processes numerical inputs to find their average if possible.
+// This file computes a specific average.
 
 /**
- * This procedure calculates the integer average of two supplied numeric values.
- * @param {float} firstVal  The initial numeric value.
- * @param {float} secondVal The subsequent numeric value.
+ * Computes a special kind of average for two numbers.
+ * @param {number} firstNum  - The initial numeric value.
+ * @param {number} secondNum - The subsequent numeric value.
  */
-let averageOfTwo = function ( firstVal, secondVal ) {
-  // Compute the aggregate sum of the two incoming values.
-  let totalSum = firstVal + secondVal;
+function calculateAverage(firstNum, secondNum) {
+  // Calculate the total of the two input numbers.
+  let sumOfNumbers = firstNum + secondNum;
 
-  // Check if the aggregated sum is evenly divisible by two.
-  if (totalSum % 2 === 0) {
-    // If divisible, calculate the exact midpoint.
-    let midpointResult = totalSum / 2;
-    // Display the computed midpoint to the standard output.
-    console.log( midpointResult );
+  // Check if the sum is an even number.
+  if (sumOfNumbers % 2 === 0) {
+    // If even, compute half of the sum.
+    let resultValue = sumOfNumbers / 2;
+    console.log(resultValue); // Output the computed value.
+  } else {
+    // If odd, indicate that the operation is not possible under these rules.
+    console.log('IMPOSSIBLE');
   }
-  else {
-    // If not evenly divisible, indicate impossibility for an integer average.
-    console.log( 'IMPOSSIBLE' );
-  }
-}; // End of averageOfTwo function definition.
+}
 
-// Retrieve the first command-line argument and parse it as a numeric value.
-let inputOne = parseFloat(process.argv[2]);
+// Retrieve the first command-line argument and convert it to a number.
+const inputOne = Number(process.argv[2]);
 
-// Retrieve the second command-line argument and parse it as a numeric value.
-let inputTwo = parseFloat(process.argv[3]);
+// Retrieve the second command-line argument and convert it to a number.
+const inputTwo = Number(process.argv[3]);
 
-// Invoke the averaging procedure with the parsed command-line arguments.
-averageOfTwo( inputOne, inputTwo );
+// Execute the average calculation function with the parsed inputs.
+calculateAverage(inputOne, inputTwo);

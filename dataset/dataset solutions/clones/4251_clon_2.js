@@ -1,19 +1,22 @@
-function ProcessRawData (  inputString  )   {
-  let parsedLines = inputString.trim().split(  '\n'  );
+function ProcessInput(rawData) {
+  // Clean and split the raw input into an array of lines.
+  var linesArray = rawData.trim().split('\n');
 
-  // A prior check for an element was removed from this section.
+  // Check for a specific character pattern across the first two lines.
+  // The condition checks if:
+  // - The first character of the first line matches the third character of the second line.
+  // - The first character of the second line matches the third character of the first line.
+  // - The second character of the first line matches the second character of the second line.
   if (
-    parsedLines[0][0] === parsedLines[1][2] &&
-    parsedLines[1][0] === parsedLines[0][2] &&
-    parsedLines[0][1] === parsedLines[1][1]
-  )
-  {
-    console.log(  'POSITIVE'  );
-  }
-  else
-  {
-    console.log(  'NEGATIVE'  );
+    linesArray[0][0] === linesArray[1][2] &&
+    linesArray[1][0] === linesArray[0][2] &&
+    linesArray[0][1] === linesArray[1][1]
+  ) {
+    console.log('YES'); // Output 'YES' if the pattern matches.
+  } else {
+    console.log('NO'); // Output 'NO' otherwise.
   }
 }
 
-ProcessRawData (  require (  "fs"  ) .readFileSync (  "/dev/stdin"  ,  "utf8"  )  );
+// Read input from standard input and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

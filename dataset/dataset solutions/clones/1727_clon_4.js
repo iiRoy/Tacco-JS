@@ -1,56 +1,47 @@
-function calculateBooks(shelfOneIndex, shelfTwoIndex, currentDuration, maxDurationLimit, bookCollectionOne, bookCollectionTwo) {
-    if (currentDuration > maxDurationLimit) {
-        return 0;
+function processBooks(dataString) {
+  const dataLines = dataString.split('\n');
+  const [numA, numB, timeLimit] = dataLines[0].split(' ').map(val => Number(val));
+  const bookTimesA = dataLines[1].split(' ').map(val => Number(val));
+  const bookTimesB = dataLines[2].split(' ').map(val => Number(val));
+
+  function* selectNextBook(shelfOne, shelfTwo) {
+    let pointerOne = 0;
+    let pointerTwo = 0;
+
+    while (true) {
+      const hasMoreOne = pointerOne < shelfOne.length;
+      const hasMoreTwo = pointerTwo < shelfTwo.length;
+
+      if (!hasMoreOne && !hasMoreTwo) {
+        return; // Both shelves are empty
+      }
+
+      let chosenDuration;
+      if (hasMoreOne && (!hasMoreTwo || shelfOne[pointerOne] <= shelfTwo[pointerTwo])) {
+        chosenDuration = shelfOne[pointerOne];
+        pointerOne++;
+      } else { // Must be hasMoreTwo
+        chosenDuration = shelfTwo[pointerTwo];
+        pointerTwo++;
+      }
+      yield chosenDuration;
     }
+  }
 
-    const hasMoreFromShelf1 = shelfOneIndex < bookCollectionOne.length;
-    const hasMoreFromShelf2 = shelfTwoIndex < bookCollectionTwo.length;
+  let accumulatedDuration = 0;
+  let booksCompleted = 0;
+  const bookStream = selectNextBook(bookTimesA, bookTimesB);
 
-    if (!hasMoreFromShelf1 && !hasMoreFromShelf2) {
-        return 0;
+  for (const currentBookDuration of bookStream) {
+    if (accumulatedDuration + currentBookDuration <= timeLimit) {
+      accumulatedDuration += currentBookDuration;
+      booksCompleted++;
+    } else {
+      break; // Adding this book would exceed the time limit
     }
+  }
 
-    let chosenBookTime = Infinity;
-    let nextIndexForShelf1 = shelfOneIndex;
-    let nextIndexForShelf2 = shelfTwoIndex;
-
-    if (hasMoreFromShelf1 && hasMoreFromShelf2) {
-        const timeFromShelf1 = bookCollectionOne[shelfOneIndex];
-        const timeFromShelf2 = bookCollectionTwo[shelfTwoIndex];
-
-        if (timeFromShelf1 <= timeFromShelf2) {
-            chosenBookTime = timeFromShelf1;
-            nextIndexForShelf1++;
-        } else {
-            chosenBookTime = timeFromShelf2;
-            nextIndexForShelf2++;
-        }
-    } else if (hasMoreFromShelf1) {
-        chosenBookTime = bookCollectionOne[shelfOneIndex];
-        nextIndexForShelf1++;
-    } else { // hasMoreFromShelf2
-        chosenBookTime = bookCollectionTwo[shelfTwoIndex];
-        nextIndexForShelf2++;
-    }
-
-    if (currentDuration + chosenBookTime > maxDurationLimit) {
-        return 0;
-    }
-
-    return 1 + calculateBooks(nextIndexForShelf1, nextIndexForShelf2, currentDuration + chosenBookTime, maxDurationLimit, bookCollectionOne, bookCollectionTwo);
+  console.log(booksCompleted);
 }
 
-function processBookData(textualInput) {
-    const lines = textualInput.split('\n');
-    const parameters = lines[0].split(' ').map(Number);
-    const timeAllowance = parameters[2];
-
-    const shelfAItems = lines[1].split(' ').map(Number);
-    const shelfBItems = lines[2].split(' ').map(Number);
-
-    const totalReadings = calculateBooks(0, 0, 0, timeAllowance, shelfAItems, shelfBItems);
-
-    console.log(totalReadings);
-}
-
-processBookData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processBooks(require('fs').readFileSync('/dev/stdin', 'utf8'));

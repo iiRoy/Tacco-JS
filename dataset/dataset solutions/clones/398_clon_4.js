@@ -1,75 +1,57 @@
-const numericalConversion = (val) => +val;
-
-const systemFileAccessor = {
-    retrieveContent: (pathIdentifier, encodingFormat) => {
-        return require('fs').readFileSync(pathIdentifier, encodingFormat);
+function measureSequence(currY, currX, dY, dX, currentGrid, gridDimension) {
+    if (currY < 0 || currX < 0 || currY >= gridDimension || currX >= gridDimension) {
+        return 0;
     }
-};
-
-const consoleOutput = {
-    publishResult: (messageContent) => console.log(messageContent)
-};
-
-const determinePathLength = (dataGrid, gridBoundary, currentYCoordinate, currentXCoordinate, yDisplacement, xDisplacement, currentAccumulation) => {
-    if (currentYCoordinate < 0 || currentXCoordinate < 0 || currentYCoordinate >= gridBoundary || currentXCoordinate >= gridBoundary) {
-        return currentAccumulation;
+    if (currentGrid[currY][currX] !== 1) {
+        return 0;
     }
-    if (dataGrid[currentYCoordinate][currentXCoordinate] !== 1) {
-        return currentAccumulation;
-    }
-    return determinePathLength(dataGrid, gridBoundary, currentYCoordinate + yDisplacement, currentXCoordinate + xDisplacement, yDisplacement, xDisplacement, currentAccumulation + 1);
-};
+    return 1 + measureSequence(currY + dY, currX + dX, dY, dX, currentGrid, gridDimension);
+}
 
-const selectMaximum = (valueA, valueB) => valueA > valueB ? valueA : valueB;
-
-const processMatrixBlock = (inputLineSet) => {
-    const firstLine = inputLineSet.shift();
-    if (firstLine === undefined) {
-        return { dimensionIndicator: 0, remainingInputLines: [] };
-    }
-    const matrixDimension = numericalConversion(firstLine);
-
-    if (matrixDimension === 0) {
-        return { dimensionIndicator: 0, remainingInputLines: inputLineSet };
-    }
-
-    const gridStructure = inputLineSet
-        .splice(0, matrixDimension)
-        .map(rowString => rowString.split('').map(numericalConversion));
-
-    const movementDirections = [
-        { yStep: 0, xStep: 1 },
-        { yStep: 1, xStep: -1 },
-        { yStep: 1, xStep: 0 },
-        { yStep: 1, xStep: 1 }
+function calculateMaxSequence(initialY, initialX, currentGrid, gridDimension) {
+    const directionVectors = [
+        [0, 1],
+        [1, -1],
+        [1, 0],
+        [1, 1]
     ];
 
-    const allCalculatedLengths = gridStructure.flatMap((rowElements, rowIndex) =>
-        rowElements.flatMap((cellElement, colIndex) => {
-            if (cellElement === 1) {
-                return movementDirections.map(direction =>
-                    determinePathLength(gridStructure, matrixDimension, rowIndex, colIndex, direction.yStep, direction.xStep, 0)
-                );
-            }
-            return [];
-        })
-    );
+    return directionVectors.reduce((currentMax, [deltaY, deltaX]) => {
+        const sequenceLength = measureSequence(initialY, initialX, deltaY, deltaX, currentGrid, gridDimension);
+        return Math.max(currentMax, sequenceLength);
+    }, 0);
+}
 
-    const overallHighestValue = allCalculatedLengths.reduce(selectMaximum, 0);
-
-    consoleOutput.publishResult(overallHighestValue);
-
-    return { dimensionIndicator: matrixDimension, remainingInputLines: inputLineSet };
-};
-
-const executeBatchProcessing = (allRawLines) => {
-    const processingResult = processMatrixBlock(allRawLines);
-    if (processingResult.dimensionIndicator !== 0) {
-        executeBatchProcessing(processingResult.remainingInputLines);
+function* parseInputCases(inputLines) {
+    let lines = [...inputLines];
+    while (lines.length > 0) {
+        const dimension = Number(lines.shift());
+        if (dimension === 0) {
+            return;
+        }
+        const gridData = [];
+        for (let r = 0; r < dimension; r++) {
+            gridData.push(lines.shift().split("").map(Number));
+        }
+        yield { size: dimension, matrix: gridData };
     }
-};
+}
 
-const fileContents = systemFileAccessor.retrieveContent('/dev/stdin', 'utf8');
-const initialProcessedLines = fileContents.trim().split('\n');
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const processedLines = rawInput.trim().split("\n");
 
-executeBatchProcessing(initialProcessedLines);
+for (const currentCase of parseInputCases(processedLines)) {
+    const currentDimension = currentCase.size;
+    const currentMatrix = currentCase.matrix;
+    let overallMaximum = 0;
+
+    currentMatrix.forEach((row, rowIndex) => {
+        row.forEach((cellValue, colIndex) => {
+            if (cellValue === 1) {
+                const localMax = calculateMaxSequence(rowIndex, colIndex, currentMatrix, currentDimension);
+                overallMaximum = Math.max(overallMaximum, localMax);
+            }
+        });
+    });
+    console.log(overallMaximum);
+}

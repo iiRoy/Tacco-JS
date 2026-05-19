@@ -1,52 +1,43 @@
-function ProcessInputData ( rawTextContent )
-{
-  // Split the raw input string into individual lines for processing.
-  let parsedLines = rawTextContent.split( '\n' ) ;
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  rawData = rawData.split('\n');
 
-  // Extract initial configuration parameters from the first line.
-  let configParameters = parsedLines[0].split( ' ' );
-  let totalParticipantCount = parseInt( configParameters[0] );
-  let minimumScoreThreshold = parseInt( configParameters[1] );
-  let totalEventQueries = parseInt( configParameters[2] );
+  // Parse the first line to get game parameters.
+  var parts = rawData[0].split(' ');
+  var numParticipants = parseInt(parts[0]); // Total number of players
+  var minScore = parseInt(parts[1]);       // Minimum score to pass
+  var numRounds = parseInt(parts[2]);      // Total number of rounds played
 
-  // Initialize an array to hold scores for each participant.
-  // The size of the array is determined by the total number of participants.
-  let participantScores = new Array( totalParticipantCount );
+  // Initialize an array to store scores for each participant.
+  // All participants start with a score of 0.
+  var participantScores = new Array(numParticipants);
 
-  // Outer loop: Iterate through each event query.
-  // Note: Queries are 1-indexed in the problem, so start from 1.
-  for ( let currentQueryNumber = 1 ; currentQueryNumber <= totalEventQueries ; currentQueryQueryNumber++ )
-  {
-    // Inner loop: Iterate through each participant.
-    for ( let participantIndex = 0 ; participantIndex < totalParticipantCount ; participantIndex++ )
-    {
-      // On the very first query, initialize all participant scores to zero.
-      if ( currentQueryNumber === 1 ) {
-        participantScores[participantIndex] = 0 ;
+  // Iterate through each round of the game.
+  for (var roundIndex = 1; roundIndex <= numRounds; roundIndex++) {
+    // For each round, iterate through all participants.
+    for (var participantIndex = 0; participantIndex < numParticipants; participantIndex++) {
+      // On the very first round, ensure all scores are initialized to zero.
+      if (roundIndex === 1) {
+        participantScores[participantIndex] = 0;
       }
 
-      // Check if the participant mentioned in the current query line
-      // is different from the current participant being evaluated (participantIndex + 1).
-      // If they are different, it means this participant did NOT win this round.
-      if ( parseInt( parsedLines[currentQueryNumber] ) !== ( participantIndex + 1 ) )
-      {
-        // Increment the score for the current participant.
-        participantScores[participantIndex] ++ ;
+      // If the current participant did NOT win this round (based on input).
+      // The input line `rawData[roundIndex]` indicates the winner of that round.
+      // `participantIndex + 1` is used because participants are 1-indexed in the input.
+      if (parseInt(rawData[roundIndex]) !== (participantIndex + 1)) {
+        // Increment the score for participants who did not win the current round.
+        participantScores[participantIndex]++;
       }
     }
   }
 
-  // After all queries are processed, evaluate each participant's final score.
-  participantScores.forEach( function ( currentParticipantScore )
-  {
-    // If a participant's score is greater than or equal to the minimum threshold,
-    // they are not eligible ('No'). Otherwise, they are eligible ('Yes').
-    ( currentParticipantScore >= minimumScoreThreshold )
-      ? console.log( 'No' )
-      : console.log( 'Yes' )
-    ;
-  } ) ;
+  // After all rounds, evaluate each participant's final score.
+  participantScores.forEach(function(currentScore) {
+    // If a participant's score is greater than or equal to the minimum required score,
+    // they "fail" (output 'No' as per problem logic). Otherwise, they "pass" (output 'Yes').
+    (currentScore >= minScore) ? console.log('No') : console.log('Yes');
+  });
 }
 
-// Read input from standard input and pass it to the processing function.
-ProcessInputData( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,65 +1,38 @@
-function processText(textualData) {
-    const newlineIndex = textualData.indexOf('\n');
+function processInputData(rawData) {
+    const contentRows = rawData.split("\n");
+    const primarySequence = contentRows[0];
+    const searchPattern = contentRows[1];
 
-    let firstPart;
-    let secondPart;
+    const extendedSource = primarySequence + primarySequence;
 
-    if (newlineIndex === -1) {
-        // If no newline, the original code would treat lines[1] as undefined.
-        // str.indexOf(undefined) evaluates to -1, resulting in "No".
-        console.log("No");
-        return;
+    let isPatternFound = false;
+
+    if (searchPattern.length === 0) {
+        // An empty string is always considered a substring at the beginning of any string.
+        isPatternFound = true;
+    } else if (searchPattern.length > extendedSource.length) {
+        // If the pattern is longer than the text to search within, it cannot be found.
+        isPatternFound = false;
     } else {
-        firstPart = textualData.substring(0, newlineIndex);
-        secondPart = textualData.substring(newlineIndex + 1);
-    }
-
-    // Original code behavior: If lines[1] is an empty string, str.indexOf("") is 0, resulting in "Yes".
-    if (secondPart.length === 0) {
-        console.log("Yes");
-        return;
-    }
-
-    // If lengths differ, it cannot be a rotation.
-    if (firstPart.length !== secondPart.length) {
-        console.log("No");
-        return;
-    }
-
-    // Convert strings to character arrays for manual manipulation.
-    const primaryCharacters = Array.from(firstPart);
-    const secondaryCharacters = Array.from(secondPart);
-
-    let isRotationMatchFound = false;
-
-    // Iterate through all possible cyclic shifts of the first string.
-    for (let currentShift = 0; currentShift < primaryCharacters.length; currentShift++) {
-        let rotatedSequence = [];
-        for (let charIndex = 0; charIndex < primaryCharacters.length; charIndex++) {
-            rotatedSequence.push(primaryCharacters[(charIndex + currentShift) % primaryCharacters.length]);
-        }
-
-        // Compare the current rotated sequence with the second string.
-        let isCurrentMatch = true;
-        for (let compareIndex = 0; compareIndex < secondaryCharacters.length; compareIndex++) {
-            if (rotatedSequence[compareIndex] !== secondaryCharacters[compareIndex]) {
-                isCurrentMatch = false;
-                break;
+        // Implement a manual, naive substring search algorithm.
+        // Iterate through all possible starting positions in the extended source.
+        for (let sourceIndex = 0; sourceIndex <= extendedSource.length - searchPattern.length; sourceIndex++) {
+            let currentSegmentMatches = true;
+            // Compare characters from the current starting position with the pattern.
+            for (let patternIndex = 0; patternIndex < searchPattern.length; patternIndex++) {
+                if (extendedSource[sourceIndex + patternIndex] !== searchPattern[patternIndex]) {
+                    currentSegmentMatches = false;
+                    break; // Mismatch found, move to the next starting position in the source.
+                }
+            }
+            if (currentSegmentMatches) {
+                isPatternFound = true;
+                break; // Full pattern matched, no need to check further.
             }
         }
-
-        if (isCurrentMatch) {
-            isRotationMatchFound = true;
-            break;
-        }
     }
 
-    if (isRotationMatchFound) {
-        console.log("Yes");
-    } else {
-        console.log("No");
-    }
+    console.log(isPatternFound ? "Yes" : "No");
 }
 
-const sourceData = require("node:fs").readFileSync("/dev/stdin","utf-8");
-processText(sourceData);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf-8"));

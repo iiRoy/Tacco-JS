@@ -1,78 +1,65 @@
 "use strict";
 
-const processRawData = (dataText) => {
-    const segmentations = dataText.trim().split('\n');
-    const entityQuantity = Number(segmentations[0]);
-    let ptr = 1;
+const processInputAndCalculate = (inputData) => {
+    const lines = inputData.trim().split("\n");
+    const personCount = parseInt(lines[0]);
 
-    const aggregateStatements = (memo, currentEntityIdx) => {
-        const claimCount = Number(segmentations[ptr++]);
-        for (let k = 0; k < claimCount; k++) {
-            const [targetStr, valueStr] = segmentations[ptr++].split(' ');
-            memo.push({
-                originator: currentEntityIdx,
-                recipient: Number(targetStr) - 1,
-                assertion: Number(valueStr)
+    const allStatements = [];
+    let currentLinePointer = 1;
+
+    for (let currentPersonIndex = 0; currentPersonIndex < personCount; currentPersonIndex++) {
+        const statementsMadeByPerson = parseInt(lines[currentLinePointer]);
+        currentLinePointer++;
+        const currentPersonStatementList = [];
+        for (let statementIterator = 0; statementIterator < statementsMadeByPerson; statementIterator++) {
+            const [targetIdentifier, truthValue] = lines[currentLinePointer].split(" ");
+            currentPersonStatementList.push({
+                target: parseInt(targetIdentifier) - 1,
+                type: parseInt(truthValue)
             });
+            currentLinePointer++;
         }
-        return memo;
-    };
+        allStatements.push(currentPersonStatementList);
+    }
 
-    const fullStatementList = Array.from({ length: entityQuantity }, (_, idx) => idx).reduce(aggregateStatements, []);
+    const declaredDishonestCounts = new Array(personCount).fill(0);
+    const declaredHonestCounts = new Array(personCount).fill(0);
+    const peopleDeclaringDishonest = new Array(personCount).fill(null).map(() => []);
+    const peopleDeclaredDishonestBy = new Array(personCount).fill(null).map(() => []);
 
-    return { entityQuantity, fullStatementList };
-};
+    for (let personIdx = 0; personIdx < personCount; personIdx++) {
+        for (const currentStatement of allStatements[personIdx]) {
+            const targetPersonIdx = currentStatement.target;
+            const statementKind = currentStatement.type;
 
-const evaluateClaims = (processedData) => {
-    const { entityQuantity, fullStatementList } = processedData;
-
-    const assertionsBySubject = new Map(Array.from({ length: entityQuantity }, (_, idx) => [
-        idx,
-        {
-            unfavorableReportsMade: new Set(),
-            favorableReportsMade: new Set(),
-            totalUnfavorableReportsMade: 0,
-            unfavorableReportsReceived: new Set(),
-        }
-    ]));
-
-    fullStatementList.forEach(report => {
-        const { originator, recipient, assertion } = report;
-        const subjectData = assertionsBySubject.get(originator);
-        if (assertion === 0) {
-            subjectData.unfavorableReportsMade.add(recipient);
-            subjectData.totalUnfavorableReportsMade++;
-        } else {
-            subjectData.favorableReportsMade.add(recipient);
-        }
-
-        if (assertion === 0) {
-            assertionsBySubject.get(recipient).unfavorableReportsReceived.add(originator);
-        }
-    });
-
-    let firstCategoryDiscrepancy = 0;
-    const secondCategoryDiscrepancyPairs = new Set();
-
-    assertionsBySubject.forEach((subjectInfo, subjectIdentifier) => {
-        if (subjectInfo.unfavorableReportsMade.size > 0 && subjectInfo.favorableReportsMade.size > 0) {
-            firstCategoryDiscrepancy += subjectInfo.totalUnfavorableReportsMade;
-        }
-
-        subjectInfo.unfavorableReportsMade.forEach(targetIdentifier => {
-            if (assertionsBySubject.get(targetIdentifier).unfavorableReportsReceived.has(subjectIdentifier)) {
-                const pairId = [subjectIdentifier, targetIdentifier].sort((a, b) => a - b).join('_');
-                secondCategoryDiscrepancyPairs.add(pairId);
+            if (statementKind === 0) {
+                declaredDishonestCounts[targetPersonIdx]++;
+                peopleDeclaringDishonest[targetPersonIdx].push(personIdx);
+                peopleDeclaredDishonestBy[personIdx].push(targetPersonIdx);
+            } else {
+                declaredHonestCounts[targetPersonIdx]++;
             }
-        });
-    });
+        }
+    }
 
-    return entityQuantity - (firstCategoryDiscrepancy + secondCategoryDiscrepancyPairs.size);
+    let firstContradictionSum = 0;
+    let mutualDishonestyCount = 0;
+
+    for (let personIdx = 0; personIdx < personCount; personIdx++) {
+        if (declaredDishonestCounts[personIdx] >= 1 && declaredHonestCounts[personIdx] >= 1) {
+            firstContradictionSum += declaredDishonestCounts[personIdx];
+        }
+    }
+
+    for (let personIdx = 0; personIdx < personCount; personIdx++) {
+        for (const declarerOfDishonesty of peopleDeclaringDishonest[personIdx]) {
+            if (peopleDeclaredDishonestBy[personIdx].includes(declarerOfDishonesty)) {
+                mutualDishonestyCount++;
+            }
+        }
+    }
+
+    console.log(personCount - (firstContradictionSum + (mutualDishonestyCount / 2)));
 };
 
-const performAnalysis = (inputPayload) => {
-    const dataProcessed = processRawData(inputPayload);
-    return evaluateClaims(dataProcessed);
-};
-
-console.log(performAnalysis(require('fs').readFileSync('/dev/stdin', 'utf8')));
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

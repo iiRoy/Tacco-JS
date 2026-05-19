@@ -1,48 +1,25 @@
 "use strict";
 
-const processInputData = (incomingText) => {
-  const numericValues = incomingText.match(/-?\d+/g).map(Number);
-  const initialCount = numericValues[0]; // The first number represents N, the count of elements
-  const dataSequence = numericValues.slice(1);
+const processSequence = (rawData) => {
+  const [firstLineContent, secondLineContent] = rawData.trim().split("\n");
+  const sequenceLength = Number(firstLineContent);
+  const numericValues = secondLineContent.split(" ").map(Number);
 
-  if (dataSequence.length === 0) {
-    console.log(0);
-    return;
-  }
+  const [totalAdjustment, _] = numericValues.slice(1).reduce(
+    (accumulator, currentVal) => {
+      const [currentSum, lastEffectiveVal] = accumulator;
 
-  // Use a functional reduce approach to iterate and accumulate the required adjustments.
-  // The accumulator keeps track of the total increment and the highest value encountered so far
-  // that the subsequent elements must meet or exceed.
-  const initialAccumulator = {
-    totalIncrement: 0,
-    currentPeak: dataSequence[0], // The first element establishes the initial "peak"
-  };
-
-  const finalResult = dataSequence.slice(1).reduce(
-    (acc, currentElement) => {
-      let elementAfterModification = currentElement;
-      let increaseRequired = 0;
-
-      // If the current element is less than the current peak, it needs to be increased.
-      if (currentElement < acc.currentPeak) {
-        increaseRequired = acc.currentPeak - currentElement;
-        elementAfterModification = acc.currentPeak; // The element is conceptually raised to the peak value
+      if (lastEffectiveVal > currentVal) {
+        const requiredIncrease = lastEffectiveVal - currentVal;
+        return [currentSum + requiredIncrease, lastEffectiveVal];
+      } else {
+        return [currentSum, currentVal];
       }
-
-      return {
-        totalIncrement: acc.totalIncrement + increaseRequired,
-        currentPeak: elementAfterModification, // This becomes the new peak for future comparisons
-      };
     },
-    initialAccumulator
+    [0, numericValues[0]]
   );
 
-  console.log(finalResult.totalIncrement);
+  console.log(totalAdjustment);
 };
 
-// Entry point for the operation, distinct from the original's 'main'
-const initiateOperation = (payload) => {
-    processInputData(payload);
-};
-
-initiateOperation(require("fs").readFileSync("/dev/stdin", "utf-8"));
+processSequence(require("fs").readFileSync("/dev/stdin", "utf-8"));

@@ -1,29 +1,34 @@
-const fileSystem = require('fs');
-const inputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const inputSegments = inputContent.trim().split('\n');
+var inputLines = [];
+var lineReader = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
 
-const firstLineValues = inputSegments[0].split(' ').map(Number);
-const arrayLength = firstLineValues[0];
-const modulusValue = firstLineValues[1];
+lineReader.on('line', function (currentLine) {
+    inputLines.push(currentLine);
+});
 
-const numericSequence = inputSegments[1].split(' ').map(Number);
+lineReader.on('close', function () {
+    const [arraySize, initialModulo] = inputLines[0].split(" ").map(Number);
+    const dataElements = inputLines[1].split(" ").map(Number);
 
-const cumulativeRemainders = numericSequence.reduce((acc, currentElement) => {
-    const previousRemainder = acc[acc.length - 1];
-    const newRemainder = (previousRemainder + currentElement) % modulusValue;
-    acc.push(newRemainder);
-    return acc;
-}, [0]); // Initialize with 0 for the empty prefix sum
+    const initialAccumulator = {
+        currentAccumulatedSum: 0,
+        prefixSumFrequencies: new Map([[0, 1]]),
+        subArrayCount: 0,
+    };
 
-const { finalResult } = cumulativeRemainders.reduce((context, currentRemainder) => {
-    if (!context.remainderCounts[currentRemainder]) {
-        context.remainderCounts[currentRemainder] = 0;
-    }
-    
-    context.finalResult += context.remainderCounts[currentRemainder];
-    context.remainderCounts[currentRemainder]++;
-    
-    return context;
-}, { finalResult: 0, remainderCounts: {} });
+    const finalResult = dataElements.reduce((accumulator, elementValue) => {
+        accumulator.currentAccumulatedSum = (accumulator.currentAccumulatedSum + elementValue) % initialModulo;
 
-console.log(finalResult);
+        const currentSumFrequency = accumulator.prefixSumFrequencies.get(accumulator.currentAccumulatedSum) || 0;
+
+        accumulator.subArrayCount += currentSumFrequency;
+
+        accumulator.prefixSumFrequencies.set(accumulator.currentAccumulatedSum, currentSumFrequency + 1);
+
+        return accumulator;
+    }, initialAccumulator);
+
+    console.log(finalResult.subArrayCount);
+});

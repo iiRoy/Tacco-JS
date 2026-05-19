@@ -1,98 +1,67 @@
-const discoverSequenceAndCycle = (
-  valueCurrently,
-  indexCurrently,
-  maxSequenceLength,
-  moduloDenominator,
-  sequenceStore,
-  indexToValueMap
-) => {
-  if (indexToValueMap.has(valueCurrently)) {
-    return {
-      generatedValues: sequenceStore,
-      cycleDetails: {
-        cycleStartPoint: indexToValueMap.get(valueCurrently),
-        cycleEndPoint: indexCurrently
-      }
-    };
-  }
+const processSequence = (inputString) => {
+    const [termCount, initialValue, modulus] = inputString.split(" ").map(Number);
 
-  if (indexCurrently >= maxSequenceLength) {
-    return {
-      generatedValues: sequenceStore,
-      cycleDetails: null
-    };
-  }
+    let currentSequenceElement = initialValue;
+    const generatedSequenceElements = []; // Stores x_0, x_1, ..., x_{cycleEndPoint-1}
+    const elementFirstAppearance = new Map(); // Maps value -> first index seen
 
-  indexToValueMap.set(valueCurrently, indexCurrently);
-  sequenceStore.push(valueCurrently);
+    let cycleStartPoint = -1;
+    let cycleEndPoint = -1;
 
-  const nextCalculatedValue = (valueCurrently * valueCurrently) % moduloDenominator;
-
-  return discoverSequenceAndCycle(
-    nextCalculatedValue,
-    indexCurrently + 1,
-    maxSequenceLength,
-    moduloDenominator,
-    sequenceStore,
-    indexToValueMap
-  );
-};
-
-const calculateTotalSum = (inputStr) => {
-  const [targetCount, seedValue, modulusDivisor] = inputStr
-    .split(" ")
-    .map(Number);
-
-  const storedValues = [];
-  const valueIndexMap = new Map();
-
-  const { generatedValues, cycleDetails } = discoverSequenceAndCycle(
-    seedValue,
-    0,
-    modulusDivisor + 1,
-    modulusDivisor,
-    storedValues,
-    valueIndexMap
-  );
-
-  let overallSum = 0;
-
-  if (!cycleDetails || cycleDetails.cycleStartPoint >= targetCount) {
-    overallSum = generatedValues
-      .slice(0, targetCount)
-      .reduce((accumulatorVal, currentVal) => accumulatorVal + currentVal, 0);
-  } else {
-    const cycleStart = cycleDetails.cycleStartPoint;
-    const cycleEnd = cycleDetails.cycleEndPoint;
-
-    for (let j = 0; j < cycleStart; ++j) {
-      if (j < targetCount) {
-        overallSum += generatedValues[j];
-      } else {
-        break;
-      }
-    }
-
-    let remainingElementsToSum = targetCount - cycleStart;
-
-    if (remainingElementsToSum > 0) {
-      const cycleSegment = generatedValues.slice(cycleStart, cycleEnd);
-      const segmentLength = cycleSegment.length;
-      const segmentSum = cycleSegment.reduce((acc, val) => acc + val, 0);
-
-      if (segmentLength > 0) {
-        const fullSegmentRepeats = Math.floor(remainingElementsToSum / segmentLength);
-        overallSum += fullSegmentRepeats * segmentSum;
-
-        const remainingInSegment = remainingElementsToSum % segmentLength;
-        for (let k = 0; k < remainingInSegment; ++k) {
-          overallSum += cycleSegment[k];
+    // Generate sequence terms and detect cycle.
+    // The loop runs up to 'modulus' iterations to guarantee cycle detection
+    // as values are x % modulus, so they must repeat within 'modulus' steps.
+    for (let currentIdx = 0; currentIdx < modulus; currentIdx++) {
+        if (elementFirstAppearance.has(currentSequenceElement)) {
+            cycleStartPoint = elementFirstAppearance.get(currentSequenceElement);
+            cycleEndPoint = currentIdx;
+            break;
         }
-      }
+        elementFirstAppearance.set(currentSequenceElement, currentIdx);
+        generatedSequenceElements.push(currentSequenceElement);
+        currentSequenceElement = (currentSequenceElement * currentSequenceElement) % modulus;
     }
-  }
 
-  console.log(overallSum);
+    // If no cycle was detected (theoretically impossible for x_k = x_{k-1}^2 % M within M steps),
+    // treat the entire generated sequence as a non-repeating part.
+    if (cycleStartPoint === -1) {
+        cycleStartPoint = generatedSequenceElements.length;
+        cycleEndPoint = generatedSequenceElements.length;
+    }
+
+    const cycleLength = cycleEndPoint - cycleStartPoint;
+
+    let sumOfCycleSegment = 0;
+    if (cycleLength > 0) {
+        for (let k = cycleStartPoint; k < cycleEndPoint; k++) {
+            sumOfCycleSegment += generatedSequenceElements[k];
+        }
+    }
+
+    let totalAccumulatedSum = 0;
+
+    // Replicate the original's summation logic for exact behavioral equivalence.
+    // This involves a potentially over-estimated sum from full cycles,
+    // then adding pre-cycle elements, and finally adding remaining partial cycle elements.
+
+    // Step 1: Add sum of full cycles based on N / cycleLength (can be an overestimation if cycleStartPoint > 0)
+    const fullCycleRepetitions = cycleLength === 0 ? 0 : Math.floor(termCount / cycleLength);
+    totalAccumulatedSum += sumOfCycleSegment * fullCycleRepetitions;
+
+    // Step 2: Add sum of elements that appear before the cycle starts
+    for (let k = 0; k < cycleStartPoint; k++) {
+        totalAccumulatedSum += generatedSequenceElements[k];
+    }
+
+    // Step 3: Add sum of remaining elements from the beginning of the cycle
+    // This value can be negative if the sum of pre-cycle elements and full cycles
+    // already exceeds N, in which case this loop will not execute.
+    const remainingCycleElements = cycleLength === 0 ? 0 : termCount - cycleStartPoint - (cycleLength * fullCycleRepetitions);
+    for (let k = 0; k < remainingCycleElements; k++) {
+        totalAccumulatedSum += generatedSequenceElements[cycleStartPoint + k];
+    }
+
+    console.log(totalAccumulatedSum);
 };
 
-calculateTotalSum("1000 2 16");
+processSequence("1000 2 16");

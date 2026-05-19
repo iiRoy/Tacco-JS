@@ -1,106 +1,70 @@
-var operationCounter = 0;
-( function startExecution ()
-  {
-    /*
-     * This module handles file system operations.
-     * It's used to read input from a specified file path.
-     */
-    const fileIO = require ( 'fs' ) ;
+var totalInversions = 0;
 
-    // Fetch raw input from the standard input stream, assuming UTF-8 encoding.
-    // Clean up any leading/trailing whitespace and then separate into individual lines.
-    const inputData = fileIO.readFileSync( '/var/data/input.txt', 'utf-8' )
-                             .trim()
-                             .split( '\n' );
+(function processInput() {
+  // Read input from standard input, parse it, and prepare for sorting.
+  const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
+  const arraySize = Number(inputLines.shift());
+  let inputNumbers = inputLines.shift().split(' ').map(Number);
 
-    // Extract the first line to determine the total number of elements.
-    // Convert this string representation to an integer value.
-    const totalElements = parseInt( inputData.shift(), 10 );
+  // Perform the merge sort operation and count inversions.
+  sortAndCount(inputNumbers, 0, arraySize);
 
-    /*
-     * The next line contains the actual numeric data.
-     * Split this string by spaces, then convert each part into a number.
-     */
-    let numericList = inputData.shift().split( ' ' ).map( Number );
-
-    // Initiate the recursive sorting process on the entire list.
-    divideAndSort( numericList, 0, totalElements );
-
-    // The original code might have printed the sorted array, but it's commented out.
-    // console.log(numericList.join(' '));
-
-    // Finally, output the accumulated count of reordering operations.
-    console.log( operationCounter );
-  }
-)();
+  // The original code had a commented-out line for printing the sorted array.
+  // console.log(inputNumbers.join(' '));
+  // Output the total count of inversions found.
+  console.log(totalInversions);
+})();
 
 /**
- * Merges two sorted subarrays back into a single sorted array segment.
- * This function also increments a global counter for every swap or reordering operation.
- * @param {Array<number>} numericList - The main array containing the data.
- * @param {number} startIdx - The starting index of the left subarray.
- * @param {number} middleIdx - The ending index of the left subarray (and start of right).
- * @param {number} endIdx - The ending index of the right subarray.
+ * Merges two sorted subarrays back into the main array and counts inversions.
+ * @param {Array<number>} dataArray The array containing the elements.
+ * @param {number} startIdx The starting index of the first subarray.
+ * @param {number} middleIdx The ending index of the first subarray (exclusive) and starting of the second.
+ * @param {number} endIdx The ending index of the second subarray (exclusive).
  */
-function combineSegments( numericList, startIdx, middleIdx, endIdx )
-{
-  // Create a copy of the left portion of the array.
-  let leftSegment = numericList.slice( startIdx, middleIdx );
+function combineSortedHalves(dataArray, startIdx, middleIdx, endIdx) {
+  // Create temporary arrays for the left and right halves.
+  let leftSubArray = dataArray.slice(startIdx, middleIdx);
+  let rightSubArray = dataArray.slice(middleIdx, endIdx);
 
-  // Create a copy of the right portion of the array.
-  let rightSegment = numericList.slice( middleIdx, endIdx );
+  // Add sentinels to simplify comparison logic.
+  leftSubArray.push(Number.POSITIVE_INFINITY);
+  rightSubArray.push(Number.POSITIVE_INFINITY);
 
-  // Append a sentinel value to each segment to simplify comparison logic.
-  leftSegment.push( Infinity );
-  rightSegment.push( Infinity );
+  let leftPtr = 0; // Pointer for the left subarray.
+  let rightPtr = 0; // Pointer for the right subarray.
 
-  // Initialize pointers for iterating through the left and right segments.
-  let leftPtr = 0;
-  let rightPtr = 0;
-
-  // Iterate through the main array segment from startIdx to endIdx.
-  for ( let currentIdx = startIdx; currentIdx < endIdx; currentIdx++ )
-  {
-    // Compare elements from both segments.
-    if ( leftSegment[ leftPtr ] <= rightSegment[ rightPtr ] )
-    {
-      // If the left segment's element is smaller or equal, place it next.
-      numericList[ currentIdx ] = leftSegment[ leftPtr++ ];
-    }
-    else
-    {
-      // If the right segment's element is smaller, place it next.
-      numericList[ currentIdx ] = rightSegment[ rightPtr++ ];
-
-      // Increment the global operation counter as an element from the right segment
-      // implies a reordering/swap relative to an element from the left.
-      operationCounter++;
+  // Iterate through the original array segment and merge elements.
+  for (let currentIdx = startIdx; currentIdx < endIdx; currentIdx++) {
+    if (leftSubArray[leftPtr] <= rightSubArray[rightPtr]) {
+      dataArray[currentIdx] = leftSubArray[leftPtr++];
+    } else {
+      dataArray[currentIdx] = rightSubArray[rightPtr++];
+      // An inversion is found when an element from the right subarray is chosen
+      // before remaining elements in the left subarray.
+      totalInversions += (middleIdx - startIdx) - leftPtr;
     }
   }
 }
 
 /**
- * Implements the merge sort algorithm recursively.
- * Divides the array into halves until individual elements are reached, then merges them back.
- * @param {Array<number>} numericList - The array to be sorted.
- * @param {number} startIdx - The starting index of the current segment.
- * @param {number} endIdx - The ending index (exclusive) of the current segment.
+ * Sorts an array using the merge sort algorithm and counts inversions.
+ * @param {Array<number>} dataArray The array to be sorted.
+ * @param {number} startIdx The starting index of the current segment.
+ * @param {number} endIdx The ending index of the current segment (exclusive).
  */
-function divideAndSort( numericList, startIdx, endIdx )
-{
+function sortAndCount(dataArray, startIdx, endIdx) {
   // Base case: if the segment has 0 or 1 element, it's already sorted.
-  if ( startIdx + 1 < endIdx )
-  {
-    // Calculate the midpoint to divide the segment into two halves.
-    let middleIdx = Math.floor( ( startIdx + endIdx ) / 2 );
+  if (startIdx + 1 < endIdx) {
+    // Find the middle point to divide the array into two halves.
+    let middlePoint = Math.floor((startIdx + endIdx) / 2);
 
     // Recursively sort the left half.
-    divideAndSort( numericList, startIdx, middleIdx );
-
+    sortAndCount(dataArray, startIdx, middlePoint);
     // Recursively sort the right half.
-    divideAndSort( numericList, middleIdx, endIdx );
+    sortAndCount(dataArray, middlePoint, endIdx);
 
-    // After both halves are sorted, combine them.
-    combineSegments( numericList, startIdx, middleIdx, endIdx );
+    // Merge the two sorted halves and count inversions.
+    combineSortedHalves(dataArray, startIdx, middlePoint, endIdx);
   }
 }

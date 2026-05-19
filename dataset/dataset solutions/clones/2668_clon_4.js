@@ -1,39 +1,35 @@
-function executeProcessing(sourceData) {
-    const collection = sourceData.split('\n');
-    const metadata = collection[0].split(' ');
-    const maximumDuration = Number(metadata[1]);
+function ProcessSchedule(rawData) {
+  const rawInputLines = rawData.split("\n");
+  const [initialTaskCount, maxDays] = rawInputLines[0].split(" ").map(Number);
 
-    const initialWorkUnits = collection.slice(1)
-        .filter(entry => entry.trim() !== '')
-        .map(entry => {
-            const components = entry.split(' ');
-            return {
-                completionLimit: Number(components[0]),
-                rewardValue: Number(components[1])
-            };
-        });
+  const taskData = rawInputLines.slice(1).map(line => {
+    const [leadTime, profitValue] = line.split(" ").map(Number);
+    return { leadTime, profitValue };
+  });
 
-    const finalResult = Array.from({ length: maximumDuration }, (_, idx) => maximumDuration - idx)
-        .reduce((accumulator, currentIterationDay) => {
-            const eligibleUnits = accumulator.remainingUnits.filter(unit =>
-                unit.completionLimit <= currentIterationDay
-            );
+  const finalState = Array.from({ length: maxDays }, (_, dayIndex) => dayIndex + 1)
+    .reduce((accumulator, currentDay) => {
+      const { totalEarnings, availableTasks } = accumulator;
+      const daysRemaining = maxDays - currentDay + 1;
 
-            if (eligibleUnits.length === 0) {
-                return accumulator;
-            }
+      const eligibleTasks = availableTasks.filter(task => task.leadTime <= daysRemaining);
 
-            const topUnit = eligibleUnits.reduce((best, current) => {
-                return (current.rewardValue > best.rewardValue) ? current : best;
-            }, { rewardValue: -1 });
+      if (eligibleTasks.length === 0) {
+        return accumulator;
+      }
 
-            return {
-                currentSum: accumulator.currentSum + topUnit.rewardValue,
-                remainingUnits: accumulator.remainingUnits.filter(unit => unit !== topUnit)
-            };
-        }, { currentSum: 0, remainingUnits: initialWorkUnits });
+      const bestTask = eligibleTasks.reduce((currentBest, task) => {
+        return (task.profitValue > currentBest.profitValue) ? task : currentBest;
+      }, { profitValue: -1 });
 
-    return finalResult.currentSum;
+      const updatedEarnings = totalEarnings + bestTask.profitValue;
+
+      const nextAvailableTasks = availableTasks.filter(task => task !== bestTask);
+
+      return { totalEarnings: updatedEarnings, availableTasks: nextAvailableTasks };
+    }, { totalEarnings: 0, availableTasks: taskData });
+
+  console.log(finalState.totalEarnings);
 }
 
-console.log(executeProcessing(require("fs").readFileSync("/dev/stdin", "utf8")));
+ProcessSchedule(require("fs").readFileSync("/dev/stdin", "utf8"));

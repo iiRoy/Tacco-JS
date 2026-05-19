@@ -1,17 +1,22 @@
-function executeCoreOperation(incomingText) {
-    const fullNumericSequence = incomingText.trim().split(/\s+/).map(Number);
+function processInput(rawData) {
+    const lineData = rawData.split('\n');
+    const [_, selectionSize] = lineData[0].split(' ').map(Number);
+    const numericValues = lineData[1].split(' ').map(Number);
 
-    const [totalQuantity, selectionQuantity, ...datasetItems] = fullNumericSequence;
+    let selectedValues = numericValues.slice(0, selectionSize);
+    selectedValues.sort((x, y) => x - y);
 
-    const accumulatedValue = datasetItems
-        .sort((firstValue, secondValue) => firstValue - secondValue)
-        .slice(0, selectionQuantity)
-        .reduce((currentSum, currentElement) => currentSum + currentElement, 0);
+    for (let idx = selectionSize; idx < numericValues.length; ++idx) {
+        const currentValue = numericValues[idx];
+        if (currentValue < selectedValues[selectionSize - 1]) {
+            selectedValues[selectionSize - 1] = currentValue;
+            selectedValues.sort((x, y) => x - y);
+        }
+    }
 
-    return accumulatedValue;
+    const totalSum = selectedValues.reduce((accumulator, current) => accumulator + current, 0);
+
+    console.log(totalSum);
 }
 
-function Main(input) {
-    const finalResult = executeCoreOperation(input);
-    console.log(finalResult);
-}
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

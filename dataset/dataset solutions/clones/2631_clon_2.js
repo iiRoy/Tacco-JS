@@ -1,35 +1,34 @@
-// This module contains a single function to handle data processing.
-function processData(rawData) {
-  // First, we split the incoming raw string by newline characters
-  // to obtain an array where each element represents a line of input.
-  const inputLines = rawData.split("\n");
+function processInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  const lines = rawData.split("\n");
 
-  // The first line typically holds the count of subsequent items.
-  let itemCount = inputLines[0];
+  // The first line contains the total number of elements, parsed as a string.
+  const countElements = lines[0];
 
-  // The second line contains the actual numerical elements, space-separated.
-  const numericalString = inputLines[1];
+  // The second line contains a space-separated string of numerical elements.
+  const elementString = lines[1];
 
-  // We then parse this string of numbers into an array of string values.
-  const numericalArray = numericalString.split(" ");
+  // Split the string of elements into an array of individual string values.
+  const elementValues = elementString.split(" ");
 
-  // For initial verification or debugging, log the first two elements.
-  console.log(numericalArray[0]);
-  console.log(numericalArray[1]);
+  // Output the first element from the parsed array.
+  console.log(elementValues[0]);
 
-  // Initialize a mutable variable to accumulate the sum of reciprocals.
-  let inverseTotal = 0;
+  // Output the second element from the parsed array.
+  console.log(elementValues[1]);
 
-  // We iterate through each element based on the 'itemCount' from the first line.
-  for (let currentIdx = 0; currentIdx < itemCount; currentIdx++) {
-    // For each element, calculate its reciprocal and add it to our running total.
-    inverseTotal = inverseTotal + (1 / numericalArray[currentIdx]);
+  // Initialize a variable to accumulate the sum of reciprocals of the elements.
+  let reciprocalSum = 0;
+
+  // Iterate through the elements from index 0 up to (but not including) countElements.
+  for (let idx = 0; idx < countElements; idx++) {
+    // Add the reciprocal of the current element (converted to a number) to the running sum.
+    reciprocalSum = reciprocalSum + (1 / elementValues[idx]);
   }
 
-  // Finally, compute and display the reciprocal of the accumulated inverse total.
-  console.log(1 / inverseTotal);
+  // Finally, output the reciprocal of the total accumulated sum.
+  console.log(1 / reciprocalSum);
 }
 
-// Execute the data processing by reading content from standard input.
-// The 'fs' module is used to read the file synchronously, and 'utf8' specifies the encoding.
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input synchronously and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

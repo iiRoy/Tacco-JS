@@ -1,34 +1,17 @@
-let dataAcquirer = require('node:fs');
+const fsModule = require('fs');
+const rawData = fsModule.readFileSync('/dev/stdin', 'utf8');
+const numericValues = rawData.trim().split(' ').map(val => Number(val));
 
-function evaluateConditions(sourceData) {
-    let numericalSequence = sourceData.trim().split(/\s+/).map(function(token) {
-        return parseInt(token, 10);
-    });
+const [firstOperand, secondOperand, thirdOperand, fourthOperand] = numericValues;
 
-    let initialTerm = numericalSequence[0];
-    let secondTerm = numericalSequence[1];
-    let thirdTerm = numericalSequence[2];
-    let fourthTerm = numericalSequence[3];
+const productResult = firstOperand * secondOperand;
+const sumResult = thirdOperand + fourthOperand;
 
-    function checkOddness(valueToCheck) {
-        // Returns 1 for odd, 0 for even using bitwise AND
-        return valueToCheck & 1;
-    }
+const isProductEven = (productResult & 1) === 0;
+const isSumEven = (sumResult & 1) === 0;
 
-    let productOutcome = initialTerm * secondTerm;
-    let summationOutcome = thirdTerm + fourthTerm;
+const determineOutcome = (prodEven, sumEven) => {
+    return (prodEven || sumEven) ? "Yes" : "No";
+};
 
-    let isProductOdd = checkOddness(productOutcome);
-    let isSumOdd = checkOddness(summationOutcome);
-
-    // The original logic outputs "No" if (product is odd) AND (sum is odd)
-    // Otherwise, it outputs "Yes".
-    let resultIndicator = (isProductOdd === 1 && isSumOdd === 1) ? 1 : 0;
-
-    let possibleResponses = ["Yes", "No"];
-    return possibleResponses[resultIndicator];
-}
-
-let fileContent = dataAcquirer.readFileSync('/dev/stdin', 'utf8');
-let finalVerdict = evaluateConditions(fileContent);
-console.log(finalVerdict);
+console.log(determineOutcome(isProductEven, isSumEven));

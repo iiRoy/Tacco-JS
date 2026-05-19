@@ -1,132 +1,138 @@
-// Data structure replication utility
-const replicateData = (sourceObject, targetContainer = {}) => {
-    const objectToString = Object.prototype.toString;
-    const arraySignature = '[object Array]';
+function deepCopyStructure(sourceObj, targetObj) {
     const hasOwnProp = Object.prototype.hasOwnProperty;
 
-    if (sourceObject === null || typeof sourceObject !== 'object') {
-        return sourceObject;
-    }
+    let destination = targetObj || [];
 
-    const isSourceArray = objectToString.call(sourceObject) === arraySignature;
-    
-    if (!targetContainer || (isSourceArray && !Array.isArray(targetContainer)) || (!isSourceArray && Array.isArray(targetContainer))) {
-        targetContainer = isSourceArray ? [] : {};
-    }
-
-    for (const propKey in sourceObject) {
-        if (hasOwnProp.call(sourceObject, propKey)) {
-            const currentVal = sourceObject[propKey];
-
-            if (typeof currentVal === 'object' && currentVal !== null) {
-                const isCurrentValArray = objectToString.call(currentVal) === arraySignature;
-                targetContainer[propKey] = replicateData(currentVal, isCurrentValArray ? [] : {});
+    for (const propKey in sourceObj) {
+        if (hasOwnProp.call(sourceObj, propKey)) {
+            const sourceValue = sourceObj[propKey];
+            if (typeof sourceValue === "object" && sourceValue !== null) {
+                const isSourceArray = Array.isArray(sourceValue);
+                destination[propKey] = isSourceArray ? [] : {};
+                deepCopyStructure(sourceValue, destination[propKey]);
             } else {
-                targetContainer[propKey] = currentVal;
+                destination[propKey] = sourceValue;
             }
         }
     }
-    return targetContainer;
-};
+    return destination;
+}
 
-((rawInputData) => {
-    class PointCoordinate {
-        constructor(xCoord, yCoord) {
-            this.x = xCoord;
-            this.y = yCoord;
-        }
+function rotateCoordinates(coordList) {
+    const rotatedList = deepCopyStructure(coordList);
+    const listLength = rotatedList.length;
+
+    for (let idx = 0; idx < listLength; idx++) {
+        const currentPoint = rotatedList[idx];
+        const originalX = currentPoint.x;
+        const originalY = currentPoint.y;
+
+        currentPoint.x = -originalY;
+        currentPoint.y = originalX;
+    }
+    return rotatedList;
+}
+
+function areShapesIdentical(shapeA, shapeB) {
+    if (!Array.isArray(shapeA) || !Array.isArray(shapeB)) {
+        return false;
     }
 
-    const transformCoordinates = (pointCollection) => {
-        return pointCollection.map(pt => new PointCoordinate(-pt.y, pt.x));
-    };
+    const lenA = shapeA.length;
+    const lenB = shapeB.length;
 
-    const comparePointArrays = (firstSet, secondSet) => {
-        if (!firstSet || !secondSet || firstSet.length !== secondSet.length) {
+    if (lenA !== lenB) {
+        return false;
+    }
+
+    for (let idx = 0; idx < lenA; idx++) {
+        const point1 = shapeA[idx];
+        const point2 = shapeB[idx];
+
+        if (!point1 || !point2 || typeof point1.x === 'undefined' || typeof point1.y === 'undefined' ||
+            typeof point2.x === 'undefined' || typeof point2.y === 'undefined') {
             return false;
         }
-        for (let idx = 0; idx < firstSet.length; idx++) {
-            if (firstSet[idx].x !== secondSet[idx].x || firstSet[idx].y !== secondSet[idx].y) {
-                return false;
-            }
-        }
-        return true;
-    };
 
-    let inputLines = rawInputData.trim().split('\n');
-    let linePointer = 0;
+        if (point1.x !== point2.x || point1.y !== point2.y) {
+            return false;
+        }
+    }
+    return true;
+}
 
-    const getNextInt = () => {
-        if (linePointer >= inputLines.length) {
-            throw new Error("Input stream exhausted.");
-        }
-        const value = parseInt(inputLines[linePointer++], 10);
-        if (isNaN(value)) {
-            throw new Error("Invalid integer format encountered.");
-        }
-        return value;
-    };
+const parseLineToNumbers = (lineStr) => {
+    return lineStr.split(' ').map(Number);
+};
 
-    const getNextPointCoords = () => {
-        if (linePointer >= inputLines.length) {
-            throw new Error("Input stream exhausted.");
-        }
-        const coords = inputLines[linePointer++].split(' ').map(Number);
-        if (coords.length !== 2 || isNaN(coords[0]) || isNaN(coords[1])) {
-            throw new Error("Malformed point coordinates encountered.");
-        }
-        return new PointCoordinate(coords[0], coords[1]);
+const createPoint = (xCoord, yCoord) => ({ x: xCoord, y: yCoord });
+
+(function (rawInput) {
+    const rawInputLines = rawInput.replace(/\r/g, '').split("\n");
+    let currentLineIndex = 0;
+
+    const getNextInt = () => parseInt(rawInputLines[currentLineIndex++]);
+
+    const getNextCoords = () => {
+        const parts = parseLineToNumbers(rawInputLines[currentLineIndex++]);
+        return createPoint(parts[0], parts[1]);
     };
 
     while (true) {
-        const segmentCount = getNextInt();
-        if (segmentCount === 0) {
+        const allShapeData = [];
+        let totalShapeSets = getNextInt() + 1;
+
+        if (totalShapeSets === 1) {
             break;
         }
 
-        const polylineSegments = [];
+        while (totalShapeSets-- > 1) {
+            const currentShapePoints = [];
+            let numPointsInShape = getNextInt() - 1;
 
-        for (let i = 0; i < segmentCount; i++) {
-            const pointCount = getNextInt();
-            
-            const firstPoint = getNextPointCoords();
-            const originX = firstPoint.x;
-            const originY = firstPoint.y;
+            const firstPointCoords = getNextCoords();
+            const originX = firstPointCoords.x;
+            const originY = firstPointCoords.y;
 
-            const currentPolyline = [];
-            currentPolyline.push(new PointCoordinate(0, 0));
+            currentShapePoints.push(createPoint(0, 0));
 
-            for (let j = 1; j < pointCount; j++) {
-                const nextPoint = getNextPointCoords();
-                currentPolyline.push(new PointCoordinate(nextPoint.x - originX, nextPoint.y - originY));
+            while (numPointsInShape-- > 0) {
+                const nextPointCoords = getNextCoords();
+                currentShapePoints.push(createPoint(nextPointCoords.x - originX, nextPointCoords.y - originY));
             }
-            polylineSegments.push(currentPolyline);
+            allShapeData.push(currentShapePoints);
         }
 
-        const referenceShape = polylineSegments.shift();
+        const targetShape = allShapeData.shift();
 
-        const reversedReferenceShape = (() => {
-            const tempReversed = replicateData(referenceShape).reverse();
-            if (tempReversed.length === 0) return [];
-            
-            const firstPointOfReversed = tempReversed[0];
-            const revOriginX = firstPointOfReversed.x;
-            const revOriginY = firstPointOfReversed.y;
+        const calculateReversedTargetShape = (originalShape) => {
+            const tempReversed = deepCopyStructure(originalShape).reverse();
+            const firstPointInReversed = tempReversed[0];
+            const reversedOriginX = firstPointInReversed.x;
+            const reversedOriginY = firstPointInReversed.y;
 
-            return tempReversed.map(pt => new PointCoordinate(pt.x - revOriginX, pt.y - revOriginY));
-        })();
+            for (let idx = 0; idx < tempReversed.length; idx++) {
+                tempReversed[idx].x -= reversedOriginX;
+                tempReversed[idx].y -= reversedOriginY;
+            }
+            return tempReversed;
+        };
+        const reversedTargetShape = calculateReversedTargetShape(targetShape);
 
-        for (let i = 0; i < polylineSegments.length; i++) {
-            let currentShape = polylineSegments[i];
-            let matchFound = false;
+        const totalShapesToCompare = allShapeData.length;
+        const NUM_ROTATIONS_PER_SHAPE = 4;
 
-            for (let rotationAttempt = 0; rotationAttempt < 4; rotationAttempt++) {
-                if (comparePointArrays(currentShape, referenceShape) || comparePointArrays(currentShape, reversedReferenceShape)) {
-                    console.log(i + 1);
-                    matchFound = true;
+        for (let shapeIdx = 0; shapeIdx < totalShapesToCompare; shapeIdx++) {
+            let currentShapeBeingProcessed = allShapeData[shapeIdx];
+
+            for (let rotationIteration = 0; rotationIteration < NUM_ROTATIONS_PER_SHAPE; rotationIteration++) {
+                const currentRotatedShape = rotateCoordinates(currentShapeBeingProcessed);
+
+                if (areShapesIdentical(currentRotatedShape, targetShape) || areShapesIdentical(currentRotatedShape, reversedTargetShape)) {
+                    console.log(shapeIdx + 1);
                     break;
                 }
-                currentShape = transformCoordinates(currentShape);
+                currentShapeBeingProcessed = currentRotatedShape;
             }
         }
         console.log("+++++");

@@ -1,37 +1,20 @@
-"use strict"; // This directive ensures strict mode parsing and error handling for the script.
+"use strict"; // Activates strict mode for the entire script, enhancing error handling.
 
-// Define a constant to alias the global 'require' function for module loading.
-const   loadUtility   =   require  ;
+// This function is designed to process a given text string.
+function processInput(rawData) {
+  // First, any leading or trailing whitespace is removed from the raw data.
+  // Then, the string is split into an array of individual characters.
+  // Finally, the array is filtered to retain only those characters that are exactly '1'.
+  const filteredOnes = rawData.trim().split('').filter(digitChar => digitChar === '1');
 
-/**
- * Executes the primary data processing workflow.
- * This function takes raw text input, processes it, and outputs a specific count.
- *
- * @param {string} sourceText - The entire raw text content that needs to be analyzed.
- */
-function   executeProcessing   (   sourceText   )   {
-  // First, remove any leading or trailing whitespace from the text input.
-  // Then, break the cleaned string into an array of individual characters.
-  // Finally, filter this array to keep only those characters that are exactly the string '1'.
-  const   onesCollection   =   sourceText
-    .trim   (  )
-    .split   (  ''  )
-    .filter   (   (   characterItem   )   =>   characterItem   ===   '1'   )  ;
-
-  // Establish a new identifier for the standard console logging function.
-  const   displayResult   =   console . log  ;
-
-  // Output the total number of '1's found in the processed collection.
-  displayResult   (   onesCollection . length   )  ;
+  // The total count of '1' characters found is then printed to the console.
+  console.log(filteredOnes.length);
 }
 
-// Begin the application's execution flow.
-// Obtain the file system module using our aliased utility function.
-const   diskIO   =   loadUtility   (   'node:fs'   )  ;
+// The script reads the entire content of the standard input stream.
+// It uses the Node.js 'fs' module to synchronously read the file at '/dev/stdin'
+// and interprets its content as a UTF-8 encoded string.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read the content from a specified input file synchronously.
-// The file path and encoding type are provided as arguments.
-// Pass this fetched content to the main processing function.
-executeProcessing   (
-  diskIO . fetchContentSynchronously   (   '/var/data/input_file.txt'   ,   'latin1'   )
-)  ;
+// The main processing function is invoked with the content read from standard input.
+processInput(fileContent);

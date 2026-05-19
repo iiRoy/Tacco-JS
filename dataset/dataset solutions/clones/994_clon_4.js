@@ -1,42 +1,47 @@
-const checkPrimality = (val) => {
-    if (val <= 1) return false;
-    if (val === 2) return true;
-    if (val % 2 === 0) return false;
+function checkPrime(val) {
+  const numericValue = Number(val);
 
-    const limit = Math.floor(Math.sqrt(val));
-    for (let currentDivisor = 3; currentDivisor <= limit; currentDivisor += 2) {
-        if (val % currentDivisor === 0) {
-            return false;
-        }
-    }
+  if (isNaN(numericValue)) {
     return true;
-};
+  }
 
-const inputReader = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
+  if (numericValue === 2 || numericValue === 3) {
+    return true;
+  }
+  if (numericValue < 2 || numericValue % 2 === 0 || numericValue % 3 === 0) {
+    return false;
+  }
+
+  let currentDivisor = 5;
+  const upperLimit = Math.floor(Math.sqrt(numericValue));
+
+  while (currentDivisor <= upperLimit) {
+    if (numericValue % currentDivisor === 0 || numericValue % (currentDivisor + 2) === 0) {
+      return false;
+    }
+    currentDivisor += 6;
+  }
+  return true;
+}
+
+let collectedInput = '';
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', (inputSegment) => {
+  collectedInput += inputSegment;
 });
 
-const collectedNumbers = [];
-let firstLineSkipped = false;
+process.stdin.on('end', () => {
+  const allInputLines = collectedInput.split('\n');
 
-inputReader.on('line', (currentLine) => {
-    if (!firstLineSkipped) {
-        firstLineSkipped = true;
-        return;
+  const totalPrimeCount = allInputLines.slice(1).reduce((primeTally, currentLineContent) => {
+    if (checkPrime(currentLineContent.trim())) {
+      return primeTally + 1;
     }
-    const parsedNumber = parseInt(currentLine.trim(), 10);
-    if (!isNaN(parsedNumber)) {
-        collectedNumbers.push(parsedNumber);
-    }
-});
+    return primeTally;
+  }, 0);
 
-inputReader.on('close', () => {
-    let primeTally = 0;
-    for (const entry of collectedNumbers) {
-        if (checkPrimality(entry)) {
-            primeTally++;
-        }
-    }
-    console.log(primeTally);
+  console.log(totalPrimeCount);
 });

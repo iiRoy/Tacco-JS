@@ -1,45 +1,44 @@
-var sourceData = require('fs') .readFileSync(  '/dev/stdin' ,  'utf8' ); // Obtain raw textual input from standard input stream
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read raw input from standard input
+var lineData = (rawData.replace(/\n$/, "")).split("\n"); // Split input into an array of lines, removing any trailing newline
+var numCases = lineData.shift() - 0; // Extract the number of test cases from the first line and convert to number
 
-var contentLines = ( sourceData .replace( /\n$/ , "" ) ) .split( "\n" ); // Process input: remove trailing newline, then split into individual lines
+// Iterate through each test case
+for (var caseIdx = 0; caseIdx < numCases; caseIdx++) {
+    var caseNums = lineData[caseIdx].split(" ").map(Number); // Parse the current line into an array of numbers
+    var startVal = caseNums[0]; // Get the starting value for the current case
+    var goalVal = caseNums[1]; // Get the target value for the current case
 
-var numOperations = contentLines .shift() - 0 ; // Extract the first line as the count of operations, converting it to a numeric type
+    var resultPath = [startVal]; // Initialize the path array with the starting value
+    var directionModifier = 1; // Initialize a modifier for the special movement logic
 
-for ( var currentOpIndex = 0 ; currentOpIndex < numOperations ; currentOpIndex++ ) { // Iterate through each specified operation
-  /*
-   * For each operation, parse the numeric pair and determine the sequence of steps
-   * required to transform the initial value into the final destination.
-   */
-  var valuePair = contentLines[ currentOpIndex ] .split( " " ) .map( Number ); // Parse the current line into a pair of numbers
-
-  var initialPoint = valuePair[ 0 ]; // The starting numerical value
-  var finalDestination = valuePair[ 1 ]; // The target numerical value
-
-  var pathTraversed = [ initialPoint ]; // Initialize the sequence with the starting point
-  var stepDirection = 1; // Default step increment
-
-  if ( initialPoint < finalDestination ) {
-    do {
-      initialPoint++; // Increment the current value
-      pathTraversed .push( initialPoint ); // Add to the sequence
-    } while ( initialPoint != finalDestination ); // Continue until the target is reached
-  } else if ( initialPoint > finalDestination && initialPoint <= 5 ) {
-    do {
-      initialPoint--; // Decrement the current value
-      pathTraversed .push( initialPoint ); // Add to the sequence
-    } while ( initialPoint != finalDestination ); // Continue until the target is reached
-  } else if ( initialPoint > finalDestination && initialPoint >= 6 ) {
-    do {
-      initialPoint += stepDirection; // Apply step direction
-      if ( initialPoint === 10 ) {
-        initialPoint = 5; // Special rule: if 10, reset to 5
-        stepDirection = -1; // Change direction to decrement
-      };
-      if ( initialPoint === 0 ) {
-        stepDirection = 1; // Special rule: if 0, change direction to increment
-      };
-      pathTraversed .push( initialPoint ); // Add to the sequence
-    } while ( initialPoint != finalDestination ); // Continue until the target is reached
-  }
-
-  console .log( pathTraversed .join( " " ) ); // Output the generated sequence, space-separated
+    // Case 1: Starting value is less than the goal value
+    if (startVal < goalVal) {
+        do {
+            startVal++; // Increment the value
+            resultPath.push(startVal); // Add the new value to the path
+        } while (startVal != goalVal); // Continue until the goal is reached
+    }
+    // Case 2: Starting value is greater than the goal value and less than or equal to 5
+    else if (startVal > goalVal && startVal <= 5) {
+        do {
+            startVal--; // Decrement the value
+            resultPath.push(startVal); // Add the new value to the path
+        } while (startVal != goalVal); // Continue until the goal is reached
+    }
+    // Case 3: Starting value is greater than the goal value and greater than or equal to 6 (special movement)
+    else if (startVal > goalVal && startVal >= 6) {
+        do {
+            startVal += directionModifier; // Apply the current direction modifier
+            if (startVal === 10) { // If the value reaches 10
+                startVal = 5; // Reset it to 5
+                directionModifier = -1; // Change direction to decrement
+            }
+            if (startVal === 0) { // If the value reaches 0
+                directionModifier = 1; // Change direction to increment
+            }
+            resultPath.push(startVal); // Add the current value to the path
+        } while (startVal !== goalVal); // Continue until the goal is reached
+    }
+    // Output the generated path, with values separated by spaces
+    console.log(resultPath.join(" "));
 }

@@ -1,89 +1,87 @@
 "use strict";
 
-/*
- * This module provides a function to compute sequences of elements
- * where repetition of elements is allowed. It's akin to permutations
- * with replacement.
- */
-const generateDuplicatePermutations = (
-  inputElements,
-  desiredLength
+// Function to generate permutations with allowed repetitions.
+const generatePermutationsWithRepeats = (
+  optionSet,
+  permLength
 ) => {
-  // Base case for the recursion: if the target length is one,
-  // each individual element is a valid permutation.
-  if (desiredLength === 1) {
-    return inputElements.map(singleElement => [singleElement]);
+  // Base case: if the desired permutation length is 1,
+  // each individual option forms a permutation.
+  if (permLength === 1) {
+    return optionSet.map(singleOption => [singleOption]);
   }
 
-  // An array to accumulate all the resulting permutations.
-  const resultingPerms = [];
+  // Initialize an array to hold all the resulting permutations.
+  const resultPerms = [];
 
-  // Recursively call the function to get permutations of a shorter length.
-  const subPermutations = generateDuplicatePermutations(
-    inputElements,
-    desiredLength - 1
+  // Recursively call the function to get permutations of a smaller length.
+  const subPerms = generatePermutationsWithRepeats(
+    optionSet,
+    permLength - 1
   );
 
-  // Iterate through each available element to prepend it to the smaller permutations.
-  inputElements.forEach((currentElement) => {
-    subPermutations.forEach((subPermutation) => {
-      // Concatenate the current element with each previously found sub-permutation.
-      resultingPerms.push([currentElement].concat(subPermutation));
+  // Iterate through each available option in the set.
+  optionSet.forEach((currentChoice) => {
+    // For each smaller permutation obtained, prepend the current option
+    // to form a new, longer permutation.
+    subPerms.forEach((subPerm) => {
+      resultPerms.push([currentChoice].concat(subPerm));
     });
   });
 
   // Return the complete collection of permutations.
-  return resultingPerms;
+  return resultPerms;
 };
 
-// This function serves as the primary entry point for the application,
-// processing input and seeking a specific mathematical outcome.
-const executeProgram = inputData => {
-    // Clean and split the raw input string into manageable parts.
-    inputData = inputData.trim().split("\n");
-    const firstNum = parseInt(inputData[0].charAt(0));
-    const secondNum = parseInt(inputData[0].charAt(1));
-    const thirdNum = parseInt(inputData[0].charAt(2));
-    const fourthNum = parseInt(inputData[0].charAt(3));
+const processInput = inputString => {
+    // Clean up the input string and split it into lines.
+    inputString = inputString.trim().split("\n");
+    // Parse the four individual digits from the first line of input.
+    const val1 = parseInt(inputString[0].split("")[0]);
+    const val2 = parseInt(inputString[0].split("")[1]);
+    const val3 = parseInt(inputString[0].split("")[2]);
+    const val4 = parseInt(inputString[0].split("")[3]);
 
-    // Define the set of binary operations to be used in expressions.
-    const operationSymbols = ["+", "-"];
-
-    // Generate all possible sequences of three operators using the permutation logic.
-    const expressionPatterns = generateDuplicatePermutations(operationSymbols, 3);
-
-    // Iterate through each generated operator pattern to form and evaluate expressions.
-    for (let patternIndex in expressionPatterns) {
-        let currentExpressionParts = [];
-
-        // Construct the arithmetic expression step by step.
-        for (let partIndex = 0; partIndex < expressionPatterns[patternIndex].length; partIndex++) {
-            if (partIndex === 0) {
-                currentExpressionParts.push(firstNum);
+    // Define the set of arithmetic operators to be used.
+    const operators = ["+", "-"];
+    
+    // Generate all possible combinations of 3 operators, allowing repetitions.
+    const allCombinations = generatePermutationsWithRepeats(operators, 3);
+    
+    // Iterate through each generated operator combination.
+    for (let idx in allCombinations) {
+        let expressionParts = []; // This array will store components of the current arithmetic expression.
+        
+        // Construct the full arithmetic expression string.
+        for (let opIdx = 0; opIdx < allCombinations[idx].length; opIdx++) {
+            // Add the numeric values based on the current operator's position.
+            if (opIdx === 0) {
+                expressionParts.push(val1);
             }
-
-            if (partIndex === 1) {
-                currentExpressionParts.push(secondNum);
+            
+            if (opIdx === 1) {
+                expressionParts.push(val2);
             }
-
-            if (partIndex === 2) {
-                currentExpressionParts.push(thirdNum);
+            
+            if (opIdx === 2) {
+                expressionParts.push(val3);
             }
-
-            currentExpressionParts.push(expressionPatterns[patternIndex][partIndex]);
+            
+            // Append the operator itself.
+            expressionParts.push(allCombinations[idx][opIdx]);
         }
-
-        // Append the final number to complete the expression.
-        currentExpressionParts.push(fourthNum);
+        
+        // After adding all operators and their preceding numbers, append the final numeric value.
+        expressionParts.push(val4);
 
         // Evaluate the constructed expression string.
-        if (eval(currentExpressionParts.join("")) === 7) {
-            // If the evaluation result is 7, output the expression and exit.
-            console.log(currentExpressionParts.join("") + "=7");
+        if (eval(expressionParts.join("")) === 7) {
+            // If the evaluation result is 7, print the expression and terminate.
+            console.log(expressionParts.join("") + "=7");
             return;
         }
     }
 };
 
-// Execute the main program function, reading input from the standard input stream.
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

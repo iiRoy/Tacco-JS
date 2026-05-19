@@ -1,200 +1,83 @@
-const ioManager = require('readline').createInterface({
+const inputReader = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-// Global state variables for input parsing
-let inputStateTracker = 0; // 0: dimensions, 1: matrixA, 2: matrixB
-let currentMatrixARowIndex = 0;
-let currentMatrixBRowIndex = 0; // This will track rows of B as they are read
+let configPhase = 0;
+let matrixARowIdx = 0;
+let matrixBRowIdx = 0; // Renamed from stepb to reflect its use as row index for B in input processing
+let numRowsA, numColsA, numRowsB; // Renamed from n, m, l. Note: l is numRowsB for matrix B.
+const matrixA = [];
+const matrixB = [];
 
-// Matrix dimensions
-let rowsA = 0;          // Corresponds to 'n'
-let commonDimension = 0; // Corresponds to 'm'
-let colsB = 0;          // Corresponds to 'l'
+process.stdin.setEncoding('ascii');
 
-// Matrix storage
-let matrixA = [];           // Stores matrix A (rowsA x commonDimension)
-let matrixBTransposed = []; // Stores matrix B as its transpose (commonDimension x colsB)
-let finalProductMatrix = []; // Stores the resulting matrix C (rowsA x colsB)
-
-/**
- * Parses a string line into an array of floating-point numbers.
- * @param {string} inputLine - The line to parse.
- * @returns {Float32Array} An array of numbers.
- */
-function parseNumericLine(inputLine) {
-    // Split by space, filter out empty strings, and convert to Float32.
-    // Guard against non-numeric input by checking for NaN and defaulting to 0.
-    const numericTokens = inputLine.split(' ').filter(s => s.trim() !== '').map(val => {
-        const num = parseFloat(val);
-        return isNaN(num) ? 0.0 : num; // Default to 0.0 if parsing fails
-    });
-    return new Float32Array(numericTokens);
-}
-
-/**
- * Initializes a 2D matrix structure with a specified number of rows and columns,
- * using Float32Array for inner rows/columns for memory efficiency.
- * @param {number} numRows - The number of rows for the matrix.
- * @param {number} numCols - The number of columns for each row.
- * @returns {Array<Float32Array>} An array representing the 2D matrix.
- */
-function initializeMatrixStructure(numRows, numCols) {
-    const matrix = [];
-    if (numRows <= 0 || numCols <= 0) {
-        console.error("Error: Matrix dimensions must be positive.");
-        // Return an empty matrix or throw an error based on desired error handling
-        return [];
-    }
-    for (let i = 0; i < numRows; i++) {
-        matrix.push(new Float32Array(numCols));
-    }
-    return matrix;
-}
-
-/**
- * Processes the first input line containing matrix dimensions (N M L).
- * Initializes matrix structures based on these dimensions.
- * @param {string} configLine - The line containing N, M, L.
- */
-function processConfigurationLine(configLine) {
-    const dimensions = parseNumericLine(configLine);
-
-    if (dimensions.length !== 3 || dimensions.some(dim => !Number.isInteger(dim) || dim <= 0)) {
-        console.error("Invalid matrix dimensions provided. Expected three positive integers (N M L). Exiting.");
-        ioManager.close();
-        return;
-    }
-
-    rowsA = dimensions[0];
-    commonDimension = dimensions[1];
-    colsB = dimensions[2];
-
-    // Initialize matrix A (N x M)
-    matrixA = initializeMatrixStructure(rowsA, commonDimension);
-    // Initialize matrix B Transposed (M x L)
-    matrixBTransposed = initializeMatrixStructure(commonDimension, colsB);
-    // Initialize the result matrix C (N x L)
-    finalProductMatrix = initializeMatrixStructure(rowsA, colsB);
-
-    inputStateTracker++; // Move to reading matrix A
-}
-
-/**
- * Reads a row of data for matrix A.
- * @param {string} dataLine - The line containing elements for a row of matrix A.
- */
-function readMatrixADataRow(dataLine) {
-    const rowElements = parseNumericLine(dataLine);
-
-    if (rowElements.length !== commonDimension) {
-        console.warn(`Warning: Row ${currentMatrixARowIndex} of Matrix A has ${rowElements.length} elements, expected ${commonDimension}. Padding/truncating.`);
-    }
-
-    // Fill the current row of matrix A
-    for (let colIdx = 0; colIdx < commonDimension; colIdx++) {
-        matrixA[currentMatrixARowIndex][colIdx] = rowElements[colIdx] !== undefined ? rowElements[colIdx] : 0.0;
-    }
-    currentMatrixARowIndex++;
-}
-
-/**
- * Reads a row of data for matrix B and populates the transposed matrix B.
- * @param {string} dataLine - The line containing elements for a row of matrix B.
- */
-function readMatrixBRowAndTranspose(dataLine) {
-    const rowElements = parseNumericLine(dataLine);
-
-    if (rowElements.length !== commonDimension) {
-        console.warn(`Warning: Row ${currentMatrixBRowIndex} of Matrix B has ${rowElements.length} elements, expected ${commonDimension}. Padding/truncating.`);
-    }
-
-    // Populate matrixBTransposed (M x L) from row-wise input of B (L x M)
-    // rowElements is a row of B, so rowElements[colIdx] is B[currentMatrixBRowIndex][colIdx]
-    // In B_transpose, this element is B_T[colIdx][currentMatrixBRowIndex]
-    for (let colIdx = 0; colIdx < commonDimension; colIdx++) {
-        matrixBTransposed[colIdx][currentMatrixBRowIndex] = rowElements[colIdx] !== undefined ? rowElements[colIdx] : 0.0;
-    }
-    currentMatrixBRowIndex++;
-}
-
-/**
- * Computes the dot product of two vectors.
- * @param {Float32Array} vector1 - The first vector.
- * @param {Float32Array} vector2 - The second vector.
- * @returns {number} The dot product.
- */
-function computeVectorDotProduct(vector1, vector2) {
-    let productSum = 0.0;
-    // Ensure vectors have the same length for dot product
-    const minLength = Math.min(vector1.length, vector2.length);
-
-    for (let k = 0; k < minLength; k++) {
-        productSum += vector1[k] * vector2[k];
-    }
-    return productSum;
-}
-
-// Event handler for each line of input
-ioManager.on('line', (currentLine) => {
-    // Trim whitespace from the input line
-    const processedLine = currentLine.trim();
-
-    if (processedLine.length === 0) {
-        // Ignore empty lines
-        return;
-    }
-
-    if (inputStateTracker === 0) {
-        processConfigurationLine(processedLine);
-    } else if (currentMatrixARowIndex < rowsA) {
-        readMatrixADataRow(processedLine);
-        if (currentMatrixARowIndex === rowsA) {
-            inputStateTracker++; // All rows of A read, move to B
-        }
-    } else if (currentMatrixBRowIndex < colsB) {
-        readMatrixBRowAndTranspose(processedLine);
-        if (currentMatrixBRowIndex === colsB) {
-            ioManager.close(); // All rows of B read, close input
-        }
+inputReader.on('line', (currentLine) => {
+    if (configPhase === 0) {
+        processConfigLine(currentLine);
+    } else if (matrixARowIdx < numRowsA) {
+        populateMatrixA(currentLine);
+    } else if (matrixBRowIdx < numRowsB) { // Original was stepb < l, which is matrixBRowIdx < numRowsB
+        populateMatrixB(currentLine);
+    } else {
+        inputReader.close();
     }
 });
 
-// Event handler for when the input stream closes
-ioManager.on('close', () => {
-    // Perform matrix multiplication C = A * B_transpose
-    // C (rowsA x colsB) = A (rowsA x commonDimension) * B_transpose (commonDimension x colsB)
+function processConfigLine(inputLine) {
+    const parsedValues = inputLine.split(' ').map(Number);
+    numRowsA = parsedValues[0]; // n
+    numColsA = parsedValues[1]; // m
+    numRowsB = parsedValues[2]; // l
 
-    for (let rowIndexA = 0; rowIndexA < rowsA; rowIndexA++) {
-        for (let colIndexB = 0; colIndexB < colsB; colIndexB++) {
-            // To compute C[rowIndexA][colIndexB], we need:
-            // - The rowIndexA-th row of matrixA (a 1 x commonDimension vector)
-            // - The colIndexB-th column of matrixB (a commonDimension x 1 vector)
-            // Since matrixBTransposed is commonDimension x colsB, its `colIndexB`-th column
-            // represents the `colIndexB`-th column of original matrix B.
-            // We need to extract this column as a vector for the dot product.
+    const aInitCount = numRowsA;
+    const bInitCount = numRowsB;
 
-            const currentBColumnVector = new Float32Array(commonDimension);
-            for (let k = 0; k < commonDimension; k++) {
-                currentBColumnVector[k] = matrixBTransposed[k][colIndexB];
-            }
-            
-            finalProductMatrix[rowIndexA][colIndexB] = computeVectorDotProduct(
-                matrixA[rowIndexA],
-                currentBColumnVector
-            );
-        }
+    for (let i = 0; i < aInitCount; i++) {
+        matrixA.push(new Int16Array(numColsA)); // m columns for A
     }
-
-    // Output the resulting matrix
-    for (let r = 0; r < rowsA; r++) {
-        // Use a temporary array to build the output line for efficiency
-        const outputRowElements = [];
-        for (let c = 0; c < colsB; c++) {
-            outputRowElements.push(finalProductMatrix[r][c].toFixed(0)); // Format as integer string
-        }
-        console.log(outputRowElements.join(' '));
+    for (let i = 0; i < bInitCount; i++) {
+        matrixB.push(new Int16Array(numColsA)); // m columns for B
     }
-    // A final newline might be desired for some systems, but not explicitly requested.
+    configPhase++;
+}
+
+function populateMatrixA(inputLine) {
+    const rowValues = inputLine.split(' ').map(Number);
+    const currentRow = matrixA[matrixARowIdx];
+    for (let elementIndex = 0; elementIndex < rowValues.length; elementIndex++) {
+        currentRow[elementIndex] = rowValues[elementIndex];
+    }
+    matrixARowIdx++;
+}
+
+function populateMatrixB(inputLine) {
+    const rowValues = inputLine.split(' ').map(Number); // Renamed from colValues, as it's a row of B
+    const currentRow = matrixB[matrixBRowIdx]; // Helper variable for current row of B
+    for (let elementIndex = 0; elementIndex < rowValues.length; elementIndex++) {
+        currentRow[elementIndex] = rowValues[elementIndex];
+    }
+    matrixBRowIdx++; // Renamed stepb++
+}
+
+inputReader.on('close', () => {
+    for (let i = 0; i < numRowsA; i++) {
+        const currentMatrixARow = matrixA[i];
+        const outputLineParts = [];
+
+        for (let j = 0; j < numRowsB; j++) { // Iterate through rows of matrixB (l rows)
+            const currentMatrixBRow = matrixB[j]; // Get current row of B
+            outputLineParts.push(calculateDotProduct(currentMatrixARow, currentMatrixBRow));
+        }
+        console.log(outputLineParts.join(' '));
+    }
 });
+
+function calculateDotProduct(vecA, vecB) {
+    let resultSum = 0;
+    const vectorLength = numColsA; // Original used m
+    for (let i = vectorLength - 1; i >= 0; i--) {
+        resultSum += vecA[i] * vecB[i];
+    }
+    return resultSum;
+}

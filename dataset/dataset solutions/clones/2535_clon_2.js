@@ -1,147 +1,173 @@
-const streamHandler = require('readline').createInterface({
+var inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
-let dataParser;
-const receivedLines = [];
-streamHandler.on('line', function(currentLine) {
-  receivedLines.push(currentLine);
+
+var dataProcessor;
+var inputLines = [];
+
+// Event listener for each line of input
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
-streamHandler.on('close', function() {
-  dataParser = setupInputProcessor(receivedLines);
-  console.error("\n");
-  const commencementTime = Date.now();
-  executeProgram();
-  const duration = Date.now() - commencementTime;
-  logDiagnostic("Processing duration : " + duration + "ms");
-  logDiagnostic("Memory utilization : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
+
+// Event listener for end of input
+inputReader.on('close', function(){
+  dataProcessor = initializeInput(inputLines); // Prepare input for processing
+  console.error("\n"); // Print a newline to stderr for formatting
+  var startTime = Date.now(); // Record start time
+  executeMainLogic(); // Run the primary application logic
+  var endTime = Date.now() - startTime; // Calculate elapsed time
+  logDebugMessage("time : " + endTime + "ms"); // Log execution time
+  logDebugMessage("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB"); // Log memory usage
 });
-function createDeepCopy(originalItem) {
-  return JSON.parse(JSON.stringify(originalItem));
+
+// Utility function to create a deep copy of an object
+function createDeepCopy(originalObject){
+  return JSON.parse(JSON.stringify(originalObject));
 }
-function retrieveNextInteger() {
-  return processValue(fetchNextItem(), 1);
-}
-function retrieveNextStringArray() {
-  return processValue(fetchNextItem(), 2);
-}
-function retrieveNextIntegerArray() {
-  return processValue(fetchNextItem(), 4);
-}
-function retrieveNextCharacterArray() {
-  return processValue(fetchNextItem(), 6);
-}
-function fetchNextItem() {
-  return dataParser.getNextItem();
-}
-function hasFurtherItems() {
-  return dataParser.hasMoreItems();
-}
-function setupInputProcessor(sourceInputs) {
+
+// Helper functions to retrieve and convert input data
+function getNextInteger(){ return convertInput(fetchNextItem(), 1); }
+function getNextStringArray(){ return convertInput(fetchNextItem(), 2); }
+function getNextIntegerArray(){ return convertInput(fetchNextItem(), 4); }
+function getNextCharacterArray(){ return convertInput(fetchNextItem(), 6); }
+
+function fetchNextItem(){ return dataProcessor.retrieveNext(); }
+function hasMoreItems(){ return dataProcessor.checkMoreAvailable(); }
+
+// Initializes the input processing object
+function initializeInput(inputArray){
   return {
-    sourceData: sourceInputs,
-    currentPosition: 0,
-    maximumCount: sourceInputs.length,
-    hasMoreItems: function() {
-      return (this.currentPosition < this.maximumCount);
+    sourceData : inputArray,
+    currentPosition : 0,
+    maximumLength : inputArray.length,
+    checkMoreAvailable : function(){
+      return (this.currentPosition < this.maximumLength);
     },
-    getNextItem: function() {
-      if (this.hasMoreItems()) {
+    retrieveNext : function(){
+      if(this.checkMoreAvailable()){
         return this.sourceData[this.currentPosition++];
       } else {
-        throw "InputBoundaryExceededException ‚No more input lines available";
+        throw "InputOutOfBoundsException: No more input available.";
       }
     }
   };
 }
-function outputResult(message) {
-  console.log(message);
+
+// Function to print results to standard output
+function printResult(outputValue){
+  console.log(outputValue);
 }
-function logDiagnostic(info) {
-  console.error("diagnostic:" + require("util").inspect(info, false, null));
+
+// Function to log debug messages to standard error
+function logDebugMessage(messageContent){
+  console.error("debug:" + require("util").inspect(messageContent, false, null));
 }
-// The 'operationCode' parameter specifies the transformation type:
-// - Default/Other : returns the value as is.
-// - 1: Parses as an integer.
-// - 2: Splits by spaces into a string array.
-// - 4: Splits by spaces and converts each part to a number.
-// - 6: Splits into an array of single characters.
-// - 7: Splits into characters and converts each to a number.
-// - 8: Joins array elements with spaces.
-// - 9: Joins array elements with newlines.
-// - 0: Joins array elements without any separator.
-function processValue(valueToProcess, operationCode) {
+
+// Input conversion utility
+// 'conversionType' parameter:
+// 1: Parse as integer.
+// 2: Split by space.
+// 4: Split by space and parse as numbers.
+// 6: Split into individual characters.
+// 7: Split into individual characters and parse as numbers.
+// 8: Join array elements with spaces.
+// 9: Join array elements with newlines.
+// 0: Join array elements without separator.
+// Default: Return input as is.
+function convertInput(inputValue, conversionType){
   try {
-    switch (operationCode) {
-      case 1:
-        return parseInt(valueToProcess);
-      case 2:
-        return valueToProcess.split(" ");
-      case 4:
-        return valueToProcess.split(" ").map(Number);
-      case 6:
-        return valueToProcess.split("");
-      case 7:
-        return valueToProcess.split("").map(Number);
-      case 8:
-        return valueToProcess.join(" ");
-      case 9:
-        return valueToProcess.join("\n");
-      case 0:
-        return valueToProcess.join("");
-      default:
-        return valueToProcess;
+    switch(conversionType){
+      case 1: return parseInt(inputValue);
+      case 2: return inputValue.split(" ");
+      case 4: return inputValue.split(" ").map(Number);
+      case 6: return inputValue.split("");
+      case 7: return inputValue.split("").map(Number);
+      case 8: return inputValue.join(" ");
+      case 9: return inputValue.join("\n");
+      case 0: return inputValue.join("");
+      default: return inputValue;
     }
-  } catch (err) {
-    return valueToProcess;
+  } catch(error) {
+    return inputValue; // Return original value on error
   }
 }
-function executeProgram() {
-  const initialParameters = retrieveNextIntegerArray();
-  const totalItems = initialParameters[0];
-  const totalOperations = initialParameters[1];
-  const operationDefinitions = new Array(totalOperations + 1);
-  const itemDependencies = {};
-  for (let opIdx = 0; opIdx < totalOperations; opIdx++) {
-    const currentOperationDetails = retrieveNextIntegerArray();
-    const operationCost = currentOperationDetails[0];
-    const dependencyCount = currentOperationDetails[1];
-    const unlockedItems = retrieveNextIntegerArray();
-    operationDefinitions[opIdx + 1] = {
-      operationCost: operationCost,
-      unlockedElements: unlockedItems
+
+// Main application logic
+function executeMainLogic(){
+  // Read the first line containing N and M
+  var firstLineData = getNextIntegerArray();
+  var numItems = firstLineData[0]; // N: total number of items
+  var numOperations = firstLineData[1]; // M: total number of operations
+
+  // Array to store details of each operation (1-indexed)
+  var operationDetails = new Array(numOperations + 1);
+  // Object to map items to the operations that unlock them
+  var unlockingMechanisms = {};
+
+  // Process each operation
+  for(var opIndex = 0; opIndex < numOperations; opIndex++){
+    var currentOperationInfo = getNextIntegerArray();
+    var operationCost = currentOperationInfo[0]; // Cost of this operation
+    var numSuccessItems = currentOperationInfo[1]; // Number of items unlocked by this operation
+    var successItemsList = getNextIntegerArray(); // List of items unlocked
+
+    // Store operation details
+    operationDetails[opIndex + 1] = {
+      operationCostValue : operationCost,
+      successfulItems : successItemsList
     };
-    for (let depIdx = 0; depIdx < dependencyCount; depIdx++) {
-      const currentUnlockedItem = unlockedItems[depIdx];
-      if (itemDependencies[currentUnlockedItem] === null || itemDependencies[currentUnlockedItem] === undefined) {
-        itemDependencies[currentUnlockedItem] = [];
+
+    // Populate the unlockingMechanisms map
+    for(var itemIndex = 0; itemIndex < numSuccessItems; itemIndex++){
+      var currentUnlockedItem = successItemsList[itemIndex];
+      if(unlockingMechanisms[currentUnlockedItem] == null){
+        unlockingMechanisms[currentUnlockedItem] = [];
       }
-      itemDependencies[currentUnlockedItem].push(opIdx + 1);
+      unlockingMechanisms[currentUnlockedItem].push(opIndex + 1); // Add operation index
     }
   }
-  let finalAccumulatedCost = 0;
-  const activatedElements = new Set();
-  for (let itemNum = 1; itemNum <= totalItems; itemNum++) {
-    if (!activatedElements.has(itemNum)) {
-      let minimumCost = 100000000000;
-      let bestOperationIndex = -1;
-      const potentialOperations = itemDependencies[itemNum];
-      if (potentialOperations === null || potentialOperations === undefined) {
-        outputResult(-1);
-        return;
+
+  // Initialize total cost and a set to track processed items
+  var totalCost = 0;
+  var processedItems = new Set();
+
+  // Iterate through all items from 1 to N
+  for(var itemCounter = 1; itemCounter <= numItems; itemCounter++){
+    // If the current item has not been processed yet
+    if(!processedItems.has(itemCounter)){
+      var minimumCost = 100000000000; // A very large number for initial minimum cost
+      var selectedOperationIndex = -1; // Index of the operation with minimum cost
+
+      // Get operations that can unlock the current item
+      var relevantOperations = unlockingMechanisms[itemCounter];
+
+      // If no operation can unlock this item, it's impossible
+      if(relevantOperations == null){
+        printResult(-1);
+        return; // Exit early
       }
-      for (let opIter = 0; opIter < potentialOperations.length; opIter++) {
-        const currentOpIndex = potentialOperations[opIter];
-        if (minimumCost > operationDefinitions[currentOpIndex].operationCost) {
-          minimumCost = operationDefinitions[currentOpIndex].operationCost;
-          bestOperationIndex = currentOpIndex;
+
+      // Find the cheapest operation that unlocks the current item
+      for(var opListIndex = 0; opListIndex < relevantOperations.length; opListIndex++){
+        var currentOpId = relevantOperations[opListIndex];
+        if(minimumCost > operationDetails[currentOpId].operationCostValue){
+          minimumCost = operationDetails[currentOpId].operationCostValue;
+          selectedOperationIndex = currentOpId;
         }
       }
-      finalAccumulatedCost += minimumCost;
-      for (let unlockedIter = 0; unlockedIter < operationDefinitions[bestOperationIndex].unlockedElements.length; unlockedIter++) {
-        activatedElements.add(operationDefinitions[bestOperationIndex].unlockedElements[unlockedIter]);
+
+      // Add the cost of the selected operation to the total
+      totalCost += minimumCost;
+
+      // Mark all items unlocked by the selected operation as processed
+      for(var unlockedItemIdx = 0; unlockedItemIdx < operationDetails[selectedOperationIndex].successfulItems.length; unlockedItemIdx++){
+        processedItems.add(operationDetails[selectedOperationIndex].successfulItems[unlockedItemIdx]);
       }
     }
   }
-  outputResult(finalAccumulatedCost);
+
+  // Output the final calculated total cost
+  printResult(totalCost);
 }

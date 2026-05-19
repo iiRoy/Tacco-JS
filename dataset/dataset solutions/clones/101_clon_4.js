@@ -1,44 +1,60 @@
-const acquireData = () => require('fs').readFileSync(0, 'utf8');
+const fileSystem = require('fs');
 
-const processRawData = (rawData) =>
-  rawData
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .reduce((acc, currentLine, index, array) => {
-      if (index % 2 === 0) {
-        acc.push({
-          primarySequence: currentLine.trim().split(' '),
-          secondarySequence: array[index + 1] ? array[index + 1].trim().split(' ') : [],
-        });
-      }
-      return acc;
-    }, []);
+// Read all standard input content as a single string
+const rawInputContent = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const determineExactMatches = (firstSeq, secondSeq) =>
-  firstSeq.filter((element, position) => element === secondSeq[position]).length;
+// Process the raw content into an array of trimmed lines
+const rawInputLines = rawInputContent.trim().split('\n');
 
-const determinePartialMatches = (firstSeq, secondSeq) =>
-  firstSeq.reduce((accumulator, primaryValue) =>
-    accumulator + Array.from({ length: firstSeq.length })
-               .filter((_, comparisonIndex) => primaryValue === secondSeq[comparisonIndex])
-               .length,
-  0);
+/**
+ * Groups an array of lines into pairs.
+ * Each pair consists of two consecutive lines from the input.
+ * @param {string[]} allLines - An array of input lines.
+ * @returns {string[][]} An array where each element is a two-element array [line1, line2].
+ */
+function groupLinesIntoPairs(allLines) {
+  const linePairs = [];
+  for (let lineIndex = 0; lineIndex < allLines.length; lineIndex += 2) {
+    linePairs.push([allLines[lineIndex], allLines[lineIndex + 1]]);
+  }
+  return linePairs;
+}
 
-const executeAnalysis = (dataset) =>
-  dataset.map(pair => ({
-    exactCount: determineExactMatches(pair.primarySequence, pair.secondarySequence),
-    partialSum: determinePartialMatches(pair.primarySequence, pair.secondarySequence),
-  }));
+/**
+ * Analyzes a pair of string sequences to find positional and content matches.
+ * @param {string[]} sequenceStrings - A two-element array [primaryString, secondaryString].
+ * @returns {number[]} A two-element array [positionalMatches, contentMatches].
+ */
+function analyzeSequencePair(sequenceStrings) {
+  const [primaryString, secondaryString] = sequenceStrings;
 
-const presentResults = (results) =>
-  results.forEach(res => process.stdout.write(`${res.exactCount} ${res.partialSum}\n`));
+  // Split and trim each string into an array of elements
+  const primaryElements = primaryString.trim().split(' ');
+  const secondaryElements = secondaryString.trim().split(' ');
 
-const commencement = () => {
-  const allInput = acquireData();
-  const structuredInput = processRawData(allInput);
-  const analysisOutput = executeAnalysis(structuredInput);
-  presentResults(analysisOutput);
-};
+  // Calculate positional matches: elements that are identical and at the same index
+  const positionalMatches = primaryElements.filter((element, index) =>
+    element === secondaryElements[index]
+  ).length;
 
-commencement();
+  // Create a Set from the secondary elements for efficient content lookup
+  const secondaryElementsSet = new Set(secondaryElements);
+
+  // Calculate content matches: elements from primary that exist anywhere in secondary
+  const contentMatches = primaryElements.filter(element =>
+    secondaryElementsSet.has(element)
+  ).length;
+
+  return [positionalMatches, contentMatches];
+}
+
+// Group the raw input lines into pairs
+const groupedInput = groupLinesIntoPairs(rawInputLines);
+
+// Process each pair to get the match counts
+const computedResults = groupedInput.map(analyzeSequencePair);
+
+// Output the results for each pair
+computedResults.forEach(matchPair => {
+  console.log(matchPair[0], matchPair[1]);
+});

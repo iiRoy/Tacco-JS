@@ -1,36 +1,33 @@
-function ComputeGameTally(gameInputText) {
-    const allNumbers = gameInputText.trim().match(/\d+/g).map(Number);
-    const numberOfContests = allNumbers[0];
-    const contestCards = allNumbers.slice(1);
+function processCardGameResults(inputContent) {
+    const allInputTokens = inputContent.trim().split(/\s|\n/);
 
-    let scoreAccumulator = { playerOne: 0, playerTwo: 0 };
+    const numberOfRounds = parseInt(allInputTokens[0]);
 
-    const scoringRules = new Map([
-        [0, [1, 1]],
-        [-1, [0, 3]],
-        [1, [3, 0]]
-    ]);
+    const roundCardPairs = Array.from({ length: numberOfRounds }, (_, index) => {
+        const playerOneValue = allInputTokens[1 + index * 2];
+        const playerTwoValue = allInputTokens[1 + index * 2 + 1];
+        return [playerOneValue, playerTwoValue];
+    });
 
-    let offsetPosition = 0;
-    while (offsetPosition < numberOfContests * 2) {
-        const p1Card = contestCards[offsetPosition];
-        const p2Card = contestCards[offsetPosition + 1];
+    const finalScoreAccumulator = roundCardPairs.reduce((currentTotalScores, currentRoundCards) => {
+        let [playerOneCurrentScore, playerTwoCurrentScore] = currentTotalScores;
+        const [cardAString, cardBString] = currentRoundCards;
 
-        const outcomeKey = Math.sign(p1Card - p2Card);
-        const [pointsP1, pointsP2] = scoringRules.get(outcomeKey);
+        const cardA = parseInt(cardAString);
+        const cardB = parseInt(cardBString);
 
-        scoreAccumulator.playerOne += pointsP1;
-        scoreAccumulator.playerTwo += pointsP2;
+        const [incrementA, incrementB] =
+            (cardA === cardB) ? [1, 1] :
+            (cardA < cardB) ? [0, 3] :
+            [3, 0];
 
-        offsetPosition += 2;
-    }
+        playerOneCurrentScore += incrementA;
+        playerTwoCurrentScore += incrementB;
 
-    console.log(scoreAccumulator.playerOne + " " + scoreAccumulator.playerTwo);
+        return [playerOneCurrentScore, playerTwoCurrentScore];
+    }, [0, 0]);
+
+    console.log(finalScoreAccumulator[0] + " " + finalScoreAccumulator[1]);
 }
 
-const systemInputSource = require("fs");
-const filePathIdentifier = "/dev/stdin";
-const encodingFormat = "utf8";
-const rawDataPayload = systemInputSource.readFileSync(filePathIdentifier, encodingFormat);
-
-ComputeGameTally(rawDataPayload);
+processCardGameResults(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,46 +1,17 @@
-process
-  .stdin
-  .resume();
-process
-  .stdin
-  .setEncoding(
-    'utf8'
-  );
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+// This is where the primary input processing logic resides.
 
-//  This section handles all incoming standard input for the application.
-
-process
-  .stdin
-  .on(
-    'incomingStreamData',
-    function (
-      inputBlock
-    ) {
-      let tokenizedData =
-        inputBlock
-          .toString()
-          .split(
-            ' '
-          );
-
-      let firstValue = tokenizedData[0];
-      let secondValue = tokenizedData[1];
-      let thirdValue = tokenizedData[2];
-
-      if (
-        thirdValue >= firstValue &&
-        thirdValue <= secondValue
-      ) {
-        console
-          .log(
-            "TrueResult"
-          );
-      }
-      else {
-        console
-          .log(
-            "FalseResult"
-          );
-      }
+process.stdin.on('data', function (inputData) {
+    var dataParts = inputData.toString().split(' ');
+    var valOne = dataParts[0];
+    var valTwo = dataParts[1];
+    var valCheck = dataParts[2];
+    
+    if (valCheck >= valOne && valCheck <= valTwo) {
+        console.log("Yes");
     }
-  );
+    else {
+        console.log("No");
+    }
+});

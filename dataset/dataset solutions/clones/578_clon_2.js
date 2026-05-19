@@ -1,75 +1,63 @@
-(function (sourceText) {
-    /*
-     * This anonymous function serves as the main entry point for processing
-     * textual input to determine a specific type of longest common substring
-     * between successive pairs of lines from the input.
-     * It simulates reading from a standard input stream.
-     */
+(function (rawData) {
+    // This section initializes variables and processes the raw input data.
+    // The rawData is first cleaned by removing carriage return characters,
+    // then split into an array of individual lines based on newline characters.
+    var lineSegments = rawData.replace(/\r/g, '').split("\n"),
+        stringPair = [],     // An array to temporarily hold the two strings being compared in each iteration.
+        shorterText,         // Will store the string with the lesser length.
+        longerText,          // Will store the string with the greater length.
+        temporaryVar,        // An auxiliary variable, declared but not utilized in the current logic.
+        currentLength,       // Keeps track of the length of the substring currently being examined.
+        maxLength;           // Stores the longest common substring length found for the current pair.
 
-    // First, preprocess the raw input: standardize line endings (remove carriage returns)
-    // and then split the entire text into an array of individual lines.
-    const processedLines = sourceText.replace(/\r/g, '').split("\n");
-
-    // Declare all variables that will be used within this scope.
-    let stringHolder = [];         // An array to temporarily hold the two current strings being compared.
-    let shorterSegment;            // Will store the string with fewer characters for optimization.
-    let longerSegment;             // Will store the string with more characters.
-    let unnecessaryPlaceholder;    // A variable declared for structural consistency, but not utilized.
-    let currentMatchLength;        // Tracks the potential length of a common substring being evaluated.
-    let peakMatchLength;           // Stores the maximum length found for the current pair of strings.
-
-    // Initiate an infinite loop to process pairs of lines until a specific termination condition is met.
+    // The main processing loop continues indefinitely until an explicit break condition is met.
     while (true) {
-        // Reset the maximum match length for each new pair of strings.
-        peakMatchLength = 0;
+        maxLength = 0x0; // Reset the maximum length for each new pair of strings.
 
-        // Extract the first line for the current comparison pair from the beginning of the `processedLines` array.
-        stringHolder[0] = processedLines.shift();
+        // Retrieve the first string for the current comparison from the input segments.
+        stringPair[0x0] = lineSegments.shift();
 
-        // Check if the extracted line is empty. An empty string signals the end of input.
-        if (stringHolder[0] === '') {
-            break; // Exit the loop if no more input lines are available.
+        // If the first string retrieved is empty, it signals the end of the input data,
+        // and the loop is terminated.
+        if (stringPair[0x0] === '') {
+            break;
         }
 
-        // Extract the second line for the current comparison pair.
-        stringHolder[1] = processedLines.shift();
+        // Retrieve the second string for the current comparison.
+        stringPair[0x1] = lineSegments.shift();
 
         // Determine which of the two strings is shorter and which is longer.
-        // This assignment helps to optimize the nested loop by iterating over the shorter string.
-        if (stringHolder[0].length < stringHolder[1].length) {
-            shorterSegment = stringHolder[0];
-            longerSegment  = stringHolder[1];
+        // This optimization helps in iterating over the smaller string for efficiency.
+        if (stringPair[0x0].length < stringPair[0x1].length) {
+            shorterText = stringPair[0x0];
+            longerText = stringPair[0x1];
         } else {
-            shorterSegment = stringHolder[1];
-            longerSegment  = stringHolder[0];
+            shorterText = stringPair[0x1];
+            longerText = stringPair[0x0];
         }
 
-        // Iterate through each possible starting character position within the shorter segment.
-        for (let charIndex = 0, segmentLimit = shorterSegment.length; charIndex < segmentLimit; charIndex++) {
-            // Initialize `currentMatchLength` for the potential substring.
-            // It starts one greater than the `peakMatchLength` to attempt finding a longer match.
-            currentMatchLength = peakMatchLength + 1;
+        // Iterate through each possible starting position within the shorter string.
+        for (var idx = 0x0, shortLen = shorterText.length; idx < shortLen; idx++) {
+            // Initialize the current substring length to one greater than the maximum found so far.
+            // This allows for checking progressively longer substrings.
+            currentLength = maxLength + 0x1;
 
-            // Expand the potential common substring from the `shorterSegment` as long as:
-            // 1. The substring remains within the bounds of `shorterSegment`.
-            // 2. The substring is found within the `longerSegment` at an index *greater than 0*.
-            //    Note: The condition `> 0` means it must not be found at the very beginning of `longerSegment`.
-            while (shorterSegment[charIndex + currentMatchLength] && longerSegment.indexOf(shorterSegment.slice(charIndex, charIndex + currentMatchLength)) > 0) {
-                currentMatchLength++; // Increment the length of the potential match.
+            // This inner loop attempts to extend the current substring.
+            // It continues as long as:
+            // 1. The substring being checked is still within the bounds of the shorterText.
+            // 2. The substring exists within the longerText, and its starting index in longerText is not 0.
+            //    (Note: The original logic specifically checks for `> 0`, meaning substrings starting at index 0 of `longerText` are not counted by this loop.)
+            while (shorterText[idx + currentLength] && longerText.indexOf(shorterText.slice(idx, idx + currentLength)) > 0x0) {
+                currentLength++; // Increment the length of the substring if it meets the criteria.
             }
 
-            // After the inner loop, if the `currentMatchLength` (adjusted by -1 because it increments one too many)
-            // is greater than the `peakMatchLength` found so far for this pair, update the peak.
-            if (currentMatchLength > peakMatchLength) {
-                peakMatchLength = currentMatchLength - 1; // Store the new maximum length.
+            // After the inner loop, if the `currentLength` (which was incremented one too many times)
+            // indicates a longer common substring than `maxLength`, update `maxLength`.
+            if (currentLength > maxLength) {
+                maxLength = currentLength - 0x1; // Adjust by subtracting one to get the actual length.
             }
         }
-
-        // Output the final `peakMatchLength` for the current pair of strings to the console.
-        console.log(peakMatchLength);
+        // Output the determined maximum length of the common substring for the current pair of strings.
+        console.log(maxLength);
     }
-})(
-    // This immediately invoked function expression (IIFE) is called with the
-    // content of the standard input file, read synchronously as UTF-8 text.
-    require("fs").readFileSync("/dev/stdin", "utf8")
-);
+})(require("fs").readFileSync("/dev/stdin", "utf8")); // The entire function is immediately invoked with input read from standard input.

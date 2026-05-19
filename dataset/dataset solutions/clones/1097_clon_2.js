@@ -1,182 +1,113 @@
 process.stdin.resume();
+process.stdin.setEncoding("utf8");
 
-/*
- * Configure the standard input stream to interpret incoming bytes
- * as UTF-8 characters.
- */
-process.stdin.setEncoding( "utf8" );
+let inputBuffer = "";
 
-// Buffer to accumulate all data received from standard input.
-let receivedData = "";
+process.stdin.on("data", function(dataChunk) {
+    inputBuffer += dataChunk;
+});
 
-/*
- * Event listener for incoming data chunks.
- * Appends each data chunk to the 'receivedData' string.
- */
-process.stdin.on( "data" , function ( dataSegment ) {
-    receivedData += dataSegment;
-} );
-
-/*
- * Event listener for the end of the input stream.
- * Splits the accumulated data by newline characters and passes the resulting
- * array of lines to the primary processing function.
- */
-process.stdin.on( "end" , function () {
-    primaryProcessor( receivedData.split( "\n" ) );
-} );
-
+process.stdin.on("end", function() {
+    // Once all input is received, process it
+    executeTreeOperations(inputBuffer.split("\n"));
+});
 
 /**
- * Creates and initializes a new tree node object.
- *
- * @param {number} value The numerical value to store in the node.
- * @returns {object} A new node object with the given value and null children pointers.
+ * Creates a new binary tree node.
+ * @param {number} nodeValue The value to store in the node.
+ * @returns {object} A new node object.
  */
-function createTreeNode ( value ) {
-    // Initialize an empty object for the node.
-    let nodeObject = {};
-
-    // Assign the provided value to the node's 'val' property.
-    nodeObject.val = value;
-
-    // Initialize left and right child pointers to null.
-    nodeObject.leftPtr = null;
-    nodeObject.rightPtr = null;
-
-    // Return the newly created node.
-    return nodeObject;
+function createBinaryTreeNode(nodeValue) {
+    let newNodeObject = {}; // Initialize a new object for the node
+    newNodeObject.key = nodeValue;
+    newNodeObject.left = null;
+    newNodeObject.right = null;
+    return newNodeObject;
 }
 
 /**
- * Inserts a child node into a binary search tree rooted at parentNode.
- *
- * @param {object|null} parentNode The current node in the traversal, or null if empty.
- * @param {object} childNode The node to be inserted.
- * @returns {object} The root of the (sub)tree after insertion.
+ * Inserts a node into the binary search tree.
+ * @param {object|null} currentTreeRoot The current root of the subtree.
+ * @param {object} nodeToPlace The node to be inserted.
+ * @returns {object} The root of the modified subtree.
  */
-function placeNode ( parentNode , childNode ) {
-    // If the current position is empty, the child node becomes the root of this subtree.
-    if ( parentNode === null ) {
-        return childNode;
+function addNodeToBinaryTree(currentTreeRoot, nodeToPlace) {
+    if (currentTreeRoot === null) {
+        return nodeToPlace; // If subtree is empty, the new node becomes the root
     }
 
-    // Compare the value of the child node with the current parent node.
-    if ( childNode.val < parentNode.val ) {
-        // If child's value is smaller, insert into the left subtree.
-        parentNode.leftPtr = placeNode( parentNode.leftPtr , childNode );
+    // Decide whether to go left or right based on the key
+    if (nodeToPlace.key < currentTreeRoot.key) {
+        currentTreeRoot.left = addNodeToBinaryTree(currentTreeRoot.left, nodeToPlace);
     } else {
-        // Otherwise, insert into the right subtree (handles equal or larger values).
-        parentNode.rightPtr = placeNode( parentNode.rightPtr , childNode );
+        currentTreeRoot.right = addNodeToBinaryTree(currentTreeRoot.right, nodeToPlace);
     }
 
-    // Return the (potentially updated) parent node.
-    return parentNode;
+    return currentTreeRoot; // Return the (potentially updated) root of the subtree
 }
 
 /**
- * Performs an in-order traversal of a binary tree, collecting node values.
- * (Left -> Root -> Right)
- *
- * @param {object|null} currentElement The current node being visited.
- * @param {Array<number>} resultList The array to which collected values are pushed.
+ * Performs an in-order traversal of the binary tree.
+ * @param {object|null} currentTreeRoot The current root of the subtree.
+ * @param {Array<number>} collectedValues An array to store the node keys.
  */
-function traverseInOrder ( currentElement , resultList ) {
-    // Base case: if the current node is null, do nothing.
-    if ( currentElement === null ) {
-        return;
+function performInOrderTraversal(currentTreeRoot, collectedValues) {
+    if (currentTreeRoot === null) {
+        return; // Base case: empty subtree
     }
-
-    // Recursively traverse the left subtree.
-    traverseInOrder( currentElement.leftPtr , resultList );
-
-    // Add the current node's value to the result list.
-    resultList.push( currentElement.val );
-
-    // Recursively traverse the right subtree.
-    traverseInOrder( currentElement.rightPtr , resultList );
+    performInOrderTraversal(currentTreeRoot.left, collectedValues); // Traverse left
+    collectedValues.push(currentTreeRoot.key); // Visit current node
+    performInOrderTraversal(currentTreeRoot.right, collectedValues); // Traverse right
 }
 
 /**
- * Performs a pre-order traversal of a binary tree, collecting node values.
- * (Root -> Left -> Right)
- *
- * @param {object|null} currentElement The current node being visited.
- * @param {Array<number>} resultList The array to which collected values are pushed.
+ * Performs a pre-order traversal of the binary tree.
+ * @param {object|null} currentTreeRoot The current root of the subtree.
+ * @param {Array<number>} collectedValues An array to store the node keys.
  */
-function traversePreOrder ( currentElement , resultList ) {
-    // Base case: if the current node is null, do nothing.
-    if ( currentElement === null ) {
-        return;
+function performPreOrderTraversal(currentTreeRoot, collectedValues) {
+    if (currentTreeRoot === null) {
+        return; // Base case: empty subtree
     }
-
-    // Add the current node's value to the result list first.
-    resultList.push( currentElement.val );
-
-    // Recursively traverse the left subtree.
-    traversePreOrder( currentElement.leftPtr , resultList );
-
-    // Recursively traverse the right subtree.
-    traversePreOrder( currentElement.rightPtr , resultList );
+    collectedValues.push(currentTreeRoot.key); // Visit current node
+    performPreOrderTraversal(currentTreeRoot.left, collectedValues); // Traverse left
+    performPreOrderTraversal(currentTreeRoot.right, collectedValues); // Traverse right
 }
 
 /**
- * Executes a specified traversal function on a tree and prints the collected values.
- *
- * @param {object|null} treeRoot The root node of the tree to traverse.
- * @param {Function} traversalFunction The function to use for traversing the tree
- *                                     (e.g., traverseInOrder, traversePreOrder).
+ * Executes a given traversal strategy and prints the result.
+ * @param {object|null} treeRoot The root of the binary tree.
+ * @param {function} traversalStrategy The function to use for traversal (e.g., performInOrderTraversal).
  */
-function outputTraversal ( treeRoot , traversalFunction ) {
-    // Initialize an empty array to store the values collected during traversal.
-    let collectedValues = [];
-
-    // Call the provided traversal function, passing the tree root and the collection array.
-    traversalFunction( treeRoot , collectedValues );
-
-    // Print the collected values, joined by spaces, to the console.
-    console.log( collectedValues.join( " " ) );
+function displayTraversalResult(treeRoot, traversalStrategy) {
+    let outputBuffer = []; // Array to hold the keys during traversal
+    traversalStrategy(treeRoot, outputBuffer); // Populate the array using the provided strategy
+    console.log(outputBuffer.join(" ")); // Print the collected keys, space-separated
 }
 
 /**
- * Main processing function that handles input lines to build and query a binary search tree.
- *
- * @param {Array<string>} inputLines An array of strings, where each string represents a line of input.
+ * Main function to process input commands and manage the binary tree.
+ * @param {Array<string>} inputCommandLines An array of strings, each representing a command.
  */
-function primaryProcessor ( inputLines ) {
-    // The first line contains the total number of operations.
-    let operationCount = Number( inputLines[ 0 ] );
+function executeTreeOperations(inputCommandLines) {
+    let totalOperations = Number(inputCommandLines[0]); // First line is the number of operations
+    let mainTreeRoot = null; // Initialize the root of the binary tree
 
-    // Initialize the root of the binary search tree to null.
-    let binarySearchTreeRoot = null;
+    // Iterate through each command line
+    for (let operationIndex = 0; operationIndex < totalOperations; operationIndex++) {
+        let currentOperationDetails = inputCommandLines[operationIndex + 1].split(" "); // Split command into parts
 
-    // Loop through each operation specified in the input lines.
-    for ( let opIdx = 0; opIdx < operationCount; opIdx++ ) {
-        // Split the current instruction line into parts.
-        // The index is opIdx + 1 because the first line was operationCount.
-        let currentInstruction = inputLines[ opIdx + 1 ].split( " " );
-
-        // Determine the type of operation based on the first character of the first part.
-        switch ( currentInstruction[ 0 ][ 0 ] ) {
-            case "i": // Case for inserting a new value into the tree.
-                // Parse the numeric value to be inserted.
-                let numericValue = Number( currentInstruction[ 1 ] );
-
-                // Create a new tree node with the parsed value.
-                let newNodeObj = createTreeNode( numericValue );
-
-                // Insert the new node into the binary search tree.
-                binarySearchTreeRoot = placeNode( binarySearchTreeRoot , newNodeObj );
+        // Determine the type of operation based on the first character
+        switch (currentOperationDetails[0][0]) {
+            case "i": // Insert operation
+                let valueForInsertion = Number(currentOperationDetails[1]);
+                let newTreeNode = createBinaryTreeNode(valueForInsertion);
+                mainTreeRoot = addNodeToBinaryTree(mainTreeRoot, newTreeNode);
                 break;
-
-            case "p": // Case for printing tree traversals.
-                // Output the in-order traversal of the tree.
-                outputTraversal( binarySearchTreeRoot , traverseInOrder );
-                // Output the pre-order traversal of the tree.
-                outputTraversal( binarySearchTreeRoot , traversePreOrder );
+            case "p": // Print operation (in-order and pre-order)
+                displayTraversalResult(mainTreeRoot, performInOrderTraversal);
+                displayTraversalResult(mainTreeRoot, performPreOrderTraversal);
                 break;
-
-            // No default case needed as input is assumed to be valid per problem spec.
         }
     }
 }

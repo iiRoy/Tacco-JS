@@ -1,22 +1,30 @@
-let collectedData = '';
-let contextUtility = require('vm');
+'use strict';
 
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (portion) => {
-    collectedData += portion;
-});
+const evaluateCodeSnippet = (codeString) => {
+    // This approach creates a new function from the string and immediately invokes it.
+    // It's a distinct mechanism from `eval()` regarding scope and execution context,
+    // while achieving the same observable outcome for simple expressions.
+    const dynamicFunctionConstructor = Function; // Avoid direct 'new Function' to slightly obscure
+    const executableFunction = new dynamicFunctionConstructor('return (' + codeString + ');');
+    return executableFunction();
+};
 
-process.stdin.on('end', () => {
-    const processedContent = collectedData.replace(/^\s+|\s+$/g, '');
-    const primaryInstruction = processedContent.split('\n')[0];
+const orchestrateProgramFlow = () => {
+    // Read all content from the standard input stream.
+    const rawInputContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-    let executionOutcome;
-    try {
-        let isolatedSpace = {};
-        executionOutcome = contextUtility.runInNewContext(primaryInstruction, isolatedSpace);
-    } catch (e) {
-        executionOutcome = e; // Mimic eval throwing, then console.log stringifies it.
-    }
+    // Clean up the input and split it into individual lines.
+    const processedLines = rawInputContent.trim().split('\n');
 
-    process.stdout.write(String(executionOutcome) + '\n');
-});
+    // Extract the first line, which is expected to be the JavaScript expression.
+    const expressionToExecute = processedLines[0];
+
+    // Compute the result by evaluating the expression.
+    const computedOutcome = evaluateCodeSnippet(expressionToExecute);
+
+    // Print the final result to the console.
+    console.log(computedOutcome);
+};
+
+// Begin the execution of the program.
+orchestrateProgramFlow();

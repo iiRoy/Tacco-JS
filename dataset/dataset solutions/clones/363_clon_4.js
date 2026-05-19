@@ -1,57 +1,60 @@
-const analyzeBoardStates = () => {
-    const stateDistances = new Map();
-    const initialArrangement = Object.freeze([0, 1, 2, 3, 4, 5, 6, 7]);
-    const initialString = initialArrangement.join('');
-    
-    stateDistances.set(initialString, 0);
+function exchangeCharacters(sourceString, posA, posB) {
+    const characterArray = sourceString.split('');
+    const temporaryChar = characterArray[posA];
+    characterArray[posA] = characterArray[posB];
+    characterArray[posB] = temporaryChar;
+    return characterArray.join('');
+}
 
-    const processingQueue = [[initialArrangement, 0]]; 
+function solveGridMoves() {
+    const distanceRegistry = new Map();
+    const initialTileOrder = "01234567";
+    const stateQueue = [];
 
-    const rowDelta = Object.freeze([-1, 0, 0, 1]);
-    const colDelta = Object.freeze([0, -1, 1, 0]);
+    const moveOffsets = [
+        [-1, 0],
+        [0, -1],
+        [0, 1],
+        [1, 0]
+    ];
 
-    while (processingQueue.length > 0) {
-        const [currentArrangement, currentMoves] = processingQueue.shift();
+    distanceRegistry.set(initialTileOrder, 0);
+    stateQueue.push([initialTileOrder, 0, 0]);
 
-        const zeroIndex = currentArrangement.indexOf(0);
-        const zeroRow = Math.floor(zeroIndex / 4);
-        const zeroCol = zeroIndex % 4;
+    let head = 0;
+    while (head < stateQueue.length) {
+        const [currentTiles, moveCount, blankTileIndex] = stateQueue[head++];
+        
+        const rowCoord = Math.floor(blankTileIndex / 4);
+        const colCoord = blankTileIndex % 4;
 
-        rowDelta.forEach((rChange, idx) => {
-            const cChange = colDelta[idx];
-            const nextZeroRow = zeroRow + rChange;
-            const nextZeroCol = zeroCol + cChange;
+        for (const [deltaY, deltaX] of moveOffsets) {
+            const nextRowCoord = rowCoord + deltaY;
+            const nextColCoord = colCoord + deltaX;
 
-            if (nextZeroRow < 0 || nextZeroCol < 0 || nextZeroRow >= 2 || nextZeroCol >= 4) {
-                return;
+            if (nextRowCoord < 0 || nextColCoord < 0 || nextRowCoord >= 2 || nextColCoord >= 4) {
+                continue;
             }
 
-            const targetIndex = nextZeroRow * 4 + nextZeroCol;
-
-            const nextArrangement = [...currentArrangement];
-            const tileToMove = nextArrangement[targetIndex];
+            const nextBlankTileIndex = nextRowCoord * 4 + nextColCoord;
             
-            nextArrangement[zeroIndex] = tileToMove;
-            nextArrangement[targetIndex] = 0;
+            const nextGridState = exchangeCharacters(currentTiles, blankTileIndex, nextBlankTileIndex);
 
-            const nextStateIdentifier = nextArrangement.join('');
-
-            if (!stateDistances.has(nextStateIdentifier)) {
-                stateDistances.set(nextStateIdentifier, currentMoves + 1);
-                processingQueue.push([nextArrangement, currentMoves + 1]);
+            if (!distanceRegistry.has(nextGridState)) {
+                distanceRegistry.set(nextGridState, moveCount + 1);
+                stateQueue.push([nextGridState, moveCount + 1, nextBlankTileIndex]);
             }
-        });
+        }
     }
-    return stateDistances;
-};
+    return distanceRegistry;
+}
 
-const fileSystem = require('fs');
-const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const inputLines = rawInput.trim().split('\n');
+const rawInputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const queryStates = rawInputData.trim().split("\n");
 
-const solutionMap = analyzeBoardStates();
+const computedSolutions = solveGridMoves();
 
-inputLines.forEach(lineEntry => {
-    const formattedQuery = lineEntry.split(' ').join('');
-    console.log(solutionMap.get(formattedQuery));
+queryStates.forEach(function(singleQueryLine) {
+    const cleanedQuery = singleQueryLine.split(" ").join("");
+    console.log(computedSolutions.get(cleanedQuery));
 });

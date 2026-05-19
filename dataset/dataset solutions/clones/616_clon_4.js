@@ -1,52 +1,20 @@
-let collectedData = '';
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
+const fs = require('fs');
 
-process.stdin.on('data', piece => {
-    collectedData += piece;
-});
+let sourceData = fs.readFileSync('/dev/stdin', 'utf8');
+let processedLines = sourceData.trim().split("\n");
 
-process.stdin.on('end', () => {
-    processTransformedInput(collectedData);
-});
+let initialValue = processedLines.shift() - 0;
 
-function processTransformedInput(entireText) {
-    const relevantLines = entireText.split(/\s*\r?\n\s*/).filter(Boolean);
-    
-    const contentSegments = relevantLines.slice(1); 
-
-    const enumerators = Array.from({ length: 5 }, (_, idx) => idx);
-
-    const numericCombinations = enumerators.flatMap(firstElementIndex => 
-        enumerators.flatMap(secondElementIndex => {
-            if (firstElementIndex === secondElementIndex) {
-                return [];
-            }
-            const combinedString = contentSegments[firstElementIndex] + contentSegments[secondElementIndex];
-            return [Number(combinedString)];
-        })
+let combinedNumericValues = Array.from({ length: 5 }, (_, firstIndex) => firstIndex)
+    .flatMap(firstIndex =>
+        Array.from({ length: 5 }, (_, secondIndex) => secondIndex)
+            .filter(secondIndex => firstIndex < secondIndex)
+            .flatMap(secondIndex => [
+                (processedLines[firstIndex] + processedLines[secondIndex]) - 0,
+                (processedLines[secondIndex] + processedLines[firstIndex]) - 0
+            ])
     );
 
-    function retrieveNthSmallest(dataCollection) {
-        let firstRank = Infinity;
-        let secondRank = Infinity;
-        let thirdRank = Infinity; 
+combinedNumericValues.sort((valA, valB) => valA - valB);
 
-        for (const currentValue of dataCollection) {
-            if (currentValue < firstRank) {
-                thirdRank = secondRank;
-                secondRank = firstRank;
-                firstRank = currentValue;
-            } else if (currentValue < secondRank) {
-                thirdRank = secondRank;
-                secondRank = currentValue;
-            } else if (currentValue < thirdRank) {
-                thirdRank = currentValue;
-            }
-        }
-        return thirdRank;
-    }
-
-    const specificRankedValue = retrieveNthSmallest(numericCombinations); 
-    console.log(specificRankedValue);
-}
+console.log(combinedNumericValues[2]);

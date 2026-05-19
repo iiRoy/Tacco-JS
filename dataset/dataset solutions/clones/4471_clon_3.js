@@ -1,97 +1,45 @@
-function calculateSumOfTopElements(dataCollection, totalCountParameter, elementsToSum) {
-    if (!Array.isArray(dataCollection) || dataCollection.length === 0) {
-        return 0;
-    }
-
-    if (elementsToSum <= 0) {
-        return 0;
-    }
-
-    const actualArrayLength = dataCollection.length;
-    const effectiveElementsToExtract = Math.min(elementsToSum, actualArrayLength);
-
-    if (effectiveElementsToExtract === 0) {
-        return 0;
-    }
-
-    const startingIndexForSlice = actualArrayLength - effectiveElementsToExtract;
-    const relevantElements = dataCollection.slice(startingIndexForSlice);
-    const accumulatedValue = relevantElements.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-
-    return accumulatedValue;
+function readStandardInput() {
+    return require("fs").readFileSync("/dev/stdin", "utf8");
 }
 
-const numericComparator = (valA, valB) => {
-    return valA - valB;
-};
+const numericComparator = (valA, valB) => valA - valB;
 
-function parseAndOrderNumerics(inputStrings) {
-    if (!Array.isArray(inputStrings) || inputStrings.length === 0) {
-        return [];
-    }
-
-    const parsedNumbers = inputStrings.map(strVal => {
-        const num = parseInt(strVal, 10);
-        return num;
-    });
-
-    parsedNumbers.sort(numericComparator);
-
-    return parsedNumbers;
+function prepareAndSort(inputArray) {
+    const parsedNumbers = inputArray.map(elementStr => parseInt(elementStr, 10));
+    const sortedNumbers = parsedNumbers.sort(numericComparator);
+    return sortedNumbers;
 }
 
-function processInputAndDisplayResult(rawInputPayload) {
-    if (typeof rawInputPayload !== 'string' || rawInputPayload.trim().length === 0) {
-        return;
-    }
+function computeSumOfLargest(arrSorted, arrayLength, numElementsToSum) {
+    const sliceStartIdx = arrayLength - numElementsToSum + 1;
+    const sliceEndIdx = arrayLength + 1;
 
-    const inputLines = rawInputPayload.split("\n");
+    const elementsToSum = arrSorted.slice(sliceStartIdx, sliceEndIdx);
 
-    if (inputLines.length < 2) {
-        return;
-    }
+    const totalSum = elementsToSum.reduce((accumulator, currentValue) => {
+        return accumulator + currentValue;
+    }, 0);
 
-    const configurationLine = inputLines[0];
-    const configurationSegments = configurationLine.split(" ");
-
-    if (configurationSegments.length < 3) {
-        return;
-    }
-
-    const arrayLengthParameter = parseInt(configurationSegments[1], 10);
-    const elementsToSumParameter = parseInt(configurationSegments[2], 10);
-
-    if (isNaN(arrayLengthParameter) || arrayLengthParameter < 0 ||
-        isNaN(elementsToSumParameter) || elementsToSumParameter < 0) {
-        return;
-    }
-
-    const dataElementsString = inputLines[1];
-    const rawDataStrings = dataElementsString.split(" ");
-
-    if (rawDataStrings.length !== arrayLengthParameter) {
-        // Proceeding with available data despite length mismatch.
-    }
-
-    const numericallyOrderedData = parseAndOrderNumerics(rawDataStrings);
-
-    const finalCalculatedSum = calculateSumOfTopElements(
-        numericallyOrderedData,
-        arrayLengthParameter,
-        elementsToSumParameter
-    );
-
-    console.log(`The aggregated value is: ${finalCalculatedSum}`);
+    return totalSum;
 }
 
-const STANDARD_INPUT_PATH = "/dev/stdin";
+function processInput(rawData) {
+    const lines = rawData.split("\n");
 
-let fileContent = '';
-try {
-    const fileSystemModule = require("fs");
-    fileContent = fileSystemModule.readFileSync(STANDARD_INPUT_PATH, "utf8");
-} catch (readError) {
-    return;
+    const firstLineParts = lines[0].split(" ");
+    const secondLineParts = lines[1].split(" ");
+
+    const N_VALUE_INDEX = 1;
+    const K_VALUE_INDEX = 2;
+
+    const arrayLength = parseInt(firstLineParts[N_VALUE_INDEX], 10);
+    const numElementsToSum = parseInt(firstLineParts[K_VALUE_INDEX], 10);
+
+    const sortedNumericData = prepareAndSort(secondLineParts);
+
+    const finalCalculatedSum = computeSumOfLargest(sortedNumericData, arrayLength, numElementsToSum);
+
+    console.log(finalCalculatedSum);
 }
 
-processInputAndDisplayResult(fileContent);
+processInput(readStandardInput());

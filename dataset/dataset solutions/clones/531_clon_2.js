@@ -1,110 +1,150 @@
 function primaryExecution() {
-  var numNodes = readInput();
-  var numConstraints = readInput();
-  var simpleEdges = [];
-  var complexOptions = [];
-  iterateRange(numConstraints, function() {
-    var constraintString = readInput('string');
-    var parsedElements = constraintString.split(/<=|>=|\*|\+|-/);
-    parsedElements[0] = +parsedElements[0] - 1;
-    parsedElements[1] = +parsedElements[1] - 1;
-    parsedElements[2] = +parsedElements[2];
-    var operationKind;
-    if (constraintString.indexOf('*') !== -1) {
-      operationKind = 2;
+    // Read the number of nodes and edges from input
+    var nodeCount = readInputToken();
+    var edgeCount = readInputToken();
+
+    // Initialize arrays to store different types of constraints
+    var fixedConstraints = []; // Stores direct edge constraints
+    var flexibleConstraints = []; // Stores pairs of mutually exclusive constraints
+
+    // Process each edge/constraint definition
+    iterateRange(edgeCount, function() {
+        var inputLine = readInputToken('string'); // Read the constraint string
+
+        // Parse the numerical values from the input string
+        var parsedValues = inputLine.split(/<=|>=|\*|\+|-/);
+        parsedValues[0] = +parsedValues[0] - 1; // Adjust node index to be 0-based
+        parsedValues[1] = +parsedValues[1] - 1; // Adjust node index to be 0-based
+        parsedValues[2] = +parsedValues[2];     // The weight/value
+
+        // Determine the type of constraint (e.g., equality, inequality)
+        var constraintType;
+        if (inputLine.indexOf('*') !== -1) {
+            constraintType = 2; // Represents an equality constraint (x = y + c)
+        } else {
+            // Represents an inequality constraint (x <= y + c or y <= x + c)
+            constraintType = +(inputLine.indexOf('<=') === -1); // 0 for <=, 1 for >=
+        }
+
+        // Determine the sign type (e.g., positive or negative constant)
+        var signType = +(inputLine.indexOf('+') === -1); // 0 for +, 1 for -
+
+        // Based on constraint and sign types, populate the constraint arrays
+        if (constraintType === 0) { // x <= y + c
+            if (signType === 0) { // x <= y + c  =>  y - x >= -c  =>  y -> x with weight -c
+                fixedConstraints[fixedConstraints.length] = [parsedValues[1], parsedValues[0], -parsedValues[2]];
+            } else { // x <= y - c  =>  y - x >= c  =>  y -> x with weight c  AND  x - y >= 0  =>  x -> y with weight 0
+                fixedConstraints[fixedConstraints.length] = [parsedValues[1], parsedValues[0], parsedValues[2]];
+                fixedConstraints[fixedConstraints.length] = [parsedValues[0], parsedValues[1], 0];
+            }
+        } else if (constraintType === 1) { // x >= y + c
+            if (signType === 0) { // x >= y + c  =>  x - y >= c  =>  x -> y with weight c
+                fixedConstraints[fixedConstraints.length] = [parsedValues[0], parsedValues[1], -parsedValues[2]];
+            } else { // x >= y - c  =>  x - y >= -c  =>  x -> y with weight -c  AND  y - x >= 0  =>  y -> x with weight 0
+                fixedConstraints[fixedConstraints.length] = [parsedValues[1], parsedValues[0], parsedValues[2]];
+                fixedConstraints[fixedConstraints.length] = [parsedValues[0], parsedValues[1], 0];
+            }
+        } else { // x = y + c (equality)
+            if (signType === 0) { // x = y + c  =>  x - y = c  =>  x -> y with weight c  AND  y -> x with weight -c
+                flexibleConstraints[flexibleConstraints.length] = [[parsedValues[0], parsedValues[1], -parsedValues[2]], [parsedValues[1], parsedValues[0], -parsedValues[2]]];
+            } else { // x = y - c  =>  x - y = -c  =>  x -> y with weight -c  AND  y -> x with weight c
+                fixedConstraints[fixedConstraints.length] = [parsedValues[1], parsedValues[0], parsedValues[2]];
+                fixedConstraints[fixedConstraints.length] = [parsedValues[0], parsedValues[1], parsedValues[2]];
+            }
+        }
+    });
+
+    // Add edges from all nodes to a source node (node 0) with weight 0
+    iterateRange(nodeCount, function(idx) {
+        fixedConstraints[fixedConstraints.length] = [idx, 0, 0];
+    });
+
+    var resultValue = -Infinity; // Initialize the maximum possible value for the answer
+
+    // Iterate through all possible combinations for flexible constraints
+    iterateRange(1 << flexibleConstraints.length, function(combinationMask) {
+        // Create a new set of edges for the current combination
+        var currentEdges = [].concat(fixedConstraints);
+        iterateRange(flexibleConstraints.length, function(idx) {
+            // Select one of the two possible edges for each flexible constraint
+            currentEdges[currentEdges.length] = flexibleConstraints[idx][(combinationMask >> idx) & 1];
+        });
+
+        // Initialize distances for Bellman-Ford algorithm
+        var distances = [];
+        iterateRange(nodeCount, function(idx) {
+            distances[idx] = Infinity;
+        });
+        distances[0] = 0; // Distance from source (node 0) to itself is 0
+
+        // Run Bellman-Ford algorithm for (nodeCount - 1) iterations
+        // (Actually, it runs nodeCount iterations, which is fine for detecting negative cycles or ensuring convergence)
+        iterateRange(nodeCount, function() {
+            iterateRange(currentEdges.length, function(edgeIdx) {
+                var currentEdge = currentEdges[edgeIdx];
+                // Relax the edge: d[v] = min(d[v], d[u] + weight(u,v))
+                distances[currentEdge[1]] = Math.min(distances[currentEdge[0]] + currentEdge[2], distances[currentEdge[1]]);
+            });
+        });
+
+        // If the distance to the source node (node 0) is non-negative,
+        // it means no negative cycle reachable from node 0 was formed.
+        // In this context, it implies a valid assignment of values.
+        if (distances[0] >= 0) {
+            resultValue = Math.max(resultValue, distances[nodeCount - 1]); // Update the maximum distance to the last node
+        }
+    });
+
+    // Output the final result
+    if (resultValue === Infinity) {
+        outputResult('inf'); // If the last node is reachable with infinite distance
+    } else if (resultValue === -Infinity) {
+        outputResult(-1); // If the last node is unreachable or no valid combination found
     } else {
-      operationKind = +(constraintString.indexOf('<=') === -1);
+        outputResult(resultValue); // The calculated maximum distance
     }
-    var signDirection = +(constraintString.indexOf('+') === -1);
-    if (operationKind === 0) {
-      if (signDirection === 0) {
-        simpleEdges[simpleEdges.length] = [parsedElements[1], parsedElements[0], -parsedElements[2]];
-      } else {
-        simpleEdges[simpleEdges.length] = [parsedElements[1], parsedElements[0], 0];
-        simpleEdges[simpleEdges.length] = [parsedElements[0], parsedElements[1], parsedElements[2]];
-      }
-    } else if (operationKind === 1) {
-      if (signDirection === 0) {
-        simpleEdges[simpleEdges.length] = [parsedElements[0], parsedElements[1], -parsedElements[2]];
-      } else {
-        simpleEdges[simpleEdges.length] = [parsedElements[1], parsedElements[0], parsedElements[2]];
-        simpleEdges[simpleEdges.length] = [parsedElements[0], parsedElements[1], 0];
-      }
-    } else {
-      if (signDirection === 0) {
-        complexOptions[complexOptions.length] = [[parsedElements[0], parsedElements[1], -parsedElements[2]], [parsedElements[1], parsedElements[0], -parsedElements[2]]];
-      } else {
-        simpleEdges[simpleEdges.length] = [parsedElements[1], parsedElements[0], parsedElements[2]];
-        simpleEdges[simpleEdges.length] = [parsedElements[0], parsedElements[1], parsedElements[2]];
-      }
-    }
-  });
-  iterateRange(numNodes, function(idx) {
-    simpleEdges[simpleEdges.length] = [idx, 0, 0];
-  });
-  var finalOutcome = -Infinity;
-  iterateRange(1 << complexOptions.length, function(combinationIndex) {
-    var currentGraphEdges = [].concat(simpleEdges);
-    iterateRange(complexOptions.length, function(idx) {
-      currentGraphEdges[currentGraphEdges.length] = complexOptions[idx][(combinationIndex >> idx) & 1];
-    });
-    var distanceArray = [];
-    iterateRange(numNodes, function(idx) {
-      distanceArray[idx] = Infinity;
-    });
-    distanceArray[0] = 0;
-    iterateRange(numNodes, function() {
-      iterateRange(currentGraphEdges.length, function(edgeIdx) {
-        var currentEdge = currentGraphEdges[edgeIdx];
-        distanceArray[currentEdge[1]] = Math.min(distanceArray[currentEdge[0]] + currentEdge[2], distanceArray[currentEdge[1]]);
-      });
-    });
-    if (distanceArray[0] >= 0) {
-      finalOutcome = Math.max(finalOutcome, distanceArray[numNodes - 1]);
-    }
-  });
-  if (finalOutcome === Infinity) {
-    outputResult('inf');
-  } else if (finalOutcome === -Infinity) {
-    outputResult(-1);
-  } else {
-    outputResult(finalOutcome);
-  }
 }
 
-function iterateRange(begin, limit, action) {
-  if (action == null) {
-    action = limit;
-    limit = begin;
-    begin = 0;
-  }
-  for (var indexVar = begin; indexVar < limit; ++indexVar) {
-    action(indexVar);
-  }
+// Helper function for iterating a range
+function iterateRange(startVal, endVal, callbackFn) {
+    if (callbackFn == null) {
+        callbackFn = endVal;
+        endVal = startVal;
+        startVal = 0;
+    }
+    for (var loopCounter = startVal; loopCounter < endVal; ++loopCounter) {
+        callbackFn(loopCounter);
+    }
 }
 
+// Standard input/output setup
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-var dataBuffer = '';
-var dataPointer = 0;
+var rawInputBuffer = '';
+var bufferPosition = 0;
 
-function readInput(dataType) {
-  if (dataType === 'string') {
-    return dataBuffer[dataPointer++];
-  } else {
-    return +dataBuffer[dataPointer++];
-  }
+// Function to read tokens from the input buffer
+function readInputToken(tokenFormat) {
+    if (tokenFormat === 'string') {
+        return rawInputBuffer[bufferPosition++];
+    } else {
+        return +rawInputBuffer[bufferPosition++]; // Convert to number
+    }
 }
 
+// Function to print values to console
 function outputResult(valueToDisplay) {
-  console.log(valueToDisplay);
+    console.log(valueToDisplay);
 }
 
+// Event listener for incoming data
 process.stdin.on('data', function(dataChunk) {
-  dataBuffer += dataChunk;
+    rawInputBuffer += dataChunk;
 });
+
+// Event listener for end of input
 process.stdin.on('end', function() {
-  dataBuffer = dataBuffer.split(/\s+/);
-  primaryExecution();
+    rawInputBuffer = rawInputBuffer.split(/\s+/); // Split input by whitespace
+    primaryExecution(); // Start the main logic
 });

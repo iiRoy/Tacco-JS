@@ -1,102 +1,83 @@
 'use strict';
 
-/**
- * Analyzes facility configurations and associated profit/penalty data
- * to determine the highest possible total profit.
- * This process involves iterating through all potential combinations
- * of features/facilities being "active" and calculating a cumulative
- * profit for each combination based on overlapping attributes.
- *
- * @param {string} rawInputContent - The complete raw string content read from the input source.
- */
-function evaluateOptimalConfiguration(rawInputContent) {
-    // Pre-process the raw input: remove leading/trailing whitespace and split into individual lines.
-    const inputDataLines = rawInputContent.trim().split('\n');
-
-    // Extract the total number of facilities from the first line.
-    // Perform basic validation to ensure it's a positive integer.
-    const totalFacilities = Number(inputDataLines.shift());
-    if (isNaN(totalFacilities) || totalFacilities <= 0) {
-        console.error("Input Error: The first line must contain a valid positive integer for total facilities.");
-        return;
-    }
-
-    // Initialize data structures for facility features and profit/penalty tables.
-    const facilityAttributes = [];
-    const profitLookupTables = [];
-
-    // Populate the 'facilityAttributes' array from the subsequent 'totalFacilities' lines.
-    // Each line describes the features (0s or 1s) present for a given facility.
-    for (let facilityIndex = 0; facilityIndex < totalFacilities; facilityIndex++) {
-        const attributes = inputDataLines[facilityIndex].split(' ').map(attributeStr => parseInt(attributeStr, 10));
-
-        // Validate that all attributes are binary (0 or 1).
-        if (attributes.some(attr => attr !== 0 && attr !== 1)) {
-            console.error(`Input Error: Facility ${facilityIndex} contains non-binary attribute values. Expected 0 or 1.`);
-            return;
-        }
-        facilityAttributes.push(attributes);
-    }
-
-    // Populate the 'profitLookupTables' array. These lines define the profit/penalty
-    // for each facility based on the count of its active features in a given configuration.
-    for (let facilityIndex = 0; facilityIndex < totalFacilities; facilityIndex++) {
-        const profitsForOverlap = inputDataLines[facilityIndex + totalFacilities].split(' ').map(profitStr => Number(profitStr));
-
-        // Validate that all profit values are valid numbers.
-        if (profitsForOverlap.some(val => isNaN(val))) {
-            console.error(`Input Error: Profit table for facility ${facilityIndex} contains invalid numeric values.`);
-            return;
-        }
-        profitLookupTables.push(profitsForOverlap);
-    }
-
-    // Initialize the variable to store the highest profit discovered, setting a very low floor.
-    let highestAchievableProfit = Number.MIN_SAFE_INTEGER;
-
-    // Define the upper limit for the configuration mask. For 10 features,
-    // this covers all combinations from 0000000001 (1) to 1111111111 (1023).
-    const MAX_FEATURE_COMBINATIONS = 1 << 10; // Represents 1024 (2^10)
-
-    // Iterate through all possible feature configurations.
-    // Each 'currentConfigurationMask' is a bitmask representing which features are "active".
-    for (let currentConfigurationMask = 1; currentConfigurationMask < MAX_FEATURE_COMBINATIONS; currentConfigurationMask++) {
-        let currentTotalProfit = 0; // Accumulator for the profit of the current configuration.
-
-        // For each facility, calculate its individual contribution to the 'currentTotalProfit'.
-        for (let facilityIdx = 0; facilityIdx < totalFacilities; facilityIdx++) {
-            const facilitySpecificAttributes = facilityAttributes[facilityIdx];
-
-            // Convert the facility's binary attribute array (e.g., [1,0,1]) into an integer bitmask.
-            const facilityAttributeBitmask = parseInt(facilitySpecificAttributes.join(''), 2);
-
-            // Perform a bitwise AND operation to find features common to both
-            // the facility and the overall 'currentConfigurationMask'.
-            const commonActiveFeatures = facilityAttributeBitmask & currentConfigurationMask;
-
-            // Count the number of set bits (1s) in 'commonActiveFeatures'.
-            // This count determines which entry in the profit table to use for this facility.
-            let numberOfOverlappingFeatures = 0;
-            // Iterate through each bit position (assuming up to 10 features).
-            for (let bitPos = 0; bitPos < 10; bitPos++) {
-                // Check if the bit at 'bitPos' is set in 'commonActiveFeatures'.
-                if ((commonActiveFeatures >> bitPos) & 1) {
-                    numberOfOverlappingFeatures++;
-                }
-            }
-
-            // Add the corresponding profit/penalty from the lookup table for the current facility.
-            currentTotalProfit += profitLookupTables[facilityIdx][numberOfOverlappingFeatures];
-        }
-
-        // Update 'highestAchievableProfit' if the current configuration yielded a better result.
-        highestAchievableProfit = Math.max(highestAchievableProfit, currentTotalProfit);
-    }
-
-    // Output the final maximum profit found across all configurations.
-    console.log(highestAchievableProfit);
+// Helper function to count the number of set bits (1s) in a given integer.
+// This uses Brian Kernighan's algorithm, which is an efficient way to count set bits.
+function countSetBitsInNumber(value) {
+  let bitCount = 0;
+  let tempValue = value;
+  while (tempValue > 0) {
+    tempValue &= (tempValue - 1); // This operation clears the least significant set bit
+    bitCount++;
+  }
+  return bitCount;
 }
 
-// Main execution block: Reads input from standard input and initiates the processing.
-// This assumes a Node.js environment where 'fs' module is available for file system operations.
-evaluateOptimalConfiguration(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function processInput(rawData) {
+  const inputLines = rawData.split('\n');
+
+  // The first line contains the number of businesses (N).
+  const numBusinesses = parseInt(inputLines[0], 10);
+
+  // The remaining lines contain the business opening schedules and profit matrices.
+  // We slice the array to remove the 'N' line, making indexing simpler for F and P.
+  const dataLines = inputLines.slice(1);
+
+  // A reusable function to parse a string of space-separated integers into an array of numbers.
+  const parseLineOfInts = (lineStr) => lineStr.split(' ').map(valStr => parseInt(valStr, 10));
+
+  // Populate the business opening schedules (F).
+  // These are the first 'numBusinesses' lines after 'N'.
+  const businessOpenings = [];
+  for (let businessIdx = 0; businessIdx < numBusinesses; businessIdx++) {
+    businessOpenings.push(parseLineOfInts(dataLines[businessIdx]));
+  }
+
+  // Populate the profit matrix (P).
+  // These are the next 'numBusinesses' lines after the business opening schedules.
+  const profitMatrix = [];
+  const profitLinesStartIndex = numBusinesses; // Index where profit data starts in dataLines
+  for (let businessIdx = 0; businessIdx < numBusinesses; businessIdx++) {
+    profitMatrix.push(parseLineOfInts(dataLines[profitLinesStartIndex + businessIdx]));
+  }
+
+  let maxProfit = -Infinity; // Initialize the maximum profit found to a very small number.
+
+  // The problem implies 10 possible opening hours (0-9), so 2^10 combinations.
+  // We iterate through all possible combinations of open hours from 1 to 1023 (inclusive).
+  const totalCombinations = 1 << 10; // Equivalent to Math.pow(2, 10) or 1024
+
+  for (let currentCombination = 1; currentCombination < totalCombinations; currentCombination++) {
+    let currentCombinationProfit = 0; // Profit for the current combination of open hours.
+
+    // For each combination, calculate the total profit across all businesses.
+    for (let businessIdx = 0; businessIdx < numBusinesses; businessIdx++) {
+      const currentBusinessSchedule = businessOpenings[businessIdx];
+
+      // Convert the business schedule array (e.g., [0,1,0,1,...]) into a binary string
+      // and then parse it as a base-2 integer.
+      const scheduleBinaryString = currentBusinessSchedule.join('');
+      const scheduleDecimalValue = parseInt(scheduleBinaryString, 2);
+
+      // Perform a bitwise AND operation between the business's schedule and the
+      // current combination of open hours. This identifies common open hours.
+      const commonHoursBitmask = scheduleDecimalValue & currentCombination;
+
+      // Count the number of set bits in the result of the bitwise AND.
+      // This count represents how many hours are common between the business's
+      // schedule and the current combination.
+      const commonOpenHoursCount = countSetBitsInNumber(commonHoursBitmask);
+
+      // Add the corresponding profit from the profit matrix for this business.
+      // The index into the profit matrix is the count of common open hours.
+      currentCombinationProfit += profitMatrix[businessIdx][commonOpenHoursCount];
+    }
+
+    // Update the overall maximum profit if the current combination yields a higher profit.
+    maxProfit = Math.max(maxProfit, currentCombinationProfit);
+  }
+
+  console.log(maxProfit); // Output the final maximum profit.
+}
+
+// Read input from standard input and pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

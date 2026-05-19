@@ -1,67 +1,56 @@
-const acquireInputData = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+const processInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+let lineBuffer = processInput.trim().split("\n");
+let lineCursor = 0;
 
-const analyzeBlocks = (fullInputContent) => {
-    let allLines = fullInputContent.trim().split('\n');
-    let currentLineIndex = 0;
+function findLargestIndexLE(sourceArray, targetValue, searchStartIdx) {
+    let lowBound = searchStartIdx;
+    let highBound = sourceArray.length - 1;
+    let bestMatchIdx = -1;
 
-    const extractParameters = () => {
-        const [numCount, targetSumLimit] = allLines[currentLineIndex++].split(' ').map(Number);
-        return { count: numCount, limit: targetSumLimit };
-    };
-
-    const retrieveValuesForCurrentBlock = (amount) => {
-        let blockValues = [];
-        for (let j = 0; j < amount; j++) {
-            blockValues.push(Number(allLines[currentLineIndex++]));
+    while (lowBound <= highBound) {
+        const midPoint = Math.floor((lowBound + highBound) / 2);
+        if (sourceArray[midPoint] <= targetValue) {
+            bestMatchIdx = midPoint;
+            lowBound = midPoint + 1;
+        } else {
+            highBound = midPoint - 1;
         }
-        blockValues.push(0); 
-        return blockValues;
-    };
-
-    const finalResults = [];
-
-    while (true) {
-        const { count, limit } = extractParameters();
-        if (count === 0 && limit === 0) break;
-
-        const initialValues = retrieveValuesForCurrentBlock(count);
-
-        const distinctPairSums = Array.from(
-            new Set(
-                initialValues.flatMap((elementA, indexA) =>
-                    initialValues.slice(indexA).map(elementB => elementA + elementB)
-                )
-            )
-        ).sort((valX, valY) => valX - valY);
-
-        let bestOverallSum = 0;
-
-        distinctPairSums.forEach(firstComponent => {
-            const availableQuota = limit - firstComponent;
-
-            let lowerBound = 0;
-            let upperBound = distinctPairSums.length - 1;
-            let optimalIndex = -1;
-
-            while (lowerBound <= upperBound) {
-                const midPoint = Math.floor((lowerBound + upperBound) / 2);
-                if (distinctPairSums[midPoint] <= availableQuota) {
-                    optimalIndex = midPoint;
-                    lowerBound = midPoint + 1; 
-                } else {
-                    upperBound = midPoint - 1; 
-                }
-            }
-
-            if (optimalIndex !== -1) {
-                const currentCandidateSum = firstComponent + distinctPairSums[optimalIndex];
-                bestOverallSum = Math.max(bestOverallSum, currentCandidateSum);
-            }
-        });
-        finalResults.push(bestOverallSum);
     }
-    return finalResults;
-};
+    return bestMatchIdx;
+}
 
-const computedOutcomes = analyzeBlocks(acquireInputData());
-computedOutcomes.forEach(outcome => console.log(outcome));
+while (true) {
+    const currentConfig = lineBuffer[lineCursor++].split(" ").map(Number);
+    const countN = currentConfig[0];
+    const limitM = currentConfig[1];
+
+    if (countN === 0 && limitM === 0) break;
+
+    const initialNumbers = [];
+    for (let k = 0; k < countN; k++) {
+        initialNumbers.push(Number(lineBuffer[lineCursor++]));
+    }
+    initialNumbers.push(0);
+
+    const sumCollector = new Set();
+    initialNumbers.forEach((valA, idxA) => {
+        initialNumbers.slice(idxA).forEach(valB => {
+            sumCollector.add(valA + valB);
+        });
+    });
+
+    const distinctSums = Array.from(sumCollector).sort((a, b) => a - b);
+
+    let greatestSum = 0;
+    for (let idxA = 0; idxA < distinctSums.length; idxA++) {
+        const termA = distinctSums[idxA];
+        const requiredTermB = limitM - termA;
+        
+        const idxB = findLargestIndexLE(distinctSums, requiredTermB, idxA);
+
+        if (idxB !== -1) {
+            greatestSum = Math.max(greatestSum, termA + distinctSums[idxB]);
+        }
+    }
+    console.log(greatestSum);
+}

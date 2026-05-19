@@ -1,47 +1,60 @@
-'use strict'; // Ensure strict mode for better code quality
+'use strict';
 
-// This function processes raw input to calculate a specific geometric area based on segment lengths.
-function ProcessGeometry (rawInputData) {
+// This function processes raw input to calculate a specific area.
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines.
+  const parsedLines = rawData.split('\n');
 
-  const inputLines = rawInputData.split('\n'); // Split the entire input string into individual lines.
-  const dimensionSegments = inputLines[1].split(' ').sort((a, b) => b - a).map(Number); // Get the second line, split by space, sort numerically in descending order, and convert to numbers.
-  const foundLengths = []; // Array to store two specific lengths that form the sides of a rectangle.
+  // Extract the second line, split it by spaces, sort in descending order,
+  // and store as an array of rod lengths (strings).
+  const rodLengths = parsedLines[1].split(' ').sort().reverse();
 
-  let calculatedArea = 0; // Initialize the variable to hold the final calculated area.
-  let isPairDetected = false; // A boolean flag to track if a pair of identical segments has been found.
+  // Initialize an array to store lengths of matched pairs.
+  const matchedPairs = [];
 
-  // Loop through the sorted dimension segments to find suitable combinations.
-  for (let segmentIndex = 0; segmentIndex < dimensionSegments.length; segmentIndex++) {
+  // Initialize the variable to hold the final calculated area.
+  let finalArea = 0;
+  // A boolean flag to track if the first rod of a potential pair has been found.
+  let foundFirstPair = false;
 
-    const currentSegment = dimensionSegments[segmentIndex];
-    const nextSegmentOne = dimensionSegments[segmentIndex + 1] || null; // Check for existence of next segments.
-    const nextSegmentTwo = dimensionSegments[segmentIndex + 2] || null;
-    const nextSegmentThree = dimensionSegments[segmentIndex + 3] || null;
+  // Iterate through the rod lengths array.
+  for (let idx = 0; idx < rodLengths.length; idx++) {
+    // Get the current rod length.
+    const currentRod = rodLengths[idx];
+    // Get the next three rod lengths, checking for array bounds.
+    const nextRod = rodLengths[idx + 1] ? rodLengths[idx + 1] : null;
+    const thirdRod = rodLengths[idx + 2] ? rodLengths[idx + 2] : null;
+    const fourthRod = rodLengths[idx + 3] ? rodLengths[idx + 3] : null;
 
-    // First check: If four consecutive segments are identical (implying a square or a very specific condition).
-    if (currentSegment === nextSegmentOne && currentSegment === nextSegmentTwo && currentSegment === nextSegmentThree) {
-      calculatedArea = currentSegment * nextSegmentThree; // Calculate area using the first and fourth (which are identical).
-      break; // Exit loop as the area is found.
+    // Check for a special case: four identical rods.
+    if (currentRod === nextRod && currentRod === thirdRod && currentRod === fourthRod) {
+      // If four identical rods are found, calculate area as (rod * rod) and break.
+      finalArea = parseInt(currentRod * fourthRod, 10);
+      break;
     }
 
-    // Second check: Look for pairs of identical segments.
-    if (currentSegment === nextSegmentOne && !isPairDetected) {
-      foundLengths.push(currentSegment); // Add the segment to our found lengths.
-      isPairDetected = true; // Mark that a pair was just detected.
+    // Check for a pair of identical rods.
+    if (currentRod === nextRod && !foundFirstPair) {
+      // If a pair is found and it's the first one we're tracking, add it to matchedPairs.
+      matchedPairs.push(currentRod);
+      // Set the flag to true to indicate we've found the first part of a pair.
+      foundFirstPair = true;
     } else {
-      isPairDetected = false; // Reset the flag if no pair or if a pair was already handled.
+      // If no pair, or if we're looking for the second pair, reset the flag.
+      foundFirstPair = false;
     }
 
-    // If two distinct pairs (or two identical segments) have been found.
-    if (foundLengths.length === 2) {
-      calculatedArea = foundLengths[0] * foundLengths[1]; // Multiply the two found lengths for the area.
-      break; // Exit loop as the area is found.
+    // If two matched pairs have been found.
+    if (matchedPairs.length === 2) {
+      // Calculate the area using the two matched lengths and break.
+      finalArea = parseInt(matchedPairs[0] * matchedPairs[1], 10);
+      break;
     }
   }
 
-  // Output the final calculated area to the console.
-  console.log(calculatedArea);
+  // Output the calculated final area to the console.
+  console.log(finalArea);
 }
 
 // Read input from standard input and pass it to the processing function.
-ProcessGeometry(require("fs").readFileSync("/dev/stdin", "utf8"));
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

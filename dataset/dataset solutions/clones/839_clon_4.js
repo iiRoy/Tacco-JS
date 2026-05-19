@@ -1,160 +1,157 @@
-const boardRows = 8;
-const boardCols = 8;
-const blankCell = 0;
-const darkChip = 1; // Corresponds to original 'x'
-const lightChip = -1; // Corresponds to original 'o'
+const BOARD_DIMENSION = 8;
+const BOUNDARY_MARKER = 'f';
+const EMPTY_SPACE = '.';
 
-const allVectors = [
-    [-1, -1], [-1, 0], [-1, 1],
-    [0, -1], /*  [0, 0], */ [0, 1],
-    [1, -1], [1, 0], [1, 1]
+const DIRECTION_VECTORS = [
+    { rowDelta: -1, colDelta: -1 }, { rowDelta: -1, colDelta: 0 }, { rowDelta: -1, colDelta: 1 },
+    { rowDelta: 0, colDelta: -1 },                                { rowDelta: 0, colDelta: 1 },
+    { rowDelta: 1, colDelta: -1 }, { rowDelta: 1, colDelta: 0 }, { rowDelta: 1, colDelta: 1 }
 ];
 
-function coordinateToIndex(r, c) {
-    return r * boardCols + c;
+function initializeGameGrid(rawInputString) {
+    const contentRows = rawInputString.trim().split('\n');
+    const gameGrid = [];
+
+    gameGrid.push(Array(BOARD_DIMENSION + 2).fill(BOUNDARY_MARKER));
+
+    contentRows.forEach(line => {
+        gameGrid.push([BOUNDARY_MARKER, ...line.split(''), BOUNDARY_MARKER]);
+    });
+
+    gameGrid.push(Array(BOARD_DIMENSION + 2).fill(BOUNDARY_MARKER));
+
+    return gameGrid;
 }
 
-function indexToCoordinate(idx) {
-    return { row: Math.floor(idx / boardCols), col: idx % boardCols };
-}
+function traceDirectionalPath(gridState, startRow, startCol, rowDelta, colDelta) {
+    const pathSegments = [];
+    let currentRow = startRow + rowDelta;
+    let currentCol = startCol + colDelta;
 
-function isWithinBoundary(r, c) {
-    return r >= 0 && r < boardRows && c >= 0 && c < boardCols;
-}
-
-function retrieveChip(currentBoard, r, c) {
-    if (!isWithinBoundary(r, c)) {
-        return undefined;
-    }
-    return currentBoard[coordinateToIndex(r, c)];
-}
-
-function computePotentialCaptures(currentBoard, initialR, initialC, dr, dc, playerChip, adversaryChip) {
-    const capturedChipsInLine = [];
-    let currentR = initialR + dr;
-    let currentC = initialC + dc;
-
-    while (isWithinBoundary(currentR, currentC)) {
-        const chipAtPosition = retrieveChip(currentBoard, currentR, currentC);
-
-        if (chipAtPosition === adversaryChip) {
-            capturedChipsInLine.push({ row: currentR, col: currentC });
-        } else if (chipAtPosition === playerChip) {
-            return capturedChipsInLine;
-        } else {
-            return [];
+    while (true) {
+        const cellContent = gridState[currentRow]?.[currentCol];
+        if (cellContent === BOUNDARY_MARKER || cellContent === undefined) {
+            break;
         }
-        currentR += dr;
-        currentC += dc;
+        pathSegments.push({ r: currentRow, c: currentCol, val: cellContent });
+        currentRow += rowDelta;
+        currentCol += colDelta;
     }
-    return [];
+    return pathSegments;
 }
 
-function countCaptures(currentBoard, moveR, moveC, playerChip, adversaryChip) {
-    if (retrieveChip(currentBoard, moveR, moveC) !== blankCell) {
+function calculatePotentialFlips(gridState, targetRow, targetCol, activePlayerToken, opposingPlayerToken) {
+    if (gridState[targetRow][targetCol] !== EMPTY_SPACE) {
         return 0;
     }
 
-    let totalCaptures = 0;
-    for (const [dr, dc] of allVectors) {
-        const lineCaptures = computePotentialCaptures(currentBoard, moveR, moveC, dr, dc, playerChip, adversaryChip);
-        totalCaptures += lineCaptures.length;
-    }
-    return totalCaptures;
-}
+    let totalFlipCount = 0;
 
-function findBestPlacement(currentBoard, currentActiveChip) {
-    const adversaryChip = (currentActiveChip === darkChip) ? lightChip : darkChip;
-    const possibleMoves = [];
+    DIRECTION_VECTORS.forEach(({ rowDelta, colDelta }) => {
+        const path = traceDirectionalPath(gridState, targetRow, targetCol, rowDelta, colDelta);
+        let currentDirectionFlipCandidates = 0;
+        let terminatingPlayerTokenFound = false;
 
-    for (let r = 0; r < boardRows; r++) {
-        for (let c = 0; c < boardCols; c++) {
-            if (retrieveChip(currentBoard, r, c) === blankCell) {
-                const captures = countCaptures(currentBoard, r, c, currentActiveChip, adversaryChip);
-                if (captures > 0) {
-                    possibleMoves.push({ row: r, col: c, captures: captures });
-                }
+        for (const segment of path) {
+            if (segment.val === opposingPlayerToken) {
+                currentDirectionFlipCandidates++;
+            } else if (segment.val === activePlayerToken) {
+                terminatingPlayerTokenFound = true;
+                break;
+            } else {
+                break;
             }
         }
-    }
 
-    if (possibleMoves.length === 0) {
-        return null;
-    }
-
-    if (currentActiveChip === lightChip) { // Original A, prefers min row/col
-        possibleMoves.sort((m1, m2) => {
-            if (m1.captures !== m2.captures) return m2.captures - m1.captures;
-            if (m1.row !== m2.row) return m1.row - m2.row;
-            return m1.col - m2.col;
-        });
-    } else { // Original B, prefers max row/col
-        possibleMoves.sort((m1, m2) => {
-            if (m1.captures !== m2.captures) return m2.captures - m1.captures;
-            if (m1.row !== m2.row) return m2.row - m1.row;
-            return m2.col - m1.col;
-        });
-    }
-
-    const best = possibleMoves[0];
-    return [best.row + 1, best.col + 1]; // Return 1-indexed coordinates
-}
-
-function executePlacement(initialBoard, placementR, placementC, playerChip, adversaryChip) {
-    const updatedBoard = [...initialBoard];
-
-    updatedBoard[coordinateToIndex(placementR, placementC)] = playerChip;
-
-    for (const [dr, dc] of allVectors) {
-        const chipsToFlip = computePotentialCaptures(initialBoard, placementR, placementC, dr, dc, playerChip, adversaryChip);
-        chipsToFlip.forEach(chipCoord => {
-            updatedBoard[coordinateToIndex(chipCoord.row, chipCoord.col)] = playerChip;
-        });
-    }
-    return updatedBoard;
-}
-
-function initiateGame(initialBoardString) {
-    const boardLines = initialBoardString.trim().split('\n');
-    let currentBoardState = Array(boardRows * boardCols).fill(blankCell);
-    boardLines.forEach((line, r) => {
-        line.split('').forEach((char, c) => {
-            if (char === 'x') currentBoardState[coordinateToIndex(r, c)] = darkChip;
-            else if (char === 'o') currentBoardState[coordinateToIndex(r, c)] = lightChip;
-        });
+        if (terminatingPlayerTokenFound && currentDirectionFlipCandidates > 0) {
+            totalFlipCount += currentDirectionFlipCandidates;
+        }
     });
 
-    let activePlayer = lightChip; // Player 'o' (lightChip) starts first
-    let opponentPlayer = darkChip; // Player 'x' (darkChip)
-    let consecutivePasses = 0;
-
-    while (consecutivePasses < 2) {
-        const potentialMove = findBestPlacement(currentBoardState, activePlayer);
-
-        if (potentialMove === null) {
-            consecutivePasses++;
-        } else {
-            consecutivePasses = 0;
-            const [moveR, moveC] = [potentialMove[0] - 1, potentialMove[1] - 1];
-            currentBoardState = executePlacement(currentBoardState, moveR, moveC, activePlayer, opponentPlayer);
-        }
-
-        [activePlayer, opponentPlayer] = [opponentPlayer, activePlayer];
-    }
-
-    let finalBoardOutput = '';
-    for (let r = 0; r < boardRows; r++) {
-        for (let c = 0; c < boardCols; c++) {
-            const chip = currentBoardState[coordinateToIndex(r, c)];
-            if (chip === darkChip) finalBoardOutput += 'x';
-            else if (chip === lightChip) finalBoardOutput += 'o';
-            else finalBoardOutput += '.';
-        }
-        if (r < boardRows - 1) finalBoardOutput += '\n';
-    }
-    return finalBoardOutput;
+    return totalFlipCount;
 }
 
-const initialInputState = '........\n........\n........\n...ox...\n...xo...\n........\n........\n........';
+function applyPlayerMove(gridState, targetRow, targetCol, activePlayerToken, opposingPlayerToken) {
+    gridState[targetRow][targetCol] = activePlayerToken;
 
-console.log(initiateGame(initialInputState));
+    DIRECTION_VECTORS.forEach(({ rowDelta, colDelta }) => {
+        const path = traceDirectionalPath(gridState, targetRow, targetCol, rowDelta, colDelta);
+        const segmentsToFlip = [];
+        let terminatingPlayerTokenFound = false;
+
+        for (const segment of path) {
+            if (segment.val === opposingPlayerToken) {
+                segmentsToFlip.push(segment);
+            } else if (segment.val === activePlayerToken) {
+                terminatingPlayerTokenFound = true;
+                break;
+            } else {
+                break;
+            }
+        }
+
+        if (terminatingPlayerTokenFound && segmentsToFlip.length > 0) {
+            segmentsToFlip.forEach(segment => {
+                gridState[segment.r][segment.c] = activePlayerToken;
+            });
+        }
+    });
+}
+
+function generateAllBoardPositions(ascendingOrder = true) {
+    const positions = [];
+    for (let r = 1; r <= BOARD_DIMENSION; r++) {
+        for (let c = 1; c <= BOARD_DIMENSION; c++) {
+            positions.push({ r, c });
+        }
+    }
+    return ascendingOrder ? positions : positions.reverse();
+}
+
+function determineBestPlacement(currentGrid, playerToken, opponentToken, positionTraversalOrder) {
+    let topScore = 0;
+    let topPosition = [];
+
+    for (const { r, c } of positionTraversalOrder) {
+        const currentScore = calculatePotentialFlips(currentGrid, r, c, playerToken, opponentToken);
+        if (currentScore > topScore) {
+            topScore = currentScore;
+            topPosition = [r, c];
+        }
+    }
+    return topPosition;
+}
+
+function runReversiSimulation(initialBoardInput) {
+    let currentBoard = initializeGameGrid(initialBoardInput);
+    let consecutiveNoMoves = 0;
+
+    const playerOne = { token: 'o', opponent: 'x', moveOrder: generateAllBoardPositions(true) };
+    const playerTwo = { token: 'x', opponent: 'o', moveOrder: generateAllBoardPositions(false) };
+
+    let activePlayer = playerOne;
+    let activeOpponent = playerTwo;
+
+    while (consecutiveNoMoves < 2) {
+        const chosenMove = determineBestPlacement(currentBoard, activePlayer.token, activeOpponent.token, activePlayer.moveOrder);
+
+        if (chosenMove.length === 0) {
+            consecutiveNoMoves++;
+        } else {
+            consecutiveNoMoves = 0;
+            applyPlayerMove(currentBoard, chosenMove[0], chosenMove[1], activePlayer.token, activeOpponent.token);
+        }
+
+        [activePlayer, activeOpponent] = [activeOpponent, activePlayer];
+    }
+
+    const finalDisplayRows = currentBoard.slice(1, BOARD_DIMENSION + 1).map(row =>
+        row.slice(1, BOARD_DIMENSION + 1).join('')
+    );
+    return finalDisplayRows.join('\n');
+}
+
+const initialGameInput = '........\n........\n........\n...ox...\n...xo...\n........\n........\n........';
+
+const gameResult = runReversiSimulation(initialGameInput);
+console.log(gameResult);

@@ -1,53 +1,41 @@
-const ProcessSupplyDemand = (rawInputData) => {
-    const parseInputData = (textualData) => {
-        const lines = textualData.trim().split(/\s*\n\s*/);
-        const countValue = parseInt(lines[0], 10);
-        const primarySupplies = lines[1].split(/\s+/).map(Number);
-        const secondaryDemands = lines[2].split(/\s+/).map(Number);
-        return {
-            initialCount: countValue,
-            supplyQuantities: primarySupplies,
-            demandAmounts: secondaryDemands
-        };
-    };
+const processInputData = (dataString) => {
+  const [firstLine, secondLine, thirdLine] = dataString.split('\n');
+  const regionCount = Number(firstLine);
+  const cityCapacities = secondLine.split(' ').map(Number);
+  const monsterCounts = thirdLine.split(' ').map(Number);
 
-    const parsedData = parseInputData(rawInputData);
+  const resolveRegionBattle = (currentCityPower, nextCityPower, regionMonsters) => {
+    let totalDefeatedInRegion = 0;
+    let nextCityPowerUsed = 0;
 
-    const calculateFulfillment = (supplies, demands) => {
-        const initialInventoryState = {
-            totalFulfilled: 0,
-            remainingSupplies: [...supplies]
-        };
+    if (regionMonsters <= currentCityPower) {
+      totalDefeatedInRegion = regionMonsters;
+    } else if (nextCityPower !== undefined) {
+      const monstersRemainingAfterCurrent = regionMonsters - currentCityPower;
+      const defeatedByNextCity = Math.min(monstersRemainingAfterCurrent, nextCityPower);
+      totalDefeatedInRegion = currentCityPower + defeatedByNextCity;
+      nextCityPowerUsed = defeatedByNextCity;
+    }
 
-        const finalInventoryState = demands.reduce((currentState, currentDemand, demandIndex) => {
-            const currentSupplyUnit = currentState.remainingSupplies[demandIndex];
-            const nextSupplyUnit = currentState.remainingSupplies[demandIndex + 1];
+    return { defeated: totalDefeatedInRegion, consumedNext: nextCityPowerUsed };
+  };
 
-            let fulfilledThisStep = 0;
-            let updatedSupplies = [...currentState.remainingSupplies];
+  const finalResult = monsterCounts.reduce((acc, currentMonsterGroup, index) => {
+    const currentCityCapacity = acc.capacities[index];
+    const nextCityCapacity = acc.capacities[index + 1];
 
-            const fromCurrent = Math.min(currentDemand, currentSupplyUnit);
-            fulfilledThisStep += fromCurrent;
-            const demandLeft = currentDemand - fromCurrent;
+    const battleOutcome = resolveRegionBattle(currentCityCapacity, nextCityCapacity, currentMonsterGroup);
 
-            if (demandLeft > 0 && nextSupplyUnit !== undefined) {
-                const fromNext = Math.min(demandLeft, nextSupplyUnit);
-                fulfilledThisStep += fromNext;
-                updatedSupplies[demandIndex + 1] = nextSupplyUnit - fromNext;
-            }
+    acc.totalDefeated += battleOutcome.defeated;
 
-            return {
-                totalFulfilled: currentState.totalFulfilled + fulfilledThisStep,
-                remainingSupplies: updatedSupplies
-            };
-        }, initialInventoryState);
+    if (index + 1 < acc.capacities.length && battleOutcome.consumedNext > 0) {
+      acc.capacities[index + 1] -= battleOutcome.consumedNext;
+    }
 
-        return finalInventoryState.totalFulfilled;
-    };
+    return acc;
+  }, { totalDefeated: 0, capacities: cityCapacities });
 
-    const totalCollectedValue = calculateFulfillment(parsedData.supplyQuantities, parsedData.demandAmounts);
-
-    console.log(totalCollectedValue);
+  console.log(finalResult.totalDefeated);
 };
 
-ProcessSupplyDemand(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

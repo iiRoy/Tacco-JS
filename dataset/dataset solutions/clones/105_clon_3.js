@@ -1,109 +1,104 @@
-const GRID_OFFSET_VAL = 2;
-const INITIAL_GRID_SIZE = 14;
-const RESULT_SUBGRID_SIZE = 10;
+function processData() {
+  const dataLines = rawInputBuffer;
 
-function findMaximumValue(valA, valB) {
-  const difference = valA - valB;
-  return valA - (difference & (difference >> 31));
-}
+  // Constants for grid dimensions and offset mapping original coordinates to 0-indexed array
+  const GRID_MIN_COORD = -2;
+  const GRID_MAX_COORD = 11;
+  const GRID_OFFSET = -GRID_MIN_COORD; // Offset to make smallest original index (-2) map to 0
+  const GRID_DIMENSION = GRID_MAX_COORD - GRID_MIN_COORD + 1; // Total size: 11 - (-2) + 1 = 14
 
-function parseCoordinateComponent(charValue) {
-    return parseInt(charValue, 10);
-}
-
-function applyCellImpact(impactGrid, r, c) {
-    if (r >= 0 && r < INITIAL_GRID_SIZE && c >= 0 && c < INITIAL_GRID_SIZE) {
-        impactGrid[r][c]++;
-    } else {
-        // console.warn(`Attempted to access out-of-bounds cell: [${r}, ${c}]`);
-    }
-}
-
-function processInputData(rawInputLines) {
-  if (!rawInputLines || rawInputLines.length === 0 || (rawInputLines.length === 1 && rawInputLines[0].trim() === '')) {
-    console.error("No valid input lines provided for processing.");
-    return;
-  }
-
-  const impactGrid = Array.from({ length: INITIAL_GRID_SIZE }, () =>
-    Array.from({ length: INITIAL_GRID_SIZE }, () => 0)
+  // Initialize gridCounts (renamed from 'f') using Array.from for moderate structural change.
+  // This creates a 0-indexed 2D array, which will be accessed using GRID_OFFSET.
+  const gridCounts = Array.from({ length: GRID_DIMENSION }, () =>
+    Array.from({ length: GRID_DIMENSION }, () => 0)
   );
 
-  for (let entryIndex = rawInputLines.length - 1; entryIndex >= 0; entryIndex--) {
-    const currentEntry = rawInputLines[entryIndex];
+  // Replicate original loop behavior: processes dataLines[dataLines.length - 2] down to dataLines[0].
+  // This means it skips the last element (often an empty string from split('\n'))
+  // and also skips all elements if dataLines.length is 0 or 1.
+  for (let lineIndex = dataLines.length - 2; lineIndex >= 0; --lineIndex) {
+    const currentLine = dataLines[lineIndex];
 
-    if (!currentEntry.trim()) {
-        continue;
-    }
+    // Original code would produce NaN from parseInt if currentLine is empty or malformed,
+    // leading to runtime errors when accessing gridCounts[NaN + offset][NaN + offset].
+    // This behavior is preserved.
+    const parsedX = parseInt(currentLine[0], 10);
+    const parsedY = parseInt(currentLine[2], 10);
+    const patternType = currentLine[4];
 
-    const colCoordinate = parseCoordinateComponent(currentEntry[0]);
-    const rowCoordinate = parseCoordinateComponent(currentEntry[2]);
-    const impactType = currentEntry[4];
+    // Introduce temporary constants for offsets for clarity
+    const offset_1 = 1;
+    const offset_2 = 2;
 
-    const adjustedRow = rowCoordinate + GRID_OFFSET_VAL;
-    const adjustedCol = colCoordinate + GRID_OFFSET_VAL;
+    // Helper function for incrementing grid cell, applying the necessary offset
+    const incrementGridCell = (yCoord, xCoord) => {
+      gridCounts[yCoord + GRID_OFFSET][xCoord + GRID_OFFSET]++;
+    };
 
-    switch (impactType) {
+    switch (patternType) {
       case '3':
-        applyCellImpact(impactGrid, adjustedRow + 2, adjustedCol);
-        applyCellImpact(impactGrid, adjustedRow - 2, adjustedCol);
-        applyCellImpact(impactGrid, adjustedRow, adjustedCol - 2);
-        applyCellImpact(impactGrid, adjustedRow, adjustedCol + 2);
+        incrementGridCell(parsedY + offset_2, parsedX);
+        incrementGridCell(parsedY - offset_2, parsedX);
+        incrementGridCell(parsedY, parsedX - offset_2);
+        incrementGridCell(parsedY, parsedX + offset_2);
+      // Fall-through is preserved as in the original code
       case '2':
-        applyCellImpact(impactGrid, adjustedRow + 1, adjustedCol - 1);
-        applyCellImpact(impactGrid, adjustedRow + 1, adjustedCol + 1);
-        applyCellImpact(impactGrid, adjustedRow - 1, adjustedCol - 1);
-        applyCellImpact(impactGrid, adjustedRow - 1, adjustedCol + 1);
+        incrementGridCell(parsedY + offset_1, parsedX - offset_1);
+        incrementGridCell(parsedY + offset_1, parsedX + offset_1);
+        incrementGridCell(parsedY - offset_1, parsedX - offset_1);
+        incrementGridCell(parsedY - offset_1, parsedX + offset_1);
+      // Fall-through is preserved as in the original code
       case '1':
-        applyCellImpact(impactGrid, adjustedRow + 1, adjustedCol);
-        applyCellImpact(impactGrid, adjustedRow, adjustedCol - 1);
-        applyCellImpact(impactGrid, adjustedRow, adjustedCol);
-        applyCellImpact(impactGrid, adjustedRow, adjustedCol + 1);
-        applyCellImpact(impactGrid, adjustedRow - 1, adjustedCol);
-        break;
-      default:
-        console.warn(`Unrecognized impact type '${impactType}' for entry: ${currentEntry}. Skipping.`);
+        incrementGridCell(parsedY + offset_1, parsedX);
+        incrementGridCell(parsedY, parsedX - offset_1);
+        incrementGridCell(parsedY, parsedX);
+        incrementGridCell(parsedY, parsedX + offset_1);
+        incrementGridCell(parsedY - offset_1, parsedX);
         break;
     }
   }
 
-  let unaffectedCellCount = 0;
-  let peakImpactValue = 0;
+  // Renamed nd to notDroppedCount, md to maxDroppedCount
+  let notDroppedCount = 0;
+  let maxDroppedCount = 0;
 
-  for (let rowIdx = 0; rowIdx < RESULT_SUBGRID_SIZE; rowIdx++) {
-    for (let colIdx = 0; colIdx < RESULT_SUBGRID_SIZE; colIdx++) {
-      const currentCellValue = impactGrid[rowIdx + GRID_OFFSET_VAL][colIdx + GRID_OFFSET_VAL];
+  // Original loop iterates y from 9 down to 0, x from 9 down to 0.
+  // These are the "visible" grid coordinates (0-9).
+  const DISPLAY_GRID_MAX_COORD = 9;
 
-      if (currentCellValue === 0) {
-        unaffectedCellCount++;
+  for (let rowIdx = DISPLAY_GRID_MAX_COORD; rowIdx >= 0; --rowIdx) {
+    for (let colIdx = DISPLAY_GRID_MAX_COORD; colIdx >= 0; --colIdx) {
+      // Access grid with offset to map original coordinates to 0-indexed array
+      const currentCellCount = gridCounts[rowIdx + GRID_OFFSET][colIdx + GRID_OFFSET];
+      // Rewrite !(f[y][x]) to (currentCellCount === 0) for clarity
+      if (currentCellCount === 0) {
+        notDroppedCount++;
       }
-
-      peakImpactValue = findMaximumValue(currentCellValue, peakImpactValue);
+      // Renamed mx to findMax and used Math.max for observable equivalence
+      maxDroppedCount = findMax(currentCellCount, maxDroppedCount);
     }
   }
 
-  console.log(unaffectedCellCount);
-  console.log(peakImpactValue);
+  console.log(notDroppedCount);
+  console.log(maxDroppedCount);
 }
 
-let accumulatedInputBuffer = '';
+// Renamed mx to findMax, a to valA, b to valB.
+// Rewritten using Math.max for observable equivalence, replacing the bitwise trick.
+function findMax(valA, valB) {
+  return Math.max(valA, valB);
+}
+
+// Renamed input to rawInputBuffer
+let rawInputBuffer = '';
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-
 process.stdin.on('data', function(chunk) {
-  accumulatedInputBuffer += chunk;
+  rawInputBuffer += chunk;
 });
-
 process.stdin.on('end', function() {
-  const cleanedInput = accumulatedInputBuffer.trim();
-
-  if (!cleanedInput) {
-    console.error("Input stream ended, but no data was received or it was all whitespace.");
-    return;
-  }
-
-  const linesArray = cleanedInput.split('\n');
-
-  processInputData(linesArray);
+  // Split input by newline and then call the main processing function
+  rawInputBuffer = rawInputBuffer.split('\n');
+  processData(); // Call the renamed main function
 });

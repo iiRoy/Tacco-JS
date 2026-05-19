@@ -1,72 +1,58 @@
-const acquireData = () => require('node:fs').readFileSync('/dev/stdin', 'utf8');
+const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineSegments = sourceData.trim().split("\n");
 
-const parseInputData = (rawText) => rawText.trim().split('\n');
+function* gameStatesProducer(startingItemCount, totalParticipants) {
+    let itemsInHand = startingItemCount;
+    let participantStashes = Array(totalParticipants).fill(0);
+    let turnHolderIndex = 0;
 
-const commenceGameSequence = (gameInstructions) => {
-    if (gameInstructions.length === 0) return;
+    const maximumGameTurns = 1000000;
+    let turnCounter = 0;
 
-    const [currentInstruction, ...remainingInstructions] = gameInstructions;
+    while (turnCounter < maximumGameTurns) {
+        turnCounter++;
 
-    if (currentInstruction === "0 0") return;
+        const lastActorIndex = turnHolderIndex;
 
-    const instructionParts = currentInstruction.split(" ");
-    const totalParticipants = Number(instructionParts[0]);
-    const initialCurrency = Number(instructionParts[1]);
-
-    const winningParticipant = conductRound(totalParticipants, initialCurrency);
-    if (winningParticipant !== undefined) {
-        console.log(winningParticipant);
-    }
-
-    commenceGameSequence(remainingInstructions);
-};
-
-const conductRound = (participantCount, startingValue) => {
-    const initialState = {
-        playerPossessions: Array.from({ length: participantCount }, () => 0),
-        centralDepot: startingValue,
-        currentTurnIndex: 0,
-        totalAssets: 0,
-        maximumIterations: 1000000
-    };
-
-    let currentState = initialState;
-
-    while (currentState.currentTurnIndex < currentState.maximumIterations) {
-        const { playerPossessions, centralDepot, currentTurnIndex, totalAssets } = currentState;
-
-        const nextPlayerPossessions = [...playerPossessions];
-        let nextCentralDepot = centralDepot;
-        let nextTotalAssets = totalAssets;
-
-        const activePlayerIdentifier = currentTurnIndex % participantCount;
-
-        if (nextCentralDepot > 0) {
-            nextCentralDepot--;
-            nextPlayerPossessions[activePlayerIdentifier]++;
-            nextTotalAssets++;
-
-            if (nextCentralDepot === 0) {
-                if (nextTotalAssets === nextPlayerPossessions[activePlayerIdentifier]) {
-                    return activePlayerIdentifier;
-                }
-            }
+        if (itemsInHand > 0) {
+            itemsInHand--;
+            participantStashes[turnHolderIndex]++;
         } else {
-            nextCentralDepot += nextPlayerPossessions[activePlayerIdentifier];
-            nextTotalAssets -= nextPlayerPossessions[activePlayerIdentifier];
-            nextPlayerPossessions[activePlayerIdentifier] = 0;
+            itemsInHand = participantStashes[turnHolderIndex];
+            participantStashes[turnHolderIndex] = 0;
         }
 
-        currentState = {
-            playerPossessions: nextPlayerPossessions,
-            centralDepot: nextCentralDepot,
-            currentTurnIndex: currentTurnIndex + 1,
-            totalAssets: nextTotalAssets,
-            maximumIterations: currentState.maximumIterations
+        yield {
+            currentHandItems: itemsInHand,
+            currentStashes: [...participantStashes],
+            lastActorIndex: lastActorIndex
         };
-    }
-    return undefined;
-};
 
-const allGameInstructions = parseInputData(acquireData());
-commenceGameSequence(allGameInstructions);
+        turnHolderIndex = (turnHolderIndex + 1) % totalParticipants;
+    }
+}
+
+while (true) {
+    const playerAndItemInfo = lineSegments.shift();
+    if (playerAndItemInfo === "0 0") {
+        break;
+    }
+
+    const [playerCount, initialItemSupply] = playerAndItemInfo.split(" ").map(Number);
+
+    const gameIterator = gameStatesProducer(initialItemSupply, playerCount);
+    let winnerIdentified = false;
+
+    for (const gameSituation of gameIterator) {
+        if (gameSituation.currentHandItems === 0) {
+            const collectiveOpponentItems = gameSituation.currentStashes.reduce((accumulator, value, index) =>
+                index === gameSituation.lastActorIndex ? accumulator : accumulator + value, 0);
+
+            if (collectiveOpponentItems === 0) {
+                console.log(gameSituation.lastActorIndex);
+                winnerIdentified = true;
+                break;
+            }
+        }
+    }
+}

@@ -1,47 +1,24 @@
-function evaluateSequence (sourceText) {
-    let firstSeparatorIdx = -1;
-    let scanPos = 0;
-    while (scanPos < sourceText.length) {
-        if (sourceText[scanPos] === '\n') {
-            firstSeparatorIdx = scanPos;
-            break;
-        }
-        scanPos++;
+function ProcessData(sourceText) {
+    const allSegments = sourceText.split('\n');
+    
+    if (allSegments.length <= 1) {
+        // If there are no lines after the first one (or no lines at all),
+        // the original behavior is to output 'undefined'.
+        console.log(undefined);
+        return;
     }
 
-    let remainingPart = "";
-    if (firstSeparatorIdx !== -1) {
-        remainingPart = sourceText.substring(firstSeparatorIdx + 1);
-    } else {
-        return undefined; // If no newline, the whole input is the first line, nothing remains.
-    }
+    // Initialize the minimal segment with the first actual data line (skipping the header)
+    let minimalSegment = allSegments[1];
 
-    let ultimateSmallest = undefined;
-    let lineBoundary = 0;
-
-    for (let currentSearchIdx = 0; currentSearchIdx <= remainingPart.length; currentSearchIdx++) {
-        if (currentSearchIdx === remainingPart.length || remainingPart[currentSearchIdx] === '\n') {
-            let candidateString = remainingPart.substring(lineBoundary, currentSearchIdx);
-
-            if (candidateString.length > 0 && candidateString[candidateString.length - 1] === '\r') {
-                candidateString = candidateString.substring(0, candidateString.length - 1);
-            }
-
-            if (ultimateSmallest === undefined || candidateString < ultimateSmallest) {
-                ultimateSmallest = candidateString;
-            }
-            lineBoundary = currentSearchIdx + 1;
+    // Iterate through the remaining segments to find the lexicographically smallest
+    for (let segmentIndex = 2; segmentIndex < allSegments.length; segmentIndex++) {
+        const currentSegment = allSegments[segmentIndex];
+        if (currentSegment < minimalSegment) {
+            minimalSegment = currentSegment;
         }
     }
-
-    return ultimateSmallest;
+    console.log(minimalSegment);
 }
 
-const fileHandle = require("fs");
-const obtainPayload = fileHandle.readFileSync;
-const dataSourcePath = "/dev/stdin";
-const encodingMode = "utf8";
-
-const completeText = obtainPayload(dataSourcePath, encodingMode);
-const finalOutcome = evaluateSequence(completeText);
-console.log(finalOutcome);
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,122 +1,227 @@
-const decimalFormatter = (numValue, precisionDigits) => {
-    const scaleFactor = Math.pow(10, precisionDigits);
-    const roundedIntegral = String(Math.round(numValue * scaleFactor));
+const AppKernel = {};
 
-    if (roundedIntegral === '0') {
-        return '0.' + '0'.repeat(precisionDigits);
-    }
-
-    const integralPartLength = roundedIntegral.length - precisionDigits;
-    let formattedResult;
-
-    if (integralPartLength <= 0) {
-        formattedResult = '0.' + '0'.repeat(-integralPartLength) + roundedIntegral;
-    } else {
-        formattedResult = roundedIntegral.substring(0, integralPartLength) + '.' + roundedIntegral.substring(integralPartLength);
-    }
-    return formattedResult;
-};
-
-const calculateGreatestCommonDivisor = (firstOperand, secondOperand) => {
-    while (secondOperand !== 0) {
-        let temporary = secondOperand;
-        secondOperand = firstOperand % secondOperand;
-        firstOperand = temporary;
-    }
-    return firstOperand;
-};
-
-const calculateLeastCommonMultiple = (firstOperand, secondOperand) => {
-    if (firstOperand === 0 || secondOperand === 0) return 0;
-    return Math.abs(firstOperand * secondOperand) / calculateGreatestCommonDivisor(firstOperand, secondOperand);
-};
-
-const squareNumber = (val) => val * val;
-
-class GeometricProcessor {
-    constructor() {
-        this.dataBuffer = [];
-        this.dataPointer = 0;
-        this.dataPattern = /[-]?\d+(\.\d+)?/g;
-        this.resultDisplay = console.log;
-    }
-
-    acquireNextIntegral() {
-        if (this.dataPointer >= this.dataBuffer.length) {
-            throw new Error("Input data exhausted for integral value.");
+AppKernel.utilityBelt = (() => {
+    const objectMerge = (target, ...sources) => {
+        // Replaces `_.extend`. Uses `Object.assign` for merging,
+        // but the iteration over sources must replicate the original `each`'s buggy behavior.
+        // The original `each` (due to `breaker` being `undefined`) stops after the first source.
+        // So, we only process the first source.
+        if (sources.length > 0 && sources[0]) {
+            Object.assign(target, sources[0]);
         }
-        return parseInt(this.dataBuffer[this.dataPointer++], 10);
-    }
+        return target;
+    };
 
-    acquireNextFloatingPoint() {
-        if (this.dataPointer >= this.dataBuffer.length) {
-            throw new Error("Input data exhausted for floating point value.");
-        }
-        return parseFloat(this.dataBuffer[this.dataPointer++]);
-    }
+    const iterateCollection = (collection, processor, contextRef) => {
+        if (collection === null || collection === undefined) return;
 
-    checkRemainingData() {
-        return this.dataPointer < this.dataBuffer.length;
-    }
-
-    async initiateProcessing() {
-        const lineReader = require('readline');
-        const inputInterface = lineReader.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-            terminal: false
-        });
-
-        for await (const currentLine of inputInterface) {
-            const discoveredMatches = currentLine.match(this.dataPattern);
-            if (discoveredMatches) {
-                this.dataBuffer.push(...discoveredMatches.filter(segment => segment.length > 0));
+        // Replicates the original `_.each`'s buggy behavior where `breaker` is `undefined`.
+        // The original `each` stops if the iterator returns `undefined`.
+        // This is achieved by using `for` loops and checking the return value.
+        if (typeof collection.length === 'number' && collection.length >= 0 && collection.length === Math.floor(collection.length)) {
+            for (let i = 0, l = collection.length; i < l; i++) {
+                if (processor.call(contextRef, collection[i], i, collection) === undefined) {
+                    return;
+                }
+            }
+        } else {
+            const ownKeys = Object.keys(collection); // Replaces `for...in` with `_.has`
+            for (let i = 0, l = ownKeys.length; i < l; i++) {
+                const key = ownKeys[i];
+                if (processor.call(contextRef, collection[key], key, collection) === undefined) {
+                    return;
+                }
             }
         }
-        this.executeMainSequence();
-    }
+    };
 
-    executeMainSequence() {
-        let cyclesRemaining = this.acquireNextIntegral();
+    return {
+        mergeObjects: objectMerge,
+        traverseElements: iterateCollection
+    };
+})();
 
-        for (let cycleIndex = 0; cycleIndex < cyclesRemaining; cycleIndex++) {
-            this.handleSingleCircuit();
+AppKernel.formatTools = (() => {
+    const formatDecimal = (value, base, padding, precision) => {
+        // Replicates the exact (and potentially quirky/buggy) string manipulation
+        // of the original `print_float` to ensure strict behavioral equivalence.
+        const powerOfTen = Math.pow(10, precision);
+        const integerString = "" + Math.round(value * powerOfTen);
+
+        if (integerString === '0') {
+            return '0.' + '0'.repeat(precision);
         }
 
-        if (this.checkRemainingData()) {
-             Promise.resolve().then(() => this.executeMainSequence());
+        const integerLength = integerString.length - precision;
+
+        if (integerLength <= 0) {
+            // This branch handles cases where the number is less than 1 (e.g., 0.123)
+            // or very small (e.g., 0.0005, which original prints as ".1").
+            // `substr` with negative start index behaves as `max(0, str.length + start)`.
+            // `integerString.substr(integerLength, precision)` will effectively be
+            // `integerString.substr(Math.max(0, integerString.length + integerLength), precision)`.
+            // For `integerString="1", precision=3, integerLength=-2`, this is `integerString.substr(0, 3)` which is "1".
+            // `integerString.substr(0, integerLength)` for negative `integerLength` is `""`.
+            return integerString.substr(0, integerLength) + "." + integerString.substr(integerLength, precision);
+        } else {
+            // Standard case for numbers >= 1
+            return integerString.substr(0, integerLength) + "." + integerString.substr(integerLength, precision);
         }
-    }
+    };
 
-    handleSingleCircuit() {
-        const p1X = this.acquireNextFloatingPoint();
-        const p1Y = this.acquireNextFloatingPoint();
-        const p2X = this.acquireNextFloatingPoint();
-        const p2Y = this.acquireNextFloatingPoint();
-        const p3X = this.acquireNextFloatingPoint();
-        const p3Y = this.acquireNextFloatingPoint();
+    return {
+        formatNumberToDecimal: formatDecimal
+    };
+})();
 
-        const paramAlpha = p1X - p2X;
-        const paramBeta = p1Y - p2Y;
-        const paramGamma = -1 * ( squareNumber(p1X) - squareNumber(p2X) + squareNumber(p1Y) - squareNumber(p2Y) );
-        const paramDelta = p1X - p3X;
-        const paramEpsilon = p1Y - p3Y;
-        const paramZeta = -1 * ( squareNumber(p1X) - squareNumber(p3X) + squareNumber(p1Y) - squareNumber(p3Y) );
+AppKernel.numericalOperations = (() => {
+    const calculateGcdIterative = (valA, valB) => {
+        // Iterative Euclidean algorithm, different from original recursive.
+        let currentA = valA;
+        let currentB = valB;
+        while (currentB !== 0) {
+            [currentA, currentB] = [currentB, currentA % currentB]; // Array destructuring for swap
+        }
+        return currentA;
+    };
 
-        const denominatorValue = paramEpsilon * paramAlpha - paramBeta * paramDelta;
+    const calculateLcmFromGcd = (valA, valB) => {
+        if (valA === 0 || valB === 0) return 0;
+        return Math.abs(valA * valB) / calculateGcdIterative(valA, valB);
+    };
 
-        const primaryCoeff = (paramGamma * paramEpsilon - paramBeta * paramZeta) / denominatorValue;
-        const secondaryCoeff = (paramAlpha * paramZeta - paramDelta * paramGamma) / denominatorValue;
+    const getSquaredValue = (val) => val * val; // Arrow function for `sq`
 
-        const constantTerm = -1 * ( squareNumber(p1X) + squareNumber(p1Y) + primaryCoeff * p1X + secondaryCoeff * p1Y );
-        
-        this.resultDisplay(
-            decimalFormatter(primaryCoeff / -2.0, 3),
-            decimalFormatter(secondaryCoeff / -2.0, 3),
-            decimalFormatter(Math.sqrt(squareNumber(primaryCoeff) + squareNumber(secondaryCoeff) + 4 * constantTerm) / 2.0, 3)
-        );
-    }
-}
+    // Extend global Math object as per original, using AppKernel's utility.
+    AppKernel.utilityBelt.mergeObjects(Math, {
+        gcd: calculateGcdIterative,
+        lcm: calculateLcmFromGcd,
+        sq: getSquaredValue
+    });
 
-const processorUnit = new GeometricProcessor();
-processorUnit.initiateProcessing();
+    return {
+        getCommonDivisor: calculateGcdIterative,
+        getLeastCommonMultiple: calculateLcmFromGcd,
+        getSquared: getSquaredValue
+    };
+})();
+
+AppKernel.mainProcessor = (() => {
+    const DATA_INPUT_TYPE_SPEC = 'float';
+
+    const InputManagementSystem = (() => {
+        let bufferedInputSegments = [];
+        const inputPatternRegistry = {
+            'string': /\w*/g,
+            'number': /[-]?\d+/g,
+            'float': /[-]?\d+(\.\d+)?/g
+        };
+        const currentInputPattern = inputPatternRegistry[DATA_INPUT_TYPE_SPEC];
+
+        const retrieveNextInteger = () => parseInt(bufferedInputSegments.shift());
+        const retrieveNextFloat = () => parseFloat(bufferedInputSegments.shift());
+        const retrieveNextText = () => bufferedInputSegments.shift();
+        const hasRemainingInput = () => bufferedInputSegments.length > 0;
+
+        const initializeInputSource = (completionHandler) => {
+            const standardInput = process.openStdin();
+            standardInput.setEncoding('utf8');
+
+            standardInput.on('data', (dataChunk) => {
+                // Using `String.prototype.matchAll` and `Array.from` for a different parsing approach.
+                const matchedEntries = Array.from(dataChunk.matchAll(currentInputPattern), m => m[0]);
+                bufferedInputSegments = bufferedInputSegments.concat(matchedEntries.filter(segment => segment.length > 0));
+            });
+
+            standardInput.on('end', () => {
+                completionHandler();
+            });
+        };
+
+        return {
+            retrieveNextInteger,
+            retrieveNextFloat,
+            retrieveNextText,
+            hasRemainingInput,
+            initializeInputSource
+        };
+    })();
+
+    const displayResults = (...args) => {
+        console.log(...args);
+    };
+
+    const CalculationEngine = {
+        beginExecution: function() {
+            // Uses `Promise.resolve().then()` for asynchronous execution,
+            // replacing `setTimeout(..., 0, ...)`.
+            Promise.resolve().then(() => this.processInputBatch(this));
+        },
+        processInputBatch: function(engineContext) {
+            let initialProblemCount = InputManagementSystem.retrieveNextInteger();
+
+            // Replicates `while (n--) func();` using a `for` loop to correctly
+            // capture the decremented `n` value for each iteration.
+            for (let currentProblemIndex = initialProblemCount - 1; currentProblemIndex >= 0; currentProblemIndex--) {
+                const executeSingleProblem = (loopIterationValue) => {
+                    const pointData = {};
+                    const coordinateIdentifiers = ['x1', 'y1', 'x2', 'y2', 'x3', 'y3'];
+
+                    // Uses `reduce` to populate an object, different from `forEach` on `names` array.
+                    coordinateIdentifiers.reduce((accumulator, identifier) => {
+                        accumulator[identifier] = InputManagementSystem.retrieveNextFloat();
+                        return accumulator;
+                    }, pointData);
+
+                    const { x1, y1, x2, y2, x3, y3 } = pointData;
+
+                    // Core mathematical calculations remain identical.
+                    const valA = x1 - x2;
+                    const valB = y1 - y2;
+                    const valC = -1 * ( Math.sq(x1) - Math.sq(x2) + Math.sq(y1) - Math.sq(y2) );
+                    const valD = x1 - x3;
+                    const valE = y1 - y3;
+                    const valF = -1 * ( Math.sq(x1) - Math.sq(x3) + Math.sq(y1) - Math.sq(y3) );
+
+                    const determinant = valE * valA - valB * valD;
+
+                    const paramL = ( valC * valE - valB * valF ) / determinant;
+                    const paramM = ( valD * valC - valA * valF ) / determinant;
+                    
+                    // The original code uses the decremented loop counter (`n`) in the radius calculation.
+                    // This behavior is preserved by passing `loopIterationValue`.
+                    const radiusValue = Math.sqrt(Math.sq(paramL) + Math.sq(paramM) + 4 * loopIterationValue) / 2.0;
+
+                    displayResults(
+                        AppKernel.formatTools.formatNumberToDecimal(paramL / -2.0, 10, 3, 3),
+                        AppKernel.formatTools.formatNumberToDecimal(paramM / -2.0, 10, 3, 3),
+                        AppKernel.formatTools.formatNumberToDecimal(radiusValue, 10, 3, 3)
+                    );
+                };
+                executeSingleProblem(currentProblemIndex);
+            }
+
+            if (InputManagementSystem.hasRemainingInput()) {
+                Promise.resolve().then(() => this.processInputBatch(engineContext));
+            }
+        }
+    };
+
+    const setupApplication = () => {
+        // Exposes functions to the global object (`globalThis` for cross-environment compatibility),
+        // replacing the original `_.extend(this, { ... })`.
+        Object.assign(globalThis, {
+            output: displayResults,
+            input_number: InputManagementSystem.retrieveNextInteger,
+            input_float: InputManagementSystem.retrieveNextFloat,
+            input_text: InputManagementSystem.retrieveNextText,
+            has_next: InputManagementSystem.hasRemainingInput
+        });
+
+        InputManagementSystem.initializeInputSource(() => CalculationEngine.beginExecution.call(globalThis));
+    };
+
+    setupApplication();
+
+    return {};
+})();

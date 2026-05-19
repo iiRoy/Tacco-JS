@@ -1,21 +1,15 @@
-"use strict"
+"use strict";
 
-const assessParityRecursively = (valueArray, currentIndex = 0, currentOddSum = 0) => {
-    if (currentIndex >= valueArray.length) {
-        return currentOddSum;
-    }
-    const nextOddSum = currentOddSum + (valueArray[currentIndex] % 2 !== 0 ? 1 : 0);
-    return assessParityRecursively(valueArray, currentIndex + 1, nextOddSum);
-};
+function processInput(rawData) {
+  const parsedLines = rawData.trim().split('\n');
+  const totalElements = Number(parsedLines[0]);
+  const numberArray = parsedLines[1].trim().split(' ').map(Number);
 
-const executeProgram = (incomingData) => {
-    const dataSegments = incomingData.trim().split('\n');
-    const numericCollection = dataSegments[1].trim().split(' ').map(stringElement => parseInt(stringElement, 10));
+  const oddCountAccumulator = numberArray.reduce((currentOddSum, currentNum) => {
+    return currentOddSum + (currentNum % 2 !== 0 ? 1 : 0);
+  }, 0);
 
-    const totalOddInstances = assessParityRecursively(numericCollection);
+  console.log(oddCountAccumulator % 2 !== 0 ? 'NO' : 'YES');
+}
 
-    const resultingStatus = (totalOddInstances % 2 === 0) ? 'YES' : 'NO';
-    console.log(resultingStatus);
-};
-
-executeProgram(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

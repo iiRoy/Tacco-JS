@@ -1,94 +1,100 @@
-ExecuteSolution(obtainRawInput());
+processData(getInputData());
 
-/*
- * Fetches the primary input data from the system's standard input.
- * Utilizes Node.js 'fs' module to synchronously read the content.
- *
- * @returns {string} The raw input text, stripped of leading/trailing whitespace.
+/**
+ * Retrieves input from standard input.
+ * @returns {string} The trimmed content read from stdin.
  */
-function obtainRawInput() {
-  return require("fs")
-    .readFileSync("/dev/stdin", "utf8")
-    .trim();
+function getInputData() {
+  return require("fs").readFileSync("/dev/stdin", "utf8").trim();
 }
 
 /**
- * Displays the given content to the standard output.
- * This function serves as the primary method for program results.
- * @param {any} outputContent - The data to be presented.
+ * Displays information to standard output.
+ * @param {*} content The data to be logged.
  */
-function displayResult(outputContent) {
-  console.log(outputContent);
+function displayOutput(content) {
+  console.log(content);
 }
 
-// Reports an error message to the standard error stream.
-// Intended for logging issues or diagnostic information.
-// @param {any} errorMessage - The description of the problem.
-function reportIssue(errorMessage) {
+/**
+ * Reports an error message to standard error.
+ * @param {*} errorMessage The error content to be logged.
+ */
+function reportError(errorMessage) {
   console.error(errorMessage);
 }
 
-// --- Data Transformation Utility ---
-// Parameters for 'operationMode':
-// 0: No specific conversion; returns input as is.
-// 1: Converts the input string to an integer number.
-// 2: Splits the input string by single space characters.
-// 3: Splits the input string by newline characters.
-// 4: Splits by space and then maps each part to a number.
-// 5: Splits by newline and then maps each part to a number.
-// 6: Splits the input string into an array of individual characters.
-// 7: Splits into individual characters and then maps each to a number.
-// 8: Joins an array of strings with spaces.
-// 9: Joins an array of strings with newlines.
-// 10: Joins an array of strings without any separator.
-function processDataForType(sourceValue, operationMode) {
-  switch (operationMode) {
+/**
+ * Transforms an input value based on a specified conversion type.
+ * @param {string|Array} inputValue The input string or array to convert.
+ * @param {number} conversionType The type of conversion to apply.
+ *   1: Convert to integer.
+ *   2: Split by space.
+ *   3: Split by newline.
+ *   4: Split by space and convert elements to numbers.
+ *   5: Split by newline and convert elements to numbers.
+ *   6: Split into individual characters.
+ *   7: Split into individual characters and convert to numbers.
+ *   8: Join array elements with space.
+ *   9: Join array elements with newline.
+ *   0: Join array elements without separator.
+ *   (Any other value): Return input as is.
+ * @returns {*} The converted value.
+ */
+function transformInput(inputValue, conversionType) {
+  switch (conversionType) {
     case 1:
-      return parseInt(sourceValue, 10);
+      return parseInt(inputValue);
     case 2:
-      return sourceValue.split(" ");
+      return inputValue.split(" ");
     case 3:
-      return sourceValue.split("\n");
+      return inputValue.split("\n");
     case 4:
-      return sourceValue.split(" ").map((singleElement) => Number(singleElement));
+      return inputValue.split(" ").map((itemStr) => Number(itemStr));
     case 5:
-      return sourceValue.split("\n").map((singleElement) => Number(singleElement));
+      return inputValue.split("\n").map((elementStr) => Number(elementStr));
     case 6:
-      return sourceValue.split("");
+      return inputValue.split("");
     case 7:
-      return sourceValue.split("").map((singleElement) => Number(singleElement));
+      return inputValue.split("").map((charVal) => Number(charVal));
     case 8:
-      return sourceValue.join(" ");
+      return inputValue.join(" ");
     case 9:
-      return sourceValue.join("\n");
-    case 10:
-      return sourceValue.join("");
+      return inputValue.join("\n");
+    case 0:
+      return inputValue.join("");
     default:
-      return sourceValue;
+      return inputValue;
   }
 }
 
 /**
- * Serves as the main entry point for the program's logic.
- * It takes the initial raw input, processes it, and generates the final output.
- * @param {string} initialDataSet - The raw input string received from `obtainRawInput`.
+ * Main function to process the input data and generate output.
+ * @param {string} rawInputString The raw input string from stdin.
  */
-function ExecuteSolution(initialDataSet) {
-  let processedDataSet = processDataForType(initialDataSet, 4);
+function processData(rawInputString) {
+  // Convert the input string into an array of numbers, split by spaces.
+  rawInputString = transformInput(rawInputString, 4);
 
-  const totalElementsCount = processedDataSet[0];
-  const thresholdKValue = processedDataSet[1];
-  const specificValue = processedDataSet[2];
+  // Extract problem parameters from the processed input array.
+  const countN = rawInputString[0]; // Represents N
+  const limitK = rawInputString[1]; // Represents K
+  const valueS = rawInputString[2]; // Represents S
 
-  let outputCollection = new Array(totalElementsCount);
+  // Initialize an array with a size of N.
+  const resultCollection = new Array(countN);
 
-  for (let loopIndex = 0; loopIndex < totalElementsCount; loopIndex++) {
-    if (loopIndex < thresholdKValue) {
-      outputCollection[loopIndex] = specificValue;
+  // Populate the array based on the conditions.
+  for (let idx = 0; idx < countN; idx++) {
+    if (idx < limitK) {
+      // If the current index is less than K, assign S.
+      resultCollection[idx] = valueS;
     } else {
-      outputCollection[loopIndex] = 1;
+      // Otherwise, assign the value 1.
+      resultCollection[idx] = 1;
     }
   }
 
-  displayResult(outputCollection.join(" "));
+  // Join the elements of the resulting array with spaces and print to console.
+  displayOutput(resultCollection.join(" "));
 }

@@ -1,102 +1,74 @@
-const fileSysModule = require('fs'); // Core module for file system operations
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Read input from standard input path
+var lines = rawData.trim().split("\n"); // Split the raw input data into an array of lines
 
-const standardInputPath = '/dev/stdin';     // Path to read input from
-const textEncoding = 'utf8';                // Character encoding for file reading
-const newlineSeparator = "\n";              // Delimiter for splitting lines
-const spaceDelimiter = " ";                 // Delimiter for splitting numbers/strings
-const initialFillValue = -1;                // Default value for array initialization
-const maxDataElements = 1000000;            // Maximum size for the cumulative sum array
-const largeNumberDivisor = 1000000000;      // Threshold for splitting large sums (1 billion)
-const resultYes = "Yes";                    // String constant for positive outcome
-const resultNo = "No";                      // String constant for negative outcome
-const nineDigitsCount = 9;                  // Number of digits for the low-part of large numbers
+lines.shift(); // Discard the first line (usually a count, not needed for processing here)
 
-// Read all input content synchronously from the specified path
-let rawInputContent = fileSysModule.readFileSync(standardInputPath, textEncoding);
-
-// Process the raw input: remove whitespace, then split into individual lines
-let processedLines = rawInputContent.trim().split(newlineSeparator);
-
-// Discard the very first line of the input
-processedLines.shift();
-
-// Extract the primary sequence of integers, parse them, and sort in ascending order
-let primaryNumberSet = processedLines.shift().split(spaceDelimiter).map(val => parseInt(val, 10));
-primaryNumberSet.sort((firstVal, secondVal) => firstVal - secondVal);
-
-// Discard another line from the input
-processedLines.shift();
-
-// Extract the secondary sequence of integers, parsing them from string format
-let secondaryNumberSet = processedLines.shift().split(spaceDelimiter).map(val => parseInt(val, 10));
-
-// Extract the sequence of string representations for comparison
-let stringComparators = processedLines.shift().split(spaceDelimiter);
-
-// Initialize a large array to store cumulative sums, filling it with a default marker value
-let cumulativeValueTracker = new Array(maxDataElements);
-for (let arrayIndex = 0; arrayIndex < maxDataElements; arrayIndex++) {
-  cumulativeValueTracker[arrayIndex] = initialFillValue;
-}
-
-// Set the base case for the cumulative sum at index zero
-cumulativeValueTracker[0] = [0, 0];
-
-// Initialize a two-part variable to hold the current accumulated sum (high_part, low_part)
-let currentRunningSum = [0, 0];
-
-/*
- * Iterate through each number in the primary set to calculate and store cumulative sums.
- * The sum is managed in two parts to handle values exceeding standard integer limits.
- */
-primaryNumberSet.forEach(function (currentNum) {
-  currentRunningSum[1] += currentNum; // Add current number to the low part
-
-  // If the low part exceeds the threshold, increment the high part and adjust the low part
-  if (currentRunningSum[1] >= largeNumberDivisor) {
-    currentRunningSum[0]++;
-    currentRunningSum[1] -= largeNumberDivisor;
-  }
-  // Store a snapshot (copy) of the current running sum at the index corresponding to currentNum
-  cumulativeValueTracker[currentNum] = currentRunningSum.slice();
+var firstNumArray = lines.shift().split(" ").map(Number); // Take the next line, split by space, and convert to numbers
+firstNumArray.sort(function(valA, valB) { // Sort the array of numbers in ascending order
+    return valA - valB;
 });
 
-/*
- * Process each element in the secondary number set. For each element,
- * determine a comparison value and output a "Yes" or "No" result.
- */
-secondaryNumberSet.forEach(function (searchTarget, outputIndex) {
-  // Find the largest available index less than or equal to searchTarget that has a valid sum
-  while (true) {
-    if (cumulativeValueTracker[searchTarget] !== initialFillValue) {
-      break; // Found a valid sum, exit loop
+lines.shift(); // Discard another line (another count, also not used directly)
+
+var secondNumArray = lines.shift().split(" ").map(Number); // Get the next line, split, and convert to numbers
+var stringArray = lines.shift().split(" "); // Get the final line, split by space, keeping as strings
+
+var prefixSums = []; // Initialize an array to store prefix sums for quick lookup
+
+// Populate the prefixSums array with a sentinel value (-1)
+// This array will store the cumulative sum up to each number encountered in firstNumArray.
+for (var i = 0; i < 1000000; i++) {
+    prefixSums[i] = -1;
+}
+
+prefixSums[0] = [0, 0]; // The sum up to 0 is [0, 0] (base case for large number arithmetic)
+
+var currentTotal = [0, 0]; // Initialize a two-part array to handle large sums (higher part, lower part)
+// The lower part handles numbers up to 1,000,000,000 - 1.
+
+firstNumArray.forEach(function(currentVal) { // Iterate through each number in the sorted first array
+    currentTotal[1] += currentVal; // Add the current number to the lower part of the running total
+
+    // Check if the lower part has overflowed (exceeded 1,000,000,000)
+    if (currentTotal[1] >= 1000000000) {
+        currentTotal[0]++; // Increment the higher part of the total
+        currentTotal[1] -= 1000000000; // Subtract the overflow amount from the lower part
     }
-    searchTarget--; // Decrement search target to find a preceding valid sum
-  }
+    // Store a copy of the current total at the index corresponding to the current value
+    // This means prefixSums[X] will hold the sum of all numbers in firstNumArray up to X.
+    prefixSums[currentVal] = currentTotal.slice();
+});
 
-  // Retrieve the corresponding string representation for the current comparison
-  let targetStringValue = stringComparators[outputIndex];
+secondNumArray.forEach(function(targetVal, idx) { // Process each target value from the second array
+    // Find the largest value less than or equal to targetVal for which a prefix sum is stored
+    while (true) {
+        if (prefixSums[targetVal] !== -1) { // If a valid prefix sum is found, break the loop
+            break;
+        }
+        targetVal--; // Decrement targetVal and try the next smaller number
+    }
 
-  /*
-   * Convert the string representation into a two-part large number ([high_part, low_part]).
-   * The last nine digits form the low part, and the remainder forms the high part.
-   */
-  let parsedLargeValue = [
-    parseInt(targetStringValue.substring(0, targetStringValue.length - nineDigitsCount), 10) || 0,
-    parseInt(targetStringValue.substring(targetStringValue.length - nineDigitsCount), 10) || 0
-  ];
+    var currentString = stringArray[idx]; // Get the corresponding string from the third array
 
-  let finalComparisonOutcome = ""; // Variable to store the comparison result
+    // Parse the string into a two-part large number representation
+    // The string is split into a higher part (all but last 9 digits) and a lower part (last 9 digits).
+    var parsedBigInt = [
+        currentString.slice(0, currentString.length - 9) - 0, // Convert higher part to number
+        currentString.slice(-9) - 0 // Convert lower part to number
+    ];
 
-  // Perform the comparison between the parsed large value and the stored cumulative sum
-  if (parsedLargeValue[0] < cumulativeValueTracker[searchTarget][0]) {
-    finalComparisonOutcome = resultYes;
-  } else if (parsedLargeValue[0] === cumulativeValueTracker[searchTarget][0] && parsedLargeValue[1] <= cumulativeValueTracker[searchTarget][1]) {
-    finalComparisonOutcome = resultYes;
-  } else {
-    finalComparisonOutcome = resultNo;
-  }
+    var resultString = ""; // Initialize the string to store the comparison result
 
-  // Print the determined outcome to the console
-  console.log(finalComparisonOutcome);
+    // Compare the parsed big integer with the calculated prefix sum
+    if (parsedBigInt[0] < prefixSums[targetVal][0]) { // If the higher part of the parsed number is smaller
+        resultString = "Yes";
+    }
+    // If higher parts are equal, compare the lower parts
+    else if (parsedBigInt[0] === prefixSums[targetVal][0] && parsedBigInt[1] <= prefixSums[targetVal][1]) {
+        resultString = "Yes";
+    }
+    else { // Otherwise, the parsed big integer is larger than the prefix sum
+        resultString = "No";
+    }
+    console.log(resultString); // Output the comparison result
 });

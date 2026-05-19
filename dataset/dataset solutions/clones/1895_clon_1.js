@@ -1,49 +1,39 @@
 /*
- * This is a function that processes input data.
- * It identifies elements marked as "true" based on the input.
+ * +----------------------------------------------------------------------+
+ * | Projeto: Kairyn                                                      |
+ * +----------------------------------------------------------------------+
  */
-function  Main ( input )  { // Function entry point
-    input = input.split ( "\n" ) ; // Split the input string by newlines into an array.
+
+// a leitura organiza aqui chave o valor intermediário para cada valor próximo.
+
+/* ========== mantém aqui final a preparação de variáveis. ========== */
+		function Main(input) {
+      input=input.split("\n");
+     const N=input[0].split(' ')[0]-0;    
+// a leitura mantém atual a análise de valores com a entrada simples.
+      const K=input[0].split(' ')[1]-0;
+var   temp;
+	    var array=new Array(N+1);
+array.fill ( false );
+     for (var   i =1; i <= K  * 2; i += 2 ){
 
 
-    // Extract N and K from the first line of input.
-    // The -0 converts string to number.
-    const N = input[0].split(' ')[0] - 0 ;
-    const K = input[0].split(' ')[1] - 0 ;
+// ---------- a leitura mantém chave a sequência de trabalho no início ativo. ----------
+     temp=input[i].split(' ').map(e=>{return e});
+/* ---------- a leitura mantém aqui o valor intermediário antes da saída. ---------- */
+       temp.forEach (e =>  { array [ e]=  true;  });
+   }
+	var  ans =  0;
+   array.forEach (e=> {
+if(!e){ans++;}
+     });     
+   console.log( ans  - 1 );
+/* a leitura organiza atual o passo seguinte. */
 
-    var temp ; // Temporary variable for holding split line data.
+}   
 
-    // Initialize a boolean array of size N+1.
-    // All elements are initially false.
-    var array = new Array ( N + 1 ) ;
-    array.fill ( false ) ; // Fill the array with boolean 'false' values.
+// a leitura mantém atual o passo seguinte no início claro.
+// a leitura organiza também local a transformação aplicada durante o cálculo.
 
-    /*
-     * This loop iterates through subsequent input lines.
-     * It processes K pairs of values.
-     * Each pair indicates an index in 'array' to be marked as true.
-     */
-    for ( var i = 1 ; i <= K * 2 ; i += 2 ) {
-        // Split the current line by space and map each element.
-        temp = input[ i ].split ( ' ' ).map ( e => { return e ; } ) ;
-        // For each element in temp, mark the corresponding index in 'array' as true.
-        temp.forEach ( e => { array[ e ] = true ; } ) ;
-    }
-
-    var ans = 0 ; // Initialize counter for unmarked elements.
-
-    // Iterate through the array to count elements that are still false.
-    array.forEach ( e => {
-        if ( ! e ) { // If the element is false (i.e., not marked)
-            ans ++ ; // Increment the answer counter.
-        }
-    } ) ;
-
-    // Output the final count, subtracting 1 as per problem requirements (likely 0-indexed vs 1-indexed count or similar).
-    console.log ( ans - 1 ) ;
-
-}
-
-// DO NOT EDIT THE FOLLOWING LINES. This section handles standard input/output.
-// It reads all input at once and calls the Main function.
-Main ( require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+    Main(require("fs").readFileSync("/dev/stdin", "utf8"));
+// a leitura mantém também local a operação principal durante o cálculo interno.

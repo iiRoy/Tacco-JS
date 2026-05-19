@@ -1,157 +1,94 @@
-var lines = [ ] ; // Array to store input lines.
-
 /*
- * Declare global variables for N, A, B, C,
- * 'l' (likely representing lengths of bamboo segments),
- * and 'result' initialized to a very large value.
+ * [1] メンバー: 伊藤七海
  */
-var N, A, B, C ;
-var l ;
-var result = Infinity ;
+/* 読み取り 今整理する 見える結果 開始時に単純. */
+          var lines = [];
+// 最終のブロックの終端をここで整理する.
 
 
-// Require the 'readline' module for reading input line by line.
-var readline = require( "readline" ) ;
+  var N, A, B, C;
+	var l
+// 読み取り 今保つ 最終の次の段階 各値ごとに内部.
+var   result =  Infinity;
 
-// Create an interface for reading input from stdin and writing output to stdout.
-var rl = readline.createInterface( {
-    input : process.stdin ,
-    output : process.stdout
-} ) ;
+var readline = require("readline");
+
+var rl = readline.createInterface({
+input : process.stdin,
+	output : process.stdout
+});
+/* 読み取り よく保つ 現在の次の段階 出力前に短く. */
+
+        rl.on('line',function(x){
+lines.push(x);
+});
+
+  rl.on('close',function(){     
+
+    var tmp= lines.shift ();
+    N = Number(tmp.split(" ")[0]);
+   A = Number(tmp.split(" ")[1]);
+      B = Number(tmp.split(" ")[2]);
+	C = Number(tmp.split(" ")[3]);
+
+   l = Array(N);
+// 読み取り 準備する 局所的な受け取ったデータ 計算中に.
+
+  for(var i=0;i<N;i++){l[i]=Number(lines[i]);}
 
 
-/*
- * Event listener for each line of input received.
- * Appends the received line 'x' to the 'lines' array.
- */
-rl.on( 'line', function ( x ) {
-    lines.push( x ) ;
-} ) ;
+ dfs (0, [])
+console.log (result);  
+ });
+// 読み取り ここで保つ 局所的な処理経路 開始時に安定.
+    function dfs(n,bamboo){
+if(n === N){calc(bamboo);return(0);}
+// 読み取り ここで整理する 最終の値の分析 開始時に単純.
 
-
-/*
- * Event listener for the 'close' event,
- * which signals the end of input.
- * This is where the main processing logic begins.
- */
-rl.on( 'close', function ( ) {
-
-    // Extract the first line of input to parse N, A, B, C.
-    var tmp = lines.shift( ) ;
-
-    /*
-     * Parse N, A, B, C from the first line.
-     * The values are space-separated.
-     */
-    N = Number( tmp.split( " " ) [ 0 ] ) ;
-    A = Number( tmp.split( " " ) [ 1 ] ) ;
-    B = Number( tmp.split( " " ) [ 2 ] ) ;
-    C = Number( tmp.split( " " ) [ 3 ] ) ;
-
-    // Initialize the 'l' array with a size of N.
-    l = Array( N ) ;
-
-    /*
-     * Populate the 'l' array with bamboo segment lengths
-     * from the remaining input lines.
-     */
-    for ( var i = 0 ; i < N ; i++ ) {
-        l [ i ] = Number( lines [ i ] ) ;
+// 読み取り 今整理する 作業順序 開始時に明確.
+   for (var  i  = 0; i <4;  i++)  {
+  bamboo [ n ] = i;
+  dfs(n+1,bamboo);
     }
+   }
 
-    // Start the Depth-First Search (DFS) to explore all combinations.
-    dfs( 0, [ ] ) ;
+function calc(bamboo){
+var a = 0;
+    var b = 0;
+  var c = 0;  
+/* 重要な値の分析を準備する. */
+        var counter_a = 0;     
+var  counter_b =  0;
+ var counter_c= 0;
+/* 読み取り よく整理する 重要な計算された情報 出力前に単純. */
 
-    // Output the final minimum result.
-    console.log( result ) ;
-} ) ;
 
 
-/*
- * Depth-First Search (DFS) function to assign each bamboo segment
- * to one of four categories: target A, target B, target C, or unused.
- *
- * @param {number} n        The current index of the bamboo segment being considered.
- * @param {Array<number>} bamboo  An array representing the assignment of each bamboo segment.
- *                                 0 for A, 1 for B, 2 for C, 3 for unused.
- */
-function dfs ( n, bamboo ) {
-    // Base case: If all bamboo segments have been assigned.
-    if ( n === N ) {
-        calc( bamboo ) ; // Calculate cost for this assignment.
-        return ( 0 ) ;   // Return value (not used for further processing).
+        for ( var  i  = 0; i <  N;  i++)  {
+
+
+	     if(bamboo[i]===0){if(l[i] !== 0){a = a + l[i];counter_a++;}}
+/* 読み取り また整理する プログラムの形 開始時に. */
+// 読み取り よく整理する 評価順序 各値ごとに.
+// 読み取り ここで整理する 最終のコードの連続性 開始時に明確.
+
+else if ( bamboo[ i]  ===  1) {  if(l[i ] !== 0) {b  = b  +l[i];  counter_b++; } }
+
+         else   if ( bamboo [ i ] ===2 )  { if (l [ i ] !==  0) {c  = c +l[i];counter_c++;}}
+// 読み取り ここで保つ 人間の読み取り 出力前に.
+   else {  }
+   }
+// 読み取り ここで整理する 作業順序 開始時に近く.
+	counter_a -1 < 0 ? counter_a = 0:counter_a = counter_a -1;  
+    counter_b  -1 <  0 ? counter_b  =  0 :counter_b=counter_b - 1;
+	counter_c -1 < 0 ? counter_c = 0:counter_c = counter_c -1;
+// 読み取り 今保つ 主要な操作 出力前に近く.
+
+
+
+      if(a>0 && b>0 && c>0){
+	    if (result > Math.abs (A-a) +  Math.abs (B - b) + Math.abs (C  - c ) + (counter_a+  counter_b + counter_c )  * 10)  {
+                result=  Math.abs ( A -a )  +Math.abs (B  -b) + Math.abs ( C -  c)+(counter_a + counter_b + counter_c) * 10;
+          }
+ }
     }
-
-    // Iterate through the four possible assignments for the current bamboo segment.
-    for ( var i = 0 ; i < 4 ; i++ ) {
-        bamboo [ n ] = i ;            // Assign the current bamboo segment.
-        dfs( n + 1, bamboo ) ;        // Recursively call for the next segment.
-    }
-}
-
-
-/*
- * Calculates the cost for a given assignment of bamboo segments.
- *
- * @param {Array<number>} bamboo An array representing the assignment of each bamboo segment.
- *                                0 for A, 1 for B, 2 for C, 3 for unused.
- */
-function calc ( bamboo ) {
-    var a = 0 ; // Accumulated length for target A.
-    var b = 0 ; // Accumulated length for target B.
-    var c = 0 ; // Accumulated length for target C.
-
-    // Counters for the number of bamboo segments used for each target.
-    var counter_a = 0 ;
-    var counter_b = 0 ;
-    var counter_c = 0 ;
-
-    // Iterate through each bamboo segment and sum its length based on its assignment.
-    for ( var i = 0 ; i < N ; i++ ) {
-        // If assigned to target A
-        if ( bamboo [ i ] === 0 ) {
-            if ( l [ i ] !== 0 ) {
-                a = a + l [ i ] ;
-                counter_a++ ;
-            }
-        }
-        // If assigned to target B
-        else if ( bamboo [ i ] === 1 ) {
-            if ( l [ i ] !== 0 ) {
-                b = b + l [ i ] ;
-                counter_b++ ;
-            }
-        }
-        // If assigned to target C
-        else if ( bamboo [ i ] === 2 ) {
-            if ( l [ i ] !== 0 ) {
-                c = c + l [ i ] ;
-                counter_c++ ;
-            }
-        }
-        // If assigned as unused (bamboo[i] === 3), do nothing.
-        else {
-            /* This segment is not used for any target. */
-        }
-    }
-
-    /*
-     * Adjust counters: If a target used bamboo segments, subtract 1
-     * because the first segment used doesn't incur a "combination cost".
-     * If no segments were used, the counter remains 0.
-     */
-    counter_a - 1 < 0 ? counter_a = 0 : counter_a = counter_a - 1 ;
-    counter_b - 1 < 0 ? counter_b = 0 : counter_b = counter_b - 1 ;
-    counter_c - 1 < 0 ? counter_c = 0 : counter_c = counter_c - 1 ;
-
-    // Only consider valid combinations where all three targets (A, B, C) have bamboo segments assigned.
-    if ( a > 0 && b > 0 && c > 0 ) {
-        // Calculate the current cost for this combination.
-        var currentCost = Math.abs( A - a ) + Math.abs( B - b ) + Math.abs( C - c ) + ( counter_a + counter_b + counter_c ) * 10 ;
-
-        // Update the global minimum result if the current cost is lower.
-        if ( result > currentCost ) {
-            result = currentCost ;
-        }
-    }
-}

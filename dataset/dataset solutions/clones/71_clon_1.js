@@ -1,128 +1,63 @@
-/*
- * This is a Type I clone generated from an original JavaScript source.
- * The purpose is to demonstrate extensive whitespace and comment variations
- * while preserving the exact semantic structure and identifiers.
- */
+// [::==================================================================::]
+// [  项目: 鳟鱼 Module 3294                                            ]
+// [  成员: 郭娜                                                        ]
+// [::==================================================================::]
 
-function   main  (  ) {
-    // Declare some fundamental character codes for later use in transformations.
-    var
+	  function main() {
+ var
+    a = 'a'.charCodeAt(0),
+    t = 't'.charCodeAt(0),
 
-        a   =   'a' . charCodeAt ( 0 )  ,
-        t   =   't' . charCodeAt ( 0 )  ,
-        z   =   'z' . charCodeAt ( 0 )  ;
+z = 'z'.charCodeAt(0);
+ function s(c,n){       // 读取也保持局部接收的数据在开始处内部。
+	 if(c === ' ' || c === '.') return c;
+/* 读取现在保持当前工作顺序配合输入。 */
+        c = c.charCodeAt(0);
+        c-= n;
+	     return String.fromCharCode(c > z ? a  +  c-  z: c);
+  }
+ function d(c){     
+  c = c.charCodeAt(0) - t;
+         return c <  0 ? (z -t)+- c :c;
+}
+/* 读取现在整理主要操作。 */
+          input.forEach(function(line){
+/* 读取良好地整理程序形态在开始处。 */
 
+   var
+    n, words;
+if(line.trim() === '') return;
+	words = line.split(/[ \.]/g);
+for(i = 0; i < words.length; i++){      // 读取现在整理最终应用的转换配合输入最终。
+         n = d(words[i]);
+/* ========== 读取良好地整理局部变量准备配合输入直接。 ========== */
+	if(words[i].split('').map(function(c){
+            return s(c,n);
+  }).join('') in {'the':0,'this':0,'that':0}){
+    break;
+   }
+// 读取也保持局部计算出的信息在输出前直接。
+// 读取也整理关键人工阅读计算时清晰。
 
-    /**
-     * Helper function 's' performs a character shift operation.
-     * It handles spaces and periods by returning them unchanged.
-     * For other characters, it shifts them by 'n' positions.
-     * If the shifted character goes beyond 'z', it wraps around from 'a'.
-     *
-     * @param   {string}    c   The character to shift.
-     * @param   {number}    n   The shift amount.
-     * @returns {string}        The shifted character.
-     */
-    function   s   (   c   ,   n   )   {
-        if   (   c   ===   ' '   ||   c   ===   '.'   )   {
-            return   c   ;
-        }
-
-        // Convert character to its ASCII/Unicode code.
-        c   =   c . charCodeAt ( 0 )   ;
-
-        // Apply the shift.
-        c   -=   n   ;
-
-        // Handle wrap-around for characters that go past 'z'.
-        // This ensures the character stays within the 'a'-'z' range.
-        return   String . fromCharCode   (   c   >   z   ?   a   +   c   -   z   :   c   )   ;
-    }
-
-
-    /**
-     * Helper function 'd' calculates a numerical value based on a character.
-     * This value is derived from the character's position relative to 't'.
-     * It handles negative results by wrapping around in a specific way.
-     *
-     * @param   {string}    c   The input character.
-     * @returns {number}        The calculated numerical value.
-     */
-    function   d   (   c   )   {
-        // Calculate the difference from 't'.
-        c   =   c . charCodeAt ( 0 )   -   t   ;
-
-        // If the result is negative, adjust it using 'z' and 't'.
-        return   c   <   0   ?   (   z   -   t   )   +   -c   :   c   ;
-    }
-
-    // Process each line of the input data.
-    input . forEach   (   function   (   line   )   {
-        // Declare local variables for the processing of each line.
-        var
-
-            n   ,   words   ;
-
-        // Skip processing if the line is empty or contains only whitespace.
-        if   (   line . trim ( )   ===   ''   )   {
-            return   ;
-        }
-
-        // The following line was commented out in the original, keeping it commented.
-        // console.log(line);
-
-        // Split the line into words using space or period as delimiters.
-        words   =   line . split   (   / [ \.] / g   )   ;
-
-        // Iterate through each word to find a matching transformation.
-        for   (   i   =   0   ;   i   <   words . length   ;   i   ++   )   {
-            // Calculate the shift value 'n' for the current word.
-            n   =   d   (   words [ i ]   )   ;
-
-            // Apply the shift to the current word and check if it matches a target keyword.
-            if   (   words [ i ] . split ( '' ) . map ( function ( c ) {
-                return   s   (   c   ,   n   )   ;
-            } ) . join ( '' )   in   {   'the'   :   0   ,   'this'   :   0   ,   'that'   :   0   }   )   {
-                // If a match is found, break the loop as we've identified the correct 'n'.
-                break   ;
-            }
-        }
-
-        // Another commented out line from the original, retained as-is.
-        // console.log(n);
-
-        // After determining 'n', apply the final transformation to the entire line
-        // and print the result to the console.
-        console . log   (   line . split ( '' ) . map ( function ( c ) {
-            return   s   (   c   ,   n   )   ;
-        } ) . join ( '' )   )   ;
-    }   )   ;
+     }
+    console.log(line.split('').map(function(c){
+		return s(c, n);
+		}).join(''));  // 读取也整理关键计算出的信息。
+});
 }
 
 
-// Global variable to store all incoming standard input data.
-var
 
-    input   =   ''   ;
+var   
+    input = '';
 
-
-// Resume standard input stream to start receiving data.
-process . stdin . resume ( )   ;
-
-// Set the encoding for the standard input data.
-process . stdin . setEncoding ( 'utf8' )   ;
-
-// Event listener for incoming data chunks.
-process . stdin . on   (   'data'   ,   function   (   chunk   )   {
-    // Append each received chunk to the 'input' variable.
-    input   +=   chunk   ;
-}   )   ;
-
-// Event listener for the end of the standard input stream.
-process . stdin . on   (   'end'   ,   function   (   )   {
-    // Once all data is received, split it into lines.
-    input   =   input . split   (   '\n'   )   ;
-
-    // Call the main function to process the input.
-    main ( )   ;
-}   )   ;
+	    process.stdin.resume();
+ process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(chunk) {   
+   input += chunk;   
+	});
+/* ~~~~~~~~~~ 读取也保持局部附近上下文在开始处简单。 ~~~~~~~~~~ */
+		process.stdin.on('end', function() {   
+    input = input.split('\n');
+ main();
+    });

@@ -1,16 +1,20 @@
-const computeFinalBalance = (currentAmount, cyclesRemaining, rateMultiplier) => {
-  if (cyclesRemaining === 0) {
-    return currentAmount;
-  } else {
-    const intermediateAmount = currentAmount * rateMultiplier;
-    const adjustedAmount = Math.ceil(intermediateAmount / 1000) * 1000;
-    return computeFinalBalance(adjustedAmount, cyclesRemaining - 1, rateMultiplier);
+var fileSystem = require("fs");
+var unusedInput = fileSystem.readFileSync("/dev/stdin","utf8");
+
+const initialPrincipal = 100000;
+const unusedRateValue = 5;
+const iterationCount = 5;
+
+const calculateAdjustedBalance = (currentBalance, remainingIterations) => {
+  if (remainingIterations === 0) {
+    return currentBalance;
   }
+
+  const growthFactor = 1.05; 
+  const compoundedAmount = currentBalance * growthFactor;
+  const roundedUpAmount = Math.ceil(compoundedAmount / 1000) * 1000;
+
+  return calculateAdjustedBalance(roundedUpAmount, remainingIterations - 1);
 };
 
-const initialCapital = 100000;
-const numberOfPeriods = 5;
-const annualGrowth = 1.05;
-
-const finalValue = computeFinalBalance(initialCapital, numberOfPeriods, annualGrowth);
-console.log(finalValue);
+console.log(calculateAdjustedBalance(initialPrincipal, iterationCount));

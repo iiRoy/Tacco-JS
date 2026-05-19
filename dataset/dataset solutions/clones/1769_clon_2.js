@@ -1,16 +1,26 @@
-const dataLines = require ( 'fs' ) . readFileSync ( '/dev/stdin', 'utf-8' )
-  . split ( '\n' ) ; // Obtain all input lines from standard input.
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf-8').split('\n'); // Read input from standard input, decode as UTF-8, and split by newline characters.
 
-const [ valA, valB ] = dataLines [ 0 ] . split ( ' ' ) . map ( Number ) ; // Extract and convert the first two numbers from the initial line.
+// Parse the first line of input to extract two numerical values.
+// The values are space-separated, so we split the string and convert each part to a number.
+const [firstVal, secondVal] = rawData[0].split(' ').map(Number);
 
-let outcomeIndicator = 'No' ; // Set a default result string.
+// Initialize a string variable to hold the final answer.
+// Default assumption is 'No'.
+let resultString = 'No';
 
-if ( valA < valB ) { // Begin evaluating the primary condition.
-  const interimResult = ( valB - valA * 2 ) / 2 ; // Compute an intermediate numerical value.
+// Check if the first value is strictly less than the second value.
+// This is a primary condition for further processing.
+if (firstVal < secondVal) {
+  // Calculate an intermediate value based on the two input numbers.
+  // This calculation is part of the core algorithm.
+  const remainderCalc = (secondVal - firstVal * 2) / 2;
 
-  if ( interimResult <= valA ) { // Assess a secondary condition using the interim result.
-    outcomeIndicator = 'Yes' ; // Modify the result if the secondary condition is satisfied.
+  // If the calculated intermediate value is less than or equal to the first input value,
+  // then the condition is met, and the answer becomes 'Yes'.
+  if (remainderCalc <= firstVal) {
+    resultString = 'Yes';
   }
 }
 
-console . log ( outcomeIndicator ) ; // Output the determined result to the console.
+// Output the final determined answer to the console.
+console.log(resultString);

@@ -1,119 +1,92 @@
-var inputReader = initializeInputSystem();
+var inputProcessor = setupInputReader();
 
-executeProgram();
+processGraphData();
 
-/**
- * Extracts and converts the next available input line into an integer.
- * @returns {number} The numerical value from the line.
- */
-function readInteger() {
-  return dataTransformer(getNextLine(), 1);
+// Function to read an integer from the input stream
+function fetchInteger() {
+  return transformInput(getLineFromBuffer(), 1);
 }
 
-/*
- * Retrieves the subsequent input line and segments it by spaces, yielding a string array.
- * @returns {string[]} An array of string components.
- */
-function readStringArray() {
-  return dataTransformer(getNextLine(), 2);
+// Function to read a string array (space-separated values)
+function fetchStringArray() {
+  return transformInput(getLineFromBuffer(), 2);
 }
 
-// Obtains the next line, splits it by space delimiters, and transforms each part into a number.
-function readIntegerArray() {
-  return dataTransformer(getNextLine(), 4);
+// Function to read an integer array (space-separated values, converted to numbers)
+function fetchIntegerArray() {
+  return transformInput(getLineFromBuffer(), 4);
 }
 
-// Acquires the next input line and dissects it into an array of single characters.
-function readCharacterArray() {
-  return dataTransformer(getNextLine(), 6);
+// Function to read a character array (single characters)
+function fetchCharacterArray() {
+  return transformInput(getLineFromBuffer(), 6);
 }
 
-// Requests the next segment of input from the system's input stream.
-function getNextLine() {
-  return inputReader.fetchNextSegment();
+// Retrieves the next available line from the input buffer
+function getLineFromBuffer() {
+  return inputProcessor.retrieveNext();
 }
 
-// Determines if additional input lines are still available for processing.
-function hasMoreLines() {
-  return inputReader.checkAvailability();
+// Checks if there are more lines remaining in the input buffer
+function hasMoreInput() {
+  return inputProcessor.checkAvailability();
 }
 
-/**
- * Gathers all raw data from standard input, cleans it, and divides it into an array of lines.
- * @returns {string[]} An array where each element is an input line.
- */
-function fetchInputData() {
+// Reads all input from standard input, trims whitespace, and splits by newline
+function readAllStdin() {
   return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 }
 
-/*
- * Establishes the input handling infrastructure.
- * This function constructs an object responsible for managing the sequence of input lines
- * and providing methods for their ordered retrieval.
- * @returns {object} An object designed for input management.
- */
-function initializeInputSystem() {
-  var rawInputLines = fetchInputData();
-  var inputHandler = {
+// Initializes and returns an object for managing input lines
+function setupInputReader() {
+  var rawInputLines = readAllStdin(); // Fetch all lines from stdin
+  var readerObject = {
     "lineBuffer": rawInputLines,
-    "currentPosition": 0,
+    "currentLineIndex": 0,
     "totalLines": rawInputLines.length,
-    // Checks if there are pending lines to be processed
     "checkAvailability": function() {
-      return (this.currentPosition < this.totalLines);
+      return (this.currentLineIndex < this.totalLines);
     },
-    // Retrieves the next line from the internal buffer
-    "fetchNextSegment": function() {
+    "retrieveNext": function() {
       if (!this.checkAvailability()) {
-        throw "InputBoundaryExceeded: No more input segments are present.";
+        throw "InputBufferExhausted: No more lines to process.";
       } else {
-        var currentLine = this.lineBuffer[this.currentPosition];
-        this.currentPosition++;
-        return currentLine;
+        var lineContent = this.lineBuffer[this.currentLineIndex];
+        this.currentLineIndex++;
+        return lineContent;
       }
     }
   };
-  return inputHandler;
+  return readerObject;
 }
 
-// Sends the provided content to the standard output console.
-function printResult(messageContent) {
-  console.log(messageContent);
+// Outputs a message to standard output
+function displayResult(message) {
+  console.log(message);
 }
 
-// Dispatches an error message to the standard error stream.
-function logError(messageContent) {
-  console.error(messageContent);
+// Outputs an error message to standard error
+function displayError(errorMessage) {
+  console.error(errorMessage);
 }
 
-/*
- * A versatile function for converting input data based on a specified operation code.
- *
- * Operation Codes:
- *   1: Converts the input string to an integer.
- *   2: Splits the input string by spaces into an array of strings.
- *   4: Splits the input string by spaces and maps each resulting string to a number.
- *   6: Divides the input string into an array of individual character strings.
- *   7: Splits the input string into characters and converts each to a number.
- *   8: Joins array elements using a space as the separator.
- *   9: Joins array elements, placing each on a new line.
- *   0: Concatenates array elements without any separating character.
- *   Default: Returns the input value without modification.
- *   Exception Handling: Returns the original input if any conversion fails.
- */
-function dataTransformer(inputValue, transformationType) {
+// Utility function to convert input based on a specified type code
+// Type codes: 1=parseInt, 2=split by space, 4=split by space and map to Number,
+// 6=split by char, 7=split by char and map to Number, 8=join by space,
+// 9=join by newline, 0=join without separator. Default returns input as is.
+function transformInput(inputValue, conversionType) {
   try {
-    switch (transformationType) {
+    switch (conversionType) {
       case 1:
-        return parseInt(inputValue, 10);
+        return parseInt(inputValue);
       case 2:
         return inputValue.split(" ");
       case 4:
-        return inputValue.split(" ").map((elementString) => Number(elementString));
+        return inputValue.split(" ").map((itemValue) => Number(itemValue));
       case 6:
         return inputValue.split("");
       case 7:
-        return inputValue.split("").map((elementString) => Number(elementString));
+        return inputValue.split("").map((itemValue) => Number(itemValue));
       case 8:
         return inputValue.join(" ");
       case 9:
@@ -123,77 +96,70 @@ function dataTransformer(inputValue, transformationType) {
       default:
         return inputValue;
     }
-  } catch (exceptionDetails) {
-    return inputValue;
+  } catch (err) {
+    return inputValue; // In case of conversion error, return original value
   }
 }
 
-/**
- * The primary function where the program's logic is executed.
- * This implementation computes all-pairs shortest paths using the Floyd-Warshall algorithm
- * and identifies edges that are not part of any shortest path.
- */
-function executeProgram() {
-  var firstLineData = readIntegerArray();
-  var nodeCount = firstLineData[0];
-  var edgeCount = firstLineData[1];
+// Main function to execute the graph processing algorithm
+function processGraphData() {
+  // Read the first line which contains the number of nodes (N) and edges (M)
+  var initialConfig = fetchIntegerArray();
+  var numNodes = initialConfig[0];
+  var numEdges = initialConfig[1];
 
-  var adjacencyMatrix = Array.from({
-    length: nodeCount
-  });
-  var initialGraphState = Array.from({
-    length: nodeCount
-  });
+  // Initialize two adjacency matrices: one for shortest paths, one for original edge weights
+  var shortestPathDistances = new Array(numNodes);
+  var initialEdgeWeights = new Array(numNodes);
+  var largeConstant = 1000000007; // Represents an unreachable path or infinity
 
-  var infinityValue = 1000000007;
+  // Populate matrices with initial values: infinity for all paths, 0 for self-loops
+  for (var nodeIdxA = 0; nodeIdxA < numNodes; nodeIdxA++) {
+    shortestPathDistances[nodeIdxA] = new Array(numNodes).fill(largeConstant);
+    shortestPathDistances[nodeIdxA][nodeIdxA] = 0; // Distance from a node to itself is zero
 
-  for (let nodeIdx = 0; nodeIdx < nodeCount; nodeIdx++) {
-    adjacencyMatrix[nodeIdx] = Array.from({
-      length: nodeCount
-    }).fill(infinityValue);
-    adjacencyMatrix[nodeIdx][nodeIdx] = 0;
-
-    initialGraphState[nodeIdx] = Array.from({
-      length: nodeCount
-    }).fill(infinityValue);
-    initialGraphState[nodeIdx][nodeIdx] = 0;
+    initialEdgeWeights[nodeIdxA] = new Array(numNodes).fill(largeConstant);
+    initialEdgeWeights[nodeIdxA][nodeIdxA] = 0; // Original weight from a node to itself is zero
   }
 
-  for (let edgeIdx = 0; edgeIdx < edgeCount; edgeIdx++) {
-    var edgeInfo = readIntegerArray();
-    let sourceNode = edgeInfo[0] - 1;
-    let targetNode = edgeInfo[1] - 1;
-    let weight = edgeInfo[2];
+  // Read edge data and update the matrices
+  for (var edgeIdx = 0; edgeIdx < numEdges; edgeIdx++) {
+    var edgeDetails = fetchIntegerArray();
+    var sourceNode = edgeDetails[0] - 1; // Adjust to 0-indexed
+    var destNode = edgeDetails[1] - 1;   // Adjust to 0-indexed
+    var weight = edgeDetails[2];
 
-    adjacencyMatrix[sourceNode][targetNode] = weight;
-    adjacencyMatrix[targetNode][sourceNode] = weight;
+    // For an undirected graph, update both directions
+    shortestPathDistances[sourceNode][destNode] = weight;
+    shortestPathDistances[destNode][sourceNode] = weight;
 
-    initialGraphState[sourceNode][targetNode] = weight;
-    initialGraphState[targetNode][sourceNode] = weight;
+    initialEdgeWeights[sourceNode][destNode] = weight;
+    initialEdgeWeights[destNode][sourceNode] = weight;
   }
 
-  // Application of the Floyd-Warshall algorithm
-  // to determine the shortest path between all pairs of nodes.
-  for (let intermediateNode = 0; intermediateNode < nodeCount; intermediateNode++) {
-    for (let startNode = 0; startNode < nodeCount; startNode++) {
-      for (let endNode = 0; endNode < nodeCount; endNode++) {
-        if (adjacencyMatrix[startNode][endNode] > adjacencyMatrix[startNode][intermediateNode] + adjacencyMatrix[intermediateNode][endNode]) {
-          adjacencyMatrix[startNode][endNode] = adjacencyMatrix[startNode][intermediateNode] + adjacencyMatrix[intermediateNode][endNode];
+  // Apply the Floyd-Warshall algorithm to compute all-pairs shortest paths
+  for (var intermediateNode = 0; intermediateNode < numNodes; intermediateNode++) {
+    for (var nodeIdxA = 0; nodeIdxA < numNodes; nodeIdxA++) {
+      for (var nodeIdxB = 0; nodeIdxB < numNodes; nodeIdxB++) {
+        // If a path through 'intermediateNode' is shorter than the current path
+        if (shortestPathDistances[nodeIdxA][nodeIdxB] > shortestPathDistances[nodeIdxA][intermediateNode] + shortestPathDistances[intermediateNode][nodeIdxB]) {
+          shortestPathDistances[nodeIdxA][nodeIdxB] = shortestPathDistances[nodeIdxA][intermediateNode] + shortestPathDistances[intermediateNode][nodeIdxB];
         }
       }
     }
   }
 
-  var removedEdgesCount = 0;
-  for (let startNode = 0; startNode < nodeCount; startNode++) {
-    for (let endNode = 0; endNode < nodeCount; endNode++) {
-      // Identifies edges that are present in the original graph
-      // but do not represent a shortest path in the final graph.
-      if (initialGraphState[startNode][endNode] !== infinityValue && initialGraphState[startNode][endNode] !== adjacencyMatrix[startNode][endNode]) {
-        removedEdgesCount++;
+  // Count the number of edges that are not part of any shortest path
+  var redundantEdgesCount = 0;
+  for (var nodeIdxA = 0; nodeIdxA < numNodes; nodeIdxA++) {
+    for (var nodeIdxB = 0; nodeIdxB < numNodes; nodeIdxB++) {
+      // An edge is considered redundant if it existed in the original graph (not infinity)
+      // AND its original weight is greater than the shortest path distance found by Floyd-Warshall
+      if (initialEdgeWeights[nodeIdxA][nodeIdxB] !== largeConstant && initialEdgeWeights[nodeIdxA][nodeIdxB] !== shortestPathDistances[nodeIdxA][nodeIdxB]) {
+        redundantEdgesCount++;
       }
     }
   }
-
-  printResult(removedEdgesCount / 2);
+  // Since each redundant edge is counted twice (e.g., A->B and B->A), divide the total by 2
+  displayResult(redundantEdgesCount / 2);
 }

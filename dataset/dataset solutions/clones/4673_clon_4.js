@@ -1,31 +1,22 @@
 'use strict';
 
-(function processInputData() {
-    const rawContentSource = require("fs").readFileSync("/dev/stdin", "utf8");
+function processInputData(sourceContent) {
+    const primaryLine = sourceContent.split('\n').slice(0, 1)[0];
 
-    const newlinePosition = rawContentSource.indexOf('\n');
-    const targetProcessingLine = (newlinePosition === -1) ? rawContentSource : rawContentSource.substring(0, newlinePosition);
+    const componentExtractor = /^(\S*)(?:\s+(\S*))?.*$/;
+    const extractedParts = primaryLine.match(componentExtractor);
 
-    let currentAccumulatedToken = '';
-    const tokenCollection = [];
-    
-    for (let charIndex = 0; charIndex < targetProcessingLine.length; charIndex++) {
-        if (targetProcessingLine[charIndex] === ' ') {
-            tokenCollection.push(currentAccumulatedToken);
-            currentAccumulatedToken = '';
-        } else {
-            currentAccumulatedToken += targetProcessingLine[charIndex];
-        }
-    }
-    tokenCollection.push(currentAccumulatedToken);
+    const firstComponent = extractedParts[1];
+    const secondComponent = extractedParts[2];
 
-    const primaryValue = tokenCollection[0];
-    const secondaryValue = tokenCollection[1];
+    const outcomeMap = new Map([
+        [true, "H"],
+        [false, "D"]
+    ]);
 
-    const comparisonOutcome = (primaryValue === secondaryValue);
+    const areEquivalent = (firstComponent == secondComponent);
 
-    const resultMapping = ["D", "H"];
-    const finalOutput = resultMapping[Number(comparisonOutcome)];
+    console.log(outcomeMap.get(areEquivalent));
+}
 
-    console.log(finalOutput);
-})();
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

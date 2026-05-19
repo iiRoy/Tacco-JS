@@ -1,57 +1,46 @@
-const getFileHandle = require('fs');
-const stdinDescriptor = 0;
-const encodingFormat = 'utf8';
+const processInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const tokenizedInput = processInput.replace(/,/g, "").trim().split(/\s/);
 
-const sourceText = getFileHandle.readFileSync(stdinDescriptor, encodingFormat);
-const filteredContent = sourceText.split(',').join('').trim();
-const wordFragments = filteredContent.split(/\s+/);
-
-const startingPoint = {
-    workingPhrase: '',
-    resultCollection: []
+const initialProcessingState = {
+    currentPhraseBuffer: "",
+    collectedPhrases: [],
+    bufferedDebugOutputs: []
 };
 
-const checkPunctuationPresence = (piece) => piece.replace(/\./g, '').length < piece.length;
-const checkTrailingPunctuation = (piece) => piece.endsWith('.');
-const checkBaseLengthValidity = (piece) => {
-    const len = piece.replace(/\./g, '').length;
-    return len >= 3 && len <= 6;
-};
-const checkFullLengthValidity = (piece) => piece.length >= 3 && piece.length <= 6;
+const finalProcessingState = tokenizedInput.reduce((accumulator, currentWord) => {
+    const { currentPhraseBuffer, collectedPhrases, bufferedDebugOutputs } = accumulator;
 
-const evaluateFragment = (stateInfo, itemPiece) => {
-    let currentWorkingPhrase = stateInfo.workingPhrase;
-    let currentResultCollection = [...stateInfo.resultCollection];
+    const wordContainsDot = currentWord.includes('.');
+    const wordWithoutDots = currentWord.replace(/\./g, "");
 
-    const cleanedItem = itemPiece.replace(/\./g, '');
+    let nextPhraseBuffer = currentPhraseBuffer;
+    let nextCollectedPhrases = [...collectedPhrases];
+    let nextBufferedDebugOutputs = [...bufferedDebugOutputs];
 
-    if (checkPunctuationPresence(itemPiece)) {
-        if (checkBaseLengthValidity(itemPiece)) {
-            if (checkTrailingPunctuation(itemPiece)) {
-                currentWorkingPhrase += cleanedItem;
-                currentResultCollection.push(currentWorkingPhrase);
+    if (wordContainsDot) {
+        nextBufferedDebugOutputs.push("x[i] : " + currentWord);
+
+        if (wordWithoutDots.length >= 3 && wordWithoutDots.length <= 6) {
+            if (currentWord.endsWith('.')) {
+                nextPhraseBuffer += wordWithoutDots;
+                nextCollectedPhrrases.push(nextPhraseBuffer);
             } else {
-                currentWorkingPhrase += itemPiece;
+                nextPhraseBuffer += currentWord;
             }
         } else {
-            currentWorkingPhrase = '';
+            nextPhraseBuffer = "";
         }
-    } else {
-        if (checkFullLengthValidity(itemPiece)) {
-            currentWorkingPhrase += itemPiece + ' ';
-        } else {
-            currentWorkingPhrase = '';
-        }
+    } else if (currentWord.length >= 3 && currentWord.length <= 6) {
+        nextPhraseBuffer += currentWord + " ";
     }
 
     return {
-        workingPhrase: currentWorkingPhrase,
-        resultCollection: currentResultCollection
+        currentPhraseBuffer: nextPhraseBuffer,
+        collectedPhrases: nextCollectedPhrases,
+        bufferedDebugOutputs: nextBufferedDebugOutputs
     };
-};
+}, initialProcessingState);
 
-const ultimateOutcome = wordFragments.reduce(evaluateFragment, startingPoint);
+finalProcessingState.bufferedDebugOutputs.forEach(outputMessage => console.log(outputMessage));
 
-ultimateOutcome.resultCollection.forEach(finalOutputLine => {
-    console.log(finalOutputLine);
-});
+finalProcessingState.collectedPhrases.forEach(phraseItem => console.log(phraseItem));

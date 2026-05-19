@@ -1,37 +1,34 @@
-const fileSystemUtility = require("node:fs");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-const contentFetcher = fileSystemUtility.readFileSync;
+((initialInput) => {
+    const textRows = initialInput.split('\n');
 
-const inputSource = "dev/stdinput";
-const characterEncoding = "utf-8";
+    const totalElements = Number(textRows[0]);
 
-(function(programInput) {
-    const stringSegments = programInput.split('\n') ;
-    const totalElements = parseFloat(stringSegments[0]) ;
-    const numberSequence = stringSegments[1].split(' ').map(parseFloat) ;
+    const numericData = textRows[1].split(' ').map(val => parseInt(val, 10));
 
-    let overallSumResult = 0 ;
-    let currentStartingPosition = 0 ;
+    let finalResult = 0;
+    let startPointer = 0;
 
-    while (currentStartingPosition < totalElements) {
-        let cumulativeSumArray = [numberSequence[currentStartingPosition]] ;
-        let cumulativeXorArray = [numberSequence[currentStartingPosition]] ;
-        let validSubarrayCounter = 1 ;
+    while (startPointer < totalElements) {
+        let sumSequence = [numericData[startPointer]];
+        let xorSequence = [numericData[startPointer]];
+        let matchCounter = 1;
 
-        for ( let offsetIndex = 1 ; offsetIndex < totalElements ; offsetIndex++ ) {
-            cumulativeSumArray[offsetIndex] = cumulativeSumArray[offsetIndex - 1] + numberSequence[offsetIndex + currentStartingPosition] ;
-            cumulativeXorArray[offsetIndex] = cumulativeXorArray[offsetIndex - 1] ^ numberSequence[offsetIndex + currentStartingPosition] ;
-            if (cumulativeSumArray[offsetIndex] === cumulativeXorArray[offsetIndex]) {
-                validSubarrayCounter++ ;
-            }
-            else {
-                break ;
+        for (let idx = 1; idx < totalElements; idx++) {
+            sumSequence[idx] = sumSequence[idx - 1] + numericData[idx + startPointer];
+            xorSequence[idx] = xorSequence[idx - 1] ^ numericData[idx + startPointer];
+
+            if (sumSequence[idx] === xorSequence[idx]) {
+                matchCounter++;
+            } else {
+                break;
             }
         }
-        overallSumResult += validSubarrayCounter;
-        currentStartingPosition++ ;
+        finalResult += matchCounter;
+        startPointer++;
     }
 
-    console.log(overallSumResult) ;
+    console.log(finalResult);
 
-})(contentFetcher(inputSource, characterEncoding)) ;
+})(rawData);

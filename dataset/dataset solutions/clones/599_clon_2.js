@@ -1,138 +1,135 @@
-// This script processes a grid-based puzzle using a breadth-first search approach.
-// It aims to find the shortest path while consuming a specific resource.
-function GridNavigator( startColumn, startRow )
-{
-  // Mark the starting cell as visited on the main level map.
-  levelMap[startRow][startColumn] = ".";
+/*
+ * This function, if uncommented, would implement a Breadth-First Search (BFS)
+ * algorithm to find the minimum number of moves to reach a target strength
+ * within a grid. It navigates through a grid, collecting strength-up items.
+ *
+ * @param {number} startXCoord - The initial X-coordinate for the search.
+ * @param {number} startYCoord - The initial Y-coordinate for the search.
+ * @returns {number} The minimum number of moves required, or -1 if no path is found.
+ */
+/*
+function PathFinder(startXCoord, startYCoord) {
+    // Mark the starting position in the grid as visited (represented by '.')
+    gridMap[startYCoord][startXCoord] = ".";
 
-  // Define offsets for moving in four cardinal directions (up, left, right, down).
-  var columnShifts = [ 0, -1, 1, 0 ];
-  var rowShifts    = [ -1, 0, 0, 1 ];
+    // Define arrays for movement offsets in X and Y directions (Up, Left, Right, Down)
+    const deltaX = [0, -1, 1, 0];
+    const deltaY = [-1, 0, 0, 1];
 
-  // Initialize the path length counter.
-  var currentDistance = 0;
+    // Initialize a counter for the number of moves
+    let moveCount = 0;
 
-  // Initialize the BFS exploration queue. Each element holds:
-  // [currentColumn, currentRow, distanceToReach, powerConsumed, currentMapState]
-  var explorationQueue = [ [startColumn, startRow, currentDistance, 1, levelMap] ];
+    // Initialize the BFS queue. Each element is a state:
+    // [current_x, current_y, current_moves, current_strength, current_grid_state]
+    const searchQueue = [[startXCoord, startYCoord, moveCount, 1, gridMap]];
 
-  // An object to keep track of already explored states to prevent cycles and redundant computations.
-  var exploredStates = {};
+    // An object to store visited states to prevent redundant computations and cycles.
+    // The key for a state is a string combining coordinates and the flattened grid state.
+    const visitedStates = {};
+    visitedStates[startXCoord + " " + startYCoord + " " + gridMap.join("")] = true;
 
-  // Create a unique string identifier for the initial state and mark it as explored.
-  exploredStates[ startColumn + " " + startRow + " " + levelMap.join("") ] = true;
+    // Begin the Breadth-First Search traversal
+    while (true) {
+        // If the queue is empty, it means no path was found to the target strength
+        if (searchQueue.length === 0) {
+            moveCount = -1; // Indicate that no solution was found
+            break;
+        }
 
-  // Begin the breadth-first search loop.
-  while ( true )
-  {
-    // If the queue is empty, no path was found to the target.
-    if ( explorationQueue.length === 0 )
-    {
-      currentDistance = -1;
-      break;
+        // Dequeue the first element from the queue, representing the current state
+        const currentPathNode = searchQueue.shift();
+
+        // Extract components from the current state
+        const currentX = currentPathNode[0];
+        const currentY = currentPathNode[1];
+        const currentMoves = currentPathNode[2];
+        const currentStrength = currentPathNode[3];
+        const currentGridState = currentPathNode[4];
+
+        // Check if the current strength has reached the required initialPower + 1
+        if (currentStrength === initialPower + 1) {
+            moveCount = currentMoves; // The target strength is achieved, store the move count
+            break;
+        }
+
+        // Iterate through all four possible directions (Up, Left, Right, Down)
+        for (let idx = 0; idx < 4; idx++) {
+            const nextX = currentX + deltaX[idx];
+            const nextY = currentY + deltaY[idx];
+            let nextStrength = currentStrength; // Initialize next strength with current strength
+
+            // Check if the next coordinates are within the grid boundaries
+            if (nextX < 0 || nextY < 0 || nextX >= dimensionsAndPower[0] || nextY >= dimensionsAndPower[1]) {
+                continue; // If out of bounds, skip this direction
+            }
+
+            // Check if the next cell is an obstacle ('X')
+            if (currentGridState[nextY][nextX] === "X") {
+                continue; // Cannot move through an obstacle, skip this direction
+            }
+
+            // Create a deep copy of the current grid state for the next step.
+            // This is crucial because the grid state can change (items collected).
+            const gridCopy = currentGridState.map(function (rowVal) {
+                return rowVal.slice();
+            });
+
+            // Check if the next cell contains a strength-up item matching the current strength
+            if (gridCopy[nextY][nextX] === "" + nextStrength) {
+                nextStrength++; // Increment strength if an item is collected
+                gridCopy[nextY][nextX] = "."; // Mark the collected item's cell as empty ('.')
+            }
+
+            // Construct a unique string key for the new state to check against visited states
+            const stateKey = nextX + " " + nextY + " " + gridCopy.join("");
+
+            // If this new state has already been visited, skip it to avoid cycles and redundant work
+            if (visitedStates.hasOwnProperty(stateKey)) {
+                continue;
+            }
+
+            // Mark the new state as visited
+            visitedStates[stateKey] = true;
+
+            // Enqueue the new state into the search queue
+            searchQueue.push([nextX, nextY, currentMoves + 1, nextStrength, gridCopy]);
+        }
     }
+    return moveCount; // Return the final move count
+}
+*/
 
-    // Dequeue the current node for processing.
-    var currentNode = explorationQueue.shift();
+// Utilize Node.js file system module to read input
+const fileSystem = require('fs');
 
-    // Extract individual components from the current node.
-    var currentColumn  = currentNode[0];
-    var currentRow     = currentNode[1];
-    var nodeDistance   = currentNode[2];
-    var consumedPower  = currentNode[3];
-    var activeMapState = currentNode[4];
+// Read all input from standard input, remove leading/trailing whitespace, and split by newlines
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const lineData = (rawData.trim()).split("\n");
 
-    // Check if the goal condition is met (consumed power exceeds the threshold).
-    if ( consumedPower === powerThreshold + 1 )
-    {
-      currentDistance = nodeDistance;
-      break;
+// Extract dimensions (width, height) and initial power from the first line of input
+const dimensionsAndPower = (lineData.shift()).split(" ").map(Number);
+const initialPower = dimensionsAndPower[2]; // The third value is the power level
+
+// Initialize the grid map and an array to store the starting position
+const gridMap = [];
+const startPosition = [];
+
+// Iterate through the remaining lines to populate the grid and find the 'S' (start) position
+for (let idx = 0; idx < dimensionsAndPower[1]; idx++) {
+    const rowChars = (lineData.shift()).split(""); // Split the current line into an array of characters
+    // Check if the 'S' character is present in the current row
+    if (rowChars.indexOf("S") !== -1) {
+        startPosition[0] = rowChars.indexOf("S"); // Store the X-coordinate of 'S'
+        startPosition[1] = idx; // Store the Y-coordinate of 'S'
     }
-
-    // Iterate through all four possible directions from the current cell.
-    for ( var dirIdx = 0; dirIdx < 4; dirIdx++ )
-    {
-      // Calculate the coordinates of the next adjacent cell.
-      var nextColumn = currentColumn + columnShifts[dirIdx];
-      var nextRow    = currentRow    + rowShifts[dirIdx];
-
-      // Store the potential power consumption for the next state.
-      var potentialPower = consumedPower;
-
-      // Skip this neighbor if it's out of bounds of the grid.
-      if ( nextColumn < 0 || nextRow < 0 || nextColumn >= mapDimensions[0] || nextRow >= mapDimensions[1] )
-      {
-        continue;
-      }
-
-      // Skip this neighbor if it's an impassable obstacle ('X').
-      if ( levelMap[nextRow][nextColumn] === "X" )
-      {
-        continue;
-      }
-
-      // Create a deep copy of the current map state to avoid modifying previous states.
-      var mapClone = activeMapState.map( function(rowVector) { return rowVector.slice(); } );
-
-      // If the next cell requires the current 'potentialPower' level,
-      // it means we can consume it and advance to the next power level.
-      if ( mapClone[nextRow][nextColumn] === "" + potentialPower )
-      {
-        potentialPower++; // Increment power level.
-        mapClone[nextRow][nextColumn] = "."; // Mark this cell as visited in the cloned map.
-      }
-
-      // Generate a unique string key for the new state (position + map configuration).
-      var stateIdentifier = nextColumn + " " + nextRow + " " + mapClone.join("");
-
-      // If this state has already been explored, skip it.
-      if ( exploredStates.hasOwnProperty(stateIdentifier) )
-      {
-        continue;
-      }
-
-      // Mark the new state as explored.
-      exploredStates[stateIdentifier] = true;
-
-      // Enqueue the new state with updated distance, power, and map configuration.
-      explorationQueue.push([ nextColumn, nextRow, nodeDistance + 1, potentialPower, mapClone ]);
-    }
-  }
-  // Return the calculated shortest distance, or -1 if no path was found.
-  return currentDistance;
+    gridMap.push(rowChars); // Add the processed row to the grid map
 }
 
-// Use the 'fs' module to read the puzzle input from standard input.
-var fileData = require('fs').readFileSync('/dev/stdin', 'utf8');
-// Trim whitespace from the input and split it into an array of lines.
-var lineFragments = (fileData.trim()).split("\n");
-// Parse the first line to get grid dimensions (width, height) and the power threshold.
-var mapDimensions = (lineFragments.shift()).split(" ").map(Number);
-// Extract the power threshold value.
-var powerThreshold = mapDimensions[2];
-// Initialize the 2D array that represents the game level map.
-var levelMap = [];
-// Initialize an array to store the starting coordinates.
-var initialCoords = [];
-// Loop through the remaining input lines to populate the level map.
-for ( var rowCounter = 0; rowCounter < mapDimensions[1]; rowCounter++ )
-{
-  // Split each line into individual characters to form a row.
-  var charRow = (lineFragments.shift()).split("");
-  // Check if the starting point 'S' is present in the current row.
-  var startColIndex = charRow.indexOf("S");
-  if ( startColIndex !== -1 )
-  {
-    initialCoords = [startColIndex, rowCounter]; // Store its coordinates.
-  }
-  // Add the processed character row to the level map.
-  levelMap.push(charRow);
-}
-// This variable would typically store the final result of the BFS.
-// In this snippet, it's initialized to zero.
-var computedAnswer = 0;
-// The line below calls the BFS function and assigns its result to `computedAnswer`.
-// However, it was commented out in the original snippet, so it remains commented here
-// to maintain the exact structure and statements.
-// computedAnswer = GridNavigator(initialCoords[0], initialCoords[1]);
-console.log(computedAnswer);
+// Initialize a variable to store the final computed result.
+// In this specific code snippet, the PathFinder function is commented out,
+// so this variable will retain its initial value.
+let finalResult = 0;
+
+// Output the final result to the console.
+// Since the PathFinder function is commented, 'finalResult' will be '0'.
+console.log(finalResult);

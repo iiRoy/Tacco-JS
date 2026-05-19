@@ -1,9 +1,2 @@
-let inputSource;
-function processString(dataSegment) {
-  if (dataSegment.length === 0) {
-    return "";
-  } else {
-    return processString(dataSegment.substring(1)) + dataSegment.charAt(0);
-  }
-}
-console.log(processString(inputSource));
+var sourceValue;
+console.log(Array.from({ length: sourceValue.length }, (_, i) => sourceValue[sourceValue.length - 1 - i]).join(''));

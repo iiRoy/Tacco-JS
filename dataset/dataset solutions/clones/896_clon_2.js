@@ -1,47 +1,37 @@
-// This script obtains textual data from the system's standard input.
-var acquiredContent = require('fs') . readFileSync(
-  '/dev/stdin',
-  'utf8'
-);
+var rawData = require('fs') .readFileSync( '/dev/stdin', 'utf8' ); // Obtain raw data from standard input
 
-// Prepares the primary character string by removing boundary spaces.
-var primaryString = acquiredContent . trim();
+// Trim any leading or trailing whitespace from the input string.
+var processedString = rawData.trim();
 
-// Initiates an iteration to scan through sections of the primary string.
-for
-(
-  var currentPositionIndex = 0;
-  currentPositionIndex < primaryString.size - 8;
-  currentPositionIndex++
-)
-{
-  // Gathers eight consecutive characters into a collection for processing.
-  var characterCollection =
-  [
-    primaryString[currentPositionIndex],
-    primaryString[currentPositionIndex + 1],
-    primaryString[currentPositionIndex + 2],
-    primaryString[currentPositionIndex + 3],
-    primaryString[currentPositionIndex + 4],
-    primaryString[currentPositionIndex + 5],
-    primaryString[currentPositionIndex + 6],
-    primaryString[currentPositionIndex + 7]
+// Iterate through the string, checking 8-character segments.
+// The loop continues until there are at least 8 characters remaining to form a segment.
+for ( var idx = 0; idx < processedString.length - 8; idx++ ) {
+  // Extract an 8-character segment starting from the current index.
+  // Each character is placed into an array.
+  var charSegment = [
+    processedString[idx],
+    processedString[idx + 1],
+    processedString[idx + 2],
+    processedString[idx + 3],
+    processedString[idx + 4],
+    processedString[idx + 5],
+    processedString[idx + 6],
+    processedString[idx + 7]
   ];
 
-  // Arranges the characters alphabetically and then concatenates them into a new string.
-  var orderedSequence = characterCollection . sort() . join("");
+  // Sort the characters in the segment alphabetically and then join them back into a string.
+  var sortedSegment = charSegment.sort().join("");
 
-  // Evaluates if the newly formed sequence matches a predefined target.
-  if (orderedSequence === "AADINNUY")
-  {
-    // If a match is found, replaces the segment within the primary string.
-    primaryString = primaryString . slice(0, currentPositionIndex) +
-                   "AIZUNYAN" +
-                   primaryString . slice(currentPositionIndex + 8, primaryString.size);
-    // Halts the scanning process as the desired modification has been made.
+  // Check if the sorted segment matches the target string "AADINNUY".
+  if ( sortedSegment === "AADINNUY" ) {
+    // If a match is found, replace the original 8-character segment with "AIZUNYAN".
+    // This is done by concatenating the part of the string before the segment,
+    // the replacement string, and the part of the string after the segment.
+    processedString = processedString.slice(0, idx) + "AIZUNYAN" + processedString.slice(idx + 8, processedString.length);
+    // Exit the loop immediately after the first replacement.
     break;
   }
 }
 
-// Emits the final, potentially altered, primary string to the standard output.
-console.log(primaryString);
+// Output the final modified string to the console.
+console.log(processedString);

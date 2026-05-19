@@ -1,141 +1,95 @@
-class CustomQueue {
-    constructor() {
-        this.storage = [];
-        this.front = 0;
-    }
-
-    add(item) {
-        this.storage.push(item);
-    }
-
-    remove() {
-        if (this.front < this.storage.length) {
-            const item = this.storage[this.front];
-            this.front++;
-            return item;
-        }
-        return undefined;
-    }
-
-    peek() {
-        if (this.front < this.storage.length) {
-            return this.storage[this.front];
-        }
-        return undefined;
-    }
-
-    isEmpty() {
-        return this.front >= this.storage.length;
-    }
-
-    size() {
-        return this.storage.length - this.front;
-    }
-}
-
-function deepCloneArray(arr) {
-    return JSON.parse(JSON.stringify(arr));
-}
-
-function navigateMaze(startColumn, startRow, initialMapGrid, maxCollectibles, dimensions) {
-    const movementDirections = [
-        { dr: -1, dc: 0 }, // Up
-        { dr: 0, dc: -1 }, // Left
-        { dr: 0, dc: 1 },  // Right
-        { dr: 1, dc: 0 }   // Down
+function findShortestPath(initialX, initialY) {
+    const movementVectors = [
+        { deltaX: 0, deltaY: -1 }, // Up
+        { deltaX: -1, deltaY: 0 }, // Left
+        { deltaX: 1, deltaY: 0 },  // Right
+        { deltaX: 0, deltaY: 1 }   // Down
     ];
-    const width = dimensions[1];
-    const height = dimensions[0];
 
-    let minimumSteps = -1;
+    const initialGridSnapshot = initialGridMap.map(row => [...row]);
+    initialGridSnapshot[initialY][initialX] = ".";
 
-    const startingMapState = deepCloneArray(initialMapGrid);
-    startingMapState[startRow][startColumn] = ".";
+    const explorationQueue = [];
+    const visitedStates = new Set();
 
-    const explorationQueue = new CustomQueue();
-    const visitedConfigurations = new Map();
+    const firstState = {
+        xCoord: initialX,
+        yCoord: initialY,
+        currentSteps: 0,
+        requiredPowerLevel: 1,
+        gridConfiguration: initialGridSnapshot
+    };
 
-    const initialConfigurationKey = `${startColumn}:${startRow}:${1}:${JSON.stringify(startingMapState)}`;
-    visitedConfigurations.set(initialConfigurationKey, true);
-    explorationQueue.add({
-        currentR: startRow,
-        currentC: startColumn,
-        currentCost: 0,
-        nextObjective: 1,
-        currentGrid: startingMapState
-    });
+    const firstStateKey = `${firstState.xCoord} ${firstState.yCoord} ${firstState.gridConfiguration.map(r => r.join('')).join('')}`;
+    visitedStates.add(firstStateKey);
+    explorationQueue.push(firstState);
 
-    while (!explorationQueue.isEmpty()) {
-        const currentExploration = explorationQueue.remove();
+    let finalPathLength = -1;
 
-        const {
-            currentR,
-            currentC,
-            currentCost,
-            nextObjective,
-            currentGrid
-        } = currentExploration;
+    while (explorationQueue.length > 0) {
+        const currentState = explorationQueue.shift();
+        const { xCoord, yCoord, currentSteps, requiredPowerLevel, gridConfiguration } = currentState;
 
-        if (nextObjective === maxCollectibles + 1) {
-            minimumSteps = currentCost;
+        if (requiredPowerLevel === maxPowerLevel + 1) {
+            finalPathLength = currentSteps;
             break;
         }
 
-        movementDirections.forEach(direction => {
-            const neighborR = currentR + direction.dr;
-            const neighborC = currentC + direction.dc;
-            let newObjective = nextObjective;
+        for (const vector of movementVectors) {
+            const nextX = xCoord + vector.deltaX;
+            const nextY = yCoord + vector.deltaY;
+            let nextRequiredPowerLevel = requiredPowerLevel;
+            const nextGridConfiguration = gridConfiguration.map(row => [...row]);
 
-            if (neighborR < 0 || neighborR >= height || neighborC < 0 || neighborC >= width) {
-                return;
+            if (nextX < 0 || nextY < 0 || nextX >= dimensionsAndPower[1] || nextY >= dimensionsAndPower[0]) {
+                continue;
             }
 
-            if (currentGrid[neighborR][neighborC] === "X") {
-                return;
+            if (gridConfiguration[nextY][nextX] === "X") {
+                continue;
             }
 
-            const nextGridState = deepCloneArray(currentGrid);
-
-            if (nextGridState[neighborR][neighborC] === String(newObjective)) {
-                newObjective++;
-                nextGridState[neighborR][neighborC] = ".";
+            if (nextGridConfiguration[nextY][nextX] === String(nextRequiredPowerLevel)) {
+                nextRequiredPowerLevel++;
+                nextGridConfiguration[nextY][nextX] = ".";
             }
 
-            const nextConfigurationKey = `${neighborC}:${neighborR}:${newObjective}:${JSON.stringify(nextGridState)}`;
+            const stateIdentifier = `${nextX} ${nextY} ${nextGridConfiguration.map(r => r.join('')).join('')}`;
 
-            if (!visitedConfigurations.has(nextConfigurationKey)) {
-                visitedConfigurations.set(nextConfigurationKey, true);
-                explorationQueue.add({
-                    currentR: neighborR,
-                    currentC: neighborC,
-                    currentCost: currentCost + 1,
-                    nextObjective: newObjective,
-                    currentGrid: nextGridState
+            if (!visitedStates.has(stateIdentifier)) {
+                visitedStates.add(stateIdentifier);
+                explorationQueue.push({
+                    xCoord: nextX,
+                    yCoord: nextY,
+                    currentSteps: currentSteps + 1,
+                    requiredPowerLevel: nextRequiredPowerLevel,
+                    gridConfiguration: nextGridConfiguration
                 });
             }
-        });
+        }
     }
-
-    return minimumSteps;
+    return finalPathLength;
 }
 
-const rawDataContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const lineSegments = rawDataContent.trim().split("\n");
+const fileSystemModule = require('fs');
+const rawInputData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
 
-const gridInfo = lineSegments.shift().split(" ").map(Number);
-const maxCollectibles = gridInfo[2];
+const lineSegments = rawInputData.trim().split("\n");
 
-const initialMapGrid = [];
-let entryPoint = [];
+const dimensionsAndPower = lineSegments.shift().split(" ").map(Number);
+const maxPowerLevel = dimensionsAndPower[2];
 
-for (let rIdx = 0; rIdx < gridInfo[0]; rIdx++) {
-    const rowContent = lineSegments.shift().split("");
-    const startColIdx = rowContent.indexOf("S");
-    if (startColIdx !== -1) {
-        entryPoint = [startColIdx, rIdx];
+const initialGridMap = [];
+let initialPosition = [];
+
+for (let rowIdx = 0; rowIdx < dimensionsAndPower[0]; rowIdx++) {
+    const gridRow = lineSegments.shift().split("");
+    const startColumnIdx = gridRow.indexOf("S");
+    if (startColumnIdx !== -1) {
+        initialPosition = [startColumnIdx, rowIdx];
     }
-    initialMapGrid.push(rowContent);
+    initialGridMap.push(gridRow);
 }
 
-const finalResult = navigateMaze(entryPoint[0], entryPoint[1], initialMapGrid, maxCollectibles, gridInfo);
-console.log(finalResult);
+const resultPathLength = findShortestPath(initialPosition[0], initialPosition[1]);
+console.log(resultPathLength);

@@ -1,203 +1,201 @@
-// This module provides utilities for parsing input data from a string source.
-var INPUT_PROCESSOR = ( function () {
-  // Factory function to create a new InputBuffer instance.
-  function createInputBuffer(sourceString) {
-    return new DataBuffer(sourceString);
+var INPUT_PARSER = (function() {
+  // This function serves as a factory for creating input stream parsers.
+  function createParser(sourceString) {
+    return new DataStream(sourceString);
   }
 
-  // Constructor for the DataBuffer class.
-  function DataBuffer(inputContent) {
-    // Store lines of input, trimmed and split by newline.
-    this.allLines = inputContent.trim().split("\n");
-    // Pointer to the current line being processed.
-    this.lineCursor = 0;
+  // The DataStream class manages the parsing of input lines.
+  function DataStream(sourceString) {
+    // Store the input string, trimmed and split into an array of lines.
+    this._sourceLines = sourceString.trim().split('\n');
+    // Initialize the index for the current line being processed.
+    this._currentLineIndex = 0x0;
   }
 
-  // Method to extract the next individual data element (token).
-  // If 'asString' is true, returns as string; otherwise, attempts conversion to number.
-  DataBuffer.prototype.extractNextElement = function (asString) {
-    var lineSegments = this.allLines,
-        currentLineIndex = this.lineCursor,
-        extractedToken;
+  // Prototype methods for the DataStream class.
+  DataStream.prototype.readNextValue = function(returnAsString) {
+    var lineData = this._sourceLines,
+      lineIndex = this._currentLineIndex,
+      extractedItem;
 
-    // If the current line is still a single string, parse it into tokens.
-    // It's processed from right to left, so reverse it first.
-    if (typeof lineSegments[currentLineIndex] === "string") {
-      lineSegments[currentLineIndex] = lineSegments[currentLineIndex].split(" ").reverse();
+    // If the current line is still a string, convert it to an array of space-separated values, reversed.
+    // Reversing allows efficient popping from the end to get values in original order.
+    if (typeof lineData[lineIndex] === 'string') {
+      lineData[lineIndex] = lineData[lineIndex].split(' ').reverse();
     }
 
-    // Pop the last token from the current line's array.
-    extractedToken = lineSegments[currentLineIndex].pop();
+    // Extract the next value from the current line.
+    extractedItem = lineData[lineIndex].pop();
 
-    // If the current line is now empty, advance the line cursor.
-    if ( !lineSegments[currentLineIndex].length ) {
-      this.lineCursor++;
+    // If the current line is now empty, advance to the next line.
+    if (!lineData[lineIndex].length) {
+      this._currentLineIndex++;
     }
 
-    // Return the token, either as a string or a number.
-    return asString ? extractedToken : Number(extractedToken);
+    // Return the extracted item, either as a string or converted to a number.
+    return returnAsString ? extractedItem : +extractedItem;
   };
 
-  // Method to read and parse an entire line of data.
-  // If 'asStrings' is true, returns array of strings; otherwise, array of numbers.
-  DataBuffer.prototype.readLineTokens = function (asStrings) {
-    // Increment cursor and split the line.
-    var tokensInLine = this.allLines[this.lineCursor++].split(" ");
-    // Return tokens, optionally converted to numbers.
-    return asStrings ? tokensInLine : tokensInLine.map( val => Number(val) );
+  DataStream.prototype.readLineOfValues = function(returnAsString) {
+    // Get the current line, split it by spaces, and then increment the line index.
+    var lineData = this._sourceLines[this._currentLineIndex++].split(' ');
+    // Return the array of values, either as strings or converted to numbers.
+    return returnAsString ? lineData : lineData.map(element => +element);
   };
 
-  // Method to read and parse multiple lines as a 2D array (matrix).
-  // 'numRows' specifies how many lines to read.
-  // If 'asStrings' is true, returns 2D array of strings; otherwise, 2D array of numbers.
-  DataBuffer.prototype.readMatrixData = function (numRows, asStrings) {
-    var collectedRows = this.allLines.slice(this.lineCursor, this.lineCursor += numRows).map( rowStr => rowStr.split(" ") );
-    // Return the matrix, optionally with inner elements converted to numbers.
-    return asStrings ? collectedRows : collectedRows.map( innerArr => innerArr.map( val => Number(val) ) );
+  DataStream.prototype.readMatrix = function(numberOfLines, returnAsString) {
+    // Extract a slice of lines, then map each line to an array of its space-separated values.
+    var extractedData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines).map(element => element.split(' '));
+    // Return the matrix, either as strings or with all elements converted to numbers.
+    return returnAsString ? extractedData : extractedData.map(element => element.map(subElement => +subElement));
   };
 
-  // Method to read multiple lines as raw string segments.
-  // 'numSegments' specifies how many lines to read.
-  // If 'asStrings' is true, returns array of strings; otherwise, array of numbers.
-  DataBuffer.prototype.readRawSegments = function (numSegments, asStrings) {
-    var rawSegments = this.allLines.slice(this.lineCursor, this.lineCursor += numSegments);
-    // Return segments, optionally converted to numbers.
-    return asStrings ? rawSegments : rawSegments.map( val => Number(val) );
+  DataStream.prototype.readRawLines = function(numberOfLines, returnAsString) {
+    // Extract a slice of raw lines.
+    var extractedData = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numberOfLines);
+    // Return the array of lines, either as strings or converted to numbers.
+    return returnAsString ? extractedData : extractedData.map(element => +element);
   };
 
-  // The module exposes only the factory function.
-  return createInputBuffer;
-} )();
+  return createParser;
+})();
 
+// Initialize the input reader by parsing the content of standard input.
+var inputReader = INPUT_PARSER(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Initialize the input data stream by reading from standard input.
-var currentDataStream = INPUT_PROCESSOR(require("fs").readFileSync("/dev/stdin", "utf8"));
+/**
+ * Dynamically creates a multi-dimensional array initialized with a specified value.
+ * This function uses `eval` to construct the array creation logic.
+ * @param {*} initialValue - The value to fill the array elements with.
+ * @param {...number} dimensions - The sizes of each dimension for the array.
+ * @returns {Array} The newly created multi-dimensional array.
+ */
+function createMultiDimArray(initialValue) {
+  var dimensions = arguments,
+    dimCount = dimensions.length,
+    // Start building the string for the innermost array.
+    arrayCreationString = 'Array(dimensions[' + --dimCount + ']).fill(0x0).map(x=>{return ' + initialValue + ';})';
 
-// Function to dynamically construct a multi-dimensional array.
-// 'initialValue' is the default value for the innermost elements.
-// Subsequent arguments define the dimensions of the array.
-function createNestedArray(initialValue) {
-  var dimensionSpecs = arguments,
-      numberOfDimensions = dimensionSpecs.length,
-      arrayCreationExpression = `Array(dimensionSpecs[${--numberOfDimensions}]).fill(0).map( _ => { return ${initialValue}; } )`;
-
-  // Build the nested array creation string from outer to inner dimensions.
-  while ( --numberOfDimensions ) {
-    arrayCreationExpression = `Array(dimensionSpecs[${numberOfDimensions}]).fill(0).map( _ => ${arrayCreationExpression} )`;
+  // Loop to build the string for outer dimensions, nesting the array creation.
+  while (--dimCount) {
+    arrayCreationString = 'Array(dimensions[' + dimCount + ']).fill(0x0).map(x=>' + arrayCreationString + ')';
   }
 
-  // Evaluate the constructed string to create the array.
-  return eval(arrayCreationExpression);
+  // Evaluate the constructed string to create and return the array.
+  return eval(arrayCreationString);
 }
 
-// Execute the primary processing logic and print its outcome.
-console.log(processScenario());
+// Execute the main logic of the program and print its return value to the console.
+console.log(executeMainLogic());
 
-// The primary function orchestrating the data processing steps.
-function processScenario() {
-  // Read the initial resource limit or capacity.
-  var totalResource = currentDataStream.extractNextElement();
-  // Read the first set of item costs/values.
-  var itemCostsA = currentDataStream.readLineTokens();
-  // Read the second set of item benefits/values.
-  var itemBenefitsB = currentDataStream.readLineTokens();
+/**
+ * The primary function that orchestrates the problem-solving process.
+ * It reads input, processes it in two phases, and returns a final calculated value.
+ * @returns {number} The ultimate maximized value after all calculations.
+ */
+function executeMainLogic() {
+  // Read the initial budget or value 'N'.
+  var initialNValue = inputReader.readNextValue();
+  // Read two arrays, 'A' and 'B', from the input.
+  var firstArray = inputReader.readLineOfValues();
+  var secondArray = inputReader.readLineOfValues();
 
-  // Initialize arrays to store filtered items for the first optimization stage.
-  var itemsForStageOneCosts = [],
-      itemsForStageOneBenefits = [];
-
-  // Populate arrays based on a condition: cost < benefit.
-  for ( var itemIndex = 0; itemIndex < 3; itemIndex++ ) {
-    if ( itemCostsA[itemIndex] < itemBenefitsB[itemIndex] ) {
-      itemsForStageOneCosts.push(itemCostsA[itemIndex]);
-      itemsForStageOneBenefits.push(itemBenefitsB[itemIndex]);
+  // First phase: Identify pairs where A[i] < B[i].
+  // These represent operations where the cost (A[i]) is less than the gain (B[i]).
+  var tempCosts = [],
+    tempGains = [];
+  for (var loopIndex = 0x0; loopIndex < 0x3; loopIndex++) {
+    if (firstArray[loopIndex] < secondArray[loopIndex]) {
+      tempCosts.push(firstArray[loopIndex]);
+      tempGains.push(secondArray[loopIndex]);
     }
   }
 
-  // Perform the first optimization calculation.
-  var firstStageResult = calculateMaxGain(totalResource, itemsForStageOneCosts, itemsForStageOneBenefits);
+  // Calculate the maximized value using the first set of costs and gains.
+  var firstResult = calculateMaximizedValue(initialNValue, tempCosts, tempGains);
 
-  // Reset arrays for the second optimization stage.
-  itemsForStageOneCosts = [];
-  itemsForStageOneBenefits = [];
-
-  // Populate arrays based on an inverted condition: benefit < cost.
-  for ( var itemIndex = 0; itemIndex < 3; itemIndex++ ) {
-    if ( itemBenefitsB[itemIndex] < itemCostsA[itemIndex] ) {
-      itemsForStageOneCosts.push(itemBenefitsB[itemIndex]);
-      itemsForStageOneBenefits.push(itemCostsA[itemIndex]);
+  // Reset temporary arrays for the second phase.
+  tempCosts = [];
+  tempGains = [];
+  // Second phase: Identify pairs where B[i] < A[i].
+  // These represent operations where the cost (B[i]) is less than the gain (A[i]).
+  for (var loopIndex = 0x0; loopIndex < 0x3; loopIndex++) {
+    if (secondArray[loopIndex] < firstArray[loopIndex]) {
+      tempCosts.push(secondArray[loopIndex]);
+      tempGains.push(firstArray[loopIndex]);
     }
   }
 
-  // Perform the second optimization calculation using the result of the first stage.
-  return calculateMaxGain(firstStageResult, itemsForStageOneCosts, itemsForStageOneBenefits);
+  // Calculate the final maximized value using the result from the first phase
+  // as the new budget, and the second set of costs and gains.
+  return calculateMaximizedValue(firstResult, tempCosts, tempGains);
 }
 
-// Function to calculate the maximum gain using dynamic programming.
-// 'resourceLimit' is the maximum capacity.
-// 'itemCosts' is an array of costs for items.
-// 'itemBenefits' is an array of benefits for items.
-function calculateMaxGain(resourceLimit, itemCosts, itemBenefits) {
-  var numItems = itemCosts.length; // Number of items available.
+/**
+ * Calculates the maximum achievable value given an initial budget and arrays of costs and gains.
+ * This function employs a dynamic programming approach to solve a variation of the knapsack problem.
+ * @param {number} currentBudget - The starting budget or current value.
+ * @param {number[]} costs - An array where each element is the cost of an operation.
+ * @param {number[]} gains - An array where each element is the gain from an operation.
+ * @returns {number} The highest possible value that can be achieved.
+ */
+function calculateMaximizedValue(currentBudget, costs, gains) {
+  var numItems = costs.length;
 
-  // Base case: If no items, no change in resource.
-  if ( numItems === 0 ) {
-    return resourceLimit;
+  // If there are no items/operations, the budget remains unchanged.
+  if (numItems === 0x0) {
+    return currentBudget;
   }
 
-  // Base case: If only one item, simple greedy calculation.
-  if ( numItems === 1 ) {
-    var singleCost = itemCosts[0];
-    var singleBenefit = itemBenefits[0];
-    // Calculate how many times the item can be 'bought'.
-    var purchaseCount = Math.floor(resourceLimit / singleCost);
-    // Reduce resource by total cost.
-    resourceLimit -= purchaseCount * singleCost;
-    // Increase resource by total benefit.
-    resourceLimit += purchaseCount * singleBenefit;
-    return resourceLimit;
+  // Special case for a single item: apply the operation as many times as possible.
+  if (numItems === 0b1) {
+    var numOperations = currentBudget / costs[0x0] | 0x0; // Integer division to find max operations.
+    currentBudget -= numOperations * costs[0x0]; // Deduct total cost.
+    currentBudget += numOperations * gains[0x0]; // Add total gain.
+    return currentBudget;
   }
 
-  // Initialize a dynamic programming table.
-  // 'dynamicProgrammingTable[k]' will store the maximum resource
-  // after spending exactly 'k' units of resource.
-  var dynamicProgrammingTable = Array(resourceLimit + 1);
-  // If 0 resource is spent, the resource limit remains 'resourceLimit'.
-  dynamicProgrammingTable[0] = resourceLimit;
+  // Dynamic Programming approach for multiple items.
+  // `memoizationTable[j]` will store the maximum value achievable if `j` units of cost are spent.
+  var memoizationTable = Array(currentBudget + 0b1);
+  memoizationTable[0x0] = currentBudget; // If 0 cost is spent, the value is the initial budget.
 
-  // Iterate through each item.
-  for ( var itemIdx = 0; itemIdx < numItems; itemIdx++ ) {
-    var currentItemCost = itemCosts[itemIdx],
-        currentItemBenefit = itemBenefits[itemIdx];
+  // Iterate through each available item/operation.
+  for (var itemIndex = 0x0; itemIndex < numItems; itemIndex++) {
+    var itemCost = costs[itemIndex],
+      itemGain = gains[itemIndex];
 
-    // Iterate through capacities from current item's cost up to the total limit.
-    // This processes the DP table from left to right for each item.
-    for ( var currentCapacity = currentItemCost; currentCapacity <= resourceLimit; currentCapacity++ ) {
-      // If the previous state (before spending currentItemCost) is not reachable, skip.
-      if ( dynamicProgrammingTable[currentCapacity - currentItemCost] === undefined ) {
+    // Iterate through possible budget points, from the current item's cost up to the total budget.
+    // This ensures we only consider states where the item can actually be "bought".
+    for (var currentBudgetPoint = itemCost; currentBudgetPoint <= currentBudget; currentBudgetPoint++) {
+      // If the state `currentBudgetPoint - itemCost` was not reachable (undefined), skip this path.
+      if (memoizationTable[currentBudgetPoint - itemCost] === void 0) {
         continue;
       }
 
-      // Calculate the potential new resource value if this item is 'bought'.
-      var potentialNewResource = dynamicProgrammingTable[currentCapacity - currentItemCost] + currentItemBenefit - currentItemCost;
+      // Calculate the potential new value if we use the current item.
+      // It's the value from the previous state plus the gain minus the cost of the current item.
+      var calculatedValue = memoizationTable[currentBudgetPoint - itemCost] + itemGain - itemCost;
 
-      // Update the DP table if this path yields a better (higher) resource value
-      // or if the current capacity hasn't been reached yet.
-      if ( dynamicProgrammingTable[currentCapacity] === undefined || dynamicProgrammingTable[currentCapacity] < potentialNewResource ) {
-        dynamicProgrammingTable[currentCapacity] = potentialNewResource;
+      // Update the DP table: if the current state `currentBudgetPoint` is undefined
+      // or if the `calculatedValue` is greater than the existing value, update it.
+      if (memoizationTable[currentBudgetPoint] === void 0 || memoizationTable[currentBudgetPoint] < calculatedValue) {
+        memoizationTable[currentBudgetPoint] = calculatedValue;
       }
     }
   }
 
-  // Find the maximum resource value across a relevant range of the DP table.
-  // The range is usually from `resourceLimit - some_offset` to `resourceLimit`
-  // to account for cases where not all capacity is used.
-  var finalMaxGain = resourceLimit; // Initialize with the original limit as a baseline.
-  for ( var checkCapacity = Math.max(0, resourceLimit - 5000); checkCapacity <= resourceLimit; checkCapacity++ ) {
-    if ( finalMaxGain < dynamicProgrammingTable[checkCapacity] ) {
-      finalMaxGain = dynamicProgrammingTable[checkCapacity];
+  // After filling the DP table, find the maximum value within a relevant range.
+  // The maximum value might not necessarily be at `memoizationTable[currentBudget]`.
+  var maxValueFound = currentBudget;
+  // Search from `max(0, currentBudget - 5000)` up to `currentBudget`.
+  // The `5e3` constant suggests a heuristic or problem-specific constraint.
+  for (var itemIndex = Math.max(0x0, currentBudget - 5e3); itemIndex <= currentBudget; itemIndex++) {
+    // Ensure `memoizationTable[itemIndex]` is not undefined before comparison.
+    if (memoizationTable[itemIndex] !== void 0 && maxValueFound < memoizationTable[itemIndex]) {
+      maxValueFound = memoizationTable[itemIndex];
     }
   }
 
-  return finalMaxGain;
+  return maxValueFound;
 }

@@ -1,25 +1,24 @@
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const stringLines = fileContent.split("\n");
+const fileSystem = require("fs");
 
-const matrixDimension = parseInt(stringLines[0]);
-const characterMatrix = stringLines.slice(1);
+const inputLines = fileSystem.readFileSync("/dev/stdin", "utf8").split("\n");
 
-const verifySymmetry = (rowOffset, colOffset, dimSize, charGrid) => {
-    return Array.from({ length: dimSize }, (_, rIndex) => rIndex).every(rIndex => {
-        return Array.from({ length: dimSize }, (_, cIndex) => cIndex).every(cIndex => {
-            const firstChar = charGrid[(rIndex + rowOffset) % dimSize][(cIndex + colOffset) % dimSize];
-            const secondChar = charGrid[(cIndex + rowOffset) % dimSize][(rIndex + colOffset) % dimSize];
-            return firstChar === secondChar;
-        });
-    });
+const gridDimension = parseInt(inputLines[0], 10);
+const charMatrix = inputLines.slice(1);
+
+const checkGridSymmetry = (rowOffset, colOffset, dimension, sourceGrid) => {
+    return Array.from({ length: dimension }, (_, rowIdx) => {
+        return Array.from({ length: dimension }, (_, colIdx) => {
+            const charA = sourceGrid[(rowIdx + rowOffset) % dimension][(colIdx + colOffset) % dimension];
+            const charB = sourceGrid[(colIdx + rowOffset) % dimension][(rowIdx + colOffset) % dimension];
+            return charA === charB;
+        }).every(Boolean);
+    }).every(Boolean) ? 1 : 0;
 };
 
-const totalSymmetricConfigurations = Array.from({ length: matrixDimension }, (_, rShift) => rShift)
-    .reduce((currentTotal, rShift) => {
-        return currentTotal + Array.from({ length: matrixDimension }, (_, cShift) => cShift)
-            .reduce((innerSum, cShift) => {
-                return innerSum + (verifySymmetry(rShift, cShift, matrixDimension, characterMatrix) ? 1 : 0);
-            }, 0);
-    }, 0);
+const totalCount = Array.from({ length: gridDimension }, (_, rShift) =>
+    Array.from({ length: gridDimension }, (_, cShift) =>
+        checkGridSymmetry(rShift, cShift, gridDimension, charMatrix)
+    )
+).flat().reduce((accumulator, value) => accumulator + value, 0);
 
-console.log(totalSymmetricConfigurations);
+console.log(totalCount);

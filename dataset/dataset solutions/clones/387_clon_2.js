@@ -1,125 +1,115 @@
-function    detonate(  rowCoord,  colCoord,  directionIdx  )
-{
-    // Validate if the current cell is available for marking
-    if (    gridMatrix[rowCoord][colCoord]    !==    "+"    )
-    {
-        return    ; // Exit if already visited or not an empty space
+function detonate(rowCoord, colCoord, directionIndex) {
+  // If the current cell is not a placeholder, terminate this recursive path.
+  if (gridMatrix[rowCoord][colCoord] !== "+") {
+    return;
+  }
+
+  // Define arrays for changes in row and column coordinates for four directions:
+  // 0: Up, 1: Right, 2: Down, 3: Left
+  const deltaRows = [-1, 0, 1, 0]; // Row offsets
+  const deltaCols = [0, 1, 0, -1]; // Column offsets
+
+  // Calculate the coordinates of the next potential cell.
+  let nextRow = rowCoord + deltaRows[directionIndex];
+  let nextCol = colCoord + deltaCols[directionIndex];
+
+  // Check if the calculated next coordinates are outside the grid boundaries.
+  if (nextRow < 0 || nextCol < 0 || nextRow >= gridDimension || nextCol >= gridDimension) {
+    // If out of bounds, change the direction (rotate clockwise).
+    directionIndex = (directionIndex + 1) % 4;
+    // Recursively call the function from the current cell with the new direction.
+    detonate(rowCoord, colCoord, directionIndex);
+  } else {
+    // If the next cell is already marked as filled ('#'), it means we've hit a wall.
+    // This indicates the completion of a spiral segment.
+    if (gridMatrix[nextRow][nextCol] === "#") {
+      // Reset the cell *before* the wall to a placeholder. This is a crucial step
+      // in the specific spiral generation algorithm.
+      gridMatrix[nextRow - deltaRows[directionIndex]][nextCol - deltaCols[directionIndex]] = "+";
+
+      // Based on the current direction, determine the new starting point and initial direction
+      // for the subsequent spiral segment. This logic is highly specific to the algorithm.
+      if (directionIndex === 3) { // If the previous movement was 'Left'
+        detonate(nextRow - 2 * deltaRows[directionIndex] - 1, nextCol - 2 * deltaCols[directionIndex], 0); // New segment starts, facing 'Up'
+      } else if (directionIndex === 0) { // If the previous movement was 'Up'
+        detonate(nextRow - 2 * deltaRows[directionIndex], nextCol - 2 * deltaCols[directionIndex] + 1, 1); // New segment starts, facing 'Right'
+      } else if (directionIndex === 1) { // If the previous movement was 'Right'
+        detonate(nextRow - 2 * deltaRows[directionIndex] + 1, nextCol - 2 * deltaCols[directionIndex], 2); // New segment starts, facing 'Down'
+      } else if (directionIndex === 2) { // If the previous movement was 'Down'
+        detonate(nextRow - 2 * deltaRows[directionIndex], nextCol - 2 * deltaCols[directionIndex] - 1, 3); // New segment starts, facing 'Left'
+      }
+    } else {
+      // If the next cell is not a wall, mark the current cell as filled.
+      gridMatrix[rowCoord][colCoord] = "#";
+      // Store the coordinates of the current cell as the last visited position.
+      finalPosition = [rowCoord, colCoord];
+      // Recursively call the function to move to the next cell in the same direction.
+      detonate(nextRow, nextCol, directionIndex);
     }
-
-    // Define the changes in row and column for each direction
-    const    rowOffsets    =    [  -1  ,  0  ,  1  ,  0  ]    ; // Up, Right, Down, Left
-    const    colOffsets    =    [  0  ,  1  ,  0  ,  -1  ]    ; // Up, Right, Down, Left
-
-    // Calculate the coordinates of the next potential step
-    let    nextRow    =    rowCoord    +    rowOffsets[directionIdx]    ;
-    let    nextCol    =    colCoord    +    colOffsets[directionIdx]    ;
-
-    // Check if the next step is outside the grid boundaries
-    if  (  nextRow  <  0  ||  nextCol  <  0  ||  nextRow  >=  gridSize  ||  nextCol  >=  gridSize  )
-    {
-        // If out of bounds, change to the next direction and re-evaluate from current position
-        directionIdx    =    (    directionIdx    +    1    )    %    4    ;
-        detonate    (    rowCoord    ,    colCoord    ,    directionIdx    )    ;
-    }
-    else
-    {
-        // If the next cell is already marked as part of the path ('#')
-        if  (  gridMatrix[nextRow][nextCol]    ===    "#"  )
-        {
-            // Unmark the cell just before the current one (backtracking logic)
-            gridMatrix    [    nextRow    -    rowOffsets[directionIdx]    ]    [    nextCol    -    colOffsets[directionIdx]    ]    =    "+"    ;
-
-            // Perform a special recursive call based on the current direction
-            if  (  directionIdx    ===    3  ) // Moving Left
-            {
-                detonate    (    nextRow    -    2    *    rowOffsets[directionIdx]    -    1    ,    nextCol    -    2    *    colOffsets[directionIdx]    ,    0    )    ;
-            }
-            else    if    (    directionIdx    ===    0    ) // Moving Up
-            {
-                detonate    (    nextRow    -    2    *    rowOffsets[directionIdx]    ,    nextCol    -    2    *    colOffsets[directionIdx]    +    1    ,    1    )    ;
-            }
-            else    if    (    directionIdx    ===    1    ) // Moving Right
-            {
-                detonate    (    nextRow    -    2    *    rowOffsets[directionIdx]    +    1    ,    nextCol    -    2    *    colOffsets[directionIdx]    ,    2    )    ;
-            }
-            else    if    (    directionIdx    ===    2    ) // Moving Down
-            {
-                detonate    (    nextRow    -    2    *    rowOffsets[directionIdx]    ,    nextCol    -    2    *    colOffsets[directionIdx]    -    1    ,    3    )    ;
-            }
-        }
-        else
-        {
-            // Mark the current cell as part of the path
-            gridMatrix    [    rowCoord    ]    [    colCoord    ]    =    "#"    ;
-            // Update the record of the last visited position
-            finalPosition    =    [    rowCoord    ,    colCoord    ]    ;
-            // Recursively call for the next step in the current direction
-            detonate    (    nextRow    ,    nextCol    ,    directionIdx    )    ;
-        }
-    }
+  }
 }
 
+// Read the entire content from standard input, assuming UTF-8 encoding.
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Read raw input data from the standard input stream
-const    rawData    =    require    (    'fs'    )    .    readFileSync    (    '/dev/stdin'    ,    'utf8'    )    ;
+// Process the input:
+// 1. Remove any leading or trailing whitespace.
+// 2. Split the string into an array of lines based on newline characters.
+// 3. Convert each element of the array (which represents a number) to a numeric type.
+let numericData = fileContent.trim().split("\n").map(Number);
 
-// Process the input string: trim whitespace, split into lines, and convert to numbers
-let    inputLines    =    rawData    .    trim    (    )    .    split    (    "\n"    )    .    map    (    Number    )    ;
+// The first number in the processed data indicates the total number of test cases.
+let testCaseCount = numericData.shift();
 
-// Extract the total number of test cases from the beginning of the input
-let    testCasesCount    =    inputLines    .    shift    (    )    ;
+// Iterate through each test case.
+while (testCaseCount--) {
+  // The next number in the data is the dimension (N) for the current N x N grid.
+  let gridDimension = numericData.shift();
 
-// Loop through each of the provided test cases
-while    (    testCasesCount--    )
-{
-    // Get the grid size for the current test case
-    let    gridSize    =    inputLines    .    shift    (    )    ;
+  // Handle specific edge cases for small grid dimensions to simplify logic.
+  if (gridDimension === 0) {
+    console.log(""); // For a 0x0 grid, output an empty line.
+    continue; // Proceed to the next test case.
+  }
+  if (gridDimension === 1) {
+    console.log("#"); // For a 1x1 grid, output a single filled cell.
+    continue; // Proceed to the next test case.
+  }
+  if (gridDimension === 2) {
+    console.log("##\n# "); // For a 2x2 grid, output a predefined pattern.
+    continue; // Proceed to the next test case.
+  }
 
-    // Handle special case: a grid of size 0
-    if  (  gridSize    ===    0  )
-    {
-        console    .    log    (    ""    )    ; // Print an empty line
-        continue    ; // Move to the next test case
+  // Declare variables that will be shared with the 'detonate' function through closure.
+  // 'gridMatrix' will represent the 2D grid, initialized for each test case.
+  let gridMatrix = [];
+  // 'finalPosition' will track the last cell modified by the spiral algorithm.
+  let finalPosition = [];
+
+  // Initialize the 'gridMatrix' with placeholder characters ('+') for all cells.
+  // This represents an empty grid before the spiral is drawn.
+  for (let rowIndex = 0; rowIndex < gridDimension; rowIndex++) {
+    gridMatrix[rowIndex] = []; // Create a new row array.
+    for (let colIndex = 0; colIndex < gridDimension; colIndex++) {
+      gridMatrix[rowIndex][colIndex] = "+"; // Fill each cell with the placeholder.
     }
+  }
 
-    // Handle special case: a grid of size 1
-    if  (  gridSize    ===    1  )
-    {
-        console    .    log    (    "#"    )    ; // Print a single hash
-        continue    ; // Move to the next test case
-    }
+  // Start the recursive spiral generation process.
+  // The algorithm begins from the bottom-left corner (gridDimension-1, 0)
+  // and initially moves upwards (directionIndex 0).
+  detonate(gridDimension - 1, 0, 0);
 
-    // Handle special case: a grid of size 2
-    if  (  gridSize    ===    2  )
-    {
-        console    .    log    (    "##\n# "    )    ; // Print the specific 2x2 pattern
-        continue    ; // Move to the next test case
-    }
+  // Apply a specific correction for grids with an even dimension:
+  // The last cell marked by the 'detonate' function needs to be reset to a placeholder.
+  // This adjustment is necessary for the correct visual output of the spiral pattern on even-sized grids.
+  if (gridDimension % 2 === 0) {
+    gridMatrix[finalPosition[0]][finalPosition[1]] = "+";
+  }
 
-    // Initialize the 2D grid matrix
-    let    gridMatrix    =    [  ]    ;
-    // Populate the grid with empty markers ('+')
-    for  (  let    rowIndex    =    0    ;    rowIndex    <    gridSize    ;    rowIndex++    )
-    {
-        gridMatrix    [    rowIndex    ]    =    [  ]    ;
-        for  (  let    colIndex    =    0    ;    colIndex    <    gridSize    ;    colIndex++    )
-        {
-            gridMatrix    [    rowIndex    ]    [    colIndex    ]    =    "+"    ;
-        }
-    }
-
-    // Declare a variable to keep track of the last marked position
-    let    finalPosition    =    [  ]    ;
-
-    // Initiate the path generation algorithm from the bottom-left corner, facing upwards
-    detonate    (    gridSize    -    1    ,    0    ,    0    )    ;
-
-    // Apply a post-processing step for even-sized grids: unmark the final position
-    if  (  gridSize    %    2    ===    0  )
-    {
-        gridMatrix    [    finalPosition[0]    ]    [    finalPosition[1]    ]    =    "+"    ;
-    }
-
-    // Format and print the final grid: join rows with newlines, remove commas, replace '+' with spaces
-    console    .    log    (    gridMatrix    .    join    (    "\n"    )    .    replace    (    /\,/g    ,    ""    )    .    replace    (    /\+/g    ,    " "    )    )    ;
+  // Format the final output string for printing:
+  // 1. Join all rows of the 'gridMatrix' with newline characters to form a multi-line string.
+  // 2. Remove any commas that might have been introduced by the array's default 'join' behavior.
+  // 3. Replace all placeholder characters ('+') with spaces to represent empty cells in the final output.
+  console.log(gridMatrix.join("\n").replace(/,/g, "").replace(/\+/g, " "));
 }

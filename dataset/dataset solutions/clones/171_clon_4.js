@@ -1,81 +1,47 @@
-const libIO = require('fs');
+const fileSystem = require('fs');
 
-function determineGreater(firstOperand, secondOperand) {
-  return firstOperand > secondOperand ? firstOperand : secondOperand;
-}
+const allInputContent = fileSystem.readFileSync(process.stdin.fd, 'utf8');
+const inputLines = allInputContent.split('\n');
 
-function parseAllEntries(fullText) {
-  const lines = fullText.trim().split('\n');
-  const allCases = [];
-  let linePointer = 0;
+function processInput() {
+    let linePointer = 0;
+    let caseNumber = 1;
 
-  while (linePointer < lines.length) {
-    const caseCapacity = parseInt(lines[linePointer++], 10);
-    if (caseCapacity === 0) {
-      break;
+    while (true) {
+        const capacityLimit = Number(inputLines[linePointer++]);
+        if (!capacityLimit) {
+            break;
+        }
+
+        const itemCount = Number(inputLines[linePointer++]);
+        let valueAccumulator = Array(capacityLimit + 1).fill(0);
+
+        for (let itemIdx = 0; itemIdx < itemCount; itemIdx++) {
+            const [itemValue, itemWeight] = inputLines[linePointer++].split(',').map(Number);
+
+            for (let currentWt = capacityLimit; currentWt >= itemWeight; currentWt--) {
+                valueAccumulator[currentWt] = Math.max(
+                    valueAccumulator[currentWt],
+                    valueAccumulator[currentWt - itemWeight] + itemValue
+                );
+            }
+        }
+
+        const maximumAchievableValue = Math.max(...valueAccumulator);
+
+        let minimumWeightForMax = 1001;
+
+        if (maximumAchievableValue > 0) {
+            for (let currentIdx = 0; currentIdx <= capacityLimit; currentIdx++) {
+                if (valueAccumulator[currentIdx] === maximumAchievableValue) {
+                    minimumWeightForMax = currentIdx;
+                    break;
+                }
+            }
+        }
+
+        console.log(`Case ${caseNumber++}:\n${maximumAchievableValue}\n${minimumWeightForMax}`);
     }
-    const numberOfArticles = parseInt(lines[linePointer++], 10);
-    const caseArticles = [];
-    for (let articleIndex = 0; articleIndex < numberOfArticles; articleIndex++) {
-      const [valStr, massStr] = lines[linePointer++].split(',');
-      caseArticles.push({
-        articleValue: parseInt(valStr, 10),
-        articleMass: parseInt(massStr, 10)
-      });
-    }
-    allCases.push({
-      capacity: caseCapacity,
-      articles: caseArticles
-    });
-  }
-  return allCases;
 }
 
-function computeOptimalSelection(containerCapacity, collectionOfArticles) {
-  const initialValuations = Array(containerCapacity + 1).fill(0);
-
-  const finalValuationTable = collectionOfArticles.reduce((pastValuations, currentArticle) => {
-    const currentArticleValue = currentArticle.articleValue;
-    const currentArticleMass = currentArticle.articleMass;
-
-    const presentValuations = Array(containerCapacity + 1).fill(0);
-
-    for (let currentLoad = 1; currentLoad <= containerCapacity; currentLoad++) {
-      const valueWithoutCurrent = pastValuations[currentLoad];
-      
-      let valueWithCurrent = 0;
-      if (currentLoad >= currentArticleMass) {
-        valueWithCurrent = pastValuations[currentLoad - currentArticleMass] + currentArticleValue;
-      }
-      
-      presentValuations[currentLoad] = determineGreater(valueWithoutCurrent, valueWithCurrent);
-    }
-    return presentValuations;
-  }, initialValuations);
-
-  return finalValuationTable;
-}
-
-function ascertainBestOutcome(valuationData) {
-  return valuationData.reduce((accumulator, currentVal, currentMass) => {
-    if (currentVal > accumulator.highestVal) {
-      return { highestVal: currentVal, minimalMass: currentMass };
-    }
-    return accumulator;
-  }, { highestVal: 0, minimalMass: 0 });
-}
-
-function orchestrateProcess() {
-  const rawEntry = libIO.readFileSync('/dev/stdin', 'utf8');
-  const parsedCases = parseAllEntries(rawEntry);
-
-  const processedResults = parsedCases.map((aCase, caseIdx) => {
-    const finalTable = computeOptimalSelection(aCase.capacity, aCase.articles);
-    const { highestVal, minimalMass } = ascertainBestOutcome(finalTable);
-    return `Case ${caseIdx + 1}:\n${highestVal}\n${minimalMass}`;
-  });
-
-  console.log(processedResults.join('\n'));
-}
-
-orchestrateProcess();
+processInput();

@@ -1,58 +1,48 @@
-/*
- * This module defines a primary routine
- * for processing a raw string input.
- */
-function ProcessInputData(initialPayload) {
-  /* Step 1: Clean up the incoming string by removing leading/trailing whitespace. */
-  let trimmedPayload = initialPayload.trim();
+function ProcessInput(rawData) {
+  // Trim leading/trailing whitespace from the input string
+  rawData = rawData.trim();
+  // Split the input string by space to get individual values
+  rawData = rawData.split(" ");
 
-  // Step 2: Divide the cleaned string into an array of constituent parts
-  let tokenizedSegments = trimmedPayload.split(" ");
+  // Parse the input values into numerical variables
+  let valX = rawData[0];
+  let valY = rawData[1];
+  let valZ = rawData[2];
 
-  /*
-   * Assign the numeric components from the tokenized array
-   * to distinct variables for easier manipulation.
-   */
-  let quantityA = tokenizedSegments[0];
-  let quantityB = tokenizedSegments[1];
-  let quantityC = tokenizedSegments[2];
+  // Initialize a variable to store the final computed outcome
+  let finalOutcome = 0;
 
-  /* Initialize the final computed value to zero. */
-  let calculationOutcome = 0;
+  // Calculate two temporary values based on the input
+  let tempA = valX - valY;
+  let tempB = valZ - 1;
 
-  // Calculate an initial difference and an adjusted third quantity.
-  let differenceAB = quantityA - quantityB;
-  let adjustedC = quantityC - 1;
-
-  /*
-   * Conditional logic based on the parity of the difference
-   * between the third and second quantities.
-   */
-  if ((quantityC - quantityB) % 2 == 0) {
-    // If the difference is even, perform specific adjustments.
-    if (quantityC - quantityB - 2 >= 0) {
-      differenceAB -= (quantityC - quantityB - 2) / 2;
-      adjustedC -= (quantityC - quantityB - 2) / 2;
+  // Check if the difference between valZ and valY is an even number
+  if ((valZ - valY) % 2 === 0) {
+    // If the difference is even, apply further adjustments if a condition is met
+    if (valZ - valY - 2 >= 0) {
+      tempA -= (valZ - valY - 2) / 2;
+      tempB -= (valZ - valY - 2) / 2;
     }
   } else {
-    // If the difference is odd, apply a different set of adjustments.
-    if (quantityC - quantityB - 1 >= 0) {
-      differenceAB -= (quantityC - quantityB - 1) / 2;
-      adjustedC -= (quantityC - quantityB - 1) / 2;
+    // If the difference is odd, apply adjustments if a different condition is met
+    if (valZ - valY - 1 >= 0) {
+      tempA -= (valZ - valY - 1) / 2;
+      tempB -= (valZ - valY - 1) / 2;
     }
   }
 
-  /* Determine the minimum of the two adjusted values. */
-  calculationOutcome = Math.min(differenceAB, adjustedC);
+  // Set the initial final outcome to the minimum of the two temporary values
+  finalOutcome = Math.min(tempA, tempB);
 
-  // Re-evaluate the outcome if the initial C-B difference was even.
-  if ((quantityC - quantityB) % 2 == 0) {
-    calculationOutcome = Math.min((quantityC - quantityB) / 2, calculationOutcome);
+  // Re-check the even difference condition for valZ and valY
+  if ((valZ - valY) % 2 === 0) {
+    // If it's even, update the final outcome with the minimum of its current value and half the difference
+    finalOutcome = Math.min((valZ - valY) / 2, finalOutcome);
   }
 
-  /* Output the final derived result to the console. */
-  console.log(calculationOutcome);
+  // Output the final computed result to the console
+  console.log(finalOutcome);
 }
 
-// Entry point: Read input from standard input and pass it to the processing function.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

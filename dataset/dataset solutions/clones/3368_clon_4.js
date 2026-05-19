@@ -1,20 +1,16 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-var entireStream = '';
-process.stdin.on('data', function(dataPortion) {
-    entireStream += dataPortion;
+let allInputBuffer = '';
+process.stdin.on('data', function(currentChunk) {
+    allInputBuffer += currentChunk;
 });
 process.stdin.on('end', function() {
-    const sourceSegments = entireStream.split(/\r?\n/);
-    const combinedText = sourceSegments.join(',');
-    performCountOperation(combinedText);
+    processData(allInputBuffer.split(/\r?\n/));
 });
 
-function performCountOperation(sourceText){
-    const charList = Array.from(sourceText);
-    const tally = charList.reduce((currentTotal, charInstance) => {
-        return currentTotal + (charInstance === '2' ? 1 : 0);
-    }, 0);
-    console.log(tally);
+function processData(inputLines){
+  const combinedContent = inputLines.join('');
+  const twoOccurrences = Array.from(combinedContent).filter(characterUnit => characterUnit === '2');
+  console.log(twoOccurrences.length);
 }

@@ -1,92 +1,64 @@
-const moduleFetcher = function(moduleName) {
-    return require(moduleName);
-};
-const numericConverter = {
-    parseValue: function(input) {
-        return Number(input);
-    }
-};
-const valueComparator = {
-    findMinimum: function(valA, valB) {
-        return Math.min(valA, valB);
-    }
-};
-const outputHandler = {
-    displayResult: function(message) {
-        console.log(message);
-    }
-};
-const systemIOChannels = {
-    inputSource: process.stdin,
-    outputSink: process.stdout
-};
-const positiveInfiniteValue = Number.POSITIVE_INFINITY;
-const dynamicCollectionFactory = function(initialSize = 0) {
-    let internalArray = new Array(initialSize);
-    internalArray.addElement = function(item) {
-        this.push(item);
-    };
-    internalArray.populateWith = function(fillValue) {
-        for (let idx = 0; idx < this.length; idx++) {
-            this[idx] = fillValue;
-        }
-        return this;
-    };
-    internalArray.transformEach = function(callback) {
-        let newArray = new Array(this.length);
-        for (let idx = 0; idx < this.length; idx++) {
-            newArray[idx] = callback(this[idx], idx, this);
-        }
-        return newArray;
-    };
-    return internalArray;
-};
-const streamProcessorModule = (function() {
-    const internalReadlineModule = moduleFetcher('readline');
-    return {
-        buildInputOutputInterface: function(options) {
-            const interfaceInstance = internalReadlineModule.createInterface(options);
-            const wrappedInterface = {
-                _actualInterface: interfaceInstance,
-                registerEventHandler: function(eventName, handler) {
-                    this._actualInterface.on(eventName, handler);
-                }
-            };
-            return wrappedInterface;
-        }
-    };
-})();
-var inputDataStore = dynamicCollectionFactory();
-var streamInterfaceUnit = streamProcessorModule.buildInputOutputInterface({
-    input: systemIOChannels.inputSource,
-    output: systemIOChannels.outputSink,
+let inputLines = []; // This array will store all lines read from standard input.
+
+// Import the 'readline' module for handling input operations.
+const inputReader = require('readline');
+
+// Create an interface for reading input line by line from the standard input stream.
+const interfaceInstance = inputReader.createInterface({
+    input: process.stdin,   // Specifies the input source as standard input.
+    output: process.stdout, // Specifies the output destination as standard output (though not used for writing in this specific setup).
 });
-streamInterfaceUnit.registerEventHandler('lineReceived', function (currentTextSegment) {
-    inputDataStore.addElement(currentTextSegment);
+
+// Attach an event listener to process each line of input as it is received.
+interfaceInstance.on('line', function (currentLine) {
+    inputLines.push(currentLine); // Add the current line to our collection of input lines.
 });
-streamInterfaceUnit.registerEventHandler('streamClosed', function () {
-    var nodeQuantity = numericConverter.parseValue(inputDataStore[0]);
-    var travelCostMatrix = dynamicCollectionFactory(nodeQuantity)
-        .populateWith(positiveInfiniteValue)
-        .transformEach(function (elementValue) {
-            return dynamicCollectionFactory(nodeQuantity).populateWith(positiveInfiniteValue);
-        });
-    for (var loopIndexA = 0; loopIndexA < nodeQuantity; loopIndexA++) {
-        travelCostMatrix[loopIndexA][(loopIndexA + 1) % nodeQuantity] = 1;
-        travelCostMatrix[loopIndexA][(loopIndexA * 10) % nodeQuantity] = 0;
-        travelCostMatrix[loopIndexA][loopIndexA] = 0;
+
+// Attach an event listener to execute a block of code once the input stream has closed.
+interfaceInstance.on('close', function () {
+    // Parse the first line of input to get the main modulus value for calculations.
+    const modulusValue = Number(inputLines[0]);
+
+    // Initialize a 2D array (matrix) to store distances between nodes.
+    // All distances are initially set to Infinity, representing unreachable paths.
+    let distanceMatrix = Array(modulusValue).fill(Infinity).map(
+        (rowPlaceholder) => {
+            // For each row, create a new array of 'modulusValue' length, also filled with Infinity.
+            return Array(modulusValue).fill(Infinity);
+        }
+    );
+
+    // Populate the initial direct edge weights based on the problem's rules.
+    // These represent the immediate costs of specific transitions between nodes.
+    for (let nodeIndex = 0; nodeIndex < modulusValue; nodeIndex++) {
+        // Set the cost from 'nodeIndex' to '(nodeIndex + 1) % modulusValue' as 1.
+        distanceMatrix[nodeIndex][(nodeIndex + 1) % modulusValue] = 1;
+        // Set the cost from 'nodeIndex' to '(nodeIndex * 10) % modulusValue' as 0.
+        distanceMatrix[nodeIndex][(nodeIndex * 10) % modulusValue] = 0;
+        // The cost of moving from a node to itself is always 0.
+        distanceMatrix[nodeIndex][nodeIndex] = 0;
     }
-    var startingVertex = 1;
-    var endingVertex = 0;
-    for (var intermediateNodeIdx = 0; intermediateNodeIdx < nodeQuantity; intermediateNodeIdx++) {
-        for (var sourceNodeIdx = 0; sourceNodeIdx < nodeQuantity; sourceNodeIdx++) {
-            for (var destinationNodeIdx = 0; destinationNodeIdx < nodeQuantity; destinationNodeIdx++) {
-                travelCostMatrix[sourceNodeIdx][destinationNodeIdx] = valueComparator.findMinimum(
-                    travelCostMatrix[sourceNodeIdx][destinationNodeIdx],
-                    travelCostMatrix[sourceNodeIdx][intermediateNodeIdx] + travelCostMatrix[intermediateNodeIdx][destinationNodeIdx]
+
+    // Define the specific starting and ending nodes for which we want to find the shortest path.
+    const initialNode = 1;
+    const targetNode = 0;
+
+    // Apply the Floyd-Warshall algorithm to compute all-pairs shortest paths.
+    // This algorithm iterates through all possible intermediate nodes to find shorter paths.
+    for (let intermediateNode = 0; intermediateNode < modulusValue; intermediateNode++) {
+        for (let sourceNode = 0; sourceNode < modulusValue; sourceNode++) {
+            for (let destinationNode = 0; destinationNode < modulusValue; destinationNode++) {
+                // Update the shortest path from 'sourceNode' to 'destinationNode'
+                // if a path through 'intermediateNode' is shorter than the current known path.
+                distanceMatrix[sourceNode][destinationNode] = Math.min(
+                    distanceMatrix[sourceNode][destinationNode],
+                    distanceMatrix[sourceNode][intermediateNode] + distanceMatrix[intermediateNode][destinationNode]
                 );
             }
         }
     }
-    outputHandler.displayResult(travelCostMatrix[startingVertex][endingVertex] + 1);
+
+    // Output the calculated shortest distance from 'initialNode' to 'targetNode',
+    // adding 1 to the result as per the problem's specific requirement.
+    console.log(distanceMatrix[initialNode][targetNode] + 1);
 });

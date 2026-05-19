@@ -1,31 +1,32 @@
-/* This JavaScript function is designed to process raw string data according to specific rules. */
-function ProcessData( rawDataInput ) {
-    // First, divide the complete input string into separate lines.
-    rawDataInput = rawDataInput.split( "\n" );
+function ProcessInput(incomingData) {
+  // Split the raw input string into an array of lines.
+  incomingData = incomingData.split("\n");
 
-    // The initial line holds three configuration parameters, often N, M, and X.
-    var configParamsContainer = rawDataInput[0].split( " " );
+  // Parse the first line to get configuration parameters.
+  // These parameters are N, M, X from the problem description.
+  var configParams = incomingData[0].split(" ");
 
-    // The subsequent line contains the primary array of values for analysis.
-    var dataValueArray = rawDataInput[1].split( " " );
+  // Parse the second line to get the array of values.
+  var dataArray = incomingData[1].split(" ");
 
-    // Begin an iterative process through the 'dataValueArray', up to the limit specified by the second config parameter.
-    for ( var currentIdx = 0 ; currentIdx < configParamsContainer[1] ; currentIdx++ ) {
-        // Evaluate if the current element from 'dataValueArray' surpasses the third configuration threshold.
-        if ( dataValueArray[currentIdx] > configParamsContainer[2] ) {
-            // Determine which calculated index is smaller: the current index or the distance from the end.
-            if ( currentIdx > configParamsContainer[1] - currentIdx ) {
-                // Output the distance from the end of the relevant segment.
-                console.log( configParamsContainer[1] - currentIdx );
-                return; // Exit the function immediately upon finding the condition.
-            } else {
-                // Otherwise, output the current iteration index.
-                console.log( currentIdx );
-                return; // Exit the function immediately.
-            }
-        }
+  // Iterate through a portion of the data array based on a configuration parameter.
+  for (var idx = 0; idx < configParams[1]; idx++) {
+    // Check if the current element in the data array exceeds a specified threshold.
+    if (dataArray[idx] > configParams[2]) {
+      // If the threshold is exceeded, determine which value to output.
+      // This logic calculates the minimum distance from either end of a conceptual range.
+      if (idx > configParams[1] - idx) {
+        // Output the distance from the "right" end.
+        console.log(configParams[1] - idx);
+        return; // Exit the function immediately after output.
+      } else {
+        // Output the distance from the "left" end.
+        console.log(idx);
+        return; // Exit the function immediately after output.
+      }
     }
+  }
 }
 
-// Invoke the main processing function with data read from standard input.
-ProcessData( require( "fs" ).readFileSync( "/dev/stdin" , "utf8" ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

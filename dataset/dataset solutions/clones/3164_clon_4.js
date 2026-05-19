@@ -1,89 +1,84 @@
-function createNetworkState(entityCount) {
-    const parentReferences = new Array(entityCount);
-    const componentMagnitudes = new Array(entityCount);
-    for (let idx = 0; idx < entityCount; idx++) {
-        parentReferences[idx] = idx;
-        componentMagnitudes[idx] = 1;
-    }
-    return { links: parentReferences, magnitudes: componentMagnitudes };
-}
-
-function findRepresentative(entityIdentifier, componentSet) {
-    let currentIdentifier = entityIdentifier;
-    const visitedPath = [];
-    while (componentSet.links[currentIdentifier] !== currentIdentifier) {
-        visitedPath.push(currentIdentifier);
-        currentIdentifier = componentSet.links[currentIdentifier];
-    }
-    for (const pathEntity of visitedPath) {
-        componentSet.links[pathEntity] = currentIdentifier;
-    }
-    return currentIdentifier;
-}
-
-function areConnected(firstEntity, secondEntity, componentSet) {
-    return findRepresentative(firstEntity, componentSet) === findRepresentative(secondEntity, componentSet);
-}
-
-function uniteComponents(firstEntity, secondEntity, componentSet) {
-    const rootA = findRepresentative(firstEntity, componentSet);
-    const rootB = findRepresentative(secondEntity, componentSet);
-
-    if (rootA === rootB) {
-        return;
+class DisjointSet {
+    constructor(nodeCount) {
+        this.parents = Array.from({ length: nodeCount }, (_, index) => index);
+        this.componentSizes = Array.from({ length: nodeCount }, () => 1);
     }
 
-    if (componentSet.magnitudes[rootA] < componentSet.magnitudes[rootB]) {
-        componentSet.links[rootA] = rootB;
-        componentSet.magnitudes[rootB] += componentSet.magnitudes[rootA];
-    } else {
-        componentSet.links[rootB] = rootA;
-        componentSet.magnitudes[rootA] += componentSet.magnitudes[rootB];
-    }
-}
-
-function retrieveComponentSize(entityIdentifier, componentSet) {
-    const rootIdentifier = findRepresentative(entityIdentifier, componentSet);
-    return componentSet.magnitudes[rootIdentifier];
-}
-
-function parseInputData(rawData) {
-    const lineSegments = rawData.trim().split('\n');
-    const parameters = lineSegments[0].split(' ').map(Number);
-    const connectionSegments = lineSegments.slice(1).map(segment => segment.split(' ').map(Number));
-    return { elementCount: parameters[0], opCount: parameters[1], connections: connectionSegments };
-}
-
-function processNetworkQueries(rawData) {
-    const parsedData = parseInputData(rawData);
-    const totalElements = parsedData.elementCount;
-    const operationCount = parsedData.opCount;
-    const connectionsToProcess = parsedData.connections;
-
-    const currentEntities = createNetworkState(totalElements);
-
-    let disruptionMetric = (totalElements * (totalElements - 1)) / 2;
-    const outputLog = new Array(operationCount + 1);
-    outputLog[operationCount] = disruptionMetric;
-
-    for (let k = operationCount - 1; k >= 0; k--) {
-        const currentLink = connectionsToProcess[k];
-        const first = currentLink[0] - 1;
-        const second = currentLink[1] - 1;
-
-        if (!areConnected(first, second, currentEntities)) {
-            const sizeA = retrieveComponentSize(first, currentEntities);
-            const sizeB = retrieveComponentSize(second, currentEntities);
-            const pairReduction = sizeA * sizeB;
-            disruptionMetric -= pairReduction;
+    find(nodeIndex) {
+        let current = nodeIndex;
+        const pathNodes = [];
+        while (this.parents[current] !== current) {
+            pathNodes.push(current);
+            current = this.parents[current];
         }
-        outputLog[k] = disruptionMetric;
-        uniteComponents(first, second, currentEntities);
+        for (const pathNode of pathNodes) {
+            this.parents[pathNode] = current;
+        }
+        return current;
     }
 
-    for (let i = 1; i <= operationCount; i++) {
-        console.log(outputLog[i]);
+    unite(firstIndex, secondIndex) {
+        let rootA = this.find(firstIndex);
+        let rootB = this.find(secondIndex);
+
+        if (rootA === rootB) {
+            return false;
+        }
+
+        if (this.componentSizes[rootA] < this.componentSizes[rootB]) {
+            [rootA, rootB] = [rootB, rootA];
+        }
+
+        this.parents[rootB] = rootA;
+        this.componentSizes[rootA] += this.componentSizes[rootB];
+        return true;
+    }
+
+    getComponentSize(nodeIndex) {
+        return this.componentSizes[this.find(nodeIndex)];
+    }
+
+    areConnected(firstIndex, secondIndex) {
+        return this.find(firstIndex) === this.find(secondIndex);
     }
 }
 
-processNetworkQueries(require('fs').readFileSync('/dev/stdin', 'utf8'));
+function processInputAndCalculate(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const [nodeCount, edgeCount] = inputLines[0].split(' ').map(Number);
+
+    const bridgeConnections = [];
+    for (let k = 1; k <= edgeCount; k++) {
+        bridgeConnections.push(inputLines[k].split(' ').map(Number));
+    }
+
+    const reversedBridgeOrder = bridgeConnections.reverse();
+
+    const islandManager = new DisjointSet(nodeCount);
+
+    let currentInconvenience = (nodeCount * (nodeCount - 1)) / 2;
+    const temporaryResults = [];
+    temporaryResults.push(currentInconvenience);
+
+    for (const currentBridge of reversedBridgeOrder) {
+        const [u, v] = [currentBridge[0] - 1, currentBridge[1] - 1];
+
+        if (!islandManager.areConnected(u, v)) {
+            const sizeU = islandManager.getComponentSize(u);
+            const sizeV = islandManager.getComponentSize(v);
+            currentInconvenience -= (sizeU * sizeV);
+            islandManager.unite(u, v);
+        } else {
+            islandManager.unite(u, v);
+        }
+        temporaryResults.push(currentInconvenience);
+    }
+
+    const finalOutputValues = temporaryResults.reverse();
+
+    for (let i = 1; i <= edgeCount; i++) {
+        console.log(finalOutputValues[i]);
+    }
+}
+
+processInputAndCalculate(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,25 +1,21 @@
-const dataAcquirer = require('readline');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const squareValue = (inputVal) => Math.pow(inputVal, 2);
-const computeRoot = (inputVal) => Math.sqrt(inputVal);
+const squareValue = (val) => val * val;
 
-const calculateSquaredDifference = (valA, valB) => squareValue(valA - valB);
+const computeSquaredDifference = (firstCoord, secondCoord) => squareValue(firstCoord - secondCoord);
 
-const performDistanceMeasurement = (numericValues) => {
-    const [alphaX, alphaY, betaX, betaY] = numericValues;
-    const deltaXSquared = calculateSquaredDifference(alphaX, betaX);
-    const deltaYSquared = calculateSquaredDifference(alphaY, betaY);
-    return computeRoot(deltaXSquared + deltaYSquared);
-};
+process.stdin.on('data', (receivedData) => {
+    const parsedNumbers = receivedData
+        .split(" ")
+        .map(Number);
 
-const lineProcessor = dataAcquirer.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+    const [coordAX, coordAY, coordBX, coordBY] = parsedNumbers;
 
-lineProcessor.on('line', (incomingLine) => {
-    const parsedNumerics = incomingLine.split(' ').map(Number);
-    const calculatedResult = performDistanceMeasurement(parsedNumerics);
-    process.stdout.write(calculatedResult.toString() + '\n');
+    const squaredDeltaX = computeSquaredDifference(coordAX, coordBX);
+    const squaredDeltaY = computeSquaredDifference(coordAY, coordBY);
+
+    const sumOfSquaredDeltas = squaredDeltaX + squaredDeltaY;
+
+    console.log(Math.sqrt(sumOfSquaredDeltas));
 });

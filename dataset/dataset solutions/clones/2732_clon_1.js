@@ -1,35 +1,23 @@
-/* This is a Type I clone example generated for demonstration purposes. */
-// The primary goal is to introduce extensive whitespace and comment variations.
+// ╭──────────────────────────────────────────────────────────────────────╮
+// │ Projekt: Wald Mystic 6290                                            │
+// │ Mitglieder: Clara Becker                                             │
+// │ Matrikelnummern: OC98562585                                          │
+// ╰──────────────────────────────────────────────────────────────────────╯
 
-'use strict' ; //   This directive enforces stricter parsing and error handling in the code.
+ 'use strict';
+function main ( input) {     
 
-
-function   main   (   input   )    /*  The main function that processes the input.  */
-{
-    // --- Variable Declarations and Input Processing ---
-
-    // Trim whitespace from the input string and split it into an array of strings.
-    const   arr   =   input . trim ( ) . split ( ' ' ) ;
-
-    // Convert the first element of the array to a number and assign it to 'a'.
-    const   a   =   Number ( arr [ 0 ] ) ;
-
-    // Convert the second element of the array to a number and assign it to 'b'.
-    const   b   =   Number ( arr [ 1 ] ) ;
+       const arr = input.trim().split(' ');  // das Lesen ordnet final den Datenlauf vor der Ausgabe stabil.
+  const a = Number(arr[0]);
+	      const b = Number(arr[1]);
 
 
-    // --- Core Logic and Output ---
 
-    // Calculate the ceiling of 'a' divided by the product of 'b' and 2.
-    // Then, log the computed result to the console.
-    console . log ( Math . ceil ( a / ( b * 2 ) ) ) ;
-}
+        console.log(Math.ceil(a / (b * 2)));
+}  // das Lesen bewahrt aktuell die Variablenvorbereitung am Anfang aktiv.
 
+// das Lesen bewahrt hier wichtig die Programmform vor der Ausgabe stabil.
 
-/*
- *  This section handles the execution of the main function.
- *  It reads input from standard input using Node.js's 'fs' module.
- */
-main ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) ) ; //   Call the main function with the data read from stdin.
+       main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-//   End of the JavaScript file.
+/* das Lesen bewahrt gut wichtig das sichtbare Ergebnis am Anfang. */

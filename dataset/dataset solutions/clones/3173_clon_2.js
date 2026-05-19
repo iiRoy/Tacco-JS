@@ -1,108 +1,121 @@
-var inputBuffer = []; // Stores all incoming lines from standard input.
+var inputData = [];
 
-var numItems, targetA, targetB, targetC; // Main configuration parameters for the problem.
-var itemLengths; // Array to hold the lengths of individual items.
-var minCost = Number.POSITIVE_INFINITY; // Initialize the minimum calculated cost to a very large value.
+var numItems, targetOne, targetTwo, targetThree;
+var itemLengths;
+var minCost = Infinity;
 
-var lineReaderModule = require("readline");
-var interfaceInstance = lineReaderModule.createInterface( {
-    input: process.stdin, // Read from standard input stream.
-    output: process.stdout // Write to standard output stream (not used for this problem, but required by interface).
-} );
+// Import the standard input/output module for Node.js
+var readline = require("readline");
+var inputHandler = readline.createInterface({
+  input:  process.stdin,
+  output: process.stdout
+});
 
-interfaceInstance.on( 'line' , function ( inputLine ) {
-    // Add each received line to our buffer for later processing.
-    inputBuffer.push(inputLine);
-} );
+// Event listener for each line of input received
+inputHandler.on('line', function(lineContent){
+  inputData.push(lineContent);
+});
 
-interfaceInstance.on( 'close' , function ( ) {
+// Event listener for when the input stream closes
+inputHandler.on('close', function(){
+  // Process the first line to get N, A, B, C
+  var firstLine = inputData.shift();
+  var params = firstLine.split(" ");
+  numItems = Number(params[0]);
+  targetOne = Number(params[1]);
+  targetTwo = Number(params[2]);
+  targetThree = Number(params[3]);
 
-    // Process the first line which contains configuration values.
-    var configLine = inputBuffer.shift();
-    numItems = Number( configLine.split(" ")[0] );
-    targetA = Number( configLine.split(" ")[1] );
-    targetB = Number( configLine.split(" ")[2] );
-    targetC = Number( configLine.split(" ")[3] );
+  // Initialize the array to store individual item lengths
+  itemLengths = Array(numItems);
 
-    itemLengths = Array(numItems); // Initialize array to hold item dimensions.
+  // Populate the itemLengths array from the remaining input lines
+  for (var idx = 0; idx < numItems; idx++) {
+    itemLengths[idx] = Number(inputData[idx]);
+  }
 
-    // Populate the item lengths array from the remaining input lines.
-    for ( var idx = 0 ; idx < numItems ; idx++ ) {
-        itemLengths[idx] = Number(inputBuffer[idx]);
+  // Start the recursive exploration process
+  exploreCombinations(0, []);
+  // Output the final minimum calculated cost
+  console.log(minCost);
+});
+
+/**
+ * Recursively explores all possible assignments of bamboo pieces.
+ * Each piece can be assigned to target A (0), B (1), C (2), or discarded (3).
+ * @param {number} currentIdx - The current index of the bamboo piece being considered.
+ * @param {number[]} assignmentMap - An array storing the assignment for each bamboo piece.
+ */
+function exploreCombinations(currentIdx, assignmentMap) {
+    // Base case: if all bamboo pieces have been assigned
+    if (currentIdx === numItems) {
+        evaluateCost(assignmentMap); // Calculate cost for this complete assignment
+        return 0; // Return value is not used, just to exit
     }
 
-    // Start the recursive exploration of item assignments.
-    exploreCombinations(0, []);
-    // Output the final minimum calculated expense.
-    console.log(minCost);
-} );
-
-function exploreCombinations(currentIdx, assignmentArray) {
-    // Base case: if all items have been assigned, evaluate the current configuration.
-    if ( currentIdx === numItems ) {
-        evaluateAssignment(assignmentArray);
-        return 0; // Return a dummy value.
-    }
-
-    // Iterate through the four possible assignments for the current item.
-    for ( var idx = 0 ; idx < 4 ; idx++ ) {
-        assignmentArray[currentIdx] = idx; // Assign the current item to a group (0, 1, 2) or discard (3).
-        // Recursively call for the next item.
-        exploreCombinations(currentIdx + 1, assignmentArray);
+    // Recursive step: try all 4 assignment options for the current bamboo piece
+    for (var option = 0; option < 4; option++) {
+        assignmentMap[currentIdx] = option; // Assign the current piece to an option
+        exploreCombinations(currentIdx + 1, assignmentMap); // Recurse for the next piece
     }
 }
 
-function evaluateAssignment(assignmentArray) {
-    var currentA = 0; // Accumulated length for group A.
-    var currentB = 0; // Accumulated length for group B.
-    var currentC = 0; // Accumulated length for group C.
-    var countA = 0; // Number of items assigned to group A.
-    var countB = 0; // Number of items assigned to group B.
-    var countC = 0; // Number of items assigned to group C.
+/**
+ * Calculates the cost for a given assignment of bamboo pieces.
+ * @param {number[]} assignmentMap - An array where each element indicates the target (0, 1, 2) or discard (3) for the corresponding bamboo piece.
+ */
+function evaluateCost(assignmentMap) {
+    var currentLenOne = 0;
+    var currentLenTwo = 0;
+    var currentLenThree = 0;
+    var countOne = 0;
+    var countTwo = 0;
+    var countThree = 0;
 
-    // Iterate through all items to calculate current group lengths and counts.
-    for ( var idx = 0 ; idx < numItems ; idx++ ) {
-        // Item assigned to group A.
-        if ( assignmentArray[idx] === 0 ) {
-            if ( itemLengths[idx] !== 0 ) {
-                currentA = currentA + itemLengths[idx];
-                countA++;
+    // Iterate through all bamboo pieces to sum their lengths and count assignments
+    for (var idx = 0; idx < numItems; idx++) {
+        // Assigned to target A
+        if (assignmentMap[idx] === 0) {
+            if (itemLengths[idx] !== 0) { // Ensure length is not zero before adding
+                currentLenOne = currentLenOne + itemLengths[idx];
+                countOne++;
             }
         }
-        // Item assigned to group B.
-        else if ( assignmentArray[idx] === 1 ) {
-            if ( itemLengths[idx] !== 0 ) {
-                currentB = currentB + itemLengths[idx];
-                countB++;
+        // Assigned to target B
+        else if (assignmentMap[idx] === 1) {
+            if (itemLengths[idx] !== 0) {
+                currentLenTwo = currentLenTwo + itemLengths[idx];
+                countTwo++;
             }
         }
-        // Item assigned to group C.
-        else if ( assignmentArray[idx] === 2 ) {
-            if ( itemLengths[idx] !== 0 ) {
-                currentC = currentC + itemLengths[idx];
-                countC++;
+        // Assigned to target C
+        else if (assignmentMap[idx] === 2) {
+            if (itemLengths[idx] !== 0) {
+                currentLenThree = currentLenThree + itemLengths[idx];
+                countThree++;
             }
         }
-        // Item is discarded (not used for any group).
-        else { /* No action needed for discarded items. */ }
+        // Discarded (option 3) - no action needed
+        else { /* This piece is not used for any target */ }
     }
 
-    // Adjust counts: if a group has items, subtract one (for the initial item, cost is 0).
-    countA = ( countA - 1 < 0 ) ? 0 : ( countA - 1 ) ;
-    countB = ( countB - 1 < 0 ) ? 0 : ( countB - 1 ) ;
-    countC = ( countC - 1 < 0 ) ? 0 : ( countC - 1 ) ;
+    // Adjust counts for MP cost: each merge costs 10 MP, so subtract 1 from count for each target
+    // If count becomes negative (meaning 0 or 1 piece), set to 0 as no merge cost applies.
+    countOne = (countOne - 1 < 0) ? 0 : (countOne - 1);
+    countTwo = (countTwo - 1 < 0) ? 0 : (countTwo - 1);
+    countThree = (countThree - 1 < 0) ? 0 : (countThree - 1);
 
-    // Only consider valid assignments where all three target groups have at least one item.
-    if ( currentA > 0 && currentB > 0 && currentC > 0 ) {
-        // Calculate the current total expense based on length differences and combination costs.
-        var currentExpense = Math.abs(targetA - currentA) +
-                             Math.abs(targetB - currentB) +
-                             Math.abs(targetC - currentC) +
-                             ( countA + countB + countC ) * 10 ;
+    // Only consider valid combinations where all three targets (A, B, C) have at least one bamboo piece assigned
+    if (currentLenOne > 0 && currentLenTwo > 0 && currentLenThree > 0) {
+        // Calculate the total cost for this combination
+        var currentTotalCost = Math.abs(targetOne - currentLenOne) +
+                               Math.abs(targetTwo - currentLenTwo) +
+                               Math.abs(targetThree - currentLenThree) +
+                               (countOne + countTwo + countThree) * 10;
 
-        // Update the minimum cost if the current expense is lower.
-        if ( minCost > currentExpense ) {
-            minCost = currentExpense;
+        // Update the minimum cost if the current combination is cheaper
+        if (minCost > currentTotalCost) {
+            minCost = currentTotalCost;
         }
     }
 }

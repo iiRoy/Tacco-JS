@@ -1,82 +1,70 @@
-const evaluateConcatenation = (rawInputContent) => {
-  const segmentLines = rawInputContent.trim().split('\n');
-  const pieceCount = parseInt(segmentLines.shift(), 10);
+console.log(function(inputArgument) {
+    const inputLines = inputArgument.trim().split('\n');
+    const numSegments = Number(inputLines.shift());
+    const segmentDetails = [];
+    let overallBalance = 0;
+    let startsWithOpen = 0;
+    let endsWithClose = 0;
 
-  const itemData = segmentLines.map(segmentText => {
-    let segmentBalance = 0;
-    for (const character of segmentText) {
-      if (character === '(') segmentBalance++;
-      else segmentBalance--;
-    }
-    return {
-      frontSymbol: segmentText.charAt(0),
-      rearSymbol: segmentText.charAt(segmentText.length - 1),
-      netValue: segmentBalance
-    };
-  });
+    for (let i = 0; i < numSegments; i++) {
+        const currentSegmentString = inputLines[i];
+        const firstChar = currentSegmentString[0];
+        const lastChar = currentSegmentString[currentSegmentString.length - 1];
+        let currentBalanceChange = 0;
 
-  const grandTotal = itemData.reduce((accumulator, item) => accumulator + item.netValue, 0);
-  const hasOpeningSegment = itemData.some(item => item.frontSymbol === '(');
-  const hasClosingSegment = itemData.some(item => item.rearSymbol === ')');
-
-  if (grandTotal !== 0 || !hasOpeningSegment || !hasClosingSegment) {
-    return 'No';
-  }
-  if (pieceCount === 1) {
-    return 'Yes';
-  }
-
-  const completeSet = (1 << pieceCount) - 1;
-  const resultCache = new Map(); // Key: `${mask}-${balance}`, Value: boolean
-
-  const determineArrangement = (presentSelection, runningBalance) => {
-    if (runningBalance < 0) {
-      return false; // Invalid: balance went negative
-    }
-
-    const cacheKey = `${presentSelection}-${runningBalance}`;
-    if (resultCache.has(cacheKey)) {
-      return resultCache.get(cacheKey);
-    }
-
-    for (let currentItemIndex = 0; currentItemIndex < pieceCount; currentItemIndex++) {
-      // Check if the current item is not yet included in the present selection
-      if (!((presentSelection >> currentItemIndex) & 1)) {
-        const futureSelection = presentSelection | (1 << currentItemIndex);
-        const subsequentBalance = runningBalance + itemData[currentItemIndex].netValue;
-
-        // If this addition completes the set of all items
-        if (futureSelection === completeSet) {
-          if (subsequentBalance === 0 && itemData[currentItemIndex].rearSymbol === ')') {
-            resultCache.set(cacheKey, true);
-            return true; // Found a valid arrangement
-          }
-        } else {
-          // Continue recursively with the new selection and balance
-          if (determineArrangement(futureSelection, subsequentBalance)) {
-            resultCache.set(cacheKey, true);
-            return true; // Found a valid arrangement through this path
-          }
+        for (let j = 0; j < currentSegmentString.length; j++) {
+            if (currentSegmentString[j] === '(') {
+                currentBalanceChange++;
+            } else if (currentSegmentString[j] === ')') {
+                currentBalanceChange--;
+            }
         }
-      }
+
+        segmentDetails.push({ initialChar: firstChar, finalChar: lastChar, balanceValue: currentBalanceChange });
+        overallBalance += currentBalanceChange;
+        if (firstChar === '(') {
+            startsWithOpen++;
+        }
+        if (lastChar === ')') {
+            endsWithClose++;
+        }
     }
 
-    // No valid arrangement found from this state
-    resultCache.set(cacheKey, false);
-    return false;
-  };
-
-  // Initiate the search by trying each possible item as the first in the sequence
-  for (let i = 0; i < pieceCount; i++) {
-    // Optimization: Only consider items that start with '(' and have a non-negative balance as initial segments
-    if (itemData[i].frontSymbol === '(' && itemData[i].netValue >= 0) {
-      if (determineArrangement((1 << i), itemData[i].netValue)) {
+    if (overallBalance !== 0 || !startsWithOpen || !endsWithClose) {
+        return 'No';
+    }
+    if (numSegments === 1) {
         return 'Yes';
-      }
     }
-  }
 
-  return 'No';
-};
+    const allSegmentsUsedMask = (1 << numSegments) - 1;
+    const possibleBalances = new Array(allSegmentsUsedMask + 1).fill(null).map(() => new Set());
+    possibleBalances[0].add(0);
 
-console.log(evaluateConcatenation(require('fs').readFileSync('/dev/stdin', 'utf8')));
+    for (let currentMask = 0; currentMask <= allSegmentsUsedMask; currentMask++) {
+        if (possibleBalances[currentMask].size === 0) {
+            continue;
+        }
+
+        for (const currentAccumulatedBalance of possibleBalances[currentMask]) {
+            for (let segmentIdx = 0; segmentIdx < numSegments; segmentIdx++) {
+                if ((currentMask & (1 << segmentIdx)) === 0) {
+                    const nextMask = currentMask | (1 << segmentIdx);
+                    const nextAccumulatedBalance = currentAccumulatedBalance + segmentDetails[segmentIdx].balanceValue;
+
+                    if (nextAccumulatedBalance >= 0) {
+                        if (nextMask === allSegmentsUsedMask) {
+                            if (nextAccumulatedBalance === 0 && segmentDetails[segmentIdx].finalChar === ')') {
+                                return 'Yes';
+                            }
+                        } else {
+                            possibleBalances[nextMask].add(nextAccumulatedBalance);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return 'No';
+}(require('fs').readFileSync('/dev/stdin', 'utf8')));

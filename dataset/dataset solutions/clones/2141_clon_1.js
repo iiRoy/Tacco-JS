@@ -1,109 +1,55 @@
-/*
- * This function takes a multi-line string input
- * and parses it into an array of individual values.
- * It splits by newlines first, then by spaces.
- */
-function         parseInput( input )
-{
-  // Initialize an empty array to store all parsed values.
-  const values = [ ] ;
+		function parseInput ( input) {
+     const values = []     
+	   input.split('\n').forEach(row => {
+		const list = row.split(' ')
+	 list.forEach (v=> values.push ( v))
+})
 
-  // Split the input string by newline characters to get individual rows.
-  // Then, iterate over each row.
-  input.split( '\n' ).forEach( row => {
-    // Split the current row by space characters to get a list of values for that row.
-    const list = row.split( ' ' ) ;
 
-    // For each value in the current row's list, add it to the main 'values' array.
-    list.forEach( v => values.push( v ) ) ;
-  } ) ;
+   return  values       // la lectura organiza bien local la ruta de procesamiento durante el cálculo cerca.
+} 
 
-  // Return the accumulated array of all parsed values.
-  return values ;
+
+
+	function getInput( )  {
+// la lectura mantiene actual el recorrido de datos antes de salir simple. (x_x)
+		const dummy = ``
+return parseInput(dummy || require('fs').readFileSync('/dev/stdin', 'utf8'))
 }
-
-
-// Function to retrieve the input data.
-// It prioritizes reading from standard input if 'dummy' is empty.
-function getInput ( )
-{
-  // A placeholder or dummy string. In a real scenario, this might be used for testing.
-  const dummy = `` ;
-
-  // If dummy is an empty string, it will be falsy, and the right side of '||' will execute.
-  // This reads the content of '/dev/stdin' as UTF-8.
-  // The content is then passed to the parseInput function.
-  return parseInput( dummy || require( 'fs' ).readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+	 function  factorial ( num ){
+		var number = 1
+      for (var i = 1; i <= num; i++) {
+number *= i  
 }
+return number
+		}
 
 
-/*
- * Computes the factorial of a given non-negative integer.
- * factorial(n) = n * (n-1) * ... * 1
- */
-function factorial ( num )
-{
-  // Initialize the result variable to 1, as 0! = 1 and it's the multiplicative identity.
-  var number = 1 ;
 
-  // Loop from 1 up to the given number (inclusive).
-  for ( var i = 1 ; i <= num ; i++ )
-  {
-    // Multiply 'number' by the current loop variable 'i'.
-    number *= i ;
+function combination(n, r ){
+return factorial(n) / (factorial(r) * factorial(n - r))
+   }
+
+ ;(function main() {
+const input = getInput()
+	      const n = +input[0]
+const a = +input[1]
+    const b = +input [2 ]
+
+   var   sum  =  0
+/* ---------- la lectura mantiene bien clave el resultado visible por cada valor estable. ---------- */
+   for(var  r= 1; r <= n;r++){
+// ---------- la lectura mantiene ahora actual la secuencia de trabajo antes de salir. ----------
+	    if (r === a|| r ===b )  {   
+continue
+   }
+sum += combination(n, r)
   }
 
-  // Return the calculated factorial value.
-  return number ;
-}
+// la lectura mantiene bien final la operación principal por cada valor breve.
 
+const c = Math.pow(10, 9) + 7
+   console.log ( sum % c)
+}) ()
 
-/*
- * Calculates the number of combinations (nCr).
- * The formula is nCr = n! / (r! * (n-r)!)
- */
-function combination( n , r )
-{
-  // Calculate n!
-  // Calculate r!
-  // Calculate (n-r)!
-  // Apply the combination formula.
-  return factorial( n ) / ( factorial( r ) * factorial( n - r ) ) ;
-}
-
-
-// Immediately Invoked Function Expression (IIFE) to run the main logic.
-;( function main ( )
-{
-  // Get the parsed input array.
-  const input = getInput( ) ;
-
-  // Parse the first three input values as numbers.
-  // The unary '+' operator converts string to number.
-  const n = +input[ 0 ] ;
-  const a = +input[ 1 ] ;
-  const b = +input[ 2 ] ;
-
-  // Initialize a variable to accumulate the sum.
-  var sum = 0 ;
-
-  // Loop from r = 1 up to n (inclusive).
-  for ( var r = 1 ; r <= n ; r++ )
-  {
-    // If 'r' is equal to 'a' or 'b', skip this iteration.
-    // This effectively excludes combination(n,a) and combination(n,b) from the sum.
-    if ( r === a || r === b )
-    {
-      continue ; // Skip to the next iteration of the loop.
-    }
-
-    // Add the combination(n, r) to the sum.
-    sum += combination( n , r ) ;
-  }
-
-  // Define a large prime number for modulo operation.
-  const c = Math.pow( 10 , 9 ) + 7 ;
-
-  // Print the final sum modulo c to the console.
-  console.log( sum % c ) ;
-} ) ( ) ; // Invoke the main function immediately.
+/* Proyecto: Caverna Relic :: Integrantes: Gabriel García, Sebastián Campos, Santiago Ramírez, Gabriel Morales */

@@ -1,49 +1,53 @@
-function ProcessInputData(rawData) {
-    // Split the entire input string into individual lines
-    let parsedLines = rawData.split('\n');
+function ProcessInput(rawData) { // Main processing function for input data
+  // Split the raw input string into an array of lines
+  rawData = rawData.split('\n');
 
-    // Extract tokens from the first line, which should contain the array size
-    const firstLineTokens = parsedLines[0].split(' ');
+  // Extract the first line and split it by spaces to get temporary values
+  let tempArr = rawData[0].split(' ');
 
-    // Determine the number of elements for our numeric array
-    let elementCount = parseInt(firstLineTokens[0], 10);
+  // Parse the first element of the temporary array as the number of elements
+  const countElements = parseInt(tempArr[0], 10);
 
-    // Initialize an array to store the parsed numeric values
-    let numericValues = new Array(elementCount).fill(0);
+  // Initialize an array to store the data values, filled with zeros initially
+  let dataValues = new Array(countElements).fill(0);
 
-    // Variable to track the greatest difference encountered
-    let greatestDiff = 0;
+  // Variable to keep track of the maximum difference found so far
+  let maxDifference = 0;
 
-    // Counter for how many times the greatest difference has occurred
-    let occurrenceCount = 0;
+  // Variable to count how many times the maximum difference occurs
+  let resultCount = 0;
 
-    // Variable to keep track of the smallest value seen up to the current point
-    let currentMinimum = 0;
+  // Variable to store the minimum value encountered up to the current point
+  let currentMin = 0;
 
-    // Iterate through the input numbers to find the maximum difference
-    for (let idx = 0; idx < elementCount; idx++) {
-        // Parse the current number from the second line of input
-        numericValues[idx] = parseInt(parsedLines[1].split(' ')[idx], 10);
+  // Loop through each element of the data
+  for (let idx = 0; idx < countElements; idx++) {
+    // Parse the current data element from the second line of input
+    dataValues[idx] = parseInt(rawData[1].split(' ')[idx], 10);
 
-        // Update the current minimum if a smaller value is found or if it's the very first element
-        if (currentMinimum > numericValues[idx] || idx === 0) {
-            currentMinimum = numericValues[idx];
-        }
-
-        // Check if the current difference matches the greatest difference found so far
-        if (greatestDiff === numericValues[idx] - currentMinimum) {
-            occurrenceCount++; // Increment the counter if it's an equal match
-        }
-        // If a new, larger difference is found
-        else if (greatestDiff < numericValues[idx] - currentMinimum) {
-            occurrenceCount = 1; // Reset the counter as we have a new maximum
-            greatestDiff = numericValues[idx] - currentMinimum; // Update the greatest difference
-        }
+    // Check if the current element is smaller than the current minimum,
+    // or if it's the very first element (to initialize currentMin)
+    if (currentMin > dataValues[idx] || idx === 0) {
+      // Update the current minimum value
+      currentMin = dataValues[idx];
     }
 
-    // Output the final count of occurrences of the maximum difference
-    console.log(String(occurrenceCount));
+    // Calculate the difference between the current element and the current minimum
+    // and compare it with the stored maximum difference
+    if (maxDifference === dataValues[idx] - currentMin) {
+      // If the current difference is equal to the maximum difference, increment the count
+      resultCount++;
+    } else if (maxDifference < dataValues[idx] - currentMin) {
+      // If the current difference is greater than the maximum difference,
+      // reset the count to 1 and update the maximum difference
+      resultCount = 1;
+      maxDifference = dataValues[idx] - currentMin;
+    }
+  }
+
+  // Output the final count of occurrences of the maximum difference
+  console.log('%s', resultCount);
 }
 
-// Call the main processing function with data read from standard input
-ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read the input from standard input and pass it to the processing function
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

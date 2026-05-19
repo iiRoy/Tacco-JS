@@ -1,40 +1,34 @@
-/*
- * This module processes input data to calculate the minimum sum of squared differences.
- * It reads a series of numbers and finds an integer 'k' (between 1 and 100)
- * that minimizes the sum of (each_number - k)^2.
- */
-function ProcessData(rawData)
-{
-  "use strict"; // Enforce strict parsing and error handling for cleaner code.
+function ProcessInput(rawData) {
+  "use strict"; // Enforce strict parsing and error handling.
 
-  // Split the entire input string into an array of individual lines.
-  const linesArray = rawData.split("\n");
+  // Split the raw input string into an array of lines.
+  const temporaryLines = rawData.split("\n");
 
-  // The first line (after shifting) is usually a count, but it's unused in this logic.
-  const totalElements = parseInt(linesArray.shift(), 10); // Base 10 for parseInt is good practice.
+  // Extract the first line, parse it as an integer.
+  // Although 'countOfElements' is not used later, its declaration is preserved.
+  const countOfElements = parseInt(temporaryLines.shift());
 
-  // The second line contains space-separated numbers, convert them to integers.
-  const dataPoints = linesArray.shift().split(" ").map(strNum => parseInt(strNum, 10));
-  
-  // Initialize the variable to store the lowest sum of squared errors found so far.
-  // Start with a very large number so any calculated sum will be smaller.
-  let leastSquaredError = Infinity;
+  // Extract the next line, split by space, and convert each part to an integer.
+  const coordinateValues = temporaryLines.shift().split(" ").map(val => parseInt(val));
 
-  // Iterate through possible target values from 1 to 100 (inclusive).
-  for (let currentValue = 1; currentValue <= 100; currentValue++)
-  {
-    // For each data point, calculate the squared difference from the current target value.
-    // Then, sum all these squared differences to get the total error for 'currentValue'.
-    const currentErrorSum = dataPoints.map(pointVal => (pointVal - currentValue) * (pointVal - currentValue)).reduce((accumulator, currentSummand) => accumulator + currentSummand, 0);
+  // Initialize a variable to store the minimum deviation found, starting with a very large number.
+  let lowestDeviation = Infinity;
 
-    // Update the minimum error if the current sum is smaller.
-    leastSquaredError = Math.min(leastSquaredError, currentErrorSum);
+  // Iterate through possible target points from 1 to 100 (inclusive).
+  for (let currentPoint = 1; currentPoint <= 100; currentPoint++) {
+    // Calculate the sum of squared differences for the current target point.
+    // For each coordinate value, subtract the current target point, square the result,
+    // and then sum all these squared differences.
+    const currentDeviation = coordinateValues.map(val => (val - currentPoint) * (val - currentPoint)).reduce((accumulator, currentValue) => accumulator + currentValue);
+
+    // Update the minimum deviation if the current deviation is smaller.
+    lowestDeviation = Math.min(lowestDeviation, currentDeviation);
   }
 
-  // Output the final calculated minimum sum of squared errors to the console.
-  console.log(leastSquaredError);
+  // Output the calculated minimum deviation to the console.
+  console.log(lowestDeviation);
 }
 
-// Do not modify the following section. It handles standard input/output.
-// This part reads the entire standard input as a UTF-8 string and passes it to the main processing function.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line handles standard input/output and calls the main processing function.
+// It should not be modified to ensure compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,62 +1,65 @@
-let inputBuffer = "";
+const fileSystem = require('fs');
 
-process.stdin.on('data', chunk => {
-    inputBuffer += chunk.toString();
-});
+module.exports = function(inputLines) {
+    const nodeCount = parseInt(inputLines[0], 10);
+    const adjacencyStructure = Array.from({ length: nodeCount }, () => []);
 
-process.stdin.on('end', () => {
-    const inputLines = inputBuffer.trim().split('\n');
+    const [queryCount, initialNodeIndex] = inputLines[nodeCount]
+        .split(" ")
+        .map(segment => parseInt(segment, 10));
 
-    const parseLineNumbers = (textLine) => textLine.split(' ').map(Number);
+    const zeroBasedInitialNode = initialNodeIndex - 1;
 
-    const totalVertices = parseInt(inputLines.shift(), 10);
-    
-    const adjacencyMapping = new Map();
-    for (let currentIdentifier = 1; currentIdentifier <= totalVertices; ++currentIdentifier) {
-        adjacencyMapping.set(currentIdentifier, new Map());
-    }
+    for (let edgeIterator = 0; edgeIterator < nodeCount - 1; ++edgeIterator) {
+        const [firstVertex, secondVertex, edgeWeightValue] = inputLines[edgeIterator + 1]
+            .split(" ")
+            .map(segment => parseInt(segment, 10));
 
-    const rawEdgeData = [];
-    for (let current = 0; current < totalVertices - 1; ++current) {
-        rawEdgeData.push(parseLineNumbers(inputLines.shift()));
-    }
+        const zeroBasedFirst = firstVertex - 1;
+        const zeroBasedSecond = secondVertex - 1;
 
-    const [numberOfRequests, pivotalNode] = parseLineNumbers(inputLines.shift());
-
-    for (const [nodeOne, nodeTwo, weightValue] of rawEdgeData) {
-        if (nodeTwo !== pivotalNode) {
-            adjacencyMapping.get(nodeOne).set(nodeTwo, weightValue);
+        if (zeroBasedSecond !== zeroBasedInitialNode) {
+            adjacencyStructure[zeroBasedFirst].push({ connectedTo: zeroBasedSecond, cost: edgeWeightValue });
         }
-        if (nodeOne !== pivotalNode) {
-            adjacencyMapping.get(nodeTwo).set(nodeOne, weightValue);
+        if (zeroBasedFirst !== zeroBasedInitialNode) {
+            adjacencyStructure[zeroBasedSecond].push({ connectedTo: zeroBasedFirst, cost: edgeWeightValue });
         }
     }
 
-    const shortestPathValues = new Map();
-    const explorationQueue = []; 
+    const pathCosts = new Array(nodeCount).fill(-1);
+    const processingQueue = [];
 
-    shortestPathValues.set(pivotalNode, 0);
-    explorationQueue.push(pivotalNode);
+    pathCosts[zeroBasedInitialNode] = 0;
+    processingQueue.push(zeroBasedInitialNode);
 
     let queueHead = 0;
-    while (queueHead < explorationQueue.length) {
-        const currentPoint = explorationQueue[queueHead++];
-        const currentAccumulatedDistance = shortestPathValues.get(currentPoint);
+    while (queueHead < processingQueue.length) {
+        const currentVertex = processingQueue[queueHead++];
+        const currentPathCost = pathCosts[currentVertex];
 
-        for (const [connectedPoint, connectionCost] of adjacencyMapping.get(currentPoint).entries()) {
-            if (!shortestPathValues.has(connectedPoint)) { 
-                shortestPathValues.set(connectedPoint, currentAccumulatedDistance + connectionCost);
-                explorationQueue.push(connectedPoint);
+        for (const connection of adjacencyStructure[currentVertex]) {
+            const nextVertex = connection.connectedTo;
+            const traversalCost = connection.cost;
+
+            if (pathCosts[nextVertex] === -1) {
+                pathCosts[nextVertex] = currentPathCost + traversalCost;
+                processingQueue.push(nextVertex);
             }
         }
     }
-    
-    const finalCalculations = [];
-    for (let current = 0; current < numberOfRequests; ++current) {
-        const [firstQueryTarget, secondQueryTarget] = parseLineNumbers(inputLines.shift());
-        const combinedDistance = shortestPathValues.get(firstQueryTarget) + shortestPathValues.get(secondQueryTarget);
-        finalCalculations.push(combinedDistance);
-    }
 
-    process.stdout.write(finalCalculations.join('\n'));
-});
+    for (let queryIterator = 0; queryIterator < queryCount; ++queryIterator) {
+        const [targetA, targetB] = inputLines[queryIterator + nodeCount + 1]
+            .split(" ")
+            .map(segment => parseInt(segment, 10));
+
+        const totalQueryCost = pathCosts[targetA - 1] + pathCosts[targetB - 1];
+        console.log(totalQueryCost);
+    }
+};
+
+if (require.main === module) {
+    const rawData = fileSystem.readFileSync("/dev/stdin", "UTF-8");
+    const dataLines = rawData.split("\n");
+    module.exports(dataLines);
+}

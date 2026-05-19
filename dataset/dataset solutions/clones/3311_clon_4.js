@@ -1,46 +1,54 @@
-function processInput(incomingData) {
-    const lines = incomingData.trim().split('\n');
-    const primaryString = lines[0].split(' ')[0];
-    const secondaryString = lines[1].split(' ')[0];
+function Main(input) {
+    const [firstLineContent, secondLineContent] = input.trim().split('\n');
+    const sourceChars = firstLineContent.split(' ')[0].split('');
+    const targetChars = secondLineContent.split(' ')[0].split('');
 
-    const len1 = primaryString.length;
-    const len2 = secondaryString.length;
+    const sourceLength = sourceChars.length;
+    const targetLength = targetChars.length;
 
-    // Initialize DP table (lcsMatrix[i][j] stores LCS length of primaryString[0...i-1] and secondaryString[0...j-1])
-    const lcsMatrix = Array.from({ length: len1 + 1 }, () => Array(len2 + 1).fill(0));
-
-    // Fill DP table
-    for (let idx1 = 1; idx1 <= len1; idx1++) {
-        for (let idx2 = 1; idx2 <= len2; idx2++) {
-            if (primaryString.charAt(idx1 - 1) === secondaryString.charAt(idx2 - 1)) {
-                lcsMatrix[idx1][idx2] = lcsMatrix[idx1 - 1][idx2 - 1] + 1;
-            } else {
-                lcsMatrix[idx1][idx2] = Math.max(lcsMatrix[idx1 - 1][idx2], lcsMatrix[idx1][idx2 - 1]);
-            }
+    const lcsMatrix = Array.from({ length: targetLength + 1 }).reduce((accumulator, _, currentTargetIndex) => {
+        if (currentTargetIndex === 0) {
+            accumulator.push(Array(sourceLength + 1).fill(0));
+            return accumulator;
         }
-    }
 
-    // Reconstruct LCS using recursion
-    function retrieveLCS(currIdx1, currIdx2) {
-        if (currIdx1 === 0 || currIdx2 === 0) {
+        const previousRow = accumulator[currentTargetIndex - 1];
+        const currentRow = Array.from({ length: sourceLength + 1 }).reduce((rowAccumulator, __, currentSourceIndex) => {
+            if (currentSourceIndex === 0) {
+                rowAccumulator.push(0);
+                return rowAccumulator;
+            }
+
+            if (sourceChars[currentSourceIndex - 1] === targetChars[currentTargetIndex - 1]) {
+                rowAccumulator.push(previousRow[currentSourceIndex - 1] + 1);
+            } else {
+                rowAccumulator.push(Math.max(previousRow[currentSourceIndex], rowAccumulator[currentSourceIndex - 1]));
+            }
+            return rowAccumulator;
+        }, []);
+
+        accumulator.push(currentRow);
+        return accumulator;
+    }, []);
+
+    const extractLCS = (rowPointer, colPointer) => {
+        if (rowPointer === 0 || colPointer === 0) {
             return "";
         }
 
-        if (primaryString.charAt(currIdx1 - 1) === secondaryString.charAt(currIdx2 - 1)) {
-            return retrieveLCS(currIdx1 - 1, currIdx2 - 1) + primaryString.charAt(currIdx1 - 1);
+        if (sourceChars[colPointer - 1] === targetChars[rowPointer - 1]) {
+            return extractLCS(rowPointer - 1, colPointer - 1) + sourceChars[colPointer - 1];
         } else {
-            if (lcsMatrix[currIdx1 - 1][currIdx2] > lcsMatrix[currIdx1][currIdx2 - 1]) {
-                return retrieveLCS(currIdx1 - 1, currIdx2);
+            if (lcsMatrix[rowPointer - 1][colPointer] > lcsMatrix[rowPointer][colPointer - 1]) {
+                return extractLCS(rowPointer - 1, colPointer);
             } else {
-                return retrieveLCS(currIdx1, currIdx2 - 1);
+                return extractLCS(rowPointer, colPointer - 1);
             }
         }
-    }
+    };
 
-    const resultString = retrieveLCS(len1, len2);
-    console.log(resultString);
+    const finalLCSResult = extractLCS(targetLength, sourceLength);
+    console.log(finalLCSResult);
 }
 
-const contentReader = require("fs");
-const systemInput = contentReader.readFileSync("/dev/stdin", "utf8");
-processInput(systemInput);
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

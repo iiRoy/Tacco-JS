@@ -1,37 +1,57 @@
 'use strict';
 
-const ioHandler = require('readline');
+const fetchLineData = () => new Promise(resolve => {
+    let rawDataAccumulator = '';
+    const inputSourceStream = process.stdin;
 
-const inputProcessor = ioHandler.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+    inputSourceStream.resume();
+    inputSourceStream.setEncoding('utf8');
+
+    inputSourceStream.on('data', (dataSegment) => {
+        rawDataAccumulator += dataSegment;
+    });
+
+    inputSourceStream.on('end', () => {
+        resolve(rawDataAccumulator);
+    });
 });
 
-let accumulatedData = '';
+const convertDegreesToRadians = (degreesValue) => {
+    return degreesValue * (Math.PI / 180);
+};
 
-inputProcessor.on('line', (incomingLine) => {
-    accumulatedData += incomingLine;
-});
+const deriveGeometricMeasures = (firstSideLength, secondSideLength, angleDegrees) => {
+    const angleRadians = convertDegreesToRadians(angleDegrees);
 
-inputProcessor.on('close', () => {
-    const calculateTriangleProperties = (sideOne, sideTwo, angleDegrees) => {
-        const radianConversionFactor = Math.PI / 180.0;
-        const angleInRad = angleDegrees * radianConversionFactor;
+    const firstSideSquared = Math.pow(firstSideLength, 2);
+    const secondSideSquared = Math.pow(secondSideLength, 2);
+    const cosineComponent = 2 * firstSideLength * secondSideLength * Math.cos(angleRadians);
+    const thirdSideSquared = firstSideSquared + secondSideSquared - cosineComponent;
 
-        const cosOfAngle = Math.cos(angleInRad);
-        const sinOfAngle = Math.sin(angleInRad);
+    const thirdSideLength = Math.sqrt(thirdSideSquared);
 
-        const thirdSideSquare = Math.pow(sideOne, 2) + Math.pow(sideTwo, 2) - (2 * sideOne * sideTwo * cosOfAngle);
-        const thirdSideDimension = Math.sqrt(thirdSideSquare);
+    const totalPerimeter = firstSideLength + secondSideLength + thirdSideLength;
 
-        const totalBoundaryLength = sideOne + sideTwo + thirdSideDimension;
-        const surfaceArea = (1 / 2) * sideOne * sideTwo * sinOfAngle;
-        const perpendicularHeight = sideTwo * sinOfAngle;
+    const sineOfAngle = Math.sin(angleRadians);
 
-        process.stdout.write(surfaceArea.toFixed(8) + ' ' + totalBoundaryLength.toFixed(8) + ' ' + perpendicularHeight.toFixed(8) + '\n');
-    };
+    const productOfTwoSides = firstSideLength * secondSideLength;
+    const surfaceArea = (productOfTwoSides * sineOfAngle) / 2;
 
-    const numericElements = accumulatedData.split(' ').map(parseFloat);
-    calculateTriangleProperties(...numericElements);
-});
+    const altitudeValue = secondSideLength * sineOfAngle;
+
+    return { surfaceArea, totalPerimeter, altitudeValue };
+};
+
+(async () => {
+    const rawInputString = await fetchLineData();
+
+    const [firstSideLength, secondSideLength, angleDegrees] = rawInputString.split(' ').map(Number);
+
+    const { surfaceArea, totalPerimeter, altitudeValue } = deriveGeometricMeasures(
+        firstSideLength,
+        secondSideLength,
+        angleDegrees
+    );
+
+    console.log(`${surfaceArea} ${totalPerimeter} ${altitudeValue}`);
+})();

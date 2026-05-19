@@ -1,63 +1,64 @@
-const acquireData = (rawText) => {
-    const interpretEntry = (val) => {
-        const numericConversion = Number(val);
-        return isNaN(numericConversion) ? val : numericConversion;
-    };
-
-    const processRecordRow = (rowString) => {
-        return rowString.split(" ").map(interpretEntry);
-    };
-
-    const contentLines = rawText.trim().split("\n");
-
-    return {
-        fetchLineString: (lineIndex) => contentLines[lineIndex],
-        fetchNumericRecord: (lineIndex) => processRecordRow(contentLines[lineIndex]),
-    };
+const convertValue = (val) => {
+    const num = Number(val);
+    return Number.isNaN(num) ? val : num;
 };
 
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
-const dataHandler = acquireData(fileContent);
+const parseLineToValues = (lineContent) => lineContent.split(" ").map(convertValue);
 
-const computeFinancialOutcome = () => {
-    const assetCount = Number(dataHandler.fetchLineString(0));
-    const assetValuations = dataHandler.fetchNumericRecord(1);
+class InputDataHandler {
+    constructor(rawInputString) {
+        this.lineBuffer = rawInputString.trim().split("\n");
+    }
 
-    const locateTransactionBoundary = (count, valuations) => {
-        if (count >= 2 && valuations[count - 1] > valuations[count - 2]) {
-            return count - 1;
+    getLineContent(lineNumber) {
+        return this.lineBuffer[lineNumber];
+    }
+
+    getLineAsParsedArray(lineNumber) {
+        return parseLineToValues(this.lineBuffer[lineNumber]);
+    }
+
+    extractLinesAndParse(startIndex, countLimit) {
+        const endIndex = countLimit !== undefined ? startIndex + countLimit : undefined;
+        return this.lineBuffer.slice(startIndex, endIndex).map(convertValue);
+    }
+
+    extractLinesAsParsedArrays(startIndex, countLimit) {
+        const endIndex = countLimit !== undefined ? startIndex + countLimit : undefined;
+        return this.lineBuffer.slice(startIndex, endIndex).map(parseLineToValues);
+    }
+}
+
+const createInputReader = (inputString) => new InputDataHandler(inputString);
+
+const dataSource = createInputReader(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+const calculateInvestmentOutcome = () => {
+    const totalItems = Number(dataSource.getLineContent(0));
+    const itemPrices = dataSource.getLineAsParsedArray(1);
+
+    const specialSellIndex = (totalItems >= 2 && itemPrices[totalItems - 1] > itemPrices[totalItems - 2])
+        ? totalItems - 1
+        : 0;
+
+    const finalInvestmentState = itemPrices.reduce((accumulator, currentAssetPrice, currentIndex) => {
+        let [capital, shares] = accumulator;
+        const nextAssetPrice = itemPrices[currentIndex + 1];
+
+        const isPeakForSelling = (currentIndex < totalItems - 1) && (currentAssetPrice > nextAssetPrice);
+
+        if (specialSellIndex === currentIndex || (isPeakForSelling && shares > 0)) {
+            capital += currentAssetPrice * shares;
+            shares = 0;
+        } else if ((currentIndex < totalItems - 1) && (currentAssetPrice < nextAssetPrice) && capital >= currentAssetPrice) {
+            const quantityToBuy = Math.floor(capital / currentAssetPrice);
+            shares += quantityToBuy;
+            capital %= currentAssetPrice;
         }
-        return 0;
-    };
-    const transactionBoundaryIndex = locateTransactionBoundary(assetCount, assetValuations);
+        return [capital, shares];
+    }, [1000, 0]);
 
-    const initialPortfolioState = {
-        currentCapital: 1000,
-        heldEquity: 0,
-    };
-
-    const finalPortfolioState = Array.from({ length: assetCount }).reduce((portfolio, _, currentIdx) => {
-        const currentValuation = assetValuations[currentIdx];
-        const nextValuation = assetValuations[currentIdx + 1];
-
-        const isSellingMoment = (transactionBoundaryIndex === currentIdx) ||
-                                  (currentValuation > nextValuation && portfolio.heldEquity > 0);
-
-        if (isSellingMoment) {
-            portfolio.currentCapital += currentValuation * portfolio.heldEquity;
-            portfolio.heldEquity = 0;
-        } else {
-            const isBuyingMoment = (currentValuation < nextValuation) && (portfolio.currentCapital >= currentValuation);
-            if (isBuyingMoment) {
-                const unitsToAcquire = Math.floor(portfolio.currentCapital / currentValuation);
-                portfolio.heldEquity += unitsToAcquire;
-                portfolio.currentCapital -= unitsToAcquire * currentValuation;
-            }
-        }
-        return portfolio;
-    }, initialPortfolioState);
-
-    return finalPortfolioState.currentCapital;
+    return finalInvestmentState[0];
 };
 
-console.log(computeFinancialOutcome());
+console.log(calculateInvestmentOutcome());

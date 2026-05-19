@@ -1,38 +1,34 @@
-const dataAccess = require('node:fs');
+var fs = require('fs');
 
-const processInputData = () => {
-    const rawTextContent = dataAccess.readFileSync(0, 'utf8');
-    const statementLines = rawTextContent.split('\n').filter(Boolean);
+function calculateGradient(pointOne, pointTwo) {
+    return (pointTwo.yCoord - pointOne.yCoord) / (pointTwo.xCoord - pointOne.xCoord);
+}
 
-    const evaluateLineSegment = (segmentFragment) => {
-        const valueSequence = segmentFragment.split(',').map(Number);
+function processCoordinateData() {
+    const rawInputContent = fs.readFileSync('/dev/stdin', 'utf8');
+    const dataLines = rawInputContent.split('\n').filter(Boolean);
 
-        const pointCollection = [
-            { xVal: valueSequence[0], yVal: valueSequence[1] },
-            { xVal: valueSequence[2], yVal: valueSequence[3] },
-            { xVal: valueSequence[4], yVal: valueSequence[5] },
-            { xVal: valueSequence[6], yVal: valueSequence[7] }
+    dataLines.forEach(function(currentLine) {
+        const numericValues = currentLine.split(',').map(Number);
+
+        const vertexCollection = [
+            { xCoord: numericValues[0], yCoord: numericValues[1] },
+            { xCoord: numericValues[2], yCoord: numericValues[3] },
+            { xCoord: numericValues[4], yCoord: numericValues[5] },
+            { xCoord: numericValues[6], yCoord: numericValues[7] }
         ];
 
-        const computeGradient = (firstPoint, secondPoint) => {
-            return (secondPoint.yVal - firstPoint.yVal) / (secondPoint.xVal - firstPoint.xVal);
-        };
+        const segmentGradients = [
+            calculateGradient(vertexCollection[0], vertexCollection[1]),
+            calculateGradient(vertexCollection[1], vertexCollection[2]),
+            calculateGradient(vertexCollection[2], vertexCollection[3]),
+            calculateGradient(vertexCollection[3], vertexCollection[0])
+        ];
 
-        const gradientAtoB = computeGradient(pointCollection[0], pointCollection[1]);
-        const gradientBtoC = computeGradient(pointCollection[1], pointCollection[2]);
-        const gradientCtoD = computeGradient(pointCollection[2], pointCollection[3]);
-        const gradientDtoA = computeGradient(pointCollection[3], pointCollection[0]);
-
-        const allGradients = [gradientAtoB, gradientBtoC, gradientCtoD, gradientDtoA];
-
-        const nonNegativeCount = allGradients.reduce((accumulator, currentGradient) => {
-            return accumulator + (currentGradient >= 0 ? 1 : 0);
-        }, 0);
+        const nonNegativeCount = segmentGradients.filter(gradient => gradient >= 0).length;
 
         console.log(nonNegativeCount % 2 === 1 ? 'YES' : 'NO');
-    };
+    });
+}
 
-    statementLines.forEach(evaluateLineSegment);
-};
-
-processInputData();
+processCoordinateData();

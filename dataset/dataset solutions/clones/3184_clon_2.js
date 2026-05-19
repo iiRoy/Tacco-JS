@@ -1,21 +1,28 @@
-// The entire incoming_data payload is received by the processor.
-function ProcessData(incoming_data) {
-    let numeric_values = incoming_data.split(" ");
-    for (let idx = 0; idx < numeric_values.length; idx++) {
-        numeric_values[idx] = parseInt(numeric_values[idx], 10);
-    }
+// This function processes the entire input string provided.
+function ProcessInput(rawData) {
+  // Divide the incoming text into an array of strings using space as a delimiter.
+  let numberArray = rawData.split(" ");
 
-    let result_value;
+  // Iterate through the array to convert each string element into an integer.
+  for (let idx = 0; idx < numberArray.length; idx++) {
+    numberArray[idx] = parseInt(numberArray[idx], 10); // Explicitly specify base 10 for parsing.
+  }
 
-    if (numeric_values[1] % numeric_values[0] === 0) {
-        result_value = numeric_values[1] + numeric_values[0];
-    }
-    else {
-        result_value = numeric_values[1] - numeric_values[0];
-    }
+  let finalResult; // A variable to hold the calculated outcome.
 
-    // Displaying the final calculated result.
-    console.log(result_value);
+  // Evaluate a condition based on the first two numbers in the array.
+  // If the second number is perfectly divisible by the first number, perform addition.
+  if (numberArray[1] % numberArray[0] === 0) {
+    finalResult = numberArray[1] + numberArray[0];
+  } else {
+    // Otherwise, perform subtraction.
+    finalResult = numberArray[1] - numberArray[0];
+  }
+
+  // Display the computed result to the console.
+  console.log(finalResult);
 }
-// Do not modify the following lines (reads input once and invokes the primary processing function)
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// The following line handles reading from standard input and invoking the main processing function.
+// It should not be altered as it manages the program's interaction with the environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

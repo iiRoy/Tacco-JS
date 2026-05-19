@@ -1,39 +1,30 @@
-"use strict" ;
+"use strict";
 
-// Create an alias for the standard output logging mechanism.
-const reportOutput = { display: console.log } ;
+// This function processes the given input string to determine if it contains duplicate adjacent characters after sorting.
+const ProcessInputData = (rawText) => {
+  // Trim whitespace, split into individual characters, and then sort them alphabetically.
+  let sortedCharacterList = rawText.trim().split('').sort();
 
-// Create an alias for the CommonJS module loading function.
-const moduleResolver = require ;
+  // Initialize a variable to store the final outcome.
+  let finalVerdict = '';
 
-// Access the file system utility module through its alias.
-const fileSystemModule = moduleResolver ( 'fs' ) ;
-
-// Create a specific alias for the synchronous file content reading function.
-const contentReader = fileSystemModule . readFileSync ;
-
-// Define a primary function to process and validate an input string.
-const analyzeStream = ( inputContent ) => {
-  // Preprocess the input: remove edge whitespace, segment into characters, then order them.
-  let characterSequence = inputContent . trim () . split ( '' ) . sort () ;
-
-  let outcomeIndicator = '' ; // Initialize a variable to store the final assessment.
-
-  // Iterate through the ordered characters to detect any adjacent duplicates.
-  for ( let currentPosition = 0 ; currentPosition < characterSequence . length ; currentPosition ++ ) {
-    // Compare the character at the current index with the character immediately following it.
-    if ( characterSequence [ currentPosition ] === characterSequence [ currentPosition + 1 ] ) {
-      outcomeIndicator = "foundMatch" ; // If identical characters are adjacent, set the flag.
-      break ; // No further checks are needed once a match is found.
+  // Iterate through the sorted list of characters.
+  for (let charIndex = 0; charIndex < sortedCharacterList.length; charIndex++) {
+    // Check if the current character is identical to the next character in the sequence.
+    if (sortedCharacterList[charIndex] === sortedCharacterList[charIndex + 1]) {
+      // If a duplicate is found, set the verdict to "no" and exit the loop immediately.
+      finalVerdict = "no";
+      break;
     } else {
-      outcomeIndicator = "noMatchYet" ; // If no match, continue searching.
+      // If no duplicate is found so far, set the verdict to "yes".
+      // This will be overwritten if a duplicate is found later.
+      finalVerdict = "yes";
     }
   }
 
-  // Output the determined indicator, which signifies whether adjacent duplicates were present.
-  reportOutput . display ( outcomeIndicator ) ;
-} ;
+  // Output the determined verdict to the console.
+  console.log(finalVerdict);
+};
 
-// Execute the analysis routine, feeding it data read from the standard input stream,
-// ensuring the content is interpreted as UTF-8 encoded text.
-analyzeStream ( contentReader ( '/dev/stdin' , 'utf8' ) ) ;
+// Read the entire content from standard input, decode it as UTF-8, and pass it to the processing function.
+ProcessInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

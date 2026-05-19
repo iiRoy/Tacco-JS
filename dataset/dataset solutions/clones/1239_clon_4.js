@@ -1,23 +1,15 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', function(incomingData) {
-    const numericComponents = incomingData.toString().trim().split(/\s+/).map(x => Number.parseInt(x, 10));
+process.stdin.on('data', function(inputBuffer) {
+  const numericStrings = inputBuffer.trim().split(' ');
 
-    const lowerBoundary = numericComponents[0];
-    const upperBoundary = numericComponents[1];
-    const principalValue = numericComponents[2];
+  const startVal = Number(numericStrings[0]);
+  const endValExclusive = Number(numericStrings[1]);
+  const divisorCandidate = Number(numericStrings[2]);
 
-    function calculateOccurrences(currentPosition, endPosition, subjectValue, accumulatedCount) {
-        if (currentPosition >= endPosition) {
-            return accumulatedCount;
-        }
+  const finalCount = Array.from({ length: endValExclusive - startVal }, (_, idx) => startVal + idx)
+    .filter(currentNum => divisorCandidate % currentNum === 0)
+    .length;
 
-        const newAccumulatedCount = (subjectValue % currentPosition === 0) ? accumulatedCount + 1 : accumulatedCount;
-
-        return calculateOccurrences(currentPosition + 1, endPosition, subjectValue, newAccumulatedCount);
-    }
-
-    const totalOccurrences = calculateOccurrences(lowerBoundary, upperBoundary, principalValue, 0);
-
-    console.log(totalOccurrences);
+  console.log(finalCount);
 });

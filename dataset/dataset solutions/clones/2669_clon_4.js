@@ -1,45 +1,58 @@
-let rawLines = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = rawInput.split("\n");
 
-let firstLineParts = rawLines[0].split(" ").map(Number);
-let totalNodes = firstLineParts[0];
-let totalEdges = firstLineParts[1];
-let finalDestination = firstLineParts[2];
+const firstLineValues = lines[0].split(" ").map(Number);
+const initialNodeCount = firstLineValues[0];
+const edgeCount = firstLineValues[1];
+const targetNode = firstLineValues[2];
 
-let graphEdgeLines = rawLines.slice(1);
+const adjacencyMap = new Map();
 
-let adjacencyMap = new Map();
-for (let j = 1; j <= totalNodes; ++j) {
-    adjacencyMap.set(j, []);
-}
-
-graphEdgeLines.forEach(line => {
-    let parts = line.split(" ").map(Number);
-    let origin = parts[0];
-    let terminus = parts[1];
-    let weight = parts[2];
-    adjacencyMap.get(origin).push([terminus, weight]);
+lines.forEach(lineStr => {
+    let source, destination, weight;
+    if (lineStr === "") {
+        // Original behavior for an empty string line: "".split(" ") -> [""] -> [""] map (i-0) -> [0]
+        // So an empty line results in an edge 0 -> 0 with weight 0.
+        source = 0;
+        destination = 0;
+        weight = 0;
+    } else {
+        const parsedValues = lineStr.split(" ").map(Number);
+        source = parsedValues[0];
+        destination = parsedValues[1];
+        weight = parsedValues[2];
+    }
+    
+    if (!adjacencyMap.has(source)) {
+        adjacencyMap.set(source, []);
+    }
+    adjacencyMap.get(source).push([destination, weight]);
 });
 
-let overallMaxGain = -1;
+let finalMaxGain = -1;
 
-function traversePaths(currentPoint, currentAccumulation, visitedPoints) {
-    visitedPoints.add(currentPoint);
+function depthFirstSearch(currentNode, currentAccumulatedGain, currentPathNodes) {
+    currentPathNodes.add(currentNode);
 
-    if (currentPoint === finalDestination) {
-        overallMaxGain = Math.max(overallMaxGain, currentAccumulation);
+    if (currentNode === targetNode) {
+        finalMaxGain = Math.max(finalMaxGain, currentAccumulatedGain);
     }
 
-    let outgoingConnections = adjacencyMap.get(currentPoint);
+    const neighbors = adjacencyMap.get(currentNode);
 
-    if (outgoingConnections) {
-        for (let [nextPoint, connectionValue] of outgoingConnections) {
-            if (!visitedPoints.has(nextPoint)) {
-                traversePaths(nextPoint, currentAccumulation + connectionValue, new Set(visitedPoints));
-            }
+    // If 'neighbors' is undefined (meaning 'currentNode' has no outgoing edges and was not pre-initialized
+    // in the 1..N-1 range), the original code would crash trying to access '.length'.
+    // The 'for...of' loop will also throw a TypeError if 'neighbors' is undefined,
+    // thus preserving the exact observable crash behavior.
+    for (const [nextNeighbor, edgeWeight] of neighbors) {
+        if (!currentPathNodes.has(nextNeighbor)) {
+            depthFirstSearch(nextNeighbor, currentAccumulatedGain + edgeWeight, currentPathNodes);
         }
     }
+
+    currentPathNodes.delete(currentNode);
 }
 
-traversePaths(1, 0, new Set());
+depthFirstSearch(1, 0, new Set());
 
-console.log(overallMaxGain);
+console.log(finalMaxGain);

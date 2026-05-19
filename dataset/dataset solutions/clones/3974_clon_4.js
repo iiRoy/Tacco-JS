@@ -1,69 +1,81 @@
-function locatePositionRecursive(sortedElements, targetValue, searchStart, searchEnd) {
-    if (searchStart > searchEnd) {
-        return searchStart;
+"use strict";
+function findInsertionPoint(dataArr, targetVal, lowIdx = 0, highIdx = dataArr.length - 1) {
+    if (lowIdx > highIdx) {
+        return lowIdx;
     }
-    const middleIndex = Math.floor((searchStart + searchEnd) / 2);
-    if (targetValue <= sortedElements[middleIndex]) {
-        return locatePositionRecursive(sortedElements, targetValue, searchStart, middleIndex - 1);
+    const midIdx = Math.floor((lowIdx + highIdx) / 2);
+    if (targetVal <= dataArr[midIdx]) {
+        return findInsertionPoint(dataArr, targetVal, lowIdx, midIdx - 1);
     } else {
-        return locatePositionRecursive(sortedElements, targetValue, middleIndex + 1, searchEnd);
+        return findInsertionPoint(dataArr, targetVal, midIdx + 1, highIdx);
     }
 }
 
-function findInsertionPoint(sortedElements, targetValue) {
-    return locatePositionRecursive(sortedElements, targetValue, 0, sortedElements.length - 1);
-}
+function processInputData(inputContent) {
+    const dataReader = new DataStreamParser(inputContent);
+    const numElements = dataReader.getInteger();
+    const initialA = dataReader.getIntegerCollection(numElements);
+    const initialB = dataReader.getIntegerCollection(numElements);
 
-function interpretInput(rawTextContent) {
-    const dataTokens = rawTextContent.split(/\s+/).filter(Boolean);
-    let tokenPointer = 0;
-    const extractInteger = () => parseInt(dataTokens[tokenPointer++], 10);
+    const finalResult = Array.from({ length: 30 }).reduce((currentAnswer, _, bitPosition) => {
+        const bitMask = (1 << (bitPosition + 1)) - 1;
+        const firstArraySubset = initialA.map(val => val & bitMask);
+        const secondArraySubset = initialB.map(val => val & bitMask).sort((x, y) => x - y);
 
-    const collectionSize = extractInteger();
-    const primarySet = Array.from({ length: collectionSize }, extractInteger);
-    const secondarySet = Array.from({ length: collectionSize }, extractInteger);
+        const powerOfTwo = 1 << bitPosition;
 
-    return { size: collectionSize, setA: primarySet, setB: secondarySet };
-}
+        const paritySum = firstArraySubset.reduce((currentParity, currentAVal) => {
+            const startRange1 = findInsertionPoint(secondArraySubset, 1 * powerOfTwo - currentAVal);
+            const endRange1 = findInsertionPoint(secondArraySubset, 2 * powerOfTwo - currentAVal);
+            const startRange2 = findInsertionPoint(secondArraySubset, 3 * powerOfTwo - currentAVal);
+            const endRange2 = findInsertionPoint(secondArraySubset, 4 * powerOfTwo - currentAVal);
 
-function processDataForBitwiseSum(sourceData) {
-    const { size, setA, setB } = interpretInput(sourceData);
+            const diff1 = endRange1 - startRange1;
+            const diff2 = endRange2 - startRange2;
 
-    const bitwiseContributions = Array.from({ length: 30 }, (_, currentBitIndex) => {
-        const bitValue = 1 << currentBitIndex;
-        const modulusForBit = 1 << (currentBitIndex + 1);
-        const currentModulusMask = modulusForBit - 1;
-
-        const processedSetA = setA.map(val => val & currentModulusMask);
-        const processedSetB = setB.map(val => val & currentModulusMask);
-
-        const sortedProcessedSetB = [...processedSetB].sort((val1, val2) => val1 - val2);
-
-        const combinedParityForBit = processedSetA.reduce((accParity, valA) => {
-            const lowerBoundRange1 = bitValue - valA;
-            const upperBoundRange1 = (2 * bitValue) - valA;
-            const lowerBoundRange2 = (3 * bitValue) - valA;
-            const upperBoundRange2 = (4 * bitValue) - valA;
-
-            const indexForR1L = findInsertionPoint(sortedProcessedSetB, lowerBoundRange1);
-            const indexForR1U = findInsertionPoint(sortedProcessedSetB, upperBoundRange1);
-            const indexForR2L = findInsertionPoint(sortedProcessedSetB, lowerBoundRange2);
-            const indexForR2U = findInsertionPoint(sortedProcessedSetB, upperBoundRange2);
-
-            const countInFirstInterval = indexForR1U - indexForR1L;
-            const countInSecondInterval = indexForR2U - indexForR2L;
-
-            return (accParity + countInFirstInterval + countInSecondInterval) % 2;
+            return (currentParity + diff1 + diff2) & 1;
         }, 0);
 
-        return combinedParityForBit === 1 ? bitValue : 0;
-    });
+        if (paritySum === 1) {
+            return currentAnswer | (1 << bitPosition);
+        }
+        return currentAnswer;
+    }, 0);
 
-    const finalCalculatedSum = bitwiseContributions.reduce((total, contribution) => total | contribution, 0);
-
-    return finalCalculatedSum;
+    console.log(finalResult);
 }
 
-if (typeof window === "undefined") {
-    console.log(processDataForBitwiseSum(require("fs").readFileSync("/dev/stdin", "utf8")));
+class DataStreamParser {
+    constructor(sourceText) {
+        if (typeof sourceText === 'undefined') throw new Error('Input source text cannot be omitted!');
+        this.tokenIterator = sourceText.split(/\n|\s/)[Symbol.iterator]();
+    }
+
+    getInteger() {
+        let currentToken;
+        do {
+            currentToken = this.tokenIterator.next().value;
+        } while (currentToken === '');
+        return currentToken - 0;
+    }
+
+    getIntegerCollection(count) {
+        if (typeof count === 'undefined' || count < 1) throw new Error('Collection count must be a positive integer!');
+        return Array.from({ length: count }, () => this.getInteger());
+    }
+
+    getString() {
+        let currentToken;
+        do {
+            currentToken = this.tokenIterator.next().value;
+        } while (currentToken === '');
+        return currentToken;
+    }
+
+    getStringCollection(count) {
+        if (typeof count === 'undefined' || count < 1) throw new Error('Collection count must be a positive integer!');
+        return Array.from({ length: count }, () => this.getString());
+    }
 }
+
+if (typeof window === "undefined") processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

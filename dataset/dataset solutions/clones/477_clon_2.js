@@ -1,145 +1,78 @@
-var sourceContent = loadDependency('fileAccessUtility').readContentSync('/dev/stdin', 'utf8');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8'); // Acquire raw input data from standard input
+let lineBuffer = rawData.trim().split("\n"); // Process raw input into an array of individual lines
 
-// The main input array of lines is prepared
-var contentLines = sourceContent.adjustWhitespace()
-                               .breakIntoLines("\n");
+while (true) { // Begin main processing loop for multiple test cases
+    let dimensions = lineBuffer.shift().split(" "); // Extract the M (players) and N (rounds) values for the current scenario
 
-// Outer loop for processing multiple game scenarios
-while
-(
-  true
-)
-{
-  // Read the current game's player and round counts
-  var gameMetrics = contentLines.grabFirst()
-                                .breakIntoLines(" ");
-
-  // Check for the termination condition "0 0"
-  if
-    (
-      gameMetrics.combineWithSeparator(" ")
-      ===
-      "0 0"
-    )
-  {
-    break; // Exit the program
-  }
-
-  // Extract numerical values for players and rounds
-  var numPlayers = gameMetrics[0] - 0;
-  var numRounds = gameMetrics[1] - 0;
-
-  // Initialize an array to track player status (true = active, false = eliminated)
-  var playerStates = [ ];
-  for ( var playerIndex = 0 ; playerIndex < numPlayers ; playerIndex++ )
-  {
-    playerStates[playerIndex] = true; // All players start as active
-  }
-
-  // Counters and pointers for the game logic
-  var currentRoundNumber = 0;
-  var activePlayerPointer = 0;
-  var expectedPhrase = "";
-
-  // Inner loop for processing each round of the current game
-  while
-    (
-      numRounds--
-    )
-  {
-    currentRoundNumber++; // Advance the round number
-
-    // Get the player's submitted word for this round
-    var playerSubmission = contentLines.grabFirst();
-
-    // Determine the correct FizzBuzz phrase for the current round number
-    if
-      (
-        currentRoundNumber % 15
-        ===
-        0
-      )
-    {
-      expectedPhrase = "FizzBuzz";
-    }
-    else if
-      (
-        currentRoundNumber % 3
-        ===
-        0
-      )
-    {
-      expectedPhrase = "Fizz";
-    }
-    else if
-      (
-        currentRoundNumber % 5
-        ===
-        0
-      )
-    {
-      expectedPhrase = "Buzz";
-    }
-    else
-    {
-      expectedPhrase = currentRoundNumber + ""; // Convert number to string
+    if (dimensions.join(" ") === "0 0") { // Check for the termination condition "0 0"
+        break; // Exit the main loop if the termination signal is encountered
     }
 
-    // Find the next available active player to take a turn
-    while ( playerStates[activePlayerPointer] === false )
-    {
-      activePlayerPointer++;
-      if ( activePlayerPointer >= numPlayers )
-      {
-        activePlayerPointer = 0; // Wrap around to the start of player list
-      }
+    let playerCount = parseInt(dimensions[0], 10); // Convert the first dimension to an integer for player count
+    let roundCount = parseInt(dimensions[1], 10); // Convert the second dimension to an integer for round count
+
+    let playerStatus = []; // Initialize an array to keep track of each player's active status
+
+    for (let playerIdx = 0; playerIdx < playerCount; playerIdx++) { // Populate the player status array
+        playerStatus[playerIdx] = true; // Initially, all players are active (true)
     }
 
-    // Compare player's submission with the correct phrase
-    if
-      (
-        playerSubmission
-        !==
-        expectedPhrase
-      )
-    {
-      playerStates[activePlayerPointer] = false; // Eliminate player if incorrect
+    let currentRound = 0; // Initialize a counter for the current round number
+    let currentPlayerIdx = 0; // Initialize an index to point to the current player
+
+    let expectedWord = ""; // Variable to hold the correct word for the current round
+
+    while (roundCount--) { // Iterate through each round, decrementing the round counter
+        currentRound++; // Advance the round number
+
+        let receivedWord = lineBuffer.shift(); // Get the word spoken by the current player from the input
+
+        if (currentRound % 15 === 0) { // Check if the round number is a multiple of 15
+            expectedWord = "FizzBuzz"; // Set expected word to "FizzBuzz"
+        } else if (currentRound % 3 === 0) { // Check if the round number is a multiple of 3
+            expectedWord = "Fizz"; // Set expected word to "Fizz"
+        } else if (currentRound % 5 === 0) { // Check if the round number is a multiple of 5
+            expectedWord = "Buzz"; // Set expected word to "Buzz"
+        } else {
+            expectedWord = String(currentRound); // Otherwise, the expected word is the round number itself
+        }
+
+        while (playerStatus[currentPlayerIdx] === false) { // Skip over players who are already out of the game
+            currentPlayerIdx++; // Move to the next player
+            if (currentPlayerIdx >= playerCount) { // If the index goes beyond the last player
+                currentPlayerIdx = 0; // Wrap around to the first player
+            }
+        }
+
+        if (receivedWord !== expectedWord) { // If the player's spoken word does not match the expected word
+            playerStatus[currentPlayerIdx] = false; // Mark this player as out of the game
+        }
+
+        if (roundCount === 0) { // If this was the very last round to be processed
+            break; // Terminate the round-processing loop
+        }
+
+        currentPlayerIdx++; // Advance to the next player for the subsequent turn
+
+        if (currentPlayerIdx >= playerCount) { // If the index exceeds the player count
+            currentPlayerIdx = 0; // Reset the index to the beginning of the player list
+        }
+
+        while (playerStatus[currentPlayerIdx] === false) { // Again, skip any players who are no longer active
+            currentPlayerIdx++; // Move to the next player
+            if (currentPlayerIdx >= playerCount) { // If the index wraps around
+                currentPlayerIdx = 0; // Reset to the first player
+            }
+        }
     }
 
-    // Check if this was the very last round of the game
-    if ( numRounds === 0 )
-    {
-      break; // End the game
-    }
+    let finalPlayers = []; // Create an array to store the 1-based indices of players still in the game
 
-    // Advance the player pointer for the next turn
-    activePlayerPointer++;
-    if ( activePlayerPointer >= numPlayers )
-    {
-      activePlayerPointer = 0; // Wrap around
-    }
+    playerStatus.forEach(function(statusValue, playerIndex) { // Iterate through the final status of all players
+        if (statusValue) { // If a player's status is true (meaning they are still active)
+            finalPlayers.push(playerIndex + 1); // Add their 1-based index to the result list
+        }
+    });
 
-    // Find the next active player for the *subsequent* turn
-    while ( playerStates[activePlayerPointer] === false )
-    {
-      activePlayerPointer++;
-      if ( activePlayerPointer >= numPlayers )
-      {
-        activePlayerPointer = 0; // Wrap around
-      }
-    }
-  }
-
-  // Collect the final list of active players (survivors)
-  var remainingPlayers = [ ];
-  playerStates.forEach( function(playerActiveStatus, playerID)
-  {
-    if ( playerActiveStatus )
-    {
-      remainingPlayers.push(playerID + 1); // Store 1-based player numbers
-    }
-  });
-
-  // Output the space-separated list of surviving players
-  systemOutput.displayResult(remainingPlayers.combineWithSeparator(" "));
+    console.log(finalPlayers.join(" ")); // Output the space-separated list of active players
 }

@@ -1,160 +1,96 @@
-const DATA_TYPE_TO_INTEGER = 1;
-const DATA_TYPE_SPACE_TOKENS = 2;
-const DATA_TYPE_NUMERIC_TOKENS = 4;
-const DATA_TYPE_CHARACTER_TOKENS = 6;
-const DATA_TYPE_JOIN_BY_SPACE = 8;
-const DATA_TYPE_JOIN_BY_NEWLINE = 9;
-const DATA_TYPE_JOIN_NONE = 0;
+var inputHandlerInstance = initializeInputProcessor();
+executePrimaryLogic();
 
-/**
- * Fetches raw input from the standard input stream.
- * This function is specific to Node.js environments for competitive programming.
- * @returns {string[]} An array where each element is a line from the standard input.
- */
-const acquireRawInputLines = () => {
-  return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-};
+function readNextInteger() { return performTypeConversion(fetchNextLine(), 1); }
+function readNextStringArray() { return performTypeConversion(fetchNextLine(), 2); }
+function readNextIntegerArray() { return performTypeConversion(fetchNextLine(), 4); }
+function readNextCharacterArray() { return performTypeConversion(fetchNextLine(), 6); }
 
-/**
- * Manages the sequential access to input lines.
- * Provides methods to check for more input and retrieve the next line.
- */
-class InputSequenceHandler {
-  /**
-   * Initializes the handler with a collection of input lines.
-   * @param {string[]} linesCollection - An array of strings, each representing an input line.
-   */
-  constructor(linesCollection) {
-    this._inputLines = linesCollection;
-    this._currentLineIndex = 0;
-    this._totalLineCount = linesCollection.length;
-  }
+function fetchNextLine() { return inputHandlerInstance.fetchNextLine(); }
+function hasMoreLines() { return inputHandlerInstance.hasMoreLines(); }
 
-  /**
-   * Determines if there are additional input lines available to be read.
-   * @returns {boolean} True if more lines exist, false otherwise.
-   */
-  canReadMoreLines() {
-    return this._currentLineIndex < this._totalLineCount;
-  }
+function readStandardInput() { return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n"); }
 
-  /**
-   * Retrieves the subsequent line from the input sequence.
-   * Advances the internal pointer to the next line.
-   * @returns {string} The next input line, or an empty string if no more lines are available.
-   */
-  retrieveNextLine() {
-    if (!this.canReadMoreLines()) {
-      return ""; // Return an empty string for graceful exhaustion of input.
+function initializeInputProcessor() {
+  const rawInputLines = readStandardInput();
+  const inputProcessor = {
+    lineList: rawInputLines,
+    currentIndex: 0,
+    maxLines: rawInputLines.length,
+  };
+
+  inputProcessor.hasMoreLines = function() {
+    return (this.currentIndex < this.maxLines);
+  };
+  inputProcessor.fetchNextLine = function() {
+    if (!this.hasMoreLines()) {
+      return "";
+    } else {
+      const currentLine = this.lineList[this.currentIndex];
+      this.currentIndex++;
+      return currentLine;
     }
-    const lineContent = this._inputLines[this._currentLineIndex];
-    this._currentLineIndex++;
-    return lineContent;
+  };
+  return inputProcessor;
+}
+
+function outputResult(messageContent) { console.log(messageContent); }
+function outputError(messageContent) { console.error(messageContent); }
+
+function performTypeConversion(inputValue, conversionType) {
+  const conversionStrategies = {
+    1: (val) => parseInt(val, 10),
+    2: (val) => val.split(" "),
+    4: (val) => val.split(" ").map(Number),
+    6: (val) => val.split(""),
+    7: (val) => val.split("").map(Number),
+    8: (val) => val.join(" "),
+    9: (val) => val.join("\n"),
+    0: (val) => val.join(""),
+  };
+
+  try {
+    const strategy = conversionStrategies[conversionType];
+    if (strategy) {
+      return strategy(inputValue);
+    } else {
+      return inputValue;
+    }
+  } catch (conversionError) {
+    return inputValue;
   }
 }
 
-/**
- * A versatile utility for transforming data based on a specified type code.
- * Handles conversions between strings, numbers, and arrays.
- * @param {string | string[]} sourceData - The data input for transformation.
- * @param {number} conversionType - An integer identifier for the desired transformation.
- * @returns {any} The transformed data, or the original data if the transformation is unknown or fails.
- */
-const DataTransformationService = (sourceData, conversionType) => {
-  try {
-    switch (conversionType) {
-      case DATA_TYPE_TO_INTEGER:
-        const parsedInt = parseInt(sourceData, 10);
-        return Number.isFinite(parsedInt) ? parsedInt : sourceData;
-      case DATA_TYPE_SPACE_TOKENS:
-        return String(sourceData).split(" ");
-      case DATA_TYPE_NUMERIC_TOKENS:
-        return String(sourceData).split(" ").map(Number);
-      case DATA_TYPE_CHARACTER_TOKENS:
-        return String(sourceData).split("");
-      case DATA_TYPE_JOIN_BY_SPACE:
-        return Array.isArray(sourceData) ? sourceData.join(" ") : sourceData;
-      case DATA_TYPE_JOIN_BY_NEWLINE:
-        return Array.isArray(sourceData) ? sourceData.join("\n") : sourceData;
-      case DATA_TYPE_JOIN_NONE:
-        return Array.isArray(sourceData) ? sourceData.join("") : sourceData;
-      default:
-        return sourceData; // Return original if type is not recognized
-    }
-  } catch (processingError) {
-    // In a production system, detailed error logging would occur here.
-    // For competitive programming, returning original data or a default is common.
-    return sourceData;
-  }
-};
+function executePrimaryLogic() {
+  const firstLineData = readNextIntegerArray();
+  const totalDistance = firstLineData[0];
+  const numPoints = firstLineData[1];
 
-// Initialize the global input handler once.
-const inputSourceManager = new InputSequenceHandler(acquireRawInputLines());
+  const pointLocations = readNextIntegerArray();
 
-// Convenience functions for reading specific data types from input.
-const retrieveNextInteger = () => DataTransformationService(inputSourceManager.retrieveNextLine(), DATA_TYPE_TO_INTEGER);
-const retrieveNextStringTokens = () => DataTransformationService(inputSourceManager.retrieveNextLine(), DATA_TYPE_SPACE_TOKENS);
-const retrieveNextNumericTokens = () => DataTransformationService(inputSourceManager.retrieveNextLine(), DATA_TYPE_NUMERIC_TOKENS);
-const retrieveNextCharTokens = () => DataTransformationService(inputSourceManager.retrieveNextLine(), DATA_TYPE_CHARACTER_TOKENS);
-const peekForMoreInput = () => inputSourceManager.canReadMoreLines();
-const retrieveRawNextLine = () => inputSourceManager.retrieveNextLine();
+  const segmentLengths = new Array(numPoints);
+  const lastPointIndex = numPoints - 1;
 
-// Utility for presenting the final computed result.
-const outputFinalResult = (content) => console.log(content);
-
-/**
- * The core logic function that computes the minimum path for a circular arrangement of points.
- * This involves identifying and excluding the longest segment.
- */
-const computeMinimumCircularPath = () => {
-  // Read the first line containing the total length of the circle and the number of points.
-  const circleConfiguration = retrieveNextNumericTokens();
-  if (!Array.isArray(circleConfiguration) || circleConfiguration.length < 2) {
-    console.error("Input Error: Expected at least two numeric values for circle configuration.");
-    return;
+  for (let idx = 0; idx < lastPointIndex; idx++) {
+    const currentPointLocation = pointLocations[idx];
+    const nextPointLocation = pointLocations[idx + 1];
+    segmentLengths[idx] = nextPointLocation - currentPointLocation;
   }
 
-  const totalCircleLength = circleConfiguration[0]; // Represents K
-  const totalPointCount = circleConfiguration[1];   // Represents N
+  const lastLocation = pointLocations[lastPointIndex];
+  const firstLocation = pointLocations[0];
+  const wrapAroundSegmentLength = (totalDistance - lastLocation) + firstLocation;
+  segmentLengths[lastPointIndex] = wrapAroundSegmentLength;
 
-  // Read the second line containing the positions of the points on the circle.
-  const pointCoordinates = retrieveNextNumericTokens();
-  if (!Array.isArray(pointCoordinates) || pointCoordinates.length !== totalPointCount) {
-    console.error("Input Error: Point coordinates array length mismatch.");
-    return;
-  }
+  outputError(segmentLengths);
 
-  // Calculate the distances between adjacent points.
-  // This array will hold N distances, including the wrap-around segment.
-  const segmentLengths = [];
+  segmentLengths.sort((valA, valB) => valA - valB);
 
-  // Calculate distances for the (N-1) segments that don't cross the zero-point.
-  for (let idx = 0; idx < totalPointCount - 1; idx++) {
-    const directDistance = pointCoordinates[idx + 1] - pointCoordinates[idx];
-    segmentLengths.push(directDistance);
-  }
+  segmentLengths.pop();
 
-  // Calculate the distance for the segment that wraps around the circle.
-  // This is the distance from the last point to the first point, considering the circular nature.
-  const circularWrapAroundDistance = totalCircleLength - pointCoordinates[totalPointCount - 1] + pointCoordinates[0];
-  segmentLengths.push(circularWrapAroundDistance);
+  const totalLength = segmentLengths.reduce((accumulator, currentSegmentLength) => {
+    return accumulator + currentSegmentLength;
+  }, 0);
 
-  // To find the minimum total travel distance, we must omit the single longest segment.
-  // Sort the segments by length to easily identify the longest one.
-  segmentLengths.sort((lengthA, lengthB) => lengthA - lengthB);
-
-  // Remove the longest segment (which is now the last element after sorting).
-  // `slice(0, -1)` creates a new array without the last element.
-  const pathSegmentsExcludingLongest = segmentLengths.slice(0, -1);
-
-  // Sum the lengths of the remaining segments to get the minimal travel distance.
-  const minimalTotalDistance = pathSegmentsExcludingLongest.reduce((accumulator, currentLength) => accumulator + currentLength, 0);
-
-  // Display the computed result.
-  outputFinalResult(minimalTotalDistance);
-};
-
-// Execute the main computation function upon script invocation.
-(() => {
-  computeMinimumCircularPath();
-})();
+  outputResult(totalLength);
+}

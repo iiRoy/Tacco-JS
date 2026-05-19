@@ -1,98 +1,112 @@
-let captured_input = '';
-let input_pointer = 0;
-let parsed_data = [];
+function executeDijkstra() {
+    // Priority queue implementation using a simple JavaScript array that is kept sorted.
+    // This approach is less efficient than a binary heap (O(N log N) for enqueue, O(N) for dequeue),
+    // but represents a substantially different implementation strategy for the core data structure.
+    let nodeDistancesQueue = [];
 
-function obtain_value() {
-    return +parsed_data[input_pointer++];
-}
-
-function display_outcome(value_to_show) {
-    console.log(value_to_show);
-}
-
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', function(chunk) {
-    captured_input += chunk;
-});
-
-process.stdin.on('end', function() {
-    parsed_data = captured_input.split(/\s+/).filter(Boolean);
-    process_scenario();
-});
-
-function extract_min_from_collection(elements_list) {
-    if (elements_list.length === 0) {
-        return undefined;
+    // Adds an item [distance, nodeId] to the priority queue and re-sorts it.
+    function enqueueNode(itemEntry) {
+        nodeDistancesQueue.push(itemEntry);
+        // Sort by the distance (first element of the tuple) in ascending order.
+        nodeDistancesQueue.sort((a, b) => a[0] - b[0]);
     }
 
-    let min_value_index = 0;
-    for (let j = 1; j < elements_list.length; j++) {
-        if (elements_list[j][0] < elements_list[min_value_index][0]) {
-            min_value_index = j;
-        }
+    // Removes and returns the item with the minimum distance from the front of the queue.
+    function dequeueMin() {
+        return nodeDistancesQueue.shift();
     }
 
-    const item_to_return = elements_list[min_value_index];
-    elements_list.splice(min_value_index, 1);
-    return item_to_return;
-}
+    // Read graph parameters from input.
+    const nodeCount = readInputToken();
+    const edgeCount = readInputToken();
+    const startNodeId = readInputToken();
 
-function process_scenario() {
-    const total_nodes = obtain_value();
-    const total_edges = obtain_value();
-    const starting_point = obtain_value();
-
-    const adjacency_structure = new Map();
-    for (let node_id = 0; node_id < total_nodes; ++node_id) {
-        adjacency_structure.set(node_id, []);
+    // Graph representation: A Map where keys are node IDs and values are arrays of edge objects.
+    // Each edge object contains a 'target' node ID and a 'cost' (weight).
+    const graphAdjacency = new Map();
+    for (let i = 0; i < nodeCount; ++i) {
+        graphAdjacency.set(i, []);
     }
 
-    for (let edge_count = 0; edge_count < total_edges; ++edge_count) {
-        const source_node = obtain_value();
-        const target_node = obtain_value();
-        const weight_val = obtain_value();
-        adjacency_structure.get(source_node).push({ endpoint: target_node, cost: weight_val });
+    // Populate the graph with edges based on input.
+    for (let i = 0; i < edgeCount; ++i) {
+        const sourceId = readInputToken();
+        const destinationId = readInputToken();
+        const edgeWeight = readInputToken();
+
+        graphAdjacency.get(sourceId).push({ target: destinationId, cost: edgeWeight });
     }
 
-    const shortest_paths_record = new Map();
-    for (let node_id = 0; node_id < total_nodes; ++node_id) {
-        shortest_paths_record.set(node_id, Number.POSITIVE_INFINITY);
-    }
+    // Array to store the shortest path distances from the start node to all other nodes.
+    // Initialized with positive infinity for all nodes.
+    const shortestPaths = new Array(nodeCount).fill(Number.POSITIVE_INFINITY);
 
-    shortest_paths_record.set(starting_point, 0);
+    // Set the distance to the start node as 0 and add it to the priority queue.
+    shortestPaths[startNodeId] = 0;
+    enqueueNode([0, startNodeId]);
 
-    const pending_discoveries = [];
-    pending_discoveries.push([0, starting_point]);
+    // Main loop for Dijkstra's algorithm. Continues as long as there are nodes to process in the queue.
+    while (nodeDistancesQueue.length > 0) {
+        const [currentDistance, currentVertexId] = dequeueMin();
 
-    while (pending_discoveries.length > 0) {
-        const current_entry = extract_min_from_collection(pending_discoveries);
-        const current_distance = current_entry[0];
-        const current_vertex = current_entry[1];
-
-        if (current_distance > shortest_paths_record.get(current_vertex)) {
+        // If a shorter path to this vertex has already been found and processed, skip.
+        if (currentDistance > shortestPaths[currentVertexId]) {
             continue;
         }
 
-        const neighbors_of_current = adjacency_structure.get(current_vertex);
-        if (neighbors_of_current) {
-            for (const connection of neighbors_of_current) {
-                const neighbor_vertex = connection.endpoint;
-                const edge_cost = connection.cost;
+        // Iterate over all neighbors of the current vertex.
+        // Using `for...of` loop for iteration over edges.
+        for (const edge of graphAdjacency.get(currentVertexId) || []) {
+            const neighborId = edge.target;
+            const weight = edge.cost;
+            const newPathDistance = shortestPaths[currentVertexId] + weight;
 
-                const potential_new_distance = current_distance + edge_cost;
-
-                if (potential_new_distance < shortest_paths_record.get(neighbor_vertex)) {
-                    shortest_paths_record.set(neighbor_vertex, potential_new_distance);
-                    pending_discoveries.push([potential_new_distance, neighbor_vertex]);
-                }
+            // If a shorter path to the neighbor is found through the current vertex, update its distance
+            // and add the neighbor to the priority queue.
+            if (shortestPaths[neighborId] > newPathDistance) {
+                shortestPaths[neighborId] = newPathDistance;
+                enqueueNode([newPathDistance, neighborId]);
             }
         }
     }
 
-    for (let node_id = 0; node_id < total_nodes; ++node_id) {
-        const final_distance = shortest_paths_record.get(node_id);
-        display_outcome(final_distance !== Number.POSITIVE_INFINITY ? final_distance : 'INF');
+    // Output the calculated shortest path distances.
+    // Replace `Number.POSITIVE_INFINITY` with the string 'INF' as per requirements.
+    for (let i = 0; i < nodeCount; ++i) {
+        outputValue(shortestPaths[i] !== Number.POSITIVE_INFINITY ? shortestPaths[i] : 'INF');
     }
 }
+
+// Standard input processing setup.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+let rawInputData = '';
+let tokenPointer = 0;
+
+// Function to read tokens from the processed input array.
+function readInputToken(dataType) {
+    if (dataType === 'string') {
+        return rawInputData[tokenPointer++];
+    } else {
+        return +rawInputData[tokenPointer++];
+    }
+}
+
+// Function to output values to the console.
+function outputValue(value) {
+    console.log(value);
+}
+
+// Event listener for incoming data from stdin.
+process.stdin.on('data', function(chunk) {
+    rawInputData += chunk;
+});
+
+// Event listener for the end of stdin input.
+process.stdin.on('end', function() {
+    // Split the entire input by whitespace into an array of tokens.
+    rawInputData = rawInputData.split(/\s+/);
+    // Execute the main Dijkstra's algorithm logic.
+    executeDijkstra();
+});

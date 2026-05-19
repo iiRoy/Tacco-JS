@@ -1,61 +1,64 @@
-'use strict'
-function processInputData(rawStringValue) {
-  const maximumAllowedValue = parseInt(rawStringValue.trim(), 10);
+'use strict';
 
-  const checkCompliance = (numericalValue) => {
-    if (numericalValue === 0) return false;
-    const valueAsString = String(numericalValue);
-    let hasDigitThree = false;
-    let hasDigitFive = false;
-    let hasDigitSeven = false;
-
-    for (let position = 0; position < valueAsString.length; position++) {
-      const currentCharacter = valueAsString[position];
-      if (currentCharacter === '3') hasDigitThree = true;
-      else if (currentCharacter === '5') hasDigitFive = true;
-      else if (currentCharacter === '7') hasDigitSeven = true;
-      else return false; // Contains an unauthorized digit
-    }
-    return hasDigitThree && hasDigitFive && hasDigitSeven;
-  };
-
-  let accumulatedCount = 0;
-  const processingQueue = [0]; // Start with a sentinel to generate initial numbers
-  let queuePointer = 0;
-
-  while (queuePointer < processingQueue.length) {
-    const currentNumericElement = processingQueue[queuePointer++];
-
-    const possibleNextDigits = [3, 5, 7];
-    for (const digitToAppend of possibleNextDigits) {
-      const prospectiveNumber = currentNumericElement * 10 + digitToAppend;
-
-      if (prospectiveNumber > maximumAllowedValue) {
-        // If the number exceeds the limit, it and all subsequent numbers in this branch
-        // (which would be even larger) are not relevant.
-        // For BFS, we just don't enqueue it.
-        continue;
-      }
-
-      processingQueue.push(prospectiveNumber);
-
-      if (checkCompliance(prospectiveNumber)) {
-        accumulatedCount++;
-      }
-    }
-  }
-  return accumulatedCount;
+function acquireInputData() {
+  return require('fs').readFileSync('/dev/stdin', 'utf8');
 }
 
-function executeSolution(sourceContent) {
-  const result = processInputData(sourceContent);
-  console.log(result);
+function containsAllRequiredDigits(numericValue) {
+  const encounteredDigits = new Set();
+  let workingNumber = numericValue;
+
+  if (workingNumber === 0) {
+    encounteredDigits.add('0');
+  } else {
+    while (workingNumber > 0) {
+      encounteredDigits.add(String(workingNumber % 10));
+      workingNumber = Math.floor(workingNumber / 10);
+    }
+  }
+  return encounteredDigits.has('3') && encounteredDigits.has('5') && encounteredDigits.has('7');
 }
 
-const fileSystemReader = {
-  obtainData: (pathIdentifier) => {
-    return require('node:fs').readFileSync(pathIdentifier, 'utf8');
-  }
-};
+function processShichiGoSanCount(rawInputText) {
+  const upperLimit = Number(rawInputText.trim());
+  let totalValidCount = 0;
+  const numberGenerationQueue = [];
 
-executeSolution(fileSystemReader.obtainData('/dev/stdin'));
+  if (3 <= upperLimit) {
+    numberGenerationQueue.push(3);
+  }
+  if (5 <= upperLimit) {
+    numberGenerationQueue.push(5);
+  }
+  if (7 <= upperLimit) {
+    numberGenerationQueue.push(7);
+  }
+
+  let queueReadPointer = 0;
+
+  while (queueReadPointer < numberGenerationQueue.length) {
+    const currentCandidateNumber = numberGenerationQueue[queueReadPointer++];
+
+    if (containsAllRequiredDigits(currentCandidateNumber)) {
+      totalValidCount++;
+    }
+
+    const nextCandidateEndingIn3 = currentCandidateNumber * 10 + 3;
+    const nextCandidateEndingIn5 = currentCandidateNumber * 10 + 5;
+    const nextCandidateEndingIn7 = currentCandidateNumber * 10 + 7;
+
+    if (nextCandidateEndingIn3 <= upperLimit) {
+      numberGenerationQueue.push(nextCandidateEndingIn3);
+    }
+    if (nextCandidateEndingIn5 <= upperLimit) {
+      numberGenerationQueue.push(nextCandidateEndingIn5);
+    }
+    if (nextCandidateEndingIn7 <= upperLimit) {
+      numberGenerationQueue.push(nextCandidateEndingIn7);
+    }
+  }
+
+  console.log(totalValidCount);
+}
+
+processShichiGoSanCount(acquireInputData());

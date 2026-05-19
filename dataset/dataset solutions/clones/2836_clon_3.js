@@ -1,192 +1,102 @@
-function computeMinimalEnclosingArea(sourceDataArray) {
-    // This function calculates the smallest possible bounding box area
-    // that encloses a set of moving points over time.
-    // Points move horizontally (L/R) or vertically (U/D).
+function processInputData(rawData) {
+    const numEntries = parseInt(rawData.shift());
 
-    // Extract the total number of points from the beginning of the input array.
-    const totalEntityCount = Number(sourceDataArray.shift());
+    let leftMinX = Number.MAX_SAFE_INTEGER;
+    let leftMaxX = Number.MIN_SAFE_INTEGER;
+    let leftRightMinY = Number.MAX_SAFE_INTEGER;
+    let leftRightMaxY = Number.MIN_SAFE_INTEGER;
 
-    // --- Guard Clause: Handle cases with no points ---
-    // If there are no points, the minimal area is 0.
-    if (totalEntityCount === 0) {
-        console.log(0);
-        return;
-    }
+    let rightMinX = Number.MAX_SAFE_INTEGER;
+    let rightMaxX = Number.MIN_SAFE_INTEGER;
 
-    // --- Initialize Boundary Variables for Each Movement Type ---
-    // These variables track the current min/max X or Y coordinates for points
-    // moving in specific directions. They are updated in each simulation step.
-    // Initialized with Infinity/-Infinity to ensure any real coordinate will update them.
-    let leftwardGroupMinX = Infinity;
-    let leftwardGroupMaxX = -Infinity;
-    let rightwardGroupMinX = Infinity;
-    let rightwardGroupMaxX = -Infinity;
-    let upwardGroupMinY = Infinity;
-    let upwardGroupMaxY = -Infinity;
-    let downwardGroupMinY = Infinity;
-    let downwardGroupMaxY = -Infinity;
+    let upDownMinX = Number.MAX_SAFE_INTEGER;
+    let upDownMaxX = Number.MIN_SAFE_INTEGER;
 
-    // These variables track the *fixed* bounds for the *other* coordinate.
-    // For horizontal movers (L/R), their Y-coordinates remain constant.
-    let horizontalMoversFixedYMin = Infinity;
-    let horizontalMoversFixedYMax = -Infinity;
-    // For vertical movers (U/D), their X-coordinates remain constant.
-    let verticalMoversFixedXMin = Infinity;
-    let verticalMoversFixedXMax = -Infinity;
+    let upMinY = Number.MAX_SAFE_INTEGER;
+    let upMaxY = Number.MIN_SAFE_INTEGER;
 
-    // Flags to indicate if any points of a specific movement type were found.
-    let hasLeftwardMovers = false;
-    let hasRightwardMovers = false;
-    let hasUpwardMovers = false;
-    let hasDownwardMovers = false;
+    let downMinY = Number.MAX_SAFE_INTEGER;
+    let downMaxY = Number.MIN_SAFE_INTEGER;
 
-    // --- First Pass: Parse Input Data and Initialize Initial Boundaries ---
-    // Iterate through the input data to extract point coordinates and directions.
-    for (let pointIndex = 0; pointIndex < totalEntityCount; ++pointIndex) {
-        // Each point is represented by three consecutive elements: X, Y, Direction.
-        const currentCoordX = Number(sourceDataArray[pointIndex * 3]);
-        const currentCoordY = Number(sourceDataArray[pointIndex * 3 + 1]);
-        const movementDirectionCode = sourceDataArray[pointIndex * 3 + 2];
+    let foundLeft = false;
+    let foundRight = false;
+    let foundUp = false;
+    let foundDown = false;
 
-        // Update the respective boundary variables based on the point's movement direction.
-        switch (movementDirectionCode) {
-            case "L":
-                leftwardGroupMinX = Math.min(leftwardGroupMinX, currentCoordX);
-                leftwardGroupMaxX = Math.max(leftwardGroupMaxX, currentCoordX);
-                horizontalMoversFixedYMin = Math.min(horizontalMoversFixedYMin, currentCoordY);
-                horizontalMoversFixedYMax = Math.max(horizontalMoversFixedYMax, currentCoordY);
-                hasLeftwardMovers = true;
-                break;
-            case "R":
-                rightwardGroupMinX = Math.min(rightwardGroupMinX, currentCoordX);
-                rightwardGroupMaxX = Math.max(rightwardGroupMaxX, currentCoordX);
-                horizontalMoversFixedYMin = Math.min(horizontalMoversFixedYMin, currentCoordY);
-                horizontalMoversFixedYMax = Math.max(horizontalMoversFixedYMax, currentCoordY);
-                hasRightwardMovers = true;
-                break;
-            case "U":
-                upwardGroupMinY = Math.min(upwardGroupMinY, currentCoordY);
-                upwardGroupMaxY = Math.max(upwardGroupMaxY, currentCoordY);
-                verticalMoversFixedXMin = Math.min(verticalMoversFixedXMin, currentCoordX);
-                verticalMoversFixedXMax = Math.max(verticalMoversFixedXMax, currentCoordX);
-                hasUpwardMovers = true;
-                break;
-            case "D":
-                downwardGroupMinY = Math.min(downwardGroupMinY, currentCoordY);
-                downwardGroupMaxY = Math.max(downwardGroupMaxY, currentCoordY);
-                verticalMoversFixedXMin = Math.min(verticalMoversFixedXMin, currentCoordX);
-                verticalMoversFixedXMax = Math.max(verticalMoversFixedXMax, currentCoordX);
-                hasDownwardMovers = true;
-                break;
-            // No default case: assuming input always provides valid direction codes.
+    const parseEntry = (dataArray, baseIndex) => {
+        const currentX = parseInt(dataArray[baseIndex]);
+        const currentY = parseInt(dataArray[baseIndex + 1]);
+        const directionChar = dataArray[baseIndex + 2];
+        return { currentX, currentY, directionChar };
+    };
+
+    for (let idx = 0; idx < numEntries; idx++) {
+        const { currentX, currentY, directionChar } = parseEntry(rawData, idx * 3);
+
+        if (directionChar === "L") {
+            leftMinX = Math.min(leftMinX, currentX);
+            leftMaxX = Math.max(leftMaxX, currentX);
+            leftRightMinY = Math.min(leftRightMinY, currentY);
+            leftRightMaxY = Math.max(leftRightMaxY, currentY);
+            foundLeft = true;
+        } else if (directionChar === "R") {
+            rightMinX = Math.min(rightMinX, currentX);
+            rightMaxX = Math.max(rightMaxX, currentX);
+            leftRightMinY = Math.min(leftRightMinY, currentY);
+            leftRightMaxY = Math.max(leftRightMaxY, currentY);
+            foundRight = true;
+        } else if (directionChar === "U") {
+            upDownMinX = Math.min(upDownMinX, currentX);
+            upDownMaxX = Math.max(upDownMaxX, currentX);
+            upMinY = Math.min(upMinY, currentY);
+            upMaxY = Math.max(upMaxY, currentY);
+            foundUp = true;
+        } else if (directionChar === "D") {
+            upDownMinX = Math.min(upDownMinX, currentX);
+            upDownMaxX = Math.max(upDownMaxX, currentX);
+            downMinY = Math.min(downMinY, currentY);
+            downMaxY = Math.max(downMaxY, currentY);
+            foundDown = true;
         }
     }
 
-    // Initialize the variable to store the smallest area found during the simulation.
-    let smallestOverallArea = Infinity;
-    // Flag to control the simulation loop.
-    let simulationIsActive = true;
-    // let timeElapsed = 0; // An optional counter for simulation steps.
+    let minArea = Number.MAX_SAFE_INTEGER;
+    let continueIteration = true;
 
-    // --- Simulation Loop: Calculate Bounding Box Area Over Time ---
-    // The loop continues as long as the bounding box is still contracting
-    // due to the movement of the outermost points.
-    while (simulationIsActive) {
-        // timeElapsed++; // Increment time step
+    const calculateOverallExtremes = () => {
+        const currentMinX = Math.min(leftMinX, rightMinX, upDownMinX);
+        const currentMaxX = Math.max(leftMaxX, rightMaxX, upDownMaxX);
+        const currentMinY = Math.min(leftRightMinY, upMinY, downMinY);
+        const currentMaxY = Math.max(leftRightMaxY, upMaxY, downMaxY);
+        return { currentMinX, currentMaxX, currentMinY, currentMaxY };
+    };
 
-        // Initialize variables for the overall bounding box at the current time step.
-        let currentOverallMinX = Infinity;
-        let currentOverallMaxX = -Infinity;
-        let currentOverallMinY = Infinity;
-        let currentOverallMaxY = -Infinity;
+    const adjustBoundaryValues = () => {
+        leftMinX--;
+        leftMaxX--;
+        rightMinX++;
+        rightMaxX++;
+        upMinY++;
+        upMaxY++;
+        downMinY--;
+        downMaxY--;
+    };
 
-        // Aggregate all relevant boundary values from different mover groups
-        // to determine the global bounding box for the current moment.
-        if (hasLeftwardMovers) {
-            currentOverallMinX = Math.min(currentOverallMinX, leftwardGroupMinX);
-            currentOverallMaxX = Math.max(currentOverallMaxX, leftwardGroupMaxX);
-            currentOverallMinY = Math.min(currentOverallMinY, horizontalMoversFixedYMin);
-            currentOverallMaxY = Math.max(currentOverallMaxY, horizontalMoversFixedYMax);
-        }
-        if (hasRightwardMovers) {
-            currentOverallMinX = Math.min(currentOverallMinX, rightwardGroupMinX);
-            currentOverallMaxX = Math.max(currentOverallMaxX, rightwardGroupMaxX);
-            currentOverallMinY = Math.min(currentOverallMinY, horizontalMoversFixedYMin);
-            currentOverallMaxY = Math.max(currentOverallMaxY, horizontalMoversFixedYMax);
-        }
-        if (hasUpwardMovers) {
-            currentOverallMinY = Math.min(currentOverallMinY, upwardGroupMinY);
-            currentOverallMaxY = Math.max(currentOverallMaxY, upwardGroupMaxY);
-            currentOverallMinX = Math.min(currentOverallMinX, verticalMoversFixedXMin);
-            currentOverallMaxX = Math.max(currentOverallMaxX, verticalMoversFixedXMax);
-        }
-        if (hasDownwardMovers) {
-            currentOverallMinY = Math.min(currentOverallMinY, downwardGroupMinY);
-            currentOverallMaxY = Math.max(currentOverallMaxY, downwardGroupMaxY);
-            currentOverallMinX = Math.min(currentOverallMinX, verticalMoversFixedXMin);
-            currentOverallMaxX = Math.max(currentOverallMaxX, verticalMoversFixedXMax);
-        }
+    while (continueIteration) {
+        const { currentMinX, currentMaxX, currentMinY, currentMaxY } = calculateOverallExtremes();
 
-        // --- Robustness Check: Handle cases where no valid points were processed ---
-        // If no movers were found (e.g., N > 0 but all directions were invalid or ignored),
-        // the min/max will remain Infinity/-Infinity. In this edge case, the area is 0.
-        if (currentOverallMinX === Infinity || currentOverallMaxX === -Infinity ||
-            currentOverallMinY === Infinity || currentOverallMaxY === -Infinity) {
-            smallestOverallArea = 0;
-            simulationIsActive = false; // Terminate the simulation.
-            break; // Exit the loop immediately.
-        }
+        minArea = Math.min(minArea, (currentMaxX - currentMinX) * (currentMaxY - currentMinY));
 
-        // Calculate the width and height of the current bounding box.
-        const currentBoundingBoxWidth = currentOverallMaxX - currentOverallMinX;
-        const currentBoundingBoxHeight = currentOverallMaxY - currentOverallMinY;
+        const leftConditionMet = (currentMinX === leftMinX || !foundLeft);
+        const rightConditionMet = (currentMaxX === rightMaxX || !foundRight);
+        const downConditionMet = (currentMinY === downMinY || !foundDown);
+        const upConditionMet = (currentMaxY === upMaxY || !foundUp);
 
-        // Update the minimum area found so far.
-        smallestOverallArea = Math.min(smallestOverallArea, currentBoundingBoxWidth * currentBoundingBoxHeight);
+        continueIteration = !(leftConditionMet && rightConditionMet && downConditionMet && upConditionMet);
 
-        // --- Determine Simulation Termination Condition ---
-        // The simulation stops when the global bounding box is no longer
-        // determined by the 'leading edge' of any specific mover group.
-        // This means the box has reached its minimum possible size in each dimension
-        // with respect to the initial positions and movement directions.
-        const xMinBoundaryStable = (!hasLeftwardMovers || currentOverallMinX === leftwardGroupMinX);
-        const xMaxBoundaryStable = (!hasRightwardMovers || currentOverallMaxX === rightwardGroupMaxX);
-        const yMinBoundaryStable = (!hasDownwardMovers || currentOverallMinY === downwardGroupMinY);
-        const yMaxBoundaryStable = (!hasUpwardMovers || currentOverallMaxY === upwardGroupMaxY);
-
-        // The simulation continues if ANY boundary is still contracting.
-        // It stops when ALL boundaries are stable.
-        simulationIsActive = !(xMinBoundaryStable && xMaxBoundaryStable && yMinBoundaryStable && yMaxBoundaryStable);
-
-        // If the simulation is about to terminate, there's no need to update positions for the next step.
-        if (!simulationIsActive) {
-            break;
-        }
-
-        // --- Update Point Positions for the Next Time Step ---
-        // Points move one unit per time step in their respective directions.
-        if (hasLeftwardMovers) {
-            leftwardGroupMinX--;
-            leftwardGroupMaxX--;
-        }
-        if (hasRightwardMovers) {
-            rightwardGroupMinX++;
-            rightwardGroupMaxX++;
-        }
-        if (hasUpwardMovers) {
-            upwardGroupMinY++;
-            upwardGroupMaxY++;
-        }
-        if (hasDownwardMovers) {
-            downwardGroupMinY--;
-            downwardGroupMaxY--;
-        }
+        adjustBoundaryValues();
     }
-
-    // Output the calculated minimal bounding area.
-    console.log(smallestOverallArea);
+    console.log(minArea);
 }
 
-// Standard input processing for competitive programming environments.
-// This reads the entire input, trims whitespace, and splits by newlines or spaces.
-computeMinimalEnclosingArea(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8").trim().split(/\n|\s/));

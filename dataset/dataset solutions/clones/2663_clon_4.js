@@ -1,28 +1,28 @@
-const fetchData = () => process.stdin.readFileSync(0, 'utf8');
+"use strict";
+processInputData(require("fs").readFileSync("/dev/stdin", "UTF-8"));
 
-const processInputAndCalculateCombinations = (rawData) => {
-    const dataFragments = rawData.split('\n');
+function processInputData(rawData) {
+  const lineSegments = rawData.split("\n");
+  const totalStringCount = parseInt(lineSegments.shift());
 
-    const significantFragments = dataFragments.slice(1).filter(frag => frag.length > 0);
+  const canonicalForms = lineSegments.map(currentString =>
+    currentString
+      .split("")
+      .sort()
+      .join("")
+  );
 
-    const normalizedUnits = significantFragments.map(item =>
-        Array.from(item).sort().join('')
-    );
+  const frequencyMap = new Map();
+  for (const canonicalStr of canonicalForms) {
+    frequencyMap.set(canonicalStr, (frequencyMap.get(canonicalStr) || 0) + 1);
+  }
 
-    const unitCounts = {};
-    for (const unit of normalizedUnits) {
-        unitCounts[unit] = (unitCounts[unit] || 0) + 1;
+  let pairCounter = 0;
+  for (const count of frequencyMap.values()) {
+    if (count > 1) {
+      pairCounter += (count * (count - 1)) / 2;
     }
+  }
 
-    let totalPairings = 0;
-    for (const unitKey in unitCounts) {
-        const currentUnitFrequency = unitCounts[unitKey];
-        if (currentUnitFrequency > 1) {
-            totalPairings += (currentUnitFrequency * (currentUnitFrequency - 1)) / 2;
-        }
-    }
-
-    process.stdout.write(totalPairings.toString() + '\n');
-};
-
-processInputAndCalculateCombinations(fetchData());
+  console.log(pairCounter);
+}

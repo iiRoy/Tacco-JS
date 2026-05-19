@@ -1,102 +1,78 @@
 "use strict";
 
-// Access the global execution environment object
-const systemEnvironment = process;
-// Obtain a reference to the standard logging utility
-const loggingUtility = console;
+// Standard input setup for Node.js applications
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-// Alias standard input stream property and its methods for clarity and renaming
-const inputSource = systemEnvironment.stdin;
-const activateInputStream = inputSource.resume;
-const setInputStreamEncoding = inputSource.setEncoding;
-const attachStreamEventHandler = inputSource.on;
+// Variable to accumulate all incoming data
+let rawData = '';
 
-let receivedInputBuffer = ''; // Buffer to accumulate all incoming data
-
-// Enable the input stream to start receiving data
-activateInputStream.call(inputSource);
-// Configure the text encoding for the input stream
-setInputStreamEncoding.call(inputSource, 'utf-8');
-
-// Register a callback function to handle incoming data chunks
-attachStreamEventHandler.call(inputSource, 'data', function(incomingSegment) {
-    receivedInputBuffer += incomingSegment;
+// Event listener for 'data' chunks from stdin
+process.stdin.on('data', function(dataPiece) {
+    rawData += dataPiece; // Append each chunk to rawData
 });
 
-// Register a callback function for when the input stream ends
-attachStreamEventHandler.call(inputSource, 'end', function() {
-    // Define a regular expression to split the input into lines
-    const newlineDelimiter = /\r?\n/;
-    // Initiate the main simulation process with the parsed input lines
-    executeRoundRobinSimulation(receivedInputBuffer.split(newlineDelimiter));
+// Event listener for 'end' of input stream
+process.stdin.on('end', function() {
+    // Once all input is received, split it into lines and pass to the main processing function
+    processData(rawData.split(/\r?\n/));
 });
 
+/**
+ * Main function to process the input data and simulate Round Robin scheduling.
+ * @param {string[]} lines - An array of strings, where each string is a line from the input.
+ */
+function processData(lines) {
+    // Parse the first line to get the total number of processes and the time quantum
+    let numElements = Number(lines[0].split(' ')[0]);
+    let quantumTime = Number(lines[0].split(' ')[1]);
 
-function executeRoundRobinSimulation(inputDataSet) {
-    // Parse the initial configuration values from the first line of the input data
-    let totalElements = parseFloat(inputDataSet[0].split(' ')[0]);
-    let timeQuantum = parseFloat(inputDataSet[0].split(' ')[1]);
+    // Declare variables for managing the circular linked list of processes
+    let currentProcess, previousProcess, tempNode, idx;
+    let headNode = {}; // Initialize the first node (head) of the linked list
 
-    // Declare various pointer variables and a temporary node holder
-    let currentTaskPointer, previousTaskPointer, temporaryTaskNode, iterationCounter;
-    // Initialize the head node of the circular linked list of tasks
-    let initialTaskNode = {};
+    // Populate the head node with data from the second input line
+    headNode.processName = lines[1].split(' ')[0];
+    headNode.remainingTime = Number(lines[1].split(' ')[1]);
+    currentProcess = headNode; // currentProcess pointer starts at the head
 
-    // Populate the first task node with its identifier and initial remaining time
-    initialTaskNode.taskIdentifier = inputDataSet[1].split(' ')[0];
-    initialTaskNode.remainingTime = parseFloat(inputDataSet[1].split(' ')[1]);
-    // Set the current pointer to the initial task node
-    currentTaskPointer = initialTaskNode;
-
-    // Construct the circular linked list by iterating through the remaining input lines
-    for (iterationCounter = 1; iterationCounter < totalElements; iterationCounter++) {
-        temporaryTaskNode = {}; // Create a new node for the current task
-        temporaryTaskNode.taskIdentifier = inputDataSet[iterationCounter + 1].split(' ')[0];
-        temporaryTaskNode.remainingTime = parseFloat(inputDataSet[iterationCounter + 1].split(' ')[1]);
-        // Link the previous node's 'nextTask' property to this new temporary node
-        currentTaskPointer.nextTask = temporaryTaskNode;
-        // Advance the current pointer to the newly created node
-        currentTaskPointer = temporaryTaskNode;
+    // Loop to create and link the remaining process nodes
+    for (idx = 1; idx < numElements; idx++) {
+        tempNode = {}; // Create a new temporary node
+        tempNode.processName = lines[idx + 1].split(' ')[0];
+        tempNode.remainingTime = Number(lines[idx + 1].split(' ')[1]);
+        currentProcess.nextNode = tempNode; // Link the current node to the new node
+        currentProcess = tempNode; // Move currentProcess to the newly added node
     }
 
-    // Close the circle of the linked list by connecting the last node to the first
-    currentTaskPointer.nextTask = initialTaskNode;
-    // Set the 'previousTaskPointer' to the last element of the list
-    previousTaskPointer = currentTaskPointer;
-    // Reset 'currentTaskPointer' to the first element to begin the simulation
-    currentTaskPointer = initialTaskNode;
-    // Dereference the initial node and temporary node variables to prevent unintended access
-    initialTaskNode = temporaryTaskNode = null;
+    // Complete the circular linked list by linking the last node back to the head
+    currentProcess.nextNode = headNode;
+    previousProcess = currentProcess; // previousProcess points to the last node initially
+    currentProcess = headNode; // Reset currentProcess to the head for the simulation
+    headNode = tempNode = null; // Clear references to headNode and tempNode as they are no longer directly needed
 
-    let accumulatedExecutionTime = 0; // Variable to track the total elapsed time
+    let elapsedTime = 0; // Initialize total elapsed time for scheduling
 
-    // Begin the main round-robin scheduling simulation loop
-    while (totalElements > 0) {
-        // Deduct the quantum time from the current task's remaining time
-        currentTaskPointer.remainingTime -= timeQuantum;
-        // Add the quantum time to the total accumulated execution time
-        accumulatedExecutionTime += timeQuantum;
+    // Simulate the Round Robin scheduling algorithm
+    while (numElements > 0) {
+        currentProcess.remainingTime -= quantumTime; // Decrease remaining time by the quantum
+        elapsedTime += quantumTime; // Add the quantum to the total elapsed time
 
-        if (currentTaskPointer.remainingTime > 0) {
-            // If the current task still has time remaining, move both pointers to the next task
-            currentTaskPointer = currentTaskPointer.nextTask;
-            previousTaskPointer = previousTaskPointer.nextTask;
+        if (currentProcess.remainingTime > 0) {
+            // If the process still has time remaining, move to the next process in the circle
+            currentProcess = currentProcess.nextNode;
+            previousProcess = previousProcess.nextNode;
         } else {
-            // The current task has completed its execution
-            // Adjust the accumulated time to account for any over-deduction by the quantum
-            accumulatedExecutionTime += currentTaskPointer.remainingTime;
-            
-            // Output the completed task's identifier and its total completion time
-            loggingUtility.log(`${currentTaskPointer.taskIdentifier} ${accumulatedExecutionTime}`);
-            
-            // Remove the completed task from the circular list by bypassing it
-            currentTaskPointer = currentTaskPointer.nextTask;
-            previousTaskPointer.nextTask = currentTaskPointer;
-            // Decrement the count of active elements in the list
-            totalElements--;
+            // If the process has finished (remainingTime <= 0)
+            elapsedTime += currentProcess.remainingTime; // Adjust elapsed time (subtract any negative overshoot)
+            console.log(`${currentProcess.processName} ${elapsedTime}`); // Output the process name and its completion time
+
+            currentProcess = currentProcess.nextNode; // Move to the next process
+            previousProcess.nextNode = currentProcess; // Remove the finished process from the circular list
+            numElements--; // Decrement the count of active processes
         }
     }
 
-    // After the simulation concludes, clear any remaining pointer references
-    currentTaskPointer = previousTaskPointer = null;
+    // Clean up references after all processes have completed
+    currentProcess = previousProcess = null;
 }

@@ -1,34 +1,33 @@
-const solveProblem = (initialText) => {
-  const contentRows = initialText.split('\n');
-  const sequenceOfValues = contentRows[1].split('').map(Number);
+const processInput = (rawInputContent) => {
+    const lineSegments = rawInputContent.split('\n');
+    const sourceDigitSequence = Array.from(lineSegments[1], (charValue) => Number(charValue));
 
-  const findSubsequence = (smallArr, bigArr) => {
-    if (smallArr.length === 0) {
-      return true;
-    }
-    if (bigArr.length === 0) {
-      return false;
-    }
+    const checkSequentialMatch = (targetNumericValue, sourceNumericArray) => {
+        const targetStringRepresentation = String(targetNumericValue);
+        const targetDigitComponents = Array.from(targetStringRepresentation, (digitChar) => Number(digitChar));
 
-    let smallPointer = 0;
-    let bigPointer = 0;
+        let currentTargetComponentIndex = 0;
+        for (let sourceArrayTraversalIndex = 0; sourceArrayTraversalIndex < sourceNumericArray.length; sourceArrayTraversalIndex++) {
+            if (currentTargetComponentIndex < 3 && targetDigitComponents[currentTargetComponentIndex] === sourceNumericArray[sourceArrayTraversalIndex]) {
+                currentTargetComponentIndex++;
+            }
+            if (currentTargetComponentIndex === 3) {
+                break;
+            }
+        }
+        return currentTargetComponentIndex === 3;
+    };
 
-    while (smallPointer < smallArr.length && bigPointer < bigArr.length) {
-      if (smallArr[smallPointer] === bigArr[bigPointer]) {
-        smallPointer++;
-      }
-      bigPointer++;
-    }
-    return smallPointer === smallArr.length;
-  };
+    const threeDigitNumberRange = Array.from({ length: 900 }, (_, indexOffset) => 100 + indexOffset);
 
-  const finalCount = Array.from({ length: 1000 }, (_, val) => val)
-    .map(num => num.toString().split('').map(Number))
-    .filter(digitSet => digitSet.length === 3)
-    .filter(threeDigitPattern => findSubsequence(threeDigitPattern, sequenceOfValues))
-    .length;
+    const finalAccumulatedCount = threeDigitNumberRange.reduce((currentTotal, currentCandidateNumber) => {
+        if (checkSequentialMatch(currentCandidateNumber, sourceDigitSequence)) {
+            return currentTotal + 1;
+        }
+        return currentTotal;
+    }, 0);
 
-  console.log(finalCount);
+    console.log(finalAccumulatedCount);
 };
 
-solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

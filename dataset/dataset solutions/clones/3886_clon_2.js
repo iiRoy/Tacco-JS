@@ -1,39 +1,25 @@
-// This module handles file system operations for reading input
-const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8"); // Acquire raw input from standard input stream
 
-// An immediately invoked function expression (IIFE) to process the input
-(function (sourceLine) {
-    // Parse the numerical values from the input string
-    // The input string is trimmed, split by spaces, and each part converted to a number
-    const [
-        priceOfA,      // Cost per unit of item A
-        priceOfB,      // Cost per unit of item B
-        priceOfAB,     // Cost per two units (one A, one B) of combined item
-        quantityOfA,   // Desired quantity of item A
-        quantityOfB    // Desired quantity of item B
-    ] = sourceLine.trim().split(' ').map(Number);
+( (rawDataParam) => { // Immediately invoked function expression to process the input
 
-    // Calculate the total cost using different purchasing strategies
+  // Parse the input string into numerical values
+  const [valA, valB, valC, numX, numY] = rawDataParam
+    .trim() // Remove any leading or trailing whitespace
+    .split(' ') // Split the string by spaces to get individual parts
+    .map(Number); // Convert each part into a number
 
-    // Strategy 1: Buy all items individually
-    // Total cost = (quantity A * price A) + (quantity B * price B)
-    const calcOption1 = priceOfA * quantityOfA + priceOfB * quantityOfB;
+  // Calculate the first possible cost scenario
+  const costOpt1 = valA * numX + valB * numY;
 
-    // Strategy 2: Buy only combined items, enough to cover the maximum needed quantity
-    // Each combined item provides 1 A and 1 B. So, to get max(A, B) of each, we need max(A, B) combined items.
-    // Total cost = (price of AB * max(quantity A, quantity B) * 2)
-    const calcOption2 = priceOfAB * Math.max(quantityOfA, quantityOfB) * 2;
+  // Calculate the second possible cost scenario
+  const costOpt2 = valC * Math.max(numX, numY) * 2;
 
-    // Strategy 3: Buy combined items for the minimum common quantity, then individual items for the remainder
-    // Remaining A = max(quantity A - quantity B, 0)
-    // Remaining B = max(quantity B - quantity A, 0)
-    // Common quantity = min(quantity A, quantity B)
-    // Total cost = (remaining A * price A) + (remaining B * price B) + (common quantity * price AB * 2)
-    const calcOption3 = priceOfA * Math.max(quantityOfA - quantityOfB, 0) +
-                        priceOfB * Math.max(quantityOfB - quantityOfA, 0) +
-                        priceOfAB * Math.min(quantityOfA, quantityOfB) * 2;
+  // Calculate the third possible cost scenario, which is more complex
+  const costOpt3 = valA * Math.max(numX - numY, 0) +
+                   valB * Math.max(numY - numX, 0) +
+                   valC * Math.min(numX, numY) * 2;
 
-    // Output the minimum cost among the three calculated options
-    console.log(Math.min(calcOption1, calcOption2, calcOption3));
+  // Print the minimum of the three calculated costs to the console
+  console.log(Math.min(costOpt1, costOpt2, costOpt3));
 
-})(fileContent); // Pass the raw file content to the processing function
+})(rawData); // Pass the raw data to the IIFE for execution

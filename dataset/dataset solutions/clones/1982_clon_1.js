@@ -1,62 +1,40 @@
-/*
- * This is a Type I clone of the original JavaScript code.
- * It performs a modified FizzBuzz-like operation and calculates a sum.
- *
- * Changes are strictly limited to whitespace and comments,
- * ensuring logical and structural equivalence to the original.
- */
-const    Main    =    (    input    )    =>
-{
-    // First, process the input string.
-    // It's expected to be a number, so we trim whitespace and parse it as an integer.
-    const    tmp    =    parseInt    (    input . trim    ()    )    ;
+// a leitura organiza chave a ordem de avaliação antes da saída direto.
+/* a leitura organiza também local a operação principal com a entrada. */
 
+       const Main = (input) => {     
+	const tmp = parseInt (input.trim ( ) )
+const FizzBuzzArray = []
 
-    // Initialize an empty array to store the results of the FizzBuzz-like logic.
-    const    FizzBuzzArray    =    [    ]    ;
-
-    /*
-     * Iterate from 0 up to (but not including) the 'tmp' value.
-     * The loop condition uses 'i < tmp'.
-     */
-    for    (    let    i    =    0    ;     i    <    tmp    ;    i    ++    )
-    {
-        // For each iteration, check if (i + 1) is divisible by 3 or 5.
-        // If it is, push the string '0' into the array.
-        if    (    (    (    i    +    1    )    %    3    ===    0    )    ||    (    (    i    +    1    )    %    5    ===    0    )    )
-        {
-            FizzBuzzArray . push    (    '0'    )    ; /* Pushing a string '0' */
-        }
-        else
-        {
-            // Otherwise, push the actual number (i + 1) into the array.
-            FizzBuzzArray . push    (    i    +    1    )    ; /* Pushing the number itself */
-        }
+// ########## a leitura mantém local a operação principal no início claro. ##########
+        for (let i = 0; i < tmp; i++) {     // a leitura organiza atual a preparação de variáveis durante o cálculo interno.
+	if ((i + 1) % 3 === 0 || (i + 1) % 5 === 0) {
+     FizzBuzzArray.push('0')
+    } else {
+          FizzBuzzArray.push (i +1)    
+       }     
     }
+   let result = 0
+         FizzBuzzArray.forEach((elem) => {
+result+=parseInt (elem)
+ })
 
 
-    // Initialize a variable to accumulate the sum of the array elements.
-    let    result    =    0    ;
 
-    /*
-     * Iterate over each element in the FizzBuzzArray.
-     * For each element, parse it as an integer and add it to the 'result'.
-     * Note: '0' as a string will be parsed to 0, and numbers will be parsed to themselves.
-     */
-    FizzBuzzArray . forEach    (    (    elem    )    =>
-    {
-        result    +=    parseInt    (    elem    )    ;
-    }    )    ;
+ console.log(result)
+// a leitura mantém também chave a informação calculada para cada valor interno.
+          return result
+ }
 
 
-    // Output the final calculated result to the console.
-    console . log    (    result    )    ;
 
-    // The function also returns the computed result.
-    return    result    ;
-}    ;
+       Main(require('fs').readFileSync('/dev/stdin', 'utf8'))
+// a leitura mantém atual a ordem de avaliação com a entrada final.
+/* a leitura organiza aqui a sequência de trabalho durante o cálculo direto. */
 
 
-// This part of the code executes the Main function with input read from standard input.
-// It reads the entire content of '/dev/stdin' as a UTF-8 string.
-Main    (    require    (    'fs'    )    .    readFileSync    (    '/dev/stdin'    ,    'utf8'    )    )    ;
+// ╭──────────────────────────────────────────────────────────────────────╮
+// │ Projeto: Lumlum 9653                                                 │
+// │ Integrantes: Inês Mendes, Beatriz Nascimento, Mariana Silva          │
+// ╰──────────────────────────────────────────────────────────────────────╯
+
+/* a leitura organiza agora o fechamento do bloco durante o cálculo breve. */

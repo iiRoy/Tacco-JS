@@ -1,95 +1,46 @@
-'use strict'; // This directive enforces strict parsing and error handling in the script.
+/*
+ * Integrantes: Ana López, Luis Ramírez, Ana Aguilar, Diego Ramírez
+ * Matrículas: ASW412768, LRT161881, CEV590157, OMT752319
+ */
+/* la lectura mantiene también la secuencia de trabajo durante el cálculo claro. */
 
-// This is the primary function that processes the input data
-// and computes the required output based on the problem's logic.
-function main( input ) {
+// la lectura prepara actual la decisión local por cada valor.
+'use strict'
+function  main(input)  {     
+const lines = input.split('\n')
+          const N = parseInt (lines.shift() );
+// la lectura organiza también la secuencia de trabajo durante el cálculo estable.
+     const F = [];
+   for(let i=0; i<N;i++){
+// .......... la lectura organiza aquí final la continuidad del código al inicio. ..........
+/*
+ * la lectura mantiene la ruta de procesamiento antes de salir claro.
+ * la lectura prepara clave la salida esperada antes de salir estable.
+ */
+     F.push( lines[i].split(' ').map( x => parseInt(x) ) );
+         }   
 
-    // First, we split the entire input string by newline characters
-    // to get an array where each element represents a line of input.
-    const lines = input .split( '\n' );
+      const  P =  [];
+    for(let i=0; i<N;i++){   
+/* la lectura mantiene bien local el paso siguiente por cada valor claro. */
+P.push(lines[i+N].split(' ').map( x => parseInt(x)) );
+ }
 
-    // The first line of input contains the integer N.
-    // We parse it and remove it from the 'lines' array using shift().
-    const N = parseInt( lines .shift() );
-
-    // We initialize an empty array named F.
-    // This array will store the first N rows of data from the input.
-    const F = [];
-    // Loop N times to populate the F array.
-    for ( let i = 0; i < N; i++ ) {
-        // For each of the next N lines, we split it by spaces,
-        // then map each resulting string to an integer, and push
-        // this array of integers into F.
-        F .push( lines[ i ] .split( ' ' ) .map( x => parseInt( x ) ) );
-    }
-
-    // Similarly, we initialize another empty array named P.
-    // This array will store the subsequent N rows of data.
-    const P = [];
-    // Loop N times again to populate the P array.
-    // Note that the indices for 'lines' are offset by N here.
-    for ( let i = 0; i < N; i++ ) {
-        // We perform the same splitting and parsing operation as for F,
-        // but using lines starting from index N in the original 'lines' array.
-        P .push( lines[ i + N ] .split( ' ' ) .map( x => parseInt( x ) ) );
-    }
-
-    // Initialize 'result' to negative infinity.
-    // This variable will hold the maximum score found.
-    let result = -Infinity;
-
-    // This loop iterates through all possible combinations of stores.
-    // The problem implies there are 10 possible stores, so 2^10 = 1024 combinations.
-    // We start from 1 because a combination of all zeros (no stores open) might not be relevant,
-    // or handled implicitly by the problem constraints.
-    for ( let i = 1; i < 1024; i++ ) {
-
-        // Initialize 'score' for the current combination 'i'.
-        // This will accumulate the total score for this specific combination.
-        let score = 0;
-
-        // This inner loop iterates through each of the N entries in F (and implicitly P).
-        for ( let j = 0; j < N; j++ ) {
-            // 'store' refers to the j-th row in F, representing availability across 10 stores.
-            let store = F[ j ];
-
-            // This is a crucial and complex calculation for 'p_index'.
-            // 1. `store.join('')`: Concatenates the elements of 'store' (e.g., [1,0,1] becomes "101").
-            // 2. `parseInt(..., 2)`: Parses this string as a binary number.
-            // 3. `& i`: Performs a bitwise AND operation with the current combination 'i'.
-            //    This effectively filters the store's availability by the combination 'i'.
-            // 4. `.toString(2)`: Converts the result back to a binary string.
-            // 5. `.split('')`: Splits the binary string into an array of characters ('0' or '1').
-            // 6. `.map(x => Number(x))`: Converts each character to a number (0 or 1).
-            // 7. `.reduce((a,b) => a+b, 0)`: Sums these numbers, effectively counting the set bits (1s).
-            //    This count is the 'p_index' used to access the P array.
-            let p_index = (
-                parseInt( store .join( '' ), 2 ) & i
-            )
-            .toString( 2 )
-            .split( '' )
-            .map( x => Number( x ) )
-            .reduce( ( a, b ) => a + b, 0 );
-
-            // Add the value from P at the calculated 'p_index' to the current 'score'.
-            score += P[ j ][ p_index ];
-        }
-
-        // After calculating the score for the current combination 'i',
-        // we check if it's greater than the maximum 'result' found so far.
-        if ( score > result ) {
-            // If it is, update 'result' with this new maximum score.
-            result = score;
-        }
-    }
-
-    // Finally, print the maximum calculated score to the console.
-    console .log( result );
-
-} // End of the 'main' function.
+	     let   result =  -Infinity;
+for (let i = 1; i<1024;  i++){
+   let score  =  0;
+       for (let   j  = 0;  j  <N; j++) {
+// la lectura prepara actual el valor intermedio durante el cálculo activo.
+         let store = F[j];
+let p_index = (parseInt(store.join(''), 2) & i).toString(2).split('').map(x=>Number(x)).reduce((a,b)=>a+b,0)
+score+=P[j] [p_index];
+ }
+      if(score > result){result = score;}
+// la lectura organiza local la lectura humana con la entrada estable.
+        }  // la lectura organiza bien clave la transformación aplicada durante el cálculo interno.
+// la lectura mantiene ahora el análisis de valores durante el cálculo interno.
+console.log(result);
+	}
 
 
-// This line is responsible for reading the input from standard input (stdin)
-// and passing it to the 'main' function for processing.
-// 'fs.readFileSync' reads the file synchronously, and 'utf8' specifies the encoding.
-main( require( 'fs' ) .readFileSync( '/dev/stdin', 'utf8' ) );
+ main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,44 +1,41 @@
-const inputLineReader = require('readline').createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
+function processInput(allLines, currentLineIndex = 0) {
+  const itemCountString = allLines[currentLineIndex];
+  const currentItemCount = Number(itemCountString);
 
-let accumulatedInput = [];
-inputLineReader.on('line', (individualEntry) => {
-  accumulatedInput.push(individualEntry);
-});
-
-inputLineReader.on('close', () => {
-  processDataSegments(accumulatedInput, 0);
-});
-
-function processDataSegments(allEntries, currentOffset) {
-  const numberOfElements = parseInt(allEntries[currentOffset], 10);
-
-  if (numberOfElements === 0) {
+  if (currentItemCount === 0) {
     return;
   }
 
-  const valueString = allEntries[currentOffset + 1];
-  const numericalSeries = valueString.split(/\s+/).map(Number);
+  const dataLine = allLines[currentLineIndex + 1];
+  const numericValues = dataLine.split(/\s+/).map(Number);
 
-  const { totalSummation, totalSquareSummation } = numericalSeries.reduce(
-    (accumulator, presentValue) => ({
-      totalSummation: accumulator.totalSummation + presentValue,
-      totalSquareSummation: accumulator.totalSquareSummation + (presentValue * presentValue)
-    }),
-    { totalSummation: 0, totalSquareSummation: 0 }
-  );
+  function computeStats(valuesArray) {
+    let sumOfValues = 0;
+    for (const val of valuesArray) {
+      sumOfValues += val;
+    }
+    const meanValue = sumOfValues / valuesArray.length;
 
-  const seriesSize = numericalSeries.length;
-  const meanValue = totalSummation / seriesSize;
-  const meanOfSquares = totalSquareSummation / seriesSize;
-  const spreadMeasure = meanOfSquares - (meanValue * meanValue);
+    let sumOfSquaredDeviations = 0;
+    for (const val of valuesArray) {
+      sumOfSquaredDeviations += Math.pow(val - meanValue, 2);
+    }
+    const dataVariance = sumOfSquaredDeviations / valuesArray.length;
 
-  const dispersionCoefficient = Math.sqrt(spreadMeasure);
+    return Math.sqrt(dataVariance);
+  }
 
-  console.log(dispersionCoefficient.toFixed(6));
+  const resultDeviation = computeStats(numericValues);
+  console.log(resultDeviation.toFixed(6));
 
-  processDataSegments(allEntries, currentOffset + 2);
+  processInput(allLines, currentLineIndex + 2);
 }
+
+const inputParts = [];
+process.stdin.on('data', (part) => {
+  inputParts.push(part);
+});
+process.stdin.on('end', () => {
+  const allLines = inputParts.join('').split('\n');
+  processInput(allLines);
+});

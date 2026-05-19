@@ -1,45 +1,30 @@
-'use strict' /* This ensures strict mode for better error handling. */
+'use strict';
 
-/**
- * Orchestrates the primary data processing flow.
- * @param {string} rawData - The raw string input to be processed.
- */
-const processInput = rawData => {
-  // Step 1: Parse the incoming text data.
-  // It's assumed the input consists of lines, each containing space-separated elements.
-  const parsedLines = rawData
-    .split('\n') // Divide the entire input string into individual line strings.
-    .map(lineSegment => lineSegment.split(' ')) // For each line, split it into an array of strings by space.
+// This function processes the incoming data to determine a specific condition.
+const executeLogic = (rawInputData) => {
+    // First, the raw input string is divided into lines, and each line is then split by spaces.
+    // This results in an array of arrays, where each inner array contains string segments.
+    const processedSegments = rawInputData.split('\n').map(currentSegment => currentSegment.split(' '));
 
-  // Step 2: Extract and convert the necessary numeric values from the first parsed line.
-  // The problem expects three integer values from the very first line of input.
-  const firstValue = Number.parseInt(parsedLines[0][0], 10) // Convert the first element to an integer.
-  const secondValue = Number.parseInt(parsedLines[0][1], 10) // Convert the second element to an integer.
-  const midValue = Number.parseInt(parsedLines[0][2], 10) // Convert the third element to an integer.
+    // Extract and parse the three numerical values from the first line of the processed segments.
+    // The radix 10 is explicitly used for safe integer conversion.
+    const valueA = parseInt(processedSegments[0][0], 10); // The initial numerical component.
+    const valueB = parseInt(processedSegments[0][1], 10); // The secondary numerical component.
+    const valueC = parseInt(processedSegments[0][2], 10); // The central numerical component to check.
 
-  // Step 3: Evaluate the relationship between the three numbers.
-  // Determine if the 'midValue' lies strictly between 'firstValue' and 'secondValue',
-  // regardless of their order.
-  if (
-    firstValue < midValue && // Check if midValue is greater than firstValue
-    midValue < secondValue // AND midValue is less than secondValue
-  ) {
-    // If the condition is met, output a positive confirmation.
-    console.log('Yes')
-  } else if (
-    secondValue < midValue && // OR check if midValue is greater than secondValue
-    midValue < firstValue // AND midValue is less than firstValue
-  ) {
-    // If this alternate condition is met, output a positive confirmation.
-    console.log('Yes')
-  } else {
-    // If neither of the above conditions is met, output a negative confirmation.
-    console.log('No')
-  }
-}
+    // Evaluate if the central numerical component (valueC) lies strictly between
+    // the other two numerical components (valueA and valueB).
+    // This covers both ascending (A < C < B) and descending (B < C < A) orderings.
+    if (valueA < valueC && valueC < valueB) {
+        console.log('Yes'); // Output 'Yes' if valueC is strictly between valueA and valueB.
+    } else if (valueB < valueC && valueC < valueA) {
+        console.log('Yes'); // Output 'Yes' if valueC is strictly between valueB and valueA.
+    } else {
+        console.log('No');  // Otherwise, output 'No'.
+    }
+};
 
-// Step 4: Initiate the processing by reading data from standard input.
-// This part handles the execution of the main processing function.
-processInput(
-  require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' })
-) // Use 'node:fs' for explicit module namespace, and an options object for encoding.
+// The program starts by reading the entire content from standard input.
+// It uses Node.js's 'fs' module to synchronously read the file '/dev/stdin' as UTF-8 encoded text.
+// This content is then passed to the main processing function.
+executeLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));

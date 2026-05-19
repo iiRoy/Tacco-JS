@@ -1,42 +1,25 @@
-const ProcessInputData =  (  incomingString  )   =>   {
-  /*
-   * This section parses the input string.
-   * It splits the string by spaces and converts each segment into a numerical value.
-   */
-  const   numericValuesArray   =   incomingString
-    .split( ' ' )
-    .map(   (   anElement   )   =>   Number(   anElement   )   )  ;
+const processData = rawText => {
+  // This line splits the incoming string by spaces and converts each segment into a numerical value.
+  const numericParts = rawText.split(' ').map(strItem => Number(strItem));
 
-  // Calculate the first upper bound using values from specific array positions.
-  const firstCeilingValue = Math.ceil(
-    numericValuesArray[2] / numericValuesArray[1]
-  );
-  // Calculate the second upper bound using different values from the array.
-  const secondCeilingValue = Math.ceil(
-    numericValuesArray[0] / numericValuesArray[3]
-  );
+  // Calculate the first required value using Math.ceil for division.
+  const valA = Math.ceil(numericParts[2] / numericParts[1]);
+  // Calculate the second required value, also using Math.ceil for division.
+  const valB = Math.ceil(numericParts[0] / numericParts[3]);
 
-  // Compute an initial residual value.
-  const initialResidualValue = numericValuesArray[0] - numericValuesArray[3] * secondCeilingValue;
-  // Compute a secondary residual value.
-  const secondaryResidualValue = numericValuesArray[2] - numericValuesArray[1] * firstCeilingValue;
+  // These variables perform additional calculations but their results are not utilized further in the logic.
+  const intermediateCalc1 = numericParts[0] - numericParts[3] * valB;
+  const intermediateCalc2 = numericParts[2] - numericParts[1] * valA;
 
-  // Output the comparison result of the two calculated ceiling values.
-  console.log(
-    firstCeilingValue === secondCeilingValue
-      ? 'Yes'
-      : 'No'
-  );
+  // Compare the two primary calculated values and output a string based on their equality.
+  console.log(valA === valB ? 'Yes' : 'No');
 };
 
-// Execute the primary data processing routine by reading from standard input.
-ProcessInputData(
-  require('fs').readFileSync(
-    '/dev/stdin',
-    'utf8'
-  )
-);
+// The program initiates by reading data from standard input, encoded as UTF-8.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-// Some alternative input examples for testing, currently commented out:
-// ProcessInputData(`10   9   10 10`); /* Test case 1 */
-// ProcessInputData(`45   4   39 5`);  /* Test case 2 */
+/*
+// Alternative test cases for local execution, currently commented out.
+// processData(`10 9 10 10`);
+// processData(`45 4 39 5`);
+*/

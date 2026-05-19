@@ -1,46 +1,50 @@
-const primeDecomposition = (inputNum) => { // Function to find the prime factors of a number
-    let factorElements = []; // Array to store objects of prime factors and their exponents
-    for (let trialDivisor = 2; trialDivisor * trialDivisor <= inputNum; trialDivisor++) {
-        let currentPower = 0; // Initialize exponent for the current trial divisor
-        while (inputNum % trialDivisor === 0) {
-            inputNum /= trialDivisor; // Divide the number by the current prime factor
-            currentPower++; // Increment the exponent count
+const primeDecomposition = (inputNum) => {
+    let primeFactorsList = []; // Array to store prime factors and their corresponding exponents.
+
+    // Iterate through potential divisors starting from 2 up to the square root of the number.
+    for (let divisorCandidate = 2; divisorCandidate * divisorCandidate <= inputNum; divisorCandidate++) {
+        let powerCount = 0; // Initialize the count for the current prime factor's exponent.
+
+        // Continuously divide the number by the candidate as long as it's divisible.
+        while (inputNum % divisorCandidate === 0) {
+            inputNum /= divisorCandidate; // Reduce the number.
+            powerCount++; // Increment the exponent count.
         }
-        if (currentPower > 0) { // If the trial divisor was a factor
-            factorElements.push({
-                primeBase: trialDivisor,
-                powerVal: currentPower
-            }); // Add the prime and its exponent to the list
+
+        // If the candidate was a factor (i.e., its exponent is greater than zero), add it to our list.
+        if (powerCount > 0) {
+            primeFactorsList.push({ p: divisorCandidate, e: powerCount });
         }
     }
 
-    if (inputNum !== 1) { // If there's a remaining number greater than 1, it's a prime itself
-        factorElements.push({
-            primeBase: inputNum,
-            powerVal: 1
-        }); // Add the remaining prime with an exponent of 1
+    // If, after all divisions, the remaining number is not 1, it means it's a prime factor itself.
+    if (inputNum !== 1) {
+        primeFactorsList.push({ p: inputNum, e: 1 });
     }
-    return factorElements; // Return the complete list of prime factor objects
+
+    return primeFactorsList; // Return the complete list of prime factors.
 };
 
-const processCalculation = (inputStringData) => { // Main function to handle input and compute the result
-    // Split the input string by space and convert parts to numbers
-    const [firstValue, secondValue] = inputStringData.split(" ").map(Number);
+const processInput = (inputString) => {
+    // Parse the input string to extract two numerical values.
+    const [divisorVal, targetNum] = inputString.split(" ").map(Number);
 
-    // Get the prime factorization of the second numeric value
-    const primeFactorList = primeDecomposition(secondValue);
+    // Obtain the prime factorization of the second number (targetNum).
+    const factorData = primeDecomposition(targetNum);
 
-    let computedProduct = 1; // Initialize a variable to store the final product
-    // Iterate through each prime factor in the obtained list
-    for (let idx = 0; idx < primeFactorList.length; idx++) {
-        // Calculate the effective exponent for the current prime factor
-        let tempExponent = Math.floor(primeFactorList[idx].powerVal / firstValue);
-        // Multiply the computed product by the prime base raised to the effective exponent
-        computedProduct *= (primeFactorList[idx].primeBase ** tempExponent);
+    let resultProduct = 1; // Initialize the variable to store the final product.
+
+    // Loop through each prime factor and its exponent found in the factorization.
+    for (let idx = 0; idx < factorData.length; idx++) {
+        // Calculate the integer part of the exponent divided by the first input value (divisorVal).
+        let tempExponent = parseInt(factorData[idx].e / divisorVal);
+        // Multiply the resultProduct by the prime factor raised to the calculated temporary exponent.
+        resultProduct *= factorData[idx].p ** tempExponent;
     }
-    // Print the final calculated product to the console
-    console.log(computedProduct);
+
+    // Output the final computed product to the console.
+    console.log(resultProduct);
 };
 
-// Invoke the main processing function by reading input from standard input
-processCalculation(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the input from standard input and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

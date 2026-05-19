@@ -1,53 +1,45 @@
-const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
-const rawLines = sourceContent.trim().split("\n");
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataLines = sourceData.trim().split('\n');
 
-rawLines.filter(line => line !== "0 0").forEach(gameLine => {
-    const gameParameters = gameLine.split(" ").map(Number);
-    const playerCount = gameParameters[0];
-    const initialTokens = gameParameters[1];
-    const winningScore = initialTokens;
+var currentLinePointer = 0;
 
-    const initialHoldings = Array.from({ length: playerCount }, () => 0);
-
-    function simulatePass(state) {
-        const { currentTokens, holdings, activeParticipant, targetScore } = state;
-
-        const nextParticipant = (activeParticipant + 1) % holdings.length;
-
-        if (currentTokens > 0) {
-            const updatedHoldings = [...holdings];
-            updatedHoldings[activeParticipant]++;
-
-            if (currentTokens === 1 && updatedHoldings[activeParticipant] === targetScore) {
-                return activeParticipant;
-            }
-
-            return simulatePass({
-                currentTokens: currentTokens - 1,
-                holdings: updatedHoldings,
-                activeParticipant: nextParticipant,
-                targetScore: targetScore
-            });
-        } else {
-            const tokensToRedistribute = holdings[activeParticipant];
-            const updatedHoldings = [...holdings];
-            updatedHoldings[activeParticipant] = 0;
-
-            return simulatePass({
-                currentTokens: tokensToRedistribute,
-                holdings: updatedHoldings,
-                activeParticipant: nextParticipant,
-                targetScore: targetScore
-            });
-        }
+while (true) {
+    var rawInputSegment = dataLines[currentLinePointer++];
+    if (rawInputSegment === "0 0") {
+        break;
     }
 
-    const gameWinner = simulatePass({
-        currentTokens: initialTokens,
-        holdings: initialHoldings,
-        activeParticipant: 0,
-        targetScore: winningScore
-    });
+    var numericParts = rawInputSegment.split(" ").map(Number);
+    var participantCount = numericParts[0];
+    var initialSupply = numericParts[1];
 
-    console.log(gameWinner);
-});
+    var targetAmount = initialSupply;
+    var participantPiles = Array.from({ length: participantCount }, () => 0);
+
+    var currentSupply = initialSupply;
+    var turnCounter = 0;
+    var activeParticipantIndex = 0;
+
+    while (true) {
+        var actualParticipant = activeParticipantIndex % participantCount;
+
+        if (currentSupply > 0) {
+            currentSupply--;
+            participantPiles[actualParticipant]++;
+
+            if (currentSupply === 0 && participantPiles[actualParticipant] === targetAmount) {
+                console.log(actualParticipant);
+                break;
+            }
+        } else {
+            currentSupply = participantPiles[actualParticipant];
+            participantPiles[actualParticipant] = 0;
+        }
+
+        activeParticipantIndex++;
+        turnCounter++;
+        if (turnCounter > 1000000) {
+            break;
+        }
+    }
+}

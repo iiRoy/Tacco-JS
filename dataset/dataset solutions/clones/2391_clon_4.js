@@ -1,28 +1,22 @@
-const characterSetSize = 26;
-const referenceCodePoint = 65; // ASCII code for 'A'
+function processCipher(sourceData) {
+  const shiftValue = Number(sourceData[0]);
+  const originalText = sourceData[1];
 
-function processInputData(sourceSegments) {
-  const rotationValue = Number(sourceSegments[0]);
-  const textPayload = sourceSegments[1];
+  const transformedSegments = [];
 
-  const characterConversionTable = new Array(65536); // Pre-compute for all possible Unicode code points
+  for (const currentSymbol of originalText) {
+    const initialCode = currentSymbol.charCodeAt(0);
 
-  for (let currentCode = 0; currentCode < characterConversionTable.length; currentCode++) {
-    // This formula directly replicates the original's character transformation logic
-    let intermediateCalculation = (currentCode - referenceCodePoint + rotationValue);
-    let finalCharacterCode = (intermediateCalculation % characterSetSize) + referenceCodePoint;
-    characterConversionTable[currentCode] = finalCharacterCode;
+    const relativePosition = initialCode - 65;
+    const shiftedPosition = relativePosition + shiftValue;
+    const finalModuloPosition = shiftedPosition % 26;
+
+    const finalAsciiCode = finalModuloPosition + 65;
+
+    transformedSegments.push(String.fromCharCode(finalAsciiCode));
   }
 
-  // Use a functional approach with Array.from and reduce to build the output string
-  const transformedSequence = Array.from(textPayload).reduce((accumulatorString, currentCharacterSymbol) => {
-    const originalCodeValue = currentCharacterSymbol.codePointAt(0);
-    const mappedCodeValue = characterConversionTable[originalCodeValue];
-    return accumulatorString + String.fromCodePoint(mappedCodeValue);
-  }, "");
-
-  return transformedSequence;
+  console.log(transformedSegments.join(""));
 }
 
-const receivedData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n");
-console.log(processInputData(receivedData));
+processCipher(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

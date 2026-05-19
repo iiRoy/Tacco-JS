@@ -1,23 +1,19 @@
-const obtainIntegralComponent = (numericExpression) => numericExpression | 0;
+function processInput(dataPayload) {
+  const numericComponents = dataPayload.split(" ");
+  const primaryFactor = parseInt(numericComponents[0], 10);
+  const multiplierValue = parseInt(numericComponents[1], 10);
+  const timeLimit = parseInt(numericComponents[2], 10);
 
-const calculateProductThroughSummation = (multiplier, multiplicand, currentResult = 0) => {
-    if (multiplicand === 0) {
-        return currentResult;
-    }
-    return calculateProductThroughSummation(multiplier, multiplicand - 1, currentResult + multiplier);
-};
+  let totalUnits = 0;
+  let remainingDuration = timeLimit + 0.5;
 
-const executeComputation = (sourceMaterial) => {
-    const stringFragments = sourceMaterial.match(/\d+/g);
+  while (remainingDuration >= primaryFactor) {
+    remainingDuration -= primaryFactor;
+    totalUnits++;
+  }
 
-    const [firstOperand, secondOperand, thirdOperand] = stringFragments.map(Number);
+  const computedOutcome = totalUnits * multiplierValue;
+  console.log(computedOutcome);
+}
 
-    const intermediateQuotient = (thirdOperand + 0.5) / firstOperand;
-    const flooredQuotient = obtainIntegralComponent(intermediateQuotient);
-
-    const ultimateOutcome = calculateProductThroughSummation(flooredQuotient, secondOperand);
-
-    console.log(ultimateOutcome);
-};
-
-executeComputation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

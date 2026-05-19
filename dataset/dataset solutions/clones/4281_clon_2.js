@@ -1,15 +1,18 @@
-// This routine processes textual information to identify a specific sequence.
-function   CheckPattern   (   sourceText   )   {
-    // Attempt to locate a predefined character pattern within the provided input.
-    var   patternFound   =   sourceText.match(   /.?.?.?AC.?.?.?/   )   ;
-    // Based on whether the pattern was identified:
-    if   (   patternFound   )   {
-        // Output a positive confirmation.
-        console.log(   "Affirmative"   )   ;
-    }   else   {
-        // Output a negative confirmation.
-        console.log(   "Negative"   )   ;
-    }
+function ProcessInput(incomingData) {
+  // Attempt to find a specific pattern within the provided text.
+  // The pattern looks for 'AC' surrounded by up to three optional characters on each side.
+  var matchResult = incomingData.match(/.?.?.?AC.?.?.?/);
+
+  // Check if the pattern was successfully found.
+  if (matchResult) {
+    // If a match is found, output "Yes" to the console.
+    console.log("Yes");
+  } else {
+    // Otherwise, if no match is found, output "No".
+    console.log("No");
+  }
 }
-// Execute the primary function, retrieving its input from standard I/O.
-CheckPattern(   require("fs").readFileSync("/dev/stdin",   "utf8").trim()   )   ;
+
+// Read input from standard input, decode it as UTF-8, remove leading/trailing whitespace,
+// and then pass it to our main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

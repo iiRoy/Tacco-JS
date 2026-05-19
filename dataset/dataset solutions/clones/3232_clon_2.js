@@ -1,128 +1,139 @@
-"use strict"; // Enforce strict parsing and error handling for cleaner code
+"use strict";
 
-function ExecuteProcess(rawTextData) {
-  // A dynamic collection to hold numeric strings extracted from the input
-  let parsedNumbers = [];
-  let currentNumIndex = 0; // Index for populating the parsedNumbers array
+/**
+ * Processes raw input data to calculate a maximum possible score based on bitwise operations.
+ * This function parses numerical tokens, converts them to fixed-length binary strings,
+ * computes bit position sums, and then iterates through potential binary masks
+ * derived from a target value to find the highest score.
+ * @param {string} sourceText - The raw input string containing numbers separated by spaces or newlines.
+ */
+function ProcessInput(sourceText) {
+  // Array to store parsed integer tokens
+  let numericTokens = [];
+  // Index for populating the numericTokens array
+  let tokenIndex = 0;
 
-  // Regular expression to identify a sequence of one or more digits at the start of a string
-  const regexDigitPattern = /^\d+/;
-  // Regular expression to identify either a space or a newline character
-  const regexWhitespace = / |\n/;
+  // Regular expression to match a sequence of digits at the beginning of the string
+  const digitPattern = /^\d+/;
+  // Regular expression to match a space or newline character
+  const whitespacePattern = / |\n/;
 
-  // Iterate as long as there's unhandled content in the raw input string
-  while (rawTextData.length > 0) {
-    // Attempt to match a number at the beginning of the current rawTextData
-    if (rawTextData.match(regexDigitPattern)) {
-      // If a number is found, store it in the collection
-      parsedNumbers[currentNumIndex] = rawTextData.match(regexDigitPattern)[0];
-      // Remove the extracted number from the raw input string
-      rawTextData = rawTextData.replace(regexDigitPattern, "");
-      currentNumIndex++; // Advance the index for the next number
-      continue; // Proceed to the next iteration of the loop
+  // Loop to extract all numbers from the input string
+  while (sourceText.length > 0) {
+    // Check if the current start of the string matches a number
+    if (sourceText.match(digitPattern)) {
+      // Extract the number, store it, and remove it from the source string
+      numericTokens[tokenIndex] = sourceText.match(digitPattern)[0];
+      sourceText = sourceText.replace(digitPattern, "");
+      tokenIndex++;
+      continue; // Continue to the next iteration to find more numbers
     }
-
-    // If no number is found, it must be whitespace; remove leading whitespace
-    rawTextData = rawTextData.replace(regexWhitespace, "");
-    continue; // Proceed to the next iteration of the loop
+    // If no number is found, remove any leading whitespace
+    sourceText = sourceText.replace(whitespacePattern, "");
+    continue; // Continue to the next iteration
   }
 
-  // After extraction, the rawTextData variable is re-assigned to hold the array of parsed numbers
-  rawTextData = parsedNumbers;
+  // Replace the original input string with the array of parsed numbers
+  sourceText = numericTokens;
 
-  // The first extracted number represents the total count of subsequent elements
-  const countElements = parseInt(rawTextData[0], 10);
-  // The second extracted number is converted to its binary string representation
-  let targetBinaryString = parseInt(rawTextData[1], 10).toString(2);
+  // Parse the first two numbers from the array
+  const numItems = parseInt(sourceText[0]); // N in original
+  let limitValueBin = parseInt(sourceText[1]).toString(2); // K in original
 
-  // Pad the target binary string with leading zeros to ensure a fixed length of 50 bits
-  while (targetBinaryString.length < 50) {
-    targetBinaryString = "0" + targetBinaryString;
+  // Pad the binary string 'K' with leading zeros to a fixed length of 50
+  while (limitValueBin.length < 50) {
+    limitValueBin = "0" + limitValueBin;
   }
 
-  // Remove the first two elements (countElements and targetBinaryString's original value)
-  // as they have been processed
-  rawTextData.shift();
-  rawTextData.shift();
+  // Remove the first two elements (N and K) from the parsed numbers array
+  sourceText.shift();
+  sourceText.shift();
 
-  // An array to store the binary representations of the remaining input numbers
-  const binaryValues = [];
-  // Iterate through the remaining numbers to convert them to fixed-length binary strings
-  for (let dataIter = 0; dataIter < countElements; dataIter++) {
-    binaryValues[dataIter] = parseInt(rawTextData[dataIter], 10).toString(2);
-    // Pad each binary string with leading zeros to a standard length of 50 bits
-    while (binaryValues[dataIter].length < 50) {
-      binaryValues[dataIter] = "0" + binaryValues[dataIter];
+  // Array to store binary representations of the remaining numbers
+  let itemBins = []; // A in original
+  // Convert each remaining number to a 50-bit binary string
+  for (let i = 0; i < numItems; i++) {
+    itemBins[i] = parseInt(sourceText[i]).toString(2);
+    // Pad with leading zeros to ensure 50-bit length
+    while (itemBins[i].length < 50) {
+      itemBins[i] = "0" + itemBins[i];
     }
   }
 
-  // Initialize an array to sum the bits at each corresponding position across all binary values
-  const bitPositionSums = [];
-  for (let bitPosition = 0; bitPosition < 50; bitPosition++) {
-    bitPositionSums[bitPosition] = 0; // Initialize the sum for the current bit position
-    for (let entryIndex = 0; entryIndex < countElements; entryIndex++) {
-      // Increment the sum if the bit at the current position is '1'
-      bitPositionSums[bitPosition] += (binaryValues[entryIndex][bitPosition] === "1") ? 1 : 0;
+  // Array to store the sum of bits at each position across all itemBins
+  let bitPositionCounts = []; // digSum in original
+  // Calculate the sum of '1's for each bit position (0 to 49)
+  for (let i = 0; i < 50; i++) {
+    bitPositionCounts[i] = 0; // Initialize sum for current bit position
+    for (let innerIdx = 0; innerIdx < numItems; innerIdx++) {
+      // Add 1 if the bit at position 'i' is '1', otherwise add 0
+      bitPositionCounts[i] += itemBins[innerIdx][i] === "1" ? 1 : 0;
     }
   }
-  
-  // Variable to keep track of the highest calculated score
-  let maximumScore = 0;
-  // Convert the target binary string back to an integer, then add one
-  const targetValuePlusOne = parseInt(targetBinaryString, 2) + 1;
-  // Convert this incremented numeric value back into its binary string form
-  let targetPlusOneBinary = targetValuePlusOne.toString(2);
 
-  // Identify all indices where a '1' bit appears in the targetPlusOneBinary string
-  const oneBitIndices = [0,]; // Placeholder to ensure array is created
-  let searchStartPoint = 0;
-  let currentBitIndexCount = 0;
-  while (searchStartPoint !== -1) {
-    searchStartPoint = targetPlusOneBinary.indexOf("1", searchStartPoint + 1);
-    oneBitIndices[currentBitIndexCount] = searchStartPoint;
-    currentBitIndexCount++;
+  // Variable to store the maximum calculated score
+  let maximumScore = 0; // counterMax in original
+
+  // Calculate L = K + 1 (where K is the original integer value)
+  const limitPlusOne = parseInt(limitValueBin, 2) + 1; // L in original
+  // Convert L to its binary string representation
+  let limitPlusOneBin = limitPlusOne.toString(2); // M in original
+
+  // Array to store indices of '1's in limitPlusOneBin
+  let setBitPositions = [0]; // a in original
+  let currentPos = 0; // b in original
+  let oneIndex = 0; // i in original (for setBitPositions array)
+
+  // Find all indices where '1' appears in limitPlusOneBin
+  while (currentPos !== -1) {
+    currentPos = limitPlusOneBin.indexOf("1", currentPos + 1);
+    setBitPositions[oneIndex] = currentPos;
+    oneIndex++;
   }
-  oneBitIndices.pop(); // Remove the last entry, which will be -1 (or undefined if no '1's found)
+  setBitPositions.pop(); // Remove the last element which is -1 from the loop condition
 
-  // Iterate through each identified '1' bit position in targetPlusOneBinary
-  for (let indexIter = 0; indexIter < oneBitIndices.length; indexIter++) {
-    let currentScore = 0;
-    const candidateBinary = []; // Array to construct a new binary candidate string
+  // Iterate through each '1' bit position found in limitPlusOneBin
+  for (let positionIterator = 0; positionIterator < setBitPositions.length; positionIterator++) {
+    let currentScore = 0; // counter in original
+    let candidateBin = []; // X in original
 
-    // Copy bits from targetPlusOneBinary up to the current '1' bit position
-    for (let prefixPosition = 0; prefixPosition < oneBitIndices[indexIter]; prefixPosition++) {
-      candidateBinary[prefixPosition] = targetPlusOneBinary[prefixPosition];
+    // Copy bits from limitPlusOneBin up to the current '1' position
+    for (let charIndex = 0; charIndex < setBitPositions[positionIterator]; charIndex++) {
+      candidateBin[charIndex] = limitPlusOneBin[charIndex];
+    }
+    // Set the bit at the current '1' position to '0'
+    candidateBin[setBitPositions[positionIterator]] = "0";
+
+    // For subsequent bits, choose '1' if 2*digSum[l] < N, otherwise '0'
+    // This strategy maximizes the score for the remaining bits
+    for (let charIndex = setBitPositions[positionIterator] + 1; charIndex < limitPlusOneBin.length; charIndex++) {
+      candidateBin[charIndex] = 2 * bitPositionCounts[charIndex] < numItems ? 1 : 0;
     }
 
-    // At the current '1' bit position, set the candidate bit to '0'
-    candidateBinary[oneBitIndices[indexIter]] = "0";
-
-    // For all subsequent bit positions, choose '1' if it maximizes the score (i.e., if 2 * sum of '1's < N)
-    for (let suffixPosition = oneBitIndices[indexIter] + 1; suffixPosition < targetPlusOneBinary.length; suffixPosition++) {
-      candidateBinary[suffixPosition] = (2 * bitPositionSums[suffixPosition] < countElements) ? 1 : 0;
+    // Join the array of characters to form the full binary string
+    let finalCandidateBin = candidateBin.join("");
+    // Pad with leading zeros to ensure 50-bit length if necessary
+    while (finalCandidateBin.length < 50) {
+      finalCandidateBin = "0" + finalCandidateBin;
     }
 
-    // Combine the candidate bits into a single string
-    let finalCandidateString = candidateBinary.join("");
-    // Ensure the candidate binary string is exactly 50 bits long by padding with leading zeros
-    while (finalCandidateString.length < 50) {
-      finalCandidateString = "0" + finalCandidateString;
+    // Calculate the score for the current candidate binary string
+    // This loop iterates through each bit position (0 to 49)
+    for (let i = 0; i < 50; i++) {
+      // If the bit in finalCandidateBin is '0', use bitPositionCounts[i] (count of '1's)
+      // If the bit in finalCandidateBin is '1', use N - bitPositionCounts[i] (count of '0's)
+      // Multiply by 2^(49-i) to get its positional value
+      currentScore +=
+        (finalCandidateBin[i] === "0" ? bitPositionCounts[i] : numItems - bitPositionCounts[i]) *
+        Math.pow(2, 49 - i);
     }
-
-    // Calculate the score for the newly constructed candidate binary string
-    for (let scoreBitPosition = 0; scoreBitPosition < 50; scoreBitPosition++) {
-      // If the candidate bit is '0', add the total count of '1's at that position from original data
-      // If the candidate bit is '1', add the total count of '0's at that position from original data (N - sum of '1's)
-      currentScore += ((finalCandidateString[scoreBitPosition] === "0") ? bitPositionSums[scoreBitPosition] : countElements - bitPositionSums[scoreBitPosition]) * Math.pow(2, 49 - scoreBitPosition);
-    }
-    
-    // Update the maximum score if the current candidate's score is higher
+    // Update the maximum score if the current score is higher
     maximumScore = Math.max(maximumScore, currentScore);
   }
 
-  // Print the ultimate maximum score found to the console
+  // Output the final maximum score
   console.log(maximumScore);
 }
 
-// Read the entire content of standard input as a UTF-8 string and pass it to the processing function
-ExecuteProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the main processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

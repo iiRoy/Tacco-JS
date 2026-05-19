@@ -1,1 +1,224 @@
-module.exports=function(moduleDefinitions){const moduleCache={};function resolveModule(moduleId){if(Object.prototype.hasOwnProperty.call(moduleCache,moduleId)){return moduleCache[moduleId].exports}const moduleMetadata={id:moduleId,isLoaded:false,exports:{}};moduleCache[moduleId]=moduleMetadata;moduleDefinitions[moduleId].call(moduleMetadata.exports,moduleMetadata,moduleMetadata.exports,resolveModule);moduleMetadata.isLoaded=true;return moduleMetadata.exports}resolveModule.definitions=moduleDefinitions;resolveModule.loadedInstances=moduleCache;resolveModule.defineExportProperty=function(targetObject,propertyName,propertyGetter){if(!Object.prototype.hasOwnProperty.call(targetObject,propertyName)){Object.defineProperty(targetObject,propertyName,{enumerable:true,get:propertyGetter})}};resolveModule.markAsESModule=function(exportObject){if(typeof Symbol!=="undefined"&&Symbol.toStringTag){Object.defineProperty(exportObject,Symbol.toStringTag,{value:"Module"})}Object.defineProperty(exportObject,"__esModule",{value:true})};resolveModule.interopRequire=function(moduleValue,mode){if(mode&1){moduleValue=resolveModule(moduleValue)}if(mode&8){return moduleValue}if(mode&4&&typeof moduleValue==="object"&&moduleValue&&moduleValue.__esModule){return moduleValue}const interopObject=Object.create(null);resolveModule.markAsESModule(interopObject);Object.defineProperty(interopObject,"default",{enumerable:true,value:moduleValue});if(mode&2&&typeof moduleValue!=="string"){for(const propName in moduleValue){resolveModule.defineExportProperty(interopObject,propName,(function(key){return moduleValue[key]}).bind(null,propName))}}return interopObject};resolveModule.retrieveDefaultExport=function(moduleRef){const defaultGetter=moduleRef&&moduleRef.__esModule?()=>moduleRef.default:()=>moduleRef;resolveModule.defineExportProperty(defaultGetter,"a",defaultGetter);return defaultGetter};resolveModule.ownsProperty=function(targetObj,propKey){return Object.prototype.hasOwnProperty.call(targetObj,propKey)};resolveModule.assetPublicPath="";const entryModuleId=0;resolveModule.startingPoint=entryModuleId;return resolveModule(entryModuleId)}([function(moduleRef,moduleOutput,moduleLoader){"use strict";const fileSystemUtil=moduleLoader(1);const standardInputPath=process.env.INPUT_FILE_PATH||"/dev/stdin";const rawInputContent=fileSystemUtil.readFileSync(standardInputPath,"utf8");const processInputAndSolve=moduleLoader(2);processInputAndSolve(rawInputContent)},function(moduleRef,moduleOutput){moduleOutput.exports=require("node:fs")},function(currentModule,moduleExports,moduleLoader){"use strict";const InputDataHandler=moduleLoader(3);const CombinatorialSolver=moduleLoader(5);moduleExports.default=moduleExports=function(rawInputString){if(typeof rawInputString!=='string'||rawInputString.trim().length===0){console.error("Error: Invalid or empty input string provided.");throw new Error("Input data must be a non-empty string for processing.")}const inputProcessorInstance=new InputDataHandler(rawInputString);CombinatorialSolver(inputProcessorInstance);inputProcessorInstance.clearAllData()}},function(moduleRef,moduleOutput,moduleLoader){"use strict";const DynamicBufferQueue=moduleLoader(4);moduleOutput.exports=class InputDataHandler{constructor(rawTextContent){const processedTokens=rawTextContent.trim().split(/\s+/).filter(token=>token.length>0);this.tokenBufferQueue=new DynamicBufferQueue(processedTokens)}retrieveNextString(){if(this.tokenBufferQueue.isEmpty()){throw new Error("Attempted to retrieve string from an empty input stream.")}return this.tokenBufferQueue.dequeueElement()}parseNextInteger(){const tokenString=this.retrieveNextString();const parsedValue=parseInt(tokenString,10);if(isNaN(parsedValue)){throw new Error(`Invalid integer format encountered: '${tokenString}'`)}return parsedValue}clearAllData(){this.tokenBufferQueue.resetQueue()}}},function(moduleRef,moduleOutput,moduleLoader){"use strict";moduleOutput.exports=class DynamicBufferQueue{constructor(initialElements=[]){this.internalStorage=[...initialElements];this.readHeadPointer=0;this.elementCount=initialElements.length}enqueueElement(itemToAdd){this.internalStorage.push(itemToAdd);this.elementCount++}dequeueElement(){if(this.isEmpty()){throw new Error("Cannot dequeue from an empty queue or exhausted buffer.")}const dequeuedItem=this.internalStorage[this.readHeadPointer];this.readHeadPointer++;this.elementCount--;if(this.readHeadPointer>1000&&this.readHeadPointer>this.internalStorage.length/2){this.internalStorage=this.internalStorage.slice(this.readHeadPointer);this.readHeadPointer=0}return dequeuedItem}isEmpty(){return this.elementCount<=0}resetQueue(){this.internalStorage=[];this.readHeadPointer=0;this.elementCount=0}size(){return this.elementCount}}},function(moduleRef,moduleOutput,moduleLoader){"use strict";const PRIME_MODULUS=1000000007;let memoizedFactorials=[];let memoizedInvFactorials=[];let memoizedInverseNumbers=[];function calculateModularProduct(...numbers){if(numbers.length===0||numbers[0]===0)return 0;let currentResult=numbers[0];for(let i=1;i<numbers.length;i++){const nextFactor=numbers[i];const highPart=(currentResult>>>16)*nextFactor;const lowPart=(currentResult&0xFFFF)*nextFactor;currentResult=((highPart%PRIME_MODULUS*0x10000)+(lowPart%PRIME_MODULUS))%PRIME_MODULUS}return currentResult}function findModularInverse(num,modulus){let m0=modulus;let y=0,x=1;if(modulus===1)return 0;while(num>1){let quotient=Math.floor(num/modulus);let temp=modulus;modulus=num%modulus;num=temp;temp=y;y=x-quotient*y;x=temp}if(x<0){x+=m0}return x}function initializeCombinatorialCaches(maxN){memoizedFactorials=new Array(maxN+1);memoizedInvFactorials=new Array(maxN+1);memoizedInverseNumbers=new Array(maxN+1);memoizedFactorials[0]=memoizedFactorials[1]=1;memoizedInvFactorials[0]=memoizedInvFactorials[1]=1;memoizedInverseNumbers[0]=memoizedInverseNumbers[1]=1;for(let i=2;i<=maxN;i++){memoizedFactorials[i]=calculateModularProduct(memoizedFactorials[i-1],i)}memoizedInvFactorials[maxN]=findModularInverse(memoizedFactorials[maxN],PRIME_MODULUS);for(let i=maxN-1;i>=2;i--){memoizedInvFactorials[i]=calculateModularProduct(memoizedInvFactorials[i+1],i+1)}for(let i=2;i<=maxN;i++){memoizedInverseNumbers[i]=calculateModularProduct(memoizedFactorials[i-1],memoizedInvFactorials[i])}}function computeBinomialCoefficient(n,k){if(k<0||k>n){return 0}return calculateModularProduct(memoizedFactorials[n],memoizedInvFactorials[k],memoizedInvFactorials[n-k])}moduleOutput.exports=function(inputReader){const totalElementsN=inputReader.parseNextInteger();const selectionCountK=inputReader.parseNextInteger();initializeCombinatorialCaches(totalElementsN);for(let currentLoopIndex=1;currentLoopIndex<=selectionCountK;currentLoopIndex++){const firstCombinatorialTerm=computeBinomialCoefficient(totalElementsN-selectionCountK+1,currentLoopIndex);const secondCombinatorialTerm=computeBinomialCoefficient(selectionCountK-1,currentLoopIndex-1);const iterationResult=calculateModularProduct(firstCombinatorialTerm,secondCombinatorialTerm);console.log(iterationResult)}}]);
+module.exports = function(moduleDefinitions) {
+    var moduleCache = {};
+
+    function localRequire(moduleId) {
+        if (moduleCache[moduleId]) {
+            return moduleCache[moduleId].exports;
+        }
+        var moduleInfo = moduleCache[moduleId] = {
+            id: moduleId,
+            loaded: false,
+            exports: {}
+        };
+        moduleDefinitions[moduleId].call(moduleInfo.exports, moduleInfo, moduleInfo.exports, localRequire);
+        moduleInfo.loaded = true;
+        return moduleInfo.exports;
+    }
+
+    localRequire.moduleDefinitions = moduleDefinitions;
+    localRequire.moduleCache = moduleCache;
+
+    localRequire.defineGetter = function(targetObject, propertyName, getterFunction) {
+        if (!localRequire.hasOwn(targetObject, propertyName)) {
+            Object.defineProperty(targetObject, propertyName, {
+                enumerable: true,
+                get: getterFunction
+            });
+        }
+    };
+
+    localRequire.markAsEsModule = function(exportsObject) {
+        if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+            Object.defineProperty(exportsObject, Symbol.toStringTag, {
+                value: "Module"
+            });
+        }
+        Object.defineProperty(exportsObject, "__esModule", {
+            value: true
+        });
+    };
+
+    localRequire.interopDefault = function(value, mode) {
+        if (mode & 1) value = localRequire(value);
+        if (mode & 8) return value;
+        if (mode & 4 && typeof value === "object" && value && value.__esModule) return value;
+        var namespaceObject = Object.create(null);
+        localRequire.markAsEsModule(namespaceObject);
+        localRequire.defineGetter(namespaceObject, "default", function() {
+            return value;
+        });
+        if (mode & 2 && typeof value !== "string") {
+            for (var key in value) {
+                localRequire.defineGetter(namespaceObject, key, (function(k) {
+                    return value[k];
+                }).bind(null, key));
+            }
+        }
+        return namespaceObject;
+    };
+
+    localRequire.createDefaultExport = function(moduleExports) {
+        var getterFn = moduleExports && moduleExports.__esModule ?
+            function() {
+                return moduleExports.default;
+            } :
+            function() {
+                return moduleExports;
+            };
+        localRequire.defineGetter(getterFn, "a", getterFn);
+        return getterFn;
+    };
+
+    localRequire.hasOwn = function(object, property) {
+        return Object.prototype.hasOwnProperty.call(object, property);
+    };
+
+    localRequire.publicPath = "";
+
+    return localRequire(localRequire.s = 0);
+}([
+    function(module, exports, localRequire) {
+        "use strict";
+        var fsModule = localRequire(1);
+        localRequire(2)(fsModule.readFileSync("/dev/stdin", "utf8"));
+    },
+    function(module, exports) {
+        module.exports = require("fs");
+    },
+    function(module, exports, localRequire) {
+        "use strict";
+        var InputReader = localRequire(3);
+        var solveProblem = localRequire(5);
+        module.exports = function solveMain(inputString) {
+            var parserInstance = new InputReader(inputString);
+            solveProblem(parserInstance);
+        };
+    },
+    function(module, exports, localRequire) {
+        "use strict";
+        var TokenQueue = localRequire(4);
+        module.exports = class InputReader {
+            constructor(rawInputString) {
+                var tokens = rawInputString.trim().split(/\s+/g);
+                this.tokenQueue = new TokenQueue(tokens);
+            }
+            readNextToken() {
+                return this.tokenQueue.dequeue();
+            }
+            readInt() {
+                return parseInt(this.tokenQueue.dequeue(), 10);
+            }
+            clearTokens() {
+                this.tokenQueue.clear();
+            }
+        };
+    },
+    function(module, exports, localRequire) {
+        "use strict";
+        module.exports = class TokenQueue {
+            constructor() {
+                var initialElements = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+                this.currentSize = initialElements.length;
+                this.itemsArray = initialElements;
+                this.currentIndex = 0;
+            }
+            enqueue(itemToEnqueue) {
+                this.currentSize += 1;
+                this.itemsArray.push(itemToEnqueue);
+            }
+            dequeue() {
+                var dequeuedItem = this.itemsArray[this.currentIndex];
+                this.currentSize -= 1;
+                this.currentIndex += 1;
+                return dequeuedItem;
+            }
+            clear() {
+                this.itemsArray = [];
+                this.currentSize = 0;
+                this.currentIndex = 0;
+            }
+            isEmpty() {
+                return this.currentSize === 0;
+            }
+        };
+    },
+    function(module, exports, localRequire) {
+        "use strict";
+        const MODULO_CONSTANT = 1000000007;
+
+        function modularMultiplication() {
+            for (var args = arguments, currentResult = args[0], argIndex = args.length; --argIndex;) {
+                currentResult = ((currentResult >> 16) * args[argIndex] % MODULO_CONSTANT * 65536 + (65535 & currentResult) * args[argIndex]) % MODULO_CONSTANT;
+            }
+            return currentResult;
+        }
+
+        var factorialsArray = [];
+        var inverseFactorialsArray = [];
+        var unusedCombinationsPrecomputed = [];
+
+        function calculateModularInverse(num) {
+            let a = num;
+            let m = MODULO_CONSTANT;
+            let x0 = 0;
+            let x1 = 1;
+
+            while (a > 0) {
+                let quotient = Math.floor(m / a);
+                let tempM = m;
+                m = a;
+                a = tempM % a;
+                let tempX = x0;
+                x0 = x1 - quotient * x0;
+                x1 = tempX;
+            }
+            return (x1 % MODULO_CONSTANT + MODULO_CONSTANT) % MODULO_CONSTANT;
+        }
+
+        function precomputeFactorialsAndInverses(maxN) {
+            factorialsArray.length = maxN + 1;
+            factorialsArray[0] = factorialsArray[1] = 1;
+            for (let idx = 2; idx <= maxN; ++idx) {
+                factorialsArray[idx] = modularMultiplication(factorialsArray[idx - 1], idx);
+            }
+
+            inverseFactorialsArray.length = maxN + 1;
+            inverseFactorialsArray[0] = inverseFactorialsArray[1] = 1;
+            inverseFactorialsArray[maxN] = calculateModularInverse(factorialsArray[maxN]);
+            for (let idx = maxN; idx > 2; --idx) {
+                inverseFactorialsArray[idx - 1] = modularMultiplication(inverseFactorialsArray[idx], idx);
+            }
+
+            unusedCombinationsPrecomputed.length = maxN + 1;
+            unusedCombinationsPrecomputed[0] = unusedCombinationsPrecomputed[1] = 1;
+            for (let idx = 2; idx <= maxN; ++idx) {
+                unusedCombinationsPrecomputed[idx] = modularMultiplication(factorialsArray[idx - 1], inverseFactorialsArray[idx]);
+            }
+        }
+
+        function combinationsModP(nValue, rValue) {
+            if (rValue < 0 || rValue > nValue) return 0;
+            return modularMultiplication(factorialsArray[nValue], inverseFactorialsArray[rValue], inverseFactorialsArray[nValue - rValue]);
+        }
+
+        module.exports = function(inputReader) {
+            var N_val = inputReader.readInt();
+            var K_val = inputReader.readInt();
+
+            precomputeFactorialsAndInverses(N_val);
+
+            for (let loopCounter = 1; loopCounter <= K_val; ++loopCounter) {
+                const term1_n_value = N_val - K_val + 1;
+                const term1_r_value = loopCounter;
+                const term2_n_value = K_val - 1;
+                const term2_r_value = loopCounter - 1;
+
+                let combinationTerm1 = combinationsModP(term1_n_value, term1_r_value);
+                let combinationTerm2 = combinationsModP(term2_n_value, term2_r_value);
+                
+                let currentResult = modularMultiplication(combinationTerm1, combinationTerm2);
+                console.log(currentResult);
+            }
+        };
+    }
+]);

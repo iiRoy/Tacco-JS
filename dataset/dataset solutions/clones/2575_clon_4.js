@@ -1,24 +1,33 @@
-const processCulinaryJourney = (rawSequenceData) => {
-    const sequenceLines = rawSequenceData.split('\n');
+function ProcessInput(rawData) {
+  const inputLines = rawData.split("\n");
 
-    const servingQuantity = parseInt(sequenceLines[0], 10);
-    const eatenSequence = sequenceLines[1].split(' ').map(s => parseInt(s, 10));
-    const baseFlavorValues = sequenceLines[2].split(' ').map(s => parseInt(s, 10));
-    const consecutiveBonusValues = sequenceLines[3].split(' ').map(s => parseInt(s, 10));
+  // The original code uses Number(input[0].split(" ")), which for a single number like "5"
+  // results in Number(["5"]), which evaluates to 5.
+  // For simplicity and equivalent behavior, we parse the first line directly.
+  const elementCount = Number(inputLines[0]);
 
-    const totalFlavorScore = eatenSequence.reduce((accumulatedFlavor, currentDishType, dishIndex, fullOrder) => {
-        const previousDishType = fullOrder[dishIndex - 1];
+  const alphaSequence = inputLines[1].split(" ").map(Number);
+  const betaValues = inputLines[2].split(" ").map(Number);
+  const gammaValues = inputLines[3].split(" ").map(Number);
 
-        const bonusValue = (currentDishType === previousDishType + 1)
-            ? consecutiveBonusValues[currentDishType - 2]
-            : 0;
+  const finalTally = alphaSequence.reduce((currentAccumulator, currentAlphaElement, currentIndex, fullAlphaArray) => {
+    let iterationTally = currentAccumulator;
 
-        return accumulatedFlavor + baseFlavorValues[currentDishType - 1] + bonusValue;
-    }, 0);
+    // Add the base value from betaValues
+    iterationTally += betaValues[currentAlphaElement - 1];
 
-    return totalFlavorScore;
-};
+    // Check the conditional bonus
+    // The original condition `a[i] === a[i-1]+1` implies `i` must be > 0 for `a[i-1]` to be valid.
+    // If `i` is 0, `a[i-1]` is `undefined`, `undefined + 1` is `NaN`, so `a[0] === NaN` is `false`.
+    // This behavior is preserved by checking `currentIndex > 0`.
+    if (currentIndex > 0 && currentAlphaElement === fullAlphaArray[currentIndex - 1] + 1) {
+      iterationTally += gammaValues[currentAlphaElement - 2];
+    }
 
-const cuisineInput = require("fs").readFileSync("/dev/stdin", "utf8");
-const finalSatisfaction = processCulinaryJourney(cuisineInput);
-console.log(finalSatisfaction);
+    return iterationTally;
+  }, 0); // Initialize the accumulator with 0
+
+  console.log(finalTally);
+}
+
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

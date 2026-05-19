@@ -1,61 +1,41 @@
-const fileSystem = require('node:fs');
-const rawDataString = fileSystem.readFileSync('/dev/stdin', 'utf8');
-const processedLines = rawDataString.trim().split('\n');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allInputLines = fileContent.trim().split('\n');
+let currentInputPointer = 0;
 
-function processAllBlocks(lineSource, currentLineIdx = 0) {
-    if (currentLineIdx >= lineSource.length) {
-        return;
+for (;;) {
+    const headerData = allInputLines[currentInputPointer++].split(' ').map(Number);
+    const [participantCount, categoryCount] = headerData;
+
+    if (participantCount === 0 && categoryCount === 0) {
+        break;
     }
 
-    const dimensionsLine = lineSource[currentLineIdx];
-    if (!dimensionsLine) {
-        return;
+    const scoreRegistry = new Map();
+    for (let i = 1; i <= categoryCount; i++) {
+        scoreRegistry.set(i, 0);
     }
 
-    const dimensionValues = dimensionsLine.split(' ').map(Number);
-    const rowCount = dimensionValues[0];
-    const colCount = dimensionValues[1];
-
-    if (rowCount === 0 && colCount === 0) {
-        return;
+    for (let i = 0; i < participantCount; i++) {
+        const currentScores = allInputLines[currentInputPointer++].split(' ').map(Number);
+        currentScores.forEach((scoreValue, categoryIndex) => {
+            const categoryIdentifier = categoryIndex + 1;
+            const existingScore = scoreRegistry.get(categoryIdentifier);
+            scoreRegistry.set(categoryIdentifier, existingScore + scoreValue);
+        });
     }
 
-    const nextLineIdxAfterDims = currentLineIdx + 1;
-    const linesForCurrentBlock = lineSource.slice(nextLineIdxAfterDims, nextLineIdxAfterDims + rowCount);
-
-    const resultForBlock = calculateScoresAndRank(colCount, linesForCurrentBlock);
-    process.stdout.write(resultForBlock.join(' ') + '\n');
-
-    const nextBlockStartIdx = nextLineIdxAfterDims + rowCount;
-    processAllBlocks(lineSource, nextBlockStartIdx);
-}
-
-function calculateScoresAndRank(numColumns, dataRows) {
-    const initialColumnStates = Array.from({ length: numColumns }, (_, k) => ({
-        columnIdentifier: k + 1,
-        currentSum: 0
+    const rankedCategories = Array.from(scoreRegistry.entries()).map(([id, total]) => ({
+        categoryId: id,
+        aggregateScore: total
     }));
 
-    const aggregatedColumnStates = dataRows.reduce((columnAccumulator, rowContent) => {
-        const individualScores = rowContent.split(' ').map(Number);
-        individualScores.forEach((scoreValue, colIndex) => {
-            if (columnAccumulator[colIndex]) {
-                columnAccumulator[colIndex].currentSum += scoreValue;
-            }
-        });
-        return columnAccumulator;
-    }, initialColumnStates);
-
-    aggregatedColumnStates.sort((firstObject, secondObject) => {
-        if (firstObject.currentSum !== secondObject.currentSum) {
-            return secondObject.currentSum - firstObject.currentSum;
+    rankedCategories.sort((first, second) => {
+        if (first.aggregateScore === second.aggregateScore) {
+            return first.categoryId - second.categoryId;
         }
-        return firstObject.columnIdentifier - secondObject.columnIdentifier;
+        return second.aggregateScore - first.aggregateScore;
     });
 
-    const finalRankedIdentifiers = aggregatedColumnStates.map(obj => obj.columnIdentifier);
-
-    return finalRankedIdentifiers;
+    const finalOrder = rankedCategories.map(item => item.categoryId);
+    console.log(finalOrder.join(' '));
 }
-
-processAllBlocks(processedLines);

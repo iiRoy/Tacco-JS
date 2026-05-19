@@ -1,35 +1,38 @@
-const fileSystemAdapter = require('fs');
-const standardInputLocation = '/dev/stdin';
+var fileSystem = require('fs');
+var rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const entireInputContent = fileSystemAdapter.readFileSync(standardInputLocation, 'utf8');
+var allInputLines = rawInputData.split('\n');
 
-const processedInputLines = entireInputContent.trim().split('\n');
+var scenarioCount = Number(allInputLines.shift());
 
-const totalCaseCount = Number(processedInputLines.shift());
+function generatePoint(xCoord, yCoord) {
+    return { x: xCoord, y: yCoord };
+}
 
-const evaluateVectorAlignment = (lineDataString) => {
-    const numericalComponents = lineDataString.split(' ').map(Number);
+function deriveVector(initialPoint, terminalPoint) {
+    return { deltaX: terminalPoint.x - initialPoint.x, deltaY: terminalPoint.y - initialPoint.y };
+}
 
-    const firstPointX = numericalComponents[0];
-    const firstPointY = numericalComponents[1];
-    const secondPointX = numericalComponents[2];
-    const secondPointY = numericalComponents[3];
-    const thirdPointX = numericalComponents[4];
-    const thirdPointY = numericalComponents[5];
-    const fourthPointX = numericalComponents[6];
-    const fourthPointY = numericalComponents[7];
+var outcomeMessages = allInputLines.slice(0, scenarioCount).map(function(currentScenarioLine) {
+    var stringCoordinates = currentScenarioLine.split(' ');
+    var numericalValues = stringCoordinates.map(Number);
 
-    const vectorADX = secondPointX - firstPointX;
-    const vectorADY = secondPointY - firstPointY;
-    const vectorBDX = fourthPointX - thirdPointX;
-    const vectorBDY = fourthPointY - thirdPointY;
+    var firstPoint = generatePoint(numericalValues[0], numericalValues[1]);
+    var secondPoint = generatePoint(numericalValues[2], numericalValues[3]);
+    var thirdPoint = generatePoint(numericalValues[4], numericalValues[5]);
+    var fourthPoint = generatePoint(numericalValues[6], numericalValues[7]);
 
-    const crossProductTermOne = (vectorADX * vectorBDY).toFixed(12);
-    const crossProductTermTwo = (vectorBDX * vectorADY).toFixed(12);
+    var segmentVectorOne = deriveVector(firstPoint, secondPoint);
+    var segmentVectorTwo = deriveVector(thirdPoint, fourthPoint);
 
-    return crossProductTermOne === crossProductTermTwo ? 'YES' : 'NO';
-};
+    var comparisonValueA = (segmentVectorOne.deltaX * segmentVectorTwo.deltaY);
+    var comparisonValueB = (segmentVectorOne.deltaY * segmentVectorTwo.deltaX);
 
-const finalResults = processedInputLines.slice(0, totalCaseCount).map(evaluateVectorAlignment);
+    if (comparisonValueA.toFixed(12) === comparisonValueB.toFixed(12)) {
+        return 'YES';
+    } else {
+        return 'NO';
+    }
+});
 
-finalResults.forEach(outcomeMessage => console.log(outcomeMessage));
+console.log(outcomeMessages.join('\n'));

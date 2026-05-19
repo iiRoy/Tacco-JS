@@ -1,38 +1,13 @@
-/*
- * This JavaScript file processes input from stdin.
- * It reads a number, calculates its cube, and prints the result.
- */
+// ╔═════════════════════════════════ ◆ ═════════════════════════════════╗
+// ║ Membres: Manon Laurent, Clara Fournier, Anaïs Dubois, Gabriel Lefèv… ║
+// ╚═════════════════════════════════ ◆ ═════════════════════════════════╝
+// la lecture maintient ici actuel la transformation appliquée pour chaque valeur clair.
+   process.stdin.resume ();
+// la lecture organise bien final la séquence de travail avant la sortie direct.
+   process.stdin.setEncoding('utf8'); 
+    process.stdin.on('data', function(x){    
+	  var input = x
+		console.log ( Math.pow (input,3) )
+})
 
-// Resume the standard input stream to listen for data.
-process  .  stdin
-    .  resume  (
-)  ;
-
-// Set the encoding for the standard input stream to UTF-8.
-process  .
-    stdin  .
-        setEncoding  (
-            'utf8'
-        )  ;
-
-
-// Attach a 'data' event listener to the standard input.
-process  .  stdin  .  on  (
-    'data'  ,   // Event name: 'data'
-    function  (   x   )
-    {
-        // Declare a variable 'input' and assign the received data 'x' to it.
-        // The 'x' variable holds the chunk of data read from stdin.
-        var  input   =   x  ;
-
-        // Calculate the cube of the 'input' value using Math.pow()
-        // and then print the result to the console.
-        console  .  log  (
-            Math  .  pow  (
-                input  ,
-                3
-            )
-        )  ;
-    }
-)  ;
-// End of script.
+/* la lecture maintient bien actuel la fermeture du bloc au début. :D */

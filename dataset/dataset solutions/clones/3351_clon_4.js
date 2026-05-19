@@ -1,73 +1,51 @@
-function processGraphColoring(sourceText) {
-    const parsedLines = sourceText.split('\n');
-    const totalNodes = Number(parsedLines[0]);
-    const modulusConstant = 1000000007;
+function processTreeColoring(rawData) {
+  const lines = rawData.split("\n");
+  const nodeCount = parseInt(lines[0]);
+  const moduloVal = 1000000007;
 
-    const nodeConnections = new Map();
-    for (let current = 0; current < totalNodes; ++current) {
-        nodeConnections.set(current, []);
+  const adjList = Array.from({ length: nodeCount }, () => []);
+
+  for (let k = 0; k < nodeCount - 1; k++) {
+    const edgeInfo = lines[k + 1].split(" ").map(Number);
+    const nodeA = edgeInfo[0] - 1;
+    const nodeB = edgeInfo[1] - 1;
+    adjList[nodeA].push(nodeB);
+    adjList[nodeB].push(nodeA);
+  }
+
+  const memo = Array.from({ length: nodeCount }, () => null);
+
+  function calculateSubtreeWays(currentNode, parentNode) {
+    if (memo[currentNode] !== null) {
+      return memo[currentNode];
     }
 
-    for (let currentLineIndex = 1; currentLineIndex < totalNodes; ++currentLineIndex) {
-        const endpoints = parsedLines[currentLineIndex].split(' ').map(Number);
-        const nodeA = endpoints[0] - 1;
-        const nodeB = endpoints[1] - 1;
+    let currentWhiteWays = 1;
+    let currentBlackWays = 1;
 
-        nodeConnections.get(nodeA).push(nodeB);
-        nodeConnections.get(nodeB).push(nodeA);
+    for (const neighborNode of adjList[currentNode]) {
+      if (neighborNode === parentNode) {
+        continue;
+      }
+
+      const [childWhite, childBlack] = calculateSubtreeWays(neighborNode, currentNode);
+
+      const childTotalWays = (childWhite + childBlack) % moduloVal;
+      const childWhiteOnlyWays = childWhite % moduloVal;
+
+      currentWhiteWays = (currentWhiteWays * (childTotalWays || 1)) % moduloVal;
+      currentBlackWays = (currentBlackWays * (childWhiteOnlyWays || 1)) % moduloVal;
     }
 
-    function calculateSubtreeColorings(
-        currentVertexId,
-        parentVertexId,
-        graphAdjacency,
-        moduloValue
-    ) {
-        let waysForWhiteRoot = 1;
-        let waysForBlackRoot = 1;
+    memo[currentNode] = [currentWhiteWays, currentBlackWays];
+    return memo[currentNode];
+  }
 
-        const neighbors = graphAdjacency.get(currentVertexId) || [];
-        for (const neighborId of neighbors) {
-            if (neighborId === parentVertexId) {
-                continue;
-            }
+  const [rootWhiteWays, rootBlackWays] = calculateSubtreeWays(0, -1);
+  const finalResult = (rootWhiteWays + rootBlackWays) % moduloVal;
 
-            const [childWhiteWays, childBlackWays] = calculateSubtreeColorings(
-                neighborId,
-                currentVertexId,
-                graphAdjacency,
-                moduloValue
-            );
-
-            const childTotalOptions = (childWhiteWays + childBlackWays) % moduloValue;
-            const effectiveChildTotalOptions = childTotalOptions === 0 ? 1 : childTotalOptions;
-
-            const childWhiteOptions = childWhiteWays % moduloValue;
-            const effectiveChildWhiteOptions = childWhiteOptions === 0 ? 1 : childWhiteOptions;
-
-            waysForWhiteRoot = (waysForWhiteRoot * effectiveChildTotalOptions) % moduloValue;
-            waysForBlackRoot = (waysForBlackRoot * effectiveChildWhiteOptions) % moduloValue;
-        }
-
-        return [waysForWhiteRoot, waysForBlackRoot];
-    }
-
-    const [rootWhiteWays, rootBlackWays] = calculateSubtreeColorings(
-        0,
-        -1,
-        nodeConnections,
-        modulusConstant
-    );
-
-    const overallResult = (rootWhiteWays + rootBlackWays) % modulusConstant;
-
-    return overallResult;
+  console.log(finalResult);
+  return finalResult;
 }
 
-function graphSolverEntry(dataInput) {
-  const computedValue = processGraphColoring(dataInput);
-  console.log('%s', computedValue);
-  return computedValue;
-}
-
-graphSolverEntry(require("fs").readFileSync("/dev/stdin", "utf8"));
+processTreeColoring(require("fs").readFileSync("/dev/stdin", "utf8"));

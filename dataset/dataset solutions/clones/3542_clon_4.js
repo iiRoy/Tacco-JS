@@ -1,52 +1,34 @@
-const processInput = (rawData) => {
-    const dataLines = rawData.trim().split('\n');
-    const firstLineValues = dataLines[0].split(' ').map(numStr => +numStr);
-    const secondLineValues = dataLines[1].split(' ').map(numStr => +numStr);
+var parseInteger = v => Number.parseInt(v, 10);
+var processNumberString = str => str.split(' ').map(parseInteger);
+var getMaximum = (...args) => Math.max(...args);
 
-    return {
-        itemCount: firstLineValues[0],
-        budgetFactor: firstLineValues[1],
-        itemAmounts: secondLineValues,
-    };
-};
+function executeMainLogic(inputContent) {
+    const inputLines = inputContent.split('\n');
+    const [countN, valueX] = processNumberString(inputLines[0]);
+    const dataElements = processNumberString(inputLines[1]);
 
-const executeComputation = (inputDetails) => {
-    const { itemCount, budgetFactor, itemAmounts } = inputDetails;
-
-    const runningTotals = itemAmounts.reduce((accumulator, currentAmount, index) => {
-        const previousTotal = index === 0 ? 0 : accumulator[index - 1];
-        accumulator.push(currentAmount + previousTotal);
+    const cumulativeSums = dataElements.reduce((accumulator, currentElement, index) => {
+        accumulator.push((index === 0 ? 0 : accumulator[index - 1]) + currentElement);
         return accumulator;
     }, []);
 
-    let aggregateSum = (itemCount + 1) * budgetFactor;
+    const initialResult = (countN + 1) * valueX;
 
-    const recurseAndAccumulate = (currentIndex, currentGroupingSize, currentAggregate) => {
-        if (currentIndex < 0) {
-            return currentAggregate;
+    const finalState = dataElements.reduceRight((accumulator, currentElement, currentIndex) => {
+        let currentStreak = accumulator.streakCount + 1;
+        let runningTotal = accumulator.currentTotal;
+        const currentCumulative = cumulativeSums[currentIndex];
+
+        if (currentStreak > 2 && valueX < currentCumulative * (currentStreak - 1) * 2 - currentElement * 2) {
+            currentStreak = 1;
+            runningTotal += valueX;
         }
+        runningTotal += currentElement * (getMaximum(currentStreak, 2) * 2 + 1);
 
-        let nextGroupingSize = currentGroupingSize + 1;
-        let nextAggregate = currentAggregate;
+        return { currentTotal: runningTotal, streakCount: currentStreak };
+    }, { currentTotal: initialResult, streakCount: 0 });
 
-        if (nextGroupingSize > 2 && budgetFactor < runningTotals[currentIndex] * (nextGroupingSize - 1) * 2 - itemAmounts[currentIndex] * 2) {
-            nextGroupingSize = 1;
-            nextAggregate += budgetFactor;
-        }
+    console.log(finalState.currentTotal);
+}
 
-        nextAggregate += itemAmounts[currentIndex] * (Math.max(nextGroupingSize, 2) * 2 + 1);
-
-        return recurseAndAccumulate(currentIndex - 1, nextGroupingSize, nextAggregate);
-    };
-
-    return recurseAndAccumulate(itemCount - 1, 0, aggregateSum);
-};
-
-const programEntry = () => {
-    const rawInput = require("fs").readFileSync(0, "utf8");
-    const parsedData = processInput(rawInput);
-    const finalResult = executeComputation(parsedData);
-    console.log(finalResult);
-};
-
-programEntry();
+executeMainLogic(require("fs").readFileSync("/dev/stdin", "utf8"));

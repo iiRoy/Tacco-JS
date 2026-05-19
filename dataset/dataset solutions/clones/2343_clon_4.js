@@ -1,22 +1,30 @@
 "use strict";
 
-const performScoreEvaluation = (sourceTextData) => {
-    const individualPoints = sourceTextData
-                                .trim()
-                                .split(/\s+/)
-                                .slice(0, 3)
-                                .map(Number);
+const calculateScore = (inputLine) => {
+  let accumulatedValue = 0;
+  let elementCounter = 0;
+  const digitSequences = inputLine.match(/\d+/g);
 
-    const calculatedTotal = individualPoints.reduce((accumulator, currentPoint) => accumulator + currentPoint, 0);
-
-    const outcomeMessages = ["bust", "win"];
-
-    const finalDecision = outcomeMessages[+(calculatedTotal <= 21)];
-
-    console.log(finalDecision);
+  for (const sequence of digitSequences) {
+    if (elementCounter < 3) {
+      accumulatedValue += Number(sequence);
+      elementCounter++;
+    } else {
+      break;
+    }
+  }
+  return accumulatedValue;
 };
 
-const systemInputHandler = require('fs');
-const receivedContent = systemInputHandler.readFileSync('/dev/stdin', 'utf8');
+const executeProgram = (programInput) => {
+  const finalScore = calculateScore(programInput);
 
-performScoreEvaluation(receivedContent);
+  const decisionTable = {
+    "true": "bust",
+    "false": "win"
+  };
+
+  console.log(decisionTable[String(finalScore > 21)]);
+};
+
+executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));

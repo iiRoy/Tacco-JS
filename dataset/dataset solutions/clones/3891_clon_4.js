@@ -1,40 +1,42 @@
-const pathProcessor = require('readline');
+const fileSystem = require('fs');
 
-const streamHandler = pathProcessor.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const processInputAndDecide = (rawInputString) => {
+    const inputParts = rawInputString.split(' ');
+    
+    const parsedValues = inputParts.reduce((accumulator, currentPart, idx) => {
+        const numericValue = Number(currentPart);
+        if (idx === 0) accumulator.initial = numericValue;
+        else if (idx === 1) accumulator.increment = numericValue;
+        else if (idx === 2) accumulator.final = numericValue;
+        return accumulator;
+    }, {});
 
-const outcomeDeterminants = [
-    (origin, allowance, destination) => {
-        const needed = destination - origin;
-        return (needed === 0) && (allowance === 0);
-    },
-    (origin, allowance, destination) => {
-        const needed = destination - origin;
-        return (needed > 0) && (allowance >= needed);
-    }
-];
+    const { initial: startPoint, increment: stepSize, final: endPoint } = parsedValues;
 
-const computeFinalVerdict = (initialSpot, stepBudget, finalSpot) => {
-    for (let decisionMaker of outcomeDeterminants) {
-        if (decisionMaker(initialSpot, stepBudget, finalSpot)) {
-            return true;
+    let outcomeFlag = false;
+
+    if (startPoint === endPoint) {
+        if (stepSize === 0) {
+            outcomeFlag = true;
+        }
+    } else if (startPoint < endPoint) {
+        if (startPoint + stepSize >= endPoint) {
+            outcomeFlag = true;
         }
     }
-    return false;
+
+    return outcomeFlag ? "YES" : "NO";
 };
 
-streamHandler.on('line', (inputData) => {
-    const numericParts = inputData.split(/\s+/).filter(Boolean).map(val => parseInt(val, 10));
-
-    const startVal = numericParts[0];
-    const fuelVal = numericParts[1];
-    const endVal = numericParts[2];
-
-    const verdict = computeFinalVerdict(startVal, fuelVal, endVal);
+try {
+    const fullInputContent = fileSystem.readFileSync("/dev/stdin", "UTF-8");
+    const inputLinesArray = fullInputContent.split("\n");
+    const firstRelevantLine = inputLinesArray[0];
     
-    process.stdout.write(verdict ? "YES\n" : "NO\n");
-    
-    streamHandler.close();
-});
+    const finalDecision = processInputAndDecide(firstRelevantLine);
+    console.log(finalDecision);
+} catch (error) {
+    throw error;
+}
+
+module.exports = undefined;

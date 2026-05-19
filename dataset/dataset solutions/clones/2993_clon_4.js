@@ -1,83 +1,101 @@
-const evaluateGridPath = (eventStream) => {
-    const [settingsLine, startCoordLine, robotPathLine, obstaclePathLine] = eventStream.split('\n');
-    const [gridRows, gridCols, totalOperations] = settingsLine.split(' ').map(Number);
-    const [originRow, originCol] = startCoordLine.split(' ').map(Number);
-    const robotSequence = robotPathLine.split('');
-    const obstacleSequence = obstaclePathLine.split('');
+function Main(input) {
+  const inputLines = input.split("\n");
+  const [gridHeight, gridWidth, totalMoves] = inputLines[0].split(" ").map(Number);
+  const [initialRow, initialColumn] = inputLines[1].split(" ").map(Number);
+  const sequenceS = inputLines[2].split("");
+  const sequenceT = inputLines[3].split("");
 
-    let dynamicState = {
-        maxLeft: 0,
-        maxRight: 0,
-        maxUp: 0,
-        maxDown: 0,
-        trapCounterLeft: 0,
-        trapCounterRight: 0,
-        trapCounterUp: 0,
-        trapCounterDown: 0
-    };
+  const initialSimulationState = {
+    currentMinColumnOffset: 0,
+    currentMaxColumnOffset: 0,
+    currentMinRowOffset: 0,
+    currentMaxRowOffset: 0,
+    permissibleMinColumnOffset: 1 - initialColumn,
+    permissibleMaxColumnOffset: gridWidth - initialColumn,
+    permissibleMinRowOffset: 1 - initialRow,
+    permissibleMaxRowOffset: gridHeight - initialRow,
+    finalOutcome: "YES"
+  };
 
-    const robotMoveActions = {
-        'L': (state) => { state.maxLeft++; },
-        'R': (state) => { state.maxRight++; },
-        'U': (state) => { state.maxUp++; },
-        'D': (state) => { state.maxDown++; }
-    };
+  const stepProcessor = (currentState, _, moveIndex) => {
+    if (currentState.finalOutcome === "NO") {
+      return currentState;
+    }
 
-    const trapMoveActions = {
-        'R': (state) => {
-            if (originCol + state.trapCounterRight + 1 <= gridCols) {
-                state.maxLeft--;
-                state.trapCounterRight++;
-            }
-        },
-        'L': (state) => {
-            if (originCol - state.trapCounterLeft - 1 > 0) {
-                state.maxRight--;
-                state.trapCounterLeft++;
-            }
-        },
-        'U': (state) => {
-            if (originRow - state.trapCounterUp - 1 > 0) {
-                state.maxDown--;
-                state.trapCounterUp++;
-            }
-        },
-        'D': (state) => {
-            if (originRow + state.trapCounterDown + 1 >= gridRows) {
-                state.maxUp--;
-                state.trapCounterDown++;
-            }
+    const currentSMove = sequenceS[moveIndex];
+    const currentTMove = sequenceT[moveIndex];
+
+    let nextState = { ...currentState };
+
+    // Update character's relative movement range based on S-move
+    switch (currentSMove) {
+      case "L":
+        nextState.currentMinColumnOffset--;
+        break;
+      case "R":
+        nextState.currentMaxColumnOffset++;
+        break;
+      case "U":
+        nextState.currentMinRowOffset--;
+        break;
+      case "D":
+        nextState.currentMaxRowOffset++;
+        break;
+    }
+
+    // Check if character's current range exceeds permissible boundaries
+    if (nextState.currentMaxColumnOffset > nextState.permissibleMaxColumnOffset ||
+        nextState.currentMinColumnOffset < nextState.permissibleMinColumnOffset ||
+        nextState.currentMaxRowOffset > nextState.permissibleMaxRowOffset ||
+        nextState.currentMinRowOffset < nextState.permissibleMinColumnOffset // Replicating original code's typo (sc-u<=0)
+        ) {
+      return { ...nextState, finalOutcome: "NO" };
+    }
+
+    // Adjust permissible boundaries based on T-move
+    switch (currentTMove) {
+      case "R":
+        if (nextState.permissibleMaxColumnOffset < gridWidth - initialColumn) {
+          nextState.permissibleMinColumnOffset++;
+          nextState.permissibleMaxColumnOffset++;
         }
-    };
-
-    const finalOutcome = Array.from({ length: totalOperations }).every((_, stepIndex) => {
-        const currentRobotAction = robotSequence[stepIndex];
-        if (robotMoveActions[currentRobotAction]) {
-            robotMoveActions[currentRobotAction](dynamicState);
+        break;
+      case "L":
+        if (nextState.permissibleMinColumnOffset > 1 - initialColumn) {
+          nextState.permissibleMinColumnOffset--;
+          nextState.permissibleMaxColumnOffset--;
         }
-
-        if (originCol + dynamicState.maxRight > gridCols) return false;
-        if (originCol - dynamicState.maxLeft <= 0) return false;
-        if (originRow + dynamicState.maxDown > gridRows) return false;
-        if (originRow - dynamicState.maxUp <= 0) return false;
-
-        const currentTrapAction = obstacleSequence[stepIndex];
-        if (trapMoveActions[currentTrapAction]) {
-            trapMoveActions[currentTrapAction](dynamicState);
+        break;
+      case "U":
+        if (nextState.permissibleMinRowOffset > 1 - initialRow) {
+          nextState.permissibleMinRowOffset--;
+          nextState.permissibleMaxRowOffset--;
         }
+        break;
+      case "D":
+        if (nextState.permissibleMaxRowOffset < gridHeight - initialRow) {
+          nextState.permissibleMinRowOffset++;
+          nextState.permissibleMaxRowOffset++;
+        }
+        break;
+    }
 
-        return true;
-    });
+    return nextState;
+  };
 
-    return finalOutcome ? "YES" : "NO";
-};
+  const finalState = Array.from({ length: totalMoves }).reduce(stepProcessor, initialSimulationState);
 
-const processInputAndOutput = (dataPayload) => {
-    const resultString = evaluateGridPath(dataPayload);
-    console.log(resultString);
-    return resultString;
-};
+  console.log('%s', finalState.finalOutcome);
+  return finalState.finalOutcome;
+}
 
-const systemFileHandler = require("fs");
-const dataFromSystem = systemFileHandler.readFileSync("/dev/stdin", "utf8");
-processInputAndOutput(dataFromSystem);
+function debug(n){
+  var input = document.getElementById("input"+n).value;
+  var ans=Main(input);
+  var result="WA";
+  if(ans==document.getElementById("output"+n).value.split("\n")[0]){
+    result="AC";
+  }
+  document.getElementById("result"+n).innerHTML=result;
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

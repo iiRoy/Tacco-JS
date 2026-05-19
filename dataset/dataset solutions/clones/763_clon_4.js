@@ -1,136 +1,70 @@
-const refineText = (rawString) => {
-    let frontIndex = 0;
-    let backIndex = rawString.length - 1;
-    while (frontIndex <= backIndex && /\s/.test(rawString[frontIndex])) {
-        frontIndex++;
+var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var dataLines = sourceData.trim().split("\n");
+
+let parseInputBlocks = (lines) => {
+    let processedBlocks = [];
+    let linePointer = 0;
+    while (true) {
+        let currentQuantity = parseInt(lines[linePointer++], 10);
+        if (currentQuantity === 0) break;
+        let currentElements = lines[linePointer++].split(" ");
+        processedBlocks.push({ totalItems: currentQuantity, itemSequence: currentElements });
     }
-    while (backIndex >= frontIndex && /\s/.test(rawString[backIndex])) {
-        backIndex--;
-    }
-    return rawString.substring(frontIndex, backIndex + 1);
+    return processedBlocks;
 };
 
-const divideByNewlines = (fullText) => {
-    const lineSegments = [];
-    let currentLine = '';
-    for (let currentCharacter = 0; currentCharacter < fullText.length; currentCharacter++) {
-        if (fullText[currentCharacter] === '\n') {
-            lineSegments.push(currentLine);
-            currentLine = '';
-        } else {
-            currentLine += fullText[currentCharacter];
-        }
-    }
-    lineSegments.push(currentLine);
-    return lineSegments;
-};
+let determineOutcomes = (inputBlockCollection) => {
+    let finalResults = [];
 
-const divideBySpaces = (lineText) => {
-    const lineParts = [];
-    let currentPart = '';
-    for (let currentCharacter = 0; currentCharacter < lineText.length; currentCharacter++) {
-        if (lineText[currentCharacter] === ' ') {
-            if (currentPart.length > 0) {
-                lineParts.push(currentPart);
+    inputBlockCollection.forEach(blockEntry => {
+        let { totalItems: blockTotal, itemSequence: blockItems } = blockEntry;
+
+        let blockProcessingState = blockItems.reduce((accumulator, currentIdentifier, stepIndex) => {
+            // If a definitive outcome has already been found for this block, bypass further processing
+            if (accumulator.finalDecision) {
+                return accumulator;
             }
-            currentPart = '';
-        } else {
-            currentPart += lineText[currentCharacter];
-        }
-    }
-    if (currentPart.length > 0) {
-        lineParts.push(currentPart);
-    }
-    return lineParts;
-};
 
-const systemUtility = globalThis.process.versions.node ? require('node:fs') : null;
-const sourceContent = systemUtility.readFileSync('/dev/stdin', 'utf8');
-let processedDataUnits = divideByNewlines(refineText(sourceContent));
+            accumulator.currentIteration = stepIndex + 1; // 1-based step count
 
-const orchestrateDataProcessing = (dataSeries) => {
-    let seriesPosition = 0;
-    while (seriesPosition < dataSeries.length) {
-        const currentDataSetSize = Number(dataSeries[seriesPosition++]);
-        if (currentDataSetSize === 0) {
-            break;
-        }
+            // Update frequency map for the current item
+            accumulator.frequencyMap.set(currentIdentifier, (accumulator.frequencyMap.get(currentIdentifier) || 0) + 1);
 
-        const dataSetMembers = divideBySpaces(dataSeries[seriesPosition++]);
+            // Convert map entries to an array and sort by frequency (ascending)
+            let sortedFrequencyPairs = Array.from(accumulator.frequencyMap.entries())
+                                             .sort((pairA, pairB) => pairA[1] - pairB[1]);
 
-        const analysisOutcome = performDataSetAnalysis(currentDataSetSize, dataSetMembers);
+            let primaryCount = sortedFrequencyPairs[0][1];
+            let primaryIdentifier = sortedFrequencyPairs[0][0];
+            let secondaryCount = sortedFrequencyPairs.length > 1 ? sortedFrequencyPairs[1][1] : 0; // Default to 0 if only one distinct item
 
-        if (analysisOutcome.hasDominantMember) {
-            console.log(`${analysisOutcome.dominantMemberName} ${analysisOutcome.discoveryStep}`);
-        } else {
-            console.log('TIE');
-        }
-    }
-};
+            let remainingItemsInBlock = blockTotal - accumulator.currentIteration;
 
-const performDataSetAnalysis = (totalParticipants, participantIdentifiers) => {
-    const finalAnalysisResult = participantIdentifiers.reduce((intermediateState, currentParticipant, participantIndex) => {
-        if (intermediateState.hasDominantMember) {
-            return intermediateState;
-        }
-
-        const updatedTally = new Map(intermediateState.participantScores);
-        updatedTally.set(currentParticipant, (updatedTally.get(currentParticipant) || 0) + 1);
-
-        let minScore1 = Infinity;
-        let minIdentifier1 = null;
-        let minScore2 = Infinity;
-        let minIdentifier2 = null;
-
-        for (const [keyIdentifier, currentScore] of updatedTally.entries()) {
-            if (currentScore < minScore1) {
-                minScore2 = minScore1;
-                minIdentifier2 = minIdentifier1;
-                minScore1 = currentScore;
-                minIdentifier1 = keyIdentifier;
-            } else if (currentScore < minScore2 && keyIdentifier !== minIdentifier1) {
-                minScore2 = currentScore;
-                minIdentifier2 = keyIdentifier;
+            // Check if a clear winner has emerged
+            if (primaryCount > secondaryCount + remainingItemsInBlock) {
+                accumulator.finalDecision = `${primaryIdentifier} ${accumulator.currentIteration}`;
             }
-        }
+            // If primaryCount === secondaryCount, it's a temporary tie, continue to next item.
+            // This is implicitly handled by not setting finalDecision.
 
-        if (updatedTally.size === 1) {
-            minScore2 = 0;
-            minIdentifier2 = minIdentifier1;
-        }
+            return accumulator;
+        }, {
+            frequencyMap: new Map(),
+            finalDecision: null, // Stores the winner string or remains null for a TIE
+            currentIteration: 0
+        });
 
-        const remainingSteps = totalParticipants - (participantIndex + 1);
-
-        if (minScore1 === minScore2) {
-            return {
-                hasDominantMember: false,
-                dominantMemberName: null,
-                discoveryStep: -1,
-                participantScores: updatedTally
-            };
-        } else if (minScore1 > minScore2 + remainingSteps) {
-            return {
-                hasDominantMember: true,
-                dominantMemberName: minIdentifier1,
-                discoveryStep: participantIndex + 1,
-                participantScores: updatedTally
-            };
+        // After processing all items in the sequence (or short-circuiting)
+        if (blockProcessingState.finalDecision) {
+            finalResults.push(blockProcessingState.finalDecision);
         } else {
-            return {
-                hasDominantMember: false,
-                dominantMemberName: null,
-                discoveryStep: -1,
-                participantScores: updatedTally
-            };
+            finalResults.push("TIE");
         }
-    }, {
-        hasDominantMember: false,
-        dominantMemberName: null,
-        discoveryStep: -1,
-        participantScores: new Map()
     });
 
-    return finalAnalysisResult;
+    return finalResults;
 };
 
-orchestrateDataProcessing(processedDataUnits);
+let parsedInput = parseInputBlocks(dataLines);
+let computedOutcomes = determineOutcomes(parsedInput);
+computedOutcomes.forEach(resultLine => console.log(resultLine));

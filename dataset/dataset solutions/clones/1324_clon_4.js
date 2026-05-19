@@ -1,45 +1,27 @@
-let collectedData = '';
+let accumulatedData = "";
 process.stdin.resume();
 process.stdin.setEncoding('utf-8');
-process.stdin.on('data', (piece) => {
-    collectedData += piece;
+process.stdin.on('data', (segment) => {
+  accumulatedData += segment;
 });
 
 process.stdin.on('end', () => {
-    const allLinesContent = collectedData.split('\n');
-    const firstLineContent = allLinesContent[0];
+  const allInputSegments = accumulatedData.split("\n");
+  const targetTerm = allInputSegments[0].toLowerCase();
 
-    const initialTokenSet = firstLineContent.split(' ').map(segment => segment.toUpperCase());
-    const primaryToken = initialTokenSet[0];
+  const finalTally = allInputSegments.slice(1).reduce((accumulator, currentSegment) => {
+    if (accumulator.stopProcessing || currentSegment.startsWith("END_OF_TEXT")) {
+      return { count: accumulator.count, stopProcessing: true };
+    }
 
-    let finalCount = 0;
-    let stopProcessing = false;
+    const tokensInSegment = currentSegment.split(/\s+/).filter(Boolean);
 
-    const traverseLinesRecursively = (currentLineIndex) => {
-        if (currentLineIndex >= allLinesContent.length || stopProcessing) {
-            return;
-        }
+    const segmentMatches = tokensInSegment.filter(token =>
+      token.toLowerCase() === targetTerm
+    ).length;
 
-        const currentLineString = allLinesContent[currentLineIndex];
-        const tokensInCurrentLine = currentLineString.split(' ').map(segment => segment.toUpperCase());
+    return { count: accumulator.count + segmentMatches, stopProcessing: false };
+  }, { count: 0, stopProcessing: false });
 
-        if (tokensInCurrentLine.length > 0 && tokensInCurrentLine[0] === 'END_OF_TEXT') {
-            stopProcessing = true;
-            return;
-        }
-
-        const lineOccurrences = tokensInCurrentLine.reduce((accumulator, currentToken) => {
-            if (currentToken === primaryToken) {
-                return accumulator + 1;
-            }
-            return accumulator;
-        }, 0);
-
-        finalCount += lineOccurrences;
-
-        traverseLinesRecursively(currentLineIndex + 1);
-    };
-
-    traverseLinesRecursively(1);
-    console.log(finalCount);
+  console.log(finalTally.count);
 });

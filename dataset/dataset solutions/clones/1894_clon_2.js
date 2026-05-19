@@ -1,51 +1,56 @@
-// This file processes some incoming data.
-// The 'incomingData' argument contains raw information.
-function ProcessData(incomingData)
-{
+function ProcessInputData(rawData) {
+  // This function processes the provided raw input string.
+  // It first splits the input into individual lines.
+  rawData = rawData.split("\n");
 
-  // Each line of the payload is now an element in the 'payloadLines' collection.
-  incomingData = incomingData.split("\n") ;
+  // Output the initial array of lines for debugging or tracing.
+  console.log(rawData);
 
-  console.log(incomingData); /* Log the initially parsed data for debugging purposes. */
+  // Extract the primary numerical value from the first line.
+  // Assuming it's the first space-separated token.
+  let initialValue = rawData[0].split(" ")[0];
 
-  let initialValue = incomingData[0].split(" ")[0]; // Extract the primary numeric identifier.
+  // Initialize an array to store elements that will be processed.
+  let processedElements = [];
 
-  const collectedSegments = []; // Initialize a container for extracted parts.
-
-  // Iterate through specific lines of the payload, skipping some.
-  for (let lineIndex = 2; lineIndex < incomingData.length; lineIndex += 2)
-  {
-    const currentLineSegments = incomingData[lineIndex].split(" "); // Split the current line into its components.
-
-    // Add each component from the current line to our main collection.
-    for (let segmentIndex = 0; segmentIndex < currentLineSegments.length; segmentIndex++)
-    {
-      collectedSegments.push(currentLineSegments[segmentIndex]);
+  // Iterate through the input lines, starting from the third line (index 2)
+  // and skipping every other line.
+  for (let idx = 2; idx < rawData.length; idx += 2) {
+    // Split the current line by spaces to get its constituent parts.
+    let currentLineParts = rawData[idx].split(" ");
+    // Add each part from the current line to our collection of elements.
+    for (let partIdx = 0; partIdx < currentLineParts.length; partIdx++) {
+      processedElements.push(currentLineParts[partIdx]);
     }
-
   }
 
-  // Refine the collection by removing duplicate entries.
-  const refinedSegments = FilterForDistinctElements(collectedSegments);
-  console.log(refinedSegments); // Display the collection after uniqueness filter.
+  // Apply a filtering operation to the collected elements to ensure uniqueness.
+  processedElements = FilterUniqueElements(processedElements);
+  // Display the array after uniqueness filtering.
+  console.log(processedElements);
 
-
-  // Calculate the final difference.
-  const finalResult = initialValue - refinedSegments.length;
+  // Calculate the final result by subtracting the count of unique elements
+  // from the initial numerical value.
+  let finalResult = initialValue - processedElements.length;
+  // Output the final calculated result.
   console.log(finalResult);
-  return finalResult; // Return the computed outcome.
 
-} /* End of main data processing function. */
+  // Return the computed result.
+  return finalResult;
+}
 
-// This auxiliary function identifies and retains only unique elements within a given collection.
-function FilterForDistinctElements (sourceCollection)
-{
-   // A predicate function to check if an element is unique within its array context.
-   const isUniquePredicate = (currentElement, currentPosition, fullArray) => {
-      return fullArray.indexOf(currentElement) === currentPosition
-    }
+// This helper function takes an array and returns a new array
+// containing only the unique elements from the input.
+function FilterUniqueElements(elementList) {
+  // Define a predicate function to determine if an element is unique
+  // within the context of its array.
+  const isUniquePredicate = (currentVal, currIdx, sourceArr) => {
+    // An element is unique if its first occurrence is at the current index.
+    return sourceArr.indexOf(currentVal) === currIdx;
+  };
 
-   // Apply the filter to obtain only the distinct items.
-   const distinctElements = sourceCollection.filter(isUniquePredicate)
-   return distinctElements // Provide the collection of unique items.
+  // Use the filter method with the predicate to create an array of distinct elements.
+  const distinctElements = elementList.filter(isUniquePredicate);
+  // Return the array containing only unique values.
+  return distinctElements;
 }

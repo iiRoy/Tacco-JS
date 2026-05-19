@@ -1,87 +1,71 @@
-/*
- * This script processes numerical data received from standard input.
- * It iterates through a sequence of numbers, performing a specialized calculation
- * for each non-zero entry, which involves modular arithmetic and difference analysis,
- * ultimately displaying processed results.
- */
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Acquire the complete raw input string from the file system.
-let rawData = require('fs') .readFileSync('/dev/stdin', 'utf8');
+// This script processes a sequence of numbers from standard input.
+// It performs calculations based on modular arithmetic and outputs results.
 
-// Refine the raw input: remove leading/trailing spaces, divide into lines,
-// and convert each line segment into a numerical value.
-const numericValues = rawData.trim().split("\n").map(Number);
+var numericSequence = rawData.trim().split("\n").map(Number);
 
-// Core processing loop: continues indefinitely until a specific termination condition is met.
 while (true) {
-    // Extract the next problem size parameter from the beginning of the numeric array.
-    var currentSize = numericValues.shift();
+    // Extract the next number from the input sequence.
+    var currentValue = numericSequence.shift();
 
-    // If the extracted size parameter is zero, exit the processing loop.
-    if (currentSize === 0) {
+    // If the extracted number is zero, it signifies the end of input blocks.
+    if (currentValue === 0) {
         break;
     }
 
-    // Initialize an array intended to hold boolean flags, setting all elements to false initially.
-    let booleanFlags = [];
-    for (let currentIdx = 0; currentIdx < currentSize; currentIdx++) {
-        booleanFlags[currentIdx] = false;
+    var booleanFlags = []; // An array to store boolean indicators.
+    // Initialize all elements of the booleanFlags array to 'false'.
+    for (var idx = 0; idx < currentValue; idx++) {
+        booleanFlags[idx] = false;
     }
 
-    // Populate the boolean flags array based on a quadratic modular congruence.
-    // Specifically, set the flag to true for indices corresponding to `i*i % currentSize`.
-    for (let currentIdx = 1; currentIdx < currentSize; currentIdx++) {
-        booleanFlags[ (currentIdx * currentIdx) % currentSize ] = true;
+    // Mark specific indices as 'true' based on a modular square operation.
+    for (var k = 1; k < currentValue; k++) {
+        booleanFlags[(k * k) % currentValue] = true;
     }
 
-    // Create a new array to store only the indices where the boolean flag is true.
-    const markedIndices = [];
-    booleanFlags.forEach(function(flagStatus, currentIdx) {
-        if (flagStatus) {
-            markedIndices.push(currentIdx);
+    var markedIndices = []; // This array will hold the indices that were marked 'true'.
+    booleanFlags.forEach(function (flagValue, indexPosition) {
+        if (flagValue) {
+            markedIndices.push(indexPosition);
         }
     });
 
-    // Declare an array that will store the final aggregated counts.
-    let resultCounts = [];
-    const halfRange = (currentSize - 1) / 2;
+    var finalCounts = []; // An array to accumulate the final count results.
+    var halfRange = (currentValue - 1) / 2; // Calculate a midpoint for array sizing.
 
-    // Initialize the result counts array with zeros, up to the calculated half-range.
-    for (let counter = 0; counter <= halfRange; counter++) {
-        resultCounts[counter] = 0;
+    // Populate the finalCounts array with zeros up to the calculated halfRange.
+    for (var p = 0; p <= halfRange; p++) {
+        finalCounts[p] = 0;
     }
 
-    // Iterate through all possible pairs of marked indices to calculate their differences.
-    for (let outerIdx = 0; outerIdx < markedIndices.length; outerIdx++) {
-        for (let innerIdx = 0; innerIdx < markedIndices.length; innerIdx++) {
-            // Skip the current iteration if both indices point to the same element.
-            if (outerIdx === innerIdx) {
+    // Iterate through all unique pairs of marked indices to compute differences.
+    for (var idx = 0; idx < markedIndices.length; idx++) {
+        for (var q = 0; q < markedIndices.length; q++) {
+            // Skip if the indices are identical to avoid self-comparison.
+            if (idx === q) {
                 continue;
             }
 
-            // Compute the difference between the two marked indices.
-            let calculatedDifference = markedIndices[outerIdx] - markedIndices[innerIdx];
+            var difference = markedIndices[idx] - markedIndices[q]; // Compute the raw difference.
 
-            // Adjust the difference to be positive within the currentSize modulus.
-            if (calculatedDifference < 0) {
-                calculatedDifference += currentSize;
+            // Adjust negative differences by adding the currentValue (modulo operation).
+            if (difference < 0) {
+                difference += currentValue;
             }
-
-            // Further adjust the difference to fit within the half-range, if necessary.
-            if (halfRange < calculatedDifference) {
-                calculatedDifference -= currentSize;
+            // Further adjust differences that exceed the halfRange.
+            if (halfRange < difference) {
+                difference -= currentValue;
             }
-
-            // Increment the count for the specific calculated difference.
-            resultCounts[calculatedDifference]++;
+            finalCounts[difference]++; // Increment the counter for the adjusted difference.
         }
     }
 
-    // Remove the first element from the resultCounts array, as it's typically unused in the output.
-    resultCounts.shift();
+    finalCounts.shift(); // Remove the element at index 0 from the final counts.
 
-    // Iterate over the remaining counts and output each one multiplied by two.
-    resultCounts.forEach(function(itemValue) {
-        console.log(itemValue * 2);
+    // Output each remaining count, multiplied by two, to the console.
+    finalCounts.forEach(function (resultItem) {
+        console.log(resultItem * 2);
     });
 }

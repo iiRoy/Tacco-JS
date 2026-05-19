@@ -1,65 +1,62 @@
-const parseRawData = (inputTxt) => {
-    const rawLines = inputTxt.split('\n');
-    const [gridHeight, gridWidth] = rawLines[0].split(' ').map(Number);
+'use strict';
 
-    const occupiedCells = new Set(); // Stores coordinates of '#' cells as strings "row,col"
+// Utility function to verify if a given coordinate pair falls within the grid boundaries.
+const validateCoordinates = (rowIndex, colIndex, totalRows, totalCols) =>
+  rowIndex >= 0 && rowIndex < totalRows && colIndex >= 0 && colIndex < totalCols;
 
-    // Process grid lines, excluding the first (dimensions) and potentially last (empty string from trailing newline)
-    rawLines.slice(1, -1).forEach((lineContents, rIndex) => {
-        lineContents.split('').forEach((character, cIndex) => {
-            if (character === '#') {
-                occupiedCells.add(`${rIndex},${cIndex}`);
-            }
-        });
-    });
+// Core logic function to determine if a specific cell has at least one '#' character as an immediate neighbor.
+const checkNeighborPresence = (r, c, gridData, maxR, maxC) => {
+  // Defines the relative offsets for checking the four cardinal directions (Up, Right, Down, Left).
+  const directionalShifts = [
+    [-1, 0], // North
+    [0, 1],  // East
+    [1, 0],  // South
+    [0, -1]  // West
+  ];
 
-    return { gridHeight, gridWidth, occupiedCells };
+  // Uses the 'some' array method to efficiently check if any of the potential neighbors meet the criteria.
+  // It short-circuits as soon as the first valid '#' neighbor is found.
+  return directionalShifts.some(([rowShift, colShift]) => {
+    const adjacentRow = r + rowShift;
+    const adjacentCol = c + colShift;
+
+    // First, ensure the adjacent cell is within the grid boundaries, then check its content.
+    return validateCoordinates(adjacentRow, adjacentCol, maxR, maxC) && gridData[adjacentRow][adjacentCol] === '#';
+  });
 };
 
-const checkAdjacentActivity = (pointKey, allOccupiedCells, maxRows, maxCols, displacementVectors) => {
-    const [currentRow, currentCol] = pointKey.split(',').map(Number);
+function processGridAnalysis(inputString) {
+  const inputLines = inputString.split('\n');
+  const [gridSizeLine] = inputLines;
+  const [rowDimensionStr, colDimensionStr] = gridSizeLine.split(' ');
+  const totalGridRows = Number(rowDimensionStr);
+  const totalGridCols = Number(colDimensionStr);
 
-    // Use Array.prototype.some to find if at least one neighbor satisfies the condition
-    return displacementVectors.some(([deltaR, deltaC]) => {
-        const nextRow = currentRow + deltaR;
-        const nextCol = currentCol + deltaC;
+  // Constructs the 2D character array representing the grid,
+  // excluding the first line (dimensions) and the last (typically empty due to EOF newline).
+  const gridMatrix = inputLines.slice(1, -1).map(line => line.split(''));
 
-        const isWithinBoundaries = nextRow >= 0 && nextRow < maxRows && nextCol >= 0 && nextCol < maxCols;
-        const isNeighborOccupied = allOccupiedCells.has(`${nextRow},${nextCol}`);
+  // Generates a flat list of all [row, column] coordinate pairs for every cell in the grid.
+  // This replaces traditional nested for-loops for grid iteration.
+  const allGridPoints = Array.from({ length: totalGridRows }, (_, r) =>
+    Array.from({ length: totalGridCols }, (_, c) => [r, c])
+  ).flat(); // Flattens the array of row-arrays into a single array of points.
 
-        return isWithinBoundaries && isNeighborOccupied;
-    });
-};
-
-const evaluateConnectivity = (gridData) => {
-    const { gridHeight, gridWidth, occupiedCells } = gridData;
-
-    // Define the four cardinal directions (up, right, down, left)
-    const displacementVectors = [
-        [-1, 0], // North
-        [0, 1],  // East
-        [1, 0],  // South
-        [0, -1]  // West
-    ];
-
-    // If there are no '#' cells, the condition is trivially met.
-    if (occupiedCells.size === 0) {
-        return 'Yes';
+  // Determines if there is any '#' cell in the grid that does not have an adjacent '#' cell.
+  // The 'some' method will return true and stop execution as soon as such a cell is identified.
+  const isAnyHashIsolated = allGridPoints.some(([currentR, currentC]) => {
+    // Only cells containing '#' are relevant for this condition.
+    if (gridMatrix[currentR][currentC] === '#') {
+      // If a '#' cell is found, check if it has any '#' neighbors.
+      // If it DOES NOT have any, then this cell is "isolated" and the condition is met.
+      return !checkNeighborPresence(currentR, currentC, gridMatrix, totalGridRows, totalGridCols);
     }
+    // Cells with '.' do not contribute to the "isolated hash" problem.
+    return false;
+  });
 
-    // Convert the Set to an Array to use Array.prototype.every
-    // Check if every '#' cell has at least one '#' neighbor
-    const allConnected = Array.from(occupiedCells).every(currentCellKey =>
-        checkAdjacentActivity(currentCellKey, occupiedCells, gridHeight, gridWidth, displacementVectors)
-    );
+  // Outputs 'No' if an isolated '#' character was detected, otherwise 'Yes'.
+  console.log(isAnyHashIsolated ? 'No' : 'Yes');
+}
 
-    return allConnected ? 'Yes' : 'No';
-};
-
-const executeGridValidation = (sourceData) => {
-    const processedInformation = parseRawData(sourceData);
-    const finalOutcome = evaluateConnectivity(processedInformation);
-    console.log(finalOutcome);
-};
-
-executeGridValidation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processGridAnalysis(require("fs").readFileSync("/dev/stdin", "utf8"));

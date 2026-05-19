@@ -1,24 +1,27 @@
-function ProcessData(rawPayload) {
-    const newlinePosition = rawPayload.indexOf('\n');
-    const primarySequence = rawPayload.slice(0, newlinePosition).toLowerCase();
-    const ordinalValue = Number(rawPayload.slice(newlinePosition + 1));
+function processInput(rawContent) {
+    const contentLines = rawContent.split("\n");
+    const baseString = contentLines[0].toLowerCase();
+    const targetRank = parseInt(contentLines[1]);
 
-    const sequenceLength = primarySequence.length;
-    const distinctFragments = new Set();
+    const textLength = baseString.length;
 
-    Array.from({ length: sequenceLength }).forEach((_, commencementPoint) => {
-        Array.from({ length: sequenceLength - commencementPoint }).forEach((_, spanIncrement) => {
-            const terminationPoint = commencementPoint + spanIncrement + 1;
-            const currentFragment = primarySequence.slice(commencementPoint, terminationPoint);
+    // Generate all non-empty substrings using a functional approach.
+    // This creates an array of arrays, where each inner array contains
+    // all substrings starting at a particular index.
+    const allPossibleSubstrings = Array.from({ length: textLength }, (_, startPoint) =>
+        Array.from({ length: textLength - startPoint }, (_, lengthOffset) =>
+            baseString.slice(startPoint, startPoint + lengthOffset + 1)
+        )
+    ).flat(); // Flatten the array of arrays into a single list of all substrings.
 
-            if (currentFragment.length > 0) {
-                distinctFragments.add(currentFragment);
-            }
-        });
-    });
+    // Utilize a Set to automatically handle the uniqueness requirement.
+    const distinctFragments = new Set(allPossibleSubstrings);
 
-    const orderedCollection = Array.from(distinctFragments).sort();
-    console.log(orderedCollection[ordinalValue - 1]);
+    // Convert the Set back to an Array and sort its elements lexicographically.
+    const orderedFragments = Array.from(distinctFragments).sort();
+
+    // Output the fragment at the specified rank (K-th element, 0-indexed).
+    console.log(orderedFragments[targetRank - 1]);
 }
 
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

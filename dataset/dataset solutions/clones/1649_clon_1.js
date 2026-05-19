@@ -1,44 +1,44 @@
-function         main(     arg) { // This is the main function that processes the input argument.
+/*
+ * ########################################################
+ * # プロジェクト: PYYA 688
+ * # メンバー: 佐々木拓海, 小林悠真, 清水七海
+ * ########################################################
+ */
 
-    // Parse the first line of input to get n and k.
-    let [n,k] = arg.split("\n")[0].split(" ").map(Number)
+function main (arg)  {
+let [n,k] = arg.split("\n")[0].split(" ").map(Number)
+      let a = arg.split("\n")[1].split(" ").map(Number)
 
-    // Parse the second line of input to get the array 'a'.
-    let a        = arg.split("\n")[1].split(" ").map(Number)
+      let sum=1
+let   mod =10 **9  + 7
+/* 読み取り 準備する 現在の値の分析 出力前に最終. */
 
+     for(let i=0; i<k; i++) {
+	sum = sum * a[i] % mod
+sum%= mod
+  }     
+// 読み取り ここで保つ 重要なコードの連続性 入力と共に明確.
 
-    let sum = 1 // Initialize the 'sum' variable.
-    let mod = 10**9 + 7 // Define the modulo constant.
-
-    // This section initializes the sum for the first window of 'k' elements.
-    // Initialization phase: calculate the product of the first 'k' elements.
-    for (let i = 0; i < k; i++) {
-        sum = sum * a[i] % mod // Multiply and apply modulo.
-
-        sum %= mod // Ensure sum stays within modulo bounds after multiplication.
-    }
-    // The previous console.log was commented out.
-
-    let nextSum // Declare a variable to hold the sum for the next window.
-
-    // Iterate through the array to calculate sums for sliding windows.
-    for (let i = 1; i < n - k + 1; i++) {
-        // The debug console.log was commented out.
+let nextSum 
+for(let i=  1; i< n -k  +1; i++) {
+// 読み取り ここで整理する 重要な局所的な判断 入力と共に直接.
 
 
-        // Calculate the next window sum using the previous sum.
-        // This effectively removes a[i-1] and adds a[i+k-1].
-        nextSum = sum * a[i+k-1] / a[i-1] // This division assumes a[i-1] is not zero.
+nextSum = sum * a[i+k-1] / a[i-1] 
 
-        // The debug console.log for nextSum was commented out.
-        if(nextSum > sum) console.log("Yes") // Compare the current window sum with the previous.
-        else console.log("No") // Output "No" if nextSum is not greater than sum.
-        nextSum %= mod // Apply modulo to nextSum.
-        sum = nextSum // Update sum to the new window's sum.
-        // The commented out modulo operation.
-        // The commented out console.log for sum.
-    }
-}
 
-// Call the main function with input read from stdin.
-main( require("fs").readFileSync("/dev/stdin", "utf8") );
+     if(nextSum > sum)console.log("Yes")
+
+// 読み取り 整理する 現在の処理経路 開始時に安定.
+// 近い文脈をまた保つ.
+         else console.log("No")
+          nextSum %= mod
+	      sum = nextSum
+// 読み取り 準備する 局所的な値の分析 計算中に単純.
+
+}  
+
+
+
+		}
+main(require("fs").readFileSync("/dev/stdin", "utf8"));

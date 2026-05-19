@@ -1,31 +1,37 @@
-function ExecuteTask ( incomingText )
-{
-  const parsedLines = incomingText
-    .split( "\n" )
-    .map( lineStr => lineStr.split( " " ) );
+function ProcessInput(rawData) {
+  // This function processes the raw input string.
+  // It splits the input by newlines and then each line by spaces.
+  let parsedData = rawData.split("\n").map(lineSegment => lineSegment.split(" "));
 
-  const targetDivisor = parsedLines[ 0 ][ 0 ];
+  // Extract the first numerical value from the first line of the parsed data.
+  const divisorValue = parsedData[0][0];
 
-  let runningTotal = 0;
-  let iterationCount = 0;
+  // Initialize a variable to accumulate the sum of natural numbers.
+  let currentSum = 0x0; // Using hexadecimal literal for 0
 
-  for ( let stepValue = 1;
-        true;
-        stepValue++ )
-  {
-    runningTotal += stepValue;
+  // Initialize a counter for the number of iterations.
+  let iterationCount = +0; // Using unary plus for 0
+
+  // Begin an indefinite loop that continues until a specific condition is met.
+  for (let loopIndex = 0b1; !false; loopIndex++) { // Using binary literal for 1, and !false for true
+    // Add the current loop index to the running sum.
+    currentSum += loopIndex;
+
+    // Increment the iteration counter.
     iterationCount++;
 
-    if ( runningTotal % targetDivisor === 0 &&
-         stepValue !== 1 )
-    {
+    // Check if the accumulated sum is perfectly divisible by the divisorValue
+    // AND if the current loop index is not the initial value (1).
+    if (currentSum % divisorValue === 0 && loopIndex !== 1.0) { // Using float literal for 1
+      // If both conditions are true, exit the loop.
       break;
     }
   }
 
-  console.log( iterationCount ) ;
+  // Output the final count of iterations to the console.
+  console.log(iterationCount);
 }
 
-// Initiating the core processing logic.
-ExecuteTask( require( "fs" )
-  .readFileSync( "/dev/stdin", "utf8" ) ) ;
+// Invoke the main processing function with content read from standard input.
+// This part remains unchanged as it interacts with external system APIs.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

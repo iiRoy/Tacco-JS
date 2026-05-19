@@ -1,116 +1,99 @@
-var dataQueue = [];
+var inputBuffer = [];
+var lineReaderModule = require('readline');
 
-// Load the necessary input/output module
-var inputModule = require('readline');
-
-// Establish an interface for reading input and writing output
-var inputReader = inputModule.createInterface({
-    sourceStream: process.stdin, // Specify the input source
-    destinationStream: process.stdout, // Specify the output destination
+var interfaceHandler = lineReaderModule.createInterface({
+    input: process.stdin,
+    output: process.stdout,
 });
 
-// Event handler for each line received
-inputReader.uponEvent('receivedLine', function dataReceiver(currentLineData) {
-    dataQueue.push(currentLineData); // Store the incoming line
+interfaceHandler.on('line', function (currentLine) {
+    inputBuffer.push(currentLine);
 });
 
-// Callback function executed when the input stream closes
-inputReader.uponEvent('streamClosed', function completionCallback() {
-    // Retrieve the initial configuration line
-    let firstLineContent = dataQueue.shift();
+interfaceHandler.on('close', function () {
+    // Extract the first line containing N, A, B
+    var tempStr = inputBuffer.shift();
 
-    // Parse the parameters from the first line
-    let totalElements = parseInt(firstLineContent.split(" ")[0], 10);
-    let selectionCount = parseInt(firstLineContent.split(" ")[1], 10);
-    let maxCombinationLimit = parseInt(firstLineContent.split(" ")[2], 10);
+    var itemCount = tempStr.split(" ")[0];
+    var minSelection = tempStr.split(" ")[1];
+    var maxSelection = tempStr.split(" ")[2];
+    var valueArray = Array(itemCount);
 
-    // Initialize an array to hold numeric values
-    let valueArray = new Array(totalElements);
-
-    // Process the second line of input
-    let secondLineTokens = dataQueue.shift().split(" ");
-    for (let elementIndex = 0; elementIndex < totalElements; elementIndex++) {
-        valueArray[elementIndex] = parseFloat(secondLineTokens[elementIndex]); // Convert string to float
+    // Parse the second line into an array of numbers
+    var tempValuesStr = inputBuffer.shift().split(" ");
+    for (var idx = 0; idx < itemCount; idx++) {
+        valueArray[idx] = Number(tempValuesStr[idx]);
     }
 
     // Sort the array in descending order
-    valueArray.sort(function sortComparator(firstValue, secondValue) {
-        return (secondValue - firstValue);
-    });
+    valueArray.sort(function (valA, valB) { return (valB - valA); });
 
-    let computedAverage = 0.0; // Variable to store the calculated average
-    let frequencyMap = {}; // Object to store element frequencies
+    var maxAverageValue = 0;
+    var frequencyMap = {}; // Stores frequency of each number
 
-    // Iterate through the sorted values to calculate average and frequencies
-    for (let currentItemIdx = 0; currentItemIdx < totalElements; currentItemIdx++) {
-        if (currentItemIdx < selectionCount) {
-            computedAverage += valueArray[currentItemIdx]; // Sum for average calculation
+    // Calculate the sum for the maximum average and populate frequency map
+    for (var idx = 0; idx < itemCount; idx++) {
+        if (idx < minSelection) {
+            maxAverageValue += valueArray[idx];
         }
-
-        // Initialize frequency if not present
-        if (frequencyMap[valueArray[currentItemIdx]] === void 0) {
-            frequencyMap[valueArray[currentItemIdx]] = 0;
+        if (frequencyMap[valueArray[idx]] === undefined) {
+            frequencyMap[valueArray[idx]] = 0;
         }
-        frequencyMap[valueArray[currentItemIdx]]++; // Increment frequency
+        frequencyMap[valueArray[idx]]++;
     }
-
-    // Finalize average calculation
-    computedAverage /= selectionCount;
-    console.log(computedAverage); // Output the calculated average
+    maxAverageValue /= minSelection;
+    console.log(maxAverageValue);
 
 
-    let cumulativeCount = 0; // Accumulates counts in the combination logic
-    let tempFactor = 1; // Temporary factor, not used in this specific path but left for structural integrity
+    var currentCount = 0;
+    var totalCombinations = 0; // Initialize combination result
 
-    // Conditional logic based on array values at specific indices
-    if (valueArray[0] !== valueArray[selectionCount]) {
-        let totalCombinations = 1; // Start with 1 for multiplication
-
-        // Loop to determine combinations based on frequencies
-        for (let loopIndex = 0; loopIndex < totalElements; loopIndex++) {
-            if (frequencyMap[valueArray[loopIndex]] >= 2) {
-                let subCount; // Sub-count for combination calculation
-                // Ternary operator to set subCount
-                (frequencyMap[valueArray[loopIndex]] > (selectionCount - cumulativeCount))
-                    ? subCount = selectionCount - cumulativeCount
-                    : subCount = frequencyMap[valueArray[loopIndex]];
-
-                totalCombinations *= chooseFunction(frequencyMap[valueArray[loopIndex]], subCount);
-
-                cumulativeCount += frequencyMap[valueArray[loopIndex]];
-                loopIndex += frequencyMap[valueArray[loopIndex]] - 1; // Adjust loop index
-            } else {
-                cumulativeCount += frequencyMap[valueArray[loopIndex]];
-                loopIndex += frequencyMap[valueArray[loopIndex]] - 1; // Adjust loop index
+    // Check if the A-th element is different from the first element
+    // This determines which combination calculation path to take
+    if (valueArray[0] !== valueArray[minSelection]) {
+        totalCombinations = 1; // Start with 1 for multiplication
+        for (var idx = 0; idx < itemCount; idx++) {
+            // If the current number appears multiple times
+            if (frequencyMap[valueArray[idx]] >= 2) {
+                var numToSelect;
+                // Determine how many of the current number to select
+                if (frequencyMap[valueArray[idx]] > (minSelection - currentCount)) {
+                    numToSelect = minSelection - currentCount;
+                } else {
+                    numToSelect = frequencyMap[valueArray[idx]];
+                }
+                totalCombinations *= calcCombinations(frequencyMap[valueArray[idx]], numToSelect);
+                
+                currentCount += frequencyMap[valueArray[idx]];
+                idx += frequencyMap[valueArray[idx]] - 1; // Skip already processed elements
+            }
+            else {
+                currentCount += frequencyMap[valueArray[idx]];
+                idx += frequencyMap[valueArray[idx]] - 1; // Skip already processed elements
             }
         }
-        console.log(totalCombinations); // Output the computed combinations
-    } else {
-        let totalCombinations = 0; // Start with 0 for addition
-
-        // Calculate combinations for a specific scenario
-        for (let iterationIndex = 1; iterationIndex <= maxCombinationLimit; iterationIndex++) {
-            totalCombinations += chooseFunction(50, iterationIndex); // Summing combinations
-        }
-        console.log(totalCombinations); // Output the summed combinations
     }
+    else {
+        // If the first A elements are all the same
+        for (var loopIndex = 1; loopIndex <= maxSelection; loopIndex++) {
+            totalCombinations += calcCombinations(50, loopIndex); // Assuming 50 is a constant from problem context
+        }
+    }
+    console.log(totalCombinations);
+
 });
 
-
-// Function to compute permutations (nPr)
-function calculatePermutations(totalItems, selectItems) {
-    let resultValue = 1; // Initialize result
-    for (let loopCounter = 0; loopCounter < selectItems; loopCounter++) {
-        resultValue *= totalItems - loopCounter; // Multiply by decreasing factors
+// Function to calculate permutations (nPr)
+function calcPermutations(totalItems, selectItems) {
+    var resultProduct = 1;
+    for (var iter = 0; iter < selectItems; iter++) {
+        resultProduct *= totalItems - iter;
     }
-    return resultValue; // Return the permutation result
+    return resultProduct;
 }
 
-// Function to compute combinations (nCr) using permutations
-function chooseFunction(totalCount, chosenCount) {
-    // Handle edge case where chosenCount is 0 to prevent division by zero in the second permutation
-    if (chosenCount === 0) {
-        return 1;
-    }
-    return calculatePermutations(totalCount, chosenCount) / calculatePermutations(chosenCount, chosenCount);
+// Function to calculate combinations (nCr)
+function calcCombinations(totalElements, chooseElements) {
+    // nCr = nPr / rPr
+    return calcPermutations(totalElements, chooseElements) / calcPermutations(chooseElements, chooseElements);
 }

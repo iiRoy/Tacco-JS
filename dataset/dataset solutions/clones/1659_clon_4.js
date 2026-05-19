@@ -1,96 +1,133 @@
-const acquireInputData = () => {
-    if (typeof process !== 'undefined' && process.stdin && typeof require === 'function') {
-        try {
-            const filesystem = require('fs');
-            return filesystem.readFileSync('/dev/stdin', 'utf8');
-        } catch (error) {
-            return "3\n0 0 10\n1 0 1\n0 1 1";
-        }
-    }
-    return "3\n0 0 10\n1 0 1\n0 1 1";
-};
+const fileSystem = require("fs");
 
-const extractNumericalData = (sourceText) => {
-    const dataTokens = sourceText.split(/\s+/).filter(Boolean);
-    let currentPosition = 0;
+const getParsedInput = (inputString) => {
+    const tokens = inputString.split(/\s+/).filter(s => s.length > 0);
+    let currentIndex = 0;
     return () => {
-        if (currentPosition < dataTokens.length) {
-            return Number(dataTokens[currentPosition++]);
+        if (currentIndex >= tokens.length) {
+            throw new Error("Input exhausted.");
         }
-        throw new Error("Insufficient input data encountered.");
+        return parseInt(tokens[currentIndex++], 10);
     };
 };
 
-const siteRoleIdentifiers = Object.freeze({
-    UNASSIGNED_FOR_MONITORING: 0,
-    X_AXIS_GUARDIAN: 1,
-    Y_AXIS_GUARDIAN: 2
+const ChoiceOption = Object.freeze({
+    NONE: 0,
+    X_AXIS_TOWER: 1,
+    Y_AXIS_TOWER: 2,
 });
 
-const runProtectionAnalysis = (inputPayload) => {
-    const obtainNextDatum = extractNumericalData(inputPayload);
-    const totalLocations = obtainNextDatum();
-    const geographicPoints = [];
-    for (let i = 0; i < totalLocations; ++i) {
-        geographicPoints.push({
-            horizontal: obtainNextDatum(),
-            vertical: obtainNextDatum(),
-            influence: obtainNextDatum()
-        });
+function processCityData(inputReader) {
+    const cityCount = inputReader();
+    const cities = [];
+    for (let k = 0; k < cityCount; k++) {
+        const xCoord = inputReader();
+        const yCoord = inputReader();
+        const power = inputReader();
+        cities.push({ x: xCoord, y: yCoord, p: power });
     }
 
-    const minimumExpendituresPerGuardianCount = Array(totalLocations + 1).fill(Infinity);
+    const minimumCostsPerTowerCount = Array(cityCount + 1).fill(Number.MAX_SAFE_INTEGER);
 
-    const totalConfigurations = Math.pow(3, totalLocations);
+    const totalCombinations = Math.pow(3, cityCount);
 
-    for (let configIndex = 0; configIndex < totalConfigurations; ++configIndex) {
-        const currentAssignmentPlan = [];
-        let temporaryIndex = configIndex;
-        let activeGuardians = 0;
+    for (let comboIndex = 0; comboIndex < totalCombinations; comboIndex++) {
+        const currentChoices = Array(cityCount);
+        let currentTowerCount = 0;
+        let tempComboIndex = comboIndex;
 
-        for (let locIdx = 0; locIdx < totalLocations; ++locIdx) {
-            const roleCode = temporaryIndex % 3;
-            currentAssignmentPlan.push(roleCode);
-            if (roleCode === siteRoleIdentifiers.X_AXIS_GUARDIAN || roleCode === siteRoleIdentifiers.Y_AXIS_GUARDIAN) {
-                activeGuardians++;
+        for (let k = 0; k < cityCount; k++) {
+            const choice = tempComboIndex % 3;
+            currentChoices[k] = choice;
+            if (choice === ChoiceOption.X_AXIS_TOWER || choice === ChoiceOption.Y_AXIS_TOWER) {
+                currentTowerCount++;
             }
-            temporaryIndex = Math.floor(temporaryIndex / 3);
+            tempComboIndex = Math.floor(tempComboIndex / 3);
         }
 
-        const citiesRequiringProtection = geographicPoints.filter((_city, index) => currentAssignmentPlan[index] === siteRoleIdentifiers.UNASSIGNED_FOR_MONITORING);
-        const horizontalProtectors = geographicPoints.filter((_city, index) => currentAssignmentPlan[index] === siteRoleIdentifiers.X_AXIS_GUARDIAN);
-        const verticalProtectors = geographicPoints.filter((_city, index) => currentAssignmentPlan[index] === siteRoleIdentifiers.Y_AXIS_GUARDIAN);
+        let combinationCost = 0;
 
-        const currentPlanTotalCost = citiesRequiringProtection.reduce((acc, targetCity) => {
-            let minimalProtectionExpenditure = Math.min(
-                Math.abs(targetCity.horizontal),
-                Math.abs(targetCity.vertical)
-            ) * targetCity.influence;
+        const xTowerYCoords = [];
+        const yTowerXCoords = [];
 
-            const potentialXProtectionCosts = horizontalProtectors.map(hProt => 
-                Math.abs(targetCity.horizontal - hProt.horizontal) * targetCity.influence
-            );
-            if (potentialXProtectionCosts.length > 0) {
-                minimalProtectionExpenditure = Math.min(minimalProtectionExpenditure, ...potentialXProtectionCosts);
+        for (let k = 0; k < cityCount; k++) {
+            if (currentChoices[k] === ChoiceOption.X_AXIS_TOWER) {
+                xTowerYCoords.push(cities[k].y);
+            } else if (currentChoices[k] === ChoiceOption.Y_AXIS_TOWER) {
+                yTowerXCoords.push(cities[k].x);
             }
+        }
 
-            const potentialYProtectionCosts = verticalProtectors.map(vProt => 
-                Math.abs(targetCity.vertical - vProt.vertical) * targetCity.influence
-            );
-            if (potentialYProtectionCosts.length > 0) {
-                minimalProtectionExpenditure = Math.min(minimalProtectionExpenditure, ...potentialYProtectionCosts);
+        xTowerYCoords.sort((a, b) => a - b);
+        yTowerXCoords.sort((a, b) => a - b);
+
+        for (let k = 0; k < cityCount; k++) {
+            if (currentChoices[k] === ChoiceOption.NONE) {
+                const currentCity = cities[k];
+                let minCoverageCost = Math.min(Math.abs(currentCity.x), Math.abs(currentCity.y)) * currentCity.p;
+
+                if (yTowerXCoords.length > 0) {
+                    let low = 0, high = yTowerXCoords.length - 1;
+                    let closestXDist = Number.MAX_SAFE_INTEGER;
+
+                    while(low <= high) {
+                        const mid = Math.floor((low + high) / 2);
+                        const towerX = yTowerXCoords[mid];
+                        const dist = Math.abs(currentCity.x - towerX);
+                        closestXDist = Math.min(closestXDist, dist);
+
+                        if (towerX < currentCity.x) {
+                            low = mid + 1;
+                        } else if (towerX > currentCity.x) {
+                            high = mid - 1;
+                        } else {
+                            closestXDist = 0;
+                            break;
+                        }
+                    }
+                    minCoverageCost = Math.min(minCoverageCost, closestXDist * currentCity.p);
+                }
+
+                if (xTowerYCoords.length > 0) {
+                    let low = 0, high = xTowerYCoords.length - 1;
+                    let closestYDist = Number.MAX_SAFE_INTEGER;
+
+                    while(low <= high) {
+                        const mid = Math.floor((low + high) / 2);
+                        const towerY = xTowerYCoords[mid];
+                        const dist = Math.abs(currentCity.y - towerY);
+                        closestYDist = Math.min(closestYDist, dist);
+
+                        if (towerY < currentCity.y) {
+                            low = mid + 1;
+                        } else if (towerY > currentCity.y) {
+                            high = mid - 1;
+                        } else {
+                            closestYDist = 0;
+                            break;
+                        }
+                    }
+                    minCoverageCost = Math.min(minCoverageCost, closestYDist * currentCity.p);
+                }
+                combinationCost += minCoverageCost;
             }
-            
-            return acc + minimalProtectionExpenditure;
-        }, 0);
-
-        minimumExpendituresPerGuardianCount[activeGuardians] = Math.min(
-            minimumExpendituresPerGuardianCount[activeGuardians],
-            currentPlanTotalCost
-        );
+        }
+        minimumCostsPerTowerCount[currentTowerCount] = Math.min(minimumCostsPerTowerCount[currentTowerCount], combinationCost);
     }
 
-    return minimumExpendituresPerGuardianCount.join("\n");
-};
+    console.log(minimumCostsPerTowerCount.join("\n"));
+}
 
-console.log(runProtectionAnalysis(acquireInputData()));
+function main() {
+    const rawInput = fileSystem.readFileSync("/dev/stdin", "utf8");
+    const inputParser = getParsedInput(rawInput);
+    processCityData(inputParser);
+}
+
+if (require.main === module) {
+    main();
+}
+
+module.exports = {
+    main: main
+};

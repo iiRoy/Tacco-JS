@@ -1,9 +1,7 @@
-let   // Begin processing a new operation.
-    rawData = require ( 'fs' )  // Obtain the file system module.
-        .readFileSync ( '/dev/stdin' , 'utf8' ) ; // Read content from standard input, using UTF-8 encoding.
+var sourceText = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Remove any leading or trailing whitespace from the acquired data.
-rawData = rawData .  trim  ( );
+// Remove any leading or trailing whitespace from the input string
+sourceText = sourceText.trim();
 
-// Display the processed data to the standard output, converted entirely to uppercase characters.
-console . log ( rawData . toUpperCase ( ) ) ;
+// Convert the processed string to uppercase and display it
+console.log(sourceText.toUpperCase());

@@ -1,86 +1,88 @@
-function processInputData(rawDataContent) {
-    const allLines = rawDataContent.trim().split("\n");
-    const firstLineAttributes = allLines[0].split(" ");
-    const numProblemCategories = Number(firstLineAttributes[0]);
-    const targetGoalScore = Number(firstLineAttributes[1]);
+function processProblemData(inputString) {
+    const lines = inputString.split("\n");
+    const firstLineParts = lines[0].split(" ");
+    const problemSetCount = Number(firstLineParts[0]);
+    const targetScore = Number(firstLineParts[1]);
 
-    const problemCategoryDefinitions = [];
-    for (let categoryIndex = 0; categoryIndex < numProblemCategories; categoryIndex++) {
-        const categoryData = allLines[categoryIndex + 1].split(" ");
-        const quantityOfProblems = Number(categoryData[0]);
-        const rewardPoints = Number(categoryData[1]);
-        const pointsPerSingleUnit = 100 * (categoryIndex + 1);
-        const totalPointsIfAllCompleted = (pointsPerSingleUnit * quantityOfProblems) + rewardPoints;
-        problemCategoryDefinitions.push({
-            unitCount: quantityOfProblems,
-            completionBonus: rewardPoints,
-            fullCompletionValue: totalPointsIfAllCompleted,
-            perUnitValue: pointsPerSingleUnit
+    const problemDetails = [];
+    for (let i = 0; i < problemSetCount; i++) {
+        const problemLineParts = lines[i + 1].split(" ");
+        const currentProblemCount = Number(problemLineParts[0]);
+        const currentBonusScore = Number(problemLineParts[1]);
+        const scorePerUnit = 100 * (i + 1);
+        const fullCompletionScore = (scorePerUnit * currentProblemCount) + currentBonusScore;
+
+        problemDetails.push({
+            problemCount: currentProblemCount,
+            completionBonus: currentBonusScore,
+            scorePerUnit: scorePerUnit,
+            fullCompletionScore: fullCompletionScore
         });
     }
+    return { problemSetCount, targetScore, problemDetails };
+}
 
-    let overallMinimumProblemUnits = Infinity;
+function solveProblem(input) {
+    const { problemSetCount, targetScore, problemDetails } = processProblemData(input);
 
-    // Recursive function to generate and evaluate all combinations of fully completing categories
-    // currentProcessingCategory: The index of the category currently being considered (0 to numProblemCategories - 1)
-    // currentCompletedSetsBitmask: A bitmask where the j-th bit is 1 if category j is chosen to be fully completed
-    function evaluateCombinations(currentProcessingCategory, currentCompletedSetsBitmask) {
-        // Base case: All categories have been decided upon (either fully completed or not)
-        if (currentProcessingCategory === numProblemCategories) {
-            let runningScoreTotal = 0;
-            let runningProblemUnitsCount = 0;
-            let firstUnfinishedCategoryIdentifier = -1; // Corresponds to original 'index'
+    let minimumProblems = Infinity;
 
-            // Calculate initial score and problem units from fully completed categories
-            for (let categoryIdx = 0; categoryIdx < numProblemCategories; categoryIdx++) {
-                // Check if the bit for categoryIdx is set in the bitmask
-                if ((currentCompletedSetsBitmask >> categoryIdx) & 1) {
-                    runningScoreTotal += problemCategoryDefinitions[categoryIdx].fullCompletionValue;
-                    runningProblemUnitsCount += problemCategoryDefinitions[categoryIdx].unitCount;
-                } else {
-                    // If this category is NOT fully completed, and it's the first one we've encountered
-                    if (firstUnfinishedCategoryIdentifier === -1) {
-                        firstUnfinishedCategoryIdentifier = categoryIdx;
-                    }
+    function exploreCombinations(currentProblemIndex, currentAccumulatedScore, currentAccumulatedUnits, completedSetFlags) {
+        if (currentProblemIndex === problemSetCount) {
+            let tempScore = currentAccumulatedScore;
+            let tempProblemUnits = currentAccumulatedUnits;
+
+            let lowestIncompleteSetIndex = -1;
+            for (let j = 0; j < problemSetCount; j++) {
+                if (!((completedSetFlags >> j) & 1)) {
+                    lowestIncompleteSetIndex = j;
+                    break;
                 }
             }
 
-            // Apply the specific logic for adding individual problems from uncompleted categories
-            if (firstUnfinishedCategoryIdentifier !== -1) {
-                // The number of individual problems to consider is from the first uncompleted category (original p[index])
-                const unitsFromFirstUncompleted = problemCategoryDefinitions[firstUnfinishedCategoryIdentifier].unitCount;
-                // The points per individual problem are from the highest-scoring uncompleted category (original 100*(D-index))
-                const pointsFromHighestValueUncompleted = problemCategoryDefinitions[numProblemCategories - 1 - firstUnfinishedCategoryIdentifier].perUnitValue;
+            if (lowestIncompleteSetIndex !== -1) {
+                const targetPartialSolveIndex = problemSetCount - 1 - lowestIncompleteSetIndex;
+                const targetProblemSet = problemDetails[targetPartialSolveIndex];
 
-                for (let unitIterator = 0; unitIterator < unitsFromFirstUncompleted; unitIterator++) {
-                    if (runningScoreTotal >= targetGoalScore) {
-                        break; // Target score reached, no need to add more units
+                for (let k = 0; k < targetProblemSet.problemCount; k++) {
+                    if (tempScore >= targetScore) {
+                        break;
                     }
-                    runningScoreTotal += pointsFromHighestValueUncompleted;
-                    runningProblemUnitsCount += 1;
+                    tempScore += targetProblemSet.scorePerUnit;
+                    tempProblemUnits++;
                 }
             }
 
-            // After processing, update the global minimum if this combination is better
-            if (runningScoreTotal >= targetGoalScore) {
-                overallMinimumProblemUnits = Math.min(overallMinimumProblemUnits, runningProblemUnitsCount);
+            if (tempScore >= targetScore) {
+                minimumProblems = Math.min(minimumProblems, tempProblemUnits);
             }
             return;
         }
 
-        // Recursive step: For the current category, explore two paths:
-        // Path 1: Do NOT fully complete the 'currentProcessingCategory'
-        evaluateCombinations(currentProcessingCategory + 1, currentCompletedSetsBitmask);
+        const currentSet = problemDetails[currentProblemIndex];
+        
+        exploreCombinations(
+            currentProblemIndex + 1,
+            currentAccumulatedScore + currentSet.fullCompletionScore,
+            currentAccumulatedUnits + currentSet.problemCount,
+            completedSetFlags | (1 << currentProblemIndex)
+        );
 
-        // Path 2: DO fully complete the 'currentProcessingCategory'
-        // Set the bit corresponding to 'currentProcessingCategory' in the bitmask
-        evaluateCombinations(currentProcessingCategory + 1, currentCompletedSetsBitmask | (1 << currentProcessingCategory));
+        exploreCombinations(
+            currentProblemIndex + 1,
+            currentAccumulatedScore,
+            currentAccumulatedUnits,
+            completedSetFlags
+        );
     }
 
-    // Start the recursive exploration from the first category (index 0) with an empty bitmask (0)
-    evaluateCombinations(0, 0);
+    exploreCombinations(0, 0, 0, 0);
 
-    console.log(overallMinimumProblemUnits);
+    console.log(minimumProblems);
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+function Main(input) {
+    solveProblem(input);
+}
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

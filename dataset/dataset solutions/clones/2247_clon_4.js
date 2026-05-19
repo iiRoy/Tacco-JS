@@ -1,26 +1,14 @@
-function charIncrementer(originalChar) {
-  if (originalChar.length !== 1) {
-    return originalChar;
-  }
+function executeTransformation(inputData) {
+  const charMap = new Map([
+    ["a", "b"], ["b", "c"], ["c", "d"], ["d", "e"], ["e", "f"],
+    ["f", "g"], ["g", "h"], ["h", "i"], ["i", "j"], ["j", "k"],
+    ["k", "l"], ["l", "m"], ["m", "n"], ["n", "o"], ["o", "p"],
+    ["p", "q"], ["q", "r"], ["r", "s"], ["s", "t"], ["t", "u"],
+    ["u", "v"], ["v", "w"], ["w", "x"], ["x", "y"], ["y", "z"]
+  ]);
 
-  const charCode = originalChar.charCodeAt(0);
-  const codeA = 'a'.charCodeAt(0);
-  const codeY = 'y'.charCodeAt(0);
-
-  return (charCode >= codeA && charCode <= codeY)
-    ? String.fromCharCode(charCode + 1)
-    : originalChar;
+  const transformedValue = charMap.get(inputData) ?? inputData;
+  console.log(transformedValue);
 }
 
-const utilityLoader = globalThis.require;
-const outputHandler = globalThis.console;
-
-const fileOperations = utilityLoader("fs");
-const syncFileReader = fileOperations.readFileSync;
-
-const rawInputData = syncFileReader("/dev/stdin", "utf8");
-
-const transformedOutput = charIncrementer(rawInputData);
-
-const printFunction = outputHandler.log;
-printFunction(transformedOutput);
+executeTransformation(require("fs").readFileSync("/dev/stdin", "utf8"));

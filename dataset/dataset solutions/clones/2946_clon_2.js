@@ -1,132 +1,127 @@
 "use strict";
 
-// This class is designed to process text input,
-// splitting it into lines and then into segments (words)
-// for sequential retrieval.
-function DataStream(sourceText, defaultParserFunction) {
-  // Store the input text split into an array of lines.
+/**
+ * A utility class for parsing input data line by line and token by token.
+ * @param {string} sourceText - The entire input string, typically from a file.
+ * @param {function} [parserFunction=Number] - The default function to parse tokens.
+ */
+function InputProcessor(sourceText, parserFunction) {
+  // Store all lines from the input string.
   this._sourceLines = sourceText.split("\n");
-  // Index of the current segment within the current line.
-  this._currentSegmentIndex = 0;
-  // Index of the current line being processed.
-  this._currentLineIndex = 0;
-  // The default function to parse segments if no custom parser is provided.
-  this._defaultParser = defaultParserFunction || Number;
+  // Current token index within the current line.
+  this._currentColumn = 0;
+  // Current line index.
+  this._currentLine = 0;
+  // Default parsing function, defaults to Number if not provided.
+  this._valueParser = parserFunction || Number;
 }
 
-// Prototype method to fetch the next individual data segment from the stream.
-DataStream.prototype.fetchValue = function (customParser) {
+/**
+ * Retrieves the next token from the input stream.
+ * Advances the internal pointers.
+ * @param {function} [customParser] - An optional parser function for this specific token.
+ * @returns {*} The parsed token.
+ */
+InputProcessor.prototype.getNextToken = function(customParser) {
   // Get the content of the current line.
-  const currentLineContent = this._sourceLines[this._currentLineIndex];
+  var currentLineContent = this._sourceLines[this._currentLine];
 
-  // If the current line exists, process it.
+  // If the current line exists (not end of input).
   if (currentLineContent) {
-    // Trim whitespace and split the line into segments (words).
-    const lineSegments = currentLineContent.trim().split(" ");
-    // Get the segment at the current segment index.
-    const segmentValue = lineSegments[this._currentSegmentIndex];
+    // Split the line into individual tokens.
+    var lineTokens = currentLineContent.trim().split(" ");
+    // Get the token at the current column.
+    var currentToken = lineTokens[this._currentColumn];
 
-    // Move to the next segment for the next read operation.
-    this._currentSegmentIndex++;
+    // Move to the next column.
+    this._currentColumn++;
 
-    // If all segments in the current line have been read,
-    // reset segment index and move to the next line.
-    if (lineSegments.length === this._currentSegmentIndex) {
-      this._currentSegmentIndex = 0;
-      this._currentLineIndex++;
+    // If we've processed all tokens on the current line, reset column and move to next line.
+    if (lineTokens.length === this._currentColumn) {
+      this._currentColumn = 0;
+      this._currentLine++;
     }
 
-    // Apply the custom parser if provided, otherwise use the default parser.
-    return customParser ? customParser(segmentValue) : this._defaultParser(segmentValue);
+    // Parse the token using the custom parser or the default parser.
+    return customParser ? customParser(currentToken) : this._valueParser(currentToken);
   }
 };
 
-// Prototype method to fetch all segments of the current line as an array.
-// This also advances to the next line.
-DataStream.prototype.fetchLineArray = function (lineItemParser) {
-  // Get the content of the active line.
-  const activeLineContent = this._sourceLines[this._currentLineIndex];
-
-  // If the active line exists, process it.
-  if (activeLineContent) {
-    // Reset segment index as we're reading the whole line.
-    this._currentSegmentIndex = 0;
-    // Advance to the next line.
-    this._currentLineIndex++;
-
-    // Split the line into segments and map them using the provided parser
-    // or the default one.
-    return activeLineContent.split(" ").map(lineItemParser || this._defaultParser);
+/**
+ * Retrieves all tokens from the current line as an array.
+ * Advances the internal line pointer.
+ * @param {function} [lineParser] - An optional parser function for each token in the line.
+ * @returns {Array<*>} An array of parsed tokens from the line.
+ */
+InputProcessor.prototype.getLineTokens = function(lineParser) {
+  var lineData = this._sourceLines[this._currentLine];
+  if (lineData) {
+    // Reset column pointer as we're consuming the whole line.
+    this._currentColumn = 0;
+    // Move to the next line.
+    this._currentLine++;
+    // Split the line and map each token using the provided parser or the default one.
+    return lineData.split(" ").map(lineParser || this._valueParser);
   }
 };
 
-// Export the DataStream class for use in other modules.
-module.exports = DataStream;
+// Export the InputProcessor class for use in other modules.
+module.exports = InputProcessor;
 
-
-// Main function to execute the problem's logic.
-function executeSolution(rawDataInput) {
-  // Initialize a data processor with the raw input.
-  // This will handle reading numbers and other data from the input stream.
-  let inputSource = new DataStream(rawDataInput);
+/**
+ * Main function to process the input data and perform calculations.
+ * @param {string} rawData - The raw input string.
+ */
+function processData(rawData) {
+  // Initialize the input processor with the raw data.
+  var dataStream = new InputProcessor(rawData);
 
   // Read the total number of operations to perform.
-  let totalOperationsCount = inputSource.fetchValue();
+  var operationCount = dataStream.getNextToken();
 
-  // Initialize a cumulative offset variable.
-  // This value will be added to the final result.
-  let cumulativeOffset = 0;
-  // Initialize an array to store elements that need to be sorted.
-  let orderedElements = [];
+  // Initialize a running total for offsets.
+  var totalOffset = 0;
+  // Initialize an array to store values that need to be sorted.
+  var valueCollection = [];
 
   // Loop through each operation.
-  for (let operationIndex = 0; operationIndex < totalOperationsCount; operationIndex++) {
-
+  for (var opIndex = 0; opIndex < operationCount; opIndex++) {
     // Read the type of the current operation.
-    let currentOperationType = inputSource.fetchValue();
+    var operationType = dataStream.getNextToken();
 
-    // Check if the operation is of type 1 (add element and offset).
-    if (currentOperationType === 1) {
-      // Read the element value to be added to the sorted list.
-      let elementValue = inputSource.fetchValue();
-      // Read the offset amount to be added to the cumulative offset.
-      let offsetAmount = inputSource.fetchValue();
+    // If operation type is 1, it's an insertion.
+    if (operationType === 1) {
+      // Read the new value to insert.
+      var newValue = dataStream.getNextToken();
+      // Read the offset value to add to the total.
+      var offsetValue = dataStream.getNextToken();
 
-      // Update the cumulative offset.
-      cumulativeOffset += offsetAmount;
+      // Accumulate the offset.
+      totalOffset += offsetValue;
 
-      // Add the element to the list.
-      orderedElements.push(elementValue);
-    }
-    // If the operation is not type 1 (it must be type 2 based on problem context).
-    else {
-      // Sort the elements in ascending order.
-      orderedElements.sort((firstItem, secondItem) => firstItem - secondItem);
+      // Add the new value to the collection.
+      valueCollection.push(newValue);
+    } else {
+      // If operation type is not 1, it's a query.
+      // Sort the collection of values in ascending order.
+      valueCollection = valueCollection.sort((valA, valB) => valA - valB);
 
-      // Calculate the median element.
-      // For an array with N elements, the median is at index floor((N-1)/2).
-      let medianElement = orderedElements[Math.floor((orderedElements.length - 1) / 2)];
+      // Calculate the median value from the sorted collection.
+      // For even length, it takes the lower of the two middle elements.
+      var medianValue = valueCollection[Math.floor((valueCollection.length - 1) / 2)];
 
       // Calculate the sum of absolute differences from the median,
-      // then add the cumulative offset.
-      let calculatedResult = orderedElements.map(
-        (item) => Math.abs(item - medianElement)
-      ).reduce(
-        (accumulator, currentValue) => accumulator + currentValue
-      ) + cumulativeOffset;
+      // then add the accumulated total offset.
+      var finalResult = valueCollection
+        .map(element => Math.abs(element - medianValue)) // Calculate absolute difference for each element.
+        .reduce((accumulator, currentElement) => accumulator + currentElement) // Sum all differences.
+        + totalOffset; // Add the total offset.
 
-      // Output the median element and the calculated result to the console.
-      console.log(medianElement, calculatedResult);
+      // Output the median value and the final calculated result.
+      console.log(medianValue, finalResult);
     }
   }
 }
 
-
-// --- Program Entry Point ---
-// Read the entire content of standard input synchronously,
-// then pass it to the main solution function.
-const fileSystemModule = require("fs");
-const standardInputPath = "/dev/stdin";
-const rawTextContent = fileSystemModule.readFileSync(standardInputPath, "utf8");
-
-executeSolution(rawTextContent);
+// Read input from standard input and pass it to the main processing function.
+processData(require("fs").readFileSync("/dev/stdin", "utf8"));

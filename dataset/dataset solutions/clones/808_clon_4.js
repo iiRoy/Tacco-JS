@@ -1,171 +1,117 @@
-const DIRECTION_VECTORS = new Map([
-    ['U', { deltaRow: -1, deltaCol: 0 }],
-    ['D', { deltaRow: 1, deltaCol: 0 }],
-    ['L', { deltaRow: 0, deltaCol: -1 }],
-    ['R', { deltaRow: 0, deltaCol: 1 }],
+const fileSystem = require('fs');
+
+const inputCharMapping = new Map([
+    ['^', 'U'],
+    ['v', 'D'],
+    ['<', 'L'],
+    ['>', 'R']
 ]);
 
-const getCoordKey = (row, col) => `${row},${col}`;
+const outputCharMapping = new Map([
+    ['U', '^'],
+    ['D', 'v'],
+    ['L', '<'],
+    ['R', '>']
+]);
 
-function updateVehiclePosition(currentVehicle, currentMap, directionSymbol) {
-    const { row: initialRow, col: initialCol } = currentVehicle;
-    const { deltaRow, deltaCol } = DIRECTION_VECTORS.get(directionSymbol);
+const maneuverVehicle = (stateObject, yDelta, xDelta, newOrientation) => {
+    const { vehicleCoordinates: [currentY, currentX], terrainGrid } = stateObject;
+    const targetY = currentY + yDelta;
+    const targetX = currentX + xDelta;
 
-    const targetRow = initialRow + deltaRow;
-    const targetCol = initialCol + deltaCol;
+    const targetCellContent = terrainGrid[targetY][targetX];
 
-    const modifiedMap = new Map(currentMap); // Immutable update pattern
-
-    let nextVehicleState = { ...currentVehicle, orientation: directionSymbol }; // Vehicle always updates its orientation
-
-    const targetCellContent = modifiedMap.get(getCoordKey(targetRow, targetCol));
-
-    if (targetCellContent === '.') {
-        // Movement is permissible
-        modifiedMap.set(getCoordKey(initialRow, initialCol), '.'); // Clear previous location
-        modifiedMap.set(getCoordKey(targetRow, targetCol), directionSymbol); // Set new location with orientation
-        nextVehicleState.row = targetRow;
-        nextVehicleState.col = targetCol;
+    if (targetCellContent === ".") {
+        terrainGrid[targetY][targetX] = newOrientation;
+        terrainGrid[currentY][currentX] = ".";
+        stateObject.vehicleCoordinates = [targetY, targetX];
     } else {
-        // Movement is obstructed, only update orientation at current location
-        modifiedMap.set(getCoordKey(initialRow, initialCol), directionSymbol);
+        terrainGrid[currentY][currentX] = newOrientation;
     }
-    
-    return { vehicleState: nextVehicleState, terrainMap: modifiedMap };
-}
+};
 
-function fireOrdnance(currentVehicle, currentMap) {
-    const { row: launchRow, col: launchCol, orientation } = currentVehicle;
-    const { deltaRow, deltaCol } = DIRECTION_VECTORS.get(orientation);
+const launchProjectile = (stateObject, yDirection, xDirection) => {
+    const { vehicleCoordinates: [originY, originX], terrainGrid } = stateObject;
 
-    const updatedMap = new Map(currentMap); // Immutable update pattern
+    for (let propagationStep = 1; ; propagationStep++) {
+        const impactY = originY + (yDirection * propagationStep);
+        const impactX = originX + (xDirection * propagationStep);
 
-    // Recursive trajectory tracing
-    const traceImpact = (currentRayRow, currentRayCol) => {
-        const nextRayRow = currentRayRow + deltaRow;
-        const nextRayCol = currentRayCol + deltaCol;
-        const nextRayKey = getCoordKey(nextRayRow, nextRayCol);
-        const cellData = updatedMap.get(nextRayKey);
+        const cellAtImpact = terrainGrid[impactY][impactX];
 
-        if (cellData === undefined || cellData === '#') { // Wall or beyond boundaries
-            return; // Projectile halts
-        } else if (cellData === '*') {
-            updatedMap.set(nextRayKey, '.'); // Target neutralized
-            return; // Projectile halts
-        } else {
-            // Continue projectile path
-            traceImpact(nextRayRow, nextRayCol);
+        switch (cellAtImpact) {
+            case "#":
+                return;
+            case "*":
+                terrainGrid[impactY][impactX] = ".";
+                return;
         }
-    };
+    }
+};
 
-    traceImpact(launchRow, launchCol); // Initiate trace from vehicle's position
-    return updatedMap;
-}
+const commandProcessors = {
+    'U': (state) => maneuverVehicle(state, -1, 0, 'U'),
+    'D': (state) => maneuverVehicle(state, 1, 0, 'D'),
+    'L': (state) => maneuverVehicle(state, 0, -1, 'L'),
+    'R': (state) => maneuverVehicle(state, 0, 1, 'R'),
+    'S': (state) => {
+        const currentVehicleOrientation = state.terrainGrid[state.vehicleCoordinates[0]][state.vehicleCoordinates[1]];
+        const shotDirectionDispatch = {
+            'U': () => launchProjectile(state, -1, 0),
+            'D': () => launchProjectile(state, 1, 0),
+            'L': () => launchProjectile(state, 0, -1),
+            'R': () => launchProjectile(state, 0, 1),
+        };
+        shotDirectionDispatch[currentVehicleOrientation]();
+    }
+};
 
-function executeSingleScenario(scenarioInputLines) {
-    let remainingLines = [...scenarioInputLines];
+let rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+let processedInputLines = rawInputData.trim().split("\n");
 
-    const [gridHeightStr, gridWidthStr] = remainingLines.shift().split(' ');
-    const gridHeight = parseInt(gridHeightStr, 10);
-    const gridWidth = parseInt(gridWidthStr, 10);
+const totalTestCases = parseInt(processedInputLines.shift(), 10);
 
-    const baseMap = new Map();
-    let initialVehicle = { row: -1, col: -1, orientation: '' };
-
-    // Establish top boundary
-    for (let currentColumn = 0; currentColumn <= gridWidth + 1; currentColumn++) {
-        baseMap.set(getCoordKey(0, currentColumn), '#');
+for (let caseIndex = 0; caseIndex < totalTestCases; caseIndex++) {
+    if (caseIndex !== 0) {
+        console.log("");
     }
 
-    // Populate core grid rows and locate initial vehicle placement
-    for (let currentRow = 0; currentRow < gridHeight; currentRow++) {
-        const lineContent = remainingLines.shift();
-        baseMap.set(getCoordKey(currentRow + 1, 0), '#'); // Left boundary
-        for (let currentColumn = 0; currentColumn < gridWidth; currentColumn++) {
-            const character = lineContent[currentColumn];
-            baseMap.set(getCoordKey(currentRow + 1, currentColumn + 1), character);
-            if (DIRECTION_VECTORS.has(character)) {
-                initialVehicle.row = currentRow + 1;
-                initialVehicle.col = currentColumn + 1;
-                initialVehicle.orientation = character;
-            }
+    const [mapHeight, mapWidth] = processedInputLines.shift().split(" ").map(Number);
+    const internalMapContent = [];
+    let initialVehiclePosition = [0, 0];
+
+    for (let rowIdx = 0; rowIdx < mapHeight; rowIdx++) {
+        const rowChars = processedInputLines.shift().split('');
+        const vehicleColIdx = rowChars.findIndex(cellChar => ['U', 'D', 'L', 'R'].includes(cellChar));
+        if (vehicleColIdx !== -1) {
+            initialVehiclePosition = [rowIdx + 1, vehicleColIdx + 1];
         }
-        baseMap.set(getCoordKey(currentRow + 1, gridWidth + 1), '#'); // Right boundary
+        internalMapContent.push(rowChars);
     }
 
-    // Establish bottom boundary
-    for (let currentColumn = 0; currentColumn <= gridWidth + 1; currentColumn++) {
-        baseMap.set(getCoordKey(gridHeight + 1, currentColumn), '#');
-    }
-    
-    remainingLines.shift(); // Consume the blank line after grid data
-    const instructionSequence = remainingLines.shift().split('');
-
-    let currentVehicleState = initialVehicle;
-    let currentTerrainMap = baseMap;
-
-    // Process each instruction
-    instructionSequence.forEach(instruction => {
-        if (instruction === 'S') {
-            currentTerrainMap = fireOrdnance(currentVehicleState, currentTerrainMap);
+    const battleGrid = Array(mapHeight + 2).fill(null).map((_, gridRowIdx) => {
+        if (gridRowIdx === 0 || gridRowIdx === mapHeight + 1) {
+            return Array(mapWidth + 2).fill('#');
         } else {
-            const { vehicleState: nextVehicle, terrainMap: nextMap } = updateVehiclePosition(currentVehicleState, currentTerrainMap, instruction);
-            currentVehicleState = nextVehicle;
-            currentTerrainMap = nextMap;
+            return ['#', ...internalMapContent[gridRowIdx - 1], '#'];
         }
     });
 
-    // Generate final grid representation, omitting external boundaries
-    let resultingLayout = [];
-    for (let r = 1; r <= gridHeight; r++) {
-        let rowCharacters = [];
-        for (let c = 1; c <= gridWidth; c++) {
-            rowCharacters.push(currentTerrainMap.get(getCoordKey(r, c)));
-        }
-        resultingLayout.push(rowCharacters.join(''));
+    processedInputLines.shift(); // Consume the empty line
+    const actionSequence = processedInputLines.shift().split('').map(char => inputCharMapping.get(char) || char);
+
+    const currentGameState = {
+        vehicleCoordinates: initialVehiclePosition,
+        terrainGrid: battleGrid
+    };
+
+    for (const actionCommand of actionSequence) {
+        commandProcessors[actionCommand](currentGameState);
     }
 
-    return resultingLayout;
+    const finalMapRows = currentGameState.terrainGrid.slice(1, -1).map(row =>
+        row.slice(1, -1).map(cell => outputCharMapping.get(cell) || cell).join('')
+    );
+
+    console.log(finalMapRows.join("\n"));
 }
-
-// Input acquisition and initial transformation
-const inputSourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-
-const normalizedInput = inputSourceData
-    .trim()
-    .replace(/\^/g, 'U')
-    .replace(/v/g, 'D')
-    .replace(/\</g, 'L')
-    .replace(/\>/g, 'R');
-
-const allScenarioLines = normalizedInput.split('\n');
-const totalTestCases = parseInt(allScenarioLines.shift(), 10);
-
-let accumulatedOutputs = [];
-
-for (let caseIndex = 0; caseIndex < totalTestCases; caseIndex++) {
-    // Determine the number of lines consumed by the current scenario
-    // (H W line) + (H grid lines) + (empty line) + (command line)
-    const [hVal, wVal] = allScenarioLines[0].split(' ').map(Number);
-    const linesForThisCase = 1 + hVal + 1 + 1; 
-    
-    const currentCaseData = allScenarioLines.splice(0, linesForThisCase);
-    
-    const finalGridResult = executeSingleScenario(currentCaseData);
-    
-    accumulatedOutputs.push(finalGridResult);
-}
-
-// Final display rendering
-accumulatedOutputs.forEach((gridOutputLines, idx) => {
-    if (idx > 0) {
-        console.log(''); // Insert blank line between outputs
-    }
-    const formattedDisplay = gridOutputLines.map(line => 
-        line.replace(/U/g, '^')
-            .replace(/D/g, 'v')
-            .replace(/L/g, '<')
-            .replace(/R/g, '>')
-    ).join('\n');
-    console.log(formattedDisplay);
-});

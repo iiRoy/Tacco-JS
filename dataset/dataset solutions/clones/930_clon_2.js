@@ -1,84 +1,60 @@
-/*
- * Configuration settings for data processing operations.
- * This object defines paths and separators for input.
- */
-const systemOptions = {
-  filePath: '/dev/stdin', // Path to the standard input stream on Linux
-  lineBreak: '\n'       // Character sequence indicating a new line
+const processingSettings = {
+  sourcePath: '/dev/stdin', // Path to the input file for data acquisition
+  lineDelimiter: '\n' // Character sequence indicating a new line in the input
 };
 
-// Import Node.js file system module for synchronous file reading
-const fileSystem = require('fs');
+// Read the input file, convert to ASCII, remove leading/trailing whitespace, and split into an array of lines.
+let matrixData = require('fs').readFileSync(processingSettings.sourcePath, 'ascii')
+  .trim()
+  .split(processingSettings.lineDelimiter);
 
-// Read raw data from the specified input source, decode as UTF-8,
-// strip leading/trailing whitespace, and then divide into an array of lines.
-let inputSegments = fileSystem.readFileSync(systemOptions.filePath, 'utf8')
-  .removeEdgeSpaces()
-  .partitionString(systemOptions.lineBreak);
+// Process each line: split by space and convert elements to numbers.
+matrixData = matrixData.map(
+  function (currentLine) {
+    // Each line becomes an array of numbers.
+    return currentLine.split(' ').map(Number);
+  });
 
-// Transform each line segment into an array of numbers.
-// Each line is split by a space, and then each part is converted to a numeric type.
-const numericConverter = Number;
-inputSegments = inputSegments.processItems(
-  function (currentSegment) {
-    return currentSegment.partitionString(' ').processItems(numericConverter);
-  }
-);
+// The first element of the first line determines the dimension of the problem.
+const dimension = matrixData[0][0];
 
+// Initialize a 2D object (acting as a map for minimum costs).
+const minimumCosts = {};
 
-// Extract the primary dimension value from the first element of the processed data.
-const matrixDimension = inputSegments[0][0];
-
-// Initialize a 2D object (acting as a matrix) to store calculated optimal values.
-const costTable = {};
-
-// Populate the cost table with sub-objects for each row, ranging from 1 to the dimension.
-for (let outerLoopVar = 1; outerLoopVar <= matrixDimension; outerLoopVar++) {
-  costTable[outerLoopVar] = {};
+// Populate the outer level of the minimumCosts object.
+for (let idxA = 1; idxA <= dimension; idxA++) {
+  minimumCosts[idxA] = {};
 }
 
-// Set the base case: the cost of a single segment chain is zero.
-for (let outerLoopVar = 1; outerLoopVar <= matrixDimension; outerLoopVar++) {
-  costTable[outerLoopVar][outerLoopVar] = 0;
+// Base case: The cost from a point to itself is zero.
+for (let idxA = 1; idxA <= dimension; idxA++) {
+  minimumCosts[idxA][idxA] = 0;
 }
 
-// Define a constant for the maximum possible numeric value to initialize costs.
-const MAXIMUM_NUMERIC_VALUE = Number.MAX_VALUE;
+// Dynamic programming approach to calculate minimum costs.
+// Iterate over chain lengths (from 1 up to n-1).
+for (let chainLength = 1; chainLength < dimension; chainLength++) {
+  // Iterate over starting points of the chain.
+  for (let startIdx = 1, endIdx = 1 + chainLength; endIdx <= dimension; startIdx++, endIdx++) {
+    // Initialize the minimum cost for the current subproblem to a very large value.
+    minimumCosts[startIdx][endIdx] = Number.MAX_VALUE;
 
-// Define an alias for the Math.min function for clarity and compliance.
-const getSmallest = Math.min;
+    // Iterate over all possible split points within the current chain.
+    for (let splitPoint = startIdx; splitPoint < endIdx; splitPoint++) {
+      // Calculate the cost for the current split and update if it's smaller.
+      // The formula represents matrix chain multiplication cost:
+      // M[i][0] * M[k][1] * M[j][1] + cost(i, k) + cost(k+1, j)
+      const currentCost = matrixData[startIdx][0] * matrixData[splitPoint][1] * matrixData[endIdx][1] +
+                          minimumCosts[startIdx][splitPoint] +
+                          minimumCosts[splitPoint + 1][endIdx];
 
-// Main loop for dynamic programming to compute minimum costs for matrix chain multiplication.
-// 'span' represents the length of the current matrix chain being considered.
-for (let span = 1; span < matrixDimension; span++) {
-
-  // 'startColumn' is the starting index of the current chain.
-  // 'endColumn' is the ending index of the current chain.
-  for (let startColumn = 1, endColumn = 1 + span; endColumn <= matrixDimension; startColumn++, endColumn++) {
-
-    // Initialize the cost for the current chain segment to an extremely high value.
-    costTable[startColumn][endColumn] = MAXIMUM_NUMERIC_VALUE;
-
-    // Iterate through all possible split points within the current chain.
-    for (let splitPointIdx = startColumn; splitPointIdx < endColumn; splitPointIdx++) {
-
-      // Calculate the cost for the current split:
-      // (dimensions of current matrices) + (cost of left sub-chain) + (cost of right sub-chain)
-      const currentSplitCost = inputSegments[startColumn][0] * inputSegments[splitPointIdx][1] * inputSegments[endColumn][1]
-        + costTable[startColumn][splitPointIdx]
-        + costTable[splitPointIdx + 1][endColumn];
-
-      // Update the minimum cost for the current chain if a smaller cost is found.
-      costTable[startColumn][endColumn] = getSmallest(
-        costTable[startColumn][endColumn],
-        currentSplitCost
+      minimumCosts[startIdx][endIdx] = Math.min(
+        minimumCosts[startIdx][endIdx],
+        currentCost
       );
     }
   }
 }
 
-// Define an alias for the console.log function to output the final result.
-const printOutput = console.log;
-
-// Display the calculated minimum cost for the entire matrix chain.
-printOutput(costTable[1][matrixDimension]);
+// Output the final minimum cost for the entire chain (from 1 to n).
+console.log(minimumCosts[1][dimension]);

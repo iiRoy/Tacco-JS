@@ -1,59 +1,38 @@
-const applicationEntry = (environmentContext) => {
-    const bigIntegerFactory = (0n).constructor;
+const processInput = (rawData) => {
+  const components = rawData.trim().split(' ');
+  const firstOperandText = components[0];
+  const secondOperandText = components[1];
 
-    const obtainIntegerFromText = (numericalText) => {
-        return bigIntegerFactory(numericalText);
-    };
+  const bigIntFirst = BigInt(firstOperandText);
 
-    const deriveScaledInteger = (decimalText) => {
-        let wholePart = '';
-        let fractionalSegment = '';
-        const dotPosition = decimalText.indexOf('.');
+  let bigIntSecondScaled;
+  const pointPosition = secondOperandText.indexOf('.');
 
-        if (dotPosition === -1) {
-            wholePart = decimalText;
-            fractionalSegment = '00';
-        } else {
-            wholePart = decimalText.substring(0, dotPosition);
-            fractionalSegment = decimalText.substring(dotPosition + 1);
-            fractionalSegment = (fractionalSegment + '00').substring(0, 2);
-        }
-        return obtainIntegerFromText(wholePart + fractionalSegment);
-    };
+  if (pointPosition === -1) {
+    // No decimal point, e.g., "123" becomes 12300
+    bigIntSecondScaled = BigInt(secondOperandText + '00');
+  } else {
+    // Has decimal point, e.g., "1.234" becomes 123
+    const integralSegment = secondOperandText.substring(0, pointPosition);
+    const fractionalSegment = secondOperandText.substring(pointPosition + 1);
 
-    const processNumericalOperation = (inputSequence) => {
-        const componentUnits = inputSequence.match(/(\S+)\s+(\S+)/);
-        if (!componentUnits || componentUnits.length < 3) {
-            throw new Error("Input string format invalid.");
-        }
-
-        const primaryOperandText = componentUnits[1];
-        const secondaryOperandText = componentUnits[2];
-
-        const factorOne = obtainIntegerFromText(primaryOperandText);
-        const factorTwoScaled = deriveScaledInteger(secondaryOperandText);
-
-        const hundredDivisor = obtainIntegerFromText('100');
-        
-        const intermediateProduct = factorOne * factorTwoScaled;
-        const finalResultant = intermediateProduct / hundredDivisor;
-
-        return String(finalResultant);
-    };
-
-    const isTestExecution = environmentContext.devTestFlag;
-    if (isTestExecution) {
-        // Test function placeholder; original `test()` is undefined.
-    } else {
-        const fileSystemAccessor = environmentContext.ioModule.readFileSync;
-        const rawData = fileSystemAccessor('/dev/stdin', { encoding: 'utf8' });
-        const computedOutcome = processNumericalOperation(rawData);
-        environmentContext.outputDestination.write(computedOutcome + '\n');
+    let twoDigitFraction = '';
+    if (fractionalSegment.length >= 2) {
+      twoDigitFraction = fractionalSegment.substring(0, 2);
+    } else if (fractionalSegment.length === 1) {
+      twoDigitFraction = fractionalSegment + '0';
+    } else { // fractionalSegment.length === 0, e.g., "1."
+      twoDigitFraction = '00';
     }
+    
+    const combinedNumericString = (integralSegment === '' ? '0' : integralSegment) + twoDigitFraction;
+    bigIntSecondScaled = BigInt(combinedNumericString);
+  }
+
+  const productValue = bigIntFirst * bigIntSecondScaled;
+  const finalOutput = (productValue / 100n).toString();
+
+  console.log(finalOutput);
 };
 
-applicationEntry({
-    devTestFlag: (globalThis.process && globalThis.process.env && globalThis.process.env.PROGRAM_TEST_MODE),
-    ioModule: globalThis.require('node:fs'),
-    outputDestination: globalThis.process.stdout
-});
+process.env.MYTEST ? test() : processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

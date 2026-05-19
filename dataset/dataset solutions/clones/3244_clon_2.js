@@ -1,88 +1,98 @@
-// This function serves as the primary entry point for processing incoming data.
-function processInput (rawData) {
-  // Split the raw input string into individual lines for further parsing.
-  const lines = rawData.split('\n');
+function processInput(rawData) {
+  // Split the raw input string into an array of lines
+  const inputLines = rawData.split('\n');
 
-  // Determine the total number of data entries from the first line.
-  const countOfItems = Number.parseInt(lines[0], 10);
+  // Parse the first line to get the number of elements
+  const itemCount = Number.parseInt(inputLines[0], 10);
 
-  // Initialize two arrays to hold our primary and secondary numerical values.
+  // Initialize two arrays to store the parsed integer pairs
   const primaryValues = [];
   const secondaryValues = [];
 
-  // Iterate through the input lines, starting from the second line (index 1)
-  // up to the total number of items, to populate our value arrays.
-  for (let idx = 1; idx <= countOfItems; idx++) {
-    // Each line contains two space-separated numbers.
-    const currentLineParts = lines[idx].split(' ');
-    // Parse the first number as a primary value.
-    primaryValues[idx - 1] = Number.parseInt(currentLineParts[0], 10);
-    // Parse the second number as a secondary value.
-    secondaryValues[idx - 1] = Number.parseInt(currentLineParts[1], 10);
+  // Loop through the remaining lines to populate the arrays
+  for (let loopCounter = 1; loopCounter <= itemCount; loopCounter++) {
+    // Split each line by space and parse the two numbers
+    const parts = inputLines[loopCounter].split(' ');
+    primaryValues[loopCounter - 1] = Number.parseInt(parts[0], 10);
+    secondaryValues[loopCounter - 1] = Number.parseInt(parts[1], 10);
   }
 
-  // Call the core transformation logic with the populated arrays and item count.
-  let finalResult = transformData(primaryValues, secondaryValues, countOfItems);
+  // Perform the main calculation using the populated arrays and item count
+  const finalCalculation = calculateResult(primaryValues, secondaryValues, itemCount);
 
-
-  // Output the computed final result to the console.
-  console.log(finalResult);
+  // Output the final computed value to the console
+  console.log(finalCalculation);
 }
 
-// This function performs the main data manipulation, alternating between adding and subtracting values.
-function transformData (listOne, listTwo, iterationLimit) {
-  // Initialize an accumulator for the final calculated value.
-  // The original code had `var o;` which would lead to `NaN` when `o += ...` is used.
-  // Initializing to 0 to ensure proper arithmetic operation, fixing a common oversight.
-  let accumulator = 0;
+/**
+ * Performs a series of operations on two arrays based on an alternating pattern.
+ * @param {number[]} arrOne - The first array of numbers.
+ * @param {number[]} arrTwo - The second array of numbers.
+ * @param {number} totalElements - The total number of elements to process.
+ * @returns {number} The accumulated result of the operations.
+ */
+function calculateResult(arrOne, arrTwo, totalElements) {
+  // Initialize an accumulator variable. Note: it starts as undefined,
+  // which will result in NaN if the first operation is an addition/subtraction.
+  let currentSum;
 
-  // Loop a specified number of times to process the data.
-  for (let loopIndex = 0; loopIndex < iterationLimit; loopIndex++) {
-    let chosenIndex; // Variable to store the index determined by the helper function.
+  // Iterate for the total number of elements
+  for (let iterationIndex = 0; iterationIndex < totalElements; iterationIndex++) {
+    let selectedIdx; // Variable to hold the index chosen in each step
 
-    // Alternate operations based on whether the current loop index is even or odd.
-    if (loopIndex % 2 === 0) {
-      // For even indices, determine an index using listOne as primary, then add its value to the accumulator.
-      chosenIndex = determineIndex(listOne, listTwo);
-      accumulator += listOne[chosenIndex];
+    // Check if the current iteration index is even or odd
+    if (iterationIndex % 2 === 0) {
+      // If even, determine the best index using arrOne as primary and arrTwo as auxiliary
+      selectedIdx = determineBestIndex(arrOne, arrTwo);
+      // Add the value from arrOne at the selected index to the accumulator
+      currentSum += arrOne[selectedIdx];
     } else {
-      // For odd indices, determine an index using listTwo as primary, then subtract its value from the accumulator.
-      chosenIndex = determineIndex(listTwo, listOne);
-      accumulator -= listTwo[chosenIndex];
+      // If odd, determine the best index using arrTwo as primary and arrOne as auxiliary
+      selectedIdx = determineBestIndex(arrTwo, arrOne);
+      // Subtract the value from arrTwo at the selected index from the accumulator
+      currentSum -= arrTwo[selectedIdx];
     }
 
-    // After each step, remove the chosen element from both lists to prevent re-selection.
-    listOne.splice(chosenIndex, 1);
-    listTwo.splice(chosenIndex, 1);
+    // Remove the chosen element from both arrays to prevent re-selection
+    arrOne.splice(selectedIdx, 1);
+    arrTwo.splice(selectedIdx, 1);
   }
 
-  // Return the accumulated total.
-  return accumulator;
+  // Return the final accumulated sum
+  return currentSum;
 }
 
-// This helper function identifies a specific index based on a maximum value criteria.
-function determineIndex (currentArray, comparisonArray) {
-  let bestIndex = 0; // Initialize the best index found so far.
+/**
+ * Finds the index of the maximum value in the main array,
+ * with a tie-breaking rule based on the auxiliary array.
+ * @param {number[]} mainArr - The array to find the maximum value in.
+ * @param {number[]} auxArr - The auxiliary array used for tie-breaking.
+ * @returns {number} The index of the chosen element.
+ */
+function determineBestIndex(mainArr, auxArr) {
+  let bestCandidateIdx = 0; // Initialize the best index to the first element
+  // Find the maximum value in the main array using the spread operator
+  const maximumValue = Math.max(...mainArr);
 
-  // Find the maximum value within the currentArray using the modern spread syntax.
-  const maximumValue = Math.max(...currentArray);
-
-  // Iterate through the currentArray to find the appropriate index.
-  // Note: The loop condition `arrayIterator <= currentArray.length` may access `currentArray[currentArray.length]`
-  // which is `undefined` for a 0-indexed array. The original code had this behavior, which is preserved.
-  for (let arrayIterator = 0; arrayIterator <= currentArray.length; arrayIterator++) {
-    // Check if the current element matches the maximum value,
-    // is not the same as the already chosen best index,
-    // AND if the corresponding value in the comparison array is greater than or equal
-    // to the value at the current best index in the comparison array.
-    if (maximumValue === currentArray[arrayIterator] && bestIndex !== arrayIterator && comparisonArray[bestIndex] <= comparisonArray[arrayIterator]) {
-      bestIndex = arrayIterator; // Update the best index.
+  // Iterate through the main array to find the optimal index
+  // The loop condition `arrayPosition <= mainArr.length` is intentional
+  // to match the original's behavior, which includes an out-of-bounds check
+  // that will fail the `maximumValue === mainArr[arrayPosition]` condition.
+  for (let arrayPosition = 0; arrayPosition <= mainArr.length; arrayPosition++) {
+    // Check if the current element is the maximum value AND
+    // if it's not the already chosen best index (to handle duplicates) AND
+    // if the auxiliary array value at the current position is greater than or equal
+    // to the auxiliary array value at the current best index (tie-breaker)
+    if (maximumValue === mainArr[arrayPosition] &&
+        bestCandidateIdx !== arrayPosition &&
+        auxArr[bestCandidateIdx] <= auxArr[arrayPosition]) {
+      // If all conditions met, update the best candidate index
+      bestCandidateIdx = arrayPosition;
     }
   }
-
-  // Return the determined best index.
-  return bestIndex;
+  // Return the determined optimal index
+  return bestCandidateIdx;
 }
 
-// Execute the main processing function by reading input from standard input.
+// Read input from standard input and pass it to the main processing function
 processInput(require('node:fs').readFileSync('/dev/stdin', 'utf8'));

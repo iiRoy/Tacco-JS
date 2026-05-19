@@ -1,22 +1,20 @@
-const obtainContent = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedFigures = obtainContent.trim().split(/\s+/).map(numericString => Number(numericString));
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const numericValues = fileContent.match(/\d+/g).map(Number);
 
-const [frameWidth, frameHeight, pointX, pointY, sphereRadius] = processedFigures;
+const [containerWidth, containerHeight, circleX, circleY, circleRadius] = numericValues;
 
-const measureMin = (...vals) => Math.min(...vals);
+const checkContainment = (rad, cX, cY, totalW, totalH) => {
+    const leftBoundaryDistance = cX;
+    const rightBoundaryDistance = totalW - cX;
+    const topBoundaryDistance = cY;
+    const bottomBoundaryDistance = totalH - cY;
 
-const distToLeftEdge = pointX;
-const distToRightEdge = frameWidth - pointX;
-const distToTopEdge = pointY;
-const distToBottomEdge = frameHeight - pointY;
+    return rad <= leftBoundaryDistance &&
+           rad <= rightBoundaryDistance &&
+           rad <= topBoundaryDistance &&
+           rad <= bottomBoundaryDistance;
+};
 
-const smallestBoundaryDistance = measureMin(
-    distToLeftEdge,
-    distToRightEdge,
-    distToTopEdge,
-    distToBottomEdge
-);
+const isContained = checkContainment(circleRadius, circleX, circleY, containerWidth, containerHeight);
 
-const finalVerdict = (sphereRadius <= smallestBoundaryDistance) ? 'Yes' : 'No';
-
-console.log(finalVerdict);
+console.log(isContained ? 'Yes' : 'No');

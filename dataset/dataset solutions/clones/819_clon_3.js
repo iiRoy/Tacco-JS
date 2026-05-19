@@ -1,113 +1,45 @@
-const calculateMagnitudeStart = (digitCount) => {
-    const flooredDigitCount = Math.floor(digitCount);
-    // This function determines the smallest number with a given number of digits.
-    // For example, for 2 digits, it returns 10 (10^1). For 3 digits, 100 (10^2).
-    return Math.pow(10, flooredDigitCount - 1);
-};
+let inputStream = process.stdin;
+inputStream.resume();
+inputStream.setEncoding('utf8');
 
-const getArithmeticSeriesSum = (startTerm, endTerm) => {
-    // Computes the sum of an arithmetic progression from startTerm to endTerm (inclusive).
-    // Formula: (number of terms / 2) * (first term + last term)
-    const numberOfTerms = endTerm - startTerm + 1;
-    return (startTerm + endTerm) * numberOfTerms / 2;
-};
+let unusedVariablePlaceholder = -1; // Original 'n' variable, renamed and kept.
 
-const concatenateAndParse = (num1, num2) => {
-    // Concatenates two numbers as strings and then parses the result back to an integer.
-    // Example: concatenateAndParse(12, 34) returns 1234.
-    return parseInt(`${num1}${num2}`, 10);
-};
+const calculatePowerOfTen = (exponentValue) => Math.pow(10, Math.floor(exponentValue)); // Renamed 'i' and made explicit with Math.floor.
 
-const NO_SOLUTIONS_MESSAGE = 'No creatures found.';
+inputStream.on('data', (receivedInputData) => {
+    const allInputLines = receivedInputData.split('\n');
+    const totalTestCases = Number(allInputLines[0]); // Extracted and explicitly converted.
 
-// Initialize standard input stream handling
-const inputSource = process.stdin;
-inputSource.setEncoding('utf8');
-inputSource.resume();
+    for (let currentCaseIndex = 0; currentCaseIndex < totalTestCases; ++currentCaseIndex) {
+        let resultsForCurrentCase = []; // Renamed 'r'
+        const caseParameters = allInputLines[currentCaseIndex + 1].split(' '); // Renamed 'o'
 
-let fullInputData = '';
+        const firstParamValue = Number(caseParameters[0]); // Helper variable for o[0]
+        const secondParamValue = Number(caseParameters[1]); // Helper variable for o[1]
 
-// Accumulate all incoming data chunks
-inputSource.on('data', (inputChunk) => {
-    fullInputData += inputChunk;
-});
+        const lowerBoundForFirstNumber = calculatePowerOfTen(firstParamValue - 1);
+        const upperBoundForFirstNumber = calculatePowerOfTen(firstParamValue);
 
-// Process the entire input once the stream has ended
-inputSource.on('end', () => {
-    const inputLines = fullInputData.split('\n').filter(line => line.trim() !== '');
+        const lowerBoundForSecondNumber = calculatePowerOfTen(secondParamValue - 1);
+        const upperBoundForSecondNumber = calculatePowerOfTen(secondParamValue);
 
-    if (inputLines.length === 0) {
-        console.error("Error: No input data was provided.");
-        return;
-    }
+        for (let firstNumber = lowerBoundForFirstNumber; firstNumber < upperBoundForFirstNumber; ++firstNumber) { // Renamed 'a'
+            for (let secondNumber = lowerBoundForSecondNumber; secondNumber < upperBoundForSecondNumber; ++secondNumber) { // Renamed 'b'
+                // Intermediate computation steps for the core condition
+                const arithmeticSum = (firstNumber + secondNumber) * (secondNumber - firstNumber + 1) / 2;
+                const concatenatedStringAsNumber = Number(`${firstNumber}${secondNumber}`); // Using template literal for concatenation
 
-    const numberOfTestCasesStr = inputLines[0];
-    const numberOfTestCases = parseInt(numberOfTestCasesStr, 10);
-
-    if (isNaN(numberOfTestCases) || numberOfTestCases < 0) {
-        console.error(`Input parsing error: Invalid number of test cases specified: "${numberOfTestCasesStr}"`);
-        return;
-    }
-
-    // Iterate through each specified test case
-    for (let currentCaseIndex = 0; currentCaseIndex < numberOfTestCases; ++currentCaseIndex) {
-        const currentCaseInputLine = inputLines[currentCaseIndex + 1];
-
-        if (!currentCaseInputLine) {
-            console.error(`Warning: Missing input line for test case ${currentCaseIndex + 1}. This case will be skipped.`);
-            continue;
-        }
-
-        const digitLengthParameters = currentCaseInputLine.split(' ');
-
-        if (digitLengthParameters.length !== 2) {
-            console.error(`Error: Test case ${currentCaseIndex + 1} has incorrect number of parameters. Expected 2, got ${digitLengthParameters.length}.`);
-            console.log(NO_SOLUTIONS_MESSAGE);
-            continue;
-        }
-
-        const firstNumDigits = parseInt(digitLengthParameters[0], 10);
-        const secondNumDigits = parseInt(digitLengthParameters[1], 10);
-
-        if (isNaN(firstNumDigits) || isNaN(secondNumDigits) || firstNumDigits <= 0 || secondNumDigits <= 0) {
-            console.error(`Error: Invalid digit counts provided for test case ${currentCaseIndex + 1}: (${digitLengthParameters[0]}, ${digitLengthParameters[1]}).`);
-            console.log(NO_SOLUTIONS_MESSAGE);
-            continue;
-        }
-
-        const foundSolutionPairs = [];
-
-        // Determine the valid range for the first number (candidateA) based on its digit count
-        const lowerBoundA = calculateMagnitudeStart(firstNumDigits);
-        const upperBoundA = calculateMagnitudeStart(firstNumDigits + 1) - 1;
-
-        // Determine the valid range for the second number (candidateB) based on its digit count
-        const lowerBoundB = calculateMagnitudeStart(secondNumDigits);
-        const upperBoundB = calculateMagnitudeStart(secondNumDigits + 1) - 1;
-
-        // Nested loops to iterate through all possible candidate pairs (candidateA, candidateB)
-        for (let candidateA = lowerBoundA; candidateA <= upperBoundA; ++candidateA) {
-            for (let candidateB = lowerBoundB; candidateB <= upperBoundB; ++candidateB) {
-                const calculatedSum = getArithmeticSeriesSum(candidateA, candidateB);
-                const concatenatedValue = concatenateAndParse(candidateA, candidateB);
-
-                // Check if the arithmetic sum equals the concatenated value
-                if (calculatedSum === concatenatedValue) {
-                    foundSolutionPairs.push(`${candidateA} ${candidateB}`);
+                if (arithmeticSum === concatenatedStringAsNumber) {
+                    resultsForCurrentCase.push(`${firstNumber} ${secondNumber}`);
                 }
             }
         }
 
-        // Output results for the current test case
-        if (foundSolutionPairs.length > 0) {
-            foundSolutionPairs.forEach(pairString => console.log(pairString));
+        // Rewriting the conditional output using an if/else block
+        if (resultsForCurrentCase.length > 0) {
+            resultsForCurrentCase.forEach(pairString => console.log(pairString));
         } else {
-            console.log(NO_SOLUTIONS_MESSAGE);
+            console.log('No cats.');
         }
     }
-});
-
-// Handle any potential errors during stream operations
-inputSource.on('error', (err) => {
-    console.error("An unexpected error occurred with the input stream:", err);
 });

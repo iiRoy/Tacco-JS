@@ -1,71 +1,49 @@
-const fileSystemModule = require('fs');
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = rawData.split("\n");
+var resultsCollection = [];
 
-const inputFilePath = '/dev/stdin';
-
-const rawInputData = fileSystemModule.readFileSync(inputFilePath, 'utf8');
-
-const lineEntries = rawInputData.split('\n');
-
-let finalOutputCollection = [];
-
-const terminationSymbol = '?';
-
-for (let currentLineIndex = 0; currentLineIndex < lineEntries.length; currentLineIndex++) {
-    const activeLine = lineEntries[currentLineIndex];
-
-    // Trim the line to handle potential leading/trailing whitespace before splitting.
-    const trimmedLine = activeLine.trim();
-    if (trimmedLine.length === 0) {
-        // Skip empty lines or lines containing only whitespace.
-        continue;
+function executeOperation(firstVal, opChar, secondVal) {
+    let computedResult;
+    switch (opChar) {
+        case "+":
+            computedResult = firstVal + secondVal;
+            break;
+        case "-":
+            computedResult = firstVal - secondVal;
+            break;
+        case "*":
+            computedResult = firstVal * secondVal;
+            break;
+        case "/":
+            computedResult = Math.floor(firstVal / secondVal);
+            break;
+        default:
+            return null;
     }
+    return computedResult;
+}
 
-    const lineComponents = trimmedLine.split(' ');
+for (var lineIndex = 0; lineIndex < lineSegments.length; lineIndex++) {
+    var currentLine = lineSegments[lineIndex];
+    var parts = currentLine.split(" ");
 
-    // Ensure we have at least three components: operand1, operator, operand2.
-    if (lineComponents.length < 3) {
-        // Malformed line, skip it.
-        continue;
-    }
+    var operandA = Number(parts[0]);
+    var operatorSymbol = parts[1];
+    var operandC = Number(parts[2]);
 
-    const firstNumericalValue = Number(lineComponents[0]);
-    const operatorCharacter = lineComponents[1];
-    const secondNumericalValue = Number(lineComponents[2]);
-
-    if (operatorCharacter === terminationSymbol) {
-        // Encountered the termination signal, stop processing further lines.
+    if (operatorSymbol === "?") {
         break;
     }
 
-    let calculatedResult;
+    let lineOutputContent = "";
 
-    switch (operatorCharacter) {
-        case '+':
-            calculatedResult = firstNumericalValue + secondNumericalValue;
-            break;
-        case '-':
-            calculatedResult = firstNumericalValue - secondNumericalValue;
-            break;
-        case '*':
-            calculatedResult = firstNumericalValue * secondNumericalValue;
-            break;
-        case '/':
-            // Perform integer division as per the original's Math.floor.
-            calculatedResult = Math.floor(firstNumericalValue / secondNumericalValue);
-            break;
-        default:
-            // If an unrecognized operator, treat as no operation for this line.
-            // The original code implicitly skipped, so we do too by not pushing a result.
-            calculatedResult = null; // Use null to signify no valid result for this line
-            break;
-    }
+    let calculatedValue = executeOperation(operandA, operatorSymbol, operandC);
 
-    if (calculatedResult !== null) {
-        finalOutputCollection.push(calculatedResult);
+    if (calculatedValue !== null) {
+        lineOutputContent = String(calculatedValue);
     }
+    
+    resultsCollection.push(lineOutputContent);
 }
 
-// Join all collected results with newline characters.
-// The `trim()` from the original is effectively handled by filtering empty lines and
-// `filter`ing invalid results, then `join`ing.
-console.log(finalOutputCollection.join('\n'));
+console.log(resultsCollection.join("\n").trim());

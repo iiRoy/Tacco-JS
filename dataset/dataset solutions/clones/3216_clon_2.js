@@ -1,146 +1,162 @@
 "use strict";
 
-const SolutionRunner = function(sourceText) {
-  // Prepare the incoming data: trim, split by whitespace, and convert to numbers.
-  let processedInput = sourceText.trim().split(/\s+/).map(x => parseInt(x, 10));
+// This function processes the input data to calculate a specific value.
+var ProcessInput = function (initialData) {
+  // Clean and parse the raw input string into an array of numbers.
+  initialData = initialData.trim().split(/\s+/).map((val) => val - 0);
 
-  // Extract grid dimensions from the beginning of the processed data.
-  const numRows = processedInput.shift();
-  const numCols = processedInput.shift();
+  // Extract the dimensions of the matrix from the beginning of the array.
+  var rowCount = initialData.shift(); // Number of rows (N)
+  var colCount = initialData.shift(); // Number of columns (M)
 
-  let basisCount = 0; // Initialize a counter for the basis (rank of the matrix).
-  const targetMatrix = new GridStructure(numRows, numCols, processedInput);
+  // Initialize a counter for the rank of the matrix.
+  var currentRank = 0;
 
-  // Begin the Gaussian elimination process to determine the matrix rank.
-  while (targetMatrix.dataRows.length > 0) {
-    let pivotRowIdx = 0;
-    // Iterate through rows to find a '1' in the current leading column.
-    for (let rowIter = 0; rowIter < targetMatrix.dataRows.length; rowIter++) {
-      if (targetMatrix.dataRows[rowIter][0] === 1) break; // Found a '1', use this row as pivot.
-      pivotRowIdx++; // Move to the next row if '0' is found.
+  // Create a new matrix object using the parsed dimensions and elements.
+  var dataMatrix = new BinaryMatrix(rowCount, colCount, initialData);
+
+  // Perform Gaussian elimination-like operations until the matrix is empty.
+  while (dataMatrix.dataRows.length > 0) {
+    let pivotRowIndex = 0; // Index to find the first row with a '1' in the current column.
+
+    // Search for a row where the first element (current pivot column) is 1.
+    for (let rIdx = 0; rIdx < dataMatrix.dataRows.length; rIdx++) {
+      if (dataMatrix.dataRows[rIdx][0] === 1) break;
+      pivotRowIndex++;
     }
 
-    // If no '1' was found in the current column (all are '0's).
-    if (pivotRowIdx === targetMatrix.dataRows.length) {
-      // This column is linearly dependent; move it to the end and then remove it.
-      targetMatrix.interchangeColumns(0, targetMatrix.dataRows[0].length - 1);
-      targetMatrix.removeLastColumn();
+    // If no row has a '1' in the current column, it means this column is linearly dependent.
+    if (pivotRowIndex === dataMatrix.dataRows.length) {
+      // Move the current column to the end and then delete it.
+      dataMatrix.exchangeColumns(0, dataMatrix.dataRows[0].length - 1);
+      dataMatrix.removeLastColumn();
     } else {
-      // A pivot '1' was found, indicating a new basis vector.
-      basisCount++;
-      // Proceed to eliminate other '1's in the current column below the pivot.
+      // A pivot '1' is found, increment the rank.
+      currentRank += 1;
+
+      // Eliminate '1's below the pivot row in the current column using XOR operations.
       while (true) {
-        let targetRowIdx = pivotRowIdx + 1;
-        // Search for the next row containing a '1' in the current column.
-        for (let rowIter = pivotRowIdx + 1; rowIter < targetMatrix.dataRows.length; rowIter++) {
-          if (targetMatrix.dataRows[rowIter][0] === 1) break; // Found another '1' to eliminate.
-          targetRowIdx++;
+        let targetRowIndex = pivotRowIndex + 1; // Index to find the next row with a '1'.
+
+        // Search for the next row below the pivot that also has a '1' in the current column.
+        for (let rIdx = pivotRowIndex + 1; rIdx < dataMatrix.dataRows.length; rIdx++) {
+          if (dataMatrix.dataRows[rIdx][0] === 1) break;
+          targetRowIndex++;
         }
-        // If no more '1's are present below the current pivot, exit this inner loop.
-        if (targetRowIdx === targetMatrix.dataRows.length) break;
 
-        // Apply XOR operation to eliminate the '1' in the target row.
-        targetMatrix.dataRows[targetRowIdx] = rowXOR(targetMatrix.dataRows[pivotRowIdx], targetMatrix.dataRows[targetRowIdx]);
+        // If no more '1's are found in the current column below the pivot, break.
+        if (targetRowIndex === dataMatrix.dataRows.length) break;
+
+        // XOR the pivot row with the target row to eliminate the '1'.
+        dataMatrix.dataRows[targetRowIndex] = rowXOR(
+          dataMatrix.dataRows[pivotRowIndex],
+          dataMatrix.dataRows[targetRowIndex]
+        );
       }
-      // After processing, move the pivot row to the end and remove it.
-      targetMatrix.interchangeRows(pivotRowIdx, targetMatrix.dataRows.length - 1);
-      targetMatrix.removeLastRow();
+
+      // Move the processed pivot row to the end and then remove it.
+      dataMatrix.exchangeRows(pivotRowIndex, dataMatrix.dataRows.length - 1);
+      dataMatrix.removeLastRow();
     }
   }
 
-  const computedRank = basisCount; // The final calculated rank.
-  const modulus = 998244353; // A prime number used for modular arithmetic.
+  // Store the final computed rank.
+  var finalRank = currentRank;
 
-  let exponentTerm1 = 1;
-  let exponentTerm2 = 1;
+  // Define a large prime modulus for calculations.
+  var primeMod = 998244353;
 
-  // Calculate 2^(numCols + numRows - 1) modulo 'modulus'.
-  for (let iterCount = 1; iterCount <= numCols + numRows - 1; iterCount++) {
-    exponentTerm1 = exponentTerm1 + exponentTerm1 - (2 * exponentTerm1 > modulus ? modulus : 0);
+  // Initialize terms for power calculations.
+  var powerTerm1 = 1;
+  var powerTerm2 = 1;
+
+  // Calculate 2^(M+N-1) mod primeMod.
+  for (let iter = 1; iter <= colCount + rowCount - 1; iter++) {
+    powerTerm1 += powerTerm1 - (2 * powerTerm1 > primeMod ? primeMod : 0);
   }
 
-  // Calculate 2^(numCols + numRows - computedRank - 1) modulo 'modulus'.
-  for (let iterCount = 1; iterCount <= numCols + numRows - computedRank - 1; iterCount++) {
-    exponentTerm2 = exponentTerm2 + exponentTerm2 - (2 * exponentTerm2 > modulus ? modulus : 0);
+  // Calculate 2^(M+N-finalRank-1) mod primeMod.
+  for (let iter = 1; iter <= colCount + rowCount - finalRank - 1; iter++) {
+    powerTerm2 += powerTerm2 - (2 * powerTerm2 > primeMod ? primeMod : 0);
   }
 
-  const outputResult = exponentTerm1 - exponentTerm2; // Final computation.
-  console.log(outputResult); // Output the result to the console.
+  // Compute the final result as the difference of the two power terms.
+  var result = powerTerm1 - powerTerm2;
+
+  // Output the calculated result to the console.
+  console.log(result);
 };
 
-// Performs a bitwise exclusive OR operation on two binary values.
-function exclusiveOrBit(val1, val2) {
-  return val1 === val2 ? 0 : 1;
+// Helper function for binary XOR operation.
+function binaryXOR(bit1, bit2) {
+  return bit1 === bit2 ? 0 : 1;
 }
 
-// Applies the exclusive OR operation element-wise to two arrays (vectors).
-function rowXOR(vectorA, vectorB) {
-  return vectorA.map((element, elementIdx) => exclusiveOrBit(element, vectorB[elementIdx]));
+// Helper function to perform XOR operation on two arrays (rows).
+function rowXOR(sourceRow, targetRow) {
+  return sourceRow.map((element, index) => binaryXOR(element, targetRow[index]));
 }
 
-// Constructor function for creating a GridStructure (binary matrix).
-function GridStructure(rows, cols, initialValues) {
-  const currentGrid = this;
-  currentGrid.dataRows = []; // Internal array to store the matrix rows.
+// Constructor function for a BinaryMatrix.
+function BinaryMatrix(totalRows, totalCols, flatData) {
+  var self = this; // Reference to the current instance.
+  self.dataRows = []; // Initialize an array to hold the matrix rows.
 
-  // Initialize each row as an empty array.
-  for (let r = 0; r < rows; r++) {
-    currentGrid.dataRows[r] = [];
-  }
+  // Initialize empty arrays for each row.
+  for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) self.dataRows[rowIndex] = [];
 
-  // Populate the grid with values from the flattened initialValues array.
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      currentGrid.dataRows[r][c] = initialValues[r * cols + c];
+  // Populate the matrix with elements from the flat data array.
+  for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+    for (let colIndex = 0; colIndex < totalCols; colIndex++) {
+      self.dataRows[rowIndex][colIndex] = flatData[rowIndex * totalCols + colIndex];
     }
   }
 }
 
-// A utility function to swap the positions of two elements within an array.
-function swapArrayPositions(targetArray, idxA, idxB) {
-  const itemA = targetArray[idxA];
-  const itemB = targetArray[idxB];
-  targetArray[idxA] = itemB;
-  targetArray[idxB] = itemA;
+// Generic helper function to swap two elements in an array.
+function swapArrayItems(collection, firstIndex, secondIndex) {
+  var tempA = collection[firstIndex];
+  var tempB = collection[secondIndex];
+  collection[firstIndex] = tempB;
+  collection[secondIndex] = tempA;
 }
 
-// Method to swap two rows within the GridStructure.
-GridStructure.prototype.interchangeRows = function(idxA, idxB) {
-  const currentContext = this;
-  swapArrayPositions(currentContext.dataRows, idxA, idxB);
+// Prototype method to swap two rows in the matrix.
+BinaryMatrix.prototype.exchangeRows = function (rowIdx1, rowIdx2) {
+  var currentMatrix = this;
+  swapArrayItems(currentMatrix.dataRows, rowIdx1, rowIdx2);
 };
 
-// Method to remove the last row from the GridStructure.
-GridStructure.prototype.removeLastRow = function() {
-  const currentContext = this;
-  const rowCollection = currentContext.dataRows;
-  rowCollection.pop(); // Removes the last element (row) from the dataRows array.
+// Prototype method to remove the last row from the matrix.
+BinaryMatrix.prototype.removeLastRow = function () {
+  var currentMatrix = this;
+  var rowCollection = currentMatrix.dataRows;
+  rowCollection.pop(); // Remove the last element (row) from the array.
 };
 
-// Method to swap two columns within the GridStructure.
-GridStructure.prototype.interchangeColumns = function(colIdxA, colIdxB) {
-  const currentContext = this;
-  for (let rowIdx = 0; rowIdx < currentContext.dataRows.length; rowIdx++) {
-    swapArrayPositions(currentContext.dataRows[rowIdx], colIdxA, colIdxB);
+// Prototype method to swap two columns in the matrix.
+BinaryMatrix.prototype.exchangeColumns = function (colIdx1, colIdx2) {
+  var currentMatrix = this;
+  // Iterate through each row and swap the elements at the specified column indices.
+  for (let rowIter = 0; rowIter < currentMatrix.dataRows.length; rowIter++) {
+    swapArrayItems(currentMatrix.dataRows[rowIter], colIdx1, colIdx2);
   }
 };
 
-// Method to remove the last column from the GridStructure.
-GridStructure.prototype.removeLastColumn = function() {
-  const currentContext = this;
-  const rowCollection = currentContext.dataRows;
-  const numActiveRows = rowCollection.length;
+// Prototype method to remove the last column from the matrix.
+BinaryMatrix.prototype.removeLastColumn = function () {
+  var currentMatrix = this;
+  var rowCollection = currentMatrix.dataRows;
+  var currentRowCount = rowCollection.length;
 
-  // Special handling: if only one column remains and is being removed, clear the entire matrix.
-  if (numActiveRows > 0 && rowCollection[0].length === 1) {
-    currentContext.dataRows = [];
-  } else {
-    // Otherwise, remove the last element (column entry) from each row.
-    for (let rowIdx = 0; rowIdx < numActiveRows; rowIdx++) {
-      rowCollection[rowIdx].pop();
-    }
+  // If there's only one column left, clear all rows.
+  if (rowCollection[0].length === 1) currentMatrix.dataRows = [];
+
+  // For each row, remove the last element (column).
+  for (let rowIter = 0; rowIter < currentRowCount; rowIter++) {
+    rowCollection[rowIter].pop();
   }
 };
 
-// Execute the primary logic by reading input from standard input.
-SolutionRunner(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Execute the main processing function with input read from stdin.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,59 +1,37 @@
-// This subroutine processes an array of textual entries, computing the sum of individual
-// numeric characters found within each entry until a specific termination marker is encountered.
-function calculateSumsFromStrings (
-  textualEntries
-) {
-  // Begin an indefinite iteration through the provided textual data.
-  for (
-    var entryCounter = 0;
-    ;
-    entryCounter++
-  ) {
-    // Check if the current textual entry is the designated termination signal.
-    if (
-      textualEntries[entryCounter] == '0'
-    ) {
-      // If the termination signal is found, exit the processing loop immediately.
-      break;
+function processInputData(inputRecords) {
+  // Iterate through the provided input records.
+  for (var recordIndex = 0; ; recordIndex++) {
+    // Check if the current record is the termination signal.
+    if (inputRecords[recordIndex] == '0') {
+      break; // Exit the loop if '0' is encountered.
     }
 
-    // Transform the current textual entry: first, split it into an array of single characters,
-    // then convert each character into its floating-point numeric representation.
-    var parsedNumbers = textualEntries[entryCounter].split('').map(parseFloat);
+    // Convert the string record into an array of floating-point numbers (digits).
+    var numericChars = inputRecords[recordIndex].split('').map(parseFloat);
+    var totalValue = 0; // Initialize a variable to accumulate the sum of digits.
 
-    // Initialize a variable to accumulate the numeric sum for the present entry.
-    var currentTotal = 0.0;
-
-    // Iterate through each of the parsed numbers collected from the current entry.
-    for (
-      var numberIndex = 0;
-      numberIndex < parsedNumbers.length;
-      numberIndex++
-    ) {
-      // Add the value of the current number to the ongoing total.
-      currentTotal += parsedNumbers[numberIndex];
+    // Loop through each numeric character in the current record.
+    for (var charIndex = 0; charIndex < numericChars.length; charIndex++) {
+      totalValue += numericChars[charIndex]; // Add the current digit to the running total.
     }
 
-    // Display the computed total for the current textual entry to the standard output.
-    console.log(currentTotal);
+    // Output the calculated sum for the current record.
+    console.log(totalValue);
   }
 }
 
-// Declare an array to store incoming buffered data portions from the standard input.
-var incomingDataSegments = [];
+// An array to store incoming data segments from standard input.
+var dataParts = [];
 
-// Attach an event handler to the standard input stream that triggers when new data arrives.
-process.stdin.on('data', function (dataPortion) {
-  // Append each received data portion to our collective storage array.
-  incomingDataSegments.push(dataPortion);
+// Set up an event listener for when data is received on standard input.
+process.stdin.on('data', function(dataSegment) {
+  dataParts.push(dataSegment); // Append the received data segment to our array.
 });
 
-// Attach an event handler to the standard input stream that triggers when the input stream concludes.
-process.stdin.on('end', function () {
-  // Consolidate all stored data portions into a single string, then divide it into an array of lines
-  // using newline characters as delimiters.
-  var textualEntries = incomingDataSegments.join('').split('\n');
-
-  // Invoke the primary processing function with the newly prepared array of textual entries.
-  calculateSumsFromStrings(textualEntries);
+// Set up an event listener for when the standard input stream ends.
+process.stdin.on('end', function() {
+  // Join all collected data segments into a single string, then split by newline to get individual records.
+  var inputRecords = dataParts.join('').split('\n');
+  // Call the main processing function with the prepared array of input records.
+  processInputData(inputRecords);
 });

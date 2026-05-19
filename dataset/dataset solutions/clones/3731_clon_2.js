@@ -1,39 +1,40 @@
-function ProcessInput ( entryData )
-{
-  // The input text is split into an array of lines.
-  entryData = entryData.split ( "\n" );
+// This function processes the entire input data
+function ProcessInput(rawData) {
+    // The input string is split into an array of lines
+    let lines = rawData.split("\n");
 
-  let maxIterations = entryData[0]; // Retrieve the primary iteration count.
-  let currentSegmentLen = 1;        // Initialize the length of the numeric part.
-  let activeValue = 1;              // Start with the initial numeric value.
+    // The first line determines the number of iterations
+    const loopCount = lines[0];
 
-  // Iterate a specific number of times as defined by the input.
-  for ( let primaryLoopIdx = 0; primaryLoopIdx < maxIterations; primaryLoopIdx++ )
-  {
-    let generatedPart = "";     // String builder for the current output.
-    generatedPart += activeValue; // Append the current numeric value.
+    // Initialize variables for digit generation
+    let digitCount = 1; // Represents the number of digits in the current number
+    let currentDigit = 1; // Represents the starting digit for the current number
 
-    // If the segment length is more than one, append '9's as padding.
-    if ( currentSegmentLen > 1 )
-    {
-      for ( let paddingCounter = 0; paddingCounter < currentSegmentLen - 1; paddingCounter++ )
-      {
-        generatedPart += "9"; // Add a '9' for padding.
-      }
+    // Loop through the specified number of times
+    for (let outerIndex = 0; outerIndex < loopCount; outerIndex++) {
+        let outputString = ""; // String to build for current output
+        outputString += currentDigit; // Append the current starting digit
+
+        // If the digit count is greater than one, append '9's
+        if (digitCount > 1) {
+            for (let innerIndex = 0; innerIndex < digitCount - 1; innerIndex++) {
+                outputString += "9"; // Add '9' for each additional digit
+            }
+        }
+
+        // Print the generated string to the console
+        console.log('%s', outputString);
+
+        // Increment the current digit
+        currentDigit++;
+
+        // If the current digit exceeds 9, reset it to 1 and increase the digit count
+        if (currentDigit > 9) {
+            currentDigit = 1;
+            digitCount++;
+        }
     }
-    // Print the assembled string for this iteration.
-    console.log( '%s', generatedPart );
-
-    activeValue++; // Increment the numeric value for the next cycle.
-
-    // Check if the active value has exceeded 9; if so, reset and increase segment length.
-    if ( activeValue > 9 )
-    {
-      activeValue = 1;
-      currentSegmentLen++;
-    }
-  }
 }
 
-// The following line is crucial for standard input/output operations and should not be altered.
+// Do not modify the following lines (reads input and calls the main processing function)
 ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

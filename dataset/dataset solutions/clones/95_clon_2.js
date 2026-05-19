@@ -1,65 +1,44 @@
-const   fileSystemModule = require ( 'fs' ) ; /* Include the Node.js File System utility */
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-/*
- *   Retrieve all data from the standard input stream.
- *   The input is expected to be UTF-8 encoded text.
- */
-let     rawDataStream = fileSystemModule . readFileSync ( '/dev/stdin' ,  'utf8' ) ;
+// Process the raw input data
+var lineSegments = fileContent.replace(/\n$/, '').split('\n');
 
-// Pre-process the raw text: remove any trailing newline character, then split into an array of lines.
-let     parsedInputLines = rawDataStream . replace ( /\n$/ , '' ) . split ( '\n' ) ;
+// Get the total number of test cases
+var numCases = Number(lineSegments.shift());
 
-// The first line of input specifies the total number of scenarios to process.
-const   totalCaseCount = Number ( parsedInputLines . shift ( ) ) ;
+// Iterate through each test case
+for (var caseIndex = 0; caseIndex < numCases; caseIndex++) {
+  // Parse the coordinates and radii for the current case
+  var currentCoords = lineSegments.shift().split(' ').map(Number);
 
-// Begin iterating through each individual scenario.
-for ( let   caseIndex = 0 ; caseIndex < totalCaseCount ; caseIndex++ )
-{
-    // Extract the current line of data, parse it by spaces, and convert each segment to a numerical value.
-    let     currentCaseData = parsedInputLines . shift ( ) . split ( ' ' ) . map ( Number ) ;
+  // Extract values for the first circle
+  var circleOneX = currentCoords.shift();
+  var circleOneY = currentCoords.shift();
+  var circleOneRadius = currentCoords.shift();
 
-    // Obtain the coordinates (x, y) and radius for the first geometric circle.
-    const   firstCircleCoordX = currentCaseData . shift ( ) ;
-    const   firstCircleCoordY = currentCaseData . shift ( ) ;
-    const   firstCircleRadius = currentCaseData . shift ( ) ;
+  // Extract values for the second circle
+  var circleTwoX = currentCoords.shift();
+  var circleTwoY = currentCoords.shift();
+  var circleTwoRadius = currentCoords.shift();
 
-    // Obtain the coordinates (x, y) and radius for the second geometric circle.
-    const   secondCircleCoordX = currentCaseData . shift ( ) ;
-    const   secondCircleCoordY = currentCaseData . shift ( ) ;
-    const   secondCircleRadius = currentCaseData . shift ( ) ;
+  // Calculate the Euclidean distance between the centers of the two circles
+  var distanceBetweenCenters = Math.sqrt(Math.pow(circleTwoX - circleOneX, 2) + Math.pow(circleTwoY - circleOneY, 2));
 
-    // Calculate the straight-line distance between the centers of the two circles using the Pythagorean theorem.
-    const   distanceBetweenCenters = Math . sqrt (
-        Math . pow ( secondCircleCoordX - firstCircleCoordX , 2 ) +
-        Math . pow ( secondCircleCoordY - firstCircleCoordY , 2 )
-    ) ;
-
-    /*
-     *   Determine the spatial relationship between the two circles
-     *   and print the corresponding status code.
-     */
-    if ( distanceBetweenCenters <= firstCircleRadius + secondCircleRadius )
-    {
-        // The circles either intersect, touch, or one is contained within the other.
-        if ( distanceBetweenCenters < secondCircleRadius - firstCircleRadius )
-        {
-            // The first circle is entirely enclosed within the second circle.
-            console . log ( -2 ) ;
-        }
-        else if ( distanceBetweenCenters < firstCircleRadius - secondCircleRadius )
-        {
-            // The second circle is entirely enclosed within the first circle.
-            console . log ( 2 ) ;
-        }
-        else
-        {
-            // The circles intersect at one or two points, or touch externally.
-            console . log ( 1 ) ;
-        }
+  // Determine the relationship between the circles based on their distance and radii
+  if (distanceBetweenCenters <= circleOneRadius + circleTwoRadius) {
+    // Circles intersect or one is inside the other
+    if (distanceBetweenCenters < circleTwoRadius - circleOneRadius) {
+      // First circle is completely inside the second circle
+      console.log(-2);
+    } else if (distanceBetweenCenters < circleOneRadius - circleTwoRadius) {
+      // Second circle is completely inside the first circle
+      console.log(2);
+    } else {
+      // Circles intersect at one or two points, or are tangent externally
+      console.log(1);
     }
-    else
-    {
-        // The circles are entirely separate and do not make contact.
-        console . log ( 0 ) ;
-    }
+  } else {
+    // Circles are separate and do not touch
+    console.log(0);
+  }
 }

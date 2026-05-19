@@ -1,100 +1,75 @@
 'use strict';
-// This directive enforces strict mode for better code quality.
 
-/*
- * Module for file system operations.
- * Using 'node:fs' for modern Node.js environments.
- */
-const sourceReader = require('node:fs');
+// This script processes numerical data from standard input.
 
-// Read all lines from standard input, decode as UTF-8, and split by newline character.
-const inputDataLines = sourceReader
-  .readFileSync(
-    '/proc/self/fd/0', // A common path for stdin on Linux systems.
-    'utf-8' // Character encoding for the input.
-  )
-  .split('\n');
+const inputLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
 /**
- * Parses a string of space-separated numbers into an array of integers.
- * @param {string} inputStringContent - The string to parse.
- * @returns {number[]} An array of parsed integer values.
+ * Converts a space-separated string of numbers into an array of integers.
+ * @param {string} inputString - The string to parse.
+ * @returns {number[]} An array of parsed integers.
  */
-const processNumericLine = (inputStringContent) => {
-  // Split the string by space characters.
-  return inputStringContent
-    .split(' ')
-    .map((singleValueElement) => Number.parseInt(singleValueElement, 10)); // Convert each part to an integer.
+const parseNumbersFromString = (inputString) => {
+  return inputString.split(' ').map(val => parseInt(val, 10));
 };
 
-// Discard the very first line of input, often metadata.
-inputDataLines.shift();
+// Discard the first line, often a count or metadata.
+inputLines.shift();
 
-// Initialize an object to store counts or quantities for various items.
-const itemQuantityMap = {};
+// Initialize a map to store counts of numbers, using BigInt for potentially large counts.
+const numberCountsMap = {};
 
-/*
- * Process the initial set of items described on the second line of input.
- * Each number on this line represents an item ID, and its count is incremented.
- */
-processNumericLine(inputDataLines.shift()).forEach((itemIdentifier) => {
-  // Ensure the item exists in the map, initializing with 0n (BigInt zero) if not.
-  itemQuantityMap[itemIdentifier] = itemQuantityMap[itemIdentifier] || 0n;
-  itemQuantityMap[itemIdentifier] += 1n; // Increment the count for the item.
+// Process the initial set of numbers from the second line of input.
+parseNumbersFromString(inputLines.shift()).forEach(currentNum => {
+  // Ensure the count is initialized to 0n if not present.
+  numberCountsMap[currentNum] = numberCountsMap[currentNum] || 0n;
+  // Increment the count for the current number.
+  ++numberCountsMap[currentNum];
 });
 
-// Discard another line, potentially a separator or another piece of metadata.
-inputDataLines.shift();
+// Discard another line, possibly a separator or another metadata line.
+inputLines.shift();
 
-// Main processing loop: continue as long as there are input lines remaining.
-while (inputDataLines.length > 0) {
-  // Parse the current line into a pair of numbers (source and destination item IDs).
-  const currentNumericPair = processNumericLine(inputDataLines.shift());
+// Process subsequent lines until no more input is available.
+while (inputLines.length > 0) {
+  const currentOperationValues = parseNumbersFromString(inputLines.shift());
 
-  // Check if the source item exists and has a positive quantity.
-  if (itemQuantityMap[currentNumericPair[0]]) {
-    // Determine the amount to transfer, ensuring it's a BigInt.
-    const transferAmount = BigInt(itemQuantityMap[currentNumericPair[0]]);
+  // Check if the first number in the current line exists in our map.
+  if (numberCountsMap[currentOperationValues[0]]) {
+    // Get the current count of the first number.
+    const transferAmount = BigInt(numberCountsMap[currentOperationValues[0]]);
 
-    // Decrease the quantity of the source item.
-    itemQuantityMap[currentNumericPair[0]] -= transferAmount;
+    // Decrease the count of the first number by the transfer amount.
+    numberCountsMap[currentOperationValues[0]] -= transferAmount;
 
-    // Ensure the destination item exists in the map, initializing with 0n if not.
-    itemQuantityMap[currentNumericPair[1]] =
-      itemQuantityMap[currentNumericPair[1]] || 0n;
-    // Increase the quantity of the destination item by the transferred amount.
-    itemQuantityMap[currentNumericPair[1]] += transferAmount;
+    // Ensure the count for the second number is initialized to 0n if not present.
+    numberCountsMap[currentOperationValues[1]] = numberCountsMap[currentOperationValues[1]] || 0n;
+    // Increase the count of the second number by the transfer amount.
+    numberCountsMap[currentOperationValues[1]] += transferAmount;
   }
 
-  // Output the current aggregate sum calculated from the item quantities.
-  console.log(computeAggregateSum());
+  // Output the calculated sum after each operation.
+  console.log(computeTotalSum());
 }
 
 /**
- * Calculates the total sum by iterating through the item quantity map.
- * Each item's ID is added to the sum 'quantity' times.
- * @returns {number} The final calculated sum.
+ * Calculates the sum of all numbers in the `numberCountsMap`,
+ * where each number is added `count` times.
+ * @returns {number} The total sum.
  */
-function computeAggregateSum() {
-  // Retrieve all unique keys (item IDs) from the quantity map.
-  const mapEntryKeys = Object.keys(itemQuantityMap);
-  let totalAccumulatedValue = 0; // Initialize the sum.
+function computeTotalSum() {
+  const allKeys = Object.keys(numberCountsMap);
+  let overallSum = 0;
 
-  // Iterate over each unique item key.
-  mapEntryKeys.forEach((entryKeyIdentifier) => {
-    // Only process if the item has a positive quantity.
-    if (itemQuantityMap[entryKeyIdentifier]) {
-      // Loop 'quantity' times for each item.
-      for (
-        let iterationCounter = 0,
-          currentEntryQuantity = itemQuantityMap[entryKeyIdentifier];
-        iterationCounter < currentEntryQuantity;
-        iterationCounter++
-      ) {
-        // Add the integer value of the item ID to the total sum.
-        totalAccumulatedValue += Number.parseInt(entryKeyIdentifier, 10);
+  // Iterate over each unique number (key) in the map.
+  allKeys.forEach(keyString => {
+    // If the count for this number is non-zero.
+    if (numberCountsMap[keyString]) {
+      // Loop `count` times, adding the number to the sum in each iteration.
+      for (let iterationIndex = 0, currentCount = numberCountsMap[keyString]; iterationIndex < currentCount; ++iterationIndex) {
+        overallSum += parseInt(keyString, 10);
       }
     }
   });
-  return totalAccumulatedValue; // Return the final computed sum.
+  return overallSum;
 }

@@ -1,73 +1,45 @@
-"use strict" ;
+/*
+ * [1] Proyecto: Carpa Quantum 7243
+ * [2] Integrantes: Mateo Torres, Luis Herrera
+ */
 
-// This is a Type I clone example.
-// All variable names, function names, and expressions
-// remain identical to the original code.
-// Only whitespace and comments have been altered significantly.
+ "use strict";
+function main ( input) {  // la lectura mantiene aquí local el resultado visible.
+    let k = input[0].split(" ");
+  k = k[1];  
+	let n = input[1].split(" ");
 
+// mantiene aquí actual el cierre del bloque.
+// la lectura organiza aquí el análisis de valores por cada valor simple.
+// la lectura organiza bien el cierre del bloque con la entrada interno.
+    let exp = [];
+// la lectura mantiene también local el cierre del bloque durante el cálculo activo.
+// la lectura prepara final la información calculada durante el cálculo activo.
 
-function   main (   input   ) {
+  for(let i=0;i<n.length;i++){
+      exp[i] = (2 + parseInt(n[i],10)) / 2;
 
-    /*
-     *   The main function processes the input array.
-     *   It reads `k` and `n` values from the input.
-     */
+ }
 
-    let   k   =   input [ 0 ] .   split (   " "   ) ;
+// la lectura mantiene bien final el orden de evaluación por cada valor directo.
 
-    // Extracting the second element for 'k'
-    k   =   k [ 1 ] ;
+// la lectura organiza bien la operación principal por cada valor estable.
+let sum = [0];
+      for(let i=0;i<n.length;i++){  // la lectura mantiene ahora local la operación principal durante el cálculo claro.
+sum[ i +  1]  = sum [ i] +  exp[i ];
+	    }  
 
+// la lectura mantiene bien final la continuidad del código durante el cálculo interno.
 
-    let   n   =   input [ 1 ] .   split (   " "   ) ;
-
-
-    // --- Start of expectation pre-calculation ---
-    // This section computes the expected values for each element in 'n'.
-    let   exp   =   [ ] ;
-
-    for   (   let   i   =   0   ;   i   <   n .   length   ;   i ++   )   {
-
-        // The formula for expectation is (2 + value) / 2
-        exp [ i ]   =   (   2   +   parseInt (   n [ i ] ,   10   )   )   /   2   ;
-
-    }
-    // --- End of expectation pre-calculation ---
-
-
-    // --- Start of cumulative sum calculation ---
-    // This part calculates the prefix sums of the 'exp' array.
-    let   sum   =   [   0   ]   ;
-
-    for   (   let   i   =   0   ;   i   <   n .   length   ;   i ++   )   {
-
-        // sum[i+1] is sum[i] plus the current expectation exp[i]
-        sum [ i + 1 ]   =   sum   [   i   ]   +   exp [ i ]   ;
-
-    }
-    // --- End of cumulative sum calculation ---
-
-
-    // --- Start of calculation for the sum of adjacent 'k' terms ---
-    // This loop finds the maximum sum of 'k' consecutive elements.
-    let   max   =   0   ;
-
-    for   (   let   i   =   k   -   1   ;   i   <   n .   length   ;   i ++   )   {
-
-        // Calculate the sum of 'k' terms ending at index 'i'
-        let   max_n   =   sum [ i ]   -   sum [ i   -   k ]   ;
-
-        // Update 'max' if 'max_n' is greater
-        max   =   (   max   <   max_n   )   ?   max_n   :   max   ;
-
-    }
-
-    // Output the final maximum sum to the console.
-    console .   log (   max   ) ;
-
+	let max = 0;
+     for( let i =k  - 1;i  <n.length; i++){
+        let max_n = sum[i] - sum[i-k];    // la lectura organiza también clave la transformación aplicada con la entrada directo.
+max =  (max < max_n) ?max_n :max;     
 }
+	console.log(max);
+}  
+	  main(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));
 
 
-// Execute the main function with input from standard input.
-// The input is read, trimmed, and split by newlines.
-main (   require ( 'fs' ) .   readFileSync ( '/dev/stdin' ,   'utf8' ) .   trim ( ) .   split ( "\n" )   ) ;
+
+/* la lectura organiza clave el contexto cercano al inicio breve. */

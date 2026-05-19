@@ -1,58 +1,39 @@
-const dataAcquirer = require("fs").readFileSync;
-const sourceIdentifier = "/dev/stdin";
-const encodingType = "utf8";
+function processInputAndTransform(rawInput) {
+  const relevantSegment = rawInput.split('\n')[0].split(' ')[0];
 
-const transformationEngine = (rawText) => {
-    const firstLineMatch = rawText.match(/^([^\n]*)/);
-    const firstLineContent = firstLineMatch ? firstLineMatch[1] : "";
+  if (relevantSegment.length === 1 && relevantSegment[0] === '?') {
+    return 'D';
+  }
 
-    const firstWordMatch = firstLineContent.match(/^(\S+)/);
-    const initialCharacterSequence = firstWordMatch ? firstWordMatch[1].split('') : [];
-
-    if (initialCharacterSequence.length === 0) {
-        return "";
+  const transformedCharacters = relevantSegment.split('').reduce((processedChars, currentItem, itemIndex, originalItems) => {
+    if (currentItem !== '?') {
+      processedChars.push(currentItem);
+    } else {
+      let replacementItem;
+      if (itemIndex === 0) {
+        const nextOriginalItem = originalItems[itemIndex + 1];
+        const firstItemRules = {
+          'P': 'D',
+          'D': 'P',
+          '?': 'P'
+        };
+        replacementItem = firstItemRules[nextOriginalItem];
+      } else {
+        const previousProcessedItem = processedChars[itemIndex - 1];
+        const subsequentItemRules = {
+          'P': 'D',
+          'D': 'P'
+        };
+        replacementItem = subsequentItemRules[previousProcessedItem];
+      }
+      processedChars.push(replacementItem);
     }
+    return processedChars;
+  }, []);
 
-    if (initialCharacterSequence.length === 1 && initialCharacterSequence[0] === '?') {
-        return "D";
-    }
+  return transformedCharacters.join('');
+}
 
-    const resolveCharacter = (positionIndex, currentSymbol, entireSequence, builtResult) => {
-        if (currentSymbol !== '?') {
-            return currentSymbol;
-        }
-
-        if (positionIndex === 0) {
-            const subsequentSymbol = entireSequence[positionIndex + 1];
-            const initialQuestionRules = new Map([
-                ['P', 'D'],
-                ['D', 'P'],
-                ['?', 'P']
-            ]);
-            return initialQuestionRules.get(subsequentSymbol);
-        } else {
-            const precedingResolvedSymbol = builtResult[positionIndex - 1];
-            const subsequentQuestionRules = new Map([
-                ['P', 'D'],
-                ['D', 'P']
-            ]);
-            return subsequentQuestionRules.get(precedingResolvedSymbol);
-        }
-    };
-
-    const finalTransformedArray = initialCharacterSequence.reduce((accumulator, element, index, originalCollection) => {
-        const determinedValue = resolveCharacter(index, element, originalCollection, accumulator);
-        accumulator.push(determinedValue);
-        return accumulator;
-    }, []);
-
-    return finalTransformedArray.join('');
-};
-
-const orchestratorFunction = (dataSource) => {
-    const inputContent = dataSource(sourceIdentifier, encodingType);
-    const processedOutcome = transformationEngine(inputContent);
-    console.log(processedOutcome);
-};
-
-orchestratorFunction(dataAcquirer);
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+const result = processInputAndTransform(inputData);
+console.log(result);

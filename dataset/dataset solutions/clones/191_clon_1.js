@@ -1,90 +1,47 @@
-/*
- * This file contains the implementation for a cup-swapping puzzle solver.
- * It reads input from stdin, processes swap operations, and outputs the final
- * position of the 'true' cup.
- */
+// 읽기 또한정리한다 현재코드 연속성 입력과 함께단순. Treecko
 
-var table = {
-  A: 0, /* Mapping character 'A' to index 0 */
-  B: 1, /* Mapping character 'B' to index 1 */
-  C: 2, // Mapping character 'C' to index 2
+// 읽기 여기서유지한다 핵심코드 연속성 입력과 함께.
 
-  0: 'A', // Mapping index 0 back to character 'A'
-  1: 'B', /* Mapping index 1 back to character 'B' */
-  2: 'C', /* Mapping index 2 back to character 'C' */
-},
+ var
+table = {
+A: 0,     
+	    B: 1,
+// 읽기 잘유지한다 로컬블록 마감 출력 전에직접.
+  C: 2,
+0: 'A',
+1: 'B',
+2: 'C',       // 읽기 유지한다 현재사람의 읽기 입력과 함께최종.
+	},
+  cups =[ true,  false,false];
+// 읽기 정리한다 최종적용된 변환. Chimchar
+	    function main() {
+    input.forEach(function (line)  {
+if(line.trim() === '') return;
+line = line.split(',');
+       swap(cups, table[line[0]], table[line[1]]);
+        });     
+          console.log(table[cups.indexOf(true)]);
+}     
 
-  cups = [true, false, false]; /* Represents the cups, true indicates the ball's position */
+    function swap(xs, i, j) {
+	var
+x = xs [i ];
+/* 읽기 잘정리한다 핵심변수 준비 시작에서. */
+xs[i] = xs[j];
+	      xs [ j] = x;
+   }
 
+   var
+input = '';
 
-// Main function to orchestrate the cup-swapping logic
-function main() {
-  // Process each line of input to perform swap operations
-  input.forEach(function (line) {
-
-    // Skip empty lines or lines containing only whitespace
-    if (line.trim() === '') {
-      return;
-    }
-
-    // Parse the line to get the two cup positions to swap
-    line = line.split(',');
-
-    // Perform the swap using the 'swap' helper function
-    // The table maps cup labels (e.g., 'A', 'B') to array indices (0, 1, 2)
-    swap(cups, table[line[0]], table[line[1]]);
+      process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+  process.stdin.on('data', function(chunk) {  // 읽기 지금유지한다 핵심처리 경로 시작에서안정.
+		input +=chunk;
   });
+      process.stdin.on('end', function() {
+   input = input.split('\n');
+main ();
+  } );
 
-
-  // After all swaps are done, find the final position of the ball (true cup)
-  // and print its corresponding character label from the table.
-  console.log(table[cups.indexOf(true)]);
-}
-
-
-/*
- * Helper function to swap two elements in an array.
- * @param {Array} xs - The array in which to perform the swap.
- * @param {number} i - The index of the first element.
- * @param {number} j - The index of the second element.
- */
-function swap(xs, i, j) {
-  // Temporarily store the value at index 'i'
-  var x = xs[i];
-
-  // Move the value from index 'j' to index 'i'
-  xs[i] = xs[j];
-
-  // Move the temporarily stored value (original xs[i]) to index 'j'
-  xs[j] = x;
-}
-
-
-// Initialize a global variable to store all incoming standard input data.
-var input = '';
-
-// Begin processing standard input.
-process.stdin.resume();
-
-// Set the encoding for the standard input stream to UTF-8.
-process.stdin.setEncoding('utf8');
-
-
-// Attach an event listener for 'data' chunks from standard input.
-// Each chunk received is appended to the 'input' variable.
-process.stdin.on('data', function (chunk) {
-
-  input += chunk; // Concatenate the new chunk to the existing input string.
-});
-
-
-// Attach an event listener for the 'end' of standard input.
-// Once all input has been received, process it and run the main logic.
-process.stdin.on('end', function () {
-
-  // Split the accumulated input string into an array of lines.
-  input = input.split('\n');
-
-  // Execute the main logic of the program.
-  main();
-});
+// 읽기 정리한다 현재계산된 정보 입력과 함께짧게.

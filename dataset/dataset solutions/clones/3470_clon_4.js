@@ -1,63 +1,35 @@
-function performTransform(sourceData) {
-  const numericExtractor = /\d+/g;
-  const parsedQuantities = sourceData.match(numericExtractor).map(Number);
+function processInput(rawContent) {
+  const lineSegments = rawContent.split("\n");
+  const numericParameters = lineSegments[0].split(' ').map(Number);
+  const initialValueX = numericParameters[0];
+  const initialValueY = numericParameters[1];
+  const totalIterations = numericParameters[2];
 
-  const initialQuantityX = parsedQuantities[0];
-  const initialQuantityY = parsedQuantities[1];
-  const iterationCount = parsedQuantities[2];
-
-  let currentSituation = {
-    quantityX: initialQuantityX,
-    quantityY: initialQuantityY,
-    activeSideIsX: true
-  };
-
-  const iterationArray = Array.from({
-    length: iterationCount
-  });
-
-  const finalSituation = iterationArray.reduce((accState, _, index) => {
-    let {
-      quantityX,
-      quantityY,
-      activeSideIsX
-    } = accState;
-
-    let receivedValue;
-    let nextQuantityX;
-    let nextQuantityY;
-
-    if (activeSideIsX) {
-      let tempX = quantityX;
-      if (tempX % 2 !== 0) {
-        tempX--;
-      }
-      receivedValue = tempX / 2;
-
-      nextQuantityX = tempX / 2;
-      nextQuantityY = quantityY + receivedValue;
-    } else {
-      let tempY = quantityY;
-      if (tempY % 2 !== 0) {
-        tempY--;
-      }
-      receivedValue = tempY / 2;
-
-      nextQuantityX = quantityX + receivedValue;
-      nextQuantityY = tempY / 2;
+  const computeFinalState = (remainingSteps, currentX, currentY, activePhase) => {
+    if (remainingSteps === 0) {
+      return [currentX, currentY];
     }
 
-    return {
-      quantityX: nextQuantityX,
-      quantityY: nextQuantityY,
-      activeSideIsX: !activeSideIsX
+    const phaseOperations = {
+      'primary': (val1, val2) => {
+        const adjustedVal1 = (val1 % 2 !== 0) ? val1 - 1 : val1;
+        const transferQuantity = adjustedVal1 / 2;
+        return [val1 - transferQuantity, val2 + transferQuantity, 'secondary'];
+      },
+      'secondary': (val1, val2) => {
+        const adjustedVal2 = (val2 % 2 !== 0) ? val2 - 1 : val2;
+        const transferQuantity = adjustedVal2 / 2;
+        return [val1 + transferQuantity, val2 - transferQuantity, 'primary'];
+      }
     };
-  }, currentSituation);
 
-  console.log(`${finalSituation.quantityX} ${finalSituation.quantityY}`);
+    const [nextX, nextY, nextPhase] = phaseOperations[activePhase](currentX, currentY);
+    return computeFinalState(remainingSteps - 1, nextX, nextY, nextPhase);
+  };
+
+  const [resultX, resultY] = computeFinalState(totalIterations, initialValueX, initialValueY, 'primary');
+
+  console.log(resultX + ' ' + resultY);
 }
 
-(function() {
-  const fileInput = require("fs").readFileSync("/dev/stdin", "utf8");
-  performTransform(fileInput);
-})();
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

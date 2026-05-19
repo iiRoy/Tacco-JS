@@ -1,67 +1,50 @@
-const processNumericSeries = (inputString) => {
-    const [limitCount, seedValue, baseModulo] = inputString.trim().split(/\s+/).map(Number);
+function computeSequenceSum(rawData) {
+    const parsedLines = rawData.trim().split("\n");
+    const numericParameters = parsedLines[0].split(" ").map(Number);
 
-    let currentElement = seedValue;
-    const positionMap = new Map(); // Maps element value -> 1-based index of its first appearance
-    const seriesElements = []; // Stores the actual elements in sequence order (0-indexed)
+    let termCount = numericParameters[0];
+    let initialValue = numericParameters[1];
+    const moduloBase = numericParameters[2];
 
-    let iterationIndex = 1; // 1-based counter for the sequence elements
+    const visitedTermIndices = new Map();
+    const generatedSequence = [];
+    const cumulativeSums = [0];
 
-    while (iterationIndex <= limitCount) {
-        if (positionMap.has(currentElement)) {
-            // Cycle detected: currentElement was seen before
-            const cycleStartIdx = positionMap.get(currentElement); // 1-based index where the cycle begins
-            const cycleSegmentLength = iterationIndex - cycleStartIdx; // Length of the repeating segment
+    let currentTerm = initialValue;
+    let currentSequenceIndex = 1;
+    let finalAccumulatedSum = 0;
 
-            // Calculate sum of the pre-period elements (before the cycle starts)
-            let preCycleSummation = 0;
-            for (let k = 0; k < cycleStartIdx - 1; k++) {
-                preCycleSummation += seriesElements[k];
+    while (currentSequenceIndex <= termCount) {
+        if (visitedTermIndices.has(currentTerm)) {
+            const cycleStartIdx = visitedTermIndices.get(currentTerm);
+            const cycleLength = currentSequenceIndex - cycleStartIdx;
+
+            const sumOfCycleElements = cumulativeSums[currentSequenceIndex - 1] - cumulativeSums[cycleStartIdx - 1];
+
+            const termsRemainingFromCycleStart = termCount - (cycleStartIdx - 1);
+
+            const fullCycleIterations = Math.floor(termsRemainingFromCycleStart / cycleLength);
+
+            finalAccumulatedSum += (fullCycleIterations * sumOfCycleElements);
+
+            const partialCycleTermsCount = termsRemainingFromCycleStart % cycleLength;
+
+            for (let k = 0; k < partialCycleTermsCount; k++) {
+                finalAccumulatedSum += generatedSequence[cycleStartIdx + k - 1];
             }
-
-            // Calculate sum of one full cycle segment
-            let cycleSummation = 0;
-            for (let k = cycleStartIdx - 1; k < cycleStartIdx - 1 + cycleSegmentLength; k++) {
-                cycleSummation += seriesElements[k];
-            }
-
-            // Calculate number of elements remaining to sum after the pre-period
-            const remainingElementsToProcess = limitCount - (cycleStartIdx - 1);
-
-            // Add contributions from full cycles
-            const fullCycleCount = Math.floor(remainingElementsToProcess / cycleSegmentLength);
-            preCycleSummation += fullCycleCount * cycleSummation;
-
-            // Add contributions from the partial remaining cycle
-            const partialCycleCount = remainingElementsToProcess % cycleSegmentLength;
-            for (let k = 0; k < partialCycleCount; k++) {
-                preCycleSummation += seriesElements[cycleStartIdx - 1 + k];
-            }
-
-            // All elements summed, return the result
-            return preCycleSummation;
-
-        } else {
-            // Element not seen before, record its position and add to series
-            positionMap.set(currentElement, iterationIndex);
-            seriesElements.push(currentElement); // Store 0-indexed
-
-            // Calculate the next element in the sequence: (a_k-1)^2 % M
-            currentElement = (currentElement * currentElement) % baseModulo;
-            iterationIndex++;
+            break;
         }
+
+        visitedTermIndices.set(currentTerm, currentSequenceIndex);
+        generatedSequence.push(currentTerm);
+        cumulativeSums.push(cumulativeSums[currentSequenceIndex - 1] + currentTerm);
+        finalAccumulatedSum += currentTerm;
+
+        currentTerm = (currentTerm * currentTerm) % moduloBase;
+        currentSequenceIndex++;
     }
 
-    // If the loop completes without detecting a cycle within 'limitCount' terms,
-    // simply sum all elements that were generated and stored in 'seriesElements'.
-    let finalSummation = 0;
-    for (const val of seriesElements) {
-        finalSummation += val;
-    }
-    return finalSummation;
-};
+    console.log(finalAccumulatedSum);
+}
 
-((inputPayload) => {
-    const calculationResult = processNumericSeries(inputPayload);
-    console.log(calculationResult);
-})(require("fs").readFileSync("/dev/stdin", "utf8"));
+computeSequenceSum(require("fs").readFileSync("/dev/stdin", "utf8"));

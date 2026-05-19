@@ -1,103 +1,77 @@
-function evaluateBookPurchase(programInputData) {
-    // Split the entire input string into individual lines for easier processing.
-    const inputLines = programInputData.split("\n");
+function solveBookProblem(rawData) {
+  const lines = rawData.split("\n");
 
-    // Parse the first line to get the global parameters:
-    // Number of books (N), Number of skill categories (M), Minimum required skill level (X).
-    const [numBooksStr, numSkillCategoriesStr, requiredSkillLevelStr] = inputLines[0].split(' ');
-    const totalBooks = parseInt(numBooksStr, 10);
-    const skillCategoryCount = parseInt(numSkillCategoriesStr, 10);
-    const skillGoalThreshold = parseInt(requiredSkillLevelStr, 10);
+  const firstLineParts = lines[0].split(' ').map(Number);
+  const numBooks = firstLineParts[0];
+  const numSkills = firstLineParts[1];
+  const requiredSkillLevel = firstLineParts[2];
 
-    // Initialize arrays to store book-specific data.
-    const bookPrices = []; // Stores the cost of each book.
-    const bookSkillContributions = []; // Stores skill levels provided by each book for all categories.
+  const bookCosts = [];
+  const bookSkillContributions = [];
 
-    // Iterate through the remaining lines to populate book data.
-    // Each line represents a book: its price followed by its skill contributions.
-    for (let currentLineIndex = 1; currentLineIndex < inputLines.length; currentLineIndex++) {
-        // Skip empty lines that might appear at the end of input or due to formatting.
-        if (!inputLines[currentLineIndex].trim()) {
-            continue;
+  for (let lineIndex = 1; lineIndex < lines.length; lineIndex++) {
+    const currentLineValues = lines[lineIndex].split(' ').map(Number);
+    bookCosts.push(currentLineValues[0]);
+    bookSkillContributions.push(currentLineValues.slice(1));
+  }
+
+  const selectedBooks = new Array(numBooks).fill(false);
+  let minimumCost = Infinity;
+
+  // Helper function to advance to the next combination of selected books
+  const advanceCombination = (selectionArray) => {
+    const numItems = selectionArray.length;
+    for (let i = 0; i < numItems; i++) {
+      if (selectionArray[i]) {
+        selectionArray[i] = false;
+      } else {
+        selectionArray[i] = true;
+        return true; // Successfully advanced to next combination
+      }
+    }
+    return false; // All combinations exhausted (all false again)
+  };
+
+  // Helper function to check if all skill requirements are met
+  const verifySkillRequirements = (selection, skillData, targetLevel, totalSkills) => {
+    for (let skillIdx = 0; skillIdx < totalSkills; skillIdx++) {
+      let currentSkillSum = 0;
+      for (let bookIdx = 0; bookIdx < selection.length; bookIdx++) {
+        if (selection[bookIdx]) {
+          currentSkillSum += skillData[bookIdx][skillIdx];
         }
-        
-        // Parse the current line: convert string parts to numbers.
-        const lineValues = inputLines[currentLineIndex].split(' ').map(Number);
-        
-        // Extract the book's price (first element) and its skill contributions (rest of elements).
-        const currentBookCost = lineValues[0];
-        const skillsProvidedByBook = lineValues.slice(1); // Get all elements from the second one onwards.
+      }
+      if (currentSkillSum < targetLevel) {
+        return false; // This skill requirement is not met
+      }
+    }
+    return true; // All skill requirements are met
+  };
 
-        // Store the parsed data into our structured arrays.
-        bookPrices.push(currentBookCost);
-        bookSkillContributions.push(skillsProvidedByBook);
+  // Helper function to calculate the total cost for the current selection
+  const calculateSelectionCost = (selection, costsArray) => {
+    let currentTotalCost = 0;
+    for (let bookIdx = 0; bookIdx < selection.length; bookIdx++) {
+      if (selection[bookIdx]) {
+        currentTotalCost += costsArray[bookIdx];
+      }
+    }
+    return currentTotalCost;
+  };
+
+  do {
+    if (!verifySkillRequirements(selectedBooks, bookSkillContributions, requiredSkillLevel, numSkills)) {
+      continue; // Skip to the next combination if skills are not met
     }
 
-    // Initialize the minimum cost found so far to a very large number (infinity).
-    // This will be updated as we find valid combinations of books.
-    let minimumAchievedCost = Number.POSITIVE_INFINITY;
+    const currentCombinationCost = calculateSelectionCost(selectedBooks, bookCosts);
 
-    // The core logic involves checking all possible combinations of books.
-    // We can represent each combination using a bitmask.
-    // If we have N books, there are 2^N possible combinations (including buying no books).
-    // A bitmask 'combinationMask' from 0 to (2^N - 1) represents a combination:
-    // if the k-th bit of 'combinationMask' is set, the k-th book is selected for purchase.
-    const totalCombinations = 1 << totalBooks; // Computes 2 raised to the power of totalBooks
-
-    // Iterate through all possible book combinations.
-    for (let combinationMask = 0; combinationMask < totalCombinations; combinationMask++) {
-        let currentCombinationCost = 0;
-        // Initialize an array to sum up skill levels for the current combination of books.
-        // All skill categories start at 0 for this specific combination.
-        const accumulatedSkillLevels = new Array(skillCategoryCount).fill(0);
-        
-        // Flag to track if the current combination of books meets all skill requirements.
-        let meetsAllSkillGoals = true; // Assume true until proven otherwise.
-
-        // Iterate through each individual book to see if it's part of the current combination.
-        for (let bookIdx = 0; bookIdx < totalBooks; bookIdx++) {
-            // Check if the 'bookIdx'-th bit is set in the current 'combinationMask'.
-            // If ((combinationMask >> bookIdx) & 1) is true, it means the book at 'bookIdx' is selected.
-            const isBookSelectedInCurrentCombination = ((combinationMask >> bookIdx) & 1) === 1;
-
-            if (isBookSelectedInCurrentCombination) {
-                // If the book is selected, add its cost to the current combination's total.
-                currentCombinationCost += bookPrices[bookIdx];
-                
-                // Add its skill contributions to the accumulated skill levels for each category.
-                for (let skillIdx = 0; skillIdx < skillCategoryCount; skillIdx++) {
-                    accumulatedSkillLevels[skillIdx] += bookSkillContributions[bookIdx][skillIdx];
-                }
-            }
-        }
-
-        // After evaluating all books for the current combination, check if it's valid.
-        // A combination is valid if all skill categories meet or exceed the required threshold.
-        for (let skillIdx = 0; skillIdx < skillCategoryCount; skillIdx++) {
-            if (accumulatedSkillLevels[skillIdx] < skillGoalThreshold) {
-                meetsAllSkillGoals = false; // This combination is not valid because one skill is too low.
-                break; // No need to check further skill categories for this combination.
-            }
-        }
-
-        // If the combination is valid (all skill goals are met),
-        // check if its cost is lower than our current minimum found so far.
-        if (meetsAllSkillGoals) {
-            // If this combination is cheaper and valid, update the minimum cost.
-            if (currentCombinationCost < minimumAchievedCost) {
-                minimumAchievedCost = currentCombinationCost;
-            }
-        }
+    if (currentCombinationCost < minimumCost) {
+      minimumCost = currentCombinationCost;
     }
+  } while (advanceCombination(selectedBooks));
 
-    // Determine the final output.
-    // If minimumAchievedCost is still Number.POSITIVE_INFINITY, it means no valid combination
-    // of books was found that satisfies all skill requirements. In that case, output -1.
-    // Otherwise, output the lowest cost found among all valid combinations.
-    const finalResult = (minimumAchievedCost === Number.POSITIVE_INFINITY) ? -1 : minimumAchievedCost;
-    console.log(finalResult);
+  console.log(minimumCost === Infinity ? -1 : minimumCost);
 }
 
-// This line handles reading input from standard input and passing it to our function.
-// It should not be modified for competitive programming environments.
-evaluateBookPurchase(require("fs").readFileSync("/dev/stdin", "utf8"));
+solveBookProblem(require("fs").readFileSync("/dev/stdin", "utf8"));

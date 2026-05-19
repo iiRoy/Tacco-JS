@@ -1,29 +1,25 @@
 'use strict';
 
-function PrimaryProcessor ( incomingDatum )
-{
-  // Convert the raw input string into an integer value for processing
-  incomingDatum = Number.parseInt ( incomingDatum.trim() );
+function ProcessInput(rawData) {
+    // Parse the incoming string data into an integer value
+    let numericValue = Number.parseInt(rawData.trim());
 
-
-  if ( incomingDatum < 1 )
-  {
-    return;
-  }
-
-  // Iterate downwards from the given input value to locate a perfect square
-  for ( let currentIterationValue = incomingDatum; currentIterationValue > 0; currentIterationValue-- )
-  {
-    // Validate if the square root of the current value is an integer (indicating a perfect square)
-    if ( Math.sqrt ( currentIterationValue ) % 1 === 0 )
-    {
-      console.log ( '%d', currentIterationValue );
-      return; // Exit upon discovering the first perfect square
+    // If the processed number is less than one, exit early
+    if (numericValue < 1) {
+        return;
     }
-  }
+
+    // Iterate downwards from the given number to find the largest perfect square
+    for (let currentNumber = numericValue; currentNumber > 0; currentNumber--) {
+        // Check if the square root of the current number is an integer
+        if (Math.sqrt(currentNumber) % 1 === 0) {
+            // If it is a perfect square, print it and terminate the function
+            console.log('%d', currentNumber);
+            return;
+        }
+    }
 }
 
-
-// The subsequent section manages standard input/output operations and initiates the primary processing routine.
-// Please refrain from altering any code positioned below this boundary, as it governs interaction with the execution environment.
-PrimaryProcessor ( require ( "fs" ) .readFileSync ( "/dev/stdin", "utf8" ) );
+// The following line handles reading from standard input and invoking the main processing function.
+// It should not be altered to maintain compatibility with the execution environment.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

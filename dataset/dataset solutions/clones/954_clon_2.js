@@ -1,107 +1,178 @@
-let nodeCount;
-let edgeList = [ ];
-let parentArray = [ ];
-let rankArray = [ ];
+var numVertices;
+var edgeList = [];
+var parentArray = [];
+var rankArray = [];
 
-function initializeDSU () {  // Sets up the Disjoint Set Union data structure.
-  iterateRange(edgeList.length, function (  idx ) { // Iterates through each potential element.
-    parentArray[idx] = idx; //  Each element is initially its own representative.
-    rankArray[idx] = 0; //    All ranks are set to zero.
-  });
-}
-
-function findRepresentative (  elementIndex ) { // Determines the root of the set containing elementIndex.
-  return parentArray[elementIndex] === elementIndex // Checks if the element is its own parent.
-    ? elementIndex // If so, it's the representative.
-    : (parentArray[elementIndex] = findRepresentative(parentArray[elementIndex])); // Otherwise, apply path compression by setting its parent to the root.
-}
-
-function areConnected ( elementA, elementB ) { // Verifies if two elements belong to the same set.
-  return findRepresentative(elementA) === findRepresentative(elementB); // Compares their respective set representatives.
-}
-
-function unionSets ( firstElement, secondElement ) { // Merges the sets containing firstElement and secondElement.
-  let repA = findRepresentative(firstElement); // Obtain the representative of the first element.
-  let repB = findRepresentative(secondElement); // Obtain the representative of the second element.
-	
-  if (repA === repB) { // If they already share the same representative, no union is needed.
-    return;
-  }
-
-  // Apply union by rank optimization.
-  if (rankArray[repA] > rankArray[repB]) { // If the rank of set A is greater, make A the parent of B.
-    parentArray[repB] = repA;
-  }
-  else { // Otherwise, make B the parent of A.
-    parentArray[repA] = repB;
-    if (rankArray[repA] === rankArray[repB]) { // If ranks were equal, increment the rank of the new parent (B).
-      ++rankArray[repB];
-    }
-  }
-}
-
-function executeAlgorithm ( ) { // The primary function orchestrating the algorithm execution.
-  nodeCount = readInputDatum(); // Reads the total count of nodes from input.
-  iterateRange(nodeCount, function (  idx ) { // Outer loop to process node connections.
-    iterateRange(nodeCount, function ( jdx ) { // Inner loop to process node connections.
-      const edgeWeight = readInputDatum(); // Reads the weight of the edge between idx and jdx.
-      if (idx < jdx && edgeWeight !== -1) { // Only consider unique, valid edges (i.e., i < j and weight is not -1).
-        edgeList[edgeList.length] = [edgeWeight, idx, jdx]; // Adds the edge [weight, source, destination] to the list.
-      }
+/**
+ * Initializes the Disjoint Set Union (DSU) structure.
+ * Each element is initially in its own set, and ranks are zero.
+ * Note: The original code initializes DSU arrays based on the number of edges (g.length)
+ * rather than the number of vertices (n), which can lead to out-of-bounds access
+ * if n is greater than g.length. This behavior is preserved as per Type II cloning rules.
+ */
+function initializeDSU() {
+    // Iterate through the current number of edges to initialize parent and rank arrays.
+    iterateRange(edgeList.length, function(currentIdx) {
+        parentArray[currentIdx] = currentIdx;
+        rankArray[currentIdx] = 0;
     });
-  });
-  edgeList.sort(function (e1, e2) { // Sorts the list of edges based on their weights in ascending order.
-    return e1[0] - e2[0];
-  });
+}
 
-  initializeDSU(); // Initializes the Disjoint Set Union structure for all nodes.
-  let totalCost = 0; // Variable to accumulate the total cost of the minimum spanning tree.
-  iterateRange(edgeList.length, function ( idx ) { // Iterates through the sorted edges.
-    const currentEdge = edgeList[idx]; // Retrieves the current edge.
-    if (!areConnected(currentEdge[1], currentEdge[2])) { // Checks if the nodes connected by this edge are already in the same set.
-      totalCost += currentEdge[0]; // If not connected, add the edge's weight to the total cost.
-      unionSets(currentEdge[1], currentEdge[2]); // Merge the sets of the two nodes.
+/**
+ * Finds the representative (root) of the set containing element 'idx1' using path compression.
+ * @param {number} idx1 - The element to find the set for.
+ * @returns {number} The representative of the set.
+ */
+function findSet(idx1) {
+    // If the element is its own parent, it's the root.
+    // Otherwise, recursively find the root and perform path compression.
+    return parentArray[idx1] === idx1 ? idx1 : (parentArray[idx1] = findSet(parentArray[idx1]));
+}
+
+/**
+ * Checks if two elements are in the same set by comparing their representatives.
+ * @param {number} idx1 - The first element.
+ * @param {number} idx2 - The second element.
+ * @returns {boolean} True if they are in the same set, false otherwise.
+ */
+function areConnected(idx1, idx2) {
+    return findSet(idx1) === findSet(idx2);
+}
+
+/**
+ * Unites the sets containing elements 'idx1' and 'idx2' using union by rank.
+ * @param {number} idx1 - The first element.
+ * @param {number} idx2 - The second element.
+ */
+function unionSets(idx1, idx2) {
+    var rootA = findSet(idx1); // Find the root of the first element's set.
+    var rootB = findSet(idx2); // Find the root of the second element's set.
+
+    // If they are already in the same set, do nothing.
+    if (rootA === rootB) {
+        return;
     }
-  });
-  outputResult(totalCost); // Displays the final calculated minimum spanning tree cost.
-}
- 
-function iterateRange ( paramA, paramB, paramC ) { // Flexible utility loop function.
-  if (paramC === undefined) { // If only two arguments are provided (end value and callback).
-    paramC = paramB; // The second argument is the callback function.
-    paramB = paramA; // The first argument is the exclusive end value.
-    paramA = 0; // Default start value is 0.
-  }
-  for (let currentIterationIndex = paramA; currentIterationIndex < paramB; ++currentIterationIndex) { // Loops from start (inclusive) to end (exclusive).
-    if (paramC(currentIterationIndex) === false) { // Executes the callback; if it explicitly returns false, the loop terminates early.
-      break;
+
+    // Perform union by rank: attach the smaller rank tree under the root of the larger rank tree.
+    if (rankArray[rootA] > rankArray[rootB]) {
+        parentArray[rootB] = rootA;
+    } else {
+        parentArray[rootA] = rootB;
+        // If ranks were equal, increment the rank of the new root.
+        if (rankArray[rootA] === rankArray[rootB]) {
+            ++rankArray[rootB];
+        }
     }
-  }
 }
- 
-process.stdin.resume(); // Ensures the standard input stream remains open.
-process.stdin.setEncoding('utf8'); // Configures standard input to decode data as UTF-8 strings.
- 
-let rawDataBuffer = ''; // A buffer to accumulate all incoming raw input data.
-let bufferPosition = 0; // An index tracking the current read position within the processed input buffer.
- 
-function readInputDatum ( expectedDataType ) { // Reads a single data item from the parsed input array.
-  if (expectedDataType === 'string') { // If the caller expects a string value.
-    return rawDataBuffer[bufferPosition++]; // Returns the string at the current position and advances the pointer.
-  }
-  else { // Otherwise, it's assumed a number is expected.
-    return +rawDataBuffer[bufferPosition++]; // Converts the string to a number, returns it, and advances the pointer.
-  }
+
+/**
+ * Main function to execute Kruskal's algorithm for finding the Minimum Spanning Tree (MST).
+ * Reads graph input, sorts edges, and applies DSU to build the MST.
+ */
+function executeKruskal() {
+    numVertices = readInputToken(); // Read the number of vertices.
+
+    // Populate the edge list from the input adjacency matrix.
+    // Only consider edges in the upper triangle (i < j) and with valid costs (not -1).
+    iterateRange(numVertices, function(idx1) {
+        iterateRange(numVertices, function(idx2) {
+            var costValue = readInputToken();
+            if (idx1 < idx2 && costValue !== -1) {
+                edgeList[edgeList.length] = [costValue, idx1, idx2];
+            }
+        });
+    });
+
+    // Sort the edges by their weight (cost) in ascending order.
+    edgeList.sort(function(edgeA, edgeB) {
+        return edgeA[0] - edgeB[0];
+    });
+
+    initializeDSU(); // Initialize the DSU structure.
+
+    var totalWeight = 0; // Variable to store the total weight of the MST.
+
+    // Iterate through the sorted edges.
+    iterateRange(edgeList.length, function(currentIdx) {
+        var currentEdge = edgeList[currentIdx];
+        // If the two vertices of the current edge are not already connected in the MST,
+        // add this edge to the MST.
+        if (!areConnected(currentEdge[1], currentEdge[2])) {
+            totalWeight += currentEdge[0]; // Add the edge's weight to the total.
+            unionSets(currentEdge[1], currentEdge[2]); // Unite the sets of the two vertices.
+        }
+    });
+
+    outputResult(totalWeight); // Print the calculated total weight of the MST.
 }
- 
-function outputResult ( finalOutputValue ) { // Function to display information to the user.
-  console.log(finalOutputValue); // Prints the provided value to the standard output.
+
+/**
+ * A flexible loop utility function.
+ * Can be called with two arguments (end, callback) or three arguments (start, end, callback).
+ * @param {number} arg1 - The loop's end index (if two arguments) or start index (if three arguments).
+ * @param {function|number} arg2 - The callback function (if two arguments) or the loop's end index (if three arguments).
+ * @param {function} [arg3] - The callback function (if three arguments).
+ */
+function iterateRange(arg1, arg2, arg3) {
+    var loopStart = 0;
+    var loopEnd;
+    var loopCallback;
+
+    if (arg3 === undefined) { // Two arguments: (end, callback)
+        loopEnd = arg1;
+        loopCallback = arg2;
+        loopStart = 0; // Default start from 0.
+    } else { // Three arguments: (start, end, callback)
+        loopStart = arg1;
+        loopEnd = arg2;
+        loopCallback = arg3;
+    }
+
+    // Execute the loop.
+    for (var currentLoopIndex = loopStart; currentLoopIndex < loopEnd; ++currentLoopIndex) {
+        // If the callback returns false, break the loop.
+        if (loopCallback(currentLoopIndex) === false) {
+            break;
+        }
+    }
 }
- 
-process.stdin.on('data', function ( dataSegment ) { // Event handler for when data chunks are received via stdin.
-  rawDataBuffer += dataSegment; // Appends the new data segment to the existing raw data buffer.
+
+// Standard input handling setup.
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var inputBuffer = ''; // Buffer to accumulate input data.
+var inputTokenIndex = 0; // Index to track the current position in the tokenized input.
+
+/**
+ * Reads and returns the next token from the processed input buffer.
+ * @param {string} [dataType] - Optional type hint; if 'string', returns as string, otherwise as number.
+ * @returns {string|number} The next input token.
+ */
+function readInputToken(dataType) {
+    if (dataType === 'string') {
+        return inputBuffer[inputTokenIndex++];
+    } else {
+        return +inputBuffer[inputTokenIndex++]; // Convert to number using unary plus.
+    }
+}
+
+/**
+ * Prints a given value to the console, followed by a newline.
+ * @param {*} outputValue - The value to be printed.
+ */
+function outputResult(outputValue) {
+    console.log(outputValue);
+}
+
+// Event listener for incoming data chunks from stdin.
+process.stdin.on('data', function(dataChunk) {
+    inputBuffer += dataChunk; // Append the chunk to the input buffer.
 });
-process.stdin.on('end', function () { // Event handler for when the stdin stream has ended.
-  rawDataBuffer = rawDataBuffer.trim().split(/\s+/); // Processes the accumulated raw data: trims whitespace then splits into an array by any whitespace.
-  executeAlgorithm(); // Initiates the main algorithm execution after all input is processed.
+
+// Event listener for the end of stdin input.
+process.stdin.on('end', function() {
+    // Process the accumulated input: trim whitespace and split into tokens by any whitespace.
+    inputBuffer = inputBuffer.trim().split(/\s+/);
+    executeKruskal(); // Call the main algorithm function.
 });

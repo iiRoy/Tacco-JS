@@ -1,46 +1,26 @@
-'use strict';
+'use strict'; // Enforce strict mode for the entire script.
 
-/**
- * This function processes the incoming data to determine a specific condition.
- * It's designed to read numerical values and apply a logical check.
- * @param {string} sourceContent The raw text string containing all input data.
- */
-const handleInputProcessing = (sourceContent) => {
-    // First, split the entire content into individual lines.
-    // Then, for each line, split it further by spaces to get distinct parts.
-    const processedSegments = sourceContent
-        .split('\n')
-        .map(segmentItem => segmentItem.split(' '));
+// This function serves as the primary entry point for processing the input data.
+const processInput = (rawData) => {
+    // First, split the raw input string by newline characters to get individual lines.
+    // Then, for each line, split it by space characters to get an array of string segments.
+    const parsedLines = rawData.split('\n').map(lineSegment => lineSegment.split(' '));
 
-    // Extract the first numerical value from the first line of segments.
-    // Ensure it's parsed as an integer with base 10.
-    const initialLimit = parseInt(processedSegments[0][0], 10);
+    // Extract and parse the first three numerical values from the first line of input.
+    // These values are converted to base-10 integers.
+    const valAlpha = parseInt(parsedLines[0][0], 10); // Represents the first integer parameter.
+    const valBeta = parseInt(parsedLines[0][1], 10);  // Represents the second integer parameter.
+    const valXray = parseInt(parsedLines[0][2], 10);  // Represents the third integer parameter, often a target value.
 
-    // Extract the second numerical value from the first line.
-    // This value represents an extension or addition to the initial limit.
-    const additionalRange = parseInt(processedSegments[0][1], 10);
-
-    // Extract the third numerical value from the first line.
-    // This is the target value we need to check against the calculated range.
-    const desiredPoint = parseInt(processedSegments[0][2], 10);
-
-    // Perform the core logical check:
-    // Is the desired point greater than or equal to the initial limit?
-    // AND is the desired point less than or equal to the sum of initial limit and additional range?
-    if (initialLimit <= desiredPoint && (initialLimit + additionalRange) >= desiredPoint) {
-        // If both conditions are met, output a positive confirmation.
-        console.log('YES');
-    }
-
-    // Otherwise, if the conditions are not met, output a negative confirmation.
-    else {
-        console.log('NO');
+    // Evaluate a specific logical condition based on the three parsed values.
+    // The condition checks if 'valXray' is within the inclusive range [valAlpha, valAlpha + valBeta].
+    if (valAlpha <= valXray && valAlpha + valBeta >= valXray) {
+        console.log('YES'); // If the condition is true, print 'YES' to standard output.
+    } else {
+        console.log('NO');  // Otherwise, if the condition is false, print 'NO'.
     }
 };
 
-// Execute the main processing function.
-// It reads the entire content of the standard input file (typically /dev/stdin)
-// as a UTF-8 encoded string and passes it to the handler.
-handleInputProcessing(
-    require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content of standard input synchronously using Node.js 'fs' module.
+// The input is read as a UTF-8 encoded string and then passed to the 'processInput' function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

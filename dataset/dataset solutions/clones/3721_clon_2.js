@@ -1,37 +1,28 @@
-// Define the primary execution function for processing system input.
-function processInput (  rawData ) {
+function processInput(rawData) {
+  // Convert the numerical input to a string, then split it into an array of individual digit characters.
+  let digitChars = rawData.toString().split('');
 
-  // Convert the initial input value into a string representation,
-  // then split that string into an array of individual character digits.
-  var digitArray = rawData.toString() .split ( '' ) ;
+  // Initialize a variable to accumulate the sum of the digits.
+  let totalDigits = 0;
 
-  // Initialize a numeric accumulator to hold the sum of the digits.
-  var totalValue = 0 ;
+  // Set an initial default response string.
+  let resultString = 'No';
 
-  // Declare a string variable to store the final computed decision,
-  // defaulting to a negative outcome.
-  var outcomeText = 'No' ;
-
-  // Iterate over each character within the digit array.
-  for ( var idx = 0 ; idx < digitArray.length ; idx ++ ) {
-    // Convert the current character (which represents a digit) to an integer
-    // and add it to the running total.
-    totalValue += parseInt(digitArray[idx]) ;
+  // Iterate through each character in the array of digits.
+  for (let idx = 0; idx < digitChars.length; idx++) {
+    // Convert the current character digit to an integer and add it to the running total.
+    totalDigits += parseInt(digitChars[idx]);
   }
 
-  // Perform a modulo operation to check if the original raw data
-  // is perfectly divisible by the accumulated sum of its digits.
-  if ( rawData % totalValue == 0 ) {
-    // If the division results in no remainder, update the decision string
-    // to indicate a positive outcome.
-    outcomeText = 'Yes' ;
+  // Check if the original raw input number is perfectly divisible by the calculated sum of its digits.
+  if (rawData % totalDigits === 0) {
+    // If it is divisible, update the response string to indicate 'Yes'.
+    resultString = 'Yes';
   }
 
-  // Output the final determined outcome to the standard console stream.
-  console.log( outcomeText ) ;
+  // Output the final determined result to the console.
+  console.log(resultString);
 }
 
-// Invoke the main processing function.
-// The input data is obtained by reading the entire content of the
-// standard input stream ("/dev/stdin") as a UTF-8 encoded string.
-processInput ( require ( 'fs' ) . readFileSync ( '/dev/stdin', 'utf8' ) ) ;
+// Read the input from standard input (e.g., a file or piped data) and then invoke the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,28 +1,20 @@
 'use strict';
-// This segment handles module fetching and initial data processing.
-const dataFeed = require('fs')
-    .readFileSync(
-        '/dev/stdin', // Path to standard input
-        'utf8'        // Encoding specification
-    )
-    .split(
-        /\s/          // Regex to split by whitespace characters
-    );
 
-// Transform the first parsed element into a numerical representation.
-const numericValue = Number(dataFeed[0]);
+// This script processes some input data to determine a category.
+const rawData = require('fs') . readFileSync ( '/dev/stdin' , 'utf8' ) . split ( / \s / ) ;
+
+// Convert the first piece of raw data into a number.
+const numericValue = Number ( rawData [ 0 ] ) ;
 
 /*
- *  Determine the appropriate classification based on the numeric value.
- *  - If less than 1200, it's 'ABC'.
- *  - If less than 2800 (but 1200 or more), it's 'ARC'.
- *  - Otherwise (2800 or more), it's 'AGC'.
+ * Determine the final outcome based on the numeric value.
+ * The logic follows a specific tiered comparison.
  */
-const classificationString = (numericValue < 1200)
+const finalOutcome = ( numericValue < 1200 )
     ? 'ABC'
-    : (numericValue < 2800)
+    : ( numericValue < 2800 )
         ? 'ARC'
-        : 'AGC';
+        : 'AGC' ;
 
-// Output the final computed classification to the console.
-console.log(classificationString);
+// Output the calculated result to the console.
+console . log ( finalOutcome ) ;

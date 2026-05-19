@@ -1,17 +1,23 @@
-const processSequenceForSwaps = (inputStringData) => {
-  const contentLines = inputStringData.split('\n');
-  const characterElements = contentLines[1].split('');
+function processInput(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const totalLength = Number(inputLines[0]);
+    const characterSequence = inputLines[1].split('');
 
-  const totalRedMarkers = characterElements.filter(element => element === 'R').length;
-
-  let misplacedWhiteMarkers = 0;
-  for (let k = 0; k < totalRedMarkers; k++) {
-    if (characterElements[k] === 'W') {
-      misplacedWhiteMarkers++;
+    let redCount = 0;
+    for (let idx = 0; idx < characterSequence.length; idx++) {
+        if (characterSequence[idx] === 'R') {
+            redCount++;
+        }
     }
-  }
 
-  console.log(misplacedWhiteMarkers);
-};
+    let necessarySwaps = 0;
+    for (let pos = 0; pos < redCount; pos++) {
+        if (characterSequence[pos] === 'W') {
+            necessarySwaps++;
+        }
+    }
 
-processSequenceForSwaps(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
+    console.log(necessarySwaps);
+}
+
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8').trim());

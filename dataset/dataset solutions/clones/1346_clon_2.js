@@ -1,17 +1,16 @@
-/*
- * Module responsible for processing numerical input
- * and deriving fundamental geometric properties of a circle.
- */
-function computeCircleStats(rawEntry) {
-  // Convert the incoming textual representation to an integer value.
-  rawEntry = parseInt( rawEntry );
+function ProcessInput(dataValue) {
+  // Convert the incoming string value to an integer for numerical operations.
+  dataValue = parseInt(dataValue);
 
-  // Output both the area (π * r * r) and the circumference (2 * π * r)
-  // using the standard Math.PI constant and the processed radius.
-  console.log( "%d %d", Math.PI * rawEntry * rawEntry, Math.PI * 2 * rawEntry );
+  // Calculate the area of a circle (π * radius^2) and its circumference (2 * π * radius).
+  // The 'dataValue' is used as the radius for these calculations.
+  console.log(
+    "%d %d",
+    Math.PI * dataValue * dataValue, // First value: Area
+    Math.PI * 2 * dataValue // Second value: Circumference
+  );
 }
 
-
-// Initiate the primary calculation process.
-// The numerical radius for the circle is retrieved from a local data file.
-computeCircleStats( require("fs").readFileSync("b.txt", "utf8") );
+// Read the content of the file "b.txt" synchronously using Node.js's file system module.
+// The content is expected to be a string, which is then passed to the processing function.
+ProcessInput(require("fs").readFileSync("b.txt", "utf8"));

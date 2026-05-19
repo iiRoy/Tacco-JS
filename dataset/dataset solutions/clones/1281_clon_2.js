@@ -1,63 +1,74 @@
-process.stdin.resume();
-process.stdin.setEncoding('utf-8'); // Set the encoding for incoming data.
+// This script processes input from standard input to aggregate and display building occupancy data.
 
-var receivedDataBuffer = ''; // Buffer to accumulate all input data.
+process.stdin.resume(); // Ensures the standard input stream remains open.
+process.stdin.setEncoding('utf-8'); // Configures the character encoding for incoming data.
 
-// Event listener for incoming data chunks.
-process.stdin.on
-(
-    'data',
-    (dataPortion) => {
-        receivedDataBuffer += dataPortion;
-    }
-);
+let rawInputContent = ''; // A string buffer to accumulate all data received from stdin.
 
-// Event listener for the end of input stream.
-process.stdin.on
-(
-    'end',
-    () => {
-        // Split the accumulated buffer into individual lines.
-        var inputLines = receivedDataBuffer.split('\n');
-        // Invoke the main processing logic with the parsed lines.
-        executeMainLogic(inputLines);
-    }
-);
+// Attaches an event listener for 'data' events on the standard input stream.
+process.stdin.on('data', (dataSegment) => {
+    rawInputContent += dataSegment; // Appends each received data chunk to the buffer.
+});
 
-// Main function to process the input dataset.
-var executeMainLogic = (dataSet) => {
-    // Extract the first element, which indicates the number of subsequent items.
-    var countOfItems = dataSet.shift();
-    // Get a slice of the array containing the actual data items.
-    var segmentList = dataSet.slice(0, countOfItems);
+// Attaches an event listener for the 'end' event, signaling the completion of stdin input.
+process.stdin.on('end', () => {
+    // Splits the accumulated raw input into an array of individual lines.
+    const inputLines = rawInputContent.split('\n');
+    // Invokes the primary data processing function with the collected lines.
+    processInputData(inputLines);
+});
 
-    // Initialize a 3D array (4x3x10) with zeroes.
-    // This structure will store aggregated values based on input coordinates.
-    var structureLevels = new Array(4).fill(null)
-                                      .map(_ => new Array(3).fill(null)
-                                                            .map(_ => new Array(10).fill(0)));
+/**
+ * Processes an array of input strings to calculate and output building occupancy.
+ * Each input line (after the first) represents an occupancy change for a specific room.
+ *
+ * @param {string[]} dataCollection - An array of strings, where the first element is the count
+ *                                    of subsequent data entries, and the rest are the entries themselves.
+ */
+const processInputData = (dataCollection) => {
+    // Extracts the first element, which indicates the total number of data entries to follow.
+    const numEntries = dataCollection.shift();
 
-    // Iterate over each record in the segment list.
-    segmentList.forEach(currentRecord => {
-        // Parse the string record into an array of integers.
-        var parsedValues = currentRecord.split(' ').map(valStr => parseInt(valStr, 10));
-        // Aggregate the fourth value into the 3D array at the specified coordinates.
-        // Coordinates are 1-based in input, so adjust to 0-based.
-        structureLevels[parsedValues[0] - 1][parsedValues[1] - 1][parsedValues[2] - 1] += parsedValues[3];
+    // Slices the array to get only the actual data entries, excluding the count.
+    const entryList = dataCollection.slice(0, numEntries);
+
+    // Initializes a 3D array to store occupancy counts.
+    // Dimensions: [building_id][floor_id][room_id]
+    // There are 4 buildings, 3 floors per building, and 10 rooms per floor.
+    let buildingData = new Array(4)
+        .fill(null) // Fills the top level with nulls as placeholders.
+        .map(_ignoredBuilding => new Array(3) // Maps each building placeholder to an array for floors.
+            .fill(null) // Fills the floor level with nulls.
+            .map(_ignoredFloor => new Array(10) // Maps each floor placeholder to an array for rooms.
+                .fill(0))); // Initializes all room occupancy counts to zero.
+
+    // Iterates over each data entry to update the occupancy records.
+    entryList.forEach(currentEntry => {
+        // Parses the current entry string into an array of integers.
+        // Expected format: "building_number floor_number room_number occupancy_change"
+        const parsedEntryDetails = currentEntry.split(' ').map(numericValue => parseInt(numericValue, 10));
+
+        // Updates the occupancy for the specific room.
+        // Note: Input numbers are 1-based, so 1 is subtracted to get 0-based array indices.
+        buildingData[parsedEntryDetails[0] - 1][parsedEntryDetails[1] - 1][parsedEntryDetails[2] - 1] += parsedEntryDetails[3];
     });
 
-    // Output the contents of the 3D array.
-    structureLevels.forEach((levelData, levelIndex) => {
-        var outputLineBuffer = ''; // Buffer to build each output line.
-        levelData.forEach(roomData => {
-           roomData.forEach(cellValue => {
-               outputLineBuffer += ' ' + cellValue; // Append each value with a leading space.
-           });
-           console.log(outputLineBuffer); // Print the completed line for the current row.
-           outputLineBuffer = ''; // Reset the buffer for the next row.
+    // Iterates through the aggregated building data to print the results to console.
+    buildingData.forEach((floorData, buildingIndex) => {
+        let outputLineBuffer = ''; // A temporary string to build each line of room occupancy.
+
+        // Iterates through each floor's data within the current building.
+        floorData.forEach(roomData => {
+            // Iterates through each room's occupancy count on the current floor.
+            roomData.forEach(occupantCount => {
+                outputLineBuffer += ' ' + occupantCount; // Appends the count, prefixed with a space.
+            });
+            console.log(outputLineBuffer); // Prints the complete line for the current floor.
+            outputLineBuffer = ''; // Resets the buffer for the next floor's output.
         });
-        // Print a separator between major sections, unless it's the last section.
-        if (levelIndex !== structureLevels.length - 1) {
+
+        // Prints a separator line after each building's data, except for the very last building.
+        if (buildingIndex !== buildingData.length - 1) {
             console.log('####################');
         }
     });

@@ -1,54 +1,50 @@
-// This function processes an incoming text stream to perform calculations.
-function ProcessDataStream (incomingText) {
-  // Split the entire input string into individual lines based on newline characters.
-  let textLines = incomingText.split('\n');
+function ProcessInput(rawData) {
+  // Split the raw input string into an array of lines
+  rawData = rawData.split('\n');
 
-  // Extract numerical data from the first three lines of the input.
-  let dataFactors = textLines[0].split(' ');
-  let firstValues = textLines[1].split(' ');
-  let secondValues = textLines[2].split(' ');
+  // Parse the first three lines into arrays of strings
+  var timeValues = rawData[0].split(' ');
+  var rateA = rawData[1].split(' ');
+  var rateB = rawData[2].split(' ');
 
-  // Iterate over the first two elements of each array to convert them from strings to actual numbers.
-  for (let itemIndex = 0; itemIndex < 2; itemIndex++) {
-    dataFactors[itemIndex] = Number(dataFactors[itemIndex]);
-    firstValues[itemIndex] = Number(firstValues[itemIndex]);
-    secondValues[itemIndex] = Number(secondValues[itemIndex]);
+  // Convert string values to numbers for the first two elements of each array
+  for (var k = 0; k < 2; k++) {
+    timeValues[k] = Number(timeValues[k]);
+    rateA[k] = Number(rateA[k]);
+    rateB[k] = Number(rateB[k]);
   }
 
-  // Declare and initialize an array to store the results of intermediate calculations.
-  const computedDifferences = new Array(2);
+  // Calculate the difference products for two scenarios
+  var diffProducts = new Array(2);
+  diffProducts[0] = timeValues[0] * rateA[0] - timeValues[0] * rateB[0];
+  diffProducts[1] = timeValues[1] * rateA[1] - timeValues[1] * rateB[1];
 
-  // Calculate the difference of products for the first and second data points.
-  computedDifferences[0] = dataFactors[0] * firstValues[0] - dataFactors[0] * secondValues[0];
-  computedDifferences[1] = dataFactors[1] * firstValues[1] - dataFactors[1] * secondValues[1];
+  // Initialize variables for the iterative calculation
+  var currentSum = 0;
+  var previousSum = 1;
+  var unusedVar = 0; // This variable is declared but not used in the original logic
+  var iterationCount = -1;
 
-  // Initialize several variables that will be used in the subsequent iterative process.
-  let cumulativeValue = 0;
-  let previousCumulativeValue = 1;
-  let unusedMarker = 0; // This variable is initialized but not utilized in the core logic.
-  let operationCounter = -1;
-
-  // Check for a specific condition where the first difference is the negative of the second.
-  // This scenario indicates an 'infinity' result.
-  if (computedDifferences[0] === computedDifferences[1] * -1) {
-    console.log('infinity'); // Output the special string 'infinity'.
+  // Check for a specific condition to determine output
+  if (diffProducts[0] === diffProducts[1] * -1) {
+    // If the condition is met, output 'infinity'
+    console.log('infinity');
   } else {
-    // Begin an iterative process. The loop condition is unusual; it relies on an internal flag.
-    for (let loopFlag = 0; loopFlag < 1; loopFlag) {
-      operationCounter++; // Increment the counter for each step of the iteration.
-      previousCumulativeValue = cumulativeValue; // Store the current cumulative value before it's updated.
-      cumulativeValue += computedDifferences[operationCounter % 2]; // Add a difference value, alternating using modulo.
+    // Otherwise, perform an iterative calculation
+    for (var loopVar = 0; loopVar < 1; loopVar) { // Loop continues until 'loopVar' is explicitly set to 1
+      iterationCount++; // Increment the counter for each iteration
+      previousSum = currentSum; // Store the current sum as the previous sum
+      currentSum += diffProducts[iterationCount % 2]; // Add a value from diffProducts based on modulo of iterationCount
 
-      // Evaluate a termination condition: if the product of current and previous cumulative values is positive.
-      if (cumulativeValue * previousCumulativeValue > 0) {
-        loopFlag = 1; // Set the loop flag to 1 to terminate the iteration.
+      // Check if the product of current and previous sums is positive
+      if (currentSum * previousSum > 0) {
+        loopVar = 1; // Terminate the loop by setting loopVar to 1
       }
     }
-    // After the loop concludes, output the final calculated result, adjusted by one.
-    console.log(operationCounter - 1);
+    // Output the final calculated value
+    console.log(iterationCount - 1);
   }
 }
 
-// Execute the main data processing function.
-// It reads content from standard input, assuming UTF-8 encoding.
-ProcessDataStream(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

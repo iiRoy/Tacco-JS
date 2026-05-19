@@ -1,53 +1,38 @@
-const obtainRawData = () => {
-  const sampleData = `1000000000 141421 173205`
-  const sourceContent = sampleData || require('fs').readFileSync('/dev/stdin', 'utf8')
+const extractNumericTokens = (sourceText) => {
+  return sourceText.split('\n').flatMap(lineSegment =>
+    lineSegment.split(' ').map(Number)
+  );
+};
 
-  // Divergent syntax: Use functional `flatMap` to process lines and tokens
-  return sourceContent.split('\n').flatMap(lineSegment => lineSegment.split(' ')).map(numericToken => +numericToken)
-}
+const retrieveInputData = () => {
+  const sampleDataString = `1000000000 141421 173205`;
+  return extractNumericTokens(sampleDataString || require('fs').readFileSync('/dev/stdin', 'utf8'));
+};
 
-const recursiveProductSequence = (limitValue, counterIndex = 1, currentProduct = 1) => {
-  if (counterIndex > limitValue) {
-    return currentProduct
+const computeProductSequence = (limitValue, currentProduct = 1, iterationIndex = 1) => {
+  if (iterationIndex > limitValue) {
+    return currentProduct;
   }
-  // The specific console.log behavior from the original must be replicated
-  console.log(currentProduct)
-  // Divergent syntax: Recursive call instead of an imperative loop
-  return recursiveProductSequence(limitValue, counterIndex + 1, currentProduct * counterIndex)
-}
+  console.log(currentProduct);
+  return computeProductSequence(limitValue, currentProduct * iterationIndex, iterationIndex + 1);
+};
 
-const computeBinomialCoefficient = (totalItems, chosenItems) => {
-  const upperProduct = recursiveProductSequence(totalItems)
-  const lowerProductA = recursiveProductSequence(chosenItems)
-  const lowerProductB = recursiveProductSequence(totalItems - chosenItems)
+const calculateBinomialCoefficient = (totalElements, chosenElements) => {
+  return computeProductSequence(totalElements) / (computeProductSequence(chosenElements) * computeProductSequence(totalElements - chosenElements));
+};
 
-  // This will produce Infinity if factorials overflow, matching original behavior
-  return upperProduct / (lowerProductA * lowerProductB)
-}
+(function executePrimaryLogic() {
+  const processedInput = retrieveInputData();
+  const totalCount = processedInput[0];
+  const exclusionA = processedInput[1];
+  const exclusionB = processedInput[2];
 
-;((computationInitiator) => {
-  const processedParameters = obtainRawData()
-  const upperBound = processedParameters[0]
-  const exclusionA = processedParameters[1]
-  const exclusionB = processedParameters[2]
+  const cumulativeSum = Array.from({ length: totalCount }, (_, currentSelection) => currentSelection + 1)
+    .filter(currentSelection => currentSelection !== exclusionA && currentSelection !== exclusionB)
+    .reduce((accumulator, currentSelection) => {
+      return accumulator + calculateBinomialCoefficient(totalCount, currentSelection);
+    }, 0);
 
-  // Divergent strategy: Recursive function for summation instead of an imperative loop
-  const calculateTotalCombinations = (currentIteration, totalLimit, skipA, skipB, runningSum) => {
-    if (currentIteration > totalLimit) {
-      return runningSum
-    }
-
-    let addition = 0
-    // Divergent syntax: Conditional check is embedded within the recursive logic
-    if (currentIteration !== skipA && currentIteration !== skipB) {
-      addition = computeBinomialCoefficient(totalLimit, currentIteration)
-    }
-
-    return calculateTotalCombinations(currentIteration + 1, totalLimit, skipA, skipB, runningSum + addition)
-  }
-
-  const cumulativeResult = calculateTotalCombinations(1, upperBound, exclusionA, exclusionB, 0)
-
-  const moduloConstant = Math.pow(10, 9) + 7
-  console.log(cumulativeResult % moduloConstant)
-})()
+  const moduloConstant = Math.pow(10, 9) + 7;
+  console.log(cumulativeSum % moduloConstant);
+})();

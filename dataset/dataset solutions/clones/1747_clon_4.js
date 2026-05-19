@@ -1,43 +1,31 @@
-const obtainCharacter = (idxVal) => {
-    if (idxVal === 0n) return 'z';
-    return String.fromCharCode('a'.charCodeAt(0) + Number(idxVal) - 1);
-};
+const main = (inputData) => {
+  const initialNumericValue = BigInt(inputData.trim());
+  const characterMap = Object.freeze({
+    0: 'z', 1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f', 7: 'g', 8: 'h', 9: 'i',
+    10: 'j', 11: 'k', 12: 'l', 13: 'm', 14: 'n', 15: 'o', 16: 'p', 17: 'q', 18: 'r',
+    19: 's', 20: 't', 21: 'u', 22: 'v', 23: 'w', 24: 'x', 25: 'y'
+  });
 
-const processSegments = (currentSegment, currentResult) => {
-    if (currentSegment === 0n) {
-        return currentResult;
+  function* generateConversionSequence(currentValue) {
+    let workingValue = currentValue;
+    while (workingValue !== 0n) {
+      const remainderComponent = workingValue % 26n;
+      const nextIterationValue = workingValue === 26n ? 0n : workingValue / 26n;
+      yield { digitIndex: Number(remainderComponent), subsequentValue: nextIterationValue };
+      workingValue = nextIterationValue;
     }
+  }
 
-    const segmentRemainder = currentSegment % 26n;
-    let nextSegmentValue;
+  const conversionSteps = [...generateConversionSequence(initialNumericValue)];
 
-    if (currentSegment === 26n) {
-        nextSegmentValue = 0n;
-    } else {
-        nextSegmentValue = currentSegment / 26n;
-    }
+  const finalOutputString = conversionSteps
+    .map(step => characterMap[step.digitIndex])
+    .reverse()
+    .join('');
 
-    const segmentChar = obtainCharacter(segmentRemainder);
-    return processSegments(nextSegmentValue, segmentChar + currentResult);
+  console.log(finalOutputString);
 };
 
-const executeConversion = (inputStringContent) => {
-    const startingNumber = BigInt(inputStringContent.trim());
-    return processSegments(startingNumber, "");
-};
-
-const entryPoint = (dataPayload) => {
-    const convertedResult = executeConversion(dataPayload);
-    console.log(convertedResult);
-};
-
-const envCheck = process.env.CLONE_TEST_VAR;
-if (envCheck) {
-    if (envCheck === 'validation') {
-        // No test function provided in original for cloning; this path would typically call it.
-    } else {
-        entryPoint(require('fs').readFileSync('dev/stdin', 'utf8'));
-    }
-} else {
-    entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));
-}
+process.env.MYTEST
+  ? (process.env.MYTEST === 'test' ? test() : main(require('fs').readFileSync('dev/stdin', 'utf8')))
+  : main(require('fs').readFileSync('/dev/stdin', 'utf8'));

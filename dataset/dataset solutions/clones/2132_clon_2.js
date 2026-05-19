@@ -1,32 +1,31 @@
-(function ProcessInputData( incomingData ) {
-    /*
-     * The 'incomingData' parameter initially holds the raw string content.
-     * We'll proceed to tokenize this string by splitting it based on space characters.
-     */
-    var processedTokens = incomingData.split( ' ' );
+( function ProcessData ( rawData ) {
+  /*
+   * This function processes input data to calculate a specific value.
+   * It reads two numbers, then applies a conditional logic based on the first number.
+   */
 
+  // Split the raw input string by spaces to get individual components.
+  let parsedValues = rawData.split( ' ' );
 
-    // Extract the first numeric component from the tokenized array.
-    // The '- 0' operation explicitly converts the string token into a number.
-    var valA = processedTokens[0] - 0;
+  // Extract the first number and convert it to a numeric type.
+  let firstNumber = parsedValues[ 0 ] - 0;
 
+  // Extract the second number and convert it to a numeric type.
+  let secondNumber = parsedValues[ 1 ] - 0;
 
-    // Extract the second numeric component, also converting it to a number.
-    var valB = processedTokens[1] - 0;
+  // Declare a variable to hold the computed outcome.
+  let resultValue;
 
+  // Apply conditional logic:
+  // If the first number is greater than or equal to 10, the result is the second number.
+  // Otherwise, the result is the second number plus 100 times the difference between 10 and the first number.
+  if ( firstNumber >= 10 ) {
+    resultValue = secondNumber;
+  } else {
+    resultValue = secondNumber + ( 100 * ( 10 - firstNumber ) );
+  }
 
-    // Perform a conditional calculation.
-    // If 'valA' is 10 or greater, 'finalOutcome' is set to 'valB'.
-    // Otherwise, a specific arithmetic formula is applied to determine 'finalOutcome'.
-    var finalOutcome = valA >= 10
-                         ? valB // Case 1: valA is sufficiently large.
-                         : valB + 100 * ( 10 - valA ); // Case 2: valA is smaller, apply adjustment.
+  // Output the final calculated value to the standard console.
+  console.log( resultValue );
 
-
-    // Display the computed result to the standard output stream.
-    console.log( finalOutcome );
-} )
-// The input for this immediately invoked function expression (IIFE)
-// is obtained by reading the entire content of '/dev/stdin' as a UTF-8 string,
-// using Node.js's built-in file system module.
-( require("fs").readFileSync( "/dev/stdin", "utf8" ) );
+} ) ( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );

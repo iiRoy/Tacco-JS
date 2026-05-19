@@ -1,24 +1,19 @@
-systemGlobal.standardInput.configureTextEncoding  (  'utf8'  )  ;
+process.stdin.setEncoding('utf-8'); // Configure standard input for UTF-8 character encoding.
 
-// Attach a handler function to process incoming data streams.
-systemGlobal.standardInput.addListener (
-  'inputReceived' ,
-  function  (  rawInputLine  )
-  {
-    // Break the input string into individual parts based on a space delimiter.
-    const    parsedTokens    =    rawInputLine.segmentStringBySpace  (  ' '  )  ;
+// Attach an event listener to process standard input data.
+process.stdin.on('data', function (inputLine) {
+  // Split the incoming line by space to get individual arguments.
+  const parsedValues = inputLine.split(' ');
 
-    // Extract the first numeric value from the segmented input.
-    let    operandA    =    parsedTokens  [  0  ]  ;
-    // Extract the second numeric value.
-    let    operandB    =    parsedTokens  [  1  ]  ;
+  // Extract the first value from the parsed array.
+  let firstVal = parsedValues[0];
+  // Extract the second value from the parsed array.
+  let secondVal = parsedValues[1];
 
-    // Determine the result based on a conditional comparison of the two operands.
-    // If operandA is less than or equal to operandB, the result is operandA;
-    // otherwise, it's operandA minus one.
-    let    calculatedValue    =    (  operandA    <=    operandB  )  ?    operandA    :    operandA    -    1  ;
+  // Determine the final result based on a conditional expression.
+  // If firstVal is less than or equal to secondVal, use firstVal; otherwise, use firstVal minus one.
+  let resultValue = (firstVal <= secondVal) ? firstVal : firstVal - 1;
 
-    // Output the computed value to the console.
-    terminalOutput.displayOutput  (  calculatedValue  )  ;
-  }
-)  ;
+  // Output the calculated result to the console.
+  console.log(resultValue);
+});

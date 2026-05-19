@@ -1,30 +1,23 @@
-const fileSystem = require('fs');
-const rawData = fileSystem.readFileSync(process.stdin.fd, 'utf8');
-const processedLines = rawData.trim().split('\n');
+const sourceContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = sourceContent.trim().split("\n");
 
-let lineIndex = 0;
-const numberOfScenarios = Number(processedLines[lineIndex++]);
+const totalCases = parseInt(inputLines.shift(), 10);
 
-const resultsContainer = [];
+Array.from({ length: totalCases }).forEach(() => {
+    const [elementCount, selectionCount] = inputLines.shift().split(' ').map(Number);
+    const numericSequence = inputLines.shift().split(' ').map(Number);
 
-Array.from({ length: numberOfScenarios }).forEach(() => {
-    const paramsString = processedLines[lineIndex++].split(' ');
-    const countElements = Number(paramsString[0]);
-    const divisionsAllowed = Number(paramsString[1]);
+    const totalSpan = numericSequence[numericSequence.length - 1] - numericSequence[0];
 
-    const coordinateArray = processedLines[lineIndex++].split(' ').map(Number);
+    const segmentDifferences = numericSequence.slice(1).map((currentValue, index) => {
+        return currentValue - numericSequence[index];
+    });
 
-    const overallRange = coordinateArray[coordinateArray.length - 1] - coordinateArray[0];
+    segmentDifferences.sort((firstElement, secondElement) => secondElement - firstElement);
 
-    const gapLengths = coordinateArray.slice(1).map((currentCoord, index) => currentCoord - coordinateArray[index]);
+    const excludedSum = segmentDifferences
+        .slice(0, Math.min(selectionCount - 1, segmentDifferences.length))
+        .reduce((accumulator, currentDifference) => accumulator + currentDifference, 0);
 
-    gapLengths.sort((firstGap, secondGap) => secondGap - firstGap);
-
-    const gapsToExcludeSum = gapLengths
-        .slice(0, Math.min(divisionsAllowed - 1, gapLengths.length))
-        .reduce((accumulator, currentGap) => accumulator + currentGap, 0);
-
-    resultsContainer.push(overallRange - gapsToExcludeSum);
+    console.log(totalSpan - excludedSum);
 });
-
-resultsContainer.forEach(finalResult => console.log(finalResult));

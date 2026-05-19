@@ -1,95 +1,107 @@
-'use strict'; // Enforce strict parsing and error handling for cleaner code
+'use strict';
 
-// A utility class to process input data from standard input.
-function DataParser( rawInputString ) {
-    let lineArray = rawInputString.split('\n'); // Split the entire input string by newline characters.
-    // If the last line is empty (common with terminal input), remove it.
-    if ( lineArray[lineArray.length - 1] === '' ) {
+// This class is designed to parse input data, typically from standard input, line by line.
+function InputParser(inputString) {
+    // Split the entire input string into an array of individual lines.
+    let lineArray = inputString.split('\n');
+
+    // If the last line is empty (common with `\n` at EOF), remove it.
+    if (lineArray[lineArray.length - 1] === '') {
         lineArray.pop();
     }
-    this.lines = lineArray; // Store all processed lines.
-    this.currentLineIndex = 0; // Initialize a pointer for reading lines.
+
+    // Store the processed lines and initialize an index to keep track of the current line being read.
+    this.lineArray = lineArray;
+    this.currentLineIndex = 0;
 }
 
-// Prototype method to read a line, split it by spaces, and convert parts to integers.
-DataParser.prototype.readIntsLine = function() {
-    // Retrieve the current line, increment the index, split by space, and map to numbers.
-    return this.lines[this.currentLineIndex++].split(' ').map( numericValue => +numericValue );
+// Add methods to the InputParser's prototype for various input reading operations.
+
+// Reads the current line, splits it by spaces, and converts each part to an integer.
+InputParser.prototype.readInts = function() {
+    // Access the current line, then increment the index for the next read.
+    return this.lineArray[this.currentLineIndex++].split(' ').map(valStr => +valStr);
 };
 
-// Prototype method to read all remaining lines as integer vectors.
-DataParser.prototype.readAllIntVectors = function() {
-    const startIndex = this.currentLineIndex; // Store the current position.
-    this.currentLineIndex = this.lines.length; // Advance the pointer to the end.
-    // Slice the remaining lines and convert each to a number.
-    return this.lines.slice(startIndex).map( numberItem => +numberItem );
+// Reads all remaining lines from the current position to the end, converting each to an integer.
+InputParser.prototype.readAllInts = function() {
+    const initialIndex = this.currentLineIndex;
+    // Set the current index to the end of the array, marking all lines as read.
+    this.currentLineIndex = this.lineArray.length;
+    // Extract the remaining lines and convert them to numbers.
+    return this.lineArray.slice(initialIndex).map(valStr => +valStr);
 };
 
-// Prototype method to read all remaining lines as string vectors.
-DataParser.prototype.readAllStringVectors = function() {
-    const startIdx = this.currentLineIndex; // Keep track of the starting line index.
-    this.currentLineIndex = this.lines.length; // Set the current index to the end of the input.
-    // Return all subsequent lines as an array of strings.
-    return this.lines.slice(startIdx);
+// Reads all remaining lines as strings from the current position to the end.
+InputParser.prototype.readAllStrings = function() {
+    const initialIndex = this.currentLineIndex;
+    // Set the current index to the end of the array.
+    this.currentLineIndex = this.lineArray.length;
+    // Return the slice containing the remaining lines.
+    return this.lineArray.slice(initialIndex);
 };
 
-// Prototype method to read a specific number of lines as strings.
-DataParser.prototype.readNStrings = function( count ) {
-    const initialIndex = this.currentLineIndex; // Capture the starting point.
-    this.currentLineIndex += count; // Move the pointer forward by the specified count.
-    // Extract a segment of lines from the input array.
-    return this.lines.slice( initialIndex, initialIndex + count );
+// Reads a specified number of lines as strings, starting from the current position.
+InputParser.prototype.readNStrings = function(count) {
+    const initialIndex = this.currentLineIndex;
+    // Advance the current line index by the specified count.
+    this.currentLineIndex += count;
+    // Return a slice of the lines read.
+    return this.lineArray.slice(initialIndex, initialIndex + count);
 };
 
-// Instantiate the input processing mechanism by reading from standard input.
-const parserInstance = new DataParser( require("fs").readFileSync("/dev/stdin", "utf8") );
+// Create an instance of the InputParser, reading data from standard input.
+const inputReader = new InputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Anonymous self-executing function to encapsulate the main program logic.
-( () => {
+// Use an Immediately Invoked Function Expression (IIFE) to encapsulate the main program logic.
+(() => {
 
-    // Read the first line containing N and K values.
-    const sizeAndTarget = parserInstance.readIntsLine();
-    const arraySize = sizeAndTarget[0]; // Extract N.
-    const targetCount = sizeAndTarget[1]; // Extract K.
+    // Read the first line which contains two integers: arraySize (N) and targetCount (K).
+    const numAndK = inputReader.readInts();
+    const arraySize = numAndK[0]; // N
+    const targetCount = numAndK[1]; // K
 
-    // Read the array of numbers for processing.
-    const inputNumbers = parserInstance.readIntsLine();
+    // Read the second line which contains the array 'a' of integers.
+    const dataArray = inputReader.readInts();
 
-    // Array to store all possible cumulative sums of subarrays.
-    const partialSums = [];
+    // This array will store all possible subarray sums.
+    const sumResults = [];
+
     // Iterate through all possible starting points for subarrays.
-    for ( let outerIndex = 0; outerIndex < arraySize; outerIndex++ ) {
-        let currentSum = 0; // Initialize sum for the current subarray.
-        // Iterate through all possible ending points for subarrays starting at outerIndex.
-        for ( let innerIndex = outerIndex; innerIndex < arraySize; innerIndex++ ) {
-            currentSum += inputNumbers[innerIndex]; // Add the current element to the sum.
-            partialSums.push( currentSum ); // Store the cumulative sum.
+    for (let outerIdx = 0; outerIdx < arraySize; outerIdx++) {
+        let currentSum = 0; // Initialize sum for the subarray starting at 'outerIdx'.
+        // Iterate through all possible ending points for subarrays, starting from 'outerIdx'.
+        for (let innerIdx = outerIdx; innerIdx < arraySize; innerIdx++) {
+            currentSum += dataArray[innerIdx]; // Add the current element to the running sum.
+            sumResults.push(currentSum); // Store this subarray sum.
         }
     }
 
-    // Sort the collected sums in descending order.
-    partialSums.sort( ( firstVal, secondVal ) => secondVal - firstVal );
+    // Sort the calculated sums in descending order.
+    sumResults.sort((valA, valB) => valB - valA);
 
-    // Variable to accumulate the maximum XOR sum.
-    let xorMaximum = 0;
-    // Iterate from the most significant bit (MSB) down to the least significant bit (LSB).
-    // The range 41 to 0 covers numbers up to 2^42 - 1, which is sufficient for typical constraints.
-    for ( let bitPosition = 41; bitPosition >= 0; bitPosition-- ) {
-        // Calculate the value represented by the current bit position.
-        let currentBitThreshold = Math.pow( 2, bitPosition );
-        // Filter the partial sums to find how many elements satisfy the current bit condition.
-        // An element 'e' satisfies if (e & (xorMaximum + currentBitThreshold)) equals (xorMaximum + currentBitThreshold).
-        // This checks if all bits set in (xorMaximum + currentBitThreshold) are also set in 'e'.
-        let validSubsets = partialSums.filter( elementValue => ( elementValue & ( xorMaximum + currentBitThreshold ) ) === ( xorMaximum + currentBitThreshold ) ).length;
+    let finalResult = 0; // Initialize the variable to store the maximum possible XOR sum.
 
-        // If the number of valid subsets is greater than or equal to K,
-        // it means we can potentially include this bit in our maximum XOR sum.
-        if ( validSubsets >= targetCount ) {
-            xorMaximum += currentBitThreshold; // Add the current bit's value to the result.
+    // Iterate from the 41st bit down to the 0th bit (most significant to least significant).
+    // This greedy approach tries to set higher bits first to maximize the result.
+    for (let bitPosition = 41; bitPosition >= 0; bitPosition--) {
+        // Calculate the decimal value of the current bit (e.g., 2^41, 2^40, ..., 2^0).
+        let bitValue = Math.pow(2, bitPosition);
+
+        // Determine how many of the subarray sums 'elementValue' satisfy a specific bitwise condition.
+        // The condition `(elementValue & (finalResult + bitValue)) === (finalResult + bitValue)`
+        // checks if all bits that are set in `(finalResult + bitValue)` are also set in `elementValue`.
+        // This effectively means `elementValue` must be "compatible" with `finalResult` having `bitValue` set.
+        let matchingCount = sumResults.filter(elementValue => (elementValue & (finalResult + bitValue)) === (finalResult + bitValue)).length;
+
+        // If there are at least 'targetCount' subarray sums that satisfy this condition,
+        // it means we can potentially include this 'bitValue' in our 'finalResult'.
+        if (matchingCount >= targetCount) {
+            finalResult += bitValue; // Add the current bit's value to the final result.
         }
     }
 
-    // Output the final calculated maximum XOR sum.
-    console.log( xorMaximum );
+    // Print the final calculated maximum XOR sum to standard output.
+    console.log(finalResult);
 
-} )();
+})(); // End of the main program IIFE.

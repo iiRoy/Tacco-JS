@@ -1,114 +1,124 @@
-(function() {
-    class PriorityStructure {
-        constructor() {
-            this.heapItems = [];
-        }
+class MaxHeap {
+    constructor(priorityEvaluator = (a, b) => a > b) {
+        this.heapElements = [];
+        this.priorityEvaluator = priorityEvaluator;
+    }
 
-        _retrieveParentIndex(itemIndex) { return Math.floor((itemIndex - 1) / 2); }
-        _retrieveLeftChildIndex(itemIndex) { return 2 * itemIndex + 1; }
-        _retrieveRightChildIndex(itemIndex) { return 2 * itemIndex + 2; }
+    _retrieveParentIndex(idx) {
+        return Math.floor((idx - 1) / 2);
+    }
 
-        _hasParentItem(itemIndex) { return this._retrieveParentIndex(itemIndex) >= 0; }
-        _hasLeftChildItem(itemIndex) { return this._retrieveLeftChildIndex(itemIndex) < this.heapItems.length; }
-        _hasRightChildItem(itemIndex) { return this._retrieveRightChildIndex(itemIndex) < this.heapItems.length; }
+    _retrieveLeftChildIndex(idx) {
+        return 2 * idx + 1;
+    }
 
-        _getParentItem(itemIndex) { return this.heapItems[this._retrieveParentIndex(itemIndex)]; }
-        _getLeftChildItem(itemIndex) { return this.heapItems[this._retrieveLeftChildIndex(itemIndex)]; }
-        _getRightChildItem(itemIndex) { return this.heapItems[this._retrieveRightChildIndex(itemIndex)]; }
+    _retrieveRightChildIndex(idx) {
+        return 2 * idx + 2;
+    }
 
-        _exchangePositions(idxA, idxB) {
-            [this.heapItems[idxA], this.heapItems[idxB]] = [this.heapItems[idxB], this.heapItems[idxA]];
-        }
+    _checkHasParent(idx) {
+        return this._retrieveParentIndex(idx) >= 0;
+    }
 
-        _compareValues(elementA, elementB) {
-            return (elementA[0] / elementA[1]) - (elementB[0] / elementB[1]);
-        }
+    _checkHasLeftChild(idx) {
+        return this._retrieveLeftChildIndex(idx) < this.heapElements.length;
+    }
 
-        _heapifyUp() {
-            let currentIdx = this.heapItems.length - 1;
-            while (this._hasParentItem(currentIdx) && this._compareValues(this.heapItems[currentIdx], this._getParentItem(currentIdx)) > 0) {
-                this._exchangePositions(currentIdx, this._retrieveParentIndex(currentIdx));
-                currentIdx = this._retrieveParentIndex(currentIdx);
-            }
-        }
+    _checkHasRightChild(idx) {
+        return this._retrieveRightChildIndex(idx) < this.heapElements.length;
+    }
 
-        _heapifyDown() {
-            let currentIdx = 0;
-            while (this._hasLeftChildItem(currentIdx)) {
-                let dominantChildIdx = this._retrieveLeftChildIndex(currentIdx);
-                if (this._hasRightChildItem(currentIdx) && this._compareValues(this._getRightChildItem(currentIdx), this._getLeftChildItem(currentIdx)) > 0) {
-                    dominantChildIdx = this._retrieveRightChildIndex(currentIdx);
-                }
+    _retrieveParent(idx) {
+        return this.heapElements[this._retrieveParentIndex(idx)];
+    }
 
-                if (this._compareValues(this.heapItems[currentIdx], this.heapItems[dominantChildIdx]) > 0) {
-                    break;
-                } else {
-                    this._exchangePositions(currentIdx, dominantChildIdx);
-                    currentIdx = dominantChildIdx;
-                }
-            }
-        }
+    _retrieveLeftChild(idx) {
+        return this.heapElements[this._retrieveLeftChildIndex(idx)];
+    }
 
-        incorporate(itemData) {
-            this.heapItems.push(itemData);
-            this._heapifyUp();
-        }
+    _retrieveRightChild(idx) {
+        return this.heapElements[this._retrieveRightChildIndex(idx)];
+    }
 
-        extractTop() {
-            if (this.heapItems.length === 0) return null;
-            if (this.heapItems.length === 1) return this.heapItems.pop();
+    _exchange(idx1, idx2) {
+        [this.heapElements[idx1], this.heapElements[idx2]] = [this.heapElements[idx2], this.heapElements[idx1]];
+    }
 
-            const topItem = this.heapItems[0];
-            this.heapItems[0] = this.heapItems.pop();
-            this._heapifyDown();
-            return topItem;
-        }
+    topElement() {
+        if (this.heapElements.length === 0) return undefined;
+        return this.heapElements[0];
+    }
 
-        peekTop() {
-            if (this.heapItems.length === 0) return null;
-            return this.heapItems[0];
-        }
+    add(item) {
+        this.heapElements.push(item);
+        this._bubbleUp();
+    }
 
-        get currentSize() {
-            return this.heapItems.length;
+    extractTop() {
+        if (this.heapElements.length === 0) return undefined;
+        if (this.heapElements.length === 1) return this.heapElements.pop();
+
+        const highestPriorityItem = this.heapElements[0];
+        this.heapElements[0] = this.heapElements.pop();
+        this._bubbleDown();
+        return highestPriorityItem;
+    }
+
+    _bubbleUp() {
+        let currentPosition = this.heapElements.length - 1;
+        while (this._checkHasParent(currentPosition) && this.priorityEvaluator(this.heapElements[currentPosition], this._retrieveParent(currentPosition))) {
+            this._exchange(currentPosition, this._retrieveParentIndex(currentPosition));
+            currentPosition = this._retrieveParentIndex(currentPosition);
         }
     }
 
-    let accumulatedText = '';
+    _bubbleDown() {
+        let currentPosition = 0;
+        while (this._checkHasLeftChild(currentPosition)) {
+            let higherPriorityChildPosition = this._retrieveLeftChildIndex(currentPosition);
+            if (this._checkHasRightChild(currentPosition) && this.priorityEvaluator(this._retrieveRightChild(currentPosition), this._retrieveLeftChild(currentPosition))) {
+                higherPriorityChildPosition = this._retrieveRightChildIndex(currentPosition);
+            }
 
-    global.process.stdin.on('data', (receivedSegment) => {
-        accumulatedText += receivedSegment.toString();
-    });
-
-    global.process.stdin.on('end', () => {
-        const textBlocks = accumulatedText.split(/\n/);
-
-        const firstLineValues = textBlocks.shift().split(/\s/).map(Number);
-        const dimensionCount = firstLineValues[0];
-        const operationQuota = firstLineValues[1];
-
-        const initialValues = textBlocks[0].split(/\s/).slice(0, dimensionCount).map(Number);
-
-        const dataProcessor = new PriorityStructure();
-        for (const initialVal of initialValues) {
-            dataProcessor.incorporate([initialVal, 1]);
+            if (this.priorityEvaluator(this.heapElements[currentPosition], this.heapElements[higherPriorityChildPosition])) {
+                break;
+            } else {
+                this._exchange(currentPosition, higherPriorityChildPosition);
+                currentPosition = higherPriorityChildPosition;
+            }
         }
+    }
+}
 
-        for (let iterationIndex = 0; iterationIndex < operationQuota; iterationIndex++) {
-            const highestPriorityElement = dataProcessor.extractTop();
-            if (!highestPriorityElement) break;
+(async () => {
+    let receivedInput = '';
+    for await (const dataChunk of process.stdin) receivedInput += dataChunk;
+    const inputSegments = receivedInput.split(/\n/);
 
-            highestPriorityElement[1]++;
-            dataProcessor.incorporate(highestPriorityElement);
+    const [elementCount, operationIterations] = inputSegments.shift().split(/\s/).map(Number);
+    const initialElements = inputSegments[0].split(/\s/).slice(0, elementCount).map(Number);
+
+    const averageComparator = (itemA, itemB) => (itemA[0] / itemA[1]) > (itemB[0] / itemB[1]);
+    const valueDistributionHeap = new MaxHeap(averageComparator);
+
+    for (const initialValue of initialElements) {
+        valueDistributionHeap.add([initialValue, 1]);
+    }
+
+    for (let currentIteration = 0; currentIteration < operationIterations; currentIteration++) {
+        const highestAverageItem = valueDistributionHeap.extractTop();
+        if (highestAverageItem) {
+            const [originalNumericValue, divisionCounter] = highestAverageItem;
+            valueDistributionHeap.add([originalNumericValue, divisionCounter + 1]);
         }
+    }
 
-        const finalDominantElement = dataProcessor.peekTop();
-        const finalCalculation = finalDominantElement[0] / finalDominantElement[1];
-
-        const determineCeiling = (numericalInput) => {
-            return (numericalInput > Math.trunc(numericalInput)) ? (Math.trunc(numericalInput) + 1) : Math.trunc(numericalInput);
-        };
-
-        global.process.stdout.write(determineCeiling(finalCalculation) + '\n');
-    });
+    const finalHighestItem = valueDistributionHeap.topElement();
+    if (finalHighestItem) {
+        const [finalOriginalNumericValue, finalDivisionCounter] = finalHighestItem;
+        const computedAverage = finalOriginalNumericValue / finalDivisionCounter;
+        console.log(Math.ceil(computedAverage));
+    } else {
+        console.log(0);
+    }
 })();

@@ -1,75 +1,44 @@
-var dataAccumulator = '';
+let rawData = '';
 
-function ascertainSmaller(primaryValue, secondaryValue) {
-  if (primaryValue < secondaryValue) {
-    return primaryValue;
+function findMinimum(valA, valB) {
+  if (valA < valB) {
+    return valA;
   } else {
-    return secondaryValue;
+    return valB;
   }
 }
 
-function ascertainLarger(primaryValue, secondaryValue) {
-  return (primaryValue > secondaryValue) ? primaryValue : secondaryValue;
-}
-
-function parseNumericLine(lineContent) {
-    const trimmedContent = lineContent.trim();
-    if (trimmedContent === '') {
-        return null;
-    }
-
-    const numericalValue = parseFloat(trimmedContent);
-
-    if (isNaN(numericalValue)) {
-        return null;
-    }
-
-    return numericalValue;
-}
-
-function computeNumericRangeDifference() {
-  const validNumbers = [];
-
-  for (const rawLine of processedInputLines) {
-    const parsedVal = parseNumericLine(rawLine);
-    if (parsedVal !== null) {
-      validNumbers.push(parsedVal);
-    }
+function findMaximum(valA, valB) {
+  if (valA > valB) {
+    return valA;
+  } else {
+    return valB;
   }
-
-  if (validNumbers.length === 0) {
-    console.error("No valid numbers were provided in the input to compute a range.");
-    return;
-  }
-
-  let minimumObserved = validNumbers[0];
-  let maximumObserved = validNumbers[0];
-
-  for (let i = 1; i < validNumbers.length; i++) {
-    const currentNumber = validNumbers[i];
-    minimumObserved = ascertainSmaller(currentNumber, minimumObserved);
-    maximumObserved = ascertainLarger(currentNumber, maximumObserved);
-  }
-
-  const calculatedSpan = maximumObserved - minimumObserved;
-
-  console.log(calculatedSpan);
 }
 
-let processedInputLines = [];
+function calculateRange() {
+  let minVal = Infinity;
+  let maxVal = -Infinity;
 
-function handleIncomingData(incomingSegment) {
-  dataAccumulator += incomingSegment;
-}
+  const updateMinMax = (currentNumStr) => {
+    const parsedNumber = parseFloat(currentNumStr);
+    minVal = findMinimum(parsedNumber, minVal);
+    maxVal = findMaximum(parsedNumber, maxVal);
+  };
 
-function finalizeProcessing() {
-  processedInputLines = dataAccumulator.split('\n').filter(line => line !== '');
+  rawData.forEach(updateMinMax);
 
-  computeNumericRangeDifference();
+  console.log(maxVal - minVal);
 }
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', handleIncomingData);
-process.stdin.on('end', finalizeProcessing);
+process.stdin.on('data', function(dataChunk) {
+  rawData += dataChunk;
+});
+
+process.stdin.on('end', function() {
+  rawData = rawData.split('\n');
+  calculateRange();
+});

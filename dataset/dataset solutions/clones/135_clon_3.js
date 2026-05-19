@@ -1,75 +1,35 @@
-const processStandardInput = () => {
-  const rawDataContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+(function(rawDataContent) {
+  const parseInputLines = (textInput) => {
+    return textInput.replace(/\n$/, '').split('\n');
+  };
 
-  if (!rawDataContent || rawDataContent.trim().length === 0) {
-    return;
+  let processedLines = parseInputLines(rawDataContent);
+
+  const numberOfTestCases = Number(processedLines.shift());
+
+  for (let caseIdx = 0; caseIdx < numberOfTestCases; caseIdx++) {
+    const currentCaseNumbers = processedLines.shift().split(' ').map(Number);
+    console.log(determineSequenceProperty(currentCaseNumbers));
   }
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));
 
-  const allInputLines = rawDataContent.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
+function determineSequenceProperty(inputArray) {
+  const initialComparisonValue = inputArray.shift();
 
-  const firstLine = allInputLines.shift();
-  const numberOfTestCases = Number(firstLine);
+  const relevantElements = inputArray.filter(element => element <= initialComparisonValue);
 
-  if (isNaN(numberOfTestCases) || numberOfTestCases < 0) {
-    return;
-  }
+  let currentMaximumValue = -Infinity;
+  let isMonotonicallyIncreasing = true;
 
-  for (let currentCaseIndex = 0; currentCaseIndex < numberOfTestCases; currentCaseIndex++) {
-    const currentLineData = allInputLines.shift();
-
-    if (!currentLineData) {
-      console.log('ERROR: Data Missing');
-      continue;
-    }
-
-    const numericDataArray = currentLineData.split(' ').map(val => parseInt(val, 10));
-
-    const evaluationResult = validateFilteredAscendingSequence(numericDataArray);
-    console.log(evaluationResult);
-  }
-};
-
-function validateFilteredAscendingSequence(initialNumericCollection) {
-  if (!initialNumericCollection || initialNumericCollection.length < 1) {
-    return 'NO_INPUT_FAILURE';
-  }
-
-  const thresholdValue = initialNumericCollection.slice(0, 1)[0];
-
-  let potentialElements = initialNumericCollection.slice(1);
-
-  const eligibleNumbers = [];
-
-  for (let k = 0; k < potentialElements.length; k++) {
-    const currentElementCandidate = potentialElements[k];
-
-    if (isNaN(currentElementCandidate)) {
-        continue;
-    }
-
-    if (currentElementCandidate <= thresholdValue) {
-      eligibleNumbers.push(currentElementCandidate);
+  for (let k = 0; k < relevantElements.length; k++) {
+    const elementInSequence = relevantElements[k];
+    if (elementInSequence > currentMaximumValue) {
+      currentMaximumValue = elementInSequence;
+    } else {
+      isMonotonicallyIncreasing = false;
+      break;
     }
   }
 
-  if (eligibleNumbers.length === 0) {
-      return 'YES';
-  }
-
-  let highestValueEncountered = Number.MIN_SAFE_INTEGER;
-
-  const reversedEligibleNumbers = eligibleNumbers.reverse();
-  while (reversedEligibleNumbers.length > 0) {
-    const valueToEvaluate = reversedEligibleNumbers.pop();
-
-    if (valueToEvaluate <= highestValueEncountered) {
-      return 'NO';
-    }
-
-    highestValueEncountered = valueToEvaluate;
-  }
-
-  return 'YES';
+  return isMonotonicallyIncreasing ? 'YES' : 'NO';
 }
-
-processStandardInput();

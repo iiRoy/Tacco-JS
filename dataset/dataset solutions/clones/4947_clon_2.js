@@ -1,77 +1,75 @@
 'use strict';
 
-// Obtain input data from standard input stream
-const inputData = require('node:fs')
-  .readFileSync('/dev/stdin', 'utf8')
-  .trim()
-  .split('\n');
+// This script reads an array of numbers from standard input,
+// then calculates a specific sum based on sub-array minimums.
 
-// Parse the first line for the array's dimension
-const arrayDimension = Number(inputData[0]);
+// Import the Node.js file system module to read input synchronously.
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
 
-// Parse the second line for the array of numeric strings
-const numericValuesAsStrings = inputData[1]
-  .split(' ');
+// The first line contains the size of the array.
+const arraySize = Number(inputData[0]);
 
-// Initialize a mapping for element positions
-let elementPositions = [];
-for (let currentPosition = 0; currentPosition < arrayDimension; currentPosition++) {
-  // Store the actual value (converted to number) minus one as index,
-  // and the current position as value.
-  elementPositions[Number(numericValuesAsStrings[currentPosition]) - 1] = currentPosition;
+// The second line contains space-separated numbers, which form the input array.
+const inputArray = inputData[1].split(' ');
+
+// Create a mapping from value (1-indexed) to its original index in the inputArray.
+// This allows for efficient lookup of the position of the smallest element.
+let positionMap = [];
+for (let idx = 0; idx < arraySize; idx++) {
+    // Values are 1-indexed, so we store the index at (value - 1).
+    positionMap[Number(inputArray[idx]) - 1] = idx;
 }
 
-// Initialize the total aggregated value and a processing queue
-let totalAggregatedValue = 0;
+// Initialize the total sum that will be calculated.
+let totalValue = 0;
 
-// The queue holds segments: [segmentStart, segmentEnd, searchStartIndex]
-const processingQueue = [[0, arrayDimension - 1, 0]];
+// Initialize a queue for processing sub-ranges.
+// Each element in the queue is an array: [start_index, end_index, min_value_search_start_index].
+// The min_value_search_start_index helps optimize finding the minimum in a range.
+let processingQueue = [[0, arraySize - 1, 0]];
 
-// Process segments from the queue until it's empty
+// Process ranges from the queue until it becomes empty.
 while (processingQueue.length > 0) {
-  // Dequeue the next segment information
-  const currentSegmentDetails = processingQueue.shift();
+    // Dequeue the current range information.
+    let currentRangeInfo = processingQueue.shift();
+    const rangeStart = currentRangeInfo[0];
+    const rangeEnd = currentRangeInfo[1];
+    let currentMinSearchIdx = currentRangeInfo[2]; // Index in positionMap to start looking for the minimum value.
 
-  // Extract segment boundaries and the current search index
-  const segmentStart = currentSegmentDetails[0];
-  const segmentEnd = currentSegmentDetails[1];
-  let currentSearchIndex = currentSegmentDetails[2];
+    // If the current range contains only one element, add its value to the total sum.
+    if (rangeStart === rangeEnd) {
+        totalValue += Number(inputArray[rangeStart]);
+        continue; // Move to the next range in the queue.
+    }
 
-  // If the segment contains only one element, add its value directly
-  if (segmentStart === segmentEnd) {
-    totalAggregatedValue += Number(numericValuesAsStrings[segmentStart]);
-    continue; // Move to the next iteration
-  }
+    // Find the actual index of the smallest element within the current [rangeStart, rangeEnd].
+    // We iterate through positionMap (which is sorted by value) until we find an element
+    // whose original index falls within the current range.
+    while (positionMap[currentMinSearchIdx] < rangeStart || positionMap[currentMinSearchIdx] > rangeEnd) {
+        currentMinSearchIdx++;
+    }
+    const pivotIndex = positionMap[currentMinSearchIdx]; // This is the index of the minimum element in the current range.
 
-  // Find the smallest element (by its value, which is its index in `elementPositions`)
-  // that falls within the current segment's boundaries.
-  while (
-    elementPositions[currentSearchIndex] < segmentStart ||
-    elementPositions[currentSearchIndex] > segmentEnd
-  ) {
-    currentSearchIndex++; // Increment search index until a valid element is found
-  }
+    // Calculate the contribution of this minimum element to the total sum.
+    // The minimum element contributes to all sub-arrays where it is the minimum.
+    // The number of such sub-arrays is (number of possible left boundaries) * (number of possible right boundaries).
+    // (pivotIndex - rangeStart + 1) is the count of valid left boundaries.
+    // (rangeEnd - pivotIndex + 1) is the count of valid right boundaries.
+    totalValue += Number(inputArray[pivotIndex]) * (pivotIndex - rangeStart + 1) * (rangeEnd - pivotIndex + 1);
 
-  // The actual position of the found smallest element in the original array
-  const pivotElementPosition = elementPositions[currentSearchIndex];
+    // If there is a sub-range to the left of the pivot element, add it to the queue.
+    // The search for the minimum in this new sub-range can start from currentMinSearchIdx + 1,
+    // as the current minimum has already been processed.
+    if (rangeStart <= pivotIndex - 1) {
+        processingQueue.push([rangeStart, pivotIndex - 1, currentMinSearchIdx + 1]);
+    }
 
-  // Calculate the contribution of this element to the total sum
-  // This is the element's value multiplied by the number of subarrays it's the minimum of
-  totalAggregatedValue +=
-    Number(numericValuesAsStrings[pivotElementPosition]) *
-    (pivotElementPosition - segmentStart + 1) *
-    (segmentEnd - pivotElementPosition + 1);
-
-  // Enqueue the left sub-segment if it exists
-  if (segmentStart <= pivotElementPosition - 1) {
-    processingQueue.push([segmentStart, pivotElementPosition - 1, currentSearchIndex + 1]);
-  }
-
-  // Enqueue the right sub-segment if it exists
-  if (pivotElementPosition + 1 <= segmentEnd) {
-    processingQueue.push([pivotElementPosition + 1, segmentEnd, currentSearchIndex + 1]);
-  }
+    // If there is a sub-range to the right of the pivot element, add it to the queue.
+    // Similarly, the minimum search index is incremented.
+    if (pivotIndex + 1 <= rangeEnd) {
+        processingQueue.push([pivotIndex + 1, rangeEnd, currentMinSearchIdx + 1]);
+    }
 }
 
-// Output the final calculated total aggregated value
-console.log(totalAggregatedValue);
+// Output the final calculated total sum to standard output.
+console.log(totalValue);

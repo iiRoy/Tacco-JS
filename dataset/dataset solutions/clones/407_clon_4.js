@@ -1,46 +1,43 @@
-let entireInputBuffer = '';
+const fileSystem = require('fs');
 
-let cachedSequenceData = [];
+const sourceData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const numericEntries = sourceData
+    .trim()
+    .split('\n')
+    .map(val => Number(val))
+    .filter(val => val !== 0);
 
-const initialSequenceElements = [1, 2, 4];
+const sequenceMemo = new Map();
 
-const maximumSequenceIndex = 30;
+const obtainSequenceValue = (termIndex) => {
+    if (sequenceMemo.has(termIndex)) {
+        return sequenceMemo.get(termIndex);
+    }
 
-const generateRecurrentSequence = (limit) => {
-    const sequenceContainer = Array.from({ length: limit + 1 }, (_, currentPosition) => {
-        if (currentPosition === 0) return initialSequenceElements[0];
-        if (currentPosition === 1) return initialSequenceElements[1];
-        if (currentPosition === 2) return initialSequenceElements[2];
-        return sequenceContainer[currentPosition - 1] + sequenceContainer[currentPosition - 2] + sequenceContainer[currentPosition - 3];
-    });
-    return sequenceContainer;
+    let calculatedValue;
+    if (termIndex === 0) {
+        calculatedValue = 1;
+    } else if (termIndex === 1) {
+        calculatedValue = 2;
+    } else if (termIndex === 2) {
+        calculatedValue = 4;
+    } else {
+        calculatedValue = obtainSequenceValue(termIndex - 1) +
+                          obtainSequenceValue(termIndex - 2) +
+                          obtainSequenceValue(termIndex - 3);
+    }
+
+    sequenceMemo.set(termIndex, calculatedValue);
+    return calculatedValue;
 };
 
-cachedSequenceData = generateRecurrentSequence(maximumSequenceIndex);
+for (let idx = 0; idx <= 31; idx++) {
+    obtainSequenceValue(idx);
+}
 
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', (dataChunk) => {
-    entireInputBuffer += dataChunk;
-});
-
-process.stdin.on('end', () => {
-    const numericQueries = entireInputBuffer
-        .trim()
-        .split('\n')
-        .filter(lineContent => lineContent !== '')
-        .map(numericString => Number(numericString))
-        .filter(valueToProcess => valueToProcess !== 0);
-
-    const divisorForFinalResult = 3650;
-
-    numericQueries.forEach(currentQuery => {
-        const targetIndex = currentQuery - 1;
-
-        const retrievedSequenceValue = cachedSequenceData[targetIndex];
-
-        const finalComputedResult = Math.ceil(retrievedSequenceValue / divisorForFinalResult);
-
-        process.stdout.write(finalComputedResult + '\n');
-    });
+numericEntries.forEach(entryValue => {
+    const targetSequenceIndex = entryValue - 1;
+    const sequenceTerm = sequenceMemo.get(targetSequenceIndex);
+    const finalResult = Math.ceil(sequenceTerm / 3650);
+    console.log(finalResult);
 });

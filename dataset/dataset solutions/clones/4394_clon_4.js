@@ -1,21 +1,14 @@
-(function() {
-    const dataAcquisition = () => {
-        return require("fs").readFileSync("/dev/stdin", "utf8");
-    };
+const processInput = (rawText) => {
+  const numericValues = rawText.split(' ').map(parseFloat);
+  const targetValue = numericValues[0];
+  const firstCandidate = numericValues[1];
+  const secondCandidate = numericValues[2];
 
-    const parseNumericalSequence = (textualData) => {
-        return textualData.trim().split(' ').map(parseFloat);
-    };
+  const distanceSqA = (targetValue - firstCandidate) ** 2;
+  const distanceSqB = (targetValue - secondCandidate) ** 2;
 
-    const [focalValue, referencePointOne, referencePointTwo] = parseNumericalSequence(dataAcquisition());
+  const resultChar = distanceSqA > distanceSqB ? 'B' : 'A';
+  console.log(resultChar);
+};
 
-    const separationFactor = referencePointTwo - referencePointOne;
-    const proximityIndicator = (2 * focalValue) - (referencePointOne + referencePointTwo);
-    const comparativeResult = separationFactor * proximityIndicator;
-
-    if (comparativeResult > 0) {
-        process.stdout.write('B\n');
-    } else {
-        process.stdout.write('A\n');
-    }
-})();
+processInput(require("node:fs").readFileSync("/dev/stdin", "utf8"));

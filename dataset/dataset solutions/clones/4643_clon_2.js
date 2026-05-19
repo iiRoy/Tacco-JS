@@ -1,27 +1,29 @@
-// This routine examines a sequence of three numerical inputs to determine if they constitute an arithmetic progression.
-function AssessProgression ( rawStringData ) {
+function ProcessInput( rawData ) {
+    // This function takes a string of numbers, splits them,
+    // and determines if they form an arithmetic progression.
 
-  // The incoming string is segmented into its constituent parts using space as a delimiter.
-  const componentStrings = rawStringData.split( ' ' );
+    // Split the incoming string by spaces to get an array of string representations of numbers.
+    let parsedData = rawData.split(' ');
 
-  // Each string segment is then converted into its numerical representation.
-  const firstElement  = Number( componentStrings[0] );
-  const secondElement = Number( componentStrings[1] );
-  const thirdElement  = Number( componentStrings[2] );
+    // Convert the string elements to actual numerical values.
+    // The first number in the sequence.
+    const firstVal = Number(parsedData[0]);
+    // The second number in the sequence.
+    const secondVal = Number(parsedData[1]);
+    // The third number in the sequence.
+    const thirdVal = Number(parsedData[2]);
 
-  // A conditional check is performed to verify if the common difference holds true across the sequence.
-  if ( ( secondElement - firstElement ) === ( thirdElement - secondElement ) )
-  {
-    // Should the condition be met, affirming an arithmetic progression, a positive response is logged.
-    console.log( 'YES' );
-  }
-  else
-  {
-    // Conversely, if the common difference is not consistent, a negative response is logged.
-    console.log( 'NO' );
-  }
+    // Check if the common difference between the numbers is consistent.
+    // An arithmetic progression has a constant difference between consecutive terms.
+    if (secondVal - firstVal === thirdVal - secondVal) {
+        // If the differences are equal, it's an arithmetic progression.
+        console.log('YES');
+    } else {
+        // Otherwise, it is not an arithmetic progression.
+        console.log('NO');
+    }
+}
 
-} // End of the AssessProgression function.
-
-// The primary function is invoked, supplying it with data asynchronously read from the system's input stream.
-AssessProgression( require('node:fs').readFileSync().toString() );
+// Read the entire content from standard input (or a file, depending on environment)
+// and then pass it to our main processing function.
+ProcessInput( require('fs').readFileSync() );

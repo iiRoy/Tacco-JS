@@ -1,41 +1,22 @@
 'use strict';
-// This self-executing function processes some numerical input.
-( function( rawDataStream )
-  {
-    // First, clean up the incoming data string.
-    // Trim any leading/trailing whitespace, then split it by any sequence of spaces,
-    // and finally convert each resulting string part into a numerical value.
-    let parsedNumbersArray = rawDataStream
-                              .trim()
-                              .split( /\s+/ )
-                              .map( val => val - 0 );
 
-    // Extract the primary numerical components from the parsed array.
-    let firstNumericalComponent  = parsedNumbersArray[ 0 ],
-        secondNumericalComponent = parsedNumbersArray[ 1 ];
+// This immediately invoked function processes input data.
+(function(rawData) {
+  // Clean up the raw input: trim whitespace, split by any whitespace,
+  // and convert each resulting string part to a numeric value.
+  rawData = rawData.trim().split(/\s+/).map(val => val - 0);
 
-    // Calculate a specific portion to be subtracted based on conditional logic.
-    // This involves checking if certain products or individual values are negative.
-    let quantityToSubtract = ( secondNumericalComponent * ( secondNumericalComponent + firstNumericalComponent - 1 ) < 0 )
-                             ? 0
-                             : ( secondNumericalComponent < 0 )
-                               ? ( secondNumericalComponent + firstNumericalComponent - 1 )
-                               : secondNumericalComponent;
+  // Extract the first two numeric values into distinct variables.
+  let count = rawData[0]; // Represents N from the original problem.
+  let startVal = rawData[1]; // Represents L from the original problem.
 
-    // Perform the final computation and display the rounded result to the console.
-    // The main formula calculates a sum based on an arithmetic progression,
-    // then subtracts the previously determined quantity.
-    console.log
-    (
-      Math.round
-      (
-        firstNumericalComponent * ( 2 * secondNumericalComponent + firstNumericalComponent - 1 ) / 2
-        -
-        quantityToSubtract
-      )
-    );
+  // Determine the 'eaten' value based on a conditional logic.
+  // This logic checks specific conditions involving 'startVal' and 'count'.
+  let removedItem = (startVal * (startVal + count - 1) < 0) ? 0 : (startVal < 0) ? (startVal + count - 1) : startVal;
 
-  }
-)
+  // Calculate the final result using a specific arithmetic formula
+  // and then print the rounded value to the console.
+  console.log(Math.round(count * (2 * startVal + count - 1) / 2 - removedItem));
+
 // The function is immediately invoked with data read from standard input.
-( require('fs').readFileSync('/dev/stdin','utf8') );
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

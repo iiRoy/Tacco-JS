@@ -1,15 +1,17 @@
-((sourceData) => {
-    const parsedValues = sourceData.trim().split('\n').map(Number);
-    const elementCount = parsedValues.shift();
-    const valueSequence = parsedValues.slice(0, elementCount);
+(function(sourceData) {
+    const parsedEntries = sourceData.split('\n').map(Number);
+    const elementCount = parsedEntries.shift();
+    const targetSequence = parsedEntries.slice(0, elementCount);
 
-    const ultimateResult = valueSequence.reduce((historicalMetrics, currentMeasure) => {
-        const potentialImprovement = currentMeasure - historicalMetrics.minimumObservation;
-        const currentOptimalYield = Math.max(historicalMetrics.optimalYield, potentialImprovement);
-        const newMinimumObservation = Math.min(historicalMetrics.minimumObservation, currentMeasure);
+    let peakSpread = -Infinity;
+    let lowestPointEncountered = Infinity;
 
-        return { minimumObservation: newMinimumObservation, optimalYield: currentOptimalYield };
-    }, { minimumObservation: Number.POSITIVE_INFINITY, optimalYield: Number.NEGATIVE_INFINITY });
+    for (let currentIdx = 0; currentIdx < targetSequence.length; currentIdx++) {
+        const presentValue = targetSequence[currentIdx];
 
-    console.log(ultimateResult.optimalYield);
-})(require('node:fs').readFileSync('/dev/stdin', 'utf8'));
+        peakSpread = Math.max(peakSpread, presentValue - lowestPointEncountered);
+        lowestPointEncountered = Math.min(lowestPointEncountered, presentValue);
+    }
+
+    console.log(peakSpread);
+})(require('fs').readFileSync('/dev/stdin', 'utf8'));

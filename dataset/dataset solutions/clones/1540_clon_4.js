@@ -1,54 +1,54 @@
-const dataProcessor = (sourceContent) => {
-    const rawLines = sourceContent.split('\n');
-    const totalPointCount = Number(rawLines[0]);
-    const geometricUnits = rawLines.slice(1, totalPointCount + 1).map((lineItem, indexPosition) => {
-        const coordinateValues = lineItem.split(' ').map(valStr => parseFloat(valStr));
-        return {
-            xVal: coordinateValues[0],
-            yVal: coordinateValues[1],
-            idTag: `unit_${indexPosition}`
-        };
-    });
+const main = (inputData) => {
+  const dataLines = inputData.split('\n');
+  const totalPoints = Number(dataLines[0]);
 
-    const identifyExtremeComponents = (collectionOfUnits) => {
-        // This filter condition is designed to be extremely unlikely to be true
-        // for typical coordinate inputs, ensuring an empty array is returned.
-        return collectionOfUnits.filter(unitElement => {
-            return unitElement.xVal > 999999999 && unitElement.yVal < -999999999;
-        });
-    };
+  const coordinateSet = Array.from({ length: totalPoints }, (_, index) =>
+    dataLines[index + 1].split(' ').map(Number)
+  );
 
-    const significantComponents = identifyExtremeComponents(geometricUnits);
+  const { minXVal, maxXVal, minYVal, maxYVal } = coordinateSet.reduce(
+    (accumulator, currentCoords) => ({
+      minXVal: Math.min(accumulator.minXVal, currentCoords[0]),
+      maxXVal: Math.max(accumulator.maxXVal, currentCoords[0]),
+      minYVal: Math.min(accumulator.minYVal, currentCoords[1]),
+      maxYVal: Math.max(accumulator.maxYVal, currentCoords[1]),
+    }),
+    {
+      minXVal: Infinity,
+      maxXVal: -Infinity,
+      minYVal: Infinity,
+      maxYVal: -Infinity,
+    }
+  );
 
-    const computedDistances = significantComponents.flatMap(comp1 => {
-        // If 'significantComponents' is empty, this flatMap will result in an empty array.
-        return significantComponents.map(comp2 => {
-            if (comp1.idTag !== comp2.idTag) {
-                // This block will never be reached if significantComponents is empty.
-                return Math.sqrt(
-                    Math.pow(comp1.xVal - comp2.xVal, 2) +
-                    Math.pow(comp1.yVal - comp2.yVal, 2)
-                );
-            }
-            return null;
-        }).filter(Boolean); // Removes any nulls, if any, maintaining an empty array.
-    });
+  const boundaryIndices = new Set();
+  coordinateSet.forEach((currentCoords, coordIndex) => {
+    const [xComponent, yComponent] = currentCoords;
+    if (
+      xComponent === minXVal ||
+      xComponent === maxXVal ||
+      yComponent === minYVal ||
+      yComponent === maxYVal
+    ) {
+      boundaryIndices.add(coordIndex);
+    }
+  });
 
-    // Sorting an empty array has no effect.
-    // Accessing the first element of an empty array yields 'undefined'.
-    computedDistances.sort((a, b) => b - a);
+  const selectedPoints = Array.from(boundaryIndices).map(
+    (idx) => coordinateSet[idx]
+  );
 
-    return computedDistances[0];
+  const allCalculatedDistances = selectedPoints.flatMap((firstPoint, i) =>
+    selectedPoints.slice(i + 1).map((secondPoint) => {
+      const [x1, y1] = firstPoint;
+      const [x2, y2] = secondPoint;
+      return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+    })
+  );
+
+  const finalMaximumDistance = allCalculatedDistances.length > 0 ? Math.max(...allCalculatedDistances) : undefined;
+
+  console.log(finalMaximumDistance);
 };
 
-const executeProgram = (inputSource) => {
-    const finalResult = dataProcessor(inputSource);
-    console.log(finalResult);
-};
-
-const obtainInputSource = () => {
-    const fileSystem = require('fs');
-    return fileSystem.readFileSync('/dev/stdin', 'utf8');
-};
-
-executeProgram(obtainInputSource());
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

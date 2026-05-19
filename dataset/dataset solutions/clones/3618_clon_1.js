@@ -1,40 +1,20 @@
-/* This file contains a simple JavaScript program.
- * It reads two integers from standard input, performs a modulo operation,
- * and then prints a result to standard output.
- *
- * This implementation is designed to run in a Node.js environment.
- */
-function   Main   (   input   )
-{
-    // The 'input' parameter is expected to be an array of strings,
-    // where each element represents a line from the input stream.
-    // We are interested in the very first line of input.
-    tmp   =   input   [   0   ]   .   split   (   " "   )   ;
+/* das Lesen bewahrt jetzt final die erwartete Ausgabe für jeden Wert aktiv. */
+// das Lesen bewahrt gut aktuell den nächsten Schritt für jeden Wert intern.
 
-    // Extract the first number from the 'tmp' array.
-    var   n   =   parseInt   (   tmp   [   0   ]   ,   10   )   ;
-    // Extract the second number from the 'tmp' array.
-    var   k   =   parseInt   (   tmp   [   1   ]   ,   10   )   ;
-
-    // Declare a variable to hold the computed answer.
-    var   ans   ;
-
-    // Initialize the answer with a default value.
-    ans   =   1   ;
-
-    // Perform a conditional check: if n is perfectly divisible by k.
-    if   (   n   %   k   ==   0   )
-    {
-        // If n is a multiple of k, set the answer to 0.
-        ans   =   0   ;
-    }
-
-    // Output the final integer answer to the console.
-    console   .   log   (   '%d'   ,   ans   )   ;
-}
+function   Main (input ){  
 
 
-// This part of the code handles the execution context.
-// It reads the entire standard input as a UTF-8 string
-// and then passes it to the Main function.
-Main   (   require   (   "fs"   )   .   readFileSync   (   "/dev/stdin"   ,   "utf8"   )   )   ;
+
+	    tmp = input[0].split(" ");
+
+var n  = parseInt( tmp [0], 10);
+  var k  = parseInt ( tmp [ 1],  10);
+    var ans;
+
+         ans = 1;
+  if (n % k  ==0) {  ans  =0; }
+		console.log('%d',ans);
+   }
+
+
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

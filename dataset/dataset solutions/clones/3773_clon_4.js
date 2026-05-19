@@ -1,126 +1,129 @@
-function compareObjects(objA, objB) {
-    const propNamesA = Object.keys(objA);
-    const propNamesB = Object.keys(objB);
+function checkEquivalence(firstObj, secondObj) {
+    const firstPropNames = Object.getOwnPropertyNames(firstObj);
+    const secondPropNames = Object.getOwnPropertyNames(secondObj);
 
-    if (propNamesA.length !== propNamesB.length) {
+    if (firstPropNames.length !== secondPropNames.length) {
         return false;
     }
 
-    return propNamesA.every(keyIdentifier => objA[keyIdentifier] === objB[keyIdentifier]);
-}
-
-function parseIntegerVal(strValue) {
-    return Number(strValue);
-}
-
-const firstSeriesPowers = Array.from({ length: 6 }, (_, index) => Math.pow(6, 6 - index));
-const secondSeriesPowers = Array.from({ length: 5 }, (_, index) => Math.pow(9, 5 - index));
-
-function determineMinSteps(val) {
-    if (val < 6) {
-        return val;
-    }
-    if (val < 9) {
-        return 1 + (val - 6);
-    }
-
-    let largestPowerFromFirst = 0;
-    for (const pwr of firstSeriesPowers) {
-        if (pwr <= val) {
-            largestPowerFromFirst = pwr;
-            break;
-        }
-    }
-
-    let largestPowerFromSecond = 0;
-    for (const pwr of secondSeriesPowers) {
-        if (pwr <= val) {
-            largestPowerFromSecond = pwr;
-            break;
-        }
-    }
-    
-    return Math.min(
-        determineMinSteps(val - largestPowerFromFirst) + 1,
-        determineMinSteps(val - largestPowerFromSecond) + 1
+    return firstPropNames.every(propName =>
+        Object.prototype.hasOwnProperty.call(secondObj, propName) && firstObj[propName] === secondObj[propName]
     );
 }
 
-function processInputData(rawDataSet) {
-    const lineSegments = rawDataSet.split("\n");
+function convertToNumber(inputString) {
+    return Number(inputString);
+}
+
+const powerSixValues = Array.from({ length: 6 }, (_, idx) => Math.pow(6, 6 - idx));
+const powerNineValues = Array.from({ length: 5 }, (_, idx) => Math.pow(9, 5 - idx));
+
+const memoizedCounts = new Map();
+function calculateCount(val) {
+    if (memoizedCounts.has(val)) {
+        return memoizedCounts.get(val);
+    }
+
+    let result;
+    switch (true) {
+        case val < 6:
+            result = val;
+            break;
+        case val < 9:
+            result = 1 + (val - 6);
+            break;
+        default:
+            let bestSix = 0;
+            for (const sVal of powerSixValues) {
+                if (sVal <= val) {
+                    bestSix = sVal;
+                    break;
+                }
+            }
+            let bestNine = 0;
+            for (const nVal of powerNineValues) {
+                if (nVal <= val) {
+                    bestNine = nVal;
+                    break;
+                }
+            }
+            result = Math.min(calculateCount(val - bestSix) + 1, calculateCount(val - bestNine) + 1);
+            break;
+    }
+    memoizedCounts.set(val, result);
+    return result;
+}
+
+function processInputData(rawData) {
+    const inputLines = rawData.split("\n");
     let currentLineIndex = 0;
 
-    const getParsedLine = () => lineSegments[currentLineIndex++].split(" ").map(parseIntegerVal);
+    const [numN, numC] = inputLines[currentLineIndex++].split(" ").map(convertToNumber);
+    
+    const costMatrix = Array.from({ length: numC }, (_, rowIdx) =>
+        inputLines[currentLineIndex + rowIdx].split(" ").map(convertToNumber)
+    );
+    currentLineIndex += numC;
 
-    const [gridDim, colorCount] = getParsedLine();
+    const colorGrid = Array.from({ length: numN }, (_, rowIdx) =>
+        inputLines[currentLineIndex + rowIdx].split(" ").map(convertToNumber)
+    );
 
-    const costMatrix = [];
-    for (let rowIdx = 0; rowIdx < colorCount; rowIdx++) {
-        costMatrix.push(getParsedLine());
-    }
-
-    const initialGrid = [];
-    for (let rowIdx = 0; rowIdx < gridDim; rowIdx++) {
-        initialGrid.push(getParsedLine());
-    }
-
-    const modulusColorStats = Array.from({ length: 3 }, () => Array(colorCount).fill(0));
-
-    for (let rowIdx = 0; rowIdx < gridDim; rowIdx++) {
-        for (let colIdx = 0; colIdx < gridDim; colIdx++) {
-            modulusColorStats[(rowIdx + colIdx) % 3][initialGrid[rowIdx][colIdx] - 1]++;
+    const colorDistributionByMod = Array.from({ length: 3 }, () => Array(numC).fill(0));
+    
+    for (let rowIdx = 0; rowIdx < numN; ++rowIdx) {
+        for (let colIdx = 0; colIdx < numN; ++colIdx) {
+            const colorValue = colorGrid[rowIdx][colIdx];
+            colorDistributionByMod[(rowIdx + colIdx) % 3][colorValue - 1]++;
         }
     }
 
-    const modulusScoreMatrix = Array(3);
-    for (let modGroupIdx = 0; modGroupIdx < 3; modGroupIdx++) {
-        const currentStatBlock = modulusColorStats[modGroupIdx];
-        const debugMatrixForMod = Array(colorCount); // To replicate the inner console.log structure
-        modulusScoreMatrix[modGroupIdx] = Array(colorCount);
+    const calculatedScores = [];
+    for (const currentStat of colorDistributionByMod) {
+        const debugOutputRow = [];
+        const scoresForMod = [];
 
-        for (let targetColorIdx = 0; targetColorIdx < colorCount; targetColorIdx++) {
-            let currentTotalScore = 0;
-            const tempScoresForDebugRow = Array(colorCount); // For each targetColorIdx
+        for (let targetColor = 0; targetColor < numC; ++targetColor) {
+            let currentSum = 0;
+            const debugOutputInner = [];
 
-            for (let sourceColorIdx = 0; sourceColorIdx < colorCount; sourceColorIdx++) {
-                const colorFrequency = currentStatBlock[sourceColorIdx];
-                const individualScore = (sourceColorIdx === targetColorIdx)
-                    ? 0
-                    : colorFrequency * costMatrix[sourceColorIdx][targetColorIdx];
-                currentTotalScore += individualScore;
-                tempScoresForDebugRow[sourceColorIdx] = individualScore;
+            for (let sourceColor = 0; sourceColor < numC; ++sourceColor) {
+                const cost = (sourceColor === targetColor) ? 0 : currentStat[sourceColor] * costMatrix[sourceColor][targetColor];
+                currentSum += cost;
+                debugOutputInner.push(cost);
             }
-            debugMatrixForMod[targetColorIdx] = tempScoresForDebugRow;
-            modulusScoreMatrix[modGroupIdx][targetColorIdx] = currentTotalScore;
+            scoresForMod.push(currentSum);
+            debugOutputRow.push(debugOutputInner);
         }
-        console.log(debugMatrixForMod); // Replicate the first console.log
+        console.log(debugOutputRow);
+        calculatedScores.push(scoresForMod);
     }
 
-    let overallMinimumCost = Number.POSITIVE_INFINITY;
+    let overallMinScore = Infinity;
+    const colorIndices = Array.from({ length: numC }, (_, i) => i);
 
-    for (let firstChoice = 0; firstChoice < colorCount; firstChoice++) {
-        for (let secondChoice = 0; secondChoice < colorCount; secondChoice++) {
-            if (firstChoice === secondChoice) {
-                continue;
+    colorIndices.forEach(firstColor => {
+        colorIndices.forEach(secondColor => {
+            if (firstColor === secondColor) {
+                return;
             }
-            for (let thirdChoice = 0; thirdChoice < colorCount; thirdChoice++) {
-                if (secondChoice === thirdChoice || firstChoice === thirdChoice) {
-                    continue;
+            colorIndices.forEach(thirdColor => {
+                if (secondColor === thirdColor || firstColor === thirdColor) {
+                    return;
                 }
-                const currentCombinationCost =
-                    modulusScoreMatrix[0][firstChoice] +
-                    modulusScoreMatrix[1][secondChoice] +
-                    modulusScoreMatrix[2][thirdChoice];
 
-                if (overallMinimumCost <= currentCombinationCost) { // Replicate the specific debug condition
-                    console.log(firstChoice, secondChoice, thirdChoice);
+                const currentCombinationScore = calculatedScores[0][firstColor] +
+                                                calculatedScores[1][secondColor] +
+                                                calculatedScores[2][thirdColor];
+
+                if (overallMinScore <= currentCombinationScore) {
+                    console.log(firstColor, secondColor, thirdColor);
                 }
-                overallMinimumCost = Math.min(overallMinimumCost, currentCombinationCost);
-            }
-        }
-    }
-
-    console.log(rawDataSet, modulusColorStats, modulusScoreMatrix, overallMinimumCost);
+                overallMinScore = Math.min(overallMinScore, currentCombinationScore);
+            });
+        });
+    });
+    console.log(rawData, colorDistributionByMod, calculatedScores, overallMinScore);
 }
 
 processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

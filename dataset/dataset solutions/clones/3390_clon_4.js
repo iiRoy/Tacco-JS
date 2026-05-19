@@ -1,15 +1,23 @@
-const calculateDisplacements = (stoneArrangement) => {
-  let presentBlueCount = 0;
-  const finalMovementTally = Array.from(stoneArrangement).reduce((cumulativeSwaps, individualStone) => {
-    if (individualStone === 'B') {
-      presentBlueCount++;
-    } else { // individualStone === 'W'
-      cumulativeSwaps += presentBlueCount;
+const processSequence = sequenceData => {
+  let totalWhiteChars = 0;
+  for (const char of sequenceData) {
+    if (char === 'W') {
+      totalWhiteChars++;
     }
-    return cumulativeSwaps;
-  }, 0);
+  }
 
-  console.log(finalMovementTally);
+  let cumulativeDisplacements = 0;
+  let currentWhiteCharsToRight = totalWhiteChars;
+
+  for (const char of sequenceData) {
+    if (char === 'W') {
+      currentWhiteCharsToRight--;
+    } else if (char === 'B') {
+      cumulativeDisplacements += currentWhiteCharsToRight;
+    }
+  }
+
+  console.log(cumulativeDisplacements);
 };
 
-calculateDisplacements(require("fs").readFileSync("/dev/stdin", "utf8"));
+processSequence(require("fs").readFileSync("/dev/stdin", "utf8"));

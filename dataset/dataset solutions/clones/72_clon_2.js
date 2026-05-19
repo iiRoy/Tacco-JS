@@ -1,15 +1,11 @@
-const characterSequence = 'abcdefghijklmnopqrstuvwxyz' ;
-
-require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )
-  . split ( '\n' )
-  . map ( ( currentLineItem ) => {
-    for ( let charShift = 26 ; charShift-- ; ) {
-      let resultString = currentLineItem . replace ( /[a-z]/g , ( matchedChar ) => {
-        return characterSequence [ ( characterSequence . indexOf ( matchedChar ) + charShift ) % 26 ] ;
-      } ) ;
-
-      resultString . match ( /th(e|is|at)/ )
-        ? console . log ( resultString )
-        : undefined ;
+const alphabetString = 'abcdefghijklmnopqrstuvwxyz';
+require('fs').readFileSync('/dev/stdin', 'utf8').split('\n').map(function (inputLine) {
+  for (let shiftValue = 25; shiftValue >= 0; shiftValue--) {
+    let decryptedText = inputLine.replace(/[a-z]/g, function (currentChar) {
+      return alphabetString[(alphabetString.indexOf(currentChar) + shiftValue) % 26];
+    });
+    if (decryptedText.match(/th(e|is|at)/)) {
+      console.log(decryptedText);
     }
-  } ) ;
+  }
+});

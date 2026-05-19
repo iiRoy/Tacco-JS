@@ -1,78 +1,81 @@
-function ProcessInput( dataString ) {
-    // Parse the incoming string to extract two numerical dimensions
-    let [ firstDimension, secondDimension ] = dataString.split( " " ).map( Number );
+function ProcessInput(rawData) {
+    // Parse the two numerical dimensions from the provided input string.
+    let [dimA, dimB] = rawData.split(" ").map(Number);
 
-    // Initialize the smallest observed difference to the maximum possible safe integer value
+    // Initialize a variable to store the smallest difference found, setting it to the maximum possible safe integer.
     let minimumDifference = Number.MAX_SAFE_INTEGER;
 
-    { // Calculation block 1: Split the first dimension with floor, then split the remainder of the second dimension
-        let valueArray = [ 0, 0, 0 ]; // Array to store the areas of three sections
-        valueArray[0] = Math.floor( firstDimension / 3 ) * secondDimension; // Area of the first large section
-        let partialDimension = Math.ceil( firstDimension / 3 * 2 ); // Remaining length after the first cut
-        valueArray[1] = partialDimension * Math.ceil( secondDimension / 2 ); // Area of the second section
-        valueArray[2] = partialDimension * Math.floor( secondDimension / 2 ); // Area of the third section
-
-        // Update the minimum difference between max and min areas among the three sections
-        minimumDifference = Math.min( minimumDifference, Math.max.apply( null, valueArray ) - Math.min.apply( null, valueArray ) );
+    // First computational path: Consider splitting the first dimension (dimA) into one-third and two-thirds.
+    {
+        // Create an array to hold the areas of the three resulting sections.
+        let areaParts = [0, 0, 0];
+        // Calculate the area of the first section: floor(dimA / 3) * dimB.
+        areaParts[0] = Math.floor(dimA / 3) * dimB;
+        // Determine the remaining dimension for the other two sections.
+        let intermediateDimension = Math.ceil(dimA / 3 * 2);
+        // Split the remaining area by dividing the second dimension (dimB) in half.
+        areaParts[1] = intermediateDimension * Math.ceil(dimB / 2);
+        areaParts[2] = intermediateDimension * Math.floor(dimB / 2);
+        // Update the minimum difference by comparing with the difference between the max and min areas in this configuration.
+        minimumDifference = Math.min(minimumDifference, Math.max.apply(null, areaParts) - Math.min.apply(null, areaParts));
     }
 
-    { // Calculation block 2: Split the first dimension with ceil, then split the remainder of the second dimension
-        let valueArray = [ 0, 0, 0 ]; // Array for current area calculations
-        valueArray[0] = Math.ceil( firstDimension / 3 ) * secondDimension; // First section area
-        let partialDimension = Math.floor( firstDimension / 3 * 2 ); // Remaining length
-        valueArray[1] = partialDimension * Math.ceil( secondDimension / 2 ); // Second section area
-        valueArray[2] = partialDimension * Math.floor( secondDimension / 2 ); // Third section area
-
-        // Update the minimum difference if this configuration yields a smaller one
-        minimumDifference = Math.min( minimumDifference, Math.max.apply( null, valueArray ) - Math.min.apply( null, valueArray ) );
+    // Second computational path: Similar to the first, but with different rounding for the initial split of dimA.
+    {
+        let areaParts = [0, 0, 0];
+        areaParts[0] = Math.ceil(dimA / 3) * dimB;
+        let intermediateDimension = Math.floor(dimA / 3 * 2);
+        areaParts[1] = intermediateDimension * Math.ceil(dimB / 2);
+        areaParts[2] = intermediateDimension * Math.floor(dimB / 2);
+        minimumDifference = Math.min(minimumDifference, Math.max.apply(null, areaParts) - Math.min.apply(null, areaParts));
     }
 
-    // Temporarily swap the dimensions to simulate a 90-degree rotation of the area
-    firstDimension = secondDimension + ( secondDimension = firstDimension, 0 );
+    // Swap the values of dimA and dimB to simulate rotating the cutting orientation.
+    dimA = dimB + (dimB = dimA, 0);
 
-    { // Calculation block 3: Repeat split strategy 1 with the swapped dimensions
-        let valueArray = [ 0, 0, 0 ];
-        valueArray[0] = Math.floor( firstDimension / 3 ) * secondDimension;
-        let partialDimension = Math.ceil( firstDimension / 3 * 2 );
-        valueArray[1] = partialDimension * Math.ceil( secondDimension / 2 );
-        valueArray[2] = partialDimension * Math.floor( secondDimension / 2 );
-
-        // Re-evaluate and potentially update the minimum difference
-        minimumDifference = Math.min( minimumDifference, Math.max.apply( null, valueArray ) - Math.min.apply( null, valueArray ) );
+    // Third computational path: Re-evaluate the first scenario with the swapped dimensions.
+    {
+        let areaParts = [0, 0, 0];
+        areaParts[0] = Math.floor(dimA / 3) * dimB;
+        let intermediateDimension = Math.ceil(dimA / 3 * 2);
+        areaParts[1] = intermediateDimension * Math.ceil(dimB / 2);
+        areaParts[2] = intermediateDimension * Math.floor(dimB / 2);
+        minimumDifference = Math.min(minimumDifference, Math.max.apply(null, areaParts) - Math.min.apply(null, areaParts));
     }
 
-    { // Calculation block 4: Repeat split strategy 2 with the swapped dimensions
-        let valueArray = [ 0, 0, 0 ];
-        valueArray[0] = Math.ceil( firstDimension / 3 ) * secondDimension;
-        let partialDimension = Math.floor( firstDimension / 3 * 2 );
-        valueArray[1] = partialDimension * Math.ceil( secondDimension / 2 );
-        valueArray[2] = partialDimension * Math.floor( secondDimension / 2 );
-
-        // Final update to the minimum difference from these calculations
-        minimumDifference = Math.min( minimumDifference, Math.max.apply( null, valueArray ) - Math.min.apply( null, valueArray ) );
+    // Fourth computational path: Re-evaluate the second scenario with the swapped dimensions.
+    {
+        let areaParts = [0, 0, 0];
+        areaParts[0] = Math.ceil(dimA / 3) * dimB;
+        let intermediateDimension = Math.floor(dimA / 3 * 2);
+        areaParts[1] = intermediateDimension * Math.ceil(dimB / 2);
+        areaParts[2] = intermediateDimension * Math.floor(dimB / 2);
+        minimumDifference = Math.min(minimumDifference, Math.max.apply(null, areaParts) - Math.min.apply(null, areaParts));
     }
 
-    { // Special case check: If the first dimension is perfectly divisible by 3
-        if ( firstDimension % 3 === 0 ) {
-            minimumDifference = 0; // The difference can be zero in this scenario
+    // Check for a special case: if dimA is perfectly divisible by 3, the difference can be zero.
+    // Otherwise, consider dimB as a potential minimum difference.
+    {
+        if (dimA % 3 === 0) {
+            minimumDifference = 0;
         } else {
-            // Otherwise, compare the current minimum difference with the value of the second dimension
-            minimumDifference = Math.min( minimumDifference, secondDimension );
+            minimumDifference = Math.min(minimumDifference, dimB);
         }
     }
 
-    { // Another special case check: If the second dimension is perfectly divisible by 3
-        if ( secondDimension % 3 === 0 ) {
-            minimumDifference = 0; // The difference can be zero
+    // Check for another special case: if dimB is perfectly divisible by 3, the difference can be zero.
+    // Otherwise, consider dimA as a potential minimum difference.
+    {
+        if (dimB % 3 === 0) {
+            minimumDifference = 0;
         } else {
-            // Otherwise, compare the current minimum difference with the value of the first dimension
-            minimumDifference = Math.min( minimumDifference, firstDimension );
+            minimumDifference = Math.min(minimumDifference, dimA);
         }
     }
 
-    // Output the final calculated minimum difference
-    console.log( minimumDifference );
+    // Print the final calculated minimum difference to the console.
+    console.log(minimumDifference);
 }
 
-// Invoke the main processing function with input read from standard input
-ProcessInput( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ).trim() );
+// Read the input from standard input, remove leading/trailing whitespace, and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

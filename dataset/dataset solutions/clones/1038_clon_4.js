@@ -1,22 +1,17 @@
-const processAndEvaluate = (dataStream) => {
-  const allInputRows = dataStream.trim().split('\n');
-
-  const primaryCollection = new Set(allInputRows[1].split(' ').map(Number));
-
-  const secondaryElements = allInputRows[3].split(' ').map(Number);
-
-  const checkPresenceInSet = (valueToFind) => {
-    return primaryCollection.has(valueToFind) ? 1 : 0;
-  };
-
-  const totalOccurrences = secondaryElements.reduce((accumulator, currentElement) => {
-    return accumulator + checkPresenceInSet(currentElement);
-  }, 0);
-
-  return totalOccurrences;
+var checkPresence = (targetValue, dataStore) => {
+  return dataStore.has(targetValue);
 };
 
-((sourceReader) => {
-  const resultValue = processAndEvaluate(sourceReader);
-  console.log(resultValue);
+(function(inputReader) {
+  let inputLines = (inputReader.trim()).split('\n');
+  let sourceNumbers = inputLines[1].split(" ").map(Number);
+  let queryNumbers = inputLines[3].split(" ").map(Number);
+
+  const searchSet = new Set(sourceNumbers);
+
+  const matchCount = queryNumbers.reduce((accumulator, currentKey) => {
+    return accumulator + (checkPresence(currentKey, searchSet) ? 1 : 0);
+  }, 0);
+
+  console.log(matchCount);
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

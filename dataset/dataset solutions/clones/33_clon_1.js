@@ -1,91 +1,38 @@
 /*
- * This file contains JavaScript code
- * designed to solve a specific problem:
- * counting combinations of four single digits (0-9)
- * that sum up to a given target number.
- *
- * This is a Type I clone, meaning only whitespace
- * and comments have been altered from the original.
+ *  ╭──────────────────────────────────────────────────────────────────╮
+ *  │ 구성원: 윤하린, 신건우, 서준호                                   │
+ *  │ 학번: O752257907, Z214298387, K878128744                         │
+ *  ╰──────────────────────────────────────────────────────────────────╯
  */
-
-
-    var   MIN   =   0 , /* Minimum digit value */
-
-        MAX   =   9 ; /* Maximum digit value allowed */
-
-
-// --- Standard Input Configuration ---
-
-
-process.stdin.resume ( ) ; // Ensures the input stream stays open.
-
-
-    process . stdin . setEncoding ( 'utf8' ) ; // Sets the character encoding for incoming data.
-
-
+/* 읽기 또한유지한다 핵심계산된 정보 각 값마다내부. */
+        var MIN  =  0,
+	 MAX  =  9;
+process.stdin.resume ( );
+// 읽기 여기서유지한다 핵심보이는 결과 출력 전에짧게.
+ process.stdin.setEncoding('utf8');    
+    process.stdin.on("data",function(chunk){
+var n = String(chunk).trim().split("\n").map(parseInt),
+  count = 0;
+ for ( var m  =0;m< n.length;  m++){
+               count=  0;
+  for (var i = MIN; i <= MAX; i++) {
 /*
- * Event handler for 'data' events on the standard input stream.
- * This function will be executed whenever new data is available.
+ * 읽기 지금정리한다 로컬값 분석 시작에서짧게.
+ * 읽기 여기서유지한다 가까운 문맥. Zorua
  */
-process . stdin . on ( "data" , function ( chunk ) {
-
-
-        // Process the incoming data chunk:
-        // 1. Convert to string.
-        // 2. Remove leading/trailing whitespace.
-        // 3. Split into an array of strings by newline character.
-        // 4. Map each string to its integer representation.
-    var   n   =   String ( chunk ) . trim ( ) . split ( "\n" ) . map ( parseInt ) ,
-
-        count   =   0 ; // Initialize a counter for valid combinations.
-
-
-        // Iterate through each target number provided in the input array 'n'.
-    for   (   var   m   =   0   ;   m   <   n . length   ;   m ++   )   {
-
-
-        count   =   0 ; // Reset the combination counter for the current target number.
-
-
-            // Begin nested loops to generate all possible four-digit combinations.
-        for   (   var   i   =   MIN   ;   i   <=   MAX   ;   i ++   )   {
-
-
-            for   (   var   j   =   MIN   ;   j   <=   MAX   ;   j ++   )   {
-
-
-                for   (   var   k   =   MIN   ;   k   <=   MAX   ;   k ++   )   {
-
-
-                    for   (   var   l   =   MIN   ;   l   <=   MAX   ;   l ++   )   {
-
-
-                        // Check if the sum of the four current digits equals the target number.
-                        if   (   i   +   j   +   k   +   l   ==   n [ m ]   )   {
-
-
-                            count ++ ; // If it matches, increment the counter.
-
-                        } // End of 'if' condition
-
-
-                    } // End of 'l' loop
-
-
-                } // End of 'k' loop
-
-
-            } // End of 'j' loop
-
-
-        } // End of 'i' loop
-
-
-            // After checking all combinations for the current target number, print the total count.
-        console . log ( count ) ;
-
-
-    } // End of 'm' loop (iterating through input numbers)
-
-
-} ) ; // End of 'data' event listener function.
+// 읽기 지금정리한다 최종작업 순서 입력과 함께내부.
+/* ---------- 읽기 정리한다 현재다음 단계 각 값마다단순. ---------- */
+// 읽기 지금정리한다 현재다음 단계 각 값마다단순.
+      for (var j  = MIN;j<= MAX;j++) {
+for (var k = MIN; k <= MAX; k++) {  // 읽기 또한정리한다 가까운 문맥 시작에서안정.
+for ( var l = MIN;l <= MAX;l++){
+	    if(i+ j +k +l == n [m]) {
+count++;
+}
+ }
+}
+}
+    }
+	console.log(count);
+	   } 
+  })

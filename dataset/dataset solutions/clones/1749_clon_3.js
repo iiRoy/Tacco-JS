@@ -1,41 +1,44 @@
 const fileSystem = require('fs');
+const STDIN_FILE_PATH = '/dev/stdin';
+const ZERO_INITIAL_SUM = 0;
 
-const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const rawInputData = fileSystem.readFileSync(STDIN_FILE_PATH, 'utf8');
+let inputLines = rawInputData.split('\n');
 
-let inputLineSegments = rawInputData.split('\n');
+const initialArrayLength = Number(inputLines.shift());
+let currentDataArray = inputLines.shift().split(' ').map(val => Number(val));
+const numberOfQueries = Number(inputLines.shift());
+inputLines.pop();
 
-const initialArrayDimension = Number.parseInt(inputLineSegments.shift(), 10);
+const sumReducer = (currentTotal, element) => currentTotal + element;
 
-let primaryNumericCollection = inputLineSegments.shift().split(' ').map(str => Number.parseInt(str, 10));
-
-const totalOperationCount = Number.parseInt(inputLineSegments.shift(), 10);
-
-if (inputLineSegments.length > 0 && inputLineSegments[inputLineSegments.length - 1] === '') {
-    inputLineSegments.pop();
+function extractQueryValues(queryLineString) {
+    const parts = queryLineString.split(' ');
+    const targetValue = parseInt(parts[0], 10);
+    const replacementValue = parseInt(parts[1], 10);
+    return { targetValue, replacementValue };
 }
 
-const aggregateValues = (currentAccumulator, currentValue) => currentAccumulator + currentValue;
+let runningSum = ZERO_INITIAL_SUM;
 
-let valueFrequencyMap = new Map();
-for (const num of primaryNumericCollection) {
-    valueFrequencyMap.set(num, (valueFrequencyMap.get(num) || 0) + 1);
-}
+for (let queryIteration = 0; queryIteration < numberOfQueries; queryIteration++) {
+    const { targetValue, replacementValue } = extractQueryValues(inputLines[queryIteration]);
 
-let currentOverallSum = primaryNumericCollection.reduce(aggregateValues, 0);
+    const targetValueIndex = currentDataArray.indexOf(targetValue);
+    const isTargetValueFound = targetValueIndex !== -1;
 
-for (let operationIndex = 0; operationIndex < totalOperationCount; operationIndex++) {
-    const operationParameters = inputLineSegments[operationIndex].split(' ');
-    const targetValueToReplace = Number.parseInt(operationParameters[0], 10);
-    const replacementValue = Number.parseInt(operationParameters[1], 10);
-
-    if (valueFrequencyMap.has(targetValueToReplace)) {
-        const occurrencesOfTarget = valueFrequencyMap.get(targetValueToReplace);
-
-        currentOverallSum = currentOverallSum - (occurrencesOfTarget * targetValueToReplace) + (occurrencesOfTarget * replacementValue);
-
-        valueFrequencyMap.delete(targetValueToReplace);
-        valueFrequencyMap.set(replacementValue, (valueFrequencyMap.get(replacementValue) || 0) + occurrencesOfTarget);
+    if (runningSum > ZERO_INITIAL_SUM && !isTargetValueFound) {
+        console.log(runningSum);
+        continue;
     }
-    
-    console.log(currentOverallSum);
+
+    const mapReplacement = (element) => {
+        return (element === targetValue) ? replacementValue : element;
+    };
+
+    currentDataArray = currentDataArray.map(mapReplacement);
+
+    runningSum = currentDataArray.reduce(sumReducer, ZERO_INITIAL_SUM);
+
+    console.log(runningSum);
 }

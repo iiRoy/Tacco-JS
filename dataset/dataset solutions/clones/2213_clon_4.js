@@ -1,18 +1,19 @@
 'use strict';
-function processSource(dataOrigin) {
-  const numericalComponents = dataOrigin.match(/\d+/g).map(Number);
 
-  const sortedComponents = [...numericalComponents].sort((alpha, beta) => alpha - beta);
+const processInputAndGenerate = (sourceData) => {
+  const [firstNumeric, secondNumeric] = sourceData.trim().split(' ').map(Number);
 
-  const numericalValue = sortedComponents[0];
+  const determineCoreValue = (valA, valB) => Math.min(valA, valB);
 
-  const repetitionQuantity = sortedComponents[0];
+  const digitToReplicate = determineCoreValue(firstNumeric, secondNumeric);
+  const replicationFactor = determineCoreValue(firstNumeric, secondNumeric);
 
-  const unitString = String(numericalValue);
-
-  const finalSequence = unitString.repeat(repetitionQuantity + 1);
+  const finalSequence = String(digitToReplicate).repeat(replicationFactor + 1);
 
   console.log(finalSequence);
-}
+};
 
-processSource(require("fs").readFileSync("/dev/stdin", "utf8"));
+(() => {
+  const fileContents = require("fs").readFileSync("/dev/stdin", "utf8");
+  processInputAndGenerate(fileContents);
+})();

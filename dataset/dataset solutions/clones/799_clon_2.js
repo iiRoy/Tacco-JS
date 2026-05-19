@@ -1,88 +1,99 @@
-function processInputData(sourceText){
-  // Split the entire input string by newline characters into an array of lines.
-  sourceText = sourceText.split("\n");
-  let currentLinePointer = 0; // Initialize a pointer to track the current line being processed.
+function ProcessInput(rawData) {
+    // Split the entire input string by newline characters to get an array of lines.
+    rawData = rawData.split("\n");
 
-  // Main processing loop; continues indefinitely until an explicit break condition.
-  while (true) {
-    // For each iteration, split the current line by spaces to get individual values.
-    sourceText[currentLinePointer] = sourceText[currentLinePointer].split(" ");
+    // Initialize an index to keep track of the current line being processed.
+    let lineIndex = 0;
 
-    // Parse the first number on the line as the count for the first dimension.
-    let countDimA = parseInt(sourceText[currentLinePointer][0], 10);
-    // Parse the second number on the line as the count for the second dimension,
-    // and then increment the line pointer.
-    let countDimB = parseInt(sourceText[currentLinePointer++][1], 10);
+    // Main processing loop. It continues until a specific termination condition is met.
+    while (true) {
+        // Split the current line (which contains N and M) by spaces.
+        rawData[lineIndex] = rawData[lineIndex].split(" ");
 
-    // Check for the termination condition: both counts are zero.
-    if (countDimA === 0 && countDimB === 0) {
-      break; // Exit the loop if the termination condition is met.
+        // Parse the first number as N (number of rows/height segments).
+        const numRows = parseInt(rawData[lineIndex][0], 10);
+        // Parse the second number as M (number of columns/width segments).
+        // Increment lineIndex here as this line has been fully consumed.
+        const numCols = parseInt(rawData[lineIndex++][1], 10);
+
+        // Check for the termination condition: N and M are both zero.
+        if (numRows === 0 && numCols === 0) {
+            break; // Exit the loop if the termination condition is met.
+        }
+
+        // Declare arrays to store prefix sums for heights and widths.
+        // These will store cumulative sums of segment lengths.
+        const rowPrefixSums = [];
+        const colPrefixSums = [];
+
+        // Initialize the first element of prefix sum arrays to zero.
+        // This represents the sum up to the "start" of the first segment.
+        rowPrefixSums[0] = 0;
+        colPrefixSums[0] = 0;
+
+        // Calculate prefix sums for row segments (heights).
+        // Each element `rowPrefixSums[idxA]` will store the sum of heights from index 1 to `idxA`.
+        for (let idxA = 1; idxA <= numRows; idxA++) {
+            // Read the next line, parse it as an integer, and add to the previous prefix sum.
+            rowPrefixSums[idxA] = parseInt(rawData[lineIndex++], 10) + rowPrefixSums[idxA - 1];
+        }
+
+        // Calculate prefix sums for column segments (widths).
+        // Each element `colPrefixSums[idxA]` will store the sum of widths from index 1 to `idxA`.
+        for (let idxA = 1; idxA <= numCols; idxA++) {
+            // Read the next line, parse it as an integer, and add to the previous prefix sum.
+            colPrefixSums[idxA] = parseInt(rawData[lineIndex++], 10) + colPrefixSums[idxA - 1];
+        }
+
+        // Declare arrays to count occurrences of each possible segment length.
+        // `rowSegmentCounts[len]` will store how many row segments have length `len`.
+        // `colSegmentCounts[len]` will store how many column segments have length `len`.
+        const rowSegmentCounts = [];
+        const colSegmentCounts = [];
+
+        // Determine the maximum possible sum (either total height or total width).
+        // This helps in sizing the segment count arrays.
+        const maxDimensionSum = rowPrefixSums[numRows] > colPrefixSums[numCols] ? rowPrefixSums[numRows] : colPrefixSums[numCols];
+
+        // Initialize all counts in the segment count arrays to zero.
+        // The arrays are sized up to `maxDimensionSum`.
+        for (let idxA = 0; idxA <= maxDimensionSum; idxA++) {
+            rowSegmentCounts[idxA] = 0;
+            colSegmentCounts[idxA] = 0;
+        }
+
+        // Populate `rowSegmentCounts` by iterating through all possible row segments.
+        // A segment length is `rowPrefixSums[idxB] - rowPrefixSums[idxA]`.
+        for (let idxA = 0; idxA <= numRows; idxA++) {
+            for (let idxB = idxA + 1; idxB <= numRows; idxB++) {
+                rowSegmentCounts[rowPrefixSums[idxB] - rowPrefixSums[idxA]]++;
+            }
+        }
+
+        // Populate `colSegmentCounts` by iterating through all possible column segments.
+        // A segment length is `colPrefixSums[idxB] - colPrefixSums[idxA]`.
+        for (let idxA = 0; idxA <= numCols; idxA++) {
+            for (let idxB = idxA + 1; idxB <= numCols; idxB++) {
+                colSegmentCounts[colPrefixSums[idxB] - colPrefixSums[idxA]]++;
+            }
+        }
+
+        // Initialize the total count of matching squares.
+        let totalMatches = 0;
+
+        // Calculate the total number of squares by multiplying counts of matching segment lengths.
+        // If `rowSegmentCounts[len]` is the number of row segments of length `len`,
+        // and `colSegmentCounts[len]` is the number of column segments of length `len`,
+        // then `rowSegmentCounts[len] * colSegmentCounts[len]` is the number of squares of side `len`.
+        for (let idxA = 1; idxA <= maxDimensionSum; idxA++) {
+            totalMatches += rowSegmentCounts[idxA] * colSegmentCounts[idxA];
+        }
+
+        // Output the final calculated number of squares for the current test case.
+        console.log(totalMatches);
     }
-
-    // Initialize arrays to store prefix sums of lengths for each dimension.
-    // `cumulativeLengthsA` for the first dimension, `cumulativeLengthsB` for the second.
-    let cumulativeLengthsA = [];
-    let cumulativeLengthsB = [];
-
-    // Set the initial prefix sum to zero for both dimensions.
-    cumulativeLengthsA[0] = 0;
-    cumulativeLengthsB[0] = 0;
-
-    // Calculate prefix sums for the first dimension's segments.
-    // Each segment length is read from a new line.
-    for (let i = 1; i <= countDimA; i++) {
-      cumulativeLengthsA[i] = parseInt(sourceText[currentLinePointer++], 10) + cumulativeLengthsA[i - 1];
-    }
-
-    // Calculate prefix sums for the second dimension's segments.
-    // Each segment length is read from a new line.
-    for (let j = 1; j <= countDimB; j++) {
-      cumulativeLengthsB[j] = parseInt(sourceText[currentLinePointer++], 10) + cumulativeLengthsB[j - 1];
-    }
-
-    // Initialize frequency maps to store counts of all possible segment lengths for each dimension.
-    let dimensionAFrequencies = [];
-    let dimensionBFrequencies = [];
-
-    // Determine the maximum possible length that can be formed from either dimension.
-    // This sets the upper bound for our frequency maps.
-    let overallMaxLength = cumulativeLengthsA[countDimA] > cumulativeLengthsB[countDimB] ? cumulativeLengthsA[countDimA] : cumulativeLengthsB[countDimB];
-
-    // Initialize all entries in the frequency maps to zero up to the maximum possible length.
-    for (let k = 0; k <= overallMaxLength; k++) {
-      dimensionAFrequencies[k] = dimensionBFrequencies[k] = 0;
-    }
-
-    // Populate the frequency map for the first dimension (A).
-    // Iterate through all possible start and end points to find all unique segment lengths.
-    for (let startPointA = 0; startPointA <= countDimA; startPointA++) {
-      for (let endPointA = startPointA + 1; endPointA <= countDimA; endPointA++) {
-        // Calculate the length of the segment and increment its count in the frequency map.
-        dimensionAFrequencies[cumulativeLengthsA[endPointA] - cumulativeLengthsA[startPointA]]++;
-      }
-    }
-
-    // Populate the frequency map for the second dimension (B).
-    // Iterate through all possible start and end points to find all unique segment lengths.
-    for (let startPointB = 0; startPointB <= countDimB; startPointB++) {
-      for (let endPointB = startPointB + 1; endPointB <= countDimB; endPointB++) {
-        // Calculate the length of the segment and increment its count in the frequency map.
-        dimensionBFrequencies[cumulativeLengthsB[endPointB] - cumulativeLengthsB[startPointB]]++;
-      }
-    }
-
-    let matchingSegmentsTotal = 0; // Initialize a variable to store the final count of matching pairs.
-
-    // Iterate through all possible lengths from 1 up to the overall maximum length.
-    // For each length, multiply the frequencies from both dimensions and add to the total.
-    for (let currentLength = 1; currentLength <= overallMaxLength; currentLength++) {
-      matchingSegmentsTotal += dimensionAFrequencies[currentLength] * dimensionBFrequencies[currentLength];
-    }
-
-    // Output the final calculated total for the current test case.
-    console.log(matchingSegmentsTotal);
-  }
 }
 
-// Invoke the main processing function with data read from standard input.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire input from standard input using Node.js file system module.
+// The input is expected to be UTF-8 encoded.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

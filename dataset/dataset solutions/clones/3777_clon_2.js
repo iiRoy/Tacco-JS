@@ -1,47 +1,52 @@
-"use strict";
+"use strict"; // Enforce strict parsing and error handling.
 
-/*
- * This module is designed to process a numeric input,
- * extracting its individual digits and then performing
- * a specific summation, with a conditional modification
- * to the final computed value.
- */
-const computeSumOfDigits = ( initialInput ) => {
-  // Determine the total number of character positions in the input's string form.
-  const characterCount = initialInput.toString().length;
+const processInput = (inputValue) => {
+  // Determine the number of characters in the string representation of the input.
+  const numChars = inputValue.toString().length;
 
-  // Convert the initial string input into an integer.
-  // Note: This corrects a potential bug in the original source where `parseInt`
-  // might have been called with an undefined variable.
-  let numericValue = parseInt( initialInput, 10 );
+  // Initialize a numeric variable.
+  // IMPORTANT: The original code contains a bug here where 'input' (which is 'currentNum' in this clone)
+  // is used before it's assigned a meaningful value from 'inputValue'.
+  // This results in `parseInt(undefined, 10)` which evaluates to `NaN`.
+  // This exact behavior, including the bug, is preserved as per Type II cloning rules.
+  let currentNum = parseInt(currentNum, 10);
 
-  // Establish a power of ten to help isolate the most significant digit.
-  let digitExtractor = Math.pow( 10, characterCount - 1 );
-  // Initialize a collection to hold each extracted digit.
-  let collectedDigits = [ ];
-  
-  // Iterate through each character position to decompose the number into its digits.
-  for ( let positionIndex = 0; positionIndex < characterCount; positionIndex++ ) {
-  	// Append the current leading digit to our collection.
-  	collectedDigits.push( Math.floor( numericValue / digitExtractor ) );
-  	// Update the numeric value by removing the digit that was just processed.
-  	numericValue = numericValue % digitExtractor;
-  	// Adjust the digit extractor for the next, less significant, digit.
-  	digitExtractor /= 10;
-  }
-  
-  // Calculate the total by summing all the digits in the collection.
-  let finalCalculatedSum = collectedDigits.reduce( ( runningTotal, currentElement ) => runningTotal + currentElement );
-  
-  // Apply a specific rule: if the sum is exactly one, transform it to ten.
-  if ( finalCalculatedSum === 1 ) {
-    finalCalculatedSum = 10;
+  // Calculate the initial divisor for extracting the most significant digit.
+  // For example, if there are 3 characters, the initial divider will be 10^(3-1) = 100.
+  let divider = Math.pow(10, numChars - 1);
+
+  // An array to store the individual digits extracted from the number.
+  let digitArray = [];
+
+  // Loop through each position to extract and store digits.
+  for (let idx = 0; idx < numChars; idx++) {
+    // Add the current most significant digit to the array.
+    // Due to the bug mentioned above, 'currentNum' is NaN, so 'NaN / divider' is NaN,
+    // and 'Math.floor(NaN)' is also NaN. Thus, NaN is pushed repeatedly.
+    digitArray.push(Math.floor(currentNum / divider));
+
+    // Update the number by taking the remainder, effectively removing the extracted digit.
+    // 'NaN % divider' also results in NaN, preserving the NaN state of 'currentNum'.
+    currentNum = currentNum % divider;
+
+    // Reduce the divider by a factor of 10 for the next digit extraction.
+    divider /= 10;
   }
 
-  // Output the final result to the console.
-  console.log( finalCalculatedSum );
+  // Calculate the sum of all extracted digits.
+  // Since 'digitArray' contains only NaNs, their sum will also be NaN.
+  let finalSum = digitArray.reduce((accumulator, currentValue) => accumulator + currentValue);
 
-}; // End of the computeSumOfDigits function definition.
+  // Apply a special condition: if the sum is 1, change it to 10.
+  // This condition will never be met if 'finalSum' is NaN.
+  if (finalSum == 1) {
+    finalSum = 10;
+  }
 
-// Retrieve the input from standard input, then trigger the digit processing routine.
-computeSumOfDigits( require( 'fs' ).readFileSync( '/dev/stdin', 'utf8' ) );
+  // Output the final computed sum to the console.
+  console.log(finalSum);
+};
+
+// Read the entire content from standard input as a UTF-8 string,
+// then pass it to the main processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

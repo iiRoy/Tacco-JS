@@ -1,46 +1,42 @@
-/*
- *  This script initiates a combat simulation between two distinct entities.
- *  It processes input data to determine the outcome of their engagement.
- */
-function executeBattleSimulation(battleScenarioData) {
-    // The input string is tokenized by spaces to extract critical combat statistics.
-    const combatantStatistics = battleScenarioData.split(' ');
+function processGame(gameData) {
+  // Split the input string by spaces to get individual data points
+  const dataParts = gameData.split(' ');
 
-    // Initialize the primary combatant's (protagonist's) vital statistics.
-    let protagonistHealthPoints = parseInt(combatantStatistics[0], 10); // Current health
-    let protagonistAttackPower = parseInt(combatantStatistics[1], 10);  // Damage per turn
+  // Parse initial health and attack values for two combatants
+  // Combatant A (formerly Takagi)
+  var playerAHealth = parseInt(dataParts[0], 10);
+  var playerAAttack = parseInt(dataParts[1], 10);
 
-    // Initialize the opposing combatant's (antagonist's) vital statistics.
-    let antagonistHealthPoints = parseInt(combatantStatistics[2], 10);  // Current health
-    let antagonistAttackPower = parseInt(combatantStatistics[3], 10);   // Damage per turn
+  // Combatant B (formerly Aoki)
+  var playerBHealth = parseInt(dataParts[2], 10);
+  var playerBAttack = parseInt(dataParts[3], 10);
 
-    // The combat proceeds in turns until one participant's health drops to zero or below.
-    while (protagonistHealthPoints > 0 && antagonistHealthPoints > 0) {
-        // Antagonist receives damage from the protagonist's strike.
-        antagonistHealthPoints -= protagonistAttackPower;
-        // Evaluate if the antagonist has been incapacitated.
-        if (antagonistHealthPoints <= 0) {
-            break; // Terminate the battle; antagonist defeated.
-        }
-
-        // Protagonist endures damage from the antagonist's retaliatory strike.
-        protagonistHealthPoints -= antagonistAttackPower;
-        // Evaluate if the protagonist has been incapacitated.
-        if (protagonistHealthPoints <= 0) {
-            break; // Terminate the battle; protagonist defeated.
-        }
+  // Simulate a turn-based battle until one combatant's health drops to zero or below
+  while (playerAHealth > 0 && playerBHealth > 0) {
+    // Combatant A attacks Combatant B
+    playerBHealth -= playerAAttack;
+    // Check if Combatant B is defeated
+    if (playerBHealth <= 0) {
+      break; // End the battle
     }
 
-    // Announce the result of the engagement based on the final health statuses.
-    if (antagonistHealthPoints <= 0) {
-        console.log('Yes'); // Output indicating the protagonist's victory.
-    } else {
-        console.log('No');  // Output indicating the protagonist's defeat.
+    // Combatant B attacks Combatant A
+    playerAHealth -= playerBAttack;
+    // Check if Combatant A is defeated
+    if (playerAHealth <= 0) {
+      break; // End the battle
     }
+  }
+
+  // Determine the winner based on remaining health
+  if (playerBHealth <= 0) {
+    // If Combatant B's health is zero or less, Combatant A wins
+    console.log('Yes');
+  } else {
+    // Otherwise, Combatant B wins (Combatant A's health is zero or less)
+    console.log('No');
+  }
 }
 
-// Invoke the battle simulation by reading battle parameters from standard input.
-executeBattleSimulation(
-    require('fs')
-        .readFileSync('/proc/self/fd/0', 'utf-8')
-);
+// Read input from standard input and pass it to the game processing function
+processGame(require('fs').readFileSync('/dev/stdin', 'utf8'));

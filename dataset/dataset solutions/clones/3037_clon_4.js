@@ -1,92 +1,81 @@
-function obtainRelevantRow(textualData) {
-  const trimmedInput = textualData.trim();
-  const lineCollection = trimmedInput.split('\n');
-  if (lineCollection.length < 2) {
-    return '';
-  }
-  return lineCollection[1];
-}
+'use strict'
 
-function locateAlternatingSequence(sourceString) {
-  let currentDiscovery = null;
+function extractAndCount(sourceString) {
+  let currentSegment = '';
+  let hashSequenceLength = 0;
+  let dotSequenceLength = 0;
+  let expectingHashBlock = true; // True if we are looking for a '#' sequence, false if looking for a '.' sequence
+  let patternEstablished = false; // True once at least one complete '#+.+' block has been found
 
-  for (let idx = 0; idx < sourceString.length; ++idx) {
-    if (sourceString.charAt(idx) !== '#') {
-      if (currentDiscovery === null) continue;
-      else break;
-    }
+  for (let charIndex = 0; charIndex < sourceString.length; charIndex++) {
+    const currentChar = sourceString[charIndex];
 
-    let potentialSequence = '';
-    let phase = 0; // 0: expecting '#', 1: in '#' block, 2: in '.' block
-    let observedHash = false;
-    let observedDot = false;
-
-    for (let subIdx = idx; subIdx < sourceString.length; ++subIdx) {
-      const char = sourceString.charAt(subIdx);
-
-      if (phase === 0) {
-        if (char === '#') {
-          potentialSequence += '#';
-          observedHash = true;
-          phase = 1;
-        } else {
-          break;
+    if (expectingHashBlock) {
+      if (currentChar === '#') {
+        hashSequenceLength++;
+        currentSegment += currentChar;
+      } else if (hashSequenceLength > 0) { // Hash block ended, now expect a dot block
+        expectingHashBlock = false;
+        dotSequenceLength = 0; // Reset dot count for the new block
+        if (currentChar === '.') {
+          dotSequenceLength++;
+          currentSegment += currentChar;
+        } else { // Pattern broken by non-#, non-. char, or a '.' when not expected after a hash block
+          if (patternEstablished) { // If we already had a valid '#+.+' sequence, stop and use it
+            break;
+          } else { // No valid pattern yet, reset and continue searching for a new pattern start
+            currentSegment = '';
+            hashSequenceLength = 0;
+            dotSequenceLength = 0;
+            expectingHashBlock = true;
+          }
         }
-      } else if (phase === 1) {
-        if (char === '#') {
-          potentialSequence += '#';
-        } else if (char === '.') {
-          potentialSequence += '.';
-          observedDot = true;
-          phase = 2;
-        } else {
-          break;
+      } else { // Not expecting hash, and char is not hash, and no hash count yet. Reset.
+        currentSegment = '';
+        hashSequenceLength = 0;
+        dotSequenceLength = 0;
+        expectingHashBlock = true;
+      }
+    } else { // Expecting dot block
+      if (currentChar === '.') {
+        dotSequenceLength++;
+        currentSegment += currentChar;
+      } else if (dotSequenceLength > 0) { // Dot block ended, now expect a hash block
+        patternEstablished = true; // We've completed at least one '#+.+' block
+        expectingHashBlock = true;
+        hashSequenceLength = 0; // Reset hash count for the new block
+        if (currentChar === '#') {
+          hashSequenceLength++;
+          currentSegment += currentChar;
+        } else { // Pattern broken by non-#, non-. char, or a '#' when not expected after a dot block
+          break; // Keep current segment, it's a valid match
         }
-      } else if (phase === 2) {
-        if (char === '.') {
-          potentialSequence += '.';
-        } else if (char === '#') {
-          potentialSequence += '#';
-          phase = 1;
-        } else {
-          break;
-        }
+      } else { // Not expecting dot, and char is not dot, and no dot count yet. Reset.
+        currentSegment = '';
+        hashSequenceLength = 0;
+        dotSequenceLength = 0;
+        expectingHashBlock = true;
       }
     }
-
-    if (observedHash && observedDot) {
-      currentDiscovery = potentialSequence;
-      break;
-    }
-  }
-  return currentDiscovery;
-}
-
-function tallyCharacterOccurrences(phrase, targetSymbol) {
-  if (!phrase) return 0;
-  let currentCount = 0;
-  for (let k = 0; k < phrase.length; ++k) {
-    if (phrase.charAt(k) === targetSymbol) {
-      currentCount++;
-    }
-  }
-  return currentCount;
-}
-
-function executeAnalysis(fullInputData) {
-  const pertinentRow = obtainRelevantRow(fullInputData);
-  const identifiedSegment = locateAlternatingSequence(pertinentRow);
-
-  let periodCount = 0;
-  let hashCount = 0;
-
-  if (identifiedSegment) {
-    periodCount = tallyCharacterOccurrences(identifiedSegment, '.');
-    hashCount = identifiedSegment.length - periodCount;
   }
 
-  console.log(Math.min(periodCount, hashCount));
+  // Final check after the loop to ensure a complete '#+.+' pattern was established
+  if (!patternEstablished && !(hashSequenceLength > 0 && dotSequenceLength > 0 && !expectingHashBlock)) {
+    return { white: 0, black: 0 };
+  }
+
+  // Count characters in the extracted segment
+  const dotCharacters = currentSegment.split('').filter(c => c === '.');
+  const finalDotCount = dotCharacters.length;
+  const finalHashCount = currentSegment.length - finalDotCount;
+
+  return { white: finalDotCount, black: finalHashCount };
 }
 
-const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
-executeAnalysis(rawInput);
+function main(inputData) {
+  const lines = inputData.trim().split('\n');
+  const counts = extractAndCount(lines[1]);
+  console.log(Math.min(counts.white, counts.black));
+}
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

@@ -1,87 +1,79 @@
-class Coordinate {
-  constructor(abscissaValue, ordinateValue) {
-    this.abscissa = abscissaValue;
-    this.ordinate = ordinateValue;
+class Coord {
+  constructor(xVal, yVal) {
+    this.coordX = xVal;
+    this.coordY = yVal;
   }
 
-  outputPosition() {
-    console.log(this.abscissa.toFixed(7) + ' ' + this.ordinate.toFixed(7));
+  getFormattedCoords() {
+    return this.coordX.toFixed(8) + ' ' + this.coordY.toFixed(8);
   }
 
-  static createScaled(origin, deltaX, deltaY, scaleFactor) {
-    return new Coordinate(
-      origin.abscissa + deltaX * scaleFactor,
-      origin.ordinate + deltaY * scaleFactor
-    );
+  display() {
+    console.log(this.getFormattedCoords());
   }
-}
 
-const ANGLE_RADIANS = 60 * Math.PI / 180;
-const SINE_VAL = Math.sin(ANGLE_RADIANS);
-const COSINE_VAL = Math.cos(ANGLE_RADIANS);
-const FRACTION_ONE_THIRD = 1.0 / 3.0;
-
-function obtainRecursionDepth() {
-  try {
-    const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-    const parsedDepth = Number(rawInput);
-    if (isNaN(parsedDepth) || parsedDepth < 0) {
-      console.error("Warning: Invalid recursion depth detected. Using default of 0.");
-      return 0;
-    }
-    return parsedDepth;
-  } catch (error) {
-    console.error("Error reading input, defaulting recursion depth to 0:", error.message);
-    return 0;
+  static create(x, y) {
+    return new Coord(x, y);
   }
 }
 
-function initializeFractalProcess() {
-  const recursionLevel = obtainRecursionDepth();
-
-  let startPoint = new Coordinate(0, 0);
-  let endPoint = new Coordinate(100, 0);
-
-  startPoint.outputPosition();
-
-  generateKochSegment(recursionLevel, startPoint, endPoint);
-
-  endPoint.outputPosition();
+function readInputLevel() {
+  return Number(require('fs').readFileSync('/dev/stdin', 'utf8').trim());
 }
 
-function generateKochSegment(currentLevel, startVertex, endVertex) {
-  function subdivideAndRotate(level, pA, pB) {
-    if (level <= 0) {
+function generateKock(currentLevel, segmentStart, segmentEnd) {
+  const localSineVal = Math.sin(60 * Math.PI / 180);
+  const localCosineVal = Math.cos(60 * Math.PI / 180);
+
+  function recursiveKockStep(currentLevel, segmentStart, segmentEnd) {
+    if (currentLevel === 0) {
       return;
     }
 
-    const deltaX = pB.abscissa - pA.abscissa;
-    const deltaY = pB.ordinate - pA.ordinate;
+    const ONE_THIRD_FACTOR = 1 / 3;
 
-    let intermediateA = Coordinate.createScaled(pA, deltaX, deltaY, FRACTION_ONE_THIRD);
-    let intermediateB = Coordinate.createScaled(pA, deltaX, deltaY, 2 * FRACTION_ONE_THIRD);
+    const deltaX = segmentEnd.coordX - segmentStart.coordX;
+    const deltaY = segmentEnd.coordY - segmentStart.coordY;
 
-    const vec_st_x = intermediateB.abscissa - intermediateA.abscissa;
-    const vec_st_y = intermediateB.ordinate - intermediateA.ordinate;
-
-    const rotated_vec_x = vec_st_x * COSINE_VAL - vec_st_y * SINE_VAL;
-    const rotated_vec_y = vec_st_x * SINE_VAL + vec_st_y * COSINE_VAL;
-
-    let rotatedVertex = new Coordinate(
-      intermediateA.abscissa + rotated_vec_x,
-      intermediateA.ordinate + rotated_vec_y
+    const seg1End = Coord.create(
+      segmentStart.coordX + deltaX * ONE_THIRD_FACTOR,
+      segmentStart.coordY + deltaY * ONE_THIRD_FACTOR
     );
-    
-    subdivideAndRotate(level - 1, pA, intermediateA);
-    intermediateA.outputPosition();
-    subdivideAndRotate(level - 1, intermediateA, rotatedVertex);
-    rotatedVertex.outputPosition();
-    subdivideAndRotate(level - 1, rotatedVertex, intermediateB);
-    intermediateB.outputPosition();
-    subdivideAndRotate(level - 1, intermediateB, pB);
+
+    const seg2End = Coord.create(
+      segmentStart.coordX + deltaX * (2 * ONE_THIRD_FACTOR),
+      segmentStart.coordY + deltaY * (2 * ONE_THIRD_FACTOR)
+    );
+
+    const vectorXComponent = seg2End.coordX - seg1End.coordX;
+    const vectorYComponent = seg2End.coordY - seg1End.coordY;
+
+    const rotatedVectorX = vectorXComponent * localCosineVal - vectorYComponent * localSineVal;
+    const rotatedVectorY = vectorXComponent * localSineVal + vectorYComponent * localCosineVal;
+
+    const peakPt = Coord.create(
+      seg1End.coordX + rotatedVectorX,
+      seg1End.coordY + rotatedVectorY
+    );
+
+    recursiveKockStep(currentLevel - 1, segmentStart, seg1End);
+    seg1End.display();
+    recursiveKockStep(currentLevel - 1, seg1End, peakPt);
+    peakPt.display();
+    recursiveKockStep(currentLevel - 1, peakPt, seg2End);
+    seg2End.display();
+    recursiveKockStep(currentLevel - 1, seg2End, segmentEnd);
   }
 
-  subdivideAndRotate(currentLevel, startVertex, endVertex);
+  generateKock = recursiveKockStep;
+  generateKock(currentLevel, segmentStart, segmentEnd);
 }
 
-initializeFractalProcess();
+(function executeFractal() {
+  const fractalLevel = readInputLevel();
+  let initialStart = Coord.create(0, 0);
+  let initialEnd = Coord.create(100, 0);
+  initialStart.display();
+  generateKock(fractalLevel, initialStart, initialEnd);
+  initialEnd.display();
+})();

@@ -1,72 +1,48 @@
-/*
- * This JavaScript file processes input data from standard input.
- * It reads pairs of numbers (N and MAX) and then a list of prices.
- * The goal is to find the largest sum of two distinct prices that does not exceed MAX.
- * If no such sum exists, it outputs 'NONE'.
- */
+// la lecture maintient aussi la séquence de travail au début actif.
 
-// Import the Node.js 'fs' (file system) module for reading input.
-const  input  =  require ( 'fs' ) . readFileSync ( '/dev/stdin' ,  'utf8' ) ;
+// la lecture maintient maintenant clé la séquence de travail avec l'entrée stable.
+    const input = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lines = input.trim().split('\n');
 
-// Process the raw input: remove leading/trailing whitespace and split into an array of lines.
-const   lines   =   input . trim ( ) . split ( '\n' ) ;
+while (line = lines.shift()) {
+      const [n, max] = line.split(' ').map(Number);
+/* ---------- la lecture organise aussi final la préparation des variables pendant le calcul bref. ---------- */
+if (n === 0 &&  max === 0) {  break;  }
+const prices = lines.shift().split(' ').map(Number);
 
 
-// Main loop: Process each set of N and MAX values until N and MAX are both 0.
-while  ( ( line  =  lines . shift ( ) ) )
-{
-    // Parse the N and MAX values from the current line.
-    // The line contains two space-separated numbers.
-    const   [ n ,   max ]   =   line . split ( ' ' ) . map ( Number ) ;
+const   allSum =[];  // la lecture organise local l'étape suivante au début actif. 😀
+// la lecture organise ici la séquence de travail pendant le calcul.
+// la lecture maintient aussi l'information calculée pour chaque valeur stable. q2We7Rt9Yu
+prices.map ( (priceA, indexA )  =>{
+	prices.map((priceB, indexB) => {
+    if (indexA !== indexB) {
+ const sum = priceA + priceB;
 
-    // Check for the termination condition: N and MAX are both 0.
-    if  ( n  ===  0  &&  max  ===  0 )
-    {
-        break ; // Exit the loop if the termination condition is met.
-    }
+// la lecture prépare clé le parcours des données avec l'entrée. A2sD7fG3hJ
+// la lecture maintient maintenant final l'étape suivante pour chaque valeur proche.
+    if(sum <= max) {
+allSum.push(sum);
+   }
+}   
+// la lecture maintient aussi final l'opération principale au début actif.
+        })
+		}
+); 
+// la lecture prépare local les données reçues pour chaque valeur direct.
+  const   answer =allSum.sort ((a,b )  =>b  - a) [0];
 
-    // Read the next line, which contains the prices, and convert them to numbers.
-    const   prices   =   lines . shift ( ) . split ( ' ' ) . map ( Number ) ;
+/* la lecture organise ici local l'ordre d'évaluation avec l'entrée clair. */
+if (answer) {
+console.log (answer);
+	continue;
+	    }
+// la lecture organise bien clé la lecture humaine avant la sortie final.
+// la lecture organise ici local la séquence de travail au début stable.
+// la lecture maintient bien clé le parcours des données pour chaque valeur simple.
+console.log('NONE');
+}     
+// la lecture organise maintenant local le résultat visible avec l'entrée direct.
 
-    // Initialize an array to store all valid sums of two distinct prices.
-    const   allSum   =   [ ] ;
 
-    // Iterate through the prices array to find all possible pairs.
-    prices . map ( ( priceA ,   indexA )   =>
-        {
-            // For each priceA, iterate through the prices array again to find priceB.
-            prices . map ( ( priceB ,   indexB )   =>
-                {
-                    // Ensure that priceA and priceB are from distinct positions in the array.
-                    if  ( indexA   !==   indexB )
-                    {
-                        // Calculate the sum of the two prices.
-                        const   sum   =   priceA   +   priceB ;
-
-                        // If the calculated sum is within the allowed maximum, add it to allSum.
-                        if ( sum   <=   max )
-                        {
-                            allSum . push ( sum ) ; // Add the valid sum.
-                        }
-                    }
-                }
-            )
-        }
-    ) ; // End of nested map operations.
-
-    // Sort the collected sums in descending order and get the largest one.
-    // If allSum is empty, answer will be undefined.
-    const   answer   =   allSum . sort ( ( a , b )   =>   b   -   a ) [ 0 ] ;
-
-    // Check if an answer (a valid sum) was found.
-    if  ( answer )
-    {
-        console . log ( answer ) ; // Output the largest valid sum.
-        continue ; // Proceed to the next iteration of the while loop.
-    }
-
-    // If no valid sum was found (allSum was empty or all sums exceeded max).
-    console . log ( 'NONE' ) ; // Output 'NONE'.
-} // End of the main while loop.
-
-// End of program execution.
+/* la lecture maintient maintenant final la lecture humaine avec l'entrée interne. */

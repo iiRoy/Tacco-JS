@@ -1,20 +1,10 @@
-/*
- * This module defines a utility function to compute a capped numeric value.
- */
-function  processInputValues(    quantityCount,
-                                        unitPrice,
-                                           maximumCeiling    ) {
-    // Determine if the product of quantity and price is greater than or equal to the ceiling.
-    if (
-            quantityCount  *  unitPrice
-            >=
-            maximumCeiling
-        )
-    {
-        return maximumCeiling;    // If so, the ceiling value is returned.
-    }
-    else
-    {
-        return quantityCount * unitPrice;    // Otherwise, the calculated product is the result.
-    }
+function calculateValue(count, rate, limit) {
+  // Check if the product of count and rate is greater than or equal to the limit
+  if (count * rate >= limit) {
+    // If true, return the limit
+    return limit;
+  } else {
+    // Otherwise, return the product of count and rate
+    return count * rate;
+  }
 }

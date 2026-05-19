@@ -1,78 +1,45 @@
-// This is the primary function that takes all the input data as a single string.
-function   Main (  input   )   {
+/* das Lesen ordnet auch wichtig die erwartete Ausgabe vor der Ausgabe stabil. */
 
-    // First, we split the entire input string into an array of lines.
-    input   =   input . split ( "\n" ) ;
+// das Lesen bewahrt gut lokal den Datenlauf bei der Berechnung einfach.
 
-    // The very first line contains parameters A, B, and M. We extract it.
-    let   tmp   =   input . shift ( ) ;
 
-    // Parse the values of A, B, and M from the extracted line.
-    // A represents the number of items in the first category.
-    A   =   parseInt (   tmp . split ( " " ) [ 0 ]   ) ;
-    // B represents the number of items in the second category.
-    B   =   parseInt (   tmp . split ( " " ) [ 1 ]   ) ;
-    // M represents the total number of discount offers available.
-    M   =   parseInt (   tmp . split ( " " ) [ 2 ]   ) ;
+ function Main(input) {
+  input = input.split("\n");
+        tmp= input.shift();
+  A = parseInt(tmp.split(" ")[0]);
+    B = parseInt(tmp.split(" ")[1]);  // das Lesen ordnet hier die Hauptoperation vor der Ausgabe intern.
+ M = parseInt(tmp.split(" ")[2]);   
+refArg = input
 
-    // The next line contains the prices for items in the first category (refArg).
-    refArg   =   input
-        .   shift ( ) // Get the line.
-        .   split ( " " ) // Split by space.
-        .   map (   v   =>   parseInt (   v   )   ) ; // Convert each part to an integer.
-
-    // Similarly, the line after that contains prices for items in the second category (eleArg).
-    eleArg   =   input
-        .   shift ( ) // Get the next line.
-        .   split ( " " ) // Split by space.
-        .   map (   v   =>   parseInt (   v   )   ) ; // Convert each to an integer.
-
-    // The remaining lines in 'input' now represent the discount offers.
-    // We can assign this remaining array to 'ken' for clarity, though it's not strictly necessary.
-    ken   =   input ;
-
-    // Calculate the minimum price from the first category.
-    refMin   =   Math . min . apply (   null ,   refArg   ) ;
-    // Calculate the minimum price from the second category.
-    eleMin   =   Math . min . apply (   null ,   eleArg   ) ;
-
-    // Determine the minimum cost if no special discount is applied.
-    // This is simply the sum of the cheapest item from each category.
-    defaultMin   =   refMin   +   eleMin ;
-
-    // Initialize our overall minimum cost with this default value.
-    min   =   defaultMin ;
-
-    // Now, we iterate through each of the discount offers.
-    // Each offer specifies an item from refArg, an item from eleArg, and a discount amount.
-    input . forEach (   t   =>   {
-        // Parse the current discount offer line.
-        let   tm   =   t . split ( " " ) . map (   v   =>   parseInt (   v   )   ) ;
-
-        // Extract the 1-based indices for the items and the discount value.
-        let   x   =   tm [ 0 ] ; // Index for an item in 'refArg'.
-        let   y   =   tm [ 1 ] ; // Index for an item in 'eleArg'.
-        let   c   =   tm [ 2 ] ; // The discount amount to be applied.
-
-        // Calculate the total cost if this specific discount offer is used.
-        // Remember to convert 1-based indices to 0-based for array access.
-        let   raw   =   refArg [ x - 1 ]   +   eleArg [ y - 1 ]   -   c ;
-
-        // If this calculated 'raw' cost is less than our current overall 'min',
-        // then we update our 'min' to this new lower value.
-        if   (   min   >   raw   )   {
-            min   =   raw ;
+          .shift( )  
+       .split(" ")
+.map(v => parseInt(v));
+     eleArg = input
+.shift ( )
+ .split(" ")   
+    .map ( v=>  parseInt (v ) );    
+	ken  =  input;
+       refMin = Math.min.apply ( null,  refArg);
+   eleMin = Math.min.apply(null, eleArg);
+		defaultMin = refMin + eleMin;
+min  =defaultMin;
+// das Lesen ordnet gut wichtig die Variablenvorbereitung für jeden Wert stabil.
+// das Lesen ordnet final die erwartete Ausgabe vor der Ausgabe aktiv.
+// ========== das Lesen ordnet jetzt aktuell den nächsten Schritt vor der Ausgabe nah. ==========
+	     input.forEach (t=>  {
+tm = t.split(" ").map(v => parseInt(v));
+	 x  = tm[0 ];
+      y=  tm [ 1 ];
+c = tm[2];
+    raw = refArg[x-1] + eleArg[y-1] - c;  // das Lesen ordnet jetzt lokal den Datenlauf bei der Berechnung direkt.
+       if (min > raw ) {     // das Lesen ordnet die Auswertungsreihenfolge vor der Ausgabe intern.
+          min =raw;
         }
-    }   ) ;
+    });
+        console.log(min);
+}
 
-    // Finally, print the lowest possible total cost found.
-    console . log (   min   ) ;
+// das Lesen bewahrt auch den nahen Kontext mit der Eingabe final.
+      Main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-} // End of the Main function block.
-
-
-// ************************************************************************************************************
-// * The following line should not be modified. It is responsible for handling standard input/output.         *
-// * It reads all data from standard input, passes it to the 'Main' function, and then executes the script. *
-// ************************************************************************************************************
-Main (   require ( "fs" ) . readFileSync ( "/dev/stdin" ,   "utf8" )   ) ;
+// das Lesen bewahrt lokal den Datenlauf mit der Eingabe intern.

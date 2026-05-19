@@ -1,116 +1,72 @@
-'use strict';
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
 
-/**
- * Solves a graph construction problem: given N nodes and K target edges,
- * find a specific graph configuration and print its edges.
- *
- * @param {string[]} inputDataLines - Array of strings, where the first string contains N and K.
- */
-function processGraphProblem(inputDataLines) {
-  // Validate and parse the initial parameters (total nodes and target edges).
-  if (!inputDataLines || inputDataLines.length === 0 || inputDataLines[0].trim() === '') {
-    console.error("Error: Input data is empty or malformed.");
-    return;
-  }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 
-  const initialParameters = inputDataLines[0].split(' ').map(Number);
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 
-  // Additional validation for parsed numbers.
-  if (initialParameters.length < 2 || isNaN(initialParameters[0]) || isNaN(initialParameters[1])) {
-    console.error("Error: Invalid number format for N and K. Expected two integers.");
-    return;
-  }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-  const totalNodes = initialParameters[0]; // Represents 'N' from original
-  const targetEdgeCount = initialParameters[1]; // Represents 'K' from original
+function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
 
-  let mainChainSizeCandidate; // This variable will hold the 'M' value if a solution is found.
-  let isConfigurationValid = false; // Flag to track if a suitable 'M' is found.
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-  // Iterate through possible 'M' values in descending order, starting from N down to 1.
-  // This 'M' corresponds to `mainChainSize` in the problem's specific construction.
-  for (let currentMainChainSize = totalNodes; currentMainChainSize >= 1; currentMainChainSize--) {
-    // Calculate 'L' based on the original problem's definition: L = N - M + 1.
-    // This 'L' represents the number of vertices forming a specific component.
-    const componentSizeForClique = totalNodes - currentMainChainSize + 1;
+function main(inputLines) {
+  const firstLineParts = inputLines[0].split(' ').map(Number);
+  const _firstLineParts = _slicedToArray(firstLineParts, 2),
+        nodeCount = _firstLineParts[0],
+        targetEdges = _firstLineParts[1];
 
-    // Calculate the number of edges in a clique of size (L-1).
-    // This part corresponds to (L - 1) * (L - 2) / 2 in the original formula.
-    // If L-1 is less than 2, there are 0 edges in such a clique.
-    const edgesFromCliqueComponent = (componentSizeForClique - 1) > 1
-      ? ((componentSizeForClique - 1) * (componentSizeForClique - 2)) / 2
-      : 0;
+  let foundSolution = false;
+  let finalMValue = -1;
 
-    // Calculate the number of edges in a path of length (M-1).
-    // This part corresponds to M - 1 in the original formula.
-    const edgesFromPathSegment = currentMainChainSize - 1;
+  const calculateEdgesForM = (currentM, totalNodes) => {
+    const remainingNodesForChain = totalNodes - currentM + 1;
+    const edgesFromRemainingNodes = (remainingNodesForChain - 1) * (remainingNodesForChain - 2) / 2;
+    const edgesInMainChain = currentM - 1;
+    return edgesFromRemainingNodes + edgesInMainChain;
+  };
 
-    // Sum the edges from both components to get the total calculated edges for this 'M'.
-    const totalCalculatedEdges = edgesFromCliqueComponent + edgesFromPathSegment;
-
-    // Check if the calculated total edges match the target edge count K.
-    if (totalCalculatedEdges === targetEdgeCount) {
-      isConfigurationValid = true;
-      mainChainSizeCandidate = currentMainChainSize; // Store the found 'M'
-      break; // Exit the loop as a valid configuration is found.
+  for (let currentCandidateM = nodeCount; currentCandidateM >= 1; currentCandidateM--) {
+    const computedEdges = calculateEdgesForM(currentCandidateM, nodeCount);
+    if (computedEdges === targetEdges) {
+      foundSolution = true;
+      finalMValue = currentCandidateM;
+      break;
     }
   }
 
-  // If no valid configuration (no suitable 'M') was found, print -1 and exit.
-  if (!isConfigurationValid) {
+  if (!foundSolution) {
     console.log(-1);
     return;
   }
 
-  // Use the validated 'M' (renamed `finalChainSize`) for output.
-  const finalChainSize = mainChainSizeCandidate;
+  console.log(`M=${finalMValue}`);
+  console.log(nodeCount - 1);
 
-  // Output the determined chain length.
-  console.log(`Determined chain length: ${finalChainSize}`);
-  // Output the total number of edges that will be printed by the following loops.
-  // Note: The graph construction described by the printing loops always results in N-1 edges.
-  console.log(totalNodes - 1);
+  const printGraphEdge = (u, v) => {
+    console.log(`${u} ${v}`);
+  };
 
-  // First set of edges: forms a path-like structure from node 1 to finalChainSize + 1.
-  // This loop prints `finalChainSize` edges: (1,2), (2,3), ..., (M, M+1).
-  for (let nodeIdentifier = 1; nodeIdentifier <= finalChainSize; nodeIdentifier++) {
-    console.log(`${nodeIdentifier} ${nodeIdentifier + 1}`);
+  for (let chainNodeIndex = 1; chainNodeIndex <= finalMValue; chainNodeIndex++) {
+    printGraphEdge(chainNodeIndex, chainNodeIndex + 1);
   }
 
-  // Second set of edges: connects remaining nodes to a central node.
-  // The central node is `finalChainSize + 1`.
-  // The remaining nodes are from `finalChainSize + 2` up to `totalNodes`.
-  // This loop prints `totalNodes - (finalChainSize + 1)` edges.
-  const centralConnectionNode = finalChainSize + 1;
-  for (let additionalNode = finalChainSize + 2; additionalNode <= totalNodes; additionalNode++) {
-    console.log(`${centralConnectionNode} ${additionalNode}`);
+  const commonStarNode = finalMValue + 1;
+  for (let starBranchNodeIndex = finalMValue + 2; starBranchNodeIndex <= nodeCount; starBranchNodeIndex++) {
+    printGraphEdge(commonStarNode, starBranchNodeIndex);
   }
 }
 
-/**
- * Sets up standard input handling to read data and pass it to the problem solver.
- */
-function executeProblemSolver() {
-  let rawInputBuffer = "";
-  process.stdin.resume(); // Keep the process alive for input.
-  process.stdin.setEncoding("utf8"); // Specify input encoding.
-
-  // Accumulate data chunks as they arrive.
-  process.stdin.on("data", function (dataChunk) {
-    rawInputBuffer += dataChunk;
+function runInputProcessor() {
+  let rawInputData = "";
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", function (chunk) {
+    rawInputData += chunk;
   });
-
-  // When all input has been received, process it.
   process.stdin.on("end", function () {
-    // Basic validation for empty input after trimming whitespace.
-    if (rawInputBuffer.trim() === "") {
-      console.error("Error: No input was provided via stdin.");
-      return;
-    }
-    const parsedInputLines = rawInputBuffer.split("\n");
-    processGraphProblem(parsedInputLines);
+    main(rawInputData.split("\n"));
   });
 }
 
-// Initiate the problem-solving process by setting up input handling.
-executeProblemSolver();
+runInputProcessor();

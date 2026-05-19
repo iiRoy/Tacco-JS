@@ -1,168 +1,142 @@
-const inputReaderInterface = require('readline').createInterface({
+const inputReader = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-let dataHandler;
-const collectedInputLines = [];
+let inputProcessor;
+const inputLines = [];
 
-// Event handler for each line of input
-inputReaderInterface.on('line', (currentLine) => {
-  collectedInputLines.push(currentLine);
+inputReader.on('line', function(currentLine){
+  inputLines.push(currentLine);
 });
 
-// Event handler for when input stream closes
-inputReaderInterface.on('close', () => {
-  dataHandler = createInputHandler(collectedInputLines);
+inputReader.on('close', function(){
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error("\n");
   
-  const executionStartTime = new Date();
-  processSolution(); // Renamed Main to processSolution
-  const executionEndTime = new Date();
-  const elapsedTime = executionEndTime - executionStartTime;
-
-  // Log diagnostic messages for performance
-  logDiagnosticMessage(`Execution time: ${elapsedTime} ms`);
-  logDiagnosticMessage(`Memory usage: ${Math.round(process.memoryUsage().heapTotal / 1024)} KB`);
+  const startTime = new Date();
+  executeSolution();
+  const endTime = new Date();
+  const durationMs = endTime.getTime() - startTime.getTime();
+  
+  logDebug("time : " + (durationMs) + "ms");
+  logDebug("memory : " + Math.round(process.memoryUsage().heapTotal / 1024) + "KB");
 });
 
-/**
- * Retrieves the next item from the input stream and parses it as an integer.
- * @returns {number} The next integer from input.
- */
-function getNextInteger() {
-  return parseInt(dataHandler.fetchNextItem(), 10);
+function createDeepCopy(sourceObject){
+  return JSON.parse(JSON.stringify(sourceObject));
 }
 
-/**
- * Retrieves the next item from the input stream and splits it into a string array by spaces.
- * @returns {string[]} An array of strings.
- */
-function getNextStringArray() {
-  return dataHandler.fetchNextItem().split(' ');
-}
+function readInteger(){return convertAndFormat(getNextLine(),1);}
+function readStringArray(){return convertAndFormat(getNextLine(),2);}
+function readIntegerArray(){return convertAndFormat(getNextLine(),4);}
+function readCharacterArray(){return convertAndFormat(getNextLine(),6);}
 
-/**
- * Retrieves the next item from the input stream, splits it by spaces, and maps to a number array.
- * @returns {number[]} An array of numbers.
- */
-function getNextIntegerArray() {
-  return dataHandler.fetchNextItem().split(' ').map(Number);
-}
+function getNextLine(){return inputProcessor.getNext();}
+function hasMoreLines(){return inputProcessor.hasMoreLines();}
 
-/**
- * Retrieves the next item from the input stream and splits it into a character array.
- * @returns {string[]} An array of characters.
- */
-function getNextCharacterArray() {
-  return dataHandler.fetchNextItem().split('');
-}
+function initializeInputHandler(linesArray){
+  const handlerObject = {};
+  handlerObject.lineList = linesArray;
+  handlerObject.currentIndex = 0;
+  handlerObject.maxIndex = linesArray.length;
 
-/**
- * Formats an array of strings or numbers into a single string, joined by newlines.
- * @param {Array<string|number>} items - The array to join.
- * @returns {string} The joined string.
- */
-function joinLines(items) {
-  return items.join('\n');
-}
+  handlerObject.hasMoreLines = function(){
+    return (this.currentIndex < this.maxIndex);
+  };
 
-/**
- * Initializes and returns an input handler object to manage reading from collected lines.
- * @param {string[]} sourceLines - An array of raw input strings.
- * @returns {object} An object with methods to access input.
- */
-function createInputHandler(sourceLines) {
-  // Guard clause: ensure sourceLines is not null or empty
-  if (!sourceLines || sourceLines.length === 0) {
-    console.warn("[WARNING] Input source lines are empty.");
-    return {
-      hasMoreInput: () => false,
-      fetchNextItem: () => { throw new Error("No more input available."); }
-    };
-  }
-
-  const inputState = {
-    dataSegments: sourceLines,
-    currentSegmentIndex: 0,
-    totalSegments: sourceLines.length,
-
-    /**
-     * Checks if there are more items to read in the input stream.
-     * @returns {boolean} True if more items exist, false otherwise.
-     */
-    hasMoreInput: function() {
-      return (this.currentSegmentIndex < this.totalSegments);
-    },
-
-    /**
-     * Fetches the next item from the input stream.
-     * @returns {string} The next input line.
-     * @throws {Error} If no more items are available.
-     */
-    fetchNextItem: function() {
-      if (!this.hasMoreInput()) {
-        throw new Error("EndOfInputException: No more lines to read.");
-      }
-      const extractedItem = this.dataSegments[this.currentSegmentIndex];
-      this.currentSegmentIndex++;
-      return extractedItem;
+  handlerObject.getNext = function(){
+    if(!this.hasMoreLines()){
+      throw new Error("ArrayIndexOutOfBoundsException: No more input lines available.");
+    } else {
+      const currentInputLine = this.lineList[this.currentIndex];
+      this.currentIndex++;
+      return currentInputLine;
     }
   };
-  return inputState;
+  return handlerObject;
 }
 
-/**
- * Prints a given string or object to the standard output.
- * @param {any} content - The content to display.
- */
-function printOutput(content) {
-  console.log(content);
-}
+function printOutput(data){console.log(data);}
+function logDebug(message){console.error("debug:" + require("util").inspect(message,false,null));}
 
-/**
- * Logs a diagnostic message to the standard error stream.
- * @param {any} message - The message to log.
- */
-function logDiagnosticMessage(message) {
-  console.error(`[DIAGNOSTIC] ${message}`);
-}
+const CONVERSION_OPTIONS = {
+    TO_INT: 1,
+    SPLIT_BY_SPACE: 2,
+    SPLIT_BY_SPACE_TO_INT_ARRAY: 4,
+    SPLIT_BY_CHAR: 6,
+    SPLIT_BY_CHAR_TO_INT_ARRAY: 7,
+    JOIN_BY_SPACE: 8,
+    JOIN_BY_NEWLINE: 9,
+    JOIN_NO_DELIMITER: 0
+};
 
-/**
- * Main function containing the problem-solving logic.
- */
-function processSolution() {
-  const problemSize = getNextInteger(); // Renamed N to problemSize
-  const MAX_COORDINATE_VALUE = 200; // Added a constant for the magic number
-  
-  // Initialize result array with zeros.
-  const resultArray = Array(problemSize).fill(0); 
-  
-  // Renamed map to calculationFrequency
-  const calculationFrequency = {}; 
-
-  // Nested loops to calculate the sum of squares and products
-  for (let valX = 1; valX <= MAX_COORDINATE_VALUE; valX++) {
-    for (let valY = 1; valY <= MAX_COORDINATE_VALUE; valY++) {
-      for (let valZ = 1; valZ <= MAX_COORDINATE_VALUE; valZ++) {
-        // Calculate the specific sum based on the formula
-        const calculatedSum = 
-          valX * valX + valY * valY + valZ * valZ + 
-          valX * valY + valY * valZ + valZ * valX;
-        
-        // Increment frequency for the calculated sum
-        // Using a more concise way to initialize and increment
-        calculationFrequency[calculatedSum] = (calculationFrequency[calculatedSum] || 0) + 1;
-      }
+function convertAndFormat(inputValue, conversionType){
+  try {
+    switch(conversionType){
+      case CONVERSION_OPTIONS.TO_INT:
+        return parseInt(inputValue, 10);
+      case CONVERSION_OPTIONS.SPLIT_BY_SPACE:
+        return inputValue.split(" ");
+      case CONVERSION_OPTIONS.SPLIT_BY_SPACE_TO_INT_ARRAY:
+        return inputValue.split(" ").map(Number);
+      case CONVERSION_OPTIONS.SPLIT_BY_CHAR:
+        return inputValue.split("");
+      case CONVERSION_OPTIONS.SPLIT_BY_CHAR_TO_INT_ARRAY:
+        return inputValue.split("").map(Number);
+      case CONVERSION_OPTIONS.JOIN_BY_SPACE:
+        return inputValue.join(" ");
+      case CONVERSION_OPTIONS.JOIN_BY_NEWLINE:
+        return inputValue.join("\n");
+      case CONVERSION_OPTIONS.JOIN_NO_DELIMITER:
+        return inputValue.join("");
+      default:
+        return inputValue;
     }
+  } catch(e){
+    return inputValue;
   }
+}
 
-  // Populate the resultArray based on the calculated frequencies
-  for (let idx = 0; idx < problemSize; idx++) {
-    // Check if a frequency exists for (idx + 1), otherwise assign 0
-    // Using logical OR for concise default value
-    resultArray[idx] = calculationFrequency[idx + 1] || 0;
-  }
-  
-  // Output the results, each on a new line
-  printOutput(joinLines(resultArray));
+function calculateSumExpression(valA, valB, valC) {
+    const sqA = valA * valA;
+    const sqB = valB * valB;
+    const sqC = valC * valC;
+    const prodAB = valA * valB;
+    const prodBC = valB * valC;
+    const prodCA = valC * valA;
+    return sqA + sqB + sqC + prodAB + prodBC + prodCA;
+}
+
+function executeSolution(){
+    const targetCount = readInteger();
+    const sumFrequencyMap = {};
+
+    const MAX_DIMENSION = 200;
+    for(let idxA = 1; idxA <= MAX_DIMENSION; idxA++){
+        for(let idxB = 1; idxB <= MAX_DIMENSION; idxB++){
+            for(let idxC = 1; idxC <= MAX_DIMENSION; idxC++){
+                const currentSumValue = calculateSumExpression(idxA, idxB, idxC);
+                
+                if (sumFrequencyMap[currentSumValue] === undefined) {
+                    sumFrequencyMap[currentSumValue] = 0;
+                }
+                sumFrequencyMap[currentSumValue]++;
+            }
+        }
+    }
+
+    const resultArray = new Array(targetCount);
+    for(let currentIdx = 0; currentIdx < targetCount; currentIdx++){
+        const requiredSumKey = currentIdx + 1;
+        const frequency = sumFrequencyMap[requiredSumKey];
+        
+        if(frequency === undefined){
+            resultArray[currentIdx] = 0;
+        } else {
+            resultArray[currentIdx] = frequency;
+        }
+    }
+    
+    printOutput(convertAndFormat(resultArray, CONVERSION_OPTIONS.JOIN_BY_NEWLINE));
 }

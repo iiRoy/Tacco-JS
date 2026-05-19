@@ -1,37 +1,56 @@
-const computationHandler = (rawDataSource) => {
-    const [firstLineOfData, secondLineOfData] = rawDataSource.split('\n');
-    const [elementQuantity, alphaIndex, betaIndex, gammaIndex, deltaIndex] = firstLineOfData.split(' ').map(Number);
-    const characterStream = secondLineOfData;
+debug = false
+function log() {
+  if (debug) {
+    const arr = [];
+    for (let i = 0; i < arguments.length; i++) {
+      arr.push(arguments[i]);
+    }
+    console.log(arr.join(', '));
+  }
+}
 
-    const collectionOfChecks = [];
+const processSpecialSegment = (currentStatus, sequence, bCoord, cCoord, dCoord) => {
+    if (cCoord <= dCoord) {
+        return currentStatus;
+    }
 
-    const conditionalModifierCheck = (gVal, dVal, bVal, charSeq) => {
-        if (gVal <= dVal) {
-            return true;
-        }
+    const boundaryPoint = (cCoord - dCoord <= 3) ? cCoord : dCoord;
+    
+    let temporarySequence = sequence;
 
-        const effectiveEndPoint = (gVal - dVal <= 3) ? gVal : dVal;
-        let modifiedCharSeq = charSeq;
+    if (sequence.charAt(dCoord - 2) === '#') {
+        log(temporarySequence, temporarySequence.charAt(dCoord - 1));
+        temporarySequence = sequence.slice(0, dCoord - 1) + '#' + sequence.slice(dCoord);
+    }
+    log(temporarySequence);
 
-        if (dVal - 2 >= 0 && dVal - 2 < charSeq.length && charSeq.charAt(dVal - 2) === '#') {
-            if (dVal - 1 >= 0 && dVal - 1 < charSeq.length) {
-                modifiedCharSeq = modifiedCharSeq.substring(0, dVal - 1) + '#' + modifiedCharSeq.substring(dVal);
-            }
-        }
-
-        const relevantSegment = modifiedCharSeq.substring(bVal - 1, effectiveEndPoint);
-        return relevantSegment.includes('...');
-    };
-    collectionOfChecks.push(conditionalModifierCheck(gammaIndex, deltaIndex, betaIndex, characterStream));
-
-    collectionOfChecks.push(!characterStream.substring(alphaIndex - 1, gammaIndex).includes('##'));
-
-    collectionOfChecks.push(!characterStream.substring(betaIndex - 1, deltaIndex).includes('##'));
-
-    const ultimateDecision = collectionOfChecks.every(Boolean);
-
-    return ultimateDecision ? 'Yes' : 'No';
+    const relevantSlice = temporarySequence.slice(bCoord - 1, boundaryPoint);
+    log(relevantSlice, currentStatus);
+    const segmentConditionMet = (relevantSlice.indexOf('...') !== -1);
+    const updatedStatus = currentStatus && segmentConditionMet;
+    log(relevantSlice, updatedStatus);
+    return updatedStatus;
 };
 
-const fileContentReader = require("fs").readFileSync("/dev/stdin", "utf8");
-console.log(computationHandler(fileContentReader));
+function Main(input) {
+  const [parameterLine, sequenceLine] = input.split("\n");
+  const [_, firstCoord, secondCoord, thirdCoord, fourthCoord] = parameterLine.split(" ").map(Number);
+  const movementSequence = sequenceLine;
+
+  log(_, firstCoord, secondCoord, thirdCoord, fourthCoord, movementSequence);
+
+  let finalResult = true;
+
+  finalResult = processSpecialSegment(finalResult, movementSequence, secondCoord, thirdCoord, fourthCoord);
+
+  const rangeOne = movementSequence.slice(firstCoord - 1, thirdCoord);
+  finalResult = finalResult && (rangeOne.indexOf('##') === -1);
+  log(rangeOne, finalResult);
+
+  const rangeTwo = movementSequence.slice(secondCoord - 1, fourthCoord);
+  finalResult = finalResult && (rangeTwo.indexOf('##') === -1);
+  log(rangeTwo, finalResult);
+
+  console.log(finalResult ? 'Yes' : 'No');
+}
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

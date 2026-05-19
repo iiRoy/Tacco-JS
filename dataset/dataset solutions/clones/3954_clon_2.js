@@ -1,48 +1,52 @@
-// This script processes provided input lines.
-function ProcessInputAndCompute(dataLines) {
+// This function processes the entire input data.
+function ProcessInput(rawData) {
+    // Parse the number of locations from the first line of input.
+    let numLocations = +(rawData[0]);
 
-  // Extract the total count from the first line of the input.
-  var totalCount = parseInt(dataLines[0], 10);
+    // Split the second line of input into an array of individual location coordinates.
+    const locationCoordinates = rawData[1].split(/\s+/);
 
-  /*
-   * Split the second line into an array of coordinate strings,
-   * using any sequence of whitespace characters as a delimiter.
-   */
-  var coordinateStrings = dataLines[1].split(/\s+/);
+    // An array to store the calculated travel costs (differences) between consecutive points.
+    let travelCosts = [];
 
-  // Initialize an array to store differences between consecutive coordinates.
-  var segmentDifferences = [];
+    // A variable to accumulate the total absolute distance traveled.
+    let totalDistance = 0;
 
-  // Initialize a variable to accumulate the total absolute differences encountered.
-  var totalAbsoluteDifference = 0;
+    // Represents the current coordinate, starting from the origin (0).
+    let currentCoord = 0;
 
-  // Set the starting point or previous coordinate value to zero.
-  var previousCoordinate = 0;
+    // Loop through each location coordinate provided in the input.
+    for (let idx = 0; idx < numLocations; ++idx) {
+        // Parse the next coordinate from the array.
+        const nextCoord = +(locationCoordinates[idx]);
 
-  // Iterate through the coordinate strings up to the specified total count.
-  for (  var   index   =   0;   index   <   totalCount;   ++index   )   {
-    // Parse the current coordinate string from the array into an integer.
-    var currentCoordinate = parseInt(coordinateStrings[index], 10);
+        // Calculate the difference (cost) from the current coordinate to the next.
+        travelCosts.push(currentCoord - nextCoord);
 
-    // Calculate the difference between the previous and current coordinates and add it to our array.
-    segmentDifferences.push(previousCoordinate - currentCoordinate);
+        // Add the absolute value of this difference to the total distance.
+        totalDistance += Math.abs(currentCoord - nextCoord);
 
-    // Add the absolute value of this difference to the running total.
-    totalAbsoluteDifference += Math.abs(previousCoordinate - currentCoordinate);
+        // Update the current coordinate to the next coordinate for the subsequent iteration.
+        currentCoord = nextCoord;
+    }
 
-    // Update the previous coordinate for the next iteration of the loop.
-    previousCoordinate = currentCoordinate;
-  }
+    // After processing all given locations, calculate the cost to return to the origin (0).
+    travelCosts.push(currentCoord - 0);
 
-  // After the loop, calculate and add the difference from the last coordinate back to zero.
-  segmentDifferences.push(previousCoordinate - 0);
-  totalAbsoluteDifference += Math.abs(previousCoordinate - 0);
+    // Add the absolute distance for returning to the origin to the total.
+    totalDistance += Math.abs(currentCoord - 0);
 
-  // Now, iterate again to compute and display results based on the accumulated data.
-  for (var elementIndex = 0; elementIndex < totalCount; ++elementIndex) {
-    // Output the calculated result to the console directly, using the segment differences.
-    console.log(`${totalAbsoluteDifference - Math.abs(segmentDifferences[elementIndex]) - Math.abs(segmentDifferences[elementIndex + 1]) + Math.abs(segmentDifferences[elementIndex] + segmentDifferences[elementIndex + 1])}`);
-  }
+    // Iterate through each location again to calculate and print the adjusted total distance
+    // if a specific segment (from point idx to point idx+1) were to be skipped.
+    for (let idx = 0; idx < numLocations; ++idx) {
+        // The formula calculates the total distance, then subtracts the absolute costs
+        // of the two segments involving point 'idx' and 'idx+1', and finally adds
+        // the absolute cost of a single segment directly connecting the points
+        // before 'idx' and after 'idx+1'.
+        console.log(`${totalDistance - Math.abs(travelCosts[idx]) - Math.abs(travelCosts[idx + 1]) + Math.abs(travelCosts[idx] + travelCosts[idx + 1])}`);
+    }
 }
-// Do not modify the following section (it handles standard input/output and invokes the main processing function).
-ProcessInputAndCompute(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// The following line should not be modified. It handles reading input from standard input
+// and then calls the main processing function with the read data.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

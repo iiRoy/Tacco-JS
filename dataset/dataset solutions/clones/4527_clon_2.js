@@ -1,32 +1,21 @@
-/*
- * This module is designed to read numerical data from standard input,
- * process it, and then output the range (difference between max and min values).
- */
-function ProcessNumericalSpan ( incomingText )
-{
-    // Step 1: Divide the complete input string into individual lines
-    // by using the newline character as a delimiter.
-    incomingText = incomingText . split ( "\n" ) ;
+function ProcessInput(rawData) {
+  // Split the incoming text by newline characters to get individual lines.
+  let linesOfText = rawData.split("\n");
 
-    /*
-     * Step 2: Access the second line (at index 1) from the resulting array.
-     * Then, split this specific line by spaces to get an array of string numbers.
-     * Finally, convert each string number into an actual numeric type.
-     * The variable 'incomingText' is intentionally reused to store this new array of numbers.
-     */
-    incomingText = incomingText [ 1 ] . split ( " " ) . map ( Number ) ;
+  // Access the second line (index 1), split it by spaces, and convert each segment to a number.
+  let numericalSequence = linesOfText[1].split(" ").map(Number);
 
-    // Step 3: Compute the difference between the maximum and minimum values
-    // found within the array of numbers. The 'apply' method is used here
-    // to pass the array elements as individual arguments to Math.max and Math.min.
-    console . log ( Math . max . apply ( null , incomingText ) - Math . min . apply ( null , incomingText ) ) ;
+  // Determine the largest value within the numerical sequence.
+  let greatestValue = Math.max.apply(null, numericalSequence);
+
+  // Determine the smallest value within the numerical sequence.
+  let leastValue = Math.min.apply(null, numericalSequence);
+
+  // Print the difference between the greatest and least values to the console.
+  console.log(greatestValue - leastValue);
 }
-/*
- * Below, the program initiates its execution.
- * It first loads the 'fs' (file system) module.
- * Then, it reads all data from '/dev/stdin' (standard input)
- * as a UTF-8 encoded string.
- * Any leading or trailing whitespace is removed using 'trim()'.
- * Finally, the 'ProcessNumericalSpan' function is invoked with this cleaned data.
- */
-ProcessNumericalSpan ( require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" ) . trim ( ) ) ;
+
+// Read the entire content from the standard input stream,
+// decode it as UTF-8, remove any leading or trailing whitespace,
+// and then pass this processed string to our main function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

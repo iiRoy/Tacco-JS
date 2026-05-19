@@ -1,28 +1,28 @@
-// This module defines a function for processing textual input by interleaving characters.
-function ProcessInputData(rawDataString) {
-  // Break down the received string into individual lines, using the newline character as a delimiter.
-  const lineCollection = rawDataString.split("\n");
+function ProcessInput(rawData) {
+    // Split the raw input string into an array of lines using the newline character.
+    let linesOfText = rawData.split("\n");
 
-  // Secure the first line of text for primary processing.
-  const firstContentLine = lineCollection[0];
+    // Extract the first line as the first string.
+    var firstString = linesOfText[0];
 
-  // Secure the second line of text for secondary processing.
-  const secondContentLine = lineCollection[1];
+    // Extract the second line as the second string.
+    var secondString = linesOfText[1];
 
-  // Begin a counting loop that covers the combined character count of both content lines.
-  for (let currentPosition = 0; currentPosition < firstContentLine.length + secondContentLine.length; currentPosition++) {
-    // Determine if the current position index is an even number.
-    if (currentPosition % 2 === 0) {
-      // For even positions, output a character from the first content line.
-      // The character's specific index is half of the current position.
-      console.log(firstContentLine[currentPosition / 2]);
-    } else {
-      // For odd positions, output a character from the second content line.
-      // The character's specific index is also half of the current position.
-      console.log(secondContentLine[currentPosition / 2]);
+    // Iterate through a sequence of indices to interleave characters.
+    // The loop runs for a total number of iterations equal to the combined length of both strings.
+    for (let idx = 0; idx < firstString.length + secondString.length; idx++) {
+        // Check if the current index is an even number.
+        if (idx % 2 === 0) {
+            // If even, print a character from the first string.
+            // The index for the first string is half of the current loop index.
+            console.log(firstString[idx / 2]);
+        } else {
+            // If odd, print a character from the second string.
+            // The index for the second string is also half of the current loop index (integer division).
+            console.log(secondString[idx / 2]);
+        }
     }
-  }
-} // Concludes the ProcessInputData routine.
+}
 
-// Initiate the data processing by reading the entire content from the standard input stream.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input asynchronously and then process it.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

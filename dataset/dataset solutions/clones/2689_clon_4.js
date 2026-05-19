@@ -1,108 +1,134 @@
-const executeProgram = (rawData) => {
-    const processedSegments = rawData.split('\n').map(segment => segment.split(' ').map(Number));
-
-    const budgetAmount = processedSegments[0][1];
-    const valueCollection = processedSegments[1];
-
-    const peakValue = locateMaximum(valueCollection);
- 
-    const upperBound = Math.min(peakValue + budgetAmount, peakValue + determineBalanceIndexMetric(valueCollection));
-    
-    let currentDivisorCandidate = upperBound;
-    while (currentDivisorCandidate > 1) {
-        if (testDivisibilityProperty(currentDivisorCandidate, valueCollection, budgetAmount)) {
-            return process.stdout.write(currentDivisorCandidate.toString() + '\n');
-        }
-        currentDivisorCandidate--;
-    }
-    return process.stdout.write('1\n');
+const parseInputData = (rawData) => {
+    const lines = rawData.split("\n");
+    const firstLineValues = lines[0].split(" ").map(Number);
+    const secondLineValues = lines[1].split(" ").map(Number);
+    return {
+        limitParam: firstLineValues[1],
+        numberSequence: secondLineValues
+    };
 };
 
-const determineBalanceIndexMetric = (inputValues) => {
-    const sortedValues = [...inputValues].sort((a, b) => a - b);
-    let cumulativeLeftIndexSum = 0;
-    let cumulativeRightValueSum = 0;
-    let rightPointer = sortedValues.length - 1;
-    
-    cumulativeRightValueSum = sortedValues[rightPointer];
+const retrieveMaxElement = (collection) => {
+    return Math.max(...collection);
+};
 
-    let leftPointer = 0;
-    while (leftPointer < rightPointer) {
-        cumulativeLeftIndexSum += leftPointer;
-        if (cumulativeLeftIndexSum > cumulativeRightValueSum) {
-            rightPointer--;
-            while (cumulativeRightValueSum < cumulativeLeftIndexSum && rightPointer > leftPointer) {
-                cumulativeRightValueSum += sortedValues[rightPointer];
-                rightPointer--;
+const computeSumOfElements = (numericArray) => {
+    let totalAccumulator = 0;
+    for (const item of numericArray) {
+        totalAccumulator += item;
+    }
+    return totalAccumulator;
+};
+
+const deriveBalanceValue = (sourceCollection) => {
+    const orderedCopy = [...sourceCollection].sort((a, b) => a - b);
+    let rightSideSum = orderedCopy[orderedCopy.length - 1];
+    let leftSideSum = 0;
+    let rightIndex = orderedCopy.length - 1;
+
+    for (let leftIndex = 0; leftIndex < rightIndex; leftIndex++) {
+        leftSideSum = leftIndex * (leftIndex + 1) / 2; // Sum of indices from 0 to leftIndex
+
+        if (leftSideSum > rightSideSum) {
+            while (rightSideSum < leftSideSum && rightIndex > leftIndex) {
+                rightIndex--;
+                rightSideSum += orderedCopy[rightIndex];
             }
         }
-        leftPointer++;
     }
-    return Math.min(cumulativeLeftIndexSum, cumulativeRightValueSum);
+    return Math.min(leftSideSum, rightSideSum);
 };
 
-const locateMaximum = (sourceArray) => {
-    return Math.max(...sourceArray);
-};
+const performPartitionSearch = (valuePairs, budgetConstraint) => {
+    const searchStack = [{ currentIdx: 0, currentLeftSum: 0, currentRightSum: 0 }];
 
-const testDivisibilityProperty = (candidateDivisor, sourceCollection, maxAllowedSum) => {
-    const remainderPairs = [];
-    let minimumTotalCostCheck = 2 * maxAllowedSum;
+    while (searchStack.length > 0) {
+        const { currentIdx, currentLeftSum, currentRightSum } = searchStack.pop();
 
-    for (const individualValue of sourceCollection) {
-        const currentModulus = individualValue % candidateDivisor;
-        if (currentModulus === 0) continue;
-
-        const costToDecrease = currentModulus;
-        const costToIncrease = candidateDivisor - currentModulus;
-        const minimumElementCost = Math.min(costToDecrease, costToIncrease);
-
-        if (maxAllowedSum < minimumElementCost) return false;
-        
-        minimumTotalCostCheck -= minimumElementCost;
-        if (minimumTotalCostCheck < 0) return false;
-
-        remainderPairs.push([costToDecrease, costToIncrease]);
-    }
-
-    return findBalancedPartition(remainderPairs, maxAllowedSum);
-};
-
-const findBalancedPartition = (costOptions, maxAllowedSum) => {
-    let achievableSums = new Map([[0, 0]]); 
-
-    for (const [decreaseOption, increaseOption] of costOptions) {
-        const nextAchievableSums = new Map();
-
-        for (const [currentLeftSum, currentRightSum] of achievableSums.entries()) {
-            const newLeftSum1 = currentLeftSum + decreaseOption;
-            const newRightSum1 = currentRightSum;
-
-            if (newLeftSum1 <= maxAllowedSum && newRightSum1 <= maxAllowedSum) {
-                if (!nextAchievableSums.has(newLeftSum1) || newRightSum1 < nextAchievableSums.get(newLeftSum1)) {
-                    nextAchievableSums.set(newLeftSum1, newRightSum1);
-                }
-            }
-
-            const newLeftSum2 = currentLeftSum;
-            const newRightSum2 = currentRightSum + increaseOption;
-
-            if (newLeftSum2 <= maxAllowedSum && newRightSum2 <= maxAllowedSum) {
-                if (!nextAchievableSums.has(newLeftSum2) || newRightSum2 < nextAchievableSums.get(newLeftSum2)) {
-                    nextAchievableSums.set(newLeftSum2, newRightSum2);
-                }
-            }
+        if (currentLeftSum > budgetConstraint || currentRightSum > budgetConstraint) {
+            continue;
         }
-        achievableSums = nextAchievableSums;
-    }
 
-    for (const [finalLeftSum, finalRightSum] of achievableSums.entries()) {
-        if (finalLeftSum === finalRightSum) {
-            return true;
+        if (currentIdx === valuePairs.length) {
+            if (currentLeftSum === currentRightSum) {
+                return true;
+            }
+            continue;
+        }
+
+        const [firstVal, secondVal] = valuePairs[currentIdx];
+
+        // Replicate original's path exploration order heuristic for stack (LIFO)
+        if (currentLeftSum < currentRightSum) {
+            // Original tries left path first, then right.
+            // Push right path first, then left path.
+            searchStack.push({ currentIdx: currentIdx + 1, currentLeftSum: currentLeftSum, currentRightSum: currentRightSum + secondVal });
+            searchStack.push({ currentIdx: currentIdx + 1, currentLeftSum: currentLeftSum + firstVal, currentRightSum: currentRightSum });
+        } else {
+            // Original tries right path first, then left.
+            // Push left path first, then right path.
+            searchStack.push({ currentIdx: currentIdx + 1, currentLeftSum: currentLeftSum + firstVal, currentRightSum: currentRightSum });
+            searchStack.push({ currentIdx: currentIdx + 1, currentLeftSum: currentLeftSum, currentRightSum: currentRightSum + secondVal });
         }
     }
-
     return false;
 };
 
-executeProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+const validateDivisorProperty = (candidateDivisor, inputNumbers, budgetLimit) => {
+    let processedPairs = [];
+    let remainingCostAllowance = 2 * budgetLimit;
+
+    const reductionResult = inputNumbers.reduce((accumulator, numberValue) => {
+        if (accumulator === false) return false;
+
+        const remainderA = numberValue % candidateDivisor;
+        if (remainderA === 0) {
+            return accumulator;
+        }
+        const remainderB = candidateDivisor - remainderA;
+
+        const smallestRemainder = Math.min(remainderA, remainderB);
+
+        if (budgetLimit < smallestRemainder) {
+            return false;
+        }
+
+        remainingCostAllowance -= smallestRemainder;
+        if (remainingCostAllowance < 0) {
+            return false;
+        }
+        accumulator.push([remainderA, remainderB]);
+        return accumulator;
+    }, []);
+
+    if (reductionResult === false) {
+        return false;
+    }
+
+    return performPartitionSearch(reductionResult, budgetLimit);
+};
+
+const executeMainLogic = (fileContent) => {
+    const { limitParam, numberSequence } = parseInputData(fileContent);
+
+    const highestValue = retrieveMaxElement(numberSequence);
+    const calculatedBalance = deriveBalanceValue(numberSequence);
+
+    const upperSearchBoundary = Math.min(highestValue + limitParam, highestValue + calculatedBalance);
+
+    const recursiveDivisorSearch = (currentTestValue) => {
+        if (currentTestValue < 2) {
+            return 1;
+        }
+        if (validateDivisorProperty(currentTestValue, numberSequence, limitParam)) {
+            return currentTestValue;
+        }
+        return recursiveDivisorSearch(currentTestValue - 1);
+    };
+
+    const finalResult = recursiveDivisorSearch(upperSearchBoundary);
+
+    console.log(finalResult);
+};
+
+executeMainLogic(require('fs').readFileSync('/dev/stdin', 'utf8'));

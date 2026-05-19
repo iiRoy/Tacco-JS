@@ -1,111 +1,80 @@
-function ProcessData(rawData) {
-  // Normalize input data: trim, split by lines, then split each line by spaces.
-  rawData = rawData.trim().split('\n').map(
-    /**
-     * Splits a single line string into an array of strings by space.
-     * @param {string} lineStr - The input line string.
-     * @returns {string[]} An array of string tokens.
-     */
-    function(lineStr) {
-      return lineStr.split(' ');
+function ProcessInput(rawData) {
+    // Normalize the input: trim whitespace, split into lines, then split each line by spaces.
+    rawData = rawData.trim().split("\n").map(function(lineSegment) {
+        return lineSegment.split(" ");
+    });
+
+    // Declare variables to store parsed configuration and results.
+    let configParams = []; // Stores N (number of switches) and M (number of light bulbs).
+    let expectedParities = []; // Stores the required parity for each light bulb.
+    let unusedVector = []; // This variable is declared but not utilized in the original logic.
+    let switchConfigurations = []; // Stores the switch connections for each light bulb.
+    let validCombinationsCount = 0; // Counter for successful switch combinations.
+
+    // Declare temporary variables used within loops.
+    let currentBinaryString; // Represents a switch combination as a binary string.
+    let tempIndex; // An unused temporary index variable, kept for structural consistency.
+    let currentBitValue; // The state (0 or 1) of an individual switch.
+    let currentSwitchSum; // Accumulates the sum of active switches for parity checks.
+
+    // Parse the first line of input to get N and M.
+    configParams = rawData[0].map(element => parseInt(element, 10));
+
+    // Parse the line containing the expected parities for each light bulb.
+    // The index is M+1 because the first line is N,M and then M lines for switch configurations.
+    expectedParities = rawData[configParams[1] + 1].map(element => parseInt(element, 10));
+
+    // Populate the switch configurations array.
+    // Each entry describes a light bulb's connections: first element is count, rest are switch indices.
+    for (let configIndex = 1; configIndex <= configParams[1]; configIndex++) {
+        switchConfigurations.push(rawData[configIndex].map(element => parseInt(element, 10)));
     }
-  );
 
-  // Declare variables to hold parsed configuration and calculation results.
-  var configVals = []; // Stores N and M values.
-  var expectedOutcomes = []; // Stores expected parities for each group.
-  var connectionSets = []; // This variable is declared but not used in the original logic.
-  var groupDetails = []; // Stores details for each group (number of switches and their indices).
-  var solutionCount = 0; // Accumulator for the number of valid configurations.
+    // Iterate through all possible switch combinations.
+    // There are 2^N combinations. The loop range is chosen to easily get N-bit binary strings
+    // by converting 'i' to binary and taking a substring from the second character.
+    for (let combinationIterator = Math.pow(2, configParams[0]); combinationIterator < Math.pow(2, configParams[0]) * 2; combinationIterator++) {
 
-  // Temporary variables for iterative calculations.
-  var binaryRepresentation; // Represents the current switch configuration as a binary string.
-  var unusedLoopVar; // Corresponds to 'j' in original, unused.
-  var currentBit; // Value of a specific bit (switch state).
-  var groupParitySum; // Sum of switch states for a given group.
+        // Convert the current iteration number to its binary representation,
+        // then remove the leading '1' to get an N-bit string (e.g., 1010 -> 010).
+        currentBinaryString = combinationIterator.toString(2).substr(1);
 
-  // Parse the first line for N and M.
-  configVals = rawData[0].map(
-    /**
-     * Converts a string element to an integer.
-     * @param {string} elementStr - The string to convert.
-     * @returns {number} The parsed integer.
-     */
-    e => parseInt(e, 10)
-  );
+        // Initialize the cumulative sum of active switches for the current combination.
+        currentSwitchSum = 0;
 
-  // Parse the line containing expected parities.
-  expectedOutcomes = rawData[configVals[1] + 1].map(
-    /**
-     * Converts a parity string to an integer.
-     * @param {string} outcomeStr - The parity string.
-     * @returns {number} The parsed integer parity.
-     */
-    e => parseInt(e, 10)
-  );
+        // Label for breaking out of the inner loop if a parity mismatch is found.
+        configurationCheckLoop:
+        // Iterate through each light bulb's configuration.
+        for (let configIndex = 1; configIndex <= configParams[1]; configIndex++) {
 
-  // Populate the array with group specifications.
-  // Each group's specification starts from the second line up to M-th line.
-  for (var groupIndex = 1; groupIndex <= configVals[1]; groupIndex++) {
-    groupDetails.push(rawData[groupIndex].map(
-      /**
-       * Converts a specification string to an integer.
-       * @param {string} specStr - The specification string.
-       * @returns {number} The parsed integer specification.
-       */
-      e => parseInt(e, 10)
-    ));
-  }
+            // For the current light bulb, iterate through its connected switches.
+            // The first element of `switchConfigurations[configIndex - 1]` is the count of switches.
+            for (let switchPosition = 1; switchPosition <= switchConfigurations[configIndex - 1][0]; switchPosition++) {
+                // Get the state (0 or 1) of the specific switch from the binary string.
+                // Switch indices are 1-based in input, so adjust to 0-based for string access.
+                currentBitValue = parseInt(currentBinaryString[switchConfigurations[configIndex - 1][switchPosition] - 1], 10);
+                // Add the switch's state to the running total.
+                currentSwitchSum += currentBitValue;
+            }
 
-  // Iterate through all possible switch configurations.
-  // The loop runs from 2^N to 2^(N+1)-1.
-  // This cleverly generates N-bit binary numbers by taking substr(1) of numbers from 2^N to 2^(N+1)-1.
-  for (var comboNum = Math.pow(2, configVals[0]); comboNum < Math.pow(2, configVals[0]) * 2; comboNum++) {
+            // Check if the parity of the cumulative sum of active switches (up to this bulb)
+            // matches the expected parity for this light bulb.
+            // If not, this combination is invalid; break to the next combination.
+            if (currentSwitchSum % 2 !== expectedParities[configIndex - 1]) {
+                break configurationCheckLoop;
+            }
 
-    // Convert the current combination number to its binary string representation.
-    // .substr(1) effectively removes the leading '1' to get N bits.
-    binaryRepresentation = comboNum.toString(2).substr(1);
-
-    // Reset the sum for the current configuration.
-    groupParitySum = 0;
-
-    // Labeled loop for checking each group's parity.
-    groupVerificationLoop:
-      for (var currGroupIdx = 1; currGroupIdx <= configVals[1]; currGroupIdx++) {
-
-        // Reset the sum for the current group.
-        groupParitySum = 0;
-
-        // Iterate through each switch connected to the current group.
-        // The first element of groupDetails[currGroupIdx-1] is the number of switches for this group.
-        for (var switchIdxInGroup = 1; switchIdxInGroup <= groupDetails[currGroupIdx - 1][0]; switchIdxInGroup++) {
-
-          // Get the state (0 or 1) of the current switch based on the binary representation.
-          // groupDetails[currGroupIdx-1][switchIdxInGroup] gives the 1-based index of the switch.
-          // We subtract 1 for 0-based array access.
-          currentBit = parseInt(binaryRepresentation[groupDetails[currGroupIdx - 1][switchIdxInGroup] - 1], 10);
-
-          // Add the switch state to the current group's sum.
-          groupParitySum += currentBit;
+            // If this is the last light bulb and all previous parity checks passed,
+            // then this combination of switches is valid.
+            if (configIndex === configParams[1]) {
+                validCombinationsCount++;
+            }
         }
+    }
 
-        // Check if the calculated parity (sum % 2) matches the expected outcome for this group.
-        if (groupParitySum % 2 != expectedOutcomes[currGroupIdx - 1]) {
-          // If parities don't match, this configuration is invalid; move to the next combination.
-          break groupVerificationLoop;
-        }
-
-        // If all groups have been checked and passed for this configuration.
-        if (currGroupIdx === configVals[1]) {
-          // Increment the count of valid configurations.
-          solutionCount++;
-        }
-      }
-  }
-
-  // Output the final count of valid configurations.
-  console.log(solutionCount);
+    // Output the total number of valid switch combinations found.
+    console.log(validCombinationsCount);
 }
 
-// Entry point: Read input from stdin and pass it to the main processing function.
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire standard input, decode it as UTF-8, and pass it to the processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

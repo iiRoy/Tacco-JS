@@ -1,26 +1,36 @@
-'use strict'
+'use strict';
 
-const determineSuccessorSymbol = (inputSequence) => {
-  if (inputSequence.length === 0) {
-    return 'a';
-  }
-
-  const numericRepresentations = Array.from(inputSequence, (char) => char.charCodeAt(0));
-  const minimumNumericValue = Math.min(...numericRepresentations);
-
-  let outputDesignation;
-  if (minimumNumericValue === 'z'.charCodeAt(0)) {
-    outputDesignation = 'None';
-  } else {
-    outputDesignation = String.fromCharCode(minimumNumericValue + 1);
-  }
-
-  return outputDesignation;
+const nextAlphabeticalLookup = {
+  'a': 'b', 'b': 'c', 'c': 'd', 'd': 'e', 'e': 'f', 'f': 'g', 'g': 'h', 'h': 'i', 'i': 'j', 'j': 'k', 'k': 'l', 'l': 'm', 'm': 'n', 'n': 'o', 'o': 'p', 'p': 'q', 'q': 'r', 'r': 's', 's': 't', 't': 'u', 'u': 'v', 'v': 'w', 'w': 'x', 'x': 'y', 'y': 'z', 'z': 'None'
 };
 
-(function() {
-  const receivedContent = require("fs").readFileSync("/dev/stdin", "utf8");
-  const trimmedContent = receivedContent.trim();
-  const calculatedOutcome = determineSuccessorSymbol(trimmedContent);
-  console.log(calculatedOutcome);
-})();
+const determineSuccessorSymbol = (currentSymbol) => {
+  return nextAlphabeticalLookup[currentSymbol];
+};
+
+const findMinimumAlphabeticalSymbol = (sourceText) => {
+  const validSymbols = Array.from(sourceText)
+    .filter(symbol => symbol >= 'a' && symbol <= 'z');
+
+  if (validSymbols.length === 0) {
+    return null;
+  }
+
+  const minimumSymbol = validSymbols.reduce((min, current) => {
+    return current < min ? current : min;
+  }, 'z');
+
+  return minimumSymbol;
+};
+
+function processInputData(sourceText) {
+  const smallestPresentAlphabetical = findMinimumAlphabeticalSymbol(sourceText);
+
+  if (smallestPresentAlphabetical === null) {
+    console.log('a');
+  } else {
+    console.log(determineSuccessorSymbol(smallestPresentAlphabetical));
+  }
+}
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

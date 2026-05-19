@@ -1,89 +1,97 @@
-// This script processes input data to compute a specific numerical outcome.
-function executePrimaryLogic( inputDataString ) {
-    // First, preprocess the raw input: trim whitespace, split into lines,
-    // and then split each line by space characters.
-    let processedInputMatrix = inputDataString
-        .trim()
-        .split( "\n" )
-        .map( ( lineFragment ) => {
-            return lineFragment.split( " " )
-        } ) ;
+function ProcessInput(rawData) {
+    // Process the raw input string: trim whitespace, split into lines,
+    // then split each line by space to get an array of string arrays.
+    let parsedData = rawData.trim().split("\n").map(function(item) {
+        return item.split(" ");
+    });
 
-    // Extract the two primary dimensions from the first row of the processed data.
-    const primaryHeightValue = Number.parseInt( processedInputMatrix[0][0], 10 );
-    const primaryWidthValue = Number.parseInt( processedInputMatrix[0][1], 10 );
+    // Extract the two dimensions (height and width) from the first line of input.
+    // Convert them from strings to base-10 integers.
+    const heightVal = parseInt(parsedData[0][0], 10);
+    const widthVal = parseInt(parsedData[0][1], 10);
 
-    // Call the core computation function with the extracted dimensions.
-    const finalCalculatedMetric = calculateOptimalSplit( primaryHeightValue, primaryWidthValue );
+    // Call the core computation function to find the minimum area difference.
+    let finalResult = computeMinAreaDiff(heightVal, widthVal);
 
-    // Output the computed metric to the standard console.
-    console.log( finalCalculatedMetric );
+    // Output the calculated minimum difference to the console.
+    console.log(finalResult);
 }
 
-// This function determines the minimal difference in area for a specific geometric partitioning problem.
-function calculateOptimalSplit( dimensionA, dimensionB ) {
-    // Trivial case: If either dimension is a multiple of three, no split is needed, difference is zero.
-    if ( ( dimensionA % 3.0 === 0.0 ) || ( dimensionB % 3.0 === 0.0 ) ) {
-        return 0.0;
+// This function calculates the minimum possible difference between the largest
+// and smallest areas when a rectangle of dimensions dimA x dimB is divided into three pieces.
+function computeMinAreaDiff(dimA, dimB) {
+    // Optimization: If either dimension is a multiple of 3, the rectangle can be
+    // perfectly divided into three equal strips, resulting in a difference of 0.
+    if (dimA % 3 === 0 || dimB % 3 === 0) {
+        return 0;
     }
 
-    // Initialize the best-found difference with the total area (product of dimensions).
-    let minimumObservedDifference = dimensionA * dimensionB;
-    let temporaryComputedDifference;
-    let lastKnownDifference = minimumObservedDifference; // Used for optimization to break early.
+    // Initialize the minimum difference found so far with the total area.
+    // This serves as an upper bound for the difference.
+    let minDifference = dimA * dimB;
 
-    // Iterate through possible division points along the second dimension (dimensionB).
-    for ( let segmentIndex = 0.0; segmentIndex <= dimensionB; segmentIndex++ ) {
-        // Calculate the maximum possible difference for the current segment configuration.
-        // This involves splitting the rectangle into three parts and finding the largest area difference.
-        temporaryComputedDifference = Math.max(
-            Math.abs( ( segmentIndex * dimensionA ) - ( ( dimensionB - segmentIndex ) * Math.ceil( dimensionA / 2.0 ) ) ),
-            Math.abs( ( segmentIndex * dimensionA ) - ( ( dimensionB - segmentIndex ) * Math.floor( dimensionA / 2.0 ) ) ),
-            ( dimensionA % 2.0 ) * ( dimensionB - segmentIndex )
+    // Variable to hold the difference calculated in the current iteration.
+    let currentDiff;
+
+    // Variable to store the difference from the previous iteration.
+    // Used for an early exit optimization if differences start increasing.
+    let previousDiff = minDifference;
+
+    // First pass: Iterate through possible cut positions along one dimension (dimB).
+    // This simulates cutting the rectangle into one strip of size dimA * idx,
+    // and then splitting the remaining rectangle (dimA * (dimB - idx)) into two pieces
+    // by cutting it horizontally.
+    for (let idx = 0; idx <= dimB; idx++) {
+        // Calculate the maximum area difference among the three pieces for the current cut.
+        // The three pieces are:
+        // 1. A strip of area `idx * dimA`.
+        // 2. One part of the remaining area: `(dimB - idx) * Math.ceil(dimA / 2)`.
+        // 3. The other part of the remaining area: `(dimB - idx) * Math.floor(dimA / 2)`.
+        // The `Math.max` finds the largest difference between any two of these three areas.
+        currentDiff = Math.max(
+            Math.abs(idx * dimA - (dimB - idx) * Math.ceil(dimA / 2)),
+            Math.abs(idx * dimA - (dimB - idx) * Math.floor(dimA / 2)),
+            (dimA % 2) * (dimB - idx) // This term represents the difference between the two sub-pieces if dimA is odd.
         );
 
-        // Update the overall minimum difference found across all segments.
-        minimumObservedDifference = Math.min( minimumObservedDifference, temporaryComputedDifference );
+        // Update the overall minimum difference found.
+        minDifference = Math.min(minDifference, currentDiff);
 
-        // Early exit optimization: if the differences start increasing, we've passed the optimal point.
-        if ( temporaryComputedDifference > lastKnownDifference ) {
+        // Early exit optimization: If the current difference is greater than the previous one,
+        // it implies we've passed the optimal point for this type of cut, so we can stop.
+        if (currentDiff > previousDiff) {
             break;
         }
-
-        // Store the current difference to compare with the next iteration.
-        lastKnownDifference = temporaryComputedDifference;
+        previousDiff = currentDiff;
     }
 
-    // Swap the dimensions and repeat the process to check the other orientation.
-    [ dimensionB, dimensionA ] = [ dimensionA, dimensionB ];
+    // Second pass: Swap the dimensions (dimA and dimB) and repeat the process.
+    // This covers the case where the initial cut is made along the other axis.
+    [dimB, dimA] = [dimA, dimB];
 
-    // Reset the comparison value for the new orientation.
-    lastKnownDifference = dimensionA * dimensionB;
+    // Reset the previous difference for the new pass.
+    previousDiff = dimA * dimB;
 
-    // Iterate through possible division points along the (now swapped) second dimension (dimensionB).
-    for ( let partitionIterator = 0.0; partitionIterator <= dimensionB; partitionIterator++ ) {
-        // Recalculate differences with the swapped dimensions.
-        temporaryComputedDifference = Math.max(
-            Math.abs( ( partitionIterator * dimensionA ) - ( ( dimensionB - partitionIterator ) * Math.ceil( dimensionA / 2.0 ) ) ),
-            Math.abs( ( partitionIterator * dimensionA ) - ( ( dimensionB - partitionIterator ) * Math.floor( dimensionA / 2.0 ) ) ),
-            ( dimensionA % 2.0 ) * ( dimensionB - partitionIterator )
+    // Repeat the loop with the swapped dimensions.
+    for (let idx = 0; idx <= dimB; idx++) {
+        currentDiff = Math.max(
+            Math.abs(idx * dimA - (dimB - idx) * Math.ceil(dimA / 2)),
+            Math.abs(idx * dimA - (dimB - idx) * Math.floor(dimA / 2)),
+            (dimA % 2) * (dimB - idx)
         );
-
-        // Update the global minimum difference.
-        minimumObservedDifference = Math.min( minimumObservedDifference, temporaryComputedDifference );
-
-        // Early exit if the trend reverses.
-        if ( temporaryComputedDifference > lastKnownDifference ) {
+        minDifference = Math.min(minDifference, currentDiff);
+        if (currentDiff > previousDiff) {
             break;
         }
-
-        // Update the reference for the next iteration.
-        lastKnownDifference = temporaryComputedDifference;
+        previousDiff = currentDiff;
     }
 
-    // The final result is the minimum of the overall calculated difference and the two dimensions themselves.
-    return Math.min( minimumObservedDifference, dimensionA, dimensionB );
+    // The final result is the minimum of all calculated differences,
+    // also considering the possibility that the minimum difference could be
+    // equal to one of the dimensions (e.g., for very thin rectangles).
+    return Math.min(minDifference, dimA, dimB);
 }
 
-// Initiate program execution by reading input from the standard file system stream.
-executePrimaryLogic( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// Read the input from standard input (e.g., a file or piped data)
+// and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

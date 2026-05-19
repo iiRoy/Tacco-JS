@@ -1,22 +1,15 @@
 'use strict';
 
-const obtainValue = require('node:fs').readFileSync('/dev/stdin', 'utf8');
-const processedNumber = Number.parseInt(obtainValue.trim(), 10);
+const fileSystem = require('fs');
+const rawInput = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const numericValue = Number(rawInput.trim().split('\n')[0]);
 
-const largePrime = BigInt(1000000007);
+const modulusConstant = 1000000000 + 7;
 
-const computeFactorialModulo = (limitValue, primeModulus) => {
-    const calculateProductInternal = (currentNumber, accumulator) => {
-        if (currentNumber > limitValue) {
-            return accumulator;
-        }
-        const nextAccumulator = (accumulator * BigInt(currentNumber)) % primeModulus;
-        return calculateProductInternal(currentNumber + 1, nextAccumulator);
-    };
+const sequence = Array.from({ length: numericValue }, (_, idx) => idx + 1);
 
-    return calculateProductInternal(1, BigInt(1));
-};
+const finalProduct = sequence.reduce((accumulator, currentElement) => {
+    return (accumulator * currentElement) % modulusConstant;
+}, 1);
 
-const finalComputation = computeFactorialModulo(processedNumber, largePrime);
-
-process.stdout.write(String(finalComputation) + '\n');
+console.log(finalProduct);

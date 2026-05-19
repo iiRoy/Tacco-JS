@@ -1,58 +1,81 @@
-// Module to manage incoming textual data
-let inputHandler = require('readline').createInterface({ source: process.stdin, destination: process.stdout });
-
-let dataRows = [];
-
-inputHandler.on('dataReceived', function (rowContent) {
-    dataRows.push(rowContent);
+var inputHandler = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
 
-// This function determines the prime factors of a given positive integer
-function computePrimeFactors(inputNumber) {
-    let factorList = [];
-    if (inputNumber === 1) {
+// Array to store all input lines received.
+var inputData = [];
+
+// Event listener for each line of input.
+inputHandler.on('line', function (currentLine) {
+    inputData.push(currentLine);
+});
+
+/**
+ * Computes the prime factorization of a given number.
+ * @param {number} targetValue The number to factorize.
+ * @returns {number[]} An array of prime factors.
+ */
+function factorizeNumber(targetValue) {
+    var factorList = []; // Stores the prime factors.
+
+    // Special case for 1.
+    if (targetValue === 1) {
         return [1];
     }
 
-    let currentDivisor = 2;
-    while (inputNumber !== 1) {
-        let testFactor = currentDivisor;
-        while (testFactor < Number.MAX_SAFE_INTEGER) {
-            if (inputNumber % testFactor === 0) {
-                factorList.push(testFactor);
-                inputNumber /= testFactor;
-                break;
+    var startDivisor = 2; // Start checking for divisibility from 2.
+
+    // Continue until the target value becomes 1.
+    while (targetValue !== 1) {
+        var currentDivisor = startDivisor; // Initialize current divisor for inner loop.
+
+        // Iterate through potential divisors.
+        while (currentDivisor < Number.MAX_SAFE_INTEGER) {
+            // If currentDivisor divides targetValue evenly.
+            if (targetValue % currentDivisor === 0) {
+                factorList.push(currentDivisor); // Add to factors.
+                targetValue /= currentDivisor; // Reduce targetValue.
+                break; // Found a factor, break inner loop to re-evaluate targetValue.
             }
-            testFactor++;
+            currentDivisor++; // Increment divisor to check the next number.
         }
-        currentDivisor = testFactor;
+        startDivisor = currentDivisor; // Update startDivisor for the next iteration of the outer loop.
     }
-    return factorList;
+    return factorList; // Return the list of prime factors.
 }
 
-// Core processing logic after all input is gathered
-inputHandler.on('finishedReading', function () {
-    /* This section was part of an alternative approach that was commented out.
-       It involved a different iterative search for factors.
-    let originalValue = parseInt(dataRows[0]);
-    let firstFactor = 1;
-    while(originalValue % firstFactor !== 0 || originalValue / firstFactor >= 1_000_000_000) {
-        firstFactor++;
+// Main execution block, triggered when input stream closes.
+inputHandler.on('close', function () {
+    /*
+     * This section contains commented-out alternative logic.
+     * It is preserved as a comment to maintain structural similarity.
+     *
+     * var s = Number(inputData[0]);
+     * var x = 1;
+     * while(s % x !== 0 || s / x >= 1000000000) x++;
+     * console.log("0 0 " + x + " 0 0 " + (s / x));
+     */
+
+    // Parse the first line of input as a number.
+    var inputNum = Number(inputData[0]);
+
+    // Get the prime factors of the input number.
+    var primeFactors = factorizeNumber(inputNum);
+
+    var factorIndex = 0; // Index for iterating through prime factors.
+    var productAccumulator = 1; // Accumulator for the product of factors.
+
+    // Multiply factors from the end of the list until product exceeds 1,000,000,000.
+    while (productAccumulator < 1000000000) {
+        // Multiply by the factor from the end of the list, moving backwards.
+        productAccumulator = productAccumulator * primeFactors[primeFactors.length - 1 - factorIndex];
+        factorIndex++; // Move to the next factor.
     }
-    console.log("0 0 " + firstFactor + " 0 0 " + (originalValue / firstFactor));
-    */
 
-    let initialValue = parseInt(dataRows[0]);
-    let primeDecomposition = computePrimeFactors(initialValue);
-    let indexCounter = 0;
-    let productAccumulator = 1;
+    // Adjust the product by dividing by the last factor that caused it to exceed the limit.
+    productAccumulator = productAccumulator / primeFactors[primeFactors.length - factorIndex];
 
-    while (productAccumulator < 1_000_000_000) {
-        productAccumulator = productAccumulator * primeDecomposition[primeDecomposition.length - 1 - indexCounter];
-        indexCounter++;
-    }
-
-    productAccumulator = productAccumulator / primeDecomposition[primeDecomposition.length - indexCounter];
-    console.log("0 0 " + productAccumulator + " 0 0 " + (initialValue / productAccumulator));
-
+    // Output the result in the specified format.
+    console.log("0 0 " + productAccumulator + " 0 0 " + (inputNum / productAccumulator));
 });

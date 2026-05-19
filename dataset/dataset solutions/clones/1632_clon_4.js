@@ -1,25 +1,16 @@
-const fileSystemModule = require('fs');
+(async () => {
+    let rawInput = '';
+    for await (const dataChunk of process.stdin) rawInput += dataChunk;
+    const parsedValues = rawInput.split(/\s/);
+    const limit = +parsedValues.shift();
+    const charSequence = parsedValues[0].split('').slice(0, limit);
 
-const entireStandardInput = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+    const redCount = charSequence.filter(symbol => symbol === 'R').length;
 
-const inputLines = entireStandardInput.trim().split('\n');
-const segmentLength = parseInt(inputLines[0], 10);
-const characterString = inputLines[1];
+    const exchangeTally = charSequence
+        .slice(0, redCount)
+        .filter(symbol => symbol === 'W')
+        .length;
 
-const characterArray = Array.from(characterString.substring(0, segmentLength));
-
-let redCharacterCount = 0;
-for (let idx = 0; idx < characterArray.length; idx++) {
-    if (characterArray[idx] === 'R') {
-        redCharacterCount++;
-    }
-}
-
-let swapOperations = 0;
-for (let pos = 0; pos < redCharacterCount; pos++) {
-    if (characterArray[pos] === 'W') {
-        swapOperations++;
-    }
-}
-
-process.stdout.write(swapOperations.toString() + '\n');
+    console.log(exchangeTally);
+})();

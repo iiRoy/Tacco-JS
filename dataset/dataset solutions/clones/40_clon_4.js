@@ -1,55 +1,46 @@
-const streamHandler = require('readline');
+const fileSystem = require('fs');
 
-const accumulatedLines = [];
+const rawInputContent = fileSystem.readFileSync(process.stdin.fd, 'utf8');
+const lineSegments = rawInputContent.split('\n');
 
-const lineInterpreter = streamHandler.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-});
+const processInputValues = (inputLines) => {
+    const parseAndNormalize = (lineString) => {
+        const numericalRepresentation = Number(lineString);
+        return isNaN(numericalRepresentation) ? 0 : numericalRepresentation;
+    };
 
-lineInterpreter.on('line', (dataLine) => {
-    accumulatedLines.push(parseInt(dataLine.trim(), 10));
-});
-
-lineInterpreter.on('close', () => {
-    processAllEntries(accumulatedLines);
-});
-
-function checkIfPrime(numVal) {
-    if (numVal < 2) return false;
-    if (numVal === 2) return true;
-    if (numVal % 2 === 0) return false;
-    const boundary = Math.sqrt(numVal);
-    for (let currentDivisor = 3; currentDivisor <= boundary; currentDivisor += 2) {
-        if (numVal % currentDivisor === 0) {
-            return false;
+    const calculateSpecificPrimeCount = (targetNumber) => {
+        if (targetNumber === 1) {
+            return 0;
         }
-    }
-    return true;
-}
-
-function determinePrimeCount(inputVal) {
-    if (inputVal === 1) {
-        return 0;
-    }
-    if (inputVal === 2) {
-        return 1;
-    }
-    
-    let primeTally = 1;
-    const upperLimit = Math.sqrt(inputVal);
-
-    for (let iter = 3; iter < upperLimit; iter++) {
-        if (checkIfPrime(iter)) {
-            primeTally++;
+        if (targetNumber < 2) {
+            return 1;
         }
-    }
-    return primeTally;
-}
 
-function processAllEntries(numericEntries) {
-    numericEntries.forEach(entry => {
-        console.log(determinePrimeCount(entry));
+        const upperLimit = Math.sqrt(targetNumber);
+
+        const recurseForPrimes = (currentCandidate, accumulatedPrimes, currentCount) => {
+            if (currentCandidate >= upperLimit) {
+                return currentCount;
+            }
+
+            const isCandidatePrime = !accumulatedPrimes.some(knownDivisor =>
+                knownDivisor <= upperLimit && currentCandidate % knownDivisor === 0
+            );
+
+            if (isCandidatePrime) {
+                return recurseForPrimes(currentCandidate + 1, accumulatedPrimes.concat(currentCandidate), currentCount + 1);
+            } else {
+                return recurseForPrimes(currentCandidate + 1, accumulatedPrimes, currentCount);
+            }
+        };
+
+        return recurseForPrimes(3, [2], 1);
+    };
+
+    inputLines.map(parseAndNormalize).forEach(value => {
+        console.log(calculateSpecificPrimeCount(value));
     });
-}
+};
+
+processInputValues(lineSegments);

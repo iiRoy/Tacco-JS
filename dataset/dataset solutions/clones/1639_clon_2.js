@@ -1,24 +1,37 @@
-function ProcessData ( dataString ) {
-  dataString = dataString.split ( "\n" ) ;
+function ProcessInput(rawData) {
+  // Split the entire input string by newline characters to get individual lines.
+  let linesOfData = rawData.split("\n");
 
-  var [ itemCount , queryCount ] = dataString[0] .split ( " " ) .map ( numStr => parseInt ( numStr , 10 ) ) ;
+  // Parse the first line to get the total number of items and the number of queries.
+  const [totalItems, queryCount] = linesOfData[0].split(" ").map(strVal => parseInt(strVal, 10));
 
-  var palette = dataString[1] .split ( " " ) ;
+  // The second line contains the colors of the items, split by spaces.
+  const itemColors = linesOfData[1].split(" ");
 
-  for ( var k = 0 ; k < queryCount ; k++ ) {
-    var [ beginIdx , finalIdx ] = dataString[k+2] .split ( " " ) .map ( numStr => parseInt ( numStr , 10 ) ) ;
+  // Iterate through each query.
+  for (let queryIndex = 0; queryIndex < queryCount; queryIndex++) {
+    // For each query, parse its start and end indices from the corresponding line.
+    // Queries start from line index 2 (0-indexed).
+    const [rangeStart, rangeEnd] = linesOfData[queryIndex + 2].split(" ").map(strVal => parseInt(strVal, 10));
 
-    var distinctColors = [ ] ;
+    // Initialize an array to store unique colors found in the current query range.
+    let uniqueColorsInQuery = [];
 
-    for ( var m = beginIdx - 1 ; m < finalIdx ; m++ ) {
-      var currentShade = palette[ m ] ;
+    // Loop through the items within the specified range (adjusting for 0-based indexing).
+    for (let itemIndex = rangeStart - 1; itemIndex < rangeEnd; itemIndex++) {
+      // Get the color of the current item.
+      const currentItemColor = itemColors[itemIndex];
 
-      if ( distinctColors .indexOf ( currentShade ) === -1 ) {
-        distinctColors .push ( currentShade ) ;
+      // Check if this color is already in our unique list.
+      if (uniqueColorsInQuery.indexOf(currentItemColor) === -1) {
+        // If not, add it to the list.
+        uniqueColorsInQuery.push(currentItemColor);
       }
     }
-    console .log ( distinctColors .length ) ;
+    // Output the count of unique colors for the current query.
+    console.log(uniqueColorsInQuery.length);
   }
 }
 
-ProcessData ( require ( "fs" ) .readFileSync ( "/dev/stdin" , "utf8" ) ) ;
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

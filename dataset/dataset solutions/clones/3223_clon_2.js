@@ -1,35 +1,43 @@
-/**
- * Processes a given input string to determine a specific condition.
- * @param {string} rawData The raw string data to be processed.
- */
-function analyzeDataSet(rawData) {
-    const parsedLines = rawData.split('\n');
-    let itemCount = Number(parsedLines[0]);
-    let numericStrings = parsedLines[1].split(' ');
+// This function processes raw string data to determine a specific condition.
+// It expects a multi-line string where the first line is a number (N)
+// and the second line is a space-separated list of N numbers.
+function processInput(rawData) {
+  // Split the entire input string into an array of lines.
+  let lineSegments = rawData.split("\n");
 
-    let largestValue = 0;
-    let totalSum = 0;
+  // Parse the first line to get the count of elements.
+  let countElements = Number(lineSegments[0]);
 
-    for (let currentIndex = 0; currentIndex < itemCount; currentIndex++) {
-        // Convert current string element to a numeric type
-        const currentValue = Number(numericStrings[currentIndex]);
+  // Split the second line by spaces to get an array of numeric strings.
+  let numericStrings = lineSegments[1].split(" ");
 
-        // Check if this value is the new maximum
-        if (largestValue < currentValue) {
-            largestValue = currentValue;
-        }
+  // Initialize variables to track the maximum value and the total sum.
+  let greatestValue = 0;
+  let totalSum = 0;
 
-        // Accumulate the current value to the total sum
-        totalSum += currentValue;
+  // Iterate through the array of numeric strings using a loop counter.
+  for (let idx = 0; idx < countElements; idx++) {
+    // Check if the current element, converted to a number, is greater than the current maximum.
+    if (greatestValue < Number(numericStrings[idx])) {
+      // If it is, update the maximum value.
+      greatestValue = Number(numericStrings[idx]);
     }
+    // Add the current element, converted to a number, to the running total sum.
+    totalSum += Number(numericStrings[idx]);
+  }
 
-    // Evaluate the final condition based on the computed values
-    if (largestValue < (totalSum - largestValue)) {
-        console.log('Yes'); // Output for the "true" case
-    } else {
-        console.log('No');  // Output for the "false" case
-    }
+  // After iterating through all elements, evaluate the condition.
+  // The condition checks if the greatest value is less than the sum of all other values.
+  // The sum of all other values is calculated as (totalSum - greatestValue).
+  if (greatestValue < (totalSum - greatestValue)) {
+    console.log("Yes"); // If the condition holds true, print "Yes".
+  } else {
+    console.log("No"); // Otherwise, print "No".
+  }
 }
 
-// Read input from standard input and pass it to the processing function
-analyzeDataSet(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// The program starts by reading the entire content of standard input.
+// It uses Node.js's 'fs' module to synchronously read the file '/dev/stdin'
+// and decodes it as a 'utf8' string. This string is then passed to the
+// 'processInput' function for further processing.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

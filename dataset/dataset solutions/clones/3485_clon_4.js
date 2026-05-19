@@ -1,19 +1,8 @@
-const initialPayload = require('node:fs').readFileSync(0, 'utf8');
-const componentStrings = initialPayload.trim().split(/\s+/);
-
-const firstNumeric = Number(componentStrings[0]);
-const secondNumeric = Number(componentStrings[1]);
-const thirdNumeric = Number(componentStrings[2]);
-
-const behaviorMap = new Map();
-behaviorMap.set(1, (paramA, paramB) => "Hello World");
-behaviorMap.set('default', (paramA, paramB) => paramA + paramB);
-
-let finalOutcome;
-if (behaviorMap.has(secondNumeric)) {
-  finalOutcome = behaviorMap.get(secondNumeric)(secondNumeric, thirdNumeric);
-} else {
-  finalOutcome = behaviorMap.get('default')(secondNumeric, thirdNumeric);
+function processValues(dataArr) {
+  const valP = +dataArr[0];
+  const valQ = +dataArr[1];
+  const valR = +dataArr[2];
+  const outputOptions = [valQ + valR, "Hello World"];
+  console.log(outputOptions[Number(valQ === 1)]);
 }
-
-process.stdout.write(String(finalOutcome) + '\n');
+processValues(require('fs').readFileSync('/dev/stdin', 'utf8').trim().split("\n"));

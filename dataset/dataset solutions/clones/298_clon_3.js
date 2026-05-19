@@ -1,128 +1,102 @@
-(function (rawInputString) {
-    /**
-     * @description Determines if the entire N x N grid is composed exclusively of '*' characters.
-     *              If true, it implies no '.' (empty) squares exist.
-     * @param {number} matrixDimension - The side length (N) of the square grid.
-     * @param {string[]} currentGrid - An array of strings, each representing a row of the grid.
-     * @returns {boolean} True if all cells are '*', false if any '.' is found.
-     */
-    function checkAllStarsPresent(matrixDimension, currentGrid) {
-        // Handle edge cases for an empty or non-positive dimension grid.
-        // Such a grid, by convention, contains no '.' characters.
-        if (matrixDimension <= 0 || !currentGrid || currentGrid.length === 0) {
-            return true;
+(function (programInput) {
+    // Helper function to determine if the entire grid is filled with '*' characters.
+    function checkAllStars(dim) {
+        // Guard clause: if the dimension is non-positive, it cannot be "filled" in a meaningful way.
+        // For this problem's constraints, 'dim' (n) is always positive, but this is a structural addition.
+        if (dim <= 0) {
+            return false;
         }
 
-        // Iterate through each row and column of the grid.
-        for (let rowIndex = 0; rowIndex < matrixDimension; ++rowIndex) {
-            for (let colIndex = 0; colIndex < matrixDimension; ++colIndex) {
-                // If any cell is not a '*', then the grid is not entirely filled with stars.
-                if (currentGrid[rowIndex][colIndex] !== '*') {
+        const starCharacter = '*'; // Temporary constant for the character to check
+
+        for (let rowIdx = 0; rowIdx < dim; rowIdx++) {
+            for (let colIdx = 0; colIdx < dim; colIdx++) {
+                const currentCellContent = gridData[rowIdx][colIdx]; // Helper variable for cell value
+                if (currentCellContent !== starCharacter) {
                     return false;
                 }
             }
         }
-        return true; // All cells were '*'
+        return true;
     }
 
-    /**
-     * @description Checks if a square sub-grid, starting at a given coordinate and with a calculated side length,
-     *              consists entirely of '.' (empty) characters.
-     * @param {number} startCol - The column index (x-coordinate) of the top-left corner of the potential square.
-     * @param {number} startRow - The row index (y-coordinate) of the top-left corner of the potential square.
-     * @param {number} currentMaxSideLength - The current maximum side length (K) of a '.' square found so far.
-     *                                        This function will test for a square of size (K+1) x (K+1).
-     * @param {string[]} matrixReference - The array of strings representing the main grid.
-     * @returns {boolean} True if the (currentMaxSideLength+1) x (currentMaxSideLength+1) square is all '.', false otherwise.
-     */
-    function verifyEmptySubGrid(startCol, startRow, currentMaxSideLength, matrixReference) {
-        // Calculate the actual side length of the square being tested.
-        // If currentMaxSideLength is K, we are checking for a (K+1)x(K+1) square.
-        const testSquareSide = currentMaxSideLength + 1;
+    // Helper function to verify if a rectangle of '.' characters exists,
+    // replicating the original's specific out-of-bounds behavior.
+    function verifyClearRectangle(startX, startY, rectDimension) {
+        const dotCharacter = '.'; // Temporary constant for the character to check
+        const rectEndRow = startY + rectDimension;
+        const rectEndCol = startX + rectDimension;
 
-        // Perform robust boundary checks.
-        // Ensure the starting coordinates are within valid bounds and non-negative.
-        // Ensure the entire potential square fits within the matrix's overall dimensions.
-        if (startRow < 0 || startCol < 0 ||
-            startRow + testSquareSide > matrixReference.length ||
-            startCol + testSquareSide > matrixReference[0].length) { // Assumes a non-empty grid for matrixReference[0].length
-            return false; // The square extends beyond the matrix boundaries or has invalid starting point.
-        }
+        for (let currRow = startY; currRow <= rectEndRow; currRow++) {
+            const currentRowData = gridData[currRow];
 
-        // Iterate through each cell within the bounds of the potential square.
-        for (let currYCoord = startRow; currYCoord < startRow + testSquareSide; ++currYCoord) {
-            for (let currXCoord = startCol; currXCoord < startCol + testSquareSide; ++currXCoord) {
-                // If any cell is not a '.', then this is not an empty square.
-                if (matrixReference[currYCoord][currXCoord] !== '.') {
+            // Original behavior: if 'currRow' is out of bounds (currentRowData is undefined),
+            // the inner loop condition `data[i] && ...` would be false,
+            // effectively skipping the inner loop and not returning false.
+            // This means out-of-bounds rows are implicitly considered 'clear' by the original logic.
+            if (currentRowData === undefined) {
+                continue; // Skip to the next row, effectively treating it as 'clear'
+            }
+
+            for (let currCol = startX; currCol <= rectEndCol; currCol++) {
+                // Original behavior: if 'currCol' is out of bounds (currentRowData[currCol] is undefined),
+                // then `currentRowData[currCol] !== '.'` (undefined !== '.') is true,
+                // causing the function to return false.
+                const cellValue = currentRowData[currCol]; // Helper variable for cell value
+                if (cellValue === undefined || cellValue !== dotCharacter) {
                     return false;
                 }
             }
         }
-        return true; // All cells within the test square were '.'
+        return true;
     }
 
-    // Prepare the input: remove potential carriage returns and split into individual lines.
-    let inputLines = rawInputString.split(/\r?\n/);
-    let gridMatrix = []; // This array will hold the grid data for each test case.
-    let gridDimension = 0; // Stores the N dimension for the current square grid.
-    let rowIterator, colIterator; // General-purpose loop iterators.
+    // --- Main program logic ---
 
-    /**
-     * @description A utility function to extract and parse the next integer from the input lines array.
-     * @returns {number} The parsed integer value.
-     */
-    const getNextInteger = () => Number.parseInt(inputLines.shift(), 10);
+    // Step 1: Clean the input by removing carriage returns.
+    const cleanedInput = programInput.replace(/\r/g, '');
+    // Step 2: Split the cleaned input into an array of lines.
+    let processedLines = cleanedInput.split("\n");
 
-    // Main loop: Processes multiple test cases sequentially.
-    // The loop continues indefinitely until a specific termination condition is met.
-    while (true) {
-        gridDimension = getNextInteger(); // Read the dimension (N) for the current test case's grid.
+    let gridData;
+    let gridSize;
 
-        // Termination condition: A grid dimension of 0 signals the end of input.
-        if (gridDimension === 0) {
-            break;
+    const loopTerminationValue = 0; // Temporary constant for the loop termination condition
+
+    // Using a do-while loop for structural change, which is functionally equivalent
+    // to the original 'while(true)' loop with an explicit 'break' statement.
+    do {
+        gridSize = parseInt(processedLines.shift(), 10); // Parse the grid size, specifying radix 10.
+        if (gridSize === loopTerminationValue) {
+            break; // Exit the loop if the grid size is the termination value.
         }
 
-        // Reset the grid matrix for the new test case and populate it with N lines of input.
-        gridMatrix = [];
-        for (rowIterator = 0; rowIterator < gridDimension; ++rowIterator) {
-            gridMatrix.push(inputLines.shift());
+        gridData = []; // Initialize an empty array to store grid rows.
+        for (let outerIdx = 0; outerIdx < gridSize; outerIdx++) {
+            const currentGridLine = processedLines.shift(); // Helper variable for the current line
+            gridData.push(currentGridLine); // Add the line to the grid data.
         }
 
-        // Phase 1: Initial check for grids with no '.' characters.
-        // If the entire grid is made of '*', no empty squares exist, so the max side length is 0.
-        if (checkAllStarsPresent(gridDimension, gridMatrix)) {
-            console.log(0);
+        const isGridCompletelyFilled = checkAllStars(gridSize); // Helper boolean variable for the condition
+        if (isGridCompletelyFilled) {
+            console.log(0); // Output 0 if the entire grid is filled with stars.
         } else {
-            // Phase 2: Search for the largest square of '.' characters.
-            // 'currentMaxSide' stores the largest side length (K) of a '.' square found so far.
-            // It's initialized to 1 because we know at least a 1x1 square exists (otherwise checkAllStarsPresent would be true).
-            let currentMaxSide = 1;
+            let currentRectSize = 1; // Renamed variable, representing (side_length - 1) of the largest square found.
 
-            // Iterate through every possible top-left cell (colIterator, rowIterator) in the grid.
-            for (rowIterator = 0; rowIterator < gridDimension; ++rowIterator) {
-                // The column iterator is handled specially within this loop,
-                // allowing it to jump based on search results.
-                for (colIterator = 0; colIterator < gridDimension; ) {
-                    // Attempt to find a square of size (currentMaxSide + 1) x (currentMaxSide + 1)
-                    // starting at the current (colIterator, rowIterator) position.
-                    // The 'currentMaxSide' parameter passed to verifyEmptySubGrid means we're checking
-                    // for a square one size larger than what we've currently confirmed.
-                    if (verifyEmptySubGrid(colIterator, rowIterator, currentMaxSide, gridMatrix)) {
-                        currentMaxSide++; // If a larger square is found, increment 'currentMaxSide'
-                                          // to try searching for an even larger one in subsequent checks.
+            // Nested loops to find the largest square of '.' characters.
+            for (let rowIter = 0; rowIter < gridSize; rowIter++) {
+                for (let colIter = 0; colIter < gridSize; ) {
+                    // Check if a rectangle of (currentRectSize+1) x (currentRectSize+1) is clear.
+                    const isCurrentRectClear = verifyClearRectangle(colIter, rowIter, currentRectSize); // Helper variable for the condition result
+                    if (isCurrentRectClear) {
+                        currentRectSize++; // If clear, try for a larger square.
                     } else {
-                        // If no larger square is found at the current position,
-                        // advance the column pointer by 'currentMaxSide'.
-                        // This is a greedy heuristic: if a (K+1)x(K+1) square isn't found starting here,
-                        // we jump forward by K cells, assuming no (K+1)x(K+1) square can begin
-                        // within the skipped portion that would have been covered by a potential (K+1)x(K+1) square.
-                        colIterator += currentMaxSide;
+                        colIter += currentRectSize; // If not clear, skip 'currentRectSize' columns.
                     }
                 }
             }
-            // Output the largest side length (K) found for any KxK square of '.' characters.
-            console.log(currentMaxSide);
+            console.log(currentRectSize); // Output the (side_length - 1) of the largest square.
         }
-    }
+    } while (true); // The loop continues indefinitely until 'break' is encountered.
+
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

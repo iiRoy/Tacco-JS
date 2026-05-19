@@ -1,193 +1,174 @@
-var fileSys = require('fs'); // Obtain file system utilities
+var fs = require('fs');
 
-/*
- * Class for handling standard input operations.
- * Manages reading lines from /dev/stdin.
- */
-function DataStreamHandler() {
-    this._bufferedContent = null; // Stores all content read from input
-    this._cachedRows = [];       // Array of individual lines
-    this._currentPosition = 0;   // Pointer to the next line to be read
+// A utility class for reading input from standard input
+function InputReader() {
+  this._dataBuffer = null; // Stores the entire input content
+  this._lineCache = [];    // Stores individual lines after splitting
+  this._currentLineIndex = 0; // Tracks the current line being read
 }
 
-/*
- * Prepares the input stream by reading from /dev/stdin.
- * Initializes the internal buffer and line cache.
- */
-DataStreamHandler.prototype.initializeStream = function() {
-    this._bufferedContent = fileSys.readFileSync('/dev/stdin', 'utf-8');
-    this._cachedRows = this._bufferedContent.split("\n");
-    this._currentPosition = 0;
-}
-
-/*
- * Reads and returns a single line from the input stream.
- * Re-initializes if all lines have been consumed.
- */
-DataStreamHandler.prototype.getSingleLine = function() {
-    if (this._currentPosition === this._cachedRows.length) {
-        this.initializeStream();
-    }
-    return this._cachedRows[this._currentPosition++];
+// Initializes or re-initializes the input reader by reading from /dev/stdin
+InputReader.prototype.initializeReader = function() {
+  this._dataBuffer = fs.readFileSync('/dev/stdin', 'utf-8'); // Read all data
+  this._lineCache = this._dataBuffer.split("\n");           // Split into lines
+  this._currentLineIndex = 0;                                // Reset line pointer
 };
 
-/*
- * Reads and returns all remaining lines from the input stream.
- * Re-initializes if all lines have been consumed.
- */
-DataStreamHandler.prototype.getAllRemainingLines = function() {
-    if (this._currentPosition === this._cachedRows.length) {
-        this.initializeStream();
-    }
-    let startingIndex = this._currentPosition;
-    this._currentPosition = this._cachedRows.length;
-    return this._cachedRows.slice(startingIndex);
+// Reads a single line from the input
+InputReader.prototype.fetchLine = function() {
+  // If all lines have been read, re-initialize the reader
+  if (this._currentLineIndex === this._lineCache.length) {
+    this.initializeReader();
+  }
+  // Return the current line and advance the pointer
+  return this._lineCache[this._currentLineIndex++];
 };
 
-var inputProcessor = new DataStreamHandler(); // Instantiate the input handler
+// Reads all remaining lines from the input
+InputReader.prototype.fetchRemainingLines = function() {
+  // If all lines have been read, re-initialize the reader
+  if (this._currentLineIndex === this._lineCache.length) {
+    this.initializeReader();
+  }
+  // Store the current index, then advance to the end to mark all as read
+  let startIdx = this._currentLineIndex;
+  this._currentLineIndex = this._lineCache.length;
+  // Return a slice containing all lines from startIdx to the end
+  return this._lineCache.slice(startIdx);
+};
 
-/*
- * Extends Array prototype with utility methods.
- */
+// Create a global instance of the input reader
+var inputSource = new InputReader();
 
-// Converts all elements in the array to integers.
-Array.prototype.mapToIntegers = function() {
-    return this.map((item) => Number.parseInt(item, 10));
-}
+// Extend Array prototype with custom mapping functions
+Array.prototype.toIntegerArray = function() {
+  return this.map((itemValue) => parseInt(itemValue));
+};
+Array.prototype.toFloatArray = function() {
+  return this.map((elementVal) => parseFloat(elementVal));
+};
+Array.prototype.toStringArray = function() {
+  return this.map((valItem) => String(valItem));
+};
 
-// Converts all elements in the array to floating-point numbers.
-Array.prototype.mapToFloats = function() {
-    return this.map((item) => Number.parseFloat(item));
-}
+// Custom array fill function using a callback
+Array.prototype.fillWithCallback = function(fillFunction) {
+  for (let idx = 0; idx < this.length; ++idx) {
+    this[idx] = fillFunction(idx);
+  }
+  return this;
+};
 
-// Converts all elements in the array to strings.
-Array.prototype.mapToStrings = function() {
-    return this.map((item) => String(item));
-}
+// Custom array max function, optionally using a callback for value extraction
+Array.prototype.findMaximum = function(valueExtractor) {
+  if (this.length === 0) return undefined;
+  let maxValue = valueExtractor ? valueExtractor(this[0], 0) : this[0];
+  for (let loopIndex = 1; loopIndex < this.length; ++loopIndex) {
+    let currentValue = valueExtractor ? valueExtractor(this[loopIndex], loopIndex) : this[loopIndex];
+    if (maxValue < currentValue) maxValue = currentValue;
+  }
+  return maxValue;
+};
 
-// Fills the array with values generated by a callback function based on index.
-Array.prototype.populateByIndex = function(generatorFunc) {
-    for (let idx = 0; idx < this.length; ++idx) {
-        this[idx] = generatorFunc(idx);
-    }
-    return this;
-}
+// Custom array min function, optionally using a callback for value processing
+Array.prototype.findMinimum = function(valueProcessor) {
+  if (this.length === 0) return undefined;
+  let minValue = valueProcessor ? valueProcessor(this[0], 0) : this[0];
+  for (let iterIndex = 1; iterIndex < this.length; ++iterIndex) {
+    let processedValue = valueProcessor ? valueProcessor(this[iterIndex], iterIndex) : this[iterIndex];
+    if (processedValue < minValue) minValue = processedValue;
+  }
+  return minValue;
+};
 
-// Finds the maximum value in the array, optionally using a transformation callback.
-Array.prototype.findMaxElement = function(transformCb) {
-    if (this.length === 0) return undefined;
-    let maximumValue = transformCb ? transformCb(this[0], 0) : this[0];
-    for (let idx = 1; idx < this.length; ++idx) {
-        let currentValue = transformCb ? transformCb(this[idx], idx) : this[idx];
-        if (maximumValue < currentValue) maximumValue = currentValue;
-    }
-    return maximumValue;
-}
+// Custom array sum function, optionally using a callback for value summing
+Array.prototype.calculateSum = function(summingFunction) {
+  if (this.length === 0) return undefined;
+  let totalSum = summingFunction ? summingFunction(this[0], 0) : this[0];
+  for (let counter = 1; counter < this.length; ++counter) {
+    totalSum += summingFunction ? summingFunction(this[counter], counter) : this[counter];
+  }
+  return totalSum;
+};
 
-// Finds the minimum value in the array, optionally using a transformation callback.
-Array.prototype.findMinElement = function(transformCb) {
-    if (this.length === 0) return undefined;
-    let minimumValue = transformCb ? transformCb(this[0], 0) : this[0];
-    for (let idx = 1; idx < this.length; ++idx) {
-        let currentValue = transformCb ? transformCb(this[idx], idx) : this[idx];
-        if (currentValue < minimumValue) minimumValue = currentValue;
-    }
-    return minimumValue;
-}
-
-// Calculates the sum of all elements in the array, optionally using a transformation callback.
-Array.prototype.computeTotal = function(transformCb) {
-    if (this.length === 0) return undefined;
-    let totalSum = transformCb ? transformCb(this[0], 0) : this[0];
-    for (let idx = 1; idx < this.length; ++idx) {
-        totalSum += transformCb ? transformCb(this[idx], idx) : this[idx];
-    }
-    return totalSum;
-}
-
-/*
- * Extends Number prototype with a utility method.
- */
-
-// Executes a callback function a specified number of times.
+// Extend Number prototype to repeat an action a specified number of times
 Number.prototype.repeatAction = function(actionCallback) {
-    let resultList = [];
-    for (let count = 0; count < this; ++count) {
-        resultList.push(actionCallback ? actionCallback(count) : count);
+  let resultArray = [];
+  for (let iterationCount = 0; iterationCount < this; ++iterationCount) {
+    resultArray.push(actionCallback ? actionCallback(iterationCount) : iterationCount);
+  }
+  return resultArray;
+};
+
+// Extend Object prototype with custom iteration functions
+Object.prototype.iterateKeys = function(callbackFunction) {
+  Object.keys(this).forEach(callbackFunction);
+};
+Object.prototype.mapKeys = function(mappingFunction) {
+  Object.keys(this).map(mappingFunction);
+};
+
+// --- Main program logic starts here ---
+
+// Read the first line, split by space, and convert to integers
+var inputDimensions = inputSource.fetchLine().split(' ').toIntegerArray();
+var numRows = inputDimensions[0]; // N
+var numCols = inputDimensions[1]; // M
+
+// Read N lines to form the grid data
+var gridData = numRows.repeatAction((rowIdx) => inputSource.fetchLine());
+
+// Cache for memoization of color count calculations
+var calculationCache = {};
+
+// Function to calculate the number of cells that are NOT the target color in a given row
+function calculateColorCount(rowIndex, targetColor) {
+  // Check if result is already in cache
+  if ([rowIndex, targetColor] in calculationCache) {
+    return calculationCache[[rowIndex, targetColor]];
+  }
+
+  let colorOccurrences = 0;
+  // Iterate through columns of the specified row
+  for (let colIndex = 0; colIndex < numCols; ++colIndex) {
+    // If the cell's color matches the target color, increment count
+    if (gridData[rowIndex][colIndex] == targetColor) {
+      colorOccurrences++;
     }
-    return resultList;
+  }
+  // The cost is the total columns minus occurrences of the target color
+  // Store and return the result
+  return calculationCache[[rowIndex, targetColor]] = numCols - colorOccurrences;
 }
 
-/*
- * Extends Object prototype with utility methods.
- */
+// Initialize current white cost and overall minimum total cost
+var currentWhiteCost = 0;
+var minimumTotalCost = numRows * numCols; // Max possible cost initially
 
-// Iterates over all own enumerable properties of an object.
-Object.prototype.processKeys = function(callbackFunction) {
-    Object.keys(this).forEach(callbackFunction);
-}
+// Iterate through all possible split points for the white section (firstSplitRow)
+for (let firstSplitRow = 0; firstSplitRow < numRows; ++firstSplitRow) {
+  // Add the cost for the current row to be white
+  currentWhiteCost += calculateColorCount(firstSplitRow, 'W');
 
-// Transforms keys of an object using a callback function.
-Object.prototype.transformKeys = function(callbackFunction) {
-    Object.keys(this).map(callbackFunction);
-}
+  let currentBlueCost = 0; // Reset blue cost for each new white section
 
-// --- Main Program Logic ---
+  // Iterate through all possible split points for the blue section (secondSplitRow)
+  // The blue section must start after the white section and leave at least one row for red
+  for (let secondSplitRow = firstSplitRow + 1; secondSplitRow < numRows - 1; ++secondSplitRow) {
+    // Add the cost for the current row to be blue
+    currentBlueCost += calculateColorCount(secondSplitRow, 'B');
 
-// Read dimensions (number of rows and columns) from the first line.
-var dimensionData = inputProcessor.getSingleLine().split(' ').mapToIntegers();
-var rowCount = dimensionData[0], colCount = dimensionData[1];
+    let currentRedCost = 0; // Reset red cost for each new blue section
 
-// Read the grid of characters (S) for each row.
-var charGrid = rowCount.repeatAction(rowIdx => inputProcessor.getSingleLine());
-
-// Cache for storing previously computed penalty values to optimize.
-var penaltyCache = {};
-
-/*
- * Calculates the penalty (number of mismatches) for a given row
- * if it were to be entirely of a specific target character.
- */
-function determineMismatchCost(targetRowIndex, desiredChar) {
-    let cacheKey = `${targetRowIndex},${desiredChar}`;
-    if (cacheKey in penaltyCache) {
-        return penaltyCache[cacheKey];
+    // Iterate through all remaining rows for the red section (thirdSplitRow)
+    for (let thirdSplitRow = secondSplitRow + 1; thirdSplitRow < numRows; ++thirdSplitRow) {
+      // Add the cost for the current row to be red
+      currentRedCost += calculateColorCount(thirdSplitRow, 'R');
     }
-    let mismatchCounter = 0;
-    for (let charPos = 0; charPos < colCount; ++charPos) {
-        if (charGrid[targetRowIndex][charPos] == desiredChar) {
-            mismatchCounter++;
-        }
-    }
-    // The cost is the total columns minus the matched count.
-    return penaltyCache[cacheKey] = colCount - mismatchCounter;
+    // Update the minimum total cost found so far
+    minimumTotalCost = [minimumTotalCost, currentWhiteCost + currentBlueCost + currentRedCost].findMinimum();
+  }
 }
 
-// Initialize penalty accumulator for 'W' and overall minimum cost.
-var currentWhitePenalty = 0;
-var overallMinimumCost = rowCount * colCount; // Max possible cost initially
-
-// Iterate through all possible split points for the 'W' section.
-for (let rIdx1 = 0; rIdx1 < rowCount; ++rIdx1) {
-    currentWhitePenalty += determineMismatchCost(rIdx1, 'W'); // Accumulate cost for 'W' rows
-
-    let currentBluePenalty = 0; // Reset blue penalty for each 'W' split
-
-    // Iterate through all possible split points for the 'B' section.
-    for (let rIdx2 = rIdx1 + 1; rIdx2 < rowCount - 1; ++rIdx2) {
-        currentBluePenalty += determineMismatchCost(rIdx2, 'B'); // Accumulate cost for 'B' rows
-
-        let currentRedPenalty = 0; // Reset red penalty for each 'B' split
-
-        // Iterate through all possible rows for the 'R' section.
-        for (let rIdx3 = rIdx2 + 1; rIdx3 < rowCount; ++rIdx3) {
-            currentRedPenalty += determineMismatchCost(rIdx3, 'R'); // Accumulate cost for 'R' rows
-        }
-
-        // Update the overall minimum cost with the current combination.
-        overallMinimumCost = [overallMinimumCost, currentWhitePenalty + currentBluePenalty + currentRedPenalty].findMinElement();
-    }
-}
-
-// Output the final calculated minimum cost.
-console.log(overallMinimumCost);
+// Output the final minimum total cost
+console.log(minimumTotalCost);

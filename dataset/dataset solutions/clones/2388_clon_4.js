@@ -1,22 +1,9 @@
 'use strict'
-function processEntry(receivedInput) {
-  const dayValueMap = {
-    'SUN': 7,
-    'MON': 6,
-    'TUE': 5,
-    'WED': 4,
-    'THU': 3,
-    'FRI': 2,
-    'SAT': 1
-  };
-
-  const targetDay = receivedInput.split('\n')[0];
-  const resultNumber = dayValueMap[targetDay];
-  console.log(resultNumber);
+function Main(input) {
+  const dayOrder = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const currentDayName = input.split("\n")[0];
+  const dayPosition = dayOrder.indexOf(currentDayName);
+  const remainingDays = 7 - dayPosition;
+  console.log(remainingDays);
 }
-
-const systemIO = require('fs');
-const inputFilePath = '/dev/stdin';
-const encodingType = 'utf8';
-
-processEntry(systemIO.readFileSync(inputFilePath, encodingType));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

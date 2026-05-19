@@ -1,71 +1,96 @@
 'use strict';
 
-const executeProgram = ( inputData ) => {
+const entryPoint = (inputData) => {
 
-	const producePathEncodings = ( startString, endString ) => {
-		const targetOneCount = ( startString.match(/1/g) || [ ] ).length;
-		let lowerBound = parseInt( startString, 2 );
-		let upperBound = parseInt( endString, 2 );
-		const pathEncodings = [ ];
+    // Utility function to generate binary strings within a specified range.
+    // It ensures that generated strings have a consistent count of '1' bits
+    // as determined by the starting binary string.
+    const generateBinaryStrings = (startBinStr, endBinStr) => {
+        // Calculate the required number of '1's from the minimum binary string.
+        const requiredOneCount = (startBinStr.match(/1/g) || []).length;
+        let startInteger = parseInt(startBinStr, 2);
+        let endInteger = parseInt(endBinStr, 2);
+        const generatedBinaries = [];
 
-		for ( let currentValue = lowerBound; currentValue <= upperBound; currentValue++ ) {
-			let currentBinaryString = ( currentValue ).toString( 2 );
-			// Confirm the current binary string has the correct number of '1' bits
-			if ( targetOneCount !== ( currentBinaryString.match(/1/g) || [ ] ).length ) {
-				continue;
-			}
-			// Prepend zero padding to match the required string length
-			let paddingZeros = [ ...Array( endString.length - currentBinaryString.length ) ].map( item => "0" ).join( "" );
-			pathEncodings.push( paddingZeros + currentBinaryString );
-		}
+        // Iterate through all integers from start to end.
+        for (let currentInt = startInteger; currentInt <= endInteger; ++currentInt) {
+            const currentBinString = (currentInt).toString(2);
 
-		return pathEncodings;
-	};
+            // Skip if the current binary string does not have the required '1' count.
+            if (requiredOneCount !== (currentBinString.match(/1/g) || []).length) {
+                continue;
+            }
 
+            // Pad the binary string with leading zeros to match the maximum length.
+            const leadingZeros = Array.from({ length: endBinStr.length - currentBinString.length }).map(() => '0').join('');
+            generatedBinaries.push(leadingZeros + currentBinString);
+        }
 
-	const processedLines = inputData.trim().split("\n");
-	const dimensions = processedLines[0].split(" ").map( cellValue => parseInt( cellValue, 10 ) ); // [mapHeight, mapWidth] starting from 1
-	const obstacleMap = processedLines.slice(1).filter( ( lineContent, lineIndex ) => lineIndex < dimensions[0] ).map( ( currentRow, rowIndex ) => {
-		// '1' for an open path, '0' for a blocked wall
-		return ( currentRow.split("").filter( ( charValue, charIndex ) => charIndex < dimensions[1] ).map( gridChar => gridChar === "." ? 1 : 0 ) );
-	} );
+        return generatedBinaries;
+    };
 
-	let leastBlockedCells;
-	const targetHeightIndex = dimensions[0] - 1;
-	const targetWidthIndex = dimensions[1] - 1;
+    // Parse the raw input data.
+    const rawInputLines = inputData.trim().split('\n');
+    // The first line contains the grid dimensions: [height, width].
+    const gridDimensions = rawInputLines[0].split(' ').map(item => parseInt(item, 10));
+    const mapHeight = gridDimensions[0];
+    const mapWidth = gridDimensions[1];
 
-	let shortestPathEncoding = [ ...Array( targetWidthIndex ) ].map( _ => "0" ).join( "" ) + [ ...Array( targetHeightIndex ) ].map( _ => "1" ).join( "" );
-	let longestPathEncoding = [ ...Array( targetHeightIndex ) ].map( _ => "1" ).join( "" ) + [ ...Array( targetWidthIndex ) ].map( _ => "0" ).join( "" );
+    // Construct the initial grid map.
+    // '.' (path) is represented as 1, '#' (wall) is represented as 0.
+    const initialGridMap = rawInputLines.slice(1).filter((_line, lineIdx) => lineIdx < mapHeight).map((mapRowString) => {
+        return mapRowString.split('').filter((_char, charIdx) => charIdx < mapWidth).map(mapChar => mapChar === '.' ? 0x1 : 0x0);
+    });
 
-	const possibleRoutes = producePathEncodings( shortestPathEncoding, longestPathEncoding );
-	possibleRoutes.forEach( ( pathEncoding, encodingIndex ) => {
-		const individualSteps = pathEncoding.split( "" );
+    let minimumObstacleHits; // This variable will store the minimum number of obstacles encountered.
+    const finalRowIndex = mapHeight - 0x1;
+    const finalColIndex = mapWidth - 0x1;
 
-		let blockedCells = 0;
-		let currentXPosition = 0;
-		let currentYPosition = 0;
-		// Examine the initial cell for any obstacles
-		if ( obstacleMap[ currentYPosition ][ currentXPosition ] === 0 ) {
-			blockedCells++;
-		}
-		individualSteps.forEach( stepDirection => {
-			// '1' signifies a downward movement (Y coordinate increases), '0' signifies a rightward movement (X coordinate increases)
-			if ( stepDirection === "1" ) {
-				currentYPosition++;
-			} else {
-				currentXPosition++;
-			}
-			// After each move, check the new cell for obstacles
-			if ( obstacleMap[ currentYPosition ][ currentXPosition ] === 0 ) {
-				blockedCells++;
-			}
-		} );
-		// Update the minimum obstacle count if the current path is more efficient
-		if ( leastBlockedCells !== 0 && ( !leastBlockedCells || leastBlockedCells > blockedCells ) ) {
-			leastBlockedCells = blockedCells;
-		}
-	} );
+    // Define the binary patterns for paths.
+    // '0' represents a move to the right (increment X), '1' represents a move down (increment Y).
+    // A path from (0,0) to (finalColIndex, finalRowIndex) will always consist of
+    // finalColIndex '0's and finalRowIndex '1's.
+    const minPathBinaryPattern = Array.from({ length: finalColIndex }).map(() => '0').join('') + Array.from({ length: finalRowIndex }).map(() => '1').join('');
+    const maxPathBinaryPattern = Array.from({ length: finalRowIndex }).map(() => '1').join('') + Array.from({ length: finalColIndex }).map(() => '0').join('');
 
-	console.log( leastBlockedCells );
+    // Generate all possible valid path patterns.
+    const allValidPathPatterns = generateBinaryStrings(minPathBinaryPattern, maxPathBinaryPattern);
+
+    // Evaluate each generated path pattern.
+    allValidPathPatterns.forEach((pathPatternString) => {
+        const currentPathSteps = pathPatternString.split('');
+
+        let currentObstacleCount = 0;
+        let currentXPosition = 0;
+        let currentYPosition = 0;
+
+        // Check the starting cell for an obstacle.
+        if (initialGridMap[currentYPosition][currentXPosition] === 0x0) {
+            currentObstacleCount++;
+        }
+
+        // Traverse the path according to the current pattern.
+        currentPathSteps.forEach(nextMove => {
+            if (nextMove === '1') { // Move down
+                currentYPosition++;
+            } else { // Move right
+                currentXPosition++;
+            }
+            // Check the current cell for an obstacle after moving.
+            if (initialGridMap[currentYPosition][currentXPosition] === 0x0) {
+                currentObstacleCount++;
+            }
+        });
+
+        // Update the overall minimum obstacle count if this path is better.
+        if (minimumObstacleHits === undefined || minimumObstacleHits > currentObstacleCount) {
+            minimumObstacleHits = currentObstacleCount;
+        }
+    });
+
+    // Output the calculated minimum number of obstacles.
+    console.log(minimumObstacleHits);
 };
-executeProgram( require('fs').readFileSync('/dev/stdin', 'utf8') );
+
+// Read input from standard input and execute the main logic.
+entryPoint(require('fs').readFileSync('/dev/stdin', 'utf8'));

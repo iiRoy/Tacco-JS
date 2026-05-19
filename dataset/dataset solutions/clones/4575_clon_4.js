@@ -1,21 +1,13 @@
-function processInputData(rawData) {
-  const dataPoints = rawData.match(/\d+/g).map(Number);
+function processNumericalInput(sourceData) {
+  const [lowerBound, upperBound, checkValue] = sourceData.split(' ').map(Number);
 
-  const firstVal = dataPoints[0];
-  const secondVal = dataPoints[1];
-  const thirdVal = dataPoints[2];
+  const conditionMet = (checkValue - lowerBound >= 0) && (upperBound - checkValue >= 0);
+  
+  const outcomeMap = new Map();
+  outcomeMap.set(true, 'Yes');
+  outcomeMap.set(false, 'No');
 
-  const isThirdValueAtLeastFirst = (Math.min(firstVal, thirdVal) === firstVal);
-  const isThirdValueAtMostSecond = (Math.max(secondVal, thirdVal) === secondVal);
-
-  const finalOutcome = isThirdValueAtLeastFirst && isThirdValueAtMostSecond;
-
-  const resultMapping = new Map([
-    [true, 'Yes'],
-    [false, 'No']
-  ]);
-
-  console.log(resultMapping.get(finalOutcome));
+  console.log(outcomeMap.get(conditionMet));
 }
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processNumericalInput(require("fs").readFileSync("/dev/stdin", "utf8"));

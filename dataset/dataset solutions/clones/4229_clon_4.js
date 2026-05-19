@@ -1,28 +1,16 @@
-const dataSource = require("fs").readFileSync("/dev/stdin", "utf8");
+const fsModule = require("fs");
 
-let tokenSet = [];
-let currentPiece = '';
-for (let iterator = 0; iterator < dataSource.length; iterator++) {
-    const characterUnit = dataSource[iterator];
-    if (characterUnit === ' ') {
-        tokenSet.push(currentPiece);
-        currentPiece = '';
-    } else {
-        currentPiece += characterUnit;
-    }
-}
-tokenSet.push(currentPiece);
+const rawData = fsModule.readFileSync("/dev/stdin", "utf8");
 
-const leftItem = tokenSet[0];
-const rightItem = tokenSet[1];
+const tokenizedSegments = rawData.split(' ');
 
-const comparisonValue = leftItem.localeCompare(rightItem);
+const firstSegment = tokenizedSegments[0];
+const secondSegment = tokenizedSegments[1];
 
-const comparisonMark =
-    (comparisonValue === 0)
-        ? '='
-        : (comparisonValue < 0)
-            ? '<'
-            : '>';
+const comparisonResult = firstSegment.localeCompare(secondSegment);
 
-console.log(comparisonMark);
+const comparisonSymbol = (comparisonResult === 0)
+    ? '='
+    : (comparisonResult < 0 ? '<' : '>');
+
+console.log(comparisonSymbol);

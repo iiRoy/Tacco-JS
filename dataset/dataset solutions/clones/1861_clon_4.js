@@ -1,136 +1,140 @@
-"use strict";
+class InputHandler {
+  constructor(rawInputContent) {
+    this.tokenStream = rawInputContent.split(/ |\n/).filter(segment => segment !== '');
+    this.currentPosition = 0;
+  }
 
-class InputProcessor {
-    constructor(sourcePath) {
-        this.dataBuffer = require("fs").readFileSync(sourcePath, "utf8");
-        this.tokenArray = this.dataBuffer.split(/ |\n/);
-        this.currentTokenPointer = 0;
-    }
+  fetchNextInteger() {
+    return Number(this.tokenStream[this.currentPosition++]);
+  }
 
-    retrieveNextInteger() {
-        return +this.tokenArray[this.currentTokenPointer++];
-    }
-
-    retrieveNextBigInteger() {
-        return BigInt(this.tokenArray[this.currentTokenPointer++]);
-    }
+  fetchNextBigInt() {
+    return BigInt(this.tokenStream[this.currentPosition++]);
+  }
 }
 
-const ArithmeticUtil = {
-    greatestCommonDivisor(numA, numB) {
-        while (numB !== 0n) {
-            const remainder = numA % numB;
-            numA = numB;
-            numB = remainder;
-        }
-        return numA;
-    },
+const PRIME_MODULUS = 1_000_000_007n;
 
-    globalModulus: 1000000007n,
+function calculateGreatestCommonDivisor(valueA, valueB) {
+  let absA = valueA > 0n ? valueA : -valueA;
+  let absB = valueB > 0n ? valueB : -valueB;
+  while (absB !== 0n) {
+    [absA, absB] = [absB, absA % absB];
+  }
+  return absA;
+}
 
-    modularProduct(operandX, operandY) {
-        return (operandX * operandY) % this.globalModulus;
-    },
+function executeModularMultiplication(operandA, operandB) {
+  return (operandA * operandB) % PRIME_MODULUS;
+}
 
-    modularPower(baseVal, exponentVal) {
-        if (exponentVal === 0n) return 1n;
-        if (exponentVal === 1n) return baseVal % this.globalModulus;
-        
-        let halfPower = this.modularPower(baseVal, exponentVal / 2n);
-        let result = this.modularProduct(halfPower, halfPower);
-        
-        if (exponentVal % 2n === 1n) {
-            result = this.modularProduct(result, baseVal);
-        }
-        return result;
-    },
-
-    ensurePositiveModulo(value) {
-        return (value % this.globalModulus + this.globalModulus) % this.globalModulus;
+function executeModularExponentiation(baseValue, exponentValue) {
+  let finalResult = 1n;
+  let currentBase = baseValue;
+  let currentExponent = exponentValue;
+  while (currentExponent > 0n) {
+    if (currentExponent % 2n === 1n) {
+      finalResult = executeModularMultiplication(finalResult, currentBase);
     }
-};
+    currentBase = executeModularMultiplication(currentBase, currentBase);
+    currentExponent /= 2n;
+  }
+  return finalResult;
+}
+
+function ensurePositiveModulo(value) {
+  return (value % PRIME_MODULUS + PRIME_MODULUS) % PRIME_MODULUS;
+}
+
+function standardizeVectorCoordinates(xComponent, yComponent) {
+  if (xComponent === 0n && yComponent === 0n) {
+    return { x: 0n, y: 0n };
+  }
+
+  const commonDivisor = calculateGreatestCommonDivisor(xComponent, yComponent);
+  let standardizedX = xComponent / commonDivisor;
+  let standardizedY = yComponent / commonDivisor;
+
+  if (standardizedX < 0n) {
+    standardizedX = -standardizedX;
+    standardizedY = -standardizedY;
+  }
+  if (standardizedX === 0n && standardizedY < 0n) {
+    standardizedY = -standardizedY;
+  }
+  return { x: standardizedX, y: standardizedY };
+}
 
 function processVectorData() {
-    const dataHandler = new InputProcessor("/dev/stdin");
-    const numVectors = dataHandler.retrieveNextInteger();
+  const inputReader = new InputHandler(require("fs").readFileSync("/dev/stdin", "utf8"));
+  const totalVectorCount = inputReader.fetchNextInteger();
 
-    let xZeroVectors = 0;
-    let yZeroVectors = 0;
-    let originVectors = 0;
+  let originPointCount = 0;
+  let xAxisOnlyCount = 0;
+  let yAxisOnlyCount = 0;
 
-    const vectorTallies = new Map(); // Map<BigInt_X, Map<BigInt_Y, BigInt_Count>>
+  const vectorDirectionMap = new Map(); // Map<BigInt, Map<BigInt, BigInt>> stores 2^k for each unique direction
 
-    let vectorIndex = 0;
-    while (vectorIndex < numVectors) {
-        let currentX = dataHandler.retrieveNextBigInteger();
-        let currentY = dataHandler.retrieveNextBigInteger();
+  for (let idx = 0; idx < totalVectorCount; idx++) {
+    const currentX = inputReader.fetchNextBigInt();
+    const currentY = inputReader.fetchNextBigInt();
 
-        if (currentX === 0n && currentY === 0n) {
-            originVectors++;
-            vectorIndex++;
-            continue;
-        }
-        if (currentX === 0n) {
-            xZeroVectors++;
-            vectorIndex++;
-            continue;
-        }
-        if (currentY === 0n) {
-            yZeroVectors++;
-            vectorIndex++;
-            continue;
-        }
-
-        const commonDivisor = ArithmeticUtil.greatestCommonDivisor(currentX, currentY);
-        currentX /= commonDivisor;
-        currentY /= commonDivisor;
-
-        if (currentX < 0n) {
-            currentX = -currentX;
-            currentY = -currentY;
-        }
-
-        if (!vectorTallies.has(currentX)) {
-            vectorTallies.set(currentX, new Map());
-        }
-        const innerTallies = vectorTallies.get(currentX);
-        innerTallies.set(currentY, (innerTallies.get(currentY) || 0n) + 1n);
-        vectorIndex++;
+    if (currentX === 0n && currentY === 0n) {
+      originPointCount++;
+      continue;
+    }
+    if (currentX === 0n) {
+      xAxisOnlyCount++;
+      continue;
+    }
+    if (currentY === 0n) {
+      yAxisOnlyCount++;
+      continue;
     }
 
-    let computationResult = ArithmeticUtil.modularPower(2n, BigInt(xZeroVectors));
-    computationResult = ArithmeticUtil.ensurePositiveModulo(computationResult + ArithmeticUtil.modularPower(2n, BigInt(yZeroVectors)) - 1n);
+    const { x: stdX, y: stdY } = standardizeVectorCoordinates(currentX, currentY);
 
-    for (const [firstCoord, innerMap] of vectorTallies.entries()) {
-        for (const [secondCoord, currentComponentCount] of innerMap.entries()) {
-            if (secondCoord < 0n) {
-                const canonicalFirst = -secondCoord;
-                const canonicalSecond = firstCoord;
-                if (vectorTallies.has(canonicalFirst) && vectorTallies.get(canonicalFirst).has(canonicalSecond)) {
-                    continue;
-                }
-            }
-            
-            let currentPairContribution = ArithmeticUtil.modularPower(2n, currentComponentCount);
-            
-            const orthogonalFirst = secondCoord;
-            const orthogonalSecond = -firstCoord;
-            
-            if (vectorTallies.has(orthogonalFirst) && vectorTallies.get(orthogonalFirst).has(orthogonalSecond)) {
-                const orthogonalComponentCount = vectorTallies.get(orthogonalFirst).get(orthogonalSecond);
-                currentPairContribution = ArithmeticUtil.ensurePositiveModulo(currentPairContribution + (ArithmeticUtil.modularPower(2n, orthogonalComponentCount) - 1n));
-            }
-            
-            computationResult = ArithmeticUtil.modularProduct(computationResult, currentPairContribution);
-        }
+    if (!vectorDirectionMap.has(stdX)) {
+      vectorDirectionMap.set(stdX, new Map());
     }
-    
-    computationResult = ArithmeticUtil.ensurePositiveModulo(computationResult - 1n + BigInt(originVectors));
-    
-    return computationResult;
+    const innerMap = vectorDirectionMap.get(stdX);
+
+    const currentPowerOfTwo = innerMap.get(stdY) || 1n;
+    innerMap.set(stdY, executeModularMultiplication(currentPowerOfTwo, 2n));
+  }
+
+  let overallResult = executeModularExponentiation(2n, BigInt(xAxisOnlyCount));
+  overallResult = ensurePositiveModulo(overallResult + executeModularExponentiation(2n, BigInt(yAxisOnlyCount)));
+  overallResult = ensurePositiveModulo(overallResult - 1n);
+
+  const processedDirectionKeys = new Set(); // Tracks unique string keys of directions already handled in a perpendicular pair
+
+  for (const [xKey, yMap] of vectorDirectionMap.entries()) {
+    for (const [yKey, countValue] of yMap.entries()) {
+      const currentDirectionKey = `${xKey.toString()},${yKey.toString()}`;
+      if (processedDirectionKeys.has(currentDirectionKey)) {
+        continue;
+      }
+
+      const perpendicularX = yKey;
+      const perpendicularY = -xKey;
+
+      const { x: stdPerpX, y: stdPerpY } = standardizeVectorCoordinates(perpendicularX, perpendicularY);
+      const perpendicularDirectionKey = `${stdPerpX.toString()},${stdPerpY.toString()}`;
+
+      let combinedGroupValue = countValue; // This is 2^k1 for the current direction
+
+      if (vectorDirectionMap.has(stdPerpX) && vectorDirectionMap.get(stdPerpX).has(stdPerpY) && currentDirectionKey !== perpendicularDirectionKey) {
+        const perpendicularCountValue = vectorDirectionMap.get(stdPerpX).get(stdPerpY); // This is 2^k2 for the perpendicular direction
+        combinedGroupValue = ensurePositiveModulo(countValue + perpendicularCountValue - 1n); // (2^k1 + 2^k2 - 1)
+        processedDirectionKeys.add(perpendicularDirectionKey); // Mark the perpendicular direction as processed
+      }
+      overallResult = executeModularMultiplication(overallResult, combinedGroupValue);
+    }
+  }
+
+  return ensurePositiveModulo(overallResult - 1n + BigInt(originPointCount));
 }
 
 const finalOutput = processVectorData();
-if (finalOutput !== undefined) {
-    console.log(finalOutput.toString());
-}
+if (finalOutput !== undefined) console.log(finalOutput.toString());

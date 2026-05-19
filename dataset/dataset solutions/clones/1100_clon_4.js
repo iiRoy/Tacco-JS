@@ -1,83 +1,107 @@
-function createPoint(val, lowerLink = null, upperLink = null) {
+function createTreeNode(value, leftChild = null, rightChild = null) {
   return {
-    value: val,
-    lower: lowerLink,
-    upper: upperLink
+    val: value,
+    lChild: leftChild,
+    rChild: rightChild,
   };
 }
 
-function introduceElement(currentBranch, newElementValue) {
-  if (currentBranch === null) {
-    return createPoint(newElementValue);
+class TreeStructure {
+  constructor() {
+    this.root = null;
   }
-  if (newElementValue < currentBranch.value) {
-    return createPoint(currentBranch.value, introduceElement(currentBranch.lower, newElementValue), currentBranch.upper);
-  } else {
-    return createPoint(currentBranch.value, currentBranch.lower, introduceElement(currentBranch.upper, newElementValue));
+
+  static makeNode(value, leftChild = null, rightChild = null) {
+    return createTreeNode(value, leftChild, rightChild);
+  }
+
+  addValue(val) {
+    if (this.root === null) {
+      this.root = TreeStructure.makeNode(val);
+      return;
+    }
+
+    const placeNodeRecursively = (current, newValue) => {
+      if (newValue < current.val) {
+        if (current.lChild === null) {
+          current.lChild = TreeStructure.makeNode(newValue);
+        } else {
+          placeNodeRecursively(current.lChild, newValue);
+        }
+      } else {
+        if (current.rChild === null) {
+          current.rChild = TreeStructure.makeNode(newValue);
+        } else {
+          placeNodeRecursively(current.rChild, newValue);
+        }
+      }
+    };
+
+    placeNodeRecursively(this.root, val);
+  }
+
+  traverseInOrderAndOutput() {
+    let collectedValues = [];
+    let currentPointer = this.root;
+    let traversalStack = [];
+
+    while (currentPointer !== null || traversalStack.length > 0) {
+      while (currentPointer !== null) {
+        traversalStack.push(currentPointer);
+        currentPointer = currentPointer.lChild;
+      }
+      currentPointer = traversalStack.pop();
+      collectedValues.push(currentPointer.val);
+      currentPointer = currentPointer.rChild;
+    }
+    console.log(collectedValues.join(' '));
+  }
+
+  traversePreOrderAndOutput() {
+    let collectedValues = [];
+    if (this.root === null) {
+      console.log('');
+      return;
+    }
+
+    let traversalStack = [];
+    traversalStack.push(this.root);
+
+    while (traversalStack.length > 0) {
+      let currentPointer = traversalStack.pop();
+      collectedValues.push(currentPointer.val);
+
+      if (currentPointer.rChild !== null) {
+        traversalStack.push(currentPointer.rChild);
+      }
+      if (currentPointer.lChild !== null) {
+        traversalStack.push(currentPointer.lChild);
+      }
+    }
+    console.log(collectedValues.join(' '));
+  }
+
+  displayAllTraversals() {
+    this.traverseInOrderAndOutput();
+    this.traversePreOrderAndOutput();
   }
 }
 
-function extractOrderedValues(initialBranch) {
-  let collectedValues = [];
-  let traversalStack = [];
-  let currentSpot = initialBranch;
+(function processInput() {
+  const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+  const inputLines = fileContent.trim().split('\n');
+  const commandCount = Number(inputLines.shift());
 
-  while (currentSpot !== null || traversalStack.length > 0) {
-    while (currentSpot !== null) {
-      traversalStack.push(currentSpot);
-      currentSpot = currentSpot.lower;
-    }
-    currentSpot = traversalStack.pop();
-    collectedValues.push(currentSpot.value);
-    currentSpot = currentSpot.upper;
-  }
-  return collectedValues.join(' ');
-}
+  const treeInstance = new TreeStructure();
 
-function extractPrecededValues(initialBranch) {
-  let collectedValues = [];
-  if (initialBranch === null) {
-    return '';
-  }
-  let traversalStack = [initialBranch];
+  for (const lineEntry of inputLines) {
+    const commandTokens = lineEntry.split(' ');
+    const primaryCommandChar = commandTokens[0].charAt(0);
 
-  while (traversalStack.length > 0) {
-    let currentSpot = traversalStack.pop();
-    collectedValues.push(currentSpot.value);
-
-    if (currentSpot.upper !== null) {
-      traversalStack.push(currentSpot.upper);
-    }
-    if (currentSpot.lower !== null) {
-      traversalStack.push(currentSpot.lower);
+    if (primaryCommandChar === 'i') {
+      treeInstance.addValue(Number(commandTokens[1]));
+    } else if (primaryCommandChar === 'p') {
+      treeInstance.displayAllTraversals();
     }
   }
-  return collectedValues.join(' ');
-}
-
-function createNumericalArrangement() {
-  let primaryReference = null;
-
-  return {
-    addEntry: function(newElementValue) {
-      primaryReference = introduceElement(primaryReference, newElementValue);
-    },
-    displayResults: function() {
-      console.log(extractOrderedValues(primaryReference));
-      console.log(extractPrecededValues(primaryReference));
-    }
-  };
-}
-
-(function processInput(){
-  const incomingData = require('fs').readFileSync('/dev/stdin', 'utf8').trim().split('\n');
-  const totalEntries = Number(incomingData.shift());
-
-  const structuredData = createNumericalArrangement();
-  incomingData.map((dataLine) => dataLine.split(' ')).forEach(function(instruction) {
-    switch(instruction[0].charAt(0)) {
-    case 'i': structuredData.addEntry(Number(instruction[1])); break;
-    default: structuredData.displayResults();
-    }
-  });
 })();

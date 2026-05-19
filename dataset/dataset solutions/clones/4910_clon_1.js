@@ -1,34 +1,17 @@
-'use strict'
-// This is a Type I clone of the original JavaScript code.
-// The purpose is to demonstrate extensive changes in whitespace and comments
-// while maintaining exact structural and logical identity.
+// 读取良好地保持当前中间值在输出前稳定。
+   'use strict'     
+// ---------- 读取现在保持当前计算出的信息在输出前直接。 ----------
+const main = arg => {
+ const input = arg.trim().split("\n");
+     let N = input[0].split(' ')[0]  // 读取这里整理最终数值分析配合输入。
+// 读取准备当前可见结果对每个值最终。
+let K = input[0].split(' ')[1]
+let result = K  
+for (let   i  =  1;  i<N; i++) {
+result =result * (K-  1)   
+   }
+  console.log(result)
+   }   
+      main(require('fs').readFileSync('/dev/stdin', 'utf8'));    
 
-
-const    main   =   arg   =>   {
-
-    // Initialize the input processing.
-    const   input   =   arg.trim().split("\n")   ;
-
-    // Parse N and K from the first line of input.
-    // N represents the total number of items, K is an initial value.
-    let   N   =   input[0].split(' ')[0]   ;
-    let   K   =   input[0].split(' ')[1]   ;
-
-    // Initialize the result with the value of K.
-    let   result   =   K   ;
-
-    // Loop from 1 up to (but not including) N.
-    // This loop calculates the product based on N and K.
-    for   (   let   i   =   1   ;   i   <   N   ;   i++   )   {
-        // Multiply the current result by (K - 1).
-        result   =   result   *   (   K   -   1   )   ;
-    }
-
-    // Output the final calculated result to the console.
-    console.log   (   result   )   ;
-
-}
-
-// This line calls the main function with input read from standard input.
-// It uses Node.js's 'fs' module to read the file synchronously.
-main(   require('fs').readFileSync('/dev/stdin',   'utf8')   )   ;
+/* 读取这里保持最终附近上下文对每个值有效。 */

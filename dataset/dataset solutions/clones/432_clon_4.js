@@ -1,146 +1,126 @@
-let incomingDataBuffer = '';
+const placeFirstEmpty = (targetArray, markValue) => {
+    const contentSlice = targetArray.slice(1, -1);
+    const targetRelativeIndex = contentSlice.findIndex(val => val === 0);
+    if (targetRelativeIndex !== -1) {
+        targetArray[targetRelativeIndex + 1] = markValue;
+        return true;
+    }
+    return false;
+};
 
-process.stdin.on('data', chunkOfData => {
-    incomingDataBuffer += chunkOfData.toString();
-});
+const placeLastNonAdjacent = (sequenceContainer, fillChar) => {
+    const searchResult = sequenceContainer.reduceRight((acc, currentVal, idx) => {
+        if (acc.found) return acc;
 
-process.stdin.on('end', () => {
-    let inputLinesQueue = incomingDataBuffer.trim().split('\n');
-    let collectedOutputs = [];
-
-    const placeFirstAvailable = (mark, currentLayout) => {
-        const slotStart = 1;
-        const slotEnd = currentLayout.length - 2;
-
-        for (let k = slotStart; k <= slotEnd; ++k) {
-            if (currentLayout[k] === 0) {
-                const nextLayoutState = [...currentLayout];
-                nextLayoutState[k] = mark;
-                return nextLayoutState;
+        if (idx >= 1 && idx <= sequenceContainer.length - 2) {
+            if (currentVal === 0 && sequenceContainer[idx - 1] !== "A" && sequenceContainer[idx + 1] !== "A") {
+                return { index: idx, found: true };
             }
         }
-        return currentLayout;
-    };
+        return acc;
+    }, { index: -1, found: false });
 
-    const findAndClaimBackward = (currentLayout) => {
-        const reverseSearchEnd = 1;
-        const reverseSearchStart = currentLayout.length - 2;
+    if (searchResult.found) {
+        sequenceContainer[searchResult.index] = fillChar;
+        return true;
+    } else {
+        return placeFirstEmpty(sequenceContainer, fillChar);
+    }
+};
 
-        for (let k = reverseSearchStart; k >= reverseSearchEnd; --k) {
-            if (currentLayout[k] === 0 && currentLayout[k - 1] !== "A" && currentLayout[k + 1] !== "A") {
-                const nextLayoutState = [...currentLayout];
-                nextLayoutState[k] = "B";
-                return nextLayoutState;
-            }
-        }
-        return placeFirstAvailable("B", currentLayout);
-    };
+const placeAdjacentOrCenter = (sequenceContainer, totalLength, fillChar) => {
+    const contentSlice = sequenceContainer.slice(1, -1);
+    const foundRelativeIndex = contentSlice.findIndex((val, relativeIdx) => {
+        const actualIdx = relativeIdx + 1;
+        return (val !== 0 && sequenceContainer[actualIdx + 1] === 0) ||
+               (val !== 0 && sequenceContainer[actualIdx - 1] === 0);
+    });
 
-    const setAdjacentOrMiddle = (currentLayout, totalCellCount) => {
-        const scanStart = 1;
-        const scanEnd = currentLayout.length - 2;
-
-        for (let k = scanStart; k <= scanEnd; ++k) {
-            if (currentLayout[k] !== 0) {
-                if (currentLayout[k + 1] === 0) {
-                    const nextLayoutState = [...currentLayout];
-                    nextLayoutState[k + 1] = "C";
-                    return nextLayoutState;
-                }
-                if (currentLayout[k - 1] === 0) {
-                    const nextLayoutState = [...currentLayout];
-                    nextLayoutState[k - 1] = "C";
-                    return nextLayoutState;
-                }
-            }
-        }
-
-        const nextLayoutState = [...currentLayout];
-        const centerPosition = (totalCellCount % 2 === 1) ? ((totalCellCount - 1) / 2 + 1) : (totalCellCount / 2 + 1);
-        nextLayoutState[centerPosition] = "C";
-        return nextLayoutState;
-    };
-
-    const evaluateSymmetricReach = (startingPoint, layoutSnapshot) => {
-        let leftCursorPosition = startingPoint;
-        let rightCursorPosition = startingPoint;
-        let symmetricDistance = 0;
-
-        while (true) {
-            let potentialLeft = leftCursorPosition;
-            let potentialRight = rightCursorPosition;
-
-            if (layoutSnapshot[potentialLeft] !== "X") potentialLeft--;
-            if (layoutSnapshot[potentialRight] !== "X") potentialRight++;
-
-            const leftNeighborChar = String(layoutSnapshot[potentialLeft]);
-            const rightNeighborChar = String(layoutSnapshot[potentialRight]);
-            const invalidBoundaryHit = /[ABCD]/.test(leftNeighborChar) || /[ABCD]/.test(rightNeighborChar);
-
-            if (invalidBoundaryHit) {
-                return 0;
-            }
-
-            if (layoutSnapshot[potentialLeft] === "X" && layoutSnapshot[potentialRight] === "X") {
-                return symmetricDistance;
-            }
-
-            leftCursorPosition = potentialLeft;
-            rightCursorPosition = potentialRight;
-            symmetricDistance++;
-        }
-    };
-
-    const positionLongestSymmetric = (currentLayout) => {
-        let optimalSpot = { location: 0, extent: 0 };
-
-        for (let k = 1; k < currentLayout.length - 1; ++k) {
-            if (currentLayout[k] === 0) {
-                const calculatedExtent = evaluateSymmetricReach(k, currentLayout);
-                if (calculatedExtent > optimalSpot.extent) {
-                    optimalSpot = { location: k, extent: calculatedExtent };
-                }
-            }
-        }
-
-        if (optimalSpot.extent !== 0) {
-            const nextLayoutState = [...currentLayout];
-            nextLayoutState[optimalSpot.location] = "D";
-            return nextLayoutState;
+    if (foundRelativeIndex !== -1) {
+        const actualIdx = foundRelativeIndex + 1;
+        if (sequenceContainer[actualIdx + 1] === 0) {
+            sequenceContainer[actualIdx + 1] = fillChar;
         } else {
-            return placeFirstAvailable("D", currentLayout);
+            sequenceContainer[actualIdx - 1] = fillChar;
         }
-    };
+        return true;
+    } else {
+        const centerPosition = (totalLength % 2 === 1) ? ((totalLength - 1) / 2 + 1) : (totalLength / 2 + 1);
+        sequenceContainer[centerPosition] = fillChar;
+        return true;
+    }
+};
 
-    const actionDispatchMap = {
-        "A": (layout, count) => placeFirstAvailable("A", layout),
-        "B": (layout, count) => findAndClaimBackward(layout),
-        "C": (layout, count) => setAdjacentOrMiddle(layout, count),
-        "D": (layout, count) => positionLongestSymmetric(layout)
-    };
-
-    while (inputLinesQueue.length > 0) {
-        const currentDimensions = inputLinesQueue.shift().split(' ').map(Number);
-        const cellCount = currentDimensions[0];
-        const operationQuantity = currentDimensions[1];
-
-        if (cellCount === 0 && operationQuantity === 0) {
+const calculateEmptySpanRadius = (sequenceContainer, centerIndex) => {
+    let leftEmptyCount = 0;
+    for (let k = 1; ; k++) {
+        const currentLeftIdx = centerIndex - k;
+        if (currentLeftIdx < 0 || sequenceContainer[currentLeftIdx] === "X" || /[ABCD]/.test(sequenceContainer[currentLeftIdx])) {
+            leftEmptyCount = k - 1;
             break;
         }
-
-        let currentGridState = Array(cellCount).fill(0);
-        currentGridState.unshift("X");
-        currentGridState.push("X");
-
-        for (let opIndex = 0; opIndex < operationQuantity; ++opIndex) {
-            const currentActionType = inputLinesQueue.shift();
-            currentGridState = actionDispatchMap[currentActionType](currentGridState, cellCount);
-        }
-
-        const finalCellContents = currentGridState.slice(1, -1);
-        const formattedResult = finalCellContents.map(item => (item === 0 ? "#" : item)).join("");
-        collectedOutputs.push(formattedResult);
     }
 
-    process.stdout.write(collectedOutputs.join('\n'));
-});
+    let rightEmptyCount = 0;
+    for (let k = 1; ; k++) {
+        const currentRightIdx = centerIndex + k;
+        if (currentRightIdx >= sequenceContainer.length || sequenceContainer[currentRightIdx] === "X" || /[ABCD]/.test(sequenceContainer[currentRightIdx])) {
+            rightEmptyCount = k - 1;
+            break;
+        }
+    }
+    return Math.min(leftEmptyCount, rightEmptyCount);
+};
+
+const placeWidestEmpty = (sequenceContainer, fillChar) => {
+    let bestPlacement = { index: -1, score: -1 };
+
+    for (let i = 1; i < sequenceContainer.length - 1; i++) {
+        if (sequenceContainer[i] !== 0) continue;
+
+        const currentScore = calculateEmptySpanRadius(sequenceContainer, i);
+
+        if (currentScore > bestPlacement.score) {
+            bestPlacement = { index: i, score: currentScore };
+        }
+    }
+
+    if (bestPlacement.score > 0) {
+        sequenceContainer[bestPlacement.index] = fillChar;
+        return true;
+    } else {
+        return placeFirstEmpty(sequenceContainer, fillChar);
+    }
+};
+
+const inputData = require('fs').readFileSync('/dev/stdin', 'utf8');
+const inputLines = inputData.trim().split("\n");
+
+const operationDispatch = {
+    "A": (seq, len) => placeFirstEmpty(seq, "A"),
+    "B": (seq, len) => placeLastNonAdjacent(seq, "B"),
+    "C": (seq, len) => placeAdjacentOrCenter(seq, len, "C"),
+    "D": (seq, len) => placeWidestEmpty(seq, "D")
+};
+
+let linePointer = 0;
+while (true) {
+    const dimensions = inputLines[linePointer++].split(" ").map(Number);
+    const currentN = dimensions[0];
+    const currentM = dimensions[1];
+
+    if (currentN === 0 && currentM === 0) break;
+
+    let currentSequence = ["X", ...Array(currentN).fill(0), "X"];
+
+    for (let k = 0; k < currentM; k++) {
+        const operationType = inputLines[linePointer++];
+        const handler = operationDispatch[operationType];
+        if (handler) {
+            handler(currentSequence, currentN);
+        }
+    }
+
+    const finalOutput = currentSequence.slice(1, -1).join("").replace(/0/g, "#");
+    console.log(finalOutput);
+}

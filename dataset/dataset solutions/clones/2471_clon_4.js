@@ -1,19 +1,20 @@
-const processExternalPayload = (sourceMaterial) => {
-    const targetValue = Number(sourceMaterial.split(/\s+/)[0]);
+function Main(input) {
+  const sourceData = input.split("\n");
+  const numericValue = parseInt(sourceData[0], 10);
 
-    const assessDivisibility = (currentDivisor) => {
-        const remainderIsZero = (targetValue % currentDivisor === 0);
-        const quotientValue = targetValue / currentDivisor;
-        const quotientIsSmall = (quotientValue < 10);
+  const permissibleProducts = new Set();
 
-        return remainderIsZero
-            ? (quotientIsSmall ? 'Yes' : 'No')
-            : assessDivisibility(currentDivisor - 1);
-    };
+  for (let multiplierA = 1; multiplierA <= 9; multiplierA++) {
+    for (let multiplierB = 0; multiplierB <= 9; multiplierB++) {
+      permissibleProducts.add(multiplierA * multiplierB);
+    }
+  }
 
-    const finalVerdict = assessDivisibility(9);
+  if (permissibleProducts.has(numericValue)) {
+    console.log('Yes');
+  } else {
+    console.log('No');
+  }
+}
 
-    console.log(finalVerdict);
-};
-
-processExternalPayload(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

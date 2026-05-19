@@ -1,58 +1,57 @@
-/* This function processes the raw input string to compute a final aggregate value. */
-function CalculateTotal ( sourceText )
-{
-  // Extract the first line containing numerical parameters.
-  const firstLineParts = sourceText.split( '\n' ) [ 0 ] .split( ' ' );
-  let itemCount = parseInt( firstLineParts [ 0 ] , 0xA ); // Number of items to process.
-  let durationLimit = parseInt( firstLineParts [ 1 ] , 0xA ); // The threshold duration.
+function ProcessInput(rawData) {
+  // Split the raw input string to extract numerical parameters.
+  // The first line contains two space-separated integers.
+  let numElements = rawData.split("\n")[0].split(" ")[0];
+  let thresholdValue = rawData.split("\n")[0].split(" ")[1];
 
-  // Retrieve the second line which contains space-separated time points.
-  const eventTimestamps = sourceText.split( '\n' ) [ 1 ] .split( ' ' );
+  // Convert the extracted string values to integers using base 10.
+  numElements = parseInt(numElements, 10);
+  thresholdValue = parseInt(thresholdValue, 10);
 
-  // Declare a flag to check conditions and an accumulator for total duration.
-  let meetsCondition;
-  let accumulatedDuration = 0x0;
+  // The second line contains a series of space-separated time points.
+  let timePoints = rawData.split("\n")[1].split(" ");
 
-  // Iterate through each event timestamp.
-  for ( let k = 0 ; k < itemCount ; k++ )
-  {
-    // Convert current timestamp string to an integer.
-    eventTimestamps [ k ] = parseInt( eventTimestamps [ k ] , 0xA );
+  // Declare a boolean variable to store comparison results.
+  let isThresholdMet;
+  // Initialize a variable to accumulate the total duration.
+  let totalDuration = 0;
 
-    // Determine if the current time interval meets or exceeds the duration limit.
-    if ( k === 0 )
-    {
-      meetsCondition = eventTimestamps [ k ] >= durationLimit;
+  // Iterate through the array of time points.
+  for (let idx = 0; idx < numElements; idx++) {
+    // Convert each time point string to an integer.
+    timePoints[idx] = parseInt(timePoints[idx], 10);
+
+    // Check the condition based on the current index.
+    if (idx === 0) {
+      // For the first element, compare its value directly with the threshold.
+      isThresholdMet = timePoints[idx] >= thresholdValue;
+    } else {
+      // For subsequent elements, compare the difference between current and previous with the threshold.
+      isThresholdMet = (timePoints[idx] - timePoints[idx - 1]) >= thresholdValue;
     }
-    else
-    {
-      meetsCondition = ( eventTimestamps [ k ] - eventTimestamps [ k - 1 ] ) >= durationLimit;
-    }
 
-    // Accumulate duration based on the condition.
-    if ( meetsCondition === !false ) // Using !false instead of true
-    {
-      accumulatedDuration += durationLimit;
-    }
-    else
-    {
-      // If the condition is not met, add the actual interval duration.
-      if ( k === 0 )
-      {
-        accumulatedDuration += eventTimestamps [ k ];
-      }
-      else
-      {
-        accumulatedDuration += ( eventTimestamps [ k ] - eventTimestamps [ k - 1 ] );
+    // Based on whether the threshold was met, update the total duration.
+    if (isThresholdMet === true) {
+      // If threshold is met, add the full threshold value.
+      totalDuration += thresholdValue;
+    } else {
+      // If threshold is not met, add the actual duration.
+      if (idx === 0) {
+        // For the first element, add its value.
+        totalDuration += timePoints[idx];
+      } else {
+        // For subsequent elements, add the difference between current and previous.
+        totalDuration += (timePoints[idx] - timePoints[idx - 1]);
       }
     }
-  } // End of for loop
+  }
 
-  // Add the final duration limit to the total accumulated duration.
-  accumulatedDuration += durationLimit;
-  // Output the final computed result.
-  console.log( accumulatedDuration );
+  // After the loop, add the threshold value one last time.
+  totalDuration += thresholdValue;
+
+  // Output the final calculated total duration to the console.
+  console.log(totalDuration);
 }
 
-// Execute the main processing logic by reading input from standard input.
-CalculateTotal( require( "fs" ) .readFileSync( "/dev/stdin" , "utf8" ) );
+// Read input from standard input and pass it to the main processing function.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

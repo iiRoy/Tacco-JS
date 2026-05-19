@@ -1,28 +1,39 @@
-function processInput(  sourceText ) {
-    const textRows = sourceText . split( '\n' ) ;
+function processInput(rawData) {
+  // This function takes raw input data as a string and processes it.
+  const inputLines = rawData.split('\n');
 
-    const configParams = textRows . shift() . split( ' ' ) . map(  item => parseInt( item )  );
+  // The first line contains three space-separated integers: N, Z, W.
+  // We extract and parse these values.
+  const configValues = inputLines.shift().split(' ').map(strVal => parseInt(strVal, 10));
 
-    const numElements = configParams[0];
-    const startPoint = configParams[1];
-    const endPoint = configParams[2];
+  // Assign the parsed configuration values to descriptive variables.
+  const arrayLength = configValues[0]; // Corresponds to N in the original problem.
+  const firstValue = configValues[1];  // Corresponds to Z.
+  const secondValue = configValues[2]; // Corresponds to W.
 
-    const valuesList = textRows . shift() . split( ' ' ) . map(  item => parseInt( item )  );
+  // The second line contains space-separated integers forming an array A.
+  // We parse these into a numeric array.
+  const dataArray = inputLines.shift().split(' ').map(strVal => parseInt(strVal, 10));
 
-    /*
-     * This section calculates three key absolute differences:
-     * 1. The initial difference between the 'startPoint' and 'endPoint'.
-     * 2. The difference between the last element and the second-to-last element of 'valuesList'.
-     * 3. The difference between the last element of 'valuesList' and 'endPoint'.
-     */
+  // Calculate three different absolute differences based on the problem's logic.
 
-    const originGap = Math.abs( startPoint - endPoint );
-    const secondLastGap = Math.abs( valuesList[ numElements - 1 ] - valuesList[ numElements - 2 ] );
-    const lastElementGap = Math.abs( valuesList[ numElements - 1 ] - endPoint );
+  // 1. The absolute difference between Z and W.
+  const baseDifference = Math.abs(firstValue - secondValue);
 
-    const overallMax = Math.max( originGap, secondLastGap, lastElementGap );
+  // 2. The absolute difference between the last element (A[N-1]) and the
+  //    second-to-last element (A[N-2]) of the data array.
+  const penultimateDifference = Math.abs(dataArray[arrayLength - 1] - dataArray[arrayLength - 2]);
 
-    console.log( overallMax );
+  // 3. The absolute difference between the last element (A[N-1]) of the
+  //    data array and W.
+  const lastElementDifference = Math.abs(dataArray[arrayLength - 1] - secondValue);
+
+  // The final result is the maximum of these three calculated differences.
+  const finalOutcome = Math.max(baseDifference, penultimateDifference, lastElementDifference);
+
+  // Print the computed maximum value to the standard output.
+  console.log(finalOutcome);
 }
 
-processInput( require('fs') . readFileSync( '/dev/stdin', 'utf8' ) );
+// Invoke the processing function by reading the entire content of /dev/stdin.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

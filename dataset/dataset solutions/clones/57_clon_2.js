@@ -1,61 +1,61 @@
-( function ( ) {
-  // This variable will accumulate all incoming data from standard input.
-  var receivedStreamData = '';
+(function () {
+  // This variable will accumulate all data received from standard input.
+  var rawData = '';
 
   /**
-   * Initiates the primary sequence of operations.
-   * It processes the input, triggers the numerical computation,
-   * and displays the final outcome.
+   * The main entry point for processing the input and performing the calculation.
+   * It parses the input value, then calls a helper function to compute the integral approximation.
    */
-  function runPrimaryProcess ( ) {
-    var currentIncrement, // Represents the step size for summation.
-        maxRangeValue = 600; // The ceiling for the calculation domain.
+  function processInputAndCalculate() {
+    var deltaVal, // Represents the 'd' value, typically a step size for numerical methods.
+        limitVal = 600; // A constant upper bound used in the integral approximation.
 
-    // Extract the first numerical value from the buffered input string.
-    currentIncrement = parseFloat( receivedStreamData[0] );
+    // The first line of input is expected to be a floating-point number.
+    deltaVal = parseFloat(rawData[0]);
 
-    // Call the function to compute the summation and log its rounded result.
-    console.log( computeNumericalSum( currentIncrement, maxRangeValue ) );
+    // Compute the approximate area and display the rounded result to the console.
+    console.log(computeApproximateArea(deltaVal, limitVal));
   }
 
   /**
-   * Computes an approximate integral using a form of Riemann sum.
-   * The function calculates the sum of areas of squares with sides
-   * proportional to `iterator * interval`.
-   * @param {number} interval - The width of each segment in the summation.
-   * @param {number} rangeMaximum - The upper boundary for the summation.
-   * @returns {number} The integer-rounded total sum.
+   * Computes an approximation of a definite integral using a Riemann sum.
+   * Specifically, it approximates the integral of x^2 from 0 up to a certain limit.
+   *
+   * @param {number} stepSize - The width of each sub-interval (delta x).
+   * @param {number} upperBound - A reference value for the integration limit (not directly the upper bound of integration).
+   * @returns {number} The total approximate area, rounded to the nearest whole number.
    */
-  function computeNumericalSum ( interval, rangeMaximum ) {
-    var loopCounter, // A variable to iterate through the segments.
-        totalValueAccumulator = 0; // Stores the running total of the computed areas.
+  function computeApproximateArea(stepSize, upperBound) {
+    var iterationIndex, // Loop counter, representing 'i' in the original formula.
+        accumulatedSum = 0; // Variable to store the running total of rectangle areas.
 
-    // Iterate as long as the product of the counter and interval is less than the range maximum.
-    for ( loopCounter = 1; loopCounter * interval < rangeMaximum; loopCounter += 1 ) {
-      // Calculate the area for the current segment and add it to the accumulator.
-      // The formula used is (segment_position)^2 * segment_width.
-      totalValueAccumulator += Math.pow( loopCounter * interval, 2 ) * interval;
+    // Iterate to sum the areas of rectangles. The loop continues as long as
+    // the current x-coordinate (iterationIndex * stepSize) is less than 600.
+    for (iterationIndex = 1; iterationIndex * stepSize < 600; iterationIndex += 1) {
+      // Calculate the area of the current rectangle: (height * width).
+      // Height is (current x-coordinate)^2, and width is 'stepSize'.
+      accumulatedSum += Math.pow(iterationIndex * stepSize, 2) * stepSize;
     }
 
-    // Return the final accumulated sum, rounded to the nearest whole number.
-    return Math.round( totalValueAccumulator );
+    // Return the final sum, rounded to the nearest integer.
+    return Math.round(accumulatedSum);
   }
 
 
-  // Configure the standard input stream to be resumable and use UTF-8 encoding.
-  process.stdin.resume( );
-  process.stdin.setEncoding( 'utf8' );
+  // Prepare standard input stream to receive data.
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
 
-  // Attach an event listener for when data chunks are received.
-  process.stdin.on( 'data', function ( dataPortion ) {
-    receivedStreamData += dataPortion; // Append the new data to our buffer.
-  } );
+  // Attach an event listener to handle incoming data chunks.
+  // Each chunk is appended to the 'rawData' string.
+  process.stdin.on('data', function (dataSegment) {
+    rawData += dataSegment;
+  });
 
-  // Attach an event listener for when the input stream has completely ended.
-  process.stdin.on( 'end', function ( ) {
-    // Once all data is received, split the buffered string by newline characters.
-    receivedStreamData = receivedStreamData.split( '\n' );
-    // Execute the main processing function with the prepared input.
-    runPrimaryProcess( );
-  } );
-}() );
+  // Attach an event listener for when the entire input stream has ended.
+  // The accumulated 'rawData' is split into lines, and then the main processing function is called.
+  process.stdin.on('end', function () {
+    rawData = rawData.split('\n');
+    processInputAndCalculate();
+  });
+}());

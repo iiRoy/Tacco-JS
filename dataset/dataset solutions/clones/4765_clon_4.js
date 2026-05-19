@@ -1,48 +1,44 @@
-function processFactorialDivisors(inputString) {
-    const limitValue = Math.floor(parseFloat(inputString));
-    const modulusConstant = 1000000007;
+function calculateDivisorCountOfFactorial(inputData) {
+    const limitValue = parseInt(inputData);
 
-    const primeTracker = new Array(limitValue + 1).fill(true);
-    primeTracker[0] = false;
-    primeTracker[1] = false;
-
-    for (let pCandidate = 2; pCandidate * pCandidate <= limitValue; pCandidate++) {
-        if (primeTracker[pCandidate]) {
-            for (let multiple = pCandidate * pCandidate; multiple <= limitValue; multiple += pCandidate) {
-                primeTracker[multiple] = false;
+    const primeFlags = new Array(limitValue + 1).fill(true);
+    primeFlags[0] = false;
+    primeFlags[1] = false;
+    for (let p = 2; p * p <= limitValue; p++) {
+        if (primeFlags[p]) {
+            for (let multiple = p * p; multiple <= limitValue; multiple += p) {
+                primeFlags[multiple] = false;
             }
         }
     }
 
-    const collectedPrimes = [];
-    for (let currentNumber = 2; currentNumber <= limitValue; currentNumber++) {
-        if (primeTracker[currentNumber]) {
-            collectedPrimes.push(currentNumber);
+    const primeFactorExponents = new Map();
+
+    for (let currentNum = 2; currentNum <= limitValue; currentNum++) {
+        if (primeFlags[currentNum]) {
+            let totalExponent = 0;
+            let currentPower = currentNum;
+            while (currentPower <= limitValue) {
+                totalExponent += Math.floor(limitValue / currentPower);
+                if (limitValue / currentNum < currentPower) {
+                    break;
+                }
+                currentPower *= currentNum;
+            }
+            if (totalExponent > 0) {
+                primeFactorExponents.set(currentNum, totalExponent);
+            }
         }
     }
 
-    const calculatePrimeExponent = (targetValue, primeBase) => {
-        let totalCount = 0;
-        let currentPower = primeBase;
-        while (currentPower <= targetValue) {
-            totalCount += Math.floor(targetValue / currentPower);
-            if (currentPower > targetValue / primeBase) break;
-            currentPower *= primeBase;
-        }
-        return totalCount;
-    };
+    let productOfCounts = 1;
+    const moduloValue = 1000000007;
 
-    let finalProduct = 1;
+    primeFactorExponents.forEach(exponentVal => {
+        productOfCounts = (productOfCounts * (exponentVal + 1)) % moduloValue;
+    });
 
-    for (const currentPrime of collectedPrimes) {
-        const primePowerInFactorial = calculatePrimeExponent(limitValue, currentPrime);
-        finalProduct = (finalProduct * (primePowerInFactorial + 1)) % modulusConstant;
-    }
-
-    console.log(finalProduct);
+    console.log(productOfCounts);
 }
 
-const standardInputReader = require("node:fs");
-const rawData = standardInputReader.readFileSync("/dev/stdin", "utf8");
-
-processFactorialDivisors(rawData);
+calculateDivisorCountOfFactorial(require("fs").readFileSync("/dev/stdin", "utf8"));

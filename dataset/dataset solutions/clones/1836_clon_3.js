@@ -1,121 +1,82 @@
-class ElementUnit {
-    constructor() {
-        this.leftChild = null;
-        this.rightChild = null;
-        this.currentLevel = null;
-        this.isTerminalNode = null;
-        this.creationTimestamp = Date.now();
-    }
-
-    hasOpenSlot() {
-        return this.leftChild === null || this.rightChild === null;
+class TreeNode {
+    constructor(level, isTerminal = false) {
+        this.left = null;
+        this.right = null;
+        this.depth = level;
+        this.isTerminalNode = isTerminal;
     }
 }
 
-let elementRegistry = [];
+let treeNodes = [];
 
-const propagatePathSegments = (ancestorElement, desiredLevel) => {
-    if (!ancestorElement || typeof desiredLevel !== 'number' || desiredLevel <= ancestorElement.currentLevel) {
-        return false;
-    }
+function extendBranchToDepth(currentAncestor, targetLevel) {
+    const startLevelForNewNodes = currentAncestor.depth + 1;
+    const newlyCreatedNodes = [];
+    let branchPathBuilder = currentAncestor;
 
-    let traversalPoint = ancestorElement;
-    for (let currentPathLevel = ancestorElement.currentLevel + 1; currentPathLevel <= desiredLevel; currentPathLevel++) {
-        const newSegment = new ElementUnit();
-        newSegment.currentLevel = currentPathLevel;
-        newSegment.isTerminalNode = (currentPathLevel === desiredLevel);
+    for (let currentLevel = startLevelForNewNodes; currentLevel <= targetLevel; currentLevel++) {
+        const isThisNodeTerminal = (currentLevel === targetLevel);
+        const newNode = new TreeNode(currentLevel, isThisNodeTerminal);
 
-        if (traversalPoint.leftChild === null) {
-            traversalPoint.leftChild = newSegment;
-        } else if (traversalPoint.rightChild === null) {
-            traversalPoint.rightChild = newSegment;
+        if (branchPathBuilder.left) {
+            branchPathBuilder.right = newNode;
         } else {
-            return false;
+            branchPathBuilder.left = newNode;
         }
-
-        elementRegistry.push(newSegment);
-        traversalPoint = newSegment;
+        newlyCreatedNodes.push(newNode);
+        branchPathBuilder = newNode;
     }
 
-    elementRegistry.sort((elemA, elemB) => elemA.currentLevel - elemB.currentLevel);
-
-    return true;
-};
-
-function findAndExtendPath(targetLevel) {
-    let pathOperationSuccess = false;
-
-    for (let k = 0; k < elementRegistry.length; k++) {
-        const candidateParent = elementRegistry[k];
-
-        if (candidateParent.isTerminalNode) {
-            continue;
-        }
-
-        if (candidateParent.leftChild !== null && candidateParent.rightChild !== null) {
-            continue;
-        }
-
-        const propagationResult = propagatePathSegments(candidateParent, targetLevel);
-        if (propagationResult) {
-            pathOperationSuccess = true;
-            break;
-        }
-    }
-    return pathOperationSuccess;
+    treeNodes.push(...newlyCreatedNodes);
+    treeNodes.sort((nodeA, nodeB) => nodeA.depth - nodeB.depth);
 }
 
-const safeParseInteger = (str) => {
-    const parsed = parseInt(str, 10);
-    if (isNaN(parsed)) {
-        console.error("Failed to parse integer:", str);
-        return NaN;
+function canAcceptChildren(nodeCandidate) {
+    return !nodeCandidate.isTerminalNode && !(nodeCandidate.left && nodeCandidate.right);
+}
+
+function attemptNodeInsertion(targetLevel) {
+    const suitableAncestor = treeNodes.find(canAcceptChildren);
+
+    if (suitableAncestor) {
+        extendBranchToDepth(suitableAncestor, targetLevel);
+        return true;
     }
-    return parsed;
-};
+    return false;
+}
 
-const executeHierarchicalProcess = (inputPayload) => {
-    const rawInputLines = inputPayload.split("\n").map(line => line.trim());
+function initializeRootNode() {
+    const rootNode = new TreeNode(0, false);
+    treeNodes.push(rootNode);
+}
 
-    const primaryCountStr = rawInputLines[0];
-    const sequenceValuesStr = rawInputLines[1];
+function executeTreeConstruction(inputData) {
+    const inputDataLines = inputData.split("\n");
+    const firstInputLine = inputDataLines[0];
+    const secondInputLine = inputDataLines[1];
 
-    const primaryCountN = safeParseInteger(primaryCountStr);
-    if (isNaN(primaryCountN)) {
+    const maxTreeLevel = parseInt(firstInputLine, 10);
+    const nodesPerLevelCounts = secondInputLine.split(" ").map(valStr => parseInt(valStr, 10));
+
+    if (nodesPerLevelCounts[0] !== 0) {
         console.log(-1);
         return;
     }
 
-    const sequenceA = sequenceValuesStr.split(" ").map(safeParseInteger);
-    if (sequenceA.some(isNaN)) {
-        console.log(-1);
-        return;
-    }
+    initializeRootNode();
 
-    if (sequenceA.length === 0 || sequenceA[0] !== 0) {
-        console.log(-1);
-        return;
-    }
-
-    const initialRoot = new ElementUnit();
-    initialRoot.currentLevel = 0;
-    initialRoot.isTerminalNode = false;
-    elementRegistry.push(initialRoot);
-
-    for (let currentStructureLevel = 1; currentStructureLevel <= primaryCountN; currentStructureLevel++) {
-        const elementsToAddAtCurrentLevel = sequenceA[currentStructureLevel];
-
-        for (let segmentIndex = 0; segmentIndex < elementsToAddAtCurrentLevel; segmentIndex++) {
-            const operationOutcome = findAndExtendPath(currentStructureLevel);
-
-            if (!operationOutcome) {
+    for (let currentLevelIndex = 1; currentLevelIndex <= maxTreeLevel; currentLevelIndex++) {
+        const requiredNodesAtThisLevel = nodesPerLevelCounts[currentLevelIndex];
+        for (let nodeCount = 0; nodeCount < requiredNodesAtThisLevel; nodeCount++) {
+            const insertionResult = attemptNodeInsertion(currentLevelIndex);
+            if (!insertionResult) {
                 console.log(-1);
                 return;
             }
         }
     }
 
-    console.log(elementRegistry.length);
-};
+    console.log(treeNodes.length);
+}
 
-executeHierarchicalProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+executeTreeConstruction(require("fs").readFileSync("/dev/stdin", "utf8"));

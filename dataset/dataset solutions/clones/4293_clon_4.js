@@ -1,43 +1,23 @@
-const _inputSource = require('readline');
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-const _dataSegments = [];
-
-const _interfaceHandler = _inputSource.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
+let inputBuffer = '';
+process.stdin.on('data', (dataChunk) => {
+    inputBuffer += dataChunk;
 });
 
-_interfaceHandler.on('line', (individualSegment) => {
-    _dataSegments.push(individualSegment);
+process.stdin.on('end', () => {
+    processInputData(inputBuffer.split(/\r?\n/));
 });
 
-_interfaceHandler.on('close', () => {
-    _processCollectedData(_dataSegments);
-});
+function processInputData(receivedLines) {
+    const valueStrings = receivedLines[0].split(' ');
 
-function _processCollectedData(allSegments) {
-    const primarySegment = allSegments[0];
-    const valueTriplet = primarySegment.split(' ');
+    const sortedValues = [...valueStrings].sort();
 
-    const singularValue = _determineUniqueElement(valueTriplet);
-    _emitResult(singularValue);
-}
+    const uniqueElement = sortedValues[0] === sortedValues[1] ? sortedValues[2] : sortedValues[0];
 
-function _determineUniqueElement(elementCollection) {
-    const elementCounts = new Map();
-    for (const item of elementCollection) {
-        elementCounts.set(item, (elementCounts.get(item) || 0) + 1);
-    }
+    console.log(uniqueElement);
 
-    for (const [item, count] of elementCounts.entries()) {
-        if (count === 1) {
-            return item;
-        }
-    }
-    return null; 
-}
-
-function _emitResult(finalOutput) {
-    process.stdout.write(finalOutput + '\n');
+    return 0;
 }

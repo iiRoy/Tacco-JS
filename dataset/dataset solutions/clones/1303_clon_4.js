@@ -1,59 +1,56 @@
-let inputBuffer = '';
-
-process.stdin.resume();
-process.stdin.setEncoding('utf8');
-
-process.stdin.on('data', function(chunk) {
-    inputBuffer += chunk;
+const inputReader = require('readline').createInterface({
+    input: process.stdin, output: process.stdout
 });
 
-process.stdin.on('end', function() {
-    processSourceData(inputBuffer);
+let allInputLines = [];
+let rowsA, colsA, rowsB;
+let matrixAData = [];
+let matrixBTransposeData = [];
+
+inputReader.on('line', (currentLine) => {
+    allInputLines.push(currentLine);
 });
 
-function processSourceData(entireInput) {
-    const sourceLines = entireInput.trim().split('\n');
-    let linePointer = 0;
+inputReader.on('close', () => {
+    const dimensionValues = allInputLines[0].split(' ').map(Number);
+    rowsA = dimensionValues[0];
+    colsA = dimensionValues[1];
+    rowsB = dimensionValues[2];
 
-    const matrixDimensions = sourceLines[linePointer++].split(' ').map(Number);
-    const alphaRows = matrixDimensions[0];
-    const alphaCols = matrixDimensions[1];
-    const betaRows = matrixDimensions[2];
-
-    const alphaMatrix = [];
-    for (let idx = 0; idx < alphaRows; idx++) {
-        alphaMatrix.push(sourceLines[linePointer++].split(' ').map(Number));
+    for (let rowIdx = 0; rowIdx < rowsA; rowIdx++) {
+        const currentLineValues = allInputLines[1 + rowIdx].split(' ').map(Number);
+        matrixAData.push(currentLineValues);
     }
 
-    const betaColumnInputs = [];
-    for (let idx = 0; idx < alphaCols; idx++) {
-        betaColumnInputs.push(sourceLines[linePointer++].split(' ').map(Number));
+    for (let commonDimIdx = 0; commonDimIdx < colsA; commonDimIdx++) {
+        matrixBTransposeData.push(new Array(rowsB).fill(0));
     }
 
-    const betaMatrix = Array.from({ length: betaRows }, () => Array(alphaCols).fill(0));
-    for (let colIdx = 0; colIdx < alphaCols; colIdx++) {
-        for (let rowIdx = 0; rowIdx < betaRows; rowIdx++) {
-            betaMatrix[rowIdx][colIdx] = betaColumnInputs[colIdx][rowIdx];
+    for (let rowIdx = 0; rowIdx < rowsB; rowIdx++) {
+        const currentLineValues = allInputLines[1 + rowsA + rowIdx].split(' ').map(Number);
+        for (let colIdx = 0; colIdx < colsA; colIdx++) {
+            matrixBTransposeData[colIdx][rowIdx] = currentLineValues[colIdx];
         }
     }
 
-    const finalProduct = alphaMatrix.map(function(currentAlphaRow) {
-        return betaMatrix.map(function(currentBetaRow) {
-            return computeDotProduct(currentAlphaRow, currentBetaRow, alphaCols);
-        });
-    });
+    const resultMatrix = [];
 
-    const formattedOutput = finalProduct.map(function(row) {
-        return row.join(' ');
-    });
+    const calculateVectorDotProduct = (vectorOne, vectorTwo) => {
+        return vectorOne.reduce((accumulator, currentVal, index) => {
+            return accumulator + (currentVal * vectorTwo[index]);
+        }, 0);
+    };
 
-    console.log(formattedOutput.join('\n'));
-}
-
-function computeDotProduct(vectorA, vectorB, lengthOfVectors) {
-    let summation = 0;
-    for (let elementIdx = 0; elementIdx < lengthOfVectors; elementIdx++) {
-        summation += vectorA[elementIdx] * vectorB[elementIdx];
+    for (let rowIdx = 0; rowIdx < rowsA; rowIdx++) {
+        const resultRow = [];
+        for (let colIdx = 0; colIdx < rowsB; colIdx++) {
+            const bColumnVector = matrixBTransposeData.map(row => row[colIdx]);
+            resultRow.push(calculateVectorDotProduct(matrixAData[rowIdx], bColumnVector));
+        }
+        resultMatrix.push(resultRow);
     }
-    return summation;
-}
+
+    resultMatrix.forEach(outputRow => {
+        console.log(outputRow.join(' '));
+    });
+});

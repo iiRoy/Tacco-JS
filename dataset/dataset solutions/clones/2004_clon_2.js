@@ -1,43 +1,51 @@
 "use strict";
 
-// This function orchestrates the primary logic of the application.
-const executeProgram = inputDataString => {
-  // First, we process the raw input string by trimming whitespace
-  // and splitting it into an array of lines.
-  const processedLinesArray = inputDataString.trim().split("\n");
+// This script processes numerical data from standard input to determine a specific condition.
 
-  // Extract the first numerical parameter from the first line.
-  const firstParam = Number(processedLinesArray[0].split(" ")[0]);
-  // Obtain the second numerical parameter from the same initial line.
-  const secondParam = Number(processedLinesArray[0].split(" ")[1]);
+/**
+ * Orchestrates the primary logic for evaluating input data.
+ * @param {string} rawInputData - The complete string content read from the input source.
+ */
+const processData = (rawInputData) => {
+    // Clean up the input string by removing leading/trailing whitespace
+    // and then splitting it into an array of individual lines.
+    const inputLines = rawInputData.trim().split("\n");
 
-  // Parse the second line into an array of numbers.
-  const numericCollection = processedLinesArray[1].split(" ").map(strValue => Number(strValue));
+    // Extract the first two numerical parameters from the initial line.
+    // The first parameter, 'itemCount', represents the total number of available items.
+    const itemCount = Number(inputLines[0].split(" ")[0]);
+    // The second parameter, 'selectionCount', indicates how many top items need to meet a criterion.
+    const selectionCount = Number(inputLines[0].split(" ")[1]);
 
-  // Calculate the sum of all elements within the numeric collection.
-  const overallSum = numericCollection.reduce((currentSum, elementValue) => currentSum + elementValue);
+    // Parse the second line of input, which contains space-separated vote counts for each item.
+    // Convert each string representation of a vote into its numerical equivalent.
+    const itemScores = inputLines[1].split(" ").map((scoreString) => Number(scoreString));
 
-  // Determine the minimum required value based on the total sum and the second parameter.
-  const minimumRequiredValue = overallSum / (4 * secondParam);
+    // Compute the aggregate sum of all item scores.
+    const totalScoreSum = itemScores.reduce((accumulatedSum, currentScore) => accumulatedSum + currentScore);
 
-  // Sort the numeric collection in descending order.
-  numericCollection.sort().reverse();
+    // Calculate the minimum required score for an item to be considered 'popular'.
+    // This threshold is defined as the total sum of scores divided by (4 * selectionCount).
+    const popularityThreshold = totalScoreSum / (4 * selectionCount);
 
-  // Iterate through a subset of the sorted collection.
-  for (let loopIndex = 0; loopIndex < secondParam; loopIndex++) {
-    // Check if any of the top 'secondParam' values fall below the calculated threshold.
-    if (numericCollection[loopIndex] < minimumRequiredValue) {
-      // If a value is below the threshold, print "No" and terminate execution.
-      console.log("No");
-      return;
+    // Arrange the item scores in descending order to easily access the highest-scoring items.
+    itemScores.sort().reverse();
+
+    // Iterate through the 'selectionCount' number of highest-scoring items.
+    for (let currentIdx = 0; currentIdx < selectionCount; currentIdx++) {
+        // If any of these top items falls below the calculated popularity threshold,
+        // the condition is not met.
+        if (itemScores[currentIdx] < popularityThreshold) {
+            console.log("No"); // Output "No" to indicate failure.
+            return; // Terminate execution as the condition is already determined.
+        }
     }
-  }
 
-  // If all top 'secondParam' values meet or exceed the threshold, print "Yes".
-  console.log("Yes");
+    // If the loop completes without any item failing the threshold check,
+    // it means all top 'selectionCount' items meet the popularity criterion.
+    console.log("Yes"); // Output "Yes" to indicate success.
 };
 
-// Initiate the program by reading input from standard input.
-executeProgram(
-  require('fs').readFileSync('/dev/stdin', 'utf8')
-);
+// Read the entire content of standard input synchronously using Node.js's 'fs' module,
+// assuming UTF-8 encoding, and then pass it to the main processing function.
+processData(require('fs').readFileSync('/dev/stdin', 'utf8'));

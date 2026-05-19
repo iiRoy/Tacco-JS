@@ -1,34 +1,22 @@
-const acquireInputData = () => {
-  return require('node:fs').readFileSync('/dev/stdin', 'utf8');
-};
-
-const charRegistry = new Set();
-for (let i = 0; i < 26; i++) {
-  charRegistry.add(String.fromCharCode(97 + i)); // Populate with 'a' through 'z'
+function fetchSourceText() {
+    return require("fs").readFileSync("/dev/stdin", "utf8");
 }
 
-const occurrenceMap = new Map();
-const rawContent = acquireInputData();
+const alphabetSequence = Array.from({ length: 26 }, (_, idx) => String.fromCharCode(97 + idx));
 
-for (const charUnit of rawContent) {
-  const charCodeVal = charUnit.charCodeAt(0);
-  let convertedChar = charUnit;
+const characterTally = new Map();
+const rawInput = fetchSourceText();
 
-  if (charCodeVal >= 65 && charCodeVal <= 90) { // If character is an uppercase letter (A-Z)
-    convertedChar = String.fromCharCode(charCodeVal + 32); // Convert to lowercase
-  }
+for (const inputChar of rawInput) {
+    const lowerChar = inputChar.toLowerCase();
+    const charCode = lowerChar.charCodeAt(0);
 
-  if (charRegistry.has(convertedChar)) {
-    occurrenceMap.set(convertedChar, (occurrenceMap.get(convertedChar) || 0) + 1);
-  }
+    if (charCode >= 97 && charCode <= 122) {
+        characterTally.set(lowerChar, (characterTally.get(lowerChar) || 0) + 1);
+    }
 }
 
-const displayAlphabet = [];
-for (let i = 0; i < 26; i++) {
-  displayAlphabet.push(String.fromCharCode(97 + i)); // Generate 'a' through 'z' for display order
-}
-
-for (const currentAlphaChar of displayAlphabet) {
-  const currentCount = occurrenceMap.has(currentAlphaChar) ? occurrenceMap.get(currentAlphaChar) : 0;
-  console.log(`${currentAlphaChar} : ${currentCount}`);
+for (const currentLetter of alphabetSequence) {
+    const count = characterTally.get(currentLetter) || 0;
+    console.log(`${currentLetter} : ${count}`);
 }

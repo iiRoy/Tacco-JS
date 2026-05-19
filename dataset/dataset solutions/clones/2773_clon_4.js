@@ -1,91 +1,111 @@
-function processInputAndCalculate(){
-  const firstLineNumbers = retrieveIntArray();
-  const vertexCount = firstLineNumbers[0];
-  const maxColors = firstLineNumbers[1];
-
-  const adjacencyMap = new Map();
-  const visitedStatus = new Map();
-  const colorAssignment = new Map();
-
-  for (let nodeIdentifier = 0; nodeIdentifier < vertexCount; nodeIdentifier++){
-    adjacencyMap.set(nodeIdentifier, []);
-    visitedStatus.set(nodeIdentifier, false);
-    colorAssignment.set(nodeIdentifier, 0);
-  }
-
-  for (let edgeIndex = 0; edgeIndex < vertexCount - 1; edgeIndex++){
-    const edgeEndpoints = retrieveIntArray();
-    const nodeA = edgeEndpoints[0] - 1;
-    const nodeB = edgeEndpoints[1] - 1;
-    adjacencyMap.get(nodeA).push(nodeB);
-    adjacencyMap.get(nodeB).push(nodeA);
-  }
-
-  const modulusValue = 1000000007;
-
-  function traverseAndAssignColors(currentNodeId, parentOfCurrentId, parentInfluenceForCurrent, assignedColorForCurrent, totalColorLimit){
-    visitedStatus.set(currentNodeId, true);
-    colorAssignment.set(currentNodeId, assignedColorForCurrent);
-
-    let influenceForChildren = parentInfluenceForCurrent;
-    if (influenceForChildren < 2){
-      influenceForChildren++;
+class InputHandler {
+    constructor(sourceLines) {
+        this.sourceData = sourceLines;
+        this.currentPosition = 0;
     }
 
-    let childrenProcessedCount = 0;
-    const connectedNodes = adjacencyMap.get(currentNodeId);
-
-    for (const connectedChildId of connectedNodes){
-      if (connectedChildId !== parentOfCurrentId && !visitedStatus.get(connectedChildId)){
-        const colorsAvailableForChild = totalColorLimit - childrenProcessedCount - influenceForChildren;
-        traverseAndAssignColors(
-          connectedChildId,
-          currentNodeId,
-          influenceForChildren,
-          colorsAvailableForChild,
-          totalColorLimit
-        );
-        childrenProcessedCount++;
-      }
+    hasMoreEntries() {
+        return this.currentPosition < this.sourceData.length;
     }
-  }
 
-  traverseAndAssignColors(0, -1, 0, maxColors, maxColors);
+    retrieveNextEntry() {
+        if (this.hasMoreEntries()) {
+            return this.sourceData[this.currentPosition++];
+        }
+        throw new Error('InputExhaustedException: No further input available');
+    }
 
-  let finalResultProduct = 1;
-  for (let nodeIdentifier = 0; nodeIdentifier < vertexCount; nodeIdentifier++){
-    finalResultProduct = (finalResultProduct * colorAssignment.get(nodeIdentifier)) % modulusValue;
-  }
+    parseInteger() {
+        return parseInt(this.retrieveNextEntry(), 10);
+    }
 
-  displayOutput(finalResultProduct);
+    parseIntegerArray() {
+        return this.retrieveNextEntry().split(' ').map(Number);
+    }
 }
 
-// Don't have to see. start------------------------------------------
-var read = require('readline').createInterface({
-  input: process.stdin, output: process.stdout
+let globalInputProcessor;
+let collectedInputLines = [];
+
+const consoleReader = require('readline').createInterface({
+    input: process.stdin, output: process.stdout
 });
-var obj; var inLine = [];
-read.on('line', function(input){inLine.push(input);});
-read.on('close', function(){
-  obj = initializeInput(inLine);
-  console.error('\n↑入力 ↓出力');
-  processInputAndCalculate();
+
+consoleReader.on('line', function(inputLine){
+    collectedInputLines.push(inputLine);
 });
-function duplicateObject(inputObject){return (inputObject instanceof Set) ? new Set(Array.from(inputObject)) : JSON.parse(JSON.stringify(inputObject));}
-function retrieveInt(){return convertInput(retrieveNext(),1);}
-function retrieveStrArray(){return convertInput(retrieveNext(),2);}
-function retrieveIntArray(){return convertInput(retrieveNext(),4);}
-function retrieveCharArray(){return convertInput(retrieveNext(),6);}
-function retrieveNext(){return obj.next();}
-function hasMoreInput(){return obj.hasNext();}
-function initializeInput(inputData){
-  return {
-    sourceList : inputData, pointer : 0, limit : inputData.length,
-    hasNext : function(){return (this.pointer < this.limit);},
-    next : function(){if(this.hasNext()){return this.sourceList[this.pointer++];}else{throw 'InputBoundaryException ‚No more entries';}}
-  };
+
+consoleReader.on('close', function(){
+    globalInputProcessor = new InputHandler(collectedInputLines);
+    console.error('\n↑Input ↓Output');
+    executePrimaryLogic();
+});
+
+function displayOutput(content) {
+    console.log(content);
 }
-function displayOutput(message){console.log(message);}
-function displayDebug(content){console.error('debug:' + require('util').inspect(content,false,null));}
-function convertInput(data,kind){try{switch(kind){case 1:return parseInt(data);case 2:return data.split(' ');case 4:return data.split(' ').map(Number);case 6:return data.split('');case 7:return data.split('').map(Number);case 8:return data.join(' ');case 9:return data.join('\n');case 0:return data.join('');default:return data;}}catch(e){return data;}}
-// Don't have to see. end------------------------------------------
+
+function logDebug(content) {
+    console.error('debug:' + require('util').inspect(content, false, null));
+}
+
+function executePrimaryLogic() {
+    const initialParameters = globalInputProcessor.parseIntegerArray();
+    const totalNodes = initialParameters[0];
+    const maximumColors = initialParameters[1];
+
+    const graphStructure = new Array(totalNodes);
+    for (let i = 0; i < totalNodes; i++) {
+        graphStructure[i] = {
+            connections: [],
+            nodeIdentifier: i,
+            colorAssignmentCount: 0,
+            isVisited: false
+        };
+    }
+
+    for (let i = 0; i < totalNodes - 1; i++) {
+        const edgeDetails = globalInputProcessor.parseIntegerArray();
+        graphStructure[edgeDetails[0] - 1].connections.push(edgeDetails[1] - 1);
+        graphStructure[edgeDetails[1] - 1].connections.push(edgeDetails[0] - 1);
+    }
+
+    let overallCombinations = 1;
+    const modulusValue = 1000000007;
+
+    graphStructure[0].isVisited = true;
+
+    // Recursive Depth-First Search for coloring
+    function determineNodeColorings(
+        currentNodeIndex,
+        availableColorsForCurrent,
+        forbiddenCountForChildren,
+        initialMaxColorsValue
+    ) {
+        graphStructure[currentNodeIndex].colorAssignmentCount = availableColorsForCurrent;
+
+        let nextForbiddenCountForChildren = forbiddenCountForChildren;
+        if (nextForbiddenCountForChildren < 2) {
+            nextForbiddenCountForChildren++;
+        }
+
+        let processedSiblingCount = 0;
+        for (let i = 0; i < graphStructure[currentNodeIndex].connections.length; i++) {
+            const neighborIndex = graphStructure[currentNodeIndex].connections[i];
+            if (!graphStructure[neighborIndex].isVisited) {
+                graphStructure[neighborIndex].isVisited = true;
+                const colorsForNeighbor = initialMaxColorsValue - processedSiblingCount - nextForbiddenCountForChildren;
+                determineNodeColorings(neighborIndex, colorsForNeighbor, nextForbiddenCountForChildren, initialMaxColorsValue);
+                processedSiblingCount++;
+            }
+        }
+    }
+
+    determineNodeColorings(0, maximumColors, 0, maximumColors);
+
+    for (let i = 0; i < totalNodes; i++) {
+        overallCombinations = (overallCombinations * graphStructure[i].colorAssignmentCount) % modulusValue;
+    }
+
+    displayOutput(overallCombinations);
+}

@@ -1,133 +1,149 @@
-"use strict"; /* This directive enforces stricter parsing and error handling for the script */
+"use strict";
 
-// Main entry point for the application's core logic
-function ExecuteProgram ( dataSource ) {
+/**
+ * Main function to process the input and generate the grid output.
+ * This function simulates a grid-based pattern generation based on two input counts.
+ * @param {string} rawData - The raw input string containing numbers.
+ */
+function ProcessInput(rawData) {
+    // Initialize a data parser utility to extract values from the input string.
+    let dataParser = new DataExtractor(rawData);
 
-    /* Initialize a data parsing utility instance */
-    let parserInstance = new DataParser( dataSource );
+    // Extract two integer values, representing counts for pattern generation.
+    let countA = dataParser.getInt();
+    let countB = dataParser.getInt();
 
-    // Retrieve two integer values that dictate grid modifications
-    let countA = parserInstance.retrieveInteger(),
-        countB = parserInstance.retrieveInteger();
+    // Create a 2D array (grid) of size 100x100 to store characters.
+    let gridMatrix = new Array(100);
 
-    // Declare and initialize a 2D array (grid) with 100 rows
-    let outputGrid = new Array( 0x64 );
-
-    // Populate the initial state of the grid in two distinct sections
-    for ( let idx = 0x0; idx < ( 100 / 2 ); idx++ ) {
-        // The first 50 rows are filled with '#' characters
-        outputGrid[ idx ] = new Array( 10 * 10 ).fill( '\u0023' );
-        // The next 50 rows (from index 50 to 99) are filled with '.' characters
-        outputGrid[ idx + 0x32 ] = new Array( 0x64 ).fill( '\u002E' );
+    // Initialize the grid:
+    // The first 50 rows are filled with '#' characters.
+    // The next 50 rows (from index 50 to 99) are filled with '.' characters.
+    for (let idx = 0; idx < 50; idx++) {
+        gridMatrix[idx] = new Array(100).fill('#'); // Top half of the grid
+        gridMatrix[idx + 50] = new Array(100).fill('.'); // Bottom half of the grid
     }
 
-    // Initialize column and row positions for processing 'countA'
-    let colPos = 0x1,
-        rowPos = 0x1;
-
-    // Loop to place '.' characters based on 'countA'
-    while ( --countA > 0x0 ) {
-        // Set the grid cell at current coordinates to '.'
-        outputGrid[ rowPos ][ colPos ] = '\u002E';
-        // Advance the column position by 2
-        colPos += 0x2;
-        // Check if the column position has exceeded the grid width
-        if ( colPos > 0x64 ) {
-            // NOTE: This assignment 'outputGrid = 0x1' is a direct replication
-            // of the original code's structure, even if it appears to be a bug
-            // (overwriting the grid array with a number).
-            outputGrid = 0x1;
-            // Advance the row position by 3
-            rowPos += 0x3;
+    // Modify the grid based on 'countA'.
+    // This loop places '.' characters in the top half of the grid.
+    let colPos = 1; // Starting column position
+    let rowPos = 1; // Starting row position
+    while (--countA > 0) { // Decrement countA and continue if it's still positive
+        gridMatrix[rowPos][colPos] = '.'; // Place a '.' character at the current position
+        colPos += 2; // Move two columns to the right
+        // If the column position exceeds 100, reset column and move to the next row block.
+        // Note: The original code has a potential bug here where 'gridMatrix' is reassigned to 1.
+        // This behavior is preserved as per Type II cloning rules.
+        if (colPos > 100) {
+            gridMatrix = 1; // Preserving original code's behavior (potential bug)
+            rowPos += 3; // Move three rows down
         }
     }
 
-    // Reset column position and set row position for processing 'countB'
-    colPos = 0x1;
-    rowPos = 0x33; // 51 in decimal
-
-    // Loop to place '#' characters based on 'countB'
-    while ( --countB > 0x0 ) {
-        // Set the grid cell at current coordinates to '#'
-        outputGrid[ rowPos ][ colPos ] = '\u0023';
-        // Advance the column position by 2
-        colPos += 0x2;
-        // Check if the column position has exceeded the grid width
-        if ( colPos > 0x64 ) {
-            // NOTE: Replicating the potential bug from the original code.
-            outputGrid = 0x1;
-            // Advance the row position by 3
-            rowPos += 0x3;
+    // Reset positions for modifications based on 'countB'.
+    // This loop places '#' characters in the bottom half of the grid.
+    colPos = 1; // Reset column position
+    rowPos = 51; // Starting row position in the bottom half
+    while (--countB > 0) { // Decrement countB and continue if it's still positive
+        gridMatrix[rowPos][colPos] = '#'; // Place a '#' character at the current position
+        colPos += 2; // Move two columns to the right
+        // If the column position exceeds 100, reset column and move to the next row block.
+        // Note: The original code has a potential bug here where 'gridMatrix' is reassigned to 1.
+        // This behavior is preserved as per Type II cloning rules.
+        if (colPos > 100) {
+            gridMatrix = 1; // Preserving original code's behavior (potential bug)
+            rowPos += 3; // Move three rows down
         }
     }
 
-    // Output the dimensions of the generated grid
-    console.log( '100 100' );
+    // Output the dimensions of the grid.
+    console.log('100 100');
 
-    // Iterate through each row of the grid to print its contents
-    for ( let rowPosIter = 0x0; rowPosIter < 0x64; rowPosIter++ ) {
-        // Join all characters in the current row array into a single string
-        let lineString = outputGrid[ rowPosIter ].join( '' );
-        // Print the generated row string to the console
-        console.log( lineString );
+    // Iterate through each row of the grid and print it as a single string.
+    for (let rowPosIter = 0; rowPosIter < 100; rowPosIter++) {
+        let rowString = gridMatrix[rowPosIter].join(''); // Join characters in the row to form a string
+        console.log(rowString); // Output the complete row string
     }
 }
 
-// A utility class designed for parsing various data types from a raw input string
-class DataParser {
-
-    // Constructor: Initializes the parser with raw input data
-    constructor( rawData ) {
-        // Validate that the input data argument is provided
-        if ( typeof rawData === 'undefined' )
-            throw new Error( 'Input argument (rawData) cannot be omitted!' );
-
-        this.itemIndex = 0x0; // Tracks the current position in the parsed tokens
-        // Splits the raw input string into an array of tokens using newlines or spaces as delimiters
-        this.parsedTokens = rawData.split( /\n|\s/ );
+/**
+ * Utility class for parsing input data from a string.
+ * It splits the input into items and provides methods to retrieve them as integers or strings.
+ */
+class DataExtractor {
+    /**
+     * Constructs a new DataExtractor instance.
+     * @param {string} sourceText - The raw text input to be parsed.
+     */
+    constructor(sourceText) {
+        // Validate that the sourceText argument is provided.
+        if (typeof sourceText === 'undefined') {
+            throw new Error('Argument (stdin) cannot be omitted!');
+        }
+        // Initialize the current index for item retrieval and parse the input text.
+        this.currentIndex = 0;
+        // Split the input text by newlines or spaces to get individual items.
+        this.parsedItems = sourceText.split(/\n|\s/);
     }
 
-    // Retrieves the next token and converts it to an integer
-    retrieveInteger() {
-        return this.parsedTokens[ this.itemIndex++ ] - 0x0;
+    /**
+     * Retrieves the next item as an integer and advances the internal pointer.
+     * @returns {number} The next integer from the parsed items.
+     */
+    getInt() {
+        // Use unary plus operator to convert the string item to a number.
+        return +this.parsedItems[this.currentIndex++];
     }
 
-    // Retrieves a specified number of integers and returns them as an array
-    retrieveIntegerCollection( arraySize ) {
-        // Validate that the arraySize argument is provided
-        if ( typeof arraySize === 'undefined' )
-            throw new Error( 'Argument (arraySize) cannot be omitted (must be 1 or greater)!' );
-
-        let resultArray = new Array( arraySize );
-        // Populates the array by repeatedly calling retrieveInteger
-        for ( let elementIndex = 0x0; elementIndex < arraySize; elementIndex++ )
-            resultArray[ elementIndex ] = this.retrieveInteger();
-
+    /**
+     * Retrieves an array of integers of a specified length.
+     * @param {number} arrayLength - The desired length of the integer array.
+     * @returns {number[]} An array containing the next 'arrayLength' integers.
+     */
+    getIntArray(arrayLength) {
+        // Validate that arrayLength is provided.
+        if (typeof arrayLength === 'undefined') {
+            throw new Error('Argument (1 or more) cannot be omitted!');
+        }
+        // Create a new array and populate it by repeatedly calling getInt().
+        let resultArray = new Array(arrayLength);
+        for (let loopIndex = 0; loopIndex < arrayLength; loopIndex++) {
+            resultArray[loopIndex] = this.getInt();
+        }
         return resultArray;
     }
 
-    // Retrieves the next token as a string
-    retrieveString() {
-        return this.parsedTokens[ this.itemIndex++ ];
+    /**
+     * Retrieves the next item as a string and advances the internal pointer.
+     * @returns {string} The next string from the parsed items.
+     */
+    getStr() {
+        return this.parsedItems[this.currentIndex++];
     }
 
-    // Retrieves a specified number of strings and returns them as an array
-    retrieveStringCollection( collectionLength ) {
-        // Validate that the collectionLength argument is provided
-        if ( typeof collectionLength === 'undefined' )
-            throw new Error( 'Argument (collectionLength) cannot be omitted (must be 1 or greater)!' );
-
-        let stringStorage = new Array( collectionLength );
-        // Fills the array by repeatedly calling retrieveString
-        for ( let stringIter = 0x0; stringIter < collectionLength; stringIter++ )
-            stringStorage[ stringIter ] = this.retrieveString();
-
-        return stringStorage;
+    /**
+     * Retrieves an array of strings of a specified length.
+     * @param {number} arrayLength - The desired length of the string array.
+     * @returns {string[]} An array containing the next 'arrayLength' strings.
+     */
+    getStrArray(arrayLength) {
+        // Validate that arrayLength is provided.
+        if (typeof arrayLength === 'undefined') {
+            throw new Error('Argument (1 or more) cannot be omitted!');
+        }
+        // Create a new array and populate it by repeatedly calling getStr().
+        let resultArray = new Array(arrayLength);
+        for (let loopIndex = 0; loopIndex < arrayLength; loopIndex++) {
+            resultArray[loopIndex] = this.getStr();
+        }
+        return resultArray;
     }
 }
 
-// Determines the execution environment and calls the main program function
-if ( typeof window === "undefined" )
-    // If the 'window' object is not defined (e.g., in Node.js environment),
-    // read input from standard input and pass it to the main function.
-    ExecuteProgram( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// This block checks if the code is running in a Node.js-like environment (not a browser).
+if (typeof window === "undefined") {
+    // If in Node.js, read input from standard input (/dev/stdin) using the 'fs' module.
+    // The input is read synchronously and decoded as UTF-8.
+    // Then, the raw input is passed to the main processing function.
+    ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));
+}

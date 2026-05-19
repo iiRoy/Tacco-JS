@@ -1,63 +1,50 @@
-const acquireModule = (moduleName) => require(moduleName);
-const fileSystemHandler = acquireModule("fs");
+const retrieveSourceData = require("fs").readFileSync;
 
-const retrieveDataFromPath = (pathSpecifier, encodingFormat) => fileSystemHandler.readFileSync(pathSpecifier, encodingFormat);
-
-const standardInputReference = "/dev/stdin";
-
-String.prototype.purgeWhitespace = function() { return this.trim(); };
-String.prototype.divideByPattern = function(pattern) { return this.split(pattern); };
-Array.prototype.convertElementsToNumber = function() { return this.map(Number); };
-Array.prototype.performActionOnEach = function(action) { this.forEach(action); };
-
-const getAbsoluteMagnitude = (value) => Math.abs(value);
-
-const toleranceThreshold = 0.0000000001;
-
-const emitOutputLine = (message) => console.log(message);
-
-class SpatialCoordinate {
-    constructor(x_val, y_val) {
-        this.x_axis_pos = x_val;
-        this.y_axis_pos = y_val;
-    }
-}
-
-class DirectionalSpan {
-    constructor(start_point, end_point) {
-        this.horizontal_difference = end_point.x_axis_pos - start_point.x_axis_pos;
-        this.vertical_difference = end_point.y_axis_pos - start_point.y_axis_pos;
-    }
-
-    static computeScalarProduct(span_one, span_two) {
-        return (span_one.horizontal_difference * span_two.horizontal_difference) +
-               (span_one.vertical_difference * span_two.vertical_difference);
-    }
-}
-
-const executeGeometricCheck = (input_data_string) => {
-    const cleansed_input_lines = input_data_string.purgeWhitespace().divideByPattern('\n');
-
-    cleansed_input_lines.performActionOnEach(current_entry => {
-        const numerical_tokens = current_entry.divideByPattern(' ').convertElementsToNumber();
-
-        const p1_coords = new SpatialCoordinate(numerical_tokens[0], numerical_tokens[1]);
-        const p2_coords = new SpatialCoordinate(numerical_tokens[2], numerical_tokens[3]);
-        const p3_coords = new SpatialCoordinate(numerical_tokens[4], numerical_tokens[5]);
-        const p4_coords = new SpatialCoordinate(numerical_tokens[6], numerical_tokens[7]);
-
-        const segment_ab_vector = new DirectionalSpan(p1_coords, p2_coords);
-        const segment_cd_vector = new DirectionalSpan(p3_coords, p4_coords);
-
-        const dot_product_result = DirectionalSpan.computeScalarProduct(segment_ab_vector, segment_cd_vector);
-
-        if (getAbsoluteMagnitude(dot_product_result) < toleranceThreshold) {
-            emitOutputLine('NO');
-        } else {
-            emitOutputLine('YES');
-        }
-    });
+const processInputLines = (inputContent) => {
+    const trimmedContent = inputContent.trim();
+    return trimmedContent.split('\n');
 };
 
-const raw_input_content = retrieveDataFromPath(standardInputReference, "utf8");
-executeGeometricCheck(raw_input_content);
+const extractNumericComponents = (textLine) => {
+    return textLine.split(' ').map(Number);
+};
+
+const formVectorFromPoints = (startX, startY, endX, endY) => {
+    return {
+        deltaX: endX - startX,
+        deltaY: endY - startY
+    };
+};
+
+const computeScalarProduct = (vectorOne, vectorTwo) => {
+    return (vectorOne.deltaX * vectorTwo.deltaX) + (vectorOne.deltaY * vectorTwo.deltaY);
+};
+
+const orthogonalityThreshold = 1e-10;
+
+const rawData = retrieveSourceData("/dev/stdin", "utf8");
+const dataLines = processInputLines(rawData);
+
+dataLines.forEach(individualLine => {
+    const coordinateSet = extractNumericComponents(individualLine);
+
+    const x1 = coordinateSet[0];
+    const y1 = coordinateSet[1];
+    const x2 = coordinateSet[2];
+    const y2 = coordinateSet[3];
+    const x3 = coordinateSet[4];
+    const y3 = coordinateSet[5];
+    const x4 = coordinateSet[6];
+    const y4 = coordinateSet[7];
+
+    const vectorAtoB = formVectorFromPoints(x1, y1, x2, y2);
+    const vectorCtoD = formVectorFromPoints(x3, y3, x4, y4);
+
+    const dotProductResult = computeScalarProduct(vectorAtoB, vectorCtoD);
+
+    if (Math.abs(dotProductResult) < orthogonalityThreshold) {
+        console.log('NO');
+    } else {
+        console.log('YES');
+    }
+});

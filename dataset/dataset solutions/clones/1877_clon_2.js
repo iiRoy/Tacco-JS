@@ -1,124 +1,115 @@
 "use strict";
 
-// Acquire raw text input from the standard input stream
-let dataString = require("fs").readFileSync("/dev/stdin", "utf8");
+// Acquire file system module and read input from standard input.
+var fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Parse the input text into an array of individual tokens,
-// and set up an index to track the current token position.
-let tokenList = dataString.split(/ |\n/),
-    tokenIndex = 0;
+// Split input by spaces or newlines and initialize token index.
+var inputTokens = fileContent.split(/ |\n/);
+var tokenIndex = 0x0;
 
-// Utility function to fetch the subsequent data element from the token array.
-// The `isStringMode` parameter dictates whether to return the token as a string
-// or attempt to convert it into a numerical value.
-function retrieveNextElement(isStringMode) {
-  return isStringMode ? tokenList[tokenIndex++] : +tokenList[tokenIndex++];
+/**
+ * Reads the next token from the input stream.
+ * @param {boolean} asString - If true, returns as string; otherwise, as number.
+ * @returns {string|number} The next token.
+ */
+function readNextToken(asString) {
+  return asString ? inputTokens[tokenIndex++] : +inputTokens[tokenIndex++];
 }
 
-// Utility function to fetch multiple consecutive data elements from the token array.
-// `count` specifies how many elements to retrieve.
-// `isStringMode` determines if elements should remain strings or be converted to numbers.
-function retrieveManyElements(count, isStringMode) {
-  let startIndex = tokenIndex;
-  tokenIndex += count;
-  let fetchedElements = tokenList.slice(startIndex, tokenIndex);
-  if (isStringMode) { // If true, return elements as strings.
-    return fetchedElements;
-  } else { // Otherwise, convert elements to numbers.
-    return fetchedElements.map(element => +element);
-  }
+/**
+ * Reads multiple tokens from the input stream.
+ * @param {number} count - The number of tokens to read.
+ * @param {boolean} asString - If true, returns as strings; otherwise, as numbers.
+ * @returns {Array<string|number>} An array of tokens.
+ */
+function readMultipleTokens(count, asString) {
+  return asString ? inputTokens.slice(tokenIndex, tokenIndex += count) : inputTokens.slice(tokenIndex, tokenIndex += count).map(val => +val);
 }
 
-// Utility function to fetch data elements and structure them into a 2D array (matrix).
-// `numRows` and `numCols` specify the dimensions of the matrix.
-// `isStringMode` controls whether elements are stored as strings or numbers.
-function retrieveMatrixElements(numRows, numCols, isStringMode) {
-  let resultGrid = [];
-  let rowIndex = 0;
-
-  if (isStringMode) { // If true, populate with string arrays.
-    for (; rowIndex < numRows; rowIndex++) {
-      let startIndex = tokenIndex;
-      tokenIndex += numCols; // Advance token index for the next row
-      resultGrid.push(tokenList.slice(startIndex, tokenIndex));
+/**
+ * Reads a matrix of tokens from the input stream.
+ * @param {number} height - The number of rows.
+ * @param {number} width - The number of columns.
+ * @param {boolean} asString - If true, returns as strings; otherwise, as numbers.
+ * @returns {Array<Array<string|number>>} A 2D array (matrix) of tokens.
+ */
+function readMatrixTokens(height, width, asString) {
+  var resultMatrix = [];
+  var rowCounter = 0x0;
+  if (asString) {
+    for (; rowCounter < height; rowCounter++) {
+      resultMatrix.push(inputTokens.slice(tokenIndex, tokenIndex += width));
     }
-  } else { // Otherwise, populate with number arrays.
-    for (; rowIndex < numRows; rowIndex++) {
-      let startIndex = tokenIndex;
-      tokenIndex += numCols; // Advance token index for the next row
-      resultGrid.push(tokenList.slice(startIndex, tokenIndex).map(element => +element));
+  } else {
+    for (; rowCounter < height; rowCounter++) {
+      resultMatrix.push(inputTokens.slice(tokenIndex, tokenIndex += width).map(val => +val));
     }
   }
-  return resultGrid;
+  return resultMatrix;
 }
 
-// Function to construct a multi-dimensional array dynamically based on provided dimensions.
-// The `initialValue` fills the innermost array elements.
+/**
+ * Creates a multi-dimensional array initialized with a specific value.
+ * @param {*} initialValue - The value to initialize array elements with.
+ * @param {...number} dimensions - The dimensions of the array.
+ * @returns {Array} The multi-dimensional array.
+ */
 function createMultiDimArray(initialValue) {
-  let dimensions = arguments;
-  let dimCount = dimensions.length;
-  // Start building the string representation for the innermost array layer
-  let arrayCreationString = "Array(dimensions[" + --dimCount + "]).fill().map(item => {return " + initialValue + ";})";
-  // Wrap the string with outer array layers
-  while (--dimCount) {
-    arrayCreationString = "Array(dimensions[" + dimCount + "]).fill().map(item => " + arrayCreationString + ")";
+  var args = arguments;
+  var argCount = args.length;
+  var arrayCreationString = "Array(args[" + --argCount + "]).fill().map(element => {return " + initialValue + ";})";
+  while (--argCount) {
+    arrayCreationString = "Array(args[" + argCount + "]).fill().map(element => " + arrayCreationString + ")";
   }
-  // Evaluate the constructed string to create the actual array structure
   return eval(arrayCreationString);
 }
 
-// Execute the primary application logic and store the computed outcome.
-const finalResult = executeProgram();
+// Execute the main processing logic.
+var finalResult = processInput();
 
-// Display the outcome to the console if it is defined.
+// Output the result if it's not undefined.
 if (finalResult !== undefined) {
   console.log(finalResult);
 }
 
-// The main program execution function, encapsulating the core algorithm.
-function executeProgram() {
-  // Read the total count of items from the input.
-  let numItems = retrieveNextElement();
-  // Read the maximum number of traversal steps, ensuring it's a BigInt for large numbers.
-  let maxSteps = BigInt(retrieveNextElement());
-  // Read the array defining connections (where each item leads to).
-  let itemConnections = retrieveManyElements(numItems);
+/**
+ * Main function to process the input and solve the problem.
+ * This function implements a cycle detection algorithm.
+ * @returns {number} The final position after K jumps.
+ */
+function processInput() {
+  var numElements = readNextToken();
+  var bigKValue = BigInt(readNextToken());
+  var jumpArray = readMultipleTokens(numElements);
 
-  // Initialize a tracking array to record the step number at which each position was first visited.
-  // -1 indicates an unvisited position.
-  let visitedSteps = createMultiDimArray(-1, numItems);
+  // Map to store the first visit iteration for each position.
+  // Initialized with -1 to indicate not visited.
+  var visitedMap = createMultiDimArray(-0x1, numElements);
 
-  // Begin the traversal at the initial position (index 0).
-  let currentPosition = 0;
-  // Mark the starting position as visited at step 0.
-  visitedSteps[0] = 0;
+  var currentPosition = 0x0; // Start at position 0.
+  visitedMap[0x0] = 0x0; // Mark starting position as visited at iteration 0.
 
-  // Iterate through the steps, up to the maximum allowed steps.
-  for (let stepCounter = 1; stepCounter <= maxSteps; stepCounter++) {
-    // Move to the next position based on the connection from the current position.
-    // Adjust for 0-based indexing (original values are 1-based).
-    currentPosition = itemConnections[currentPosition] - 1;
+  // Loop through K jumps or until a cycle is detected.
+  for (var iterationCount = 0x1; iterationCount <= bigKValue; iterationCount++) {
+    currentPosition = jumpArray[currentPosition] - 0x1; // Perform the jump.
 
-    // Check if the current position has been visited previously.
-    if (visitedSteps[currentPosition] >= 0) {
-      // A cycle has been detected!
-      // Calculate the length of this detected cycle.
-      let cycleLength = stepCounter - visitedSteps[currentPosition];
-      // Subtract the steps already taken from the total remaining steps.
-      maxSteps -= BigInt(stepCounter);
-      // Calculate the effective remaining steps within the discovered cycle.
-      maxSteps %= BigInt(cycleLength);
+    // Check if the current position has been visited before.
+    if (visitedMap[currentPosition] >= 0x0) {
+      // Cycle detected!
+      var cycleLength = iterationCount - visitedMap[currentPosition]; // Length of the cycle.
+      bigKValue -= BigInt(iterationCount); // Remaining jumps after reaching the cycle.
+      bigKValue %= BigInt(cycleLength); // Jumps remaining within the cycle.
 
-      // Perform the remaining, reduced number of steps within the cycle.
-      for (let s = 1; s <= maxSteps; s++) {
-        currentPosition = itemConnections[currentPosition] - 1;
+      // Perform the remaining jumps within the cycle.
+      for (var cycleJumpCount = 0x1; cycleJumpCount <= bigKValue; cycleJumpCount++) {
+        currentPosition = jumpArray[currentPosition] - 0x1;
       }
-      // Once the cycle is processed, the traversal is complete, so exit the loop.
-      break;
+      break; // Exit the main loop as we've calculated the final position.
     }
-    // If the position is new, mark it with the current step number.
-    visitedSteps[currentPosition] = stepCounter;
+    // Mark the current position with the current iteration count.
+    visitedMap[currentPosition] = iterationCount;
   }
-  // Return the final position, adjusted back to 1-based indexing for the output.
-  return currentPosition + 1;
+
+  // Return the final position (1-indexed).
+  return currentPosition + 0x1;
 }

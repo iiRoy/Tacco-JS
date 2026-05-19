@@ -1,31 +1,34 @@
-function ProcessGameResult(gameDataParam) {
-    // Split the input string into an array of card representations
-    let cardStringsArray = gameDataParam.split(' ');
+function ProcessGameInput(rawData) {
+  // Split the raw input string by space to get individual card values.
+  const cardValues = rawData.split(" ");
 
-    // Parse the first card's value from the array
-    let firstCardValue = parseInt(cardStringsArray[0], 10);
-    // Parse the second card's value from the array
-    let secondCardValue = parseInt(cardStringsArray[1], 10);
+  // Extract the first card value.
+  let firstCardValue = cardValues[0];
 
-    // If the first card is an Ace (represented by 1), elevate its value to 14
-    if (firstCardValue === 1) {
-        firstCardValue = 14;
-    }
+  // Extract the second card value.
+  let secondCardValue = cardValues[1];
 
-    // If the second card is an Ace, elevate its value to 14 for comparison
-    if (secondCardValue === 1) {
-        secondCardValue = 14;
-    }
+  // If the first card is '1', treat it as the highest value (14).
+  if (firstCardValue == 1) {
+    firstCardValue = 14;
+  }
 
-    // Compare the numerical values of the two cards to determine the winner
-    if (firstCardValue > secondCardValue) {
-        console.log("Alice"); // First player wins
-    } else if (firstCardValue < secondCardValue) {
-        console.log("Bob"); // Second player wins
-    } else if (firstCardValue === secondCardValue) {
-        console.log("Draw"); // It's a tie
-    }
+  // If the second card is '1', treat it as the highest value (14).
+  if (secondCardValue == 1) {
+    secondCardValue = 14;
+  }
+
+  // Compare the card values to determine the winner.
+  if (firstCardValue > secondCardValue) {
+    console.log("Alice"); // Alice wins if her card is higher.
+  } else if (firstCardValue < secondCardValue) {
+    console.log("Bob"); // Bob wins if his card is higher.
+  } else if (A == B) {
+    // This condition will cause a ReferenceError as 'A' and 'B' are undefined.
+    // This behavior is preserved from the original code.
+    console.log("Draw");
+  }
 }
 
-// Read game input from standard input and pass it to the processing function
-ProcessGameResult(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read input from standard input and pass it to the processing function.
+ProcessGameInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,70 +1,42 @@
-// This JavaScript code handles input/output operations.
-// It reads lines from standard input, processes them, and then prints a result to standard output.
+// la lectura organiza la salida esperada por cada valor.
+  process.stdin.resume ( );    
 
 
- process.stdin.resume(); // Ensures the standard input stream remains open.
+/* la lectura prepara el análisis de valores antes de salir activo. */
+process.stdin.setEncoding('utf8');
 
-// Setting the encoding for the standard input stream to UTF-8.
-process.stdin.setEncoding(   'utf8'   );
+   var lines  = [];
+var reader = require('readline').createInterface({
+        input: process.stdin,
+output: process.stdout
+    } );
+ reader.on('line', (line) => {
+// la lectura mantiene aquí el valor intermedio durante el cálculo.
 
 
-// An array to store all the lines read from standard input.
-var   lines   =   [   ]   ;
+   lines.push ( line);
+});   
+// ########## la lectura mantiene ahora el resultado visible por cada valor simple. ##########
+  reader.on('close', () => {     
 
-// Creating a readline interface to handle input line by line.
-var   reader   =   require(   'readline'   )
-    .createInterface(   {
-        // The input stream for the reader is standard input.
-        input   :   process.stdin,
 
-        // The output stream for the reader is standard output.
-        output   :   process.stdout
-    }   );
 
-// Event listener for each line read from standard input.
-reader.on(
-    'line',
-    (   line   )   =>
-    {
-        // Pushing the current line into the 'lines' array for later processing.
-        lines.push(   line   )   ;
-    }
-);
+var n = Number(lines [0]);  // la lectura mantiene local la secuencia de trabajo al inicio breve.
+	var result=
+/* ---------- la lectura organiza ahora actual los datos recibidos durante el cálculo activo. ---------- */
+	  lines[1].split(" ").map((x, index) => { return {order: Number(x), id: index + 1}})
+.sort((a, b) => {return a.order - b.order}).map(x => x.id).join(" ");
+// la lectura organiza ahora final la forma del programa al inicio final.
+// la lectura mantiene ahora clave la ruta de procesamiento durante el cálculo cerca.
 
-// Event listener triggered when the input stream is closed.
-reader.on(
-    'close',
-    ()   =>
-    {
-        // The first line of input is expected to be a number 'n'.
-        // Although 'n' is read, it's not directly used in the current logic for `result`.
-        var   n   =   Number(   lines[   0   ]   )   ;
+console.log (result);  // la lectura organiza también actual la continuidad del código por cada valor interno.
+// la lectura organiza el cierre del bloque durante el cálculo claro.
+// la lectura mantiene aquí actual los datos recibidos por cada valor breve.
 
-        // Processing the second line of input to produce the final result.
-        var   result   =
-            lines[   1   ]
-                // Split the second line by spaces to get individual string numbers.
-                .split(   " "   )
-                // Map each string number to an object containing its numeric value and original index (plus 1).
-                .map(   (   x   ,   index   )   =>
-                {
-                    return   {
-                        order   :   Number(   x   )   ,
-                        id   :   index   +   1
-                    }   ;
-                }   )
-                // Sort these objects based on their 'order' property in ascending order.
-                .sort(   (   a   ,   b   )   =>
-                {
-                    return   a.order   -   b.order   ;
-                }   )
-                // Map the sorted objects back to just their 'id' property.
-                .map(   x   =>   x.id   )
-                // Join the resulting IDs with spaces to form a single string.
-                .join(   " "   )   ;
 
-        // Printing the final computed result to standard output.
-        console.log(   result   )   ;
-    }
-);
-// End of file.
+
+
+
+
+/* mantiene aquí el recorrido de datos. */
+  });

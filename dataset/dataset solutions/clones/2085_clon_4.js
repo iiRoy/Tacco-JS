@@ -1,21 +1,29 @@
-function processData(rawPayload) {
-  const allLines = rawPayload.split('\n');
+function Main(input) {
+  const allInputLines = input.split("\n");
 
-  const [alphaCount, betaCount, dealCount] = allLines[0].split(' ').map(Number);
-  const itemCostsAlpha = allLines[1].split(' ').map(Number);
-  const itemCostsBeta = allLines[2].split(' ').map(Number);
+  const [countA, countB, maxCoupons] = allInputLines[0].split(" ").map(Number);
 
-  const baseLineMinimum = Math.min(...itemCostsAlpha) + Math.min(...itemCostsBeta);
+  const refrigeratorCosts = allInputLines[1].split(" ").map(Number);
 
-  const offerDetails = allLines.slice(3, 3 + dealCount).map(line => line.split(' ').map(Number));
+  const electronicsCosts = allInputLines[2].split(" ").map(Number);
 
-  const specificOfferPrices = offerDetails.map(([alphaIndex, betaIndex, priceReduction]) => {
-    return itemCostsAlpha[alphaIndex - 1] + itemCostsBeta[betaIndex - 1] - priceReduction;
-  });
+  const couponOffers = allInputLines.slice(3).map(line => line.split(" ").map(Number));
 
-  const ultimateLowestPrice = Math.min(baseLineMinimum, ...specificOfferPrices);
+  const minimumRefrigeratorCost = refrigeratorCosts.reduce((currentMin, price) => (price < currentMin ? price : currentMin), Infinity);
 
-  console.log(ultimateLowestPrice);
+  const minimumElectronicsCost = electronicsCosts.reduce((currentMin, price) => (price < currentMin ? price : currentMin), Infinity);
+
+  const initialCombinedMinimum = minimumRefrigeratorCost + minimumElectronicsCost;
+
+  const finalLowestPrice = couponOffers.reduce((currentOverallLowest, offerDetails) => {
+    const [refIndex, eleIndex, discountValue] = offerDetails;
+    const actualRefPrice = refrigeratorCosts[refIndex - 1];
+    const actualElePrice = electronicsCosts[eleIndex - 1];
+    const priceWithCoupon = actualRefPrice + actualElePrice - discountValue;
+    return priceWithCoupon < currentOverallLowest ? priceWithCoupon : currentOverallLowest;
+  }, initialCombinedMinimum);
+
+  console.log(finalLowestPrice);
 }
 
-processData(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

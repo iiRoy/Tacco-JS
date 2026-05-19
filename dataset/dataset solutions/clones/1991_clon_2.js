@@ -1,67 +1,59 @@
-// Function to compute the number of valid RGB triplets in a given sequence.
-function calculateDistinctTriplets(  sequenceSize, symbolSequence  )
-{
-  // Convert the input string into an array of individual characters for easier processing.
-  const symbolChars = symbolSequence.split('');
+function processStringData(N, S) {
+  // Convert the input string into an array of characters for easier access.
+  const charArr = S.split('');
 
-  // Initialize counters for each specific color type found within the sequence.
-  let   redOccurrences = 0,
-        greenOccurrences = 0,
-        blueOccurrences = 0;
+  // Initialize counters for each color.
+  let redCount = 0;
+  let greenCount = 0;
+  let blueCount = 0;
 
-  // Iterate through every character in the sequence to tally color occurrences.
-  for (const currentSymbol of symbolChars) {
-    if (currentSymbol === 'R')
-      { redOccurrences++; } // Increment count for 'R'
-    if (currentSymbol === 'G')
-      { greenOccurrences++; } // Increment count for 'G'
-    if (currentSymbol === 'B')
-      { blueOccurrences++; } // Increment count for 'B'
-  }
-
-  // Calculate the total possible combinations if there were no constraints on position or distinctness.
-  const initialProduct = redOccurrences * greenOccurrences * blueOccurrences;
-
-  // Initialize a counter for combinations that violate the specific distinctness and spacing rules.
-  let invalidForms = 0;
-
-  // Outer loop: iterates through all possible starting positions for the first element of a triplet.
-  for (let firstPosition = 0; firstPosition < sequenceSize; firstPosition++)
-  {
-    // Inner loop: iterates through all possible second positions, ensuring it's strictly after the first.
-    for (let secondPosition = firstPosition + 1; secondPosition < sequenceSize; secondPosition++)
-    {
-      // Condition 1: If the characters at firstPosition and secondPosition are identical, this pair is not valid for a distinct triplet.
-      if (symbolChars[firstPosition] === symbolChars[secondPosition])
-      {
-        continue;
-      }
-
-      // Calculate the third position based on the specific geometric progression rule (j - i = k - j, or k = 2j - i).
-      let thirdPosition = 2 * secondPosition - firstPosition;
-
-      // Condition 2: Check if the calculated third position is within the bounds of the sequence
-      // AND if its character is distinct from both the first and second positions.
-      if (thirdPosition >= sequenceSize ||
-          symbolChars[thirdPosition] === symbolChars[firstPosition] ||
-          symbolChars[thirdPosition] === symbolChars[secondPosition])
-      {
-        continue;
-      }
-
-      // If all conditions are met (distinct characters, valid positions, and specific spacing), it's an invalid triplet by problem definition.
-      invalidForms++;
+  // Iterate through the character array to count occurrences of 'R', 'G', 'B'.
+  for (const currentChar of charArr) {
+    if (currentChar === 'R') {
+      ++redCount;
+    }
+    if (currentChar === 'G') {
+      ++greenCount;
+    }
+    if (currentChar === 'B') {
+      ++blueCount;
     }
   }
 
-  // Output the final count of valid RGB triplets by subtracting the identified invalid ones from the initial total.
-  console.log(initialProduct - invalidForms);
+  // Calculate the total possible combinations of one R, one G, and one B.
+  const totalCombinations = redCount * greenCount * blueCount;
+
+  // Initialize a counter for invalid triplets (those that satisfy the j - i == k - j condition).
+  let invalidTriplets = 0;
+
+  // Iterate through all possible pairs (idx1, idx2) where idx1 < idx2.
+  for (let idx1 = 0; idx1 < N; idx1++) {
+    for (let idx2 = idx1 + 1; idx2 < N; idx2++) {
+      // If the characters at idx1 and idx2 are the same, this pair cannot form a valid triplet.
+      if (charArr[idx1] === charArr[idx2]) {
+        continue;
+      }
+
+      // Calculate the index for the third character (idx3) based on the condition j - i == k - j.
+      // This simplifies to k = 2 * j - i.
+      let idx3 = 2 * idx2 - idx1;
+
+      // Check if idx3 is within bounds and if the character at idx3 is different from charArr[idx1] and charArr[idx2].
+      if (idx3 >= N || charArr[idx3] === charArr[idx1] || charArr[idx3] === charArr[idx2]) {
+        continue;
+      }
+
+      // If all conditions are met, this is an invalid triplet. Increment the counter.
+      ++invalidTriplets;
+    }
+  }
+  // The final result is the total possible combinations minus the invalid triplets.
+  console.log(totalCombinations - invalidTriplets);
 }
 
-// Read the program input from standard input, typically provided by the execution environment.
-const programData = require('fs') .readFileSync('/dev/stdin', 'utf8') .split('\n');
+// Read input from standard input.
+const dataLines = require('fs').readFileSync('/dev/stdin', 'utf8').split('\n');
 
-// Invoke the main calculation function with the parsed input values.
-// The first line of input is the sequence size (N), parsed as an integer.
-// The second line is the symbol sequence (S).
-calculateDistinctTriplets(parseInt(programData[0]), programData[1]);
+// Call the main processing function with the parsed input.
+// N is the first line, S is the second line.
+processStringData(parseInt(dataLines[0], 10), dataLines[1]);

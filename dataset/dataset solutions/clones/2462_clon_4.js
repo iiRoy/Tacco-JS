@@ -1,210 +1,161 @@
 "use strict";
+const createInputParser = (rawContent) => {
+    let lineBuffer = rawContent.trim().split("\n");
+    let currentLineIndex = 0;
+    let currentLineTokens = [];
 
-// Input reading utility class
-class DataStreamProcessor {
-    #sourceLines;
-    #linePointer = 0;
-    #currentLineTokens = [];
-
-    constructor(rawData) {
-        this.#sourceLines = rawData.trim().split("\n");
-    }
-
-    #advancePointer() {
-        this.#linePointer++;
-        this.#currentLineTokens = [];
-    }
-
-    #ensureTokens() {
-        if (this.#currentLineTokens.length === 0 && this.#linePointer < this.#sourceLines.length) {
-            this.#currentLineTokens = this.#sourceLines[this.#linePointer].split(" ");
+    const advanceLine = () => {
+        if (currentLineIndex < lineBuffer.length) {
+            currentLineTokens = lineBuffer[currentLineIndex++].split(" ");
+        } else {
+            currentLineTokens = [];
         }
-        return this.#currentLineTokens;
-    }
+    };
 
-    // Extracts the last token from the current line. Moves to next line if exhausted.
-    // transformToNumber: boolean, if true, converts to Number.
-    extractLastToken(transformToNumber = true) {
-        let tokens = this.#ensureTokens();
-        if (tokens.length === 0) {
-            this.#advancePointer();
-            tokens = this.#ensureTokens();
-        }
-        const extracted = tokens.pop();
-        if (tokens.length === 0) {
-            this.#advancePointer();
-        }
-        return transformToNumber ? Number(extracted) : extracted;
-    }
+    advanceLine(); // Initialize the first line's tokens
 
-    // Extracts all tokens from the current line. Moves to next line.
-    // transformToNumber: boolean, if true, converts to Array<Number>.
-    extractFullLine(transformToNumber = true) {
-        if (this.#linePointer >= this.#sourceLines.length) {
-            return [];
-        }
-        const currentLine = this.#sourceLines[this.#linePointer++];
-        const tokens = currentLine.split(" ");
-        return transformToNumber ? tokens.map(Number) : tokens;
-    }
-
-    // Extracts 'count' lines, splitting each by space. Returns a 2D array.
-    // transformToNumber: boolean.
-    extractTokenMatrix(count, transformToNumber = true) {
-        const result = [];
-        for (let i = 0; i < count; i++) {
-            if (this.#linePointer >= this.#sourceLines.length) {
-                break;
+    const fetchToken = (asString = false) => {
+        if (currentLineTokens.length === 0) {
+            advanceLine();
+            if (currentLineTokens.length === 0) {
+                return undefined;
             }
-            const currentLine = this.#sourceLines[this.#linePointer++];
-            const tokens = currentLine.split(" ");
-            result.push(transformToNumber ? tokens.map(Number) : tokens);
         }
-        return result;
-    }
+        const token = currentLineTokens.shift();
+        return asString ? token : Number(token);
+    };
 
-    // Extracts 'count' lines as a 1D array of raw lines.
-    // transformToNumber: boolean.
-    extractLineRange(count, transformToNumber = true) {
-        const result = [];
-        for (let i = 0; i < count; i++) {
-            if (this.#linePointer >= this.#sourceLines.length) {
-                break;
-            }
-            const currentLine = this.#sourceLines[this.#linePointer++];
-            result.push(transformToNumber ? Number(currentLine) : currentLine);
+    const fetchLine = (asStrings = false) => {
+        const line = lineBuffer[currentLineIndex++];
+        const tokens = line.split(" ");
+        return asStrings ? tokens : tokens.map(Number);
+    };
+
+    const fetchMatrix = (rowCount, asStrings = false) => {
+        const matrix = Array.from({ length: rowCount }, () => {
+            const line = lineBuffer[currentLineIndex++];
+            const tokens = line.split(" ");
+            return asStrings ? tokens : tokens.map(Number);
+        });
+        return matrix;
+    };
+
+    const fetchRows = (rowCount, asStrings = false) => {
+        const rows = Array.from({ length: rowCount }, () => {
+            const line = lineBuffer[currentLineIndex++];
+            return asStrings ? line : Number(line);
+        });
+        return rows;
+    };
+
+    return {
+        fetchToken,
+        fetchLine,
+        fetchMatrix,
+        fetchRows,
+    };
+};
+
+const generateMultiDimensionalArray = (initialValue, ...dimensions) => {
+    const createArrayRecursive = (dims, currentDepth) => {
+        if (currentDepth === dims.length - 1) {
+            return Array.from({ length: dims[currentDepth] }, () => initialValue);
+        } else {
+            return Array.from({ length: dims[currentDepth] }, () =>
+                createArrayRecursive(dims, currentDepth + 1)
+            );
         }
-        return result;
-    }
-}
-
-// Recursive N-dimensional array creation
-function createNestedArray(initialValue, ...dimensions) {
+    };
     if (dimensions.length === 0) {
         return initialValue;
     }
-    const currentDimensionSize = dimensions[0];
-    const remainingDimensions = dimensions.slice(1);
-    return Array.from({ length: currentDimensionSize }, () => createNestedArray(initialValue, ...remainingDimensions));
-}
+    return createArrayRecursive(dimensions, 0);
+};
 
-// Modular Arithmetic Constants and Functions
-const primeModuloValue = 998244353n;
+const MOD_VAL = 998244353;
+let _factorialValues = [];
+let _inverseFactorialValues = [];
 
-function computeModularProduct(...factors) {
-    let accumulator = 1n;
-    for (const factor of factors) {
-        accumulator = (accumulator * BigInt(factor)) % primeModuloValue;
+const modMultiply = (...factors) => {
+    return factors.reduce((accumulator, currentFactor) => {
+        return (accumulator * currentFactor) % MOD_VAL;
+    }, 1);
+};
+
+const modInverse = (number) => {
+    let a = number;
+    let b = MOD_VAL;
+    let x = 1, y = 0;
+    let temp;
+
+    while (b !== 0) {
+        let quotient = Math.floor(a / b);
+        temp = b;
+        b = a % b;
+        a = temp;
+
+        temp = y;
+        y = x - quotient * y;
+        x = temp;
     }
-    return Number(accumulator < 0n ? accumulator + primeModuloValue : accumulator);
-}
+    x %= MOD_VAL;
+    return x < 0 ? x + MOD_VAL : x;
+};
 
-function calculateModularInverse(value) {
-    let a = BigInt(value);
-    let b = primeModuloValue;
-    let u = 1n, v = 0n;
-    while (b !== 0n) {
-        const q = a / b;
-        let t = a - q * b; a = b; b = t;
-        t = u - q * v; u = v; v = t;
-    }
-    u %= primeModuloValue;
-    return Number(u < 0n ? u + primeModuloValue : u);
-}
+const modPower = (base, exponent) => {
+    let result = 1;
+    let currentBase = base % MOD_VAL;
+    let currentExponent = exponent;
 
-function calculateModularPower(base, exponent) {
-    let res = 1n;
-    let currentBase = BigInt(base);
-    let currentExponent = BigInt(exponent);
-
-    while (currentExponent > 0n) {
-        if (currentExponent % 2n === 1n) {
-            res = (res * currentBase) % primeModuloValue;
+    while (currentExponent > 0) {
+        if (currentExponent % 2 === 1) {
+            result = modMultiply(result, currentBase);
         }
-        currentBase = (currentBase * currentBase) % primeModuloValue;
-        currentExponent /= 2n;
+        currentBase = modMultiply(currentBase, currentBase);
+        currentExponent = Math.floor(currentExponent / 2);
     }
-    return Number(res);
+    return result;
+};
+
+const precomputeFactorials = (limit) => {
+    _factorialValues = new Array(limit + 1);
+    _inverseFactorialValues = new Array(limit + 1);
+
+    _factorialValues[0] = 1;
+    for (let k = 1; k <= limit; k++) {
+        _factorialValues[k] = modMultiply(_factorialValues[k - 1], k);
+    }
+
+    _inverseFactorialValues[limit] = modInverse(_factorialValues[limit]);
+    for (let k = limit - 1; k >= 0; k--) {
+        _inverseFactorialValues[k] = modMultiply(_inverseFactorialValues[k + 1], k + 1);
+    }
+};
+
+const combinations = (nVal, rVal) => {
+    if (rVal < 0 || rVal > nVal) return 0;
+    return modMultiply(_factorialValues[nVal], _inverseFactorialValues[rVal], _inverseFactorialValues[nVal - rVal]);
+};
+
+const inputReader = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+function solveProblem() {
+    const problemSize = inputReader.fetchToken();
+    precomputeFactorials(problemSize);
+
+    let finalResult = modPower(3, problemSize);
+    let currentPowerOfTwo = 1;
+
+    const lowerBound = Math.floor(problemSize / 2);
+
+    finalResult = Array.from({ length: problemSize - lowerBound }, (_, index) => problemSize - index)
+        .reduce((accumulator, currentI) => {
+            currentPowerOfTwo = modMultiply(currentPowerOfTwo, 2);
+            const term = modMultiply(combinations(problemSize, currentI), currentPowerOfTwo);
+            return (accumulator - term + MOD_VAL) % MOD_VAL;
+        }, finalResult);
+
+    return finalResult;
 }
 
-const factorialLookup = new Map();
-const inverseFactorialLookup = new Map();
-let largestNComputed = 0;
-
-function precomputeCombinatorialFactors(upperBound) {
-    if (upperBound < largestNComputed) {
-        return; // Cache already covers this range
-    }
-
-    // Initialize base cases for 0! and 1!
-    if (!factorialLookup.has(0)) {
-        factorialLookup.set(0, 1n);
-        inverseFactorialLookup.set(0, 1n);
-    }
-    if (!factorialLookup.has(1)) {
-        factorialLookup.set(1, 1n);
-        inverseFactorialLookup.set(1, 1n);
-    }
-
-    let currentFactorialVal = factorialLookup.get(largestNComputed) || 1n;
-    let startPoint = largestNComputed + 1;
-
-    for (let i = startPoint; i <= upperBound; i++) {
-        if (i === 8_000_000) { // Specific hardcoded value from original's fset
-            currentFactorialVal = 833655840n;
-        } else {
-            currentFactorialVal = (currentFactorialVal * BigInt(i)) % primeModuloValue;
-        }
-        factorialLookup.set(i, currentFactorialVal);
-    }
-    largestNComputed = upperBound;
-
-    // Compute inverse factorials backwards
-    inverseFactorialLookup.set(upperBound, BigInt(calculateModularInverse(factorialLookup.get(upperBound))));
-    for (let i = upperBound; i > 0; i--) {
-        const invFact_i = inverseFactorialLookup.get(i);
-        const invFact_i_minus_1 = (invFact_i * BigInt(i)) % primeModuloValue;
-        inverseFactorialLookup.set(i - 1, invFact_i_minus_1);
-    }
-}
-
-function calculateCombinations(nVal, kVal) {
-    if (kVal < 0 || kVal > nVal) return 0;
-    if (kVal === 0 || kVal === nVal) return 1;
-    if (kVal > nVal / 2) kVal = nVal - kVal;
-
-    precomputeCombinatorialFactors(nVal);
-
-    const numerator = factorialLookup.get(nVal);
-    const invDenominator1 = inverseFactorialLookup.get(kVal);
-    const invDenominator2 = inverseFactorialLookup.get(nVal - kVal);
-
-    return computeModularProduct(numerator, invDenominator1, invDenominator2);
-}
-
-// Main execution logic
-const inputStream = new DataStreamProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-function processChallenge() {
-    const N = inputStream.extractLastToken();
-
-    // The original computes 3^N - sum_{i=floor(N/2)+1 to N} (N choose i) * 2^(N-i)
-    // This is equivalent to sum_{j=0 to floor(N/2)} (N choose j) * 2^(N-j)
-
-    precomputeCombinatorialFactors(N); // Ensure all needed factorials/inverse factorials are ready
-
-    const upperSumLimit = Math.floor(N / 2);
-
-    const finalAccumulation = Array.from({ length: upperSumLimit + 1 }, (_, j) => j)
-        .reduce((currentSum, j) => {
-            const term = computeModularProduct(
-                calculateCombinations(N, j),
-                calculateModularPower(2, N - j)
-            );
-            return (BigInt(currentSum) + BigInt(term)) % primeModuloValue;
-        }, 0n); // Start with BigInt 0n
-
-    return Number(finalAccumulation < 0n ? finalAccumulation + primeModuloValue : finalAccumulation);
-}
-
-console.log(processChallenge());
+console.log(solveProblem());

@@ -1,69 +1,83 @@
-function  processInputData (  rawData  )   {
-  "use strict"; // Enforce strict parsing and error handling
+function processInput(rawData) {
+  "use strict"; // Enforce strict parsing and error handling in the code.
 
-  // Split the raw input string into individual text rows
-  const   textRows   =   rawData.split ( "\n" ) ;
+  // Split the entire input string into an array of individual lines.
+  const inputLines = rawData.split("\n");
 
-  // Parse the first line to extract initial parameters
-  // It splits by space and converts each part to a number.
-  const   initialParams   =   textRows[0] . split ( " " ) . map (  ( numericString )  =>  Number(numericString)  ) ;
+  // Process the very first line to extract key parameters.
+  // It's expected to contain two space-separated numeric values.
+  const initialParams = inputLines[0].split(" ").map((itemVal) => +itemVal);
 
-  // Extract the circuit length from the initial parameters
-  const   circuitLength   =   initialParams[0] ;
+  // The first parameter represents the circumference of the circle.
+  const circumference = initialParams[0];
 
-  // Extract the total number of points from the initial parameters
-  const   numPoints   =   initialParams[1] ;
+  // The second parameter, numPoints, is not directly used in the algorithm's core logic,
+  // but it indicates the count of points that follow.
+  const numPoints = initialParams[1];
 
-  // Process subsequent rows to get point positions
-  // Filters out empty lines and converts remaining strings to numbers.
-  let   pointPositions   =   textRows.slice(1) . filter (  ( item )  =>  item  ) . map (  ( item )  =>  parseInt(item, 10)  ) ;
+  // Extract and parse the remaining lines, filtering out any empty strings,
+  // and converting them into an array of numbers representing point locations.
+  let pointLocations = inputLines
+    .slice(1)
+    .filter((itemVal) => itemVal)
+    .map((itemVal) => +itemVal);
 
+  // This array will store the total travel costs for all possible paths.
+  let totalCosts = [];
 
-  // Array to store calculated total costs for different paths
-  let   totalCosts   =   [];
-
-  // Recursive function to explore all possible paths and calculate their costs
-  const   explorePaths   =   (  currentPos ,  remainingPoints ,  currentSum  )   =>   {
-    // Base case: if no points are left, record the accumulated sum
-    if   (  remainingPoints.length === 0  )   {
-      totalCosts.push (  currentSum  ) ;
-      return ;
+  /**
+   * Recursively explores all possible paths to visit all points,
+   * calculating the accumulated cost for each path.
+   *
+   * @param {number} currentPos - The current position on the circle.
+   * @param {number[]} remainingPoints - An array of points yet to be visited.
+   * @param {number} accumulatedCost - The total cost accumulated so far for the current path.
+   */
+  const explorePaths = (currentPos, remainingPoints, accumulatedCost) => {
+    // Base case: If there are no points left to visit,
+    // the current path is complete. Record its total cost.
+    if (remainingPoints.length === 0) {
+      totalCosts.push(accumulatedCost);
+      return;
     }
 
-    // Calculate distance to the leftmost available point
-    // Handles wrapping around the circuit if necessary
-    const   distToLeftmost   =   remainingPoints[0]   >=   currentPos
-      ?   remainingPoints[0] - currentPos
-      :   ( circuitLength - currentPos ) + remainingPoints[0] ;
+    // Calculate the distance to the leftmost remaining point.
+    // Accounts for wrapping around the circle (circumference).
+    const distToLeft =
+      remainingPoints[0] >= currentPos
+        ? remainingPoints[0] - currentPos
+        : circumference - currentPos + remainingPoints[0];
 
-    // Calculate distance to the rightmost available point
-    // Handles wrapping around the circuit if necessary
-    const   distToRightmost   =   remainingPoints[remainingPoints.length - 1]   <=   currentPos
-      ?   currentPos - remainingPoints[remainingPoints.length - 1]
-      :   currentPos + ( circuitLength - remainingPoints[remainingPoints.length - 1] ) ;
+    // Calculate the distance to the rightmost remaining point.
+    // Accounts for wrapping around the circle (circumference).
+    const distToRight =
+      remainingPoints[remainingPoints.length - 1] <= currentPos
+        ? currentPos - remainingPoints[remainingPoints.length - 1]
+        : currentPos + (circumference - remainingPoints[remainingPoints.length - 1]);
 
-    // Create a copy for the left path exploration
-    const   leftBranchPoints   =   remainingPoints.concat (  ) ;
-    // Get and remove the leftmost point for this path
-    const   chosenLeftPoint   =   leftBranchPoints.shift (  ) ;
+    // Create a copy of the remaining points for the 'left' path.
+    const leftPathPoints = remainingPoints.concat();
+    // Get and remove the leftmost point for this path.
+    const leftmostPoint = leftPathPoints.shift();
 
-    // Create another copy for the right path exploration
-    const   rightBranchPoints   =   remainingPoints.concat (  ) ;
-    // Get and remove the rightmost point for this path
-    const   chosenRightPoint   =   rightBranchPoints.pop (  ) ;
+    // Create another copy of the remaining points for the 'right' path.
+    const rightPathPoints = remainingPoints.concat();
+    // Get and remove the rightmost point for this path.
+    const rightmostPoint = rightPathPoints.pop();
 
-    // Recursively explore the path choosing the leftmost point next
-    explorePaths (  chosenLeftPoint ,  leftBranchPoints ,  currentSum   +   distToLeftmost  ) ;
-    // Recursively explore the path choosing the rightmost point next
-    explorePaths (  chosenRightPoint ,  rightBranchPoints ,  currentSum   +   distToRightmost  ) ;
-  }; // End of explorePaths function definition
+    // Recursively explore the path by moving to the leftmost point.
+    explorePaths(leftmostPoint, leftPathPoints, accumulatedCost + distToLeft);
 
-  // Initiate the path exploration starting from position 0 with an initial sum of 0
-  explorePaths (  0 ,  pointPositions ,  0  ) ;
+    // Recursively explore the path by moving to the rightmost point.
+    explorePaths(rightmostPoint, rightPathPoints, accumulatedCost + distToRight);
+  };
 
-  // Output the maximum cost found among all explored paths
-  console . log (  Math.max (  ...totalCosts  )  ) ;
+  // Initiate the path exploration from position 0 with all points and an initial cost of 0.
+  explorePaths(0, pointLocations, 0);
+
+  // Output the maximum accumulated cost found among all possible paths.
+  console.log(Math.max.apply(null, totalCosts));
 }
 
-// Read input from standard input and pass it to the processing function
-processInputData (  require ( "fs" ) . readFileSync ( "/dev/stdin" , "utf8" )  ) ;
+// Read input from standard input and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

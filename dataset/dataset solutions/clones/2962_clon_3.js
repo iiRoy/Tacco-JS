@@ -1,107 +1,81 @@
 'use strict';
-(function(rawInputString) {
-  // Define a constant for an unassigned label, making the code more readable.
-  const UNASSIGNED_LABEL = -1;
+(function(rawInputData){
 
-  // Process the raw input string: trim whitespace, split into lines.
-  let processedLines = rawInputString.trim().split('\n');
-
-  // Extract the total number of vertices from the first line.
-  // Using parseInt for explicit type conversion.
-  const totalVertices = parseInt(processedLines.shift(), 10);
-
-  // Validate the number of vertices. If invalid, terminate early or handle error.
-  // This is an added guard clause.
-  if (isNaN(totalVertices) || totalVertices <= 0) {
-    console.error("Error: Invalid number of vertices provided.");
-    return; // Exit the IIFE
+  // Helper function to parse the input string into structured data
+  function parseGraphInput(inputString) {
+    const lines = inputString.trim().split('\n');
+    const nodeCount = Number(lines.shift()); // Convert first line to number of nodes
+    // Map remaining lines to arrays of numbers representing edges
+    const edgeDataList = lines.map(lineStr => lineStr.split(/\s+/).map(Number));
+    return { nodeCount, edgeDataList };
   }
 
-  // Map the remaining lines to an array of edge details.
-  // Each edge detail is an array [source, destination, weight].
-  // Using Number() for type conversion instead of `x-0`.
-  const edgeDefinitions = processedLines.map(line =>
-    line.split(/\s+/).map(Number)
-  );
-
-  // Define a class for a graph vertex.
-  // This is a structural change from a function constructor to a class.
-  class GraphVertex {
-    // A constructor that takes an optional identifier, though not strictly used in the original.
-    constructor(vertexIdentifier) {
-      this.vertexIdentifier = vertexIdentifier; // Added for completeness, though not central to logic.
-      this.adjacencies = []; // List of connected vertices and their modified edge weights.
-      this.partitionLabel = UNASSIGNED_LABEL; // The 'group' or 'color' assigned to the vertex.
-      this.currentEdgePointer = 0; // New property for iterative DFS traversal.
+  // Class to represent a node in the graph
+  class GraphNode {
+    constructor(nodeIdentifier) {
+      this.nodeIdentifier = nodeIdentifier; // Store the node's ID for reference
+      this.adjList = []; // Adjacency list, stores objects { target: number, parity: number }
+      this.colorGroup = -1; // -1 indicates unvisited, 0 or 1 for assigned color group
     }
   }
 
-  // Initialize an array to hold all graph vertices.
-  // Using Array.from with a length and then filling it.
-  const vertexRegister = Array.from({
-    length: totalVertices + 1
-  }, (_, idx) => new GraphVertex(idx));
+  // Parse the initial input data
+  const { nodeCount, edgeDataList } = parseGraphInput(rawInputData);
 
-  // Populate the adjacency lists for each vertex based on edge definitions.
-  // Iterate using a for...of loop for modern JS style.
-  for (const connectionDetails of edgeDefinitions) {
-    const sourceVertexIdx = connectionDetails[0];
-    const targetVertexIdx = connectionDetails[1];
-    const originalWeight = connectionDetails[2];
+  // Initialize graph nodes. Array index 0 is unused to maintain 1-indexed node IDs.
+  const graphNodes = Array.from({ length: nodeCount + 1 }, (_, idx) => {
+    if (idx === 0) return null; // Placeholder for the unused 0-index
+    return new GraphNode(idx);
+  });
 
-    // Store the target vertex index and the parity of the edge weight.
-    // The modulo operation simplifies the weight to 0 or 1.
-    vertexRegister[sourceVertexIdx].adjacencies.push([targetVertexIdx, originalWeight % 2]);
-  }
+  // Populate adjacency lists based on the parsed edge data
+  edgeDataList.forEach(function(edgeInfo){
+    const sourceNodeId = edgeInfo[0];
+    const targetNodeId = edgeInfo[1];
+    const edgeWeightParity = edgeInfo[2] % 2; // Calculate parity once for clarity
+    // Add edge to the source node's adjacency list using an object literal
+    graphNodes[sourceNodeId].adjList.push({ target: targetNodeId, parity: edgeWeightParity });
+  });
 
-  // Initialize the traversal stack for a depth-first search (DFS) like algorithm.
-  // Start the traversal from vertex 1.
-  const traversalStack = [1];
-  vertexRegister[1].partitionLabel = 0; // Assign an initial label to the starting vertex.
+  // Initialize DFS stack with the starting node (node 1)
+  const dfsStack = [1];
+  // Assign initial color group to the starting node
+  graphNodes[1].colorGroup = 0;
 
-  // Perform the graph traversal.
-  // This loop implements an iterative DFS variant using an explicit stack
-  // and an internal pointer for each node's adjacency list.
-  while (traversalStack.length > 0) {
-    // Get the index of the vertex currently at the top of the stack.
-    const currentVertexIndex = traversalStack[traversalStack.length - 1];
-    const currentVertex = vertexRegister[currentVertexIndex];
+  // Perform an iterative Depth-First Search traversal
+  while (dfsStack.length > 0) {
+    const currentId = dfsStack[dfsStack.length - 1]; // Peek at the top of the stack to get current node ID
+    const currentGraphNode = graphNodes[currentId]; // Get the actual GraphNode object
 
-    // Check if there are still unexplored edges from the current vertex.
-    if (currentVertex.currentEdgePointer < currentVertex.adjacencies.length) {
-      // Get the next edge to process.
-      const edgeLinkDetails = currentVertex.adjacencies[currentVertex.currentEdgePointer];
-      const neighborIndex = edgeLinkDetails[0];
-      const edgeParity = edgeLinkDetails[1];
+    // Check if the current node has any unprocessed edges in its adjacency list
+    if (currentGraphNode.adjList.length === 0) {
+      dfsStack.pop(); // All edges from this node have been processed, so backtrack
+      continue; // Move to the next iteration of the while loop
+    }
 
-      // Move the pointer to the next edge for this vertex.
-      currentVertex.currentEdgePointer++;
+    // Get the last added edge from the current node's adjacency list.
+    // This mimics the original's specific behavior of processing edges from the end.
+    const nextEdgeToProcess = currentGraphNode.adjList[currentGraphNode.adjList.length - 1];
+    const neighborId = nextEdgeToProcess.target;
+    const edgeParity = nextEdgeToProcess.parity;
+    const neighborGraphNode = graphNodes[neighborId];
 
-      const neighborVertex = vertexRegister[neighborIndex];
-
-      // If the neighbor hasn't been visited (partitionLabel is UNASSIGNED_LABEL).
-      if (neighborVertex.partitionLabel === UNASSIGNED_LABEL) {
-        // Calculate the neighbor's label based on current vertex's label XOR edge parity.
-        // This is a key step in the 2-coloring/bipartite graph logic.
-        neighborVertex.partitionLabel = currentVertex.partitionLabel ^ edgeParity;
-        traversalStack.push(neighborIndex); // Push the neighbor onto the stack to explore it next.
-      }
-      // If the neighbor has already been visited, we just skip this edge for now.
-      // The original logic would pop the edge from the adjacencies array;
-      // here, advancing currentEdgePointer achieves a similar effect without modifying adjacencies.
+    // Check if the neighbor node has been visited (colorGroup is -1 if unvisited)
+    if (neighborGraphNode.colorGroup === -1) {
+      // Neighbor is unvisited: assign its color group based on current node's color and edge parity
+      neighborGraphNode.colorGroup = (currentGraphNode.colorGroup ^ edgeParity);
+      dfsStack.push(neighborId); // Push the neighbor to the stack to visit it next
     } else {
-      // If all edges from the current vertex have been explored, pop it from the stack.
-      traversalStack.pop();
+      // Neighbor has already been visited: this edge is considered processed.
+      // Remove it from the current node's adjacency list to avoid re-processing it.
+      currentGraphNode.adjList.pop();
     }
   }
 
-  // Collect the final partition labels for all vertices (from 1 to totalVertices).
-  const finalPartitionLabels = [];
-  for (let idx = 1; idx <= totalVertices; idx++) {
-    finalPartitionLabels.push(vertexRegister[idx].partitionLabel);
-  }
+  // Collect the final color groups for all nodes (excluding the dummy 0-index)
+  const finalColors = graphNodes.slice(1).map(node => node.colorGroup);
 
-  // Output the results, joining them with newline characters.
-  console.log(finalPartitionLabels.join('\n'));
+  // Output the results, each color group on a new line
+  console.log(finalColors.join('\n'));
 
-})(require('fs').readFileSync('/dev/stdin', 'utf8'));
+})(require('fs').readFileSync('/dev/stdin','utf8'));

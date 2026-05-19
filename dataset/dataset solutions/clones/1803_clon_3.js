@@ -1,115 +1,71 @@
 "use strict";
 
-// Utility function to determine the number of set bits (population count) in an integer.
-// This handles potential negative numbers by treating them as unsigned 32-bit integers.
-const determinePopulationCount = (numericalValue) => {
-    // Ensure value is treated as unsigned for consistent bit counting, then convert to binary string.
-    const binaryRepresentation = (numericalValue >>> 0).toString(2);
-    let oneBitCounter = 0;
-    // Iterate through the binary string to count '1's.
-    for (const char of binaryRepresentation) {
-        if (char === '1') {
-            oneBitCounter++;
-        }
-    }
-    return oneBitCounter;
+// Helper function to calculate the population count (number of set bits) of an integer.
+const calculatePopCount = (numericValue) => {
+    // Convert the number to its binary string representation.
+    const binaryString = numericValue.toString(2);
+    // Split the binary string into an array of characters, filter for '1's, and count them.
+    return binaryString.split("").filter(bitChar => bitChar === '1').length;
 };
 
-// Orchestrates the processing of multiple computational challenges from a raw input string.
-function manageComputationalChallenges(incomingInputPayload) {
-    // Initial validation: ensure the input is a non-empty string.
-    if (typeof incomingInputPayload !== 'string' || incomingInputPayload.length === 0) {
-        console.error("System Error: Received an invalid or empty input payload. Aborting processing.");
-        return;
-    }
+function processInput(rawData) {
+    // Trim whitespace and split the raw input into an array of lines.
+    let processedLines = rawData.trim().split("\n");
+    // The first line contains the total number of test cases.
+    const testCaseCount = Number(processedLines.shift()); // Ensure it's a number for loop comparison.
 
-    // Pre-process the input: remove extraneous whitespace and segment into individual lines.
-    let segmentedInputLines = incomingInputPayload.trim().split("\n");
-    
-    // Extract the total number of distinct challenge instances to process.
-    // Use `shift()` to remove the first line and get the count, ensuring it's an integer.
-    const totalChallengeInstances = parseInt(segmentedInputLines.shift(), 10);
-    
-    // Validate the extracted challenge count.
-    if (isNaN(totalChallengeInstances) || totalChallengeInstances < 1) {
-        console.error("System Error: Unable to determine a valid number of challenge instances. Exiting.");
-        return;
-    }
+    // Iterate through each test case.
+    for (let caseIndex = 0; caseIndex < testCaseCount; caseIndex++) {
+        // Calculate the starting index for the current test case's data.
+        const currentLineOffset = caseIndex * 3;
 
-    // Loop through each identified challenge instance.
-    for (let challengeIndex = 0; challengeIndex < totalChallengeInstances; challengeIndex++) {
-        // Extract the three lines of data pertinent to the current challenge instance.
-        // Using `splice` removes these lines from the array, simplifying indexing for subsequent iterations.
-        const currentChallengeData = segmentedInputLines.splice(0, 3);
+        // Extract data for the current test case.
+        // _vertexCount: The number of vertices (not used in the provided logic, but read).
+        const _vertexCount = Number(processedLines[currentLineOffset]);
+        // xorValues: Array of numbers for XOR operations.
+        const xorValues = processedLines[currentLineOffset + 1].split(" ").map(val => Number(val));
+        // operationSequence: String of '0's and '1's dictating operation logic.
+        const operationSequence = processedLines[currentLineOffset + 2];
 
-        // The first line (number of vertices) is not utilized in the core logic of this problem,
-        // so it's parsed but effectively ignored.
-        // const graphVertexCount = parseInt(currentChallengeData[0], 10);
+        // Initialize the XOR sum for the current test case.
+        let currentXorSum = 0;
 
-        // Parse the second line into an array of numerical operands for XOR operations.
-        const xorOperationOperands = currentChallengeData[1].split(" ").map(Number);
-        
-        // The third line represents the sequence of binary decisions ('0' or '1').
-        const decisionInstructionSequence = currentChallengeData[2];
+        // Process each character in the operation sequence string.
+        operationSequence.split("").forEach((operationChar, charIndex) => {
+            // Calculate the potential new XOR sum if an update occurs.
+            const potentialNewXorSum = currentXorSum ^ xorValues[charIndex];
 
-        // Initialize the primary accumulator for the current challenge's XOR results.
-        let resultantAccumulator = 0;
+            // Get the population count for the potential new XOR sum.
+            const newXorPopCount = calculatePopCount(potentialNewXorSum);
+            // Get the population count for the current XOR sum.
+            const currentXorPopCount = calculatePopCount(currentXorSum);
 
-        // Process each character in the decision instruction sequence.
-        // `reduce` is employed here to iteratively update the accumulator based on decisions.
-        resultantAccumulator = decisionInstructionSequence.split('').reduce((currentResult, decisionCharIndicator, operandPosition) => {
-            const currentOperandValue = xorOperationOperands[operandPosition];
+            // Output debug information as per original behavior.
+            console.log(`S${operationChar} will do..`);
+            console.log(`  1 count for new = ${newXorPopCount}, or ${potentialNewXorSum}`);
+            console.log(`  1 count for old = ${currentXorPopCount}, or ${currentXorSum}`);
 
-            // Safety check: ensure an operand exists for the current position.
-            if (currentOperandValue === undefined) {
-                // Log a non-critical warning and continue with the current accumulator state.
-                // console.warn(`Diagnostic: Missing operand at sequence position ${operandPosition}. Skipping operation.`);
-                return currentResult;
+            // Determine if an update to currentXorSum should occur based on operationChar and pop counts.
+            let shouldPerformUpdate = false;
+            if (operationChar === '0') {
+                // If operationChar is '0', update if the new pop count is NOT strictly greater than the old.
+                shouldPerformUpdate = (newXorPopCount <= currentXorPopCount);
+            } else { // operationChar === '1'
+                // If operationChar is '1', update if the new pop count IS strictly greater than the old.
+                shouldPerformUpdate = (newXorPopCount > currentXorPopCount);
             }
 
-            // Calculate the population count of the current accumulator state.
-            const initialAccumulatorPopCount = determinePopulationCount(currentResult);
-            
-            // Simulate the XOR operation and calculate its potential population count.
-            const trialXorResult = currentResult ^ currentOperandValue;
-            const trialPopCount = determinePopulationCount(trialXorResult);
-
-            // Determine if the XOR operation should be applied based on the decision indicator.
-            let shouldApplyXorOperation = false;
-            if (decisionCharIndicator === '0') {
-                // For a '0' decision: apply XOR if the trial pop count is NOT strictly greater than initial.
-                shouldApplyXorOperation = (trialPopCount <= initialAccumulatorPopCount);
-            } else if (decisionCharIndicator === '1') {
-                // For a '1' decision: apply XOR if the trial pop count IS strictly greater than initial.
-                shouldApplyXorOperation = (trialPopCount > initialAccumulatorPopCount);
-            } else {
-                // If an unrecognized decision character is encountered, log and skip this step.
-                // console.warn(`Diagnostic: Encountered an unknown decision character '${decisionCharIndicator}' at position ${operandPosition}. Ignoring.`);
-                return currentResult; // Retain current accumulator state.
+            // Apply the update if the condition is met.
+            if (shouldPerformUpdate) {
+                currentXorSum = potentialNewXorSum;
             }
+        });
 
-            // Return the updated accumulator if the condition for XOR was met, otherwise return the original.
-            return shouldApplyXorOperation ? trialXorResult : currentResult;
-        }, 0); // The initial value for the accumulator is 0.
-
-        // After processing all decisions for the challenge, output '1' if the final accumulator is non-zero, else '0'.
-        console.log(resultantAccumulator !== 0 ? "1" : "0");
+        // After processing all operations for the current test case, output the final result.
+        // Output "1" if currentXorSum is non-zero, otherwise "0".
+        console.log(`${currentXorSum ? "1" : "0"}`);
     }
 }
 
-// --- Execution Block ---
-// This section handles reading input from the standard input stream (/dev/stdin)
-// and invoking the main processing function.
-try {
-    // Attempt to load the 'fs' (file system) module, which is standard in Node.js environments.
-    const fileSystemModule = require("fs");
-    // Read the entire content of standard input synchronously and decode it as UTF-8.
-    const standardInputContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-    // Pass the acquired input content to the primary challenge manager function.
-    manageComputationalChallenges(standardInputContent);
-} catch (executionError) {
-    // If any error occurs during file reading or initial processing, log it.
-    console.error("Critical Execution Error: Failed to retrieve or process standard input.", executionError.message);
-    // Optionally, for local testing without /dev/stdin, one might call with a hardcoded string:
-    // manageComputationalChallenges("2\n2\n1 2\n10\n2\n1 1\n10");
-}
+// Read input from stdin and pass it to the main processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

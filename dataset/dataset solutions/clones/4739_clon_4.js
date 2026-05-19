@@ -1,31 +1,19 @@
-const executeCalculation = (rawData) => {
-  const numericalParameter = parseInt(rawData.trim(), 10);
+const processInput = (sourceData) => {
+  const initialValue = sourceData;
+  const divisors = Array.from({ length: 11 }, (_, index) => 11 - index);
 
-  const determineCoefficient = (divisorCriterion) => (divisorCriterion > 6 ? 2 : 1);
+  const finalState = divisors.reduce(
+    (accumulator, currentDivisor) => {
+      const unitsObtained = Math.floor(accumulator.remainder / currentDivisor);
+      const costFactor = currentDivisor > 6 ? 2 : 1;
+      const newTotalCost = accumulator.accumulatedCost + unitsObtained * costFactor;
+      const newRemainder = accumulator.remainder % currentDivisor;
+      return { accumulatedCost: newTotalCost, remainder: newRemainder };
+    },
+    { accumulatedCost: 0, remainder: initialValue }
+  );
 
-  const transformValue = (initialNumericInput) => {
-    const sequenceOfDivisors = Array.from({ length: 11 }, (_, idx) => 11 - idx);
-
-    const finalAccumulation = sequenceOfDivisors.reduce(
-      (currentContainer, activeDivisor) => {
-        const accumulatedTotal = currentContainer[0];
-        const remainingValue = currentContainer[1];
-
-        const coefficient = determineCoefficient(activeDivisor);
-        const currentQuotient = Math.trunc(remainingValue / activeDivisor);
-        const nextTotal = accumulatedTotal + (currentQuotient * coefficient);
-        const nextRemainingValue = remainingValue % activeDivisor;
-
-        return [nextTotal, nextRemainingValue];
-      },
-      [0, initialNumericInput]
-    );
-
-    return finalAccumulation[0];
-  };
-
-  const finalOutcome = transformValue(numericalParameter);
-  console.log(finalOutcome);
+  console.log(finalState.accumulatedCost);
 };
 
-executeCalculation(require('fs').readFileSync('/dev/stdin', 'UTF-8'));
+processInput(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

@@ -1,36 +1,21 @@
-function executeProcess(dataInput) {
-  const lineSeparatorPosition = dataInput.indexOf('\n');
-  const shiftValueString = dataInput.substring(0, lineSeparatorPosition);
-  const shiftAmount = parseInt(shiftValueString, 10);
-  const sourcePhrase = dataInput.substring(lineSeparatorPosition + 1);
+function processInputData(rawData) {
+  const inputLines = rawData.split("\n");
+  const shiftMagnitude = parseInt(inputLines[0], 10);
+  const sourceString = inputLines[1];
 
-  const phraseLength = sourcePhrase.length;
-  const initialCharCodeA = 'A'.charCodeAt(0);
-  const alphabetSize = 26;
+  const baseCharacterCode = 'A'.charCodeAt(0);
 
-  function transformRecursively(currentIndex, constructedOutput) {
-    if (currentIndex >= phraseLength) {
-      return constructedOutput;
-    }
+  const transformedCharacters = [...sourceString].map(currentSymbol => {
+    const symbolCode = currentSymbol.charCodeAt(0);
+    const relativePosition = symbolCode - baseCharacterCode;
+    const newRelativePosition = (relativePosition + shiftMagnitude) % 26;
+    const newSymbolCode = newRelativePosition + baseCharacterCode;
+    return String.fromCharCode(newSymbolCode);
+  });
 
-    const originalCharacterCode = sourcePhrase.charCodeAt(currentIndex);
-    
-    // Assuming input characters are always uppercase English letters as per problem context
-    // and original code's behavior (alpha array contains only 'A'-'Z').
-    const zeroBasedAlphabetIndex = originalCharacterCode - initialCharCodeA;
-    const shiftedAlphabetIndex = (zeroBasedAlphabetIndex + shiftAmount) % alphabetSize;
-    
-    // Handle potential negative result from modulo for negative shifts, though problem context implies positive.
-    // If original problem implies negative shifts, this needs adjustment to match original's undefined behavior.
-    // For positive shifts, (X % 26) is always non-negative.
-    const finalCharacterCode = initialCharCodeA + shiftedAlphabetIndex;
-    const transformedCharacter = String.fromCharCode(finalCharacterCode);
+  const finalOutputString = transformedCharacters.join('');
 
-    return transformRecursively(currentIndex + 1, constructedOutput + transformedCharacter);
-  }
-
-  const finalResult = transformRecursively(0, "");
-
-  console.log(finalResult);
+  console.log(finalOutputString);
 }
-executeProcess(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

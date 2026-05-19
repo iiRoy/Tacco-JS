@@ -1,63 +1,55 @@
-const fetchSource = () => {
-    return new Promise(resolve => {
-        let fullData = '';
-        process.stdin.resume();
-        process.stdin.setEncoding('utf8');
-        process.stdin.on('data', fragment => {
-            fullData += fragment;
-        });
-        process.stdin.on('end', () => {
-            resolve(fullData.split('\n'));
-        });
-    });
-};
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+let rawInputBuffer = '';
 
-fetchSource().then(allLines => {
-    processGridState(allLines);
+process.stdin.on('data', function (dataChunk) {
+    rawInputBuffer += dataChunk;
 });
 
-const processGridState = (incomingMaterial) => {
-    const relevantLines = incomingMaterial.filter(l => l.length > 0);
+process.stdin.on('end', function () {
+    const inputLines = rawInputBuffer.split('\n');
 
-    const dimensionsString = relevantLines[0].trim().split(' ');
-    const gridColumns = Number(dimensionsString[0]);
-    const gridRows = Number(dimensionsString[1]);
+    const parseNumericLine = (textLine) =>
+        textLine.trim().split(' ').map(Number);
 
-    const initialLayout = relevantLines.slice(1).map(line => line.split(''));
+    const [gridWidth, gridHeight] = parseNumericLine(inputLines[0]);
 
-    const relativePositions = [
-        [-1, -1], [-1, 0], [-1, 1],
-        [0, -1],           [0, 1],
-        [1, -1], [1, 0], [1, 1]
-    ];
+    const initialGrid = inputLines
+        .slice(1)
+        .filter(Boolean)
+        .map(rowString => Array.from(rowString));
 
-    const retrieveCellContent = (layout, y, x, maxY, maxX) => {
-        if (y >= 0 && y < maxY && x >= 0 && x < maxX) {
-            return layout[y][x];
-        }
-        return undefined;
-    };
+    const directionalVectors = [-1, 0, 1].flatMap(rowOffset =>
+        [-1, 0, 1].map(colOffset => [rowOffset, colOffset])
+    ).filter(([rowOffset, colOffset]) => rowOffset !== 0 || colOffset !== 0);
 
-    const finalConfiguration = initialLayout.map((rowArr, rowIndex) => {
-        return rowArr.map((cellValue, colIndex) => {
-            if (cellValue === '#') {
+    const finalGrid = Array.from({ length: gridHeight }, (_, currentRow) =>
+        Array.from({ length: gridWidth }, (_, currentCol) => {
+            const currentCellContent = initialGrid[currentRow][currentCol];
+
+            if (currentCellContent === '#') {
                 return '#';
-            } else {
-                let obstacleCount = 0;
-                relativePositions.forEach(offset => {
-                    const neighborY = rowIndex + offset[0];
-                    const neighborX = colIndex + offset[1];
-                    const content = retrieveCellContent(initialLayout, neighborY, neighborX, gridRows, gridColumns);
-                    if (content === '#') {
-                        obstacleCount++;
-                    }
-                });
-                return obstacleCount;
             }
-        });
-    });
 
-    finalConfiguration.forEach(rowArr => {
-        console.log(rowArr.join(''));
+            const bombNeighborCount = directionalVectors.reduce((accumulator, [dr, dc]) => {
+                const neighborRow = currentRow + dr;
+                const neighborCol = currentCol + dc;
+
+                const isWithinBounds =
+                    neighborRow >= 0 && neighborRow < gridHeight &&
+                    neighborCol >= 0 && neighborCol < gridWidth;
+
+                if (isWithinBounds && initialGrid[neighborRow][neighborCol] === '#') {
+                    return accumulator + 1;
+                }
+                return accumulator;
+            }, 0);
+
+            return bombNeighborCount;
+        })
+    );
+
+    finalGrid.forEach(processedRow => {
+        console.log(processedRow.join(''));
     });
-};
+});

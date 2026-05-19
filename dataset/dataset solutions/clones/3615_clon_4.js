@@ -1,61 +1,54 @@
-const executeComputation = (inputMatrix) => {
-    const parseInput = (textBlock) => {
-        const lines = textBlock.trim().split('\n');
-        const [vertexCount, edgeCountParam, queryCountParam] = lines[0].split(' ').map(val => parseInt(val, 10));
+const parseNumericLine = (lineContent) => lineContent.split(" ").map(Number);
 
-        const edgeRecords = lines.slice(1, 1 + edgeCountParam).map(line => {
-            const [sourceNode, targetNode] = line.split(' ').map(val => parseInt(val, 10));
-            return { source: sourceNode, target: targetNode };
-        });
+function getCountOfLesserOrEqual(sortedCollection, targetValue, startIndex, endIndex) {
+    if (startIndex > endIndex) {
+        return startIndex;
+    }
+    const midIndex = Math.floor((startIndex + endIndex) / 2);
+    if (sortedCollection[midIndex] <= targetValue) {
+        return getCountOfLesserOrEqual(sortedCollection, targetValue, midIndex + 1, endIndex);
+    } else {
+        return getCountOfLesserOrEqual(sortedCollection, targetValue, startIndex, midIndex - 1);
+    }
+}
 
-        const queryRecords = lines.slice(1 + edgeCountParam).map(line => {
-            const [beginNode, endNode] = line.split(' ').map(val => parseInt(val, 10));
-            return { begin: beginNode, end: endNode };
-        });
+function processGraphQueries(rawInputData) {
+    const inputLines = rawInputData.split("\n");
 
-        return { vertexCount, edgeCountParam, queryCountParam, edgeRecords, queryRecords };
-    };
+    let linePointer = 0;
 
-    const buildTopology = (records, totalVertices) => {
-        const connectivityGraph = new Map();
-        for (let currentVertex = 1; currentVertex <= totalVertices; ++currentVertex) {
-            connectivityGraph.set(currentVertex, []);
-        }
-        records.forEach(connection => {
-            connectivityGraph.get(connection.source).push(connection.target);
-        });
-        connectivityGraph.forEach(targets => targets.sort((v1, v2) => v1 - v2));
-        return connectivityGraph;
-    };
+    const [nodeCount, edgeCount, queryCount] = parseNumericLine(inputLines[linePointer++]);
 
-    const findBoundaryIndex = (orderedCollection, valueThreshold, startPointer, endPointer) => {
-        if (startPointer >= endPointer) {
-            return startPointer;
-        }
-        const midPoint = Math.floor((startPointer + endPointer) / 2);
-        if (orderedCollection[midPoint] <= valueThreshold) {
-            return findBoundaryIndex(orderedCollection, valueThreshold, midPoint + 1, endPointer);
-        } else {
-            return findBoundaryIndex(orderedCollection, valueThreshold, startPointer, midPoint);
-        }
-    };
+    const adjacencyMap = new Map();
+    for (let k = 1; k <= nodeCount; k++) {
+        adjacencyMap.set(k, []);
+    }
 
-    const { vertexCount, edgeCountParam, queryCountParam, edgeRecords, queryRecords } = parseInput(inputMatrix);
-    const connectionMap = buildTopology(edgeRecords, vertexCount);
+    for (let k = 0; k < edgeCount; k++) {
+        const [sourceNode, destinationNode] = parseNumericLine(inputLines[linePointer++]);
+        adjacencyMap.get(sourceNode).push(destinationNode);
+    }
 
-    const finalResults = queryRecords.map(currentQuery => {
-        const relevantNodesRange = Array.from({ length: currentQuery.end - currentQuery.begin + 1 },
-                                              (_, offset) => currentQuery.begin + offset);
+    adjacencyMap.forEach(neighborList => neighborList.sort((valA, valB) => valA - valB));
 
-        return relevantNodesRange.reduce((accumulatedPathCount, processingNode) => {
-            const destinationNodes = connectionMap.get(processingNode);
-            if (destinationNodes && destinationNodes.length > 0) {
-                accumulatedPathCount += findBoundaryIndex(destinationNodes, currentQuery.end, 0, destinationNodes.length);
-            }
-            return accumulatedPathCount;
-        }, 0);
-    });
+    const queryResults = [];
 
-    console.log(finalResults.join('\n'));
-};
-executeComputation(require("fs").readFileSync("/dev/stdin","utf8"));
+    for (let k = 0; k < queryCount; k++) {
+        const [queryStartNode, queryEndNode] = parseNumericLine(inputLines[linePointer++]);
+        
+        const currentQueryTotal = Array.from({ length: queryEndNode - queryStartNode + 1 }, (_, idx) => queryStartNode + idx)
+            .reduce((accumulator, currentNode) => {
+                const neighbors = adjacencyMap.get(currentNode);
+                if (neighbors && neighbors.length > 0) {
+                    return accumulator + getCountOfLesserOrEqual(neighbors, queryEndNode, 0, neighbors.length - 1);
+                }
+                return accumulator;
+            }, 0);
+        
+        queryResults.push(currentQueryTotal);
+    }
+
+    console.log(queryResults.join("\n"));
+}
+
+processGraphQueries(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,214 +1,139 @@
-/* This module provides utilities for parsing multi-line string input.
- * It's designed to read data from a source, line by line,
- * and convert segments into numerical or string formats.
- */
-var INPUT_PROCESSOR = (function(){
-  /**
-   * Initializes a new input reader instance.
-   * @param {string} sourceContent - The raw string content to be parsed.
-   * @returns {LineInputHandler} A new handler object.
-   */
-  function createInputReader(sourceContent) {
-    return new LineInputHandler(sourceContent);
+var INPUT_PARSER=(function(){
+  // Factory function to create a new data processor instance
+  function createParser(sourceString){
+    return new DataProcessor(sourceString);
   }
 
-  /**
-   * Handles the processing of input lines.
-   * @class
-   * @param {string} rawData - The complete raw input string.
-   */
-  function LineInputHandler(rawData) {
-    // Stores each line of the input as an array of strings.
-    this._inputSegments = rawData.trim().split("\n");
-    // Keeps track of the current line being processed.
-    this._processingPosition = 0;
+  // Constructor for the data processing object
+  function DataProcessor(inputContent){
+    // Store lines as an array, trimming initial/final whitespace
+    this._linesArray = inputContent.trim().split("\n");
+    // Initialize current line index
+    this._currentLineIndex = 0;
   }
 
-  /**
-   * Extracts a single item from the current line.
-   * If the line is exhausted, moves to the next.
-   * @param {boolean} [asString=false] - If true, returns the item as a string; otherwise, as a number.
-   * @returns {string|number} The extracted item.
-   */
-  LineInputHandler.prototype.fetchSingleItem = function(asString) {
-    var currentLineParts = this._inputSegments;
-    var lineCursor = this._processingPosition;
+  // Method to read a single item from the current line
+  DataProcessor.prototype.readNextItem=function(isString){
+    var currentLines = this._linesArray;
+    var lineIdx = this._currentLineIndex;
     var extractedValue;
 
-    // Check if the current line needs to be split and reversed for easy popping.
-    if (typeof currentLineParts[lineCursor] === "string") {
-      currentLineParts[lineCursor] = currentLineParts[lineCursor].split(" ").reverse();
+    // If the current line hasn't been split yet, split it and reverse for easy popping
+    if(typeof currentLines[lineIdx]==="string") {
+      currentLines[lineIdx] = currentLines[lineIdx].split(" ").reverse();
     }
 
-    // Pop the last element from the current line's parts.
-    extractedValue = currentLineParts[lineCursor].pop();
+    // Pop the last item from the current line's array
+    extractedValue = currentLines[lineIdx].pop();
 
-    // If the current line is now empty, advance to the next line.
-    if (!currentLineParts[lineCursor].length) {
-      this._processingPosition++;
+    // If the current line is now empty, advance to the next line
+    if(!currentLines[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    // Return as string or convert to number based on the flag.
-    return asString ? extractedValue : +extractedValue;
+    // Return as string or number based on the flag
+    return isString ? extractedValue : +extractedValue;
   };
 
-  /**
-   * Retrieves all items from the current line.
-   * Advances the line pointer after reading.
-   * @param {boolean} [keepOriginalType=false] - If true, returns items as strings; otherwise, as numbers.
-   * @returns {Array<string|number>} An array of items from the line.
-   */
-  LineInputHandler.prototype.retrieveLineItems = function(keepOriginalType) {
-    // Get the current line, split by space, and advance the line pointer.
-    var lineData = this._inputSegments[this._processingPosition++].split(" ");
-    return keepOriginalType ? lineData : lineData.map(segmentText => +segmentText);
+  // Method to read all items from the current line
+  DataProcessor.prototype.readLineItems=function(asStrings){
+    // Get the current line, split it by space, and advance the line index
+    var currentLineParts = this._linesArray[this._currentLineIndex++].split(" ");
+    // Return as strings or numbers based on the flag
+    return asStrings ? currentLineParts : currentLineParts.map(item => +item);
   };
 
-  /**
-   * Extracts a matrix (2D array) of data from multiple subsequent lines.
-   * Advances the line pointer by the number of lines read.
-   * @param {number} rowCount - The number of lines to read for the matrix.
-   * @param {boolean} [keepOriginalType=false] - If true, returns items as strings; otherwise, as numbers.
-   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
-   */
-  LineInputHandler.prototype.extractMultipleRows = function(rowCount, keepOriginalType) {
-    // Slice 'rowCount' lines, split each by space.
-    var matrixResult = this._inputSegments
-                         .slice(this._processingPosition, this._processingPosition += rowCount)
-                         .map(segmentText => segmentText.split(" "));
-
-    // Convert all elements to numbers if not keeping original type.
-    return keepOriginalType ? matrixResult : matrixResult.map(row => row.map(itemString => +itemString));
+  // Method to read a matrix of 'numRows' rows
+  DataProcessor.prototype.readMatrix=function(numRows, returnStrings){
+    // Slice the required number of rows, split each by space
+    var matrixData = this._linesArray.slice(this._currentLineIndex, this._currentLineIndex += numRows).map(row => row.split(" "));
+    // Return as strings or numbers based on the flag
+    return returnStrings ? matrixData : matrixData.map(row => row.map(item => +item));
   };
 
-  /**
-   * Reads a specified number of raw lines without splitting them into items.
-   * Advances the line pointer by the number of lines read.
-   * @param {number} numberOfLines - The count of lines to retrieve.
-   * @param {boolean} [keepOriginalType=false] - If true, returns lines as strings; otherwise, attempts to convert to number.
-   * @returns {Array<string|number>} An array of raw lines.
-   */
-  LineInputHandler.prototype.getRawLines = function(numberOfLines, keepOriginalType) {
-    // Slice 'numberOfLines' directly.
-    var rawLineData = this._inputSegments.slice(this._processingPosition, this._processingPosition += numberOfLines);
-    return keepOriginalType ? rawLineData : rawLineData.map(itemString => +itemString);
+  // Method to read 'count' raw rows
+  DataProcessor.prototype.readRows=function(count, asRawStrings){
+    // Slice the required number of rows
+    var rowStrings = this._linesArray.slice(this._currentLineIndex, this._currentLineIndex += count);
+    // Return as raw strings or numbers based on the flag
+    return asRawStrings ? rowStrings : rowStrings.map(item => +item);
   };
 
-  return createInputReader;
+  return createParser;
 })();
 
-// Instantiate the input handler with content from standard input.
-var dataHandler = INPUT_PROCESSOR(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Initialize the input reader with content from standard input
+var inputReader=INPUT_PARSER(require("fs").readFileSync("/dev/stdin","utf8"));
 
-/**
- * Creates a multi-dimensional array with a specified initial value.
- * The dimensions are passed as subsequent arguments.
- * @param {*} fillerContent - The value to fill the innermost array elements with.
- * @param {...number} dimensions - The sizes of each dimension, from outermost to innermost.
- * @returns {Array} The dynamically created multi-dimensional array.
- */
-function generateNestedArray(fillerContent) {
-  var argumentList = arguments;
-  var dimCount = argumentList.length;
-  // Start building the array creation code from the innermost dimension.
-  var dynamicCode = "Array(argumentList[" + --dimCount + "]).fill(0).map(x=>{return " + fillerContent + ";})";
-
-  // Wrap with Array.map for each remaining dimension.
-  while (--dimCount) {
-    dynamicCode = "Array(argumentList[" + dimCount + "]).fill(0).map(x=>" + dynamicCode + ")";
+// Helper function to create multi-dimensional arrays
+function createMultiDimArray(initialValue){
+  var argsList=arguments, argCount=argsList.length, arrayCreationString="Array(argsList["+--argCount+"]).fill(0).map(x=>{return "+initialValue+";})";
+  while(--argCount) {
+    arrayCreationString="Array(argsList["+argCount+"]).fill(0).map(x=>"+arrayCreationString+")";
   }
-  // Evaluate the constructed string to create the array.
-  return eval(dynamicCode);
+  return eval(arrayCreationString);
 }
 
-// Output the result of the main calculation function.
-console.log(determineBestOutcome());
+// Output the result of the main problem-solving function
+console.log(solveProblem());
 
-/**
- * Main function to perform the core logic and calculation.
- * It processes input data, sorts it, and uses a binary search
- * to find an optimal value based on certain conditions.
- * @returns {number} The calculated optimal value.
- */
-function determineBestOutcome() {
-  // Read the number of items and a threshold value from input.
-  var numElements = dataHandler.fetchSingleItem();
-  var limitFactor = dataHandler.fetchSingleItem();
-  // Read a matrix of data for all items.
-  var resourceMatrix = dataHandler.extractMultipleRows(numElements);
+// Main function containing the problem's logic
+function solveProblem(){
+  var numItems = inputReader.readNextItem(); // N
+  var thresholdValue = inputReader.readNextItem(); // X
+  var itemData = inputReader.readMatrix(numItems); // B
 
-  var totalBaseValue = 0; // Accumulator for initial costs.
-
-  // First pass: calculate additional properties for each item.
-  for (var elementIdx = 0; elementIdx < numElements; elementIdx++) {
-    // Calculate primary product (base cost).
-    var primaryProduct = resourceMatrix[elementIdx][0] * resourceMatrix[elementIdx][1];
-    // Calculate secondary product (additional cost based on limit factor).
-    var additionalCost = (limitFactor - resourceMatrix[elementIdx][0]) * resourceMatrix[elementIdx][2];
-
-    totalBaseValue += primaryProduct; // Add base cost to total.
-    // Append calculated costs and their sum to the current item's row.
-    resourceMatrix[elementIdx].push(additionalCost, primaryProduct, additionalCost + primaryProduct);
+  var totalSum = 0; // S
+  // Process each item to calculate derived values
+  for(var idx = 0; idx < numItems; idx++){
+    var productVal = itemData[idx][0] * itemData[idx][1]; // t = b[i][0]*b[i][1]
+    var adjustedVal = (thresholdValue - itemData[idx][0]) * itemData[idx][2]; // a = (x-b[i][0])*b[i][2]
+    totalSum += productVal; // S += t
+    // Add calculated values to the item's array: adjustedVal, productVal, adjustedVal+productVal
+    itemData[idx].push(adjustedVal, productVal, adjustedVal + productVal);
   }
 
-  // Sort the resource matrix based on the combined cost (index 5).
-  // Descending order, so items with higher combined costs are first.
-  resourceMatrix.sort((firstItem, secondItem) => secondItem[5] - firstItem[5]);
+  // Sort items based on the last added value (adjustedVal + productVal) in descending order
+  itemData.sort((itemA, itemB) => itemB[5] - itemA[5]);
 
-  // Initialize binary search bounds.
-  var upperBound = numElements * limitFactor; // 'ok' in original, represents a possible maximum.
-  var lowerBound = -1; // 'ng' in original, represents an impossible minimum.
+  // Binary search setup
+  var upperBound = numItems * thresholdValue; // ok = N*X
+  var lowerBound = -1; // ng = -1
 
-  // Perform binary search.
-  while (upperBound - lowerBound > 1) {
-    var currentGuess = Math.floor((upperBound + lowerBound) / 2); // Calculate midpoint.
-    var remainingSum = totalBaseValue; // Initialize remaining sum with the total base value.
-    var availableCapacity = currentGuess; // Initialize available capacity with the current guess.
+  // Binary search loop
+  while(upperBound - lowerBound > 1){
+    var midPoint = Math.floor((upperBound + lowerBound) / 2); // m = (ok+ng)/2
+    var currentSum = totalSum; // u = S
+    var remainingThreshold = midPoint; // k = m
 
-    // Iterate through sorted items, trying to satisfy 'availableCapacity'.
-    for (var elementIdx = 0;
-         elementIdx < numElements && availableCapacity > 0 && remainingSum > 0;
-         elementIdx++)
-    {
-      // If the limitFactor is less than or equal to availableCapacity,
-      // it means we can fully apply the cost reduction for this item.
-      if (limitFactor <= availableCapacity) {
-        remainingSum -= resourceMatrix[elementIdx][5]; // Subtract combined cost.
-        availableCapacity -= limitFactor; // Reduce available capacity.
+    // Iterate through sorted items while conditions are met
+    for(var idx = 0; idx < numItems && remainingThreshold > 0 && currentSum > 0; idx++){
+      if(thresholdValue <= remainingThreshold){ // if X <= k
+        currentSum -= itemData[idx][5]; // u -= b[i][5]
+        remainingThreshold -= thresholdValue; // k -= X
       } else {
-        // If limitFactor is greater than availableCapacity,
-        // we need a more granular calculation.
-        var workingTotal = remainingSum; // Use a temporary variable for inner loop calculations.
-
-        // Inner loop, potentially problematic if 'elementIdx' is advanced here too.
-        // This structure is preserved as per Type II cloning rules.
-        for (
-          /* No initialization, 'elementIdx' continues from outer loop */;
-          elementIdx < numElements && workingTotal > 0;
-          elementIdx++
-        ) {
-          workingTotal = remainingSum; // Reset workingTotal for each inner iteration (this is key to original logic).
-
-          // If availableCapacity is less than the item's first property.
-          if (availableCapacity < resourceMatrix[elementIdx][0]) {
-            workingTotal -= resourceMatrix[elementIdx][1] * availableCapacity; // Subtract partial cost.
+        // Complex calculation when remainingThreshold is less than thresholdValue
+        for(var tempIdx = idx; tempIdx < numItems && currentSum > 0; tempIdx++){
+          var tempSum = currentSum; // v = u
+          if(remainingThreshold < itemData[tempIdx][0]){ // if k < b[i][0]
+            tempSum -= itemData[tempIdx][1] * remainingThreshold; // v -= b[i][1]*k
           } else {
-            // If availableCapacity is sufficient or more.
-            workingTotal -= resourceMatrix[elementIdx][4] + (availableCapacity - resourceMatrix[elementIdx][0]) * resourceMatrix[elementIdx][2];
+            tempSum -= itemData[tempIdx][4] + (remainingThreshold - itemData[tempIdx][0]) * itemData[tempIdx][2]; // v -= b[i][4]+(k-b[i][0])*b[i][2]
           }
+          currentSum = tempSum; // u = v
+          idx = tempIdx; // Update outer loop index
         }
-        // After inner loop, update remainingSum and reset availableCapacity.
-        remainingSum = workingTotal;
-        availableCapacity = 0;
+        remainingThreshold = 0; // k = 0
       }
     }
 
-    // Adjust binary search bounds based on whether remainingSum is positive.
-    if (remainingSum > 0) {
-      lowerBound = currentGuess; // If sum is still positive, currentGuess is too low.
+    // Adjust binary search bounds
+    if(currentSum > 0) {
+      lowerBound = midPoint; // ng = m
     } else {
-      upperBound = currentGuess; // If sum is zero or negative, currentGuess is a possible solution or too high.
+      upperBound = midPoint; // ok = m
     }
   }
-  return upperBound; // The final upper bound is the optimal value.
+
+  return upperBound; // Return the final result
 }

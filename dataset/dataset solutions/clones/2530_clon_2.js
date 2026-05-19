@@ -1,69 +1,75 @@
-// The entire input string is passed into the processing function.
-function ProcessInputData (rawData) {
+function ProcessInput(rawData) {
+  // The rawData string contains all input data.
+  // The first line is rawData[0], second is rawData[1], etc.
+  const parsedValues = rawData.split(" ");
 
-  // The first value is at parsedData[0], the second at parsedData[1], etc.
-  var parsedData = rawData.split(" ");
+  let firstNum = Number(parsedValues[0]);
+  let secondNum = Number(parsedValues[1]);
 
-  var firstNum = Number(parsedData[0]);
-  var secondNum = Number(parsedData[1]);
+  // Calculate the greatest common divisor of the two numbers.
+  let commonDivisorResult = calculateGCD(firstNum, secondNum);
+  let coprimeCount = 0;
+  let coprimeFactors = [1]; // Initialize with 1, as 1 is always a factor and coprime.
 
-  var resultGCD = computeCommonDivisor(firstNum, secondNum);
-  var primeFactorCount = 0;
-  var factorsList = [1];
-
-  // Iterate to find divisors up to the square root of the calculated GCD
-  for ( var currentDivisor = 1; currentDivisor < Math.sqrt(resultGCD); currentDivisor++ ) {
-    if ( resultGCD % currentDivisor == 0 ) {
-
-      // Check against existing factors in the list for relative primality
-      for ( var listIndex in factorsList ) {
-
-        if ( computeCommonDivisor(factorsList[listIndex], currentDivisor) != 1 ) {
+  // Iterate through potential factors up to the square root of the GCD.
+  for (let factorCandidate = 1; factorCandidate < Math.sqrt(commonDivisorResult); factorCandidate++) {
+    if (commonDivisorResult % factorCandidate === 0) {
+      // If factorCandidate is a divisor, check its coprimality with existing factors.
+      for (let existingFactorIdx in coprimeFactors) {
+        // If not coprime with any existing factor, break and discard factorCandidate.
+        if (calculateGCD(coprimeFactors[existingFactorIdx], factorCandidate) !== 1) {
           break;
         }
 
-        if ( listIndex == factorsList.length - 1 ) {
-          primeFactorCount++;
-          factorsList.push(currentDivisor);
+        // If factorCandidate is coprime with all existing factors, add it.
+        if (existingFactorIdx == coprimeFactors.length - 1) {
+          coprimeCount++;
+          coprimeFactors.push(factorCandidate);
         }
       }
     }
   }
 
-  // Second iteration, for divisors that are resultGCD / currentDivisor
-  for ( var anotherDivisor = 2; anotherDivisor < Math.sqrt(resultGCD); anotherDivisor++ ) {
-      // The condition `resultGCD % (resultGCD / anotherDivisor) == 0` will always be true in JavaScript for anotherDivisor > 0
-      if ( resultGCD % (resultGCD / anotherDivisor) == 0 ) {
+  // Now, check the complementary factors (commonDivisorResult / factorCandidate).
+  // We start from 2 because 1 was handled and commonDivisorResult/1 is commonDivisorResult itself.
+  for (let factorCandidate = 2; factorCandidate < Math.sqrt(commonDivisorResult); factorCandidate++) {
+    // Check if commonDivisorResult is divisible by its complement (commonDivisorResult / factorCandidate).
+    // This is equivalent to checking if commonDivisorResult is divisible by factorCandidate.
+    if (commonDivisorResult % (commonDivisorResult / factorCandidate) === 0) {
+      let complementaryFactor = commonDivisorResult / factorCandidate;
 
-      // Check against existing factors for relative primality
-      for ( var elementIndex in factorsList ) {
+      // Check coprimality of the complementary factor with existing factors.
+      for (let existingFactorIdx in coprimeFactors) {
+        if (calculateGCD(coprimeFactors[existingFactorIdx], complementaryFactor) !== 1) {
+          break;
+        }
 
-          if ( computeCommonDivisor(factorsList[elementIndex], resultGCD / anotherDivisor) != 1 ) {
-           break;
-          }
-
-          if ( elementIndex == factorsList.length - 1 ) {
-            primeFactorCount++;
-            factorsList.push(resultGCD / anotherDivisor);
-          }
+        // If coprime with all, add it.
+        if (existingFactorIdx == coprimeFactors.length - 1) {
+          coprimeCount++;
+          coprimeFactors.push(complementaryFactor);
         }
       }
     }
+  }
 
-  // If the square root of the GCD is an integer, increment the count
-  if ( Number.isInteger(Math.sqrt(resultGCD)) ) {
-  		primeFactorCount++;
-	}
-  console.log(primeFactorCount);
+  // If the GCD is a perfect square, its square root is a unique factor
+  // that would have been missed by the two loops (as they go up to < sqrt).
+  if (Number.isInteger(Math.sqrt(commonDivisorResult))) {
+    coprimeCount++; // Increment for the square root itself.
+  }
+
+  // Output the final count of coprime factors.
+  console.log(coprimeCount);
 }
 
-// Function to calculate the greatest common divisor (GCD) using the Euclidean algorithm
-function computeCommonDivisor(val1, val2) {
-  if ( val2 == 0 ) {
+// Function to compute the greatest common divisor using the Euclidean algorithm.
+function calculateGCD(val1, val2) {
+  if (val2 === 0) {
     return val1;
   }
-  return computeCommonDivisor(val2, val1 % val2);
+  return calculateGCD(val2, val1 % val2);
 }
 
-// The following line loads input from standard I/O and invokes the main processing function. Do not modify.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// The following line should not be modified. It handles standard input/output.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

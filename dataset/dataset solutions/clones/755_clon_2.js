@@ -1,78 +1,81 @@
-const sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Parse the raw input string into an array of individual lines.
-let contentLines = sourceData.trim().split("\n");
+// Process the raw input string into an array of lines.
+let linesOfData = rawData.trim().split("\n");
 
-// The very first item is often a count, but not always used.
-const unusedCount = parseInt(contentLines.shift(), 10);
+// Extract the first numerical value, which is not used in the final calculation.
+let initialCount = Number(linesOfData.shift());
 
-// Extract the initial values for an arithmetic sequence: starting_val and step_size.
-const [startingValue, stepSize] = contentLines.shift().split(" ").map(Number);
+// Parse the next line to get the first term and common difference for an arithmetic progression.
+let [firstTerm, commonDifference] = linesOfData.shift().split(" ").map(Number);
 
-// Initialize a dictionary-like structure to store various associations.
-let associationStore = {};
+// Initialize an object to store key-value mappings.
+const mappingStore = {};
 
-// Determine how many association operations will be performed.
-const associationCount = parseInt(contentLines.shift(), 10);
+// Get the total number of mapping operations to perform.
+let operationCount = Number(linesOfData.shift());
 
-// Iterate through each specified association operation.
-for (let currentIteration = 0; currentIteration < associationCount; currentIteration++) {
-    // Break down the current operation into its type and two operand keys.
-    const [operationKind, operandA, operandB] = contentLines.shift().split(" ");
+// Iterate through each mapping operation.
+for (let opIndex = 0; opIndex < operationCount; opIndex++) {
+    // Extract the operation type and the two keys involved in the current operation.
+    let [operationType, firstKey, secondKey] = linesOfData.shift().split(" ");
 
-    // Check the operation type to decide the linking behavior.
-    if (operationKind === "0") {
-        // Operation type "0" implies a bidirectional or swapping link.
-        const isOperandAPresent = associationStore.hasOwnProperty(operandA);
-        const isOperandBPresent = associationStore.hasOwnProperty(operandB);
-
-        if (!isOperandAPresent && !isOperandBPresent) {
-            // If neither key exists, establish a new mutual link.
-            associationStore[operandA] = operandB;
-            associationStore[operandB] = operandA;
-        } else if (isOperandAPresent && !isOperandBPresent) {
-            // If only A exists, B takes A's partner, then A links to B.
-            associationStore[operandB] = associationStore[operandA];
-            associationStore[operandA] = operandB;
-        } else if (!isOperandAPresent && isOperandBPresent) {
-            // If only B exists, A takes B's partner, then B links to A.
-            associationStore[operandA] = associationStore[operandB];
-            associationStore[operandB] = operandA;
-        } else {
-            // If both exist, swap their associated values.
-            [associationStore[operandA], associationStore[operandB]] = [associationStore[operandB], associationStore[operandA]];
+    // Conditional logic based on the operation type.
+    if (operationType === "0") {
+        // Operation type "0" implies a bidirectional mapping or a swap.
+        // Case 1: Both keys are new to the mapping store.
+        if (!mappingStore.hasOwnProperty(firstKey) && !mappingStore.hasOwnProperty(secondKey)) {
+            mappingStore[firstKey] = secondKey;
+            mappingStore[secondKey] = firstKey;
+        }
+        // Case 2: Only the first key exists in the store.
+        else if (mappingStore.hasOwnProperty(firstKey) && !mappingStore.hasOwnProperty(secondKey)) {
+            mappingStore[secondKey] = mappingStore[firstKey];
+            mappingStore[firstKey] = secondKey;
+        }
+        // Case 3: Only the second key exists in the store.
+        else if (!mappingStore.hasOwnProperty(firstKey) && mappingStore.hasOwnProperty(secondKey)) {
+            mappingStore[firstKey] = mappingStore[secondKey];
+            mappingStore[secondKey] = firstKey;
+        }
+        // Case 4: Both keys already exist; their mapped values are swapped.
+        else {
+            let temporaryValue = mappingStore[firstKey];
+            mappingStore[firstKey] = mappingStore[secondKey];
+            mappingStore[secondKey] = temporaryValue;
         }
     } else {
-        // Operation type "1" (or any other) implies a unidirectional assignment or re-assignment.
-        const operandAExists = associationStore.hasOwnProperty(operandA);
-        const operandBExists = associationStore.hasOwnProperty(operandB);
-
-        if (!operandAExists && !operandBExists) {
-            // If neither exists, A is simply assigned B.
-            associationStore[operandA] = operandB;
-        } else if (operandAExists && !operandBExists) {
-            // If only A exists, A's value is updated to B.
-            associationStore[operandA] = operandB;
-        } else if (!operandAExists && operandBExists) {
-            // If only B exists, A is assigned B's current associated value.
-            associationStore[operandA] = associationStore[operandB];
-        } else {
-            // If both exist, A is assigned B's current associated value.
-            associationStore[operandA] = associationStore[operandB];
+        // Operation type "1" implies a unidirectional mapping.
+        // Case 1: Neither key is present in the store.
+        if (!mappingStore.hasOwnProperty(firstKey) && !mappingStore.hasOwnProperty(secondKey)) {
+            mappingStore[firstKey] = secondKey;
+        }
+        // Case 2: Only the first key is present.
+        else if (mappingStore.hasOwnProperty(firstKey) && !mappingStore.hasOwnProperty(secondKey)) {
+            mappingStore[firstKey] = secondKey;
+        }
+        // Case 3: Only the second key is present.
+        else if (!mappingStore.hasOwnProperty(firstKey) && mappingStore.hasOwnProperty(secondKey)) {
+            mappingStore[firstKey] = mappingStore[secondKey];
+        }
+        // Case 4: Both keys are present.
+        else {
+            mappingStore[firstKey] = mappingStore[secondKey];
         }
     }
 }
 
-// Retrieve the final key whose value needs to be determined.
-let finalKeyQuery = contentLines.shift();
+// Retrieve the final key from the remaining input lines.
+let finalKey = linesOfData.shift();
 
-// If the final key has an association, update the query to its associated value.
-if (associationStore.hasOwnProperty(finalKeyQuery)) {
-    finalKeyQuery = associationStore[finalKeyQuery];
+// If the final key has a mapping, update it to its mapped value.
+if (mappingStore.hasOwnProperty(finalKey)) {
+    finalKey = mappingStore[finalKey];
 }
 
-// Convert the potentially updated key to a numerical format for calculation.
-const numericalFinalKey = parseInt(finalKeyQuery, 10);
+// Convert the final key to a numerical type for calculation.
+finalKey = Number(finalKey);
 
-// Compute and output the result using the arithmetic sequence formula: a + (n-1)d.
-console.log(startingValue + ((numericalFinalKey - 1) * stepSize));
+// Calculate the value using the arithmetic progression formula: a + (n-1) * d.
+// The result is then printed to the console.
+console.log(firstTerm + ((finalKey - 1) * commonDifference));

@@ -1,16 +1,20 @@
-"use strict"
-; // Activate strict mode for the entire script
+"use strict";
 
-const processInput = ( inputDataStream ) =>
-{ // This primary routine handles the incoming data
-  inputDataStream  =  inputDataStream .  trim ( ) .  split ( "\n" ) ; // Clean up and segment the data by newlines
+// This script processes some input data.
+const processInput = (inputData) => {
+  // First, clean up the input string by removing leading/trailing whitespace
+  // and then splitting it into an array of lines.
+  inputData = inputData.trim().split("\n");
 
-  const  firstNumericElement  =  parseInt ( inputDataStream [ 0 ] ) ; // Extract and convert the initial numeric datum
-  const  secondStringElement  =  inputDataStream [ 1 ] ; // Obtain the subsequent string datum
+  // Parse the first line as an integer.
+  const numericValue = parseInt(inputData[0]);
+  // Get the second line as a string.
+  const stringValue = inputData[1];
 
-  // Display a conditional outcome based on the numeric value
-  console .  log ( firstNumericElement >= 3200 ? secondStringElement : "red" ) ;
-}
+  // Based on a condition, output either the string value or a fixed string.
+  // The condition checks if the numeric value is greater than or equal to 3200.
+  console.log(numericValue >= 3200 ? stringValue : "red");
+};
 
-// Execute the processing routine by reading content from the standard input source
-processInput ( require ( 'fs' ) .  readFileSync ( '/dev/stdin' ,  'utf8' ) ) ;
+// Read input from standard input synchronously and pass it to the processing function.
+processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

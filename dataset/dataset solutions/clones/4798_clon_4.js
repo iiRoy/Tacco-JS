@@ -1,78 +1,100 @@
-const retrieveInt = nextInt;
-const retrieveIntArray = nextIntArray;
-const displayResult = myout;
-const formatOutput = myconv;
+var read = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
+});
+var obj; var inLine = [];
+read.on('line', function(input){inLine.push(input);});
+read.on('close', function(){
+  obj = init(inLine);
+  console.error('\n');
+  var start = Date.now();
+  Main();
+  var end = Date.now() - start;
+  myerr('time : ' + end + 'ms');
+  myerr('memory : ' + Math.round(process.memoryUsage().heapTotal / 1024) + 'KB');
+});
+function makeClone(obj){return (obj instanceof Set) ? new Set(Array.from(obj)) : JSON.parse(JSON.stringify(obj));}
+function nextInt(){return myconv(next(),1);} function nextStrArray(){return myconv(next(),2);}
+function nextIntArray(){return myconv(next(),4);} function nextCharArray(){return myconv(next(),6);}
+function next(){return obj.next();} function hasNext(){return obj.hasNext();}
+function init(input){  
+  return {
+    list : input, index : 0, max : input.length,
+    hasNext : function(){return (this.index < this.max);},
+    next : function(){if(this.hasNext()){return this.list[this.index++];}else{throw 'ArrayIndexOutOfBoundsException ‚There is no more input';}}
+  };
+}
+function myout(s){console.log(s);}
+function myerr(s){console.error('debug:' + require('util').inspect(s,false,null));}
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(' ');case 4:return i.split(' ').map(Number);case 6:return i.split('');case 7:return i.split('').map(Number);case 8:return i.join(' ');case 9:return i.join('\n');case 0:return i.join('');default:return i;}}catch(e){return i;}}
 
 function Main() {
-  const dimVal = retrieveInt();
-  const initialPositions = retrieveIntArray();
-  const totalCells = dimVal * dimVal;
+  const cellCount = nextInt();
+  const totalElements = cellCount * cellCount;
 
-  const currentGridArrangement = initialPositions.reduce((acc, position, index) => {
-    acc[position - 1] = index + 1;
-    return acc;
-  }, new Array(totalCells).fill(undefined));
+  const contentRegistry = new Map();
 
-  const fillFromLeft = (currentArr, d, val, numToPlace, cIdx) => {
-    if (val > d) return currentArr;
-    if (numToPlace === 0) {
-      return fillFromLeft(currentArr, d, val + 1, val, 0);
-    }
-    if (cIdx >= totalCells) {
-      return "No";
-    }
-
-    const cellContent = currentArr[cIdx];
-    if (cellContent === undefined) {
-      const nextArr = [...currentArr];
-      nextArr[cIdx] = val;
-      return fillFromLeft(nextArr, d, val, numToPlace - 1, cIdx + 1);
-    } else if (cellContent === val) {
-      return "No";
-    } else {
-      return fillFromLeft(currentArr, d, val, numToPlace, cIdx + 1);
-    }
+  const signalFailure = () => {
+    myout("No");
+    return;
   };
 
-  const afterLeftFill = fillFromLeft(currentGridArrangement, dimVal, 2, 1, 0);
-  if (afterLeftFill === "No") {
-    displayResult("No");
+  const initialIndices = nextIntArray();
+  for (let k = 0; k < cellCount; k++) {
+    const elementValue = k + 1;
+    const targetPosition = initialIndices[k] - 1;
+
+    if (contentRegistry.has(targetPosition)) {
+      signalFailure();
+      return;
+    }
+    contentRegistry.set(targetPosition, elementValue);
+  }
+
+  const vacantPositions = new Set();
+  for (let i = 0; i < totalElements; i++) {
+    if (!contentRegistry.has(i)) {
+      vacantPositions.add(i);
+    }
+  }
+
+  for (let currentVal = 2; currentVal <= cellCount; currentVal++) {
+    let requiredFillings = currentVal - 1;
+    for (let i = 0; i < totalElements && requiredFillings > 0; i++) {
+      if (vacantPositions.has(i)) {
+        contentRegistry.set(i, currentVal);
+        vacantPositions.delete(i);
+        requiredFillings--;
+      } else if (contentRegistry.get(i) === currentVal) {
+        signalFailure();
+        return;
+      }
+    }
+  }
+
+  for (let currentVal = 1; currentVal < cellCount; currentVal++) {
+    let requiredFillings = cellCount - currentVal;
+    for (let i = totalElements - 1; i >= 0 && requiredFillings > 0; i--) {
+      if (vacantPositions.has(i)) {
+        contentRegistry.set(i, currentVal);
+        vacantPositions.delete(i);
+        requiredFillings--;
+      } else if (contentRegistry.get(i) === currentVal) {
+        signalFailure();
+        return;
+      }
+    }
+  }
+
+  if (vacantPositions.size > 0) {
+    signalFailure();
     return;
   }
 
-  const fillFromRight = (currentArr, d, val, numToPlace, cIdx) => {
-    if (val >= d) return currentArr;
-    if (numToPlace === 0) {
-      return fillFromRight(currentArr, d, val + 1, d - (val + 1), totalCells - 1);
-    }
-    if (cIdx < 0) {
-      return "No";
-    }
-
-    const cellContent = currentArr[cIdx];
-    if (cellContent === undefined) {
-      const nextArr = [...currentArr];
-      nextArr[cIdx] = val;
-      return fillFromRight(nextArr, d, val, numToPlace - 1, cIdx - 1);
-    } else if (cellContent === val) {
-      return "No";
-    } else {
-      return fillFromRight(currentArr, d, val, numToPlace, cIdx - 1);
-    }
-  };
-
-  const finalArrangement = fillFromRight(afterLeftFill, dimVal, 1, dimVal - 1, totalCells - 1);
-  if (finalArrangement === "No") {
-    displayResult("No");
-    return;
+  const finalArrangement = new Array(totalElements);
+  for (let i = 0; i < totalElements; i++) {
+    finalArrangement[i] = contentRegistry.get(i);
   }
 
-  const anyUnfilled = finalArrangement.some(cell => cell === undefined);
-  if (anyUnfilled) {
-    displayResult("No");
-    return;
-  }
-
-  displayResult("Yes");
-  displayResult(formatOutput(finalArrangement, 8));
+  myout("Yes");
+  myout(myconv(finalArrangement, 8));
 }

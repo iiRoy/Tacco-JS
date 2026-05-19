@@ -1,30 +1,16 @@
-const ruleRegistry = [
-    {
-        checkCriterion: (valuePoint) => valuePoint < 1200,
-        outcomeLabel: 'ABC'
-    },
-    {
-        checkCriterion: (valuePoint) => valuePoint >= 1200 && valuePoint < 2800,
-        outcomeLabel: 'ARC'
-    },
-    {
-        checkCriterion: (valuePoint) => valuePoint <= 4208,
-        outcomeLabel: 'AGC'
-    }
+const classificationRules = [
+    { check: (val) => val < 1200, label: 'ABC' },
+    { check: (val) => val >= 1200 && val < 2800, label: 'ARC' },
+    { check: (val) => val <= 4208, label: 'AGC' }
 ];
 
-function processDataStream(sourceData) {
-    const numericalValue = Number(sourceData.trim());
-    
-    ruleRegistry
-        .filter(entry => entry.checkCriterion(numericalValue))
-        .map(entry => entry.outcomeLabel)
-        .forEach(outputMessage => console.log(outputMessage));
+function determineAndDisplay(rawData) {
+    const numericData = Number(rawData);
+    classificationRules.forEach(rule => {
+        if (rule.check(numericData)) {
+            console.log(rule.label);
+        }
+    });
 }
 
-const fileSystemReader = require("fs").readFileSync;
-const dataPathIdentifier = "/dev/stdin";
-const textEncodingStandard = "utf8";
-const retrievedContent = fileSystemReader(dataPathIdentifier, textEncodingStandard);
-
-processDataStream(retrievedContent);
+determineAndDisplay(require("fs").readFileSync("/dev/stdin", "utf8"));

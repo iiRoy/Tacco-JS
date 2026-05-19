@@ -1,52 +1,51 @@
 process.stdin.resume();
 process.stdin.setEncoding("utf8");
-process.stdin.on("data", function (dataPayload) {
-    const payloadLines = dataPayload.trim().split('\n');
-    const problemQuantity = parseInt(payloadLines.shift(), 10);
-    const problemInputs = payloadLines;
 
-    const characterMapping = {
-        '1': ['.', ',', '!', '?', ' '],
-        '2': ['a', 'b', 'c'],
-        '3': ['d', 'e', 'f'],
-        '4': ['g', 'h', 'i'],
-        '5': ['j', 'k', 'l'],
-        '6': ['m', 'n', 'o'],
-        '7': ['p', 'q', 'r', 's'],
-        '8': ['t', 'u', 'v'],
-        '9': ['w', 'x', 'y', 'z']
-    };
+const digitCharMap = [
+    [],
+    ['.', ',', '!', '?', ' '],
+    ['a', 'b', 'c'],
+    ['d', 'e', 'f'],
+    ['g', 'h', 'i'],
+    ['j', 'k', 'l'],
+    ['m', 'n', 'o'],
+    ['p', 'q', 'r', 's'],
+    ['t', 'u', 'v'],
+    ['w', 'x', 'y', 'z']
+];
 
-    const interpretSequence = (sequenceText) => {
-        const numericSequence = sequenceText.split('').map(Number);
+function decipherSequence(
+    digitStream,
+    charMapRef,
+    currentAccumulatedPhrase = '',
+    currentActiveChar = '',
+    pressCounter = 0,
+    currentIndex = 0
+) {
+    if (currentIndex >= digitStream.length) {
+        return currentAccumulatedPhrase + currentActiveChar;
+    }
 
-        const reductionState = numericSequence.reduce((accumulator, digitPressed) => {
-            const { messageAccumulator, currentSelection, pressCount } = accumulator;
+    const currentInputDigit = digitStream[currentIndex];
 
-            if (digitPressed === 0) {
-                return {
-                    messageAccumulator: messageAccumulator + currentSelection,
-                    currentSelection: '',
-                    pressCount: 0
-                };
-            } else {
-                const availableOptions = characterMapping[digitPressed.toString()];
-                const nextSelection = availableOptions[pressCount % availableOptions.length];
-                return {
-                    messageAccumulator: messageAccumulator,
-                    currentSelection: nextSelection,
-                    pressCount: pressCount + 1
-                };
-            }
-        }, { messageAccumulator: '', currentSelection: '', pressCount: 0 });
+    if (currentInputDigit === 0) {
+        const updatedPhrase = currentAccumulatedPhrase + currentActiveChar;
+        return decipherSequence(digitStream, charMapRef, updatedPhrase, '', 0, currentIndex + 1);
+    } else {
+        const availableChars = charMapRef[currentInputDigit];
+        const nextActiveChar = availableChars[pressCounter % availableChars.length];
+        return decipherSequence(digitStream, charMapRef, currentAccumulatedPhrase, nextActiveChar, pressCounter + 1, currentIndex + 1);
+    }
+}
 
-        return reductionState.messageAccumulator;
-    };
+process.stdin.on("data", function (chunkData) {
+    const processedLines = chunkData.trim().split("\n");
+    const totalCases = Number(processedLines.shift());
 
-    problemInputs.forEach((eachInput, index) => {
-        if (index < problemQuantity) { // Ensure we only process 'problemQuantity' lines
-            const decodedMessage = interpretSequence(eachInput);
-            console.log(decodedMessage);
-        }
+    const results = processedLines.slice(0, totalCases).map(lineContent => {
+        const numericSequence = lineContent.split("").map(Number);
+        return decipherSequence(numericSequence, digitCharMap);
     });
+
+    results.forEach(finalMessage => console.log(finalMessage));
 });

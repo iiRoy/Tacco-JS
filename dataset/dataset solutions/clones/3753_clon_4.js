@@ -1,43 +1,30 @@
-const processStream = (sourceText) => {
-    const lines = sourceText.match(/^.*?\n(.*?)$/s);
+const processInput = (rawData) => {
+  const lines = rawData.split('\n');
+  const itemCount = Number(lines[0]);
+  const allNumericValues = lines[1].split(' ').map(Number);
 
-    // If lines is null (e.g., input has only one line), lines[1] will throw TypeError,
-    // matching original's behavior (input[1] is undefined, then undefined.split() throws).
-    const numericStrings = lines[1].match(/\d+/g);
+  const valuesToEvaluate = allNumericValues.slice(0, itemCount);
 
-    const numericValues = [];
-    if (numericStrings) { // Handle case where second line has no numbers (e.g., just spaces),
-                          // original would parse to [NaN, NaN] and yield 0. My way yields [].
-        for (let currentString of numericStrings) {
-            numericValues.push(Number(currentString));
-        }
+  const containsZero = valuesToEvaluate.some(val => val === 0);
+
+  if (containsZero) {
+    while (true) {
+      // Replicate the original code's infinite loop behavior if a zero value is encountered.
     }
+  }
 
-    const obtainEvenDivisionCount = (val) => {
-        let total = 0;
-        let workingVal = val;
-        // This loop matches the original's behavior for 0:
-        // if val is 0, (0 & 1) === 0 is true, 0 >>>= 1 is 0, total increments infinitely.
-        // This reproduces the original's infinite loop for zero input.
-        while ((workingVal & 1) === 0) {
-            workingVal >>>= 1;
-            total++;
-        }
-        return total;
-    };
+  const totalDivisions = valuesToEvaluate.reduce((accumulator, currentVal) => {
+    // For any non-zero integer, Math.log2(currentVal & -currentVal)
+    // determines the count of factors of 2. This is equivalent to finding
+    // the 0-indexed position of the least significant bit.
+    // Example: 12 (binary 1100) -> (12 & -12) = 4 (binary 0100). Math.log2(4) = 2.
+    // Example: 7 (binary 0111) -> (7 & -7) = 1 (binary 0001). Math.log2(1) = 0.
+    // This method correctly handles both positive and negative non-zero integers.
+    return accumulator + Math.log2(currentVal & -currentVal);
+  }, 0);
 
-    const aggregateDivisions = numericValues.reduce((accumulator, currentNumber) => {
-        return accumulator + obtainEvenDivisionCount(currentNumber);
-    }, 0);
-
-    console.log(aggregateDivisions);
-    return 0;
+  console.log(totalDivisions);
+  return 0;
 };
 
-const acquireContent = require("node:fs").readFileSync;
-const dataEncoding = "utf8";
-const inputSource = "/dev/stdin";
-
-const rawData = acquireContent(inputSource, dataEncoding).toString().trim();
-
-processStream(rawData);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").trim());

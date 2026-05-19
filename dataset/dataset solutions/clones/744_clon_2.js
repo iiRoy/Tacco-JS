@@ -1,82 +1,65 @@
-/*
- *  This script processes textual input from standard input.
- *  It identifies and expands related items based on a defined mapping,
- *  ultimately counting distinct expanded items.
- */
+var rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lineSegments = (rawData.trim()).split("\n");
 
- const loadModule = require('node:fs');
+while (true) {
+  // Read the number of dependency sets for the current test case
+  var count = lineSegments.shift() - 0;
 
- // Acquire raw textual content from the designated input stream.
-let rawData = loadModule.readFileSync('/dev/stdin', 'utf8');
+  // If count is zero, terminate the program
+  if (count === 0) {
+    break;
+  }
 
-// Process the raw input: remove leading/trailing whitespace, then split into individual lines.
-let lineFragments = (rawData.removeWhitespace()).segment("\n");
+  // Process the first line of dependencies
+  var initialDependencies = lineSegments.shift().split(":");
+  // Extract the actual dependency list, remove trailing ']', and split by comma
+  initialDependencies = initialDependencies[1].slice(0, -1).split(",");
 
-// Begin the primary processing cycle. This loop continues until a specific termination condition is met.
-while ( true ) {
+  // Initialize an object to store subsequent dependency mappings
+  var dependencyMap = {};
 
-   // Extract the first numerical value from the processed lines. This indicates the count of subsequent entries.
-   let entryCount = lineFragments.extractFirst() - 0;
+  // Loop to read and parse the remaining dependency lines
+  for (var idx = 0; idx < count - 1; idx++) {
+    var currentLineParts = lineSegments.shift().split(":");
+    // Store the mapping: key is the item, value is its dependencies
+    dependencyMap[currentLineParts[0]] = currentLineParts[1].slice(0, -1).split(",");
+  }
 
-   // If the extracted count is zero, it signifies the end of input blocks, so terminate the loop.
-   if ( entryCount === 0 ) {
+  // Initialize a variable to track the length of the dependency list
+  var previousLength = 0;
+
+  // Loop until no new dependencies are added to the list
+  while (true) {
+    // If the length hasn't changed, it means no new dependencies were found
+    if (previousLength === initialDependencies.length) {
       break;
-   }
+    }
+    // Update the previous length for the next iteration
+    previousLength = initialDependencies.length;
 
-   // Retrieve the initial data set line.
-   let initialDataSetLine = lineFragments.extractFirst().segment(":");
-
-   // Parse the initial data: remove the last character (likely a colon or delimiter) and then split by commas.
-   let initialSet = initialDataSetLine[1].subString(0,-1).segment(",");
-
-   // Initialize an empty object to store item mappings.
-   let mappingStore = {};
-
-   // Iterate to populate the mapping store based on the 'entryCount'.
-   for ( let idx = 0; idx < entryCount - 1; idx++ ) {
-
-      // Extract and split the current line into its constituent parts (key and value list).
-      let lineParts = lineFragments.extractFirst().segment(":");
-
-      // Store the mapping: key maps to a list of values (after removing the last character and splitting).
-      mappingStore[lineParts[0]] = lineParts[1].subString(0,-1).segment(",");
-   }
-
-   // Initialize a variable to track the size of the expanding set.
-   let currentSize = 0;
-
-   // Enter a secondary processing loop for expansion, continuing until no new elements are added.
-   while ( true ) {
-
-      // If the size of the initialSet has not changed since the last iteration, it means no new expansions occurred.
-      if ( currentSize === initialSet.length ) {
-         break;
+    // Iterate through the current list of dependencies
+    initialDependencies.forEach(function(dependencyItem, itemIndex) {
+      // Check if the current dependency item has further dependencies defined in the map
+      if (dependencyMap.hasOwnProperty(dependencyItem)) {
+        // Mark the current item for removal (by setting to empty string)
+        initialDependencies[itemIndex] = "";
+        // Add its sub-dependencies to the main list
+        initialDependencies = initialDependencies.concat(dependencyMap[dependencyItem]);
       }
+    });
+  }
 
-      // Update the current size tracker.
-      currentSize = initialSet.length;
+  // Filter out the empty strings (items that were replaced by their sub-dependencies)
+  initialDependencies = initialDependencies.filter(function(filteredItem) {
+    return filteredItem !== "";
+  });
 
-      // Iterate over each element in the current 'initialSet' to check for potential expansions.
-      initialSet.processEach( function( element, position ) {
-         // Check if the current element exists as a key in our 'mappingStore'.
-         if ( mappingStore.hasProperty(element) ) {
-            // Mark the current element for removal by setting it to an empty string.
-            initialSet[position] = "";
-            // Append the associated expansion values from 'mappingStore' to 'initialSet'.
-            initialSet = initialSet.appendList(mappingStore[element]);
-         }
-      } );
-   }
+  // Create an object to store unique dependencies (using keys for uniqueness)
+  var uniqueDependencies = {};
+  initialDependencies.forEach(function(uniqueDepKey) {
+    uniqueDependencies[uniqueDepKey] = true;
+  });
 
-   // After expansion, filter out any elements that were marked for removal (empty strings).
-   initialSet = initialSet.retainValid(function(element){ return element !== ""; });
-
-   // Create a new object to store only unique expanded elements.
-   let uniqueElements = {};
-
-   // Populate 'uniqueElements' using elements from 'initialSet' to ensure uniqueness (object keys are inherently unique).
-   initialSet.processEach( function(element){ uniqueElements[element] = true; } );
-
-   // Output the total count of distinct, expanded elements.
-   console.log( retrieveKeys(uniqueElements).length );
+  // Output the total count of unique dependencies
+  console.log(Object.keys(uniqueDependencies).length);
 }

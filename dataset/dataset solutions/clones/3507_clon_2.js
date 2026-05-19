@@ -1,124 +1,110 @@
-"use strict"; // Ensures strict parsing rules are applied for better code quality
+"use strict"; // Enforce strict mode for the entire script
 
-// --- Data Stream Handling Utilities ---
+// Obtain raw input data from the standard input stream
+let rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Loads the complete raw data stream from standard input, encoded as UTF-8
-let dataStreamContent = require("fs").readFileSync("/dev/stdin", "utf8");
-
-// Splits the entire input data into individual tokens using spaces or newlines as delimiters
-let tokenBuffer = dataStreamContent.split(/ |\n/);
-// Initializes an index to keep track of the current position in the token buffer
+// Process the raw input: split into tokens by spaces or newlines, and initialize a pointer
+let tokenStream = rawData.split(/ |\n/);
 let tokenIndex = 0;
 
 /**
- * Retrieves the next available token from the buffer and explicitly converts it to a numeric type.
- * @returns {number} The parsed numeric value of the next token.
+ * Fetches the subsequent token from the stream and casts it to a numerical type.
+ * @returns {number} The next token as a number.
  */
-function getNextNumericValue() {
-    return Number(tokenBuffer[tokenIndex++]);
+function getNextNumber() {
+  return +tokenStream[tokenIndex++];
 }
 
 /**
- * Retrieves the next available token from the buffer as its raw string representation.
- * @returns {string} The string value of the next token.
+ * Fetches the subsequent token from the stream as a string.
+ * @returns {string} The next token as a string.
  */
-function getNextTextValue() {
-    return tokenBuffer[tokenIndex++];
+function getNextString() {
+  return tokenStream[tokenIndex++];
 }
 
 /**
- * Retrieves the next available token from the buffer and converts it to a BigInt type.
- * This is suitable for very large integer values.
- * @returns {BigInt} The BigInt value of the next token.
+ * Fetches the subsequent token from the stream and converts it into a BigInt.
+ * @returns {BigInt} The next token as a BigInt.
  */
-function getNextLargeInteger() {
-    return BigInt(tokenBuffer[tokenIndex++]);
+function getNextBigInt() {
+  return BigInt(tokenStream[tokenIndex++]);
 }
 
 /**
- * Fetches a contiguous sequence of tokens from the buffer.
- * Allows specifying whether the tokens should be returned as strings or parsed as numbers.
- * @param {number} sliceLength - The total count of tokens to extract.
- * @param {boolean} returnAsString - A flag indicating if tokens should be kept as strings (true) or converted to numbers (false).
- * @returns {Array<string|number>} An array containing the requested sequence of tokens.
+ * Retrieves an array of tokens, either as raw strings or parsed numbers.
+ * @param {number} count - The total number of elements to extract.
+ * @param {boolean} isRaw - If true, elements are returned as strings; otherwise, they are converted to numbers.
+ * @returns {Array<number|string>} An array containing the requested tokens.
  */
-function getSliceOfTokens(sliceLength, returnAsString) {
-    if (returnAsString) {
-        // Return tokens as-is (strings)
-        return tokenBuffer.slice(tokenIndex, tokenIndex += sliceLength);
-    } else {
-        // Return tokens converted to numbers
-        return tokenBuffer.slice(tokenIndex, tokenIndex += sliceLength).map(item => Number(item));
+function getNumbersArray(count, isRaw) {
+  if (isRaw) {
+    return tokenStream.slice(tokenIndex, (tokenIndex += count));
+  } else {
+    return tokenStream.slice(tokenIndex, (tokenIndex += count)).map((val) => +val);
+  }
+}
+
+/**
+ * Extracts a two-dimensional matrix (array of arrays) from the token stream.
+ * @param {number} rows - The number of rows for the matrix.
+ * @param {number} cols - The number of columns for each row.
+ * @param {boolean} isRaw - If true, matrix elements are strings; otherwise, they are numbers.
+ * @returns {Array<Array<number|string>>} The constructed matrix.
+ */
+function getMatrix(rows, cols, isRaw) {
+  let matrixData = []; // Container for the matrix rows
+  let rowIndex = 0; // Iterator for rows
+
+  if (isRaw) {
+    for (; rowIndex < rows; rowIndex++) {
+      matrixData.push(tokenStream.slice(tokenIndex, (tokenIndex += cols)));
     }
-}
-
-/**
- * Reads a block of tokens from the buffer and organizes them into a two-dimensional array (matrix).
- * Each row of the matrix will contain a specified number of elements.
- * @param {number} matrixHeight - The total number of rows for the matrix.
- * @param {number} matrixWidth - The number of columns (elements) in each row.
- * @param {boolean} keepAsStrings - If true, matrix elements remain strings; otherwise, they are converted to numbers.
- * @returns {Array<Array<string|number>>} The constructed matrix.
- */
-function getMatrixFromTokens(matrixHeight, matrixWidth, keepAsStrings) {
-    let matrixRows = [];
-    let currentR = 0; // Row counter
-
-    if (keepAsStrings) {
-        for (; currentR < matrixHeight; currentR++) {
-            matrixRows.push(tokenBuffer.slice(tokenIndex, tokenIndex += matrixWidth));
-        }
-    } else {
-        for (; currentR < matrixHeight; currentR++) {
-            matrixRows.push(tokenBuffer.slice(tokenIndex, tokenIndex += matrixWidth).map(value => Number(value)));
-        }
+  } else {
+    for (; rowIndex < rows; rowIndex++) {
+      matrixData.push(tokenStream.slice(tokenIndex, (tokenIndex += cols)).map((element) => +element));
     }
-    return matrixRows;
+  }
+  return matrixData;
 }
 
 /**
- * Generates a multi-dimensional array dynamically based on a variable number of dimension arguments.
- * The first argument specifies the initial value for the deepest elements,
- * subsequent arguments define the size of each dimension from outermost to innermost.
- * @param {*} initialElementValue - The default value to fill the array's elements with.
- * @param {...number} dimensions - The sizes for each dimension of the array.
- * @returns {Array} A newly created multi-dimensional array.
+ * Generates a multi-dimensional array with specified dimensions, initialized with a given value.
+ * @param {*} initialValue - The value to populate the array elements with.
+ * @param {...number} dimensions - Variable number of arguments representing array dimensions.
+ * @returns {Array} The newly created multi-dimensional array.
  */
-function createDynamicArray(initialElementValue) {
-    const dimensionsList = arguments; // Access all arguments passed to the function
-    let dimensionCount = dimensionsList.length;
-    // Construct the innermost array creation part of the string
-    let arrayConstructionCode = "Array(dimensionsList[" + --dimensionCount + "]).fill().map(_ => { return " + initialElementValue + "; })";
+function createMultiDimArray(initialValue) {
+  let dimensionArgs = arguments; // Access all arguments, including the initial value and dimensions
+  let argLength = dimensionArgs.length; // Total count of arguments
+  let arrayCreationString = "Array(dimensionArgs[" + --argLength + "]).fill().map(_ => { return " + initialValue + "; })";
 
-    // Build up the nested array creation string from innermost to outermost
-    while (--dimensionCount) {
-        arrayConstructionCode = "Array(dimensionsList[" + dimensionCount + "]).fill().map(_ => " + arrayConstructionCode + ")";
-    }
+  // Iteratively build the string for nested array creation
+  while (--argLength) {
+    arrayCreationString = "Array(dimensionArgs[" + argLength + "]).fill().map(_ => " + arrayCreationString + ")";
+  }
 
-    // Evaluate the constructed string to create the multi-dimensional array
-    return eval(arrayConstructionCode);
+  // Execute the dynamically generated string to construct the array
+  return eval(arrayCreationString);
 }
 
+// Invoke the primary execution function and store its outcome
+let programResult = executeProgram();
 
-// --- Core Program Logic Execution ---
-
-// Invokes the primary function that contains the main algorithm
-const finalResult = executeCoreLogic();
-
-// Checks if the result returned by the main logic is defined and, if so, prints it to console
-if (finalResult !== undefined) {
-    console.log(finalResult);
+// Display the result to the console if it holds a defined value
+if (programResult !== undefined) {
+  console.log(programResult);
 }
 
 /**
- * The main function encapsulating the program's primary business logic.
- * It reads a single numeric input and performs a specific calculation.
- * @returns {number} The computed result of the operation.
+ * The central function encapsulating the problem's logic.
+ * @returns {number} The computed numerical outcome.
  */
-function executeCoreLogic() {
-    // Reads the first numeric value from the input stream
-    const inputNumberValue = getNextNumericValue();
+function executeProgram() {
+  // Read the single input number required for the calculation
+  let inputNum = getNextNumber();
 
-    // Calculates the smallest multiple of 111 that is greater than or equal to the input number
-    return Math.ceil(inputNumberValue / 111) * 111;
+  // Determine the smallest multiple of 111 that is greater than or equal to the input number.
+  // This is achieved by dividing by 111, rounding up, and then multiplying by 111.
+  return Math.ceil(inputNum / 111) * 111;
 }

@@ -1,66 +1,106 @@
-const pathResolver = (() => {
-    const inputInterface = require('readline').createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+module.exports = (function(moduleDefinitions) {
+    const moduleCache = new Map();
 
-    let currentInputData = [];
-
-    // Verifies if the path contains any unpassable consecutive blockages
-    const verifyBlockageAbsence = (routeLayout) => {
-        return !routeLayout.split('').some((cell, position, entireLayout) => 
-            cell === '#' && entireLayout[position + 1] === '#'
-        );
-    };
-
-    // Determines if a bypass route is available within a specified segment
-    // This looks for two consecutive empty cells ('.')
-    const identifyBypassOption = (courseMap, startPosition, endPositionExclusive) => {
-        // The segment to analyze for the pattern '..'
-        // The first '.' of the '..' pair can be at indices from startPosition up to endPositionExclusive - 1.
-        // So the substring needs to cover characters from startPosition up to endPositionExclusive.
-        const relevantSection = courseMap.substring(startPosition, endPositionExclusive);
-        return relevantSection.match(/\.\./) !== null;
-    };
-
-    // Main decision-making function for the path
-    const processMovementScenario = (pathParameters, pathSurface) => {
-        const [totalCells, initialA, initialB, finalC, finalD] = pathParameters;
-
-        // Convert 1-based indices to 0-based for string manipulation
-        const zeroBasedInitialB = initialB - 1;
-        const zeroBasedFinalC = finalC - 1;
-        const zeroBasedFinalD = finalD - 1;
-
-        // First, check for any immediate blocking obstacles anywhere on the path
-        if (!verifyBlockageAbsence(pathSurface)) {
-            return "No";
+    function moduleResolver(moduleId) {
+        if (moduleCache.has(moduleId)) {
+            return moduleCache.get(moduleId).exports;
         }
 
-        // If the target (C) is before the destination (D), it's always possible
-        if (zeroBasedFinalC < zeroBasedFinalD) {
-            return "Yes";
-        } else { // Target (C) is at or after destination (D)
-            // A bypass is needed. Check if two consecutive empty cells exist between B and D.
-            // The range for the *first* '.' of the '..' pair is from zeroBasedInitialB to zeroBasedFinalD - 2.
-            // So the substring for regex matching should end exclusively at zeroBasedFinalD - 1.
-            if (identifyBypassOption(pathSurface, zeroBasedInitialB, zeroBasedFinalD - 1)) {
-                return "Yes";
-            } else {
-                return "No";
+        const moduleContainer = {
+            identifier: moduleId,
+            isLoaded: false,
+            exports: {}
+        };
+        moduleCache.set(moduleId, moduleContainer);
+
+        moduleDefinitions[moduleId].call(moduleContainer.exports, moduleContainer, moduleContainer.exports, moduleResolver);
+
+        moduleContainer.isLoaded = true;
+        return moduleContainer.exports;
+    }
+
+    moduleResolver.moduleMap = moduleDefinitions;
+    moduleResolver.moduleCache = moduleCache;
+
+    moduleResolver.defineExport = function(targetObject, propertyKey, valueGetter) {
+        if (!Reflect.has(targetObject, propertyKey)) {
+            Reflect.defineProperty(targetObject, propertyKey, {
+                enumerable: true,
+                get: valueGetter
+            });
+        }
+    };
+
+    moduleResolver.registerEsModule = function(targetModule) {
+        const symTag = typeof Symbol !== 'undefined' && Symbol.toStringTag;
+        if (symTag) {
+            Reflect.defineProperty(targetModule, symTag, { value: "Module" });
+        }
+        Reflect.defineProperty(targetModule, "__esModule", { value: true });
+    };
+
+    moduleResolver.interopRequire = function(moduleValue, flags) {
+        let processedModule = (flags & 1) ? moduleResolver(moduleValue) : moduleValue;
+
+        if (flags & 8) return processedModule;
+        if ((flags & 4) && typeof processedModule === 'object' && processedModule && processedModule.__esModule) return processedModule;
+
+        const defaultExportWrapper = Object.create(null);
+        moduleResolver.registerEsModule(defaultExportWrapper);
+        Reflect.defineProperty(defaultExportWrapper, "default", { enumerable: true, value: processedModule });
+
+        if ((flags & 2) && typeof processedModule !== 'string') {
+            for (const key in processedModule) {
+                moduleResolver.defineExport(defaultExportWrapper, key, () => processedModule[key]);
             }
         }
+        return defaultExportWrapper;
     };
 
-    inputInterface.on('line', (lineContent) => {
-        currentInputData.push(lineContent);
-    });
+    moduleResolver.getDefaultExport = function(moduleObject) {
+        const exportAccessor = (moduleObject && moduleObject.__esModule) ? () => moduleObject.default : () => moduleObject;
+        const accessorContainer = {};
+        moduleResolver.defineExport(accessorContainer, "a", exportAccessor);
+        return accessorContainer;
+    };
 
-    inputInterface.on('close', () => {
-        const numericalSpecifications = currentInputData[0].split(' ').map(Number);
-        const terrainDescription = currentInputData[1];
-        
-        const finalDecision = processMovementScenario(numericalSpecifications, terrainDescription);
-        console.log(finalDecision);
-    });
-})();
+    moduleResolver.hasProperty = function(obj, prop) {
+        return Object.prototype.hasOwnProperty.call(obj, prop);
+    };
+
+    moduleResolver.publicPath = "";
+
+    return moduleResolver(0);
+})([
+    function(mod, exp, load) {
+        const fileSystemModule = load(2);
+        const mainLogicFunction = load(1);
+        mainLogicFunction(fileSystemModule.readFileSync("/dev/stdin", "UTF-8"));
+    },
+    function(mod, exp, load) {
+        mod.exports = function(inputData) {
+            const [firstLineData, charGridString] = inputData.split('\n');
+            const [gridLength, initialPosition, finalPosition, barrierPosition, _extra] = firstLineData.split(' ').map(Number);
+
+            if (charGridString.includes('##')) {
+                console.log("No");
+                return;
+            }
+
+            if (finalPosition < barrierPosition) {
+                console.log("Yes");
+                return;
+            }
+
+            const relevantSegment = charGridString.substring(initialPosition, barrierPosition - 1);
+            if (relevantSegment.includes('...')) {
+                console.log("Yes");
+            } else {
+                console.log("No");
+            }
+        };
+    },
+    function(mod, exp, load) {
+        mod.exports = require("fs");
+    }
+]);

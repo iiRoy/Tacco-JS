@@ -1,179 +1,155 @@
-let dataBuffer = [];
-let dataPointer = 0;
+class MinPriorityQueue {
+    #elements = [];
 
-function acquireDatum(isString) {
-    if (isString) {
-        return dataBuffer[dataPointer++];
-    }
-    return Number(dataBuffer[dataPointer++]);
-}
-
-function outputResult(value) {
-    console.log(value);
-}
-
-class GraphEdge {
-    constructor(destination, firstCost, secondCost) {
-        this.destination = destination;
-        this.firstCost = firstCost;
-        this.secondCost = secondCost;
+    insert(item) {
+        this.#elements.push(item);
+        this.#bubbleUp(this.#elements.length - 1);
     }
 
-    getCost(selector) {
-        return selector === 0 ? this.firstCost : this.secondCost;
-    }
-}
-
-class MinPathQueue {
-    constructor() {
-        this._elements = [];
-    }
-
-    offer(priorityValue, itemData) {
-        const entry = { priority: priorityValue, item: itemData };
-        this._elements.push(entry);
-        this._percolateUp(this._elements.length - 1);
-    }
-
-    poll() {
+    extractMin() {
         if (this.isEmpty()) {
             return undefined;
         }
-        const smallestEntry = this._elements[0];
-        const lastEntry = this._elements.pop();
+        const min = this.#elements[0];
+        const last = this.#elements.pop();
         if (!this.isEmpty()) {
-            this._elements[0] = lastEntry;
-            this._percolateDown(0);
+            this.#elements[0] = last;
+            this.#bubbleDown(0);
         }
-        return [smallestEntry.priority, smallestEntry.item];
+        return min;
     }
 
     isEmpty() {
-        return this._elements.length === 0;
+        return this.#elements.length === 0;
     }
 
-    _percolateUp(index) {
-        const currentEntry = this._elements[index];
-        while (index > 0) {
-            const parentIdx = Math.floor((index - 1) / 2);
-            const parentEntry = this._elements[parentIdx];
-            if (currentEntry.priority < parentEntry.priority) {
-                this._elements[index] = parentEntry;
-                index = parentIdx;
-            } else {
+    #bubbleUp(idx) {
+        while (idx > 0) {
+            const parentIdx = Math.floor((idx - 1) / 2);
+            if (this.#elements[idx][0] >= this.#elements[parentIdx][0]) {
                 break;
             }
+            [this.#elements[idx], this.#elements[parentIdx]] = [this.#elements[parentIdx], this.#elements[idx]];
+            idx = parentIdx;
         }
-        this._elements[index] = currentEntry;
     }
 
-    _percolateDown(index) {
-        const lastIdx = this._elements.length - 1;
-        const currentEntry = this._elements[index];
+    #bubbleDown(idx) {
+        const lastIdx = this.#elements.length - 1;
         while (true) {
-            const leftChildIdx = 2 * index + 1;
-            const rightChildIdx = 2 * index + 2;
-            let smallestIdx = index;
+            let leftChildIdx = 2 * idx + 1;
+            let rightChildIdx = 2 * idx + 2;
+            let smallestIdx = idx;
 
-            if (leftChildIdx <= lastIdx && this._elements[leftChildIdx].priority < this._elements[smallestIdx].priority) {
+            if (leftChildIdx <= lastIdx && this.#elements[leftChildIdx][0] < this.#elements[smallestIdx][0]) {
                 smallestIdx = leftChildIdx;
             }
-
-            if (rightChildIdx <= lastIdx && this._elements[rightChildIdx].priority < this._elements[smallestIdx].priority) {
+            if (rightChildIdx <= lastIdx && this.#elements[rightChildIdx][0] < this.#elements[smallestIdx][0]) {
                 smallestIdx = rightChildIdx;
             }
 
-            if (smallestIdx !== index) {
-                this._elements[index] = this._elements[smallestIdx];
-                index = smallestIdx;
-            } else {
+            if (smallestIdx === idx) {
                 break;
             }
+
+            [this.#elements[idx], this.#elements[smallestIdx]] = [this.#elements[smallestIdx], this.#elements[idx]];
+            idx = smallestIdx;
         }
-        this._elements[index] = currentEntry;
     }
 }
 
-function locateShortestPath(initialNode, finalNode, pathType, totalNodes, adjacencies) {
-    const distanceRecords = new Map();
-    for (let current = 0; current < totalNodes; ++current) {
-        distanceRecords.set(current, Infinity);
+const calculateShortestPath = (startNode, targetNode, costType, graphStructure, totalNodes) => {
+    const distanceMap = new Map();
+    for (let i = 0; i < totalNodes; ++i) {
+        distanceMap.set(i, Infinity);
     }
+    distanceMap.set(startNode, 0);
 
-    distanceRecords.set(initialNode, 0);
-    const frontierQueue = new MinPathQueue();
-    frontierQueue.offer(0, initialNode);
+    const pathQueue = new MinPriorityQueue();
+    pathQueue.insert([0, startNode]);
 
-    while (!frontierQueue.isEmpty()) {
-        const [currentDist, currentNode] = frontierQueue.poll();
+    while (!pathQueue.isEmpty()) {
+        const [currentDist, currentNode] = pathQueue.extractMin();
 
-        if (currentDist > distanceRecords.get(currentNode)) {
+        if (currentDist > distanceMap.get(currentNode)) {
             continue;
         }
 
-        const neighbors = adjacencies.get(currentNode) || [];
-        for (const connectedPath of neighbors) {
-            const potentialNewDist = currentDist + connectedPath.getCost(pathType);
-            const neighborNode = connectedPath.destination;
+        const adjacentEdges = graphStructure.get(currentNode) || [];
+        adjacentEdges.forEach(edge => {
+            const neighborNode = edge.destination;
+            const edgeCost = (costType === 0) ? edge.costA : edge.costB;
+            const newDist = currentDist + edgeCost;
 
-            if (potentialNewDist < distanceRecords.get(neighborNode)) {
-                distanceRecords.set(neighborNode, potentialNewDist);
-                frontierQueue.offer(potentialNewDist, neighborNode);
+            if (newDist < distanceMap.get(neighborNode)) {
+                distanceMap.set(neighborNode, newDist);
+                pathQueue.insert([newDist, neighborNode]);
             }
-        }
+        });
     }
 
-    return distanceRecords.get(finalNode);
-}
+    return distanceMap.get(targetNode);
+};
 
-function commenceProcessing() {
+let inputBuffer = '';
+let inputTokens = [];
+let tokenIndex = 0;
+
+const readNextToken = () => {
+    if (tokenIndex >= inputTokens.length) {
+        throw new Error("Input token stream exhausted.");
+    }
+    return inputTokens[tokenIndex++];
+};
+
+const parseInteger = () => parseInt(readNextToken(), 10);
+
+const outputResult = (value) => console.log(value);
+
+const processGraphQueries = () => {
     while (true) {
-        const edgeQuantity = acquireDatum();
-        const vertexQuantity = acquireDatum();
+        const edgeCount = parseInteger();
+        const nodeCount = parseInteger();
 
-        if (vertexQuantity === 0 && edgeQuantity === 0) {
+        if (nodeCount === 0 && edgeCount === 0) {
             break;
         }
 
-        const graphAdjacencies = new Map();
-        for (let i = 0; i < vertexQuantity; ++i) {
-            graphAdjacencies.set(i, []);
+        const graphAdjacency = new Map();
+        for (let i = 0; i < nodeCount; ++i) {
+            graphAdjacency.set(i, []);
         }
 
-        for (let i = 0; i < edgeQuantity; ++i) {
-            const firstVertex = acquireDatum() - 1;
-            const secondVertex = acquireDatum() - 1;
-            const weightA = acquireDatum();
-            const weightB = acquireDatum();
+        for (let i = 0; i < edgeCount; ++i) {
+            const nodeU = parseInteger() - 1;
+            const nodeV = parseInteger() - 1;
+            const weightA = parseInteger();
+            const weightB = parseInteger();
 
-            const forwardEdge = new GraphEdge(secondVertex, weightA, weightB);
-            const backwardEdge = new GraphEdge(firstVertex, weightA, weightB);
-
-            graphAdjacencies.get(firstVertex).push(forwardEdge);
-            graphAdjacencies.get(secondVertex).push(backwardEdge);
+            graphAdjacency.get(nodeU).push({ destination: nodeV, costA: weightA, costB: weightB });
+            graphAdjacency.get(nodeV).push({ destination: nodeU, costA: weightA, costB: weightB });
         }
 
-        const queryQuantity = acquireDatum();
-        for (let i = 0; i < queryQuantity; ++i) {
-            const queryStart = acquireDatum() - 1;
-            const queryEnd = acquireDatum() - 1;
-            const queryType = acquireDatum();
+        const queryCount = parseInteger();
+        for (let i = 0; i < queryCount; ++i) {
+            const startNodeIdx = parseInteger() - 1;
+            const endNodeIdx = parseInteger() - 1;
+            const selectedCostType = parseInteger();
 
-            const result = locateShortestPath(queryStart, queryEnd, queryType, vertexQuantity, graphAdjacencies);
+            const result = calculateShortestPath(startNodeIdx, endNodeIdx, selectedCostType, graphAdjacency, nodeCount);
             outputResult(result);
         }
     }
-}
+};
 
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let accumulatedInput = '';
-process.stdin.on('data', function(chunk) {
-    accumulatedInput += chunk;
+process.stdin.on('data', (chunk) => {
+    inputBuffer += chunk;
 });
 
-process.stdin.on('end', function() {
-    dataBuffer = accumulatedInput.split(/\s+/);
-    commenceProcessing();
+process.stdin.on('end', () => {
+    inputTokens = inputBuffer.split(/\s+/).filter(token => token.length > 0);
+    processGraphQueries();
 });

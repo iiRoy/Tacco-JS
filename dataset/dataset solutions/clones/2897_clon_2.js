@@ -1,290 +1,180 @@
-const DataStreamReader = (function() {
-    /**
-     * Factory function to create a new input stream reader.
-     * It takes raw text input and prepares it for sequential reading.
-     * @param {string} sourceText The complete string of input data.
-     * @returns {StreamContext} An object capable of parsing the input.
-     */
-    function establishReader(sourceText) {
-        return new StreamContext(sourceText);
+var INPUT_PARSER = (function () {
+  // Internal function to create a new parser instance
+  function createParser(sourceText) {
+    return new InputReader(sourceText);
+  }
+
+  // Constructor for the InputReader class
+  function InputReader(sourceText) {
+    this._lineData = sourceText.trim().split("\n"); // Store lines as an array
+    this._currentLineIndex = 0; // Current line pointer
+  }
+
+  // Prototype method to read the next value from the current line
+  InputReader.prototype.readNextValue = function (asString) {
+    var currentLineArray = this._lineData;
+    var lineIdx = this._currentLineIndex;
+    var resultValue;
+
+    // If the current line hasn't been split yet, split it and reverse for pop efficiency
+    if (typeof currentLineArray[lineIdx] === "string") {
+      currentLineArray[lineIdx] = currentLineArray[lineIdx].split(" ").reverse();
     }
 
-    /**
-     * Constructor for the internal state of the input stream.
-     * Initializes the source lines and the current reading position.
-     * @param {string} rawInput The full input string to be processed.
-     */
-    function StreamContext(rawInput) {
-        // Stores each line of the input as an element in an array.
-        this._sourceLines = rawInput.trim().split("\n");
-        // Tracks the current line number being processed by the reader.
-        this._currentLineNum = 0;
+    // Pop the last element (which was the first before reversing)
+    resultValue = currentLineArray[lineIdx].pop();
+
+    // If the current line is exhausted, move to the next line
+    if (!currentLineArray[lineIdx].length) {
+      this._currentLineIndex++;
     }
 
-    /**
-     * Extracts a single token (word) from the current line of input.
-     * If the line has not been tokenized yet, it will be split.
-     * Moves to the next line if the current one is exhausted after extraction.
-     * @param {boolean} returnAsText If true, the token is returned as a string; otherwise, it's converted to a number.
-     * @returns {string|number} The extracted data item.
-     */
-    StreamContext.prototype.fetchSingleItem = function(returnAsText) {
-        let currentSource = this._sourceLines;
-        let currentLineIdx = this._currentLineNum;
-        let extractedValue;
+    // Return as string or number based on the 'asString' flag
+    return asString ? resultValue : +resultValue;
+  };
 
-        // On first access, tokenize the current line by splitting on spaces.
-        if (typeof currentSource[currentLineIdx] === "string") {
-            currentSource[currentLineIdx] = currentSource[currentLineIdx].split(" ").reverse();
-        }
+  // Prototype method to read all values from the current line
+  InputReader.prototype.readLineValues = function (asString) {
+    var lineContent = this._lineData[this._currentLineIndex++];
+    var splitContent = lineContent.split(" ");
+    // Return as strings or numbers
+    return asString ? splitContent : splitContent.map(item => +item);
+  };
 
-        // Retrieve the last token from the (reversed) array of tokens.
-        extractedValue = currentSource[currentLineIdx].pop();
+  // Prototype method to read a matrix of 'numRows' rows
+  InputReader.prototype.readMatrix = function (numRows, asString) {
+    var extractedData = this._lineData.slice(this._currentLineIndex, this._currentLineIndex += numRows);
+    var mappedData = extractedData.map(row => row.split(" "));
+    // Return as strings or numbers
+    return asString ? mappedData : mappedData.map(row => row.map(cell => +cell));
+  };
 
-        // If the current line is now empty, increment the line pointer.
-        if (!currentSource[currentLineIdx].length) {
-            this._currentLineNum++;
-        }
-        // Conditionally return the value as text or parsed number.
-        return returnAsText ? extractedValue : +extractedValue;
-    };
+  // Prototype method to read 'numLines' raw lines
+  InputReader.prototype.readRawLines = function (numLines, asString) {
+    var extractedData = this._lineData.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    // Return as strings or numbers
+    return asString ? extractedData : extractedData.map(line => +line);
+  };
 
-    /**
-     * Reads and processes an entire line of input, returning all its tokens.
-     * The line pointer is advanced after reading.
-     * @param {boolean} getTextOnly If true, tokens are returned as strings; otherwise, they are converted to numbers.
-     * @returns {Array<string|number>} An array containing all tokens from the read line.
-     */
-    StreamContext.prototype.obtainLineItems = function(getTextOnly) {
-        // Splits the current line into an array of strings and then advances the line index.
-        let sourceRow = this._sourceLines[this._currentLineNum++].split(" ");
-        // Maps the string tokens to numbers if getTextOnly is false.
-        return getTextOnly ? sourceRow : sourceRow.map(entryStr => +entryStr);
-    };
-
-    /**
-     * Retrieves a block of lines, treating each as a row in a matrix.
-     * Each line is tokenized. The line pointer is advanced by `numRowsToRead`.
-     * @param {number} numRowsToRead The count of lines to read as matrix rows.
-     * @param {boolean} asStringArray If true, matrix elements are strings; otherwise, numbers.
-     * @returns {Array<Array<string|number>>} A 2D array representing the matrix data.
-     */
-    StreamContext.prototype.getMatrixData = function(numRowsToRead, asStringArray) {
-        // Extracts a slice of lines and splits each into tokens.
-        let retrievedMatrix = this._sourceLines.slice(this._currentLineNum, this._currentLineNum += numRowsToRead).map(lineData => lineData.split(" "));
-        // Converts all matrix elements to numbers if `asStringArray` is false.
-        return asStringArray ? retrievedMatrix : retrievedMatrix.map(row => row.map(cellStr => +cellStr));
-    };
-
-    /**
-     * Fetches a specified number of raw lines without further tokenization.
-     * Advances the internal line pointer by the number of lines read.
-     * @param {number} rowsCount The total number of lines to retrieve.
-     * @param {boolean} keepAsStrings If true, lines are returned as raw strings; otherwise, converted to numbers.
-     * @returns {Array<string|number>} An array containing the raw lines or their numeric equivalents.
-     */
-    StreamContext.prototype.retrieveRawLines = function(rowsCount, keepAsStrings) {
-        // Slices the required number of lines from the source.
-        let resultLines = this._sourceLines.slice(this._currentLineNum, this._currentLineNum += rowsCount);
-        // Maps the lines to numbers if `keepAsStrings` is false.
-        return keepAsStrings ? resultLines : resultLines.map(lineValue => +lineValue);
-    };
-
-    return establishReader;
+  return createParser;
 })();
 
+// Initialize the input reader with content from stdin
+var inputReaderInstance = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-// Instantiate the input reader by consuming standard input.
-const dataInput = DataStreamReader(require("fs").readFileSync("/dev/stdin", "utf8"));
-
-/**
- * Dynamically constructs a multi-dimensional array filled with a specified initial value.
- * This function uses `eval` to create the nested array structure based on provided dimension sizes.
- * @param {any} initialFillValue The value to populate the innermost elements of the array.
- * @param {...number} dimensionSizes Variable number of arguments specifying the size of each dimension.
- * @returns {Array} A new multi-dimensional array.
- */
-function buildMultiArray(initialFillValue) {
-    const dimensionSizes = arguments;
-    let argCount = dimensionSizes.length;
-    // Constructs the string representation for the innermost array.
-    let creationString = `Array(dimensionSizes[${--argCount}]).fill(0).map(_val => { return ${initialFillValue}; })`;
-
-    // Iteratively wraps the string with outer array creation calls.
-    while (--argCount) {
-        creationString = `Array(dimensionSizes[${argCount}]).fill(0).map(_val => ${creationString})`;
-    }
-    // Executes the constructed string to create the array.
-    return eval(creationString);
+// Function to create a multi-dimensional array (not used in this specific problem, but part of the original utility)
+function createMultiDimArray(initialValue) {
+  var args = arguments,
+    argCount = args.length,
+    arrayCreationString = "Array(args[" + --argCount + "]).fill(0).map(x=>{return " + initialValue + ";})";
+  while (--argCount) arrayCreationString = "Array(args[" + argCount + "]).fill(0).map(x=>" + arrayCreationString + ")";
+  return eval(arrayCreationString);
 }
 
+// Define the modulus value
+var MODULUS_VALUE = 1000003;
 
-// A constant representing the prime modulus for all modular arithmetic operations.
-const PRIME_MODULO = 1000003;
-
-/**
- * Computes the modular product of multiple numbers.
- * It's optimized to prevent overflow in intermediate calculations by splitting numbers into high/low bits.
- * @param {...number} factors A variable number of numeric arguments to multiply.
- * @returns {number} The product of all factors modulo PRIME_MODULO.
- */
-function computeModProduct() {
-    const factors = arguments;
-    let currentProduct = factors[0];
-    let factorIndex = 1;
-
-    // Iterate through additional factors, applying modular multiplication.
-    while (factorIndex < factors.length) {
-        // This calculation splits the current product and the factor into 16-bit parts
-        // to handle numbers larger than 2^31-1 before applying the modulo,
-        // preventing overflow for intermediate results in standard JS number types.
-        currentProduct = (
-            ( (currentProduct >>> 16) * factors[factorIndex] % PRIME_MODULO * 65536) + // High 16 bits * factor
-            ( (currentProduct & 65535) * factors[factorIndex++])                       // Low 16 bits * factor
-        ) % PRIME_MODULO;
-    }
-    return currentProduct;
+// Function to perform multiplication with modulo operation
+function multiplyAndModulo() {
+  var operands = arguments,
+    currentProduct = operands[0],
+    idx = 1;
+  while (idx < operands.length) {
+    // Optimized multiplication for large numbers to prevent overflow before modulo
+    currentProduct = ((currentProduct >> 16) * operands[idx] % MODULUS_VALUE * 65536 + (currentProduct & 65535) * operands[idx++]) % MODULUS_VALUE;
+  }
+  return currentProduct;
 }
 
+// Cache for factorial values
+var factorialCache = [1, 1];
 
-// An array used to cache precomputed factorial values.
-// Initialized with 0! = 1 and 1! = 1.
-const factorialStorage = [1, 1];
-
-/**
- * Populates the `factorialStorage` array with factorial values modulo `PRIME_MODULO`
- * up to the specified `upperBound`.
- * @param {number} upperBound The maximum integer for which to compute the factorial.
- */
-function generateFactorials(upperBound) {
-    let loopCounter = 2; // Start from 2 as 0! and 1! are already set.
-    while (loopCounter <= upperBound) {
-        // Calculate current factorial using the previous one and modular multiplication.
-        factorialStorage[loopCounter] = computeModProduct(factorialStorage[loopCounter - 1], loopCounter++);
-    }
+// Function to precompute factorials up to a given limit
+function precomputeFactorials(limit) {
+  for (var counter = 2; counter <= limit;) {
+    factorialCache[counter] = multiplyAndModulo(factorialCache[counter - 1], counter++);
+  }
 }
 
-/**
- * Calculates the modular multiplicative inverse of a number `firstNum` modulo `PRIME_MODULO`.
- * Uses the Extended Euclidean Algorithm.
- * @param {number} firstNum The number for which to find the inverse.
- * @returns {number} The modular inverse, always a positive value within [0, PRIME_MODULO-1].
- */
-function calculateModInverse(firstNum) {
-    let secondNum = PRIME_MODULO;
-    let coeffX = 1, coeffY = 0; // Coefficients for the Bezout's identity (ax + by = gcd(a,b))
-    let tempVar;
-
-    // The core of the Extended Euclidean Algorithm.
-    while (secondNum) {
-        tempVar = Math.floor(firstNum / secondNum); // Quotient
-        firstNum -= tempVar * secondNum;
-        coeffX -= tempVar * coeffY;
-
-        // Swap (firstNum, secondNum) and (coeffX, coeffY)
-        tempVar = firstNum;
-        firstNum = secondNum;
-        secondNum = tempVar;
-
-        tempVar = coeffX;
-        coeffX = coeffY;
-        coeffY = tempVar;
-    }
-
-    // Ensure the result is positive and within the modulo range.
-    coeffX %= PRIME_MODULO;
-    return coeffX < 0 ? coeffX + PRIME_MODULO : coeffX;
+// Function to calculate modular multiplicative inverse using extended Euclidean algorithm
+function modularInverse(num) {
+  var modVal = MODULUS_VALUE,
+    x0 = 1,
+    x1 = 0,
+    temp;
+  while (modVal) {
+    temp = num / modVal | 0; // Integer division
+    num -= temp * modVal;
+    x0 -= temp * x1;
+    temp = num;
+    num = modVal;
+    modVal = temp;
+    temp = x0;
+    x0 = x1;
+    x1 = temp;
+  }
+  x0 %= MODULUS_VALUE;
+  return x0 < 0 ? x0 + MODULUS_VALUE : x0;
 }
 
-/**
- * Computes the number of permutations nPr (n choose r) modulo `PRIME_MODULO`.
- * nPr = n! / (n-r)! = n! * ((n-r)!)^(-1) mod M
- * @param {number} totalElements The total number of items 'n'.
- * @param {number} selectCount The number of items to choose 'r'.
- * @returns {number} The calculated nPr value modulo PRIME_MODULO.
- */
-function getPermutationMod(totalElements, selectCount) {
-    // Uses precomputed factorials and modular inverse.
-    return computeModProduct(
-        factorialStorage[totalElements],
-        calculateModInverse(factorialStorage[(totalElements - selectCount + PRIME_MODULO) % PRIME_MODULO])
-    );
+// Function to calculate nPr modulo MODULUS_VALUE
+function nPermutationModulo(totalItems, selectedItems) {
+  // nPr = n! / (n-r)!
+  // This is equivalent to n! * ( (n-r)! )^-1 mod MODULUS_VALUE
+  return multiplyAndModulo(factorialCache[totalItems], modularInverse(factorialCache[(totalItems - selectedItems + MODULUS_VALUE) % MODULUS_VALUE]));
 }
 
-/**
- * Calculates (baseValue ^ exponentValue) modulo `PRIME_MODULO` using binary exponentiation (exponentiation by squaring).
- * @param {number} baseValue The base of the exponentiation.
- * @param {number} exponentValue The exponent.
- * @returns {number} The result of the modular exponentiation.
- */
-function performModPower(baseValue, exponentValue) {
-    let powerResult = 1; // Initialize result to 1 (base^0).
-    // Loop continues as long as the exponent is greater than zero.
-    while (exponentValue > 0) {
-        // If the least significant bit of the exponent is 1, multiply result by current base.
-        if (exponentValue & 1) {
-            powerResult = computeModProduct(baseValue, powerResult);
-        }
-        // Square the base for the next iteration (effectively processing the next bit of the exponent).
-        baseValue = computeModProduct(baseValue, baseValue);
-        // Right shift the exponent by 1 (integer division by 2).
-        exponentValue >>= 1;
+// Function to calculate (base^exponent) modulo MODULUS_VALUE using binary exponentiation
+function powerModulo(base, exponent) {
+  var result = 1;
+  while (exponent) {
+    if (exponent & 1) { // If exponent is odd
+      result = multiplyAndModulo(base, result);
     }
-    return powerResult;
+    base = multiplyAndModulo(base, base); // Square the base
+    exponent >>= 1; // Divide exponent by 2
+  }
+  return result;
 }
 
+// Execute the main logic and print the result
+console.log(main());
 
-// Executes the main application logic and prints its return value to the console.
-console.log(runApplication());
+// Main function containing the problem's core logic
+function main() {
+  var queryCount = inputReaderInstance.readNextValue(); // Read the number of queries
+  var resultsArray = Array(queryCount).fill(0); // Initialize an array to store results
 
-/**
- * The main entry point for the application's logic.
- * It reads a series of queries from the input, performs specific modular arithmetic calculations
- * for each query, and compiles the results.
- * @returns {string} A string containing all the computed answers, each on a new line.
- */
-function runApplication() {
-    // Read the total number of queries to process.
-    let numberOfQueries = dataInput.fetchSingleItem();
-    // Initialize an array to store the answer for each query, pre-filled with zeros.
-    let outputResults = Array(numberOfQueries).fill(0);
+  precomputeFactorials(MODULUS_VALUE); // Precompute factorials up to MODULUS_VALUE
 
-    // Precompute all necessary factorial values up to the modulo.
-    generateFactorials(PRIME_MODULO);
+  // Process each query
+  for (var queryIndex = 0; queryIndex < queryCount; queryIndex++) {
+    var currentQueryData = inputReaderInstance.readLineValues(),
+      valX = currentQueryData[0],
+      valD = currentQueryData[1],
+      valN = currentQueryData[2];
 
-    // Iterate through each query to perform calculations.
-    for (let queryIterator = 0; queryIterator < numberOfQueries; queryIterator++) {
-        // Read the three parameters for the current query from a single line.
-        let currentQueryData = dataInput.obtainLineItems();
-        let initialValueX = currentQueryData[0];
-        let differenceD = currentQueryData[1];
-        let countN = currentQueryData[2];
-
-        // Handle specific conditions:
-        // If 'countN' is too large (greater than or equal to PRIME_MODULO), or 'initialValueX' is zero,
-        // the result for this query is implicitly 0 (due to zero-filled array and skip).
-        if (countN >= PRIME_MODULO || initialValueX === 0) {
-            outputResults[queryIterator] = 0; // Explicitly set to 0 for clarity.
-            continue; // Move to the next query.
-        }
-
-        // Branch based on the value of 'differenceD'.
-        if (differenceD === 0) {
-            // If difference is zero, calculate (initialValueX ^ countN) mod PRIME_MODULO.
-            outputResults[queryIterator] = performModPower(initialValueX, countN);
-        } else {
-            // If difference is non-zero, perform a more complex calculation.
-            // Step 1: Calculate an intermediate term 'a'.
-            let intermediateTermA = ((PRIME_MODULO - computeModProduct(initialValueX, calculateModInverse(differenceD))) % PRIME_MODULO + PRIME_MODULO) % PRIME_MODULO;
-            // Step 2: Calculate a permutation term 'p'.
-            let permutationTermP = getPermutationMod(intermediateTermA, countN);
-            // Step 3: Calculate a multiplier term 'm'.
-            let multiplierTermM = performModPower(PRIME_MODULO - differenceD, countN);
-            // Step 4: Combine 'p' and 'm' with modular multiplication.
-            outputResults[queryIterator] = computeModProduct(permutationTermP, multiplierTermM);
-        }
+    // Handle edge cases
+    if (valN >= MODULUS_VALUE || valX === 0) {
+      resultsArray[queryIndex] = 0; // If N is too large or X is 0, result is 0
+      continue;
     }
 
-    // Join all computed results with newline characters for final output.
-    return outputResults.join("\n");
+    if (valD === 0) {
+      // If D is 0, it's simply X^N mod MODULUS_VALUE
+      resultsArray[queryIndex] = powerModulo(valX, valN);
+    } else {
+      // General case: (X * (D^-1)) * (X + D) * ... * (X + (N-1)D) mod MODULUS_VALUE
+      // This can be rewritten as D^N * (X/D) * (X/D + 1) * ... * (X/D + N-1) mod MODULUS_VALUE
+      // Which is D^N * P((X/D) + N - 1, N) mod MODULUS_VALUE
+      // Let A = (X * D^-1) mod MODULUS_VALUE
+      // Then it's D^N * P(A + N - 1, N) mod MODULUS_VALUE
+      var intermediateA = ((MODULUS_VALUE - multiplyAndModulo(valX, modularInverse(valD))) % MODULUS_VALUE + MODULUS_VALUE) % MODULUS_VALUE;
+      var permutationResult = nPermutationModulo(intermediateA, valN);
+      var powerOfModMinusD = powerModulo(MODULUS_VALUE - valD, valN); // (MODULUS_VALUE - D)^N is equivalent to (-D)^N mod MODULUS_VALUE
+      resultsArray[queryIndex] = multiplyAndModulo(permutationResult, powerOfModMinusD);
+    }
+  }
+  // Join all results with newline characters
+  return resultsArray.join("\n");
 }

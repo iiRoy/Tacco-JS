@@ -1,70 +1,63 @@
-var rawDataObtainer = require("fs");
-var rawDataCollection = rawDataObtainer.readFileSync("/dev/stdin", "utf8");
-rawDataCollection = rawDataCollection.split("\n");
-var linePointer = 0;
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+
+rawData = rawData.split("\n");
+
+var currentLineIdx = 0;
+
 while (true) {
-    var entityCount = +rawDataCollection[linePointer++];
-    if (0 === entityCount) {
+    var numEntries = +rawData[currentLineIdx++];
+
+    if (numEntries === 0) {
         break;
     }
-    var processedTextFragments = [];
-    for (
-        var entryIndex = 0;
-        entryIndex < entityCount;
-        entryIndex++
-    ) {
-        processedTextFragments.push(rawDataCollection[linePointer++]);
+
+    var processedStrings = [];
+
+    for (var entryCounter = 0; entryCounter < numEntries; entryCounter++) {
+        processedStrings.push(rawData[currentLineIdx++]);
     }
-    processedTextFragments = processedTextFragments.map(
-        function (initialString) {
-            var abbreviatedForm = "";
-            var shouldCaptureNextChar = true;
-            for (
-                var charPosition = 0,
-                    stringCharacters = initialString;
-                charPosition < stringCharacters.length;
-                charPosition++
-            ) {
-                var currentCharacter = stringCharacters[charPosition];
-                if (shouldCaptureNextChar) {
-                    abbreviatedForm += currentCharacter;
-                    shouldCaptureNextChar = false;
-                }
-                if (/[aeiou]/.test(currentCharacter)) {
-                    shouldCaptureNextChar = true;
-                }
+
+    processedStrings = processedStrings.map(function (originalName) {
+        var filteredName = "";
+        var vowelFound = true;
+
+        for (var charIndex = 0; charIndex < originalName.length; charIndex++) {
+            var currentChar = originalName[charIndex];
+            if (vowelFound) {
+                filteredName += currentChar;
+                vowelFound = false;
             }
-            return abbreviatedForm;
-        }
-    ).sort();
-    var ascertainCommonPrefixLength = function (stringA, stringB) {
-        var minimalLength = Math.min(stringA.length, stringB.length);
-        for (var charIter = 0; charIter < minimalLength; charIter++) {
-            if (stringA[charIter] !== stringB[charIter]) {
-                return charIter;
+            if (/[aiueo]/.test(currentChar)) {
+                vowelFound = true;
             }
         }
-        if (stringA.length === stringB.length) {
+        return filteredName;
+    }).sort();
+
+    var findCommonPrefixLength = function (strA, strB) {
+        var minLength = Math.min(strA.length, strB.length);
+        for (var charComparisonIdx = 0; charComparisonIdx < minLength; charComparisonIdx++) {
+            if (strA[charComparisonIdx] !== strB[charComparisonIdx]) {
+                return charComparisonIdx;
+            }
+        }
+        if (strA.length === strB.length)
             return -1;
-        }
-        return minimalLength;
+        return minLength;
     };
-    var greatestPrefixValue = 0;
-    for (var fragmentIdx = 0; fragmentIdx < entityCount; fragmentIdx++) {
-        if (fragmentIdx === 0) {
+
+    var maxPrefixLength = 0;
+    for (var entryCounter = 0; entryCounter < numEntries; entryCounter++) {
+        if (entryCounter === 0)
             continue;
-        }
-        var currentAdjacentPrefix = ascertainCommonPrefixLength(
-            processedTextFragments[fragmentIdx - 1],
-            processedTextFragments[fragmentIdx]
-        );
-        if (currentAdjacentPrefix === -1) {
-            greatestPrefixValue = -2;
+        var currentPrefixLen = findCommonPrefixLength(processedStrings[entryCounter - 1], processedStrings[entryCounter]);
+        if (currentPrefixLen === -1) {
+            maxPrefixLength = -2;
             break;
         }
-        if (currentAdjacentPrefix > greatestPrefixValue) {
-            greatestPrefixValue = currentAdjacentPrefix;
+        if (currentPrefixLen > maxPrefixLength) {
+            maxPrefixLength = currentPrefixLen;
         }
     }
-    console.log(greatestPrefixValue + 1);
+    console.log(maxPrefixLength + 1);
 }

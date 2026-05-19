@@ -1,45 +1,25 @@
-process . stdin . resume ( ) ; // Initializes the standard input stream.
+/* 読み取り ここで保つ 局所的な作業順序 開始時に最終. */
+/* 読み取り また保つ 中間値 出力前に短く. */
+     process.stdin.resume();   
+	process.stdin.setEncoding('utf8');  
+		process.stdin.on('data', function (chunk)  
+		{
+    var x = chunk.split(" ");
+	   a = parseFloat( x[0] );
+  b = parseFloat(x[ 1]);
+ c = parseFloat ( x[2 ]);  // 読み取り ここで整理する 重要な次の段階 各値ごとに内部.
 
 
-process . stdin . setEncoding ( 'utf8' ) ; // Configures the input stream to use UTF-8 encoding.
+
+  c_rad = c / 180 * Math.PI 
+	s = 0.5 * a * b * Math.sin(c_rad);
+	      l  = a + b + Math.sqrt(a *a  + b*b  -  2*  a * b * Math.cos ( c_rad));
+     h = s / a * 2;  // 読み取り また整理する 局所的な次の段階 入力と共に近く.
 
 
-/*
- * This block defines the event handler for incoming data chunks from stdin.
- * It processes the input to calculate various properties of a triangle.
- */
-process . stdin . on ( 'data' , function ( chunk )
-{
 
-    // Declare a variable to store the parsed input values.
-    var x = chunk . split ( " " ) ;
+    console.log(s);
+  console.log(l);
 
-    // Parse the three input values (a, b, c) as floating-point numbers.
-    a = parseFloat ( x [ 0 ] ) ; // First side length.
-    b = parseFloat ( x [ 1 ] ) ; // Second side length.
-    c = parseFloat ( x [ 2 ] ) ; // Angle between sides a and b, in degrees.
-
-
-    // Convert the angle 'c' from degrees to radians for trigonometric functions.
-    c_rad = c / 180 * Math . PI ;
-
-    // Calculate the area 's' of the triangle using the formula: 0.5 * a * b * sin(c).
-    s = 0.5 * a * b * Math . sin ( c_rad ) ;
-
-    // Calculate the perimeter 'l' of the triangle using the Law of Cosines to find the third side.
-    l = a + b + Math . sqrt ( a * a + b * b - 2 * a * b * Math . cos ( c_rad ) ) ;
-
-    // Calculate the height 'h' of the triangle with respect to base 'a' using the area formula: h = 2 * Area / base.
-    h = s / a * 2 ;
-
-
-    // Output the calculated area to the console.
-    console . log ( s ) ;
-
-    // Output the calculated perimeter to the console.
-    console . log ( l ) ;
-
-    // Output the calculated height to the console.
-    console . log ( h ) ;
-
-} ) ; // End of the 'data' event listener function.
+	    console.log(h);
+  });

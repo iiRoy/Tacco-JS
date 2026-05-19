@@ -1,201 +1,154 @@
-// This segment contains essential input/output utilities and data processing functions.
-var lineHandler = require('input_line_processor').generateReader({
-  inboundStream:  process.stdin,
-  outboundStream: process.stdout
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-var   dataContainer;
-var   cachedLines = [];
+var dataProcessor;
+var inputLines = [];
 
-lineHandler.subscribeEvent('receivedLine', function(inputEntry) {
-  cachedLines.addEntry(inputEntry);
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-lineHandler.subscribeEvent('endSession', function() {
-  dataContainer = prepareData(cachedLines);
-  console.error('\n▲ Data Input ▼ Result Output'); // Modified console error message
-  ExecuteMainLogic();
+inputReader.on('close', function() {
+  dataProcessor = initializeInputHandler(inputLines);
+  console.error('\n↑入力 ↓出力');
+  executeSolution();
 });
 
-
-// Utility to create a deep duplicate of an object or a Set instance.
-function duplicateEntity(originalObject) {
+function createDeepCopy(originalObject) {
   return (originalObject instanceof Set) ? new Set(Array.from(originalObject)) : JSON.parse(JSON.stringify(originalObject));
 }
 
-// Retrieves the next integer from the processed input.
-function obtainInteger() {
-  return convertValue(fetchNext(), 1);
+function getNextInteger() {
+  return convertInput(fetchNextToken(), 1);
 }
 
-// Retrieves the next string array from the processed input.
-function obtainStringArray() {
-  return convertValue(fetchNext(), 2);
+function getNextStringArray() {
+  return convertInput(fetchNextToken(), 2);
 }
 
-// Retrieves the next integer array from the processed input.
-function obtainIntegerArray() {
-  return convertValue(fetchNext(), 4);
+function getNextIntegerArray() {
+  return convertInput(fetchNextToken(), 4);
 }
 
-// Retrieves the next character array from the processed input.
-function obtainCharArray() {
-  return convertValue(fetchNext(), 6);
+function getNextCharacterArray() {
+  return convertInput(fetchNextToken(), 6);
 }
 
-// Fetches the subsequent data item from the input stream.
-function fetchNext() {
-  return dataContainer.fetchNext();
+function fetchNextToken() {
+  return dataProcessor.fetchNextToken();
 }
 
-// Checks if there are more items remaining in the input stream.
-function hasRemaining() {
-  return dataContainer.hasRemaining();
+function hasMoreTokens() {
+  return dataProcessor.hasMoreTokens();
 }
 
-// Initializes the data container with the provided array of input lines.
-function prepareData(inputCollection) {
+function initializeInputHandler(sourceInput) {
   return {
-    sourceCollection: inputCollection,
-    currentIdx: 0,
-    maxElements: inputCollection.length,
-    hasRemaining: function() {
-      return (this.currentIdx < this.maxElements);
+    sourceData: sourceInput,
+    currentIndex: +0,
+    maximumIndex: sourceInput.length,
+    hasMoreTokens: function() {
+      return (this.currentIndex < this.maximumIndex);
     },
-    fetchNext: function() {
-      if (this.hasRemaining()) {
-        return this.sourceCollection[this.currentIdx++];
+    fetchNextToken: function() {
+      if (this.hasMoreTokens()) {
+        return this.sourceData[this.currentIndex++];
       } else {
-        throw new Error('InputOverflowError: Attempted to read past available data.'); // Custom error type and message
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
       }
     }
   };
 }
 
-// Outputs a given string to the standard console.
-function printOutput(messageString) {
-  console.log(messageString);
+function printOutput(message) {
+  console.log(message);
 }
 
-// Logs detailed debug information to the error console.
-function logDebug(debugItem) {
-  console.error('Debug Trace: ' + require('util').inspect(debugItem, false, null));
+function logDebugMessage(debugInfo) {
+  console.error('debug:' + require('util').inspect(debugInfo, !true, void 0));
 }
 
-/*
- * This function handles various data type transformations.
- * The 'conversionMode' parameter dictates the type of conversion:
- *   - 1: Converts input to an integer.
- *   - 2: Splits input string by spaces into a string array.
- *   - 4: Splits input string by spaces and maps elements to numbers.
- *   - 6: Splits input string into an array of individual characters.
- *   - 7: Splits input string into characters and converts each to a number.
- *   - 8: Joins array elements with a space separator.
- *   - 9: Joins array elements with a newline character.
- *   - 0: Joins array elements without any separator.
- *   - Any other value: Returns the input value unchanged.
- */
-function convertValue(itemValue, conversionMode) {
+function convertInput(inputValue, conversionType) {
   try {
-    switch (conversionMode) {
+    switch (conversionType) {
       case 1:
-        return parseInt(itemValue);
+        return parseInt(inputValue);
       case 2:
-        return itemValue.split(' ');
+        return inputValue.split(' ');
       case 4:
-        return itemValue.split(' ').map(Number);
+        return inputValue.split(' ').map(Number);
       case 6:
-        return itemValue.split('');
+        return inputValue.split('');
       case 7:
-        return itemValue.split('').map(Number);
+        return inputValue.split('').map(Number);
       case 8:
-        return itemValue.join(' ');
+        return inputValue.join(' ');
       case 9:
-        return itemValue.join('\n');
+        return inputValue.join('\n');
       case 0:
-        return itemValue.join('');
+        return inputValue.join('');
       default:
-        return itemValue;
+        return inputValue;
     }
-  } catch (errorObject) {
-    return itemValue; // If conversion fails, return the original item.
+  } catch (error) {
+    return inputValue;
   }
 }
 
-// End of the initial utility block.
-//----------------------------------------------------------------------------------------------------
+function executeSolution() {
+  var arraySize = getNextInteger();
+  var firstArray = getNextIntegerArray();
+  var secondArray = getNextIntegerArray();
+  var thirdArray = getNextIntegerArray();
 
-/**
- * Main function to orchestrate the program's primary logic.
- */
-function ExecuteMainLogic() {
-  var elementCount = obtainInteger();
-  var firstArray = obtainIntegerArray();
-  var secondArray = obtainIntegerArray();
-  var thirdArray = obtainIntegerArray();
+  firstArray.sort(numericSort);
+  secondArray.sort(numericSort);
+  thirdArray.sort(numericSort);
 
-  firstArray.sort(numberSorter);
-  secondArray.sort(numberSorter);
-  thirdArray.sort(numberSorter);
+  var totalCount = +0;
 
-  var finalSum = 0;
-
-  for (var iterationIdx = 0; iterationIdx < elementCount; iterationIdx++) {
-    var lowerCount = findThreshold(firstArray, secondArray[iterationIdx], true);
-    var upperCount = findThreshold(thirdArray, secondArray[iterationIdx], false);
-    finalSum += lowerCount * upperCount;
+  for (var idx = +0; idx < arraySize; idx++) {
+    var countBefore = performBinarySearch(firstArray, secondArray[idx], !false);
+    var countAfter = performBinarySearch(thirdArray, secondArray[idx], !true);
+    totalCount += countBefore * countAfter;
   }
 
-  printOutput(finalSum);
+  printOutput(totalCount);
 }
 
-/**
- * A standard numeric comparison function for sorting in ascending order.
- * @param {number} val1 - The first value for comparison.
- * @param {number} val2 - The second value for comparison.
- * @returns {number} A negative value if val1 < val2, positive if val1 > val2, zero if equal.
- */
-function numberSorter(val1, val2) {
-  return val1 - val2;
+function numericSort(valA, valB) {
+  return valA - valB;
 }
 
-/**
- * Performs a modified binary search on a sorted array to count elements
- * either less than or greater than a specific query value.
- *
- * @param {Array<number>} targetArr        The sorted array to perform the search on.
- * @param {number}        queryVal         The value to search for within the array.
- * @param {boolean}       isLowerBoundSearch If true, counts elements strictly less than queryVal.
- *                                         If false, counts elements strictly greater than queryVal.
- * @returns {number} The count of elements based on the search criteria.
- */
-function findThreshold(targetArr, queryVal, isLowerBoundSearch) {
-  var lowPtr = -1;
-  var highPtr = targetArr.length;
+function performBinarySearch(targetList, searchValue, findLowerBound) {
+  var lowIndex = -1;
+  var highIndex = targetList.length;
 
-  while (Math.abs(highPtr - lowPtr) > 1) {
-    var midpoint = Math.floor((highPtr + lowPtr) / 2);
-    if (isLowerBoundSearch) {
-      if (targetArr[midpoint] >= queryVal) {
-        highPtr = midpoint;
+  while (Math.abs(highIndex - lowIndex) > 1) {
+    var midIndex = Math.floor((highIndex + lowIndex) / 2);
+    if (findLowerBound) {
+      if (targetList[midIndex] >= searchValue) {
+        highIndex = midIndex;
       } else {
-        lowPtr = midpoint;
+        lowIndex = midIndex;
       }
     } else {
-      if (targetArr[midpoint] > queryVal) {
-        highPtr = midpoint;
+      if (targetList[midIndex] > searchValue) {
+        highIndex = midIndex;
       } else {
-        lowPtr = midpoint;
+        lowIndex = midIndex;
       }
     }
   }
 
-  if (isLowerBoundSearch) {
-    return lowPtr + 1;
+  if (findLowerBound) {
+    return lowIndex + 1;
   } else {
-    if (highPtr !== targetArr.length && targetArr[highPtr] === queryVal) {
-      lowPtr++;
+    if (highIndex !== targetList.length && targetList[highIndex] === searchValue) {
+      lowIndex++;
     }
-    return targetArr.length - (lowPtr + 1);
+    return targetList.length - (lowIndex + 1);
   }
 }

@@ -1,44 +1,28 @@
-let file_utility_module = require('fs'); // Obtain the built-in file system utility.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let raw_input_data = file_utility_module.readFileSync('/dev/stdin', 'utf8'); // Read all content from standard input using UTF-8 encoding.
+let lineSegments = (rawData.trim()).split("\n"); // Split the input into an array of lines.
 
-let processed_string_segments = raw_input_data
-    .trim() // Eliminate leading and trailing whitespace from the entire input.
-    .split("\n"); // Divide the input into an array of strings, one for each line.
+lineSegments.forEach(function(currentLine) {
+    // For each line, parse the numeric values.
+    let numericValues = currentLine.split(" ").map(Number);
 
-// Iterate through every individual processed string segment.
-processed_string_segments.forEach(function(current_line_item) {
+    let overlapCount = 0; // Initialize a counter for dimensional overlaps.
 
-    // For the current line, split it by spaces and convert each resulting substring into a number.
-    let numeric_coord_array = current_line_item
-        .split(" ")
-        .map(Number);
-
-    // Initialize a counter to track the number of dimensions where overlap is detected.
-    let overlap_dimension_counter = 0;
-
-    // Execute an immediately-invoked function expression (IIFE) to perform the overlap check.
-    // This function takes eight arguments representing the coordinates of two rectangles.
-    (function(rectangle_a_x1, rectangle_a_y1, rectangle_a_x2, rectangle_a_y2,
-              rectangle_b_x1, rectangle_b_y1, rectangle_b_x2, rectangle_b_y2) {
-
-        // Evaluate if there is an overlap along the horizontal (X) axis.
-        // Overlap exists if rectangle B's right edge is not to the left of rectangle A's left edge,
-        // AND rectangle B's left edge is not to the right of rectangle A's right edge.
-        if (rectangle_b_x2 >= rectangle_a_x1 && rectangle_b_x1 <= rectangle_a_x2) {
-            overlap_dimension_counter++; // Increment the counter if X-axis overlap is confirmed.
+    // Define an anonymous function to check for interval overlaps and immediately execute it.
+    (function(firstX1, firstY1, firstX2, firstY2, secondX1, secondY1, secondX2, secondY2) {
+        // Check if the X-intervals overlap.
+        // An overlap occurs if the end of the second interval is not before the start of the first,
+        // AND the start of the second interval is not after the end of the first.
+        if (secondX2 >= firstX1 && secondX1 <= firstX2) {
+            overlapCount++; // Increment if X-axis intervals intersect.
         }
 
-        // Evaluate if there is an overlap along the vertical (Y) axis.
-        // Overlap exists if rectangle B's top edge is not below rectangle A's bottom edge,
-        // AND rectangle B's bottom edge is not above rectangle A's top edge.
-        if (rectangle_b_y2 >= rectangle_a_y1 && rectangle_b_y1 <= rectangle_a_y2) {
-            overlap_dimension_counter++; // Increment the counter if Y-axis overlap is confirmed.
+        // Check if the Y-intervals overlap using the same logic.
+        if (secondY2 >= firstY1 && secondY1 <= firstY2) {
+            overlapCount++; // Increment if Y-axis intervals intersect.
         }
+    }).apply(null, numericValues); // Pass the parsed numbers as arguments to the function.
 
-    }).apply(null, numeric_coord_array); // Invoke the function, passing the numeric coordinate array as arguments.
-
-    // Output the final determination: "YES" if overlap was found in both dimensions (full intersection),
-    // otherwise "NO".
-    console.log((overlap_dimension_counter === 2) ? "YES" : "NO");
+    // Output "YES" if both X and Y dimensions showed an overlap, otherwise "NO".
+    console.log((overlapCount === 2) ? "YES" : "NO");
 });

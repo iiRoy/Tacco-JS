@@ -1,45 +1,20 @@
-/*
- * This JavaScript file enforces strict parsing and execution rules.
- */
-"use strict"
-;
+"use strict";
 
 /**
- * Initiates the primary computation routine.
- * @param {string} sourceData The complete input string received for processing.
+ * This function serves as the primary entry point for processing input data.
+ * It takes a raw string, parses it, and performs a specific calculation.
+ * @param {string} rawData The complete input string received from the environment.
  */
-function ProcessInput
-    (
-        sourceData
-    )
-{
-    // Divide the raw input string into separate components based on a space delimiter.
-    const valueSegments = sourceData . split ( " " ) ;
+function ProcessInput(rawData) {
+  // Divide the incoming string into an array of substrings based on space delimiter.
+  const numStrings = rawData.split(" ");
 
-    // Concatenate the initial two string components, then implicitly convert the result to a number
-    // and divide it by two before logging the final calculated value to the console.
-    console . log
-        (
-            (
-                valueSegments[0]
-                +
-                valueSegments[1]
-            )
-            /
-            2
-        )
-    ;
+  // Perform a calculation: concatenate the first two string elements,
+  // then implicitly convert the resulting string to a number and divide by two.
+  // The result is then printed to the standard output.
+  console.log((numStrings[0] + numStrings[1]) / 2);
 }
 
-// Retrieve the content from standard input synchronously using the file system module
-// and pass it to the main processing function for execution.
-ProcessInput
-(
-    require("fs")
-        . readFileSync
-            (
-                "/dev/stdin",
-                "utf8"
-            )
-)
-;
+// Execute the main processing function by reading data from standard input.
+// The input is read synchronously and decoded as UTF-8.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

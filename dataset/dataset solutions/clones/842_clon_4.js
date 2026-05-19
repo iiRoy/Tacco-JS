@@ -1,48 +1,23 @@
-const lineProcessor = require('readline').createInterface({ input: process.stdin });
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const lineData = fileContent.trim().split('\n');
 
-let receivedLines = [];
+const itemCount = parseInt(lineData.shift(), 10);
 
-lineProcessor.on('line', (individualLine) => {
-    receivedLines.push(individualLine.trim());
+const items = lineData.slice(0, itemCount).map(line => {
+    const [availabilityValue, capacityValue] = line.split(' ').map(Number);
+    return { availability: availabilityValue, capacity: capacityValue };
 });
 
-lineProcessor.on('close', () => {
-    let currentLinePointer = 0;
+items.sort((itemA, itemB) => itemB.capacity - itemA.capacity);
 
-    const fetchNextValue = () => receivedLines[currentLinePointer++];
+const maximumAchieved = Array.from({ length: 100000 }, (_, index) => index + 2)
+    .reduce((currentMax, currentThreshold) => {
+        const currentSelectionCount = items
+            .filter(currentItem => currentItem.availability <= currentThreshold)
+            .reduce((accumulator, currentItem) => {
+                return (accumulator + 1 <= currentItem.capacity) ? accumulator + 1 : accumulator;
+            }, 0);
+        return Math.max(currentMax, currentSelectionCount);
+    }, 0);
 
-    const totalItemCount = parseInt(fetchNextValue(), 10);
-
-    const dataObjects = [];
-    for (let currentItem = 0; currentItem < totalItemCount; currentItem++) {
-        const componentStrings = fetchNextValue().split(" ");
-        dataObjects.push({
-            deadline: parseInt(componentStrings[0], 10),
-            threshold: parseInt(componentStrings[1], 10)
-        });
-    }
-
-    // Order data by 'threshold' in descending sequence
-    dataObjects.sort((firstElement, secondElement) => secondElement.threshold - firstElement.threshold);
-
-    // Function to determine the quantity of selected elements for a specific time limit
-    const determineSelectedQuantity = (timeLimit, orderedData) => {
-        return orderedData.reduce((accumulatedQuantity, currentElement) => {
-            if (currentElement.deadline <= timeLimit && currentElement.threshold > accumulatedQuantity) {
-                return accumulatedQuantity + 1;
-            }
-            return accumulatedQuantity;
-        }, 0);
-    };
-
-    // Construct a numerical range from 2 to 100001 (inclusive)
-    const possibleTimeLimits = Array.from({ length: 100000 }, (_, index) => index + 2);
-
-    // Compute the selected quantity for each time limit and find the largest among them
-    const allComputedQuantities = possibleTimeLimits.map(limit => determineSelectedQuantity(limit, dataObjects));
-    
-    const ultimateMaximum = allComputedQuantities.reduce((currentHigh, value) => Math.max(currentHigh, value), 0);
-
-    // Deliver the final outcome
-    process.stdout.write((ultimateMaximum - 1).toString() + '\n');
-});
+console.log(maximumAchieved - 1);

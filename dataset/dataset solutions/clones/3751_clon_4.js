@@ -1,32 +1,15 @@
-function exponentiation(baseVal, expVal) {
-    const actualExp = Math.trunc(expVal);
+function processInput(rawData) {
+    const parts = rawData.match(/\S+/g);
+    
+    const exponentVal = Math.trunc(Number(parts[0]));
+    const factorVal = Math.trunc(Number(parts[1]));
 
-    if (actualExp === 0) {
-        return 1;
+    let calculatedPower = 1;
+    for (let currentIteration = 0; currentIteration < exponentVal; currentIteration++) {
+        calculatedPower *= 100;
     }
-    if (actualExp < 0) {
-        return 1 / exponentiation(baseVal, -actualExp);
-    }
-    return baseVal * exponentiation(baseVal, actualExp - 1);
+
+    console.log(calculatedPower * factorVal);
 }
 
-function processingRoutine(sourceText) {
-    const numberSet = sourceText.split(' ').map(Number);
-
-    const firstDatum = numberSet[0];
-    const secondDatum = numberSet[1];
-
-    const intermediateProduct = exponentiation(100, firstDatum);
-
-    const finalProduct = intermediateProduct * Math.trunc(secondDatum);
-
-    console.log(finalProduct);
-}
-
-let dataChunks = '';
-process.stdin.on('data', inputReceiver => {
-    dataChunks += inputReceiver;
-});
-process.stdin.on('end', () => {
-    processingRoutine(dataChunks.trim());
-});
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

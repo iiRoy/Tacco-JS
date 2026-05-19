@@ -1,70 +1,45 @@
-'use strict'; // Strictly enforce good coding practices.
+'use strict';
 
-/**
- * Main entry point for processing incoming data.
- * This function handles reading and parsing multiple lines of input.
- * @param {string} rawData - The complete string of raw input.
- */
-function processInput(rawData) {
-  // Split the entire raw input string into individual lines.
-  const textRows = rawData.split('\n');
+// This function processes the raw input data.
+function processInputData(rawData) {
+  const inputLines = rawData.split('\n'); // Split the input string by newline characters.
 
-  // Remove the last element, which is often an empty string due to trailing newline.
-  textRows.pop();
+  inputLines.pop(); // Remove the last element, which might be an empty string if the input ends with a newline.
 
-  // Iterate over each significant line of text.
-  textRows.forEach(currentSegment => {
-    /*
-     * For every line, divide it into parts based on space.
-     * Then, parse the numerical values from these parts.
-     */
-    const parts = currentSegment.split(' ');
-    const firstNum = parseInt(parts[0], 10); // Convert the first part to an integer.
-    const secondNum = parseInt(parts[1], 10); // Convert the second part to an integer.
+  inputLines.forEach(currentLine => {
+    const parts = currentLine.split(' '); // Split each line by space to get two string parts.
+    const firstNum = parseInt(parts[0], 10); // Parse the first part as an integer (base 10).
+    const secondNum = parseInt(parts[1], 10); // Parse the second part as an integer (base 10).
 
-    // Call the sequence generation utility with the extracted numbers.
-    generateSequence(firstNum, secondNum);
+    calculateAndPrintRange(firstNum, secondNum); // Call the helper function with the parsed numbers.
   });
 }
 
+// This function calculates and prints a range of numbers based on the given parameters.
+function calculateAndPrintRange(firstNum, secondNum) {
+  const rangeOffset = firstNum - 1; // Determine the offset for the range calculation.
 
-// --- Utility function for generating and displaying a number sequence ---
+  const lowerBound = -1000000; // Define the absolute minimum allowed value.
+  const upperBound = 1000000; // Define the absolute maximum allowed value.
 
-/**
- * Generates and prints a sequence of integers based on provided parameters.
- * The sequence is centered around `centerVal` with a range derived from `baseVal`.
- * It's also clamped within predefined absolute bounds.
- * @param {number} baseVal - The base value used to determine the sequence's spread.
- * @param {number} centerVal - The central value around which the sequence is generated.
- */
-function generateSequence(baseVal, centerVal) {
-  // Calculate the offset for the sequence range.
-  const rangeOffset = baseVal - 1;
+  let effectiveMin = secondNum - rangeOffset; // Calculate the initial minimum for the output range.
+  let effectiveMax = secondNum + rangeOffset; // Calculate the initial maximum for the output range.
 
-  // Define the absolute minimum and maximum boundaries for the sequence.
-  const lowerBound = -1_000_000; // Absolute minimum value.
-  const upperBound = 1_000_000; // Absolute maximum value.
-
-  // Calculate the initial minimum and maximum values for the sequence.
-  let calculatedMin = centerVal - rangeOffset;
-  let calculatedMax = centerVal + rangeOffset;
-
-  // Ensure the calculated minimum does not fall below the absolute lower bound.
-  if (calculatedMin < lowerBound) {
-    calculatedMin = lowerBound;
+  // Adjust the effective minimum if it falls below the absolute lower bound.
+  if (effectiveMin < lowerBound) {
+    effectiveMin = lowerBound;
   }
 
-  // Ensure the calculated maximum does not exceed the absolute upper bound.
-  if (calculatedMax > upperBound) {
-    calculatedMax = upperBound;
+  // Adjust the effective maximum if it exceeds the absolute upper bound.
+  if (effectiveMax > upperBound) {
+    effectiveMax = upperBound;
   }
 
-  // Loop through the determined range and print each number.
-  for (let sequenceElement = calculatedMin; sequenceElement <= calculatedMax; sequenceElement++) {
-    console.log(sequenceElement); // Output the current sequence number to console.
+  // Iterate from the adjusted minimum to the adjusted maximum and print each number.
+  for (let currentValue = effectiveMin; currentValue <= effectiveMax; currentValue++) {
+    console.log(currentValue);
   }
 }
 
-// Execute the primary function by reading input from standard input.
-// This assumes an environment where 'fs' module is available (e.g., Node.js).
-processInput(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// Read input from standard input and pass it to the main processing function.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

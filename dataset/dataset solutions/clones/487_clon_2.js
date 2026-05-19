@@ -1,123 +1,122 @@
-function pathSearcher ( )
-{
-   // This object stores visited states (row, column) to prevent re-processing
-   var visitedNodes = {};
+function solveMaze() {
+  // This object tracks visited cells to prevent redundant processing.
+  // Keys are formatted as "row,column".
+  let visitedCells = {};
 
-   // Initialize the result value to 'NA' (Not Available)
-   var finalPathLength = "NA";
+  // Stores the final result, initialized to "NA" if no path is found.
+  let resultValue = "NA";
 
-   // The queue of paths to explore, each element is [row, column, length]
-   var queueOfPaths = [ [0, 0, 0], [1, 0, 0] ];
+  // A queue for Breadth-First Search (BFS), storing [row, column, steps] tuples.
+  // Starts at (0,0) and (1,0) with 0 steps.
+  let processingQueue = [
+    [0, 0, 0],
+    [1, 0, 0]
+  ];
 
-   while ( true )
-   {
-      // If there are no more paths to explore, exit the loop
-      if ( queueOfPaths.length === 0 )
-      {
-         break;
+  // Main BFS loop. Continues until the queue is empty or a solution is found.
+  while (true) {
+    // If the queue is empty, no more paths to explore.
+    if (processingQueue.length === 0) {
+      break;
+    }
+
+    // Dequeue the next state to process.
+    let currentPath = processingQueue.shift();
+
+    // Extract current row, column, and step count.
+    let currentRow = currentPath[0];
+    let currentCol = currentPath[1];
+    let stepCount = currentPath[2];
+
+    // Form a unique key for the current cell.
+    let cellKey = currentRow + "," + currentCol;
+
+    // If this cell has already been visited, skip it to avoid cycles and redundant work.
+    if (visitedCells.hasOwnProperty(cellKey)) {
+      continue;
+    } else {
+      // Mark the current cell as visited.
+      visitedCells[cellKey] = true;
+    }
+
+    // Check if the target column (n-1) has been reached and the cell type is not '2'.
+    // If so, a solution is found.
+    if (currentCol === gridWidth - 1 && gridData[currentRow][currentCol] !== 2) {
+      resultValue = stepCount; // Store the number of steps.
+      break; // Exit the main loop as the shortest path is found.
+    }
+
+    // Get the type of the current cell from the grid.
+    let cellType = gridData[currentRow][currentCol];
+
+    // Handle movement based on cell type.
+    if (cellType === 1) {
+      // Cell type '1': Move right as long as cells are '1' or until the end of the row.
+      let reachedEnd = false;
+      while (true) {
+        currentCol++; // Move one step right.
+        // If the end of the row is reached, set flag and break.
+        if (currentCol === gridWidth - 1) {
+          reachedEnd = true;
+          break;
+        }
+        // If the next cell is not '1', stop moving right and backtrack one step.
+        if (gridData[currentRow][currentCol] !== 1) {
+          currentCol--;
+          break;
+        }
       }
-
-      // Get the next path segment from the front of the queue
-      var currentPathSegment = queueOfPaths.shift();
-
-      // Extract coordinates and path length from the current segment
-      var currentRow = currentPathSegment[0];
-      var currentColumn = currentPathSegment[1];
-
-      // Check if this node has been visited before
-      if ( visitedNodes.hasOwnProperty( currentRow + "," + currentColumn ) )
-      {
-         continue; // Skip if already visited
+      // If the end of the row was reached during '1' movement, it's a solution.
+      if (reachedEnd) {
+        resultValue = stepCount;
+        break;
       }
-      else
-      {
-         // Mark the current node as visited
-         visitedNodes[ currentRow + "," + currentColumn ] = true;
+    } else if (cellType === 2) {
+      // Cell type '2': Move left as long as cells are '2'.
+      while (true) {
+        currentCol--; // Move one step left.
+        // If the next cell is not '2', stop moving left.
+        if (gridData[currentRow][currentCol] !== 2) {
+          break;
+        }
       }
+    }
 
-      var segmentLength = currentPathSegment[2];
+    // After potential special movements, add next possible states to the queue.
+    // This involves switching rows (1-currentRow) and exploring three adjacent columns (currentCol, currentCol+1, currentCol+2).
+    for (let offsetIndex = 0; offsetIndex <= 2; offsetIndex++) {
+      processingQueue.push([1 - currentRow, currentCol + offsetIndex, stepCount + 1]);
+    }
+  }
 
-      // Check if the target column is reached and the cell type is not a specific blocker (type 2)
-      if ( currentColumn === gridDimension - 1 && gridConfiguration[currentRow][currentColumn] !== 2 )
-      {
-         finalPathLength = segmentLength; // Update the result with the current path length
-         break; // Target reached, exit the main search loop
-      }
-
-      // Determine the type of the current cell
-      var cellType = gridConfiguration[currentRow][currentColumn];
-
-      // Special handling for cell type 1 (move right until boundary or non-1 cell)
-      if ( cellType === 1 )
-      {
-         var reachedTarget = false;
-         while ( true )
-         {
-            currentColumn++; // Move one step right
-            if ( currentColumn === gridDimension - 1 ) // If we hit the right boundary
-            {
-               reachedTarget = true; // Mark that target was reached
-               break;
-            }
-            if ( gridConfiguration[currentRow][currentColumn] !== 1 ) // If the next cell is not type 1
-            {
-               currentColumn--; // Step back, as the current cell is not type 1
-               break;
-            }
-         }
-         if ( reachedTarget ) // If the target was reached by continuous movement
-         {
-            finalPathLength = segmentLength; // Update the result
-            break; // Exit the main search loop
-         }
-      }
-      // Special handling for cell type 2 (move left until non-2 cell)
-      else if ( cellType === 2 )
-      {
-         while ( true )
-         {
-            currentColumn--; // Move one step left
-            if ( gridConfiguration[currentRow][currentColumn] !== 2 ) // If the next cell is not type 2
-            {
-               break; // Stop moving left
-            }
-         }
-      }
-      // For all cell types, explore neighbors in the other row
-      for ( var neighborOffset = 0; neighborOffset <= 2; neighborOffset++ )
-      {
-         // Add potential next states to the queue: switch row, move to currentColumn + offset, increment length
-         queueOfPaths.push( [ 1 - currentRow, currentColumn + neighborOffset, segmentLength + 1 ] );
-      }
-   }
-   return finalPathLength; // Return the calculated path length
+  return resultValue; // Return the calculated result.
 }
 
-// Read input from standard input
-var fileData = require('fs') .readFileSync( '/dev/stdin', 'utf8' );
+// Read input from standard input.
+let rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-// Process the input data: trim whitespace and split into lines
-var inputLinesArray = fileData .trim() .split( "\n" );
+// Process the input: trim whitespace and split into lines.
+let inputLines = rawData.trim().split("\n");
 
-// Main loop to process multiple test cases
-while ( true )
-{
-   // Get the grid dimension for the current test case and convert to number
-   var gridDimension = inputLinesArray.shift() - 0;
+// Loop through test cases until 'n' is 0.
+while (true) {
+  // Read the grid width (n) for the current test case and convert to number.
+  let gridWidth = inputLines.shift() - 0;
 
-   // If gridDimension is 0, it signifies the end of input
-   if ( gridDimension === 0 )
-   {
-      break;
-   }
+  // If n is 0, it's the end of input.
+  if (gridWidth === 0) {
+    break;
+  }
 
-   // Initialize the grid configuration for two rows
-   var gridConfiguration = [];
-   // Parse the first row of the grid
-   gridConfiguration[0] = inputLinesArray.shift() .split( " " ) .map( Number );
-   // Parse the second row of the grid
-   gridConfiguration[1] = inputLinesArray.shift() .split( " " ) .map( Number );
+  // Initialize the grid data structure.
+  let gridData = [];
 
-   // Call the path searcher function and print the result
-   console.log( pathSearcher() );
+  // Read the first row of the grid, split by spaces, and convert to numbers.
+  gridData[0] = inputLines.shift().split(" ").map(Number);
+
+  // Read the second row of the grid, split by spaces, and convert to numbers.
+  gridData[1] = inputLines.shift().split(" ").map(Number);
+
+  // Call the maze solver function and print its result to console.
+  console.log(solveMaze());
 }

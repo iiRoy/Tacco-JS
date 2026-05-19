@@ -1,40 +1,31 @@
-// This function processes all incoming input data.
-const ExecuteProgram = (rawData) => {
+function ProcessInputData(rawData) {
+    // The initial raw input string is split into individual lines.
+    let processedLines = rawData.split("\n");
 
-    // The initial data is separated into distinct textual segments.
-    let processedLines = rawData.split('\n');
+    // The first line is treated as a sequence of characters.
+    let charSequence = processedLines[0];
+    // The second line is parsed as an integer, using base 10.
+    let thresholdValue = parseInt(processedLines[1], 10);
 
-    // Transform the first segment into its string representation.
-    let firstString = processedLines[0];
+    // Initialize a running total for calculations.
+    let cumulativeSum = 0;
+    // Define a large constant exponent for power operations.
+    const exponentFactor = 5 * Math.pow(10, 15);
 
-    // Convert the second segment into an integer value, using base 10.
-    let targetSum = parseInt(processedLines[1], 10);
+    // Iterate through each character in the sequence.
+    for (let idx = 0; idx < charSequence.length; idx++) {
+        // Add the current character raised to the exponent factor to the cumulative sum.
+        cumulativeSum += Math.pow(charSequence[idx], exponentFactor);
 
-    // Initialize an accumulator for calculations.
-    let currentAccumulation = 0;
-
-    // Define a very large exponent for mathematical operations.
-    const largeExponent = 5 * Math.pow(10, 15);
-
-    // Iterate through each character of the initial string.
-    for (let charIndex = 0; charIndex < firstString.length; charIndex++) {
-
-        // Add the power of the current character (converted to number) to the accumulator.
-        currentAccumulation += Math.pow(firstString[charIndex], largeExponent);
-
-        // Check if the accumulated value has reached or exceeded the target sum.
-        if (targetSum <= currentAccumulation) {
-
-            // If the condition is met, display the current character.
-            console.log('%d', firstString[charIndex]);
-            // And terminate the loop prematurely.
+        // Check if the cumulative sum has reached or exceeded the defined threshold.
+        if (thresholdValue <= cumulativeSum) {
+            // If the threshold is met, print the current character as an integer.
+            console.log('%d', charSequence[idx]);
+            // Exit the loop as the condition has been satisfied.
             break;
         }
     }
+}
 
-    // The final result is displayed.
-
-};
-
-// This specific invocation must not be altered; it reads input from standard input.
-ExecuteProgram(require('fs').readFileSync('/dev/stdin', 'utf8'));
+// This line handles reading input from standard input and passing it to the main processing function.
+ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,23 +1,16 @@
 "use strict";
 
-const processInformation = (sourceData) => {
-    const dataParts = sourceData.trim().split(/\s+/);
-    const firstRelevantPart = dataParts[0];
+const processInputData = (inputDataString) => {
+    const numericalValue = Number(inputDataString.trim().split(/\s+/)[0]);
 
-    let numericRepresentation = Number(firstRelevantPart);
+    // The original logic determines a result based on whether the input is even or odd.
+    // If even, it's N / 2.
+    // If odd, it's Math.floor(N / 2) + 1.
+    // This combined behavior is mathematically equivalent to Math.ceil(N / 2)
+    // for positive integers N.
 
-    if (Number.isNaN(numericRepresentation)) {
-        return "NaN";
-    }
-
-    const calculatedOutcome = (numericRepresentation + 1) >>> 1;
-
-    return calculatedOutcome.toString();
+    const computedOutcome = Math.ceil(numericalValue / 2);
+    console.log(computedOutcome);
 };
 
-const filesystemAccessor = require('fs');
-const standardInputLocation = '/dev/stdin';
-const textContentEncoding = 'utf8';
-
-const rawContentBuffer = filesystemAccessor.readFileSync(standardInputLocation, textContentEncoding);
-console.log(processInformation(rawContentBuffer));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

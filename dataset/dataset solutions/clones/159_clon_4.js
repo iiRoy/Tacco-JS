@@ -1,55 +1,43 @@
-const symbolValues = Object.freeze({
-    'I': 1,
-    'V': 5,
-    'X': 10,
-    'L': 50,
-    'C': 100,
-    'D': 500,
-    'M': 1000
-});
+const numeralValueMap = new Map([
+    ['I', 1], ['V', 5], ['X', 10], ['L', 50], ['C', 100], ['D', 500], ['M', 1000]
+]);
 
-const obtainNumerical = (charElement) => {
-    const referenceString = ".IVXLCDM";
-    const originalIndex = referenceString.indexOf(charElement);
-
-    if (originalIndex !== -1) {
-        return symbolValues[charElement];
-    } else {
-        const exponent = Math.floor(originalIndex / 2);
-        const modulus = originalIndex % 2;
-        return Math.pow(10, exponent) / (2 - modulus);
+const calculateRomanValue = (inputSegment) => {
+    if (!inputSegment) {
+        return 0;
     }
+
+    let accumulatedTotal = 0;
+    let previousSymbolValue = 0;
+
+    for (let currentPosition = inputSegment.length - 1; currentPosition >= 0; currentPosition--) {
+        const currentSymbolChar = inputSegment[currentPosition];
+        const currentSymbolNumeric = numeralValueMap.get(currentSymbolChar);
+
+        if (currentSymbolNumeric < previousSymbolValue) {
+            accumulatedTotal -= currentSymbolNumeric;
+        } else {
+            accumulatedTotal += currentSymbolNumeric;
+        }
+        previousSymbolValue = currentSymbolNumeric;
+    }
+    return accumulatedTotal;
 };
 
-let capturedBuffer = '';
-process.stdin.setEncoding('utf8');
+const entireInput = require("fs").readFileSync("/dev/stdin", "utf8");
 
-process.stdin.on('data', (incomingChunk) => {
-    capturedBuffer += incomingChunk;
-});
+let lineCharacters = [];
+let inputIndex = 0;
 
-process.stdin.on('end', () => {
-    const parsedLines = capturedBuffer.trim().split('\n');
+while (inputIndex < entireInput.length) {
+    const currentInputChar = entireInput[inputIndex];
 
-    parsedLines.forEach((currentLineSegment) => {
-        if (currentLineSegment.length > 0) {
-            const finalLineSum = Array.from(currentLineSegment).reduce((state, currentSymbol) => {
-                let [currentSum, previousSymbolValue] = state;
-
-                const numericRepresentation = obtainNumerical(currentSymbol);
-
-                currentSum += numericRepresentation;
-
-                if (numericRepresentation > previousSymbolValue) {
-                    currentSum -= previousSymbolValue * 2;
-                }
-
-                previousSymbolValue = numericRepresentation;
-
-                return [currentSum, previousSymbolValue];
-            }, [0, 0]);
-
-            process.stdout.write(finalLineSum[0] + '\n');
-        }
-    });
-});
+    if (currentInputChar === '\n') {
+        const currentRomanString = lineCharacters.join('');
+        console.log(calculateRomanValue(currentRomanString));
+        lineCharacters = [];
+    } else {
+        lineCharacters.push(currentInputChar);
+    }
+    inputIndex++;
+}

@@ -1,99 +1,136 @@
-const InputFeeder = (sourceText) => {
-  const allDataLines = sourceText.trim().split('\n');
-  let currentLineIndex = 0;
-  let processedLineBuffer = null;
-  let processedLineOriginIndex = -1;
+const createInputParser = (sourceText) => {
+    const allLines = sourceText.trim().split('\n');
+    let currentLineIndex = 0;
+    let currentLineTokens = [];
+    let currentTokenIndex = 0;
 
-  const retrieveNumericItem = () => {
-    if (processedLineOriginIndex !== currentLineIndex) {
-      if (currentLineIndex >= allDataLines.length) {
-        throw new Error("Input exhaustion for numeric item.");
-      }
-      processedLineBuffer = allDataLines[currentLineIndex].split(' ').reverse();
-      processedLineOriginIndex = currentLineIndex;
-    }
-    const val = Number(processedLineBuffer.pop());
-    if (processedLineBuffer.length === 0) {
-      currentLineIndex++;
-      processedLineBuffer = null;
-      processedLineOriginIndex = -1;
-    }
-    return val;
-  };
+    const advanceToNextLine = () => {
+        currentLineIndex++;
+        currentTokenIndex = 0;
+        currentLineTokens = [];
+        if (currentLineIndex < allLines.length) {
+            currentLineTokens = allLines[currentLineIndex].split(' ');
+        }
+    };
 
-  const retrieveLineItems = () => {
-    if (currentLineIndex >= allDataLines.length) {
-      throw new Error("Input exhaustion for line items.");
-    }
-    const items = allDataLines[currentLineIndex].split(' ').map(Number);
-    currentLineIndex++;
-    processedLineBuffer = null;
-    processedLineOriginIndex = -1;
-    return items;
-  };
+    const retrieveNextToken = (returnAsString) => {
+        if (currentTokenIndex >= currentLineTokens.length) {
+            advanceToNextLine();
+            if (currentLineIndex >= allLines.length) {
+                return undefined;
+            }
+        }
+        const tokenValue = currentLineTokens[currentTokenIndex++];
+        return returnAsString ? tokenValue : Number(tokenValue);
+    };
 
-  const retrieveMultipleLines = (count) => {
-    const collectedMatrix = [];
-    for (let index = 0; index < count; index++) {
-      collectedMatrix.push(retrieveLineItems());
-    }
-    return collectedMatrix;
-  };
+    const retrieveFullLineTokens = (returnAsString) => {
+        if (currentTokenIndex > 0 && currentTokenIndex < currentLineTokens.length) {
+            advanceToNextLine();
+        }
+        if (currentLineIndex >= allLines.length) {
+            return undefined;
+        }
+        const lineContent = allLines[currentLineIndex];
+        advanceToNextLine();
+        const tokens = lineContent.split(' ');
+        return returnAsString ? tokens : tokens.map(Number);
+    };
 
-  return {
-    retrieveNumericItem,
-    retrieveLineItems,
-    retrieveMultipleLines,
-  };
+    const retrieveMultipleLinesTokens = (count, returnAsString) => {
+        if (currentTokenIndex > 0 && currentTokenIndex < currentLineTokens.length) {
+            advanceToNextLine();
+        }
+        const collectedLines = [];
+        for (let i = 0; i < count; i++) {
+            if (currentLineIndex >= allLines.length) {
+                break;
+            }
+            const lineContent = allLines[currentLineIndex];
+            advanceToNextLine();
+            collectedLines.push(returnAsString ? lineContent.split(' ') : lineContent.split(' ').map(Number));
+        }
+        return collectedLines;
+    };
+
+    const retrieveRawLines = (count, returnAsString) => {
+        if (currentTokenIndex > 0 && currentTokenIndex < currentLineTokens.length) {
+            advanceToNextLine();
+        }
+        const collectedRawLines = [];
+        for (let i = 0; i < count; i++) {
+            if (currentLineIndex >= allLines.length) {
+                break;
+            }
+            const lineContent = allLines[currentLineIndex];
+            advanceToNextLine();
+            collectedRawLines.push(returnAsString ? lineContent : Number(lineContent));
+        }
+        return collectedRawLines;
+    };
+
+    if (allLines.length > 0) {
+        currentLineTokens = allLines[0].split(' ');
+    }
+
+    return {
+        fetchAtom: retrieveNextToken,
+        fetchLine: retrieveFullLineTokens,
+        fetchManyLines: retrieveMultipleLinesTokens,
+        fetchRawLines: retrieveRawLines,
+    };
 };
 
-const constructMultiDimensionalCollection = (initialElement, ...dimensions) => {
-  const recursivelyBuild = (currentDimensions, depthLevel) => {
-    if (depthLevel === currentDimensions.length) {
-      return initialElement;
-    }
-    const currentDimensionSize = currentDimensions[depthLevel];
-    return Array.from({
-      length: currentDimensionSize
-    }, () => recursivelyBuild(currentDimensions, depthLevel + 1));
-  };
-  return recursivelyBuild(dimensions, 0);
+const generateNestedArray = (initialValue, ...dimensions) => {
+    const constructArray = (remainingDimensions) => {
+        if (remainingDimensions.length === 0) {
+            return initialValue;
+        }
+        const currentDimensionSize = remainingDimensions[0];
+        const nextDimensions = remainingDimensions.slice(1);
+        return Array.from({ length: currentDimensionSize }, () => constructArray(nextDimensions));
+    };
+    return constructArray(dimensions);
 };
 
-const calculateCompositeSum = () => {
-  const dataSource = InputFeeder(require("fs").readFileSync("/dev/stdin", "utf8"));
+const inputSource = createInputParser(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-  const quantityOfElements = dataSource.retrieveNumericItem();
-  const quantityOfOperations = dataSource.retrieveNumericItem();
+function processData() {
+    const totalElements = inputSource.fetchAtom();
+    const modificationSetCount = inputSource.fetchAtom();
 
-  const elementValues = dataSource.retrieveLineItems().sort((valA, valB) => valA - valB);
-  const operationDetails = dataSource.retrieveMultipleLines(quantityOfOperations).sort((opA, opB) => opB[1] - opA[1]);
+    const elementValues = inputSource.fetchLine().sort((valA, valB) => valA - valB);
 
-  const evaluateOffers = (remainingOperations, currentElementSet, itemCursorPosition, totalElementCount) => {
-    if (remainingOperations.length === 0 || itemCursorPosition >= totalElementCount) {
-      return currentElementSet.reduce((accumulator, value) => accumulator + value, 0);
+    const modificationSets = inputSource.fetchManyLines(modificationSetCount);
+    modificationSets.sort((setA, setB) => setB[1] - setA[1]);
+
+    let elementPointer = 0;
+    let setPointer = 0;
+    let currentSetApplications = 0;
+
+    while (elementPointer < totalElements && setPointer < modificationSetCount) {
+        const [applicationLimit, modificationValue] = modificationSets[setPointer];
+
+        if (currentSetApplications >= applicationLimit) {
+            setPointer++;
+            currentSetApplications = 0;
+            continue;
+        }
+
+        if (elementValues[elementPointer] < modificationValue) {
+            elementValues[elementPointer] = modificationValue;
+            elementPointer++;
+            currentSetApplications++;
+        } else {
+            break;
+        }
     }
-    const [currentOfferQuantity, currentOfferValue] = remainingOperations[0];
-    let operationsToApply = currentOfferQuantity;
-    let localCursor = itemCursorPosition;
-    while (operationsToApply > 0 && localCursor < totalElementCount) {
-      if (currentElementSet[localCursor] < currentOfferValue) {
-        currentElementSet[localCursor] = currentOfferValue;
-        localCursor++;
-        operationsToApply--;
-      } else {
-        return currentElementSet.reduce((accumulator, value) => accumulator + value, 0);
-      }
+
+    let finalSum = 0;
+    for (const value of elementValues) {
+        finalSum += value;
     }
-    return evaluateOffers(
-      remainingOperations.slice(1),
-      currentElementSet,
-      localCursor,
-      totalElementCount
-    );
-  };
+    return finalSum;
+}
 
-  return evaluateOffers(operationDetails, elementValues, 0, quantityOfElements);
-};
-
-console.log(calculateCompositeSum());
+console.log(processData());

@@ -1,15 +1,15 @@
 "use strict";
 
-function SolveProblem(inputString) {
-    const finalResult = inputString.split('').reduce((accumulatorState, currentSymbol, currentPosition) => {
+function Main(sourceData) {
+    const processingOutcome = Array.from(sourceData).reduce((currentAccumulator, currentSymbol, currentPosition) => {
         if (currentSymbol === 'W') {
-            accumulatorState.netShifts += currentPosition - accumulatorState.processedWhites;
-            accumulatorState.processedWhites += 1;
+            currentAccumulator.cumulativeDisplacement += currentPosition - currentAccumulator.whiteMarkerCount;
+            currentAccumulator.whiteMarkerCount++;
         }
-        return accumulatorState;
-    }, { netShifts: 0, processedWhites: 0 });
+        return currentAccumulator;
+    }, { cumulativeDisplacement: 0, whiteMarkerCount: 0 });
 
-    console.log(finalResult.netShifts);
+    console.log(processingOutcome.cumulativeDisplacement);
 }
 
-SolveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

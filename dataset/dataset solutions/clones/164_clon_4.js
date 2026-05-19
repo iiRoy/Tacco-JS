@@ -1,60 +1,33 @@
-const systemIO = require("node:fs");
+const fileSystem = require("fs");
 
-function generateCipherParameters() {
-    const allCombinations = [];
-    let factor = 0;
-    while (factor < 26) {
-        let offset = 0;
-        while (offset < 26) {
-            allCombinations.push({ factorValue: factor, offsetValue: offset });
-            offset++;
-        }
-        factor++;
+const inputDataLines = fileSystem.readFileSync("/dev/stdin", "utf8").split('\n');
+
+const affineParameters = Array.from({ length: 26 }, (_, tIndex) => 25 - tIndex)
+    .flatMap(currentMultiplier =>
+        Array.from({ length: 26 }, (_, sIndex) => 25 - sIndex)
+            .map(currentShift => ({ multiplier: currentMultiplier, shift: currentShift }))
+    );
+
+const transformCharacter = (charToProcess, currentMultiplier, currentShift) => {
+    if (!/[\w]/.test(charToProcess)) {
+        return charToProcess;
     }
-    return allCombinations;
-}
+    const charCodeValue = charToProcess.charCodeAt(0);
+    const newCharCodeValue = (charCodeValue * currentMultiplier + currentShift) % 26 + 97;
+    return String.fromCharCode(newCharCodeValue);
+};
 
-function transformTextSegment(originalInput, factor, offset) {
-    let outputChars = [];
-    for (let charIndex = 0; charIndex < originalInput.length; charIndex++) {
-        const currentSymbol = originalInput[charIndex];
-        const symbolCode = currentSymbol.charCodeAt(0);
+inputDataLines.forEach(sourceLine => {
+    affineParameters.forEach(params => {
+        const { multiplier: currentT, shift: currentS } = params;
 
-        // Check if the character is a word character (alphanumeric or underscore)
-        const isAlphaNumOrUnderscore = (
-            (symbolCode >= 48 && symbolCode <= 57) || // 0-9
-            (symbolCode >= 65 && symbolCode <= 90) || // A-Z
-            (symbolCode >= 97 && symbolCode <= 122) || // a-z
-            symbolCode === 95 // _
+        const transformedLineCharacters = Array.from(sourceLine).map(charItem =>
+            transformCharacter(charItem, currentT, currentS)
         );
+        const processedString = transformedLineCharacters.join('');
 
-        if (isAlphaNumOrUnderscore) {
-            // Apply the affine-like transformation
-            const transformedCode = (symbolCode * factor + offset) % 26 + 97;
-            outputChars.push(String.fromCharCode(transformedCode));
-        } else {
-            outputChars.push(currentSymbol);
-        }
-    }
-    return outputChars.join('');
-}
-
-function checkKeywords(processedSegment) {
-    return processedSegment.includes("this") || processedSegment.includes("that");
-}
-
-const inputSource = systemIO.readFileSync("/dev/stdin", "utf8");
-const inputRecords = inputSource.split('\n');
-
-const allCipherSettings = generateCipherParameters();
-
-inputRecords.forEach(currentRecord => {
-    if (!currentRecord.trim()) return;
-
-    allCipherSettings.forEach(settings => {
-        const modifiedRecord = transformTextSegment(currentRecord, settings.factorValue, settings.offsetValue);
-        if (checkKeywords(modifiedRecord)) {
-            console.log(modifiedRecord);
+        if (processedString.match(/th(is|at)/)) {
+            console.log(processedString);
         }
     });
 });

@@ -1,45 +1,44 @@
-const numFromStr = (val) => Number(val);
+function parseIntegerFromString(textValue) {
+  return parseInt(textValue, 10);
+}
 
-const extractNumericalData = (fullText) => {
-    const lines = fullText.split('\n').filter(Boolean);
-    const elementCount = numFromStr(lines[0]);
-    const subsequentValues = lines.slice(1, elementCount + 1).map(numFromStr);
-    return { size: elementCount, values: subsequentValues };
-};
+function calculateSequenceMetric(sequenceElements) {
+  return sequenceElements.slice(1).reduce((accumulator, currentElement, currentIndex) => {
+    const previousElement = sequenceElements[currentIndex];
+    return accumulator + Math.abs(currentElement - previousElement);
+  }, 0);
+}
 
-const calcAdjacentAbsDeltaSum = (numericSequence) =>
-    numericSequence.slice(0, numericSequence.length - 1)
-        .reduce((currentSum, currentElement, index) =>
-            currentSum + Math.abs(currentElement - numericSequence[index + 1]), 0);
+function performRandomPermutation(originalArray) {
+  const workingArray = [...originalArray];
+  const arrayLength = workingArray.length;
+  for (let k = 0; k < arrayLength - 1; k++) {
+    const swapIndex = k + Math.floor(Math.random() * (arrayLength - k));
+    const tempValue = workingArray[k];
+    workingArray[k] = workingArray[swapIndex];
+    workingArray[swapIndex] = tempValue;
+  }
+  return workingArray;
+}
 
-const permuteCollectionRandomly = (sourceCollection) => {
-    const recursivePureShuffler = (remainingElements, resultSoFar = []) => {
-        if (remainingElements.length === 0) {
-            return resultSoFar;
-        }
-        const randomIndex = Math.floor(Math.random() * remainingElements.length);
-        const elementToAppend = remainingElements[randomIndex];
-        const nextRemaining = [
-            ...remainingElements.slice(0, randomIndex),
-            ...remainingElements.slice(randomIndex + 1)
-        ];
-        return recursivePureShuffler(nextRemaining, [...resultSoFar, elementToAppend]);
-    };
-    return recursivePureShuffler([...sourceCollection]);
-};
+function processInputAndFindMax(rawInputString) {
+  const parsedLines = rawInputString.split("\n");
+  const sequenceLength = parseIntegerFromString(parsedLines[0]);
+  const initialSequence = [];
+  for (let idx = 1; idx <= sequenceLength; idx++) {
+    initialSequence.push(parseIntegerFromString(parsedLines[idx]));
+  }
 
-const conductExperiment = (rawInputContent) => {
-    const { values: initialNumericSet } = extractNumericalData(rawInputContent);
+  let highestMetricValue = 0;
+  const numberOfTrials = 10000;
 
-    const trialIterations = Array.from({ length: 10000 });
+  for (let trialCount = 0; trialCount < numberOfTrials; trialCount++) {
+    const currentPermutation = performRandomPermutation(initialSequence);
+    const currentMetric = calculateSequenceMetric(currentPermutation);
+    highestMetricValue = Math.max(highestMetricValue, currentMetric);
+  }
 
-    const peakScore = trialIterations.reduce((currentHighestScore) => {
-        const randomizedOrder = permuteCollectionRandomly(initialNumericSet);
-        const currentTrialScore = calcAdjacentAbsDeltaSum(randomizedOrder);
-        return Math.max(currentHighestScore, currentTrialScore);
-    }, 0);
+  console.log(highestMetricValue);
+}
 
-    console.log(peakScore);
-};
-
-conductExperiment(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputAndFindMax(require("fs").readFileSync("/dev/stdin", "utf8"));

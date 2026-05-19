@@ -1,58 +1,44 @@
-const makeNumber = (textValue) => Number(textValue);
+function entryPoint(rawInput) {
+    const inputLines = rawInput.split('\n');
+    const [gridHeight, gridWidth] = inputLines[0].split(' ').map(Number);
 
-const sendOutput = (messageContent) => console.log(messageContent);
-
-const analyzePattern = (sourceData) => {
-    const segments = sourceData.split('\n');
-    const firstLineDetails = segments[0].split(' ');
-    const verticalDimension = makeNumber(firstLineDetails[0]);
-    const horizontalDimension = makeNumber(firstLineDetails[1]);
-
-    if (horizontalDimension === 1) {
-        sendOutput('Yes');
-        return;
+    if (gridWidth === 1) {
+        return console.log('Yes');
     }
 
-    const characterOccurrences = new Map();
-    const materialContent = segments.slice(1).join('');
-    for (const charUnit of materialContent) {
-        characterOccurrences.set(charUnit, (characterOccurrences.get(charUnit) || 0) + 1);
-    }
-
-    let scenarioKey;
-    if (verticalDimension % 2 === 0 && horizontalDimension % 2 === 0) {
-        scenarioKey = 'all_even';
-    } else if (verticalDimension % 2 !== 0 && horizontalDimension % 2 !== 0) {
-        scenarioKey = 'all_odd';
-    } else {
-        scenarioKey = 'mixed_parity';
-    }
-
-    const nonQuadrupleCounts = [];
-    for (const countValue of characterOccurrences.values()) {
-        if (countValue % 4 !== 0) {
-            nonQuadrupleCounts.push(countValue);
+    const characterFrequencies = new Map();
+    for (let lineIndex = 1; lineIndex < inputLines.length; ++lineIndex) {
+        const currentLine = inputLines[lineIndex];
+        for (let charIndex = 0; charIndex < currentLine.length; ++charIndex) {
+            const char = currentLine[charIndex];
+            characterFrequencies.set(char, (characterFrequencies.get(char) || 0) + 1);
         }
     }
 
-    switch (scenarioKey) {
-        case 'all_even':
-        case 'mixed_parity':
-            if (nonQuadrupleCounts.length === 0) {
-                sendOutput('Yes');
-            } else {
-                sendOutput('No');
-            }
-            break;
-        case 'all_odd':
-            const sumOfNonQuadruples = nonQuadrupleCounts.reduce((accumulator, item) => accumulator + item, 0);
-            if (sumOfNonQuadruples % 2 === 1) {
-                sendOutput('Yes');
-            } else {
-                sendOutput('No');
-            }
-            break;
-    }
-};
+    let sumOfCountsNotDivisibleByFour = 0;
+    let countOfCountsNotDivisibleByFour = 0;
 
-analyzePattern(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    for (const countValue of characterFrequencies.values()) {
+        if (countValue % 4 !== 0) {
+            sumOfCountsNotDivisibleByFour += countValue;
+            countOfCountsNotDivisibleByFour++;
+        }
+    }
+
+    const isHeightOdd = (gridHeight % 2) !== 0;
+    const isWidthOdd = (gridWidth % 2) !== 0;
+
+    let finalDecision;
+
+    if (!isHeightOdd && !isWidthOdd) { // Both dimensions are even
+        finalDecision = (countOfCountsNotDivisibleByFour === 0);
+    } else if (isHeightOdd && isWidthOdd) { // Both dimensions are odd
+        finalDecision = (sumOfCountsNotDivisibleByFour % 2) === 1;
+    } else { // One dimension is even, the other is odd
+        finalDecision = (sumOfCountsNotDivisibleByFour === 0);
+    }
+
+    console.log(finalDecision ? 'Yes' : 'No');
+}
+
+entryPoint(require("fs").readFileSync("/dev/stdin", "utf8"));

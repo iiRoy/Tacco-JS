@@ -1,23 +1,20 @@
-const calculateMinimumPurchase = (acquisitionSource) => {
-    const rawDataSegments = acquisitionSource.trim().split('\n');
-    const initialConfiguration = rawDataSegments[0].split(' ').map(Number);
-    const unitsRequired = initialConfiguration[1];
-    const uniqueOfferings = initialConfiguration[0];
+function processPurchase(sourceText) {
+    const lines = sourceText.split('\n');
+    const [itemTypeCount, desiredQuantity] = lines[0].split(' ').map(Number);
 
-    const individualUnitPrices = rawDataSegments.slice(1, uniqueOfferings + 1)
-        .flatMap(lineSegment => {
-            const offerDetails = lineSegment.split(' ').map(Number);
-            const itemValue = offerDetails[0];
-            const itemCount = offerDetails[1];
-            return Array.from({ length: itemCount }, () => itemValue);
-        });
+    const availableItems = lines.slice(1, 1 + itemTypeCount).map(itemLine => itemLine.split(' ').map(Number));
 
-    individualUnitPrices.sort((valA, valB) => valA - valB);
+    const expandedPrices = availableItems.flatMap(([unitCost, stockCount]) =>
+        Array(stockCount).fill(unitCost)
+    );
 
-    const finalSummation = individualUnitPrices.slice(0, unitsRequired)
-        .reduce((accumulator, currentUnitCost) => accumulator + currentUnitCost, 0);
+    expandedPrices.sort((a, b) => a - b);
 
-    console.log(finalSummation);
-};
+    const purchaseSequence = Array(desiredQuantity).fill(undefined).map((_, index) => expandedPrices[index]);
 
-calculateMinimumPurchase(require('fs').readFileSync('/dev/stdin', 'utf8'));
+    const totalCost = purchaseSequence.reduce((accumulator, currentPrice) => accumulator + currentPrice, 0);
+
+    console.log(totalCost);
+}
+
+processPurchase(require('fs').readFileSync('/dev/stdin', 'utf8'));

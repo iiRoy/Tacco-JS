@@ -1,69 +1,62 @@
-function ProcessData(dataString) {
-  // Begin by extracting the initial numerical count from the first line of the raw input
-  var recordCount = parseInt(dataString.split("\n")[0]);
+function ProcessInput(rawData) {
+  // Extract the first line to determine the count value.
+  var countVal = parseInt(rawData.split('\n')[0]);
+  // Obtain the second line, then split it by spaces to get the primary numerical sequence.
+  var primaryValues = rawData.split('\n')[1].split(' ');
+  // Retrieve the third line, splitting it by spaces to form the secondary numerical sequence.
+  var secondaryValues = rawData.split('\n')[2].split(' ');
 
-  // Next, parse the sequence of values from the second line, splitting by spaces
-  var alphaValues = dataString.split("\n")[1].split(" ");
-
-  // Then, retrieve the corresponding sequence of values from the third line
-  var betaValues = dataString.split("\n")[2].split(" ");
-
-  // Iterate through the collected string arrays to convert their elements to integers
-  for (var indexNum = 0; indexNum < alphaValues.length; indexNum++) {
-    alphaValues[indexNum] = parseInt(alphaValues[indexNum]);
-
-    // Ensure we only attempt conversion for elements within the bounds of the second array
-    if (indexNum < betaValues.length) {
-      betaValues[indexNum] = parseInt(betaValues[indexNum]);
+  // Iterate through the primary values array to convert string elements to integers.
+  for (var idx = 0; idx < primaryValues.length; idx++) {
+    primaryValues[idx] = parseInt(primaryValues[idx]);
+    // If the current index is within the bounds of the secondary values array,
+    // convert its element to an integer as well.
+    if (idx < secondaryValues.length) {
+      secondaryValues[idx] = parseInt(secondaryValues[idx]);
     }
   }
 
-  // Initialize a variable to accumulate the final computed score
-  var totalScore = 0;
+  // Initialize a variable to accumulate the final sum.
+  var totalSum = 0;
 
-  // Commence the primary processing loop, iterating over the beta sequence
-  for (var indexNum = 0; indexNum < betaValues.length; indexNum++) {
-    // Fetch the current element from the alpha sequence
-    var currentAlpha = alphaValues[indexNum];
+  // Begin the main processing loop, iterating through the secondary values.
+  for (var idx = 0; idx < secondaryValues.length; idx++) {
+    // Assign current and next primary values, and the current secondary value to temporary variables for clarity.
+    var currentPrimary = primaryValues[idx];
+    var nextPrimary = primaryValues[idx + 1];
+    var currentSecondary = secondaryValues[idx];
 
-    // Retrieve the subsequent element from the alpha sequence
-    var nextAlpha = alphaValues[indexNum + 1];
+    // The following line was commented out in the original and is kept as such.
+    // console.log("currentPrimary:" + currentPrimary + ",nextPrimary:" + nextPrimary + ":currentSecondary:" + currentSecondary);
 
-    // Get the current element from the beta sequence
-    var currentBeta = betaValues[indexNum];
-
-    // A previously used debug output line is omitted here to maintain clean clone structure.
-    // console.log("Current A: " + currentAlpha + ", Next A: " + nextAlpha + ", Current B: " + currentBeta);
-
-    // Evaluate conditions based on the relationships between currentAlpha, nextAlpha, and currentBeta
-    if (currentBeta <= currentAlpha) {
-      // If currentBeta is less than or equal to currentAlpha, add currentBeta to the total
-      totalScore += currentBeta;
-      continue;
-    } else if (currentBeta > currentAlpha && currentBeta < nextAlpha) {
-      // If currentBeta is between currentAlpha and nextAlpha
-      totalScore += currentBeta;
-      // Adjust the nextAlpha value based on the difference
-      alphaValues[indexNum + 1] = nextAlpha - (currentBeta - currentAlpha);
-      continue;
-    } else if (currentBeta > currentAlpha && currentBeta > nextAlpha && currentBeta < currentAlpha + nextAlpha) {
-      // If currentBeta is greater than both but less than their sum
-      totalScore += currentBeta;
-      // Re-calculate and update the nextAlpha value
-      alphaValues[indexNum + 1] = nextAlpha - (currentBeta - currentAlpha);
-      continue;
-    } else if (currentBeta >= currentAlpha + nextAlpha) {
-      // If currentBeta is greater than or equal to the sum of currentAlpha and nextAlpha
-      totalScore += currentAlpha + nextAlpha;
-      // Set the nextAlpha value to zero as it has been fully utilized
-      alphaValues[indexNum + 1] = 0;
-      continue;
+    // Evaluate different conditions to update the total sum and potentially modify the primary values array.
+    if (currentSecondary <= currentPrimary) {
+      // If the current secondary value is less than or equal to the current primary, add it directly to the sum.
+      totalSum += currentSecondary;
+      continue; // Move to the next iteration.
+    } else if (currentSecondary > currentPrimary && currentSecondary < nextPrimary) {
+      // If current secondary is greater than current primary but less than next primary.
+      totalSum += currentSecondary;
+      // Adjust the next primary value based on the difference.
+      primaryValues[idx + 1] = nextPrimary - (currentSecondary - currentPrimary);
+      continue; // Move to the next iteration.
+    } else if (currentSecondary > currentPrimary && currentSecondary > nextPrimary && currentSecondary < currentPrimary + nextPrimary) {
+      // If current secondary is greater than both current and next primary, but less than their sum.
+      totalSum += currentSecondary;
+      // Adjust the next primary value similarly.
+      primaryValues[idx + 1] = nextPrimary - (currentSecondary - currentPrimary);
+      continue; // Move to the next iteration.
+    } else if (currentSecondary >= currentPrimary + nextPrimary) {
+      // If current secondary is greater than or equal to the sum of current and next primary.
+      totalSum += currentPrimary + nextPrimary;
+      // Set the next primary value to zero.
+      primaryValues[idx + 1] = 0;
+      continue; // Move to the next iteration.
     }
   }
-
-  // Print the final accumulated total score to the console
-  console.log(totalScore);
+  // Output the final calculated total sum to the console.
+  console.log(totalSum);
 }
 
-// Execute the data processing routine, supplying input read asynchronously from standard input
-ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Read the entire content of standard input as a UTF-8 string and pass it to the processing function.
+ProcessInput(require('fs').readFileSync('/dev/stdin', 'utf8'));

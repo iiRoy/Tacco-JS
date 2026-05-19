@@ -1,73 +1,31 @@
-const dataSource = require('fs');
+const rawInput = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-let inputBuffer = '';
+const isSquareNumber = (val) => {
+    if (val < 0) {
+        return false;
+    }
+    if (val === 0 || val === 1) {
+        return true;
+    }
 
-process.stdin.on('data', (segment) => {
-    inputBuffer += segment.toString();
-});
+    let lowerBound = 1;
+    let upperBound = val;
 
-process.stdin.on('end', () => {
-    const processedString = inputBuffer.toString().replace(' ', '');
-    let numericalValue;
+    while (lowerBound <= upperBound) {
+        const midPoint = Math.floor(lowerBound + (upperBound - lowerBound) / 2);
+        const midSquare = midPoint * midPoint;
 
-    if (processedString.length === 0) {
-        numericalValue = NaN;
-    } else {
-        let currentAccumulator = 0;
-        let signIndicator = 1;
-        let digitEncountered = false;
-        let scanStart = 0;
-
-        if (processedString[0] === '-') {
-            signIndicator = -1;
-            scanStart = 1;
-        } else if (processedString[0] === '+') {
-            scanStart = 1;
-        }
-
-        for (let i = scanStart; i < processedString.length; i++) {
-            const charCodePoint = processedString.charCodeAt(i);
-            if (charCodePoint >= 48 && charCodePoint <= 57) {
-                currentAccumulator = currentAccumulator * 10 + (charCodePoint - 48);
-                digitEncountered = true;
-            } else {
-                break;
-            }
-        }
-
-        if (!digitEncountered) {
-            numericalValue = NaN;
+        if (midSquare === val) {
+            return true;
+        } else if (midSquare < val) {
+            lowerBound = midPoint + 1;
         } else {
-            numericalValue = currentAccumulator * signIndicator;
+            upperBound = midPoint - 1;
         }
     }
+    return false;
+};
 
-    let isSquareResult = false;
+const targetValue = parseInt(rawInput.replace(' ', ''), 10);
 
-    if (Number.isNaN(numericalValue) || numericalValue < 0) {
-        isSquareResult = false;
-    } else if (numericalValue === 0) {
-        isSquareResult = true;
-    } else {
-        let testCandidate = 1;
-        while (true) {
-            const currentProduct = testCandidate * testCandidate;
-
-            if (currentProduct === numericalValue) {
-                isSquareResult = true;
-                break;
-            }
-            if (currentProduct > numericalValue || currentProduct < 0 || currentProduct === Infinity) {
-                isSquareResult = false;
-                break;
-            }
-            testCandidate++;
-        }
-    }
-
-    if (isSquareResult) {
-        process.stdout.write('Yes\n');
-    } else {
-        process.stdout.write('No\n');
-    }
-});
+console.log(isSquareNumber(targetValue) ? 'Yes' : 'No');

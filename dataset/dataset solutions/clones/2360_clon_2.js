@@ -1,228 +1,223 @@
-const systemInput = process.stdin;
-const systemOutput = process.stdout;
-const systemLog = console;
-const moduleUtility = require('util');
-const lineProcessorModule = require('readline');
-
-// This section contains helper utilities and input/output management.
-const inputReaderInterface = lineProcessorModule.createInterface({
-    input: systemInput,
-    output: systemOutput
+// This section handles input processing and utility functions.
+// It's generally not part of the core algorithm logic.
+var inputReader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-let inputDataLoader;
-const collectedInputLines = [];
+var inputProcessor; // Stores the initialized input handler.
+var inputLines = []; // Accumulates all lines read from standard input.
 
-inputReaderInterface.on('line', function(currentInputSegment) {
-    collectedInputLines.push(currentInputSegment);
+inputReader.on('line', function(currentLine) {
+  inputLines.push(currentLine);
 });
 
-inputReaderInterface.on('close', function() {
-    inputDataLoader = initializeInputProcessor(collectedInputLines);
-    systemLog.error('\n^ Input v Output');
-    executePrimaryRoutine();
+inputReader.on('close', function() {
+  inputProcessor = initializeInputHandler(inputLines);
+  console.error('\n↑入力 ↓出力'); // Output for debugging/user guidance.
+  executeSolution(); // Start the main problem-solving logic.
 });
 
-/*
- * Produces a deep copy of an object.
- * If the object is a Set, it constructs a new Set from its elements.
- * Otherwise, it uses JSON serialization/deserialization for a generic deep clone.
- */
-function duplicateStructure(originalEntity) {
-    return (originalEntity instanceof Set) ? new Set(Array.from(originalEntity)) : JSON.parse(JSON.stringify(originalEntity));
+// Creates a deep copy of an object or Set.
+function createDeepCopy(sourceObject) {
+  return (sourceObject instanceof Set) ? new Set(Array.from(sourceObject)) : JSON.parse(JSON.stringify(sourceObject));
 }
 
-// Retrieves and converts the subsequent input item as an integer.
-function obtainNextInteger() {
-    return convertInputFormat(fetchNextItem(), 1);
+// Fetches the next input item and converts it to an integer.
+function getNextInteger() {
+  return convertInput(fetchNextItem(), 1);
 }
 
-// Retrieves and converts the subsequent input item into a string array.
-function obtainNextStringArray() {
-    return convertInputFormat(fetchNextItem(), 2);
+// Fetches the next input item and converts it to a string array.
+function getNextStringArray() {
+  return convertInput(fetchNextItem(), 2);
 }
 
-// Retrieves and converts the subsequent input item into an array of integers.
-function obtainNextIntegerArray() {
-    return convertInputFormat(fetchNextItem(), 4);
+// Fetches the next input item and converts it to an integer array.
+function getNextIntegerArray() {
+  return convertInput(fetchNextItem(), 4);
 }
 
-// Retrieves and converts the subsequent input item into a character array.
-function obtainNextCharacterArray() {
-    return convertInputFormat(fetchNextItem(), 6);
+// Fetches the next input item and converts it to a character array.
+function getNextCharacterArray() {
+  return convertInput(fetchNextItem(), 6);
 }
 
-// Fetches the very next available input item from the data loader.
+// Retrieves the next available input item from the handler.
 function fetchNextItem() {
-    return inputDataLoader.fetchNextItem();
+  return inputProcessor.fetchNextItem();
 }
 
-// Determines if additional input items are available for processing.
-function checkMoreItemsAvailable() {
-    return inputDataLoader.checkMoreItemsAvailable();
+// Checks if there are more input items available.
+function hasMoreItems() {
+  return inputProcessor.hasMoreItems();
 }
 
-/*
- * Sets up the core input processing object.
- * This object manages reading input lines sequentially.
- * @param {Array<string>} sourceLineArray - An array of strings, each representing an input line.
- * @returns {object} An object providing methods for input access.
- */
-function initializeInputProcessor(sourceLineArray) {
-    return {
-        lineCollection: sourceLineArray,
-        currentReadIndex: 0,
-        maximumLineCount: sourceLineArray.length,
-        checkMoreItemsAvailable: function() {
-            return (this.currentReadIndex < this.maximumLineCount);
-        },
-        fetchNextItem: function() {
-            if (this.checkMoreItemsAvailable()) {
-                return this.lineCollection[this.currentReadIndex++];
-            } else {
-                throw 'InputBoundsExceeded: No additional input elements exist.';
-            }
-        }
-    };
-}
+// Initializes an object to handle sequential input reading.
+function initializeInputHandler(allInputLines) {
+  return {
+    dataList: allInputLines,
+    currentIdx: 0,
+    maxCount: allInputLines.length,
 
-// Displays a given message to the standard output stream.
-function emitOutputMessage(displayContent) {
-    systemLog.log(displayContent);
-}
+    // Method to check if more input lines exist.
+    hasMoreItems: function() {
+      return (this.currentIdx < this.maxCount);
+    },
 
-// Outputs a diagnostic or error message to the standard error stream.
-function reportDiagnosticInfo(diagnosticData) {
-    systemLog.error('diagnostic_info:' + moduleUtility.inspect(diagnosticData, false, null));
-}
-
-/*
- * This function handles various input data type conversions.
- * The 'conversionCase' parameter specifies the desired output format:
- *   - Any other value: Returns the input as is.
- *   - 1: Converts the input string to an integer.
- *   - 2: Splits the input string by spaces into an array of strings.
- *   - 4: Splits by spaces and maps to an array of numbers.
- *   - 6: Splits the input string into an array of individual characters.
- *   - 7: Splits into individual characters and maps to an array of numbers.
- *   - 8: Joins array elements with a space separator.
- *   - 9: Joins array elements with a newline character.
- *   - 0: Joins array elements without any separator.
- */
-function convertInputFormat(incomingItem, conversionCase) {
-    try {
-        switch (conversionCase) {
-            case 1:
-                return parseInt(incomingItem);
-            case 2:
-                return incomingItem.split(' ');
-            case 4:
-                return incomingItem.split(' ').map(Number);
-            case 6:
-                return incomingItem.split('');
-            case 7:
-                return incomingItem.split('').map(Number);
-            case 8:
-                return incomingItem.join(' ');
-            case 9:
-                return incomingItem.join('\n');
-            case 0:
-                return incomingItem.join('');
-            default:
-                return incomingItem;
-        }
-    } catch (conversionError) {
-        return incomingItem; // In case of conversion failure, return the original item.
+    // Method to get the next input line.
+    fetchNextItem: function() {
+      if (this.hasMoreItems()) {
+        return this.dataList[this.currentIdx++];
+      } else {
+        throw 'ArrayIndexOutOfBoundsException ‚There is no more input';
+      }
     }
+  };
 }
 
-// End of input/output and utility function definitions.
-// -------------------------------------------------------------------
+// Prints the final result to standard output.
+function printResult(outputValue) {
+  console.log(outputValue);
+}
 
-/**
- * This is the primary execution point for the algorithm.
- * It reads grid dimensions and values, then applies dynamic programming
- * to find the minimum absolute difference path through the grid.
- */
-function executePrimaryRoutine() {
-    const initialDimensions = obtainNextIntegerArray();
-    const gridHeight = initialDimensions[0];
-    const gridWidth = initialDimensions[1];
+// Logs debug information to standard error.
+function logDebug(debugInfo) {
+  console.error('debug:' + require('util').inspect(debugInfo, false, null));
+}
 
-    const valueGrid = new Array(gridHeight);
-    const dynamicProgrammingTable = new Array(gridHeight);
-    const maximumPermissibleSum = 1272; // Upper bound for accumulated sums in DP states.
-
-    // Initialize the main value grid and the DP state table.
-    for (let currentHeightIdx = 0; currentHeightIdx < gridHeight; currentHeightIdx++) {
-        dynamicProgrammingTable[currentHeightIdx] = new Array(gridWidth);
-        for (let currentWidthIdx = 0; currentWidthIdx < gridWidth; currentWidthIdx++) {
-            dynamicProgrammingTable[currentHeightIdx][currentWidthIdx] = new Array(maximumPermissibleSum);
-        }
-        valueGrid[currentHeightIdx] = obtainNextIntegerArray();
+// Utility function to convert input based on a specified type.
+// Type "conversionType" determines the parsing method:
+// 1: Parse as integer.
+// 2: Split by space into string array.
+// 4: Split by space and parse each part as number into integer array.
+// 6: Split into character array.
+// 7: Split into character array and parse each as number.
+// 8: Join array elements with space.
+// 9: Join array elements with newline.
+// 0: Join array elements without separator.
+// Default: Return input as is.
+function convertInput(inputValue, conversionType) {
+  try {
+    switch (conversionType) {
+      case 1:
+        return parseInt(inputValue);
+      case 2:
+        return inputValue.split(' ');
+      case 4:
+        return inputValue.split(' ').map(Number);
+      case 6:
+        return inputValue.split('');
+      case 7:
+        return inputValue.split('').map(Number);
+      case 8:
+        return inputValue.join(' ');
+      case 9:
+        return inputValue.join('\n');
+      case 0:
+        return inputValue.join('');
+      default:
+        return inputValue;
     }
+  } catch (error) {
+    return inputValue; // In case of conversion error, return original value.
+  }
+}
 
-    // Adjust grid values based on a second set of input.
-    for (let currentHeightIdx = 0; currentHeightIdx < gridHeight; currentHeightIdx++) {
-        const temporaryRowData = obtainNextIntegerArray();
-        for (let currentWidthIdx = 0; currentWidthIdx < gridWidth; currentWidthIdx++) {
-            valueGrid[currentHeightIdx][currentWidthIdx] = Math.abs(valueGrid[currentHeightIdx][currentWidthIdx] - temporaryRowData[currentWidthIdx]);
-        }
+// End of input processing and utility functions.
+
+// Main function containing the problem's solution logic.
+function executeSolution() {
+  // Read the first line which contains H and W.
+  var dimensions = getNextIntegerArray();
+  var heightVal = dimensions[0];
+  var widthVal = dimensions[1];
+
+  // Initialize a 2D array to store grid values.
+  var gridValues = new Array(heightVal);
+  // Initialize a 3D DP table.
+  var dynamicProgTable = new Array(heightVal);
+  // Define the maximum possible sum for DP table dimension.
+  var maxPossibleSum = 1272;
+
+  // Populate the gridValues and initialize the DP table structure.
+  for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    dynamicProgTable[rowIdx] = new Array(widthVal);
+    for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+      dynamicProgTable[rowIdx][colIdx] = new Array(maxPossibleSum);
     }
+    // Read the initial row values for the grid.
+    gridValues[rowIdx] = getNextIntegerArray();
+  }
 
-    // Establish the base case for the dynamic programming table at the starting cell.
-    dynamicProgrammingTable[0][0][valueGrid[0][0]] = true;
-
-    // Populate the DP table by iterating through all grid cells.
-    for (let currentHeightIdx = 0; currentHeightIdx < gridHeight; currentHeightIdx++) {
-        for (let currentWidthIdx = 0; currentWidthIdx < gridWidth; currentWidthIdx++) {
-
-            // Skip the initial cell as its state is already defined.
-            if (currentHeightIdx === 0 && currentWidthIdx === 0) {
-                continue;
-            }
-
-            // For cells in the first row, transitions are only possible from the left.
-            if (currentHeightIdx === 0) {
-                for (let currentSumState = 0; currentSumState < maximumPermissibleSum; currentSumState++) {
-                    if (dynamicProgrammingTable[currentHeightIdx][currentWidthIdx - 1][currentSumState]) {
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState + valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState - valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                    }
-                }
-            }
-            // For cells in the first column, transitions are only possible from above.
-            else if (currentWidthIdx === 0) {
-                for (let currentSumState = 0; currentSumState < maximumPermissibleSum; currentSumState++) {
-                    if (dynamicProgrammingTable[currentHeightIdx - 1][currentWidthIdx][currentSumState]) {
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState + valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState - valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                    }
-                }
-            }
-            // For all other cells, transitions can occur from either above or the left.
-            else {
-                for (let currentSumState = 0; currentSumState < maximumPermissibleSum; currentSumState++) {
-                    // Check for paths originating from the cell directly above.
-                    if (dynamicProgrammingTable[currentHeightIdx - 1][currentWidthIdx][currentSumState]) {
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState + valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState - valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                    }
-                    // Check for paths originating from the cell directly to the left.
-                    if (dynamicProgrammingTable[currentHeightIdx][currentWidthIdx - 1][currentSumState]) {
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState + valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                        dynamicProgrammingTable[currentHeightIdx][currentWidthIdx][Math.abs(currentSumState - valueGrid[currentHeightIdx][currentWidthIdx])] = true;
-                    }
-                }
-            }
-        }
+  // Process the second set of input rows to calculate absolute differences.
+  for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    var tempRow = getNextIntegerArray(); // Read the next row for subtraction.
+    for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+      // Calculate the absolute difference and update gridValues.
+      gridValues[rowIdx][colIdx] = Math.abs(gridValues[rowIdx][colIdx] - tempRow[colIdx]);
     }
+  }
 
-    // Search for the smallest absolute difference achievable at the final grid cell.
-    for (let currentSumState = 0; currentSumState < maximumPermissibleSum; currentSumState++) {
-        if (dynamicProgrammingTable[gridHeight - 1][gridWidth - 1][currentSumState]) {
-            emitOutputMessage(currentSumState);
-            return; // Output the first valid sum found and terminate.
+  // Initialize the DP table at the starting cell (0,0).
+  // The value at gridValues[0][0] is the initial sum.
+  dynamicProgTable[0][0][gridValues[0][0]] = true;
+
+  // Iterate through the grid to fill the DP table.
+  for (var rowIdx = 0; rowIdx < heightVal; rowIdx++) {
+    for (var colIdx = 0; colIdx < widthVal; colIdx++) {
+      // Skip the starting cell as it's already initialized.
+      if (rowIdx === 0 && colIdx === 0) {
+        continue;
+      }
+
+      // Handle the first row (movement only from left).
+      if (rowIdx === 0) {
+        for (var sumVal = 0; sumVal < maxPossibleSum; sumVal++) {
+          // If the previous cell (left) had a path leading to 'sumVal'.
+          if (dynamicProgTable[rowIdx][colIdx - 1][sumVal]) {
+            // Update current cell's DP table with new possible sums.
+            // Add the current cell's value.
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal + gridValues[rowIdx][colIdx])] = true;
+            // Subtract the current cell's value.
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal - gridValues[rowIdx][colIdx])] = true;
+          }
         }
+      }
+      // Handle the first column (movement only from top).
+      else if (colIdx === 0) {
+        for (var sumVal = 0; sumVal < maxPossibleSum; sumVal++) {
+          // If the previous cell (top) had a path leading to 'sumVal'.
+          if (dynamicProgTable[rowIdx - 1][colIdx][sumVal]) {
+            // Update current cell's DP table with new possible sums.
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal + gridValues[rowIdx][colIdx])] = true;
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal - gridValues[rowIdx][colIdx])] = true;
+          }
+        }
+      }
+      // Handle general cells (movement from top or left).
+      else {
+        for (var sumVal = 0; sumVal < maxPossibleSum; sumVal++) {
+          // Check path from top cell.
+          if (dynamicProgTable[rowIdx - 1][colIdx][sumVal]) {
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal + gridValues[rowIdx][colIdx])] = true;
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal - gridValues[rowIdx][colIdx])] = true;
+          }
+          // Check path from left cell.
+          if (dynamicProgTable[rowIdx][colIdx - 1][sumVal]) {
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal + gridValues[rowIdx][colIdx])] = true;
+            dynamicProgTable[rowIdx][colIdx][Math.abs(sumVal - gridValues[rowIdx][colIdx])] = true;
+          }
+        }
+      }
     }
+  }
+
+  // Find the smallest absolute sum at the bottom-right cell.
+  for (var sumVal = 0; sumVal < maxPossibleSum; sumVal++) {
+    if (dynamicProgTable[heightVal - 1][widthVal - 1][sumVal]) {
+      printResult(sumVal); // Output the first found sum.
+      return; // Exit after finding the minimum sum.
+    }
+  }
 }

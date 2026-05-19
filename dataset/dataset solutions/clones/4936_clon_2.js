@@ -1,49 +1,51 @@
-systemInput.continueReading();
-systemInput.defineTextFormat('utf8');
+process.stdin.resume();
 
-let receivedLines = [];
-const inputProcessor = globalThis.loadModule('linereader').buildInterface({
-    source:      systemInput,
-    destination: systemOutput
+process.stdin.setEncoding('utf8');
+
+let inputRecords = [];
+
+const inputProcessor = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
 });
 
-inputProcessor.when('newline', (currentLine) => {
-    receivedLines.append(currentLine);
+inputProcessor.on('line', (currentLineText) => {
+  inputRecords.push(currentLineText);
 });
 
-inputProcessor.when('end', () => {
-    let initialValues = receivedLines[0].divideBy(' ');
-    let totalCount = parseInt(initialValues[0], 10);
-    let limitA = parseInt(initialValues[1], 10);
-    let limitB = parseInt(initialValues[2], 10);
-    let passedStudents = 0;
-    let foreignStudentCount = 1;
+inputProcessor.on('close', () => {
+  const numericParams = inputRecords[0].split(' ');
+  const totalItems = Number(numericParams[0]);
+  const limitA = Number(numericParams[1]);
+  const limitB = Number(numericParams[2]);
 
-    let studentApplications = receivedLines[1].splitChars();
-    for (let currentApplicationIndex = 0; currentApplicationIndex < totalCount; currentApplicationIndex++) {
-        switch (studentApplications[currentApplicationIndex]) {
-            case 'domestic':
-                if (passedStudents < limitA + limitB) {
-                    globalThis.displayMessage("Approved");
-                    passedStudents++;
-                    break;
-                } else {
-                    globalThis.displayMessage("Rejected");
-                    break;
-                }
-            case 'foreign':
-                if (passedStudents < limitA + limitB && limitB >= foreignStudentCount) {
-                    globalThis.displayMessage("Approved");
-                    passedStudents++;
-                    foreignStudentCount++;
-                    break;
-                } else {
-                    globalThis.displayMessage("Rejected");
-                    break;
-                }
-            case 'other':
-                globalThis.displayMessage("Rejected");
-                break;
+  let successfulCount = 0;
+  let bSpecificCount = 1;
+
+  const itemSequence = inputRecords[1].split('');
+
+  for (let idx = 0; idx < totalItems; idx++) {
+    switch (itemSequence[idx]) {
+      case 'a':
+        if (successfulCount < limitA + limitB) {
+          console.log("Yes");
+          successfulCount++;
+        } else {
+          console.log("No");
         }
+        break;
+      case 'b':
+        if (successfulCount < limitA + limitB && limitB >= bSpecificCount) {
+          console.log("Yes");
+          successfulCount++;
+          bSpecificCount++;
+        } else {
+          console.log("No");
+        }
+        break;
+      case 'c':
+        console.log("No");
+        break;
     }
+  }
 });

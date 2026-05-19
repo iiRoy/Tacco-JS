@@ -1,26 +1,28 @@
-const processNumericChallenge = (sourceText) => {
-    const textSections = sourceText.trim().split('\n');
+function processInputData(rawData) {
+    const lineSegments = rawData.split("\n");
 
-    const firstRowValues = textSections[0].split(' ').map(Number);
-    const totalElements = firstRowValues[0];
-    const segmentLength = firstRowValues[1];
+    const firstLineComponents = lineSegments[0].split(" ");
+    const totalDataPoints = parseInt(firstLineComponents[0], 10);
+    const windowLength = parseInt(firstLineComponents[1], 10);
 
-    const valueSeries = textSections[1].split(' ').map(Number);
+    const secondLineComponents = lineSegments[1].split(" ");
+    const numericalDataSequence = secondLineComponents.map(Number);
 
-    const segmentProducts = Array.from({ length: totalElements - segmentLength + 1 }, (_, position) => {
-        const currentSegment = valueSeries.slice(position, position + segmentLength);
-        return currentSegment.reduce((accum, currentVal) => accum * currentVal, 1);
+    const customProductAccumulator = (currentAccum, nextValue) => (currentAccum === 0 ? nextValue : currentAccum * nextValue);
+
+    const windowResultValues = Array.from({ length: totalDataPoints - windowLength + 1 }, (_, windowStartIndex) => {
+        const currentWindowSlice = numericalDataSequence.slice(windowStartIndex, windowStartIndex + windowLength);
+        return currentWindowSlice.reduce(customProductAccumulator, 0);
     });
 
-    const outcomeSequence = [];
-    if (segmentProducts.length > 1) {
-        segmentProducts.slice(1).forEach((currentProductValue, indexInSliced) => {
-            const previousProductValue = segmentProducts[indexInSliced];
-            outcomeSequence.push(previousProductValue < currentProductValue ? 'Yes' : 'No');
-        });
-    }
+    const comparisonOutcomes = windowResultValues.slice(1).map((currentComparisonValue, indexInSliced) => {
+        const previousComparisonValue = windowResultValues[indexInSliced];
+        return currentComparisonValue > previousComparisonValue ? 'Yes' : 'No';
+    });
 
-    outcomeSequence.forEach(resultLine => console.log(resultLine));
-};
+    comparisonOutcomes.forEach(resultEntry => {
+        console.log(resultEntry);
+    });
+}
 
-processNumericChallenge(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

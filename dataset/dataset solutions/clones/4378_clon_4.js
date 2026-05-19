@@ -1,17 +1,13 @@
-const fileSystemInterface = require("fs");
+var fileSystem = require("fs");
+processInput(fileSystem.readFileSync("/dev/stdin", "utf-8"));
 
-const computeAlternateSequence = (sourceLine, currentPosition) => {
-    if (currentPosition >= sourceLine.length) {
-        return "";
-    }
-    const currentChar = sourceLine[currentPosition];
-    return currentChar + computeAlternateSequence(sourceLine, currentPosition + 2);
-};
+function processInput(sourceText) {
+    const relevantLine = sourceText.split("\n")[0];
+    const characterSequence = Array.from(relevantLine);
 
-const processExternalData = (streamPayload) => {
-    const initialSegment = streamPayload.split("\n")[0];
-    return computeAlternateSequence(initialSegment, 0);
-};
+    const finalResult = characterSequence.reduce((accumulator, currentCharacter, indexPosition) => {
+        return indexPosition % 2 === 0 ? accumulator + currentCharacter : accumulator;
+    }, '');
 
-const outcome = processExternalData(fileSystemInterface.readFileSync("/dev/stdin", "utf-8"));
-console.log(outcome);
+    console.log(finalResult);
+}

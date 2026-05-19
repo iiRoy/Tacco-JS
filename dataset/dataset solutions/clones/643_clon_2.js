@@ -1,37 +1,50 @@
-var sourceData = require('fs').readFileSync('/dev/stdin', 'utf8');
-var processedLines = sourceData.trim().replace(/G/g, "0").replace(/P/g, "1").replace(/O/g, "2").split("\n");
-var gridDimensions = processedLines.shift().split(" ").map(Number);
-var numRows = gridDimensions[0];
-var numCols = gridDimensions[1];
-var rowColorCostMatrix = processedLines.map(function(currentLineData) {
-   var lineCosts = [numCols, numCols, numCols];
-   for (var charIndex = 0; charIndex < numCols; charIndex++) {
-      lineCosts[parseInt(currentLineData[charIndex])]--;
-   }
-   return lineCosts;
+const rawData = require('node:fs').readFileSync('/dev/stdin', 'utf8');
+
+let lineData = rawData.trim().replace(/W/g, '0').replace(/B/g, '1').replace(/R/g, '2').split('\n');
+
+const dimensions = lineData.shift().split(' ').map(Number);
+
+const rows = dimensions[0];
+const cols = dimensions[1];
+
+const colorCountsPerRow = lineData.map(function(rowString) {
+    let rowColorDeficit = [cols, cols, cols];
+    for (let charIndex = 0; charIndex < cols; charIndex++) {
+        rowColorDeficit[parseInt(rowString[charIndex], 10)]--;
+    }
+    return rowColorDeficit;
 });
-var smallestOverallCost = 2500;
-for (var rowBoundaryOne = 0; rowBoundaryOne < numRows ; rowBoundaryOne++) {
-   for (var rowBoundaryTwo = 0; rowBoundaryTwo < numRows ; rowBoundaryTwo++) {
-      var segmentValidityFlags = [0,0,0];
-      var currentAccumulatedCost = 0;
-      var currentRowPointer = 0;
-      while(currentRowPointer < rowBoundaryOne){
-         segmentValidityFlags[0] = 1;
-         currentAccumulatedCost += rowColorCostMatrix[currentRowPointer][0];
-         currentRowPointer++;
-      }
-      while(currentRowPointer < rowBoundaryTwo){
-         segmentValidityFlags[1] = 1;
-         currentAccumulatedCost += rowColorCostMatrix[currentRowPointer][1];
-         currentRowPointer++;
-      }
-      while(currentRowPointer < numRows){
-         segmentValidityFlags[2] = 1;
-         currentAccumulatedCost += rowColorCostMatrix[currentRowPointer][2];
-         currentRowPointer++;
-      }
-      if (segmentValidityFlags[0] + segmentValidityFlags[1] + segmentValidityFlags[2] === 3)smallestOverallCost = Math.min(currentAccumulatedCost, smallestOverallCost);
-   }
+
+let minimumCost = 2500;
+
+for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+    for (let splitPoint1 = 0; splitPoint1 < rows; splitPoint1++) {
+        let sectionFlags = [0, 0, 0];
+        let currentCost = 0;
+        let currentRow = 0;
+
+        while (currentRow < rowIndex) {
+            sectionFlags[0] = 1;
+            currentCost += colorCountsPerRow[currentRow][0];
+            currentRow++;
+        }
+
+        while (currentRow < splitPoint1) {
+            sectionFlags[1] = 1;
+            currentCost += colorCountsPerRow[currentRow][1];
+            currentRow++;
+        }
+
+        while (currentRow < rows) {
+            sectionFlags[2] = 1;
+            currentCost += colorCountsPerRow[currentRow][2];
+            currentRow++;
+        }
+
+        if (sectionFlags[0] + sectionFlags[1] + sectionFlags[2] === 3) {
+            minimumCost = Math.min(currentCost, minimumCost);
+        }
+    }
 }
-console.log(smallestOverallCost);
+
+console.log(minimumCost);

@@ -1,26 +1,19 @@
-const performTransformation = (sourceData) => {
-  const lineSegment = sourceData.split('\n')[0];
-  const numericalStrings = lineSegment.trim().split(' ');
+function processNumbers(inputString) {
+  const parsedNumbers = inputString.split("\n")[0].split(" ").map(val => parseInt(val, 10)).sort((x, y) => y - x);
 
-  const initialNumbers = numericalStrings.map(val => +val);
+  const largestValue = parsedNumbers[0];
+  const middleValue = parsedNumbers[1];
+  const smallestValue = parsedNumbers[2];
 
-  const firstValue = initialNumbers[0];
-  const secondValue = initialNumbers[1];
-  const thirdValue = initialNumbers[2];
+  let operationCount;
 
-  const greatest = Math.max(firstValue, secondValue, thirdValue);
-  const least = Math.min(firstValue, secondValue, thirdValue);
-  const intermediate = firstValue + secondValue + thirdValue - greatest - least;
-
-  let outcomeCount;
-
-  if (Math.abs(intermediate - least) % 2 === 0) {
-    outcomeCount = (greatest - intermediate) + (intermediate - least) / 2;
+  if ((middleValue - smallestValue) % 2 === 0) {
+    operationCount = (largestValue - middleValue) + (middleValue - smallestValue) / 2;
   } else {
-    outcomeCount = 1 + (greatest - intermediate) + (intermediate + 1 - least) / 2;
+    operationCount = 1 + (largestValue - middleValue) + (middleValue - smallestValue + 1) / 2;
   }
 
-  console.log(outcomeCount);
-};
+  console.log(operationCount);
+}
 
-performTransformation(require("fs").readFileSync("/dev/stdin", "utf8"));
+processNumbers(require("fs").readFileSync("/dev/stdin", "utf8"));

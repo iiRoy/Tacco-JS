@@ -1,37 +1,18 @@
-const calculateMismatchCount = (sourceContent) => {
-    const fixedPattern = 'CODEFESTIVAL2016';
+function processInputData(rawData) {
+    const lines = rawData.split("\n");
+    const firstLine = lines[0];
 
-    const acquireTargetFragment = (completeText, currentIdx = 0, accumulatedFragment = '') => {
-        if (accumulatedFragment.length >= 16 || currentIdx >= completeText.length) {
-            return accumulatedFragment;
-        }
-        const charAtCurrent = completeText[currentIdx];
-        if (charAtCurrent === '\n') {
-            return accumulatedFragment;
-        }
-        return acquireTargetFragment(completeText, currentIdx + 1, accumulatedFragment + charAtCurrent);
-    };
+    const comparisonBase = 'CODEFESTIVAL2016';
+    const targetString = firstLine.substring(0, comparisonBase.length);
 
-    const processedFragment = acquireTargetFragment(sourceContent);
+    const diffCounter = Array.from({ length: comparisonBase.length }, (_, charIndex) => charIndex)
+                             .reduce((currentMismatchCount, charIndex) => {
+                                 const targetChar = targetString.charAt(charIndex);
+                                 const baseChar = comparisonBase.charAt(charIndex);
+                                 return currentMismatchCount + (targetChar !== baseChar ? 1 : 0);
+                             }, 0);
 
-    const positionsToExamine = Array.from({ length: 16 }, (_, index) => index);
+    console.log(diffCounter);
+}
 
-    const differingPositions = positionsToExamine.reduce((counter, position) => {
-        const inputChar = processedFragment[position];
-        const patternChar = fixedPattern[position];
-
-        if (inputChar !== patternChar) {
-            return counter + 1;
-        }
-        return counter;
-    }, 0);
-
-    return differingPositions;
-};
-
-const executeLogic = (externalData) => {
-    const finalResult = calculateMismatchCount(externalData);
-    console.log(finalResult);
-};
-
-executeLogic(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

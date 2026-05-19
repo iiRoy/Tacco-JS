@@ -1,64 +1,61 @@
-const extractIntegerPart = (value) => Math.floor(value);
-const determineMaximum = (valA, valB) => Math.max(valA, valB);
-const computeValuation = (baseFigure, rateModifier) =>
-  extractIntegerPart(baseFigure * (100 + rateModifier) / 100);
-const convertToInteger = (textualRepresentation) => parseInt(textualRepresentation, 10);
-const reportOutcome = (value) => process.stdout.write(value + '\n');
+const fileSystemModule = require('fs');
 
-const discoverMatchingSecondComponent = (desiredCostForSecond, modifierA, upperLimit) => {
-    for (let currentSecond = 1; currentSecond < upperLimit; ++currentSecond) {
-        const currentSecondValuation = computeValuation(currentSecond, modifierA);
-        if (currentSecondValuation === desiredCostForSecond) {
-            return currentSecond;
-        }
-        if (currentSecondValuation > desiredCostForSecond) {
-            return null;
-        }
+const computeAdjustedValue = (baseValue, adjustmentRate) =>
+  Math.floor(baseValue * (100 + adjustmentRate) / 100);
+
+function* findQualifyingPairs(targetSum, firstRate) {
+  const adjustFirst = (val) => computeAdjustedValue(val, firstRate);
+
+  for (let firstItem = 1; firstItem < targetSum; firstItem++) {
+    const adjustedFirstItem = adjustFirst(firstItem);
+
+    for (let secondItem = 1; secondItem < targetSum; secondItem++) {
+      const adjustedSecondItem = adjustFirst(secondItem);
+      const currentTotalAdjusted = adjustedFirstItem + adjustedSecondItem;
+
+      if (currentTotalAdjusted > targetSum) {
+        break;
+      }
+
+      if (currentTotalAdjusted === targetSum) {
+        yield { itemA: firstItem, itemB: secondItem };
+        break;
+      }
     }
+  }
+}
+
+const processParameterSet = (params) => {
+  const [paramX, paramY, paramS] = params;
+
+  if (paramX === 0 && paramY === 0 && paramS === 0) {
     return null;
+  }
+
+  let highestValue = 0;
+
+  for (const pair of findQualifyingPairs(paramS, paramX)) {
+    const valueForY_A = computeAdjustedValue(pair.itemA, paramY);
+    const valueForY_B = computeAdjustedValue(pair.itemB, paramY);
+    const totalValueForY = valueForY_A + valueForY_B;
+
+    highestValue = Math.max(highestValue, totalValueForY);
+  }
+
+  return highestValue;
 };
 
-const processInputSequentially = (remainingDataLines) => {
-    if (remainingDataLines.length === 0) {
-        return;
-    }
+const rawData = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const dataLines = rawData.trim().split("\n");
 
-    const currentDataLine = remainingDataLines[0];
-    const numericParameters = currentDataLine.split(" ").map(convertToInteger);
-    const modifierAlpha = numericParameters[0];
-    const modifierBeta = numericParameters[1];
-    const ultimateTarget = numericParameters[2];
+const finalResults = dataLines.reduce((accumulator, currentLine) => {
+  const numericParams = currentLine.split(" ").map(Number);
+  const resultForSet = processParameterSet(numericParams);
 
-    if (modifierAlpha === 0 && modifierBeta === 0 && ultimateTarget === 0) {
-        return;
-    }
+  if (resultForSet !== null) {
+    accumulator.push(resultForSet);
+  }
+  return accumulator;
+}, []);
 
-    let greatestAccumulatedValue = 0;
-
-    for (let firstComponent = 1; firstComponent < ultimateTarget; ++firstComponent) {
-        const costOfFirstComponentAlpha = computeValuation(firstComponent, modifierAlpha);
-        const requiredCostForSecond = ultimateTarget - costOfFirstComponentAlpha;
-
-        if (requiredCostForSecond <= 0) {
-            continue;
-        }
-
-        const secondComponent = discoverMatchingSecondComponent(requiredCostForSecond, modifierAlpha, ultimateTarget);
-
-        if (secondComponent !== null) {
-            const costOfFirstComponentBeta = computeValuation(firstComponent, modifierBeta);
-            const costOfSecondComponentBeta = computeValuation(secondComponent, modifierBeta);
-            const currentTotalBeta = costOfFirstComponentBeta + costOfSecondComponentBeta;
-            greatestAccumulatedValue = determineMaximum(greatestAccumulatedValue, currentTotalBeta);
-        }
-    }
-
-    reportOutcome(greatestAccumulatedValue);
-    processInputSequentially(remainingDataLines.slice(1));
-};
-
-const fileSystemAccessModule = require('fs');
-const rawInputContent = fileSystemAccessModule.readFileSync('/dev/stdin', 'utf8');
-const preparedInputLines = rawInputContent.trim().split("\n");
-
-processInputSequentially(preparedInputLines);
+finalResults.forEach(outputValue => console.log(outputValue));

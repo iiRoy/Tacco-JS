@@ -1,280 +1,179 @@
-/*
- * This module provides a utility for processing input data from a string.
- * It allows parsing tokens, lines, or blocks of numbers.
- */
-var InputProcessorModule = ( function () {
-  /**
-   * Creates a new input stream processor.
-   * @param {string} rawSourceString - The raw input string to process.
-   * @returns {DataStream} An instance of the DataStream class.
-   */
-  function createProcessor( rawSourceString ) {
-    return new DataStream( rawSourceString );
+var INPUT_PARSER = (function() {
+  // Factory function to create a new parser instance
+  function createParser(sourceText) {
+    return new InputSource(sourceText);
   }
 
-  /**
-   * Represents a stream of data, allowing sequential parsing.
-   * @class
-   * @param {string} streamInput - The string containing all input data.
-   */
-  function DataStream( streamInput ) {
-    // Stores all lines of the input, trimmed and split by newline.
-    this._dataLines = streamInput.trim().split( "\n" );
-    // Keeps track of the current line being processed.
-    this._currentLineIndex = 0;
+  // Class to handle parsing input lines
+  function InputSource(sourceText) {
+    this._sourceLines = sourceText.trim().split("\n"); // Store all lines
+    this._currentLineIndex = 0; // Current line being processed
   }
 
-  /**
-   * Extracts the next token from the current line.
-   * If a line is processed, it moves to the next one.
-   * @param {boolean} [returnAsString=false] - If true, returns the token as a string; otherwise, converts to a number.
-   * @returns {(string|number)} The next token.
-   */
-  DataStream.prototype.getNextToken = function ( returnAsString ) {
-    var currentLines = this._dataLines;
-    var lineIndex = this._currentLineIndex;
-    var extractedValue;
+  // Method to read a single token from the current line
+  InputSource.prototype.readNextToken = function(asString) {
+    var lines = this._sourceLines;
+    var lineIdx = this._currentLineIndex;
+    var resultToken;
 
-    // If the current line hasn't been split into tokens yet, do it.
-    // The original logic reverses the split array; we maintain this behavior.
-    if ( typeof currentLines[ lineIndex ] === "string" ) {
-      currentLines[ lineIndex ] = currentLines[ lineIndex ].split( " " ).reverse();
+    // If the current line hasn't been split into tokens yet, do it
+    if (typeof lines[lineIdx] === "string") {
+      lines[lineIdx] = lines[lineIdx].split(" ").reverse(); // Split and reverse for efficient pop
     }
 
-    // Pop the last token (which is the first after reversal).
-    extractedValue = currentLines[ lineIndex ].pop();
+    resultToken = lines[lineIdx].pop(); // Get the last token
 
-    // If the current line is exhausted, advance to the next line.
-    if ( !currentLines[ lineIndex ].length ) {
+    // If the current line is exhausted, move to the next
+    if (!lines[lineIdx].length) {
       this._currentLineIndex++;
     }
 
-    // Return as string or number based on the flag.
-    return returnAsString ? extractedValue : +extractedValue;
+    return asString ? resultToken : +resultToken; // Return as string or number
   };
 
-  /**
-   * Reads an entire line and splits it into tokens.
-   * Advances the line index after reading.
-   * @param {boolean} [returnAsString=false] - If true, returns tokens as strings; otherwise, converts to numbers.
-   * @returns {(string[]|number[])} An array of tokens from the line.
-   */
-  DataStream.prototype.getNextLine = function ( returnAsString ) {
-    var lineTokens = this._dataLines[ this._currentLineIndex++ ].split( " " );
-    // Map tokens to numbers if not requested as strings.
-    return returnAsString ? lineTokens : lineTokens.map( ( val ) => +val );
+  // Method to read all tokens from the current line
+  InputSource.prototype.readLineTokens = function(asStrings) {
+    var tokens = this._sourceLines[this._currentLineIndex++].split(" ");
+    return asStrings ? tokens : tokens.map(val => +val);
   };
 
-  /**
-   * Reads a specified number of lines, treating each as a row in a matrix.
-   * @param {number} numRows - The number of lines (rows) to read.
-   * @param {boolean} [returnAsString=false] - If true, returns matrix elements as strings; otherwise, converts to numbers.
-   * @returns {(string[][]|number[][])} A 2D array (matrix) of values.
-   */
-  DataStream.prototype.getNextMatrix = function ( numRows, returnAsString ) {
-    // Slice the required lines and map each to an array of split tokens.
-    var matrixRows = this._dataLines
-      .slice( this._currentLineIndex, ( this._currentLineIndex += numRows ) )
-      .map( ( line ) => line.split( " " ) );
-
-    // If not returning as string, map all elements to numbers.
-    return returnAsString
-      ? matrixRows
-      : matrixRows.map( ( row ) => row.map( ( element ) => +element ) );
+  // Method to read a matrix (multiple lines, each split into tokens)
+  InputSource.prototype.readMatrix = function(numRows, asStrings) {
+    var matrixRows = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numRows)
+                                      .map(line => line.split(" "));
+    return asStrings ? matrixRows : matrixRows.map(row => row.map(val => +val));
   };
 
-  /**
-   * Reads a specified number of lines, returning each line as a single value.
-   * @param {number} numEntries - The number of lines to read.
-   * @param {boolean} [returnAsString=false] - If true, returns values as strings; otherwise, converts to numbers.
-   * @returns {(string[]|number[])} An array of values, each from a new line.
-   */
-  DataStream.prototype.getNextRows = function ( numEntries, returnAsString ) {
-    // Slice the required lines.
-    var rowValues = this._dataLines.slice(
-      this._currentLineIndex,
-      ( this._currentLineIndex += numEntries )
-    );
-
-    // If not returning as string, map all elements to numbers.
-    return returnAsString ? rowValues : rowValues.map( ( element ) => +element );
+  // Method to read raw lines (without splitting into tokens)
+  InputSource.prototype.readRawLines = function(numLines, asStrings) {
+    var rawLines = this._sourceLines.slice(this._currentLineIndex, this._currentLineIndex += numLines);
+    return asStrings ? rawLines : rawLines.map(line => +line);
   };
 
-  // The IIFE returns the factory function `createProcessor`.
-  return createProcessor;
-} )();
+  return createParser;
+})();
 
-/*
- * Initialize the input reader by reading from standard input.
- * The 'utf8' encoding ensures proper character handling.
- */
-var inputReader = InputProcessorModule( require( "fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+var inputReader = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/**
- * Creates a multi-dimensional array initialized with a specific value.
- * The dimensions are passed as additional arguments after the initial value.
- * Example: createMultiDimArray(0, 2, 3) creates a 2x3 array filled with 0s.
- * @param {*} initialValue - The value to fill the array with.
- * @param {...number} dimensions - The dimensions of the array.
- * @returns {Array} The multi-dimensional array.
- */
-function createMultiDimArray( initialValue ) {
-  var dimensionArgs = arguments;
-  var argLength = dimensionArgs.length;
-  // Start building the string for the innermost array.
-  var arrayCreationString = "Array(dimensionArgs[" + --argLength + "]).fill(initialValue)";
-  // Build the string for outer dimensions, mapping with 0s for intermediate layers.
-  while ( --argLength ) {
-    arrayCreationString =
-      "Array(dimensionArgs[" + argLength + "]).fill(0).map((_)=> " + arrayCreationString + ")";
+function createMultiDimArray(initialValue) {
+  var allArgs = arguments;
+  var argCount = allArgs.length;
+  var arrayCreationString = "Array(allArgs[" + --argCount + "]).fill(initialValue)";
+
+  while (--argCount) {
+    arrayCreationString = "Array(allArgs[" + argCount + "]).fill(0).map(_ => " + arrayCreationString + ")";
   }
-  // Use eval to dynamically create the array structure.
-  return eval( arrayCreationString );
+  return eval(arrayCreationString);
 }
 
-/**
- * Implements the Quickselect algorithm to find the k-th smallest element in an array.
- * This function modifies the input array in place.
- * @param {Array<number>} targetArray - The array to search within.
- * @param {number} targetIndex - The 1-based index (k) of the element to find.
- * @returns {number} The k-th smallest element.
- */
-function findKthSmallest( targetArray, targetIndex ) {
-  // Convert 1-based index to 0-based.
-  --targetIndex;
+function findKthSmallest(dataArray, kthIndex) {
+  // Adjust k to be 0-indexed
+  --kthIndex;
 
-  var leftBound = 0;
-  var rightBound = targetArray.length - 1;
+  var leftPointer = 0;
+  var rightPointer = dataArray.length - 1;
 
-  // Continue partitioning until the k-th element is found.
-  while ( leftBound < rightBound ) {
-    var leftPointer = leftBound - 1;
-    var rightPointer = rightBound;
-    // Median-of-three pivot selection (simple middle element here).
-    var pivotIndex = ( leftBound + rightBound ) >> 1;
-    var pivotValue = targetArray[ pivotIndex ];
-    var tempStorage;
+  while (leftPointer < rightPointer) {
+    var pivotIndex = leftPointer - 1;
+    var scanIndex = rightPointer;
+    var medianIndex = leftPointer + rightPointer >> 1; // Bitwise right shift for integer division
 
-    // Move pivot to the end for partitioning.
-    targetArray[ pivotIndex ] = targetArray[ rightBound ];
+    var pivotValue = dataArray[medianIndex];
+    var tempSwap;
 
-    // Lomuto partition scheme variant.
-    while ( 1 ) {
-      // Find element greater than pivot from left.
-      while ( leftPointer < rightPointer ) {
-        if ( pivotValue < targetArray[ ++leftPointer ] ) {
+    // Move pivot to the end
+    dataArray[medianIndex] = dataArray[rightPointer];
+    dataArray[rightPointer] = pivotValue;
+
+    // Partitioning loop
+    while (true) {
+      while (pivotIndex < scanIndex) {
+        if (pivotValue < dataArray[++pivotIndex]) {
           break;
         }
       }
-      // Find element smaller than pivot from right.
-      while ( leftPointer < rightPointer ) {
-        if ( targetArray[ --rightPointer ] < pivotValue ) {
+      while (pivotIndex < scanIndex) {
+        if (dataArray[--scanIndex] < pivotValue) {
           break;
         }
       }
-
-      // If pointers cross, partitioning for this segment is complete.
-      if ( rightPointer <= leftPointer ) {
-        break;
+      if (scanIndex <= pivotIndex) {
+        break; // Partitioning complete
       }
-
-      // Swap elements.
-      tempStorage = targetArray[ leftPointer ];
-      targetArray[ leftPointer ] = targetArray[ rightPointer ];
-      targetArray[ rightPointer ] = tempStorage;
+      // Swap elements
+      tempSwap = dataArray[pivotIndex];
+      dataArray[pivotIndex] = dataArray[scanIndex];
+      dataArray[scanIndex] = tempSwap;
     }
 
-    // Place pivot in its final sorted position.
-    targetArray[ rightBound ] = targetArray[ leftPointer ];
-    targetArray[ leftPointer ] = pivotValue;
+    // Restore pivot to its final sorted position
+    dataArray[rightPointer] = dataArray[pivotIndex];
+    dataArray[pivotIndex] = pivotValue;
 
-    // Adjust bounds based on pivot's position relative to targetIndex.
-    if ( leftPointer < targetIndex ) {
-      leftBound = leftPointer + 1;
-    } else if ( targetIndex < leftPointer ) {
-      rightBound = leftPointer - 1;
+    // Adjust pointers for next iteration
+    if (pivotIndex < kthIndex) {
+      leftPointer = pivotIndex + 1;
+    } else if (kthIndex < pivotIndex) {
+      rightPointer = pivotIndex - 1;
     } else {
-      // k-th element found at leftPointer.
-      break;
+      break; // Found the k-th element
     }
   }
-  // Return the element at the target index.
-  return targetArray[ targetIndex ];
+  return dataArray[kthIndex]; // Return the k-th smallest element
 }
 
-/*
- * Executes the main logic of the program and prints the result to console.
- */
-console.log( executeSolution() );
+console.log(processInputAndCalculate());
 
-/**
- * Main function to solve the problem.
- * Reads input, processes arrays, finds top K sums, and formats output.
- * @returns {string} The formatted string of the final K largest sums.
- */
-function executeSolution() {
-  // Read four integer parameters from input.
-  var firstCount = inputReader.getNextToken();
-  var secondCount = inputReader.getNextToken();
-  var thirdCount = inputReader.getNextToken();
-  var desiredElements = inputReader.getNextToken();
+function processInputAndCalculate() {
+  // Read input values
+  var countX = inputReader.readNextToken();
+  var countY = inputReader.readNextToken();
+  var countZ = inputReader.readNextToken();
+  var topK = inputReader.readNextToken();
 
-  // Read three arrays of numbers, sort them in descending order.
-  var firstSet = inputReader.getNextLine().sort( ( valA, valB ) => valB - valA );
-  var secondSet = inputReader.getNextLine().sort( ( valA, valB ) => valB - valA );
-  var thirdSet = inputReader.getNextLine().sort( ( valA, valB ) => valB - valA );
+  // Read and sort arrays in descending order
+  var arrayA = inputReader.readLineTokens().sort((val1, val2) => val2 - val1);
+  var arrayB = inputReader.readLineTokens().sort((val1, val2) => val2 - val1);
+  var arrayC = inputReader.readLineTokens().sort((val1, val2) => val2 - val1);
 
-  // Calculate all possible sums of elements from firstSet and secondSet.
+  // Calculate all possible sums of elements from arrayA and arrayB
   var intermediateSums = [];
-  for ( var loopCounterA = 0; loopCounterA < firstCount; loopCounterA++ ) {
-    for ( var loopCounterB = 0; loopCounterB < secondCount; loopCounterB++ ) {
-      intermediateSums.push( firstSet[ loopCounterA ] + secondSet[ loopCounterB ] );
+  for (var idx1 = 0; idx1 < countX; idx1++) {
+    for (var idx2 = 0; idx2 < countY; idx2++) {
+      intermediateSums.push(arrayA[idx1] + arrayB[idx2]);
     }
   }
 
-  // If the number of intermediate sums exceeds desiredElements,
-  // reduce the array to contain only the top desiredElements sums.
-  if ( desiredElements < intermediateSums.length ) {
-    intermediateSums = extractTopK( intermediateSums, desiredElements );
+  // If the number of intermediate sums exceeds topK, reduce it to the topK largest
+  if (topK < intermediateSums.length) {
+    intermediateSums = getTopKElements(intermediateSums, topK);
   }
 
-  // Sort the intermediate sums in descending order.
-  intermediateSums.sort( ( valA, valB ) => valB - valA );
+  // Sort the intermediate sums in descending order
+  intermediateSums.sort((val1, val2) => val2 - val1);
 
-  // Calculate final sums by adding elements from thirdSet to intermediateSums.
+  // Calculate final results by adding elements from arrayC to intermediate sums
   var finalResults = [];
-  for ( var loopCounterA = 0; loopCounterA < thirdCount; loopCounterA++ ) {
-    // Determine how many sums to generate for the current element of thirdSet.
-    // This is limited by remaining desiredElements and available intermediateSums.
-    var limitValue = Math.min( intermediateSums.length, desiredElements - loopCounterA );
-    for ( var loopCounterB = 0; loopCounterB < limitValue; loopCounterB++ ) {
-      finalResults.push( thirdSet[ loopCounterA ] + intermediateSums[ loopCounterB ] );
+  for (var idx1 = 0; idx1 < countZ; idx1++) {
+    var limit = Math.min(intermediateSums.length, topK - idx1);
+    for (var idx2 = 0; idx2 < limit; idx2++) {
+      finalResults.push(arrayC[idx1] + intermediateSums[idx2]);
     }
   }
 
-  // If the number of final results exceeds desiredElements,
-  // reduce the array to contain only the top desiredElements sums.
-  if ( desiredElements < finalResults.length ) {
-    finalResults = extractTopK( finalResults, desiredElements );
+  // If the number of final results exceeds topK, reduce it to the topK largest
+  if (topK < finalResults.length) {
+    finalResults = getTopKElements(finalResults, topK);
   }
 
-  // Sort the final results in descending order and join them with newlines.
-  return finalResults.sort( ( valA, valB ) => valB - valA ).join( "\n" );
+  // Sort the final results in descending order and join them with newlines
+  return finalResults.sort((val1, val2) => val2 - val1).join("\n");
 }
 
-/**
- * Extracts the `numElements` largest elements from an input collection.
- * This is done efficiently using Quickselect to find the (N-k)-th smallest element,
- * then slicing the array.
- * @param {Array<number>} inputCollection - The array to process.
- * @param {number} numElements - The number of largest elements to extract.
- * @returns {Array<number>} An array containing the top `numElements` largest values.
- */
-function extractTopK( inputCollection, numElements ) {
-  // Find the (length - numElements)-th smallest element.
-  // This effectively partitions the array such that all elements after this index
-  // are the largest 'numElements' values.
-  findKthSmallest( inputCollection, inputCollection.length - numElements );
-  // Return the slice containing these largest elements.
-  return inputCollection.slice( inputCollection.length - numElements );
+function getTopKElements(inputCollection, numElements) {
+  // Use findKthSmallest to find the (length - numElements)-th smallest element.
+  // This effectively partitions the array such that the largest 'numElements' are at the end.
+  findKthSmallest(inputCollection, inputCollection.length - numElements);
+  // Return the slice containing the largest 'numElements'
+  return inputCollection.slice(inputCollection.length - numElements);
 }

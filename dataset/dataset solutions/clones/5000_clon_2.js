@@ -1,85 +1,64 @@
-function prefixDigits(valueString, requiredLength) {
-  // This utility function prepends '0' characters to a string
-  // until it reaches the specified 'requiredLength', then truncates it
-  // from the right if it exceeds the length.
-  let paddingCharacters = ''; // Initialize an empty string to hold leading zeros
-
+function padWithZeros(inputString, desiredLength) {
+  // Initialize a string to accumulate leading zeros
+  let zeroAccumulator = '';
   // Loop to build the string of zeros
-  for (let idx = 0; idx < requiredLength; idx++) {
-    paddingCharacters = paddingCharacters + '0'; // Append a zero in each iteration
+  for (let idx = 0; idx < desiredLength; idx++) {
+    zeroAccumulator = zeroAccumulator + '0';
   }
-
-  // Concatenate the generated zeros with the original string
-  // and then slice from the end to ensure the final string has
-  // exactly 'requiredLength' characters.
-  return (paddingCharacters + valueString).slice(-requiredLength);
+  // Concatenate zeros and the input string, then take the last 'desiredLength' characters
+  return (zeroAccumulator + inputString).slice(-desiredLength);
 }
 
-function analyzeBinaryCombinations(sourceData) {
-  // Main function to process input data and find combinations
-  // that satisfy a specific average condition.
+function processInputData(rawData) {
+  // Split the raw input into an array of lines
+  let inputLines = rawData.split('\n');
 
-  // Split the entire input block by newline characters to get individual lines.
-  const inputLines = sourceData.split('\n');
-
-  // Process the first line: split by space to get two numeric values.
+  // Process the first line: split by space
   inputLines[0] = inputLines[0].split(' ');
-
-  // Process the second line: split by space to get an array of numeric strings.
+  // Process the second line: split by space
   inputLines[1] = inputLines[1].split(' ');
 
-  // Parse the first value from the first line as the total number of elements.
-  const numElements = parseInt(inputLines[0][0], 10);
+  // Parse N (number of elements) from the first line
+  const subsetSize = parseInt(inputLines[0][0]);
+  // Parse A (target average) from the first line
+  const targetAverage = parseInt(inputLines[0][1]);
+  // Store the array of numbers from the second line
+  const numberArray = inputLines[1];
 
-  // Parse the second value from the first line as the target average.
-  const targetMean = parseInt(inputLines[0][1], 10);
+  // Calculate M = 2^N, representing the total number of possible subsets (including empty)
+  const totalCombinations = Math.pow(2, subsetSize);
+  // Initialize a counter for valid subsets
+  let validSubsetCount = 0;
 
-  // Store the array of element values from the second input line.
-  const elementValues = inputLines[1];
+  // Iterate from 1 to M-1 to generate all non-empty subsets
+  for (let combinationIndex = 1; combinationIndex < totalCombinations; combinationIndex++) {
+    // Convert the combination index to its binary representation and pad with leading zeros to length N
+    const binaryRepresentation = padWithZeros((combinationIndex.toString(2)), subsetSize);
 
-  // Calculate the total number of possible combinations (2^numElements).
-  // This represents all possible subsets of the elements.
-  const maxCombinations = Math.pow(2, numElements);
+    // Initialize sum for the current subset
+    let currentSum = 0;
+    // Count the number of '1's in the binary representation (which is the number of elements in the subset)
+    const oneCount = binaryRepresentation.match(/1/g).length;
 
-  // Initialize a counter for subsets that meet the average criteria.
-  let matchingCount = 0;
-
-  // Iterate through all possible combinations from 1 to maxCombinations - 1.
-  // Each integer 'combinationId' represents a unique subset when converted to binary.
-  for (let combinationId = 1; combinationId < maxCombinations; combinationId++) {
-    // Convert the current 'combinationId' to its binary string representation.
-    // Ensure it's padded with leading zeros to match 'numElements' length.
-    const currentBinaryString = prefixDigits((combinationId.toString(2)), numElements);
-
-    // Initialize the sum for the current subset.
-    let currentSubsetSum = 0;
-
-    // Count the number of '1's in the binary string, which represents
-    // the number of elements included in the current subset.
-    const setBitQuantity = currentBinaryString.match(/1/g).length;
-
-    // Iterate through each bit of the binary string.
-    for (let positionIndex = 0; positionIndex < numElements; positionIndex++) {
-      // If the bit at 'positionIndex' is '1', include the corresponding
-      // element value in the 'currentSubsetSum'.
-      if (currentBinaryString[positionIndex] === '1') {
-        currentSubsetSum += parseInt(elementValues[positionIndex], 10);
+    // Iterate through the binary representation to calculate the sum of elements in the current subset
+    for (let digitIndex = 0; digitIndex < subsetSize; digitIndex++) {
+      // If the current binary digit is '1', add the corresponding number from numberArray to currentSum
+      if (binaryRepresentation[digitIndex] === '1') {
+        currentSum += parseInt(numberArray[digitIndex]);
       }
     }
 
-    // Check if the average of the current subset's elements equals the 'targetMean'.
-    // The average is calculated as 'currentSubsetSum / setBitQuantity'.
-    if (targetMean === currentSubsetSum / setBitQuantity) {
-      // If the condition is met, log the binary string representation of the subset.
-      console.log(currentBinaryString);
-      // Increment the counter for matching subsets.
-      matchingCount++;
+    // Check if the average of the current subset equals the target average
+    if (targetAverage === currentSum / oneCount) {
+      // If it matches, print the binary representation of the subset
+      console.log(binaryRepresentation);
+      // Increment the counter for valid subsets
+      validSubsetCount++;
     }
   }
-
-  // After checking all combinations, print the total count of matching subsets.
-  console.log(matchingCount);
+  // After checking all combinations, print the total count of valid subsets
+  console.log(validSubsetCount);
 }
 
-// Call the main processing function with data read from standard input.
-analyzeBinaryCombinations(require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' }));
+// Read input from standard input and pass it to the main processing function
+processInputData(require('fs').readFileSync('/dev/stdin', 'UTF-8'));

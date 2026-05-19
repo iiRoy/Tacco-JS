@@ -1,23 +1,26 @@
-const initialData = require('fs').readFileSync('/dev/stdin', 'utf8').trimEnd();
-const [lengthStr, firstSeq, secondSeq, thirdSeq] = initialData.split('\n');
-const sequenceCount = Number(lengthStr);
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const firstArray = [...firstSeq];
-const secondArray = [...secondSeq];
-const thirdArray = [...thirdSeq];
+var contentLines = fileContent.split('\n');
 
-const determineMismatchValue = (val1, val2, val3) => {
-    const distinctElements = new Set([val1, val2, val3]);
-    return distinctElements.size - 1;
+var sequenceLength = Number(contentLines[0]);
+
+var firstSequence = contentLines[1].split('');
+
+var secondSequence = contentLines[2].split('');
+
+var thirdSequence = contentLines[3].split('');
+
+const calculateTripletScore = (charA, charB, charC) => {
+  const uniqueCharacters = new Set([charA, charB, charC]);
+  const uniqueCount = uniqueCharacters.size;
+  return Math.max(0, uniqueCount - 1);
 };
 
-const positions = Array.from({ length: sequenceCount }, (_, k) => k);
-
-const finalTally = positions.reduce((currentTally, positionIndex) => {
-    const charA = firstArray[positionIndex];
-    const charB = secondArray[positionIndex];
-    const charC = thirdArray[positionIndex];
-    return currentTally + determineMismatchValue(charA, charB, charC);
+const totalDifferenceScore = Array.from({ length: sequenceLength }).reduce((currentAccumulation, _, currentIndex) => {
+  const charOne = firstSequence[currentIndex];
+  const charTwo = secondSequence[currentIndex];
+  const charThree = thirdSequence[currentIndex];
+  return currentAccumulation + calculateTripletScore(charOne, charTwo, charThree);
 }, 0);
 
-console.log(finalTally);
+console.log(totalDifferenceScore);

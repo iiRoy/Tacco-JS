@@ -1,70 +1,62 @@
-const     rawData   = require('fs').readFileSync('/dev/stdin', 'utf8') ;
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-const linesOfText=rawData.trim().split('\n');
-const connections=linesOfText.map( (lineStr) => lineStr.split(' ').map(Number) );
+const lineData = rawData.trim().split('\n');
+const adjacencyMatrix = lineData.map((s) => s.split(' ').map(Number));
 
-class ConnectionLink {
-  constructor( targetNodeId, linkCost = 1 ) {
-    this.targetNode = targetNodeId;
-    this.costValue = linkCost;
+class Connection {
+  constructor(target, cost = +true) {
+    this.target = target;
+    this.cost = cost;
   }
 }
 
 class Vertex {
-  constructor(  ) {
-    this.outgoingLinks = [];
+  constructor() {
+    this.connections = [];
   }
-
-  appendLink( newConnection ) {
-    this.outgoingLinks.push(newConnection);
+  addConnection(connection) {
+    this.connections.push(connection);
   }
-
-  hasOddDegree(  ) {
-    return !!(this.outgoingLinks.length % 2);
+  hasOddDegree() {
+    return !!(this.connections.length % 2);
   }
 }
 
-class NetworkStructure {
+class Network {
   constructor() {
-    this.initializeStructure();
+    this.initialize();
   }
-
-  initializeStructure(  ) {
-    this.vertexRegistry = new Map();
+  initialize() {
+    this.vertexMap = new Map();
   }
-
-  getVertexReference( originIdentifier, linkObject ) {
-    if ( !this.vertexRegistry.has(originIdentifier) ) {
-      this.vertexRegistry.set(originIdentifier, new Vertex());
+  getVertex(origin) {
+    if (!this.vertexMap.has(origin)) {
+      this.vertexMap.set(origin, new Vertex());
     }
-    return this.vertexRegistry.get(originIdentifier);
+    return this.vertexMap.get(origin);
   }
-
-  appendLinkBetween( originIdentifier, newConnection ) {
-    const currentVertex = this.getVertexReference(originIdentifier);
-    currentVertex.appendLink(newConnection);
+  addConnectionToNetwork(origin, connection) {
+    const currentVertex = this.getVertex(origin);
+    currentVertex.addConnection(connection);
   }
-
-  countOddDegreeVertices(  ) {
-    return Array.from(this.vertexRegistry.values()).map(aVertex => aVertex.hasOddDegree() ? 1 : 0).reduce((accumulator, currentValue) => accumulator + currentValue);
+  countOddDegreeVertices() {
+    return Array.from(this.vertexMap.values()).map(vertex => vertex.hasOddDegree() ? +true : +false).reduce((accumulator, currentValue) => accumulator + currentValue);
   }
-
-  canTraverseEulerianPath(  ) {
-    if ( networkInstance.countOddDegreeVertices() !== 2 ) {
+  canBeTraversed() {
+    if (networkInstance.countOddDegreeVertices() !== 2) {
       return false;
     }
-    return networkInstance.getVertexReference(1).hasOddDegree() && networkInstance.getVertexReference(2).hasOddDegree();
+    return networkInstance.getVertex(1).hasOddDegree() && networkInstance.getVertex(2).hasOddDegree();
   }
 }
 
-const networkInstance = new NetworkStructure();
-
-connections.forEach(  ( [startId, endId] ) => {
-  if ( startId === 0 && endId === 0 ) {
-    console.log( networkInstance.canTraverseEulerianPath() ? 'OK' : 'NG' );
-    networkInstance.initializeStructure();
+const networkInstance = new Network();
+adjacencyMatrix.forEach(([origin, destination]) => {
+  if (origin === (0) && destination === (0)) {
+    console.log(networkInstance.canBeTraversed() ? 'OK' : 'NG');
+    networkInstance.initialize();
     return;
   }
-  networkInstance.appendLinkBetween( startId, new ConnectionLink(endId) );
-  networkInstance.appendLinkBetween( endId, new ConnectionLink(startId) );
-} );
+  networkInstance.addConnectionToNetwork(origin, new Connection(destination));
+  networkInstance.addConnectionToNetwork(destination, new Connection(origin));
+});

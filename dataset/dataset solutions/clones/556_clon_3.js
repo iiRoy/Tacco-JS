@@ -1,99 +1,45 @@
-const STANDARD_INPUT_SOURCE_PATH = '/dev/stdin';
-const systemInputModule = require('fs');
+var fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+var lines = (fileContent.trim()).split("\n");
 
-// Raw content read from the standard input stream
-const rawSystemInputContent = systemInputModule.readFileSync(STANDARD_INPUT_SOURCE_PATH, 'utf8');
+const TERMINATION_SIGNAL_VALUE = "0 0";
 
-// Process the raw input: remove leading/trailing whitespace and split into an array of lines
-let inputDataLines = rawSystemInputContent.trim().split('\n');
+// Helper function to parse dimension strings into numbers
+const parseDimensionString = (dimensionText) => dimensionText.split(" ").map(Number);
 
-// Define the specific string that signals the end of input data processing
-const PROCESSING_TERMINATOR_SEQUENCE = "0 0";
-
-/**
- * A utility function to safely parse a string containing space-separated numbers
- * into an array of numeric values. Includes basic validation.
- * @param {string} lineToParse The string expected to contain numbers.
- * @returns {number[]} An array of parsed numbers. Returns an empty array if input is invalid.
- */
-function extractNumericValues(lineToParse) {
-    // Implement a guard clause for empty or malformed input lines
-    if (!lineToParse || typeof lineToParse !== 'string' || lineToParse.trim() === '') {
-        console.warn("Attempted to parse an empty or invalid numeric line.");
-        return [];
-    }
-    // Split the string by spaces and convert each part to a number
-    return lineToParse.split(' ').map(Number);
-}
-
-// Main operational loop for processing multiple competition datasets
-// This loop continues indefinitely until a specific termination condition is met
 while (true) {
-    // Fetch the next line, which should contain the participant and round counts
-    const competitionSizeDescriptorLine = inputDataLines.shift();
+    var dimensionsLine = lines.shift();
 
-    // Check if the retrieved line matches the defined termination sequence
-    if (competitionSizeDescriptorLine === PROCESSING_TERMINATOR_SEQUENCE) {
-        // If it matches, gracefully exit the processing loop
+    if (dimensionsLine === TERMINATION_SIGNAL_VALUE) {
         break;
     }
 
-    // Parse the descriptor line to get the number of rounds and participants
-    const parsedCompetitionDimensions = extractNumericValues(competitionSizeDescriptorLine);
+    var parsedDims = parseDimensionString(dimensionsLine);
+    var numRows = parsedDims[0];
+    var numCols = parsedDims[1];
 
-    // Validate that exactly two dimension values (rounds, participants) were provided
-    if (parsedCompetitionDimensions.length !== 2) {
-        console.error(`Error: Malformed competition dimension line encountered: "${competitionSizeDescriptorLine}". Skipping this data block.`);
-        // Skip to the next iteration of the loop if the dimensions are invalid
-        continue;
-    }
-
-    // Assign the extracted dimension values to clearly named constants
-    const totalNumberOfRounds = parsedCompetitionDimensions[0];
-    const totalNumberOfParticipants = parsedCompetitionDimensions[1];
-
-    // Initialize an array to hold data for each participant.
-    // Each participant object will track their unique ID and their cumulative score.
-    // Using Array.from for a more functional and concise initialization.
-    const participantPerformanceRecords = Array.from({ length: totalNumberOfParticipants }, (_, index) => ({
-        participantUniqueId: index + 1, // Participant IDs are typically 1-based
-        cumulativePointTotal: 0         // Start each participant's score at zero
+    // Initialize column aggregates using Array.from for a different structural approach
+    var columnAggregates = Array.from({ length: numCols }, (_, index) => ({
+        columnIdentifier: index + 1,
+        totalSum: 0
     }));
 
-    // Iterate through each round to accumulate scores for all participants
-    for (let currentRoundIndex = 0; currentRoundIndex < totalNumberOfRounds; currentRoundIndex++) {
-        // Retrieve and parse the scores submitted for the current round
-        const scoresForThisRound = extractNumericValues(inputDataLines.shift());
-
-        // Perform a validation check to ensure the number of scores matches the expected participant count
-        if (scoresForThisRound.length !== totalNumberOfParticipants) {
-            console.warn(`Warning: Score count mismatch in round ${currentRoundIndex + 1}. Expected ${totalNumberOfParticipants} scores, but received ${scoresForThisRound.length}. Skipping this round's data.`);
-            // Continue to the next round if the data is incomplete or malformed
-            continue;
-        }
-
-        // Update each participant's cumulative score with their score from the current round
-        // Using a traditional for loop for direct indexed access, which can be clearer for this update pattern.
-        for (let participantIndex = 0; participantIndex < totalNumberOfParticipants; participantIndex++) {
-            participantPerformanceRecords[participantIndex].cumulativePointTotal += scoresForThisRound[participantIndex];
+    // Process each data row
+    for (var currentRowIndex = 0; currentRowIndex < numRows; currentRowIndex++) {
+        var currentDataRow = (lines.shift()).split(" ").map(Number);
+        // Iterate through columns to update sums using a traditional for loop
+        for (let colIndex = 0; colIndex < numCols; colIndex++) {
+            columnAggregates[colIndex].totalSum += currentDataRow[colIndex];
         }
     }
 
-    // Sort the participant records based on their cumulative scores in ascending order.
-    // The comparison function is simplified to directly return the difference,
-    // which is standard practice for numeric ascending sorts.
-    participantPerformanceRecords.sort((participantOne, participantTwo) => {
-        return participantOne.cumulativePointTotal - participantTwo.cumulativePointTotal;
+    // Sort column aggregates in descending order of totalSum
+    columnAggregates.sort(function (itemA, itemB) {
+        // Rewriting the comparison logic for clarity and idiomatic JavaScript
+        return itemB.totalSum - itemA.totalSum;
     });
 
-    // After sorting, extract only the unique identifiers of the participants
-    // The map function provides a clean way to transform the array of objects into an array of IDs.
-    const orderedParticipantIdentifiers = participantPerformanceRecords.map(
-        (participantEntry) => participantEntry.participantUniqueId
-    );
+    // Extract sorted column identifiers using map
+    var resultIdentifiers = columnAggregates.map(entry => entry.columnIdentifier);
 
-    // Output the final ordered list of participant identifiers, joined by spaces
-    // The console.log function automatically adds a newline character at the end.
-    console.log(orderedParticipantIdentifiers.join(' '));
+    console.log(resultIdentifiers.join(" "));
 }
-// This comment marks the logical conclusion of the script's execution.

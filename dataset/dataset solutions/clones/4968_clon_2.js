@@ -1,14 +1,14 @@
-'use strict'; // Enable strict mode for better error handling.
+'use strict'; // Enforce strict mode for cleaner code execution
 
-// Retrieve all textual segments from the standard input,
-// interpreting them as UTF-8 characters, and then divide them by newline characters.
-const   inputRows   =   require (  "fs"  )  .  readFileSync (  "/dev/stdin"  ,  "utf8"  )  .  split (  "\n"  )  ;
+// Import the Node.js file system module to handle file operations.
+// Read the entire content from standard input, decode it as UTF-8,
+// and then divide it into an array of strings based on newline characters.
+const inputRows = require("fs").readFileSync("/dev/stdin", "utf8").split("\n");
 
-/*
- * Transform every individual text segment into its numerical equivalent.
- * This operation creates a new array containing only numeric values.
- */
-const   parsedNumbers   =   inputRows .  map (  textItem  =>  Number (  textItem  )  )  ;
+// Process each string in the 'inputRows' array.
+// Convert each string element into its numerical representation.
+// Store the resulting array of numbers in 'numericValues'.
+const numericValues = inputRows.map(textLine => Number(textLine));
 
-// Output a specific integer constant directly to the console.
-console .  log (  16  )  ;
+// Output a specific integer value to the console.
+console.log(16);

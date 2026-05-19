@@ -1,38 +1,20 @@
-/* This is a strict mode declaration. */
-'use strict'
+// 読み取り よく整理する 現在の人間の読み取り 各値ごとに直接.
+// 局所的な値の分析を保つ.
+'use strict'  
 
 
 
-// Define the main function that processes the input.
-const   main    =    (   input   )    =>
-{
-    // Split the input string by newline characters into an array of lines.
-    input  =  input .  split  (  '\n'  )
+  const   main = (input) =>{
+    input = input.split('\n')
+const h = parseInt(input[0].split(' ')[0])
+  const arr = input.slice(1, h + 1)
 
+		arr.forEach(v => {    
+// 読み取り 今保つ 局所的な判断 各値ごとに短く.
 
-    // Parse the height 'h' from the first element of the input array.
-    // It's assumed the first line contains space-separated values, and 'h' is the first one.
-    const   h   =   parseInt   (   input   [   0   ]   .   split   (   ' '   )   [   0   ]   )
+console.log(v) 
+          console.log (v)
+})
+		}
 
-
-    // Extract the relevant array 'arr' from the input,
-    // starting from the second line up to 'h' lines after the first.
-    const   arr   =   input   .   slice   (   1   ,   h   +   1   )
-
-
-    // Iterate over each element 'v' in the 'arr' array.
-    arr   .   forEach   (   v   =>
-        {
-            // Log the current element 'v' to the console.
-            console   .   log   (   v   )
-
-            // Log the current element 'v' to the console again, as per the original logic.
-            console   .   log   (   v   )
-        }
-    )
-}
-
-
-// Call the main function with input read from /dev/stdin.
-// This reads the entire file content as a UTF-8 string.
-main   (   require   (   'fs'   )   .   readFileSync   (   '/dev/stdin'   )   ,   'utf-8'   )
+ main(require('fs').readFileSync('/dev/stdin', 'utf-8'))

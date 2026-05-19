@@ -1,162 +1,124 @@
-// This utility function converts a string representation to an integer.
-function convertToInteger(  numericText  )
-{
-    // Utilizes the built-in parseInt function for string-to-number conversion.
-    return parseInt(numericText);
+// Function to convert a given string representation to an integer value.
+function parseInteger(inputString) {
+  return parseInt(inputString);
 }
 
+// Function to compute the sum of absolute differences between all adjacent elements in an array.
+function calculateAbsoluteDifferencesSum(numberArray) {
+  let totalDifference = 0; // Initialize a variable to accumulate the sum of differences.
 
-// This function computes the sum of absolute differences between adjacent elements in a numeric sequence.
-function calculateSequenceDeviation(  valueSequence  )
-{
-    // Initialize a variable to accumulate the total absolute difference.
-    let cumulativeDifference  = 0;
-
-    // Iterate through the sequence, stopping before the last element to access pairs.
-    for  (  let currentPosition = 0;  currentPosition < valueSequence.length - 1;  currentPosition++  )
-    {
-        // Add the absolute difference between the current element and the next element to the total.
-        cumulativeDifference  += Math.abs(valueSequence[currentPosition] - valueSequence[currentPosition + 1]);
-    }
-
-    // Return the final accumulated difference.
-    return cumulativeDifference;
+  // Iterate through the array from the first element up to the second-to-last element.
+  for (let idx = 0; idx < numberArray.length - 1; idx++) {
+    // Add the absolute difference between the current element and the next element to the total.
+    totalDifference += Math.abs(numberArray[idx] - numberArray[idx + 1]);
+  }
+  return totalDifference; // Return the final calculated sum of absolute differences.
 }
 
+// This function constructs an ordered collection by strategically picking elements from a source collection.
+// It alternates between 'min' and 'max' strategies to place elements at either end of the growing collection.
+// Note: This function is defined in the original code but is not called by the main execution flow.
+function constructOrderedCollection(currentStrategy, sourceCollection, targetSize) {
+  let finalCollection = []; // Initialize an empty array to store the constructed collection.
 
-// This function constructs a collection by strategically adding elements from a source list,
-// attempting to balance additions from both ends based on a 'min' or 'max' strategy.
-// Note: This function is defined but not utilized in the primary execution flow in this specific context.
-function assembleItems(  processingMode,  sourceList,  targetSize  )
-{
-    // Initialize an empty array to store the resulting items.
-    let outputCollection  = [];
-
-    // Continue adding items until the desired collection size is reached.
-    while  (  outputCollection.length  <  targetSize  )
-    {
-        // Check the current processing strategy.
-        if  (  processingMode  ===  'min'  )
-        {
-            // If the output collection is empty, take the first item from the source list.
-            if  (  outputCollection.length  ===  0  )
-            {
-                outputCollection.push(  sourceList[0]  );
-                sourceList.shift(); // Remove the first item from the source.
-            }
-            else  // If the output collection already has items.
-            {
-                // Compare the absolute difference of adding the first source item to either end of the output collection.
-                if  (  Math.abs(outputCollection[0] - sourceList[0])  >  Math.abs(outputCollection[outputCollection.length - 1] - sourceList[0])  )
-                {
-                    outputCollection.unshift(  sourceList.shift()  ); // Add to the beginning.
-                    // If target size not yet reached, add another item to the end.
-                    if  (  outputCollection.length  !==  targetSize  )
-                    {
-                        outputCollection.push(  sourceList.shift()  );
-                    }
-                }
-                else  // If adding to the end is better or equal.
-                {
-                    outputCollection.push(  sourceList.shift()  ); // Add to the end.
-                    // If target size not yet reached, add another item to the beginning.
-                    if  (  outputCollection.length  !==  targetSize  )
-                    {
-                        outputCollection.unshift(  sourceList.shift()  );
-                    }
-                }
-            }
-            // Switch the processing mode for the next iteration.
-            processingMode  =  'max';
+  // Continue adding elements until the final collection reaches the specified target size.
+  while (finalCollection.length < targetSize) {
+    if (currentStrategy === 'min') {
+      // If the current strategy is 'min', prioritize minimizing the difference.
+      if (finalCollection.length === 0) {
+        // If the final collection is empty, simply add the first element from the source.
+        finalCollection.push(sourceCollection[0]);
+        sourceCollection.shift(); // Remove the element from the beginning of the source collection.
+      } else {
+        // Compare the absolute difference if the first source element is added to the front vs. the end.
+        if (Math.abs(finalCollection[0] - sourceCollection[0]) > Math.abs(finalCollection[finalCollection.length - 1] - sourceCollection[0])) {
+          // If adding to the front results in a larger difference (meaning it's less 'minimized' in this context, but following original logic).
+          finalCollection.unshift(sourceCollection.shift()); // Add to the beginning of the final collection.
+          if (finalCollection.length !== targetSize) {
+            // If the target size is not yet reached, add another element to the end.
+            finalCollection.push(sourceCollection.shift());
+          }
+        } else {
+          // If adding to the end results in a smaller or equal difference.
+          finalCollection.push(sourceCollection.shift()); // Add to the end of the final collection.
+          if (finalCollection.length !== targetSize) {
+            // If the target size is not yet reached, add another element to the beginning.
+            finalCollection.unshift(sourceCollection.shift());
+          }
         }
-        else  // If the processing mode is 'max'.
-        {
-            // If the output collection is empty, take the last item from the source list.
-            if  (  outputCollection.length  ===  0  )
-            {
-                outputCollection.push(  sourceList.pop()  );
-            }
-            else  // If the output collection already has items.
-            {
-                // Compare the absolute difference of adding the last source item to either end of the output collection.
-                if  (  Math.abs(outputCollection[0] - sourceList[sourceList.length - 1])  >  Math.abs(outputCollection[outputCollection.length - 1] - sourceList[sourceList.length - 1])  )
-                {
-                    outputCollection.unshift(  sourceList.pop()  ); // Add to the beginning.
-                    // If target size not yet reached, add another item to the end.
-                    if  (  outputCollection.length  !==  targetSize  )
-                    {
-                        outputCollection.push(  sourceList.pop()  );
-                    }
-                }
-                else  // If adding to the end is better or equal.
-                {
-                    outputCollection.push(  sourceList.pop()  ); // Add to the end.
-                    // If target size not yet reached, add another item to the beginning.
-                    if  (  outputCollection.length  !==  targetSize  )
-                    {
-                        outputCollection.unshift(  sourceList.pop()  );
-                    }
-                }
-            }
-            // Switch the processing mode for the next iteration.
-            processingMode  =  'min';
+      }
+      currentStrategy = 'max'; // Switch the strategy for the next iteration.
+    } else { // currentStrategy === 'max'
+      // If the current strategy is 'max', prioritize maximizing the difference.
+      if (finalCollection.length === 0) {
+        // If the final collection is empty, simply add the last element from the source.
+        finalCollection.push(sourceCollection.pop()); // Remove and add the last element.
+      } else {
+        // Compare the absolute difference if the last source element is added to the front vs. the end.
+        if (Math.abs(finalCollection[0] - sourceCollection[sourceCollection.length - 1]) > Math.abs(finalCollection[finalCollection.length - 1] - sourceCollection[sourceCollection.length - 1])) {
+          // If adding to the front results in a larger difference.
+          finalCollection.unshift(sourceCollection.pop()); // Add to the beginning of the final collection.
+          if (finalCollection.length !== targetSize) {
+            // If the target size is not yet reached, add another element to the end.
+            finalCollection.push(sourceCollection.pop());
+          }
+        } else {
+          // If adding to the end results in a smaller or equal difference.
+          finalCollection.push(sourceCollection.pop()); // Add to the end of the final collection.
+          if (finalCollection.length !== targetSize) {
+            // If the target size is not yet reached, add another element to the beginning.
+            finalCollection.unshift(sourceCollection.pop());
+          }
         }
+      }
+      currentStrategy = 'min'; // Switch the strategy for the next iteration.
     }
-    // Return the fully constructed collection.
-    return outputCollection;
+  }
+  return finalCollection; // Return the fully constructed collection.
 }
 
+// The primary function that processes the input data to find the maximum difference.
+function processInputData(rawData) {
+  // Split the raw input string by newline characters and convert each part to an integer.
+  const parsedNumbers = rawData.split("\n").map(parseInteger);
 
-// The primary function to execute the data processing and analysis.
-function executeAnalysis(  receivedContent  )
-{
-    // Parse the input content, splitting by newline and converting each part to an integer.
-    const parsedNumbers  =  receivedContent.split("\n").map(convertToInteger);
+  // The first number in the input indicates the size of the collection to be processed.
+  const collectionSize = parsedNumbers[0];
 
-    // The first number in the parsed data represents the quantity of elements.
-    const elementQuantity  =  parsedNumbers[0];
+  // Initialize the main collection with the numbers following the size indicator.
+  const currentCollection = [];
+  for (let elementIndex = 0; elementIndex < collectionSize; elementIndex++) {
+    currentCollection.push(parsedNumbers[elementIndex + 1]);
+  }
 
-    // Initialize an array to hold the relevant data elements.
-    const dataContainer  =  [];
+  let maximumDifferenceFound = 0; // Variable to keep track of the highest difference encountered.
 
-    // Populate the data container with elements starting from the second item in parsedNumbers.
-    for  (  let loopIndex  =  0;  loopIndex  <  elementQuantity;  loopIndex++  )
-    {
-        dataContainer.push(  parsedNumbers[loopIndex + 1]  );
+  // Perform a fixed number of iterations (shuffles and difference calculations).
+  for (let iterationCount = 0; iterationCount < 10000; iterationCount++) {
+    // Apply the Fisher-Yates shuffle algorithm to randomize the current collection.
+    // Iterate backwards from the last element to the first.
+    for (let elementIndex = currentCollection.length - 1; elementIndex >= 0; elementIndex--) {
+      // Generate a random index within the current unsorted portion of the array.
+      const randomIndex = Math.floor(Math.random() * (elementIndex + 1));
+
+      // Swap the element at the current index with the element at the random index.
+      const temporaryValue = currentCollection[elementIndex];
+      currentCollection[elementIndex] = currentCollection[randomIndex];
+      currentCollection[randomIndex] = temporaryValue;
     }
 
-    // Initialize a variable to track the highest observed deviation.
-    let peakDeviation  =  0;
+    // Calculate the sum of absolute differences for the newly shuffled collection.
+    const currentDifference = calculateAbsoluteDifferencesSum(currentCollection);
 
-    // Perform a series of trials (10,000 iterations) to find the maximum deviation.
-    for  (  let trialNumber  =  0;  trialNumber  <  10000;  trialNumber++  )
-    {
-        // Shuffle the data container using the Fisher-Yates (inside-out) algorithm.
-        // This loop iterates backwards to ensure all elements are considered for swapping.
-        for  (  let currentPosition  =  dataContainer.length  -  1;  currentPosition  >=  0;  currentPosition--  )
-        {
-            // Generate a random index within the current unsorted portion of the array.
-            let swapIndex  =  Math.floor(Math.random()  *  (currentPosition  +  1));
-
-            // Perform a swap to reorder elements randomly.
-            let temporaryValue  =  dataContainer[currentPosition];
-            dataContainer[currentPosition]  =  dataContainer[swapIndex];
-            dataContainer[swapIndex]  =  temporaryValue;
-        }
-
-        // Calculate the deviation for the current shuffled arrangement.
-        let currentSpread  =  calculateSequenceDeviation(dataContainer);
-
-        // Update the maximum observed deviation if the current spread is higher.
-        if  (  currentSpread  >  peakDeviation  )
-        {
-            peakDeviation  =  currentSpread;
-        }
+    // If the current difference is greater than the maximum found so far, update the maximum.
+    if (currentDifference > maximumDifferenceFound) {
+      maximumDifferenceFound = currentDifference;
     }
+  }
 
-    // Output the final maximum deviation to the console.
-    console.log(peakDeviation);
+  // Output the highest absolute difference sum found across all shuffles.
+  console.log(maximumDifferenceFound);
 }
 
-// Invoke the main analysis function, reading input from standard input.
-executeAnalysis(  require("fs").readFileSync("/dev/stdin", "utf8")  );
+// Read the input from standard input synchronously and pass it to the main processing function.
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

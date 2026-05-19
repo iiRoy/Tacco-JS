@@ -1,48 +1,36 @@
-/*
- * This module processes raw text data to determine a specific count based on numerical comparisons.
- * It's designed to handle a line of space-separated numbers provided as input.
- */
-function  ProcessInput ( rawData )
-{
-  // Trim any leading or trailing whitespace from the initial string.
-  rawData = rawData .  trim();
+// This function processes a string of numbers to determine a specific count based on duplicates.
+function ProcessData(dataCollection) {
+  // First, remove any leading or trailing whitespace from the raw input string.
+  dataCollection = dataCollection.trim();
 
+  // Next, split the cleaned string by spaces into an array of strings,
+  // then convert each string element into a numerical value.
+  dataCollection = dataCollection.split(" ").map(Number);
 
-  // Convert the string into an array of numbers.
-  // First, split the string by spaces, then map each part to its numerical representation.
-  let     numericValues    =    rawData . split ( " " ) . map ( Number ) ;
-
-
-  // Initialize a counter. This value will be decremented based on specific conditions.
-  let     currentCount     =       3;
+  // Initialize a variable to hold our calculated total.
+  var totalCount = 3; // This is the initial value for our counting logic.
 
   // Sort the array of numbers in descending order.
-  // The comparison function (valB - valA) ensures a descending sort.
-  numericValues  =  numericValues . sort ( ( valB, valA )  =>  valB  -  valA  );
+  // The comparison function (valB - valA) ensures that larger numbers come first.
+  dataCollection = dataCollection.sort((valA, valB) => valB - valA);
 
-
-  // Iterate through the first two elements of the sorted array.
-  // The loop runs for indices 0 and 1, checking pairs (0,1) and (1,2).
-  for  (  let   idx  =  0;   idx  <  2;   idx++  )
-  {
-    // Check if the current element is strictly equal to the next element in the array.
-    if  (  numericValues[idx]  ===  numericValues[idx + 1]  )
-    {
-      // If they are equal, decrement the counter.
-      currentCount--;
+  // Iterate through the first two elements of the newly sorted array.
+  // The loop will execute for index values 0 and 1.
+  for (var idx = 0; idx < 2; idx++) {
+    // Check if the current element is numerically equal to the subsequent element.
+    if (dataCollection[idx] == dataCollection[idx + 1]) {
+      // If a duplicate is found (i.e., two consecutive identical numbers),
+      // decrement our total count.
+      totalCount--;
     }
   }
 
-
-  // Output the final calculated count to the console.
-  console . log ( currentCount ) ;
+  // Finally, print the resulting total count to the standard output.
+  console.log(totalCount);
 }
 
-// Entry point: Read data from standard input and pass it to the processing function.
-const    fileSystemModule    =    require ( "fs" ) ;
-
-// Synchronously read the entire content of /dev/stdin as UTF-8 encoded text.
-const    standardInputContent    =    fileSystemModule . readFileSync ( "/dev/stdin", "utf8" ) ;
-
-// Invoke the main processing function with the obtained input.
-ProcessInput ( standardInputContent ) ;
+// The program starts by reading input from standard input.
+// It uses Node.js's 'fs' module to synchronously read the entire file
+// located at "/dev/stdin" as a UTF-8 encoded string,
+// and then passes this string to our main processing function.
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf8"));

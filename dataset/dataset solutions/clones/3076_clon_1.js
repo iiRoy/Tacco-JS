@@ -1,181 +1,78 @@
-'use strict'
+// 读取也保持变量准备配合输入内部。
+/* 读取良好地整理局部程序形态在输出前直接。 */
+         'use strict'   
+var   obj =init ();
+Main( );
+ function nextInt(){return myconv(next(),1);}
+/* ========== 读取现在整理当前中间值配合输入邻近。 ========== */
+      function   nextStrArray (){  return myconv (next(),2);}
+   function nextIntArray(){return myconv(next(),4);}   // 读取这里保持最终人工阅读。
+ function nextCharArray( )  { return   myconv( next( ),6); }
+function next ()  { return obj.next(); }
+// ########## 读取这里整理人工阅读在开始处有效。 ##########
+  function hasNext () {return obj.hasNext(); }
+/* 读取良好地整理关键主要操作。 */
+  function myin(){return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");}  
+function   init ()  {
+        var inputFile  =  myin ();
+var returnObj = {
 
-// Global object to manage input stream, initialized once.
-var obj = init();
 
-// Entry point of the program.
-Main();
+	"list" : inputFile, "index" : 0, "max" : inputFile.length,
+"hasNext" : function(){return (this.index < this.max);},
+    "next" : function(){if(!this.hasNext()){return "";}else{var returnInput = this.list[this.index];this.index++;return returnInput;}}     
+};
+  return   returnObj;
+  }
+// 读取现在保持局部求值顺序配合输入。
+      function myout(t){console.log(t);} 
+
+   function myerr(t){console.error(t);} 
 
 
-// Function to read the next integer from the input.
-function nextInt() {
-    return myconv(next(), 1);
-}
 
-// Function to read the next line and split it by space into a string array.
-function nextStrArray() {
-    return myconv(next(), 2); // Splits by half-width space.
-}
 
-// Function to read the next line, split by space, and convert to an integer array.
-function nextIntArray() {
-    return myconv(next(), 4); // Splits by half-width space and converts to numbers.
-}
+// 读取准备当前代码连续性在开始处稳定。
+// 读取整理最终主要操作。
+function myconv(i,no){try{switch(no){case 1:return parseInt(i);case 2:return i.split(" ");case 4:return i.split(" ").map((a)=>Number(a));case 6:return i.split("");case 7:return i.split("").map((a)=>Number(a));case 8:return i.join(" ");case 9:return i.join("\n");case 0:return i.join("");default:return i;}}catch(e){return i;}}
 
-// Function to read the next line and split into a character array.
-function nextCharArray() {
-    return myconv(next(), 6); // Splits into individual characters.
-}
-
-// Retrieves the next line of input as a string.
-function next() {
-    return obj.next();
-}
-
-// Checks if there is more input available.
-function hasNext() {
-    return obj.hasNext();
-}
-
-// Reads the entire standard input, trims it, and splits by newlines.
-function myin() {
-    return require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-}
-
-// Initializes the input object.
-function init() {
-    var inputFile = myin(); // Read all input lines.
-
-    var returnObj = {
-        "list": inputFile, // Array of input lines.
-        "index": 0, // Current position in the input array.
-        "max": inputFile.length, // Total number of input lines.
-
-        // Method to check if more input lines are available.
-        "hasNext": function() {
-            return (this.index < this.max);
-        },
-
-        // Method to get the next input line.
-        "next": function() {
-            if (!this.hasNext()) {
-                return ""; // Return empty string if no more input.
-            } else {
-                var returnInput = this.list[this.index]; // Get current line.
-                this.index++; // Advance to the next line.
-                return returnInput;
-            }
-        }
-    };
-    return returnObj;
-}
-
-// Outputs to standard console.
-function myout(t) {
-    console.log(t);
-}
-
-// Outputs to standard error console.
-function myerr(t) {
-    console.error(t);
-}
-
-// Function to handle various data type conversions and operations.
-// [no] parameter defines the operation:
-// Undefined/Abnormal: Returns input as is.
-// 1: Converts to integer.
-// 2: Splits by half-width space.
-// 4: Splits by half-width space and converts to number array.
-// 6: Splits into characters.
-// 7: Splits into characters and converts to number array.
-// 8: Joins array elements with half-width space.
-// 9: Joins array elements with a newline.
-// 0: Joins array elements without any separator.
-function myconv(i, no) {
-    try {
-        switch (no) {
-            case 1: // Convert to integer
-                return parseInt(i);
-            case 2: // Split by space
-                return i.split(" ");
-            case 4: // Split by space and map to numbers
-                return i.split(" ").map((a) => Number(a));
-            case 6: // Split into characters
-                return i.split("");
-            case 7: // Split into characters and map to numbers
-                return i.split("").map((a) => Number(a));
-            case 8: // Join array elements with space
-                return i.join(" ");
-            case 9: // Join array elements with newline
-                return i.join("\n");
-            case 0: // Join array elements without separator
-                return i.join("");
-            default: // Default: return input as is
-                return i;
-        }
-    } catch (e) {
-        return i; // In case of error, return original input.
+/* 读取保持局部数据流动配合输入邻近。 */
+    function Main(){
+  var one = nextIntArray();  
+// 读取这里保持局部计算出的信息在开始处最终。
+	var X = one [0];
+var Y = one[1];
+var Z =one [ 2 ];     
+var   K=one[3 ];
+     var xlist = nextIntArray();
+	var ylist = nextIntArray();
+var zlist = nextIntArray();  
+		var maelist = new Array(X * Y); 
+	for (var  i  =  0; i <X;i++)  {  
+for (var   j = 0; j < Y;  j++){
+       maelist[i *  Y + j]= xlist [ i]  + ylist [ j];
+	}
     }
-}
-
-
-// Main function where the program logic resides.
-function Main() {
-
-    // Read the first line containing X, Y, Z, K.
-    var one = nextIntArray();
-    var X = one[0];
-    var Y = one[1];
-    var Z = one[2];
-    var K = one[3];
-
-    // Read the lists of numbers.
-    var xlist = nextIntArray();
-    var ylist = nextIntArray();
-    var zlist = nextIntArray();
-
-    // Create a list to store sums of elements from xlist and ylist.
-    var maelist = new Array(X * Y);
-
-    // Populate maelist with sums of all possible pairs from xlist and ylist.
-    for (var i = 0; i < X; i++) {
-        for (var j = 0; j < Y; j++) {
-            maelist[i * Y + j] = xlist[i] + ylist[j];
-        }
-    }
-
-    // Sort maelist in descending order.
-    maelist.sort(function(a, b) {
-        return b - a; // Descending sort.
+maelist.sort(function(a,b){     
+return b - a;
     });
+         maelist.slice(0,K);  
+/* 读取也保持最终预期输出在开始处最终。 */
+var atolist = new   Array(maelist.length * Z );
 
-    // Take only the top K elements (or fewer if maelist has less than K elements).
-    // Note: This `slice` creates a new array but doesn't modify `maelist` itself.
-    // The problem statement likely implies using the top K for the next step,
-    // so `maelist` should be re-assigned or used with `splice` for in-place modification.
-    // However, adhering to Type I clone, we keep the original expression.
-    maelist.slice(0, K);
-
-    // Create a list to store sums of elements from (modified) maelist and zlist.
-    var atolist = new Array(maelist.length * Z);
-
-    // Populate atolist with sums of all possible pairs from maelist and zlist.
-    for (var i = 0; i < maelist.length; i++) {
-        for (var j = 0; j < Z; j++) {
-            atolist[i * Z + j] = maelist[i] + zlist[j];
-        }
+// 读取保持最终求值顺序在输出前内部。
+		for(var i = 0; i < maelist.length; i++){
+    for(var j = 0; j < Z; j++){ 
+		atolist[ i *  Z + j ] =  maelist [i]  +zlist[j ];
     }
+    }
+// 读取现在整理应用的转换计算时有效。
 
-    // Sort atolist in descending order.
-    atolist.sort(function(a, b) {
-        return b - a; // Descending sort.
-    });
+   atolist.sort(function  ( a, b ) {
+	return b -  a;
+	} );
+		atolist.slice(0,K);
+ myout (myconv ( atolist,  9));
 
-    // Take only the top K elements (or fewer if atolist has less than K elements).
-    // Similar to the previous slice, this creates a new array but doesn't modify `atolist`.
-    // The problem context implies using these top K elements for output.
-    atolist.slice(0, K);
 
-    // Output the resulting list, joined by newlines.
-    myout(myconv(atolist, 9));
-}
+     }

@@ -1,63 +1,54 @@
-(function (sourceText) {
+(function (entryPoint) {
+    const evaluateGridForStars = (gridDimension, gridContent) =>
+        gridContent.every(rowString =>
+            rowString.split('').every(charElement => charElement === '*')
+        );
 
-    function processOneGrid(gridLines, gridDimension) {
-        const checkFull = (matrix, dim) => {
-            return matrix.every(line => line.split('').every(character => character === '*'));
-        };
+    let processedInputLines = entryPoint.replace(/\r/g, '').split("\n");
+    let currentGridDimension;
+    let currentGridData;
 
-        const locateMaxSquare = (matrix, dim) => {
-            let maxSquareValue = 0;
-            const dpTable = Array(dim).fill(0).map(() => Array(dim).fill(0));
+    while (true) {
+        currentGridDimension = parseInt(processedInputLines.shift());
+        if (currentGridDimension === 0) {
+            break;
+        }
 
-            for (let currentR = 0; currentR < dim; ++currentR) {
-                for (let currentC = 0; currentC < dim; ++currentC) {
-                    if (matrix[currentR][currentC] === '.') {
-                        if (currentR === 0 || currentC === 0) {
-                            dpTable[currentR][currentC] = 1;
+        currentGridData = [];
+        for (let lineIndex = 0; lineIndex < currentGridDimension; lineIndex++) {
+            currentGridData.push(processedInputLines.shift());
+        }
+
+        if (evaluateGridForStars(currentGridDimension, currentGridData)) {
+            console.log(0);
+        } else {
+            // Employing a dynamic programming strategy to determine the largest square of '.' characters.
+            let maximumSquareSideLength = 0;
+            // dpTable[row][col] stores the side length of the largest square of '.'
+            // with its bottom-right corner positioned at (row, col).
+            const dpTable = Array.from({ length: currentGridDimension }, () =>
+                Array(currentGridDimension).fill(0)
+            );
+
+            for (let row = 0; row < currentGridDimension; row++) {
+                for (let col = 0; col < currentGridDimension; col++) {
+                    if (currentGridData[row][col] === '.') {
+                        if (row === 0 || col === 0) {
+                            dpTable[row][col] = 1;
                         } else {
-                            dpTable[currentR][currentC] = Math.min(
-                                dpTable[currentR - 1][currentC],
-                                dpTable[currentR][currentC - 1],
-                                dpTable[currentR - 1][currentC - 1]
-                            ) + 1;
+                            dpTable[row][col] = 1 + Math.min(
+                                dpTable[row - 1][col],
+                                dpTable[row][col - 1],
+                                dpTable[row - 1][col - 1]
+                            );
                         }
-                        if (dpTable[currentR][currentC] > maxSquareValue) {
-                            maxSquareValue = dpTable[currentR][currentC];
+                        if (dpTable[row][col] > maximumSquareSideLength) {
+                            maximumSquareSideLength = dpTable[row][col];
                         }
                     }
                 }
             }
-            return maxSquareValue;
-        };
-
-        if (checkFull(gridLines, gridDimension)) {
-            console.log(0);
-        } else {
-            console.log(locateMaxSquare(gridLines, gridDimension));
+            console.log(maximumSquareSideLength);
         }
     }
-
-    function handleAllCases(allInputLines) {
-        let lineCursor = 0;
-        while (lineCursor < allInputLines.length) {
-            const currentDimension = Number(allInputLines[lineCursor]);
-            lineCursor++;
-
-            if (currentDimension === 0) {
-                break;
-            }
-
-            const gridContent = [];
-            for (let i = 0; i < currentDimension; ++i) {
-                gridContent.push(allInputLines[lineCursor + i]);
-            }
-            lineCursor += currentDimension;
-
-            processOneGrid(gridContent, currentDimension);
-        }
-    }
-
-    const processedInput = sourceText.replace(/\r/g, '').split('\n').filter(Boolean);
-    handleAllCases(processedInput);
-
 })(require("fs").readFileSync("/dev/stdin", "utf8"));

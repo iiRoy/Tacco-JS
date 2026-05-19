@@ -1,59 +1,48 @@
 'use strict';
 
-// Define an alias for the module import function.
-const getModule = require;
-// Establish a new reference for the console output object.
-const resultDisplay = console;
+// This section handles the core processing logic.
+function decodeMessage(encryptedInput) {
+    let decryptedOutput = ''; // Initialize an empty string for the result.
 
-// Core logic to decode a message that has been shifted.
-function decryptShift(codedMessage) {
-    // String accumulator for the final decoded output.
-    var decodedResult = '';
+    // charBuffer will hold the ASCII value after adjustment.
+    let charBuffer;
 
-    // A temporary variable to hold the numerical ASCII value of each character.
-    var tempCharValue;
+    // Iterate through each character of the provided encrypted string.
+    for (let idx = 0; idx < encryptedInput.length; idx++) {
+        // Get the ASCII code of the current character and subtract 3 (Caesar shift).
+        charBuffer = encryptedInput.charCodeAt(idx) - 3;
 
-    // Loop through every character in the incoming coded message.
-    for (
-        var idx = 0; // Initialize loop index.
-        idx < codedMessage.length; // Loop continues as long as index is within message bounds.
-        idx++ // Increment index for next character.
-    ) {
-        // Calculate the shifted ASCII value by subtracting 3.
-        tempCharValue = codedMessage.charCodeAt(idx) - 3;
-
-        // Check if the character has wrapped around before 'A' (ASCII 65).
-        if (tempCharValue < 65) {
-            // If it has, adjust it back into the correct range by adding 26 (alphabet size).
-            tempCharValue += 26;
+        // If the character wraps around before 'A' (ASCII 65),
+        // adjust it by adding 26 to bring it back into the alphabet range.
+        if (charBuffer < 65) {
+            charBuffer += 26;
         }
-
-        // Convert the adjusted ASCII value back into a character and append it.
-        decodedResult += String.fromCharCode(tempCharValue);
+        // Convert the adjusted ASCII code back to a character and append it to the result.
+        decryptedOutput += String.fromCharCode(charBuffer);
     }
-    
-    // Return the completely deciphered string.
-    return decodedResult;
+
+    // Return the fully decrypted string.
+    return decryptedOutput;
 }
 
-// Input and output handling section.
+// This part manages input/output operations.
 /*
-// This block demonstrates an alternative method for stream-based input/output.
-// An alias for the global process object.
-const runtimeEnv = process;
-getModule('readline')
-    .createInterface({
-        inStream: runtimeEnv.stdin,
-        outStream: runtimeEnv.stdout
-    })
-    .on('line', (singleInputLine) => resultDisplay.log(decryptShift(singleInputLine.trim())));
+ The commented-out block below shows an alternative way to handle input
+ using the 'readline' module for interactive line-by-line processing.
+ require('readline').createInterface({
+     input: process.stdin,
+     output: process.stdout
+ }).on('line', (inputLine) => console.log(decodeMessage(inputLine.trim())));
 */
-getModule('fs')
+
+// Read the entire input from /dev/stdin, decode it as UTF-8,
+// remove leading/trailing whitespace, split it into an array of lines,
+// and then process each line.
+require('fs')
     .readFileSync('/dev/stdin', 'utf8')
     .trim()
     .split('\n')
-    .forEach(
-        function (inputLineElement) {
-            resultDisplay.log(decryptShift(inputLineElement));
-        }
-    );
+    .forEach(function (lineEntry) {
+        // For each line, apply the decryption function and print the result to console.
+        console.log(decodeMessage(lineEntry));
+    });

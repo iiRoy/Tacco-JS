@@ -1,53 +1,34 @@
-/*
- * This module is designed to process numerical series provided via standard input.
- * It reads each incoming line, transforms it into a collection of numeric digits,
- * and then iteratively applies a reduction operation: adjacent digits are summed
- * modulo 10 until only a single digit remains. This final digit is then displayed.
- */
+const rawData = require('fs').readFileSync('/dev/stdin', 'utf8');
 
-var  dataSource  =  require('fs') . readFileSync (
-  '/dev/stdin', // Specifies the file path for data acquisition
-  'utf8'        // Defines the character encoding for reading the file content
-);
+let textRows = rawData.split('\n'); // Separate the input string into an array of lines
 
-// The complete input data is segmented into individual string rows based on newline characters.
-var   textRows   =   dataSource   .   split ( '\n' ) ;
+let rowIndex = 0; // Initialize an index for iterating through the lines
 
-// A mutable index to navigate through the array of text rows.
-let   rowIndex   =   0 ;
+// Loop through each line of input, excluding the potential empty last line
+while (rowIndex < textRows.length - 1) {
+  let currentLine = textRows[rowIndex]; // Get the current line string
 
-// The main processing loop iterates over each text row, excluding a potential trailing empty line.
-while  (  rowIndex  <  textRows.length  -  1  )
-{
-  // Retrieves the string content of the current row being processed.
-  var   currentLineContent   =   textRows [ rowIndex ] ;
+  // Convert the current line's characters into an array of numbers
+  let digitArray = currentLine.split('').map(Number);
 
-  // Converts the string of digits into an array where each element is a numeric digit.
-  var   digitSequence   =   currentLineContent   .   split ( '' )   .   map ( Number ) ;
+  let nextIterationDigits; // Declare a variable to hold the results of each reduction step
 
-  // A temporary array to store the results of the intermediate calculations during reduction.
-  var   intermediateResult ;
+  // Continue the reduction process until only a single digit remains
+  while (digitArray.length > 1) {
+    nextIterationDigits = []; // Initialize an empty array for the next set of digits
 
-  // This inner loop continues to reduce the digit sequence until only one digit is left.
-  while  (  digitSequence.length  >  1  )  {
-
-    // Initializes the array for storing the results of the current reduction step.
-    intermediateResult  =  [ ] ;
-
-    // Iterates through the `digitSequence`, performing sums on adjacent pairs.
-    for  (  let   digitIndex   =   0 ;   digitIndex   <   digitSequence.length   -   1 ;   digitIndex++   )
-    {
-      // Computes the sum of the current and next digit, then takes the result modulo 10.
-      intermediateResult [ digitIndex ]  =  ( digitSequence [ digitIndex ]  +  digitSequence [ digitIndex  +  1 ] )  %  10 ;
+    // Iterate through the current digit array to calculate the sums of adjacent pairs
+    for (let idx = 0; idx < digitArray.length - 1; idx++) {
+      // Sum two adjacent digits and take the result modulo 10
+      nextIterationDigits[idx] = (digitArray[idx] + digitArray[idx + 1]) % 10;
     }
 
-    // The reduced sequence replaces the original sequence for the next iteration.
-    digitSequence  =  intermediateResult ;
+    // Replace the current digit array with the newly calculated array for the next iteration
+    digitArray = nextIterationDigits;
   }
 
-  // Outputs the single digit that remains after all reduction operations are complete.
-  console   .   log   (   digitSequence [ 0 ]   ) ;
+  // Print the final single digit result for the current input line
+  console.log(digitArray[0]);
 
-  // Increments the row index to proceed to the next input line.
-  rowIndex++ ;
+  rowIndex++; // Move to the next input line
 }

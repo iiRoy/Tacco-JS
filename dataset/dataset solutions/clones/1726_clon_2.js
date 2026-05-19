@@ -1,89 +1,104 @@
-"use strict"; // Enforce strict parsing and error handling rules for the script
+"use strict";
 
-// A factory function to produce an input stream handler object
-const constructDataStream = () => {
-  // Read all data from standard input, decode as UTF-8, trim whitespace, and split into individual lines
-  const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
-  // Configure and return the data stream manager object
-  const dataStream = {
-    "dataItems": rawData, // Stores the array of processed input lines
-    "currentItemIndex": 0, // Tracks the current position in the data items array
-    "totalItems": rawData.length, // The total count of available data items
-    // Method to determine if there are more elements left to be read
-    "hasMoreElements": function() {
-      return this.currentItemIndex < this.totalItems;
+// This function initializes a utility for reading input lines from standard input.
+const makeInputReader = () => {
+  // Read all content from stdin, decode as UTF-8, remove leading/trailing whitespace, and split into an array of lines.
+  const sourceContent = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
+
+  // Create an object to manage the input lines and provide navigation methods.
+  const dataProcessor = {
+    linesArray: sourceContent, // Stores the array of input lines.
+    currentPosition: 0,        // Tracks the current line index.
+    maximumIndex: sourceContent.length, // Stores the total number of lines.
+
+    // Checks if there are more lines to read.
+    hasMoreData: function () {
+      return this.currentPosition < this.maximumIndex;
     },
-    // Method to fetch the next data element from the stream
-    "getNextElement": function() {
-      if (!this.hasMoreElements()) {
-        // Raise an error if an attempt is made to access data beyond available bounds
-        throw "InputOutOfBoundsError"; // Custom error message
+
+    // Retrieves the next line from the input.
+    retrieveNext: function () {
+      if (!this.hasMoreData()) {
+        // If no more lines, throw an error indicating out-of-bounds access.
+        throw "ArrayIndexOutOfBoundsException";
       } else {
-        // Retrieve the element at the current index and then advance the index
-        return this.dataItems[this.currentItemIndex++];
+        // Return the current line and then increment the position.
+        return this.linesArray[this.currentPosition++];
       }
     }
   };
-  return dataStream;
+  return dataProcessor;
 };
 
-// Instantiate the global input reader object using the factory function
-const readerObject = constructDataStream();
+// Initialize the global input reader instance.
+const inputHandler = makeInputReader();
 
-// Convenient helper aliases for common input operations
-const fetchNextItem = () => readerObject.getNextElement();
-const fetchNextInteger = () => parseInt(readerObject.getNextElement());
-const fetchNextStringArray = () => readerObject.getNextElement().split(" ");
-const fetchNextIntegerArray = () => readerObject.getNextElement().split(" ").map(elementValue => parseInt(elementValue));
-const fetchNextCharacterArray = () => readerObject.getNextElement().split("");
-const checkHasMore = () => readerObject.hasMoreElements();
+// Helper function to get the next raw line.
+const getNextLine = () => inputHandler.retrieveNext();
 
-// A generalized utility function for logging output to the console
-const displayOutput = (...outputValues) => console.log(...outputValues);
+// Helper function to parse the next line as an integer.
+const getNextInteger = () => parseInt(inputHandler.retrieveNext());
 
-// The core function encapsulating the primary business logic
-const ExecutePrincipalLogic = () => {
-  // Extract three integer parameters (N, M, K) from the first line of input
-  let [numItemsA, numItemsB, maxBudget] = fetchNextIntegerArray();
-  // Read two separate arrays of integers, 'arrayA' and 'arrayB'
-  let arrayA = fetchNextIntegerArray();
-  let arrayB = fetchNextIntegerArray();
+// Helper function to split the next line into an array of strings.
+const readStringTokens = () => inputHandler.retrieveNext().split(" ");
 
-  // Compute prefix sums (cumulative sums) for arrayA
-  let cumulativeSumsA = [0]; // Start with 0 to represent sum before any elements
-  for (let idxA = 0; idxA < arrayA.length; idxA++) {
-    cumulativeSumsA.push(cumulativeSumsA[idxA] + arrayA[idxA]);
+// Helper function to split the next line into an array of integers.
+const readIntTokens = () => inputHandler.retrieveNext().split(" ").map(el => parseInt(el));
+
+// Helper function to split the next line into an array of characters.
+const readCharTokens = () => inputHandler.retrieveNext().split("");
+
+// Helper function to check if there's more input available.
+const moreAvailable = () => inputHandler.hasMoreData();
+
+// Helper function for printing output to the console.
+const displayResult = (...outputItems) => console.log(...outputItems);
+
+// The main logic of the program.
+const executeSolution = () => {
+  // Read the three initial integers N, M, K from the first line.
+  let [valN, valM, valK] = readIntTokens();
+  // Read array 'a' from the second line.
+  let listA = readIntTokens();
+  // Read array 'b' from the third line.
+  let listB = readIntTokens();
+
+  // Calculate prefix sums for array 'a'.
+  let prefixSumsA = [0];
+  for (let idxA = 0; idxA < listA.length; idxA++) {
+    prefixSumsA.push(prefixSumsA[idxA] + listA[idxA]);
   }
 
-  // Compute prefix sums (cumulative sums) for arrayB
-  let cumulativeSumsB = [0]; // Initialize with 0 for the prefix sum array
-  for (let idxB = 0; idxB < arrayB.length; idxB++) {
-    cumulativeSumsB.push(cumulativeSumsB[idxB] + arrayB[idxB]);
+  // Calculate prefix sums for array 'b'.
+  let prefixSumsB = [0];
+  for (let idxB = 0; idxB < listB.length; idxB++) {
+    prefixSumsB.push(prefixSumsB[idxB] + listB[idxB]);
   }
 
-  // Initialize a variable to track the maximum combined count of items
-  let maxCombinedCount = 0;
+  // Initialize the variable to store the maximum count of books.
+  let maximumCount = 0;
 
-  // Use a two-pointer approach to find the maximum combination
-  // 'idxA' iterates through possible counts from arrayA, 'idxB' adjusts for arrayB
-  for (let idxA = 0, idxB = numItemsB; idxA <= numItemsA; idxA++) {
-    // If the current sum from arrayA alone exceeds the budget,
-    // then any further increase in 'idxA' will also exceed, so terminate.
-    if (cumulativeSumsA[idxA] > maxBudget) {
+  // Iterate through possible numbers of books from listA (from 0 to N).
+  // Use a two-pointer approach with 'idxB' for listB.
+  for (let idxA = 0, idxB = valM; idxA <= valN; idxA++) {
+    // If the cumulative sum from listA already exceeds K, we can't add more from listA.
+    if (prefixSumsA[idxA] > valK) {
       break;
     }
-    // While the combined sum of items from arrayA (up to idxA) and arrayB (up to idxB)
-    // surpasses the allocated budget, decrease 'idxB' to reduce the sum from arrayB.
-    while (cumulativeSumsA[idxA] + cumulativeSumsB[idxB] > maxBudget) {
+
+    // While the combined sum of books from listA (up to idxA) and listB (up to idxB)
+    // exceeds K, reduce the number of books taken from listB.
+    while (prefixSumsA[idxA] + prefixSumsB[idxB] > valK) {
       idxB--;
     }
-    // Update 'maxCombinedCount' with the larger value between the current max
-    // and the sum of current indices (representing total items selected).
-    maxCombinedCount = Math.max(maxCombinedCount, idxA + idxB);
+
+    // Update the maximum count of books if the current combination (idxA + idxB) is greater.
+    maximumCount = Math.max(maximumCount, idxA + idxB);
   }
-  // Display the final computed maximum combined count to standard output
-  console.log(maxCombinedCount);
+
+  // Print the final maximum count of books.
+  console.log(maximumCount);
 };
 
-// Invoke the main program logic to begin execution
-ExecutePrincipalLogic();
+// Execute the main solution function.
+executeSolution();

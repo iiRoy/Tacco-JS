@@ -1,50 +1,116 @@
-const processInputAndCompute = (sourceText) => {
-    const allLines = sourceText.split('\n');
+class MinPriorityQueue {
+    constructor() {
+        this.heap = [];
+    }
 
-    const configLine = allLines[0].split(' ');
-    const initialItemCount = Number(configLine[0]);
-    const offerDealCount = Number(configLine[1]);
+    _getParentIndex(i) { return Math.floor((i - 1) / 2); }
+    _getLeftChildIndex(i) { return 2 * i + 1; }
+    _getRightChildIndex(i) { return 2 * i + 2; }
 
-    const baseItemValues = allLines[1].split(' ').map(Number).sort((x, y) => x - y);
+    _hasParent(i) { return this._getParentIndex(i) >= 0; }
+    _hasLeftChild(i) { return this._getLeftChildIndex(i) < this.heap.length; }
+    _hasRightChild(i) { return this._getRightChildIndex(i) < this.heap.length; }
 
-    const dealDescriptions = allLines.slice(2).filter(line => line.trim() !== '');
-    const sortedDeals = dealDescriptions
+    _getParent(i) { return this.heap[this._getParentIndex(i)]; }
+    _getLeftChild(i) { return this.heap[this._getLeftChildIndex(i)]; }
+    _getRightChild(i) { return this.heap[this._getRightChildIndex(i)]; }
+
+    _swap(i, j) {
+        [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+    }
+
+    peek() {
+        if (this.heap.length === 0) return undefined;
+        return this.heap[0];
+    }
+
+    enqueue(item) {
+        this.heap.push(item);
+        this._heapifyUp();
+    }
+
+    dequeue() {
+        if (this.heap.length === 0) return undefined;
+        if (this.heap.length === 1) return this.heap.pop();
+
+        const item = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this._heapifyDown();
+        return item;
+    }
+
+    _heapifyUp() {
+        let index = this.heap.length - 1;
+        while (this._hasParent(index) && this._getParent(index) > this.heap[index]) {
+            this._swap(this._getParentIndex(index), index);
+            index = this._getParentIndex(index);
+        }
+    }
+
+    _heapifyDown() {
+        let index = 0;
+        while (this._hasLeftChild(index)) {
+            let smallerChildIndex = this._getLeftChildIndex(index);
+            if (this._hasRightChild(index) && this._getRightChild(index) < this._getLeftChild(index)) {
+                smallerChildIndex = this._getRightChildIndex(index);
+            }
+
+            if (this.heap[index] < this.heap[smallerChildIndex]) {
+                break;
+            } else {
+                this._swap(index, smallerChildIndex);
+            }
+            index = smallerChildIndex;
+        }
+    }
+
+    isEmpty() {
+        return this.heap.length === 0;
+    }
+}
+
+function Main(input) {
+    const dataLines = input.split('\n');
+
+    const firstLineParts = dataLines.shift().split(' ');
+    const initialCountN = Number(firstLineParts[0]);
+    const offerCountM = Number(firstLineParts[1]);
+
+    const initialValues = dataLines.shift().split(' ').map(Number);
+
+    const valuePool = new MinPriorityQueue();
+    for (const val of initialValues) {
+        valuePool.enqueue(val);
+    }
+
+    if (dataLines[dataLines.length - 1] === '') {
+        dataLines.pop();
+    }
+
+    const offers = dataLines
         .map(line => {
             const parts = line.split(' ');
-            return {
-                amount: Number(parts[0]),
-                rate: Number(parts[1])
-            };
+            return { quantity: Number(parts[0]), price: Number(parts[1]) };
         })
-        .sort((a, b) => b.rate - a.rate);
+        .sort((a, b) => b.price - a.price);
 
-    let currentItemPointer = 0;
-    const processedItemValues = Array.from(baseItemValues);
+    for (const currentOffer of offers) {
+        let remainingQuantity = currentOffer.quantity;
+        const offerPrice = currentOffer.price;
 
-    sortedDeals.forEach(deal => {
-        let remainingDealAmount = deal.amount;
-        const dealRate = deal.rate;
-
-        for (let k = 0; k < remainingDealAmount; k++) {
-            if (currentItemPointer >= initialItemCount) {
-                break;
-            }
-            if (processedItemValues[currentItemPointer] >= dealRate) {
-                break;
-            }
-            processedItemValues[currentItemPointer] = dealRate;
-            currentItemPointer++;
+        while (remainingQuantity > 0 && !valuePool.isEmpty() && valuePool.peek() < offerPrice) {
+            valuePool.dequeue();
+            valuePool.enqueue(offerPrice);
+            remainingQuantity--;
         }
-    });
+    }
 
-    const grandTotal = processedItemValues.reduce((accumulator, itemVal) => accumulator + itemVal, 0);
+    let totalSum = 0;
+    while (!valuePool.isEmpty()) {
+        totalSum += valuePool.dequeue();
+    }
 
-    return grandTotal;
-};
+    console.log(totalSum);
+}
 
-const runSolution = (sourceText) => {
-    const finalResult = processInputAndCompute(sourceText);
-    console.log(finalResult);
-};
-
-runSolution(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

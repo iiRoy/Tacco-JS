@@ -1,34 +1,43 @@
-const navigateSystem = (sourceData) => {
-    const extractPathInfo = (rawData) => {
-        const dataLines = rawData.split('\n');
-        const elementCount = Number(dataLines[0]);
-        const connections = dataLines.slice(1, elementCount + 1).map(Number);
-        return connections;
-    };
+"use strict";
 
-    const pathConnections = extractPathInfo(sourceData);
+const parseInputData = (rawText) => {
+    const lines = rawText.trim().split('\n');
+    const totalNodes = Number(lines[0]);
+    const adjacencyMap = new Map();
 
-    const computeTraversalLength = (map, currentPoint, previouslyVisited, elapsedSteps) => {
-        if (currentPoint === 2) {
-            return elapsedSteps;
+    for (let k = 0; k < totalNodes; k++) {
+        adjacencyMap.set(k + 1, Number(lines[k + 1]));
+    }
+    return adjacencyMap;
+};
+
+const findPathLength = (graphStructure) => {
+    const entryPoint = 1;
+    const destinationNode = 2;
+    const visitedTracker = new Set();
+
+    const recursivePathfinder = (currentPosition, accumulatedEdges) => {
+        if (currentPosition === destinationNode) {
+            return accumulatedEdges;
         }
-
-        if (previouslyVisited.has(currentPoint)) {
+        if (visitedTracker.has(currentPosition)) {
             return -1;
         }
 
-        const updatedVisited = new Set(previouslyVisited);
-        updatedVisited.add(currentPoint);
+        visitedTracker.add(currentPosition);
+        
+        const nextHop = graphStructure.get(currentPosition);
 
-        const nextPoint = map[currentPoint - 1];
-
-        return computeTraversalLength(map, nextPoint, updatedVisited, elapsedSteps + 1);
+        return recursivePathfinder(nextHop, accumulatedEdges + 1);
     };
 
-    const initialNode = 1;
-    const finalResult = computeTraversalLength(pathConnections, pathConnections[0], new Set([initialNode]), 1);
+    return recursivePathfinder(entryPoint, 0);
+};
 
+const executeMainLogic = (inputContent) => {
+    const nodeConnections = parseInputData(inputContent);
+    const finalResult = findPathLength(nodeConnections);
     console.log(finalResult);
 };
 
-navigateSystem(require('fs').readFileSync('/dev/stdin', 'utf-8'));
+executeMainLogic(require('fs').readFileSync('/dev/stdin', 'utf-8'));

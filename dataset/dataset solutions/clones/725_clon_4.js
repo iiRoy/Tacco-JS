@@ -1,48 +1,41 @@
-const dataSource = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
-const recordSet = dataSource.split("\n");
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8').trim();
+const dataRows = fileContent.split("\n");
 
-const obtainCycleLength = (currentEra, currentCycle) => {
-    const isSpecialEra = (currentEra % 3 === 0);
-    if (isSpecialEra) {
+const nonLeapMonthDurations = [0, 20, 19, 20, 19, 20, 19, 20, 19, 20, 19];
+
+const retrieveMonthDuration = (currentYear, currentMonth) => {
+    if (currentYear % 3 === 0) {
         return 20;
-    } else {
-        return (currentCycle % 2 !== 0) ? 20 : 19;
     }
+    return nonLeapMonthDurations[currentMonth];
 };
 
-const obtainEraLength = (currentEra) => {
-    const isSpecialEra = (currentEra % 3 === 0);
-    if (isSpecialEra) {
-        return 20 * 10;
-    } else {
-        return (5 * 20) + (5 * 19);
+const computeAbsoluteDayIndex = (targetYear, targetMonth, targetDay) => {
+    let totalAccumulatedDays = 0;
+
+    for (let yrIterator = 1; yrIterator < targetYear; yrIterator++) {
+        totalAccumulatedDays += (yrIterator % 3 === 0) ? 200 : 195;
     }
+
+    for (let mnIterator = 1; mnIterator < targetMonth; mnIterator++) {
+        totalAccumulatedDays += retrieveMonthDuration(targetYear, mnIterator);
+    }
+
+    totalAccumulatedDays += targetDay;
+
+    return totalAccumulatedDays;
 };
 
-const transformToEpochDistance = (currentEra, currentCycle, currentPhase) => {
-    let totalPassage = 0;
-    for (let e = 1; e < currentEra; e++) {
-        totalPassage += obtainEraLength(e);
-    }
-    for (let c = 1; c < currentCycle; c++) {
-        totalPassage += obtainCycleLength(currentEra, c);
-    }
-    totalPassage += currentPhase - 1; 
-    return totalPassage;
-};
+const absoluteTargetDay = computeAbsoluteDayIndex(1000, 1, 1);
 
-const targetEraIdentifier = 1000;
-const targetCycleIdentifier = 1;
-const targetPhaseIdentifier = 1;
-const targetEpochValue = transformToEpochDistance(targetEraIdentifier, targetCycleIdentifier, targetPhaseIdentifier);
+dataRows.shift();
 
-recordSet.shift(); 
+dataRows.forEach(rowText => {
+    const [parsedYear, parsedMonth, parsedDay] = rowText.trim().split(' ').map(Number);
 
-recordSet.forEach(rawDatum => {
-    const components = rawDatum.trim().split(' ').map(Number);
-    const [initialEra, initialCycle, initialPhase] = components;
+    const absoluteInputDay = computeAbsoluteDayIndex(parsedYear, parsedMonth, parsedDay);
 
-    const initialEpochValue = transformToEpochDistance(initialEra, initialCycle, initialPhase);
-    const duration = targetEpochValue - initialEpochValue;
-    console.log(duration);
+    const dayCount = absoluteTargetDay - absoluteInputDay;
+
+    console.log(dayCount);
 });

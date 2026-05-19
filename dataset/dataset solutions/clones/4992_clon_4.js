@@ -1,24 +1,18 @@
-(function() {
-    const fileAccessUtility = require('node:fs');
-    const rawInputContent = fileAccessUtility.readFileSync('/dev/stdin', { encoding: 'utf8' });
+function processInputData(rawData) {
+  const processedData = rawData.trim();
 
-    const trimmedInputContent = rawInputContent.trim();
-    const dataLines = trimmedInputContent.split('\n');
+  const lineSegments = processedData.split('\n');
 
-    const parameterAlpha = Number(dataLines[0]);
-    const parameterBeta = Number(dataLines[1]);
-    const parameterGamma = Number(dataLines[2]);
-    const parameterDelta = Number(dataLines[3]);
+  const numericComponents = lineSegments.map(segment => parseInt(segment, 10));
 
-    let baseComputation = parameterBeta * parameterGamma;
-    let additionalCharge = 0;
+  const componentOne = numericComponents[0];
+  const componentTwo = numericComponents[1];
+  const componentThree = numericComponents[2];
+  const componentFour = numericComponents[3];
 
-    let differenceMetric = parameterAlpha - parameterBeta;
-    if (differenceMetric > 0) {
-        additionalCharge = differenceMetric * parameterDelta;
-    }
+  const calculatedOutcome = componentTwo * componentThree + Math.max(0, componentOne - componentTwo) * componentFour;
 
-    const finalResult = baseComputation + additionalCharge;
+  console.log(calculatedOutcome);
+}
 
-    process.stdout.write(String(finalResult) + '\n');
-})();
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

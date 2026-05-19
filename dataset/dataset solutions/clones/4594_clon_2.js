@@ -1,145 +1,136 @@
-// Utility function to convert a string to an integer value
-function parseInteger(inputString) {
-    return Number.parseInt(inputString, 10);
+function parseInteger(inputStr) {
+  // Converts a string to an integer.
+  return parseInt(inputStr);
 }
 
-// Utility function to convert a string to a floating-point number
-function parseFloatNumber(valueString) {
-    return parseFloat(valueString);
+function parseFloatValue(inputStr) {
+  // Converts a string to a floating-point number.
+  return parseFloat(inputStr);
 }
 
-// Determines if a given numeric value is an even number
-function isEvenlyDivisible(numberValue) {
-    return (numberValue % 2) === 0;
+function isEven(numVal) {
+  // Checks if a number is even.
+  return (numVal % 2) === 0;
 }
 
-// Determines if a given numeric value is an odd number
-function isOddlyDivisible(numberValue) {
-    return (numberValue % 2) === 1;
+function isOdd(numVal) {
+  // Checks if a number is odd.
+  return (numVal % 2) === 1;
 }
 
-// Extends the Array prototype with various sorting and filtering methods
-Array.prototype.orderNumbersAscending = function() {
-    // Sorts array elements numerically in ascending order
-    return this.sort((first, second) => (first - second));
-};
-Array.prototype.orderNumbersDescending = function() {
-    // Sorts array elements numerically in descending order
-    return this.sort((first, second) => (second - first));
-};
-Array.prototype.orderStringsAlphabetically = function() {
-    // Sorts array elements as strings in ascending alphabetical order
-    return this.sort();
-};
-Array.prototype.orderStringsReverseAlphabetically = function() {
-    // Sorts array elements as strings in descending alphabetical order
-    return this.sort().reverse();
-};
-Array.prototype.filterOutElement = function(excludedItem) {
-    // Returns a new array with all occurrences of 'excludedItem' removed
-    return this.filter(elementInArray => elementInArray !== excludedItem);
+// Extend Array prototype with custom sorting and filtering methods.
+Array.prototype.sortAscendingNumbers = function () {
+  // Sorts an array of numbers in ascending order.
+  return this.sort((first, second) => (first - second));
 };
 
-// Main function to process the challenge input and determine the solution
-function processInputData(inputLines) {
-    // Parse the first line of input to extract grid dimensions and the maximum allowed steps
-    var dimensionsArray = inputLines[0].split(' ').map(parseInteger);
-    var gridHeight = dimensionsArray[0]; // Height of the grid
-    var gridWidth = dimensionsArray[1];  // Width of the grid
-    var maxSteps = dimensionsArray[2];   // Maximum steps allowed for movement
+Array.prototype.sortDescendingNumbers = function () {
+  // Sorts an array of numbers in descending order.
+  return this.sort((first, second) => (second - first));
+};
 
-    // Initialize variables for the starting point and the game grid itself
-    var startingPosition = []; // Stores the [row, column] of the 'S' character
-    // Convert remaining input lines into a 2D array representing the grid
-    var gameGrid = inputLines.slice(1).map(lineContent => lineContent.split(''));
+Array.prototype.sortAscendingStrings = function () {
+  // Sorts an array of strings in ascending lexicographical order.
+  return this.sort();
+};
 
-    // Loop through the grid to locate the starting point 'S'
-    initialScan:
-    for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-        for (var colIdx = 0; colIdx < gridWidth; colIdx++) {
-            if (gameGrid[rowIdx][colIdx] === 'S') {
-                startingPosition = [rowIdx, colIdx];
-                break initialScan; // Exit both loops once 'S' is found
-            }
-        }
+Array.prototype.sortDescendingStrings = function () {
+  // Sorts an array of strings in descending lexicographical order.
+  return this.sort().reverse();
+};
+
+Array.prototype.filterOutElement = function (elementToRemove) {
+  // Returns a new array with all occurrences of a specific element removed.
+  return this.filter(currentElement => currentElement !== elementToRemove);
+};
+
+function processGridData(inputLines) {
+  // Main function to process grid data and find the minimum steps.
+
+  // Parse the first line for grid dimensions and max steps per jump.
+  var dimensionsArray = inputLines[0].split(' ').map(parseInteger);
+  var gridHeight = dimensionsArray[0];
+  var gridWidth = dimensionsArray[1];
+  var maxStepsPerJump = dimensionsArray[2];
+
+  // Initialize starting position.
+  var startPosition = [];
+
+  // Create the grid from the remaining input lines.
+  var currentGridState = inputLines.slice(1).map(lineContent => lineContent.split(''));
+
+  // Find the 'S' (start) position in the grid.
+  findStart: for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
+    for (var colIdx = 0; colIdx < gridWidth; colIdx++) {
+      if (currentGridState[rowIdx][colIdx] === 'S') {
+        startPosition = [rowIdx, colIdx];
+        break findStart; // Exit both loops once 'S' is found.
+      }
     }
+  }
 
-    // Recursive depth-first search function to explore reachable cells within 'maxSteps'
-    function exploreGrid(currentRow, currentCol, currentStep) {
-        // Base case: If the current number of steps exceeds the maximum allowed, terminate this path
-        if (currentStep > maxSteps) {
-            return;
-        }
-        // Base case: If the current coordinates are outside the grid boundaries, terminate this path
-        if (currentRow < 0 || gridHeight <= currentRow || currentCol < 0 || gridWidth <= currentCol) {
-            return;
-        }
+  // Recursive function to explore paths from the start position.
+  function explorePath(currentRow, currentCol, currentStepCount) {
+    // If current steps exceed K, or outside grid boundaries, stop.
+    if (currentStepCount > maxStepsPerJump) return;
+    if (currentRow < 0 || gridHeight <= currentRow || currentCol < 0 || gridWidth <= currentCol) return;
 
-        var cellContent = gameGrid[currentRow][currentCol]; // Get the content of the current cell
+    var cellValue = currentGridState[currentRow][currentCol];
 
-        // Conditions for marking a cell as visited with the current step count:
-        // 1. The cell is empty ('.')
-        // 2. The cell is the starting point ('S')
-        // 3. The cell has been previously visited but with a higher step count,
-        //    meaning we found a shorter path to it.
-        if (
-            cellContent === '.' ||
-            cellContent === 'S' ||
-            (typeof cellContent === 'number' && cellContent > currentStep)
-        ) {
-            gameGrid[currentRow][currentCol] = currentStep; // Mark the cell with the current step count
+    // If the cell is traversable ('.', 'S', or a higher step count already recorded),
+    // update it and explore neighbors.
+    if (
+      cellValue === '.' || cellValue === 'S' ||
+      ((typeof cellValue === 'number') && cellValue > currentStepCount)
+    ) {
+      currentGridState[currentRow][currentCol] = currentStepCount; // Mark cell with current step count.
 
-            // Recursively explore all four adjacent cells, incrementing the step count
-            exploreGrid(currentRow - 1, currentCol, currentStep + 1); // Move Up
-            exploreGrid(currentRow + 1, currentCol, currentStep + 1); // Move Down
-            exploreGrid(currentRow, currentCol - 1, currentStep + 1); // Move Left
-            exploreGrid(currentRow, currentCol + 1, currentStep + 1); // Move Right
-        }
+      // Explore adjacent cells.
+      explorePath(currentRow - 1, currentCol, currentStepCount + 1); // Up
+      explorePath(currentRow + 1, currentCol, currentStepCount + 1); // Down
+      explorePath(currentRow, currentCol - 1, currentStepCount + 1); // Left
+      explorePath(currentRow, currentCol + 1, currentStepCount + 1); // Right
     }
+  }
 
-    // Initiate the grid exploration starting from the identified 'S' position with 0 steps taken
-    exploreGrid(startingPosition[0], startingPosition[1], 0);
+  // Start the path exploration from the 'S' position with 0 steps.
+  explorePath(startPosition[0], startPosition[1], 0);
 
-    // Helper function to compute the minimum number of steps from a given cell
-    // to any of the grid's four boundaries (top, bottom, left, right)
-    function calculateMinStepsToBoundary(currRow, currCol) {
-        var distToBottom = (gridHeight - 1) - currRow;
-        var distToTop = currRow;
-        var distToRight = (gridWidth - 1) - currCol;
-        var distToLeft = currCol;
-        return Math.min(distToBottom, distToTop, distToRight, distToLeft);
-    }
+  // Helper function to calculate minimum distance from a cell to any edge.
+  function calculateMinDistanceToEdge(currentH, currentW) {
+    var distToBottom = (gridHeight - 1) - currentH;
+    var distToTop = currentH;
+    var distToRight = (gridWidth - 1) - currentW;
+    var distToLeft = currentW;
+    return Math.min(distToBottom, distToTop, distToRight, distToLeft);
+  }
 
-    var finalMinimumSteps = Number.POSITIVE_INFINITY; // Initialize the minimum steps to a very large value
+  var overallMinimumSteps = Infinity; // Initialize minimum steps to a very large value.
 
-    // Second pass through the grid to determine the overall minimum steps to exit
-    exitScan:
-    for (var rowIdx = 0; rowIdx < gridHeight; rowIdx++) {
-        for (var colIdx = 0; colIdx < gridWidth; colIdx++) {
-            var cellValue = gameGrid[rowIdx][colIdx];
+  // Iterate through the grid to find the minimum steps to reach an edge.
+  findMin: for (var r = 0; r < gridHeight; r++) {
+    for (var c = 0; c < gridWidth; c++) {
+      var cellData = currentGridState[r][c];
 
-            // Only consider cells that were successfully reached during the exploration (marked with a number)
-            if (typeof cellValue === 'number') {
-                var boundarySteps = calculateMinStepsToBoundary(rowIdx, colIdx);
+      // If the cell was visited (contains a number representing steps).
+      if (typeof cellData === 'number') {
+        var stepsToEdge = calculateMinDistanceToEdge(r, c);
 
-                // If a reachable cell is directly on a boundary (0 steps to boundary)
-                if (boundarySteps === 0) {
-                    finalMinimumSteps = 1; // It takes 1 step to exit from this boundary cell
-                    break exitScan; // Since 1 is the minimum possible, we can stop searching
-                }
-
-                // Calculate the total steps required:
-                // steps to reach this cell (`cellValue`) +
-                // steps to reach the boundary from this cell, considering `maxSteps` per jump (`Math.ceil(boundarySteps / maxSteps)`) +
-                // 1 additional step for the final exit.
-                finalMinimumSteps = Math.min(finalMinimumSteps, Math.ceil(boundarySteps / maxSteps) + 1);
-            }
+        // If an edge cell is reachable, the minimum steps is 1.
+        if (stepsToEdge === 0) {
+          overallMinimumSteps = 1;
+          break findMin; // Optimization: if 1 step is possible, it's the minimum.
         }
-    }
 
-    // Output the computed final minimum steps to the console
-    console.log(finalMinimumSteps);
+        // Calculate total steps: (ceil(distance_to_edge / K) + 1 for the jump itself)
+        overallMinimumSteps = Math.min(overallMinimumSteps, Math.ceil(stepsToEdge / maxStepsPerJump) + 1);
+      }
+    }
+  }
+
+  // Output the final minimum steps.
+  console.log(overallMinimumSteps);
 }
 
-// Execute the main processing function by reading input from stdin
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim()));
+// Read input from stdin, split by newlines, and trim each line.
+processGridData(require("fs").readFileSync("/dev/stdin", "utf8").split('\n').map(l => l.trim()));

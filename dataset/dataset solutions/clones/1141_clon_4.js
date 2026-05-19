@@ -1,37 +1,36 @@
-const computeLongestAscendingChain = () => {
-    const sequenceItems = sourceData.slice(1);
+function computeLongestAscendingSubsequence() {
+    const numericSequence = T.slice(1);
 
-    if (sequenceItems.length === 0) {
-        process.stdout.write("0\n");
+    if (numericSequence.length === 0) {
+        console.log(0);
         return;
     }
 
-    const chainEnds = [];
+    const endElements = [];
 
-    for (const currentElement of sequenceItems) {
-        let searchLow = 0;
-        let searchHigh = chainEnds.length;
+    for (const currentElement of numericSequence) {
+        let lowerBound = 0;
+        let upperBound = endElements.length;
 
-        while (searchLow < searchHigh) {
-            const searchMid = Math.floor((searchLow + searchHigh) / 2);
-            if (chainEnds[searchMid] < currentElement) {
-                searchLow = searchMid + 1;
+        while (lowerBound < upperBound) {
+            const midPoint = Math.floor((lowerBound + upperBound) / 2);
+            if (endElements[midPoint] < currentElement) {
+                lowerBound = midPoint + 1;
             } else {
-                searchHigh = searchMid;
+                upperBound = midPoint;
             }
         }
 
-        if (searchLow === chainEnds.length) {
-            chainEnds.push(currentElement);
+        if (lowerBound === endElements.length) {
+            endElements.push(currentElement);
         } else {
-            chainEnds[searchLow] = currentElement;
+            endElements[lowerBound] = currentElement;
         }
     }
 
-    process.stdout.write(chainEnds.length.toString() + "\n");
-};
+    console.log(endElements.length);
+}
 
-const rawInputBuffer = require('fs').readFileSync('/dev/stdin', 'utf8');
-const sourceData = rawInputBuffer.trim().split("\n").map(Number);
-
-computeLongestAscendingChain();
+var input = require('fs').readFileSync('/dev/stdin', 'utf8');
+var T = (input.trim()).split("\n").map(Number);
+computeLongestAscendingSubsequence();

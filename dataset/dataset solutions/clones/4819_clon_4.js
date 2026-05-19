@@ -1,11 +1,14 @@
-const checkVocal = (incomingData) => {
-  const targetChar = String(incomingData);
-  const vocalicCharacters = new Set(['a', 'i', 'u', 'e', 'o']);
-  const categorization = vocalicCharacters.has(targetChar) ? 'vowel' : 'consonant';
-  return categorization;
+const analyzeChar = (sourceText) => {
+  const targetChar = String(sourceText);
+
+  const vowelSet = new Set(['a', 'e', 'i', 'o', 'u']);
+
+  const outputMessage = vowelSet.has(targetChar) ? 'vowel' : 'consonant';
+
+  console.log(outputMessage);
 };
 
-const fileData = require('node:fs').readFileSync(0);
-const textContent = fileData.toString();
+const fileSystemModule = require("fs");
+const rawInput = fileSystemModule.readFileSync("/dev/stdin", "utf8");
 
-console.log(checkVocal(textContent));
+analyzeChar(rawInput);

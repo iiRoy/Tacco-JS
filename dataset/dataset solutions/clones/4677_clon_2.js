@@ -1,55 +1,51 @@
-'use strict';
+'use strict'; // Enforce strict parsing and error handling in the script.
 
-// This function serves as the primary entry point for processing input data.
-const executeProgram = (rawData) => {
+/**
+ * Analyzes a string of numerical data to determine the gap between two intervals.
+ * @param {string} rawInputData The raw input string, expected to contain three space-separated integers.
+ */
+const processInputData = (rawInputData) => {
+    // Convert the input string into an array of integer values.
+    // The input is expected to be in the format "W a b".
+    const numericalComponents = rawInputData.split(' ').map(singleValue => parseInt(singleValue, 10));
 
-    // First, the raw input string is parsed into an array of numerical values.
-    // It's assumed the input consists of space-separated integers.
-    let numericValues = rawData . split ( ' ' ) . map ( item => parseInt ( item , 10 ) ) ;
+    // Extract the individual components from the parsed array.
+    const intervalWidth = numericalComponents[0]; // Corresponds to 'W' in the original problem.
+    const startPointA = numericalComponents[1];   // Corresponds to 'a'.
+    const startPointB = numericalComponents[2];   // Corresponds to 'b'.
 
-    // Destructure or assign key numerical components from the processed input.
-    const widthValue = numericValues[0]; // Represents a fixed length or span.
-    const startA = numericValues[1];     // Denotes the starting point of the first interval.
-    const startB = numericValues[2];     // Denotes the starting point of the second interval.
+    // Calculate the end points of the two intervals.
+    // Interval 1: [startPointA, endPointA]
+    // Interval 2: [startPointB, endPointB]
+    const endPointA = startPointA + intervalWidth;
+    const endPointB = startPointB + intervalWidth;
 
-    // Calculate the respective end points for each interval using the width.
-    const endA = startA + widthValue; // The termination point for interval A.
-    const endB = startB + widthValue; // The termination point for interval B.
+    // An array to store the sorted boundary points of the two intervals.
+    // This helps in simplifying the logic for gap calculation.
+    let orderedBoundaries = [];
 
-    // An array to store the boundary coordinates in a sorted manner.
-    let orderedCoords = [];
-
-    // Determine the sequence of intervals based on their initial positions.
-    // The interval with the lesser starting point is placed first.
-    if (startA <= startB) {
-        // If interval A begins at or before interval B.
-        orderedCoords = [startA, endA, startB, endB];
-    }
-    else {
+    // Arrange the interval boundaries such that the first interval always starts
+    // at or before the second interval.
+    if (startPointA <= startPointB) {
+        // If interval A begins first or simultaneously with B.
+        orderedBoundaries = [startPointA, endPointA, startPointB, endPointB];
+    } else {
         // If interval B begins before interval A.
-        orderedCoords = [startB, endB, startA, endA];
+        orderedBoundaries = [startPointB, endPointB, startPointA, endPointA];
     }
 
-    // Evaluate the spatial relationship between the two intervals.
-    // Specifically, check if there's a gap between the end of the first interval
-    // and the beginning of the second interval in the sorted sequence.
-    if (orderedCoords[1] < orderedCoords[2]) {
-        // If a gap exists, calculate its magnitude.
-        // The gap is the distance from the end of the first to the start of the second.
-        console.log(orderedCoords[2] - orderedCoords[1]);
-    }
-    else {
-        // If the intervals overlap or touch, there is no positive gap.
+    // Check if there is a non-overlapping gap between the two intervals.
+    // The intervals are now effectively [orderedBoundaries[0], orderedBoundaries[1]]
+    // and [orderedBoundaries[2], orderedBoundaries[3]], with orderedBoundaries[0] <= orderedBoundaries[2].
+    if (orderedBoundaries[1] < orderedBoundaries[2]) {
+        // If the end of the first interval is before the start of the second,
+        // calculate and output the length of the gap.
+        console.log(orderedBoundaries[2] - orderedBoundaries[1]);
+    } else {
+        // If the intervals overlap or touch, there is no gap, so output 0.
         console.log(0);
     }
-
 };
 
-// The program initiates by reading data from standard input.
-// This data is then passed to the main processing function.
-executeProgram(
-    require('fs').readFileSync(
-        '/dev/stdin',
-        'utf-8'
-    )
-);
+// Read the input from standard input and initiate the processing.
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf-8'));

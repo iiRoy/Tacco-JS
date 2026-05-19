@@ -1,19 +1,17 @@
-function processData(rawData) {
-  const lines = rawData.trim().split('\n');
-  const entryCount = Number(lines[0]);
-  const setOne = lines[1].split(' ').map(Number);
-  const setTwo = lines[2].split(' ').map(Number);
+function processInputData(rawData) {
+  const lineSegments = rawData.split('\n');
+  const elementCount = Number(lineSegments[0]);
+  const firstSequenceStrings = lineSegments[1].split(' ');
+  const secondSequenceStrings = lineSegments[2].split(' ');
 
-  const paritySumSetOne = setOne.reduce((accumulator, currentValue) => (accumulator + (currentValue % 2)) % 2, 0);
-  const paritySumSetTwo = setTwo.reduce((accumulator, currentValue) => (accumulator + (currentValue % 2)) % 2, 0);
+  const sumOfFirsts = firstSequenceStrings.reduce((currentTotal, stringValue) => currentTotal + Number(stringValue), 0);
+  const sumOfSeconds = secondSequenceStrings.reduce((currentTotal, stringValue) => currentTotal + Number(stringValue), 0);
 
-  const finalParityResult = (paritySumSetTwo - paritySumSetOne + 2) % 2;
+  const overallDifference = sumOfSeconds - sumOfFirsts;
 
-  const responseLookup = ["No", "Yes"];
+  const outcomeText = (overallDifference % 2 !== 0) ? "Yes" : "No";
 
-  console.log(responseLookup[finalParityResult]);
+  console.log("%s", outcomeText);
 }
 
-const fileSystemModule = require("fs");
-const receivedContent = fileSystemModule.readFileSync("/dev/stdin", "utf8");
-processData(receivedContent);
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,50 +1,50 @@
-const fileContent = require('node:fs').readFileSync('/dev/stdin', { encoding: 'utf8' });
-const dataChunks = fileContent.trim().split('\n');
+"use strict";
 
-const dimension = Number(dataChunks[0]);
-const targetSequence = dataChunks[1].split(' ').map(Number);
-const initialSequence = dataChunks[2].split(' ').map(Number);
+const fileSystem = require('fs');
 
-const checkEquality = (firstArr, secondArr) => {
-    if (firstArr.length !== secondArr.length) {
-        return false;
-    }
-    for (let i = 0; i < firstArr.length; i++) {
-        if (firstArr[i] !== secondArr[i]) {
-            return false;
-        }
+const inputDataString = fileSystem.readFileSync('/dev/stdin', 'UTF-8');
+const inputLines = inputDataString.split('\n');
+
+const arraySize = parseInt(inputLines[0]);
+const targetArray = inputLines[1].split(' ').map(val => parseInt(val));
+const initialArray = inputLines[2].split(' ').map(val => parseInt(val));
+
+const checkArrayEquivalence = (arrA, arrB) => {
+    if (arrA.length !== arrB.length) return false;
+    let currentIdx = 0;
+    while (currentIdx < arrA.length) {
+        if (arrA[currentIdx] !== arrB[currentIdx]) return false;
+        currentIdx++;
     }
     return true;
 };
 
-const mutateAndCount = (currentArrState, goalArr, arrLength, currentOperationCount) => {
-    if (checkEquality(currentArrState, goalArr)) {
-        return currentOperationCount;
+const computeTransformationSteps = (currentArrState, desiredArrState, arrLen, currentStep) => {
+    if (checkArrayEquivalence(currentArrState, desiredArrState)) {
+        return currentStep;
     }
 
-    let highestValue = -Infinity;
-    let highestIndex = -1;
-
-    for (let i = 0; i < arrLength; i++) {
-        if (currentArrState[i] > highestValue) {
-            highestValue = currentArrState[i];
-            highestIndex = i;
+    let maximumValue = -Infinity;
+    let peakIndex = -1;
+    let iterationIndex = 0;
+    while (iterationIndex < arrLen) {
+        if (currentArrState[iterationIndex] > maximumValue) {
+            maximumValue = currentArrState[iterationIndex];
+            peakIndex = iterationIndex;
         }
+        iterationIndex++;
     }
 
     const nextArrState = [...currentArrState];
 
-    const leftAdjacentIndex = (highestIndex - 1 + arrLength) % arrLength;
-    const rightAdjacentIndex = (highestIndex + 1) % arrLength;
+    const previousIndex = (peakIndex - 1 + arrLen) % arrLen;
+    const subsequentIndex = (peakIndex + 1) % arrLen;
 
-    const leftAdjacentValue = currentArrState[leftAdjacentIndex];
-    const rightAdjacentValue = currentArrState[rightAdjacentIndex];
+    nextArrState[peakIndex] = nextArrState[peakIndex] - nextArrState[previousIndex] - nextArrState[subsequentIndex];
 
-    nextArrState[highestIndex] = currentArrState[highestIndex] - leftAdjacentValue - rightAdjacentValue;
-
-    return mutateAndCount(nextArrState, goalArr, arrLength, currentOperationCount + 1);
+    return computeTransformationSteps(nextArrState, desiredArrState, arrLen, currentStep + 1);
 };
 
-const finalResult = mutateAndCount(initialSequence, targetSequence, dimension, 0);
+const finalCount = computeTransformationSteps(initialArray, targetArray, arraySize, 0);
 
-console.log(finalResult);
+console.log(finalCount);

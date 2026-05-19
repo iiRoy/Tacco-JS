@@ -1,40 +1,42 @@
 'use strict';
 
-const getOutputChannel = () => ({
-    display: (dataPayload) => process.stdout.write(String(dataPayload) + '\n')
-});
-
-const getFileAccessor = (loaderFunction) => ({
-    retrieveContents: (resourcePath, textEncoding) => loaderFunction("fs").readFileSync(resourcePath, textEncoding)
-});
-
-const performCalculation = () => {
-    const outputMechanism = getOutputChannel();
-    const dataAcquisitionUnit = getFileAccessor(require);
-
-    const sourceLocation = "/dev/stdin";
-    const dataFormat = "utf8";
-
-    const receivedData = dataAcquisitionUnit.retrieveContents(sourceLocation, dataFormat);
-    const endOfFirstLine = receivedData.indexOf('\n');
-    const initialSegment = (endOfFirstLine === -1) ? receivedData : receivedData.substring(0, endOfFirstLine);
-
-    const numericalPattern = /^\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*$/;
-    const identifiedValues = initialSegment.match(numericalPattern);
-
-    if (!identifiedValues || identifiedValues.length < 3) {
-        throw new Error("Input data structure mismatch.");
+function processInput(rawText) {
+    let currentLineContent = '';
+    let newlineEncountered = false;
+    for (let i = 0; i < rawText.length; i++) {
+        if (rawText[i] === '\n') {
+            newlineEncountered = true;
+            break;
+        }
+        currentLineContent += rawText[i];
+    }
+    if (!newlineEncountered && rawText.length > 0) {
+        currentLineContent = rawText;
     }
 
-    const valueA = parseFloat(identifiedValues[1]);
-    const valueB = parseFloat(identifiedValues[2]);
+    const numericStrings = [];
+    let digitSequence = '';
+    for (let j = 0; j < currentLineContent.length; j++) {
+        const character = currentLineContent[j];
+        if (character >= '0' && character <= '9') {
+            digitSequence += character;
+        } else {
+            if (digitSequence.length > 0) {
+                numericStrings.push(digitSequence);
+                digitSequence = '';
+            }
+        }
+    }
+    if (digitSequence.length > 0) {
+        numericStrings.push(digitSequence);
+    }
 
-    const productOfAandB = valueA * valueB;
-    const sumOfAandB = valueA + valueB;
-    const intermediateResult = productOfAandB - sumOfAandB;
-    const finalOutcome = intermediateResult + 1;
+    let firstOperand = Number(numericStrings[0]);
+    let secondOperand = Number(numericStrings[1]);
 
-    outputMechanism.display(finalOutcome);
-};
+    const finalResult = firstOperand * secondOperand - firstOperand - secondOperand + 1;
 
-performCalculation();
+    console.log(finalResult);
+}
+
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

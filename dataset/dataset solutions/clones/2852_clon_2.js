@@ -1,261 +1,203 @@
-/*
- * This module provides a utility for parsing structured input.
- * It's designed to read data line by line or in blocks.
- */
-var INPUT_PARSER = ( function ( ) {
-  /**
-   * Creates a new instance of the input parser.
-   * @param {string} inputString - The raw string data to parse.
-   * @returns {ParserInstance} A new parser object.
-   */
-  function createParser ( inputString ) {
-    return new ParserInstance( inputString ) ;
-  }
-
-  /**
-   * Represents an instance of the input parser, managing its internal state.
-   * @class
-   * @param {string} sourceText - The full text input.
-   */
-  function ParserInstance ( sourceText ) {
-    // Stores the input text split into individual lines.
-    this._lines = sourceText.trim( ).split( '\n' ) ;
-    // Keeps track of the current line index being processed.
-    this._currentLineIndex = 0 ;
-  }
-
-  /**
-   * Reads and extracts a single value from the current line.
-   * If the current line is not yet split, it will be split by spaces in reverse order.
-   * @param {boolean} [returnAsString=false] - If true, returns the value as a string; otherwise, as a number.
-   * @returns {string|number} The extracted value.
-   */
-  ParserInstance.prototype.readSingleValue = function ( returnAsString ) {
-    var currentLines = this._lines ,
-        lineIdx = this._currentLineIndex ,
-        extractedValue ;
-
-    // If the current line hasn't been processed into a reversed array yet, do so.
-    if ( typeof currentLines[ lineIdx ] === 'string' ) {
-      currentLines[ lineIdx ] = currentLines[ lineIdx ].split( ' ' ).reverse( ) ;
+var INPUT_PARSER = (function() {
+    // Factory function to create an InputReader instance
+    function createParser(inputString) {
+        return new InputReader(inputString);
     }
 
-    // Pop the last element (which is the first in the original order due to reverse).
-    extractedValue = currentLines[ lineIdx ].pop( ) ;
-
-    // If the current line is now empty, advance to the next line.
-    if ( ! currentLines[ lineIdx ].length ) {
-      this._currentLineIndex ++ ;
+    // Constructor for the InputReader, responsible for parsing input lines
+    function InputReader(inputString) {
+        // Store processed input lines, trimmed and split by newline
+        this._linesArray = inputString.trim().split("\n");
+        // Initialize current line index to 0
+        this._currentLineIndex = 0;
     }
 
-    // Return the value, either as a string or converted to a number.
-    return returnAsString ? extractedValue : Number( extractedValue ) ;
-  } ;
+    // Method to read a single value from the current line, typically from the end (right-to-left)
+    InputReader.prototype.readSingleValue = function(asString) {
+        var lineData = this._linesArray;
+        var lineIdx = this._currentLineIndex;
+        var resultValue;
 
-  /**
-   * Reads an entire line and processes its values.
-   * Increments the line index after reading.
-   * @param {boolean} [keepStrings=false] - If true, returns values as strings; otherwise, as numbers.
-   * @returns {Array<string|number>} An array of values from the line.
-   */
-  ParserInstance.prototype.readNextLine = function ( keepStrings ) {
-    var lineValues = this._lines[ this._currentLineIndex ++ ].split( ' ' ) ;
-    // Map values to numbers if not keeping them as strings.
-    return keepStrings ? lineValues : lineValues.map( ( val ) => Number( val ) ) ;
-  } ;
-
-  /**
-   * Reads a block of 'numRows' lines, treating each as a row in a matrix.
-   * Each row is split by spaces.
-   * @param {number} numRows - The number of rows to read.
-   * @param {boolean} [returnStrings=false] - If true, returns matrix elements as strings; otherwise, as numbers.
-   * @returns {Array<Array<string|number>>} A 2D array representing the matrix.
-   */
-  ParserInstance.prototype.readMatrix = function ( numRows, returnStrings ) {
-    // Extract the specified number of rows and split each into elements.
-    var matrixData = this._lines.slice( this._currentLineIndex, this._currentLineIndex += numRows ).map( ( rowStr ) => rowStr.split( ' ' ) ) ;
-
-    // Convert elements to numbers if required.
-    return returnStrings ? matrixData : matrixData.map( ( row ) => row.map( ( item ) => Number( item ) ) ) ;
-  } ;
-
-  /**
-   * Reads a specified count of raw lines.
-   * @param {number} count - The number of lines to read.
-   * @param {boolean} [outputAsStrings=false] - If true, returns lines as strings; otherwise, attempts to convert to numbers.
-   * @returns {Array<string|number>} An array of lines.
-   */
-  ParserInstance.prototype.readRawRows = function ( count, outputAsStrings ) {
-    var extractedRows = this._lines.slice( this._currentLineIndex, this._currentLineIndex += count ) ;
-    // Convert elements to numbers if required.
-    return outputAsStrings ? extractedRows : extractedRows.map( ( line ) => Number( line ) ) ;
-  } ;
-
-  return createParser ;
-
-} ) ( ) ;
-
-// Initialize the data processor by reading from standard input.
-var dataProcessor = INPUT_PARSER( require( 'node:fs' ).readFileSync( '/dev/stdin', 'utf-8' ) ) ;
-
-/**
- * Dynamically creates a multi-dimensional array with a specified initial value.
- * @param {*} initialValue - The value to fill the array elements with.
- * @param {...number} dimensions - The dimensions of the array (e.g., dim1, dim2, dim3).
- * @returns {Array} The created multi-dimensional array.
- */
-function createMultiDimArray ( initialValue ) {
-  var args = arguments ,
-      lengthCounter = args.length ,
-      // Build the string representation of the array creation logic.
-      arrayCreationString = "Array(args[" + --lengthCounter + "]).fill(0).map(_ => { return " + initialValue + "; })" ;
-
-  // Wrap the array creation string for each additional dimension.
-  while ( --lengthCounter ) {
-    arrayCreationString = "Array(args[" + lengthCounter + "]).fill(0).map(_ => " + arrayCreationString + ")" ;
-  }
-
-  // Evaluate the constructed string to create the array.
-  return eval( arrayCreationString ) ;
-}
-
-// Log the result of the main execution function to the console.
-console.log( executeMainLogic( ) ) ;
-
-/**
- * Orchestrates the primary logic of the program.
- * Reads input, processes it through 'calculateSolution', and returns the final result.
- * @returns {number} The final computed result.
- */
-function executeMainLogic ( ) {
-  // Read an initial integer value.
-  var initialValueN = dataProcessor.readSingleValue( ) ;
-  // Read two arrays of integers from subsequent lines.
-  var firstInputArr = dataProcessor.readNextLine( ) ;
-  var secondInputArr = dataProcessor.readNextLine( ) ;
-
-  // Initialize temporary arrays for sorting values.
-  var smallerValues = [ ] ,
-      largerValues = [ ] ;
-
-  // Populate temporary arrays based on comparison of elements from firstInputArr and secondInputArr.
-  // This loop runs for a fixed count of 3 iterations.
-  for ( var loopIndex = 0 ; loopIndex < 3 ; loopIndex ++ ) {
-    if ( firstInputArr[ loopIndex ] < secondInputArr[ loopIndex ] ) {
-      smallerValues.push( firstInputArr[ loopIndex ] ) ;
-      largerValues.push( secondInputArr[ loopIndex ] ) ;
-    }
-  }
-
-  // Calculate an intermediate result using the sorted values.
-  var intermediateResult = calculateSolution( initialValueN, smallerValues, largerValues ) ;
-
-  // Clear temporary arrays for the next processing stage.
-  smallerValues = [ ] ;
-  largerValues = [ ] ;
-
-  // Repopulate temporary arrays, reversing the comparison logic.
-  for ( var loopIndex = 0 ; loopIndex < 3 ; loopIndex ++ ) {
-    if ( secondInputArr[ loopIndex ] < firstInputArr[ loopIndex ] ) {
-      smallerValues.push( secondInputArr[ loopIndex ] ) ;
-      largerValues.push( firstInputArr[ loopIndex ] ) ;
-    }
-  }
-
-  // Return the final result after another call to calculateSolution.
-  return calculateSolution( intermediateResult, smallerValues, largerValues ) ;
-}
-
-/**
- * Solves a specific optimization problem based on the provided parameters.
- * The logic adapts based on the number of elements in 'arrA'.
- * @param {number} currentN - The current budget or total value.
- * @param {Array<number>} arrA - An array of 'costs' or 'initial values'.
- * @param {Array<number>} arrB - An array of 'benefits' or 'replacement values'.
- * @returns {number} The optimized result.
- */
-function calculateSolution ( currentN, arrA, arrB ) {
-  var arrayLength = arrA.length ;
-
-  // Base case: If no items, return currentN as is.
-  if ( arrayLength === 0 ) {
-    return currentN ;
-  }
-
-  // Case: Only one item type.
-  if ( arrayLength === 1 ) {
-    // Calculate how many times the item can be taken.
-    var numItems = currentN / arrA[ 0 ] | 0 ; // Integer division.
-    // Subtract cost and add benefit for the chosen items.
-    currentN -= numItems * arrA[ 0 ] ;
-    currentN += numItems * arrB[ 0 ] ;
-    return currentN ;
-  }
-
-  // Case: Three item types (dynamic programming approach).
-  if ( arrayLength === 3 ) {
-    // Initialize DP array with -1 (indicating not reachable) up to currentN.
-    var dynamicProgrammingArray = createMultiDimArray( -1, currentN + 1 ) ;
-    // Base case: 0 cost yields initial N.
-    dynamicProgrammingArray[ 0 ] = currentN ;
-
-    // Iterate through each item type.
-    for ( var itemTypeIndex = 0 ; itemTypeIndex < 3 ; itemTypeIndex ++ ) {
-      var itemCost = arrA[ itemTypeIndex ] ,
-          itemBenefit = arrB[ itemTypeIndex ] ;
-
-      // Iterate backwards from currentN down to the itemCost.
-      // This ensures each item is considered multiple times without affecting previous calculations within the same item type.
-      for ( var currentSum = itemCost ; currentSum <= currentN ; currentSum ++ ) {
-        // If the state (currentSum - itemCost) is not reachable, skip.
-        if ( dynamicProgrammingArray[ currentSum - itemCost ] === -1 ) {
-          continue ;
+        // If the current line hasn't been split and reversed yet, process it
+        if (typeof lineData[lineIdx] === "string") {
+            lineData[lineIdx] = lineData[lineIdx].split(" ").reverse();
         }
-        // Update the DP array: either keep current value or update with new benefit.
-        dynamicProgrammingArray[ currentSum ] = Math.max( dynamicProgrammingArray[ currentSum ], dynamicProgrammingArray[ currentSum - itemCost ] + itemBenefit ) ;
-      }
+
+        // Pop the last element (which was the first in the original order)
+        resultValue = lineData[lineIdx].pop();
+
+        // If the current line is now empty, advance to the next line
+        if (!lineData[lineIdx].length) {
+            this._currentLineIndex++;
+        }
+
+        // Return the value as a string or a number based on the 'asString' flag
+        return asString ? resultValue : +resultValue;
+    };
+
+    // Method to read all values from the current line, advancing the line index
+    InputReader.prototype.readLineValues = function(asString) {
+        var lineContent = this._linesArray[this._currentLineIndex++].split(" ");
+        // Return as strings or numbers
+        return asString ? lineContent : lineContent.map(item => +item);
+    };
+
+    // Method to read a matrix of 'numRows' rows, where each row is split by space
+    InputReader.prototype.readMatrix = function(numRows, asString) {
+        var matrixRows = this._linesArray.slice(this._currentLineIndex, this._currentLineIndex += numRows)
+                                         .map(rowStr => rowStr.split(" "));
+        // Return as strings or numbers
+        return asString ? matrixRows : matrixRows.map(row => row.map(item => +item));
+    };
+
+    // Method to read 'numRows' as a list of single values (each row is one value)
+    InputReader.prototype.readRows = function(numRows, asString) {
+        var rowValues = this._linesArray.slice(this._currentLineIndex, this._currentLineIndex += numRows);
+        // Return as strings or numbers
+        return asString ? rowValues : rowValues.map(item => +item);
+    };
+
+    return createParser;
+})();
+
+// Initialize the input parser with data read from standard input
+var inputData = INPUT_PARSER(require("fs").readFileSync("/dev/stdin", "utf8"));
+
+// Function to create a multi-dimensional array initialized with a specific value
+function createMultiDimArray(initialValue) {
+    var args = arguments;
+    var argCount = args.length;
+    // Construct the array creation code dynamically
+    var arrayCreationCode = "Array(args[" + --argCount + "]).fill(0).map(_ => { return " + initialValue + "; })";
+
+    // Build nested Array.map calls for higher dimensions
+    while (--argCount) {
+        arrayCreationCode = "Array(args[" + argCount + "]).fill(0).map(_ => " + arrayCreationCode + ")";
     }
-    // Return the maximum value found in the DP array.
-    return Math.max( ...dynamicProgrammingArray ) ;
-  }
+    // Evaluate the generated code to create the array
+    return eval(arrayCreationCode);
+}
 
-  // Case: Two item types (brute force with optimization for one item).
-  var firstCost, firstBenefit, secondCost, secondBenefit ;
+// Output the result of the main processing function
+console.log(processInput());
 
-  // Determine which item type has a better "profit ratio" (benefit - cost) / cost.
-  // The item with the higher ratio is considered 'first' for optimization.
-  if ( ( arrB[ 0 ] - arrA[ 0 ] ) / arrA[ 0 ] < ( arrB[ 1 ] - arrA[ 1 ] ) / arrA[ 1 ] ) {
-    firstCost = arrA[ 1 ] ;
-    firstBenefit = arrB[ 1 ] ;
-    secondCost = arrA[ 0 ] ;
-    secondBenefit = arrB[ 0 ] ;
-  } else {
-    firstCost = arrA[ 0 ] ;
-    firstBenefit = arrB[ 0 ] ;
-    secondCost = arrA[ 1 ] ;
-    secondBenefit = arrB[ 1 ] ;
-  }
+// Main function to orchestrate the problem solving
+function processInput() {
+    var initialAmount = inputData.readSingleValue(); // Read N
+    var firstArray = inputData.readLineValues();     // Read array A
+    var secondArray = inputData.readLineValues();    // Read array B
 
-  // Calculate the maximum possible number of the 'first' item type.
-  var maxFirstItems = currentN / firstCost | 0 ,
-      maximizedResult = 0 ; // Initialize the maximum profit found.
+    var smallerValues = [];
+    var largerValues = [];
 
-  // Iterate a limited number of times for the 'first' item type.
-  // The upper bound `5000` is a heuristic or problem constraint.
-  for ( var iterationCount = 0 ; iterationCount <= 5000 && iterationCount <= maxFirstItems ; iterationCount ++ ) {
-    var firstItemCount = maxFirstItems - iterationCount ; // Try different counts for the first item.
-    var remainingN = currentN - firstItemCount * firstCost ; // Remaining budget after buying 'first' items.
-    var secondItemCount = remainingN / secondCost | 0 ; // How many 'second' items can be bought.
-
-    // Calculate the total profit for this combination.
-    remainingN -= secondItemCount * secondCost ; // Subtract cost of 'second' items.
-    remainingN += firstItemCount * firstBenefit ; // Add benefit of 'first' items.
-    remainingN += secondItemCount * secondBenefit ; // Add benefit of 'second' items.
-
-    // Update the maximum profit if a better one is found.
-    if ( maximizedResult < remainingN ) {
-      maximizedResult = remainingN ;
+    // First pass: collect pairs where A[idx] < B[idx]
+    for (var idx = 0; idx < 3; ++idx) {
+        if (firstArray[idx] < secondArray[idx]) {
+            smallerValues.push(firstArray[idx]);
+            largerValues.push(secondArray[idx]);
+        }
     }
-  }
-  return maximizedResult ;
+
+    // Calculate the intermediate result using the first set of pairs
+    var intermediateResult = calculateMaxProfit(initialAmount, smallerValues, largerValues);
+
+    // Reset arrays for the second pass
+    smallerValues = [];
+    largerValues = [];
+
+    // Second pass: collect pairs where B[idx] < A[idx]
+    for (var idx = 0; idx < 3; ++idx) {
+        if (secondArray[idx] < firstArray[idx]) {
+            smallerValues.push(secondArray[idx]);
+            largerValues.push(firstArray[idx]);
+        }
+    }
+
+    // Calculate the final result using the intermediate result and the second set of pairs
+    return calculateMaxProfit(intermediateResult, smallerValues, largerValues);
+}
+
+// Function to calculate the maximum profit based on current value and item costs/profits
+function calculateMaxProfit(currentValue, costs, profits) {
+    var numItems = costs.length;
+
+    // Base case: no items to process, return the current value
+    if (numItems === 0) {
+        return currentValue;
+    }
+
+    // Case 1: Only one item type available
+    if (numItems === 1) {
+        var numTransactions = currentValue / costs[0] | 0; // Calculate max integer transactions
+        currentValue -= numTransactions * costs[0];        // Subtract total cost
+        currentValue += numTransactions * profits[0];      // Add total profit
+        return currentValue;
+    }
+
+    // Case 2: Three item types available (uses dynamic programming)
+    if (numItems === 3) {
+        var dynamicProgrammingTable = createMultiDimArray(-1, currentValue + 1);
+        dynamicProgrammingTable[0] = currentValue; // Base case: 0 cost, current value remains
+
+        // Iterate through each item type
+        for (var itemIndex = 0; itemIndex < 3; ++itemIndex) {
+            var costOfItem = costs[itemIndex];
+            var profitOfItem = profits[itemIndex];
+
+            // Iterate through possible budgets from costOfItem up to currentValue
+            for (var currentBudget = costOfItem; currentBudget <= currentValue; ++currentBudget) {
+                // If the previous state (currentBudget - costOfItem) is unreachable, skip
+                if (dynamicProgrammingTable[currentBudget - costOfItem] === -1) {
+                    continue;
+                }
+                // Update DP table: take the maximum of the current value for this budget
+                // or the value achieved by taking the current item
+                dynamicProgrammingTable[currentBudget] = Math.max(
+                    dynamicProgrammingTable[currentBudget],
+                    dynamicProgrammingTable[currentBudget - costOfItem] + profitOfItem
+                );
+            }
+        }
+        // Return the maximum value found in the DP table
+        return Math.max(...dynamicProgrammingTable);
+    }
+
+    // Case 3: Two item types available (numItems === 2)
+    var cost1, profit1, cost2, profit2;
+
+    // Determine which item has a better profit-to-cost ratio (profit_gain / cost)
+    if ((profits[0] - costs[0]) / costs[0] < (profits[1] - costs[1]) / costs[1]) {
+        // If item 0 has a worse ratio, prioritize item 1
+        cost1 = costs[1];
+        profit1 = profits[1];
+        cost2 = costs[0];
+        profit2 = profits[0];
+    } else {
+        // Otherwise, prioritize item 0
+        cost1 = costs[0];
+        profit1 = profits[0];
+        cost2 = costs[1];
+        profit2 = profits[1];
+    }
+
+    var maxTransactionsCost1 = currentValue / cost1 | 0; // Max possible transactions for the prioritized item
+    var maxAchievedValue = 0; // Initialize the maximum value found
+
+    // Iterate through possible transactions for the prioritized item.
+    // The loop limit 5000 is a hard-coded constant from the original algorithm.
+    for (var offsetTransactions = 0; offsetTransactions <= 5000 && offsetTransactions <= maxTransactionsCost1; ++offsetTransactions) {
+        var actualTransactionsCost1 = maxTransactionsCost1 - offsetTransactions;
+        var remainingBudget = currentValue - actualTransactionsCost1 * cost1;
+        var transactionsCost2 = remainingBudget / cost2 | 0; // Transactions for the second item
+
+        remainingBudget -= transactionsCost2 * cost2; // Subtract cost of second item transactions
+        remainingBudget += actualTransactionsCost1 * profit1; // Add profit from first item transactions
+        remainingBudget += transactionsCost2 * profit2;       // Add profit from second item transactions
+
+        // Update the overall maximum achieved value
+        if (maxAchievedValue < remainingBudget) {
+            maxAchievedValue = remainingBudget;
+        }
+    }
+    return maxAchievedValue;
 }

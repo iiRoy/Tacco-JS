@@ -1,40 +1,35 @@
-// This module computes an optimal financial outcome
-// based on several user-provided numeric inputs
-// obtained from the execution environment.
+// This script computes the lowest expenditure based on two distinct pricing models.
+// It anticipates five numerical command-line inputs.
 
-// The Node.js runtime supplies execution arguments
-// within the 'process.argv' array.
-// The initial two entries are system-related ('node' executable and script path),
-// therefore, actual input values commence from the third array position (index 2).
-// A total of five distinct numeric arguments are anticipated from the user.
-if ( ( process.argv . length - 2 ) === 5 )
-{
-    // Convert the textual input values into whole numbers.
-    const initialMeasurement      = parseInt( process.argv[ 2 ] ) ; // The fundamental quantity requiring processing
-    const methodOneUnitCapacity   = parseInt( process.argv[ 3 ] ) ; // The capacity definition for the primary calculation path
-    const methodOneUnitPrice      = parseInt( process.argv[ 4 ] ) ; // The cost factor linked to the primary calculation path
-    const methodTwoUnitCapacity   = parseInt( process.argv[ 5 ] ) ; // The capacity definition for the alternative calculation path
-    const methodTwoUnitPrice      = parseInt( process.argv[ 6 ] ) ; // The cost factor linked to the alternative calculation path
+// Verify that the expected count of arguments is supplied.
+// 'process.argv' includes 'node' and the script's path, so 7 elements signify 5 user-provided values.
+if (process.argv.length === 7) {
 
-    // Determine the count of required units for the first computational approach.
-    // Should the initialMeasurement be perfectly divisible by methodOneUnitCapacity,
-    // the direct quotient is utilized. Otherwise, an additional unit is allocated
-    // to accommodate any remaining portion.
-    const unitsRequiredOptionA = ( initialMeasurement % methodOneUnitCapacity === 0 )
-        ? Math.floor( initialMeasurement / methodOneUnitCapacity )
-        : Math.floor( initialMeasurement / methodOneUnitCapacity ) + 1 ;
+    // Extract and convert the command-line arguments into integers.
+    // The radix 10 is specified for explicit decimal parsing.
+    const mainVal = parseInt(process.argv[2], 10); // Original N
+    const divA = parseInt(process.argv[3], 10);    // Original A
+    const priceA = parseInt(process.argv[4], 10);  // Original B
+    const divB = parseInt(process.argv[5], 10);    // Original C
+    const priceB = parseInt(process.argv[6], 10);  // Original D
 
-    // Ascertain the count of required units for the second computational approach.
-    // This follows an identical logical structure as the first approach,
-    // but employs methodTwoUnitCapacity for its calculations.
-    const unitsRequiredOptionB = ( initialMeasurement % methodTwoUnitCapacity === 0 )
-        ? Math.floor( initialMeasurement / methodTwoUnitCapacity )
-        : Math.floor( initialMeasurement / methodTwoUnitCapacity ) + 1 ;
+    // Calculate the quantity of items required for the first pricing structure.
+    // This logic mirrors ceiling division (e.g., Math.ceil(mainVal / divA)).
+    // The original Java code's conditional modulo check is preserved for structural fidelity.
+    let countA = (mainVal % divA === 0)
+        ? Math.floor(mainVal / divA)
+        : Math.floor(mainVal / divA) + 1;
 
-    // Compute the aggregate expense for each distinct method.
-    const totalExpenseOptionA = methodOneUnitPrice * unitsRequiredOptionA ;
-    const totalExpenseOptionB = methodTwoUnitPrice * unitsRequiredOptionB ;
+    // Calculate the quantity of items for the second pricing structure.
+    // The same ceiling division principle is applied here.
+    let countB = (mainVal % divB === 0)
+        ? Math.floor(mainVal / divB)
+        : Math.floor(mainVal / divB) + 1;
 
-    // Present the lesser of the two computed aggregate expenses to the console.
-    console.log( ( totalExpenseOptionA < totalExpenseOptionB ? totalExpenseOptionA : totalExpenseOptionB ) ) ;
+    // Compute the aggregate expenditure for each pricing model.
+    const totalA = priceA * countA;
+    const totalB = priceB * countB;
+
+    // Display the lesser of the two computed total expenditures.
+    console.log((totalA < totalB ? totalA : totalB));
 }

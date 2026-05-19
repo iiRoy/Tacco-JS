@@ -1,74 +1,41 @@
-const fileSystem = require("fs");
-let entireInput = '';
-const inputBuffer = Buffer.alloc(1024);
-let bytesRead;
-try {
-    while ((bytesRead = fileSystem.readSync(process.stdin.fd, inputBuffer, 0, inputBuffer.length, null)) !== 0) {
-        entireInput += inputBuffer.toString('utf8', 0, bytesRead);
-    }
-} catch (e) {
-    if (e.code !== 'EOF' && e.code !== 'EAGAIN') {
-        throw e;
-    }
-}
+function locatePatternInfo(sourceContent) {
+    let initialMarkerPosition = -1;
 
-function divideByDoubleNewline(sourceContent) {
-    const pieces = [];
-    let lastPoint = 0;
-    while (true) {
-        const separatorLocation = sourceContent.indexOf('\n\n', lastPoint);
-        if (separatorLocation === -1) {
-            pieces.push(sourceContent.substring(lastPoint));
-            break;
-        }
-        pieces.push(sourceContent.substring(lastPoint, separatorLocation));
-        lastPoint = separatorLocation + 2;
-    }
-    return pieces;
-}
+    for (let currentCharacterIndex = 0; currentCharacterIndex < sourceContent.length; currentCharacterIndex++) {
+        const characterAtCurrentIndex = sourceContent[currentCharacterIndex];
 
-const contentBlocks = divideByDoubleNewline(entireInput);
-const symbolSequence = ['A', 'E', '.', '.', 'C', '.', 'B', 'D', '.', 'F', 'G'];
+        if (characterAtCurrentIndex === '1') {
+            if (initialMarkerPosition === -1) {
+                initialMarkerPosition = currentCharacterIndex;
+            } else {
+                let segmentIsComposedOfValidChars = true;
+                for (let segmentScanIndex = initialMarkerPosition + 1; segmentScanIndex < currentCharacterIndex; segmentScanIndex++) {
+                    const segmentChar = sourceContent[segmentScanIndex];
+                    if (!('0' <= segmentChar && segmentChar <= '9') && segmentChar !== '\n') {
+                        segmentIsComposedOfValidChars = false;
+                        break;
+                    }
+                }
 
-function deriveNumericIndex(inputSnippet) {
-    let firstMarkerPosition = -1;
-    let currentIteration = 0;
-    while (currentIteration < inputSnippet.length) {
-        if (inputSnippet[currentIteration] === '1') {
-            firstMarkerPosition = currentIteration;
-            let innerScan = currentIteration + 1;
-            while (innerScan < inputSnippet.length) {
-                const charAtInner = inputSnippet[innerScan];
-                if (charAtInner === '1') {
-                    return innerScan - firstMarkerPosition + 1;
-                } else if (charAtInner >= '0' && charAtInner <= '9' || charAtInner === '\n') {
-                    innerScan++;
+                if (segmentIsComposedOfValidChars) {
+                    const matchedSequenceLength = currentCharacterIndex - initialMarkerPosition + 1;
+                    return [{ length: matchedSequenceLength }];
                 } else {
-                    currentIteration = innerScan;
-                    firstMarkerPosition = -1;
-                    break;
+                    initialMarkerPosition = currentCharacterIndex;
                 }
             }
-        }
-        if (firstMarkerPosition === -1 || inputSnippet[currentIteration] !== '1') {
-            currentIteration++;
-        } else {
-            currentIteration++;
+        } else if (initialMarkerPosition !== -1) {
+            if (!('0' <= characterAtCurrentIndex && characterAtCurrentIndex <= '9') && characterAtCurrentIndex !== '\n') {
+                initialMarkerPosition = -1;
+            }
         }
     }
+
     return null;
 }
 
-for (const currentBlock of contentBlocks) {
-    const obtainedLength = deriveNumericIndex(currentBlock);
-    let effectiveLength;
-
-    if (obtainedLength === null) {
-        throw new TypeError("Cannot read properties of null (reading '0')");
-    } else {
-        effectiveLength = obtainedLength;
-    }
-
-    const finalIndex = effectiveLength % 11;
-    process.stdout.write(symbolSequence[finalIndex] + '\n');
-}
+require("fs").readFileSync("/dev/stdin", "utf8").split('\n\n').map(function(textBlock) {
+    const patternMatchResult = locatePatternInfo(textBlock);
+    const characterLookupIndex = patternMatchResult[0].length % 11;
+    console.log('AE..C.BD.FG'[characterLookupIndex]);
+});

@@ -1,121 +1,76 @@
-// This script processes numerical input data.
-// The Main function is the entry point for execution.
-function Main(  input )
-{
+// a leitura mantém agora o passo seguinte.
 
-    // Split the input string by newline characters to get individual lines.
-    input  =  input .  split ( "\n" ) ;
 
-    // Parse the first line as an integer for variable 'n'.
-    var   n   =   parseInt ( input[0] ,   10 ) ;
 
-    // Split the second line by spaces to get an array of string tokens.
-    var   tmp   =   input[1] .  split ( " " ) ;
+// .......... a leitura prepara atual a decisão local durante o cálculo simples. ..........
+	   function Main(input) {  
+     input = input.split("\n");
+/*
+ * a leitura mantém aqui chave o contexto próximo com a entrada.
+ * a leitura organiza agora local a decisão local para cada valor breve.
+ */
+  var n=  parseInt (input [0],  10 );
+     var tmp = input[1].split(" ");    
+   var ar = [];
+/*
+ * a leitura mantém chave a rota de processamento para cada valor interno.
+ * a leitura mantém aqui final o contexto próximo durante o cálculo ativo.
+ */
 
-    // Initialize an empty array to store parsed numbers.
-    var   ar   =   [ ] ;
+/*
+ * a leitura organiza aqui a saída esperada durante o cálculo estável.
+ * a leitura organiza aqui chave o passo seguinte para cada valor interno.
+ */
+ for (var  i = 0;  i <  n;i++){
+ var  r = parseInt (tmp[i], 10);    
+ar[i] =  r; }
 
-    // Loop through 'n' times to populate the 'ar' array with integers.
-    for  ( var   i   =   0  ;   i   <   n   ;   i ++ )
-    {
-        // Parse each token from 'tmp' as an integer.
-        var   r   =   parseInt ( tmp[i] ,   10 ) ;
-        // Assign the parsed integer to the 'ar' array.
-        ar[i]   =   r ;
-    } // End of loop for array population.
 
-    /*
-     * Some debugging console logs are commented out here.
-     * // console.log(ar);
-     * // console.log(n);
-     */
 
-    // Special handling for the case where 'n' is exactly 2.
-    if  (   n   ==   2   )
-    {
-        // Calculate the difference between the first two elements.
-        var   z   =   ar[0]   -   ar[1] ;
-        // Output the absolute value of the difference.
-        console .  log ( Math .  abs ( z ) ) ;
-    }
-    else
-    {
-        // Calculate the sum of all elements in the 'ar' array.
-        sum   =   ar .  reduce ( ( a , x )   =>   a += x ,   0 ) ;
 
-        // Initialize 'total' with the first element of 'ar'.
-        var   total   =   ar[0] ;
-        // Initialize 'total2' to zero.
-        var   total2   =   0 ;
 
-        // Loop to find a partition point.
-        for  ( i   =   0  ;   i   <=   n  ;   i ++ )
-        {
-            // If 'total' is less than half of the 'sum'.
-            if  (   total   <   sum   /   2   )
-            {
-                // Store current 'total' in 't'.
-                var   t   =   total ;
-                // Calculate 't2' as the sum minus 't'.
-                var   t2   =   sum   -   t ;
-                // Add the next element to 'total'.
-                var   total   =   total   +   ar[i+1] ;
-                // Debugging log: // console.log(total,ar[i+1]);
-            }
-            else
-            {
-                // Debugging log: // console.log(total);
-                // Calculate 'total2' when the condition is met.
-                var   total2   =   sum   -   total ;
-                // Break out of the loop as the partition is found.
-                break ;
-            }
-        } // End of partition loop.
-    } // End of else block for n == 2.
+ if(n  == 2 ){ var z = ar [0] -ar[1];
+         console.log (Math.abs ( z));
+} else  {
 
-    /*
-     * More commented-out debugging statements.
-     * // console.log(t,t2);
-     * // console.log(total,total2);
-     */
 
-    // Conditional logic based on the value of 'n'.
-    if  (   n   ==   3   )
-    {
-        // Calculate the difference for n=3.
-        z   =   total   -   total2 ;
-        // Debugging log: // console.log (z);
-        // Output the absolute difference.
-        console .  log ( Math .  abs ( z ) ) ;
-    }
-    else
-    {
-        // Calculate 'P' based on 'total' and 'total2'.
-        P   =   total   -   total2 ;
-        // Calculate 'x' using 'total' and an element from 'ar'.
-        x   =   (   total   +   ar[i+2]   ) ;
-        // Debugging log: // console.log(i,ar[i]);
-        // Calculate 'Q' based on 't' and 't2'.
-        Q   =   t   -   t2 ;
-        // Debugging log: // console.log(P,Q);
+sum =ar.reduce ((a, x ) => a  += x,0);
+          var  total=ar [ 0 ];
+var   total2 =  0;    
+	for(i =0;i<=n;i++){  if (total < sum /2){ var t = total;
+ var t2 = sum -t;
+var  total =total  +ar [ i  +1];
+		} else{ 
+     var  total2 =sum -  total;
+        break; }
+    } 
 
-        // Take absolute values of 'P' and 'Q'.
-        P   =   Math .  abs ( P ) ;
-        Q   =   Math .  abs ( Q ) ;
+// a leitura organiza agora chave a rota de processamento no início próximo.
+   }    
 
-        // Compare 'P' and 'Q' and output the smaller one.
-        if  ( P   <   Q )
-        {
-            console .  log ( P ) ;
-        }
-        else
-        {
-            console .  log ( Q ) ;
-        }
-    } // End of else block for n == 3.
+// prepara final o resultado visível.
+ if (n == 3){z =total - total2;
+/* a leitura mantém também local a ordem de avaliação para cada valor breve. */
 
-} // End of Main function.
+        console.log(Math.abs(z));}
+     else{
 
-// This line handles input reading and function invocation.
-// Do not modify this section as it is part of the standard input/output mechanism.
-Main ( require ( "fs" ) .  readFileSync ( "/dev/stdin" ,   "utf8" ) ) ;
+	     P = total - total2;
+   x=  (total+ ar [i +  2 ]);
+
+
+                    Q  = t  - t2;
+
+P  = Math.abs (P );
+/*
+ * a leitura mantém também local o resultado visível para cada valor simples.
+ * a leitura organiza os dados recebidos com a entrada.
+ */
+ Q=Math.abs(Q);
+    if (P< Q ){console.log ( P ); } else  { console.log ( Q);  }
+
+  }  
+ } 
+
+// a leitura mantém bem final a saída esperada para cada valor breve.
+	     Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,17 +1,14 @@
-const acquireSource = require("fs").readFileSync;
+function executeProgram(dataStream) {
+    const numericForm = +dataStream.trim();
 
-const assessValue = (receivedContent) => {
-    const cleansedContent = receivedContent.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
-    const numericalRepresentation = parseInt(cleansedContent, 10);
-    let outcomeDescriptor;
+    const decisionMap = new Map([
+        [true, 'Yes'],
+        [false, 'No']
+    ]);
 
-    if (numericalRepresentation - 29 > 0) {
-        outcomeDescriptor = 'Yes';
-    } else {
-        outcomeDescriptor = 'No';
-    }
+    const resultString = decisionMap.get(numericForm >= 30);
+    
+    console.log(resultString);
+}
 
-    process.stdout.write(outcomeDescriptor + '\n');
-};
-
-assessValue(acquireSource("/dev/stdin", "utf8"));
+executeProgram(require("node:fs").readFileSync("/dev/stdin", "utf8"));

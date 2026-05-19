@@ -1,80 +1,62 @@
-const dataVault = [];
+var inputLines = [];
 
-const interactionAgent = require('readline').createInterface({
+var standardInput = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-interactionAgent.on('line', (entry) => {
-    dataVault.push(entry);
+standardInput.on('line', function (lineContent) {
+    inputLines.push(lineContent);
 });
 
-interactionAgent.on('close', () => {
-    processCapturedInput(dataVault);
-});
+standardInput.on('close', function () {
+    var firstLineParts = inputLines.shift().split(" ");
+    var numVal = Number(firstLineParts[0]);
+    var flipLimit = Number(firstLineParts[1]);
 
-function processCapturedInput(allEntries) {
-    const configLine = allEntries[0].split(" ");
-    const sequenceLength = Number(configLine[0]);
-    const maxZeroFlips = Number(configLine[1]);
+    var charSequence = inputLines[0];
 
-    const binarySequence = allEntries[1];
-
-    const segmentMeasures = deriveSegmentLengths(binarySequence);
-
-    const finalOutcome = computeMaximalConsecutiveOnes(segmentMeasures, maxZeroFlips);
-
-    console.log(finalOutcome);
-}
-
-function deriveSegmentLengths(sourceString) {
-    const spanCollection = [];
-    let activeSegmentType = 1; 
-    let currentRunCount = 0;   
-
-    for (let i = 0; i < sourceString.length; i++) {
-        const currentDigit = Number(sourceString[i]);
-        if (currentDigit === activeSegmentType) {
-            currentRunCount++;
+    const initialGroups = charSequence.split('').reduce((accumulator, char) => {
+        const lastGroup = accumulator.length > 0 ? accumulator[accumulator.length - 1] : null;
+        if (lastGroup && lastGroup.char === char) {
+            lastGroup.count++;
         } else {
-            spanCollection.push(currentRunCount);
-            activeSegmentType = 1 - activeSegmentType; 
-            currentRunCount = 1; 
+            accumulator.push({ char: char, count: 1 });
         }
+        return accumulator;
+    }, []);
+
+    let processedCounts = [];
+    if (initialGroups.length > 0 && initialGroups[0].char === '0') {
+        processedCounts.push(0);
     }
 
-    if (currentRunCount !== 0) {
-        spanCollection.push(currentRunCount);
+    initialGroups.forEach(group => {
+        processedCounts.push(group.count);
+    });
+
+    if (processedCounts.length % 2 === 0) {
+        processedCounts.push(0);
     }
 
-    if (spanCollection.length % 2 === 0) {
-        spanCollection.push(0);
+    const windowSpan = 2 * flipLimit + 1;
+
+    const windowTotals = Array.from({ length: processedCounts.length }, (_, idx) => idx)
+        .filter(idx => idx % 2 === 0)
+        .map(startIdx => {
+            let currentWindowTotal = 0;
+            for (let offset = 0; offset < windowSpan; offset++) {
+                currentWindowTotal += processedCounts[startIdx + offset];
+            }
+            return currentWindowTotal;
+        });
+
+    let maxConsecutiveOnes = 1;
+    const validWindowTotals = windowTotals.filter(val => !Number.isNaN(val));
+
+    if (validWindowTotals.length > 0) {
+        maxConsecutiveOnes = Math.max(1, ...validWindowTotals);
     }
 
-    return spanCollection;
-}
-
-function computeMaximalConsecutiveOnes(segmentCounts, allowedFlips) {
-    const cumulativeSums = new Array(segmentCounts.length + 1).fill(0);
-    for (let i = 0; i < segmentCounts.length; i++) {
-        cumulativeSums[i + 1] = cumulativeSums[i] + segmentCounts[i];
-    }
-
-    let greatestLength = 0;
-    const windowBlockCount = 2 * allowedFlips + 1;
-
-    for (let currentStartIdx = 0; currentStartIdx < segmentCounts.length; currentStartIdx += 2) {
-        let windowEndIdx = currentStartIdx + windowBlockCount;
-
-        if (windowEndIdx > segmentCounts.length) {
-             windowEndIdx = segmentCounts.length;
-        }
-
-        const currentWindowSum = cumulativeSums[windowEndIdx] - cumulativeSums[currentStartIdx];
-        if (currentWindowSum > greatestLength) {
-            greatestLength = currentWindowSum;
-        }
-    }
-
-    return greatestLength;
-}
+    console.log(maxConsecutiveOnes);
+});

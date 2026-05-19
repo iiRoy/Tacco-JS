@@ -1,55 +1,53 @@
-const processProblemSet = (rawInputContent) => {
-    const dataLines = rawInputContent.split(/\r?\n/);
-    const numberOfTestCases = Number.parseInt(dataLines[0]);
-    const outcomes = [];
-
-    const calculateOutcomeForCase = (initialValue, stepValue, thresholdValue, incrementValue) => {
-        if (initialValue < stepValue) return "No";
-        if (incrementValue < stepValue) return "No";
-        if (initialValue < thresholdValue) return "Yes";
-
-        const traversePath = (currentPosition, visitedPositions) => {
-            if (currentPosition >= initialValue) {
-                return "Yes";
-            }
-            if (currentPosition < stepValue) {
-                return "No";
-            }
-            if (visitedPositions.has(currentPosition)) {
-                return "No";
-            }
-
-            visitedPositions.add(currentPosition);
-
-            const remainingAfterStep = currentPosition - stepValue;
-            let nextPosition;
-
-            if (remainingAfterStep <= thresholdValue) {
-                nextPosition = remainingAfterStep + incrementValue;
-            } else {
-                nextPosition = remainingAfterStep;
-            }
-
-            return traversePath(nextPosition, visitedPositions);
-        };
-
-        const startPosition = (initialValue % stepValue) + stepValue;
-        return traversePath(startPosition, new Set());
-    };
-
-    for (let testIndex = 1; testIndex <= numberOfTestCases; ++testIndex) {
-        const parameters = dataLines[testIndex].split(' ').map(Number.parseInt);
-        const [p0, p1, p2, p3] = parameters;
-        outcomes.push(calculateOutcomeForCase(p0, p1, p2, p3));
+function processSingleCase(initialA, B, C, D) {
+    if (initialA < B) {
+        return "No";
+    }
+    if (D < B) {
+        return "No";
+    }
+    if (initialA < C) {
+        return "Yes";
     }
 
-    outcomes.forEach(result => console.log(result));
-};
+    const targetA = initialA;
+    let currentVal = (initialA % B) + B;
 
-const obtainInputAndExecute = (inputSource) => {
-    const fileModule = require('fs');
-    const fileContent = fileModule.readFileSync(inputSource, 'utf8');
-    processProblemSet(fileContent);
-};
+    const visitedStates = new Set();
 
-obtainInputAndExecute('/dev/stdin');
+    function advanceState(val) {
+        if (val >= targetA) {
+            return true;
+        }
+        if (val < B) {
+            return false;
+        }
+        if (visitedStates.has(val)) {
+            return false;
+        }
+
+        visitedStates.add(val);
+
+        let nextVal;
+        if ((val - B) <= C) {
+            nextVal = val - B + D;
+        } else {
+            nextVal = val - B;
+        }
+
+        return advanceState(nextVal);
+    }
+
+    return advanceState(currentVal) ? "Yes" : "No";
+}
+
+function main(inputContent) {
+    const dataLines = inputContent.split('\n');
+    const numberOfCases = parseInt(dataLines[0], 10);
+
+    for (let i = 1; i <= numberOfCases; i++) {
+        const [valA, valB, valC, valD] = dataLines[i].split(' ').map(Number);
+        console.log(processSingleCase(valA, valB, valC, valD));
+    }
+}
+
+main(require('fs').readFileSync('/dev/stdin', 'utf8'));

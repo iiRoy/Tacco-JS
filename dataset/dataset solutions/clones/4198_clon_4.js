@@ -1,65 +1,68 @@
-class InputHandler {
-    constructor(inputLines) {
-        this.cache = inputLines;
-        this.indexPointer = 0;
-    }
+var inputLines = [];
+var currentLineIndex = 0;
 
-    extractNumericSequence() {
-        if (this.indexPointer >= this.cache.length) {
-            throw new Error("Input Exhausted");
-        }
-        const currentLine = this.cache[this.indexPointer++];
-        return currentLine.split(' ').map(val => parseInt(val, 10));
-    }
-}
-
-let inputCollector = [];
-let inputProcessor;
-
-require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-}).on('line', (dataLine) => {
-    inputCollector.push(dataLine);
-}).on('close', () => {
-    inputProcessor = new InputHandler(inputCollector);
-    console.error('\n↑Input ↓Output');
-    calculatePeakConcurrency();
+var inputReader = require('readline').createInterface({
+  input: process.stdin, output: process.stdout
 });
 
-function presentResult(outcome) {
-    console.log(outcome);
+inputReader.on('line', function(lineContent){
+  inputLines.push(lineContent);
+});
+
+inputReader.on('close', function(){
+  console.error('\n↑入力 ↓出力');
+  executeIntervalAnalysis();
+});
+
+function retrieveNextLine() {
+  if (currentLineIndex < inputLines.length) {
+    return inputLines[currentLineIndex++];
+  }
+  throw new Error('Input exhausted.');
 }
 
-function calculatePeakConcurrency() {
-    const configData = inputProcessor.extractNumericSequence();
-    const numIntervals = configData[0];
+function parseLineAsNumbers() {
+  return retrieveNextLine().split(' ').map(Number);
+}
 
-    const eventPoints = [];
+function outputResult(data) {
+  console.log(data);
+}
 
-    for (let intervalIdx = 0; intervalIdx < numIntervals; intervalIdx++) {
-        const rangeBoundaries = inputProcessor.extractNumericSequence();
-        const startPoint = rangeBoundaries[0];
-        const endPoint = rangeBoundaries[1];
+function logDebugInfo(data) {
+  console.error('debug:' + require('util').inspect(data, false, null));
+}
 
-        eventPoints.push([startPoint, 1]);
-        eventPoints.push([endPoint + 1, -1]);
+function executeIntervalAnalysis() {
+  var initialParameters = parseLineAsNumbers();
+  var totalIntervals = initialParameters[0];
+  var ignoredParameter = initialParameters[1];
+
+  var timelineEvents = [];
+
+  for (var intervalIdx = 0; intervalIdx < totalIntervals; intervalIdx++) {
+    var currentInterval = parseLineAsNumbers();
+    var startCoord = currentInterval[0];
+    var endCoord = currentInterval[1];
+
+    timelineEvents.push([startCoord, 1]);
+    timelineEvents.push([endCoord + 1, -1]);
+  }
+
+  timelineEvents.sort(function(eventA, eventB) {
+    if (eventA[0] !== eventB[0]) {
+      return eventA[0] - eventB[0];
     }
+    return eventA[1] - eventB[1];
+  });
 
-    eventPoints.sort((eventA, eventB) => {
-        if (eventA[0] !== eventB[0]) {
-            return eventA[0] - eventB[0];
-        }
-        return eventA[1] - eventB[1];
-    });
+  var peakOverlap = 1;
+  var currentActiveCount = 0;
 
-    let currentOverlapCount = 0;
-    let maxOverlapAchieved = 1;
+  for (var eventIdx = 0; eventIdx < timelineEvents.length; eventIdx++) {
+    currentActiveCount += timelineEvents[eventIdx][1];
+    peakOverlap = Math.max(peakOverlap, currentActiveCount);
+  }
 
-    for (const point of eventPoints) {
-        currentOverlapCount += point[1];
-        maxOverlapAchieved = Math.max(maxOverlapAchieved, currentOverlapCount);
-    }
-
-    presentResult(maxOverlapAchieved);
+  outputResult(peakOverlap);
 }

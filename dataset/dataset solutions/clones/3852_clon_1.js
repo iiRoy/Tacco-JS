@@ -1,58 +1,40 @@
+// lectio ordinat quoque clavis cursum datorum ante exitum.
+function main(input) {
+      const arr = input.split('\n');  // lectio servat bene finale valorem medium in computatione directe. Squirtle
+ const nums= arr [0];
+   const k = parseInt(arr[1]);
+    let vals = nums.split(' ').map(num => parseInt(num));
+// ordinat bene finale valorem medium.
+ for(let   i = 0; i<k; i++) {
+// lectio ordinat quoque contextum propinquum in initio stabile.
+   vals = doubleMax(vals);  
+  }     
+
+
+// lectio servat bene clavis exitum exspectatum pro quolibet valore breviter.
+
+         }
+
+
+
+		function doubleMax (vals ) {
+// lectio ordinat quoque lectionem humanam cum introitu clare.
+	const result = vals.concat();
+      const max =  Math.max.apply (null, vals);  // lectio ordinat clavis exitum exspectatum.
+  const index = result.indexOf(max);
+    result[index] = max * 2;
+return result;
+          }
+
+
+	main(require('fs').readFileSync('/dev/stdin', 'utf8'));
+
+
+
+
 /*
- * This JavaScript file processes numerical data.
- * It reads input, performs a series of operations,
- * and could potentially log the final sum (currently commented out).
- *
- * Author: Code Clone Generator
- * Date: 2023-10-27
+ * /\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+ * Sodales: Claudia Marcius
  */
 
-// Define the main function that orchestrates the program flow.
-function   main (   input   ) {
-    // Split the input string by newline characters to get an array of lines.
-    const   arr   =   input.split ( '\n' ) ;
-
-    // The first line contains space-separated numbers.
-    const   nums   =   arr[ 0 ] ;
-
-    // The second line contains the integer 'k', representing the number of iterations.
-    const   k   =   parseInt ( arr[ 1 ] ) ;
-
-    // Parse the space-separated numbers from 'nums' into an array of integers.
-    let   vals   =   nums.split ( ' ' ) .map ( num   =>   parseInt ( num ) ) ;
-
-
-    // Loop 'k' times, applying the 'doubleMax' operation in each iteration.
-    for   (   let   i   =   0   ;   i   <   k   ;   i ++   )   {
-        // In each iteration, update 'vals' by doubling the maximum element.
-        vals   =   doubleMax ( vals ) ;
-    }
-
-    // The following line is commented out, but it would calculate and log the sum of 'vals'.
-    // console.log ( vals.reduce ( ( prev , current ) => prev + current ) ) ;
-
-} /* End of main function */
-
-
-// This helper function doubles the maximum value in an array.
-function   doubleMax (   vals   ) {
-    // Create a copy of the input array to avoid modifying the original directly before returning.
-    const   result   =   vals.concat ( ) ;
-
-    // Find the maximum value in the array.
-    const   max   =   Math.max.apply ( null , vals ) ;
-
-    // Get the index of the first occurrence of the maximum value.
-    const   index   =   result.indexOf ( max ) ;
-
-    // Double the maximum value at its found index.
-    result[ index ]   =   max   *   2 ;
-
-    // Return the modified array.
-    return   result ;
-} /* End of doubleMax function */
-
-
-// The program execution starts here.
-// It reads the input from standard input and passes it to the main function.
-main ( require ( 'fs' ) .readFileSync ( '/dev/stdin' , 'utf8' ) ) ;
+// lectio servat quoque finale finem bloci cum introitu directe.

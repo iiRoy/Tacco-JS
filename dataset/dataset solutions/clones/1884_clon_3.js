@@ -1,133 +1,108 @@
-const dataStream = require("fs").readFileSync("/dev/stdin", "utf8");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8");
 
-// Define a constant for the prime modulus, converted to BigInt for arithmetic
-const PRIME_MODULUS = 998244353n; // Using 'n' suffix for BigInt literal
+const moduloConstant = 998244353;
 
 /**
- * Performs modular multiplication (A * B) % M using BigInts to prevent overflow.
- * @param {bigint | number} factorA - The first operand.
- * @param {bigint | number} factorB - The second operand.
- * @returns {bigint} The result of (factorA * factorB) % PRIME_MODULUS.
+ * Performs modular exponentiation (base^exponent % moduloConstant).
+ * @param {number} baseVal - The base.
+ * @param {number} exponentVal - The exponent.
+ * @returns {number} The result of base^exponent % moduloConstant.
  */
-function calculateModularProduct(factorA, factorB) {
-    const bigA = BigInt(factorA);
-    const bigB = BigInt(factorB);
-    return (bigA * bigB) % PRIME_MODULUS;
+function powerModulo(baseVal, exponentVal) {
+    let resultVal = 1;
+    let currentBase = baseVal % moduloConstant;
+    if (currentBase < 0) currentBase += moduloConstant; // Ensure positive base
+
+    let currentExponent = exponentVal;
+
+    while (currentExponent > 0) {
+        if (currentExponent & 1) {
+            resultVal = multiplyModulo(resultVal, currentBase);
+        }
+        currentBase = multiplyModulo(currentBase, currentBase);
+        currentExponent >>= 1;
+    }
+    return resultVal;
 }
 
 /**
- * Computes (base ^ exponent) % PRIME_MODULUS using modular exponentiation (binary exponentiation).
- * This function is designed to work with BigInts.
- * @param {bigint | number} baseVal - The base value.
- * @param {bigint | number} exponentVal - The exponent. Must be non-negative.
- * @returns {bigint} The result of (baseVal ^ exponentVal) % PRIME_MODULUS.
+ * Calculates the modular multiplicative inverse of a number using Fermat's Little Theorem.
+ * Assumes moduloConstant is a prime number.
+ * @param {number} val - The number to find the inverse of.
+ * @returns {number} The modular inverse of val.
  */
-function computeModularPower(baseVal, exponentVal) {
-    let currentBase = BigInt(baseVal);
-    let currentExponent = BigInt(exponentVal);
-
-    // Guard clause for negative exponent, although problem constraints typically ensure non-negative
-    if (currentExponent < 0n) {
-        // For competitive programming problems, negative exponents usually imply an error
-        // or a need for modular inverse of the base raised to the positive exponent.
-        // For this context, we'll assume valid non-negative exponents.
-        return 0n; // Or throw an error: new Error("Negative exponents not supported in this context.");
+function modularInverse(val) {
+    if (val === 1) {
+        return 1;
     }
-    
-    // Optimized base case: anything to the power of 0 is 1 (modulo PRIME_MODULUS)
-    if (currentExponent === 0n) {
-        return 1n;
-    }
-
-    let accumulator = 1n;
-    currentBase %= PRIME_MODULUS; // Ensure base is within modulus range
-
-    // Iterate while the exponent is greater than zero
-    for (; currentExponent > 0n; currentExponent /= 2n) {
-        // If the current exponent bit is 1 (i.e., exponent is odd)
-        if (currentExponent % 2n === 1n) {
-            accumulator = calculateModularProduct(accumulator, currentBase);
-        }
-        // Square the base for the next iteration
-        currentBase = calculateModularProduct(currentBase, currentBase);
-    }
-    return accumulator;
+    const exponentForInverse = moduloConstant - 2;
+    return powerModulo(val, exponentForInverse);
 }
 
 /**
- * Finds the modular multiplicative inverse of a number 'val' modulo PRIME_MODULUS.
- * Uses Fermat's Little Theorem: val^(PRIME_MODULUS - 2) % PRIME_MODULUS,
- * which is valid because PRIME_MODULUS is prime.
- * @param {bigint | number} val - The number for which to find the inverse.
- * @returns {bigint} The modular inverse of 'val'.
+ * Performs modular multiplication (operandA * operandB % moduloConstant)
+ * using a specific optimization to prevent overflow for large numbers.
+ * @param {number} operandA - The first operand.
+ * @param {number} operandB - The second operand.
+ * @returns {number} The result of (operandA * operandB) % moduloConstant.
  */
-function fetchModularInverse(val) {
-    const bigVal = BigInt(val);
-    // Deleted specific 'val == 1' check as computeModularPower handles it generically.
-    return computeModularPower(bigVal, PRIME_MODULUS - 2n);
+function multiplyModulo(operandA, operandB) {
+    let a_normalized = (operandA % moduloConstant + moduloConstant) % moduloConstant;
+    let b_normalized = (operandB % moduloConstant + moduloConstant) % moduloConstant;
+
+    const highPartA = a_normalized >>> 16;
+    const lowPartA = a_normalized & 0xFFFF; // 65535
+
+    const termHighIntermediate = highPartA * b_normalized;
+    const termHighModded = termHighIntermediate % moduloConstant;
+    const termHighFinal = termHighModded * 0x10000; // 65536
+
+    const termLowFinal = lowPartA * b_normalized;
+
+    return (termHighFinal + termLowFinal) % moduloConstant;
 }
 
-// Immediately invoked function expression to encapsulate the main logic
-((inputString) => {
-    // Split the input into lines and parse the first line
-    const dataRows = inputString.trim().split('\n');
-    const [paramN_num, paramM_num, paramK_num] = dataRows[0].split(' ').map(Number);
+// Helper function to parse space-separated numbers from a string
+const parseSpaceSeparatedNumbers = (inputString) => {
+    return inputString.split(' ').map(Number);
+};
 
-    // Convert parameters to BigInt for consistent arithmetic
-    const paramN = BigInt(paramN_num);
-    const paramM = BigInt(paramM_num);
-    const paramK = BigInt(paramK_num);
+// Helper function for the factorial B term logic
+const getFactorialBTerm = (currentIndex, totalN) => {
+    if (currentIndex === 0) {
+        return 1;
+    }
+    return totalN - currentIndex;
+};
 
-    let finalCumulativeSum = 0n;
-    let runningNumeratorProduct = 1n; // Accumulates N * (N-1) * ... * (N-k+1)
-    let runningDenominatorProduct = 1n; // Accumulates k!
+((inputContent) => {
+    const inputLines = inputContent.split('\n');
+    let [numN, numM, numK] = parseSpaceSeparatedNumbers(inputLines[0]);
 
-    // Pre-calculate (M-1) as it's used repeatedly as a base for exponentiation
-    const baseForMMinusOne = paramM - 1n;
+    let finalResultAccumulator = 0;
+    let currentFactorialA = 1;
+    let currentFactorialB = 1;
 
-    // Loop through values from 0 up to K (inclusive)
-    for (let currentIteration = 0n; currentIteration <= paramK; ++currentIteration) {
-        // Update runningNumeratorProduct (N * (N-1) * ... * (N-currentIteration+1))
-        if (currentIteration > 0n) {
-            runningNumeratorProduct = calculateModularProduct(runningNumeratorProduct, paramN - currentIteration + 1n);
-        }
+    for (let loopIterationIndex = 0; loopIterationIndex <= numK; loopIterationIndex++) {
+        const multiplierForFactorialA = (loopIterationIndex === 0) ? 1 : loopIterationIndex;
+        currentFactorialA = multiplyModulo(currentFactorialA, multiplierForFactorialA);
 
-        // Update runningDenominatorProduct (currentIteration!)
-        // Handle k=0 case explicitly or ensure product is 1.
-        // `currentIteration || 1n` ensures multiplication by 1 if currentIteration is 0.
-        runningDenominatorProduct = calculateModularProduct(runningDenominatorProduct, currentIteration || 1n);
+        const multiplierForFactorialB = getFactorialBTerm(loopIterationIndex, numN);
+        currentFactorialB = multiplyModulo(currentFactorialB, multiplierForFactorialB);
 
-        // Calculate the binomial coefficient (N choose currentIteration)
-        // which is N! / (currentIteration! * (N-currentIteration)!)
-        // In our current accumulation, runningNumeratorProduct is N! / (N-currentIteration)!
-        // So, (N choose currentIteration) = runningNumeratorProduct * (1 / currentIteration!)
-        const combinationTerm = calculateModularProduct(runningNumeratorProduct, fetchModularInverse(runningDenominatorProduct));
+        const inverseOfFactorialA = modularInverse(currentFactorialA);
+        const intermediateProductTerm = multiplyModulo(currentFactorialB, inverseOfFactorialA);
 
-        // Calculate the exponent for (M-1)
-        const exponentValue = paramN - currentIteration - 1n;
+        const powerBase = numM - 1;
+        const powerExponent = numN - (loopIterationIndex + 1);
+        const calculatedPower = powerModulo(powerBase, powerExponent);
 
-        // Guard against negative exponents for M-1, though problem constraints usually prevent this.
-        // If (M-1) is 0 and exponent is 0, result is 1. If exponent is negative, it's problematic.
-        // For this problem, exponentValue can be -1 if currentIteration = N.
-        // If exponentValue < 0, then pow(base, neg_exp) is typically 0 or undefined in modular arithmetic
-        // unless it's a specific problem requirement (e.g., modular inverse of base^|neg_exp|).
-        // For safety, if exponent is negative, we consider the term contribution 0.
-        let powerTermResult = 0n;
-        if (exponentValue >= 0n) {
-            powerTermResult = computeModularPower(baseForMMinusOne, exponentValue);
-        }
+        const termBeforeFinalM = multiplyModulo(intermediateProductTerm, calculatedPower);
+        const currentTermValue = multiplyModulo(termBeforeFinalM, numM);
 
-        // Calculate the intermediate product: (N choose k) * (M-1)^(N-k-1)
-        const intermediateProduct = calculateModularProduct(combinationTerm, powerTermResult);
-
-        // Calculate the full term for the sum: intermediateProduct * M
-        const currentTermValue = calculateModularProduct(intermediateProduct, paramM);
-
-        // Add the current term to the cumulative sum
-        finalCumulativeSum = (finalCumulativeSum + currentTermValue) % PRIME_MODULUS;
+        finalResultAccumulator = (finalResultAccumulator + currentTermValue) % moduloConstant;
     }
 
-    // Output the final result, ensuring it's a Number for console.log
-    console.log(Number(finalCumulativeSum));
+    console.log(finalResultAccumulator);
 
-})(dataStream);
+})(rawData);

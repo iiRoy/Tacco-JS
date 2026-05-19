@@ -1,17 +1,21 @@
-const dataSource = require('fs');
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+const allLines = fileContent.split('\n');
 
-const fullContent = dataSource.readFileSync('/dev/stdin', 'utf8');
-const contentLines = fullContent.split('\n');
+const [
+    firstInputLine,
+    secondInputLine,
+    thirdInputLine,
+    fourthInputLine,
+    ...remainingInputLines
+] = allLines;
 
-contentLines.shift();
-const sourceCollectionString = contentLines.shift();
-contentLines.shift();
-const targetCollectionString = contentLines.shift();
+const sourceCollection = secondInputLine.split(' ');
+const targetCollectionUnique = new Set(fourthInputLine.split(' '));
 
-const referenceElements = new Set(sourceCollectionString.split(' '));
+const sourceSetForLookup = new Set(sourceCollection);
 
-const distinctTargetElements = [...new Set(targetCollectionString.split(' '))];
-
-const intersectionCount = distinctTargetElements.filter(item => referenceElements.has(item)).length;
+const intersectionCount = Array.from(targetCollectionUnique).reduce((accumulator, currentItem) => {
+    return accumulator + (sourceSetForLookup.has(currentItem) ? 1 : 0);
+}, 0);
 
 console.log(intersectionCount);

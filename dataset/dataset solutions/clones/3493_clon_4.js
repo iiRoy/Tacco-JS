@@ -1,45 +1,60 @@
-function processDataInput(inputStringContent) {
-    const sourceLines = inputStringContent.trim().split('\n');
-    const countOfReadings = parseInt(sourceLines[0], 10);
-    const observationRegistry = [];
-    for (let i = 1; i <= countOfReadings; i++) {
-        const currentParts = sourceLines[i].split(' ').map(Number);
-        observationRegistry.push({ coordX: currentParts[0], coordY: currentParts[1], observedH: currentParts[2] });
+function parseInputData(rawText) {
+    const lineSegments = rawText.split('\n');
+    const dataPointCount = Number(lineSegments[0]);
+    const observationPoints = [];
+
+    for (let i = 1; i <= dataPointCount; i++) {
+        const coordinateParts = lineSegments[i].split(' ').map(Number);
+        observationPoints.push({
+            xCoord: coordinateParts[0],
+            yCoord: coordinateParts[1],
+            heightVal: coordinateParts[2]
+        });
     }
-    return observationRegistry;
+    return observationPoints;
 }
 
-function assessPotentialLocation(allObservations, targetX, targetY) {
-    const derivedHeights = allObservations
-        .filter(entry => entry.observedH !== 0)
-        .map(entry => entry.observedH + Math.abs(targetX - entry.coordX) + Math.abs(targetY - entry.coordY));
+function verifyPeakCandidate(allObservations, centerX, centerY) {
+    let derivedPeakHeight = null;
 
-    if (derivedHeights.length === 0) {
-        return 0;
+    const consistencyCheck = allObservations.every(observation => {
+        if (observation.heightVal !== 0) {
+            const currentPointCalculatedHeight = observation.heightVal + Math.abs(centerX - observation.xCoord) + Math.abs(centerY - observation.yCoord);
+            if (derivedPeakHeight === null) {
+                derivedPeakHeight = currentPointCalculatedHeight;
+            } else if (derivedPeakHeight !== currentPointCalculatedHeight) {
+                return false; // Inconsistent height found
+            }
+        }
+        return true; // This observation is consistent or has zero height
+    });
+
+    if (!consistencyCheck) {
+        return false; // An inconsistency was detected
     }
 
-    const uniqueDerivedHeights = new Set(derivedHeights);
-    return uniqueDerivedHeights.size === 1 ? uniqueDerivedHeights.values().next().value : null;
+    // If all observations are consistent, return the derived height (or 0 if no non-zero height observations)
+    return derivedPeakHeight === null ? 0 : derivedPeakHeight;
 }
 
-function pinpointEmitter(incomingDataSource) {
-    const sensorReadings = processDataInput(incomingDataSource);
+function locatePeak(sourceData) {
+    const parsedObservations = parseInputData(sourceData);
 
-    const result = Array.from({ length: 101 }, (_, xCoordinate) => xCoordinate)
-        .reduce((foundResult, currentX) => {
-            if (foundResult) return foundResult;
+    // Generate all possible (X, Y) center coordinates from 0 to 100
+    const potentialCenters = Array.from({ length: 101 }, (_, xIndex) =>
+        Array.from({ length: 101 }, (_, yIndex) => ({ x: xIndex, y: yIndex }))
+    ).flat(); // Flatten to a single array of {x, y} objects
 
-            return Array.from({ length: 101 }, (_, yCoordinate) => yCoordinate)
-                .reduce((innerFoundResult, currentY) => {
-                    if (innerFoundResult) return innerFoundResult;
+    // Iterate through potential centers to find the first valid one
+    for (const center of potentialCenters) {
+        const finalHeight = verifyPeakCandidate(parsedObservations, center.x, center.y);
+        if (finalHeight !== false) { // 'false' indicates an invalid candidate
+            return `${center.x} ${center.y} ${finalHeight}`;
+        }
+    }
 
-                    const calculatedHeightValue = assessPotentialLocation(sensorReadings, currentX, currentY);
-                    if (calculatedHeightValue !== null) {
-                        return `${currentX} ${currentY} ${calculatedHeightValue}`;
-                    }
-                    return null;
-                }, null);
-        }, null);
-
-    return result;
+    // This part should ideally not be reached given problem constraints
+    return "No valid peak found";
 }
+
+console.log(locatePeak(require("fs").readFileSync("/dev/stdin", "utf8")));

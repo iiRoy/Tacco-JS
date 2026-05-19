@@ -1,27 +1,13 @@
-(function(initialPayload) {
-  const numericalSequence = initialPayload.replace(/\n$/, '').split('\n').map(val => +val);
+(function(rawText) {
+  const numericSequence = rawText.replace(/\n$/, '').split('\n').map(Number);
 
-  const processSequenceRecursively = (remainingElements, currentDepository, collectedOutputs) => {
-    if (remainingElements.length === 0) {
-      return collectedOutputs;
-    }
-
-    const [currentElement, ...tailElements] = remainingElements;
-
-    if (currentElement === 0) {
-      const depositorySize = currentDepository.length;
-      const extractedValue = currentDepository[depositorySize - 1];
-      const nextDepositoryState = currentDepository.slice(0, depositorySize - 1);
-      const nextCollectedOutputs = [...collectedOutputs, extractedValue];
-      return processSequenceRecursively(tailElements, nextDepositoryState, nextCollectedOutputs);
+  numericSequence.reduce((valueStore, currentItem) => {
+    if (currentItem === 0) {
+      console.log(valueStore.pop());
     } else {
-      const nextDepositoryState = [...currentDepository, currentElement];
-      return processSequenceRecursively(tailElements, nextDepositoryState, collectedOutputs);
+      valueStore.push(currentItem);
     }
-  };
-
-  const finalReports = processSequenceRecursively(numericalSequence, [], []);
-
-  finalReports.forEach(reportItem => console.log(reportItem));
+    return valueStore;
+  }, []);
 
 })(require('fs').readFileSync('/dev/stdin', 'utf8'));

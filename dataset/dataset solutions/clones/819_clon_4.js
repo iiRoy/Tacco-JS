@@ -1,61 +1,45 @@
-const input_stream_handler = require('readline');
-const data_interface = input_stream_handler.createInterface({
+const rL = require('readline');
+
+const iO = rL.createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: false
 });
 
-let collected_lines = [];
-let total_test_cases = 0;
+const lN = [];
 
-data_interface.on('line', (individual_input_line) => {
-    collected_lines.push(individual_input_line);
+iO.on('line', (l) => {
+    lN.push(l);
 });
 
-data_interface.on('close', () => {
-    total_test_cases = Number(collected_lines[0]);
-    process_all_scenarios(collected_lines.slice(1));
-});
+iO.on('close', () => {
+    const cT = Number(lN[0]);
 
-const generate_power_of_ten = (magnitude_exponent) => {
-    if (magnitude_exponent === 0) return 1;
-    return Number('1' + '0'.repeat(magnitude_exponent));
-};
+    Array.from({ length: cT }, (_, cI) => {
+        const [dO1, dO2] = lN[cI + 1].split(' ').map(Number);
 
-const identify_matching_sequences = (first_number_digits, second_number_digits) => {
-    const valid_results = [];
+        const fR = [];
+        const sA = 10**(dO1 - 1);
+        const eA = 10**dO1 - 1;
+        const sB = 10**(dO2 - 1);
+        const eB = 10**dO2 - 1;
 
-    const start_first_number = generate_power_of_ten(first_number_digits - 1);
-    const end_first_number = generate_power_of_ten(first_number_digits) - 1;
+        Array.from({ length: eA - sA + 1 }, (_, aI) => sA + aI)
+            .forEach(vA => {
+                Array.from({ length: eB - sB + 1 }, (_, bI) => sB + bI)
+                    .forEach(vB => {
+                        const sS = (vA + vB) * (vB - vA + 1) / 2;
+                        const cN = Number(`${vA}${vB}`);
+                        if (sS === cN) {
+                            fR.push(`${vA} ${vB}`);
+                        }
+                    });
+            });
 
-    const start_second_number = generate_power_of_ten(second_number_digits - 1);
-    const end_second_number = generate_power_of_ten(second_number_digits) - 1;
-
-    Array.from({ length: end_first_number - start_first_number + 1 }, (_, first_idx) => start_first_number + first_idx)
-        .forEach(current_first_value => {
-            Array.from({ length: end_second_number - start_second_number + 1 }, (_, second_idx) => start_second_number + second_idx)
-                .forEach(current_second_value => {
-                    const series_summation = (current_first_value + current_second_value) * (current_second_value - current_first_value + 1) / 2;
-                    const combined_numeric_representation = Number(`${current_first_value}${current_second_value}`);
-
-                    if (series_summation === combined_numeric_representation) {
-                        valid_results.push(`${current_first_value} ${current_second_value}`);
-                    }
-                });
-        });
-
-    return valid_results;
-};
-
-const process_all_scenarios = (scenario_inputs) => {
-    scenario_inputs.forEach((scenario_text, scenario_index) => {
-        const [digit_count_x, digit_count_y] = scenario_text.split(' ').map(Number);
-        const discovered_matches = identify_matching_sequences(digit_count_x, digit_count_y);
-
-        if (discovered_matches.length > 0) {
-            discovered_matches.forEach(match_string => process.stdout.write(match_string + '\n'));
+        if (fR.length > 0) {
+            fR.forEach(oP => console.log(oP));
         } else {
-            process.stdout.write('No cats.\n');
+            console.log('No cats.');
         }
     });
-};
+});

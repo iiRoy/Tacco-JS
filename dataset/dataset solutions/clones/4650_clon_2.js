@@ -1,102 +1,159 @@
-"use strict";
+"use strict"; // Enforce strict mode for cleaner code execution
 
-// This function establishes a mechanism to read input line by line.
-const produceSource = () => {
-  // Reads all data from standard input, cleans it, and splits it into an array of lines.
-  const dataLines = require("fs").readFileSync("/dev/stdin", "utf8")
-                                 .trim()
-                                 .split("\n");
+/**
+ * Creates an input reader utility from standard input.
+ * This function reads all lines from /dev/stdin, stores them,
+ * and provides methods to access them sequentially.
+ * @returns {object} An object with methods to navigate input lines.
+ */
+const makeInputReader = () => {
+    // Read the entire standard input, decode as UTF-8, trim whitespace, and split into an array of lines.
+    const dataLines = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-  const dataStream = {
-    segmentList: dataLines,       // Stores the array of processed input lines.
-    currentPosition: 0,           // Keeps track of the current line being accessed.
-    maximumItems: dataLines.length, // The total count of available input lines.
+    // Construct the reader object with line storage, current position, and total line count.
+    const readerObject = {
+        lineStorage: dataLines, // Array holding all input lines
+        currentPosition: 0,    // Current index for line retrieval
+        totalLines: dataLines.length, // Total number of lines available
 
-    // Determines if there are additional input segments to be read.
-    hasMoreSegments: function() {
-      return this.currentPosition < this.maximumItems;
-    },
+        /**
+         * Checks if there are more lines to read.
+         * @returns {boolean} True if more lines exist, false otherwise.
+         */
+        hasMoreData: function() {
+            return this.currentPosition < this.totalLines;
+        },
 
-    // Retrieves the subsequent input segment from the stream.
-    retrieveNext: function() {
-      if (!this.hasMoreSegments()) {
-        throw "InputOutOfBoundsError"; // Throws an error if attempting to read beyond available input.
-      }
-      return this.segmentList[this.currentPosition++]; // Returns the current segment and advances the position.
-    }
-  };
-  return dataStream; // Returns the configured input stream handler.
+        /**
+         * Retrieves the next line from the input.
+         * Throws an error if no more lines are available.
+         * @returns {string} The next line of input.
+         * @throws {string} "ArrayIndexOutOfBoundsException" if attempting to read past the end.
+         */
+        retrieveNextLine: function() {
+            if (!this.hasMoreData()) {
+                throw "ArrayIndexOutOfBoundsException"; // Indicate out-of-bounds access
+            } else {
+                return this.lineStorage[this.currentPosition++]; // Return current line and advance position
+            }
+        }
+    };
+    return readerObject; // Return the fully configured reader
 };
 
-// Initializes the global input stream object.
-const sourceReader = produceSource();
+// Initialize the global input handler instance.
+const inputHandler = makeInputReader();
 
-// Auxiliary functions for simplified input parsing.
-const retrieveNextLine = () => sourceReader.retrieveNext(); // Fetches the next raw line as a string.
-const readInteger = () => parseInt(sourceReader.retrieveNext()); // Parses the next line into an integer.
-const readStringArray = () => sourceReader.retrieveNext().split(" "); // Splits the next line into an array of strings by space.
-const readIntegerArray = () => sourceReader.retrieveNext().split(" ").map(numericElement => parseInt(numericElement)); // Splits and parses the next line into an array of integers.
-const readCharacterArray = () => sourceReader.retrieveNext().split(""); // Splits the next line into an array of individual characters.
-const checkMoreInput = () => sourceReader.hasMoreSegments(); // Verifies if more input is available.
+// Helper functions for convenient input parsing.
 
-// A utility function for printing output to the console.
-const displayOutput = (...outputArgs) => console.log(...outputArgs);
+/**
+ * Gets the next raw line of input.
+ * @returns {string} The next line.
+ */
+const getNextLine = () => inputHandler.retrieveNextLine();
 
+/**
+ * Parses the next line as an integer.
+ * @returns {number} The parsed integer.
+ */
+const parseNextInteger = () => parseInt(inputHandler.retrieveNextLine());
 
-// The primary execution routine of the program.
-const ExecuteProgram = () => {
-  let lineCount = readInteger(); // Reads the initial integer value, often representing N items.
+/**
+ * Gets the next line and splits it into an array of strings by space.
+ * @returns {string[]} An array of strings.
+ */
+const getNextStringArray = () => inputHandler.retrieveNextLine().split(" ");
 
-  // Defines the standard lowercase English alphabet.
-  const alphabetSequence = "abcdefghijklmnopqrstuvwxyz";
+/**
+ * Gets the next line, splits it by space, and parses each part as an integer.
+ * @returns {number[]} An array of integers.
+ */
+const getNextIntegerArray = () => inputHandler.retrieveNextLine().split(" ").map(el => parseInt(el));
 
-  // An array to store the minimum frequency of each character across all input lines.
-  // Initialized to -1 to signify that a character has not yet been encountered.
-  let charFrequencies = new Array(26).fill(-1);
+/**
+ * Gets the next line and splits it into an array of individual characters.
+ * @returns {string[]} An array of characters.
+ */
+const getNextCharacterArray = () => inputHandler.retrieveNextLine().split("");
 
-  // Iterates through each subsequent line of input.
-  while (checkMoreInput()) {
-    let currentLine = retrieveNextLine(); // Obtains the current line of text.
+/**
+ * Checks if there's more data available from the input source.
+ * @returns {boolean} True if more data, false otherwise.
+ */
+const checkMoreData = () => inputHandler.hasMoreData();
 
-    // Computes the frequency of each character within the current line.
-    let lineCharCounts = new Array(26).fill(0);
-    for (let charItem of currentLine) {
-      let charIndex = alphabetSequence.indexOf(charItem); // Finds the alphabetical index of the character.
-      lineCharCounts[charIndex]++;
+/**
+ * Custom output function that wraps console.log.
+ * @param {...any} outputItems - Items to be logged to the console.
+ */
+const displayOutput = (...outputItems) => console.log(...outputItems);
+
+/**
+ * The primary logic execution function.
+ * This function processes the input according to the problem's requirements.
+ */
+const ProcessMainLogic = () => {
+    // Read the first integer, though it's not used in the subsequent logic.
+    let lineCount = parseNextInteger();
+
+    // Define the lowercase English alphabet for character indexing.
+    const alphabetString = "abcdefghijklmnopqrstuvwxyz";
+
+    // Initialize an array to store the minimum frequency of each character across all input strings.
+    // -1 indicates the character hasn't been encountered yet.
+    // 0 indicates the character was encountered in a previous string but not in the current one,
+    //   meaning its overall frequency limit is 0.
+    let charFrequencyLimits = new Array(26).fill(-1);
+
+    // Loop through all remaining input lines.
+    while (checkMoreData()) {
+        let currentLineText = getNextLine(); // Get the current line as a string.
+
+        // Initialize a frequency counter for characters in the current line.
+        let lineCharCounts = new Array(26).fill(0);
+
+        // Count character frequencies for the current line.
+        for (let characterElement of currentLineText) {
+            let charIndex = alphabetString.indexOf(characterElement); // Get index of character.
+            lineCharCounts[charIndex]++; // Increment count for this character.
+        }
+
+        // Update the global minimum frequency limits based on the current line's counts.
+        for (let loopCounter = 0; loopCounter < charFrequencyLimits.length; loopCounter++) {
+            if (lineCharCounts[loopCounter] === 0) {
+                // If a character is not in the current string, its overall frequency limit becomes 0.
+                charFrequencyLimits[loopCounter] = 0;
+            } else if (charFrequencyLimits[loopCounter] === -1 && lineCharCounts[loopCounter] !== 0) {
+                // If this is the first time we're seeing this character, set its limit to its current count.
+                charFrequencyLimits[loopCounter] = lineCharCounts[loopCounter];
+            } else if (charFrequencyLimits[loopCounter] !== 0 && lineCharCounts[loopCounter] !== 0) {
+                // If the character has been seen before and is in the current string,
+                // update its limit to the minimum of its current limit and the current string's count.
+                charFrequencyLimits[loopCounter] = Math.min(charFrequencyLimits[loopCounter], lineCharCounts[loopCounter]);
+            }
+        }
     }
 
-    // Updates the global minimum character frequencies.
-    for (let iterator = 0; iterator < charFrequencies.length; iterator++) {
-      if (lineCharCounts[iterator] === 0) {
-        // If a character is absent in the current line, its overall minimum frequency becomes zero.
-        charFrequencies[iterator] = 0;
-      } else if (charFrequencies[iterator] === -1) {
-        // If this is the first time observing this character, its frequency is set.
-        charFrequencies[iterator] = lineCharCounts[iterator];
-      } else if (charFrequencies[iterator] !== 0) {
-        // If the character has been seen before, update its frequency to the minimum encountered so far.
-        charFrequencies[iterator] = Math.min(charFrequencies[iterator], lineCharCounts[iterator]);
-      }
+    // Construct the final result string based on the calculated frequency limits.
+    let resultCharacters = [];
+    for (let loopCounter = 0; loopCounter < charFrequencyLimits.length; loopCounter++) {
+        if (charFrequencyLimits[loopCounter] === 0) {
+            // If the limit is 0, this character should not be in the result.
+            continue;
+        }
+        // Add the character to the result array as many times as its frequency limit.
+        while (charFrequencyLimits[loopCounter] > 0) {
+            resultCharacters.push(alphabetString[loopCounter]);
+            charFrequencyLimits[loopCounter]--;
+        }
     }
-  }
 
-  // Constructs the final character string based on the determined minimum frequencies.
-  let resultCharacters = [];
-  for (let iterator = 0; iterator < charFrequencies.length; iterator++) {
-    if (charFrequencies[iterator] === 0) {
-      continue; // Skips characters that did not appear in all input lines.
-    }
-    // Appends each character to the result array as many times as its calculated minimum frequency.
-    while (charFrequencies[iterator] > 0) {
-      resultCharacters.push(alphabetSequence[iterator]);
-      charFrequencies[iterator]--;
-    }
-  }
+    // Sort the resulting characters alphabetically.
+    resultCharacters.sort();
 
-  // Sorts the collected characters alphabetically and joins them into a single string for display.
-  resultCharacters.sort();
-  displayOutput(resultCharacters.join("")); // Outputs the final string.
+    // Print the final string by joining the characters.
+    console.log(resultCharacters.join(""));
 };
 
-// Initiates the program's main execution flow.
-ExecuteProgram();
+// Execute the main program logic.
+ProcessMainLogic();

@@ -1,75 +1,103 @@
-'use strict'; // Enforce strict parsing and error handling for better code quality.
+'use strict';
+// This immediately-invoked function expression (IIFE) encapsulates the script's logic.
+// It takes the raw input string as an argument.
+(function(dataInput) {
+  // First, clean and parse the input string.
+  // - `trim()` removes leading/trailing whitespace.
+  // - `split(/\s+/)` splits the string into an array of substrings using any whitespace as a delimiter.
+  // - `map(val => Number(val))` converts each substring in the array to a numeric value.
+  dataInput = dataInput.trim().split(/\s+/).map(val => Number(val));
 
-( function ( dataStream ) { // Anonymous function to encapsulate scope and process provided input.
+  // Define problem-specific constants from the parsed input array.
+  const totalElements = dataInput[0]; // Corresponds to 'N' in the original problem statement.
+  const selectedCount = dataInput[1]; // Corresponds to 'K' in the original problem statement.
+  // Calculate 'L': the number of elements remaining when 'K' items are chosen from 'N', plus one.
+  const remainingElements = totalElements - selectedCount + 1;
+  // Define the modulo value, a large prime number often used in competitive programming.
+  const moduloValue = 1_000_000_007; // Corresponds to 'M' (10^9 + 7).
 
-    // Process the raw input stream: trim spaces, split by any whitespace, and convert to numbers.
-    let numericValues = dataStream
-        .trim()
-        .split( /\s+/ )
-        .map( ( item ) => Number( item ) ); // Convert string items to numeric values.
+  /**
+   * Computes the sum of two numbers modulo `moduloValue`.
+   * This function ensures that the result remains within the bounds of the modulo.
+   * @param {number} valA - The first integer operand.
+   * @param {number} valB - The second integer operand.
+   * @returns {number} The modular sum (valA + valB) % moduloValue.
+   */
+  function addMod(valA, valB) {
+    return (valA + valB) % moduloValue;
+  }
 
-    const
-        mainCount = numericValues[ 0 ], // The primary count, often denoted as 'n'.
-        groupLimit = numericValues[ 1 ], // The maximum group size or 'k'.
-        subRangeLen = mainCount - groupLimit + 1, // Calculated length for a sub-range.
-        primeMod = ( 1e9 + 7 ); // A large prime number used for modular arithmetic operations.
+  /**
+   * Computes the product of two numbers modulo `moduloValue`.
+   * This implementation uses a technique to handle potential intermediate overflows
+   * when multiplying large numbers before applying the modulo. It splits each number
+   * into 16-bit high and low parts, effectively performing (A*2^16 + A_)*(B*2^16 + B_)
+   * and then taking the modulo of each term.
+   * @param {number} valA - The first integer operand.
+   * @param {number} valB - The second integer operand.
+   * @returns {number} The modular product (valA * valB) % moduloValue.
+   */
+  function multiplyMod(valA, valB) {
+    // Extract the higher 16 bits of each number.
+    const highA = (valA >> 16); // Equivalent to floor(valA / 2^16)
+    const highB = (valB >> 16); // Equivalent to floor(valB / 2^16)
 
-    /*
-     * Custom function to perform modular addition.
-     * Ensures results stay within the bounds of the prime modulus.
-     */
-    function modAdd( operandA , operandB ) {
-        return ( operandA + operandB ) % primeMod;
+    // Extract the lower 16 bits of each number.
+    const lowA = valA - (highA << 16); // Equivalent to valA % 2^16
+    const lowB = valB - (highB << 16); // Equivalent to valB % 2^16
+
+    // Calculate the four terms of the expanded product (A*2^16 + A_)*(B*2^16 + B_)
+    // and apply modulo at each step to prevent overflow.
+    // Term 1: (highA * highB * 2^32) % moduloValue
+    const termC = (((((highA * highB) % moduloValue) << 16) % moduloValue) << 16) % moduloValue;
+    // Term 2: (highA * lowB * 2^16) % moduloValue
+    const termD = (((highA * lowB) % moduloValue) << 16) % moduloValue;
+    // Term 3: (lowA * highB * 2^16) % moduloValue
+    const termE = (((lowA * highB) % moduloValue) << 16) % moduloValue;
+    // Term 4: (lowA * lowB) % moduloValue
+    const termF = (lowA * lowB) % moduloValue;
+
+    // Sum all four terms and take the final modulo.
+    const finalResult = (termC + termD + termE + termF) % moduloValue;
+    return finalResult;
+  }
+
+  // Initialize a 2D array (matrix) to store binomial coefficients C(n, k).
+  // The array will have `totalElements + 1` rows.
+  // Each row `rowIdx` will contain `rowIdx + 1` elements, representing C(rowIdx, 0) to C(rowIdx, rowIdx).
+  // Initially, C(n, 0) and C(n, n) are set to 1 for all n.
+  const binomCoeffs = new Array(totalElements + 1).fill(0).map((_unused, rowIdx) => {
+    const row = new Array(rowIdx + 1).fill(1); // C(n, 0) and C(n, n) are always 1.
+    return row;
+  });
+
+  // Populate the `binomCoeffs` array using Pascal's identity: C(n, k) = C(n-1, k-1) + C(n-1, k).
+  // We start from `rowIdx = 2` because C(0,0), C(1,0), and C(1,1) are already correctly initialized to 1.
+  for (let rowIdx = 2; rowIdx <= totalElements; rowIdx++) {
+    // Iterate for `colIdx` from 1 to `rowIdx - 1`, as C(rowIdx, 0) and C(rowIdx, rowIdx) are already 1.
+    for (let colIdx = 1; colIdx < rowIdx; colIdx++) {
+      binomCoeffs[rowIdx][colIdx] = addMod(binomCoeffs[rowIdx - 1][colIdx - 1], binomCoeffs[rowIdx - 1][colIdx]);
     }
+  }
 
-    /*
-     * Custom function for modular multiplication, handling large numbers efficiently
-     * by splitting them into 16-bit parts to avoid overflow before the final modulo.
-     */
-    function modMultiply( argX , argY ) {
-        let
-            highPartX = ( argX >>> 16 ), // Extract higher 16 bits of argX.
-            highPartY = ( argY >>> 16 ), // Extract higher 16 bits of argY.
-            lowPartX = argX - ( highPartX << 16 ), // Extract lower 16 bits of argX.
-            lowPartY = argY - ( highPartY << 16 ), // Extract lower 16 bits of argY.
+  // An array to store the final computed results for each iteration.
+  const resultsArray = [];
 
-            // Calculate intermediate products and apply modulo at each step.
-            term1 = ( ( ( ( ( highPartX * highPartY ) % primeMod ) << 16 ) % primeMod ) << 16 ) % primeMod,
-            term2 = ( ( ( highPartX * lowPartY ) % primeMod ) << 16 ) % primeMod,
-            term3 = ( ( ( lowPartX * highPartY ) % primeMod ) << 16 ) % primeMod,
-            term4 = ( lowPartX * lowPartY ) % primeMod,
+  // Loop `selectedCount` times to compute the required products of combinations.
+  // The loop variable `outerLoopIdx` runs from 0 to `selectedCount - 1`.
+  // `currentK` is a 1-based index derived from `outerLoopIdx`, used for combination lookups.
+  for (let outerLoopIdx = 0; outerLoopIdx < selectedCount; outerLoopIdx++) {
+    let currentK = outerLoopIdx + 1; // Adjust to 1-based indexing for the problem's 'i'.
 
-            // Sum up the intermediate terms, ensuring each addition is also modular.
-            finalProduct = ( term1 + term2 + term3 + term4 ) % primeMod;
-        return finalProduct; // Return the final modular product.
-    }
+    // Retrieve the two combination terms: C(L, i) and C(K-1, i-1).
+    const term1 = binomCoeffs[remainingElements][currentK];
+    const term2 = binomCoeffs[selectedCount - 1][currentK - 1];
 
-    // Initialize a 2D array to store binomial coefficients (Pascal's triangle).
-    // The dimensions are (mainCount + 1) x (rowIdx + 1) for each row.
-    const binomCoeffs = new Array( mainCount + 1 )
-        .fill( 0 )
-        .map( ( _unused , rowIdx ) => new Array( rowIdx + 1 ).fill( 1 ) );
+    // Calculate their product modulo `moduloValue` and add to the results array.
+    resultsArray.push(multiplyMod(term1, term2));
+  }
 
-    // Populate Pascal's triangle using the recurrence relation C(n, k) = C(n-1, k-1) + C(n-1, k).
-    for ( let rowIdx = 2 ; rowIdx < mainCount + 1 ; rowIdx++ ) {
-        for ( let colIdx = 1 ; colIdx < rowIdx ; colIdx++ ) {
-            binomCoeffs[ rowIdx ][ colIdx ] = modAdd( binomCoeffs[ rowIdx - 1 ][ colIdx - 1 ] ,
-                                                      binomCoeffs[ rowIdx - 1 ][ colIdx ] );
-        }
-    }
+  // Output the final results. Each element of `resultsArray` is printed on a new line.
+  console.log(resultsArray.join('\n'));
 
-    // Prepare an array to store the computed final sequence of values.
-    const outputValues = [ ];
-
-    // Iterate 'groupLimit' times to compute and store the required results.
-    for ( let iterCount = 0 ; iterCount < groupLimit ; iterCount++ ) {
-        let adjustedIndex = iterCount + 1; // Adjust the 0-based loop index for 1-based array access.
-        // Calculate the product of two specific binomial coefficients using modular multiplication.
-        outputValues.push( modMultiply( binomCoeffs[ subRangeLen ][ adjustedIndex ] ,
-                                        binomCoeffs[ groupLimit - 1 ][ adjustedIndex - 1 ] ) );
-    }
-
-    // Print the final calculated values, each on a new line.
-    console.log( outputValues.join( '\x0A' ) );
-
-} ) ( require( 'fs' ).readFileSync( '/dev/stdin' , 'utf8' ) ); // Read input synchronously from standard input.
+})(require('fs').readFileSync('/dev/stdin', 'utf8')); // Read input from standard input.

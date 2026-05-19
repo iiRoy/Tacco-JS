@@ -1,44 +1,65 @@
-"use strict" ;
+"use strict";
 
-const processInputData = rawDataString => {
-  // Clean up the initial input string by trimming and splitting into lines
-  rawDataString = rawDataString .trim() .split("\n") ;
+// This function processes the input data to find a specific value based on cumulative sums.
+const processInput = (inputData) => {
+  // Clean up the input string and split it into lines.
+  inputData = inputData.trim().split("\n");
 
-  // Parse the first line to extract the total record count and the target numeric value
-  const recordCount = parseInt(rawDataString[0] .split(" ")[0] , 10) ;
-  const targetValue = parseInt(rawDataString[0] .split(" ")[1] , 10) ;
+  // Parse the first line to get the total count of items and the target cumulative value.
+  const firstLineParts = inputData[0].split(" ");
+  const countItems = parseInt(firstLineParts[0], 10); // Total number of entries
+  const targetValue = parseInt(firstLineParts[1], 10); // The threshold for the cumulative sum
 
-  // Process subsequent input lines, converting them into an array of number pairs
-  const dataPairs = rawDataString .slice(1, recordCount + 1) .map( lineStr => lineStr.split(" ").map( valStr => parseInt(valStr, 10) ) ) ;
+  // Extract item details from the remaining lines.
+  // Each item has an identifier and a quantity.
+  const itemDetails = inputData
+    .slice(1, countItems + 1)
+    .map((lineStr) => lineStr.split(" ").map((partStr) => parseInt(partStr, 10)));
 
-  // Initialize a collection to store items with their cumulative quantities
-  let cumulativeList = [ { identifier: dataPairs[0][0], quantity: dataPairs[0][1], cumulativeQuantity: dataPairs[0][1] } ] ;
-  let runningTotal = dataPairs[0][1] ; // Keep track of the aggregate sum
+  // Initialize an array to store cumulative data and the current running sum.
+  let cumulativeData = [
+    {
+      identifier: itemDetails[0][0],
+      quantity: itemDetails[0][1],
+      runningSum: itemDetails[0][1],
+    },
+  ];
+  let currentSum = itemDetails[0][1]; // Initialize with the first item's quantity
 
-  // Iterate through the remaining data pairs to populate the cumulative list
-  for ( let idx = 1 ; idx < recordCount ; idx++ ) {
-    runningTotal += dataPairs[idx - 1][1] ; // Add the quantity of the preceding item to the current running total
-    let currentItemSummary = { identifier: dataPairs[idx][0], quantity: dataPairs[idx][1], cumulativeQuantity: runningTotal } ;
+  // Iterate through the rest of the items to build the cumulative data array.
+  for (let idx = 1; idx < countItems; idx++) {
+    currentSum += itemDetails[idx - 1][1]; // Add the quantity of the *previous* item to the running sum
+    // Create a new object for the current item with its identifier, quantity, and the updated running sum.
+    let currentItem = {
+      identifier: itemDetails[idx][0],
+      quantity: itemDetails[idx][1],
+      runningSum: currentSum,
+    };
 
-    cumulativeList .push(currentItemSummary) ; // Append the new summary object to the list
+    cumulativeData.push(currentItem); // Add the current item's cumulative data to the array.
   }
 
-  // Search the cumulative list for the first entry that meets or exceeds the target value
-  for ( let loopIndex in cumulativeList ) {
-    if ( cumulativeList[loopIndex] .cumulativeQuantity >= targetValue ) {
-      // If the current item's cumulative sum is at or above the target, determine the relevant identifier
-      const selectedItemCode = cumulativeList[loopIndex] .cumulativeQuantity - cumulativeList[loopIndex] .quantity < targetValue
-        ? cumulativeList[loopIndex] .identifier // The current item is the first to cross the threshold
-        : cumulativeList[loopIndex - 1] .identifier ; // The previous item was the last one before crossing
-
-      console.log(selectedItemCode) ; // Output the chosen identifier
-      return ; // Terminate function execution as the result has been found
+  // Now, iterate through the cumulative data to find the first entry that meets or exceeds the target value.
+  for (let entryIndex in cumulativeData) {
+    if (cumulativeData[entryIndex].runningSum >= targetValue) {
+      // If the running sum for the current entry is greater than or equal to the target value,
+      // determine the final result.
+      // The result is the current item's identifier if the sum *before* adding its quantity was less than K,
+      // otherwise, it's the previous item's identifier.
+      const finalResult =
+        cumulativeData[entryIndex].runningSum - cumulativeData[entryIndex].quantity <
+        targetValue
+          ? cumulativeData[entryIndex].identifier
+          : cumulativeData[entryIndex - 1].identifier;
+      console.log(finalResult); // Output the determined identifier.
+      return; // Exit the function after finding and printing the result.
     }
   }
 
-  // This part is a fallback, typically for debugging or unexpected scenarios where no item meets the condition
-  console.log( JSON.stringify(cumulativeList) ) ;
-} ;
+  // If no entry's running sum met the target value (this case might indicate an issue or specific scenario),
+  // print the entire cumulative data array as a JSON string.
+  console.log(JSON.stringify(cumulativeData));
+};
 
-// Invoke the primary data processing function, reading input from standard input
-processInputData( require('fs') .readFileSync( '/dev/stdin' , 'utf8' ) ) ;
+// Read input from standard input and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

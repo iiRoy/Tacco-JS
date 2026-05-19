@@ -1,35 +1,37 @@
-// This processing function receives all input information as a single string.
-function ProcessData (incomingText)
-{
-    // The received text is divided into an array of individual lines.
-    // The first line is at textLines[0], the second at textLines[1], and so on.
-    let textLines = incomingText.split ("\n") ;
+function ProcessInput(rawData) {
+  // This function processes the provided raw data.
+  // The rawData string is expected to contain multiple lines.
 
-    const initialValues = textLines[0].split (' ') ;
-    let itemQuantity = Number(initialValues[0]) ;
-    let threshold = Number (initialValues[1]) ;
+  rawData = rawData.split("\n"); // Break the input string into an array of lines.
 
-    let valueStrings = textLines[1].split(' ') ;
-    let halfMultiplied = [ ] ; // Prepare an empty array to store the results.
+  let firstLineParts = rawData[0].split(' '); // Split the first line by spaces.
+  let itemCount = Number(firstLineParts[0]); // Convert the first part to a number.
+  let upperBound = Number(firstLineParts[1]); // Convert the second part to a number.
 
-    // Loop through the string values to apply a specific transformation.
-    for (let loopIndex = 0; loopIndex < itemQuantity; loopIndex ++ )
-    {
-        halfMultiplied.push( Number(valueStrings[loopIndex]) * 0.5 ) ;
-    }
+  let secondLineValues = rawData[1].split(' '); // Split the second line by spaces.
+  let processedValues = []; // Initialize an empty array to store modified numbers.
 
-    let productAccumulator = halfMultiplied.reduce( (currentProduct, nextValue) => currentProduct * nextValue ) ;
-    let stepsTaken = 0 ;
+  // Iterate through the numbers from the second line.
+  for (let idx = 0; idx < itemCount; idx++) {
+    // Convert each string value to a number, multiply by 0.5, and add to the new list.
+    processedValues.push(Number(secondLineValues[idx]) * 0.5);
+  }
 
-    // Repeatedly double the accumulator until its value surpasses the defined threshold.
-    while (threshold > productAccumulator)
-    {
-        productAccumulator += productAccumulator ; // Perform the doubling operation
-        stepsTaken ++ ; // Increment the counter for each doubling step performed
-    }
+  // Calculate the product of all elements in the processedValues array.
+  let currentProduct = processedValues.reduce((accumulator, currentValue) => accumulator * currentValue);
 
-    console.log(stepsTaken) ;
+  let iterations = 0; // Initialize a counter for the loop.
+
+  // Keep doubling the product until it is no longer less than or equal to the upper bound.
+  while (upperBound > currentProduct) {
+    currentProduct += currentProduct; // Double the current product.
+    iterations++; // Increment the iteration counter.
+  }
+
+  // Output the final count of iterations.
+  console.log(iterations);
 }
 
-// Please do not alter the following section (it manages reading from standard input and invoking the primary processing function).
-ProcessData( require("fs").readFileSync("/dev/stdin", "utf8") ) ;
+// The following line handles reading from standard input and invoking the main processing function.
+// It should not be altered as it's part of the environment setup.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

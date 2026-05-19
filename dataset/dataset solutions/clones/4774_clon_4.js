@@ -1,29 +1,13 @@
 'use strict';
 
-function processInputContent(rawContent) {
-  let initialSegment;
-  const newlineIndex = rawContent.indexOf('\n');
-  if (newlineIndex !== -1) {
-    initialSegment = rawContent.substring(0, newlineIndex);
-  } else {
-    initialSegment = rawContent;
-  }
+function processInput(inputString) {
+  const initialLine = inputString.split('\n')[0];
 
-  const transformedCharacters = initialSegment.split('').map(singleCharacter => {
-    if (singleCharacter === ',') {
-      return ' ';
-    }
-    return singleCharacter;
-  });
+  const finalResult = Array.from(initialLine).reduce((accumulator, currentCharacter) => {
+    return accumulator + (currentCharacter === ',' ? ' ' : currentCharacter);
+  }, '');
 
-  const finalStringResult = transformedCharacters.join('');
-
-  console.log(finalStringResult);
+  console.log(finalResult);
 }
 
-const fileSystemModule = require("fs");
-const inputSourcePath = "/dev/stdin";
-const encodingMethod = "utf8";
-const acquiredData = fileSystemModule.readFileSync(inputSourcePath, encodingMethod);
-
-processInputContent(acquiredData);
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

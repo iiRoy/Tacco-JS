@@ -1,48 +1,43 @@
-function ProcessData(incomingData) {
-    const obtainNumericSequence = (lineText) => {
-        const segments = lineText.split(' ');
-        const numericalElements = [];
-        for (let j = 0; j < segments.length; j++) {
-            numericalElements.push(parseInt(segments[j], 10));
+const obtainNumericSequence = (lineContent) => lineContent.split(' ').map(Number);
+
+const determineCountBelow = (orderedSequence, comparisonValue) => {
+    let lowerBound = 0;
+    let upperBound = orderedSequence.length;
+    while (lowerBound < upperBound) {
+        const midPoint = Math.floor((lowerBound + upperBound) / 2);
+        if (orderedSequence[midPoint] < comparisonValue) {
+            lowerBound = midPoint + 1;
+        } else {
+            upperBound = midPoint;
         }
-        return numericalElements;
-    };
+    }
+    return lowerBound;
+};
 
-    const textLines = incomingData.split('\n');
-    const collectionAlpha = obtainNumericSequence(textLines[1]);
-    const collectionBeta = obtainNumericSequence(textLines[2]);
-    const collectionGamma = obtainNumericSequence(textLines[3]);
+function processInputData(rawData) {
+    const inputLines = rawData.split('\n');
+    const primaryValues = obtainNumericSequence(inputLines[1]);
+    const secondaryValues = obtainNumericSequence(inputLines[2]);
+    const tertiaryValues = obtainNumericSequence(inputLines[3]);
 
-    const preliminaryCounts = [];
-    for (let j = 0; j < collectionBeta.length; j++) {
-        const currentBetaElement = collectionBeta[j];
-        let countOfSmallerAlphas = 0;
-        for (let k = 0; k < collectionAlpha.length; k++) {
-            if (collectionAlpha[k] < currentBetaElement) {
-                countOfSmallerAlphas++;
+    const sortedPrimaryValues = [...primaryValues].sort((valX, valY) => valX - valY);
+
+    const countsForSecondary = secondaryValues.map(currentSecondary =>
+        determineCountBelow(sortedPrimaryValues, currentSecondary)
+    );
+    console.log(countsForSecondary);
+
+    const finalAccumulatedTotal = tertiaryValues.reduce((outerSum, currentTertiary) => {
+        let innerIterationSum = 0;
+        for (let index = 0; index < secondaryValues.length; index++) {
+            if (secondaryValues[index] < currentTertiary) {
+                innerIterationSum += countsForSecondary[index];
             }
         }
-        preliminaryCounts.push(countOfSmallerAlphas);
-    }
+        return outerSum + innerIterationSum;
+    }, 0);
 
-    console.log(preliminaryCounts);
-
-    let overallAccumulation = 0;
-
-    for (let j = 0; j < collectionBeta.length; j++) {
-        const currentBetaElement = collectionBeta[j];
-        const correspondingPreliminaryCount = preliminaryCounts[j];
-
-        let countOfGammaElementsGreaterThanBeta = 0;
-        for (let k = 0; k < collectionGamma.length; k++) {
-            if (currentBetaElement < collectionGamma[k]) {
-                countOfGammaElementsGreaterThanBeta++;
-            }
-        }
-        overallAccumulation += correspondingPreliminaryCount * countOfGammaElementsGreaterThanBeta;
-    }
-
-    console.log(overallAccumulation);
+    console.log(finalAccumulatedTotal);
 }
 
-ProcessData(require('fs').readFileSync('/dev/stdin', 'utf8'));
+processInputData(require('fs').readFileSync('/dev/stdin', 'utf8'));

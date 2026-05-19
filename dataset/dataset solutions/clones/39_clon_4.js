@@ -1,27 +1,22 @@
-function assessPrimality(numberCandidate) {
-    if (numberCandidate < 2) return false;
-    if (numberCandidate === 2 || numberCandidate === 3) return true;
-    if (numberCandidate % 2 === 0 || numberCandidate % 3 === 0) return false;
-    let currentFactor = 5;
-    while (currentFactor * currentFactor <= numberCandidate) {
-        if (numberCandidate % currentFactor === 0 || numberCandidate % (currentFactor + 2) === 0) {
-            return false;
+function calculatePrimeCountUpTo(upperBound) {
+    let totalPrimeCount = 0;
+
+    for (let candidateNumber = 2; candidateNumber <= upperBound; ++candidateNumber) {
+        let isCandidatePrime = true;
+
+        for (let testDivisor = 2; testDivisor * testDivisor <= candidateNumber; ++testDivisor) {
+            if (candidateNumber % testDivisor === 0) {
+                isCandidatePrime = false;
+                break;
+            }
         }
-        currentFactor += 6;
+
+        if (isCandidatePrime) {
+            totalPrimeCount++;
+        }
     }
-    return true;
+    return totalPrimeCount;
 }
 
-function calculatePrimeOccurrences(upperBoundary) {
-    const sequence = Array.from({ length: upperBoundary - 1 }, (_, idx) => idx + 2);
-    const countedPrimes = sequence.filter(assessPrimality);
-    return countedPrimes.length;
-}
-
-const fileOperations = require('fs');
-const standardInputStreamIdentifier = '/dev/stdin';
-const textEncoding = 'utf8';
-const rawInputContent = fileOperations.readFileSync(standardInputStreamIdentifier, textEncoding);
-const numericalValue = parseInt(rawInputContent.trim(), 10);
-
-console.log(calculatePrimeOccurrences(numericalValue));
+const fileContent = require('fs').readFileSync('/dev/stdin', 'utf8');
+console.log(calculatePrimeCountUpTo(Number.fileContent));

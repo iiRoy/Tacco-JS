@@ -1,29 +1,23 @@
-// This top-level function processes the incoming data string.
-function ProcessDataEntry( incomingText )
-{
-	// The provided text string is split into individual components using a space as the delimiter.
-	const tokenizedInput = incomingText.split( " " );
+// This function is designed to process incoming textual data.
+function ProcessInput(rawData) {
+  // The provided string is divided into an array of substrings using a space as the delimiter.
+  let parsedData = rawData.split(" ");
 
+  // Each relevant part of the parsed data is converted from a string to an integer.
+  let firstValue = parseInt(parsedData[0]);
+  let secondValue = parseInt(parsedData[1]);
+  let thirdValue = parseInt(parsedData[2]);
 
-	// Extract and parse the initial value, representing the total count, from the first component.
-	let totalQuantity = Number.parseInt( tokenizedInput[ 0 ], 10 );
+  // A secondary calculation is performed:
+  // If the difference (firstValue - secondValue - thirdValue) is positive, the result is zero.
+  // Otherwise, the absolute value of this difference is taken.
+  let calculatedResult = (firstValue - secondValue - thirdValue > 0) ? 0 : Math.abs(firstValue - secondValue - thirdValue);
 
-	// Extract and parse the second value, representing the quantity of the first group.
-	let firstQuantity = Number.parseInt( tokenizedInput[ 1 ], 10 );
-
-	// Extract and parse the third value, representing the quantity of the second group.
-	let secondQuantity = Number.parseInt( tokenizedInput[ 2 ], 10 );
-
-
-	// Compute the remaining count or the absolute deficit if the combined groups exceed the total.
-	let deficitValue = ( totalQuantity - firstQuantity - secondQuantity > 0 )
-		? 0
-		: Math.abs( totalQuantity - firstQuantity - secondQuantity );
-
-	// Display the smaller of the two group quantities and the calculated deficit value.
-	console.log( '%i %i', Math.min( firstQuantity, secondQuantity ), deficitValue );
+  // The final output consists of two integer values:
+  // The minimum of secondValue and thirdValue, followed by the calculatedResult.
+  console.log('%d %d', Math.min(secondValue, thirdValue), calculatedResult);
 }
 
-
-// Do not alter the following segment of the script; it handles input/output and calls the main processing routine.
-ProcessDataEntry( require( "node:fs" ).readFileSync( "/dev/stdin", "utf8" ) );
+// The following line is responsible for reading input from standard input and invoking the primary processing function.
+// It should not be altered.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

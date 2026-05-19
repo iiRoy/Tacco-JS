@@ -1,84 +1,92 @@
-let fullInput = '';
+const fileSystem = require('fs');
 
-process.stdin.on('data', chunk => {
-    fullInput += chunk.toString();
-});
+const rawInputData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const rawInputLines = rawInputData.split('\n').map(s => s.trim()).filter(Boolean);
 
 const PROXIMITY_THRESHOLD = 1e-10;
 
-const checkBoundary = val => val >= -100 && val <= 100;
+function locateIntersection(seg1, seg2) {
+    const seg1P1 = seg1[0];
+    const seg1P2 = seg1[1];
+    const seg2P1 = seg2[0];
+    const seg2P2 = seg2[1];
 
-const deriveConfluence = (segmentA, segmentB) => {
-    const [aX, aY, bX, bY] = segmentA;
-    const [cX, cY, dX, dY] = segmentB;
+    const deltaX1 = seg1P2[0] - seg1P1[0];
+    const deltaY1 = seg1P2[1] - seg1P1[1];
+    const deltaX2 = seg2P2[0] - seg2P1[0];
+    const deltaY2 = seg2P2[1] - seg2P1[1];
 
-    const denomCalc = (bX - aX) * (dY - cY) - (bY - aY) * (dX - cX);
+    const crossProductDenominator = deltaX1 * deltaY2 - deltaY1 * deltaX2;
 
-    if (Math.abs(denomCalc) < PROXIMITY_THRESHOLD) {
-        return undefined;
+    if (Math.abs(crossProductDenominator) < PROXIMITY_THRESHOLD) {
+        return null;
     }
 
-    const paramNumR = (dY - cY) * (cX - aX) - (dX - cX) * (cY - aY);
-    const paramNumS = (bY - aY) * (cX - aX) - (bX - aX) * (cY - aY);
+    const paramR = ((seg2P1[1] - seg1P1[1]) * deltaX2 - (seg2P1[0] - seg1P1[0]) * deltaY2) / crossProductDenominator;
+    const paramS = ((seg2P1[1] - seg1P1[1]) * deltaX1 - (seg2P1[0] - seg1P1[0]) * deltaY1) / crossProductDenominator;
 
-    const ratioR = paramNumR / denomCalc;
+    const intersectX = seg1P1[0] + paramR * deltaX1;
+    const intersectY = seg1P1[1] + paramR * deltaY1;
 
-    const intersectX = aX * (1 - ratioR) + bX * ratioR;
-    const intersectY = aY * (1 - ratioR) + bY * ratioR;
+    const MIN_COORD_BOUND = -100;
+    const MAX_COORD_BOUND = 100;
 
-    if (!checkBoundary(intersectX) || !checkBoundary(intersectY)) {
-        return undefined;
+    if (intersectX < MIN_COORD_BOUND || intersectX > MAX_COORD_BOUND ||
+        intersectY < MIN_COORD_BOUND || intersectY > MAX_COORD_BOUND) {
+        return null;
     }
 
     return [intersectX, intersectY];
-};
+}
 
-const computeEnclosures = segmentCollection => {
-    let regionCount = 1 + segmentCollection.length;
-    const distinctCrossings = [];
+function processSegments(segments) {
+    let totalFeatures = 1 + segments.length;
 
-    for (let i = 0; i < segmentCollection.length; ++i) {
-        for (let j = i + 1; j < segmentCollection.length; ++j) {
-            const currentCross = deriveConfluence(segmentCollection[i], segmentCollection[j]);
+    const allCandidateIntersections = segments.flatMap((currentSegment, idx) =>
+        segments.slice(0, idx)
+            .map(previousSegment => locateIntersection(currentSegment, previousSegment))
+            .filter(Boolean)
+    );
 
-            if (currentCross !== undefined) {
-                const isUnique = !distinctCrossings.some(recordedPoint =>
-                    (currentCross[0] - recordedPoint[0]) ** 2 +
-                    (currentCross[1] - recordedPoint[1]) ** 2 <
-                    PROXIMITY_THRESHOLD ** 2
-                );
+    const distinctIntersections = allCandidateIntersections.reduce((uniquePointsAccumulator, currentPoint) => {
+        const isCloseToExisting = uniquePointsAccumulator.some(existingPoint =>
+            Math.hypot(currentPoint[0] - existingPoint[0], currentPoint[1] - existingPoint[1]) < PROXIMITY_THRESHOLD
+        );
 
-                if (isUnique) {
-                    distinctCrossings.push(currentCross);
-                }
-            }
+        if (!isCloseToExisting) {
+            uniquePointsAccumulator.push(currentPoint);
         }
-    }
+        return uniquePointsAccumulator;
+    }, []);
 
-    regionCount += distinctCrossings.length;
-    return regionCount;
-};
+    totalFeatures += distinctIntersections.length;
 
-const processDiagrams = entireFeed => {
-    const feedLines = entireFeed.split('\n').filter(Boolean);
-    let currentLinePointer = 0;
+    return totalFeatures;
+}
 
-    while (currentLinePointer < feedLines.length) {
-        const segmentQuantity = parseInt(feedLines[currentLinePointer++], 10);
+function coordinateProcessor(inputLines) {
+    let currentLineCursor = 0;
+    const outputResults = [];
 
-        if (segmentQuantity === 0) {
+    while (true) {
+        const segmentCount = Number(inputLines[currentLineCursor++]);
+
+        if (segmentCount === 0) {
             break;
         }
 
-        const currentSegments = Array.from({ length: segmentQuantity }, () => {
-            const coordinateStrings = feedLines[currentLinePointer++].split(' ');
-            return coordinateStrings.map(Number);
-        });
-
-        console.log(computeEnclosures(currentSegments));
+        const currentSetOfSegments = [];
+        for (let i = 0; i < segmentCount; i++) {
+            const coordinateStrings = inputLines[currentLineCursor++].split(' ').map(Number);
+            currentSetOfSegments.push([
+                [coordinateStrings[0], coordinateStrings[1]],
+                [coordinateStrings[2], coordinateStrings[3]]
+            ]);
+        }
+        outputResults.push(processSegments(currentSetOfSegments));
     }
-};
 
-process.stdin.on('end', () => {
-    processDiagrams(fullInput);
-});
+    outputResults.forEach(result => console.log(result));
+}
+
+coordinateProcessor(rawInputLines);

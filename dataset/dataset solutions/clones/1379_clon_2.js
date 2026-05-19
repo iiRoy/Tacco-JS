@@ -1,46 +1,42 @@
-/*
- * This module processes input data to generate ASCII art frames.
- * Each line of input is expected to contain two space-separated numbers,
- * representing width and height for a frame.
- */
-(function (inputDataString) {
+(function(inputContent) {
+    // This function processes input data to generate ASCII frames.
 
-  // The raw input string is split into individual lines.
-  var linesArray = inputDataString.split('\n');
+    // Split the entire input string by newline characters to get individual lines.
+    var lineData = inputContent.split('\n');
+    // An array to store parsed width and height values for each line.
+    var dimensionPairs = [];
 
-  // This array will store parsed coordinate pairs (width, height) for each line.
-  var parsedCoordinates = [];
+    // Loop through each line of the input data.
+    for (var currentIdx = 0, totalEntries = lineData.length; currentIdx < totalEntries; currentIdx++) {
+        // Split the current line by space to separate width and height.
+        dimensionPairs[currentIdx] = lineData[currentIdx].split(' ');
 
-  // Loop through each line of the input to generate a frame.
-  for (var lineIdx = 0, totalLines = linesArray.length; lineIdx < totalLines; lineIdx++) {
+        // Convert the string representations of width and height to numeric values.
+        // The `- 0` operation is a common JavaScript trick for type coercion to number.
+        var currentWidth = dimensionPairs[currentIdx][0] - 0;
+        var currentHeight = dimensionPairs[currentIdx][1] - 0;
 
-    // Split the current line by space to get individual coordinate values.
-    parsedCoordinates[lineIdx] = linesArray[lineIdx].split(' ');
+        // If both width and height are zero, it's a termination signal.
+        // The function should stop processing further input.
+        if (currentWidth === 0 && currentHeight === 0) {
+            return; // Exit the anonymous function.
+        }
 
-    // Convert the first value to an integer for width.
-    var frameWidth = parsedCoordinates[lineIdx][0] - 0;
-    // Convert the second value to an integer for height.
-    var frameHeight = parsedCoordinates[lineIdx][1] - 0;
+        // Construct the top and bottom border line of the frame.
+        // It consists of 'currentWidth' hash characters followed by a newline.
+        var horizontalBorder = new Array(currentWidth + 1).join('#') + '\n';
 
-    // If both width and height are zero, it signals the end of input or an invalid frame.
-    if (frameWidth === 0 && frameHeight === 0) {
-      return; // Terminate execution.
+        // Construct the pattern for the middle rows of the frame.
+        // It starts with '#', followed by 'currentWidth - 2' dots, then another '#', and a newline.
+        // If currentWidth is 1, it becomes '#\n'. If currentWidth is 2, it becomes '##\n'.
+        var interiorRowPattern = '#' + (new Array(currentWidth - 1).join('.') + ('#') + '\n');
+
+        // Assemble the complete ASCII frame.
+        // It starts with the top border, followed by 'currentHeight - 2' repetitions of the interior row pattern,
+        // and finally the bottom border, with an extra newline at the very end for spacing.
+        var completeFrameOutput = horizontalBorder + (new Array(currentHeight - 1).join(interiorRowPattern)) + horizontalBorder + '\n';
+
+        // Output the generated frame to the console.
+        console.log(completeFrameOutput);
     }
-
-    // Generate the top and bottom border string (e.g., "###\n").
-    // It's a row of '#' characters, length `frameWidth + 1`.
-    var horizontalEdge = new Array(frameWidth + 1).join('#') + '\n';
-
-    // Generate the pattern for an internal row (e.g., "#.#\n").
-    // It consists of '#' at ends and '.' in between, length `frameWidth - 1` for dots.
-    var internalRowPattern = '#' + (new Array(frameWidth - 1).join('.') + '#') + '\n';
-
-    // Assemble the full ASCII art frame.
-    // It starts with the top border, followed by `frameHeight - 1` internal rows,
-    // then the bottom border, and an extra newline at the end.
-    var outputBlock = horizontalEdge + (new Array(frameHeight - 1).join(internalRowPattern)) + horizontalEdge + '\n';
-
-    // Print the generated frame to the console.
-    console.log(outputBlock);
-  }
-}(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Read input from standard input using Node.js fs module.
+}(require('fs').readFileSync('/dev/stdin', 'utf8'))); // Read input from standard input using Node.js 'fs' module.

@@ -1,98 +1,93 @@
 "use strict";
+var rawData = require("fs").readFileSync("/dev/stdin", "utf8");
+var tokenStream = rawData.trim().split(/ |\n/), tokenIndex = 0;
 
-const rawInputContent = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(calculatePrimeFactorSum().toString());
 
-const initialValueString = rawInputContent.trim().split(/\s+/)[0];
-const numericalSubject = parseInt(initialValueString, 10);
-
-console.log(processFactorialExponents(numericalSubject).toString());
-
-function processFactorialExponents(inputNumberCandidate) {
-    if (Number.isNaN(inputNumberCandidate) || inputNumberCandidate < 1 || !Number.isInteger(inputNumberCandidate)) {
-        return -1;
+function calculatePrimeFactorSum() {
+    var targetNum = +tokenStream.shift();
+    
+    if (targetNum === 1) {
+        return 0;
+    } else if (targetNum === 2) {
+        return 1;
     }
 
-    if (inputNumberCandidate < 3) {
-        return inputNumberCandidate - 1;
-    }
-
-    let remainingValue = inputNumberCandidate;
-    let finalAggregateScore = 0;
-
-    const limitForPrimeGeneration = Math.floor(Math.sqrt(remainingValue));
-    const generatedPrimeSequence = formPrimeCollection(limitForPrimeGeneration);
-
-    let primeSequenceIndex = 0;
-    let currentDivisorElement;
-
-    while (primeSequenceIndex < generatedPrimeSequence.length) {
-        currentDivisorElement = generatedPrimeSequence[primeSequenceIndex];
-
-        if (currentDivisorElement * currentDivisorElement > remainingValue) {
+    const sqrtLimit = Math.sqrt(targetNum);
+    var primeList = generatePrimesUpTo(sqrtLimit);
+    
+    let resultCount = 0;
+    
+    for (let primeIdx = 0; primeIdx < primeList.length; primeIdx++) {
+        let currentPrime = primeList[primeIdx];
+        
+        // If the current prime is already greater than or equal to the remaining targetNum,
+        // any further primes in the list (which are larger) won't be factors.
+        // The remaining targetNum itself will be a prime factor if > 1.
+        if (currentPrime >= targetNum) {
             break;
         }
 
-        let divisorExponentCount = 0;
-        while (remainingValue % currentDivisorElement === 0) {
-            divisorExponentCount++;
-            remainingValue /= currentDivisorElement;
+        let exponentVal = 0;
+        while (targetNum % currentPrime === 0) {
+            exponentVal++;
+            targetNum /= currentPrime;
         }
-
-        if (divisorExponentCount > 0) {
-            let sumOfSeriesTerms = 0;
-            let currentSeriesTerm = 0;
-            while (sumOfSeriesTerms + (currentSeriesTerm + 1) <= divisorExponentCount) {
-                currentSeriesTerm++;
-                sumOfSeriesTerms += currentSeriesTerm;
-            }
-            finalAggregateScore += currentSeriesTerm;
+        
+        if (exponentVal === 0) {
+            continue;
         }
-        primeSequenceIndex++;
+        
+        resultCount += determineConsecutiveSumCount(exponentVal);
+    }
+    
+    // If targetNum is still greater than 1, it means the remaining targetNum is a prime factor
+    // (which was larger than sqrt(original_n) or not in the pre-generated prime list).
+    if (targetNum > 1) {
+        resultCount++;
     }
 
-    if (remainingValue > 1) {
-        finalAggregateScore++;
-    }
-
-    return finalAggregateScore;
+    return resultCount;
 }
 
-function formPrimeCollection(upperRangeBound) {
-    const discoveredPrimeValues = [];
-
-    if (upperRangeBound < 2) {
-        return discoveredPrimeValues;
-    }
-    discoveredPrimeValues.push(2);
-    if (upperRangeBound < 3) {
-        return discoveredPrimeValues;
-    }
-    discoveredPrimeValues.push(3);
-    if (upperRangeBound < 5) {
-        return discoveredPrimeValues;
-    }
-
-    let potentialPrimeCandidate = 5;
-    while (potentialPrimeCandidate <= upperRangeBound) {
-        let hasSmallDivisor = false;
-        let primeListPosition = 0;
-
-        while (primeListPosition < discoveredPrimeValues.length) {
-            const trialDivisor = discoveredPrimeValues[primeListPosition];
-            if (trialDivisor * trialDivisor > potentialPrimeCandidate) {
+function generatePrimesUpTo(limitValue) {
+    let foundPrimes = [2, 3];
+    
+    // Start checking from 5, increment by 2 (only odd numbers)
+    for (let currentCandidate = 5; currentCandidate <= limitValue; currentCandidate += 2) {
+        let isDivisible = false;
+        // Check divisibility only by primes found so far, up to sqrt(currentCandidate)
+        for (let primeDivisorIndex = 0; primeDivisorIndex < foundPrimes.length; primeDivisorIndex++) {
+            const currentDivisor = foundPrimes[primeDivisorIndex];
+            const squareOfCurrentDivisor = currentDivisor * currentDivisor;
+            
+            if (squareOfCurrentDivisor > currentCandidate) {
+                // If square of current divisor exceeds candidate, no larger prime divisor will be found.
+                // Candidate is prime.
                 break;
             }
-            if (potentialPrimeCandidate % trialDivisor === 0) {
-                hasSmallDivisor = true;
+            
+            if (currentCandidate % currentDivisor === 0) {
+                isDivisible = true;
                 break;
             }
-            primeListPosition++;
         }
-
-        if (!hasSmallDivisor) {
-            discoveredPrimeValues.push(potentialPrimeCandidate);
+        
+        if (!isDivisible) {
+            foundPrimes.push(currentCandidate);
         }
-        potentialPrimeCandidate += 2;
     }
-    return discoveredPrimeValues;
+    return foundPrimes;
+}
+
+// Helper function extracted from the main logic for clarity and modularity.
+// It calculates the maximum 'i' such that 1 + 2 + ... + i <= exponent.
+function determineConsecutiveSumCount(exponent) {
+    let currentSum = 1;
+    let currentIter = 1;
+    while (currentSum + currentIter + 1 <= exponent) {
+        currentSum = currentSum + currentIter + 1;
+        currentIter++;
+    }
+    return currentIter;
 }

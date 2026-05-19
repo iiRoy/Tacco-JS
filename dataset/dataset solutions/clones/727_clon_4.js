@@ -1,54 +1,36 @@
-const filesystem = require('fs');
+#!/usr/bin/node
 
-const transformCalculation = (numericalInputs) => {
-    const [firstEntry, secondEntry, thirdEntry] = numericalInputs;
+const { stdin: inputSource } = process;
+inputSource.setEncoding('utf8');
 
-    const adjustedFirst = firstEntry - 1;
-    const adjustedSecond = secondEntry - 1;
+let collectedLines = [];
 
-    // Determine an additional modifier based on adjustedFirst and adjustedSecond
-    // This replaces the 'if' conditional with a ternary operator
-    const additionalModifier = (adjustedFirst % 3 === 2) ? 0 : Math.floor(adjustedSecond / 2);
+async function processInputData() {
+  for await (const chunk of inputSource) {
+    const currentChunkLines = chunk.split("\n");
+    if (currentChunkLines.length > 2 || currentChunkLines[1] !== '') {
+      collectedLines = currentChunkLines;
+    } else {
+      collectedLines.push(currentChunkLines[0]);
+    }
+  }
 
-    // Define the various constant terms used in the final computation
-    const baseConstant = 196471;
-    const multiplierForFirst = 195;
-    const multiplierForFirstDiv3 = 5;
-    const multiplierForSecond = 20;
+  const dataLength = Number.parseInt(collectedLines.shift(), 10);
+  
+  for (let idx = 0; idx < dataLength; idx++) {
+    const currentDataLine = collectedLines[idx];
+    const numericParts = currentDataLine.split(" ").map(s => Number.parseInt(s, 10));
 
-    // Construct a sequence of values that, when summed, yield the final result
-    // This uses a functional reduction for the final sum
-    const calculationComponents = [
-        baseConstant,
-        -adjustedFirst * multiplierForFirst,
-        -Math.floor(adjustedFirst / 3) * multiplierForFirstDiv3,
-        -adjustedSecond * multiplierForSecond,
-        additionalModifier,
-        -thirdEntry
-    ];
+    const [valA, valB, valC] = numericParts;
 
-    return calculationComponents.reduce((accumulatedValue, currentComponent) => accumulatedValue + currentComponent, 0);
-};
+    const adjustedA = valA - 1;
+    const adjustedB = valB - 1;
 
-// Read all standard input synchronously as a single string
-const entireInputContent = filesystem.readFileSync('/dev/stdin', 'utf8');
+    const conditionalTerm = (adjustedA % 3 !== 2) ? Math.floor(adjustedB / 2) : 0;
 
-// Split the content into individual lines and remove any empty lines
-const processedInputLines = entireInputContent.split('\n').filter(entry => entry.trim() !== '');
+    const finalOutput = 196471 - adjustedA * 195 - Math.floor(adjustedA / 3) * 5 - adjustedB * 20 + conditionalTerm - valC;
+    console.log(finalOutput);
+  }
+}
 
-// The initial line specifies the number of data sets to process
-const numberOfDataSets = Number(processedInputLines.shift());
-
-// Create an array of results by iterating 'numberOfDataSets' times.
-// This approach mirrors the original's behavior of crashing if too few data lines are provided.
-const finalOutputValues = Array.from({ length: numberOfDataSets })
-    .map((_, idx) => {
-        // Retrieve the current line; if undefined, .split() will cause a TypeError,
-        // replicating the original's error for insufficient input data.
-        const currentDataLine = processedInputLines[idx];
-        return currentDataLine.split(' ').map(Number); // Convert string parts to numbers
-    })
-    .map(transformCalculation); // Apply the core transformation to each set of numbers
-
-// Print all computed results, each on a new line
-console.log(finalOutputValues.join('\n'));
+processInputData();

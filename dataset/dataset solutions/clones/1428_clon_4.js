@@ -1,30 +1,24 @@
-const analyzeTextData = (dataStream) => {
-  const retrieveRelevantSegments = (collectionOfStrings) => {
-    if (collectionOfStrings.length === 0 || collectionOfStrings[0] === '') {
-      return [];
+function processInput(sourceText) {
+  const lineSegments = sourceText.split('\n');
+  const charOccurrences = new Map();
+
+  for (const currentSegment of lineSegments) {
+    if (currentSegment === "") {
+      break;
     }
-    return [collectionOfStrings[0], ...retrieveRelevantSegments(collectionOfStrings.slice(1))];
-  };
+    const lowercasedSegment = currentSegment.toLowerCase();
+    for (const charUnit of lowercasedSegment) {
+      charOccurrences.set(charUnit, (charOccurrences.get(charUnit) || 0) + 1);
+    }
+  }
 
-  const initialSegments = dataStream.split('\n');
-  const operationalSegments = retrieveRelevantSegments(initialSegments);
-  const combinedContent = operationalSegments.join('');
-
-  const occurrenceRegistry = Array.from(combinedContent).reduce((tallyMap, currentSymbol) => {
-    const adjustedSymbol = currentSymbol.toLowerCase();
-    return tallyMap.set(adjustedSymbol, (tallyMap.get(adjustedSymbol) || 0) + 1);
-  }, new Map());
-
-  const alphabetSeries = Array.from({ length: 26 }, (_, position) =>
-    String.fromCharCode('a'.charCodeAt(0) + position)
-  );
-
-  const finalReportEntries = alphabetSeries.map(charElement => {
-    const recordedCount = occurrenceRegistry.get(charElement) || 0;
-    return `${charElement} : ${recordedCount}`;
+  const alphabetCharacters = Array.from({ length: 26 }, (_, idx) => String.fromCharCode(0x61 + idx));
+  const formattedOutput = alphabetCharacters.map(currentLetter => {
+    const letterCount = charOccurrences.get(currentLetter) || 0;
+    return `${currentLetter} : ${letterCount}`;
   });
 
-  finalReportEntries.forEach(entryLine => console.log(entryLine));
-};
+  console.log(formattedOutput.join('\n'));
+}
 
-analyzeTextData(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

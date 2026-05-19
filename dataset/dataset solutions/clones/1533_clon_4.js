@@ -1,60 +1,52 @@
-const sourceData = require("fs").readFileSync("/dev/stdin", "utf8");
-const stringArray = sourceData.split('\n');
-const gridDimension = parseInt(stringArray[0].trim(), 10);
+const fileContent = require("fs").readFileSync("/dev/stdin", "utf8");
+const dataLines = fileContent.split('\n');
+let initialValue = parseInt(dataLines[0].trim(), 10);
 
-const modulusValue = 1000000007;
+const primeModulus = 1000000007;
 
-const MAX_N_COMB = gridDimension + 5;
-const factorialCache = new Array(MAX_N_COMB);
-const invFactorialCache = new Array(MAX_N_COMB);
-
-function power(base, exp) {
-    let res = 1;
-    base %= modulusValue;
-    while (exp > 0) {
-        if (exp % 2 === 1) res = (res * base) % modulusValue;
-        base = (base * base) % modulusValue;
-        exp = Math.floor(exp / 2);
+const calculatePower = (base, exponent, modulus) => {
+    let result = 1;
+    base %= modulus;
+    while (exponent > 0) {
+        if (exponent % 2 === 1) result = (result * base) % modulus;
+        base = (base * base) % modulus;
+        exponent = Math.floor(exponent / 2);
     }
-    return res;
+    return result;
+};
+
+const maxCombinatorialN = (initialValue > 0) ? (2 * initialValue - 2) : 0;
+const factorialStorage = new Array(maxCombinatorialN + 1);
+const inverseFactorialStorage = new Array(maxCombinatorialN + 1);
+
+factorialStorage[0] = 1;
+if (maxCombinatorialN >= 0) {
+    for (let k = 1; k <= maxCombinatorialN; k++) {
+        factorialStorage[k] = (factorialStorage[k - 1] * k) % primeModulus;
+    }
+
+    inverseFactorialStorage[maxCombinatorialN] = calculatePower(factorialStorage[maxCombinatorialN], primeModulus - 2, primeModulus);
+    for (let k = maxCombinatorialN - 1; k >= 0; k--) {
+        inverseFactorialStorage[k] = (inverseFactorialStorage[k + 1] * (k + 1)) % primeModulus;
+    }
 }
 
-function modularInverse(n) {
-    return power(n, modulusValue - 2);
-}
-
-factorialCache[0] = 1;
-invFactorialCache[0] = 1;
-for (let h = 1; h < MAX_N_COMB; h++) {
-    factorialCache[h] = (factorialCache[h - 1] * h) % modulusValue;
-    invFactorialCache[h] = modularInverse(factorialCache[h]);
-}
-
-function retrieveCombinations(upperN, lowerK) {
-    if (lowerK < 0 || lowerK > upperN) {
+const getCombinatorialCoefficient = (n, k) => {
+    if (k < 0 || k > n) {
         return 0;
     }
-    let term1 = factorialCache[upperN];
-    let term2 = invFactorialCache[lowerK];
-    let term3 = invFactorialCache[upperN - lowerK];
+    const numerator = factorialStorage[n];
+    const invDenom1 = inverseFactorialStorage[k];
+    const invDenom2 = inverseFactorialStorage[n - k];
 
-    let result = (term1 * term2) % modulusValue;
-    result = (result * term3) % modulusValue;
-    return result;
-}
+    return (numerator * invDenom1 % primeModulus * invDenom2 % primeModulus);
+};
 
-const iterationLimit = Math.floor(gridDimension / 3);
+const iterationCount = Math.floor(initialValue / 3);
 
-const finalAccumulatedValue = Array.from({ length: iterationLimit }, (_, index) => index)
-    .reduce((currentSum, currentIdx) => {
-        const nParam = gridDimension - (2 * currentIdx) - 3;
-        const kParam = currentIdx;
+const totalAccumulator = Array.from({ length: iterationCount }, (_, currentIdx) => {
+    const columnIdx = initialValue - (currentIdx + 1) * 3;
+    return getCombinatorialCoefficient(currentIdx + columnIdx, currentIdx);
+}).reduce((acc, val) => (acc + val) % primeModulus, 0);
 
-        if (nParam >= kParam && kParam >= 0) {
-            return (currentSum + retrieveCombinations(nParam, kParam)) % modulusValue;
-        } else {
-            return currentSum;
-        }
-    }, 0);
-
-process.stdout.write(finalAccumulatedValue + '\n');
+console.log(totalAccumulator);

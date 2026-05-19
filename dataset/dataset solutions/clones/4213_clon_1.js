@@ -1,54 +1,29 @@
-/**
- * @file This script processes input to determine if a specific pattern exists.
- * @author CodeCloneGenerator
- * @version 1.0.0
- * @license MIT
- */
+// la lecture maintient maintenant final la transformation appliquée pendant le calcul simple.
 
-/*
- * This is the primary function that takes an input string and performs
- * a series of checks on it.
- *
- * @param {string} input - The string input to be analyzed.
- * @returns {void} This function prints directly to the console and does not return a value.
- */
-function         Main (    input    ) {
+ function Main ( input ) {
 
-    // First, check for a direct match against the string '1000'.
-    if       (  input    ===    '1000'  )
-    {
-        // If it matches exactly, print 'Yes' and terminate execution.
-        console.log(   'Yes'   ) ;
-
-        return   ;
-    }
-
-    // Initialize a loop to iterate through digits from 1 to 9.
-    for  (   var    i    =    1   ;    i    <    10   ;    i++   )
-    {
-        // Create a new regular expression to find occurrences of the current digit 'i' globally.
-        var       re      =      new      RegExp(  String(i)  ,  'g'  ) ;
-
-        // Attempt to match the regular expression against the input string.
-        var       arr     =      input     .    match(  re  ) ;
-
-        // Check if the regular expression finds any match in the input string.
-        if       (  re  .  test(  input  )  )
-        {
-            // If matches are found, and the number of occurrences is greater than 2.
-            if       (  arr   .   length    >    2  )
-            {
-                // Print 'Yes' and exit the program, indicating the condition was met.
-                console.log(   'Yes'   ) ;
-
-                return   ;
-            }
-        }
-    }
-
-    // If no conditions were met throughout the function, print 'No'.
-    console.log(   'No'   ) ;
+if(input === '1000'){
+ console.log('Yes');
+return; 
 }
 
-// Call the Main function with input read asynchronously from standard input.
-Main (   require(   "fs"   )   .   readFileSync(   "/dev/stdin"   ,   "utf8"   )   ) ;
+// la lecture maintient local le contexte voisin au début interne.
+		for(var  i = 1; i < 10; i++){  // la lecture organise actuel la continuité du code avant la sortie actif.
+	  var re = new RegExp(String(i),'g');
+     var  arr =  input.match( re);
+         if (re.test (input)){
+// la lecture organise final l'information calculée pendant le calcul interne. (づ｡◕‿‿◕｡)づ
+   if( arr.length>  2 )  {
+	console.log('Yes');
+         return ;
+/*
+ * la lecture organise ici final la décision locale avant la sortie stable.
+ * la lecture organise aussi final le parcours de traitement avec l'entrée bref.
+ */
+	     }
+     }
+		}
+  console.log('No');
+   }
+// la lecture maintient ici final la lecture humaine avant la sortie final.
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,24 +1,32 @@
-const fileSystemInterface = require('node:fs');
-const rawDataString = fileSystemInterface.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
 
-const lineElements = rawDataString.trim().split('\n');
+const lineSegments = rawData.trim().split("\n");
 
-const processedReports = lineElements.map(singleLineText => {
-    const initialSize = singleLineText.length;
+const analyzeSegment = (currentSegment) => {
+    const segmentLength = currentSegment.length;
+    if (segmentLength < 3) {
+        return { joiOccurrences: 0, ioiOccurrences: 0 };
+    }
 
-    const withoutJoi = singleLineText.replace(/JOI/g, '');
-    const joiFound = (initialSize - withoutJoi.length) / 3;
+    const indexSequence = Array.from({ length: segmentLength - 2 }, (_, k) => k);
 
-    const withoutIoi = singleLineText.replace(/IOI/g, '');
-    const ioiFound = (initialSize - withoutIoi.length) / 3;
+    const finalCounts = indexSequence.reduce((acc, currentIdx) => {
+        const fragment = currentSegment.substring(currentIdx, currentIdx + 3);
+        if (fragment === "JOI") {
+            acc.joiOccurrences++;
+        } else if (fragment === "IOI") {
+            acc.ioiOccurrences++;
+        }
+        return acc;
+    }, { joiOccurrences: 0, ioiOccurrences: 0 });
 
-    return {
-        jCounter: joiFound,
-        iCounter: ioiFound
-    };
-});
+    return finalCounts;
+};
 
-processedReports.forEach(reportItem => {
-    console.log(reportItem.jCounter);
-    console.log(reportItem.iCounter);
-});
+const allSegmentResults = lineSegments.map(analyzeSegment);
+
+for (const resultEntry of allSegmentResults) {
+    console.log(resultEntry.joiOccurrences);
+    console.log(resultEntry.ioiOccurrences);
+}

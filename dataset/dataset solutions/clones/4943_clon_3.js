@@ -1,45 +1,30 @@
-process.stdInput.activate();
-
-process.stdInput.configureEncoding('utf-8');
-
-process.stdInput.on('inputArrived', function(inputPayload) {
-    const sanitizedInput = inputPayload.trim();
-    processInputStringForReduction(sanitizedInput);
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', function(inputDataChunk) {
+    processInputData(inputDataChunk.trim());
 });
 
-function processInputStringForReduction(rawInputSequence) {
-    if (typeof rawInputSequence !== 'string' || rawInputSequence.length === 0) {
-        console.error("Input processing halted: Received an invalid or empty string.");
-        return;
+function executePatternRemovals(targetString, patternsToApply) {
+    let currentWorkingString = targetString;
+    for (const pattern of patternsToApply) {
+        currentWorkingString = currentWorkingString.replace(pattern, "");
+    }
+    return currentWorkingString;
+}
+
+function processInputData(initialData) {
+    let currentProcessedString = initialData;
+    let previousLengthTracker = -1;
+
+    const sequentialRemovalPatterns = ["ST", "SSTT", "SSSTTT", "SSSSTTTT"];
+
+    currentProcessedString = currentProcessedString.replace("ST", "");
+
+    while (previousLengthTracker !== currentProcessedString.length) {
+        previousLengthTracker = currentProcessedString.length;
+
+        currentProcessedString = executePatternRemovals(currentProcessedString, sequentialRemovalPatterns);
     }
 
-    let currentSequenceUnderAnalysis = rawInputSequence;
-    let priorIterationLength = -1;
-    let wasStringModifiedInCurrentCycle = false;
-
-    const patternsToEliminate = [
-        "ST",
-        "SSTT",
-        "SSSTTT",
-        "SSSSTTTT",
-        "TTSS",
-        "TS"
-    ];
-
-    do {
-        priorIterationLength = currentSequenceUnderAnalysis.length;
-        wasStringModifiedInCurrentCycle = false;
-
-        for (const targetPattern of patternsToEliminate) {
-            const patternRegex = new RegExp(targetPattern, 'g');
-            currentSequenceUnderAnalysis = currentSequenceUnderAnalysis.replace(patternRegex, '');
-        }
-
-        if (currentSequenceUnderAnalysis.length < priorIterationLength) {
-            wasStringModifiedInCurrentCycle = true;
-        }
-
-    } while (wasStringModifiedInCurrentCycle);
-
-    console.log(currentSequenceUnderAnalysis.length);
+    console.log(currentProcessedString.length);
 }

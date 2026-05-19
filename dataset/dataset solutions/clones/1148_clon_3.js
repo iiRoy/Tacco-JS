@@ -1,264 +1,160 @@
-/**
- * @fileoverview This module provides a utility for calculating string edit distances,
- * specifically the Levenshtein distance, using dynamic programming.
- * It also supports incremental updates to the input sequence.
- */
+class EditDistanceCalculator {
+  constructor(targetStr) {
+    this._targetWordChars = targetStr.split("");
+    this._currentInputChars = [];
+    this._dpMatrix = [];
+    this._pathTracker = [];
+    this._initializeBaseMatrices(targetStr.length);
+  }
 
-// A potential reference for the algorithm: https://en.wikipedia.org/wiki/Levenshtein_distance
+  _initializeBaseMatrices(targetLength) {
+    const initialRowSize = targetLength + 1;
+    // Initialize the first row of the DP matrix with costs for deletions
+    this._dpMatrix.push(Array.from({ length: initialRowSize }, (_, i) => i));
 
-// Define constants for clarity and maintainability.
-const OPERATION_COST_MATCH = 0;
-const OPERATION_COST_MISMATCH = 1;
-const OPERATION_COST_INSERTION = 1;
-const OPERATION_COST_DELETION = 1;
-const DEFAULT_UNINITIALIZED_VALUE = Infinity;
-const NO_PREVIOUS_CELL = [-1, -1]; // Sentinel for traceback path initialization
-
-/**
- * Manages the computation of edit distance between a reference string and an evolving input string.
- */
-class StringSimilarityEngine {
-  /**
-   * Internal 2D array representing the dynamic programming grid.
-   * `_distanceGrid[i][j]` stores the Levenshtein distance between
-   * the first `i` characters of the processed sequence and the first `j` characters of the reference sequence.
-   */
-  #distanceGrid;
-
-  /**
-   * Internal 2D array storing traceback pointers for path reconstruction.
-   * `_pathTracker[i][j]` stores the `[row, col]` of the cell from which `_distanceGrid[i][j]` was derived.
-   */
-  #pathTracker;
-
-  /**
-   * The fixed reference string, broken into individual characters.
-   */
-  #referenceSequenceChars;
-
-  /**
-   * The current input string being compared against the reference, broken into individual characters.
-   */
-  #processedSequenceChars;
-
-  /**
-   * Initializes a new instance of the StringSimilarityEngine.
-   * @param {string} referenceText - The base string to compare against.
-   * @throws {Error} If the referenceText is not a string or is empty.
-   */
-  constructor(referenceText) {
-    if (typeof referenceText !== 'string' || referenceText.length === 0) {
-      throw new Error("Reference text must be a non-empty string for similarity calculation.");
-    }
-
-    this.#referenceSequenceChars = Array.from(referenceText);
-    const refLen = this.#referenceSequenceChars.length;
-
-    // Initialize the first row of the DP grid.
-    // The distance from an empty string to the first 'j' chars of refText is 'j' (all insertions).
-    this.#distanceGrid = [Array.from({ length: refLen + 1 }, (_, index) => index)];
-    this.#pathTracker = [Array.from({ length: refLen + 1 }, (_, index) => [0, index - 1])];
-    this.#pathTracker[0][0] = NO_PREVIOUS_CELL; // Base case: no predecessor for (0,0)
-
-    this.#processedSequenceChars = []; // Start with an empty input sequence.
+    // Initialize the first row of the path tracker for deletions
+    this._pathTracker.push(Array.from({ length: initialRowSize }, (_, i) => [0, i - 1]));
+    this._pathTracker[0][0] = [-1, -1]; // Base case: no previous cell
   }
 
   /**
-   * Extends or truncates the current processed sequence and recomputes the edit distances
-   * from a specified starting point. This allows for efficient partial updates.
-   * Time complexity: O(|referenceSequence| * |newSegment|).
-   * @param {number} startPosition - The index in the processed sequence from which to apply the new segment.
-   *                                 The existing processed sequence will be truncated at this point.
-   * @param {string} newSegment - The string segment to append to the processed sequence.
-   * @throws {Error} If startPosition is out of bounds or newSegment is not a string.
+   * Updates the input string from a given start index with a new suffix.
+   * This recalculates the relevant parts of the DP table.
+   * @param {Number} startIndex - The index in the current input from which to apply the suffix.
+   * @param {String} newSuffixStr - The new suffix to append.
    */
-  recomputeFrom(startPosition, newSegment) {
-    if (startPosition < 0 || startPosition > this.#processedSequenceChars.length) {
-      throw new Error(`Invalid start position (${startPosition}). Must be within [0, current processed length].`);
+  updateInputSuffix(startIndex, newSuffixStr) {
+    if (startIndex < 0) {
+      throw new Error("開始インデックスは負の値にできません");
     }
-    if (typeof newSegment !== 'string') {
-      throw new Error("New segment must be a string.");
+    if (startIndex > this._currentInputChars.length) {
+      throw new Error("入力の長さより後ろの位置が指定されました");
     }
 
-    // Truncate the processed sequence and the DP grid/path tracker up to the startPosition.
-    this.#processedSequenceChars.splice(startPosition);
-    this.#distanceGrid.length = startPosition + 1; // Keep the row for startPosition
-    this.#pathTracker.length = startPosition + 1;
+    // Reconstruct the _currentInputChars array
+    const suffixChars = newSuffixStr.split("");
+    this._currentInputChars = this._currentInputChars.slice(0, startIndex).concat(suffixChars);
 
-    // Append the new segment characters.
-    const segmentChars = Array.from(newSegment);
-    this.#processedSequenceChars.push(...segmentChars);
+    const currentInputLength = this._currentInputChars.length;
+    const targetWordLengthPlusOne = this._targetWordChars.length + 1;
 
-    const currentInputLen = this.#processedSequenceChars.length;
-    const refSeqLen = this.#referenceSequenceChars.length;
+    // Ensure DP matrices have enough rows for the new input length
+    this._ensureMatrixCapacity(currentInputLength, targetWordLengthPlusOne);
 
-    // Iterate through new rows that need to be computed or recomputed.
-    for (let currentRow = startPosition + 1; currentRow <= currentInputLen; currentRow++) {
-      // Initialize a new row for the distance grid and path tracker.
-      const newDistanceRow = new Array(refSeqLen + 1).fill(DEFAULT_UNINITIALIZED_VALUE);
-      const newPathRow = new Array(refSeqLen + 1).fill(NO_PREVIOUS_CELL);
+    // Iterate through the rows that need recalculation (from startIndex + 1 up to the new input length)
+    for (let rowIdx = startIndex + 1; rowIdx <= currentInputLength; rowIdx++) {
+      // Initialize the first column of the current row (cost for deleting all input chars)
+      this._dpMatrix[rowIdx][0] = rowIdx;
+      this._pathTracker[rowIdx][0] = [rowIdx - 1, 0]; // Path for deletion
 
-      // Distance from first 'currentRow' chars of input to empty refText is 'currentRow' (all deletions).
-      newDistanceRow[0] = currentRow;
-      newPathRow[0] = [currentRow - 1, 0]; // Trace back to the cell above (deletion)
-
-      this.#distanceGrid.push(newDistanceRow);
-      this.#pathTracker.push(newPathRow);
-
-      // Compute distances for the current row across all reference sequence characters.
-      for (let currentCol = 1; currentCol <= refSeqLen; currentCol++) {
-        // Character comparison for match/mismatch cost.
-        const charMatchCost = (this.#processedSequenceChars[currentRow - 1] === this.#referenceSequenceChars[currentCol - 1])
-          ? OPERATION_COST_MATCH
-          : OPERATION_COST_MISMATCH;
-
-        // Calculate potential distances from three possible previous cells:
-        // 1. Substitution (diagonal): _distanceGrid[currentRow-1][currentCol-1] + charMatchCost
-        // 2. Deletion (up): _distanceGrid[currentRow-1][currentCol] + OPERATION_COST_DELETION
-        // 3. Insertion (left): _distanceGrid[currentRow][currentCol-1] + OPERATION_COST_INSERTION
-
-        const diagonalCost = this.#distanceGrid[currentRow - 1][currentCol - 1] + charMatchCost;
-        const upCost = this.#distanceGrid[currentRow - 1][currentCol] + OPERATION_COST_DELETION;
-        const leftCost = this.#distanceGrid[currentRow][currentCol - 1] + OPERATION_COST_INSERTION;
-
-        // Find the minimum cost and update the current cell.
-        const minimumCost = Math.min(diagonalCost, upCost, leftCost);
-        this.#distanceGrid[currentRow][currentCol] = minimumCost;
-
-        // Record the path that led to this minimum cost.
-        if (minimumCost === diagonalCost) {
-          newPathRow[currentCol] = [currentRow - 1, currentCol - 1];
-        } else if (minimumCost === upCost) {
-          newPathRow[currentCol] = [currentRow - 1, currentCol];
-        } else { // minimumCost === leftCost
-          newPathRow[currentCol] = [currentRow, currentCol - 1];
-        }
+      // Fill the rest of the cells in the current row
+      for (let colIdx = 1; colIdx < targetWordLengthPlusOne; colIdx++) {
+        this._calculateCellMinDistance(rowIdx, colIdx);
       }
     }
   }
 
+  _ensureMatrixCapacity(requiredRows, targetWordLengthPlusOne) {
+    const currentRows = this._dpMatrix.length;
+    for (let r = currentRows; r <= requiredRows; r++) {
+      this._dpMatrix[r] = Array.from({ length: targetWordLengthPlusOne }, () => Infinity);
+      this._pathTracker[r] = Array.from({ length: targetWordLengthPlusOne }, () => [-1, -1]);
+    }
+  }
+
+  _calculateCellMinDistance(rowIdx, colIdx) {
+    // Option 1: Match or Mismatch (diagonal transition)
+    const matchCost = (this._currentInputChars[rowIdx - 1] === this._targetWordChars[colIdx - 1]) ? 0 : 1;
+    this._applyDpTransition({
+      rowIdx,
+      colIdx,
+      prevRow: rowIdx - 1,
+      prevCol: colIdx - 1,
+      transitionCost: matchCost
+    });
+
+    // Option 2: Insertion (horizontal transition from left)
+    this._applyDpTransition({
+      rowIdx,
+      colIdx,
+      prevRow: rowIdx,
+      prevCol: colIdx - 1,
+      transitionCost: 1
+    });
+
+    // Option 3: Deletion (vertical transition from top)
+    this._applyDpTransition({
+      rowIdx,
+    colIdx,
+      prevRow: rowIdx - 1,
+      prevCol: colIdx,
+      transitionCost: 1
+    });
+  }
+
+  _applyDpTransition(dpUpdateParams) {
+    const { rowIdx, colIdx, prevRow, prevCol, transitionCost } = dpUpdateParams;
+    const potentialNewDistance = this._dpMatrix[prevRow][prevCol] + transitionCost;
+
+    if (potentialNewDistance < this._dpMatrix[rowIdx][colIdx]) {
+      this._dpMatrix[rowIdx][colIdx] = potentialNewDistance;
+      this._pathTracker[rowIdx][colIdx] = [prevRow, prevCol];
+    }
+  }
+
   /**
-   * Reconstructs the optimal alignment path to identify matched characters.
-   * It returns two boolean arrays indicating which characters in the input and reference
-   * sequences were part of a "match" operation (i.e., didn't incur a mismatch cost).
-   * Time complexity: O(|inputSequence| + |referenceSequence|).
-   * @returns {{processedSequenceMatches: boolean[], referenceSequenceMatches: boolean[]}}
-   * An object containing two arrays of booleans. `true` indicates a matched character.
+   * Traces back through the DP table to identify matching characters.
+   * Returns two boolean arrays indicating which characters in the input and target
+   * were part of a "match" (zero-cost transition).
    */
-  generateAlignmentReport() {
-    const currentInputLen = this.#processedSequenceChars.length;
-    const refSeqLen = this.#referenceSequenceChars.length;
+  buildCorrections() {
+    const inputLength = this._currentInputChars.length;
+    const targetLength = this._targetWordChars.length;
+    const inputMatchFlags = Array.from({ length: inputLength }, () => false);
+    const targetMatchFlags = Array.from({ length: targetLength }, () => false);
 
-    // Initialize arrays to track matched characters.
-    const processedSequenceMatches = new Array(currentInputLen).fill(false);
-    const referenceSequenceMatches = new Array(refSeqLen).fill(false);
+    let currentRow = inputLength;
+    let currentCol = targetLength;
 
-    let currentRow = currentInputLen;
-    let currentCol = refSeqLen;
-
-    // Trace back from the bottom-right corner of the DP grid.
     while (currentRow > 0 || currentCol > 0) {
-      const [prevRow, prevCol] = this.#pathTracker[currentRow][currentCol];
+      let [prevRow, prevCol] = this._pathTracker[currentRow][currentCol];
 
-      // Check if the current cell's value was derived from a 'match' (0 cost substitution).
-      // This happens if the distance didn't increase from the diagonal predecessor,
-      // and the characters were indeed the same.
-      if (prevRow === currentRow - 1 && prevCol === currentCol - 1) { // Diagonal move (substitution/match)
-        if (this.#distanceGrid[prevRow][prevCol] === this.#distanceGrid[currentRow][currentCol]) {
-          // This implies charMatchCost was 0, so it was a true match.
-          processedSequenceMatches[currentRow - 1] = true;
-          referenceSequenceMatches[currentCol - 1] = true;
-        }
+      // If the distance did not increase, it means a match or a no-cost operation occurred.
+      if (this._dpMatrix[prevRow][prevCol] === this._dpMatrix[currentRow][currentCol]) {
+        this._markCorrectionPath(inputMatchFlags, targetMatchFlags, prevRow, currentRow, prevCol, currentCol);
       }
-      // Move to the previous cell in the traceback path.
       currentRow = prevRow;
       currentCol = prevCol;
     }
-
-    return {
-      processedSequenceMatches,
-      referenceSequenceMatches
-    };
+    return { input: inputMatchFlags, word: targetMatchFlags };
   }
 
-  /**
-   * Returns the complete 2D distance matrix.
-   * @returns {number[][]} The dynamic programming distance grid.
-   */
+  _markCorrectionPath(inputFlags, targetFlags, startInput, endInput, startTarget, endTarget) {
+    for (let i = startInput; i < endInput; i++) {
+      inputFlags[i] = true;
+    }
+    for (let i = startTarget; i < endTarget; i++) {
+      targetFlags[i] = true;
+    }
+  }
+
   get distanceMatrix() {
-    // Return a shallow copy to prevent external modification of the internal state.
-    return this.#distanceGrid.map(row => [...row]);
-  }
-
-  /**
-   * Returns the final Levenshtein distance between the current processed sequence
-   * and the reference sequence.
-   * @returns {number} The Levenshtein distance.
-   */
-  get finalDistance() {
-    const currentInputLen = this.#processedSequenceChars.length;
-    const refSeqLen = this.#referenceSequenceChars.length;
-    if (currentInputLen === 0 && refSeqLen === 0) return 0;
-    if (currentInputLen === 0) return refSeqLen;
-    if (refSeqLen === 0) return currentInputLen;
-    return this.#distanceGrid[currentInputLen][refSeqLen];
+    return this._dpMatrix;
   }
 }
 
-// --- Main execution block for command-line usage ---
-(function() {
-  const SCRIPT_NAME = 'edit-distance-calculator';
+const processInputAndCalculate = inputData => {
+  const lines = inputData.split("\n");
+  const targetWord = lines[0];
+  const currentInput = lines[1];
 
-  /**
-   * Orchestrates the calculation of Levenshtein distance from standard input.
-   * @param {string} inputPayload - The input string containing two lines: reference text and query text.
-   */
-  function executeCalculation(inputPayload) {
-    if (!inputPayload || typeof inputPayload !== 'string') {
-      console.error(`${SCRIPT_NAME}: Error: No input payload provided.`);
-      process.exit(1);
-    }
+  const distanceCalc = new EditDistanceCalculator(targetWord);
+  distanceCalc.updateInputSuffix(0, currentInput);
 
-    const lines = inputPayload.trim().split("\n");
-    if (lines.length < 2) {
-      console.error(`${SCRIPT_NAME}: Error: Input must contain at least two lines (reference and query text).`);
-      process.exit(1);
-    }
+  const finalInputLength = currentInput.length;
+  const finalTargetLength = targetWord.length;
 
-    const referenceText = lines[0];
-    const queryText = lines[1];
+  console.log(distanceCalc.distanceMatrix[finalInputLength][finalTargetLength]);
+};
 
-    try {
-      const similarityEngine = new StringSimilarityEngine(referenceText);
-      // Update the input sequence from index 0 with the entire query text.
-      similarityEngine.recomputeFrom(0, queryText);
-
-      // Output the final Levenshtein distance.
-      console.log(similarityEngine.finalDistance);
-
-      // Optional: Log alignment report for debugging/visualization
-      // const alignment = similarityEngine.generateAlignmentReport();
-      // console.log("Input Matches:", alignment.processedSequenceMatches);
-      // console.log("Reference Matches:", alignment.referenceSequenceMatches);
-
-    } catch (error) {
-      console.error(`${SCRIPT_NAME}: Calculation failed:`, error.message);
-      process.exit(1);
-    }
-  }
-
-  // Check if running in a Node.js environment to read from stdin.
-  if (typeof require !== 'undefined' && require.main === module) {
-    try {
-      const rawInput = require("fs").readFileSync("/dev/stdin", "utf8");
-      executeCalculation(rawInput);
-    } catch (error) {
-      console.error(`${SCRIPT_NAME}: Failed to read from stdin:`, error.message);
-      process.exit(1);
-    }
-  } else {
-    // For browser or other environments, expose the class or provide a dummy runner.
-    // console.log("StringSimilarityEngine class is available.");
-    // window.StringSimilarityEngine = StringSimilarityEngine; // Example for browser
-  }
-})();
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

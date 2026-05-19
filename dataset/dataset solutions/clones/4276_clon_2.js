@@ -1,39 +1,38 @@
 process.stdin.resume();
-
 process.stdin.setEncoding('utf8');
 
-// This function is designed to handle all incoming data
-function PrimaryProcessor(incomingData) {
-  // Split the entire input into individual lines
-  let tempArray = incomingData.split('\n');
+// This function processes the entire input data
+function ProcessInput(rawData) {
+  // Split the raw input into an array of lines
+  // The first line goes into firstLineParts, the second into secondLineParts, etc.
+  let linesArray = rawData.split("\n");
+  let firstLineParts = linesArray[0].split(" ");
+  let secondLineParts = linesArray[1].split(" ");
+  // let thirdLineParts = linesArray[2].split(" "); // Unused line
+  // let fourthLineParts = linesArray[3].split(" "); // Another unused line
 
-  // Extract and split the components of the first line
-  let firstLineParts = tempArray[0].split(' ');
-  // Extract and split the components of the second line
-  let secondLineParts = tempArray[1].split(' ');
+  // Parse numerical values from the first and second lines
+  let iterationsCount = Number(firstLineParts[0]);
+  let thresholdValue = Number(secondLineParts[0]);
+  // let someOtherValue = Number(firstLineParts[2]); // This variable was commented out
 
-  // Obtain the primary numerical parameter from the first line
-  let firstValue = parseInt(firstLineParts[0], 10);
-  // Obtain the secondary numerical parameter from the second line
-  let limitFactor = parseInt(secondLineParts[0], 10);
+  let currentResult = 1; // Initialize the result variable
 
-  // Initialize the computed outcome
-  let finalResult = 1;
+  // console.log(iterationsCount + " " + thresholdValue + " " + " debug message "); // Debugging line, commented out
 
-  // Loop through a specified number of iterations
-  for (let cycleCount = 1; cycleCount <= firstValue; ++cycleCount) {
-    // Conditionally modify the result based on the limit factor
-    if (finalResult < limitFactor) {
-      finalResult *= 2; // Double the result if it's less than the factor
-    }
-    else {
-      finalResult += limitFactor; // Otherwise, add the factor to the result
+  // Loop a specified number of times
+  for (let loopIndex = 1; loopIndex <= iterationsCount; loopIndex++) {
+    // Apply the core logic: double if below threshold, otherwise add threshold
+    if (currentResult < thresholdValue) {
+      currentResult *= 2;
+    } else {
+      currentResult += thresholdValue;
     }
   }
 
-  // Output the final calculated value
-  console.log(finalResult);
+  // Output the final calculated result to the console
+  console.log(currentResult);
 }
 
-// The following line should not be modified; it manages input reading and function execution.
-PrimaryProcessor(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Do not modify the code below this line (it handles standard input/output and calls the main processing function)
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

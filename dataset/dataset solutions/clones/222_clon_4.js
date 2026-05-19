@@ -1,11 +1,27 @@
-const fileSystemModule = require('node:fs');
-const rawContent = fileSystemModule.readFileSync('/dev/stdin', 'utf8');
+const fileSystem = require('fs');
 
-const parsedNumbers = rawContent.trim().split('\n').map(Number);
+const rawData = fileSystem.readFileSync('/dev/stdin', 'utf8');
+const numericInputs = rawData.trim().split("\n").map(Number);
 
-const seriesMultiplier = 211 / 27;
+function* sequenceProducer(initialElement) {
+    let currentElement = initialElement;
+    yield 0;
+    yield currentElement;
 
-for (const singleValue of parsedNumbers) {
-   const finalCalculatedTotal = singleValue * seriesMultiplier;
-   process.stdout.write(finalCalculatedTotal.toFixed(8) + '\n');
+    for (let position = 2; position <= 10; ++position) {
+        if (position % 2 === 0) {
+            currentElement *= 2;
+        } else {
+            currentElement /= 3;
+        }
+        yield currentElement;
+    }
+}
+
+for (const currentInput of numericInputs) {
+    let totalAccumulation = 0;
+    for (const generatedValue of sequenceProducer(currentInput)) {
+        totalAccumulation += generatedValue;
+    }
+    console.log(totalAccumulation.toFixed(8));
 }

@@ -1,66 +1,66 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-let incomingPayload = '';
-
-process.stdin.on('data', (dataFragment) => {
-    incomingPayload += dataFragment;
+let inputBuffer = '';
+process.stdin.on('data', function(chunk) {
+    inputBuffer += chunk;
 });
 
-process.stdin.on('end', () => {
-    performCalculation(incomingPayload.split(/\r?\n/));
+process.stdin.on('end', function() {
+    processInput(inputBuffer.split(/\r?\n/));
 });
 
-const performCalculation = (dataLines) => {
-    const desiredNumerator = 4;
-    const inputDenominator = Number.parseInt(dataLines[0], 10);
-    const maximumSearchLimit = 3500;
+function processInput(lines) {
+    const targetN = parseInt(lines[0], 10);
 
-    let solution_triplet = null;
+    const solution = findEgyptianFractionSolution(targetN);
 
-    function* valueRange(init, limit) {
-        let current = init;
-        while (current < limit) {
-            yield current;
-            current++;
+    console.log(solution[0] + ' ' + solution[1] + ' ' + solution[2]);
+
+    return 0;
+}
+
+function findEgyptianFractionSolution(targetNValue) {
+    let foundSolution = null;
+
+    const upperLimit = 3500;
+
+    const targetReciprocal = 4 / targetNValue;
+
+    Array.from({ length: upperLimit - 1 }, (_, idxH) => idxH + 1).some(firstComponent => {
+        const firstComponentReciprocal = 1 / firstComponent;
+
+        if (targetReciprocal < firstComponentReciprocal + (2 / upperLimit)) {
+            return false;
         }
-    }
 
-    for (const val_x_candidate of valueRange(1, maximumSearchLimit)) {
-        if (solution_triplet !== null) break;
+        Array.from({ length: upperLimit - firstComponent }, (_, idxN) => idxN + firstComponent).some(secondComponent => {
+            const secondComponentReciprocal = 1 / secondComponent;
 
-        if ((desiredNumerator / inputDenominator) < (1 / val_x_candidate) + (2 / maximumSearchLimit)) {
-            continue;
-        }
-
-        for (const val_y_candidate of valueRange(val_x_candidate, maximumSearchLimit)) {
-            if (solution_triplet !== null) break;
-
-            if ((desiredNumerator / inputDenominator) < (1 / val_x_candidate) + (1 / val_y_candidate) + (1 / maximumSearchLimit)) {
-                continue;
+            if (targetReciprocal < firstComponentReciprocal + secondComponentReciprocal + (1 / upperLimit)) {
+                return false;
             }
 
-            const commonDenominatorExpression = desiredNumerator * val_x_candidate * val_y_candidate - inputDenominator * val_y_candidate - inputDenominator * val_x_candidate;
+            const remainingFraction = targetReciprocal - firstComponentReciprocal - secondComponentReciprocal;
 
-            if (commonDenominatorExpression <= 0) {
-                continue;
+            if (remainingFraction <= 0) {
+                return false;
             }
 
-            const calculated_z_val = (inputDenominator * val_x_candidate * val_y_candidate) / commonDenominatorExpression;
+            const thirdComponentExact = 1 / remainingFraction;
 
-            if (Number.isInteger(calculated_z_val) && calculated_z_val >= val_y_candidate && calculated_z_val < maximumSearchLimit) {
-                const leftSide = desiredNumerator * val_x_candidate * val_y_candidate * calculated_z_val;
-                const rightSide = inputDenominator * val_y_candidate * calculated_z_val + inputDenominator * val_x_candidate * calculated_z_val + inputDenominator * val_x_candidate * val_y_candidate;
+            if (Number.isInteger(thirdComponentExact) &&
+                thirdComponentExact >= secondComponent &&
+                thirdComponentExact < upperLimit) {
 
-                if (leftSide === rightSide) {
-                    solution_triplet = [val_x_candidate, val_y_candidate, calculated_z_val];
-                    break;
-                }
+                foundSolution = [firstComponent, secondComponent, thirdComponentExact];
+                return true;
             }
-        }
-    }
+            return false;
+        });
 
-    if (solution_triplet) {
-        console.log(`${solution_triplet[0]} ${solution_triplet[1]} ${solution_triplet[2]}`);
-    }
-};
+        return foundSolution !== null;
+    });
+
+    return foundSolution;
+}

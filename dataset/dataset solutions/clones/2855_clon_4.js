@@ -1,25 +1,23 @@
-let inputBuffer = '';
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
 
-process.stdin.on('data', (inputChunk) => {
-  inputBuffer += inputChunk.toString('utf8');
+var inputData = [];
+var ioHandler = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+ioHandler.on('line', (currentLine) => {
+  inputData.push(currentLine)
 });
 
-process.stdin.on('end', () => {
-  const parsedValues = inputBuffer
-    .trim()
-    .split(' ')
-    .map(Number);
+ioHandler.on('close', () => {
 
-  const smallestPairObject = parsedValues.reduce((accumulatorObject, currentNumericValue) => {
-    if (currentNumericValue < accumulatorObject.primaryMinimum) {
-      accumulatorObject.secondaryMinimum = accumulatorObject.primaryMinimum;
-      accumulatorObject.primaryMinimum = currentNumericValue;
-    } else if (currentNumericValue < accumulatorObject.secondaryMinimum) {
-      accumulatorObject.secondaryMinimum = currentNumericValue;
-    }
-    return accumulatorObject;
-  }, { primaryMinimum: Number.POSITIVE_INFINITY, secondaryMinimum: Number.POSITIVE_INFINITY });
+  const numericValues = inputData[0].split(' ').map(Number);
+  numericValues.sort((a, b) => a - b);
 
-  const finalSum = smallestPairObject.primaryMinimum + smallestPairObject.secondaryMinimum;
-  process.stdout.write(finalSum.toString() + '\n');
+  const smallestOne = numericValues[0];
+  const smallestTwo = numericValues[1];
+  
+  console.log(smallestOne + smallestTwo);
+
 });

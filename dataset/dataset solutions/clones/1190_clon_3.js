@@ -1,122 +1,82 @@
 process.stdin.resume();
 process.stdin.setEncoding("utf8");
 
-const lineReaderInterface = require("readline").createInterface({
+const inputReader = require("readline").createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const bufferedInputLines = [];
+const inputLines = [];
 
-lineReaderInterface.on("line", (currentLine) => {
-  bufferedInputLines.push(currentLine);
+inputReader.on("line", (currentLine) => {
+  inputLines.push(currentLine);
 });
 
-lineReaderInterface.on("close", () => {
-  // --- Input Validation and Parsing ---
-  if (bufferedInputLines.length < 2) {
-    console.error("Error: Insufficient input. Expected at least two lines for die setup and operation count.");
-    process.exit(1);
-  }
+inputReader.on("close", () => {
+  // Parse initial dice faces from the first line of input
+  const initialFaceValues = inputLines[0].split(" ");
+  let faceUp = initialFaceValues[0];
+  let faceFront = initialFaceValues[1];
+  let faceRight = initialFaceValues[2];
+  let faceLeft = initialFaceValues[3];
+  let faceBack = initialFaceValues[4];
+  let faceDown = initialFaceValues[5];
 
-  // Extract the initial die face configuration
-  const initialFaceConfiguration = bufferedInputLines[0].split(" ");
-  if (initialFaceConfiguration.length !== 6) {
-    console.error("Error: Initial die configuration must specify exactly 6 faces.");
-    process.exit(1);
-  }
+  // Determine the total number of operations from the second line
+  const numOperations = Number(inputLines[1]);
 
-  // Assign descriptive names to the die faces
-  const [
-    upperSurface,     // Corresponds to original 'top'
-    forwardSurface,   // Corresponds to original 'front'
-    starboardSurface, // Corresponds to original 'right'
-    portSurface,      // Corresponds to original 'left'
-    rearSurface,      // Corresponds to original 'back'
-    lowerSurface,     // Corresponds to original 'bottom'
-  ] = initialFaceConfiguration;
+  // Define the three primary rotation sequences based on the initial face values.
+  // These sequences represent the faces that cycle when the dice is rotated along specific axes.
+  // rollSequenceX: Faces involved in rotations that keep left/right faces fixed (e.g., rolling forward/backward).
+  // rollSequenceY: Faces involved in rotations that keep front/back faces fixed (e.g., rolling left/right).
+  // rollSequenceZ: Faces involved in rotations that keep top/bottom faces fixed (e.g., rotating on its spot).
+  const rollSequenceX = [faceUp, faceFront, faceDown, faceBack];
+  const rollSequenceY = [faceUp, faceRight, faceDown, faceLeft];
+  const rollSequenceZ = [faceFront, faceRight, faceBack, faceLeft];
 
-  // Convert the number of operations to an integer
-  const numberOfRotationCommands = Number(bufferedInputLines[1]);
-  if (isNaN(numberOfRotationCommands) || numberOfRotationCommands < 0) {
-    console.error("Error: Number of rotation commands must be a non-negative integer.");
-    process.exit(1);
-  }
+  // Constants for array indexing and loop control
+  const MAX_SEQUENCE_INDEX = 3;
+  const MIN_SEQUENCE_INDEX = 0;
+  const FIRST_OPERATION_LINE_INDEX = 2;
 
-  // Verify that enough input lines are available for all operations
-  if (bufferedInputLines.length < 2 + numberOfRotationCommands) {
-    console.error("Error: Not enough rotation commands provided for the specified number of operations.");
-    process.exit(1);
-  }
+  // Iterate through each operation provided in the input lines
+  for (let opIndex = FIRST_OPERATION_LINE_INDEX; opIndex < numOperations + FIRST_OPERATION_LINE_INDEX; opIndex++) {
+    const [targetTop, targetFront] = inputLines[opIndex].split(" ");
 
-  // --- Helper function to determine the active rotational plane ---
-  // This function replaces the nested ternary logic for s1, s2, s3 selection.
-  // It returns an array representing the four faces that rotate around a fixed axis.
-  const selectRotationPlane = (fixedReferenceFace) => {
-    switch (fixedReferenceFace) {
-      case upperSurface:
-      case lowerSurface:
-        // If 'top' or 'bottom' is the reference, the horizontal plane rotates.
-        return [forwardSurface, starboardSurface, rearSurface, portSurface];
-      case forwardSurface:
-      case rearSurface:
-        // If 'front' or 'back' is the reference, the vertical plane along right-left axis rotates.
-        return [upperSurface, starboardSurface, lowerSurface, portSurface];
-      case starboardSurface:
-      case portSurface:
-        // If 'right' or 'left' is the reference, the vertical plane along front-back axis rotates.
-        return [upperSurface, forwardSurface, lowerSurface, rearSurface];
-      default:
-        // This case indicates an unexpected face identifier in the input.
-        console.error(`Internal Logic Error: Unrecognized face '${fixedReferenceFace}' used as a rotation reference.`);
-        process.exit(1);
-    }
-  };
+    let activeRotationSequence;
 
-  // --- Process each rotation operation ---
-  // Loop through the rotation commands, starting from the third line of input.
-  for (let commandIndex = 0; commandIndex < numberOfRotationCommands; ++commandIndex) {
-    const currentCommandLine = bufferedInputLines[2 + commandIndex];
-    const [rotationIndicatorFace, fixedObservationFace] = currentCommandLine.split(" ");
+    // Determine which rotation sequence is relevant for the current operation.
+    // This logic is equivalent to the original ternary expression:
+    // s1.includes(t) ? (s2.includes(t) ? s3 : s2) : s1;
+    const isTargetTopInSequenceX = rollSequenceX.includes(targetTop);
+    const isTargetTopInSequenceY = rollSequenceY.includes(targetTop);
 
-    // Determine which set of faces is currently in play for the rotation.
-    const activeRotationalSlice = selectRotationPlane(rotationIndicatorFace);
-
-    // Find the position of the fixed observation face within this slice.
-    let observationFaceCurrentPosition = activeRotationalSlice.indexOf(fixedObservationFace);
-
-    if (observationFaceCurrentPosition === -1) {
-        console.error(`Error: Fixed observation face '${fixedObservationFace}' not found in the active rotational slice for indicator face '${rotationIndicatorFace}'.`);
-        process.exit(1);
-    }
-
-    // Determine the direction of rotation.
-    // The original logic checks if 't' was 'top', 'right', or 'back' for one direction.
-    const isClockwiseShift = (
-      rotationIndicatorFace === upperSurface ||
-      rotationIndicatorFace === starboardSurface ||
-      rotationIndicatorFace === rearSurface
-    );
-
-    let resultingFacePosition;
-    if (isClockwiseShift) {
-      // Clockwise rotation (move to the next element, wrapping around).
-      resultingFacePosition = (observationFaceCurrentPosition + 1) % activeRotationalSlice.length;
+    if (isTargetTopInSequenceX) {
+      if (isTargetTopInSequenceY) {
+        activeRotationSequence = rollSequenceZ;
+      } else {
+        activeRotationSequence = rollSequenceY;
+      }
     } else {
-      // Counter-clockwise rotation (move to the previous element, wrapping around).
-      // Adding `activeRotationalSlice.length` handles negative results from `-1` before modulo.
-      resultingFacePosition = (observationFaceCurrentPosition - 1 + activeRotationalSlice.length) % activeRotationalSlice.length;
+      activeRotationSequence = rollSequenceX;
     }
 
-    // Output the face that ends up at the determined position.
-    console.log(activeRotationalSlice[resultingFacePosition]);
-  }
-});
+    let frontFaceCurrentIndex = activeRotationSequence.indexOf(targetFront);
 
-// Optional: Global error handler for unexpected issues during execution.
-process.on('uncaughtException', (error) => {
-    console.error('An unexpected runtime error occurred:', error.message);
-    // For debugging, uncomment the following line:
-    // console.error(error.stack);
-    process.exit(1);
+    // Determine the direction of rotation (clockwise or counter-clockwise)
+    // based on the target top face relative to the initial dice orientation.
+    // The original condition was: t === top || t === right || t === back
+    const isClockwiseRotation = (targetTop === faceUp || targetTop === faceRight || targetTop === faceBack);
+
+    if (isClockwiseRotation) {
+      // For clockwise rotation, the index increases, wrapping from the maximum index to the minimum.
+      frontFaceCurrentIndex = (frontFaceCurrentIndex === MAX_SEQUENCE_INDEX) ? MIN_SEQUENCE_INDEX : frontFaceCurrentIndex + 1;
+    } else {
+      // For counter-clockwise rotation, the index decreases, wrapping from the minimum index to the maximum.
+      frontFaceCurrentIndex = (frontFaceCurrentIndex === MIN_SEQUENCE_INDEX) ? MAX_SEQUENCE_INDEX : frontFaceCurrentIndex - 1;
+    }
+
+    // Output the face that will be on the front after the rotation.
+    console.log(activeRotationSequence[frontFaceCurrentIndex]);
+  }
 });

@@ -1,25 +1,25 @@
-function processStringValue(incomingData) {
-  if (incomingData === '1000') {
-    console.log('Yes');
-    return;
-  }
+function analyzeString(sourceText) {
+    const isSpecialCaseMatch = sourceText === '1000';
 
-  const digitFrequencies = Array.from(incomingData).reduce((tally, charItem) => {
-    if (charItem >= '1' && charItem <= '9') {
-      tally[charItem] = (tally[charItem] || 0) + 1;
+    if (isSpecialCaseMatch) {
+        return 'Yes';
     }
-    return tally;
-  }, {});
 
-  const meetsThreshold = Object.values(digitFrequencies).some(countValue => countValue >= 3);
+    const digitOccurrenceMap = Array.from(sourceText).reduce((accumulator, currentCharacter) => {
+        if (currentCharacter >= '1' && currentCharacter <= '9') {
+            accumulator[currentCharacter] = (accumulator[currentCharacter] || 0) + 1;
+        }
+        return accumulator;
+    }, {});
 
-  if (meetsThreshold) {
-    console.log('Yes');
-  } else {
-    console.log('No');
-  }
+    const targetDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const hasSufficientOccurrences = targetDigits.some(singleDigit => {
+        const currentCount = digitOccurrenceMap[singleDigit] || 0;
+        return currentCount >= 3;
+    });
+
+    return hasSufficientOccurrences ? 'Yes' : 'No';
 }
 
-const fetchSourceData = () => require("fs").readFileSync("/dev/stdin", "utf8");
-
-processStringValue(fetchSourceData());
+const inputData = require("fs").readFileSync("/dev/stdin", "utf8");
+console.log(analyzeString(inputData));

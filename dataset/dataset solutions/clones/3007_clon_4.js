@@ -1,27 +1,17 @@
-const obtainRawMaterial = () => require("node:fs").readFileSync("/dev/stdin", "utf-8");
+function ProcessData(rawData) {
+    const dataLines = rawData.split("\n");
+    const elementCount = Number(dataLines[0]);
 
-const calculateNetYield = (sourceContent) => {
-    const contentUnits = sourceContent.trim().split("\n");
-    const [_ignoreCount, worthsStr, expensesStr] = contentUnits;
+    const valueStrings = dataLines[1].split(" ");
+    const costStrings = dataLines[2].split(" ");
 
-    const worthArray = worthsStr.split(" ").map(val => +val);
-    const expenseArray = expensesStr.split(" ").map(val => +val);
+    const totalPositiveDifference = Array.from({ length: elementCount }, (_, index) => {
+        const currentVal = Number(valueStrings[index]);
+        const currentCost = Number(costStrings[index]);
+        return Math.max(0, currentVal - currentCost);
+    }).reduce((accumulator, currentDifference) => accumulator + currentDifference, 0);
 
-    const computeRecursiveDelta = (idx, currentAccumulation) => {
-        if (idx >= worthArray.length) {
-            return currentAccumulation;
-        }
+    console.log(totalPositiveDifference);
+}
 
-        const worth = worthArray[idx];
-        const expense = expenseArray[idx];
-        const delta = worth - expense;
-
-        const nextAccumulation = currentAccumulation + (delta > 0 ? delta : 0);
-        return computeRecursiveDelta(idx + 1, nextAccumulation);
-    };
-
-    return String(computeRecursiveDelta(0, 0));
-};
-
-const processedResult = calculateNetYield(obtainRawMaterial());
-process.stdout.write(processedResult + "\n");
+ProcessData(require("fs").readFileSync("/dev/stdin", "utf-8"));

@@ -1,94 +1,95 @@
-function processInputData(rawDataLines) {
-    // Declare all essential variables required for graph processing operations.
-    var nodeCount, edgeCount, tempParts, startNodeIndex, endNodeIndex, edgeWeight,
-        adjList, maxPathValues, outerLoopIdx, innerLoopIdx, bellmanFordPass,
-        minPossibleValue, targetVertex, hasPositiveCycle;
+function processInput(rawData) {
+    // Declare all variables at the beginning of the function scope.
+    var nodeCount, edgeCount, tempArr, startNode, endNode, weightVal, adjList, maxPath, idx1, idx2, iterCount, negInfinity, targetNode, hasPositiveCycle;
 
-    // Define a very low numerical value to represent negative infinity for path calculations.
-    minPossibleValue = -1.0E14; // A large negative number, slightly different value and notation.
+    // Initialize a very small negative number to represent negative infinity for path calculations.
+    negInfinity = -100000000000000;
 
-    // Parse the initial line of input to extract the total number of nodes and edges.
-    tempParts = rawDataLines[0].split(" ");
-    nodeCount = parseInt(tempParts[0], 10); // Explicitly parse as base 10 integer.
-    edgeCount = parseInt(tempParts[1], 10);
+    // Parse the first line of the input data to get graph dimensions.
+    tempArr = rawData[0].split(" ");
+    nodeCount = parseInt(tempArr[0]); // Number of vertices in the graph.
+    edgeCount = parseInt(tempArr[1]); // Number of edges in the graph.
 
-    // Initialize the adjacency list for graph representation and the array for storing maximum path values.
+    // Initialize the adjacency list for graph representation and the array to store maximum path lengths.
     adjList = [];
-    maxPathValues = [];
-    for (outerLoopIdx = 0; outerLoopIdx < nodeCount; outerLoopIdx++) {
-        adjList.push([]);
-        maxPathValues.push(minPossibleValue); // All path values are initially set to negative infinity.
+    maxPath = [];
+    for (idx1 = 0; idx1 < nodeCount; idx1++) {
+        adjList.push([]); // Each element is an array to hold outgoing edges from a node.
+        maxPath.push(negInfinity); // Initialize all path lengths to an extremely small value.
     }
-    maxPathValues[0] = 0; // The path from the starting node (index 0) to itself is zero.
+    maxPath[0] = 0; // The path length from the starting node (node 0) to itself is zero.
 
-    // Populate the adjacency list with graph edges and their corresponding weights.
-    // Each subsequent line of input (from index 1 to edgeCount) represents an edge.
-    for (outerLoopIdx = 0; outerLoopIdx < edgeCount; outerLoopIdx++) {
-        tempParts = rawDataLines[1 + outerLoopIdx].split(" ");
-        startNodeIndex = parseInt(tempParts[0], 10) - 1; // Adjust to zero-based indexing.
-        endNodeIndex = parseInt(tempParts[1], 10) - 1;   // Adjust to zero-based indexing.
-        edgeWeight = parseInt(tempParts[2], 10);
-        adjList[startNodeIndex].push([endNodeIndex, edgeWeight]); // Store the destination node and edge weight.
+    // Populate the adjacency list with edge information (destination node and weight).
+    for (idx1 = 0; idx1 < edgeCount; idx1++) {
+        tempArr = rawData[1 + idx1].split(" ");
+        startNode = parseInt(tempArr[0]) - 1; // Convert to 0-indexed node identifier.
+        endNode = parseInt(tempArr[1]) - 1;   // Convert to 0-indexed node identifier.
+        weightVal = parseInt(tempArr[2]);     // Weight of the edge.
+        adjList[startNode].push([endNode, weightVal]); // Add edge to the adjacency list.
     }
 
-    // Execute the Bellman-Ford-like algorithm to determine the maximum path values.
-    // This loop runs 'nodeCount' times to ensure all possible paths are evaluated.
-    for (bellmanFordPass = 0; bellmanFordPass < nodeCount; bellmanFordPass++) {
-        for (outerLoopIdx = 0; outerLoopIdx < nodeCount - 1; outerLoopIdx++) {
-            // If the current node is currently unreachable (has a negative infinite path value), skip it.
-            if (maxPathValues[outerLoopIdx] === minPossibleValue) {
+    // First phase of Bellman-Ford-like algorithm: Calculate longest paths.
+    // Iterate 'nodeCount' times to ensure all paths are relaxed up to 'nodeCount - 1' edges.
+    for (iterCount = 0; iterCount < nodeCount; iterCount++) {
+        // Iterate through each node in the graph.
+        for (idx1 = 0; idx1 < nodeCount; idx1++) {
+            // If the current node's path is negative infinity, it means it's unreachable, so skip.
+            // Note: The original code has a subtle bug here, checking `maxPath[targetNode]`
+            // where `targetNode` holds the value from the previous inner loop iteration.
+            // This behavior is preserved as per Type II cloning rules.
+            if (maxPath[targetNode] === negInfinity) {
                 continue;
             }
             // Iterate through all outgoing edges from the current node.
-            for (innerLoopIdx = 0; innerLoopIdx < adjList[outerLoopIdx].length; innerLoopIdx++) {
-                targetVertex = adjList[outerLoopIdx][innerLoopIdx][0]; // The destination node of the edge.
-                edgeWeight = adjList[outerLoopIdx][innerLoopIdx][1];   // The weight (cost) of the edge.
-                // If a longer path to 'targetVertex' is discovered, update its maximum path value.
-                if (maxPathValues[targetVertex] < maxPathValues[outerLoopIdx] + edgeWeight) {
-                    maxPathValues[targetVertex] = maxPathValues[outerLoopIdx] + edgeWeight;
+            for (idx2 = 0; idx2 < adjList[idx1].length; idx2++) {
+                targetNode = adjList[idx1][idx2][0]; // The destination node of the current edge.
+                weightVal = adjList[idx1][idx2][1];  // The weight of the current edge.
+                // If a longer path to the target node is found, update the maxPath array.
+                if (maxPath[targetNode] < maxPath[idx1] + weightVal) {
+                    maxPath[targetNode] = maxPath[idx1] + weightVal;
                 }
             }
         }
     }
 
-    // Perform an additional iteration (or 'nodeCount' such iterations as per original structure)
-    // to detect the presence of positive cycles (which would lead to infinitely long paths).
+    // Second phase: Detect positive cycles that can extend the path to the destination.
     hasPositiveCycle = false;
-    for (bellmanFordPass = 0; bellmanFordPass < nodeCount; bellmanFordPass++) { // This loop runs 'nodeCount' times for cycle detection.
-        for (outerLoopIdx = 0; outerLoopIdx < nodeCount; outerLoopIdx++) {
-            // This condition checks the reachability of 'targetVertex'.
-            // Note: 'targetVertex' might be undefined or hold a stale value from a previous iteration,
-            // replicating the original code's behavior which could lead to this check being ineffective.
-            if (maxPathValues[targetVertex] === minPossibleValue) {
+    // Iterate 'nodeCount' times again to check for further relaxations, indicating a cycle.
+    for (iterCount = 0; iterCount < nodeCount; iterCount++) {
+        // Iterate through each node.
+        for (idx1 = 0; idx1 < nodeCount; idx1++) {
+            // Preserve the original code's behavior regarding `targetNode` here.
+            if (maxPath[targetNode] === negInfinity) {
                 continue;
             }
-            for (innerLoopIdx = 0; innerLoopIdx < adjList[outerLoopIdx].length; innerLoopIdx++) {
-                targetVertex = adjList[outerLoopIdx][innerLoopIdx][0];
-                edgeWeight = adjList[outerLoopIdx][innerLoopIdx][1];
-                // If a path value can still be improved after N-1 iterations, it indicates a positive cycle.
-                if (maxPathValues[targetVertex] < maxPathValues[outerLoopIdx] + edgeWeight) {
-                    maxPathValues[targetVertex] = maxPathValues[outerLoopIdx] + edgeWeight;
-                    // If the specific target node (last node) is affected by this positive cycle,
-                    // its path value is effectively infinite.
-                    if (targetVertex === nodeCount - 1) {
+            // Iterate through all outgoing edges from the current node.
+            for (idx2 = 0; idx2 < adjList[idx1].length; idx2++) {
+                targetNode = adjList[idx1][idx2][0]; // Destination node.
+                weightVal = adjList[idx1][idx2][1];  // Edge weight.
+                // If a path can still be increased, it implies a positive cycle.
+                if (maxPath[targetNode] < maxPath[idx1] + weightVal) {
+                    maxPath[targetNode] = maxPath[idx1] + weightVal;
+                    // If this cycle affects the path to the final destination (nodeCount - 1),
+                    // then the longest path is effectively infinite.
+                    if (targetNode === nodeCount - 1) {
                         hasPositiveCycle = true;
-                        break; // Exit the inner loop upon detection.
+                        break; // Exit the inner (idx2) loop.
                     }
                 }
             }
             if (hasPositiveCycle) {
-                break; // Exit the outer loop if a positive cycle is found.
+                break; // Exit the middle (idx1) loop.
             }
         }
     }
 
-    // Output the final result.
+    // Output the final result based on whether a positive cycle was detected.
     if (hasPositiveCycle) {
-        console.log("inf"); // If a positive cycle is detected, print "inf".
+        console.log("inf"); // Output "inf" if a positive cycle makes the path infinite.
     } else {
-        console.log(maxPathValues[nodeCount - 1]); // Otherwise, print the maximum path value to the last node.
+        console.log(maxPath[nodeCount - 1]); // Otherwise, output the calculated longest path to the last node.
     }
 }
 
-// Execute the graph processing function by reading input from standard input.
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));
+// Read input from standard input, parse it, and pass it to the processing function.
+processInput(require("fs").readFileSync("/dev/stdin", "utf8").split("\n"));

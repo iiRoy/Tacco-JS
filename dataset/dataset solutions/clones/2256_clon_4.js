@@ -1,85 +1,91 @@
-const filesystemHandler = require('fs');
+var fs = require("fs");
 
-const limitlessValue = 1000000000;
+const ROW_DELTAS = [-1, 0, 1, 0];
+const COL_DELTAS = [0, -1, 0, 1];
 
-const rowAlterations = [-1, 0, 1, 0];
-const colAlterations = [0, -1, 0, 1];
-
-const makeMatrix = ({ dimensionsX, dimensionsY, initialValue }) => {
-    return Array.from({ length: dimensionsX }, () =>
-        Array.from({ length: dimensionsY }, () => initialValue)
-    );
-};
-
-const createGridPoint = (rCoord, cCoord) => ({ r: rCoord, c: cCoord });
-
-const processInputData = (rawInput) => {
-    const inputLines = rawInput.split('\n');
-
-    const [gridRows, gridCols] = inputLines[0].split(' ').map(numStr => parseInt(numStr, 10));
-
-    const terrainMap = [];
-    for (let currentLineIdx = 0; currentLineIdx < gridRows; currentLineIdx++) {
-        terrainMap.push(inputLines[currentLineIdx + 1].split(''));
+class GridTraversalQueue {
+    constructor() {
+        this.storage = [];
+        this.front = 0;
     }
 
-    const emptyCellPositions = [];
-    const cellToIndexMap = makeMatrix({ dimensionsX: gridRows, dimensionsY: gridCols, initialValue: -1 });
+    addPoint(element) {
+        this.storage.push(element);
+    }
+
+    retrievePoint() {
+        if (this.isEmpty()) {
+            return undefined;
+        }
+        const element = this.storage[this.front];
+        this.front++;
+        if (this.front > 2048 && this.front > this.storage.length / 4) {
+            this.storage = this.storage.slice(this.front);
+            this.front = 0;
+        }
+        return element;
+    }
+
+    isEmpty() {
+        return this.front === this.storage.length;
+    }
+}
+
+function performBFS(initialRow, initialCol, totalRows, totalCols, gridLayout, rDeltas, cDeltas) {
+    const currentPathDistances = new Map();
+    const bfsQueue = new GridTraversalQueue();
+    let maximumDistanceInPath = 0;
+
+    const startKey = `${initialRow},${initialCol}`;
+    currentPathDistances.set(startKey, 0);
+    bfsQueue.addPoint([initialRow, initialCol]);
+
+    while (!bfsQueue.isEmpty()) {
+        const [currentRow, currentCol] = bfsQueue.retrievePoint();
+        const currentCellDistance = currentPathDistances.get(`${currentRow},${currentCol}`);
+        maximumDistanceInPath = Math.max(maximumDistanceInPath, currentCellDistance);
+
+        for (let k = 0; k < 4; k++) {
+            const nextRow = currentRow + rDeltas[k];
+            const nextCol = currentCol + cDeltas[k];
+            const nextCellKey = `${nextRow},${nextCol}`;
+
+            if (nextRow >= 0 && nextRow < totalRows &&
+                nextCol >= 0 && nextCol < totalCols &&
+                gridLayout[nextRow][nextCol] === '.' &&
+                !currentPathDistances.has(nextCellKey)) {
+                
+                currentPathDistances.set(nextCellKey, currentCellDistance + 1);
+                bfsQueue.addPoint([nextRow, nextCol]);
+            }
+        }
+    }
+    return maximumDistanceInPath;
+}
+
+const solveLabyrinth = (rawInput) => {
+    const inputLines = rawInput.split('\n');
+    const dimensions = inputLines[0].split(' ').map(Number);
+    const gridRows = dimensions[0];
+    const gridCols = dimensions[1];
+
+    const mapLayout = [];
+    for (let i = 0; i < gridRows; i++) {
+        mapLayout.push(inputLines[i + 1].split(''));
+    }
+
+    let overallMaxDistance = 0;
 
     for (let r = 0; r < gridRows; r++) {
         for (let c = 0; c < gridCols; c++) {
-            if (terrainMap[r][c] === '.') {
-                const newIndex = emptyCellPositions.length;
-                emptyCellPositions.push(createGridPoint(r, c));
-                cellToIndexMap[r][c] = newIndex;
+            if (mapLayout[r][c] === '.') {
+                const pathMaxFromStart = performBFS(r, c, gridRows, gridCols, mapLayout, ROW_DELTAS, COL_DELTAS);
+                overallMaxDistance = Math.max(overallMaxDistance, pathMaxFromStart);
             }
         }
     }
 
-    const nodeCount = emptyCellPositions.length;
-
-    const adjMatrix = makeMatrix({ dimensionsX: nodeCount, dimensionsY: nodeCount, initialValue: limitlessValue });
-
-    for (let i = 0; i < nodeCount; i++) {
-        adjMatrix[i][i] = 0;
-
-        const { r: sourceR, c: sourceC } = emptyCellPositions[i];
-
-        for (let directionIndex = 0; directionIndex < 4; directionIndex++) {
-            const nextR = sourceR + rowAlterations[directionIndex];
-            const nextC = sourceC + colAlterations[directionIndex];
-
-            if (nextR >= 0 && nextR < gridRows && nextC >= 0 && nextC < gridCols && terrainMap[nextR][nextC] === '.') {
-                const neighborIndex = cellToIndexMap[nextR][nextC];
-                adjMatrix[i][neighborIndex] = 1;
-            }
-        }
-    }
-
-    for (let intermediateNode = 0; intermediateNode < nodeCount; intermediateNode++) {
-        for (let sourceNode = 0; sourceNode < nodeCount; sourceNode++) {
-            for (let destinationNode = 0; destinationNode < nodeCount; destinationNode++) {
-                if (adjMatrix[sourceNode][intermediateNode] !== limitlessValue &&
-                    adjMatrix[intermediateNode][destinationNode] !== limitlessValue) {
-                    const pathThroughIntermediate = adjMatrix[sourceNode][intermediateNode] + adjMatrix[intermediateNode][destinationNode];
-                    if (pathThroughIntermediate < adjMatrix[sourceNode][destinationNode]) {
-                        adjMatrix[sourceNode][destinationNode] = pathThroughIntermediate;
-                    }
-                }
-            }
-        }
-    }
-
-    let peakJourneyLength = 0;
-    for (let sourceNode = 0; sourceNode < nodeCount; sourceNode++) {
-        for (let destinationNode = 0; destinationNode < nodeCount; destinationNode++) {
-            if (adjMatrix[sourceNode][destinationNode] !== limitlessValue) {
-                peakJourneyLength = Math.max(peakJourneyLength, adjMatrix[sourceNode][destinationNode]);
-            }
-        }
-    }
-
-    console.log(peakJourneyLength);
+    console.log(overallMaxDistance);
 };
 
-processInputData(filesystemHandler.readFileSync('/dev/stdin', 'utf8'));
+solveLabyrinth(fs.readFileSync('/dev/stdin', 'utf8'));

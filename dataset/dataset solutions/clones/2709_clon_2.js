@@ -1,265 +1,204 @@
-/*
- * This module provides a flexible input parsing utility.
- * It is designed to read various formats from a multi-line string input.
- */
-var DATA_PARSER=(function()
-{
-  // The main factory function to create an input handler.
-  function createInputHandler(sourceString)
-  {
-    return new InputHandler(sourceString);
+var INPUT_PARSER_FACTORY = (function () {
+  // This function serves as the primary entry point for creating an input reader.
+  function createInputReader(sourceString) {
+    return new InputDataProcessor(sourceString);
   }
 
-  /*
-   * Constructor for the InputHandler object.
-   * Initializes the internal state for parsing.
-   */
-  function InputHandler(rawText)
-  {
-    this._lines = rawText.trim().split("\n"); // Store lines as an array
-    this._currentLineIndex = 0;              // Pointer to the current line being processed
+  // The InputDataProcessor class handles parsing the raw input string.
+  function InputDataProcessor(rawInput) {
+    this._sourceLines = rawInput.trim().split("\n"); // Stores each line of input.
+    this._lineIndex = 0; // Keeps track of the current line being processed.
   }
 
-  // Prototype methods for InputHandler
-  InputHandler.prototype.readSingleValue=function(keepAsString)
-  {
-    var currentLines = this._lines,
-        pointer = this._currentLineIndex,
-        extractedValue;
+  // Prototype method to extract the next token from the current line.
+  // It can return the token as a string or a number.
+  InputDataProcessor.prototype.getNextValue = function (asString) {
+    var lines = this._sourceLines;
+    var currentIdx = this._lineIndex;
+    var extractedToken;
 
-    // If the current line hasn't been split into tokens yet, do it now.
-    // Tokens are processed in reverse order for easy popping.
-    if (typeof currentLines[pointer] === "string")
-      currentLines[pointer] = currentLines[pointer].split(" ").reverse();
+    // If the current line is still a single string, split it into tokens and reverse.
+    if (typeof lines[currentIdx] === "string") {
+      lines[currentIdx] = lines[currentIdx].split(" ").reverse();
+    }
 
-    // Extract the last token from the current line.
-    extractedValue = currentLines[pointer].pop();
+    extractedToken = lines[currentIdx].pop(); // Retrieve the last token (from the reversed array).
 
     // If the current line is now empty, advance to the next line.
-    if (!currentLines[pointer].length)
-      this._currentLineIndex++;
+    if (!lines[currentIdx].length) {
+      this._lineIndex++;
+    }
 
-    // Return the value, either as string or number based on the flag.
-    return keepAsString ? extractedValue : +extractedValue;
+    // Return the token, converting to a number if 'asString' is not true.
+    return asString ? extractedToken : +extractedToken;
   };
 
-  InputHandler.prototype.readLineValues=function(keepAsString)
-  {
-    // Retrieve and split the current line, then advance the line pointer.
-    var lineContent = this._lines[this._currentLineIndex++].split(" ");
-
-    // Return values as strings or convert them to numbers.
-    return keepAsString ? lineContent : lineContent.map(token=>+token);
+  // Prototype method to read all tokens from the current line.
+  // Returns an array of strings or numbers based on 'asString'.
+  InputDataProcessor.prototype.getLineValues = function (asString) {
+    var tokensOnLine = this._sourceLines[this._lineIndex++].split(" ");
+    return asString ? tokensOnLine : tokensOnLine.map(item => +item);
   };
 
-  InputHandler.prototype.readMatrix=function(numRows, keepAsString)
-  {
-    // Extract a slice of lines to form the matrix.
-    // Advance the line pointer by the number of rows read.
-    var matrixData = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numRows)
-                                .map(rowString=>rowString.split(" "));
-
-    // If numbers are required, convert all cell values.
-    return keepAsString ? matrixData : matrixData.map(rowContent=>rowContent.map(cellValue=>+cellValue));
+  // Prototype method to read a specified number of rows as a matrix.
+  // Each row is split into tokens. Returns a 2D array.
+  InputDataProcessor.prototype.getMatrixValues = function (numRows, asString) {
+    var matrixData = this._sourceLines.slice(this._lineIndex, this._lineIndex += numRows).map(lineStr => lineStr.split(" "));
+    return asString ? matrixData : matrixData.map(row => row.map(cell => +cell));
   };
 
-  InputHandler.prototype.readRawLines=function(numToExtract, keepAsString)
-  {
-    // Extract a specified number of raw lines.
-    // Advance the line pointer.
-    var extractedLines = this._lines.slice(this._currentLineIndex, this._currentLineIndex += numToExtract);
-
-    // Return lines as strings or convert each line to a number.
-    return keepAsString ? extractedLines : extractedLines.map(lineItem=>+lineItem);
+  // Prototype method to read a specified number of raw lines without splitting.
+  // Returns an array of strings or numbers.
+  InputDataProcessor.prototype.getRawLines = function (numLines, asString) {
+    var rawLineData = this._sourceLines.slice(this._lineIndex, this._lineIndex += numLines);
+    return asString ? rawLineData : rawLineData.map(line => +line);
   };
 
-  return createInputHandler; // Return the factory function
+  return createInputReader; // Expose the factory function.
 })();
 
-// Create an input reader instance by reading from standard input.
-var inputReader = DATA_PARSER(require("fs").readFileSync("/dev/stdin","utf8"));
+// Initialize the input reader by reading the entire content of standard input.
+var inputReader = INPUT_PARSER_FACTORY(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-/*
- * Utility function to create a multi-dimensional array with a default value.
- * Arguments are the dimensions, followed by the initial value.
- * Example: createMultiDimArray(2, 3, 0) -> [[0,0,0],[0,0,0]]
- */
-function createMultiDimArray(initialValue)
-{
-  var argsList = arguments,
-      arrayLength = argsList.length,
-      arrayCreationString = "Array(argsList["+--arrayLength+"]).fill(0).map(itemPlaceholder=>{return "+initialValue+";})";
+// This function dynamically creates multi-dimensional arrays.
+// It uses 'eval' for dynamic array construction, which is generally not recommended
+// but preserved here to maintain Type II clone characteristics.
+function createMultiDimensionalArray(defaultValue) {
+  var dimensions = arguments;
+  var dimCount = dimensions.length;
+  var arrayDefinition = "Array(dimensions[" + --dimCount + "]).fill(0).map(x=>{return " + defaultValue + ";})";
 
-  while (--arrayLength)
-    arrayCreationString = "Array(argsList["+arrayLength+"]).fill(0).map(itemPlaceholder=>"+arrayCreationString+")";
+  while (--dimCount) {
+    arrayDefinition = "Array(dimensions[" + dimCount + "]).fill(0).map(x=>" + arrayDefinition + ")";
+  }
 
-  return eval(arrayCreationString);
+  return eval(arrayDefinition);
 }
 
-// Global variables for problem state
-var stepCount, targetX, targetY, currentX=0, currentY=0;
+// Global variables to store problem parameters and current state.
+var maxStepLength, targetCoordX, targetCoordY, currentCoordX = 0, currentCoordY = 0;
 
-// Output the result of the main processing function.
-console.log(processSolution());
+// Execute the main program logic and print the final result to console.
+console.log(runProgram());
 
-/*
- * The main function that orchestrates the solution logic.
- * It reads initial parameters, performs calculations, and generates a path.
- */
-function processSolution()
-{
-  // Read initial parameters from the input.
-  stepCount = inputReader.readSingleValue();
-  targetX = inputReader.readSingleValue();
-  targetY = inputReader.readSingleValue();
+// The core function that orchestrates the solution to the problem.
+function runProgram() {
+  // Read the problem's initial parameters from input.
+  maxStepLength = inputReader.getNextValue();
+  targetCoordX = inputReader.getNextValue();
+  targetCoordY = inputReader.getNextValue();
 
-  // Handle base cases: target is origin or impossible scenarios.
-  if (targetX === 0 && targetY === 0)
+  // Handle specific initial conditions.
+  if (targetCoordX === 0 && targetCoordY === 0) {
     return 0; // Already at the target.
-
-  // If total steps are even and Manhattan distance parity is odd, it's impossible.
-  if (stepCount % 2 === 0 && (targetX + targetY) % 2)
-    return -1; // Cannot reach the target.
-
-  var solutionPath = []; // Stores the sequence of moves.
-  var manhattanDist = calculateManhattanDistance(0,0); // Distance from (0,0) to (targetX, targetY).
-
-  // Check if the initial Manhattan distance is not a multiple of 'stepCount'.
-  if (manhattanDist % stepCount !== 0)
-  {
-    // If the remainder's parity is odd, make an initial move.
-    if (manhattanDist % stepCount % 2 === 1)
-    {
-      solutionPath.push(makeMove()); // Perform an initial adjustment move.
-    }
-
-    // Calculate a new 'manhattanDist' based on the current position and 'stepCount'.
-    manhattanDist = calculateManhattanDistance(currentX,currentY) % stepCount / 2;
-
-    // Adjust 'manhattanDist' if 'stepCount' is even.
-    if (stepCount % 2 === 0)
-      manhattanDist = stepCount - manhattanDist;
-
-    // Determine the next step based on 'manhattanDist' and target coordinates.
-    if (Math.abs(currentX - targetX) >= manhattanDist)
-    {
-      // Adjust X coordinate.
-      if (currentX < targetX)
-        currentX += manhattanDist;
-      else
-        currentX -= manhattanDist;
-
-      // Adjust Y coordinate in the opposite direction.
-      if (currentY < targetY)
-        currentY -= (stepCount - manhattanDist);
-      else
-        currentY += (stepCount - manhattanDist);
-    }
-    else
-    {
-      // Adjust Y coordinate.
-      if (currentY < targetY)
-        currentY += manhattanDist;
-      else
-        currentY -= manhattanDist;
-
-      // Adjust X coordinate in the opposite direction.
-      if (currentX < targetX)
-        currentX -= (stepCount - manhattanDist);
-      else
-        currentX += (stepCount - manhattanDist);
-    }
-    // Record the current position after this complex adjustment.
-    solutionPath.push(currentX + " " + currentY);
+  }
+  // Check for parity impossibility: even step length cannot reach odd total distance.
+  if (maxStepLength % 2 === 0 && (targetCoordX + targetCoordY) % 2 !== 0) {
+    return -1; // Target is unreachable.
   }
 
-  // Continue making moves until the current position matches the target.
-  while (calculateManhattanDistance(currentX,currentY))
-  {
-    solutionPath.push(makeMove()); // Add the next move to the path.
+  var pathSteps = []; // Stores the sequence of coordinates visited.
+  var currentDistance = computeManhattanDistance(0, 0); // Calculate initial distance from origin.
+
+  // If the initial distance is not perfectly divisible by the maximum step length,
+  // an initial adjustment phase is required.
+  if (currentDistance % maxStepLength !== 0) {
+    // If the remainder of the distance divided by maxStepLength is odd, perform a full step.
+    if ((currentDistance % maxStepLength) % 2 === 1) {
+      pathSteps.push(performStep());
+    }
+
+    // Calculate a specific sub-step length for the adjustment.
+    var subStepLength = computeManhattanDistance(currentCoordX, currentCoordY) % maxStepLength / 2;
+    if (maxStepLength % 2 === 0) {
+      subStepLength = maxStepLength - subStepLength;
+    }
+
+    // Apply the sub-step movement based on current and target coordinates.
+    if (Math.abs(currentCoordX - targetCoordX) >= subStepLength) {
+      // Prioritize X-axis movement.
+      if (currentCoordX < targetCoordX) {
+        currentCoordX += subStepLength;
+      } else {
+        currentCoordX -= subStepLength;
+      }
+      if (currentCoordY < targetCoordY) {
+        currentCoordY -= (maxStepLength - subStepLength);
+      } else {
+        currentCoordY += (maxStepLength - subStepLength);
+      }
+    } else {
+      // Prioritize Y-axis movement.
+      if (currentCoordY < targetCoordY) {
+        currentCoordY += subStepLength;
+      } else {
+        currentCoordY -= subStepLength;
+      }
+      if (currentCoordX < targetCoordX) {
+        currentCoordX -= (maxStepLength - subStepLength);
+      } else {
+        currentCoordX += (maxStepLength - subStepLength);
+      }
+    }
+    pathSteps.push(currentCoordX + " " + currentCoordY); // Record the new position.
   }
 
-  // Log the total number of moves and return the path as a newline-separated string.
-  console.log(solutionPath.length);
-  return solutionPath.join("\n");
+  // Continue taking full steps until the current position matches the target.
+  while (computeManhattanDistance(currentCoordX, currentCoordY) !== 0) {
+    pathSteps.push(performStep());
+  }
+
+  // Output the total number of steps taken and the path as a newline-separated string.
+  console.log(pathSteps.length);
+  return pathSteps.join("\n");
 }
 
-/*
- * Calculates the Manhattan distance between current coordinates and target coordinates.
- * @param {number} coordA - The current X coordinate.
- * @param {number} coordB - The current Y coordinate.
- * @returns {number} The Manhattan distance.
- */
-function calculateManhattanDistance(coordA, coordB)
-{
-  return Math.abs(coordA - targetX) + Math.abs(coordB - targetY);
+// Computes the Manhattan distance between (pointAX, pointBY) and (targetCoordX, targetCoordY).
+function computeManhattanDistance(pointAX, pointBY) {
+  return Math.abs(pointAX - targetCoordX) + Math.abs(pointBY - targetCoordY);
 }
 
-/*
- * Determines the sign of the difference between two coordinates.
- * @param {number} startCoord - The starting coordinate.
- * @param {number} endCoord   - The ending coordinate.
- * @returns {number} 1 if start > end, -1 if start < end, 0 if equal.
- */
-function getDirectionSign(startCoord, endCoord)
-{
-  var difference = startCoord - endCoord;
-  return difference > 0 ? 1 : difference < 0 ? -1 : 0;
+// Determines the directional sign (1, -1, or 0) from startPoint to endPoint.
+function getCoordinateDirection(startPoint, endPoint) {
+  var coordDifference = startPoint - endPoint;
+  return coordDifference > 0 ? 1 : coordDifference < 0 ? -1 : 0;
 }
 
-/*
- * Performs a single 'stepCount' move towards the target coordinates (targetX, targetY).
- * Updates currentX and currentY and returns the new coordinates as a string.
- */
-function makeMove()
-{
-  var remainingSteps = stepCount; // Steps available for this move.
+// Executes a single movement step of 'maxStepLength' towards the target.
+// Updates global 'currentCoordX' and 'currentCoordY'.
+function performStep() {
+  var remainingMoveBudget = maxStepLength; // The total distance that can be covered in this step.
 
-  // Prioritize moving along the X-axis if not at targetX.
-  if (targetX !== currentX)
-  {
-    if (targetX < currentX)
-    {
-      // Move left (decrease X)
-      if (remainingSteps >= currentX - targetX)
-      {
-        remainingSteps -= (currentX - targetX);
-        currentX = targetX; // Reached targetX
+  // Attempt to move along the X-axis first if not already at target X.
+  if (targetCoordX !== currentCoordX) {
+    if (targetCoordX < currentCoordX) { // Target X is to the left.
+      if (remainingMoveBudget >= currentCoordX - targetCoordX) {
+        remainingMoveBudget -= (currentCoordX - targetCoordX);
+        currentCoordX = targetCoordX; // Reached target X, update budget.
+      } else {
+        currentCoordX -= remainingMoveBudget; // Move partially towards target X.
+        remainingMoveBudget = 0; // Budget exhausted.
       }
-      else
-      {
-        currentX -= remainingSteps;
-        remainingSteps = 0; // All steps used for X-axis movement
-      }
-    }
-    else
-    {
-      // Move right (increase X)
-      if (remainingSteps >= targetX - currentX)
-      {
-        remainingSteps -= (targetX - currentX);
-        currentX = targetX; // Reached targetX
-      }
-      else
-      {
-        currentX += remainingSteps;
-        remainingSteps = 0; // All steps used for X-axis movement
+    } else { // Target X is to the right.
+      if (remainingMoveBudget >= targetCoordX - currentCoordX) {
+        remainingMoveBudget -= (targetCoordX - currentCoordX);
+        currentCoordX = targetCoordX; // Reached target X, update budget.
+      } else {
+        currentCoordX += remainingMoveBudget; // Move partially towards target X.
+        remainingMoveBudget = 0; // Budget exhausted.
       }
     }
   }
 
-  // If steps are still remaining, move along the Y-axis.
-  if (remainingSteps)
-  {
-    if (targetY < currentY)
-    {
-      currentY -= remainingSteps; // Move down (decrease Y)
-    }
-    else
-    {
-      currentY += remainingSteps; // Move up (increase Y)
+  // If there's still movement budget remaining, apply it to the Y-axis.
+  if (remainingMoveBudget > 0) {
+    if (targetCoordY < currentCoordY) { // Target Y is below.
+      currentCoordY -= remainingMoveBudget;
+    } else { // Target Y is above or at the same level.
+      currentCoordY += remainingMoveBudget;
     }
   }
-  // Return the new current coordinates as a string.
-  return currentX + " " + currentY;
+
+  // Return the new current coordinates as a space-separated string.
+  return currentCoordX + " " + currentCoordY;
 }

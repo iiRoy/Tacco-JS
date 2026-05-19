@@ -1,206 +1,187 @@
-// This module provides the core functionality for loading and managing code units.
-module.exports = function(programUnits) {
-  // Cache for already loaded code units, storing their exports and metadata.
-  var loadedUnits = {};
+module.exports = function(modMap) {
+  // This object serves as a cache for loaded modules.
+  var moduleCache = {};
 
-  // Main function to load a code unit by its unique ID.
-  function unitLoader(unitId) {
-    // If the unit is already in the cache, return its exports immediately.
-    if (loadedUnits[unitId]) {
-      return loadedUnits[unitId].exports;
+  // The core module loading function.
+  function loadModule(moduleId) {
+    // If the module is already in the cache, return its exports.
+    if (moduleCache[moduleId]) {
+      return moduleCache[moduleId].exports;
     }
 
-    // If not in cache, create a new unit object and add it to the cache.
-    var currentUnit = loadedUnits[unitId] = {
-      identifier: unitId, // The unique ID of this code unit.
-      isLoaded: false,    // Flag indicating whether the unit has completed loading.
-      exports: {}         // The exports object for this particular unit.
+    // If not, create a new module entry in the cache.
+    var currentModule = moduleCache[moduleId] = {
+      i: moduleId, // Module ID
+      l: false, // Loaded flag
+      exports: {} // Exports object
     };
 
-    // Execute the unit's code. The `call` method ensures `this` context is correct
-    // and passes the module object, its exports, and the loader itself as arguments.
-    programUnits[unitId].call(currentUnit.exports, currentUnit, currentUnit.exports, unitLoader);
+    // Execute the module function, passing module, exports, and the require function.
+    modMap[moduleId].call(currentModule.exports, currentModule, currentModule.exports, loadModule);
 
-    // Mark the unit as loaded after its code has been executed.
-    currentUnit.isLoaded = true;
-    // Return the exports of the newly loaded unit.
-    return currentUnit.exports;
+    // Mark the module as loaded.
+    currentModule.l = true;
+
+    // Return the module's exports.
+    return currentModule.exports;
   }
 
-  // Store a reference to the collection of all program units on the loader itself.
-  unitLoader.moduleStore = programUnits;
+  // Store the module definitions on the loader function itself.
+  loadModule.modules = modMap;
 
-  // Store a reference to the cache of loaded units on the loader.
-  unitLoader.cache = loadedUnits;
+  // Store the module cache on the loader function.
+  loadModule.cache = moduleCache;
 
-  // Helper function to define an enumerable getter property on a target object.
-  unitLoader.defineExport = function(outputObject, propKey, valueProvider) {
-    // Only define the property if it doesn't already exist on the object.
-    unitLoader.hasOwn(outputObject, propKey) || Object.defineProperty(outputObject, propKey, {
-      enumerable: true, // Make the property appear during enumeration (e.g., in `for...in` loops).
-      get: valueProvider // Assign the provided function as the getter for the property.
-    });
+  // Helper to define a getter function for a property on an object.
+  loadModule.definePropertyGetter = function(targetObject, propertyName, getterFunction) {
+    // Check if the property already exists.
+    if (!loadModule.hasOwn(targetObject, propertyName)) {
+      // If not, define it with an enumerable getter.
+      Object.defineProperty(targetObject, propertyName, {
+        enumerable: true,
+        get: getterFunction
+      });
+    }
   };
 
-  // Helper function to register an object as an ES Module.
-  unitLoader.registerESModule = function(outputObject) {
-    // If Symbol.toStringTag is supported, set it to "Module" for better debugging and identification.
-    ("undefined" != typeof Symbol && Symbol.toStringTag) && Object.defineProperty(outputObject, Symbol.toStringTag, {
-      value: "Module"
-    });
-    // Define the __esModule property to explicitly mark this object as an ES Module.
-    Object.defineProperty(outputObject, "__esModule", {
+  // Helper to mark a module as an ES module.
+  loadModule.registerESModule = function(targetModule) {
+    // Set Symbol.toStringTag for better module identification.
+    if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+      Object.defineProperty(targetModule, Symbol.toStringTag, {
+        value: "Module"
+      });
+    }
+    // Mark as an ES module.
+    Object.defineProperty(targetModule, "__esModule", {
       value: true
     });
   };
 
-  // Helper function to create a module namespace object, handling various import modes.
-  unitLoader.createNamespace = function(sourceItem, accessMode) {
-    // Mode 1: If sourceItem is an ID, load it using the unitLoader.
-    if (1 & accessMode) sourceItem = unitLoader(sourceItem);
-    // Mode 8: If mode indicates direct return, return sourceItem as is.
-    if (8 & accessMode) return sourceItem;
-    // Mode 4: If sourceItem is an object, truthy, and already an ES Module, return it.
-    if (4 & accessMode && "object" == typeof sourceItem && sourceItem && sourceItem.__esModule) return sourceItem;
+  // Helper for interoperability with non-ES modules (wildcard import).
+  loadModule.interopRequireWildcard = function(moduleReference, modeFlags) {
+    // If modeFlags indicates a direct module reference (1), just return it.
+    if (modeFlags & 1) {
+      moduleReference = loadModule(moduleReference);
+    }
+    // If modeFlags indicates an object and it's already an ES module (4), return it.
+    if (modeFlags & 4 && typeof moduleReference === "object" && moduleReference && moduleReference.__esModule) {
+      return moduleReference;
+    }
 
-    // Create a new plain object to serve as the namespace.
+    // Otherwise, create a new namespace object.
     var namespaceObject = Object.create(null);
-    // Register this new object as an ES Module.
-    unitLoader.registerESModule(namespaceObject);
-    // Define a 'default' export on the namespace, pointing to the original sourceItem.
+    loadModule.registerESModule(namespaceObject); // Mark as ES module.
+
+    // Define 'default' property pointing to the module reference.
     Object.defineProperty(namespaceObject, "default", {
       enumerable: true,
-      value: sourceItem
+      value: moduleReference
     });
-    // Mode 2: If sourceItem is not a string, copy all its enumerable properties to the namespace.
-    if (2 & accessMode && "string" != typeof sourceItem)
-      for (var propKey in sourceItem)
-        unitLoader.defineExport(namespaceObject, propKey, (function(copiedKey) {
-          return sourceItem[copiedKey];
-        }).bind(null, propKey)); // Use a bound function to capture the current propKey.
-    // Return the constructed namespace object.
+
+    // If modeFlags indicates a string (2) and it's not a string,
+    // iterate over its properties and define getters for them.
+    if (modeFlags & 2 && typeof moduleReference !== "string") {
+      for (var propKey in moduleReference) {
+        loadModule.definePropertyGetter(namespaceObject, propKey, (function(currentPropKey) {
+          return moduleReference[currentPropKey];
+        }).bind(null, propKey));
+      }
+    }
     return namespaceObject;
   };
 
-  // Helper function to retrieve the standard export of a module (default or direct).
-  unitLoader.getStandardExport = function(sourceModule) {
-    // Determine the appropriate getter for the default export.
-    var defaultExportGetter = sourceModule && sourceModule.__esModule ?
+  // Helper for interoperability with non-ES modules (default import).
+  loadModule.interopRequireDefault = function(moduleExports) {
+    // If it's an ES module and has a 'default' export, return a getter for it.
+    var defaultExportGetter = moduleExports && moduleExports.__esModule ?
       function() {
-        return sourceModule.default;
-      } : // If it's an ES Module, return its 'default' property.
+        return moduleExports.default;
+      } :
       function() {
-        return sourceModule;
-      }; // Otherwise, return the module object itself.
-    // Define an 'a' property on the getter function itself, pointing back to the getter.
-    unitLoader.defineExport(defaultExportGetter, "a", defaultExportGetter);
-    // Return the getter function.
+        return moduleExports;
+      };
+    // Define a getter 'a' for the default export.
+    loadModule.definePropertyGetter(defaultExportGetter, "a", defaultExportGetter);
     return defaultExportGetter;
   };
 
-  // Helper function to check if an object possesses its own property (not inherited).
-  unitLoader.hasOwn = function(checkObject, propertyName) {
-    return Object.prototype.hasOwnProperty.call(checkObject, propertyName);
+  // Helper to check if an object has a specific property.
+  loadModule.hasOwn = function(objectToCheck, keyToCheck) {
+    return Object.prototype.hasOwnProperty.call(objectToCheck, keyToCheck);
   };
 
-  // Public path for loading assets (currently an empty string).
-  unitLoader.publicPath = "";
+  // Public path for assets (empty in this case).
+  loadModule.publicPath = "";
 
-  // Execute the entry point unit (typically unit with ID 0) and return its exports.
-  return unitLoader(unitLoader.startUnit = 0);
-
-  // The collection of all program units, defined as an array of functions.
+  // Start execution by loading the startup module (module 0).
+  return loadModule(loadModule.startupModule = 0);
 }([
-  // Unit 0: The main application entry point and orchestration logic.
-  function(currentModule, moduleExports, unitLoader) {
-    // Load unit 1 (the core calculation logic) and unit 2 (the file system module).
-    // Read content from standard input using the file system module, then pass it to unit 1 for processing.
-    unitLoader(1)(unitLoader(2).readFileSync("/dev/stdin", "UTF-8"));
+  /* Module 0 */
+  function(moduleObj0, exportObj0, reqFunc0) {
+    // Read input from stdin, then pass it to module 1's exported function.
+    reqFunc0(1)(reqFunc0(2).readFileSync("/dev/stdin", "UTF-8"));
   },
-  // Unit 1: Contains the number processing logic and a utility for array destructuring.
-  function(currentModule, moduleExports) {
-    // Helper function to safely unpack values from an iterable, mimicking Babel's _slicedToArray.
-    function unpackValues(sourceIterable, limitCount) {
-      return (
-        // Part 1: If the source is already an array, return it directly.
-        function(inputSource) {
-          if (Array.isArray(inputSource)) {
-            return inputSource;
+  /* Module 1 */
+  function(moduleObj1, exportObj1) {
+    // Helper function to safely destructure arrays.
+    function extractArrayElements(sourceArray, elementCount) {
+      // If it's already an array, return it directly.
+      if (Array.isArray(sourceArray)) {
+        return sourceArray;
+      }
+
+      // If it's an iterable, try to extract elements up to elementCount.
+      var collectedElements = [];
+      var isIterationDone = true;
+      var hadError = false;
+      var errorValue = undefined;
+      try {
+        for (var iteratorInstance = sourceArray[Symbol.iterator](); !(isIterationDone = (currentIterationItem = iteratorInstance.next()).done) && (collectedElements.push(currentIterationItem.value), !elementCount || collectedElements.length !== elementCount); isIterationDone = true);
+      } catch (err) {
+        hadError = true;
+        errorValue = err;
+      } finally {
+        try {
+          if (!isIterationDone && iteratorInstance["return"] != null) {
+            iteratorInstance["return"]();
           }
-        }(sourceIterable)
-      ) || (
-        // Part 2: If not an array, attempt to iterate and collect values up to a limit.
-        function(inputSource, countLimit) {
-          var collectedItems = [],
-            isIterationDone = true,
-            hadError = false,
-            thrownError = undefined;
-          try {
-            // Get the iterator from the source object.
-            for (
-              var iterResult, dataIterator = inputSource[Symbol.iterator](); !(isIterationDone = (iterResult = dataIterator.next()).done) &&
-              (collectedItems.push(iterResult.value), !countLimit || collectedItems.length !== countLimit);
-              isIterationDone = true
-            ) {}
-          } catch (exceptionObject) {
-            hadError = true;
-            thrownError = exceptionObject;
-          } finally {
-            try {
-              // Ensure the iterator's `return` method is called if iteration wasn't naturally completed.
-              isIterationDone || null == dataIterator.return || dataIterator.return();
-            } finally {
-              // If an error occurred during iteration, re-throw it after cleanup.
-              if (hadError) throw thrownError;
-            }
+        } finally {
+          if (hadError) {
+            throw errorValue;
           }
-          // Return the array of collected items.
-          return collectedItems;
-        }(sourceIterable, limitCount)
-      ) || (
-        // Part 3: If neither of the above returned a value, it indicates an invalid non-iterable instance.
-        function() {
-          throw new TypeError("Invalid attempt to destructure non-iterable instance");
-        }()
-      );
+        }
+      }
+      return collectedElements;
     }
 
-    // Assign the main calculation function to this module's exports.
-    currentModule.exports = function(inputData) {
-      // Process the input string:
-      // 1. Split by newline to get the first line.
-      // 2. Split the first line by space.
-      // 3. Map each string segment to a Number.
-      // 4. Use `unpackValues` to extract the first four numbers.
-      var parsedNumbers = unpackValues(inputData.split("\n")[0].split(" ").map(function(valStr) {
-        return Number(valStr);
+    // The main logic for this module.
+    moduleObj1.exports = function(inputData) {
+      // Parse the first line of input into four numbers.
+      var parsedValues = extractArrayElements(inputData.split("\n")[0].split(" ").map(function(strVal) {
+        return Number(strVal);
       }), 4);
 
-      // Destructure the extracted numbers into individual variables.
-      var firstNum = parsedNumbers[0],
-        secondNum = parsedNumbers[1],
-        thirdNum = parsedNumbers[2],
-        fourthNum = parsedNumbers[3];
+      // Destructure the parsed numbers.
+      var firstVal = parsedValues[0];
+      var secondVal = parsedValues[1];
+      var thirdVal = parsedValues[2];
+      var fourthVal = parsedValues[3];
 
-      // Calculate the inclusive length of the numerical range.
-      var rangeLength = secondNum - firstNum + 1;
+      // Calculate the total range length.
+      var rangeLength = secondVal - firstVal + 1;
 
-      // Apply the principle of inclusion-exclusion to find the count of numbers
-      // within the range that are NOT divisible by 'thirdNum' NOR 'fourthNum'.
-      // Total length - (multiples of thirdNum + multiples of fourthNum - multiples of LCM(thirdNum, fourthNum))
-      var finalResult = rangeLength - (
-        Math.floor(rangeLength / thirdNum) +
-        Math.floor(rangeLength / fourthNum) -
-        Math.floor(rangeLength / (thirdNum * fourthNum))
-      );
+      // Calculate the final answer using inclusion-exclusion principle.
+      // Total numbers in range - (multiples of C) - (multiples of D) + (multiples of C*D)
+      var finalAnswer = rangeLength - (Math.floor(rangeLength / thirdVal) + Math.floor(rangeLength / fourthVal) - Math.floor(rangeLength / (thirdVal * fourthVal)));
 
-      // Output the calculated final result to the console.
-      console.log(finalResult);
+      // Print the result to the console.
+      console.log(finalAnswer);
     };
   },
-  // Unit 2: Provides access to Node.js's native File System module.
-  function(currentModule, moduleExports) {
-    // Export the standard Node.js 'fs' module for file operations.
-    currentModule.exports = require("node:fs");
+  /* Module 2 */
+  function(moduleObj2, exportObj2) {
+    // This module simply exports the 'fs' (file system) built-in module.
+    moduleObj2.exports = require("fs");
   }
-]));
+]);

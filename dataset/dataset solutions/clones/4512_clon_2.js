@@ -1,94 +1,99 @@
-"use strict" /* Ensure strict mode for cleaner code */
+"use strict";
 
-/* Function to set up an input stream handler */
-const makeInputHandler = () => {
-  /* Read all input from standard input, decode as UTF-8, trim whitespace, and split into lines */
-  const incomingText = require("fs").readFileSync("/dev/stdin", "utf8") .trim() .split("\n");
+// This function initializes an input reader utility.
+const makeInputReader = () => {
+    // Read all input from stdin, decode as UTF-8, remove leading/trailing whitespace, and split into an array of lines.
+    const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-  // Create an object to manage input lines
-  const lineProcessor = {
-    "lineBuffer": incomingText, /* Store all lines read from input */
-    "readPointer": 0,           /* Current position in the line buffer */
-    "totalLines": incomingText.length, /* Total number of lines available */
+    // Create an object to manage reading lines sequentially.
+    const readerInstance = {
+        "dataLines": rawData, // Stores the array of input lines.
+        "currentLineIdx": 0,  // Current index for the next line to be read.
+        "totalLines": rawData.length, // Total number of lines available.
 
-    /**
-     * Checks if there are more lines to read.
-     * @returns {boolean} True if more lines are available, false otherwise.
-     */
-    "hasMoreEntries": function() {
-      return this.readPointer < this.totalLines;
-    },
+        // Method to check if there are more lines to read.
+        "hasMore": function() {
+            return this.currentLineIdx < this.totalLines;
+        },
 
-    /**
-     * Retrieves the next line from the buffer and advances the pointer.
-     * Throws an error if no more lines are available.
-     * @returns {string} The next line of input.
-     */
-    "fetchNextEntry": function() {
-      if (!this.hasMoreEntries()) {
-        throw "EndOfInputException"; // Custom error for out of bounds access
-      }
-      return this.lineBuffer[this.readPointer++];
+        // Method to retrieve the next line from the input.
+        "retrieveNext": function() {
+            if (!this.hasMore()) {
+                // If no more lines, throw an error.
+                throw "ArrayIndexOutOfBoundsException";
+            } else {
+                // Return the current line and increment the index.
+                return this.dataLines[this.currentLineIdx++];
+            }
+        }
+    };
+    return readerInstance;
+};
+
+// Initialize the input source object.
+const inputSource = makeInputReader();
+
+// Helper function to get the next raw line.
+const getNextLine = () => inputSource.retrieveNext();
+
+// Helper function to get the next line parsed as an integer.
+const getNextInt = () => parseInt(inputSource.retrieveNext());
+
+// Helper function to get the next line split into an array of strings.
+const getNextStringArray = () => inputSource.retrieveNext().split(" ");
+
+// Helper function to get the next line split into an array of integers.
+const getNextIntArray = () => inputSource.retrieveNext().split(" ").map(elementValue => parseInt(elementValue));
+
+// Helper function to get the next line split into an array of characters.
+const getNextCharArr = () => inputSource.retrieveNext().split("");
+
+// Helper function to check if there are more lines available.
+const checkHasMore = () => inputSource.hasMore();
+
+// Helper function for console output.
+const printOutput = (...outputValues) => console.log(...outputValues);
+
+// Function to calculate factorial for a BigInt number.
+const calculateFactorialBigInt = (inputNumber) => {
+    let factorialResult = 1n; // Initialize result as BigInt 1.
+    // Loop from 1 to the input number (inclusive).
+    for (let counterVal = 1n; counterVal <= inputNumber; counterVal++) {
+        factorialResult *= counterVal; // Multiply current result by the counter.
     }
-  };
-  return lineProcessor;
+    return factorialResult; // Return the computed factorial.
 };
 
-/* Initialize the global input stream object */
-const dataStream = makeInputHandler();
+// Main execution logic.
+const executeMainLogic = () => {
+    // Read two integers from the input line.
+    const [firstNum, secondNum] = getNextIntArray();
 
-/* Helper function to get the next raw line */
-const obtainLine = () => dataStream.fetchNextEntry();
+    // Calculate the initial answer using factorials and multiply by 2n.
+    let finalAnswer = calculateFactorialBigInt(firstNum) * calculateFactorialBigInt(secondNum) * 2n;
 
-/* Helper function to get the next line parsed as an integer */
-const obtainInteger = () => parseInt(dataStream.fetchNextEntry());
+    // Reduce the answer modulo 1000000007n if it's larger.
+    // This effectively performs a modulo operation, but using division and assignment.
+    // Note: The original code's `while` loop for modulo is unusual for a single modulo operation.
+    // It will repeatedly divide until `ans` is less than `1000000007n`.
+    // If `ans` is `1000000007n * k + r`, it will become `k` after one division, then `k / 1000000007n` etc.
+    // This is not equivalent to `ans % 1000000007n` if `ans` is very large.
+    // However, the instruction is to preserve the algorithm, so the `while` loop is kept.
+    // For typical factorial results, `ans` might be much larger than `1000000007n`,
+    // so this loop would repeatedly divide until `ans` is smaller than the modulus.
+    // This is a specific way to reduce a large number, not a standard modulo.
+    // Example: if finalAnswer = 2 * 10^9 and MOD = 10^9 + 7,
+    // finalAnswer /= MOD would make it ~2.
+    // Then 2 /= MOD would make it 0.
+    // This is not `finalAnswer % MOD`.
+    // The original code's behavior is preserved.
+    while (finalAnswer > 1000000007n) {
+        finalAnswer /= 1000000007n;
+    }
 
-/* Helper function to get the next line split into a string array */
-const obtainStringArray = () => dataStream.fetchNextEntry().split(" ");
-
-/* Helper function to get the next line split into an array of integers */
-const obtainIntegerArray = () => dataStream.fetchNextEntry().split(" ").map(elementItem => parseInt(elementItem));
-
-/* Helper function to get the next line split into a character array */
-const obtainCharacterArray = () => dataStream.fetchNextEntry().split("");
-
-/* Helper function to check if more input is available */
-const checkAvailability = () => dataStream.hasMoreEntries();
-
-/* Helper function for console output */
-const outputResult = (...outputValues) => console.log(...outputValues);
-
-/**
- * Computes the factorial of a given BigInt number.
- * @param {BigInt} valueToFactorial - The number to compute the factorial for.
- * @returns {BigInt} The factorial of the input number.
- */
-const factorialBigInt = (valueToFactorial) => {
-  let productAccumulator = 1n; // Initialize accumulator as BigInt
-  for (let counterVariable = 1n; counterVariable <= valueToFactorial; counterVariable++) {
-    productAccumulator *= counterVariable; // Multiply using BigInt arithmetic
-  }
-  return productAccumulator;
+    // Print the final answer, converting the BigInt to a Number.
+    console.log(Number(finalAnswer));
 };
 
-/* Main application logic execution point */
-const runApplication = () => {
-  const [firstValue, secondValue] = obtainIntegerArray(); // Read two integer values from input
-  
-  // Calculate initial result: (factorial of firstValue) * (factorial of secondValue) * 2
-  let calculatedAnswer = factorialBigInt(firstValue) * factorialBigInt(secondValue) * 2n;
-  
-  const MODULO_VALUE = 1000000007n; // Define the large BigInt modulo value
-  
-  // Repeatedly divide the answer by MODULO_VALUE until it's smaller than MODULO_VALUE
-  // Note: This is not a standard modulo operation (%) but a repeated division.
-  while (calculatedAnswer > MODULO_VALUE) {
-    calculatedAnswer /= MODULO_VALUE;
-  }
-  
-  // Convert the final BigInt result to a standard Number and print it
-  console.log(Number(calculatedAnswer));
-};
-
-// Start the program execution
-runApplication();
+// Invoke the main logic.
+executeMainLogic();

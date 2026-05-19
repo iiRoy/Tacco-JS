@@ -1,98 +1,77 @@
-const getRawInput = () => require('fs').readFileSync('/dev/stdin', 'utf8');
+function processInputAndCalculate(inputContent) {
+  const lines = inputContent.split("\n");
+  const numElements = parseInt(lines[0], 10);
+  const valuesArray = lines[1].split(" ").map(Number);
 
-const extractProcessedData = (rawText) => {
-    const textLines = rawText.split('\n');
-    const entryCount = parseInt(textLines[0], 10);
-    const levelSequence = textLines[1].split(' ').map(Number);
-    return { entryCount, levelSequence };
-};
+  const initialAccumulatorState = {
+    digitsList: new Array(valuesArray[0]).fill(1),
+    thresholdValue: 1,
+    isDigitsUniform: true,
+    pendingUniformityCheck: false
+  };
 
-class DynamicStructureController {
-    #segmentUnits;
-    #operationPhase;
-    #cycleMarker;
+  const finalAccumulatorState = Array.from({ length: numElements - 1 }, (_, index) => index + 1).reduce((currentAcc, currentIdx) => {
+    let { digitsList, thresholdValue, isDigitsUniform, pendingUniformityCheck } = currentAcc;
 
-    constructor(initialLevel) {
-        this.#segmentUnits = Array(initialLevel).fill(1);
-        this.#operationPhase = 0;
-        this.#cycleMarker = 1;
+    let nextDigitsList = [...digitsList];
+    let nextThresholdValue = thresholdValue;
+    let nextIsDigitsUniform = isDigitsUniform;
+    let nextPendingUniformityCheck = pendingUniformityCheck;
+
+    if (nextPendingUniformityCheck) {
+      const firstDigitInList = nextDigitsList[0];
+      const allDigitsAreSame = nextDigitsList.every(digit => digit === firstDigitInList);
+      nextIsDigitsUniform = allDigitsAreSame;
+      nextPendingUniformityCheck = false;
     }
 
-    #transitionPhaseOnVerification() {
-        if (this.#operationPhase === 2) {
-            const firstUnit = this.#segmentUnits.length > 0 ? this.#segmentUnits[0] : null;
-            const allUnitsIdentical = this.#segmentUnits.every(unit => unit === firstUnit);
-            this.#operationPhase = allUnitsIdentical ? 0 : 1;
-        }
-    }
+    const currentValue = valuesArray[currentIdx];
+    const previousValue = valuesArray[currentIdx - 1];
 
-    #handleLevelIncrease(previousDepth, currentDepth) {
-        const unitsToAdd = currentDepth - previousDepth;
-        this.#segmentUnits.push(...Array(unitsToAdd).fill(1));
-        if (this.#operationPhase !== 0) {
-            this.#operationPhase = 1;
-        }
-    }
-
-    #handleLevelDecreaseStandard(currentDepth) {
-        this.#segmentUnits[currentDepth - 1] = (this.#segmentUnits[currentDepth - 1] || 0) + 1;
-        this.#segmentUnits = this.#segmentUnits.slice(0, currentDepth);
-        if (this.#segmentUnits.length !== 1) {
-            this.#operationPhase = 1;
-            this.#cycleMarker++;
-        }
-    }
-
-    #handleLevelDecreaseResetIncrement(currentDepth) {
-        this.#segmentUnits = this.#segmentUnits.slice(0, currentDepth);
-        for (let k = currentDepth - 1; k >= 0; k--) {
-            if (this.#segmentUnits[k] === this.#cycleMarker) {
-                this.#segmentUnits[k] = 1;
-            } else {
-                this.#segmentUnits[k]++;
-                this.#operationPhase = 2;
-                break;
-            }
-        }
-    }
-
-    processLevelTransition(previousDepth, currentDepth) {
-        this.#transitionPhaseOnVerification();
-
-        if (currentDepth > previousDepth) {
-            this.#handleLevelIncrease(previousDepth, currentDepth);
+    if (currentValue > previousValue) {
+      const difference = currentValue - previousValue;
+      for (let k = 0; k < difference; k++) {
+        nextDigitsList.push(1);
+      }
+    } else if (nextIsDigitsUniform) {
+      nextDigitsList[currentValue - 1]++;
+      nextDigitsList = nextDigitsList.slice(0, currentValue);
+      if (nextDigitsList.length !== 1) {
+        nextIsDigitsUniform = false;
+        nextThresholdValue++;
+      }
+    } else {
+      nextDigitsList = nextDigitsList.slice(0, currentValue);
+      let carryHappenedInStep = false;
+      for (let k = currentValue - 1; k >= 0; k--) {
+        if (nextDigitsList[k] === nextThresholdValue) {
+          nextDigitsList[k] = 1;
         } else {
-            switch (this.#operationPhase) {
-                case 0:
-                    this.#handleLevelDecreaseStandard(currentDepth);
-                    break;
-                case 1:
-                    this.#handleLevelDecreaseResetIncrement(currentDepth);
-                    break;
-            }
+          nextDigitsList[k]++;
+          carryHappenedInStep = true;
+          break;
         }
+      }
+      if (carryHappenedInStep) {
+        nextPendingUniformityCheck = true;
+      }
     }
 
-    retrieveMaximumUnitValue() {
-        return this.#segmentUnits.length > 0 ? Math.max(...this.#segmentUnits) : 0;
-    }
+    return {
+      digitsList: nextDigitsList,
+      thresholdValue: nextThresholdValue,
+      isDigitsUniform: nextIsDigitsUniform,
+      pendingUniformityCheck: nextPendingUniformityCheck
+    };
+  }, initialAccumulatorState);
+
+  const finalDigits = finalAccumulatorState.digitsList;
+  const maximumValue = Math.max(...finalDigits);
+  console.log('%s', maximumValue);
 }
-
-const orchestrateCalculation = (inputPayload) => {
-    const { entryCount, levelSequence } = extractProcessedData(inputPayload);
-
-    if (entryCount === 0 || levelSequence.length === 0) {
-        return 0;
-    }
-
-    const sequenceManipulator = new DynamicStructureController(levelSequence[0]);
-
-    for (let i = 1; i < entryCount; i++) {
-        sequenceManipulator.processLevelTransition(levelSequence[i - 1], levelSequence[i]);
-    }
-
-    return sequenceManipulator.retrieveMaximumUnitValue();
-};
-
-const executionOutcome = orchestrateCalculation(getRawInput());
-console.log(executionOutcome);
+  
+function debug(){
+  var input = document.getElementById("input").value;
+  processInputAndCalculate(input);
+}
+processInputAndCalculate(require("fs").readFileSync("/dev/stdin", "utf8"));

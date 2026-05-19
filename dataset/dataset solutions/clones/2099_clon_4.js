@@ -1,19 +1,15 @@
-const processInputData = (incomingText) => {
-    const numericTokens = incomingText.match(/\d+/g).map(Number);
+function calculateConsumedA(inputString) {
+    const [totalUnits, segmentA, segmentB] = inputString.split(" ").map(Number);
 
-    const quantifyValue = numericTokens[0];
-    const componentOneValue = numericTokens[1];
-    const componentTwoValue = numericTokens[2];
+    const cycleTotal = segmentA + segmentB;
+    const fullCycles = Math.floor(totalUnits / cycleTotal);
+    const remainingUnits = totalUnits % cycleTotal;
 
-    const calculateAccumulation = (totalDuration, unitA, unitB) => {
-        const cyclePeriod = unitA + unitB;
-        const completeCycles = Math.trunc(totalDuration / cyclePeriod);
-        const remainingDuration = totalDuration % cyclePeriod;
-        return (completeCycles * unitA) + Math.min(remainingDuration, unitA);
-    };
+    const contributionFromFullCycles = fullCycles * segmentA;
+    const contributionFromRemainder = Math.min(remainingUnits, segmentA);
 
-    const finalResult = calculateAccumulation(quantifyValue, componentOneValue, componentTwoValue);
-    console.log(finalResult);
-};
+    const finalCount = contributionFromFullCycles + contributionFromRemainder;
 
-processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+    console.log(finalCount);
+}
+calculateConsumedA(require("fs").readFileSync("/dev/stdin", "utf8"));

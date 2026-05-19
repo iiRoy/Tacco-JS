@@ -1,35 +1,30 @@
-function solveProblem(inputStr) {
-    const [maxVal, divVal] = inputStr.split(' ').map(Number);
+function Main(inputData) {
+  const [upperBound, modulusValue] = inputData.split(' ').map(Number);
 
-    const satisfyConditions = (x, y, z, d) => {
-        return (
-            (x + y) % d === 0 &&
-            (y + z) % d === 0 &&
-            (z + x) % d === 0
-        );
-    };
+  let countForZeroRemainder = Math.floor(upperBound / modulusValue);
+  let countForHalfModulusRemainder = 0;
 
-    let totalSatisfied = 0;
+  if (modulusValue % 2 === 0) {
+    const targetRemainder = modulusValue / 2;
+    // Calculate how many numbers 'x' in [1, upperBound] satisfy x % modulusValue === targetRemainder
+    // These numbers are targetRemainder, targetRemainder + modulusValue, targetRemainder + 2*modulusValue, ...
+    // The count is floor((upperBound - targetRemainder) / modulusValue) + 1
+    // This formula correctly handles cases where targetRemainder > upperBound, resulting in 0.
+    countForHalfModulusRemainder = Math.floor((upperBound - targetRemainder) / modulusValue) + 1;
+  }
 
-    // Recursive helper to build triplets and count valid ones
-    function exploreCombinations(currentTriplet = [], depth = 0) {
-        if (depth === 3) {
-            // Base case: a complete triplet is formed
-            if (satisfyConditions(currentTriplet[0], currentTriplet[1], currentTriplet[2], divVal)) {
-                totalSatisfied++;
-            }
-            return;
-        }
+  let finalTally = 0;
 
-        // Recursive step: iterate for the current position in the triplet
-        for (let element = 1; element <= maxVal; element++) {
-            currentTriplet[depth] = element;
-            exploreCombinations(currentTriplet, depth + 1);
-        }
-    }
+  // If all three numbers (a, b, c) have a remainder of 0 when divided by modulusValue,
+  // then (a+b)%M=0, (b+c)%M=0, (c+a)%M=0 are all satisfied.
+  finalTally += Math.pow(countForZeroRemainder, 3);
 
-    exploreCombinations(); // Start the recursion
-    console.log(totalSatisfied);
+  // If modulusValue is even, and all three numbers (a, b, c) have a remainder of modulusValue/2,
+  // then (a+b)%M = (M/2 + M/2)%M = M%M = 0.
+  // Similarly for (b+c)%M and (c+a)%M.
+  finalTally += Math.pow(countForHalfModulusRemainder, 3);
+
+  console.log(finalTally);
 }
 
-solveProblem(require("fs").readFileSync("/dev/stdin", "utf8"));
+Main(require("fs").readFileSync("/dev/stdin", "utf8"));

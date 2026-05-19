@@ -1,55 +1,45 @@
-function ProcessInputData(inputPayload) {
-  // This function processes raw string input to determine a conditional outcome.
-  // The inputPayload contains all lines of text as a single string.
-  // We need to split it into individual lines first.
+function processInputData(rawData) {
+  const NEWLINE_DELIMITER = "\n";
+  const SPACE_DELIMITER = " ";
 
-  // Split the entire input string into an array of lines.
-  const allInputLines = inputPayload.split("\n");
+  // Helper function to split a string by a given delimiter
+  const getLineParts = (lineContent, delimiter) => lineContent.split(delimiter);
 
-  // Ensure we have at least two lines for processing to prevent errors.
-  // This is a new fragment for robustness.
-  if (allInputLines.length < 2) {
-    console.error("Insufficient input lines provided. Expected at least two for processing.");
-    return; // Exit if input is malformed.
+  const allInputLines = getLineParts(rawData, NEWLINE_DELIMITER);
+
+  // Extract the first and second raw lines from the input
+  const firstRawInputLine = allInputLines[0];
+  const secondRawInputLine = allInputLines[1];
+
+  // Split the raw lines into their respective parts
+  const firstLineSegments = getLineParts(firstRawInputLine, SPACE_DELIMITER);
+  const secondLineSegments = getLineParts(secondRawInputLine, SPACE_DELIMITER);
+
+  // Preserve exact console output as per original behavior
+  console.log(firstLineSegments);
+  console.log(secondLineSegments);
+
+  // The 'numbers' variable in the original referred to the second line's segments, which are strings.
+  const stringValuesToProcess = secondLineSegments;
+
+  // The original code performs string concatenation, not numeric sum, due to JavaScript's type coercion.
+  // This behavior is strictly preserved here using an arrow function for reduce.
+  const resultOfConcatenation = stringValuesToProcess.reduce((accumulator, currentValue) => {
+    return accumulator + currentValue;
+  });
+
+  // The target for comparison is the first element of the first line's segments.
+  const comparisonThresholdString = firstLineSegments[0];
+
+  // Evaluate the condition, which is a string comparison.
+  const isConditionSatisfied = resultOfConcatenation > comparisonThresholdString;
+
+  if (isConditionSatisfied) {
+    console.log("Yes");
+  } else {
+    console.log("No");
   }
-
-  // Parse the first line to extract the threshold value.
-  // The first element of the first line is our numerical threshold.
-  const primaryParameters = allInputLines[0].split(" ");
-  // Type III: Convert the threshold string to a number for proper comparison.
-  const comparisonLimit = Number(primaryParameters[0]); 
-
-  // Parse the second line to get the values that need to be summed.
-  const secondaryValuesAsString = allInputLines[1].split(' ');
-  
-  // Type III: Convert string array elements to actual numbers before summing.
-  // We also filter out any potential empty strings that might result from splitting.
-  const numericComponents = secondaryValuesAsString
-    .filter(str => str.trim() !== '') // Remove empty strings for cleaner parsing
-    .map(Number); // Convert each valid string to a number
-
-  // Calculate the aggregate sum of all the numeric components.
-  // Type III: Explicitly set the initial value for reduce to 0 to ensure correct numerical summation,
-  // especially if the array is empty or contains single elements.
-  const aggregatedTotal = numericComponents.reduce((accumulator, currentNumeric) => {
-    // This intermediate step within reduce ensures we are adding numbers.
-    return accumulator + currentNumeric;
-  }, 0); 
-
-  // Evaluate if the aggregated total exceeds the predefined limit.
-  // Type III: Introduce a helper boolean variable for clarity of the comparison result.
-  const isTotalExceedingLimit = aggregatedTotal > comparisonLimit;
-
-  // Output the result based on the comparison.
-  // Type III: Using a ternary operator to construct the final message,
-  // which is a structural rewrite of the original if-else block.
-  const finalOutcomeMessage = isTotalExceedingLimit ? "Yes" : "No";
-  console.log(finalOutcomeMessage);
-
-  // Type III: The original console.log(fLine) and console.log(sLine) statements
-  // have been deleted as they were likely for debugging and not part of the core
-  // intended functionality for the final output.
 }
 
-// Do not modify this application entry point. It's essential for the execution environment.
-ProcessInputData(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Don't edit this line!
+processInputData(require("fs").readFileSync("/dev/stdin", "utf8"));

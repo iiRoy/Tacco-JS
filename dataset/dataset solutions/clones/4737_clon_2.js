@@ -1,84 +1,79 @@
-const fileSystemModule = require("fs");
-const programInputData = fileSystemModule.readFileSync("/dev/stdin", "utf8").trim().split("\n");
+const rawData = require("fs").readFileSync("/dev/stdin", "utf8").trim().split("\n");
 
-const contentNavigator = {
-  elements: programInputData,
+let dataStream = {
+  itemCollection: rawData,
   currentPosition: 0,
-  totalCount: programInputData.length,
-
+  maximumItems: rawData.length,
   retrieveNext: function() {
     if (!this.hasMoreElements()) {
-      throw new Error("NoMoreElementsException: There are no additional items.");
+      throw "NoSuchElementException:次に要素は無いよ";
     }
-    const currentElement = this.elements[this.currentPosition];
+    let currentItem = this.itemCollection[this.currentPosition];
     this.currentPosition++;
-    return currentElement;
+    return currentItem;
   },
-
   hasMoreElements: function() {
-    return (this.currentPosition < this.totalCount);
+    return (this.currentPosition < this.maximumItems);
   }
 };
 
-mainExecution();
+ExecutePrimaryLogic();
 
-function getNextLine() {
-  return contentNavigator.retrieveNext();
+function fetchNextItem() {
+  return dataStream.retrieveNext();
 }
 
-function getNextInteger() {
-  return dataTransformer(getNextLine(), 1);
+function fetchNextInteger() {
+  return dataTransformer(fetchNextItem(), 1);
 }
 
-function getNextStringArray() {
-  return dataTransformer(getNextLine(), 2); // Divide by space characters
+function fetchNextStringArray() {
+  return dataTransformer(fetchNextItem(), 2);
 }
 
-function getNextNumericArray() {
-  return dataTransformer(getNextLine(), 4); // Divide by space and convert to numbers
+function fetchNextIntegerArray() {
+  return dataTransformer(fetchNextItem(), 4);
 }
 
-function getNextCharacterArray() {
-  return dataTransformer(getNextLine(), 6); // Divide into individual characters
+function fetchNextCharacterArray() {
+  return dataTransformer(fetchNextItem(), 6);
 }
 
-function hasMoreData() {
-  return contentNavigator.hasMoreElements();
+function checkMoreElements() {
+  return dataStream.hasMoreElements();
 }
 
-function displayOutput(valueToLog) {
-  console.log(valueToLog);
-} // Print to standard output
+function displayOutput(content) {
+  console.log(content);
+}
 
-function displayError(errorMessage) {
-  console.error(errorMessage);
-} // Print to standard error output
+function displayError(message) {
+  console.error(message);
+}
 
-// This function handles various conversions for input data.
-// It converts an input value based on the specified conversion mode.
-// If the conversion fails or mode is unknown, the original input is returned.
-// Conversion modes:
-//   1: Convert to an integer.
-//   2: Split by spaces into an array of strings.
-//   4: Split by spaces and convert each part to a number, returning a numeric array.
-//   6: Split into an array of individual characters.
-//   7: Split into an array of individual characters and convert each to a number.
-//   8: Join array elements with spaces.
-//   9: Join array elements with newlines.
-//   0: Join array elements without any separator.
-function dataTransformer(inputValue, conversionMode) {
+// This function handles various data transformations.
+// Type 1: Convert to integer.
+// Type 2: Split string by space.
+// Type 4: Split string by space and convert to numbers.
+// Type 6: Split string into characters.
+// Type 7: Split string into characters and convert to numbers.
+// Type 8: Join array elements with a space.
+// Type 9: Join array elements with a newline.
+// Type 0: Join array elements without a separator.
+// Default: Return input as is.
+function dataTransformer(inputValue, transformType) {
   try {
-    switch (conversionMode) {
+    switch (transformType) {
       case 1:
-        return parseInt(inputValue, 10);
+        return parseInt(inputValue);
       case 2:
         return inputValue.split(" ");
       case 4:
-        return inputValue.split(" ").map(item => Number(item));
+        return inputValue.split(" ").map((element) => Number(element));
       case 6:
         return inputValue.split("");
       case 7:
-        return inputValue.split("").map(item => Number(item));
+        return inputValue.split("").map((element) => Number(element));
       case 8:
         return inputValue.join(" ");
       case 9:
@@ -88,21 +83,21 @@ function dataTransformer(inputValue, conversionMode) {
       default:
         return inputValue;
     }
-  } catch (exceptionDetails) {
+  } catch (error) {
     return inputValue;
   }
 }
 
-function mainExecution() {
-  var initialValue = getNextInteger();
-  var finalResult = Math.floor(initialValue / 11) * 2;
-  var remainderValue = initialValue % 11;
+function ExecutePrimaryLogic() {
+  const inputNumber = fetchNextInteger();
+  let resultValue = Math.floor(inputNumber / 11) * 2;
+  const remainder = inputNumber % 11;
 
-  if (remainderValue >= 6) {
-    finalResult += 2;
-  } else if (remainderValue > 0) {
-    finalResult++;
+  if (remainder >= 6) {
+    resultValue += 2;
+  } else if (remainder > 0) {
+    resultValue++;
   }
 
-  displayOutput(finalResult);
+  displayOutput(resultValue);
 }

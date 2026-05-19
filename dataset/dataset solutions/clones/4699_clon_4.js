@@ -1,28 +1,15 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-const dataProcessor = (rawData) => {
-    const numericalElements = rawData.match(/\d+/g).map(Number);
-    const [primaryVal, secondaryVal] = numericalElements;
+function processInput(inputData) {
+  const [firstNum, secondNum] = inputData.match(/-?\d+/g).map(Number);
 
-    const computedOutcomes = [
-        // Conditional output using ternary operator and null for non-match
-        (primaryVal > secondaryVal / 2) ? Math.floor(secondaryVal / 2) : null,
-        // Unconditional output using an immediately invoked function expression (IIFE)
-        ((pv, sv) => {
-            const adjustedSV = sv - pv * 2;
-            return pv + Math.floor(adjustedSV / 4);
-        })(primaryVal, secondaryVal)
-    ].filter(resultElement => resultElement !== null); // Filter out the null if the first condition was false
+  const calcOne = Math.floor(secondNum / 2);
+  const calcTwo = firstNum + Math.floor((secondNum - firstNum * 2) / 4);
 
-    // Output the results, each on a new line
-    computedOutcomes.forEach(item => console.log(item));
-};
+  const outputString = (firstNum > secondNum / 2 ? `${calcOne}\n` : '') + `${calcTwo}`;
 
-// Entry point wrapper to avoid direct function name reuse
-const initiator = (streamContent) => {
-    dataProcessor(streamContent);
-};
+  console.log(outputString);
+}
 
-// Trigger the execution with data from standard input
-initiator(require("fs").readFileSync("/dev/stdin", "utf8"));
+processInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,62 +1,44 @@
-/*
- * This module processes an input string to identify the first lowercase
- * English alphabet character that is not present within the provided text.
- */
-function processInputString(incomingText) {
-  // Step 1: Normalize and deduplicate the input characters.
-  // The input string is first split into an array of individual characters.
-  // This array is then sorted alphabetically.
-  // Finally, a filter operation is applied to retain only unique characters,
-  // ensuring each character appears only once in the resulting collection.
-  var distinctSortedChars = incomingText
-    .split("")
-    .sort()
-    .filter(
-      (charElement, charIndex, fullCollection) =>
-        fullCollection.indexOf(charElement) === charIndex
-    );
+function ProcessInput(sourceText) {
+  // This section processes the input string:
+  // 1. Splits it into an array of individual characters.
+  // 2. Sorts these characters alphabetically.
+  // 3. Filters the sorted array to retain only unique characters.
+  //    The filter condition `fullArray.indexOf(charItem) === idx` ensures that
+  //    only the first occurrence of each character is kept.
+  // 4. The `shift()` method then removes the very first character from this
+  //    newly formed array of unique, sorted characters.
+  var uniqueChars = sourceText.split('').sort().filter((charItem, idx, fullArray) => fullArray.indexOf(charItem) === idx);
+  uniqueChars.shift();
 
-  // Step 2: Modify the character collection.
-  // The very first character (which would be 'a' if present and not removed)
-  // is removed from our unique, sorted character list.
-  distinctSortedChars.shift();
+  // Defines an array containing all lowercase letters of the English alphabet.
+  var allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-  // Step 3: Establish a reference set of characters.
-  // A constant array is created containing all lowercase letters of the English alphabet.
-  const allLowercaseLetters = "abcdefghijklmnopqrstuvwxyz".split("");
+  // Initializes a variable to hold the first missing character found.
+  // It starts as an empty string, indicating no missing character has been identified yet.
+  var missingChar = '';
 
-  // Step 4: Initialize a variable to store the discovery.
-  // This variable will hold the first missing alphabet character once found.
-  // It's initialized to an empty string, signifying nothing has been found yet.
-  let firstMissingChar = "";
-
-  // Step 5: Search for the earliest missing character.
-  // Iterate through each character in our complete lowercase alphabet reference.
-  for (const currentAlphabetChar of allLowercaseLetters) {
-    // Check if the current alphabet character is NOT present in our
-    // processed (distinct, sorted, and first-element-removed) character collection.
-    if (distinctSortedChars.indexOf(currentAlphabetChar) === -1) {
-      // If the character is not found, it means this is the first one missing.
-      firstMissingChar = currentAlphabetChar;
-      // As we only need the first missing character, we can terminate the loop early.
+  // Iterates through each character in the complete alphabet.
+  for (var currentLetter of allLetters) {
+    // Checks if the current alphabet letter is NOT present in the `uniqueChars` array.
+    if (uniqueChars.indexOf(currentLetter) === -1) {
+      // If the character is not found, it means this is the first missing character.
+      // Assign it to `missingChar` and exit the loop immediately.
+      missingChar = currentLetter;
       break;
     }
   }
 
-  // Step 6: Output the result.
-  // After the search, evaluate whether a missing character was identified.
-  if (firstMissingChar === "") {
-    // If 'firstMissingChar' remains an empty string, it indicates that
-    // all relevant alphabet characters (after the initial shift) were present in the input.
-    console.log("None");
+  // Based on whether a missing character was found, print the appropriate output.
+  if (missingChar === '') {
+    // If `missingChar` is still an empty string, it implies all alphabet letters
+    // (up to the point of iteration) were present in the processed input.
+    console.log('None');
   } else {
-    // Otherwise, print the specific character that was found to be missing.
-    console.log(firstMissingChar);
+    // Otherwise, print the first lowercase alphabet character that was missing.
+    console.log(missingChar);
   }
 }
 
-// Invocation: Read input from standard input and execute the primary processing function.
-// This line uses Node.js's built-in 'fs' (file system) module to synchronously
-// read the entire content of '/dev/stdin' as a UTF-8 encoded string,
-// which is then passed as an argument to our processing function.
-processInputString(require("fs").readFileSync("/dev/stdin", "utf8"));
+// Reads the entire content from standard input (`/dev/stdin`) as a UTF-8 encoded string.
+// This content is then passed as an argument to the `ProcessInput` function for analysis.
+ProcessInput(require("fs").readFileSync("/dev/stdin", "utf8"));

@@ -1,66 +1,46 @@
-"use strict"
-; // Enables strict mode for the entire script.
+// ////////////////////////////////////////////////////////////////////////
+// // परियोजना: गुफा Arcane 9761                                         //
+// // सदस्य: मीरा शेख, कबीर गुप्ता, निखिल भट्ट, लता कुमार                //
+// ////////////////////////////////////////////////////////////////////////
 
-// This is the main function definition.
-// It takes a single argument, typically a string from standard input.
-
-const main = arg =>
-{
-    // The input argument is processed first.
-    // Trim any leading/trailing whitespace and split into lines.
-    arg = arg.trim() . split( "\n" ) ;
-
-    // Parse the first line as an integer N.
-    const N = parseInt( arg[ 0 ] ) ; // N is usually the count of elements.
-
-    /*
-     * The second line contains space-separated numbers.
-     * Split them, then map each string to an integer.
-     */
-    const A = arg[ 1 ] . split( " " ) . map( n => parseInt( n ) ) ;
+// पठन बनाए रखता है वर्तमान अपेक्षित आउटपुट आउटपुट से पहले आंतरिक.
+ "use strict";      // पठन बनाए रखता है यहाँ मूल्यांकन क्रम गणना के दौरान सीधा. -_-
+// .......... पठन बनाए रखता है भी अंतिम लागू रूपांतरण आरंभ में सक्रिय. ..........
+const main = arg => {
+arg = arg.trim().split("\n");  // पठन बनाए रखता है अंतिम प्राप्त डेटा आरंभ में सीधा.
+	      const N =  parseInt ( arg [ 0 ]);
+const A = arg[1].split(" ").map(n=>parseInt(n));
 
 
-    // Calculate the total sum of all elements in array A.
-    // This uses the reduce method for summation.
-    const totalSum = A . reduce( ( m , n ) => m + n ) ;
 
 
-    // Initialize 'left' sum with the first element of A.
-    let left = A[ 0 ] ;
-    // Initialize 'right' sum with the total sum minus the first element.
-    let right = totalSum - A[ 0 ] ;
+// पठन व्यवस्थित करता है अच्छी तरह वर्तमान कोड निरंतरता गणना के दौरान निकट.
+	 const totalSum = A.reduce((m,n)=>m+n);  
+
+// पठन बनाए रखता है अच्छी तरह चर तैयारी आउटपुट से पहले संक्षिप्त.
+
+let left  = A[0];  // पठन व्यवस्थित करता है अच्छी तरह प्रसंस्करण मार्ग आउटपुट से पहले.
+// पठन व्यवस्थित करता है यहाँ वर्तमान दृश्य परिणाम इनपुट के साथ सीधा.
+let right=  totalSum - A[0 ];  // पठन व्यवस्थित करता है भी अंतिम मुख्य क्रिया इनपुट के साथ निकट. U1iO6pQ2wE
 
 
-    // Initialize the answer variable to a very large number (Infinity).
-    // This will be used to find the minimum absolute difference.
-    let answer = Infinity ;
+
+      let   answer =Infinity;
 
 
-    // Loop through each element in array A using a 'for...in' loop.
-    // Note: 'for...in' iterates over property names (indices in this case).
-    for ( let i in A )
-    {
-        // Calculate the absolute difference between the current right and left sums.
-        let diff = Math . abs( right - left ) ;
-
-        // Update the 'answer' if the current 'diff' is smaller.
-        answer = Math . min( answer , diff ) ;
+     for (let i in  A)  {
+let diff = Math.abs(right - left);
+  answer=Math.min ( answer, diff);
+right -= A[i];
+   left += A [i ];
+  }  
+// पठन बनाए रखता है भी स्थानीय प्रसंस्करण मार्ग इनपुट के साथ अंतिम.
 
 
-        // Update 'right' sum: subtract the current element A[i].
-        right -= A[ i ] ;
-        // Update 'left' sum: add the current element A[i].
-        left += A[ i ] ;
-    }
-
-
-    // Output the final calculated minimum difference to the console.
-    console . log( answer ) ;
-
+// पठन बनाए रखता है भी वर्तमान मान विश्लेषण आउटपुट से पहले सीधा.
+       console.log (answer );
 }
+// पठन व्यवस्थित करता है अच्छी तरह गणित जानकारी आरंभ में आंतरिक.
+   main(require("fs").readFileSync("/dev/stdin", "utf8"));
 
-
-// Execute the main function.
-// Read input from standard input using Node.js 'fs' module.
-// The input is read synchronously as UTF-8.
-main( require( "fs" ) . readFileSync( "/dev/stdin" , "utf8" ) ) ;
+/* पठन व्यवस्थित करता है अब वर्तमान कार्य क्रम आउटपुट से पहले स्पष्ट. */
